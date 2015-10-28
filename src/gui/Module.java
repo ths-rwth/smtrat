@@ -5,25 +5,36 @@
  * @since   2012-02-13
  * @version 2012-10-17
  */
+
+import java.util.ArrayList;
+
 public class Module implements Comparable<Module>
 {
     private final String name;
-    private final String type;
+    private ArrayList<String> settings;
+    private int chosenSetting;
     
     /**
-     * Constructs a module with name and getType.
+     * Constructs a module with name.
      * @param name
-     * @param type
      */
-    public Module( String name, String type )
+    public Module( String name )
     {
-        int offset = name.lastIndexOf( "Module" );
-        if( offset!=-1 )
-        {
-            name = name.substring( 0, offset );
-        }
+        // int offset = name.lastIndexOf( "Module" );
+        // if( offset!=-1 )
+        // {
+        //     name = name.substring( 0, offset );
+        // }
         this.name = name;
-        this.type = type;
+        this.settings = new ArrayList<>();
+        chosenSetting = -1;
+    }
+
+    public void addSetting( String name )
+    {
+        if( settings.isEmpty() )
+            chosenSetting = 0;
+        settings.add( name );
     }
     
     @Override
@@ -48,14 +59,37 @@ public class Module implements Comparable<Module>
     {
         return name;
     }
-
-    /**
-     * This method returns the getType, which is more an internal data field. The name is returned by toString().
-     * @return getType of this string
-     */
-    public String getType()
+    
+    public String getNameAndSetting()
     {
-        return type;
+        if( chosenSetting == -1 )
+            return name;
+        return name + "<" + settings.get( chosenSetting ) + ">";
+    }
+    
+    public String currentSetting()
+    {
+        if( chosenSetting == -1 )
+            return null;
+        return settings.get( chosenSetting );
+    }
+
+    public int changeChosenSetting( String _setting )
+    {
+        chosenSetting = 0;
+        for( ; chosenSetting < settings.size(); ++chosenSetting )
+        {
+            if( settings.get(chosenSetting).equals( _setting ) )
+                return chosenSetting;
+        }
+        // Throw an exception?
+        chosenSetting = -1;
+        return chosenSetting;
+    }
+
+    public ArrayList<String> getSettings()
+    {
+        return settings;
     }
 
     @Override

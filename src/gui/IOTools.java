@@ -14,6 +14,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -54,12 +55,14 @@ public class IOTools
     private static final String CONDITION_CLASS = "Condition";
     public static final String STRATEGIES_HEADER_CLASS = "strategies";
 
-    private static final File MODULE_TYPE_LISTING_FILE = new File( SMTRAT_SOURCE_DIR + File.separator + "modules" + File.separator + "MODULETYPES.txt" );
+    private static final String MODULES_DIRECTORY = SMTRAT_SOURCE_DIR + File.separator + "modules";
     private static final File PROPOSITION_SOURCE_FILE = new File( getAbsoluteCarlPath() + File.separator + "carl" + File.separator + "formula" + File.separator + "Condition.h" );
     private static final File SMTRAT_STRATEGIES_BUILD_FILE = new File( SMTRAT_STRATEGIES_DIR + File.separator + "CMakeLists.txt" );
     private static final File SMTRAT_STRATEGIES_HEADER_FILE = new File( SMTRAT_STRATEGIES_DIR + File.separator + STRATEGIES_HEADER_CLASS + ".h" );
 
     public static final ArrayList<Module> modules = readModules();
+    public static final String longestModuleName = getLongestModuleName( modules );
+    public static final String longestSettingName = getLongestSettingName( modules );
     public static final ArrayList<String> propositions = readPropositions();
     public static final ArrayList<String> existingSolverNames = readExistingSolverNames();
 
@@ -92,10 +95,6 @@ public class IOTools
         if( !SMTRAT_SOURCE_DIR.exists() )
         {
             throw new IOToolsException( IOToolsException.SMTRAT_SOURCE_DIR_EXCEPTION );
-        }
-        if( !MODULE_TYPE_LISTING_FILE.exists() )
-        {
-            throw new IOToolsException( IOToolsException.MODULE_TYPE_LISTING_FILE_EXCEPTION );
         }
 
         if( modules==null )
@@ -335,8 +334,8 @@ public class IOTools
                 throw new IOToolsException( IOToolsException.XML_EXCEPTION );
             }
 
-            Element typeElement = (Element) moduleElement.getLastChild();
-            if( !typeElement.getTagName().equals( "type" ) )
+            Element settingElement = (Element) moduleElement.getLastChild();
+            if( !settingElement.getTagName().equals( "setting" ) )
             {
                 throw new IOToolsException( IOToolsException.XML_EXCEPTION );
             }
@@ -354,7 +353,7 @@ public class IOTools
                 throw new IOToolsException( IOToolsException.XML_EXCEPTION );
             }
             String name = ((Text) nameElement.getFirstChild()).getData();
-            String type = ((Text) typeElement.getFirstChild()).getData();
+            String settingName = ((Text) settingElement.getFirstChild()).getData();
             Vertex vertex;
             if( name.equals( StrategyGraph.ROOT_VERTEX_MODULE_NAME ) )
             {
@@ -362,7 +361,24 @@ public class IOTools
             }
             else
             {
-                vertex = new Vertex( new Module( name, type ) );
+                Module module = null;
+                for( Module m : modules )
+                {
+                    if( m.getName().equals( name ) )
+                    {
+                        module = m;
+                        break;
+                    }
+                }
+                if( module == null )
+                    throw new IOToolsException( IOToolsException.XML_EXCEPTION );
+                if( !settingName.equals("None") )
+                {
+                    int ret = module.changeChosenSetting( settingName );
+                    if( ret == -1 )
+                        throw new IOToolsException( IOToolsException.XML_EXCEPTION );
+                }
+                vertex = new Vertex( module );
                 graph.addVertex( vertex );
             }
             layout.setLocation( vertex, x, y);
@@ -464,9 +480,12 @@ public class IOTools
             nameElement.appendChild( document.createTextNode( v.getModule().getName() ) );
             moduleElement.appendChild( nameElement );
 
-            Element typeElement = document.createElement( "type" );
-            typeElement.appendChild( document.createTextNode( v.getModule().getType() ) );
-            moduleElement.appendChild( typeElement );
+            Element settingElement = document.createElement( "setting" );
+            String curset = v.getModule().currentSetting();
+            if( curset == null )
+                curset = "None";
+            settingElement.appendChild( document.createTextNode( curset ) );
+            moduleElement.appendChild( settingElement );
         }
 
         Element edgesElement = document.createElement( "edges" );
@@ -524,9 +543,7 @@ public class IOTools
         try
         {
             if( solverName==null || solverName.equals( "" ) || solverName.contains( "config" ) )
-            {
                 return null;
-            }
 
             String tab = "    ";
             String nl = System.lineSeparator();
@@ -534,86 +551,67 @@ public class IOTools
 
             File headerFile = new File( SMTRAT_STRATEGIES_DIR.getPath() + File.separator + solverName + ".h" );
             File headerTempFile = null;
-            File implementationFile = new File( SMTRAT_STRATEGIES_DIR.getPath() + File.separator + solverName + ".cpp" );
-            File implementationTempFile = null;
             File smtratStrategiesBuildTempFile = new File( SMTRAT_STRATEGIES_BUILD_FILE.getPath() + "~" );
             File smtratStrategiesHeaderTempFile = new File( SMTRAT_STRATEGIES_HEADER_FILE.getPath() + "~" );
 
+            // Collect the string to implement the strategy of this solver and the string implementing the conditions the strategy uses.
             if( add )
             {
                 StrategyGraph graph = (StrategyGraph) layout.getGraph();
-                HashMap<Integer,Edge> edges = new HashMap<>();
-                for( Edge e : (Collection<Edge>) graph.getEdges() )
+                StringBuilder headerString = new StringBuilder();
+
+                Collection<String> conditions = new ArrayList<String>();
+                Collection<String> moduleNames = new ArrayList<String>();
+                HashMap<String,String> backlinks = new HashMap();
+                String graphString = getGraphString( graph, graph.getRoot(), new String( tab + tab + tab ), tab, nl, conditions, moduleNames, backlinks );
+                
+                // Write the content to the header file.
+                headerString.append( "/**" + nl + 
+                                     " * @file " + solverName + ".h" + nl +
+                                     " */" + nl +
+                                     "#pragma once" + nl + nl +
+                                     "#include \"../solver/Manager.h\"" + nl );
+                for( String moduleName : moduleNames )
+                    headerString.append( "#include \"../modules/" + moduleName + "/" + moduleName + ".h\"" + nl );
+                headerString.append( nl ); 
+                headerString.append( "namespace smtrat" + nl + 
+                                     "{" + nl );
+                headerString.append( tab + "/**" + nl +
+                                     tab + " * Strategy description." + nl +
+                                     tab + " *" + nl +
+                                     tab + " * @author" + nl +
+                                     tab + " * @since" + nl +
+                                     tab + " * @version" + nl +
+                                     tab + " *" + nl +
+                                     tab + " */" + nl );
+                headerString.append( tab + "class " + solverName + ":" + nl +
+                                     tab + tab + "public Manager" + nl +
+                                     tab + "{" + nl );
+                for( String condition : conditions )
+                    headerString.append( condition + nl );
+                headerString.append( tab + tab + "public:" + nl + nl +
+                                     tab + tab + solverName + "(): Manager()" + nl + 
+                                     tab + tab + "{" + nl + 
+                                     tab + tab + tab + "size_t " );
+                int i = 0;
+                Collection<Vertex> vertices = graph.getVertices();
+                for( Vertex vertex : vertices )
                 {
-                    edges.put( e.getPriority(), e );
+                    headerString.append( vertex.identifier() + " = 0" );
+                    if( i < vertices.size()-1 )
+                        headerString.append( ", " );
+                    ++i;
                 }
+                headerString.append( ";" + nl );
+                headerString.append( tab + tab + tab + "setStrategy" );
+                headerString.append( graphString + ";" + nl );
+                for( String from : backlinks.keySet() )
+                    headerString.append( tab + tab + tab + "addEdge( " + from + ", " + backlinks.get( from ) + " );" );
+                headerString.append( tab + tab + "}" + nl +
+                                     tab + "};" + nl +
+                                     "} // namespace smtrat" );
 
-                String license = "";
-
-                String headerString = license + "/**" + nl + " * @file " + solverName + ".h" + nl + " *" + nl + " */" + nl + "#ifndef SMTRAT_" + solverNameUpperCase + "_H" + nl + "#define SMTRAT_" + solverNameUpperCase + "_H" + nl + nl + "#include \"../solver/Manager.h\"" + nl + nl + "namespace smtrat" + nl + "{" + nl + tab + "class " + solverName + ":" + nl + tab + tab + "public Manager" + nl + tab + "{" + nl + tab + tab + "public:" + nl + tab + tab + tab + solverName + "( bool _externalModuleFactoryAdding = false );" + nl + tab + tab + tab + "~" + solverName + "();" + nl + tab + "};" + nl + "}" + tab + "// namespace smtrat" + nl + "#endif" + tab + "/** SMTRAT_" + solverNameUpperCase + "_H */" + nl;
-
-                StringBuilder conditionsString = new StringBuilder();
-                StringBuilder graphString = new StringBuilder();
-
-                StringBuilder implementationString = new StringBuilder();
-                implementationString.append( license ).append( "/**" ).append( nl ).append( " * @file " ).append( solverName ).append( ".cpp" ).append( nl ).append( " *" ).append( nl ).append( " */" ).append( nl ).append( "#include \"" ).append( solverName ).append( ".h\"" ).append( nl ).append( nl ).append( "namespace smtrat" ).append( nl ).append( "{" ).append( nl );
-
-                for( int i=0; i<edges.size(); i++ )
-                {
-                    Edge edge = edges.get( i );
-                    Edge predecessorEdge = graph.getPredecesssorEdge( edge );
-                    Condition condition = edge.getCondition();
-                    Vertex successorVertex = (Vertex) graph.getEndpoints( edge ).getSecond();
-
-                    if( !condition.isTrueCondition() )
-                    {
-//                        implementationString.append( tab ).append( "static carl::Condition condition" ).append( i ).append( " = (" ).append( condition.toStringCPP() ).append( ");" ).append( nl );
-                        conditionsString.append( nl ).append( tab ).append( "static bool conditionEvaluation" ).append( i ).append( "( carl::Condition _condition )" ).append( nl ).append( tab ).append( "{" ).append( nl ).append( tab ).append( tab ).append( "return " ).append( "( " ).append( condition.toStringCPP( "_condition" ) ).append( " );" ).append( nl ).append( tab ).append( "}" ).append( nl );
-                    }
-
-                    if( edge.isBackLink() )
-                    {
-                        graphString.append( tab ).append( tab ).append( "addBacklinkIntoStrategyGraph( " );
-
-                    }
-                    else
-                    {
-                        graphString.append( tab ).append( tab ).append( "addBackendIntoStrategyGraph( " );
-                    }
-
-                    if( predecessorEdge==null )
-                    {
-                        graphString.append( "0" ).append( ", " );
-                    }
-                    else
-                    {
-                        graphString.append( predecessorEdge.getPriority()+1 ).append( ", " );
-                    }
-
-                    if( edge.isBackLink() )
-                    {
-                        predecessorEdge = graph.getPredecesssorEdge( successorVertex );
-                        graphString.append( predecessorEdge.getPriority()+1 );
-                    }
-                    else
-                    {
-                        graphString.append( successorVertex.getModule().getType() );
-                    }
-
-                    if( condition.isTrueCondition() )
-                    {
-                        graphString.append( ", isCondition );" ).append( nl );
-                    }
-                    else
-                    {
-                        graphString.append( ", conditionEvaluation" ).append( i ).append( " );" ).append( nl );
-                    }
-                }
-                implementationString.append( conditionsString );
-                implementationString.append( nl ).append( tab ).append( solverName ).append( "::" ).append( solverName ).append( "( bool _externalModuleFactoryAdding ):" ).append( nl ).append( tab ).append( tab ).append( "Manager( _externalModuleFactoryAdding )" ).append( nl ).append( tab ).append( "{" ).append( nl );
-                implementationString.append( graphString );
-                implementationString.append( tab ).append( "}" ).append( nl ).append( nl ).append( tab ).append( solverName ).append( "::~" ).append( solverName ).append( "(){}" ).append( nl ).append( nl ).append( "}" ).append( tab ).append( "// namespace smtrat" );
-
+                // Try to store the content to the file.
                 if( headerFile.exists() )
                 {
                     headerTempFile = new File( headerFile.getPath() + "~" );
@@ -621,7 +619,7 @@ public class IOTools
                 }
                 try( PrintWriter writeFile = new PrintWriter( new FileWriter( headerFile ) ) )
                 {
-                    writeFile.print( headerString );
+                    writeFile.print( headerString.toString() );
                     writeFile.flush();
                 }
                 catch( Exception ex )
@@ -633,168 +631,63 @@ public class IOTools
                     }
                     throw ex;
                 }
-
-                if( implementationFile.exists() )
-                {
-                    implementationTempFile = new File( implementationFile.getPath() + "~" );
-                    Files.copy( implementationFile.toPath(), implementationTempFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
-                }
-                try( PrintWriter writeFile = new PrintWriter( new FileWriter( implementationFile ) ) )
-                {
-                    writeFile.print( implementationString.toString() );
-                    writeFile.flush();
-                }
-                catch( Exception ex )
-                {
-                    if( headerTempFile!=null && headerTempFile.exists() )
-                    {
-                        Files.copy( headerTempFile.toPath(), headerFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
-                        Files.delete( headerTempFile.toPath() );
-                    }
-                    if( implementationTempFile!=null && implementationTempFile.exists() )
-                    {
-                        Files.copy( implementationTempFile.toPath(), implementationFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
-                        Files.delete( implementationTempFile.toPath() );
-                    }
-                    throw ex;
-                }
-            }
-
-            //String newStrategiesBuildFileContents = "";
-            //try ( BufferedReader readBuildFile = new BufferedReader( new FileReader( SMTRAT_STRATEGIES_BUILD_FILE ) ) )
-            //{
-            //    String line;
-            //    while( (line = readBuildFile.readLine())!=null )
-            //    {
-            //        newStrategiesBuildFileContents += line + nl;
-            //    }
-            //    newStrategiesBuildFileContents = newStrategiesBuildFileContents.replaceAll( "strategies/" + solverName + "\\.cpp\\s*", "" );
-            //    newStrategiesBuildFileContents = newStrategiesBuildFileContents.replaceAll( "strategies/" + solverName + "\\.h\\s*", "" );
-            //}
-
-            String newStrategiesHeaderFileContents;
-            try ( BufferedReader readHeaderFile = new BufferedReader( new FileReader( SMTRAT_STRATEGIES_HEADER_FILE ) ) )
-            {
-                String line;
-                StringBuilder fileContents = new StringBuilder();
-                while( (line = readHeaderFile.readLine())!=null )
-                {
-                    fileContents.append( line ).append( nl );
-                }
-
-                newStrategiesHeaderFileContents = fileContents.toString().replaceAll( "#include\\s*\"" + solverName + "\\.h\"\\s*" + nl, "" );
-            }
-
-            if( add )
-            {
-                //Pattern definitionStart = Pattern.compile( "set\\(lib_strategies_src\\s*\\$\\{lib_strategies_src\\}\\s*", Pattern.COMMENTS + Pattern.DOTALL );
-                //Matcher definitionStartMatcher = definitionStart.matcher( newStrategiesBuildFileContents );
-                //if( definitionStartMatcher.find() )
-                //{
-                //    int matchIndexEnd = definitionStartMatcher.end();
-                //    newStrategiesBuildFileContents = newStrategiesBuildFileContents.substring( 0, matchIndexEnd ) + "strategies/" + solverName + ".cpp " + newStrategiesBuildFileContents.substring( matchIndexEnd );
-                //}
-                //else
-                //{
-                //    throw new IOToolsException( IOToolsException.BUILD_ENTRY_POINT_NOT_FOUND );
-                //}
-
-                //definitionStart = Pattern.compile( "set\\(lib_strategies_headers\\s*\\$\\{lib_strategies_header\\}\\s*", Pattern.COMMENTS + Pattern.DOTALL );
-                //definitionStartMatcher = definitionStart.matcher( newStrategiesBuildFileContents );
-
-                //if( definitionStartMatcher.find() )
-                //{
-                //    int matchIndexEnd = definitionStartMatcher.end();
-                //    newStrategiesBuildFileContents = newStrategiesBuildFileContents.substring( 0, matchIndexEnd ) + "strategies/" + solverName + ".h " + newStrategiesBuildFileContents.substring( matchIndexEnd );
-                //}
-                //else
-                //{
-                //    throw new IOToolsException( IOToolsException.BUILD_ENTRY_POINT_NOT_FOUND );
-                //}
-
-                Pattern definitionStart = Pattern.compile( "#include", Pattern.DOTALL );
-                Matcher definitionStartMatcher = definitionStart.matcher( newStrategiesHeaderFileContents );
-
-                if( definitionStartMatcher.find() )
-                {
-                    int matchIndexBegin = definitionStartMatcher.start();
-                    newStrategiesHeaderFileContents = newStrategiesHeaderFileContents.substring( 0, matchIndexBegin ) + "#include \"" + solverName + ".h\"" + nl + newStrategiesHeaderFileContents.substring( matchIndexBegin );
-                }
-                else
-                {
-                    throw new IOToolsException( IOToolsException.HEADER_ENTRY_POINT_NOT_FOUND );
-                }
-            }
-
-            //Files.copy( SMTRAT_STRATEGIES_BUILD_FILE.toPath(), smtratStrategiesBuildTempFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
-            Files.copy( SMTRAT_STRATEGIES_HEADER_FILE.toPath(), smtratStrategiesHeaderTempFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
-
-            //try( PrintWriter writeBuildFile = new PrintWriter( new FileWriter( SMTRAT_STRATEGIES_BUILD_FILE ) ) )
-            //{
-            //    writeBuildFile.print( newStrategiesBuildFileContents );
-            //    writeBuildFile.flush();
-                try( PrintWriter writeHeaderFile = new PrintWriter( new FileWriter( SMTRAT_STRATEGIES_HEADER_FILE ) ) )
-                {
-                    writeHeaderFile.print( newStrategiesHeaderFileContents );
-                    writeHeaderFile.flush();
-                    if( !add )
-                    {
-                        if( headerFile.exists() )
-                        {
-                            Files.delete( headerFile.toPath() );
-                        }
-                        if( implementationFile.exists() )
-                        {
-                            Files.delete( implementationFile.toPath() );
-                        }
-                    }
-                }
-            //}
-            catch( Exception ex )
-            {
-                if( headerTempFile!=null && headerTempFile.exists() )
-                {
-                    Files.copy( headerTempFile.toPath(), headerFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
-                    Files.delete( headerTempFile.toPath() );
-                }
-                if( implementationTempFile!=null && implementationTempFile.exists() )
-                {
-                    Files.copy( implementationTempFile.toPath(), implementationFile.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
-                    Files.delete( implementationTempFile.toPath() );
-                }
-                //if( smtratStrategiesBuildTempFile.exists() )
-                //{
-                //    Files.copy( smtratStrategiesBuildTempFile.toPath(), SMTRAT_STRATEGIES_BUILD_FILE.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
-                //    Files.delete( smtratStrategiesBuildTempFile.toPath() );
-                //}
-                if( smtratStrategiesHeaderTempFile.exists() )
-                {
-                    Files.copy( smtratStrategiesHeaderTempFile.toPath(), SMTRAT_STRATEGIES_HEADER_FILE.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES );
-                    Files.delete( smtratStrategiesHeaderTempFile.toPath() );
-                }
-                throw ex;
             }
 
             if( headerTempFile!=null && headerTempFile.exists() )
-            {
                 Files.delete( headerTempFile.toPath() );
-            }
-            if( implementationTempFile!=null && implementationTempFile.exists() )
-            {
-                Files.delete( implementationTempFile.toPath() );
-            }
-            //if( smtratStrategiesBuildTempFile.exists() )
-            //{
-            //    Files.delete( smtratStrategiesBuildTempFile.toPath() );
-            //}
-
             return solverName;
         }
-        catch( IOException | IOToolsException ex )
+        catch( IOException ex )
         {
             JOptionPane.showMessageDialog( gui, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE );
             return null;
         }
+    }
+
+    private static String getGraphString( StrategyGraph _graph, Vertex _vertex, String _prefix, String _tab, String _nl, Collection<String> _conditions, Collection<String> _moduleNames, HashMap<String,String> _backlinks )
+    {
+        Collection<Edge> outEdges = _graph.getOutEdges( _vertex );
+        Collection<Edge> nonBacklingOutEdges = new ArrayList<Edge>();
+        for( Edge outEdge : outEdges )
+        {
+            Vertex succ = (Vertex) _graph.getDest( outEdge );
+            if( outEdge.isBackLink() )
+                _backlinks.put( _vertex.identifier(), succ.identifier() );
+            else
+                nonBacklingOutEdges.add( outEdge );
+        }
+        if( nonBacklingOutEdges.isEmpty() )
+            return "()";
+        String result = new String( "(" + _nl );
+        result += _prefix + "{" + _nl;
+        int i = 0;
+        for( Edge outEdge : nonBacklingOutEdges )
+        {
+            Condition condition = outEdge.getCondition();
+            int condNumber = _conditions.size();
+            if( !condition.isTrueCondition() )
+            {
+                _conditions.add( 
+                    _tab + _tab + "static bool conditionEvaluation" + condNumber + "( carl::Condition _condition )" + _nl + 
+                    _tab + _tab + "{" + _nl +
+                    _tab + _tab + _tab + "return " + "( " + condition.toStringCPP( "_condition" ) + " );" + _nl + 
+                    _tab + _tab + "}" + _nl
+                );
+            }
+            Vertex succ = (Vertex) _graph.getDest( outEdge );
+            result += _prefix + _tab + "addBackend<" + succ.getModule().getNameAndSetting() + ">";
+            _moduleNames.add( succ.getModule().getName() );
+            result += getGraphString( _graph, succ, _prefix + _tab, _tab, _nl, _conditions, _moduleNames, _backlinks );
+            if( !condition.isTrueCondition() )
+                result += ".condition( &conditionEvaluation" + condNumber + " )";
+            result += ".id( " + succ.identifier() + " )";
+            if( i < nonBacklingOutEdges.size()-1 )
+                result += ",";
+            result += _nl;
+            ++i;
+        }
+        result += _prefix + "})";
+        return result;
     }
 
     /**
@@ -806,34 +699,85 @@ public class IOTools
     private static ArrayList<Module> readModules()
     {
         ArrayList<Module> moduleList = new ArrayList<>();
-
-        try ( BufferedReader readFile = new BufferedReader( new FileReader( MODULE_TYPE_LISTING_FILE ) ) )
+        
+        File file = new File( MODULES_DIRECTORY );
+        String[] directories = file.list(new FilenameFilter()
         {
-            String line;
-            while( (line = readFile.readLine())!=null )
+            @Override
+            public boolean accept(File current, String name)
             {
-                line = line.replaceAll( "\\s*", "" );
-                if( !line.equals( "" ) && line.startsWith( "MT_" ) )
+                return new File(current, name).isDirectory();
+            }
+        });
+
+        for( int i = 0; i < directories.length; ++i )
+        {
+            Module module = new Module( directories[i] );
+            moduleList.add( module );
+
+            String line;
+            String settingPrefix = directories[i].substring( 0, directories[i].length() - 6 ) + "Settings";
+            Pattern p = Pattern.compile("\\b"+settingPrefix, Pattern.CASE_INSENSITIVE);
+            Collection<String> settings = new ArrayList<String>();
+            String settingsFileName = MODULES_DIRECTORY + "/" + directories[i] + "/" + settingPrefix + ".h";
+            try ( BufferedReader readFile = new BufferedReader( new FileReader( MODULES_DIRECTORY + "/" + directories[i] + "/" + settingPrefix + ".h" ) ) )
+            {
+                while( (line = readFile.readLine()) != null )
                 {
-                    moduleList.add( new Module( line.substring( 3 ), line ) );
+                    if( line.indexOf("struct") != -1 )
+                    {
+                        Matcher m = p.matcher(line);
+
+                        // indicate all matches on the line
+                        if( m.find() )
+                        {
+                            String rem = line.substring( m.start(), line.length() ).split(" ")[0].replaceAll(":","");
+                            settings.add( rem );
+                        }
+                    }
                 }
             }
+            catch( IOException ex )
+            {
+                // No Setting
+            }
+            for( String setting : settings  )
+            {
+                module.addSetting( setting );
+            }
         }
-        catch( IOException ex )
-        {
-            JOptionPane.showMessageDialog( gui, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE );
-            return null;
-        }
-
         if( moduleList.isEmpty() )
-        {
             return null;
-        }
         else
         {
             Collections.sort( moduleList );
             return moduleList;
         }
+    }
+
+    private static String getLongestModuleName( ArrayList<Module> _modules )
+    {
+        String result = "";
+        for( Module module : _modules )
+        {
+            if( module.getName().length() > result.length() )
+                result = module.getName();
+        }
+        return result;
+    }
+
+    private static String getLongestSettingName( ArrayList<Module> _modules )
+    {
+        String result = "";
+        for( Module module : _modules )
+        {
+            for( String setting : module.getSettings() )
+            {
+                if( setting.length() > result.length() )
+                    result = setting;
+            }
+        }
+        return result;
     }
 
     /**

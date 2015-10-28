@@ -12,6 +12,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.ActionListener;
 import javax.swing.AbstractAction;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -69,6 +70,7 @@ public class EditStrategyGraphDialog extends JDialog
     private Module module;
     
     private JComboBox<Module> moduleComboBox;
+    private JComboBox<String> settingsComboBox;
     private JTextArea conditionTextArea;
     private JComboBox<String> propositionComboBox;
 
@@ -110,6 +112,7 @@ public class EditStrategyGraphDialog extends JDialog
         getRootPane().getActionMap().put( "Instructions", instructionsAction );
         AddPropositionAction addPropositionAction = new AddPropositionAction();
         ModuleInfoAction moduleInfoAction = new ModuleInfoAction();
+        SettingsInfoAction settingInfoAction = new SettingsInfoAction();
         
         conditionCaretListener = new ConditionCaretListener();
         ConditionFocusListener conditionFocusListener = new ConditionFocusListener();
@@ -152,10 +155,31 @@ public class EditStrategyGraphDialog extends JDialog
             JPanel modulePanel = new JPanel();
             modulePanel.setLayout( new BoxLayout( modulePanel, BoxLayout.LINE_AXIS ) );
             moduleComboBox = new JComboBox( IOTools.modules.toArray() );
+            moduleComboBox.setPrototypeDisplayValue( new Module( IOTools.longestModuleName ) );
             if( type==DialogType.EditVertex )
             {
                 moduleComboBox.setSelectedItem( module );
             }
+            Module selectedModule = (Module) moduleComboBox.getSelectedItem();
+            settingsComboBox = new JComboBox( selectedModule.getSettings().toArray() );
+            settingsComboBox.setPrototypeDisplayValue( IOTools.longestSettingName );
+            String setting = selectedModule.currentSetting();
+            if( setting != null )
+                settingsComboBox.setSelectedItem( setting );
+            moduleComboBox.addActionListener( new ActionListener() 
+            {
+                public void actionPerformed( ActionEvent event )
+                {
+                    JComboBox moduleComboBox = (JComboBox) event.getSource();
+                    Module selectedModule = (Module) moduleComboBox.getSelectedItem();
+                    settingsComboBox.removeAllItems();
+                    for( String s : selectedModule.getSettings() )
+                        settingsComboBox.addItem( s );
+                    String setting = selectedModule.currentSetting();
+                    if( setting != null )
+                        settingsComboBox.setSelectedItem( setting );
+                }
+            } );
             gridBagLayout.setConstraints( moduleComboBox, gridBagConstraints );
             modulePanel.add( moduleComboBox );
             modulePanel.add( Box.createRigidArea( new Dimension( 5, 0 ) ) );
@@ -163,6 +187,13 @@ public class EditStrategyGraphDialog extends JDialog
             moduleInfoButton.addActionListener( moduleInfoAction );
             moduleInfoButton.setMnemonic( KeyEvent.VK_I );
             modulePanel.add( moduleInfoButton );
+            gridBagLayout.setConstraints( settingsComboBox, gridBagConstraints );
+            modulePanel.add( settingsComboBox );
+            modulePanel.add( Box.createRigidArea( new Dimension( 5, 0 ) ) );
+            JButton settingInfoButton = new JButton( "?" );
+            settingInfoButton.addActionListener( settingInfoAction );
+            settingInfoButton.setMnemonic( KeyEvent.VK_I );
+            modulePanel.add( settingInfoButton );
             gridBagLayout.setConstraints( modulePanel, gridBagConstraints );
             getContentPane().add( modulePanel );
         }
@@ -569,7 +600,9 @@ public class EditStrategyGraphDialog extends JDialog
                     }
                     else if( type==DialogType.AddVertexAndEdge )
                     {
-                        graph.addEdge( new Edge( condition ), vertex, new Vertex( (Module) moduleComboBox.getSelectedItem() ) );
+                        Module module = (Module) moduleComboBox.getSelectedItem();
+                        module.changeChosenSetting( (String) settingsComboBox.getSelectedItem() );
+                        graph.addEdge( new Edge( condition ), vertex, new Vertex( module ) );
                         graphChanged = true;
                     }
                 }
@@ -577,7 +610,9 @@ public class EditStrategyGraphDialog extends JDialog
                 {
                     if( !module.getName().equals( moduleComboBox.getSelectedItem().toString() ) )
                     {
-                        vertex.setModule( (Module) moduleComboBox.getSelectedItem() );
+                        Module module = (Module) moduleComboBox.getSelectedItem();
+                        module.changeChosenSetting( (String) settingsComboBox.getSelectedItem() );
+                        vertex.setModule( module );
                         graphChanged = true;
                     }
                 }
@@ -624,7 +659,7 @@ public class EditStrategyGraphDialog extends JDialog
         {
             int textAreaWidth = 50;
             int textWidth = (textAreaWidth*3)/2;
-            String moduleName = moduleComboBox.getSelectedItem().toString() + new String( "Module" );
+            String moduleName = moduleComboBox.getSelectedItem().toString();
             Config config = new Config();
             File file = new File( config.getModulesPath() + File.separator + moduleName + File.separator + moduleName + ".tex" );
             try ( BufferedReader readFile = new BufferedReader( new FileReader( file ) ) )
@@ -637,7 +672,7 @@ public class EditStrategyGraphDialog extends JDialog
                     ret.append(" ");
                 }
                 JTextArea textArea = new JTextArea(20, textAreaWidth);
-                String infoText = ret.toString().replace( "~", " " );;
+                String infoText = ret.toString().replace( "~", " " );
                 infoText = infoText.replaceAll( "\\$", "" );
                 infoText = infoText.replaceAll( "\\.", "\\. " );
                 infoText = infoText.replaceAll( "\\,", "\\, " );
@@ -719,6 +754,51 @@ public class EditStrategyGraphDialog extends JDialog
                 textArea.setEditable(false);
                 JScrollPane scrollPane = new JScrollPane(textArea);
                 String dialogName = new String( "Information to the " ) + moduleName;
+                JOptionPane.showMessageDialog(EditStrategyGraphDialog.this, scrollPane, dialogName, JOptionPane.INFORMATION_MESSAGE);
+            }
+            catch( IOException ex )
+            {
+                JOptionPane.showMessageDialog( gui, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE );
+            }
+        }
+    }
+
+    private class SettingsInfoAction extends AbstractAction
+    {
+        @Override
+        public void actionPerformed( ActionEvent ae )
+        {
+            int textAreaWidth = 50;
+            int textWidth = (textAreaWidth*3)/2;
+            String moduleName = moduleComboBox.getSelectedItem().toString();
+            String settingsFileName = moduleName.substring( 0, moduleName.length() - 6 ) + "Settings.h";
+            Config config = new Config();
+            File file = new File( config.getModulesPath() + File.separator + moduleName + File.separator + settingsFileName );
+            try ( BufferedReader readFile = new BufferedReader( new FileReader( file ) ) )
+            {
+                String line;
+                StringBuilder infoText = new StringBuilder();
+                while( (line = readFile.readLine())!=null )
+                {
+                    while( line.length() > 0 && (line.charAt( 0 ) == ' ' || line.charAt( 0 ) == '\t') )
+                    {
+                        line = line.substring( 1, line.length() );
+                    }
+                    String cleanedLine = "";
+                    for( int i = 0; i < line.length()-1; ++i )
+                    {
+                        if( line.charAt( i ) != ' ' || line.charAt( i+1 ) != ' ' )
+                            cleanedLine = cleanedLine + line.charAt( i );
+                    }
+                    if( line.length() > 0 )
+                        cleanedLine = cleanedLine + line.charAt( line.length()-1 );
+                    infoText.append( cleanedLine + System.lineSeparator() );
+                }
+                JTextArea textArea = new JTextArea(20, textAreaWidth);
+                textArea.setText( infoText.toString() );
+                textArea.setEditable(false);
+                JScrollPane scrollPane = new JScrollPane(textArea);
+                String dialogName = new String( "Information to the settings of " ) + moduleName;
                 JOptionPane.showMessageDialog(EditStrategyGraphDialog.this, scrollPane, dialogName, JOptionPane.INFORMATION_MESSAGE);
             }
             catch( IOException ex )
