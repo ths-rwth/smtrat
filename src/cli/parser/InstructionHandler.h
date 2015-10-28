@@ -1,9 +1,7 @@
 #pragma once
 
-#include "Common.h"
 #include "VariantMap.h"
 #include "Attribute.h"
-#include "theories/Theories.h"
 
 namespace smtrat {
 namespace parser {
