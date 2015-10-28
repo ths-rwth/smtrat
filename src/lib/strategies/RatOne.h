@@ -5,6 +5,12 @@
 
 #include "../solver/Manager.h"
 
+#include "../modules/CADModule/CADModule.h"
+#include "../modules/LRAModule/LRAModule.h"
+#include "../modules/PreprocessingModule/PreprocessingModule.h"
+#include "../modules/SATModule/SATModule.h"
+#include "../modules/VSModule/VSModule.h"
+
 namespace smtrat
 {
     /**
