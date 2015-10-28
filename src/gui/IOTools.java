@@ -116,6 +116,7 @@ public class IOTools
             fileChooser.removeChoosableFileFilter( fileChooser.getChoosableFileFilters()[0] );
             fileChooser.setFileFilter( new XMLFilter() );
             fileChooser.setMultiSelectionEnabled( false );
+            fileChooser.setCurrentDirectory( SMTRAT_STRATEGIES_DIR );
             while( true )
             {
                 int option = fileChooser.showOpenDialog( gui );
@@ -175,6 +176,7 @@ public class IOTools
                 fileChooser.removeChoosableFileFilter( fileChooser.getChoosableFileFilters()[0] );
                 fileChooser.setFileFilter( new XMLFilter() );
                 fileChooser.setMultiSelectionEnabled( false );
+                fileChooser.setCurrentDirectory( SMTRAT_STRATEGIES_DIR );
                 while( true )
                 {
                     int option = fileChooser.showSaveDialog( gui );
@@ -238,6 +240,7 @@ public class IOTools
             fileChooser.removeChoosableFileFilter( fileChooser.getChoosableFileFilters()[0] );
             fileChooser.setFileFilter( new PNGFilter() );
             fileChooser.setMultiSelectionEnabled( false );
+            fileChooser.setCurrentDirectory( SMTRAT_STRATEGIES_DIR );
             while( true )
             {
                 int option = fileChooser.showSaveDialog( gui );
