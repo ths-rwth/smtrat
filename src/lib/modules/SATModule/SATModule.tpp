@@ -126,6 +126,10 @@ namespace smtrat
         mSplittingVars(),
         mOldSplittingVars(),
         mNewSplittingVars(),
+        mNonTseitinShadowedOccurrences(),
+        mTseitinVarShadows(),
+        mFormulaTseitinVarMap(),
+        mCurrentFormulaTseitinVarMapEntry(),
         mCurrentTheoryConflicts(),
         mCurrentTheoryConflictEvaluations(),
         mLevelCounter(),
@@ -502,6 +506,10 @@ namespace smtrat
                 Lit negElseLit = _formula.secondCase().isLiteral() ? addClauses( _formula.secondCase().negated(), _type, false, _original ) : neg( elseLit );
                 FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
                 Lit tsLit = getLiteral( tsVar, _original, true );
+                if( Settings::formula_guided_decision_heuristic )
+                {
+                    
+                }
                 // (or ts -cond -then)
                 lits.push( tsLit ); lits.push( negCondLit ); lits.push( negThenLit ); addClause( lits, _type );
                 // (or ts cond -else)
@@ -510,17 +518,6 @@ namespace smtrat
                 lits.clear(); lits.push( neg( tsLit ) ); lits.push( negCondLit ); lits.push( thenLit ); addClause( lits, _type );
                 // (or -ts cond else)
                 lits.clear(); lits.push( neg( tsLit ) ); lits.push( condLit ); lits.push( elseLit ); addClause( lits, _type );
-                #ifdef SMTRAT_DEVOPTION_Validation
-                FormulasT equivalentSubs;
-                equivalentSubs.emplace_back( carl::FormulaType::OR, tsVar, _formula.condition().negated(), _formula.firstCase().negated() );
-                equivalentSubs.emplace_back( carl::FormulaType::OR, tsVar, _formula.condition(), _formula.secondCase().negated() );
-                equivalentSubs.emplace_back( carl::FormulaType::OR, tsVar.negated(), _formula.condition().negated(), _formula.firstCase() );
-                equivalentSubs.emplace_back( carl::FormulaType::OR, tsVar.negated(), _formula.condition(), _formula.firstCase() );
-                addAssumptionToCheck( FormulaT( carl::FormulaType::IFF, 
-                                        FormulaT( carl::FormulaType::IFF, _formula, tsVar ), 
-                                        FormulaT( carl::FormulaType::AND, std::move(equivalentSubs) ) 
-                                      ).negated(), false, "SAT_CNF_ITE" );
-                #endif
                 return tsLit;
             }
             case carl::FormulaType::IMPLIES:
@@ -544,16 +541,6 @@ namespace smtrat
                 lits.clear(); lits.push( tsLit ); lits.push( premLit ); addClause( lits, _type );
                 // (or ts -con)
                 lits.clear(); lits.push( tsLit ); lits.push( negConLit ); addClause( lits, _type );
-                #ifdef SMTRAT_DEVOPTION_Validation
-                FormulasT equivalentSubs;
-                equivalentSubs.emplace_back( carl::FormulaType::OR, tsVar.negated(), _formula.premise().negated(), _formula.conclusion() );
-                equivalentSubs.emplace_back( carl::FormulaType::OR, tsVar, _formula.premise() );
-                equivalentSubs.emplace_back( carl::FormulaType::OR, tsVar, _formula.conclusion().negated() );
-                addAssumptionToCheck( FormulaT( carl::FormulaType::IFF, 
-                                        FormulaT( carl::FormulaType::IFF, _formula, tsVar ), 
-                                        FormulaT( carl::FormulaType::AND, std::move(equivalentSubs) ) 
-                                      ).negated(), false, "SAT_CNF_IMPLIES" );
-                #endif
                 return tsLit;
             }
             case carl::FormulaType::OR:
@@ -585,18 +572,6 @@ namespace smtrat
                     litsTmp.pop();
                     ++i;
                 }
-                #ifdef SMTRAT_DEVOPTION_Validation
-                FormulasT equivalentSubs;
-                FormulasT clauseSubs = _formula.subformulas();
-                clauseSubs.push_back( tsVar.negated() );
-                equivalentSubs.emplace_back( carl::FormulaType::OR, std::move(clauseSubs) );
-                for( const auto& sf : _formula.subformulas() )
-                    equivalentSubs.emplace_back( carl::FormulaType::OR, tsVar, sf.negated() );
-                addAssumptionToCheck( FormulaT( carl::FormulaType::IFF, 
-                                        FormulaT( carl::FormulaType::IFF, _formula, tsVar ), 
-                                        FormulaT( carl::FormulaType::AND, std::move(equivalentSubs) ) 
-                                      ).negated(), false, "SAT_CNF_OR" );
-                #endif
                 return tsLit;
             }
             case carl::FormulaType::AND:
@@ -620,21 +595,6 @@ namespace smtrat
                 }
                 lits.push( tsLit );
                 addClause( lits, _type );
-                #ifdef SMTRAT_DEVOPTION_Validation
-                FormulasT equivalentSubs;
-                FormulasT clauseSubs;
-                clauseSubs.push_back( tsVar );
-                for( const auto& sf : _formula.subformulas() )
-                {
-                    clauseSubs.push_back( sf.negated() );
-                    equivalentSubs.emplace_back( carl::FormulaType::OR, tsVar.negated(), sf );
-                }
-                equivalentSubs.emplace_back( carl::FormulaType::OR, std::move(clauseSubs) );
-                addAssumptionToCheck( FormulaT( carl::FormulaType::IFF, 
-                                        FormulaT( carl::FormulaType::IFF, _formula, tsVar ), 
-                                        FormulaT( carl::FormulaType::AND, std::move(equivalentSubs) ) 
-                                      ).negated(), false, "SAT_CNF_AND" );
-                #endif
                 return tsLit;
             }
             case carl::FormulaType::IFF: 
@@ -681,26 +641,6 @@ namespace smtrat
                     tmpB.clear(); tmpB.push( tmp[i-1] ); tmpB.push( lits[i] ); tmpB.push( neg( tsLit ) ); addClause( tmpB, _type );
                     tmpB.clear(); tmpB.push( lits[i-1] ); tmpB.push( tmp[i] ); tmpB.push( neg( tsLit ) ); addClause( tmpB, _type );
                 }
-                #ifdef SMTRAT_DEVOPTION_Validation
-                FormulasT equivalentSubs;
-                FormulasT clauseSubsA = _formula.subformulas();
-                clauseSubsA.push_back( tsVar );
-                equivalentSubs.emplace_back( carl::FormulaType::OR, std::move(clauseSubsA) );
-                FormulasT clauseSubsB;
-                clauseSubsB.push_back( tsVar );
-                for( const auto& sf : _formula.subformulas() )
-                    clauseSubsB.push_back( sf.negated() );
-                equivalentSubs.emplace_back( carl::FormulaType::OR, std::move(clauseSubsB) );
-                for( size_t i = 1; i < _formula.subformulas().size(); ++i )
-                {
-                    equivalentSubs.emplace_back( carl::FormulaType::OR, _formula.subformulas().at(i-1), _formula.subformulas().at(i).negated(), tsVar.negated() );
-                    equivalentSubs.emplace_back( carl::FormulaType::OR, _formula.subformulas().at(i-1).negated(), _formula.subformulas().at(i), tsVar.negated() );
-                }
-                addAssumptionToCheck( FormulaT( carl::FormulaType::IFF, 
-                                        FormulaT( carl::FormulaType::IFF, _formula, tsVar ), 
-                                        FormulaT( carl::FormulaType::AND, std::move(equivalentSubs) ) 
-                                      ).negated(), false, "SAT_CNF_IFF" );
-                #endif
                 return tsLit;
             }
             case carl::FormulaType::XOR:
@@ -1155,7 +1095,13 @@ namespace smtrat
         polarity.push( sign );
         decision.push();
         trail.capacity( v + 1 );
-        setDecisionVar( v, dvar );
+        if( Settings::formula_guided_decision_heuristic )
+        {
+            setDecisionVar( v, dvar );
+            mNonTseitinShadowedOccurrences.push( dvar ? 1 : 0 );
+        }
+        else
+            setDecisionVar( v, dvar );
         return v;
     }
 
@@ -1536,6 +1482,18 @@ SetWatches:
                             mChangedBooleans.push_back( x );
                     }
                     else if( abstr.consistencyRelevant ) abstr.updateInfo = 0;
+                }
+                
+                if( Settings::formula_guided_decision_heuristic )
+                {
+                    auto iter = mTseitinVarShadows.find( (signed) x );
+                    if( iter != mTseitinVarShadows.end() )
+                    {
+                        for( signed v : iter->second )
+                        {
+                            decrementTseitinShadowOccurrences(v);
+                        }
+                    }
                 }
                 assigns[x] = l_Undef;
                 if( Settings::check_if_all_clauses_are_satisfied && !mReceivedFormulaPurelyPropositional && mNumberOfSatisfiedClauses > 0 )
@@ -2196,6 +2154,17 @@ SetWatches:
             vardata[var( p )] = mkVarData( from, decisionLevel() );
             trail.push_( p );
         }
+        if( Settings::formula_guided_decision_heuristic )
+        {
+            auto iter = mTseitinVarShadows.find( (signed) var(p) );
+            if( iter != mTseitinVarShadows.end() )
+            {
+                for( signed v : iter->second )
+                {
+                    incrementTseitinShadowOccurrences(v);
+                }
+            }
+        }
     }
 
     template<class Settings>
@@ -2300,7 +2269,6 @@ NextClause:
     template<class Settings>
     void SATModule<Settings>::reduceDB()
     {
-        std::cout << "reduceDB" << std::endl;
         int    i, j;
         double extra_lim = cla_inc / learnts.size();    // Remove any clause below this activity
 

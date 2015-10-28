@@ -53,4 +53,4 @@ namespace smtrat
 
 #include "EMModule.tpp"
 
-#include "EMModuleInstantiation.h"
+

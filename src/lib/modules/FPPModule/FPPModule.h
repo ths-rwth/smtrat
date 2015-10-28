@@ -93,4 +93,4 @@ return SettingsType::moduleName;
 
 #include "FPPModule.tpp"
 
-#include "FPPModuleInstantiation.h"
+

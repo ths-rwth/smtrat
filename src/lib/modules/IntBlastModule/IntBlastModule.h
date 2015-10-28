@@ -1,6 +1,7 @@
 /**
  * @file IntBlastModule.h
  * @author Andreas Krueger <andreas.krueger@rwth-aachen.de>
+ * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  */
 
 #pragma once
@@ -11,7 +12,7 @@
 #include "IntBlastSettings.h"
 #include "IntBlastStatistics.h"
 #include "PolyTreePool.h"
-#include "BVSolver.h"
+#include "../../strategies/BVSolver.h"
 
 namespace smtrat
 {
@@ -589,4 +590,4 @@ return SettingsType::moduleName;
 }
 
 #include "IntBlastModule.tpp"
-#include "IntBlastModuleInstantiation.h"
+

@@ -91,4 +91,4 @@ return SettingsType::moduleName;
     };
 }
 #include "IntEqModule.tpp"
-#include "IntEqModuleInstantiation.h"
+

@@ -51,12 +51,9 @@ elseif( ${SMTRAT_CADSETTING_INDEX} EQUAL 8 )
 endif()
 
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/CADModule/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/CADModule/config.h )
-configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/CADModule/CADModule.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/CADModule/CADModule.cpp )
-configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/CADModule/CADModuleInstantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/CADModule/CADModuleInstantiation.h )
 
 BeginDefineModule()
 ModuleMainHeader(CADModule/CADModule.h)
 ModuleName(CADModule)
-ModuleClass(CADModule<CADSettings${SMTRAT_CAD_SETTINGS}>)
 ModuleVersion(0 7 0)
 EndDefineModule()

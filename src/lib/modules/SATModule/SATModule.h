@@ -249,6 +249,8 @@ namespace smtrat
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
             typedef carl::FastMap<FormulaT, std::vector<Minisat::CRef>> FormulaClausesMap;
             
+            typedef carl::FastMap<signed,std::unordered_set<signed>> TseitinVarShadows;
+            
             /// A vector of vectors of literals representing a vector of clauses.
             typedef std::vector<std::vector<Minisat::Lit>> ClauseVector;
             
@@ -429,6 +431,14 @@ namespace smtrat
             /// Stores the just introduced Boolean variables for theory splitting decisions.
             std::vector<signed> mNewSplittingVars;
             ///
+            Minisat::vec<unsigned> mNonTseitinShadowedOccurrences;
+            ///
+            TseitinVarShadows mTseitinVarShadows;
+            ///
+            carl::FastMap<FormulaT, TseitinVarShadows::iterator> mFormulaTseitinVarMap;
+            ///
+            carl::FastMap<FormulaT, std::vector<TseitinVarShadows::iterator>>::iterator mCurrentFormulaTseitinVarMapEntry;
+            ///
             std::vector<Minisat::vec<Minisat::Lit>> mCurrentTheoryConflicts;
             std::map<std::pair<size_t,size_t>,size_t> mCurrentTheoryConflictEvaluations;
             std::unordered_set<int> mLevelCounter;
@@ -442,9 +452,9 @@ namespace smtrat
 
         public:
 			typedef Settings SettingsType;
-std::string moduleName() const {
-return SettingsType::moduleName;
-}
+			std::string moduleName() const {
+				return SettingsType::moduleName;
+			}
 
             /**
              * Constructs a SATModule.
@@ -844,6 +854,27 @@ return SettingsType::moduleName;
             inline void newDecisionLevel()
             {
                 trail_lim.push( trail.size() );
+            }
+            
+            void decrementTseitinShadowOccurrences( signed _var )
+            {
+                unsigned& ntso = mNonTseitinShadowedOccurrences[_var];
+                assert( ntso > 0 );
+                --ntso;
+                if( ntso == 0 )
+                {
+                    setDecisionVar( _var, false );
+                }
+            }
+            
+            void incrementTseitinShadowOccurrences( signed _var )
+            {
+                unsigned& ntso = mNonTseitinShadowedOccurrences[_var];
+                if( ntso == 0 )
+                {
+                    setDecisionVar( _var, true );
+                }
+                ++ntso;
             }
             
             /**
@@ -1268,4 +1299,3 @@ return SettingsType::moduleName;
 }    // namespace smtrat
 
 #include "SATModule.tpp"
-#include "SATModuleInstantiation.h"

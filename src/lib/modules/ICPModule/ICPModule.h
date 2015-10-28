@@ -513,4 +513,4 @@ return SettingsType::moduleName;
 }    // namespace smtrat
     
 #include "ICPModule.tpp"
-#include "ICPModuleInstantiation.h"
+

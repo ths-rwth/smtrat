@@ -70,5 +70,3 @@ return SettingsType::moduleName;
 }
 
 #include "RPFModule.tpp"
-
-#include "RPFModuleInstantiation.h"

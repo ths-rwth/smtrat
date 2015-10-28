@@ -174,4 +174,4 @@ return SettingsType::moduleName;
 
 #include "LICModule.tpp"
 
-#include "LICModuleInstantiation.h"
+
