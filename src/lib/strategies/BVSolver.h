@@ -3,7 +3,7 @@
  */
 #pragma once
 
-#include "../../solver/Manager.h"
+#include "../solver/Manager.h"
 
 namespace smtrat
 {
@@ -19,7 +19,7 @@ namespace smtrat
         public Manager
     {
         public:
-            BVSolver();
+            BVSolver( bool _externalModuleFactoryAdding = false );
             ~BVSolver();
 
             void removeFormula( const FormulaT& _subformula );

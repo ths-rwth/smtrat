@@ -20,7 +20,8 @@
  */
 /**
  * @file BVSettings.h
- * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ * @author Andreas Krueger <andreas.krueger@rwth-aachen.de>
+ * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  *
  * @version 2015-02-05
  * Created on 2015-02-05.

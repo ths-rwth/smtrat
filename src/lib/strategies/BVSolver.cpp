@@ -3,14 +3,14 @@
  */
 
 #include "BVSolver.h"
+
 #include "../../modules/BVModule/BVModule.h"
 #include "../../modules/SATModule/SATModule.h"
 
 namespace smtrat
 {
 
-    BVSolver::BVSolver():
-        Manager()
+    BVSolver::BVSolver(): Manager()
     {
 		setStrategy({
 			addBackend<BVModule<BVSettings1>>({
@@ -18,8 +18,6 @@ namespace smtrat
 			})
 		});
     }
-
-    BVSolver::~BVSolver(){}
 
     void BVSolver::removeFormula( const FormulaT& _subformula )
     {
