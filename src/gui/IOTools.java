@@ -60,6 +60,9 @@ public class IOTools
     private static final File SMTRAT_STRATEGIES_BUILD_FILE = new File( SMTRAT_STRATEGIES_DIR + File.separator + "CMakeLists.txt" );
     private static final File SMTRAT_STRATEGIES_HEADER_FILE = new File( SMTRAT_STRATEGIES_DIR + File.separator + STRATEGIES_HEADER_CLASS + ".h" );
 
+    private static final String TAB = "    ";
+    private static final String NL = System.lineSeparator();
+
     public static final ArrayList<Module> modules = readModules();
     public static final String longestModuleName = getLongestModuleName( modules );
     public static final String longestSettingName = getLongestSettingName( modules );
@@ -548,8 +551,6 @@ public class IOTools
             if( solverName==null || solverName.equals( "" ) || solverName.contains( "config" ) )
                 return null;
 
-            String tab = "    ";
-            String nl = System.lineSeparator();
             String solverNameUpperCase = solverName.toUpperCase();
 
             File headerFile = new File( SMTRAT_STRATEGIES_DIR.getPath() + File.separator + solverName + ".h" );
@@ -563,55 +564,76 @@ public class IOTools
                 StrategyGraph graph = (StrategyGraph) layout.getGraph();
                 StringBuilder headerString = new StringBuilder();
 
+                Collection<String> necessaryIdentifier = new ArrayList<String>();
+                Collection<Edge> backlinks = new ArrayList<Edge>();
                 Collection<String> conditions = new ArrayList<String>();
                 Collection<String> moduleNames = new ArrayList<String>();
-                HashMap<String,String> backlinks = new HashMap();
-                String graphString = getGraphString( graph, graph.getRoot(), new String( tab + tab + tab ), tab, nl, conditions, moduleNames, backlinks );
+                getGraphInformation( graph, graph.getRoot(), necessaryIdentifier, backlinks, conditions, moduleNames );
+                String graphString = getGraphString( graph, graph.getRoot(), new String( TAB + TAB + TAB ), necessaryIdentifier );
                 
                 // Write the content to the header file.
-                headerString.append( "/**" + nl + 
-                                     " * @file " + solverName + ".h" + nl +
-                                     " */" + nl +
-                                     "#pragma once" + nl + nl +
-                                     "#include \"../solver/Manager.h\"" + nl );
+                // Write the preamble.
+                headerString.append( "/**" + NL + 
+                                     " * @file " + solverName + ".h" + NL +
+                                     " */" + NL +
+                                     "#pragma once" + NL + NL +
+                                     "#include \"../solver/Manager.h\"" + NL );
+                // Include all necessary modules.
                 for( String moduleName : moduleNames )
-                    headerString.append( "#include \"../modules/" + moduleName + "/" + moduleName + ".h\"" + nl );
-                headerString.append( nl ); 
-                headerString.append( "namespace smtrat" + nl + 
-                                     "{" + nl );
-                headerString.append( tab + "/**" + nl +
-                                     tab + " * Strategy description." + nl +
-                                     tab + " *" + nl +
-                                     tab + " * @author" + nl +
-                                     tab + " * @since" + nl +
-                                     tab + " * @version" + nl +
-                                     tab + " *" + nl +
-                                     tab + " */" + nl );
-                headerString.append( tab + "class " + solverName + ":" + nl +
-                                     tab + tab + "public Manager" + nl +
-                                     tab + "{" + nl );
+                    headerString.append( "#include \"../modules/" + moduleName + "/" + moduleName + ".h\"" + NL );
+                headerString.append( NL ); 
+                // Write the solver class.
+                headerString.append( "namespace smtrat" + NL + 
+                                     "{" + NL );
+                headerString.append( TAB + "/**" + NL +
+                                     TAB + " * Strategy description." + NL +
+                                     TAB + " *" + NL +
+                                     TAB + " * @author" + NL +
+                                     TAB + " * @since" + NL +
+                                     TAB + " * @version" + NL +
+                                     TAB + " *" + NL +
+                                     TAB + " */" + NL );
+                headerString.append( TAB + "class " + solverName + ":" + NL +
+                                     TAB + TAB + "public Manager" + NL +
+                                     TAB + "{" + NL );
+                // Add all conditions used in the strategy.
                 for( String condition : conditions )
-                    headerString.append( condition + nl );
-                headerString.append( tab + tab + "public:" + nl + nl +
-                                     tab + tab + solverName + "(): Manager()" + nl + 
-                                     tab + tab + "{" + nl + 
-                                     tab + tab + tab + "size_t " );
-                int i = 0;
-                Collection<Vertex> vertices = graph.getVertices();
-                for( Vertex vertex : vertices )
+                    headerString.append( condition + NL );
+                headerString.append( TAB + TAB + "public:" + NL + NL +
+                                     TAB + TAB + solverName + "(): Manager()" + NL + 
+                                     TAB + TAB + "{" + NL );
+                // Check if identifier have to added, which are used to create backlinks
+                if( necessaryIdentifier.size() > 0 )
                 {
-                    headerString.append( vertex.identifier() + " = 0" );
-                    if( i < vertices.size()-1 )
-                        headerString.append( ", " );
-                    ++i;
+                    headerString.append(  TAB + TAB + TAB + "size_t " );
+                    int i = 0;
+                    for( String ident : necessaryIdentifier )
+                    {
+                        headerString.append( ident + " = 0" );
+                        if( i < necessaryIdentifier.size()-1 )
+                            headerString.append( ", " );
+                        ++i;
+                    }
+                    headerString.append( ";" + NL );
                 }
-                headerString.append( ";" + nl );
-                headerString.append( tab + tab + tab + "setStrategy" );
-                headerString.append( graphString + ";" + nl );
-                for( String from : backlinks.keySet() )
-                    headerString.append( tab + tab + tab + "addEdge( " + from + ", " + backlinks.get( from ) + " );" );
-                headerString.append( tab + tab + "}" + nl +
-                                     tab + "};" + nl +
+                // Write the strategy of the solver.
+                headerString.append( TAB + TAB + TAB + "setStrategy" );
+                headerString.append( graphString );
+                if( necessaryIdentifier.contains( graph.getRoot().identifier() ) )
+                    headerString.append( ".id( " + graph.getRoot().identifier() + " )" );
+                headerString.append( ";" + NL );
+                // Add the backlinks.
+                for( Edge bl : backlinks )
+                {
+                    Vertex from = (Vertex) graph.getSource( bl );
+                    Vertex to = (Vertex) graph.getDest( bl );
+                    headerString.append( TAB + TAB + TAB + "addEdge( " + from.identifier() + ", " + to.identifier() + " )" );
+                    if( !bl.getCondition().isTrueCondition() )
+                        headerString.append( ".condition( &conditionEvaluation" + bl.getPriority() + " )" );
+                    headerString.append( ";" + NL );
+                }
+                headerString.append( TAB + TAB + "}" + NL +
+                                     TAB + "};" + NL +
                                      "} // namespace smtrat" );
 
                 // Try to store the content to the file.
@@ -647,46 +669,61 @@ public class IOTools
         }
     }
 
-    private static String getGraphString( StrategyGraph _graph, Vertex _vertex, String _prefix, String _tab, String _nl, Collection<String> _conditions, Collection<String> _moduleNames, HashMap<String,String> _backlinks )
+    private static void getGraphInformation( StrategyGraph _graph, Vertex _vertex, Collection<String> _identifier, Collection<Edge> _backlinks, Collection<String> _conditions, Collection<String> _moduleNames )
+    {
+        Collection<Edge> outEdges = _graph.getOutEdges( _vertex );
+        for( Edge outEdge : outEdges )
+        {
+            Vertex succ = (Vertex) _graph.getDest( outEdge );
+            Condition condition = outEdge.getCondition();
+            if( !condition.isTrueCondition() )
+            {
+                _conditions.add( 
+                    TAB + TAB + "static bool conditionEvaluation" + outEdge.getPriority() + "( carl::Condition _condition )" + NL + 
+                    TAB + TAB + "{" + NL +
+                    TAB + TAB + TAB + "return " + "( " + condition.toStringCPP( "_condition" ) + " );" + NL + 
+                    TAB + TAB + "}" + NL
+                );
+            }
+            _moduleNames.add( succ.getModule().getName() );
+            if( outEdge.isBackLink() )
+            {
+                _backlinks.add( outEdge );
+                _identifier.add( _vertex.identifier() );
+                _identifier.add(  succ.identifier() );
+            }
+            else
+                getGraphInformation( _graph, succ, _identifier, _backlinks, _conditions, _moduleNames );
+        }
+    }
+
+    private static String getGraphString( StrategyGraph _graph, Vertex _vertex, String _prefix, Collection<String> _necessaryIds )
     {
         Collection<Edge> outEdges = _graph.getOutEdges( _vertex );
         Collection<Edge> nonBacklingOutEdges = new ArrayList<Edge>();
         for( Edge outEdge : outEdges )
         {
-            Vertex succ = (Vertex) _graph.getDest( outEdge );
-            if( outEdge.isBackLink() )
-                _backlinks.put( _vertex.identifier(), succ.identifier() );
-            else
+            if( !outEdge.isBackLink() )
                 nonBacklingOutEdges.add( outEdge );
         }
         if( nonBacklingOutEdges.isEmpty() )
             return "()";
-        String result = new String( "(" + _nl );
-        result += _prefix + "{" + _nl;
+        String result = new String( "(" + NL );
+        result += _prefix + "{" + NL;
         int i = 0;
         for( Edge outEdge : nonBacklingOutEdges )
         {
             Condition condition = outEdge.getCondition();
-            int condNumber = _conditions.size();
-            if( !condition.isTrueCondition() )
-            {
-                _conditions.add( 
-                    _tab + _tab + "static bool conditionEvaluation" + condNumber + "( carl::Condition _condition )" + _nl + 
-                    _tab + _tab + "{" + _nl +
-                    _tab + _tab + _tab + "return " + "( " + condition.toStringCPP( "_condition" ) + " );" + _nl + 
-                    _tab + _tab + "}" + _nl
-                );
-            }
             Vertex succ = (Vertex) _graph.getDest( outEdge );
-            result += _prefix + _tab + "addBackend<" + succ.getModule().getNameAndSetting() + ">";
-            _moduleNames.add( succ.getModule().getName() );
-            result += getGraphString( _graph, succ, _prefix + _tab, _tab, _nl, _conditions, _moduleNames, _backlinks );
+            result += _prefix + TAB + "addBackend<" + succ.getModule().getNameAndSetting() + ">";
+            result += getGraphString( _graph, succ, _prefix + TAB, _necessaryIds );
             if( !condition.isTrueCondition() )
-                result += ".condition( &conditionEvaluation" + condNumber + " )";
-            result += ".id( " + succ.identifier() + " )";
+                result += ".condition( &conditionEvaluation" + outEdge.getPriority() + " )";
+            if( _necessaryIds.contains( succ.identifier() ) )
+                result += ".id( " + succ.identifier() + " )";
             if( i < nonBacklingOutEdges.size()-1 )
                 result += ",";
-            result += _nl;
+            result += NL;
             ++i;
         }
         result += _prefix + "})";

@@ -28,7 +28,6 @@ namespace smtrat
 
         RatThree(): Manager()
         {
-            size_t CADModule5 = 0, VSModule3 = 0, SATModule2 = 0, Start1 = 0, LRAModule6 = 0, PreprocessingModule4 = 0, CADModule11 = 0;
             setStrategy(
             {
                 addBackend<PreprocessingModule<PreprocessingSettings1>>(
@@ -39,12 +38,12 @@ namespace smtrat
                         {
                             addBackend<VSModule<VSSettings1>>(
                             {
-                                addBackend<CADModule<CADSettings1>>().id( CADModule5 )
-                            }).id( VSModule3 ),
-                            addBackend<CADModule<CADSettings1>>().id( CADModule11 )
-                        }).id( LRAModule6 )
-                    }).id( SATModule2 )
-                }).id( PreprocessingModule4 )
+                                addBackend<CADModule<CADSettings1>>()
+                            }),
+                            addBackend<CADModule<CADSettings1>>()
+                        })
+                    })
+                })
             });
         }
     };
