@@ -10,12 +10,6 @@
 #include "../modules/VSModule/VSModule.h"
 #include "../modules/CADModule/CADModule.h"
 
-#include "../modules/CADModule/CADModule.h"
-#include "../modules/LRAModule/LRAModule.h"
-#include "../modules/PreprocessingModule/PreprocessingModule.h"
-#include "../modules/SATModule/SATModule.h"
-#include "../modules/VSModule/VSModule.h"
-
 namespace smtrat
 {
     /**
@@ -33,7 +27,6 @@ namespace smtrat
 
         RatOne(): Manager()
         {
-            size_t Start22 = 0, VSModule24 = 0, SATModule25 = 0, CADModule23 = 0, LRAModule26 = 0, PreprocessingModule27 = 0;
             setStrategy(
             {
                 addBackend<PreprocessingModule<PreprocessingSettings1>>(
@@ -44,11 +37,11 @@ namespace smtrat
                         {
                             addBackend<VSModule<VSSettings1>>(
                             {
-                                addBackend<CADModule<CADSettings1>>().id( CADModule23 )
-                            }).id( VSModule24 )
-                        }).id( LRAModule26 )
-                    }).id( SATModule25 )
-                }).id( PreprocessingModule27 )
+                                addBackend<CADModule<CADSettings1>>()
+                            })
+                        })
+                    })
+                })
             });
         }
     };
