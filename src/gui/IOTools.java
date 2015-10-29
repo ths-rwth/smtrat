@@ -70,7 +70,7 @@ public class IOTools
     public static final ArrayList<String> existingSolverNames = readExistingSolverNames();
 
     private static GUI gui;
-    private static FRLayout layout;
+    public static FRLayout layout;
 
     public static String deleteSolver( String solverName )
     {
