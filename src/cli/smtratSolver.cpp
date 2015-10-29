@@ -13,7 +13,7 @@
 #include "../lib/config.h"
 
 #include "config.h"
-#include CMakeStrategyHeader
+#include "../lib/strategies/config.h"
 #include "RuntimeSettingsManager.h"
 #include "../lib/solver/Module.h"
 #include "../lib/Common.h"

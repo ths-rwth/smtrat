@@ -31,6 +31,7 @@ add_subdirectory(modules)
 # write config.h
 #######################
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/config.h )
+configure_file( ${CMAKE_SOURCE_DIR}/src/lib/strategies/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/strategies/config.h )
 
 add_subdirectory(utilities)
 
