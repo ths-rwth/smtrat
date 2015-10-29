@@ -44,7 +44,6 @@ namespace smtrat
         mRunsParallel( false )
         #endif
     {
-		std::cout << "Manager constructor..." << std::endl;
         mGeneratedModules.push_back( mpPrimaryBackend );
         // inform it about all constraints
         typedef void (*Func)( Module*, const FormulaT& );
