@@ -36,6 +36,6 @@ public class Vertex
     @Override
     public String toString()
     {
-        return getModule().getNameAndSetting();
+        return getModule().getNameAndSettingShort();
     }
 }

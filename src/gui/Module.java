@@ -66,6 +66,20 @@ public class Module implements Comparable<Module>
             return name;
         return name + "<" + settings.get( chosenSetting ) + ">";
     }
+
+    public String getNameAndSettingShort()
+    {
+        String modulePrefix;
+        if( name.contains( "Module" ) )
+            modulePrefix = name.substring( 0, name.length() - 6 );
+        else
+            modulePrefix = name;
+        if( chosenSetting == -1 )
+            return modulePrefix;
+        String settingName = settings.get( chosenSetting );
+        settingName = settingName.substring( modulePrefix.length() + 8, settingName.length() );
+        return modulePrefix + "<" + settingName + ">";
+    }
     
     public String currentSetting()
     {
