@@ -39,7 +39,7 @@ namespace smtrat
                     {
                         addBackend<LRAModule<LRASettings1>>(
                         {
-                            addBackend<VSModule<VSSettings1>>(
+                            addBackend<VSModule<VSSettings234>>(
                             {
                                 addBackend<CADModule<CADSettings1>>()
                             })
@@ -49,7 +49,7 @@ namespace smtrat
                     {
                         addBackend<ICPModule<ICPSettings1>>(
                         {
-                            addBackend<VSModule<VSSettings1>>(
+                            addBackend<VSModule<VSSettings234>>(
                             {
                                 addBackend<CADModule<CADSettings1>>()
                             })
