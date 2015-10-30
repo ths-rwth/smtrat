@@ -32,9 +32,9 @@ ENDMACRO(LIST_APPEND)
 MACRO(LIST_APPEND_UNIQUE var value)
      SET(LIST_ADD_UNIQUE_FLAG 0)
      FOREACH(i ${${var}})
-         IF ("${i}" MATCHES "${value}")
+         IF ("${i}" EQUAL "${value}")
              SET(LIST_ADD_UNIQUE_FLAG 1)
-         ENDIF("${i}" MATCHES "${value}")
+         ENDIF("${i}" EQUAL "${value}")
      ENDFOREACH(i)
      IF(NOT LIST_ADD_UNIQUE_FLAG)
          SET(${var} ${${var}} ${value})
@@ -142,29 +142,30 @@ MACRO(ModuleDefaultEnabled)
 	set(mod_default_enable ON)
 ENDMACRO()
 
-MACRO(EndDefineModule enabled)
+MACRO(EndDefineModule)
 	if( NOT defineModule )
 		message(FATAL_ERROR "Invalid EndDefineModule call, outside of ModuleDefinition")
 	endif()
 
-	option(SMTRAT_ENABLE_${mod_name} "Compile " ${mod_default_enable})
-
 	set(allModuleTypes ${allModuleTypes} ${mod_name} PARENT_SCOPE)
-	if(SMTRAT_ENABLE_${mod_name})
-		# Number of modules (for determining this modules number)
-		list(LENGTH moduleTypes mod_index)
+	# Number of modules (for determining this modules number)
+	list(LENGTH moduleTypes mod_index)
 
-		set(moduleMainHeaders ${moduleMainHeaders} ${mod_header} PARENT_SCOPE)
-		set(moduleSources ${moduleSources} PARENT_SCOPE)
-		set(moduleLibraries ${moduleLibraries} PARENT_SCOPE)
-		set(moduleTypes ${moduleTypes} ${mod_name} PARENT_SCOPE)
-		set(moduleClasses ${moduleClasses} ${mod_classname} PARENT_SCOPE)
-		set(moduleVersions ${moduleVersions} ${mod_version} PARENT_SCOPE)
-		set(moduleSettingsClasses ${moduleSettingsClasses} ${mod_settingsClassname} PARENT_SCOPE)
-		set(moduleSettingsList_${mod_index} ${mod_settingsNames} PARENT_SCOPE)
-	endif()
+    FILE(GLOB_RECURSE sources *.cpp)
+    foreach(src ${sources})
+        AddModuleSource(${src})
+    endforeach()
+
+	set(moduleMainHeaders ${moduleMainHeaders} ${mod_header} PARENT_SCOPE)
+	set(moduleSources ${moduleSources} PARENT_SCOPE)
+	set(moduleLibraries ${moduleLibraries} PARENT_SCOPE)
+	set(moduleTypes ${moduleTypes} ${mod_name} PARENT_SCOPE)
+	set(moduleClasses ${moduleClasses} ${mod_classname} PARENT_SCOPE)
+	set(moduleVersions ${moduleVersions} ${mod_version} PARENT_SCOPE)
+	set(moduleSettingsClasses ${moduleSettingsClasses} ${mod_settingsClassname} PARENT_SCOPE)
+	set(moduleSettingsList_${mod_index} ${mod_settingsNames} PARENT_SCOPE)
+
 	set(defineModule 0)
-	set(${enabled} SMTRAT_ENABLE_${mod_name})
 ENDMACRO()
 
 # Function
@@ -183,9 +184,10 @@ function(collect_files prefix name)
       get_filename_component(subdir ${subfile} DIRECTORY)
       if(NOT ${subdir} STREQUAL "")
         LIST_APPEND_UNIQUE(${prefix}_${name}_subdir ${subdir})
-        list(APPEND ${prefix}_${name}_${subdir}_headers ${subfile})
+        list(APPEND ${prefix}_${name}_${subdir}_headers ${name}/${subfile})
+      else()
+        list(APPEND ${prefix}_${name}_headers ${name}/${subfile})
       endif()
-        list(APPEND ${prefix}_${name}_headers ${subfile})
 
     elseif(${subfile} MATCHES ".*([.]cpp)")
       list(APPEND ${prefix}_${name}_src ${name}/${subfile})
@@ -194,7 +196,7 @@ function(collect_files prefix name)
 
   foreach(subdir ${${prefix}_${name}_subdir})
     install(FILES			${${prefix}_${name}_${subdir}_headers}
-      DESTINATION		include/${prefix}/${subdir})
+    DESTINATION		include/${prefix}/${name}/${subdir})
   endforeach()
 
 	#Install
@@ -205,3 +207,18 @@ function(collect_files prefix name)
 	set(${prefix}_${name}_headers ${${prefix}_${name}_headers} PARENT_SCOPE)
 	set(${prefix}_${name}_src ${${prefix}_${name}_src} PARENT_SCOPE)
 endfunction(collect_files)
+
+MACRO(ADD_PRECOMPILED_HEADER PrecompiledHeader PrecompiledSource SourcesVar)
+  GET_FILENAME_COMPONENT(PrecompiledBasename ${PrecompiledHeader} NAME_WE)
+  SET(PrecompiledBinary "${CMAKE_CURRENT_BINARY_DIR}/${PrecompiledBasename}.pch")
+  SET(Sources ${${SourcesVar}})
+
+  SET_SOURCE_FILES_PROPERTIES(${PrecompiledSource}
+                              PROPERTIES COMPILE_FLAGS "/Yc\"${PrecompiledHeader}\" /Fp\"${PrecompiledBinary}\""
+                                         OBJECT_OUTPUTS "${PrecompiledBinary}")
+  SET_SOURCE_FILES_PROPERTIES(${Sources}
+                              PROPERTIES COMPILE_FLAGS "/Yu\"${PrecompiledHeader}\" /FI\"${PrecompiledHeader}\" /Fp\"${PrecompiledBinary}\""
+                                         OBJECT_DEPENDS "${PrecompiledBinary}")
+  # Add precompiled header to SourcesVar
+  LIST(APPEND ${SourcesVar} ${PrecompiledSource})
+ENDMACRO(ADD_PRECOMPILED_HEADER)

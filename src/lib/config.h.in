@@ -3,7 +3,7 @@
 #define SMTRAT_PACKAGE_NAME "@PROJECT_NAME@"
 #define SMTRAT_PROJECT_NAME "@PROJECT_FULLNAME@"
 #define SMTRAT_VERSION "@PROJECT_VERSION@"
-#define SMTRAT_WEBSITE "smtrat.sourceforge.net"
+#define SMTRAT_WEBSITE "https://github.com/smtrat/smtrat/wiki"
 
 #cmakedefine USE_NSS
 

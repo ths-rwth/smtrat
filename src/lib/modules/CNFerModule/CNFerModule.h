@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include "../../solver/Module.h"
+#include "../../solver/PModule.h"
 #include "CNFerModuleStatistics.h"
 
 namespace smtrat
 {
     class CNFerModule:
-        public Module
+        public PModule
     {
         private:
             #ifdef SMTRAT_DEVOPTION_Statistics
@@ -21,11 +21,15 @@ namespace smtrat
             CNFerModuleStatistics* mpStatistics;
             #endif
         public:
+			
+			struct SettingsType {
+				static constexpr auto moduleName = "CNFerModule";
+			};
 
             /**
              * Constructs a CNFerModule.
              */
-            CNFerModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            CNFerModule( const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             /**
              * Destructs a CNFerModule.

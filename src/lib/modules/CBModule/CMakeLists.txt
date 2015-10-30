@@ -1,0 +1,5 @@
+BeginDefineModule()
+ModuleMainHeader(CBModule/CBModule.h)
+ModuleName(CBModule)
+ModuleVersion(0 0 1)
+EndDefineModule()

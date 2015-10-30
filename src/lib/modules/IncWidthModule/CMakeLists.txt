@@ -1,15 +1,5 @@
-set(SMTRAT_IncWidth_SETTINGS "1" CACHE STRING "Number of setting used for IncWidthModule")
 BeginDefineModule()
 ModuleMainHeader(IncWidthModule/IncWidthModule.h)
-FILE(GLOB_RECURSE sources *.cpp)
-foreach(src ${sources})
-    AddModuleSource(${src})
-endforeach()
 ModuleName(IncWidthModule)
-ModuleClass(IncWidthModule<IncWidthSettings${SMTRAT_IncWidth_SETTINGS}>)
 ModuleVersion(0 0 1)
-EndDefineModule(moduleEnabled)
-
-if(${moduleEnabled})
-    # do something
-endif()
+EndDefineModule()

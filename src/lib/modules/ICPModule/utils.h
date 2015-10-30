@@ -12,7 +12,7 @@
 #include <carl/numbers/numbers.h>
 
 namespace smtrat
-{
+{    
     namespace icp
     {
         /**

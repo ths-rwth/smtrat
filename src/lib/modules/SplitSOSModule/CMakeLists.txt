@@ -1,0 +1,5 @@
+BeginDefineModule()
+ModuleMainHeader(SplitSOSModule/SplitSOSModule.h)
+ModuleName(SplitSOSModule)
+ModuleVersion(0 0 1)
+EndDefineModule()

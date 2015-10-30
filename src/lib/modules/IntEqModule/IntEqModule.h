@@ -46,8 +46,12 @@ namespace smtrat
             bool constructSolution();
             
         public:
-            
-            IntEqModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+			
+				typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
+            IntEqModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
             
             ~IntEqModule() {}
         
@@ -87,3 +91,4 @@ namespace smtrat
     };
 }
 #include "IntEqModule.tpp"
+

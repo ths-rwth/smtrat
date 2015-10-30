@@ -1237,9 +1237,9 @@ namespace vs
         for( auto var = _allVariables.begin(); var != _allVariables.end(); ++var )
         {
             if( var->getType() == carl::VariableType::VT_INT )
-                mIntVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, std::move(multiset<double>()) ) );
+                mIntVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, multiset<double>() ) );
             else
-                mRealVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, std::move(multiset<double>()) ) );
+                mRealVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, multiset<double>() ) );
         }
         vector<pair<carl::Variable, multiset<double>>>& varValsB = mRealVarVals.empty() ? mIntVarVals : mRealVarVals;
         // Find for each variable the highest valuation of all conditions' constraints.
@@ -2495,6 +2495,8 @@ namespace vs
         #endif
         return false;
     }
+    
+    #ifdef VS_STATE_DEBUG_METHODS
 
     void State::print( const string _initiation, ostream& _out ) const
     {
@@ -2736,6 +2738,8 @@ namespace vs
             }
         }
     }
+    
+    #endif
 
     size_t State::coveringSet( const ConditionSetSetSet& _conflictSets, carl::PointerSet<Condition>& _coveringSet, unsigned _currentTreeDepth )
     {

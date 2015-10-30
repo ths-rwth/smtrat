@@ -5,21 +5,19 @@
 # Project name: SMT-RAT                                       #
 # Contact: Florian Corzilius <corzilius@cs.rwth-aachen.de>,   #
 #          Ulrich Loup <loup@cs.rwth-aachen.de>               #
-# Project sourceforge page: http://smtrat.sourceforge.net/    #
+# Project page: https://github.com/smtrat/smtrat/wiki         #
 # Development status: beta                                    #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Version: 2013-03-31                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-foreach(name datastructures solver strategies utilities)
-  collect_files(lib ${name})
-endforeach()
 
 include_directories( ${carl_INCLUDE_DIR} )
 
 # Core library
 # # # # # # # # # # #
 set(lib_core_src
+    Common.cpp
 )
 
 set(lib_core_headers
@@ -33,8 +31,13 @@ add_subdirectory(modules)
 # write config.h
 #######################
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/config.h )
+configure_file( ${CMAKE_SOURCE_DIR}/src/lib/strategies/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/strategies/config.h )
 
 add_subdirectory(utilities)
+
+foreach(name datastructures solver strategies utilities)
+  collect_files(lib ${name})
+endforeach()
 
 set(lib_${PROJECT_NAME}_SRCS
     ${lib_core_src}
@@ -74,6 +77,11 @@ if(STATICLIB_SWITCH)
 else()
         set(SMTRAT_TARGETS lib_smtrat CACHE STRING INTERNAL FORCE)
 	target_link_libraries( lib_${PROJECT_NAME} lib_carl ${libraries} ) # libraries definied in top-level CMakeLists.txt
+endif()
+
+
+if(USE_COTIRE)
+    cotire( lib_${PROJECT_NAME} )
 endif()
 
 

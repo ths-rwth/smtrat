@@ -5,19 +5,13 @@
  *
  */
 
-#include "PreprocessingModule.h"
-#include "../../../cli/ExitCodes.h"
-#include <limits.h>
-
-//#define REMOVE_LESS_EQUAL_IN_CNF_TRANSFORMATION (Not working)
-//#define ADDLINEARDEDUCTIONS
-//#define PREPROCESSING_DEVELOP_MODE
+//#define DEBUG_ELIMINATE_SUBSTITUTIONS
 
 namespace smtrat {
 
 	template<typename Settings>
-	PreprocessingModule<Settings>::PreprocessingModule( ModuleType _type, const ModuleInput* const _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
-        Module( _type, _formula, _conditionals, _manager ),
+	PreprocessingModule<Settings>::PreprocessingModule( const ModuleInput* const _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
+        PModule( _formula, _conditionals, _manager ),
         visitor(),
         newBounds(),
         varbounds(),
@@ -52,6 +46,11 @@ namespace smtrat {
     bool PreprocessingModule<Settings>::addCore(ModuleInput::const_iterator _subformula) {
 		if (Settings::checkBounds) {
 			addBounds(_subformula->formula(), _subformula->formula());
+            if( varbounds.isConflicting() )
+            {
+                mInfeasibleSubsets.push_back( varbounds.getConflict() );
+                return false;
+            }
 		}
         return true;
     }
@@ -87,6 +86,8 @@ namespace smtrat {
                 formula = visitor.visitResult(formula, splitSOSFunction);
             }
             // Apply all substitutions in form of an equations or Boolean facts.
+            boolSubs.clear();
+            arithSubs.clear();
             formula = elimSubstitutions(formula);
             SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Eliminate substitutions  " << formula);
             if (Settings::extractBounds) {
@@ -95,6 +96,8 @@ namespace smtrat {
             }
             SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Extract bounds  " << formula);
             if (Settings::checkBounds) {
+                tmpOrigins.clear();
+                tmpOrigins.insert(formula);
                 // Check if bounds make constraints vanish.
                 formula = visitor.visitResult(formula, checkBoundsFunction);
                 FormulasT bounds = varbounds.getOriginsOfBounds();
@@ -102,8 +105,6 @@ namespace smtrat {
                 formula = FormulaT( carl::FormulaType::AND, std::move( bounds ) );
             }
             SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Checked bounds  " << formula);
-//            std::cout << formula.toString( false, 1, "", true, false, true, true ) << std::endl;
-            formula = formula.toCNF( true, true, false );
 			if (Settings::printChanges) {
 				std::cout << (FormulaT)rReceivedFormula() << " -> " << formula << std::endl;
 			}
@@ -155,7 +156,6 @@ namespace smtrat {
                 }
                 SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Checked bounds  " << formula);
 
-                formula = formula.toCNF( true, true, false );
                 FormulaT origins(carl::FormulaType::AND, tmpOrigins);
 
 				if (Settings::printChanges) {
@@ -229,6 +229,18 @@ namespace smtrat {
                 }
                 break;
             }
+			case carl::FormulaType::NOT:
+            {
+                if( formula.subformula().getType() == carl::FormulaType::CONSTRAINT )
+                {
+                    const ConstraintT& c = formula.subformula().constraint();
+                    if( varbounds.addBound( ConstraintT( c.lhs(), invertRelation(c.relation()) ), _origin) )
+                    {
+                        newBounds.insert(formula);
+                    }
+                }
+                break;
+            }
 			case carl::FormulaType::AND:
             {
 				for (const auto& f: formula.subformulas()) addBounds(f, _origin);
@@ -249,6 +261,18 @@ namespace smtrat {
                     newBounds.erase(formula);
                 }
 				break;
+            }
+			case carl::FormulaType::NOT:
+            {
+                if( formula.subformula().getType() == carl::FormulaType::CONSTRAINT )
+                {
+                    const ConstraintT& c = formula.subformula().constraint();
+                    if( varbounds.removeBound( ConstraintT( c.lhs(), invertRelation(c.relation()) ), _origin) )
+                    {
+                        newBounds.erase(formula);
+                    }
+                }
+                break;
             }
 			case carl::FormulaType::AND:
 				for (const auto& f: formula.subformulas()) removeBounds(f, _origin);
@@ -626,6 +650,7 @@ namespace smtrat {
     template<typename Settings>
     FormulaT PreprocessingModule<Settings>::elimSubstitutions( const FormulaT& _formula, bool _elimSubstitutions ) 
     {
+        
         auto iter = boolSubs.find( _formula );
         if( iter != boolSubs.end() )
         {

@@ -46,6 +46,10 @@ namespace smtrat
         public Module
     {
         public:
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
             /**
              * Stores a formula, being part of the received formula of this module, and the position of 
              * this formula in the passed formula.
@@ -64,7 +68,7 @@ namespace smtrat
                 {}
             };
             /// Maps an original variable to it's corresponding LRAModule variable.
-            typedef std::map<carl::Variable, LRAVariable*> VarVariableMap;
+            typedef carl::FastMap<carl::Variable, LRAVariable*> VarVariableMap;
             /// Maps a linear polynomial to it's corresponding LRAModule variable.
             typedef carl::FastPointerMap<typename Poly::PolyType, LRAVariable*> ExVariableMap;
             /// Maps constraint to the bounds it represents (e.g., equations represent two bounds)
@@ -144,7 +148,7 @@ namespace smtrat
              * @param _conditionals Vector of Booleans: If any of them is true, we have to terminate a running check procedure.
              * @param _manager A reference to the manager of the solver using this module.
              */
-            LRAModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+            LRAModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             /**
              * Destructs this LRAModule.
@@ -397,6 +401,10 @@ namespace smtrat
              *         false, if no branching occured.
              */    
             bool first_var( bool _gc_support );
+            
+            /**
+             */
+            void calculatePseudoCosts();
             
             /**
              * @param gc_support true, if gomory cut construction is enabled.

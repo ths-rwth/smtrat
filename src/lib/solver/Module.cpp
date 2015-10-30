@@ -19,7 +19,6 @@
 
 #include "Manager.h"
 #include "Module.h"
-#include "ModuleFactory.h"
 
 // Flag activating some informative and not exaggerated output about module calls.
 //#define MODULE_VERBOSE
@@ -48,10 +47,9 @@ namespace smtrat
 
     // Constructor.
     
-    Module::Module( ModuleType type, const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager ):
+    Module::Module( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager ):
         mId( 0 ),
         mThreadPriority( thread_priority( 0 , 0 ) ),
-        mType( type ),
         mpReceivedFormula( _formula ),
         mpPassedFormula( new ModuleInput() ),
         mInfeasibleSubsets(),
@@ -101,7 +99,7 @@ namespace smtrat
     
     Answer Module::check( bool _full )
     {
-		SMTRAT_LOG_TRACE("smtrat.module", "Check " << (_full ? "full" : "lazy") << " with " << moduleName(type()));
+	SMTRAT_LOG_TRACE("smtrat.module", "Check " << (_full ? "full" : "lazy") << " with " << moduleName());
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         startCheckTimer();
         ++(mNrConsistencyChecks);
@@ -113,36 +111,42 @@ namespace smtrat
         cout << "))\n";
         #endif
         clearDeductions();
-        if( rReceivedFormula().empty() ) return foundAnswer( True );
-        Answer result = foundAnswer( checkCore( _full ) );
-        assert(result == Unknown || result == False || result == True);
-        assert( result != False || hasValidInfeasibleSubset() );
+        if( rReceivedFormula().empty() )
+        {
+            #ifdef SMTRAT_DEVOPTION_MeasureTime
+            stopCheckTimer();
+            #endif
+            return foundAnswer( True );
+        }
+        Answer result = checkCore( _full );
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         stopCheckTimer();
         #endif
+        assert(result == Unknown || result == False || result == True);
+        assert( result != False || hasValidInfeasibleSubset() );
         #ifdef SMTRAT_DEVOPTION_Validation
         if( validationSettings->logTCalls() )
         {
             if( result != Unknown && !mpReceivedFormula->empty() )
             {
 //                std::cout  << "Add assumption to check in Line " << __LINE__ << " from " << moduleName( type() ) << ": " << ((FormulaT)*mpReceivedFormula) << std::endl;
-                addAssumptionToCheck( *mpReceivedFormula, result == True, moduleName( type() ) );
+                addAssumptionToCheck( *mpReceivedFormula, result == True, moduleName() );
             }
         }
         #endif
-        return result;
+        return foundAnswer( result );
     }
 
     bool Module::inform( const FormulaT& _constraint )
     {
-		SMTRAT_LOG_TRACE("smtrat.module", __func__ << " in " << this << " with name " << moduleName(mType) << ": " << _constraint);
-		addConstraintToInform( _constraint );
+	SMTRAT_LOG_TRACE("smtrat.module", __func__ << " in " << this << " with name " << moduleName() << ": " << _constraint);
+	addConstraintToInform( _constraint );
         return informCore( _constraint );
     }
     
     bool Module::add( ModuleInput::const_iterator _receivedSubformula )
     {
-        SMTRAT_LOG_TRACE("smtrat.module", __func__ << " in " << this << " with name " << moduleName(mType) << ": " << _receivedSubformula->formula());
+        SMTRAT_LOG_TRACE("smtrat.module", __func__ << " in " << this << " with name " << moduleName() << ": " << _receivedSubformula->formula());
         if( mFirstUncheckedReceivedSubformula == mpReceivedFormula->end() )
         {
             mFirstUncheckedReceivedSubformula = _receivedSubformula;
@@ -155,7 +159,7 @@ namespace smtrat
     
     void Module::remove( ModuleInput::const_iterator _receivedSubformula )
     {
-        SMTRAT_LOG_TRACE("smtrat.module", __func__ << " in " << this << " with name " << moduleName(mType) << ": " << _receivedSubformula->formula());
+        SMTRAT_LOG_TRACE("smtrat.module", __func__ << " in " << this << " with name " << moduleName() << ": " << _receivedSubformula->formula());
         removeCore( _receivedSubformula );
         if( mFirstUncheckedReceivedSubformula == _receivedSubformula )
             ++mFirstUncheckedReceivedSubformula;
@@ -246,31 +250,7 @@ namespace smtrat
         if( mSolverState == True )
         {
             getBackendsModel();
-            carl::Variables receivedVariables;
-            mpReceivedFormula->arithmeticVars( receivedVariables );
-            mpReceivedFormula->booleanVars( receivedVariables );
-            // TODO: Do the same for bv and uninterpreted variables and functions 
-            auto iterRV = receivedVariables.begin();
-            if( iterRV != receivedVariables.end() )
-            {
-                for( std::map<ModelVariable,ModelValue>::const_iterator iter = mModel.begin(); iter != mModel.end(); )
-                {
-                    if( iter->first.isVariable() )
-                    {
-                        auto tmp = std::find( iterRV, receivedVariables.end(), iter->first.asVariable() );
-                        if( tmp == receivedVariables.end() )
-                        {
-                            iter = mModel.erase( iter );
-                            continue;
-                        }
-                        else
-                        {   
-                            iterRV = tmp;
-                        }
-                    }
-                    ++iter;
-                }
-            }
+            excludeNotReceivedVariablesFromModel();
         }
     }
 
@@ -540,13 +520,13 @@ namespace smtrat
         subformulas.push_back( FormulaT( FormulaType::NOT, _unequalConstraint ) );
         subformulas.push_back( lessConstraint );
         subformulas.push_back( greaterConstraint );
-        addDeduction( FormulaT( FormulaType::OR, std::move( subformulas ) ) );
+        addDeduction( FormulaT( FormulaType::OR, std::move( subformulas ) ), DeductionType::PERMANENT );
         // (not p<0 or p!=0)
-        addDeduction( FormulaT( FormulaType::OR, notLessConstraint, _unequalConstraint ) );
+        addDeduction( FormulaT( FormulaType::OR, notLessConstraint, _unequalConstraint ), DeductionType::PERMANENT );
         // (not p>0 or p!=0)
-        addDeduction( FormulaT( FormulaType::OR, notGreaterConstraint, _unequalConstraint ) );
+        addDeduction( FormulaT( FormulaType::OR, notGreaterConstraint, _unequalConstraint ), DeductionType::PERMANENT );
         // (not p>0 or not p<0)
-        addDeduction( FormulaT( FormulaType::OR, notGreaterConstraint, notLessConstraint ) );
+        addDeduction( FormulaT( FormulaType::OR, notGreaterConstraint, notLessConstraint ), DeductionType::PERMANENT );
     }
     
     unsigned Module::checkModel() const
@@ -678,7 +658,7 @@ namespace smtrat
             assert( !infSubSet->empty() );
             #ifdef SMTRAT_DEVOPTION_Validation
             if( validationSettings->logInfSubsets() )
-                addAssumptionToCheck( *infSubSet, false, moduleName( _backend.type() ) + "_infeasible_subset" );
+                addAssumptionToCheck( *infSubSet, false, _backend.moduleName() + "_infeasible_subset" );
             #endif
             result.emplace_back();
             for( const auto& cons : *infSubSet )
@@ -880,6 +860,76 @@ namespace smtrat
         // as it is compared by an id which gets incremented every time a new constraint is constructed.
         mConstraintsToInform.insert( mConstraintsToInform.end(), constraint );
     }
+    
+    void Module::excludeNotReceivedVariablesFromModel() const
+    {
+        if( mModel.empty() )
+            return;
+        // collect all variables, bit-vector variables and uninterpreted variables occurring in the received formula
+        carl::Variables receivedVariables;
+        std::set<BVVariable>* bvVars = nullptr;
+        std::set<UVariable>* ueVars = nullptr;
+        bool containtsBVConstraints = mpReceivedFormula->containsBitVectorConstraints();
+        bool containtsUEquality = mpReceivedFormula->containsUninterpretedEquations();
+        if( containtsBVConstraints )
+            bvVars = new std::set<BVVariable>();
+        if( containtsUEquality )
+            ueVars = new std::set<UVariable>();
+        for( auto& fwo : *mpReceivedFormula )
+            fwo.formula().collectVariables_( receivedVariables, bvVars, ueVars, true, true, true, containtsUEquality, containtsBVConstraints );
+        // initialize iterators of variable containers
+        carl::Variables::const_iterator iterRV = receivedVariables.begin();
+        std::set<BVVariable>::const_iterator bvVarsIter;
+        if( containtsBVConstraints )
+            bvVarsIter = bvVars->begin();
+        std::set<UVariable>::const_iterator ueVarsIter;
+        if( containtsUEquality )
+            ueVarsIter = ueVars->begin();
+        // remove the variables, which do not occur in the one of these containers
+        for( std::map<ModelVariable,ModelValue>::const_iterator iter = mModel.begin(); iter != mModel.end(); )
+        {
+            if( iter->first.isVariable() )
+            {
+                auto tmp = std::find( iterRV, receivedVariables.end(), iter->first.asVariable() );
+                if( tmp == receivedVariables.end() )
+                {
+                    iter = mModel.erase( iter );
+                    continue;
+                }
+                else
+                    iterRV = tmp;
+            }
+            else if( containtsBVConstraints && iter->first.isBVVariable() )
+            {
+                assert( bvVars != nullptr );
+                auto tmp = std::find( bvVarsIter, bvVars->end(), iter->first.asBVVariable() );
+                if( tmp == bvVars->end() )
+                {
+                    iter = mModel.erase( iter );
+                    continue;
+                }
+                else
+                    bvVarsIter = tmp;
+            }
+            else if( containtsUEquality && iter->first.isUVariable() )
+            {
+                assert( ueVars != nullptr );
+                auto tmp = std::find( ueVarsIter, ueVars->end(), iter->first.asUVariable() );
+                if( tmp == ueVars->end() )
+                {
+                    iter = mModel.erase( iter );
+                    continue;
+                }
+                else
+                    ueVarsIter = tmp;
+            }
+            ++iter;
+        }
+        if( containtsBVConstraints )
+            delete bvVars;
+        if( containtsUEquality )
+            delete ueVars;
+    }
 
     void Module::updateDeductions()
     {
@@ -890,7 +940,7 @@ namespace smtrat
             if( validationSettings->logLemmata() )
             {
                 for( const auto& ded : (*module)->deductions() )
-                    addAssumptionToCheck( FormulaT( FormulaType::NOT, ded.first ), false, moduleName( (*module)->type() ) + "_lemma" );
+                    addAssumptionToCheck( FormulaT( FormulaType::NOT, ded.first ), false, (*module)->moduleName() + "_lemma" );
             }
             #endif
             mDeductions.insert( mDeductions.end(), (*module)->mDeductions.begin(), (*module)->mDeductions.end() );
@@ -904,6 +954,21 @@ namespace smtrat
                 }
             }
         }
+    }
+    
+    pair<bool,FormulaT> Module::getReceivedFormulaSimplified()
+    {
+        if( mSolverState == False )
+            return make_pair( true, FormulaT( carl::FormulaType::FALSE ) );
+        for( auto& backend : usedBackends() )
+        {
+            pair<bool,FormulaT> simplifiedPassedFormula = backend->getReceivedFormulaSimplified();
+            if( simplifiedPassedFormula.first )
+            {
+                return simplifiedPassedFormula;
+            }
+        }
+        return make_pair( false, FormulaT( carl::FormulaType::TRUE ) );
     }
     
     void Module::collectOrigins( const FormulaT& _formula, FormulasT& _origins ) const
@@ -1057,10 +1122,10 @@ namespace smtrat
         return true;
     }
     
-    void Module::checkInfSubsetForMinimality( std::vector<FormulasT>::const_iterator _infsubset, const string& _filename, unsigned _maxSizeDifference ) const
+    void Module::checkInfSubsetForMinimality( std::vector<FormulaSetT>::const_iterator _infsubset, const string& _filename, unsigned _maxSizeDifference ) const
     {
         stringstream filename;
-        filename << _filename << "_" << moduleName(mType) << "_" << mSmallerMusesCheckCounter << ".smt2";
+        filename << _filename << "_" << moduleName() << "_" << mSmallerMusesCheckCounter << ".smt2";
         ofstream smtlibFile;
         smtlibFile.open( filename.str() );
         for( size_t size = _infsubset->size() - _maxSizeDifference; size < _infsubset->size(); ++size )
@@ -1123,7 +1188,7 @@ namespace smtrat
     void Module::print( ostream& _out, const string _initiation ) const
     {
         _out << _initiation << "********************************************************************************" << endl;
-        _out << _initiation << " Solver with stored at " << this << " with name " << moduleName( type() ) << endl;
+        _out << _initiation << " Solver with stored at " << this << " with name " << moduleName() << endl;
         _out << _initiation << endl;
         _out << _initiation << " Current solver state" << endl;
         _out << _initiation << endl;

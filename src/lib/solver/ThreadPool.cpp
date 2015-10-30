@@ -13,7 +13,7 @@ using namespace std;
 
 namespace smtrat
 {
-    ThreadPool::ThreadPool( size_t _numberOfThreads, unsigned _numberOfCores ):
+    ThreadPool::ThreadPool( size_t _numberOfThreads, std::size_t _numberOfCores ):
         mDone( false ),
         mPossibleOversubscription( _numberOfCores<_numberOfThreads ),
         mNumberOfCores( _numberOfCores ),
@@ -42,7 +42,7 @@ namespace smtrat
             mThreads.pop_back();
     }
 
-    void ThreadPool::consumeBackend( unsigned _threadId )
+    void ThreadPool::consumeBackend( std::size_t _threadId )
     {
         thread_priority nextThreadPriority;
         std::unique_lock<std::mutex> lock( mMutex );

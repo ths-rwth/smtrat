@@ -6,7 +6,7 @@ namespace smtrat {
 
 struct OptionPrinter {
 	std::ostream& os;
-	OptionPrinter(std::ostream& os): os(os) {}
+	OptionPrinter(std::ostream& out): os(out) {}
 	void operator()(const std::string& name, const std::string& value) {
 		if (name.at(0) == '_') return;
 		if (value.find('\n') == std::string::npos) {

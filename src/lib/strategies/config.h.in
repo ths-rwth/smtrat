@@ -1,11 +1,3 @@
 #pragma once
 
-#cmakedefine SMTRAT_ENABLE_BVModule
-#cmakedefine SMTRAT_ENABLE_GroebnerModule
-#cmakedefine SMTRAT_ENABLE_CADModule
-#cmakedefine SMTRAT_ENABLE_VSModule
-#cmakedefine SMTRAT_ENABLE_CNFerModule
-#cmakedefine SMTRAT_ENABLE_PreprocessingModule
-#cmakedefine SMTRAT_ENABLE_LRAModule
-#cmakedefine SMTRAT_ENABLE_SATModule
-#cmakedefine SMTRAT_ENABLE_ICPModule
+#include "../lib/strategies/@SMTRAT_Strategy@.h"

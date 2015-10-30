@@ -17,8 +17,8 @@ namespace smtrat {
 	 * Constructors.
 	 */
 	template<class Settings>
-	EQModule<Settings>::EQModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-		Module( _type, _formula, _conditionals, _manager ),
+	EQModule<Settings>::EQModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+		Module( _formula, _conditionals, _manager ),
 		mLocalSplitAge(0), mGlobalSplitAge(0),
 		mBfsQueue(Settings::initial_bfsqueue_capacity),
 		mImplicitEdgeQueue(Settings::initial_bfsqueue_capacity),
@@ -1520,7 +1520,7 @@ namespace smtrat {
 #endif
                 #ifdef SMTRAT_DEVOPTION_Validation
                 if( validationSettings->logLemmata() )
-                    addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName( type() ) + "_lemma_1" );
+                    addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName() + "_lemma_1" );
                 #endif
 				addDeduction(or_);
 			} else {
@@ -1572,7 +1572,7 @@ namespace smtrat {
 #endif
 					#ifdef SMTRAT_DEVOPTION_Validation
                     if( validationSettings->logLemmata() )
-                        addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName( type() ) + "_lemma_2" );
+                        addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName() + "_lemma_2" );
                     #endif
                     addDeduction(or_);
 				} else {
@@ -1624,7 +1624,7 @@ namespace smtrat {
 								FormulaT or_(carl::OR, std::move(innerformulas));
 								#ifdef SMTRAT_DEVOPTION_Validation
                                 if( validationSettings->logLemmata() )
-                                    addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName( type() ) + "_lemma_3" );
+                                    addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName() + "_lemma_3" );
                                 #endif
                                 addDeduction(or_);
 
@@ -1640,7 +1640,7 @@ namespace smtrat {
 				FormulaT or_(carl::OR, std::move(outerformulas));
                 #ifdef SMTRAT_DEVOPTION_Validation
                 if( validationSettings->logLemmata() )
-                    addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName( type() ) + "_lemma_4" );
+                    addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName() + "_lemma_4" );
                 #endif
 				addDeduction(or_);
 

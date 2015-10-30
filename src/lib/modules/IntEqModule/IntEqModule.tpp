@@ -17,8 +17,8 @@ namespace smtrat
      */
 
     template<class Settings>
-    IntEqModule<Settings>::IntEqModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        Module( _type, _formula, _conditionals, _manager ),
+    IntEqModule<Settings>::IntEqModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+        Module( _formula, _conditionals, _manager ),
         mProc_Constraints(),
         mRecent_Constraints(),    
         mSubstitutions(),
@@ -37,8 +37,8 @@ namespace smtrat
         #endif
         if( _subformula->formula().isFalse() )
         {
-            FormulasT infSubSet;
-            infSubSet.push_back( _subformula->formula() );
+            FormulaSetT infSubSet;
+            infSubSet.insert( _subformula->formula() );
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;            
         } 
@@ -129,7 +129,7 @@ namespace smtrat
                 cout << "NewEq is invalid" << endl;
                 #endif
                 size_t i = determine_smallest_origin( *origins );
-                FormulasT infSubSet;
+                FormulaSetT infSubSet;
                 collectOrigins( origins->at(i), infSubSet );
                 mInfeasibleSubsets.push_back( infSubSet );
                 return false;                
@@ -393,7 +393,7 @@ namespace smtrat
             if( mProc_Constraints.begin()->first.isFalse() )
             {
                 size_t i = determine_smallest_origin( *( mProc_Constraints.begin()->second ) );
-                FormulasT infSubSet;
+                FormulaSetT infSubSet;
                 collectOrigins( mProc_Constraints.begin()->second->at(i), infSubSet );
                 mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                 return False;
@@ -555,7 +555,7 @@ namespace smtrat
                     cout << "Constraint is invalid!" << endl;
                     #endif
                     size_t i = determine_smallest_origin( *origins_new );
-                    FormulasT infSubSet;
+                    FormulaSetT infSubSet;
                     collectOrigins( origins_new->at(i), infSubSet  );
                     mInfeasibleSubsets.push_back( infSubSet );
                     return False; 
@@ -622,7 +622,7 @@ namespace smtrat
                     cout << "Origins: " << *origins << endl;
                     #endif
                     size_t i = determine_smallest_origin( *origins );
-                    FormulasT infSubSet;
+                    FormulaSetT infSubSet;
                     collectOrigins( origins->at(i), infSubSet );
                     mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                     return False;
@@ -716,7 +716,7 @@ namespace smtrat
             }
             else
             {
-                auto to_delete = iter_ass;
+                Model::const_iterator to_delete = iter_ass;
                 ++iter_ass;
                 mTemp_Model.erase( to_delete );
             }

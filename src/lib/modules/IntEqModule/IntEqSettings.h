@@ -13,6 +13,7 @@ namespace smtrat
 {
     struct IntEqSettings1
     {
+		static constexpr auto moduleName = "IntEqModule<IntEqSettings1>";
         /**
          * Example for a setting.
          */

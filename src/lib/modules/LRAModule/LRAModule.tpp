@@ -9,6 +9,9 @@
 
 #include "LRAModule.h"
 
+#ifdef DEBUG_METHODS_TABLEAU
+//#define DEBUG_METHODS_LRA_MODULE
+#endif
 //#define DEBUG_LRA_MODULE
 
 using namespace smtrat::lra;
@@ -16,8 +19,8 @@ using namespace smtrat::lra;
 namespace smtrat
 {
     template<class Settings>
-    LRAModule<Settings>::LRAModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        Module( _type, _formula, _conditionals, _manager ),
+    LRAModule<Settings>::LRAModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+        Module( _formula, _conditionals, _manager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
         mStrongestBoundsRemoved( false ),
@@ -32,7 +35,7 @@ namespace smtrat
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
-        s << moduleName( type() ) << "_" << id();
+        s << moduleName() << "_" << id();
         mpStatistics = new LRAModuleStatistics( s.str() );
         #endif
     }
@@ -338,6 +341,7 @@ namespace smtrat
         printReceivedFormula();
         #endif
         bool backendsResultUnknown = true;
+        bool containsIntegerValuedVariables = true;
         Answer result = Unknown;
         if( !rReceivedFormula().isConstraintConjunction() )
         {
@@ -348,6 +352,8 @@ namespace smtrat
             result = False;
             goto Return;
         }
+        if( rReceivedFormula().isRealConstraintConjunction() )
+            containsIntegerValuedVariables = false;
         assert( !mTableau.isConflicting() );
         #ifdef LRA_USE_PIVOTING_STRATEGY
         mTableau.setBlandsRuleStart( 1000 );//(unsigned) mTableau.columns().size() );
@@ -386,88 +392,20 @@ namespace smtrat
                     // If the current assignment also fulfills the nonlinear constraints.
                     if( checkAssignmentForNonlinearConstraint() )
                     {
-                        if( Settings::use_gomory_cuts && gomory_cut() )
+                        if( containsIntegerValuedVariables )
                         {
-                            goto Return; // Unknown
-                        }
-                        if( !Settings::use_gomory_cuts && Settings::use_cuts_from_proofs && cuts_from_proofs() )
-                        {
-                            goto Return; // Unknown
-                        }
-                        if( !Settings::use_gomory_cuts && !Settings::use_cuts_from_proofs && branch_and_bound() )
-                        {
-                            if( Settings::pseudo_cost_branching )
-                            {                                
-                                // Count how many integer variables violate their domain
-                                EvalRationalMap _rMap = getRationalModel();
-                                auto map_iterator = _rMap.begin();
-                                unsigned count = 0;
-                                for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
-                                {
-                                    assert( var->first == map_iterator->first );
-                                    Rational& ass = map_iterator->second;
-                                    if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
-                                    {
-                                        count++;
-                                    }
-                                    ++map_iterator;
-                                }    
-                                // Go through the received constraints and store for which variables we branch 'left' 
-                                // resp. 'right'
-                                auto iter_constr = rReceivedFormula().begin();
-                                while( iter_constr != rReceivedFormula().end() )
-                                {
-                                    Poly branching_poly = iter_constr->formula().constraint().lhs();
-                                    std::set< carl::Variable > occ_vars;
-                                    branching_poly.gatherVariables( occ_vars );
-                                    // Check whether the current constraint is a branching constraint
-                                    if( occ_vars.size() == 1 )
-                                    {
-                                        auto iter_poly = branching_poly.begin();
-                                        while( iter_poly != branching_poly.end() )
-                                        {
-                                            if( !iter_poly->isConstant() )
-                                            {    
-                                                if( iter_poly->isLinear() )
-                                                {
-                                                    // Update mBranch_Success
-                                                    auto iter_help = mBranch_Success.find( *( occ_vars.begin() ) );
-                                                    if( iter_help == mBranch_Success.end() )
-                                                    {
-                                                        std::pair< carl::Variable, std::pair< std::vector< unsigned >, std::vector< unsigned > > > to_be_ins;
-                                                        to_be_ins.first = *( occ_vars.begin() );
-                                                        std::pair< std::vector< unsigned >, std::vector< unsigned > > new_pair;
-                                                        if( branching_poly.begin()->coeff() < 0 )
-                                                        {                               
-                                                            new_pair.first = std::vector< unsigned >();
-                                                            new_pair.second = std::vector< unsigned >( count );
-                                                        }
-                                                        else
-                                                        {
-                                                            new_pair.second = std::vector< unsigned >();
-                                                            new_pair.first = std::vector< unsigned >( count );                                                                                                
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        if( branching_poly.begin()->coeff() < 0 )
-                                                        {
-                                                            iter_help->second.second.push_back( count );
-                                                        }
-                                                        else
-                                                        {
-                                                            iter_help->second.first.push_back( count );                                                    
-                                                        }                                                
-                                                    }
-                                                }
-                                            }
-                                            ++iter_poly;
-                                        }    
-                                    }
-                                    ++iter_constr;
-                                }
-                            }    
-                            goto Return; // Unknown
+                            if( Settings::use_gomory_cuts && gomory_cut() )
+                            {
+                                goto Return; // Unknown
+                            }
+                            if( !Settings::use_gomory_cuts && Settings::use_cuts_from_proofs && cuts_from_proofs() )
+                            {
+                                goto Return; // Unknown
+                            }
+                            if( !Settings::use_gomory_cuts && !Settings::use_cuts_from_proofs && branch_and_bound() )
+                            {
+                                goto Return; // Unknown
+                            }
                         }
                         result = True;
                         if( Settings::restore_previous_consistent_assignment )
@@ -599,7 +537,7 @@ namespace smtrat
                 }
                 else
                 {
-                    std::vector< std::set< const LRABound* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
+                    std::vector< std::vector< const LRABound* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
                     for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
                     {
                         FormulaSetT infSubSet;
@@ -687,9 +625,7 @@ Return:
                 EvalRationalMap rationalAssignment = getRationalModel();
                 for( auto ratAss = rationalAssignment.begin(); ratAss != rationalAssignment.end(); ++ratAss )
                 {
-                    Poly value = Poly( ratAss->second );
-                    ModelValue assignment = vs::SqrtEx(value);
-                    mModel.insert(mModel.end(), std::make_pair(ratAss->first, assignment));
+                    mModel.insert(mModel.end(), std::make_pair(ratAss->first, ratAss->second) );
                 }
             }
             else
@@ -712,7 +648,7 @@ Return:
     template<class Settings>
     EvalRationalIntervalMap LRAModule<Settings>::getVariableBounds() const
     {
-        EvalRationalIntervalMap result = EvalRationalIntervalMap();
+        EvalRationalIntervalMap result;
         for( auto iter = mTableau.originalVars().begin(); iter != mTableau.originalVars().end(); ++iter )
         {
             const LRAVariable& var = *iter->second;
@@ -1016,7 +952,7 @@ Return:
                     {
                         FormulasT subformulas
                         {
-                            std::move(FormulaT(carl::FormulaType::NOT, (*currentBound)->asConstraint())), 
+                            FormulaT(carl::FormulaType::NOT, (*currentBound)->asConstraint()), 
                             (_boundNeq ? _bound->neqRepresentation() : _bound->asConstraint())
                         };
                         addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
@@ -1036,7 +972,7 @@ Return:
                     {
                         FormulasT subformulas
                         {
-                            std::move( FormulaT( carl::FormulaType::NOT, _bound->asConstraint() ) ),
+                            FormulaT( carl::FormulaType::NOT, _bound->asConstraint() ),
                             (*currentBound)->asConstraint()
                         };
                         addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
@@ -1066,7 +1002,7 @@ Return:
                     {
                         FormulasT subformulas
                         {
-                            std::move( FormulaT( carl::FormulaType::NOT, _bound->asConstraint() ) ),
+                            FormulaT( carl::FormulaType::NOT, _bound->asConstraint() ),
                             (*currentBound)->asConstraint()
                         };
                         addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
@@ -1087,7 +1023,7 @@ Return:
                     {
                         FormulasT subformulas
                         {
-                            std::move( FormulaT( carl::FormulaType::NOT, (*currentBound)->asConstraint() ) ),
+                            FormulaT( carl::FormulaType::NOT, (*currentBound)->asConstraint() ),
                             ( _boundNeq ? _bound->neqRepresentation() : _bound->asConstraint() )
                         };
                         addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
@@ -1106,8 +1042,8 @@ Return:
     {
         FormulasT subformulas
         {
-            std::move( FormulaT( carl::FormulaType::NOT, _caseA.asConstraint() ) ),
-            std::move( FormulaT( carl::FormulaType::NOT, _caseBneq ? _caseB.neqRepresentation() : _caseB.asConstraint() ) )
+            FormulaT( carl::FormulaType::NOT, _caseA.asConstraint() ),
+            FormulaT( carl::FormulaType::NOT, _caseBneq ? _caseB.neqRepresentation() : _caseB.asConstraint() )
         };
         addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
         #ifdef SMTRAT_DEVOPTION_Statistics
@@ -1397,9 +1333,9 @@ Return:
                     cons1.setActivity( -numeric_limits<double>::infinity() );
                     FormulaT cons2 = FormulaT( cut_constraint2 );
                     cons2.setActivity( -numeric_limits<double>::infinity() );
-                    addDeduction( FormulaT( carl::FormulaType::OR, std::move( FormulasT{ cons1, cons2 } ) ) );   
+                    addDeduction( FormulaT( carl::FormulaType::OR, FormulasT{ cons1, cons2 } ) );   
                     // (not(p<=I-1) or not(p>=I))
-                    FormulasT subformulasB{ std::move(FormulaT( carl::FormulaType::NOT, cons1 )), std::move(FormulaT( carl::FormulaType::NOT, cons2 )) };
+                    FormulasT subformulasB{ FormulaT( carl::FormulaType::NOT, cons1 ), FormulaT( carl::FormulaType::NOT, cons2 ) };
                     addDeduction( FormulaT( carl::FormulaType::OR, std::move( subformulasB ) ) );
                     #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                     cout << "After adding proof of unsatisfiability:" << endl;
@@ -1468,13 +1404,13 @@ Return:
     bool LRAModule<Settings>::minimal_row_var( bool _gc_support )
     {
         EvalRationalMap _rMap = getRationalModel();
-        auto map_iterator = _rMap.begin();
         auto branch_var = mTableau.originalVars().begin();
         Rational ass_;
         Rational row_count_min = mTableau.columns().size()+1;
         bool result = false;
-        for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
+        for( auto map_iterator = _rMap.begin(); map_iterator != _rMap.end(); ++map_iterator )
         {
+            auto var = mTableau.originalVars().find( map_iterator->first );
             assert( var->first == map_iterator->first );
             Rational& ass = map_iterator->second;
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
@@ -1488,7 +1424,6 @@ Return:
                     ass_ = ass; 
                 }
             }
-            ++map_iterator;
         }
         if( result )
         {
@@ -1516,13 +1451,13 @@ Return:
     bool LRAModule<Settings>::most_feasible_var( bool _gc_support )
     {
         EvalRationalMap _rMap = getRationalModel();
-        auto map_iterator = _rMap.begin();
         auto branch_var = mTableau.originalVars().begin();
         Rational ass_;
         bool result = false;
         Rational diff = MINUS_ONE_RATIONAL;
-        for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
+        for( auto map_iterator = _rMap.begin(); map_iterator != _rMap.end(); ++map_iterator )
         {
+            auto var = mTableau.originalVars().find( map_iterator->first );
             assert( var->first == map_iterator->first );
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
@@ -1536,7 +1471,6 @@ Return:
                     ass_ = ass;                   
                 }
             }
-            ++map_iterator;
         }
         if( result )
         {
@@ -1564,13 +1498,14 @@ Return:
     bool LRAModule<Settings>::most_infeasible_var( bool _gc_support ) 
     {
         EvalRationalMap _rMap = getRationalModel();
-        auto map_iterator = _rMap.begin();
+        
         auto branch_var = mTableau.originalVars().begin();
         Rational ass_;
         bool result = false;
         Rational diff = ONE_RATIONAL;
-        for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
+        for( auto map_iterator = _rMap.begin(); map_iterator != _rMap.end(); ++map_iterator )
         {
+            auto var = mTableau.originalVars().find( map_iterator->first );
             assert( var->first == map_iterator->first );
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
@@ -1584,7 +1519,6 @@ Return:
                     ass_ = ass;                   
                 }
             }
-            ++map_iterator;
         }
         if( result )
         {
@@ -1612,9 +1546,9 @@ Return:
     bool LRAModule<Settings>::first_var( bool _gc_support )
     {
         EvalRationalMap _rMap = getRationalModel();
-        auto map_iterator = _rMap.begin();
-        for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
+        for( auto map_iterator = _rMap.begin(); map_iterator != _rMap.end(); ++map_iterator )
         {
+            auto var = mTableau.originalVars().find( map_iterator->first );
             assert( var->first == map_iterator->first );
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
@@ -1633,22 +1567,94 @@ Return:
                 branchAt( var->second->expression(), true, ass );
                 return true;           
             }
-            ++map_iterator;
         } 
         return false;
+    }
+    
+    template<class Settings>
+    void LRAModule<Settings>::calculatePseudoCosts()
+    {
+        // Count how many integer variables violate their domain
+        EvalRationalMap _rMap = getRationalModel();
+        auto map_iterator = _rMap.begin();
+        unsigned count = 0;
+        for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
+        {
+            assert( var->first == map_iterator->first );
+            Rational& ass = map_iterator->second;
+            if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
+            {
+                count++;
+            }
+            ++map_iterator;
+        }    
+        // Go through the received constraints and store for which variables we branch 'left' 
+        // resp. 'right'
+        auto iter_constr = rReceivedFormula().begin();
+        while( iter_constr != rReceivedFormula().end() )
+        {
+            Poly branching_poly = iter_constr->formula().constraint().lhs();
+            std::set< carl::Variable > occ_vars;
+            branching_poly.gatherVariables( occ_vars );
+            // Check whether the current constraint is a branching constraint
+            if( occ_vars.size() == 1 )
+            {
+                auto iter_poly = branching_poly.begin();
+                while( iter_poly != branching_poly.end() )
+                {
+                    if( !iter_poly->isConstant() )
+                    {    
+                        if( iter_poly->isLinear() )
+                        {
+                            // Update mBranch_Success
+                            auto iter_help = mBranch_Success.find( *( occ_vars.begin() ) );
+                            if( iter_help == mBranch_Success.end() )
+                            {
+                                std::pair< carl::Variable, std::pair< std::vector< unsigned >, std::vector< unsigned > > > to_be_ins;
+                                to_be_ins.first = *( occ_vars.begin() );
+                                std::pair< std::vector< unsigned >, std::vector< unsigned > > new_pair;
+                                if( branching_poly.begin()->coeff() < 0 )
+                                {                               
+                                    new_pair.first = std::vector< unsigned >();
+                                    new_pair.second = std::vector< unsigned >( count );
+                                }
+                                else
+                                {
+                                    new_pair.second = std::vector< unsigned >();
+                                    new_pair.first = std::vector< unsigned >( count );                                                                                                
+                                }
+                            }
+                            else
+                            {
+                                if( branching_poly.begin()->coeff() < 0 )
+                                {
+                                    iter_help->second.second.push_back( count );
+                                }
+                                else
+                                {
+                                    iter_help->second.first.push_back( count );                                                    
+                                }                                                
+                            }
+                        }
+                    }
+                    ++iter_poly;
+                }    
+            }
+            ++iter_constr;
+        }
     }
     
     template<class Settings>
     bool LRAModule<Settings>::pseudo_cost_branching( bool _gc_support, BRANCH_STRATEGY strat )
     {
         EvalRationalMap _rMap = getRationalModel();
-        auto map_iterator = _rMap.begin();
         auto branch_var = mTableau.originalVars().begin();
         Rational ass_;
         Rational min_score;
         bool result = false, first_round = true, at_least_one = false;
-        for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
+        for( auto map_iterator = _rMap.begin(); map_iterator != _rMap.end(); ++map_iterator )
         {
+            auto var = mTableau.originalVars().find( map_iterator->first );
             assert( var->first == map_iterator->first );
             Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
@@ -1661,7 +1667,6 @@ Return:
                 auto iter_succ = mBranch_Success.find( var->first );
                 if( iter_succ == mBranch_Success.end() )
                 {
-                    ++map_iterator;
                     continue;
                 }
                 at_least_one = true;
@@ -1729,7 +1734,6 @@ Return:
                     }
                 }
             }
-            ++map_iterator;
         }
         if( !at_least_one && result )
         {
@@ -1757,7 +1761,10 @@ Return:
         {
             if( _gc_support )
             {
-                return maybeGomoryCut( branch_var->second, ass_ );
+                result = maybeGomoryCut( branch_var->second, ass_ );
+                if( result )
+                    calculatePseudoCosts();
+                return result;
             }
 //            FormulasT premises;
 //            mTableau.collect_premises( branch_var->second , premises  );
@@ -1767,6 +1774,7 @@ Return:
 //                collectOrigins( pf, premisesOrigins );
 //            }            
             branchAt( branch_var->second->expression(), true, ass_ );
+            calculatePseudoCosts();
             return true;         
         }
         else
@@ -1814,6 +1822,8 @@ Return:
         }
         return true;
     }
+    
+    #ifdef DEBUG_METHODS_LRA_MODULE
 
     template<class Settings>
     void LRAModule<Settings>::printLinearConstraints( ostream& _out, const string _init ) const
@@ -1841,7 +1851,7 @@ Return:
         _out << _init << "Mapping of constraints to bounds:" << endl;
         for( auto iter = mTableau.constraintToBound().begin(); iter != mTableau.constraintToBound().end(); ++iter )
         {
-            _out << _init << "   " << iter->first->toString() << endl;
+            _out << _init << "   " << iter->first.toString() << endl;
             for( auto iter2 = iter->second->begin(); iter2 != iter->second->end(); ++iter2 )
             {
                 _out << _init << "        ";
@@ -1887,4 +1897,5 @@ Return:
     {
         mTableau.printVariables( true, _out, _init );
     }
+    #endif
 }    // namespace smtrat

@@ -13,17 +13,18 @@
 
 #include <vector>
 
-#include "ModuleFactory.h"
 #include "StrategyGraph.h"
-#include "../modules/ModuleType.h"
-#include "Module.h"
 #include "../config.h"
-#include "../modules/StandardModuleFactory.h"
+#include "ModuleInput.h"
 #include "GeneralStatistics.h"
 #include "QuantifierManager.h"
 
 namespace smtrat
 {   
+    class Module; // forward declaration
+    //class ModuleFactory; // forward declaration
+    class Model; // forward declaration
+    
     /**
      * Base class for solvers. This is the interface to the user.
      **/
@@ -48,10 +49,8 @@ namespace smtrat
             Module* mpPrimaryBackend;
             /// a Boolean showing whether the manager has received new constraint after the last consistency check
             bool mBackendsUptodate;
-            /// modules we can use
-            std::map<const ModuleType, ModuleFactory*>* mpModuleFactories;
             /// primary strategy
-            StrategyGraph mStrategyGraph;
+			StrategyGraph mStrategyGraph;
             /// channel to write debug output
             std::ostream mDebugOutputChannel;
 			/// quantified variables
@@ -106,10 +105,7 @@ namespace smtrat
              *          the constraint itself is inconsistent;
              *          true, otherwise.
              */
-            bool inform( const FormulaT& _constraint )
-            {
-                return mpPrimaryBackend->inform( _constraint );
-            }
+            bool inform( const FormulaT& _constraint );
 
             /**
              * Adds the given formula to the conjunction of formulas, which will be considered for the next 
@@ -118,24 +114,7 @@ namespace smtrat
              * @return false, if it is easy to decide whether adding this formula creates a conflict;
              *          true, otherwise.
              */
-            bool add( const FormulaT& _subformula )
-            {
-                auto res = mpPassedFormula->add( _subformula );
-                if( res.second )
-                {
-                    auto btp = mBacktrackPoints.end();
-                    while( btp != mBacktrackPoints.begin() )
-                    {
-                        --btp;
-                        if( *btp == mpPassedFormula->end() )
-                            *btp = res.first;
-                        else
-                            break;
-                    }
-                    return mpPrimaryBackend->add( res.first );
-                }
-                return true;
-            }
+            bool add( const FormulaT& _subformula );
 
             /**
              * Checks the so far added formulas for satisfiability.
@@ -143,12 +122,7 @@ namespace smtrat
              *          False, if it not satisfiable;
              *          Unknown, if this solver cannot decide whether it is satisfiable or not.
              */
-            Answer check( bool _full = true )
-            {
-                *mPrimaryBackendFoundAnswer.back() = false;
-                mpPassedFormula->updateProperties();
-                return mpPrimaryBackend->check( _full );
-            }
+            Answer check( bool _full = true );
             
             /**
              * Pushes a backtrack point to the stack of backtrack points.
@@ -175,7 +149,7 @@ namespace smtrat
                 if( mBacktrackPoints.empty() ) return false;
                 auto subFormula = mBacktrackPoints.back();
                 while( subFormula != mpPassedFormula->end() )
-                    subFormula = remove( subFormula );
+                    subFormula = remove( subFormula, false );
                 mBacktrackPoints.pop_back();
                 return true;
             }
@@ -186,6 +160,11 @@ namespace smtrat
                     if( !pop() ) return;
             }
             
+            void clear()
+            {
+                while( pop() );
+            }
+            
             void reset();
             
             /**
@@ -194,19 +173,13 @@ namespace smtrat
              * Note, that the conjunction of the so far added formulas must be inconsistent to
              * receive an infeasible subset.
              */
-            const std::vector<FormulaSetT>& infeasibleSubsets() const
-            {
-                return mpPrimaryBackend->infeasibleSubsets();
-            }
+            const std::vector<FormulaSetT>& infeasibleSubsets() const;
 
             /**
              * Determines variables assigned by the currently found satisfying assignment to an equal value in their domain.
              * @return A list of vectors of variables, stating that the variables in one vector are assigned to equal values.
              */
-			std::list<std::vector<carl::Variable>> getModelEqualities() const
-			{
-				return mpPrimaryBackend->getModelEqualities();
-			}
+			std::list<std::vector<carl::Variable>> getModelEqualities() const;
 
             /**
              * @return An assignment of the variables, which occur in the so far added
@@ -218,11 +191,7 @@ namespace smtrat
              * formulas the assignment could contain other variables or freshly introduced
              * variables.
              */
-            const Model model() const
-            {
-                mpPrimaryBackend->updateModel();
-                return mpPrimaryBackend->model();
-            }
+            const Model& model() const;
 
 			/**
 			 * @return A list of all assignments, such that they satisfy the conjunction of
@@ -233,27 +202,14 @@ namespace smtrat
 			 * formulas the assignment could contain other variables or freshly introduced
 			 * variables.
 			 */
-			const std::vector<Model> allModels() const
-			{
-				mpPrimaryBackend->updateAllModels();
-				return mpPrimaryBackend->allModels();
-			}
+			const std::vector<Model>& allModels() const;
             
             /**
              * Returns the lemmas/tautologies which were made during the last solving provoked by check(). These lemmas
              * can be used in the same manner as infeasible subsets are used.
              * @return The lemmas/tautologies made during solving.
              */
-            std::vector<FormulaT> lemmas()
-            {
-                std::vector<FormulaT> result;
-                mpPrimaryBackend->updateDeductions();
-                for( const auto& ded : mpPrimaryBackend->deductions() )
-                {
-                    result.push_back( ded.first );
-                }
-                return result;
-            }
+            std::vector<FormulaT> lemmas();
 
             /**
              * @return The conjunction of so far added formulas.
@@ -269,10 +225,7 @@ namespace smtrat
              * formulas is satisfiable.
              * @param The stream to print on.
              */
-            void printAssignment( std::ostream& _out = std::cout ) const
-            {
-                mpPrimaryBackend->printModel( _out );
-            }
+			void printAssignment( std::ostream& _out ) const;
             
             /**
              * Prints all assignments of variables occurring in the so far 
@@ -280,10 +233,7 @@ namespace smtrat
              * formulas is satisfiable.
              * @param The stream to print on.
              */
-            void printAllAssignments( std::ostream& _out = std::cout )
-            {
-                mpPrimaryBackend->printAllModels( _out );
-            }
+			void printAllAssignments( std::ostream& _out ) const;
     
             /**
              * Prints the so far added formulas.
@@ -300,30 +250,11 @@ namespace smtrat
             // Internally used interfaces
             
             /**
-             * Adds a module type to this manager, for which modules can be instantiated in order to be part of the solving procedure.
-             * @param _moduleType The module type to add to the module types for which modules can be instantiated in order to be 
-             *                     part of the solving procedure.
-             * @param _factory The factory to instantiate modules of this type.
-             */
-            void addModuleType( const ModuleType _moduleType, ModuleFactory* _factory )
-            {
-                mpModuleFactories->insert( std::pair<const ModuleType, ModuleFactory*>( _moduleType, _factory ) );
-            }
-
-            /**
              * @return All instantiated modules of the solver belonging to this manager.
              */
             const std::vector<Module*>& getAllGeneratedModules() const
             {
                 return mGeneratedModules;
-            }
-            
-            /**
-             * @return A constant reference to the mapping of module types to the factories to instantiate the modules of this type.
-             */
-            const std::map<const ModuleType, ModuleFactory*>& rModuleFactories() const
-            {
-                return *mpModuleFactories;
             }
             
             /**
@@ -408,12 +339,19 @@ namespace smtrat
 			 * Checks if current lemma level is greater or equal to given level.
 			 * @param level Level to check.
 			 */
-			inline bool isLemmaLevel(LemmaLevel level)
+			inline bool isLemmaLevel(LemmaLevel level) const
 			{
 				return level <= mLemmaLevel;
 			}
 
         protected:
+            
+            /**
+             * @return A pair of a Boolean and a formula, where the Boolean is true, if the input formula 
+             *         could be simplified to an equisatisfiable formula. The formula is equisatisfiable to this
+             *         solver's input formula, if the Boolean is true.
+             */
+            std::pair<bool,FormulaT> getInputSimplified();
 
             /**
              * Removes the formula at the given position in the conjunction of formulas,
@@ -424,21 +362,45 @@ namespace smtrat
              *          end of the conjunction of formulas, which will be considered for the 
              *          next satisfiability check is returned.
              */
-            ModuleInput::iterator remove( ModuleInput::iterator _subformula )
-            {
-                assert( _subformula != mpPassedFormula->end() );
-                mpPrimaryBackend->remove( _subformula );
-                return mpPassedFormula->erase( _subformula );
-            }
+            ModuleInput::iterator remove( ModuleInput::iterator _subformula, bool _repairBT = true );
+            
+        protected:
 
             /**
-             * @return A reference to the graph representing the solving strategy.
+             * Temporarily added: (TODO: Discuss with Gereon)
+             * Removes the given formula in the conjunction of formulas,
+             * which will be considered for the next satisfiability check.
+             * @param _subformula The formula to remove.
+             * @return An iterator to the formula after the position of the just removed
+             *          formula. If the removed formula has been the last element, the
+             *          end of the conjunction of formulas, which will be considered for the
+             *          next satisfiability check is returned.
              */
-            StrategyGraph& rStrategyGraph()
+            ModuleInput::iterator remove( const FormulaT& _subformula )
             {
-                return mStrategyGraph;
+                return remove( mpPassedFormula->find( _subformula ) );
             }
-
+			
+		 	void setStrategy(const std::initializer_list<BackendLink>& backends) {
+				std::size_t id = mStrategyGraph.addRoot(backends);
+				std::size_t priority = mpPrimaryBackend->threadPriority().first;
+				mpPrimaryBackend->setThreadPriority(thread_priority(priority, id));
+				SMTRAT_LOG_INFO("smtrat.strategygraph", "Strategygraph:" << std::endl << mStrategyGraph);
+			}
+			void setStrategy(const BackendLink& backend) {
+				setStrategy({backend});
+			}
+			template<typename Module>
+			BackendLink addBackend(const std::initializer_list<BackendLink>& backends = {}) {
+				return mStrategyGraph.addBackend<Module>(backends);
+			}
+			template<typename Module>
+			BackendLink addBackend(const BackendLink& backend) {
+				return mStrategyGraph.addBackend<Module>({backend});
+			}
+			BackendLink& addEdge(std::size_t from, std::size_t to) {
+				return mStrategyGraph.addEdge(from, to);
+			}
             /**
              * Gets all backends so far instantiated according the strategy and all previous enquiries of the given module.
              * @param _module The module to get all backends so far instantiated according the strategy and all previous enquiries of this module. 
@@ -454,36 +416,7 @@ namespace smtrat
                 std::vector<Module*> result = iter->second;
                 return result;
             }
-            
-            /**
-             * Adds the module type of a backend for the module of the type given by the given position in the manager's strategy graph. 
-             * Backends of the given type will be instantiated if a module corresponding to the given position in the strategy graph asks 
-             * for backends with a formula fulfilling the given conditions.
-             * @param _at The position in the strategy graph to add a backend's module type.
-             * @param _moduleType The module type of the backend to instantiate for modules corresponding to the given position in the 
-             *                     managers strategy graph.
-             * @param _conditionEvaluation A function which evaluates whether the properties of a given formula fulfill certain conditions.
-             * @return The position in this managers strategy graph corresponding to the added module type.
-             */
-            size_t addBackendIntoStrategyGraph( size_t _at, ModuleType _moduleType, ConditionEvaluation _conditionEvaluation = isCondition )
-            {
-                return mStrategyGraph.addBackend( _at, _moduleType, _conditionEvaluation );
-            }
-
-            /**
-             * Extends the strategy graph of this manager such that if a module corresponding to the first given position in the
-             * strategy graph asks for backends for a formula whose properties satisfy the conditions checked by the given function pointer,
-             * the this manager instantiates (if not yet instantiated) a backend corresponding to the second given position in the 
-             * strategy graph.
-             * @param _from The position in the strategy graph to which the enquiring module corresponds to.
-             * @param _to The position in the strategy graph to which the instantiated backend for this enquiry corresponds to.
-             * @param _conditionEvaluation A function which evaluates whether the properties of a given formula fulfill certain conditions.
-             */
-            void addBacklinkIntoStrategyGraph( size_t _from, size_t _to, ConditionEvaluation _conditionEvaluation = isCondition )
-            {
-                mStrategyGraph.addBacklink( _from, _to, _conditionEvaluation );
-            }
-
+			
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             /**
              * @return true, if we might run in parallel eventually;

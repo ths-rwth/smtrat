@@ -10,7 +10,7 @@
 #pragma once
 
 /// Flag activating some informative and not exaggerated output about module calls.
-//#define MODULE_VERBOSE
+#define MODULE_VERBOSE
 //#define GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
 #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
 #ifndef SMTRAT_DEVOPTION_Validation
@@ -24,16 +24,18 @@
 #include <string>
 #include <chrono>
 #include <atomic>
-#include "../modules/ModuleType.h"
 #include "ModuleInput.h"
 #include "ValidationSettings.h"
-#include "ThreadPool.h"
+#include "../datastructures/Assignment.h"
 #include "../config.h"
 #include "../logging.h"
 
 namespace smtrat
 {
-    class Manager;
+    class Manager; // forward declaration
+
+    /// A vector of atomic bool pointers.
+    typedef std::vector<std::atomic_bool*> Conditionals;
     
     /**
      * Stores all necessary information of an branch, which can be used to detect probable infinite loop of branchings.
@@ -98,7 +100,7 @@ namespace smtrat
         {}
         
         Splitting( const FormulaT& _leftCase, const FormulaT& _rightCase, const std::vector<FormulaT>& _premise = std::vector<FormulaT>(), bool _preferLeftCase = true ):
-            Splitting( _leftCase, _rightCase, std::move( std::vector<FormulaT>( _premise ) ), _preferLeftCase )
+            Splitting( _leftCase, _rightCase, std::vector<FormulaT>( _premise ), _preferLeftCase )
         {}
     };
     
@@ -125,11 +127,9 @@ namespace smtrat
         // Members.
         private:
             /// A unique ID to identify this module instance. (Could be useful but currently nowhere used)
-            unsigned mId;
+            std::size_t mId;
             /// The priority of this module to get a thread for running its check procedure.
             thread_priority mThreadPriority;
-            /// The type of this module.
-            ModuleType mType;
             /// The formula passed to this module.
             const ModuleInput* mpReceivedFormula;
             /// The formula passed to the backends of this module.
@@ -183,7 +183,7 @@ namespace smtrat
              * @param _foundAnswer Vector of Booleans: If any of them is true, we have to terminate a running check procedure.
              * @param _manager A reference to the manager of the solver using this module.
              */
-            Module( ModuleType type, const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager = NULL );
+            Module( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager = NULL );
             
             /**
              * Destructs a module.
@@ -289,7 +289,7 @@ namespace smtrat
             /**
              * @return A unique ID to identify this module instance.
              */
-            inline unsigned id() const
+            inline std::size_t id() const
             {
                 return mId;
             }
@@ -298,7 +298,7 @@ namespace smtrat
              * Sets this modules unique ID to identify itself.
              * @param _id The id to set this module's id to.
              */
-            void setId( unsigned _id )
+            void setId( std::size_t _id )
             {
                 assert( mId == 0 && _id != 0 );
                 mId = _id;
@@ -379,14 +379,6 @@ namespace smtrat
             }
 
             /**
-             * @return The type of this module.
-             */
-            const ModuleType& type() const
-            {
-                return mType;
-            }
-
-            /**
              * @return The backends of this module which are currently used (conditions to use this module are fulfilled for the passed formula).
              */
             const std::vector<Module*>& usedBackends() const
@@ -418,6 +410,24 @@ namespace smtrat
             void addDeduction( const FormulaT& _deduction, const DeductionType& _dt = DeductionType::NORMAL )
             {
                 mDeductions.push_back( std::pair<FormulaT,DeductionType>( _deduction, _dt ) );
+            }
+
+            /**
+             * Checks whether this module or any of its backends provides any lemmas or splitting decisions.
+             */
+            bool hasDeductions()
+            {
+                if( !mDeductions.empty() || !mSplittings.empty() )
+                    return true;
+                if( mpManager != nullptr )
+                {
+                    for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+                    {
+                        if( (*module)->hasDeductions() )
+                            return true;
+                    }
+                }
+                return false;
             }
 
             /**
@@ -503,13 +513,26 @@ namespace smtrat
             }
             
             /**
-             * @param _moduleType The module type to return the name as string for. 
+             * @return true, if this module is a preprocessor that is a module, which simplifies
+             *         its received formula to an equisatisfiable formula being passed to its backends.
+             *         The simplified formula can be obtained with getReceivedFormulaSimplified().
+             */
+            bool isPreprocessor() const
+            {
+                return false;
+            }
+            
+            /**
              * @return The name of the given module type as name.
              */
-            static const std::string moduleName( const ModuleType _moduleType )
-            {
-                return moduleTypeToString( _moduleType );
-            }
+            virtual std::string moduleName() const {
+				return "Module";
+			}
+            
+            /**
+             * Excludes all variables from the current model, which do not occur in the received formula.
+             */
+            void excludeNotReceivedVariablesFromModel() const;
             
             /**
              * Stores all deductions of any backend of this module in its own deduction vector.
@@ -595,7 +618,14 @@ namespace smtrat
              * @param _filename The name of the file to store the infeasible subsets in order to be able to check their infeasibility.
              * @param _maxSizeDifference The maximal difference between the sizes of the subsets compared to the size of the infeasible subset.
              */
-            void checkInfSubsetForMinimality( std::vector<FormulasT>::const_iterator _infsubset, const std::string& _filename = "smaller_muses", unsigned _maxSizeDifference = 1 ) const;
+            void checkInfSubsetForMinimality( std::vector<FormulaSetT>::const_iterator _infsubset, const std::string& _filename = "smaller_muses", unsigned _maxSizeDifference = 1 ) const;
+            
+            /**
+             * @return A pair of a Boolean and a formula, where the Boolean is true, if the received formula 
+             *         could be simplified to an equisatisfiable formula. The formula is equisatisfiable to this
+             *         module's reveived formula, if the Boolean is true.
+             */
+            virtual std::pair<bool,FormulaT> getReceivedFormulaSimplified();
 
         protected:
 
@@ -814,6 +844,27 @@ namespace smtrat
                 return addSubformulaToPassedFormula( _formula, true, _origin, nullptr, true );
             }
             
+            /**
+             * Stores the trivial infeasible subset being the set of received formulas.
+             */
+            void generateTrivialInfeasibleSubset()
+            {
+                FormulaSetT infeasibleSubset;
+                for( auto subformula = rReceivedFormula().begin(); subformula != rReceivedFormula().end(); ++subformula )
+                    infeasibleSubset.insert( subformula->formula() );
+                mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
+            }
+            
+            /**
+             * Stores an infeasible subset consisting only of the given received formula.
+             */
+            void receivedFormulasAsInfeasibleSubset( ModuleInput::const_iterator _subformula )
+            {
+                FormulaSetT infeasibleSubset;
+                infeasibleSubset.insert( _subformula->formula() );
+                mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
+            }
+            
     private:
             /**
              * This method actually implements the adding of a formula to the passed formula
@@ -971,7 +1022,7 @@ namespace smtrat
             
             bool branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
             {
-                return branchAt( _polynomial, _integral, _value, std::move( std::vector<FormulaT>( _premise ) ), _leftCaseWeak, _preferLeftCase );
+                return branchAt( _polynomial, _integral, _value, std::vector<FormulaT>( _premise ), _leftCaseWeak, _preferLeftCase );
             }
             
             bool branchAt( carl::Variable::Arg _var, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak = true, bool _preferLeftCase = true )
@@ -981,7 +1032,7 @@ namespace smtrat
             
             bool branchAt( carl::Variable::Arg _var, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
             {
-                return branchAt( carl::makePolynomial<Poly>( _var ), _var.getType() == carl::VariableType::VT_INT, _value, std::move( std::vector<FormulaT>( _premise ) ), _leftCaseWeak, _preferLeftCase );
+                return branchAt( carl::makePolynomial<Poly>( _var ), _var.getType() == carl::VariableType::VT_INT, _value, std::vector<FormulaT>( _premise ), _leftCaseWeak, _preferLeftCase );
             }
             
             template<typename P = Poly, carl::EnableIf<carl::needs_cache<P>> = carl::dummy>

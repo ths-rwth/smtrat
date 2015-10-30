@@ -87,11 +87,26 @@ namespace Minisat
             {
                 growTo( size, pad );
             }
+            vec( vec<T>&& _toMove )
+            {
+                data = _toMove.data;
+                sz   = _toMove.sz;
+                cap  = _toMove.cap;
+                _toMove.data      = NULL;
+                _toMove.sz        = 0;
+                _toMove.cap       = 0;
+            }
             ~vec()
             {
                 clear( true );
             }
 
+            vec<T>& operator = ( vec<T>&& _toMove )
+            {
+                _toMove.moveTo( *this );
+                return *this;
+            }
+            
             // Pointer to first element:
             operator T*( void )
             {

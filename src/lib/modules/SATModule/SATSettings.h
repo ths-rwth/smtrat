@@ -12,8 +12,11 @@ namespace smtrat
 {
     enum class TheoryGuidedDecisionHeuristicLevel : unsigned { CONFLICT_FIRST, NON_SATISFIED_FIRST, DISABLED };
     
+    enum class CCES : unsigned { SECOND_LEVEL_MINIMIZER, LITERALS_BLOCKS_DISTANCE, SECOND_LEVEL_MINIMIZER_PLUS_LBD };
+    
     struct SATSettings1
     {
+		static constexpr auto moduleName = "SATModule<SATSettings1>";
         /**
          * 
          */
@@ -21,15 +24,7 @@ namespace smtrat
         /**
          * 
          */
-        static const bool detect_deductions = false;
-        /**
-         * 
-         */
         static const bool try_full_lazy_call_first = false;
-        /**
-         * 
-         */
-        static const bool apply_valid_substitutions = false;
         /**
          * 
          */
@@ -45,25 +40,22 @@ namespace smtrat
         /**
          * 
          */
-#ifdef __VS
-        static const TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::DISABLED;
-#else
+        static const bool check_if_all_clauses_are_satisfied = false;
+        /**
+         * 
+         */
         static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::DISABLED;
-#endif
+        /**
+         * 
+         */
+        static constexpr double percentage_of_conflicts_to_add = 1.0;
+        /**
+         *
+         */
+        static constexpr CCES conflict_clause_evaluation_strategy = CCES::SECOND_LEVEL_MINIMIZER_PLUS_LBD;
 		/**
 		 *
 		 */
-		static const bool remove_satisfied = true;
-    };
-    
-    struct SATSettings2 : SATSettings1
-    {
-        static const bool detect_deductions = true;
-    };
-
-    struct SATSettings3 : SATSettings1
-    {
 		static const bool remove_satisfied = false;
-	};
+    };
 }
-

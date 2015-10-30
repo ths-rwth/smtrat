@@ -473,40 +473,52 @@ namespace smtrat
         {
             assert( mpConflictingVariable == NULL );
             typename VariableMap::iterator varVarPair = mpVariableMap->find( _var );
-            assert( varVarPair != mpVariableMap->end() );
-            Variable<T>& var = *varVarPair->second;
-            if( var.updatedExactInterval() )
+            if( varVarPair == mpVariableMap->end() )
             {
-                carl::BoundType lowerBoundType;
-                Rational lowerBoundValue;
-                carl::BoundType upperBoundType;
-                Rational upperBoundValue;
-                if( var.infimum().isInfinite() )
+                Variable<T>* var = new Variable<T>();
+                mpVariableMap->emplace( _var, var );
+                auto ret = mEvalIntervalMap.emplace( _var, RationalInterval::unboundedInterval() );
+                var->exactIntervalHasBeenUpdated();
+                mDoubleIntervalMap.emplace( _var, carl::Interval<double>::unboundedInterval() );
+                var->doubleIntervalHasBeenUpdated();
+                return ret.first->second;
+            }
+            else
+            {
+                Variable<T>& var = *varVarPair->second;
+                if( var.updatedExactInterval() )
                 {
-                    lowerBoundType = carl::BoundType::INFTY;
-                    lowerBoundValue = 0;
+                    carl::BoundType lowerBoundType;
+                    Rational lowerBoundValue;
+                    carl::BoundType upperBoundType;
+                    Rational upperBoundValue;
+                    if( var.infimum().isInfinite() )
+                    {
+                        lowerBoundType = carl::BoundType::INFTY;
+                        lowerBoundValue = 0;
+                    }
+                    else
+                    {
+                        lowerBoundType = CONVERT_BOUND( var.infimum().type(), carl::BoundType );
+                        lowerBoundValue = var.infimum().limit();
+                    }
+                    if( var.supremum().isInfinite() )
+                    {
+                        upperBoundType = carl::BoundType::INFTY;
+                        upperBoundValue = 0;
+                    }
+                    else
+                    {
+                        upperBoundType = CONVERT_BOUND( var.supremum().type(), carl::BoundType );
+                        upperBoundValue = var.supremum().limit();
+                    }
+                    auto ret = mEvalIntervalMap.emplace( _var, RationalInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType ) );
+                    var.exactIntervalHasBeenUpdated();
+                    return ret.first->second;
                 }
-                else
-                {
-                    lowerBoundType = CONVERT_BOUND( var.infimum().type(), carl::BoundType );
-                    lowerBoundValue = var.infimum().limit();
-                }
-                if( var.supremum().isInfinite() )
-                {
-                    upperBoundType = carl::BoundType::INFTY;
-                    upperBoundValue = 0;
-                }
-                else
-                {
-                    upperBoundType = CONVERT_BOUND( var.supremum().type(), carl::BoundType );
-                    upperBoundValue = var.supremum().limit();
-                }
-                mEvalIntervalMap[_var] = RationalInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
-                var.exactIntervalHasBeenUpdated();
             }
             return mEvalIntervalMap[_var];
         }
-
 		
         template<typename T>
         const smtrat::EvalDoubleIntervalMap& VariableBounds<T>::getIntervalMap() const
@@ -554,36 +566,50 @@ namespace smtrat
         {
             assert( mpConflictingVariable == NULL );
             typename VariableMap::iterator varVarPair = mpVariableMap->find( _var );
-            assert( varVarPair != mpVariableMap->end() );
-            Variable<T>& var = *varVarPair->second;
-            if( var.updatedDoubleInterval() )
+            
+            if( varVarPair == mpVariableMap->end() )
             {
-                carl::BoundType lowerBoundType;
-                Rational lowerBoundValue;
-                carl::BoundType upperBoundType;
-                Rational upperBoundValue;
-                if( var.infimum().isInfinite() )
+                Variable<T>* var = new Variable<T>();
+                mpVariableMap->emplace( _var, var );
+                mEvalIntervalMap.emplace( _var, RationalInterval::unboundedInterval() );
+                var->exactIntervalHasBeenUpdated();
+                auto ret = mDoubleIntervalMap.emplace( _var, carl::Interval<double>::unboundedInterval() );
+                var->doubleIntervalHasBeenUpdated();
+                return ret.first->second;
+            }
+            else
+            {
+                Variable<T>& var = *varVarPair->second;
+                if( var.updatedDoubleInterval() )
                 {
-                    lowerBoundType = carl::BoundType::INFTY;
-                    lowerBoundValue = 0;
+                    carl::BoundType lowerBoundType;
+                    Rational lowerBoundValue;
+                    carl::BoundType upperBoundType;
+                    Rational upperBoundValue;
+                    if( var.infimum().isInfinite() )
+                    {
+                        lowerBoundType = carl::BoundType::INFTY;
+                        lowerBoundValue = 0;
+                    }
+                    else
+                    {
+                        lowerBoundType = CONVERT_BOUND( var.infimum().type(), carl::BoundType );
+                        lowerBoundValue = var.infimum().limit();
+                    }
+                    if( var.supremum().isInfinite() )
+                    {
+                        upperBoundType = carl::BoundType::INFTY;
+                        upperBoundValue = 0;
+                    }
+                    else
+                    {
+                        upperBoundType = CONVERT_BOUND( var.supremum().type(), carl::BoundType );
+                        upperBoundValue = var.supremum().limit();
+                    }
+                    auto ret = mDoubleIntervalMap.emplace( _var, carl::Interval<double>( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType ) );
+                    var.doubleIntervalHasBeenUpdated();
+                    return ret.first->second;
                 }
-                else
-                {
-                    lowerBoundType = CONVERT_BOUND( var.infimum().type(), carl::BoundType );
-                    lowerBoundValue = var.infimum().limit();
-                }
-                if( var.supremum().isInfinite() )
-                {
-                    upperBoundType = carl::BoundType::INFTY;
-                    upperBoundValue = 0;
-                }
-                else
-                {
-                    upperBoundType = CONVERT_BOUND( var.supremum().type(), carl::BoundType );
-                    upperBoundValue = var.supremum().limit();
-                }
-                mDoubleIntervalMap[_var] = carl::Interval<double>( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
-                var.doubleIntervalHasBeenUpdated();
             }
             return mDoubleIntervalMap[_var];
         }
@@ -626,6 +652,48 @@ namespace smtrat
                 const Variable<T>& var = *varVarPair->second;
                 if( !var.infimum().isInfinite() ) originsOfBounds.push_back( *var.infimum().origins().begin() );
                 if( !var.supremum().isInfinite() ) originsOfBounds.push_back( *var.supremum().origins().begin() );
+            }
+            return originsOfBounds;
+        }
+		
+        template<typename T>
+        std::set<T> VariableBounds<T>::getOriginSetOfBounds() const
+        {
+            std::set<T> originsOfBounds;
+            for( auto varVarPair = mpVariableMap->begin(); varVarPair != mpVariableMap->end(); ++varVarPair )
+            {
+                const Variable<T>& var = *varVarPair->second;
+                if( !var.infimum().isInfinite() ) originsOfBounds.insert( *var.infimum().origins().begin() );
+                if( !var.supremum().isInfinite() ) originsOfBounds.insert( *var.supremum().origins().begin() );
+            }
+            return originsOfBounds;
+        }
+
+        template<typename T>
+        std::set<T> VariableBounds<T>::getOriginSetOfBounds( const carl::Variable& _var ) const
+        {
+            std::set<T> originsOfBounds;
+            auto varVarPair = mpVariableMap->find( _var );
+            if( varVarPair != mpVariableMap->end() )
+            {
+                if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->infimum().origins().begin() );
+                if( !varVarPair->second->supremum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->supremum().origins().begin() );
+            }
+            return originsOfBounds;
+        }
+
+        template<typename T>
+        std::set<T> VariableBounds<T>::getOriginSetOfBounds( const carl::Variables& _variables ) const
+        {
+            std::set<T> originsOfBounds;
+            for( auto var = _variables.begin(); var != _variables.end(); ++var )
+            {
+                auto varVarPair = mpVariableMap->find( *var );
+                if( varVarPair != mpVariableMap->end() )
+                {
+                    if( !varVarPair->second->infimum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->infimum().origins().begin() );
+                    if( !varVarPair->second->supremum().isInfinite() ) originsOfBounds.insert( *varVarPair->second->supremum().origins().begin() );
+                }
             }
             return originsOfBounds;
         }

@@ -9,19 +9,14 @@
 
 #pragma once
 
+#include "../Common.h"
 #include <map>
 #include "../../cli/config.h"
 #ifdef __VS
 #pragma warning(push, 0)
 #include <boost/variant.hpp>
-#pragma warning(pop)
-#else
-#include <boost/variant.hpp>
-#endif
-
-#include "../Common.h"
+#include <carl/core/RealAlgebraicNumber.h>
 #include "vs/SqrtEx.h"
-#include "carl/core/RealAlgebraicNumber.h"
 #include "SortValue.h"
 #include "UFModel.h"
 
@@ -257,12 +252,12 @@ namespace smtrat
      * It is implemented as subclass of a boost::variant.
      * Possible value types are bool, vs::SqrtEx and carl::RealAlgebraicNumberPtr.
      */
-    class ModelValue : public boost::variant<bool, vs::SqrtEx, carl::RealAlgebraicNumberPtr<smtrat::Rational>, carl::BVValue, SortValue, UFModel>
+    class ModelValue : public boost::variant<bool, Rational, vs::SqrtEx, carl::RealAlgebraicNumberPtr<smtrat::Rational>, carl::BVValue, SortValue, UFModel>
     {
         /**
          * Base type we are deriving from.
          */
-        typedef boost::variant<bool, vs::SqrtEx, carl::RealAlgebraicNumberPtr<smtrat::Rational>, carl::BVValue, SortValue, UFModel> Super;
+        typedef boost::variant<bool, Rational, vs::SqrtEx, carl::RealAlgebraicNumberPtr<smtrat::Rational>, carl::BVValue, SortValue, UFModel> Super;
         
     public:
         /**
@@ -277,6 +272,11 @@ namespace smtrat
         template<typename T>
         ModelValue(const T& _t): Super(_t)
         {}
+//        template<>
+//        ModelValue(const vs::SqrtEx& _se)
+//        {
+//            Super(_se);
+//        }
 
         /**
          * Assign some value to the underlying variant.
@@ -306,6 +306,10 @@ namespace smtrat
             {
                 return asBool() == _mval.asBool();
             }
+            else if( isRational() && _mval.isRational() )
+            {
+                return asRational() == _mval.asRational();
+            } 
             else if( isSqrtEx() && _mval.isSqrtEx() )
             {
                 return asSqrtEx() == _mval.asSqrtEx();
@@ -335,6 +339,14 @@ namespace smtrat
         bool isBool() const
         {
             return type() == typeid(bool);
+        }
+        
+        /**
+         * @return true, if the stored value is a rational.
+         */
+        bool isRational() const
+        {
+            return type() == typeid(Rational);
         }
         
         /**
@@ -386,6 +398,15 @@ namespace smtrat
         }
         
         /**
+         * @return The stored value as a rational.
+         */
+        const Rational& asRational() const
+        {
+            assert( isRational() );
+            return boost::get<Rational>(*this);
+        }
+        
+        /**
          * @return The stored value as a square root expression.
          */
         const vs::SqrtEx& asSqrtEx() const
@@ -432,7 +453,7 @@ namespace smtrat
     };
     
     /// Data type for a assignment assigning a variable, represented as a string, a real algebraic number, represented as a string.
-    typedef std::map<ModelVariable,ModelValue> Model;
+    class Model : public std::map<ModelVariable,ModelValue> {};
     
     /**
      * Obtains all assignments which can be transformed to rationals and stores them in the passed map.
@@ -461,7 +482,12 @@ namespace smtrat
      *         1, if this formula is satisfied by the given assignment;
      *         2, otherwise.
      */
-    unsigned satisfies( const Model& _model, const EvalRationalMap& _assignment, const FormulaT& _formula );
+    unsigned satisfies( const Model& _model, const EvalRationalMap& _assignment, const std::map<carl::BVVariable, carl::BVTerm>& bvAssigns, const FormulaT& _formula );
+    
+    void getDefaultModel( Model& _defaultModel, const carl::UEquality& _constraint, bool _overwrite = true, size_t _seed = 0 );
+    void getDefaultModel( Model& _defaultModel, const carl::BVTerm& _constraint, bool _overwrite = true, size_t _seed = 0 );
+    void getDefaultModel( Model& _defaultModel, const ConstraintT& _constraint, bool _overwrite = true, size_t _seed = 0 );
+    void getDefaultModel( Model& _defaultModel, const FormulaT& _formula, bool _overwrite = true, size_t _seed = 0 );
     
     std::ostream& operator<<( std::ostream& _out, const Model& _model );
 }

@@ -13,8 +13,8 @@
 namespace smtrat
 {
     template<class Settings>
-    FouMoModule<Settings>::FouMoModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
-        Module( _type, _formula, _conditionals, _manager ),
+    FouMoModule<Settings>::FouMoModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+        Module( _formula, _conditionals, _manager ),
         mProc_Constraints(),
         mRecent_Constraints(),    
         mEqualities(),
@@ -63,8 +63,8 @@ namespace smtrat
             #ifdef DEBUG_FouMoModule
             cout << "Asserted formula: " << _subformula->formula().constraint() << "is false" << endl;
             #endif
-            FormulasT infSubSet;
-            infSubSet.push_back( _subformula->formula() );
+            FormulaSetT infSubSet;
+            infSubSet.insert( _subformula->formula() );
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;            
         }
@@ -186,7 +186,7 @@ namespace smtrat
                                             cout << "The obtained formula is unsatisfiable" << endl;
                                             #endif
                                             size_t i = determine_smallest_origin( *origins_new );
-                                            FormulasT infSubSet;
+                                            FormulaSetT infSubSet;
                                             collectOrigins( origins_new->at(i), infSubSet );
                                             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                                             return false;
@@ -239,7 +239,7 @@ namespace smtrat
                                             cout << "The obtained formula is unsatisfiable" << endl;
                                             #endif
                                             size_t i = determine_smallest_origin( *origins_new );
-                                            FormulasT infSubSet;
+                                            FormulaSetT infSubSet;
                                             collectOrigins( origins_new->at(i), infSubSet );
                                             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                                             return false;
@@ -610,7 +610,7 @@ namespace smtrat
     }    
 
     template<class Settings>
-    void FouMoModule<Settings>::updateModel() 
+    void FouMoModule<Settings>::updateModel() const
     {
         mModel.clear();
         if( solverState() == True )
@@ -811,7 +811,7 @@ namespace smtrat
                         cout << "The obtained formula is unsatisfiable" << endl;
                         #endif
                         size_t i = determine_smallest_origin( *origins_new );
-                        FormulasT infSubSet;
+                        FormulaSetT infSubSet;
                         collectOrigins( origins_new->at(i), infSubSet );
                         mInfeasibleSubsets.push_back( std::move( infSubSet ) );
                         return False;
@@ -1049,7 +1049,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    bool FouMoModule<Settings>::constructSolution( std::map< carl::Variable, Rational > temp_solution )
+    bool FouMoModule<Settings>::constructSolution( std::map< carl::Variable, Rational > temp_solution ) const
     {
         if( mElim_Order.empty() )
         {
@@ -1120,27 +1120,27 @@ namespace smtrat
                     first_iter_upper = false;     
                     if( mDom == INT )
                     {
-                        lowest_upper = carl::floor( Rational( to_be_substituted_upper.constantPart() )/(Rational(-1)*coeff_upper ) );         
+                        lowest_upper = carl::floor( Rational( to_be_substituted_upper.constantPart()/(Rational(-1)*coeff_upper)) );
                     }
                     else
                     {
-                        lowest_upper = Rational(-1)*Rational( to_be_substituted_upper.constantPart() )/coeff_upper;
+                        lowest_upper = Rational(-1)*to_be_substituted_upper.constantPart()/coeff_upper;
                     }
                 }
                 else
                 {                    
                     if( mDom == INT )
                     {                        
-                        if( carl::floor( Rational( Rational(-1)*(Rational)to_be_substituted_upper.constantPart() )/coeff_upper ) < lowest_upper )
+                        if( carl::floor( Rational( Rational(-1)*to_be_substituted_upper.constantPart()/coeff_upper) ) < lowest_upper )
                         {
-                            lowest_upper = carl::floor( Rational( Rational(-1)*(Rational)to_be_substituted_upper.constantPart() )/coeff_upper );
+                            lowest_upper = carl::floor( Rational( Rational(-1)*to_be_substituted_upper.constantPart()/coeff_upper) );
                         }
                     }
                     else
                     {                        
-                        if( Rational(-1)*Rational( to_be_substituted_upper.constantPart() )/coeff_upper < lowest_upper )
+                        if( Rational(-1)*to_be_substituted_upper.constantPart()/coeff_upper < lowest_upper )
                         {
-                            lowest_upper = Rational(-1)*Rational( to_be_substituted_upper.constantPart() )/coeff_upper;
+                            lowest_upper = Rational(-1)*to_be_substituted_upper.constantPart()/coeff_upper;
                         }
                     }    
                 }
@@ -1198,27 +1198,27 @@ namespace smtrat
                     first_iter_lower = false;
                     if( mDom == INT )
                     {
-                        highest_lower = carl::ceil( Rational( to_be_substituted_lower.constantPart() )/coeff_lower );
+                        highest_lower = carl::ceil( Rational(to_be_substituted_lower.constantPart()/coeff_lower) );
                     }
                     else
                     {
-                        highest_lower = Rational( to_be_substituted_lower.constantPart() )/coeff_lower;
+                        highest_lower = to_be_substituted_lower.constantPart()/coeff_lower;
                     }
                 }
                 else
                 {
                     if( mDom == INT )
                     {
-                        if( carl::ceil( Rational( to_be_substituted_lower.constantPart() )/coeff_lower ) > highest_lower )
+                        if( carl::ceil( Rational( to_be_substituted_lower.constantPart()/coeff_lower) ) > highest_lower )
                         {
-                            highest_lower = carl::ceil( Rational( to_be_substituted_lower.constantPart() )/coeff_lower );
+                            highest_lower = carl::ceil( Rational( to_be_substituted_lower.constantPart()/coeff_lower) );
                         }
                     }
                     else
                     {
-                        if( Rational( to_be_substituted_lower.constantPart() )/coeff_lower > highest_lower )
+                        if( to_be_substituted_lower.constantPart()/coeff_lower > highest_lower )
                         {
-                            highest_lower = Rational( to_be_substituted_lower.constantPart() )/coeff_lower;
+                            highest_lower = to_be_substituted_lower.constantPart()/coeff_lower;
                         }
                     }
                 }
@@ -1230,7 +1230,7 @@ namespace smtrat
             {
                 if( mNonLinear )
                 {
-                    mVarAss[ *iter_elim ] = Rational(highest_lower+lowest_upper)/2; 
+                    mVarAss[ *iter_elim ] = (highest_lower+lowest_upper)/2; 
                 }
                 else
                 {

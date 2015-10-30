@@ -12,9 +12,10 @@
 #include "../lib/config.h"
 
 #include "config.h"
-#include CMakeStrategyHeader
+#include "../lib/strategies/config.h"
 #include "RuntimeSettingsManager.h"
-#include "../lib/modules/AddModules.h"
+#include "../lib/solver/Module.h"
+#include "../lib/Common.h"
 
 #ifndef __WIN
 #include <sys/resource.h>
@@ -26,7 +27,7 @@
 #endif //SMTRAT_DEVOPTION_Statistics
 
 
-#include "newparser/Parser.h"
+#include "parser/ParserWrapper.h"
 #include "../lib/Common.h"
 #include <carl/formula/DIMACSExporter.h>
 #include <carl/formula/DIMACSImporter.h>
@@ -90,7 +91,7 @@ public:
 			}
 		}
 	}
-	void declareFun(const carl::Variable& var) {
+	void declareFun(const carl::Variable&) {
 		//if (smtrat::parser::TypeOfTerm::get(var.getType()) == smtrat::parser::ExpressionType::THEORY) {
 		//	this->solver->quantifierManager().addUnquantifiedVariable(var);
 		//}
@@ -107,9 +108,11 @@ public:
 		this->solver->printAssertions(std::cout);
 	}
 	void getAssignment() {
-		if (this->lastAnswer == smtrat::True) {
-			this->solver->printAssignment(std::cout);
-		}
+            if (this->lastAnswer == smtrat::True) {
+                smtrat::Model m = this->solver->model();
+                this->cleanModel( m );
+                std::cout << std::endl << m;
+            }
 	}
 	void getAllAssignments() {
 		if (this->lastAnswer == smtrat::True) {
@@ -168,26 +171,25 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 
 	std::ifstream infile(pathToInputFile);
 	if (!infile.good()) {
-		std::cerr << "Could not open file: " << pathToInputFile << std::endl;
-		exit(SMTRAT_EXIT_NOSUCHFILE);
+            std::cerr << "Could not open file: " << pathToInputFile << std::endl;
+            exit(SMTRAT_EXIT_NOSUCHFILE);
 	}
 	Executor* e = new Executor(solver);
 	if (settingsManager.exportDIMACS()) e->exportDIMACS = true;
 	{
-		smtrat::parser::SMTLIBParser parser(e, true);
-		bool parsingSuccessful = parser.parse(infile);
-		if (!parsingSuccessful) {
-			std::cerr << "Parse error" << std::endl;
-			delete e;
-			exit(SMTRAT_EXIT_PARSERFAILURE);
-		}
+		if (!smtrat::parseSMT2File(e, true, infile)) {
+            std::cerr << "Parse error" << std::endl;
+            delete e;
+            exit(SMTRAT_EXIT_PARSERFAILURE);
+        }
 	}
 	if (e->hasInstructions()) e->runInstructions();
 	unsigned exitCode = e->getExitCode();
 	if( settingsManager.printModel() && e->lastAnswer == smtrat::True )
 	{
-		std::cout << std::endl;
-		solver->printAssignment( std::cout );
+            smtrat::Model m = solver->model();
+            e->cleanModel( m );
+            std::cout << std::endl << m;
 	}
 	if( settingsManager.printAllModels() && e->lastAnswer == smtrat::True )
 	{
@@ -206,7 +208,7 @@ void printTimings(smtrat::Manager* solver)
     std::cout << "\t\tAdd \t\tCheck \t (calls) \tRemove" << std::endl;
     for(std::vector<smtrat::Module*>::const_iterator it =  solver->getAllGeneratedModules().begin(); it != solver->getAllGeneratedModules().end(); ++it)
     {
-        std::cout << smtrat::moduleTypeToString((*it)->type()) << ":\t" << (*it)->getAddTimerMS() << "\t\t" << (*it)->getCheckTimerMS() << "\t(" << (*it)->getNrConsistencyChecks() << ")\t\t" << (*it)->getRemoveTimerMS() << std::endl;
+        std::cout << (*it)->moduleName() << ":\t" << (*it)->getAddTimerMS() << "\t\t" << (*it)->getCheckTimerMS() << "\t(" << (*it)->getNrConsistencyChecks() << ")\t\t" << (*it)->getRemoveTimerMS() << std::endl;
 
     }
     std::cout << "**********************************************" << std::endl;
@@ -241,6 +243,7 @@ int main( int argc, char* argv[] )
 		("smtrat.cad", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.sat", carl::logging::LogLevel::LVL_DEBUG)
+		("smtrat.strategygraph", carl::logging::LogLevel::LVL_DEBUG)
 	;
 #endif
 	SMTRAT_LOG_INFO("smtrat", "Starting smtrat.");
@@ -267,16 +270,14 @@ int main( int argc, char* argv[] )
 
     // Construct solver.
     CMakeStrategySolver* solver = new CMakeStrategySolver();
-	
-    std::list<std::pair<std::string, smtrat::RuntimeSettings*> > settingsObjects = smtrat::addModules( solver );
-    
+	    
     #ifdef SMTRAT_DEVOPTION_Statistics
     //smtrat::CollectStatistics::settings->rOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
     #endif
     
     // Introduce the settingsObjects from the modules to the manager.
-    settingsManager.addSettingsObject( settingsObjects );
-    settingsObjects.clear();
+    //settingsManager.addSettingsObject( settingsObjects );
+    //settingsObjects.clear();
 	
 	
 	unsigned exitCode = 0;

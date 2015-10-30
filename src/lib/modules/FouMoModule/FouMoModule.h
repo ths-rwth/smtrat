@@ -39,7 +39,7 @@ namespace smtrat
             // upper/lower constraints are saved in the order given by mElim_Order
             VariableUpperLower mDeleted_Constraints;  
             // Stores constructed assignments for the occuring variables when a solution was found
-            std::map< carl::Variable, Rational > mVarAss;
+            mutable std::map< carl::Variable, Rational > mVarAss;
             // Stores whether we found a valid solution in this module
             bool mCorrect_Solution;
             // Stores whether at least one non-linear term occured
@@ -74,7 +74,7 @@ namespace smtrat
              * and returns whether this was successful
              * * @param temp_solution Contains assignments that have possibly been determined by the backends
              */            
-            bool constructSolution( std::map< carl::Variable, Rational > temp_solution );
+            bool constructSolution( std::map< carl::Variable, Rational > temp_solution ) const;
             
             /*
              * Depending on whether we work on integer or rational instances, it
@@ -93,7 +93,11 @@ namespace smtrat
             std::pair< FormulaT, bool > worthInserting( FormulaOrigins& formula_map, const Poly& new_poly );
             
         public:
-            FouMoModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
+            FouMoModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~FouMoModule() {}
 
@@ -120,7 +124,7 @@ namespace smtrat
              * Updates the current assignment into the model.
              * Note, that this is a unique but possibly symbolic assignment maybe containing newly introduced variables.
              */
-            void updateModel();
+            void updateModel() const;
 
             /**
              * Checks the received formula for consistency.
@@ -135,3 +139,4 @@ namespace smtrat
 }
 
 #include "FouMoModule.tpp"
+

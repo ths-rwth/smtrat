@@ -20,6 +20,7 @@
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "CADStatistics.h"
 #endif
+#include "CADSettings.h"
 
 namespace smtrat
 {
@@ -41,8 +42,8 @@ namespace smtrat
      * @version 2012-11-29
      *
      */
-    class CADModule:
-        public Module
+    template<typename Settings>
+    class CADModule: public Module
     {
 		typedef std::unordered_map<FormulaT, unsigned> ConstraintIndexMap;
 		typedef smtrat::vb::VariableBounds< FormulaT > VariableBounds;
@@ -75,8 +76,11 @@ namespace smtrat
 		VariableBounds mVariableBounds;
 
         public:
-
-            CADModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
+            CADModule( const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             ~CADModule();
 
@@ -101,7 +105,6 @@ namespace smtrat
 			bool addConstraintFormula(const FormulaT& f);
             const carl::cad::Constraint<smtrat::Rational> convertConstraint(const ConstraintT&);
             ConstraintT convertConstraint(const carl::cad::Constraint<smtrat::Rational>&);
-            std::vector<FormulaSetT> extractMinimalInfeasibleSubsets_GreedyHeuristics(carl::cad::ConflictGraph<smtrat::Rational>& conflictGraph);
             const FormulaT& getConstraintAt(unsigned index);
             void updateConstraintMap(unsigned index, bool decrement = true);
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -110,3 +113,5 @@ namespace smtrat
     };
 
 }    // namespace smtrat
+
+#include "CADModule.tpp"

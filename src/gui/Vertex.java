@@ -8,10 +8,14 @@
 public class Vertex
 {
     private Module module;
+    private int vertexId;
+    private static int idCounter = 0;
 
     public Vertex( Module module )
     {
         this.module = module;
+        this.vertexId = Vertex.idCounter;
+        ++Vertex.idCounter;
     }
     
     public Module getModule()
@@ -23,10 +27,15 @@ public class Vertex
     {
         this.module = module;
     }
+
+    public String identifier()
+    {
+        return module.getName() + vertexId;
+    }
     
     @Override
     public String toString()
     {
-        return getModule().getName();
+        return getModule().getNameAndSettingShort();
     }
 }

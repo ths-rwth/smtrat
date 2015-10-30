@@ -76,6 +76,7 @@ namespace smtrat
             /**
              * Members:
              */
+            carl::FastMap<Poly, Contractor<carl::SimpleNewton>> mContractors;
             icp::ContractionCandidateManager mCandidateManager; // keeps all candidates
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveNonlinearConstraints; // nonlinear candidates considered
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveLinearConstraints; // linear candidates considered
@@ -92,7 +93,6 @@ namespace smtrat
             carl::FastMap<FormulaT,FormulaT> mDeLinearizations; // linearized constraint -> original constraint
             carl::FastMap<Poly, carl::Variable> mVariableLinearizations; // monome -> variable
             std::map<carl::Variable, Poly> mSubstitutions; // variable -> monome/variable
-            carl::FastMap<Poly, Contractor<carl::SimpleNewton>> mContractors;
             
             icp::HistoryNode* mHistoryRoot; // Root-Node of the state-tree
             icp::HistoryNode* mHistoryActual; // Actual node of the state-tree
@@ -128,11 +128,15 @@ namespace smtrat
             static const unsigned mSplittingStrategy = 0;
 
         public:
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
 
             /**
              * Constructors:
              */
-            ICPModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            ICPModule( const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             /**
             * Destructor:
@@ -236,7 +240,7 @@ namespace smtrat
              * @param _constraint
              * @param _origin
              */
-            void createLinearCCs( const FormulaT& _constraint );
+            void createLinearCCs( const FormulaT& _constraint, const FormulaT& _original );
             
             /**
              * Fills the IcpRelevantCandidates with all nonlinear and all active linear ContractionCandidates.
@@ -371,6 +375,11 @@ namespace smtrat
              */
             void pushBoundsToPassedFormula();
             
+        public:
+            FormulasT getCurrentBoxAsFormulas() const;
+        private:
+            FormulaT intervalBoundToFormula( carl::Variable::Arg _var, const DoubleInterval& _interval, const EvalRationalIntervalMap& _lraVarBounds, EvalRationalIntervalMap::const_iterator _lraBoundsIter, bool _upper ) const;
+            
             /**
              * Compute hull of defining origins for set of icpVariables.
              * @param _reasons
@@ -504,3 +513,4 @@ namespace smtrat
 }    // namespace smtrat
     
 #include "ICPModule.tpp"
+

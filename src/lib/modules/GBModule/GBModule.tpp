@@ -17,6 +17,7 @@
 
 //#define CHECK_SMALLER_MUSES
 //#define SEARCH_FOR_RADICALMEMBERS
+//#define GB_OUTPUT_METHODS
 //#define GB_OUTPUT
 
 using std::set;
@@ -27,8 +28,8 @@ namespace smtrat
 {
 
 template<class Settings>
-GBModule<Settings>::GBModule( ModuleType _type, const ModuleInput* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
-        Module( _type, _formula, _conditionals, _manager ),
+GBModule<Settings>::GBModule( const ModuleInput* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+        Module( _formula, _conditionals, _manager ),
     mBasis( ),
     mInequalities( this ),
     mStateHistory( ),
@@ -1026,6 +1027,7 @@ void GBModule<Settings>::removeSubformulaFromPassedFormula( ModuleInput::iterato
     super::eraseSubformulaFromPassedFormula( _formula, true );
 }
 
+#ifdef GB_OUTPUT_METHODS
 
 /**
  *  Prints the state history.
@@ -1038,7 +1040,7 @@ void GBModule<Settings>::printStateHistory( )
     for( auto it = mStateHistory.begin( ); it != mStateHistory.end( ); ++it )
     {
         std::cout << (*btp)->formula() << ": ";
-        it->getBasis( ).getGbIdeal( ).print( );
+        it->getBasis( ).getIdeal( ).print( );
         std::cout << "," << std::endl;
         btp++;
     }
@@ -1058,7 +1060,7 @@ void GBModule<Settings>::printRewriteRules( )
         std::cout <<  "]" << std::endl;
     }
 }
-
+#endif
 
 
 } // namespace smtrat

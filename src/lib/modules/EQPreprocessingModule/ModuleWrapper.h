@@ -8,9 +8,9 @@
 namespace smtrat {
 	template<typename M> class ModuleWrapper {
 		public:
-			ModuleWrapper(ModuleType type) :
+			ModuleWrapper() :
 				input(),
-				module(type, &input, nullptr, conditionals, nullptr)
+				module(&input, nullptr, conditionals, nullptr)
 			{}
 
 			M& get() noexcept { return module; }

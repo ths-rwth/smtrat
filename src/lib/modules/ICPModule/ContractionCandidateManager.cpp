@@ -13,9 +13,10 @@ namespace icp
                                                                         const Poly _rhs,
                                                                         const ConstraintT& _constraint,
                                                                         carl::Variable _derivationVar,
-                                                                        Contractor<carl::SimpleNewton>& _contractor)
+                                                                        Contractor<carl::SimpleNewton>& _contractor,
+                                                                        bool _usePropagation)
     {
-        ContractionCandidate* tmp = new ContractionCandidate(_lhs, _rhs, _constraint, _derivationVar, _contractor, mCurrentId);
+        ContractionCandidate* tmp = new ContractionCandidate(_lhs, _rhs, _constraint, _derivationVar, _contractor, mCurrentId, _usePropagation);
         
         assert( mCurrentId == mCandidates.size() + 1 );
         mCandidates.push_back( tmp );

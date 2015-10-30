@@ -96,6 +96,7 @@ namespace smtrat
 
 	struct EQSettings1
 	{
+		static constexpr auto moduleName = "EQModule<EQSettings1>";
 		/*
 		 * If we are collecting statistics, whether we collect hashing statistics (like the number of collisions, bucket insertions, hashtable size, ...).
 		 */

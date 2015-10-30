@@ -16,7 +16,8 @@
 
 namespace smtrat 
 {
-struct PreprocessingSettings {
+struct PreprocessingSettings1 {
+	static CONSTEXPR auto moduleName = "PreprocessingModule<PreprocessingSettings1>";
 	static CONSTEXPR bool printChanges = false;
 	/**
 	 * Enables removing of redundant or obsolete factors.

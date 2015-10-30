@@ -14,9 +14,8 @@
 #include <utility>
 #include <vector>
 
-#include "carl/util/Singleton.h"
+#include <carl/util/Singleton.h>
 #include "SortValue.h"
-#include "../Common.h"
 
 namespace smtrat
 {

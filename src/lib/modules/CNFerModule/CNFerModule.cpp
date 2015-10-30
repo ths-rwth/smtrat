@@ -5,7 +5,6 @@
  * Created on 02. May 2012, 20:53
  */
 
-#include "../../solver/Manager.h"
 #include "CNFerModule.h"
 
 using namespace std;
@@ -13,12 +12,12 @@ using namespace carl;
 
 namespace smtrat
 {
-    CNFerModule::CNFerModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
-        Module( _type, _formula, _conditionals, _manager )
+    CNFerModule::CNFerModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
+        PModule( _formula, _conditionals, _manager )
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
-        s << moduleName( type() ) << "_" << id();
+        s << moduleName() << "_" << id();
         mpStatistics = new CNFerModuleStatistics( s.str() );
         #endif
     }
@@ -34,9 +33,6 @@ namespace smtrat
              * Add the currently considered formula of the received constraint as clauses
              * to the passed formula.
              */
-//            const Formula* formulaQF = (*receivedSubformula)->toQF(mpManager->quantifiedVariables());
-//            const Formula* formulaToAssertInCnf = formulaQF->toCNF( true );
-//            cout << (**receivedSubformula) << endl;
             FormulaT formulaToAssertInCnf = receivedSubformula->formula().toCNF( true, true, true );
             if( formulaToAssertInCnf.getType() == TRUE )
             {
@@ -44,9 +40,7 @@ namespace smtrat
             }
             else if( formulaToAssertInCnf.getType() == FALSE )
             {
-                FormulaSetT reason;
-                reason.insert( receivedSubformula->formula() );
-                mInfeasibleSubsets.push_back( reason );
+                receivedFormulasAsInfeasibleSubset( receivedSubformula );
                 return False;
             }
             else

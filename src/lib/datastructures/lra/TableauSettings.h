@@ -12,6 +12,9 @@ namespace smtrat
 {   
     namespace lra
     {
+        
+        enum class NBCS : unsigned { LESS_BOUNDED_VARIABLES, LESS_COLUMN_ENTRIES };
+    
         struct TableauSettings1
         {
             /**
@@ -42,6 +45,10 @@ namespace smtrat
              * 
              */
             static const bool introduce_new_constraint_in_refinement = false;
+            /**
+             *
+             */
+            static constexpr NBCS nonbasic_var_choice_strategy = NBCS::LESS_COLUMN_ENTRIES;
         };
     }
 }

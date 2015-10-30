@@ -1,0 +1,5 @@
+BeginDefineModule()
+ModuleMainHeader(LICModule/LICModule.h)
+ModuleName(LICModule)
+ModuleVersion(0 0 1)
+EndDefineModule()

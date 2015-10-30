@@ -48,6 +48,10 @@ class GBModule : public Module
 {
     friend class InequalitiesTable<Settings>;
 public:
+	typedef Settings SettingsType;
+	std::string moduleName() const {
+		return SettingsType::moduleName;
+	}
     typedef typename Settings::Order Order;
     typedef typename Settings::PolynomialWithReasons GBPolynomial;
     typedef typename Settings::MultivariateIdeal Ideal;
@@ -77,7 +81,7 @@ protected:
     FormulasT mGbEqualities;
 
 public:
-    GBModule( ModuleType _type, const ModuleInput* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+    GBModule( const ModuleInput* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
     virtual ~GBModule( );
 
     bool addCore( ModuleInput::const_iterator _formula );
@@ -115,7 +119,7 @@ protected:
     void removeReceivedFormulaFromNewInequalities( ModuleInput::const_iterator _formula );
     void removeSubformulaFromPassedFormula( ModuleInput::iterator _formula );
 
-	GBPolynomial rewriteVariable(const GBPolynomial&, const carl::Variable&, const TermT&, const BitVector&);
+	GBPolynomial rewriteVariable(const GBPolynomial&, const carl::Variable&, const TermT&, const BitVector&){/*TODO*/return GBPolynomial();}
     bool validityCheck( );
 public:
     void printStateHistory( );
@@ -133,3 +137,4 @@ private:
 } // namespace smtrat
 #include "GBModule.tpp"
 #include "InequalitiesTable.tpp"
+

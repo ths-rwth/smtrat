@@ -1,23 +1,23 @@
 #include "PreprocessingSettings.h"
 
-CONSTEXPR bool smtrat::PreprocessingSettings::printChanges;
-CONSTEXPR bool smtrat::PreprocessingSettings::removeFactors;
-CONSTEXPR bool smtrat::PreprocessingSettings::eliminateMonomialEquation;
-CONSTEXPR bool smtrat::PreprocessingSettings::checkBounds;
-CONSTEXPR bool smtrat::PreprocessingSettings::splitSOS;
-CONSTEXPR bool smtrat::PreprocessingSettings::eliminateSubstitutions;
-CONSTEXPR bool smtrat::PreprocessingSettings::extractBounds;
-CONSTEXPR bool smtrat::PreprocessingSettings::removeUnboundedVars;
-CONSTEXPR unsigned smtrat::PreprocessingSettings::enumerate_integers_domain_size;
+CONSTEXPR bool smtrat::PreprocessingSettings1::printChanges;
+CONSTEXPR bool smtrat::PreprocessingSettings1::removeFactors;
+CONSTEXPR bool smtrat::PreprocessingSettings1::eliminateMonomialEquation;
+CONSTEXPR bool smtrat::PreprocessingSettings1::checkBounds;
+CONSTEXPR bool smtrat::PreprocessingSettings1::splitSOS;
+CONSTEXPR bool smtrat::PreprocessingSettings1::eliminateSubstitutions;
+CONSTEXPR bool smtrat::PreprocessingSettings1::extractBounds;
+CONSTEXPR bool smtrat::PreprocessingSettings1::removeUnboundedVars;
+CONSTEXPR unsigned smtrat::PreprocessingSettings1::enumerate_integers_domain_size;
 
-const bool smtrat::PreprocessingSettings::dummy = SettingsManager::addModule("Preprocessing",
-	"printChanges", false, smtrat::PreprocessingSettings::printChanges,
-	"eliminateMonomialEquation", true, smtrat::PreprocessingSettings::eliminateMonomialEquation,
-	"removeFactors", true, smtrat::PreprocessingSettings::removeFactors,
-	"checkBounds", true, smtrat::PreprocessingSettings::checkBounds,
-	"splitSOS", true, smtrat::PreprocessingSettings::splitSOS,
-	"eliminateSubstitutions", false, smtrat::PreprocessingSettings::eliminateSubstitutions,
-	"extractBounds", true, smtrat::PreprocessingSettings::extractBounds,
-	"removeUnboundedVars", true, smtrat::PreprocessingSettings::removeUnboundedVars,
-    "enumerate_integers_domain_size", unsigned(0), smtrat::PreprocessingSettings::enumerate_integers_domain_size
+const bool smtrat::PreprocessingSettings1::dummy = SettingsManager::addModule("Preprocessing",
+	"printChanges", false, smtrat::PreprocessingSettings1::printChanges,
+	"eliminateMonomialEquation", true, smtrat::PreprocessingSettings1::eliminateMonomialEquation,
+	"removeFactors", true, smtrat::PreprocessingSettings1::removeFactors,
+	"checkBounds", true, smtrat::PreprocessingSettings1::checkBounds,
+	"splitSOS", true, smtrat::PreprocessingSettings1::splitSOS,
+	"eliminateSubstitutions", false, smtrat::PreprocessingSettings1::eliminateSubstitutions,
+	"extractBounds", true, smtrat::PreprocessingSettings1::extractBounds,
+	"removeUnboundedVars", true, smtrat::PreprocessingSettings1::removeUnboundedVars,
+    "enumerate_integers_domain_size", unsigned(0), smtrat::PreprocessingSettings1::enumerate_integers_domain_size
 );

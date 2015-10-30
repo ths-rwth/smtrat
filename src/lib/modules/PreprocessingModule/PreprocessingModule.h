@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "../../solver/Module.h"
+#include "../../solver/PModule.h"
 #include "../../datastructures/VariableBounds.h"
 #include "PreprocessingSettings.h"
 
@@ -18,7 +18,7 @@ namespace smtrat
      *
      */
 	template<typename Settings>
-    class PreprocessingModule : public Module
+    class PreprocessingModule : public PModule
     {
         private:
 			carl::FormulaVisitor<FormulaT> visitor;
@@ -58,8 +58,12 @@ namespace smtrat
 			}
 
         public:
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
 
-            PreprocessingModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = nullptr );
+            PreprocessingModule( const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = nullptr );
 
             /**
              * Destructor:
@@ -126,3 +130,4 @@ namespace smtrat
 }    // namespace smtrat
 
 #include "PreprocessingModule.tpp"
+

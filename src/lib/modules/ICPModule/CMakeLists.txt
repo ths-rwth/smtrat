@@ -1,16 +1,5 @@
-set(SMTRAT_ICP_Settings "1" CACHE STRING "Number of setting used for ICPModule")
 BeginDefineModule()
 ModuleMainHeader(ICPModule/ICPModule.h)
-FILE(GLOB_RECURSE sources *.cpp)
-foreach(src ${sources})
-    AddModuleSource(${src})
-endforeach()
 ModuleName(ICPModule)
-ModuleClass(ICPModule<ICPSettings${SMTRAT_ICP_Settings}>)
 ModuleVersion(1 0 0)
-ModuleDefaultEnabled()
-EndDefineModule(moduleEnabled)
-
-if(${moduleEnabled})
-	# do something
-endif()
+EndDefineModule()

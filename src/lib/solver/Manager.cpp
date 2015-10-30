@@ -11,7 +11,6 @@
 
 #include "Manager.h"
 #include "StrategyGraph.h"
-#include "../modules/Modules.h"
 #include <functional>
 
 #include <typeinfo>
@@ -33,8 +32,8 @@ namespace smtrat
         mBacktrackPoints(),
         mGeneratedModules(),
         mBackendsOfModules(),
-        mpPrimaryBackend( new Module( MT_Module, mpPassedFormula, mPrimaryBackendFoundAnswer, this ) ),
-        mStrategyGraph(),
+        mpPrimaryBackend( new Module( mpPassedFormula, mPrimaryBackendFoundAnswer, this ) ),
+		mStrategyGraph(),
         mDebugOutputChannel( cout.rdbuf() ),
         mLogic( Logic::UNDEFINED ),
         mInformationRelevantFormula(),
@@ -52,7 +51,6 @@ namespace smtrat
         #endif
     {
         mGeneratedModules.push_back( mpPrimaryBackend );
-        mpModuleFactories = new map<const ModuleType, ModuleFactory*>();
         // inform it about all constraints
         typedef void (*Func)( Module*, const FormulaT& );
         Func f = [] ( Module* _module, const FormulaT& _constraint ) { _module->inform( _constraint ); };
@@ -76,13 +74,6 @@ namespace smtrat
             mGeneratedModules.pop_back();
             delete ptsmodule;
         }
-        while( !mpModuleFactories->empty() )
-        {
-            const ModuleFactory* pModuleFactory = mpModuleFactories->begin()->second;
-            mpModuleFactories->erase( mpModuleFactories->begin() );
-            delete pModuleFactory;
-        }
-        delete mpModuleFactories;
         while( !mPrimaryBackendFoundAnswer.empty() )
         {
 #ifdef __VS
@@ -98,6 +89,115 @@ namespace smtrat
             delete mpThreadPool;
         #endif
         delete mpPassedFormula;
+    }
+    
+    bool Manager::inform( const FormulaT& _constraint )
+    {
+        return mpPrimaryBackend->inform( _constraint );
+    }
+    
+    bool Manager::add( const FormulaT& _subformula )
+    {
+        if( _subformula.getType() == carl::FormulaType::CONSTRAINT )
+            mpPrimaryBackend->inform( _subformula );
+        else if( _subformula.isNary() )
+        {
+            vector<FormulaT> constraints;
+            _subformula.getConstraints( constraints );
+            for( auto& c : constraints )
+                mpPrimaryBackend->inform( c );
+        }
+        auto res = mpPassedFormula->add( _subformula );
+        if( res.second )
+        {
+            auto btp = mBacktrackPoints.end();
+            while( btp != mBacktrackPoints.begin() )
+            {
+                --btp;
+                if( *btp == mpPassedFormula->end() )
+                    *btp = res.first;
+                else
+                    break;
+            }
+            return mpPrimaryBackend->add( res.first );
+        }
+        return true;
+    }
+    
+    Answer Manager::check( bool _full )
+    {
+        *mPrimaryBackendFoundAnswer.back() = false;
+        mpPassedFormula->updateProperties();
+        return mpPrimaryBackend->check( _full );
+    }
+    
+    const std::vector<FormulaSetT>& Manager::infeasibleSubsets() const
+    {
+        return mpPrimaryBackend->infeasibleSubsets();
+    }
+    
+    std::list<std::vector<carl::Variable>> Manager::getModelEqualities() const
+    {
+        return mpPrimaryBackend->getModelEqualities();
+    }
+    
+    const Model& Manager::model() const
+    {
+        mpPrimaryBackend->updateModel();
+        return mpPrimaryBackend->model();
+    }
+
+	const std::vector<Model>& Manager::allModels() const
+	{
+		mpPrimaryBackend->updateAllModels();
+		return mpPrimaryBackend->allModels();
+	}
+    
+    std::vector<FormulaT> Manager::lemmas()
+    {
+        std::vector<FormulaT> result;
+        mpPrimaryBackend->updateDeductions();
+        for( const auto& ded : mpPrimaryBackend->deductions() )
+        {
+            result.push_back( ded.first );
+        }
+        return result;
+    }
+    
+    std::pair<bool,FormulaT> Manager::getInputSimplified()
+    {
+        return mpPrimaryBackend->getReceivedFormulaSimplified();
+    }
+    
+    void Manager::printAssignment( std::ostream& _out ) const
+    {
+        mpPrimaryBackend->printModel( _out );
+    }
+
+	void Manager::printAllAssignments( std::ostream& _out ) const
+	{
+		mpPrimaryBackend->printAllModels( _out );
+	}
+    
+    ModuleInput::iterator Manager::remove( ModuleInput::iterator _subformula, bool _repairBT )
+    {
+        assert( _subformula != mpPassedFormula->end() );
+        mpPrimaryBackend->remove( _subformula );
+        if( _repairBT )
+        {
+            auto iter = mpPassedFormula->erase( _subformula );
+            for( auto& it : mBacktrackPoints )
+            {
+                if( it == _subformula )
+                {
+                    it = iter;
+                    break;
+                }
+            }
+            return iter;
+        }
+        else
+            return mpPassedFormula->erase( _subformula );
     }
     
     void Manager::reset()
@@ -118,7 +218,8 @@ namespace smtrat
             delete toDelete;
         }
         mLogic = Logic::UNDEFINED;
-        mpPrimaryBackend = new Module( MT_Module, mpPassedFormula, mPrimaryBackendFoundAnswer, this );
+		assert(mpPrimaryBackend == nullptr);
+        mpPrimaryBackend = new Module( mpPassedFormula, mPrimaryBackendFoundAnswer, this );
         mGeneratedModules.push_back( mpPrimaryBackend );
     }
 
@@ -127,6 +228,11 @@ namespace smtrat
     #ifdef SMTRAT_STRAT_PARALLEL_MODE
     void Manager::initialize()
     {
+#if 1
+		if (mStrategyGraph.hasBranches()) {
+			// TODO
+		}
+#else
         mNumberOfBranches = mStrategyGraph.numberOfBranches();
         if( mNumberOfBranches > 1 )
         {
@@ -140,6 +246,7 @@ namespace smtrat
                 mpThreadPool = new ThreadPool( mNumberOfBranches, mNumberOfCores );
             }
         }
+#endif
     }
     #endif
     
@@ -188,54 +295,43 @@ namespace smtrat
 #endif
     {
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
-        std::lock_guard<std::mutex> lock( mBackendsMutex );
+        std::lock_guard<std::mutex> lock(mBackendsMutex);
         #endif
-        std::vector<Module*>  backends;
+        std::vector<Module*> backends;
         std::vector<Module*>& allBackends = mBackendsOfModules[_requiredBy];
-        /*
-         * Get the types of the modules, which the given module needs to call to solve its passedFormula.
-         */
-        _requiredBy->mpPassedFormula->updateProperties();
-        std::vector< std::pair< thread_priority, ModuleType > > backendValues = mStrategyGraph.getNextModuleTypes( _requiredBy->threadPriority().second, _requiredBy->pPassedFormula()->properties() );
-        for( auto iter = backendValues.begin(); iter != backendValues.end(); ++iter )
-        {
-            assert( iter->second != _requiredBy->type() );
-            // If for this module type an instance already exists, we just add it to the modules to return.
-            std::vector<Module*>::iterator backend = allBackends.begin();
-            while( backend != allBackends.end() )
-            {
-                if( (*backend)->threadPriority() == iter->first )
-                {
-                    // The backend already exists.
-                    backends.push_back( *backend );
-                    break;
-                }
-                ++backend;
-            }
-            // Otherwise, we create a new instance of this module type and add it to the modules to return.
-            if( backend == allBackends.end() )
-            {
-                auto backendFactory = mpModuleFactories->find( iter->second );
-                assert( backendFactory != mpModuleFactories->end() );
-                smtrat::Conditionals foundAnswers = smtrat::Conditionals( _requiredBy->answerFound() );
-                foundAnswers.push_back( _foundAnswer );
-                Module* pBackend = backendFactory->second->create( iter->second, _requiredBy->pPassedFormula(), foundAnswers, this );
-                mGeneratedModules.push_back( pBackend );
-                pBackend->setId( (unsigned)mGeneratedModules.size()-1 );
-                pBackend->setThreadPriority( iter->first );
-                allBackends.push_back( pBackend );
-                backends.push_back( pBackend );
-                // Inform it about all constraints.
-                for( auto cons = _requiredBy->informedConstraints().begin(); cons != _requiredBy->informedConstraints().end(); ++cons )
-                {
-                    pBackend->inform( *cons );
-                }
-                for( auto form = _requiredBy->rPassedFormula().begin(); form != _requiredBy->firstSubformulaToPass(); ++form )
-                {
-                    pBackend->add( form );
-                }
-            }
-        }
+		_requiredBy->mpPassedFormula->updateProperties();
+		// Obtain list of backends in the strategy
+		std::set<std::pair<thread_priority,AbstractModuleFactory*>> factories = mStrategyGraph.getBackends(_requiredBy->threadPriority().second, _requiredBy->pPassedFormula()->properties());
+		for (const auto& iter: factories) {
+			// Check if the respective module has already been created
+			bool moduleExists = false;
+			for (const auto& candidate: allBackends) {
+				if (candidate->threadPriority() == iter.first) {
+					backends.emplace_back(candidate);
+					moduleExists = true;
+					break;
+				}
+			}
+			// Create a new module with the given factory
+			if (!moduleExists) {
+				auto factory = iter.second;
+				assert(factory != nullptr);
+				std::vector<std::atomic_bool*> foundAnswers(_requiredBy->answerFound());
+				foundAnswers.emplace_back(_foundAnswer);
+				Module* newBackend = factory->create(_requiredBy->pPassedFormula(), foundAnswers, this);
+				newBackend->setId(mGeneratedModules.size());
+				newBackend->setThreadPriority(iter.first);
+				mGeneratedModules.emplace_back(newBackend);
+				allBackends.emplace_back(newBackend);
+				backends.emplace_back(newBackend);
+				for(const auto& cons: _requiredBy->informedConstraints()) {
+					newBackend->inform(cons);
+				}
+				for(auto form = _requiredBy->rPassedFormula().begin(); form != _requiredBy->firstSubformulaToPass(); form++) {
+					newBackend->add(form);
+				}
+			}
+		}
         return backends;
     }
 

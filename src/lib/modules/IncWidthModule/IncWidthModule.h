@@ -9,6 +9,7 @@
 #pragma once
 
 #include "../../solver/Module.h"
+#include "../../datastructures/VariableBounds.h"
 #include "IncWidthStatistics.h"
 #include "IncWidthSettings.h"
 namespace smtrat
@@ -28,7 +29,11 @@ namespace smtrat
 			vb::VariableBounds<FormulaT> mVarBounds;
 
         public:
-            IncWidthModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
+            IncWidthModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~IncWidthModule();
 
@@ -75,3 +80,4 @@ namespace smtrat
 }
 
 #include "IncWidthModule.tpp"
+
