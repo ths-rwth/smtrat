@@ -8,6 +8,8 @@
 #include <boost/variant.hpp>
 #include <cxxabi.h>
 #include <map>
+#include <string>
+#include <cstdlib>
 
 namespace smtrat {
 
