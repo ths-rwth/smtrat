@@ -35,7 +35,11 @@ namespace smtrat
     class Manager; // forward declaration
 
     /// A vector of atomic bool pointers.
-    typedef std::vector<std::atomic_bool*> Conditionals;
+#ifdef __VS
+	typedef std::vector<std::atomic<bool>*> Conditionals;
+#else
+	typedef std::vector<std::atomic_bool*> Conditionals;
+#endif
     
     /**
      * Stores all necessary information of an branch, which can be used to detect probable infinite loop of branchings.

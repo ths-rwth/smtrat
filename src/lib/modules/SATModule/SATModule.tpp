@@ -608,29 +608,16 @@ namespace smtrat
 			else
 			{
 				// Set assignment for all defined variables (might be partial assignment)
-				for ( int i = 0; i < assigns.size(); ++i )
+				for (BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar)
 				{
-					if ( assigns[i] == l_Undef )
-					{
-						// Partial assignment
-						continue;
-					}
-					ModelValue assignment = assigns[i] == l_True;
-					carl::Variable var = mMinisatVarMap.at( i ).boolean();
-					model.insert( std::make_pair( var, assignment ) );
+					ModelValue assignment = assigns[bVar->second] == l_True;
+					model.insert(std::make_pair(bVar->first, assignment));
 				}
 			}
-
-			// Set variable replacements
-			// TODO Matthias: correct way?
-			Module::getBackendsAllModels();
-			for( auto varReplacement = mVarReplacements.begin(); varReplacement != mVarReplacements.end(); ++varReplacement )
+			Module::getBackendsModel();
+			if (Settings::check_if_all_clauses_are_satisfied && trail.size() < assigns.size())
 			{
-				Model::iterator iter = model.find( varReplacement->first );
-				if ( iter != model.end() )
-				{
-					iter->second = varReplacement->second;
-				}
+				getDefaultModel(model, (FormulaT)rReceivedFormula(), false);
 			}
 		}
     }
@@ -1412,7 +1399,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    bool SATModule<Settings>::addClause( const vec<Lit>& _clause, unsigned _type )
+    bool SATModule<Settings>::addClause( const vec<Lit>& _clause, unsigned _type, bool force )
     {
         assert( _clause.size() != 0 );
         assert(_type < 4);

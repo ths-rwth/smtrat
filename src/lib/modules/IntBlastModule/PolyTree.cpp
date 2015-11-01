@@ -24,12 +24,20 @@ namespace smtrat
 
     carl::Variable::Arg PolyTree::variable() const {
         assert(mpContent->mType == Type::VARIABLE);
-        return mpContent->mVariable;
+#ifdef __VS
+        return *mpContent->mpVariableVS;
+#else
+		return mpContent->mVariable;
+#endif
     }
 
     const Integer& PolyTree::constant() const {
         assert(mpContent->mType == Type::CONSTANT);
-        return mpContent->mConstant;
+#ifdef __VS
+        return *mpContent->mpConstantVS;
+#else
+		return mpContent->mConstant;
+#endif
     }
 
     PolyTree::Type PolyTree::type() const {

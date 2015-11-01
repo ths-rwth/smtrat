@@ -48,7 +48,11 @@ namespace smtrat
             /**
              *
              */
-            static constexpr NBCS nonbasic_var_choice_strategy = NBCS::LESS_COLUMN_ENTRIES;
+#ifdef __VS
+            static const NBCS nonbasic_var_choice_strategy = NBCS::LESS_COLUMN_ENTRIES;
+#else
+			static constexpr NBCS nonbasic_var_choice_strategy = NBCS::LESS_COLUMN_ENTRIES;
+#endif
         };
     }
 }

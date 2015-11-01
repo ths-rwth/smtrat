@@ -388,7 +388,7 @@ namespace smtrat
 				SMTRAT_LOG_INFO("smtrat.strategygraph", "Strategygraph:" << std::endl << mStrategyGraph);
 			}
 			void setStrategy(const BackendLink& backend) {
-				setStrategy({backend});
+				setStrategy(std::initializer_list<BackendLink>{backend});
 			}
 			template<typename Module>
 			BackendLink addBackend(const std::initializer_list<BackendLink>& backends = {}) {

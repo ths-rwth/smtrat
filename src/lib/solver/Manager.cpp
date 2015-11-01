@@ -316,7 +316,7 @@ namespace smtrat
 			if (!moduleExists) {
 				auto factory = iter.second;
 				assert(factory != nullptr);
-				std::vector<std::atomic_bool*> foundAnswers(_requiredBy->answerFound());
+				Conditionals foundAnswers(_requiredBy->answerFound());
 				foundAnswers.emplace_back(_foundAnswer);
 				Module* newBackend = factory->create(_requiredBy->pPassedFormula(), foundAnswers, this);
 				newBackend->setId(mGeneratedModules.size());

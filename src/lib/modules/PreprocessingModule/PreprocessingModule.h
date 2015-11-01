@@ -59,9 +59,13 @@ namespace smtrat
 
         public:
 			typedef Settings SettingsType;
-std::string moduleName() const {
-return SettingsType::moduleName;
-}
+			std::string moduleName() const {
+#ifdef __VS
+				return SettingsType::getModuleName();
+#else
+				return SettingsType::moduleName;
+#endif
+			}
 
             PreprocessingModule( const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = nullptr );
 

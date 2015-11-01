@@ -32,7 +32,11 @@ namespace smtrat {
 			return new Module(_formula, mSettings, _conditionals, _manager);
 		}
 		std::string moduleName() const {
+#ifdef __VS
+			return Module::SettingsType::getModuleName();
+#else
 			return Module::SettingsType::moduleName;
+#endif
 		}
 	};
 	

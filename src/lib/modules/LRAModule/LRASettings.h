@@ -14,7 +14,11 @@ namespace smtrat
 {
     struct LRASettings1
     {
+#ifdef __VS
+		static const std::string getModuleName() { return "LRAModule<LRASettings1>"; }
+#else
 		static constexpr auto moduleName = "LRAModule<LRASettings1>";
+#endif
         /**
          * 
          */

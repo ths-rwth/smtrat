@@ -47,9 +47,13 @@ namespace smtrat
     {
         public:
 			typedef Settings SettingsType;
-std::string moduleName() const {
-return SettingsType::moduleName;
-}
+			std::string moduleName() const {
+#ifdef __VS
+				return SettingsType::getModuleName();
+#else
+				return SettingsType::moduleName;
+#endif
+			}
             /**
              * Stores a formula, being part of the received formula of this module, and the position of 
              * this formula in the passed formula.

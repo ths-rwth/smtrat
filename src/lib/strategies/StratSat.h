@@ -4,25 +4,33 @@
 #pragma once
 
 #include "../solver/Manager.h"
+#include "../modules/PreprocessingModule/PreprocessingModule.h"
+#include "../modules/SATModule/SATModule.h"
 
 namespace smtrat
 {
     /**
-     * @class	StratSat
+     * Strategy description.
      *
-     * @brief	Strategy description.
+     * @author
+     * @since
+     * @version
      *
-     * @author	Matthias Volk
-     * 			@since 2015-05-22
-     * 			@version 2015-05-22
-     * @date	22.05.2015
      */
     class StratSat:
         public Manager
     {
         public:
-            StratSat();
-            ~StratSat();
-    };
 
-}    // namespace smtrat
+        StratSat(): Manager()
+        {
+			setStrategy(std::initializer_list<BackendLink>
+            {
+				addBackend<PreprocessingModule<PreprocessingSettings1>>(std::initializer_list<BackendLink>
+                {
+                    addBackend<SATModule<SATSettings1>>()
+                })
+            });
+        }
+    };
+} // namespace smtrat

@@ -92,7 +92,7 @@ namespace smtrat {
             SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Eliminate substitutions  " << formula);
             if (Settings::extractBounds) {
                 // Check if bounds make constraints vanish.
-                formula = visitor.rvisit(formula, extractBoundsFunction);
+                formula = visitor.visitResult(formula, extractBoundsFunction);
             }
             SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Extract bounds  " << formula);
             if (Settings::checkBounds) {
@@ -147,7 +147,7 @@ namespace smtrat {
                 SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Remove unbounded variables  " << formula);
                 if (Settings::extractBounds) {
                     // Check if bounds make constraints vanish.
-                    formula = visitor.rvisit(formula, extractBoundsFunction);
+                    formula = visitor.visitResult(formula, extractBoundsFunction);
                 }
                 SMTRAT_LOG_DEBUG("smtrat.preprocessing", "Extract bounds  " << formula);
                 if (Settings::checkBounds) {

@@ -22,13 +22,24 @@ namespace smtrat
     
     struct CADSettings1
     {
-		static constexpr auto moduleName = "CADModule<CADSettings1>";
-        static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::SPLIT_EARLY;
+#ifdef __VS
+	#define CONSTEXPR const
+	static const std::string moduleName;
+#else
+	#define CONSTEXPR constexpr
+	static CONSTEXPR auto moduleName = "CADModule<CADSettings1>";
+#endif
+
+		static CONSTEXPR carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::SPLIT_EARLY;
         
-        static constexpr MISHeuristic mis_heuristic = MISHeuristic::GREEDY;
-        static constexpr bool computeConflictGraph = (mis_heuristic != MISHeuristic::TRIVIAL);
-        static constexpr bool checkMISForMinimality = false;
+		static CONSTEXPR MISHeuristic mis_heuristic = MISHeuristic::GREEDY;
+		static CONSTEXPR bool computeConflictGraph = (mis_heuristic != MISHeuristic::TRIVIAL);
+		static CONSTEXPR bool checkMISForMinimality = false;
         
         static const bool dummy;
     };
+
+#ifdef __VS
+	const std::string CADSettings1::moduleName = "CADModule<CADSettings1>";
+#endif
 }

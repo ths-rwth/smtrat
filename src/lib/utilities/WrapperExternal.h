@@ -6,10 +6,9 @@
 #pragma once
 
 #include "../../cli/config.h"
-#include "../strategies/strategies.h"
-#include "../modules/ModuleType.h"
-#include "../modules/Modules.h"
-#include "../modules/AddModules.h"
+#include "../strategies/config.h"
+#include "../solver/Module.h"
+#include "../Common.h"
 #include "carl/util/stringparser.h"
 #include "carl/util/parser/Parser.h"
 #include "carl/util/Common.h"
@@ -19,8 +18,6 @@
 #else
 #define DLL_EXPORT 
 #endif
-
-#define SOLVER smtrat::StratSat
 
 #ifdef DEBUG
 #define DEFAULT_LVL carl::logging::LogLevel::LVL_DEBUG
@@ -32,7 +29,7 @@ namespace smtrat {
     class WrapperExternal
     {
     private:
-        SOLVER* solver;
+		CMakeStrategySolver* solver;
         carl::parser::Parser<Poly> parser;
 		mutable std::string lastBuffer = "";
     public:
@@ -62,8 +59,7 @@ namespace smtrat {
 				("smtrat.preprocessing", DEFAULT_LVL)
 				;
 #endif
-            pWrapper->solver = new SOLVER();
-            smtrat::addModules(pWrapper->solver);
+			pWrapper->solver = new CMakeStrategySolver();
 			return pWrapper;
         }
 

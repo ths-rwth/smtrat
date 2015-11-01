@@ -139,7 +139,14 @@ namespace smtrat
                     mPosition( _position )
                 {}
                 ClauseInformation( const ClauseInformation& ) = default;
-                ClauseInformation( ClauseInformation&& ) = default;
+#ifdef __VS
+				ClauseInformation(ClauseInformation&& clInformation) {
+					mStoredInSatisfied = clInformation.mStoredInSatisfied;
+					mPosition = clInformation.mPosition;
+				}
+#else
+				ClauseInformation(ClauseInformation&&) = default;
+#endif
             };
             
             struct VarConnection
@@ -472,7 +479,11 @@ namespace smtrat
         public:
 			typedef Settings SettingsType;
 			std::string moduleName() const {
+#ifdef __VS
+				return SettingsType::getModuleName();
+#else
 				return SettingsType::moduleName;
+#endif
 			}
 
             /**
@@ -663,7 +674,7 @@ namespace smtrat
              * @return  true, if a clause has been added;
              *          false, otherwise.
              */
-            bool addClause( const Minisat::vec<Minisat::Lit>& _clause, unsigned _type = 0 );
+            bool addClause( const Minisat::vec<Minisat::Lit>& _clause, unsigned _type = 0 , bool force = false);
             
             /**
              * Moves two literals which are not assigned to false to the beginning of the clause.

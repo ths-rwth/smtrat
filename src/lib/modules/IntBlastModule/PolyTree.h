@@ -43,34 +43,72 @@ namespace smtrat
         PolyTree::Type mType;
         union
         {
-            carl::Variable mVariable;
-            Integer mConstant;
+#ifdef __VS
+            carl::Variable* mpVariableVS;
+            Integer* mpConstantVS;
+#else
+			carl::Variable mVariable;
+			Integer mConstant;
+#endif
         };
         boost::optional<PolyTree> mLeft;
         boost::optional<PolyTree> mRight;
 
     public:
         PolyTreeContent(const Poly& _poly, PolyTree::Type _type, const PolyTree& _left, const PolyTree& _right) :
-        mPoly(_poly), mType(_type), mVariable(), mLeft(_left), mRight(_right)
-        {
-            assert(_type == PolyTree::Type::SUM || _type == PolyTree::Type::PRODUCT);
-        }
+#ifdef __VS
+        mPoly(_poly), mType(_type), mLeft(_left), mRight(_right)
+		{
+			mpVariableVS = new carl::Variable();
+			assert(_type == PolyTree::Type::SUM || _type == PolyTree::Type::PRODUCT);
+		}
+#else
+		mPoly(_poly), mType(_type), mVariable(), mLeft(_left), mRight(_right)
+		{
+			assert(_type == PolyTree::Type::SUM || _type == PolyTree::Type::PRODUCT);
+		}
+#endif
 
         PolyTreeContent(carl::Variable::Arg _variable) :
-        mPoly(_variable), mType(PolyTree::Type::VARIABLE), mVariable(_variable), mLeft(), mRight()
-        { }
+#ifdef __VS
+        mPoly(_variable), mType(PolyTree::Type::VARIABLE), mLeft(), mRight()
+        {
+			mpVariableVS = new carl::Variable(_variable);
+		}
+#else
+		mPoly(_variable), mType(PolyTree::Type::VARIABLE), mVariable(_variable), mLeft(), mRight()
+		{ }
+#endif
 
-        PolyTreeContent(Integer _constant) :
-        mPoly(_constant), mType(PolyTree::Type::CONSTANT), mConstant(_constant), mLeft(), mRight()
-        { }
+		PolyTreeContent(Integer _constant) :
+#ifdef __VS
+		mPoly(_constant), mType(PolyTree::Type::CONSTANT), mLeft(), mRight()
+		{
+			mpConstantVS = new Integer(_constant);
+		}
+#else
+		mPoly(_constant), mType(PolyTree::Type::CONSTANT), mConstant(_constant), mLeft(), mRight()
+		{ }
+#endif
 
         ~PolyTreeContent()
         {
+#ifdef __VS
             if(mType == PolyTree::Type::CONSTANT) {
-                mConstant.~Integer();
+                mpConstantVS->~Integer();
+				delete mpConstantVS;
             } else {
-                mVariable.~Variable();
+                mpVariableVS->~Variable();
+				delete mpVariableVS;
             }
+#else
+			if (mType == PolyTree::Type::CONSTANT) {
+				mConstant.~Integer();
+			}
+			else {
+				mVariable.~Variable();
+			}
+#endif
         }
 
         const Poly& poly() const

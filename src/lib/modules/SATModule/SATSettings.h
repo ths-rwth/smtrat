@@ -16,7 +16,13 @@ namespace smtrat
     
     struct SATSettings1
     {
+#ifdef __VS
+		#define CONSTEXPR const
+		static const std::string getModuleName() { return "SATModule<SATSettings1>"; }
+#else
+		#define CONSTEXPR constexpr
 		static constexpr auto moduleName = "SATModule<SATSettings1>";
+#endif
         /**
          * 
          */
@@ -44,18 +50,26 @@ namespace smtrat
         /**
          * 
          */
-        static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::DISABLED;
+		static CONSTEXPR TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::DISABLED;
         /**
          * 
          */
-        static constexpr double percentage_of_conflicts_to_add = 1.0;
+#ifdef __VS
+		static const double percentage_of_conflicts_to_add;
+#else
+		static CONSTEXPR double percentage_of_conflicts_to_add = 1.0;
+#endif
         /**
          *
          */
-        static constexpr CCES conflict_clause_evaluation_strategy = CCES::SECOND_LEVEL_MINIMIZER_PLUS_LBD;
+		static CONSTEXPR CCES conflict_clause_evaluation_strategy = CCES::SECOND_LEVEL_MINIMIZER_PLUS_LBD;
 		/**
 		 *
 		 */
 		static const bool remove_satisfied = false;
     };
+
+#ifdef __VS
+	const double SATSettings1::percentage_of_conflicts_to_add = 1.0;
+#endif
 }

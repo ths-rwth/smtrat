@@ -8,16 +8,17 @@
 #pragma once
 
 #include "../../utilities/SettingsManager.h"
-#ifdef __VS
-#define CONSTEXPR const
-#else
-#define CONSTEXPR constexpr
-#endif
 
 namespace smtrat 
 {
 struct PreprocessingSettings1 {
+#ifdef __VS
+	#define CONSTEXPR const
+	static const std::string getModuleName() { return "PreprocessingModule<PreprocessingSettings1>"; }
+#else
+	#define CONSTEXPR constexpr
 	static CONSTEXPR auto moduleName = "PreprocessingModule<PreprocessingSettings1>";
+#endif
 	static CONSTEXPR bool printChanges = false;
 	/**
 	 * Enables removing of redundant or obsolete factors.
