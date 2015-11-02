@@ -6,7 +6,7 @@
  * Created on 2014-12-05.
  */
 
-#include "EQPreprocessindModule.h"
+#include "EQPreprocessingModule.h"
 
 namespace smtrat
 {
