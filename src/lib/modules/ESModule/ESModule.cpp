@@ -8,6 +8,8 @@
 
 //#define DEBUG_ELIMINATE_SUBSTITUTIONS
 
+#include "ESModule.h"
+
 namespace smtrat
 {
     template<class Settings>
@@ -351,3 +353,5 @@ namespace smtrat
         return result;
     }
 }
+
+#include "Instantiation.h"

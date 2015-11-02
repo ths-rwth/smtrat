@@ -90,7 +90,3 @@ return SettingsType::moduleName;
 
     };
 }
-
-#include "FPPModule.tpp"
-
-

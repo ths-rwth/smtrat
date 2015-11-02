@@ -1062,5 +1062,6 @@ void GBModule<Settings>::printRewriteRules( )
 }
 #endif
 
-
 } // namespace smtrat
+
+#include "Instantiation.h"

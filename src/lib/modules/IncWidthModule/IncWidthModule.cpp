@@ -307,3 +307,5 @@ namespace smtrat
         mHalfOfCurrentWidth = Settings::half_of_start_width;
     }
 }
+
+#include "Instantiation.h"

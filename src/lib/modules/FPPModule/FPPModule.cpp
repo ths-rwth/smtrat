@@ -6,6 +6,8 @@
  * Created on 2015-09-10.
  */
 
+#include "FPPModule.h"
+
 namespace smtrat
 {
     template<class Settings>
@@ -109,3 +111,5 @@ namespace smtrat
         return ans;
     }
 }
+
+#include "Instantiation.h"
