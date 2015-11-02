@@ -7,6 +7,7 @@
  */
 
 #include "EQPreprocessingModule.h"
+#include "../../datastructures/SortValueManager.h"
 
 namespace smtrat
 {
