@@ -7,6 +7,8 @@
  * Created on 2015-09-10.
  */
 
+#include "RPFModule.h"
+
 namespace smtrat
 {
     template<class Settings>
@@ -97,3 +99,5 @@ namespace smtrat
 		return formula;
 	}
 }
+
+#include "Instantiation.h"

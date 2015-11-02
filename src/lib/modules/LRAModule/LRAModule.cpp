@@ -1899,3 +1899,5 @@ Return:
     }
     #endif
 }    // namespace smtrat
+
+#include "Instantiation.h"

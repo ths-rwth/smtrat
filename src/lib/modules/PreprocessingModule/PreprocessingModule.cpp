@@ -7,6 +7,8 @@
 
 //#define DEBUG_ELIMINATE_SUBSTITUTIONS
 
+#include "PreprocessingModule.h"
+
 namespace smtrat {
 
 	template<typename Settings>
@@ -951,5 +953,6 @@ namespace smtrat {
 			addSubformulaToPassedFormula(FormulaT(carl::FormulaType::OR, curEnum), FormulaT(carl::FormulaType::AND, varbounds.getOriginsOfBounds(bound.first)));
 		}
 	}
-    
 }
+
+#include "Instantiation.h"

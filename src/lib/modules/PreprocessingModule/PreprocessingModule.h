@@ -128,6 +128,3 @@ return SettingsType::moduleName;
     };
 
 }    // namespace smtrat
-
-#include "PreprocessingModule.tpp"
-

@@ -6,6 +6,8 @@
  * Created on 2015-09-10.
  */
 
+#include "SplitSOSModule.h"
+
 namespace smtrat
 {
     template<class Settings>
@@ -137,3 +139,5 @@ namespace smtrat
 		return formula;
 	}
 }
+
+#include "Instantiation.h"

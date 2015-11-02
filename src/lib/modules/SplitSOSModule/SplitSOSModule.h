@@ -53,7 +53,3 @@ return SettingsType::moduleName;
 			std::function<FormulaT(FormulaT)> splitSOSFunction;
     };
 }
-
-#include "SplitSOSModule.tpp"
-
-
