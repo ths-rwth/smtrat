@@ -80,6 +80,7 @@ namespace smtrat
         typedef carl::Ideal<PolynomialWithReasons>						     MultivariateIdeal;
         typedef carl::Reductor<PolynomialWithReasons,PolynomialWithReasons>	 Reductor;
 		typedef smtrat::decidePassingPolynomial								 passPolynomial;
+		typedef carl::GBProcedure<PolynomialWithReasons, carl::Buchberger, carl::StdAdding> Groebner;
 
         static const bool                                passGB                                  = true;
         static const bool                                getReasonsForInfeasibility              = true;
@@ -114,6 +115,7 @@ namespace smtrat
         typedef carl::Ideal<PolynomialWithReasons>						     MultivariateIdeal;
         typedef carl::Reductor<PolynomialWithReasons,PolynomialWithReasons>	 Reductor;
 		typedef smtrat::decidePassingPolynomial								 passPolynomial;
+		typedef carl::GBProcedure<PolynomialWithReasons, carl::Buchberger, carl::StdAdding> Groebner;
 
         static const bool                                passGB                                  = true;
         static const bool                                getReasonsForInfeasibility              = false;
@@ -145,6 +147,7 @@ namespace smtrat
         typedef carl::Ideal<PolynomialWithReasons>						     MultivariateIdeal;
         typedef carl::Reductor<PolynomialWithReasons,PolynomialWithReasons>	 Reductor;
 		typedef smtrat::decidePassingPolynomial								 passPolynomial;
+		typedef carl::GBProcedure<PolynomialWithReasons, carl::Buchberger, carl::StdAdding> Groebner;
 
         static const bool                                passGB                                  = false;
         static const bool                                getReasonsForInfeasibility              = true;
@@ -177,6 +180,7 @@ namespace smtrat
         typedef carl::Ideal<PolynomialWithReasons>						     MultivariateIdeal;
         typedef carl::Reductor<PolynomialWithReasons,PolynomialWithReasons>	 Reductor;
 		typedef smtrat::decidePassingPolynomial								 passPolynomial;
+		typedef carl::GBProcedure<PolynomialWithReasons, carl::Buchberger, carl::StdAdding> Groebner;
 
         static const bool                                passGB                                  = false;
         static const bool                                getReasonsForInfeasibility              = true;
