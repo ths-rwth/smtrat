@@ -588,6 +588,3 @@ return SettingsType::moduleName;
             void unblastPolys(const std::set<Poly>& _polys);
     };
 }
-
-#include "IntBlastModule.tpp"
-

@@ -86,6 +86,7 @@ namespace smtrat
             
             std::map<carl::Variable, icp::IcpVariable*> mVariables; // list of occurring variables
             EvalDoubleIntervalMap mIntervals; // actual intervals relevant for contraction
+            EvalRationalIntervalMap mInitialIntervals; // intervals after linear check
             EvalRationalMap mFoundSolution;
             std::set<std::pair<double, unsigned>, comp> mIcpRelevantCandidates; // candidates considered for contraction 
             
@@ -378,7 +379,7 @@ return SettingsType::moduleName;
         public:
             FormulasT getCurrentBoxAsFormulas() const;
         private:
-            FormulaT intervalBoundToFormula( carl::Variable::Arg _var, const DoubleInterval& _interval, const EvalRationalIntervalMap& _lraVarBounds, EvalRationalIntervalMap::const_iterator _lraBoundsIter, bool _upper ) const;
+            FormulaT intervalBoundToFormula( carl::Variable::Arg _var, const DoubleInterval& _interval, EvalRationalIntervalMap::const_iterator _initialIntervalIter, bool _upper ) const;
             
             /**
              * Compute hull of defining origins for set of icpVariables.
@@ -511,6 +512,3 @@ return SettingsType::moduleName;
             void printContraction( const icp::ContractionCandidate& _cc, const DoubleInterval& _before, const DoubleInterval& _afterA, const DoubleInterval& _afterB = DoubleInterval::emptyInterval(), std::ostream& _out = std::cout ) const;
     };
 }    // namespace smtrat
-    
-#include "ICPModule.tpp"
-

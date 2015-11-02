@@ -141,31 +141,6 @@ namespace smtrat
                 ClauseInformation( const ClauseInformation& ) = default;
                 ClauseInformation( ClauseInformation&& ) = default;
             };
-            
-            struct VarConnection
-            {
-                size_t mNumConnections;
-                std::unordered_map<int,size_t> mConnections;
-                
-                VarConnection():
-                    mNumConnections(0),
-                    mConnections()
-                {};
-                
-                VarConnection( VarConnection&& _toMove ):
-                    mNumConnections( _toMove.mNumConnections ),
-                    mConnections( std::move( _toMove.mConnections ) )
-                {};
-                
-                VarConnection( const VarConnection& ) = delete;
-                
-                VarConnection& operator=( VarConnection&& _toMove )
-                {
-                    mNumConnections = _toMove.mNumConnections;
-                    mConnections = std::move( _toMove.mConnections );
-                    return *this;
-                }
-            };
 
             /// [Minisat related code]
             struct Watcher
@@ -250,12 +225,6 @@ namespace smtrat
             typedef carl::FastMap<FormulaT, std::vector<Minisat::CRef>> FormulaClausesMap;
             
             typedef carl::FastMap<signed,std::unordered_set<signed>> TseitinVarShadows;
-            
-            /// A vector of vectors of literals representing a vector of clauses.
-            typedef std::vector<std::vector<Minisat::Lit>> ClauseVector;
-            
-            /// A set of vectors of integer representing a set of clauses.
-            typedef std::set<std::vector<int>> ClauseSet;
 
             /// [Minisat related code]
             static inline VarData mkVarData( Minisat::CRef cr, int l )
@@ -1297,5 +1266,3 @@ namespace smtrat
             bool passedFormulaCorrect() const;
     };
 }    // namespace smtrat
-
-#include "SATModule.tpp"

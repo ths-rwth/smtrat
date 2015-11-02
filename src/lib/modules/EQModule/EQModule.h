@@ -300,11 +300,6 @@ namespace smtrat
 					 */
 					typedef circular_linked_list<bucket, circular_node_base<bucket>> bin;
 
-					/**
-					 * This selects the hash function used by the underlying hash table.
-					 */
-					typedef typename Settings::FunctionInstanceHash FunctionInstanceHash;
-
 				private:
 					/**
 					 * Doubles the size of the underlying hash table and moves buckets accordingly.
@@ -314,37 +309,10 @@ namespace smtrat
 
 					/* use tag dispatch to call the right overload; enables hash function selection at compile-time */
 					// the functions below are implementations of different hash functions
-					inline std::size_t P_compute_hash(const class_vector_entry* classes, HashFunctions::SIMPLE_ADD_MULT_HASHER tag) const;
-					inline std::size_t P_compute_hash(const class_vector_entry* classes, HashFunctions::SIMPLE_PAIR_COMBINE_HASHER tag) const;
-					inline void P_update_hash_step(std::size_t& hvalue, std::size_t c, std::size_t index, HashFunctions::SIMPLE_ADD_MULT_HASHER tag);
-					inline void P_update_hash_step(std::size_t& hvalue, std::size_t c, std::size_t index, HashFunctions::SIMPLE_PAIR_COMBINE_HASHER tag);
-					inline std::size_t P_reduce_hash(std::size_t hvalue, HashFunctions::SIMPLE_ADD_MULT_HASHER tag) const;
-					inline std::size_t P_reduce_hash(std::size_t hvalue, HashFunctions::SIMPLE_PAIR_COMBINE_HASHER tag) const;
-					void P_redistribute_buckets(bin* newBins, HashFunctions::SIMPLE_ADD_MULT_HASHER tag);
-					void P_redistribute_buckets(bin* newBins, HashFunctions::SIMPLE_PAIR_COMBINE_HASHER tag);
-
-					/**
-					 * Computes the hash value for a given array of argument classes.
-					 */
 					inline std::size_t P_compute_hash(const class_vector_entry* classes) const;
-
-					/**
-					 * Update the referenced hash value by applying the hash function for class c at position index.
-					 */
 					inline void P_update_hash_step(std::size_t& hvalue, std::size_t c, std::size_t index);
-
-					/**
-					 * Reduces the hash value to a value between 0 (inclusive) and (1 << mBinShift) (exclusive).
-					 * This is used for the actual lookup in the hash table.
-					 * Note that this is hash function dependent; for some hashes, right shifts are much better than using modulus.
-					 */
 					inline std::size_t P_reduce_hash(std::size_t hvalue) const;
-
-					/**
-					 * Redistributes buckets when the size of the hash table is doubled.
-					 * This is hash function dependent (because P_reduce_hash is).
-					 */
-					inline void P_redistribute_buckets(bin* newBins);
+					void P_redistribute_buckets(bin* newBins);
 
 					/**
 					 * Update a bucket by replacing every occurrence of oldClass by newClass.
@@ -672,7 +640,7 @@ namespace smtrat
              * @param real_rhs the real end
              * @return a pointer to the added implicit edge
              */
-			inline implicit_edge_info* P_add_implicit_edge(g_iterator lhs, g_iterator rhs, g_iterator real_lhs, g_iterator real_rhs);
+			implicit_edge_info* P_add_implicit_edge(g_iterator lhs, g_iterator rhs, g_iterator real_lhs, g_iterator real_rhs);
 			
 			// removes and destroys an explicit edge
 			inline void P_remove_edge(g_iterator lhs, g_iterator rhs, const FormulaT& formula);
@@ -731,7 +699,7 @@ namespace smtrat
 			inline void P_check_inconsistencies();
 			
 			// check for possible inconsistencies
-			inline bool P_cc_union_for_ineq(std::size_t indexCOld, std::size_t indexCNew);
+			bool P_cc_union_for_ineq(std::size_t indexCOld, std::size_t indexCNew);
 			
 			// remove all incident inequality edges from node in the graph and push them into the possible inconsistencies
 			inline void P_remove_ineq_edges_of_vertex(g_iterator node);
@@ -753,7 +721,7 @@ namespace smtrat
 			// add deductions for unassigned literals
 			inline void P_check_for_unassigned_literals();
 			// adds a deduction on the pair of function instances given
-			inline void P_add_implicit_edge_deduction(g_iterator i, g_iterator j);
+			void P_add_implicit_edge_deduction(g_iterator i, g_iterator j);
 
 			// prints the current graph in a dot format
 			void P_print_graph();
@@ -841,16 +809,11 @@ return SettingsType::moduleName;
 			/// returns the component-component-level class of some term
 			std::size_t get_class(const term_type& term);
 	};
-
-
-	extern template class EQModule<EQSettings1>;
-	extern template class EQModule<EQSettingsForPreprocessing>;
 }
 
 template<typename Settings>
 std::atomic<std::size_t> smtrat::EQModule<Settings>::implicit_edge_info::mIDCounter(0);
 
-#include "EQModule.tpp"
 #include "EQModulePrinting.tpp"
 #include "EQModuleHash.tpp"
 #include "EQModuleEdgeList.tpp"
