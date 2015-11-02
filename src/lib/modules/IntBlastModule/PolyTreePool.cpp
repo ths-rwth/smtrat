@@ -8,7 +8,7 @@
 
 namespace smtrat
 {
-    PolyTreePool::CTreePointer PolyTreePool::get(const Poly& _poly)
+    const PolyTreeContent* PolyTreePool::get(const Poly& _poly)
     {
         auto it = mPool.find(_poly);
         if(it == mPool.end()) {
@@ -17,7 +17,7 @@ namespace smtrat
         return it->second;
     }
 
-    PolyTreePool::CTreePointer PolyTreePool::create(const Poly& _poly)
+    const PolyTreeContent* PolyTreePool::create(const Poly& _poly)
     {
         Poly poly(_poly);
         poly.makeOrdered();
@@ -61,22 +61,22 @@ namespace smtrat
         return create(variableAndExponent.first);
     }
 
-    PolyTreePool::CTreePointer PolyTreePool::create(carl::Variable::Arg _variable)
+    const PolyTreeContent* PolyTreePool::create(carl::Variable::Arg _variable)
     {
         return add(new PolyTreeContent(_variable));
     }
 
-    PolyTreePool::CTreePointer PolyTreePool::create(Integer _constant)
+    const PolyTreeContent* PolyTreePool::create(Integer _constant)
     {
         return add(new PolyTreeContent(_constant));
     }
 
-    PolyTreePool::CTreePointer PolyTreePool::create(const Poly& _poly, PolyTree::Type _type, const Poly& _left, const Poly& _right)
+    const PolyTreeContent* PolyTreePool::create(const Poly& _poly, PolyTree::Type _type, const Poly& _left, const Poly& _right)
     {
         return add(new PolyTreeContent(_poly, _type, PolyTree(_left), PolyTree(_right)));
     }
 
-    PolyTreePool::CTreePointer PolyTreePool::add(PolyTreePool::TreePointer _element)
+    const PolyTreeContent* PolyTreePool::add(PolyTreeContent* _element)
     {
         POOL_LOCK_GUARD
 
