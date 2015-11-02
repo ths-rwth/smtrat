@@ -37,6 +37,20 @@ Module name: ${modType} \\n \\
 Module version: ${modVersion} \\n \\
 Module settings classname: ${modSettingsClass} \\n \\
 Module settings: ${moduleSettingsList_${modIndex}} \\n")
+
+	if (EXISTS "${CMAKE_SOURCE_DIR}/src/lib/modules/${modType}/Instantiation.h.in")
+		string(REPLACE "Module" "" Prefix ${modType})
+		file(READ "${CMAKE_SOURCE_DIR}/src/lib/modules/${modType}/${Prefix}Settings.h" Content)
+		string(REGEX MATCHALL "${Prefix}Settings[0-9]+" Matches ${Content})
+		list(SORT Matches)
+		list(REMOVE_DUPLICATES Matches)
+		set(INSTANTIATIONS "")
+		foreach(Match ${Matches})
+			set(INSTANTIATIONS "${INSTANTIATIONS}template class ${modType}<${Match}>;\n")
+		endforeach()
+		configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/${modType}/Instantiation.h.in ${CMAKE_SOURCE_DIR}/src/lib/modules/${modType}/Instantiation.h )
+	endif()
+
 endforeach()
 configure_file( ${CMAKE_SOURCE_DIR}/src/lib/modules/Modules.cpp.in ${CMAKE_SOURCE_DIR}/src/lib/modules/Modules.cpp )
 
