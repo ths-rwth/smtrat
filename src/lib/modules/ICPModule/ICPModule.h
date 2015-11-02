@@ -511,6 +511,3 @@ return SettingsType::moduleName;
             void printContraction( const icp::ContractionCandidate& _cc, const DoubleInterval& _before, const DoubleInterval& _afterA, const DoubleInterval& _afterB = DoubleInterval::emptyInterval(), std::ostream& _out = std::cout ) const;
     };
 }    // namespace smtrat
-    
-#include "ICPModule.tpp"
-

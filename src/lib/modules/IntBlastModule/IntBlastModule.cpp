@@ -1249,3 +1249,5 @@ namespace smtrat
         }
     }
 }
+
+#include "Instantiation.h"

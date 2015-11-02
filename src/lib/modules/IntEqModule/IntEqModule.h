@@ -90,5 +90,3 @@ return SettingsType::moduleName;
             Answer checkCore( bool _full );
     };
 }
-#include "IntEqModule.tpp"
-

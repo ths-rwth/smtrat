@@ -3071,3 +3071,5 @@ namespace smtrat
     }
     #endif
 } // namespace smtrat
+
+#include "Instantiation.h"

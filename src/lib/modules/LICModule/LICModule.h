@@ -171,7 +171,3 @@ return SettingsType::moduleName;
 
     };
 }
-
-#include "LICModule.tpp"
-
-
