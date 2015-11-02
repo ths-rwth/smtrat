@@ -78,6 +78,3 @@ return SettingsType::moduleName;
 
     };
 }
-
-#include "IncWidthModule.tpp"
-

@@ -99,5 +99,3 @@ return SettingsType::moduleName;
 			std::function<FormulaT(FormulaT)> checkBoundsFunction;
     };
 }
-
-#include "CBModule.tpp"

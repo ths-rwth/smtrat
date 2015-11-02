@@ -445,5 +445,3 @@ return SettingsType::moduleName;
     };
 
 }    // namespace smtrat
-
-#include "LRAModule.tpp"

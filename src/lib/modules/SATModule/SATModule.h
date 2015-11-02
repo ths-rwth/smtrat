@@ -1266,5 +1266,3 @@ namespace smtrat
             bool passedFormulaCorrect() const;
     };
 }    // namespace smtrat
-
-#include "SATModule.tpp"

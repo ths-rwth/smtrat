@@ -107,9 +107,4 @@ return SettingsType::moduleName;
 			 */
 			Answer checkCore( bool );
 	};
-	
-	extern template class EQPreprocessingModule<EQPreprocessingSettings1>;
-	extern template class EQPreprocessingModule<EQPreprocessingSettings2>;
 }
-
-#include "EQPreprocessingModule.tpp"

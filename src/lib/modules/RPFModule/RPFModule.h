@@ -68,5 +68,3 @@ return SettingsType::moduleName;
 
     };
 }
-
-#include "RPFModule.tpp"

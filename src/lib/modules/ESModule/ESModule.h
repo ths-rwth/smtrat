@@ -60,5 +60,3 @@ namespace smtrat
 
     };
 }
-
-#include "ESModule.tpp"

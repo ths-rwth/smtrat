@@ -137,6 +137,3 @@ return SettingsType::moduleName;
 
     };
 }
-
-#include "FouMoModule.tpp"
-

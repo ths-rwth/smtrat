@@ -135,6 +135,4 @@ private:
     typedef Module super;
 };
 } // namespace smtrat
-#include "GBModule.tpp"
 #include "InequalitiesTable.tpp"
-

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CADModule.h"
+#include "CADSettings.h"
 
 namespace smtrat {
 namespace cad {

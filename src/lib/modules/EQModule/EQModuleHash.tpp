@@ -418,71 +418,19 @@ tail: // we have seen both newClass and oldClass
 	}
 
 	template<typename Settings>
-		void EQModule<Settings>::hash_bucket_set::P_update_hash_step(std::size_t& hvalue, std::size_t c, std::size_t index, HashFunctions::SIMPLE_ADD_MULT_HASHER)
-	{
-		hvalue += c * HashFunctions::LARGE_CONSTANTS::factors[index%8] + HashFunctions::LARGE_CONSTANTS::additive[index%8];
-	}
-
-	template<typename Settings>
-		void EQModule<Settings>::hash_bucket_set::P_update_hash_step(std::size_t& hvalue, std::size_t c, std::size_t, HashFunctions::SIMPLE_PAIR_COMBINE_HASHER)
+		void EQModule<Settings>::hash_bucket_set::P_update_hash_step(std::size_t& hvalue, std::size_t c, std::size_t)
 	{
 		hash_combine(hvalue, c);
 	}
 
-	// computes the hash value of the given array of classes (uses mArity to determine the arrays length)
-	template<typename Settings>
-		std::size_t EQModule<Settings>::hash_bucket_set::P_compute_hash(const class_vector_entry* classes) const
-	{
-		return P_compute_hash(classes, FunctionInstanceHash{});
-	}
-
-	// update the reference hash value by applying the hash function for class c at position index
-	template<typename Settings>
-		void EQModule<Settings>::hash_bucket_set::P_update_hash_step(std::size_t& hvalue, std::size_t c, std::size_t index)
-	{
-		P_update_hash_step(hvalue, c, index, FunctionInstanceHash{});
-	}
-
-	// reduces the hash value to a value between 0 (inclusive) and (1 << mBinShift) (exclusive)
 	template<typename Settings>
 		std::size_t EQModule<Settings>::hash_bucket_set::P_reduce_hash(std::size_t hvalue) const
-	{
-		return P_reduce_hash(hvalue, FunctionInstanceHash{});
-	}
-
-	// performs "rehashing" (rather redistribution of buckets using the stored hash values)
-	template<typename Settings>
-		void EQModule<Settings>::hash_bucket_set::P_redistribute_buckets(bin* newBins)
-	{
-		return P_redistribute_buckets(newBins, FunctionInstanceHash{});
-	}
-
-	template<typename Settings>
-		std::size_t EQModule<Settings>::hash_bucket_set::P_reduce_hash(std::size_t hvalue, HashFunctions::SIMPLE_ADD_MULT_HASHER) const
-	{
-		return hvalue >> (sizeof(std::size_t)*8 - mBinShift);
-	}
-
-	template<typename Settings>
-		std::size_t EQModule<Settings>::hash_bucket_set::P_reduce_hash(std::size_t hvalue, HashFunctions::SIMPLE_PAIR_COMBINE_HASHER) const
 	{
 		return hvalue & ((1 << mBinShift) - 1);
 	}
 
 	template<typename Settings>
-		std::size_t EQModule<Settings>::hash_bucket_set::P_compute_hash(const class_vector_entry* classes, HashFunctions::SIMPLE_ADD_MULT_HASHER) const
-	{
-		std::size_t result = 0;
-
-		for(std::size_t i = 0; i < mArity; ++i) {
-			result += classes[i].mClass * HashFunctions::LARGE_CONSTANTS::factors[i%8] + HashFunctions::LARGE_CONSTANTS::additive[i%8];
-		}
-
-		return result;
-	}
-
-	template<typename Settings>
-		std::size_t EQModule<Settings>::hash_bucket_set::P_compute_hash(const class_vector_entry* classes, HashFunctions::SIMPLE_PAIR_COMBINE_HASHER) const
+		std::size_t EQModule<Settings>::hash_bucket_set::P_compute_hash(const class_vector_entry* classes) const
 	{
 		std::size_t hvalue = 0;
 
@@ -494,7 +442,7 @@ tail: // we have seen both newClass and oldClass
 	}
 
 	template<typename Settings>
-		void EQModule<Settings>::hash_bucket_set::P_redistribute_buckets(bin* newBins, HashFunctions::SIMPLE_PAIR_COMBINE_HASHER)
+		void EQModule<Settings>::hash_bucket_set::P_redistribute_buckets(bin* newBins)
 	{
 		const std::size_t mBins = 1 << mBinShift;
 
@@ -508,30 +456,6 @@ tail: // we have seen both newClass and oldClass
 				bucket *cur;
 				while((cur = currentBin.pop_front()) != nullptr) {
 					if(cur->hashValue & mBins) {
-						bodd.push_back(cur);
-					} else {
-						beven.push_back(cur);
-					}
-				}
-			}
-		}
-	}
-
-	template<typename Settings>
-		void EQModule<Settings>::hash_bucket_set::P_redistribute_buckets(bin* newBins, HashFunctions::SIMPLE_ADD_MULT_HASHER)
-	{
-		const std::size_t mBins = 1 << mBinShift;
-
-		for(std::size_t i = 0; i < mBins; ++i) {
-			bin& currentBin = mBinPtr[i];
-
-			if(!currentBin.empty()) {
-				bin &beven = newBins[2*i];
-				bin &bodd = newBins[2*i + 1];
-
-				bucket *cur;
-				while((cur = currentBin.pop_front()) != nullptr) {
-					if((cur->hashValue >> (sizeof(std::size_t)*8 - (mBinShift+1))) & 1) {
 						bodd.push_back(cur);
 					} else {
 						beven.push_back(cur);
