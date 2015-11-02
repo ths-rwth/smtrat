@@ -44,6 +44,7 @@ namespace smtrat
         mNotEqualConstraints(),
         mVariables(),
         mIntervals(),
+        mInitialIntervals(),
         mIcpRelevantCandidates(),
         mLinearizations(),
         mDeLinearizations(),
@@ -309,8 +310,6 @@ namespace smtrat
     template<class Settings>
     Answer ICPModule<Settings>::checkCore( bool _full )
     {
-//        if( !rReceivedFormula().isConstraintConjunction() )
-//			return Unknown;
         #ifdef ICP_MODULE_DEBUG_0
         std::cout << "##############################################################" << std::endl;
         std::cout << "Start consistency check with the ICPModule on the constraints " << std::endl;
@@ -1380,23 +1379,33 @@ namespace smtrat
                 if( takeLower && takeUpper )
                 {
                     if(interv.isPointInterval())
+                    {
                         value = interv.lower();
+                    }
                     else
+                    {
                         value = interv.sample(false);
+                    }
                 }
                 else if( takeLower )
                 {
                     if( interv.lowerBoundType() == carl::BoundType::INFTY )
                     {
                         if( interv.upperBoundType() == carl::BoundType::WEAK )
+                        {
                             value = interv.upper();
+                        }
                         else
+                        {
                             value = std::nextafter( interv.upper(), -INFINITY );
+                        }
                     }
                     else
                     {
                         if( interv.lowerBoundType() == carl::BoundType::WEAK )
+                        {
                             value = interv.lower();
+                        }
                         else if( interv.upperBoundType() != carl::BoundType::INFTY )
                         {
                             value = std::nextafter( interv.lower(), INFINITY );
@@ -1409,7 +1418,9 @@ namespace smtrat
                         else
                         {
                             if( interv.lower() == std::numeric_limits<double>::max() )
+                            {
                                 return std::map<carl::Variable, double>();
+                            }
                             value = std::nextafter( interv.lower(), INFINITY );
                         }
                     }
@@ -1419,35 +1430,42 @@ namespace smtrat
                     if( interv.upperBoundType() == carl::BoundType::INFTY )
                     {
                         if( interv.lowerBoundType() == carl::BoundType::WEAK )
+                        {
                             value = interv.lower();
+                        }
                         else
+                        {
                             value = std::nextafter( interv.lower(), INFINITY );
+                        }
                     }
                     else
                     {
                         if( interv.upperBoundType() == carl::BoundType::WEAK )
+                        {
                             value = interv.upper();
+                        }
                         else if( interv.lowerBoundType() != carl::BoundType::INFTY )
                         {
                             value = std::nextafter( interv.upper(), -INFINITY );
                             // Check if the interval does contain any double. If not, return an empty model.
                             if( value < interv.lower() || (interv.lowerBoundType() == carl::BoundType::STRICT && value == interv.lower()) )
                             {
-                                std::cout << __func__ << ":" << __LINE__ << std::endl;
                                 return std::map<carl::Variable, double>();
                             }
                         }
                         else
                         {
                             if( interv.upper() == std::numeric_limits<double>::min() )
+                            {
                                 return std::map<carl::Variable, double>();
+                            }
                             value = std::nextafter( interv.upper(), -INFINITY );
                         }
                     }
                 }
             }
             assert( interv.contains( value ) );
-            assignments.insert( std::make_pair(varIt->first, value) );
+            assignments[varIt->first] = value;
             ++varIt;
             ++varIntervalIt;
         }
@@ -2179,7 +2197,7 @@ namespace smtrat
         }
         bool boxContainsOnlyOneSolution = true;
         auto origVarsIter = originalRealVariables.begin();
-        EvalRationalIntervalMap lraVarBounds = mLRA.getVariableBounds();
+        assert( mInitialIntervals == mLRA.getVariableBounds() );
         for( auto iter = antipoint.begin(); iter != antipoint.end(); ++iter )
         {
             // Add an assignment for variables only occurring in constraints with != as relation symbol
@@ -2194,8 +2212,8 @@ namespace smtrat
             Rational value = carl::rationalize<Rational>( iter->second );
             // check if the test point, which has been generated for double intervals, does not satisfy the rational
             // original bounds in this dimension (might occur, as we over-approximated them)
-            auto lraVarBoundsIter = lraVarBounds.find( iter->first );
-            if( lraVarBoundsIter != lraVarBounds.end() )
+            auto lraVarBoundsIter = mInitialIntervals.find( iter->first );
+            if( lraVarBoundsIter != mInitialIntervals.end() )
             {
                 const RationalInterval& varBounds = lraVarBoundsIter->second;
                 assert( !varBounds.isEmpty() );
@@ -2211,23 +2229,32 @@ namespace smtrat
                     if( varBounds.lowerBoundType() != carl::BoundType::INFTY && value < varBounds.lower() )
                     {
                         if( varBounds.lowerBoundType() == carl::BoundType::STRICT )
+                        {
                             value = varBounds.sample( false );
+                        }
                         else
+                        {
                             value = varBounds.lower();
+                        }
                     }
                     else if( varBounds.upperBoundType() != carl::BoundType::INFTY && value > varBounds.upper() )
                     {
                         if( varBounds.upperBoundType() == carl::BoundType::STRICT )
+                        {
                             value = varBounds.sample( false );
+                        }
                         else
+                        {
                             value = varBounds.upper();
+                        }
                     }
                 }
+                assert( varBounds.contains( value ) );
             }
             #ifdef ICP_MODULE_DEBUG_0
             std::cout << "    " << iter->first << " -> " << std::setprecision(10) << iter->second << "  [" << value << "]" << std::endl;
             #endif
-            mFoundSolution.insert( std::make_pair( iter->first, value ) );
+            mFoundSolution[iter->first] = value;
         }
         for( const auto& rf : rReceivedFormula() )
         {
@@ -2321,11 +2348,11 @@ namespace smtrat
         if( !splittings().empty() && _answer == Unknown )
             return true;
         // get intervals for initial variables
-        EvalRationalIntervalMap tmp = mLRA.getVariableBounds();
+        mInitialIntervals = mLRA.getVariableBounds();
         #ifdef ICP_MODULE_DEBUG_1
         std::cout << "Newly obtained Intervals: " << std::endl;
         #endif
-        for ( auto constraintIt = tmp.begin(); constraintIt != tmp.end(); ++constraintIt )
+        for ( auto constraintIt = mInitialIntervals.begin(); constraintIt != mInitialIntervals.end(); ++constraintIt )
         {
             #ifdef ICP_MODULE_DEBUG_1
             std::cout << (*constraintIt).first << ": " << (*constraintIt).second << std::endl;
@@ -2510,7 +2537,8 @@ namespace smtrat
     {
         carl::Variables originalRealVariables;
         rReceivedFormula().realValuedVars( originalRealVariables ); // TODO: store original variables as member, updating them efficiently with assert and remove
-        EvalRationalIntervalMap lraVarBounds = mLRA.getVariableBounds();
+        auto varIntervalIter = mIntervals.begin();
+        auto varInitialIntervalIter = mInitialIntervals.begin();
         for( std::map<carl::Variable, icp::IcpVariable*>::iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
         {
             carl::Variable::Arg tmpSymbol = iter->first;
@@ -2519,16 +2547,22 @@ namespace smtrat
             {
                 if( icpVar.isExternalUpdated() != icp::Updated::NONE )
                 {
-                    auto varIntervalPair = mIntervals.find( tmpSymbol );
-                    assert( varIntervalPair != mIntervals.end() );
-                    const DoubleInterval& interval = varIntervalPair->second;
-                    auto lraVarBoundsIter = lraVarBounds.find( tmpSymbol );
+                    while( varIntervalIter->first < tmpSymbol )
+                    {
+                        assert( varIntervalIter != mIntervals.end() );
+                        ++varIntervalIter;
+                    }
+                    while( varInitialIntervalIter != mInitialIntervals.end() && varInitialIntervalIter->first < tmpSymbol )
+                    {
+                        ++varInitialIntervalIter;
+                    }
+                    const DoubleInterval& interval = varIntervalIter->second;
 
                     icp::Updated icpVarExUpdated = icpVar.isExternalUpdated();
                     // generate both bounds, left first
                     if( icpVarExUpdated == icp::Updated::BOTH || icpVarExUpdated == icp::Updated::LEFT )
                     {   
-                        FormulaT leftTmp = intervalBoundToFormula( tmpSymbol, interval, lraVarBounds, lraVarBoundsIter, false );
+                        FormulaT leftTmp = intervalBoundToFormula( tmpSymbol, interval, varInitialIntervalIter, false );
                         if( icpVar.externalLeftBound() != passedFormulaEnd() )
                         {
                             Module::eraseSubformulaFromPassedFormula( icpVar.externalLeftBound(), true );
@@ -2551,7 +2585,7 @@ namespace smtrat
                     if( icpVarExUpdated == icp::Updated::BOTH || icpVarExUpdated == icp::Updated::RIGHT )
                     {
                         // right:
-                        FormulaT rightTmp = intervalBoundToFormula( tmpSymbol, interval, lraVarBounds, lraVarBoundsIter, true );
+                        FormulaT rightTmp = intervalBoundToFormula( tmpSymbol, interval, varInitialIntervalIter, true );
                         if( icpVar.externalRightBound() != passedFormulaEnd() )
                         {
                             Module::eraseSubformulaFromPassedFormula( icpVar.externalRightBound(), true );
@@ -2582,21 +2616,28 @@ namespace smtrat
         FormulasT result;
         carl::Variables originalRealVariables;
         rReceivedFormula().realValuedVars( originalRealVariables ); // TODO: store original variables as member, updating them efficiently with assert and remove
-        EvalRationalIntervalMap lraVarBounds = mLRA.getVariableBounds();
+        auto varIntervalIter = mIntervals.begin();
+        auto varInitialIntervalIter = mInitialIntervals.begin();
         for( std::map<carl::Variable, icp::IcpVariable*>::const_iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
         {
             carl::Variable::Arg tmpSymbol = iter->first;
             const icp::IcpVariable& icpVar = *iter->second;
             if( icpVar.isOriginal() && originalRealVariables.find( tmpSymbol ) != originalRealVariables.end() )
             {
-                auto varIntervalPair = mIntervals.find( tmpSymbol );
-                assert( varIntervalPair != mIntervals.end() );
-                const DoubleInterval& interval = varIntervalPair->second;
-                auto lraVarBoundsIter = lraVarBounds.find( tmpSymbol );
-                FormulaT leftTmp = intervalBoundToFormula( tmpSymbol, interval, lraVarBounds, lraVarBoundsIter, false );
+                while( varIntervalIter->first < tmpSymbol )
+                {
+                    assert( varIntervalIter != mIntervals.end() );
+                    ++varIntervalIter;
+                }
+                while( varInitialIntervalIter != mInitialIntervals.end() && varInitialIntervalIter->first < tmpSymbol )
+                {
+                    ++varInitialIntervalIter;
+                }
+                const DoubleInterval& interval = varIntervalIter->second;
+                FormulaT leftTmp = intervalBoundToFormula( tmpSymbol, interval, varInitialIntervalIter, false );
                 if( !leftTmp.isTrue() )
                     result.push_back( leftTmp );
-                FormulaT rightTmp = intervalBoundToFormula( tmpSymbol, interval, lraVarBounds, lraVarBoundsIter, true );
+                FormulaT rightTmp = intervalBoundToFormula( tmpSymbol, interval, varInitialIntervalIter, true );
                 if( !rightTmp.isTrue() )
                     result.push_back( rightTmp );
             }
@@ -2605,18 +2646,29 @@ namespace smtrat
     }
     
     template<class Settings>
-    FormulaT ICPModule<Settings>::intervalBoundToFormula( carl::Variable::Arg _var, const DoubleInterval& _interval, const EvalRationalIntervalMap& _lraVarBounds, EvalRationalIntervalMap::const_iterator _lraBoundsIter, bool _upper ) const
+    FormulaT ICPModule<Settings>::intervalBoundToFormula( carl::Variable::Arg _var, const DoubleInterval& _interval, EvalRationalIntervalMap::const_iterator _initialIntervalIter, bool _upper ) const
     {
         Rational bound = carl::rationalize<Rational>( _upper ? _interval.upper() : _interval.lower() );
         carl::BoundType boundType = _upper ? _interval.upperBoundType() : _interval.lowerBoundType();
-        if( _lraBoundsIter != _lraVarBounds.end() )
+        if( _initialIntervalIter != mInitialIntervals.end() )
         {
-            const RationalInterval& varBounds = _lraBoundsIter->second;
-            if( (_upper ? varBounds.upperBoundType() : varBounds.lowerBoundType()) != carl::BoundType::INFTY 
-                    && (boundType == carl::BoundType::INFTY || bound < (_upper ? varBounds.upper() : varBounds.lower())) )
+            const RationalInterval& varBounds = _initialIntervalIter->second;
+            if( _upper )
             {
-                bound = _upper ? varBounds.upper() : varBounds.lower();
-                boundType = _upper ? varBounds.upperBoundType() : varBounds.lowerBoundType();
+                if( varBounds.upperBoundType() != carl::BoundType::INFTY && (boundType == carl::BoundType::INFTY || bound > varBounds.upper()) )
+                {
+                    bound = varBounds.upper();
+                    boundType = varBounds.upperBoundType();
+                }
+            }
+            else
+            {
+                if( varBounds.lowerBoundType() != carl::BoundType::INFTY && (boundType == carl::BoundType::INFTY || bound < varBounds.lower()) )
+                {
+                    bound = varBounds.lower();
+                    boundType = varBounds.lowerBoundType();
+                }
+                
             }
         }
         Poly p = carl::makePolynomial<Poly>( _var ) - Poly(bound);
