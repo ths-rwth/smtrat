@@ -7,6 +7,8 @@
  * Created on 2015-09-10.
  */
 
+#include "EMModule.h"
+
 namespace smtrat
 {
     template<class Settings>
@@ -66,3 +68,5 @@ namespace smtrat
 		return FormulaT(carl::FormulaType::OR, std::move(res));
 	}
 }
+
+#include "Instantiation.h"

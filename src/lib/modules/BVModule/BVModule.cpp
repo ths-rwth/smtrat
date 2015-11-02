@@ -294,3 +294,5 @@ namespace smtrat
         return Settings::equation_preference_weight * _formula.complexity();
     }
 }
+
+#include "Instantiation.h"

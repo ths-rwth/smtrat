@@ -6,6 +6,8 @@
  * @version 2015-09-10
  * Created on 2015-09-10.
  */
+ 
+#include "CBModule.h"
 
 namespace smtrat
 {
@@ -169,3 +171,5 @@ namespace smtrat
 		return formula;
 	}
 }
+
+#include "Instantiation.h"
