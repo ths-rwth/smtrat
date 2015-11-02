@@ -225,3 +225,5 @@ namespace smtrat
 		return formula;
 	}
 }
+
+#include "Instantiation.h"
