@@ -199,15 +199,10 @@ namespace smtrat
                 addClauses( _subformula->formula(), NORMAL_CLAUSE, true, _subformula->formula() );
                 for( ; pos < clauses.size(); ++pos )
                 {
-//TODO Matthias Merge:
-/*<<<<<<< HEAD
-                    CRef cl = addClause( _subformula->formula(), NORMAL_CLAUSE );
-                    mFormulaClauseMap[_subformula->formula()] = cl;
-					mClauseFormulaMap[cl] = _subformula->formula();
-*/
                     ret.first->second.push_back( clauses[pos] );
                     assert( mClauseInformation.find( clauses[pos] ) == mClauseInformation.end() );
                     mClauseInformation.emplace( clauses[pos], ClauseInformation( pos ) );
+					mClauseFormulaMap[ clauses[pos] ] = _subformula->formula();
                 }
             }
 
@@ -296,6 +291,8 @@ namespace smtrat
                     for( int i = 0; i < c.size(); ++i )
                         mLiteralClausesMap[Minisat::toInt(c[i])].erase( cref );
                 }
+
+				mClauseFormulaMap.erase(cref);
                 removeClause( cref );
             }
             mFormulaClausesMap.erase( iter );
@@ -333,23 +330,6 @@ namespace smtrat
                         origs.pop_back();
                         break;
                     }
-//TODO Matthias Merge:
-/*<<<<<<< HEAD
-                    // Remove from clauses
-                    int i, j;
-                    for( i = j = 0; i < clauses.size(); i++ )
-                    {
-                        if (iter->second != clauses[i])
-                        {
-                            clauses[j++] = clauses[i];							
-                        }
-                    }
-                    assert( j + 1 == i);
-                    clauses.shrink( i - j );
-                    removeClause( iter->second );
-                }
-                mFormulaClauseMap.erase( iter );
-*/
                 }
                 else
                 {
@@ -400,103 +380,6 @@ namespace smtrat
         learntsize_adjust_confl = learntsize_adjust_start_confl;
         learntsize_adjust_cnt = (int)learntsize_adjust_confl;
 
-//TODO Matthias Merge:
-/*<<<<<<< HEAD
-            lbool result = checkFormula();
-			#ifdef DEBUG_SATMODULE
-            printCurrentAssignment();
-			#endif
-
-            //TODO Matthias: finish
-            if ( isLemmaLevel(LemmaLevel::ADVANCED) )
-            {
-                SMTRAT_LOG_TRACE("smtrat.sat", "Find all dependent variables");
-                assert( result == l_True );
-                clearDeductions();
-                int assumptionSizeStart = assumptions.size();
-                // Initialize set of all variables which are not tested yet for positive assignment
-                std::set<Minisat::Var> testVarsPositive;
-                Minisat::Var testCandidate;
-                if (getInformationRelevantFormulas().empty())
-                {
-                    // If non are selected, all variables are relevant
-                    for (BooleanVarMap::const_iterator iterVar = mBooleanVarMap.begin(); iterVar != mBooleanVarMap.end(); ++iterVar)
-                    {
-                        testVarsPositive.insert(iterVar->second);
-                    }
-                }
-                else
-                {
-                    for (std::set<FormulaT>::const_iterator iterVar = getInformationRelevantFormulas().begin(); iterVar != getInformationRelevantFormulas().end(); ++iterVar)
-                    {
-                        testVarsPositive.insert(mBooleanVarMap.at(iterVar->boolean()));
-                    }
-                }
-
-                while ( !testVarsPositive.empty() )
-                {
-                    for( int pos = 0; pos < assigns.size(); ++pos )
-                    {
-                        if ( assigns[ pos ] == l_True )
-                        {
-                            testVarsPositive.erase( pos );
-                        }
-                    }
-
-                    // Reset the state until level 0
-                    cancelUntil(0, true);
-                    mPropagatedLemmas.clear();
-
-                    if ( testVarsPositive.empty() )
-                    {
-                        break;
-                    }
-
-                    // Set new positive assignment
-                    // TODO matthias: ignore other variables as "Oxxxx"
-                    testCandidate = *testVarsPositive.begin();
-                    SMTRAT_LOG_DEBUG("smtrat.sat", "Test candidate: " << mMinisatVarMap.at( testCandidate ));
-                    Lit nextLit = mkLit( testCandidate, false );
-                    assert(assumptions.size() <= assumptionSizeStart + 1);
-                    assumptions.shrink(assumptions.size() - assumptionSizeStart);
-                    assumptions.push(nextLit);
-
-                    // Check again
-                    result = checkFormula();
-                    if ( result == l_False )
-                    {
-						SMTRAT_LOG_DEBUG("smtrat.sat", "Unsat with variable: " << mMinisatVarMap.at( testCandidate ));
-                        testVarsPositive.erase( testCandidate );
-                        //Construct lemma via infeasible subset
-                        updateInfeasibleSubset();
-                        FormulaT negation = FormulaT( carl::FormulaType::NOT, mMinisatVarMap.at( testCandidate) );
-                        FormulaT infeasibleSubset = FormulaT( carl::FormulaType::AND, infeasibleSubsets()[0] );
-                        FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, infeasibleSubset, negation );
-						SMTRAT_LOG_DEBUG("smtrat.sat", "Add propagated lemma: " << lemma);
-						addDeduction(lemma);
-                    }
-                    else if ( result == l_True )
-                    {
-                        SMTRAT_LOG_DEBUG("smtrat.sat", "Sat with variable: " << mMinisatVarMap.at( testCandidate ));
-						#ifdef DEBUG_SATMODULE
-						printCurrentAssignment();
-                        #endif
-                    }
-					else
-					{
-						SMTRAT_LOG_TRACE("smtrat.sat", "Unknown with variable: " << mMinisatVarMap.at( testCandidate ));
-					}
-                }
-				// Avoid returning l_False from last call
-				return True;
-            }
-            if( !Settings::stop_search_after_first_unknown )
-            {
-                unknown_excludes.clear();
-            }
-            #ifdef SATMODULE_WITH_CALL_NUMBER
-            cout << endl << endl;
-*/
         if( !ok )
         {
             assert( !mInfeasibleSubsets.empty() );
@@ -513,22 +396,12 @@ namespace smtrat
             mChangedActivities.clear();
         }
 
-        lbool result = l_Undef;
-        if( Settings::use_restarts )
-        {
-            mCurr_Restarts = 0;
-            int current_restarts = -1;
-            result = l_Undef;
-            while( current_restarts < mCurr_Restarts )
-            {
-                current_restarts = mCurr_Restarts;
-                double rest_base = luby_restart ? luby( restart_inc, mCurr_Restarts ) : pow( restart_inc, mCurr_Restarts );
-                result = search( (int)rest_base * restart_first );
-                // if( !withinBudget() ) break;
-            }
-        }
-        else
-            result = search();
+		lbool result = checkFormula();
+		if (isLemmaLevel(LemmaLevel::ADVANCED))
+		{
+			assert(result == l_True);
+			computeAdvancedLemmas();
+		}
 
         if( !Settings::stop_search_after_first_unknown )
             unknown_excludes.clear();
@@ -568,6 +441,91 @@ namespace smtrat
             return search();
         }
     }
+
+	template<class Settings>
+	void SATModule<Settings>::computeAdvancedLemmas()
+	{
+#ifdef DEBUG_SATMODULE
+		printCurrentAssignment();
+#endif
+		SMTRAT_LOG_TRACE("smtrat.sat", "Find all dependent variables");
+		clearDeductions();
+		int assumptionSizeStart = assumptions.size();
+		// Initialize set of all variables which are not tested yet for positive assignment
+		std::set<Minisat::Var> testVarsPositive;
+		Minisat::Var testCandidate;
+		if (getInformationRelevantFormulas().empty())
+		{
+			// If non are selected, all variables are relevant
+			for (BooleanVarMap::const_iterator iterVar = mBooleanVarMap.begin(); iterVar != mBooleanVarMap.end(); ++iterVar)
+			{
+				testVarsPositive.insert(iterVar->second);
+			}
+		}
+		else
+		{
+			for (std::set<FormulaT>::const_iterator iterVar = getInformationRelevantFormulas().begin(); iterVar != getInformationRelevantFormulas().end(); ++iterVar)
+			{
+				testVarsPositive.insert(mBooleanVarMap.at(iterVar->boolean()));
+			}
+		}
+
+		lbool result = l_Undef;
+		while (!testVarsPositive.empty())
+		{
+			for (int pos = 0; pos < assigns.size(); ++pos)
+			{
+				if (assigns[pos] == l_True)
+				{
+					testVarsPositive.erase(pos);
+				}
+			}
+
+			// Reset the state until level 0
+			cancelUntil(0, true);
+			mPropagatedLemmas.clear();
+
+			if (testVarsPositive.empty())
+			{
+				break;
+			}
+
+			// Set new positive assignment
+			// TODO matthias: ignore other variables as "Oxxxx"
+			testCandidate = *testVarsPositive.begin();
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Test candidate: " << mMinisatVarMap.at(testCandidate));
+			Lit nextLit = mkLit(testCandidate, false);
+			assert(assumptions.size() <= assumptionSizeStart + 1);
+			assumptions.shrink(assumptions.size() - assumptionSizeStart);
+			assumptions.push(nextLit);
+
+			// Check again
+			result = checkFormula();
+			if (result == l_False)
+			{
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Unsat with variable: " << mMinisatVarMap.at(testCandidate));
+				testVarsPositive.erase(testCandidate);
+				//Construct lemma via infeasible subset
+				updateInfeasibleSubset();
+				FormulaT negation = FormulaT(carl::FormulaType::NOT, mMinisatVarMap.at(testCandidate));
+				FormulaT infeasibleSubset = FormulaT(carl::FormulaType::AND, infeasibleSubsets()[0]);
+				FormulaT lemma = FormulaT(carl::FormulaType::IMPLIES, infeasibleSubset, negation);
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Add propagated lemma: " << lemma);
+				addDeduction(lemma);
+			}
+			else if (result == l_True)
+			{
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Sat with variable: " << mMinisatVarMap.at(testCandidate));
+#ifdef DEBUG_SATMODULE
+				printCurrentAssignment();
+#endif
+			}
+			else
+			{
+				SMTRAT_LOG_TRACE("smtrat.sat", "Unknown with variable: " << mMinisatVarMap.at(testCandidate));
+			}
+		}
+	}
 
     template<class Settings>
     void SATModule<Settings>::updateModel() const

@@ -1037,6 +1037,11 @@ namespace smtrat
              */
             Minisat::lbool checkFormula();
 
+			/**
+			 * Compute advanced lemmas by checking which variables are unrealizable.
+			 */
+			void computeAdvancedLemmas();
+
             /**
              * search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
              *
