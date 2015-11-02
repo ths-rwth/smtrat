@@ -6,7 +6,6 @@
  * Created on 2014-10-19.
  */
 
-#include "EQModule.h"
 #include "../../datastructures/SortValueManager.h"
 
 #include <iostream>

@@ -841,10 +841,6 @@ return SettingsType::moduleName;
 			/// returns the component-component-level class of some term
 			std::size_t get_class(const term_type& term);
 	};
-
-
-	extern template class EQModule<EQSettings1>;
-	extern template class EQModule<EQSettingsForPreprocessing>;
 }
 
 template<typename Settings>
