@@ -194,6 +194,7 @@ namespace smtrat
 				boundMap[v] = vPos->second;
 		}
 		carl::cad::Answer status = mCAD.check(mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, false, true);
+		//std::cout << mCAD.getVariables() << " = " << mRealAlgebraicSolution << std::endl;
 		if (anAnswerFound()) return Unknown;
 		if (status == carl::cad::Answer::False) {
 			
@@ -256,6 +257,7 @@ namespace smtrat
 			for (std::size_t d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
 				if (vars[d].getType() != carl::VariableType::VT_INT) continue;
 				auto r = this->mRealAlgebraicSolution[d]->branchingPoint();
+				//if (!carl::isInteger(r)) exit(56);
 				assert(carl::isInteger(r));
 			}
 		}
@@ -373,6 +375,7 @@ namespace smtrat
 	bool CADModule<Settings>::addConstraintFormula(const FormulaT& f) {
 		assert(f.getType() == carl::FormulaType::CONSTRAINT);
 		mVariableBounds.addBound(f.constraint(), f);
+		SMTRAT_LOG_WARN("smtrat.cad", "Adding " << f << std::endl << mVariableBounds);
 		// add the constraint to the local list of constraints and memorize the index/constraint assignment if the constraint is not present already
 		if (mConstraintsMap.find(f) != mConstraintsMap.end())
 			return true;	// the exact constraint was already considered
@@ -490,3 +493,5 @@ namespace smtrat
 	}
 
 }	// namespace smtrat
+
+#include "Instantiation.h"
