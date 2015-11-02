@@ -32,9 +32,9 @@ ENDMACRO(LIST_APPEND)
 MACRO(LIST_APPEND_UNIQUE var value)
      SET(LIST_ADD_UNIQUE_FLAG 0)
      FOREACH(i ${${var}})
-         IF ("${i}" MATCHES "${value}")
+         IF ("${i}" EQUAL "${value}")
              SET(LIST_ADD_UNIQUE_FLAG 1)
-         ENDIF("${i}" MATCHES "${value}")
+         ENDIF("${i}" EQUAL "${value}")
      ENDFOREACH(i)
      IF(NOT LIST_ADD_UNIQUE_FLAG)
          SET(${var} ${${var}} ${value})
@@ -150,7 +150,7 @@ MACRO(EndDefineModule)
 	set(allModuleTypes ${allModuleTypes} ${mod_name} PARENT_SCOPE)
 	# Number of modules (for determining this modules number)
 	list(LENGTH moduleTypes mod_index)
-    
+
     FILE(GLOB_RECURSE sources *.cpp)
     foreach(src ${sources})
         AddModuleSource(${src})
@@ -184,9 +184,10 @@ function(collect_files prefix name)
       get_filename_component(subdir ${subfile} DIRECTORY)
       if(NOT ${subdir} STREQUAL "")
         LIST_APPEND_UNIQUE(${prefix}_${name}_subdir ${subdir})
-        list(APPEND ${prefix}_${name}_${subdir}_headers ${subfile})
+        list(APPEND ${prefix}_${name}_${subdir}_headers ${name}/${subfile})
+      else()
+        list(APPEND ${prefix}_${name}_headers ${name}/${subfile})
       endif()
-        list(APPEND ${prefix}_${name}_headers ${subfile})
 
     elseif(${subfile} MATCHES ".*([.]cpp)")
       list(APPEND ${prefix}_${name}_src ${name}/${subfile})
@@ -195,7 +196,7 @@ function(collect_files prefix name)
 
   foreach(subdir ${${prefix}_${name}_subdir})
     install(FILES			${${prefix}_${name}_${subdir}_headers}
-      DESTINATION		include/${prefix}/${subdir})
+    DESTINATION		include/${prefix}/${name}/${subdir})
   endforeach()
 
 	#Install
@@ -217,7 +218,7 @@ MACRO(ADD_PRECOMPILED_HEADER PrecompiledHeader PrecompiledSource SourcesVar)
                                          OBJECT_OUTPUTS "${PrecompiledBinary}")
   SET_SOURCE_FILES_PROPERTIES(${Sources}
                               PROPERTIES COMPILE_FLAGS "/Yu\"${PrecompiledHeader}\" /FI\"${PrecompiledHeader}\" /Fp\"${PrecompiledBinary}\""
-                                         OBJECT_DEPENDS "${PrecompiledBinary}")  
+                                         OBJECT_DEPENDS "${PrecompiledBinary}")
   # Add precompiled header to SourcesVar
   LIST(APPEND ${SourcesVar} ${PrecompiledSource})
 ENDMACRO(ADD_PRECOMPILED_HEADER)

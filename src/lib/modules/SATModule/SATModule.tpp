@@ -177,7 +177,7 @@ namespace smtrat
         else if( !_subformula->formula().isTrue() )
         {
             //TODO Matthias: better solution?
-            cancelUntil( assumptions.size() );
+//            cancelUntil( assumptions.size() );
             adaptPassedFormula();
             if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
             {
@@ -211,7 +211,7 @@ namespace smtrat
         {
             return;
         }
-        cancelUntil( assumptions.size() );  // can we do better than this?
+//        cancelUntil( assumptions.size() );  // can we do better than this?
         adaptPassedFormula();
         learnts.clear();
         ok = true;

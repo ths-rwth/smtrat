@@ -92,7 +92,7 @@ public class GUI extends JFrame implements WindowListener
 
         // Layout
         layout = new FRLayout( graph, new Dimension( VISUALIZATION_WIDTH-VISUALIZATION_PADDING, VISUALIZATION_HEIGHT-VISUALIZATION_PADDING ) );
-        layout.setLocation( graph.getRoot(), VISUALIZATION_PADDING, VISUALIZATION_HEIGHT/2 );
+        layout.setLocation( graph.getRoot(), VISUALIZATION_WIDTH/2, VISUALIZATION_PADDING );
         layout.lock( graph.getRoot(), true );
         
         // Visualization

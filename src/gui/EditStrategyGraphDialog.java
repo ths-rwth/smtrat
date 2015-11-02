@@ -38,6 +38,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.Collection;
 
 /**
  * @file EditStrategyGraphDialog.java
@@ -273,11 +274,11 @@ public class EditStrategyGraphDialog extends JDialog
         okButton.addActionListener( closingOkAction );
         okButton.setMnemonic( KeyEvent.VK_O );
         buttonPanel.add( okButton );
-		buttonPanel.add( Box.createRigidArea( new Dimension( 5, 0 ) ) );
+        buttonPanel.add( Box.createRigidArea( new Dimension( 5, 0 ) ) );
         JButton cancelButton = new JButton( "Cancel" );
         cancelButton.addActionListener( closingCancelAction );
         cancelButton.setMnemonic( KeyEvent.VK_C );
-		buttonPanel.add( cancelButton );
+        buttonPanel.add( cancelButton );
         gridBagLayout.setConstraints( buttonPanel, gridBagConstraints );
         getContentPane().add( buttonPanel );
         
@@ -602,7 +603,63 @@ public class EditStrategyGraphDialog extends JDialog
                     {
                         Module module = (Module) moduleComboBox.getSelectedItem();
                         module.changeChosenSetting( (String) settingsComboBox.getSelectedItem() );
-                        graph.addEdge( new Edge( condition ), vertex, new Vertex( module ) );
+                        Vertex succ = new Vertex( module );
+                        double posX = 0;
+                        double posY = 0;
+                        Collection<Edge> outEdges = graph.getOutEdges( vertex );
+                        if( outEdges.size() == 0 )
+                        {
+                            posY = IOTools.layout.getY( vertex ) + (2* GUI.VISUALIZATION_PADDING);
+                            if( posY > GUI.VISUALIZATION_HEIGHT - GUI.VISUALIZATION_PADDING )
+                                posY = GUI.VISUALIZATION_HEIGHT - GUI.VISUALIZATION_PADDING;
+                            posX = IOTools.layout.getX( vertex )/2;
+                        }
+                        else
+                        {
+                            double sumOfY = 0;
+                            double minX = -1;
+                            double maxX = -1;
+                            for( Edge outEdge : outEdges )
+                            {
+                                Vertex dest = (Vertex) graph.getDest( outEdge );
+                                double destPosX = IOTools.layout.getX( dest );
+                                double destPosY = IOTools.layout.getY( dest );
+                                if( minX == -1 || minX > destPosX )
+                                    minX = destPosX;
+                                if( maxX == -1 || maxX < destPosX )
+                                    maxX = destPosX;
+                                sumOfY += destPosY;
+                            }
+                            posY = sumOfY/(double) outEdges.size();
+                            double vertexPosX = IOTools.layout.getX( vertex );
+                            double xdist = maxX - minX;
+                            if( outEdges.size() == 1 )
+                            {
+                                xdist = 2*GUI.VISUALIZATION_PADDING;
+                            }
+                            else
+                            {
+                                xdist = xdist/(outEdges.size()-1);
+                            }
+                            if( Math.abs( vertexPosX - minX ) < Math.abs( vertexPosX - maxX ) )
+                            {
+                                posX = minX - xdist;
+                                if( posX < GUI.VISUALIZATION_PADDING )
+                                {
+                                    posX = GUI.VISUALIZATION_PADDING;
+                                }
+                            }
+                            else
+                            {
+                                posX = maxX + xdist;
+                                if( posX > GUI.VISUALIZATION_WIDTH - GUI.VISUALIZATION_PADDING )
+                                {
+                                    posX = GUI.VISUALIZATION_WIDTH - GUI.VISUALIZATION_PADDING;
+                                }
+                            }
+                        }
+                        IOTools.layout.setLocation( succ, posX, posY );
+                        graph.addEdge( new Edge( condition ), vertex, succ );
                         graphChanged = true;
                     }
                 }

@@ -18,6 +18,9 @@
 #include "ModuleInput.h"
 #include "GeneralStatistics.h"
 #include "QuantifierManager.h"
+#ifdef SMTRAT_STRAT_PARALLEL_MODE
+#include "ThreadPool.h"
+#endif
 
 namespace smtrat
 {   
