@@ -525,6 +525,8 @@ namespace smtrat
 				SMTRAT_LOG_TRACE("smtrat.sat", "Unknown with variable: " << mMinisatVarMap.at(testCandidate));
 			}
 		}
+		//Clear
+		assumptions.shrink(assumptions.size() - assumptionSizeStart);
 	}
 
     template<class Settings>
