@@ -95,6 +95,7 @@ namespace smtrat
         static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
         static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
 		static const transform_inequalities				 transformIntoEqualities				 = NO_INEQUALITIES;
+        static const bool                                iterativeVariableRewriting              = false;
 
 		static const bool								 applyNSS								 = false;
         static const unsigned                            maxSDPdegree                            = 4;
@@ -128,6 +129,7 @@ namespace smtrat
         static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
         static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
 		static const transform_inequalities				 transformIntoEqualities				 = NO_INEQUALITIES;
+        static const bool                                iterativeVariableRewriting              = false;
 
 		static const bool								 applyNSS								 = false;
         static const unsigned                            maxSDPdegree                            = 4;
@@ -140,6 +142,7 @@ namespace smtrat
    
     struct GBSettings4
     {
+		static constexpr auto moduleName = "GBModule<GBSettings4>";
         static const unsigned                            identifier                              = 4;
         
         typedef carl::GrLexOrdering											 Order;
@@ -173,6 +176,7 @@ namespace smtrat
     
     struct GBSettings6
     {
+		static constexpr auto moduleName = "GBModule<GBSettings6>";
         static const unsigned                            identifier                              = 6;
         
         typedef carl::GrLexOrdering											 Order;

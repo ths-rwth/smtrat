@@ -640,7 +640,7 @@ namespace smtrat
              * @param real_rhs the real end
              * @return a pointer to the added implicit edge
              */
-			inline implicit_edge_info* P_add_implicit_edge(g_iterator lhs, g_iterator rhs, g_iterator real_lhs, g_iterator real_rhs);
+			implicit_edge_info* P_add_implicit_edge(g_iterator lhs, g_iterator rhs, g_iterator real_lhs, g_iterator real_rhs);
 			
 			// removes and destroys an explicit edge
 			inline void P_remove_edge(g_iterator lhs, g_iterator rhs, const FormulaT& formula);
@@ -699,7 +699,7 @@ namespace smtrat
 			inline void P_check_inconsistencies();
 			
 			// check for possible inconsistencies
-			inline bool P_cc_union_for_ineq(std::size_t indexCOld, std::size_t indexCNew);
+			bool P_cc_union_for_ineq(std::size_t indexCOld, std::size_t indexCNew);
 			
 			// remove all incident inequality edges from node in the graph and push them into the possible inconsistencies
 			inline void P_remove_ineq_edges_of_vertex(g_iterator node);
@@ -721,7 +721,7 @@ namespace smtrat
 			// add deductions for unassigned literals
 			inline void P_check_for_unassigned_literals();
 			// adds a deduction on the pair of function instances given
-			inline void P_add_implicit_edge_deduction(g_iterator i, g_iterator j);
+			void P_add_implicit_edge_deduction(g_iterator i, g_iterator j);
 
 			// prints the current graph in a dot format
 			void P_print_graph();
