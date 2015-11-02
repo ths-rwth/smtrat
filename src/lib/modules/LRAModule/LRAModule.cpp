@@ -5,8 +5,6 @@
  * @version 2014-10-01
  */
 
-#pragma once
-
 #include "LRAModule.h"
 
 #ifdef DEBUG_METHODS_TABLEAU
