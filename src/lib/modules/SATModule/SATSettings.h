@@ -34,7 +34,7 @@ namespace smtrat
         /**
          * 
          */
-        static const bool use_restarts = true;
+        static const bool use_restarts = false;
         /**
          * 
          */

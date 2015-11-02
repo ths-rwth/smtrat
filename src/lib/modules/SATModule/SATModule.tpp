@@ -1088,6 +1088,7 @@ namespace smtrat
             {
                 Var var = newVar( true, _decisionRelevant, content.activity() );
                 mBooleanVarMap[content.boolean()] = var;
+                mMinisatVarMap[var] = content;
                 mBooleanConstraintMap.push( std::make_pair( nullptr, nullptr ) );
                 l = mkLit( var, negated );
             }
