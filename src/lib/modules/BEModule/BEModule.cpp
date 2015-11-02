@@ -6,6 +6,8 @@
  * Created on 2015-09-09.
  */
 
+#include "BEModule.h"
+
 namespace smtrat
 {
     template<class Settings>
