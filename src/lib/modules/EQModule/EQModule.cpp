@@ -11,6 +11,8 @@
 #include <iostream>
 #include <iterator>
 
+#include "EQModule.h"
+
 namespace smtrat {
 	/**
 	 * Constructors.
@@ -1743,3 +1745,5 @@ namespace smtrat {
 		return mComponentUnionFind.find(mUnionFind.find(iter->second.mUFIndex));
 	}
 }
+
+#include "Instantiation.h"

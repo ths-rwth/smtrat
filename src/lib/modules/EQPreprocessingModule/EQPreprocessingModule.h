@@ -108,5 +108,3 @@ return SettingsType::moduleName;
 			Answer checkCore( bool );
 	};
 }
-
-#include "EQPreprocessingModule.tpp"

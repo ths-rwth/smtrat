@@ -6,6 +6,8 @@
  * Created on 2014-12-05.
  */
 
+#include "EQPreprocessindModule.h"
+
 namespace smtrat
 {
 	/**
@@ -334,3 +336,5 @@ namespace smtrat
 		const_cast<EQPreprocessingModule<Settings>&>(*this).P_update_model();
 	}
 }
+
+#include "Instantiation.h"

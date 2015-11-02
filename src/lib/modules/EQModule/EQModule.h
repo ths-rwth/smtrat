@@ -814,7 +814,6 @@ return SettingsType::moduleName;
 template<typename Settings>
 std::atomic<std::size_t> smtrat::EQModule<Settings>::implicit_edge_info::mIDCounter(0);
 
-#include "EQModule.tpp"
 #include "EQModulePrinting.tpp"
 #include "EQModuleHash.tpp"
 #include "EQModuleEdgeList.tpp"
