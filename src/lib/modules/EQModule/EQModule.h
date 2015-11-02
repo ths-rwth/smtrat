@@ -300,11 +300,6 @@ namespace smtrat
 					 */
 					typedef circular_linked_list<bucket, circular_node_base<bucket>> bin;
 
-					/**
-					 * This selects the hash function used by the underlying hash table.
-					 */
-					typedef typename Settings::FunctionInstanceHash FunctionInstanceHash;
-
 				private:
 					/**
 					 * Doubles the size of the underlying hash table and moves buckets accordingly.
@@ -314,37 +309,10 @@ namespace smtrat
 
 					/* use tag dispatch to call the right overload; enables hash function selection at compile-time */
 					// the functions below are implementations of different hash functions
-					inline std::size_t P_compute_hash(const class_vector_entry* classes, HashFunctions::SIMPLE_ADD_MULT_HASHER tag) const;
-					inline std::size_t P_compute_hash(const class_vector_entry* classes, HashFunctions::SIMPLE_PAIR_COMBINE_HASHER tag) const;
-					inline void P_update_hash_step(std::size_t& hvalue, std::size_t c, std::size_t index, HashFunctions::SIMPLE_ADD_MULT_HASHER tag);
-					inline void P_update_hash_step(std::size_t& hvalue, std::size_t c, std::size_t index, HashFunctions::SIMPLE_PAIR_COMBINE_HASHER tag);
-					inline std::size_t P_reduce_hash(std::size_t hvalue, HashFunctions::SIMPLE_ADD_MULT_HASHER tag) const;
-					inline std::size_t P_reduce_hash(std::size_t hvalue, HashFunctions::SIMPLE_PAIR_COMBINE_HASHER tag) const;
-					void P_redistribute_buckets(bin* newBins, HashFunctions::SIMPLE_ADD_MULT_HASHER tag);
-					void P_redistribute_buckets(bin* newBins, HashFunctions::SIMPLE_PAIR_COMBINE_HASHER tag);
-
-					/**
-					 * Computes the hash value for a given array of argument classes.
-					 */
 					inline std::size_t P_compute_hash(const class_vector_entry* classes) const;
-
-					/**
-					 * Update the referenced hash value by applying the hash function for class c at position index.
-					 */
 					inline void P_update_hash_step(std::size_t& hvalue, std::size_t c, std::size_t index);
-
-					/**
-					 * Reduces the hash value to a value between 0 (inclusive) and (1 << mBinShift) (exclusive).
-					 * This is used for the actual lookup in the hash table.
-					 * Note that this is hash function dependent; for some hashes, right shifts are much better than using modulus.
-					 */
 					inline std::size_t P_reduce_hash(std::size_t hvalue) const;
-
-					/**
-					 * Redistributes buckets when the size of the hash table is doubled.
-					 * This is hash function dependent (because P_reduce_hash is).
-					 */
-					inline void P_redistribute_buckets(bin* newBins);
+					void P_redistribute_buckets(bin* newBins);
 
 					/**
 					 * Update a bucket by replacing every occurrence of oldClass by newClass.
