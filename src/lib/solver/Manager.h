@@ -151,7 +151,7 @@ namespace smtrat
                 while( subFormula != mpPassedFormula->end() )
                     subFormula = remove( subFormula, false );
                 mBacktrackPoints.pop_back();
-                return true;
+		return true;
             }
             
             void pop( size_t _levels )
