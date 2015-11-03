@@ -150,6 +150,9 @@ namespace smtrat
                 while( subFormula != mpPassedFormula->end() )
                     subFormula = remove( subFormula, false );
                 mBacktrackPoints.pop_back();
+                subFormula = mBacktrackPoints.back();
+                for( auto iter = mBacktrackPoints.rbegin(); *iter == subFormula; ++iter )
+                    *iter = mpPassedFormula->end();
                 return true;
             }
             
@@ -226,6 +229,12 @@ namespace smtrat
              * @param _out The stream to print on.
              */
             void printInfeasibleSubset( std::ostream& = std::cout ) const;
+            
+            /**
+             * Prints the stack of backtrack points.
+             * @param _out The stream to print on.
+             */
+            void printBackTrackStack( std::ostream& = std::cout ) const;
             
             // Internally used interfaces
             

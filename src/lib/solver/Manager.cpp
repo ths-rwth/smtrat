@@ -175,8 +175,8 @@ namespace smtrat
             }
             return iter;
         }
-        else
-            return mpPassedFormula->erase( _subformula );
+        auto result = mpPassedFormula->erase( _subformula );
+        return result;
     }
     
     void Manager::reset()
@@ -266,6 +266,49 @@ namespace smtrat
         }
         _out << ")" << endl;
     }
+            
+    void Manager::printBackTrackStack( std::ostream& _out ) const
+    {
+        _out << "(and" << std::endl;
+        std::string lastBTPoint = "";
+        std::string currentBTPoint = "";
+        size_t btCounter = 0;
+        size_t currentBTSize = 0;
+        for( std::vector< ModuleInput::iterator >::const_iterator btIter = mBacktrackPoints.begin(); btIter != mBacktrackPoints.end();  )
+        {
+            ModuleInput::const_iterator currentBt = *btIter;
+            ++btIter;
+            ModuleInput::const_iterator nextBt = ( btIter == mBacktrackPoints.end() ? mpPassedFormula->end() : *btIter );
+            for( ; currentBt != nextBt; ++currentBt )
+            {
+                currentBTPoint += " " + currentBt->formula().toString();
+                ++currentBTSize;
+            }
+            std::stringstream s;
+            s << btCounter;
+            if( currentBTSize == 0 )
+            {
+                assert( currentBTPoint == "" );
+                lastBTPoint = "(! " + lastBTPoint + " :named bt_" + s.str() + ")";
+            }
+            else
+            {
+                if( btCounter > 0 )
+                    _out << " " << lastBTPoint << std::endl;
+                assert( currentBTPoint.size() > 1 );
+                if( currentBTSize > 1 )
+                    currentBTPoint = "(and" + currentBTPoint + ")";
+                else
+                    currentBTPoint = currentBTPoint.substr( 1, currentBTPoint.size() );
+                currentBTPoint = "(! " + currentBTPoint + " :named bt_" + s.str() + ")";
+                lastBTPoint = currentBTPoint;
+                currentBTPoint = "";
+                currentBTSize = 0;
+            }
+            ++btCounter;
+        }
+        _out << " " << lastBTPoint << std::endl << ")" << std::endl;
+    }
     
     vector<Module*> Manager::getBackends( Module* _requiredBy, atomic_bool* _foundAnswer )
     {
@@ -274,39 +317,39 @@ namespace smtrat
         #endif
         std::vector<Module*> backends;
         std::vector<Module*>& allBackends = mBackendsOfModules[_requiredBy];
-		_requiredBy->mpPassedFormula->updateProperties();
-		// Obtain list of backends in the strategy
-		std::set<std::pair<thread_priority,AbstractModuleFactory*>> factories = mStrategyGraph.getBackends(_requiredBy->threadPriority().second, _requiredBy->pPassedFormula()->properties());
-		for (const auto& iter: factories) {
-			// Check if the respective module has already been created
-			bool moduleExists = false;
-			for (const auto& candidate: allBackends) {
-				if (candidate->threadPriority() == iter.first) {
-					backends.emplace_back(candidate);
-					moduleExists = true;
-					break;
-				}
-			}
-			// Create a new module with the given factory
-			if (!moduleExists) {
-				auto factory = iter.second;
-				assert(factory != nullptr);
-				std::vector<std::atomic_bool*> foundAnswers(_requiredBy->answerFound());
-				foundAnswers.emplace_back(_foundAnswer);
-				Module* newBackend = factory->create(_requiredBy->pPassedFormula(), foundAnswers, this);
-				newBackend->setId(mGeneratedModules.size());
-				newBackend->setThreadPriority(iter.first);
-				mGeneratedModules.emplace_back(newBackend);
-				allBackends.emplace_back(newBackend);
-				backends.emplace_back(newBackend);
-				for(const auto& cons: _requiredBy->informedConstraints()) {
-					newBackend->inform(cons);
-				}
-				for(auto form = _requiredBy->rPassedFormula().begin(); form != _requiredBy->firstSubformulaToPass(); form++) {
-					newBackend->add(form);
-				}
-			}
-		}
+        _requiredBy->mpPassedFormula->updateProperties();
+        // Obtain list of backends in the strategy
+        std::set<std::pair<thread_priority,AbstractModuleFactory*>> factories = mStrategyGraph.getBackends(_requiredBy->threadPriority().second, _requiredBy->pPassedFormula()->properties());
+        for (const auto& iter: factories) {
+            // Check if the respective module has already been created
+            bool moduleExists = false;
+            for (const auto& candidate: allBackends) {
+                if (candidate->threadPriority() == iter.first) {
+                    backends.emplace_back(candidate);
+                    moduleExists = true;
+                    break;
+                }
+            }
+            // Create a new module with the given factory
+            if (!moduleExists) {
+                auto factory = iter.second;
+                assert(factory != nullptr);
+                std::vector<std::atomic_bool*> foundAnswers(_requiredBy->answerFound());
+                foundAnswers.emplace_back(_foundAnswer);
+                Module* newBackend = factory->create(_requiredBy->pPassedFormula(), foundAnswers, this);
+                newBackend->setId(mGeneratedModules.size());
+                newBackend->setThreadPriority(iter.first);
+                mGeneratedModules.emplace_back(newBackend);
+                allBackends.emplace_back(newBackend);
+                backends.emplace_back(newBackend);
+                for(const auto& cons: _requiredBy->informedConstraints()) {
+                    newBackend->inform(cons);
+                }
+                for(auto form = _requiredBy->rPassedFormula().begin(); form != _requiredBy->firstSubformulaToPass(); form++) {
+                    newBackend->add(form);
+                }
+            }
+        }
         return backends;
     }
 
