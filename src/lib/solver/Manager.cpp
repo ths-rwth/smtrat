@@ -196,8 +196,8 @@ namespace smtrat
             }
             return iter;
         }
-        else
-            return mpPassedFormula->erase( _subformula );
+        auto result =  mpPassedFormula->erase( _subformula );
+	return result;
     }
     
     void Manager::reset()

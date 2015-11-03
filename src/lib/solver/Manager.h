@@ -151,7 +151,10 @@ namespace smtrat
                 while( subFormula != mpPassedFormula->end() )
                     subFormula = remove( subFormula, false );
                 mBacktrackPoints.pop_back();
-                return true;
+                subFormula = mBacktrackPoints.back();
+                for( auto iter = mBacktrackPoints.rbegin(); *iter == subFormula; ++iter )
+                    *iter = mpPassedFormula->end();
+		return true;
             }
             
             void pop( size_t _levels )
