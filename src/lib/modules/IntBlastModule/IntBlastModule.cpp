@@ -567,7 +567,8 @@ namespace smtrat
                 if(blastingIt != mPolyBlastings.end()) {
                     unblastVariable(variable);
                 }
-                notReachedMaxWidth = notReachedMaxWidth && blastVariable(variable, interval, linear);
+                if( blastVariable(variable, interval, linear) )
+                    notReachedMaxWidth = false;
             }
         }
 
@@ -695,10 +696,7 @@ namespace smtrat
         if(previousType.hasOffset() && ! _linear) {
             return true;
         }
-
-        // Here we might choose different strategies.
-        // For now, do a reblasting only if the new and the previous interval are disjoint.
-        return ! previousType.bounds().intersectsWith(_interval);
+        return previousType.bounds() != _interval && !previousType.bounds().contains(_interval);
     }
 
     template<class Settings>
