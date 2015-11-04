@@ -39,7 +39,7 @@ namespace smtrat
                 reset();
             }
         }
-        return !mVarBounds.isConflicting(); // This should be adapted according to your implementation.
+        return !mVarBounds.isConflicting();
     }
 
     template<class Settings>
@@ -167,7 +167,7 @@ namespace smtrat
                     }
                     if( vb->second.upperBoundType() == carl::BoundType::INFTY || mHalfOfCurrentWidth < vb->second.upper() + varShift )
                     {
-                        auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LEQ, Rational( mHalfOfCurrentWidth ) ) ) );
+                        auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LESS, Rational( mHalfOfCurrentWidth ) ) ) );
                         if( res.second )
                         {
                             boundAdded = true;
@@ -179,7 +179,7 @@ namespace smtrat
                     }
                     if( vb->second.lowerBoundType() == carl::BoundType::INFTY || -mHalfOfCurrentWidth > vb->second.lower() + varShift )
                     {
-                        auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::GEQ, -Rational( mHalfOfCurrentWidth ) ) ) );
+                        auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::GREATER, -Rational( mHalfOfCurrentWidth ) ) ) );
                         if( res.second )
                         {
                             boundAdded = true;
@@ -192,7 +192,7 @@ namespace smtrat
                 }
                 else
                 {
-                    auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LEQ, Rational( mHalfOfCurrentWidth ) ) ) );
+                    auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LESS, Rational( mHalfOfCurrentWidth ) ) ) );
                     if( res.second )
                     {
                         boundAdded = true;
@@ -201,7 +201,7 @@ namespace smtrat
                         std::cout << "   add  " << res.first->formula() << std::endl;
                         #endif
                     }
-                    res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::GEQ, -Rational( mHalfOfCurrentWidth ) ) ) );
+                    res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::GREATER, -Rational( mHalfOfCurrentWidth ) ) ) );
                     if( res.second )
                     {
                         boundAdded = true;

@@ -553,7 +553,7 @@ return SettingsType::moduleName;
             BlastedPoly blastProduct(const BlastedPoly& _factor1, const BlastedPoly& _factor2);
             bool reblastingNeeded(const BlastedPoly& _previousBlasting, const IntegerInterval& _interval, bool _linear) const;
             void unblastVariable(const carl::Variable& _variable);
-            void blastVariable(const carl::Variable& _variable, const IntegerInterval& _interval, bool _allowOffset);
+            bool blastVariable(const carl::Variable& _variable, const IntegerInterval& _interval, bool _allowOffset);
             std::size_t chooseWidth(const Integer& _numberToCover, std::size_t _maxWidth, bool _signed) const;
             void updateBoundsFromICP();
             void updateOutsideRestrictionConstraint(bool _fromICPOnly);
