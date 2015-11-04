@@ -551,6 +551,7 @@ namespace smtrat
         // Choose blastings for new variables,
         // and ensure compatibility of previous blastings for all variables
 
+        bool notReachedMaxWidth = true;
         for(auto variableWO : mInputVariables)
         {
             const carl::Variable& variable = variableWO.element();
@@ -566,7 +567,7 @@ namespace smtrat
                 if(blastingIt != mPolyBlastings.end()) {
                     unblastVariable(variable);
                 }
-                blastVariable(variable, interval, linear);
+                notReachedMaxWidth = notReachedMaxWidth && blastVariable(variable, interval, linear);
             }
         }
 
@@ -634,18 +635,22 @@ namespace smtrat
         // (determined either by the ICP module or by the BV solver).
         // Call backend
 
-        updateOutsideRestrictionConstraint(icpAnswer == False);
+        if( !notReachedMaxWidth )
+        {
+            updateOutsideRestrictionConstraint(icpAnswer == False);
 
-        INTBLAST_DEBUG("Running backend.");
-        Answer backendAnswer = runBackends(_full);
-        INTBLAST_DEBUG("Answer from backend: " << (backendAnswer == False ? "False" : (backendAnswer == True ? "True" : "Unknown")));
-        mSolutionOrigin = SolutionOrigin::BACKEND;
+            INTBLAST_DEBUG("Running backend.");
+            Answer backendAnswer = runBackends(_full);
+            INTBLAST_DEBUG("Answer from backend: " << (backendAnswer == False ? "False" : (backendAnswer == True ? "True" : "Unknown")));
+            mSolutionOrigin = SolutionOrigin::BACKEND;
 
-        if(backendAnswer == False) {
-            getInfeasibleSubsets();
+            if(backendAnswer == False) {
+                getInfeasibleSubsets();
+            }
+
+            return backendAnswer;
         }
-
-        return backendAnswer;
+        return Unknown;
     }
 
 
@@ -706,7 +711,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    void IntBlastModule<Settings>::blastVariable(const carl::Variable& _variable, const IntegerInterval& _interval, bool _allowOffset)
+    bool IntBlastModule<Settings>::blastVariable(const carl::Variable& _variable, const IntegerInterval& _interval, bool _allowOffset)
     {
         Poly variablePoly(_variable);
         if(_interval.isPointInterval()) {
@@ -716,23 +721,25 @@ namespace smtrat
         std::size_t maxWidth = Settings::max_variable_encoding_width;
         _allowOffset = _allowOffset && Settings::use_offsets_in_encoding;
 
-        // If interval is unbounded:
-        //   Start with no offset, signed, maximum width (tempType)
-        //     If offset is not allowed
-        //       Remove sign if interval is semi-positive
-        //     Else:
-        //       If lower bound of interval is higher than tempType's lower bound, shift range using offset and remove sign
-        //       (similar for upper bound)
-
-        // If interval is bounded:
-        //   If offset allowed:
-        //     Lower bound as offset, width "as small as possible" (at most maximum width), unsigned
-        //   Else:
-        //     Make signed iff interval not semipositive
-        //     Width "as small as possible" (at most maximum width)
+        /* 
+         * If interval is unbounded:
+         *   Start with no offset, signed, maximum width (tempType)
+         *     If offset is not allowed
+         *       Remove sign if interval is semi-positive
+         *     Else:
+         *       If lower bound of interval is higher than tempType's lower bound, shift range using offset and remove sign
+         *       (similar for upper bound)
+         *
+         *  If interval is bounded:
+         *   If offset allowed:
+         *     Lower bound as offset, width "as small as possible" (at most maximum width), unsigned
+         *   Else:
+         *     Make signed iff interval not semipositive
+         *     Width "as small as possible" (at most maximum width)
+         */
 
         BVAnnotation blastedType;
-
+        bool ret = true;
         if(_interval.lowerBoundType() == carl::BoundType::INFTY || _interval.upperBoundType() == carl::BoundType::INFTY) {
             if(! _allowOffset) {
                 blastedType = BVAnnotation(maxWidth, ! _interval.isSemiPositive(), 0);
@@ -747,21 +754,25 @@ namespace smtrat
                     blastedType = tempType;
                 }
             }
+            ret = false;
         } else {
             // interval is bounded
+            std::size_t width = 0;
             if(_allowOffset) {
-                std::size_t width = chooseWidth(_interval.upper() - _interval.lower(), maxWidth, false);
+                width = chooseWidth(_interval.upper() - _interval.lower(), maxWidth, false);
                 blastedType = BVAnnotation(width, false, _interval.lower());
             } else {
                 if(_interval.isSemiPositive()) {
-                    std::size_t width = chooseWidth(_interval.upper(), maxWidth, false);
+                    width = chooseWidth(_interval.upper(), maxWidth, false);
                     blastedType = BVAnnotation(width, false, 0);
                 } else {
                     std::size_t widthForUpper = chooseWidth(_interval.upper(), maxWidth, true);
                     std::size_t widthForLower = chooseWidth(_interval.lower(), maxWidth, true);
-                    blastedType = BVAnnotation(std::max(widthForUpper, widthForLower), true, 0);
+                    width = std::max(widthForUpper, widthForLower);
+                    blastedType = BVAnnotation(width, true, 0);
                 }
             }
+            ret = width < maxWidth;
         }
 
         if(Settings::apply_icp) {
@@ -769,6 +780,7 @@ namespace smtrat
         }
 
         mPolyBlastings[variablePoly] = BlastedPoly(AnnotatedBVTerm(blastedType));
+        return ret;
     }
 
     template<class Settings>
