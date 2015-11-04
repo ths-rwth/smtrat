@@ -155,7 +155,7 @@ namespace smtrat
 					auto it = mpPassedFormula->end();
 					--it;
 					if (it == mBacktrackPoints.back()) break;
-					remove(it, false);
+					remove(it);
 				}
                 mBacktrackPoints.pop_back();
                 return true;
@@ -319,7 +319,7 @@ namespace smtrat
              *          end of the conjunction of formulas, which will be considered for the 
              *          next satisfiability check is returned.
              */
-            ModuleInput::iterator remove( ModuleInput::iterator _subformula, bool _repairBT = true );
+            ModuleInput::iterator remove( ModuleInput::iterator _subformula );
             
         protected:
 
