@@ -42,7 +42,7 @@ namespace smtrat
             ModuleInput* mpPassedFormula;
             /// The propositions of the passed formula.
             carl::Condition mPropositions;
-            /// the backtrack points
+            /// Contains the backtrack points, that are iterators to the last formula to be kept when backtracking to the respective point.
             std::vector< ModuleInput::iterator > mBacktrackPoints;
             /// all generated instances of modules
             std::vector<Module*> mGeneratedModules;
@@ -132,7 +132,11 @@ namespace smtrat
              */
             void push()
             {
-                mBacktrackPoints.push_back( mpPassedFormula->end() );
+				// Pushes iterator to last formula contained in the backtrack point.
+				auto it = mpPassedFormula->end();
+				// If the list is empty use end(), otherwise an iterator to the last element
+				if (!mpPassedFormula->empty()) --it;
+                mBacktrackPoints.push_back(it);
             }
             
             /**
@@ -145,14 +149,15 @@ namespace smtrat
              */
             bool pop()
             {
-                if( mBacktrackPoints.empty() ) return false;
-                auto subFormula = mBacktrackPoints.back();
-                while( subFormula != mpPassedFormula->end() )
-                    subFormula = remove( subFormula, false );
+                if (mBacktrackPoints.empty()) return false;
+				while (!mpPassedFormula->empty()) {
+					// Remove until the list is either empty or the backtrack point is hit.
+					auto it = mpPassedFormula->end();
+					--it;
+					if (it == mBacktrackPoints.back()) break;
+					remove(it, false);
+				}
                 mBacktrackPoints.pop_back();
-                subFormula = mBacktrackPoints.back();
-                for( auto iter = mBacktrackPoints.rbegin(); *iter == subFormula; ++iter )
-                    *iter = mpPassedFormula->end();
                 return true;
             }
             

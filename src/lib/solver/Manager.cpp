@@ -100,15 +100,6 @@ namespace smtrat
         auto res = mpPassedFormula->add( _subformula );
         if( res.second )
         {
-            auto btp = mBacktrackPoints.end();
-            while( btp != mBacktrackPoints.begin() )
-            {
-                --btp;
-                if( *btp == mpPassedFormula->end() )
-                    *btp = res.first;
-                else
-                    break;
-            }
             return mpPrimaryBackend->add( res.first );
         }
         return true;
@@ -162,19 +153,6 @@ namespace smtrat
     {
         assert( _subformula != mpPassedFormula->end() );
         mpPrimaryBackend->remove( _subformula );
-        if( _repairBT )
-        {
-            auto iter = mpPassedFormula->erase( _subformula );
-            for( auto& it : mBacktrackPoints )
-            {
-                if( it == _subformula )
-                {
-                    it = iter;
-                    break;
-                }
-            }
-            return iter;
-        }
         auto result = mpPassedFormula->erase( _subformula );
         return result;
     }
@@ -269,45 +247,23 @@ namespace smtrat
             
     void Manager::printBackTrackStack( std::ostream& _out ) const
     {
-        _out << "(and" << std::endl;
-        std::string lastBTPoint = "";
-        std::string currentBTPoint = "";
-        size_t btCounter = 0;
-        size_t currentBTSize = 0;
-        for( std::vector< ModuleInput::iterator >::const_iterator btIter = mBacktrackPoints.begin(); btIter != mBacktrackPoints.end();  )
-        {
-            ModuleInput::const_iterator currentBt = *btIter;
-            ++btIter;
-            ModuleInput::const_iterator nextBt = ( btIter == mBacktrackPoints.end() ? mpPassedFormula->end() : *btIter );
-            for( ; currentBt != nextBt; ++currentBt )
-            {
-                currentBTPoint += " " + currentBt->formula().toString();
-                ++currentBTSize;
-            }
-            std::stringstream s;
-            s << btCounter;
-            if( currentBTSize == 0 )
-            {
-                assert( currentBTPoint == "" );
-                lastBTPoint = "(! " + lastBTPoint + " :named bt_" + s.str() + ")";
-            }
-            else
-            {
-                if( btCounter > 0 )
-                    _out << " " << lastBTPoint << std::endl;
-                assert( currentBTPoint.size() > 1 );
-                if( currentBTSize > 1 )
-                    currentBTPoint = "(and" + currentBTPoint + ")";
-                else
-                    currentBTPoint = currentBTPoint.substr( 1, currentBTPoint.size() );
-                currentBTPoint = "(! " + currentBTPoint + " :named bt_" + s.str() + ")";
-                lastBTPoint = currentBTPoint;
-                currentBTPoint = "";
-                currentBTSize = 0;
-            }
-            ++btCounter;
-        }
-        _out << " " << lastBTPoint << std::endl << ")" << std::endl;
+		auto btlIter = mBacktrackPoints.begin();
+		std::size_t btlCounter = 0;
+		while (btlIter != mBacktrackPoints.end() && *btlIter == mpPassedFormula->end()) {
+			_out << "btl_" << btlCounter << ": (and ) skip" << std::endl;;
+			btlCounter++;
+			btlIter++;
+		}
+		_out << "btl_" << btlCounter << ": (and";
+		for (auto it = mpPassedFormula->begin(); it != mpPassedFormula->end(); it++) {
+			_out << " " << it->formula().toString();
+			if (btlIter != mBacktrackPoints.end() && *btlIter == it) {
+				btlCounter++;
+				btlIter++;
+				_out << " )" << std::endl << "btl_" << btlCounter << ": (and";
+			}
+		}
+		_out << " )" << std::endl << std::endl;;
     }
     
     vector<Module*> Manager::getBackends( Module* _requiredBy, atomic_bool* _foundAnswer )
