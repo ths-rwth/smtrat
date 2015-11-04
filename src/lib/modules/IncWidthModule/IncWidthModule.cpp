@@ -144,6 +144,7 @@ namespace smtrat
             // Check if we exceed the maximally allowed width
             if( Settings::half_of_max_width > 0 && mHalfOfCurrentWidth > Settings::half_of_max_width )
             {
+                mHalfOfCurrentWidth /= Settings::increment;
                 #ifdef DEBUG_INC_WIDTH_MODULE
                 std::cout << "Reached maximal width" << std::endl;
                 #endif
@@ -278,6 +279,47 @@ namespace smtrat
             {
                 eraseSubformulaFromPassedFormula( addedBounds.back(), true );
                 addedBounds.pop_back();
+            }
+        }
+        // Add the not yet covered search space.
+        for( carl::Variable::Arg var : arithVars )
+        {
+            auto vb = varBounds.find( var );
+            if( vb != varBounds.end() )
+            {
+                auto iter = mVariableShifts.find( var );
+                Rational varShift = iter == mVariableShifts.end() ? ZERO_RATIONAL : iter->second.constantPart();
+                FormulasT formulas;
+                if( vb->second.upperBoundType() == carl::BoundType::INFTY || mHalfOfCurrentWidth < vb->second.upper() + varShift )
+                    formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::GEQ, Rational( mHalfOfCurrentWidth ) ) ) );
+                if( vb->second.lowerBoundType() == carl::BoundType::INFTY || -mHalfOfCurrentWidth > vb->second.lower() + varShift )
+                    formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::LEQ, -Rational( mHalfOfCurrentWidth ) ) ) );
+                if( formulas.size() > 1 )
+                {
+                    FormulaT rem( carl::FormulaType::OR, formulas );
+                    addSubformulaToPassedFormula( rem );
+                    #ifdef DEBUG_INC_WIDTH_MODULE
+                    std::cout << "   add remainig space  " << rem << std::endl;
+                    #endif
+                }
+                else if( !formulas.empty() )
+                {
+                    addSubformulaToPassedFormula( formulas.back() );
+                    #ifdef DEBUG_INC_WIDTH_MODULE
+                    std::cout << "   add remainig space  " << formulas.back() << std::endl;
+                    #endif
+                }
+            }
+            else
+            {
+                FormulasT formulas;
+                formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::GEQ, Rational( mHalfOfCurrentWidth ) ) ) );
+                formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::LEQ, -Rational( mHalfOfCurrentWidth ) ) ) );
+                FormulaT rem( carl::FormulaType::OR, formulas );
+                addSubformulaToPassedFormula( rem );
+                #ifdef DEBUG_INC_WIDTH_MODULE
+                std::cout << "   add remainig space  " << rem << std::endl;
+                #endif
             }
         }
         Answer ans = runBackends( _full );

@@ -67,4 +67,9 @@ namespace smtrat
          */
         static const bool use_offsets_in_encoding = false;
     };
+    
+    struct IntBlastSettings2 : IntBlastSettings1
+    {
+        static const std::size_t max_variable_encoding_width = 0;
+    };
 }
