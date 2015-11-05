@@ -105,7 +105,7 @@ namespace smtrat
             {
                 auto it = varBounds.find( v );
                 if( it == varBounds.end() )
-                    std::cout << "   " << v << " in (-INF,INF)" << std::endl;
+                    std::cout << "   " << v << " in " << RationalInterval::unboundedInterval() << std::endl;
                 else
                     std::cout << "   " << v << " in " << it->second << std::endl;
             }
@@ -158,42 +158,9 @@ namespace smtrat
             for( carl::Variable::Arg var : arithVars )
             {
                 auto vb = varBounds.find( var );
-                if( vb != varBounds.end() )
+                if( vb == varBounds.end() || (vb->second.lowerBoundType() == carl::BoundType::INFTY && vb->second.upperBoundType() == carl::BoundType::INFTY) )
                 {
-                    Rational varShift = ZERO_RATIONAL;
-                    auto iter = mVariableShifts.find( var );
-                    if( iter != mVariableShifts.end() )
-                    {
-                        varShift = iter->second.constantPart();
-                    }
-                    if( vb->second.upperBoundType() == carl::BoundType::INFTY || mHalfOfCurrentWidth < vb->second.upper() + varShift )
-                    {
-                        auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LESS, Rational( mHalfOfCurrentWidth ) ) ) );
-                        if( res.second )
-                        {
-                            boundAdded = true;
-                            addedBounds.push_back( res.first );
-                            #ifdef DEBUG_INC_WIDTH_MODULE
-                            std::cout << "   add  " << res.first->formula() << std::endl;
-                            #endif
-                        }
-                    }
-                    if( vb->second.lowerBoundType() == carl::BoundType::INFTY || -mHalfOfCurrentWidth > vb->second.lower() + varShift )
-                    {
-                        auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::GREATER, -Rational( mHalfOfCurrentWidth ) ) ) );
-                        if( res.second )
-                        {
-                            boundAdded = true;
-                            addedBounds.push_back( res.first );
-                            #ifdef DEBUG_INC_WIDTH_MODULE
-                            std::cout << "   add  " << res.first->formula() << std::endl;
-                            #endif
-                        }
-                    }
-                }
-                else
-                {
-                    auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LESS, Rational( mHalfOfCurrentWidth ) ) ) );
+                    auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LEQ, Rational( mHalfOfCurrentWidth ) ) ) );
                     if( res.second )
                     {
                         boundAdded = true;
@@ -210,6 +177,36 @@ namespace smtrat
                         #ifdef DEBUG_INC_WIDTH_MODULE
                         std::cout << "   add  " << res.first->formula() << std::endl;
                         #endif
+                    }
+                }
+                else
+                {
+                    if( vb->second.lowerBoundType() != carl::BoundType::INFTY )
+                    {
+                        assert( mVariableShifts.find( var ) == mVariableShifts.end() || vb->second.lower() - mVariableShifts.find( var )->second.constantPart() == ZERO_RATIONAL );
+                        auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LESS, Rational(2)*mHalfOfCurrentWidth ) ) );
+                        if( res.second )
+                        {
+                            boundAdded = true;
+                            addedBounds.push_back( res.first );
+                            #ifdef DEBUG_INC_WIDTH_MODULE
+                            std::cout << "   add  " << res.first->formula() << std::endl;
+                            #endif
+                        }
+                    }
+                    else
+                    {
+                        assert( vb->second.upperBoundType() != carl::BoundType::INFTY );
+                        assert( mVariableShifts.find( var ) == mVariableShifts.end() || vb->second.upper() - mVariableShifts.find( var )->second.constantPart() == ZERO_RATIONAL );
+                        auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::GREATER, -(Rational(2)*mHalfOfCurrentWidth) ) ) );
+                        if( res.second )
+                        {
+                            boundAdded = true;
+                            addedBounds.push_back( res.first );
+                            #ifdef DEBUG_INC_WIDTH_MODULE
+                            std::cout << "   add  " << res.first->formula() << std::endl;
+                            #endif
+                        }
                     }
                 }
             }
@@ -282,45 +279,37 @@ namespace smtrat
             }
         }
         // Add the not yet covered search space.
+        FormulasT formulas;
         for( carl::Variable::Arg var : arithVars )
         {
             auto vb = varBounds.find( var );
-            if( vb != varBounds.end() )
+            if( vb == varBounds.end() || (vb->second.lowerBoundType() == carl::BoundType::INFTY && vb->second.upperBoundType() == carl::BoundType::INFTY) )
             {
-                auto iter = mVariableShifts.find( var );
-                Rational varShift = iter == mVariableShifts.end() ? ZERO_RATIONAL : iter->second.constantPart();
-                FormulasT formulas;
-                if( vb->second.upperBoundType() == carl::BoundType::INFTY || mHalfOfCurrentWidth < vb->second.upper() + varShift )
-                    formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::GEQ, Rational( mHalfOfCurrentWidth ) ) ) );
-                if( vb->second.lowerBoundType() == carl::BoundType::INFTY || -mHalfOfCurrentWidth > vb->second.lower() + varShift )
-                    formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::LEQ, -Rational( mHalfOfCurrentWidth ) ) ) );
-                if( formulas.size() > 1 )
-                {
-                    FormulaT rem( carl::FormulaType::OR, formulas );
-                    addSubformulaToPassedFormula( rem );
-                    #ifdef DEBUG_INC_WIDTH_MODULE
-                    std::cout << "   add remainig space  " << rem << std::endl;
-                    #endif
-                }
-                else if( !formulas.empty() )
-                {
-                    addSubformulaToPassedFormula( formulas.back() );
-                    #ifdef DEBUG_INC_WIDTH_MODULE
-                    std::cout << "   add remainig space  " << formulas.back() << std::endl;
-                    #endif
-                }
+                formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::GREATER, Rational( mHalfOfCurrentWidth ) ) ) );
+                formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::LEQ, -Rational( mHalfOfCurrentWidth ) ) ) );
             }
             else
             {
-                FormulasT formulas;
-                formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::GEQ, Rational( mHalfOfCurrentWidth ) ) ) );
-                formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::LEQ, -Rational( mHalfOfCurrentWidth ) ) ) );
-                FormulaT rem( carl::FormulaType::OR, formulas );
-                addSubformulaToPassedFormula( rem );
-                #ifdef DEBUG_INC_WIDTH_MODULE
-                std::cout << "   add remainig space  " << rem << std::endl;
-                #endif
+                if( vb->second.lowerBoundType() != carl::BoundType::INFTY )
+                    formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::GEQ, Rational(2)*mHalfOfCurrentWidth ) ) );
+                else
+                    formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::LEQ, -(Rational(2)*mHalfOfCurrentWidth) ) ) );
             }
+        }
+        if( formulas.size() > 1 )
+        {
+            FormulaT rem( carl::FormulaType::OR, formulas );
+            addSubformulaToPassedFormula( rem );
+            #ifdef DEBUG_INC_WIDTH_MODULE
+            std::cout << "   add remainig space  " << rem << std::endl;
+            #endif
+        }
+        else if( !formulas.empty() )
+        {
+            addSubformulaToPassedFormula( formulas.back() );
+            #ifdef DEBUG_INC_WIDTH_MODULE
+            std::cout << "   add remainig space  " << formulas.back() << std::endl;
+            #endif
         }
         Answer ans = runBackends( _full );
         #ifdef DEBUG_INC_WIDTH_MODULE

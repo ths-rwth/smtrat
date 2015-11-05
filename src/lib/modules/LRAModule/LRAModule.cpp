@@ -638,7 +638,8 @@ Return:
     {
         if( mInfeasibleSubsets.empty() )
         {
-            return mTableau.getRationalAssignment();
+            auto ret = mTableau.getRationalAssignment();
+            return ret;
         }
         return EvalRationalMap();
     }

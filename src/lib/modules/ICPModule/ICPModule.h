@@ -108,6 +108,7 @@ namespace smtrat
             bool mSplitOccurred;
             bool mInvalidBox;
             bool mOriginalVariableIntervalContracted;
+            bool mLRAFoundSolution;
             double mTargetDiameter;
             double mContractionThreshold;
             double mDefaultSplittingSize;

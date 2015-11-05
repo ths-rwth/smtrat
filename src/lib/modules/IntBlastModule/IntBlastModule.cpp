@@ -646,7 +646,7 @@ namespace smtrat
 
         if( reachedMaxWidth )
         {
-            updateOutsideRestrictionConstraint(icpAnswer == False);
+            //updateOutsideRestrictionConstraint(icpAnswer == False);
 
             INTBLAST_DEBUG("Running backend.");
             Answer backendAnswer = runBackends(_full);
@@ -658,6 +658,27 @@ namespace smtrat
             }
 
             return backendAnswer;
+        }
+        bool originalBoundsCovered = true;
+        for(auto variableWO : mInputVariables)
+        {
+            const carl::Variable& variable = variableWO.element();
+            IntegerInterval interval = getNum(mBoundsFromInput.getInterval(variable));
+
+            Poly variablePoly(variable);
+            auto blastingIt = mPolyBlastings.find( Poly(variable) );
+            assert( blastingIt != mPolyBlastings.end() );
+            const carl::Interval<Integer>& blastBounds = blastingIt->second.term().type().bounds();
+            if( blastBounds != interval && !blastBounds.contains( interval ) )
+            {
+                originalBoundsCovered = false;
+                break;
+            }
+        }
+        if( originalBoundsCovered )
+        {
+            generateTrivialInfeasibleSubset();
+            return False;
         }
         return Unknown;
     }
@@ -699,7 +720,7 @@ namespace smtrat
             return ! _interval.isPointInterval() || _interval.lower() != _previousBlasting.constant();
         }
 
-        const BVAnnotation previousType = _previousBlasting.term().type();
+        const BVAnnotation& previousType = _previousBlasting.term().type();
 
         if(previousType.hasOffset() && ! _linear) {
             return true;

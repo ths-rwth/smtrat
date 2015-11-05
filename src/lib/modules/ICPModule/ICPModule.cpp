@@ -316,6 +316,7 @@ namespace smtrat
         for( const auto& f : rReceivedFormula() )
             std::cout << "    " << f.formula().constraint() << std::endl;
         #endif
+        mLRAFoundSolution = false;
         if( !mFoundSolution.empty() )
         {
             #ifdef ICP_MODULE_DEBUG_0
@@ -352,6 +353,7 @@ namespace smtrat
                         #ifdef ICP_MODULE_DEBUG_0
                         std::cout << "Found solution with internal LRAModule!" << std::endl;
                         #endif
+                        mLRAFoundSolution = true;
                         return True;
                     }
                     else
@@ -1480,7 +1482,8 @@ namespace smtrat
         {
             if( mFoundSolution.empty() )
             {
-                Module::getBackendsModel();
+                if( !mLRAFoundSolution )
+                    Module::getBackendsModel();
                 EvalRationalMap rationalAssignment = mLRA.getRationalModel();
                 for( auto assignmentIt = rationalAssignment.begin(); assignmentIt != rationalAssignment.end(); ++assignmentIt )
                 {
