@@ -177,6 +177,7 @@ namespace smtrat
     
     template<class Settings>
     bool LICModule<Settings>::isSuitable(const ConstraintT& c, carl::Variable& src, std::vector<carl::Variable>& dest, Coefficient& coeff) {
+		SMTRAT_LOG_FUNC("smtrat.lic", c);
         bool invert = false;
         src = carl::Variable::NO_VARIABLE;
         dest.clear();

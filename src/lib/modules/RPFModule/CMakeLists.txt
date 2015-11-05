@@ -1,5 +1,0 @@
-BeginDefineModule()
-ModuleMainHeader(RPFModule/RPFModule.h)
-ModuleName(RPFModule)
-ModuleVersion(0 0 1)
-EndDefineModule()

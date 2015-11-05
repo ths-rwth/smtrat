@@ -39,20 +39,25 @@ namespace smtrat
     
     pair<bool,FormulaT> PModule::getReceivedFormulaSimplified()
     {
-        if( solverState() == False )
+        if( solverState() == False ) {
+			SMTRAT_LOG_WARN("smtrat.pmodule", moduleName() << ": Returning FALSE");
             return make_pair( true, FormulaT( carl::FormulaType::FALSE ) );
+		}
         for( auto& backend : usedBackends() )
         {
             pair<bool,FormulaT> simplifiedPassedFormula = backend->getReceivedFormulaSimplified();
             if( simplifiedPassedFormula.first )
             {
+				SMTRAT_LOG_WARN("smtrat.pmodule", moduleName() << ": Returning from backend: " << simplifiedPassedFormula.second);
                 return simplifiedPassedFormula;
             }
         }
         if( mAppliedPreprocessing )
         {
+			SMTRAT_LOG_WARN("smtrat.pmodule", moduleName() << ": Returning " << FormulaT(rPassedFormula()));
             return make_pair( true, (FormulaT) rPassedFormula() );
         }
+		SMTRAT_LOG_WARN("smtrat.pmodule", moduleName() << ": No simplifications");
         return make_pair( false, FormulaT( carl::FormulaType::TRUE ) );
     }
 }

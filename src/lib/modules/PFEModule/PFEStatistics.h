@@ -1,5 +1,5 @@
 /**
- * @file RPFStatistics.h
+ * @file PFEStatistics.h
  * @author YOUR NAME <YOUR EMAIL ADDRESS>
  *
  * @version 2015-09-10
@@ -15,7 +15,7 @@
 
 namespace smtrat
 {
-    class RPFStatistics : public Statistics
+    class PFEStatistics : public Statistics
     {
     private:
         // Members.
@@ -36,12 +36,12 @@ namespace smtrat
             ++mExampleStatistic;
         }
 
-        RPFStatistics( const std::string& _statisticName ): 
+        PFEStatistics( const std::string& _statisticName ): 
             Statistics( _statisticName, this ),
             mExampleStatistic( 0 )
         {}
 
-        ~RPFStatistics() {}
+        ~PFEStatistics() {}
     };
 }
 

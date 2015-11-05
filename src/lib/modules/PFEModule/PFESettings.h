@@ -1,5 +1,5 @@
 /**
- * @file RPFSettings.h
+ * @file PFESettings.h
  * @author YOUR NAME <YOUR EMAIL ADDRESS>
  *
  * @version 2015-09-10
@@ -10,9 +10,9 @@
 
 namespace smtrat
 {
-    struct RPFSettings1
+    struct PFESettings1
     {
-		static constexpr auto moduleName = "RPFModule<RPFSettings1>";
+		static constexpr auto moduleName = "PFEModule<PFESettings1>";
         /**
          * Example for a setting.
          */

@@ -100,7 +100,11 @@ namespace smtrat
         auto res = mpPassedFormula->add( _subformula );
         if( res.second )
         {
-            return mpPrimaryBackend->add( res.first );
+			bool r = true;
+			for (auto it = res.first; it != mpPassedFormula->end(); it++) {
+				r = r && mpPrimaryBackend->add( it );
+			}
+			return r;
         }
         return true;
     }
