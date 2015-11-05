@@ -786,11 +786,6 @@ namespace smtrat
     Answer Module::foundAnswer( Answer _answer )
     {
         mSolverState = _answer;
-        if( !( _answer != True || checkModel() != 0 ) )
-        {
-            print();
-//            exit(1234);
-        }
         assert( _answer != True || checkModel() != 0 );
         // If we are in the SMT environment:
         if( mpManager != NULL && _answer != Unknown )
