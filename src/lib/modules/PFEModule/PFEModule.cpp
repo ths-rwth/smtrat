@@ -50,7 +50,7 @@ namespace smtrat
 				++receivedFormula;
 				continue;
 			}
-			FormulaT formula = visitor.visit(receivedFormula->formula(), removeFactorsFunction);
+			FormulaT formula = visitor.visitResult(receivedFormula->formula(), removeFactorsFunction);
 			SMTRAT_LOG_DEBUG("smtrat.PFE", "Simplified " << receivedFormula->formula() << " to " << formula);
 			
 			if (formula.isFalse()) {

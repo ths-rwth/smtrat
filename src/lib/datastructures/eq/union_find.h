@@ -25,10 +25,10 @@ namespace smtrat {
 					M_rank(0)
 				{}
 				
-				std::size_t rank() const noexcept { return M_rank; }
-				std::size_t class_() const noexcept { return M_class; }
-				void set_class(std::size_t newclass) noexcept { M_class = newclass; }
-				void increment_rank() noexcept { ++M_rank; }
+				std::size_t rank() const NOEXCEPT{ return M_rank; }
+				std::size_t class_() const NOEXCEPT{ return M_class; }
+				void set_class(std::size_t newclass) NOEXCEPT{ M_class = newclass; }
+				void increment_rank() NOEXCEPT{ ++M_rank; }
 				void set_rank(std::size_t rank) { M_rank = rank; }
 
 			private:
@@ -44,19 +44,19 @@ namespace smtrat {
 					M_rank_and_class(class_index)
 				{}
 
-				std::size_t rank() const noexcept {
+				std::size_t rank() const NOEXCEPT{
 					return M_rank_and_class >> 56;
 				}
 
-				std::size_t class_() const noexcept {
+				std::size_t class_() const NOEXCEPT{
 					return M_rank_and_class & ((std::size_t(1) << 56) - 1);
 				}
 
-				void set_class(std::size_t newclass) noexcept {
+				void set_class(std::size_t newclass) NOEXCEPT{
 					M_rank_and_class = (M_rank_and_class & ~((std::size_t(1) << 56) - 1)) | newclass;
 				}
 
-				void increment_rank() noexcept {
+				void increment_rank() NOEXCEPT{
 					M_rank_and_class += (std::size_t(1) << 56);
 				}
 
@@ -82,14 +82,14 @@ namespace smtrat {
 					M_rank_and_class(class_index)
 				{}
 
-				T &value() noexcept { return M_value; }
-				const T& value() const noexcept { return M_value; }
+				T &value() NOEXCEPT{ return M_value; }
+				const T& value() const NOEXCEPT{ return M_value; }
 
-				std::size_t rank() const noexcept { return M_rank_and_class.rank(); }
-				std::size_t class_() const noexcept { return M_rank_and_class.class_(); }
-				void set_class(std::size_t newclass) noexcept { M_rank_and_class.set_class(newclass); }
-				void increment_rank() noexcept { M_rank_and_class.increment_rank(); }
-				void set_rank(std::size_t rank_) noexcept { M_rank_and_class.set_rank(rank_); }
+				std::size_t rank() const NOEXCEPT{ return M_rank_and_class.rank(); }
+				std::size_t class_() const NOEXCEPT{ return M_rank_and_class.class_(); }
+				void set_class(std::size_t newclass) NOEXCEPT{ M_rank_and_class.set_class(newclass); }
+				void increment_rank() NOEXCEPT{ M_rank_and_class.increment_rank(); }
+				void set_rank(std::size_t rank_) NOEXCEPT{ M_rank_and_class.set_rank(rank_); }
 
 			private:
 				T M_value;
@@ -106,11 +106,11 @@ namespace smtrat {
 					M_rank_and_class(class_index)
 				{}
 
-				std::size_t rank() const noexcept { return M_rank_and_class.rank(); }
-				std::size_t class_() const noexcept { return M_rank_and_class.class_(); }
-				void set_class(std::size_t newclass) noexcept { M_rank_and_class.set_class(newclass); }
-				void increment_rank() noexcept { M_rank_and_class.increment_rank(); }
-				void set_rank(std::size_t rank_) noexcept { M_rank_and_class.set_rank(rank_); }
+				std::size_t rank() const NOEXCEPT{ return M_rank_and_class.rank(); }
+				std::size_t class_() const NOEXCEPT{ return M_rank_and_class.class_(); }
+				void set_class(std::size_t newclass) NOEXCEPT{ M_rank_and_class.set_class(newclass); }
+				void increment_rank() NOEXCEPT{ M_rank_and_class.increment_rank(); }
+				void set_rank(std::size_t rank_) NOEXCEPT{ M_rank_and_class.set_rank(rank_); }
 
 			private:
 				uf_rank_and_class<compression> M_rank_and_class;
@@ -126,13 +126,13 @@ namespace smtrat {
 			bool IsRandomAccess = std::is_convertible< typename std::iterator_traits<IteratorType>::iterator_category, std::random_access_iterator_tag >::value
 		> struct estimator 
 		{
-			static std::size_t estimate_distance(IteratorType begin, IteratorType end) noexcept {
+			static std::size_t estimate_distance(IteratorType begin, IteratorType end) NOEXCEPT {
 				return std::distance(begin, end);
 			}
 		};
 
 		template<typename IteratorType> struct estimator<IteratorType, false> {
-			static constexpr std::size_t estimate_distance(IteratorType, IteratorType) noexcept {
+			static CONSTEXPR std::size_t estimate_distance(IteratorType, IteratorType) NOEXCEPT {
 				return 0;
 			}
 		};
@@ -198,7 +198,7 @@ namespace smtrat {
 			 * Therefore it is not safe to call this method from different threads
 			 * on the same UF datastructure without external synchronization.
 			 */
-			std::size_t find(std::size_t index_) const noexcept {
+			std::size_t find(std::size_t index_) const NOEXCEPT {
 				return const_cast<union_find&>(*this).P_do_find(index_);
 			}
 
@@ -206,7 +206,7 @@ namespace smtrat {
 			 * Determines if the two entries at positions index1 and index2
 			 * are considered equivalent, that is find(index1) == find(index2).
 			 */
-			bool equivalent(std::size_t index1, std::size_t index2) const noexcept {
+			bool equivalent(std::size_t index1, std::size_t index2) const NOEXCEPT {
 				return find(index1) == find(index2);
 			}
 
@@ -216,7 +216,7 @@ namespace smtrat {
 			 * of find(index1) or find(index2) can become the index of the new representative of both entries.
 			 * Returns false when this operation did no changes on the datastructure and true otherwise.
 			 */
-			bool union_(std::size_t index1, std::size_t index2) noexcept {
+			bool union_(std::size_t index1, std::size_t index2) NOEXCEPT {
 				index1 = find(index1);
 				index2 = find(index2);
 
@@ -285,7 +285,7 @@ namespace smtrat {
 			 * Access to values (only if T is not void, relies on C++11 feature: default template arguments for template methods).
 			 */
 			template<bool Ignore = true> typename std::enable_if< !std::is_void<T>::value && Ignore, T>::type&
-				/* T& */ operator[](std::size_t index_) noexcept 
+				/* T& */ operator[](std::size_t index_) NOEXCEPT 
 			{
 				assert(index_ < M_array.size());
 				return M_array[index_].value();
@@ -295,7 +295,7 @@ namespace smtrat {
 			 * Access to values (only if T is not void, relies on C++11 feature: default template arguments for template methods), const.
 			 */
 			template<bool Ignore = true> typename std::enable_if< !std::is_void<T>::value && Ignore, const T>::type&
-				/* const T& */ operator[](std::size_t index_) const noexcept 
+				/* const T& */ operator[](std::size_t index_) const NOEXCEPT 
 			{
 				assert(index_ < M_array.size());
 				return M_array[index_].value();
@@ -304,7 +304,7 @@ namespace smtrat {
 			/**
 			 * Returns the number of entries in this union-find datastructure.
 			 */
-			std::size_t size() const noexcept { return M_array.size(); }
+			std::size_t size() const NOEXCEPT { return M_array.size(); }
 
 			/**
 			 * Initialize the union-find datastructure with an array of new_size default-constructed entries,
@@ -362,7 +362,7 @@ namespace smtrat {
 			 * Perform the find operation (walk the path until an entry
 			 * with class == index is found).
 			 */
-			std::size_t P_do_find(std::size_t index_) noexcept {
+			std::size_t P_do_find(std::size_t index_) NOEXCEPT {
 				wrapper_type *traceback[MaxTracebackLength];
 				std::size_t traceback_index = 0;
 

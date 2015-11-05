@@ -12,7 +12,11 @@ namespace smtrat
 {
     struct CBSettings1
     {
+#ifdef __VS
+		static const std::string getModuleName() { return "CBModule<CBSettings1>"; }
+#else
 		static constexpr auto moduleName = "CBModule<CBSettings1>";
+#endif
         /**
          * Example for a setting.
          */

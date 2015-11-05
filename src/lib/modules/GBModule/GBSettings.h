@@ -39,7 +39,11 @@ namespace smtrat
     
     struct GBSettings5
     {
+#ifdef __VS
+		static const std::string getModuleName() { return "GBModule<GBSettings5>"; }
+#else
 		static constexpr auto moduleName = "GBModule<GBSettings5>";
+#endif
         static const unsigned                            identifier                              = 5;
         
         typedef carl::GrLexOrdering											 Order;
@@ -72,7 +76,11 @@ namespace smtrat
     
     struct GBSettings3
     {
+#ifdef __VS
+		static const std::string getModuleName() { return "GBModule<GBSettings3>"; }
+#else
 		static constexpr auto moduleName = "GBModule<GBSettings3>";
+#endif
         static const unsigned                            identifier                              = 3;
         
 		typedef carl::GrLexOrdering											 Order;
@@ -108,7 +116,11 @@ namespace smtrat
    
     struct GBSettings1
     {
+#ifdef __VS
+		static const std::string getModuleName() { return "GBModule<GBSettings1>"; }
+#else
 		static constexpr auto moduleName = "GBModule<GBSettings1>";
+#endif
         static const unsigned                            identifier                              = 1;
         
 		typedef carl::GrLexOrdering											 Order;
@@ -142,7 +154,11 @@ namespace smtrat
    
     struct GBSettings4
     {
+#ifdef __VS
+		static const std::string getModuleName() { return "GBModule<GBSettings4>"; }
+#else
 		static constexpr auto moduleName = "GBModule<GBSettings4>";
+#endif
         static const unsigned                            identifier                              = 4;
         
         typedef carl::GrLexOrdering											 Order;
@@ -176,7 +192,11 @@ namespace smtrat
     
     struct GBSettings6
     {
+#ifdef __VS
+		static const std::string getModuleName() { return "GBModule<GBSettings6>"; }
+#else
 		static constexpr auto moduleName = "GBModule<GBSettings6>";
+#endif
         static const unsigned                            identifier                              = 6;
         
         typedef carl::GrLexOrdering											 Order;

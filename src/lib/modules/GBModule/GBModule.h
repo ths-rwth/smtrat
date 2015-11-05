@@ -50,7 +50,11 @@ class GBModule : public Module
 public:
 	typedef Settings SettingsType;
 	std::string moduleName() const {
+#ifdef __VS
+		return SettingsType::getModuleName();
+#else
 		return SettingsType::moduleName;
+#endif
 	}
     typedef typename Settings::Order Order;
     typedef typename Settings::PolynomialWithReasons GBPolynomial;

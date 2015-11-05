@@ -13,7 +13,11 @@ namespace smtrat
 {
     struct FPPSettings1
     {
+#ifdef __VS
+		static const std::string getModuleName() { return "FPPModule<FPPSettings1>"; }
+#else
 		static constexpr auto moduleName = "FPPModule<FPPSettings1>";
+#endif
         /**
          * The maximum number of iterations in order to reach a fix point during the repeated application of preprocessing.
          * If this number is negative, this procedure stops only if it indeed reached a fix point.

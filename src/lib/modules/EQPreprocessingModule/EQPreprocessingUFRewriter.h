@@ -41,9 +41,9 @@ namespace smtrat {
 				return changed ? FormulaT(*lhs, *rhs, ueq.negated()) : formula;
 			}
 
-			const FormulaSetT& congruences() const noexcept { return mCongruences; }
+			const FormulaSetT& congruences() const NOEXCEPT{ return mCongruences; }
 
-			const std::unordered_map<UFInstance, UVariable>& UFItoVar() const noexcept { return mUFIToVar; }
+			const std::unordered_map<UFInstance, UVariable>& UFItoVar() const NOEXCEPT{ return mUFIToVar; }
 
 		private:
 			UVariable *P_handle_UF(const UFInstance& instance) {

@@ -94,9 +94,13 @@ namespace smtrat
             
         public:
 			typedef Settings SettingsType;
-std::string moduleName() const {
-return SettingsType::moduleName;
-}
+            std::string moduleName() const {
+#ifdef __VS
+	            return SettingsType::getModuleName();
+#else
+	            return SettingsType::moduleName;
+#endif
+            }
             FouMoModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~FouMoModule() {}

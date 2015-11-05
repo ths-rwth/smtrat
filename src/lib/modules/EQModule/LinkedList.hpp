@@ -36,33 +36,33 @@ namespace smtrat {
 					struct enabler {};
 
 				public:
-					node_iterator() noexcept : mPtr(nullptr) {}
+					node_iterator() NOEXCEPT : mPtr(nullptr) {}
 
 					template<typename OtherRealNodeType>
 						node_iterator(
 							const node_iterator<OtherRealNodeType>& other,
 							std::enable_if<std::is_convertible<OtherRealNodeType*, RealNodeType*>::value, enabler> = enabler{}
-						) noexcept : mPtr(other.mPtr)
+							) NOEXCEPT : mPtr(other.mPtr)
 					{}
 
 				private:
-					explicit node_iterator(RealNodeType* ptr) noexcept :
+					explicit node_iterator(RealNodeType* ptr) NOEXCEPT :
 						mPtr(ptr)
 					{}
 
 					template<typename OtherRealNodeType>
-						bool equal(const node_iterator<OtherRealNodeType>& other) const noexcept
+					bool equal(const node_iterator<OtherRealNodeType>& other) const NOEXCEPT
 					{
 						return mPtr == other.mPtr;
 					}
 
-					void increment() noexcept {
+					void increment() NOEXCEPT{
 						assert(mPtr);
 
 						mPtr = mPtr->*NextPtr;
 					}
 
-					RealNodeType &dereference() const noexcept {
+					RealNodeType &dereference() const NOEXCEPT{
 						assert(mPtr);
 
 						return *mPtr;
@@ -84,21 +84,21 @@ namespace smtrat {
 				first = last = element;
 			}
 
-			iterator begin() noexcept { return iterator(first); }
-			iterator end() noexcept { return iterator{}; }
+			iterator begin() NOEXCEPT{ return iterator(first); }
+			iterator end() NOEXCEPT{ return iterator{}; }
 
-			const_iterator begin() const noexcept { return const_iterator(first); }
-			const_iterator end() const noexcept { return const_iterator{}; }
-			const_iterator cbegin() const noexcept { return const_iterator(first); }
-			const_iterator cend() const noexcept { return const_iterator{}; }
+			const_iterator begin() const NOEXCEPT{ return const_iterator(first); }
+			const_iterator end() const NOEXCEPT{ return const_iterator{}; }
+			const_iterator cbegin() const NOEXCEPT{ return const_iterator(first); }
+			const_iterator cend() const NOEXCEPT{ return const_iterator{}; }
 
-			bool empty() const noexcept { return first == nullptr; }
+			bool empty() const NOEXCEPT{ return first == nullptr; }
 
 			/**
 			 * Returns true if this linked list is either empty or contains
 			 * only a single element.
 			 */
-			bool trivial() const noexcept { return first == last; }
+			bool trivial() const NOEXCEPT{ return first == last; }
 
 			/**
 			 * Add the pointed-to node to the front of the list.
@@ -251,14 +251,14 @@ namespace smtrat {
 		class circular_node_base
 	{
 		public:
-			circular_node_base() noexcept :
+			circular_node_base() NOEXCEPT :
 				prev(nullptr), next(nullptr)
 			{}
 
 		private:
 			template<typename NodeType, typename NodeBaseType> friend class circular_linked_list;
 
-			circular_node_base(circular_node_base *p, circular_node_base *n) noexcept :
+			circular_node_base(circular_node_base *p, circular_node_base *n) NOEXCEPT :
 				prev(p), next(n)
 			{}
 
@@ -301,37 +301,37 @@ namespace smtrat {
 					struct enabler {};
 
 				public:
-					node_iterator() noexcept : mPtr(nullptr) {}
+					node_iterator() NOEXCEPT : mPtr(nullptr) {}
 
 					template<typename OtherRealNodeBase, typename OtherRealNodeType>
 						node_iterator(
 							const node_iterator<OtherRealNodeBase, OtherRealNodeType>& other,
 							std::enable_if<std::is_convertible<OtherRealNodeBase*, RealNodeBase*>::value, enabler> = enabler{}
-						) noexcept : mPtr(other.mPtr)
+							) NOEXCEPT : mPtr(other.mPtr)
 					{}
 
 				private:
-					explicit node_iterator(RealNodeBase* ptr) noexcept :
+					explicit node_iterator(RealNodeBase* ptr) NOEXCEPT :
 						mPtr(ptr)
 					{}
 
 					template<typename OtherRealNodeBase, typename OtherRealNodeType>
-						bool equal(const node_iterator<OtherRealNodeBase, OtherRealNodeType>& other) const noexcept
+					bool equal(const node_iterator<OtherRealNodeBase, OtherRealNodeType>& other) const NOEXCEPT
 					{
 						return mPtr == other.mPtr;
 					}
 
-					void increment() noexcept {
+					void increment() NOEXCEPT{
 						assert(mPtr);
 						mPtr = mPtr->next;
 					}
 
-					void decrement() noexcept {
+					void decrement() NOEXCEPT{
 						assert(mPtr);
 						mPtr = mPtr->prev;
 					}
 
-					RealNodeType &dereference() const noexcept {
+					RealNodeType &dereference() const NOEXCEPT{
 						assert(mPtr);
 						return *static_cast<RealNodeType*>(mPtr);
 					}
@@ -343,11 +343,11 @@ namespace smtrat {
 			typedef node_iterator<NodeBaseType, NodeType> iterator;
 			typedef node_iterator<const NodeBaseType, const NodeType> const_iterator;
 
-			circular_linked_list() noexcept :
+			circular_linked_list() NOEXCEPT :
 				node(&node, &node)
 			{}
 
-			void assign(pointer ptr_) noexcept {
+			void assign(pointer ptr_) NOEXCEPT{
 				assert(empty());
 
 				NodeBaseType* const ptr = static_cast<NodeBaseType*>(ptr_);
@@ -358,63 +358,63 @@ namespace smtrat {
 				ptr->prev = &node;
 			}
 
-			iterator begin() noexcept {
+			iterator begin() NOEXCEPT{
 				return iterator(node.next);
 			}
 
-			iterator end() noexcept {
+			iterator end() NOEXCEPT{
 				return iterator(&node);
 			}
 
-			const_iterator begin() const noexcept {
+			const_iterator begin() const NOEXCEPT{
 				return const_iterator(node.next);
 			}
 
-			const_iterator end() const noexcept {
+			const_iterator end() const NOEXCEPT{
 				return const_iterator(&node);
 			}
 
-			const_iterator cbegin() const noexcept {
+			const_iterator cbegin() const NOEXCEPT{
 				return const_iterator(node.next);
 			}
 
-			const_iterator cend() const noexcept {
+			const_iterator cend() const NOEXCEPT{
 				return const_iterator(&node);
 			}
 
-			bool empty() const noexcept {
+			bool empty() const NOEXCEPT{
 				return node.next == &node;
 			}
 
-			bool trivial() const noexcept {
+			bool trivial() const NOEXCEPT{
 				return node.prev == node.next;
 			}
 
-			void clear() noexcept {
+			void clear() NOEXCEPT{
 				node.prev = node.next = &node;
 			}
 
-			pointer front() noexcept {
+			pointer front() NOEXCEPT{
 				assert(!empty());
 				return static_cast<pointer>(node.next);
 			}
 
-			pointer back() noexcept {
+			pointer back() NOEXCEPT{
 				assert(!empty());
 				return static_cast<pointer>(node.prev);
 			}
 
-			const_pointer front() const noexcept {
+			const_pointer front() const NOEXCEPT{
 				assert(!empty());
 				return static_cast<const_pointer>(node.next);
 			}
 
-			const_pointer back() const noexcept {
+			const_pointer back() const NOEXCEPT{
 				assert(!empty());
 				return static_cast<const_pointer>(node.prev);
 			}
 
-			void push_front(pointer ptr_) noexcept {
+			void push_front(pointer ptr_) NOEXCEPT{
 				NodeBaseType* const ptr = static_cast<NodeBaseType*>(ptr_);
 
 				ptr->next = node.next;
@@ -423,7 +423,7 @@ namespace smtrat {
 				node.next = ptr;
 			}
 
-			void add_front(pointer ptr_) noexcept {
+			void add_front(pointer ptr_) NOEXCEPT{
 				NodeBaseType* const ptr = static_cast<NodeBaseType*>(ptr_);
 
 				if(ptr->next == nullptr) {
@@ -434,7 +434,7 @@ namespace smtrat {
 				}
 			}
 
-			void push_back(pointer ptr_) noexcept {
+			void push_back(pointer ptr_) NOEXCEPT{
 				NodeBaseType* const ptr = static_cast<NodeBaseType*>(ptr_);
 
 				ptr->next = &node;
@@ -443,11 +443,11 @@ namespace smtrat {
 				node.prev = ptr;
 			}
 
-			void push_back_nonempty(pointer ptr_) noexcept {
+			void push_back_nonempty(pointer ptr_) NOEXCEPT{
 				push_back(ptr_);
 			}
 
-			void add_back(pointer ptr_) noexcept {
+			void add_back(pointer ptr_) NOEXCEPT{
 				NodeBaseType* const ptr = static_cast<NodeBaseType*>(ptr_);
 
 				if(ptr->next == nullptr) {
@@ -458,7 +458,7 @@ namespace smtrat {
 				}
 			}
 
-			pointer pop_front() noexcept {
+			pointer pop_front() NOEXCEPT{
 				NodeBaseType* const ptr = node.next;
 				if(ptr == &node) {
 					return nullptr;
@@ -472,7 +472,7 @@ namespace smtrat {
 				return static_cast<pointer>(ptr);
 			}
 
-			pointer pop_back() noexcept {
+			pointer pop_back() NOEXCEPT{
 				NodeBaseType* const ptr = node.prev;
 				if(ptr == &node) {
 					return nullptr;
@@ -486,7 +486,7 @@ namespace smtrat {
 				return static_cast<pointer>(ptr);
 			}
 
-			void erase(pointer ptr_) noexcept {
+			void erase(pointer ptr_) NOEXCEPT{
 				NodeBaseType* const ptr = static_cast<NodeBaseType*>(ptr_);
 
 				assert(ptr->next != nullptr);
@@ -499,7 +499,7 @@ namespace smtrat {
 				ptr->next = nullptr;
 			}
 
-			void erase_if_present(pointer ptr_) noexcept {
+			void erase_if_present(pointer ptr_) NOEXCEPT{
 				NodeBaseType* const ptr = static_cast<NodeBaseType*>(ptr_);
 
 				assert(ptr != &node);
@@ -514,7 +514,7 @@ namespace smtrat {
 				}
 			}
 
-			void merge(circular_linked_list& other) noexcept {
+			void merge(circular_linked_list& other) NOEXCEPT{
 				assert(!empty() && !other.empty());
 
 				NodeBaseType* const oldLast = node.prev;

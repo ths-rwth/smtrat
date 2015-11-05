@@ -12,7 +12,11 @@ namespace smtrat
 {
     struct SplitSOSSettings1
     {
+#ifdef __VS
+		static const std::string getModuleName() { return "SplitSOSModule<SplitSOSSettings1>"; }
+#else
 		static constexpr auto moduleName = "SplitSOSModule<SplitSOSSettings1>";
+#endif
         /**
          * Example for a setting.
          */

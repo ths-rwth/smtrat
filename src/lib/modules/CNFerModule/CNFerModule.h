@@ -24,7 +24,7 @@ namespace smtrat
 			
 			struct SettingsType {
 #ifdef __VS
-				static const std::string moduleName;
+				static const std::string getModuleName() { return "CNFerModule"; }
 #else
 				static constexpr auto moduleName = "CNFerModule";
 #endif
@@ -51,9 +51,4 @@ namespace smtrat
              */
             Answer checkCore( bool _full );
     };
-
-#ifdef __VS
-	const std::string CNFerModule::SettingsType::moduleName = "CNFerModule";
-#endif
-
 }    // namespace smtrat

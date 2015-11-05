@@ -27,11 +27,11 @@ namespace smtrat
     {
         public:
             PreprocessingOne(): Manager() {
-				setStrategy({
-					addBackend<LICModule<LICSettings1>>({
-						addBackend<EMModule<EMSettings1>>({
-							addBackend<PFEModule<PFESettings1>>({
-								addBackend<SplitSOSModule<SplitSOSSettings1>>({
+				setStrategy(std::initializer_list<BackendLink>{
+					addBackend<LICModule<LICSettings1>>(std::initializer_list<BackendLink>{
+						addBackend<EMModule<EMSettings1>>(std::initializer_list<BackendLink>{
+							addBackend<PFEModule<PFESettings1>>(std::initializer_list<BackendLink>{
+								addBackend<SplitSOSModule<SplitSOSSettings1>>(std::initializer_list<BackendLink>{
 									addBackend<ESModule<ESSettings1>>(
 										addBackend<BEModule<BESettings1>>(
 											addBackend<CBModule<CBSettings1>>()

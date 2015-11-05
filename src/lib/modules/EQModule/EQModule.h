@@ -59,7 +59,7 @@ namespace smtrat
 			 */
 			class graph_info {
 				public:
-					graph_info(EQModule& module) noexcept :
+					graph_info(EQModule& module) NOEXCEPT :
 						mExplicit(module.mExplicitEdgeAlloc),
 						mImplicit(module.mImplicitEdgeAlloc),
 						mIneq(module.mIneqEdgeAlloc),
@@ -84,7 +84,7 @@ namespace smtrat
 					 */
 					template<typename EdgeType> struct edge_list_type {
 						public:
-							edge_list_type(freelist<EdgeType> &alloc) noexcept :
+							edge_list_type(freelist<EdgeType> &alloc) NOEXCEPT :
 								mAlloc(alloc),
 								mEdges(nullptr),
 								mEdgeSize(0), mEdgeCap(0)
@@ -96,22 +96,22 @@ namespace smtrat
 							typedef const EdgeType* const* const_iterator;
 
 							// obtain pointers to the beginning/end of the edges list
-							iterator begin() noexcept { return mEdges; }
-							iterator end() noexcept { return mEdges + mEdgeSize; }
-							const_iterator begin() const noexcept { return mEdges; }
-							const_iterator end() const noexcept { return mEdges + mEdgeSize; }
+							iterator begin() NOEXCEPT { return mEdges; }
+							iterator end() NOEXCEPT { return mEdges + mEdgeSize; }
+							const_iterator begin() const NOEXCEPT { return mEdges; }
+							const_iterator end() const NOEXCEPT { return mEdges + mEdgeSize; }
 
-							EdgeType* &operator[](std::size_t i) noexcept {
+							EdgeType* &operator[](std::size_t i) NOEXCEPT {
 								assert(i < mEdgeSize);
 								return mEdges[i];
 							}
 
-							const EdgeType* operator[](std::size_t i) const noexcept {
+							const EdgeType* operator[](std::size_t i) const NOEXCEPT {
 								assert(i < mEdgeSize);
 								return mEdges[i];
 							}
 
-							std::size_t size() const noexcept { return mEdgeSize; }
+							std::size_t size() const NOEXCEPT { return mEdgeSize; }
 
 							// add edge O(1)
 							inline void add(EdgeType* edge);
@@ -222,7 +222,7 @@ namespace smtrat
 					/**
 					 * The initial size of the hash bucket set's underlying hash table is 1 << InitialCapacityShift (= 2**InitialCapacityShift).
 					 */
-					static constexpr std::size_t InitialCapacityShift = Settings::hash_bucket_set_initial_capacity_shift;
+					static CONSTEXPR std::size_t InitialCapacityShift = Settings::hash_bucket_set_initial_capacity_shift;
 
 					/**
 					 * The LoadFactor of the underlying hash table.
@@ -548,23 +548,23 @@ namespace smtrat
 			};
 
 			struct not_asserted_equality : private boost::equality_comparable<not_asserted_equality> {
-				explicit not_asserted_equality(FormulaT formula) noexcept :
+				explicit not_asserted_equality(FormulaT formula) NOEXCEPT :
 					mFormula(formula)
 				{}
 
-				not_asserted_equality(FormulaT formula, g_iterator lhs, g_iterator rhs) noexcept :
+				not_asserted_equality(FormulaT formula, g_iterator lhs, g_iterator rhs) NOEXCEPT :
 					mFormula(formula),
 					mLhs(lhs),
 					mRhs(rhs)
 				{}
 
-				bool operator==(const not_asserted_equality& nae) const noexcept { return mFormula == nae.mFormula; }
+				bool operator==(const not_asserted_equality& nae) const NOEXCEPT { return mFormula == nae.mFormula; }
 
 				FormulaT   mFormula;
 				g_iterator mLhs, mRhs;
 
 				struct hash {
-					std::size_t operator()(const not_asserted_equality& nae) const noexcept {
+					std::size_t operator()(const not_asserted_equality& nae) const NOEXCEPT {
 						return std::hash<FormulaT>{}(nae.mFormula);
 					}
 				};

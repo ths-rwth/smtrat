@@ -13,7 +13,11 @@ namespace smtrat
 {
     struct IntEqSettings1
     {
+#ifdef __VS
+		static const std::string getModuleName() { return "IntEqModule<IntEqSettings1>"; }
+#else
 		static constexpr auto moduleName = "IntEqModule<IntEqSettings1>";
+#endif
         /**
          * Example for a setting.
          */

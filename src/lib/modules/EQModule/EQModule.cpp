@@ -1661,11 +1661,11 @@ namespace smtrat {
 			return nullptr;
 
 		struct is_uvariable_visitor : boost::static_visitor<bool> {
-			constexpr bool operator()(const UVariable&) const noexcept {
+			CONSTEXPR bool operator()(const UVariable&) const noexcept {
 				return true;
 			}
 
-			constexpr bool operator()(const UFInstance&) const noexcept {
+			CONSTEXPR bool operator()(const UFInstance&) const noexcept {
 				return false;
 			}
 		};

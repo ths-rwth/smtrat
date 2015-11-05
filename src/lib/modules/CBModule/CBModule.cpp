@@ -60,7 +60,7 @@ namespace smtrat
             
             tmpOrigins.clear();
             tmpOrigins.insert(receivedFormula->formula());
-            FormulaT formula = visitor.visit(receivedFormula->formula(), checkBoundsFunction);
+            FormulaT formula = visitor.visitResult(receivedFormula->formula(), checkBoundsFunction);
             
             if( formula.isFalse() )
             {

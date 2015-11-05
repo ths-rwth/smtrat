@@ -8,6 +8,7 @@
 #include <iostream>
 #include <map>
 #include "../../cli/config.h"
+#include "../config.h"
 #ifdef __VS
 #pragma warning(push, 0)
 #include <boost/spirit/home/support/detail/hold_any.hpp>

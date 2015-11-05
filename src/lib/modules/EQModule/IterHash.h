@@ -11,7 +11,7 @@ namespace smtrat {
 	template<typename IterType> struct by_address_hasher {
 		typedef typename std::iterator_traits<IterType>::pointer pointer_type;
 
-		std::size_t operator()(const IterType& iter) const noexcept {
+		std::size_t operator()(const IterType& iter) const NOEXCEPT{
 			std::hash<pointer_type> phasher;
 			return phasher(&*iter);
 		}

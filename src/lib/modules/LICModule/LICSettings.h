@@ -12,7 +12,11 @@ namespace smtrat
 {
     struct LICSettings1
     {
+#ifdef __VS
+		static const std::string getModuleName() { return "LICModule<LICSettings1>"; }
+#else
 		static constexpr auto moduleName = "LICModule<LICSettings1>";
+#endif
         /**
          * Example for a setting.
          */

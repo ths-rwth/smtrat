@@ -13,7 +13,7 @@ namespace smtrat {
 				module(&input, nullptr, conditionals, nullptr)
 			{}
 
-			M& get() noexcept { return module; }
+			M& get() NOEXCEPT { return module; }
 
 			bool add(const FormulaT& formula) {
 				ModuleInput::iterator iter;

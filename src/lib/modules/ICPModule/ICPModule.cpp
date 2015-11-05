@@ -54,7 +54,7 @@ namespace smtrat
         mHistoryActual(nullptr),
         mValidationFormula(new ModuleInput()),
 #ifdef __VS
-        mLRAFoundAnswer( std::vector< std::atomic_bool* >( 1, new std::atomic<bool>( false ) ) ),
+        mLRAFoundAnswer( std::vector< std::atomic<bool>* >( 1, new std::atomic<bool>( false ) ) ),
 #else
         mLRAFoundAnswer( std::vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
 #endif
@@ -64,11 +64,16 @@ namespace smtrat
         mIsIcpInitialized(false),
         mSplitOccurred(false),
         mInvalidBox(false),
-        mTargetDiameter(Settings::target_diameter_nra),
-        mContractionThreshold(Settings::contraction_threshold_nra),
-        mDefaultSplittingSize(Settings::default_splitting_size_nra),
-        mSplittingHeuristic(Settings::splitting_heuristic_nra),
-        mNumberOfReusagesAfterTargetDiameterReached(Settings::number_of_reusages_after_target_diameter_reached),
+#ifdef __VS
+        mTargetDiameter(Settings::getTarget_diameter_nra()),
+        mContractionThreshold(Settings::getContraction_threshold_nra()),
+#else
+		mTargetDiameter(Settings::target_diameter_nra),
+		mContractionThreshold(Settings::contraction_threshold_nra),
+#endif
+		mDefaultSplittingSize(Settings::default_splitting_size_nra),
+		mSplittingHeuristic(Settings::splitting_heuristic_nra),
+		mNumberOfReusagesAfterTargetDiameterReached(Settings::number_of_reusages_after_target_diameter_reached),
         mRelativeContraction(0),
         mAbsoluteContraction(0),
         mCountBackendCalls(0),
@@ -77,8 +82,13 @@ namespace smtrat
     {
         if( mpManager != nullptr && mpManager->logic() == Logic::QF_NIA )
         {
+#ifdef __VS
+			mTargetDiameter = Settings::getTarget_diameter_nra();
+			mContractionThreshold = Settings::getContraction_threshold_nra();
+#else
             mTargetDiameter = Settings::target_diameter_nia;
             mContractionThreshold = Settings::contraction_threshold_nia;
+#endif
             mDefaultSplittingSize = Settings::default_splitting_size_nia;
             mSplittingHeuristic = Settings::splitting_heuristic_nia;
         }

@@ -77,9 +77,13 @@ namespace smtrat
 
         public:
 			typedef Settings SettingsType;
-std::string moduleName() const {
-return SettingsType::moduleName;
-}
+			std::string moduleName() const {
+#ifdef __VS
+				return SettingsType::getModuleName();
+#else
+				return SettingsType::moduleName;
+#endif
+			}
             CADModule( const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             ~CADModule();

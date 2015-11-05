@@ -14,7 +14,7 @@ namespace smtrat
     struct VSSettings1
     {
 #ifdef __VS
-		static const std::string moduleName;
+		static const std::string getModuleName() { return "VSModule<VSSettings1>"; }
 #else
 		static constexpr auto moduleName = "VSModule<VSSettings1>";
 #endif
@@ -117,8 +117,4 @@ namespace smtrat
     {
         static const bool sturm_sequence_for_root_check                         = use_variable_bounds && true;
     };
-
-#ifdef __VS
-	const std::string VSSettings1::moduleName = "VSModule<VSSettings1>";
-#endif
 }

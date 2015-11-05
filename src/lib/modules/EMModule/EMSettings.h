@@ -11,8 +11,12 @@
 namespace smtrat
 {
     struct EMSettings1
-    {
+	{
+#ifdef __VS
+		static const std::string getModuleName() { return "EMModule<EMSettings1>"; }
+#else
 		static constexpr auto moduleName = "EMModule<EMSettings1>";
+#endif
         /**
          * Example for a setting.
          */

@@ -23,11 +23,9 @@ namespace smtrat
     struct CADSettings1
     {
 #ifdef __VS
-	#define CONSTEXPR const
-	static const std::string moduleName;
+		static const std::string getModuleName() { return "CADModule<CADSettings1>"; }
 #else
-	#define CONSTEXPR constexpr
-	static CONSTEXPR auto moduleName = "CADModule<CADSettings1>";
+		static constexpr auto moduleName = "CADModule<CADSettings1>";
 #endif
 
 		static CONSTEXPR carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::SPLIT_EARLY;
@@ -38,8 +36,4 @@ namespace smtrat
         
         static const bool dummy;
     };
-
-#ifdef __VS
-	const std::string CADSettings1::moduleName = "CADModule<CADSettings1>";
-#endif
 }

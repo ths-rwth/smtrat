@@ -17,3 +17,19 @@
 #cmakedefine USE_GINAC
 
 #cmakedefine LOGGING
+
+#ifdef _MSC_VER
+#define __VS
+#endif
+
+#ifdef _WIN32
+#define __WIN
+#endif
+
+#ifdef __VS
+    #define CONSTEXPR const
+    #define NOEXCEPT 
+#else
+    #define CONSTEXPR constexpr
+    #define NOEXCEPT noexcept
+#endif

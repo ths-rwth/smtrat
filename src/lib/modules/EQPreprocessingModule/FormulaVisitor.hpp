@@ -971,8 +971,8 @@ namespace smtrat {
 				mRewriter(std::forward<Args>(args)...)
 			{}
 
-			RewriterType &get() noexcept { return mRewriter; }
-			const RewriterType &get() const noexcept { return mRewriter; }
+			RewriterType &get() NOEXCEPT { return mRewriter; }
+			const RewriterType &get() const NOEXCEPT{ return mRewriter; }
 
 		private:
 			#define SMTRAT_DISP_TAG(name) (typename has_decl_##name<RewriterType>::type{})

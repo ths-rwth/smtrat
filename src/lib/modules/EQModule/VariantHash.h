@@ -15,7 +15,7 @@
 
 namespace smtrat {
 	struct variant_hash_visitor : public boost::static_visitor<std::size_t> {
-		template<typename T> std::size_t operator()(const T& value) const noexcept {
+		template<typename T> std::size_t operator()(const T& value) const NOEXCEPT {
 			std::hash<T> hasher;
 			return hasher(value);
 		}
@@ -24,13 +24,13 @@ namespace smtrat {
 
 namespace std {
 	template<BOOST_VARIANT_ENUM_PARAMS(typename Args)> struct hash< boost::variant<BOOST_VARIANT_ENUM_PARAMS(Args)> > {
-		size_t operator()(const boost::variant<BOOST_VARIANT_ENUM_PARAMS(Args)>& var) const noexcept {
+		size_t operator()(const boost::variant<BOOST_VARIANT_ENUM_PARAMS(Args)>& var) const NOEXCEPT{
 			return boost::apply_visitor(smtrat::variant_hash_visitor(), var);
 		}
 	};
 
 	template<BOOST_VARIANT_ENUM_PARAMS(typename Args)> struct hash< const boost::variant<BOOST_VARIANT_ENUM_PARAMS(Args)> > {
-		size_t operator()(const boost::variant<BOOST_VARIANT_ENUM_PARAMS(Args)>& var) const noexcept {
+		size_t operator()(const boost::variant<BOOST_VARIANT_ENUM_PARAMS(Args)>& var) const NOEXCEPT{
 			return boost::apply_visitor(smtrat::variant_hash_visitor(), var);
 		}
 	};

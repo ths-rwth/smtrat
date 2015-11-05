@@ -24,8 +24,8 @@ namespace smtrat
         public:
             BVSolver(): Manager()
 		    {
-				setStrategy({
-					addBackend<BVModule<BVSettings1>>({
+				setStrategy(std::initializer_list<BackendLink>{
+					addBackend<BVModule<BVSettings1>>(std::initializer_list<BackendLink>{
 						addBackend<SATModule<SATSettings1>>()
 					})
 				});

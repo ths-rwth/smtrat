@@ -34,7 +34,11 @@ namespace smtrat
 {
     struct BVSettings1
     {
+#ifdef __VS
+		static const std::string getModuleName() { return "BVModule<BVSettings1>"; }
+#else
 		static constexpr auto moduleName = "BVModule<BVSettings1>";
+#endif
         /**
          * Add the received formulas incrementally, each time checking and testing if the 
          * found model in the satisfiable case satisfies all remaining received formulas.

@@ -7,6 +7,7 @@
  */
 
 #pragma once
+#include <string>
     
 namespace smtrat
 {
@@ -17,10 +18,8 @@ namespace smtrat
     struct SATSettings1
     {
 #ifdef __VS
-		#define CONSTEXPR const
 		static const std::string getModuleName() { return "SATModule<SATSettings1>"; }
 #else
-		#define CONSTEXPR constexpr
 		static constexpr auto moduleName = "SATModule<SATSettings1>";
 #endif
         /**
@@ -55,7 +54,7 @@ namespace smtrat
          * 
          */
 #ifdef __VS
-		static const double percentage_of_conflicts_to_add;
+		static const double getPercentage_of_conflicts_to_add() { return 1.0; }
 #else
 		static CONSTEXPR double percentage_of_conflicts_to_add = 1.0;
 #endif
@@ -68,8 +67,4 @@ namespace smtrat
 		 */
 		static const bool remove_satisfied = false;
     };
-
-#ifdef __VS
-	const double SATSettings1::percentage_of_conflicts_to_add = 1.0;
-#endif
 }

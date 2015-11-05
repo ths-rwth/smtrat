@@ -30,28 +30,36 @@
 
 namespace smtrat {
 	struct EQPreprocessingSettings1 {
+#ifdef __VS
+		static const std::string getModuleName() { return "EQPreprocessingModule<EQPreprocessingSettings1>"; }
+#else
 		static constexpr auto moduleName = "EQPreprocessingModule<EQPreprocessingSettings1>";
-		static constexpr bool printFormulas = false;
+#endif
+		static CONSTEXPR bool printFormulas = false;
 
-		static constexpr bool rewriteFunctionInstances = false;
+		static CONSTEXPR bool rewriteFunctionInstances = false;
 
-		static constexpr bool rewriteBooleanDomainConstraints = true;
+		static CONSTEXPR bool rewriteBooleanDomainConstraints = true;
 
-		static constexpr bool performNNF = true;
+		static CONSTEXPR bool performNNF = true;
 
-		static constexpr bool rewriteUsingFacts = false;
+		static CONSTEXPR bool rewriteUsingFacts = false;
 	};
 
 	struct EQPreprocessingSettings2 {
+#ifdef __VS
+		static const std::string getModuleName() { return "EQPreprocessingModule<EQPreprocessingSettings2>"; }
+#else
 		static constexpr auto moduleName = "EQPreprocessingModule<EQPreprocessingSettings2>";
-		static constexpr bool printFormulas = false;
+#endif
+		static CONSTEXPR bool printFormulas = false;
 
-		static constexpr bool rewriteFunctionInstances = true;
+		static CONSTEXPR bool rewriteFunctionInstances = true;
 
-		static constexpr bool rewriteBooleanDomainConstraints = true;
+		static CONSTEXPR bool rewriteBooleanDomainConstraints = true;
 
-		static constexpr bool performNNF = true;
+		static CONSTEXPR bool performNNF = true;
 
-		static constexpr bool rewriteUsingFacts = false;
+		static CONSTEXPR bool rewriteUsingFacts = false;
 	};
 }

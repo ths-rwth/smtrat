@@ -2885,7 +2885,11 @@ NextClause:
         auto tcIter = mCurrentTheoryConflictEvaluations.begin();
         ++tcIter;
         size_t addedClauses = 1;
-        size_t threshold = (size_t)(Settings::percentage_of_conflicts_to_add * (double) mCurrentTheoryConflictEvaluations.size());
+#ifdef __VS
+        size_t threshold = (size_t)(Settings::getPercentage_of_conflicts_to_add() * (double) mCurrentTheoryConflictEvaluations.size());
+#else
+		size_t threshold = (size_t)(Settings::percentage_of_conflicts_to_add * (double)mCurrentTheoryConflictEvaluations.size());
+#endif
         for( ; tcIter != mCurrentTheoryConflictEvaluations.end(); ++tcIter )
         {
             if( addedClauses > threshold )

@@ -28,7 +28,7 @@ namespace smtrat
         auto receivedFormula = firstUncheckedReceivedSubformula();
         while( receivedFormula != rReceivedFormula().end() )
         {
-            FormulaT formula = mVisitor.rvisit( receivedFormula->formula(), extractBoundsFunction );
+            FormulaT formula = mVisitor.visitResult( receivedFormula->formula(), extractBoundsFunction );
             if( formula.isFalse() )
             {
                 receivedFormulasAsInfeasibleSubset( receivedFormula );

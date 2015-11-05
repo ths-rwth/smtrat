@@ -52,7 +52,7 @@ namespace smtrat
 
 		std::size_t mAddedImplicitDeductions;
 
-		static constexpr std::size_t reportMostFrequentValues = 128;
+		static CONSTEXPR std::size_t reportMostFrequentValues = 128;
 
 	public:
 		// Override Statistics::collect.

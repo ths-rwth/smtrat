@@ -128,7 +128,9 @@ namespace smtrat
         mType(_type), mTerm()
         {
             carl::Variable var = carl::VariablePool::getInstance().getFreshVariable(carl::VariableType::VT_BITVECTOR);
-            carl::Sort bvSort = carl::SortManager::getInstance().getSort("BitVec", std::vector<std::size_t>({_type.width()}));
+			std::vector<std::size_t> tmp;
+			tmp.push_back(_type.width());
+            carl::Sort bvSort = carl::SortManager::getInstance().getSort("BitVec", tmp);
             carl::BVVariable bvVar(var, bvSort);
             mTerm = carl::BVTerm(carl::BVTermType::VARIABLE, bvVar);
         }
@@ -466,7 +468,7 @@ namespace smtrat
             CollectionWithOrigins<carl::Variable, FormulaT> mNonlinearInputVariables;
 
             ModuleInput* mpICPInput; // ReceivedFormula of the internal ICP Module
-            std::vector<std::atomic_bool*> mICPFoundAnswer;
+            Conditionals mICPFoundAnswer;
             RuntimeSettings* mpICPRuntimeSettings;
             ICPModule<ICPSettings1> mICP;
             FormulaT mConstraintFromBounds;
@@ -487,9 +489,13 @@ namespace smtrat
 
         public:
 			typedef Settings SettingsType;
-std::string moduleName() const {
-return SettingsType::moduleName;
-}
+			std::string moduleName() const {
+#ifdef __VS
+				return SettingsType::getModuleName();
+#else
+				return SettingsType::moduleName;
+#endif
+			}
             IntBlastModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~IntBlastModule();

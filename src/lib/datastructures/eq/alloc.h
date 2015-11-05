@@ -18,10 +18,8 @@
 	// Visual studio does neither support noexcept nor constexpr
 	// TODO Matthias: Introduce project-wide
 	#define NOEXCEPT 
-	#define CONSTEXPR const
 #else
 	#define NOEXCEPT noexcept
-	#define CONSTEXPR constexpr
 #endif
 
 namespace smtrat {
