@@ -68,6 +68,7 @@ namespace smtrat
             struct VertexPropertyWriter {
             private:
                 const Graph& g;
+				//TODO Matthias: activate for VS
                 std::vector<std::string> colors = {
                     "aquamarine", "blue", "brown", "coral",
                     "chartreuse", "darkorange", "deepskyblue", "goldenrod",

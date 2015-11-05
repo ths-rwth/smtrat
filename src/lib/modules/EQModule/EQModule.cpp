@@ -5,7 +5,9 @@
  * @version 2014-10-19
  * Created on 2014-10-19.
  */
-
+#include "../../config.h"
+//TODO Matthias: activate for VS
+#ifndef __VS
 #include "../../datastructures/SortValueManager.h"
 
 #include <iostream>
@@ -1747,3 +1749,4 @@ namespace smtrat {
 }
 
 #include "Instantiation.h"
+#endif

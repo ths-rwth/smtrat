@@ -5,7 +5,9 @@
  * @version 2014-12-05
  * Created on 2014-12-05.
  */
-
+//TODO Matthias: activate for VS
+#include "../../config.h"
+#ifndef __VS
 #include "EQPreprocessingModule.h"
 #include "../../datastructures/SortValueManager.h"
 
@@ -339,3 +341,4 @@ namespace smtrat
 }
 
 #include "Instantiation.h"
+#endif

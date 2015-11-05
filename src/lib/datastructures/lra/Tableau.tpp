@@ -2702,7 +2702,10 @@ namespace smtrat
                     std::cout << "elim_content = " << elim_content << std::endl;
                     std::cout << "T2((-1)*floor_value*added_content) = " << T2((-1)*floor_value*added_content) << std::endl;
                     #endif
+					//TODO Matthias: activate for VS
+#ifndef __VS
                     addColumns(elim_pos,added_pos,T2((-1)*floor_value));
+#endif
                     #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
                     std::cout << "Add " << (added_pos+1) << ". column to " << (elim_pos+1) << ". column:" << std::endl;
                     print( LAST_ENTRY_ID, std::cout, "", true, true );

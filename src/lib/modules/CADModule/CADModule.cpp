@@ -1,3 +1,6 @@
+#include "../../config.h"
+//TODO Matthias: activate for VS
+#ifndef __VS
 /**
  * @file CADModule.cpp
  *
@@ -503,3 +506,4 @@ namespace smtrat
 }	// namespace smtrat
 
 #include "Instantiation.h"
+#endif

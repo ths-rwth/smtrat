@@ -9,6 +9,10 @@
 namespace smtrat {
 // helper macro to determine whether a type T declares a member
 // with the name given as argument. This is determined at compile-time using SFINAE.
+#ifdef __VS
+	//TODO Matthias implement for VS
+#define SMTRAT_HAS_DECL(name) 
+#else
 #define SMTRAT_HAS_DECL(name) \
 	template<typename T> struct has_decl_##name {\
 		private:\
@@ -19,6 +23,7 @@ namespace smtrat {
 			constexpr static bool value = decltype(check<T>(nullptr))::value;\
 			typedef decltype(check<T>(nullptr)) type;\
 	}
+#endif
 
 	template<typename T> struct default_compare {
 		typedef std::less<T> type;

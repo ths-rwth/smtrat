@@ -5,7 +5,9 @@
  * @version 2015-09-03
  * Created on 2015-09-03.
  */
-
+#include "../../config.h"
+//TODO Matthias: activate for VS
+#ifndef __VS
 #include "LICModule.h"
 
 namespace smtrat
@@ -319,3 +321,4 @@ namespace smtrat
 }
 
 #include "Instantiation.h"
+#endif
