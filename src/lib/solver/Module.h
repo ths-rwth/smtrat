@@ -10,7 +10,7 @@
 #pragma once
 
 /// Flag activating some informative and not exaggerated output about module calls.
-#define MODULE_VERBOSE
+//#define MODULE_VERBOSE
 //#define GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
 #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
 #ifndef SMTRAT_DEVOPTION_Validation

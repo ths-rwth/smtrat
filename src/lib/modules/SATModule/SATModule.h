@@ -148,31 +148,6 @@ namespace smtrat
 				ClauseInformation(ClauseInformation&&) = default;
 #endif
             };
-            
-            struct VarConnection
-            {
-                size_t mNumConnections;
-                std::unordered_map<int,size_t> mConnections;
-                
-                VarConnection():
-                    mNumConnections(0),
-                    mConnections()
-                {};
-                
-                VarConnection( VarConnection&& _toMove ):
-                    mNumConnections( _toMove.mNumConnections ),
-                    mConnections( std::move( _toMove.mConnections ) )
-                {};
-                
-                VarConnection( const VarConnection& ) = delete;
-                
-                VarConnection& operator=( VarConnection&& _toMove )
-                {
-                    mNumConnections = _toMove.mNumConnections;
-                    mConnections = std::move( _toMove.mConnections );
-                    return *this;
-                }
-            };
 
             /// [Minisat related code]
             struct Watcher
@@ -1380,5 +1355,3 @@ namespace smtrat
 			void updateModel( Model& model, bool only_relevant_variables = false ) const;
     };
 }    // namespace smtrat
-
-#include "SATModule.tpp"

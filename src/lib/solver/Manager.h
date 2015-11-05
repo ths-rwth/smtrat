@@ -18,6 +18,9 @@
 #include "ModuleInput.h"
 #include "GeneralStatistics.h"
 #include "QuantifierManager.h"
+#ifdef SMTRAT_STRAT_PARALLEL_MODE
+#include "ThreadPool.h"
+#endif
 
 namespace smtrat
 {   
@@ -39,7 +42,7 @@ namespace smtrat
             ModuleInput* mpPassedFormula;
             /// The propositions of the passed formula.
             carl::Condition mPropositions;
-            /// the backtrack points
+            /// Contains the backtrack points, that are iterators to the last formula to be kept when backtracking to the respective point.
             std::vector< ModuleInput::iterator > mBacktrackPoints;
             /// all generated instances of modules
             std::vector<Module*> mGeneratedModules;
@@ -133,7 +136,11 @@ namespace smtrat
              */
             void push()
             {
-                mBacktrackPoints.push_back( mpPassedFormula->end() );
+				// Pushes iterator to last formula contained in the backtrack point.
+				auto it = mpPassedFormula->end();
+				// If the list is empty use end(), otherwise an iterator to the last element
+				if (!mpPassedFormula->empty()) --it;
+                mBacktrackPoints.push_back(it);
             }
             
             /**
@@ -146,10 +153,14 @@ namespace smtrat
              */
             bool pop()
             {
-                if( mBacktrackPoints.empty() ) return false;
-                auto subFormula = mBacktrackPoints.back();
-                while( subFormula != mpPassedFormula->end() )
-                    subFormula = remove( subFormula, false );
+                if (mBacktrackPoints.empty()) return false;
+				while (!mpPassedFormula->empty()) {
+					// Remove until the list is either empty or the backtrack point is hit.
+					auto it = mpPassedFormula->end();
+					--it;
+					if (it == mBacktrackPoints.back()) break;
+					remove(it);
+				}
                 mBacktrackPoints.pop_back();
 		return true;
             }
@@ -246,6 +257,12 @@ namespace smtrat
              * @param _out The stream to print on.
              */
             void printInfeasibleSubset( std::ostream& = std::cout ) const;
+            
+            /**
+             * Prints the stack of backtrack points.
+             * @param _out The stream to print on.
+             */
+            void printBackTrackStack( std::ostream& = std::cout ) const;
             
             // Internally used interfaces
             
@@ -362,7 +379,7 @@ namespace smtrat
              *          end of the conjunction of formulas, which will be considered for the 
              *          next satisfiability check is returned.
              */
-            ModuleInput::iterator remove( ModuleInput::iterator _subformula, bool _repairBT = true );
+            ModuleInput::iterator remove( ModuleInput::iterator _subformula );
             
         protected:
 

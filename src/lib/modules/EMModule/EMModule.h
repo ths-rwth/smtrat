@@ -50,7 +50,3 @@ namespace smtrat
 
     };
 }
-
-#include "EMModule.tpp"
-
-

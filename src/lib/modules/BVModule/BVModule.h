@@ -121,5 +121,3 @@ namespace smtrat
             void transferBackendModel() const;
     };
 }
-
-#include "BVModule.tpp"

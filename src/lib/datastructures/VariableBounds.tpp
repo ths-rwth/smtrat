@@ -365,7 +365,30 @@ namespace smtrat
             }
             return false;
         }
-
+		
+		template<typename T>
+        bool VariableBounds<T>::addBound( const FormulaT& _formula, const T& _origin ) {
+			switch (_formula.getType()) {
+				case carl::FormulaType::CONSTRAINT:
+					return addBound(_formula.constraint(), _origin);
+				case carl::FormulaType::NOT: {
+	                if (_formula.subformula().getType() == carl::FormulaType::CONSTRAINT) {
+	                    const ConstraintT& c = _formula.subformula().constraint();
+	                    return addBound(ConstraintT(c.lhs(), invertRelation(c.relation())), _origin);
+	                }
+	                break;
+				}
+				case carl::FormulaType::AND: {
+					bool res = false;
+					for (const auto& f: _formula.subformulas()) {
+						res = res || addBound(f, _origin);
+					}
+	                return res;
+				}
+				default: break;
+			}
+			return false;
+		}
 		
         template<typename T>
         unsigned VariableBounds<T>::removeBound( const ConstraintT& _constraint, const T& _origin )
@@ -424,6 +447,29 @@ namespace smtrat
             return 0;
         }
 
+		template<typename T>
+		unsigned VariableBounds<T>::removeBound(const FormulaT& _formula, const T& _origin) {
+			switch (_formula.getType()) {
+				case carl::FormulaType::CONSTRAINT:
+					return removeBound(_formula.constraint(), _origin);
+				case carl::FormulaType::NOT: {
+	                if (_formula.subformula().getType() == carl::FormulaType::CONSTRAINT) {
+	                    const ConstraintT& c = _formula.subformula().constraint();
+	                    return removeBound(ConstraintT(c.lhs(), invertRelation(c.relation())), _origin);
+	                }
+	                break;
+				}
+				case carl::FormulaType::AND: {
+					unsigned res = 0;
+					for (const auto& f: _formula.subformulas()) {
+						res = std::max(res, removeBound(f, _origin));
+					}
+	                return res;
+				}
+				default: break;
+			}
+			return 0;
+		}
 		
         #define CONVERT_BOUND(type, namesp) (type != Bound<T>::WEAK_UPPER_BOUND && type != Bound<T>::WEAK_LOWER_BOUND && type != Bound<T>::EQUAL_BOUND ) ? namesp::STRICT : namesp::WEAK
 
@@ -512,9 +558,8 @@ namespace smtrat
                         upperBoundType = CONVERT_BOUND( var.supremum().type(), carl::BoundType );
                         upperBoundValue = var.supremum().limit();
                     }
-                    auto ret = mEvalIntervalMap.emplace( _var, RationalInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType ) );
+                    mEvalIntervalMap[_var] = RationalInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
                     var.exactIntervalHasBeenUpdated();
-                    return ret.first->second;
                 }
             }
             return mEvalIntervalMap[_var];
@@ -606,9 +651,8 @@ namespace smtrat
                         upperBoundType = CONVERT_BOUND( var.supremum().type(), carl::BoundType );
                         upperBoundValue = var.supremum().limit();
                     }
-                    auto ret = mDoubleIntervalMap.emplace( _var, carl::Interval<double>( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType ) );
+                    mDoubleIntervalMap[_var] = carl::Interval<double>( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
                     var.doubleIntervalHasBeenUpdated();
-                    return ret.first->second;
                 }
             }
             return mDoubleIntervalMap[_var];

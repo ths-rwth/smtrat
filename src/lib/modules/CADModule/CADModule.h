@@ -113,5 +113,3 @@ return SettingsType::moduleName;
     };
 
 }    // namespace smtrat
-
-#include "CADModule.tpp"

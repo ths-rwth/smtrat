@@ -49,5 +49,3 @@ namespace smtrat
 			std::function<FormulaT(FormulaT)> extractBoundsFunction;
     };
 }
-
-#include "BEModule.tpp"

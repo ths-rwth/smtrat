@@ -20,8 +20,8 @@
 #include "../modules/IntEqModule/IntEqModule.h"
 #include "../modules/LICModule/LICModule.h"
 #include "../modules/LRAModule/LRAModule.h"
+#include "../modules/PFEModule/PFEModule.h"
 #include "../modules/PreprocessingModule/PreprocessingModule.h"
-#include "../modules/RPFModule/RPFModule.h"
 #include "../modules/SATModule/SATModule.h"
 #include "../modules/SplitSOSModule/SplitSOSModule.h"
 #include "../modules/VSModule/VSModule.h"
@@ -52,8 +52,8 @@ namespace smtrat
 					addBackend<IntEqModule<IntEqSettings1>>(),
 					addBackend<LICModule<LICSettings1>>(),
 					addBackend<LRAModule<LRASettings1>>(),
+					addBackend<PFEModule<PFESettings1>>(),
 					addBackend<PreprocessingModule<PreprocessingSettings1>>(),
-					addBackend<RPFModule<RPFSettings1>>(),
 					addBackend<SATModule<SATSettings1>>(),
 					addBackend<SplitSOSModule<SplitSOSSettings1>>(),
 					addBackend<VSModule<VSSettings1>>(),

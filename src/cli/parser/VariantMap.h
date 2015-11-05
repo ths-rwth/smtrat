@@ -16,6 +16,8 @@
 #endif
 
 #include <map>
+#include <string>
+#include <cstdlib>
 
 namespace smtrat {
 

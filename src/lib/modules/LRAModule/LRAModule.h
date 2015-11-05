@@ -449,5 +449,3 @@ namespace smtrat
     };
 
 }    // namespace smtrat
-
-#include "LRAModule.tpp"

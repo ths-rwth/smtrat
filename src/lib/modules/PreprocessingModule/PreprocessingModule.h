@@ -132,6 +132,3 @@ namespace smtrat
     };
 
 }    // namespace smtrat
-
-#include "PreprocessingModule.tpp"
-

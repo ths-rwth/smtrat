@@ -18,19 +18,20 @@ namespace smtrat
     class FPPModule : public PModule
     {
         private:
-            // Members.
+#ifdef SMTRAT_DEVOPTION_Statistics
+			FPPStatistics mStatistics;
+#endif
             ///
-            unsigned mIterations;
+            std::size_t mIterations;
             ///
             FormulaT mFormulaAfterPreprocessing;
             ///
             typename Settings::Preprocessor mPreprocessor;
-
         public:
 			typedef Settings SettingsType;
-std::string moduleName() const {
-return SettingsType::moduleName;
-}
+			std::string moduleName() const {
+				return SettingsType::moduleName;
+			}
             FPPModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~FPPModule();
@@ -90,7 +91,3 @@ return SettingsType::moduleName;
 
     };
 }
-
-#include "FPPModule.tpp"
-
-
