@@ -19,26 +19,26 @@ namespace smtrat
     {
     private:
         // Members.
-        /**
-         * Example for a statistic.
-         */
-        size_t mExampleStatistic;
+        std::size_t mInputVariables = 0;
+		std::size_t mOutputVariables = 0;
 
     public:
         // Override Statistics::collect.
         void collect()
         {
-           Statistics::addKeyValuePair( "example_statistic", mExampleStatistic );
+           Statistics::addKeyValuePair( "input_variables", mInputVariables );
+		   Statistics::addKeyValuePair( "output_variables", mOutputVariables );
         }
 
-        void foo()
-        {
-            ++mExampleStatistic;
+        void setInput(std::size_t variables) {
+            mInputVariables = variables;
+        }
+		void setOutput(std::size_t variables) {
+            mOutputVariables = variables;
         }
 
         FPPStatistics( const std::string& _statisticName ): 
-            Statistics( _statisticName, this ),
-            mExampleStatistic( 0 )
+            Statistics( _statisticName, this )
         {}
 
         ~FPPStatistics() {}
