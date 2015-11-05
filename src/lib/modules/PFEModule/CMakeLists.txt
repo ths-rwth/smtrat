@@ -1,0 +1,5 @@
+BeginDefineModule()
+ModuleMainHeader(PFEModule/PFEModule.h)
+ModuleName(PFEModule)
+ModuleVersion(0 0 1)
+EndDefineModule()
