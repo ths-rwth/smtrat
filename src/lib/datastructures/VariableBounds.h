@@ -397,6 +397,8 @@ namespace smtrat
                  *          false, otherwise.
                  */
                 bool addBound( const ConstraintT& _constraint, const T& _origin );
+				
+				bool addBound( const FormulaT& _formula, const T& _origin );
                 
                 /**
                  * Removes all effects the given constraint has on the variable bounds.
@@ -407,6 +409,8 @@ namespace smtrat
                  *          0, otherwise.
                  */
                 unsigned removeBound( const ConstraintT& _constraint, const T& _origin );
+				
+				unsigned removeBound( const FormulaT& _formula, const T& _origin );
                 
                 /**
                  * Removes all effects the given constraint has on the variable bounds.
