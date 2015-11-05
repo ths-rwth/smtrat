@@ -267,9 +267,14 @@ namespace smtrat
                 removeClause( cref );
             }
             mFormulaClausesMap.erase( iter );
-            for( auto subformula = _subformula->formula().subformulas().begin(); subformula != _subformula->formula().subformulas().end(); ++subformula )
+            std::vector<FormulaT> constraints;
+            _subformula->formula().getConstraints( constraints );
+            for( const FormulaT& constraint : constraints )
             {
-                ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( *subformula );
+                ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( constraint );
+                if( constraintLiteralPair != mConstraintLiteralMap.end() )
+                    removeLiteralOrigin( constraintLiteralPair->second.front(), _subformula->formula() );
+                constraintLiteralPair = mConstraintLiteralMap.find( constraint.negated() );
                 if( constraintLiteralPair != mConstraintLiteralMap.end() )
                     removeLiteralOrigin( constraintLiteralPair->second.front(), _subformula->formula() );
             }

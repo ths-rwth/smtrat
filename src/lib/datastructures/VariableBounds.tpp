@@ -558,9 +558,8 @@ namespace smtrat
                         upperBoundType = CONVERT_BOUND( var.supremum().type(), carl::BoundType );
                         upperBoundValue = var.supremum().limit();
                     }
-                    auto ret = mEvalIntervalMap.emplace( _var, RationalInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType ) );
+                    mEvalIntervalMap[_var] = RationalInterval( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
                     var.exactIntervalHasBeenUpdated();
-                    return ret.first->second;
                 }
             }
             return mEvalIntervalMap[_var];
@@ -652,9 +651,8 @@ namespace smtrat
                         upperBoundType = CONVERT_BOUND( var.supremum().type(), carl::BoundType );
                         upperBoundValue = var.supremum().limit();
                     }
-                    auto ret = mDoubleIntervalMap.emplace( _var, carl::Interval<double>( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType ) );
+                    mDoubleIntervalMap[_var] = carl::Interval<double>( lowerBoundValue, lowerBoundType, upperBoundValue, upperBoundType );
                     var.doubleIntervalHasBeenUpdated();
-                    return ret.first->second;
                 }
             }
             return mDoubleIntervalMap[_var];

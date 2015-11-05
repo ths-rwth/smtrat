@@ -551,7 +551,7 @@ namespace smtrat
         // Choose blastings for new variables,
         // and ensure compatibility of previous blastings for all variables
 
-        bool notReachedMaxWidth = true;
+        bool reachedMaxWidth = false;
         for(auto variableWO : mInputVariables)
         {
             const carl::Variable& variable = variableWO.element();
@@ -567,7 +567,16 @@ namespace smtrat
                 if(blastingIt != mPolyBlastings.end()) {
                     unblastVariable(variable);
                 }
-                notReachedMaxWidth = notReachedMaxWidth && blastVariable(variable, interval, linear);
+                switch( blastVariable(variable, interval, linear) )
+                {
+                    case -1:
+                        return Unknown;
+                    case 0:
+                        reachedMaxWidth = true;
+                        break;
+                    default:
+                        break;
+                }
             }
         }
 
@@ -635,9 +644,9 @@ namespace smtrat
         // (determined either by the ICP module or by the BV solver).
         // Call backend
 
-        if( !notReachedMaxWidth )
+        if( reachedMaxWidth )
         {
-            updateOutsideRestrictionConstraint(icpAnswer == False);
+            //updateOutsideRestrictionConstraint(icpAnswer == False);
 
             INTBLAST_DEBUG("Running backend.");
             Answer backendAnswer = runBackends(_full);
@@ -649,6 +658,27 @@ namespace smtrat
             }
 
             return backendAnswer;
+        }
+        bool originalBoundsCovered = true;
+        for(auto variableWO : mInputVariables)
+        {
+            const carl::Variable& variable = variableWO.element();
+            IntegerInterval interval = getNum(mBoundsFromInput.getInterval(variable));
+
+            Poly variablePoly(variable);
+            auto blastingIt = mPolyBlastings.find( Poly(variable) );
+            assert( blastingIt != mPolyBlastings.end() );
+            const carl::Interval<Integer>& blastBounds = blastingIt->second.term().type().bounds();
+            if( blastBounds != interval && !blastBounds.contains( interval ) )
+            {
+                originalBoundsCovered = false;
+                break;
+            }
+        }
+        if( originalBoundsCovered )
+        {
+            generateTrivialInfeasibleSubset();
+            return False;
         }
         return Unknown;
     }
@@ -690,15 +720,12 @@ namespace smtrat
             return ! _interval.isPointInterval() || _interval.lower() != _previousBlasting.constant();
         }
 
-        const BVAnnotation previousType = _previousBlasting.term().type();
+        const BVAnnotation& previousType = _previousBlasting.term().type();
 
         if(previousType.hasOffset() && ! _linear) {
             return true;
         }
-
-        // Here we might choose different strategies.
-        // For now, do a reblasting only if the new and the previous interval are disjoint.
-        return ! previousType.bounds().intersectsWith(_interval);
+        return previousType.bounds() != _interval && !previousType.bounds().contains(_interval);
     }
 
     template<class Settings>
@@ -711,11 +738,12 @@ namespace smtrat
     }
 
     template<class Settings>
-    bool IntBlastModule<Settings>::blastVariable(const carl::Variable& _variable, const IntegerInterval& _interval, bool _allowOffset)
+    int IntBlastModule<Settings>::blastVariable( const carl::Variable& _variable, const IntegerInterval& _interval, bool _allowOffset )
     {
-        Poly variablePoly(_variable);
-        if(_interval.isPointInterval()) {
-            mPolyBlastings[variablePoly] = BlastedPoly(_interval.lower());
+        Poly variablePoly( _variable );
+        if( _interval.isPointInterval() )
+        {
+            mPolyBlastings[variablePoly] = BlastedPoly( _interval.lower() );
         }
 
         std::size_t maxWidth = Settings::max_variable_encoding_width;
@@ -739,47 +767,67 @@ namespace smtrat
          */
 
         BVAnnotation blastedType;
-        bool ret = true;
-        if(_interval.lowerBoundType() == carl::BoundType::INFTY || _interval.upperBoundType() == carl::BoundType::INFTY) {
-            if(! _allowOffset) {
-                blastedType = BVAnnotation(maxWidth, ! _interval.isSemiPositive(), 0);
-            } else {
-                BVAnnotation tempType(maxWidth, true, 0);
-
-                if(_interval.lowerBoundType() != carl::BoundType::INFTY && _interval.lower() > tempType.lowerBound()) {
-                    blastedType = BVAnnotation(maxWidth, false, _interval.lower());
-                } else if(_interval.upperBoundType() != carl::BoundType::INFTY && _interval.upper() < tempType.upperBound()) {
-                    blastedType = BVAnnotation(maxWidth, false, _interval.upper() - (tempType.upperBound() - tempType.lowerBound()));
-                } else {
+        int ret = 1;
+        if( _interval.lowerBoundType() == carl::BoundType::INFTY || _interval.upperBoundType() == carl::BoundType::INFTY )
+        {
+            if( _allowOffset )
+            {
+                BVAnnotation tempType( maxWidth, true, 0 );
+                
+                if( _interval.lowerBoundType() != carl::BoundType::INFTY && _interval.lower() > tempType.lowerBound() )
+                {
+                    blastedType = BVAnnotation( maxWidth, false, _interval.lower() );
+                }
+                else if( _interval.upperBoundType() != carl::BoundType::INFTY && _interval.upper() < tempType.upperBound() )
+                {
+                    blastedType = BVAnnotation( maxWidth, false, _interval.upper() - (tempType.upperBound() - tempType.lowerBound()) );
+                }
+                else
+                {
                     blastedType = tempType;
                 }
+            } 
+            else
+            {
+                if( maxWidth == 0 )
+                    return -1;
+                blastedType = BVAnnotation( maxWidth, !_interval.isSemiPositive(), 0 );
             }
-            ret = false;
-        } else {
+            ret = 0;
+        }
+        else
+        {
             // interval is bounded
             std::size_t width = 0;
-            if(_allowOffset) {
-                width = chooseWidth(_interval.upper() - _interval.lower(), maxWidth, false);
-                blastedType = BVAnnotation(width, false, _interval.lower());
-            } else {
-                if(_interval.isSemiPositive()) {
-                    width = chooseWidth(_interval.upper(), maxWidth, false);
-                    blastedType = BVAnnotation(width, false, 0);
-                } else {
-                    std::size_t widthForUpper = chooseWidth(_interval.upper(), maxWidth, true);
-                    std::size_t widthForLower = chooseWidth(_interval.lower(), maxWidth, true);
-                    width = std::max(widthForUpper, widthForLower);
-                    blastedType = BVAnnotation(width, true, 0);
+            if( _allowOffset )
+            {
+                width = chooseWidth( _interval.upper() - _interval.lower(), maxWidth, false );
+                blastedType = BVAnnotation( width, false, _interval.lower() );
+            }
+            else
+            {
+                if( _interval.isSemiPositive() )
+                {
+                    width = chooseWidth( _interval.upper(), maxWidth, false );
+                    blastedType = BVAnnotation( width, false, 0 );
+                }
+                else
+                {
+                    std::size_t widthForUpper = chooseWidth( _interval.upper(), maxWidth, true );
+                    std::size_t widthForLower = chooseWidth(_interval.lower(), maxWidth, true );
+                    width = std::max( widthForUpper, widthForLower );
+                    blastedType = BVAnnotation( width, true, 0 );
                 }
             }
-            ret = width < maxWidth;
+            ret = width < maxWidth ? 1 : 0;
         }
 
-        if(Settings::apply_icp) {
-            addBoundRestrictionsToICP(_variable, blastedType);
+        if( Settings::apply_icp )
+        {
+            addBoundRestrictionsToICP( _variable, blastedType );
         }
 
-        mPolyBlastings[variablePoly] = BlastedPoly(AnnotatedBVTerm(blastedType));
+        mPolyBlastings[variablePoly] = BlastedPoly( AnnotatedBVTerm(blastedType) );
         return ret;
     }
 
