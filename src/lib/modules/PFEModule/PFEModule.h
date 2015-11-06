@@ -12,9 +12,9 @@
 #pragma once
 
 #include "../../solver/PModule.h"
+#include "../../datastructures/VariableBounds.h"
 #include "PFEStatistics.h"
 #include "PFESettings.h"
-#include "../../datastructures/VariableBounds.h"
 
 namespace smtrat
 {
