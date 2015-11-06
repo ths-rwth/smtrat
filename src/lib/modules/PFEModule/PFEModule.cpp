@@ -75,6 +75,7 @@ namespace smtrat
 			}
 			++receivedFormula;
 		}
+		generateVariableAssignments();
 		SMTRAT_LOG_DEBUG("smtrat.PFE", "Simplification: " << FormulaT(rReceivedFormula()) << " to " << FormulaT(rPassedFormula()));
 		Answer ans = runBackends(_full);
 		if (ans == False) {

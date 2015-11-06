@@ -89,6 +89,15 @@ namespace smtrat
 				return res;
 			}
 			
+			void generateVariableAssignments() {
+				for (const auto& bound: varbounds.getEvalIntervalMap()) {
+					if (bound.second.isPointInterval()) {
+						FormulasT origins = varbounds.getOriginsOfBounds(bound.first);
+						addSubformulaToPassedFormula(FormulaT(bound.first - bound.second.lower(), carl::Relation::EQ), std::make_shared<std::vector<FormulaT>>(std::move(origins)));
+					}
+				}
+			}
+			
 			EvalRationalIntervalMap completeBounds(const Poly& p) const {
 				auto res = varbounds.getEvalIntervalMap();
 				for (auto var: p.gatherVariables()) {
