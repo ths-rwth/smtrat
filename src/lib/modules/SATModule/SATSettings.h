@@ -7,6 +7,8 @@
  */
 
 #pragma once
+
+#include "../../solver/ModuleSettings.h"
     
 namespace smtrat
 {
@@ -14,7 +16,7 @@ namespace smtrat
     
     enum class CCES : unsigned { SECOND_LEVEL_MINIMIZER, LITERALS_BLOCKS_DISTANCE, SECOND_LEVEL_MINIMIZER_PLUS_LBD };
     
-    struct SATSettings1
+    struct SATSettings1 : ModuleSettings
     {
 		static constexpr auto moduleName = "SATModule<SATSettings1>";
         /**

@@ -241,6 +241,15 @@ namespace smtrat
              */
             void printBackTrackStack( std::ostream& = std::cout ) const;
             
+            /**
+             * Prints the strategy of the solver maintained by this manager.
+             * @param _out The stream to print on.
+             */
+            void printStrategyGraph( std::ostream& _os = std::cout ) const
+            {
+                _os << mStrategyGraph << std::endl;
+            }
+            
             // Internally used interfaces
             
             /**

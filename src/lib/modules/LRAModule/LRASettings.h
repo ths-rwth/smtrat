@@ -9,10 +9,11 @@
 #pragma once
 
 #include "../../datastructures/lra/TableauSettings.h"
+#include "../../solver/ModuleSettings.h"
     
 namespace smtrat
 {
-    struct LRASettings1
+    struct LRASettings1 : ModuleSettings
     {
 		static constexpr auto moduleName = "LRAModule<LRASettings1>";
         /**

@@ -247,6 +247,13 @@ int main( int argc, char* argv[] )
 
     // Construct solver.
     CMakeStrategySolver* solver = new CMakeStrategySolver();
+    
+    if( settingsManager.printStrategy() )
+    {
+        solver->printStrategyGraph();
+        delete solver;
+        return (int)SMTRAT_EXIT_SUCCESS;
+    }
 	    
     #ifdef SMTRAT_DEVOPTION_Statistics
     //smtrat::CollectStatistics::settings->rOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );

@@ -8,9 +8,11 @@
 
 #pragma once
 
+#include "../../solver/ModuleSettings.h"
+
 namespace smtrat
 {
-    struct LICSettings1
+    struct LICSettings1 : ModuleSettings
     {
 		static constexpr auto moduleName = "LICModule<LICSettings1>";
         /**

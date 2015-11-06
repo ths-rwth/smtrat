@@ -8,13 +8,14 @@
 
 #pragma once
     
+#include "../../solver/ModuleSettings.h"
 #include "../../config.h"
 
 namespace smtrat
 {
     enum class SplittingHeuristic : unsigned { SIZE, UNSATISFIABILITY, SATISFIABILITY };
             
-    struct ICPSettings1
+    struct ICPSettings1 : ModuleSettings
     {
 		static constexpr auto moduleName = "ICPModule<ICPSettings1>";
         /**
@@ -78,5 +79,12 @@ namespace smtrat
          */
         static constexpr bool use_propagation = true;
         
+    };
+    
+    struct ICPSettings2 : ICPSettings1
+    {
+		static constexpr auto moduleName = "ICPModule<ICPSettings2>";
+        static constexpr double contraction_threshold_nia = 0.001;
+        static constexpr double default_splitting_size_nia = 1000;
     };
 }

@@ -28,6 +28,7 @@
 #include "ValidationSettings.h"
 #include "../datastructures/Assignment.h"
 #include "../config.h"
+#include "ModuleSettings.h"
 
 
 

@@ -7,11 +7,12 @@
 
 #pragma once
 
+#include "../../solver/ModuleSettings.h"
 #include "../../utilities/SettingsManager.h"
 
 namespace smtrat 
 {
-struct PreprocessingSettings1 {
+struct PreprocessingSettings1 : ModuleSettings {
 	static constexpr auto moduleName = "PreprocessingModule<PreprocessingSettings1>";
 	static constexpr bool printChanges = false;
 	/**
