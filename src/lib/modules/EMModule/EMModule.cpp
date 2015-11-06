@@ -50,13 +50,21 @@ namespace smtrat
 	template<typename Settings>
     FormulaT EMModule<Settings>::eliminateEquation(const FormulaT& formula) {
 		if (formula.getType() != carl::FormulaType::CONSTRAINT) return formula;
-		if (formula.constraint().relation() != carl::Relation::EQ) return formula;
-		auto factors = formula.constraint().factorization();
-		FormulasT res;
-		for (const auto& factor: factors) {
-			res.emplace_back(factor.first, carl::Relation::EQ);
+		carl::Relation rel = formula.constraint().relation();
+		switch (rel) {
+			case carl::Relation::EQ:
+			case carl::Relation::NEQ: {
+				auto factors = formula.constraint().factorization();
+				FormulasT res;
+				for (const auto& factor: factors) {
+					res.emplace_back(factor.first, rel);
+				}
+				carl::FormulaType ft = (rel == carl::Relation::EQ) ? carl::FormulaType::OR : carl::FormulaType::AND;
+				return FormulaT(ft, std::move(res));
+			}
+			default:
+				return formula;
 		}
-		return FormulaT(carl::FormulaType::OR, std::move(res));
 	}
 }
 
