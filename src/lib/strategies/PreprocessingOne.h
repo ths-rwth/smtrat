@@ -27,16 +27,16 @@ namespace smtrat
         public:
             PreprocessingOne(): Manager() {
 				setStrategy({
-					addBackend<LICModule<LICSettings1>>(
-						//addBackend<EMModule<EMSettings1>>({
-						addBackend<PFEModule<PFESettings1>>(
-						//		addBackend<SplitSOSModule<SplitSOSSettings1>>({
-									addBackend<ESModule<ESSettings1>>(
-						//				addBackend<BEModule<BESettings1>>()
-									)
-						//		})
+					addBackend<BEModule<BESettings1>>(
+						addBackend<LICModule<LICSettings1>>(
+							addBackend<EMModule<EMSettings1>>(
+								addBackend<PFEModule<PFESettings1>>(
+							//		addBackend<SplitSOSModule<SplitSOSSettings1>>({
+										addBackend<ESModule<ESSettings1>>()
+							//		})
+								)
 							)
-						//})
+						)
 					)
 				});
 			}
