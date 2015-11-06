@@ -350,6 +350,7 @@ namespace smtrat
 			// bound-independent part of the model
 			std::vector<carl::Variable> vars(mCAD.getVariables());
 			for (unsigned varID = 0; varID < vars.size(); ++varID) {
+				if (varID != mRealAlgebraicSolution.dim()) break;
 				ModelValue ass = mRealAlgebraicSolution[varID];
 				mModel.insert(std::make_pair(vars[varID], ass));
 			}
