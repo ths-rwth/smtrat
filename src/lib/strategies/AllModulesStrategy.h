@@ -5,7 +5,6 @@
 #include "../modules/BEModule/BEModule.h"
 #include "../modules/BVModule/BVModule.h"
 #include "../modules/CADModule/CADModule.h"
-#include "../modules/CBModule/CBModule.h"
 #include "../modules/CNFerModule/CNFerModule.h"
 #include "../modules/EMModule/EMModule.h"
 #include "../modules/EQModule/EQModule.h"
@@ -37,7 +36,6 @@ namespace smtrat
 					addBackend<BEModule<BESettings1>>(),
 					addBackend<BVModule<BVSettings1>>(),
 					addBackend<CADModule<CADSettings1>>(),
-					addBackend<CBModule<CBSettings1>>(),
 					addBackend<CNFerModule>(),
 					addBackend<EMModule<EMSettings1>>(),
 					addBackend<EQModule<EQSettings1>>(),
