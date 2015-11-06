@@ -131,7 +131,7 @@ namespace smtrat
     
     inline carl::Variable newVariable( const std::string& _name, const carl::VariableType& _type )
     {
-        return carl::VariablePool::getInstance().getFreshVariable( _name, _type );
+        return carl::freshVariable( _name, _type );
     }
     
     inline carl::Sort newSort( const std::string& _name, size_t _arity = 0 )

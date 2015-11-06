@@ -1056,7 +1056,7 @@ namespace smtrat
             return substituteLookup->second;
         }
 
-        mSubstitutes[_poly] = carl::VariablePool::getInstance().getFreshVariable(carl::VariableType::VT_INT);
+        mSubstitutes[_poly] = carl::freshIntegerVariable();
         return mSubstitutes[_poly];
     }
 

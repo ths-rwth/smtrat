@@ -127,7 +127,7 @@ namespace smtrat
         AnnotatedBVTerm(const BVAnnotation& _type) :
         mType(_type), mTerm()
         {
-            carl::Variable var = carl::VariablePool::getInstance().getFreshVariable(carl::VariableType::VT_BITVECTOR);
+            carl::Variable var = carl::freshBitvectorVariable();
             carl::Sort bvSort = carl::SortManager::getInstance().getSort("BitVec", std::vector<std::size_t>({_type.width()}));
             carl::BVVariable bvVar(var, bvSort);
             mTerm = carl::BVTerm(carl::BVTermType::VARIABLE, bvVar);

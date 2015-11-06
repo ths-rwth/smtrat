@@ -878,7 +878,7 @@ namespace smtrat
 
             Variable createVariable()
             {
-                Variable var = carl::VariablePool::getInstance().getFreshVariable(carl::VariableType::VT_BOOL);
+                Variable var = carl::freshBooleanVariable();
                 #ifndef SMTRAT_BV_ENCODER_DEBUG
                 mIntroducedVariables.insert(var);
                 #endif
