@@ -34,6 +34,16 @@ namespace smtrat {
 		std::string moduleName() const {
 			return Module::SettingsType::moduleName;
 		}
+        
+        ModuleSettings moduleSettingsType() const
+        {
+            return Module::SettingsType;
+        }
+        
+        friend std::ostream& operator<<( std::ostream& _os, const ModuleFactory& _moduleFactory )
+        {
+            _os << _moduleFactory.moduleSettingsType();
+        }
 	};
 	
 	template<typename Module>
@@ -114,7 +124,7 @@ namespace smtrat {
 				os << indent << moduleName << " (" << vertex << ")"<< std::endl;
 				history.insert(vertex);
 				for (const auto& backend: mEdges[vertex]) {
-					printAsTree(os, backend.getTarget(), history, indent + "\t");
+					printAsTree(os, backend.getTarget(), history, indent + "    ");
 				}
 			}
 		}

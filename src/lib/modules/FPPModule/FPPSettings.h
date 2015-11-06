@@ -7,11 +7,13 @@
  */
 
 #pragma once
+
+#include "../../solver/ModuleSettings.h"
 #include "../../strategies/PreprocessingOne.h"
 
 namespace smtrat
 {
-    struct FPPSettings1
+    struct FPPSettings1 : ModuleSettings
     {
 		static constexpr auto moduleName = "FPPModule<FPPSettings1>";
         /**

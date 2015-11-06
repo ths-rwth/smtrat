@@ -4,10 +4,12 @@
  *
  */
 
-#include "carl/core/MultivariatePolynomial.h"
-#include "../../config.h"
 
 #pragma once
+
+#include "carl/core/MultivariatePolynomial.h"
+#include "../../config.h"
+#include "../../solver/ModuleSettings.h"
 
 namespace smtrat
 {
@@ -37,7 +39,7 @@ namespace smtrat
 	typedef carl::StdMultivariatePolynomialPolicies<carl::BVReasons> ReasonPolicy;
 	
     
-    struct GBSettings5
+    struct GBSettings5 : ModuleSettings
     {
 		static constexpr auto moduleName = "GBModule<GBSettings5>";
         static const unsigned                            identifier                              = 5;
@@ -70,7 +72,7 @@ namespace smtrat
     
 
     
-    struct GBSettings3
+    struct GBSettings3 : ModuleSettings
     {
 		static constexpr auto moduleName = "GBModule<GBSettings3>";
         static const unsigned                            identifier                              = 3;
@@ -106,7 +108,7 @@ namespace smtrat
 		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
     };
    
-    struct GBSettings1
+    struct GBSettings1 : ModuleSettings
     {
 		static constexpr auto moduleName = "GBModule<GBSettings1>";
         static const unsigned                            identifier                              = 1;
@@ -140,7 +142,7 @@ namespace smtrat
 		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
     };
    
-    struct GBSettings4
+    struct GBSettings4 : ModuleSettings
     {
 		static constexpr auto moduleName = "GBModule<GBSettings4>";
         static const unsigned                            identifier                              = 4;
@@ -174,7 +176,7 @@ namespace smtrat
     
 
     
-    struct GBSettings6
+    struct GBSettings6 : ModuleSettings
     {
 		static constexpr auto moduleName = "GBModule<GBSettings6>";
         static const unsigned                            identifier                              = 6;

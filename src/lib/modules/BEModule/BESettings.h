@@ -8,9 +8,11 @@
 
 #pragma once
 
+#include "../../solver/ModuleSettings.h"
+
 namespace smtrat
 {
-    struct BESettings1
+    struct BESettings1 : ModuleSettings
     {
 		static constexpr auto moduleName = "BEModule<BESettings1>";
         /**

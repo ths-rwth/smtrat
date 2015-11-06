@@ -7,11 +7,12 @@
 
 #pragma once
 
+#include "../../solver/ModuleSettings.h"
 #include "../../config.h"
     
 namespace smtrat
 {   
-    struct VSSettings1
+    struct VSSettings1 : ModuleSettings
     {
 		static constexpr auto moduleName = "VSModule<VSSettings1>";
         static const bool elimination_with_factorization                        = false;

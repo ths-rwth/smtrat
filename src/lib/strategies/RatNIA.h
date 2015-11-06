@@ -4,7 +4,7 @@
 #pragma once
 
 #include "../solver/Manager.h"
-#include "../modules/PreprocessingModule/PreprocessingModule.h"
+#include "../modules/FPPModule/FPPModule.h"
 #include "../modules/IncWidthModule/IncWidthModule.h"
 #include "../modules/SATModule/SATModule.h"
 #include "../modules/IntBlastModule/IntBlastModule.h"
@@ -41,8 +41,8 @@ namespace smtrat
         {
             setStrategy(
             {
-//                addBackend<PreprocessingModule<PreprocessingSettings1>>(
-//                {
+                addBackend<FPPModule<FPPSettings1>>(
+                {
                     addBackend<IncWidthModule<IncWidthSettings1>>(
                     {
 //                        addBackend<SATModule<SATSettings1>>(
@@ -63,7 +63,7 @@ namespace smtrat
                             })
 //                        })
                     })
-//                })
+                })
             });
         }
     };

@@ -9,9 +9,11 @@
 
 #pragma once
 
+#include "../../solver/ModuleSettings.h"
+
 namespace smtrat
 {
-    struct IntEqSettings1
+    struct IntEqSettings1 : ModuleSettings
     {
 		static constexpr auto moduleName = "IntEqModule<IntEqSettings1>";
         /**

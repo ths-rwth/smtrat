@@ -24,6 +24,7 @@ namespace smtrat
         bool mDoPrintTimings;
         bool mPrintModel;
         bool mPrintStatistics;
+        bool mPrintStrategy;
         bool mExportDIMACS;
         bool mReadDIMACS;
     public:
@@ -48,6 +49,11 @@ namespace smtrat
         bool printStatistics() const
         {
             return mPrintStatistics;
+        }
+        
+        bool printStrategy() const
+        {
+            return mPrintStrategy;
         }
         
         bool exportDIMACS() const

@@ -9,9 +9,11 @@
 
 #pragma once
 
+#include "../../solver/ModuleSettings.h"
+
 namespace smtrat
 {
-    struct IncWidthSettings1
+    struct IncWidthSettings1 : ModuleSettings
     {
 		static constexpr auto moduleName = "IncWidthModule<IncWidthSettings1>";
         /**
@@ -25,7 +27,7 @@ namespace smtrat
         /**
          * The half of the maximal width of the intervals specifying the variable domains.
          */
-        static constexpr unsigned half_of_max_width = 8;
+        static constexpr unsigned half_of_max_width = 16;
     };
     
     struct IncWidthSettings2 : IncWidthSettings1

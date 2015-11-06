@@ -12,6 +12,8 @@
 
 #include <carl/cad/CADSettings.h>
 
+#include "../../solver/ModuleSettings.h"
+
 #include "../../utilities/SettingsManager.h"
 
 namespace smtrat
@@ -20,7 +22,7 @@ namespace smtrat
 		TRIVIAL, GREEDY
 	};
     
-    struct CADSettings1
+    struct CADSettings1 : ModuleSettings
     {
 		static constexpr auto moduleName = "CADModule<CADSettings1>";
         static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::SPLIT_EARLY;

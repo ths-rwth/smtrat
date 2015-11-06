@@ -27,9 +27,11 @@
 
 #pragma once
 
+#include "../../solver/ModuleSettings.h"
+
 namespace smtrat
 {
-    struct IntBlastSettings1
+    struct IntBlastSettings1 : ModuleSettings
     {
 		static constexpr auto moduleName = "IntBlastModule<IntBlastSettings1>";
         /**
@@ -41,7 +43,7 @@ namespace smtrat
          * 
          * If this value is set to zero, there is no maximal width. Choose this option only if all variables are bounded.
          */
-        static const std::size_t max_variable_encoding_width = 4;
+        static const std::size_t max_variable_encoding_width = 5;
 
         /**
          * Whether to allow the encoding into complex bitvector terms.
@@ -70,6 +72,7 @@ namespace smtrat
     
     struct IntBlastSettings2 : IntBlastSettings1
     {
+		static constexpr auto moduleName = "IntBlastModule<IntBlastSettings2>";
         static const std::size_t max_variable_encoding_width = 0;
     };
 }

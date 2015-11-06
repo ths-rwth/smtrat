@@ -35,6 +35,7 @@ RuntimeSettingsManager::RuntimeSettingsManager() :
     mDoPrintTimings( false ), 
     mPrintModel( false ),
     mPrintStatistics( false ),
+    mPrintStrategy( false ),
     mExportDIMACS( false ),
     mReadDIMACS( false )
 {}
@@ -162,6 +163,11 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
             else if(optionName == "statistics" || optionName == "s")
             {
                 mPrintStatistics = true;
+            }
+            else if(optionName == "print-strategy")
+            {
+                mPrintStrategy = true;
+                return "";
             }
             // no more global options, so we expect module options
             else
