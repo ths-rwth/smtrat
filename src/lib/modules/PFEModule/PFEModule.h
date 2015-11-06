@@ -80,6 +80,7 @@ namespace smtrat
 						}
 					case carl::Relation::NEQ: return carl::Relation::NEQ;
 				}
+				return carl::Relation::NEQ;
 			}
 			
 			Poly getPoly(const std::vector<Factorization::const_iterator>& its) const {
