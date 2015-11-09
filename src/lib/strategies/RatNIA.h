@@ -45,15 +45,15 @@ namespace smtrat
                 {
                     addBackend<IncWidthModule<IncWidthSettings1>>(
                     {
-//                        addBackend<SATModule<SATSettings1>>(
-//                        {
+//                            addBackend<SATModule<SATSettings1>>(
+//                            {
                             addBackend<IntBlastModule<IntBlastSettings1>>(
                             {
                                 addBackend<SATModule<SATSettings1>>(
                                 {
-                                    addBackend<ICPModule<ICPSettings1>>(
+                                    addBackend<ICPModule<ICPSettings2>>(
                                     {
-                                        addBackend<VSModule<VSSettings1>>(
+                                        addBackend<VSModule<VSSettings234>>(
                                         {
                                             addBackend<CADModule<CADSettings1>>()
                                         })
@@ -61,7 +61,7 @@ namespace smtrat
                                 }).condition( &conditionEvaluation5 ),
                                 addBackend<SATModule<SATSettings1>>().condition( &conditionEvaluation4 )
                             })
-//                        })
+//                            })
                     })
                 })
             });
