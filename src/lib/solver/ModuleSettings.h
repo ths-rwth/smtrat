@@ -18,6 +18,7 @@ namespace smtrat
         friend std::ostream& operator<<( std::ostream& _os, const ModuleSettings& _settings )
         {
             _os << _settings.moduleName;
+            return _os;
         }
     };
 }

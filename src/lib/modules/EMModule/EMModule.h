@@ -45,8 +45,8 @@ namespace smtrat
         
         private:
                 
-			FormulaT eliminateMonomialEquation(const FormulaT& formula);
-			std::function<FormulaT(FormulaT)> eliminateMonomialEquationFunction;
+			FormulaT eliminateEquation(const FormulaT& formula);
+			std::function<FormulaT(FormulaT)> eliminateEquationFunction;
 
     };
 }

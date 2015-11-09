@@ -16,7 +16,7 @@ namespace smtrat
         PModule( _formula, _conditionals, _manager ),
         mVisitor()
     {
-		eliminateMonomialEquationFunction = std::bind(&EMModule<Settings>::eliminateMonomialEquation, this, std::placeholders::_1);
+		eliminateEquationFunction = std::bind(&EMModule<Settings>::eliminateEquation, this, std::placeholders::_1);
     }
 
     template<class Settings>
@@ -27,45 +27,44 @@ namespace smtrat
     Answer EMModule<Settings>::checkCore( bool _full )
     {
         auto receivedFormula = firstUncheckedReceivedSubformula();
-        while( receivedFormula != rReceivedFormula().end() )
-        {
+        while (receivedFormula != rReceivedFormula().end()) {
             FormulaT formula = receivedFormula->formula();
-            if( receivedFormula->formula().propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL) )
-            {
-                formula = mVisitor.visit( receivedFormula->formula(), eliminateMonomialEquationFunction );
+            if (receivedFormula->formula().propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL)) {
+                formula = mVisitor.visit(receivedFormula->formula(), eliminateEquationFunction);
             }
-            if( formula.isFalse() )
-            {
-                receivedFormulasAsInfeasibleSubset( receivedFormula );
+            if (formula.isFalse()) {
+                receivedFormulasAsInfeasibleSubset(receivedFormula);
                 return False;
             }
-            if( !formula.isTrue() )
-            {
-                addSubformulaToPassedFormula( formula, receivedFormula->formula() );
+            if (!formula.isTrue()) {
+                addSubformulaToPassedFormula(formula, receivedFormula->formula());
             }
             ++receivedFormula;
         }
-        Answer ans = runBackends( _full );
-        if( ans == False )
-            generateTrivialInfeasibleSubset(); // TODO: compute a better infeasible subset
+        Answer ans = runBackends(_full);
+        if (ans == False)
+            getInfeasibleSubsets();
         return ans;
     }
     
 	template<typename Settings>
-    FormulaT EMModule<Settings>::eliminateMonomialEquation(const FormulaT& formula) {
+    FormulaT EMModule<Settings>::eliminateEquation(const FormulaT& formula) {
 		if (formula.getType() != carl::FormulaType::CONSTRAINT) return formula;
-		auto c = formula.constraint();
-		if (c.relation() != carl::Relation::EQ) return formula;
-		auto p = c.lhs();
-		if (p.nrTerms() != 1) return formula;
-		carl::Monomial::Arg m = p.lmon();
-		if (m->isConstant()) return formula;
-		FormulasT res;
-		for (const auto& exp: *m) {
-			res.emplace_back(Poly(exp.first), carl::Relation::EQ);
+		carl::Relation rel = formula.constraint().relation();
+		switch (rel) {
+			case carl::Relation::EQ:
+			case carl::Relation::NEQ: {
+				auto factors = formula.constraint().factorization();
+				FormulasT res;
+				for (const auto& factor: factors) {
+					res.emplace_back(factor.first, rel);
+				}
+				carl::FormulaType ft = (rel == carl::Relation::EQ) ? carl::FormulaType::OR : carl::FormulaType::AND;
+				return FormulaT(ft, std::move(res));
+			}
+			default:
+				return formula;
 		}
-		//std::cout << "Monomial elimination!" << std::endl;
-		return FormulaT(carl::FormulaType::OR, std::move(res));
 	}
 }
 
