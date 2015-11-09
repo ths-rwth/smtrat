@@ -51,7 +51,7 @@ namespace smtrat
 				continue;
 			}
 			FormulaT formula = visitor.visit(receivedFormula->formula(), removeFactorsFunction);
-			SMTRAT_LOG_DEBUG("smtrat.PFE", "Simplified " << receivedFormula->formula() << " to " << formula);
+			SMTRAT_LOG_DEBUG("smtrat.pfe", "Simplified " << receivedFormula->formula() << " to " << formula);
 			
 			if (formula.isFalse()) {
 				mInfeasibleSubsets.clear();
@@ -75,7 +75,8 @@ namespace smtrat
 			}
 			++receivedFormula;
 		}
-		SMTRAT_LOG_DEBUG("smtrat.PFE", "Simplification: " << FormulaT(rReceivedFormula()) << " to " << FormulaT(rPassedFormula()));
+		generateVariableAssignments();
+		SMTRAT_LOG_DEBUG("smtrat.pfe", "Simplification: " << FormulaT(rReceivedFormula()) << " to " << FormulaT(rPassedFormula()));
 		Answer ans = runBackends(_full);
 		if (ans == False) {
 			getInfeasibleSubsets();
@@ -94,13 +95,13 @@ namespace smtrat
 	FormulaT PFEModule<Settings>::removeFactors(const FormulaT& formula){
 		if(formula.getType() == carl::FormulaType::CONSTRAINT) {
 			auto factors = formula.constraint().factorization();
-			SMTRAT_LOG_TRACE("smtrat.PFE", "Factorization of " << formula << " = " << factors);
+			SMTRAT_LOG_TRACE("smtrat.pfe", "Factorization of " << formula << " = " << factors);
 			std::vector<Factorization::const_iterator> Pq;
 			std::vector<Factorization::const_iterator> Pr;
 			carl::Relation qrel = carl::Relation::GREATER;
 			for (auto it = factors.begin(); it != factors.end(); it++) {
 				auto i = carl::IntervalEvaluation::evaluate(it->first, completeBounds(it->first));
-				SMTRAT_LOG_TRACE("smtrat.PFE", "Factor " << it->first << " has bounds " << i);
+				SMTRAT_LOG_TRACE("smtrat.pfe", "Factor " << it->first << " has bounds " << i);
 				if (i.isPositive()) {
 					qrel = combine(qrel, carl::Relation::GREATER, it->second);
 					Pq.push_back(it);

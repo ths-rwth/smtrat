@@ -12,9 +12,9 @@
 #pragma once
 
 #include "../../solver/PModule.h"
+#include "../../datastructures/VariableBounds.h"
 #include "PFEStatistics.h"
 #include "PFESettings.h"
-#include "../../datastructures/VariableBounds.h"
 
 namespace smtrat
 {
@@ -80,12 +80,22 @@ namespace smtrat
 						}
 					case carl::Relation::NEQ: return carl::Relation::NEQ;
 				}
+				return carl::Relation::NEQ;
 			}
 			
 			Poly getPoly(const std::vector<Factorization::const_iterator>& its) const {
 				Poly res = ONE_POLYNOMIAL;
 				for (const auto& it: its) res *= carl::pow(it->first, it->second);
 				return res;
+			}
+			
+			void generateVariableAssignments() {
+				for (const auto& bound: varbounds.getEvalIntervalMap()) {
+					if (bound.second.isPointInterval()) {
+						FormulasT origins = varbounds.getOriginsOfBounds(bound.first);
+						addSubformulaToPassedFormula(FormulaT(bound.first - bound.second.lower(), carl::Relation::EQ), std::make_shared<std::vector<FormulaT>>(std::move(origins)));
+					}
+				}
 			}
 			
 			EvalRationalIntervalMap completeBounds(const Poly& p) const {
