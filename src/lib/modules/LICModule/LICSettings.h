@@ -15,9 +15,8 @@ namespace smtrat
     struct LICSettings1 : ModuleSettings
     {
 		static constexpr auto moduleName = "LICModule<LICSettings1>";
-        /**
-         * Example for a setting.
-         */
-        static const bool example_setting = true;
+        
+        static constexpr bool dumpAsDot = false;
+		static constexpr auto dotFilename = "licgraph.dot";
     };
 }
