@@ -374,7 +374,7 @@ namespace smtrat
         }
     }
     
-    void getDefaultModel( Model& _defaultModel, const carl::UEquality& _constraint, bool _overwrite, size_t _seed )
+    void getDefaultModel( Model& /*_defaultModel*/, const carl::UEquality& /*_constraint*/, bool /*_overwrite*/, size_t /*_seed*/ )
     {
         assert(false);
     }
@@ -404,7 +404,7 @@ namespace smtrat
             getDefaultModel( _defaultModel, _bvTerm.operand(), _overwrite, _seed );
     }
     
-    void getDefaultModel( Model& _defaultModel, const ConstraintT& _constraint, bool _overwrite, size_t _seed )
+    void getDefaultModel( Model& _defaultModel, const ConstraintT& _constraint, bool /*_overwrite*/, size_t /*_seed*/ )
     {
         for( carl::Variable::Arg var : _constraint.variables() )
         {
