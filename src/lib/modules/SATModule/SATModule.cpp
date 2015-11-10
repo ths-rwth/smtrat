@@ -2464,8 +2464,8 @@ NextClause:
             }
             ++backend;
         }
-        addClause( mCurrentTheoryConflicts[mCurrentTheoryConflictEvaluations.begin()->second], CONFLICT_CLAUSE );
-        conflictClause = learnts.last();
+        if( addClause( mCurrentTheoryConflicts[mCurrentTheoryConflictEvaluations.begin()->second], CONFLICT_CLAUSE ) )
+            conflictClause = learnts.last();
         auto tcIter = mCurrentTheoryConflictEvaluations.begin();
         ++tcIter;
         size_t addedClauses = 1;
