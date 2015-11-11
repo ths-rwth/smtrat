@@ -656,6 +656,11 @@ namespace smtrat
 				{
 					clause = learnts.last();
 				}
+				else if ( excludeClause.size() == 1)
+				{
+					// Already UnSAT
+					break;
+				}
 				else
 				{
 					assert( false );
@@ -2162,7 +2167,8 @@ SetWatches:
 			CRef cr = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
 			learnts.push( cr );
 			attachClause( cr );
-			mChangedActivities.push_back( cr );
+			if( !mReceivedFormulaPurelyPropositional )
+				mChangedActivities.push_back( cr );
 			claBumpActivity( ca[cr] );
 			#ifdef SMTRAT_DEVOPTION_Validation
 			// this is often an indication that something is wrong with our theory, so we do store our assumptions.
