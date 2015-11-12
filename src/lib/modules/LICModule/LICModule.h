@@ -45,16 +45,16 @@ namespace smtrat
 				}
 			};
 			struct VertexProperty {
-				carl::Variable var;
+				TermT term;
 				Coefficient coeff;
 				std::size_t component;
 				FormulaT constraint;
-				VertexProperty(): var(carl::Variable::NO_VARIABLE), coeff(), component(0), constraint() {}
+				VertexProperty(): term(), coeff(), component(0), constraint() {}
 				friend std::ostream& operator<<(std::ostream& os, const VertexProperty& vp) {
-					if (vp.var == carl::Variable::NO_VARIABLE) {
+					if (vp.term.isZero()) {
 						return os << vp.coeff;
 					} else {
-						return os << vp.var;
+						return os << vp.term;
 					}
 				}
 			};
@@ -63,7 +63,7 @@ namespace smtrat
 			typedef typename boost::graph_traits<Graph>::out_edge_iterator EdgeIterator;
 			typedef typename Graph::vertex_descriptor Vertex;
 			
-			typedef std::map<carl::Variable, Vertex> VertexMap;
+			typedef std::map<TermT, Vertex> VertexMap;
 			
 			struct VertexPropertyWriter {
 			private:
@@ -91,15 +91,18 @@ namespace smtrat
 			
 			Answer processConstraints();
 			
-			bool isSemiPositive(carl::Variable::Arg v) const {
-				return mBounds.getInterval(v).isSemiPositive();
+			bool isZero(const TermT& t) const {
+				return mBounds.getInterval(t).isZero();
 			}
-			bool isSemiNegative(carl::Variable::Arg v) const {
-				return mBounds.getInterval(v).isSemiNegative();
+			bool isSemiPositive(const TermT& t) const {
+				return mBounds.getInterval(t).isSemiPositive();
 			}
-			bool isSuitable(const ConstraintT& c, carl::Variable& src, std::vector<carl::Variable>& dest, Coefficient& coeff);
+			bool isSemiNegative(const TermT& t) const {
+				return mBounds.getInterval(t).isSemiNegative();
+			}
+			bool isSuitable(const ConstraintT& c, TermT& src, std::vector<TermT>& dest, Coefficient& coeff);
 			
-			typename VertexMap::mapped_type getVertex(Graph& g, VertexMap& vm, carl::Variable::Arg v) const;
+			typename VertexMap::mapped_type getVertex(Graph& g, VertexMap& vm, const TermT& t) const;
 			Vertex getVertex(Graph& g, const Coefficient& c, const ConstraintT& constraint) const;
 			
 			Vertex nextInComponent(const Graph& g, const Vertex& source, std::size_t component, std::vector<Vertex>* otherVertices = nullptr) const;

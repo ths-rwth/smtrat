@@ -119,8 +119,8 @@ namespace smtrat
 		Graph graph;
 		VertexMap vertices;
 		
-		carl::Variable src;
-		std::vector<carl::Variable> dest;
+		TermT src;
+		std::vector<TermT> dest;
 		Coefficient coeff;
 		for (const auto& c: mConstraints) {
 			if (isSuitable(c, src, dest, coeff)) {
@@ -169,12 +169,13 @@ namespace smtrat
 	}
 	
 	template<class Settings>
-	bool LICModule<Settings>::isSuitable(const ConstraintT& c, carl::Variable& src, std::vector<carl::Variable>& dest, Coefficient& coeff) {
+	bool LICModule<Settings>::isSuitable(const ConstraintT& c, TermT& src, std::vector<TermT>& dest, Coefficient& coeff) {
 		SMTRAT_LOG_FUNC("smtrat.lic", c);
 		bool invert = false;
-		src = carl::Variable::NO_VARIABLE;
+		src = TermT();
 		dest.clear();
 		coeff.strict = false;
+		coeff.r = 0;
 
 		switch (c.relation()) {
 			case carl::Relation::EQ: break;
@@ -197,39 +198,34 @@ namespace smtrat
 		if (invert) p = -p;
 
 		for (const auto& term: p) {
-			if (term.isConstant()) continue;
-			if (term.coeff() == pone) {
-				if (!term.isSingleVariable()) return false;
-				carl::Variable v = term.getSingleVariable();
-				if (isSemiPositive(v)) {
-					if (src != carl::Variable::NO_VARIABLE) return false;
-					src = v;
-				} else if (isSemiNegative(v)) dest.push_back(v);
-				else return false;
-			} else if (term.coeff() == mone) {
-				if (!term.isSingleVariable()) return false;
-				carl::Variable v = term.getSingleVariable();
-				if (isSemiPositive(v)) dest.push_back(v);
-				else if (isSemiNegative(v)) {
-					if (src != carl::Variable::NO_VARIABLE) return false;
-					src = v;
-				} else return false;
+			if (term.isConstant()) {
+				coeff.r += term.coeff();
+				continue;
+			}
+			if (isZero(term)) {
+				SMTRAT_LOG_WARN("smtrat.lic", "Term " << term << " is zero. We'll ignore it.");
+				continue;
+			}
+			if (isSemiPositive(term)) {
+				if (!src.isZero()) return false;
+				src = term;
+			} else if (isSemiNegative(term)) {
+				dest.push_back(term);
 			} else {
 				return false;
 			}
 		}
 		if (dest.empty()) return false;
-		coeff.r = p.constantPart();
 		return true;
 	}
 	
 	template<class Settings>
-	typename LICModule<Settings>::VertexMap::mapped_type LICModule<Settings>::getVertex(Graph& g, VertexMap& vm, carl::Variable::Arg v) const {
-		auto it = vm.find(v);
+	typename LICModule<Settings>::VertexMap::mapped_type LICModule<Settings>::getVertex(Graph& g, VertexMap& vm, const TermT& t) const {
+		auto it = vm.find(t);
 		if (it != vm.end()) return it->second;
 		auto res = boost::add_vertex(g);
-		g[res].var = v;
-		vm.emplace(v, res);
+		g[res].term = t;
+		vm.emplace(t, res);
 		return res;
 	}
 	template<class Settings>
@@ -299,15 +295,13 @@ namespace smtrat
 				// Sum is zero and all inequalities are weak
 				// -> Variables on the cycle 
 				for (const auto& v: others) {
-					FormulaT lemma(Poly(g[v].var), carl::Relation::EQ);
+					FormulaT lemma(Poly(g[v].term), carl::Relation::EQ);
 					addSubformulaToPassedFormula(lemma, origin);
 				}
 				for (std::size_t i = 1; i < cycle.size(); i++) {
-					TermT a(g[cycle[i-1]].var);
-					TermT b(g[cycle[i]].var);
-					if (isSemiNegative(g[cycle[i-1]].var)) a = -a;
-					if (isSemiNegative(g[cycle[i]].var)) b = -b;
-					FormulaT lemma(a-b + g[edges[i-1]].coeff.r, carl::Relation::EQ);
+					const TermT& a = g[cycle[i-1]].term;
+					const TermT& b = g[cycle[i]].term;
+					FormulaT lemma(a - b + g[edges[i-1]].coeff.r, carl::Relation::EQ);
 					addSubformulaToPassedFormula(lemma, origin);
 				}
 				return True;
