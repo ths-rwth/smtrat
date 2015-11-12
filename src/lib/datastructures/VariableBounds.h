@@ -435,6 +435,20 @@ namespace smtrat
                  * @return The variable bounds as an interval.
                  */
                 const RationalInterval& getInterval( const carl::Variable& _var ) const;
+				
+				/**
+                 * Creates an interval corresponding to the bounds of the given monomial.
+                 * @param _mon The monomial to compute the bounds as interval for.
+                 * @return The monomial bounds as an interval.
+                 */
+				RationalInterval getInterval( carl::Monomial::Arg _mon ) const;
+				
+				/**
+                 * Creates an interval corresponding to the bounds of the given term.
+                 * @param _term The term to compute the bounds as interval for.
+                 * @return The term bounds as an interval.
+                 */
+				RationalInterval getInterval( const carl::Term& _term ) const;
                 
                 /**
                  * Creates an interval map corresponding to the variable bounds.

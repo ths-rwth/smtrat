@@ -565,6 +565,24 @@ namespace smtrat
             return mEvalIntervalMap[_var];
         }
 		
+		template<typename T>
+        RationalInterval VariableBounds<T>::getInterval( carl::Monomial::Arg _mon ) const
+        {
+			RationalInterval res(1);
+			for (const auto& vexp: _mon) {
+				const RationalInterval& i = getInterval(vexp.first);
+				res *= i.pow(vexp.second);
+			}
+			return res;
+		}
+		
+		template<typename T>
+        RationalInterval VariableBounds<T>::getInterval( const carl::Term& _term ) const
+        {
+			if (_term.isConstant()) return RationalInterval(_term.coeff());
+			return getInterval(_term.monomial()) * _term.coeff();
+		}
+		
         template<typename T>
         const smtrat::EvalDoubleIntervalMap& VariableBounds<T>::getIntervalMap() const
         {
