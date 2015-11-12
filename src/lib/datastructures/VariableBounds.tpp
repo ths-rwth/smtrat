@@ -569,7 +569,7 @@ namespace smtrat
         RationalInterval VariableBounds<T>::getInterval( carl::Monomial::Arg _mon ) const
         {
 			RationalInterval res(1);
-			for (const auto& vexp: _mon) {
+			for (const auto& vexp: *_mon) {
 				const RationalInterval& i = getInterval(vexp.first);
 				res *= i.pow(vexp.second);
 			}
@@ -577,7 +577,7 @@ namespace smtrat
 		}
 		
 		template<typename T>
-        RationalInterval VariableBounds<T>::getInterval( const carl::Term& _term ) const
+        RationalInterval VariableBounds<T>::getInterval( const TermT& _term ) const
         {
 			if (_term.isConstant()) return RationalInterval(_term.coeff());
 			return getInterval(_term.monomial()) * _term.coeff();

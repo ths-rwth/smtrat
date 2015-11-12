@@ -448,7 +448,7 @@ namespace smtrat
                  * @param _term The term to compute the bounds as interval for.
                  * @return The term bounds as an interval.
                  */
-				RationalInterval getInterval( const carl::Term& _term ) const;
+				RationalInterval getInterval( const TermT& _term ) const;
                 
                 /**
                  * Creates an interval map corresponding to the variable bounds.
