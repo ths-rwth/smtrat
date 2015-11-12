@@ -303,9 +303,11 @@ namespace smtrat
 					addSubformulaToPassedFormula(lemma, origin);
 				}
 				for (std::size_t i = 1; i < cycle.size(); i++) {
-					carl::Variable a = g[cycle[i-1]].var;
-					carl::Variable b = g[cycle[i]].var;
-					FormulaT lemma(Poly(a)-b + g[edges[i-1]].coeff.r, carl::Relation::EQ);
+					TermT a(g[cycle[i-1]].var);
+					TermT b(g[cycle[i]].var);
+					if (isSemiNegative(g[cycle[i-1]].var)) a = -a;
+					if (isSemiNegative(g[cycle[i]].var)) b = -b;
+					FormulaT lemma(a-b + g[edges[i-1]].coeff.r, carl::Relation::EQ);
 					addSubformulaToPassedFormula(lemma, origin);
 				}
 				return True;
