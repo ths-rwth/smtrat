@@ -148,9 +148,9 @@ namespace smtrat
 		std::vector<boost::default_color_type> color(boost::num_vertices(graph));
 		std::vector<Vertex> root(boost::num_vertices(graph));
 		std::size_t num = boost::strong_components(graph, boost::make_iterator_property_map(component.begin(), boost::get(boost::vertex_index, graph)), 
-							  root_map(boost::make_iterator_property_map(root.begin(), boost::get(boost::vertex_index, graph))).
-							  color_map(boost::make_iterator_property_map(color.begin(), boost::get(boost::vertex_index, graph))).
-							  discover_time_map(boost::make_iterator_property_map(discover_time.begin(), boost::get(boost::vertex_index, graph))));
+							root_map(boost::make_iterator_property_map(root.begin(), boost::get(boost::vertex_index, graph))).
+							color_map(boost::make_iterator_property_map(color.begin(), boost::get(boost::vertex_index, graph))).
+							discover_time_map(boost::make_iterator_property_map(discover_time.begin(), boost::get(boost::vertex_index, graph))));
 		std::vector<std::pair<Vertex,std::size_t>> classes;
 		classes.resize(num);
 		for (std::size_t i = 0; i < component.size(); i++) {
@@ -168,14 +168,26 @@ namespace smtrat
 			std::ofstream out(Settings::dotFilename);
 			boost::write_graphviz(out, graph, vpw);
 			out.close();
+			
+			SMTRAT_LOG_INFO("smtrat.lic", "Graph is:");
+			boost::write_graphviz(std::cout, graph);
+			SMTRAT_LOG_INFO("smtrat.lic", "components: " << component);
+			SMTRAT_LOG_INFO("smtrat.lic", "discover time: " << discover_time);
 		}
 		
 		for (const auto& c: classes) {
+			enumerateCycles(graph, c.first);
 			if (c.second == 1) continue;
 			Answer a = analyzeCycle(graph, c.first);
 			if (a == False) return False;
 		}
 		return True;
+	}
+	
+	template<class Settings>
+	void LICModule<Settings>::enumerateCycles(const Graph& g, const Vertex& v) {
+		CycleCollector cc;
+		boost::breadth_first_search(g, v, boost::visitor(cc) );
 	}
 	
 	template<class Settings>
