@@ -255,6 +255,8 @@ namespace smtrat
 					return Unknown;
 				}
 			}
+		} else if (Settings::integerHandling == carl::cad::IntegerHandling::NONE) {
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Ignoring integers.");
 		} else {
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
 			for (std::size_t d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
