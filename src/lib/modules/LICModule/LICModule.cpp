@@ -64,6 +64,7 @@ namespace smtrat
 	template<class Settings>
 	Answer LICModule<Settings>::checkCore( bool _full )
 	{
+		SMTRAT_LOG_DEBUG("smtrat.lic", "Obtained the following bounds: " << std::endl << mBounds);
 		Answer res = processConstraints();
 		if (res == False) return False;
 		
@@ -76,15 +77,19 @@ namespace smtrat
 	void LICModule<Settings>::addFormula(const FormulaT& f) {
 		switch (f.getType()) {
 			case carl::FormulaType::CONSTRAINT:
-				mConstraints.insert(f.constraint());
 				mBounds.addBound(f.constraint(), f);
+				if (!f.constraint().isBound()) {
+					mConstraints.insert(f.constraint());
+				}
 				break;
 			case carl::FormulaType::NOT: {
 				if (f.subformula().getType() == carl::FormulaType::CONSTRAINT) {
 					const ConstraintT& c = f.subformula().constraint();
 					ConstraintT newC(c.lhs(), invertRelation(c.relation()));
-					mConstraints.insert(newC);
 					mBounds.addBound(newC, f);
+					if (!newC.isBound()) {
+						mConstraints.insert(newC);
+					}
 				}
 				break;
 			}
@@ -97,15 +102,19 @@ namespace smtrat
 	void LICModule<Settings>::removeFormula(const FormulaT& f) {
 		switch (f.getType()) {
 			case carl::FormulaType::CONSTRAINT:
-				mConstraints.erase(f.constraint());
 				mBounds.removeBound(f.constraint(), f);
+				if (!f.constraint().isBound()) {
+					mConstraints.erase(f.constraint());
+				}
 				break;
 			case carl::FormulaType::NOT: {
 				if (f.subformula().getType() == carl::FormulaType::CONSTRAINT) {
 					const ConstraintT& c = f.subformula().constraint();
 					ConstraintT newC(c.lhs(), invertRelation(c.relation()));
-					mConstraints.erase(newC);
 					mBounds.removeBound(newC, f);
+					if (!newC.isBound()) {
+						mConstraints.erase(newC);
+					}
 				}
 				break;
 			}
@@ -154,6 +163,7 @@ namespace smtrat
 		assert(classes.size() == num);
 		
 		if (Settings::dumpAsDot) {
+			SMTRAT_LOG_INFO("smtrat.lic", "Dumping resulting graph to " << Settings::dotFilename);
 			VertexPropertyWriter vpw(graph);
 			std::ofstream out(Settings::dotFilename);
 			boost::write_graphviz(out, graph, vpw);
@@ -192,8 +202,6 @@ namespace smtrat
 				break;
 			case carl::Relation::GEQ: break;
 		}
-		Rational pone = carl::constant_one<Rational>().get();
-		Rational mone = -carl::constant_one<Rational>().get();
 		Poly p = c.lhs();
 		if (invert) p = -p;
 
@@ -207,15 +215,23 @@ namespace smtrat
 				continue;
 			}
 			if (isSemiPositive(term)) {
-				if (!src.isZero()) return false;
+				if (!src.isZero()) {
+					SMTRAT_LOG_TRACE("smtrat.lic", "No: Already has a source, but " << term << " was found.");
+					return false;
+				}
 				src = term;
 			} else if (isSemiNegative(term)) {
-				dest.push_back(term);
+				dest.push_back(-term);
 			} else {
+				SMTRAT_LOG_TRACE("smtrat.lic", "No: Has indefinite term " << term << ".");
 				return false;
 			}
 		}
-		if (dest.empty()) return false;
+		if (dest.empty()) {
+			SMTRAT_LOG_TRACE("smtrat.lic", "No: No destinations were found.");
+			return false;
+		}
+		SMTRAT_LOG_TRACE("smtrat.lic", "Yes: " << src << " -> " << dest << " with coefficient " << coeff << ".");
 		return true;
 	}
 	
@@ -296,12 +312,14 @@ namespace smtrat
 				// -> Variables on the cycle 
 				for (const auto& v: others) {
 					FormulaT lemma(Poly(g[v].term), carl::Relation::EQ);
+					SMTRAT_LOG_DEBUG("smtrat.lic", "Deducted " << lemma);
 					addSubformulaToPassedFormula(lemma, origin);
 				}
 				for (std::size_t i = 1; i < cycle.size(); i++) {
 					const TermT& a = g[cycle[i-1]].term;
 					const TermT& b = g[cycle[i]].term;
 					FormulaT lemma(a - b + g[edges[i-1]].coeff.r, carl::Relation::EQ);
+					SMTRAT_LOG_DEBUG("smtrat.lic", "Deducted " << lemma);
 					addSubformulaToPassedFormula(lemma, origin);
 				}
 				return True;
