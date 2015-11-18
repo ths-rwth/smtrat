@@ -1592,8 +1592,8 @@ namespace smtrat
                     }
                     else if( ass.second.isRAN() )
                     {
-                        assert( ass.second.asRAN()->isNumeric() && carl::isInteger( ass.second.asRAN()->value() ) );
-                        varSolutions[ass.first.asVariable()] = ass.second.asRAN()->value();
+                        assert( ass.second.asRAN().isNumeric() && carl::isInteger( ass.second.asRAN().value() ) );
+                        varSolutions[ass.first.asVariable()] = ass.second.asRAN().value();
                     }
                 }
             }

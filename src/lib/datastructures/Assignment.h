@@ -249,12 +249,12 @@ namespace smtrat
      * It is implemented as subclass of a boost::variant.
      * Possible value types are bool, vs::SqrtEx and carl::RealAlgebraicNumberPtr.
      */
-    class ModelValue : public boost::variant<bool, Rational, vs::SqrtEx, carl::RealAlgebraicNumberPtr<smtrat::Rational>, carl::BVValue, SortValue, UFModel>
+    class ModelValue : public boost::variant<bool, Rational, vs::SqrtEx, carl::RealAlgebraicNumber<smtrat::Rational>, carl::BVValue, SortValue, UFModel>
     {
         /**
          * Base type we are deriving from.
          */
-        typedef boost::variant<bool, Rational, vs::SqrtEx, carl::RealAlgebraicNumberPtr<smtrat::Rational>, carl::BVValue, SortValue, UFModel> Super;
+        typedef boost::variant<bool, Rational, vs::SqrtEx, carl::RealAlgebraicNumber<smtrat::Rational>, carl::BVValue, SortValue, UFModel> Super;
         
     public:
         /**
@@ -313,7 +313,7 @@ namespace smtrat
             } 
             else if( isRAN() & _mval.isRAN() )
             {
-                return std::equal_to<carl::RealAlgebraicNumberPtr<smtrat::Rational>>()(asRAN(), _mval.asRAN());
+                return std::equal_to<carl::RealAlgebraicNumber<smtrat::Rational>>()(asRAN(), _mval.asRAN());
             }
             else if( isBVValue() && _mval.isBVValue() )
             {
@@ -359,7 +359,7 @@ namespace smtrat
          */
         bool isRAN() const
         {
-            return type() == typeid(carl::RealAlgebraicNumberPtr<smtrat::Rational>);
+            return type() == typeid(carl::RealAlgebraicNumber<smtrat::Rational>);
         }
         
         /**
@@ -415,10 +415,10 @@ namespace smtrat
         /**
          * @return The stored value as a real algebraic number.
          */
-        carl::RealAlgebraicNumberPtr<smtrat::Rational> asRAN() const
+        carl::RealAlgebraicNumber<smtrat::Rational> asRAN() const
         {
             assert( isRAN() );
-            return boost::get<carl::RealAlgebraicNumberPtr<smtrat::Rational>>(*this);
+            return boost::get<carl::RealAlgebraicNumber<smtrat::Rational>>(*this);
         }
         
         /**

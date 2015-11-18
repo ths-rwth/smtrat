@@ -24,4 +24,10 @@ namespace smtrat
         
         typedef PreprocessingOne Preprocessor;
     };
+    
+    struct FPPSettings2 : FPPSettings1
+    {
+		static constexpr auto moduleName = "FPPModule<FPPSettings2>";
+        static const int max_iterations = -1;
+    };
 }

@@ -78,7 +78,7 @@ namespace smtrat
                     else // ass.second.isRAN()
                     {
                         assert(false); // TODO: How to add a value to a RAN
-                        carl::RealAlgebraicNumberPtr<smtrat::Rational> bound = carl::RealAlgebraicNumberNR<smtrat::Rational>::create(varShiftIter->second.constantPart());
+                        carl::RealAlgebraicNumber<smtrat::Rational> bound = carl::RealAlgebraicNumber<smtrat::Rational>(varShiftIter->second.constantPart());
 //                        ass.second = ass.second.asRAN()->add( bound );
                     }
                 }

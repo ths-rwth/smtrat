@@ -182,6 +182,7 @@ namespace smtrat
 		if (variableBounds().isConflicting()) {
 			mInfeasibleSubsets.push_back(variableBounds().getConflict());
 			mRealAlgebraicSolution = carl::RealAlgebraicPoint<smtrat::Rational>();
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Returning False due to bound conflict.");
 			return False;
 		}
 		carl::CAD<smtrat::Rational>::BoundMap boundMap;
@@ -207,6 +208,8 @@ namespace smtrat
 				Module::checkInfSubsetForMinimality(mInfeasibleSubsets.begin());
 			}
 			mRealAlgebraicSolution = carl::RealAlgebraicPoint<smtrat::Rational>();
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Returning False due to theory conflict.");
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Subset: " << mInfeasibleSubsets.back());
 			return False;
 		}
 		if (status == carl::cad::Answer::Unknown) {
@@ -214,7 +217,7 @@ namespace smtrat
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
 			std::size_t d = vars.size() - mRealAlgebraicSolution.dim();
 			assert(vars[d].getType() == carl::VariableType::VT_INT);
-			auto r = mRealAlgebraicSolution[0]->branchingPoint();
+			auto r = mRealAlgebraicSolution[0].branchingPoint();
 			assert(!carl::isInteger(r));
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Variables: " << vars);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Branching at " << vars[d] << " = " << r);
@@ -235,7 +238,7 @@ namespace smtrat
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
 			for (unsigned d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
 				if (vars[d].getType() != carl::VariableType::VT_INT) continue;
-				auto r = this->mRealAlgebraicSolution[d]->branchingPoint();
+				auto r = this->mRealAlgebraicSolution[d].branchingPoint();
 				if (!carl::isInteger(r)) {
 					branchAt(vars[d], r);
 					return Unknown;
@@ -246,17 +249,19 @@ namespace smtrat
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
 			for (std::size_t d = this->mRealAlgebraicSolution.dim(); d > 0; d--) {
 				if (vars[d-1].getType() != carl::VariableType::VT_INT) continue;
-				auto r = this->mRealAlgebraicSolution[d-1]->branchingPoint();
+				auto r = this->mRealAlgebraicSolution[d-1].branchingPoint();
 				if (!carl::isInteger(r)) {
 					branchAt(vars[d-1], r);
 					return Unknown;
 				}
 			}
+		} else if (Settings::integerHandling == carl::cad::IntegerHandling::NONE) {
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Ignoring integers.");
 		} else {
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
 			for (std::size_t d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
 				if (vars[d].getType() != carl::VariableType::VT_INT) continue;
-				auto r = this->mRealAlgebraicSolution[d]->branchingPoint();
+				auto r = this->mRealAlgebraicSolution[d].branchingPoint();
 				//if (!carl::isInteger(r)) exit(56);
 				assert(carl::isInteger(r));
 			}
