@@ -168,7 +168,7 @@ Answer GBModule<Settings>::checkCore( bool _full )
     std::cout << "GB Called" << std::endl;
 #endif
     // We can only handle conjunctions of constraints.
-    if(!rReceivedFormula().isRealConstraintConjunction())
+    if(!rReceivedFormula().isConstraintConjunction())
     {
         return Unknown;
     }
