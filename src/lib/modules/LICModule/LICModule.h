@@ -13,10 +13,12 @@
 #include "LICStatistics.h"
 #include "LICSettings.h"
 
-#include <boost/graph/strong_components.hpp>
 #include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/graphviz.hpp>
+#include <boost/graph/breadth_first_search.hpp>
 #include <boost/graph/graph_utility.hpp>
+#include <boost/graph/graphviz.hpp>
+#include <boost/graph/strong_components.hpp>
+#include <boost/graph/visitors.hpp>
 
 namespace smtrat
 {
@@ -77,7 +79,25 @@ namespace smtrat
 			public:
 				VertexPropertyWriter(const Graph& graph): g(graph) {}
 				void operator()(std::ostream& out, const Vertex& vd) const {
-					out << " [label=\"" << g[vd] << "\", color=\"" << colors[g[vd].component % colors.size()] << "\"]";
+					out << " [label=\"" << vd << ": " << g[vd] << "\", color=\"" << colors[g[vd].component % colors.size()] << "\"]";
+				}
+			};
+			
+			struct CycleCollector: public boost::bfs_visitor<> {
+				std::map<Vertex, std::vector<Vertex>> predecessors;
+				std::vector<int> cycles;
+				//const std::vector<std::size_t>& discovery
+				
+				template<typename Edge>
+				void operator()(Edge e, const Graph& g) {
+					Vertex source = boost::source(e, g);
+					Vertex target = boost::target(e, g);
+					auto f = cycles[source];
+					if (predecessors.find(target) == predecessors.end()) {
+						predecessors.emplace(target, {source});
+					} else {
+						//cycles.push_back(e);
+					}
 				}
 			};
 			
@@ -100,6 +120,7 @@ namespace smtrat
 			bool isSemiNegative(const TermT& t) const {
 				return mBounds.getInterval(t).isSemiNegative();
 			}
+			void enumerateCycles(const Graph& g, const Vertex& v);
 			bool isSuitable(const ConstraintT& c, TermT& src, std::vector<TermT>& dest, Coefficient& coeff);
 			
 			typename VertexMap::mapped_type getVertex(Graph& g, VertexMap& vm, const TermT& t) const;

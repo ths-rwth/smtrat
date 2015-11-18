@@ -187,16 +187,17 @@ namespace smtrat
     void ModuleInput::updateProperties()
     {
         mProperties = carl::Condition();
-        mProperties |= carl::PROP_IS_PURE_CONJUNCTION | carl::PROP_IS_IN_CNF | carl::PROP_IS_IN_NNF;
+        mProperties |= carl::PROP_IS_PURE_CONJUNCTION | PROP_IS_LITERAL_CONJUNCTION | carl::PROP_IS_IN_CNF | carl::PROP_IS_IN_NNF;
         for( const FormulaWithOrigins& fwo : *this )
         {
             carl::Condition subFormulaConds = fwo.formula().properties();
             if( !(carl::PROP_IS_A_CLAUSE<=subFormulaConds) )
             {
                 mProperties &= ~carl::PROP_IS_PURE_CONJUNCTION;
+                mProperties &= ~carl::PROP_IS_LITERAL_CONJUNCTION;
                 mProperties &= ~carl::PROP_IS_IN_CNF;
             }
-            else if( !(carl::PROP_IS_A_LITERAL<=subFormulaConds) )
+            else if( !(carl::PROP_IS_AN_ATOM<=subFormulaConds) )
                 mProperties &= ~carl::PROP_IS_PURE_CONJUNCTION;
             if( !(carl::PROP_IS_IN_NNF<=subFormulaConds) )
                 mProperties &= ~carl::PROP_IS_IN_NNF;
