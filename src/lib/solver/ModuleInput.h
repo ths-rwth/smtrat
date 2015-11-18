@@ -191,6 +191,18 @@ namespace smtrat
             else
                 return false;
         }
+        
+        /**
+         * @return true, if this formula is a conjunction of literals of constraints;
+         *         false, otherwise.
+         */
+        bool isConstraintLiteralConjunction() const
+        {
+            if( carl::PROP_IS_LITERAL_CONJUNCTION <= mProperties )
+                return !(carl::PROP_CONTAINS_BOOLEAN <= mProperties) && !(carl::PROP_CONTAINS_UNINTERPRETED_EQUATIONS <= mProperties);
+            else
+                return false;
+        }
 
         /**
          * @return true, if this formula is a conjunction of real constraints;
@@ -202,12 +214,30 @@ namespace smtrat
         }
 
         /**
+         * @return true, if this formula is a conjunction of literals of real constraints;
+         *         false, otherwise.
+         */
+        bool isRealConstraintLiteralConjunction() const
+        {
+            return isConstraintLiteralConjunction() && !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= mProperties);
+        }
+
+        /**
          * @return true, if this formula is a conjunction of integer constraints;
          *         false, otherwise.
          */
         bool isIntegerConstraintConjunction() const
         {
             return isConstraintConjunction() && !(carl::PROP_CONTAINS_REAL_VALUED_VARS <= mProperties);
+        }
+
+        /**
+         * @return true, if this formula is a conjunction of literals of integer constraints;
+         *         false, otherwise.
+         */
+        bool isIntegerConstraintLiteralConjunction() const
+        {
+            return isConstraintLiteralConjunction() && !(carl::PROP_CONTAINS_REAL_VALUED_VARS <= mProperties);
         }
 
         /**
