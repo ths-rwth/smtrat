@@ -16,7 +16,7 @@ namespace smtrat
     {
 		static constexpr auto moduleName = "LICModule<LICSettings1>";
         
-        static constexpr bool dumpAsDot = true;
+        static constexpr bool dumpAsDot = false;
 		static constexpr auto dotFilename = "licgraph.dot";
     };
 }
