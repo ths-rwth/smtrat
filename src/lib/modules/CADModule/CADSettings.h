@@ -33,4 +33,10 @@ namespace smtrat
         
         static const bool dummy;
     };
+    
+    struct CADSettings2 : CADSettings1
+    {
+		static constexpr auto moduleName = "CADModule<CADSettings2>";
+        static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::NONE;
+    };
 }
