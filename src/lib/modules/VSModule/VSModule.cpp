@@ -1587,7 +1587,8 @@ namespace smtrat
                         Rational nextIntTCinRange;
                         if( currentState->getNextIntTestCandidate( nextIntTCinRange, Settings::int_max_range ) )
                         {
-                            branchAt( currentState->substitution().variable(), nextIntTCinRange, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
+                            if( Settings::use_branch_and_bound )
+                                branchAt( currentState->substitution().variable(), nextIntTCinRange, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
                         }
                         else
                         {
@@ -1600,22 +1601,25 @@ namespace smtrat
                     else
                     {
                         assert( currentState->substitution().type() != Substitution::PLUS_EPSILON );
-                        EvalRationalMap partialVarSolutions;
-                        const Poly& substitutionPoly = (*currentState->substitution().originalConditions().begin())->constraint().lhs();
-                        for( auto var = varOrder.rbegin(); var != varOrder.rend(); ++var )
+                        if( Settings::use_branch_and_bound && Settings::branch_and_bound_at_origin )
                         {
-                            assert( varSolutions.find( *var ) != varSolutions.end() );
-                            partialVarSolutions[*var] = varSolutions[*var];
-                            Poly subPolyPartiallySubstituted = substitutionPoly.substitute( partialVarSolutions );
-                            Rational cp = subPolyPartiallySubstituted.coprimeFactorWithoutConstant();
-                            assert( carl::getNum( cp ) == ONE_RATIONAL || carl::getNum( cp ) == MINUS_ONE_RATIONAL );
-                            Rational g = carl::getDenom( cp );
-                            if( g > ZERO_RATIONAL && carl::mod( Integer( subPolyPartiallySubstituted.constantPart() ), Integer( g ) ) != 0 )
+                            EvalRationalMap partialVarSolutions;
+                            const Poly& substitutionPoly = (*currentState->substitution().originalConditions().begin())->constraint().lhs();
+                            for( auto var = varOrder.rbegin(); var != varOrder.rend(); ++var )
                             {
-                                Poly branchEx = (subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * cp;
-                                Rational branchValue = subPolyPartiallySubstituted.constantPart() * cp;
-                                if( branchAt( branchEx, true, branchValue, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) ) )
-                                    return false;
+                                assert( varSolutions.find( *var ) != varSolutions.end() );
+                                partialVarSolutions[*var] = varSolutions[*var];
+                                Poly subPolyPartiallySubstituted = substitutionPoly.substitute( partialVarSolutions );
+                                Rational cp = subPolyPartiallySubstituted.coprimeFactorWithoutConstant();
+                                assert( carl::getNum( cp ) == ONE_RATIONAL || carl::getNum( cp ) == MINUS_ONE_RATIONAL );
+                                Rational g = carl::getDenom( cp );
+                                if( g > ZERO_RATIONAL && carl::mod( Integer( subPolyPartiallySubstituted.constantPart() ), Integer( g ) ) != 0 )
+                                {
+                                    Poly branchEx = (subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * cp;
+                                    Rational branchValue = subPolyPartiallySubstituted.constantPart() * cp;
+                                    if( branchAt( branchEx, true, branchValue, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) ) )
+                                        return false;
+                                }
                             }
                         }
                         // Insert the (integer!) assignments of the other variables.
@@ -1625,7 +1629,8 @@ namespace smtrat
                         assIsInteger &= carl::isInteger( evaluatedSubTerm );
                         if( !assIsInteger )
                         {
-                            branchAt( currentState->substitution().variable(), evaluatedSubTerm, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
+                            if( Settings::use_branch_and_bound )
+                                branchAt( currentState->substitution().variable(), evaluatedSubTerm, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
                             return false;
                         }
                         assert( varSolutions.find( currentState->substitution().variable() ) == varSolutions.end() );
