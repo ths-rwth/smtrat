@@ -1632,15 +1632,18 @@ namespace smtrat
                                 assert( varSolutions.find( *var ) != varSolutions.end() );
                                 partialVarSolutions[*var] = varSolutions[*var];
                                 Poly subPolyPartiallySubstituted = substitutionPoly.substitute( partialVarSolutions );
-                                Rational cp = subPolyPartiallySubstituted.coprimeFactorWithoutConstant();
-                                assert( carl::getNum( cp ) == ONE_RATIONAL || carl::getNum( cp ) == MINUS_ONE_RATIONAL );
-                                Rational g = carl::getDenom( cp );
-                                if( g > ZERO_RATIONAL && carl::mod( Integer( subPolyPartiallySubstituted.constantPart() ), Integer( g ) ) != 0 )
+                                if( !subPolyPartiallySubstituted.isZero() )
                                 {
-                                    Poly branchEx = (subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * cp;
-                                    Rational branchValue = subPolyPartiallySubstituted.constantPart() * cp;
-                                    if( branchAt( branchEx, true, branchValue, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) ) )
-                                        return false;
+                                    Rational cp = subPolyPartiallySubstituted.coprimeFactorWithoutConstant();
+                                    assert( carl::getNum( cp ) == ONE_RATIONAL || carl::getNum( cp ) == MINUS_ONE_RATIONAL );
+                                    Rational g = carl::getDenom( cp );
+                                    if( g > ZERO_RATIONAL && carl::mod( Integer( subPolyPartiallySubstituted.constantPart() ), Integer( g ) ) != 0 )
+                                    {
+                                        Poly branchEx = (subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * cp;
+                                        Rational branchValue = subPolyPartiallySubstituted.constantPart() * cp;
+                                        if( branchAt( branchEx, true, branchValue, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) ) )
+                                            return false;
+                                    }
                                 }
                             }
                         }
