@@ -28,11 +28,21 @@ namespace smtrat
          * The half of the maximal width of the intervals specifying the variable domains.
          */
         static constexpr unsigned half_of_max_width = 16;
+        /**
+         * 
+         */
+        static constexpr bool exclude_searched_space = true;
     };
     
     struct IncWidthSettings2 : IncWidthSettings1
     {
         static constexpr auto moduleName = "IncWidthModule<IncWidthSettings2>";
         static constexpr unsigned half_of_max_width = 0;
+    };
+    
+    struct IncWidthSettings3 : IncWidthSettings1
+    {
+        static constexpr auto moduleName = "IncWidthModule<IncWidthSettings3>";
+        static constexpr bool exclude_searched_space = false;
     };
 }
