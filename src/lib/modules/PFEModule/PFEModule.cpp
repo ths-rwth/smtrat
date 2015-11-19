@@ -126,24 +126,24 @@ namespace smtrat
 				assert(qrel != carl::Relation::NEQ);
 				switch (qrel) {
 					case carl::Relation::GREATER: return FormulaT(getPoly(Pr), rel);
-					case carl::Relation::GEQ: 
+					case carl::Relation::GEQ:
 						switch (rel) {
-							case carl::Relation::EQ: return FormulaT(carl::FormulaType::OR, FormulaT(getPoly(Pq), carl::Relation::EQ), FormulaT(getPoly(Pr), rel));
-							case carl::Relation::NEQ: return FormulaT(carl::FormulaType::AND, FormulaT(getPoly(Pq), carl::Relation::GREATER), FormulaT(getPoly(Pr), rel));
-							case carl::Relation::GEQ: return FormulaT(carl::FormulaType::OR, FormulaT(getPoly(Pq), carl::Relation::EQ), FormulaT(getPoly(Pr), rel));
-							case carl::Relation::GREATER: return FormulaT(carl::FormulaType::AND, FormulaT(getPoly(Pq), carl::Relation::GREATER), FormulaT(getPoly(Pr), rel));
-							case carl::Relation::LEQ: return FormulaT(carl::FormulaType::OR, FormulaT(getPoly(Pq), carl::Relation::EQ), FormulaT(getPoly(Pr), rel));
-							case carl::Relation::LESS: return FormulaT(carl::FormulaType::AND, FormulaT(getPoly(Pq), carl::Relation::GREATER), FormulaT(getPoly(Pr), rel));
+							case carl::Relation::EQ: return FormulaT(carl::FormulaType::OR, {FormulaT(getPoly(Pq), carl::Relation::EQ), FormulaT(getPoly(Pr), rel)});
+							case carl::Relation::NEQ: return FormulaT(carl::FormulaType::AND, {FormulaT(getPoly(Pq), carl::Relation::GREATER), FormulaT(getPoly(Pr), rel)});
+							case carl::Relation::GEQ: return FormulaT(carl::FormulaType::OR, {FormulaT(getPoly(Pq), carl::Relation::EQ), FormulaT(getPoly(Pr), rel)});
+							case carl::Relation::GREATER: return FormulaT(carl::FormulaType::AND, {FormulaT(getPoly(Pq), carl::Relation::GREATER), FormulaT(getPoly(Pr), rel)});
+							case carl::Relation::LEQ: return FormulaT(carl::FormulaType::OR, {FormulaT(getPoly(Pq), carl::Relation::EQ), FormulaT(getPoly(Pr), rel)});
+							case carl::Relation::LESS: return FormulaT(carl::FormulaType::AND, {FormulaT(getPoly(Pq), carl::Relation::GREATER), FormulaT(getPoly(Pr), rel)});
 						}
 					case carl::Relation::EQ: return FormulaT(ZERO_POLYNOMIAL, rel);
 					case carl::Relation::LEQ:
 						switch (rel) {
-							case carl::Relation::EQ: return FormulaT(carl::FormulaType::OR, FormulaT(getPoly(Pq), carl::Relation::EQ), FormulaT(getPoly(Pr), rel));
-							case carl::Relation::NEQ: return FormulaT(carl::FormulaType::AND, FormulaT(getPoly(Pq), carl::Relation::LESS), FormulaT(getPoly(Pr), rel));
-							case carl::Relation::GEQ: return FormulaT(carl::FormulaType::OR, FormulaT(getPoly(Pq), carl::Relation::EQ), FormulaT(getPoly(Pr), carl::Relation::LEQ));
-							case carl::Relation::GREATER: return FormulaT(carl::FormulaType::AND, FormulaT(getPoly(Pq), carl::Relation::LESS), FormulaT(getPoly(Pr), carl::Relation::LESS));
-							case carl::Relation::LEQ: return FormulaT(carl::FormulaType::OR, FormulaT(getPoly(Pq), carl::Relation::EQ), FormulaT(getPoly(Pr), carl::Relation::GEQ));
-							case carl::Relation::LESS: return FormulaT(carl::FormulaType::AND, FormulaT(getPoly(Pq), carl::Relation::LESS), FormulaT(getPoly(Pr), carl::Relation::GREATER));
+							case carl::Relation::EQ: return FormulaT(carl::FormulaType::OR, {FormulaT(getPoly(Pq), carl::Relation::EQ), FormulaT(getPoly(Pr), rel)});
+							case carl::Relation::NEQ: return FormulaT(carl::FormulaType::AND, {FormulaT(getPoly(Pq), carl::Relation::LESS), FormulaT(getPoly(Pr), rel)});
+							case carl::Relation::GEQ: return FormulaT(carl::FormulaType::OR, {FormulaT(getPoly(Pq), carl::Relation::EQ), FormulaT(getPoly(Pr), carl::Relation::LEQ)});
+							case carl::Relation::GREATER: return FormulaT(carl::FormulaType::AND, {FormulaT(getPoly(Pq), carl::Relation::LESS), FormulaT(getPoly(Pr), carl::Relation::LESS)});
+							case carl::Relation::LEQ: return FormulaT(carl::FormulaType::OR, {FormulaT(getPoly(Pq), carl::Relation::EQ), FormulaT(getPoly(Pr), carl::Relation::GEQ)});
+							case carl::Relation::LESS: return FormulaT(carl::FormulaType::AND, {FormulaT(getPoly(Pq), carl::Relation::LESS), FormulaT(getPoly(Pr), carl::Relation::GREATER)});
 						}
 					case carl::Relation::LESS:
 						switch (rel) {

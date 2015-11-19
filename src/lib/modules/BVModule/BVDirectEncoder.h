@@ -917,11 +917,11 @@ namespace smtrat
             }
 
             Bit boolImplies(const Bit& _first, const Bit& _second) {
-                return Formula(carl::FormulaType::IMPLIES, _first, _second);
+                return Formula(carl::FormulaType::IMPLIES, {_first, _second});
             }
 
             Bit boolAnd(const Bit& _first, const Bit& _second) {
-                return Formula(carl::FormulaType::AND, _first, _second);
+                return Formula(carl::FormulaType::AND, {_first, _second});
             }
 
             Bit boolAnd(const Bits& _operands) {
@@ -929,7 +929,7 @@ namespace smtrat
             }
 
             Bit boolOr(const Bit& _first, const Bit& _second) {
-                return Formula(carl::FormulaType::OR, _first, _second);
+                return Formula(carl::FormulaType::OR, {_first, _second});
             }
 
             Bit boolOr(const Bits& _operands) {
@@ -937,15 +937,15 @@ namespace smtrat
             }
 
             Bit boolXor(const Bit& _first, const Bit& _second) {
-                return Formula(carl::FormulaType::XOR, _first, _second);
+                return Formula(carl::FormulaType::XOR, {_first, _second});
             }
 
             Bit boolIff(const Bit& _first, const Bit& _second) {
-                return Formula(carl::FormulaType::IFF, _first, _second);
+                return Formula(carl::FormulaType::IFF, {_first, _second});
             }
 
             Bit boolIte(const Bit& _condition, const Bit& _then, const Bit& _else) {
-                return Formula(carl::FormulaType::ITE, _condition, _then, _else);
+                return Formula(carl::FormulaType::ITE, {_condition, _then, _else});
             }
 
             FormulaT encodeBVConstraints(const FormulaT _original)

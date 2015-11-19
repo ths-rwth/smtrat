@@ -68,7 +68,7 @@ namespace smtrat
         mIterations = 0;
         Answer ans = Unknown;
         FormulaT formulaBeforePreprocessing = (FormulaT) rReceivedFormula();
-        while( Settings::max_iterations < 0 || mIterations < Settings::max_iterations )
+        while( Settings::max_iterations < 0 || mIterations < (std::size_t)Settings::max_iterations )
         {
             ++mIterations;
             // call the preprocessing on the current formula

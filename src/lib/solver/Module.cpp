@@ -486,13 +486,13 @@ namespace smtrat
         subformulas.push_back( greaterConstraint );
         addDeduction( FormulaT( FormulaType::OR, std::move( subformulas ) ), DeductionType::PERMANENT );
         // (not p<0 or p!=0)
-        addDeduction( FormulaT( FormulaType::OR, notLessConstraint, _unequalConstraint ), DeductionType::PERMANENT );
+        addDeduction( FormulaT( FormulaType::OR, {notLessConstraint, _unequalConstraint} ), DeductionType::PERMANENT );
         // (not p>0 or p!=0)
-        addDeduction( FormulaT( FormulaType::OR, notGreaterConstraint, _unequalConstraint ), DeductionType::PERMANENT );
+        addDeduction( FormulaT( FormulaType::OR, {notGreaterConstraint, _unequalConstraint} ), DeductionType::PERMANENT );
         // (not p>0 or not p<0)
-        addDeduction( FormulaT( FormulaType::OR, notGreaterConstraint, notLessConstraint ), DeductionType::PERMANENT );
+        addDeduction( FormulaT( FormulaType::OR, {notGreaterConstraint, notLessConstraint} ), DeductionType::PERMANENT );
     }
-    
+
     unsigned Module::checkModel() const
     {
         this->updateModel();
