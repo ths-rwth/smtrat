@@ -170,7 +170,6 @@ namespace smtrat
 			out.close();
 			
 			SMTRAT_LOG_INFO("smtrat.lic", "Graph is:");
-			boost::write_graphviz(std::cout, graph);
 			SMTRAT_LOG_INFO("smtrat.lic", "components: " << component);
 			SMTRAT_LOG_INFO("smtrat.lic", "discover time: " << discover_time);
 		}

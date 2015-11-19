@@ -56,11 +56,18 @@ namespace smtrat
     bool VSModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
         mLazyMode = false;
-        if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT )
+        bool negated = false;
+        FormulaT constraintF = _subformula->formula();
+        if( constraintF.getType() == carl::FormulaType::NOT && constraintF.subformula().getType() == carl::FormulaType::CONSTRAINT )
         {
-            const ConstraintT& constraint = _subformula->formula().constraint();
+            constraintF = _subformula->formula().subformula();
+            negated = true;
+        }
+        if( constraintF.getType() == carl::FormulaType::CONSTRAINT )
+        {
+            const ConstraintT& constraint = negated ? ConstraintT( constraintF.constraint().lhs(), carl::invertRelation( constraintF.constraint().relation() ) ) : constraintF.constraint();
             const vs::Condition* condition = new vs::Condition( constraint, mpConditionIdAllocator->get() );
-            mFormulaConditionMap[_subformula->formula()] = condition;
+            mFormulaConditionMap[constraintF] = condition;
             assert( constraint.isConsistent() == 2 );
             for( auto var = constraint.variables().begin(); var != constraint.variables().end(); ++var )
                 mAllVariables.insert( *var );
@@ -114,10 +121,13 @@ namespace smtrat
     void VSModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
         mLazyMode = false;
-        if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT )
+        FormulaT constraintF = _subformula->formula();
+        if( constraintF.getType() == carl::FormulaType::NOT && constraintF.subformula().getType() == carl::FormulaType::CONSTRAINT )
+            constraintF = _subformula->formula().subformula();
+        if( constraintF.getType() == carl::FormulaType::CONSTRAINT )
         {
             mInconsistentConstraintAdded = false;
-            auto formulaConditionPair = mFormulaConditionMap.find( _subformula->formula() );
+            auto formulaConditionPair = mFormulaConditionMap.find( constraintF );
             assert( formulaConditionPair != mFormulaConditionMap.end() );
             const vs::Condition* condToDelete = formulaConditionPair->second;
             if( Settings::incremental_solving )
@@ -166,9 +176,9 @@ namespace smtrat
             }
             addStateToRanking( mpStateTree );
         }
-        if( !rReceivedFormula().isConstraintConjunction() )
+        if( !rReceivedFormula().isConstraintLiteralConjunction() )
             return Unknown;
-        if( !(rReceivedFormula().isIntegerConstraintConjunction() || rReceivedFormula().isRealConstraintConjunction()) )
+        if( !(rReceivedFormula().isIntegerConstraintLiteralConjunction() || rReceivedFormula().isRealConstraintLiteralConjunction()) )
             return Unknown;
         if( !mConditionsChanged && (!_full || mLastCheckFull) )
         {
@@ -1468,6 +1478,12 @@ namespace smtrat
                     if( (**oCond).constraint() == receivedConstraint->formula().constraint() )
                         break;
                 }
+                else if( receivedConstraint->formula().getType() == carl::FormulaType::NOT && receivedConstraint->formula().subformula().getType() == carl::FormulaType::CONSTRAINT )
+                {
+                    ConstraintT recConstraint = receivedConstraint->formula().subformula().constraint();
+                    if( (**oCond).constraint() == ConstraintT( recConstraint.lhs(), carl::invertRelation( recConstraint.relation() ) ) )
+                        break;
+                }
                 ++receivedConstraint;
             }
             assert( receivedConstraint != rReceivedFormula().end() );
@@ -1504,6 +1520,12 @@ namespace smtrat
                 if( receivedConstraint->formula().getType() == carl::FormulaType::CONSTRAINT )
                 {
                     if( (**oCond).constraint() == receivedConstraint->formula().constraint() )
+                        break;
+                }
+                else if( receivedConstraint->formula().getType() == carl::FormulaType::NOT && receivedConstraint->formula().subformula().getType() == carl::FormulaType::CONSTRAINT )
+                {
+                    ConstraintT recConstraint = receivedConstraint->formula().subformula().constraint();
+                    if( (**oCond).constraint() == ConstraintT( recConstraint.lhs(), carl::invertRelation( recConstraint.relation() ) ) )
                         break;
                 }
                 ++receivedConstraint;
@@ -1550,7 +1572,7 @@ namespace smtrat
     template<class Settings>
     bool VSModule<Settings>::solutionInDomain()
     {
-        if( rReceivedFormula().isRealConstraintConjunction() )
+        if( rReceivedFormula().isRealConstraintLiteralConjunction() )
             return true;
         assert( solverState() != False );
         if( !mRanking.empty() )
@@ -1587,7 +1609,8 @@ namespace smtrat
                         Rational nextIntTCinRange;
                         if( currentState->getNextIntTestCandidate( nextIntTCinRange, Settings::int_max_range ) )
                         {
-                            branchAt( currentState->substitution().variable(), nextIntTCinRange, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
+                            if( Settings::use_branch_and_bound )
+                                branchAt( currentState->substitution().variable(), nextIntTCinRange, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
                         }
                         else
                         {
@@ -1600,22 +1623,28 @@ namespace smtrat
                     else
                     {
                         assert( currentState->substitution().type() != Substitution::PLUS_EPSILON );
-                        EvalRationalMap partialVarSolutions;
-                        const Poly& substitutionPoly = (*currentState->substitution().originalConditions().begin())->constraint().lhs();
-                        for( auto var = varOrder.rbegin(); var != varOrder.rend(); ++var )
+                        if( Settings::use_branch_and_bound && Settings::branch_and_bound_at_origin )
                         {
-                            assert( varSolutions.find( *var ) != varSolutions.end() );
-                            partialVarSolutions[*var] = varSolutions[*var];
-                            Poly subPolyPartiallySubstituted = substitutionPoly.substitute( partialVarSolutions );
-                            Rational cp = subPolyPartiallySubstituted.coprimeFactorWithoutConstant();
-                            assert( carl::getNum( cp ) == ONE_RATIONAL || carl::getNum( cp ) == MINUS_ONE_RATIONAL );
-                            Rational g = carl::getDenom( cp );
-                            if( g > ZERO_RATIONAL && carl::mod( Integer( subPolyPartiallySubstituted.constantPart() ), Integer( g ) ) != 0 )
+                            EvalRationalMap partialVarSolutions;
+                            const Poly& substitutionPoly = (*currentState->substitution().originalConditions().begin())->constraint().lhs();
+                            for( auto var = varOrder.rbegin(); var != varOrder.rend(); ++var )
                             {
-                                Poly branchEx = (subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * cp;
-                                Rational branchValue = subPolyPartiallySubstituted.constantPart() * cp;
-                                if( branchAt( branchEx, true, branchValue, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) ) )
-                                    return false;
+                                assert( varSolutions.find( *var ) != varSolutions.end() );
+                                partialVarSolutions[*var] = varSolutions[*var];
+                                Poly subPolyPartiallySubstituted = substitutionPoly.substitute( partialVarSolutions );
+                                if( !subPolyPartiallySubstituted.isZero() )
+                                {
+                                    Rational cp = subPolyPartiallySubstituted.coprimeFactorWithoutConstant();
+                                    assert( carl::getNum( cp ) == ONE_RATIONAL || carl::getNum( cp ) == MINUS_ONE_RATIONAL );
+                                    Rational g = carl::getDenom( cp );
+                                    if( g > ZERO_RATIONAL && carl::mod( Integer( subPolyPartiallySubstituted.constantPart() ), Integer( g ) ) != 0 )
+                                    {
+                                        Poly branchEx = (subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * cp;
+                                        Rational branchValue = subPolyPartiallySubstituted.constantPart() * cp;
+                                        if( branchAt( branchEx, true, branchValue, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) ) )
+                                            return false;
+                                    }
+                                }
                             }
                         }
                         // Insert the (integer!) assignments of the other variables.
@@ -1625,7 +1654,8 @@ namespace smtrat
                         assIsInteger &= carl::isInteger( evaluatedSubTerm );
                         if( !assIsInteger )
                         {
-                            branchAt( currentState->substitution().variable(), evaluatedSubTerm, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
+                            if( Settings::use_branch_and_bound )
+                                branchAt( currentState->substitution().variable(), evaluatedSubTerm, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
                             return false;
                         }
                         assert( varSolutions.find( currentState->substitution().variable() ) == varSolutions.end() );

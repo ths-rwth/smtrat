@@ -278,38 +278,41 @@ namespace smtrat
                 addedBounds.pop_back();
             }
         }
-        // Add the not yet covered search space.
-        FormulasT formulas;
-        for( carl::Variable::Arg var : arithVars )
+        if( Settings::exclude_searched_space )
         {
-            auto vb = varBounds.find( var );
-            if( vb == varBounds.end() || (vb->second.lowerBoundType() == carl::BoundType::INFTY && vb->second.upperBoundType() == carl::BoundType::INFTY) )
+            // Add the not yet covered search space.
+            FormulasT formulas;
+            for( carl::Variable::Arg var : arithVars )
             {
-                formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::GREATER, Rational( mHalfOfCurrentWidth ) ) ) );
-                formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::LEQ, -Rational( mHalfOfCurrentWidth ) ) ) );
-            }
-            else
-            {
-                if( vb->second.lowerBoundType() != carl::BoundType::INFTY )
-                    formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::GEQ, Rational(2)*mHalfOfCurrentWidth ) ) );
+                auto vb = varBounds.find( var );
+                if( vb == varBounds.end() || (vb->second.lowerBoundType() == carl::BoundType::INFTY && vb->second.upperBoundType() == carl::BoundType::INFTY) )
+                {
+                    formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::GREATER, Rational( mHalfOfCurrentWidth ) ) ) );
+                    formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::LEQ, -Rational( mHalfOfCurrentWidth ) ) ) );
+                }
                 else
-                    formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::LEQ, -(Rational(2)*mHalfOfCurrentWidth) ) ) );
+                {
+                    if( vb->second.lowerBoundType() != carl::BoundType::INFTY )
+                        formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::GEQ, Rational(2)*mHalfOfCurrentWidth ) ) );
+                    else
+                        formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::LEQ, -(Rational(2)*mHalfOfCurrentWidth) ) ) );
+                }
             }
-        }
-        if( formulas.size() > 1 )
-        {
-            FormulaT rem( carl::FormulaType::OR, formulas );
-            addSubformulaToPassedFormula( rem );
-            #ifdef DEBUG_INC_WIDTH_MODULE
-            std::cout << "   add remainig space  " << rem << std::endl;
-            #endif
-        }
-        else if( !formulas.empty() )
-        {
-            addSubformulaToPassedFormula( formulas.back() );
-            #ifdef DEBUG_INC_WIDTH_MODULE
-            std::cout << "   add remainig space  " << formulas.back() << std::endl;
-            #endif
+            if( formulas.size() > 1 )
+            {
+                FormulaT rem( carl::FormulaType::OR, formulas );
+                addSubformulaToPassedFormula( rem );
+                #ifdef DEBUG_INC_WIDTH_MODULE
+                std::cout << "   add remainig space  " << rem << std::endl;
+                #endif
+            }
+            else if( !formulas.empty() )
+            {
+                addSubformulaToPassedFormula( formulas.back() );
+                #ifdef DEBUG_INC_WIDTH_MODULE
+                std::cout << "   add remainig space  " << formulas.back() << std::endl;
+                #endif
+            }
         }
         Answer ans = runBackends( _full );
         #ifdef DEBUG_INC_WIDTH_MODULE

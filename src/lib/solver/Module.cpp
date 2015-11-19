@@ -443,7 +443,7 @@ namespace smtrat
                 constraintA = ConstraintT( std::move(_polynomial - (--bound)), Relation::LEQ );
             }
             #ifdef MODULE_VERBOSE_INTEGERS
-            cout << "[" << moduleName(type()) << "]  branch at  " << constraintA << "  and  " << constraintB << endl;
+            cout << "[" << moduleName() << "]  branch at  " << constraintA << "  and  " << constraintB << endl;
             cout << "Premise is: " << _premise << endl;
             #endif
         }
