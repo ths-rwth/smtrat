@@ -84,7 +84,6 @@ namespace smtrat
     struct ICPSettings2 : ICPSettings1
     {
 		static constexpr auto moduleName = "ICPModule<ICPSettings2>";
-        static constexpr double contraction_threshold_nia = 0.001;
-        static constexpr double default_splitting_size_nia = 1000;
+        static constexpr double default_splitting_size_nia = 100;
     };
 }
