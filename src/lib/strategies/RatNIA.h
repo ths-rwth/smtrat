@@ -8,7 +8,7 @@
 #include "../modules/IncWidthModule/IncWidthModule.h"
 #include "../modules/SATModule/SATModule.h"
 #include "../modules/IntBlastModule/IntBlastModule.h"
-#include "../modules/ICPModule/ICPModule.h"
+#include "../modules/LRAModule/LRAModule.h"
 #include "../modules/VSModule/VSModule.h"
 #include "../modules/CADModule/CADModule.h"
 
@@ -51,7 +51,7 @@ namespace smtrat
                             {
                                 addBackend<SATModule<SATSettings1>>(
                                 {
-                                    addBackend<ICPModule<ICPSettings2>>(
+                                    addBackend<LRAModule<LRASettings1>>(
                                     {
                                         addBackend<VSModule<VSSettings234>>(
                                         {
