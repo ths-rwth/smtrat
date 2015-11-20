@@ -205,7 +205,7 @@ namespace parser {
 			// Now combine everything: (and (=> (and conditions) constraint) ...)
 			FormulasT subs;
 			for (unsigned i = 0; i < polys.size(); i++) {
-				subs.push_back(FormulaT(carl::FormulaType::IMPLIES, FormulaT(carl::FormulaType::AND, conds[i]), FormulaT(polys[i], rel)));
+				subs.push_back(FormulaT(carl::FormulaType::IMPLIES, {FormulaT(carl::FormulaType::AND, conds[i]), FormulaT(polys[i], rel)}));
 			}
 			auto res = FormulaT(carl::FormulaType::AND, subs);
 			return res;
@@ -216,14 +216,14 @@ namespace parser {
 				FormulaT consThen = FormulaT(std::move(carl::makePolynomial<Poly>(v) - std::get<1>(t)), carl::Relation::EQ);
 				FormulaT consElse = FormulaT(std::move(carl::makePolynomial<Poly>(v) - std::get<2>(t)), carl::Relation::EQ);
 
-                state->global_formulas.emplace_back(FormulaT(carl::FormulaType::ITE,std::get<0>(t),consThen,consElse));
+                state->global_formulas.emplace_back(FormulaT(carl::FormulaType::ITE, {std::get<0>(t),consThen,consElse}));
 //				state->global_formulas.emplace(FormulaT(carl::FormulaType::IMPLIES,std::get<0>(t), consThen));
 //				state->global_formulas.emplace(FormulaT(carl::FormulaType::IMPLIES,FormulaT(carl::FormulaType::NOT,std::get<0>(t)), consElse));
 			}
 			return FormulaT(p, rel);
 		}
 	}
-	
+
 	bool ArithmeticTheory::instantiate(const types::VariableType& var, const types::TermType& replacement, types::TermType& result, TheoryError& errors) {
 		carl::Variable v;
 		conversion::VariantConverter<carl::Variable> c;
@@ -260,7 +260,7 @@ namespace parser {
 			carl::Variable v = carl::freshVariable(carl::VariableType::VT_INT);
 			FormulaT lower(Poly(v) - arg, carl::Relation::LEQ);
 			FormulaT greater(Poly(v) - arg - Rational(1), carl::Relation::GREATER);
-			state->global_formulas.emplace_back(FormulaT(carl::FormulaType::AND, lower, greater));
+			state->global_formulas.emplace_back(FormulaT(carl::FormulaType::AND, {lower, greater}));
 			result = v;
 			return true;
 		}
@@ -284,7 +284,7 @@ namespace parser {
 				FormulaT relation(Poly(v) - arg + u * modulus, carl::Relation::EQ);
 				FormulaT geq(Poly(v), carl::Relation::GEQ);
 				FormulaT less(Poly(v) - modulus, carl::Relation::LESS);
-				state->global_formulas.emplace_back(FormulaT(carl::FormulaType::AND, relation, geq, less));
+				state->global_formulas.emplace_back(FormulaT(carl::FormulaType::AND, {relation, geq, less}));
 				result = v;
 				return true;
 			} else if (ci(arguments[0], rarg)) {
