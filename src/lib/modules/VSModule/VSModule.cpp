@@ -11,7 +11,7 @@
 using namespace vs;
 
 #ifdef VS_STATE_DEBUG_METHODS
-#define VS_DEBUG_METHODS
+//#define VS_DEBUG_METHODS
 #endif
 //#define VS_DEBUG
 //#define VS_MODULE_VERBOSE_INTEGERS
@@ -995,28 +995,28 @@ namespace smtrat
                 #endif
             }
         }
-        if( _eliminationVar.getType() == carl::VariableType::VT_INT )
-        {
-            if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
-            {
-                // Create state ( Conditions, [x -> -infinity]):
-                Substitution sub = Substitution( _eliminationVar, Substitution::PLUS_INFINITY, carl::PointerSet<vs::Condition>(oConditions) );
-                std::vector<State*> addedChildren = _currentState->addChild( sub );
-                if( !addedChildren.empty() )
-                {
-                    // Add its valuation to the current ranking.
-                    while( !addedChildren.empty() )
-                    {
-                        addStatesToRanking( addedChildren.back() );
-                        addedChildren.pop_back();
-                    }
-                    numberOfAddedChildren++;
-                    #ifdef VS_DEBUG
-                    (*(*_currentState).rChildren().back()).print( "   ", cout );
-                    #endif
-                }
-            }
-        }
+//        if( _eliminationVar.getType() == carl::VariableType::VT_INT )
+//        {
+//            if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
+//            {
+//                // Create state ( Conditions, [x -> -infinity]):
+//                Substitution sub = Substitution( _eliminationVar, Substitution::PLUS_INFINITY, carl::PointerSet<vs::Condition>(oConditions) );
+//                std::vector<State*> addedChildren = _currentState->addChild( sub );
+//                if( !addedChildren.empty() )
+//                {
+//                    // Add its valuation to the current ranking.
+//                    while( !addedChildren.empty() )
+//                    {
+//                        addStatesToRanking( addedChildren.back() );
+//                        addedChildren.pop_back();
+//                    }
+//                    numberOfAddedChildren++;
+//                    #ifdef VS_DEBUG
+//                    (*(*_currentState).rChildren().back()).print( "   ", cout );
+//                    #endif
+//                }
+//            }
+//        }
         if( generatedTestCandidateBeingASolution )
         {
             _currentState->rTooHighDegreeConditions().clear();
@@ -1610,7 +1610,9 @@ namespace smtrat
                         if( currentState->getNextIntTestCandidate( nextIntTCinRange, Settings::int_max_range ) )
                         {
                             if( Settings::use_branch_and_bound )
+                            {
                                 branchAt( currentState->substitution().variable(), nextIntTCinRange, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
+                            }
                         }
                         else
                         {
