@@ -35,7 +35,7 @@ namespace parser {
 				errors.next() << "Operator \"implies\" may only have a single argument.";
 				return false;
 			}
-			result = FormulaT(carl::FormulaType::IMPLIES, arguments[0], arguments[1]);
+			result = FormulaT(carl::FormulaType::IMPLIES, {arguments[0], arguments[1]});
 			return true;
 		}
 	};
@@ -118,14 +118,14 @@ namespace parser {
 			errors.next() << "Failed to construct ITE, the else-term \"" << elseterm << "\" is unsupported.";
 			return false;
 		}
-		result = FormulaT(carl::FormulaType::ITE, ifterm, thenf, elsef);
+		result = FormulaT(carl::FormulaType::ITE, {ifterm, thenf, elsef});
 		return true;
 	}
 	bool CoreTheory::handleDistinct(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
 		std::vector<FormulaT> args;
 		if (!convertArguments(arguments, args, errors)) return false;
-		result = expandDistinct(args, [](const FormulaT& a, const FormulaT& b){ 
-			return FormulaT(carl::FormulaType::XOR, a, b);
+		result = expandDistinct(args, [](const FormulaT& a, const FormulaT& b){
+			return FormulaT(carl::FormulaType::XOR, {a, b});
 		});
 		return true;
 	}

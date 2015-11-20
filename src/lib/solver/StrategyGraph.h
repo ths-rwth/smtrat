@@ -34,21 +34,21 @@ namespace smtrat {
 		std::string moduleName() const {
 			return Module::SettingsType::moduleName;
 		}
-        
+
         ModuleSettings moduleSettingsType() const
         {
             return Module::SettingsType;
         }
-        
+
         friend std::ostream& operator<<( std::ostream& _os, const ModuleFactory& _moduleFactory )
         {
-            _os << _moduleFactory.moduleSettingsType();
+            return _os << _moduleFactory.moduleSettingsType();
         }
 	};
-	
+
 	template<typename Module>
 	using StandardModuleFactory = ModuleFactory<Module>;
-	
+
 	typedef std::function<bool(carl::Condition)> ConditionFunction;
 	class BackendLink {
 	private:

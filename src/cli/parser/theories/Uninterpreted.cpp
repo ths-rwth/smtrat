@@ -78,7 +78,7 @@ namespace parser {
 			} else if (const FormulaT* f = boost::get<FormulaT>(&v)) {
 				carl::Variable tmp = carl::freshBooleanVariable();
 				vars.push_back(carl::UVariable(tmp));
-				state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IFF, FormulaT(tmp), *f));
+				state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IFF, {FormulaT(tmp), *f}));
 			} else if (const Poly* p = boost::get<Poly>(&v)) {
 				carl::Variable tmp = carl::freshRealVariable();
 				vars.push_back(carl::UVariable(tmp));

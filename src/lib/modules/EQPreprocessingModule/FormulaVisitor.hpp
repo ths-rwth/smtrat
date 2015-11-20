@@ -1131,7 +1131,7 @@ namespace smtrat {
 			}
 
 			template<typename = void> FormulaT P_visit_implication(const FormulaT& formula, FormulaT&& premise, FormulaT&& conclusion, std::false_type) {
-				return P_rewrite_default(formula, FormulaT(carl::IMPLIES, std::move(premise), std::move(conclusion)));
+				return P_rewrite_default(formula, FormulaT(carl::IMPLIES, {std::move(premise), std::move(conclusion)}));
 			}
 
 			FormulaT visit_implication(const FormulaT& formula, FormulaT&& premise, FormulaT&& conclusion) {
@@ -1143,7 +1143,7 @@ namespace smtrat {
 			}
 
 			template<typename = void> FormulaT P_visit_ite(const FormulaT& formula, FormulaT&& condition, FormulaT&& then, FormulaT&& else_, std::false_type) {
-				return P_rewrite_default(formula, FormulaT(carl::ITE, std::move(condition), std::move(then), std::move(else_)));
+				return P_rewrite_default(formula, FormulaT(carl::ITE, {std::move(condition), std::move(then), std::move(else_)}));
 			}
 
 			FormulaT visit_ite(const FormulaT& formula, FormulaT&& condition, FormulaT&& trueCase, FormulaT&& falseCase) {

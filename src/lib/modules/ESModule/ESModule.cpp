@@ -234,7 +234,7 @@ namespace smtrat
                         assert( addedBoolSub.second );
                         FormulaT secondCaseTmp = elimSubstitutions( _formula.secondCase() );
                         mBoolSubs.erase( addedBoolSub.first );
-                        result = FormulaT( carl::FormulaType::ITE, cond, firstCaseTmp, secondCaseTmp );
+                        result = FormulaT( carl::FormulaType::ITE, {cond, firstCaseTmp, secondCaseTmp} );
                         break;
                     }
                     else if( cond.constraint().getSubstitution( subVar, subPoly, true ) )
@@ -258,7 +258,7 @@ namespace smtrat
                         FormulaT secondCaseTmp = elimSubstitutions( _formula.secondCase() );
                         mArithSubs.erase( iterB );
                         mBoolSubs.erase( addedBoolSub.first );
-                        result = FormulaT( carl::FormulaType::ITE, cond, firstCaseTmp, secondCaseTmp );
+                        result = FormulaT( carl::FormulaType::ITE, {cond, firstCaseTmp, secondCaseTmp} );
                         break;
                     }
                 }
@@ -286,7 +286,7 @@ namespace smtrat
                     assert( addedBoolSub.second );
                     FormulaT secondCaseTmp = elimSubstitutions( _formula.secondCase() );
                     mBoolSubs.erase( addedBoolSub.first );
-                    result = FormulaT( carl::FormulaType::ITE, cond, firstCaseTmp, secondCaseTmp );
+                    result = FormulaT( carl::FormulaType::ITE, {cond, firstCaseTmp, secondCaseTmp} );
                 }
                 break;
             }
@@ -314,7 +314,7 @@ namespace smtrat
                 FormulaT prem = elimSubstitutions(_formula.premise());
                 FormulaT conc = elimSubstitutions(_formula.conclusion());
                 if ((prem != _formula.premise()) || (conc != _formula.conclusion()))
-                    result = FormulaT(carl::FormulaType::IMPLIES, prem, conc);
+                    result = FormulaT(carl::FormulaType::IMPLIES, {prem, conc});
                 break;
             }
             case carl::FormulaType::CONSTRAINT: {

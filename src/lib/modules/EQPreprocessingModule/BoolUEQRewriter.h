@@ -78,16 +78,16 @@ namespace smtrat {
 
 					formulaMap.emplace(FormulaT(carl::TRUE),
 						FormulaT(carl::OR,
-							FormulaT(uvar, mTrueHelper, false),
-							FormulaT(uvar, mFalseHelper, false)
+							{FormulaT(uvar, mTrueHelper, false),
+							FormulaT(uvar, mFalseHelper, false)}
 						)
 					);
 
 					formulaMap.emplace(FormulaT(carl::TRUE),
 						FormulaT(
 							carl::OR,
-							FormulaT(carl::NOT, FormulaT(uvar, mTrueHelper, false)),
-							FormulaT(carl::NOT, FormulaT(uvar, mFalseHelper, false))
+							{FormulaT(carl::NOT, FormulaT(uvar, mTrueHelper, false)),
+							FormulaT(carl::NOT, FormulaT(uvar, mFalseHelper, false))}
 						)
 					);
 				}

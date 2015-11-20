@@ -215,20 +215,20 @@ namespace parser {
 		carl::BVVariable bvvar(var, sm.index(this->bvSort, {thent.width()}));
 		state->auxiliary_variables.insert(bvvar);
 		types::BVTerm vart = types::BVTerm(carl::BVTermType::VARIABLE, bvvar);
-		
+
 		FormulaT consThen = FormulaT(types::BVConstraint::create(carl::BVCompareRelation::EQ, vart, thent));
 		FormulaT consElse = FormulaT(types::BVConstraint::create(carl::BVCompareRelation::EQ, vart, elset));
-		
-		state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IMPLIES,ifterm, consThen));
-		state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IMPLIES,FormulaT(carl::FormulaType::NOT,ifterm), consElse));
+
+		state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IMPLIES, {ifterm, consThen}));
+		state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IMPLIES, {FormulaT(carl::FormulaType::NOT,ifterm), consElse}));
 		result = vart;
 		return true;
 	}
 	bool BitvectorTheory::handleDistinct(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
 		std::vector<carl::BVTerm> args;
 		if (!vectorConverter(arguments, args, errors)) return false;
-		result = expandDistinct(args, [](const carl::BVTerm& a, const carl::BVTerm& b){ 
-			return FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::NEQ, a, b)); 
+		result = expandDistinct(args, [](const carl::BVTerm& a, const carl::BVTerm& b){
+			return FormulaT(carl::BVConstraint::create(carl::BVCompareRelation::NEQ, a, b));
 		});
 		return true;
 	}
