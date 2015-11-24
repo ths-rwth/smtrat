@@ -1652,6 +1652,11 @@ namespace smtrat
                         // Insert the (integer!) assignments of the other variables.
                         const SqrtEx& subTerm = currentState->substitution().term();
                         Rational evaluatedSubTerm;
+                        if( subTerm.denominator().substitute( varSolutions ).isZero() )
+                        {
+                            splitUnequalConstraint( FormulaT( subTerm.denominator(), carl::Relation::NEQ ) );
+                            return false;
+                        }
                         bool assIsInteger = subTerm.evaluate( evaluatedSubTerm, varSolutions, -1 );
                         assIsInteger &= carl::isInteger( evaluatedSubTerm );
                         if( !assIsInteger )
