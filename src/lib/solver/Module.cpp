@@ -895,8 +895,8 @@ namespace smtrat
                 for( const auto& form : sp.mPremise )
                 {
                     getOrigins( form, premise );
-                    addSplitting( sp.mLeftCase, sp.mRightCase, std::move( premise ), sp.mPreferLeftCase );
                 }
+                addSplitting( sp.mLeftCase, sp.mRightCase, std::move( premise ), sp.mPreferLeftCase );
             }
         }
     }
