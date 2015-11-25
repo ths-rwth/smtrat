@@ -83,24 +83,6 @@ namespace smtrat
 				}
 			};
 			
-			struct CycleCollector: public boost::bfs_visitor<> {
-				std::map<Vertex, std::vector<Vertex>> predecessors;
-				std::vector<int> cycles;
-				//const std::vector<std::size_t>& discovery
-				
-				template<typename Edge>
-				void operator()(Edge e, const Graph& g) {
-					Vertex source = boost::source(e, g);
-					Vertex target = boost::target(e, g);
-					auto f = cycles[source];
-					if (predecessors.find(target) == predecessors.end()) {
-						predecessors.emplace(target, {source});
-					} else {
-						//cycles.push_back(e);
-					}
-				}
-			};
-			
 		private:
 			vb::VariableBounds<FormulaT> mBounds;
 			std::set<ConstraintT> mConstraints;
@@ -120,7 +102,6 @@ namespace smtrat
 			bool isSemiNegative(const TermT& t) const {
 				return mBounds.getInterval(t).isSemiNegative();
 			}
-			void enumerateCycles(const Graph& g, const Vertex& v);
 			bool isSuitable(const ConstraintT& c, TermT& src, std::vector<TermT>& dest, Coefficient& coeff);
 			
 			typename VertexMap::mapped_type getVertex(Graph& g, VertexMap& vm, const TermT& t) const;

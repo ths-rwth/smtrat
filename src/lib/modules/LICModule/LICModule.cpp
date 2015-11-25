@@ -175,18 +175,11 @@ namespace smtrat
 		}
 		
 		for (const auto& c: classes) {
-			enumerateCycles(graph, c.first);
 			if (c.second == 1) continue;
 			Answer a = analyzeCycle(graph, c.first);
 			if (a == False) return False;
 		}
 		return True;
-	}
-	
-	template<class Settings>
-	void LICModule<Settings>::enumerateCycles(const Graph& g, const Vertex& v) {
-		CycleCollector cc;
-		boost::breadth_first_search(g, v, boost::visitor(cc) );
 	}
 	
 	template<class Settings>
