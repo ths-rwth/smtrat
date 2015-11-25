@@ -169,7 +169,7 @@ private:
 	/// Stores the current list of edges.
 	std::vector<typename FHG::EdgePropertyT> mEdgeStack;
 	/// The callback object.
-	Collector mCollector;
+	Collector& mCollector;
 	/// Whether this search has been aborted by the collector.
 	bool mAborted;
 public:
