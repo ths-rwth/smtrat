@@ -53,16 +53,27 @@ namespace smtrat
 		using FHG = ForwardHyperGraph<VertexProperty, EdgeProperty>;
 		
 		struct CycleCollector {
+			using Vertex = typename FHG::Vertex;
+			using Edge = typename FHG::Edge;
+			
 			FormulaSetT mInfeasibleSubset;
 			std::vector<std::pair<FormulaT,FormulaT>> mLemmas;
 			
-			FormulaT buildFormula(const std::vector<EdgeProperty>& edges) const {
+			FormulaT buildFormula(const std::vector<Edge>& edges) const {
 				FormulasT res;
-				std::transform(edges.begin(), edges.end(), std::back_inserter(res), [](const EdgeProperty& edge){ return FormulaT(edge.constraint); });
+				std::transform(edges.begin(), edges.end(), std::back_inserter(res), [](const Edge& edge){ return FormulaT(edge->constraint); });
 				return FormulaT(carl::FormulaType::AND, std::move(res));
 			}
-			std::vector<VertexProperty> collectAdjacent(const std::vector<VertexProperty>& vertices, const std::vector<EdgeProperty>& edges) {
-				std::vector<VertexProperty> res;
+			std::vector<Vertex> collectAdjacent(const std::vector<Vertex>& vertices, const std::vector<Edge>& edges) {
+				std::vector<Vertex> res;
+				auto curVertex = vertices.begin();
+				for (const auto& edge: edges) {
+					curVertex++;
+					for (const auto& v: edge.out()) {
+						if (v == *curVertex) continue;
+						res.push_back(v);
+					}
+				}
 				return res;
 			}
 			
@@ -70,9 +81,9 @@ namespace smtrat
 			 * Is called whenever a cycle is found.
 			 * If true is returned, the search for further cycles is aborted.
 			 */
-			bool operator()(const std::vector<VertexProperty>& vertices, const std::vector<EdgeProperty>& edges) {
+			bool operator()(const FHG& graph, const std::vector<Vertex>& vertices, const std::vector<Edge>& edges) {
 				Coefficient sum;
-				for (const auto& edge: edges) sum += edge.coeff;
+				for (const auto& edge: edges) sum += edge->coeff;
 				
 				if (carl::isZero(sum.r)) {
 					FormulaT origin = buildFormula(edges);
@@ -84,14 +95,14 @@ namespace smtrat
 						// Sum is zero and all inequalities are weak
 						// -> Variables on the cycle
 						for (const auto& v: collectAdjacent(vertices, edges)) {
-							FormulaT lemma(Poly(v), carl::Relation::EQ);
+							FormulaT lemma(Poly(graph[v]), carl::Relation::EQ);
 							SMTRAT_LOG_DEBUG("smtrat.ice", "Deducted " << lemma);
 							mLemmas.emplace_back(lemma, origin);
 						}
 						for (std::size_t i = 1; i < vertices.size(); i++) {
-							const auto& a = vertices[i-1];
-							const auto& b = vertices[i];
-							FormulaT lemma(a - b + edges[i-1].coeff.r, carl::Relation::EQ);
+							const auto& a = graph[vertices[i-1]];
+							const auto& b = graph[vertices[i]];
+							FormulaT lemma(a - b + edges[i-1]->coeff.r, carl::Relation::EQ);
 							SMTRAT_LOG_DEBUG("smtrat.ice", "Deducted " << lemma);
 							mLemmas.emplace_back(lemma, origin);
 						}

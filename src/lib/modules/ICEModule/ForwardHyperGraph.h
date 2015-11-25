@@ -68,10 +68,6 @@ public:
 			return mOut;
 		}
 	};
-	/// Type of the vertex property.
-	using VertexPropertyT = VertexProperty;
-	/// Type of the edge property.
-	using EdgePropertyT = EdgeProperty;
 private:
 	/// Storage for all vertex properties.
 	std::vector<VertexProperty> mVertexProperties;
@@ -165,9 +161,9 @@ private:
 	/// Stores vertex dependencies when vertices are blocked.
 	std::vector<std::vector<Vertex>> mBlockDependencies;
 	/// Stores the current list of vertices.
-	std::vector<typename FHG::VertexPropertyT> mVertexStack;
+	std::vector<typename FHG::Vertex> mVertexStack;
 	/// Stores the current list of edges.
-	std::vector<typename FHG::EdgePropertyT> mEdgeStack;
+	std::vector<typename FHG::Edge> mEdgeStack;
 	/// The callback object.
 	Collector& mCollector;
 	/// Whether this search has been aborted by the collector.

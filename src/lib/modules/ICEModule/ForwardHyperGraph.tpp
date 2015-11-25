@@ -72,16 +72,16 @@ function main:
 	template<typename FHG, typename Collector>
 	bool CycleEnumerator<FHG,Collector>::enumerate(CycleEnumerator<FHG,Collector>::Vertex src, CycleEnumerator<FHG,Collector>::Vertex v) {
 		bool found = false;
-		mVertexStack.push_back(mGraph[v]);
+		mVertexStack.push_back(v);
 		mBlocked[v] = true;
 		for (const auto& edge: mGraph.out(v)) {
 			for (Vertex u: edge.out()) {
 				if (u == src) {
-					mAborted = mCollector(mVertexStack, mEdgeStack);
+					mAborted = mCollector(mGraph, mVertexStack, mEdgeStack);
 					if (mAborted) return false;
 					found = true;
 				} else if (!mBlocked[u]) {
-					mEdgeStack.push_back(*edge);
+					mEdgeStack.push_back(edge);
 					found = found || enumerate(src, u);
 					if (mAborted) return false;
 					mEdgeStack.pop_back();
