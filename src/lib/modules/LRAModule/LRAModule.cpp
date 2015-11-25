@@ -8,7 +8,7 @@
 #include "LRAModule.h"
 
 #ifdef DEBUG_METHODS_TABLEAU
-//#define DEBUG_METHODS_LRA_MODULE
+#define DEBUG_METHODS_LRA_MODULE
 #endif
 //#define DEBUG_LRA_MODULE
 
@@ -353,9 +353,7 @@ namespace smtrat
         if( rReceivedFormula().isRealConstraintConjunction() )
             containsIntegerValuedVariables = false;
         assert( !mTableau.isConflicting() );
-        #ifdef LRA_USE_PIVOTING_STRATEGY
         mTableau.setBlandsRuleStart( 1000 );//(unsigned) mTableau.columns().size() );
-        #endif
         mTableau.compressRows();
         for( ; ; )
         {
@@ -1131,9 +1129,7 @@ Return:
                 setBound( constraint );
             }
 //            mTableau.setSize( mTableau.slackVars().size(), mTableau.originalVars().size(), mLinearConstraints.size() );
-            #ifdef LRA_USE_PIVOTING_STRATEGY
             mTableau.setBlandsRuleStart( 1000 );//(unsigned) mTableau.columns().size() );
-            #endif
         }
     }
     

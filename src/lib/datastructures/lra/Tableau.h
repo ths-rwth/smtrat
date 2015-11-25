@@ -393,7 +393,7 @@ namespace smtrat
                  */
                 size_t size() const
                 {
-                    return mpEntries->size();
+                    return mpEntries->size()-1;
                 }
 
                 /**

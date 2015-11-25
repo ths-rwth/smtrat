@@ -103,14 +103,10 @@ namespace smtrat
                     {
                         // If the cubification is now active again, add it to the internal LRAModule.
                         auto ret = mLRAFormula->add( iter->second.mCubification );
-                        if( ret.second )
-                        {
-                            exit(172);
-                        }
-                        assert( ret.second );
                         #ifdef DEBUG_CUBELIAMODULE
                         std::cout << "Add to internal LRAModule: " << iter->second.mCubification << std::endl;
                         #endif
+                        assert( ret.second );
                         mLRA.add( ret.first );
                         assert( iter->second.mPosition == mLRAFormula->end() );
                         iter->second.mPosition = ret.first;
@@ -139,6 +135,7 @@ namespace smtrat
                 std::cout << "Remove from internal LRAModule: " << iter->second.mPosition->formula() << std::endl;
                 #endif
                 mLRA.remove( iter->second.mPosition );
+                mLRAFormula->erase( iter->second.mPosition );
                 iter->second.mPosition = mLRAFormula->end();
             }
         }
@@ -225,7 +222,13 @@ namespace smtrat
                     if( Settings::exclude_unsatisfiable_cube_space )
                     {
                         // Exclude the space for which mLRA has detected unsatisfiability
-
+                        for( auto& infsubset : mLRA.infeasibleSubsets() )
+                        {
+                            FormulasT formulas;
+                            for( auto& formula : infsubset )
+                                formulas.push_back( formula.negated() );
+                            addDeduction( FormulaT( carl::FormulaType::OR, formulas ) );
+                        }
                     }
                     break;
                 }

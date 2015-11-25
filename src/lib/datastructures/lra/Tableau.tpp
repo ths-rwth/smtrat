@@ -10,7 +10,7 @@
 #include "Tableau.h"
 #include "TableauSettings.h"
 
-//#define DEBUG_METHODS_TABLEAU
+#define DEBUG_METHODS_TABLEAU
 //#define LRA_DEBUG_CUTS_FROM_PROOFS
 
 namespace smtrat
@@ -1380,21 +1380,7 @@ namespace smtrat
                 #else
                 rowVar->rAssignment() += (*mpTheta) * pivotContent;
                 #endif
-                if( !( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() ) ) 
-                {
-                    std::cout << "rowVar->assignment() = " << rowVar->assignment() << std::endl;
-                    std::cout << "rowVar->supremum() = " << rowVar->supremum() << std::endl; 
-                    std::cout << "(error: " << __func__ << " " << __LINE__ << ")" << std::endl; 
-    //                exit( 7771 );
-                }
                 assert( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() );
-                if( !( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() ) ) 
-                {
-                    std::cout << "rowVar->assignment() = " << rowVar->assignment() << std::endl;
-                    std::cout << "rowVar->infimum() = " << rowVar->infimum() << std::endl;
-                    std::cout << "(error: " << __func__ << " " << __LINE__ << ")" << std::endl; 
-    //                exit( 7771 );
-                }
                 assert( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() );
                 columnVar->rAssignment() += (*mpTheta);
             }
