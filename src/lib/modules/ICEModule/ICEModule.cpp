@@ -146,6 +146,7 @@ namespace smtrat
 			return False;
 		}
 		for (const auto& lemma: collector.mLemmas) {
+			SMTRAT_LOG_DEBUG("smtrat.ice", "Adding " << lemma.first << " with origin " << lemma.second);
 			addSubformulaToPassedFormula(lemma.first, lemma.second);
 		}
 		return True;
