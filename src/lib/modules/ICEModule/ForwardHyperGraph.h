@@ -187,7 +187,7 @@ private:
 	void unblock(Vertex v) {
 		if (!mBlocked[v]) return;
 		mBlocked[v] = false;
-		for (auto u: mBlockDependencies[v]) unblock(v);
+		for (auto u: mBlockDependencies[v]) unblock(u);
 		mBlockDependencies[v].clear();
 	}
 	/// Recursively enumerate all cycles that start in src and are currently in v.
