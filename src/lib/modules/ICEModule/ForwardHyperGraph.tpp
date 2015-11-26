@@ -77,9 +77,11 @@ function main:
 		for (const auto& edge: mGraph.out(v)) {
 			for (Vertex u: edge.out()) {
 				if (u == src) {
+					mEdgeStack.push_back(edge);
 					mAborted = mCollector(mGraph, mVertexStack, mEdgeStack);
 					if (mAborted) return false;
 					found = true;
+					mEdgeStack.pop_back();
 				} else if (!mBlocked[u]) {
 					mEdgeStack.push_back(edge);
 					found = found || enumerate(src, u);
