@@ -2653,7 +2653,7 @@ namespace smtrat
     {
         Rational bound = carl::rationalize<Rational>( _upper ? _interval.upper() : _interval.lower() );
         carl::BoundType boundType = _upper ? _interval.upperBoundType() : _interval.lowerBoundType();
-        if( _initialIntervalIter != mInitialIntervals.end() )
+        if( _initialIntervalIter != mInitialIntervals.end() && _initialIntervalIter->first == _var )
         {
             const RationalInterval& varBounds = _initialIntervalIter->second;
             if( _upper )
@@ -2675,7 +2675,6 @@ namespace smtrat
             }
         }
         Poly p = carl::makePolynomial<Poly>( _var ) - Poly(bound);
-
         FormulaT result( carl::FormulaType::TRUE );
         switch( boundType )
         {
@@ -3110,18 +3109,18 @@ namespace smtrat
         _out << ((mRelativeContraction > 0 || mAbsoluteContraction > 0) ? "#" : " ");
         _out << std::setw(10) << _cc.derivationVar();
         std::stringstream s;
-        s << _before;
-        _out << ":" << std::setw(20) << s.str();
+        s << std::setprecision(20) << _before;
+        _out << ":" << std::setw(50) << s.str();
         std::stringstream s2;
         if( _afterB.isEmpty() )
         {
-            s2 << _afterA;
+            s2 << std::setprecision(20) << _afterA;
         }
         else
         {
-            s2 << _afterA << " or " << _afterB;
+            s2 << std::setprecision(20) << _afterA << " or " << std::setprecision(20) << _afterB;
         }
-        _out << "  ->  " << std::setw(20) << std::left << s2.str();
+        _out << "  ->  " << std::setw(50) << std::left << s2.str();
         _out << std::right << " with " << _cc.contractor().polynomial() << std::endl;
     }
     #endif
