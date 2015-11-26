@@ -22,7 +22,7 @@ class Checker {
 	/// Solver executable filename.
 	std::string executable;
 	/// Timeout for a single call.
-	unsigned timeout;
+	std::size_t timeout;
 	/// Expected exit code.
 	int expected;
 	/// Flag is some process has been killed.
@@ -51,7 +51,7 @@ public:
 	 * @param timeout Timeout for a single call to the solver.
 	 * @param original Filename of the original file to obtain the expected exit code.
 	 */
-	Checker(const std::string& exec, unsigned timeout, const std::string& original):
+	Checker(const std::string& exec, std::size_t timeout, const std::string& original):
 		executable(exec), timeout(timeout), expected(execute(original)), killed(0)
 	{}
 
@@ -81,6 +81,9 @@ public:
 	}
 	void resetKilled() const {
 		killed = 0;
+	}
+	void resetTimeout(std::size_t t) {
+		timeout = t;
 	}
 };
 
