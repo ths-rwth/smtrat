@@ -234,16 +234,31 @@ namespace smtrat
 		SMTRAT_LOG_TRACE("smtrat.cad", "Solution point: " << mRealAlgebraicSolution);
 		mInfeasibleSubsets.clear();
 		if (Settings::integerHandling == carl::cad::IntegerHandling::SPLIT_SOLUTION) {
-			// Check whether the found assignment is integer.
+			// Check whether the found assignment is integer. Split on first non-integral assignment.
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
-			for (unsigned d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
+			for (std::size_t d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
 				if (checkIntegerAssignment(vars, d, true)) return Unknown;
 			}
-		} else if (Settings::integerHandling == carl::cad::IntegerHandling::SPLIT_SOLUTION_INVERSE) {
-			// Check whether the found assignment is integer.
+		} else if (Settings::integerHandling == carl::cad::IntegerHandling::GUESS_AND_SPLIT) {
+			// Check whether the found assignment is integer. Guess or split.
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
-			for (std::size_t d = this->mRealAlgebraicSolution.dim(); d > 0; d--) {
-				if (checkIntegerAssignment(vars, d-1, true)) return Unknown;
+			for (std::size_t d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
+				if (checkIntegerAssignment(vars, d, false)) {
+					auto current = mRealAlgebraicSolution[d];
+					auto r = mRealAlgebraicSolution[d].branchingPoint();
+					mRealAlgebraicSolution[d] = carl::RealAlgebraicNumber<smtrat::Rational>(carl::floor(r));
+					if (checkSatisfiabilityOfAssignment()) {
+						SMTRAT_LOG_TRACE("smtrat.cad", "Could fix rational assignment " << r << " by rounding down to " << mRealAlgebraicSolution[d]);
+						continue;
+					}
+					mRealAlgebraicSolution[d] = carl::RealAlgebraicNumber<smtrat::Rational>(carl::ceil(r));
+					if (checkSatisfiabilityOfAssignment()) {
+						SMTRAT_LOG_TRACE("smtrat.cad", "Could fix rational assignment " << r << " by rounding up to " << mRealAlgebraicSolution[d]);
+						continue;
+					}
+					mRealAlgebraicSolution[d] = current;
+					branchAt(vars[d], r);
+				}
 			}
 		} else if (Settings::integerHandling == carl::cad::IntegerHandling::NONE) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Ignoring integers.");
@@ -253,6 +268,7 @@ namespace smtrat
 				checkIntegerAssignment(vars, d, false);
 			}
 		}
+		assert(checkSatisfiabilityOfAssignment());
 		return True;
 	}
 
@@ -364,6 +380,14 @@ namespace smtrat
 	///////////////////////
 	// Auxiliary methods //
 	///////////////////////
+	template<typename Settings>
+	bool CADModule<Settings>::checkSatisfiabilityOfAssignment() const {
+		for (const auto& c: mConstraints) {
+			if (!c.satisfiedBy(mRealAlgebraicSolution, mCAD.getVariables())) return false;
+		}
+		return true;
+	}
+	
 	template<typename Settings>
 	bool CADModule<Settings>::addConstraintFormula(const FormulaT& f) {
 		assert(f.getType() == carl::FormulaType::CONSTRAINT);

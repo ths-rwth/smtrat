@@ -116,6 +116,7 @@ return SettingsType::moduleName;
 				}
 				return false;
 			}
+			bool checkSatisfiabilityOfAssignment() const;
 			bool addConstraintFormula(const FormulaT& f);
             const carl::cad::Constraint<smtrat::Rational> convertConstraint(const ConstraintT&);
             ConstraintT convertConstraint(const carl::cad::Constraint<smtrat::Rational>&);
