@@ -84,6 +84,7 @@ namespace smtrat
 	        mPreprocessor.pop();
             if( res.first )
             {
+				SMTRAT_LOG_INFO("smtrat.fpp", "Formula has been simplified from" << std::endl << formulaBeforePreprocessing << std::endl << "\tto" << std::endl << res.second);
                 mFormulaAfterPreprocessing = res.second;
             }
             else

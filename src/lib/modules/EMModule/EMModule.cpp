@@ -60,7 +60,11 @@ namespace smtrat
 					res.emplace_back(factor.first, rel);
 				}
 				carl::FormulaType ft = (rel == carl::Relation::EQ) ? carl::FormulaType::OR : carl::FormulaType::AND;
-				return FormulaT(ft, std::move(res));
+				FormulaT result(ft, std::move(res));
+				if (result != formula) {
+					SMTRAT_LOG_INFO("smtrat.em", "Translated " << formula << " to " << result);
+				}
+				return result;
 			}
 			default:
 				return formula;
