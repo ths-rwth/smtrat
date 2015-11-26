@@ -92,18 +92,18 @@ namespace smtrat
     Answer Module::check( bool _full )
     {
         #ifdef MODULE_VERBOSE
-        cout << endl << "Check " << (_full ? "full" : "lazy" ) << " with " << moduleName() << endl;
-        print( cout, " ");
+        std::cout << std::endl << __func__  << (_full ? " full" : " lazy" ) << " with " << moduleName() << std::endl;
+        print( std::cout, "\t");
         #endif
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         startCheckTimer();
         ++(mNrConsistencyChecks);
         #endif
         #ifdef DEBUG_MODULE_CALLS_IN_SMTLIB
-        cout << "(assert (and";
+        std::cout << "(assert (and";
         for( auto& subformula : *mpReceivedFormula )
-            cout << " " << subformula.formula().toString( false, true );
-        cout << "))\n";
+            std::cout << " " << subformula.formula().toString( false, true );
+        std::cout << "))\n";
         #endif
         clearDeductions();
         if( rReceivedFormula().empty() )
@@ -135,7 +135,7 @@ namespace smtrat
     bool Module::inform( const FormulaT& _constraint )
     {
         #ifdef MODULE_VERBOSE
-        cout << __func__ << " in " << this << " with name " << moduleName() << ": " << _constraint << endl;
+        std::cout << __func__ << " " << moduleName() << " about: " << _constraint << endl;
         #endif
         addConstraintToInform( _constraint );
         return informCore( _constraint );
@@ -144,8 +144,8 @@ namespace smtrat
     bool Module::add( ModuleInput::const_iterator _receivedSubformula )
     {
         #ifdef MODULE_VERBOSE
-        cout << __func__ << " in " << this << " with name " << moduleName() << ":" << endl << endl;
-        cout << " " << _receivedSubformula->formula() << endl << endl;
+        std::cout << __func__ << " to " << moduleName() << ":" << std::endl;
+        std::cout << "\t" << _receivedSubformula->formula() << std::endl;
         #endif
         if( mFirstUncheckedReceivedSubformula == mpReceivedFormula->end() )
         {
@@ -160,8 +160,8 @@ namespace smtrat
     void Module::remove( ModuleInput::const_iterator _receivedSubformula )
     {
         #ifdef MODULE_VERBOSE
-        cout << __func__ << " in " << this << " with name " << moduleName() << ":" << endl << endl;
-        cout << " " << _receivedSubformula->formula() << endl << endl;
+        std::cout << __func__ << " from " << moduleName() << ":" << std::endl;
+        std::cout << "\t" << _receivedSubformula->formula() << std::endl;
         #endif
         removeCore( _receivedSubformula );
         if( mFirstUncheckedReceivedSubformula == _receivedSubformula )
@@ -443,8 +443,8 @@ namespace smtrat
                 constraintA = ConstraintT( std::move(_polynomial - (--bound)), Relation::LEQ );
             }
             #ifdef MODULE_VERBOSE_INTEGERS
-            cout << "[" << moduleName() << "]  branch at  " << constraintA << "  and  " << constraintB << endl;
-            cout << "Premise is: " << _premise << endl;
+            std::cout << __func__ << " from " << moduleName() << " at  " << constraintA << "  and  " << constraintB << std::endl;
+            std::cout << "\tPremise is: " << _premise << std::endl;
             #endif
         }
         else
@@ -675,15 +675,15 @@ namespace smtrat
                 for( size_t i=0; i<highestIndex; ++i )
                 {
                     #ifdef MODULE_VERBOSE
-                    cout << endl << "Call to module " << moduleName( mUsedBackends[ i ]->type() ) << endl;
-                    mUsedBackends[ i ]->print( cout, " ");
+                    std::cout << std::endl << "Call to module " << moduleName( mUsedBackends[ i ]->type() ) << std::endl;
+                    mUsedBackends[ i ]->print( std::cout, " ");
                     #endif
                     futures[ i ] = mpManager->submitBackend( mUsedBackends[ i ], _full );
                 }
                 mpManager->checkBackendPriority( mUsedBackends[ highestIndex ] );
                 #ifdef MODULE_VERBOSE
-                cout << endl << "Call to module " << moduleName( mUsedBackends[ highestIndex ]->type() ) << endl;
-                mUsedBackends[ highestIndex ]->print( cout, " ");
+                std::cout << std::endl << "Call to module " << moduleName( mUsedBackends[ highestIndex ]->type() ) << std::endl;
+                mUsedBackends[ highestIndex ]->print( std::cout, " ");
                 #endif
                 result = mUsedBackends[ highestIndex ]->check( _full );
                 mUsedBackends[ highestIndex ]->receivedFormulaChecked();
@@ -694,7 +694,7 @@ namespace smtrat
                     mUsedBackends[ i ]->receivedFormulaChecked();
                     if( res!=Unknown )
                     {
-//                        cout << "Resultat: " << res << " and threadid: " << mUsedBackends[i]->threadPriority().first << " and type: " << mUsedBackends[i]->type() << endl;
+//                        std::cout << "Resultat: " << res << " and threadid: " << mUsedBackends[i]->threadPriority().first << " and type: " << mUsedBackends[i]->type() << std::endl;
                         assert( result == Unknown || result == res );
                         result = res;
                     }
@@ -716,7 +716,7 @@ namespace smtrat
             #endif
         }
         #ifdef MODULE_VERBOSE
-//        cout << "Result:   " << ANSWER_TO_STRING( result ) << endl;
+//        std::cout << "Result:   " << ANSWER_TO_STRING( result ) << std::endl;
         #endif
         return result;
     }
@@ -794,7 +794,7 @@ namespace smtrat
                 *mFoundAnswer.back() = true;
         }
         #ifdef MODULE_VERBOSE 
-        cout << "Results in: " << ANSWER_TO_STRING( _answer ) << endl;
+        std::cout << __func__ << " of " << moduleName() << " is " << ANSWER_TO_STRING( _answer ) << std::endl;
         #endif
         return _answer;
     }
@@ -1117,40 +1117,38 @@ namespace smtrat
 
     void Module::print( ostream& _out, const string _initiation ) const
     {
-        _out << _initiation << "********************************************************************************" << endl;
-        _out << _initiation << " Solver with stored at " << this << " with name " << moduleName() << endl;
-        _out << _initiation << endl;
-        _out << _initiation << " Current solver state" << endl;
-        _out << _initiation << endl;
-        printReceivedFormula( _out, _initiation + " " );
-        _out << _initiation << endl;
-        printPassedFormula( _out, _initiation + " " );
-        _out << _initiation << endl;
-        printInfeasibleSubsets( _out, _initiation + " " );
-        _out << _initiation << endl;
-        _out << _initiation << "********************************************************************************" << endl;
+        _out << _initiation << "********************************************************************************" << std::endl;
+        _out << _initiation << " Solver stored at " << this << " with name " << moduleName() << std::endl;
+        _out << _initiation << std::endl;
+        printReceivedFormula( _out, _initiation + "\t" );
+        _out << _initiation << std::endl;
+        printPassedFormula( _out, _initiation + "\t" );
+        _out << _initiation << std::endl;
+        printInfeasibleSubsets( _out, _initiation + "\t" );
+        _out << _initiation << std::endl;
+        _out << _initiation << "********************************************************************************" << std::endl;
     }
 
     void Module::printReceivedFormula( ostream& _out, const string _initiation ) const
     {
-        _out << _initiation << "Received formula:" << endl;
+        _out << _initiation << "Received formula:" << std::endl;
         for( auto form = mpReceivedFormula->begin(); form != mpReceivedFormula->end(); ++form )
         {
             _out << _initiation << "  ";
             // bool _withActivity, unsigned _resolveUnequal, const string _init, bool _oneline, bool _infix, bool _friendlyNames
             _out << setw( 45 ) << form->formula().toString( false, 0, "", true, true, true );
             if( form->deducted() ) _out << " deducted";
-            _out << endl;
+            _out << std::endl;
         }
     }
 
     void Module::printPassedFormula( ostream& _out, const string _initiation ) const
     {
-        _out << _initiation << "Passed formula:" << endl;
+        _out << _initiation << "Passed formula:" << std::endl;
         for( auto form = mpPassedFormula->begin(); form != mpPassedFormula->end(); ++form )
         {
             _out << _initiation << "  ";
-            _out << setw( 30 ) << form->formula().toString( false, 0, "", true, true, true );
+            _out << setw( 45 ) << form->formula().toString( false, 0, "", true, true, true );
             if( form->hasOrigins() )
             {
                 for( auto oSubformulas = form->origins().begin(); oSubformulas != form->origins().end(); ++oSubformulas )
@@ -1158,24 +1156,24 @@ namespace smtrat
                     _out << " {" << oSubformulas->toString( false, 0, "", true, true, true ) << " }";
                 }
             }
-            _out << endl;
+            _out << std::endl;
         }
     }
 
     void Module::printInfeasibleSubsets( ostream& _out, const string _initiation ) const
     {
-        _out << _initiation << "Infeasible subsets:" << endl;
+        _out << _initiation << "Infeasible subsets:" << std::endl;
         _out << _initiation << "   {";
         for( auto infSubSet = mInfeasibleSubsets.begin(); infSubSet != mInfeasibleSubsets.end(); ++infSubSet )
         {
             if( infSubSet != mInfeasibleSubsets.begin() )
-                _out << endl << _initiation << "    ";
+                _out << std::endl << _initiation << "    ";
             _out << " {";
             for( auto infSubFormula = infSubSet->begin(); infSubFormula != infSubSet->end(); ++infSubFormula )
-                _out << " " << infSubFormula->toString( false, 0, "", true, true, true ) << endl;
+                _out << " " << infSubFormula->toString( false, 0, "", true, true, true ) << std::endl;
             _out << " }";
         }
-        _out << " }" << endl;
+        _out << " }" << std::endl;
     }
     
     void Module::printModel( ostream& _out ) const
