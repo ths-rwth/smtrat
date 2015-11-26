@@ -1721,8 +1721,6 @@ SetWatches:
                         }
                         else
                         {
-                            if( mCurrentAssignmentConsistent != Unknown )
-                                exit(213);
                             assert( mCurrentAssignmentConsistent == Unknown );
                             if( !Settings::stop_search_after_first_unknown )
                             {
