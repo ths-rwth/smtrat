@@ -237,33 +237,20 @@ namespace smtrat
 			// Check whether the found assignment is integer.
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
 			for (unsigned d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
-				if (vars[d].getType() != carl::VariableType::VT_INT) continue;
-				auto r = this->mRealAlgebraicSolution[d].branchingPoint();
-				if (!carl::isInteger(r)) {
-					branchAt(vars[d], r);
-					return Unknown;
-				}
+				if (checkIntegerAssignment(vars, d, true)) return Unknown;
 			}
 		} else if (Settings::integerHandling == carl::cad::IntegerHandling::SPLIT_SOLUTION_INVERSE) {
 			// Check whether the found assignment is integer.
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
 			for (std::size_t d = this->mRealAlgebraicSolution.dim(); d > 0; d--) {
-				if (vars[d-1].getType() != carl::VariableType::VT_INT) continue;
-				auto r = this->mRealAlgebraicSolution[d-1].branchingPoint();
-				if (!carl::isInteger(r)) {
-					branchAt(vars[d-1], r);
-					return Unknown;
-				}
+				if (checkIntegerAssignment(vars, d-1, true)) return Unknown;
 			}
 		} else if (Settings::integerHandling == carl::cad::IntegerHandling::NONE) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Ignoring integers.");
 		} else {
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
 			for (std::size_t d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
-				if (vars[d].getType() != carl::VariableType::VT_INT) continue;
-				auto r = this->mRealAlgebraicSolution[d].branchingPoint();
-				//if (!carl::isInteger(r)) exit(56);
-				assert(carl::isInteger(r));
+				checkIntegerAssignment(vars, d, false);
 			}
 		}
 		return True;

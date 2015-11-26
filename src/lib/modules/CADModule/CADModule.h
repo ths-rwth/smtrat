@@ -102,6 +102,19 @@ return SettingsType::moduleName;
             }
 
         private:
+			bool checkIntegerAssignment(const std::vector<carl::Variable>& vars, std::size_t d, bool createBranch) {
+				if (vars[d].getType() != carl::VariableType::VT_INT) return false;
+				auto r = this->mRealAlgebraicSolution[d].branchingPoint();
+				if (createBranch) {
+					if (!carl::isInteger(r)) {
+						branchAt(vars[d], r);
+						return true;
+					}
+				} else {
+					assert(carl::isInteger(r));
+					return false;
+				}
+			}
 			bool addConstraintFormula(const FormulaT& f);
             const carl::cad::Constraint<smtrat::Rational> convertConstraint(const ConstraintT&);
             ConstraintT convertConstraint(const carl::cad::Constraint<smtrat::Rational>&);
