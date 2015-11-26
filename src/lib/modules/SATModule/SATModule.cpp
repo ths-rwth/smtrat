@@ -1528,7 +1528,7 @@ SetWatches:
     }
     
     template<class Settings>
-    CRef SATModule<Settings>::propagateConsistently( bool& _madeTheoryCall )
+    CRef SATModule<Settings>::propagateConsistently( bool& _madeTheoryCall, bool& _foundConflictOfSizeOne  )
     {
         CRef confl = CRef_Undef;
         bool deductionsLearned = true;
@@ -1589,7 +1589,7 @@ SetWatches:
                         }
                         case False:
                         {
-                            confl = learnTheoryConflict();
+                            confl = learnTheoryConflict( _foundConflictOfSizeOne );
                             if( confl == CRef_Undef )
                             {
                                 if( !ok )
@@ -1634,7 +1634,8 @@ SetWatches:
             if( anAnswerFound() )
                 return l_Undef;
             bool madeTheoryCall = false;
-            CRef confl = propagateConsistently( madeTheoryCall );
+            bool foundConflictOfSizeOne = false;
+            CRef confl = propagateConsistently( madeTheoryCall, foundConflictOfSizeOne );
             if( qhead < trail_lim.size() )
                 continue;
             if( !ok )
@@ -1644,7 +1645,7 @@ SetWatches:
                 return l_False;
             }
 
-            if( confl == CRef_Undef )
+            if( !foundConflictOfSizeOne && confl == CRef_Undef )
             {
                 // NO CONFLICT
                 if( Settings::check_if_all_clauses_are_satisfied && !mReceivedFormulaPurelyPropositional )
@@ -1720,6 +1721,8 @@ SetWatches:
                         }
                         else
                         {
+                            if( mCurrentAssignmentConsistent != Unknown )
+                                exit(213);
                             assert( mCurrentAssignmentConsistent == Unknown );
                             if( !Settings::stop_search_after_first_unknown )
                             {
@@ -2429,7 +2432,7 @@ NextClause:
     }
 
     template<class Settings>
-    CRef SATModule<Settings>::learnTheoryConflict()
+    CRef SATModule<Settings>::learnTheoryConflict( bool& _foundConflictOfSizeOne )
     {
         CRef conflictClause = CRef_Undef;
         std::vector<Module*>::const_iterator backend = usedBackends().begin();
@@ -2465,7 +2468,12 @@ NextClause:
             ++backend;
         }
         if( addClause( mCurrentTheoryConflicts[mCurrentTheoryConflictEvaluations.begin()->second], CONFLICT_CLAUSE ) )
+        {
+            _foundConflictOfSizeOne = false;
             conflictClause = learnts.last();
+        }
+        else
+            _foundConflictOfSizeOne = true;
         auto tcIter = mCurrentTheoryConflictEvaluations.begin();
         ++tcIter;
         size_t addedClauses = 1;
