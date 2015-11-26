@@ -874,6 +874,8 @@ namespace smtrat
             }
             else // Bland's rule
             {
+                const Variable<T1, T2>* bestBasicVar = nullptr;
+                std::pair<EntryID,bool> bestResult( LAST_ENTRY_ID, true ); 
                 for( const Variable<T1, T2>* basicVar : mRows )
                 {
                     assert( basicVar != NULL );
@@ -901,18 +903,21 @@ namespace smtrat
                         }
                         else if( result.first != LAST_ENTRY_ID )
                         {
-                            // Found a pivoting element
-                            *mpTheta = thetaB;
-                            #ifdef LRA_NO_DIVISION
-                            (*mpTheta) *= bVar.factor();
-                            #endif 
-                            (*mpTheta) /= (*mpEntries)[result.first].content();
-                            return std::pair<EntryID,bool>( result.first, true );
+                            if( bestBasicVar == nullptr || *basicVar < *bestBasicVar )
+                            {
+                                bestBasicVar = basicVar;
+                                // Found a pivoting element
+                                *mpTheta = thetaB;
+                                #ifdef LRA_NO_DIVISION
+                                (*mpTheta) *= bVar.factor();
+                                #endif 
+                                (*mpTheta) /= (*mpEntries)[result.first].content();
+                                bestResult = std::pair<EntryID,bool>( result.first, true );
+                            }
                         }
                     }
                 }
-                // Found no pivoting element, that is no variable violates its bounds.
-                return std::pair<EntryID,bool>( LAST_ENTRY_ID, true );
+                return bestResult;
             }
         }
 
@@ -1036,6 +1041,8 @@ namespace smtrat
             if( _than == LAST_ENTRY_ID ) return true;
             const Variable<T1,T2>& isBetterNbVar = *((*mpEntries)[_isBetter].columnVar());
             const Variable<T1,T2>& thanColumnNbVar = *((*mpEntries)[_than].columnVar());
+            if( !Settings::use_pivoting_strategy || mPivotingSteps >= mMaxPivotsWithoutBlandsRule )
+                return isBetterNbVar < thanColumnNbVar;
             if( Settings::use_activity_based_pivot_strategy )
             {
                 if( isBetterNbVar.conflictActivity() < thanColumnNbVar.conflictActivity() )
