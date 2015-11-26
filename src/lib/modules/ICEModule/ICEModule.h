@@ -44,8 +44,8 @@ namespace smtrat
 		using VertexProperty = TermT;
 		struct EdgeProperty {
 			Coefficient coeff;
-			ConstraintT constraint;
-			EdgeProperty(const Coefficient& c, const ConstraintT& con): coeff(c), constraint(con) {}
+			FormulaT constraint;
+			EdgeProperty(const Coefficient& c, const FormulaT& con): coeff(c), constraint(con) {}
 			friend std::ostream& operator<<(std::ostream& os, const EdgeProperty& ep) {
 				return os << ep.coeff;
 			}
@@ -61,7 +61,7 @@ namespace smtrat
 			
 			FormulaT buildFormula(const std::vector<Edge>& edges) const {
 				FormulasT res;
-				std::transform(edges.begin(), edges.end(), std::back_inserter(res), [](const Edge& edge){ return FormulaT(edge->constraint); });
+				std::transform(edges.begin(), edges.end(), std::back_inserter(res), [](const Edge& edge){ return edge->constraint; });
 				return FormulaT(carl::FormulaType::AND, std::move(res));
 			}
 			std::vector<Vertex> collectAdjacent(const std::vector<Vertex>& vertices, const std::vector<Edge>& edges) {
@@ -123,7 +123,7 @@ namespace smtrat
 			ICEStatistics mStatistics;
 #endif
 			vb::VariableBounds<FormulaT> mBounds;
-			std::set<ConstraintT> mConstraints;
+			std::map<FormulaT,ConstraintT> mConstraints;
 			std::set<FormulaT> mOtherFormulas;
 			
 			void addFormula(const FormulaT& f);

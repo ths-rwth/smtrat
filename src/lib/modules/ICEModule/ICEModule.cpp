@@ -73,7 +73,7 @@ namespace smtrat
 			case carl::FormulaType::CONSTRAINT:
 				mBounds.addBound(f.constraint(), f);
 				if (!f.constraint().isBound()) {
-					mConstraints.insert(f.constraint());
+					mConstraints.emplace(f, f.constraint());
 				}
 				break;
 			case carl::FormulaType::NOT: {
@@ -82,7 +82,7 @@ namespace smtrat
 					ConstraintT newC(c.lhs(), invertRelation(c.relation()));
 					mBounds.addBound(newC, f);
 					if (!newC.isBound()) {
-						mConstraints.insert(newC);
+						mConstraints.emplace(f, newC);
 					}
 				}
 				break;
@@ -98,7 +98,7 @@ namespace smtrat
 			case carl::FormulaType::CONSTRAINT:
 				mBounds.removeBound(f.constraint(), f);
 				if (!f.constraint().isBound()) {
-					mConstraints.erase(f.constraint());
+					mConstraints.erase(f);
 				}
 				break;
 			case carl::FormulaType::NOT: {
@@ -107,7 +107,7 @@ namespace smtrat
 					ConstraintT newC(c.lhs(), invertRelation(c.relation()));
 					mBounds.removeBound(newC, f);
 					if (!newC.isBound()) {
-						mConstraints.erase(newC);
+						mConstraints.erase(f);
 					}
 				}
 				break;
@@ -125,8 +125,8 @@ namespace smtrat
 		std::vector<TermT> dest;
 		Coefficient coeff;
 		for (const auto& c: mConstraints) {
-			if (isSuitable(c, src, dest, coeff)) {
-				auto& edge = graph.newEdge(graph.newVertex(src), EdgeProperty(coeff, c));
+			if (isSuitable(c.second, src, dest, coeff)) {
+				auto& edge = graph.newEdge(graph.newVertex(src), EdgeProperty(coeff, c.first));
 				for (const auto& d: dest) {
 					edge.addOut(graph.newVertex(d));
 				}
@@ -142,6 +142,7 @@ namespace smtrat
 		enumerator.findAll();
 		
 		if (!collector.mInfeasibleSubset.empty()) {
+			SMTRAT_LOG_INFO("smtrat.ice", "Found input to be unsat, subset is " << collector.mInfeasibleSubset);
 			mInfeasibleSubsets.emplace_back(collector.mInfeasibleSubset);
 			return False;
 		}
