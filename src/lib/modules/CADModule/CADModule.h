@@ -114,6 +114,7 @@ return SettingsType::moduleName;
 					assert(carl::isInteger(r));
 					return false;
 				}
+				return false;
 			}
 			bool addConstraintFormula(const FormulaT& f);
             const carl::cad::Constraint<smtrat::Rational> convertConstraint(const ConstraintT&);
