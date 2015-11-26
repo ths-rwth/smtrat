@@ -21,8 +21,8 @@
 #include "Module.h"
 
 // Flag activating some informative and not exaggerated output about module calls.
-//#define MODULE_VERBOSE
-//#define MODULE_VERBOSE_INTEGERS
+#define MODULE_VERBOSE
+#define MODULE_VERBOSE_INTEGERS
 //#define DEBUG_MODULE_CALLS_IN_SMTLIB
 
 using namespace std;
@@ -92,7 +92,7 @@ namespace smtrat
     Answer Module::check( bool _full )
     {
         #ifdef MODULE_VERBOSE
-        std::cout << std::endl << __func__  << (_full ? " full" : " lazy" ) << " with " << moduleName() << std::endl;
+        std::cout << std::endl << __func__  << (_full ? " full" : " lazy" ) << " with module " << moduleName() << " (" << mId << ")" << std::endl;
         print( std::cout, "\t");
         #endif
         #ifdef SMTRAT_DEVOPTION_MeasureTime
@@ -135,7 +135,7 @@ namespace smtrat
     bool Module::inform( const FormulaT& _constraint )
     {
         #ifdef MODULE_VERBOSE
-        std::cout << __func__ << " " << moduleName() << " about: " << _constraint << endl;
+        std::cout << __func__ << " " << moduleName() << " (" << mId << ") about: " << _constraint << endl;
         #endif
         addConstraintToInform( _constraint );
         return informCore( _constraint );
@@ -144,7 +144,7 @@ namespace smtrat
     bool Module::add( ModuleInput::const_iterator _receivedSubformula )
     {
         #ifdef MODULE_VERBOSE
-        std::cout << __func__ << " to " << moduleName() << ":" << std::endl;
+        std::cout << __func__ << " to " << moduleName() << " (" << mId << "):" << std::endl;
         std::cout << "\t" << _receivedSubformula->formula() << std::endl;
         #endif
         if( mFirstUncheckedReceivedSubformula == mpReceivedFormula->end() )
@@ -160,7 +160,7 @@ namespace smtrat
     void Module::remove( ModuleInput::const_iterator _receivedSubformula )
     {
         #ifdef MODULE_VERBOSE
-        std::cout << __func__ << " from " << moduleName() << ":" << std::endl;
+        std::cout << __func__ << " from " << moduleName() << " (" << mId << "):" << std::endl;
         std::cout << "\t" << _receivedSubformula->formula() << std::endl;
         #endif
         removeCore( _receivedSubformula );
@@ -443,7 +443,7 @@ namespace smtrat
                 constraintA = ConstraintT( std::move(_polynomial - (--bound)), Relation::LEQ );
             }
             #ifdef MODULE_VERBOSE_INTEGERS
-            std::cout << __func__ << " from " << moduleName() << " at  " << constraintA << "  and  " << constraintB << std::endl;
+            std::cout << __func__ << " from " << moduleName() << " (" << mId << ") at  " << constraintA << "  and  " << constraintB << std::endl;
             std::cout << "\tPremise is: " << _premise << std::endl;
             #endif
         }
@@ -794,7 +794,7 @@ namespace smtrat
                 *mFoundAnswer.back() = true;
         }
         #ifdef MODULE_VERBOSE 
-        std::cout << __func__ << " of " << moduleName() << " is " << ANSWER_TO_STRING( _answer ) << std::endl;
+        std::cout << __func__ << " of " << moduleName() << " (" << mId << ") is " << ANSWER_TO_STRING( _answer ) << std::endl;
         #endif
         return _answer;
     }
@@ -1118,7 +1118,7 @@ namespace smtrat
     void Module::print( ostream& _out, const string _initiation ) const
     {
         _out << _initiation << "********************************************************************************" << std::endl;
-        _out << _initiation << " Solver stored at " << this << " with name " << moduleName() << std::endl;
+        _out << _initiation << " Solver " << mId << " / " << moduleName() << std::endl;
         _out << _initiation << std::endl;
         printReceivedFormula( _out, _initiation + "\t" );
         _out << _initiation << std::endl;

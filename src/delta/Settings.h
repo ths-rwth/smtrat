@@ -37,7 +37,7 @@ public:
 			("input-file,i", bpo::value<std::string>()->required(), "input filename")
 			("output-file,o", bpo::value<std::string>()->default_value("delta.out.smt2"), "output filename")
 			("solver,s", bpo::value<std::string>()->default_value("./smtrat"), "solver executable")
-			("timeout,t", bpo::value<unsigned>()->default_value(15), "timeout in seconds")
+			("timeout,t", bpo::value<std::size_t>()->default_value(15), "timeout in seconds")
 			("verbose,v", "be verbose")
 		;
 		bpo::options_description finetuning("Finetuning");
@@ -98,9 +98,20 @@ public:
      * @return Value of the option as type T.
      */
 	template<typename T>
-	T as(const std::string& s) const {
+	const T& as(const std::string& s) const {
 		assert(has(s));
 		return vm[s].as<T>();
+	}
+	/**
+	 * Set option with given name as a given type.
+	 * If there is no such option exceptions may be thrown.
+     * @param s Name of the option.
+     * @param t New value.
+     */
+	template<typename T>
+	void set(const std::string& s, const T& t) {
+		assert(has(s));
+		vm.at(s).value() = t;
 	}
 	/**
 	 * Checks if there is an option with this name.
@@ -109,6 +120,16 @@ public:
      */
 	bool has(const std::string& s) const {
 		return vm.count(s) > 0;
+	}
+	/**
+	 * Check if the option with the given name was set due to its default value.
+	 * If there is no such option exceptions may be thrown.
+     * @param s Name of the option.
+     * @return Whether it's value was set as the default.
+     */
+	bool isDefault(const std::string& s) const {
+		assert(has(s));
+		return vm[s].defaulted();
 	}
 };
 

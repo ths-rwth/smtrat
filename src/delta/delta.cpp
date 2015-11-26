@@ -49,9 +49,17 @@ int main(int argc, char* argv[]) {
 	// Initialize checker.
 	std::cout << "Calculating original exit code..." << std::endl;
 	auto start_exit = Clock::now();
-	delta::Checker c(s.as<std::string>("solver"), s.as<unsigned>("timeout"), input);
+	delta::Checker c(s.as<std::string>("solver"), s.as<std::size_t>("timeout"), input);
 	std::cout << BGREEN << "Original exit code is " << c.expectedCode() << END << std::endl;
-	std::cout << "Calculation took " << std::chrono::duration_cast<seconds>(Clock::now() - start_exit).count() << " seconds, the configured timeout is " << s.as<unsigned>("timeout") << " seconds." << std::endl;
+	std::size_t duration = (std::size_t)std::chrono::duration_cast<seconds>(Clock::now() - start_exit).count(); 
+	std::size_t candidate = (duration + 1) * 2;
+	if (s.isDefault("timeout") && (candidate < s.as<std::size_t>("timeout"))) {
+		s.set("timeout", candidate);
+		c.resetTimeout(candidate);
+		std::cout << "Calculation took " << duration << " seconds, the default timeout is set to " << s.as<std::size_t>("timeout") << " seconds." << std::endl;
+	} else {
+		std::cout << "Calculation took " << duration << " seconds, the configured timeout is " << s.as<std::size_t>("timeout") << " seconds." << std::endl;
+	}
 	if (c.expectedCode() == 137) {
 		std::cout << BRED << "This exit code might be a timeout!" << END << std::endl;
 	}
@@ -62,7 +70,7 @@ int main(int argc, char* argv[]) {
 	// Perform simplications.
 	delta::Producer producer(c, s);
 	producerPtr = &producer;
-	unsigned iterations = producer(n);
+	std::size_t iterations = producer(n);
 	if (s.as<bool>("delay-declare-fun")) {
 		n.eliminateDefineFuns();
 	}
