@@ -1636,7 +1636,7 @@ SetWatches:
             bool madeTheoryCall = false;
             bool foundConflictOfSizeOne = false;
             CRef confl = propagateConsistently( madeTheoryCall, foundConflictOfSizeOne );
-            if( qhead < trail_lim.size() )
+            if( qhead < trail.size() )
                 continue;
             if( !ok )
             {
