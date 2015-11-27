@@ -392,7 +392,7 @@ namespace smtrat
 	bool CADModule<Settings>::addConstraintFormula(const FormulaT& f) {
 		assert(f.getType() == carl::FormulaType::CONSTRAINT);
 		mVariableBounds.addBound(f.constraint(), f);
-		SMTRAT_LOG_WARN("smtrat.cad", "Adding " << f << std::endl << mVariableBounds);
+		SMTRAT_LOG_WARN("smtrat.cad", "Adding " << f);
 		// add the constraint to the local list of constraints and memorize the index/constraint assignment if the constraint is not present already
 		if (mConstraintsMap.find(f) != mConstraintsMap.end())
 			return true;	// the exact constraint was already considered
