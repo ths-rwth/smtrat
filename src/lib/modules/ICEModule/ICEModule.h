@@ -69,6 +69,7 @@ namespace smtrat
 				auto curVertex = vertices.begin();
 				for (const auto& edge: edges) {
 					curVertex++;
+					if (curVertex == vertices.end()) curVertex = vertices.begin();
 					for (const auto& v: edge.out()) {
 						if (v == *curVertex) continue;
 						res.push_back(v);
