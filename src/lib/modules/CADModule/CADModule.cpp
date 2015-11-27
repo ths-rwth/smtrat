@@ -295,7 +295,7 @@ namespace smtrat
 			ConstraintIndexMap::iterator constraintIt = mConstraintsMap.find(_subformula->formula());
 			if (constraintIt == mConstraintsMap.end())
 				return; // there is nothing to remove
-			const carl::cad::Constraint<smtrat::Rational>& constraint = mConstraints[constraintIt->second];
+			carl::cad::Constraint<smtrat::Rational> constraint = mConstraints[constraintIt->second];
 
 			SMTRAT_LOG_TRACE("smtrat.cad", "---- Constraint removal (before) ----");
 			SMTRAT_LOG_TRACE("smtrat.cad", "Elimination sets:");
@@ -313,11 +313,16 @@ namespace smtrat
 			updateConstraintMap(constraintIndex, true);
 			// remove the corresponding constraint node with index constraintIndex
 			mConflictGraph.removeConstraint(constraint);
+			
+			// remove the constraint from the list of constraints
+			assert(mConstraints.size() > constraintIndex); // the constraint to be removed should be stored in the local constraint list
+			mConstraints.erase(mConstraints.begin() + constraintIndex);	// erase the (constraintIt->second)-th element
 
 			// remove the corresponding polynomial from the CAD if it is not occurring in another constraint
 			bool doDelete = true;
 			for (const auto& c: mConstraints) {
 				if (constraint.getPolynomial() == c.getPolynomial()) {
+					SMTRAT_LOG_TRACE("smtrat.cad", "Not removing " << constraint.getPolynomial() << " due to " << c);
 					doDelete = false;
 					break;
 				}
@@ -327,9 +332,6 @@ namespace smtrat
 				mCAD.removePolynomial(constraint.getPolynomial());
 			}	
 
-			// remove the constraint from the list of constraints
-			assert(mConstraints.size() > constraintIndex); // the constraint to be removed should be stored in the local constraint list
-			mConstraints.erase(mConstraints.begin() + constraintIndex);	// erase the (constraintIt->second)-th element
 			
 			SMTRAT_LOG_TRACE("smtrat.cad", "---- Constraint removal (afterwards) ----");
 			SMTRAT_LOG_TRACE("smtrat.cad", "New constraint set: " << mConstraints);
