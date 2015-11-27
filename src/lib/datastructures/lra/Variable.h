@@ -558,6 +558,33 @@ namespace smtrat
                  * @return 
                  */
                 FormulasT getDefiningOrigins() const;
+                
+                /**
+                 * 
+                 * @param _bound
+                 * @return 
+                 */
+                bool operator<( const Variable& _variable ) const
+                {
+                    if( this == &_variable )
+                        return false;
+                    return this->expression() < _variable.expression();
+                }
+                
+                bool operator>( const Variable& _variable ) const
+                {
+                    return _variable < *this;
+                }
+                
+                bool operator==( const Variable& _variable ) const
+                {
+                    return &_variable == this;
+                }
+                
+                bool operator!=( const Variable& _variable ) const
+                {
+                    return !(_variable == *this);
+                }
 
                 /**
                  * 

@@ -40,7 +40,7 @@ namespace smtrat
             /**
              * 
              */
-            static const bool use_theta_based_pivot_strategy = true;
+            static const bool use_theta_based_pivot_strategy = false;
             /**
              * 
              */
