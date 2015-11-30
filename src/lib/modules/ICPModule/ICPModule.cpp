@@ -1071,6 +1071,11 @@ namespace smtrat
         icp::IcpVariable& icpVar = *mVariables.find( variable )->second;
         DoubleInterval icpVarIntervalBefore = icpVar.interval();
         mSplitOccurred = _selection->contract( mIntervals, resultA, resultB );
+        if( !Settings::split_by_division_with_zero && mSplitOccurred )
+        {
+            mSplitOccurred = false;
+            resultA = resultA.convexHull( resultB );
+        }
         if( mSplitOccurred )
         {
             assert( !resultB.isEmpty() );

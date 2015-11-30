@@ -78,6 +78,10 @@ namespace smtrat
          * 
          */
         static constexpr bool use_propagation = true;
+        /**
+         * 
+         */
+        static constexpr bool split_by_division_with_zero = true;
         
     };
     
@@ -85,5 +89,11 @@ namespace smtrat
     {
 		static constexpr auto moduleName = "ICPModule<ICPSettings2>";
         static constexpr double default_splitting_size_nia = 100;
+    };
+    
+    struct ICPSettings3 : ICPSettings1
+    {
+		static constexpr auto moduleName = "ICPModule<ICPSettings34>";
+        static constexpr bool split_by_division_with_zero = false;
     };
 }
