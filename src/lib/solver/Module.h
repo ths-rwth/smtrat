@@ -161,6 +161,11 @@ namespace smtrat
             ModuleInput::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
             mutable unsigned mSmallerMusesCheckCounter;
+            /// Objective functions for global optimization regarding the received formula. If this container contains more
+            /// than one objective function, we deal it according pareto optimization starting with the first element.
+            std::vector<Poly> mObjectives;
+            /// Position after the last objective passed to the backends.
+            std::vector<Poly>::const_iterator mPositionAfterLastPassedObjective;
 
         public:
 
@@ -257,6 +262,11 @@ namespace smtrat
              * @return Equivalence classes.
              */
             virtual std::list<std::vector<carl::Variable>> getModelEqualities() const;
+            
+            void passObjectives( Module& _backend, std::vector<Poly>::const_iterator _begin, std::vector<Poly>::const_iterator _end ) const
+            {
+                _backend.addObjectives( _begin, _end );
+            }
 
             // Methods to read and write on the members.
             /**
@@ -470,6 +480,11 @@ namespace smtrat
             {
                 return mFirstSubformulaToPass;
             }
+            
+            std::vector<Poly>::const_iterator positionAfterLastPassedObjective() const
+            {
+                return mPositionAfterLastPassedObjective;
+            }
 
             /**
              * Notifies that the received formulas has been checked.
@@ -503,6 +518,28 @@ namespace smtrat
             virtual std::string moduleName() const {
 				return "Module";
 			}
+            
+            const std::vector<Poly>& objectives() const
+            {
+                return mObjectives;
+            }
+            
+            void addObjective( const Poly& _objective )
+            {
+                mObjectives.push_back( _objective );
+            }
+            
+            void addObjectives( std::vector<Poly>::const_iterator _begin, std::vector<Poly>::const_iterator _end )
+            {
+                mObjectives.insert( mObjectives.end(), _begin, _end );
+            }
+            
+            void removeObjective( const Poly& _objective )
+            {
+                auto iter = std::find( mObjectives.rbegin(), mObjectives.rend(), _objective );
+                if( iter != mObjectives.rend() )
+                    mObjectives.erase( (++iter).base() );
+            }
             
             /**
              * Excludes all variables from the current model, which do not occur in the received formula.

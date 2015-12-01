@@ -115,6 +115,8 @@ return SettingsType::moduleName;
             carl::Variable mDelta;
             /// Stores the bounds, which would influence a backend call because of recent changes.
             std::vector<const LRABound* > mBoundCandidatesToPass;
+            ///
+            carl::FastMap<Poly,LRAVariable*> mObjectiveVariables;
             // Stores for each variable the number of violated integer variables in the left resp. 
             // right branch ( first component of the pair for the left branch and second component for
             // the right branch ) after the i-th step in the corresponding direction

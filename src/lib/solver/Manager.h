@@ -172,6 +172,16 @@ namespace smtrat
                 while( pop() );
             }
             
+            void addObjective( const Poly& _objective )
+            {
+                mpPrimaryBackend->addObjective( _objective );
+            }
+            
+            void removeObjective( const Poly& _objective )
+            {
+                mpPrimaryBackend->removeObjective( _objective );
+            }
+            
             void reset();
             
             /**

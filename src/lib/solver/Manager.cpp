@@ -307,6 +307,7 @@ namespace smtrat
                 for(auto form = _requiredBy->rPassedFormula().begin(); form != _requiredBy->firstSubformulaToPass(); form++) {
                     newBackend->add(form);
                 }
+                _requiredBy->passObjectives( *newBackend, _requiredBy->objectives().begin(), _requiredBy->positionAfterLastPassedObjective() );
             }
         }
         return backends;
