@@ -40,6 +40,15 @@
 
 namespace smtrat {
 namespace parser {
+	
+	enum OptimizationType { Maximize, Minimize };
+	inline std::ostream& operator<<(std::ostream& os, OptimizationType ot) {
+		switch (ot) {
+			case Maximize: return os << "maximize";
+			case Minimize: return os << "minimize";
+		}
+	}
+	
 	namespace spirit = boost::spirit;
 	namespace qi = boost::spirit::qi;
 	namespace px = boost::phoenix;

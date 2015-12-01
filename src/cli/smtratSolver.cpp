@@ -120,6 +120,9 @@ public:
 	void getValue(const std::vector<carl::Variable>&) {
 		error() << "(get-value <variables>) is not implemented.";
 	}
+	void addObjective(const smtrat::Poly& p, smtrat::parser::OptimizationType ot) {
+		error() << "Was asked to " << ot << " " << p << " but we can't do this yet.";
+	}
 	void pop(std::size_t n) {
 		this->solver->pop(n);
 		if (exportDIMACS) dimacs.clear();

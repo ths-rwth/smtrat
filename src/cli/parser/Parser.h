@@ -133,6 +133,16 @@ public:
     ) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-value " << vars << ")");
 	}
+	void addObjective(const types::TermType& t, OptimizationType ot) {
+		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(" << ot << " " << t << ")");
+		Poly p;
+		conversion::VariantConverter<Poly> conv;
+		if (!conv(t, p)) {
+			SMTRAT_LOG_ERROR("smtrat.parser", "objectives are required to be arithmetic, but it is \"" << t << "\".");
+			return;
+		}
+		callHandler(&InstructionHandler::addObjective, p, ot);
+	}
 	void pop(const Integer& n) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(pop " << n << ")");
 		theories.popScriptScope(carl::toInt<std::size_t>(n));

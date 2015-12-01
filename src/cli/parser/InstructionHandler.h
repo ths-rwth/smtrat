@@ -2,6 +2,7 @@
 
 #include "VariantMap.h"
 #include "Attribute.h"
+#include "Common.h"
 
 namespace smtrat {
 namespace parser {
@@ -131,6 +132,7 @@ public:
 	virtual void getProof() = 0;
 	virtual void getUnsatCore() = 0;
 	virtual void getValue(const std::vector<carl::Variable>&) = 0;
+	virtual void addObjective(const Poly& p, OptimizationType ot) = 0;
 	virtual void pop(std::size_t) = 0;
 	virtual void push(std::size_t) = 0;
 	virtual void reset() = 0;
