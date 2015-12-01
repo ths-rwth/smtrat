@@ -19,7 +19,7 @@ template class carl::Constraint<smtrat::Poly>;
 template class carl::Formula<smtrat::Poly>;
 template class carl::Interval<smtrat::Rational>;
 template class carl::Interval<double>;
-template class carl::VariableInformation<true, smtrat::Poly>;
+template struct carl::VariableInformation<true, smtrat::Poly>;
 
 //template class std::set<carl::Constraint<smtrat::Poly>, carl::less<carl::Constraint<smtrat::Poly>, false>>;
 //template class std::vector<carl::Formula<smtrat::Poly>>;

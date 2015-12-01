@@ -341,6 +341,15 @@ namespace smtrat
         bool backendsResultUnknown = true;
         bool containsIntegerValuedVariables = true;
         Answer result = Unknown;
+//        Poly* objective = new Poly();
+//        carl::Variable x = carl::VariablePool::getInstance().findVariableWithName("x");
+//        carl::Variable y = carl::VariablePool::getInstance().findVariableWithName("y");
+//        carl::Variable z = carl::VariablePool::getInstance().findVariableWithName("z");
+//        (*objective) += (carl::makePolynomial<Poly>(x) * Rational(-2));
+//        (*objective) += (carl::makePolynomial<Poly>(y) * Rational(-3));
+//        (*objective) += (carl::makePolynomial<Poly>(z) * Rational(-4));
+//        LRAVariable* objectiveVar = mTableau.newBasicVariable( objective, false, true );
+//        mTableau.activateBasicVar( objectiveVar );
         if( !rReceivedFormula().isConstraintConjunction() )
         {
             goto Return; // Unknown
@@ -378,7 +387,7 @@ namespace smtrat
             if( pivotingElement.second )
             {
                 // If no basic variable violates its bounds (and hence no variable at all).
-                if( pivotingElement.first == 0 )
+                if( pivotingElement.first == lra::LAST_ENTRY_ID )
                 {
                     #ifdef DEBUG_LRA_MODULE
                     mTableau.print();
@@ -564,6 +573,43 @@ Return:
             mpStatistics->setTableauSize( mTableau.rows().size()*mTableau.columns().size() );
         }
         #endif
+//        if( result == True )
+//        {
+//            std::cout << "Optimization phase:" << std::endl;
+//            for( ; ; )
+//            {
+//                std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElementForOptimizing( *objectiveVar );
+//                if( pivotingElement.second )
+//                {
+//                    if( pivotingElement.first == lra::LAST_ENTRY_ID )
+//                    {
+//                        cout << endl;
+//                        mTableau.print();
+//                        cout << endl;
+//                        std::cout << "Optimum: -oo" << std::endl;
+//                        break;
+//                    }
+//                    else
+//                    {
+//                        #ifdef DEBUG_LRA_MODULE
+//                        cout << endl;
+//                        mTableau.print( pivotingElement.first, cout, "    " );
+//                        cout << endl;
+//                        #endif
+//                        mTableau.pivot( pivotingElement.first );
+//                    }
+//                }
+//                else
+//                {
+//                    cout << endl;
+//                    mTableau.print();
+//                    cout << endl;
+//                    std::cout << "Optimum: " << objectiveVar->assignment() << std::endl;
+//                    break;
+//                }
+//            }
+//        }
+//        mTableau.deactivateBasicVar( objectiveVar );
         if( result != Unknown )
         {
             mTableau.resetNumberOfPivotingSteps();

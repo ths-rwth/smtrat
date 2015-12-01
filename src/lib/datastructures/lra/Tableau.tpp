@@ -353,10 +353,10 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( const typename Poly::PolyType* _poly, bool _isInteger )
+        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( const typename Poly::PolyType* _poly, bool _isInteger, bool _isObjective )
         {
             mNonActiveBasics.emplace_front();
-            Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), _poly, mDefaultBoundPosition, _isInteger );
+            Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), _poly, mDefaultBoundPosition, _isInteger, _isObjective );
             for( auto term = _poly->begin(); term != _poly->end(); ++term )
             {
                 assert( !term->isConstant() );
@@ -734,6 +734,11 @@ namespace smtrat
                 {
                     assert( *basicVar != NULL );
                     Variable<T1,T2>& bVar = **basicVar;
+                    if( bVar.isObjective() )
+                    {
+                        ++basicVar;
+                        continue;
+                    }
                     Value<T1> diff = Value<T1>( 0 );
                     Value<T1> thetaB = Value<T1>( 0 );
                     bool upperBoundViolated = false;
@@ -880,6 +885,8 @@ namespace smtrat
                 {
                     assert( basicVar != NULL );
                     const Variable<T1,T2>& bVar = *basicVar;
+                    if( bVar.isObjective() )
+                        continue;
                     Value<T1> thetaB = Value<T1>( 0 );
                     bool upperBoundViolated = false;
                     bool lowerBoundViolated = false;
@@ -921,6 +928,197 @@ namespace smtrat
             }
         }
 
+        template<class Settings, typename T1, typename T2>
+        std::pair<EntryID,bool> Tableau<Settings,T1,T2>::nextPivotingElementForOptimizing( const Variable<T1, T2>& _objective )
+        {
+            assert( _objective.isObjective() );
+            Value<T1> maxTheta = Value<T1>(T1(-1));
+            EntryID rowStartEntry = _objective.startEntry();
+            Iterator rowIter = Iterator( rowStartEntry, mpEntries );
+            while( true )
+            {
+                const Variable<T1, T2>& nonBasicVar = *(*rowIter).columnVar();
+                #ifdef LRA_NO_DIVISION
+                if( ((*rowIter).content() < 0 && _objective.factor() > 0) || ((*rowIter).content() > 0 && _objective.factor() < 0) )
+                #else
+                if( (*rowIter).content() < 0 )
+                #endif
+                {
+                    if( nonBasicVar.supremum() > nonBasicVar.assignment() )
+                    {
+                        Value<T1> columnTheta = nonBasicVar.supremum().isInfinite() ? maxTheta : (nonBasicVar.supremum().limit() - nonBasicVar.assignment());
+                        EntryID result = LAST_ENTRY_ID;
+                        Iterator columnIter = Iterator( nonBasicVar.startEntry(), mpEntries );
+                        while( true )
+                        {
+                            Variable<T1, T2>& basic = *((*columnIter).rowVar());
+                            if( !basic.isObjective() )
+                            {
+                                #ifdef LRA_NO_DIVISION
+                                if( ((*columnIter).content() < 0 && basic.factor() > 0) || ((*columnIter).content() > 0 && basic.factor() < 0) )
+                                #else
+                                if( (*columnIter).content() < 0 )
+                                #endif
+                                {
+                                    if( basic.infimum() < basic.assignment() )
+                                    {
+                                        if( !basic.infimum().isInfinite() )
+                                        {
+                                            Value<T1> rowTheta = basic.assignment() - basic.infimum().limit();
+                                            #ifdef LRA_NO_DIVISION
+                                            rowTheta *= basic.factor();
+                                            #endif 
+                                            rowTheta /= (*columnIter).content();
+                                            if( rowTheta < T1(0) )
+                                                rowTheta = rowTheta * T1( -1 );
+                                            if( columnTheta == maxTheta || columnTheta > rowTheta )
+                                            {
+                                                columnTheta = rowTheta;
+                                                result = columnIter.entryID();
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    if( basic.supremum() > basic.assignment() )
+                                    {
+                                        if( !basic.supremum().isInfinite() )
+                                        {
+                                            Value<T1> rowTheta = basic.supremum().limit() - basic.assignment();
+                                            #ifdef LRA_NO_DIVISION
+                                            rowTheta *= basic.factor();
+                                            #endif 
+                                            rowTheta /= (*columnIter).content();
+                                            if( rowTheta < T1(0) )
+                                                rowTheta = rowTheta * T1( -1 );
+                                            if( columnTheta == maxTheta || columnTheta > rowTheta )
+                                            {
+                                                columnTheta = rowTheta;
+                                                result = columnIter.entryID();
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
+                            if( columnIter.vEnd( false ) )
+                            {
+                                if( result != LAST_ENTRY_ID )
+                                {
+                                    (*mpTheta) = columnTheta;
+                                    std::cout << "mpTheta = " << (*mpTheta) << std::endl;
+                                }
+                                return std::make_pair( result, true );
+                            }
+                            else
+                            {
+                                columnIter.vMove( false );
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if( nonBasicVar.infimum() < nonBasicVar.assignment()  )
+                    {
+                        Value<T1> columnTheta = nonBasicVar.infimum().isInfinite() ? maxTheta : (nonBasicVar.assignment() - nonBasicVar.infimum().limit());
+                        EntryID result = LAST_ENTRY_ID;
+                        Iterator columnIter = Iterator( nonBasicVar.startEntry(), mpEntries );
+                        while( true )
+                        {
+                            Variable<T1, T2>& basic = *((*columnIter).rowVar());
+                            if( !basic.isObjective() )
+                            {
+                                #ifdef LRA_NO_DIVISION
+                                if( ((*columnIter).content() < 0 && basic.factor() > 0) || ((*columnIter).content() > 0 && basic.factor() < 0) )
+                                #else
+                                if( (*columnIter).content() < 0 )
+                                #endif
+                                {
+                                    if( basic.supremum() > basic.assignment() )
+                                    {
+                                        if( !basic.supremum().isInfinite() )
+                                        {
+                                            Value<T1> rowTheta = basic.supremum().limit() - basic.assignment();
+                                            #ifdef LRA_NO_DIVISION
+                                            rowTheta *= basic.factor();
+                                            #endif 
+                                            rowTheta /= (*columnIter).content();
+                                            if( rowTheta < T1(0) )
+                                                rowTheta = rowTheta * T1( -1 );
+                                            if( columnTheta == maxTheta || columnTheta > rowTheta )
+                                            {
+                                                columnTheta = rowTheta;
+                                                result = columnIter.entryID();
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    if( basic.infimum() < basic.assignment()  )
+                                    {
+                                        if( !basic.infimum().isInfinite() )
+                                        {
+                                            Value<T1> rowTheta = basic.assignment() - basic.infimum().limit();
+                                            #ifdef LRA_NO_DIVISION
+                                            rowTheta *= basic.factor();
+                                            #endif 
+                                            rowTheta /= (*columnIter).content();
+                                            if( rowTheta < T1(0) )
+                                                rowTheta = rowTheta * T1( -1 );
+                                            if( columnTheta == maxTheta || columnTheta > rowTheta )
+                                            {
+                                                columnTheta = rowTheta;
+                                                result = columnIter.entryID();
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
+                            if( columnIter.vEnd( false ) )
+                            {
+                                if( result != LAST_ENTRY_ID )
+                                {
+                                    (*mpTheta) = columnTheta * T1( -1 );
+                                }
+                                return std::make_pair( result, true );
+                            }
+                            else
+                            {
+                                columnIter.vMove( false );
+                            }
+                        }
+                    }
+                }
+                if( rowIter.hEnd( false ) )
+                {
+                    break;
+                }
+                else
+                {
+                    rowIter.hMove( false );
+                }
+            }
+            return std::make_pair( LAST_ENTRY_ID, false );
+        }
+        
         template<class Settings, typename T1, typename T2>
         std::pair<EntryID,bool> Tableau<Settings,T1,T2>::isSuitable( const Variable<T1, T2>& _basicVar, bool supremumViolated ) const
         {
@@ -1445,7 +1643,7 @@ namespace smtrat
                     compressRows();
                 }
                 assert( basicVar.supremum() >= basicVar.assignment() || basicVar.infimum() <= basicVar.assignment() );
-                assert( nonbasicVar.supremum() == nonbasicVar.assignment() || nonbasicVar.infimum() == nonbasicVar.assignment() );
+//                assert( nonbasicVar.supremum() == nonbasicVar.assignment() || nonbasicVar.infimum() == nonbasicVar.assignment() );
             }
             assert( checkCorrectness() == mRows.size() );
             return columnVar;
