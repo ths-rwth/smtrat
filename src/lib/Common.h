@@ -198,7 +198,7 @@ extern template class carl::Constraint<smtrat::Poly>;
 extern template class carl::Formula<smtrat::Poly>;
 extern template class carl::Interval<smtrat::Rational>;
 extern template class carl::Interval<double>;
-extern template class carl::VariableInformation<true, smtrat::Poly>;
+extern template struct carl::VariableInformation<true, smtrat::Poly>;
 
 //extern template class std::set<carl::Constraint<smtrat::Poly>, carl::less<carl::Constraint<smtrat::Poly>, false>>;
 //extern template class std::vector<carl::Formula<smtrat::Poly>>;

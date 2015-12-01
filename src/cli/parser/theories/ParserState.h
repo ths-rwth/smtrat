@@ -12,7 +12,7 @@
 namespace smtrat {
 namespace parser {
 	
-	struct InstructionHandler;
+	class InstructionHandler;
 	
 	struct ParserState {
 
