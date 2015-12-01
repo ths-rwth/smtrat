@@ -542,7 +542,7 @@ namespace smtrat
                  * @param _isInteger
                  * @return 
                  */
-                Variable<T1, T2>* newBasicVariable( const typename Poly::PolyType* _poly, bool _isInteger );
+                Variable<T1, T2>* newBasicVariable( const typename Poly::PolyType* _poly, bool _isInteger, bool _isObjective = false );
                 
                 /**
                  * 
@@ -589,6 +589,12 @@ namespace smtrat
                  * @return 
                  */
                 std::pair<EntryID, bool> nextPivotingElement();
+                
+                /**
+                 * 
+                 * @return 
+                 */
+                std::pair<EntryID,bool> nextPivotingElementForOptimizing( const Variable<T1, T2>& _objective );
                 
                 /**
                  * 
