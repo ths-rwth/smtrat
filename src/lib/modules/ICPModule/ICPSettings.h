@@ -93,7 +93,7 @@ namespace smtrat
     
     struct ICPSettings3 : ICPSettings1
     {
-		static constexpr auto moduleName = "ICPModule<ICPSettings34>";
+		static constexpr auto moduleName = "ICPModule<ICPSettings3>";
         static constexpr bool split_by_division_with_zero = false;
     };
 }
