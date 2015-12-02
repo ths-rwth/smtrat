@@ -76,7 +76,7 @@ namespace smtrat
 		for( fcs_const_iterator i = mpReceivedFormula->constraintPool().begin(); i != mpReceivedFormula->constraintPool().end(); ++i )
 			polynomials.push_front( (*i)->lhs() );
 		mCAD = CAD( {}, CAD::orderVariablesGreeedily( variables.begin(), variables.end(), polynomials.begin(), polynomials.end() ), _conditionals, setting );
-		#ifdef MODULE_VERBOSE
+
 		cout << "Optimizing CAD variable order from ";
 		for( forward_list<GiNaC::symbol>::const_iterator k = variables.begin(); k != variables.end(); ++k )
 			cout << *k << " ";
@@ -84,7 +84,6 @@ namespace smtrat
 		for( vector<GiNaC::symbol>::const_iterator k = mCAD.variablesScheduled().begin(); k != mCAD.variablesScheduled().end(); ++k )
 			cout << *k << " ";
 		cout << endl;;
-		#endif
 		#else
 		mCAD.alterSetting(setting);
 		#endif
