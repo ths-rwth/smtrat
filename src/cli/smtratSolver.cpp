@@ -219,6 +219,7 @@ int main( int argc, char* argv[] )
 	if (!carl::logging::logger().has("stdout")) {
 		carl::logging::logger().configure("stdout", std::cout);
 	}
+	carl::logging::logger().formatter("stdout")->printInformation = false;
 	carl::logging::logger().filter("smtrat")
 		("smtrat", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.cad", carl::logging::LogLevel::LVL_DEBUG)
@@ -226,6 +227,7 @@ int main( int argc, char* argv[] )
 	;
 	carl::logging::logger().filter("stdout")
 		("smtrat", carl::logging::LogLevel::LVL_DEBUG)
+		("smtrat.module", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.parser", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.cad", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
