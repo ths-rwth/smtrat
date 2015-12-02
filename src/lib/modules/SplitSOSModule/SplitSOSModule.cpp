@@ -23,7 +23,7 @@ namespace smtrat
     {}
 
     template<class Settings>
-    Answer SplitSOSModule<Settings>::checkCore( bool _full )
+    Answer SplitSOSModule<Settings>::checkCore( bool _full, bool _minimize )
     {
         auto receivedFormula = firstUncheckedReceivedSubformula();
         while( receivedFormula != rReceivedFormula().end() )
@@ -47,7 +47,7 @@ namespace smtrat
             }
             ++receivedFormula;
         }
-        Answer ans = runBackends( _full );
+        Answer ans = runBackends( _full, _minimize );
         if( ans == False )
         {
             mInfeasibleSubsets.clear();

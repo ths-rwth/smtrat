@@ -88,9 +88,9 @@ namespace smtrat
         delete mBackendsFoundAnswer;
     }
     
-    Answer Module::check( bool _full )
+    Answer Module::check( bool _full, bool _minimize )
     {
-		SMTRAT_LOG_INFO("smtrat.module", __func__  << (_full ? " full" : " lazy" ) << " with module " << moduleName() << " (" << mId << ")");
+        SMTRAT_LOG_INFO("smtrat.module", __func__  << (_full ? " full" : " lazy" ) << " with module " << moduleName() << " (" << mId << ")");
         print("\t");
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         startCheckTimer();
@@ -110,7 +110,7 @@ namespace smtrat
             #endif
             return foundAnswer( True );
         }
-        Answer result = checkCore( _full );
+        Answer result = checkCore( _full, _minimize );
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         stopCheckTimer();
         #endif
@@ -189,7 +189,7 @@ namespace smtrat
             mSolverState = Unknown;
     }
 
-    Answer Module::checkCore( bool _full )
+    Answer Module::checkCore( bool _full, bool _minimize )
     {
         if ( !mInfeasibleSubsets.empty() )
             return False;
@@ -212,7 +212,7 @@ namespace smtrat
         return True;
         #else
         // Run the backends on the passed formula and return its answer.
-        Answer a = runBackends( _full );
+        Answer a = runBackends( _full, _minimize );
         if( a == False )
         {
             getInfeasibleSubsets();
@@ -597,7 +597,7 @@ namespace smtrat
         return result;
     }
 
-    Answer Module::runBackends( bool _full )
+    Answer Module::runBackends( bool _full, bool _minimize )
     {
         if( mpManager == NULL ) return Unknown;
         *mBackendsFoundAnswer = false;
@@ -669,7 +669,7 @@ namespace smtrat
                 mpManager->checkBackendPriority( mUsedBackends[ highestIndex ] );
                 SMTRAT_LOG_INFO("smtrat.module", "Call to module " << moduleName( mUsedBackends[ highestIndex ]->type() ));
                 mUsedBackends[ highestIndex ]->print();
-                result = mUsedBackends[ highestIndex ]->check( _full );
+                result = mUsedBackends[ highestIndex ]->check( _full, _minimize );
                 mUsedBackends[ highestIndex ]->receivedFormulaChecked();
                 for( unsigned i=0; i<highestIndex; ++i )
                 {
@@ -690,7 +690,7 @@ namespace smtrat
                 std::vector<Module*>::iterator module = mUsedBackends.begin();
                 while( module != mUsedBackends.end() && result == Unknown )
                 {
-                    result = (*module)->check( _full );
+                    result = (*module)->check( _full, _minimize );
                     (*module)->receivedFormulaChecked();
                     ++module;
                 }

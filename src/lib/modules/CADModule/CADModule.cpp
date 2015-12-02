@@ -149,7 +149,7 @@ namespace smtrat
 	 * @return True if consistent, False otherwise
 	 */
 	template<typename Settings>
-	Answer CADModule<Settings>::checkCore( bool _full )
+	Answer CADModule<Settings>::checkCore( bool _full, bool )
 	{
 		SMTRAT_LOG_FUNC("smtrat.cad", _full);
 		if (!_full) {

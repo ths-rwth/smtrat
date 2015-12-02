@@ -123,7 +123,7 @@ namespace smtrat
             push(); // In this level we store the equation between the objective function and it's introduced variable.
             add( FormulaT( obVarIter->first - obVarIter->second, carl::Relation::EQ ) );
             mpPrimaryBackend->setObjective( obVarIter->second );
-            Answer result = mpPrimaryBackend->check( _full );
+            Answer result = mpPrimaryBackend->check( _full, true );
             if( result != True )
             {
                 pop( 2 );

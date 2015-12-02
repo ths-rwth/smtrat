@@ -64,11 +64,12 @@ namespace smtrat
             /**
              * Runs the backend solvers on the passed formula.
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
+             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return True,    if the passed formula is consistent;
              *          False,   if the passed formula is inconsistent;
              *          Unknown, otherwise.
              */
-            Answer runBackends( bool _full = true );
+            Answer runBackends( bool _full = true, bool _minimize = false );
             
             /**
              * @return A pair of a Boolean and a formula, where the Boolean is true, if the received formula 

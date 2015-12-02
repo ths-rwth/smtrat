@@ -108,6 +108,8 @@ namespace smtrat
         propagation_budget( -1 ),
         asynch_interrupt( false ),
         mChangedPassedFormula( false ),
+        mFullCheck( true ),
+        mMinimize( false ),
         mCurrentAssignmentConsistent( True ),
         mNumberOfFullLazyCalls( 0 ),
         mCurr_Restarts( 0 ),
@@ -338,8 +340,10 @@ namespace smtrat
     }
     
     template<class Settings>
-    Answer SATModule<Settings>::checkCore( bool )
+    Answer SATModule<Settings>::checkCore( bool _full, bool _minimize )
     {
+        mFullCheck = _full;
+        mMinimize = _minimize;
 //        std::cout << ((FormulaT) rReceivedFormula()).toString( false, 1, "", true, false, true, true ) << std::endl;
         #ifdef SMTRAT_DEVOPTION_Statistics
         mpStatistics->rNrTotalVariablesBefore() = (size_t) nVars();
@@ -1575,7 +1579,7 @@ SetWatches:
                     cout << "### Check the constraints: { "; for( auto& subformula : rPassedFormula() ) cout << subformula.formula() << " "; cout << "}" << endl;
                     #endif
                     mChangedPassedFormula = false;
-                    mCurrentAssignmentConsistent = runBackends();
+                    mCurrentAssignmentConsistent = runBackends( mFullCheck, mMinimize );
                     #ifdef DEBUG_SATMODULE
                     cout << "### Result: " << ANSWER_TO_STRING( mCurrentAssignmentConsistent ) << "!" << endl;
                     #endif

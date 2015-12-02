@@ -37,7 +37,7 @@ namespace smtrat
 	}
 
 	template<class Settings>
-	Answer PFEModule<Settings>::checkCore(bool _full) {
+	Answer PFEModule<Settings>::checkCore(bool _full, bool _minimize) {
 		auto receivedFormula = firstUncheckedReceivedSubformula();
 		if (boundsChanged) {
 			clearPassedFormula();
@@ -77,7 +77,7 @@ namespace smtrat
 		}
 		generateVariableAssignments();
 		SMTRAT_LOG_DEBUG("smtrat.pfe", "Simplification: " << FormulaT(rReceivedFormula()) << " to " << FormulaT(rPassedFormula()));
-		Answer ans = runBackends(_full);
+		Answer ans = runBackends(_full,_minimize);
 		if (ans == False) {
 			getInfeasibleSubsets();
 		}

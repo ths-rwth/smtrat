@@ -87,7 +87,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer IncWidthModule<Settings>::checkCore( bool _full )
+    Answer IncWidthModule<Settings>::checkCore( bool _full, bool _minimize )
     {
         #ifdef DEBUG_INC_WIDTH_MODULE
         std::cout << "Check of IncWidthModule:" << std::endl;
@@ -226,7 +226,7 @@ namespace smtrat
             #ifdef DEBUG_INC_WIDTH_MODULE
             std::cout << " to " << mHalfOfCurrentWidth << std::endl;
             #endif
-            Answer ans = runBackends( _full );
+            Answer ans = runBackends( _full, _minimize );
             #ifdef DEBUG_INC_WIDTH_MODULE
             std::cout << "Calling backends on:" << std::endl;
             printPassedFormula( std::cout, "   " );
@@ -314,7 +314,7 @@ namespace smtrat
                 #endif
             }
         }
-        Answer ans = runBackends( _full );
+        Answer ans = runBackends( _full, _minimize );
         #ifdef DEBUG_INC_WIDTH_MODULE
         std::cout << "Final call of backends results in " << ANSWER_TO_STRING(ans) << std::endl;
         #endif

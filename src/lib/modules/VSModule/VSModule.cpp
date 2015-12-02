@@ -154,7 +154,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer VSModule<Settings>::checkCore( bool _full )
+    Answer VSModule<Settings>::checkCore( bool _full, bool _minimize )
     {
         #ifdef VS_STATISTICS
         mStepCounter = 0;
@@ -575,7 +575,7 @@ namespace smtrat
                                         if( (*currentState).cannotBeSolved( mLazyMode ) )
                                         {
                                             // If we need to involve another approach.
-                                            Answer result = runBackendSolvers( currentState, _full );
+                                            Answer result = runBackendSolvers( currentState, _full, _minimize );
                                             switch( result )
                                             {
                                                 case True:
@@ -1831,12 +1831,12 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer VSModule<Settings>::runBackendSolvers( State* _state, bool _full )
+    Answer VSModule<Settings>::runBackendSolvers( State* _state, bool _full, bool _minimize )
     {
         // Run the backends on the constraint of the state.
         FormulaConditionMap formulaToConditions;
         adaptPassedFormula( *_state, formulaToConditions );
-        Answer result = runBackends( _full );
+        Answer result = runBackends( _full, _minimize );
         #ifdef VS_DEBUG
         cout << "Ask backend      : ";
         printPassedFormula();

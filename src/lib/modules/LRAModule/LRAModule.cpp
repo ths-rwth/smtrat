@@ -349,7 +349,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer LRAModule<Settings>::checkCore( bool _full )
+    Answer LRAModule<Settings>::checkCore( bool _full, bool _minimize )
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "LRAModule::check" << endl; printReceivedFormula();
@@ -407,7 +407,7 @@ namespace smtrat
                     else
                     {
                         adaptPassedFormula();
-                        Answer a = runBackends( _full );
+                        Answer a = runBackends( _full, _minimize );
                         if( a == False )
                             getInfeasibleSubsets();
                         if( a != Unknown )

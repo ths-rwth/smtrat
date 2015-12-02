@@ -874,7 +874,7 @@ namespace smtrat {
 	}
 
 	template<class Settings>
-		Answer EQModule<Settings>::checkCore( bool )
+		Answer EQModule<Settings>::checkCore( bool, bool )
 	{
 		Answer answer = (mCountNonUEQFormulas == 0) ? True : Unknown;
 		

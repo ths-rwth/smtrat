@@ -24,7 +24,7 @@ namespace smtrat
     {}
     
     template<class Settings>
-    Answer EMModule<Settings>::checkCore( bool _full )
+    Answer EMModule<Settings>::checkCore( bool _full, bool _minimize )
     {
         auto receivedFormula = firstUncheckedReceivedSubformula();
         while (receivedFormula != rReceivedFormula().end()) {
@@ -41,7 +41,7 @@ namespace smtrat
             }
             ++receivedFormula;
         }
-        Answer ans = runBackends(_full);
+        Answer ans = runBackends(_full,_minimize);
         if (ans == False)
             getInfeasibleSubsets();
         return ans;

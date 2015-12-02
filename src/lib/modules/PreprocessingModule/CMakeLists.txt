@@ -1,7 +1,0 @@
-BeginDefineModule()
-ModuleMainHeader(PreprocessingModule/PreprocessingModule.h)
-ModuleName(PreprocessingModule)
-ModuleVersion(0 0 1)
-#ModuleSettingsClass(PreprocessingSettings)
-#ModuleSettingsName(standard)
-EndDefineModule()

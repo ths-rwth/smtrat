@@ -61,7 +61,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer FPPModule<Settings>::checkCore( bool _full )
+    Answer FPPModule<Settings>::checkCore( bool _full, bool _minimize )
     {
         //if( mIterations > 0 ) // we did a check before hence the result is still stored in the preprocessor
         //    mPreprocessor.pop();
@@ -74,7 +74,7 @@ namespace smtrat
             // call the preprocessing on the current formula
             mPreprocessor.push();
             mPreprocessor.add( formulaBeforePreprocessing );
-            ans = mPreprocessor.check( _full );
+            ans = mPreprocessor.check( _full ); // @todo: do we need to add the objective function to the preprocessors??
             // preprocessing detects satisfiabilty or unsatisfiability
             if( ans != Unknown ) {
 	            mPreprocessor.pop();
@@ -100,7 +100,7 @@ namespace smtrat
             // TODO: make this incremental
             clearPassedFormula();
             addSubformulaToPassedFormula( mFormulaAfterPreprocessing );
-            ans = runBackends( _full );
+            ans = runBackends( _full, _minimize );
         }
         // obtain an infeasible subset, if the received formula is unsatisfiable
         if( ans == False )
