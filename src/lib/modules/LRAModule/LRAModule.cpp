@@ -6,6 +6,7 @@
  */
 
 #include "LRAModule.h"
+#include "../../../cli/ExitCodes.h"
 
 #ifdef DEBUG_METHODS_TABLEAU
 #define DEBUG_METHODS_LRA_MODULE
@@ -341,15 +342,16 @@ namespace smtrat
         bool backendsResultUnknown = true;
         bool containsIntegerValuedVariables = true;
         Answer result = Unknown;
-//        Poly* objective = new Poly();
-//        carl::Variable x = carl::VariablePool::getInstance().findVariableWithName("x");
-//        carl::Variable y = carl::VariablePool::getInstance().findVariableWithName("y");
-//        carl::Variable z = carl::VariablePool::getInstance().findVariableWithName("z");
-//        (*objective) += (carl::makePolynomial<Poly>(x) * Rational(-2));
-//        (*objective) += (carl::makePolynomial<Poly>(y) * Rational(-3));
-//        (*objective) += (carl::makePolynomial<Poly>(z) * Rational(-4));
-//        LRAVariable* objectiveVar = mTableau.newBasicVariable( objective, false, true );
-//        mTableau.activateBasicVar( objectiveVar );
+        for( const auto& ob : objectives() )
+        {
+            auto obLRAVarIter = mObjectiveVariables.find( ob );
+            if( obLRAVarIter == mObjectiveVariables.end() )
+            {
+                obLRAVarIter = mObjectiveVariables.emplace( ob, mTableau.newBasicVariable( new Poly( ob ), false, true ) ).first;
+            }
+            assert( obLRAVarIter != mObjectiveVariables.end() );
+            mTableau.activateBasicVar( obLRAVarIter->second );
+        }
         if( !rReceivedFormula().isConstraintConjunction() )
         {
             goto Return; // Unknown
@@ -573,43 +575,58 @@ Return:
             mpStatistics->setTableauSize( mTableau.rows().size()*mTableau.columns().size() );
         }
         #endif
-//        if( result == True )
-//        {
-//            std::cout << "Optimization phase:" << std::endl;
-//            for( ; ; )
-//            {
-//                std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElementForOptimizing( *objectiveVar );
-//                if( pivotingElement.second )
-//                {
-//                    if( pivotingElement.first == lra::LAST_ENTRY_ID )
-//                    {
-//                        cout << endl;
-//                        mTableau.print();
-//                        cout << endl;
-//                        std::cout << "Optimum: -oo" << std::endl;
-//                        break;
-//                    }
-//                    else
-//                    {
-//                        #ifdef DEBUG_LRA_MODULE
-//                        cout << endl;
-//                        mTableau.print( pivotingElement.first, cout, "    " );
-//                        cout << endl;
-//                        #endif
-//                        mTableau.pivot( pivotingElement.first );
-//                    }
-//                }
-//                else
-//                {
-//                    cout << endl;
-//                    mTableau.print();
-//                    cout << endl;
-//                    std::cout << "Optimum: " << objectiveVar->assignment() << std::endl;
-//                    break;
-//                }
-//            }
-//        }
-//        mTableau.deactivateBasicVar( objectiveVar );
+        if( result == True )
+        {
+            for( auto& obVar : objectives() )
+            {
+                auto obLRAVarIter = mObjectiveVariables.find( obVar );
+                assert( obLRAVarIter != mObjectiveVariables.end() );
+                for( ; ; )
+                {
+                    std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElementForOptimizing( *(obLRAVarIter->second) );
+                    if( pivotingElement.second )
+                    {
+                        if( pivotingElement.first == lra::LAST_ENTRY_ID )
+                        {
+                            #ifdef DEBUG_LRA_MODULE
+                            std::cout << std::endl;
+                            mTableau.print();
+                            std::cout << std::endl;
+                            std::cout << "Optimum: -oo" << std::endl;
+                            #endif
+                            if( objectives().size() > 1 )
+                            {
+                                // As I do not know what to do in the case of more than one objective.
+                                std::cerr << "Multi-objective optimization not entirely supported!" << std::endl;
+                                exit(SMTRAT_EXIT_UNEXPECTED_INPUT);
+                            }
+                            break;
+                        }
+                        else
+                        {
+                            #ifdef DEBUG_LRA_MODULE
+                            std::cout << std::endl;
+                            mTableau.print( pivotingElement.first, cout, "    " );
+                            std::cout << std::endl;
+                            #endif
+                            mTableau.pivot( pivotingElement.first );
+                        }
+                    }
+                    else
+                    {
+                        #ifdef DEBUG_LRA_MODULE
+                        std::cout << std::endl;
+                        mTableau.print();
+                        std::cout << std::endl;
+                        std::cout << "Optimum: " << obLRAVarIter->second->assignment() << std::endl;
+                        #endif
+                        break;
+                    }
+                }
+            }
+        }
+        for( auto& obVar : mObjectiveVariables )
+            mTableau.deactivateBasicVar( obVar.second );
         if( result != Unknown )
         {
             mTableau.resetNumberOfPivotingSteps();
