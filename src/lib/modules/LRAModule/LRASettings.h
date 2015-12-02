@@ -39,19 +39,7 @@ namespace smtrat
         /**
          * 
          */
-        static const bool branch_and_bound_early = false;
-        /**
-         * 
-         */
-        static const bool pseudo_cost_branching = false;
-        /**
-         * 
-         */
         static const bool use_gomory_cuts = false;
-        /**
-         * 
-         */
-        static const bool use_cuts_from_proofs = false;
         /**
          * 
          */

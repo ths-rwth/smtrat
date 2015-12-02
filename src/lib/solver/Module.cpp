@@ -63,8 +63,7 @@ namespace smtrat
         mInformedConstraints(),
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
         mSmallerMusesCheckCounter( 0 ),
-        mObjectives(),
-        mPositionAfterLastPassedObjective( mObjectives.begin() )
+        mObjective( carl::Variable::NO_VARIABLE )
 #ifdef SMTRAT_DEVOPTION_MeasureTime
         ,
         mTimerAddTotal( 0 ),
@@ -644,7 +643,6 @@ namespace smtrat
                         if( !(*module)->add( subformula ) )
                             assertionFailed = true;
                     }
-                    passObjectives( **module, mPositionAfterLastPassedObjective, mObjectives.end() );
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->stopAddTimer();
                     #endif
@@ -652,7 +650,6 @@ namespace smtrat
                 mFirstSubformulaToPass = mpPassedFormula->end();
                 mInformedConstraints.insert(mInformedConstraints.end(), mConstraintsToInform.begin(), mConstraintsToInform.end() );
                 mConstraintsToInform.clear();
-                mPositionAfterLastPassedObjective = mObjectives.end();
                 if( assertionFailed )
                 {
                     return False;

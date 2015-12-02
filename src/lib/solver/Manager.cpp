@@ -31,7 +31,8 @@ namespace smtrat
         mpPrimaryBackend( new Module( mpPassedFormula, mPrimaryBackendFoundAnswer, this ) ),
 		mStrategyGraph(),
         mDebugOutputChannel( cout.rdbuf() ),
-        mLogic( Logic::UNDEFINED )
+        mLogic( Logic::UNDEFINED ),
+        mObjectives()
         #ifdef SMTRAT_DEVOPTION_Statistics
         ,
         mpStatistics( new GeneralStatistics() )
@@ -113,7 +114,39 @@ namespace smtrat
     {
         *mPrimaryBackendFoundAnswer.back() = false;
         mpPassedFormula->updateProperties();
-        return mpPrimaryBackend->check( _full );
+        if( mObjectives.empty() )
+            return mpPrimaryBackend->check( _full );
+        push(); // In this level we collect the upper bounds for the minimum of each objective function.
+        for( auto obVarIter = mObjectives.begin(); ; )
+        {
+            assert( obVarIter != mObjectives.end() );
+            push(); // In this level we store the equation between the objective function and it's introduced variable.
+            add( FormulaT( obVarIter->first - obVarIter->second, carl::Relation::EQ ) );
+            mpPrimaryBackend->setObjective( obVarIter->second );
+            Answer result = mpPrimaryBackend->check( _full );
+            if( result != True )
+            {
+                pop( 2 );
+                return result;
+            }
+            ++obVarIter;
+            if( obVarIter != mObjectives.end() )
+            {
+                const Model& primModel = model();
+                auto objModel = primModel.find( obVarIter->second );
+                assert( objModel != primModel.end() );
+                assert( objModel->second.isRational() ); // Non-linear optimization not yet supported.
+                FormulaT minimumUpperBound( obVarIter->first - objModel->second.asRational(), carl::Relation::LESS );
+                pop(); // Remove the equation between the objective function and it's introduced variable.
+                add( minimumUpperBound );
+            }
+            else
+            {
+                pop( 2 );
+                return result;
+            }
+        }
+        
     }
     
     const std::vector<FormulaSetT>& Manager::infeasibleSubsets() const
@@ -307,7 +340,7 @@ namespace smtrat
                 for(auto form = _requiredBy->rPassedFormula().begin(); form != _requiredBy->firstSubformulaToPass(); form++) {
                     newBackend->add(form);
                 }
-                _requiredBy->passObjectives( *newBackend, _requiredBy->objectives().begin(), _requiredBy->positionAfterLastPassedObjective() );
+                newBackend->setObjective( _requiredBy->objective() );
             }
         }
         return backends;

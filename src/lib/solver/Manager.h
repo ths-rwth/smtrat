@@ -60,6 +60,8 @@ namespace smtrat
 			QuantifierManager mQuantifierManager;
             /// the logic this solver considers
             Logic mLogic;
+            ///
+            std::vector<std::pair<Poly,carl::Variable>> mObjectives;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all statistics for the solver this manager belongs to.
             GeneralStatistics* mpStatistics;
@@ -174,12 +176,19 @@ namespace smtrat
             
             void addObjective( const Poly& _objective )
             {
-                mpPrimaryBackend->addObjective( _objective );
+                mObjectives.push_back( std::make_pair( _objective, _objective.integerValued() ? carl::freshIntegerVariable() : carl::freshRealVariable() ) );
             }
             
             void removeObjective( const Poly& _objective )
             {
-                mpPrimaryBackend->removeObjective( _objective );
+                for( auto iter = mObjectives.rbegin(); iter != mObjectives.rend(); ++iter )
+                {
+                    if( iter->first == _objective )
+                    {
+                        mObjectives.erase( (++iter).base() );
+                        return;
+                    }
+                }
             }
             
             void reset();

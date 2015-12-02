@@ -116,25 +116,9 @@ return SettingsType::moduleName;
             /// Stores the bounds, which would influence a backend call because of recent changes.
             std::vector<const LRABound* > mBoundCandidatesToPass;
             ///
-            carl::FastMap<Poly,LRAVariable*> mObjectiveVariables;
-            // Stores for each variable the number of violated integer variables in the left resp. 
-            // right branch ( first component of the pair for the left branch and second component for
-            // the right branch ) after the i-th step in the corresponding direction
-            std::map< carl::Variable, std::pair< std::vector< unsigned >, std::vector< unsigned > > > mBranch_Success; 
-            /**
-             * Stores all set of constraints which have already led to defining constraint matrices. 
-             * As the computation of these matrices is rather expensive, we try to omit this if possible.
-             */
-            std::set< std::vector<ConstraintT> > mProcessedDCMatrices;
-            // An enumeration type containing the names of the different branching strategies
-            enum BRANCH_STRATEGY
-            {
-                MIN_PIVOT,
-                MOST_FEASIBLE,
-                MOST_INFEASIBLE,
-                PSEUDO_COST,
-                NATIVE
-            };
+            LRAVariable* mObjectiveLRAVar;
+            ///
+            carl::FastPointerMap<Poly,LRAVariable*> mCreatedObjectiveLRAVars;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores the yet collected statistics of this LRAModule.
             LRAModuleStatistics* mpStatistics;
@@ -197,6 +181,8 @@ return SettingsType::moduleName;
              */
             Answer checkCore( bool _full = true );
             
+            Answer processResult( Answer _result, bool _backendsResultUnknown );
+            
             /**
              * Updates the model, if the solver has detected the consistency of the received formula, beforehand.
              */
@@ -208,6 +194,14 @@ return SettingsType::moduleName;
              * @return The rational model.
              */
             EvalRationalMap getRationalModel() const;
+            
+            Answer optimize( Answer _result );
+            
+            Answer checkNotEqualConstraints( Answer _result );
+            
+            void processLearnedBounds();
+            
+            void createInfeasibleSubsets( lra::EntryID _tableauEntry );
             
             /**
              * Returns the bounds of the variables as intervals.
@@ -374,53 +368,12 @@ return SettingsType::moduleName;
             bool maybeGomoryCut( const LRAVariable* _lraVar, const Rational& _branchingValue );
             
             /**
-             * @param _gc_support true, if gomory cut construction is enabled.
-             * @return true,  if a branching occured with an original variable that has to be fixed 
-             *                which has the lowest count of entries in its row.
-             *         false, if no branching occured.
-             */    
-            bool minimal_row_var( bool _gc_support );
-            
-            /**
-             * @param _gc_support true, if gomory cut construction is enabled.
-             * @return true,  if a branching occured with an original variable that has to be fixed 
-             *                which is most feasible.
-             *         false, if no branching occured.
-             */  
-            bool most_feasible_var( bool _gc_support );
-            
-            /**
              * @param gc_support true, if gomory cut construction is enabled.
              * @return true,  if a branching occured with an original variable that has to be fixed 
              *                which is most infeasible.
              *         false, if no branching occured.
              */   
             bool most_infeasible_var( bool _gc_support );
-            
-            /**
-             * @param gc_support true, if gomory cut construction is enabled.
-             * @return true,  if a branching occured with the first original variable that has to be fixed.
-             *         false, if no branching occured.
-             */    
-            bool first_var( bool _gc_support );
-            
-            /**
-             */
-            void calculatePseudoCosts();
-            
-            /**
-             * @param gc_support true, if gomory cut construction is enabled.
-             * @return true,  if a branching occured with the first original variable that has to be fixed.
-             *         false, if no branching occured.
-             */
-            bool pseudo_cost_branching( bool _gc_support, BRANCH_STRATEGY strat );
-            
-            /**
-             * Creates a cuts from proof lemma, if it could be found. Otherwise it creates a branch and bound lemma.
-             * @return true, if a branching occurred.
-             *         false, otherwise.
-             */
-            bool cuts_from_proofs();
             
             /**
              * Creates a branch and bound lemma.

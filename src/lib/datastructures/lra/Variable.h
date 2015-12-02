@@ -165,6 +165,13 @@ namespace smtrat
                 {
                     return mObjective;
                 }
+
+                /**
+                 */
+                void setObjective( bool _isObjective )
+                {
+                    mObjective = _isObjective;
+                }
                 
                 /**
                  * @return 

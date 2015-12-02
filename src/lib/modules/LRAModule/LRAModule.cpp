@@ -30,7 +30,7 @@ namespace smtrat
         mActiveUnresolvedNEQConstraints(),
         mDelta( carl::freshRealVariable( "delta_" + to_string( id() ) ) ),
         mBoundCandidatesToPass(),
-        mBranch_Success()    
+        mObjectiveLRAVar( nullptr )
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
@@ -42,6 +42,7 @@ namespace smtrat
     template<class Settings>
     LRAModule<Settings>::~LRAModule()
     {
+        mCreatedObjectiveLRAVars.clear();
         #ifdef SMTRAT_DEVOPTION_Statistics
         delete mpStatistics;
         #endif
@@ -108,6 +109,21 @@ namespace smtrat
 //                        }
                         if( constraint.relation() != carl::Relation::NEQ )
                         {
+                            if( constraint.hasVariable( objective() ) )
+                            {
+                                assert( constraint.relation() == carl::Relation::EQ );
+                                Poly objCoeff = constraint.coefficient( objective(), 1 );
+                                assert( objCoeff.isConstant() );
+                                assert( carl::abs( objCoeff.constantPart() ) == ONE_RATIONAL );
+                                Poly* objFct = new Poly(objCoeff.constantPart() < ZERO_RATIONAL ? constraint.lhs() : -constraint.lhs());
+                                (*objFct) += objective();
+                                auto olIter = mCreatedObjectiveLRAVars.find( objFct );
+                                if( olIter == mCreatedObjectiveLRAVars.end() )
+                                {
+                                    olIter = mCreatedObjectiveLRAVars.emplace( objFct, mTableau.newBasicVariable( objFct, false, true ) ).first;
+                                }
+                                mObjectiveLRAVar = olIter->second;
+                            }
                             auto constrBoundIter = mTableau.constraintToBound().find( formula );
                             assert( constrBoundIter != mTableau.constraintToBound().end() );
                             const std::vector< const LRABound* >* bounds = constrBoundIter->second;
@@ -336,31 +352,16 @@ namespace smtrat
     Answer LRAModule<Settings>::checkCore( bool _full )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "LRAModule::check" << endl;
-        printReceivedFormula();
+        cout << "LRAModule::check" << endl; printReceivedFormula();
         #endif
         bool backendsResultUnknown = true;
         bool containsIntegerValuedVariables = true;
-        Answer result = Unknown;
-        for( const auto& ob : objectives() )
-        {
-            auto obLRAVarIter = mObjectiveVariables.find( ob );
-            if( obLRAVarIter == mObjectiveVariables.end() )
-            {
-                obLRAVarIter = mObjectiveVariables.emplace( ob, mTableau.newBasicVariable( new Poly( ob ), false, true ) ).first;
-            }
-            assert( obLRAVarIter != mObjectiveVariables.end() );
-            mTableau.activateBasicVar( obLRAVarIter->second );
-        }
         if( !rReceivedFormula().isConstraintConjunction() )
-        {
-            goto Return; // Unknown
-        }
+            return processResult( Unknown, backendsResultUnknown );
         if( !mInfeasibleSubsets.empty() )
-        {
-            result = False;
-            goto Return;
-        }
+            return processResult( False, backendsResultUnknown );
+        if( mObjectiveLRAVar != nullptr )
+            mTableau.activateBasicVar( mObjectiveLRAVar );
         if( rReceivedFormula().isRealConstraintConjunction() )
             containsIntegerValuedVariables = false;
         assert( !mTableau.isConflicting() );
@@ -370,19 +371,13 @@ namespace smtrat
         {
             // Check whether a module which has been called on the same instance in parallel, has found an answer.
             if( anAnswerFound() )
-            {
-                result = Unknown;
-                goto Return;
-            }
+                return processResult( Unknown, backendsResultUnknown );
             // Find a pivoting element in the tableau.
-            struct std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
-//            cout << "\r" << mTableau.numberOfPivotingSteps() << endl;
+            std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
             #ifdef DEBUG_LRA_MODULE
             if( pivotingElement.second && pivotingElement.first != LAST_ENTRY_ID )
             {
-                cout << endl;
-                mTableau.print( pivotingElement.first, cout, "    " );
-                cout << endl;
+                std::cout << std::endl; mTableau.print( pivotingElement.first, std::cout, "    " ); std::cout << std::endl;
             }
             #endif
             // If there is no conflict.
@@ -392,9 +387,7 @@ namespace smtrat
                 if( pivotingElement.first == lra::LAST_ENTRY_ID )
                 {
                     #ifdef DEBUG_LRA_MODULE
-                    mTableau.print();
-                    mTableau.printVariables();
-                    cout << "True" << endl;
+                    mTableau.print(); mTableau.printVariables(); cout << "True" << endl;
                     #endif
                     // If the current assignment also fulfills the nonlinear constraints.
                     if( checkAssignmentForNonlinearConstraint() )
@@ -402,24 +395,13 @@ namespace smtrat
                         if( containsIntegerValuedVariables )
                         {
                             if( Settings::use_gomory_cuts && gomory_cut() )
-                            {
-                                goto Return; // Unknown
-                            }
-                            if( !Settings::use_gomory_cuts && Settings::use_cuts_from_proofs && cuts_from_proofs() )
-                            {
-                                goto Return; // Unknown
-                            }
-                            if( !Settings::use_gomory_cuts && !Settings::use_cuts_from_proofs && branch_and_bound() )
-                            {
-                                goto Return; // Unknown
-                            }
+                                return processResult( Unknown, backendsResultUnknown );
+                            if( !Settings::use_gomory_cuts && branch_and_bound() )
+                                return processResult( Unknown, backendsResultUnknown );
                         }
-                        result = True;
                         if( Settings::restore_previous_consistent_assignment )
-                        {
                             mTableau.storeAssignment();
-                        }
-                        goto Return;
+                        return processResult( True, backendsResultUnknown );
                     }
                     // Otherwise, check the consistency of the formula consisting of the nonlinear constraints and the tightest bounds with the backends.
                     else
@@ -428,249 +410,66 @@ namespace smtrat
                         Answer a = runBackends( _full );
                         if( a == False )
                             getInfeasibleSubsets();
-                        result = a;
                         if( a != Unknown )
                             backendsResultUnknown = false;
-                        goto Return;
+                        return processResult( a, backendsResultUnknown );
                     }
                 }
                 else
                 {
                     // Pivot at the found pivoting entry.
-                    if( Settings::branch_and_bound_early )
-                    {
-                        LRAVariable* newBasicVar = mTableau.pivot( pivotingElement.first );
-                        Rational ratAss = (Rational)newBasicVar->assignment().mainPart();
-                        if( newBasicVar->isActive() && newBasicVar->isInteger() && !carl::isInteger( ratAss ) )
-                        {
-                            if( !probablyLooping( newBasicVar->expression(), ratAss ) )
-                            {
-                                assert( newBasicVar->assignment().deltaPart() == 0 );
-                                FormulasT premises;
-                                mTableau.collect_premises( newBasicVar, premises );
-                                std::vector<FormulaT> premisesOrigins;
-                                for( auto& pf : premises )
-                                {
-                                    collectOrigins( pf, premisesOrigins );
-                                }
-                                branchAt( newBasicVar->expression(), true, ratAss, std::move(premisesOrigins) );
-                                goto Return;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        mTableau.pivot( pivotingElement.first );
-                    }
+                    mTableau.pivot( pivotingElement.first );
                     #ifdef SMTRAT_DEVOPTION_Statistics
                     mpStatistics->pivotStep();
                     #endif
                     #ifdef LRA_REFINEMENT
                     // Learn all bounds which have been deduced during the pivoting process.
-                    while( !mTableau.rNewLearnedBounds().empty() )
-                    {
-                        FormulasT originSet;
-                        typename LRATableau::LearnedBound& learnedBound = mTableau.rNewLearnedBounds().back()->second;
-                        mTableau.rNewLearnedBounds().pop_back();
-                        std::vector<const LRABound*>& bounds = learnedBound.premise;
-                        for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
-                        {
-                            const FormulaT& boundOrigins = *(*bound)->origins().begin(); 
-                            if( boundOrigins.getType() == carl::FormulaType::AND )
-                            {
-                                originSet.insert( originSet.end(), boundOrigins.subformulas().begin(), boundOrigins.subformulas().end() );
-                                for( auto origin = boundOrigins.subformulas().begin(); origin != boundOrigins.subformulas().end(); ++origin )
-                                {
-                                    auto constrBoundIter = mTableau.rConstraintToBound().find( boundOrigins );
-                                    assert( constrBoundIter != mTableau.constraintToBound().end() );
-                                    std::vector< const LRABound* >* constraintToBounds = constrBoundIter->second;
-                                    constraintToBounds->push_back( learnedBound.nextWeakerBound );
-                                    #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
-                                    if( learnedBound.newBound != NULL ) constraintToBounds->push_back( learnedBound.newBound );
-                                    #endif
-                                }
-                            }
-                            else
-                            {
-                                assert( boundOrigins.getType() == carl::FormulaType::CONSTRAINT );
-                                originSet.push_back( boundOrigins );
-                                auto constrBoundIter = mTableau.rConstraintToBound().find( boundOrigins );
-                                assert( constrBoundIter != mTableau.constraintToBound().end() );
-                                std::vector< const LRABound* >* constraintToBounds = constrBoundIter->second;
-                                constraintToBounds->push_back( learnedBound.nextWeakerBound );
-                                #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
-                                if( learnedBound.newBound != NULL ) constraintToBounds->push_back( learnedBound.newBound );
-                                #endif
-                            }
-                        }
-                        FormulaT origin = FormulaT( carl::FormulaType::AND, std::move(originSet) );
-                        activateBound( learnedBound.nextWeakerBound, origin );
-                        #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
-                        if( learnedBound.newBound != NULL )
-                        {
-                            const FormulaT& newConstraint = learnedBound.newBound->asConstraint();
-                            addConstraintToInform( newConstraint );
-                            mLinearConstraints.insert( newConstraint );
-                            std::vector< const LRABound* >* boundVector = new std::vector< const LRABound* >();
-                            boundVector->push_back( learnedBound.newBound );
-                            mConstraintToBound[newConstraint] = boundVector;
-                            activateBound( learnedBound.newBound, origin );
-                        }
-                        #endif
-                    }
+                    processLearnedBounds();
                     #endif
                     // Maybe an easy conflict occurred with the learned bounds.
                     if( !mInfeasibleSubsets.empty() )
-                    {
-                        result = False;
-                        goto Return;
-                    }
+                        return processResult( False, backendsResultUnknown );
                 }
             }
             // There is a conflict, namely a basic variable violating its bounds without any suitable non-basic variable.
             else
             {
                 // Create the infeasible subsets.
-                if( Settings::one_conflict_reason )
-                {
-                    std::vector< const LRABound* > conflict = mTableau.getConflict( pivotingElement.first );
-                    FormulaSetT infSubSet;
-                    for( auto bound = conflict.begin(); bound != conflict.end(); ++bound )
-                    {
-                        assert( (*bound)->isActive() );
-                        collectOrigins( *(*bound)->origins().begin(), infSubSet );
-                    }
-                    mInfeasibleSubsets.push_back( infSubSet );
-                }
-                else
-                {
-                    std::vector< std::vector< const LRABound* > > conflictingBounds = mTableau.getConflictsFrom( pivotingElement.first );
-                    for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
-                    {
-                        FormulaSetT infSubSet;
-                        for( auto bound = conflict->begin(); bound != conflict->end(); ++bound )
-                        {
-                            assert( (*bound)->isActive() );
-                            collectOrigins( *(*bound)->origins().begin(), infSubSet );
-                        }
-                        mInfeasibleSubsets.push_back( infSubSet );
-                    }
-                }
-                result = False;
-                goto Return;
+                createInfeasibleSubsets( pivotingElement.first );
+                return processResult( False, backendsResultUnknown );
             }
         }
         assert( false );
-Return:
+        return Unknown;
+    }
+    
+    template<class Settings>
+    Answer LRAModule<Settings>::processResult( Answer _result, bool _backendsResultUnknown )
+    {
         #ifdef LRA_REFINEMENT
         learnRefinements();
         #endif
         #ifdef SMTRAT_DEVOPTION_Statistics
-        if( result != Unknown )
+        if( _result != Unknown )
         {
             mpStatistics->check( rReceivedFormula() );
-            if( result == False )
+            if( _result == False )
                 mpStatistics->addConflict( mInfeasibleSubsets );
             mpStatistics->setNumberOfTableauxEntries( mTableau.size() );
             mpStatistics->setTableauSize( mTableau.rows().size()*mTableau.columns().size() );
         }
         #endif
-        if( result == True )
-        {
-            for( auto& obVar : objectives() )
-            {
-                auto obLRAVarIter = mObjectiveVariables.find( obVar );
-                assert( obLRAVarIter != mObjectiveVariables.end() );
-                for( ; ; )
-                {
-                    std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElementForOptimizing( *(obLRAVarIter->second) );
-                    if( pivotingElement.second )
-                    {
-                        if( pivotingElement.first == lra::LAST_ENTRY_ID )
-                        {
-                            #ifdef DEBUG_LRA_MODULE
-                            std::cout << std::endl;
-                            mTableau.print();
-                            std::cout << std::endl;
-                            std::cout << "Optimum: -oo" << std::endl;
-                            #endif
-                            if( objectives().size() > 1 )
-                            {
-                                // As I do not know what to do in the case of more than one objective.
-                                std::cerr << "Multi-objective optimization not entirely supported!" << std::endl;
-                                exit(SMTRAT_EXIT_UNEXPECTED_INPUT);
-                            }
-                            break;
-                        }
-                        else
-                        {
-                            #ifdef DEBUG_LRA_MODULE
-                            std::cout << std::endl;
-                            mTableau.print( pivotingElement.first, cout, "    " );
-                            std::cout << std::endl;
-                            #endif
-                            mTableau.pivot( pivotingElement.first );
-                        }
-                    }
-                    else
-                    {
-                        #ifdef DEBUG_LRA_MODULE
-                        std::cout << std::endl;
-                        mTableau.print();
-                        std::cout << std::endl;
-                        std::cout << "Optimum: " << obLRAVarIter->second->assignment() << std::endl;
-                        #endif
-                        break;
-                    }
-                }
-            }
-        }
-        for( auto& obVar : mObjectiveVariables )
-            mTableau.deactivateBasicVar( obVar.second );
-        if( result != Unknown )
+        _result = optimize( _result );
+        if( _result != Unknown )
         {
             mTableau.resetNumberOfPivotingSteps();
-            if( result == True && backendsResultUnknown )
-            {
-                // If there are unresolved notequal-constraints and the found satisfying assignment
-                // conflicts this constraint, resolve it by creating the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
-                EvalRationalMap ass = getRationalModel();
-                for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
-                {
-                    unsigned consistency = iter->first.satisfiedBy( ass );
-                    assert( consistency != 2 );
-                    if( consistency == 0 )
-                    {
-                        splitUnequalConstraint( iter->first );
-                        result = Unknown;
-                        break;
-                    }
-                }
-                // TODO: This is a rather unfortunate hack, because I couldn't fix the efficient neq-constraint-handling with integer-valued constraints
-                if( result != Unknown && !rReceivedFormula().isRealConstraintConjunction() )
-                {
-                    for( auto iter = mActiveResolvedNEQConstraints.begin(); iter != mActiveResolvedNEQConstraints.end(); ++iter )
-                    {
-                        unsigned consistency = iter->first.satisfiedBy( ass );
-                        assert( consistency != 2 );
-                        if( consistency == 0 )
-                        {
-                            splitUnequalConstraint( iter->first );
-                            result = Unknown;
-                            break;
-                        }
-                    }
-                }
-                assert( result != True || assignmentCorrect() );
-            }
+            if( _result == True && _backendsResultUnknown )
+                _result = checkNotEqualConstraints( _result );
         }
         #ifdef DEBUG_LRA_MODULE
-        cout << endl;
-        mTableau.print();
-        cout << endl;
-        cout << ANSWER_TO_STRING( result ) << endl;
+        std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << ANSWER_TO_STRING( _result ) << std::endl;
         #endif
-        return result;
+        return _result;
     }
 
     template<class Settings>
@@ -703,6 +502,175 @@ Return:
             return ret;
         }
         return EvalRationalMap();
+    }
+    
+    template<class Settings>
+    Answer LRAModule<Settings>::optimize( Answer _result )
+    {
+        if( mObjectiveLRAVar == nullptr )
+            return _result;
+        if( _result == True )
+        {
+            for( ; ; )
+            {
+                std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElementForOptimizing( *mObjectiveLRAVar );
+                if( pivotingElement.second )
+                {
+                    if( pivotingElement.first == lra::LAST_ENTRY_ID )
+                    {
+                        #ifdef DEBUG_LRA_MODULE
+                        std::cout << std::endl;
+                        mTableau.print();
+                        std::cout << std::endl;
+                        std::cout << "Optimum: -oo" << std::endl;
+                        #endif
+                        break;
+                    }
+                    else
+                    {
+                        #ifdef DEBUG_LRA_MODULE
+                        std::cout << std::endl;
+                        mTableau.print( pivotingElement.first, cout, "    " );
+                        std::cout << std::endl;
+                        #endif
+                        mTableau.pivot( pivotingElement.first );
+                    }
+                }
+                else
+                {
+                    #ifdef DEBUG_LRA_MODULE
+                    std::cout << std::endl;
+                    mTableau.print();
+                    std::cout << std::endl;
+                    std::cout << "Optimum: " << mObjectiveLRAVar->assignment() << std::endl;
+                    #endif
+                    break;
+                }
+            }
+        }
+        mTableau.deactivateBasicVar( mObjectiveLRAVar );
+        // @todo Branch if assignment does not fulfill integer domains.
+        return _result;
+    }
+    
+    template<class Settings>
+    Answer LRAModule<Settings>::checkNotEqualConstraints( Answer _result )
+    {
+        // If there are unresolved notequal-constraints and the found satisfying assignment
+        // conflicts this constraint, resolve it by creating the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
+        EvalRationalMap ass = getRationalModel();
+        for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
+        {
+            unsigned consistency = iter->first.satisfiedBy( ass );
+            assert( consistency != 2 );
+            if( consistency == 0 )
+            {
+                splitUnequalConstraint( iter->first );
+                return Unknown;
+            }
+        }
+        // TODO: This is a rather unfortunate hack, because I couldn't fix the efficient neq-constraint-handling with integer-valued constraints
+        if( _result != Unknown && !rReceivedFormula().isRealConstraintConjunction() )
+        {
+            for( auto iter = mActiveResolvedNEQConstraints.begin(); iter != mActiveResolvedNEQConstraints.end(); ++iter )
+            {
+                unsigned consistency = iter->first.satisfiedBy( ass );
+                assert( consistency != 2 );
+                if( consistency == 0 )
+                {
+                    splitUnequalConstraint( iter->first );
+                    return Unknown;
+                }
+            }
+        }
+        assert( assignmentCorrect() );
+        return True;
+    }
+    
+    template<class Settings>
+    void LRAModule<Settings>::processLearnedBounds()
+    {   
+        while( !mTableau.rNewLearnedBounds().empty() )
+        {
+            FormulasT originSet;
+            typename LRATableau::LearnedBound& learnedBound = mTableau.rNewLearnedBounds().back()->second;
+            mTableau.rNewLearnedBounds().pop_back();
+            std::vector<const LRABound*>& bounds = learnedBound.premise;
+            for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
+            {
+                const FormulaT& boundOrigins = *(*bound)->origins().begin(); 
+                if( boundOrigins.getType() == carl::FormulaType::AND )
+                {
+                    originSet.insert( originSet.end(), boundOrigins.subformulas().begin(), boundOrigins.subformulas().end() );
+                    for( auto origin = boundOrigins.subformulas().begin(); origin != boundOrigins.subformulas().end(); ++origin )
+                    {
+                        auto constrBoundIter = mTableau.rConstraintToBound().find( boundOrigins );
+                        assert( constrBoundIter != mTableau.constraintToBound().end() );
+                        std::vector< const LRABound* >* constraintToBounds = constrBoundIter->second;
+                        constraintToBounds->push_back( learnedBound.nextWeakerBound );
+                        #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                        if( learnedBound.newBound != NULL ) constraintToBounds->push_back( learnedBound.newBound );
+                        #endif
+                    }
+                }
+                else
+                {
+                    assert( boundOrigins.getType() == carl::FormulaType::CONSTRAINT );
+                    originSet.push_back( boundOrigins );
+                    auto constrBoundIter = mTableau.rConstraintToBound().find( boundOrigins );
+                    assert( constrBoundIter != mTableau.constraintToBound().end() );
+                    std::vector< const LRABound* >* constraintToBounds = constrBoundIter->second;
+                    constraintToBounds->push_back( learnedBound.nextWeakerBound );
+                    #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+                    if( learnedBound.newBound != NULL ) constraintToBounds->push_back( learnedBound.newBound );
+                    #endif
+                }
+            }
+            FormulaT origin = FormulaT( carl::FormulaType::AND, std::move(originSet) );
+            activateBound( learnedBound.nextWeakerBound, origin );
+            #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
+            if( learnedBound.newBound != NULL )
+            {
+                const FormulaT& newConstraint = learnedBound.newBound->asConstraint();
+                addConstraintToInform( newConstraint );
+                mLinearConstraints.insert( newConstraint );
+                std::vector< const LRABound* >* boundVector = new std::vector< const LRABound* >();
+                boundVector->push_back( learnedBound.newBound );
+                mConstraintToBound[newConstraint] = boundVector;
+                activateBound( learnedBound.newBound, origin );
+            }
+            #endif
+        }
+    }
+    
+    template<class Settings>
+    void LRAModule<Settings>::createInfeasibleSubsets( EntryID _tableauEntry )
+    {
+        if( Settings::one_conflict_reason )
+        {
+            std::vector< const LRABound* > conflict = mTableau.getConflict( _tableauEntry );
+            FormulaSetT infSubSet;
+            for( auto bound = conflict.begin(); bound != conflict.end(); ++bound )
+            {
+                assert( (*bound)->isActive() );
+                collectOrigins( *(*bound)->origins().begin(), infSubSet );
+            }
+            mInfeasibleSubsets.push_back( infSubSet );
+        }
+        else
+        {
+            std::vector< std::vector< const LRABound* > > conflictingBounds = mTableau.getConflictsFrom( _tableauEntry );
+            for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
+            {
+                FormulaSetT infSubSet;
+                for( auto bound = conflict->begin(); bound != conflict->end(); ++bound )
+                {
+                    assert( (*bound)->isActive() );
+                    collectOrigins( *(*bound)->origins().begin(), infSubSet );
+                }
+                mInfeasibleSubsets.push_back( infSubSet );
+            }
+        }
     }
 
     template<class Settings>
@@ -1249,202 +1217,10 @@ Return:
     }
     
     template<class Settings>
-    bool LRAModule<Settings>::cuts_from_proofs()
-    {
-        #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-        cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
-        cout << "Cut from proofs:" << endl;
-        mTableau.print();
-        #endif
-        // Check if the solution is integer.
-        EvalRationalMap _rMap = getRationalModel();
-        auto map_iterator = _rMap.begin();
-        auto var = mTableau.originalVars().begin();
-        while( var != mTableau.originalVars().end() )
-        {
-            assert( var->first == map_iterator->first );
-            Rational& ass = map_iterator->second; 
-            if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
-            {
-                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-                cout << "Fix: " << var->first << endl;
-                #endif
-                break;
-            }
-            ++map_iterator;
-            ++var;
-        }
-        if( var == mTableau.originalVars().end() )
-        {
-            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-            cout << "Assignment is already integer!" << endl;
-            cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
-            #endif
-            return false;
-        }
-        /*
-         * Build the new Tableau consisting out of the defining constraints.
-         */
-        LRATableau dc_Tableau = LRATableau( passedFormulaEnd() );  
-        size_t i=0;
-        for( auto nbVar = mTableau.columns().begin(); nbVar != mTableau.columns().end(); ++nbVar )
-        {
-            dc_Tableau.newNonbasicVariable( new Poly::PolyType( (*mTableau.columns().at(i)).expression() ), true );
-            ++i;
-        } 
-        size_t numRows = mTableau.rows().size();
-        LRAEntryType max_value = 0;
-        std::vector<size_t> dc_positions = std::vector<size_t>();
-        #ifdef LRA_NO_DIVISION
-        std::vector<LRAEntryType> lcm_rows;
-        #endif
-        std::vector<ConstraintT> DC_Matrix;
-        for( size_t i = 0; i < numRows; ++i )
-        {
-            std::vector<std::pair<size_t,LRAEntryType>> nonbasicindex_coefficient = std::vector<std::pair<size_t,LRAEntryType>>();
-            LRAEntryType lcmOfCoeffDenoms = 1;
-            ConstraintT dc_constraint = mTableau.isDefining( i, nonbasicindex_coefficient,  lcmOfCoeffDenoms, max_value );
-            if( dc_constraint != ConstraintT()  )
-            {      
-                LRAVariable* new_var = dc_Tableau.newBasicVariable( nonbasicindex_coefficient, (*mTableau.rows().at(i)).expression(), (*mTableau.rows().at(i)).factor(),dc_constraint.integerValued() );
-                dc_Tableau.activateBasicVar(new_var);
-                dc_positions.push_back(i); 
-                #ifdef LRA_NO_DIVISION
-                lcm_rows.push_back( lcmOfCoeffDenoms );
-                #endif
-                DC_Matrix.push_back( dc_constraint );
-            }   
-        }
-        #ifdef LRA_NO_DIVISION
-        /* Multiply all defining constraints with the corresponding least common multiple 
-         * of the occuring denominators in order to ensure that we work on a tableau 
-         * contatining only integers
-         */
-        for( size_t i = 0; i < dc_Tableau.rows().size(); ++i )
-        {
-            dc_Tableau.multiplyRow(i,lcm_rows.at(i));          
-        }
-        #endif
-        auto pos = mProcessedDCMatrices.find( DC_Matrix );
-        if( pos == mProcessedDCMatrices.end() )
-        {
-            mProcessedDCMatrices.insert( DC_Matrix );
-        }
-        if( dc_Tableau.rows().size() > 0 && pos == mProcessedDCMatrices.end() )
-        {
-            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-            cout << "Defining constraints:" << endl;
-            dc_Tableau.print();   
-            #endif
-
-            // At least one DC exists -> Construct and embed it.
-            std::vector<size_t> diagonals = std::vector<size_t>();    
-            std::vector<size_t>& diagonals_ref = diagonals;               
-            /*
-            dc_Tableau.addColumns(0,2,2);
-            dc_Tableau.addColumns(1,2,4);
-            dc_Tableau.addColumns(2,2,2);
-            dc_Tableau.addColumns(3,4,1);
-            dc_Tableau.addColumns(5,4,1);
-            dc_Tableau.addColumns(4,4,-1);
-            dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
-            */
-            bool full_rank = true;
-            dc_Tableau.calculate_hermite_normalform( diagonals_ref, full_rank );
-            if( !full_rank )
-            {
-                branchAt( var->first, (Rational)map_iterator->second );
-                return true;
-            }
-            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-            cout << "HNF of defining constraints:" << endl;
-            dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
-            cout << "Actual order of columns:" << endl;
-            for( auto iter = diagonals.begin(); iter != diagonals.end(); ++iter ) 
-                printf( "%u", (unsigned)*iter );
-            #endif  
-            dc_Tableau.invert_HNF_Matrix( diagonals );
-            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-            cout << "Inverted matrix:" << endl;
-            dc_Tableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
-            #endif 
-            Poly::PolyType* cut_from_proof = nullptr;
-            for( size_t i = 0; i < dc_positions.size(); ++i )
-            {
-                LRAEntryType upper_lower_bound;
-                cut_from_proof = dc_Tableau.create_cut_from_proof( dc_Tableau, mTableau, i, diagonals, dc_positions, upper_lower_bound, max_value );
-                if( cut_from_proof != nullptr )
-                {
-                    #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-                    cout << "Proof of unsatisfiability:  " << *cut_from_proof << " = 0" << endl;
-                    #endif
-                    LRAEntryType bound_add = 1;
-                    LRAEntryType bound = upper_lower_bound;
-                    if( carl::isInteger( upper_lower_bound ) )
-                    {
-                        bound_add = 0;
-                    }
-                    ConstraintT cut_constraint = ConstraintT( *cut_from_proof - (Rational)carl::floor((Rational)upper_lower_bound) , carl::Relation::LEQ );
-                    ConstraintT cut_constraint2 = ConstraintT( *cut_from_proof - Rational(((Rational)carl::floor((Rational)upper_lower_bound)+Rational(bound_add))), carl::Relation::GEQ );
-                    // Construct and add (p<=I-1 or p>=I))
-                    FormulaT cons1 = FormulaT( cut_constraint );
-                    cons1.setActivity( -numeric_limits<double>::infinity() );
-                    FormulaT cons2 = FormulaT( cut_constraint2 );
-                    cons2.setActivity( -numeric_limits<double>::infinity() );
-                    addDeduction( FormulaT( carl::FormulaType::OR, FormulasT{ cons1, cons2 } ) );   
-                    // (not(p<=I-1) or not(p>=I))
-                    FormulasT subformulasB{ FormulaT( carl::FormulaType::NOT, cons1 ), FormulaT( carl::FormulaType::NOT, cons2 ) };
-                    addDeduction( FormulaT( carl::FormulaType::OR, std::move( subformulasB ) ) );
-                    #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-                    cout << "After adding proof of unsatisfiability:" << endl;
-                    mTableau.print( LAST_ENTRY_ID, std::cout, "", true, true );
-                    cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
-                    #endif
-                    delete cut_from_proof;
-                    return true;
-                }
-            }
-            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-            cout << "Found no proof of unsatisfiability!" << endl;
-            #endif
-        }
-        #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-            cout << "No defining constraint!" << endl;
-        cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
-        cout << "Branch at: " << var->first << endl;
-        #endif
-        branchAt( var->first, (Rational)map_iterator->second );
-        return true;
-    }
-    
-    template<class Settings>
     bool LRAModule<Settings>::branch_and_bound()
     {
-        BRANCH_STRATEGY strat = MOST_INFEASIBLE;
         bool gc_support = true;
-        bool result = true;
-        if( strat == MIN_PIVOT )
-        {
-            result = minimal_row_var( gc_support );            
-        }
-        else if( strat == MOST_FEASIBLE )
-        {
-            result = most_feasible_var( gc_support );
-        }
-        else if( strat == MOST_INFEASIBLE )
-        {
-            result = most_infeasible_var( gc_support );
-        }
-        else if( strat == NATIVE )
-        {
-            result = first_var( gc_support );
-        }  
-        else if( strat == PSEUDO_COST )
-        {
-            BRANCH_STRATEGY alternative_strat = MOST_INFEASIBLE;
-            result = pseudo_cost_branching( gc_support, alternative_strat );
-        } 
-        return result;
+        return most_infeasible_var( gc_support );
     }
     
     template<class Settings>
@@ -1456,100 +1232,6 @@ Return:
         }
         branchAt( _lraVar->expression(), true, _branchingValue );
         return true;
-    }
-    
-    template<class Settings>
-    bool LRAModule<Settings>::minimal_row_var( bool _gc_support )
-    {
-        EvalRationalMap _rMap = getRationalModel();
-        auto branch_var = mTableau.originalVars().begin();
-        Rational ass_;
-        Rational row_count_min = mTableau.columns().size()+1;
-        bool result = false;
-        for( auto map_iterator = _rMap.begin(); map_iterator != _rMap.end(); ++map_iterator )
-        {
-            auto var = mTableau.originalVars().find( map_iterator->first );
-            assert( var->first == map_iterator->first );
-            Rational& ass = map_iterator->second;
-            if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
-            {
-                size_t row_count_new = mTableau.getNumberOfEntries( var->second );
-                if( row_count_new < row_count_min )
-                {
-                    result = true;
-                    row_count_min = row_count_new; 
-                    branch_var = var;
-                    ass_ = ass; 
-                }
-            }
-        }
-        if( result )
-        {
-            if( _gc_support )
-            {
-                return maybeGomoryCut( branch_var->second, ass_ );
-            }
-//            FormulaSetT premises;
-//            mTableau.collect_premises( branch_var->second , premises  ); 
-//            FormulaSetT premisesOrigins;
-//            for( auto& pf : premises )
-//            {
-//                collectOrigins( pf, premisesOrigins );
-//            }
-            branchAt( branch_var->second->expression(), true, ass_ );
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
-    
-    template<class Settings>
-    bool LRAModule<Settings>::most_feasible_var( bool _gc_support )
-    {
-        EvalRationalMap _rMap = getRationalModel();
-        auto branch_var = mTableau.originalVars().begin();
-        Rational ass_;
-        bool result = false;
-        Rational diff = MINUS_ONE_RATIONAL;
-        for( auto map_iterator = _rMap.begin(); map_iterator != _rMap.end(); ++map_iterator )
-        {
-            auto var = mTableau.originalVars().find( map_iterator->first );
-            assert( var->first == map_iterator->first );
-            Rational& ass = map_iterator->second; 
-            if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
-            {
-                Rational curr_diff = ass - carl::floor(ass);
-                if( carl::abs(Rational(curr_diff -  ONE_RATIONAL/Rational(2))) > diff )
-                {
-                    result = true;
-                    diff = carl::abs(Rational(curr_diff -  ONE_RATIONAL/Rational(2))); 
-                    branch_var = var;
-                    ass_ = ass;                   
-                }
-            }
-        }
-        if( result )
-        {
-            if( _gc_support )
-            {
-                return maybeGomoryCut( branch_var->second, ass_ );
-            }
-//            FormulaSetT premises;
-//            mTableau.collect_premises( branch_var->second , premises  );
-//            FormulaSetT premisesOrigins;
-//            for( auto& pf : premises )
-//            {
-//                collectOrigins( pf, premisesOrigins );
-//            }            
-            branchAt( branch_var->second->expression(), true, ass_ );
-            return true;         
-        }
-        else
-        {
-            return false;
-        } 
     }
     
     template<class Settings>
@@ -1593,247 +1275,6 @@ Return:
 //            }
             branchAt( branch_var->second->expression(), true, ass_ );
             return true;
-        }
-        else
-        {
-            return false;
-        } 
-    }
-    
-    template<class Settings>
-    bool LRAModule<Settings>::first_var( bool _gc_support )
-    {
-        EvalRationalMap _rMap = getRationalModel();
-        for( auto map_iterator = _rMap.begin(); map_iterator != _rMap.end(); ++map_iterator )
-        {
-            auto var = mTableau.originalVars().find( map_iterator->first );
-            assert( var->first == map_iterator->first );
-            Rational& ass = map_iterator->second; 
-            if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
-            {
-                if( _gc_support )
-                {
-                    return maybeGomoryCut( var->second, ass );
-                }
-//                FormulasT premises;
-//                mTableau.collect_premises( var->second, premises  ); 
-//                FormulasT premisesOrigins;
-//                for( auto& pf : premises )
-//                {
-//                    collectOrigins( pf, premisesOrigins );
-//                }
-                branchAt( var->second->expression(), true, ass );
-                return true;           
-            }
-        } 
-        return false;
-    }
-    
-    template<class Settings>
-    void LRAModule<Settings>::calculatePseudoCosts()
-    {
-        // Count how many integer variables violate their domain
-        EvalRationalMap _rMap = getRationalModel();
-        auto map_iterator = _rMap.begin();
-        unsigned count = 0;
-        for( auto var = mTableau.originalVars().begin(); var != mTableau.originalVars().end(); ++var )
-        {
-            assert( var->first == map_iterator->first );
-            Rational& ass = map_iterator->second;
-            if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
-            {
-                count++;
-            }
-            ++map_iterator;
-        }    
-        // Go through the received constraints and store for which variables we branch 'left' 
-        // resp. 'right'
-        auto iter_constr = rReceivedFormula().begin();
-        while( iter_constr != rReceivedFormula().end() )
-        {
-            Poly branching_poly = iter_constr->formula().constraint().lhs();
-            std::set< carl::Variable > occ_vars;
-            branching_poly.gatherVariables( occ_vars );
-            // Check whether the current constraint is a branching constraint
-            if( occ_vars.size() == 1 )
-            {
-                auto iter_poly = branching_poly.begin();
-                while( iter_poly != branching_poly.end() )
-                {
-                    if( !iter_poly->isConstant() )
-                    {    
-                        if( iter_poly->isLinear() )
-                        {
-                            // Update mBranch_Success
-                            auto iter_help = mBranch_Success.find( *( occ_vars.begin() ) );
-                            if( iter_help == mBranch_Success.end() )
-                            {
-                                std::pair< carl::Variable, std::pair< std::vector< unsigned >, std::vector< unsigned > > > to_be_ins;
-                                to_be_ins.first = *( occ_vars.begin() );
-                                std::pair< std::vector< unsigned >, std::vector< unsigned > > new_pair;
-                                if( branching_poly.begin()->coeff() < 0 )
-                                {                               
-                                    new_pair.first = std::vector< unsigned >();
-                                    new_pair.second = std::vector< unsigned >( count );
-                                }
-                                else
-                                {
-                                    new_pair.second = std::vector< unsigned >();
-                                    new_pair.first = std::vector< unsigned >( count );                                                                                                
-                                }
-                            }
-                            else
-                            {
-                                if( branching_poly.begin()->coeff() < 0 )
-                                {
-                                    iter_help->second.second.push_back( count );
-                                }
-                                else
-                                {
-                                    iter_help->second.first.push_back( count );                                                    
-                                }                                                
-                            }
-                        }
-                    }
-                    ++iter_poly;
-                }    
-            }
-            ++iter_constr;
-        }
-    }
-    
-    template<class Settings>
-    bool LRAModule<Settings>::pseudo_cost_branching( bool _gc_support, BRANCH_STRATEGY strat )
-    {
-        EvalRationalMap _rMap = getRationalModel();
-        auto branch_var = mTableau.originalVars().begin();
-        Rational ass_;
-        Rational min_score;
-        bool result = false, first_round = true, at_least_one = false;
-        for( auto map_iterator = _rMap.begin(); map_iterator != _rMap.end(); ++map_iterator )
-        {
-            auto var = mTableau.originalVars().find( map_iterator->first );
-            assert( var->first == map_iterator->first );
-            Rational& ass = map_iterator->second; 
-            if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
-            {
-                result = true;
-                // Check whether we already have data about the considered variable
-                // If so, determine its branching success according to the
-                // heuristic branching function that we apply.
-                // Otherwise, move on to the next variable.
-                auto iter_succ = mBranch_Success.find( var->first );
-                if( iter_succ == mBranch_Success.end() )
-                {
-                    continue;
-                }
-                at_least_one = true;
-                unsigned sum_left = 0;
-                auto iter_left = iter_succ->second.first.begin();
-                while( iter_left != iter_succ->second.first.end() )
-                {
-                    sum_left += *iter_left;
-                    ++iter_left;
-                }
-                unsigned sum_right = 0;
-                auto iter_right = iter_succ->second.second.begin();
-                while( iter_right != iter_succ->second.second.end() )
-                {
-                    sum_right += *iter_right;
-                    ++iter_right;
-                }
-                Rational min_temp = 0;
-                Rational score_left = 0;
-                if( iter_succ->second.first.size() != 0 )
-                {
-                    score_left = Rational( sum_right )/Rational( iter_succ->second.first.size() );
-                }   
-                Rational score_right = 0;
-                if( iter_succ->second.second.size() != 0 )
-                {
-                    score_right = Rational( sum_left )/Rational( iter_succ->second.second.size() );
-                }
-                if( score_left < score_right )
-                {
-                    if( score_left != 0 )
-                    {
-                        min_temp = score_left;
-                    }
-                    else
-                    {
-                        min_temp = score_right;                        
-                    }
-                }
-                else
-                {
-                    if( score_right != 0 )
-                    {
-                        min_temp = score_right;
-                    }
-                    else
-                    {
-                        min_temp = score_left;
-                    }
-                }
-                assert( min_temp != 0 );
-                if( first_round )
-                {
-                    min_score = min_temp;  
-                    branch_var = var;
-                    ass_ = ass;
-                }
-                else
-                {
-                    if( min_temp < min_score )
-                    {
-                        min_score = min_temp;
-                        branch_var = var;
-                        ass_ = ass;
-                    }
-                }
-            }
-        }
-        if( !at_least_one && result )
-        {
-            assert( strat != PSEUDO_COST );
-            // If we don't have data about any of the violated variables but there
-            // exist violated ones, apply the branching heuristic specified by strat
-            if( strat == MIN_PIVOT )
-            {
-                result = minimal_row_var( _gc_support );            
-            }
-            else if( strat == MOST_FEASIBLE )
-            {
-                result = most_feasible_var( _gc_support );
-            }
-            else if( strat == MOST_INFEASIBLE )
-            {
-                result = most_infeasible_var( _gc_support );
-            }
-            else if( strat == NATIVE )
-            {
-                result = first_var( _gc_support );
-            }
-        }    
-        if( result )
-        {
-            if( _gc_support )
-            {
-                result = maybeGomoryCut( branch_var->second, ass_ );
-                if( result )
-                    calculatePseudoCosts();
-                return result;
-            }
-//            FormulasT premises;
-//            mTableau.collect_premises( branch_var->second , premises  );
-//            FormulasT premisesOrigins;
-//            for( auto& pf : premises )
-//            {
-//                collectOrigins( pf, premisesOrigins );
-//            }            
-            branchAt( branch_var->second->expression(), true, ass_ );
-            calculatePseudoCosts();
-            return true;         
         }
         else
         {
