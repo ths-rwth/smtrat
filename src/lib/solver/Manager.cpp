@@ -181,9 +181,9 @@ namespace smtrat
         return mpPrimaryBackend->getReceivedFormulaSimplified();
     }
     
-    void Manager::printAssignment( std::ostream& _out ) const
+    void Manager::printAssignment() const
     {
-        mpPrimaryBackend->printModel( _out );
+        mpPrimaryBackend->printModel();
     }
     
     ModuleInput::iterator Manager::remove( ModuleInput::iterator _subformula )
