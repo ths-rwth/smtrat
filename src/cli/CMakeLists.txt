@@ -50,6 +50,24 @@ target_link_libraries( smtrat
                         ${libraries} # libraries definied in top-level CMakeLists.txt
 )
 
+# executable wrapper
+# # # # # # # # # #
+
+add_executable( smtratWrapper
+    parser/theories/Arithmetic.cpp
+    parser/theories/Bitvector.cpp
+    parser/theories/Core.cpp
+    parser/theories/Uninterpreted.cpp
+	parser/ParserWrapper.cpp
+	smtratWrapper.cpp
+    RuntimeSettingsManager.cpp
+)
+
+target_link_libraries( smtratWrapper
+                        lib_${PROJECT_NAME} # smtrat library
+                        ${libraries} # libraries definied in top-level CMakeLists.txt
+)
+
 #if(USE_COTIRE)
 #    cotire( smtrat )
 #endif()
