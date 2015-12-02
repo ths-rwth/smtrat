@@ -110,9 +110,9 @@ return SettingsType::moduleName;
 						branchAt(vars[d], r);
 						return true;
 					}
-				} else {
-					assert(carl::isInteger(r));
 					return false;
+				} else {
+					return !carl::isInteger(r);
 				}
 				return false;
 			}
