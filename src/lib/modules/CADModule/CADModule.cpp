@@ -64,7 +64,6 @@ namespace smtrat
 			setting.computeConflictGraph = true;
 		#endif
 
-		setting.trimVariables = false; // maintains the dimension important for the constraint checking
 //		setting.autoSeparateEquations = false; // <- @TODO: find a correct implementation of the MIS for the only-strict or only-equations optimizations
 
 		#ifndef SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
