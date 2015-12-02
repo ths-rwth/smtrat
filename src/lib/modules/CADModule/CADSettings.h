@@ -34,9 +34,15 @@ namespace smtrat
         static const bool dummy;
     };
     
-    struct CADSettings2 : CADSettings1
+    struct CADSettingsSplitLazy : CADSettings1
     {
-		static constexpr auto moduleName = "CADModule<CADSettings2>";
-        static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::NONE;
+		static constexpr auto moduleName = "CADModule<SplitLazy>";
+        static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::SPLIT_LAZY;
+    };
+	
+	struct CADSettingsGuessAndSplit : CADSettings1
+    {
+		static constexpr auto moduleName = "CADModule<GuessAndSplit>";
+        static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::GUESS_AND_SPLIT;
     };
 }
