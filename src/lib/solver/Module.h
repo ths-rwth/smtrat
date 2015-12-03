@@ -231,11 +231,12 @@ namespace smtrat
              * actually nothing but passing the problem to its backends. This implementation is only used
              * internally and must be overwritten by any derived module.
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
+             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer check( bool _full = true );
+            Answer check( bool _full = true, bool _minimize = false );
             
             /**
              * Removes everything related to the given sub-formula of the received formula. However,
@@ -650,11 +651,12 @@ namespace smtrat
              * actually nothing but passing the problem to its backends. This implementation is only used
              * internally and must be overwritten by any derived module.
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
+             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            virtual Answer checkCore( bool _full = true );
+            virtual Answer checkCore( bool _full = true, bool _minimize = false );
             
             /**
              * Removes everything related to the given sub-formula of the received formula. However,
@@ -912,11 +914,12 @@ namespace smtrat
             /**
              * Runs the backend solvers on the passed formula.
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
+             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return True,    if the passed formula is consistent;
              *          False,   if the passed formula is inconsistent;
              *          Unknown, otherwise.
              */
-            Answer runBackends( bool _full = true );
+            Answer runBackends( bool _full = true, bool _minimize = false );
             
             /**
              * Removes everything related to the sub-formula to remove from the passed formula in the backends of this module.

@@ -47,7 +47,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer ESModule<Settings>::checkCore( bool _full )
+    Answer ESModule<Settings>::checkCore( bool _full, bool _minimize )
     {
         mBoolSubs.clear();
         mArithSubs.clear();
@@ -58,7 +58,7 @@ namespace smtrat
         else
         {
             addSubformulaToPassedFormula( formula );
-            ans = runBackends( _full );
+            ans = runBackends( _full, _minimize );
         }
         if( ans == False )
             generateTrivialInfeasibleSubset(); // TODO: compute a better infeasible subset

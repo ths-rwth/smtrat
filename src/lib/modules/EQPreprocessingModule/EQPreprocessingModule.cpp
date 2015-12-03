@@ -197,7 +197,7 @@ namespace smtrat
 	}
 
 	template<class Settings>
-		Answer EQPreprocessingModule<Settings>::checkCore(bool)
+		Answer EQPreprocessingModule<Settings>::checkCore(bool _full, bool _minimize)
 	{
 		if(Settings::printFormulas) {
 			for(auto&& f : rReceivedFormula()) {
@@ -283,7 +283,7 @@ namespace smtrat
 		}
 
 		// Call backends.
-		Answer answer = runBackends();
+		Answer answer = runBackends(_full,_minimize);
 		if(answer == False) {
 			getInfeasibleSubsets();
 		}

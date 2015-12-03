@@ -80,8 +80,9 @@ namespace smtrat
              * Depending on whether we work on integer or rational instances, it
              * sends the corresponding set of constraints to the backends and returns
              * the answer obtained by the latter
+             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              */
-            Answer callBackends( bool _full );
+            Answer callBackends( bool _full, bool _minimize );
             
             /*
              * @param  formula_map A map of formulas and their origins
@@ -129,11 +130,12 @@ return SettingsType::moduleName;
             /**
              * Checks the received formula for consistency.
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
+             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer checkCore( bool _full );
+            Answer checkCore( bool _full, bool _minimize );
 
     };
 }

@@ -308,7 +308,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer ICPModule<Settings>::checkCore( bool _full )
+    Answer ICPModule<Settings>::checkCore( bool _full, bool _minimize )
     {
         #ifdef ICP_MODULE_DEBUG_0
         std::cout << "##############################################################" << std::endl;
@@ -717,7 +717,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer ICPModule<Settings>::callBackends( bool _full )
+    Answer ICPModule<Settings>::callBackends( bool _full, bool _minimize )
     {
         #ifdef ICP_MODULE_DEBUG_0
         std::cout << "Ask backends " << (_full ? "full" : "lazy") << " for the satisfiability of:" << std::endl;
@@ -725,7 +725,7 @@ namespace smtrat
             std::cout << "    " << f.formula().constraint() << std::endl;
         #endif
         ++mCountBackendCalls;
-        Answer a = runBackends( _full );
+        Answer a = runBackends( _full, _minimize );
         updateDeductions();
         if( !Settings::use_backends_splitting_decisions )
             clearSplittings();

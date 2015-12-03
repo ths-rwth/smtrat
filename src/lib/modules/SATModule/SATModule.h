@@ -352,6 +352,10 @@ namespace smtrat
             // Module related members.
             /// A flag, which is set to true, if anything has been changed in the passed formula between now and the last consistency check.
             bool mChangedPassedFormula;
+            ///
+            bool mFullCheck;
+            ///
+            bool mMinimize;
             /**
              * Stores gained information about the current assignment's consistency. If we know from the last consistency check, whether the
              * current assignment is consistent, this member is True, if we know that it is inconsistent it is False, otherwise Unknown.
@@ -454,11 +458,12 @@ namespace smtrat
             /**
              * Checks the received formula for consistency.
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
+             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer checkCore( bool _full = true );
+            Answer checkCore( bool _full = true, bool _minimize = false );
             
             /**
              * Removes everything related to the given sub-formula of the received formula.

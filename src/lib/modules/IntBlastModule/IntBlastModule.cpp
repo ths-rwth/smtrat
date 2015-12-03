@@ -544,7 +544,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer IntBlastModule<Settings>::checkCore(bool _full)
+    Answer IntBlastModule<Settings>::checkCore(bool _full, bool _minimize)
     {
         mSolutionOrigin = SolutionOrigin::NONE;
 
@@ -649,7 +649,7 @@ namespace smtrat
             //updateOutsideRestrictionConstraint(icpAnswer == False);
 
             INTBLAST_DEBUG("Running backend.");
-            Answer backendAnswer = runBackends(_full);
+            Answer backendAnswer = runBackends(_full,_minimize);
             INTBLAST_DEBUG("Answer from backend: " << (backendAnswer == False ? "False" : (backendAnswer == True ? "True" : "Unknown")));
             mSolutionOrigin = SolutionOrigin::BACKEND;
 

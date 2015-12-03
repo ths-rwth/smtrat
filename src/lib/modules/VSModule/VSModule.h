@@ -79,7 +79,7 @@ namespace smtrat
             
             // Interfaces.
             bool addCore( ModuleInput::const_iterator );
-            Answer checkCore( bool _full );
+            Answer checkCore( bool _full = true, bool _minimize = false );
             void removeCore( ModuleInput::const_iterator );
             void updateModel() const;
 
@@ -203,11 +203,12 @@ namespace smtrat
              * Run the backend solvers on the conditions of the given state.
              * @param _state    The state to check the conditions of.
              * @param _full     false, if this module should avoid too expensive procedures and rather return unknown instead.
+             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return  True,    if the conditions are consistent and there is no unfinished ancestor;
              *          False,   if the conditions are inconsistent;
              *          Unknown, if the theory solver cannot give an answer for these conditons.
             */
-            Answer runBackendSolvers( vs::State* _state, bool _full );
+            Answer runBackendSolvers( vs::State* _state, bool _full = true, bool _minimize = false );
             
             /**
              * Checks the correctness of the symbolic assignment given by the path from the root

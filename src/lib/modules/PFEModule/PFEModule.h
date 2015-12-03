@@ -39,7 +39,7 @@ namespace smtrat
 
             // Main interfaces.
 			bool addCore( ModuleInput::const_iterator );
-            Answer checkCore( bool _full );
+            Answer checkCore( bool _full, bool _minimize );
             void removeCore( ModuleInput::const_iterator );
         private:
             

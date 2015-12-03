@@ -149,7 +149,7 @@ return SettingsType::moduleName;
             bool informCore( const FormulaT& );
             bool addCore( ModuleInput::const_iterator );
             void removeCore( ModuleInput::const_iterator );
-            Answer checkCore( bool _full );
+            Answer checkCore( bool _full, bool _minimize );
             void updateModel() const;
             
         protected:
@@ -228,9 +228,10 @@ return SettingsType::moduleName;
             
             /**
              * 
+             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return 
              */
-            Answer callBackends( bool _full );
+            Answer callBackends( bool _full = true, bool _minimize = false );
 
             /**
              * Creates the non-linear contraction candidates from all items in mTemporaryMonomes and empties mTemporaryMonomes.

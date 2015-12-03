@@ -23,7 +23,7 @@ namespace smtrat
     {}
 
     template<class Settings>
-    Answer BEModule<Settings>::checkCore( bool _full )
+    Answer BEModule<Settings>::checkCore( bool _full, bool _minimize )
     {
         auto receivedFormula = firstUncheckedReceivedSubformula();
         while( receivedFormula != rReceivedFormula().end() )
@@ -38,13 +38,13 @@ namespace smtrat
                 addSubformulaToPassedFormula( formula, receivedFormula->formula() );
             ++receivedFormula;
         }
-        Answer ans = runBackends( _full );
+        Answer ans = runBackends( _full, _minimize );
         if( ans == False )
             generateTrivialInfeasibleSubset(); // TODO: compute a better infeasible subset
         return ans;
     }
 	
-	template<typename Settings>
+    template<typename Settings>
     FormulaT BEModule<Settings>::extractBounds(const FormulaT& formula)
     {
 		if( formula.getType() == carl::FormulaType::OR )
