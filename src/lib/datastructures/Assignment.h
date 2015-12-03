@@ -244,17 +244,30 @@ namespace smtrat
      */
     bool operator<( const carl::UninterpretedFunction& _uf, const ModelVariable& _mvar );
     
+	/**
+	 * This class represents infinity or minus infinity, depending on its flag positive.
+	 * The default is minus infinity.
+	 */
+	struct InfinityValue {
+		bool positive = false;
+		explicit InfinityValue() {}
+		explicit InfinityValue(bool positive): positive(positive) {}
+	};
+	inline std::ostream& operator<<(std::ostream& os, const InfinityValue& iv) {
+		return os << (iv.positive ? "+" : "-") << "infinity";
+	}
+	
     /**
      * This class represents some value that is assigned to some variable.
      * It is implemented as subclass of a boost::variant.
      * Possible value types are bool, vs::SqrtEx and carl::RealAlgebraicNumberPtr.
      */
-    class ModelValue : public boost::variant<bool, Rational, vs::SqrtEx, carl::RealAlgebraicNumber<smtrat::Rational>, carl::BVValue, SortValue, UFModel>
+    class ModelValue : public boost::variant<bool, Rational, vs::SqrtEx, carl::RealAlgebraicNumber<smtrat::Rational>, carl::BVValue, SortValue, UFModel, InfinityValue>
     {
         /**
          * Base type we are deriving from.
          */
-        typedef boost::variant<bool, Rational, vs::SqrtEx, carl::RealAlgebraicNumber<smtrat::Rational>, carl::BVValue, SortValue, UFModel> Super;
+        typedef boost::variant<bool, Rational, vs::SqrtEx, carl::RealAlgebraicNumber<smtrat::Rational>, carl::BVValue, SortValue, UFModel, InfinityValue> Super;
         
     public:
         /**
@@ -384,6 +397,19 @@ namespace smtrat
         bool isUFModel() const {
             return type() == typeid(UFModel);
         }
+		
+		/**
+         * @return true, if the stored value is +infinity.
+         */
+        bool isPlusInfinity() const {
+            return (type() == typeid(InfinityValue)) && boost::get<InfinityValue>(*this).positive;
+        }
+		/**
+         * @return true, if the stored value is -infinity.
+         */
+        bool isMinusInfinity() const {
+            return (type() == typeid(InfinityValue)) && !boost::get<InfinityValue>(*this).positive;
+        }
 
         /**
          * @return The stored value as a bool.
@@ -446,6 +472,14 @@ namespace smtrat
         {
             assert( isUFModel() );
             return boost::get<UFModel>(*this);
+        }
+		/**
+         * @return The stored value as a infinity value.
+         */
+        const InfinityValue& asInfinity() const
+        {
+            assert( isPlusInfinity() || isMinusInfinity() );
+            return boost::get<InfinityValue>(*this);
         }
     };
     
