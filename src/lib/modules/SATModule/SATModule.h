@@ -655,10 +655,11 @@ namespace smtrat
              * Adds the clause of the given type with the given literals to the clauses managed by Minisat.
              * @param _clause The clause to add.
              * @param _type The type of the clause (NORMAL_CLAUSE, DEDUCTED_CLAUSE or CONFLICT_CLAUSE).
+             * @param _force If true backtracking won't stop at the first assumption-decision-level.
              * @return  true, if a clause has been added;
              *          false, otherwise.
              */
-            bool addClause( const Minisat::vec<Minisat::Lit>& _clause, unsigned _type = 0 );
+            bool addClause( const Minisat::vec<Minisat::Lit>& _clause, unsigned _type = 0, bool _force = false );
             
             /**
              * Moves two literals which are not assigned to false to the beginning of the clause.
@@ -1020,6 +1021,8 @@ namespace smtrat
              *         l_Undef, otherwise.
              */
             Minisat::lbool checkFormula();
+            
+            void computeAdvancedLemmas();
 
             /**
              * search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
@@ -1056,6 +1059,8 @@ namespace smtrat
              *   clauses are clauses that are reason to some assignment. Binary clauses are never removed.
              */
             void reduceDB();
+            
+            void clearLearnts( size_t n );
             
             // Shrink 'cs' to contain only non-satisfied clauses.
             

@@ -756,11 +756,7 @@ namespace smtrat
                 {
                     break;
                 }
-                if ( handleConflict( clause ) != l_True )
-                {
-                    // Already UnSAT
-                    break;
-                }
+                handleConflict( clause );
 
                 // Check again
                 result = checkFormula();
@@ -1887,13 +1883,10 @@ SetWatches:
                 polarity[x] = sign( trail[c] );
             insertVarOrder( x );
         }
-        else
-        {
-            assigns[x] = l_Undef;
-            if( (phase_saving > 1 || (phase_saving == 1)) && c > trail_lim.last() )
-                polarity[x] = sign( trail[c] );
-            insertVarOrder( x );
-        }
+//        assigns[x] = l_Undef;
+//        if( (phase_saving > 1 || (phase_saving == 1)) && c > trail_lim.last() )
+//            polarity[x] = sign( trail[c] );
+//        insertVarOrder( x );
     }
     
     template<class Settings>

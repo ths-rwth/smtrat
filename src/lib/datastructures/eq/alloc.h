@@ -330,7 +330,7 @@ namespace smtrat {
 
 				pointer allocate(size_type n, const void* hint = 0) {
 					if(n == 1) {
-						return static_cast<pointer>(static_cast<fixedsize_freelist<SizeShift>&>(fixedsize_allocator_freelists::INSTANCE).alloc());
+//						return static_cast<pointer>(static_cast<fixedsize_freelist<SizeShift>&>(fixedsize_allocator_freelists::INSTANCE).alloc()); // @todo
 					} else {
 						return std::allocator<T>{}.allocate(n, hint);
 					}
@@ -338,7 +338,7 @@ namespace smtrat {
 
 				void deallocate(pointer p, size_type n) {
 					if(n == 1) {
-						static_cast<fixedsize_freelist<SizeShift>&>(fixedsize_allocator_freelists::INSTANCE).free(p);
+//						static_cast<fixedsize_freelist<SizeShift>&>(fixedsize_allocator_freelists::INSTANCE).free(p); // @todo
 					} else {
 						std::allocator<T>{}.deallocate(p, n);
 					}

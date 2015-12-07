@@ -15,7 +15,7 @@ namespace smtrat
         PModule( _formula, _conditionals, _manager ),
         mVisitor()
     {
-		splitSOSFunction = std::bind(&SplitSOSModule<Settings>::splitSOS, this, std::placeholders::_1);
+        splitSOSFunction = std::bind(&SplitSOSModule<Settings>::splitSOS, this, std::placeholders::_1);
     }
 
     template<class Settings>
@@ -31,7 +31,7 @@ namespace smtrat
             FormulaT formula = receivedFormula->formula();
             if( receivedFormula->formula().propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL) )
             {
-                formula = mVisitor.visit( receivedFormula->formula(), splitSOSFunction );
+                formula = mVisitor.visitResult( receivedFormula->formula(), splitSOSFunction );
             }
             if( formula.isFalse() )
             {

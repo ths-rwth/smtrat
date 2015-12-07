@@ -6,13 +6,12 @@
 #pragma once
 
 #include "../../cli/config.h"
-#include "../strategies/strategies.h"
 #include "../modules/ModuleType.h"
 #include "../modules/Modules.h"
-#include "../modules/AddModules.h"
 #include "carl/util/stringparser.h"
 #include "carl/util/parser/Parser.h"
-#include "carl/util/Common.h"
+#include "../Common.h"
+#include "../strategies/PureSAT.h"
 
 #ifdef __WIN
 #define DLL_EXPORT __declspec(dllexport)
@@ -20,7 +19,7 @@
 #define DLL_EXPORT 
 #endif
 
-#define SOLVER smtrat::StratSat
+#define SOLVER smtrat::PureSAT
 
 #ifdef DEBUG
 #define DEFAULT_LVL carl::logging::LogLevel::LVL_DEBUG
@@ -63,7 +62,7 @@ namespace smtrat {
 				;
 #endif
             pWrapper->solver = new SOLVER();
-            smtrat::addModules(pWrapper->solver);
+//            smtrat::addModules(pWrapper->solver);
 			return pWrapper;
         }
 

@@ -692,7 +692,7 @@ namespace smtrat
         FormulasT bitvectorConstraints;
         carl::FormulaVisitor<FormulaT> visitor;
         std::function<FormulaT(FormulaT)> encodeConstraints = std::bind(&IntBlastModule::encodeConstraintToBV, this, std::placeholders::_1, &bitvectorConstraints);
-        FormulaT bitvectorFormula = visitor.visit(_formula, encodeConstraints);
+        FormulaT bitvectorFormula = visitor.visitResult(_formula, encodeConstraints);
 
         addFormulaToBV(bitvectorFormula, _formula);
 
