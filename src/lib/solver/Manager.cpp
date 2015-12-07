@@ -221,7 +221,6 @@ namespace smtrat
                 {
                     if( objectivesIter != mObjectives.end() && ass->first.asVariable() == objectivesIter->second )
                     {
-//                        std::cout << objectivesIter->first << " is a variable: " << objectivesIter->first.isVariable() << std::endl;
                         if( !objectivesIter->first.isVariable() )
                             cout << "(" << objectivesIter->first.toString( false, true ) << " " << ass->second << ")" << endl;
                         ++objectivesIter;
