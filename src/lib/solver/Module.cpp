@@ -49,6 +49,7 @@ namespace smtrat
         mInfeasibleSubsets(),
         mpManager( _manager ),
         mModel(),
+        mModelComputed( false ),
         mSolverState( Unknown ),
         mBackendsFoundAnswer( new std::atomic_bool( false ) ),
         mFoundAnswer( _foundAnswer ),
@@ -139,9 +140,23 @@ namespace smtrat
     {
         SMTRAT_LOG_INFO("smtrat.module", __func__ << " to " << moduleName() << " (" << mId << "):");
         SMTRAT_LOG_INFO("smtrat.module", "\t" << _receivedSubformula->formula());
+        mModelComputed = false;
         if( mFirstUncheckedReceivedSubformula == mpReceivedFormula->end() )
         {
             mFirstUncheckedReceivedSubformula = _receivedSubformula;
+        }
+        if( _receivedSubformula->formula().getType() == carl::FormulaType::CONSTRAINT )
+        {
+            const ConstraintT& constraint = _receivedSubformula->formula().constraint();
+            if( constraint.hasVariable( objective() ) )
+            {
+                assert( constraint.relation() == carl::Relation::EQ );
+                Poly objCoeff = constraint.coefficient( objective(), 1 );
+                assert( objCoeff.isConstant() );
+                assert( carl::abs( objCoeff.constantPart() ) == ONE_RATIONAL );
+                mObjectiveFunction = objCoeff.constantPart() < ZERO_RATIONAL ? constraint.lhs() : -constraint.lhs();
+                mObjectiveFunction += objective();
+            }
         }
         bool result = addCore( _receivedSubformula );
         if( !result )
@@ -239,11 +254,15 @@ namespace smtrat
 
     void Module::updateModel() const
     {
-        clearModel();
-        if( mSolverState == True )
+        if( !mModelComputed )
         {
-            getBackendsModel();
-            excludeNotReceivedVariablesFromModel();
+            clearModel();
+            if( mSolverState == True )
+            {
+                getBackendsModel();
+                excludeNotReceivedVariablesFromModel();
+            }
+            mModelComputed = true;
         }
     }
 
@@ -1095,7 +1114,7 @@ namespace smtrat
 
     void Module::print( const string _initiation ) const
     {
-		SMTRAT_LOG_INFO("smtrat.module", _initiation << "********************************************************************************");
+        SMTRAT_LOG_INFO("smtrat.module", _initiation << "********************************************************************************");
         SMTRAT_LOG_INFO("smtrat.module", _initiation << " Solver " << moduleName() << " (" << mId << ")");
         SMTRAT_LOG_INFO("smtrat.module", _initiation);
         printReceivedFormula( _initiation + "\t" );
@@ -1112,11 +1131,11 @@ namespace smtrat
         SMTRAT_LOG_INFO("smtrat.module", _initiation << "Received formula:");
         for( auto form = mpReceivedFormula->begin(); form != mpReceivedFormula->end(); ++form )
         {
-			std::stringstream ss;
+            std::stringstream ss;
             // bool _withActivity, unsigned _resolveUnequal, const string _init, bool _oneline, bool _infix, bool _friendlyNames
             ss << setw( 45 ) << form->formula().toString( false, 0, "", true, true, true );
             if( form->deducted() ) ss << " deducted";
-			SMTRAT_LOG_INFO("smtrat.module", _initiation << ss.str());
+                SMTRAT_LOG_INFO("smtrat.module", _initiation << ss.str());
         }
     }
 
@@ -1157,7 +1176,7 @@ namespace smtrat
         this->updateModel();
         if( !model().empty() )
         {
-			SMTRAT_LOG_INFO("smtrat.module", model());
+            std::cout << model() << std::endl;
         }
     }
 } // namespace smtrat

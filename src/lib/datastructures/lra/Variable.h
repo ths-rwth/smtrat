@@ -35,8 +35,6 @@ namespace smtrat
                 ///
                 bool mInteger;
                 ///
-                bool mObjective;
-                ///
                 EntryID mStartEntry;
                 ///
                 size_t mSize;
@@ -77,7 +75,7 @@ namespace smtrat
                  * @param _defaultBoundPosition
                  * @param _isInteger
                  */
-                Variable( size_t _position, const typename Poly::PolyType* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger, bool _isObjective = false );
+                Variable( size_t _position, const typename Poly::PolyType* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger );
                 
                 /**
                  * 
@@ -86,7 +84,7 @@ namespace smtrat
                  * @param _defaultBoundPosition
                  * @param _isInteger
                  */
-                Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives, const typename Poly::PolyType* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger, bool _isObjective = false );
+                Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives, const typename Poly::PolyType* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger );
                 
                 /**
                  * 
@@ -156,21 +154,6 @@ namespace smtrat
                 bool isInteger() const
                 {
                     return mInteger;
-                }
-
-                /**
-                 * @return 
-                 */
-                bool isObjective() const
-                {
-                    return mObjective;
-                }
-
-                /**
-                 */
-                void setObjective( bool _isObjective )
-                {
-                    mObjective = _isObjective;
                 }
                 
                 /**

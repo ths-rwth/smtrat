@@ -220,6 +220,14 @@ namespace smtrat
             const Model& model() const;
             
             /**
+             * @param _objFct The objective function to obtain the minimal assignment for.
+             * @return The minimal assignment of the given objective function. 
+             * Note, that a previous check call must have returned True beforehand.
+             * Note, that the objective must be added by addObjective beforehand.
+             */
+            const ModelValue& minimum( const Poly& _objFct ) const;
+            
+            /**
              * Returns the lemmas/tautologies which were made during the last solving provoked by check(). These lemmas
              * can be used in the same manner as infeasible subsets are used.
              * @return The lemmas/tautologies made during solving.

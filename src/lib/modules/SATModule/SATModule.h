@@ -210,7 +210,7 @@ namespace smtrat
              * Maps the constraints occurring in the SAT module to their abstractions. We store a vector of literals
              * for each constraints, which is only used in the optimization, which applies valid substitutions.
              */
-            typedef carl::FastMap<FormulaT, std::vector<Minisat::Lit>> ConstraintLiteralsMap; // @todo use hashing if possible
+            typedef carl::FastMap<FormulaT, std::vector<Minisat::Lit>> ConstraintLiteralsMap;
             
             /// Maps the Boolean variables to their corresponding Minisat variable.
             typedef carl::FastMap<carl::Variable, Minisat::Var> BooleanVarMap;
@@ -348,6 +348,8 @@ namespace smtrat
             int64_t propagation_budget;
             /// [Minisat related code]
             bool asynch_interrupt;
+            /// For temporary usage.
+            Minisat::vec<Minisat::Lit> learnt_clause;
 
             // Module related members.
             /// A flag, which is set to true, if anything has been changed in the passed formula between now and the last consistency check.
@@ -413,10 +415,16 @@ namespace smtrat
             carl::FastMap<FormulaT, std::vector<TseitinVarShadows::iterator>>::iterator mCurrentFormulaTseitinVarMapEntry;
             ///
             std::vector<Minisat::vec<Minisat::Lit>> mCurrentTheoryConflicts;
+            ///
+            std::vector<unsigned> mCurrentTheoryConflictTypes;
+            ///
             std::map<std::pair<size_t,size_t>,size_t> mCurrentTheoryConflictEvaluations;
+            ///
             std::unordered_set<int> mLevelCounter;
             ///
             size_t mTheoryConflictIdCounter;
+            ///
+            ModuleInput::iterator mUpperBoundOnMinimal;
             
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
@@ -480,6 +488,10 @@ namespace smtrat
              * Updates the infeasible subset found by the SATModule, if the received formula is unsatisfiable.
              */
             void updateInfeasibleSubset();
+            
+            void cleanUpAfterOptimizing( int _clausesSizeBefore, const std::vector<Minisat::CRef>& _excludedAssignments );
+            
+            void removeUpperBoundOnMinimal();
             
             /**
              * Adds the Boolean assignments to the given assignments, which were determined by the Minisat procedure.
@@ -973,6 +985,8 @@ namespace smtrat
              */
             Minisat::lbool search( int nof_conflicts = 100 );
             
+            void handleConflict( Minisat::CRef _confl );
+            
             /**
              * reduceDB : ()  ->  [void]
              *
@@ -1263,11 +1277,5 @@ namespace smtrat
              *               information, if the Boolean does not correspond to a constraint's abstraction).
              */
             void adaptPassedFormula( Abstraction& _abstr );
-            
-            /**
-             * @return true, if the passed formula coincides with the constraints whose abstractions (literals)
-             *               are assigned to true.
-             */
-            bool passedFormulaCorrect() const;
     };
 }    // namespace smtrat

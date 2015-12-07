@@ -9,7 +9,7 @@
 #include "../../../cli/ExitCodes.h"
 
 #ifdef DEBUG_METHODS_TABLEAU
-#define DEBUG_METHODS_LRA_MODULE
+//#define DEBUG_METHODS_LRA_MODULE
 #endif
 //#define DEBUG_LRA_MODULE
 
@@ -23,6 +23,7 @@ namespace smtrat
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
         mStrongestBoundsRemoved( false ),
+        mMinimize( false ),
         mTableau( passedFormulaEnd() ),
         mLinearConstraints(),
         mNonlinearConstraints(),
@@ -30,7 +31,9 @@ namespace smtrat
         mActiveUnresolvedNEQConstraints(),
         mDelta( carl::freshRealVariable( "delta_" + to_string( id() ) ) ),
         mBoundCandidatesToPass(),
-        mObjectiveLRAVar( nullptr )
+        mCreatedObjectiveLRAVars(),
+        mObjectiveLRAVar( mCreatedObjectiveLRAVars.end() ),
+        mRationalAssignment()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
@@ -111,18 +114,21 @@ namespace smtrat
                         {
                             if( constraint.hasVariable( objective() ) )
                             {
-                                assert( constraint.relation() == carl::Relation::EQ );
-                                Poly objCoeff = constraint.coefficient( objective(), 1 );
-                                assert( objCoeff.isConstant() );
-                                assert( carl::abs( objCoeff.constantPart() ) == ONE_RATIONAL );
-                                Poly* objFct = new Poly(objCoeff.constantPart() < ZERO_RATIONAL ? constraint.lhs() : -constraint.lhs());
-                                (*objFct) += objective();
-                                auto olIter = mCreatedObjectiveLRAVars.find( objFct );
-                                if( olIter == mCreatedObjectiveLRAVars.end() )
+                                if( constraint.relation() == carl::Relation::EQ )
                                 {
-                                    olIter = mCreatedObjectiveLRAVars.emplace( objFct, mTableau.newBasicVariable( objFct, false, true ) ).first;
+                                    auto olIter = mCreatedObjectiveLRAVars.find( objectiveFunction() );
+                                    if( olIter == mCreatedObjectiveLRAVars.end() )
+                                    {
+                                        LRABoundType factor;
+                                        LRABoundType bound;
+                                        LRAVariable* lraVar = mTableau.getVariable( objectiveFunction(), factor, bound );
+                                        olIter = mCreatedObjectiveLRAVars.emplace( objectiveFunction(), std::make_pair( lraVar, (Rational)factor ) ).first;
+                                    }
+                                    mObjectiveLRAVar = olIter;
+                                    if( mObjectiveLRAVar->second.first->isBasic() )
+                                        mTableau.activateBasicVar( mObjectiveLRAVar->second.first );
                                 }
-                                mObjectiveLRAVar = olIter->second;
+                                return true;
                             }
                             auto constrBoundIter = mTableau.constraintToBound().find( formula );
                             assert( constrBoundIter != mTableau.constraintToBound().end() );
@@ -209,6 +215,8 @@ namespace smtrat
             {
                 if( constraint.lhs().isLinear() )
                 {
+                    if( constraint.hasVariable( objective() ) )
+                        return;
                     // Deactivate the bounds regarding the given constraint
                     auto constrBoundIter = mTableau.constraintToBound().find( pformula );
                     assert( constrBoundIter != mTableau.rConstraintToBound().end() );
@@ -352,16 +360,17 @@ namespace smtrat
     Answer LRAModule<Settings>::checkCore( bool _full, bool _minimize )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "LRAModule::check" << endl; printReceivedFormula();
+        cout << "LRAModule::check with _minimize = " << _minimize << endl;
+        for( const auto& f : rReceivedFormula() )
+            std::cout << f.formula().toString() << std::endl;
         #endif
+        mMinimize = _minimize;
         bool backendsResultUnknown = true;
         bool containsIntegerValuedVariables = true;
         if( !rReceivedFormula().isConstraintConjunction() )
             return processResult( Unknown, backendsResultUnknown );
         if( !mInfeasibleSubsets.empty() )
             return processResult( False, backendsResultUnknown );
-        if( mObjectiveLRAVar != nullptr )
-            mTableau.activateBasicVar( mObjectiveLRAVar );
         if( rReceivedFormula().isRealConstraintConjunction() )
             containsIntegerValuedVariables = false;
         assert( !mTableau.isConflicting() );
@@ -459,12 +468,17 @@ namespace smtrat
             mpStatistics->setTableauSize( mTableau.rows().size()*mTableau.columns().size() );
         }
         #endif
-        _result = optimize( _result );
+        if( mMinimize )
+        {
+            _result = optimize( _result );
+        }
         if( _result != Unknown )
         {
             mTableau.resetNumberOfPivotingSteps();
             if( _result == True && _backendsResultUnknown )
+            {
                 _result = checkNotEqualConstraints( _result );
+            }
         }
         #ifdef DEBUG_LRA_MODULE
         std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << ANSWER_TO_STRING( _result ) << std::endl;
@@ -475,80 +489,95 @@ namespace smtrat
     template<class Settings>
     void LRAModule<Settings>::updateModel() const
     {
-        clearModel();
-        if( solverState() == True )
+        if( !mModelComputed )
         {
-            if( mAssignmentFullfilsNonlinearConstraints )
+            clearModel();
+            if( solverState() == True || mMinimize )
             {
-                EvalRationalMap rationalAssignment = getRationalModel();
-                for( auto ratAss = rationalAssignment.begin(); ratAss != rationalAssignment.end(); ++ratAss )
+                if( mAssignmentFullfilsNonlinearConstraints )
                 {
-                    mModel.insert(mModel.end(), std::make_pair(ratAss->first, ratAss->second) );
+                    const EvalRationalMap& rationalAssignment = getRationalModel();
+                    for( auto ratAss = rationalAssignment.begin(); ratAss != rationalAssignment.end(); ++ratAss )
+                    {
+                        mModel.insert(mModel.end(), std::make_pair(ratAss->first, ratAss->second) );
+                    }
                 }
-            }
-            else
-            {
-                Module::getBackendsModel();
+                else
+                {
+                    Module::getBackendsModel();
+                }
             }
         }
     }
 
     template<class Settings>
-    EvalRationalMap LRAModule<Settings>::getRationalModel() const
+    const EvalRationalMap& LRAModule<Settings>::getRationalModel() const
     {
-        if( mInfeasibleSubsets.empty() )
+        if( !mModelComputed )
         {
-            auto ret = mTableau.getRationalAssignment();
-            return ret;
+            mRationalAssignment = mTableau.getRationalAssignment();
+            mModelComputed = true;
         }
-        return EvalRationalMap();
+        return mRationalAssignment;
     }
     
     template<class Settings>
     Answer LRAModule<Settings>::optimize( Answer _result )
     {
-        if( mObjectiveLRAVar == nullptr )
-            return _result;
         if( _result == True )
         {
             for( ; ; )
             {
-                std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElementForOptimizing( *mObjectiveLRAVar );
+                std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElementForOptimizing( *(mObjectiveLRAVar->second.first) );
                 if( pivotingElement.second )
                 {
                     if( pivotingElement.first == lra::LAST_ENTRY_ID )
                     {
-                        #ifdef DEBUG_LRA_MODULE
-                        std::cout << std::endl;
-                        mTableau.print();
-                        std::cout << std::endl;
-                        std::cout << "Optimum: -oo" << std::endl;
-                        #endif
+                        if( mObjectiveLRAVar->second.first->infimum().isInfinite() )
+                        {
+                            #ifdef DEBUG_LRA_MODULE
+                            std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: -oo" << std::endl;
+                            #endif
+                            clearModel();
+                            mModel.insert(mModel.end(), std::make_pair(objective(), InfinityValue()) );
+                        }
+                        else
+                        {
+                            mModelComputed = false;
+                            updateModel();
+                            const LRAValue& infimum = mObjectiveLRAVar->second.first->infimum().limit();
+                            Rational ass = (Rational)(infimum.mainPart()+mTableau.currentDelta()*infimum.deltaPart());
+                            #ifdef DEBUG_LRA_MODULE
+                            std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: " << ass << std::endl;
+                            #endif
+                            mModel.insert(mModel.end(), std::make_pair(objective(), ass ) );
+                            if( mObjectiveLRAVar->second.first->isOriginal() )
+                                mModel[mObjectiveLRAVar->second.first->expression().getSingleVariable()] = ass;
+                        }
                         break;
                     }
                     else
                     {
                         #ifdef DEBUG_LRA_MODULE
-                        std::cout << std::endl;
-                        mTableau.print( pivotingElement.first, cout, "    " );
-                        std::cout << std::endl;
+                        std::cout << std::endl; mTableau.print( pivotingElement.first, cout, "    " ); std::cout << std::endl;
                         #endif
-                        mTableau.pivot( pivotingElement.first );
+                        mTableau.pivot( pivotingElement.first, true );
                     }
                 }
                 else
                 {
+                    mModelComputed = false;
+                    updateModel();
+                    const EvalRationalMap& ratModel = getRationalModel();
+                    Rational opti = mObjectiveLRAVar->second.second*mObjectiveLRAVar->second.first->expression().evaluate( ratModel );
                     #ifdef DEBUG_LRA_MODULE
-                    std::cout << std::endl;
-                    mTableau.print();
-                    std::cout << std::endl;
-                    std::cout << "Optimum: " << mObjectiveLRAVar->assignment() << std::endl;
+                    std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: " << opti << std::endl;
                     #endif
+                    mModel.insert(mModel.end(), std::make_pair(objective(), opti ) );
                     break;
                 }
             }
         }
-        mTableau.deactivateBasicVar( mObjectiveLRAVar );
         // @todo Branch if assignment does not fulfill integer domains.
         return _result;
     }
@@ -558,7 +587,7 @@ namespace smtrat
     {
         // If there are unresolved notequal-constraints and the found satisfying assignment
         // conflicts this constraint, resolve it by creating the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
-        EvalRationalMap ass = getRationalModel();
+        const EvalRationalMap& ass = getRationalModel();
         for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
         {
             unsigned consistency = iter->first.satisfiedBy( ass );
@@ -804,7 +833,7 @@ namespace smtrat
         }
         else
         {
-            EvalRationalMap assignments = getRationalModel();
+            const EvalRationalMap& assignments = getRationalModel();
             // Check whether the assignment satisfies the non linear constraints.
             for( auto constraint = mNonlinearConstraints.begin(); constraint != mNonlinearConstraints.end(); ++constraint )
             {
@@ -937,6 +966,8 @@ namespace smtrat
     template<class Settings>
     void LRAModule<Settings>::setBound( const FormulaT& _constraint )
     {
+        if( _constraint.constraint().hasVariable( objective() ) )
+            return;
         if( Settings::simple_conflicts_and_propagation_on_demand )
         {
             mTableau.newBound( _constraint );
@@ -1167,7 +1198,7 @@ namespace smtrat
     template<class Settings>
     bool LRAModule<Settings>::gomory_cut()
     {
-        EvalRationalMap rMap_ = getRationalModel();
+        const EvalRationalMap& rMap_ = getRationalModel();
         bool all_int = true;
         for( LRAVariable* basicVar : mTableau.rows() )
         {            
@@ -1177,7 +1208,7 @@ namespace smtrat
                 basicVar->expression().gatherVariables( vars );
                 assert( vars.size() == 1 );
                 auto found_ex = rMap_.find(*vars.begin()); 
-                Rational& ass = found_ex->second;
+                const Rational& ass = found_ex->second;
                 if( !carl::isInteger( ass ) )
                 {
                     all_int = false;
@@ -1237,7 +1268,7 @@ namespace smtrat
     template<class Settings>
     bool LRAModule<Settings>::most_infeasible_var( bool _gc_support ) 
     {
-        EvalRationalMap _rMap = getRationalModel();
+        const EvalRationalMap& _rMap = getRationalModel();
         
         auto branch_var = mTableau.originalVars().begin();
         Rational ass_;
@@ -1247,7 +1278,7 @@ namespace smtrat
         {
             auto var = mTableau.originalVars().find( map_iterator->first );
             assert( var->first == map_iterator->first );
-            Rational& ass = map_iterator->second; 
+            const Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
                 Rational curr_diff = ass - carl::floor(ass);
@@ -1303,7 +1334,7 @@ namespace smtrat
     {
         if( solverState() == False ) return true;
         if( !mAssignmentFullfilsNonlinearConstraints ) return true;
-        EvalRationalMap model = getRationalModel();
+        const EvalRationalMap& model = getRationalModel();
         for( auto ass = model.begin(); ass != model.end(); ++ass )
         {
             if( ass->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass->second ) )
@@ -1313,7 +1344,7 @@ namespace smtrat
         }
         for( auto iter = rReceivedFormula().begin(); iter != rReceivedFormula().end(); ++iter )
         {
-            if( iter->formula().constraint().satisfiedBy( model ) != 1 )
+            if( !iter->formula().constraint().hasVariable( objective() ) && iter->formula().constraint().satisfiedBy( model ) != 1 )
             {
                 assert( iter->formula().constraint().satisfiedBy( model ) == 0 );
                 return false;
@@ -1375,7 +1406,7 @@ namespace smtrat
     template<class Settings>
     void LRAModule<Settings>::printRationalModel( ostream& _out, const string _init ) const
     {
-        EvalRationalMap rmodel = getRationalModel();
+        const EvalRationalMap& rmodel = getRationalModel();
         _out << _init << "Rational model:" << endl;
         for( auto assign = rmodel.begin(); assign != rmodel.end(); ++assign )
         {

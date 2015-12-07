@@ -89,6 +89,8 @@ return SettingsType::moduleName;
             bool mAssignmentFullfilsNonlinearConstraints;
             /// A flag which is set, if a supremum or infimum of a LRAModule variable has been changed.
             bool mStrongestBoundsRemoved;
+            ///
+            bool mMinimize;
             /**
              * Contains the main data structures of this module. It maintains for each LRAModule variable a row
              * or a column. On this tableau pivoting can be performed as the well known Simplex method performs.
@@ -116,9 +118,11 @@ return SettingsType::moduleName;
             /// Stores the bounds, which would influence a backend call because of recent changes.
             std::vector<const LRABound* > mBoundCandidatesToPass;
             ///
-            LRAVariable* mObjectiveLRAVar;
+            carl::FastMap<Poly,std::pair<LRAVariable*,Rational>> mCreatedObjectiveLRAVars;
             ///
-            carl::FastPointerMap<Poly,LRAVariable*> mCreatedObjectiveLRAVars;
+            carl::FastMap<Poly,std::pair<LRAVariable*,Rational>>::iterator mObjectiveLRAVar;
+            ///
+            mutable EvalRationalMap mRationalAssignment;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores the yet collected statistics of this LRAModule.
             LRAModuleStatistics* mpStatistics;
@@ -194,7 +198,7 @@ return SettingsType::moduleName;
              * is calculated from scratch every time you call this method.
              * @return The rational model.
              */
-            EvalRationalMap getRationalModel() const;
+            const EvalRationalMap& getRationalModel() const;
             
             Answer optimize( Answer _result );
             

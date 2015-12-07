@@ -29,6 +29,7 @@ namespace smtrat
             mColumns(),
             mNonActiveBasics(),
             mConflictingRows(),
+            mCurDelta( 0 ),
             mOriginalVars(),
             mSlackVars(),
             mConstraintToBound(),
@@ -154,6 +155,65 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
+        Variable<T1,T2>* Tableau<Settings,T1,T2>::getVariable( const Poly& _lhs, T1& _factor, T1& _boundValue )
+        {
+            Variable<T1, T2>* result;
+            if( _lhs.nrTerms() == 1 || ( _lhs.nrTerms() == 2 && _lhs.hasConstantTerm() ) )
+            {
+                // TODO: do not store the expanded polynomial, but use the coefficient and coprimeCoefficients
+                const typename Poly::PolyType& expandedPoly = _lhs.polynomial();
+                auto term = expandedPoly.begin();
+                for( ; term != expandedPoly.end(); ++term )
+                    if( !term->isConstant() ) break;
+				carl::Variable var = term->monomial()->begin()->first;
+                _factor = T1( term->coeff() ) * _lhs.coefficient();
+                _boundValue = T1( -_lhs.constantPart() )/_factor;
+                auto basicIter = mOriginalVars.find( var );
+                // constraint not found, add new nonbasic variable
+                if( basicIter == mOriginalVars.end() )
+                {
+                    typename Poly::PolyType* varPoly = new typename Poly::PolyType( var );
+                    result = newNonbasicVariable( varPoly, var.getType() == carl::VariableType::VT_INT );
+                    mOriginalVars.insert( std::pair<carl::Variable, Variable<T1, T2>*>( var, result ) );
+                }
+                else
+                {
+                    result = basicIter->second;
+                }
+            }
+            else
+            {
+                T1 constantPart( _lhs.constantPart() );
+                bool negative = (_lhs.lterm().coeff() < typename Poly::CoeffType(T1( 0 )));
+                typename Poly::PolyType* linearPart;
+                if( negative )
+                    linearPart = new typename Poly::PolyType( -_lhs + (Rational)constantPart );
+                else
+                    linearPart = new typename Poly::PolyType( _lhs - (Rational)constantPart );
+                _factor = linearPart->coprimeFactor();
+                assert( _factor > 0 );
+                constantPart *= _factor;
+                (*linearPart) *= _factor;
+//                linearPart->makeOrdered();
+                _boundValue = (negative ? constantPart : -constantPart);
+                typename carl::FastPointerMap<typename Poly::PolyType, Variable<T1, T2>*>::iterator slackIter = mSlackVars.find( linearPart );
+                if( slackIter == mSlackVars.end() )
+                {
+                    result = newBasicVariable( linearPart, _lhs.integerValued() );
+                    mSlackVars.insert( std::pair<const typename Poly::PolyType*, Variable<T1, T2>*>( linearPart, result ) );
+                }
+                else
+                {
+                    delete linearPart;
+                    result = slackIter->second;
+                }
+                if( negative )
+                    _factor = -_factor;
+            }
+            return result;
+        }
+        
+        template<class Settings, typename T1, typename T2>
         std::pair<const Bound<T1,T2>*, bool> Tableau<Settings,T1,T2>::newBound( const FormulaT& _constraint )
         {
             auto ctbIter = mConstraintToBound.find( _constraint );
@@ -162,60 +222,10 @@ namespace smtrat
             assert( _constraint.getType() == carl::FormulaType::CONSTRAINT );
             const ConstraintT& constraint = _constraint.constraint();
             assert( constraint.isConsistent() == 2 );
-            T1 boundValue = T1( 0 );
-            bool negative = false;
-            Variable<T1, T2>* newVar;
-            if( constraint.lhs().nrTerms() == 1 || ( constraint.lhs().nrTerms() == 2 && constraint.lhs().hasConstantTerm() ) )
-            {
-                // TODO: do not store the expanded polynomial, but use the coefficient and coprimeCoefficients
-                const typename Poly::PolyType& expandedPoly = constraint.lhs().polynomial();
-                auto term = expandedPoly.begin();
-                for( ; term != expandedPoly.end(); ++term )
-                    if( !term->isConstant() ) break;
-				carl::Variable var = term->monomial()->begin()->first;
-                T1 primCoeff = T1( term->coeff() ) * constraint.lhs().coefficient();
-                negative = (primCoeff < T1( 0 ));
-                boundValue = T1( -constraint.constantPart() )/primCoeff;
-                auto basicIter = mOriginalVars.find( var );
-                // constraint not found, add new nonbasic variable
-                if( basicIter == mOriginalVars.end() )
-                {
-                    typename Poly::PolyType* varPoly = new typename Poly::PolyType( var );
-                    newVar = newNonbasicVariable( varPoly, var.getType() == carl::VariableType::VT_INT );
-                    mOriginalVars.insert( std::pair<carl::Variable, Variable<T1, T2>*>( var, newVar ) );
-                }
-                else
-                {
-                    newVar = basicIter->second;
-                }
-            }
-            else
-            {
-                T1 constantPart( constraint.constantPart() );
-                negative = (constraint.lhs().lterm().coeff() < typename Poly::CoeffType(T1( 0 )));
-                typename Poly::PolyType* linearPart;
-                if( negative )
-                    linearPart = new typename Poly::PolyType( -constraint.lhs() + (Rational)constantPart );
-                else
-                    linearPart = new typename Poly::PolyType( constraint.lhs() - (Rational)constantPart );
-                T1 cf( linearPart->coprimeFactor() );
-                assert( cf > 0 );
-                constantPart *= cf;
-                (*linearPart) *= cf;
-//                linearPart->makeOrdered();
-                boundValue = (negative ? constantPart : -constantPart);
-                typename carl::FastPointerMap<typename Poly::PolyType, Variable<T1, T2>*>::iterator slackIter = mSlackVars.find( linearPart );
-                if( slackIter == mSlackVars.end() )
-                {
-                    newVar = newBasicVariable( linearPart, constraint.integerValued() );
-                    mSlackVars.insert( std::pair<const typename Poly::PolyType*, Variable<T1, T2>*>( linearPart, newVar ) );
-                }
-                else
-                {
-                    delete linearPart;
-                    newVar = slackIter->second;
-                }
-            }
+            T1 factor( 0 );
+            T1 boundValue( 0 );
+            Variable<T1, T2>* newVar = getVariable( constraint.lhs(), factor, boundValue );
+            bool negative = (factor < T1(0));
             std::pair<const Bound<T1,T2>*, bool> result;
             switch( constraint.relation() )
             {
@@ -353,10 +363,10 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( const typename Poly::PolyType* _poly, bool _isInteger, bool _isObjective )
+        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( const typename Poly::PolyType* _poly, bool _isInteger )
         {
             mNonActiveBasics.emplace_front();
-            Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), _poly, mDefaultBoundPosition, _isInteger, _isObjective );
+            Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), _poly, mDefaultBoundPosition, _isInteger );
             for( auto term = _poly->begin(); term != _poly->end(); ++term )
             {
                 assert( !term->isConstant() );
@@ -618,7 +628,7 @@ namespace smtrat
         {
             EvalRationalMap result;
             T1 minDelta = -1;
-            T1 curDelta = 0;
+            mCurDelta = T1(0);
             Variable<T1,T2>* variable = NULL;
             // For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
             for( auto originalVar = originalVars().begin(); originalVar != originalVars().end(); ++originalVar )
@@ -631,9 +641,9 @@ namespace smtrat
                     // .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
                     if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
                     {
-                        curDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                            minDelta = curDelta;
+                        mCurDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
+                        if( minDelta < 0 || mCurDelta < minDelta )
+                            minDelta = mCurDelta;
                     }
                 }
                 const Bound<T1,T2>& sup = variable->supremum();
@@ -642,9 +652,9 @@ namespace smtrat
                     // .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
                     if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
                     {
-                        curDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                            minDelta = curDelta;
+                        mCurDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
+                        if( minDelta < 0 || mCurDelta < minDelta )
+                            minDelta = mCurDelta;
                     }
                 }
             }
@@ -660,9 +670,9 @@ namespace smtrat
                     // .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
                     if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
                     {
-                        curDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                            minDelta = curDelta;
+                        mCurDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
+                        if( minDelta < 0 || mCurDelta < minDelta )
+                            minDelta = mCurDelta;
                     }
                 }
                 const Bound<T1,T2>& sup = variable->supremum();
@@ -671,19 +681,19 @@ namespace smtrat
                     // .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
                     if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
                     {
-                        curDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                            minDelta = curDelta;
+                        mCurDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
+                        if( minDelta < 0 || mCurDelta < minDelta )
+                            minDelta = mCurDelta;
                     }
                 }
             }
 
-            curDelta = minDelta < 0 ? 1 : minDelta;
+            mCurDelta = minDelta < 0 ? 1 : minDelta;
             // Calculate the rational assignment of all original variables.
             for( auto var = originalVars().begin(); var != originalVars().end(); ++var )
             {
                 T1 value = var->second->assignment().mainPart();
-                value += (var->second->assignment().deltaPart() * curDelta);
+                value += (var->second->assignment().deltaPart() * mCurDelta);
                 result.insert( std::pair<const carl::Variable,T1>( var->first, value ) );
             }
             return result;
@@ -734,11 +744,6 @@ namespace smtrat
                 {
                     assert( *basicVar != NULL );
                     Variable<T1,T2>& bVar = **basicVar;
-                    if( bVar.isObjective() )
-                    {
-                        ++basicVar;
-                        continue;
-                    }
                     Value<T1> diff = Value<T1>( 0 );
                     Value<T1> thetaB = Value<T1>( 0 );
                     bool upperBoundViolated = false;
@@ -885,8 +890,6 @@ namespace smtrat
                 {
                     assert( basicVar != NULL );
                     const Variable<T1,T2>& bVar = *basicVar;
-                    if( bVar.isObjective() )
-                        continue;
                     Value<T1> thetaB = Value<T1>( 0 );
                     bool upperBoundViolated = false;
                     bool lowerBoundViolated = false;
@@ -931,191 +934,92 @@ namespace smtrat
         template<class Settings, typename T1, typename T2>
         std::pair<EntryID,bool> Tableau<Settings,T1,T2>::nextPivotingElementForOptimizing( const Variable<T1, T2>& _objective )
         {
-            assert( _objective.isObjective() );
             Value<T1> maxTheta = Value<T1>(T1(-1));
-            EntryID rowStartEntry = _objective.startEntry();
-            Iterator rowIter = Iterator( rowStartEntry, mpEntries );
+            EntryID objectiveStartEntry = _objective.startEntry();
+            Iterator objectiveIter = Iterator( objectiveStartEntry, mpEntries );
+            if( (_objective.isBasic() && objectiveIter.hEnd( false )) || (!_objective.isBasic() && objectiveIter.vEnd( false )) )
+                return std::make_pair( LAST_ENTRY_ID, true );
+            (*mpTheta) = T1( 0 );
+            EntryID bestResult = LAST_ENTRY_ID;
             while( true )
             {
-                const Variable<T1, T2>& nonBasicVar = *(*rowIter).columnVar();
+                const Variable<T1, T2>& varForMinimizaton = _objective.isBasic() ? *(*objectiveIter).columnVar() : *(*objectiveIter).rowVar();
                 #ifdef LRA_NO_DIVISION
-                if( ((*rowIter).content() < 0 && _objective.factor() > 0) || ((*rowIter).content() > 0 && _objective.factor() < 0) )
+                bool increaseVar = ((*objectiveIter).content() < 0 && _objective.factor() > 0) || ((*objectiveIter).content() > 0 && _objective.factor() < 0);
                 #else
-                if( (*rowIter).content() < 0 )
+                bool increaseVar = (*objectiveIter).content() < 0;
                 #endif
+                if( (increaseVar && varForMinimizaton.supremum() > varForMinimizaton.assignment()) || (!increaseVar && varForMinimizaton.infimum() < varForMinimizaton.assignment()) )
                 {
-                    if( nonBasicVar.supremum() > nonBasicVar.assignment() )
+                    Value<T1> varForMinTheta = increaseVar ? 
+                        (varForMinimizaton.supremum().isInfinite() ? maxTheta : (varForMinimizaton.supremum().limit() - varForMinimizaton.assignment())) :
+                        (varForMinimizaton.infimum().isInfinite() ? maxTheta : (varForMinimizaton.assignment() - varForMinimizaton.infimum().limit()));
+                    EntryID result = LAST_ENTRY_ID;
+                    Iterator varForMinIter = Iterator( varForMinimizaton.startEntry(), mpEntries );
+                    while( true )
                     {
-                        Value<T1> columnTheta = nonBasicVar.supremum().isInfinite() ? maxTheta : (nonBasicVar.supremum().limit() - nonBasicVar.assignment());
-                        EntryID result = LAST_ENTRY_ID;
-                        Iterator columnIter = Iterator( nonBasicVar.startEntry(), mpEntries );
-                        while( true )
+                        Variable<T1, T2>& lraVar = _objective.isBasic() ? *((*varForMinIter).rowVar()) : *((*varForMinIter).columnVar());
+                        #ifdef LRA_NO_DIVISION
+                        bool entryNegative = ((*varForMinIter).content() < 0 && lraVar.factor() > 0) || ((*varForMinIter).content() > 0 && lraVar.factor() < 0);
+                        #else
+                        bool entryNegative = (*varForMinIter).content() < 0;
+                        #endif
+                        if( (increaseVar == entryNegative && lraVar.infimum() < lraVar.assignment())
+                         || (increaseVar != entryNegative && lraVar.supremum() > lraVar.assignment()))
                         {
-                            Variable<T1, T2>& basic = *((*columnIter).rowVar());
-                            if( !basic.isObjective() )
+                            if( (increaseVar == entryNegative && !lraVar.infimum().isInfinite()) || (increaseVar != entryNegative && !lraVar.supremum().isInfinite()) )
                             {
+                                Value<T1> lraVarTheta = (increaseVar == entryNegative) ? (lraVar.assignment() - lraVar.infimum().limit()) : (lraVar.supremum().limit() - lraVar.assignment());
                                 #ifdef LRA_NO_DIVISION
-                                if( ((*columnIter).content() < 0 && basic.factor() > 0) || ((*columnIter).content() > 0 && basic.factor() < 0) )
-                                #else
-                                if( (*columnIter).content() < 0 )
-                                #endif
+                                lraVarTheta *= lraVar.factor();
+                                #endif 
+                                lraVarTheta /= (*varForMinIter).content();
+                                if( lraVarTheta < T1(0) )
+                                    lraVarTheta = lraVarTheta * T1( -1 );
+                                if( varForMinTheta == maxTheta || varForMinTheta > lraVarTheta )
                                 {
-                                    if( basic.infimum() < basic.assignment() )
-                                    {
-                                        if( !basic.infimum().isInfinite() )
-                                        {
-                                            Value<T1> rowTheta = basic.assignment() - basic.infimum().limit();
-                                            #ifdef LRA_NO_DIVISION
-                                            rowTheta *= basic.factor();
-                                            #endif 
-                                            rowTheta /= (*columnIter).content();
-                                            if( rowTheta < T1(0) )
-                                                rowTheta = rowTheta * T1( -1 );
-                                            if( columnTheta == maxTheta || columnTheta > rowTheta )
-                                            {
-                                                columnTheta = rowTheta;
-                                                result = columnIter.entryID();
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        break;
-                                    }
-                                }
-                                else
-                                {
-                                    if( basic.supremum() > basic.assignment() )
-                                    {
-                                        if( !basic.supremum().isInfinite() )
-                                        {
-                                            Value<T1> rowTheta = basic.supremum().limit() - basic.assignment();
-                                            #ifdef LRA_NO_DIVISION
-                                            rowTheta *= basic.factor();
-                                            #endif 
-                                            rowTheta /= (*columnIter).content();
-                                            if( rowTheta < T1(0) )
-                                                rowTheta = rowTheta * T1( -1 );
-                                            if( columnTheta == maxTheta || columnTheta > rowTheta )
-                                            {
-                                                columnTheta = rowTheta;
-                                                result = columnIter.entryID();
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        break;
-                                    }
+                                    varForMinTheta = lraVarTheta;
+                                    result = varForMinIter.entryID();
                                 }
                             }
-                            if( columnIter.vEnd( false ) )
+                        }
+                        else
+                        {
+                            break;
+                        }
+                        if( (_objective.isBasic() && varForMinIter.vEnd( false )) || (!_objective.isBasic() && varForMinIter.hEnd( false )) )
+                        {
+                            if( result != LAST_ENTRY_ID &&
+                                (bestResult == LAST_ENTRY_ID || (*mpTheta > T1(0) && varForMinTheta > *mpTheta) || (*mpTheta < T1(0) && varForMinTheta > *mpTheta * T1( -1 ))) )
                             {
-                                if( result != LAST_ENTRY_ID )
-                                {
-                                    (*mpTheta) = columnTheta;
-                                    std::cout << "mpTheta = " << (*mpTheta) << std::endl;
-                                }
-                                return std::make_pair( result, true );
+                                (*mpTheta) = increaseVar ? varForMinTheta : (varForMinTheta * T1( -1 ));
+                                bestResult = result;
                             }
+                            break;
+                        }
+                        else
+                        {
+                            if( _objective.isBasic() )
+                                varForMinIter.vMove( false );
                             else
-                            {
-                                columnIter.vMove( false );
-                            }
+                                varForMinIter.hMove( false );
                         }
                     }
                 }
-                else
-                {
-                    if( nonBasicVar.infimum() < nonBasicVar.assignment()  )
-                    {
-                        Value<T1> columnTheta = nonBasicVar.infimum().isInfinite() ? maxTheta : (nonBasicVar.assignment() - nonBasicVar.infimum().limit());
-                        EntryID result = LAST_ENTRY_ID;
-                        Iterator columnIter = Iterator( nonBasicVar.startEntry(), mpEntries );
-                        while( true )
-                        {
-                            Variable<T1, T2>& basic = *((*columnIter).rowVar());
-                            if( !basic.isObjective() )
-                            {
-                                #ifdef LRA_NO_DIVISION
-                                if( ((*columnIter).content() < 0 && basic.factor() > 0) || ((*columnIter).content() > 0 && basic.factor() < 0) )
-                                #else
-                                if( (*columnIter).content() < 0 )
-                                #endif
-                                {
-                                    if( basic.supremum() > basic.assignment() )
-                                    {
-                                        if( !basic.supremum().isInfinite() )
-                                        {
-                                            Value<T1> rowTheta = basic.supremum().limit() - basic.assignment();
-                                            #ifdef LRA_NO_DIVISION
-                                            rowTheta *= basic.factor();
-                                            #endif 
-                                            rowTheta /= (*columnIter).content();
-                                            if( rowTheta < T1(0) )
-                                                rowTheta = rowTheta * T1( -1 );
-                                            if( columnTheta == maxTheta || columnTheta > rowTheta )
-                                            {
-                                                columnTheta = rowTheta;
-                                                result = columnIter.entryID();
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        break;
-                                    }
-                                }
-                                else
-                                {
-                                    if( basic.infimum() < basic.assignment()  )
-                                    {
-                                        if( !basic.infimum().isInfinite() )
-                                        {
-                                            Value<T1> rowTheta = basic.assignment() - basic.infimum().limit();
-                                            #ifdef LRA_NO_DIVISION
-                                            rowTheta *= basic.factor();
-                                            #endif 
-                                            rowTheta /= (*columnIter).content();
-                                            if( rowTheta < T1(0) )
-                                                rowTheta = rowTheta * T1( -1 );
-                                            if( columnTheta == maxTheta || columnTheta > rowTheta )
-                                            {
-                                                columnTheta = rowTheta;
-                                                result = columnIter.entryID();
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        break;
-                                    }
-                                }
-                            }
-                            if( columnIter.vEnd( false ) )
-                            {
-                                if( result != LAST_ENTRY_ID )
-                                {
-                                    (*mpTheta) = columnTheta * T1( -1 );
-                                }
-                                return std::make_pair( result, true );
-                            }
-                            else
-                            {
-                                columnIter.vMove( false );
-                            }
-                        }
-                    }
-                }
-                if( rowIter.hEnd( false ) )
+                if( (_objective.isBasic() && objectiveIter.hEnd( false )) || (!_objective.isBasic() && objectiveIter.vEnd( false )) )
                 {
                     break;
                 }
                 else
                 {
-                    rowIter.hMove( false );
+                    if( _objective.isBasic() )
+                        objectiveIter.hMove( false );
+                    else
+                        objectiveIter.vMove( false );
                 }
             }
+            if( bestResult != LAST_ENTRY_ID )
+                return std::make_pair( bestResult, true );
             return std::make_pair( LAST_ENTRY_ID, false );
         }
         
@@ -1528,7 +1432,7 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        Variable<T1, T2>* Tableau<Settings,T1,T2>::pivot( EntryID _pivotingElement, bool updateAssignments )
+        Variable<T1, T2>* Tableau<Settings,T1,T2>::pivot( EntryID _pivotingElement, bool _optimizing )
         {
             // Find all columns having "a nonzero entry in the pivoting row"**, update this entry and store it.
             // First the column with ** left to the pivoting column until the leftmost column with **.
@@ -1575,20 +1479,15 @@ namespace smtrat
             // Swap the variables
             mRows[rowVar->position()] = columnVar;
             mColumns[columnVar->position()] = rowVar;
-            assert( updateAssignments || rowVar->assignment() == T1( 0 ) );
-            assert( updateAssignments || columnVar->assignment() == T1( 0 ) );
-            if( updateAssignments )
-            {
-                // Update the assignments of the pivoting variables
-                #ifdef LRA_NO_DIVISION
-                rowVar->rAssignment() += ((*mpTheta) * pivotContent) / rowVar->factor();
-                #else
-                rowVar->rAssignment() += (*mpTheta) * pivotContent;
-                #endif
-                assert( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() );
-                assert( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() );
-                columnVar->rAssignment() += (*mpTheta);
-            }
+            // Update the assignments of the pivoting variables
+            #ifdef LRA_NO_DIVISION
+            rowVar->rAssignment() += ((*mpTheta) * pivotContent) / rowVar->factor();
+            #else
+            rowVar->rAssignment() += (*mpTheta) * pivotContent;
+            #endif
+            assert( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() );
+            assert( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() );
+            columnVar->rAssignment() += (*mpTheta);
             // Adapt both variables.
             Variable<T1, T2>& basicVar = *columnVar;
             Variable<T1, T2>& nonbasicVar = *rowVar;
@@ -1613,7 +1512,7 @@ namespace smtrat
             #else
             pivotContent = carl::div( T2(1), pivotContent );
             #endif
-            if( Settings::use_refinement && updateAssignments && basicVar.isActive() )
+            if( Settings::use_refinement && basicVar.isActive() )
             {
                 rowRefinement( columnVar ); // Note, we have swapped the variables, so the current basic var is now corresponding to what we have stored in columnVar.
             }
@@ -1623,34 +1522,31 @@ namespace smtrat
             //        Update the entry (t_r,t_c,t_e) of the intersection of R and C to (t_r,t_c,t_e+r_e).
             if( pivotEntry.vNext( false ) == LAST_ENTRY_ID )
             {
-                update( true, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, updateAssignments );
+                update( true, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, _optimizing );
             }
             else if( pivotEntry.vNext( true ) == LAST_ENTRY_ID )
             {
-                update( false, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, updateAssignments );
+                update( false, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, _optimizing );
             }
             else
             {
-                update( true, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, updateAssignments );
-                update( false, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, updateAssignments );
+                update( true, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, _optimizing );
+                update( false, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, _optimizing );
             }
-            if( updateAssignments )
+            ++mPivotingSteps;
+            if( !_optimizing && !basicVar.isActive() && !basicVar.isOriginal() )
             {
-                ++mPivotingSteps;
-                if( !basicVar.isActive() && !basicVar.isOriginal() )
-                {
-                    deactivateBasicVar( columnVar );
-                    compressRows();
-                }
-                assert( basicVar.supremum() >= basicVar.assignment() || basicVar.infimum() <= basicVar.assignment() );
-//                assert( nonbasicVar.supremum() == nonbasicVar.assignment() || nonbasicVar.infimum() == nonbasicVar.assignment() );
+                deactivateBasicVar( columnVar );
+                compressRows();
             }
+            assert( basicVar.supremum() >= basicVar.assignment() || basicVar.infimum() <= basicVar.assignment() );
+//                assert( nonbasicVar.supremum() == nonbasicVar.assignment() || nonbasicVar.infimum() == nonbasicVar.assignment() );
             assert( checkCorrectness() == mRows.size() );
             return columnVar;
         }
 
         template<class Settings, typename T1, typename T2>
-        void Tableau<Settings,T1,T2>::update( bool _downwards, EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide, bool _updateAssignments )
+        void Tableau<Settings,T1,T2>::update( bool _downwards, EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide, bool _optimizing )
         {
             std::vector<Iterator> leftColumnIters = std::vector<Iterator>( _pivotingRowLeftSide );
             std::vector<Iterator> rightColumnIters = std::vector<Iterator>( _pivotingRowRightSide );
@@ -1670,14 +1566,11 @@ namespace smtrat
                 }
                 // Update the assignment of the basic variable corresponding to this row
                 Variable<T1,T2>& currBasicVar = *((*pivotingColumnIter).rowVar());
-                if( _updateAssignments )
-                {
-                    #ifdef LRA_NO_DIVISION
-                    currBasicVar.rAssignment() += ((*mpTheta) * (*pivotingColumnIter).content())/currBasicVar.factor();
-                    #else
-                    currBasicVar.rAssignment() += (*mpTheta) * (*pivotingColumnIter).content();
-                    #endif
-                }
+                #ifdef LRA_NO_DIVISION
+                currBasicVar.rAssignment() += ((*mpTheta) * (*pivotingColumnIter).content())/currBasicVar.factor();
+                #else
+                currBasicVar.rAssignment() += (*mpTheta) * (*pivotingColumnIter).content();
+                #endif
                 // Update the row
                 Iterator currentRowIter = pivotingColumnIter;
                 #ifdef LRA_NO_DIVISION
@@ -1762,7 +1655,7 @@ namespace smtrat
                 #else
                 (*pivotingColumnIter).rContent() *= (*mpEntries)[_pivotingElement].content();
                 #endif
-                if( _updateAssignments && (currBasicVar.supremum() > currBasicVar.assignment() || currBasicVar.infimum() < currBasicVar.assignment()) )
+                if( !_optimizing && (currBasicVar.supremum() > currBasicVar.assignment() || currBasicVar.infimum() < currBasicVar.assignment()) )
                 {
                     if( Settings::pivot_into_local_conflict )
                     {

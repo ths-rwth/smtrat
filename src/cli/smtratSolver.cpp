@@ -106,9 +106,7 @@ public:
 	}
 	void getAssignment() {
             if (this->lastAnswer == smtrat::True) {
-                smtrat::Model m = this->solver->model();
-                this->cleanModel( m );
-                std::cout << std::endl << m;
+                this->solver->printAssignment();
             }
 	}
 	void getProof() {
@@ -182,9 +180,7 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 	unsigned exitCode = e->getExitCode();
 	if( settingsManager.printModel() && e->lastAnswer == smtrat::True )
 	{
-            smtrat::Model m = solver->model();
-            e->cleanModel( m );
-            std::cout << std::endl << m;
+            solver->printAssignment();
 	}
 	delete e;
 	return exitCode;

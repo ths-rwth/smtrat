@@ -253,6 +253,19 @@ namespace smtrat
 		explicit InfinityValue() {}
 		explicit InfinityValue(bool positive): positive(positive) {}
 	};
+    
+	inline std::string toString(const InfinityValue& iv, bool _infix) {
+        if( _infix )
+        {
+            std::string result = iv.positive ? "+" : "-";
+            result += "infinity";
+            return result;
+        }
+        if( iv.positive )
+            return "infinity";
+        return "(- infinity)";
+	}
+    
 	inline std::ostream& operator<<(std::ostream& os, const InfinityValue& iv) {
 		return os << (iv.positive ? "+" : "-") << "infinity";
 	}
@@ -481,6 +494,7 @@ namespace smtrat
             assert( isPlusInfinity() || isMinusInfinity() );
             return boost::get<InfinityValue>(*this);
         }
+        
     };
     
     /// Data type for a assignment assigning a variable, represented as a string, a real algebraic number, represented as a string.
@@ -519,6 +533,8 @@ namespace smtrat
     void getDefaultModel( Model& _defaultModel, const carl::BVTerm& _constraint, bool _overwrite = true, size_t _seed = 0 );
     void getDefaultModel( Model& _defaultModel, const ConstraintT& _constraint, bool _overwrite = true, size_t _seed = 0 );
     void getDefaultModel( Model& _defaultModel, const FormulaT& _formula, bool _overwrite = true, size_t _seed = 0 );
+    
+    std::ostream& operator<<( std::ostream& _out, const ModelValue& _modelValue );
     
     std::ostream& operator<<( std::ostream& _out, const Model& _model );
 }

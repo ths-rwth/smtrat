@@ -165,6 +165,30 @@ namespace smtrat
         return mpPrimaryBackend->model();
     }
     
+    const ModelValue& Manager::minimum( const Poly& _objFct ) const
+    {
+        if( mObjectives.size() == 1 )
+        {
+            assert( mObjectives.front().first == _objFct );
+            const Model& curModel = model();
+            auto modelIter = curModel.find( mObjectives.front().second );
+            assert( modelIter != curModel.end() );
+            return modelIter->second;
+        }
+        for( auto& obj : mObjectives )
+        {
+            if( obj.first == _objFct )
+            {
+                const Model& curModel = model();
+                auto modelIter = curModel.find( mObjectives.front().second );
+                assert( modelIter != curModel.end() );
+                return modelIter->second;
+            }
+        }
+        assert( false );
+        return model().begin()->second;
+    }
+    
     std::vector<FormulaT> Manager::lemmas()
     {
         std::vector<FormulaT> result;
@@ -183,7 +207,40 @@ namespace smtrat
     
     void Manager::printAssignment() const
     {
-        mpPrimaryBackend->printModel();
+        if( mObjectives.empty() )
+            mpPrimaryBackend->printModel();
+        else
+        {
+            const Model& model = mpPrimaryBackend->model();
+            auto objectivesIter = mObjectives.begin();
+            cout << "(";
+            for( Model::const_iterator ass = model.begin(); ass != model.end(); ++ass )
+            {
+                if (ass != model.begin()) cout << " ";
+                if (ass->first.isVariable() || ass->first.isBVVariable())
+                {
+                    if( objectivesIter != mObjectives.end() && ass->first.asVariable() == objectivesIter->second )
+                    {
+                        std::cout << objectivesIter->first << " is a variable: " << objectivesIter->first.isVariable() << std::endl;
+                        if( !objectivesIter->first.isVariable() )
+                            cout << "(" << objectivesIter->first.toString( false, true ) << " " << ass->second << ")" << endl;
+                        ++objectivesIter;
+                    }
+                    else
+                    {
+                        cout << "(" << ass->first << " " << ass->second << ")" << endl;
+                    }
+                }
+                else if( ass->first.isUVariable() )
+                    cout << "(define-fun " << ass->first << " () " << ass->first.asUVariable().domain() << " " << ass->second << ")" << endl;
+                else
+                {
+                    assert(ass->first.isFunction());
+                    cout << ass->second.asUFModel() << endl;
+                }
+            }
+            cout << ")" << endl;
+        }
     }
     
     ModuleInput::iterator Manager::remove( ModuleInput::iterator _subformula )

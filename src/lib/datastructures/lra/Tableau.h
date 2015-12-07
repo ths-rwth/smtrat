@@ -240,6 +240,8 @@ namespace smtrat
                 std::vector<Variable<T1,T2>*> mConflictingRows;
                 ///
                 Value<T1>* mpTheta;
+                /// 
+                mutable T1 mCurDelta;
                 ///
                 carl::FastMap<carl::Variable, Variable<T1,T2>*> mOriginalVars;
                 ///
@@ -436,6 +438,11 @@ namespace smtrat
                     return mSlackVars;
                 }
                 
+                const T1& currentDelta() const
+                {
+                    return mCurDelta;
+                }
+                
                 /**
                  * @return 
                  */
@@ -513,6 +520,8 @@ namespace smtrat
                  */
                 void removeEntry( EntryID _entryID );
                 
+                Variable<T1,T2>* getVariable( const Poly& _lhs, T1& _factor, T1& _boundValue );
+                
                 /**
                  * 
                  * @param _constraint
@@ -542,7 +551,7 @@ namespace smtrat
                  * @param _isInteger
                  * @return 
                  */
-                Variable<T1, T2>* newBasicVariable( const typename Poly::PolyType* _poly, bool _isInteger, bool _isObjective = false );
+                Variable<T1, T2>* newBasicVariable( const typename Poly::PolyType* _poly, bool _isInteger );
                 
                 /**
                  * 
@@ -639,7 +648,7 @@ namespace smtrat
                  * @param updateAssignments
                  * @return 
                  */
-                Variable<T1, T2>* pivot( EntryID _pivotingElement, bool updateAssignments = true );
+                Variable<T1, T2>* pivot( EntryID _pivotingElement, bool _optimizing = false );
                 
                 /**
                  * Updates the tableau according to the new values in the pivoting row containing the given pivoting element. The updating is
@@ -655,7 +664,7 @@ namespace smtrat
                  *                              iterator's index in the vector.
                  * @param _updateAssignments If true, the assignments of all variables will be updated after pivoting.
                  */
-                void update( bool _downwards, EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide, bool = true );
+                void update( bool _downwards, EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide, bool _optimizing = false );
                 
                 /**
                  * Adds the given value to the entry being at the position (i,j), where i is the vertical position of the given horizontal 

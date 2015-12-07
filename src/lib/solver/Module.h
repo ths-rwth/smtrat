@@ -13,7 +13,7 @@
 //#define GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
 #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
 #ifndef SMTRAT_DEVOPTION_Validation
-#define SMTRAT_DEVOPTION_Validation
+//#define SMTRAT_DEVOPTION_Validation
 #endif
 #endif
 
@@ -134,6 +134,8 @@ namespace smtrat
             Manager* const mpManager;
             /// Stores the assignment of the current satisfiable result, if existent.
             mutable Model mModel;
+            /// True, if the model has already been computed.
+            mutable bool mModelComputed;
 
         private:
             /// States whether the received formula is known to be satisfiable or unsatisfiable otherwise it is set to unknown.
@@ -160,9 +162,10 @@ namespace smtrat
             ModuleInput::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
             mutable unsigned mSmallerMusesCheckCounter;
-            /// Objective functions for global optimization regarding the received formula. If this container contains more
-            /// than one objective function, we deal it according pareto optimization starting with the first element.
+            /// The variable for which to find a minimal assignment.
             carl::Variable mObjective;
+            /// The function to which the objective variable is equal.
+            Poly mObjectiveFunction;
 
         public:
 
@@ -515,6 +518,11 @@ namespace smtrat
             void setObjective( carl::Variable::Arg _objective )
             {
                 mObjective = _objective;
+            }
+            
+            const Poly& objectiveFunction() const
+            {
+                return mObjectiveFunction;
             }
             
             /**

@@ -14,11 +14,10 @@ namespace smtrat
     namespace lra
     {
         template<typename T1, typename T2>
-        Variable<T1, T2>::Variable( size_t _position, const typename Poly::PolyType* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger, bool _isObjective ):
+        Variable<T1, T2>::Variable( size_t _position, const typename Poly::PolyType* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger ):
             mBasic( false ),
             mOriginal( true ),
             mInteger( _isInteger ),
-            mObjective( _isObjective ),
             mStartEntry( LAST_ENTRY_ID ),
             mSize( 0 ),
             mConflictActivity( 0 ),
@@ -38,11 +37,10 @@ namespace smtrat
         }
         
         template<typename T1, typename T2>
-        Variable<T1, T2>::Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives, const typename Poly::PolyType* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger, bool _isObjective ):
+        Variable<T1, T2>::Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives, const typename Poly::PolyType* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger ):
             mBasic( true ),
             mOriginal( false ),
             mInteger( _isInteger ),
-            mObjective( _isObjective ),
             mStartEntry( LAST_ENTRY_ID ),
             mSize( 0 ),
             mConflictActivity( 0 ),

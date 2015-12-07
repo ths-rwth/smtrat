@@ -133,11 +133,14 @@ namespace smtrat
         mFormulaTseitinVarMap(),
         mCurrentFormulaTseitinVarMapEntry(),
         mCurrentTheoryConflicts(),
+        mCurrentTheoryConflictTypes(),
         mCurrentTheoryConflictEvaluations(),
         mLevelCounter(),
-        mTheoryConflictIdCounter( 0 )
+        mTheoryConflictIdCounter( 0 ),
+        mUpperBoundOnMinimal( passedFormulaEnd() )
     {
         mCurrentTheoryConflicts.reserve(100);
+        mCurrentTheoryConflictTypes.reserve(100);
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
         s << moduleName() << "_" << id();
@@ -172,12 +175,14 @@ namespace smtrat
     {
         if( _subformula->formula().isFalse() )
         {
+            mModelComputed = false;
             mInfeasibleSubsets.emplace_back();
             mInfeasibleSubsets.back().insert( _subformula->formula() );
             return false;
         }
         else if( !_subformula->formula().isTrue() )
         {
+            mModelComputed = false;
             //TODO Matthias: better solution?
             cancelUntil( assumptions.size() );
             adaptPassedFormula();
@@ -268,6 +273,7 @@ namespace smtrat
                 }
                 removeClause( cref );
             }
+            clauses.shrink( (int)iter->second.size() );
             mFormulaClausesMap.erase( iter );
             std::vector<FormulaT> constraints;
             _subformula->formula().getConstraints( constraints );
@@ -375,26 +381,90 @@ namespace smtrat
             mChangedBooleans.clear();
             mChangedActivities.clear();
         }
-
+        int clausesSizeBefore = clauses.size();
         lbool result = l_Undef;
-        if( Settings::use_restarts )
+        mUpperBoundOnMinimal = passedFormulaEnd();
+        while( true )
         {
-            mCurr_Restarts = 0;
-            int current_restarts = -1;
-            result = l_Undef;
-            while( current_restarts < mCurr_Restarts )
+            if( Settings::use_restarts )
             {
-                current_restarts = mCurr_Restarts;
-                double rest_base = luby_restart ? luby( restart_inc, mCurr_Restarts ) : pow( restart_inc, mCurr_Restarts );
-                result = search( (int)rest_base * restart_first );
-                // if( !withinBudget() ) break;
+                mCurr_Restarts = 0;
+                int current_restarts = -1;
+                while( current_restarts < mCurr_Restarts )
+                {
+                    current_restarts = mCurr_Restarts;
+                    double rest_base = luby_restart ? luby( restart_inc, mCurr_Restarts ) : pow( restart_inc, mCurr_Restarts );
+                    result = search( (int)rest_base * restart_first );
+                    // if( !withinBudget() ) break;
+                }
+            }
+            else
+                result = search();
+
+            if( !Settings::stop_search_after_first_unknown )
+                unknown_excludes.clear();
+            if( !mMinimize )
+                break;
+            std::vector<CRef> excludedAssignments;
+            if( result == l_Undef )
+                break;
+            else if( result == l_False )
+            {
+                if( mUpperBoundOnMinimal != rPassedFormula().end() )
+                {
+                    cleanUpAfterOptimizing( clausesSizeBefore, excludedAssignments );
+                    result = l_True;
+                }
+                break;
+            }
+            else
+            {
+                assert( result == l_True );
+                runBackends( mFullCheck, true );
+                updateModel();
+                auto modelIter = mModel.find( objective() );
+                assert( modelIter != mModel.end() );
+                const ModelValue& mv = modelIter->second;
+                if( mv.isMinusInfinity() )
+                {
+                    cleanUpAfterOptimizing( clausesSizeBefore, excludedAssignments );
+                    break;
+                }
+                assert( mv.isRational() ); // @todo: how do we handle the other model value types?
+                // Add a new upper bound on the yet computed minimum
+                removeUpperBoundOnMinimal();
+                FormulaT newUpperBoundOnMinimal( objectiveFunction() - mv.asRational(), carl::Relation::LESS );
+                addConstraintToInform( newUpperBoundOnMinimal );
+                mUpperBoundOnMinimal = addSubformulaToPassedFormula( newUpperBoundOnMinimal, newUpperBoundOnMinimal ).first;
+                // Exclude the last theory call with a clause.
+                vec<Lit> excludeClause;
+                for( int k = 0; k < mBooleanConstraintMap.size(); ++k )
+                {
+                    if( assigns[k] != l_Undef )
+                    {
+                        if( mBooleanConstraintMap[k].first != nullptr )
+                        {
+                            assert( mBooleanConstraintMap[k].second != nullptr );
+                            const Abstraction& abstr = assigns[k] == l_False ? *mBooleanConstraintMap[k].second : *mBooleanConstraintMap[k].first;
+                            if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == carl::FormulaType::UEQ || abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().isConsistent() != 1))
+                            {
+                                excludeClause.push( mkLit( k, assigns[k] != l_False ) ); 
+                            }
+                        }
+                    }
+                }
+                if( addClause( excludeClause, DEDUCTED_CLAUSE ) )
+                {
+                    excludedAssignments.push_back( learnts.last() );
+                }
+                if( !ok || decisionLevel() <= assumptions.size() )
+                {
+                    cleanUpAfterOptimizing( clausesSizeBefore, excludedAssignments );
+                    break;
+                }
+                handleConflict( learnts.last() );
             }
         }
-        else
-            result = search();
-
-        if( !Settings::stop_search_after_first_unknown )
-            unknown_excludes.clear();
         #ifdef SMTRAT_DEVOPTION_Statistics
         collectStats();
         #endif
@@ -412,18 +482,21 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::updateModel() const
     {
-        clearModel();
-        if( solverState() == True )
+        if( !mModelComputed )
         {
-            for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
+            clearModel();
+            if( solverState() == True || mMinimize )
             {
-                ModelValue assignment = assigns[bVar->second] == l_True;
-                mModel.insert(std::make_pair(bVar->first, assignment));
-            }
-            Module::getBackendsModel();
-            if( Settings::check_if_all_clauses_are_satisfied && trail.size() < assigns.size() )
-            {
-                getDefaultModel( mModel, (FormulaT)rReceivedFormula(), false );
+                for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
+                {
+                    ModelValue assignment = assigns[bVar->second] == l_True;
+                    mModel.insert(std::make_pair(bVar->first, assignment));
+                }
+                Module::getBackendsModel();
+                if( Settings::check_if_all_clauses_are_satisfied && trail.size() < assigns.size() )
+                {
+                    getDefaultModel( mModel, (FormulaT)rReceivedFormula(), false );
+                }
             }
         }
     }
@@ -449,6 +522,48 @@ namespace smtrat
             }
 //        }
         mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
+    }
+    
+    template<class Settings>
+    void SATModule<Settings>::cleanUpAfterOptimizing( int _clausesSizeBefore, const std::vector<CRef>& _excludedAssignments )
+    {
+        mModelComputed = true; // fix the last found model
+        removeUpperBoundOnMinimal();
+        mUpperBoundOnMinimal = passedFormulaEnd();
+        // Remove the added clauses for the exclusion of Boolean assignments.
+        for( CRef cl : _excludedAssignments )
+        {
+            removeClause( cl );
+        }
+        clauses.shrink( (int)_excludedAssignments.size() );
+    }
+    
+    template<class Settings>
+    void SATModule<Settings>::removeUpperBoundOnMinimal()
+    {
+        if( mUpperBoundOnMinimal != passedFormulaEnd() )
+        {
+            auto clIter = mConstraintLiteralMap.find( mUpperBoundOnMinimal->formula() );
+            eraseSubformulaFromPassedFormula( mUpperBoundOnMinimal, true );
+            // Check whether the unlikely case occurs, that the constraint was also added due to the Boolean assignment.
+            if( clIter != mConstraintLiteralMap.end() )
+            {
+                int v = var( clIter->second.front() );
+                if( assigns[v] != l_Undef && mBooleanConstraintMap[v].first != nullptr )
+                {
+                    assert( mBooleanConstraintMap[v].second != nullptr );
+                    Abstraction& abstrA = *mBooleanConstraintMap[v].first;
+                    if( abstrA.position != rPassedFormula().end() )
+                        abstrA.position = addSubformulaToPassedFormula( abstrA.reabstraction, abstrA.origins ).first;
+                    else
+                    {
+                        Abstraction& abstrB = *mBooleanConstraintMap[v].second;
+                        if( abstrB.position != rPassedFormula().end() )
+                            abstrB.position = addSubformulaToPassedFormula( abstrB.reabstraction, abstrB.origins ).first;
+                    }
+                }
+            }
+        }
     }
     
     template<class Settings>
@@ -1027,7 +1142,6 @@ namespace smtrat
         mChangedActivities.clear();
         if( mChangedPassedFormula )
             mCurrentAssignmentConsistent = True;
-        assert( passedFormulaCorrect() );
     }
     
     template<class Settings>
@@ -1053,41 +1167,6 @@ namespace smtrat
             mChangedPassedFormula = true;
         }
         _abstr.updateInfo = 0;
-    }
-    
-    template<class Settings>
-    bool SATModule<Settings>::passedFormulaCorrect() const
-    {
-        for( int k = 0; k < mBooleanConstraintMap.size(); ++k )
-        {
-            if( assigns[k] != l_Undef )
-            {
-                if( mBooleanConstraintMap[k].first != nullptr )
-                {
-                    assert( mBooleanConstraintMap[k].second != nullptr );
-                    const Abstraction& abstr = assigns[k] == l_False ? *mBooleanConstraintMap[k].second : *mBooleanConstraintMap[k].first;
-                    if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == carl::FormulaType::UEQ || abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().isConsistent() != 1))
-                    {
-                        if( !rPassedFormula().contains( abstr.reabstraction ) )
-                        {
-                            cout << "does not contain  " << abstr.reabstraction << endl;
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-        for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
-        {
-            auto iter = mConstraintLiteralMap.find( subformula->formula() );
-            assert( iter != mConstraintLiteralMap.end() );
-            if( value( iter->second.front() ) != l_True )
-            {
-                cout << "should not contain  " << iter->first << endl;
-                return false;
-            }
-        }
-        return true;
     }
 
     template<class Settings>
@@ -1579,7 +1658,7 @@ SetWatches:
                     cout << "### Check the constraints: { "; for( auto& subformula : rPassedFormula() ) cout << subformula.formula() << " "; cout << "}" << endl;
                     #endif
                     mChangedPassedFormula = false;
-                    mCurrentAssignmentConsistent = runBackends( mFullCheck, mMinimize );
+                    mCurrentAssignmentConsistent = runBackends( mFullCheck, false );
                     #ifdef DEBUG_SATMODULE
                     cout << "### Result: " << ANSWER_TO_STRING( mCurrentAssignmentConsistent ) << "!" << endl;
                     #endif
@@ -1628,9 +1707,7 @@ SetWatches:
         cout << "###" << endl;
         #endif
         assert( ok );
-        int backtrack_level;
         int conflictC = 0;
-        vec<Lit> learnt_clause;
         starts++;
         mCurrentAssignmentConsistent = True;
         for( ; ; )
@@ -1676,7 +1753,6 @@ SetWatches:
                     #endif
                     return l_Undef;
                 }
-                // TODO: must be adapted. Currently it does not forget clauses with premises so easily, but it forgets unequal-constraint-splittings, which causes problems.
                 if( learnts.size() - nAssigns() >= max_learnts && rReceivedFormula().isOnlyPropositional() )
                 {
 //                if( mCurrentAssignmentConsistent != Unknown && learnts.size() - nAssigns() >= max_learnts )
@@ -1728,7 +1804,7 @@ SetWatches:
                             assert( mCurrentAssignmentConsistent == Unknown );
                             if( !Settings::stop_search_after_first_unknown )
                             {
-                                vec<Lit> learnt_clause;
+                                learnt_clause.clear();
                                 if( rPassedFormula().size() > 1 )
                                 {
                                     for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
@@ -1767,6 +1843,7 @@ SetWatches:
                 // CONFLICT
                 conflicts++;
                 conflictC++;
+                
                 if( decisionLevel() <= assumptions.size() )
                 {
                     if( !Settings::stop_search_after_first_unknown && unknown_excludes.size() > 0 )
@@ -1776,48 +1853,54 @@ SetWatches:
                     return l_False;
                 }
 
-                learnt_clause.clear();
-                assert( confl != CRef_Undef );
-                #ifdef DEBUG_SATMODULE
-                if( madeTheoryCall ) { cout << "### Conflict clause: "; printClause( confl ); }
-                else { cout << "### SAT conflict!" << endl; printClause( confl );}
-                #endif
-
-                analyze( confl, learnt_clause, backtrack_level );
-                assert( learnt_clause.size() > 0 );
-
-                #ifdef DEBUG_SATMODULE
-                printClause( learnt_clause, true, cout, "### Asserting clause: " );
-                cout << "### Backtrack to level " << backtrack_level << endl;
-                cout << "###" << endl;
-                #endif
-                cancelUntil( backtrack_level );
-
-                #ifdef SMTRAT_DEVOPTION_Validation // this is often an indication that something is wrong with our theory, so we do store our assumptions.
-                if( value( learnt_clause[0] ) != l_Undef ) Module::storeAssumptionsToCheck( *mpManager );
-                #endif
-                assert( value( learnt_clause[0] ) == l_Undef );
-                if( learnt_clause.size() == 1 )
-                {
-                    uncheckedEnqueue( learnt_clause[0] );
-                }
-                else
-                {
-                    // learnt clause is the asserting clause.
-                    CRef cr = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
-                    learnts.push( cr );
-                    attachClause( cr );
-                    if( !mReceivedFormulaPurelyPropositional )
-                        mChangedActivities.push_back( cr );
-                    claBumpActivity( ca[cr] );
-                    uncheckedEnqueue( learnt_clause[0], cr );
-                    decrementLearntSizeAdjustCnt();
-                }
-
-                varDecayActivity();
-                claDecayActivity();
+                handleConflict( confl );
             }
         }
+    }
+    
+    template<class Settings>
+    void SATModule<Settings>::handleConflict( CRef _confl )
+    {
+        learnt_clause.clear();
+        assert( _confl != CRef_Undef );
+        #ifdef DEBUG_SATMODULE
+        cout << "### Conflict clause: "; printClause( _confl );
+        #endif
+
+        int backtrack_level;
+        analyze( _confl, learnt_clause, backtrack_level );
+        assert( learnt_clause.size() > 0 );
+
+        #ifdef DEBUG_SATMODULE
+        printClause( learnt_clause, true, cout, "### Asserting clause: " );
+        cout << "### Backtrack to level " << backtrack_level << endl;
+        cout << "###" << endl;
+        #endif
+        cancelUntil( backtrack_level );
+
+        #ifdef SMTRAT_DEVOPTION_Validation // this is often an indication that something is wrong with our theory, so we do store our assumptions.
+        if( value( learnt_clause[0] ) != l_Undef ) Module::storeAssumptionsToCheck( *mpManager );
+        #endif
+        assert( value( learnt_clause[0] ) == l_Undef );
+        if( learnt_clause.size() == 1 )
+        {
+            uncheckedEnqueue( learnt_clause[0] );
+        }
+        else
+        {
+            // learnt clause is the asserting clause.
+            CRef cr = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
+            learnts.push( cr );
+            attachClause( cr );
+            if( !mReceivedFormulaPurelyPropositional )
+                mChangedActivities.push_back( cr );
+            claBumpActivity( ca[cr] );
+            uncheckedEnqueue( learnt_clause[0], cr );
+            decrementLearntSizeAdjustCnt();
+        }
+
+        varDecayActivity();
+        claDecayActivity();
     }
     
     template<class Settings>
@@ -2000,7 +2083,7 @@ SetWatches:
             for( int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++ )
             {
                 Lit q = c[j];
-
+                
                 if( !seen[var( q )] && level( var( q ) ) > 0 )
                 {
                     varBumpActivity( var( q ) );
@@ -2455,8 +2538,14 @@ NextClause:
                 // Add the according literals to the conflict clause.
                 vec<Lit> learnt_clause;
                 size_t conflictEvaluation;
+                bool containsUpperBoundOnMinimal = false;
                 for( auto subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                 {
+                    if( mUpperBoundOnMinimal != passedFormulaEnd() && mUpperBoundOnMinimal->formula() == *subformula )
+                    {
+                        containsUpperBoundOnMinimal = true;
+                        continue;
+                    }
                     // Add literal to clause
                     ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( *subformula );
                     assert( constraintLiteralPair != mConstraintLiteralMap.end() );
@@ -2466,10 +2555,11 @@ NextClause:
                 }
                 mCurrentTheoryConflictEvaluations[std::make_pair( conflictEvaluation, ++mTheoryConflictIdCounter )] = mCurrentTheoryConflicts.size();
                 mCurrentTheoryConflicts.push_back( std::move( learnt_clause ) );
+                mCurrentTheoryConflictTypes.push_back( containsUpperBoundOnMinimal ? NORMAL_CLAUSE : CONFLICT_CLAUSE );
             }
             ++backend;
         }
-        if( addClause( mCurrentTheoryConflicts[mCurrentTheoryConflictEvaluations.begin()->second], CONFLICT_CLAUSE ) )
+        if( addClause( mCurrentTheoryConflicts[mCurrentTheoryConflictEvaluations.begin()->second], mCurrentTheoryConflictTypes[mCurrentTheoryConflictEvaluations.begin()->second] ) )
         {
             _foundConflictOfSizeOne = false;
             conflictClause = learnts.last();
@@ -2484,10 +2574,11 @@ NextClause:
         {
             if( addedClauses > threshold )
                 break;
-            addClause( mCurrentTheoryConflicts[tcIter->second], CONFLICT_CLAUSE );
+            addClause( mCurrentTheoryConflicts[tcIter->second], mCurrentTheoryConflictTypes[tcIter->second] );
             ++addedClauses;
         }
         mCurrentTheoryConflicts.clear();
+        mCurrentTheoryConflictTypes.clear();
         mCurrentTheoryConflictEvaluations.clear();
         mTheoryConflictIdCounter = 0;
         return conflictClause;
@@ -2671,7 +2762,7 @@ NextClause:
         printClauses( clauses, "Clauses", _out, _init );
         printClauses( learnts, "Learnts", _out, _init );
         printDecisions( _out, _init );
-        printPassedFormula( _out, _init );
+        printPassedFormula( _init );
         for(int i = 0; i < vardata.size(); i++ )
             _out << _init << i << " -> " << ((uint32_t) vardata[i].reason) << endl;
     }
