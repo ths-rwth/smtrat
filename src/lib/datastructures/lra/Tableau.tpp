@@ -416,6 +416,7 @@ namespace smtrat
             assert( !_var->isOriginal() );
             assert( !_var->isActive() );
             compressRows();
+            assert( _var->positionInNonActives() != mNonActiveBasics.end() );
             std::map<size_t,T2> coeffs;
             for( auto lravarCoeffPair = _var->positionInNonActives()->begin(); lravarCoeffPair != _var->positionInNonActives()->end(); ++lravarCoeffPair )
             {
