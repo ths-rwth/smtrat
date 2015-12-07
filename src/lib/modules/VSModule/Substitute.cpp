@@ -984,7 +984,7 @@ namespace vs
     {
         assert( _cons.hasVariable( _subs.variable() ) );
         // Create a substitution formed by the given one without an addition of epsilon.
-        Substitution substitution = Substitution( _subs.variable(), _subs.term(), Substitution::NORMAL, std::move(carl::PointerSet<Condition>(_subs.originalConditions())) );
+        Substitution substitution = Substitution( _subs.variable(), _subs.term(), Substitution::NORMAL, carl::PointerSet<Condition>(_subs.originalConditions()) );
         // Call the method substituteNormal with the constraint f(x)~0 and the substitution [x -> t],  where the parameter relation is ~.
         smtrat::ConstraintT firstCaseInequality = smtrat::ConstraintT( _cons.lhs(), _relation );
         if( !substituteNormal( firstCaseInequality, substitution, _result, _accordingPaper, _conflictingVariables, _solutionSpace ) )
@@ -1116,4 +1116,3 @@ namespace vs
         }
     }
 }    // end namspace vs
-

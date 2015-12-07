@@ -1,16 +1,5 @@
-set(SMTRAT_BV_SETTINGS "1" CACHE STRING "Number of setting used for BVModule")
 BeginDefineModule()
 ModuleMainHeader(BVModule/BVModule.h)
-FILE(GLOB_RECURSE sources *.cpp)
-foreach(src ${sources})
-    AddModuleSource(${src})
-endforeach()
 ModuleName(BVModule)
-ModuleClass(BVModule<BVSettings${SMTRAT_BV_SETTINGS}>)
 ModuleVersion(0 0 1)
-ModuleDefaultEnabled()
-EndDefineModule(moduleEnabled)
-
-if(${moduleEnabled})
-    # do something
-endif()
+EndDefineModule()

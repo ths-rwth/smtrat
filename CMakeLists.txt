@@ -5,7 +5,7 @@
 # Project name: SMT-RAT                                       #
 # Contact: Florian Corzilius <corzilius@cs.rwth-aachen.de>,   #
 #          Ulrich Loup <loup@cs.rwth-aachen.de>               #
-# Project sourceforge page: http://smtrat.sourceforge.net/    #
+# Project page: https://github.com/smtrat/smtrat/wiki         #
 # Development status: beta                                    #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Version: 2013-04-25                                         #
@@ -98,6 +98,7 @@ endif()
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     if (APPLE)
         message("-- Using clang on apple")
+        set(CMAKE_MACOSX_RPATH 1)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
     else()
         message("-- Using clang")

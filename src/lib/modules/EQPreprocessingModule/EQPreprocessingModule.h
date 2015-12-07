@@ -88,7 +88,11 @@ namespace smtrat
 			inline std::pair<bool,bool> P_collect_fact(const FormulaT& origin, const FormulaT& fact, bool negated);
 
 		public:
-			EQPreprocessingModule(ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL);
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
+			EQPreprocessingModule(const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL);
 			~EQPreprocessingModule();
 
 			void updateModel() const;
@@ -97,15 +101,11 @@ namespace smtrat
 
 			/**
 			 * Checks the received formula for consistency.
+             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
 			 * @return True,	if the received formula is satisfiable;
 			 *		 False,   if the received formula is not satisfiable;
 			 *		 Unknown, otherwise.
 			 */
-			Answer checkCore( bool );
+			Answer checkCore( bool _full = true, bool _minimize = false );
 	};
-	
-	extern template class EQPreprocessingModule<EQPreprocessingSettings1>;
-	extern template class EQPreprocessingModule<EQPreprocessingSettings2>;
 }
-
-#include "EQPreprocessingModule.tpp"

@@ -1,0 +1,5 @@
+BeginDefineModule()
+ModuleMainHeader(BEModule/BEModule.h)
+ModuleName(BEModule)
+ModuleVersion(0 0 1)
+EndDefineModule()

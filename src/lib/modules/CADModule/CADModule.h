@@ -20,6 +20,7 @@
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "CADStatistics.h"
 #endif
+#include "CADSettings.h"
 
 namespace smtrat
 {
@@ -41,8 +42,8 @@ namespace smtrat
      * @version 2012-11-29
      *
      */
-    class CADModule:
-        public Module
+    template<typename Settings>
+    class CADModule: public Module
     {
 		typedef std::unordered_map<FormulaT, unsigned> ConstraintIndexMap;
 		typedef smtrat::vb::VariableBounds< FormulaT > VariableBounds;
@@ -75,14 +76,17 @@ namespace smtrat
 		VariableBounds mVariableBounds;
 
         public:
-
-            CADModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
+            CADModule( const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             ~CADModule();
 
             bool addCore(ModuleInput::const_iterator _subformula);
             void removeCore(ModuleInput::const_iterator _subformula);
-            Answer checkCore( bool _full = true );
+            Answer checkCore( bool _full = true, bool _minimize = false );
             void updateModel() const;
 
 
@@ -98,10 +102,24 @@ namespace smtrat
             }
 
         private:
+			bool checkIntegerAssignment(const std::vector<carl::Variable>& vars, std::size_t d, bool createBranch) {
+				if (vars[d].getType() != carl::VariableType::VT_INT) return false;
+				auto r = this->mRealAlgebraicSolution[d].branchingPoint();
+				if (createBranch) {
+					if (!carl::isInteger(r)) {
+						branchAt(vars[d], r);
+						return true;
+					}
+					return false;
+				} else {
+					return !carl::isInteger(r);
+				}
+				return false;
+			}
+			bool checkSatisfiabilityOfAssignment() const;
 			bool addConstraintFormula(const FormulaT& f);
             const carl::cad::Constraint<smtrat::Rational> convertConstraint(const ConstraintT&);
             ConstraintT convertConstraint(const carl::cad::Constraint<smtrat::Rational>&);
-            std::vector<FormulasT> extractMinimalInfeasibleSubsets_GreedyHeuristics(carl::cad::ConflictGraph<smtrat::Rational>& conflictGraph);
             const FormulaT& getConstraintAt(unsigned index);
             void updateConstraintMap(unsigned index, bool decrement = true);
 #ifdef SMTRAT_DEVOPTION_Statistics

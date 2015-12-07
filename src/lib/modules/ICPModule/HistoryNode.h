@@ -133,14 +133,14 @@ namespace smtrat
                     return mAppliedContractions;
                 }
                 
-                FormulasT appliedConstraints()
+                FormulaSetT appliedConstraints()
                 {
-                    FormulasT appliedConstraints;
+                    FormulaSetT appliedConstraints;
                     for( std::set<const ContractionCandidate*>::iterator candidateIt = mAppliedContractions.begin(); candidateIt != mAppliedContractions.end(); ++candidateIt )
                     {
                         for( auto originIt = (*candidateIt)->origin().begin(); originIt != (*candidateIt)->origin().end(); ++originIt )
                         {
-                            appliedConstraints.push_back(*originIt);
+                            appliedConstraints.insert(*originIt);
                         }
                     }
                     return appliedConstraints;
@@ -323,21 +323,21 @@ namespace smtrat
                 
                 void propagateStateInfeasibleConstraints(HistoryNode* _target) const
                 {
-                        for( std::set<ConstraintT>::iterator constraintIt = mStateInfeasibleConstraints.begin(); constraintIt != mStateInfeasibleConstraints.end(); ++constraintIt )
-                            _target->addInfeasibleConstraint(*constraintIt);
+                    for( std::set<ConstraintT>::iterator constraintIt = mStateInfeasibleConstraints.begin(); constraintIt != mStateInfeasibleConstraints.end(); ++constraintIt )
+                        _target->addInfeasibleConstraint(*constraintIt);
                 }
                 
                 void propagateStateInfeasibleVariables(HistoryNode* _target) const
                 {
-                        set_icpVariable result;
-                        for( set_icpVariable::iterator variableIt = mStateInfeasibleVariables.begin(); variableIt != mStateInfeasibleVariables.end(); ++variableIt )
+                    set_icpVariable result;
+                    for( set_icpVariable::iterator variableIt = mStateInfeasibleVariables.begin(); variableIt != mStateInfeasibleVariables.end(); ++variableIt )
+                    {
+                        gatherVariables((*variableIt)->var(), result);
+                        for( set_icpVariable::iterator collectedVarIt = result.begin(); collectedVarIt != result.end(); ++collectedVarIt )
                         {
-                            gatherVariables((*variableIt)->var(), result);
-                            for( set_icpVariable::iterator collectedVarIt = result.begin(); collectedVarIt != result.end(); ++collectedVarIt )
-                            {
-                                _target->addInfeasibleVariable(*collectedVarIt);
-                            }
+                            _target->addInfeasibleVariable(*collectedVarIt);
                         }
+                    }
                 }
 
                 void print( std::ostream& _out = std::cout ) const

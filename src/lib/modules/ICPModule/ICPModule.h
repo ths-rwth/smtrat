@@ -76,6 +76,7 @@ namespace smtrat
             /**
              * Members:
              */
+            carl::FastMap<Poly, Contractor<carl::SimpleNewton>> mContractors;
             icp::ContractionCandidateManager mCandidateManager; // keeps all candidates
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveNonlinearConstraints; // nonlinear candidates considered
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveLinearConstraints; // linear candidates considered
@@ -85,6 +86,7 @@ namespace smtrat
             
             std::map<carl::Variable, icp::IcpVariable*> mVariables; // list of occurring variables
             EvalDoubleIntervalMap mIntervals; // actual intervals relevant for contraction
+            EvalRationalIntervalMap mInitialIntervals; // intervals after linear check
             EvalRationalMap mFoundSolution;
             std::set<std::pair<double, unsigned>, comp> mIcpRelevantCandidates; // candidates considered for contraction 
             
@@ -92,7 +94,6 @@ namespace smtrat
             carl::FastMap<FormulaT,FormulaT> mDeLinearizations; // linearized constraint -> original constraint
             carl::FastMap<Poly, carl::Variable> mVariableLinearizations; // monome -> variable
             std::map<carl::Variable, Poly> mSubstitutions; // variable -> monome/variable
-            carl::FastMap<Poly, Contractor<carl::SimpleNewton>> mContractors;
             
             icp::HistoryNode* mHistoryRoot; // Root-Node of the state-tree
             icp::HistoryNode* mHistoryActual; // Actual node of the state-tree
@@ -107,6 +108,7 @@ namespace smtrat
             bool mSplitOccurred;
             bool mInvalidBox;
             bool mOriginalVariableIntervalContracted;
+            bool mLRAFoundSolution;
             double mTargetDiameter;
             double mContractionThreshold;
             double mDefaultSplittingSize;
@@ -128,11 +130,15 @@ namespace smtrat
             static const unsigned mSplittingStrategy = 0;
 
         public:
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
 
             /**
              * Constructors:
              */
-            ICPModule( ModuleType _type, const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            ICPModule( const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
 
             /**
             * Destructor:
@@ -143,7 +149,7 @@ namespace smtrat
             bool informCore( const FormulaT& );
             bool addCore( ModuleInput::const_iterator );
             void removeCore( ModuleInput::const_iterator );
-            Answer checkCore( bool _full );
+            Answer checkCore( bool _full, bool _minimize );
             void updateModel() const;
             
         protected:
@@ -222,9 +228,10 @@ namespace smtrat
             
             /**
              * 
+             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return 
              */
-            Answer callBackends( bool _full );
+            Answer callBackends( bool _full = true, bool _minimize = false );
 
             /**
              * Creates the non-linear contraction candidates from all items in mTemporaryMonomes and empties mTemporaryMonomes.
@@ -236,7 +243,7 @@ namespace smtrat
              * @param _constraint
              * @param _origin
              */
-            void createLinearCCs( const FormulaT& _constraint );
+            void createLinearCCs( const FormulaT& _constraint, const FormulaT& _original );
             
             /**
              * Fills the IcpRelevantCandidates with all nonlinear and all active linear ContractionCandidates.
@@ -310,7 +317,7 @@ namespace smtrat
              * 
              * @return 
              */
-            FormulasT createPremiseDeductions();
+            FormulaSetT createPremiseDeductions();
             
             std::vector<FormulaT> createPremise();
             
@@ -370,6 +377,11 @@ namespace smtrat
              * Creates Bounds and passes them to PassedFormula for the Backends.
              */
             void pushBoundsToPassedFormula();
+            
+        public:
+            FormulasT getCurrentBoxAsFormulas() const;
+        private:
+            FormulaT intervalBoundToFormula( carl::Variable::Arg _var, const DoubleInterval& _interval, EvalRationalIntervalMap::const_iterator _initialIntervalIter, bool _upper ) const;
             
             /**
              * Compute hull of defining origins for set of icpVariables.
@@ -502,5 +514,3 @@ namespace smtrat
             void printContraction( const icp::ContractionCandidate& _cc, const DoubleInterval& _before, const DoubleInterval& _afterA, const DoubleInterval& _afterB = DoubleInterval::emptyInterval(), std::ostream& _out = std::cout ) const;
     };
 }    // namespace smtrat
-    
-#include "ICPModule.tpp"

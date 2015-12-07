@@ -1,16 +1,5 @@
-set(SMTRAT_LRA_Settings "1" CACHE STRING "Number of setting used for LRAModule")
 BeginDefineModule()
 ModuleMainHeader(LRAModule/LRAModule.h)
-FILE(GLOB_RECURSE sources *.cpp)
-foreach(src ${sources})
-    AddModuleSource(${src})
-endforeach()
 ModuleName(LRAModule)
-ModuleClass(LRAModule<LRASettings${SMTRAT_LRA_Settings}>)
 ModuleVersion(1 0 0)
-ModuleDefaultEnabled()
-EndDefineModule(lraEnabled)
-
-if(${lraEnabled})
-	# do something
-endif()
+EndDefineModule()

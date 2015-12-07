@@ -63,9 +63,9 @@ public:
 	 * Apply simplifications to the given node.
 	 * @param n Node to simplify.
 	 */
-	unsigned operator()(Node& root) {
+	std::size_t operator()(Node& root) {
 		std::size_t skip = 0;
-		for (unsigned i = 1; ; i++) {
+		for (std::size_t i = 1; ; i++) {
 			consumer.reset();
 			progress(0, root.complexity());
 			std::size_t num = 0;

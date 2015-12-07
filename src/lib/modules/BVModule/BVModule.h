@@ -41,10 +41,23 @@ namespace smtrat
     class BVModule : public Module
     {
         private:
+            ///
+            mutable bool mModelComputed;
+            ///
             BVDirectEncoder mEncoder;
+            ///
+            std::unordered_set<FormulaT> mBlastedFormulas;
+            ///
+            std::unordered_map<FormulaT,std::map<std::pair<size_t,size_t>,FormulaT>::iterator> mPositionInFormulasToBlast;
+            ///
+            std::map<std::pair<size_t,size_t>,FormulaT> mFormulasToBlast;
 
         public:
-            BVModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+			typedef Settings SettingsType;
+			std::string moduleName() const {
+				return SettingsType::moduleName;
+			}
+            BVModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~BVModule();
 
@@ -95,13 +108,17 @@ namespace smtrat
             /**
              * Checks the received formula for consistency.
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
+             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer checkCore( bool _full = true );
-
+            Answer checkCore( bool _full = true, bool _minimize = false );
+            
+        protected:
+                
+			size_t evaluateBVFormula( const FormulaT& formula );
+            
+            void transferBackendModel() const;
     };
 }
-
-#include "BVModule.tpp"

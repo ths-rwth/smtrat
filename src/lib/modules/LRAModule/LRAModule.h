@@ -46,6 +46,10 @@ namespace smtrat
         public Module
     {
         public:
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
             /**
              * Stores a formula, being part of the received formula of this module, and the position of 
              * this formula in the passed formula.
@@ -64,7 +68,7 @@ namespace smtrat
                 {}
             };
             /// Maps an original variable to it's corresponding LRAModule variable.
-            typedef std::map<carl::Variable, LRAVariable*> VarVariableMap;
+            typedef carl::FastMap<carl::Variable, LRAVariable*> VarVariableMap;
             /// Maps a linear polynomial to it's corresponding LRAModule variable.
             typedef carl::FastPointerMap<typename Poly::PolyType, LRAVariable*> ExVariableMap;
             /// Maps constraint to the bounds it represents (e.g., equations represent two bounds)
@@ -85,6 +89,8 @@ namespace smtrat
             bool mAssignmentFullfilsNonlinearConstraints;
             /// A flag which is set, if a supremum or infimum of a LRAModule variable has been changed.
             bool mStrongestBoundsRemoved;
+            ///
+            bool mMinimize;
             /**
              * Contains the main data structures of this module. It maintains for each LRAModule variable a row
              * or a column. On this tableau pivoting can be performed as the well known Simplex method performs.
@@ -111,24 +117,12 @@ namespace smtrat
             carl::Variable mDelta;
             /// Stores the bounds, which would influence a backend call because of recent changes.
             std::vector<const LRABound* > mBoundCandidatesToPass;
-            // Stores for each variable the number of violated integer variables in the left resp. 
-            // right branch ( first component of the pair for the left branch and second component for
-            // the right branch ) after the i-th step in the corresponding direction
-            std::map< carl::Variable, std::pair< std::vector< unsigned >, std::vector< unsigned > > > mBranch_Success; 
-            /**
-             * Stores all set of constraints which have already led to defining constraint matrices. 
-             * As the computation of these matrices is rather expensive, we try to omit this if possible.
-             */
-            std::set< std::vector<ConstraintT> > mProcessedDCMatrices;
-            // An enumeration type containing the names of the different branching strategies
-            enum BRANCH_STRATEGY
-            {
-                MIN_PIVOT,
-                MOST_FEASIBLE,
-                MOST_INFEASIBLE,
-                PSEUDO_COST,
-                NATIVE
-            };
+            ///
+            carl::FastMap<Poly,std::pair<LRAVariable*,Rational>> mCreatedObjectiveLRAVars;
+            ///
+            carl::FastMap<Poly,std::pair<LRAVariable*,Rational>>::iterator mObjectiveLRAVar;
+            ///
+            mutable EvalRationalMap mRationalAssignment;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores the yet collected statistics of this LRAModule.
             LRAModuleStatistics* mpStatistics;
@@ -144,7 +138,7 @@ namespace smtrat
              * @param _conditionals Vector of Booleans: If any of them is true, we have to terminate a running check procedure.
              * @param _manager A reference to the manager of the solver using this module.
              */
-            LRAModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+            LRAModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             /**
              * Destructs this LRAModule.
@@ -185,11 +179,14 @@ namespace smtrat
             /**
              * Checks the received formula for consistency.
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
+             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer checkCore( bool _full = true );
+            Answer checkCore( bool _full = true, bool _minimize = false );
+            
+            Answer processResult( Answer _result, bool _backendsResultUnknown );
             
             /**
              * Updates the model, if the solver has detected the consistency of the received formula, beforehand.
@@ -201,7 +198,15 @@ namespace smtrat
              * is calculated from scratch every time you call this method.
              * @return The rational model.
              */
-            EvalRationalMap getRationalModel() const;
+            const EvalRationalMap& getRationalModel() const;
+            
+            Answer optimize( Answer _result );
+            
+            Answer checkNotEqualConstraints( Answer _result );
+            
+            void processLearnedBounds();
+            
+            void createInfeasibleSubsets( lra::EntryID _tableauEntry );
             
             /**
              * Returns the bounds of the variables as intervals.
@@ -368,49 +373,12 @@ namespace smtrat
             bool maybeGomoryCut( const LRAVariable* _lraVar, const Rational& _branchingValue );
             
             /**
-             * @param _gc_support true, if gomory cut construction is enabled.
-             * @return true,  if a branching occured with an original variable that has to be fixed 
-             *                which has the lowest count of entries in its row.
-             *         false, if no branching occured.
-             */    
-            bool minimal_row_var( bool _gc_support );
-            
-            /**
-             * @param _gc_support true, if gomory cut construction is enabled.
-             * @return true,  if a branching occured with an original variable that has to be fixed 
-             *                which is most feasible.
-             *         false, if no branching occured.
-             */  
-            bool most_feasible_var( bool _gc_support );
-            
-            /**
              * @param gc_support true, if gomory cut construction is enabled.
              * @return true,  if a branching occured with an original variable that has to be fixed 
              *                which is most infeasible.
              *         false, if no branching occured.
              */   
             bool most_infeasible_var( bool _gc_support );
-            
-            /**
-             * @param gc_support true, if gomory cut construction is enabled.
-             * @return true,  if a branching occured with the first original variable that has to be fixed.
-             *         false, if no branching occured.
-             */    
-            bool first_var( bool _gc_support );
-            
-            /**
-             * @param gc_support true, if gomory cut construction is enabled.
-             * @return true,  if a branching occured with the first original variable that has to be fixed.
-             *         false, if no branching occured.
-             */
-            bool pseudo_cost_branching( bool _gc_support, BRANCH_STRATEGY strat );
-            
-            /**
-             * Creates a cuts from proof lemma, if it could be found. Otherwise it creates a branch and bound lemma.
-             * @return true, if a branching occurred.
-             *         false, otherwise.
-             */
-            bool cuts_from_proofs();
             
             /**
              * Creates a branch and bound lemma.
@@ -437,5 +405,3 @@ namespace smtrat
     };
 
 }    // namespace smtrat
-
-#include "LRAModule.tpp"

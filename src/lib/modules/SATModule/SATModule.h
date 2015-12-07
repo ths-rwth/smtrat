@@ -36,6 +36,7 @@
 #include "SolverTypes.h"
 #include "Sort.h"
 #include <math.h>
+#include <carl/formula/DIMACSExporter.h>
 #include "../../solver/Module.h"
 #include "../../solver/RuntimeSettings.h"
 
@@ -126,6 +127,20 @@ namespace smtrat
                 
                 Abstraction( const Abstraction& ) = delete;
             };
+            
+            struct ClauseInformation
+            {
+                bool mStoredInSatisfied;
+                int mPosition;
+                
+                ClauseInformation() = delete;
+                ClauseInformation( int _position ):
+                    mStoredInSatisfied( false ),
+                    mPosition( _position )
+                {}
+                ClauseInformation( const ClauseInformation& ) = default;
+                ClauseInformation( ClauseInformation&& ) = default;
+            };
 
             /// [Minisat related code]
             struct Watcher
@@ -195,10 +210,10 @@ namespace smtrat
              * Maps the constraints occurring in the SAT module to their abstractions. We store a vector of literals
              * for each constraints, which is only used in the optimization, which applies valid substitutions.
              */
-            typedef std::map<FormulaT, std::vector<Minisat::Lit>> ConstraintLiteralsMap; // @todo use hashing if possible
+            typedef carl::FastMap<FormulaT, std::vector<Minisat::Lit>> ConstraintLiteralsMap;
             
             /// Maps the Boolean variables to their corresponding Minisat variable.
-            typedef std::map<const carl::Variable, Minisat::Var> BooleanVarMap;
+            typedef carl::FastMap<carl::Variable, Minisat::Var> BooleanVarMap;
             
             /// Maps the Minisat variables to their corresponding boolean variable.
             typedef std::map<const Minisat::Var, FormulaT> MinisatVarMap;
@@ -210,7 +225,7 @@ namespace smtrat
             typedef Minisat::vec<std::pair<Abstraction*,Abstraction*>> BooleanConstraintMap;
             
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
-            typedef std::map<FormulaT, Minisat::CRef> FormulaClauseMap;
+            typedef carl::FastMap<FormulaT, std::vector<Minisat::CRef>> FormulaClausesMap;
             
             /// Maps the clauses in Minisat to the corresponding received formula.
             typedef std::map<Minisat::CRef, FormulaT> ClauseFormulaMap;
@@ -223,6 +238,9 @@ namespace smtrat
             
             /// A set of vectors of integer representing a set of clauses.
             typedef std::set<std::vector<int>> ClauseSet;
+            
+            ///
+            typedef carl::FastMap<signed,std::unordered_set<signed>> TseitinVarShadows;
 
             /// [Minisat related code]
             static inline VarData mkVarData( Minisat::CRef cr, int l )
@@ -280,6 +298,8 @@ namespace smtrat
             bool ok;
             /// List of problem clauses.
             Minisat::vec<Minisat::CRef> clauses;
+            /// List of problem clauses.
+            Minisat::vec<Minisat::CRef> satisfiedClauses;
             /// List of learned clauses.
             Minisat::vec<Minisat::CRef> learnts;
             /// List of clauses which exclude a call resulted in unknown.
@@ -344,25 +364,31 @@ namespace smtrat
             int64_t propagation_budget;
             /// [Minisat related code]
             bool asynch_interrupt;
+            /// For temporary usage.
+            Minisat::vec<Minisat::Lit> learnt_clause;
 
             // Module related members.
             /// A flag, which is set to true, if anything has been changed in the passed formula between now and the last consistency check.
             bool mChangedPassedFormula;
 			/// A flag, which is set to true, if all satisfying assignments should be computed.
 			bool mComputeAllSAT;
+            ///
+            bool mFullCheck;
+            ///
+            bool mMinimize;
             /**
              * Stores gained information about the current assignment's consistency. If we know from the last consistency check, whether the
              * current assignment is consistent, this member is True, if we know that it is inconsistent it is False, otherwise Unknown.
              */
             Answer mCurrentAssignmentConsistent;
-            /// The number of satisfied clauses (for debug purpose).
-            mutable double mSatisfiedClauses;
             /// The number of full laze calls made.
             size_t mNumberOfFullLazyCalls;
             /// The number of restarts made.
             int mCurr_Restarts;
             /// The number of theory calls made.
             unsigned mNumberOfTheoryCalls;
+            ///
+            bool mReceivedFormulaPurelyPropositional;
             /**
              * Maps each Minisat variable to a pair of Abstractions, one contains the abstraction information of the literal
              * being the variable and one contains the abstraction information of the literal being the variables negation.
@@ -380,23 +406,23 @@ namespace smtrat
             ///
             carl::FastMap<FormulaT, Minisat::Lit> mFormulaAssumptionMap;
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
-            FormulaClauseMap mFormulaClauseMap;
+            FormulaClausesMap mFormulaClausesMap;
             /// Maps the Minisat clauses to the corresponding received formula.
             ClauseFormulaMap mClauseFormulaMap;
             /// If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
             ClauseSet mLearntDeductions;
+            ///
+            carl::FastMap<Minisat::CRef,ClauseInformation> mClauseInformation;
+            ///
+            std::unordered_map<int,std::unordered_set<Minisat::CRef>> mLiteralClausesMap;
+            ///
+            size_t mNumberOfSatisfiedClauses;
             /// Stores all Literals for which the abstraction information might be changed.
             std::vector<signed> mChangedBooleans;
             /// Is true, if we have to communicate all activities to the backends. (This might be the case after rescaling the activities.)
             bool mAllActivitiesChanged;
             /// Stores all clauses in which the activities have been changed.
             std::vector<Minisat::CRef> mChangedActivities;
-            /// Maps arithmetic variables to the constraints they occur in (only used by the valid-substitutions optimization).
-            std::map<carl::Variable,FormulaSetT> mVarOccurrences;
-            /// Maps Minisat variables to the clauses they occur in (only used by the valid-substitutions optimization).
-            std::vector<std::set<Minisat::CRef>> mVarClausesMap;
-            /// Maps the arithmetic variables to the terms they have been replaced by a valid substitution (only used by the valid-substitutions optimization).
-            std::map<carl::Variable,Poly> mVarReplacements;
             /// Stores all Boolean variables introduced for theory splitting decisions.
             std::vector<signed> mSplittingVars;
             /// Stores all Boolean variables which once had been used for theory splitting decisions.
@@ -410,13 +436,34 @@ namespace smtrat
             ///
             Minisat::vec<unsigned> mNonTseitinShadowedOccurrences;
             ///
-            std::map<signed,std::set<signed>> mTseitinVarShadows;
+            TseitinVarShadows mTseitinVarShadows;
+            ///
+            carl::FastMap<FormulaT, TseitinVarShadows::iterator> mFormulaTseitinVarMap;
+            ///
+            carl::FastMap<FormulaT, std::vector<TseitinVarShadows::iterator>>::iterator mCurrentFormulaTseitinVarMapEntry;
+            ///
+            std::vector<Minisat::vec<Minisat::Lit>> mCurrentTheoryConflicts;
+            ///
+            std::vector<unsigned> mCurrentTheoryConflictTypes;
+            ///
+            std::map<std::pair<size_t,size_t>,size_t> mCurrentTheoryConflictEvaluations;
+            ///
+            std::unordered_set<int> mLevelCounter;
+            ///
+            size_t mTheoryConflictIdCounter;
+            ///
+            ModuleInput::iterator mUpperBoundOnMinimal;
+            
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
             SATModuleStatistics* mpStatistics;
             #endif
 
         public:
+			typedef Settings SettingsType;
+			std::string moduleName() const {
+				return SettingsType::moduleName;
+			}
 
             /**
              * Constructs a SATModule.
@@ -426,7 +473,7 @@ namespace smtrat
              * @param _foundAnswer Vector of Booleans: If any of them is true, we have to terminate a running check procedure.
              * @param _manager A reference to the manager of the solver using this module.
              */
-            SATModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _foundAnswer, Manager* const _manager = NULL );
+            SATModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _foundAnswer, Manager* const _manager = NULL );
 
             /**
              * Destructs this SATModule.
@@ -447,11 +494,12 @@ namespace smtrat
             /**
              * Checks the received formula for consistency.
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
+             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer checkCore( bool _full = true );
+            Answer checkCore( bool _full = true, bool _minimize = false );
             
             /**
              * Removes everything related to the given sub-formula of the received formula.
@@ -473,6 +521,10 @@ namespace smtrat
              * Updates the infeasible subset found by the SATModule, if the received formula is unsatisfiable.
              */
             void updateInfeasibleSubset();
+            
+            void cleanUpAfterOptimizing( int _clausesSizeBefore, const std::vector<Minisat::CRef>& _excludedAssignments );
+            
+            void removeUpperBoundOnMinimal();
             
             /**
              * Adds the Boolean assignments to the given assignments, which were determined by the Minisat procedure.
@@ -501,6 +553,20 @@ namespace smtrat
              * @param _init The line initiation.
              */
             void printConstraintLiteralMap( std::ostream& _out = std::cout, const std::string _init = "" ) const;
+            
+            /**
+             * Prints the formulas to clauses map.
+             * @param _out  The output stream where the answer should be printed.
+             * @param _init The line initiation.
+             */
+            void printFormulaClausesMap( std::ostream& _out = std::cout, const std::string _init = "" ) const;
+            
+            /**
+             * Prints the clause information.
+             * @param _out  The output stream where the answer should be printed.
+             * @param _init The line initiation.
+             */
+            void printClauseInformation( std::ostream& _out = std::cout, const std::string _init = "" ) const;
             
             /**
              * Prints map of the Boolean within the SAT solver to the given Booleans.
@@ -551,20 +617,6 @@ namespace smtrat
              * @param _init The line initiation.
              */
             void printDecisions( std::ostream& _out = std::cout, std::string _init = "" ) const;
-            
-            /**
-             * Prints the occurrences of arithmetic variables in constraints the SAT solver has contains.
-             * @param _out  The output stream where the answer should be printed.
-             * @param _init The line initiation.
-             */
-            void printVariableOccurrences( std::ostream& _out = std::cout, std::string _init = "" ) const;
-            
-            /**
-             * Prints the mapping of variable managed by the SAT solver to the clauses they occur.
-             * @param _out  The output stream where the answer should be printed.
-             * @param _init The line initiation.
-             */
-            void printVariableClausesMap( std::ostream& _out = std::cout, std::string _init = "" ) const;
 
             /**
              * Prints the propagated lemmas for each variables which influence its value.
@@ -590,7 +642,7 @@ namespace smtrat
              * @param _tseitinShadowed A flag, which is true, if the variable to create is a sub-formula of a formula represented by a Tseitin variable.
              * @return The created Minisat variable.
              */
-            Minisat::Var newVar( bool polarity = true, bool dvar = true, double _activity = 0, bool _tseitinShadowed = false );
+            Minisat::Var newVar( bool polarity = true, bool dvar = true, double _activity = 0 );
 
             // Solving:
             
@@ -600,36 +652,13 @@ namespace smtrat
             void simplify();
             
             /**
-             * Applies all valid substitutions resulting of equations containing at least one variable only linearly.
-             * @return true, if a valid substitution took place;
-             *         false, otherwise.
-             */
-            bool applyValidSubstitutionsOnClauses();
-            
-            /**
-             * 
-             * @param _toReplace
-             * @param _replaceBy
-             * @param _subOrigins
-             */
-            void replaceConstraint( const FormulaT& _toReplace, const FormulaT& _replaceBy, const std::vector<FormulaT>& _subOrigins );
-            
-            /**
              * Adds the clause of the given type with the given literals to the clauses managed by Minisat.
              * @param _clause The clause to add.
              * @param _type The type of the clause (NORMAL_CLAUSE, DEDUCTED_CLAUSE or CONFLICT_CLAUSE).
              * @return  true, if a clause has been added;
              *          false, otherwise.
              */
-            bool addClause( Minisat::vec<Minisat::Lit>& _clause, unsigned _type = 0 );
-            
-            /**
-             * Checks the correctness of the watches in a clause.
-             * @param The clause to check the watches for.
-             * @return true, if the literals are ordered correctly according to the watches;
-             *         false, otherwise.
-             */
-            bool watchesCorrect( const Minisat::Clause& _clause ) const;
+            bool addClause( const Minisat::vec<Minisat::Lit>& _clause, unsigned _type = 0 );
             
             /**
              * Moves two literals which are not assigned to false to the beginning of the clause.
@@ -639,6 +668,8 @@ namespace smtrat
              * @param _clause The clause in which the literals shall be reordered.
              */
             void arrangeForWatches( Minisat::Clause& _clause );
+            
+            void removeLiteralOrigin( Minisat::Lit _litToRemove, const FormulaT& _origin );
             
             /**
              * @return FALSE means solver is in a conflicting state
@@ -971,14 +1002,16 @@ namespace smtrat
              * Adds the clauses representing all conflicts generated by all backends.
              * @return A reference to the clause representing the best infeasible subset.
              */
-            Minisat::CRef learnTheoryConflict();
+            Minisat::CRef learnTheoryConflict( bool& _foundConflictOfSizeOne );
+            
+            void adaptConflictEvaluation( size_t& _clauseEvaluation, Minisat::Lit _lit, bool _firstLiteral );
             
             /**
              * Propagate and check the consistency of the constraints, whose abstraction literals have been assigned to true.
              * @param _madeTheoryCall A flag which is set to true, if at least one theory call has been made within this method.
              * @return A reference to a conflicting clause, if a clause has been added.
              */
-            Minisat::CRef propagateConsistently( bool& _madeTheoryCall );
+            Minisat::CRef propagateConsistently( bool& _madeTheoryCall, bool& _foundConflictOfSizeOne  );
             
             /**
              * Checks the received formula for consistency.
@@ -1010,10 +1043,10 @@ namespace smtrat
 			/**
 			 * Handles conflict
 			 * @param conf conflict clause
-			 * @param madeTheoryCall Was theory call made
 			 * @return if return is not l_True, search can be aborted
              */
-			Minisat::lbool handleConflict( Minisat::CRef conf, bool madeTheoryCall );
+            void handleConflict( Minisat::CRef _confl );
+//            Minisat::lbool handleConflict( Minisat::CRef conf, bool madeTheoryCall );
             
             /**
              * reduceDB : ()  ->  [void]
@@ -1036,24 +1069,6 @@ namespace smtrat
              * Removes all splitting variables, which are either assigned to true of false in decision level 0.
              */
             void removeAssignedSplittingVars();
-            
-            /**
-             * Replaces the variable in the literal _var by the variable in the literal _by, such that _var is replaced by _by 
-             * and ~_var is replaced by ~by.
-             * @param _var The literal containing the variable to replace.
-             * @param _by The literal containing the variable to replace by.
-             */
-            void replaceVariable( Minisat::Lit _var, Minisat::Lit _by );
-            
-            /**
-             * Replaces the variable in the literal _var by the variable in the literal _by, such that _var is replaced by _by 
-             * and ~_var is replaced by ~by.
-             * @param _cr A reference to the clause where _var should be replaced.
-             * @param _var The literal containing the variable to replace.
-             * @param _by The literal containing the variable to replace by.
-             * @return true, if the resulting clause could be removed, because of bein valid according to the assignments of decision level 0.
-             */
-            bool replaceVariable( Minisat::CRef _cr, Minisat::Lit _var, Minisat::Lit _by );
             
             /**
              * [Minisat related code]
@@ -1129,10 +1144,11 @@ namespace smtrat
             {
                 if( (c.activity() += (float)cla_inc) > 1e20 )
                 {
+                    if( !mReceivedFormulaPurelyPropositional )
+                        mAllActivitiesChanged = true;
                     // Rescale:
                     for( int i = 0; i < learnts.size(); i++ )
                     {
-                        mAllActivitiesChanged = true;
                         ca[learnts[i]].activity() *= (float)1e-20;
                     }
                     cla_inc *= 1e-20;
@@ -1290,23 +1306,9 @@ namespace smtrat
             {
                 return (int)(drand( seed ) * size);
             }
-
-            /**
-             * Adds the Boolean abstraction of the given formula in CNF to the SAT solver.
-             * @param _formula The formula to add clauses for.
-             * @return The reference to the first clause which has been added.
-             */
-            Minisat::CRef addFormula( const FormulaT&, unsigned _type );
             
-            bool isTseitinShadowed( const FormulaT& _var, const FormulaT& _clause ) const;
-            
-            /**
-             * Adds the Boolean abstraction of the given formula being a clause to the SAT solver.
-             * @param _formula  The formula to abstract and add to the SAT solver. Note, that the
-             *                  formula is expected to be a clause.
-             * @return The reference to the added clause, if any has been added; otherwise CRef_Undef.
-             */
-            Minisat::CRef addClause( const FormulaT&, unsigned _type = 0 );
+            Minisat::Lit addClauses( const FormulaT& _formula, unsigned _type, bool _outermost = true, const FormulaT& _original = FormulaT( carl::FormulaType::TRUE ) );
+            void addXorClauses( const Minisat::vec<Minisat::Lit>& _literals, const Minisat::vec<Minisat::Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, Minisat::vec<Minisat::Lit>& _clause );
             
             /**
              * Stores the given splitting to the set of learned clauses
@@ -1321,7 +1323,7 @@ namespace smtrat
              * @param _decisionRelevant true, if the variable of the literal needs to be involved in the decision process of the SAT solving.
              * @return The corresponding literal.
              */
-            Minisat::Lit getLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant = true, bool _tseitinShadowed = false );
+            Minisat::Lit getLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant = true );
             
             /**
              * Adapts the passed formula according to the current assignment within the SAT solver.
@@ -1336,12 +1338,6 @@ namespace smtrat
              *               information, if the Boolean does not correspond to a constraint's abstraction).
              */
             void adaptPassedFormula( Abstraction& _abstr );
-            
-            /**
-             * @return true, if the passed formula coincides with the constraints whose abstractions (literals)
-             *               are assigned to true.
-             */
-            bool passedFormulaCorrect() const;
 
 			/**
 			 * Updates the model, if the solver has detected the consistency of the received formula, beforehand.
@@ -1351,5 +1347,3 @@ namespace smtrat
 			void updateModel( Model& model, bool only_relevant_variables = false ) const;
     };
 }    // namespace smtrat
-
-#include "SATModule.tpp"

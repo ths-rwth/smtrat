@@ -240,8 +240,10 @@ namespace smtrat
                 std::vector<Variable<T1,T2>*> mConflictingRows;
                 ///
                 Value<T1>* mpTheta;
+                /// 
+                mutable T1 mCurDelta;
                 ///
-                std::map<carl::Variable, Variable<T1,T2>*> mOriginalVars;
+                carl::FastMap<carl::Variable, Variable<T1,T2>*> mOriginalVars;
                 ///
                 carl::FastPointerMap<typename Poly::PolyType, Variable<T1,T2>*> mSlackVars;
                 ///
@@ -393,7 +395,7 @@ namespace smtrat
                  */
                 size_t size() const
                 {
-                    return mpEntries->size();
+                    return mpEntries->size()-1;
                 }
 
                 /**
@@ -423,7 +425,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                const std::map< carl::Variable, Variable<T1,T2>*>& originalVars() const
+                const carl::FastMap< carl::Variable, Variable<T1,T2>*>& originalVars() const
                 {
                     return mOriginalVars;
                 }
@@ -434,6 +436,11 @@ namespace smtrat
                 const carl::FastPointerMap<typename Poly::PolyType, Variable<T1,T2>*>& slackVars() const 
                 {
                     return mSlackVars;
+                }
+                
+                const T1& currentDelta() const
+                {
+                    return mCurDelta;
                 }
                 
                 /**
@@ -513,6 +520,8 @@ namespace smtrat
                  */
                 void removeEntry( EntryID _entryID );
                 
+                Variable<T1,T2>* getVariable( const Poly& _lhs, T1& _factor, T1& _boundValue );
+                
                 /**
                  * 
                  * @param _constraint
@@ -542,7 +551,7 @@ namespace smtrat
                  * @param _isInteger
                  * @return 
                  */
-                Variable<T1, T2>* newBasicVariable( const typename Poly::PolyType* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars, bool _isInteger );
+                Variable<T1, T2>* newBasicVariable( const typename Poly::PolyType* _poly, bool _isInteger );
                 
                 /**
                  * 
@@ -592,6 +601,12 @@ namespace smtrat
                 
                 /**
                  * 
+                 * @return 
+                 */
+                std::pair<EntryID,bool> nextPivotingElementForOptimizing( const Variable<T1, T2>& _objective );
+                
+                /**
+                 * 
                  * @param _basicVar
                  * @param supremumViolated
                  * @return 
@@ -618,7 +633,7 @@ namespace smtrat
                  * @param _rowEntry
                  * @return 
                  */
-                std::vector< std::set< const Bound<T1, T2>* > > getConflictsFrom( EntryID _rowEntry ) const;
+                std::vector< std::vector< const Bound<T1, T2>* > > getConflictsFrom( EntryID _rowEntry ) const;
                 
                 /**
                  * 
@@ -633,7 +648,7 @@ namespace smtrat
                  * @param updateAssignments
                  * @return 
                  */
-                Variable<T1, T2>* pivot( EntryID _pivotingElement, bool updateAssignments = true );
+                Variable<T1, T2>* pivot( EntryID _pivotingElement, bool _optimizing = false );
                 
                 /**
                  * Updates the tableau according to the new values in the pivoting row containing the given pivoting element. The updating is
@@ -649,7 +664,7 @@ namespace smtrat
                  *                              iterator's index in the vector.
                  * @param _updateAssignments If true, the assignments of all variables will be updated after pivoting.
                  */
-                void update( bool _downwards, EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide, bool = true );
+                void update( bool _downwards, EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide, bool _optimizing = false );
                 
                 /**
                  * Adds the given value to the entry being at the position (i,j), where i is the vertical position of the given horizontal 
@@ -718,109 +733,6 @@ namespace smtrat
                 bool rowCorrect( size_t _rowNumber ) const;
                 
                 bool isConflicting() const;
-                
-                /**
-                 * Checks whether a constraint is a defining constraint. 
-                 * @param row_index
-                 * @param max_value
-                 * @return true, if the constraint is a defining constraint
-                 *         false, otherwise   
-                 */
-                ConstraintT isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient_list, T2& lcm, T2& max_value ) const;
-                
-                /**
-                 * Checks whether the row with index row_index is defining. 
-                 * @param dc_positions
-                 * @param row_index
-                 * @return true, if so
-                 *         false, otherwise   
-                 */ 
-                bool isDefining_Easy( std::vector<size_t>& dc_positions, size_t row_index );
-                
-                /**
-                 * Checks whether the column with index column_index is a diagonal column.
-                 * @param column_index
-                 * @param diagonals
-                 * @return true, if the column with index column_index is a diagonal column
-                 *         false, otherwise   
-                 */        
-                bool isDiagonal( size_t column_index, std::vector<size_t>& diagonals );
-                
-                /**
-                 * @param row_index
-                 * @param dc_positions
-                 * @return The row of the defining constraint with index row_index in the Tableau containing this DC.
-                 */ 
-                size_t position_DC( size_t row_index, std::vector<size_t>& dc_positions );
-                
-                /**
-                 * @param column_index
-                 * @param diagonals
-                 * @return The the actual index of the column with index column_index in the permutated tableau.   
-                 */   
-                size_t revert_diagonals( size_t column_index, std::vector<size_t>& diagonals );
-                
-                /**
-                 * Multiplies all entries in the column with the index column_index by (-1).
-                 * @param column_index
-                 */     
-                void invertColumn( size_t column_index );
-                
-                /**
-                 * Adds the column with index columnB_index multiplied by multiple to the column with index columnA_index.
-                 * @param columnA_index
-                 * @param columnB_index
-                 * @param multiple
-                 */
-                void addColumns( size_t columnA_index, size_t columnB_index, const T2& multiple );
-                
-                /**
-                 * Multiplies the row with index row_index by multiple.
-                 * @param row_index
-                 * @param multiple
-                 */        
-                void multiplyRow( size_t row_index, const T2& multiple );
-                
-                /**
-                 * Calculates the scalar product of the row with index rowA from Tableau A with the column
-                 * with index columnB from Tableau B considering that the columns in B are permutated.
-                 * @param A
-                 * @param B
-                 * @param rowA
-                 * @param columnB
-                 * @param diagonals
-                 * @param dc_positions 
-                 * @return the value (T) of the scalar product.
-                 */        
-                std::pair< const Variable<T1,T2>*, T2 > Scalar_Product( Tableau<Settings,T1,T2>& A, Tableau<Settings,T1,T2>& B, size_t rowA, size_t columnB, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions );
-                
-                /**
-                 * Calculate the Hermite normal form of the calling Tableau. 
-                 * @param diagonals
-                 * @param full_rank
-                 * @return The vector containing the indices of the diagonal elements.
-                 */
-                void calculate_hermite_normalform( std::vector<size_t>& diagonals, bool& full_rank );
-                
-                /**
-                 * Inverts the HNF matrix.
-                 * @param diagonals
-                 */
-                void invert_HNF_Matrix( std::vector<size_t>& diagonals );
-                
-                /**
-                 * Checks whether a cut from proof can be constructed with the row with index row_index in the DC_Tableau. 
-                 * @param Inverted_Tableau
-                 * @param DC_Tableau
-                 * @param row_index
-                 * @param diagonals
-                 * @param dc_positions
-                 * @param lower
-                 * @param max_value
-                 * @return the valid proof,    if the proof can be constructed.
-                 *         NULL,               otherwise.   
-                 */
-                typename Poly::PolyType* create_cut_from_proof( Tableau<Settings,T1,T2>& Inverted_Tableau, Tableau<Settings,T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value );
 
                 /**
                  * Creates a constraint referring to Gomory Cuts, if possible. 

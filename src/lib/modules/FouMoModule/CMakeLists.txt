@@ -1,15 +1,5 @@
-set(SMTRAT_FouMo_SETTINGS "1" CACHE STRING "Number of setting used for FouMoModule")
 BeginDefineModule()
 ModuleMainHeader(FouMoModule/FouMoModule.h)
-FILE(GLOB_RECURSE sources *.cpp)
-foreach(src ${sources})
-    AddModuleSource(${src})
-endforeach()
 ModuleName(FouMoModule)
-ModuleClass(FouMoModule<FouMoSettings${SMTRAT_FouMo_SETTINGS}>)
 ModuleVersion(0 0 1)
-EndDefineModule(moduleEnabled)
-
-if(${moduleEnabled})
-    # do something
-endif()
+EndDefineModule()

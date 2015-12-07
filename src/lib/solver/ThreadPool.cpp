@@ -13,7 +13,7 @@ using namespace std;
 
 namespace smtrat
 {
-    ThreadPool::ThreadPool( size_t _numberOfThreads, unsigned _numberOfCores ):
+    ThreadPool::ThreadPool( size_t _numberOfThreads, std::size_t _numberOfCores ):
         mDone( false ),
         mPossibleOversubscription( _numberOfCores<_numberOfThreads ),
         mNumberOfCores( _numberOfCores ),
@@ -42,7 +42,7 @@ namespace smtrat
             mThreads.pop_back();
     }
 
-    void ThreadPool::consumeBackend( unsigned _threadId )
+    void ThreadPool::consumeBackend( std::size_t _threadId )
     {
         thread_priority nextThreadPriority;
         std::unique_lock<std::mutex> lock( mMutex );
@@ -93,12 +93,12 @@ namespace smtrat
         }
     }
 
-    std::future<Answer> ThreadPool::submitBackend( Module* _pModule, bool _full )
+    std::future<Answer> ThreadPool::submitBackend( Module* _pModule, bool _full, bool _minimize )
     {
         assert(mNumberOfRunningThreads <= mNumberOfCores);
         thread_priority threadPriority = _pModule->threadPriority();
         assert(threadPriority.first < (mNumberOfThreads-1));
-        std::packaged_task<Answer()> task( std::bind( &Module::check, _pModule, _full ) );
+        std::packaged_task<Answer()> task( std::bind( &Module::check, _pModule, _full, _minimize ) );
         std::future<Answer> result( task.get_future() );
         std::lock_guard<std::mutex> lock( mMutex );
         mTasks[ threadPriority.first ] = std::make_shared< std::packaged_task<Answer()> >( std::move( task ) );

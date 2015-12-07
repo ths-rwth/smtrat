@@ -63,15 +63,16 @@ namespace smtrat {
                 }
             }
         }
-
-        void generateXML(std::stringstream& filestream) {
-            filestream << "\t<module name=\"" << mName << "\">\n";
-            for (size_t i = 0; i < mKeyValuePairs.size(); ++i) {
-
-                filestream << "\t\t<stat name=\"" << mKeyValuePairs[i].first << "\" value=\"" << mKeyValuePairs[i].second << "\" />\n";
-            }
-            filestream << "\t</module>\n";
-
+    }
+    
+    void generateXML(std::stringstream& filestream) {
+		std::string name = mName;
+		std::replace(name.begin(), name.end(), '<', '(');
+		std::replace(name.begin(), name.end(), '>', ')');
+        filestream << "\t<module name=\"" << name << "\">\n"; 
+        for(size_t i = 0; i < mKeyValuePairs.size(); ++i) {
+            
+            filestream << "\t\t<stat name=\"" << mKeyValuePairs[i].first << "\" value=\"" << mKeyValuePairs[i].second << "\" />\n";
         }
 
         size_t maxKeyLength() const
@@ -105,4 +106,5 @@ namespace smtrat {
         }
     };
 }
+
 #endif

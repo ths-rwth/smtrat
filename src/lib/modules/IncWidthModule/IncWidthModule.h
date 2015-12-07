@@ -9,6 +9,7 @@
 #pragma once
 
 #include "../../solver/Module.h"
+#include "../../datastructures/VariableBounds.h"
 #include "IncWidthStatistics.h"
 #include "IncWidthSettings.h"
 namespace smtrat
@@ -28,7 +29,11 @@ namespace smtrat
 			vb::VariableBounds<FormulaT> mVarBounds;
 
         public:
-            IncWidthModule( ModuleType _type, const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+			typedef Settings SettingsType;
+std::string moduleName() const {
+return SettingsType::moduleName;
+}
+            IncWidthModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~IncWidthModule();
 
@@ -62,16 +67,15 @@ namespace smtrat
             /**
              * Checks the received formula for consistency.
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
+             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer checkCore( bool _full );
+            Answer checkCore( bool _full = true, bool _minimize = false );
             
         private:
             void reset();
 
     };
 }
-
-#include "IncWidthModule.tpp"

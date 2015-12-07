@@ -9,11 +9,13 @@
 #pragma once
 
 #include "../../datastructures/lra/TableauSettings.h"
+#include "../../solver/ModuleSettings.h"
     
 namespace smtrat
 {
-    struct LRASettings1
+    struct LRASettings1 : ModuleSettings
     {
+		static constexpr auto moduleName = "LRAModule<LRASettings1>";
         /**
          * 
          */
@@ -25,7 +27,7 @@ namespace smtrat
         /**
          * 
          */
-        static const bool simple_conflicts_and_propagation_on_demand = false;
+        static const bool simple_conflicts_and_propagation_on_demand = true;
         /**
          * 
          */
@@ -37,23 +39,10 @@ namespace smtrat
         /**
          * 
          */
-        static const bool branch_and_bound_early = false;
-        /**
-         * 
-         */
-        static const bool pseudo_cost_branching = false;
-        /**
-         * 
-         */
         static const bool use_gomory_cuts = false;
-        /**
-         * 
-         */
-        static const bool use_cuts_from_proofs = false;
         /**
          * 
          */
         struct Tableau_settings : lra::TableauSettings1 {};
     };
 }
-

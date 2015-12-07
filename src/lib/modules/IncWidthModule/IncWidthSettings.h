@@ -9,10 +9,13 @@
 
 #pragma once
 
+#include "../../solver/ModuleSettings.h"
+
 namespace smtrat
 {
-    struct IncWidthSettings1
+    struct IncWidthSettings1 : ModuleSettings
     {
+		static constexpr auto moduleName = "IncWidthModule<IncWidthSettings1>";
         /**
          * The increment of the width of the intervals specifying the variable domains.
          */
@@ -20,10 +23,26 @@ namespace smtrat
         /**
          * The half of the starting width of the intervals specifying the variable domains. Starting interval domains are then: [-half_of_start_width,half_of_start_width]
          */
-        static constexpr unsigned half_of_start_width = 2;
+        static constexpr unsigned half_of_start_width = 1;
         /**
          * The half of the maximal width of the intervals specifying the variable domains.
          */
-        static constexpr unsigned half_of_max_width = 1000;
+        static constexpr unsigned half_of_max_width = 16;
+        /**
+         * 
+         */
+        static constexpr bool exclude_searched_space = true;
+    };
+    
+    struct IncWidthSettings2 : IncWidthSettings1
+    {
+        static constexpr auto moduleName = "IncWidthModule<IncWidthSettings2>";
+        static constexpr unsigned half_of_max_width = 0;
+    };
+    
+    struct IncWidthSettings3 : IncWidthSettings1
+    {
+        static constexpr auto moduleName = "IncWidthModule<IncWidthSettings3>";
+        static constexpr bool exclude_searched_space = false;
     };
 }

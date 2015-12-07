@@ -8,9 +8,9 @@
 namespace smtrat {
 	template<typename M> class ModuleWrapper {
 		public:
-			ModuleWrapper(ModuleType type) :
+			ModuleWrapper() :
 				input(),
-				module(type, &input, nullptr, conditionals, nullptr)
+				module(&input, nullptr, conditionals, nullptr)
 			{}
 
 			M& get() noexcept { return module; }
@@ -45,7 +45,7 @@ namespace smtrat {
 				return module.check() != False;
 			}
 
-			const std::vector<FormulasT>& infeasibleSubsets() {
+			const std::vector<FormulaSetT>& infeasibleSubsets() {
 				return module.infeasibleSubsets();
 			}
 

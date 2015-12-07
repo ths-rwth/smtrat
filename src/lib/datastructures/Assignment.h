@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "../Common.h"
 #include <map>
 #include "../../cli/config.h"
 #ifdef __VS
@@ -18,10 +19,8 @@
 #else
 #include <boost/variant.hpp>
 #endif
-
-#include "../Common.h"
+#include <carl/core/RealAlgebraicNumber.h>
 #include "vs/SqrtEx.h"
-#include "carl/core/RealAlgebraicNumber.h"
 #include "SortValue.h"
 #include "UFModel.h"
 
@@ -252,17 +251,43 @@ namespace smtrat
      */
     bool operator<( const carl::UninterpretedFunction& _uf, const ModelVariable& _mvar );
     
+	/**
+	 * This class represents infinity or minus infinity, depending on its flag positive.
+	 * The default is minus infinity.
+	 */
+	struct InfinityValue {
+		bool positive = false;
+		explicit InfinityValue() {}
+		explicit InfinityValue(bool positive): positive(positive) {}
+	};
+    
+	inline std::string toString(const InfinityValue& iv, bool _infix) {
+        if( _infix )
+        {
+            std::string result = iv.positive ? "+" : "-";
+            result += "infinity";
+            return result;
+        }
+        if( iv.positive )
+            return "infinity";
+        return "(- infinity)";
+	}
+    
+	inline std::ostream& operator<<(std::ostream& os, const InfinityValue& iv) {
+		return os << (iv.positive ? "+" : "-") << "infinity";
+	}
+	
     /**
      * This class represents some value that is assigned to some variable.
      * It is implemented as subclass of a boost::variant.
      * Possible value types are bool, vs::SqrtEx and carl::RealAlgebraicNumberPtr.
      */
-    class ModelValue : public boost::variant<bool, vs::SqrtEx, carl::RealAlgebraicNumberPtr<smtrat::Rational>, carl::BVValue, SortValue, UFModel>
+    class ModelValue : public boost::variant<bool, Rational, vs::SqrtEx, carl::RealAlgebraicNumber<smtrat::Rational>, carl::BVValue, SortValue, UFModel, InfinityValue>
     {
         /**
          * Base type we are deriving from.
          */
-        typedef boost::variant<bool, vs::SqrtEx, carl::RealAlgebraicNumberPtr<smtrat::Rational>, carl::BVValue, SortValue, UFModel> Super;
+        typedef boost::variant<bool, Rational, vs::SqrtEx, carl::RealAlgebraicNumber<smtrat::Rational>, carl::BVValue, SortValue, UFModel, InfinityValue> Super;
         
     public:
         /**
@@ -277,6 +302,11 @@ namespace smtrat
         template<typename T>
         ModelValue(const T& _t): Super(_t)
         {}
+//        template<>
+//        ModelValue(const vs::SqrtEx& _se)
+//        {
+//            Super(_se);
+//        }
 
         /**
          * Assign some value to the underlying variant.
@@ -306,13 +336,17 @@ namespace smtrat
             {
                 return asBool() == _mval.asBool();
             }
+            else if( isRational() && _mval.isRational() )
+            {
+                return asRational() == _mval.asRational();
+            } 
             else if( isSqrtEx() && _mval.isSqrtEx() )
             {
                 return asSqrtEx() == _mval.asSqrtEx();
             } 
             else if( isRAN() & _mval.isRAN() )
             {
-                return std::equal_to<carl::RealAlgebraicNumberPtr<smtrat::Rational>>()(asRAN(), _mval.asRAN());
+                return std::equal_to<carl::RealAlgebraicNumber<smtrat::Rational>>()(asRAN(), _mval.asRAN());
             }
 			else if( isBVValue() && _mval.isBVValue() )
             {
@@ -338,6 +372,14 @@ namespace smtrat
         }
         
         /**
+         * @return true, if the stored value is a rational.
+         */
+        bool isRational() const
+        {
+            return type() == typeid(Rational);
+        }
+        
+        /**
          * @return true, if the stored value is a square root expression.
          */
         bool isSqrtEx() const
@@ -350,7 +392,7 @@ namespace smtrat
          */
         bool isRAN() const
         {
-            return type() == typeid(carl::RealAlgebraicNumberPtr<smtrat::Rational>);
+            return type() == typeid(carl::RealAlgebraicNumber<smtrat::Rational>);
         }
         
         /**
@@ -375,6 +417,19 @@ namespace smtrat
         bool isUFModel() const {
             return type() == typeid(UFModel);
         }
+		
+		/**
+         * @return true, if the stored value is +infinity.
+         */
+        bool isPlusInfinity() const {
+            return (type() == typeid(InfinityValue)) && boost::get<InfinityValue>(*this).positive;
+        }
+		/**
+         * @return true, if the stored value is -infinity.
+         */
+        bool isMinusInfinity() const {
+            return (type() == typeid(InfinityValue)) && !boost::get<InfinityValue>(*this).positive;
+        }
 
         /**
          * @return The stored value as a bool.
@@ -383,6 +438,15 @@ namespace smtrat
         {
             assert( isBool() );
             return boost::get<bool>(*this);
+        }
+        
+        /**
+         * @return The stored value as a rational.
+         */
+        const Rational& asRational() const
+        {
+            assert( isRational() );
+            return boost::get<Rational>(*this);
         }
         
         /**
@@ -397,10 +461,10 @@ namespace smtrat
         /**
          * @return The stored value as a real algebraic number.
          */
-        carl::RealAlgebraicNumberPtr<smtrat::Rational> asRAN() const
+        carl::RealAlgebraicNumber<smtrat::Rational> asRAN() const
         {
             assert( isRAN() );
-            return boost::get<carl::RealAlgebraicNumberPtr<smtrat::Rational>>(*this);
+            return boost::get<carl::RealAlgebraicNumber<smtrat::Rational>>(*this);
         }
         
         /**
@@ -429,10 +493,19 @@ namespace smtrat
             assert( isUFModel() );
             return boost::get<UFModel>(*this);
         }
+		/**
+         * @return The stored value as a infinity value.
+         */
+        const InfinityValue& asInfinity() const
+        {
+            assert( isPlusInfinity() || isMinusInfinity() );
+            return boost::get<InfinityValue>(*this);
+        }
+        
     };
     
     /// Data type for a assignment assigning a variable, represented as a string, a real algebraic number, represented as a string.
-    typedef std::map<ModelVariable,ModelValue> Model;
+    class Model : public std::map<ModelVariable,ModelValue> {};
     
     /**
      * Obtains all assignments which can be transformed to rationals and stores them in the passed map.
@@ -461,7 +534,14 @@ namespace smtrat
      *         1, if this formula is satisfied by the given assignment;
      *         2, otherwise.
      */
-    unsigned satisfies( const Model& _model, const EvalRationalMap& _assignment, const FormulaT& _formula );
+    unsigned satisfies( const Model& _model, const EvalRationalMap& _assignment, const std::map<carl::BVVariable, carl::BVTerm>& bvAssigns, const FormulaT& _formula );
+    
+    void getDefaultModel( Model& _defaultModel, const carl::UEquality& _constraint, bool _overwrite = true, size_t _seed = 0 );
+    void getDefaultModel( Model& _defaultModel, const carl::BVTerm& _constraint, bool _overwrite = true, size_t _seed = 0 );
+    void getDefaultModel( Model& _defaultModel, const ConstraintT& _constraint, bool _overwrite = true, size_t _seed = 0 );
+    void getDefaultModel( Model& _defaultModel, const FormulaT& _formula, bool _overwrite = true, size_t _seed = 0 );
+    
+    std::ostream& operator<<( std::ostream& _out, const ModelValue& _modelValue );
     
     std::ostream& operator<<( std::ostream& _out, const Model& _model );
 }

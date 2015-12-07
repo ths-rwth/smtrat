@@ -14,22 +14,22 @@
 #include <unordered_map>
 #include <atomic>
 #include "logging.h"
-#include "carl/core/MultivariatePolynomial.h"
-#include "carl/core/FactorizedPolynomial.h"
-#include "carl/core/Variable.h"
-#include "carl/core/VariablePool.h"
-#include "carl/interval/Interval.h"
-#include "carl/interval/IntervalEvaluation.h"
-#include "carl/interval/Contraction.h"
-#include "carl/io/streamingOperators.h"
-#include "carl/util/Common.h"
-#include "carl/formula/FormulaPool.h"
-#include "carl/formula/uninterpreted/UFManager.h"
-#include "carl/formula/uninterpreted/UFInstanceManager.h"
-#include "carl/formula/bitvector/BVTerm.h"
-#include "carl/formula/bitvector/BVTermPool.h"
-#include "carl/formula/bitvector/BVConstraintPool.h"
-#include "carl/formula/bitvector/BVConstraint.h"
+#include <carl/core/MultivariatePolynomial.h>
+#include <carl/core/FactorizedPolynomial.h>
+#include <carl/core/Variable.h>
+#include <carl/core/VariablePool.h>
+#include <carl/interval/Interval.h>
+#include <carl/interval/IntervalEvaluation.h>
+#include <carl/interval/Contraction.h>
+#include <carl/io/streamingOperators.h>
+#include <carl/util/Common.h>
+#include <carl/formula/FormulaPool.h>
+#include <carl/formula/uninterpreted/UFManager.h>
+#include <carl/formula/uninterpreted/UFInstanceManager.h>
+#include <carl/formula/bitvector/BVTerm.h>
+#include <carl/formula/bitvector/BVTermPool.h>
+#include <carl/formula/bitvector/BVConstraintPool.h>
+#include <carl/formula/bitvector/BVConstraint.h>
 
 namespace smtrat
 {
@@ -63,6 +63,7 @@ namespace smtrat
     // Further type definitions.
 
     typedef mpq_class Rational;
+    
 	typedef carl::IntegralType<Rational>::type Integer;
     
     typedef carl::Term<Rational> TermT;
@@ -107,6 +108,9 @@ namespace smtrat
     typedef std::vector<std::atomic_bool*> Conditionals;
 #endif
     
+	// Pair of priority and module id (within the respective strategy graph)
+    typedef std::pair<std::size_t, std::size_t> thread_priority;
+    
     // Constants.
     ///@todo move static variables to own cpp
     static const Rational ZERO_RATIONAL = Rational( 0 );
@@ -137,7 +141,7 @@ namespace smtrat
     
     inline carl::Variable newVariable( const std::string& _name, const carl::VariableType& _type )
     {
-        return carl::VariablePool::getInstance().getFreshVariable( _name, _type );
+        return carl::freshVariable( _name, _type );
     }
     
     inline carl::Sort newSort( const std::string& _name, size_t _arity = 0 )
@@ -153,7 +157,7 @@ namespace smtrat
     
     inline carl::UninterpretedFunction newUF( const std::string& _name, const std::vector<carl::Sort>& _dom, const carl::Sort& _codom )
     {
-        return newUF( _name, std::move( std::vector<carl::Sort>( _dom ) ), _codom );
+        return newUF( _name, std::vector<carl::Sort>( _dom ), _codom );
     }
     
     inline carl::UninterpretedFunction newUF( const std::string& _name, const carl::Sort& _dom, const carl::Sort& _codom )
@@ -178,7 +182,7 @@ namespace smtrat
     
     inline carl::UFInstance newUFInstance( const carl::UninterpretedFunction& _function, const std::vector<carl::UVariable>& _args )
     {
-        return smtrat::newUFInstance( _function, std::move(std::vector<carl::UVariable>(_args)) );
+        return smtrat::newUFInstance( _function, std::vector<carl::UVariable>(_args));
     }
     
     inline carl::UFInstance newUFInstance( const carl::UninterpretedFunction& _function, const carl::UVariable& _arg )
@@ -197,3 +201,21 @@ namespace smtrat
     }
     
 }    // namespace smtrat
+
+extern template class carl::Term<smtrat::Rational>;
+extern template class carl::MultivariatePolynomial<smtrat::Rational>;
+extern template class carl::Constraint<smtrat::Poly>;
+extern template class carl::Formula<smtrat::Poly>;
+extern template class carl::Interval<smtrat::Rational>;
+extern template class carl::Interval<double>;
+extern template struct carl::VariableInformation<true, smtrat::Poly>;
+
+//extern template class std::set<carl::Constraint<smtrat::Poly>, carl::less<carl::Constraint<smtrat::Poly>, false>>;
+//extern template class std::vector<carl::Formula<smtrat::Poly>>;
+//extern template class std::set<carl::Formula<smtrat::Poly>>;
+//extern template class std::multiset<carl::Formula<smtrat::Poly>, carl::less<carl::Formula<smtrat::Poly>>>;
+//extern template class std::map<carl::Variable,smtrat::Rational>;
+//extern template class std::map<carl::Variable,smtrat::RationalInterval>;
+//extern template class std::map<carl::Variable,smtrat::DoubleInterval>;
+//extern template class std::map<carl::Variable, carl::VariableInformation<true, smtrat::Poly>>;
+//extern template class std::map<smtrat::Poly,carl::exponent>;

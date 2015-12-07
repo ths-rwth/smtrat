@@ -8,7 +8,9 @@
 #pragma once
 
 #include "Tableau.h"
+#include "TableauSettings.h"
 
+#define DEBUG_METHODS_TABLEAU
 //#define LRA_DEBUG_CUTS_FROM_PROOFS
 
 namespace smtrat
@@ -27,6 +29,7 @@ namespace smtrat
             mColumns(),
             mNonActiveBasics(),
             mConflictingRows(),
+            mCurDelta( 0 ),
             mOriginalVars(),
             mSlackVars(),
             mConstraintToBound(),
@@ -152,6 +155,65 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
+        Variable<T1,T2>* Tableau<Settings,T1,T2>::getVariable( const Poly& _lhs, T1& _factor, T1& _boundValue )
+        {
+            Variable<T1, T2>* result;
+            if( _lhs.nrTerms() == 1 || ( _lhs.nrTerms() == 2 && _lhs.hasConstantTerm() ) )
+            {
+                // TODO: do not store the expanded polynomial, but use the coefficient and coprimeCoefficients
+                const typename Poly::PolyType& expandedPoly = _lhs.polynomial();
+                auto term = expandedPoly.begin();
+                for( ; term != expandedPoly.end(); ++term )
+                    if( !term->isConstant() ) break;
+				carl::Variable var = term->monomial()->begin()->first;
+                _factor = T1( term->coeff() ) * _lhs.coefficient();
+                _boundValue = T1( -_lhs.constantPart() )/_factor;
+                auto basicIter = mOriginalVars.find( var );
+                // constraint not found, add new nonbasic variable
+                if( basicIter == mOriginalVars.end() )
+                {
+                    typename Poly::PolyType* varPoly = new typename Poly::PolyType( var );
+                    result = newNonbasicVariable( varPoly, var.getType() == carl::VariableType::VT_INT );
+                    mOriginalVars.insert( std::pair<carl::Variable, Variable<T1, T2>*>( var, result ) );
+                }
+                else
+                {
+                    result = basicIter->second;
+                }
+            }
+            else
+            {
+                T1 constantPart( _lhs.constantPart() );
+                bool negative = (_lhs.lterm().coeff() < typename Poly::CoeffType(T1( 0 )));
+                typename Poly::PolyType* linearPart;
+                if( negative )
+                    linearPart = new typename Poly::PolyType( -_lhs + (Rational)constantPart );
+                else
+                    linearPart = new typename Poly::PolyType( _lhs - (Rational)constantPart );
+                _factor = linearPart->coprimeFactor();
+                assert( _factor > 0 );
+                constantPart *= _factor;
+                (*linearPart) *= _factor;
+//                linearPart->makeOrdered();
+                _boundValue = (negative ? constantPart : -constantPart);
+                typename carl::FastPointerMap<typename Poly::PolyType, Variable<T1, T2>*>::iterator slackIter = mSlackVars.find( linearPart );
+                if( slackIter == mSlackVars.end() )
+                {
+                    result = newBasicVariable( linearPart, _lhs.integerValued() );
+                    mSlackVars.insert( std::pair<const typename Poly::PolyType*, Variable<T1, T2>*>( linearPart, result ) );
+                }
+                else
+                {
+                    delete linearPart;
+                    result = slackIter->second;
+                }
+                if( negative )
+                    _factor = -_factor;
+            }
+            return result;
+        }
+        
+        template<class Settings, typename T1, typename T2>
         std::pair<const Bound<T1,T2>*, bool> Tableau<Settings,T1,T2>::newBound( const FormulaT& _constraint )
         {
             auto ctbIter = mConstraintToBound.find( _constraint );
@@ -160,60 +222,10 @@ namespace smtrat
             assert( _constraint.getType() == carl::FormulaType::CONSTRAINT );
             const ConstraintT& constraint = _constraint.constraint();
             assert( constraint.isConsistent() == 2 );
-            T1 boundValue = T1( 0 );
-            bool negative = false;
-            Variable<T1, T2>* newVar;
-            if( constraint.lhs().nrTerms() == 1 || ( constraint.lhs().nrTerms() == 2 && constraint.lhs().hasConstantTerm() ) )
-            {
-                // TODO: do not store the expanded polynomial, but use the coefficient and coprimeCoefficients
-                const typename Poly::PolyType& expandedPoly = constraint.lhs().polynomial();
-                auto term = expandedPoly.begin();
-                for( ; term != expandedPoly.end(); ++term )
-                    if( !term->isConstant() ) break;
-				carl::Variable var = term->monomial()->begin()->first;
-                T1 primCoeff = T1( term->coeff() ) * constraint.lhs().coefficient();
-                negative = (primCoeff < T1( 0 ));
-                boundValue = T1( -constraint.constantPart() )/primCoeff;
-                typename std::map<carl::Variable, Variable<T1, T2>*>::iterator basicIter = mOriginalVars.find( var );
-                // constraint not found, add new nonbasic variable
-                if( basicIter == mOriginalVars.end() )
-                {
-                    typename Poly::PolyType* varPoly = new typename Poly::PolyType( var );
-                    newVar = newNonbasicVariable( varPoly, var.getType() == carl::VariableType::VT_INT );
-                    mOriginalVars.insert( std::pair<carl::Variable, Variable<T1, T2>*>( var, newVar ) );
-                }
-                else
-                {
-                    newVar = basicIter->second;
-                }
-            }
-            else
-            {
-                T1 constantPart( constraint.constantPart() );
-                negative = (constraint.lhs().lterm().coeff() < typename Poly::CoeffType(T1( 0 )));
-                typename Poly::PolyType* linearPart;
-                if( negative )
-                    linearPart = new typename Poly::PolyType( -constraint.lhs() + (Rational)constantPart );
-                else
-                    linearPart = new typename Poly::PolyType( constraint.lhs() - (Rational)constantPart );
-                T1 cf( linearPart->coprimeFactor() );
-                assert( cf > 0 );
-                constantPart *= cf;
-                (*linearPart) *= cf;
-//                linearPart->makeOrdered();
-                boundValue = (negative ? constantPart : -constantPart);
-                typename carl::FastPointerMap<typename Poly::PolyType, Variable<T1, T2>*>::iterator slackIter = mSlackVars.find( linearPart );
-                if( slackIter == mSlackVars.end() )
-                {
-                    newVar = newBasicVariable( linearPart, mOriginalVars, constraint.integerValued() );
-                    mSlackVars.insert( std::pair<const typename Poly::PolyType*, Variable<T1, T2>*>( linearPart, newVar ) );
-                }
-                else
-                {
-                    delete linearPart;
-                    newVar = slackIter->second;
-                }
-            }
+            T1 factor( 0 );
+            T1 boundValue( 0 );
+            Variable<T1, T2>* newVar = getVariable( constraint.lhs(), factor, boundValue );
+            bool negative = (factor < T1(0));
             std::pair<const Bound<T1,T2>*, bool> result;
             switch( constraint.relation() )
             {
@@ -351,7 +363,7 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( const typename Poly::PolyType* _poly, std::map<carl::Variable, Variable<T1, T2>*>& _originalVars, bool _isInteger )
+        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( const typename Poly::PolyType* _poly, bool _isInteger )
         {
             mNonActiveBasics.emplace_front();
             Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), _poly, mDefaultBoundPosition, _isInteger );
@@ -361,12 +373,12 @@ namespace smtrat
                 assert( carl::isInteger( term->coeff() ) );
 				carl::Variable var = term->monomial()->begin()->first;
                 Variable<T1, T2>* nonBasic;
-                auto nonBasicIter = _originalVars.find( var );
-                if( _originalVars.end() == nonBasicIter )
+                auto nonBasicIter = mOriginalVars.find( var );
+                if( mOriginalVars.end() == nonBasicIter )
                 {
                     typename Poly::PolyType* varPoly = new typename Poly::PolyType( var );
                     nonBasic = newNonbasicVariable( varPoly, var.getType() == carl::VariableType::VT_INT );
-                    _originalVars.insert( std::pair<carl::Variable, Variable<T1, T2>*>( var, nonBasic ) );
+                    mOriginalVars.insert( std::pair<carl::Variable, Variable<T1, T2>*>( var, nonBasic ) );
                 }
                 else
                 {
@@ -404,6 +416,7 @@ namespace smtrat
             assert( !_var->isOriginal() );
             assert( !_var->isActive() );
             compressRows();
+            assert( _var->positionInNonActives() != mNonActiveBasics.end() );
             std::map<size_t,T2> coeffs;
             for( auto lravarCoeffPair = _var->positionInNonActives()->begin(); lravarCoeffPair != _var->positionInNonActives()->end(); ++lravarCoeffPair )
             {
@@ -591,7 +604,10 @@ namespace smtrat
         void Tableau<Settings,T1,T2>::storeAssignment()
         {
             for( Variable<T1, T2>* basicVar : mRows )
+            {
+                assert( basicVar != NULL );
                 basicVar->storeAssignment();
+            }
             for( Variable<T1, T2>* nonbasicVar : mColumns )
                 nonbasicVar->storeAssignment();
         }
@@ -600,7 +616,10 @@ namespace smtrat
         void Tableau<Settings,T1,T2>::resetAssignment()
         {
             for( Variable<T1, T2>* basicVar : mRows )
+            {
+                assert( basicVar != NULL );
                 basicVar->resetAssignment();
+            }
             for( Variable<T1, T2>* nonbasicVar : mColumns )
                 nonbasicVar->resetAssignment();
         }
@@ -610,7 +629,7 @@ namespace smtrat
         {
             EvalRationalMap result;
             T1 minDelta = -1;
-            T1 curDelta = 0;
+            mCurDelta = T1(0);
             Variable<T1,T2>* variable = NULL;
             // For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
             for( auto originalVar = originalVars().begin(); originalVar != originalVars().end(); ++originalVar )
@@ -623,9 +642,9 @@ namespace smtrat
                     // .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
                     if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
                     {
-                        curDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                            minDelta = curDelta;
+                        mCurDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
+                        if( minDelta < 0 || mCurDelta < minDelta )
+                            minDelta = mCurDelta;
                     }
                 }
                 const Bound<T1,T2>& sup = variable->supremum();
@@ -634,9 +653,9 @@ namespace smtrat
                     // .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
                     if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
                     {
-                        curDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                            minDelta = curDelta;
+                        mCurDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
+                        if( minDelta < 0 || mCurDelta < minDelta )
+                            minDelta = mCurDelta;
                     }
                 }
             }
@@ -652,9 +671,9 @@ namespace smtrat
                     // .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
                     if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
                     {
-                        curDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                            minDelta = curDelta;
+                        mCurDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
+                        if( minDelta < 0 || mCurDelta < minDelta )
+                            minDelta = mCurDelta;
                     }
                 }
                 const Bound<T1,T2>& sup = variable->supremum();
@@ -663,19 +682,19 @@ namespace smtrat
                     // .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
                     if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
                     {
-                        curDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
-                        if( minDelta < 0 || curDelta < minDelta )
-                            minDelta = curDelta;
+                        mCurDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
+                        if( minDelta < 0 || mCurDelta < minDelta )
+                            minDelta = mCurDelta;
                     }
                 }
             }
 
-            curDelta = minDelta < 0 ? 1 : minDelta;
+            mCurDelta = minDelta < 0 ? 1 : minDelta;
             // Calculate the rational assignment of all original variables.
             for( auto var = originalVars().begin(); var != originalVars().end(); ++var )
             {
                 T1 value = var->second->assignment().mainPart();
-                value += (var->second->assignment().deltaPart() * curDelta);
+                value += (var->second->assignment().deltaPart() * mCurDelta);
                 result.insert( std::pair<const carl::Variable,T1>( var->first, value ) );
             }
             return result;
@@ -866,6 +885,8 @@ namespace smtrat
             }
             else // Bland's rule
             {
+                const Variable<T1, T2>* bestBasicVar = nullptr;
+                std::pair<EntryID,bool> bestResult( LAST_ENTRY_ID, true ); 
                 for( const Variable<T1, T2>* basicVar : mRows )
                 {
                     assert( basicVar != NULL );
@@ -893,21 +914,116 @@ namespace smtrat
                         }
                         else if( result.first != LAST_ENTRY_ID )
                         {
-                            // Found a pivoting element
-                            *mpTheta = thetaB;
-                            #ifdef LRA_NO_DIVISION
-                            (*mpTheta) *= bVar.factor();
-                            #endif 
-                            (*mpTheta) /= (*mpEntries)[result.first].content();
-                            return std::pair<EntryID,bool>( result.first, true );
+                            if( bestBasicVar == nullptr || *basicVar < *bestBasicVar )
+                            {
+                                bestBasicVar = basicVar;
+                                // Found a pivoting element
+                                *mpTheta = thetaB;
+                                #ifdef LRA_NO_DIVISION
+                                (*mpTheta) *= bVar.factor();
+                                #endif 
+                                (*mpTheta) /= (*mpEntries)[result.first].content();
+                                bestResult = std::pair<EntryID,bool>( result.first, true );
+                            }
                         }
                     }
                 }
-                // Found no pivoting element, that is no variable violates its bounds.
-                return std::pair<EntryID,bool>( LAST_ENTRY_ID, true );
+                return bestResult;
             }
         }
 
+        template<class Settings, typename T1, typename T2>
+        std::pair<EntryID,bool> Tableau<Settings,T1,T2>::nextPivotingElementForOptimizing( const Variable<T1, T2>& _objective )
+        {
+            Value<T1> maxTheta = Value<T1>(T1(-1));
+            EntryID objectiveStartEntry = _objective.startEntry();
+            Iterator objectiveIter = Iterator( objectiveStartEntry, mpEntries );
+            if( (_objective.isBasic() && objectiveIter.hEnd( false )) || (!_objective.isBasic() && objectiveIter.vEnd( false )) )
+                return std::make_pair( LAST_ENTRY_ID, true );
+            (*mpTheta) = T1( 0 );
+            EntryID bestResult = LAST_ENTRY_ID;
+            while( true )
+            {
+                const Variable<T1, T2>& varForMinimizaton = _objective.isBasic() ? *(*objectiveIter).columnVar() : *(*objectiveIter).rowVar();
+                #ifdef LRA_NO_DIVISION
+                bool increaseVar = ((*objectiveIter).content() < 0 && _objective.factor() > 0) || ((*objectiveIter).content() > 0 && _objective.factor() < 0);
+                #else
+                bool increaseVar = (*objectiveIter).content() < 0;
+                #endif
+                if( (increaseVar && varForMinimizaton.supremum() > varForMinimizaton.assignment()) || (!increaseVar && varForMinimizaton.infimum() < varForMinimizaton.assignment()) )
+                {
+                    Value<T1> varForMinTheta = increaseVar ? 
+                        (varForMinimizaton.supremum().isInfinite() ? maxTheta : (varForMinimizaton.supremum().limit() - varForMinimizaton.assignment())) :
+                        (varForMinimizaton.infimum().isInfinite() ? maxTheta : (varForMinimizaton.assignment() - varForMinimizaton.infimum().limit()));
+                    EntryID result = LAST_ENTRY_ID;
+                    Iterator varForMinIter = Iterator( varForMinimizaton.startEntry(), mpEntries );
+                    while( true )
+                    {
+                        Variable<T1, T2>& lraVar = _objective.isBasic() ? *((*varForMinIter).rowVar()) : *((*varForMinIter).columnVar());
+                        #ifdef LRA_NO_DIVISION
+                        bool entryNegative = ((*varForMinIter).content() < 0 && lraVar.factor() > 0) || ((*varForMinIter).content() > 0 && lraVar.factor() < 0);
+                        #else
+                        bool entryNegative = (*varForMinIter).content() < 0;
+                        #endif
+                        if( (increaseVar == entryNegative && lraVar.infimum() < lraVar.assignment())
+                         || (increaseVar != entryNegative && lraVar.supremum() > lraVar.assignment()))
+                        {
+                            if( (increaseVar == entryNegative && !lraVar.infimum().isInfinite()) || (increaseVar != entryNegative && !lraVar.supremum().isInfinite()) )
+                            {
+                                Value<T1> lraVarTheta = (increaseVar == entryNegative) ? (lraVar.assignment() - lraVar.infimum().limit()) : (lraVar.supremum().limit() - lraVar.assignment());
+                                #ifdef LRA_NO_DIVISION
+                                lraVarTheta *= lraVar.factor();
+                                #endif 
+                                lraVarTheta /= (*varForMinIter).content();
+                                if( lraVarTheta < T1(0) )
+                                    lraVarTheta = lraVarTheta * T1( -1 );
+                                if( varForMinTheta == maxTheta || varForMinTheta > lraVarTheta )
+                                {
+                                    varForMinTheta = lraVarTheta;
+                                    result = varForMinIter.entryID();
+                                }
+                            }
+                        }
+                        else
+                        {
+                            break;
+                        }
+                        if( (_objective.isBasic() && varForMinIter.vEnd( false )) || (!_objective.isBasic() && varForMinIter.hEnd( false )) )
+                        {
+                            if( result != LAST_ENTRY_ID &&
+                                (bestResult == LAST_ENTRY_ID || (*mpTheta > T1(0) && varForMinTheta > *mpTheta) || (*mpTheta < T1(0) && varForMinTheta > *mpTheta * T1( -1 ))) )
+                            {
+                                (*mpTheta) = increaseVar ? varForMinTheta : (varForMinTheta * T1( -1 ));
+                                bestResult = result;
+                            }
+                            break;
+                        }
+                        else
+                        {
+                            if( _objective.isBasic() )
+                                varForMinIter.vMove( false );
+                            else
+                                varForMinIter.hMove( false );
+                        }
+                    }
+                }
+                if( (_objective.isBasic() && objectiveIter.hEnd( false )) || (!_objective.isBasic() && objectiveIter.vEnd( false )) )
+                {
+                    break;
+                }
+                else
+                {
+                    if( _objective.isBasic() )
+                        objectiveIter.hMove( false );
+                    else
+                        objectiveIter.vMove( false );
+                }
+            }
+            if( bestResult != LAST_ENTRY_ID )
+                return std::make_pair( bestResult, true );
+            return std::make_pair( LAST_ENTRY_ID, false );
+        }
+        
         template<class Settings, typename T1, typename T2>
         std::pair<EntryID,bool> Tableau<Settings,T1,T2>::isSuitable( const Variable<T1, T2>& _basicVar, bool supremumViolated ) const
         {
@@ -1028,6 +1144,8 @@ namespace smtrat
             if( _than == LAST_ENTRY_ID ) return true;
             const Variable<T1,T2>& isBetterNbVar = *((*mpEntries)[_isBetter].columnVar());
             const Variable<T1,T2>& thanColumnNbVar = *((*mpEntries)[_than].columnVar());
+            if( !Settings::use_pivoting_strategy || mPivotingSteps >= mMaxPivotsWithoutBlandsRule )
+                return isBetterNbVar < thanColumnNbVar;
             if( Settings::use_activity_based_pivot_strategy )
             {
                 if( isBetterNbVar.conflictActivity() < thanColumnNbVar.conflictActivity() )
@@ -1048,12 +1166,33 @@ namespace smtrat
             }
             else
             {
-                size_t valueA = boundedVariables( isBetterNbVar );
-                size_t valueB = boundedVariables( thanColumnNbVar, valueA );
-                if( valueA < valueB  ) return true;
-                else if( valueA == valueB )
+                switch( Settings::nonbasic_var_choice_strategy )
                 {
-                    if( isBetterNbVar.size() < thanColumnNbVar.size() ) return true;
+                    case NBCS::LESS_BOUNDED_VARIABLES:
+                    {
+                        size_t valueA = boundedVariables( isBetterNbVar );
+                        size_t valueB = boundedVariables( thanColumnNbVar, valueA );
+                        if( valueA < valueB  ) return true;
+                        else if( valueA == valueB )
+                        {
+                            if( isBetterNbVar.size() < thanColumnNbVar.size() ) return true;
+                        }
+                        break;
+                    }
+                    case NBCS::LESS_COLUMN_ENTRIES:
+                    {
+                        if( isBetterNbVar.size() < thanColumnNbVar.size() )
+                            return true;
+                        else if( isBetterNbVar.size() == thanColumnNbVar.size() )
+                        {
+                            size_t valueA = boundedVariables( isBetterNbVar );
+                            size_t valueB = boundedVariables( thanColumnNbVar, valueA );
+                            if( valueA < valueB  ) return true;
+                        }
+                        break;
+                    }
+                    default:
+                        assert( false );
                 }
             }
             return false;
@@ -1148,22 +1287,27 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        std::vector< std::set< const Bound<T1, T2>* > > Tableau<Settings,T1,T2>::getConflictsFrom( EntryID _rowEntry ) const
+        std::vector< std::vector< const Bound<T1, T2>* > > Tableau<Settings,T1,T2>::getConflictsFrom( EntryID _rowEntry ) const
         {
-            std::vector< std::set< const Bound<T1, T2>* > > conflicts = std::vector< std::set< const Bound<T1, T2>* > >();
+            std::vector< std::vector< const Bound<T1, T2>* > > conflicts;
             const Variable<T1,T2>* firstConflictingVar = (*mpEntries)[_rowEntry].rowVar();
             bool posOfFirstConflictFound = false;
             for( Variable<T1,T2>* rowElement : mRows )
             {
-                if( !posOfFirstConflictFound && rowElement != firstConflictingVar )
-                    continue;
+                if( !posOfFirstConflictFound )
+                {
+                    if( rowElement == firstConflictingVar )
+                        posOfFirstConflictFound = true;
+                    else
+                        continue;
+                }
                 assert( rowElement != NULL );
                 // Upper bound is violated
                 const Variable<T1,T2>& basicVar = *rowElement;
                 if( basicVar.supremum() < basicVar.assignment() )
                 {
-                    conflicts.push_back( std::set< const Bound<T1, T2>* >() );
-                    conflicts.back().insert( basicVar.pSupremum() );
+                    conflicts.emplace_back();
+                    conflicts.back().push_back( basicVar.pSupremum() );
                     // Check all entries in the row / basic variables
                     Iterator rowIter = Iterator( basicVar.startEntry(), mpEntries );
                     while( true )
@@ -1182,7 +1326,7 @@ namespace smtrat
                             }
                             else
                             {
-                                conflicts.back().insert( (*rowIter).columnVar()->pSupremum() );
+                                conflicts.back().push_back( (*rowIter).columnVar()->pSupremum() );
                             }
                         }
                         else
@@ -1195,7 +1339,7 @@ namespace smtrat
                             }
                             else
                             {
-                                conflicts.back().insert( (*rowIter).columnVar()->pInfimum() );
+                                conflicts.back().push_back( (*rowIter).columnVar()->pInfimum() );
                             }
                         }
                         if( rowIter.hEnd( false ) )
@@ -1211,8 +1355,8 @@ namespace smtrat
                 // Lower bound is violated
                 else if( basicVar.infimum() > basicVar.assignment() )
                 {
-                    conflicts.push_back( std::set< const Bound<T1, T2>* >() );
-                    conflicts.back().insert( basicVar.pInfimum() );
+                    conflicts.emplace_back();
+                    conflicts.back().push_back( basicVar.pInfimum() );
                     // Check all entries in the row / basic variables
                     Iterator rowIter = Iterator( basicVar.startEntry(), mpEntries );
                     while( true )
@@ -1231,7 +1375,7 @@ namespace smtrat
                             }
                             else
                             {
-                                conflicts.back().insert( (*rowIter).columnVar()->pSupremum() );
+                                conflicts.back().push_back( (*rowIter).columnVar()->pSupremum() );
                             }
                         }
                         else
@@ -1244,7 +1388,7 @@ namespace smtrat
                             }
                             else
                             {
-                                conflicts.back().insert( (*rowIter).columnVar()->pInfimum() );
+                                conflicts.back().push_back( (*rowIter).columnVar()->pInfimum() );
                             }
                         }
                         if( rowIter.hEnd( false ) )
@@ -1258,7 +1402,7 @@ namespace smtrat
                     }
                 }
             }
-            return conflicts;
+            return std::move(conflicts);
         }
 
         template<class Settings, typename T1, typename T2>
@@ -1289,7 +1433,7 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        Variable<T1, T2>* Tableau<Settings,T1,T2>::pivot( EntryID _pivotingElement, bool updateAssignments )
+        Variable<T1, T2>* Tableau<Settings,T1,T2>::pivot( EntryID _pivotingElement, bool _optimizing )
         {
             // Find all columns having "a nonzero entry in the pivoting row"**, update this entry and store it.
             // First the column with ** left to the pivoting column until the leftmost column with **.
@@ -1336,34 +1480,15 @@ namespace smtrat
             // Swap the variables
             mRows[rowVar->position()] = columnVar;
             mColumns[columnVar->position()] = rowVar;
-            assert( updateAssignments || rowVar->assignment() == T1( 0 ) );
-            assert( updateAssignments || columnVar->assignment() == T1( 0 ) );
-            if( updateAssignments )
-            {
-                // Update the assignments of the pivoting variables
-                #ifdef LRA_NO_DIVISION
-                rowVar->rAssignment() += ((*mpTheta) * pivotContent) / rowVar->factor();
-                #else
-                rowVar->rAssignment() += (*mpTheta) * pivotContent;
-                #endif
-                if( !( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() ) ) 
-                {
-                    std::cout << "rowVar->assignment() = " << rowVar->assignment() << std::endl;
-                    std::cout << "rowVar->supremum() = " << rowVar->supremum() << std::endl; 
-                    std::cout << "(error: " << __func__ << " " << __LINE__ << ")" << std::endl; 
-    //                exit( 7771 );
-                }
-                assert( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() );
-                if( !( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() ) ) 
-                {
-                    std::cout << "rowVar->assignment() = " << rowVar->assignment() << std::endl;
-                    std::cout << "rowVar->infimum() = " << rowVar->infimum() << std::endl;
-                    std::cout << "(error: " << __func__ << " " << __LINE__ << ")" << std::endl; 
-    //                exit( 7771 );
-                }
-                assert( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() );
-                columnVar->rAssignment() += (*mpTheta);
-            }
+            // Update the assignments of the pivoting variables
+            #ifdef LRA_NO_DIVISION
+            rowVar->rAssignment() += ((*mpTheta) * pivotContent) / rowVar->factor();
+            #else
+            rowVar->rAssignment() += (*mpTheta) * pivotContent;
+            #endif
+            assert( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() );
+            assert( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() );
+            columnVar->rAssignment() += (*mpTheta);
             // Adapt both variables.
             Variable<T1, T2>& basicVar = *columnVar;
             Variable<T1, T2>& nonbasicVar = *rowVar;
@@ -1388,7 +1513,7 @@ namespace smtrat
             #else
             pivotContent = carl::div( T2(1), pivotContent );
             #endif
-            if( Settings::use_refinement && updateAssignments && basicVar.isActive() )
+            if( Settings::use_refinement && basicVar.isActive() )
             {
                 rowRefinement( columnVar ); // Note, we have swapped the variables, so the current basic var is now corresponding to what we have stored in columnVar.
             }
@@ -1398,34 +1523,31 @@ namespace smtrat
             //        Update the entry (t_r,t_c,t_e) of the intersection of R and C to (t_r,t_c,t_e+r_e).
             if( pivotEntry.vNext( false ) == LAST_ENTRY_ID )
             {
-                update( true, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, updateAssignments );
+                update( true, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, _optimizing );
             }
             else if( pivotEntry.vNext( true ) == LAST_ENTRY_ID )
             {
-                update( false, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, updateAssignments );
+                update( false, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, _optimizing );
             }
             else
             {
-                update( true, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, updateAssignments );
-                update( false, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, updateAssignments );
+                update( true, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, _optimizing );
+                update( false, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, _optimizing );
             }
-            if( updateAssignments )
+            ++mPivotingSteps;
+            if( !_optimizing && !basicVar.isActive() && !basicVar.isOriginal() )
             {
-                ++mPivotingSteps;
-                if( !basicVar.isActive() && !basicVar.isOriginal() )
-                {
-                    deactivateBasicVar( columnVar );
-                    compressRows();
-                }
-                assert( basicVar.supremum() >= basicVar.assignment() || basicVar.infimum() <= basicVar.assignment() );
-                assert( nonbasicVar.supremum() == nonbasicVar.assignment() || nonbasicVar.infimum() == nonbasicVar.assignment() );
+                deactivateBasicVar( columnVar );
+                compressRows();
             }
+            assert( basicVar.supremum() >= basicVar.assignment() || basicVar.infimum() <= basicVar.assignment() );
+//                assert( nonbasicVar.supremum() == nonbasicVar.assignment() || nonbasicVar.infimum() == nonbasicVar.assignment() );
             assert( checkCorrectness() == mRows.size() );
             return columnVar;
         }
 
         template<class Settings, typename T1, typename T2>
-        void Tableau<Settings,T1,T2>::update( bool _downwards, EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide, bool _updateAssignments )
+        void Tableau<Settings,T1,T2>::update( bool _downwards, EntryID _pivotingElement, std::vector<Iterator>& _pivotingRowLeftSide, std::vector<Iterator>& _pivotingRowRightSide, bool _optimizing )
         {
             std::vector<Iterator> leftColumnIters = std::vector<Iterator>( _pivotingRowLeftSide );
             std::vector<Iterator> rightColumnIters = std::vector<Iterator>( _pivotingRowRightSide );
@@ -1445,14 +1567,11 @@ namespace smtrat
                 }
                 // Update the assignment of the basic variable corresponding to this row
                 Variable<T1,T2>& currBasicVar = *((*pivotingColumnIter).rowVar());
-                if( _updateAssignments )
-                {
-                    #ifdef LRA_NO_DIVISION
-                    currBasicVar.rAssignment() += ((*mpTheta) * (*pivotingColumnIter).content())/currBasicVar.factor();
-                    #else
-                    currBasicVar.rAssignment() += (*mpTheta) * (*pivotingColumnIter).content();
-                    #endif
-                }
+                #ifdef LRA_NO_DIVISION
+                currBasicVar.rAssignment() += ((*mpTheta) * (*pivotingColumnIter).content())/currBasicVar.factor();
+                #else
+                currBasicVar.rAssignment() += (*mpTheta) * (*pivotingColumnIter).content();
+                #endif
                 // Update the row
                 Iterator currentRowIter = pivotingColumnIter;
                 #ifdef LRA_NO_DIVISION
@@ -1537,7 +1656,7 @@ namespace smtrat
                 #else
                 (*pivotingColumnIter).rContent() *= (*mpEntries)[_pivotingElement].content();
                 #endif
-                if( _updateAssignments && (currBasicVar.supremum() > currBasicVar.assignment() || currBasicVar.infimum() < currBasicVar.assignment()) )
+                if( !_optimizing && (currBasicVar.supremum() > currBasicVar.assignment() || currBasicVar.infimum() < currBasicVar.assignment()) )
                 {
                     if( Settings::pivot_into_local_conflict )
                     {
@@ -2119,847 +2238,6 @@ namespace smtrat
             return false;
         }
         
-        template<class Settings, typename T1, typename T2>
-        ConstraintT Tableau<Settings,T1,T2>::isDefining( size_t row_index, std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, T2& lcm, T2& max_value ) const
-        {
-            const Variable<T1, T2>& basic_var = *mRows.at(row_index);
-            basic_var.expression();
-            bool upper_bound_hit = false;
-            Iterator row_iterator = Iterator( basic_var.startEntry() , mpEntries );
-            if( basic_var.infimum() == basic_var.assignment() || basic_var.supremum() == basic_var.assignment() )
-            {
-                if( basic_var.supremum() == basic_var.assignment() ) 
-                {
-                    upper_bound_hit = true;                    
-                }
-                /*
-                 * The row represents a DC. Collect the nonbasics and the corresponding coefficients.
-                 */ 
-                while( true )
-                {
-                    T2 content = (*row_iterator).content();
-                    T2 abs_content = carl::abs( content );
-                    std::pair<size_t,T2> to_be_added = std::pair<size_t,T2>();
-                    to_be_added.first = (*(*row_iterator).columnVar()).position();
-                    to_be_added.second = content;
-                    nonbasicindex_coefficient.push_back(to_be_added);
-                    //non_basic_vars_positions.push_back( (*(*row_iterator).columnVar()).position() );
-                    //row_polynomial += (Rational)content*(*(*row_iterator).columnVar()).expression();
-                    //coefficients.push_back( content );
-                    if( abs_content > max_value )
-                    {
-                        max_value = abs_content;                        
-                    }
-                    #ifdef LRA_NO_DIVISION
-                    lcm = carl::lcm(lcm,content);
-                    #endif
-                    if( !row_iterator.hEnd( false ) )
-                    {
-                        row_iterator.hMove( false );                   
-                    }
-                    else
-                    {
-                        break;
-                    }                    
-                }
-                typename Poly::PolyType dc_poly;
-                dc_poly = basic_var.expression();
-                if( upper_bound_hit )
-                {
-                    dc_poly = dc_poly -  (Rational)(basic_var.supremum().limit().mainPart());
-                }
-                else
-                {
-                    dc_poly = dc_poly - (Rational)(basic_var.infimum().limit().mainPart());
-                }
-                return smtrat::ConstraintT( dc_poly, carl::Relation::EQ );
-            }
-            else
-            {
-                while( true )
-                {
-                    T2 abs_content = carl::abs( (*row_iterator).content() );
-                    if( abs_content > max_value )
-                    {
-                        max_value = abs_content;                        
-                    }
-                    if( !row_iterator.hEnd( false ) )
-                    {
-                        row_iterator.hMove( false );
-                    }
-                    else
-                    {
-                        break;
-                    }                    
-                }                
-            }
-            return smtrat::ConstraintT();
-        }
-        
-        template<class Settings, typename T1, typename T2>
-        bool Tableau<Settings,T1,T2>::isDefining_Easy( std::vector<size_t>& dc_positions,size_t row_index )
-        {
-            auto vector_iterator = dc_positions.begin();
-            while( vector_iterator != dc_positions.end() )
-            {
-                if( *vector_iterator == row_index )
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-        
-        template<class Settings, typename T1, typename T2>
-        bool Tableau<Settings,T1,T2>::isDiagonal( size_t column_index , std::vector<size_t>& diagonals )
-        {
-            size_t i=0;
-            while( diagonals.at(i) != mColumns.size() )
-            {
-                if( diagonals.at(i) == column_index )
-                {
-                    return true;
-                }
-            ++i;    
-            }
-            return false;            
-        }
-        
-        template<class Settings, typename T1, typename T2>
-        size_t Tableau<Settings,T1,T2>::position_DC( size_t row_index,std::vector<size_t>& dc_positions )
-        {
-            auto vector_iterator = dc_positions.begin();
-            size_t i=0;
-            while( vector_iterator != dc_positions.end() )
-            {
-                if( *vector_iterator == row_index )
-                {
-                    return i;
-                }
-                ++i;
-                ++vector_iterator;
-            }
-            return mRows.size();
-        }
-        
-        template<class Settings, typename T1, typename T2>
-        size_t Tableau<Settings,T1,T2>::revert_diagonals( size_t column_index, std::vector<size_t>& diagonals )
-        {
-            size_t i=0;
-            while(diagonals.at(i) != mColumns.size())   
-            {
-                if(diagonals.at(i) == column_index)
-                {
-                    return i;
-                }
-                ++i;
-            }
-            return mColumns.size();
-        }
-        
-        template<class Settings, typename T1, typename T2>
-        void Tableau<Settings,T1,T2>::invertColumn( size_t column_index )
-        {   
-            Iterator column_iterator = Iterator( (*mColumns.at(column_index)).startEntry(), mpEntries );   
-            while(true)
-            {
-                (*mpEntries)[column_iterator.entryID()].rContent() = T2(-1)*(*mpEntries)[column_iterator.entryID()].content();
-                if( !column_iterator.vEnd( false ) )
-                {
-                    column_iterator.vMove( false );            
-                } 
-                else 
-                {
-                    break;
-                }
-            }        
-        }
-
-        template<class Settings, typename T1, typename T2>
-        void Tableau<Settings,T1,T2>::addColumns( size_t columnA_index, size_t columnB_index, const T2& multiple )
-        {
-            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-            std::cout << __func__ << "( " << columnA_index << ", " << columnB_index << ", " << multiple << " )" << std::endl;
-            #endif
-            Iterator columnA_iterator = Iterator((*mColumns.at(columnA_index)).startEntry(), mpEntries);
-            Iterator columnB_iterator = Iterator((*mColumns.at(columnB_index)).startEntry(), mpEntries);                
-            while( true )
-            {
-            /* 
-             * Make columnA_iterator and columnB_iterator neighbors. 
-             */ 
-            while( (*(*columnA_iterator).rowVar()).position() > (*(*columnB_iterator).rowVar()).position() && !columnA_iterator.vEnd( false ) )
-            {
-                columnA_iterator.vMove( false );
-            }    
-            EntryID ID1_to_be_Fixed,ID2_to_be_Fixed;            
-            if( (*(*columnA_iterator).rowVar()).position() == (*(*columnB_iterator).rowVar()).position() )
-            {
-                T2 content = T2((*columnA_iterator).content()+T2(multiple*(*columnB_iterator).content()));  
-                if(content == 0)
-                {
-                    EntryID to_delete = columnA_iterator.entryID();
-                    if( !columnA_iterator.vEnd( false ) )
-                    {                        
-                        columnA_iterator.vMove( false );
-                    }    
-                    removeEntry(to_delete);                
-                 }                
-                 else
-                 {
-                    (*columnA_iterator).rContent() = content;           
-                 }    
-              }
-              else if( (*(*columnA_iterator).rowVar()).position() < (*(*columnB_iterator).rowVar()).position() ) 
-              {
-                  /*
-                   * A new entry has to be created under the position of columnA_iterator
-                   * and sideways to column_B_iterator.
-                   */   
-                  EntryID entryID = newTableauEntry(T2(multiple*(*columnB_iterator).content()));
-                  TableauEntry<T1,T2>& entry = (*mpEntries)[entryID];
-                  TableauEntry<T1,T2>& entry_down = (*mpEntries)[(*columnA_iterator).vNext( true )];   
-                  EntryID down = (*columnA_iterator).vNext( true );
-                  entry.setColumnVar( (*columnA_iterator).columnVar() );
-                  entry.setRowVar( (*columnB_iterator).rowVar() );
-                  entry.setVNext( true, down);
-                  entry.setVNext( false,columnA_iterator.entryID());
-                  entry_down.setVNext( false,entryID);
-                  (*columnA_iterator).setVNext( true, entryID);
-                  Variable<T1, T2>& nonBasicVar = *mColumns[(*entry.columnVar()).position()];
-                  ++nonBasicVar.rSize();
-                  Iterator row_iterator = Iterator(columnB_iterator.entryID(), mpEntries);
-                  ID2_to_be_Fixed = row_iterator.entryID();
-                  if( (*(*row_iterator).columnVar()).position() > entry.columnVar()->position() )
-                  {
-                      /*
-                       * The new entry is left from the added entry.
-                       * Search for the entries which have to be modified.
-                       */
-                      while( (*(*row_iterator).columnVar()).position() > entry.columnVar()->position() && !row_iterator.hEnd( true ) )
-                      {
-                          ID1_to_be_Fixed = row_iterator.entryID();
-                          row_iterator.hMove( true ); 
-                          ID2_to_be_Fixed = row_iterator.entryID();
-                      }
-                      if( (*(*row_iterator).columnVar()).position() > entry.columnVar()->position() && row_iterator.hEnd( true ) )
-                      {                          
-                          (*mpEntries)[entryID].setHNext( true,LAST_ENTRY_ID);  
-                          (*mpEntries)[entryID].setHNext( false,ID2_to_be_Fixed);
-                          (*mpEntries)[ID2_to_be_Fixed].setHNext( true,entryID);
-                          mRows[(*(*columnB_iterator).rowVar()).position()]->rStartEntry() = entryID;
-                      }                     
-                      else
-                      {
-                          (*mpEntries)[ID2_to_be_Fixed].setHNext( false,entryID);
-                          (*mpEntries)[ID1_to_be_Fixed].setHNext( true,entryID);
-                          (*mpEntries)[entryID].setHNext( true,ID2_to_be_Fixed); 
-                          (*mpEntries)[entryID].setHNext( false,ID1_to_be_Fixed);
-                      }
-                  }    
-                  else
-                  {
-                      /*
-                       * The new entry is right from the added entry.
-                       * Search for the entries which have to be modified.
-                       */                      
-                      while( (*(*row_iterator).columnVar()).position() < entry.columnVar()->position() && !row_iterator.hEnd( false ) )
-                      {
-                          ID1_to_be_Fixed = row_iterator.entryID();
-                          row_iterator.hMove( false );
-                          ID2_to_be_Fixed = row_iterator.entryID();
-                      }
-                      if( (*(*row_iterator).columnVar()).position() < entry.columnVar()->position() && row_iterator.hEnd( false ) )
-                      {
-                          (*mpEntries)[entryID].setHNext( false,LAST_ENTRY_ID);  
-                          (*mpEntries)[entryID].setHNext( true,ID2_to_be_Fixed);
-                          (*mpEntries)[ID2_to_be_Fixed].setHNext( false,entryID);
-                      }    
-                      else
-                      {                          
-                          (*mpEntries)[ID2_to_be_Fixed].setHNext( true,entryID);
-                          (*mpEntries)[ID1_to_be_Fixed].setHNext( false,entryID);
-                          (*mpEntries)[entryID].setHNext( false,ID2_to_be_Fixed); 
-                          (*mpEntries)[entryID].setHNext( true,ID1_to_be_Fixed);
-                      }
-                  }
-                  ++(mRows[(*entry.rowVar()).position()]->rSize());
-                  if( nonBasicVar.startEntry() == columnA_iterator.entryID() )    
-                  {
-                      nonBasicVar.rStartEntry() = entryID;
-                  }  
-                                   
-              }
-              else
-              {
-                  /*
-                   * A new entry has to be created above the position of columnA_iterator
-                   * and sideways to column_B_iterator.
-                   */                   
-                  EntryID entryID = newTableauEntry(T2(multiple*(*columnB_iterator).content()));
-                  TableauEntry<T1,T2>& entry = (*mpEntries)[entryID];
-                  entry.setColumnVar((*columnA_iterator).columnVar());
-                  entry.setRowVar((*columnB_iterator).rowVar());
-                  entry.setVNext( true,columnA_iterator.entryID());
-                  entry.setVNext( false,LAST_ENTRY_ID);
-                  (*columnA_iterator).setVNext( false,entryID);
-                  Variable<T1, T2>& nonBasicVar = *mColumns[(*entry.columnVar()).position()];
-                  ++nonBasicVar.rSize();                  
-                  Iterator row_iterator = Iterator(columnB_iterator.entryID(), mpEntries);
-                  ID2_to_be_Fixed = row_iterator.entryID();
-                  if( (*(*row_iterator).columnVar()).position() > entry.columnVar()->position() )
-                  {
-                      /*
-                       * The new entry is left from the added entry.
-                       * Search for the entries which have to be modified.
-                       */                      
-                      while( (*(*row_iterator).columnVar()).position() > entry.columnVar()->position() && !row_iterator.hEnd( true ) )
-                      {
-                          ID1_to_be_Fixed = row_iterator.entryID();
-                          row_iterator.hMove( true );                     
-                          ID2_to_be_Fixed = row_iterator.entryID();
-                      }
-                      if( (*(*row_iterator).columnVar()).position() > entry.columnVar()->position() && row_iterator.hEnd( true ) )
-                      {
-                          (*mpEntries)[entryID].setHNext( true,LAST_ENTRY_ID);
-                          (*mpEntries)[entryID].setHNext( false,ID2_to_be_Fixed);
-                          (*mpEntries)[ID2_to_be_Fixed].setHNext( true,entryID);
-                          mRows[(*(*columnB_iterator).rowVar()).position()]->rStartEntry() = entryID;                       
-                      }                     
-                      else
-                      {
-                          (*mpEntries)[ID2_to_be_Fixed].setHNext( false,entryID);
-                          (*mpEntries)[ID1_to_be_Fixed].setHNext( true,entryID);
-                          (*mpEntries)[entryID].setHNext( true,ID2_to_be_Fixed); 
-                          (*mpEntries)[entryID].setHNext( false,ID1_to_be_Fixed);
-                      }  
-                  }  
-                  else
-                  {
-                      /*
-                       * The new entry is right from the added entry.
-                       * Search for the entries which have to be modified.
-                       */                      
-                      while( (*(*row_iterator).columnVar()).position() < entry.columnVar()->position() && !row_iterator.hEnd( false ) )
-                      {                             
-                          ID1_to_be_Fixed = row_iterator.entryID();
-                          row_iterator.hMove( false );     
-                          ID2_to_be_Fixed = row_iterator.entryID();
-                      }
-                      if( (*(*row_iterator).columnVar()).position() < entry.columnVar()->position() && row_iterator.hEnd( false ) )
-                      {
-                          (*mpEntries)[entryID].setHNext( false,LAST_ENTRY_ID);  
-                          (*mpEntries)[entryID].setHNext( true,ID2_to_be_Fixed);
-                          (*mpEntries)[ID2_to_be_Fixed].setHNext( false,entryID);
-                      }    
-                      else
-                      {                          
-                          (*mpEntries)[ID2_to_be_Fixed].setHNext( true,entryID);
-                          (*mpEntries)[ID1_to_be_Fixed].setHNext( false,entryID);
-                          (*mpEntries)[entryID].setHNext( false,ID2_to_be_Fixed); 
-                          (*mpEntries)[entryID].setHNext( true,ID1_to_be_Fixed);
-                      }                      
-                  }
-               ++mRows[(*(entry.rowVar())).position()]->rSize();                    
-               }
-               if( !columnB_iterator.vEnd( false ) )
-               {
-                   columnB_iterator.vMove( false );
-               }
-               else
-               { 
-                   break;
-               }    
-           }
-        }
-        
-        template<class Settings, typename T1, typename T2> 
-        void Tableau<Settings,T1,T2>::multiplyRow( size_t row_index, const T2& _multiple )
-        {            
-            const Variable<T1, T2>& basic_var = *mRows.at(row_index);
-            Iterator row_iterator = Iterator( basic_var.position(), mpEntries);
-            while(true)
-            { 
-                T2 content = (*row_iterator).content()*_multiple;
-                (*row_iterator).rContent() = content;
-                if( !row_iterator.hEnd( false ) )
-                {
-                    row_iterator.hMove( false );
-                }
-                else
-                {
-                    break;
-                }
-            }
-        }
-        
-        template<class Settings, typename T1, typename T2> 
-        std::pair< const Variable<T1,T2>*, T2 > Tableau<Settings,T1,T2>::Scalar_Product( Tableau<Settings,T1,T2>& A, Tableau<Settings,T1,T2>& B,size_t rowA, size_t columnB,std::vector<size_t>& diagonals,std::vector<size_t>& dc_positions ) 
-        {
-            Iterator rowA_iterator = Iterator((*A.mRows.at(rowA)).startEntry(),A.mpEntries);
-            Iterator columnB_iterator = Iterator( (*B.mColumns.at(columnB)).startEntry(),B.mpEntries );
-            T2 sum = T2(0);
-            while( true )
-            {
-                columnB_iterator = Iterator( (*B.mColumns.at(columnB)).startEntry(),B.mpEntries );
-                size_t actual_column = revert_diagonals( (*(*rowA_iterator).columnVar()).position(),diagonals ); 
-                while( true )
-                {
-                    if( actual_column == position_DC( (*(*columnB_iterator).rowVar()).position(),dc_positions) )
-                    {
-                        sum += (*rowA_iterator).content()*(*columnB_iterator).content();
-                        break;
-                    }
-                    if( columnB_iterator.vEnd( false ) )
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        columnB_iterator.vMove( false );
-                    }
-                }
-                if( rowA_iterator.hEnd( false ) )
-                {
-                    break;
-                }
-                else
-                {
-                    rowA_iterator.hMove( false );
-                }  
-            }    
-            #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-            std::cout << sum << std::endl;
-            #endif
-            std::pair< const Variable<T1,T2>*, T2 > result = std::pair< const Variable<T1,T2>*, T2 >((*columnB_iterator).columnVar(),sum);
-            return result;    
-        }
-        
-        template<class Settings, typename T1, typename T2> 
-        void Tableau<Settings,T1,T2>::calculate_hermite_normalform( std::vector<size_t>& diagonals, bool& full_rank )
-        {
-            for(size_t i=0;i<mColumns.size();i++)
-            {
-                diagonals.push_back(mColumns.size());
-            }  
-            Iterator row_iterator = Iterator( (*mRows.at(0)).startEntry(), mpEntries);          
-            bool first_free;
-            bool first_loop;
-            bool just_deleted; 
-            /*
-             * Iterate through all rows in order to construct the HNF.
-             */
-            for(size_t i=0;i<mRows.size();++i)
-            {
-                size_t elim_pos=mColumns.size(),added_pos=mColumns.size();
-                EntryID added_entry,elim_entry;
-                T2 elim_content, added_content;     
-                row_iterator = Iterator( (*mRows.at(i)).startEntry(), mpEntries);
-                size_t number_of_entries = (*mRows.at(i)).size();
-                first_loop = true;
-                first_free = true;
-                just_deleted = false;
-                /*
-                 * Count how many zero entries of diagonal columns are in the
-                 * current row.
-                 */
-                size_t diag_zero_entries=0;
-                for(size_t j=0;j<i;j++)
-                {
-                    Iterator diagonal_iterator = Iterator( (*mColumns.at(diagonals.at(j))).startEntry(), mpEntries);
-                    while( (*diagonal_iterator).rowVar()->position() > i && !diagonal_iterator.vEnd( false ) )
-                    {
-                        diagonal_iterator.vMove( false );
-                    }
-                    if( (*diagonal_iterator).rowVar()->position() != i )
-                    {
-                        diag_zero_entries++;
-                    }
-                }             
-                /*
-                 * Eliminate as many entries as necessary.
-                 */
-                while( number_of_entries + diag_zero_entries > i + 1 )
-                {
-                    if( just_deleted )
-                    {
-                        /*
-                         * Move the iterator to the correct position if an entry
-                         * has been deleted in the last loop run.
-                         */
-                        row_iterator = Iterator(added_entry, mpEntries);
-                    }    
-                    else if( !first_loop )
-                    {
-                        /*
-                         * If no entry was deleted during the last loop run and it is not 
-                         * the first loop run, correct the position of the iterators.
-                         */                        
-                        if( (*(*mpEntries)[added_entry].columnVar()).position() > (*(*mpEntries)[elim_entry].columnVar()).position() )
-                        {
-                            row_iterator = Iterator(elim_entry,mpEntries);
-                        }    
-                        else
-                        {
-                            row_iterator = Iterator(added_entry,mpEntries);
-                        }    
-                    }
-                    /*
-                     * Make all entries in the current row positive.
-                     */
-                    Iterator help_iterator = Iterator((*mRows.at(i)).startEntry(), mpEntries);
-                    while( true )
-                    {
-                        if( (*help_iterator).content() < 0 && !isDiagonal((*(*help_iterator).columnVar()).position(),diagonals) )
-                        {
-                            invertColumn( (*(*help_iterator).columnVar()).position() );
-                        }
-                        if( !help_iterator.hEnd( false ) )
-                        {
-                            help_iterator.hMove( false );
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-                    
-                    while( elim_pos == added_pos )
-                    {
-                        T2 content = (*mpEntries)[row_iterator.entryID()].content();
-                        size_t column = (*(*mpEntries)[row_iterator.entryID()].columnVar()).position();   
-                        if( !isDiagonal(column,diagonals) )
-                        {    
-                            if( first_free )
-                            {                                
-                                elim_pos = column;
-                                elim_content = content; 
-                                added_pos = column;
-                                added_content = content;
-                                first_free = false;
-                                added_entry = row_iterator.entryID();
-                                elim_entry = row_iterator.entryID();
-                            }
-                            else
-                            {
-                                if( elim_content <= content )
-                                {
-                                    elim_pos = column;
-                                    elim_content = content;  
-                                    elim_entry = row_iterator.entryID();
-                                }
-                                else
-                                {
-                                    added_pos = column;
-                                    added_content = content; 
-                                    added_entry = row_iterator.entryID();
-                                }
-                             }
-                        }                        
-                        if( elim_pos == added_pos && !row_iterator.hEnd( false ) )
-                        {
-                            row_iterator.hMove( false );  
-                        }    
-                    }
-                    T2 floor_value = T2( (carl::floor( (Rational)(elim_content / added_content) ) ) );
-                    #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-                    std::cout << "floor_value = " << floor_value << std::endl;
-                    std::cout << "added_content = " << added_content << std::endl;
-                    std::cout << "elim_content = " << elim_content << std::endl;
-                    std::cout << "T2((-1)*floor_value*added_content) = " << T2((-1)*floor_value*added_content) << std::endl;
-                    #endif
-                    addColumns(elim_pos,added_pos,T2((-1)*floor_value));
-                    #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-                    std::cout << "Add " << (added_pos+1) << ". column to " << (elim_pos+1) << ". column:" << std::endl;
-                    print( LAST_ENTRY_ID, std::cout, "", true, true );
-                    #endif
-                    number_of_entries = (*mRows.at(i)).size(); 
-                    #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-                    std::cout << "Number of entries: " << number_of_entries << std::endl;
-                    std::cout << "Zero entries: " << diag_zero_entries << std::endl;
-                    std::cout << "i: " << i << std::endl;
-                    #endif
-                    first_loop = false;
-                    if( carl::mod( carl::getNum(Rational(elim_content)), carl::getNum(Rational(added_content)) ) == 0 )
-                    {
-                        /*
-                         * If the remain of the division is zero,
-                         * the following addition will delete
-                         * the entry with the ID elim_entry
-                         */
-                        just_deleted = true; 
-                        first_free = true;
-                        elim_pos = added_pos;
-                        elim_entry = added_entry;
-                    }    
-                    else
-                    {
-                         just_deleted = false;  
-                         first_free = true;
-                         if(elim_pos < added_pos)
-                         {
-                             added_pos = elim_pos;
-                         }    
-                         else
-                         {
-                             elim_pos = added_pos;
-                         }         
-                    }
-                }
-                if( first_loop )
-                {
-                    /*
-                     * The current row does not need any eliminations.
-                     * So search manually for the diagonal element.
-                     */
-                    while( isDiagonal((*(*row_iterator).columnVar()).position(),diagonals) )
-                    {
-                        if( row_iterator.hEnd( false ) )
-                        {
-                            full_rank = false;
-                            return;
-                        }
-                        row_iterator.hMove( false );                        
-                    }
-                    if( (*row_iterator).content() < 0 )
-                    {
-                        invertColumn( (*(*row_iterator).columnVar()).position() );
-                    }
-                    added_content = (*row_iterator).content();
-                    added_pos = (*(*row_iterator).columnVar()).position();
-                } 
-                diagonals.at(i) = added_pos;                
-                /*
-                 *  Normalize row.
-                 */
-                row_iterator = Iterator((*mRows.at(i)).startEntry(), mpEntries);
-                while( true )
-                {   
-                    if( (*(*row_iterator).columnVar()).position() != added_pos && isDiagonal((*(*row_iterator).columnVar()).position(),diagonals) && ( added_content <= carl::abs( (*row_iterator).content() ) || (*row_iterator).content() > 0 ) )
-                    {
-                       /*
-                        * The current entry has to be normalized because it´s
-                        * in a diagonal column and greater or equal than the
-                        * diagonal entry in the current row.
-                        */
-                        #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-                        std::cout << "Normalize" << std::endl;
-                        std::cout << (*(*mpEntries)[row_iterator.entryID()].columnVar()).position() << std::endl;
-                        std::cout << diagonals.at(i) << std::endl;
-                        #endif
-                        T2 floor_value = T2( (carl::floor( (Rational)(carl::abs( (*row_iterator).content() / added_content) ) ) ) );
-                        if( carl::mod( carl::toInt<typename carl::IntegralType<T2>::type>(carl::abs( (*row_iterator).content() )), carl::toInt<typename carl::IntegralType<T2>::type>(added_content) ) != 0 )
-                        {
-                            ++floor_value;
-                        }
-                        T2 inverter = (Rational)1;
-                        if ( (*row_iterator).content() < 0 )
-                        {
-                            inverter = inverter * (Rational)-1;                            
-                        }
-                        addColumns( (*(*mpEntries)[row_iterator.entryID()].columnVar()).position(),
-                                  diagonals.at(i),
-                                  Rational(Rational(-1)*inverter*Rational(floor_value)) );
-                        #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-                        print();
-                        #endif
-                    }
-                    if( !row_iterator.hEnd( false ) )
-                    {
-                        row_iterator.hMove( false ); 
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }                
-            }  
-        }     
-        
-        template<class Settings, typename T1, typename T2> 
-        void Tableau<Settings,T1,T2>::invert_HNF_Matrix(std::vector<size_t>& diagonals)
-        {
-            /*
-             * Iterate through the tableau beginning in the the last
-             * column which only contains one element.
-             */  
-           size_t i = mRows.size()-1;
-           std::map< std::pair<size_t, size_t >, T2 > changed_values  = std::map< std::pair<size_t, size_t>, T2 >();
-            while( true )
-            {
-                /*
-                 * Move the iterator to the diagonal element in the current column
-                 * and calculate the new content for it.
-                 */
-                Iterator column_iterator = Iterator( (*mColumns.at(diagonals.at(i))).startEntry(), mpEntries ); 
-                while( !column_iterator.vEnd( false ) )
-                {
-                    column_iterator.vMove( false );                  
-                } 
-                changed_values[std::pair<size_t, size_t >((*column_iterator).rowVar()->position(), (*column_iterator).rowVar()->position()  )] = (*column_iterator).content();
-                (*column_iterator).rContent() = Rational(Rational(1)/(*column_iterator).content());
-                /*
-                 * Now change the other entries in the current column if necessary.
-                 */
-                if( column_iterator.vEnd( true ) )
-                {
-                    if( i == 0 )
-                    {
-                        return;
-                    }
-                    --i;
-                    continue;
-                }
-                column_iterator.vMove( true );
-                Iterator row_iterator = Iterator( (*column_iterator).rowVar()->startEntry(), mpEntries );
-                while( true )
-                {
-                    size_t res = revert_diagonals( (*(*row_iterator).columnVar()).position(), diagonals );
-                    while( res < (*(*column_iterator).rowVar()).position() && !row_iterator.hEnd( false ) )
-                    {
-                        row_iterator.hMove( false );
-                        res = revert_diagonals( (*(*row_iterator).columnVar()).position(), diagonals );
-                    }
-                    if( res == (*(*column_iterator).rowVar()).position() )
-                    {
-                        changed_values[std::pair<size_t, size_t >((*column_iterator).rowVar()->position(), revert_diagonals( (*column_iterator).columnVar()->position(), diagonals ) )] = (*column_iterator).content();
-                        T2& value_to_be_changed = (*column_iterator).rContent();
-                        T2 divisor = changed_values.at(std::pair<size_t, size_t >((*row_iterator).rowVar()->position(), res ));  
-                        T2 sum = 0; 
-                        Iterator column_iterator2 = Iterator( column_iterator.entryID(), mpEntries );
-                        row_iterator = Iterator( (*column_iterator2).rowVar()->startEntry(), mpEntries );
-                        column_iterator2.vMove( false );
-                        while( true )
-                        {
-                            row_iterator = Iterator( (*column_iterator).rowVar()->startEntry(), mpEntries );
-                            res = revert_diagonals( (*(*row_iterator).columnVar()).position(), diagonals );
-                            while( res != (*(*column_iterator2).rowVar()).position() && !row_iterator.hEnd( false ) )
-                            {
-                                row_iterator.hMove( false );
-                                res = revert_diagonals( (*(*row_iterator).columnVar()).position(), diagonals );
-                            }
-                            if( res == (*(*column_iterator2).rowVar()).position() )
-                            {
-                                sum = sum-(*row_iterator).content()*(*column_iterator2).content();
-                            }                             
-                            if( column_iterator2.vEnd( false ) )
-                            {
-                                break;
-                            }
-                            column_iterator2.vMove( false );
-                            row_iterator = Iterator( (*column_iterator).rowVar()->startEntry(), mpEntries );
-                        }   
-                        value_to_be_changed = sum / divisor;
-                    }  
-                    if( !column_iterator.vEnd( true ) )
-                    {
-                        column_iterator.vMove( true );
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }    
-                if(i == 0)
-                {
-                    return;
-                }
-                --i;
-            }
-        }
-        
-        template<class Settings, typename T1, typename T2>
-        typename Poly::PolyType* Tableau<Settings,T1,T2>::create_cut_from_proof( Tableau<Settings,T1,T2>& Inverted_Tableau, Tableau<Settings,T1,T2>& DC_Tableau, size_t row_index, std::vector<size_t>& diagonals, std::vector<size_t>& dc_positions, T2& lower, T2& max_value )
-        {
-            Value<T1> result = T2(0);
-            assert( mRows.size() > row_index );
-            Iterator row_iterator = Iterator( (*mRows.at(row_index)).startEntry(),mpEntries); 
-            /*
-             * Calculate H^(-1)*b 
-             */
-            size_t i;
-            while( true )
-            {
-                i = revert_diagonals((*(*row_iterator).columnVar()).position(),diagonals);
-                assert( i < mColumns.size() );
-                const Variable<T1, T2>& basic_var = *(DC_Tableau.mRows).at(dc_positions.at(i));
-                result += basic_var.assignment() * (*row_iterator).content();                    
-                if( row_iterator.hEnd( false ) )
-                {
-                    break;
-                }
-                else
-                {
-                    row_iterator.hMove( false );
-                }                
-            }
-            if( !carl::isInteger( (Rational)result.mainPart() ) )
-            {
-                // Construct the Cut
-                std::pair< const Variable<T1,T2>*, T2 > product;
-                size_t i=0;
-                typename Poly::PolyType* sum = new typename Poly::PolyType();
-                T2 gcd_row = T2(1);
-                while( i < DC_Tableau.mColumns.size() )
-                {
-                    // Check whether the current column variable also exists in the inverted Tableau
-                    size_t j = 0;
-                    bool var_exists = false;
-                    const Variable<T1, T2>* nonBasicVar = DC_Tableau.mColumns.at(i);
-                    while( j < Inverted_Tableau.mColumns.size() && !var_exists )
-                    {
-                        if( (*nonBasicVar).expression() ==  (*Inverted_Tableau.columns().at(j)).expression() )
-                        {
-                            var_exists = true;
-                        }
-                        ++j;
-                    }
-                    if( var_exists )
-                    {
-                        product = Scalar_Product(Inverted_Tableau,DC_Tableau,row_index,i,diagonals,dc_positions);
-                    }
-                    else
-                    {
-                        product.second = 0;
-                    }
-                    if( product.second != 0 )
-                    {
-                        T2 temp = T2(Rational(carl::getDenom((Rational)result.mainPart()))*Rational(product.second));
-                        gcd_row  = carl::gcd( gcd_row , temp );
-                        *sum += (*product.first).expression()*(Rational)temp;
-                    }
-                    ++i;
-                }
-                /* Check whether the proof of unsatisfiability contains a coefficient which is greater 
-                 * than max_value*gcd_row and also divide the coefficients of the sum by gcd_row 
-                 * according to the algorithm.
-                 */ 
-                auto iter = (*sum).begin();
-                while( iter != (*sum).end() )
-                {
-                    if( (*iter).coeff() > Rational(max_value*gcd_row) )
-                    {
-                        return NULL;                        
-                    }
-                    ++iter;
-                }
-				(*sum) /= (Rational)gcd_row;
-                lower = (Rational)carl::getNum((Rational)result.mainPart())/(Rational)gcd_row;
-                #ifdef LRA_DEBUG_CUTS_FROM_PROOFS
-                std::cout << "Numerator: " << carl::getNum((Rational)result.mainPart()) << std::endl;
-                std::cout << "Denominator: " << carl::getDenom((Rational)result.mainPart()) << std::endl;
-                std::cout << "gcd: " << gcd_row << std::endl;
-                std::cout << "lower: " << lower << std::endl;
-                std::cout << "Cut: " << *sum << std::endl;
-                #endif
-                return sum; 
-            }
-            else
-            {                
-                return NULL;                
-            }
-        }
-        
         enum GOMORY_SET
         {
             J_PLUS,
@@ -3159,6 +2437,8 @@ namespace smtrat
                 }              
             }            
         }
+        
+        #ifdef DEBUG_METHODS_TABLEAU
 
         template<class Settings, typename T1, typename T2>
         void Tableau<Settings,T1,T2>::printHeap( std::ostream& _out, int _maxEntryLength, const std::string _init ) const
@@ -3490,5 +2770,6 @@ namespace smtrat
             _out << std::endl;
             _out << std::setfill( ' ' );
         }
+        #endif
     }    // end namspace lra
 }    // end namspace smtrat

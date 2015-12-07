@@ -10,15 +10,15 @@ namespace smtrat {
 	struct NNFPreparation {
 		FormulaT rewrite_implication(const FormulaT&, FormulaT&& premise, FormulaT&& conclusion) {
 			// A => B ----> (!A v B)
-			return FormulaT(carl::OR, FormulaT(carl::NOT, std::move(premise)), std::move(conclusion));
+			return FormulaT(carl::OR, {FormulaT(carl::NOT, std::move(premise)), std::move(conclusion)});
 		}
 
 		FormulaT rewrite_ite(const FormulaT&, FormulaT&& condition, FormulaT&& trueCase, FormulaT&& falseCase) {
 			// if(A) then B else C ----> (!A v B) & (A v C)
 			return FormulaT(
 				carl::AND,
-				FormulaT(carl::OR, FormulaT(carl::NOT, std::move(condition)), std::move(trueCase)),
-				FormulaT(carl::OR, std::move(condition), std::move(falseCase))
+				{FormulaT(carl::OR, {FormulaT(carl::NOT, std::move(condition)), std::move(trueCase)}),
+				FormulaT(carl::OR, {std::move(condition), std::move(falseCase)})}
 			);
 		}
 
@@ -32,8 +32,8 @@ namespace smtrat {
 
 			return FormulaT(
 				carl::OR,
-				FormulaT(carl::AND, std::move(subformulas)),
-				FormulaT(carl::AND, std::move(negs))
+				{FormulaT(carl::AND, std::move(subformulas)),
+				FormulaT(carl::AND, std::move(negs))}
 			);
 		}
 

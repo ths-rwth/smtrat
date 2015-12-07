@@ -9,7 +9,7 @@
 
 namespace smtrat {
 	template<typename Settings> template<typename EdgeType>
-		void EQModule<Settings>::P_print_edge(std::ostream& out, EdgeType* edge, FormulasT& infeasible, std::unordered_set< g_iterator, by_address_hasher<g_iterator> >& inserted_nodes)
+		void EQModule<Settings>::P_print_edge(std::ostream& out, EdgeType* edge, FormulaSetT& infeasible, std::unordered_set< g_iterator, by_address_hasher<g_iterator> >& inserted_nodes)
 	{
 		if(edge->mPred->second.mUFIndex < edge->mSucc->second.mUFIndex) {
 			
@@ -112,7 +112,7 @@ namespace smtrat {
 		static int visualiseGraphCount = 0;
 		std::ofstream file;
 
-		FormulasT& infeasible = mInfeasibleSubsets.back();
+		FormulaSetT& infeasible = mInfeasibleSubsets.back();
 		
 		std::string fileName("graphs/graph" + boost::lexical_cast<std::string>(visualiseGraphCount++) + ".dot");
 		file.open(fileName.c_str(), std::fstream::out | std::fstream::trunc);
@@ -183,7 +183,7 @@ namespace smtrat {
 	{
 		static unsigned formulaCount = 0;
 
-		for(const FormulasT &infeasible : mInfeasibleSubsets) {
+		for(const FormulaSetT &infeasible : mInfeasibleSubsets) {
 			std::ofstream file("formulas/infeasible_subset_" + boost::lexical_cast<std::string>(++formulaCount)+".smt2");
 
 			if(file) {

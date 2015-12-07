@@ -81,6 +81,7 @@ namespace Minisat
             T& operator []( Ref r )
             {
                 assert( r >= 0 );
+//                if( r >= sz ) exit(1379);
                 assert( r < sz );
                 return memory[r];
             }

@@ -1,0 +1,5 @@
+BeginDefineModule()
+ModuleMainHeader(EMModule/EMModule.h)
+ModuleName(EMModule)
+ModuleVersion(0 0 1)
+EndDefineModule()

@@ -397,6 +397,8 @@ namespace smtrat
                  *          false, otherwise.
                  */
                 bool addBound( const ConstraintT& _constraint, const T& _origin );
+				
+				bool addBound( const FormulaT& _formula, const T& _origin );
                 
                 /**
                  * Removes all effects the given constraint has on the variable bounds.
@@ -407,6 +409,8 @@ namespace smtrat
                  *          0, otherwise.
                  */
                 unsigned removeBound( const ConstraintT& _constraint, const T& _origin );
+				
+				unsigned removeBound( const FormulaT& _formula, const T& _origin );
                 
                 /**
                  * Removes all effects the given constraint has on the variable bounds.
@@ -431,6 +435,20 @@ namespace smtrat
                  * @return The variable bounds as an interval.
                  */
                 const RationalInterval& getInterval( const carl::Variable& _var ) const;
+				
+				/**
+                 * Creates an interval corresponding to the bounds of the given monomial.
+                 * @param _mon The monomial to compute the bounds as interval for.
+                 * @return The monomial bounds as an interval.
+                 */
+				RationalInterval getInterval( carl::Monomial::Arg _mon ) const;
+				
+				/**
+                 * Creates an interval corresponding to the bounds of the given term.
+                 * @param _term The term to compute the bounds as interval for.
+                 * @return The term bounds as an interval.
+                 */
+				RationalInterval getInterval( const TermT& _term ) const;
                 
                 /**
                  * Creates an interval map corresponding to the variable bounds.
@@ -450,18 +468,21 @@ namespace smtrat
                  * @return The origin constraints of the supremum and infimum of the given variable.
                  */
                 std::vector<T> getOriginsOfBounds( const carl::Variable& _var ) const;
+                std::set<T> getOriginSetOfBounds( const carl::Variable& _var ) const;
                 
                 /**
                  * @param _variables The variables to get origins of the bounds for.
                  * @return The origin constraints of the supremum and infimum of the given variables.
                  */
                 std::vector<T> getOriginsOfBounds( const carl::Variables& _variables ) const;
+                std::set<T> getOriginSetOfBounds( const carl::Variables& _variables ) const;
                 
                 /**
                  * Collect the origins to the supremums and infimums of all variables.
                  * @return A set of origins corresponding to the supremums and infimums of all variables.
                  */
                 std::vector<T> getOriginsOfBounds() const;
+                std::set<T> getOriginSetOfBounds() const;
                 
                 /**
                  * @return The deductions which this variable bounds manager has detected.
@@ -488,13 +509,13 @@ namespace smtrat
                 /**
                  * @return The origins which cause the conflict. This method can only be called, if there is a conflict.
                  */
-                std::vector<T> getConflict() const
+                std::set<T> getConflict() const
                 {
                     assert( isConflicting() );
                     assert( !mpConflictingVariable->infimum().isInfinite() && !mpConflictingVariable->supremum().isInfinite() );
-                    std::vector<T> conflict;
-                    conflict.push_back( *mpConflictingVariable->infimum().origins().begin() );
-                    conflict.push_back( *mpConflictingVariable->supremum().origins().begin() );
+                    std::set<T> conflict;
+                    conflict.insert( *mpConflictingVariable->infimum().origins().begin() );
+                    conflict.insert( *mpConflictingVariable->supremum().origins().begin() );
                     return conflict;
                 }
         };

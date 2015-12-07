@@ -6,6 +6,7 @@
  */
 
 #include "ModuleInput.h"
+#include "../datastructures/Assignment.h"
 
 using namespace std;
 using namespace carl;
@@ -33,16 +34,14 @@ namespace smtrat
     
     unsigned ModuleInput::satisfiedBy( const Model& _assignment ) const
     {
-        EvalRationalMap rationalAssigns;
-        getRationalAssignmentsFromModel( _assignment, rationalAssigns );
         unsigned result = 1;
-//        std::cout << "Rational assignment:" << std::endl;
-//        for( const auto& ra : rationalAssigns )
-//            std::cout << ra.first << " -> " << ra.second << std::endl;
+//        std::cout << "Assignment:" << std::endl;
+//        for( const auto& a : _assignment )
+//            std::cout << a.first << " -> " << a.second << std::endl;
         for( const FormulaWithOrigins& fwo : *this )
         {
 //            std::cout << fwo.formula() << " satisfied = ";
-            switch( satisfies( _assignment, rationalAssigns, fwo.formula() ) )
+            switch( satisfies( _assignment, fwo.formula() ) )
             {
                 case 0:
                 {
@@ -187,21 +186,22 @@ namespace smtrat
     
     void ModuleInput::updateProperties()
     {
-        mProperties = Condition();
-        mProperties |= PROP_IS_PURE_CONJUNCTION | PROP_IS_IN_CNF | PROP_IS_IN_NNF;
+        mProperties = carl::Condition();
+        mProperties |= carl::PROP_IS_PURE_CONJUNCTION | PROP_IS_LITERAL_CONJUNCTION | carl::PROP_IS_IN_CNF | carl::PROP_IS_IN_NNF;
         for( const FormulaWithOrigins& fwo : *this )
         {
-            Condition subFormulaConds = fwo.formula().properties();
-            if( !(PROP_IS_A_CLAUSE<=subFormulaConds) )
+            carl::Condition subFormulaConds = fwo.formula().properties();
+            if( !(carl::PROP_IS_A_CLAUSE<=subFormulaConds) )
             {
-                mProperties &= ~PROP_IS_PURE_CONJUNCTION;
-                mProperties &= ~PROP_IS_IN_CNF;
+                mProperties &= ~carl::PROP_IS_PURE_CONJUNCTION;
+                mProperties &= ~carl::PROP_IS_LITERAL_CONJUNCTION;
+                mProperties &= ~carl::PROP_IS_IN_CNF;
             }
-            else if( !(PROP_IS_A_LITERAL<=subFormulaConds) )
-                mProperties &= ~PROP_IS_PURE_CONJUNCTION;
-            if( !(PROP_IS_IN_NNF<=subFormulaConds) )
-                mProperties &= ~PROP_IS_IN_NNF;
-            mProperties |= (subFormulaConds & WEAK_CONDITIONS);
+            else if( !(carl::PROP_IS_AN_ATOM<=subFormulaConds) )
+                mProperties &= ~carl::PROP_IS_PURE_CONJUNCTION;
+            if( !(carl::PROP_IS_IN_NNF<=subFormulaConds) )
+                mProperties &= ~carl::PROP_IS_IN_NNF;
+            mProperties |= (subFormulaConds & carl::WEAK_CONDITIONS);
         }
         mPropertiesUpdated = true;
     }

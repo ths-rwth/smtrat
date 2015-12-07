@@ -62,6 +62,7 @@ inline  Lit  operator ~(Lit p)              { Lit q; q.x = p.x ^ 1; return q; }
 inline  Lit  operator ^(Lit p, bool b)      { Lit q; q.x = p.x ^ (int)(unsigned int)b; return q; }
 inline  bool sign      (Lit p)              { return p.x & 1; }
 inline  int  var       (Lit p)              { return p.x >> 1; }
+inline  Lit  neg       (Lit p)              { return mkLit( var(p), !sign(p) ); }
 
 // Mapping Literals to and from compact integers suitable for array indexing:
 inline  int  toInt     (Var v)              { return v; }
@@ -125,6 +126,7 @@ typedef RegionAllocator<uint32_t>::Ref CRef;
 static const unsigned NORMAL_CLAUSE = 0;
 static const unsigned DEDUCTED_CLAUSE = 1;
 static const unsigned CONFLICT_CLAUSE = 2;
+static const unsigned PERMANENT_CLAUSE = 3;
 
 #define BITMASK_MARK 0x03
 #define BITMASK_TYPE 0x03

@@ -8,14 +8,16 @@
 
 #pragma once
     
+#include "../../solver/ModuleSettings.h"
 #include "../../config.h"
 
 namespace smtrat
 {
     enum class SplittingHeuristic : unsigned { SIZE, UNSATISFIABILITY, SATISFIABILITY };
             
-    struct ICPSettings1
+    struct ICPSettings1 : ModuleSettings
     {
+		static constexpr auto moduleName = "ICPModule<ICPSettings1>";
         /**
          * 
          */
@@ -23,7 +25,7 @@ namespace smtrat
         /**
          * 
          */
-        static constexpr double target_diameter_nra = 0.1;
+        static constexpr double target_diameter_nra = 0.01;
         /**
          * 
          */
@@ -31,7 +33,7 @@ namespace smtrat
         /**
          * 
          */
-        static constexpr double contraction_threshold_nra = 0.01; // Because we currently cannot change the settings within one strategy
+        static constexpr double contraction_threshold_nra = 0.001; // Because we currently cannot change the settings within one strategy
         /**
          * 
          */
@@ -68,6 +70,30 @@ namespace smtrat
          * 
          */
         static constexpr bool prolong_contraction = true;
+        /**
+         * 
+         */
+        static constexpr bool original_polynomial_contraction = false;
+        /**
+         * 
+         */
+        static constexpr bool use_propagation = true;
+        /**
+         * 
+         */
+        static constexpr bool split_by_division_with_zero = true;
         
+    };
+    
+    struct ICPSettings2 : ICPSettings1
+    {
+		static constexpr auto moduleName = "ICPModule<ICPSettings2>";
+        static constexpr double default_splitting_size_nia = 100;
+    };
+    
+    struct ICPSettings3 : ICPSettings1
+    {
+		static constexpr auto moduleName = "ICPModule<ICPSettings3>";
+        static constexpr bool split_by_division_with_zero = false;
     };
 }

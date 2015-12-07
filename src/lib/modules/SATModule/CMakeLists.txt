@@ -1,16 +1,5 @@
-set(SMTRAT_SAT_Settings "1" CACHE STRING "Number of setting used for SATModule")
 BeginDefineModule()
 ModuleMainHeader(SATModule/SATModule.h)
-FILE(GLOB_RECURSE sources *.cpp)
-foreach(src ${sources})
-    AddModuleSource(${src})
-endforeach()
 ModuleName(SATModule)
-ModuleClass(SATModule<SATSettings${SMTRAT_SAT_Settings}>)
 ModuleVersion(1 0 0)
-ModuleDefaultEnabled()
-EndDefineModule(satEnabled)
-
-if(${satEnabled})
-	# do something
-endif()
+EndDefineModule()

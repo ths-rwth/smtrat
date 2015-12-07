@@ -4,10 +4,12 @@
  *
  */
 
-#include "carl/core/MultivariatePolynomial.h"
-#include "../../config.h"
 
 #pragma once
+
+#include "carl/core/MultivariatePolynomial.h"
+#include "../../config.h"
+#include "../../solver/ModuleSettings.h"
 
 namespace smtrat
 {
@@ -37,8 +39,9 @@ namespace smtrat
 	typedef carl::StdMultivariatePolynomialPolicies<carl::BVReasons> ReasonPolicy;
 	
     
-    struct GBSettings5
+    struct GBSettings5 : ModuleSettings
     {
+		static constexpr auto moduleName = "GBModule<GBSettings5>";
         static const unsigned                            identifier                              = 5;
         
         typedef carl::GrLexOrdering											 Order;
@@ -69,8 +72,9 @@ namespace smtrat
     
 
     
-    struct GBSettings3
+    struct GBSettings3 : ModuleSettings
     {
+		static constexpr auto moduleName = "GBModule<GBSettings3>";
         static const unsigned                            identifier                              = 3;
         
 		typedef carl::GrLexOrdering											 Order;
@@ -78,6 +82,7 @@ namespace smtrat
         typedef carl::Ideal<PolynomialWithReasons>						     MultivariateIdeal;
         typedef carl::Reductor<PolynomialWithReasons,PolynomialWithReasons>	 Reductor;
 		typedef smtrat::decidePassingPolynomial								 passPolynomial;
+		typedef carl::GBProcedure<PolynomialWithReasons, carl::Buchberger, carl::StdAdding> Groebner;
 
         static const bool                                passGB                                  = true;
         static const bool                                getReasonsForInfeasibility              = true;
@@ -92,6 +97,7 @@ namespace smtrat
         static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
         static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
 		static const transform_inequalities				 transformIntoEqualities				 = NO_INEQUALITIES;
+        static const bool                                iterativeVariableRewriting              = false;
 
 		static const bool								 applyNSS								 = false;
         static const unsigned                            maxSDPdegree                            = 4;
@@ -102,8 +108,9 @@ namespace smtrat
 		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
     };
    
-    struct GBSettings1
+    struct GBSettings1 : ModuleSettings
     {
+		static constexpr auto moduleName = "GBModule<GBSettings1>";
         static const unsigned                            identifier                              = 1;
         
 		typedef carl::GrLexOrdering											 Order;
@@ -111,6 +118,7 @@ namespace smtrat
         typedef carl::Ideal<PolynomialWithReasons>						     MultivariateIdeal;
         typedef carl::Reductor<PolynomialWithReasons,PolynomialWithReasons>	 Reductor;
 		typedef smtrat::decidePassingPolynomial								 passPolynomial;
+		typedef carl::GBProcedure<PolynomialWithReasons, carl::Buchberger, carl::StdAdding> Groebner;
 
         static const bool                                passGB                                  = true;
         static const bool                                getReasonsForInfeasibility              = false;
@@ -123,6 +131,7 @@ namespace smtrat
         static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
         static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
 		static const transform_inequalities				 transformIntoEqualities				 = NO_INEQUALITIES;
+        static const bool                                iterativeVariableRewriting              = false;
 
 		static const bool								 applyNSS								 = false;
         static const unsigned                            maxSDPdegree                            = 4;
@@ -133,41 +142,9 @@ namespace smtrat
 		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
     };
    
-    
- 	/**
-      struct GBSettings2
+    struct GBSettings4 : ModuleSettings
     {
-        static const unsigned                            identifier                              = 2;
-        
-        typedef carl::GrLexOrdering              Order;
-        typedef carl::MultivariatePolynomial<Rational, Order> Polynomial;
-        typedef carl::MultivariateIdeal<Order>        MultivariateIdeal;
-        typedef carl::BaseReductor<Order>             Reductor;
-		typedef smtrat::decidePassingPolynomial			 passPolynomial;
-
-        static const bool                                passGB                                  = true;
-        static const bool                                getReasonsForInfeasibility              = true;
-        static const bool                                passWithMinimalReasons                  = true;
-        static const check_inequalities                  checkInequalities                       = NEVER;
-        static const pass_inequalities                   passInequalities                        = AS_RECEIVED;
-        static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_INFEASIBLEANDDEDUCTION;
-        static const theory_deductions                   addTheoryDeductions                     = ONLY_INEQUALITIES;
-        static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
-        static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
-        static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
-		static const transform_inequalities				 transformIntoEqualities				 = NO_INEQUALITIES;
-
-		static const bool								 applyNSS								 = false;
-        static const unsigned                            maxSDPdegree                            = 4;
-        static const unsigned                            SDPupperBoundNrVariables                = 6;
-		static const unsigned							 callSDPAfterNMonomials					 = 6;
-		static const unsigned							 sternBrocotStartPrecisionOneTo			 = 80;
-		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 2;
-		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
-    };
-    */
-    struct GBSettings4
-    {
+		static constexpr auto moduleName = "GBModule<GBSettings4>";
         static const unsigned                            identifier                              = 4;
         
         typedef carl::GrLexOrdering											 Order;
@@ -175,6 +152,7 @@ namespace smtrat
         typedef carl::Ideal<PolynomialWithReasons>						     MultivariateIdeal;
         typedef carl::Reductor<PolynomialWithReasons,PolynomialWithReasons>	 Reductor;
 		typedef smtrat::decidePassingPolynomial								 passPolynomial;
+		typedef carl::GBProcedure<PolynomialWithReasons, carl::Buchberger, carl::StdAdding> Groebner;
 
         static const bool                                passGB                                  = false;
         static const bool                                getReasonsForInfeasibility              = true;
@@ -198,8 +176,9 @@ namespace smtrat
     
 
     
-    struct GBSettings6
+    struct GBSettings6 : ModuleSettings
     {
+		static constexpr auto moduleName = "GBModule<GBSettings6>";
         static const unsigned                            identifier                              = 6;
         
         typedef carl::GrLexOrdering											 Order;
@@ -207,6 +186,7 @@ namespace smtrat
         typedef carl::Ideal<PolynomialWithReasons>						     MultivariateIdeal;
         typedef carl::Reductor<PolynomialWithReasons,PolynomialWithReasons>	 Reductor;
 		typedef smtrat::decidePassingPolynomial								 passPolynomial;
+		typedef carl::GBProcedure<PolynomialWithReasons, carl::Buchberger, carl::StdAdding> Groebner;
 
         static const bool                                passGB                                  = false;
         static const bool                                getReasonsForInfeasibility              = true;
@@ -302,193 +282,6 @@ namespace smtrat
         static const unsigned                            SDPupperBoundNrVariables                = 15;
 		
     };
-    /*
-    struct GBSettings7
-    {
-        static const unsigned                            identifier                              = 7;
-        
-        typedef carl::GrLexOrdering              Order;
-        typedef carl::MultivariatePolynomial<Rational, Order> Polynomial;
-        typedef carl::MultivariateIdeal<Order>        MultivariateIdeal;
-        typedef carl::BaseReductor<Order>             Reductor;
-		typedef smtrat::decidePassingPolynomial			 passPolynomial;
-
-        static const bool                                passGB                                  = true;
-        static const bool                                getReasonsForInfeasibility              = false;
-        static const bool                                passWithMinimalReasons                  = false;
-        static const check_inequalities                  checkInequalities                       = ALWAYS;
-        static const pass_inequalities                   passInequalities                        = FULL_REDUCED;
-        static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_ALLINEQUALITIES;
-        static const theory_deductions                   addTheoryDeductions                     = NO_CONSTRAINTS;
-        static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
-        static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
-        static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
-		static const transform_inequalities				 transformIntoEqualities				 = NO_INEQUALITIES;
-
-		static const bool								 applyNSS								 = false;
-        static const unsigned                            maxSDPdegree                            = 4;
-        static const unsigned                            SDPupperBoundNrVariables                = 6;
-		static const unsigned							 callSDPAfterNMonomials					 = 6;
-		static const unsigned							 sternBrocotStartPrecisionOneTo			 = 80;
-		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 2;
-		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
-    };
-    
-    struct GBSettings0
-    {
-        static const unsigned                            identifier                              = 0;
-        
-        typedef carl::GrLexOrdering              Order;
-        typedef carl::MultivariatePolynomial<Rational, Order> Polynomial;
-        typedef carl::MultivariateIdeal<Order>        MultivariateIdeal;
-        typedef carl::BaseReductor<Order>             Reductor;
-		typedef smtrat::decidePassingPolynomial			 passPolynomial;
-
-        static const bool                                passGB                                  = false;
-        static const bool                                getReasonsForInfeasibility              = false;
-        static const bool                                passWithMinimalReasons                  = false;
-        static const check_inequalities                  checkInequalities                       = NEVER;
-        static const pass_inequalities                   passInequalities                        = AS_RECEIVED;
-        static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_INFEASIBLEANDDEDUCTION;
-        static const theory_deductions                   addTheoryDeductions                     = ONLY_INEQUALITIES;
-        static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
-        static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
-        static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
-		static const transform_inequalities				 transformIntoEqualities				 = NO_INEQUALITIES;
-
-		static const bool								 applyNSS								 = false;
-        static const unsigned                            maxSDPdegree                            = 4;
-        static const unsigned                            SDPupperBoundNrVariables                = 6;
-		static const unsigned							 callSDPAfterNMonomials					 = 6;
-		static const unsigned							 sternBrocotStartPrecisionOneTo			 = 80;
-		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 2;
-		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
-    };
-    
-    struct GBSettings8
-    {
-        static const unsigned                            identifier                              = 8;
-        
-        typedef carl::GrLexOrdering              Order;
-        typedef carl::MultivariatePolynomial<Rational, Order> Polynomial;
-        typedef carl::MultivariateIdeal<Order>        MultivariateIdeal;
-        typedef carl::BaseReductor<Order>             Reductor;
-		typedef smtrat::decidePassingPolynomial			 passPolynomial;
-
-        static const bool                                passGB                                  = true;
-        static const bool                                getReasonsForInfeasibility              = true;
-        static const bool                                passWithMinimalReasons                  = true;
-        static const check_inequalities                  checkInequalities                       = NEVER;
-        static const pass_inequalities                   passInequalities                        = AS_RECEIVED;
-        static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_ALLINEQUALITIES;
-        static const theory_deductions                   addTheoryDeductions                     = NO_CONSTRAINTS;
-        static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
-        static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
-        static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
-		static const transform_inequalities				 transformIntoEqualities				 = ALL_INEQUALITIES;
-
-		static const bool								 applyNSS								 = false;
-        static const unsigned                            maxSDPdegree                            = 4;
-        static const unsigned                            SDPupperBoundNrVariables                = 6;
-		static const unsigned							 callSDPAfterNMonomials					 = 6;
-		static const unsigned							 sternBrocotStartPrecisionOneTo			 = 80;
-		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 2;
-		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
-    };
-    
-    struct GBSettings9
-    {
-        static const unsigned                            identifier                              = 9;
-        
-        typedef carl::GrLexOrdering              Order;
-        typedef carl::MultivariatePolynomial<Rational, Order> Polynomial;
-        typedef carl::MultivariateIdeal<Order>        MultivariateIdeal;
-        typedef carl::BaseReductor<Order>             Reductor;
-		typedef smtrat::decidePassingPolynomial			 passPolynomial;
-
-        static const bool                                passGB                                  = true;
-        static const bool                                getReasonsForInfeasibility              = true;
-        static const bool                                passWithMinimalReasons                  = true;
-        static const check_inequalities                  checkInequalities                       = AFTER_NEW_GB;
-        static const pass_inequalities                   passInequalities                        = AS_RECEIVED;
-        static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_ALLINEQUALITIES;
-        static const theory_deductions                   addTheoryDeductions                     = NO_CONSTRAINTS;
-        static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
-        static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
-        static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
-		static const transform_inequalities				 transformIntoEqualities				 = ONLY_NONSTRICT;
-
-		static const bool								 applyNSS								 = false;
-        static const unsigned                            maxSDPdegree                            = 4;
-        static const unsigned                            SDPupperBoundNrVariables                = 6;
-		static const unsigned							 callSDPAfterNMonomials					 = 6;
-		static const unsigned							 sternBrocotStartPrecisionOneTo			 = 80;
-		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 2;
-		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
-    };
-    
-    struct GBSettings10
-    {
-        static const unsigned                            identifier                              = 10;
-        
-        typedef carl::GrLexOrdering              Order;
-        typedef carl::MultivariatePolynomial<Rational, Order> Polynomial;
-        typedef carl::MultivariateIdeal<Order>        MultivariateIdeal;
-        typedef carl::BaseReductor<Order>             Reductor;
-		typedef smtrat::decidePassingPolynomial			 passPolynomial;
-
-        static const bool                                passGB                                  = false;
-        static const bool                                getReasonsForInfeasibility              = true;
-        static const bool                                passWithMinimalReasons                  = false;
-        static const check_inequalities                  checkInequalities                       = NEVER;
-        static const pass_inequalities                   passInequalities                        = AS_RECEIVED;
-        static const after_firstInfeasibleSubset         withInfeasibleSubset                    = PROCEED_INFEASIBLEANDDEDUCTION;
-        static const theory_deductions                   addTheoryDeductions                     = NO_CONSTRAINTS;
-        static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
-        static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
-        static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
-		static const transform_inequalities				 transformIntoEqualities				 = NO_INEQUALITIES;
-
-		static const bool								 applyNSS								 = false;
-        static const unsigned                            maxSDPdegree                            = 4;
-        static const unsigned                            SDPupperBoundNrVariables                = 6;
-		static const unsigned							 callSDPAfterNMonomials					 = 6;
-		static const unsigned							 sternBrocotStartPrecisionOneTo			 = 80;
-		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 2;
-		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
-    };
-    
-    struct GBSettings25
-    {
-        static const unsigned                            identifier                              = 25;
-        
-        typedef carl::GrLexOrdering              Order;
-        typedef carl::MultivariatePolynomial<Rational, Order> Polynomial;
-        typedef carl::MultivariateIdeal<Order>        MultivariateIdeal;
-        typedef carl::BaseReductor<Order>             Reductor;
-		typedef smtrat::decidePassingPolynomial			 passPolynomial;
-
-        static const bool                                passGB                                  = true;
-        static const bool                                getReasonsForInfeasibility              = true;
-        static const bool                                passWithMinimalReasons                  = true;
-        static const check_inequalities                  checkInequalities                       = ALWAYS;
-        static const pass_inequalities                   passInequalities                        = AS_RECEIVED;
-        static const after_firstInfeasibleSubset         withInfeasibleSubset                    = RETURN_DIRECTLY;
-        static const theory_deductions                   addTheoryDeductions                     = NO_CONSTRAINTS;
-        static const unsigned                            setCheckInequalitiesToBeginAfter        = 0;
-        static const bool                                checkInequalitiesForTrivialSumOfSquares = true;
-        static const bool                                checkEqualitiesForTrivialSumOfSquares   = true;
-		static const transform_inequalities				 transformIntoEqualities				 = NO_INEQUALITIES;
-
-		static const bool								 applyNSS								 = true;
-        static const unsigned                            maxSDPdegree                            = 3;
-        static const unsigned                            SDPupperBoundNrVariables                = 60;
-		static const unsigned							 callSDPAfterNMonomials					 = 6;
-		static const unsigned							 sternBrocotStartPrecisionOneTo			 = 80;
-		static const unsigned							 sternBrocotHigherPrecisionSteps		 = 2;
-		static const unsigned							 sternBrocotHigherPrecisionFactor		 = 10;
-    };
-    */
     
     
 	struct decidePassingPolynomial {
@@ -499,4 +292,3 @@ namespace smtrat
 	};
     
 }
-

@@ -25,7 +25,7 @@ public class StrategyGraph extends DirectedSparseGraph
     {
         super();
         priorityAllocator = 0;
-        rootVertex = new Vertex( new Module( ROOT_VERTEX_MODULE_NAME, "MT_" + ROOT_VERTEX_MODULE_NAME ) );
+        rootVertex = new Vertex( new Module( ROOT_VERTEX_MODULE_NAME ) );
         addVertex( rootVertex );
     }
     
