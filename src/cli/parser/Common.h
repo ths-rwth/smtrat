@@ -47,6 +47,7 @@ namespace parser {
 			case Maximize: return os << "maximize";
 			case Minimize: return os << "minimize";
 		}
+		return os << "???";
 	}
 	
 	namespace spirit = boost::spirit;
