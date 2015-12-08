@@ -76,6 +76,7 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         cout << "LRAModule::add " << _subformula->formula() << endl;
         #endif
+        mRationalModelComputed = false;
         switch( _subformula->formula().getType() )
         {
             case carl::FormulaType::FALSE:
@@ -319,7 +320,7 @@ namespace smtrat
                                     mBoundCandidatesToPass.push_back( (*bound)->pVariable()->pInfimum() );
                                 }
 
-                                if( !(*bound)->variable().isActive() && (*bound)->variable().isBasic() && !(*bound)->variable().isOriginal() )
+                                if( !mMinimize && !(*bound)->variable().hasBound() && (*bound)->variable().isBasic() && !(*bound)->variable().isOriginal() )
                                 {
                                     mTableau.deactivateBasicVar( (*bound)->pVariable() );
                                 }
@@ -507,16 +508,17 @@ namespace smtrat
                     Module::getBackendsModel();
                 }
             }
+            mModelComputed = true;
         }
     }
 
     template<class Settings>
     const EvalRationalMap& LRAModule<Settings>::getRationalModel() const
     {
-        if( !mModelComputed )
+        if( !mRationalModelComputed )
         {
             mRationalAssignment = mTableau.getRationalAssignment();
-            mModelComputed = true;
+            mRationalModelComputed = true;
         }
         return mRationalAssignment;
     }

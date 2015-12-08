@@ -131,8 +131,8 @@ namespace smtrat
         {
             assert( obVarIter != mObjectives.end() );
             push(); // In this level we store the equation between the objective function and it's introduced variable.
-            add( FormulaT( obVarIter->first - obVarIter->second, carl::Relation::EQ ) );
-            mpPrimaryBackend->setObjective( obVarIter->second );
+            add( FormulaT( (obVarIter->second.second ? obVarIter->first : -(obVarIter->first)) - obVarIter->second.first, carl::Relation::EQ ) );
+            mpPrimaryBackend->setObjective( obVarIter->second.first );
             Answer result = mpPrimaryBackend->check( _full, true );
             if( result != True )
             {
@@ -143,10 +143,10 @@ namespace smtrat
             if( obVarIter != mObjectives.end() )
             {
                 const Model& primModel = model();
-                auto objModel = primModel.find( obVarIter->second );
+                auto objModel = primModel.find( obVarIter->second.first );
                 assert( objModel != primModel.end() );
                 assert( objModel->second.isRational() ); // Non-linear optimization not yet supported.
-                FormulaT minimumUpperBound( obVarIter->first - objModel->second.asRational(), carl::Relation::LESS );
+                FormulaT minimumUpperBound( (obVarIter->second.second ? obVarIter->first : -(obVarIter->first)) - objModel->second.asRational(), carl::Relation::LESS );
                 pop(); // Remove the equation between the objective function and it's introduced variable.
                 add( minimumUpperBound );
             }
@@ -175,28 +175,30 @@ namespace smtrat
         return mpPrimaryBackend->model();
     }
     
-    const ModelValue& Manager::minimum( const Poly& _objFct ) const
+    ModelValue Manager::optimum( const Poly& _objFct ) const
     {
         if( mObjectives.size() == 1 )
         {
             assert( mObjectives.front().first == _objFct );
             const Model& curModel = model();
-            auto modelIter = curModel.find( mObjectives.front().second );
+            auto modelIter = curModel.find( mObjectives.front().second.first );
             assert( modelIter != curModel.end() );
-            return modelIter->second;
+            assert( modelIter->second.isRational() );
+            return (mObjectives.front().second.second ? modelIter->second.asRational() : -(modelIter->second.asRational()));
         }
         for( auto& obj : mObjectives )
         {
             if( obj.first == _objFct )
             {
                 const Model& curModel = model();
-                auto modelIter = curModel.find( mObjectives.front().second );
+                auto modelIter = curModel.find( obj.second.first );
                 assert( modelIter != curModel.end() );
-                return modelIter->second;
+                assert( modelIter->second.isRational() );
+                return (obj.second.second ? modelIter->second.asRational() : -(modelIter->second.asRational()));
             }
         }
         assert( false );
-        return model().begin()->second;
+        return ModelValue();
     }
     
     std::vector<FormulaT> Manager::lemmas()
@@ -229,10 +231,14 @@ namespace smtrat
                 if (ass != model.begin()) cout << " ";
                 if (ass->first.isVariable() || ass->first.isBVVariable())
                 {
-                    if( objectivesIter != mObjectives.end() && ass->first.asVariable() == objectivesIter->second )
+                    if( objectivesIter != mObjectives.end() && ass->first.asVariable() == objectivesIter->second.first )
                     {
                         if( !objectivesIter->first.isVariable() )
-                            cout << "(" << objectivesIter->first.toString( false, true ) << " " << ass->second << ")" << endl;
+                        {
+                            assert( ass->second.isRational() );
+                            Rational opt = (objectivesIter->second.second ? ass->second.asRational() : -(ass->second.asRational()));
+                            cout << "(" << objectivesIter->first.toString( false, true ) << " " << opt << ")" << endl;
+                        }
                         ++objectivesIter;
                     }
                     else

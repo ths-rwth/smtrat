@@ -41,18 +41,15 @@ namespace smtrat
                 ///
                 double mConflictActivity;
                 ///
-                union
-                {
-                    ///
-                    size_t mPosition;
-                    ///
+                size_t mPosition;
+                ///
 #ifdef __VS
-                    //Use pointer as VS cannot handle unrestricted unions right now
-                    typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator* mpPositionInNonActivesVS;
+                //Use pointer as VS cannot handle unrestricted unions right now
+                typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator* mpPositionInNonActivesVS;
 #else
-                    typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator mPositionInNonActives;
+                ///
+                typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator mPositionInNonActives;
 #endif
-                };
                 ///
                 typename Bound<T1, T2>::BoundSet mUpperbounds;
                 ///
@@ -164,7 +161,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                bool isActive() const
+                bool hasBound() const
                 {
                     return !(mpInfimum->isInfinite() && mpSupremum->isInfinite());
                 }

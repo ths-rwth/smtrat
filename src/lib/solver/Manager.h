@@ -65,7 +65,7 @@ namespace smtrat
 			/// Level of lemma generation
 			LemmaLevel mLemmaLevel;
             ///
-            std::vector<std::pair<Poly,carl::Variable>> mObjectives;
+            std::vector<std::pair<Poly,std::pair<carl::Variable,bool>>> mObjectives;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all statistics for the solver this manager belongs to.
             GeneralStatistics* mpStatistics;
@@ -178,9 +178,9 @@ namespace smtrat
                 while( pop() );
             }
             
-            void addObjective( const Poly& _objective )
+            void addObjective( const Poly& _objective, bool _minimize = true )
             {
-                mObjectives.push_back( std::make_pair( _objective, _objective.integerValued() ? carl::freshIntegerVariable() : carl::freshRealVariable() ) );
+                mObjectives.push_back( std::make_pair( _objective, std::make_pair( _objective.integerValued() ? carl::freshIntegerVariable() : carl::freshRealVariable(), _minimize ) ) );
             }
             
             void removeObjective( const Poly& _objective )
@@ -244,7 +244,7 @@ namespace smtrat
              * Note, that a previous check call must have returned True beforehand.
              * Note, that the objective must be added by addObjective beforehand.
              */
-            const ModelValue& minimum( const Poly& _objFct ) const;
+            ModelValue optimum( const Poly& _objFct ) const;
             
             /**
              * Returns the lemmas/tautologies which were made during the last solving provoked by check(). These lemmas

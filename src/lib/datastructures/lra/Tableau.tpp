@@ -126,7 +126,7 @@ namespace smtrat
         {
             _bound->pOrigins()->push_back( _formula );
             const Variable<T1,T2>& var = _bound->variable();
-            if( !var.isActive() && var.isBasic() && !var.isOriginal() )
+            if( !var.hasBound() && var.isBasic() && !var.isOriginal() )
                 activateBasicVar( _bound->pVariable() );
             if( _bound->isUpperBound() )
             {
@@ -390,40 +390,21 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
-        Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const typename Poly::PolyType& poly, const T2& leading_coeff, bool isInteger )
-        {
-            std::list<std::pair<Variable<T1,T2>*,T2>> nonbasicvar_coefficient = std::list<std::pair<Variable<T1,T2>*,T2>>();            
-            auto iter = nonbasicindex_coefficient.begin();
-            while( iter !=  nonbasicindex_coefficient.end() )
-            {
-                std::pair<Variable<T1,T2>*,T2> to_be_added = std::pair<Variable<T1,T2>*,T2>();
-                to_be_added.first = mColumns.at((*iter).first);
-                to_be_added.second = (*iter).second;
-                nonbasicvar_coefficient.push_back(to_be_added);
-                ++iter;
-            }          
-            mNonActiveBasics.push_front( nonbasicvar_coefficient ); 
-            Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), new typename Poly::PolyType( poly ), mDefaultBoundPosition, isInteger );            
-            T2& factor = var->rFactor();
-            factor = leading_coeff;
-            return var;
-        }
-        
-        template<class Settings, typename T1, typename T2>
         void Tableau<Settings,T1,T2>::activateBasicVar( Variable<T1, T2>* _var )
         {
+            if( _var->positionInNonActives() == mNonActiveBasics.end() )
+                return;
             assert( _var->isBasic() );
             assert( !_var->isOriginal() );
-            assert( !_var->isActive() );
+            assert( !_var->hasBound() );
             compressRows();
-            assert( _var->positionInNonActives() != mNonActiveBasics.end() );
             std::map<size_t,T2> coeffs;
             for( auto lravarCoeffPair = _var->positionInNonActives()->begin(); lravarCoeffPair != _var->positionInNonActives()->end(); ++lravarCoeffPair )
             {
                 Variable<T1, T2>* lravar = lravarCoeffPair->first;
                 if( lravar->isBasic() )
                 {
-                    if( !lravar->isActive() && !lravar->isOriginal() )
+                    if( lravar->positionInNonActives() != mNonActiveBasics.end() && !lravar->isOriginal() )
                     {
                         #ifdef LRA_NO_DIVISION
                         T2 l = carl::lcm( lravarCoeffPair->second, lravar->factor() );
@@ -549,6 +530,7 @@ namespace smtrat
             }
             _var->rAssignment() /= _var->factor();
             assert( checkCorrectness() == mRows.size() );
+            assert( _var->positionInNonActives() == mNonActiveBasics.end() );
         }
         
         template<class Settings, typename T1, typename T2>
@@ -627,69 +609,22 @@ namespace smtrat
         template<class Settings, typename T1, typename T2>
         EvalRationalMap Tableau<Settings,T1,T2>::getRationalAssignment() const
         {
-            EvalRationalMap result;
             T1 minDelta = -1;
             mCurDelta = T1(0);
-            Variable<T1,T2>* variable = NULL;
             // For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
             for( auto originalVar = originalVars().begin(); originalVar != originalVars().end(); ++originalVar )
             {
-                variable = originalVar->second;
-                const Value<T1>& assValue = variable->assignment();
-                const Bound<T1,T2>& inf = variable->infimum();
-                if( !inf.isInfinite() )
-                {
-                    // .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
-                    if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
-                    {
-                        mCurDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
-                        if( minDelta < 0 || mCurDelta < minDelta )
-                            minDelta = mCurDelta;
-                    }
-                }
-                const Bound<T1,T2>& sup = variable->supremum();
-                if( !sup.isInfinite() )
-                {
-                    // .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
-                    if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
-                    {
-                        mCurDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
-                        if( minDelta < 0 || mCurDelta < minDelta )
-                            minDelta = mCurDelta;
-                    }
-                }
+                adaptDelta( *(originalVar->second), false, minDelta );
+                adaptDelta( *(originalVar->second), true, minDelta );
             }
             // For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
             for( auto slackVar = slackVars().begin(); slackVar != slackVars().end(); ++slackVar )
             {
-                variable = slackVar->second;
-                if( !variable->isActive() ) continue;
-                const Value<T1>& assValue = variable->assignment();
-                const Bound<T1,T2>& inf = variable->infimum();
-                if( !inf.isInfinite() )
-                {
-                    // .. the infimum is c1+k1*delta, the variable assignment is c2+k2*delta, c1<c2 and k1>k2.
-                    if( inf.limit().mainPart() < assValue.mainPart() && inf.limit().deltaPart() > assValue.deltaPart() )
-                    {
-                        mCurDelta = ( assValue.mainPart() - inf.limit().mainPart() ) / ( inf.limit().deltaPart() - assValue.deltaPart() );
-                        if( minDelta < 0 || mCurDelta < minDelta )
-                            minDelta = mCurDelta;
-                    }
-                }
-                const Bound<T1,T2>& sup = variable->supremum();
-                if( !sup.isInfinite() )
-                {
-                    // .. the supremum is c2+k2*delta, the variable assignment is c1+k1*delta, c1<c2 and k1>k2.
-                    if( sup.limit().mainPart() > assValue.mainPart() && sup.limit().deltaPart() < assValue.deltaPart() )
-                    {
-                        mCurDelta = ( sup.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - sup.limit().deltaPart() );
-                        if( minDelta < 0 || mCurDelta < minDelta )
-                            minDelta = mCurDelta;
-                    }
-                }
+                adaptDelta( *(slackVar->second), false, minDelta );
+                adaptDelta( *(slackVar->second), true, minDelta );
             }
-
-            mCurDelta = minDelta < 0 ? 1 : minDelta;
+            mCurDelta = minDelta < 0 ? T1(1) : minDelta;
+            EvalRationalMap result;
             // Calculate the rational assignment of all original variables.
             for( auto var = originalVars().begin(); var != originalVars().end(); ++var )
             {
@@ -698,6 +633,27 @@ namespace smtrat
                 result.insert( std::pair<const carl::Variable,T1>( var->first, value ) );
             }
             return result;
+        }
+        
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::adaptDelta( const Variable<T1,T2>& _variable, bool _upperBound, T1& _minDelta ) const
+        {
+            const Value<T1>& assValue = _variable.assignment();
+            const Bound<T1,T2>& bound = _upperBound ? _variable.supremum() : _variable.infimum();
+            if( !bound.isInfinite() )
+            {
+                // .. the bound limit is c1+k1*delta, the variable assignment is c2+k2*delta, then ..
+                if( (_upperBound && bound.limit().mainPart() > assValue.mainPart() && bound.limit().deltaPart() < assValue.deltaPart()) // .. c1>c2 and k1<k2
+                 || (!_upperBound && bound.limit().mainPart() < assValue.mainPart() && bound.limit().deltaPart() > assValue.deltaPart()) ) // .. c1<c2 and k1>k2
+                {
+                    if( _upperBound )
+                        mCurDelta = ( bound.limit().mainPart() - assValue.mainPart() ) / ( assValue.deltaPart() - bound.limit().deltaPart() );
+                    else
+                        mCurDelta = ( assValue.mainPart() - bound.limit().mainPart() ) / ( bound.limit().deltaPart() - assValue.deltaPart() );
+                    if( _minDelta < 0 || mCurDelta < _minDelta )
+                        _minDelta = mCurDelta;
+                }
+            }
         }
         
         template<class Settings, typename T1, typename T2>
@@ -1513,7 +1469,7 @@ namespace smtrat
             #else
             pivotContent = carl::div( T2(1), pivotContent );
             #endif
-            if( Settings::use_refinement && basicVar.isActive() )
+            if( !_optimizing && Settings::use_refinement && basicVar.hasBound() )
             {
                 rowRefinement( columnVar ); // Note, we have swapped the variables, so the current basic var is now corresponding to what we have stored in columnVar.
             }
@@ -1535,7 +1491,7 @@ namespace smtrat
                 update( false, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, _optimizing );
             }
             ++mPivotingSteps;
-            if( !_optimizing && !basicVar.isActive() && !basicVar.isOriginal() )
+            if( !_optimizing && !basicVar.hasBound() && !basicVar.isOriginal() )
             {
                 deactivateBasicVar( columnVar );
                 compressRows();
@@ -2057,79 +2013,6 @@ namespace smtrat
                 }
                 return unboundedVars;
             }
-        }
-        
-//        #define LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
-        
-        template<class Settings, typename T1, typename T2>
-        typename std::map<carl::Variable, Variable<T1,T2>*>::iterator Tableau<Settings,T1,T2>::substitute( carl::Variable::Arg _var, const Poly& _term )
-        {
-            #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
-            std::cout << __func__ << "  " << _var << " -> " << _term << std::endl;
-            print();
-            #endif
-            assert( mNonActiveBasics.empty() ); // This makes removing lra-variables far easier and must be assured before invoking this method.
-            std::set<Variable<T1,T2>*> slackVarsToRemove;
-            std::map<FormulaT,FormulasT> constraintToAdd;
-            auto iter = mConstraintToBound.begin();
-            while( iter != mConstraintToBound.end() )
-            {
-                const ConstraintT& constraint = iter->first->constraint();
-                if( constraint.hasVariable( _var ) && constraint.variables().size() > 1 )
-                {
-                    #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
-                    std::cout << "remove variable: " << std::endl;
-                    iter->second->front()->pVariable()->print();
-                    std::cout << std::endl;
-                    iter->second->front()->pVariable()->printAllBounds();
-                    std::cout << std::endl;
-                    #endif
-                    assert( iter->second->front()->pVariable()->isBasic() ); // This makes removing lra-variables far easier and must be assured before invoking this method.
-                    slackVarsToRemove.insert( iter->second->front()->pVariable() );
-                    FormulaT cons = FormulaT( smtrat::ConstraintT( constraint.lhs().substitute( _var, _term ), constraint.relation() ) );
-                    if( cons.constraint().isConsistent() == 2 )
-                    {
-                        #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
-                        std::cout << "add constraint " << *cons << std::endl;
-                        #endif
-                        FormulasT origins;
-                        constraintToAdd.insert( std::pair<FormulaT,FormulasT>( cons, origins ) );
-                    }
-                    iter = mConstraintToBound.erase( iter );
-                }
-                else
-                {
-                    ++iter;
-                }
-            }
-            while( !slackVarsToRemove.empty() )
-            {
-                Variable<T1,T2>* var = *slackVarsToRemove.begin();
-                slackVarsToRemove.erase( slackVarsToRemove.begin() );
-                deactivateBasicVar( var );
-                assert( mLearnedLowerBounds.empty() );
-                assert( mLearnedUpperBounds.empty() );
-                assert( mNewLearnedBounds.empty() );
-                mSlackVars.erase( var->pExpression() );
-                assert( mConflictingRows.empty() );
-                mNonActiveBasics.erase( var->positionInNonActives() );
-                var->setPositionInNonActives( mNonActiveBasics.end() );
-                delete var;
-            }
-            typename std::map<carl::Variable, Variable<T1,T2>*>::iterator pos = mOriginalVars.find( _var );
-            pos = mOriginalVars.erase(pos);
-            for( auto iter = constraintToAdd.begin(); iter != constraintToAdd.end(); ++iter )
-            {
-                std::pair<const lra::Bound<carl::Numeric<Rational>,carl::Numeric<Rational>>*, bool> res = newBound( iter->first );
-                if( res.second )
-                {
-                    activateBound( res.first, iter->second );
-                } 
-            }
-            #ifdef LRA_FIND_VALID_SUBSTITUTIONS_DEBUG
-            print(); 
-            #endif
-            return pos;
         }
         
         template<class Settings, typename T1, typename T2>
