@@ -1,5 +1,5 @@
 /**
- * @file CADOnly.h
+ * @file PureSAT.h
  */
 #pragma once
 

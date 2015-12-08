@@ -373,6 +373,10 @@ namespace smtrat
     {
         mFullCheck = _full;
         mMinimize = _minimize;
+        
+//        cout << "Check smt:" << endl;
+//        for( const auto& f : rReceivedFormula() )
+//            std::cout << "   " << f.formula().toString() << std::endl;
 //        std::cout << ((FormulaT) rReceivedFormula()).toString( false, 1, "", true, false, true, true ) << std::endl;
         #ifdef SMTRAT_DEVOPTION_Statistics
         mpStatistics->rNrTotalVariablesBefore() = (size_t) nVars();
@@ -1959,6 +1963,10 @@ SetWatches:
                     cout << "### Check the constraints: { "; for( auto& subformula : rPassedFormula() ) cout << subformula.formula() << " "; cout << "}" << endl;
                     #endif
                     mChangedPassedFormula = false;
+                    
+//                    cout << "        Check theory:" << endl;
+//                    for( const auto& f : rPassedFormula() )
+//                        std::cout << "           " << f.formula().toString() << std::endl;
                     mCurrentAssignmentConsistent = runBackends( mFullCheck, false );
                     #ifdef DEBUG_SATMODULE
                     cout << "### Result: " << ANSWER_TO_STRING( mCurrentAssignmentConsistent ) << "!" << endl;
@@ -2325,13 +2333,17 @@ SetWatches:
                         #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
                         std::cout << "consistency = " << consistency << std::endl;
                         #endif
-                        if( (_conflictFirst && consistency != 0) || (!_conflictFirst && consistency == 1) )
+                        if( consistency == 2 )//(_conflictFirst && consistency != 0) || (!_conflictFirst && consistency == 1) )
                         {
                             #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
                             std::cout << "store variable for restorage" << std::endl;
                             #endif
                             varsToRestore.push(next);
                             next = var_Undef;
+                        }
+                        else
+                        {
+                            polarity[next] = (consistency == 1);
                         }
                     }
                 }
