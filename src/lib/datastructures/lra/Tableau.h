@@ -506,6 +506,11 @@ namespace smtrat
                 {
                     return mDefaultBoundPosition;
                 }
+                
+                bool isActive( const Variable<T1, T2>& _var ) const
+                {
+                    return _var.positionInNonActives() != mNonActiveBasics.end();
+                }
 
                 /**
                  * 
@@ -554,13 +559,6 @@ namespace smtrat
                 Variable<T1, T2>* newBasicVariable( const typename Poly::PolyType* _poly, bool _isInteger );
                 
                 /**
-                 * 
-                 * @param nonbasic_coefficient_list
-                 * @return 
-                 */
-                Variable<T1, T2>* newBasicVariable( std::vector<std::pair<size_t,T2>>& nonbasicindex_coefficient, const typename Poly::PolyType& poly, const T2& leading_coeff, bool isInteger );
-                
-                /**
                  * g
                  * @param _var
                  */
@@ -587,6 +585,8 @@ namespace smtrat
                  * @return 
                  */
                 EvalRationalMap getRationalAssignment() const;
+                
+                void adaptDelta( const Variable<T1,T2>& _variable, bool _upperBound, T1& _minDelta ) const;
                 
                 /**
                  * 
@@ -694,14 +694,6 @@ namespace smtrat
                  * @param _basicVar The basic variable for which to refine the supremum and infimum.
                  */
                 void rowRefinement( Variable<T1, T2>* _basicVar );
-
-                /**
-                 * 
-                 * @param _var
-                 * @param _term
-                 * @return 
-                 */
-                typename std::map<carl::Variable, Variable<T1, T2>*>::iterator substitute( carl::Variable::Arg _var, const Poly& _term );
                 
                 /**
                  * 

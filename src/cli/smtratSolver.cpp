@@ -119,13 +119,7 @@ public:
 		error() << "(get-value <variables>) is not implemented.";
 	}
 	void addObjective(const smtrat::Poly& p, smtrat::parser::OptimizationType ot) {
-            if( ot == smtrat::parser::OptimizationType::Maximize )
-                this->solver->addObjective( -p );
-            else
-            {
-                assert( ot == smtrat::parser::OptimizationType::Minimize );
-                this->solver->addObjective( p );
-            }
+            this->solver->addObjective( p, ot == smtrat::parser::OptimizationType::Minimize );
 	}
 	void pop(std::size_t n) {
 		this->solver->pop(n);

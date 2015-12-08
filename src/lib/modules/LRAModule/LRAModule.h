@@ -47,9 +47,10 @@ namespace smtrat
     {
         public:
 			typedef Settings SettingsType;
-std::string moduleName() const {
-return SettingsType::moduleName;
-}
+            std::string moduleName() const
+            {
+                return SettingsType::moduleName;
+            }
             /**
              * Stores a formula, being part of the received formula of this module, and the position of 
              * this formula in the passed formula.
@@ -91,6 +92,8 @@ return SettingsType::moduleName;
             bool mStrongestBoundsRemoved;
             ///
             bool mMinimize;
+            ///
+            mutable bool mRationalModelComputed;
             /**
              * Contains the main data structures of this module. It maintains for each LRAModule variable a row
              * or a column. On this tableau pivoting can be performed as the well known Simplex method performs.
