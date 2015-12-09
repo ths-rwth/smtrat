@@ -528,6 +528,10 @@ namespace smtrat
     {
         if( _result == True )
         {
+            if( !mObjectiveLRAVar->second.first->isBasic() )
+            {
+                mTableau.pivot( mObjectiveLRAVar->second.first->startEntry(), true );
+            }
             for( ; ; )
             {
                 std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElementForOptimizing( *(mObjectiveLRAVar->second.first) );
