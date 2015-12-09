@@ -156,13 +156,11 @@ namespace smtrat
         if( _receivedSubformula->formula().getType() == carl::FormulaType::CONSTRAINT )
         {
             const ConstraintT& constraint = _receivedSubformula->formula().constraint();
-            if( constraint.hasVariable( objective() ) )
+            if( constraint.hasVariable( objective() ) && constraint.relation() == carl::Relation::EQ )
             {
-                assert( constraint.relation() == carl::Relation::EQ );
                 Poly objCoeff = constraint.coefficient( objective(), 1 );
                 assert( objCoeff.isConstant() );
-                assert( carl::abs( objCoeff.constantPart() ) == ONE_RATIONAL );
-                mObjectiveFunction = objCoeff.constantPart() < ZERO_RATIONAL ? constraint.lhs() : -constraint.lhs();
+                mObjectiveFunction = -(constraint.lhs()/objCoeff.constantPart());
                 mObjectiveFunction += objective();
             }
         }
@@ -854,8 +852,6 @@ namespace smtrat
     Answer Module::foundAnswer( Answer _answer )
     {
         mSolverState = _answer;
-        if( !( _answer != True || checkModel() != 0 ) )
-            exit(171);
         assert( _answer != True || checkModel() != 0 );
         // If we are in the SMT environment:
         if( mpManager != NULL && _answer != Unknown )
