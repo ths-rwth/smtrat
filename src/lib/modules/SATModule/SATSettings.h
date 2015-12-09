@@ -64,7 +64,7 @@ namespace smtrat
         /**
          * 
          */
-        static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::CONFLICT_FIRST;
+        static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::DISABLED;
         /**
          * 
          */
