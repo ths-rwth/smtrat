@@ -1442,8 +1442,8 @@ namespace smtrat
             #else
             rowVar->rAssignment() += (*mpTheta) * pivotContent;
             #endif
-            assert( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() );
-            assert( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() );
+            assert( _optimizing || rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() );
+            assert( _optimizing || rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() );
             columnVar->rAssignment() += (*mpTheta);
             // Adapt both variables.
             Variable<T1, T2>& basicVar = *columnVar;
