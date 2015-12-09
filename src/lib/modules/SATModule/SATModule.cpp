@@ -485,7 +485,7 @@ namespace smtrat
                         }
                     }
                 }
-                if( addClause( excludeClause, DEDUCTED_CLAUSE ) )
+                if( addClause( excludeClause, PERMANENT_CLAUSE ) )
                 {
                     excludedAssignments.push_back( learnts.last() );
                 }
@@ -533,7 +533,6 @@ namespace smtrat
             return search();
         }
     }
-    
 
     template<class Settings>
     void SATModule<Settings>::computeAdvancedLemmas()
@@ -697,7 +696,7 @@ namespace smtrat
                 // If non are selected, all variables are relevant
                 for ( BooleanVarMap::const_iterator iterVar = mBooleanVarMap.begin(); iterVar != mBooleanVarMap.end(); ++ iterVar)
                 {
-                        mRelevantVariables.push_back( iterVar->second );
+                    mRelevantVariables.push_back( iterVar->second );
                 }
             }
             else
@@ -807,7 +806,6 @@ namespace smtrat
         {
             removeClause( cl );
         }
-        clauses.shrink( (int)_excludedAssignments.size() );
     }
     
     template<class Settings>
