@@ -528,13 +528,19 @@ namespace smtrat
     {
         if( _result == True )
         {
+            bool variableBasicAndNotConnected = false;
             if( !mObjectiveLRAVar->second.first->isBasic() )
             {
-                mTableau.pivot( mObjectiveLRAVar->second.first->startEntry(), true );
+                if( mObjectiveLRAVar->second.first->startEntry() != lra::LAST_ENTRY_ID )
+                {
+                    mTableau.pivot( mObjectiveLRAVar->second.first->startEntry(), true );
+                }
+                else
+                    variableBasicAndNotConnected = true;
             }
             for( ; ; )
             {
-                std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElementForOptimizing( *(mObjectiveLRAVar->second.first) );
+                std::pair<EntryID,bool> pivotingElement = variableBasicAndNotConnected ? std::make_pair( lra::LAST_ENTRY_ID, true ) : mTableau.nextPivotingElementForOptimizing( *(mObjectiveLRAVar->second.first) );
                 if( pivotingElement.second )
                 {
                     if( pivotingElement.first == lra::LAST_ENTRY_ID )
@@ -550,15 +556,14 @@ namespace smtrat
                         else
                         {
                             mModelComputed = false;
-                            updateModel();
                             const LRAValue& infimum = mObjectiveLRAVar->second.first->infimum().limit();
-                            Rational ass = (Rational)(infimum.mainPart()+mTableau.currentDelta()*infimum.deltaPart());
+                            mObjectiveLRAVar->second.first->rAssignment() = infimum;
+                            updateModel();
+                            Rational ass = (Rational)(infimum.mainPart()+mTableau.currentDelta()*infimum.deltaPart())/mObjectiveLRAVar->second.second;
                             #ifdef DEBUG_LRA_MODULE
                             std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: " << ass << std::endl;
                             #endif
                             mModel.insert(mModel.end(), std::make_pair(objective(), ass ) );
-                            if( mObjectiveLRAVar->second.first->isOriginal() )
-                                mModel[mObjectiveLRAVar->second.first->expression().getSingleVariable()] = ass;
                         }
                         break;
                     }
