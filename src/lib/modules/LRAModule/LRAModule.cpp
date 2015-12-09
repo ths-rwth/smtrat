@@ -562,6 +562,7 @@ namespace smtrat
                             #endif
                             clearModel();
                             mModel.insert(mModel.end(), std::make_pair(objective(), InfinityValue()) );
+                            mModelComputed = true;
                         }
                         else
                         {
