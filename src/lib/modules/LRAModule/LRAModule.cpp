@@ -528,6 +528,10 @@ namespace smtrat
     {
         if( _result == True )
         {
+            if( !mObjectiveLRAVar->second.first->isBasic() )
+            {
+                mTableau.pivot( mObjectiveLRAVar->second.first->startEntry(), true );
+            }
             for( ; ; )
             {
                 std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElementForOptimizing( *(mObjectiveLRAVar->second.first) );
@@ -571,7 +575,7 @@ namespace smtrat
                     mModelComputed = false;
                     updateModel();
                     const EvalRationalMap& ratModel = getRationalModel();
-                    Rational opti = mObjectiveLRAVar->second.second*mObjectiveLRAVar->second.first->expression().evaluate( ratModel );
+                    Rational opti = mObjectiveLRAVar->second.first->expression().evaluate( ratModel )/mObjectiveLRAVar->second.second;
                     #ifdef DEBUG_LRA_MODULE
                     std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: " << opti << std::endl;
                     #endif
