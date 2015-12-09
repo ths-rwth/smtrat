@@ -183,6 +183,8 @@ namespace smtrat
             const Model& curModel = model();
             auto modelIter = curModel.find( mObjectives.front().second.first );
             assert( modelIter != curModel.end() );
+            if( modelIter->second.isMinusInfinity() )
+                return (mObjectives.front().second.second ? modelIter->second.asInfinity() : InfinityValue(true));
             assert( modelIter->second.isRational() );
             return (mObjectives.front().second.second ? modelIter->second.asRational() : -(modelIter->second.asRational()));
         }

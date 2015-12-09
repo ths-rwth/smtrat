@@ -70,7 +70,8 @@ namespace smtrat
         mInformedConstraints(),
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
         mSmallerMusesCheckCounter( 0 ),
-        mObjective( carl::Variable::NO_VARIABLE )
+        mObjective( carl::Variable::NO_VARIABLE ),
+        mObjectiveFunction()
 #ifdef SMTRAT_DEVOPTION_MeasureTime
         ,
         mTimerAddTotal( 0 ),
