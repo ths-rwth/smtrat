@@ -117,17 +117,20 @@ namespace smtrat
                             {
                                 if( constraint.relation() == carl::Relation::EQ )
                                 {
-                                    auto olIter = mCreatedObjectiveLRAVars.find( objectiveFunction() );
-                                    if( olIter == mCreatedObjectiveLRAVars.end() )
+                                    if( !objectiveFunction().isConstant() )
                                     {
-                                        LRABoundType factor;
-                                        LRABoundType bound;
-                                        LRAVariable* lraVar = mTableau.getVariable( objectiveFunction(), factor, bound );
-                                        olIter = mCreatedObjectiveLRAVars.emplace( objectiveFunction(), std::make_pair( lraVar, (Rational)factor ) ).first;
+                                        auto olIter = mCreatedObjectiveLRAVars.find( objectiveFunction() );
+                                        if( olIter == mCreatedObjectiveLRAVars.end() )
+                                        {
+                                            LRABoundType factor;
+                                            LRABoundType bound;
+                                            LRAVariable* lraVar = mTableau.getVariable( objectiveFunction(), factor, bound );
+                                            olIter = mCreatedObjectiveLRAVars.emplace( objectiveFunction(), std::make_pair( lraVar, (Rational)factor ) ).first;
+                                        }
+                                        mObjectiveLRAVar = olIter;
+                                        if( mObjectiveLRAVar->second.first->isBasic() )
+                                            mTableau.activateBasicVar( mObjectiveLRAVar->second.first );
                                     }
-                                    mObjectiveLRAVar = olIter;
-                                    if( mObjectiveLRAVar->second.first->isBasic() )
-                                        mTableau.activateBasicVar( mObjectiveLRAVar->second.first );
                                 }
                                 return true;
                             }
@@ -528,6 +531,13 @@ namespace smtrat
     {
         if( _result == True )
         {
+            if( objectiveFunction().isConstant() )
+            {
+                mModelComputed = false;
+                updateModel();
+                mModel.insert(mModel.end(), std::make_pair(objective(), objectiveFunction().constantPart() ) );
+                return _result;
+            }
             bool variableBasicAndNotConnected = false;
             if( !mObjectiveLRAVar->second.first->isBasic() )
             {
