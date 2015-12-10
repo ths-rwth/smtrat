@@ -42,6 +42,10 @@ namespace smtrat
         /**
          * 
          */
+        static const bool check_active_literal_occurrences = false;
+        /**
+         * 
+         */
         static const bool check_if_all_clauses_are_satisfied = false;
 		/**
 		 *

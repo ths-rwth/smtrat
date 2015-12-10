@@ -241,6 +241,74 @@ namespace smtrat
             
             ///
             typedef carl::FastMap<signed,std::unordered_set<signed>> TseitinVarShadows;
+            
+            ///
+            struct LiteralClauses
+            {
+            private:
+                std::vector<Minisat::CRef> mPositives;
+                std::vector<Minisat::CRef> mNegatives;
+                
+            public:
+                
+                LiteralClauses(): mPositives(), mNegatives() {}
+                LiteralClauses( const LiteralClauses& ) = delete;
+                LiteralClauses( LiteralClauses&& _toMove ):
+                    mPositives( std::move(_toMove.mPositives) ),
+                    mNegatives( std::move(_toMove.mNegatives) )
+                {}
+                ~LiteralClauses(){}
+                
+                const std::vector<Minisat::CRef>& positives() const
+                {
+                    return mPositives;
+                }
+                
+                const std::vector<Minisat::CRef>& negatives() const
+                {
+                    return mNegatives;
+                }
+                
+                void addPositive( Minisat::CRef _cref )
+                {
+                    mPositives.push_back( _cref );
+                }
+                
+                void addNegative( Minisat::CRef _cref )
+                {
+                    mNegatives.push_back( _cref );
+                }
+                
+                void removePositive( Minisat::CRef _cref )
+                {
+                    auto iter = std::find( mPositives.begin(), mPositives.end(), _cref );
+                    if( iter != mPositives.end() )
+                    {
+                        *iter = mPositives.back();
+                        mPositives.pop_back();
+                    }
+                }
+                
+                void removeNegative( Minisat::CRef _cref )
+                {
+                    auto iter = std::find( mNegatives.begin(), mNegatives.end(), _cref );
+                    if( iter != mNegatives.end() )
+                    {
+                        *iter = mNegatives.back();
+                        mNegatives.pop_back();
+                    }
+                }
+                
+                size_t numOfNegatives() const
+                {
+                    return mNegatives.size();
+                }
+                
+                size_t numOfPositives() const
+                {
+                    return mPositives.size();
+                }
+            };
 
             /// [Minisat related code]
             static inline VarData mkVarData( Minisat::CRef cr, int l )
@@ -440,8 +508,6 @@ namespace smtrat
             ///
             carl::FastMap<FormulaT, TseitinVarShadows::iterator> mFormulaTseitinVarMap;
             ///
-            carl::FastMap<FormulaT, std::vector<TseitinVarShadows::iterator>>::iterator mCurrentFormulaTseitinVarMapEntry;
-            ///
             std::vector<Minisat::vec<Minisat::Lit>> mCurrentTheoryConflicts;
             ///
             std::vector<unsigned> mCurrentTheoryConflictTypes;
@@ -453,6 +519,10 @@ namespace smtrat
             size_t mTheoryConflictIdCounter;
             ///
             ModuleInput::iterator mUpperBoundOnMinimal;
+            ///
+            std::vector<LiteralClauses> mLiteralsClausesMap;
+            ///
+            std::vector<std::pair<size_t,size_t>> mLiteralsActivOccurrences;
             
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.

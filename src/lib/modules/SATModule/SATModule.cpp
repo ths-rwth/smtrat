@@ -136,13 +136,14 @@ namespace smtrat
         mNonTseitinShadowedOccurrences(),
         mTseitinVarShadows(),
         mFormulaTseitinVarMap(),
-        mCurrentFormulaTseitinVarMapEntry(),
         mCurrentTheoryConflicts(),
         mCurrentTheoryConflictTypes(),
         mCurrentTheoryConflictEvaluations(),
         mLevelCounter(),
         mTheoryConflictIdCounter( 0 ),
-        mUpperBoundOnMinimal( passedFormulaEnd() )
+        mUpperBoundOnMinimal( passedFormulaEnd() ),
+        mLiteralsClausesMap(),
+        mLiteralsActivOccurrences()
     {
         mCurrentTheoryConflicts.reserve(100);
         mCurrentTheoryConflictTypes.reserve(100);
@@ -1461,6 +1462,11 @@ namespace smtrat
         }
         else
             setDecisionVar( v, dvar );
+        if( Settings::check_active_literal_occurrences )
+        {
+            mLiteralsClausesMap.emplace_back();
+            mLiteralsActivOccurrences.emplace_back();
+        }
         return v;
     }
 
@@ -1764,6 +1770,26 @@ SetWatches:
         }
         else
             clauses_literals += (uint64_t)c.size();
+        if( Settings::check_active_literal_occurrences )
+        {
+            bool clauseSatisfied = satisfied(c);
+            for( int i = 0; i < c.size(); ++i )
+            {
+                size_t v = (size_t)var(c[i]);
+                if( sign(c[i]) )
+                {
+                    if( !clauseSatisfied )
+                        ++(mLiteralsActivOccurrences[v].second);
+                    mLiteralsClausesMap[v].addNegative( cr );
+                }
+                else
+                {
+                    if( !clauseSatisfied )
+                        ++(mLiteralsActivOccurrences[v].first);
+                    mLiteralsClausesMap[v].addPositive( cr );
+                }
+            }
+        }
     }
 
     template<class Settings>
@@ -1788,6 +1814,26 @@ SetWatches:
             learnts_literals -= (uint64_t)c.size();
         else
             clauses_literals -= (uint64_t)c.size();
+        if( Settings::check_active_literal_occurrences )
+        {
+            bool clauseSatisfied = satisfied(c);
+            for( int i = 0; i < c.size(); ++i )
+            {
+                size_t v = (size_t)var(c[i]);
+                if( sign(c[i]) )
+                {
+                    if( !clauseSatisfied )
+                        --(mLiteralsActivOccurrences[v].second);
+                    mLiteralsClausesMap[v].removeNegative( cr );
+                }
+                else
+                {
+                    if( !clauseSatisfied )
+                        --(mLiteralsActivOccurrences[v].first);
+                    mLiteralsClausesMap[v].removePositive( cr );
+                }
+            }
+        }
     }
 
     template<class Settings>
@@ -1866,6 +1912,28 @@ SetWatches:
                 }
             }
             assigns[x] = l_Undef;
+            if( Settings::check_active_literal_occurrences )
+            {
+                // Check clauses which are going to be satisfied by this assignment.
+                size_t v = (size_t)x;
+                const std::vector<CRef>& satisfiedClauses = sign(trail[c]) ? mLiteralsClausesMap[v].negatives() : mLiteralsClausesMap[v].positives();
+                for( CRef cr : satisfiedClauses )
+                {
+                    const Clause& c = ca[cr];
+                    // Check if clause is not yet satisfied.
+                    if( !satisfied(c) )
+                    {
+                        for( int i = 0; i < c.size(); ++i )
+                        {
+                            size_t v = (size_t)var(c[i]);
+                            if( sign(c[i]) )
+                                ++(mLiteralsActivOccurrences[v].second);
+                            else
+                                ++(mLiteralsActivOccurrences[v].first);
+                        }
+                    }
+                }
+            }
             if( Settings::check_if_all_clauses_are_satisfied && !mReceivedFormulaPurelyPropositional && mNumberOfSatisfiedClauses > 0 )
             {
                 auto litClausesIter = mLiteralClausesMap.find( Minisat::toInt( trail[c] ) );
@@ -2543,6 +2611,28 @@ SetWatches:
                     {
                         assert( mNumberOfSatisfiedClauses < (size_t)clauses.size() );
                         ++mNumberOfSatisfiedClauses;
+                    }
+                }
+            }
+        }
+        if( Settings::check_active_literal_occurrences )
+        {
+            // Check clauses which are going to be satisfied by this assignment.
+            size_t v = (size_t)var(p);
+            const std::vector<CRef>& nowSatisfiedClauses = sign(p) ? mLiteralsClausesMap[v].negatives() : mLiteralsClausesMap[v].positives();
+            for( CRef cr : nowSatisfiedClauses )
+            {
+                const Clause& c = ca[cr];
+                // Check if clause is not yet satisfied.
+                if( !satisfied(c) )
+                {
+                    for( int i = 0; i < c.size(); ++i )
+                    {
+                        size_t v = (size_t)var(c[i]);
+                        if( sign(c[i]) )
+                            --(mLiteralsActivOccurrences[v].second);
+                        else
+                            --(mLiteralsActivOccurrences[v].first);
                     }
                 }
             }
