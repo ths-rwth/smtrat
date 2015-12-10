@@ -887,10 +887,18 @@ namespace smtrat
                 return bestResult;
             }
         }
+        
+//        #define DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
 
         template<class Settings, typename T1, typename T2>
         std::pair<EntryID,bool> Tableau<Settings,T1,T2>::nextPivotingElementForOptimizing( const Variable<T1, T2>& _objective, bool _minimize )
         {
+            #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+            std::cout << "Find next pivoting element to " << (_minimize ? "minimize" : "maximize") << " ";
+            _objective.print();
+            std::cout << " in:" << std::endl;
+            print();
+            #endif
             assert( _objective.isBasic() );
             Value<T1> maxTheta = Value<T1>(T1(-1));
             EntryID objectiveStartEntry = _objective.startEntry();
@@ -902,6 +910,11 @@ namespace smtrat
             while( true )
             {
                 const Variable<T1, T2>& varForMinimizaton = *(*objectiveIter).columnVar();
+                #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                std::cout << "Check the non-basic variable ";
+                varForMinimizaton.print();
+                std::cout << std::endl;
+                #endif
                 #ifdef LRA_NO_DIVISION
                 bool increaseVar = ((*objectiveIter).content() < 0 && _objective.factor() > 0) || ((*objectiveIter).content() > 0 && _objective.factor() < 0);
                 #else
@@ -919,9 +932,9 @@ namespace smtrat
                         maxOptimizationValue *= _objective.factor();
                         #endif 
                         maxOptimizationValue /= (*objectiveIter).content();
-                    }               
                     if( maxOptimizationValue < T1(0) )
                         maxOptimizationValue = maxOptimizationValue * T1( -1 );
+                    } 
                 }
                 else
                 {
@@ -934,16 +947,29 @@ namespace smtrat
                         maxOptimizationValue *= _objective.factor();
                         #endif 
                         maxOptimizationValue /= (*objectiveIter).content();
+                        if( maxOptimizationValue < T1(0) )
+                            maxOptimizationValue = maxOptimizationValue * T1( -1 );
                     }
-                    if( maxOptimizationValue < T1(0) )
-                        maxOptimizationValue = maxOptimizationValue * T1( -1 );
                     increaseVar = !increaseVar;
                 }
+                #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                std::cout << "   " << (increaseVar ? "Increase" : "Decrease") << " non-basic variable's assignment." << std::endl;
+                if( maxOptimizationValue == maxTheta )
+                    std::cout << "   No limit on change of assignment of objective function." << std::endl;
+                else
+                    std::cout << "   Maximally allowed change on the assignment of the objective function: " << maxOptimizationValue << std::endl;
+                #endif
                 if( (increaseVar && varForMinimizaton.supremum() > varForMinimizaton.assignment()) || (!increaseVar && varForMinimizaton.infimum() < varForMinimizaton.assignment()) )
                 {
                     Value<T1> varForMinTheta = increaseVar ? 
                         (varForMinimizaton.supremum().isInfinite() ? maxTheta : (varForMinimizaton.supremum().limit() - varForMinimizaton.assignment())) :
                         (varForMinimizaton.infimum().isInfinite() ? maxTheta : (varForMinimizaton.assignment() - varForMinimizaton.infimum().limit()));
+                    #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                    if( varForMinTheta == maxTheta )
+                        std::cout << "   No limit on change of assignment of non-basic variable." << std::endl;
+                    else
+                        std::cout << "   Maximally allowed change on non-basic variable: " << varForMinTheta << std::endl;
+                    #endif
                     EntryID result = LAST_ENTRY_ID;
                     Iterator varForMinIter = Iterator( varForMinimizaton.startEntry(), mpEntries );
                     while( true )
@@ -951,14 +977,25 @@ namespace smtrat
                         Variable<T1, T2>& lraVar = *((*varForMinIter).rowVar());
                         if( lraVar != _objective )
                         {
+                            #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                            std::cout << "      Check the basic variable ";
+                            lraVar.print();
+                            std::cout << std::endl;
+                            #endif
                             #ifdef LRA_NO_DIVISION
                             bool entryNegative = ((*varForMinIter).content() < 0 && lraVar.factor() > 0) || ((*varForMinIter).content() > 0 && lraVar.factor() < 0);
                             #else
                             bool entryNegative = (*varForMinIter).content() < 0;
                             #endif
+                            #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                            std::cout << "      " << (increaseVar == entryNegative ? "Increase" : "Decrease") << " basic variable's assignment." << std::endl;
+                            #endif
                             if( (increaseVar == entryNegative && lraVar.infimum() < lraVar.assignment())
                              || (increaseVar != entryNegative && lraVar.supremum() > lraVar.assignment()))
                             {
+                                #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                                std::cout << "      Found basic variable with margin." << std::endl;
+                                #endif
                                 if( (increaseVar == entryNegative && !lraVar.infimum().isInfinite()) || (increaseVar != entryNegative && !lraVar.supremum().isInfinite()) )
                                 {
                                     Value<T1> lraVarTheta = (increaseVar == entryNegative) ? (lraVar.assignment() - lraVar.infimum().limit()) : (lraVar.supremum().limit() - lraVar.assignment());
@@ -969,10 +1006,17 @@ namespace smtrat
                                     if( lraVarTheta < T1(0) )
                                         lraVarTheta = lraVarTheta * T1( -1 );
                                     if( varForMinTheta == maxTheta || varForMinTheta > lraVarTheta )
-                                    {
+                                    {   
+                                        #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                                        std::cout << "      Found basic variable with the smaller margin " << varForMinTheta << std::endl;
+                                        #endif
                                         varForMinTheta = lraVarTheta;
                                         result = varForMinIter.entryID();
                                     }
+                                }
+                                else if( !(varForMinTheta == maxTheta) )
+                                {
+                                    result = varForMinIter.entryID();
                                 }
                             }
                             else
@@ -980,17 +1024,36 @@ namespace smtrat
                         }
                         if( varForMinIter.vEnd( false ) )
                         {
-                            bool maxOptimizationReached = maxOptimizationValue <= varForMinTheta;
-                            if( maxOptimizationReached )
-                                varForMinTheta = maxOptimizationValue;
-                            if( result != LAST_ENTRY_ID &&
-                                (bestResult == LAST_ENTRY_ID || (*mpTheta > T1(0) && varForMinTheta > *mpTheta) || (*mpTheta < T1(0) && varForMinTheta > *mpTheta * T1( -1 ))) )
+                            if( result != LAST_ENTRY_ID )
                             {
-                                (*mpTheta) = increaseVar ? varForMinTheta : (varForMinTheta * T1( -1 ));
-                                bestResult = result;
+                                bool maxOptimizationReached = !(maxOptimizationValue == maxTheta) && maxOptimizationValue <= varForMinTheta;
+                                if( maxOptimizationReached )
+                                {
+                                    varForMinTheta = maxOptimizationValue;
+                                    #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                                    std::cout << "   Optimization potential of non-basic variable exceeds possible margin of the objective function." << std::endl;
+                                    #endif
+                                }
+                                if( (bestResult == LAST_ENTRY_ID || (*mpTheta > T1(0) && varForMinTheta > *mpTheta) || (*mpTheta < T1(0) && varForMinTheta > *mpTheta * T1( -1 ))) )
+                                {
+                                    (*mpTheta) = increaseVar ? varForMinTheta : (varForMinTheta * T1( -1 ));
+                                    bestResult = result;
+                                    #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                                    std::cout << "   Found a non-basic variable with the better margin for optimization." << std::endl;
+                                    std::cout << "   Theta is now: " << (*mpTheta) << std::endl;
+                                    #endif
+                                }
+                                if( maxOptimizationReached )
+                                {
+                                    #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                                    std::cout << "Return as possible margin of the objective function is reached." << std::endl;
+                                    #endif
+                                    return std::make_pair( bestResult, true );
+                                }
                             }
-                            if( maxOptimizationReached )
-                                std::make_pair( bestResult, true );
+                            #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                            else std::cout << "   Basic variable has infinite margin." << std::endl;
+                            #endif
                             break;
                         }
                         else
@@ -1003,7 +1066,18 @@ namespace smtrat
                     objectiveIter.hMove( false );
             }
             if( bestResult != LAST_ENTRY_ID )
+            {
+                #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                if( bestResult == LAST_ENTRY_ID )
+                    std::cout << "Infinite optimization potential." << std::endl;
+                else
+                    std::cout << "Optimization margin: " << (*mpTheta) << std::endl;
+                #endif
                 return std::make_pair( bestResult, true );
+            }
+            #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+            std::cout << "No variable suits for optimizing." << std::endl;
+            #endif
             return std::make_pair( LAST_ENTRY_ID, false );
         }
         
