@@ -313,9 +313,10 @@ namespace smtrat
         for( const Module* module : mUsedBackends )
         {
             unsigned ret = module->currentlySatisfied( _formula );
-            if( ret != 2 )
+            if( ret == 0 || ret == 1 )
                 return ret;
         }
+        return 3;
     }
 
     list<std::vector<carl::Variable>> Module::getModelEqualities() const
