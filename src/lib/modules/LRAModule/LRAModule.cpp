@@ -496,7 +496,7 @@ namespace smtrat
         if( !mModelComputed )
         {
             clearModel();
-            if( solverState() == True || mMinimize )
+            if( solverState() != False || mMinimize )
             {
                 if( mAssignmentFullfilsNonlinearConstraints )
                 {
@@ -527,6 +527,34 @@ namespace smtrat
     }
     
     template<class Settings>
+    unsigned LRAModule<Settings>::currentlySatisfied( const FormulaT& _formula ) const
+    {
+        switch( _formula.getType() )
+        {
+            case carl::FormulaType::TRUE:
+                return 1;
+            case carl::FormulaType::FALSE:
+                return 0;
+            case carl::FormulaType::CONSTRAINT:
+            {
+                if( _formula.constraint().lhs().isLinear() && _formula.constraint().relation() != carl::Relation::NEQ )
+                {
+                    auto constrBoundIter = mTableau.constraintToBound().find( _formula );
+                    if( constrBoundIter != mTableau.constraintToBound().end() )
+                    {
+                        if( constrBoundIter->second->front()->isSatisfied() )
+                            return 1;
+                        else
+                            return 0;
+                    }
+                }
+            }
+            default:
+                return _formula.satisfiedBy( getRationalModel() );
+        }
+    }
+    
+    template<class Settings>
     Answer LRAModule<Settings>::optimize( Answer _result )
     {
         if( _result == True )
@@ -543,6 +571,7 @@ namespace smtrat
             {
                 if( mObjectiveLRAVar->second.first->startEntry() != lra::LAST_ENTRY_ID )
                 {
+                    mTableau.resetTheta();
                     mTableau.pivot( mObjectiveLRAVar->second.first->startEntry(), true );
                 }
                 else

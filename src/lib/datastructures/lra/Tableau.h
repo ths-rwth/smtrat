@@ -491,6 +491,11 @@ namespace smtrat
                     return mLearnedUpperBounds;
                 }
                 
+                void resetTheta()
+                {
+                    *mpTheta = Value<T1>( T1( 0 ) );
+                }
+                
                 /**
                  * @return 
                  */
