@@ -117,17 +117,20 @@ namespace smtrat
                             {
                                 if( constraint.relation() == carl::Relation::EQ )
                                 {
-                                    auto olIter = mCreatedObjectiveLRAVars.find( objectiveFunction() );
-                                    if( olIter == mCreatedObjectiveLRAVars.end() )
+                                    if( !objectiveFunction().isConstant() )
                                     {
-                                        LRABoundType factor;
-                                        LRABoundType bound;
-                                        LRAVariable* lraVar = mTableau.getVariable( objectiveFunction(), factor, bound );
-                                        olIter = mCreatedObjectiveLRAVars.emplace( objectiveFunction(), std::make_pair( lraVar, (Rational)factor ) ).first;
+                                        auto olIter = mCreatedObjectiveLRAVars.find( objectiveFunction() );
+                                        if( olIter == mCreatedObjectiveLRAVars.end() )
+                                        {
+                                            LRABoundType factor;
+                                            LRABoundType bound;
+                                            LRAVariable* lraVar = mTableau.getVariable( objectiveFunction(), factor, bound );
+                                            olIter = mCreatedObjectiveLRAVars.emplace( objectiveFunction(), std::make_pair( lraVar, (Rational)factor ) ).first;
+                                        }
+                                        mObjectiveLRAVar = olIter;
+                                        if( mObjectiveLRAVar->second.first->isBasic() )
+                                            mTableau.activateBasicVar( mObjectiveLRAVar->second.first );
                                     }
-                                    mObjectiveLRAVar = olIter;
-                                    if( mObjectiveLRAVar->second.first->isBasic() )
-                                        mTableau.activateBasicVar( mObjectiveLRAVar->second.first );
                                 }
                                 return true;
                             }
@@ -493,7 +496,7 @@ namespace smtrat
         if( !mModelComputed )
         {
             clearModel();
-            if( solverState() == True || mMinimize )
+            if( solverState() != False || mMinimize )
             {
                 if( mAssignmentFullfilsNonlinearConstraints )
                 {
@@ -524,13 +527,61 @@ namespace smtrat
     }
     
     template<class Settings>
+    unsigned LRAModule<Settings>::currentlySatisfied( const FormulaT& _formula ) const
+    {
+        switch( _formula.getType() )
+        {
+            case carl::FormulaType::TRUE:
+                return 1;
+            case carl::FormulaType::FALSE:
+                return 0;
+            case carl::FormulaType::CONSTRAINT:
+            {
+                if( _formula.constraint().lhs().isLinear() && _formula.constraint().relation() != carl::Relation::NEQ )
+                {
+                    auto constrBoundIter = mTableau.constraintToBound().find( _formula );
+                    if( constrBoundIter != mTableau.constraintToBound().end() )
+                    {
+                        if( constrBoundIter->second->front()->isSatisfied() )
+                            return 1;
+                        else
+                            return 0;
+                    }
+                }
+            }
+            default:
+                return _formula.satisfiedBy( getRationalModel() );
+        }
+    }
+    
+    template<class Settings>
     Answer LRAModule<Settings>::optimize( Answer _result )
     {
         if( _result == True )
         {
+            if( objectiveFunction().isConstant() )
+            {
+                mModelComputed = false;
+                updateModel();
+                mModel.insert(mModel.end(), std::make_pair(objective(), objectiveFunction().constantPart() ) );
+                return _result;
+            }
+            bool variableBasicAndNotConnected = false;
+            if( !mObjectiveLRAVar->second.first->isBasic() )
+            {
+                if( mObjectiveLRAVar->second.first->startEntry() != lra::LAST_ENTRY_ID )
+                {
+                    mTableau.resetTheta();
+                    mTableau.pivot( mObjectiveLRAVar->second.first->startEntry(), true );
+                }
+                else
+                    variableBasicAndNotConnected = true;
+            }
             for( ; ; )
             {
-                std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElementForOptimizing( *(mObjectiveLRAVar->second.first) );
+                std::pair<EntryID,bool> pivotingElement = variableBasicAndNotConnected ? 
+                    std::make_pair( lra::LAST_ENTRY_ID, true ) : 
+                    mTableau.nextPivotingElementForOptimizing( *(mObjectiveLRAVar->second.first), mObjectiveLRAVar->second.second > 0 );
                 if( pivotingElement.second )
                 {
                     if( pivotingElement.first == lra::LAST_ENTRY_ID )
@@ -542,19 +593,19 @@ namespace smtrat
                             #endif
                             clearModel();
                             mModel.insert(mModel.end(), std::make_pair(objective(), InfinityValue()) );
+                            mModelComputed = true;
                         }
                         else
                         {
                             mModelComputed = false;
-                            updateModel();
                             const LRAValue& infimum = mObjectiveLRAVar->second.first->infimum().limit();
-                            Rational ass = (Rational)(infimum.mainPart()+mTableau.currentDelta()*infimum.deltaPart());
+                            mObjectiveLRAVar->second.first->rAssignment() = infimum;
+                            updateModel();
+                            Rational ass = (Rational)(infimum.mainPart()+mTableau.currentDelta()*infimum.deltaPart())/mObjectiveLRAVar->second.second;
                             #ifdef DEBUG_LRA_MODULE
                             std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: " << ass << std::endl;
                             #endif
                             mModel.insert(mModel.end(), std::make_pair(objective(), ass ) );
-                            if( mObjectiveLRAVar->second.first->isOriginal() )
-                                mModel[mObjectiveLRAVar->second.first->expression().getSingleVariable()] = ass;
                         }
                         break;
                     }
@@ -571,7 +622,7 @@ namespace smtrat
                     mModelComputed = false;
                     updateModel();
                     const EvalRationalMap& ratModel = getRationalModel();
-                    Rational opti = mObjectiveLRAVar->second.second*mObjectiveLRAVar->second.first->expression().evaluate( ratModel );
+                    Rational opti = mObjectiveLRAVar->second.first->expression().evaluate( ratModel )/mObjectiveLRAVar->second.second;
                     #ifdef DEBUG_LRA_MODULE
                     std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: " << opti << std::endl;
                     #endif

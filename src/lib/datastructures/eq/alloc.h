@@ -8,7 +8,6 @@
 #include <cassert>
 
 #include "../../config.h"
-#include "../../../cli/config.h"
 
 #ifdef SMTRAT_STRAT_PARALLEL_MODE
 #include <mutex>

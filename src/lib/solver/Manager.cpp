@@ -183,6 +183,8 @@ namespace smtrat
             const Model& curModel = model();
             auto modelIter = curModel.find( mObjectives.front().second.first );
             assert( modelIter != curModel.end() );
+            if( modelIter->second.isMinusInfinity() )
+                return (mObjectives.front().second.second ? modelIter->second.asInfinity() : InfinityValue(true));
             assert( modelIter->second.isRational() );
             return (mObjectives.front().second.second ? modelIter->second.asRational() : -(modelIter->second.asRational()));
         }
@@ -235,9 +237,17 @@ namespace smtrat
                     {
                         if( !objectivesIter->first.isVariable() )
                         {
-                            assert( ass->second.isRational() );
-                            Rational opt = (objectivesIter->second.second ? ass->second.asRational() : -(ass->second.asRational()));
-                            cout << "(" << objectivesIter->first.toString( false, true ) << " " << opt << ")" << endl;
+                            if( ass->second.isMinusInfinity() )
+                            {
+                                string opt = objectivesIter->second.second ? toString( ass->second.asInfinity(), false ) : toString( InfinityValue(true), false );
+                                cout << "(" << objectivesIter->first.toString( false, true ) << " " << opt << ")" << endl;
+                            }
+                            else
+                            {
+                                assert( ass->second.isRational() );
+                                Rational opt = (objectivesIter->second.second ? ass->second.asRational() : -(ass->second.asRational()));
+                                cout << "(" << objectivesIter->first.toString( false, true ) << " " << opt << ")" << endl;
+                            }
                         }
                         ++objectivesIter;
                     }

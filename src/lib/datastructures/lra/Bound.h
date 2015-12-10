@@ -346,6 +346,14 @@ namespace smtrat
                 {
                     return mpInfo;
                 }
+                
+                bool isSatisfied() const
+                {
+                    if( isUpperBound() )
+                        return (*this) >= variable().assignment();
+                    else
+                        return (*this) <= variable().assignment();
+                }
 
                 /**
                  * @return 

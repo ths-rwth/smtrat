@@ -5,7 +5,7 @@
 */
 #pragma once
 
-#include "../../cli/config.h"
+#include "../config.h"
 #include "../modules/Modules.h"
 #include "carl/util/stringparser.h"
 #include "carl/util/parser/Parser.h"

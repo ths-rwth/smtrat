@@ -197,6 +197,13 @@ namespace smtrat
             void updateModel() const;
             
             /**
+             * @return 0, if the given formula is conflicted by the current model;
+             *         1, if the given formula is satisfied by the current model;
+             *         2, otherwise
+             */
+            unsigned currentlySatisfied( const FormulaT& ) const;
+            
+            /**
              * Gives a rational model if the received formula is satisfiable. Note, that it
              * is calculated from scratch every time you call this method.
              * @return The rational model.
