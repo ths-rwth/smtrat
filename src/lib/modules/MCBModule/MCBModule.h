@@ -25,7 +25,7 @@ namespace smtrat
 #ifdef SMTRAT_DEVOPTION_Statistics
 			MCBStatistics mStatistics;
 #endif
-			using Choice = std::tuple<carl::Variable,FormulaT>;
+			using Choice = std::tuple<carl::Variable,Rational,FormulaT>;
 			std::map<Choice, carl::Variable> mChoices;
 			
 		public:

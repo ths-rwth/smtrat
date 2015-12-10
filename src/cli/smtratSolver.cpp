@@ -185,14 +185,9 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 	}
 	if (e->hasInstructions()) e->runInstructions();
 	unsigned exitCode = e->getExitCode();
-	if( settingsManager.printModel() && e->lastAnswer == smtrat::True )
-	{
-            solver->printAssignment();
-	}
-	if( settingsManager.printAllModels() && e->lastAnswer == smtrat::True )
-	{
-		std::cout << std::endl;
-		solver->printAllAssignments( std::cout );
+	if (e->lastAnswer == smtrat::True) {
+		if (settingsManager.printModel()) solver->printAssignment();
+		else if (settingsManager.printAllModels()) solver->printAllAssignments(std::cout);
 	}
 	delete e;
 	return exitCode;
