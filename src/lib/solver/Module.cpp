@@ -307,6 +307,16 @@ namespace smtrat
             }*/
         }
     }
+    
+    unsigned Module::currentlySatisfiedByBackend( const FormulaT& _formula ) const
+    {
+        for( const Module* module : mUsedBackends )
+        {
+            unsigned ret = module->currentlySatisfied( _formula );
+            if( ret != 2 )
+                return ret;
+        }
+    }
 
     list<std::vector<carl::Variable>> Module::getModelEqualities() const
     {

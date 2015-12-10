@@ -280,6 +280,25 @@ namespace smtrat
              * @return Equivalence classes.
              */
             virtual std::list<std::vector<carl::Variable>> getModelEqualities() const;
+            
+            /**
+             * @return 0, if the given formula is conflicted by the current model;
+             *         1, if the given formula is satisfied by the current model;
+             *         2, otherwise
+             *         3, if we do not know anything (default)
+             */
+            unsigned currentlySatisfiedByBackend( const FormulaT& _formula ) const;
+            
+            /**
+             * @return 0, if the given formula is conflicted by the current model;
+             *         1, if the given formula is satisfied by the current model;
+             *         2, otherwise;
+             *         3, if we do not know anything (default)
+             */
+            virtual unsigned currentlySatisfied( const FormulaT& ) const
+            {
+                return 3;
+            }
 
             // Methods to read and write on the members.
             /**

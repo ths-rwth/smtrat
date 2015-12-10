@@ -156,6 +156,7 @@ namespace smtrat
     template<class Settings>
     SATModule<Settings>::~SATModule()
     {
+        std::cout << "Decisions: " << decisions << std::endl;
         while( mBooleanConstraintMap.size() > 0 )
         {
             Abstraction*& abstrAToDel = mBooleanConstraintMap.last().first;
@@ -374,7 +375,7 @@ namespace smtrat
         mFullCheck = _full;
         mMinimize = _minimize;
         
-//        cout << "Check smt:" << endl;
+        cout << "Check smt:" << endl;
 //        for( const auto& f : rReceivedFormula() )
 //            std::cout << "   " << f.formula().toString() << std::endl;
 //        std::cout << ((FormulaT) rReceivedFormula()).toString( false, 1, "", true, false, true, true ) << std::endl;
@@ -1951,8 +1952,10 @@ SetWatches:
                 assert( !mReceivedFormulaPurelyPropositional || mChangedActivities.empty() );
                 assert( !mReceivedFormulaPurelyPropositional || mChangedBooleans.empty() );
                 assert( !mReceivedFormulaPurelyPropositional || !mAllActivitiesChanged );
-                if( !mReceivedFormulaPurelyPropositional )
+                if( !mReceivedFormulaPurelyPropositional && mCurrentAssignmentConsistent != True )
+                {
                     adaptPassedFormula();
+                }
                 assert( !mReceivedFormulaPurelyPropositional || !mChangedPassedFormula );
                 if( mChangedPassedFormula )
                 {
@@ -2036,6 +2039,11 @@ SetWatches:
             if( !foundConflictOfSizeOne && confl == CRef_Undef )
             {
                 // NO CONFLICT
+//                if( madeTheoryCall && rReceivedFormula().satisfiedBy( backendsModel() ) == 1 )
+//                {
+//                    std::cout << "Found sat!" << std::endl;
+//                    return l_True;
+//                }
                 if( Settings::check_if_all_clauses_are_satisfied && !mReceivedFormulaPurelyPropositional )
                 {
 //                    std::cout << "\r" << std::setw(30) << mNumberOfSatisfiedClauses << " from " << clauses.size() << " clauses are satisfied";
@@ -2295,8 +2303,8 @@ SetWatches:
         #endif
         Var next = var_Undef;
         vec<Var> varsToRestore;
-        Model bModel = backendsModel();
         #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
+        Model bModel = backendsModel();
         std::cout << "Backend's model: " << std::endl << bModel << std::endl;
         #endif
         while( next == var_Undef || value( next ) != l_Undef || !decision[next] )
@@ -2327,7 +2335,7 @@ SetWatches:
                         #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
                         std::cout << "corresponds to constraint: " << abstr.reabstraction << std::endl;
                         #endif
-                        unsigned consistency = satisfies( bModel, abstr.reabstraction );
+                        unsigned consistency = currentlySatisfiedByBackend( abstr.reabstraction );
                         #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
                         std::cout << "consistency = " << consistency << std::endl;
                         #endif
@@ -2339,9 +2347,9 @@ SetWatches:
                             varsToRestore.push(next);
                             next = var_Undef;
                         }
-                        else
+                        else if( consistency != 3 )
                         {
-                            polarity[next] = (consistency == 1);
+                            polarity[next] = (consistency == 0);
                         }
                     }
                 }
@@ -2548,7 +2556,11 @@ SetWatches:
             if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == carl::FormulaType::UEQ || abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().isConsistent() != 1)) 
             {
                 if( ++abstr.updateInfo > 0 )
+                {
+                    if( currentlySatisfiedByBackend( abstr.reabstraction ) != 1 )
+                        mCurrentAssignmentConsistent = Unknown;
                     mChangedBooleans.push_back( var( p ) );
+                }
             }
             vardata[var( p )] = mkVarData( from, decisionLevel() );
             trail.push_( p );
