@@ -143,7 +143,7 @@ namespace smtrat
     
     // Macros.
     
-    #define ANSWER_TO_STRING(_ans) (_ans == True ? "True" : (_ans == False ? "False" : (_ans == Unknown ? "Unknown" : "Undefined")))
+    #define ANSWER_TO_STRING(_ans) (_ans == SAT ? "SAT" : (_ans == UNSAT ? "UNSAT" : (_ans == UNKNOWN ? "UNKNOWN" : (_ans == ABORTED ? "ABORTED" : "Undefined"))))
 
     // Function wrapper.
     
