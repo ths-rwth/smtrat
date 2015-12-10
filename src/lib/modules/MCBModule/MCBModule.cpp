@@ -97,22 +97,18 @@ namespace smtrat
 		std::map<FormulaT, FormulaT> repl;
 		for (const auto& r: mChoices) {
 			carl::Variable v = std::get<0>(r.first);
-			FormulaT form = std::get<1>(r.first);
-			std::cout << "Handling " << form << std::endl;
-			
+			const FormulaT& form = std::get<1>(r.first);
 			variables.insert(v);
 			repl.emplace(form, FormulaT(r.second));
 		}
 		carl::FormulaSubstitutor<FormulaT> subs;
-		std::cout << "Doing substitution..." << std::endl;
 		FormulaT res = subs.substitute(f, repl);
-		std::cout << "Done." << std::endl;
+		
 		carl::Variables remainingVars;
 		res.allVars(remainingVars);
 		FormulasT impl;
 		for (const auto& v: variables) {
 			if (remainingVars.count(v) > 0) {
-				std::cout << "Checking for " << v << std::endl;
 				for (const auto& r: mChoices) {
 					if (v != std::get<0>(r.first)) continue;
 					FormulaT form = std::get<1>(r.first);
