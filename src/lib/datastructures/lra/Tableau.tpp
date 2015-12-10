@@ -907,8 +907,38 @@ namespace smtrat
                 #else
                 bool increaseVar = (*objectiveIter).content() < 0;
                 #endif
-                if( !_minimize )
+                Value<T1> maxOptimizationValue;
+                if( _minimize )
+                {
+                    if( _objective.infimum().isInfinite() )
+                        maxOptimizationValue = maxTheta;
+                    else
+                    {
+                        maxOptimizationValue = (_objective.assignment()-_objective.infimum().limit())/(*objectiveIter).content();
+                        #ifdef LRA_NO_DIVISION
+                        maxOptimizationValue *= _objective.factor();
+                        #endif 
+                        maxOptimizationValue /= (*objectiveIter).content();
+                    }               
+                    if( maxOptimizationValue < T1(0) )
+                        maxOptimizationValue = maxOptimizationValue * T1( -1 );
+                }
+                else
+                {
+                    if( _objective.supremum().isInfinite() )
+                        maxOptimizationValue = maxTheta;
+                    else
+                    {
+                        maxOptimizationValue = (_objective.supremum().limit()-_objective.assignment())/(*objectiveIter).content();
+                        #ifdef LRA_NO_DIVISION
+                        maxOptimizationValue *= _objective.factor();
+                        #endif 
+                        maxOptimizationValue /= (*objectiveIter).content();
+                    }
+                    if( maxOptimizationValue < T1(0) )
+                        maxOptimizationValue = maxOptimizationValue * T1( -1 );
                     increaseVar = !increaseVar;
+                }
                 if( (increaseVar && varForMinimizaton.supremum() > varForMinimizaton.assignment()) || (!increaseVar && varForMinimizaton.infimum() < varForMinimizaton.assignment()) )
                 {
                     Value<T1> varForMinTheta = increaseVar ? 
@@ -950,12 +980,17 @@ namespace smtrat
                         }
                         if( varForMinIter.vEnd( false ) )
                         {
+                            bool maxOptimizationReached = maxOptimizationValue <= varForMinTheta;
+                            if( maxOptimizationReached )
+                                varForMinTheta = maxOptimizationValue;
                             if( result != LAST_ENTRY_ID &&
                                 (bestResult == LAST_ENTRY_ID || (*mpTheta > T1(0) && varForMinTheta > *mpTheta) || (*mpTheta < T1(0) && varForMinTheta > *mpTheta * T1( -1 ))) )
                             {
                                 (*mpTheta) = increaseVar ? varForMinTheta : (varForMinTheta * T1( -1 ));
                                 bestResult = result;
                             }
+                            if( maxOptimizationReached )
+                                std::make_pair( bestResult, true );
                             break;
                         }
                         else
