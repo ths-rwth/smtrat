@@ -579,7 +579,9 @@ namespace smtrat
             }
             for( ; ; )
             {
-                std::pair<EntryID,bool> pivotingElement = variableBasicAndNotConnected ? std::make_pair( lra::LAST_ENTRY_ID, true ) : mTableau.nextPivotingElementForOptimizing( *(mObjectiveLRAVar->second.first) );
+                std::pair<EntryID,bool> pivotingElement = variableBasicAndNotConnected ? 
+                    std::make_pair( lra::LAST_ENTRY_ID, true ) : 
+                    mTableau.nextPivotingElementForOptimizing( *(mObjectiveLRAVar->second.first), mObjectiveLRAVar->second.second > 0 );
                 if( pivotingElement.second )
                 {
                     if( pivotingElement.first == lra::LAST_ENTRY_ID )

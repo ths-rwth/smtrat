@@ -889,23 +889,26 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        std::pair<EntryID,bool> Tableau<Settings,T1,T2>::nextPivotingElementForOptimizing( const Variable<T1, T2>& _objective )
+        std::pair<EntryID,bool> Tableau<Settings,T1,T2>::nextPivotingElementForOptimizing( const Variable<T1, T2>& _objective, bool _minimize )
         {
+            assert( _objective.isBasic() );
             Value<T1> maxTheta = Value<T1>(T1(-1));
             EntryID objectiveStartEntry = _objective.startEntry();
             Iterator objectiveIter = Iterator( objectiveStartEntry, mpEntries );
-            if( (_objective.isBasic() && objectiveIter.hEnd( false )) || (!_objective.isBasic() && objectiveIter.vEnd( false )) )
+            if( objectiveIter.hEnd( false ) )
                 return std::make_pair( LAST_ENTRY_ID, true );
             (*mpTheta) = T1( 0 );
             EntryID bestResult = LAST_ENTRY_ID;
             while( true )
             {
-                const Variable<T1, T2>& varForMinimizaton = _objective.isBasic() ? *(*objectiveIter).columnVar() : *(*objectiveIter).rowVar();
+                const Variable<T1, T2>& varForMinimizaton = *(*objectiveIter).columnVar();
                 #ifdef LRA_NO_DIVISION
                 bool increaseVar = ((*objectiveIter).content() < 0 && _objective.factor() > 0) || ((*objectiveIter).content() > 0 && _objective.factor() < 0);
                 #else
                 bool increaseVar = (*objectiveIter).content() < 0;
                 #endif
+                if( !_minimize )
+                    increaseVar = !increaseVar;
                 if( (increaseVar && varForMinimizaton.supremum() > varForMinimizaton.assignment()) || (!increaseVar && varForMinimizaton.infimum() < varForMinimizaton.assignment()) )
                 {
                     Value<T1> varForMinTheta = increaseVar ? 
@@ -915,36 +918,37 @@ namespace smtrat
                     Iterator varForMinIter = Iterator( varForMinimizaton.startEntry(), mpEntries );
                     while( true )
                     {
-                        Variable<T1, T2>& lraVar = _objective.isBasic() ? *((*varForMinIter).rowVar()) : *((*varForMinIter).columnVar());
-                        #ifdef LRA_NO_DIVISION
-                        bool entryNegative = ((*varForMinIter).content() < 0 && lraVar.factor() > 0) || ((*varForMinIter).content() > 0 && lraVar.factor() < 0);
-                        #else
-                        bool entryNegative = (*varForMinIter).content() < 0;
-                        #endif
-                        if( (increaseVar == entryNegative && lraVar.infimum() < lraVar.assignment())
-                         || (increaseVar != entryNegative && lraVar.supremum() > lraVar.assignment()))
+                        Variable<T1, T2>& lraVar = *((*varForMinIter).rowVar());
+                        if( lraVar != _objective )
                         {
-                            if( (increaseVar == entryNegative && !lraVar.infimum().isInfinite()) || (increaseVar != entryNegative && !lraVar.supremum().isInfinite()) )
+                            #ifdef LRA_NO_DIVISION
+                            bool entryNegative = ((*varForMinIter).content() < 0 && lraVar.factor() > 0) || ((*varForMinIter).content() > 0 && lraVar.factor() < 0);
+                            #else
+                            bool entryNegative = (*varForMinIter).content() < 0;
+                            #endif
+                            if( (increaseVar == entryNegative && lraVar.infimum() < lraVar.assignment())
+                             || (increaseVar != entryNegative && lraVar.supremum() > lraVar.assignment()))
                             {
-                                Value<T1> lraVarTheta = (increaseVar == entryNegative) ? (lraVar.assignment() - lraVar.infimum().limit()) : (lraVar.supremum().limit() - lraVar.assignment());
-                                #ifdef LRA_NO_DIVISION
-                                lraVarTheta *= lraVar.factor();
-                                #endif 
-                                lraVarTheta /= (*varForMinIter).content();
-                                if( lraVarTheta < T1(0) )
-                                    lraVarTheta = lraVarTheta * T1( -1 );
-                                if( varForMinTheta == maxTheta || varForMinTheta > lraVarTheta )
+                                if( (increaseVar == entryNegative && !lraVar.infimum().isInfinite()) || (increaseVar != entryNegative && !lraVar.supremum().isInfinite()) )
                                 {
-                                    varForMinTheta = lraVarTheta;
-                                    result = varForMinIter.entryID();
+                                    Value<T1> lraVarTheta = (increaseVar == entryNegative) ? (lraVar.assignment() - lraVar.infimum().limit()) : (lraVar.supremum().limit() - lraVar.assignment());
+                                    #ifdef LRA_NO_DIVISION
+                                    lraVarTheta *= lraVar.factor();
+                                    #endif 
+                                    lraVarTheta /= (*varForMinIter).content();
+                                    if( lraVarTheta < T1(0) )
+                                        lraVarTheta = lraVarTheta * T1( -1 );
+                                    if( varForMinTheta == maxTheta || varForMinTheta > lraVarTheta )
+                                    {
+                                        varForMinTheta = lraVarTheta;
+                                        result = varForMinIter.entryID();
+                                    }
                                 }
                             }
+                            else
+                                break;
                         }
-                        else
-                        {
-                            break;
-                        }
-                        if( (_objective.isBasic() && varForMinIter.vEnd( false )) || (!_objective.isBasic() && varForMinIter.hEnd( false )) )
+                        if( varForMinIter.vEnd( false ) )
                         {
                             if( result != LAST_ENTRY_ID &&
                                 (bestResult == LAST_ENTRY_ID || (*mpTheta > T1(0) && varForMinTheta > *mpTheta) || (*mpTheta < T1(0) && varForMinTheta > *mpTheta * T1( -1 ))) )
@@ -955,25 +959,13 @@ namespace smtrat
                             break;
                         }
                         else
-                        {
-                            if( _objective.isBasic() )
-                                varForMinIter.vMove( false );
-                            else
-                                varForMinIter.hMove( false );
-                        }
+                            varForMinIter.vMove( false );
                     }
                 }
-                if( (_objective.isBasic() && objectiveIter.hEnd( false )) || (!_objective.isBasic() && objectiveIter.vEnd( false )) )
-                {
+                if( objectiveIter.hEnd( false ) )
                     break;
-                }
                 else
-                {
-                    if( _objective.isBasic() )
-                        objectiveIter.hMove( false );
-                    else
-                        objectiveIter.vMove( false );
-                }
+                    objectiveIter.hMove( false );
             }
             if( bestResult != LAST_ENTRY_ID )
                 return std::make_pair( bestResult, true );
