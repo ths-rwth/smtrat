@@ -54,7 +54,7 @@ namespace smtrat
         mpManager( _manager ),
         mModel(),
         mModelComputed( false ),
-        mSolverState( Unknown ),
+        mSolverState( UNKNOWN ),
 #ifdef __VS
         mBackendsFoundAnswer(new std::atomic<bool>(false)),
 #else
@@ -118,20 +118,20 @@ namespace smtrat
             #ifdef SMTRAT_DEVOPTION_MeasureTime
             stopCheckTimer();
             #endif
-            return foundAnswer( True );
+            return foundAnswer( SAT );
         }
         Answer result = checkCore( _full, _minimize );
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         stopCheckTimer();
         #endif
-        assert(result == Unknown || result == False || result == True);
-        assert( result != False || hasValidInfeasibleSubset() );
+        assert(result == UNKNOWN || result == UNSAT || result == SAT);
+        assert( result != UNSAT || hasValidInfeasibleSubset() );
         #ifdef SMTRAT_DEVOPTION_Validation
         if( validationSettings->logTCalls() )
         {
-            if( result != Unknown && !mpReceivedFormula->empty() )
+            if( result != UNKNOWN && !mpReceivedFormula->empty() )
             {
-                addAssumptionToCheck( *mpReceivedFormula, result == True, moduleName() );
+                addAssumptionToCheck( *mpReceivedFormula, result == SAT, moduleName() );
             }
         }
         #endif
@@ -167,7 +167,7 @@ namespace smtrat
         }
         bool result = addCore( _receivedSubformula );
         if( !result )
-            foundAnswer( False );
+            foundAnswer( UNSAT );
         return result;
     }
     
@@ -208,13 +208,13 @@ namespace smtrat
             }
         }
         if( mInfeasibleSubsets.empty() ) 
-            mSolverState = Unknown;
+            mSolverState = UNKNOWN;
     }
 
     Answer Module::checkCore( bool _full, bool _minimize )
     {
         if ( !mInfeasibleSubsets.empty() )
-            return False;
+            return UNSAT;
 
         assert( mInfeasibleSubsets.empty() );
 
@@ -231,11 +231,11 @@ namespace smtrat
         }
         #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
         addAssumptionToCheck( *mpReceivedFormula, true, moduleName( type() ) );
-        return True;
+        return SAT;
         #else
         // Run the backends on the passed formula and return its answer.
         Answer a = runBackends( _full, _minimize );
-        if( a == False )
+        if( a == UNSAT )
         {
             getInfeasibleSubsets();
         }
@@ -264,7 +264,7 @@ namespace smtrat
         if( !mModelComputed )
         {
             clearModel();
-            if( mSolverState == True )
+            if( mSolverState != UNSAT )
             {
                 getBackendsModel();
                 excludeNotReceivedVariablesFromModel();
@@ -276,7 +276,7 @@ namespace smtrat
     void Module::updateAllModels()
     {
         clearModel();
-        if( mSolverState == True )
+        if( mSolverState == SAT )
         {
             //TODO Matthias: set all models
             getBackendsAllModels();
@@ -568,7 +568,7 @@ namespace smtrat
         vector<Module*>::const_iterator backend = mUsedBackends.begin();
         while( backend != mUsedBackends.end() )
         {
-            if( (*backend)->solverState() == False )
+            if( (*backend)->solverState() == UNSAT )
             {
                 std::vector<FormulaSetT> infsubsets = getInfeasibleSubsets( **backend );
                 mInfeasibleSubsets.insert( mInfeasibleSubsets.end(), infsubsets.begin(), infsubsets.end() );
@@ -602,8 +602,8 @@ namespace smtrat
         auto module = mUsedBackends.begin();
         while( module != mUsedBackends.end() )
         {
-            assert( (*module)->solverState() != False );
-            if( (*module)->solverState() == True )
+            assert( (*module)->solverState() != UNSAT );
+            if( (*module)->solverState() == SAT )
             {
 		//@todo models should be disjoint, but this breaks CAD on certain inputs.
                 //assert( modelsDisjoint( mModel, (*module)->model() ) );
@@ -620,8 +620,8 @@ namespace smtrat
         auto module = mUsedBackends.begin();
         while( module != mUsedBackends.end() )
         {
-            assert( (*module)->solverState() != False );
-            if( (*module)->solverState() == True )
+            assert( (*module)->solverState() != UNSAT );
+            if( (*module)->solverState() == SAT )
             {
 		//@todo models should be disjoint, but this breaks CAD on certain inputs.
                 //assert( modelsDisjoint( mModel, (*module)->model() ) );
@@ -641,8 +641,8 @@ namespace smtrat
         auto module = mUsedBackends.begin();
         while( module != mUsedBackends.end() )
         {
-            assert( (*module)->solverState() != False );
-            if( (*module)->solverState() == True )
+            assert( (*module)->solverState() != UNSAT );
+            if( (*module)->solverState() == SAT )
             {
 				//@todo modules should be disjoint, but this breaks CAD on certain inputs.
                 //assert( modelsDisjoint( mModel, (*module)->model() ) );
@@ -697,9 +697,9 @@ namespace smtrat
 
     Answer Module::runBackends( bool _full, bool _minimize )
     {
-        if( mpManager == NULL ) return Unknown;
+        if( mpManager == NULL ) return UNKNOWN;
         *mBackendsFoundAnswer = false;
-        Answer result = Unknown;
+        Answer result = UNKNOWN;
         // Update the propositions of the passed formula
         mpPassedFormula->updateProperties();
         // Get the backends to be considered from the manager.
@@ -737,7 +737,7 @@ namespace smtrat
                 mConstraintsToInform.clear();
                 if( assertionFailed )
                 {
-                    return False;
+                    return UNSAT;
                 }
             }
             else
@@ -755,7 +755,7 @@ namespace smtrat
             {
                 // Run the backend solver parallel until the first answers true or false.
                 if( anAnswerFound() )
-                    return Unknown;
+                    return ABORTED;
                 size_t highestIndex = numberOfUsedBackends-1;
                 vector< std::future<Answer> > futures( highestIndex );
                 for( size_t i=0; i<highestIndex; ++i )
@@ -774,9 +774,9 @@ namespace smtrat
                     // Futures must be received, otherwise inconsistent state.
                     Answer res = futures[ i ].get();
                     mUsedBackends[ i ]->receivedFormulaChecked();
-                    if( res!=Unknown )
+                    if( res != UNKNOWN )
                     {
-                        assert( result == Unknown || result == res );
+                        assert( result == UNKNOWN || result == res );
                         result = res;
                     }
                 }
@@ -786,7 +786,7 @@ namespace smtrat
             #endif
                 // Run the backend solver sequentially until the first answers true or false.
                 std::vector<Module*>::iterator module = mUsedBackends.begin();
-                while( module != mUsedBackends.end() && result == Unknown )
+                while( module != mUsedBackends.end() && result == UNKNOWN )
                 {
                     result = (*module)->check( _full, _minimize );
                     (*module)->receivedFormulaChecked();
@@ -864,9 +864,9 @@ namespace smtrat
     Answer Module::foundAnswer( Answer _answer )
     {
         mSolverState = _answer;
-        assert( _answer != True || checkModel() != 0 );
+        assert( _answer != SAT || checkModel() != 0 );
         // If we are in the SMT environment:
-        if( mpManager != NULL && _answer != Unknown )
+        if( mpManager != NULL && _answer != UNKNOWN )
         {
             if( !anAnswerFound() )
                 *mFoundAnswer.back() = true;
@@ -979,7 +979,7 @@ namespace smtrat
     
     pair<bool,FormulaT> Module::getReceivedFormulaSimplified()
     {
-        if( mSolverState == False )
+        if( mSolverState == UNSAT )
             return make_pair( true, FormulaT( carl::FormulaType::FALSE ) );
         for( auto& backend : usedBackends() )
         {

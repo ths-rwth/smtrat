@@ -372,9 +372,9 @@ namespace smtrat
         bool backendsResultUnknown = true;
         bool containsIntegerValuedVariables = true;
         if( !rReceivedFormula().isConstraintConjunction() )
-            return processResult( Unknown, backendsResultUnknown );
+            return processResult( UNKNOWN, backendsResultUnknown );
         if( !mInfeasibleSubsets.empty() )
-            return processResult( False, backendsResultUnknown );
+            return processResult( UNSAT, backendsResultUnknown );
         if( rReceivedFormula().isRealConstraintConjunction() )
             containsIntegerValuedVariables = false;
         assert( !mTableau.isConflicting() );
@@ -384,7 +384,7 @@ namespace smtrat
         {
             // Check whether a module which has been called on the same instance in parallel, has found an answer.
             if( anAnswerFound() )
-                return processResult( Unknown, backendsResultUnknown );
+                return processResult( UNKNOWN, backendsResultUnknown );
             // Find a pivoting element in the tableau.
             std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
             #ifdef DEBUG_LRA_MODULE
@@ -408,22 +408,22 @@ namespace smtrat
                         if( containsIntegerValuedVariables )
                         {
                             if( Settings::use_gomory_cuts && gomory_cut() )
-                                return processResult( Unknown, backendsResultUnknown );
+                                return processResult( UNKNOWN, backendsResultUnknown );
                             if( !Settings::use_gomory_cuts && branch_and_bound() )
-                                return processResult( Unknown, backendsResultUnknown );
+                                return processResult( UNKNOWN, backendsResultUnknown );
                         }
                         if( Settings::restore_previous_consistent_assignment )
                             mTableau.storeAssignment();
-                        return processResult( True, backendsResultUnknown );
+                        return processResult( SAT, backendsResultUnknown );
                     }
                     // Otherwise, check the consistency of the formula consisting of the nonlinear constraints and the tightest bounds with the backends.
                     else
                     {
                         adaptPassedFormula();
                         Answer a = runBackends( _full, _minimize );
-                        if( a == False )
+                        if( a == UNSAT )
                             getInfeasibleSubsets();
-                        if( a != Unknown )
+                        if( a != UNKNOWN )
                             backendsResultUnknown = false;
                         return processResult( a, backendsResultUnknown );
                     }
@@ -441,7 +441,7 @@ namespace smtrat
                     #endif
                     // Maybe an easy conflict occurred with the learned bounds.
                     if( !mInfeasibleSubsets.empty() )
-                        return processResult( False, backendsResultUnknown );
+                        return processResult( UNSAT, backendsResultUnknown );
                 }
             }
             // There is a conflict, namely a basic variable violating its bounds without any suitable non-basic variable.
@@ -449,11 +449,11 @@ namespace smtrat
             {
                 // Create the infeasible subsets.
                 createInfeasibleSubsets( pivotingElement.first );
-                return processResult( False, backendsResultUnknown );
+                return processResult( UNSAT, backendsResultUnknown );
             }
         }
         assert( false );
-        return Unknown;
+        return UNKNOWN;
     }
     
     template<class Settings>
@@ -463,10 +463,10 @@ namespace smtrat
         learnRefinements();
         #endif
         #ifdef SMTRAT_DEVOPTION_Statistics
-        if( _result != Unknown )
+        if( _result != UNKNOWN )
         {
             mpStatistics->check( rReceivedFormula() );
-            if( _result == False )
+            if( _result == UNSAT )
                 mpStatistics->addConflict( mInfeasibleSubsets );
             mpStatistics->setNumberOfTableauxEntries( mTableau.size() );
             mpStatistics->setTableauSize( mTableau.rows().size()*mTableau.columns().size() );
@@ -476,10 +476,10 @@ namespace smtrat
         {
             _result = optimize( _result );
         }
-        if( _result != Unknown )
+        if( _result != UNKNOWN )
         {
             mTableau.resetNumberOfPivotingSteps();
-            if( _result == True && _backendsResultUnknown )
+            if( _result == SAT && _backendsResultUnknown )
             {
                 _result = checkNotEqualConstraints( _result );
             }
@@ -496,7 +496,7 @@ namespace smtrat
         if( !mModelComputed )
         {
             clearModel();
-            if( solverState() != False || mMinimize )
+            if( solverState() != UNSAT || mMinimize )
             {
                 if( mAssignmentFullfilsNonlinearConstraints )
                 {
@@ -557,7 +557,7 @@ namespace smtrat
     template<class Settings>
     Answer LRAModule<Settings>::optimize( Answer _result )
     {
-        if( _result == True )
+        if( _result == SAT )
         {
             if( objectiveFunction().isConstant() )
             {
@@ -639,7 +639,7 @@ namespace smtrat
     Answer LRAModule<Settings>::checkNotEqualConstraints( Answer _result )
     {
         // If there are unresolved notequal-constraints and the found satisfying assignment
-        // conflicts this constraint, resolve it by creating the lemma (p<0 or p>0) <-> p!=0 ) and return Unknown.
+        // conflicts this constraint, resolve it by creating the lemma (p<0 or p>0) <-> p!=0 ) and return UNKNOWN.
         const EvalRationalMap& ass = getRationalModel();
         for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
         {
@@ -648,11 +648,11 @@ namespace smtrat
             if( consistency == 0 )
             {
                 splitUnequalConstraint( iter->first );
-                return Unknown;
+                return UNKNOWN;
             }
         }
         // TODO: This is a rather unfortunate hack, because I couldn't fix the efficient neq-constraint-handling with integer-valued constraints
-        if( _result != Unknown && !rReceivedFormula().isRealConstraintConjunction() )
+        if( _result != UNKNOWN && !rReceivedFormula().isRealConstraintConjunction() )
         {
             for( auto iter = mActiveResolvedNEQConstraints.begin(); iter != mActiveResolvedNEQConstraints.end(); ++iter )
             {
@@ -661,12 +661,12 @@ namespace smtrat
                 if( consistency == 0 )
                 {
                     splitUnequalConstraint( iter->first );
-                    return Unknown;
+                    return UNKNOWN;
                 }
             }
         }
         assert( assignmentCorrect() );
-        return True;
+        return SAT;
     }
     
     template<class Settings>
@@ -1385,7 +1385,7 @@ namespace smtrat
     template<class Settings>
     bool LRAModule<Settings>::assignmentCorrect() const
     {
-        if( solverState() == False ) return true;
+        if( solverState() == UNSAT ) return true;
         if( !mAssignmentFullfilsNonlinearConstraints ) return true;
         const EvalRationalMap& model = getRationalModel();
         for( auto ass = model.begin(); ass != model.end(); ++ass )

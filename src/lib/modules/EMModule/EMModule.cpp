@@ -34,7 +34,7 @@ namespace smtrat
             }
             if (formula.isFalse()) {
                 receivedFormulasAsInfeasibleSubset(receivedFormula);
-                return False;
+                return UNSAT;
             }
             if (!formula.isTrue()) {
                 addSubformulaToPassedFormula(formula, receivedFormula->formula());
@@ -42,7 +42,7 @@ namespace smtrat
             ++receivedFormula;
         }
         Answer ans = runBackends(_full,_minimize);
-        if (ans == False)
+        if (ans == UNSAT)
             getInfeasibleSubsets();
         return ans;
     }

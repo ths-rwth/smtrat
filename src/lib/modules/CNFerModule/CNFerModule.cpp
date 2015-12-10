@@ -41,7 +41,7 @@ namespace smtrat
             else if( formulaToAssertInCnf.getType() == FALSE )
             {
                 receivedFormulasAsInfeasibleSubset( receivedSubformula );
-                return False;
+                return UNSAT;
             }
             else
             {
@@ -66,9 +66,9 @@ namespace smtrat
             ++receivedSubformula;
         }
         //No given formulas is SAT but only if no other run was before
-        if( rPassedFormula().empty() && solverState() == Unknown )
+        if( rPassedFormula().empty() && solverState() == UNKNOWN )
         {
-            return True;
+            return SAT;
         }
         else
         {
@@ -82,7 +82,7 @@ namespace smtrat
             #endif
             Answer a = runBackends( _full, _minimize );
 
-            if( a == False )
+            if( a == UNSAT )
             {
                 getInfeasibleSubsets();
             }

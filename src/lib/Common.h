@@ -54,8 +54,16 @@ namespace smtrat
 }
     
     
-    ///An enum with the possible answer a Module can give
-    enum Answer { True = 0, False = 1, Unknown = 2 };
+    ///An enum with the possible answers a Module can give
+    enum Answer { SAT = 0, UNSAT = 1, UNKNOWN = 2, ABORTED = 3 };
+	inline std::ostream& operator<<(std::ostream& os, const Answer& a) {
+		switch (a) {
+			case Answer::SAT:		return os << "SAT";
+			case Answer::UNSAT:		return os << "UNSAT";
+			case Answer::UNKNOWN:	return os << "UNKNOWN";
+			case Answer::ABORTED:	return os << "ABORTED";
+		}
+	}
 
     /// An enum with the levels for lemma generation
     enum LemmaLevel { NONE = 0, NORMAL = 1, ADVANCED = 2 };

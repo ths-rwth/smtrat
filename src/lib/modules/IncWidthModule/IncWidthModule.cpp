@@ -58,7 +58,7 @@ namespace smtrat
     void IncWidthModule<Settings>::updateModel() const
     {
         mModel.clear();
-        if( solverState() == True )
+        if( solverState() == SAT )
         {
             getBackendsModel();
             for( auto& ass : mModel )
@@ -232,13 +232,13 @@ namespace smtrat
             printPassedFormula( std::cout, "   " );
             std::cout << "results in " << ANSWER_TO_STRING(ans) << std::endl;
             #endif
-            if( ans == False )
+            if( ans == UNSAT )
             {
                 // Check if infeasible subset does not contain the introduced bounds. Then we know that the input is unsatisfiable.
                 std::vector<Module*>::const_iterator backend = usedBackends().begin();
                 while( backend != usedBackends().end() )
                 {
-                    if( (*backend)->solverState() == False )
+                    if( (*backend)->solverState() == UNSAT )
                     {
                         const std::vector<FormulaSetT>& backendsInfsubsets = (*backend)->infeasibleSubsets();
                         assert( !backendsInfsubsets.empty() );
@@ -266,10 +266,10 @@ namespace smtrat
                     #ifdef DEBUG_INC_WIDTH_MODULE
                     std::cout << "Found an infeasible subset not containing introduced bounds!" << std::endl;
                     #endif
-                    return False;
+                    return UNSAT;
                 }
             }
-            if( ans == True )
+            if( ans == SAT )
                 return ans;
             // Remove the bounds.
             while( !addedBounds.empty() )
@@ -318,7 +318,7 @@ namespace smtrat
         #ifdef DEBUG_INC_WIDTH_MODULE
         std::cout << "Final call of backends results in " << ANSWER_TO_STRING(ans) << std::endl;
         #endif
-        if( ans == False )
+        if( ans == UNSAT )
         {
             mInfeasibleSubsets.clear();
             FormulaSetT infeasibleSubset;

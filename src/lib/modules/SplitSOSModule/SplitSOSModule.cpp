@@ -39,7 +39,7 @@ namespace smtrat
                 FormulaSetT infeasibleSubset;
                 infeasibleSubset.insert( receivedFormula->formula() );
                 mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
-                return False;
+                return UNSAT;
             }
             if( !formula.isTrue() )
             {
@@ -48,7 +48,7 @@ namespace smtrat
             ++receivedFormula;
         }
         Answer ans = runBackends( _full, _minimize );
-        if( ans == False )
+        if( ans == UNSAT )
         {
             mInfeasibleSubsets.clear();
             FormulaSetT infeasibleSubset;

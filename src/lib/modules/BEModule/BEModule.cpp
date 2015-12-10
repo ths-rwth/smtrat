@@ -32,14 +32,14 @@ namespace smtrat
             if( formula.isFalse() )
             {
                 receivedFormulasAsInfeasibleSubset( receivedFormula );
-                return False;
+                return UNSAT;
             }
             if( !formula.isTrue() )
                 addSubformulaToPassedFormula( formula, receivedFormula->formula() );
             ++receivedFormula;
         }
         Answer ans = runBackends( _full, _minimize );
-        if( ans == False )
+        if( ans == UNSAT )
             generateTrivialInfeasibleSubset(); // TODO: compute a better infeasible subset
         return ans;
     }

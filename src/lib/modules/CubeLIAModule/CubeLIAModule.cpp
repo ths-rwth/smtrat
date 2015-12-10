@@ -148,7 +148,7 @@ namespace smtrat
         {
             mModelUpdated = true;
             clearModel();
-            if( solverState() == True )
+            if( solverState() == SAT )
             {
                 getBackendsModel();
             }
@@ -173,7 +173,7 @@ namespace smtrat
             ans = mLRA.check( _full, _minimize );
             switch( ans )
             {
-                case True:
+                case SAT:
                 {
                     clearModel();
                     // Get the model of mLRA
@@ -198,7 +198,7 @@ namespace smtrat
                                 {
                                     // If a constraint p!=0 is conflicting, lift a lemma to split it into (p<0 or p>0)
                                     splitUnequalConstraint( fwo.formula() );
-                                    return Unknown;
+                                    return UNKNOWN;
                                 }
                             case 2:
                                 receivedFormulaSatisfied = false;
@@ -212,12 +212,12 @@ namespace smtrat
                     if( receivedFormulaSatisfied )
                     {
                         mModelUpdated = true;
-                        return True;
+                        return SAT;
                     }
                     clearModel();
                     break;
                 }
-                case False:
+                case UNSAT:
                 {
                     if( Settings::exclude_unsatisfiable_cube_space )
                     {
@@ -241,7 +241,7 @@ namespace smtrat
         #endif
         // Run backends on received formula
         ans = runBackends( _full, _minimize );
-        if( ans == False)
+        if( ans == UNSAT)
             getInfeasibleSubsets();
         return ans;
     }

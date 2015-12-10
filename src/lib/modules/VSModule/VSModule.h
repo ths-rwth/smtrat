@@ -156,7 +156,7 @@ namespace smtrat
             /**
              * Removes a state from the ranking.
              * @param _state The states, which will be erased of the ranking.
-             * @return  True, if the state was in the ranking.
+             * @return  SAT, if the state was in the ranking.
              */
             bool removeStateFromRanking( vs::State& _state );
             
@@ -204,8 +204,8 @@ namespace smtrat
              * @param _state    The state to check the conditions of.
              * @param _full     false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
-             * @return  True,    if the conditions are consistent and there is no unfinished ancestor;
-             *          False,   if the conditions are inconsistent;
+             * @return  SAT,    if the conditions are consistent and there is no unfinished ancestor;
+             *          UNSAT,   if the conditions are inconsistent;
              *          Unknown, if the theory solver cannot give an answer for these conditons.
             */
             Answer runBackendSolvers( vs::State* _state, bool _full = true, bool _minimize = false );

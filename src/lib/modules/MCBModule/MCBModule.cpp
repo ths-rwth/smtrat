@@ -28,7 +28,7 @@ namespace smtrat
 	void MCBModule<Settings>::updateModel() const
 	{
 		mModel.clear();
-		if( solverState() == True )
+		if( solverState() != UNSAT )
 		{
 			getBackendsModel();
 			for (const auto& choice: mChoices) {
@@ -65,7 +65,7 @@ namespace smtrat
 		addSubformulaToPassedFormula(newFormula);
 		
 		Answer ans = runBackends(_full, _minimize);
-        if (ans == False) {
+        if (ans == UNSAT) {
             generateTrivialInfeasibleSubset();
 		}
         return ans;

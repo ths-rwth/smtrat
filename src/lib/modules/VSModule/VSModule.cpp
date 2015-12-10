@@ -177,18 +177,18 @@ namespace smtrat
             addStateToRanking( mpStateTree );
         }
         if( !rReceivedFormula().isConstraintLiteralConjunction() )
-            return Unknown;
+            return UNKNOWN;
         if( !(rReceivedFormula().isIntegerConstraintLiteralConjunction() || rReceivedFormula().isRealConstraintLiteralConjunction()) )
-            return Unknown;
+            return UNKNOWN;
         if( !mConditionsChanged && (!_full || mLastCheckFull) )
         {
             if( mInfeasibleSubsets.empty() )
             {
-                if( solverState() == True )
+                if( solverState() == SAT )
                 {
                     if( !solutionInDomain() )
                     {
-                        return Unknown;
+                        return UNKNOWN;
                     }
                     else
                     {
@@ -197,11 +197,11 @@ namespace smtrat
                 }
                 else
                 {
-                    return (mFormulaConditionMap.empty() ? consistencyTrue() : Unknown );
+                    return (mFormulaConditionMap.empty() ? consistencyTrue() : UNKNOWN );
                 }
             }
             else
-                return False;
+                return UNSAT;
         }
         mConditionsChanged = false;
         mLastCheckFull = _full;
@@ -209,7 +209,7 @@ namespace smtrat
         {
             if( !solutionInDomain() )
             {
-                return Unknown;
+                return UNKNOWN;
             }
             else
             {
@@ -220,7 +220,7 @@ namespace smtrat
         {
             assert( !mInfeasibleSubsets.empty() );
             assert( !mInfeasibleSubsets.back().empty() );
-            return False;
+            return UNSAT;
         }
         if( Settings::use_variable_bounds )
         {
@@ -253,7 +253,7 @@ namespace smtrat
             assert( checkRanking() );
 //                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             if( anAnswerFound() )
-                return Unknown;
+                return ABORTED;
 //            else
 //                cout << "VSModule iteration" << endl;
             #ifdef VS_STATISTICS
@@ -287,7 +287,7 @@ namespace smtrat
 //                        // Split the neq-constraint in a preceeding sat module (make sure that it is there in your strategy when choosing this vssetting)
 //                        splitUnequalConstraint( FormulaT( (*cond)->constraint() ) );
 //                        assert( currentState->isRoot() );
-//                        return Unknown;
+//                        return UNKNOWN;
 //                    }
 //                }
 //            }
@@ -307,7 +307,7 @@ namespace smtrat
                     if( currentState->isRoot() )
                     {
                         updateInfeasibleSubset();
-                        return False;
+                        return UNSAT;
                     }
                     else
                     {
@@ -389,7 +389,7 @@ namespace smtrat
                             {
                                 if( currentState->cannotBeSolved( true ) )
                                 {
-                                    return Unknown;
+                                    return UNKNOWN;
                                 }  
                                 removeStatesFromRanking( *currentState );
                                 currentState->rCannotBeSolvedLazy() = true;
@@ -515,7 +515,7 @@ namespace smtrat
                                             {
                                                 if( !solutionInDomain() )
                                                 {
-                                                    return Unknown;
+                                                    return UNKNOWN;
                                                 }
                                                 else
                                                 {
@@ -578,7 +578,7 @@ namespace smtrat
                                             Answer result = runBackendSolvers( currentState, _full, _minimize );
                                             switch( result )
                                             {
-                                                case True:
+                                                case SAT:
                                                 {
                                                     currentState->rCannotBeSolved() = true;
                                                     State * unfinishedAncestor;
@@ -597,7 +597,7 @@ namespace smtrat
                                                     {
                                                         if( !solutionInDomain() )
                                                         {
-                                                            return Unknown;
+                                                            return UNKNOWN;
                                                         }
                                                         else
                                                         {
@@ -606,18 +606,18 @@ namespace smtrat
                                                     }
                                                     break;
                                                 }
-                                                case False:
+                                                case UNSAT:
                                                 {
                                                     break;
                                                 }
-                                                case Unknown:
+                                                case UNKNOWN:
                                                 {
-                                                    return Unknown;
+                                                    return UNKNOWN;
                                                 }
                                                 default:
                                                 {
-                                                    cout << "Error: Unknown answer in method " << __func__ << " line " << __LINE__ << endl;
-                                                    return Unknown;
+                                                    cout << "Error: UNKNOWN answer in method " << __func__ << " line " << __LINE__ << endl;
+                                                    return UNKNOWN;
                                                 }
                                             }
                                         }
@@ -668,14 +668,14 @@ namespace smtrat
         #ifdef VS_DEBUG
         printAll();
         #endif
-        return False;
+        return UNSAT;
     }
 
     template<class Settings>
     void VSModule<Settings>::updateModel() const
     {
         clearModel();
-        if( solverState() == True )
+        if( solverState() == SAT )
         {
             if( mFormulaConditionMap.empty() )
                 return;
@@ -745,7 +745,7 @@ namespace smtrat
         #ifdef VS_DEBUG
         printAll();
         #endif
-        return True;
+        return SAT;
     }
 
     template<class Settings>
@@ -1574,7 +1574,7 @@ namespace smtrat
     {
         if( rReceivedFormula().isRealConstraintLiteralConjunction() )
             return true;
-        assert( solverState() != False );
+        assert( solverState() != UNSAT );
         if( !mRanking.empty() )
         {
             std::vector<carl::Variable> varOrder;
@@ -1841,15 +1841,15 @@ namespace smtrat
         cout << "Ask backend      : ";
         printPassedFormula();
         cout << endl;
-        cout << "Answer           : " << ( result == True ? "True" : ( result == False ? "False" : "Unknown" ) ) << endl;
+        cout << "Answer           : " << result == SAT << endl;
         #endif
         switch( result )
         {
-            case True:
+            case SAT:
             {
-                return True;
+                return SAT;
             }
-            case False:
+            case UNSAT:
             {
                 /*
                 * Get the conflict sets formed by the infeasible subsets in the backend.
@@ -1912,17 +1912,17 @@ namespace smtrat
                     removeStateFromRanking( _state->rFather() );
                     addStateToRanking( _state->pFather() );
                 }
-                return False;
+                return UNSAT;
             }
-            case Unknown:
+            case UNKNOWN:
             {
-                return Unknown;
+                return UNKNOWN;
             }
             default:
             {
-                cerr << "Unknown answer type!" << endl;
+                cerr << "UNKNOWN answer type!" << endl;
                 assert( false );
-                return Unknown;
+                return UNKNOWN;
             }
         }
     }
@@ -2008,10 +2008,10 @@ namespace smtrat
     {
         _out << _init << " Answer:" << endl;
         if( mRanking.empty() )
-            _out << _init << "        False." << endl;
+            _out << _init << "        UNSAT." << endl;
         else
         {
-            _out << _init << "        True:" << endl;
+            _out << _init << "        SAT:" << endl;
             const State* currentState = mRanking.begin()->second;
             while( !(*currentState).isRoot() )
             {

@@ -794,8 +794,8 @@ return SettingsType::moduleName;
 			/**
 			 * Checks the received formula for consistency.
              * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
-			 * @return True,	if the received formula is satisfiable;
-			 *		 False,   if the received formula is not satisfiable;
+			 * @return SAT,	if the received formula is satisfiable;
+			 *		 UNSAT,   if the received formula is not satisfiable;
 			 *		 Unknown, otherwise.
 			 */
 			Answer checkCore( bool _full = true, bool _minimize = false );

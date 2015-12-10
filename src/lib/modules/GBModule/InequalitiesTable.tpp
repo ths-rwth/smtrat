@@ -137,7 +137,7 @@ namespace smtrat
     /**
      * Reduce all rows with respect to the given Groebner basis.
      * @param gb The groebner basis
-     * @return If one of the inequalities yields a contradiction, False, else Unknown.
+     * @return If one of the inequalities yields a contradiction, UNSAT, else Unknown.
      */
 
     template<class Settings>
@@ -152,7 +152,7 @@ namespace smtrat
                 #endif
                 if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
                 {
-                    return False;
+                    return UNSAT;
                 }
             }
         }
@@ -160,19 +160,19 @@ namespace smtrat
         {
             if( mModule->mInfeasibleSubsets.empty( ) )
             {
-                return Unknown;
+                return UNKNOWN;
             }
             else
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mStats->infeasibleInequality();
                 #endif
-                return False;
+                return UNSAT;
             }
         }
         else
         {
-            return Unknown;
+            return UNKNOWN;
         }
 
     }
@@ -181,7 +181,7 @@ namespace smtrat
      * Reduce the given rows with respect to the given Groebner basis.
      * @param ineqToBeReduced A list of rows which should be updated.
      * @param gb The Groebner basis.
-     * @return If one of the inequalities yields a contradiction, False, else Unknown.
+     * @return If one of the inequalities yields a contradiction, UNSAT, else Unknown.
      */
 
     template<class Settings>
@@ -196,7 +196,7 @@ namespace smtrat
                 #endif
                 if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
                 {
-                    return False;
+                    return UNSAT;
                 }
             }
         }
@@ -204,19 +204,19 @@ namespace smtrat
         {
             if( mModule->mInfeasibleSubsets.empty( ) )
             {
-                return Unknown;
+                return UNKNOWN;
             }
             else
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mStats->infeasibleInequality();
                 #endif
-                return False;
+                return UNSAT;
             }
         }
         else
         {
-            return Unknown;
+            return UNKNOWN;
         }
     }
 
@@ -450,7 +450,7 @@ namespace smtrat
                 #endif
                 if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
                 {
-                    return False;
+                    return UNSAT;
                 }
             }
         }
@@ -458,19 +458,19 @@ namespace smtrat
         {
             if( mModule->mInfeasibleSubsets.empty( ) )
             {
-                return Unknown;
+                return UNKNOWN;
             }
             else
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mStats->infeasibleInequality();
                 #endif
-                return False;
+                return UNSAT;
             }
         }
         else
         {
-            return Unknown;
+            return UNKNOWN;
         }
     }
 
@@ -486,7 +486,7 @@ namespace smtrat
                 #endif
                 if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
                 {
-                    return False;
+                    return UNSAT;
                 }
             }
         }
@@ -494,19 +494,19 @@ namespace smtrat
         {
             if( mModule->mInfeasibleSubsets.empty( ) )
             {
-                return Unknown;
+                return UNKNOWN;
             }
             else
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mStats->infeasibleInequality();
                 #endif
-                return False;
+                return UNSAT;
             }
         }
         else
         {
-            return Unknown;
+            return UNKNOWN;
         }
     }
 

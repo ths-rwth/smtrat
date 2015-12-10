@@ -42,7 +42,7 @@ namespace smtrat {
 			}
 
 			bool check() {
-				return module.check() != False;
+				return module.check() != UNSAT;
 			}
 
 			const std::vector<FormulaSetT>& infeasibleSubsets() {
