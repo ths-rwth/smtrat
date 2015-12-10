@@ -156,7 +156,6 @@ namespace smtrat
     template<class Settings>
     SATModule<Settings>::~SATModule()
     {
-        std::cout << "Decisions: " << decisions << std::endl;
         while( mBooleanConstraintMap.size() > 0 )
         {
             Abstraction*& abstrAToDel = mBooleanConstraintMap.last().first;
@@ -375,7 +374,7 @@ namespace smtrat
         mFullCheck = _full;
         mMinimize = _minimize;
         
-        cout << "Check smt:" << endl;
+//        cout << "Check smt:" << endl;
 //        for( const auto& f : rReceivedFormula() )
 //            std::cout << "   " << f.formula().toString() << std::endl;
 //        std::cout << ((FormulaT) rReceivedFormula()).toString( false, 1, "", true, false, true, true ) << std::endl;
