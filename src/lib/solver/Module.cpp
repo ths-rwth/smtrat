@@ -1208,6 +1208,7 @@ namespace smtrat
 
     void Module::print( const string _initiation ) const
     {
+#ifdef SMTRAT_LOGGING_ENABLED
         SMTRAT_LOG_INFO("smtrat.module", _initiation << "********************************************************************************");
         SMTRAT_LOG_INFO("smtrat.module", _initiation << " Solver " << moduleName() << " (" << mId << ")");
         SMTRAT_LOG_INFO("smtrat.module", _initiation);
@@ -1218,6 +1219,7 @@ namespace smtrat
         printInfeasibleSubsets( _initiation + "\t" );
         SMTRAT_LOG_INFO("smtrat.module", _initiation);
         SMTRAT_LOG_INFO("smtrat.module", _initiation << "********************************************************************************");
+#endif
     }
 
     void Module::printReceivedFormula( const string _initiation ) const
