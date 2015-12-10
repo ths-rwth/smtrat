@@ -58,7 +58,7 @@ public:
 		}
 		this->lastAnswer = this->solver->check();
 		switch (this->lastAnswer) {
-			case smtrat::Answer::True: {
+			case smtrat::Answer::SAT: {
 				if (this->infos.has<std::string>("status") && this->infos.get<std::string>("status") == "unsat") {
 					error() << "expected unsat, but returned sat";
 					this->exitCode = SMTRAT_EXIT_WRONG_ANSWER;
@@ -69,7 +69,7 @@ public:
 				//if (settingsManager.printModel()) this->solver->printAssignment(std::cout);
 				break;
 			}
-			case smtrat::Answer::False: {
+			case smtrat::Answer::UNSAT: {
 				if (this->infos.has<std::string>("status") && this->infos.get<std::string>("status") == "sat") {
 					error() << "expected sat, but returned unsat";
 					this->exitCode = SMTRAT_EXIT_WRONG_ANSWER;
@@ -79,7 +79,7 @@ public:
 				}
 				break;
 			}
-			case smtrat::Answer::Unknown: {
+			case smtrat::Answer::UNKNOWN: {
 				regular() << "unknown" << std::endl;
 				this->exitCode = SMTRAT_EXIT_UNKNOWN;
 				break;
@@ -108,12 +108,12 @@ public:
 		this->solver->printAssertions(std::cout);
 	}
 	void getAssignment() {
-            if (this->lastAnswer == smtrat::True) {
+            if (this->lastAnswer == smtrat::Answer::SAT) {
                 this->solver->printAssignment();
             }
 	}
 	void getAllAssignments() {
-		if (this->lastAnswer == smtrat::True) {
+		if (this->lastAnswer == smtrat::Answer::SAT) {
 			this->solver->printAllAssignments(std::cout);
 		}
 	}
@@ -185,7 +185,7 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 	}
 	if (e->hasInstructions()) e->runInstructions();
 	unsigned exitCode = e->getExitCode();
-	if (e->lastAnswer == smtrat::True) {
+	if (e->lastAnswer == smtrat::Answer::SAT) {
 		if (settingsManager.printModel()) solver->printAssignment();
 		else if (settingsManager.printAllModels()) solver->printAllAssignments(std::cout);
 	}
@@ -284,17 +284,17 @@ int main( int argc, char* argv[] )
 		while (dimacs.hasNext()) {
 			solver->add(dimacs.next());
 			switch (solver->check()) {
-				case smtrat::Answer::True: {
+				case smtrat::Answer::SAT: {
 					std::cout << "sat" << std::endl;
 					exitCode = SMTRAT_EXIT_SAT;
 					break;
 				}
-				case smtrat::Answer::False: {
+				case smtrat::Answer::UNSAT: {
 					std::cout << "unsat" << std::endl;
 					exitCode = SMTRAT_EXIT_UNSAT;
 					break;
 				}
-				case smtrat::Answer::Unknown: {
+				case smtrat::Answer::UNKNOWN: {
 					std::cout << "unknown" << std::endl;
 					exitCode = SMTRAT_EXIT_UNKNOWN;
 					break;
