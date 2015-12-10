@@ -11,7 +11,7 @@
 namespace smtrat
 {
 	template<class Settings>
-	MCBModule<Settings>::MCBModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager):
+	MCBModule<Settings>::MCBModule(const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager):
 		PModule( _formula, _conditionals, _manager )
 #ifdef SMTRAT_DEVOPTION_Statistics
 		, mStatistics(Settings::moduleName)
@@ -30,7 +30,21 @@ namespace smtrat
 		mModel.clear();
 		if( solverState() == True )
 		{
-			// Your code.
+			getBackendsModel();
+			for (const auto& choice: mChoices) {
+				ModelVariable var(choice.second);
+				auto val = mModel.find(var);
+				assert(val != mModel.end());
+				assert(val->second.isBool());
+				if (val->second.asBool()) {
+					ModelVariable arithvar(std::get<0>(choice.first));
+					auto arithval = mModel.find(arithvar);
+					if (arithval == mModel.end()) {
+						mModel.emplace(arithvar, ModelValue(std::get<1>(choice.first)));
+					}
+				}
+				mModel.erase(var);
+			}
 		}
 	}
 	
@@ -79,7 +93,7 @@ namespace smtrat
 			std::vector<Choice> choices;
 			for (const auto& entry: poly.second) {
 				if (entry.second.first != carl::Relation::EQ) break;
-				choices.emplace_back(poly.first.getSingleVariable(), entry.second.second);
+				choices.emplace_back(poly.first.getSingleVariable(), entry.first, entry.second.second);
 			}
 			if (choices.size() != poly.second.size()) continue;
 			for (const auto& c: choices) {
@@ -97,7 +111,7 @@ namespace smtrat
 		std::map<FormulaT, FormulaT> repl;
 		for (const auto& r: mChoices) {
 			carl::Variable v = std::get<0>(r.first);
-			const FormulaT& form = std::get<1>(r.first);
+			const FormulaT& form = std::get<2>(r.first);
 			variables.insert(v);
 			repl.emplace(form, FormulaT(r.second));
 		}
@@ -111,7 +125,7 @@ namespace smtrat
 			if (remainingVars.count(v) > 0) {
 				for (const auto& r: mChoices) {
 					if (v != std::get<0>(r.first)) continue;
-					FormulaT form = std::get<1>(r.first);
+					FormulaT form = std::get<2>(r.first);
 					impl.push_back(FormulaT(carl::FormulaType::IMPLIES, {FormulaT(r.second), form}));
 				}
 			}
