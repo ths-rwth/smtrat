@@ -125,7 +125,7 @@ namespace smtrat
     template<class Settings>
     void BVModule<Settings>::updateModel() const
     {
-        if( solverState() != True )
+        if( solverState() != SAT )
             return;
         if( !Settings::incremental_flattening || !mModelComputed )
             transferBackendModel();
@@ -201,12 +201,12 @@ namespace smtrat
                 #endif
                 switch( backendAnswer )
                 {
-                    case False:
+                    case UNSAT:
                     {
                         getInfeasibleSubsets();
-                        return False;
+                        return UNSAT;
                     }
-                    case True:
+                    case SAT:
                     {
                         transferBackendModel();
                         Model currentModel = model();
@@ -237,7 +237,7 @@ namespace smtrat
                             std::cout << "All formulas satisfied!" << std::endl;
                             #endif
                             mModelComputed = true;
-                            return True;
+                            return SAT;
                         }
                         else
                         {
@@ -254,12 +254,12 @@ namespace smtrat
                         break;
                     }
                     default:
-                        assert( backendAnswer == Unknown );
-                        return Unknown;
+                        assert( backendAnswer == UNKNOWN );
+                        return UNKNOWN;
                 }
             }
             assert( false ); 
-            return True;
+            return SAT;
         }
         else
         {
@@ -277,7 +277,7 @@ namespace smtrat
             }
 
             Answer backendAnswer = runBackends( _full, _minimize );
-            if(backendAnswer == False)
+            if(backendAnswer == UNSAT)
             {
                 getInfeasibleSubsets();
             }

@@ -146,22 +146,22 @@ namespace smtrat
 	 * If the result is false, a minimal infeasible subset of the original constraint set is computed.
 	 * Otherwise a sample value is available.
 	 * @param false, if this module should avoid too expensive procedures and rather return unknown instead.
-	 * @return True if consistent, False otherwise
+	 * @return SAT if consistent, UNSAT otherwise
 	 */
 	template<typename Settings>
 	Answer CADModule<Settings>::checkCore( bool _full, bool )
 	{
 		SMTRAT_LOG_FUNC("smtrat.cad", _full);
 		if (!_full) {
-			SMTRAT_LOG_WARN("smtrat.cad", "Unknown due to !_full");
-			return Unknown;
+			SMTRAT_LOG_WARN("smtrat.cad", "UNKNOWN due to !_full");
+			return UNKNOWN;
 		}
 		
 		assert(mConstraints.size() == mConstraintsMap.size());
 #ifdef SMTRAT_DEVOPTION_Statistics
 		mStats->addCall();
 #endif
-		if (this->hasFalse) return False;
+		if (this->hasFalse) return UNSAT;
 		else {
 			for (const auto& f: this->subformulaQueue) {
 				this->addConstraintFormula(f);
@@ -169,19 +169,19 @@ namespace smtrat
 			this->subformulaQueue.clear();
 		}
 		if (!rReceivedFormula().isRealConstraintConjunction() && !rReceivedFormula().isIntegerConstraintConjunction()) {
-			SMTRAT_LOG_WARN("smtrat.cad", "Unknown due to invalid constraints");
-			return Unknown;
+			SMTRAT_LOG_WARN("smtrat.cad", "UNKNOWN due to invalid constraints");
+			return UNKNOWN;
 		}
 		if (!mInfeasibleSubsets.empty())
-			return False; // there was no constraint removed which was in a previously generated infeasible subset
+			return UNSAT; // there was no constraint removed which was in a previously generated infeasible subset
 		// check the extended constraints for satisfiability
 		mCAD.prepareElimination();
 
 		if (variableBounds().isConflicting()) {
 			mInfeasibleSubsets.push_back(variableBounds().getConflict());
 			mRealAlgebraicSolution = carl::RealAlgebraicPoint<smtrat::Rational>();
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Returning False due to bound conflict.");
-			return False;
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Returning UNSAT due to bound conflict.");
+			return UNSAT;
 		}
 		carl::CAD<smtrat::Rational>::BoundMap boundMap;
 		std::map<carl::Variable, carl::Interval<smtrat::Rational>> eiMap = mVariableBounds.getEvalIntervalMap();
@@ -194,7 +194,7 @@ namespace smtrat
 		}
 		carl::cad::Answer status = mCAD.check(mConstraints, mRealAlgebraicSolution, mConflictGraph, boundMap, false, true);
 		//std::cout << mCAD.getVariables() << " = " << mRealAlgebraicSolution << std::endl;
-		if (anAnswerFound()) return Unknown;
+		if (anAnswerFound()) return ABORTED;
 		if (status == carl::cad::Answer::False) {
 			
 			cad::MISGeneration<Settings::mis_heuristic> mis;
@@ -206,9 +206,9 @@ namespace smtrat
 				Module::checkInfSubsetForMinimality(mInfeasibleSubsets.begin());
 			}
 			mRealAlgebraicSolution = carl::RealAlgebraicPoint<smtrat::Rational>();
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Returning False due to theory conflict.");
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Returning UNSAT due to theory conflict.");
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Subset: " << mInfeasibleSubsets.back());
-			return False;
+			return UNSAT;
 		}
 		if (status == carl::cad::Answer::Unknown) {
 			// Pass on branch from CAD.
@@ -220,7 +220,7 @@ namespace smtrat
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Variables: " << vars);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Branching at " << vars[d] << " = " << r);
 			branchAt(vars[d], r);
-			return Unknown;
+			return UNKNOWN;
 		}
 		SMTRAT_LOG_TRACE("smtrat.cad", "#Samples: " << mCAD.samples().size());
 		SMTRAT_LOG_TRACE("smtrat.cad", "Elimination sets:");
@@ -235,7 +235,7 @@ namespace smtrat
 			// Check whether the found assignment is integer. Split on first non-integral assignment.
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
 			for (std::size_t d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
-				if (checkIntegerAssignment(vars, d, true)) return Unknown;
+				if (checkIntegerAssignment(vars, d, true)) return UNKNOWN;
 			}
 		} else if (Settings::integerHandling == carl::cad::IntegerHandling::GUESS_AND_SPLIT) {
 			// Check whether the found assignment is integer. Guess or split.
@@ -267,7 +267,7 @@ namespace smtrat
 			}
 		}
 		assert(checkSatisfiabilityOfAssignment());
-		return True;
+		return SAT;
 	}
 
 	template<typename Settings>
@@ -354,7 +354,7 @@ namespace smtrat
 	{
 		SMTRAT_LOG_FUNC("smtrat.cad", "");
 		clearModel();
-		if (this->solverState() == True) {
+		if (this->solverState() == SAT) {
 			// bound-independent part of the model
 			std::vector<carl::Variable> vars(mCAD.getVariables());
 			for (unsigned varID = 0; varID < vars.size(); ++varID) {
@@ -406,7 +406,7 @@ namespace smtrat
 		mCAD.addPolynomial(typename Poly::PolyType(constraint.getPolynomial()), constraint.getVariables());
 #endif
 
-		return solverState() != False;
+		return solverState() != UNSAT;
 	}
 
 	/**

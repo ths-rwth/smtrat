@@ -170,7 +170,7 @@ namespace smtrat
     void IntBlastModule<Settings>::updateModel() const
     {
         mModel.clear();
-        if(solverState() == True)
+        if(solverState() == SAT)
         {
             switch(mSolutionOrigin) {
                 case SolutionOrigin::ICP:
@@ -570,7 +570,7 @@ namespace smtrat
                 switch( blastVariable(variable, interval, linear) )
                 {
                     case -1:
-                        return Unknown;
+                        return UNKNOWN;
                     case 0:
                         reachedMaxWidth = true;
                         break;
@@ -592,7 +592,7 @@ namespace smtrat
             }
         }
 
-        Answer icpAnswer = Unknown;
+        Answer icpAnswer = UNKNOWN;
 
         if(Settings::apply_icp) {
             // Run ICP
@@ -607,15 +607,15 @@ namespace smtrat
                 }
             }
             icpAnswer = mICP.check();
-            INTBLAST_DEBUG("icpAnswer: " << (icpAnswer == True ? "True" : (icpAnswer == False ? "False" : "Unknown")));
+            INTBLAST_DEBUG("icpAnswer: " << icpAnswer);
 
-            if(icpAnswer == True && rReceivedFormula().satisfiedBy( mICP.model() ) == 1) {
+            if(icpAnswer == SAT && rReceivedFormula().satisfiedBy( mICP.model() ) == 1) {
                 mSolutionOrigin = SolutionOrigin::ICP;
-                return True;
+                return SAT;
             }
         }
 
-        if(icpAnswer != False) {
+        if(icpAnswer != UNSAT) {
             if(Settings::apply_icp) {
                 INTBLAST_DEBUG("Updating bounds from ICP.");
 
@@ -632,11 +632,11 @@ namespace smtrat
             INTBLAST_DEBUG("Running BV solver.");
 
             Answer bvAnswer = mpBVSolver->check();
-            INTBLAST_DEBUG("Answer from BV solver: " << (bvAnswer == False ? "False" : (bvAnswer == True ? "True" : "Unknown")));
+            INTBLAST_DEBUG("Answer from BV solver: " << bvAnswer);
 
-            if(bvAnswer == True) {
+            if(bvAnswer == SAT) {
                  mSolutionOrigin = SolutionOrigin::BV;
-                 return True;
+                 return SAT;
             }
         }
 
@@ -646,14 +646,14 @@ namespace smtrat
 
         if( reachedMaxWidth )
         {
-            //updateOutsideRestrictionConstraint(icpAnswer == False);
+            //updateOutsideRestrictionConstraint(icpAnswer == UNSAT);
 
             INTBLAST_DEBUG("Running backend.");
             Answer backendAnswer = runBackends(_full,_minimize);
-            INTBLAST_DEBUG("Answer from backend: " << (backendAnswer == False ? "False" : (backendAnswer == True ? "True" : "Unknown")));
+            INTBLAST_DEBUG("Answer from backend: " << backendAnswer);
             mSolutionOrigin = SolutionOrigin::BACKEND;
 
-            if(backendAnswer == False) {
+            if(backendAnswer == UNSAT) {
                 getInfeasibleSubsets();
             }
 
@@ -678,9 +678,9 @@ namespace smtrat
         if( originalBoundsCovered )
         {
             generateTrivialInfeasibleSubset();
-            return False;
+            return UNSAT;
         }
-        return Unknown;
+        return UNKNOWN;
     }
 
 
@@ -916,11 +916,11 @@ namespace smtrat
         // Construct origins of the "outside restriction" constraint.
         // They should be picked in a suitable way for the infeasible subset derivation.
 
-        // If the ICP module has returned False, we can use the infeasible subset from ICP.
+        // If the ICP module has returned UNSAT, we can use the infeasible subset from ICP.
         // The origins of the constraints are turned into a conjunction and inserted as
         // one origin of the "outside restriction" constraint.
 
-        // If the ICP module has returned Unknown, and the BV module has returned False,
+        // If the ICP module has returned UNKNOWN, and the BV module has returned UNSAT,
         // the infeasible subset of the BV module is not sufficient: When encoding into
         // Bitvector logic, the contracted bounds from ICP are used and become an implicit
         // constraint of the Bitvector problem. However, the ICP module currently does not

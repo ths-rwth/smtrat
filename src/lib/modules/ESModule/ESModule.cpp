@@ -27,7 +27,7 @@ namespace smtrat
     void ESModule<Settings>::updateModel() const
     {
         clearModel();
-        if( solverState() == True || (solverState() != False && appliedPreprocessing()) )
+        if( solverState() == SAT || (solverState() != UNSAT && appliedPreprocessing()) )
         {
             getBackendsModel();
             for( const auto& iter : mBoolSubs )
@@ -52,15 +52,15 @@ namespace smtrat
         mBoolSubs.clear();
         mArithSubs.clear();
         FormulaT formula = elimSubstitutions( (FormulaT) rReceivedFormula(), true );
-        Answer ans = True;
+        Answer ans = SAT;
         if( formula.isFalse() )
-            ans = False;
+            ans = UNSAT;
         else
         {
             addSubformulaToPassedFormula( formula );
             ans = runBackends( _full, _minimize );
         }
-        if( ans == False )
+        if( ans == UNSAT )
             generateTrivialInfeasibleSubset(); // TODO: compute a better infeasible subset
         return ans;
     }

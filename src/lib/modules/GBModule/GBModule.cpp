@@ -171,12 +171,12 @@ Answer GBModule<Settings>::checkCore( bool _full, bool _minimize )
     // We can only handle conjunctions of constraints.
     if(!rReceivedFormula().isConstraintConjunction())
     {
-        return Unknown;
+        return UNKNOWN;
     }
     // This check asserts that all the conflicts are handled by the SAT solver. (workaround)
     if( !mInfeasibleSubsets.empty() )
     {
-        return False;
+        return UNSAT;
     }
 
     #ifdef SMTRAT_DEVOPTION_Statistics
@@ -302,17 +302,17 @@ Answer GBModule<Settings>::checkCore( bool _full, bool _minimize )
             #endif
 			assert(!mInfeasibleSubsets.empty());
 			assert(!mInfeasibleSubsets.front().empty());
-            return False;
+            return UNSAT;
         }
         saveState( );
 
 
         if( Settings::checkInequalities != NEVER )
         {
-            Answer ans = Unknown;
+            Answer ans = UNKNOWN;
             ans = mInequalities.reduceWRTGroebnerBasis( mBasis.getIdeal( ), mRewriteRules );
 
-            if( ans == False )
+            if( ans == UNSAT )
             {
                 return ans;
             }
@@ -342,13 +342,13 @@ Answer GBModule<Settings>::checkCore( bool _full, bool _minimize )
     // If we always want to check inequalities, we also have to do so when there is no new groebner basis
     else if( Settings::checkInequalities == ALWAYS )
     {
-        Answer ans = Unknown;
+        Answer ans = UNKNOWN;
         // We only check those inequalities which are new, as the others are unchanged and have already been reduced wrt the latest GB
         ans = mInequalities.reduceWRTGroebnerBasis( mNewInequalities, mBasis.getIdeal( ), mRewriteRules );
         // New inequalities are handled now, no need to longer save them as new.
         mNewInequalities.clear( );
         // If we managed to get an answer, we can return that.
-        if( ans != Unknown )
+        if( ans != UNKNOWN )
         {
             return ans;
         }
@@ -365,7 +365,7 @@ Answer GBModule<Settings>::checkCore( bool _full, bool _minimize )
 
     // call other modules as the groebner module cannot decide satisfiability.
     Answer ans = runBackends( _full, _minimize );
-    if( ans == False )
+    if( ans == UNSAT )
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
         mStats->backendFalse();

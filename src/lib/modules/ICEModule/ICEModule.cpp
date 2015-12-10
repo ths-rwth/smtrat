@@ -50,7 +50,7 @@ namespace smtrat
 	void ICEModule<Settings>::updateModel() const
 	{
 		mModel.clear();
-		if (solverState() == True) {
+		if (solverState() == SAT) {
 			getBackendsModel();
 		}
 	}
@@ -60,10 +60,10 @@ namespace smtrat
 	{
 		SMTRAT_LOG_DEBUG("smtrat.ice", "Obtained the following bounds: " << std::endl << mBounds);
 		Answer res = processConstraints();
-		if (res == False) return False;
+		if (res == UNSAT) return UNSAT;
 		
 		res = runBackends(_full,_minimize);
-		if (res == False) getInfeasibleSubsets();
+		if (res == UNSAT) getInfeasibleSubsets();
 		return res;
 	}
 	
@@ -144,13 +144,13 @@ namespace smtrat
 		if (!collector.mInfeasibleSubset.empty()) {
 			SMTRAT_LOG_INFO("smtrat.ice", "Found input to be unsat, subset is " << collector.mInfeasibleSubset);
 			mInfeasibleSubsets.emplace_back(collector.mInfeasibleSubset);
-			return False;
+			return UNSAT;
 		}
 		for (const auto& lemma: collector.mLemmas) {
 			SMTRAT_LOG_DEBUG("smtrat.ice", "Adding " << lemma.first << " with origin " << lemma.second);
 			addSubformulaToPassedFormula(lemma.first, lemma.second);
 		}
-		return True;
+		return SAT;
 	}
 	
 	template<class Settings>

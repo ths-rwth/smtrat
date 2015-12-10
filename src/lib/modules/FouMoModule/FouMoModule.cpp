@@ -613,7 +613,7 @@ namespace smtrat
     void FouMoModule<Settings>::updateModel() const
     {
         mModel.clear();
-        if( solverState() == True )
+        if( solverState() == SAT )
         {
             // For the case that the found solution is already correct, just
             // store the assignments in mModel
@@ -688,7 +688,7 @@ namespace smtrat
         // Check whether a module which has been called on the same instance in parallel, has found an answer
         if( anAnswerFound() )
         {
-            return Unknown;
+            return ABORTED;
         }
         #ifdef DEBUG_FouMoModule
         cout << "Apply the Fourier-Motzkin-Algorithm" << endl;
@@ -717,7 +717,7 @@ namespace smtrat
                     cout << "Run non-linear backends!" << endl;
                     #endif
                     Answer ans = callBackends( _full, _minimize );
-                    if( ans == False )
+                    if( ans == UNSAT )
                     {
                         getInfeasibleSubsets();
                     }
@@ -738,7 +738,7 @@ namespace smtrat
                         ++iter_con;
                     }
                     #endif
-                    return True;
+                    return SAT;
                 }
                 else
                 {
@@ -746,7 +746,7 @@ namespace smtrat
                     cout << "Run Backends!" << endl;
                     #endif
                     Answer ans = callBackends( _full, _minimize );
-                    if( ans == False )
+                    if( ans == UNSAT )
                     {
                         getInfeasibleSubsets();
                     }
@@ -814,7 +814,7 @@ namespace smtrat
                         FormulaSetT infSubSet;
                         collectOrigins( origins_new->at(i), infSubSet );
                         mInfeasibleSubsets.push_back( std::move( infSubSet ) );
-                        return False;
+                        return UNSAT;
                     }
                     else
                     {
@@ -1346,7 +1346,7 @@ namespace smtrat
             }
         }        
         Answer ans = runBackends( _full, _minimize );
-        if( ans == False )
+        if( ans == UNSAT )
         {
             getInfeasibleSubsets();
         }

@@ -111,7 +111,7 @@ namespace smtrat
         mComputeAllSAT( false ),
         mFullCheck( true ),
         mMinimize( false ),
-        mCurrentAssignmentConsistent( True ),
+        mCurrentAssignmentConsistent( SAT ),
         mNumberOfFullLazyCalls( 0 ),
         mCurr_Restarts( 0 ),
         mNumberOfTheoryCalls( 0 ),
@@ -399,7 +399,7 @@ namespace smtrat
             #ifdef SMTRAT_DEVOPTION_Statistics
             collectStats();
             #endif
-            return False;
+            return UNSAT;
         }
         mReceivedFormulaPurelyPropositional = rReceivedFormula().isOnlyPropositional();
         if( mReceivedFormulaPurelyPropositional )
@@ -501,14 +501,14 @@ namespace smtrat
         collectStats();
         #endif
         if( result == l_True )
-            return True;
+            return SAT;
         else if( result == l_False )
         {
             ok = false;
             updateInfeasibleSubset();
-            return False;
+            return UNSAT;
         }
-        return Unknown;
+        return UNKNOWN;
     }
     
     template<class Settings>
@@ -614,7 +614,7 @@ namespace smtrat
             }
             else
             {
-                SMTRAT_LOG_TRACE("smtrat.sat", "Unknown with variable: " << mMinisatVarMap.at(testCandidate));
+                SMTRAT_LOG_TRACE("smtrat.sat", "UNKNOWN with variable: " << mMinisatVarMap.at(testCandidate));
             }
         }
         //Clear
@@ -627,7 +627,7 @@ namespace smtrat
         if( !mModelComputed )
         {
             clearModel();
-            if( solverState() == True || mMinimize )
+            if( solverState() == SAT || mMinimize )
             {
                 for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
                 {
@@ -647,7 +647,7 @@ namespace smtrat
     void SATModule<Settings>::updateModel( Model& model, bool only_relevant_variables ) const
     {
         model.clear();
-        if( solverState() == True )
+        if( solverState() == SAT )
         {
             if ( only_relevant_variables )
             {
@@ -684,7 +684,7 @@ namespace smtrat
         mComputeAllSAT = true;
         clearModels();
         size_t sizeLearntsStart = learnts.size();
-        if( solverState() == True )
+        if( solverState() == SAT )
         {
             // Compute all satisfying assignments
             SMTRAT_LOG_TRACE("smtrat.sat", "Compute more assignments");
@@ -1412,7 +1412,7 @@ namespace smtrat
         }
         mChangedActivities.clear();
         if( mChangedPassedFormula )
-            mCurrentAssignmentConsistent = True;
+            mCurrentAssignmentConsistent = SAT;
     }
     
     template<class Settings>
@@ -1951,7 +1951,7 @@ SetWatches:
                 assert( !mReceivedFormulaPurelyPropositional || mChangedActivities.empty() );
                 assert( !mReceivedFormulaPurelyPropositional || mChangedBooleans.empty() );
                 assert( !mReceivedFormulaPurelyPropositional || !mAllActivitiesChanged );
-                if( !mReceivedFormulaPurelyPropositional && mCurrentAssignmentConsistent != True )
+                if( !mReceivedFormulaPurelyPropositional && mCurrentAssignmentConsistent != SAT )
                 {
                     adaptPassedFormula();
                 }
@@ -1973,13 +1973,13 @@ SetWatches:
                     #endif
                     switch( mCurrentAssignmentConsistent )
                     {
-                        case True:
+                        case SAT:
                         {
                             if( Settings::allow_theory_propagation )
                                 deductionsLearned = processLemmas(); // Theory propagation.
                             break;
                         }
-                        case False:
+                        case UNSAT:
                         {
                             confl = learnTheoryConflict( _foundConflictOfSizeOne );
                             if( confl == CRef_Undef )
@@ -1992,7 +1992,7 @@ SetWatches:
                         }
                         default:
                         {
-                            assert( mCurrentAssignmentConsistent == Unknown );
+                            assert( mCurrentAssignmentConsistent == UNKNOWN );
                             if( Settings::allow_theory_propagation )
                                 deductionsLearned = processLemmas(); // Theory propagation.
                             break;
@@ -2018,7 +2018,7 @@ SetWatches:
         assert( ok );
         int conflictC = 0;
         starts++;
-        mCurrentAssignmentConsistent = True;
+        mCurrentAssignmentConsistent = SAT;
         for( ; ; )
         {
             if( !mComputeAllSAT && anAnswerFound() )
@@ -2069,7 +2069,7 @@ SetWatches:
                 }
                 if( learnts.size() - nAssigns() >= max_learnts && rReceivedFormula().isOnlyPropositional() )
                 {
-//                if( mCurrentAssignmentConsistent != Unknown && learnts.size() - nAssigns() >= max_learnts )
+//                if( mCurrentAssignmentConsistent != UNKNOWN && learnts.size() - nAssigns() >= max_learnts )
 //                {
                      // Reduce the set of learned clauses:
                      reduceDB(); 
@@ -2108,14 +2108,14 @@ SetWatches:
 
                     if( next == lit_Undef )
                     {
-                        if( mCurrentAssignmentConsistent == True )
+                        if( mCurrentAssignmentConsistent == SAT )
                         {
                             // Model found:
                             return l_True;
                         }
                         else
                         {
-                            assert( mCurrentAssignmentConsistent == Unknown );
+                            assert( mCurrentAssignmentConsistent == UNKNOWN );
                             if( !Settings::stop_search_after_first_unknown )
                             {
                                 learnt_clause.clear();
@@ -2273,7 +2273,7 @@ SetWatches:
             mNewSplittingVars.pop_back();
         else
         {
-            if( Settings::theory_conflict_guided_decision_heuristic == TheoryGuidedDecisionHeuristicLevel::DISABLED || mCurrentAssignmentConsistent != True )
+            if( Settings::theory_conflict_guided_decision_heuristic == TheoryGuidedDecisionHeuristicLevel::DISABLED || mCurrentAssignmentConsistent != SAT )
             {
                 // Activity based decision:
                 while( next == var_Undef || value( next ) != l_Undef || !decision[next] )
@@ -2557,7 +2557,7 @@ SetWatches:
                 if( ++abstr.updateInfo > 0 )
                 {
                     if( currentlySatisfiedByBackend( abstr.reabstraction ) != 1 )
-                        mCurrentAssignmentConsistent = Unknown;
+                        mCurrentAssignmentConsistent = UNKNOWN;
                     mChangedBooleans.push_back( var( p ) );
                 }
             }
@@ -2891,7 +2891,7 @@ NextClause:
         while( backend != usedBackends().end() )
         {
             const std::vector<FormulaSetT>& infSubsets = (*backend)->infeasibleSubsets();
-            assert( (*backend)->solverState() != False || !infSubsets.empty() );
+            assert( (*backend)->solverState() != UNSAT || !infSubsets.empty() );
             for( auto infsubset = infSubsets.begin(); infsubset != infSubsets.end(); ++infsubset )
             {
                 assert( !infsubset->empty() );

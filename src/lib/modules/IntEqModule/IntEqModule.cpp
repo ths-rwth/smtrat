@@ -122,7 +122,7 @@ namespace smtrat
             cout << "After substitution: " << new_poly << endl;
             #endif
             FormulaT newEq( ConstraintT( new_poly, carl::Relation::EQ ) );
-            // Return False if the newly obtained constraint is unsatisfiable
+            // Return UNSAT if the newly obtained constraint is unsatisfiable
             if( newEq.isFalse() )
             {
                 #ifdef DEBUG_IntEqModule
@@ -359,7 +359,7 @@ namespace smtrat
     void IntEqModule<Settings>::updateModel() const
     {
         mModel.clear();
-        if( solverState() == True )
+        if( solverState() == SAT )
         {
             mModel = mTemp_Model;
         }
@@ -370,12 +370,12 @@ namespace smtrat
     {
         if( !rReceivedFormula().isConstraintConjunction() )
         {
-            return Unknown;
+            return UNKNOWN;
         }
         // Check whether a module which has been called on the same instance in parallel, has found an answer
         if( anAnswerFound() )
         {
-            return Unknown;
+            return ABORTED;
         }
         // Execute the algorithm until unsatisfiability or a parametric solution
         // is detected
@@ -396,7 +396,7 @@ namespace smtrat
                 FormulaSetT infSubSet;
                 collectOrigins( mProc_Constraints.begin()->second->at(i), infSubSet );
                 mInfeasibleSubsets.push_back( std::move( infSubSet ) );
-                return False;
+                return UNSAT;
             }
             #ifdef DEBUG_IntEqModule
             cout << mProc_Constraints.begin()->first.constraint() << " was chosen." << endl;
@@ -558,7 +558,7 @@ namespace smtrat
                     FormulaSetT infSubSet;
                     collectOrigins( origins_new->at(i), infSubSet  );
                     mInfeasibleSubsets.push_back( infSubSet );
-                    return False; 
+                    return UNSAT; 
                 } 
                 auto iter_help = temp_proc_constraints.find( newEq );
                 if( iter_help == temp_proc_constraints.end() )
@@ -625,7 +625,7 @@ namespace smtrat
                     FormulaSetT infSubSet;
                     collectOrigins( origins->at(i), infSubSet );
                     mInfeasibleSubsets.push_back( std::move( infSubSet ) );
-                    return False;
+                    return UNSAT;
                 }                                        
                 addConstraintToInform( formula_passed );
                 addSubformulaToPassedFormula( formula_passed, origins );    
@@ -640,15 +640,15 @@ namespace smtrat
         cout << "Run LRAModule" << endl;
         #endif
         Answer ans = runBackends( _full, _minimize );
-        if( ans == False )
+        if( ans == UNSAT )
         {
             getInfeasibleSubsets();
         }
-        else if( ans == True )
+        else if( ans == SAT )
         {
             if( !constructSolution() )
             {
-                ans = Unknown;
+                ans = UNKNOWN;
             }    
         }
         return ans;

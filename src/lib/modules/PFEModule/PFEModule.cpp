@@ -60,7 +60,7 @@ namespace smtrat
 				FormulaSetT infeasibleSubset = varbounds.getOriginSetOfBounds(vars);
 				infeasibleSubset.insert(receivedFormula->formula());
 				mInfeasibleSubsets.push_back(std::move(infeasibleSubset));
-				return False;
+				return UNSAT;
 			}
 			if (!formula.isTrue()) {
 				if (formula == receivedFormula->formula()) {
@@ -78,7 +78,7 @@ namespace smtrat
 		generateVariableAssignments();
 		SMTRAT_LOG_DEBUG("smtrat.pfe", "Simplification: " << FormulaT(rReceivedFormula()) << " to " << FormulaT(rPassedFormula()));
 		Answer ans = runBackends(_full,_minimize);
-		if (ans == False) {
+		if (ans == UNSAT) {
 			getInfeasibleSubsets();
 		}
 		return ans;

@@ -323,9 +323,9 @@ namespace smtrat
             std::cout << "Found solution still feasible." << std::endl << std::endl;
             #endif
             if( checkNotEqualConstraints() )
-                return True;
+                return SAT;
             else
-                return Unknown;
+                return UNKNOWN;
         }
         for(;;)
         {
@@ -343,10 +343,10 @@ namespace smtrat
                 cc->resetReusagesAfterTargetDiameterReached();
             for( icp::ContractionCandidate* cc : mActiveNonlinearConstraints )
                 cc->resetReusagesAfterTargetDiameterReached();
-            Answer lraAnswer = Unknown;
+            Answer lraAnswer = UNKNOWN;
             if( initialLinearCheck( lraAnswer ) )
             {
-                if( lraAnswer == True )
+                if( lraAnswer == SAT )
                 {
                     if( checkNotEqualConstraints() )
                     {
@@ -354,10 +354,10 @@ namespace smtrat
                         std::cout << "Found solution with internal LRAModule!" << std::endl;
                         #endif
                         mLRAFoundSolution = true;
-                        return True;
+                        return SAT;
                     }
                     else
-                        return Unknown;
+                        return UNKNOWN;
                 }
                 #ifdef ICP_MODULE_DEBUG_0
                 std::cout << "Linear constraints not feasible!" << std::endl;
@@ -380,14 +380,14 @@ namespace smtrat
             if( mInvalidBox ) // box contains no solution
             {
                 #ifdef ICP_MODULE_DEBUG_0
-                std::cout << "Whole box contains no solution! Return False." << std::endl;
+                std::cout << "Whole box contains no solution! Return UNSAT." << std::endl;
                 #endif
                 // whole box forms infeasible subset
                 mInfeasibleSubsets.push_back( createPremiseDeductions() );
                 #ifdef ICP_MODULE_SHOW_PROGRESS
                 addProgress( mInitialBoxSize );
                 #endif
-                return False;
+                return UNSAT;
             }
             else
             {
@@ -398,15 +398,15 @@ namespace smtrat
                     std::cout << "Return unknown, raise deductions for split." << std::endl;
                     #endif
                     assert( !splittings().empty() );
-                    return Unknown;
+                    return UNKNOWN;
                 }
                 assert( splittings().empty() );
                 if( tryTestPoints() )
                 {
                     if( checkNotEqualConstraints() )
-                        return True;
+                        return SAT;
                     else
-                        return Unknown;
+                        return UNKNOWN;
                 }
                 else
                 {
@@ -415,7 +415,7 @@ namespace smtrat
                     // lazy call of the backends on found box
                     Answer lazyResult = callBackends( false );
                     // if it led to a result or the backends require a splitting
-                    if( lazyResult != Unknown || !splittings().empty() )
+                    if( lazyResult != UNKNOWN || !splittings().empty() )
                         return lazyResult;
                     // Full call of the backends, if no box has target diameter
                     bool furtherContractionOccurred = false;
@@ -424,19 +424,19 @@ namespace smtrat
                     if( mInvalidBox )
                     {
                         #ifdef ICP_MODULE_DEBUG_0
-                        std::cout << "Whole box contains no solution! Return False." << std::endl;
+                        std::cout << "Whole box contains no solution! Return UNSAT." << std::endl;
                         #endif
                         // whole box forms infeasible subset
                         mInfeasibleSubsets.push_back( createPremiseDeductions() );
                         #ifdef ICP_MODULE_SHOW_PROGRESS
                         addProgress( mInitialBoxSize );
                         #endif
-                        return False;
+                        return UNSAT;
                     }
                     if( furtherContractionOccurred )
                         continue;
                     assert( splittings().size() == 1 );
-                    return Unknown; // Splitting required
+                    return UNKNOWN; // Splitting required
                 }
             }
         }
@@ -738,7 +738,7 @@ namespace smtrat
         #ifdef ICP_MODULE_DEBUG_0
         std::cout << "  Backend's answer: " << ANSWER_TO_STRING( a ) << std::endl;
         #endif
-        if( a == False )
+        if( a == UNSAT )
         {
             assert(infeasibleSubsets().empty());
             FormulaSetT contractionConstraints = this->createPremiseDeductions();
@@ -765,16 +765,16 @@ namespace smtrat
             #ifdef ICP_MODULE_SHOW_PROGRESS
             addProgress( mInitialBoxSize );
             #endif
-            return False;
+            return UNSAT;
         }
-        else // if a == True or a == Unknown
+        else // if a == SAT or a == UNKNOWN
         {
             assert( mHistoryActual != nullptr );
             assert( mHistoryRoot != nullptr );
             mHistoryActual->propagateStateInfeasibleConstraints(mHistoryRoot);
             mHistoryActual->propagateStateInfeasibleVariables(mHistoryRoot);
             #ifdef ICP_MODULE_SHOW_PROGRESS
-//            if( _full && a == Unknown && !hasDeductions() )
+//            if( _full && a == UNKNOWN && !hasDeductions() )
 //                addProgress( mInitialBoxSize );
             #endif
             return a;
@@ -1483,7 +1483,7 @@ namespace smtrat
     void ICPModule<Settings>::updateModel() const
     {
         clearModel();
-        if( solverState() == True )
+        if( solverState() == SAT )
         {
             if( mFoundSolution.empty() )
             {
@@ -2274,7 +2274,7 @@ namespace smtrat
                 testSuccessful = false;
                 if( boxContainsOnlyOneSolution )
                 {
-                    // TODO: create infeasible subset and return False in checkCore
+                    // TODO: create infeasible subset and return UNSAT in checkCore
                 }
                 break;
             }
@@ -2323,7 +2323,7 @@ namespace smtrat
             }
         }
         mLRA.clearDeductions();
-        if( _answer == False )
+        if( _answer == UNSAT )
         {
             // remap infeasible subsets to original constraints
             remapAndSetLraInfeasibleSubsets();
@@ -2332,7 +2332,7 @@ namespace smtrat
             #endif
             return true;
         }
-        else if( _answer == True ) // _answer == True, but no nonlinear constraints -> linear solution is a solution
+        else if( _answer == SAT ) // _answer == SAT, but no nonlinear constraints -> linear solution is a solution
         {
             #ifdef ICP_MODULE_DEBUG_1
             std::cout << "LRA: " << _answer << std::endl;
@@ -2353,7 +2353,7 @@ namespace smtrat
             if( solutionFound )
                 return true;
         }
-        if( !splittings().empty() && _answer == Unknown )
+        if( !splittings().empty() && _answer == UNKNOWN )
             return true;
         // get intervals for initial variables
         mInitialIntervals = mLRA.getVariableBounds();
@@ -2433,15 +2433,15 @@ namespace smtrat
         std::cout << "Boxcheck: " << ANSWER_TO_STRING(boxCheck) << std::endl;
         #endif
         #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
-        if ( boxCheck == False )
+        if ( boxCheck == UNSAT )
         {
             FormulaT actualAssumptions = FormulaT(*mValidationFormula);
             Module::addAssumptionToCheck(actualAssumptions,false,"ICP_BoxValidation");
         }
         #endif
-        if( boxCheck != Unknown )
+        if( boxCheck != UNKNOWN )
         {
-            if( boxCheck != True )
+            if( boxCheck != SAT )
             {
                 std::vector<FormulaSetT> tmpSet = mLRA.infeasibleSubsets();
                 for ( auto infSetIt = tmpSet.begin(); infSetIt != tmpSet.end(); ++infSetIt )
@@ -2535,7 +2535,7 @@ namespace smtrat
         mLRA.clearDeductions();
         assert(addedBoundaries.empty());
 
-        if ( boxCheck == False )
+        if ( boxCheck == UNSAT )
             return false;
         return true;
     }

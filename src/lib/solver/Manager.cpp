@@ -134,7 +134,7 @@ namespace smtrat
             add( FormulaT( (obVarIter->second.second ? obVarIter->first : -(obVarIter->first)) - obVarIter->second.first, carl::Relation::EQ ) );
             mpPrimaryBackend->setObjective( obVarIter->second.first );
             Answer result = mpPrimaryBackend->check( _full, true );
-            if( result != True )
+            if( result != SAT )
             {
                 pop( 2 );
                 return result;

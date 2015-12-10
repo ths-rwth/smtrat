@@ -39,7 +39,7 @@ namespace smtrat
     
     pair<bool,FormulaT> PModule::getReceivedFormulaSimplified()
     {
-        if( solverState() == False ) {
+        if( solverState() == UNSAT ) {
 			SMTRAT_LOG_WARN("smtrat.pmodule", moduleName() << ": Returning FALSE");
             return make_pair( true, FormulaT( carl::FormulaType::FALSE ) );
 		}

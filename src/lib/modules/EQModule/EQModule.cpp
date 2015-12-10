@@ -624,7 +624,7 @@ namespace smtrat {
 		void EQModule<Settings>::P_update_model()
 	{
 		mModel.clear();
-		if(solverState() == True) {
+		if(solverState() == SAT) {
 			P_update_model_variable();
 			P_update_model_function();
 		}
@@ -876,7 +876,7 @@ namespace smtrat {
 	template<class Settings>
 		Answer EQModule<Settings>::checkCore( bool, bool )
 	{
-		Answer answer = (mCountNonUEQFormulas == 0) ? True : Unknown;
+		Answer answer = (mCountNonUEQFormulas == 0) ? SAT : UNKNOWN;
 		
 		if(!mFunctionMap.empty()) {
 			process_merge_lists();
@@ -887,7 +887,7 @@ namespace smtrat {
 		
 		// now, mPossibleInconsistencies contains only real inconsistencies
 		if(!mPossibleInconsistencies.empty()) {
-			answer = False;
+			answer = UNSAT;
 			
 			// return as many infeasible subsets as we are configured to do
 			std::size_t count = mPossibleInconsistencies.size();
@@ -934,15 +934,15 @@ namespace smtrat {
 		}
 
 		if(Settings::printFormulas) {
-			std::cout << "Answer: " << (answer == True ? "True" : (answer == Unknown ? "Unknown" : "False")) << std::endl;
+			std::cout << "Answer: " << answer << std::endl;
 		}
 
-		if(Settings::printInfeasibleSubsetFormulas && answer == False) {
+		if(Settings::printInfeasibleSubsetFormulas && answer == UNSAT) {
 			P_print_infeasible_subset();
 		}
 
 		if(Settings::visualiseGraphs) {
-			if(!Settings::visualiseOnlyWhenInconsistent || answer == False) {
+			if(!Settings::visualiseOnlyWhenInconsistent || answer == UNSAT) {
 				P_print_graph();
 			}
 		}

@@ -378,7 +378,7 @@ namespace smtrat
             bool mMinimize;
             /**
              * Stores gained information about the current assignment's consistency. If we know from the last consistency check, whether the
-             * current assignment is consistent, this member is True, if we know that it is inconsistent it is False, otherwise Unknown.
+             * current assignment is consistent, this member is SAT, if we know that it is inconsistent it is UNSAT, otherwise Unknown.
              */
             Answer mCurrentAssignmentConsistent;
             /// The number of full laze calls made.
@@ -495,8 +495,8 @@ namespace smtrat
              * Checks the received formula for consistency.
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
-             * @return True,    if the received formula is satisfiable;
-             *         False,   if the received formula is not satisfiable;
+             * @return SAT,    if the received formula is satisfiable;
+             *         UNSAT,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
             Answer checkCore( bool _full = true, bool _minimize = false );

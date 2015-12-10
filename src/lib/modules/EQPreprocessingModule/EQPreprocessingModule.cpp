@@ -237,7 +237,7 @@ namespace smtrat
 				}
 
 				mInfeasibleSubsets.emplace_back(std::move(constructInfeasible));
-				return False;
+				return UNSAT;
 			}
 
 			changed = !stable;
@@ -284,7 +284,7 @@ namespace smtrat
 
 		// Call backends.
 		Answer answer = runBackends(_full,_minimize);
-		if(answer == False) {
+		if(answer == UNSAT) {
 			getInfeasibleSubsets();
 		}
 
@@ -296,7 +296,7 @@ namespace smtrat
 	{
 		clearModel();
 
-		if(solverState() == True) {
+		if(solverState() == SAT) {
 			getBackendsModel();
 
 			if(Settings::rewriteFunctionInstances) {

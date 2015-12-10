@@ -51,7 +51,7 @@ namespace smtrat
     void FPPModule<Settings>::updateModel() const
     {
         mModel.clear();
-        if( solverState() == True )
+        if( solverState() == SAT )
         {
             const Model& preprocessorModel = mPreprocessor.model();
             Module::updateModel();
@@ -66,7 +66,7 @@ namespace smtrat
         //if( mIterations > 0 ) // we did a check before hence the result is still stored in the preprocessor
         //    mPreprocessor.pop();
         mIterations = 0;
-        Answer ans = Unknown;
+        Answer ans = UNKNOWN;
         FormulaT formulaBeforePreprocessing = (FormulaT) rReceivedFormula();
         while( Settings::max_iterations < 0 || mIterations < (std::size_t)Settings::max_iterations )
         {
@@ -76,7 +76,7 @@ namespace smtrat
             mPreprocessor.add( formulaBeforePreprocessing );
             ans = mPreprocessor.check( _full ); // @todo: do we need to add the objective function to the preprocessors??
             // preprocessing detects satisfiabilty or unsatisfiability
-            if( ans != Unknown ) {
+            if( ans != UNKNOWN ) {
 	            mPreprocessor.pop();
                 break;
 			}
@@ -94,7 +94,7 @@ namespace smtrat
             // after preprocessing is before preprocessing
             formulaBeforePreprocessing = mFormulaAfterPreprocessing;
         }
-        if( ans == Unknown )
+        if( ans == UNKNOWN )
         {
             // run the backends on the fix point of the iterative application of preprocessing
             // TODO: make this incremental
@@ -103,7 +103,7 @@ namespace smtrat
             ans = runBackends( _full, _minimize );
         }
         // obtain an infeasible subset, if the received formula is unsatisfiable
-        if( ans == False )
+        if( ans == UNSAT )
             generateTrivialInfeasibleSubset(); // TODO: compute a better infeasible subset
         return ans;
     }
