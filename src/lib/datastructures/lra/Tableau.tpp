@@ -936,6 +936,8 @@ namespace smtrat
                     if( maxOptimizationValue < T1(0) )
                         maxOptimizationValue = maxOptimizationValue * T1( -1 );
                 }
+                else
+                    maxOptimizationValue = maxTheta;
                 if( !_minimize )
                     increaseVar = !increaseVar;
                 #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
