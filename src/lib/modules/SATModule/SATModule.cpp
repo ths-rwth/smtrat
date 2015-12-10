@@ -1926,10 +1926,17 @@ SetWatches:
                         for( int i = 0; i < c.size(); ++i )
                         {
                             size_t v = (size_t)var(c[i]);
+                            std::pair<size_t,size_t>& litActOccs = mLiteralsActivOccurrences[v];
+                            if( litActOccs.first == 0 && litActOccs.second == 0 )
+                            {
+                                Var x = var(c[i]);
+                                decision[x] = true;
+                                insertVarOrder( x );
+                            }
                             if( sign(c[i]) )
-                                ++(mLiteralsActivOccurrences[v].second);
+                                ++(litActOccs.second);
                             else
-                                ++(mLiteralsActivOccurrences[v].first);
+                                ++(litActOccs.first);
                         }
                     }
                 }
@@ -2629,10 +2636,19 @@ SetWatches:
                     for( int i = 0; i < c.size(); ++i )
                     {
                         size_t v = (size_t)var(c[i]);
+                        std::pair<size_t,size_t>& litActOccs = mLiteralsActivOccurrences[v];
                         if( sign(c[i]) )
-                            --(mLiteralsActivOccurrences[v].second);
+                        {
+                            assert( litActOccs.second > 0 );
+                            --(litActOccs.second);
+                        }
                         else
-                            --(mLiteralsActivOccurrences[v].first);
+                        {
+                            assert( litActOccs.first > 0 );
+                            --(litActOccs.first);
+                        }
+                        if( litActOccs.first == 0 && litActOccs.second == 0 )
+                            decision[var(c[i])] = false;
                     }
                 }
             }

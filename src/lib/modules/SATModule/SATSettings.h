@@ -16,6 +16,8 @@ namespace smtrat
     
     enum class CCES : unsigned { SECOND_LEVEL_MINIMIZER, LITERALS_BLOCKS_DISTANCE, SECOND_LEVEL_MINIMIZER_PLUS_LBD };
     
+    enum class VARIABLE_ACTIVITY_STRATEGY : unsigned { NONE, MIN_COMPLEXITY_MAX_OCCURRENCES };
+    
     struct SATSettings1 : ModuleSettings
     {
 		static constexpr auto moduleName = "SATModule<SATSettings1>";
@@ -64,6 +66,10 @@ namespace smtrat
          *
          */
         static const CCES conflict_clause_evaluation_strategy = CCES::SECOND_LEVEL_MINIMIZER_PLUS_LBD;
+        /**
+         * 
+         */
+        static const VARIABLE_ACTIVITY_STRATEGY initial_variable_activities = VARIABLE_ACTIVITY_STRATEGY::NONE;
 #else
         /**
          * 
@@ -77,6 +83,10 @@ namespace smtrat
          *
          */
         static constexpr CCES conflict_clause_evaluation_strategy = CCES::SECOND_LEVEL_MINIMIZER_PLUS_LBD;
+        /**
+         * 
+         */
+        static constexpr VARIABLE_ACTIVITY_STRATEGY initial_variable_activities = VARIABLE_ACTIVITY_STRATEGY::NONE;
 #endif
     };
 
