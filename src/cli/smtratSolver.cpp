@@ -84,6 +84,11 @@ public:
 				this->exitCode = SMTRAT_EXIT_UNKNOWN;
 				break;
 			}
+			case smtrat::Answer::ABORTED: {
+				regular() << "aborted" << std::endl;
+				this->exitCode = SMTRAT_EXIT_UNKNOWN;
+				break;
+			}
 			default: {
 				error() << "unexpected output!";
 				this->exitCode = SMTRAT_EXIT_UNEXPECTED_ANSWER;
