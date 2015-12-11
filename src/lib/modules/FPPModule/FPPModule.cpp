@@ -51,7 +51,7 @@ namespace smtrat
     void FPPModule<Settings>::updateModel() const
     {
         mModel.clear();
-        if( solverState() == SAT )
+        if( solverState() != UNSAT )
         {
             const Model& preprocessorModel = mPreprocessor.model();
             Module::updateModel();
