@@ -59,7 +59,6 @@ namespace smtrat {
 		}
 		virtual void print(std::ostream& os) const {
 			os << mPoly;
-			if (mValue != nullptr) os << " = " << *mValue;
 		}
 	};
 	
