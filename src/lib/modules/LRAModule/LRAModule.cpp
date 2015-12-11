@@ -579,14 +579,15 @@ namespace smtrat
             }
             for( ; ; )
             {
+                bool minimize = mObjectiveLRAVar->second.second > 0;
                 std::pair<EntryID,bool> pivotingElement = variableBasicAndNotConnected ? 
                     std::make_pair( lra::LAST_ENTRY_ID, true ) : 
-                    mTableau.nextPivotingElementForOptimizing( *(mObjectiveLRAVar->second.first), mObjectiveLRAVar->second.second > 0 );
+                    mTableau.nextPivotingElementForOptimizing( *(mObjectiveLRAVar->second.first), minimize );
                 if( pivotingElement.second )
                 {
                     if( pivotingElement.first == lra::LAST_ENTRY_ID )
                     {
-                        if( mObjectiveLRAVar->second.first->infimum().isInfinite() )
+                        if( (minimize && mObjectiveLRAVar->second.first->infimum().isInfinite()) || (!minimize && mObjectiveLRAVar->second.first->supremum().isInfinite()) )
                         {
                             #ifdef DEBUG_LRA_MODULE
                             std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: -oo" << std::endl;
@@ -598,10 +599,10 @@ namespace smtrat
                         else
                         {
                             mModelComputed = false;
-                            const LRAValue& infimum = mObjectiveLRAVar->second.first->infimum().limit();
-                            mObjectiveLRAVar->second.first->rAssignment() = infimum;
+                            const LRAValue& optimum = minimize ? mObjectiveLRAVar->second.first->infimum().limit() : mObjectiveLRAVar->second.first->supremum().limit();
+                            mObjectiveLRAVar->second.first->rAssignment() = optimum;
                             updateModel();
-                            Rational ass = (Rational)(infimum.mainPart()+mTableau.currentDelta()*infimum.deltaPart())/mObjectiveLRAVar->second.second;
+                            Rational ass = (Rational)(optimum.mainPart()+mTableau.currentDelta()*optimum.deltaPart())/mObjectiveLRAVar->second.second;
                             #ifdef DEBUG_LRA_MODULE
                             std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: " << ass << std::endl;
                             #endif
