@@ -984,9 +984,6 @@ namespace smtrat
                             if( (increaseVar == entryNegative && lraVar.infimum() < lraVar.assignment())
                              || (increaseVar != entryNegative && lraVar.supremum() > lraVar.assignment()))
                             {
-                                #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                                std::cout << "      Found basic variable with margin." << std::endl;
-                                #endif
                                 if( (increaseVar == entryNegative && !lraVar.infimum().isInfinite()) || (increaseVar != entryNegative && !lraVar.supremum().isInfinite()) )
                                 {
                                     Value<T1> lraVarTheta = (increaseVar == entryNegative) ? (lraVar.assignment() - lraVar.infimum().limit()) : (lraVar.supremum().limit() - lraVar.assignment());
@@ -996,8 +993,11 @@ namespace smtrat
                                     lraVarTheta /= (*varForMinIter).content();
                                     if( lraVarTheta < T1(0) )
                                         lraVarTheta = lraVarTheta * T1( -1 );
-                                    if( varForMinTheta == maxTheta || varForMinTheta > lraVarTheta )
-                                    {   
+                                    #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                                    std::cout << "      Found basic variable with margin " << lraVarTheta << std::endl;
+                                    #endif
+                                    if( varForMinTheta == maxTheta || lraVarTheta <= varForMinTheta )
+                                    {
                                         #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
                                         std::cout << "      Found basic variable with the smaller margin " << varForMinTheta << std::endl;
                                         #endif
@@ -1043,7 +1043,7 @@ namespace smtrat
                                     std::cout << "   Optimization potential of non-basic variable exceeds possible margin of the objective function." << std::endl;
                                     #endif
                                 }
-                                if( maxOptimizationReached || bestResult == LAST_ENTRY_ID || (*mpTheta > T1(0) && varForMinTheta > *mpTheta) || (*mpTheta < T1(0) && varForMinTheta > *mpTheta * T1( -1 )) )
+                                if( maxOptimizationReached || bestResult == LAST_ENTRY_ID || (*mpTheta > T1(0) && *mpTheta <= varForMinTheta ) || (*mpTheta < T1(0) && (*mpTheta * T1( -1 )) <= varForMinTheta) )
                                 {
                                     (*mpTheta) = increaseVar ? varForMinTheta : (varForMinTheta * T1( -1 ));
                                     bestResult = result;
