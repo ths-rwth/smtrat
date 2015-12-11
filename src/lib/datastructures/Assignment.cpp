@@ -10,61 +10,6 @@
 
 namespace smtrat
 {
-    bool operator<( const ModelVariable& _mvar, const carl::Variable& _var )
-    {
-        if( _mvar.isVariable() )
-            return _mvar.asVariable() < _var;
-        return false;
-    }
-    
-    bool operator<( const carl::Variable& _var, const ModelVariable& _mvar )
-    {
-        if( _mvar.isVariable() )
-            return _var < _mvar.asVariable();
-        return true;
-    }
-    
-	bool operator<(const ModelVariable& _mvar, const carl::BVVariable& _bvvar)
-    {
-        if( _mvar.isBVVariable() )
-            return _mvar.asBVVariable() < _bvvar;
-        return _mvar.isVariable();
-    }
-
-    bool operator<( const carl::BVVariable& _bvvar, const ModelVariable& _mvar )
-    {
-        if( _mvar.isBVVariable() )
-            return _bvvar < _mvar.asBVVariable();
-        return !_mvar.isVariable();
-    }
-
-    bool operator<( const ModelVariable& _mvar, const carl::UVariable& _uv )
-    {
-        if( _mvar.isUVariable() )
-            return _mvar.asUVariable() < _uv;
-        return !_mvar.isFunction();
-    }
-    
-    bool operator<( const carl::UVariable& _uv, const ModelVariable& _mvar )
-    {
-        if( _mvar.isUVariable() )
-            return _uv < _mvar.asUVariable();
-        return _mvar.isFunction();
-    }
-    
-    bool operator<( const ModelVariable& _mvar, const carl::UninterpretedFunction& _uf )
-    {
-        if( _mvar.isFunction() )
-            return _mvar.asFunction() < _uf;
-        return true;
-    }
-    
-    bool operator<( const carl::UninterpretedFunction& _uf, const ModelVariable& _mvar )
-    {
-        if( _mvar.isFunction() )
-            return _uf < _mvar.asFunction();
-        return false;
-    }
     
     bool getRationalAssignmentsFromModel( const Model& _model, EvalRationalMap& _rationalAssigns )
     {
