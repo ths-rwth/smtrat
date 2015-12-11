@@ -49,3 +49,5 @@ target_link_libraries( parserTest
                         lib_${PROJECT_NAME} # smtrat library
                         ${libraries} # libraries definied in top-level CMakeLists.txt
 )
+
+add_subdirectory(datastructures)

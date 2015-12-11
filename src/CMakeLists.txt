@@ -19,10 +19,7 @@ endif()
 # unit tests
 # # # # # # #
 
-if(CppUnit_FOUND)
-    add_subdirectory(test EXCLUDE_FROM_ALL)
-endif()
-
+add_subdirectory(tests EXCLUDE_FROM_ALL)
 
 add_subdirectory(gui EXCLUDE_FROM_ALL)
 
