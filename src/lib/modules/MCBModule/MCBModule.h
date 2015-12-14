@@ -25,8 +25,11 @@ namespace smtrat
 #ifdef SMTRAT_DEVOPTION_Statistics
 			MCBStatistics mStatistics;
 #endif
-			using Choice = std::tuple<carl::Variable,Rational,FormulaT>;
-			std::map<Choice, carl::Variable> mChoices;
+			using AVar = carl::Variable;
+			using BVar = carl::Variable;
+			
+			std::map<AVar, std::map<Rational, std::pair<BVar,FormulaT>>> mChoices;
+			std::set<AVar> mRemaining;
 			
 		public:
 			typedef Settings SettingsType;
@@ -46,7 +49,7 @@ namespace smtrat
 			/**
 			 * Checks the received formula for consistency.
 			 * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
-                         * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
+			 * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
 			 * @return SAT,	if the received formula is satisfiable;
 			 *		 UNSAT,   if the received formula is not satisfiable;
 			 *		 Unknown, otherwise.
@@ -56,6 +59,6 @@ namespace smtrat
 			void collectBounds(FormulaT::ConstraintBounds& cb, const FormulaT& formula, bool conjunction) const;
 			void collectChoices(const FormulaT& formula);
 			std::function<void(FormulaT)> collectChoicesFunction;
-			FormulaT applyReplacements(const FormulaT& f) const;
+			FormulaT applyReplacements(const FormulaT& f);
 	};
 }
