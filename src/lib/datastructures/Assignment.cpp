@@ -400,32 +400,11 @@ namespace smtrat
                     getDefaultModel( _defaultModel, subFormula, _overwrite, _seed );
         }
     }
-    
-    std::ostream& operator<<( std::ostream& _out, const ModelValue& _modelValue )
-    {
-        if( _modelValue.isRational() )
-            _out << carl::toString( _modelValue.asRational(), false );
-        else if( _modelValue.isSqrtEx() )
-            _out << _modelValue.asSqrtEx().toString( false, true );
-        else if( _modelValue.isBVValue() )
-            _out << _modelValue.asBVValue();
-        else if( _modelValue.isBool() )
-            _out << _modelValue.asBool();
-        else if( _modelValue.isMinusInfinity() || _modelValue.isPlusInfinity() )
-            _out << toString(_modelValue.asInfinity(), false);
-        else if( _modelValue.isRAN() )
-            _out << _modelValue.asRAN();
-        else if( _modelValue.isSortValue() )
-            _out << _modelValue.asSortValue();
-        else if( _modelValue.isUFModel() )
-            _out << _modelValue.asUFModel();
-        return _out;
-    }
-    
+
     std::ostream& operator<<( std::ostream& _out, const Model& _model )
     {
         _out << "(";
-        for( Model::const_iterator ass = _model.begin(); ass != _model.end(); ++ass )
+        for( auto ass = _model.begin(); ass != _model.end(); ++ass )
         {
             if (ass != _model.begin()) _out << " ";
 			if (ass->first.isVariable() || ass->first.isBVVariable())
