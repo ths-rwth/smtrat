@@ -64,7 +64,10 @@ namespace smtrat
 			return erase(mData.find(variable));
 		}
 		Map::iterator erase(const Map::iterator& it) {
-			if (it == mData.end()) return it;
+			return erase(Map::const_iterator(it));
+		}
+		Map::iterator erase(const Map::const_iterator& it) {
+			if (it == mData.end()) return mData.end();
 			for (auto& m: mData) {
 				const auto& val = m.second;
 				if (!val.isSubstitution()) continue;
