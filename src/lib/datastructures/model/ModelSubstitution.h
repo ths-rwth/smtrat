@@ -1,31 +1,36 @@
 #pragma once
 
 #include <iostream>
+#include <map>
 #include <memory>
 
 #include <carl/core/RealAlgebraicNumberEvaluation.h>
 #include "../../Common.h"
-#include "Model.h"
+#include "ModelValue.h"
+#include "ModelVariable.h"
 
 namespace smtrat {
-	
 	class Model;
-	class ModelValue;
-	
 	class ModelSubstitution {
 	protected:
 	public:
 		ModelSubstitution() {}
 		virtual ~ModelSubstitution() {}
 		
+		/// Evaluates this substitution with respect to the given model.
 		virtual ModelValue evaluate(Model& model) = 0;
+		/// Checks whether this substitution needs the given model variable.
+		virtual bool dependsOn(const ModelVariable&) const {
+			return true;
+		}
+		/// Prints this substitution to the given output stream.
+		virtual void print(std::ostream& os) const {
+			os << "substitution";
+		}
 		
 		template<typename Substitution, typename... Args>
 		static ModelValue create(Args&&... args) {
 			return ModelValue(std::make_shared<Substitution>(std::forward<Args>(args)...));
-		}
-		virtual void print(std::ostream& os) const {
-			os << "substitution";
 		}
 	};
 	inline std::ostream& operator<<(std::ostream& os, const std::shared_ptr<ModelSubstitution>& ms) {
@@ -40,22 +45,10 @@ namespace smtrat {
 	public:
 		ModelPolynomialSubstitution(const Poly& p): ModelSubstitution(), mPoly(p), mVars(p.gatherVariables())
 		{}
-		virtual ModelValue evaluate(Model& model) {
-			carl::RealAlgebraicNumberEvaluation::RANMap<Rational> map;
-			for (const auto& var: mVars) {
-				auto it = model.find(ModelVariable(var));
-				assert(it != model.end());
-				const ModelValue& mv = it->second;
-				
-				if (mv.isRational()) {
-					map.emplace(var, carl::RealAlgebraicNumber<Rational>(mv.asRational()));
-				} else if (mv.isRAN()) {
-					map.emplace(var, mv.asRAN());
-				} else {
-					assert(false);
-				}	
-			}
-			return ModelValue(carl::RealAlgebraicNumberEvaluation::evaluate(mPoly, map));
+		virtual ModelValue evaluate(Model& model);
+		virtual bool dependsOn(const ModelVariable& var) const {
+			if (!var.isVariable()) return false;
+			return mPoly.degree(var.asVariable()) > 0;
 		}
 		virtual void print(std::ostream& os) const {
 			os << mPoly;
