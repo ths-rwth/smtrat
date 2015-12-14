@@ -1134,7 +1134,7 @@ namespace smtrat
         const Model& bvModel = mpBVSolver->model();
 
         // Transfer all non-bitvector assignments
-        for(auto& varAndValue : bvModel) {
+        for(const auto& varAndValue : bvModel) {
             if(! varAndValue.first.isBVVariable()) {
                 mModel.insert(varAndValue);
             }
