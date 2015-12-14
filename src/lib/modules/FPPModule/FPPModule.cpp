@@ -96,7 +96,6 @@ namespace smtrat
 			// TODO: make this incremental
 			clearPassedFormula();
 			addSubformulaToPassedFormula(mFormulaAfterPreprocessing);
-			std::cout << "Calling Backend with " << mFormulaAfterPreprocessing << std::endl;
 			answer = runBackends(_full, _minimize);
 		}
 		// obtain an infeasible subset, if the received formula is unsatisfiable
