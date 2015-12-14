@@ -580,7 +580,7 @@ namespace smtrat
 
     bool Module::modelsDisjoint( const Model& _modelA, const Model& _modelB )
     {
-        Model::const_iterator assignment = _modelA.begin();
+        auto assignment = _modelA.begin();
         while( assignment != _modelA.end() )
         {
             if( _modelB.find( assignment->first ) != _modelB.end() )
@@ -620,14 +620,13 @@ namespace smtrat
         auto module = mUsedBackends.begin();
         while( module != mUsedBackends.end() )
         {
-            assert( (*module)->solverState() != UNSAT );
-            if( (*module)->solverState() == SAT )
+            assert((*module)->solverState() != UNSAT);
+            if ((*module)->solverState() != ABORTED)
             {
 		//@todo models should be disjoint, but this breaks CAD on certain inputs.
                 //assert( modelsDisjoint( mModel, (*module)->model() ) );
                 (*module)->updateModel();
-                for (auto ass: (*module)->model())
-                {
+                for (const auto& ass: (*module)->model()) {
                     mModel.insert(ass);
                 }
                 break;
@@ -907,7 +906,7 @@ namespace smtrat
         if( containtsUEquality )
             ueVarsIter = ueVars->begin();
         // remove the variables, which do not occur in the one of these containers
-        for( std::map<ModelVariable,ModelValue>::const_iterator iter = mModel.begin(); iter != mModel.end(); )
+        for( auto iter = mModel.begin(); iter != mModel.end(); )
         {
             if( iter->first.isVariable() )
             {
