@@ -299,6 +299,18 @@ namespace smtrat
             {
                 return 3;
             }
+            
+            bool receivedVariable( carl::Variable::Arg _var ) const
+            {
+                // @todo this should be done more efficiently
+                for( const auto& rf : rReceivedFormula() )
+                {
+                    const carl::Variables& vars = rf.formula().variables();
+                    if( vars.find( _var ) != vars.end() )
+                        return true;
+                }
+                return false;
+            }
 
             // Methods to read and write on the members.
             /**
