@@ -620,8 +620,11 @@ namespace smtrat
             // For all basic variables find the minimum of all (c2-c1)/(k1-k2), where ..
             for( auto var : mRows )
             {
-                adaptDelta( *var, false, minDelta );
-                adaptDelta( *var, true, minDelta );
+                if( var != NULL )
+                {
+                    adaptDelta( *var, false, minDelta );
+                    adaptDelta( *var, true, minDelta );
+                }
             }
             mCurDelta = minDelta < 0 ? T1(1) : minDelta;
             EvalRationalMap result;
@@ -637,7 +640,7 @@ namespace smtrat
             }
             for( auto var : mRows )
             {
-                if( var->isOriginal() )
+                if( var != NULL && var->isOriginal() )
                 {
                     T1 value = var->assignment().mainPart();
                     value += (var->assignment().deltaPart() * mCurDelta);
