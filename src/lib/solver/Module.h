@@ -178,6 +178,8 @@ namespace smtrat
             carl::Variable mObjective;
             /// The function to which the objective variable is equal.
             Poly mObjectiveFunction;
+            /// Maps variables to the number of their occurrences
+            std::vector<std::size_t> mVariableCounters;
 
         public:
 
@@ -302,14 +304,7 @@ namespace smtrat
             
             bool receivedVariable( carl::Variable::Arg _var ) const
             {
-                // @todo this should be done more efficiently
-                for( const auto& rf : rReceivedFormula() )
-                {
-                    const carl::Variables& vars = rf.formula().variables();
-                    if( vars.find( _var ) != vars.end() )
-                        return true;
-                }
-                return false;
+                return _var.getId() < mVariableCounters.size() && mVariableCounters[_var.getId()] > 0;
             }
 
             // Methods to read and write on the members.
