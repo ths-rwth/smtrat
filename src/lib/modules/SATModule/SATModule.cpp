@@ -653,7 +653,7 @@ namespace smtrat
             if ( only_relevant_variables )
             {
                 // Set assignment for all relevant variables (might be partial assignment)
-                for ( int i = 0; i < mRelevantVariables.size(); ++i )
+                for ( size_t i = 0; i < mRelevantVariables.size(); ++i )
                 {
                     int index = mRelevantVariables[ i ];
                     ModelValue assignment = assigns[ index ] == l_True;
@@ -684,7 +684,7 @@ namespace smtrat
         SMTRAT_LOG_TRACE("smtrat.sat", "Update all models");
         mComputeAllSAT = true;
         clearModels();
-        size_t sizeLearntsStart = learnts.size();
+        int sizeLearntsStart = learnts.size();
         if( solverState() == SAT )
         {
             // Compute all satisfying assignments
@@ -731,7 +731,7 @@ namespace smtrat
                 // Exclude assignment
                 vec<Lit> excludeClause;
                 int index;
-                for ( int i = 0; i < mRelevantVariables.size(); ++i )
+                for ( size_t i = 0; i < mRelevantVariables.size(); ++i )
                 {
                     index = mRelevantVariables[ i ];
                     // Add negated literal
@@ -2847,7 +2847,7 @@ NextClause:
     }
 	
     template<class Settings>
-    void SATModule<Settings>::clearLearnts( size_t n )
+    void SATModule<Settings>::clearLearnts( int n )
     {
         for( int i = n; i < learnts.size(); ++i )
         {

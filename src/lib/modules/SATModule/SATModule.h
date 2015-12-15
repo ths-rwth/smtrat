@@ -500,7 +500,7 @@ namespace smtrat
             /// Stores for each variable the corresponding formulas which control its value
             VarLemmaMap mPropagatedLemmas;
 			/// Stores Minisat indexes of all relevant variables
-			vector<int> mRelevantVariables;
+			std::vector<int> mRelevantVariables;
             ///
             Minisat::vec<unsigned> mNonTseitinShadowedOccurrences;
             ///
@@ -1130,7 +1130,7 @@ namespace smtrat
              */
             void reduceDB();
             
-            void clearLearnts( size_t n );
+            void clearLearnts( int n );
             
             // Shrink 'cs' to contain only non-satisfied clauses.
             

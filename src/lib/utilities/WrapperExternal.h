@@ -92,7 +92,7 @@ namespace smtrat {
 		* @param bufferSize Size of buffer
 		* @return needed buffersize if the current one is too small, 0 otherwise
 		*/
-		DLL_EXPORT int parseFormula(const char* input, char* buffer, int bufferSize);
+		DLL_EXPORT std::size_t parseFormula(const char* input, char* buffer, std::size_t bufferSize);
 
         /**
         * Informs the solver about a constraint. Optimally, it should be informed about all constraints,
@@ -124,7 +124,7 @@ namespace smtrat {
 		* @param buffer      The stream to print on.
 		* @return needed buffersize if the current one is too small, 0 otherwise
 		*/
-		DLL_EXPORT int addWithVariables(const char* _subformula, const char* _name, char* buffer, int bufferSize);
+		DLL_EXPORT std::size_t addWithVariables(const char* _subformula, const char* _name, char* buffer, std::size_t bufferSize);
 
 		/**
 		* Adds formula as InformationRelevantFormula
@@ -143,7 +143,7 @@ namespace smtrat {
         *          False, if it not satisfiable;
         *          Unknown, if this solver cannot decide whether it is satisfiable or not.
         */
-        DLL_EXPORT int check();
+        DLL_EXPORT unsigned check();
 
         /**
         * Pushes a backtrack point to the stack of backtrack points.
@@ -175,13 +175,13 @@ namespace smtrat {
         * Note, that the conjunction of the so far added formulas must be inconsistent to
         * receive an infeasible subset.
         */
-        DLL_EXPORT int infeasibleSubsets(char* buffer, int bufferSize) const;
+        DLL_EXPORT std::size_t infeasibleSubsets(char* buffer, std::size_t bufferSize) const;
 
         /**
         * Determines variables assigned by the currently found satisfying assignment to an equal value in their domain.
         * @return A list of vectors of variables, stating that the variables in one vector are assigned to equal values.
         */
-		DLL_EXPORT int getModelEqualities(char* buffer, int bufferSize) const;
+		DLL_EXPORT std::size_t getModelEqualities(char* buffer, std::size_t bufferSize) const;
 
         /**
         * @return An assignment of the variables, which occur in the so far added
@@ -193,7 +193,7 @@ namespace smtrat {
         * formulas the assignment could contain other variables or freshly introduced
         * variables.
         */
-		DLL_EXPORT int model(char* buffer, int bufferSize) const;
+		DLL_EXPORT std::size_t model(char* buffer, std::size_t bufferSize) const;
 
 		/**
 		* @return A list of all assignments, such that they satisfy the conjunction of
@@ -204,19 +204,19 @@ namespace smtrat {
 		* formulas the assignment could contain other variables or freshly introduced
 		* variables.
 		*/
-		DLL_EXPORT int allModels(char* buffer, int bufferSize) const;
+		DLL_EXPORT std::size_t allModels(char* buffer, std::size_t bufferSize) const;
 
         /**
         * Returns the lemmas/tautologies which were made during the last solving provoked by check(). These lemmas
         * can be used in the same manner as infeasible subsets are used.
         * @return The lemmas/tautologies made during solving.
         */
-		DLL_EXPORT int lemmas(char* buffer, int bufferSize) const;
+		DLL_EXPORT std::size_t lemmas(char* buffer, std::size_t bufferSize) const;
 
         /**
         * @return The conjunction of so far added formulas.
         */
-		DLL_EXPORT int formula(char* buffer, int bufferSize) const;
+		DLL_EXPORT std::size_t formula(char* buffer, std::size_t bufferSize) const;
 
         /**
         * Prints the currently found assignment of variables occurring in the so far
@@ -225,21 +225,21 @@ namespace smtrat {
         * @param The stream to print on.
         * @return needed buffersize if the current one is too small, 0 otherwise
         */
-        DLL_EXPORT int getAssignmentString(char* buffer, int bufferSize) const;
+        DLL_EXPORT std::size_t getAssignmentString(char* buffer, std::size_t bufferSize) const;
 
         /**
         * Prints the so far added formulas.
         * @param _out The stream to print on.
         * @return needed buffersize if the current one is too small, 0 otherwise
         */
-        DLL_EXPORT int getAssertionsString(char* buffer, int bufferSize) const;
+        DLL_EXPORT std::size_t getAssertionsString(char* buffer, std::size_t bufferSize) const;
 
         /**
         * Prints the first found infeasible subset of the set of received formulas.
         * @param _out The stream to print on.
         * @return needed buffersize if the current one is too small, 0 otherwise
         */
-        DLL_EXPORT int getInfeasibleSubsetString(char* buffer, int bufferSize) const;
+        DLL_EXPORT std::size_t getInfeasibleSubsetString(char* buffer, std::size_t bufferSize) const;
 
 	private:
 
@@ -250,7 +250,7 @@ namespace smtrat {
 		 * @param buffersize The current buffersize.
 		 * @return needed buffersize if the current one is too small, 0 otherwise
 		 */
-		int copyResult(const std::ostringstream& stream, char* buffer, int bufferSize) const;
+		std::size_t copyResult(const std::ostringstream& stream, char* buffer, std::size_t bufferSize) const;
 
 		/**
 		 * Tries to write lastBuffer into a buffer for an external program.
@@ -258,6 +258,6 @@ namespace smtrat {
 		 * @param buffersize The current buffersize.
 		 * @return true, if there was something to write, false otherwise
 		 */
-		bool tryCopyOld(char* buffer, int bufferSize) const;
+		bool tryCopyOld(char* buffer, std::size_t bufferSize) const;
     };
 }
