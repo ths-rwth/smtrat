@@ -1938,11 +1938,32 @@ SetWatches:
                         {
                             size_t v = (size_t)var(c[i]);
                             std::pair<size_t,size_t>& litActOccs = mLiteralsActivOccurrences[v];
-                            if( litActOccs.first == 0 && litActOccs.second == 0 )
+                            if( litActOccs.first == 0 )
                             {
                                 Var x = var(c[i]);
-                                decision[x] = true;
-                                insertVarOrder( x );
+                                if( litActOccs.second == 0  )
+                                {
+                                    decision[x] = true;
+                                    insertVarOrder( x );
+                                }
+                                else
+                                {
+                                    auto pfdIter = std::find( mPropagationFreeDecisions.begin(), mPropagationFreeDecisions.end(), mkLit( x, true ) );
+                                    if( pfdIter != mPropagationFreeDecisions.end() )
+                                    {
+                                        *pfdIter = mPropagationFreeDecisions.back();
+                                        mPropagationFreeDecisions.pop_back();
+                                    }
+                                }
+                            }
+                            else if( litActOccs.second == 0 )
+                            {
+                                auto pfdIter = std::find( mPropagationFreeDecisions.begin(), mPropagationFreeDecisions.end(), mkLit( x, false ) );
+                                if( pfdIter != mPropagationFreeDecisions.end() )
+                                {
+                                    *pfdIter = mPropagationFreeDecisions.back();
+                                    mPropagationFreeDecisions.pop_back();
+                                }
                             }
                             if( sign(c[i]) )
                                 ++(litActOccs.second);
@@ -2359,6 +2380,16 @@ SetWatches:
             mNewSplittingVars.pop_back();
         else
         {
+            if( Settings::check_active_literal_occurrences )
+            {
+                while( next == var_Undef && !mPropagationFreeDecisions.empty() )
+                {
+                    Lit l = mPropagationFreeDecisions.back();
+                    mPropagationFreeDecisions.pop_back();
+                    if( assigns[var(l)] == l_Undef )
+                        return l;
+                }
+            }
             if( Settings::theory_conflict_guided_decision_heuristic == TheoryGuidedDecisionHeuristicLevel::DISABLED || mCurrentAssignmentConsistent != SAT )
             {
                 // Activity based decision:
@@ -2658,8 +2689,18 @@ SetWatches:
                             assert( litActOccs.first > 0 );
                             --(litActOccs.first);
                         }
-                        if( litActOccs.first == 0 && litActOccs.second == 0 )
-                            decision[var(c[i])] = false;
+                        if( litActOccs.first == 0 )
+                        {
+                            if( litActOccs.second == 0 )
+                                decision[var(c[i])] = false;
+                            else
+                                mPropagationFreeDecisions.push_back( mkLit( var(c[i]), true ) );
+                        }
+                        else
+                        {
+                            if( litActOccs.second == 0 )
+                                mPropagationFreeDecisions.push_back( mkLit( var(c[i]), false ) );
+                        }
                     }
                 }
             }

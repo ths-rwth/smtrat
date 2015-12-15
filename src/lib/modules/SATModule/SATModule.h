@@ -523,6 +523,8 @@ namespace smtrat
             std::vector<LiteralClauses> mLiteralsClausesMap;
             ///
             std::vector<std::pair<size_t,size_t>> mLiteralsActivOccurrences;
+            ///
+            std::vector<Minisat::Lit> mPropagationFreeDecisions;
             
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
