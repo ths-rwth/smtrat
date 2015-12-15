@@ -29,7 +29,7 @@
 #include <iomanip>
 #include <carl/formula/DIMACSExporter.h>
 
-//#define DEBUG_METHODS_SATMODULE
+//#define DEBUG_METHODS_SATMODULME
 #ifdef DEBUG_METHODS_SATMODULE
 //#define DEBUG_SATMODULE
 #endif
@@ -3422,7 +3422,7 @@ NextClause:
             {
                 _out << _init << "               ";
             }
-            _out << setw( 5 ) << mMinisatVarMap.at(pos);;
+//            _out << setw( 5 ) << mMinisatVarMap.at(pos);
             _out << "  (" << setw( 7 ) << activity[pos] << ") " << " -> ";
             if( assigns[pos] == l_True )
             {
