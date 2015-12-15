@@ -586,7 +586,7 @@ namespace smtrat
             // Set new positive assignment
             // TODO matthias: ignore other variables as "Oxxxx"
             testCandidate = *testVarsPositive.begin();
-            SMTRAT_LOG_DEBUG("smtrat.sat", "Test candidate: " << mMinisatVarMap.at(testCandidate));
+            SMTRAT_LOG_DEBUG("smtrat.sat", "Test candidate: " << mMinisatVarMap.find(testCandidate)->second);
             Lit nextLit = mkLit(testCandidate, false);
             assert(assumptions.size() <= assumptionSizeStart + 1);
             assumptions.shrink(assumptions.size() - assumptionSizeStart);
@@ -596,26 +596,27 @@ namespace smtrat
             result = checkFormula();
             if (result == l_False)
             {
-                SMTRAT_LOG_DEBUG("smtrat.sat", "Unsat with variable: " << mMinisatVarMap.at(testCandidate));
+                auto mvIter = mMinisatVarMap.find((int)testCandidate);
+                assert( mvIter != mMinisatVarMap.end() );
+                SMTRAT_LOG_DEBUG("smtrat.sat", "Unsat with variable: " << mvIter->second);
                 testVarsPositive.erase(testCandidate);
                 //Construct lemma via infeasible subset
                 updateInfeasibleSubset();
-                FormulaT negation = FormulaT(carl::FormulaType::NOT, mMinisatVarMap.at(testCandidate));
                 FormulaT infeasibleSubset = FormulaT(carl::FormulaType::AND, infeasibleSubsets()[0]);
-                FormulaT lemma = FormulaT(carl::FormulaType::IMPLIES, infeasibleSubset, negation);
+                FormulaT lemma = FormulaT(carl::FormulaType::IMPLIES, infeasibleSubset, mvIter->second.negated());
                 SMTRAT_LOG_DEBUG("smtrat.sat", "Add propagated lemma: " << lemma);
                 addDeduction(lemma);
             }
             else if (result == l_True)
             {
-                SMTRAT_LOG_DEBUG("smtrat.sat", "Sat with variable: " << mMinisatVarMap.at(testCandidate));
+                SMTRAT_LOG_DEBUG("smtrat.sat", "Sat with variable: " << mMinisatVarMap.find(testCandidate)->second);
 #ifdef DEBUG_SATMODULE
                 printCurrentAssignment();
 #endif
             }
             else
             {
-                SMTRAT_LOG_TRACE("smtrat.sat", "UNKNOWN with variable: " << mMinisatVarMap.at(testCandidate));
+                SMTRAT_LOG_TRACE("smtrat.sat", "UNKNOWN with variable: " << mMinisatVarMap.find(testCandidate)->second);
             }
         }
         //Clear
@@ -657,7 +658,9 @@ namespace smtrat
                 {
                     int index = mRelevantVariables[ i ];
                     ModelValue assignment = assigns[ index ] == l_True;
-                    carl::Variable var = mMinisatVarMap.at( index ).boolean();
+                    auto mvIter = mMinisatVarMap.find(index);
+                    assert( mvIter != mMinisatVarMap.end() );
+                    carl::Variable var = mvIter->second.boolean();
                     model.insert( std::make_pair( var, assignment ) );
                 }
             }
@@ -712,7 +715,9 @@ namespace smtrat
             std::cout << "Relevant variables: ";
             for ( int i = 0; i < mRelevantVariables.size(); ++i )
             {
-                std::cout << mRelevantVariables[ i ] << " (" << mMinisatVarMap[ mRelevantVariables[ i ] ] << "), ";
+                auto mvIter = mMinisatVarMap.find(mRelevantVariables[ i ]);
+                assert( mvIter != mMinisatVarMap.end() );
+                std::cout << mRelevantVariables[ i ] << " (" << mvIter->second << "), ";
             }
             std::cout << std::endl;
             #endif
@@ -1232,7 +1237,7 @@ namespace smtrat
             {
                 Var var = newVar( true, _decisionRelevant, content.activity() );
                 mBooleanVarMap[content.boolean()] = var;
-                mMinisatVarMap[var] = content;
+                mMinisatVarMap.emplace((int)var,content);
                 mBooleanConstraintMap.push( std::make_pair( nullptr, nullptr ) );
                 l = mkLit( var, negated );
             }
@@ -1823,13 +1828,19 @@ SetWatches:
                 if( sign(c[i]) )
                 {
                     if( !clauseSatisfied )
+                    {
+                        assert( mLiteralsActivOccurrences[v].second > 0 );
                         --(mLiteralsActivOccurrences[v].second);
+                    }
                     mLiteralsClausesMap[v].removeNegative( cr );
                 }
                 else
                 {
                     if( !clauseSatisfied )
+                    {
+                        assert( mLiteralsActivOccurrences[v].first > 0 );
                         --(mLiteralsActivOccurrences[v].first);
+                    }
                     mLiteralsClausesMap[v].removePositive( cr );
                 }
             }
@@ -1988,16 +1999,16 @@ SetWatches:
                     {
                         // Construct formula
                         FormulaT premise = FormulaT( carl::FormulaType::AND, std::move( iter->second ) );
+                        auto mvIter = mMinisatVarMap.find(iter->first);
+                        assert( mvIter != mMinisatVarMap.end() );
                         if ( assigns[ iter->first ] == l_False )
                         {
-                            FormulaT negation = FormulaT( carl::FormulaType::NOT, mMinisatVarMap.at( iter->first ) );
-                            FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, premise, negation );
-                            addDeduction( lemma );
+                            addDeduction( FormulaT( carl::FormulaType::IMPLIES, premise, mvIter->second.negated() ) );
                         }
                         else
                         {
                             assert( assigns[ iter->first ] == l_True );
-                            FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, premise, mMinisatVarMap.at( iter->first) );
+                            FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, premise, mvIter->second );
                             addDeduction( lemma );
                         }
                     }
@@ -3490,7 +3501,9 @@ NextClause:
         _out << _init << " Propagated lemmas:" << endl;
         for( VarLemmaMap::const_iterator itFormulas = mPropagatedLemmas.begin(); itFormulas != mPropagatedLemmas.end(); ++itFormulas )
         {
-            _out << _init << " " << mMinisatVarMap.at( itFormulas->first ) << " <- { ";
+            auto mvIter = mMinisatVarMap.find(itFormulas->first);
+            assert( mvIter != mMinisatVarMap.end() );
+            _out << _init << " " << mvIter->second << " <- { ";
             FormulasT formulas = itFormulas->second;
             for ( FormulasT::iterator iter = formulas.begin(); iter != formulas.end(); ++iter )
             {
