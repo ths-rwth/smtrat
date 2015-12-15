@@ -157,7 +157,7 @@ namespace smtrat
         for( carl::Variable::Arg var : vars )
         {
             if( var.getId() >= mVariableCounters.size() )
-                mVariableCounters.resize( var.getId(), 0 );
+                mVariableCounters.resize( var.getId()+1, 0 );
             ++mVariableCounters[var.getId()];
         }
         if( _receivedSubformula->formula().getType() == carl::FormulaType::CONSTRAINT )
