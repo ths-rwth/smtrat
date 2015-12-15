@@ -49,6 +49,14 @@ namespace smtrat
          * 
          */
         static const bool check_if_all_clauses_are_satisfied = false;
+        /**
+         * 
+         */
+        static const bool initiate_activities = false;
+        /**
+         * 
+         */
+        static const bool polarity_based_cnf_transformation = false;
 		/**
 		 *
 		 */

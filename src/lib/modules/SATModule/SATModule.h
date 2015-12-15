@@ -508,6 +508,8 @@ namespace smtrat
             ///
             carl::FastMap<FormulaT, TseitinVarShadows::iterator> mFormulaTseitinVarMap;
             ///
+            carl::FastMap<int, FormulaT> mTseitinVarFormulaMap;
+            ///
             std::vector<Minisat::vec<Minisat::Lit>> mCurrentTheoryConflicts;
             ///
             std::vector<unsigned> mCurrentTheoryConflictTypes;
@@ -681,7 +683,7 @@ namespace smtrat
              * @param _from The position of the first clause to print within the given vector of clauses.
              * @param _withAssignment A flag indicating if true, that the assignments should be printed too.
              */
-            void printClauses( const Minisat::vec<Minisat::CRef>& _clauses, const std::string _name, std::ostream& _out = std::cout, const std::string _init = "", int = 0, bool _withAssignment = false ) const;
+            void printClauses( const Minisat::vec<Minisat::CRef>& _clauses, const std::string _name, std::ostream& _out = std::cout, const std::string _init = "", int = 0, bool _withAssignment = false, bool _onlyNotSatisfied = false ) const;
             
             /**
              * Prints the decisions the SAT solver has made.
@@ -1384,8 +1386,8 @@ namespace smtrat
                 return (int)(drand( seed ) * size);
             }
             
-            Minisat::Lit addClauses( const FormulaT& _formula, unsigned _type, bool _outermost = true, const FormulaT& _original = FormulaT( carl::FormulaType::TRUE ) );
-            void addXorClauses( const Minisat::vec<Minisat::Lit>& _literals, const Minisat::vec<Minisat::Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, Minisat::vec<Minisat::Lit>& _clause );
+            Minisat::Lit addClauses( const FormulaT& _formula, unsigned _type, bool _outermost = true, const FormulaT& _original = FormulaT( carl::FormulaType::TRUE ), bool _polarity = false );
+            void addXorClauses( const Minisat::vec<Minisat::Lit>& _literals, const Minisat::vec<Minisat::Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, Minisat::vec<Minisat::Lit>& _clause, bool _ignorePolarity, bool _polarity );
             
             /**
              * Stores the given splitting to the set of learned clauses

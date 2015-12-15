@@ -29,7 +29,7 @@
 #include <iomanip>
 #include <carl/formula/DIMACSExporter.h>
 
-//#define DEBUG_METHODS_SATMODULME
+//#define DEBUG_METHODS_SATMODULE
 #ifdef DEBUG_METHODS_SATMODULE
 //#define DEBUG_SATMODULE
 #endif
@@ -136,6 +136,7 @@ namespace smtrat
         mNonTseitinShadowedOccurrences(),
         mTseitinVarShadows(),
         mFormulaTseitinVarMap(),
+        mTseitinVarFormulaMap(),
         mCurrentTheoryConflicts(),
         mCurrentTheoryConflictTypes(),
         mCurrentTheoryConflictEvaluations(),
@@ -203,7 +204,7 @@ namespace smtrat
                 assert( mFormulaClausesMap.find( _subformula->formula() ) == mFormulaClausesMap.end() );
                 auto ret = mFormulaClausesMap.emplace( _subformula->formula(), std::vector<Minisat::CRef>() );
                 int pos = clauses.size();
-                addClauses( _subformula->formula(), NORMAL_CLAUSE, true, _subformula->formula() );
+                addClauses( _subformula->formula(), NORMAL_CLAUSE, true, _subformula->formula(), false );
                 for( ; pos < clauses.size(); ++pos )
                 {
                     ret.first->second.push_back( clauses[pos] );
@@ -408,6 +409,40 @@ namespace smtrat
             mAllActivitiesChanged = false;
             mChangedBooleans.clear();
             mChangedActivities.clear();
+        }
+        else if( Settings::initiate_activities )
+        {
+            double highestActivity = 0;
+            for( int pos = 0; pos < activity.size(); ++pos )
+            {
+                double& act = activity[pos];
+                act = 1;
+                if( Settings::check_active_literal_occurrences )
+                {
+                    const auto& litActOccs = mLiteralsActivOccurrences[pos];
+                    act = litActOccs.first + litActOccs.second;
+                }
+                if( mBooleanConstraintMap[pos].first != nullptr )
+                {
+                    act /= mBooleanConstraintMap[pos].first->reabstraction.complexity();
+                }
+                else
+                {
+                    auto tvfIter = mTseitinVarFormulaMap.find( pos );
+                    if( tvfIter != mTseitinVarFormulaMap.end() )
+                        act /= tvfIter->second.complexity();
+                }
+                if( act > highestActivity )
+                    highestActivity = act;
+            }
+            if( highestActivity > 1 )
+            {
+                for( int pos = 0; pos < activity.size(); ++pos )
+                {
+                    activity[pos] /= highestActivity;
+                }
+            }
+            rebuildOrderHeap();
         }
         int clausesSizeBefore = clauses.size();
         lbool result = l_Undef;
@@ -861,9 +896,11 @@ namespace smtrat
     }
     
     template<class Settings>
-    Lit SATModule<Settings>::addClauses( const FormulaT& _formula, unsigned _type, bool _outermost, const FormulaT& _original )
+    Lit SATModule<Settings>::addClauses( const FormulaT& _formula, unsigned _type, bool _outermost, const FormulaT& _original, bool _polarity )
     {
         assert( _type < 4 );
+        bool decisionRelevant = !Settings::formula_guided_decision_heuristic || _outermost;
+        assert( !_outermost || !_polarity );
         switch( _formula.getType() )
         {
             case carl::FormulaType::TRUE:
@@ -874,10 +911,10 @@ namespace smtrat
             case carl::FormulaType::UEQ:
             case carl::FormulaType::CONSTRAINT:
             case carl::FormulaType::BITVECTOR:
-                return getLiteral( _formula, _original, true );
+                return getLiteral( _formula, _original, decisionRelevant );
             case carl::FormulaType::NOT:
             {
-                Lit l = _formula.isLiteral() ? getLiteral( _formula, _original, true ) : neg( addClauses( _formula.subformula(), _type, false, _original ) );
+                Lit l = _formula.isLiteral() ? getLiteral( _formula, _original, decisionRelevant ) : neg( addClauses( _formula.subformula(), _type, false, _original, !_polarity ) );
                 if( _outermost )
                 {
                     assumptions.push( l );
@@ -905,19 +942,25 @@ namespace smtrat
                 Lit negThenLit = _formula.firstCase().isLiteral() ? addClauses( _formula.firstCase().negated(), _type, false, _original ) : neg( thenLit );
                 Lit negElseLit = _formula.secondCase().isLiteral() ? addClauses( _formula.secondCase().negated(), _type, false, _original ) : neg( elseLit );
                 FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
-                Lit tsLit = getLiteral( tsVar, _original, true );
-                if( Settings::formula_guided_decision_heuristic )
+                Lit tsLit = getLiteral( tsVar, _original, decisionRelevant );
+                if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
                 {
-                    
+                    mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
                 }
-                // (or ts -cond -then)
-                lits.push( tsLit ); lits.push( negCondLit ); lits.push( negThenLit ); addClause( lits, _type );
-                // (or ts cond -else)
-                lits.clear(); lits.push( tsLit ); lits.push( condLit ); lits.push( negElseLit ); addClause( lits, _type );
-                // (or -ts -cond then)
-                lits.clear(); lits.push( neg( tsLit ) ); lits.push( negCondLit ); lits.push( thenLit ); addClause( lits, _type );
-                // (or -ts cond else)
-                lits.clear(); lits.push( neg( tsLit ) ); lits.push( condLit ); lits.push( elseLit ); addClause( lits, _type );
+                if( !Settings::polarity_based_cnf_transformation || !_polarity )
+                {
+                    // (or ts -cond -then)
+                    lits.push( tsLit ); lits.push( negCondLit ); lits.push( negThenLit ); addClause( lits, _type );
+                    // (or ts cond -else)
+                    lits.clear(); lits.push( tsLit ); lits.push( condLit ); lits.push( negElseLit ); addClause( lits, _type );
+                }
+                if( !Settings::polarity_based_cnf_transformation || _polarity )
+                {
+                    // (or -ts -cond then)
+                    lits.clear(); lits.push( neg( tsLit ) ); lits.push( negCondLit ); lits.push( thenLit ); addClause( lits, _type );
+                    // (or -ts cond else)
+                    lits.clear(); lits.push( neg( tsLit ) ); lits.push( condLit ); lits.push( elseLit ); addClause( lits, _type );
+                }
                 return tsLit;
             }
             case carl::FormulaType::IMPLIES:
@@ -934,13 +977,23 @@ namespace smtrat
                 }
                 Lit negConLit = _formula.conclusion().isLiteral() ? addClauses( _formula.conclusion().negated(), _type, false, _original ) : neg( conLit );
                 FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
-                Lit tsLit = getLiteral( tsVar, _original, true );
-                // (or -ts -prem con)
-                lits.push( neg( tsLit ) ); lits.push( negPremLit ); lits.push( conLit ); addClause( lits, _type );
-                // (or ts prem)
-                lits.clear(); lits.push( tsLit ); lits.push( premLit ); addClause( lits, _type );
-                // (or ts -con)
-                lits.clear(); lits.push( tsLit ); lits.push( negConLit ); addClause( lits, _type );
+                Lit tsLit = getLiteral( tsVar, _original, decisionRelevant );
+                if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
+                {
+                    mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
+                }
+                if( !Settings::polarity_based_cnf_transformation || !_polarity )
+                {
+                    // (or -ts -prem con)
+                    lits.push( neg( tsLit ) ); lits.push( negPremLit ); lits.push( conLit ); addClause( lits, _type );
+                }
+                if( !Settings::polarity_based_cnf_transformation || _polarity )
+                {
+                    // (or ts prem)
+                    lits.clear(); lits.push( tsLit ); lits.push( premLit ); addClause( lits, _type );
+                    // (or ts -con)
+                    lits.clear(); lits.push( tsLit ); lits.push( negConLit ); addClause( lits, _type );
+                }
                 return tsLit;
             }
             case carl::FormulaType::OR:
@@ -955,22 +1008,33 @@ namespace smtrat
                     return lit_Undef;
                 }
                 FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
-                Lit tsLit = getLiteral( tsVar, _original, true );
-                // (or -ts a1 .. an)
-                lits.push( neg( tsLit ) );
-                addClause( lits, _type );
-                lits.pop();
-                // (or ts -a1) .. (or ts -an)
-                vec<Lit> litsTmp;
-                litsTmp.push( tsLit );
-                int i = 0;
-                for( const auto& sf : _formula.subformulas() )
+                Lit tsLit = getLiteral( tsVar, _original, decisionRelevant );
+                if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
                 {
-                    assert( i < lits.size() );
-                    litsTmp.push( sf.isLiteral() ? addClauses( sf.negated(), _type, false, _original ) : neg( lits[i] ) );
-                    addClause( litsTmp, _type );
-                    litsTmp.pop();
-                    ++i;
+                    mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
+                }
+                if( !Settings::polarity_based_cnf_transformation || !_polarity )
+                {
+                    // (or -ts a1 .. an)
+                    lits.push( neg( tsLit ) );
+                    addClause( lits, _type );
+                }
+                if( !Settings::polarity_based_cnf_transformation )
+                    lits.pop();
+                if( !Settings::polarity_based_cnf_transformation || _polarity )
+                {
+                    // (or ts -a1) .. (or ts -an)
+                    vec<Lit> litsTmp;
+                    litsTmp.push( tsLit );
+                    int i = 0;
+                    for( const auto& sf : _formula.subformulas() )
+                    {
+                        assert( i < lits.size() );
+                        litsTmp.push( sf.isLiteral() ? addClauses( sf.negated(), _type, false, _original ) : neg( lits[i] ) );
+                        addClause( litsTmp, _type );
+                        litsTmp.pop();
+                        ++i;
+                    }
                 }
                 return tsLit;
             }
@@ -978,23 +1042,54 @@ namespace smtrat
             {
                 assert( !_outermost ); // because, this should be split in the module input
                 FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
-                Lit tsLit = getLiteral( tsVar, _original, true );
-                // (or -ts a1) .. (or -ts an)
-                // (or ts -a1 .. -an)
-                vec<Lit> lits;
-                vec<Lit> litsTmp;
-                litsTmp.push( neg( tsLit ) );
-                for( const auto& sf : _formula.subformulas() )
+                Lit tsLit = getLiteral( tsVar, _original, decisionRelevant );
+                if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
                 {
-                    Lit l = addClauses( sf, _type, false, _original );
-                    litsTmp.push( l );
-                    addClause( litsTmp, _type );
-                    litsTmp.pop();
-                    Lit negL = sf.isLiteral() ? addClauses( sf.negated(), _type, false, _original ) : neg( l );
-                    lits.push( negL );
+                    mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
                 }
-                lits.push( tsLit );
-                addClause( lits, _type );
+                if( !Settings::polarity_based_cnf_transformation )
+                {
+                    // (or -ts a1) .. (or -ts an)
+                    // (or ts -a1 .. -an)
+                    vec<Lit> lits;
+                    vec<Lit> litsTmp;
+                    litsTmp.push( neg( tsLit ) );
+                    for( const auto& sf : _formula.subformulas() )
+                    {
+                        Lit l = addClauses( sf, _type, false, _original );
+                        litsTmp.push( l );
+                        addClause( litsTmp, _type );
+                        litsTmp.pop();
+                        Lit negL = sf.isLiteral() ? addClauses( sf.negated(), _type, false, _original ) : neg( l );
+                        lits.push( negL );
+                    }
+                    lits.push( tsLit );
+                    addClause( lits, _type );
+                }
+                else
+                {
+                    if( _polarity )
+                    {
+                        // (or ts -a1 .. -an)
+                        vec<Lit> lits;
+                        for( const auto& sf : _formula.subformulas() )
+                            lits.push( sf.isLiteral() ? addClauses( sf.negated(), _type, false, _original ) : neg( addClauses( sf, _type, false, _original ) ) );
+                        lits.push( tsLit );
+                        addClause( lits, _type );
+                    }
+                    else
+                    {
+                        // (or -ts a1) .. (or -ts an)
+                        vec<Lit> litsTmp;
+                        litsTmp.push( neg( tsLit ) );
+                        for( const auto& sf : _formula.subformulas() )
+                        {
+                            litsTmp.push( addClauses( sf, _type, false, _original ) );
+                            addClause( litsTmp, _type );
+                            litsTmp.pop();
+                        }
+                    }
+                }
                 return tsLit;
             }
             case carl::FormulaType::IFF: 
@@ -1028,18 +1123,28 @@ namespace smtrat
                     tmp.push( negL );
                 }
                 FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
-                Lit tsLit = getLiteral( tsVar, _original, true );
-                // (or a1 .. an h)
-                lits.push( tsLit ); addClause( lits, _type );
-                lits.pop();
-                // (or -a1 .. -an h)
-                tmp.push( tsLit ); addClause( tmp, _type );
-                // (or -a1 a2 -h) (or a1 -a2 -h) .. (or -a{n-1} an -h) (or a{n-1} -an -h)
-                vec<Lit> tmpB;
-                for( int i = 1; i < lits.size(); ++i )
+                Lit tsLit = getLiteral( tsVar, _original, decisionRelevant );
+                if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
                 {
-                    tmpB.clear(); tmpB.push( tmp[i-1] ); tmpB.push( lits[i] ); tmpB.push( neg( tsLit ) ); addClause( tmpB, _type );
-                    tmpB.clear(); tmpB.push( lits[i-1] ); tmpB.push( tmp[i] ); tmpB.push( neg( tsLit ) ); addClause( tmpB, _type );
+                    mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
+                }
+                if( !Settings::polarity_based_cnf_transformation || _polarity )
+                {
+                    // (or a1 .. an h)
+                    lits.push( tsLit ); addClause( lits, _type );
+                    lits.pop();
+                    // (or -a1 .. -an h)
+                    tmp.push( tsLit ); addClause( tmp, _type );
+                }
+                if( !Settings::polarity_based_cnf_transformation || !_polarity )
+                {
+                    // (or -a1 a2 -h) (or a1 -a2 -h) .. (or -a{n-1} an -h) (or a{n-1} -an -h)
+                    vec<Lit> tmpB;
+                    for( int i = 1; i < lits.size(); ++i )
+                    {
+                        tmpB.clear(); tmpB.push( tmp[i-1] ); tmpB.push( lits[i] ); tmpB.push( neg( tsLit ) ); addClause( tmpB, _type );
+                        tmpB.clear(); tmpB.push( lits[i-1] ); tmpB.push( tmp[i] ); tmpB.push( neg( tsLit ) ); addClause( tmpB, _type );
+                    }
                 }
                 return tsLit;
             }
@@ -1055,13 +1160,17 @@ namespace smtrat
                 }
                 if( _outermost )
                 {
-                    addXorClauses( lits, negLits, 0, true, _type, tmp );
+                    addXorClauses( lits, negLits, 0, true, _type, tmp, true, false );
                     return lit_Undef;
                 }
-                Lit tsLit = getLiteral( carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula ), _original, true );
+                Lit tsLit = getLiteral( carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula ), _original, decisionRelevant );
+                if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
+                {
+                    mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
+                }
                 lits.push( neg( tsLit ) );
                 negLits.push( tsLit );
-                addXorClauses( lits, negLits, 0, true, _type, tmp );
+                addXorClauses( lits, negLits, 0, true, _type, tmp, !Settings::polarity_based_cnf_transformation, _polarity );
                 return tsLit;
             }
             case carl::FormulaType::EXISTS:
@@ -1077,21 +1186,30 @@ namespace smtrat
     }
     
     template<class Settings>
-    void SATModule<Settings>::addXorClauses( const vec<Lit>& _literals, const vec<Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, vec<Lit>& _clause )
+    void SATModule<Settings>::addXorClauses( const vec<Lit>& _literals, const vec<Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, vec<Lit>& _clause, bool _ignorePolarity, bool _polarity )
     {
         if( _from == _literals.size() - 1 )
         {
-            _clause.push( _numOfNegatedLitsEven ? _literals[_from] : _negLiterals[_from] );
-            addClause( _clause, _type );
-            _clause.pop();
+            if( _ignorePolarity )
+            {
+                _clause.push( _numOfNegatedLitsEven ? _literals[_from] : _negLiterals[_from] );
+                addClause( _clause, _type );
+                _clause.pop();
+            }
+            else if( _polarity != _numOfNegatedLitsEven )
+            {
+                _clause.push( _numOfNegatedLitsEven ? _literals[_from] : _negLiterals[_from] );
+                addClause( _clause, _type );
+                _clause.pop();
+            }
         }
         else
         {
             _clause.push( _literals[_from] );
-            addXorClauses( _literals, _negLiterals, _from+1, _numOfNegatedLitsEven, _type, _clause );
+            addXorClauses( _literals, _negLiterals, _from+1, _numOfNegatedLitsEven, _type, _clause, _ignorePolarity, _polarity );
             _clause.pop();
             _clause.push( _negLiterals[_from] );
-            addXorClauses( _literals, _negLiterals, _from+1, !_numOfNegatedLitsEven, _type, _clause );
+            addXorClauses( _literals, _negLiterals, _from+1, !_numOfNegatedLitsEven, _type, _clause, _ignorePolarity, _polarity );
             _clause.pop();
         }
     }
@@ -1460,14 +1578,14 @@ namespace smtrat
         polarity.push( sign );
         decision.push();
         trail.capacity( v + 1 );
-        if( Settings::formula_guided_decision_heuristic )
+        if( !mReceivedFormulaPurelyPropositional && Settings::formula_guided_decision_heuristic )
         {
             setDecisionVar( v, dvar );
             mNonTseitinShadowedOccurrences.push( dvar ? 1 : 0 );
         }
         else
             setDecisionVar( v, dvar );
-        if( Settings::check_active_literal_occurrences )
+        if( !mReceivedFormulaPurelyPropositional && Settings::check_active_literal_occurrences )
         {
             mLiteralsClausesMap.emplace_back();
             mLiteralsActivOccurrences.emplace_back();
@@ -1775,7 +1893,7 @@ SetWatches:
         }
         else
             clauses_literals += (uint64_t)c.size();
-        if( Settings::check_active_literal_occurrences )
+        if( !mReceivedFormulaPurelyPropositional && Settings::check_active_literal_occurrences )
         {
             bool clauseSatisfied = satisfied(c);
             for( int i = 0; i < c.size(); ++i )
@@ -1819,7 +1937,7 @@ SetWatches:
             learnts_literals -= (uint64_t)c.size();
         else
             clauses_literals -= (uint64_t)c.size();
-        if( Settings::check_active_literal_occurrences )
+        if( !mReceivedFormulaPurelyPropositional && Settings::check_active_literal_occurrences )
         {
             bool clauseSatisfied = satisfied(c);
             for( int i = 0; i < c.size(); ++i )
@@ -1923,7 +2041,7 @@ SetWatches:
                 }
             }
             assigns[x] = l_Undef;
-            if( Settings::check_active_literal_occurrences )
+            if( !mReceivedFormulaPurelyPropositional && Settings::check_active_literal_occurrences )
             {
                 // Check clauses which are going to be satisfied by this assignment.
                 size_t v = (size_t)x;
@@ -2043,8 +2161,8 @@ SetWatches:
             #ifdef DEBUG_SATMODULE
             cout << "### Sat iteration" << endl;
             cout << "######################################################################" << endl;
-            cout << "###" << endl; printClauses( clauses, "Clauses", cout, "### " );
-            cout << "###" << endl; printClauses( learnts, "Learnts", cout, "### " );
+            cout << "###" << endl; printClauses( clauses, "Clauses", cout, "### ", 0, false, true );
+            cout << "###" << endl; printClauses( learnts, "Learnts", cout, "### ", 0, false, true );
             cout << "###" << endl; printCurrentAssignment( cout, "### " );
             cout << "###" << endl; printDecisions( cout, "### " );
             cout << "###" << endl;
@@ -2380,7 +2498,7 @@ SetWatches:
             mNewSplittingVars.pop_back();
         else
         {
-            if( Settings::check_active_literal_occurrences )
+            if( !mReceivedFormulaPurelyPropositional && Settings::check_active_literal_occurrences )
             {
                 while( next == var_Undef && !mPropagationFreeDecisions.empty() )
                 {
@@ -2447,7 +2565,13 @@ SetWatches:
                     if( abstrPair.first != nullptr )
                     {
                         assert( abstrPair.second != nullptr );
-                        const Abstraction& abstr = polarity[next] ? *abstrPair.second : *abstrPair.first;
+                        bool takeNegation = polarity[next];
+                        if( Settings::check_active_literal_occurrences )
+                        {
+                            const auto& litActOccs = mLiteralsActivOccurrences[next];
+                            takeNegation = litActOccs.second > litActOccs.first;
+                        }
+                        const Abstraction& abstr = takeNegation ? *abstrPair.second : *abstrPair.first;
                         #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
                         std::cout << "corresponds to constraint: " << abstr.reabstraction << std::endl;
                         #endif
@@ -2465,7 +2589,14 @@ SetWatches:
                         }
                         else if( consistency != 3 )
                         {
-                            polarity[next] = (consistency == 0);
+                            if( Settings::check_active_literal_occurrences )
+                            {
+                                polarity[next] = !takeNegation;
+                            }
+                            else
+                            {
+                                polarity[next] = (consistency == 0);
+                            }
                         }
                     }
                 }
@@ -2664,7 +2795,7 @@ SetWatches:
                 }
             }
         }
-        if( Settings::check_active_literal_occurrences )
+        if( !mReceivedFormulaPurelyPropositional && Settings::check_active_literal_occurrences )
         {
             // Check clauses which are going to be satisfied by this assignment.
             size_t v = (size_t)var(p);
@@ -3346,7 +3477,11 @@ NextClause:
         _out << _init << " BooleanVarMap" << endl;
         for( BooleanVarMap::const_iterator clPair = mBooleanVarMap.begin(); clPair != mBooleanVarMap.end(); ++clPair )
         {
-            _out << _init << "    " << clPair->first << "  ->  " << clPair->second << endl;
+            _out << _init << "    " << clPair->first << "  ->  " << clPair->second;
+            auto tvfIter = mTseitinVarFormulaMap.find( (int)clPair->second );
+            if( tvfIter != mTseitinVarFormulaMap.end() )
+                _out << "   ( " << tvfIter->second << " )";
+            _out << endl;
         }
     }
 
@@ -3412,7 +3547,7 @@ NextClause:
     }
 
     template<class Settings>
-    void SATModule<Settings>::printClauses( const vec<CRef>& _clauses, const string _name, ostream& _out, const string _init, int _from, bool _withAssignment ) const
+    void SATModule<Settings>::printClauses( const vec<CRef>& _clauses, const string _name, ostream& _out, const string _init, int _from, bool _withAssignment, bool _onlyNotSatisfied ) const
     {
         _out << _init << " " << _name << ":" << endl;
         // Handle case when solver is in contradictory state:
@@ -3456,8 +3591,11 @@ NextClause:
 
         for( int i = _from; i < _clauses.size(); i++ )
         {
-            _out << i << ": ";
-            printClause( _clauses[i], _withAssignment, _out, _init  );
+            if( !_onlyNotSatisfied || !satisfied(ca[_clauses[i]]) )
+            {
+                _out << i << ": ";
+                printClause( _clauses[i], _withAssignment, _out, _init  );
+            }
         }
 
         if( verbosity > 0 )
@@ -3474,7 +3612,7 @@ NextClause:
             {
                 _out << _init << "               ";
             }
-//            _out << setw( 5 ) << mMinisatVarMap.at(pos);
+            _out << setw( 5 ) << pos;
             _out << "  (" << setw( 7 ) << activity[pos] << ") " << " -> ";
             if( assigns[pos] == l_True )
             {
@@ -3482,6 +3620,12 @@ NextClause:
                 // if it is not a Boolean variable
                 if( mBooleanConstraintMap[pos].first != nullptr && mBooleanConstraintMap[pos].first->consistencyRelevant )
                     _out << "   ( " << mBooleanConstraintMap[pos].first->reabstraction << " )";
+                else
+                {
+                    auto tvfIter = mTseitinVarFormulaMap.find( pos );
+                    if( tvfIter != mTseitinVarFormulaMap.end() )
+                        _out << "   ( " << tvfIter->second << " )";
+                }
                 _out << endl;
             }
             else if( assigns[pos] == l_False )
@@ -3490,6 +3634,12 @@ NextClause:
                 // if it is not a Boolean variable
                 if( mBooleanConstraintMap[pos].second != nullptr && mBooleanConstraintMap[pos].second->consistencyRelevant )
                     _out << "   ( " << mBooleanConstraintMap[pos].second->reabstraction << " )";
+                else
+                {
+                    auto tvfIter = mTseitinVarFormulaMap.find( pos );
+                    if( tvfIter != mTseitinVarFormulaMap.end() )
+                        _out << "   ( " << tvfIter->second.negated() << " )";
+                }
                 _out << endl;
             }
             else
