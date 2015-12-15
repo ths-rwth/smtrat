@@ -228,7 +228,7 @@ namespace smtrat
             const Model& model = mpPrimaryBackend->model();
             auto objectivesIter = mObjectives.begin();
             cout << "(";
-            for( Model::const_iterator ass = model.begin(); ass != model.end(); ++ass )
+            for( auto ass = model.begin(); ass != model.end(); ++ass )
             {
                 if (ass != model.begin()) cout << " ";
                 if (ass->first.isVariable() || ass->first.isBVVariable())

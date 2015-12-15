@@ -62,7 +62,5 @@ namespace smtrat
     void getDefaultModel( Model& _defaultModel, const ConstraintT& _constraint, bool _overwrite = true, size_t _seed = 0 );
     void getDefaultModel( Model& _defaultModel, const FormulaT& _formula, bool _overwrite = true, size_t _seed = 0 );
     
-    std::ostream& operator<<( std::ostream& _out, const ModelValue& _modelValue );
-    
     std::ostream& operator<<( std::ostream& _out, const Model& _model );
 }
