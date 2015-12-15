@@ -547,12 +547,15 @@ namespace smtrat
                         if( lravar.hasBound() || (lravar.isOriginal() && receivedVariable( lravar.expression().getSingleVariable() )) )
                         {
                             if( bound.isSatisfied( mTableau.currentDelta() ) )
+                            {
                                 return 1;
+                            }
                             else
+                            {
                                 return 0;
+                            }
                         }
                     }
-                    return 2;
                 }
             }
             default:
