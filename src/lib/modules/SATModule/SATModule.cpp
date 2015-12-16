@@ -419,7 +419,7 @@ namespace smtrat
                 act = 1;
                 if( Settings::check_active_literal_occurrences )
                 {
-                    const auto& litActOccs = mLiteralsActivOccurrences[pos];
+                    const auto& litActOccs = mLiteralsActivOccurrences[(size_t)pos];
                     act = litActOccs.first + litActOccs.second;
                 }
                 if( mBooleanConstraintMap[pos].first != nullptr )
@@ -2568,7 +2568,7 @@ SetWatches:
                         bool takeNegation = polarity[next];
                         if( Settings::check_active_literal_occurrences )
                         {
-                            const auto& litActOccs = mLiteralsActivOccurrences[next];
+                            const auto& litActOccs = mLiteralsActivOccurrences[(size_t)next];
                             takeNegation = litActOccs.second > litActOccs.first;
                         }
                         const Abstraction& abstr = takeNegation ? *abstrPair.second : *abstrPair.first;
@@ -2845,8 +2845,11 @@ SetWatches:
             {
                 if( ++abstr.updateInfo > 0 )
                 {
-                    if( currentlySatisfiedByBackend( abstr.reabstraction ) != 1 )
+                    unsigned res = currentlySatisfiedByBackend( abstr.reabstraction );
+                    if( res != 1 )
+                    {
                         mCurrentAssignmentConsistent = UNKNOWN;
+                    }
                     mChangedBooleans.push_back( var( p ) );
                 }
             }
