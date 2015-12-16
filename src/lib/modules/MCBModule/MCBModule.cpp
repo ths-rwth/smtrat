@@ -83,7 +83,7 @@ namespace smtrat
 		carl::FormulaVisitor<FormulaT> visitor;
 		auto receivedFormula = firstUncheckedReceivedSubformula();
 		while (receivedFormula != rReceivedFormula().end()) {
-			visitor.visitVoid(receivedFormula->formula(), collectChoicesFunction);
+			visitor.visit(receivedFormula->formula(), collectChoicesFunction);
 			receivedFormula++;
 		}
 		FormulaT newFormula = applyReplacements(FormulaT(rReceivedFormula()));
