@@ -587,8 +587,8 @@ namespace smtrat
         {
             for( Variable<T1, T2>* basicVar : mRows )
             {
-                assert( basicVar != NULL );
-                basicVar->storeAssignment();
+                if( basicVar != NULL )
+                    basicVar->storeAssignment();
             }
             for( Variable<T1, T2>* nonbasicVar : mColumns )
                 nonbasicVar->storeAssignment();
@@ -599,8 +599,10 @@ namespace smtrat
         {
             for( Variable<T1, T2>* basicVar : mRows )
             {
-                assert( basicVar != NULL );
-                basicVar->resetAssignment();
+                if( basicVar != NULL )
+                {
+                    basicVar->resetAssignment();
+                }
             }
             for( Variable<T1, T2>* nonbasicVar : mColumns )
                 nonbasicVar->resetAssignment();

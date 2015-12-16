@@ -917,6 +917,7 @@ namespace smtrat
         {
             mTableau.resetAssignment();
             mStrongestBoundsRemoved = false;
+            mModelComputed = false;
         }
         if( Settings::simple_conflicts_and_propagation_on_demand )
         {
