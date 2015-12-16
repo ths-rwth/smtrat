@@ -69,8 +69,8 @@ public:
 			consumer.reset();
 			progress(0, root.complexity());
 			std::size_t num = 0;
-			if (settings.has("useDFS")) dfs(root, &root, num, skip);
-			else bfs(root, num, skip);
+			if (settings.has("useDFS")) dfs(root, &root, num, skip-1);
+			else bfs(root, num, skip-1);
 			if (verbose) {
 				std::cout << GRAY << "Waiting for processes to terminate..." << END << std::endl << std::endl;
 				while (!consumer.wait()) progress(consumer.getProgress());

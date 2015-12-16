@@ -17,32 +17,41 @@
 #include "../../utilities/SettingsManager.h"
 
 namespace smtrat
-{    
+{
 	enum class MISHeuristic {
 		TRIVIAL, GREEDY
 	};
-    
-    struct CADSettings1 : ModuleSettings
-    {
-		static constexpr auto moduleName = "CADModule<CADSettings1>";
-        static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::SPLIT_SOLUTION;
-        
-        static constexpr MISHeuristic mis_heuristic = MISHeuristic::GREEDY;
-        static constexpr bool computeConflictGraph = (mis_heuristic != MISHeuristic::TRIVIAL);
-        static constexpr bool checkMISForMinimality = false;
-        
-        static const bool dummy;
-    };
-    
-    struct CADSettingsSplitLazy : CADSettings1
-    {
+
+	struct CADSettingsReal : ModuleSettings
+	{
+		static constexpr auto moduleName = "CADModule<CADSettingsReal>";
+		static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::NONE;
+
+		static constexpr MISHeuristic mis_heuristic = MISHeuristic::GREEDY;
+		static constexpr bool computeConflictGraph = (mis_heuristic != MISHeuristic::TRIVIAL);
+		static constexpr bool checkMISForMinimality = false;
+
+		static const bool dummy;
+	};
+
+	struct CADSettingsSplitEarly : CADSettingsReal
+	{
+		static constexpr auto moduleName = "CADModule<SplitEarly>";
+		static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::SPLIT_EARLY;
+	};
+	struct CADSettingsSplitLazy : CADSettingsReal
+	{
 		static constexpr auto moduleName = "CADModule<SplitLazy>";
-        static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::SPLIT_LAZY;
-    };
-	
-	struct CADSettingsGuessAndSplit : CADSettings1
-    {
+		static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::SPLIT_LAZY;
+	};
+	struct CADSettingsSplitSolution : CADSettingsReal
+	{
+		static constexpr auto moduleName = "CADModule<SplitSolution>";
+		static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::SPLIT_SOLUTION;
+	};
+	struct CADSettingsGuessAndSplit : CADSettingsReal
+	{
 		static constexpr auto moduleName = "CADModule<GuessAndSplit>";
-        static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::GUESS_AND_SPLIT;
-    };
+		static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::GUESS_AND_SPLIT;
+	};
 }

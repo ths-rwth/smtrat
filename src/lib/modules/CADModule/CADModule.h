@@ -65,7 +65,7 @@ namespace smtrat
 		 * If false has been asserted, new formulas are stored in this list until false is removed.
 		 * This prevents unnecessary add() and remove() operation on the CAD object.
 		 */
-		FormulasT subformulaQueue;
+		FormulasT mSubformulaQueue;
 		/// Maps the received formulas to indices within mConstraints.
 		ConstraintIndexMap mConstraintsMap;
 		

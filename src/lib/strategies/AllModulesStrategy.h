@@ -33,7 +33,7 @@ namespace smtrat
 				setStrategy({
 					addBackend<BEModule<BESettings1>>(),
 					addBackend<BVModule<BVSettings1>>(),
-					addBackend<CADModule<CADSettings1>>(),
+					addBackend<CADModule<CADSettingsReal>>(),
 					addBackend<CNFerModule>(),
 					addBackend<EMModule<EMSettings1>>(),
 					addBackend<EQModule<EQSettings1>>(),

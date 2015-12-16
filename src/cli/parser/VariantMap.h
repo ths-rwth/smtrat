@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../../cli/config.h"
+#include "../../lib/Common.h"
 #ifdef __VS
 #pragma warning(push, 0)
 #include <boost/variant.hpp>
