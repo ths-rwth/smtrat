@@ -351,16 +351,21 @@ namespace smtrat
                 {
                     if( isInfinite() )
                         return true;
-                    const Value<T1>& ass = variable().assignment();
-                    if( isUpperBound() )
+                    const Value<T1>& ass = variable().lastConsistentAssignment();
+                    switch( mType )
                     {
-                        if( isWeak() )
-                            return limit().mainPart() >= ass.mainPart();
-                        return limit().mainPart() + (limit().deltaPart() * _delta) > ass.mainPart() + (ass.deltaPart() * _delta);
+                        case UPPER:
+                            if( isWeak() )
+                                return limit().mainPart() >= ass.mainPart();
+                            return limit().mainPart() + (limit().deltaPart() * _delta) > ass.mainPart() + (ass.deltaPart() * _delta);
+                        case LOWER:
+                            if( isWeak() )
+                                return limit().mainPart() <= ass.mainPart();
+                            return limit().mainPart() + (limit().deltaPart() * _delta) < ass.mainPart() + (ass.deltaPart() * _delta);
+                        default:
+                            assert( mType == EQUAL );
+                            return limit().mainPart() == ass.mainPart();
                     }
-                    if( isWeak() )
-                        return limit().mainPart() <= ass.mainPart();
-                    return limit().mainPart() + (limit().deltaPart() * _delta) < ass.mainPart() + (ass.deltaPart() * _delta);
                 }
 
                 /**

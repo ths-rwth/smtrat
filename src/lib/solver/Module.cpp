@@ -150,7 +150,6 @@ namespace smtrat
     {
         SMTRAT_LOG_INFO("smtrat.module", __func__ << " to " << moduleName() << " (" << mId << "):");
         SMTRAT_LOG_INFO("smtrat.module", "\t" << _receivedSubformula->formula());
-        mModelComputed = false;
         if( mFirstUncheckedReceivedSubformula == mpReceivedFormula->end() )
             mFirstUncheckedReceivedSubformula = _receivedSubformula;
         const carl::Variables& vars = _receivedSubformula->formula().variables();
@@ -276,11 +275,8 @@ namespace smtrat
         if( !mModelComputed )
         {
             clearModel();
-            if( mSolverState != UNSAT )
-            {
-                getBackendsModel();
-                excludeNotReceivedVariablesFromModel();
-            }
+            getBackendsModel();
+            excludeNotReceivedVariablesFromModel();
             mModelComputed = true;
         }
     }
@@ -615,15 +611,19 @@ namespace smtrat
         auto module = mUsedBackends.begin();
         while( module != mUsedBackends.end() )
         {
-            assert( (*module)->solverState() != UNSAT );
             if( (*module)->solverState() == SAT )
             {
-		//@todo models should be disjoint, but this breaks CAD on certain inputs.
+                //@todo models should be disjoint, but this breaks CAD on certain inputs.
                 //assert( modelsDisjoint( mModel, (*module)->model() ) );
                 (*module)->updateModel();
                 return (*module)->model();
             }
             ++module;
+        }
+        if( !mUsedBackends.empty() )
+        {
+            (*mUsedBackends.begin())->updateModel();
+            return (*mUsedBackends.begin())->model();
         }
         return Model();
     }
@@ -633,10 +633,9 @@ namespace smtrat
         auto module = mUsedBackends.begin();
         while( module != mUsedBackends.end() )
         {
-            assert((*module)->solverState() != UNSAT);
             if ((*module)->solverState() != ABORTED)
             {
-		//@todo models should be disjoint, but this breaks CAD on certain inputs.
+                //@todo models should be disjoint, but this breaks CAD on certain inputs.
                 //assert( modelsDisjoint( mModel, (*module)->model() ) );
                 (*module)->updateModel();
                 for (const auto& ass: (*module)->model()) {
@@ -884,6 +883,8 @@ namespace smtrat
                 *mFoundAnswer.back() = true;
         }
         SMTRAT_LOG_INFO("smtrat.module", __func__ << " of " << moduleName() << " (" << mId << ") is " << ANSWER_TO_STRING( _answer ));
+        if( _answer == SAT )
+            mModelComputed = false;
         return _answer;
     }
 

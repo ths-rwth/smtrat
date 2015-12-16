@@ -35,10 +35,6 @@ namespace smtrat
         /**
          * 
          */
-        static const bool restore_previous_consistent_assignment = false;
-        /**
-         * 
-         */
         static const bool use_gomory_cuts = false;
         /**
          * 

@@ -420,17 +420,17 @@ namespace smtrat
                 if( Settings::check_active_literal_occurrences )
                 {
                     const auto& litActOccs = mLiteralsActivOccurrences[(size_t)pos];
-                    act = litActOccs.first + litActOccs.second;
+                    act = (double)litActOccs.first + (double)litActOccs.second;
                 }
                 if( mBooleanConstraintMap[pos].first != nullptr )
                 {
-                    act /= mBooleanConstraintMap[pos].first->reabstraction.complexity();
+                    act /= (double)mBooleanConstraintMap[pos].first->reabstraction.complexity();
                 }
                 else
                 {
                     auto tvfIter = mTseitinVarFormulaMap.find( pos );
                     if( tvfIter != mTseitinVarFormulaMap.end() )
-                        act /= tvfIter->second.complexity();
+                        act /= (double)tvfIter->second.complexity();
                 }
                 if( act > highestActivity )
                     highestActivity = act;
@@ -444,7 +444,6 @@ namespace smtrat
             }
             rebuildOrderHeap();
         }
-        int clausesSizeBefore = clauses.size();
         lbool result = l_Undef;
         mUpperBoundOnMinimal = passedFormulaEnd();
         while( true )
@@ -480,7 +479,7 @@ namespace smtrat
             {
                 if( mUpperBoundOnMinimal != rPassedFormula().end() )
                 {
-                    cleanUpAfterOptimizing( clausesSizeBefore, excludedAssignments );
+                    cleanUpAfterOptimizing( excludedAssignments );
                     result = l_True;
                 }
                 break;
@@ -495,7 +494,7 @@ namespace smtrat
                 const ModelValue& mv = modelIter->second;
                 if( mv.isMinusInfinity() )
                 {
-                    cleanUpAfterOptimizing( clausesSizeBefore, excludedAssignments );
+                    cleanUpAfterOptimizing( excludedAssignments );
                     break;
                 }
                 assert( mv.isRational() ); // @todo: how do we handle the other model value types?
@@ -527,7 +526,7 @@ namespace smtrat
                 }
                 if( !ok || decisionLevel() <= assumptions.size() )
                 {
-                    cleanUpAfterOptimizing( clausesSizeBefore, excludedAssignments );
+                    cleanUpAfterOptimizing( excludedAssignments );
                     break;
                 }
                 handleConflict( learnts.last() );
@@ -837,7 +836,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    void SATModule<Settings>::cleanUpAfterOptimizing( int _clausesSizeBefore, const std::vector<CRef>& _excludedAssignments )
+    void SATModule<Settings>::cleanUpAfterOptimizing( const std::vector<CRef>& _excludedAssignments )
     {
         mModelComputed = true; // fix the last found model
         removeUpperBoundOnMinimal();
@@ -905,6 +904,7 @@ namespace smtrat
         {
             case carl::FormulaType::TRUE:
             case carl::FormulaType::FALSE:
+                exit(71);
                 assert( false );
                 break;
             case carl::FormulaType::BOOL:

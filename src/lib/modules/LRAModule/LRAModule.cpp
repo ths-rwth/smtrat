@@ -22,8 +22,8 @@ namespace smtrat
         Module( _formula, _conditionals, _manager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
-        mStrongestBoundsRemoved( false ),
         mMinimize( false ),
+        mRationalModelComputed( false ),
         mTableau( passedFormulaEnd() ),
         mLinearConstraints(),
         mNonlinearConstraints(),
@@ -76,7 +76,6 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         cout << "LRAModule::add " << _subformula->formula() << endl;
         #endif
-        mRationalModelComputed = false;
         switch( _subformula->formula().getType() )
         {
             case carl::FormulaType::FALSE:
@@ -277,11 +276,17 @@ namespace smtrat
                                     }
                                 }
                                 LRAVariable& var = *(*bound)->pVariable();
-                                if( Settings::restore_previous_consistent_assignment )
+                                if( var.deactivateBound( *bound, passedFormulaEnd() ) && !var.isBasic() )
                                 {
-                                    if( var.deactivateBound( *bound, passedFormulaEnd() ) )
+                                    if( var.supremum() < var.assignment() )
                                     {
-                                        mStrongestBoundsRemoved = true;
+                                        mTableau.updateBasicAssignments( var.position(), LRAValue( var.supremum().limit() - var.assignment() ) );
+                                        var.rAssignment() = var.supremum().limit();
+                                    }
+                                    else if( var.infimum() > var.assignment() )
+                                    {
+                                        mTableau.updateBasicAssignments( var.position(), LRAValue( var.infimum().limit() - var.assignment() ) );
+                                        var.rAssignment() = var.infimum().limit();
                                     }
                                     if( var.isConflicting() )
                                     {
@@ -289,29 +294,6 @@ namespace smtrat
                                         collectOrigins( *var.supremum().origins().begin(), infsubset );
                                         collectOrigins( var.infimum().pOrigins()->back(), infsubset );
                                         mInfeasibleSubsets.push_back( std::move(infsubset) );
-                                    }
-                                }
-                                else
-                                {
-                                    if( var.deactivateBound( *bound, passedFormulaEnd() ) && !var.isBasic() )
-                                    {
-                                        if( var.supremum() < var.assignment() )
-                                        {
-                                            mTableau.updateBasicAssignments( var.position(), LRAValue( var.supremum().limit() - var.assignment() ) );
-                                            var.rAssignment() = var.supremum().limit();
-                                        }
-                                        else if( var.infimum() > var.assignment() )
-                                        {
-                                            mTableau.updateBasicAssignments( var.position(), LRAValue( var.infimum().limit() - var.assignment() ) );
-                                            var.rAssignment() = var.infimum().limit();
-                                        }
-                                        if( var.isConflicting() )
-                                        {
-                                            FormulaSetT infsubset;
-                                            collectOrigins( *var.supremum().origins().begin(), infsubset );
-                                            collectOrigins( var.infimum().pOrigins()->back(), infsubset );
-                                            mInfeasibleSubsets.push_back( std::move(infsubset) );
-                                        }
                                     }
                                 }
                                 if( !(*bound)->pVariable()->pSupremum()->isInfinite() )
@@ -405,6 +387,8 @@ namespace smtrat
                     // If the current assignment also fulfills the nonlinear constraints.
                     if( checkAssignmentForNonlinearConstraint() )
                     {
+                        mTableau.storeAssignment();
+                        mRationalModelComputed = false;
                         if( containsIntegerValuedVariables )
                         {
                             if( Settings::use_gomory_cuts && gomory_cut() )
@@ -412,8 +396,6 @@ namespace smtrat
                             if( !Settings::use_gomory_cuts && branch_and_bound() )
                                 return processResult( UNKNOWN, backendsResultUnknown );
                         }
-                        if( Settings::restore_previous_consistent_assignment )
-                            mTableau.storeAssignment();
                         return processResult( SAT, backendsResultUnknown );
                     }
                     // Otherwise, check the consistency of the formula consisting of the nonlinear constraints and the tightest bounds with the backends.
@@ -441,7 +423,9 @@ namespace smtrat
                     #endif
                     // Maybe an easy conflict occurred with the learned bounds.
                     if( !mInfeasibleSubsets.empty() )
+                    {
                         return processResult( UNSAT, backendsResultUnknown );
+                    }
                 }
             }
             // There is a conflict, namely a basic variable violating its bounds without any suitable non-basic variable.
@@ -496,20 +480,18 @@ namespace smtrat
         if( !mModelComputed )
         {
             clearModel();
-            if( solverState() != UNSAT || mMinimize )
+            assert( solverState() != UNSAT || mMinimize );
+            if( mAssignmentFullfilsNonlinearConstraints )
             {
-                if( mAssignmentFullfilsNonlinearConstraints )
+                const EvalRationalMap& rationalAssignment = getRationalModel();
+                for( auto ratAss = rationalAssignment.begin(); ratAss != rationalAssignment.end(); ++ratAss )
                 {
-                    const EvalRationalMap& rationalAssignment = getRationalModel();
-                    for( auto ratAss = rationalAssignment.begin(); ratAss != rationalAssignment.end(); ++ratAss )
-                    {
-                        mModel.insert(mModel.end(), std::make_pair(ratAss->first, ratAss->second) );
-                    }
+                    mModel.insert(mModel.end(), std::make_pair(ratAss->first, ratAss->second) );
                 }
-                else
-                {
-                    Module::getBackendsModel();
-                }
+            }
+            else
+            {
+                Module::getBackendsModel();
             }
             mModelComputed = true;
         }
@@ -913,12 +895,6 @@ namespace smtrat
     template<class Settings>
     void LRAModule<Settings>::activateBound( const LRABound* _bound, const FormulaT& _formula )
     {
-        if( mStrongestBoundsRemoved )
-        {
-            mTableau.resetAssignment();
-            mStrongestBoundsRemoved = false;
-            mModelComputed = false;
-        }
         if( Settings::simple_conflicts_and_propagation_on_demand )
         {
             if( Settings::simple_theory_propagation )
@@ -1333,7 +1309,6 @@ namespace smtrat
     bool LRAModule<Settings>::most_infeasible_var( bool _gc_support ) 
     {
         const EvalRationalMap& _rMap = getRationalModel();
-        
         auto branch_var = mTableau.originalVars().begin();
         Rational ass_;
         bool result = false;

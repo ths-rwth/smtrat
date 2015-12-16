@@ -596,7 +596,7 @@ namespace smtrat
              */
             void updateInfeasibleSubset();
             
-            void cleanUpAfterOptimizing( int _clausesSizeBefore, const std::vector<Minisat::CRef>& _excludedAssignments );
+            void cleanUpAfterOptimizing( const std::vector<Minisat::CRef>& _excludedAssignments );
             
             void removeUpperBoundOnMinimal();
             

@@ -112,17 +112,17 @@ namespace smtrat
                 /**
                  * 
                  */
-                void resetAssignment()
-                {
-                    mAssignment = mLastConsistentAssignment;
-                }
-                
-                /**
-                 * 
-                 */
                 void storeAssignment()
                 {
                     mLastConsistentAssignment = mAssignment;
+                }
+
+                /**
+                 * @return 
+                 */
+                const Value<T1>& lastConsistentAssignment() const
+                {
+                    return mLastConsistentAssignment;
                 }
 
                 /**
