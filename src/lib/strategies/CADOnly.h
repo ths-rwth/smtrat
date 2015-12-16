@@ -18,16 +18,23 @@ namespace smtrat
      * @version
      *
      */
-    class CADOnly: public Manager
+	template<typename CADSetting>
+    class CADOnlyStrategy: public Manager
     {
         public:
             CADOnly(): Manager() {
 				setStrategy({
 					addBackend<SATModule<SATSettings1>>({
-						addBackend<CADModule<CADSettings1>>()
+						addBackend<CADModule<CADSetting>>()
 					})
 				});
 			}
     };
+	
+	using CADOnly = CADOnlyStrategy<CADSettingsReal>;
+	using CADOnlyEarly = CADOnlyStrategy<CADSettingsSplitEarly>;
+	using CADOnlyLazy = CADOnlyStrategy<CADSettingsSplitLazy>;
+	using CADOnlySolution = CADOnlyStrategy<CADSettingsSplitSolution>;
+	using CADOnlyGuess = CADOnlyStrategy<CADSettingsGuessAndSplit>;
 
 }    // namespace smtrat
