@@ -238,6 +238,7 @@ void RuntimeSettingsManager::printHelp() const
     std::cout << "\t --model (-m) \t\t prints a model is printed if the example is found to be satisfiable" << std::endl;
     std::cout << "\t --all-models (-a) \t\t\t prints all models if the example is found to be satisfiable" << std::endl;
     std::cout << "\t --statistics (-s) \t prints any statistics collected in the solving process" << std::endl;
+    std::cout << "\t --print-strategy \t prints the strategy of this solver" << std::endl;
     std::cout << std::endl;
     std::cout << "Developer options:" <<std::endl;
     std::cout << "\t --list-modules \t prints all compiled modules" << std::endl;
