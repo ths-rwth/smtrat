@@ -259,7 +259,10 @@ namespace smtrat
 				}
 			}
 		} else if (Settings::integerHandling == carl::cad::IntegerHandling::NONE) {
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Ignoring integers.");
+			const std::vector<carl::Variable>& vars = mCAD.getVariables();
+			for (std::size_t d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
+				if (checkIntegerAssignment(vars, d, false)) return UNKNOWN;
+			}
 		} else {
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
 			for (std::size_t d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
@@ -392,7 +395,6 @@ namespace smtrat
 	bool CADModule<Settings>::addConstraintFormula(const FormulaT& f) {
 		assert(f.getType() == carl::FormulaType::CONSTRAINT);
 		mVariableBounds.addBound(f.constraint(), f);
-		SMTRAT_LOG_WARN("smtrat.cad", "Adding " << f);
 		// add the constraint to the local list of constraints and memorize the index/constraint assignment if the constraint is not present already
 		if (mConstraintsMap.find(f) != mConstraintsMap.end())
 			return true;	// the exact constraint was already considered
