@@ -216,7 +216,7 @@ namespace smtrat
             typedef carl::FastMap<carl::Variable, Minisat::Var> BooleanVarMap;
             
             /// Maps the Minisat variables to their corresponding boolean variable.
-            typedef std::map<const Minisat::Var, FormulaT> MinisatVarMap;
+            typedef std::unordered_map<int,FormulaT> MinisatVarMap;
 
             /**
              * Maps each Minisat variable to a pair of Abstractions, one contains the abstraction information of the literal
@@ -500,13 +500,15 @@ namespace smtrat
             /// Stores for each variable the corresponding formulas which control its value
             VarLemmaMap mPropagatedLemmas;
 			/// Stores Minisat indexes of all relevant variables
-			vector<int> mRelevantVariables;
+			std::vector<int> mRelevantVariables;
             ///
             Minisat::vec<unsigned> mNonTseitinShadowedOccurrences;
             ///
             TseitinVarShadows mTseitinVarShadows;
             ///
             carl::FastMap<FormulaT, TseitinVarShadows::iterator> mFormulaTseitinVarMap;
+            ///
+            carl::FastMap<int, FormulaT> mTseitinVarFormulaMap;
             ///
             std::vector<Minisat::vec<Minisat::Lit>> mCurrentTheoryConflicts;
             ///
@@ -523,6 +525,8 @@ namespace smtrat
             std::vector<LiteralClauses> mLiteralsClausesMap;
             ///
             std::vector<std::pair<size_t,size_t>> mLiteralsActivOccurrences;
+            ///
+            std::vector<Minisat::Lit> mPropagationFreeDecisions;
             
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
@@ -679,7 +683,7 @@ namespace smtrat
              * @param _from The position of the first clause to print within the given vector of clauses.
              * @param _withAssignment A flag indicating if true, that the assignments should be printed too.
              */
-            void printClauses( const Minisat::vec<Minisat::CRef>& _clauses, const std::string _name, std::ostream& _out = std::cout, const std::string _init = "", int = 0, bool _withAssignment = false ) const;
+            void printClauses( const Minisat::vec<Minisat::CRef>& _clauses, const std::string _name, std::ostream& _out = std::cout, const std::string _init = "", int = 0, bool _withAssignment = false, bool _onlyNotSatisfied = false ) const;
             
             /**
              * Prints the decisions the SAT solver has made.
@@ -1130,7 +1134,7 @@ namespace smtrat
              */
             void reduceDB();
             
-            void clearLearnts( size_t n );
+            void clearLearnts( int n );
             
             // Shrink 'cs' to contain only non-satisfied clauses.
             
@@ -1382,8 +1386,8 @@ namespace smtrat
                 return (int)(drand( seed ) * size);
             }
             
-            Minisat::Lit addClauses( const FormulaT& _formula, unsigned _type, bool _outermost = true, const FormulaT& _original = FormulaT( carl::FormulaType::TRUE ) );
-            void addXorClauses( const Minisat::vec<Minisat::Lit>& _literals, const Minisat::vec<Minisat::Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, Minisat::vec<Minisat::Lit>& _clause );
+            Minisat::Lit addClauses( const FormulaT& _formula, unsigned _type, bool _outermost = true, const FormulaT& _original = FormulaT( carl::FormulaType::TRUE ), bool _polarity = false );
+            void addXorClauses( const Minisat::vec<Minisat::Lit>& _literals, const Minisat::vec<Minisat::Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, Minisat::vec<Minisat::Lit>& _clause, bool _ignorePolarity, bool _polarity );
             
             /**
              * Stores the given splitting to the set of learned clauses

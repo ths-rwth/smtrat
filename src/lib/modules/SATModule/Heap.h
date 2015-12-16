@@ -178,6 +178,14 @@ namespace Minisat
                     indices[heap[i]] = -1;
                 heap.clear( dealloc );
             }
+            
+            void print() const
+            {
+                std::cout << "Order heap:";
+                for( int i = 0; i < heap.size(); i++ )
+                    std::cout << " " << heap[i];
+                std::cout << std::endl;
+            }
     };
 
     //=================================================================================================

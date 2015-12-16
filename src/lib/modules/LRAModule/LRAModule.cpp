@@ -542,10 +542,19 @@ namespace smtrat
                     auto constrBoundIter = mTableau.constraintToBound().find( _formula );
                     if( constrBoundIter != mTableau.constraintToBound().end() )
                     {
-                        if( constrBoundIter->second->front()->isSatisfied() )
-                            return 1;
-                        else
-                            return 0;
+                        const LRABound& bound = *constrBoundIter->second->front();
+                        const LRAVariable& lravar = bound.variable();
+                        if( lravar.hasBound() || (lravar.isOriginal() && receivedVariable( lravar.expression().getSingleVariable() )) )
+                        {
+                            if( bound.isSatisfied( mTableau.currentDelta() ) )
+                            {
+                                return 1;
+                            }
+                            else
+                            {
+                                return 0;
+                            }
+                        }
                     }
                 }
             }
@@ -908,6 +917,7 @@ namespace smtrat
         {
             mTableau.resetAssignment();
             mStrongestBoundsRemoved = false;
+            mModelComputed = false;
         }
         if( Settings::simple_conflicts_and_propagation_on_demand )
         {

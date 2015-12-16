@@ -587,8 +587,8 @@ namespace smtrat
         {
             for( Variable<T1, T2>* basicVar : mRows )
             {
-                assert( basicVar != NULL );
-                basicVar->storeAssignment();
+                if( basicVar != NULL )
+                    basicVar->storeAssignment();
             }
             for( Variable<T1, T2>* nonbasicVar : mColumns )
                 nonbasicVar->storeAssignment();
@@ -599,8 +599,10 @@ namespace smtrat
         {
             for( Variable<T1, T2>* basicVar : mRows )
             {
-                assert( basicVar != NULL );
-                basicVar->resetAssignment();
+                if( basicVar != NULL )
+                {
+                    basicVar->resetAssignment();
+                }
             }
             for( Variable<T1, T2>* nonbasicVar : mColumns )
                 nonbasicVar->resetAssignment();
@@ -611,26 +613,41 @@ namespace smtrat
         {
             T1 minDelta = -1;
             mCurDelta = T1(0);
-            // For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
-            for( auto originalVar = originalVars().begin(); originalVar != originalVars().end(); ++originalVar )
+            // For all non-basic variables find the minimum of all (c2-c1)/(k1-k2), where ..
+            for( auto originalVar : mColumns )
             {
-                adaptDelta( *(originalVar->second), false, minDelta );
-                adaptDelta( *(originalVar->second), true, minDelta );
+                adaptDelta( *originalVar, false, minDelta );
+                adaptDelta( *originalVar, true, minDelta );
             }
-            // For all slack variables find the minimum of all (c2-c1)/(k1-k2), where ..
-            for( auto slackVar = slackVars().begin(); slackVar != slackVars().end(); ++slackVar )
+            // For all basic variables find the minimum of all (c2-c1)/(k1-k2), where ..
+            for( auto var : mRows )
             {
-                adaptDelta( *(slackVar->second), false, minDelta );
-                adaptDelta( *(slackVar->second), true, minDelta );
+                if( var != NULL )
+                {
+                    adaptDelta( *var, false, minDelta );
+                    adaptDelta( *var, true, minDelta );
+                }
             }
             mCurDelta = minDelta < 0 ? T1(1) : minDelta;
             EvalRationalMap result;
             // Calculate the rational assignment of all original variables.
-            for( auto var = originalVars().begin(); var != originalVars().end(); ++var )
+            for( auto var : mColumns )
             {
-                T1 value = var->second->assignment().mainPart();
-                value += (var->second->assignment().deltaPart() * mCurDelta);
-                result.insert( std::pair<const carl::Variable,T1>( var->first, value ) );
+                if( var->isOriginal() )
+                {
+                    T1 value = var->assignment().mainPart();
+                    value += (var->assignment().deltaPart() * mCurDelta);
+                    result.insert( std::pair<const carl::Variable,T1>( var->expression().getSingleVariable(), value ) );
+                }
+            }
+            for( auto var : mRows )
+            {
+                if( var != NULL && var->isOriginal() )
+                {
+                    T1 value = var->assignment().mainPart();
+                    value += (var->assignment().deltaPart() * mCurDelta);
+                    result.insert( std::pair<const carl::Variable,T1>( var->expression().getSingleVariable(), value ) );
+                }
             }
             return result;
         }
@@ -899,11 +916,11 @@ namespace smtrat
             std::cout << " in:" << std::endl;
             print();
             #endif
-            assert( _objective.isBasic() );
+            bool isBasic = _objective.isBasic();
             Value<T1> maxTheta = Value<T1>(T1(-1));
             EntryID objectiveStartEntry = _objective.startEntry();
             Iterator objectiveIter = Iterator( objectiveStartEntry, mpEntries );
-            if( objectiveIter.hEnd( false ) )
+            if( (isBasic && objectiveIter.hEnd( false )) || (!isBasic && objectiveIter.vEnd( false )) )
                 return std::make_pair( LAST_ENTRY_ID, true );
             Value<T1> optimizationRange = _minimize ? 
                 (_objective.infimum().isInfinite() ? maxTheta : (_objective.assignment()-_objective.infimum().limit())) :
@@ -914,7 +931,7 @@ namespace smtrat
             EntryID bestResult = LAST_ENTRY_ID;
             while( true )
             {
-                const Variable<T1, T2>& varForMinimizaton = *(*objectiveIter).columnVar();
+                const Variable<T1, T2>& varForMinimizaton = isBasic ? *(*objectiveIter).columnVar() : *(*objectiveIter).rowVar();
                 #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
                 std::cout << "Check the non-basic variable ";
                 varForMinimizaton.print();
@@ -961,11 +978,10 @@ namespace smtrat
                     }
                     Value<T1> varForMinTheta = maxNonBasicMargin;
                     EntryID result = LAST_ENTRY_ID;
-                    EntryID infiniteBasic = LAST_ENTRY_ID;
                     Iterator varForMinIter = Iterator( varForMinimizaton.startEntry(), mpEntries );
                     while( true )
                     {
-                        Variable<T1, T2>& lraVar = *((*varForMinIter).rowVar());
+                        Variable<T1, T2>& lraVar = isBasic ? *((*varForMinIter).rowVar()) : *((*varForMinIter).columnVar());
                         if( lraVar != _objective )
                         {
                             #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
@@ -1031,7 +1047,7 @@ namespace smtrat
                                 break;
                             }
                         }
-                        if( varForMinIter.vEnd( false ) )
+                        if( (isBasic && varForMinIter.vEnd( false )) || (!isBasic && varForMinIter.hEnd( false )) )
                         {
                             if( result != LAST_ENTRY_ID )
                             {
@@ -1075,13 +1091,23 @@ namespace smtrat
                             break;
                         }
                         else
-                            varForMinIter.vMove( false );
+                        {
+                            if( isBasic )
+                                varForMinIter.vMove( false );
+                            else
+                                varForMinIter.hMove( false );
+                        }
                     }
                 }
-                if( objectiveIter.hEnd( false ) )
+                if( (isBasic && objectiveIter.hEnd( false )) || (!isBasic && objectiveIter.vEnd( false )) )
                     break;
                 else
-                    objectiveIter.hMove( false );
+                {
+                    if( isBasic )
+                        objectiveIter.hMove( false );
+                    else
+                        objectiveIter.vMove( false );
+                }
             }
             if( bestResult != LAST_ENTRY_ID )
             {

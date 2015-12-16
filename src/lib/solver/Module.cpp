@@ -71,7 +71,8 @@ namespace smtrat
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
         mSmallerMusesCheckCounter( 0 ),
         mObjective( carl::Variable::NO_VARIABLE ),
-        mObjectiveFunction()
+        mObjectiveFunction(),
+        mVariableCounters()
 #ifdef SMTRAT_DEVOPTION_MeasureTime
         ,
         mTimerAddTotal( 0 ),
@@ -151,8 +152,13 @@ namespace smtrat
         SMTRAT_LOG_INFO("smtrat.module", "\t" << _receivedSubformula->formula());
         mModelComputed = false;
         if( mFirstUncheckedReceivedSubformula == mpReceivedFormula->end() )
-        {
             mFirstUncheckedReceivedSubformula = _receivedSubformula;
+        const carl::Variables& vars = _receivedSubformula->formula().variables();
+        for( carl::Variable::Arg var : vars )
+        {
+            if( var.getId() >= mVariableCounters.size() )
+                mVariableCounters.resize( var.getId()+1, 0 );
+            ++mVariableCounters[var.getId()];
         }
         if( _receivedSubformula->formula().getType() == carl::FormulaType::CONSTRAINT )
         {
@@ -178,6 +184,12 @@ namespace smtrat
         removeCore( _receivedSubformula );
         if( mFirstUncheckedReceivedSubformula == _receivedSubformula )
             ++mFirstUncheckedReceivedSubformula;
+        const carl::Variables& vars = _receivedSubformula->formula().variables();
+        for( carl::Variable::Arg var : vars )
+        {
+            assert( mVariableCounters[var.getId()] > 0 );
+            --mVariableCounters[var.getId()];
+        }
         // Check if the constraint to delete is an original constraint of constraints in the vector
         // of passed constraints.
         ModuleInput::iterator passedSubformula = mpPassedFormula->begin();
@@ -310,13 +322,14 @@ namespace smtrat
     
     unsigned Module::currentlySatisfiedByBackend( const FormulaT& _formula ) const
     {
+        unsigned result = 3;
         for( const Module* module : mUsedBackends )
         {
-            unsigned ret = module->currentlySatisfied( _formula );
-            if( ret == 0 || ret == 1 )
-                return ret;
+            result = module->currentlySatisfied( _formula );
+            if( result == 0 || result == 1 )
+                return result;
         }
-        return 3;
+        return result;
     }
 
     list<std::vector<carl::Variable>> Module::getModelEqualities() const

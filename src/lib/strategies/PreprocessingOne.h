@@ -9,7 +9,7 @@
 #include "../modules/SplitSOSModule/SplitSOSModule.h"
 #include "../modules/ESModule/ESModule.h"
 #include "../modules/ICEModule/ICEModule.h"
-#include "../modules/BEModule/BEModule.h"
+#include "../modules/MCBModule/MCBModule.h"
 
 namespace smtrat
 {
@@ -27,7 +27,7 @@ namespace smtrat
         public:
             PreprocessingOne(): Manager() {
 				setStrategy({
-					addBackend<BEModule<BESettings1>>(
+					addBackend<MCBModule<MCBSettings1>>(
 						addBackend<ICEModule<ICESettings1>>(
 							addBackend<EMModule<EMSettings1>>(
 								addBackend<PFEModule<PFESettings1>>(

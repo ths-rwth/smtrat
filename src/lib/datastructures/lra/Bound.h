@@ -347,12 +347,20 @@ namespace smtrat
                     return mpInfo;
                 }
                 
-                bool isSatisfied() const
+                bool isSatisfied( const T1& _delta ) const
                 {
+                    if( isInfinite() )
+                        return true;
+                    const Value<T1>& ass = variable().assignment();
                     if( isUpperBound() )
-                        return (*this) >= variable().assignment();
-                    else
-                        return (*this) <= variable().assignment();
+                    {
+                        if( isWeak() )
+                            return limit().mainPart() >= ass.mainPart();
+                        return limit().mainPart() + (limit().deltaPart() * _delta) > ass.mainPart() + (ass.deltaPart() * _delta);
+                    }
+                    if( isWeak() )
+                        return limit().mainPart() <= ass.mainPart();
+                    return limit().mainPart() + (limit().deltaPart() * _delta) < ass.mainPart() + (ass.deltaPart() * _delta);
                 }
 
                 /**
