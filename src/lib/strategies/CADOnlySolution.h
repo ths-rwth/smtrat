@@ -7,13 +7,13 @@
 
 namespace smtrat
 {
-	class CADOnly: public Manager
+	class CADOnlySolution: public Manager
 	{
 		public:
-			CADOnly(): Manager() {
+			CADOnlySolution(): Manager() {
 				setStrategy({
 					addBackend<SATModule<SATSettings1>>({
-						addBackend<CADModule<CADSettingsReal>>()
+						addBackend<CADModule<CADSettingsSplitSolution>>()
 					})
 				});
 			}
