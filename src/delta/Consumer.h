@@ -87,8 +87,8 @@ public:
      */
 	void consume(const Node& n, const std::string& message, std::size_t num) {
 		if (hasResult()) return;
-		while (jobcount - progress >= std::thread::hardware_concurrency()) {
-			wait();
+		while (jobs.size() >= std::thread::hardware_concurrency()) {
+			while (!jobs.empty() && jobs.front().valid()) jobs.pop();
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 		}
 		if (hasResult()) return;
