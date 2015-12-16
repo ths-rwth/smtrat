@@ -39,7 +39,7 @@ namespace smtrat
 		mCAD(_conditionals),
 		mConstraints(),
 		hasFalse(false),
-		subformulaQueue(),
+		mSubformulaQueue(),
 		mConstraintsMap(),
 		mRealAlgebraicSolution(),
 		mConflictGraph(),
@@ -128,7 +128,7 @@ namespace smtrat
         case carl::FormulaType::CONSTRAINT: {
 			SMTRAT_LOG_FUNC("smtrat.cad", _subformula->formula().constraint());
 			if (this->hasFalse) {
-				this->subformulaQueue.push_back(_subformula->formula());
+				mSubformulaQueue.push_back(_subformula->formula());
 				return false;
 			} else {
 				return this->addConstraintFormula(_subformula->formula());
@@ -163,10 +163,10 @@ namespace smtrat
 #endif
 		if (this->hasFalse) return UNSAT;
 		else {
-			for (const auto& f: this->subformulaQueue) {
-				this->addConstraintFormula(f);
+			for (const auto& f: mSubformulaQueue) {
+				addConstraintFormula(f);
 			}
-			this->subformulaQueue.clear();
+			mSubformulaQueue.clear();
 		}
 		if (!rReceivedFormula().isRealConstraintConjunction() && !rReceivedFormula().isIntegerConstraintConjunction()) {
 			SMTRAT_LOG_WARN("smtrat.cad", "UNKNOWN due to invalid constraints");
@@ -282,9 +282,9 @@ namespace smtrat
 			return;
         case carl::FormulaType::CONSTRAINT: {
 			SMTRAT_LOG_FUNC("smtrat.cad", _subformula->formula().constraint());
-			auto it = std::find(this->subformulaQueue.begin(), this->subformulaQueue.end(), _subformula->formula());
-			if (it != this->subformulaQueue.end()) {
-				this->subformulaQueue.erase(it);
+			auto it = std::find(mSubformulaQueue.begin(), mSubformulaQueue.end(), _subformula->formula());
+			if (it != mSubformulaQueue.end()) {
+				mSubformulaQueue.erase(it);
 				return;
 			}
 
