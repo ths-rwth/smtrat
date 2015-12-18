@@ -85,6 +85,7 @@ namespace smtrat
 				mFormulaAfterPreprocessing = res.second;
 			}
 			else {
+				mFormulaAfterPreprocessing = formulaBeforePreprocessing;
 				break;
 			}
 			// after preprocessing is before preprocessing
