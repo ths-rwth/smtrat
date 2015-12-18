@@ -152,8 +152,8 @@ namespace smtrat
 				// Variable has been eliminated
 				ModelVariable var(v);
 				std::map<BVar,Rational> assignment;
-				for (const auto& v: mChoices.at(v)) {
-					assignment.emplace(v.second.first, v.first);
+				for (const auto& c: mChoices.at(v)) {
+					assignment.emplace(c.second.first, c.first);
 				}
 				SMTRAT_LOG_DEBUG("smtrat.mcb", "Adding " << var << " = " << assignment);
 				mModel.emplace(var, ModelSubstitution::create<MCBModelSubstitution>(assignment));
