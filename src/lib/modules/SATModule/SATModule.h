@@ -299,6 +299,14 @@ namespace smtrat
                     }
                 }
                 
+                void reloc( Minisat::ClauseAllocator& _ca, Minisat::ClauseAllocator& _to )
+                {
+                    for( Minisat::CRef& cr : mPositives )
+                        _ca.reloc( cr, _to );
+                    for( Minisat::CRef& cr : mNegatives )
+                        _ca.reloc( cr, _to );
+                }
+                
                 size_t numOfNegatives() const
                 {
                     return mNegatives.size();
@@ -698,6 +706,13 @@ namespace smtrat
              * @param _init The line initiation.
              */
             void printPropagatedLemmas( std::ostream& _out = std::cout, std::string _init = "" ) const;
+            
+            /**
+             * Prints the literals' active occurrences in all clauses.
+             * @param _out  The output stream where the answer should be printed.
+             * @param _init The line initiation.
+             */
+            void printLiteralsActiveOccurrences( std::ostream& _out = std::cout, std::string _init = "" ) const;
 
             /**
              * Collects the taken statistics.
@@ -1025,6 +1040,7 @@ namespace smtrat
              * @param level The level to backtrack to
              */
             void cancelAssignmentUntil( int level );
+            void resetVariableAssignment( Minisat::Var _var );
 
             /**
              *  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
@@ -1386,7 +1402,7 @@ namespace smtrat
                 return (int)(drand( seed ) * size);
             }
             
-            Minisat::Lit addClauses( const FormulaT& _formula, unsigned _type, bool _outermost = true, const FormulaT& _original = FormulaT( carl::FormulaType::TRUE ), bool _polarity = false );
+            Minisat::Lit addClauses( const FormulaT& _formula, unsigned _type, unsigned _depth = 0, const FormulaT& _original = FormulaT( carl::FormulaType::TRUE ), bool _polarity = false );
             void addXorClauses( const Minisat::vec<Minisat::Lit>& _literals, const Minisat::vec<Minisat::Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, Minisat::vec<Minisat::Lit>& _clause, bool _ignorePolarity, bool _polarity );
             
             /**
