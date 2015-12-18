@@ -39,12 +39,6 @@ namespace smtrat
 			MCBModule(const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = nullptr);
 
 			~MCBModule();
-			
-			/**
-			 * Updates the current assignment into the model.
-			 * Note, that this is a unique but possibly symbolic assignment maybe containing newly introduced variables.
-			 */
-			void updateModel() const;
 
 			/**
 			 * Checks the received formula for consistency.
