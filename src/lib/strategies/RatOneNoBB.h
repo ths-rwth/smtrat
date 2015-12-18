@@ -40,7 +40,7 @@ namespace smtrat
                             {
                                 addBackend<VSModule<VSSettings2346>>(
                                 {
-                                    addBackend<CADModule<CADSettings2>>()
+                                    addBackend<CADModule<CADSettingsReal>>()
                                 })
                             })
                         })
