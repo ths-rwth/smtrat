@@ -135,16 +135,18 @@ namespace smtrat
 			}
 		}
 		carl::FormulaSubstitutor<FormulaT> subs;
+		SMTRAT_LOG_DEBUG("smtrat.mcb", "Applying " << repl << " on \n\t" << f);
 		FormulaT res = subs.substitute(f, repl);
+		SMTRAT_LOG_DEBUG("smtrat.mcb", "Resulting in\n\t" << res);
 		
 		mRemaining.clear();
 		res.allVars(mRemaining);
-		FormulasT impl;
+		FormulasT equiv;
 		for (const auto& v: variables) {
 			if (mRemaining.count(v) > 0) {
 				// Variable is still in the formula
 				for (const auto& r: mChoices.at(v)) {
-					impl.push_back(FormulaT(carl::FormulaType::IMPLIES, {FormulaT(r.second.first), r.second.second}));
+					equiv.push_back(FormulaT(carl::FormulaType::IFF, {FormulaT(r.second.first), r.second.second}));
 				}
 			} else {
 				// Variable has been eliminated
@@ -157,9 +159,10 @@ namespace smtrat
 				mModel.emplace(var, ModelSubstitution::create<MCBModelSubstitution>(assignment));
 			}
 		}
-		if (impl.empty()) return res;
-		impl.push_back(res);
-		return FormulaT(carl::FormulaType::AND, std::move(impl));
+		if (equiv.empty()) return res;
+		SMTRAT_LOG_DEBUG("smtrat.mcb", "Adding equivalences " << equiv);
+		equiv.push_back(res);
+		return FormulaT(carl::FormulaType::AND, std::move(equiv));
 	}
 }
 
