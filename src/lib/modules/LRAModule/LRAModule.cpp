@@ -131,7 +131,6 @@ namespace smtrat
                                             LRAVariable* lraVar = mTableau.getObjectiveVariable( objectiveFunction() );
                                             mObjectiveLRAVar = mCreatedObjectiveLRAVars.emplace( objectiveFunction(), lraVar ).first;
                                         }
-                                        mTableau.activateBasicVar( mObjectiveLRAVar->second );
                                     }
                                 }
                                 return true;
@@ -563,7 +562,9 @@ namespace smtrat
                 mOptimumComputed = true;
                 return _result;
             }
+            assert( mObjectiveLRAVar != mCreatedObjectiveLRAVars.end() );
             assert( mObjectiveLRAVar->second->isBasic() );
+            mTableau.activateBasicVar( mObjectiveLRAVar->second );
             for( ; ; )
             {
                 std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElementForOptimizing( *(mObjectiveLRAVar->second) );
@@ -604,6 +605,7 @@ namespace smtrat
                 }
             }
         }
+        mTableau.deactivateBasicVar( mObjectiveLRAVar->second );
         // @todo Branch if assignment does not fulfill integer domains.
         return _result;
     }
