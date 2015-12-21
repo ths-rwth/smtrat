@@ -75,16 +75,19 @@ namespace smtrat
 				mPreprocessor.pop();
 				break;
 			}
+			SMTRAT_LOG_INFO("smtrat.fpp", "Retrieving simplified input and partial model...");
 			std::pair<bool,FormulaT> res = mPreprocessor.getInputSimplified();
 			mPartialModel.merge(mPreprocessor.model());
-			
+			SMTRAT_LOG_INFO("smtrat.fpp", "Backtracking");
 			mPreprocessor.pop();
 			if (res.first && (formulaBeforePreprocessing != res.second)) {
-				SMTRAT_LOG_INFO("smtrat.fpp", "Formula has been simplified from\n\t" << formulaBeforePreprocessing << std::endl << "\tto" << std::endl << res.second);
+				SMTRAT_LOG_INFO("smtrat.fpp", "Formula has been simplified from\n\t" << formulaBeforePreprocessing << std::endl << "to\n\t" << res.second);
+				SMTRAT_LOG_INFO("smtrat.fpp", "Current partial model:" << std::endl << mPartialModel);
 				assert(formulaBeforePreprocessing != res.second);
 				mFormulaAfterPreprocessing = res.second;
 			}
 			else {
+				mFormulaAfterPreprocessing = formulaBeforePreprocessing;
 				break;
 			}
 			// after preprocessing is before preprocessing
@@ -94,6 +97,7 @@ namespace smtrat
 		if (answer == UNKNOWN) {
 			// run the backends on the fix point of the iterative application of preprocessing
 			// TODO: make this incremental
+			SMTRAT_LOG_INFO("smtrat.fpp", "Calling backend with\n\t" << mFormulaAfterPreprocessing);
 			clearPassedFormula();
 			addSubformulaToPassedFormula(mFormulaAfterPreprocessing);
 			answer = runBackends(_full, _minimize);

@@ -60,4 +60,8 @@ namespace smtrat
 		SMTRAT_LOG_WARN("smtrat.pmodule", moduleName() << ": No simplifications");
         return make_pair( false, FormulaT( carl::FormulaType::TRUE ) );
     }
+	
+	void PModule::updateModel() const {
+		getBackendsModel();
+	}
 }

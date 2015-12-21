@@ -638,9 +638,7 @@ namespace smtrat
                 //@todo models should be disjoint, but this breaks CAD on certain inputs.
                 //assert( modelsDisjoint( mModel, (*module)->model() ) );
                 (*module)->updateModel();
-                for (const auto& ass: (*module)->model()) {
-                    mModel.insert(ass);
-                }
+				mModel.merge((*module)->model());
                 break;
             }
             ++module;
@@ -877,13 +875,13 @@ namespace smtrat
         mSolverState = _answer;
         assert( _answer != SAT || checkModel() != 0 );
         // If we are in the SMT environment:
-        if( mpManager != NULL && _answer != UNKNOWN )
+        if( mpManager != nullptr && _answer != UNKNOWN )
         {
             if( !anAnswerFound() )
                 *mFoundAnswer.back() = true;
         }
         SMTRAT_LOG_INFO("smtrat.module", __func__ << " of " << moduleName() << " (" << mId << ") is " << ANSWER_TO_STRING( _answer ));
-        if( _answer == SAT )
+        if( _answer == SAT || _answer == UNKNOWN )
             mModelComputed = false;
         return _answer;
     }

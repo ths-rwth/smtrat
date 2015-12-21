@@ -33,6 +33,10 @@ namespace smtrat {
 			return ModelValue(std::make_shared<Substitution>(std::forward<Args>(args)...));
 		}
 	};
+	inline std::ostream& operator<<(std::ostream& os, const ModelSubstitution& ms) {
+		ms.print(os);
+		return os;
+	}
 	inline std::ostream& operator<<(std::ostream& os, const std::shared_ptr<ModelSubstitution>& ms) {
 		ms->print(os);
 		return os;

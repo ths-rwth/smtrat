@@ -25,7 +25,13 @@ namespace smtrat
 				if (mit->second.asBool()) {
 					assert(selection == mAssignments.end());
 					selection = it;
+					SMTRAT_LOG_DEBUG("smtrat.mcb", "Evaluating " << *this << " to " << selection->second << " on " << model);
+					break;
 				}
+			}
+			if (selection == mAssignments.end()) {
+				SMTRAT_LOG_DEBUG("smtrat.mcb", "Evaluating " << *this << " to default 0 on " << model);
+				return ModelValue(Rational(0));
 			}
 			return ModelValue(selection->second);
 		}
@@ -56,24 +62,6 @@ namespace smtrat
 	template<class Settings>
 	MCBModule<Settings>::~MCBModule()
 	{}
-	
-	template<class Settings>
-	void MCBModule<Settings>::updateModel() const
-	{
-		mModel.clear();
-		if (solverState() != UNSAT) {
-			getBackendsModel();
-			for (const auto& choice: mChoices) {
-				if (mRemaining.count(choice.first) > 0) continue;
-				ModelVariable var(choice.first);
-				std::map<BVar,Rational> assignment;
-				for (const auto& v: choice.second) {
-					assignment.emplace(v.second.first, v.first);
-				}
-				mModel.emplace(var, ModelSubstitution::create<MCBModelSubstitution>(assignment));
-			}
-		}
-	}
 	
 	template<class Settings>
 	Answer MCBModule<Settings>::checkCore( bool _full, bool _minimize )
@@ -135,6 +123,7 @@ namespace smtrat
 	
 	template<typename Settings>
 	FormulaT MCBModule<Settings>::applyReplacements(const FormulaT& f) {
+		if (mChoices.empty()) return f;
 		std::set<AVar> variables;
 		std::map<FormulaT, FormulaT> repl;
 		for (const auto& r: mChoices) {
@@ -146,21 +135,34 @@ namespace smtrat
 			}
 		}
 		carl::FormulaSubstitutor<FormulaT> subs;
+		SMTRAT_LOG_DEBUG("smtrat.mcb", "Applying " << repl << " on \n\t" << f);
 		FormulaT res = subs.substitute(f, repl);
+		SMTRAT_LOG_DEBUG("smtrat.mcb", "Resulting in\n\t" << res);
 		
 		mRemaining.clear();
 		res.allVars(mRemaining);
-		FormulasT impl;
+		FormulasT equiv;
 		for (const auto& v: variables) {
 			if (mRemaining.count(v) > 0) {
+				// Variable is still in the formula
 				for (const auto& r: mChoices.at(v)) {
-					impl.push_back(FormulaT(carl::FormulaType::IMPLIES, {FormulaT(r.second.first), r.second.second}));
+					equiv.push_back(FormulaT(carl::FormulaType::IFF, {FormulaT(r.second.first), r.second.second}));
 				}
+			} else {
+				// Variable has been eliminated
+				ModelVariable var(v);
+				std::map<BVar,Rational> assignment;
+				for (const auto& c: mChoices.at(v)) {
+					assignment.emplace(c.second.first, c.first);
+				}
+				SMTRAT_LOG_DEBUG("smtrat.mcb", "Adding " << var << " = " << assignment);
+				mModel.emplace(var, ModelSubstitution::create<MCBModelSubstitution>(assignment));
 			}
 		}
-		if (impl.empty()) return res;
-		impl.push_back(res);
-		return FormulaT(carl::FormulaType::AND, std::move(impl));
+		if (equiv.empty()) return res;
+		SMTRAT_LOG_DEBUG("smtrat.mcb", "Adding equivalences " << equiv);
+		equiv.push_back(res);
+		return FormulaT(carl::FormulaType::AND, std::move(equiv));
 	}
 }
 

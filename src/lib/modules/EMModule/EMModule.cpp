@@ -62,7 +62,7 @@ namespace smtrat
 				carl::FormulaType ft = (rel == carl::Relation::EQ) ? carl::FormulaType::OR : carl::FormulaType::AND;
 				FormulaT result(ft, std::move(res));
 				if (result != formula) {
-					SMTRAT_LOG_INFO("smtrat.em", "Translated " << formula << " to " << result);
+					SMTRAT_LOG_INFO("smtrat.em", "Translated\n\t" << formula << "\nto\n\t" << result);
 				}
 				return result;
 			}
