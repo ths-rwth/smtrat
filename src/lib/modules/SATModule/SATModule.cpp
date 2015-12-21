@@ -747,7 +747,7 @@ namespace smtrat
             assert( mRelevantVariables.size() > 0);
             #ifdef DEBUG_SATMODULE
             std::cout << "Relevant variables: ";
-            for ( int i = 0; i < mRelevantVariables.size(); ++i )
+            for ( std::size_t i = 0; i < mRelevantVariables.size(); ++i )
             {
                 auto mvIter = mMinisatVarMap.find(mRelevantVariables[ i ]);
                 assert( mvIter != mMinisatVarMap.end() );
