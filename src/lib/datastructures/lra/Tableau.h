@@ -532,6 +532,8 @@ namespace smtrat
                 
                 Variable<T1,T2>* getVariable( const Poly& _lhs, T1& _factor, T1& _boundValue );
                 
+                Variable<T1,T2>* getObjectiveVariable( const Poly& _lhs );
+                
                 /**
                  * 
                  * @param _constraint
@@ -606,9 +608,16 @@ namespace smtrat
                 
                 /**
                  * 
+                 * @param _objective
                  * @return 
                  */
-                std::pair<EntryID,bool> nextPivotingElementForOptimizing( const Variable<T1, T2>& _objective, bool _minimize );
+                std::pair<EntryID,bool> optimizeIndependentNonbasics( const Variable<T1, T2>& _objective );
+                
+                /**
+                 * 
+                 * @return 
+                 */
+                std::pair<EntryID,bool> nextPivotingElementForOptimizing( const Variable<T1, T2>& _objective );
                 
                 /**
                  * 

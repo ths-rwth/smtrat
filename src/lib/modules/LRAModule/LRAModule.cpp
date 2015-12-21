@@ -23,6 +23,7 @@ namespace smtrat
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
         mMinimize( false ),
+        mOptimumComputed( false),
         mRationalModelComputed( false ),
         mTableau( passedFormulaEnd() ),
         mLinearConstraints(),
@@ -45,7 +46,12 @@ namespace smtrat
     template<class Settings>
     LRAModule<Settings>::~LRAModule()
     {
-        mCreatedObjectiveLRAVars.clear();
+        while( !mCreatedObjectiveLRAVars.empty() )
+        {
+            LRAVariable* toDel = mCreatedObjectiveLRAVars.begin()->second;
+            mCreatedObjectiveLRAVars.erase( mCreatedObjectiveLRAVars.begin() );
+            delete toDel;
+        }
         #ifdef SMTRAT_DEVOPTION_Statistics
         delete mpStatistics;
         #endif
@@ -76,6 +82,7 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         cout << "LRAModule::add " << _subformula->formula() << endl;
         #endif
+        mOptimumComputed = false;
         switch( _subformula->formula().getType() )
         {
             case carl::FormulaType::FALSE:
@@ -118,17 +125,13 @@ namespace smtrat
                                 {
                                     if( !objectiveFunction().isConstant() )
                                     {
-                                        auto olIter = mCreatedObjectiveLRAVars.find( objectiveFunction() );
-                                        if( olIter == mCreatedObjectiveLRAVars.end() )
+                                        mObjectiveLRAVar = mCreatedObjectiveLRAVars.find( objectiveFunction() );
+                                        if( mObjectiveLRAVar == mCreatedObjectiveLRAVars.end() )
                                         {
-                                            LRABoundType factor;
-                                            LRABoundType bound;
-                                            LRAVariable* lraVar = mTableau.getVariable( objectiveFunction(), factor, bound );
-                                            olIter = mCreatedObjectiveLRAVars.emplace( objectiveFunction(), std::make_pair( lraVar, (Rational)factor ) ).first;
+                                            LRAVariable* lraVar = mTableau.getObjectiveVariable( objectiveFunction() );
+                                            mObjectiveLRAVar = mCreatedObjectiveLRAVars.emplace( objectiveFunction(), lraVar ).first;
                                         }
-                                        mObjectiveLRAVar = olIter;
-                                        if( mObjectiveLRAVar->second.first->isBasic() )
-                                            mTableau.activateBasicVar( mObjectiveLRAVar->second.first );
+                                        mTableau.activateBasicVar( mObjectiveLRAVar->second );
                                     }
                                 }
                                 return true;
@@ -205,6 +208,7 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         cout << "LRAModule::remove " << _subformula->formula() << endl;
         #endif
+        mOptimumComputed = false;
         const FormulaT& formula = _subformula->formula();
         if( formula.getType() == carl::FormulaType::CONSTRAINT )
         {
@@ -477,10 +481,10 @@ namespace smtrat
     template<class Settings>
     void LRAModule<Settings>::updateModel() const
     {
-        if( !mModelComputed )
+        if( !mModelComputed && !mOptimumComputed )
         {
             clearModel();
-            assert( solverState() != UNSAT || mMinimize );
+            assert( solverState() != UNSAT );
             if( mAssignmentFullfilsNonlinearConstraints )
             {
                 const EvalRationalMap& rationalAssignment = getRationalModel();
@@ -552,53 +556,28 @@ namespace smtrat
         {
             if( objectiveFunction().isConstant() )
             {
+                mOptimumComputed = false;
                 mModelComputed = false;
                 updateModel();
                 mModel.insert(mModel.end(), std::make_pair(objective(), objectiveFunction().constantPart() ) );
+                mOptimumComputed = true;
                 return _result;
             }
-            bool variableBasicAndNotConnected = false;
-            if( !mObjectiveLRAVar->second.first->isBasic() )
-            {
-                if( mObjectiveLRAVar->second.first->startEntry() != lra::LAST_ENTRY_ID )
-                {
-                    mTableau.resetTheta();
-                    mTableau.pivot( mObjectiveLRAVar->second.first->startEntry(), true );
-                }
-                else
-                    variableBasicAndNotConnected = true;
-            }
+            assert( mObjectiveLRAVar->second->isBasic() );
             for( ; ; )
             {
-                bool minimize = mObjectiveLRAVar->second.second > 0;
-                std::pair<EntryID,bool> pivotingElement = variableBasicAndNotConnected ? 
-                    std::make_pair( lra::LAST_ENTRY_ID, true ) : 
-                    mTableau.nextPivotingElementForOptimizing( *(mObjectiveLRAVar->second.first), minimize );
+                std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElementForOptimizing( *(mObjectiveLRAVar->second) );
                 if( pivotingElement.second )
                 {
                     if( pivotingElement.first == lra::LAST_ENTRY_ID )
                     {
-                        if( (minimize && mObjectiveLRAVar->second.first->infimum().isInfinite()) || (!minimize && mObjectiveLRAVar->second.first->supremum().isInfinite()) )
-                        {
-                            #ifdef DEBUG_LRA_MODULE
-                            std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: -oo" << std::endl;
-                            #endif
-                            clearModel();
-                            mModel.insert(mModel.end(), std::make_pair(objective(), InfinityValue()) );
-                            mModelComputed = true;
-                        }
-                        else
-                        {
-                            mModelComputed = false;
-                            const LRAValue& optimum = minimize ? mObjectiveLRAVar->second.first->infimum().limit() : mObjectiveLRAVar->second.first->supremum().limit();
-                            mObjectiveLRAVar->second.first->rAssignment() = optimum;
-                            updateModel();
-                            Rational ass = (Rational)(optimum.mainPart()+mTableau.currentDelta()*optimum.deltaPart())/mObjectiveLRAVar->second.second;
-                            #ifdef DEBUG_LRA_MODULE
-                            std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: " << ass << std::endl;
-                            #endif
-                            mModel.insert(mModel.end(), std::make_pair(objective(), ass ) );
-                        }
+                        assert( mObjectiveLRAVar->second->infimum().isInfinite() );
+                        #ifdef DEBUG_LRA_MODULE
+                        std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: -oo" << std::endl;
+                        #endif
+                        clearModel();
+                        mModel.insert(mModel.end(), std::make_pair(objective(), InfinityValue()) );
+                        mOptimumComputed = true;
                         break;
                     }
                     else
@@ -612,13 +591,15 @@ namespace smtrat
                 else
                 {
                     mModelComputed = false;
+                    mOptimumComputed = false;
                     updateModel();
                     const EvalRationalMap& ratModel = getRationalModel();
-                    Rational opti = mObjectiveLRAVar->second.first->expression().evaluate( ratModel )/mObjectiveLRAVar->second.second;
+                    Rational opti = mObjectiveLRAVar->second->expression().evaluate( ratModel );
                     #ifdef DEBUG_LRA_MODULE
                     std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: " << opti << std::endl;
                     #endif
                     mModel.insert(mModel.end(), std::make_pair(objective(), opti ) );
+                    mOptimumComputed = true;
                     break;
                 }
             }

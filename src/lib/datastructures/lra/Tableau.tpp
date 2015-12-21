@@ -10,7 +10,7 @@
 #include "Tableau.h"
 #include "TableauSettings.h"
 
-#define DEBUG_METHODS_TABLEAU
+//#define DEBUG_METHODS_TABLEAU
 //#define LRA_DEBUG_CUTS_FROM_PROOFS
 
 namespace smtrat
@@ -211,6 +211,12 @@ namespace smtrat
                     _factor = -_factor;
             }
             return result;
+        }
+        
+        template<class Settings, typename T1, typename T2>
+        Variable<T1,T2>* Tableau<Settings,T1,T2>::getObjectiveVariable( const Poly& _lhs )
+        {
+            return newBasicVariable( new typename Poly::PolyType( _lhs ), _lhs.integerValued() );
         }
         
         template<class Settings, typename T1, typename T2>
@@ -908,30 +914,82 @@ namespace smtrat
 //        #define DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
 
         template<class Settings, typename T1, typename T2>
-        std::pair<EntryID,bool> Tableau<Settings,T1,T2>::nextPivotingElementForOptimizing( const Variable<T1, T2>& _objective, bool _minimize )
+        std::pair<EntryID,bool> Tableau<Settings,T1,T2>::optimizeIndependentNonbasics( const Variable<T1, T2>& _objective )
+        {
+            EntryID firstColumnToCheck = LAST_ENTRY_ID;
+            Iterator objectiveIter = Iterator( _objective.startEntry(), mpEntries );
+            while( true )
+            {
+                Variable<T1, T2>& varForMinimizaton = *(*objectiveIter).columnVar();
+                if( (*mpEntries)[varForMinimizaton.startEntry()].vNext( false ) == LAST_ENTRY_ID ) // Non-basic variable only occurs in objective function
+                {
+                    #ifdef LRA_NO_DIVISION
+                    bool increaseVar = ((*objectiveIter).content() < 0 && _objective.factor() > 0) || ((*objectiveIter).content() > 0 && _objective.factor() < 0);
+                    #else
+                    bool increaseVar = (*objectiveIter).content() < 0;
+                    #endif
+                    if( increaseVar )
+                    {
+                        if( varForMinimizaton.supremum().isInfinite() )
+                        {
+                            return std::make_pair( LAST_ENTRY_ID, true );
+                        }
+                        else if( varForMinimizaton.supremum() > varForMinimizaton.assignment() )
+                        {
+                            updateBasicAssignments( varForMinimizaton.position(), varForMinimizaton.supremum().limit() - varForMinimizaton.assignment() );
+                            varForMinimizaton.rAssignment() = varForMinimizaton.supremum().limit();
+                        }
+                    }
+                    else
+                    {
+                        if( varForMinimizaton.infimum().isInfinite() )
+                        {
+                            return std::make_pair( LAST_ENTRY_ID, true );
+                        }
+                        else if( varForMinimizaton.infimum() < varForMinimizaton.assignment() )
+                        {
+                            updateBasicAssignments( varForMinimizaton.position(), varForMinimizaton.assignment() - varForMinimizaton.infimum().limit() );
+                            varForMinimizaton.rAssignment() = varForMinimizaton.infimum().limit();
+                        }
+                    }
+                }
+                else if( firstColumnToCheck == LAST_ENTRY_ID )
+                {
+                    firstColumnToCheck = objectiveIter.entryID();
+                }
+                if( objectiveIter.hEnd( false ) )
+                    break;
+                else
+                    objectiveIter.hMove( false );
+            }
+            return std::make_pair( firstColumnToCheck, firstColumnToCheck != LAST_ENTRY_ID );
+        }
+
+        template<class Settings, typename T1, typename T2>
+        std::pair<EntryID,bool> Tableau<Settings,T1,T2>::nextPivotingElementForOptimizing( const Variable<T1, T2>& _objective )
         {
             #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-            std::cout << "Find next pivoting element to " << (_minimize ? "minimize" : "maximize") << " ";
+            std::cout << "Find next pivoting element to minimize ";
             _objective.print();
             std::cout << " in:" << std::endl;
             print();
             #endif
-            bool isBasic = _objective.isBasic();
+            assert( _objective.isBasic() );
+            assert( _objective.positionInNonActives() == mNonActiveBasics.end() );
+            std::pair<EntryID,bool> ret = optimizeIndependentNonbasics( _objective );
+            if( ret.first == LAST_ENTRY_ID )
+                return ret;
             Value<T1> maxTheta = Value<T1>(T1(-1));
-            EntryID objectiveStartEntry = _objective.startEntry();
-            Iterator objectiveIter = Iterator( objectiveStartEntry, mpEntries );
-            if( (isBasic && objectiveIter.hEnd( false )) || (!isBasic && objectiveIter.vEnd( false )) )
-                return std::make_pair( LAST_ENTRY_ID, true );
-            Value<T1> optimizationRange = _minimize ? 
-                (_objective.infimum().isInfinite() ? maxTheta : (_objective.assignment()-_objective.infimum().limit())) :
-                (_objective.supremum().isInfinite() ? maxTheta : (_objective.supremum().limit()-_objective.assignment()));
+            assert( ret.first != LAST_ENTRY_ID );
+            Iterator objectiveIter = Iterator( ret.first, mpEntries );
+            Value<T1> optimizationRange = (_objective.infimum().isInfinite() ? maxTheta : (_objective.assignment()-_objective.infimum().limit()));
             if( optimizationRange == T1( 0 ) )
                 return std::make_pair( LAST_ENTRY_ID, false );
             (*mpTheta) = T1( 0 );
             EntryID bestResult = LAST_ENTRY_ID;
             while( true )
             {
-                const Variable<T1, T2>& varForMinimizaton = isBasic ? *(*objectiveIter).columnVar() : *(*objectiveIter).rowVar();
+                const Variable<T1, T2>& varForMinimizaton = *(*objectiveIter).columnVar();
                 #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
                 std::cout << "Check the non-basic variable ";
                 varForMinimizaton.print();
@@ -952,8 +1010,6 @@ namespace smtrat
                     if( maxOptimizationValue < T1(0) )
                         maxOptimizationValue = maxOptimizationValue * T1( -1 );
                 }
-                if( !_minimize )
-                    increaseVar = !increaseVar;
                 #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
                 std::cout << "   " << (increaseVar ? "Increase" : "Decrease") << " non-basic variable's assignment." << std::endl;
                 if( maxOptimizationValue == maxTheta )
@@ -979,9 +1035,10 @@ namespace smtrat
                     Value<T1> varForMinTheta = maxNonBasicMargin;
                     EntryID result = LAST_ENTRY_ID;
                     Iterator varForMinIter = Iterator( varForMinimizaton.startEntry(), mpEntries );
+                    assert( varForMinIter.vEnd( true ) ); // Is the lowest row.
                     while( true )
                     {
-                        Variable<T1, T2>& lraVar = isBasic ? *((*varForMinIter).rowVar()) : *((*varForMinIter).columnVar());
+                        Variable<T1, T2>& lraVar = *((*varForMinIter).rowVar());
                         if( lraVar != _objective )
                         {
                             #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
@@ -1047,7 +1104,7 @@ namespace smtrat
                                 break;
                             }
                         }
-                        if( (isBasic && varForMinIter.vEnd( false )) || (!isBasic && varForMinIter.hEnd( false )) )
+                        if( varForMinIter.vEnd( false ) )
                         {
                             if( result != LAST_ENTRY_ID )
                             {
@@ -1092,21 +1149,15 @@ namespace smtrat
                         }
                         else
                         {
-                            if( isBasic )
-                                varForMinIter.vMove( false );
-                            else
-                                varForMinIter.hMove( false );
+                            varForMinIter.vMove( false );
                         }
                     }
                 }
-                if( (isBasic && objectiveIter.hEnd( false )) || (!isBasic && objectiveIter.vEnd( false )) )
+                if( objectiveIter.hEnd( false ) )
                     break;
                 else
                 {
-                    if( isBasic )
-                        objectiveIter.hMove( false );
-                    else
-                        objectiveIter.vMove( false );
+                    objectiveIter.hMove( false );
                 }
             }
             if( bestResult != LAST_ENTRY_ID )

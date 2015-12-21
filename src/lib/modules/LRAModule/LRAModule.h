@@ -93,6 +93,8 @@ namespace smtrat
             ///
             bool mMinimize;
             ///
+            bool mOptimumComputed;
+            ///
             mutable bool mRationalModelComputed;
             /**
              * Contains the main data structures of this module. It maintains for each LRAModule variable a row
@@ -121,9 +123,9 @@ namespace smtrat
             /// Stores the bounds, which would influence a backend call because of recent changes.
             std::vector<const LRABound* > mBoundCandidatesToPass;
             ///
-            carl::FastMap<Poly,std::pair<LRAVariable*,Rational>> mCreatedObjectiveLRAVars;
+            carl::FastMap<Poly,LRAVariable*> mCreatedObjectiveLRAVars;
             ///
-            carl::FastMap<Poly,std::pair<LRAVariable*,Rational>>::iterator mObjectiveLRAVar;
+            carl::FastMap<Poly,LRAVariable*>::iterator mObjectiveLRAVar;
             ///
             mutable EvalRationalMap mRationalAssignment;
             #ifdef SMTRAT_DEVOPTION_Statistics
