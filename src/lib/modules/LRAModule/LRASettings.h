@@ -39,6 +39,29 @@ namespace smtrat
         /**
          * 
          */
+        #ifdef SMTRAT_STRAT_PARALLEL_MODE
+        typedef Rational BoundType;
+        #else
+        typedef carl::Numeric<Rational> BoundType;
+        #endif
+        /**
+         * 
+         */
+        #ifdef SMTRAT_STRAT_PARALLEL_MODE
+        typedef Rational EntryType;
+        #else
+        typedef carl::Numeric<Rational> EntryType;
+        #endif
+        /**
+         * 
+         */
         struct Tableau_settings : lra::TableauSettings1 {};
     };
+    
+//    struct LRASettings2 : LRASettings1
+//    {
+//		static constexpr auto moduleName = "LRAModule<LRASettings2>";
+//        typedef carl::FLOAT_T<double> BoundType;
+//        typedef carl::FLOAT_T<double> EntryType;
+//    };
 }

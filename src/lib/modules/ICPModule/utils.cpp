@@ -83,7 +83,7 @@ namespace smtrat
             return false;
         }
         
-        const LRAVariable* getOriginalLraVar( carl::Variable::Arg _var, const LRAModule<LRASettings1>& _lra )
+        const LRAModule<LRASettings1>::LRAVariable* getOriginalLraVar( carl::Variable::Arg _var, const LRAModule<LRASettings1>& _lra )
         {
 #ifdef __VS
             LRAModule<LRASettings1>::VarVariableMap::const_iterator target = _lra.originalVariables().find(_var);

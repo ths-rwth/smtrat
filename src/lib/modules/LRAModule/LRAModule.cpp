@@ -1016,9 +1016,9 @@ namespace smtrat
         const LRAVariable& lraVar = _bound->variable();
         if( _bound->isUpperBound() )
         {
-            LRABound::BoundSet::const_iterator boundPos = lraVar.upperbounds().find( _bound );
+            typename LRABound::BoundSet::const_iterator boundPos = lraVar.upperbounds().find( _bound );
             assert( boundPos != lraVar.upperbounds().end() );
-            LRABound::BoundSet::const_iterator currentBound = lraVar.upperbounds().begin();
+            typename LRABound::BoundSet::const_iterator currentBound = lraVar.upperbounds().begin();
             if( _bound->type() == LRABound::Type::EQUAL )
             {
                 currentBound = boundPos;
@@ -1066,9 +1066,9 @@ namespace smtrat
         }
         if( _bound->isLowerBound() )
         {
-            LRABound::BoundSet::const_iterator boundPos = lraVar.lowerbounds().find( _bound );
+            typename LRABound::BoundSet::const_iterator boundPos = lraVar.lowerbounds().find( _bound );
             assert( boundPos != lraVar.lowerbounds().end() );
-            LRABound::BoundSet::const_iterator currentBound = lraVar.lowerbounds().begin();
+            typename LRABound::BoundSet::const_iterator currentBound = lraVar.lowerbounds().begin();
             if( _boundNeq )
             {
                 currentBound = boundPos;
@@ -1137,7 +1137,7 @@ namespace smtrat
         assert( !_bound.deduced() );
         if( _bound.isUpperBound() )
         {
-            const LRABound::BoundSet& lbounds = _bound.variable().lowerbounds();
+            const typename LRABound::BoundSet& lbounds = _bound.variable().lowerbounds();
             for( auto lbound = lbounds.rbegin(); lbound != --lbounds.rend(); ++lbound )
             {
                 if( **lbound > _bound.limit() && !(*lbound)->asConstraint().isTrue() )
@@ -1169,7 +1169,7 @@ namespace smtrat
         }
         if( _bound.isLowerBound() )
         {
-            const LRABound::BoundSet& ubounds = _bound.variable().upperbounds();
+            const typename LRABound::BoundSet& ubounds = _bound.variable().upperbounds();
             for( auto ubound = ubounds.begin(); ubound != --ubounds.end(); ++ubound )
             {
                 if( **ubound < _bound.limit() && !(*ubound)->asConstraint().isTrue() )

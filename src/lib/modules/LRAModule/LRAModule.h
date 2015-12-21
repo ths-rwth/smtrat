@@ -19,24 +19,6 @@
 
 namespace smtrat
 {
-    /// Number type of the underlying value of a bound of a variable within the LRAModule.
-    #ifdef SMTRAT_STRAT_PARALLEL_MODE
-    typedef Rational LRABoundType;
-    #else
-    typedef carl::Numeric<Rational> LRABoundType;
-    #endif
-    /// Type of an entry within the tableau.
-    #ifdef SMTRAT_STRAT_PARALLEL_MODE
-    typedef Rational LRAEntryType;
-    #else
-    typedef carl::Numeric<Rational> LRAEntryType;
-    #endif
-    /// Type of a bound of a variable within the LRAModule.
-    typedef lra::Bound<LRABoundType, LRAEntryType> LRABound;
-    /// A variable of the LRAModule, being either a original variable or a slack variable representing a linear polynomial.
-    typedef lra::Variable<LRABoundType, LRAEntryType> LRAVariable;
-    /// The type of the assignment of a variable maintained by the LRAModule. It consists of a tuple of two value of the bound type.
-    typedef lra::Value<LRABoundType> LRAValue;
     
     /**
      * A module which performs the Simplex method on the linear part of it's received formula.
@@ -46,6 +28,16 @@ namespace smtrat
         public Module
     {
         public:
+            /// Number type of the underlying value of a bound of a variable within the LRAModule.
+            typedef typename Settings::BoundType LRABoundType;
+            /// Type of an entry within the tableau.
+            typedef typename Settings::EntryType LRAEntryType;
+            /// Type of a bound of a variable within the LRAModule.
+            typedef lra::Bound<LRABoundType, LRAEntryType> LRABound;
+            /// A variable of the LRAModule, being either a original variable or a slack variable representing a linear polynomial.
+            typedef lra::Variable<LRABoundType, LRAEntryType> LRAVariable;
+            /// The type of the assignment of a variable maintained by the LRAModule. It consists of a tuple of two value of the bound type.
+            typedef lra::Value<LRABoundType> LRAValue;
 			typedef Settings SettingsType;
             std::string moduleName() const
             {
@@ -125,7 +117,7 @@ namespace smtrat
             ///
             carl::FastMap<Poly,LRAVariable*> mCreatedObjectiveLRAVars;
             ///
-            carl::FastMap<Poly,LRAVariable*>::iterator mObjectiveLRAVar;
+            typename carl::FastMap<Poly,LRAVariable*>::iterator mObjectiveLRAVar;
             ///
             mutable EvalRationalMap mRationalAssignment;
             #ifdef SMTRAT_DEVOPTION_Statistics
@@ -297,7 +289,7 @@ namespace smtrat
              */
             const LRAVariable* getSlackVariable( const FormulaT& _constraint ) const
             {
-                ConstraintBoundsMap::const_iterator iter = mTableau.constraintToBound().find( _constraint );
+                typename ConstraintBoundsMap::const_iterator iter = mTableau.constraintToBound().find( _constraint );
                 assert( iter != mTableau.constraintToBound().end() );
                 return (*iter->second->begin())->pVariable();
             }

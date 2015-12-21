@@ -80,7 +80,7 @@ namespace smtrat
             icp::ContractionCandidateManager mCandidateManager; // keeps all candidates
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveNonlinearConstraints; // nonlinear candidates considered
             std::set<icp::ContractionCandidate*, icp::contractionCandidateComp> mActiveLinearConstraints; // linear candidates considered
-            std::map<const LRAVariable*, ContractionCandidates> mLinearConstraints; // all linear candidates
+            std::map<const icp::LRAVariable*, ContractionCandidates> mLinearConstraints; // all linear candidates
             std::map<ConstraintT, ContractionCandidates> mNonlinearConstraints; // all nonlinear candidates
 			FormulaSetT mNotEqualConstraints;
             
@@ -192,7 +192,7 @@ return SettingsType::moduleName;
              * @param _lraVar
              * @return 
              */
-            icp::IcpVariable* getIcpVariable( carl::Variable::Arg _var, bool _original, const LRAVariable* _lraVar );
+            icp::IcpVariable* getIcpVariable( carl::Variable::Arg _var, bool _original, const icp::LRAVariable* _lraVar );
             
             /**
              * 

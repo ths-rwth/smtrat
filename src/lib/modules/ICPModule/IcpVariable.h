@@ -30,6 +30,8 @@ namespace icp
         NONE
     };
     
+    typedef LRAModule<LRASettings1>::LRAVariable LRAVariable;
+    
     class IcpVariable
     {
         private:

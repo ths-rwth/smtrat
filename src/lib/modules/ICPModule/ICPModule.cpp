@@ -264,7 +264,7 @@ namespace smtrat
         // linear handling
         auto linearization = mLinearizations.find( _formula->formula() );
         assert( linearization != mLinearizations.end() );
-        const LRAVariable* slackvariable = mLRA.getSlackVariable( linearization->second );
+        const icp::LRAVariable* slackvariable = mLRA.getSlackVariable( linearization->second );
         assert( slackvariable != nullptr );
         // lookup if contraction candidates already exist - if so, add origins
         auto iterB = mLinearConstraints.find( slackvariable );
@@ -525,7 +525,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    icp::IcpVariable* ICPModule<Settings>::getIcpVariable( carl::Variable::Arg _var, bool _original, const LRAVariable* _lraVar )
+    icp::IcpVariable* ICPModule<Settings>::getIcpVariable( carl::Variable::Arg _var, bool _original, const icp::LRAVariable* _lraVar )
     {
         auto iter = mVariables.find( _var );
         if( iter != mVariables.end() )
@@ -569,7 +569,7 @@ namespace smtrat
     void ICPModule<Settings>::activateLinearConstraint( const FormulaT& _formula, const FormulaT& _origin )
     {
         assert( _formula.getType() == carl::FormulaType::CONSTRAINT );
-        const LRAVariable* slackvariable = mLRA.getSlackVariable( _formula );
+        const icp::LRAVariable* slackvariable = mLRA.getSlackVariable( _formula );
         assert( slackvariable != nullptr );
         // lookup if contraction candidates already exist - if so, add origins
         auto iter = mLinearConstraints.find( slackvariable );
@@ -894,7 +894,7 @@ namespace smtrat
          */
         assert( _constraint.getType() == carl::FormulaType::CONSTRAINT );
         assert( _constraint.constraint().lhs().isLinear() );
-        const LRAVariable* slackvariable = mLRA.getSlackVariable( _constraint );
+        const icp::LRAVariable* slackvariable = mLRA.getSlackVariable( _constraint );
         assert( slackvariable != nullptr );
         if( mLinearConstraints.find( slackvariable ) == mLinearConstraints.end() )
         {
@@ -938,7 +938,7 @@ namespace smtrat
                 assert( origIcpVar != mVariables.end() );
                 origIcpVar->second->addCandidates( ccs );
             }
-            mLinearConstraints.insert( pair<const LRAVariable*, ContractionCandidates>( slackvariable, icpVar->candidates() ) );
+            mLinearConstraints.insert( pair<const icp::LRAVariable*, ContractionCandidates>( slackvariable, icpVar->candidates() ) );
         }
     }
 
@@ -2382,7 +2382,7 @@ namespace smtrat
         const LRAModule<LRASettings1>::ExVariableMap slackVariables = mLRA.slackVariables();
         for( auto slackIt = slackVariables.begin(); slackIt != slackVariables.end(); ++slackIt )
         {
-            std::map<const LRAVariable*, ContractionCandidates>::iterator linIt = mLinearConstraints.find((*slackIt).second);
+            std::map<const icp::LRAVariable*, ContractionCandidates>::iterator linIt = mLinearConstraints.find((*slackIt).second);
             if ( linIt != mLinearConstraints.end() )
             {
                 // dirty hack: expect lhs to be set and take first item of set of CCs --> Todo: Check if it is really set in the constructors of the CCs during inform and assert
@@ -2496,7 +2496,7 @@ namespace smtrat
                 const LRAModule<LRASettings1>::ExVariableMap slackVariables = mLRA.slackVariables();
                 for ( auto slackIt = slackVariables.begin(); slackIt != slackVariables.end(); ++slackIt )
                 {
-                    std::map<const LRAVariable*, ContractionCandidates>::iterator linIt = mLinearConstraints.find((*slackIt).second);
+                    std::map<const icp::LRAVariable*, ContractionCandidates>::iterator linIt = mLinearConstraints.find((*slackIt).second);
                     if ( linIt != mLinearConstraints.end() )
                     {
                         // dirty hack: expect lhs to be set and take first item of set of CCs --> Todo: Check if it is really set in the constructors of the CCs during inform and assert
