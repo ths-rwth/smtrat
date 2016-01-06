@@ -115,7 +115,7 @@ namespace smtrat
         mNumberOfFullLazyCalls( 0 ),
         mCurr_Restarts( 0 ),
         mNumberOfTheoryCalls( 0 ),
-        mReceivedFormulaPurelyPropositional(false),
+        mReceivedFormulaPurelyPropositional(true),
         mConstraintLiteralMap(),
         mBooleanVarMap(),
         mMinisatVarMap(),
@@ -189,6 +189,8 @@ namespace smtrat
         }
         else if( !_subformula->formula().isTrue() )
         {
+            if( !_subformula->formula().isOnlyPropositional() )
+                mReceivedFormulaPurelyPropositional = false;
             mModelComputed = false;
             //TODO Matthias: better solution?
             cancelUntil( assumptions.size() );
@@ -298,7 +300,6 @@ namespace smtrat
                 mClauseFormulaMap.erase(cref);
                 removeClause( cref );
             }
-            clauses.shrink( (int)iter->second.size() );
             mFormulaClausesMap.erase( iter );
             std::vector<FormulaT> constraints;
             _subformula->formula().getConstraints( constraints );
@@ -532,11 +533,16 @@ namespace smtrat
                 handleConflict( learnts.last() );
             }
         }
+        
+//        std::cout << decisions << std::endl;
+//        exit(77);
         #ifdef SMTRAT_DEVOPTION_Statistics
         collectStats();
         #endif
         if( result == l_True )
+        {
             return SAT;
+        }
         else if( result == l_False )
         {
             ok = false;
@@ -2041,7 +2047,7 @@ SetWatches:
             else if( abstr.consistencyRelevant ) abstr.updateInfo = 0;
         }
 
-        if( Settings::formula_guided_decision_heuristic )
+        if( !mReceivedFormulaPurelyPropositional && Settings::formula_guided_decision_heuristic )
         {
             auto iter = mTseitinVarShadows.find( (signed) _var );
             if( iter != mTseitinVarShadows.end() )
@@ -2598,17 +2604,17 @@ SetWatches:
                             varsToRestore.push(next);
                             next = var_Undef;
                         }
-                        else if( consistency != 3 )
-                        {
-                            if( Settings::check_active_literal_occurrences )
-                            {
-                                polarity[next] = !takeNegation;
-                            }
-                            else
-                            {
-                                polarity[next] = (consistency == 0);
-                            }
-                        }
+//                        else if( consistency != 3 )
+//                        {
+//                            if( Settings::check_active_literal_occurrences )
+//                            {
+//                                polarity[next] = !takeNegation;
+//                            }
+//                            else
+//                            {
+//                                polarity[next] = (consistency == 0);
+//                            }
+//                        }
                     }
                 }
             }
@@ -2907,7 +2913,7 @@ SetWatches:
                 }
             }
         }
-        if( Settings::formula_guided_decision_heuristic )
+        if( !mReceivedFormulaPurelyPropositional && Settings::formula_guided_decision_heuristic )
         {
             auto iter = mTseitinVarShadows.find( (signed) var(p) );
             if( iter != mTseitinVarShadows.end() )

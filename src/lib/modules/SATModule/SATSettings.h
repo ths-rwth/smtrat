@@ -60,7 +60,7 @@ namespace smtrat
 		/**
 		 *
 		 */
-		static const bool remove_satisfied = true;
+		static const bool remove_satisfied = false; // This cannot be true as otherwise incremental sat solving won't work
 #ifdef __VS
         /**
          * 
