@@ -53,6 +53,7 @@ namespace smtrat
         mInfeasibleSubsets(),
         mpManager( _manager ),
         mModel(),
+        mAllModels(),
         mModelComputed( false ),
         mSolverState( UNKNOWN ),
 #ifdef __VS
