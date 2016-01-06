@@ -225,12 +225,12 @@ namespace smtrat
             mpPrimaryBackend->printModel();
         else
         {
-            const Model& model = mpPrimaryBackend->model();
+            const Model& curModel = model();
             auto objectivesIter = mObjectives.begin();
             cout << "(";
-            for( auto ass = model.begin(); ass != model.end(); ++ass )
+            for( auto ass = curModel.begin(); ass != curModel.end(); ++ass )
             {
-                if (ass != model.begin()) cout << " ";
+                if (ass != curModel.begin()) cout << " ";
                 if (ass->first.isVariable() || ass->first.isBVVariable())
                 {
                     if( objectivesIter != mObjectives.end() && ass->first.asVariable() == objectivesIter->second.first )
