@@ -23,7 +23,7 @@ namespace smtrat
 	{}
 	
 	template<class Settings>
-	bool ICEModule<Settings>::informCore( const FormulaT& _constraint )
+	bool ICEModule<Settings>::informCore( const FormulaT& )
 	{
 		return true;
 	}

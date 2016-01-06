@@ -413,7 +413,7 @@ namespace smtrat
                     // create Bounds and set them, add to passedFormula
                     pushBoundsToPassedFormula();
                     // lazy call of the backends on found box
-                    Answer lazyResult = callBackends( false );
+                    Answer lazyResult = callBackends( false, _minimize );
                     // if it led to a result or the backends require a splitting
                     if( lazyResult != UNKNOWN || !splittings().empty() )
                         return lazyResult;
