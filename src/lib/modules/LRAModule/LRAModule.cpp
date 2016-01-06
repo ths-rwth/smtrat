@@ -48,7 +48,7 @@ namespace smtrat
     {
         while( !mCreatedObjectiveLRAVars.empty() )
         {
-            LRAVariable* toDel = mCreatedObjectiveLRAVars.begin()->second;
+            LRAVariable* toDel = mCreatedObjectiveLRAVars.begin()->second.first;
             mCreatedObjectiveLRAVars.erase( mCreatedObjectiveLRAVars.begin() );
             delete toDel;
         }
@@ -128,8 +128,9 @@ namespace smtrat
                                         mObjectiveLRAVar = mCreatedObjectiveLRAVars.find( objectiveFunction() );
                                         if( mObjectiveLRAVar == mCreatedObjectiveLRAVars.end() )
                                         {
-                                            LRAVariable* lraVar = mTableau.getObjectiveVariable( objectiveFunction() );
-                                            mObjectiveLRAVar = mCreatedObjectiveLRAVars.emplace( objectiveFunction(), lraVar ).first;
+                                            Rational denominator = carl::abs( carl::getNum( objectiveFunction().coprimeFactor() ) );
+                                            LRAVariable* lraVar = mTableau.getObjectiveVariable( objectiveFunction()*denominator );
+                                            mObjectiveLRAVar = mCreatedObjectiveLRAVars.emplace( objectiveFunction(), std::make_pair( lraVar, std::move(denominator) ) ).first;
                                         }
                                     }
                                 }
@@ -563,16 +564,16 @@ namespace smtrat
                 return _result;
             }
             assert( mObjectiveLRAVar != mCreatedObjectiveLRAVars.end() );
-            assert( mObjectiveLRAVar->second->isBasic() );
-            mTableau.activateBasicVar( mObjectiveLRAVar->second );
+            assert( mObjectiveLRAVar->second.first->isBasic() );
+            mTableau.activateBasicVar( mObjectiveLRAVar->second.first );
             for( ; ; )
             {
-                std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElementForOptimizing( *(mObjectiveLRAVar->second) );
+                std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElementForOptimizing( *(mObjectiveLRAVar->second.first) );
                 if( pivotingElement.second )
                 {
                     if( pivotingElement.first == lra::LAST_ENTRY_ID )
                     {
-                        assert( mObjectiveLRAVar->second->infimum().isInfinite() );
+                        assert( mObjectiveLRAVar->second.first->infimum().isInfinite() );
                         #ifdef DEBUG_LRA_MODULE
                         std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: -oo" << std::endl;
                         #endif
@@ -595,7 +596,7 @@ namespace smtrat
                     mOptimumComputed = false;
                     updateModel();
                     const EvalRationalMap& ratModel = getRationalModel();
-                    Rational opti = mObjectiveLRAVar->second->expression().evaluate( ratModel );
+                    Rational opti = mObjectiveLRAVar->second.first->expression().evaluate( ratModel )/mObjectiveLRAVar->second.second;
                     #ifdef DEBUG_LRA_MODULE
                     std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: " << opti << std::endl;
                     #endif
@@ -605,7 +606,7 @@ namespace smtrat
                 }
             }
         }
-        mTableau.deactivateBasicVar( mObjectiveLRAVar->second );
+        mTableau.deactivateBasicVar( mObjectiveLRAVar->second.first );
         // @todo Branch if assignment does not fulfill integer domains.
         return _result;
     }
