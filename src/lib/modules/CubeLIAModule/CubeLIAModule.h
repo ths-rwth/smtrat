@@ -34,10 +34,6 @@ namespace smtrat
                     mUsages(1)
                 {}
             };
-            
-#ifdef SMTRAT_DEVOPTION_Statistics
-			CubeLIAStatistics mStatistics;
-#endif
 			// Members.
             mutable bool mModelUpdated;
             std::map<carl::Variable,Poly> mIntToRealVarMap;
@@ -47,6 +43,10 @@ namespace smtrat
             std::vector<std::atomic_bool*> mLRAFoundAnswer;
             RuntimeSettings* mLRARuntimeSettings;
             LRAModule<LRASettings1> mLRA;
+            
+#ifdef SMTRAT_DEVOPTION_Statistics
+			CubeLIAStatistics mStatistics;
+#endif
 			
 		public:
 			typedef Settings SettingsType;
