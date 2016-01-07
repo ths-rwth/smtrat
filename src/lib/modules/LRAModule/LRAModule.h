@@ -183,7 +183,7 @@ namespace smtrat
              */
             Answer checkCore( bool _full = true, bool _minimize = false );
             
-            Answer processResult( Answer _result, bool _backendsResultUnknown );
+            Answer processResult( Answer _result, bool _unsatisfiedNonlinearConstraints = false );
             
             /**
              * Updates the model, if the solver has detected the consistency of the received formula, beforehand.
