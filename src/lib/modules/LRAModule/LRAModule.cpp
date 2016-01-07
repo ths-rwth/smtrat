@@ -25,6 +25,7 @@ namespace smtrat
         mMinimize( false ),
         mOptimumComputed( false),
         mRationalModelComputed( false ),
+        mCheckedWithBackends( false ),
         mTableau( passedFormulaEnd() ),
         mLinearConstraints(),
         mNonlinearConstraints(),
@@ -365,6 +366,7 @@ namespace smtrat
         assert( !mTableau.isConflicting() );
         mTableau.setBlandsRuleStart( 1000 );//(unsigned) mTableau.columns().size() );
         mTableau.compressRows();
+        mCheckedWithBackends = false;
         for( ; ; )
         {
             // Check whether a module which has been called on the same instance in parallel, has found an answer.
@@ -404,11 +406,12 @@ namespace smtrat
                     // Otherwise, check the consistency of the formula consisting of the nonlinear constraints and the tightest bounds with the backends.
                     else
                     {
+                        mCheckedWithBackends = true;
                         adaptPassedFormula();
                         Answer a = runBackends( _full, _minimize );
                         if( a == UNSAT )
                             getInfeasibleSubsets();
-                        return processResult( a, true );
+                        return processResult( a );
                     }
                 }
                 else
@@ -440,7 +443,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    Answer LRAModule<Settings>::processResult( Answer _result, bool _unsatisfiedNonlinearConstraints )
+    Answer LRAModule<Settings>::processResult( Answer _result )
     {
         #ifdef LRA_REFINEMENT
         learnRefinements();
@@ -462,7 +465,7 @@ namespace smtrat
         if( _result != UNKNOWN )
         {
             mTableau.resetNumberOfPivotingSteps();
-            if( _result == SAT && !_unsatisfiedNonlinearConstraints )
+            if( _result == SAT && !mCheckedWithBackends )
             {
                 _result = checkNotEqualConstraints( _result );
             }
@@ -518,30 +521,43 @@ namespace smtrat
                 return 0;
             case carl::FormulaType::CONSTRAINT:
             {
-                if( _formula.constraint().lhs().isLinear() && _formula.constraint().relation() != carl::Relation::NEQ )
+                if( mCheckedWithBackends )
                 {
-                    auto constrBoundIter = mTableau.constraintToBound().find( _formula );
-                    if( constrBoundIter != mTableau.constraintToBound().end() )
+                    return satisfies( model(), _formula );
+                }
+                else
+                {
+                    if( _formula.constraint().lhs().isLinear() && _formula.constraint().relation() != carl::Relation::NEQ )
                     {
-                        const LRABound& bound = *constrBoundIter->second->front();
-                        const LRAVariable& lravar = bound.variable();
-                        if( lravar.hasBound() || (lravar.isOriginal() && receivedVariable( lravar.expression().getSingleVariable() )) )
+                        auto constrBoundIter = mTableau.constraintToBound().find( _formula );
+                        if( constrBoundIter != mTableau.constraintToBound().end() )
                         {
-                            if( bound.isSatisfied( mTableau.currentDelta() ) )
+                            const LRABound& bound = *constrBoundIter->second->front();
+                            const LRAVariable& lravar = bound.variable();
+                            if( lravar.hasBound() || (lravar.isOriginal() && receivedVariable( lravar.expression().getSingleVariable() )) )
                             {
-                                return 1;
-                            }
-                            else
-                            {
-                                return 0;
+                                if( bound.isSatisfied( mTableau.currentDelta() ) )
+                                {
+                                    return 1;
+                                }
+                                else
+                                {
+                                    return 0;
+                                }
                             }
                         }
                     }
+                    else
+                    {
+                        return _formula.satisfiedBy( getRationalModel() );
+                    }
                 }
+                break;
             }
             default:
-                return _formula.satisfiedBy( getRationalModel() );
+                break;
         }
+        return 2;
     }
     
     template<class Settings>
