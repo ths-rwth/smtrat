@@ -669,7 +669,7 @@ namespace smtrat
         if( !mModelComputed )
         {
             clearModel();
-            if( solverState() == SAT || mMinimize )
+            if( solverState() != UNSAT || mMinimize )
             {
                 for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
                 {
