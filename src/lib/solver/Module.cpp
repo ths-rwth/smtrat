@@ -730,13 +730,17 @@ namespace smtrat
                     (*module)->mDeductions.clear(); // TODO: this might be removed, as it is now done in check as well
                     (*module)->mSplittings.clear(); // TODO: this might be removed, as it is now done in check as well
                     if( !(*module)->mInfeasibleSubsets.empty() )
+                    {
                         assertionFailed = true;
+                    }
                     for( auto iter = mConstraintsToInform.begin(); iter != mConstraintsToInform.end(); ++iter )
                         (*module)->inform( *iter );
                     for( auto subformula = mFirstSubformulaToPass; subformula != mpPassedFormula->end(); ++subformula )
                     {
                         if( !(*module)->add( subformula ) )
+                        {
                             assertionFailed = true;
+                        }
                     }
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->stopAddTimer();
