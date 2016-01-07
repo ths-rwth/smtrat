@@ -152,6 +152,7 @@ namespace smtrat
             }
             else
             {
+                mpPrimaryBackend->updateModel();
                 pop( 2 );
                 return result;
             }
@@ -181,12 +182,12 @@ namespace smtrat
         {
             assert( mObjectives.front().first == _objFct );
             const Model& curModel = model();
-            auto modelIter = curModel.find( mObjectives.front().second.first );
+            auto modelIter = curModel.find( mObjectives.front().first.isVariable() ? mObjectives.front().first.getSingleVariable() : mObjectives.front().second.first );
             assert( modelIter != curModel.end() );
             if( modelIter->second.isMinusInfinity() )
-                return (mObjectives.front().second.second ? modelIter->second.asInfinity() : InfinityValue(true));
+                return ((mObjectives.front().second.second || mObjectives.front().first.isVariable()) ? modelIter->second.asInfinity() : InfinityValue(true));
             assert( modelIter->second.isRational() );
-            return (mObjectives.front().second.second ? modelIter->second.asRational() : -(modelIter->second.asRational()));
+            return ((mObjectives.front().second.second || mObjectives.front().first.isVariable()) ? modelIter->second.asRational() : -(modelIter->second.asRational()));
         }
         for( auto& obj : mObjectives )
         {
@@ -225,12 +226,12 @@ namespace smtrat
             mpPrimaryBackend->printModel();
         else
         {
-            const Model& model = mpPrimaryBackend->model();
+            const Model& curModel = model();
             auto objectivesIter = mObjectives.begin();
             cout << "(";
-            for( auto ass = model.begin(); ass != model.end(); ++ass )
+            for( auto ass = curModel.begin(); ass != curModel.end(); ++ass )
             {
-                if (ass != model.begin()) cout << " ";
+                if (ass != curModel.begin()) cout << " ";
                 if (ass->first.isVariable() || ass->first.isBVVariable())
                 {
                     if( objectivesIter != mObjectives.end() && ass->first.asVariable() == objectivesIter->second.first )

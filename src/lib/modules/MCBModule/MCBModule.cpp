@@ -55,7 +55,7 @@ namespace smtrat
 	};
 	
 	template<class Settings>
-	MCBModule<Settings>::MCBModule(const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager):
+	MCBModule<Settings>::MCBModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager):
 		PModule( _formula, _conditionals, _manager )
 #ifdef SMTRAT_DEVOPTION_Statistics
 		, mStatistics(Settings::moduleName)

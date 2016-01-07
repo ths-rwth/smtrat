@@ -35,7 +35,11 @@ namespace smtrat {
 		mutable std::string lastBuffer = "";
     public:
 
-		DLL_EXPORT static WrapperExternal* createWrapper(const char* logFile){
+		DLL_EXPORT static WrapperExternal* createWrapper(const char*
+#ifdef LOGGING
+            logFile
+#endif
+        ){
             WrapperExternal* pWrapper = new WrapperExternal();
 #ifdef LOGGING
 			// Initialize logging

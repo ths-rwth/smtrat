@@ -874,7 +874,6 @@ namespace smtrat
     Answer Module::foundAnswer( Answer _answer )
     {
         mSolverState = _answer;
-        assert( _answer != SAT || checkModel() != 0 );
         // If we are in the SMT environment:
         if( mpManager != nullptr && _answer != UNKNOWN )
         {
@@ -883,7 +882,10 @@ namespace smtrat
         }
         SMTRAT_LOG_INFO("smtrat.module", __func__ << " of " << moduleName() << " (" << mId << ") is " << ANSWER_TO_STRING( _answer ));
         if( _answer == SAT || _answer == UNKNOWN )
+        {
             mModelComputed = false;
+        }
+        assert( _answer != SAT || checkModel() != 0 );
         return _answer;
     }
 
@@ -1218,7 +1220,11 @@ namespace smtrat
             return mpManager->isLemmaLevel(level);
     }
 
-    void Module::print( const string _initiation ) const
+    void Module::print( const string 
+#ifdef SMTRAT_LOGGING_ENABLED
+        _initiation
+#endif
+    ) const
     {
 #ifdef SMTRAT_LOGGING_ENABLED
         SMTRAT_LOG_INFO("smtrat.module", _initiation << "********************************************************************************");
@@ -1241,9 +1247,10 @@ namespace smtrat
         {
             std::stringstream ss;
             // bool _withActivity, unsigned _resolveUnequal, const string _init, bool _oneline, bool _infix, bool _friendlyNames
+            ss << _initiation;
             ss << setw( 45 ) << form->formula().toString( false, 0, "", true, true, true );
             if( form->deducted() ) ss << " deducted";
-                SMTRAT_LOG_INFO("smtrat.module", _initiation << ss.str());
+                SMTRAT_LOG_INFO("smtrat.module", ss.str());
         }
     }
 
@@ -1253,6 +1260,7 @@ namespace smtrat
         for( auto form = mpPassedFormula->begin(); form != mpPassedFormula->end(); ++form )
         {
 			std::stringstream ss;
+            ss << _initiation;
             ss << setw( 45 ) << form->formula().toString( false, 0, "", true, true, true );
             if( form->hasOrigins() )
             {
@@ -1261,7 +1269,7 @@ namespace smtrat
                     ss << " {" << oSubformulas->toString( false, 0, "", true, true, true ) << " }";
                 }
             }
-			SMTRAT_LOG_INFO("smtrat.module", _initiation << ss.str());
+			SMTRAT_LOG_INFO("smtrat.module", ss.str());
         }
     }
 
@@ -1271,11 +1279,12 @@ namespace smtrat
         for( auto infSubSet = mInfeasibleSubsets.begin(); infSubSet != mInfeasibleSubsets.end(); ++infSubSet )
         {
 			std::stringstream ss;
+            ss << _initiation;
             ss << " {";
             for( auto infSubFormula = infSubSet->begin(); infSubFormula != infSubSet->end(); ++infSubFormula )
                 ss << " " << infSubFormula->toString( false, 0, "", true, true, true ) << std::endl;
             ss << " }";
-			SMTRAT_LOG_INFO("smtrat.module", _initiation << "\t" << ss.str());
+			SMTRAT_LOG_INFO("smtrat.module", "\t" << ss.str());
         }
     }
     

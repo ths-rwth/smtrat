@@ -20,7 +20,7 @@ namespace smtrat
     IncWidthModule<Settings>::IncWidthModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
         Module( _formula, _conditionals, _manager ),
         mRestartCheck( true ),
-        mHalfOfCurrentWidth( Settings::half_of_start_width ),
+        mHalfOfCurrentWidth( carl::pow( Rational(2), Settings::start_width-1 ) ),
         mVariableShifts(),
         mVarBounds()
     {}
@@ -91,7 +91,7 @@ namespace smtrat
     {
         #ifdef DEBUG_INC_WIDTH_MODULE
         std::cout << "Check of IncWidthModule:" << std::endl;
-        printReceivedFormula( std::cout, "   " );
+        for( const auto& f : rReceivedFormula() ) std::cout << "   " << f.formula() << std::endl;
         #endif
         ModuleInput::const_iterator rf = firstUncheckedReceivedSubformula();
         carl::Variables arithVars;
@@ -142,7 +142,7 @@ namespace smtrat
         for(;;)
         {
             // Check if we exceed the maximally allowed width
-            if( Settings::half_of_max_width > 0 && mHalfOfCurrentWidth > Settings::half_of_max_width )
+            if( Settings::max_width > 0 && mHalfOfCurrentWidth > carl::pow( Rational(2), Settings::max_width-1 ) )
             {
                 mHalfOfCurrentWidth /= Settings::increment;
                 #ifdef DEBUG_INC_WIDTH_MODULE
@@ -229,7 +229,7 @@ namespace smtrat
             Answer ans = runBackends( _full, _minimize );
             #ifdef DEBUG_INC_WIDTH_MODULE
             std::cout << "Calling backends on:" << std::endl;
-            printPassedFormula( std::cout, "   " );
+            for( const auto& f : rPassedFormula() ) std::cout << "   " << f.formula() << std::endl;
             std::cout << "results in " << ANSWER_TO_STRING(ans) << std::endl;
             #endif
             if( ans == UNSAT )
@@ -338,7 +338,7 @@ namespace smtrat
         mRestartCheck = true;
         clearPassedFormula();
         mVariableShifts.clear();
-        mHalfOfCurrentWidth = Settings::half_of_start_width;
+        mHalfOfCurrentWidth = carl::pow( Rational(2), Settings::start_width-1 );
     }
 }
 

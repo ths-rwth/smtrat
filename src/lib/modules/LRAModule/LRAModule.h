@@ -115,9 +115,9 @@ namespace smtrat
             /// Stores the bounds, which would influence a backend call because of recent changes.
             std::vector<const LRABound* > mBoundCandidatesToPass;
             ///
-            carl::FastMap<Poly,LRAVariable*> mCreatedObjectiveLRAVars;
+            carl::FastMap<Poly,std::pair<LRAVariable*,Rational>> mCreatedObjectiveLRAVars;
             ///
-            typename carl::FastMap<Poly,LRAVariable*>::iterator mObjectiveLRAVar;
+            typename carl::FastMap<Poly,std::pair<LRAVariable*,Rational>>::iterator mObjectiveLRAVar;
             ///
             mutable EvalRationalMap mRationalAssignment;
             #ifdef SMTRAT_DEVOPTION_Statistics

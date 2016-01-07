@@ -2525,7 +2525,7 @@ SetWatches:
                         return l;
                 }
             }
-            if( Settings::theory_conflict_guided_decision_heuristic == TheoryGuidedDecisionHeuristicLevel::DISABLED || mCurrentAssignmentConsistent != SAT )
+            if( mReceivedFormulaPurelyPropositional || Settings::theory_conflict_guided_decision_heuristic == TheoryGuidedDecisionHeuristicLevel::DISABLED || mCurrentAssignmentConsistent != SAT )
             {
                 // Activity based decision:
                 while( next == var_Undef || value( next ) != l_Undef || !decision[next] )
@@ -3370,7 +3370,7 @@ NextClause:
             }
         }
         
-        if( Settings::check_active_literal_occurrences )
+        if( !mReceivedFormulaPurelyPropositional && Settings::check_active_literal_occurrences )
         {
             for( auto& cls : mLiteralsClausesMap )
             {

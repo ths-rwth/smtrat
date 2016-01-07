@@ -22,7 +22,11 @@ namespace smtrat {
         return copyResult(stream, buffer, bufferSize);
     }
 
-    bool WrapperExternal::inform(const char* _constraint, const char* _name)
+    bool WrapperExternal::inform(const char* _constraint, const char*
+#ifdef LOGGING
+        _name
+#endif
+    )
     {
         FormulaT constraint = parser.formula(_constraint);
         SMTRAT_LOG_DEBUG("smtrat.wrapper", "Informed: " << constraint << "(" << _name << ")");
@@ -30,7 +34,11 @@ namespace smtrat {
         return solver->inform(constraint);
     }
 
-    bool WrapperExternal::add(const char* _subformula, const char* _name)
+    bool WrapperExternal::add(const char* _subformula, const char* 
+#ifdef LOGGING
+        _name
+#endif
+    )
     {
         FormulaT subformula = parser.formula(_subformula);
         SMTRAT_LOG_DEBUG("smtrat.wrapper", "Added: " << subformula << "(" << _name << ")");
@@ -38,7 +46,11 @@ namespace smtrat {
         return solver->add(subformula);
     }
 
-    std::size_t WrapperExternal::addWithVariables(const char* _subformula, const char* _name, char* buffer, std::size_t bufferSize)
+    std::size_t WrapperExternal::addWithVariables(const char* _subformula, const char* 
+#ifdef LOGGING
+        _name
+#endif
+        , char* buffer, std::size_t bufferSize)
     {
         if (tryCopyOld(buffer, bufferSize))
             return 0;
