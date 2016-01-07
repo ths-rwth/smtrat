@@ -88,6 +88,8 @@ namespace smtrat
             bool mOptimumComputed;
             ///
             mutable bool mRationalModelComputed;
+            ///
+            bool mCheckedWithBackends;
             /**
              * Contains the main data structures of this module. It maintains for each LRAModule variable a row
              * or a column. On this tableau pivoting can be performed as the well known Simplex method performs.
@@ -183,7 +185,7 @@ namespace smtrat
              */
             Answer checkCore( bool _full = true, bool _minimize = false );
             
-            Answer processResult( Answer _result, bool _backendsResultUnknown );
+            Answer processResult( Answer _result );
             
             /**
              * Updates the model, if the solver has detected the consistency of the received formula, beforehand.

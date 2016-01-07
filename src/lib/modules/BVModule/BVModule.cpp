@@ -137,6 +137,7 @@ namespace smtrat
     template<class Settings>
     void BVModule<Settings>::transferBackendModel() const
     {
+        clearModel();
         getBackendsModel();
 
         // Build bitvector values from the values of the single bits
