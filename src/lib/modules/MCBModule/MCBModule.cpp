@@ -14,8 +14,13 @@ namespace smtrat
 	class MCBModelSubstitution: public ModelSubstitution {
 	private:
 		std::map<carl::Variable,Rational> mAssignments;
+		Rational mDefault;
 	public:
-		MCBModelSubstitution(const std::map<carl::Variable,Rational>& assignments): ModelSubstitution(), mAssignments(assignments) {}
+		MCBModelSubstitution(const std::map<carl::Variable,Rational>& assignments): ModelSubstitution(), mAssignments(assignments), mDefault(0) {
+			for (const auto& a: mAssignments) {
+				if (a.second >= mDefault) mDefault = carl::ceil(a.second) + 1;
+			}
+		}
 		virtual ModelValue evaluate(Model& model) {
 			auto selection = mAssignments.end();
 			for (auto it = mAssignments.begin(); it != mAssignments.end(); it++) {
@@ -30,8 +35,8 @@ namespace smtrat
 				}
 			}
 			if (selection == mAssignments.end()) {
-				SMTRAT_LOG_DEBUG("smtrat.mcb", "Evaluating " << *this << " to default 0 on " << model);
-				return ModelValue(Rational(0));
+				SMTRAT_LOG_DEBUG("smtrat.mcb", "Evaluating " << *this << " to default " << mDefault << " on " << model);
+				return ModelValue(mDefault);
 			}
 			return ModelValue(selection->second);
 		}
