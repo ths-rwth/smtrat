@@ -160,6 +160,7 @@ namespace smtrat
                 auto vb = varBounds.find( var );
                 if( vb == varBounds.end() || (vb->second.lowerBoundType() == carl::BoundType::INFTY && vb->second.upperBoundType() == carl::BoundType::INFTY) )
                 {
+                    // Unbounded variable v. Add: mHalfOfCurrentWidth < v <= mHalfOfCurrentWidth
                     auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LEQ, Rational( mHalfOfCurrentWidth ) ) ) );
                     if( res.second )
                     {
@@ -181,31 +182,39 @@ namespace smtrat
                 }
                 else
                 {
+                    Rational currentWidth = Rational(2)*mHalfOfCurrentWidth;
                     if( vb->second.lowerBoundType() != carl::BoundType::INFTY )
                     {
                         assert( mVariableShifts.find( var ) == mVariableShifts.end() || vb->second.lower() - mVariableShifts.find( var )->second.constantPart() == ZERO_RATIONAL );
-                        auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LESS, Rational(2)*mHalfOfCurrentWidth ) ) );
-                        if( res.second )
+                        if( vb->second.upperBoundType() == carl::BoundType::INFTY || currentWidth <= vb->second.upper() )
                         {
-                            boundAdded = true;
-                            addedBounds.push_back( res.first );
-                            #ifdef DEBUG_INC_WIDTH_MODULE
-                            std::cout << "   add  " << res.first->formula() << std::endl;
-                            #endif
+                            auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LESS, currentWidth ) ) );
+                            if( res.second )
+                            {
+                                boundAdded = true;
+                                addedBounds.push_back( res.first );
+                                #ifdef DEBUG_INC_WIDTH_MODULE
+                                std::cout << "   add  " << res.first->formula() << std::endl;
+                                #endif
+                            }
                         }
                     }
                     else
                     {
+                        currentWidth = -currentWidth;
                         assert( vb->second.upperBoundType() != carl::BoundType::INFTY );
                         assert( mVariableShifts.find( var ) == mVariableShifts.end() || vb->second.upper() - mVariableShifts.find( var )->second.constantPart() == ZERO_RATIONAL );
-                        auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::GREATER, -(Rational(2)*mHalfOfCurrentWidth) ) ) );
-                        if( res.second )
+                        if( vb->second.lowerBoundType() == carl::BoundType::INFTY || vb->second.lower() > currentWidth )
                         {
-                            boundAdded = true;
-                            addedBounds.push_back( res.first );
-                            #ifdef DEBUG_INC_WIDTH_MODULE
-                            std::cout << "   add  " << res.first->formula() << std::endl;
-                            #endif
+                            auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::GREATER, currentWidth ) ) );
+                            if( res.second )
+                            {
+                                boundAdded = true;
+                                addedBounds.push_back( res.first );
+                                #ifdef DEBUG_INC_WIDTH_MODULE
+                                std::cout << "   add  " << res.first->formula() << std::endl;
+                                #endif
+                            }
                         }
                     }
                 }
@@ -272,8 +281,14 @@ namespace smtrat
             if( ans == SAT )
                 return ans;
             // Remove the bounds.
+            #ifdef DEBUG_INC_WIDTH_MODULE
+            std::cout << "Remove added bounds!" << std::endl;
+            #endif
             while( !addedBounds.empty() )
             {
+                #ifdef DEBUG_INC_WIDTH_MODULE
+                std::cout << "Remove bound: " << addedBounds.back()->formula() << std::endl;
+                #endif
                 eraseSubformulaFromPassedFormula( addedBounds.back(), true );
                 addedBounds.pop_back();
             }
@@ -317,6 +332,9 @@ namespace smtrat
         Answer ans = runBackends( _full, _minimize );
         #ifdef DEBUG_INC_WIDTH_MODULE
         std::cout << "Final call of backends results in " << ANSWER_TO_STRING(ans) << std::endl;
+        std::cout << "Calling backends on:" << std::endl;
+        for( const auto& f : rPassedFormula() ) std::cout << "   " << f.formula() << std::endl;
+        std::cout << "results in " << ANSWER_TO_STRING(ans) << std::endl;
         #endif
         if( ans == UNSAT )
         {
