@@ -57,7 +57,7 @@ namespace smtrat
             /**
 			 * Eliminates all equation forming a substitution of the form x = p with p not containing x.
 			 */
-			FormulaT elimSubstitutions( const FormulaT& _formula, bool _elimSubstitutions = false );
+			FormulaT elimSubstitutions( const FormulaT& _formula, bool _elimSubstitutions = false, bool _outermost = false );
 
     };
 }

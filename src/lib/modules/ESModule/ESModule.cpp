@@ -51,7 +51,7 @@ namespace smtrat
     {
         mBoolSubs.clear();
         mArithSubs.clear();
-        FormulaT formula = elimSubstitutions( (FormulaT) rReceivedFormula(), true );
+        FormulaT formula = elimSubstitutions( (FormulaT) rReceivedFormula(), true, true );
         Answer ans = SAT;
         if( formula.isFalse() )
             ans = UNSAT;
@@ -66,7 +66,7 @@ namespace smtrat
     }
     
     template<typename Settings>
-    FormulaT ESModule<Settings>::elimSubstitutions( const FormulaT& _formula, bool _elimSubstitutions ) 
+    FormulaT ESModule<Settings>::elimSubstitutions( const FormulaT& _formula, bool _elimSubstitutions, bool _outermost ) 
     {
         
         auto iter = mBoolSubs.find( _formula );
@@ -193,16 +193,19 @@ namespace smtrat
                     result = FormulaT( carl::FormulaType::AND, std::move(currentSubformulas) );
                 }
             Return:
-                while( !addedArithSubs.empty() )
+                if( !_outermost )
                 {
-                    assert( std::count( addedArithSubs.begin(), addedArithSubs.end(), addedArithSubs.back() ) == 1 );
-                    mArithSubs.erase( addedArithSubs.back() );
-                    addedArithSubs.pop_back();
-                }
-                while( !foundBooleanSubstitutions.empty() )
-                {
-                    mBoolSubs.erase( foundBooleanSubstitutions.begin()->second );
-                    foundBooleanSubstitutions.erase( foundBooleanSubstitutions.begin() );
+                    while( !addedArithSubs.empty() )
+                    {
+                        assert( std::count( addedArithSubs.begin(), addedArithSubs.end(), addedArithSubs.back() ) == 1 );
+                        mArithSubs.erase( addedArithSubs.back() );
+                        addedArithSubs.pop_back();
+                    }
+                    while( !foundBooleanSubstitutions.empty() )
+                    {
+                        mBoolSubs.erase( foundBooleanSubstitutions.begin()->second );
+                        foundBooleanSubstitutions.erase( foundBooleanSubstitutions.begin() );
+                    }
                 }
                 break;
             }
