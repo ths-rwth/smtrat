@@ -190,15 +190,10 @@ namespace smtrat
                     bool receivedFormulaSatisfied = true;
                     for( const FormulaWithOrigins& fwo : rReceivedFormula() )
                     {
-                        switch( satisfies( mModel, fwo.formula() ) )
+                        unsigned res = satisfies( mModel, fwo.formula() );
+                        switch( res )
                         {
                             case 0:
-                                if( fwo.formula().getType() == carl::FormulaType::CONSTRAINT && fwo.formula().constraint().relation() == carl::Relation::NEQ )
-                                {
-                                    // If a constraint p!=0 is conflicting, lift a lemma to split it into (p<0 or p>0)
-                                    splitUnequalConstraint( fwo.formula() );
-                                    return UNKNOWN;
-                                }
                             case 2:
                                 receivedFormulaSatisfied = false;
                             default:
