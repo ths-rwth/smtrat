@@ -91,6 +91,16 @@ namespace smtrat
 	}
 	
 	template<typename Settings>
+	void MCBModule<Settings>::updateModel() const {
+		clearModel();
+		if (solverState() == SAT || (solverState() != UNSAT && appliedPreprocessing())) {
+			getBackendsModel();
+			mModel.merge(mAssignments);
+			mAssignments.clear();
+		}
+	}
+	
+	template<typename Settings>
 	void MCBModule<Settings>::collectBounds(FormulaT::ConstraintBounds& cb, const FormulaT& formula, bool conjunction) const {
 		for (const auto& f: formula.subformulas()) {
 			if (f.getType() == carl::FormulaType::CONSTRAINT || (f.getType() == carl::FormulaType::NOT && f.subformula().getType() == carl::FormulaType::CONSTRAINT)) {
@@ -161,7 +171,7 @@ namespace smtrat
 					assignment.emplace(c.second.first, c.first);
 				}
 				SMTRAT_LOG_DEBUG("smtrat.mcb", "Adding " << var << " = " << assignment);
-				mModel.emplace(var, ModelSubstitution::create<MCBModelSubstitution>(assignment));
+				mAssignments.emplace(var, ModelSubstitution::create<MCBModelSubstitution>(assignment));
 			}
 		}
 		if (equiv.empty()) return res;

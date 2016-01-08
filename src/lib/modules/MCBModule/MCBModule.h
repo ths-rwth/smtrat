@@ -30,6 +30,7 @@ namespace smtrat
 			
 			std::map<AVar, std::map<Rational, std::pair<BVar,FormulaT>>> mChoices;
 			std::set<AVar> mRemaining;
+			mutable Model mAssignments;
 			
 		public:
 			typedef Settings SettingsType;
@@ -49,6 +50,7 @@ namespace smtrat
 			 *		 Unknown, otherwise.
 			 */
 			Answer checkCore( bool _full = true, bool _minimize = false );
+			void updateModel() const;
 		private:
 			void collectBounds(FormulaT::ConstraintBounds& cb, const FormulaT& formula, bool conjunction) const;
 			void collectChoices(const FormulaT& formula);
