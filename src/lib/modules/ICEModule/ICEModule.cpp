@@ -50,7 +50,7 @@ namespace smtrat
 	void ICEModule<Settings>::updateModel() const
 	{
 		mModel.clear();
-		if (solverState() == SAT) {
+		if (solverState() == SAT || (solverState() != UNSAT && appliedPreprocessing())) {
 			getBackendsModel();
 		}
 	}
