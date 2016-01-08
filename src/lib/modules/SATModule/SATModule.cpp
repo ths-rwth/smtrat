@@ -3100,7 +3100,6 @@ NextClause:
                 mOldSplittingVars.push(mSplittingVars[i]);
                 mSplittingVars[i] = mSplittingVars.back();
                 mSplittingVars.pop_back();
-                assert(false);
             }
             else
             {
