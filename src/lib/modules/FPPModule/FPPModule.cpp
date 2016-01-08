@@ -77,6 +77,7 @@ namespace smtrat
 			}
 			SMTRAT_LOG_INFO("smtrat.fpp", "Retrieving simplified input and partial model...");
 			std::pair<bool,FormulaT> res = mPreprocessor.getInputSimplified();
+			SMTRAT_LOG_INFO("smtrat.fpp", "Preprocessor model:" << std::endl << mPreprocessor.model());
 			mPartialModel.merge(mPreprocessor.model());
 			SMTRAT_LOG_INFO("smtrat.fpp", "Backtracking");
 			mPreprocessor.pop();

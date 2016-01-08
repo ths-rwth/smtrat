@@ -62,6 +62,10 @@ namespace smtrat
     }
 	
 	void PModule::updateModel() const {
-		getBackendsModel();
+		mModel.clear();
+		if (solverState() == SAT || (solverState() != UNSAT && appliedPreprocessing())) {
+			getBackendsModel();
+			SMTRAT_LOG_DEBUG("smtrat.pmodule", moduleName() << ": obtained backend model" << std::endl << mModel);
+		}
 	}
 }

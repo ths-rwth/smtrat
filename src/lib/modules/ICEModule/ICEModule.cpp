@@ -47,15 +47,6 @@ namespace smtrat
 	}
 	
 	template<class Settings>
-	void ICEModule<Settings>::updateModel() const
-	{
-		mModel.clear();
-		if (solverState() == SAT || (solverState() != UNSAT && appliedPreprocessing())) {
-			getBackendsModel();
-		}
-	}
-	
-	template<class Settings>
 	Answer ICEModule<Settings>::checkCore( bool _full, bool _minimize )
 	{
 		SMTRAT_LOG_DEBUG("smtrat.ice", "Obtained the following bounds: " << std::endl << mBounds);

@@ -189,12 +189,6 @@ namespace smtrat
 			void removeCore( ModuleInput::const_iterator _subformula );
 
 			/**
-			 * Updates the current assignment into the model.
-			 * Note, that this is a unique but possibly symbolic assignment maybe containing newly introduced variables.
-			 */
-			void updateModel() const;
-
-			/**
 			 * Checks the received formula for consistency.
 			 * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
