@@ -14,7 +14,7 @@ namespace smtrat
     template<class Settings>
     CubeLIAModule<Settings>::CubeLIAModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager):
         Module( _formula, _conditionals, _manager ),
-        mModelUpdated(),
+        mModelUpdated(false),
         mIntToRealVarMap(),
         mRealToIntVarMap(),
         mCubifications(),
@@ -44,7 +44,6 @@ namespace smtrat
     template<class Settings>
     bool CubeLIAModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        mModelUpdated = false;
         if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT && !_subformula->formula().propertyHolds( carl::PROP_CONTAINS_REAL_VALUED_VARS ) )
         {
             const ConstraintT& constraint = _subformula->formula().constraint();
@@ -144,14 +143,14 @@ namespace smtrat
     template<class Settings>
     void CubeLIAModule<Settings>::updateModel() const
     {
-        if( !mModelUpdated )
+        if( !mModelComputed && !mModelUpdated )
         {
-            mModelUpdated = true;
             clearModel();
-            if( solverState() == SAT )
+            if( solverState() != UNSAT )
             {
                 getBackendsModel();
             }
+            mModelUpdated = true;
         }
     }
 
@@ -241,8 +240,10 @@ namespace smtrat
         #endif
         // Run backends on received formula
         ans = runBackends( _full, _minimize );
-        if( ans == UNSAT)
+        if( ans == UNSAT )
             getInfeasibleSubsets();
+        else if( ans == SAT )
+            mModelUpdated = false;
         return ans;
     }
 }

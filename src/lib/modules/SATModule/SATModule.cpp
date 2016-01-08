@@ -215,7 +215,7 @@ namespace smtrat
                     mClauseFormulaMap[ clauses[pos] ] = _subformula->formula();
                 }
             }
-            if (isLemmaLevel(NORMAL) && decisionLevel() == 0)
+            if ( isLemmaLevel(NORMAL) && decisionLevel() == 0)
             {
                 if (_subformula->formula().propertyHolds(carl::PROP_IS_A_LITERAL) && _subformula->formula().propertyHolds(carl::PROP_CONTAINS_BOOLEAN))
                 {
@@ -233,7 +233,9 @@ namespace smtrat
             }
         }
         if( !ok )
+        {
             updateInfeasibleSubset();
+        }
         return ok;
     }
 
@@ -244,7 +246,7 @@ namespace smtrat
         {
             return;
         }
-        cancelUntil( assumptions.size() );  // can we do better than this?
+        cancelUntil( 0 );  // can we do better than this?
         adaptPassedFormula();
         learnts.clear();
         ok = true;
@@ -669,7 +671,7 @@ namespace smtrat
         if( !mModelComputed )
         {
             clearModel();
-            if( solverState() == SAT || mMinimize )
+            if( solverState() != UNSAT || mMinimize )
             {
                 for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
                 {

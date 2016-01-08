@@ -419,7 +419,7 @@ namespace smtrat
                         return lazyResult;
                     // Full call of the backends, if no box has target diameter
                     bool furtherContractionOccurred = false;
-                    if( !performSplit( mOriginalVariableIntervalContracted, furtherContractionOccurred ) )
+                    if( Settings::no_splitting || !performSplit( mOriginalVariableIntervalContracted, furtherContractionOccurred ) )
                         return callBackends( _full );
                     if( mInvalidBox )
                     {
@@ -1071,7 +1071,7 @@ namespace smtrat
         icp::IcpVariable& icpVar = *mVariables.find( variable )->second;
         DoubleInterval icpVarIntervalBefore = icpVar.interval();
         mSplitOccurred = _selection->contract( mIntervals, resultA, resultB );
-        if( !Settings::split_by_division_with_zero && mSplitOccurred )
+        if( (Settings::no_splitting || !Settings::split_by_division_with_zero) && mSplitOccurred )
         {
             mSplitOccurred = false;
             resultA = resultA.convexHull( resultB );
