@@ -246,8 +246,12 @@ namespace smtrat
         {
             return;
         }
-        cancelUntil( 0 );  // can we do better than this?
-        adaptPassedFormula();
+        cancelUntil( 0, true );  // can we do better than this?
+        if( !mReceivedFormulaPurelyPropositional )
+        {
+            adaptPassedFormula();
+        }
+        assert( rPassedFormula().empty() );
         learnts.clear();
         ok = true;
         if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
@@ -264,8 +268,6 @@ namespace smtrat
             }
             assumptions.pop();
             mFormulaAssumptionMap.erase( iter );
-            cancelUntil(pos, true);
-            adaptPassedFormula();
             ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _subformula->formula() );
             if( constraintLiteralPair != mConstraintLiteralMap.end() )
                 removeLiteralOrigin( constraintLiteralPair->second.front(), _subformula->formula() );
@@ -1555,6 +1557,11 @@ namespace smtrat
             assert( !_abstr.reabstraction.isTrue() );
             if( _abstr.position != rPassedFormula().end() )
             {
+//                std::cout << "removeOrigins of " <<  _abstr.position->formula() << ":" << std::endl;
+//                if( _abstr.origins == nullptr )
+//                    std::cout << "  nullptr" << std::endl;
+//                else
+//                    std::cout << "  " <<  *_abstr.origins << std::endl;
                 removeOrigins( _abstr.position, _abstr.origins );
                 _abstr.position = passedFormulaEnd();
                 mChangedPassedFormula = true;
