@@ -11,7 +11,6 @@
 #include "TableauSettings.h"
 
 //#define DEBUG_METHODS_TABLEAU
-//#define LRA_DEBUG_CUTS_FROM_PROOFS
 
 namespace smtrat
 {
