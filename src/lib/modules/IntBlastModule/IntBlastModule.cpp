@@ -8,7 +8,7 @@
 
 #define INTBLAST_DEBUG_ENABLED 0
 #define INTBLAST_DEBUG(x) do { \
-  if (INTBLAST_DEBUG_ENABLED) { std::cerr << "[IntBlast] " << x << std::endl; } \
+  if (INTBLAST_DEBUG_ENABLED) { std::cout << "[IntBlast] " << x << std::endl; } \
 } while (0)
 
 namespace smtrat
@@ -570,7 +570,7 @@ namespace smtrat
                 switch( blastVariable(variable, interval, linear) )
                 {
                     case -1:
-                        return UNKNOWN;
+                        return callBackends( _full, _minimize );
                     case 0:
                         reachedMaxWidth = true;
                         break;
@@ -647,17 +647,7 @@ namespace smtrat
         if( reachedMaxWidth )
         {
             //updateOutsideRestrictionConstraint(icpAnswer == UNSAT);
-
-            INTBLAST_DEBUG("Running backend.");
-            Answer backendAnswer = runBackends(_full,_minimize);
-            INTBLAST_DEBUG("Answer from backend: " << backendAnswer);
-            mSolutionOrigin = SolutionOrigin::BACKEND;
-
-            if(backendAnswer == UNSAT) {
-                getInfeasibleSubsets();
-            }
-
-            return backendAnswer;
+            return callBackends( _full, _minimize );
         }
         bool originalBoundsCovered = true;
         for(auto variableWO : mInputVariables)
@@ -683,6 +673,20 @@ namespace smtrat
         return UNKNOWN;
     }
 
+    template<class Settings>
+    Answer IntBlastModule<Settings>::callBackends( bool _full, bool _minimize )
+    {
+        INTBLAST_DEBUG("Running backend.");
+        Answer backendAnswer = runBackends(_full,_minimize);
+        INTBLAST_DEBUG("Answer from backend: " << backendAnswer);
+        mSolutionOrigin = SolutionOrigin::BACKEND;
+
+        if(backendAnswer == UNSAT) {
+            getInfeasibleSubsets();
+        }
+
+        return backendAnswer;
+    }
 
     template<class Settings>
     void IntBlastModule<Settings>::encodeFormulaToBV(const FormulaT& _formula)
@@ -811,7 +815,7 @@ namespace smtrat
                     width = chooseWidth( _interval.upper(), maxWidth, false );
                     blastedType = BVAnnotation( width, false, 0 );
                 }
-                else
+                else // @todo: do something clever, if semi-negative
                 {
                     std::size_t widthForUpper = chooseWidth( _interval.upper(), maxWidth, true );
                     std::size_t widthForLower = chooseWidth(_interval.lower(), maxWidth, true );
@@ -819,7 +823,8 @@ namespace smtrat
                     blastedType = BVAnnotation( width, true, 0 );
                 }
             }
-            ret = width < maxWidth ? 1 : 0;
+            if( maxWidth > 0 )
+                ret = width <= maxWidth ? 1 : 0;
         }
 
         if( Settings::apply_icp )
@@ -857,8 +862,7 @@ namespace smtrat
         assert(_numberToCover >= 0 || _signed);
         std::size_t width = 1;
         carl::Interval<Integer> interval(Integer(_signed ? -1 : 0), Integer(_signed ? 0 : 1));
-
-        while((width < _maxWidth || _maxWidth == 0) && ! interval.contains(_numberToCover)) {
+        while((width < _maxWidth || _maxWidth == 0) && !interval.contains(_numberToCover)) {
             ++width;
             interval.setLower(interval.lower() * 2);
             interval.setUpper((interval.upper()+1)*2 - 1);

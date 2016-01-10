@@ -550,6 +550,7 @@ return SettingsType::moduleName;
 
     private:
 
+            Answer callBackends( bool _full, bool _minimize );
             BlastedPoly blastSum(const BlastedPoly& _summand1, const BlastedPoly& _summand2);
             BlastedPoly blastProduct(const BlastedPoly& _factor1, const BlastedPoly& _factor2);
             bool reblastingNeeded(const BlastedPoly& _previousBlasting, const IntegerInterval& _interval, bool _linear) const;

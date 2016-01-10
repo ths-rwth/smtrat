@@ -67,13 +67,14 @@ namespace smtrat
                 if( varShiftIter != mVariableShifts.end() )
                 {
                     assert( ass.second.isRational() || ass.second.isSqrtEx() || ass.second.isRAN() );
+                    bool varWithNegCoeff = carl::isNegative( varShiftIter->second.lcoeff() );
                     if( ass.second.isRational() )
                     {
-                        ass.second = ass.second.asRational() + varShiftIter->second.constantPart();
+                        ass.second = (varWithNegCoeff ? -ass.second.asRational() : ass.second.asRational()) + varShiftIter->second.constantPart();
                     }
                     else if( ass.second.isSqrtEx() )
                     {
-                        ass.second = ass.second.asSqrtEx() + vs::SqrtEx( Poly( varShiftIter->second.constantPart() ) );
+                        ass.second = (varWithNegCoeff ? ass.second.asSqrtEx()*vs::SqrtEx( Poly( MINUS_ONE_RATIONAL ) ) : ass.second.asSqrtEx()) + vs::SqrtEx( Poly( varShiftIter->second.constantPart() ) );
                     }
                     else // ass.second.isRAN()
                     {
@@ -126,8 +127,8 @@ namespace smtrat
                 }
                 else if( vb.second.upperBoundType() != carl::BoundType::INFTY )
                 {
-                    // (-oo,b) -> (-oo,0)
-                    mVariableShifts[vb.first] = carl::makePolynomial<smtrat::Poly>( vb.first ) + vb.second.upper();
+                    // (-oo,b) -> (0,oo)
+                    mVariableShifts[vb.first] = -carl::makePolynomial<smtrat::Poly>( vb.first ) + vb.second.upper();
                     #ifdef DEBUG_INC_WIDTH_MODULE
                     std::cout << "   " << vb.first << " -> " << mVariableShifts[vb.first] << std::endl;
                     #endif
@@ -160,8 +161,8 @@ namespace smtrat
                 auto vb = varBounds.find( var );
                 if( vb == varBounds.end() || (vb->second.lowerBoundType() == carl::BoundType::INFTY && vb->second.upperBoundType() == carl::BoundType::INFTY) )
                 {
-                    // Unbounded variable v. Add: mHalfOfCurrentWidth < v <= mHalfOfCurrentWidth
-                    auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LEQ, Rational( mHalfOfCurrentWidth ) ) ) );
+                    // Unbounded variable v. Add: mHalfOfCurrentWidth <= v < mHalfOfCurrentWidth
+                    auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LESS, Rational( mHalfOfCurrentWidth ) ) ) );
                     if( res.second )
                     {
                         boundAdded = true;
@@ -170,7 +171,7 @@ namespace smtrat
                         std::cout << "   add  " << res.first->formula() << std::endl;
                         #endif
                     }
-                    res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::GREATER, -Rational( mHalfOfCurrentWidth ) ) ) );
+                    res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::GEQ, -Rational( mHalfOfCurrentWidth ) ) ) );
                     if( res.second )
                     {
                         boundAdded = true;
@@ -183,38 +184,18 @@ namespace smtrat
                 else
                 {
                     Rational currentWidth = Rational(2)*mHalfOfCurrentWidth;
-                    if( vb->second.lowerBoundType() != carl::BoundType::INFTY )
+                    bool intervalHalfOpen = vb->second.lowerBoundType() == carl::BoundType::INFTY || vb->second.upperBoundType() == carl::BoundType::INFTY;
+                    const Rational& boundValue = vb->second.lowerBoundType() != carl::BoundType::INFTY ? -vb->second.lower() : vb->second.upper();
+                    if( intervalHalfOpen || currentWidth <= boundValue )
                     {
-                        assert( mVariableShifts.find( var ) == mVariableShifts.end() || vb->second.lower() - mVariableShifts.find( var )->second.constantPart() == ZERO_RATIONAL );
-                        if( vb->second.upperBoundType() == carl::BoundType::INFTY || currentWidth <= vb->second.upper() )
+                        auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LESS, currentWidth ) ) );
+                        if( res.second )
                         {
-                            auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LESS, currentWidth ) ) );
-                            if( res.second )
-                            {
-                                boundAdded = true;
-                                addedBounds.push_back( res.first );
-                                #ifdef DEBUG_INC_WIDTH_MODULE
-                                std::cout << "   add  " << res.first->formula() << std::endl;
-                                #endif
-                            }
-                        }
-                    }
-                    else
-                    {
-                        currentWidth = -currentWidth;
-                        assert( vb->second.upperBoundType() != carl::BoundType::INFTY );
-                        assert( mVariableShifts.find( var ) == mVariableShifts.end() || vb->second.upper() - mVariableShifts.find( var )->second.constantPart() == ZERO_RATIONAL );
-                        if( vb->second.lowerBoundType() == carl::BoundType::INFTY || vb->second.lower() > currentWidth )
-                        {
-                            auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::GREATER, currentWidth ) ) );
-                            if( res.second )
-                            {
-                                boundAdded = true;
-                                addedBounds.push_back( res.first );
-                                #ifdef DEBUG_INC_WIDTH_MODULE
-                                std::cout << "   add  " << res.first->formula() << std::endl;
-                                #endif
-                            }
+                            boundAdded = true;
+                            addedBounds.push_back( res.first );
+                            #ifdef DEBUG_INC_WIDTH_MODULE
+                            std::cout << "   add  " << res.first->formula() << std::endl;
+                            #endif
                         }
                     }
                 }

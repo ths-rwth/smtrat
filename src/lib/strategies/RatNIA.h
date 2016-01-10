@@ -48,7 +48,7 @@ namespace smtrat
                     {
 //                            addBackend<SATModule<SATSettings1>>(
 //                            {
-                            addBackend<IntBlastModule<IntBlastSettings1>>(
+                            addBackend<IntBlastModule<IntBlastSettings2>>(
                             {
                                 addBackend<SATModule<SATSettings1>>(
                                 {
@@ -62,8 +62,7 @@ namespace smtrat
                                             })
                                         })
                                     })
-                                }).condition( &conditionEvaluation5 ),
-                                addBackend<SATModule<SATSettings1>>().condition( &conditionEvaluation4 )
+                                })
                             })
 //                            })
                     })

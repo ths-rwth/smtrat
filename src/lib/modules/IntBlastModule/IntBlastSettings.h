@@ -35,7 +35,7 @@ namespace smtrat
     {
 		static constexpr auto moduleName = "IntBlastModule<IntBlastSettings1>";
         /**
-         * Maximum width used for encoding an integer variable as bitvector.
+         * Maximum width used for encoding an integer variable as bit-vector.
          *
          * Note that this only applies to the encoding of variables.
          * Intermediate terms (polynomials) are always encoded using a
@@ -46,24 +46,24 @@ namespace smtrat
         static const std::size_t max_variable_encoding_width = 6;
 
         /**
-         * Whether to allow the encoding into complex bitvector terms.
-         * When set to false, an own bitvector variable is introduced for
+         * Whether to allow the encoding into complex bit-vector terms.
+         * When set to false, an own bit-vector variable is introduced for
          * each encoded polynomial.
-         * When set to true, polynomials may also be encoded by bitvector terms
-         * that consist of bitvector function symbols.
+         * When set to true, polynomials may also be encoded by bit-vector terms
+         * that consist of bit-vector function symbols.
          */
         static const bool allow_encoding_into_complex_bvterms = true;
 
         /**
-         * Whether to apply ICP to optain smaller bounds for the
+         * Whether to apply ICP to obtain smaller bounds for the
          * term encodings.
-         * If set to false, the widths for the encoded bitvector terms
+         * If set to false, the widths for the encoded bit-vector terms
          * are chosen conservatively.
          */
         static const bool apply_icp = false;
 
         /**
-         * Whether to use offsets for annotated bitvector terms.
+         * Whether to use offsets for annotated bit-vector terms.
          * For nonlinear variables, no offset is used (independent of this
          * configuration setting).
          */
