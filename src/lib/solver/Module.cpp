@@ -889,8 +889,6 @@ namespace smtrat
         {
             mModelComputed = false;
         }
-//        if( !( _answer != SAT || checkModel() != 0 ) )
-//            exit(77);
         assert( _answer != SAT || checkModel() != 0 );
         return _answer;
     }
