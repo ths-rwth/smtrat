@@ -970,7 +970,7 @@ namespace smtrat
             delete ueVars;
     }
 
-    void Module::updateDeductions()
+    void Module::updateDeductions( bool _withSplittings )
     {
         for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
         {
@@ -983,6 +983,26 @@ namespace smtrat
             }
             #endif
             mDeductions.insert( mDeductions.end(), (*module)->mDeductions.begin(), (*module)->mDeductions.end() );
+            if( _withSplittings )
+            {
+                for( auto& sp : (*module)->mSplittings )
+                {
+                    vector<FormulaT> premise;
+                    for( const auto& form : sp.mPremise )
+                    {
+                        getOrigins( form, premise );
+                    }
+                    addSplitting( sp.mLeftCase, sp.mRightCase, std::move( premise ), sp.mPreferLeftCase );
+                }
+            }
+        }
+    }
+
+    void Module::updateSplittings()
+    {
+        for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
+        {
+            (*module)->updateSplittings();
             for( auto& sp : (*module)->mSplittings )
             {
                 vector<FormulaT> premise;

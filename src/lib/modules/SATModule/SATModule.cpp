@@ -2207,6 +2207,7 @@ SetWatches:
                 if( mChangedPassedFormula )
                 {
                     _madeTheoryCall = true;
+                    clearSplittings();
                     #ifdef DEBUG_SATMODULE
                     cout << "### Check the constraints: { "; for( auto& subformula : rPassedFormula() ) cout << subformula.formula() << " "; cout << "}" << endl;
                     #endif
@@ -2286,18 +2287,10 @@ SetWatches:
             if( !foundConflictOfSizeOne && confl == CRef_Undef )
             {
                 // NO CONFLICT
-//                if( madeTheoryCall && rReceivedFormula().satisfiedBy( backendsModel() ) == 1 )
-//                {
-//                    std::cout << "Found sat!" << std::endl;
-//                    return l_True;
-//                }
                 if( Settings::check_if_all_clauses_are_satisfied && !mReceivedFormulaPurelyPropositional )
                 {
-//                    std::cout << "\r" << std::setw(30) << mNumberOfSatisfiedClauses << " from " << clauses.size() << " clauses are satisfied";
-//                    std::cout.flush();
                     if( decisionLevel() >= assumptions.size() && mNumberOfSatisfiedClauses == (size_t)clauses.size() )
                     {
-//                        std::cout << "terminate early saving " << (assigns.size()-trail.size()) << " assignments!" << std::endl;
                         return l_True;
                     }
                 }
@@ -2317,11 +2310,8 @@ SetWatches:
                 }
                 if( learnts.size() - nAssigns() >= max_learnts && rReceivedFormula().isOnlyPropositional() )
                 {
-//                if( mCurrentAssignmentConsistent != UNKNOWN && learnts.size() - nAssigns() >= max_learnts )
-//                {
                      // Reduce the set of learned clauses:
-                     reduceDB(); 
-//                }
+                     reduceDB();
                 }
                 
                 Lit next = lit_Undef;
@@ -2364,6 +2354,8 @@ SetWatches:
                         else
                         {
                             assert( mCurrentAssignmentConsistent == UNKNOWN );
+                            if( processSplittings() )
+                                continue;
                             if( !Settings::stop_search_after_first_unknown )
                             {
                                 learnt_clause.clear();
@@ -3174,7 +3166,7 @@ NextClause:
         while( backend != usedBackends().end() )
         {
             // Learn the deductions.
-            (*backend)->updateDeductions();
+            (*backend)->updateDeductions( false );
             for( const auto& ded : (*backend)->deductions() )
             {
                 if( ded.first.getType() != carl::FormulaType::TRUE )
@@ -3191,15 +3183,31 @@ NextClause:
                     }
                 }
             }
-            // Add the splittings.
+            (*backend)->clearDeductions( false );
+            ++backend;
+        }
+        return deductionsLearned;
+    }
+    
+    template<class Settings>
+    bool SATModule<Settings>::processSplittings()
+    {
+        std::vector<Module*>::const_iterator backend = usedBackends().begin();
+        bool addedSplittings = false;
+        while( backend != usedBackends().end() )
+        {
+            // Learn the deductions.
+            (*backend)->updateSplittings();
+            if( !(*backend)->splittings().empty() )
+                addedSplittings = true;
             for( const Splitting& splitting : (*backend)->splittings() )
             {
                 addSplitting( splitting );
             }
-            (*backend)->clearDeductions();
+            (*backend)->clearSplittings();
             ++backend;
         }
-        return deductionsLearned;
+        return addedSplittings;
     }
 
     template<class Settings>

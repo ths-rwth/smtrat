@@ -465,17 +465,18 @@ namespace smtrat
             /**
              * Deletes all yet found deductions/lemmas.
              */
-            void clearDeductions()
+            void clearDeductions( bool _clearSplittings = true )
             {
                 if( mpManager != nullptr )
                 {
                     for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
                     {
-                        (*module)->clearDeductions();
+                        (*module)->clearDeductions( _clearSplittings );
                     }
                 }
                 mDeductions.clear();
-                mSplittings.clear();
+                if( _clearSplittings )
+                    mSplittings.clear();
             }
 
             /**
@@ -483,6 +484,13 @@ namespace smtrat
              */
             void clearSplittings()
             {
+                if( mpManager != nullptr )
+                {
+                    for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+                    {
+                        (*module)->clearSplittings();
+                    }
+                }
                 mSplittings.clear();
             }
 
@@ -584,7 +592,8 @@ namespace smtrat
             /**
              * Stores all deductions of any backend of this module in its own deduction vector.
              */
-            void updateDeductions();
+            void updateDeductions( bool _withSplittings = true );
+            void updateSplittings();
             
             /**
              * Collects the formulas in the given formula, which are part of the received formula. If the given formula directly
