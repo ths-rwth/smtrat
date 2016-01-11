@@ -34,8 +34,8 @@ namespace smtrat
                 {
                     addBackend<SATModule<SATSettings1>>(
                     {
-                        addBackend<CubeLIAModule<CubeLIASettings1>>(
-                        {   
+//                        addBackend<CubeLIAModule<CubeLIASettings1>>(
+//                        {   
                             addBackend<LRAModule<LRASettings1>>(
                             {
                                 addBackend<VSModule<VSSettings2346>>(
@@ -43,7 +43,7 @@ namespace smtrat
                                     addBackend<CADModule<CADSettingsReal>>()
                                 })
                             })
-                        })
+//                        })
                     })
                 })
             });

@@ -32,13 +32,13 @@ namespace smtrat
             {
                 addBackend<FPPModule<FPPSettings1>>(
                     addBackend<SATModule<SATSettings1>>(
-                        addBackend<CubeLIAModule<CubeLIASettings1>>(
+//                        addBackend<CubeLIAModule<CubeLIASettings1>>(
                             addBackend<LRAModule<LRASettings1>>(
                                 addBackend<VSModule<VSSettings234>>(
-                                    addBackend<CADModule<CADSettingsGuessAndSplit>>()
+//                                    addBackend<CADModule<CADSettingsGuessAndSplit>>()
                                 )
                             )
-                        )
+//                        )
                     )
                 )
             });
