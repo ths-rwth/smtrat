@@ -434,10 +434,10 @@ namespace smtrat
     }
 
     #ifdef SMTRAT_STRAT_PARALLEL_MODE
-    std::future<Answer> Manager::submitBackend( Module* _pModule, bool _full )
+    std::future<Answer> Manager::submitBackend( Module* _pModule, bool _full, bool _minimize )
     {
         assert( mRunsParallel );
-        return mpThreadPool->submitBackend( _pModule, _full );
+        return mpThreadPool->submitBackend( _pModule, _full, _minimize );
     }
 
     void Manager::checkBackendPriority( Module* _pModule )
