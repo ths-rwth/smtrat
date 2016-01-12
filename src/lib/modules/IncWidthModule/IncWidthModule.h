@@ -10,6 +10,7 @@
 
 #include "../../solver/Module.h"
 #include "../../datastructures/VariableBounds.h"
+#include "../ICPModule/ICPModule.h"
 #include "IncWidthStatistics.h"
 #include "IncWidthSettings.h"
 namespace smtrat
@@ -27,12 +28,22 @@ namespace smtrat
             std::map<carl::Variable,Poly> mVariableShifts;
             /// Collection of bounds of all received formulas.
 			vb::VariableBounds<FormulaT> mVarBounds;
+            ///
+            ModuleInput* mICPFormula;
+            std::vector<std::atomic_bool*> mICPFoundAnswer;
+            RuntimeSettings* mICPRuntimeSettings;
+            ICPModule<ICPSettings4>* mICP;
+            carl::FastMap<FormulaT,ModuleInput::iterator> mICPFormulaPositions;
+            
 
         public:
 			typedef Settings SettingsType;
-std::string moduleName() const {
-return SettingsType::moduleName;
-}
+            
+            std::string moduleName() const
+            {
+                return SettingsType::moduleName;
+            }
+            
             IncWidthModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~IncWidthModule();
@@ -76,6 +87,8 @@ return SettingsType::moduleName;
             
         private:
             void reset();
-
+            std::pair<ModuleInput::iterator,bool> addToICP( const FormulaT& _formula, bool _guaranteedNew = true );
+            void removeFromICP( const FormulaT& _formula );
+            void clearICP();
     };
 }

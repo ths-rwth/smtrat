@@ -379,8 +379,10 @@ return SettingsType::moduleName;
             void pushBoundsToPassedFormula();
             
         public:
+            EvalRationalIntervalMap getCurrentBoxAsIntervals() const;
             FormulasT getCurrentBoxAsFormulas() const;
         private:
+            RationalInterval doubleToRationalInterval( carl::Variable::Arg _var, const DoubleInterval& _interval, EvalRationalIntervalMap::const_iterator _initialIntervalIter ) const;
             FormulaT intervalBoundToFormula( carl::Variable::Arg _var, const DoubleInterval& _interval, EvalRationalIntervalMap::const_iterator _initialIntervalIter, bool _upper ) const;
             
             /**

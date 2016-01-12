@@ -85,7 +85,7 @@ namespace smtrat
         /**
          * 
          */
-        static constexpr bool no_splitting = false;
+        static constexpr bool just_contraction = false;
         
     };
     
@@ -104,6 +104,6 @@ namespace smtrat
     struct ICPSettings4 : ICPSettings1
     {
 		static constexpr auto moduleName = "ICPModule<ICPSettings4>";
-        static constexpr bool no_splitting = true;
+        static constexpr bool just_contraction = true;
     };
 }

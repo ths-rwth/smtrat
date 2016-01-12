@@ -27,11 +27,19 @@ namespace smtrat
         /**
          * The half of the maximal width of the intervals specifying the variable domains.
          */
-        static constexpr unsigned max_width = 6;
+        static constexpr unsigned max_width = 4;
         /**
          * 
          */
         static constexpr bool exclude_searched_space = false;
+        /**
+         * 
+         */
+        static constexpr bool exclude_negative_numbers = true;
+        /**
+         * 
+         */
+        static constexpr bool use_icp = true;
     };
     
     struct IncWidthSettings2 : IncWidthSettings1

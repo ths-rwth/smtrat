@@ -20,23 +20,56 @@ namespace smtrat
     IncWidthModule<Settings>::IncWidthModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
         Module( _formula, _conditionals, _manager ),
         mRestartCheck( true ),
-        mHalfOfCurrentWidth( carl::pow( Rational(2), Settings::start_width-1 ) ),
+        mHalfOfCurrentWidth( carl::pow( Rational(Settings::increment), Settings::start_width-1 ) ),
         mVariableShifts(),
-        mVarBounds()
-    {}
+        mVarBounds(),
+        mICPFormula( nullptr ),
+        mICPFoundAnswer(),
+        mICPRuntimeSettings( nullptr ),
+        mICP( nullptr ),
+        mICPFormulaPositions()
+    {
+        if( Settings::use_icp )
+        {
+            mICPFormula = new ModuleInput();
+            mICPFoundAnswer.push_back( new std::atomic_bool( false ) );
+            mICPRuntimeSettings = new RuntimeSettings();
+            mICP = new ICPModule<ICPSettings4>( mICPFormula, mICPRuntimeSettings, mICPFoundAnswer );
+            
+        }
+    }
 
     template<class Settings>
     IncWidthModule<Settings>::~IncWidthModule()
-    {}
+    {
+        if( Settings::use_icp )
+        {
+            while( !mICPFoundAnswer.empty() )
+            {
+                std::atomic_bool* toDel = mICPFoundAnswer.back();
+                mICPFoundAnswer.pop_back();
+                delete toDel;
+            }
+            mICPFoundAnswer.clear();
+            delete mICPRuntimeSettings;
+            delete mICPFormula;
+            delete mICP;
+        }
+    }
 
     template<class Settings>
     bool IncWidthModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
         if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT )
         {
-            if( mVarBounds.addBound( _subformula->formula().constraint(), _subformula->formula() ) )
+            if( Settings::use_icp )
+                addToICP( _subformula->formula() );
+            else
             {
-                reset();
+                if( mVarBounds.addBound( _subformula->formula().constraint(), _subformula->formula() ) )
+                {
+                    reset();
+                }
             }
         }
         return !mVarBounds.isConflicting();
@@ -47,11 +80,60 @@ namespace smtrat
     {
         if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT )
         {
-            if( mVarBounds.removeBound( _subformula->formula().constraint(), _subformula->formula() ) )
+            if( Settings::use_icp )
+                removeFromICP( _subformula->formula() );
+            else
             {
-                reset();
+                if( mVarBounds.removeBound( _subformula->formula().constraint(), _subformula->formula() ) )
+                {
+                    reset();
+                }
             }
         }
+    }
+    
+    template<class Settings>
+    std::pair<ModuleInput::iterator,bool> IncWidthModule<Settings>::addToICP( const FormulaT& _formula, bool _guaranteedNew )
+    {
+        #ifdef DEBUG_INC_WIDTH_MODULE
+        std::cout << "Add to internal ICPModule: " << _formula << std::endl;
+        #endif
+        auto ret = mICPFormula->add( _formula, false );
+        assert( !_guaranteedNew || ret.second );
+        if( _guaranteedNew )
+        {
+            assert( mICPFormulaPositions.find( _formula ) == mICPFormulaPositions.end() );
+            mICPFormulaPositions.emplace( _formula, ret.first );
+        }
+        mICP->inform( _formula );
+        mICP->add( ret.first );
+        return ret;
+    }
+    
+    template<class Settings>
+    void IncWidthModule<Settings>::removeFromICP( const FormulaT& _formula )
+    {
+        #ifdef DEBUG_INC_WIDTH_MODULE
+        std::cout << "Remove from internal ICPModule: " << _formula << std::endl;
+        #endif
+        auto icpformpos = mICPFormulaPositions.find( _formula );
+        mICP->remove( icpformpos->second );
+        mICPFormula->erase( icpformpos->second );
+        mICPFormulaPositions.erase( icpformpos );
+    }
+    
+    template<class Settings>
+    void IncWidthModule<Settings>::clearICP()
+    {
+        #ifdef DEBUG_INC_WIDTH_MODULE
+        std::cout << "Clear internal ICPModule!" << std::endl;
+        #endif
+        for( const auto& icpformpos : mICPFormulaPositions )
+        {
+            mICP->remove( icpformpos.second );
+            mICPFormula->erase( icpformpos.second );
+        }
+        mICPFormulaPositions.clear();
     }
 
     template<class Settings>
@@ -97,7 +179,19 @@ namespace smtrat
         ModuleInput::const_iterator rf = firstUncheckedReceivedSubformula();
         carl::Variables arithVars;
         rReceivedFormula().arithmeticVars( arithVars );
-        const EvalRationalIntervalMap& varBounds = mVarBounds.getEvalIntervalMap();
+        if( Settings::use_icp )
+        {
+            Answer icpResult = mICP->check();
+            if( icpResult == UNSAT )
+            {
+                for( auto& infsubset : mICP->infeasibleSubsets() )
+                {
+                    mInfeasibleSubsets.push_back( infsubset );
+                }
+                return UNSAT;
+            }
+        }
+        EvalRationalIntervalMap varBounds = Settings::use_icp ? mICP->getCurrentBoxAsIntervals() : mVarBounds.getEvalIntervalMap();
         if( mRestartCheck )
         {
             #ifdef DEBUG_INC_WIDTH_MODULE
@@ -136,14 +230,29 @@ namespace smtrat
             }
         }
         // add all received formula after performing the shift to the passed formula
+        if( Settings::use_icp )
+        {
+            clearICP();
+        }
         for( ; rf != rReceivedFormula().end(); ++rf )
-            addSubformulaToPassedFormula( rf->formula().substitute( mVariableShifts ), rf->formula() );
-        vector<ModuleInput::iterator> addedBounds;
+        {
+            FormulaT subResult = rf->formula().substitute( mVariableShifts );
+            addSubformulaToPassedFormula( subResult, rf->formula() );
+            if( Settings::use_icp && subResult.getType() == carl::FormulaType::CONSTRAINT )
+            {
+                addToICP( subResult );
+            }
+        }
+        std::vector<ModuleInput::iterator> addedBounds;
         // For all variables add bounds (incrementally widening) until a solution is found or a certain width is reached
         for(;;)
         {
+            if( anAnswerFound() )
+            {
+                return UNKNOWN;
+            }
             // Check if we exceed the maximally allowed width
-            if( Settings::max_width > 0 && mHalfOfCurrentWidth > carl::pow( Rational(2), Settings::max_width-1 ) )
+            if( Settings::max_width > 0 && mHalfOfCurrentWidth > carl::pow( Rational(Settings::increment), Settings::max_width-1 ) )
             {
                 mHalfOfCurrentWidth /= Settings::increment;
                 #ifdef DEBUG_INC_WIDTH_MODULE
@@ -152,43 +261,121 @@ namespace smtrat
                 break;
             }
             // For each variable x add the bounds x >= -mHalfOfCurrentWidth and x <= mHalfOfCurrentWidth
-            #ifdef DEBUG_INC_WIDTH_MODULE
-            std::cout << "Try to add bounds:" << std::endl;
-            #endif
             bool boundAdded = false;
-            for( carl::Variable::Arg var : arithVars )
+            bool icpFoundUnsat = false;
+            if( Settings::use_icp )
             {
-                auto vb = varBounds.find( var );
-                if( vb == varBounds.end() || (vb->second.lowerBoundType() == carl::BoundType::INFTY && vb->second.upperBoundType() == carl::BoundType::INFTY) )
+                std::vector<ModuleInput::iterator> icpsAddedBounds;
+                // First try to contract variable domains with ICP.
+                for( carl::Variable::Arg var : arithVars )
                 {
-                    // Unbounded variable v. Add: mHalfOfCurrentWidth <= v < mHalfOfCurrentWidth
-                    auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LESS, Rational( mHalfOfCurrentWidth ) ) ) );
-                    if( res.second )
+                    auto vb = varBounds.find( var );
+                    if( (vb == varBounds.end() || (vb->second.lowerBoundType() == carl::BoundType::INFTY && vb->second.upperBoundType() == carl::BoundType::INFTY)) )
                     {
-                        boundAdded = true;
-                        addedBounds.push_back( res.first );
-                        #ifdef DEBUG_INC_WIDTH_MODULE
-                        std::cout << "   add  " << res.first->formula() << std::endl;
-                        #endif
+                        // Unbounded variable v. Add: mHalfONfCurrentWidth <= v < mHalfOfCurrentWidth
+                        ConstraintT boundA( var, carl::Relation::LESS, Settings::exclude_negative_numbers ? Rational(2)*mHalfOfCurrentWidth : Rational( mHalfOfCurrentWidth ) );
+                        auto ret = addToICP( FormulaT( boundA ), false );
+                        if( ret.second )
+                            icpsAddedBounds.push_back( ret.first );
+                        ConstraintT boundB( var, carl::Relation::GEQ, Settings::exclude_negative_numbers ? ZERO_RATIONAL : -Rational( mHalfOfCurrentWidth ) );
+                        ret = addToICP( FormulaT( boundB ) );
+                        if( ret.second )
+                            icpsAddedBounds.push_back( ret.first );
                     }
-                    res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::GEQ, -Rational( mHalfOfCurrentWidth ) ) ) );
-                    if( res.second )
+                    else
                     {
-                        boundAdded = true;
-                        addedBounds.push_back( res.first );
-                        #ifdef DEBUG_INC_WIDTH_MODULE
-                        std::cout << "   add  " << res.first->formula() << std::endl;
-                        #endif
+                        Rational currentWidth = Rational(2)*mHalfOfCurrentWidth;
+                        bool intervalHalfOpen = vb->second.lowerBoundType() == carl::BoundType::INFTY || vb->second.upperBoundType() == carl::BoundType::INFTY;
+                        if( intervalHalfOpen || currentWidth <= (vb->second.lowerBoundType() != carl::BoundType::INFTY ? -vb->second.lower() : vb->second.upper()) )
+                        {
+                            auto ret = addToICP( FormulaT( ConstraintT( var, carl::Relation::LESS, currentWidth ) ) );
+                            if( ret.second )
+                                icpsAddedBounds.push_back( ret.first );
+                        }
                     }
+                }
+                Answer icpResult = mICP->check();
+                if( icpResult == UNSAT )
+                {
+                    icpFoundUnsat = true;
                 }
                 else
                 {
-                    Rational currentWidth = Rational(2)*mHalfOfCurrentWidth;
-                    bool intervalHalfOpen = vb->second.lowerBoundType() == carl::BoundType::INFTY || vb->second.upperBoundType() == carl::BoundType::INFTY;
-                    const Rational& boundValue = vb->second.lowerBoundType() != carl::BoundType::INFTY ? -vb->second.lower() : vb->second.upper();
-                    if( intervalHalfOpen || currentWidth <= boundValue )
+                    EvalRationalIntervalMap newvarBounds = mICP->getCurrentBoxAsIntervals();
+                    for( const auto& varToInterval : newvarBounds )
                     {
-                        auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LESS, currentWidth ) ) );
+                        const RationalInterval& vi = varToInterval.second;
+                        if( vi.lowerBoundType() == carl::BoundType::STRICT )
+                        {
+                            auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( varToInterval.first, carl::Relation::GREATER, vi.lower() ) ) );
+                            if( res.second )
+                            {
+                                boundAdded = true;
+                                addedBounds.push_back( res.first );
+                                #ifdef DEBUG_INC_WIDTH_MODULE
+                                std::cout << "   add  " << res.first->formula() << std::endl;
+                                #endif
+                            }
+                        }
+                        else
+                        {
+                            assert( vi.lowerBoundType() == carl::BoundType::WEAK );
+                            auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( varToInterval.first, carl::Relation::GEQ, vi.lower() ) ) );
+                            if( res.second )
+                            {
+                                boundAdded = true;
+                                addedBounds.push_back( res.first );
+                                #ifdef DEBUG_INC_WIDTH_MODULE
+                                std::cout << "   add  " << res.first->formula() << std::endl;
+                                #endif
+                            }
+                        }
+                        if( vi.upperBoundType() == carl::BoundType::STRICT )
+                        {
+                            auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( varToInterval.first, carl::Relation::LESS, vi.upper() ) ) );
+                            if( res.second )
+                            {
+                                boundAdded = true;
+                                addedBounds.push_back( res.first );
+                                #ifdef DEBUG_INC_WIDTH_MODULE
+                                std::cout << "   add  " << res.first->formula() << std::endl;
+                                #endif
+                            }
+                        }
+                        else
+                        {
+                            assert( vi.upperBoundType() == carl::BoundType::WEAK );
+                            auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( varToInterval.first, carl::Relation::LEQ, vi.upper() ) ) );
+                            if( res.second )
+                            {
+                                boundAdded = true;
+                                addedBounds.push_back( res.first );
+                                #ifdef DEBUG_INC_WIDTH_MODULE
+                                std::cout << "   add  " << res.first->formula() << std::endl;
+                                #endif
+                            }
+                        }
+                    }
+                }
+                for( auto icpFormIter : icpsAddedBounds )
+                {
+                    mICP->remove( icpFormIter );
+                    mICPFormula->erase( icpFormIter );
+                }
+            }
+            else
+            {
+                #ifdef DEBUG_INC_WIDTH_MODULE
+                std::cout << "Try to add bounds:" << std::endl;
+                #endif
+                for( carl::Variable::Arg var : arithVars )
+                {
+                    auto vb = varBounds.find( var );
+                    if( (vb == varBounds.end() || (vb->second.lowerBoundType() == carl::BoundType::INFTY && vb->second.upperBoundType() == carl::BoundType::INFTY)) )
+                    {
+                        // Unbounded variable v. Add: mHalfONfCurrentWidth <= v < mHalfOfCurrentWidth
+                        ConstraintT boundA( var, carl::Relation::LESS, Settings::exclude_negative_numbers ? Rational(2)*mHalfOfCurrentWidth : Rational( mHalfOfCurrentWidth ) );
+                        auto res = addSubformulaToPassedFormula( FormulaT( boundA ) );
                         if( res.second )
                         {
                             boundAdded = true;
@@ -196,6 +383,33 @@ namespace smtrat
                             #ifdef DEBUG_INC_WIDTH_MODULE
                             std::cout << "   add  " << res.first->formula() << std::endl;
                             #endif
+                        }
+                        ConstraintT boundB( var, carl::Relation::GEQ, Settings::exclude_negative_numbers ? ZERO_RATIONAL : -Rational( mHalfOfCurrentWidth ) );
+                        res = addSubformulaToPassedFormula( FormulaT( boundB ) );
+                        if( res.second )
+                        {
+                            boundAdded = true;
+                            addedBounds.push_back( res.first );
+                            #ifdef DEBUG_INC_WIDTH_MODULE
+                            std::cout << "   add  " << res.first->formula() << std::endl;
+                            #endif
+                        }
+                    }
+                    else
+                    {
+                        Rational currentWidth = Rational(2)*mHalfOfCurrentWidth;
+                        bool intervalHalfOpen = vb->second.lowerBoundType() == carl::BoundType::INFTY || vb->second.upperBoundType() == carl::BoundType::INFTY;
+                        if( intervalHalfOpen || currentWidth <= (vb->second.lowerBoundType() != carl::BoundType::INFTY ? -vb->second.lower() : vb->second.upper()) )
+                        {
+                            auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LESS, currentWidth ) ) );
+                            if( res.second )
+                            {
+                                boundAdded = true;
+                                addedBounds.push_back( res.first );
+                                #ifdef DEBUG_INC_WIDTH_MODULE
+                                std::cout << "   add  " << res.first->formula() << std::endl;
+                                #endif
+                            }
                         }
                     }
                 }
@@ -310,6 +524,12 @@ namespace smtrat
                 #endif
             }
         }
+        if( Settings::use_icp )
+        {
+            clearICP();
+            for( const auto& rformula : rReceivedFormula() )
+                addToICP( rformula.formula() );
+        }
         Answer ans = runBackends( _full, _minimize );
         #ifdef DEBUG_INC_WIDTH_MODULE
         std::cout << "Final call of backends results in " << ANSWER_TO_STRING(ans) << std::endl;
@@ -337,7 +557,7 @@ namespace smtrat
         mRestartCheck = true;
         clearPassedFormula();
         mVariableShifts.clear();
-        mHalfOfCurrentWidth = carl::pow( Rational(2), Settings::start_width-1 );
+        mHalfOfCurrentWidth = carl::pow( Rational(Settings::increment), Settings::start_width-1 );
     }
 }
 
