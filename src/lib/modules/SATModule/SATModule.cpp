@@ -252,6 +252,11 @@ namespace smtrat
             adaptPassedFormula();
         }
         assert( rPassedFormula().empty() );
+        for( int i = 0; i < learnts.size(); ++i )
+        {
+            assert( learnts[i] != CRef_Undef );
+            removeClause( learnts[i] );
+        }
         learnts.clear();
         ok = true;
         if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
