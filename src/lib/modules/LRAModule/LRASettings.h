@@ -39,6 +39,10 @@ namespace smtrat
         /**
          * 
          */
+        static const bool support_bb_with_gc = false;
+        /**
+         * 
+         */
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         typedef Rational BoundType;
         #else

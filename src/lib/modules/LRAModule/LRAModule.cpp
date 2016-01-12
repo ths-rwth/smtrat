@@ -459,16 +459,12 @@ namespace smtrat
         }
         #endif
         if( mMinimize )
-        {
             _result = optimize( _result );
-        }
         if( _result != UNKNOWN )
         {
             mTableau.resetNumberOfPivotingSteps();
             if( _result == SAT && !mCheckedWithBackends )
-            {
                 _result = checkNotEqualConstraints( _result );
-            }
         }
         #ifdef DEBUG_LRA_MODULE
         std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << ANSWER_TO_STRING( _result ) << std::endl;
@@ -487,14 +483,10 @@ namespace smtrat
             {
                 const EvalRationalMap& rationalAssignment = getRationalModel();
                 for( auto ratAss = rationalAssignment.begin(); ratAss != rationalAssignment.end(); ++ratAss )
-                {
                     mModel.insert(mModel.end(), std::make_pair(ratAss->first, ratAss->second) );
-                }
             }
             else
-            {
                 Module::getBackendsModel();
-            }
             mModelComputed = true;
         }
     }
@@ -522,9 +514,7 @@ namespace smtrat
             case carl::FormulaType::CONSTRAINT:
             {
                 if( mCheckedWithBackends )
-                {
                     return satisfies( model(), _formula );
-                }
                 else
                 {
                     if( _formula.constraint().lhs().isLinear() && _formula.constraint().relation() != carl::Relation::NEQ )
@@ -537,20 +527,14 @@ namespace smtrat
                             if( lravar.hasBound() || (lravar.isOriginal() && receivedVariable( lravar.expression().getSingleVariable() )) )
                             {
                                 if( bound.isSatisfied( mTableau.currentDelta() ) )
-                                {
                                     return 1;
-                                }
                                 else
-                                {
                                     return 0;
-                                }
                             }
                         }
                     }
                     else
-                    {
                         return _formula.satisfiedBy( getRationalModel() );
-                    }
                 }
                 break;
             }
@@ -1236,7 +1220,7 @@ namespace smtrat
         const EvalRationalMap& rMap_ = getRationalModel();
         bool all_int = true;
         for( LRAVariable* basicVar : mTableau.rows() )
-        {            
+        {   
             if( basicVar->isOriginal() )
             {
                 carl::Variables vars;
@@ -1285,8 +1269,7 @@ namespace smtrat
     template<class Settings>
     bool LRAModule<Settings>::branch_and_bound()
     {
-        bool gc_support = true;
-        return most_infeasible_var( gc_support );
+        return most_infeasible_var( Settings::support_bb_with_gc );
     }
     
     template<class Settings>
@@ -1315,11 +1298,11 @@ namespace smtrat
             const Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
-                Rational curr_diff = ass - carl::floor(ass);
-                if( carl::abs( Rational(curr_diff - ONE_RATIONAL/Rational(2)) ) < diff )
+                Rational curr_diff = carl::abs( (ass - carl::floor(ass)) - ONE_RATIONAL/Rational(2) );
+                if( curr_diff < diff )
                 {
                     result = true;
-                    diff = carl::abs( Rational(curr_diff -  ONE_RATIONAL/Rational(2)) ); 
+                    diff = curr_diff; 
                     branch_var = var;
                     ass_ = ass;                   
                 }
@@ -1328,9 +1311,7 @@ namespace smtrat
         if( result )
         {
             if( _gc_support )
-            {
                 return maybeGomoryCut( branch_var->second, ass_ );
-            }
 //            FormulaSetT premises;
 //            mTableau.collect_premises( branch_var->second , premises  ); 
 //            FormulaSetT premisesOrigins;
@@ -1342,9 +1323,7 @@ namespace smtrat
             return true;
         }
         else
-        {
             return false;
-        } 
     }
     
     template<class Settings>
