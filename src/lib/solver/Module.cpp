@@ -459,11 +459,11 @@ namespace smtrat
             {
                 if( iter->mIncreasing > 0 )
                 {
-                    if( _branchingValue >= iter->mValue )
+                    if( _branchingValue > iter->mValue )
                     {
                         ++(iter->mRepetitions);
                     }
-                    else
+                    else if( _branchingValue < iter->mValue )
                     {
                         iter->mIncreasing = -1;
                         iter->mRepetitions = 1;
@@ -471,20 +471,20 @@ namespace smtrat
                 }
                 else if( iter->mIncreasing < 0 )
                 {
-                    if( _branchingValue <= iter->mValue )
+                    if( _branchingValue < iter->mValue )
                     {
                         ++(iter->mRepetitions);
                     }
-                    else
+                    else if( _branchingValue > iter->mValue )
                     {
                         iter->mIncreasing = 1;
                         iter->mRepetitions = 1;
                     }
                 }
-                else
+                else if( _branchingValue != iter->mValue )
                 {
-                    ++(iter->mRepetitions);
-                    iter->mIncreasing = _branchingValue >= iter->mValue ?  1 : -1;
+                    iter->mRepetitions = 1;
+                    iter->mIncreasing = _branchingValue > iter->mValue ? 1 : -1;
                 }
                 iter->mValue = _branchingValue;
                 if( iter->mRepetitions > 50 ) return true;
