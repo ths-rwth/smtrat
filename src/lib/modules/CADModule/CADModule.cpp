@@ -227,9 +227,9 @@ namespace smtrat
 		for (unsigned i = 0; i != mCAD.getEliminationSets().size(); ++i) {
 			SMTRAT_LOG_TRACE("smtrat.cad", "\tLevel " << i << " (" << mCAD.getEliminationSet(i).size() << "): " << mCAD.getEliminationSet(i));
 		}
-		SMTRAT_LOG_TRACE("smtrat.cad", "Result: true");
-		SMTRAT_LOG_TRACE("smtrat.cad", "CAD complete: " << mCAD.isComplete());
-		SMTRAT_LOG_TRACE("smtrat.cad", "Solution point: " << mRealAlgebraicSolution);
+		SMTRAT_LOG_DEBUG("smtrat.cad", "Result: true");
+		SMTRAT_LOG_DEBUG("smtrat.cad", "CAD complete: " << mCAD.isComplete());
+		SMTRAT_LOG_DEBUG("smtrat.cad", "Solution point: " << mRealAlgebraicSolution);
 		mInfeasibleSubsets.clear();
 		if (Settings::integerHandling == carl::cad::IntegerHandling::SPLIT_SOLUTION) {
 			// Check whether the found assignment is integer. Split on first non-integral assignment.
