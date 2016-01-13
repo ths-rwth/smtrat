@@ -87,6 +87,7 @@ public:
 	InstructionHandler(): mRegular(std::cout.rdbuf()), mDiagnostic(std::cerr.rdbuf()) {
 		Attribute attr("print-instruction", Value(false));
 		this->setOption(attr);
+		smtrat::resource::Limiter::getInstance().initialize();
 	}
 	virtual ~InstructionHandler() {
 		for (auto& it: this->streams) it.second.close();
@@ -175,6 +176,16 @@ public:
 		else if (key == "regular-output-channel") this->regular(this->options.get<std::string>(key));
 		else if (key == "verbosity") {
 			this->options.assertType<Rational>("verbosity", std::bind(&InstructionHandler::error, this));
+		}
+		else if (key == "timeout") {
+			this->options.assertType<Rational>("timeout", std::bind(&InstructionHandler::error, this));
+			std::size_t timeout = carl::toInt<std::size_t>(options.get<Rational>("timeout"));
+			this->info() << "Setting timeout to " << timeout << " seconds";
+			smtrat::resource::Limiter::getInstance().setTimeout(timeout);
+		}
+		else if (key == "memout") {
+			this->options.assertType<Rational>("memout", std::bind(&InstructionHandler::error, this));
+			smtrat::resource::Limiter::getInstance().setMemout(carl::toInt<std::size_t>(options.get<Rational>("memout")));
 		}
 	}
 };

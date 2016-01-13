@@ -49,6 +49,7 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat", "Asserting " << f);
 	}
 	void check() {
+		smtrat::resource::Limiter::getInstance().resetTimeout();
 		if (exportDIMACS) {
 			dimacsID++;
 			std::ofstream out("dimacs_" + std::to_string(dimacsID) + ".dimacs");
@@ -142,6 +143,7 @@ public:
 		for (; n > 0; n--) this->solver->push();
 	}
 	void reset() {
+		smtrat::resource::Limiter::getInstance().reset();
 		this->solver->reset();
 	}
 	void setLogic(const smtrat::Logic& logic) {
