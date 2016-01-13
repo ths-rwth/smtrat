@@ -626,7 +626,7 @@ namespace smtrat
                 while( iter_ass != mVarAss.end() )
                 {
                     ModelValue ass = vs::SqrtEx( (Poly)iter_ass->second );
-                    mModel[ iter_ass->first ] = ass;
+                    mModel.emplace( iter_ass->first, ass );
                     ++iter_ass;
                 }
             }
@@ -673,7 +673,7 @@ namespace smtrat
                         if( iter_help == temp_solution.end() )
                         {
                             ModelValue assignment = vs::SqrtEx( Poly( iter_sol->second ) );
-                            mModel[ iter_sol->first ] = assignment;
+                            mModel.emplace(iter_sol->first, assignment);
                         }
                         ++iter_sol;
                     }
