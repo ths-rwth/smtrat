@@ -57,6 +57,7 @@ inline std::size_t usedCPU() {}
 inline void resetCPULimit() {}
 inline void setMemoryLimit(std::size_t) {}
 inline void resetMemoryLimit() {}
+inline void installSignalHandler() {}
 #endif
 
 class Limiter: public carl::Singleton<Limiter> {
