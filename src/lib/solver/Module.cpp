@@ -344,7 +344,7 @@ namespace smtrat
                     // There should be no empty classes in the result.
                     assert(cls.size() > 0);
                     // Check if the current assignment fits into this class.
-                    if( a == this->mModel[cls.front()] )
+                    if( a == this->mModel.at(cls.front()) )
                     {
                         // insert it and continue with the next assignment.
                         cls.push_back( v );
