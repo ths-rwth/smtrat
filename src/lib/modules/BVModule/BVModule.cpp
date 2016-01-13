@@ -153,8 +153,7 @@ namespace smtrat
                 assert( iter != mModel.end() );
                 composedValue[i] = iter->second.asBool();
             }
-
-            mModel[bitvectorToBits.first] = composedValue;
+            mModel.emplace(bitvectorToBits.first, composedValue);
         }
 
         // Remove internal variables which have been introduced by blasting

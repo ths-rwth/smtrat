@@ -152,11 +152,11 @@ namespace smtrat
                     bool varWithNegCoeff = carl::isNegative( varShiftIter->second.lcoeff() );
                     if( ass.second.isRational() )
                     {
-                        ass.second = (varWithNegCoeff ? -ass.second.asRational() : ass.second.asRational()) + varShiftIter->second.constantPart();
+                        mModel.assign(ass.first, (varWithNegCoeff ? -ass.second.asRational() : ass.second.asRational()) + varShiftIter->second.constantPart());
                     }
                     else if( ass.second.isSqrtEx() )
                     {
-                        ass.second = (varWithNegCoeff ? ass.second.asSqrtEx()*vs::SqrtEx( Poly( MINUS_ONE_RATIONAL ) ) : ass.second.asSqrtEx()) + vs::SqrtEx( Poly( varShiftIter->second.constantPart() ) );
+                        mModel.assign(ass.first, (varWithNegCoeff ? ass.second.asSqrtEx()*vs::SqrtEx( Poly( MINUS_ONE_RATIONAL ) ) : ass.second.asSqrtEx()) + vs::SqrtEx( Poly( varShiftIter->second.constantPart() ) ));
                     }
                     else // ass.second.isRAN()
                     {

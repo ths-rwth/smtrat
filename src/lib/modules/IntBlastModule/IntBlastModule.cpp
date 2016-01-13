@@ -1152,7 +1152,7 @@ namespace smtrat
 
             if(blasting.isConstant()) {
                 auto modelValue = carl::RealAlgebraicNumber<Rational>(blasting.constant(), false);
-                mModel[ModelVariable(variable)] = ModelValue(modelValue);
+                mModel.emplace(ModelVariable(variable), ModelValue(modelValue));
             } else {
                 const carl::BVTerm& blastedTerm = blasting.term().term();
                 assert(blastedTerm.type() == carl::BVTermType::VARIABLE);
@@ -1169,7 +1169,7 @@ namespace smtrat
                 // BV solver, the BV solver has not received any constraints
                 // containing this variable. This implies that an arbitrary value is allowed.
                 // We simply use constant 0.
-                mModel[ModelVariable(variable)] = ModelValue(integerValue);
+                mModel.emplace(ModelVariable(variable), ModelValue(integerValue));
             }
         }
     }

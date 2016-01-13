@@ -331,7 +331,7 @@ namespace smtrat
             auto ass = _defaultModel.find( _bvTerm.variable() );
             if( ass == _defaultModel.end() )
             {
-                _defaultModel[_bvTerm.variable()] = carl::BVValue(_bvTerm.variable().width());
+				_defaultModel.emplace(_bvTerm.variable(), carl::BVValue(_bvTerm.variable().width()));
             }
             else
             {
@@ -356,7 +356,7 @@ namespace smtrat
             auto ass = _defaultModel.find( var );
             if( ass == _defaultModel.end() )
             {
-                _defaultModel[var] = 0;
+                _defaultModel.emplace(var, 0);
             }
             else
             {
@@ -376,7 +376,7 @@ namespace smtrat
                 auto ass = _defaultModel.find( _formula.boolean() );
                 if( ass == _defaultModel.end() )
                 {
-                    _defaultModel[_formula.boolean()] = false;
+                    _defaultModel.emplace(_formula.boolean(), false);
                 }
                 else
                 {

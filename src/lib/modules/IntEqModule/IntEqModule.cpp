@@ -662,7 +662,7 @@ namespace smtrat
         auto iter_model = mModel.begin();
         while( iter_model != mModel.end() )
         {
-            mTemp_Model[ iter_model->first ] = iter_model->second;
+            mTemp_Model.emplace(iter_model->first, iter_model->second);
             ++iter_model;
         }
         std::map<carl::Variable, Rational> temp_map;
@@ -695,7 +695,7 @@ namespace smtrat
             assert( value.isConstant() );
             temp_map[ iter_vars->first ] = (Rational)value.constantPart();
             ModelValue assignment = vs::SqrtEx( value );
-            mTemp_Model[ iter_vars->first ] = assignment;
+            mTemp_Model.emplace(iter_vars->first, assignment);
             if( iter_vars != mSubstitutions.begin() )
             {
                 --iter_vars;
