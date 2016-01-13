@@ -19,5 +19,7 @@
 #define SMTRAT_EXIT_UNEXPECTED_INPUT    8
 #define SMTRAT_EXIT_NOSUCHFILE          9
 #define SMTRAT_EXIT_PARSERFAILURE       10
+#define SMTRAT_EXIT_TIMEOUT             11
+#define SMTRAT_EXIT_MEMOUT              12
 
 #endif   /* EXITCODES_H */
