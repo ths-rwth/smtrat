@@ -348,6 +348,7 @@ namespace smtrat
             {
                 if( lraAnswer == SAT )
                 {
+                    assert( !Settings::just_contraction );
                     if( checkNotEqualConstraints() )
                     {
                         #ifdef ICP_MODULE_DEBUG_0
@@ -359,10 +360,13 @@ namespace smtrat
                     else
                         return UNKNOWN;
                 }
-                #ifdef ICP_MODULE_DEBUG_0
-                std::cout << "Linear constraints not feasible!" << std::endl;
-                #endif
-                return lraAnswer;
+                else
+                {
+                    #ifdef ICP_MODULE_DEBUG_0
+                    std::cout << "Linear constraints not feasible!" << std::endl;
+                    #endif
+                    return lraAnswer;
+                }
             }
             #ifdef ICP_MODULE_SHOW_PROGRESS
             if( mGlobalBoxSize == 0.0 ) mGlobalBoxSize = calculateCurrentBoxSize();
@@ -401,7 +405,7 @@ namespace smtrat
                     return UNKNOWN;
                 }
                 assert( splittings().empty() );
-                if( tryTestPoints() )
+                if( !Settings::just_contraction && tryTestPoints() )
                 {
                     if( checkNotEqualConstraints() )
                         return SAT;
@@ -419,7 +423,7 @@ namespace smtrat
                         return lazyResult;
                     // Full call of the backends, if no box has target diameter
                     bool furtherContractionOccurred = false;
-                    if( Settings::no_splitting || !performSplit( mOriginalVariableIntervalContracted, furtherContractionOccurred ) )
+                    if( Settings::just_contraction || !performSplit( mOriginalVariableIntervalContracted, furtherContractionOccurred ) )
                         return callBackends( _full );
                     if( mInvalidBox )
                     {
@@ -1071,7 +1075,7 @@ namespace smtrat
         icp::IcpVariable& icpVar = *mVariables.find( variable )->second;
         DoubleInterval icpVarIntervalBefore = icpVar.interval();
         mSplitOccurred = _selection->contract( mIntervals, resultA, resultB );
-        if( (Settings::no_splitting || !Settings::split_by_division_with_zero) && mSplitOccurred )
+        if( (Settings::just_contraction || !Settings::split_by_division_with_zero) && mSplitOccurred )
         {
             mSplitOccurred = false;
             resultA = resultA.convexHull( resultB );
@@ -2299,16 +2303,19 @@ namespace smtrat
         _answer = mLRA.check();
 
         // catch deductions
-        for( const auto& ded : mLRA.deductions() )
+        if( !Settings::just_contraction )
         {
-            #ifdef ICP_MODULE_DEBUG_2
-            std::cout << "Create deduction for: " << ded.first << std::endl;
-            #endif
-            FormulaT deduction = getReceivedFormulas(ded.first);
-            addDeduction(deduction, ded.second);
-            #ifdef ICP_MODULE_DEBUG_2
-            std::cout << "Passed deduction: " << deduction << std::endl;
-            #endif
+            for( const auto& ded : mLRA.deductions() )
+            {
+                #ifdef ICP_MODULE_DEBUG_2
+                std::cout << "Create deduction for: " << ded.first << std::endl;
+                #endif
+                FormulaT deduction = getReceivedFormulas(ded.first);
+                addDeduction(deduction, ded.second);
+                #ifdef ICP_MODULE_DEBUG_2
+                std::cout << "Passed deduction: " << deduction << std::endl;
+                #endif
+            }
         }
         if( Settings::use_lramodules_splitting_decisions )
         {
@@ -2332,7 +2339,7 @@ namespace smtrat
             #endif
             return true;
         }
-        else if( _answer == SAT ) // _answer == SAT, but no nonlinear constraints -> linear solution is a solution
+        else if( !Settings::just_contraction && _answer == SAT ) // _answer == SAT, but no nonlinear constraints -> linear solution is a solution
         {
             #ifdef ICP_MODULE_DEBUG_1
             std::cout << "LRA: " << _answer << std::endl;
@@ -2353,7 +2360,7 @@ namespace smtrat
             if( solutionFound )
                 return true;
         }
-        if( !splittings().empty() && _answer == UNKNOWN )
+        if( !Settings::just_contraction && !splittings().empty() && _answer == UNKNOWN )
             return true;
         // get intervals for initial variables
         mInitialIntervals = mLRA.getVariableBounds();
@@ -2619,6 +2626,37 @@ namespace smtrat
     }
     
     template<class Settings>
+    EvalRationalIntervalMap ICPModule<Settings>::getCurrentBoxAsIntervals() const
+    {
+        EvalRationalIntervalMap result;
+        carl::Variables originalRealVariables;
+        rReceivedFormula().realValuedVars( originalRealVariables ); // TODO: store original variables as member, updating them efficiently with assert and remove
+        auto varIntervalIter = mIntervals.begin();
+        auto varInitialIntervalIter = mInitialIntervals.begin();
+        for( std::map<carl::Variable, icp::IcpVariable*>::const_iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
+        {
+            carl::Variable::Arg tmpSymbol = iter->first;
+            const icp::IcpVariable& icpVar = *iter->second;
+            if( icpVar.isOriginal() && originalRealVariables.find( tmpSymbol ) != originalRealVariables.end() )
+            {
+                while( varIntervalIter->first < tmpSymbol )
+                {
+                    assert( varIntervalIter != mIntervals.end() );
+                    ++varIntervalIter;
+                }
+                while( varInitialIntervalIter != mInitialIntervals.end() && varInitialIntervalIter->first < tmpSymbol )
+                {
+                    ++varInitialIntervalIter;
+                }
+                const DoubleInterval& interval = varIntervalIter->second;
+                assert( result.find( tmpSymbol ) == result.end() );
+                result.emplace( tmpSymbol, doubleToRationalInterval( tmpSymbol, interval, varInitialIntervalIter ) ); 
+            }
+        }
+        return result;
+    }
+    
+    template<class Settings>
     FormulasT ICPModule<Settings>::getCurrentBoxAsFormulas() const
     {
         FormulasT result;
@@ -2651,6 +2689,30 @@ namespace smtrat
             }
         }
         return result;
+    }
+    
+    template<class Settings>
+    RationalInterval ICPModule<Settings>::doubleToRationalInterval( carl::Variable::Arg _var, const DoubleInterval& _interval, EvalRationalIntervalMap::const_iterator _initialIntervalIter ) const
+    {
+        Rational lbound = carl::rationalize<Rational>( _interval.lower() );
+        Rational ubound = carl::rationalize<Rational>( _interval.upper() );
+        carl::BoundType lboundType = _interval.lowerBoundType();
+        carl::BoundType uboundType = _interval.upperBoundType();
+        if( _initialIntervalIter != mInitialIntervals.end() && _initialIntervalIter->first == _var )
+        {
+            const RationalInterval& varBounds = _initialIntervalIter->second;
+            if( varBounds.upperBoundType() != carl::BoundType::INFTY && (uboundType == carl::BoundType::INFTY || ubound > varBounds.upper()) )
+            {
+                ubound = varBounds.upper();
+                uboundType = varBounds.upperBoundType();
+            }
+            if( varBounds.lowerBoundType() != carl::BoundType::INFTY && (lboundType == carl::BoundType::INFTY || lbound < varBounds.lower()) )
+            {
+                lbound = varBounds.lower();
+                lboundType = varBounds.lowerBoundType();
+            }
+        }
+        return RationalInterval( lbound, lboundType, ubound, uboundType );
     }
     
     template<class Settings>

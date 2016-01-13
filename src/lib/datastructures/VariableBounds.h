@@ -388,6 +388,12 @@ namespace smtrat
                  * Destructs a variable bounds manager.
                  */
                 ~VariableBounds();
+                void clear();
+                
+                bool empty() const
+                {
+                    return mpConstraintBoundMap->empty();
+                }
                 
                 /**
                  * Updates the variable bounds by the given constraint.

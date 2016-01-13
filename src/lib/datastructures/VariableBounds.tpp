@@ -300,6 +300,21 @@ namespace smtrat
             delete mpVariableMap;
         }
 
+        template<typename T>
+        void VariableBounds<T>::clear()
+        {
+            mpConflictingVariable = NULL;
+            mpConstraintBoundMap->clear();
+            while( !mpVariableMap->empty() )
+            {
+                Variable<T>* toDelete = mpVariableMap->begin()->second;
+                mpVariableMap->erase( mpVariableMap->begin() );
+                delete toDelete;
+            }
+            mBoundDeductions.clear();
+            mDoubleIntervalMap.clear();
+            mEvalIntervalMap.clear();
+        }
 		
         template<typename T>
         bool VariableBounds<T>::addBound( const ConstraintT& _constraint, const T& _origin )

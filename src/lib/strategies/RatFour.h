@@ -4,7 +4,7 @@
 #pragma once
 
 #include "../solver/Manager.h"
-#include "../modules/PreprocessingModule/PreprocessingModule.h"
+#include "../modules/FPPModule/FPPModule.h"
 #include "../modules/SATModule/SATModule.h"
 #include "../modules/LRAModule/LRAModule.h"
 #include "../modules/VSModule/VSModule.h"
@@ -33,7 +33,7 @@ namespace smtrat
         {
             setStrategy(
             {
-                addBackend<PreprocessingModule<PreprocessingSettings1>>(
+                addBackend<FPPModule<FPPSettings1>>(
                 {
                     addBackend<SATModule<SATSettings1>>(
                     {
@@ -41,7 +41,7 @@ namespace smtrat
                         {
                             addBackend<VSModule<VSSettings234>>(
                             {
-                                addBackend<CADModule<CADSettings1>>()
+                                addBackend<CADModule<CADSettingsGuessAndSplit>>()
                             })
                         })
                     }),
@@ -51,7 +51,7 @@ namespace smtrat
                         {
                             addBackend<VSModule<VSSettings234>>(
                             {
-                                addBackend<CADModule<CADSettings1>>()
+                                addBackend<CADModule<CADSettingsGuessAndSplit>>()
                             })
                         })
                     })

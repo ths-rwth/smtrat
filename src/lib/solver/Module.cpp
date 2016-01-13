@@ -776,7 +776,7 @@ namespace smtrat
                 {
                     SMTRAT_LOG_INFO("smtrat.module","Call to module " << moduleName( mUsedBackends[ i ]->type() ));
                     mUsedBackends[ i ]->print();
-                    futures[ i ] = mpManager->submitBackend( mUsedBackends[ i ], _full );
+                    futures[ i ] = mpManager->submitBackend( mUsedBackends[ i ], _full, _minimize );
                 }
                 mpManager->checkBackendPriority( mUsedBackends[ highestIndex ] );
                 SMTRAT_LOG_INFO("smtrat.module", "Call to module " << moduleName( mUsedBackends[ highestIndex ]->type() ));
