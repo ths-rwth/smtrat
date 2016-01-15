@@ -20,11 +20,13 @@ inline void setCPULimit(std::size_t seconds) {
 	rl.rlim_cur = seconds;
 	setrlimit(RLIMIT_CPU, &rl);
 }
+inline std::size_t getCPULimit() {
+	rlimit rl;
+    getrlimit(RLIMIT_CPU, &rl);
+	return rl.rlim_cur;
+}
 inline std::size_t usedCPU() {
 	return std::size_t(clock()) / CLOCKS_PER_SEC;
-}
-inline void resetCPULimit() {
-	setCPULimit(RLIM_INFINITY);
 }
 inline void setMemoryLimit(std::size_t megabytes) {
 	rlimit rl;
@@ -32,8 +34,11 @@ inline void setMemoryLimit(std::size_t megabytes) {
 	rl.rlim_cur = megabytes * 1024 * 1024;
 	setrlimit(RLIMIT_AS, &rl);
 }
-inline void resetMemoryLimit() {
-	setMemoryLimit(RLIM_INFINITY);
+
+inline std::size_t getMemoryLimit() {
+	rlimit rl;
+    getrlimit(RLIMIT_AS, &rl);
+	return rl.rlim_cur;
 }
 inline void signalHandler(int signal) {
 	if (signal == SIGXCPU) {
@@ -53,38 +58,49 @@ inline void installSignalHandler() {
 }
 #else
 inline void setCPULimit(std::size_t) {}
-inline std::size_t usedCPU() {}
-inline void resetCPULimit() {}
+inline std::size_t getCPULimit() { return 0; }
+inline std::size_t usedCPU() { return 0; }
 inline void setMemoryLimit(std::size_t) {}
-inline void resetMemoryLimit() {}
+inline std::size_t getMemoryLimit() { return 0; }
 inline void installSignalHandler() {}
 #endif
 
 class Limiter: public carl::Singleton<Limiter> {
 private:
+	std::size_t mMemout;
 	std::size_t mTimeout;
+	std::size_t mOriginalMemout;
+	std::size_t mOriginalTimeout;
 public:
-	void initialize() const {
+	void initialize() {
 		installSignalHandler();
+		mMemout = 0;
+		mTimeout = 0;
+		mOriginalMemout = getMemoryLimit();
+		mOriginalTimeout = getCPULimit();
 	}
 	void reset() {
-		mTimeout = 0;
-		resetTimeout();
-		resetMemoryLimit();
+		if (mMemout != 0) {
+			mMemout = 0;
+			setMemoryLimit(mOriginalMemout);
+		}
+		if (mTimeout != 0) {
+			mTimeout = 0;
+			setCPULimit(mOriginalTimeout);
+		}
 	}
-	void setMemout(std::size_t megabytes) const {
-		setMemoryLimit(megabytes);
-	}
-	void resetMemout() const {
-		resetMemoryLimit();
+	void setMemout(std::size_t megabytes) {
+		mMemout = megabytes;
+		setMemoryLimit(mMemout);
 	}
 	void setTimeout(std::size_t seconds) {
 		mTimeout = seconds;
-		resetTimeout();
+		setCPULimit(usedCPU() + mTimeout);
 	}
 	void resetTimeout() const {
-		if (mTimeout == 0) resetCPULimit();
-		else setCPULimit(usedCPU() + mTimeout);
+		if (mTimeout != 0) {
+			setCPULimit(usedCPU() + mTimeout);
+		}
 	}
 };
 
