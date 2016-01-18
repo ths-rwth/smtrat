@@ -256,6 +256,7 @@ namespace smtrat
 					}
 					mRealAlgebraicSolution[d] = current;
 					branchAt(vars[d], r);
+					return UNKNOWN;
 				}
 			}
 		} else if (Settings::integerHandling == carl::cad::IntegerHandling::NONE) {
