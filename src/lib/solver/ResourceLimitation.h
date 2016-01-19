@@ -42,14 +42,14 @@ inline std::size_t getMemoryLimit() {
 }
 inline void signalHandler(int signal) {
 	if (signal == SIGXCPU) {
-		std::cerr << "CPU resource out" << std::endl;
-		std::exit(SMTRAT_EXIT_TIMEOUT);
+		std::cerr << "(error \"CPU resource out\")" << std::endl;
+		std::quick_exit(SMTRAT_EXIT_TIMEOUT);
 	} else if (signal == ENOMEM) {
-		std::cerr << "Mem resource out" << std::endl;
-		std::exit(SMTRAT_EXIT_MEMOUT);
+		std::cerr << "(error \"Mem resource out\")" << std::endl;
+		std::quick_exit(SMTRAT_EXIT_MEMOUT);
 	} else {
-		std::cerr << "Unknown abort in resource limitation module" << std::endl;
-		std::exit(SMTRAT_EXIT_GENERALERROR);
+		std::cerr << "(error \"Unknown abort in resource limitation module\")" << std::endl;
+		std::quick_exit(SMTRAT_EXIT_GENERALERROR);
 	}
 }
 inline void installSignalHandler() {
