@@ -13,7 +13,7 @@
 #include "../modules/EQPreprocessingModule/EQPreprocessingModule.h"
 #include "../modules/ICPModule/ICPModule.h"
 #include "../modules/LRAModule/LRAModule.h"
-#include "../modules/PreprocessingModule/PreprocessingModule.h"
+#include "../modules/FPPModule/FPPModule.h"
 #include "../modules/SATModule/SATModule.h"
 #include "../modules/VSModule/VSModule.h"
 
@@ -49,19 +49,19 @@ namespace smtrat
         public:
             FullStrategy(): Manager() {
 				setStrategy({
-					addBackend<EQPreprocessingModule<EQPreprocessingSettings1>>({
+//					addBackend<EQPreprocessingModule<EQPreprocessingSettings1>>({
 						addBackend<SATModule<SATSettings1>>({
 							addBackend<EQModule<EQSettings1>>()
-						})
-					}).condition(&conditionEvaluation0),
+						}).condition(&conditionEvaluation0),
+//					}).condition(&conditionEvaluation0),
 					addBackend<BVModule<BVSettings1>>({
 						addBackend<SATModule<SATSettings1>>()
 					}).condition(&conditionEvaluation4),
-					addBackend<PreprocessingModule<PreprocessingSettings1>>({
+					addBackend<FPPModule<FPPSettings1>>({
 						addBackend<SATModule<SATSettings1>>({
 							addBackend<ICPModule<ICPSettings1>>({
-								addBackend<VSModule<VSSettings1>>({
-									addBackend<CADModule<CADSettings1>>()
+								addBackend<VSModule<VSSettings234>>({
+									addBackend<CADModule<CADSettingsGuessAndSplit>>()
 								})
 							})
 						}).condition(&conditionEvaluation8),
