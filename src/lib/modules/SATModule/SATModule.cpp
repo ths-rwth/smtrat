@@ -262,7 +262,6 @@ namespace smtrat
             assert( iter != mFormulaAssumptionMap.end() );
             int i = 0;
             while( assumptions[i] != iter->second ) ++i;
-            int pos = (i < 1 ? 0 : i-1);
             while( i < assumptions.size() - 1 )
             {
                 assumptions[i] = assumptions[i+1];
@@ -378,7 +377,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    Answer SATModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
+    Answer SATModule<Settings>::checkCore( bool, bool _full, bool _minimize )
     {
         mFullCheck = _full;
         mMinimize = _minimize;
