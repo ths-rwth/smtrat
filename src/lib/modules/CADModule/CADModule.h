@@ -86,7 +86,7 @@ return SettingsType::moduleName;
 
             bool addCore(ModuleInput::const_iterator _subformula);
             void removeCore(ModuleInput::const_iterator _subformula);
-            Answer checkCore( bool _full = true, bool _minimize = false );
+            Answer checkCore( bool _final = false, bool _full = true, bool _minimize = false );
             void updateModel() const;
 
 

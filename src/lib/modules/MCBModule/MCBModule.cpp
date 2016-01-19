@@ -69,7 +69,7 @@ namespace smtrat
 	{}
 	
 	template<class Settings>
-	Answer MCBModule<Settings>::checkCore( bool _full, bool _minimize )
+	Answer MCBModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
 	{
 		mRemaining.clear();
 		mChoices.clear();
@@ -83,7 +83,7 @@ namespace smtrat
 		clearPassedFormula();
 		addSubformulaToPassedFormula(newFormula);
 		
-		Answer ans = runBackends(_full, _minimize);
+		Answer ans = runBackends(_final, _full, _minimize);
 		if (ans == UNSAT) {
 			generateTrivialInfeasibleSubset();
 		}

@@ -23,6 +23,9 @@ namespace smtrat
             // Members.
             ///
 			carl::FormulaVisitor<FormulaT> mVisitor;
+			
+			using Choice = std::tuple<carl::Variable,FormulaT>;
+			std::map<Choice, carl::Variable> mReplacements;
 
         public:
 			typedef Settings SettingsType;
@@ -37,16 +40,20 @@ namespace smtrat
 
             /**
              * Checks the received formula for consistency.
+             * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT.
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return SAT,    if the received formula is satisfiable;
              *         UNSAT,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer checkCore( bool _full, bool _minimize = false );
+            Answer checkCore( bool _final = false, bool _full = true, bool _minimize = false );
 
         private:
             FormulaT extractBounds( const FormulaT& formula );
 			std::function<FormulaT(FormulaT)> extractBoundsFunction;
+			
+			void collectBounds(FormulaT::ConstraintBounds& cb, const FormulaT& formula, bool conjunction) const;
+			FormulaT applyReplacements(const FormulaT& f) const;
     };
 }

@@ -12,25 +12,22 @@ namespace smtrat
 	/// Basically a wrapper around std::map.
 	class Model {
 	public:
+		//using Map = std::unordered_map<ModelVariable,ModelValue>;
 		using Map = std::map<ModelVariable,ModelValue>;
 	private:
-		std::map<ModelVariable,ModelValue> mData;
+		Map mData;
+		std::map<ModelVariable, std::size_t> mUsedInSubstitution;
 	public:
 		// Element access
-		auto operator[](const Map::key_type& key) -> decltype(mData[key]) {
-			return mData[key];
+		auto at(const Map::key_type& key) const -> decltype(mData.at(key)) {
+			return mData.at(key);
 		}
+		
 		// Iterators
 		auto begin() const -> decltype(mData.begin()) {
 			return mData.begin();
 		}
-		auto begin() -> decltype(mData.begin()) {
-			return mData.begin();
-		}
 		auto end() const -> decltype(mData.end()) {
-			return mData.end();
-		}
-		auto end() -> decltype(mData.end()) {
 			return mData.end();
 		}
 		// Capacity
@@ -88,6 +85,12 @@ namespace smtrat
 		}
 		
 		// Additional (w.r.t. std::map)
+		template<typename T>
+		void assign(const Map::key_type& key, const T& t) {
+			auto it = mData.find(key);
+			if (it == mData.end()) mData.emplace(key, t);
+			else it->second = t;
+		}
 		void merge(const Model& model, bool overwrite = false) {
 			for (const auto& m: model) {
 				auto res = mData.insert(m);

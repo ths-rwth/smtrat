@@ -61,14 +61,6 @@ namespace smtrat
         /**
          * 
          */
-        static constexpr bool use_lramodules_splitting_decisions = false;
-        /**
-         * 
-         */
-        static constexpr bool use_backends_splitting_decisions = false;
-        /**
-         * 
-         */
         static constexpr bool prolong_contraction = true;
         /**
          * 

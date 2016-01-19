@@ -85,7 +85,7 @@ public:
     virtual ~GBModule( );
 
     bool addCore( ModuleInput::const_iterator _formula );
-    virtual Answer checkCore( bool _full = true, bool _minimize = false );
+    virtual Answer checkCore( bool _final = false, bool _full = true, bool _minimize = false );
     void removeCore( ModuleInput::const_iterator _formula );
 	
 

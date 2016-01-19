@@ -93,12 +93,12 @@ namespace smtrat
         }
     }
 
-    std::future<Answer> ThreadPool::submitBackend( Module* _pModule, bool _full, bool _minimize )
+    std::future<Answer> ThreadPool::submitBackend( Module* _pModule, bool _final, bool _full, bool _minimize )
     {
         assert(mNumberOfRunningThreads <= mNumberOfCores);
         thread_priority threadPriority = _pModule->threadPriority();
         assert(threadPriority.first < (mNumberOfThreads-1));
-        std::packaged_task<Answer()> task( std::bind( &Module::check, _pModule, _full, _minimize ) );
+        std::packaged_task<Answer()> task( std::bind( &Module::check, _pModule, _final, _full, _minimize ) );
         std::future<Answer> result( task.get_future() );
         std::lock_guard<std::mutex> lock( mMutex );
         mTasks[ threadPriority.first ] = std::make_shared< std::packaged_task<Answer()> >( std::move( task ) );

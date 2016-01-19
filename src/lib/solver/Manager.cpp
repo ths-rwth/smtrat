@@ -182,12 +182,12 @@ namespace smtrat
         {
             assert( mObjectives.front().first == _objFct );
             const Model& curModel = model();
-            auto modelIter = curModel.find( mObjectives.front().first.isVariable() ? mObjectives.front().first.getSingleVariable() : mObjectives.front().second.first );
+            auto modelIter = curModel.find( mObjectives.front().second.first );
             assert( modelIter != curModel.end() );
             if( modelIter->second.isMinusInfinity() )
-                return ((mObjectives.front().second.second || mObjectives.front().first.isVariable()) ? modelIter->second.asInfinity() : InfinityValue(true));
+                return mObjectives.front().second.second ? modelIter->second.asInfinity() : InfinityValue(true);
             assert( modelIter->second.isRational() );
-            return ((mObjectives.front().second.second || mObjectives.front().first.isVariable()) ? modelIter->second.asRational() : -(modelIter->second.asRational()));
+            return mObjectives.front().second.second ? modelIter->second.asRational() : -(modelIter->second.asRational());
         }
         for( auto& obj : mObjectives )
         {
@@ -207,10 +207,10 @@ namespace smtrat
     std::vector<FormulaT> Manager::lemmas()
     {
         std::vector<FormulaT> result;
-        mpPrimaryBackend->updateDeductions();
-        for( const auto& ded : mpPrimaryBackend->deductions() )
+        mpPrimaryBackend->updateLemmas();
+        for( const auto& lem : mpPrimaryBackend->lemmas() )
         {
-            result.push_back( ded.first );
+            result.push_back( lem.mLemma );
         }
         return result;
     }
@@ -236,19 +236,16 @@ namespace smtrat
                 {
                     if( objectivesIter != mObjectives.end() && ass->first.asVariable() == objectivesIter->second.first )
                     {
-                        if( !objectivesIter->first.isVariable() )
+                        if( ass->second.isMinusInfinity() )
                         {
-                            if( ass->second.isMinusInfinity() )
-                            {
-                                string opt = objectivesIter->second.second ? toString( ass->second.asInfinity(), false ) : toString( InfinityValue(true), false );
-                                cout << "(" << objectivesIter->first.toString( false, true ) << " " << opt << ")" << endl;
-                            }
-                            else
-                            {
-                                assert( ass->second.isRational() );
-                                Rational opt = (objectivesIter->second.second ? ass->second.asRational() : -(ass->second.asRational()));
-                                cout << "(" << objectivesIter->first.toString( false, true ) << " " << opt << ")" << endl;
-                            }
+                            string opt = objectivesIter->second.second ? toString( ass->second.asInfinity(), false ) : toString( InfinityValue(true), false );
+                            cout << "(" << objectivesIter->first.toString( false, true ) << " " << opt << ")" << endl;
+                        }
+                        else if( !objectivesIter->first.isVariable() )
+                        {
+                            assert( ass->second.isRational() );
+                            Rational opt = (objectivesIter->second.second ? ass->second.asRational() : -(ass->second.asRational()));
+                            cout << "(" << objectivesIter->first.toString( false, true ) << " " << opt << ")" << endl;
                         }
                         ++objectivesIter;
                     }

@@ -874,7 +874,7 @@ namespace smtrat {
 	}
 
 	template<class Settings>
-		Answer EQModule<Settings>::checkCore( bool, bool )
+		Answer EQModule<Settings>::checkCore( bool, bool, bool )
 	{
 		Answer answer = (mCountNonUEQFormulas == 0) ? SAT : UNKNOWN;
 		
@@ -1523,7 +1523,7 @@ namespace smtrat {
                 if( validationSettings->logLemmata() )
                     addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName() + "_lemma_1" );
                 #endif
-				addDeduction(or_);
+				addLemma(or_);
 			} else {
 				std::size_t min, max;
 				g_iterator itrMin, itrMax;
@@ -1575,7 +1575,7 @@ namespace smtrat {
                     if( validationSettings->logLemmata() )
                         addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName() + "_lemma_2" );
                     #endif
-                    addDeduction(or_);
+                    addLemma(or_);
 				} else {
 					++entry;
 				}
@@ -1627,7 +1627,7 @@ namespace smtrat {
                                 if( validationSettings->logLemmata() )
                                     addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName() + "_lemma_3" );
                                 #endif
-                                addDeduction(or_);
+                                addLemma(or_);
 
 								if(Settings::printFormulas) {
 									std::cout << "Added implicit edge deduction for arguments: " << or_ << std::endl;
@@ -1643,7 +1643,7 @@ namespace smtrat {
                 if( validationSettings->logLemmata() )
                     addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName() + "_lemma_4" );
                 #endif
-				addDeduction(or_);
+				addLemma(or_);
 
 				if(Settings::printFormulas) {
 					std::cout << "Added implicit edge deduction for function instances: " << or_ << std::endl;

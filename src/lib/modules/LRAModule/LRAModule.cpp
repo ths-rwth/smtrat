@@ -348,7 +348,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer LRAModule<Settings>::checkCore( bool _full, bool _minimize )
+    Answer LRAModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
     {
         #ifdef DEBUG_LRA_MODULE
         cout << "LRAModule::check with _minimize = " << _minimize << endl;
@@ -396,9 +396,9 @@ namespace smtrat
                     {
                         if( containsIntegerValuedVariables )
                         {
-                            if( Settings::use_gomory_cuts && gomory_cut() )
+                            if( Settings::use_gomory_cuts && gomory_cut( _final ) )
                                 return processResult( UNKNOWN );
-                            if( !Settings::use_gomory_cuts && branch_and_bound() )
+                            if( !Settings::use_gomory_cuts && branch_and_bound( _final ) )
                                 return processResult( UNKNOWN );
                         }
                         return processResult( SAT );
@@ -408,7 +408,7 @@ namespace smtrat
                     {
                         mCheckedWithBackends = true;
                         adaptPassedFormula();
-                        Answer a = runBackends( _full, _minimize );
+                        Answer a = runBackends( _final, _full, _minimize );
                         if( a == UNSAT )
                             getInfeasibleSubsets();
                         return processResult( a );
@@ -788,10 +788,10 @@ namespace smtrat
                 }
             }
             subformulas.push_back( iter->second.nextWeakerBound->asConstraint() );
-            addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
+            addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
-            mpStatistics->addDeduction();
+            mpStatistics->addLemma();
             #endif
         }
         mTableau.rLearnedLowerBounds().clear();
@@ -816,10 +816,10 @@ namespace smtrat
                 }
             }
             subformulas.push_back( iter->second.nextWeakerBound->asConstraint() );
-            addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
+            addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
-            mpStatistics->addDeduction();
+            mpStatistics->addLemma();
             #endif
         }
         mTableau.rLearnedUpperBounds().clear();
@@ -1033,9 +1033,9 @@ namespace smtrat
                             FormulaT(carl::FormulaType::NOT, (*currentBound)->asConstraint()), 
                             (_boundNeq ? _bound->neqRepresentation() : _bound->asConstraint())
                         };
-                        addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
+                        addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
                         #ifdef SMTRAT_DEVOPTION_Statistics
-                        mpStatistics->addDeduction();
+                        mpStatistics->addLemma();
                         #endif
                     }
                     ++currentBound;
@@ -1053,9 +1053,9 @@ namespace smtrat
                             FormulaT( carl::FormulaType::NOT, _bound->asConstraint() ),
                             (*currentBound)->asConstraint()
                         };
-                        addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
+                        addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
                         #ifdef SMTRAT_DEVOPTION_Statistics
-                        mpStatistics->addDeduction();
+                        mpStatistics->addLemma();
                         #endif
                     }
                     ++currentBound;
@@ -1083,9 +1083,9 @@ namespace smtrat
                             FormulaT( carl::FormulaType::NOT, _bound->asConstraint() ),
                             (*currentBound)->asConstraint()
                         };
-                        addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
+                        addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
                         #ifdef SMTRAT_DEVOPTION_Statistics
-                        mpStatistics->addDeduction();
+                        mpStatistics->addLemma();
                         #endif
                     }
                     ++currentBound;
@@ -1104,9 +1104,9 @@ namespace smtrat
                             FormulaT( carl::FormulaType::NOT, (*currentBound)->asConstraint() ),
                             ( _boundNeq ? _bound->neqRepresentation() : _bound->asConstraint() )
                         };
-                        addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
+                        addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
                         #ifdef SMTRAT_DEVOPTION_Statistics
-                        mpStatistics->addDeduction();
+                        mpStatistics->addLemma();
                         #endif
                     }
                     ++currentBound;
@@ -1123,9 +1123,9 @@ namespace smtrat
             FormulaT( carl::FormulaType::NOT, _caseA.asConstraint() ),
             FormulaT( carl::FormulaType::NOT, _caseBneq ? _caseB.neqRepresentation() : _caseB.asConstraint() )
         };
-        addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
+        addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
         #ifdef SMTRAT_DEVOPTION_Statistics
-        mpStatistics->addDeduction();
+        mpStatistics->addLemma();
         #endif
     }
 
@@ -1215,7 +1215,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    bool LRAModule<Settings>::gomory_cut()
+    bool LRAModule<Settings>::gomory_cut( bool _final )
     {
         const EvalRationalMap& rMap_ = getRationalModel();
         bool all_int = true;
@@ -1230,6 +1230,8 @@ namespace smtrat
                 const Rational& ass = found_ex->second;
                 if( !carl::isInteger( ass ) )
                 {
+                    if( !_final )
+                        return true;
                     all_int = false;
                     const Poly::PolyType* gomory_poly = mTableau.gomoryCut(ass, basicVar);
                     if( *gomory_poly != ZERO_RATIONAL )
@@ -1258,7 +1260,7 @@ namespace smtrat
                         FormulasT subformulas = { gomory_formula, neg_gomory_formula };
                         FormulaT branch_formula = FormulaT( carl::FormulaType::OR, std::move( subformulas ) );
                         //premise.insert( gomory_formula );
-                        addDeduction( branch_formula );
+                        addLemma( branch_formula );
                     } 
                 }
             }    
@@ -1267,9 +1269,9 @@ namespace smtrat
     }
     
     template<class Settings>
-    bool LRAModule<Settings>::branch_and_bound()
+    bool LRAModule<Settings>::branch_and_bound( bool _final )
     {
-        return most_infeasible_var( Settings::support_bb_with_gc );
+        return most_infeasible_var( _final, Settings::support_bb_with_gc );
     }
     
     template<class Settings>
@@ -1277,14 +1279,14 @@ namespace smtrat
     {
         if( probablyLooping( _lraVar->expression(), _branchingValue ) )
         {
-            return gomory_cut();
+            return gomory_cut( true );
         }
         branchAt( _lraVar->expression(), true, _branchingValue );
         return true;
     }
     
     template<class Settings>
-    bool LRAModule<Settings>::most_infeasible_var( bool _gc_support ) 
+    bool LRAModule<Settings>::most_infeasible_var( bool _final, bool _gc_support ) 
     {
         const EvalRationalMap& _rMap = getRationalModel();
         auto branch_var = mTableau.originalVars().begin();
@@ -1298,14 +1300,19 @@ namespace smtrat
             const Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
-                Rational curr_diff = carl::abs( (ass - carl::floor(ass)) - ONE_RATIONAL/Rational(2) );
-                if( curr_diff < diff )
+                if( _final )
                 {
-                    result = true;
-                    diff = curr_diff; 
-                    branch_var = var;
-                    ass_ = ass;                   
+                    Rational curr_diff = carl::abs( (ass - carl::floor(ass)) - ONE_RATIONAL/Rational(2) );
+                    if( curr_diff < diff )
+                    {
+                        result = true;
+                        diff = curr_diff; 
+                        branch_var = var;
+                        ass_ = ass;                   
+                    }
                 }
+                else
+                    return true;
             }
         }
         if( result )

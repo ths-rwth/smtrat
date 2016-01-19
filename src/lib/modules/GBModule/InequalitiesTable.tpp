@@ -332,7 +332,7 @@ namespace smtrat
 //                        std::cout << "Gb learns: ";
 //                        deduction->print();
 //                        std::cout << std::endl;
-//                        mModule->addDeduction( FormulaT( carl::FormulaType::carl::FormulaType::OR, subformulas ) ); // TODO: Florian ask Sebastian, why he commented that line
+//                        mModule->addLemma( FormulaT( carl::FormulaType::carl::FormulaType::OR, subformulas ) ); // TODO: Florian ask Sebastian, why he commented that line
                         #ifdef SMTRAT_DEVOPTION_Statistics
                         mStats->DeducedInequality();
                         #endif
@@ -430,7 +430,7 @@ namespace smtrat
                         }
                         subformulas.insert( FormulaT( carl::FormulaType::NOT, *it->first ) );
                         subformulas.insert( FormulaT( reduced.toEx( ), relation ) );
-                        //mModule->addDeduction( FormulaT( carl::FormulaType::OR, subformulas ) );
+                        //mModule->addLemma( FormulaT( carl::FormulaType::OR, subformulas ) );
                     }
                 }*/
             }

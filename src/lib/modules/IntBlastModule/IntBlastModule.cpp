@@ -544,7 +544,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer IntBlastModule<Settings>::checkCore(bool _full, bool _minimize)
+    Answer IntBlastModule<Settings>::checkCore(bool _final, bool _full, bool _minimize)
     {
         mSolutionOrigin = SolutionOrigin::NONE;
 
@@ -570,7 +570,7 @@ namespace smtrat
                 switch( blastVariable(variable, interval, linear) )
                 {
                     case -1:
-                        return callBackends( _full, _minimize );
+                        return callBackends( _final, _full, _minimize );
                     case 0:
                         reachedMaxWidth = true;
                         break;
@@ -647,7 +647,7 @@ namespace smtrat
         if( reachedMaxWidth )
         {
             //updateOutsideRestrictionConstraint(icpAnswer == UNSAT);
-            return callBackends( _full, _minimize );
+            return callBackends( _final, _full, _minimize );
         }
         bool originalBoundsCovered = true;
         for(auto variableWO : mInputVariables)
@@ -674,10 +674,10 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer IntBlastModule<Settings>::callBackends( bool _full, bool _minimize )
+    Answer IntBlastModule<Settings>::callBackends( bool _final, bool _full, bool _minimize )
     {
         INTBLAST_DEBUG("Running backend.");
-        Answer backendAnswer = runBackends(_full,_minimize);
+        Answer backendAnswer = runBackends(_final,_full,_minimize);
         INTBLAST_DEBUG("Answer from backend: " << backendAnswer);
         mSolutionOrigin = SolutionOrigin::BACKEND;
 
@@ -1152,7 +1152,7 @@ namespace smtrat
 
             if(blasting.isConstant()) {
                 auto modelValue = carl::RealAlgebraicNumber<Rational>(blasting.constant(), false);
-                mModel[ModelVariable(variable)] = ModelValue(modelValue);
+                mModel.emplace(ModelVariable(variable), ModelValue(modelValue));
             } else {
                 const carl::BVTerm& blastedTerm = blasting.term().term();
                 assert(blastedTerm.type() == carl::BVTermType::VARIABLE);
@@ -1169,7 +1169,7 @@ namespace smtrat
                 // BV solver, the BV solver has not received any constraints
                 // containing this variable. This implies that an arbitrary value is allowed.
                 // We simply use constant 0.
-                mModel[ModelVariable(variable)] = ModelValue(integerValue);
+                mModel.emplace(ModelVariable(variable), ModelValue(integerValue));
             }
         }
     }

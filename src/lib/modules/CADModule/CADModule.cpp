@@ -145,11 +145,12 @@ namespace smtrat
 	 * All constraints asserted (and not removed)  so far are now added to the CAD object and checked for consistency.
 	 * If the result is false, a minimal infeasible subset of the original constraint set is computed.
 	 * Otherwise a sample value is available.
-	 * @param false, if this module should avoid too expensive procedures and rather return unknown instead.
+         * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT
+	 * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
 	 * @return SAT if consistent, UNSAT otherwise
 	 */
 	template<typename Settings>
-	Answer CADModule<Settings>::checkCore( bool _full, bool )
+	Answer CADModule<Settings>::checkCore( bool /*_final*/, bool _full, bool )
 	{
 		SMTRAT_LOG_FUNC("smtrat.cad", _full);
 		if (!_full) {
@@ -227,9 +228,9 @@ namespace smtrat
 		for (unsigned i = 0; i != mCAD.getEliminationSets().size(); ++i) {
 			SMTRAT_LOG_TRACE("smtrat.cad", "\tLevel " << i << " (" << mCAD.getEliminationSet(i).size() << "): " << mCAD.getEliminationSet(i));
 		}
-		SMTRAT_LOG_TRACE("smtrat.cad", "Result: true");
-		SMTRAT_LOG_TRACE("smtrat.cad", "CAD complete: " << mCAD.isComplete());
-		SMTRAT_LOG_TRACE("smtrat.cad", "Solution point: " << mRealAlgebraicSolution);
+		SMTRAT_LOG_DEBUG("smtrat.cad", "Result: true");
+		SMTRAT_LOG_DEBUG("smtrat.cad", "CAD complete: " << mCAD.isComplete());
+		SMTRAT_LOG_DEBUG("smtrat.cad", "Solution point: " << mRealAlgebraicSolution);
 		mInfeasibleSubsets.clear();
 		if (Settings::integerHandling == carl::cad::IntegerHandling::SPLIT_SOLUTION) {
 			// Check whether the found assignment is integer. Split on first non-integral assignment.
@@ -256,6 +257,7 @@ namespace smtrat
 					}
 					mRealAlgebraicSolution[d] = current;
 					branchAt(vars[d], r);
+					return UNKNOWN;
 				}
 			}
 		} else if (Settings::integerHandling == carl::cad::IntegerHandling::NONE) {

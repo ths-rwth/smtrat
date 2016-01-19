@@ -23,7 +23,7 @@ namespace smtrat
     {}
 
     template<class Settings>
-    Answer BEModule<Settings>::checkCore( bool _full, bool _minimize )
+    Answer BEModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
     {
         auto receivedFormula = firstUncheckedReceivedSubformula();
         while( receivedFormula != rReceivedFormula().end() )
@@ -38,7 +38,7 @@ namespace smtrat
                 addSubformulaToPassedFormula( formula, receivedFormula->formula() );
             ++receivedFormula;
         }
-        Answer ans = runBackends( _full, _minimize );
+        Answer ans = runBackends( _final, _full, _minimize );
         if( ans == UNSAT )
             generateTrivialInfeasibleSubset(); // TODO: compute a better infeasible subset
         return ans;
@@ -47,184 +47,80 @@ namespace smtrat
     template<typename Settings>
     FormulaT BEModule<Settings>::extractBounds(const FormulaT& formula)
     {
-		if( formula.getType() == carl::FormulaType::OR )
-		{
-//            std::cout << formula << std::endl;
-            Poly foundPoly = ZERO_POLYNOMIAL;
-            bool leftOpen = false;
-            bool rightOpen = false;
-            Rational foundUpperBound;
-            bool foundUpperBoundIsStrict = true;
-            Rational foundLowerBound;
-            bool foundLowerBoundIsStrict = true;
-            for( const auto& sf : formula.subformulas() )
-            {
-                if( sf.getType() == carl::FormulaType::CONSTRAINT || (sf.getType() == carl::FormulaType::NOT && sf.subformula().getType() == carl::FormulaType::CONSTRAINT) )
-                {
-                    const ConstraintT& constr = sf.getType() == carl::FormulaType::NOT ? sf.subformula().constraint() : sf.constraint();
-                    carl::Relation relation = sf.getType() == carl::FormulaType::NOT ? carl::invertRelation( constr.relation() ) : constr.relation();
-                    if( relation == carl::Relation::NEQ )
-                    {
-//                        std::cout << "  ---> in Line " << __LINE__ << std::endl;
-                        return formula;
-                    }
-                    Rational boundValue;
-                    const Poly& lhs = constr.lhs();
-                    Poly pol;
-                    bool multipliedByMinusOne = lhs.lterm().coeff() < ZERO_RATIONAL;
-                    if( multipliedByMinusOne )
-                    {
-                        boundValue = constr.constantPart();
-                        relation = carl::turnAroundRelation( relation );
-                        pol = Poly( -lhs + boundValue );
-                    }
-                    else
-                    {
-                        boundValue = -constr.constantPart();
-                        pol = Poly( lhs + boundValue );
-                    }
-                    Rational cf( pol.coprimeFactor() );
-                    assert( cf > 0 );
-                    pol *= cf;
-                    if( foundPoly.isZero() )
-                    {
-                        boundValue *= cf;
-                        foundPoly = pol;
-                        switch( relation ) 
-                        {
-                            case carl::Relation::LEQ:
-                                foundUpperBoundIsStrict = false;
-                            case carl::Relation::LESS:
-                                foundUpperBound = boundValue;
-                                leftOpen = true;
-                                break;
-                            case carl::Relation::GEQ:
-                                foundLowerBoundIsStrict = false;
-                            case carl::Relation::GREATER:
-                                foundLowerBound = boundValue;
-                                rightOpen = true;
-                                break;
-                            case carl::Relation::EQ:
-                                foundLowerBoundIsStrict = false;
-                                foundUpperBoundIsStrict = false;
-                                foundUpperBound = boundValue;
-                                foundLowerBound = boundValue;
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        if( pol != foundPoly )
-                        {
-//                            std::cout << "  ---> in Line " << __LINE__ << std::endl;
-                            return formula;
-                        }
-                        boundValue *= cf;
-                        switch( relation) 
-                        {
-                            case carl::Relation::LEQ:
-                            {
-                                if( rightOpen ) 
-                                {
-//                                    std::cout << "  ---> in Line " << __LINE__ << std::endl;
-                                    return formula;
-                                }
-                                leftOpen = true;
-                                if(foundUpperBound <= boundValue)
-                                {
-                                    foundUpperBound = boundValue;
-                                    foundUpperBoundIsStrict = false;
-                                }
-                                break;
-                            }
-                            case carl::Relation::LESS:
-                            {
-                                if( rightOpen )
-                                {
-//                                    std::cout << "  ---> in Line " << __LINE__ << std::endl;
-                                    return formula;
-                                }
-                                leftOpen = true;
-                                if(foundUpperBound < boundValue)
-                                {
-                                    foundUpperBound = boundValue;
-                                    foundUpperBoundIsStrict = true;
-                                }
-                                break;
-                            }
-                            case carl::Relation::GEQ:
-                            {
-                                if( leftOpen )
-                                {
-//                                    std::cout << "  ---> in Line " << __LINE__ << std::endl;
-                                    return formula;
-                                }
-                                rightOpen = true;
-                                if(foundLowerBound >= boundValue)
-                                {
-                                    foundLowerBound = boundValue;
-                                    foundLowerBoundIsStrict = false;
-                                }
-                                break;
-                            }
-                            case carl::Relation::GREATER:
-                            {
-                                if( leftOpen ) 
-                                {
-//                                    std::cout << "  ---> in Line " << __LINE__ << std::endl;
-                                    return formula;
-                                }
-                                rightOpen = true;
-                                if(foundLowerBound > boundValue)
-                                {
-                                    foundLowerBound = boundValue;
-                                    foundLowerBoundIsStrict = true;
-                                }
-                                break;
-                            }
-                            case carl::Relation::EQ:
-                            {   
-                                if(foundLowerBound >= boundValue)
-                                {
-                                    foundLowerBound = boundValue;
-                                    foundLowerBoundIsStrict = false;
-                                }
-                                if(foundUpperBound <= boundValue)
-                                {
-                                    foundUpperBound = boundValue;
-                                    foundUpperBoundIsStrict = false;
-                                }
-                                break;
-                            }
-                            default:
-                                break;
-                        }
-                    }
-                }
-                else
-                {
-//                    std::cout << "  ---> in Line " << __LINE__ << std::endl;
-                    return formula;
-                }
-            }
-            assert( !leftOpen || !rightOpen );
-            FormulasT sfs;
-            if( !leftOpen )
-            {
-                sfs.emplace_back( foundPoly-foundLowerBound, foundLowerBoundIsStrict ? carl::Relation::GREATER : carl::Relation::GEQ );
-            }
-            if( !rightOpen )
-            {
-                sfs.emplace_back( foundPoly-foundUpperBound, foundUpperBoundIsStrict ? carl::Relation::LESS : carl::Relation::LEQ );
-            }
-            sfs.push_back( formula );
-            FormulaT result( carl::FormulaType::AND, std::move(sfs) );
-//            std::cout << "  ---> " << result << std::endl;
-            return result;
+		if (formula.getType() != carl::FormulaType::OR && formula.getType() != carl::FormulaType::AND) return formula;
+		bool conjunction = formula.getType() == carl::FormulaType::AND;
+	
+		FormulaT::ConstraintBounds cb;
+		collectBounds(cb, formula, conjunction);
+		if (cb.empty()) return formula;
+		//std::cout << cb << std::endl;
+			
+		if (conjunction) {
+			FormulasT f;
+			FormulaT::swapConstraintBounds(cb, f, conjunction);
+			f.push_back(formula);
+			return FormulaT(carl::FormulaType::AND, std::move(f));
+		} else {
+			for (const auto& poly: cb) {
+				if (!poly.first.isVariable()) continue;
+				std::vector<Choice> choices;
+				for (const auto& entry: poly.second) {
+					if (entry.second.first != carl::Relation::EQ) break;
+					choices.emplace_back(poly.first.getSingleVariable(), entry.second.second);
+				}
+				if (choices.size() != poly.second.size()) continue;
+				for (const auto& c: choices) {
+					auto it = mReplacements.find(c);
+					if (it == mReplacements.end()) {
+						mReplacements.emplace(c, carl::freshBooleanVariable());
+					}
+				}
+			}
 		}
 		return formula;
+	}
+	
+	template<typename Settings>
+	void BEModule<Settings>::collectBounds(FormulaT::ConstraintBounds& cb, const FormulaT& formula, bool conjunction) const {
+		for (const auto& f: formula.subformulas()) {
+			if (f.getType() == carl::FormulaType::CONSTRAINT || (f.getType() == carl::FormulaType::NOT && f.subformula().getType() == carl::FormulaType::CONSTRAINT)) {
+				FormulaT::addConstraintBound(cb, f, conjunction);
+			}
+		}
+	}
+	
+	template<typename Settings>
+	FormulaT BEModule<Settings>::applyReplacements(const FormulaT& f) const {
+		std::vector<carl::Variable> variables;
+		std::map<FormulaT, FormulaT> repl;
+		for (const auto& r: mReplacements) {
+			carl::Variable v = std::get<0>(r.first);
+			FormulaT form = std::get<1>(r.first);
+			std::cout << "Handling " << form << std::endl;
+			
+			variables.push_back(v);
+			repl.emplace(form, FormulaT(r.second));
+		}
+		carl::FormulaSubstitutor<FormulaT> subs;
+		std::cout << "Doing substitution..." << std::endl;
+		FormulaT res = subs.substitute(f, repl);
+		std::cout << "Done." << std::endl;
+		carl::Variables remainingVars;
+		res.allVars(remainingVars);
+		FormulasT impl;
+		for (const auto& v: variables) {
+			if (remainingVars.count(v) > 0) {
+				std::cout << "Checking for " << v << std::endl;
+				for (const auto& r: mReplacements) {
+					if (v != std::get<0>(r.first)) continue;
+					FormulaT form = std::get<1>(r.first);
+					impl.push_back(FormulaT(carl::FormulaType::IMPLIES, {FormulaT(r.second), form}));
+				}
+			}
+		}
+		if (impl.empty()) return res;
+		impl.push_back(res);
+		return FormulaT(carl::FormulaType::AND, std::move(impl));
 	}
 }
 

@@ -15,6 +15,7 @@ namespace smtrat
         typedef boost::variant<carl::Variable,carl::BVVariable,carl::UVariable,carl::UninterpretedFunction> Super;
         
     public:
+		friend struct std::hash<smtrat::ModelVariable>;
         /**
          * Default constructor.
          */
@@ -151,26 +152,21 @@ namespace smtrat
          */
         bool operator==( const ModelVariable& _mvar ) const
         {
-            if( isVariable() )
-            {
-                if( _mvar.isVariable() ) return asVariable() == _mvar.asVariable();
-                return false;
+			if (which() != _mvar.which()) {
+				return false;
+			}
+            if (isVariable()) {
+                return asVariable() == _mvar.asVariable();
             }
-            if( isBVVariable() )
-            {
-                if( _mvar.isBVVariable() ) return asBVVariable() == _mvar.asBVVariable();
-                return false;
+            if (isBVVariable()) {
+                return asBVVariable() == _mvar.asBVVariable();
             }
-            if( isUVariable() )
-            {
-                if( _mvar.isUVariable() ) return asUVariable() == _mvar.asUVariable();
-                return false;
+            if (isUVariable()) {
+                return asUVariable() == _mvar.asUVariable();
             }
-            assert( isFunction() );
-            if( _mvar.isFunction() )
-                return asFunction() == _mvar.asFunction();
-            return false;
-        }
+			assert(isFunction());
+            return asFunction() == _mvar.asFunction();
+        }	
     };
 	
 	
@@ -229,4 +225,18 @@ namespace smtrat
 	        return _uf < _mvar.asFunction();
 	    return false;
 	}
+}
+
+namespace std {
+	template<>
+	struct hash<smtrat::ModelVariable>: boost::static_visitor<std::size_t> {
+		std::size_t operator()(const smtrat::ModelVariable& mv) const {
+			auto r = boost::apply_visitor(*this, mv);
+			return r;
+		}
+		template<typename T>
+		std::size_t operator()(const T& t) const {
+			return std::hash<T>()(t);
+		}
+	};
 }

@@ -155,7 +155,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer CubeLIAModule<Settings>::checkCore( bool _full, bool _minimize )
+    Answer CubeLIAModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
     {
         #ifdef DEBUG_CUBELIAMODULE
         print();
@@ -167,7 +167,7 @@ namespace smtrat
             std::cout << "Call internal LRAModule:" << std::endl;
             mLRA.print();
             #endif
-            mLRA.clearDeductions();
+            mLRA.clearLemmas();
             mLRAFormula->updateProperties();
             ans = mLRA.check( _full, _minimize );
             switch( ans )
@@ -221,7 +221,7 @@ namespace smtrat
                             FormulasT formulas;
                             for( auto& formula : infsubset )
                                 formulas.push_back( formula.negated() );
-                            addDeduction( FormulaT( carl::FormulaType::OR, formulas ) );
+                            addLemma( FormulaT( carl::FormulaType::OR, formulas ) );
                         }
                     }
                     break;
@@ -234,7 +234,7 @@ namespace smtrat
         std::cout << "Call Backends:" << std::endl;
         #endif
         // Run backends on received formula
-        ans = runBackends( _full, _minimize );
+        ans = runBackends( _final, _full, _minimize );
         if( ans == UNSAT )
             getInfeasibleSubsets();
         else if( ans == SAT )

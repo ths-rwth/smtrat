@@ -152,11 +152,11 @@ namespace smtrat
                     bool varWithNegCoeff = carl::isNegative( varShiftIter->second.lcoeff() );
                     if( ass.second.isRational() )
                     {
-                        ass.second = (varWithNegCoeff ? -ass.second.asRational() : ass.second.asRational()) + varShiftIter->second.constantPart();
+                        mModel.assign(ass.first, (varWithNegCoeff ? -ass.second.asRational() : ass.second.asRational()) + varShiftIter->second.constantPart());
                     }
                     else if( ass.second.isSqrtEx() )
                     {
-                        ass.second = (varWithNegCoeff ? ass.second.asSqrtEx()*vs::SqrtEx( Poly( MINUS_ONE_RATIONAL ) ) : ass.second.asSqrtEx()) + vs::SqrtEx( Poly( varShiftIter->second.constantPart() ) );
+                        mModel.assign(ass.first, (varWithNegCoeff ? ass.second.asSqrtEx()*vs::SqrtEx( Poly( MINUS_ONE_RATIONAL ) ) : ass.second.asSqrtEx()) + vs::SqrtEx( Poly( varShiftIter->second.constantPart() ) ));
                     }
                     else // ass.second.isRAN()
                     {
@@ -170,7 +170,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer IncWidthModule<Settings>::checkCore( bool _full, bool _minimize )
+    Answer IncWidthModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
     {
         #ifdef DEBUG_INC_WIDTH_MODULE
         std::cout << "Check of IncWidthModule:" << std::endl;
@@ -430,7 +430,7 @@ namespace smtrat
             #ifdef DEBUG_INC_WIDTH_MODULE
             std::cout << " to " << mHalfOfCurrentWidth << std::endl;
             #endif
-            Answer ans = runBackends( _full, _minimize );
+            Answer ans = runBackends( _final, _full, _minimize );
             #ifdef DEBUG_INC_WIDTH_MODULE
             std::cout << "Calling backends on:" << std::endl;
             for( const auto& f : rPassedFormula() ) std::cout << "   " << f.formula() << std::endl;
@@ -530,7 +530,7 @@ namespace smtrat
             for( const auto& rformula : rReceivedFormula() )
                 addToICP( rformula.formula() );
         }
-        Answer ans = runBackends( _full, _minimize );
+        Answer ans = runBackends( _final, _full, _minimize );
         #ifdef DEBUG_INC_WIDTH_MODULE
         std::cout << "Final call of backends results in " << ANSWER_TO_STRING(ans) << std::endl;
         std::cout << "Calling backends on:" << std::endl;

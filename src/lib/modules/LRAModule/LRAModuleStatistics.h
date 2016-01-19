@@ -35,7 +35,7 @@ namespace smtrat
            Statistics::addKeyValuePair( "refinements", mRefinements );
            Statistics::addKeyValuePair( "conflicts", mConflicts );
            Statistics::addKeyValuePair( "average-conflict-size", mConflicts == 0 ? 0 : (double)mAllConflictsSizes/(double)mConflicts );
-           Statistics::addKeyValuePair( "deductions", mDeductions );
+           Statistics::addKeyValuePair( "lemmas", mDeductions );
            Statistics::addKeyValuePair( "checks", mChecks );
            Statistics::addKeyValuePair( "checks-with-pivots", mChecksWithPivoting );
            Statistics::addKeyValuePair( "average-check-size", mChecks == 0 ? 0 : (double)mAllChecksSizes/(double)mChecks );
@@ -77,7 +77,7 @@ namespace smtrat
             }
         }
         
-        void addDeduction()
+        void addLemma()
         {
             ++mDeductions;
         }

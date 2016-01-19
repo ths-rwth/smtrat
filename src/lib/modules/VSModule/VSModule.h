@@ -79,7 +79,17 @@ namespace smtrat
             
             // Interfaces.
             bool addCore( ModuleInput::const_iterator );
-            Answer checkCore( bool _full = true, bool _minimize = false );
+            
+			/**
+			 * Checks the received formula for consistency.
+             * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT.
+			 * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
+			 * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
+			 * @return SAT,	if the received formula is satisfiable;
+			 *		 UNSAT,   if the received formula is not satisfiable;
+			 *		 Unknown, otherwise.
+			 */
+            Answer checkCore( bool _final = false, bool _full = true, bool _minimize = false );
             void removeCore( ModuleInput::const_iterator );
             void updateModel() const;
 
@@ -177,7 +187,7 @@ namespace smtrat
              */
             void updateInfeasibleSubset( bool _includeInconsistentTestCandidates = false );
             
-            bool solutionInDomain();
+            bool solutionInDomain( bool _final );
             
             /**
              * Finds all minimum covering sets of a vector of sets of sets. A minimum covering set
@@ -202,13 +212,14 @@ namespace smtrat
             /**
              * Run the backend solvers on the conditions of the given state.
              * @param _state    The state to check the conditions of.
+             * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT.
              * @param _full     false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return  SAT,    if the conditions are consistent and there is no unfinished ancestor;
              *          UNSAT,   if the conditions are inconsistent;
              *          Unknown, if the theory solver cannot give an answer for these conditons.
             */
-            Answer runBackendSolvers( vs::State* _state, bool _full = true, bool _minimize = false );
+            Answer runBackendSolvers( vs::State* _state, bool _final = false, bool _full = true, bool _minimize = false );
             
             /**
              * Checks the correctness of the symbolic assignment given by the path from the root

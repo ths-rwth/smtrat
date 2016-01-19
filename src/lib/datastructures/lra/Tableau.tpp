@@ -1076,6 +1076,13 @@ namespace smtrat
                                         varForMinTheta = lraVarTheta;
                                         result = varForMinIter.entryID();
                                     }
+                                    else if( !(varForMinTheta == maxTheta) )
+                                    {
+                                        #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                                        std::cout << "      Found basic variable can be used for full non-basic margin." << std::endl;
+                                        #endif
+                                        result = varForMinIter.entryID();
+                                    }
                                 }
                                 else
                                 {
