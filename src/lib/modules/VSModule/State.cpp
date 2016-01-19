@@ -1206,7 +1206,7 @@ namespace vs
         }
     }
 
-    bool State::initIndex( const carl::Variables& _allVariables, bool _preferEquation, bool _tryDifferentVarOrder )
+    bool State::initIndex( const carl::Variables& _allVariables, bool _preferEquation, bool _tryDifferentVarOrder, bool _useFixedVariableOrder )
     {
         assert( !_tryDifferentVarOrder || !mTryToRefreshIndex );
         if( conditions().empty() )
@@ -1265,6 +1265,22 @@ namespace vs
         #endif
         // Find the variable which has in a constraint the best valuation. If more than one have the highest valuation, 
         // then choose the one having the higher valuation according to the order in _allVariables.
+        if( _useFixedVariableOrder )
+        {
+            for( const auto& varValPair : varVals )
+            {
+                if( !varValPair.second.empty() )
+                {   
+                    if( index() != varValPair.first )
+                    {
+                        setIndex( varValPair.first );
+                        return true;
+                    }
+                    return false;
+                }
+            }
+            return false;
+        }
         size_t var = 1;
         mBestVarVals.push_back(0);
         while( var < varVals.size() )

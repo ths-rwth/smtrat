@@ -17,7 +17,7 @@
 #define SMTRAT_VS_VARIABLEBOUNDS_B
 #endif
 
-//#define VS_STATE_DEBUG_METHODS
+#define VS_STATE_DEBUG_METHODS
 
 namespace vs
 {
@@ -925,7 +925,7 @@ namespace vs
          * @param _preferEquation A flag that indicates to prefer equations in the heuristics of this method.
          * @param _tryDifferentVarOrder
          */
-        bool initIndex( const carl::Variables& _allVariables, bool _preferEquation, bool _tryDifferentVarOrder = false );
+        bool initIndex( const carl::Variables& _allVariables, bool _preferEquation, bool _tryDifferentVarOrder = false, bool _useFixedVariableOrder = false );
         
         /**
          * Adds a constraint to the conditions of this state.
