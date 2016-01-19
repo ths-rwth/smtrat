@@ -43,7 +43,7 @@ namespace smtrat
             /// The propositions of the passed formula.
             carl::Condition mPropositions;
             /// Contains the backtrack points, that are iterators to the last formula to be kept when backtracking to the respective point.
-            std::vector< ModuleInput::iterator > mBacktrackPoints;
+            std::vector<std::pair<ModuleInput::iterator, std::vector<std::pair<Poly,std::pair<carl::Variable,bool>>>::iterator>> mBacktrackPoints;
             /// all generated instances of modules
             std::vector<Module*> mGeneratedModules;
             /// a mapping of each module to its backends
@@ -140,9 +140,11 @@ namespace smtrat
             {
 				// Pushes iterator to last formula contained in the backtrack point.
 				auto it = mpPassedFormula->end();
+                auto objIt = mObjectives.end();
 				// If the list is empty use end(), otherwise an iterator to the last element
 				if (!mpPassedFormula->empty()) --it;
-                mBacktrackPoints.push_back(it);
+				if (!mObjectives.empty()) --objIt;
+                mBacktrackPoints.emplace_back(it,objIt);
             }
             
             /**
@@ -160,8 +162,15 @@ namespace smtrat
 					// Remove until the list is either empty or the backtrack point is hit.
 					auto it = mpPassedFormula->end();
 					--it;
-					if (it == mBacktrackPoints.back()) break;
+					if (it == mBacktrackPoints.back().first) break;
 					remove(it);
+				}
+				while (!mObjectives.empty()) {
+					// Remove until the list is either empty or the backtrack point is hit.
+					auto it = mObjectives.end();
+					--it;
+					if (it == mBacktrackPoints.back().second) break;
+					mObjectives.pop_back();
 				}
                 mBacktrackPoints.pop_back();
                 return true;
@@ -193,6 +202,11 @@ namespace smtrat
                         return;
                     }
                 }
+            }
+            
+            const Poly& firstObjective() const
+            {
+                return mObjectives.front().first;
             }
             
             void reset();

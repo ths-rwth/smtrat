@@ -368,7 +368,7 @@ namespace smtrat
     {
 		auto btlIter = mBacktrackPoints.begin();
 		std::size_t btlCounter = 0;
-		while (btlIter != mBacktrackPoints.end() && *btlIter == mpPassedFormula->end()) {
+		while (btlIter != mBacktrackPoints.end() && btlIter->first == mpPassedFormula->end()) {
 			_out << "btl_" << btlCounter << ": (and ) skip" << std::endl;;
 			btlCounter++;
 			btlIter++;
@@ -376,7 +376,7 @@ namespace smtrat
 		_out << "btl_" << btlCounter << ": (and";
 		for (auto it = mpPassedFormula->begin(); it != mpPassedFormula->end(); it++) {
 			_out << " " << it->formula().toString();
-			if (btlIter != mBacktrackPoints.end() && *btlIter == it) {
+			if (btlIter != mBacktrackPoints.end() && btlIter->first == it) {
 				btlCounter++;
 				btlIter++;
 				_out << " )" << std::endl << "btl_" << btlCounter << ": (and";
