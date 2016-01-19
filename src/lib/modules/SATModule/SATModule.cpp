@@ -2255,7 +2255,9 @@ SetWatches:
                                 }
                             }
                             if( Settings::stop_search_after_first_unknown || confl == CRef_Undef )
+                            {
                                 return l_Undef;
+                            }
                         }
                     }
                 }
@@ -2366,13 +2368,8 @@ SetWatches:
         Var next = pickSplittingVar();
         if( next != var_Undef )
             return false;
-        while( next == var_Undef || value( next ) != l_Undef || !decision[next] )
-        {
-            if( order_heap.empty() )
-                return true;
-            else
-                next = order_heap.removeMin();
-        }
+        while( !order_heap.empty() && ((next = order_heap[0]) == var_Undef || value( next ) != l_Undef || !decision[next]) )
+            order_heap.removeMin();
         return false;
     }
         

@@ -1843,7 +1843,7 @@ namespace smtrat
         cout << "Ask backend      : ";
         printPassedFormula();
         cout << endl;
-        cout << "Answer           : " << result == SAT << endl;
+        cout << "Answer           : " << (result == SAT) << std::endl;
         #endif
         switch( result )
         {
