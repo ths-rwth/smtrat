@@ -23,6 +23,7 @@
 #include <string>
 #include <chrono>
 #include <atomic>
+#include <mutex>
 #include "ModuleInput.h"
 #include "ValidationSettings.h"
 #include "../datastructures/Assignment.h"
@@ -75,35 +76,6 @@ namespace smtrat
     };
     
     /**
-     * Stores all necessary information for a splitting decision.
-     */
-    struct Splitting
-    {
-        /// The constraint of the form p<=b or p<b for a polynomial p and a rational b.
-        FormulaT mLeftCase;
-        /// The constraint of the form p>b or p>=b for a polynomial p and a rational b.
-        FormulaT mRightCase;
-        /// The premise of the split, that is the current received formulas forming the reason for the desired splitting.
-        std::vector<FormulaT> mPremise;
-        /// A flag which is true, if the left case shall be preferred when deciding which case to choose.
-        bool mPreferLeftCase;
-
-        /**
-         * Constructor.
-         */
-        Splitting( const FormulaT& _leftCase, const FormulaT& _rightCase, std::vector<FormulaT>&& _premise, bool _preferLeftCase = true ):
-            mLeftCase( _leftCase ),
-            mRightCase( _rightCase ),
-            mPremise( std::move( _premise ) ),
-            mPreferLeftCase( _preferLeftCase )
-        {}
-        
-        Splitting( const FormulaT& _leftCase, const FormulaT& _rightCase, const std::vector<FormulaT>& _premise = std::vector<FormulaT>(), bool _preferLeftCase = true ):
-            Splitting( _leftCase, _rightCase, std::vector<FormulaT>( _premise ), _preferLeftCase )
-        {}
-    };
-    
-    /**
      * A base class for all kind of theory solving methods.
      */
     class Module
@@ -118,10 +90,32 @@ namespace smtrat
             /// For time measuring purposes.
             typedef std::chrono::microseconds timeunit;
             /*
-             * The type of a deduction.
-             *     PERMANENT = The deduction should not be forgotten.
+             * The type of a lemma.
+             *     PERMANENT = The lemma should not be forgotten.
              */
-            enum class DeductionType: unsigned { NORMAL = 0, PERMANENT = 1 };
+            enum class LemmaType: unsigned { NORMAL = 0, PERMANENT = 1 };
+            
+            struct Lemma
+            {
+                /// The lemma to learn.
+                FormulaT mLemma;
+                /// The type of the lemma.
+                LemmaType mLemmaType;
+                /// The formula within the lemma, which should be assigned to true in the next decision.
+                FormulaT mPreferredFormula;
+
+                /**
+                 * Constructor.
+                 * @param _lemma The lemma to learn.
+                 * @param _lemmaType The type of the lemma.
+                 * @param _preferredFormula The formula within the lemma, which should be assigned to true in the next decision.
+                 */
+                Lemma( const FormulaT& _lemma, const LemmaType& _lemmaType, const FormulaT& _preferredFormula ):
+                    mLemma( _lemma ),
+                    mLemmaType( _lemmaType ),
+                    mPreferredFormula( _preferredFormula )
+                {}
+            };
 
         // Members.
         private:
@@ -160,10 +154,8 @@ namespace smtrat
             std::vector<Module*> mUsedBackends;
             /// The backends of this module which have been used.
             std::vector<Module*> mAllBackends;
-            /// Stores the deductions/lemmas being valid formulas this module or its backends made.
-            std::vector<std::pair<FormulaT,DeductionType>> mDeductions;
-            /// Stores the splitting decisions this module or its backends made.
-            std::vector<Splitting> mSplittings;
+            /// Stores the lemmas being valid formulas this module or its backends made.
+            std::vector<Lemma> mLemmas;
             /// Stores the position of the first sub-formula in the passed formula, which has not yet been considered for a consistency check of the backends.
             ModuleInput::iterator mFirstSubformulaToPass;
             /// Stores the constraints which the backends must be informed about.
@@ -180,6 +172,17 @@ namespace smtrat
             Poly mObjectiveFunction;
             /// Maps variables to the number of their occurrences
             std::vector<std::size_t> mVariableCounters;
+            #ifdef SMTRAT_STRAT_PARALLEL_MODE
+            /// a mutex for exclusive access to the old splitting variables
+            mutable std::mutex mOldSplittingVarMutex;
+            #define OLD_SPLITTING_VARS_LOCK_GUARD std::lock_guard<std::mutex> lock( mOldSplittingVarMutex );
+            #define OLD_SPLITTING_VARS_LOCK mOldSplittingVarMutex.lock();
+            #define OLD_SPLITTING_VARS_UNLOCK mOldSplittingVarMutex.unlock();
+            #else
+            #define OLD_SPLITTING_VARS_LOCK_GUARD
+            #define OLD_SPLITTING_VARS_LOCK
+            #define OLD_SPLITTING_VARS_UNLOCK
+            #endif
 
         public:
 
@@ -205,8 +208,10 @@ namespace smtrat
             static size_t mNumOfBranchVarsToStore;
             /// Stores the last branches in a cycle buffer.
             static std::vector<Branching> mLastBranches;
-            /// The beginning of the cylcic buffer storing the last branches.
+            /// The beginning of the cyclic buffer storing the last branches.
             static size_t mFirstPosInLastBranches;
+            /// Reusable splitting variables.
+            static std::vector<FormulaT> mOldSplittingVariables;
 
             #ifdef SMTRAT_DEVOPTION_Validation
             /// The types of validations to involve.
@@ -247,13 +252,14 @@ namespace smtrat
              * the satisfiability check of the conjunction of the so far received formulas, which does
              * actually nothing but passing the problem to its backends. This implementation is only used
              * internally and must be overwritten by any derived module.
+             * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer check( bool _full = true, bool _minimize = false );
+            Answer check( bool _final = false, bool _full = true, bool _minimize = false );
             
             /**
              * Removes everything related to the given sub-formula of the received formula. However,
@@ -433,29 +439,35 @@ namespace smtrat
             {
                 return mInformedConstraints;
             }
-
-            /**
-             * Stores a deduction/lemma being a valid formula.
-             * @param _deduction The eduction/lemma to store.
-             * @param _dt The type of the deduction.
-             */
-            void addDeduction( const FormulaT& _deduction, const DeductionType& _dt = DeductionType::NORMAL )
+            
+            static void freeSplittingVariable( const FormulaT& _splittingVariable )
             {
-                mDeductions.push_back( std::pair<FormulaT,DeductionType>( _deduction, _dt ) );
+                OLD_SPLITTING_VARS_LOCK_GUARD
+                mOldSplittingVariables.push_back( _splittingVariable ); 
             }
 
             /**
-             * Checks whether this module or any of its backends provides any lemmas or splitting decisions.
+             * Stores a lemma being a valid formula.
+             * @param _lemma The eduction/lemma to store.
+             * @param _lt The type of the lemma.
              */
-            bool hasDeductions()
+            void addLemma( const FormulaT& _lemma, const LemmaType& _lt = LemmaType::NORMAL, const FormulaT& _preferredFormula = FormulaT( carl::FormulaType::TRUE ) )
             {
-                if( !mDeductions.empty() || !mSplittings.empty() )
+                mLemmas.emplace_back( _lemma, _lt, _preferredFormula );
+            }
+
+            /**
+             * Checks whether this module or any of its backends provides any lemmas.
+             */
+            bool hasLemmas()
+            {
+                if( !mLemmas.empty() )
                     return true;
                 if( mpManager != nullptr )
                 {
                     for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
                     {
-                        if( (*module)->hasDeductions() )
+                        if( (*module)->hasLemmas() )
                             return true;
                     }
                 }
@@ -463,61 +475,26 @@ namespace smtrat
             }
 
             /**
-             * Deletes all yet found deductions/lemmas.
+             * Deletes all yet found lemmas.
              */
-            void clearDeductions( bool _clearSplittings = true )
+            void clearLemmas()
             {
                 if( mpManager != nullptr )
                 {
                     for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
                     {
-                        (*module)->clearDeductions( _clearSplittings );
+                        (*module)->clearLemmas();
                     }
                 }
-                mDeductions.clear();
-                if( _clearSplittings )
-                    mSplittings.clear();
+                mLemmas.clear();
             }
 
             /**
-             * Deletes all yet found deductions/lemmas.
+             * @return A constant reference to the lemmas being valid formulas this module or its backends made.
              */
-            void clearSplittings()
+            const std::vector<Lemma>& lemmas() const
             {
-                if( mpManager != nullptr )
-                {
-                    for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
-                    {
-                        (*module)->clearSplittings();
-                    }
-                }
-                mSplittings.clear();
-            }
-
-            /**
-             * @return A constant reference to the splitting decisions this module or its backends made.
-             */
-            const std::vector<Splitting>& splittings() const
-            {
-                return mSplittings;
-            }
-            
-            void addSplitting( const FormulaT& _leftCase, const FormulaT& _rightCase, std::vector<FormulaT>&& _premise, bool _preferLeftCase )
-            {
-                mSplittings.emplace_back( _leftCase, _rightCase, std::move( _premise ), _preferLeftCase );
-            }
-            
-            void addSplittings( const std::vector<Splitting>& _splittings )
-            {
-                mSplittings.insert( mSplittings.end(), _splittings.begin(), _splittings.end() );
-            }
-
-            /**
-             * @return A constant reference to the deductions/lemmas being valid formulas this module or its backends made.
-             */
-            const std::vector<std::pair<FormulaT,DeductionType>>& deductions() const
-            {
-                return mDeductions;
+                return mLemmas;
             }
 
             /**
@@ -590,10 +567,9 @@ namespace smtrat
             void excludeNotReceivedVariablesFromModel() const;
             
             /**
-             * Stores all deductions of any backend of this module in its own deduction vector.
+             * Stores all lemmas of any backend of this module in its own lemma vector.
              */
-            void updateDeductions( bool _withSplittings = true );
-            void updateSplittings();
+            void updateLemmas();
             
             /**
              * Collects the formulas in the given formula, which are part of the received formula. If the given formula directly
@@ -718,13 +694,14 @@ namespace smtrat
              * the satisfiability check of the conjunction of the so far received formulas, which does
              * actually nothing but passing the problem to its backends. This implementation is only used
              * internally and must be overwritten by any derived module.
+             * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            virtual Answer checkCore( bool _full = true, bool _minimize = false );
+            virtual Answer checkCore( bool _final = false, bool _full = true, bool _minimize = false );
             
             /**
              * Removes everything related to the given sub-formula of the received formula. However,
@@ -999,13 +976,14 @@ namespace smtrat
 
             /**
              * Runs the backend solvers on the passed formula.
+             * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return True,    if the passed formula is consistent;
              *          False,   if the passed formula is inconsistent;
              *          Unknown, otherwise.
              */
-            Answer runBackends( bool _full = true, bool _minimize = false );
+            Answer runBackends( bool _final = false, bool _full = true, bool _minimize = false );
             
             /**
              * Removes everything related to the sub-formula to remove from the passed formula in the backends of this module.
@@ -1061,7 +1039,7 @@ namespace smtrat
 #endif
             
             /**
-             * Adds a deductions which provoke a branching for the given variable at the given value,
+             * Adds a lemmas which provoke a branching for the given variable at the given value,
              * if this module returns Unknown and there exists a preceding SATModule. Note that the 
              * given value is rounded down and up, if the given variable is integer-valued.
              * @param _polynomial The variable to branch for.

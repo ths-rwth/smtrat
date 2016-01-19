@@ -366,7 +366,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer IntEqModule<Settings>::checkCore( bool _full, bool _minimize )
+    Answer IntEqModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
     {
         if( !rReceivedFormula().isConstraintConjunction() )
         {
@@ -639,7 +639,7 @@ namespace smtrat
         #ifdef DEBUG_IntEqModule
         cout << "Run LRAModule" << endl;
         #endif
-        Answer ans = runBackends( _full, _minimize );
+        Answer ans = runBackends( _final, _full, _minimize );
         if( ans == UNSAT )
         {
             getInfeasibleSubsets();

@@ -31,10 +31,10 @@ namespace smtrat
         return Module::remove( _subformula );
     }
     
-    Answer PModule::runBackends( bool _full, bool _minimize )
+    Answer PModule::runBackends( bool _final, bool _full, bool _minimize )
     {
         mAppliedPreprocessing = true;
-        return Module::runBackends( _full, _minimize );
+        return Module::runBackends( _final, _full, _minimize );
     }
     
     pair<bool,FormulaT> PModule::getReceivedFormulaSimplified()

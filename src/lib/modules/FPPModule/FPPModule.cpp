@@ -59,7 +59,7 @@ namespace smtrat
 	}
 
 	template<class Settings>
-	Answer FPPModule<Settings>::checkCore( bool _full, bool _minimize )
+	Answer FPPModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
 	{
 		std::size_t iterations = 0;
 		Answer answer = UNKNOWN;
@@ -101,7 +101,7 @@ namespace smtrat
 			SMTRAT_LOG_INFO("smtrat.fpp", "Calling backend with\n\t" << mFormulaAfterPreprocessing);
 			clearPassedFormula();
 			addSubformulaToPassedFormula(mFormulaAfterPreprocessing);
-			answer = runBackends(_full, _minimize);
+			answer = runBackends(_final, _full, _minimize);
 		}
 		// obtain an infeasible subset, if the received formula is unsatisfiable
 		if (answer == UNSAT) {

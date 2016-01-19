@@ -23,7 +23,7 @@ namespace smtrat
     {}
 
     template<class Settings>
-    Answer BEModule<Settings>::checkCore( bool _full, bool _minimize )
+    Answer BEModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
     {
         auto receivedFormula = firstUncheckedReceivedSubformula();
         while( receivedFormula != rReceivedFormula().end() )
@@ -38,12 +38,7 @@ namespace smtrat
                 addSubformulaToPassedFormula( formula, receivedFormula->formula() );
             ++receivedFormula;
         }
-		for (const auto& r: mReplacements) {
-			std::cout << r.first << " -> " << r.second << std::endl;
-		}
-		FormulaT newFormula = applyReplacements(FormulaT(rReceivedFormula()));
-		std::cout << newFormula << std::endl;
-        Answer ans = runBackends( _full, _minimize );
+        Answer ans = runBackends( _final, _full, _minimize );
         if( ans == UNSAT )
             generateTrivialInfeasibleSubset(); // TODO: compute a better infeasible subset
         return ans;

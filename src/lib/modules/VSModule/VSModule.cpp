@@ -154,7 +154,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer VSModule<Settings>::checkCore( bool _full, bool _minimize )
+    Answer VSModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
     {
         #ifdef VS_STATISTICS
         mStepCounter = 0;
@@ -186,7 +186,7 @@ namespace smtrat
             {
                 if( solverState() == SAT )
                 {
-                    if( !solutionInDomain() )
+                    if( !solutionInDomain( _final ) )
                     {
                         return UNKNOWN;
                     }
@@ -207,7 +207,7 @@ namespace smtrat
         mLastCheckFull = _full;
         if( rReceivedFormula().empty() )
         {
-            if( !solutionInDomain() )
+            if( !solutionInDomain( _final ) )
             {
                 return UNKNOWN;
             }
@@ -235,8 +235,7 @@ namespace smtrat
                         subformulas.emplace_back( carl::FormulaType::NOT, FormulaT( *cons ) ); // @todo store formulas and do not generate a formula here
                     }
                     subformulas.emplace_back( bDed->second );
-                    std::cout << __LINE__ << std::endl;
-                    addDeduction( FormulaT( carl::FormulaType::OR, std::move( subformulas ) ) );
+                    addLemma( FormulaT( carl::FormulaType::OR, std::move( subformulas ) ) );
                 }
             }
         }
@@ -514,7 +513,7 @@ namespace smtrat
                                             }
                                             else // Solution.
                                             {
-                                                if( !solutionInDomain() )
+                                                if( !solutionInDomain( _final ) )
                                                 {
                                                     return UNKNOWN;
                                                 }
@@ -576,7 +575,7 @@ namespace smtrat
                                         if( (*currentState).cannotBeSolved( mLazyMode ) )
                                         {
                                             // If we need to involve another approach.
-                                            Answer result = runBackendSolvers( currentState, _full, _minimize );
+                                            Answer result = runBackendSolvers( currentState, _final, _full, _minimize );
                                             switch( result )
                                             {
                                                 case SAT:
@@ -596,7 +595,7 @@ namespace smtrat
                                                     }
                                                     else // Solution.
                                                     {
-                                                        if( !solutionInDomain() )
+                                                        if( !solutionInDomain( _final ) )
                                                         {
                                                             return UNKNOWN;
                                                         }
@@ -1571,8 +1570,9 @@ namespace smtrat
     }
     
     template<class Settings>
-    bool VSModule<Settings>::solutionInDomain()
+    bool VSModule<Settings>::solutionInDomain( bool _final )
     {
+        bool trySplitting = Settings::use_branch_and_bound && (!Settings::only_split_in_final_call || _final);
         if( rReceivedFormula().isRealConstraintLiteralConjunction() )
             return true;
         assert( solverState() != UNSAT );
@@ -1610,7 +1610,7 @@ namespace smtrat
                         Rational nextIntTCinRange;
                         if( currentState->getNextIntTestCandidate( nextIntTCinRange, Settings::int_max_range ) )
                         {
-                            if( Settings::use_branch_and_bound )
+                            if( trySplitting )
                             {
                                 branchAt( currentState->substitution().variable(), nextIntTCinRange, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
                             }
@@ -1626,7 +1626,7 @@ namespace smtrat
                     else
                     {
                         assert( currentState->substitution().type() != Substitution::PLUS_EPSILON );
-                        if( Settings::use_branch_and_bound && Settings::branch_and_bound_at_origin )
+                        if( trySplitting && Settings::branch_and_bound_at_origin )
                         {
                             EvalRationalMap partialVarSolutions;
                             const Poly& substitutionPoly = (*currentState->substitution().originalConditions().begin())->constraint().lhs();
@@ -1655,14 +1655,15 @@ namespace smtrat
                         Rational evaluatedSubTerm;
                         if( subTerm.denominator().substitute( varSolutions ).isZero() )
                         {
-                            splitUnequalConstraint( FormulaT( subTerm.denominator(), carl::Relation::NEQ ) );
+                            if( _final )
+                                splitUnequalConstraint( FormulaT( subTerm.denominator(), carl::Relation::NEQ ) );
                             return false;
                         }
                         bool assIsInteger = subTerm.evaluate( evaluatedSubTerm, varSolutions, -1 );
                         assIsInteger &= carl::isInteger( evaluatedSubTerm );
                         if( !assIsInteger )
                         {
-                            if( Settings::use_branch_and_bound )
+                            if( trySplitting )
                                 branchAt( currentState->substitution().variable(), evaluatedSubTerm, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
                             return false;
                         }
@@ -1832,12 +1833,12 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer VSModule<Settings>::runBackendSolvers( State* _state, bool _full, bool _minimize )
+    Answer VSModule<Settings>::runBackendSolvers( State* _state, bool _final, bool _full, bool _minimize )
     {
         // Run the backends on the constraint of the state.
         FormulaConditionMap formulaToConditions;
         adaptPassedFormula( *_state, formulaToConditions );
-        Answer result = runBackends( _full, _minimize );
+        Answer result = runBackends( _final, _full, _minimize );
         #ifdef VS_DEBUG
         cout << "Ask backend      : ";
         printPassedFormula();

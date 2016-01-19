@@ -35,6 +35,7 @@ namespace smtrat
         static const size_t lazy_check_threshold                                = 1;
         static const bool try_first_lazy                                        = false;
         static const bool use_branch_and_bound                                  = true;
+        static const bool only_split_in_final_call                              = true;
         static const bool branch_and_bound_at_origin                            = false;
         static const bool use_fixed_variable_order                              = false;
     };

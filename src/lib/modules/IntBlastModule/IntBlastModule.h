@@ -540,17 +540,18 @@ return SettingsType::moduleName;
 
             /**
              * Checks the received formula for consistency.
+             * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
              * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return SAT,    if the received formula is satisfiable;
              *         UNSAT,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer checkCore( bool _full = true, bool _minimize = false );
+            Answer checkCore( bool _final = false, bool _full = true, bool _minimize = false );
 
     private:
 
-            Answer callBackends( bool _full, bool _minimize );
+            Answer callBackends( bool _final, bool _full, bool _minimize );
             BlastedPoly blastSum(const BlastedPoly& _summand1, const BlastedPoly& _summand2);
             BlastedPoly blastProduct(const BlastedPoly& _factor1, const BlastedPoly& _factor2);
             bool reblastingNeeded(const BlastedPoly& _previousBlasting, const IntegerInterval& _interval, bool _linear) const;

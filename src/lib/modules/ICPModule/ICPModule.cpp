@@ -145,21 +145,21 @@ namespace smtrat
                     mFoundSolution.clear();
                 if( !mIsIcpInitialized )
                 {
-                    // catch deductions
+                    // catch lemmas
                     mLRA.init();
-                    mLRA.updateDeductions();
-                    for( const auto& ded : mLRA.deductions() )
+                    mLRA.updateLemmas();
+                    for( const auto& lem : mLRA.lemmas() )
                     {
                         #ifdef ICP_MODULE_DEBUG_2
-                        std::cout << "Create deduction for: " << ded.first.toString(false,0,"",true,true,true ) << std::endl;
+                        std::cout << "Create lemma for: " << lem.mLemma.toString(false,0,"",true,true,true ) << std::endl;
                         #endif
-                        FormulaT deduction = getReceivedFormulas( ded.first );
-                        addDeduction(deduction, ded.second);
+                        FormulaT lemma = getReceivedFormulas( lem.mLemma );
+                        addLemma(lemma, lem.mLemmaType);
                         #ifdef ICP_MODULE_DEBUG_2
-                        std::cout << "Passed deduction: " << deduction.toString(false,0,"",true,true,true ) << std::endl;
+                        std::cout << "Passed lemma: " << lemma.toString(false,0,"",true,true,true ) << std::endl;
                         #endif
                     }
-                    mLRA.clearDeductions();
+                    mLRA.clearLemmas();
                     mIsIcpInitialized = true;
                 }
                 // Handle Not Equal separate
@@ -308,7 +308,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer ICPModule<Settings>::checkCore( bool _full, bool _minimize )
+    Answer ICPModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
     {
         #ifdef ICP_MODULE_DEBUG_0
         std::cout << "##############################################################" << std::endl;
@@ -399,12 +399,10 @@ namespace smtrat
                 if( mSplitOccurred )
                 {
                     #ifdef ICP_MODULE_DEBUG_0
-                    std::cout << "Return unknown, raise deductions for split." << std::endl;
+                    std::cout << "Return unknown, raise lemmas for split." << std::endl;
                     #endif
-                    assert( !splittings().empty() );
                     return UNKNOWN;
                 }
-                assert( splittings().empty() );
                 if( !Settings::just_contraction && tryTestPoints() )
                 {
                     if( checkNotEqualConstraints() )
@@ -419,7 +417,7 @@ namespace smtrat
                     // lazy call of the backends on found box
                     Answer lazyResult = callBackends( false, _minimize );
                     // if it led to a result or the backends require a splitting
-                    if( lazyResult != UNKNOWN || !splittings().empty() )
+                    if( lazyResult != UNKNOWN || !lemmas().empty() )
                         return lazyResult;
                     // Full call of the backends, if no box has target diameter
                     bool furtherContractionOccurred = false;
@@ -439,7 +437,7 @@ namespace smtrat
                     }
                     if( furtherContractionOccurred )
                         continue;
-                    assert( splittings().size() == 1 );
+                    assert( lemmas().size() == 1 );
                     return UNKNOWN; // Splitting required
                 }
             }
@@ -616,7 +614,7 @@ namespace smtrat
             {
                 splitUnequalConstraint(constraint);
                 #ifdef ICP_MODULE_DEBUG_0
-                std::cout << "Unresolved inequality " << constraint << "  -  Return unknown and raise deductions for split." << std::endl;
+                std::cout << "Unresolved inequality " << constraint << "  -  Return unknown and raise lemmas for split." << std::endl;
                 #endif
                 return false;
             }
@@ -721,7 +719,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer ICPModule<Settings>::callBackends( bool _full, bool _minimize )
+    Answer ICPModule<Settings>::callBackends( bool _final, bool _full, bool _minimize )
     {
         #ifdef ICP_MODULE_DEBUG_0
         std::cout << "Ask backends " << (_full ? "full" : "lazy") << " for the satisfiability of:" << std::endl;
@@ -729,14 +727,12 @@ namespace smtrat
             std::cout << "    " << f.formula().constraint() << std::endl;
         #endif
         ++mCountBackendCalls;
-        Answer a = runBackends( _full, _minimize );
-        updateDeductions();
-        if( !Settings::use_backends_splitting_decisions )
-            clearSplittings();
+        Answer a = runBackends( _final, _full, _minimize );
+        updateLemmas();
         std::vector<Module*>::const_iterator backend = usedBackends().begin();
         while( backend != usedBackends().end() )
         {
-            (*backend)->clearDeductions();
+            (*backend)->clearLemmas();
             ++backend;
         }
         #ifdef ICP_MODULE_DEBUG_0
@@ -778,7 +774,7 @@ namespace smtrat
             mHistoryActual->propagateStateInfeasibleConstraints(mHistoryRoot);
             mHistoryActual->propagateStateInfeasibleVariables(mHistoryRoot);
             #ifdef ICP_MODULE_SHOW_PROGRESS
-//            if( _full && a == UNKNOWN && !hasDeductions() )
+//            if( _full && a == UNKNOWN && !hasLemmas() )
 //                addProgress( mInitialBoxSize );
             #endif
             return a;
@@ -1100,7 +1096,7 @@ namespace smtrat
                 subformulas.emplace_back( carl::FormulaType::NOT, subformula );
             // construct new box
             FormulasT boxFormulas = createBoxFormula();
-            // push deduction
+            // push lemma
             if( boxFormulas.size() > 1 )
             {
                 auto lastFormula = --boxFormulas.end();
@@ -1108,7 +1104,7 @@ namespace smtrat
                 {
                     FormulasT subFormulaSetTmp = subformulas;
                     subFormulaSetTmp.push_back( *iter );
-                    addDeduction( FormulaT( carl::FormulaType::OR, std::move(subFormulaSetTmp) ) );
+                    addLemma( FormulaT( carl::FormulaType::OR, std::move(subFormulaSetTmp) ) );
                 }
             }
             #ifdef ICP_MODULE_SHOW_PROGRESS
@@ -1685,15 +1681,14 @@ namespace smtrat
                 for( auto formulaIt = splitPremise.begin(); formulaIt != splitPremise.end(); ++formulaIt )
                     subformulas.emplace_back( carl::FormulaType::NOT, *formulaIt );
                 // construct new box
-                subformulas.emplace_back( carl::FormulaType::AND, std::move( createBoxFormula() ) ); // TODO: only add this deduction if any contraction took place!!!
-                // push deduction
-                addDeduction( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
+                subformulas.emplace_back( carl::FormulaType::AND, std::move( createBoxFormula() ) ); // TODO: only add this lemma if any contraction took place!!!
+                // push lemma
+                addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
                 #ifdef ICP_MODULE_SHOW_PROGRESS
                 addProgress( mInitialBoxSize - calculateCurrentBoxSize() );
                 #endif
             }
             assert( variable != carl::Variable::NO_VARIABLE);
-            assert( splittings().size() == 0 );
             Module::branchAt( variable, bound, std::move(splitPremise), leftCaseWeak, preferLeftCase );
             #ifdef ICP_MODULE_DEBUG_0
             std::cout << std::endl << "Force split on " << variable << " at " << bound << "!" << std::endl;
@@ -2298,38 +2293,26 @@ namespace smtrat
         std::cout << "Initial linear check:" << std::endl;
         #endif
         // call mLRA to check linear feasibility
-        mLRA.clearDeductions();
+        mLRA.clearLemmas();
         mValidationFormula->updateProperties();
         _answer = mLRA.check();
 
-        // catch deductions
+        // catch lemmas
         if( !Settings::just_contraction )
         {
-            for( const auto& ded : mLRA.deductions() )
+            for( const auto& lem : mLRA.lemmas() )
             {
                 #ifdef ICP_MODULE_DEBUG_2
-                std::cout << "Create deduction for: " << ded.first << std::endl;
+                std::cout << "Create lemma for: " << lem.mLemma << std::endl;
                 #endif
-                FormulaT deduction = getReceivedFormulas(ded.first);
-                addDeduction(deduction, ded.second);
+                FormulaT lemma = getReceivedFormulas(lem.mLemma);
+                addLemma(lemma, lem.mLemmaType);
                 #ifdef ICP_MODULE_DEBUG_2
-                std::cout << "Passed deduction: " << deduction << std::endl;
+                std::cout << "Passed lemma: " << lemma << std::endl;
                 #endif
             }
         }
-        if( Settings::use_lramodules_splitting_decisions )
-        {
-            for( auto& sp : mLRA.splittings() )
-            {
-                vector<FormulaT> premise;
-                for( const auto& form : sp.mPremise )
-                {
-                    getOrigins( form, premise );
-                    addSplitting( sp.mLeftCase, sp.mRightCase, std::move( premise ), sp.mPreferLeftCase );
-                }
-            }
-        }
-        mLRA.clearDeductions();
+        mLRA.clearLemmas();
         if( _answer == UNSAT )
         {
             // remap infeasible subsets to original constraints
@@ -2360,7 +2343,7 @@ namespace smtrat
             if( solutionFound )
                 return true;
         }
-        if( !Settings::just_contraction && !splittings().empty() && _answer == UNKNOWN )
+        if( !Settings::just_contraction && !lemmas().empty() && _answer == UNKNOWN )
             return true;
         // get intervals for initial variables
         mInitialIntervals = mLRA.getVariableBounds();
@@ -2539,7 +2522,7 @@ namespace smtrat
             boundIt = addedBoundaries.erase(boundIt);
         }
 
-        mLRA.clearDeductions();
+        mLRA.clearLemmas();
         assert(addedBoundaries.empty());
 
         if ( boxCheck == UNSAT )

@@ -38,6 +38,7 @@ namespace smtrat
 	vector<Branching> Module::mLastBranches = vector<Branching>(mNumOfBranchVarsToStore, Branching(typename Poly::PolyType(ZERO_RATIONAL), ZERO_RATIONAL));
 #endif
     size_t Module::mFirstPosInLastBranches = 0;
+    vector<FormulaT> Module::mOldSplittingVariables = vector<FormulaT>();
 
     #ifdef SMTRAT_DEVOPTION_Validation
     ValidationSettings* Module::validationSettings = new ValidationSettings();
@@ -64,8 +65,7 @@ namespace smtrat
         mFoundAnswer( _foundAnswer ),
         mUsedBackends(),
         mAllBackends(),
-        mDeductions(),
-        mSplittings(),
+        mLemmas(),
         mFirstSubformulaToPass( mpPassedFormula->end() ),
         mConstraintsToInform(),
         mInformedConstraints(),
@@ -90,8 +90,7 @@ namespace smtrat
     
     Module::~Module()
     {
-        mDeductions.clear();
-        mSplittings.clear();
+        mLemmas.clear();
         clearModel();
         mConstraintsToInform.clear();
         mInformedConstraints.clear();
@@ -100,7 +99,7 @@ namespace smtrat
         delete mBackendsFoundAnswer;
     }
     
-    Answer Module::check( bool _full, bool _minimize )
+    Answer Module::check( bool _final, bool _full, bool _minimize )
     {
         SMTRAT_LOG_INFO("smtrat.module", __func__  << (_full ? " full" : " lazy" ) << " with module " << moduleName() << " (" << mId << ")");
         print("\t");
@@ -114,7 +113,7 @@ namespace smtrat
             std::cout << " " << subformula.formula().toString( false, true );
         std::cout << "))\n";
         #endif
-        clearDeductions();
+        clearLemmas();
         if( rReceivedFormula().empty() )
         {
             #ifdef SMTRAT_DEVOPTION_MeasureTime
@@ -122,7 +121,7 @@ namespace smtrat
             #endif
             return foundAnswer( SAT );
         }
-        Answer result = checkCore( _full, _minimize );
+        Answer result = checkCore( _final, _full, _minimize );
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         stopCheckTimer();
         #endif
@@ -223,7 +222,7 @@ namespace smtrat
             mSolverState = UNKNOWN;
     }
 
-    Answer Module::checkCore( bool _full, bool _minimize )
+    Answer Module::checkCore( bool _final, bool _full, bool _minimize )
     {
         if ( !mInfeasibleSubsets.empty() )
             return UNSAT;
@@ -246,7 +245,7 @@ namespace smtrat
         return SAT;
         #else
         // Run the backends on the passed formula and return its answer.
-        Answer a = runBackends( _full, _minimize );
+        Answer a = runBackends( _final, _full, _minimize );
         if( a == UNSAT )
         {
             getInfeasibleSubsets();
@@ -537,7 +536,37 @@ namespace smtrat
         }
         if( constraintA.isConsistent() == 2 )
         {
-            mSplittings.emplace_back( FormulaT( constraintA ), FormulaT( constraintB ), std::move( _premise ), _preferLeftCase );
+            // Create splitting variables
+            FormulaT s1, s2;
+            OLD_SPLITTING_VARS_LOCK
+            if( mOldSplittingVariables.empty() )
+                s1 = FormulaT( carl::freshBooleanVariable() );
+            else
+            {
+                s1 = mOldSplittingVariables.back();
+                mOldSplittingVariables.pop_back();
+            }
+            if( mOldSplittingVariables.empty() )
+                s2 = FormulaT( carl::freshBooleanVariable() );
+            else
+            {
+                s2 = mOldSplittingVariables.back();
+                mOldSplittingVariables.pop_back();
+            }
+            OLD_SPLITTING_VARS_UNLOCK
+            // Create _premise -> (s1 or s2)
+            FormulasT subformulas;
+            for( const FormulaT premForm : _premise )
+                subformulas.push_back( premForm.negated() );
+            subformulas.push_back( s1 );
+            subformulas.push_back( s2 );
+            addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ), LemmaType::NORMAL, _preferLeftCase ? s1 : s2 );
+            // Create (not s1 or not s2)
+            addLemma( FormulaT( carl::FormulaType::OR, s1.negated(), s2.negated() ) );
+            // Create (s1 -> constraintA)
+            addLemma( FormulaT( carl::FormulaType::OR, s1.negated(), FormulaT( constraintA ) ) );
+            // Create (s2 -> constraintB)
+            addLemma( FormulaT( carl::FormulaType::OR, s2.negated(), FormulaT( constraintB ) ) );
             return true;
         }
         assert( constraintB.isConsistent() != 2  );
@@ -558,13 +587,13 @@ namespace smtrat
         subformulas.push_back( FormulaT( FormulaType::NOT, _unequalConstraint ) );
         subformulas.push_back( lessConstraint );
         subformulas.push_back( greaterConstraint );
-        addDeduction( FormulaT( FormulaType::OR, std::move( subformulas ) ), DeductionType::PERMANENT );
+        addLemma( FormulaT( FormulaType::OR, std::move( subformulas ) ), LemmaType::PERMANENT );
         // (not p<0 or p!=0)
-        addDeduction( FormulaT( FormulaType::OR, {notLessConstraint, _unequalConstraint} ), DeductionType::PERMANENT );
+        addLemma( FormulaT( FormulaType::OR, {notLessConstraint, _unequalConstraint} ), LemmaType::PERMANENT );
         // (not p>0 or p!=0)
-        addDeduction( FormulaT( FormulaType::OR, {notGreaterConstraint, _unequalConstraint} ), DeductionType::PERMANENT );
+        addLemma( FormulaT( FormulaType::OR, {notGreaterConstraint, _unequalConstraint} ), LemmaType::PERMANENT );
         // (not p>0 or not p<0)
-        addDeduction( FormulaT( FormulaType::OR, {notGreaterConstraint, notLessConstraint} ), DeductionType::PERMANENT );
+        addLemma( FormulaT( FormulaType::OR, {notGreaterConstraint, notLessConstraint} ), LemmaType::PERMANENT );
     }
 
     unsigned Module::checkModel() const
@@ -705,7 +734,7 @@ namespace smtrat
         return result;
     }
 
-    Answer Module::runBackends( bool _full, bool _minimize )
+    Answer Module::runBackends( bool _final, bool _full, bool _minimize )
     {
         if( mpManager == NULL ) return UNKNOWN;
         *mBackendsFoundAnswer = false;
@@ -727,8 +756,7 @@ namespace smtrat
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->startAddTimer();
                     #endif
-                    (*module)->mDeductions.clear(); // TODO: this might be removed, as it is now done in check as well
-                    (*module)->mSplittings.clear(); // TODO: this might be removed, as it is now done in check as well
+                    (*module)->mLemmas.clear(); // TODO: this might be removed, as it is now done in check as well
                     if( !(*module)->mInfeasibleSubsets.empty() )
                     {
                         assertionFailed = true;
@@ -759,8 +787,7 @@ namespace smtrat
                 // TODO: this might be removed, as it is now done in check as well
                 for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
                 {
-                    (*module)->mDeductions.clear();
-                    (*module)->mSplittings.clear();
+                    (*module)->mLemmas.clear();
                 }
             }
 
@@ -781,7 +808,7 @@ namespace smtrat
                 mpManager->checkBackendPriority( mUsedBackends[ highestIndex ] );
                 SMTRAT_LOG_INFO("smtrat.module", "Call to module " << moduleName( mUsedBackends[ highestIndex ]->type() ));
                 mUsedBackends[ highestIndex ]->print();
-                result = mUsedBackends[ highestIndex ]->check( _full, _minimize );
+                result = mUsedBackends[ highestIndex ]->check( _final, _full, _minimize );
                 mUsedBackends[ highestIndex ]->receivedFormulaChecked();
                 for( unsigned i=0; i<highestIndex; ++i )
                 {
@@ -802,7 +829,7 @@ namespace smtrat
                 std::vector<Module*>::iterator module = mUsedBackends.begin();
                 while( module != mUsedBackends.end() && result == UNKNOWN )
                 {
-                    result = (*module)->check( _full, _minimize );
+                    result = (*module)->check( _final, _full, _minimize );
                     (*module)->receivedFormulaChecked();
                     ++module;
                 }
@@ -970,48 +997,19 @@ namespace smtrat
             delete ueVars;
     }
 
-    void Module::updateDeductions( bool _withSplittings )
+    void Module::updateLemmas()
     {
         for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
         {
-            (*module)->updateDeductions();
+            (*module)->updateLemmas();
             #ifdef SMTRAT_DEVOPTION_Validation
             if( validationSettings->logLemmata() )
             {
-                for( const auto& ded : (*module)->deductions() )
-                    addAssumptionToCheck( FormulaT( FormulaType::NOT, ded.first ), false, (*module)->moduleName() + "_lemma" );
+                for( const auto& lem : (*module)->lemmas() )
+                    addAssumptionToCheck( FormulaT( FormulaType::NOT, lem.mLemma ), false, (*module)->moduleName() + "_lemma" );
             }
             #endif
-            mDeductions.insert( mDeductions.end(), (*module)->mDeductions.begin(), (*module)->mDeductions.end() );
-            if( _withSplittings )
-            {
-                for( auto& sp : (*module)->mSplittings )
-                {
-                    vector<FormulaT> premise;
-                    for( const auto& form : sp.mPremise )
-                    {
-                        getOrigins( form, premise );
-                    }
-                    addSplitting( sp.mLeftCase, sp.mRightCase, std::move( premise ), sp.mPreferLeftCase );
-                }
-            }
-        }
-    }
-
-    void Module::updateSplittings()
-    {
-        for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
-        {
-            (*module)->updateSplittings();
-            for( auto& sp : (*module)->mSplittings )
-            {
-                vector<FormulaT> premise;
-                for( const auto& form : sp.mPremise )
-                {
-                    getOrigins( form, premise );
-                }
-                addSplitting( sp.mLeftCase, sp.mRightCase, std::move( premise ), sp.mPreferLeftCase );
-            }
+            mLemmas.insert( mLemmas.end(), (*module)->mLemmas.begin(), (*module)->mLemmas.end() );
         }
     }
     

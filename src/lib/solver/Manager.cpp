@@ -207,10 +207,10 @@ namespace smtrat
     std::vector<FormulaT> Manager::lemmas()
     {
         std::vector<FormulaT> result;
-        mpPrimaryBackend->updateDeductions();
-        for( const auto& ded : mpPrimaryBackend->deductions() )
+        mpPrimaryBackend->updateLemmas();
+        for( const auto& lem : mpPrimaryBackend->lemmas() )
         {
-            result.push_back( ded.first );
+            result.push_back( lem.mLemma );
         }
         return result;
     }

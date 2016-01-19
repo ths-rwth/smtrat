@@ -683,7 +683,7 @@ namespace smtrat
     }
             
     template<class Settings>
-    Answer FouMoModule<Settings>::checkCore( bool _full, bool _minimize )
+    Answer FouMoModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
     {
         // Check whether a module which has been called on the same instance in parallel, has found an answer
         if( anAnswerFound() )
@@ -1309,7 +1309,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    Answer FouMoModule<Settings>::callBackends( bool _full, bool _minimize )
+    Answer FouMoModule<Settings>::callBackends( bool _final, bool _full, bool _minimize )
     {
         if( mDom == INT )
         {
@@ -1345,7 +1345,7 @@ namespace smtrat
                 ++iter_diseq;
             }
         }        
-        Answer ans = runBackends( _full, _minimize );
+        Answer ans = runBackends( _final, _full, _minimize );
         if( ans == UNSAT )
         {
             getInfeasibleSubsets();

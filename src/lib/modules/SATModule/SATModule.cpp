@@ -35,7 +35,6 @@
 #endif
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
 //#define DEBUG_SATMODULE_DECISION_HEURISTIC
-//#define DEBUG_ADD_SPLITTING
 
 using namespace Minisat;
 
@@ -128,8 +127,6 @@ namespace smtrat
         mChangedBooleans(),
         mAllActivitiesChanged( false ),
         mChangedActivities(),
-        mSplittingVars(),
-        mOldSplittingVars(),
         mNewSplittingVars(),
         mPropagatedLemmas(),
         mRelevantVariables(),
@@ -381,7 +378,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    Answer SATModule<Settings>::checkCore( bool _full, bool _minimize )
+    Answer SATModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
     {
         mFullCheck = _full;
         mMinimize = _minimize;
@@ -591,7 +588,7 @@ namespace smtrat
         printCurrentAssignment();
 #endif
         SMTRAT_LOG_TRACE("smtrat.sat", "Find all dependent variables");
-        clearDeductions();
+        clearLemmas();
         int assumptionSizeStart = assumptions.size();
         // Initialize set of all variables which are not tested yet for positive assignment
         std::set<Minisat::Var> testVarsPositive;
@@ -654,7 +651,7 @@ namespace smtrat
                 FormulaT infeasibleSubset = FormulaT(carl::FormulaType::AND, infeasibleSubsets()[0]);
                 FormulaT lemma = FormulaT(carl::FormulaType::IMPLIES, infeasibleSubset, mvIter->second.negated());
                 SMTRAT_LOG_DEBUG("smtrat.sat", "Add propagated lemma: " << lemma);
-                addDeduction(lemma);
+                addLemma(lemma);
             }
             else if (result == l_True)
             {
@@ -1227,127 +1224,6 @@ namespace smtrat
             addXorClauses( _literals, _negLiterals, _from+1, !_numOfNegatedLitsEven, _type, _clause, _ignorePolarity, _polarity );
             _clause.pop();
         }
-    }
-    
-    template<class Settings>
-    void SATModule<Settings>::addSplitting( const Splitting& _splitting )
-    {
-        // Learn clause (or (not p1) .. (not pn) h1 h2) where (and p1 .. pn) forms the premise and h1 and h2 are new Boolean variables.
-        #ifdef DEBUG_ADD_SPLITTING
-        std::cout << "add splitting to SAT module" << std::endl;
-        std::cout << "   where the premise is:";
-        #endif
-        vec<Lit> clauseLits;
-        for( const FormulaT& subformula : _splitting.mPremise )
-        {
-            #ifdef DEBUG_ADD_SPLITTING
-            std::cout << " " << subformula;
-            #endif
-            ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( subformula );
-            assert( constraintLiteralPair != mConstraintLiteralMap.end() );
-            clauseLits.push( neg( constraintLiteralPair->second.front() ) );
-        }
-        #ifdef DEBUG_ADD_SPLITTING
-        std::cout << std::endl;
-        std::cout << "   and the split is: " << _splitting.mLeftCase << " or " << _splitting.mRightCase << std::endl;
-        std::cout << "   we prefer the " << (_splitting.mPreferLeftCase ? "left":"right") << " case" << std::endl;
-        #endif
-        int leftCase = 0;
-        if( mOldSplittingVars.empty() )
-        {
-            leftCase = newVar( false, true, 0.0 );
-            mBooleanConstraintMap.push( std::make_pair( nullptr, nullptr ) );
-            #ifdef DEBUG_ADD_SPLITTING
-            std::cout << "create the new Boolean variable " << leftCase << " for the left case" << std::endl;
-            #endif
-        }
-        else
-        {
-            leftCase = mOldSplittingVars.top();
-            mOldSplittingVars.pop();
-            assert( leftCase < trail.capacity() );
-            assigns[leftCase] = l_Undef;
-            vardata[leftCase] = mkVarData( CRef_Undef, 0 );
-            activity[leftCase] = 0.0;
-            seen[leftCase] = 0;
-            decision[leftCase] = true;
-            #ifdef DEBUG_ADD_SPLITTING
-            std::cout << "recycle the Boolean variable " << leftCase << " for the left case" << std::endl;
-            #endif
-        }
-        clauseLits.push( mkLit( leftCase, false ) );
-        mSplittingVars.push_back( leftCase );
-        int rightCase = 0;
-        if( mOldSplittingVars.empty() )
-        {
-            rightCase = newVar( false, true, 0.0 );
-            mBooleanConstraintMap.push( std::make_pair( nullptr, nullptr ) );
-            #ifdef DEBUG_ADD_SPLITTING
-            std::cout << "create the new Boolean variable " << rightCase << " for the right case" << std::endl;
-            #endif
-        }
-        else
-        {
-            rightCase = mOldSplittingVars.top();
-            mOldSplittingVars.pop();
-            assert( rightCase < trail.capacity() );
-            assigns[rightCase] = l_Undef;
-            vardata[rightCase] = mkVarData( CRef_Undef, 0 );
-            activity[rightCase] = 0.0;
-            seen[rightCase] = 0;
-            decision[rightCase] = true;
-            #ifdef DEBUG_ADD_SPLITTING
-            std::cout << "recycle the Boolean variable " << rightCase << " for the right case" << std::endl;
-            #endif
-        }
-        clauseLits.push( mkLit( rightCase, false ) );
-        mSplittingVars.push_back( rightCase );
-        if( _splitting.mPreferLeftCase )
-            mNewSplittingVars.push_back( leftCase );
-        else
-            mNewSplittingVars.push_back( rightCase );
-        assert( decision[mNewSplittingVars.back()] );
-        #ifdef DEBUG_ADD_SPLITTING
-        std::cout << "add the clause: ";
-        printClause( clauseLits );
-        std::cout << std::endl;
-        #endif
-        addClause( clauseLits, DEDUCTED_CLAUSE );
-        // Add clause (or (not h1) (not h2))
-        vec<Lit> clauseLitsB;
-        clauseLitsB.push( mkLit( leftCase, true ) );
-        clauseLitsB.push( mkLit( rightCase, true ) );
-        #ifdef DEBUG_ADD_SPLITTING
-        printClause( clauseLitsB );
-        std::cout << std::endl;
-        #endif
-        addClause( clauseLitsB, DEDUCTED_CLAUSE );
-        // Add clause (or (not h1) (<= p b)) resp. (or (not h1) (< p b)) where we want to split the polynomial p at b.
-        vec<Lit> clauseLitsC;
-        clauseLitsC.push( mkLit( leftCase, true ) );
-        Lit l = getLiteral( _splitting.mLeftCase, FormulaT( carl::FormulaType::TRUE ), false );
-        #ifdef DEBUG_ADD_SPLITTING
-        std::cout << "Literal for the left case " << _splitting.mLeftCase << " is " << (sign(l) ? "-" : "") << var(l) << std::endl;
-        #endif
-        clauseLitsC.push( l );
-        #ifdef DEBUG_ADD_SPLITTING
-        printClause( clauseLitsC );
-        std::cout << std::endl;
-        #endif
-        addClause( clauseLitsC, DEDUCTED_CLAUSE );
-        // Add clause (or (not h2) (> p b)) resp. (or (not h1) (>= p b)) where we want to split the polynomial p at b.
-        vec<Lit> clauseLitsD;
-        clauseLitsD.push( mkLit( rightCase, true ) );
-        Lit r = getLiteral( _splitting.mRightCase, FormulaT( carl::FormulaType::TRUE ), false );
-        #ifdef DEBUG_ADD_SPLITTING
-        std::cout << "Literal for the right case " << _splitting.mRightCase << " is " << (sign(r) ? "-" : "") << var(r) << std::endl;
-        #endif
-        clauseLitsD.push( r );
-        #ifdef DEBUG_ADD_SPLITTING
-        printClause( clauseLitsD );
-        std::cout << std::endl;
-        #endif
-        addClause( clauseLitsD, DEDUCTED_CLAUSE );
     }
     
     template<class Settings>
@@ -2148,10 +2024,10 @@ SetWatches:
     CRef SATModule<Settings>::propagateConsistently( bool& _madeTheoryCall, bool& _foundConflictOfSizeOne  )
     {
         CRef confl = CRef_Undef;
-        bool deductionsLearned = true;
-        while( deductionsLearned ) // || !mChangedBooleans.empty() )
+        bool lemmasLearned = true;
+        while( lemmasLearned ) // || !mChangedBooleans.empty() )
         {
-            deductionsLearned = false;
+            lemmasLearned = false;
             // Simplify the set of problem clauses:
             if( decisionLevel() == assumptions.size() )
             {
@@ -2170,21 +2046,21 @@ SetWatches:
                         assert( mvIter != mMinisatVarMap.end() );
                         if ( assigns[ iter->first ] == l_False )
                         {
-                            addDeduction( FormulaT( carl::FormulaType::IMPLIES, premise, mvIter->second.negated() ) );
+                            addLemma( FormulaT( carl::FormulaType::IMPLIES, premise, mvIter->second.negated() ) );
                         }
                         else
                         {
                             assert( assigns[ iter->first ] == l_True );
                             FormulaT lemma = FormulaT( carl::FormulaType::IMPLIES, premise, mvIter->second );
-                            addDeduction( lemma );
+                            addLemma( lemma );
                         }
                     }
                 }
             }
             else
                 confl = propagate();
-            // If a Boolean conflict occurred of a splitting decision is asked for
-            if( confl != CRef_Undef || existsUnassignedSplittingVar() )
+            // If a Boolean conflict occurred.
+            if( confl != CRef_Undef )
                 break;
             #ifdef DEBUG_SATMODULE
             cout << "### Sat iteration" << endl;
@@ -2209,19 +2085,18 @@ SetWatches:
                     adaptPassedFormula();
                 }
                 assert( !mReceivedFormulaPurelyPropositional || !mChangedPassedFormula );
-                if( mChangedPassedFormula )
+                bool finalCheck = fullAssignment();
+                if( mChangedPassedFormula || finalCheck )
                 {
                     _madeTheoryCall = true;
-                    clearSplittings();
                     #ifdef DEBUG_SATMODULE
                     cout << "### Check the constraints: { "; for( auto& subformula : rPassedFormula() ) cout << subformula.formula() << " "; cout << "}" << endl;
                     #endif
                     mChangedPassedFormula = false;
-                    
 //                    cout << "        Check theory:" << endl;
 //                    for( const auto& f : rPassedFormula() )
 //                        std::cout << "           " << f.formula().toString() << std::endl;
-                    mCurrentAssignmentConsistent = runBackends( mFullCheck, false );
+                    mCurrentAssignmentConsistent = runBackends( finalCheck, mFullCheck, false );
                     #ifdef DEBUG_SATMODULE
                     cout << "### Result: " << ANSWER_TO_STRING( mCurrentAssignmentConsistent ) << "!" << endl;
                     #endif
@@ -2230,7 +2105,7 @@ SetWatches:
                         case SAT:
                         {
                             if( Settings::allow_theory_propagation )
-                                deductionsLearned = processLemmas(); // Theory propagation.
+                                lemmasLearned = processLemmas(); // Theory propagation.
                             break;
                         }
                         case UNSAT:
@@ -2248,7 +2123,7 @@ SetWatches:
                         {
                             assert( mCurrentAssignmentConsistent == UNKNOWN );
                             if( Settings::allow_theory_propagation )
-                                deductionsLearned = processLemmas(); // Theory propagation.
+                                lemmasLearned = processLemmas(); // Theory propagation.
                             break;
                         }
                     }
@@ -2359,8 +2234,6 @@ SetWatches:
                         else
                         {
                             assert( mCurrentAssignmentConsistent == UNKNOWN );
-                            if( processSplittings() )
-                                continue;
                             if( !Settings::stop_search_after_first_unknown )
                             {
                                 learnt_clause.clear();
@@ -2487,6 +2360,22 @@ SetWatches:
         }
     }
     
+    template<class Settings>
+    bool SATModule<Settings>::fullAssignment()
+    {
+        Var next = pickSplittingVar();
+        if( next != var_Undef )
+            return false;
+        while( next == var_Undef || value( next ) != l_Undef || !decision[next] )
+        {
+            if( order_heap.empty() )
+                return true;
+            else
+                next = order_heap.removeMin();
+        }
+        return false;
+    }
+        
     template<class Settings>
     Var SATModule<Settings>::pickSplittingVar()
     {
@@ -3079,48 +2968,6 @@ NextClause:
         }
         cs.shrink( i - j );
     }
-    
-    template<class Settings>
-    void SATModule<Settings>::removeAssignedSplittingVars()
-    {
-        assert( decisionLevel() <= assumptions.size() );
-        for( size_t i = 0; i < mSplittingVars.size(); )
-        {
-            if( assigns[mSplittingVars[i]] != l_Undef )
-            {
-                for( auto iter = mNewSplittingVars.begin(); iter != mNewSplittingVars.end(); ++iter )
-                {
-                    if( *iter == mSplittingVars[i] )
-                    {
-                        // we want to keep the order and do a rather expensive erase, but this vector
-                        // is not going to be very big and this method is called only at decision level 0
-                        mNewSplittingVars.erase( iter ); 
-                        break;
-                    }
-                }
-                
-                assigns[mSplittingVars[i]] = l_Undef; // if assertions in detachClause fail, maybe use resetVariableAssignment( mSplittingVars[i] ); instead
-                decision[mSplittingVars[i]] = false;
-                mOldSplittingVars.push(mSplittingVars[i]);
-                mSplittingVars[i] = mSplittingVars.back();
-                mSplittingVars.pop_back();
-            }
-            else
-            {
-                ++i;
-            }
-        }
-        int i, j;
-        for( i = j = 0; i < trail.size(); ++i )
-        {
-            if( assigns[var(trail[i])] != l_Undef )
-            {
-                trail[j++] = trail[i];
-            }
-        }
-        trail.shrink( i - j );
-        qhead = trail.size();
-    }
 
     template<class Settings>
     void SATModule<Settings>::rebuildOrderHeap()
@@ -3154,7 +3001,7 @@ NextClause:
             removeSatisfied( learnts );
             if( remove_satisfied )    // Can be turned off.
                 removeSatisfied( clauses );
-            removeAssignedSplittingVars();
+            // @todo: free somehow splitting variables, which are assigned in decision level 0 (aka assumption.size())
             checkGarbage();
             rebuildOrderHeap();
             simpDB_assigns = nAssigns();
@@ -3166,53 +3013,35 @@ NextClause:
     template<class Settings>
     bool SATModule<Settings>::processLemmas()
     {
-        bool deductionsLearned = false;
+        bool lemmasLearned = false;
         std::vector<Module*>::const_iterator backend = usedBackends().begin();
         while( backend != usedBackends().end() )
         {
-            // Learn the deductions.
-            (*backend)->updateDeductions( false );
-            for( const auto& ded : (*backend)->deductions() )
+            // Learn the lemmas.
+            (*backend)->updateLemmas();
+            if( !(mCurrentAssignmentConsistent == SAT && fullAssignment()) )
             {
-                if( ded.first.getType() != carl::FormulaType::TRUE )
+                for( const auto& lem : (*backend)->lemmas() )
                 {
-                    #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
-                    cout << "Learned a theory deduction from a backend module!" << endl;
-                    cout << ded.first.toString( false, 0, "", true, true, true ) << endl;
-                    #endif
-                    int numOfLearnts = learnts.size();
-                    addClauses( ded.first, ded.second == DeductionType::PERMANENT ? PERMANENT_CLAUSE : DEDUCTED_CLAUSE );
-                    if( numOfLearnts < learnts.size() )
+                    if( lem.mLemma.getType() != carl::FormulaType::TRUE )
                     {
-                        deductionsLearned = true;
+                        #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
+                        cout << "Learned a theory lemma from a backend module!" << endl;
+                        cout << lem.mLemma.toString( false, 0, "", true, true, true ) << endl;
+                        #endif
+                        int numOfLearnts = learnts.size();
+                        addClauses( lem.mLemma, lem.mLemmaType == LemmaType::PERMANENT ? PERMANENT_CLAUSE : DEDUCTED_CLAUSE );
+                        if( numOfLearnts < learnts.size() )
+                        {
+                            lemmasLearned = true;
+                        }
                     }
                 }
             }
-            (*backend)->clearDeductions( false );
+            (*backend)->clearLemmas();
             ++backend;
         }
-        return deductionsLearned;
-    }
-    
-    template<class Settings>
-    bool SATModule<Settings>::processSplittings()
-    {
-        std::vector<Module*>::const_iterator backend = usedBackends().begin();
-        bool addedSplittings = false;
-        while( backend != usedBackends().end() )
-        {
-            // Learn the deductions.
-            (*backend)->updateSplittings();
-            if( !(*backend)->splittings().empty() )
-                addedSplittings = true;
-            for( const Splitting& splitting : (*backend)->splittings() )
-            {
-                addSplitting( splitting );
-            }
-            (*backend)->clearSplittings();
-            ++backend;
-        }
-        return addedSplittings;
+        return lemmasLearned;
     }
 
     template<class Settings>
