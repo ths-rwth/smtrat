@@ -180,7 +180,7 @@ namespace smtrat
             return UNKNOWN;
         if( !(rReceivedFormula().isIntegerConstraintLiteralConjunction() || rReceivedFormula().isRealConstraintLiteralConjunction()) )
             return UNKNOWN;
-        if( !mConditionsChanged && (!_full || mLastCheckFull) )
+        if( !_final && !mConditionsChanged && (!_full || mLastCheckFull) )
         {
             if( mInfeasibleSubsets.empty() )
             {
