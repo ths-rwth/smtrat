@@ -2071,19 +2071,15 @@ SetWatches:
             cout << "###" << endl;
             #endif
 
-            if( decisionLevel() >= assumptions.size() && (!Settings::try_full_lazy_call_first || mNumberOfFullLazyCalls > 0 || trail.size() == assigns.size()) )
+            if( !mReceivedFormulaPurelyPropositional && decisionLevel() >= assumptions.size() && (!Settings::try_full_lazy_call_first || mNumberOfFullLazyCalls > 0 || trail.size() == assigns.size()) )
             {
                 if( Settings::try_full_lazy_call_first && trail.size() == assigns.size() )
                     ++mNumberOfFullLazyCalls;
                 // Check constraints corresponding to the positively assigned Boolean variables for consistency.
-                assert( !mReceivedFormulaPurelyPropositional || mChangedActivities.empty() );
-                assert( !mReceivedFormulaPurelyPropositional || mChangedBooleans.empty() );
-                assert( !mReceivedFormulaPurelyPropositional || !mAllActivitiesChanged );
-                if( !mReceivedFormulaPurelyPropositional && mCurrentAssignmentConsistent != SAT )
+                if( mCurrentAssignmentConsistent != SAT )
                 {
                     adaptPassedFormula();
                 }
-                assert( !mReceivedFormulaPurelyPropositional || !mChangedPassedFormula );
                 bool finalCheck = fullAssignment();
                 if( mChangedPassedFormula || finalCheck )
                 {
@@ -2092,9 +2088,6 @@ SetWatches:
                     cout << "### Check the constraints: { "; for( auto& subformula : rPassedFormula() ) cout << subformula.formula() << " "; cout << "}" << endl;
                     #endif
                     mChangedPassedFormula = false;
-//                    cout << "        Check theory:" << endl;
-//                    for( const auto& f : rPassedFormula() )
-//                        std::cout << "           " << f.formula().toString() << std::endl;
                     mCurrentAssignmentConsistent = runBackends( finalCheck, mFullCheck, false );
                     #ifdef DEBUG_SATMODULE
                     cout << "### Result: " << ANSWER_TO_STRING( mCurrentAssignmentConsistent ) << "!" << endl;
@@ -2369,7 +2362,7 @@ SetWatches:
             return false;
         while( !order_heap.empty() && ((next = order_heap[0]) == var_Undef || value( next ) != l_Undef || !decision[next]) )
             order_heap.removeMin();
-        return false;
+        return order_heap.empty();
     }
         
     template<class Settings>
