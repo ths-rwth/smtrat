@@ -136,8 +136,11 @@ public:
             this->solver->addObjective( p, ot == smtrat::parser::OptimizationType::Minimize );
 	}
 	void pop(std::size_t n) {
+            if( n > 1 )
 		this->solver->pop(n);
-		if (exportDIMACS) dimacs.clear();
+            else
+                this->solver->pop();
+            if (exportDIMACS) dimacs.clear();
 	}
 	void push(std::size_t n) {
 		for (; n > 0; n--) this->solver->push();

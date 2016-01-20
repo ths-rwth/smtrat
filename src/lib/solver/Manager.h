@@ -43,7 +43,7 @@ namespace smtrat
             /// The propositions of the passed formula.
             carl::Condition mPropositions;
             /// Contains the backtrack points, that are iterators to the last formula to be kept when backtracking to the respective point.
-            std::vector<std::pair<ModuleInput::iterator, std::vector<std::pair<Poly,std::pair<carl::Variable,bool>>>::iterator>> mBacktrackPoints;
+            std::vector<std::pair<ModuleInput::iterator, int>> mBacktrackPoints;
             /// all generated instances of modules
             std::vector<Module*> mGeneratedModules;
             /// a mapping of each module to its backends
@@ -66,6 +66,9 @@ namespace smtrat
 			LemmaLevel mLemmaLevel;
             ///
             std::vector<std::pair<Poly,std::pair<carl::Variable,bool>>> mObjectives;
+            ///
+            std::stack<carl::Variable> mReusableRealObjectiveVars;
+            std::stack<carl::Variable> mReusableIntObjectiveVars;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all statistics for the solver this manager belongs to.
             GeneralStatistics* mpStatistics;
@@ -140,11 +143,9 @@ namespace smtrat
             {
 				// Pushes iterator to last formula contained in the backtrack point.
 				auto it = mpPassedFormula->end();
-                auto objIt = mObjectives.end();
 				// If the list is empty use end(), otherwise an iterator to the last element
 				if (!mpPassedFormula->empty()) --it;
-				if (!mObjectives.empty()) --objIt;
-                mBacktrackPoints.emplace_back(it,objIt);
+                mBacktrackPoints.emplace_back(it,(int)mObjectives.size() - 1);
             }
             
             /**
@@ -155,32 +156,9 @@ namespace smtrat
              * with SMT-RAT, but is often required by state-of-the-art SMT solvers when embedding
              * a theory solver constructed with SMT-RAT into them.
              */
-            bool pop()
-            {
-                if (mBacktrackPoints.empty()) return false;
-				while (!mpPassedFormula->empty()) {
-					// Remove until the list is either empty or the backtrack point is hit.
-					auto it = mpPassedFormula->end();
-					--it;
-					if (it == mBacktrackPoints.back().first) break;
-					remove(it);
-				}
-				while (!mObjectives.empty()) {
-					// Remove until the list is either empty or the backtrack point is hit.
-					auto it = mObjectives.end();
-					--it;
-					if (it == mBacktrackPoints.back().second) break;
-					mObjectives.pop_back();
-				}
-                mBacktrackPoints.pop_back();
-                return true;
-            }
+            bool pop();
             
-            void pop( size_t _levels )
-            {
-                for( ; _levels > 0; --_levels )
-                    if( !pop() ) return;
-            }
+            void pop( size_t _levels );
             
             void clear()
             {
@@ -189,7 +167,26 @@ namespace smtrat
             
             void addObjective( const Poly& _objective, bool _minimize = true )
             {
-                mObjectives.push_back( std::make_pair( _objective, std::make_pair( _objective.integerValued() ? carl::freshIntegerVariable() : carl::freshRealVariable(), _minimize ) ) );
+                if( _objective.integerValued() )
+                {
+                    if( mReusableIntObjectiveVars.empty() )
+                        mObjectives.push_back( std::make_pair( _objective, std::make_pair( carl::freshIntegerVariable(), _minimize ) ) );
+                    else
+                    {
+                        mObjectives.push_back( std::make_pair( _objective, std::make_pair( mReusableIntObjectiveVars.top(), _minimize ) ) );
+                        mReusableIntObjectiveVars.pop();
+                    }
+                }
+                else
+                {   
+                    if( mReusableRealObjectiveVars.empty() )
+                        mObjectives.push_back( std::make_pair( _objective, std::make_pair( carl::freshRealVariable(), _minimize ) ) );
+                    else
+                    {
+                        mObjectives.push_back( std::make_pair( _objective, std::make_pair( mReusableRealObjectiveVars.top(), _minimize ) ) );
+                        mReusableRealObjectiveVars.pop();
+                    }
+                }   
             }
             
             void removeObjective( const Poly& _objective )

@@ -126,6 +126,7 @@ namespace smtrat
         mpPassedFormula->updateProperties();
         if( mObjectives.empty() )
             return mpPrimaryBackend->check( _full );
+        assert( mObjectives.size() == 1 );
         push(); // In this level we collect the upper bounds for the minimum of each objective function.
         for( auto obVarIter = mObjectives.begin(); ; )
         {
@@ -273,6 +274,40 @@ namespace smtrat
         return mpPassedFormula->erase( _subformula );
     }
     
+    bool Manager::pop()
+    {
+        if (mBacktrackPoints.empty()) return false;
+        while (!mpPassedFormula->empty()) {
+            // Remove until the list is either empty or the backtrack point is hit.
+            auto it = mpPassedFormula->end();
+            --it;
+            if (it == mBacktrackPoints.back().first) break;
+            remove(it);
+        }
+        int pos = (int)mObjectives.size();
+        while (!mObjectives.empty()) {
+            // Remove until the list is either empty or the backtrack point is hit.
+            if (--pos == mBacktrackPoints.back().second) break;
+            carl::Variable objVar = mObjectives.back().second.first;
+            if( objVar.getType() == carl::VariableType::VT_INT )
+                mReusableIntObjectiveVars.push( objVar );
+            else
+            {
+                assert( objVar.getType() == carl::VariableType::VT_REAL );
+                mReusableRealObjectiveVars.push( objVar );
+            }
+            mObjectives.pop_back();
+        }
+        mBacktrackPoints.pop_back();
+        return true;
+    }
+
+    void Manager::pop( size_t _levels )
+    {
+        for( ; _levels > 0; --_levels )
+            if( !pop() ) return;
+    }
+    
     void Manager::reset()
     {
         while( pop() );
@@ -363,23 +398,23 @@ namespace smtrat
             
     void Manager::printBackTrackStack( std::ostream& _out ) const
     {
-		auto btlIter = mBacktrackPoints.begin();
-		std::size_t btlCounter = 0;
-		while (btlIter != mBacktrackPoints.end() && btlIter->first == mpPassedFormula->end()) {
-			_out << "btl_" << btlCounter << ": (and ) skip" << std::endl;;
-			btlCounter++;
-			btlIter++;
-		}
-		_out << "btl_" << btlCounter << ": (and";
-		for (auto it = mpPassedFormula->begin(); it != mpPassedFormula->end(); it++) {
-			_out << " " << it->formula().toString();
-			if (btlIter != mBacktrackPoints.end() && btlIter->first == it) {
-				btlCounter++;
-				btlIter++;
-				_out << " )" << std::endl << "btl_" << btlCounter << ": (and";
-			}
-		}
-		_out << " )" << std::endl << std::endl;;
+        auto btlIter = mBacktrackPoints.begin();
+        std::size_t btlCounter = 0;
+        while (btlIter != mBacktrackPoints.end() && btlIter->first == mpPassedFormula->end()) {
+            _out << "btl_" << btlCounter << ": (and ) skip" << std::endl;;
+            btlCounter++;
+            btlIter++;
+        }
+        _out << "btl_" << btlCounter << ": (and";
+        for (auto it = mpPassedFormula->begin(); it != mpPassedFormula->end(); it++) {
+            _out << " " << it->formula().toString();
+            if (btlIter != mBacktrackPoints.end() && btlIter->first == it) {
+                btlCounter++;
+                btlIter++;
+                _out << " )" << std::endl << "btl_" << btlCounter << ": (and";
+            }
+        }
+        _out << " )" << std::endl << std::endl;;
     }
     
 #ifdef __VS
