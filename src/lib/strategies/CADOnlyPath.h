@@ -7,16 +7,15 @@
 
 namespace smtrat
 {
-	class CADOnlyEarly: public Manager
+	class CADOnlyPath: public Manager
 	{
 		public:
-			CADOnlyEarly(): Manager() {
+			CADOnlyPath(): Manager() {
 				setStrategy({
 					addBackend<SATModule<SATSettings1>>({
-						addBackend<CADModule<CADSettingsSplitEarly>>()
+						addBackend<CADModule<CADSettingsSplitPath>>()
 					})
 				});
 			}
 	};
-
 }	// namespace smtrat
