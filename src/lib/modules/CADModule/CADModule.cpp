@@ -150,7 +150,7 @@ namespace smtrat
 	 * @return SAT if consistent, UNSAT otherwise
 	 */
 	template<typename Settings>
-	Answer CADModule<Settings>::checkCore( bool /*_final*/, bool _full, bool )
+	Answer CADModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
 	{
 		SMTRAT_LOG_FUNC("smtrat.cad", _full);
 		if (!_full) {
@@ -220,7 +220,7 @@ namespace smtrat
 			assert(!carl::isInteger(r));
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Variables: " << vars);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Branching at " << vars[d] << " = " << r);
-			branchAt(vars[d], r);
+			if (_final) branchAt(vars[d], r);
 			return UNKNOWN;
 		}
 		SMTRAT_LOG_TRACE("smtrat.cad", "#Samples: " << mCAD.samples().size());
@@ -233,13 +233,14 @@ namespace smtrat
 		SMTRAT_LOG_DEBUG("smtrat.cad", "Solution point: " << mRealAlgebraicSolution);
 		mInfeasibleSubsets.clear();
 		if (Settings::integerHandling == carl::cad::IntegerHandling::SPLIT_ASSIGNMENT) {
+			std::cout << "Splitting on assignment" << std::endl;
 			// Check whether the found assignment is integer. Split on first non-integral assignment.
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
 			Rational r;
 			for (std::size_t d = 0; d < mRealAlgebraicSolution.dim(); d++) {
 				if (!validateIntegrality(vars, d)) {
 					auto r = this->mRealAlgebraicSolution[d].branchingPoint();
-					branchAt(vars[d], r);
+					if (_final) branchAt(vars[d], r);
 					return UNKNOWN;
 				}
 			}
@@ -251,7 +252,9 @@ namespace smtrat
 				std::size_t d = mRealAlgebraicSolution.dim() - dim;
 				if (!validateIntegrality(vars, dim)) {
 					// Assemble lemma
-					addLemma(FormulaT(carl::IMPLIES, {FormulaT(rReceivedFormula()), FormulaT(carl::OR, std::move(formulas))}));
+					if (_final) {
+						addLemma(FormulaT(carl::IMPLIES, {FormulaT(rReceivedFormula()), FormulaT(carl::OR, std::move(formulas))}));
+					}
 					return UNKNOWN;
 				}
 				auto r = this->mRealAlgebraicSolution[d].branchingPoint();
