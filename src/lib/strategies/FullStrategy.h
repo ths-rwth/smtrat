@@ -61,7 +61,7 @@ namespace smtrat
 						addBackend<SATModule<SATSettings1>>({
 							addBackend<ICPModule<ICPSettings1>>({
 								addBackend<VSModule<VSSettings234>>({
-									addBackend<CADModule<CADSettingsGuessAndSplit>>()
+									addBackend<CADModule<CADSettingsSplitPath>>()
 								})
 							})
 						}).condition(&conditionEvaluation8),

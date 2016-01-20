@@ -38,9 +38,9 @@ namespace smtrat
                         {
                             addBackend<VSModule<VSSettings234>>(
                             {
-                                addBackend<CADModule<CADSettingsGuessAndSplit>>()
+                                addBackend<CADModule<CADSettingsSplitPath>>()
                             }),
-                            addBackend<CADModule<CADSettingsGuessAndSplit>>()
+                            addBackend<CADModule<CADSettingsSplitPath>>()
                         })
                     })
                 })
