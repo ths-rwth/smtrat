@@ -34,24 +34,14 @@ namespace smtrat
 		static const bool dummy;
 	};
 
-	struct CADSettingsSplitEarly : CADSettingsReal
+	struct CADSettingsSplitAssignment : CADSettingsReal
 	{
-		static constexpr auto moduleName = "CADModule<SplitEarly>";
-		static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::SPLIT_EARLY;
+		static constexpr auto moduleName = "CADModule<SplitAssignment>";
+		static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::SPLIT_ASSIGNMENT;
 	};
-	struct CADSettingsSplitLazy : CADSettingsReal
+	struct CADSettingsSplitPath : CADSettingsReal
 	{
-		static constexpr auto moduleName = "CADModule<SplitLazy>";
-		static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::SPLIT_LAZY;
-	};
-	struct CADSettingsSplitSolution : CADSettingsReal
-	{
-		static constexpr auto moduleName = "CADModule<SplitSolution>";
-		static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::SPLIT_SOLUTION;
-	};
-	struct CADSettingsGuessAndSplit : CADSettingsReal
-	{
-		static constexpr auto moduleName = "CADModule<GuessAndSplit>";
-		static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::GUESS_AND_SPLIT;
+		static constexpr auto moduleName = "CADModule<SplitPath>";
+		static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::SPLIT_PATH;
 	};
 }

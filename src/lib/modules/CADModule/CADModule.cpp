@@ -197,7 +197,7 @@ namespace smtrat
 		//std::cout << mCAD.getVariables() << " = " << mRealAlgebraicSolution << std::endl;
 		if (anAnswerFound()) return ABORTED;
 		if (status == carl::cad::Answer::False) {
-			
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Conflict Graph: " << mConflictGraph);
 			cad::MISGeneration<Settings::mis_heuristic> mis;
 			mis(*this, mInfeasibleSubsets);
 			//std::cout << "Infeasible Subset: " << *mInfeasibleSubsets.begin() << std::endl;
@@ -232,43 +232,37 @@ namespace smtrat
 		SMTRAT_LOG_DEBUG("smtrat.cad", "CAD complete: " << mCAD.isComplete());
 		SMTRAT_LOG_DEBUG("smtrat.cad", "Solution point: " << mRealAlgebraicSolution);
 		mInfeasibleSubsets.clear();
-		if (Settings::integerHandling == carl::cad::IntegerHandling::SPLIT_SOLUTION) {
+		if (Settings::integerHandling == carl::cad::IntegerHandling::SPLIT_ASSIGNMENT) {
 			// Check whether the found assignment is integer. Split on first non-integral assignment.
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
-			for (std::size_t d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
-				if (checkIntegerAssignment(vars, d, true)) return UNKNOWN;
-			}
-		} else if (Settings::integerHandling == carl::cad::IntegerHandling::GUESS_AND_SPLIT) {
-			// Check whether the found assignment is integer. Guess or split.
-			const std::vector<carl::Variable>& vars = mCAD.getVariables();
-			for (std::size_t d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
-				if (checkIntegerAssignment(vars, d, false)) {
-					auto current = mRealAlgebraicSolution[d];
-					auto r = mRealAlgebraicSolution[d].branchingPoint();
-					mRealAlgebraicSolution[d] = carl::RealAlgebraicNumber<smtrat::Rational>(carl::floor(r));
-					if (checkSatisfiabilityOfAssignment()) {
-						SMTRAT_LOG_TRACE("smtrat.cad", "Could fix rational assignment " << r << " by rounding down to " << mRealAlgebraicSolution[d]);
-						continue;
-					}
-					mRealAlgebraicSolution[d] = carl::RealAlgebraicNumber<smtrat::Rational>(carl::ceil(r));
-					if (checkSatisfiabilityOfAssignment()) {
-						SMTRAT_LOG_TRACE("smtrat.cad", "Could fix rational assignment " << r << " by rounding up to " << mRealAlgebraicSolution[d]);
-						continue;
-					}
-					mRealAlgebraicSolution[d] = current;
+			Rational r;
+			for (std::size_t d = 0; d < mRealAlgebraicSolution.dim(); d++) {
+				if (!validateIntegrality(vars, d)) {
+					auto r = this->mRealAlgebraicSolution[d].branchingPoint();
 					branchAt(vars[d], r);
 					return UNKNOWN;
 				}
 			}
+		} else if (Settings::integerHandling == carl::cad::IntegerHandling::SPLIT_PATH) {
+			// Check whether the found assignment is integer. Split path to first non-integral assignment
+			const std::vector<carl::Variable>& vars = mCAD.getVariables();
+			FormulasT formulas;
+			for (std::size_t dim = mRealAlgebraicSolution.dim(); dim > 0; dim--) {
+				std::size_t d = mRealAlgebraicSolution.dim() - dim;
+				if (!validateIntegrality(vars, dim)) {
+					// Assemble lemma
+					addLemma(FormulaT(carl::IMPLIES, {FormulaT(rReceivedFormula()), FormulaT(carl::OR, std::move(formulas))}));
+					return UNKNOWN;
+				}
+				auto r = this->mRealAlgebraicSolution[d].branchingPoint();
+				Poly p = vars[d] - r;
+				formulas.emplace_back(ConstraintT(p + carl::constant_one<Rational>::get(), carl::Relation::LEQ));
+				formulas.emplace_back(ConstraintT(-p + carl::constant_one<Rational>::get(), carl::Relation::LEQ));
+			}
 		} else if (Settings::integerHandling == carl::cad::IntegerHandling::NONE) {
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
-			for (std::size_t d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
-				if (checkIntegerAssignment(vars, d, false)) return UNKNOWN;
-			}
-		} else {
-			const std::vector<carl::Variable>& vars = mCAD.getVariables();
-			for (std::size_t d = 0; d < this->mRealAlgebraicSolution.dim(); d++) {
-				checkIntegerAssignment(vars, d, false);
+			for (std::size_t d = 0; d < mRealAlgebraicSolution.dim(); d++) {
+				if (!validateIntegrality(vars, d)) return UNKNOWN;
 			}
 		}
 		assert(checkSatisfiabilityOfAssignment());
