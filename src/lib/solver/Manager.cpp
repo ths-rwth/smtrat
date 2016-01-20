@@ -125,7 +125,7 @@ namespace smtrat
         *mPrimaryBackendFoundAnswer.back() = false;
         mpPassedFormula->updateProperties();
         if( mObjectives.empty() )
-            return mpPrimaryBackend->check( _full );
+            return mpPrimaryBackend->check( true, _full );
         assert( mObjectives.size() == 1 );
         push(); // In this level we collect the upper bounds for the minimum of each objective function.
         for( auto obVarIter = mObjectives.begin(); ; )
@@ -134,7 +134,7 @@ namespace smtrat
             push(); // In this level we store the equation between the objective function and it's introduced variable.
             add( FormulaT( (obVarIter->second.second ? obVarIter->first : -(obVarIter->first)) - obVarIter->second.first, carl::Relation::EQ ) );
             mpPrimaryBackend->setObjective( obVarIter->second.first );
-            Answer result = mpPrimaryBackend->check( _full, true );
+            Answer result = mpPrimaryBackend->check( true, _full, true );
             if( result != SAT )
             {
                 pop( 2 );
@@ -183,6 +183,9 @@ namespace smtrat
         {
             assert( mObjectives.front().first == _objFct );
             const Model& curModel = model();
+            std::cout << "curModel = " << curModel << std::endl;
+            std::cout << "mObjectives.front().second.first = " << mObjectives.front().second.first << std::endl;
+            std::cout << "mObjectives = " << mObjectives << std::endl;
             auto modelIter = curModel.find( mObjectives.front().second.first );
             assert( modelIter != curModel.end() );
             if( modelIter->second.isMinusInfinity() )
