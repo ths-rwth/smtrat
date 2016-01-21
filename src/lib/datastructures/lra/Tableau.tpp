@@ -1067,22 +1067,23 @@ namespace smtrat
                                         lraVarTheta = lraVarTheta * T1( -1 );
                                     #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
                                     std::cout << "      Found basic variable with margin " << lraVarTheta << std::endl;
+                                    std::cout << "          where varForMinTheta = " << varForMinTheta << std::endl;
                                     #endif
                                     if( varForMinTheta == maxTheta || lraVarTheta <= varForMinTheta )
                                     {
                                         #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                                        std::cout << "      Found basic variable with the smaller margin " << varForMinTheta << std::endl;
+                                        std::cout << "      Found basic variable with the smaller margin " << lraVarTheta << std::endl;
                                         #endif
                                         varForMinTheta = lraVarTheta;
                                         result = varForMinIter.entryID();
                                     }
-                                    else if( !(varForMinTheta == maxTheta) )
-                                    {
-                                        #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                                        std::cout << "      Found basic variable can be used for full non-basic margin." << std::endl;
-                                        #endif
-                                        result = varForMinIter.entryID();
-                                    }
+//                                    else if( !(varForMinTheta == maxTheta) )
+//                                    {
+//                                        #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+//                                        std::cout << "      Found basic variable can be used for full non-basic margin." << std::endl;
+//                                        #endif
+//                                        result = varForMinIter.entryID();
+//                                    }
                                 }
                                 else
                                 {
@@ -1093,10 +1094,10 @@ namespace smtrat
                                     {
                                         result = varForMinIter.entryID();
                                         varForMinTheta = maxNonBasicMargin;
-                                        #ifdef LRA_NO_DIVISION
-                                        varForMinTheta *= lraVar.factor();
-                                        #endif 
-                                        varForMinTheta /= (*varForMinIter).content();
+//                                        #ifdef LRA_NO_DIVISION
+//                                        varForMinTheta *= lraVar.factor();
+//                                        #endif 
+//                                        varForMinTheta /= (*varForMinIter).content();
                                         if( varForMinTheta < T1(0) )
                                             varForMinTheta = varForMinTheta * T1( -1 );
                                     }

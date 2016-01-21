@@ -600,8 +600,8 @@ namespace smtrat
                     break;
                 }
             }
+            mTableau.deactivateBasicVar( mObjectiveLRAVar->second.first );
         }
-        mTableau.deactivateBasicVar( mObjectiveLRAVar->second.first );
         // @todo Branch if assignment does not fulfill integer domains.
         return _result;
     }
@@ -1354,8 +1354,8 @@ namespace smtrat
     {
         if( solverState() == UNSAT ) return true;
         if( !mAssignmentFullfilsNonlinearConstraints ) return true;
-        const EvalRationalMap& model = getRationalModel();
-        for( auto ass = model.begin(); ass != model.end(); ++ass )
+        const EvalRationalMap& rmodel = getRationalModel();
+        for( auto ass = rmodel.begin(); ass != rmodel.end(); ++ass )
         {
             if( ass->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass->second ) )
             {
@@ -1364,9 +1364,9 @@ namespace smtrat
         }
         for( auto iter = rReceivedFormula().begin(); iter != rReceivedFormula().end(); ++iter )
         {
-            if( !iter->formula().constraint().hasVariable( objective() ) && iter->formula().constraint().satisfiedBy( model ) != 1 )
+            if( !iter->formula().constraint().hasVariable( objective() ) && iter->formula().constraint().satisfiedBy( rmodel ) != 1 )
             {
-                assert( iter->formula().constraint().satisfiedBy( model ) == 0 );
+                assert( iter->formula().constraint().satisfiedBy( rmodel ) == 0 );
                 return false;
             }
         }
