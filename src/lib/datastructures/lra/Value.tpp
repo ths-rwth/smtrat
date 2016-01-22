@@ -133,23 +133,6 @@ namespace smtrat
         }
 
         template<class T>
-        bool Value<T>::operator >( const Value<T>& _value ) const
-        {
-            if( mMainPart > _value.mainPart() )
-            {
-                return true;
-            }
-            else if( mMainPart == _value.mainPart() )
-            {
-                if( mDeltaPart > _value.deltaPart() )
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        template<class T>
         bool Value<T>::operator <=( const Value<T>& _value ) const
         {
             bool b = false;

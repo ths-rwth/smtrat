@@ -129,13 +129,10 @@ namespace smtrat
                  * @return 
                  */
                 bool operator <( const Value<T>& _value ) const;
-                
-                /**
-                 * 
-                 * @param _value
-                 * @return 
-                 */
-                bool operator >( const Value<T>& _value ) const;
+                bool operator >( const Value<T>& _value ) const
+                {
+                    return _value < *this;
+                }
                 
                 /**
                  * 
@@ -143,6 +140,10 @@ namespace smtrat
                  * @return 
                  */
                 bool operator <=( const Value<T>& _value ) const;
+                bool operator >=( const Value<T>& _value ) const
+                {
+                    return _value <= *this;
+                }
                 
                 /**
                  * 
@@ -150,6 +151,10 @@ namespace smtrat
                  * @return 
                  */
                 bool operator ==( const Value<T>& _value ) const;
+                bool operator !=( const Value<T>& _value ) const
+                {
+                    return !(*this == _value);
+                }
                 
                 /**
                  * 
@@ -157,6 +162,10 @@ namespace smtrat
                  * @return 
                  */
                 bool operator ==( const T& _a ) const;
+                bool operator !=( const T& _a ) const
+                {
+                    return !(*this == _a);
+                }
                 
                 /**
                  * 
@@ -213,6 +222,26 @@ namespace smtrat
                 const T& deltaPart() const
                 {
                     return mDeltaPart;
+                }
+                
+                const Value<T>& abs_()
+                {
+                    if( *this < T(0) )
+                        (*this) *= T( -1 );
+                    return *this;
+                }
+                
+                Value<T> abs() const
+                {
+                    if( *this < T(0) )
+                        return (*this) * T( -1 );
+                    else
+                        return *this;
+                }
+                
+                bool isZero() const
+                {
+                    return mMainPart == T(0) && mDeltaPart == T(0);
                 }
 
                 /**
