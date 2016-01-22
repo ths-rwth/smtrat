@@ -1281,7 +1281,7 @@ namespace smtrat
         SMTRAT_LOG_INFO("smtrat.module", _initiation << "Passed formula:");
         for( auto form = mpPassedFormula->begin(); form != mpPassedFormula->end(); ++form )
         {
-			std::stringstream ss;
+            std::stringstream ss;
             ss << _initiation;
             ss << setw( 45 ) << form->formula().toString( false, 0, "", true, true, true );
             if( form->hasOrigins() )

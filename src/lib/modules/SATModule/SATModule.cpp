@@ -243,6 +243,7 @@ namespace smtrat
         {
             return;
         }
+        
         cancelUntil( 0, true );  // can we do better than this?
         if( !mReceivedFormulaPurelyPropositional )
         {
@@ -493,7 +494,7 @@ namespace smtrat
             else
             {
                 assert( result == l_True );
-                runBackends( mFullCheck, true );
+                runBackends( true, mFullCheck, true );
                 updateModel();
                 auto modelIter = mModel.find( objective() );
                 assert( modelIter != mModel.end() );
@@ -506,9 +507,11 @@ namespace smtrat
                 assert( mv.isRational() ); // @todo: how do we handle the other model value types?
                 // Add a new upper bound on the yet computed minimum
                 removeUpperBoundOnMinimal();
+                printPassedFormula();
                 FormulaT newUpperBoundOnMinimal( objectiveFunction() - mv.asRational(), carl::Relation::LESS );
                 addConstraintToInform( newUpperBoundOnMinimal );
                 mUpperBoundOnMinimal = addSubformulaToPassedFormula( newUpperBoundOnMinimal, newUpperBoundOnMinimal ).first;
+                printPassedFormula();
                 // Exclude the last theory call with a clause.
                 vec<Lit> excludeClause;
                 for( int k = 0; k < mBooleanConstraintMap.size(); ++k )
@@ -539,8 +542,6 @@ namespace smtrat
             }
         }
         
-//        std::cout << decisions << std::endl;
-//        exit(77);
         #ifdef SMTRAT_DEVOPTION_Statistics
         collectStats();
         #endif
@@ -864,26 +865,9 @@ namespace smtrat
     {
         if( mUpperBoundOnMinimal != passedFormulaEnd() )
         {
-            auto clIter = mConstraintLiteralMap.find( mUpperBoundOnMinimal->formula() );
+            FormulaT bound = mUpperBoundOnMinimal->formula();
+            auto clIter = mConstraintLiteralMap.find( bound );
             eraseSubformulaFromPassedFormula( mUpperBoundOnMinimal, true );
-            // Check whether the unlikely case occurs, that the constraint was also added due to the Boolean assignment.
-            if( clIter != mConstraintLiteralMap.end() )
-            {
-                int v = var( clIter->second.front() );
-                if( assigns[v] != l_Undef && mBooleanConstraintMap[v].first != nullptr )
-                {
-                    assert( mBooleanConstraintMap[v].second != nullptr );
-                    Abstraction& abstrA = *mBooleanConstraintMap[v].first;
-                    if( abstrA.position != rPassedFormula().end() )
-                        abstrA.position = addSubformulaToPassedFormula( abstrA.reabstraction, abstrA.origins ).first;
-                    else
-                    {
-                        Abstraction& abstrB = *mBooleanConstraintMap[v].second;
-                        if( abstrB.position != rPassedFormula().end() )
-                            abstrB.position = addSubformulaToPassedFormula( abstrB.reabstraction, abstrB.origins ).first;
-                    }
-                }
-            }
         }
     }
     
@@ -1279,6 +1263,7 @@ namespace smtrat
 //                    assert( abstr.origins == nullptr || std::find( abstr.origins->begin(), abstr.origins->end(), _origin ) == abstr.origins->end() );
                     if( !abstr.consistencyRelevant )
                     {
+                        std::cout << "WHY!!??" << std::endl;
                         addConstraintToInform( abstr.reabstraction );
                         if( (sign(constraintLiteralPair->second.front()) && assigns[abstractionVar] == l_False)
                             || (!sign(constraintLiteralPair->second.front()) && assigns[abstractionVar] == l_True) )
@@ -1437,11 +1422,6 @@ namespace smtrat
             assert( !_abstr.reabstraction.isTrue() );
             if( _abstr.position != rPassedFormula().end() )
             {
-//                std::cout << "removeOrigins of " <<  _abstr.position->formula() << ":" << std::endl;
-//                if( _abstr.origins == nullptr )
-//                    std::cout << "  nullptr" << std::endl;
-//                else
-//                    std::cout << "  " <<  *_abstr.origins << std::endl;
                 removeOrigins( _abstr.position, _abstr.origins );
                 _abstr.position = passedFormulaEnd();
                 mChangedPassedFormula = true;
@@ -1931,9 +1911,14 @@ SetWatches:
             if( abstr.position != rPassedFormula().end() )
             {
                 if( abstr.updateInfo >=0 && --abstr.updateInfo < 0 )
+                {
                     mChangedBooleans.push_back( _var );
+                }
             }
-            else if( abstr.consistencyRelevant ) abstr.updateInfo = 0;
+            else if( abstr.consistencyRelevant )
+            {
+                abstr.updateInfo = 0;
+            }
         }
 
         if( !mReceivedFormulaPurelyPropositional && Settings::formula_guided_decision_heuristic )
