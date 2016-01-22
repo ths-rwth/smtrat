@@ -159,7 +159,7 @@ return SettingsType::moduleName;
 			 *		 UNSAT,   if the received formula is not satisfiable;
 			 *		 Unknown, otherwise.
 			 */
-            Answer checkCore( bool _final = false, bool _full = true, bool _minimize = false );
+            Answer checkCore();
             void updateModel() const;
             
         protected:

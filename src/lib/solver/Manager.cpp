@@ -125,7 +125,7 @@ namespace smtrat
         *mPrimaryBackendFoundAnswer.back() = false;
         mpPassedFormula->updateProperties();
         if( mObjectives.empty() )
-            return mpPrimaryBackend->check( true, _full );
+            return mpPrimaryBackend->check( true, _full, false );
         assert( mObjectives.size() == 1 );
         push(); // In this level we collect the upper bounds for the minimum of each objective function.
         for( auto obVarIter = mObjectives.begin(); ; )

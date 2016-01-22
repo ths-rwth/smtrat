@@ -145,16 +145,14 @@ namespace smtrat
 	 * All constraints asserted (and not removed)  so far are now added to the CAD object and checked for consistency.
 	 * If the result is false, a minimal infeasible subset of the original constraint set is computed.
 	 * Otherwise a sample value is available.
-         * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT
-	 * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
 	 * @return SAT if consistent, UNSAT otherwise
 	 */
 	template<typename Settings>
-	Answer CADModule<Settings>::checkCore( bool /*_final*/, bool _full, bool )
+	Answer CADModule<Settings>::checkCore()
 	{
-		SMTRAT_LOG_FUNC("smtrat.cad", _full);
-		if (!_full) {
-			SMTRAT_LOG_WARN("smtrat.cad", "UNKNOWN due to !_full");
+		SMTRAT_LOG_FUNC("smtrat.cad", mFullCheck);
+		if (!mFullCheck) {
+			SMTRAT_LOG_WARN("smtrat.cad", "UNKNOWN due to !mFullCheck");
 			return UNKNOWN;
 		}
 		

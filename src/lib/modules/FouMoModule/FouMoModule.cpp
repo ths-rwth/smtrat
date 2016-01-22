@@ -683,7 +683,7 @@ namespace smtrat
     }
             
     template<class Settings>
-    Answer FouMoModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
+    Answer FouMoModule<Settings>::checkCore()
     {
         // Check whether a module which has been called on the same instance in parallel, has found an answer
         if( anAnswerFound() )
@@ -716,7 +716,7 @@ namespace smtrat
                     #ifdef DEBUG_FouMoModule
                     cout << "Run non-linear backends!" << endl;
                     #endif
-                    Answer ans = callBackends( _full, _minimize );
+                    Answer ans = callBackends();
                     if( ans == UNSAT )
                     {
                         getInfeasibleSubsets();
@@ -745,7 +745,7 @@ namespace smtrat
                     #ifdef DEBUG_FouMoModule
                     cout << "Run Backends!" << endl;
                     #endif
-                    Answer ans = callBackends( _full, _minimize );
+                    Answer ans = callBackends();
                     if( ans == UNSAT )
                     {
                         getInfeasibleSubsets();
@@ -775,7 +775,7 @@ namespace smtrat
                 #ifdef DEBUG_FouMoModule
                 cout << "Run Backends because Threshold is exceeded!" << endl;
                 #endif
-                return callBackends( _full, _minimize );                
+                return callBackends();                
             }
             #ifdef DEBUG_FouMoModule
             cout << "The 'best' variable is:" << best_var << endl;
@@ -1309,7 +1309,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    Answer FouMoModule<Settings>::callBackends( bool _final, bool _full, bool _minimize )
+    Answer FouMoModule<Settings>::callBackends()
     {
         if( mDom == INT )
         {
@@ -1345,7 +1345,7 @@ namespace smtrat
                 ++iter_diseq;
             }
         }        
-        Answer ans = runBackends( _final, _full, _minimize );
+        Answer ans = runBackends();
         if( ans == UNSAT )
         {
             getInfeasibleSubsets();

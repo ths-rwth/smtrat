@@ -59,7 +59,7 @@ namespace smtrat
 	}
 
 	template<class Settings>
-	Answer FPPModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
+	Answer FPPModule<Settings>::checkCore()
 	{
 		std::size_t iterations = 0;
 		Answer answer = UNKNOWN;
@@ -69,8 +69,8 @@ namespace smtrat
 			// call the preprocessing on the current formula
 			mPreprocessor.push();
 			mPreprocessor.add(formulaBeforePreprocessing);
-			answer = mPreprocessor.check(_full); // @todo: do we need to add the objective function to the preprocessors??
-			// preprocessing detects satisfiabilty or unsatisfiability
+			answer = mPreprocessor.check(mFullCheck); // @todo: do we need to add the objective function to the preprocessors??
+			// preprocessing detects satisfiability or unsatisfiability
 			if (answer != UNKNOWN) {
 				mPreprocessor.pop();
 				break;
@@ -101,7 +101,7 @@ namespace smtrat
 			SMTRAT_LOG_INFO("smtrat.fpp", "Calling backend with\n\t" << mFormulaAfterPreprocessing);
 			clearPassedFormula();
 			addSubformulaToPassedFormula(mFormulaAfterPreprocessing);
-			answer = runBackends(_final, _full, _minimize);
+			answer = runBackends();
 		}
 		// obtain an infeasible subset, if the received formula is unsatisfiable
 		if (answer == UNSAT) {

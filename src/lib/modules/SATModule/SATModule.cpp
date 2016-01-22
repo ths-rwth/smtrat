@@ -108,8 +108,6 @@ namespace smtrat
         asynch_interrupt( false ),
         mChangedPassedFormula( false ),
         mComputeAllSAT( false ),
-        mFullCheck( true ),
-        mMinimize( false ),
         mCurrentAssignmentConsistent( SAT ),
         mNumberOfFullLazyCalls( 0 ),
         mCurr_Restarts( 0 ),
@@ -378,11 +376,8 @@ namespace smtrat
     }
     
     template<class Settings>
-    Answer SATModule<Settings>::checkCore( bool, bool _full, bool _minimize )
-    {
-        mFullCheck = _full;
-        mMinimize = _minimize;
-        
+    Answer SATModule<Settings>::checkCore()
+    {   
 //        cout << "Check smt:" << endl;
 //        for( const auto& f : rReceivedFormula() )
 //            std::cout << "   " << f.formula().toString() << std::endl;
@@ -477,7 +472,7 @@ namespace smtrat
             }
             if( !Settings::stop_search_after_first_unknown )
                 unknown_excludes.clear();
-            if( !mMinimize )
+            if( !mMinimizingCheck )
                 break;
             std::vector<CRef> excludedAssignments;
             if( result == l_Undef )
@@ -675,7 +670,7 @@ namespace smtrat
         if( !mModelComputed )
         {
             clearModel();
-            if( solverState() != UNSAT || mMinimize )
+            if( solverState() != UNSAT || mMinimizingCheck )
             {
                 for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
                 {

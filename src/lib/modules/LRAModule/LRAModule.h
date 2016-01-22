@@ -83,8 +83,6 @@ namespace smtrat
             /// A flag which is set, if a supremum or infimum of a LRAModule variable has been changed.
             bool mStrongestBoundsRemoved;
             ///
-            bool mMinimize;
-            ///
             bool mOptimumComputed;
             ///
             mutable bool mRationalModelComputed;
@@ -177,14 +175,11 @@ namespace smtrat
             
             /**
              * Checks the received formula for consistency.
-             * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT.
-             * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
-             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return SAT,    if the received formula is satisfiable;
              *         UNSAT,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer checkCore( bool _final = false, bool _full = true, bool _minimize = false );
+            Answer checkCore();
             
             Answer processResult( Answer _result );
             
@@ -365,14 +360,13 @@ namespace smtrat
             void findSimpleConflicts( const LRABound& _bound );
             
             /**
-             * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT
              * @return true, if a branching occurred.
              *         false, otherwise.
              */
-            bool gomory_cut( bool _final );
+            bool gomory_cut();
             
             /**
-             * Constructs a gomory cut, if branch and bound is probably looping, otherwise branch and bound is performed.
+             * Constructs a Gomory cut, if branch and bound is probably looping, otherwise branch and bound is performed.
              * @param _lraVar The variable at which to branch.
              * @param _branchingValue The value at which to branch the variable at.
              * @return true, if a branching occurred.
@@ -381,20 +375,19 @@ namespace smtrat
             bool maybeGomoryCut( const LRAVariable* _lraVar, const Rational& _branchingValue );
             
             /**
-             * @param gc_support true, if gomory cut construction is enabled.
-             * @return true,  if a branching occured with an original variable that has to be fixed 
+             * @param gc_support true, if Gomory cut construction is enabled.
+             * @return true,  if a branching occurred with an original variable that has to be fixed 
              *                which is most infeasible.
-             *         false, if no branching occured.
+             *         false, if no branching occurred.
              */   
-            bool most_infeasible_var( bool _final, bool _gc_support );
+            bool most_infeasible_var( bool _gc_support );
             
             /**
              * Creates a branch and bound lemma.
-             * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT
              * @return true, if a branching occurred.
              *         false, otherwise.
              */
-            bool branch_and_bound( bool _final );
+            bool branch_and_bound();
             
             /**
              * Checks whether the found assignment is consistent with the tableau, hence replacing the original

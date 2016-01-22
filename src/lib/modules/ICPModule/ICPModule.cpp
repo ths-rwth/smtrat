@@ -308,7 +308,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer ICPModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
+    Answer ICPModule<Settings>::checkCore()
     {
         #ifdef ICP_MODULE_DEBUG_0
         std::cout << "##############################################################" << std::endl;
@@ -415,14 +415,14 @@ namespace smtrat
                     // create Bounds and set them, add to passedFormula
                     pushBoundsToPassedFormula();
                     // lazy call of the backends on found box
-                    Answer lazyResult = callBackends( false, _minimize );
+                    Answer lazyResult = callBackends( mFinalCheck, false, mMinimizingCheck );
                     // if it led to a result or the backends require a splitting
                     if( lazyResult != UNKNOWN || !lemmas().empty() )
                         return lazyResult;
                     // Full call of the backends, if no box has target diameter
                     bool furtherContractionOccurred = false;
                     if( Settings::just_contraction || !performSplit( mOriginalVariableIntervalContracted, furtherContractionOccurred ) )
-                        return callBackends( _full );
+                        return callBackends( mFinalCheck, mFullCheck, mMinimizingCheck );
                     if( mInvalidBox )
                     {
                         #ifdef ICP_MODULE_DEBUG_0
@@ -727,7 +727,7 @@ namespace smtrat
             std::cout << "    " << f.formula().constraint() << std::endl;
         #endif
         ++mCountBackendCalls;
-        Answer a = runBackends( _final, _full, _minimize );
+        Answer a = runBackends();
         updateLemmas();
         std::vector<Module*>::const_iterator backend = usedBackends().begin();
         while( backend != usedBackends().end() )

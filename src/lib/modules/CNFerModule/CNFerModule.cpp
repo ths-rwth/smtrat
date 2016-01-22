@@ -24,7 +24,7 @@ namespace smtrat
 
     CNFerModule::~CNFerModule(){}
 
-    Answer CNFerModule::checkCore( bool _final, bool _full, bool _minimize )
+    Answer CNFerModule::checkCore()
     {
         auto receivedSubformula = firstUncheckedReceivedSubformula();
         while( receivedSubformula != rReceivedFormula().end() )
@@ -80,7 +80,7 @@ namespace smtrat
             rPassedFormula().booleanVars( bvars );
             mpStatistics->nrOfBoolVariables() = bvars.size();
             #endif
-            Answer a = runBackends( _final, _full, _minimize );
+            Answer a = runBackends();
 
             if( a == UNSAT )
             {

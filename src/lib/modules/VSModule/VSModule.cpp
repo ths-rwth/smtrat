@@ -154,7 +154,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer VSModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
+    Answer VSModule<Settings>::checkCore()
     {
         #ifdef VS_STATISTICS
         mStepCounter = 0;
@@ -180,13 +180,13 @@ namespace smtrat
             return UNKNOWN;
         if( !(rReceivedFormula().isIntegerConstraintLiteralConjunction() || rReceivedFormula().isRealConstraintLiteralConjunction()) )
             return UNKNOWN;
-        if( !_final && !mConditionsChanged && (!_full || mLastCheckFull) )
+        if( !mFinalCheck && !mConditionsChanged && (!mFullCheck || mLastCheckFull) )
         {
             if( mInfeasibleSubsets.empty() )
             {
                 if( solverState() == SAT )
                 {
-                    if( !solutionInDomain( _final ) )
+                    if( !solutionInDomain() )
                     {
                         return UNKNOWN;
                     }
@@ -204,10 +204,10 @@ namespace smtrat
                 return UNSAT;
         }
         mConditionsChanged = false;
-        mLastCheckFull = _full;
+        mLastCheckFull = mFullCheck;
         if( rReceivedFormula().empty() )
         {
-            if( !solutionInDomain( _final ) )
+            if( !solutionInDomain() )
             {
                 return UNKNOWN;
             }
@@ -239,12 +239,12 @@ namespace smtrat
                 }
             }
         }
-        mLazyMode = !_full || Settings::try_first_lazy;
-        if( Settings::try_first_lazy && _full )
+        mLazyMode = !mFullCheck || Settings::try_first_lazy;
+        if( Settings::try_first_lazy && mFullCheck )
         {
             mLazyCheckThreshold = 1;
         }
-        else if( !_full )
+        else if( !mFullCheck )
         {
             mLazyCheckThreshold = Settings::lazy_check_threshold;
         }
@@ -354,7 +354,7 @@ namespace smtrat
                         #endif
                         if( mLazyMode && currentState->getNumberOfCurrentSubresultCombination() > mLazyCheckThreshold )
                         {
-                            if( _full )
+                            if( mFullCheck )
                             {
                                 if( currentState->cannotBeSolved( true ) )
                                 {
@@ -513,7 +513,7 @@ namespace smtrat
                                             }
                                             else // Solution.
                                             {
-                                                if( !solutionInDomain( _final ) )
+                                                if( !solutionInDomain() )
                                                 {
                                                     return UNKNOWN;
                                                 }
@@ -575,7 +575,7 @@ namespace smtrat
                                         if( (*currentState).cannotBeSolved( mLazyMode ) )
                                         {
                                             // If we need to involve another approach.
-                                            Answer result = runBackendSolvers( currentState, _final, _full, _minimize );
+                                            Answer result = runBackendSolvers( currentState );
                                             switch( result )
                                             {
                                                 case SAT:
@@ -595,7 +595,7 @@ namespace smtrat
                                                     }
                                                     else // Solution.
                                                     {
-                                                        if( !solutionInDomain( _final ) )
+                                                        if( !solutionInDomain() )
                                                         {
                                                             return UNKNOWN;
                                                         }
@@ -1570,9 +1570,9 @@ namespace smtrat
     }
     
     template<class Settings>
-    bool VSModule<Settings>::solutionInDomain( bool _final )
+    bool VSModule<Settings>::solutionInDomain()
     {
-        bool trySplitting = Settings::use_branch_and_bound && (!Settings::only_split_in_final_call || _final);
+        bool trySplitting = Settings::use_branch_and_bound && (!Settings::only_split_in_final_call || mFinalCheck);
         if( rReceivedFormula().isRealConstraintLiteralConjunction() )
             return true;
         assert( solverState() != UNSAT );
@@ -1655,7 +1655,7 @@ namespace smtrat
                         Rational evaluatedSubTerm;
                         if( subTerm.denominator().substitute( varSolutions ).isZero() )
                         {
-                            if( _final )
+                            if( mFinalCheck )
                                 splitUnequalConstraint( FormulaT( subTerm.denominator(), carl::Relation::NEQ ) );
                             return false;
                         }
@@ -1833,12 +1833,12 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer VSModule<Settings>::runBackendSolvers( State* _state, bool _final, bool _full, bool _minimize )
+    Answer VSModule<Settings>::runBackendSolvers( State* _state )
     {
         // Run the backends on the constraint of the state.
         FormulaConditionMap formulaToConditions;
         adaptPassedFormula( *_state, formulaToConditions );
-        Answer result = runBackends( _final, _full, _minimize );
+        Answer result = runBackends();
         #ifdef VS_DEBUG
         cout << "Ask backend      : ";
         printPassedFormula();

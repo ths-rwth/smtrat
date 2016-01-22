@@ -158,13 +158,10 @@ void GBModule<Settings>::handleConstraintNotToGB(ModuleInput::const_iterator _fo
 
 /**
  * A theory call to the GBModule. The exact working of this module depends on the settings in GBSettings.
- * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT
- * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
- * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
  * @return (TRUE,FALSE,UNKNOWN) dependent on the asserted constraints.
  */
 template<class Settings>
-Answer GBModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
+Answer GBModule<Settings>::checkCore()
 {
 #ifdef GB_OUTPUT
     std::cout << "GB Called" << std::endl;
@@ -365,7 +362,7 @@ Answer GBModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
     #endif
 
     // call other modules as the groebner module cannot decide satisfiability.
-    Answer ans = runBackends( _final, _full, _minimize );
+    Answer ans = runBackends();
     if( ans == UNSAT )
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
