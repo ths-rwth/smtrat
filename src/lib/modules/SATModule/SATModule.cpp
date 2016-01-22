@@ -1263,7 +1263,6 @@ namespace smtrat
 //                    assert( abstr.origins == nullptr || std::find( abstr.origins->begin(), abstr.origins->end(), _origin ) == abstr.origins->end() );
                     if( !abstr.consistencyRelevant )
                     {
-                        std::cout << "WHY!!??" << std::endl;
                         addConstraintToInform( abstr.reabstraction );
                         if( (sign(constraintLiteralPair->second.front()) && assigns[abstractionVar] == l_False)
                             || (!sign(constraintLiteralPair->second.front()) && assigns[abstractionVar] == l_True) )
