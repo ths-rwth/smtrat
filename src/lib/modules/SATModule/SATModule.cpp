@@ -904,7 +904,19 @@ namespace smtrat
                 return getLiteral( _formula, _original, everythingDecisionRelevant || _depth <= 1 );
             case carl::FormulaType::NOT:
             {
-                Lit l = _formula.isLiteral() ? getLiteral( _formula, _original, everythingDecisionRelevant || _depth <= 1 ) : neg( addClauses( _formula.subformula(), _type, nextDepth, _original, !_polarity ) );
+                Lit l = lit_Undef; 
+                if( _formula.isLiteral() )
+                {
+                    if( Settings::polarity_based_cnf_transformation && _formula.subformula().getType() == carl::FormulaType::CONSTRAINT )
+                    {
+                        const ConstraintT& cons = _formula.subformula().constraint();
+                        l = getLiteral( FormulaT( cons.lhs(), carl::invertRelation( cons.relation() ) ), _original, everythingDecisionRelevant || _depth <= 1 );
+                    }
+                    else
+                        l = getLiteral( _formula, _original, everythingDecisionRelevant || _depth <= 1 );
+                }
+                else
+                    l = neg( addClauses( _formula.subformula(), _type, nextDepth, _original, !_polarity ) );
                 if( _depth == 0 )
                 {
                     assumptions.push( l );
