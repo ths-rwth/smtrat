@@ -34,7 +34,7 @@ namespace smtrat
     Answer PModule::runBackends( bool _final, bool _full, bool _minimize )
     {
         mAppliedPreprocessing = true;
-        return Module::runBackends( _final, _full, _minimize );
+        return Module::runBackends();
     }
     
     pair<bool,FormulaT> PModule::getReceivedFormulaSimplified()

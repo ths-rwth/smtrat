@@ -125,7 +125,7 @@ namespace smtrat
         *mPrimaryBackendFoundAnswer.back() = false;
         mpPassedFormula->updateProperties();
         if( mObjectives.empty() )
-            return mpPrimaryBackend->check( true, _full );
+            return mpPrimaryBackend->check( true, _full, false );
         assert( mObjectives.size() == 1 );
         push(); // In this level we collect the upper bounds for the minimum of each objective function.
         for( auto obVarIter = mObjectives.begin(); ; )
@@ -183,9 +183,6 @@ namespace smtrat
         {
             assert( mObjectives.front().first == _objFct );
             const Model& curModel = model();
-            std::cout << "curModel = " << curModel << std::endl;
-            std::cout << "mObjectives.front().second.first = " << mObjectives.front().second.first << std::endl;
-            std::cout << "mObjectives = " << mObjectives << std::endl;
             auto modelIter = curModel.find( mObjectives.front().second.first );
             assert( modelIter != curModel.end() );
             if( modelIter->second.isMinusInfinity() )

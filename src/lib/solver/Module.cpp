@@ -56,6 +56,9 @@ namespace smtrat
         mModel(),
         mAllModels(),
         mModelComputed( false ),
+        mFinalCheck( true ),
+        mFullCheck( true ),
+        mMinimizingCheck( false ),
         mSolverState( UNKNOWN ),
 #ifdef __VS
         mBackendsFoundAnswer(new std::atomic<bool>(false)),
@@ -103,6 +106,9 @@ namespace smtrat
     {
         SMTRAT_LOG_INFO("smtrat.module", __func__  << (_full ? " full" : " lazy" ) << " with module " << moduleName() << " (" << mId << ")");
         print("\t");
+        mFinalCheck = _final;
+        mFullCheck = _full;
+        mMinimizingCheck = _minimize;
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         startCheckTimer();
         ++(mNrConsistencyChecks);
@@ -121,7 +127,7 @@ namespace smtrat
             #endif
             return foundAnswer( SAT );
         }
-        Answer result = checkCore( _final, _full, _minimize );
+        Answer result = checkCore();
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         stopCheckTimer();
         #endif
@@ -222,7 +228,7 @@ namespace smtrat
             mSolverState = UNKNOWN;
     }
 
-    Answer Module::checkCore( bool _final, bool _full, bool _minimize )
+    Answer Module::checkCore()
     {
         if ( !mInfeasibleSubsets.empty() )
             return UNSAT;
@@ -245,7 +251,7 @@ namespace smtrat
         return SAT;
         #else
         // Run the backends on the passed formula and return its answer.
-        Answer a = runBackends( _final, _full, _minimize );
+        Answer a = runBackends();
         if( a == UNSAT )
         {
             getInfeasibleSubsets();
@@ -1281,7 +1287,7 @@ namespace smtrat
         SMTRAT_LOG_INFO("smtrat.module", _initiation << "Passed formula:");
         for( auto form = mpPassedFormula->begin(); form != mpPassedFormula->end(); ++form )
         {
-			std::stringstream ss;
+            std::stringstream ss;
             ss << _initiation;
             ss << setw( 45 ) << form->formula().toString( false, 0, "", true, true, true );
             if( form->hasOrigins() )

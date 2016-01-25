@@ -39,7 +39,7 @@ namespace smtrat
         /**
          * 
          */
-        static constexpr bool use_icp = true;
+        static constexpr bool use_icp = false;
     };
     
     struct IncWidthSettings2 : IncWidthSettings1

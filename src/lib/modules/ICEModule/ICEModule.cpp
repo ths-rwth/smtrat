@@ -47,13 +47,13 @@ namespace smtrat
 	}
 	
 	template<class Settings>
-	Answer ICEModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
+	Answer ICEModule<Settings>::checkCore()
 	{
 		SMTRAT_LOG_DEBUG("smtrat.ice", "Obtained the following bounds: " << std::endl << mBounds);
 		Answer res = processConstraints();
 		if (res == UNSAT) return UNSAT;
 		
-		res = runBackends(_final,_full,_minimize);
+		res = runBackends();
 		if (res == UNSAT) getInfeasibleSubsets();
 		return res;
 	}

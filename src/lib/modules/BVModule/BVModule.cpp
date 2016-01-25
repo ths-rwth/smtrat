@@ -166,7 +166,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer BVModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
+    Answer BVModule<Settings>::checkCore()
     {
         if( Settings::incremental_flattening )
         {
@@ -195,7 +195,7 @@ namespace smtrat
                 #ifdef DEBUG_BVMODULE
                 std::cout << std::endl << "Run backends" << std::endl;
                 #endif
-                Answer backendAnswer = runBackends( _final, _full, _minimize );
+                Answer backendAnswer = runBackends();
                 #ifdef DEBUG_BVMODULE
                 std::cout << " --> " << ANSWER_TO_STRING(backendAnswer) << std::endl << std::endl;
                 #endif
@@ -276,7 +276,7 @@ namespace smtrat
                 ++receivedSubformula;
             }
 
-            Answer backendAnswer = runBackends( _final, _full, _minimize );
+            Answer backendAnswer = runBackends();
             if(backendAnswer == UNSAT)
             {
                 getInfeasibleSubsets();

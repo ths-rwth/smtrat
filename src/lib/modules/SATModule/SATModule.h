@@ -449,10 +449,6 @@ namespace smtrat
 			/// A flag, which is set to true, if all satisfying assignments should be computed.
 			bool mComputeAllSAT;
             ///
-            bool mFullCheck;
-            ///
-            bool mMinimize;
-            ///
             bool mFullAssignmentCheckedForConsistency;
             /**
              * Stores gained information about the current assignment's consistency. If we know from the last consistency check, whether the
@@ -573,14 +569,11 @@ namespace smtrat
             
             /**
              * Checks the received formula for consistency.
-             * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT.
-             * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
-             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return SAT,    if the received formula is satisfiable;
              *         UNSAT,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer checkCore( bool _final = false, bool _full = true, bool _minimize = false );
+            Answer checkCore();
             
             /**
              * Removes everything related to the given sub-formula of the received formula.

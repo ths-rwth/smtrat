@@ -170,7 +170,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer IncWidthModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
+    Answer IncWidthModule<Settings>::checkCore()
     {
         #ifdef DEBUG_INC_WIDTH_MODULE
         std::cout << "Check of IncWidthModule:" << std::endl;
@@ -430,7 +430,7 @@ namespace smtrat
             #ifdef DEBUG_INC_WIDTH_MODULE
             std::cout << " to " << mHalfOfCurrentWidth << std::endl;
             #endif
-            Answer ans = runBackends( _final, _full, _minimize );
+            Answer ans = runBackends();
             #ifdef DEBUG_INC_WIDTH_MODULE
             std::cout << "Calling backends on:" << std::endl;
             for( const auto& f : rPassedFormula() ) std::cout << "   " << f.formula() << std::endl;
@@ -530,7 +530,7 @@ namespace smtrat
             for( const auto& rformula : rReceivedFormula() )
                 addToICP( rformula.formula() );
         }
-        Answer ans = runBackends( _final, _full, _minimize );
+        Answer ans = runBackends();
         #ifdef DEBUG_INC_WIDTH_MODULE
         std::cout << "Final call of backends results in " << ANSWER_TO_STRING(ans) << std::endl;
         std::cout << "Calling backends on:" << std::endl;

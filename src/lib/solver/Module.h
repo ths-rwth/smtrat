@@ -138,6 +138,12 @@ namespace smtrat
 			mutable std::vector<Model> mAllModels;
             /// True, if the model has already been computed.
             mutable bool mModelComputed;
+            /// true, if the check procedure should perform a final check which especially means not to postpone splitting decisions
+            bool mFinalCheck;
+            /// false, if this module should avoid too expensive procedures and rather return unknown instead.
+            bool mFullCheck;
+            /// true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
+            bool mMinimizingCheck;
 
         private:
             /// States whether the received formula is known to be satisfiable or unsatisfiable otherwise it is set to unknown.
@@ -694,14 +700,11 @@ namespace smtrat
              * the satisfiability check of the conjunction of the so far received formulas, which does
              * actually nothing but passing the problem to its backends. This implementation is only used
              * internally and must be overwritten by any derived module.
-             * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT
-             * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
-             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            virtual Answer checkCore( bool _final = false, bool _full = true, bool _minimize = false );
+            virtual Answer checkCore();
             
             /**
              * Removes everything related to the given sub-formula of the received formula. However,
@@ -983,7 +986,11 @@ namespace smtrat
              *          False,   if the passed formula is inconsistent;
              *          Unknown, otherwise.
              */
-            Answer runBackends( bool _final = false, bool _full = true, bool _minimize = false );
+            Answer runBackends( bool _final, bool _full, bool _minimize );
+            Answer runBackends()
+            {
+                return runBackends( mFinalCheck, mFullCheck, mMinimizingCheck );
+            }
             
             /**
              * Removes everything related to the sub-formula to remove from the passed formula in the backends of this module.

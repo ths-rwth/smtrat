@@ -11,6 +11,7 @@
 #include "TableauSettings.h"
 
 //#define DEBUG_METHODS_TABLEAU
+//#define DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
 
 namespace smtrat
 {
@@ -909,8 +910,6 @@ namespace smtrat
                 return bestResult;
             }
         }
-        
-//        #define DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
 
         template<class Settings, typename T1, typename T2>
         std::pair<EntryID,bool> Tableau<Settings,T1,T2>::optimizeIndependentNonbasics( const Variable<T1, T2>& _objective )
@@ -963,7 +962,7 @@ namespace smtrat
             }
             return std::make_pair( firstColumnToCheck, firstColumnToCheck != LAST_ENTRY_ID );
         }
-
+        
         template<class Settings, typename T1, typename T2>
         std::pair<EntryID,bool> Tableau<Settings,T1,T2>::nextPivotingElementForOptimizing( const Variable<T1, T2>& _objective )
         {
@@ -978,184 +977,168 @@ namespace smtrat
             std::pair<EntryID,bool> ret = optimizeIndependentNonbasics( _objective );
             if( ret.first == LAST_ENTRY_ID )
                 return ret;
-            Value<T1> maxTheta = Value<T1>(T1(-1));
-            assert( ret.first != LAST_ENTRY_ID );
             Iterator objectiveIter = Iterator( ret.first, mpEntries );
-            Value<T1> optimizationRange = (_objective.infimum().isInfinite() ? maxTheta : (_objective.assignment()-_objective.infimum().limit()));
-            if( optimizationRange == T1( 0 ) )
-                return std::make_pair( LAST_ENTRY_ID, false );
-            (*mpTheta) = T1( 0 );
-            EntryID bestResult = LAST_ENTRY_ID;
+            assert( _objective.infimum().isInfinite() );
+            // Default value for infinity.
+            Value<T1> infinityValue = Value<T1>(T1(-1));
+            // The best entry to pivot at to achieve the best improvement (bestImprovement) on the objective function.
+            EntryID bestPivotingEntry = LAST_ENTRY_ID;
+            Value<T1> bestImprovement = Value<T1>(T1(0));
+            // Go through all columns of the objective functions row.
             while( true )
             {
-                const Variable<T1, T2>& varForMinimizaton = *(*objectiveIter).columnVar();
-                #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                std::cout << "Check the non-basic variable ";
-                varForMinimizaton.print();
-                std::cout << std::endl;
-                #endif
+                const Variable<T1, T2>& columnVar = *(*objectiveIter).columnVar();
                 #ifdef LRA_NO_DIVISION
-                bool increaseVar = ((*objectiveIter).content() < 0 && _objective.factor() > 0) || ((*objectiveIter).content() > 0 && _objective.factor() < 0);
+                bool increaseColumnVar = ((*objectiveIter).content() < 0 && _objective.factor() > 0) || ((*objectiveIter).content() > 0 && _objective.factor() < 0);
                 #else
-                bool increaseVar = (*objectiveIter).content() < 0;
+                bool increaseColumnVar = (*objectiveIter).content() < 0;
                 #endif
-                Value<T1> maxOptimizationValue = optimizationRange;
-                if( !(maxOptimizationValue == maxTheta) )
-                {
-                    #ifdef LRA_NO_DIVISION
-                    maxOptimizationValue *= _objective.factor();
-                    #endif 
-                    maxOptimizationValue /= (*objectiveIter).content();
-                    if( maxOptimizationValue < T1(0) )
-                        maxOptimizationValue = maxOptimizationValue * T1( -1 );
-                }
                 #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                std::cout << "   " << (increaseVar ? "Increase" : "Decrease") << " non-basic variable's assignment." << std::endl;
-                if( maxOptimizationValue == maxTheta )
-                    std::cout << "   No limit on change of assignment of objective function." << std::endl;
-                else
-                    std::cout << "   Maximally allowed change on the assignment of the objective function: " << maxOptimizationValue << std::endl;
+                std::cout << "Check the non-basic variable "; columnVar.print(); std::cout << std::endl;
+                std::cout << "   " << (increaseColumnVar ? "Increase" : "Decrease") << " non-basic variable's assignment." << std::endl;
                 #endif
-                if( (increaseVar && varForMinimizaton.supremum() > varForMinimizaton.assignment()) || (!increaseVar && varForMinimizaton.infimum() < varForMinimizaton.assignment()) )
+                // The margin of the column variable according to its bounds (-1 if it is infinite)
+                Value<T1> columnVarMargin = increaseColumnVar ? 
+                        (columnVar.supremum().isInfinite() ? infinityValue : (columnVar.supremum().limit() - columnVar.assignment())) :
+                        (columnVar.infimum().isInfinite() ? infinityValue : (columnVar.assignment() - columnVar.infimum().limit()));
+                if( !columnVarMargin.isZero() )
                 {
-                    Value<T1> maxNonBasicMargin = increaseVar ? 
-                        (varForMinimizaton.supremum().isInfinite() ? maxTheta : (varForMinimizaton.supremum().limit() - varForMinimizaton.assignment())) :
-                        (varForMinimizaton.infimum().isInfinite() ? maxTheta : (varForMinimizaton.assignment() - varForMinimizaton.infimum().limit()));
+                    // Calculate the change we minimally need on the column variable in order to improve the objective 
+                    // more than with the currently best found pivoting entry.
+                    Value<T1> minNeededColumnVarChange = bestImprovement;
+                    assert( bestImprovement >= T1(0) );
+                    #ifdef LRA_NO_DIVISION
+                    minNeededColumnVarChange *= _objective.factor();
+                    #endif 
+                    minNeededColumnVarChange /= (*objectiveIter).content();
+                    minNeededColumnVarChange.abs_();
                     #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                    if( maxNonBasicMargin == maxTheta )
-                        std::cout << "   No limit on change of assignment of non-basic variable." << std::endl;
-                    else
-                        std::cout << "   Maximally allowed change on non-basic variable: " << maxNonBasicMargin << std::endl;
+                    std::cout << "   We need more change on non-basic variable than: " << minNeededColumnVarChange << std::endl;
                     #endif
-                    if( !(maxOptimizationValue == maxTheta) && (maxNonBasicMargin == maxTheta || maxNonBasicMargin > maxOptimizationValue) )
+                    // This column variable allows more improvement than we could gain so far.
+                    if( columnVarMargin == infinityValue || columnVarMargin > minNeededColumnVarChange )
                     {
-                        maxNonBasicMargin = maxOptimizationValue;
-                    }
-                    Value<T1> varForMinTheta = maxNonBasicMargin;
-                    EntryID result = LAST_ENTRY_ID;
-                    Iterator varForMinIter = Iterator( varForMinimizaton.startEntry(), mpEntries );
-                    assert( varForMinIter.vEnd( true ) ); // Is the lowest row.
-                    while( true )
-                    {
-                        Variable<T1, T2>& lraVar = *((*varForMinIter).rowVar());
-                        if( lraVar != _objective )
+                        // Search the value, for which we change this column variable without violating any bound of the row variables in it's column.
+                        Value<T1> minColumnVarChange = infinityValue;
+                        EntryID criticalColumnEntry = LAST_ENTRY_ID;
+                        Iterator columnIter = Iterator( columnVar.startEntry(), mpEntries );
+                        assert( columnIter.vEnd( true ) ); // Is the lowest row.
+                        assert( !columnIter.vEnd( false ) ); // There should be at least one more row containing this column variable.
+                        // Skip the objective function's row.
+                        columnIter.vMove( false );
+                        while( true )
                         {
-                            #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                            std::cout << "      Check the basic variable ";
-                            lraVar.print();
-                            std::cout << std::endl;
-                            #endif
+                            Variable<T1, T2>& rowVar = *((*columnIter).rowVar());
+                            assert( rowVar != _objective );
                             #ifdef LRA_NO_DIVISION
-                            bool entryNegative = ((*varForMinIter).content() < 0 && lraVar.factor() > 0) || ((*varForMinIter).content() > 0 && lraVar.factor() < 0);
+                            bool entryNegative = ((*columnIter).content() < 0 && rowVar.factor() > 0) || ((*columnIter).content() > 0 && rowVar.factor() < 0);
                             #else
-                            bool entryNegative = (*varForMinIter).content() < 0;
+                            bool entryNegative = (*columnIter).content() < 0;
                             #endif
                             #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                            std::cout << "      " << (increaseVar != entryNegative ? "Increase" : "Decrease") << " basic variable's assignment." << std::endl;
+                            std::cout << "      Check the basic variable "; rowVar.print(); std::cout << std::endl;
+                            std::cout << "         " << (increaseColumnVar != entryNegative ? "Increase" : "Decrease") << " basic variable's assignment." << std::endl;
                             #endif
-                            if( (increaseVar == entryNegative && lraVar.infimum() < lraVar.assignment())
-                             || (increaseVar != entryNegative && lraVar.supremum() > lraVar.assignment()))
+                            Value<T1> changeOnColumnVar = (increaseColumnVar == entryNegative) ? 
+                                (rowVar.infimum().isInfinite() ? infinityValue : rowVar.assignment() - rowVar.infimum().limit()) : 
+                                (rowVar.supremum().isInfinite() ? infinityValue : rowVar.supremum().limit() - rowVar.assignment());
+                            if( changeOnColumnVar == infinityValue )
                             {
-                                if( (increaseVar == entryNegative && !lraVar.infimum().isInfinite()) || (increaseVar != entryNegative && !lraVar.supremum().isInfinite()) )
+                                // If this is the first entry to be checked, take it as currently most critical entry (which has actually no constraint).
+                                if( criticalColumnEntry == LAST_ENTRY_ID )
                                 {
-                                    Value<T1> lraVarTheta = (increaseVar == entryNegative) ? (lraVar.assignment() - lraVar.infimum().limit()) : (lraVar.supremum().limit() - lraVar.assignment());
-                                    #ifdef LRA_NO_DIVISION
-                                    lraVarTheta *= lraVar.factor();
-                                    #endif 
-                                    lraVarTheta /= (*varForMinIter).content();
-                                    if( lraVarTheta < T1(0) )
-                                        lraVarTheta = lraVarTheta * T1( -1 );
                                     #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                                    std::cout << "      Found basic variable with margin " << lraVarTheta << std::endl;
+                                    std::cout << "         Take basic variable allowing infinite change." << std::endl;
                                     #endif
-                                    if( varForMinTheta == maxTheta || lraVarTheta <= varForMinTheta )
+                                    criticalColumnEntry = columnIter.entryID();
+                                }
+                            }
+                            else if( changeOnColumnVar == T1(0) )
+                            {
+                                // No change allowed making this column variable not suitable at all.
+                                #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                                std::cout << "   The non-basic variable has no margin." << std::endl;
+                                #endif
+                                break;
+                            }
+                            else
+                            {
+                                #ifdef LRA_NO_DIVISION
+                                changeOnColumnVar *= rowVar.factor();
+                                #endif 
+                                changeOnColumnVar /= (*columnIter).content();
+                                changeOnColumnVar.abs_();
+                                if( columnVarMargin != infinityValue && changeOnColumnVar > columnVarMargin )
+                                    changeOnColumnVar = columnVarMargin;
+                                #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                                std::cout << "         Possible change on non-basic variable: " << changeOnColumnVar << std::endl;
+                                #endif
+                                if( changeOnColumnVar > minNeededColumnVarChange )
+                                {
+                                    if( minColumnVarChange == infinityValue || changeOnColumnVar < minColumnVarChange )
                                     {
+                                        // Found a row which allows less change on the column variable.
                                         #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                                        std::cout << "      Found basic variable with the smaller margin " << varForMinTheta << std::endl;
+                                        std::cout << "         Take basic variable with stricter margin." << std::endl;
                                         #endif
-                                        varForMinTheta = lraVarTheta;
-                                        result = varForMinIter.entryID();
-                                    }
-                                    else if( !(varForMinTheta == maxTheta) )
-                                    {
-                                        #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                                        std::cout << "      Found basic variable can be used for full non-basic margin." << std::endl;
-                                        #endif
-                                        result = varForMinIter.entryID();
+                                        minColumnVarChange = changeOnColumnVar;
+                                        criticalColumnEntry = columnIter.entryID();
                                     }
                                 }
                                 else
                                 {
+                                    // This column cannot improve the best improvement found yet .. go to the next column.
                                     #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                                    std::cout << "      Basic variable has infinite margin." << std::endl;
+                                    std::cout << "   The non-basic variable cannot improve the best found one." << std::endl;
                                     #endif
-                                    if( !(maxNonBasicMargin == maxTheta) )
+                                    break;
+                                }
+                            }
+                            if( columnIter.vEnd( false ) )
+                            {
+                                // All rows are inspected.
+                                assert( criticalColumnEntry != LAST_ENTRY_ID );
+                                if( minColumnVarChange == infinityValue )
+                                {
+                                    // No row variable constraints the column variable in the desired direction.
+                                    if( columnVarMargin == infinityValue )
                                     {
-                                        result = varForMinIter.entryID();
-                                        varForMinTheta = maxNonBasicMargin;
-                                        #ifdef LRA_NO_DIVISION
-                                        varForMinTheta *= lraVar.factor();
-                                        #endif 
-                                        varForMinTheta /= (*varForMinIter).content();
-                                        if( varForMinTheta < T1(0) )
-                                            varForMinTheta = varForMinTheta * T1( -1 );
+                                        // Infinite change possible, which cannot be improved.
+                                        #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                                        std::cout << "   Take this non-basic variable having no limits." << std::endl;
+                                        #endif
+                                        return std::make_pair( LAST_ENTRY_ID, true );
+                                    }
+                                    else
+                                    {
+                                        // We can use the whole margin of the column variable.
+                                        #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                                        std::cout << "   Use the whole margin of the non-basic variable." << std::endl;
+                                        #endif
+                                        minColumnVarChange = columnVarMargin;
                                     }
                                 }
-                            }
-                            else
-                            {
-                                #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                                std::cout << "      Basic variable has no margin. -> Check next non-basic variable." << std::endl;
+                                assert( minColumnVarChange > minNeededColumnVarChange );
+                                // Calculate improvement on objective.
+                                minColumnVarChange *= (*objectiveIter).content();
+                                #ifdef LRA_NO_DIVISION
+                                minColumnVarChange /= _objective.factor();
                                 #endif
+                                minColumnVarChange.abs_();
+                                #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                                std::cout << "   Take this non-basic variable improving the objective by " << minColumnVarChange << std::endl;
+                                #endif
+                                // Set it as the new best improvement on objective.
+                                assert( minColumnVarChange > bestImprovement );
+                                bestImprovement = minColumnVarChange;
+                                // Take the corresponding entry as the best for pivoting.
+                                bestPivotingEntry = criticalColumnEntry;
                                 break;
                             }
-                        }
-                        if( varForMinIter.vEnd( false ) )
-                        {
-                            if( result != LAST_ENTRY_ID )
-                            {
-                                bool maxOptimizationReached = !(maxOptimizationValue == maxTheta) && maxOptimizationValue <= varForMinTheta;
-                                if( maxOptimizationReached )
-                                {
-                                    varForMinTheta = maxOptimizationValue;
-                                    #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                                    std::cout << "   Optimization potential of non-basic variable exceeds possible margin of the objective function." << std::endl;
-                                    #endif
-                                }
-                                if( maxOptimizationReached || bestResult == LAST_ENTRY_ID || (*mpTheta > T1(0) && *mpTheta <= varForMinTheta ) || (*mpTheta < T1(0) && (*mpTheta * T1( -1 )) <= varForMinTheta) )
-                                {
-                                    (*mpTheta) = increaseVar ? varForMinTheta : (varForMinTheta * T1( -1 ));
-                                    bestResult = result;
-                                    #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                                    std::cout << "   Found a non-basic variable with the better margin for optimization." << std::endl;
-                                    std::cout << "   Theta is now: " << (*mpTheta) << std::endl;
-                                    #endif
-                                }
-                                if( maxOptimizationReached )
-                                {
-                                    #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                                    std::cout << "Return as possible margin of the objective function is reached." << std::endl;
-                                    #endif
-                                    assert( !(*mpTheta == T1(0)) );
-                                    return std::make_pair( bestResult, true );
-                                }
-                            }
                             else
                             {
-                                #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                                std::cout << "   Non-basic variable has infinite margin." << std::endl;
-                                #endif
-                                assert( maxOptimizationValue == maxTheta );
-                                #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                                std::cout << "No limits on objective function. -> Infinite margin." << std::endl;
-                                #endif
-                                return std::make_pair( LAST_ENTRY_ID, true );
+                                columnIter.vMove( false );
                             }
-                            break;
-                        }
-                        else
-                        {
-                            varForMinIter.vMove( false );
                         }
                     }
                 }
@@ -1166,17 +1149,31 @@ namespace smtrat
                     objectiveIter.hMove( false );
                 }
             }
-            if( bestResult != LAST_ENTRY_ID )
+            if( bestPivotingEntry == LAST_ENTRY_ID )
             {
+                // We could not find any suitable column variable for pivoting -> Minimum reached.
                 #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                std::cout << "Optimization margin: " << (*mpTheta) << std::endl;
+                std::cout << "No non-basic variable is suitable." << std::endl;
                 #endif
-                return std::make_pair( bestResult, true );
+                return std::make_pair( LAST_ENTRY_ID, false );
             }
-            #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-            std::cout << "No variable suits for optimizing." << std::endl;
+            assert( bestImprovement != infinityValue );
+            assert( bestImprovement > T1(0) );
+            // Calculate theta (how much do we change the assignment of the column/non-basic variable when pivoting).
+            *mpTheta = bestImprovement * T1(-1); // Change on objective (negative as we are minimizing).
+            const Variable<T1, T2>& bestColumnVar = *((*mpEntries)[bestPivotingEntry].columnVar());
+            Iterator columnIter = Iterator( bestColumnVar.startEntry(), mpEntries );
+            assert( *(*columnIter).rowVar() == _objective );
+            #ifdef LRA_NO_DIVISION
+            *mpTheta *= _objective.factor();
             #endif
-            return std::make_pair( LAST_ENTRY_ID, false );
+            *mpTheta /= (*columnIter).content();
+            #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+            std::cout << "Found the non-basic variable " << (*mpEntries)[bestPivotingEntry].columnVar()->expression() << " optimizing the objective by " << bestImprovement;
+            std::cout << " if we pivot it with " << (*mpEntries)[bestPivotingEntry].rowVar()->expression();
+            std::cout << " where theta (change on non-basic variable) is " << *mpTheta << "." << std::endl;
+            #endif
+            return std::make_pair( bestPivotingEntry, true );
         }
         
         template<class Settings, typename T1, typename T2>
@@ -1592,7 +1589,7 @@ namespace smtrat
         {
             // Find all columns having "a nonzero entry in the pivoting row"**, update this entry and store it.
             // First the column with ** left to the pivoting column until the leftmost column with **.
-            std::vector<Iterator> pivotingRowLeftSide = std::vector<Iterator>();
+            std::vector<Iterator> pivotingRowLeftSide;
             TableauEntry<T1,T2>& pivotEntry = (*mpEntries)[_pivotingElement];
             T2& pivotContent = pivotEntry.rContent();
             Iterator iterTemp = Iterator( _pivotingElement, mpEntries );

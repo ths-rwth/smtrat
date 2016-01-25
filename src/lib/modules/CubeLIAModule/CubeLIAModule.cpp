@@ -155,7 +155,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer CubeLIAModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
+    Answer CubeLIAModule<Settings>::checkCore()
     {
         #ifdef DEBUG_CUBELIAMODULE
         print();
@@ -169,7 +169,7 @@ namespace smtrat
             #endif
             mLRA.clearLemmas();
             mLRAFormula->updateProperties();
-            ans = mLRA.check( _full, _minimize );
+            ans = mLRA.check( false, mFullCheck, mMinimizingCheck );
             switch( ans )
             {
                 case SAT:
@@ -234,7 +234,7 @@ namespace smtrat
         std::cout << "Call Backends:" << std::endl;
         #endif
         // Run backends on received formula
-        ans = runBackends( _final, _full, _minimize );
+        ans = runBackends();
         if( ans == UNSAT )
             getInfeasibleSubsets();
         else if( ans == SAT )

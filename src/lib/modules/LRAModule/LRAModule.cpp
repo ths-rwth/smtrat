@@ -22,7 +22,6 @@ namespace smtrat
         Module( _formula, _conditionals, _manager ),
         mInitialized( false ),
         mAssignmentFullfilsNonlinearConstraints( false ),
-        mMinimize( false ),
         mOptimumComputed( false),
         mRationalModelComputed( false ),
         mCheckedWithBackends( false ),
@@ -310,7 +309,7 @@ namespace smtrat
                                     mBoundCandidatesToPass.push_back( (*bound)->pVariable()->pInfimum() );
                                 }
 
-                                if( !mMinimize && !(*bound)->variable().hasBound() && (*bound)->variable().isBasic() && !(*bound)->variable().isOriginal() )
+                                if( !mMinimizingCheck && !(*bound)->variable().hasBound() && (*bound)->variable().isBasic() && !(*bound)->variable().isOriginal() )
                                 {
                                     mTableau.deactivateBasicVar( (*bound)->pVariable() );
                                 }
@@ -348,14 +347,13 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer LRAModule<Settings>::checkCore( bool _final, bool _full, bool _minimize )
+    Answer LRAModule<Settings>::checkCore()
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "LRAModule::check with _minimize = " << _minimize << endl;
+        cout << "LRAModule::check with mMinimizingCheck = " << mMinimizingCheck << endl;
         for( const auto& f : rReceivedFormula() )
             std::cout << f.formula().toString() << std::endl;
         #endif
-        mMinimize = _minimize;
         bool containsIntegerValuedVariables = true;
         if( !rReceivedFormula().isConstraintConjunction() )
             return processResult( UNKNOWN );
@@ -396,9 +394,9 @@ namespace smtrat
                     {
                         if( containsIntegerValuedVariables )
                         {
-                            if( Settings::use_gomory_cuts && gomory_cut( _final ) )
+                            if( Settings::use_gomory_cuts && gomory_cut() )
                                 return processResult( UNKNOWN );
-                            if( !Settings::use_gomory_cuts && branch_and_bound( _final ) )
+                            if( !Settings::use_gomory_cuts && branch_and_bound() )
                                 return processResult( UNKNOWN );
                         }
                         return processResult( SAT );
@@ -408,7 +406,7 @@ namespace smtrat
                     {
                         mCheckedWithBackends = true;
                         adaptPassedFormula();
-                        Answer a = runBackends( _final, _full, _minimize );
+                        Answer a = runBackends();
                         if( a == UNSAT )
                             getInfeasibleSubsets();
                         return processResult( a );
@@ -458,7 +456,7 @@ namespace smtrat
             mpStatistics->setTableauSize( mTableau.rows().size()*mTableau.columns().size() );
         }
         #endif
-        if( mMinimize )
+        if( mMinimizingCheck )
             _result = optimize( _result );
         if( _result != UNKNOWN )
         {
@@ -600,8 +598,8 @@ namespace smtrat
                     break;
                 }
             }
+            mTableau.deactivateBasicVar( mObjectiveLRAVar->second.first );
         }
-        mTableau.deactivateBasicVar( mObjectiveLRAVar->second.first );
         // @todo Branch if assignment does not fulfill integer domains.
         return _result;
     }
@@ -1215,7 +1213,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    bool LRAModule<Settings>::gomory_cut( bool _final )
+    bool LRAModule<Settings>::gomory_cut()
     {
         const EvalRationalMap& rMap_ = getRationalModel();
         bool all_int = true;
@@ -1230,7 +1228,7 @@ namespace smtrat
                 const Rational& ass = found_ex->second;
                 if( !carl::isInteger( ass ) )
                 {
-                    if( !_final )
+                    if( !mFinalCheck )
                         return true;
                     all_int = false;
                     const Poly::PolyType* gomory_poly = mTableau.gomoryCut(ass, basicVar);
@@ -1269,9 +1267,9 @@ namespace smtrat
     }
     
     template<class Settings>
-    bool LRAModule<Settings>::branch_and_bound( bool _final )
+    bool LRAModule<Settings>::branch_and_bound()
     {
-        return most_infeasible_var( _final, Settings::support_bb_with_gc );
+        return most_infeasible_var( Settings::support_bb_with_gc );
     }
     
     template<class Settings>
@@ -1279,14 +1277,14 @@ namespace smtrat
     {
         if( probablyLooping( _lraVar->expression(), _branchingValue ) )
         {
-            return gomory_cut( true );
+            return gomory_cut();
         }
         branchAt( _lraVar->expression(), true, _branchingValue );
         return true;
     }
     
     template<class Settings>
-    bool LRAModule<Settings>::most_infeasible_var( bool _final, bool _gc_support ) 
+    bool LRAModule<Settings>::most_infeasible_var( bool _gc_support ) 
     {
         const EvalRationalMap& _rMap = getRationalModel();
         auto branch_var = mTableau.originalVars().begin();
@@ -1300,7 +1298,7 @@ namespace smtrat
             const Rational& ass = map_iterator->second; 
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
-                if( _final )
+                if( mFinalCheck )
                 {
                     Rational curr_diff = carl::abs( (ass - carl::floor(ass)) - ONE_RATIONAL/Rational(2) );
                     if( curr_diff < diff )
@@ -1354,8 +1352,8 @@ namespace smtrat
     {
         if( solverState() == UNSAT ) return true;
         if( !mAssignmentFullfilsNonlinearConstraints ) return true;
-        const EvalRationalMap& model = getRationalModel();
-        for( auto ass = model.begin(); ass != model.end(); ++ass )
+        const EvalRationalMap& rmodel = getRationalModel();
+        for( auto ass = rmodel.begin(); ass != rmodel.end(); ++ass )
         {
             if( ass->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass->second ) )
             {
@@ -1364,9 +1362,9 @@ namespace smtrat
         }
         for( auto iter = rReceivedFormula().begin(); iter != rReceivedFormula().end(); ++iter )
         {
-            if( !iter->formula().constraint().hasVariable( objective() ) && iter->formula().constraint().satisfiedBy( model ) != 1 )
+            if( !iter->formula().constraint().hasVariable( objective() ) && iter->formula().constraint().satisfiedBy( rmodel ) != 1 )
             {
-                assert( iter->formula().constraint().satisfiedBy( model ) == 0 );
+                assert( iter->formula().constraint().satisfiedBy( rmodel ) == 0 );
                 return false;
             }
         }
