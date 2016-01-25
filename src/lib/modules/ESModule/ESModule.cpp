@@ -72,9 +72,7 @@ namespace smtrat
         auto iter = mBoolSubs.find( _formula );
         if( iter != mBoolSubs.end() )
         {
-            #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-            std::cout << _formula << " ----> " << (iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE )) << std::endl;
-            #endif
+			SMTRAT_LOG_DEBUG("smtrat.es", _formula << " ----> " << (iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE )));
             return iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE );
         }
         FormulaT result = _formula;
@@ -108,9 +106,7 @@ namespace smtrat
                                 Poly subPoly;
                                 if( tmp.constraint().getSubstitution( subVar, subPoly ) )
                                 {
-                                    #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                                    std::cout << __LINE__ << "   found substitution [" << subVar << " -> " << subPoly << "]" << std::endl;
-                                    #endif
+                                    SMTRAT_LOG_DEBUG("smtrat.es", "found substitution [" << subVar << " -> " << subPoly << "]");
                                     assert( mArithSubs.find( subVar ) == mArithSubs.end() );
                                     addedArithSubs.push_back( mArithSubs.emplace( subVar, subPoly ).first );
                                     foundSubstitutions.insert( tmp );
@@ -158,18 +154,14 @@ namespace smtrat
                                         sfs.push_back( sfSimplified );
                                     if( sfSimplified.getType() == carl::FormulaType::NOT )
                                     {
-                                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                                        std::cout <<  __LINE__ << "   found boolean substitution [" << sfSimplified.subformula() << " -> false]" << std::endl;
-                                        #endif
+                                        SMTRAT_LOG_DEBUG("smtrat.es", "found boolean substitution [" << sfSimplified.subformula() << " -> false]");
                                         assert( mBoolSubs.find( sfSimplified.subformula() ) == mBoolSubs.end() );
                                         assert( foundBooleanSubstitutions.find( sfSimplified ) == foundBooleanSubstitutions.end() );
                                         foundBooleanSubstitutions.emplace( sfSimplified, mBoolSubs.insert( std::make_pair( sfSimplified.subformula(), false ) ).first );
                                     }
                                     else
                                     {
-                                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                                        std::cout <<  __LINE__ << "   found boolean substitution [" << sfSimplified << " -> true]" << std::endl;
-                                        #endif
+                                        SMTRAT_LOG_DEBUG("smtrat.es", "found boolean substitution [" << sfSimplified << " -> true]");
                                         assert( mBoolSubs.find( sfSimplified ) == mBoolSubs.end() );
                                         assert( foundBooleanSubstitutions.find( sfSimplified ) == foundBooleanSubstitutions.end() );
                                         foundBooleanSubstitutions.emplace( sfSimplified, mBoolSubs.insert( std::make_pair( sfSimplified, true ) ).first );
@@ -332,9 +324,7 @@ namespace smtrat
             case carl::FormulaType::UEQ: 
             case carl::FormulaType::TRUE:
             case carl::FormulaType::FALSE:
-                #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                std::cout << _formula << " ----> " << result << std::endl;
-                #endif
+				SMTRAT_LOG_DEBUG("smtrat.es", _formula << " ----> " << result);
                 return result;
             case carl::FormulaType::EXISTS:
             case carl::FormulaType::FORALL: {
@@ -346,14 +336,10 @@ namespace smtrat
         iter = mBoolSubs.find( result );
         if( iter != mBoolSubs.end() )
         {
-            #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-            std::cout << _formula << " ----> " << (iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE )) << std::endl;
-            #endif
+			SMTRAT_LOG_DEBUG("smtrat.es", _formula << " ----> " << (iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE )));
             return iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE );
         }
-        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-        std::cout << _formula << " ----> " << result << std::endl;
-        #endif
+		SMTRAT_LOG_DEBUG("smtrat.es", _formula << " ----> " << result);
         return result;
     }
 }
