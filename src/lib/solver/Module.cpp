@@ -104,7 +104,7 @@ namespace smtrat
     
     Answer Module::check( bool _final, bool _full, bool _minimize )
     {
-        SMTRAT_LOG_INFO("smtrat.module", __func__  << (_full ? " full" : " lazy" ) << " with module " << moduleName() << " (" << mId << ")");
+        SMTRAT_LOG_INFO("smtrat.module", __func__  << (_final ? " final" : " partial") << (_full ? " full" : " lazy" ) << " with module " << moduleName() << " (" << mId << ")");
         print("\t");
         mFinalCheck = _final;
         mFullCheck = _full;
