@@ -147,7 +147,7 @@ namespace smtrat
 
     bool Module::inform( const FormulaT& _constraint )
     {
-        SMTRAT_LOG_INFO("smtrat.module", __func__ << " " << moduleName() << " (" << mId << ") about: " << _constraint);
+        SMTRAT_LOG_DEBUG("smtrat.module", __func__ << " " << moduleName() << " (" << mId << ") about: " << _constraint);
         addConstraintToInform( _constraint );
         return informCore( _constraint );
     }
