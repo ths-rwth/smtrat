@@ -218,7 +218,7 @@ namespace smtrat
 			assert(!carl::isInteger(r));
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Variables: " << vars);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Branching at " << vars[d] << " = " << r);
-			branchAt(vars[d], r);
+			if (mFinalCheck) branchAt(vars[d], r);
 			return UNKNOWN;
 		}
 		SMTRAT_LOG_TRACE("smtrat.cad", "#Samples: " << mCAD.samples().size());
@@ -229,15 +229,17 @@ namespace smtrat
 		SMTRAT_LOG_DEBUG("smtrat.cad", "Result: true");
 		SMTRAT_LOG_DEBUG("smtrat.cad", "CAD complete: " << mCAD.isComplete());
 		SMTRAT_LOG_DEBUG("smtrat.cad", "Solution point: " << mRealAlgebraicSolution);
+		SMTRAT_LOG_DEBUG("smtrat.cad", "Variables: " << mCAD.getVariables());
 		mInfeasibleSubsets.clear();
 		if (Settings::integerHandling == carl::cad::IntegerHandling::SPLIT_ASSIGNMENT) {
+			std::cout << "Splitting on assignment" << std::endl;
 			// Check whether the found assignment is integer. Split on first non-integral assignment.
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
 			Rational r;
 			for (std::size_t d = 0; d < mRealAlgebraicSolution.dim(); d++) {
 				if (!validateIntegrality(vars, d)) {
 					auto r = this->mRealAlgebraicSolution[d].branchingPoint();
-					branchAt(vars[d], r);
+					if (mFinalCheck) branchAt(vars[d], r);
 					return UNKNOWN;
 				}
 			}
@@ -245,17 +247,29 @@ namespace smtrat
 			// Check whether the found assignment is integer. Split path to first non-integral assignment
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
 			FormulasT formulas;
+			FormulasT exclusion;
 			for (std::size_t dim = mRealAlgebraicSolution.dim(); dim > 0; dim--) {
-				std::size_t d = mRealAlgebraicSolution.dim() - dim;
-				if (!validateIntegrality(vars, dim)) {
+				std::size_t d = dim - 1;
+				if (!validateIntegrality(vars, d)) {
 					// Assemble lemma
-					addLemma(FormulaT(carl::IMPLIES, {FormulaT(rReceivedFormula()), FormulaT(carl::OR, std::move(formulas))}));
+					if (mFinalCheck) {
+						FormulaT lemma(carl::OR, std::move(formulas));
+						FormulaT enforcer(carl::AND, std::move(exclusion));
+						SMTRAT_LOG_DEBUG("smtrat.cad", "Lifting lemma " << lemma);
+						SMTRAT_LOG_DEBUG("smtrat.cad", "Lifting exclusion " << enforcer);
+						SMTRAT_LOG_DEBUG("smtrat.cad", "For sample tree" << mCAD.getSampleTree());
+						addLemma(FormulaT(carl::OR, {FormulaT(rReceivedFormula()).negated(), std::move(lemma)}));
+						addLemma(enforcer);
+					}
 					return UNKNOWN;
 				}
 				auto r = this->mRealAlgebraicSolution[d].branchingPoint();
 				Poly p = vars[d] - r;
-				formulas.emplace_back(ConstraintT(p + carl::constant_one<Rational>::get(), carl::Relation::LEQ));
-				formulas.emplace_back(ConstraintT(-p + carl::constant_one<Rational>::get(), carl::Relation::LEQ));
+				FormulaT c1(ConstraintT(p + carl::constant_one<Rational>::get(), carl::Relation::LEQ));
+				FormulaT c2(ConstraintT(-p + carl::constant_one<Rational>::get(), carl::Relation::LEQ));
+				formulas.push_back(c1);
+				formulas.push_back(c2);
+				exclusion.push_back(FormulaT(carl::OR, {c1.negated(), c2.negated()}));
 			}
 		} else if (Settings::integerHandling == carl::cad::IntegerHandling::NONE) {
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
