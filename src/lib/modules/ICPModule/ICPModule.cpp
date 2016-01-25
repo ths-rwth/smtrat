@@ -421,7 +421,7 @@ namespace smtrat
                         return lazyResult;
                     // Full call of the backends, if no box has target diameter
                     bool furtherContractionOccurred = false;
-                    if( Settings::just_contraction || !performSplit( mOriginalVariableIntervalContracted, furtherContractionOccurred ) )
+                    if( !mFinalCheck || !performSplit( mOriginalVariableIntervalContracted, furtherContractionOccurred ) )
                         return callBackends( mFinalCheck, mFullCheck, mMinimizingCheck );
                     if( mInvalidBox )
                     {
@@ -612,10 +612,13 @@ namespace smtrat
         {
             if( constraint.satisfiedBy(mFoundSolution) == 0 )
             {
-                splitUnequalConstraint(constraint);
-                #ifdef ICP_MODULE_DEBUG_0
-                std::cout << "Unresolved inequality " << constraint << "  -  Return unknown and raise lemmas for split." << std::endl;
-                #endif
+                if( mFinalCheck )
+                {
+                    splitUnequalConstraint(constraint);
+                    #ifdef ICP_MODULE_DEBUG_0
+                    std::cout << "Unresolved inequality " << constraint << "  -  Return unknown and raise lemmas for split." << std::endl;
+                    #endif
+                }
                 return false;
             }
         }
@@ -727,7 +730,7 @@ namespace smtrat
             std::cout << "    " << f.formula().constraint() << std::endl;
         #endif
         ++mCountBackendCalls;
-        Answer a = runBackends();
+        Answer a = runBackends( _final, _full, _minimize );
         updateLemmas();
         std::vector<Module*>::const_iterator backend = usedBackends().begin();
         while( backend != usedBackends().end() )
@@ -1071,7 +1074,7 @@ namespace smtrat
         icp::IcpVariable& icpVar = *mVariables.find( variable )->second;
         DoubleInterval icpVarIntervalBefore = icpVar.interval();
         mSplitOccurred = _selection->contract( mIntervals, resultA, resultB );
-        if( (Settings::just_contraction || !Settings::split_by_division_with_zero) && mSplitOccurred )
+        if( (!mFinalCheck || !Settings::split_by_division_with_zero) && mSplitOccurred )
         {
             mSplitOccurred = false;
             resultA = resultA.convexHull( resultB );
@@ -2295,10 +2298,10 @@ namespace smtrat
         // call mLRA to check linear feasibility
         mLRA.clearLemmas();
         mValidationFormula->updateProperties();
-        _answer = mLRA.check();
+        _answer = mLRA.check( mFinalCheck, true, false );
 
         // catch lemmas
-        if( !Settings::just_contraction )
+        if( mFinalCheck )
         {
             for( const auto& lem : mLRA.lemmas() )
             {
@@ -2417,7 +2420,7 @@ namespace smtrat
             }
         }
         mValidationFormula->updateProperties();
-        Answer boxCheck = mLRA.check();
+        Answer boxCheck = mLRA.check( false, true, false );
         #ifdef ICP_MODULE_DEBUG_1
         mLRA.print();
         std::cout << "Boxcheck: " << ANSWER_TO_STRING(boxCheck) << std::endl;
