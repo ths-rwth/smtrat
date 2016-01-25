@@ -154,7 +154,8 @@ namespace smtrat
                                 }
                                 else
                                 {
-                                    sfs.push_back( sfSimplified );
+                                    if( !_outermost || !sfSimplified.isLiteral() || !sfSimplified.isOnlyPropositional() )
+                                        sfs.push_back( sfSimplified );
                                     if( sfSimplified.getType() == carl::FormulaType::NOT )
                                     {
                                         #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
