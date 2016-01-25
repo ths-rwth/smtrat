@@ -15,8 +15,6 @@
 #include "LRASettings.h"
 #include <stdio.h>
 
-//#define LRA_REFINEMENT
-
 namespace smtrat
 {
     
@@ -295,12 +293,10 @@ namespace smtrat
         private:
             // Methods.
             
-            #ifdef LRA_REFINEMENT
             /**
              * Adds the refinements learned during pivoting to the deductions.
              */
             void learnRefinements();
-            #endif
 
             /**
              * Adapt the passed formula, such that it consists of the finite infimums and supremums

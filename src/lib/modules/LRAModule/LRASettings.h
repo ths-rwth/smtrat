@@ -23,6 +23,10 @@ namespace smtrat
         /**
          * 
          */
+        static const bool learn_refinements = true;
+        /**
+         * 
+         */
         static const bool simple_conflict_search = true;
         /**
          * 
@@ -65,7 +69,8 @@ namespace smtrat
     struct LRASettings2 : LRASettings1
     {
 		static constexpr auto moduleName = "LRAModule<LRASettings2>";
-//        typedef carl::FLOAT_T<double> BoundType;
-//        typedef carl::FLOAT_T<double> EntryType;
+        typedef Rational BoundType;
+        typedef Rational EntryType;
+        struct Tableau_settings : lra::TableauSettings2 {};
     };
 }

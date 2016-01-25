@@ -22,6 +22,7 @@ namespace smtrat
         size_t mDeductions;
         size_t mChecks;
         size_t mAllChecksSizes;
+        size_t mUnequalConstrainSplittings;
     public:
         // Override Statistics::collect.
         void collect()
@@ -39,6 +40,7 @@ namespace smtrat
            Statistics::addKeyValuePair( "checks", mChecks );
            Statistics::addKeyValuePair( "checks-with-pivots", mChecksWithPivoting );
            Statistics::addKeyValuePair( "average-check-size", mChecks == 0 ? 0 : (double)mAllChecksSizes/(double)mChecks );
+           Statistics::addKeyValuePair( "unequal-constraint-splittings", mUnequalConstrainSplittings );
         }
         
         void pivotStep()
@@ -87,6 +89,11 @@ namespace smtrat
             ++mRefinements;
         }
         
+        void splitUnequalConstraint()
+        {
+            ++mUnequalConstrainSplittings;
+        }
+        
         void setTableauSize( size_t _size )
         {
             mTableauxSize = _size;
@@ -110,7 +117,8 @@ namespace smtrat
             mAllConflictsSizes( 0 ),
             mDeductions( 0 ),
             mChecks( 0 ),
-            mAllChecksSizes( 0 )
+            mAllChecksSizes( 0 ),
+            mUnequalConstrainSplittings( 0 )
         {}
         
         ~LRAModuleStatistics() {}

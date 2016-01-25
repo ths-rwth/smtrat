@@ -10,7 +10,7 @@
 #include "Tableau.h"
 #include "TableauSettings.h"
 
-//#define DEBUG_METHODS_TABLEAU
+#define DEBUG_METHODS_TABLEAU
 //#define DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
 
 namespace smtrat
@@ -412,57 +412,76 @@ namespace smtrat
                 {
                     if( lravar->positionInNonActives() != mNonActiveBasics.end() && !lravar->isOriginal() )
                     {
-                        #ifdef LRA_NO_DIVISION
-                        T2 l = carl::lcm( lravarCoeffPair->second, lravar->factor() );
-                        assert( l > 0 );
-                        if( lravarCoeffPair->second < 0 && lravar->factor() < 0 )
-                            l *= T2( -1 );
-                        T2 ca = carl::div( l, lravar->factor() );
-                        T2 cb = carl::div( l, lravarCoeffPair->second );
-                        _var->rFactor() *= cb;
-                        for( auto iter = coeffs.begin(); iter != coeffs.end(); ++iter )
+                        if( Settings::omit_division )
                         {
-                            iter->second *= cb;
+                            T2 l = carl::lcm( lravarCoeffPair->second, lravar->factor() );
+                            assert( l > 0 );
+                            if( lravarCoeffPair->second < 0 && lravar->factor() < 0 )
+                                l *= T2( -1 );
+                            T2 ca = carl::div( l, lravar->factor() );
+                            T2 cb = carl::div( l, lravarCoeffPair->second );
+                            _var->rFactor() *= cb;
+                            for( auto iter = coeffs.begin(); iter != coeffs.end(); ++iter )
+                            {
+                                iter->second *= cb;
+                            }
+                            auto iterB = lravarCoeffPair;
+                            ++iterB;
+                            for( ; iterB != _var->positionInNonActives()->end(); ++iterB )
+                            {
+                                iterB->second *= cb;
+                            }
+                            for( auto lravarCoeffPairB = lravar->positionInNonActives()->begin(); lravarCoeffPairB != lravar->positionInNonActives()->end(); ++lravarCoeffPairB )
+                            {
+                                _var->positionInNonActives()->emplace_back( lravarCoeffPairB->first, ca*lravarCoeffPairB->second );
+                            }
                         }
-                        auto iterB = lravarCoeffPair;
-                        ++iterB;
-                        for( ; iterB != _var->positionInNonActives()->end(); ++iterB )
+                        else
                         {
-                            iterB->second *= cb;
-                        }
-                        #endif
-                        for( auto lravarCoeffPairB = lravar->positionInNonActives()->begin(); lravarCoeffPairB != lravar->positionInNonActives()->end(); ++lravarCoeffPairB )
-                        {
-                            _var->positionInNonActives()->emplace_back( lravarCoeffPairB->first, ca*lravarCoeffPairB->second );
+                            for( auto lravarCoeffPairB = lravar->positionInNonActives()->begin(); lravarCoeffPairB != lravar->positionInNonActives()->end(); ++lravarCoeffPairB )
+                            {
+                                _var->positionInNonActives()->emplace_back( lravarCoeffPairB->first, lravarCoeffPair->second*lravarCoeffPairB->second );
+                            }
                         }
                     }
                     else
                     {
-                        #ifdef LRA_NO_DIVISION
-                        T2 l = carl::lcm( lravarCoeffPair->second, lravar->factor() );
-                        assert( l > 0 );
-                        if( lravarCoeffPair->second < 0 && lravar->factor() < 0 )
-                            l *= T2( -1 );
-                        T2 ca = carl::div( l, lravar->factor() );
-                        T2 cb = carl::div( l, lravarCoeffPair->second );
-                        _var->rFactor() *= cb;
-                        for( auto iter = coeffs.begin(); iter != coeffs.end(); ++iter )
+                        if( Settings::omit_division )
                         {
-                            iter->second *= cb;
+                            T2 l = carl::lcm( lravarCoeffPair->second, lravar->factor() );
+                            assert( l > 0 );
+                            if( lravarCoeffPair->second < 0 && lravar->factor() < 0 )
+                                l *= T2( -1 );
+                            T2 ca = carl::div( l, lravar->factor() );
+                            T2 cb = carl::div( l, lravarCoeffPair->second );
+                            _var->rFactor() *= cb;
+                            for( auto iter = coeffs.begin(); iter != coeffs.end(); ++iter )
+                            {
+                                iter->second *= cb;
+                            }
+                            auto iterB = lravarCoeffPair;
+                            ++iterB;
+                            for( ; iterB != _var->positionInNonActives()->end(); ++iterB )
+                            {
+                                iterB->second *= cb;
+                            }
+                            Iterator rowIter = Iterator( lravar->startEntry(), mpEntries );
+                            while( true )
+                            {
+                                coeffs[(*rowIter).columnVar()->position()] += ca*(*rowIter).content();
+                                if( rowIter.hEnd( false ) ) break;
+                                else rowIter.hMove( false );
+                            }
                         }
-                        auto iterB = lravarCoeffPair;
-                        ++iterB;
-                        for( ; iterB != _var->positionInNonActives()->end(); ++iterB )
-                        {
-                            iterB->second *= cb;
-                        }
-                        #endif
-                        Iterator rowIter = Iterator( lravar->startEntry(), mpEntries );
-                        while( true )
-                        {
-                            coeffs[(*rowIter).columnVar()->position()] += ca*(*rowIter).content();
-                            if( rowIter.hEnd( false ) ) break;
-                            else rowIter.hMove( false );
+                        else
+                        {   
+                            Iterator rowIter = Iterator( lravar->startEntry(), mpEntries );
+                            while( true )
+                            {
+                                coeffs[(*rowIter).columnVar()->position()] += lravarCoeffPair->second*(*rowIter).content();
+                                if( rowIter.hEnd( false ) ) break;
+                                else rowIter.hMove( false );
+                            }
                         }
                     }
                 }
@@ -844,9 +863,8 @@ namespace smtrat
                 {
                     // The best pivoting element found
                     *mpTheta = bestThetaB;
-                    #ifdef LRA_NO_DIVISION
-                    (*mpTheta) *= (*bestVar)->factor();
-                    #endif 
+                    if( Settings::omit_division )
+                        (*mpTheta) *= (*bestVar)->factor();
                     (*mpTheta) /= (*mpEntries)[bestTableauEntry].content();
                     if( Settings::pivot_into_local_conflict && !initialSearch )
                     {
@@ -898,9 +916,8 @@ namespace smtrat
                                 bestBasicVar = basicVar;
                                 // Found a pivoting element
                                 *mpTheta = thetaB;
-                                #ifdef LRA_NO_DIVISION
-                                (*mpTheta) *= bVar.factor();
-                                #endif 
+                                if( Settings::omit_division )
+                                    (*mpTheta) *= bVar.factor();
                                 (*mpTheta) /= (*mpEntries)[result.first].content();
                                 bestResult = std::pair<EntryID,bool>( result.first, true );
                             }
@@ -921,11 +938,9 @@ namespace smtrat
                 Variable<T1, T2>& varForMinimizaton = *(*objectiveIter).columnVar();
                 if( (*mpEntries)[varForMinimizaton.startEntry()].vNext( false ) == LAST_ENTRY_ID ) // Non-basic variable only occurs in objective function
                 {
-                    #ifdef LRA_NO_DIVISION
-                    bool increaseVar = ((*objectiveIter).content() < 0 && _objective.factor() > 0) || ((*objectiveIter).content() > 0 && _objective.factor() < 0);
-                    #else
-                    bool increaseVar = (*objectiveIter).content() < 0;
-                    #endif
+                    bool increaseVar = Settings::omit_division ? 
+                        ((*objectiveIter).content() < 0 && _objective.factor() > 0) || ((*objectiveIter).content() > 0 && _objective.factor() < 0) :
+                        (*objectiveIter).content() < 0;
                     if( increaseVar )
                     {
                         if( varForMinimizaton.supremum().isInfinite() )
@@ -988,11 +1003,9 @@ namespace smtrat
             while( true )
             {
                 const Variable<T1, T2>& columnVar = *(*objectiveIter).columnVar();
-                #ifdef LRA_NO_DIVISION
-                bool increaseColumnVar = ((*objectiveIter).content() < 0 && _objective.factor() > 0) || ((*objectiveIter).content() > 0 && _objective.factor() < 0);
-                #else
-                bool increaseColumnVar = (*objectiveIter).content() < 0;
-                #endif
+                bool increaseColumnVar = Settings::omit_division ?
+                    ((*objectiveIter).content() < 0 && _objective.factor() > 0) || ((*objectiveIter).content() > 0 && _objective.factor() < 0) :
+                    (*objectiveIter).content() < 0;
                 #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
                 std::cout << "Check the non-basic variable "; columnVar.print(); std::cout << std::endl;
                 std::cout << "   " << (increaseColumnVar ? "Increase" : "Decrease") << " non-basic variable's assignment." << std::endl;
@@ -1007,9 +1020,8 @@ namespace smtrat
                     // more than with the currently best found pivoting entry.
                     Value<T1> minNeededColumnVarChange = bestImprovement;
                     assert( bestImprovement >= T1(0) );
-                    #ifdef LRA_NO_DIVISION
-                    minNeededColumnVarChange *= _objective.factor();
-                    #endif 
+                    if( Settings::omit_division )
+                        minNeededColumnVarChange *= _objective.factor();
                     minNeededColumnVarChange /= (*objectiveIter).content();
                     minNeededColumnVarChange.abs_();
                     #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
@@ -1030,11 +1042,9 @@ namespace smtrat
                         {
                             Variable<T1, T2>& rowVar = *((*columnIter).rowVar());
                             assert( rowVar != _objective );
-                            #ifdef LRA_NO_DIVISION
-                            bool entryNegative = ((*columnIter).content() < 0 && rowVar.factor() > 0) || ((*columnIter).content() > 0 && rowVar.factor() < 0);
-                            #else
-                            bool entryNegative = (*columnIter).content() < 0;
-                            #endif
+                            bool entryNegative = Settings::omit_division ?
+                                ((*columnIter).content() < 0 && rowVar.factor() > 0) || ((*columnIter).content() > 0 && rowVar.factor() < 0) :
+                                (*columnIter).content() < 0;
                             #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
                             std::cout << "      Check the basic variable "; rowVar.print(); std::cout << std::endl;
                             std::cout << "         " << (increaseColumnVar != entryNegative ? "Increase" : "Decrease") << " basic variable's assignment." << std::endl;
@@ -1063,9 +1073,8 @@ namespace smtrat
                             }
                             else
                             {
-                                #ifdef LRA_NO_DIVISION
-                                changeOnColumnVar *= rowVar.factor();
-                                #endif 
+                                if( Settings::omit_division )
+                                    changeOnColumnVar *= rowVar.factor();
                                 changeOnColumnVar /= (*columnIter).content();
                                 changeOnColumnVar.abs_();
                                 if( columnVarMargin != infinityValue && changeOnColumnVar > columnVarMargin )
@@ -1121,9 +1130,8 @@ namespace smtrat
                                 assert( minColumnVarChange > minNeededColumnVarChange );
                                 // Calculate improvement on objective.
                                 minColumnVarChange *= (*objectiveIter).content();
-                                #ifdef LRA_NO_DIVISION
-                                minColumnVarChange /= _objective.factor();
-                                #endif
+                                if( Settings::omit_division )
+                                    minColumnVarChange /= _objective.factor();
                                 minColumnVarChange.abs_();
                                 #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
                                 std::cout << "   Take this non-basic variable improving the objective by " << minColumnVarChange << std::endl;
@@ -1164,9 +1172,8 @@ namespace smtrat
             const Variable<T1, T2>& bestColumnVar = *((*mpEntries)[bestPivotingEntry].columnVar());
             Iterator columnIter = Iterator( bestColumnVar.startEntry(), mpEntries );
             assert( *(*columnIter).rowVar() == _objective );
-            #ifdef LRA_NO_DIVISION
-            *mpTheta *= _objective.factor();
-            #endif
+            if( Settings::omit_division )
+                *mpTheta *= _objective.factor();
             *mpTheta /= (*columnIter).content();
             #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
             std::cout << "Found the non-basic variable " << (*mpEntries)[bestPivotingEntry].columnVar()->expression() << " optimizing the objective by " << bestImprovement;
@@ -1193,11 +1200,8 @@ namespace smtrat
                 while( true )
                 {
                     const Variable<T1, T2>& nonBasicVar = *(*rowIter).columnVar();
-                    #ifdef LRA_NO_DIVISION
-                    if( ((*rowIter).content() < 0 && _basicVar.factor() > 0) || ((*rowIter).content() > 0 && _basicVar.factor() < 0) )
-                    #else
-                    if( (*rowIter).content() < 0 )
-                    #endif
+                    if( (!Settings::omit_division || ((*rowIter).content() < 0 && _basicVar.factor() > 0) || ((*rowIter).content() > 0 && _basicVar.factor() < 0))
+                     && (Settings::omit_division || (*rowIter).content() < 0) )
                     {
                         if( nonBasicVar.supremum() > nonBasicVar.assignment() )
                         {
@@ -1244,11 +1248,8 @@ namespace smtrat
                 while( true )
                 {
                     const Variable<T1, T2>& nonBasicVar = *(*rowIter).columnVar();
-                    #ifdef LRA_NO_DIVISION
-                    if( ((*rowIter).content() > 0 && _basicVar.factor() > 0) || ((*rowIter).content() < 0 && _basicVar.factor() < 0) )
-                    #else
-                    if( (*rowIter).content() > 0 )
-                    #endif
+                    if( (!Settings::omit_division || ((*rowIter).content() > 0 && _basicVar.factor() > 0) || ((*rowIter).content() < 0 && _basicVar.factor() < 0))
+                     && (Settings::omit_division || (*rowIter).content() > 0) )
                     {
                         if( nonBasicVar.supremum() > nonBasicVar.assignment() )
                         {
@@ -1371,11 +1372,8 @@ namespace smtrat
                 Iterator rowIter = Iterator( basicVar.startEntry(), mpEntries );
                 while( true )
                 {
-                    #ifdef LRA_NO_DIVISION
-                    if( ((*rowIter).content() < 0 && basicVar.factor() > 0) || ((*rowIter).content() > 0 && basicVar.factor() < 0) )
-                    #else
-                    if( (*rowIter).content() < 0 )
-                    #endif
+                    if( (!Settings::omit_division || ((*rowIter).content() < 0 && basicVar.factor() > 0) || ((*rowIter).content() > 0 && basicVar.factor() < 0))
+                     && (Settings::omit_division || (*rowIter).content() < 0) )
                     {
                         assert( !((*rowIter).columnVar()->supremum() > (*rowIter).columnVar()->assignment()) );
                         conflict.push_back( (*rowIter).columnVar()->pSupremum() );
@@ -1411,11 +1409,8 @@ namespace smtrat
                 Iterator rowIter = Iterator( basicVar.startEntry(), mpEntries );
                 while( true )
                 {
-                    #ifdef LRA_NO_DIVISION
-                    if( ((*rowIter).content() > 0 && basicVar.factor() > 0) || ((*rowIter).content() < 0 && basicVar.factor() < 0) )
-                    #else
-                    if( (*rowIter).content() > 0 )
-                    #endif
+                    if( (!Settings::omit_division || ((*rowIter).content() > 0 && basicVar.factor() > 0) || ((*rowIter).content() < 0 && basicVar.factor() < 0))
+                     && (Settings::omit_division || (*rowIter).content() > 0) )
                     {
                         assert( !((*rowIter).columnVar()->supremum() > (*rowIter).columnVar()->assignment()) );
                         conflict.push_back( (*rowIter).columnVar()->pSupremum() );
@@ -1464,11 +1459,8 @@ namespace smtrat
                     Iterator rowIter = Iterator( basicVar.startEntry(), mpEntries );
                     while( true )
                     {
-                        #ifdef LRA_NO_DIVISION
-                        if( ( (*rowIter).content() < 0 && basicVar.factor() > 0) || ((*rowIter).content() > 0 && basicVar.factor() < 0) )
-                        #else
-                        if( (*rowIter).content() < 0 )
-                        #endif
+                        if( (!Settings::omit_division || ( (*rowIter).content() < 0 && basicVar.factor() > 0) || ((*rowIter).content() > 0 && basicVar.factor() < 0))
+                         && (Settings::omit_division || (*rowIter).content() < 0) )
                         {
                             if( (*rowIter).columnVar()->supremum() > (*rowIter).columnVar()->assignment() )
                             {
@@ -1513,11 +1505,8 @@ namespace smtrat
                     Iterator rowIter = Iterator( basicVar.startEntry(), mpEntries );
                     while( true )
                     {
-                        #ifdef LRA_NO_DIVISION
-                        if( ((*rowIter).content() > 0 && basicVar.factor() > 0) || ((*rowIter).content() < 0 && basicVar.factor() < 0) )
-                        #else
-                        if( (*rowIter).content() > 0 )
-                        #endif
+                        if( (!Settings::omit_division || ((*rowIter).content() > 0 && basicVar.factor() > 0) || ((*rowIter).content() < 0 && basicVar.factor() < 0))
+                         && (Settings::omit_division || (*rowIter).content() > 0) )
                         {
                             if( (*rowIter).columnVar()->supremum() > (*rowIter).columnVar()->assignment()  )
                             {
@@ -1567,11 +1556,10 @@ namespace smtrat
                 while( true )
                 {
                     Variable<T1, T2>& basic = *((*columnIter).rowVar());
-                    #ifdef LRA_NO_DIVISION
-                    basic.rAssignment() += (_change * (*columnIter).content())/basic.factor();
-                    #else
-                    basic.rAssignment() += (_change * (*columnIter).content());
-                    #endif
+                    if( Settings::omit_division )
+                        basic.rAssignment() += (_change * (*columnIter).content())/basic.factor();
+                    else
+                        basic.rAssignment() += (_change * (*columnIter).content());
                     if( columnIter.vEnd( false ) )
                     {
                         break;
@@ -1608,11 +1596,10 @@ namespace smtrat
             {
                 iterTemp.hMove( true );
                 (*iterTemp).setRowVar( columnVar );
-                #ifdef LRA_NO_DIVISION
-                (*iterTemp).rContent() = -(*iterTemp).content();
-                #else
-                (*iterTemp).rContent() /= -pivotContent;
-                #endif
+                if( Settings::omit_division )
+                    (*iterTemp).rContent() = -(*iterTemp).content();
+                else
+                    (*iterTemp).rContent() /= -pivotContent;
                 pivotingRowLeftSide.push_back( iterTemp );
             }
             // Then the column with ** right to the pivoting column until the rightmost column with **.
@@ -1622,22 +1609,20 @@ namespace smtrat
             {
                 iterTemp.hMove( false );
                 (*iterTemp).setRowVar( columnVar );
-                #ifdef LRA_NO_DIVISION
-                (*iterTemp).rContent() = -(*iterTemp).content();
-                #else
-                (*iterTemp).rContent() /= -pivotContent;
-                #endif
+                if( Settings::omit_division )
+                    (*iterTemp).rContent() = -(*iterTemp).content();
+                else
+                    (*iterTemp).rContent() /= -pivotContent;
                 pivotingRowRightSide.push_back( iterTemp );
             }
             // Swap the variables
             mRows[rowVar->position()] = columnVar;
             mColumns[columnVar->position()] = rowVar;
             // Update the assignments of the pivoting variables
-            #ifdef LRA_NO_DIVISION
-            rowVar->rAssignment() += ((*mpTheta) * pivotContent) / rowVar->factor();
-            #else
-            rowVar->rAssignment() += (*mpTheta) * pivotContent;
-            #endif 
+            if( Settings::omit_division )
+                rowVar->rAssignment() += ((*mpTheta) * pivotContent) / rowVar->factor();
+            else
+                rowVar->rAssignment() += (*mpTheta) * pivotContent;
             assert( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() );
             assert( rowVar->infimum() < rowVar->assignment() || rowVar->infimum() == rowVar->assignment() );
             columnVar->rAssignment() += (*mpTheta);
@@ -1655,16 +1640,17 @@ namespace smtrat
             EntryID tmpStartEntry = basicVar.startEntry();
             basicVar.rStartEntry() = nonbasicVar.startEntry();
             nonbasicVar.rStartEntry() = tmpStartEntry;
-            #ifdef LRA_NO_DIVISION
-            basicVar.rFactor() = pivotContent;
-            #endif
             // Update the content of the pivoting entry
-            #ifdef LRA_NO_DIVISION
-            pivotContent = nonbasicVar.factor();
-            nonbasicVar.rFactor() = 1;
-            #else
-            pivotContent = carl::div( T2(1), pivotContent );
-            #endif
+            if( Settings::omit_division )
+            {
+                basicVar.rFactor() = pivotContent;
+                pivotContent = nonbasicVar.factor();
+                nonbasicVar.rFactor() = 1;
+            }
+            else
+            {
+                pivotContent = carl::div( T2(1), pivotContent );
+            }
             if( !_optimizing && Settings::use_refinement && basicVar.hasBound() )
             {
                 rowRefinement( columnVar ); // Note, we have swapped the variables, so the current basic var is now corresponding to what we have stored in columnVar.
@@ -1704,9 +1690,7 @@ namespace smtrat
             std::vector<Iterator> leftColumnIters = std::vector<Iterator>( _pivotingRowLeftSide );
             std::vector<Iterator> rightColumnIters = std::vector<Iterator>( _pivotingRowRightSide );
             Iterator pivotingColumnIter = Iterator( _pivotingElement, mpEntries );
-            #ifdef LRA_NO_DIVISION
-            const T2& pivotingRowFactor = (*mpEntries)[_pivotingElement].rowVar()->factor();
-            #endif
+            const T2& pivotingRowFactor = Settings::omit_division ? (*mpEntries)[_pivotingElement].rowVar()->factor() : T2(1);
             while( true )
             {
                 if( !pivotingColumnIter.vEnd( _downwards ) )
@@ -1719,32 +1703,34 @@ namespace smtrat
                 }
                 // Update the assignment of the basic variable corresponding to this row
                 Variable<T1,T2>& currBasicVar = *((*pivotingColumnIter).rowVar());
-                #ifdef LRA_NO_DIVISION
-                currBasicVar.rAssignment() += ((*mpTheta) * (*pivotingColumnIter).content())/currBasicVar.factor();
-                #else
-                currBasicVar.rAssignment() += (*mpTheta) * (*pivotingColumnIter).content();
-                #endif
+                if( Settings::omit_division )
+                    currBasicVar.rAssignment() += ((*mpTheta) * (*pivotingColumnIter).content())/currBasicVar.factor();
+                else
+                    currBasicVar.rAssignment() += (*mpTheta) * (*pivotingColumnIter).content();
                 assert( !_optimizing || currBasicVar.infimum() < currBasicVar.assignment() || currBasicVar.infimum() == currBasicVar.assignment() );
                 assert( !_optimizing || currBasicVar.supremum() > currBasicVar.assignment() || currBasicVar.supremum() == currBasicVar.assignment() );
                 // Update the row
                 Iterator currentRowIter = pivotingColumnIter;
-                #ifdef LRA_NO_DIVISION
-                T2 l = carl::lcm( (*pivotingColumnIter).content(), pivotingRowFactor );
-                assert( l > 0 );
-                if( (*pivotingColumnIter).content() < 0 && pivotingRowFactor < 0 )
-                    l *= T2( -1 );
-                T2 ca = carl::div( l, pivotingRowFactor );
-                T2 cb = carl::div( l, (*pivotingColumnIter).content() );
-                currBasicVar.rFactor() *= cb;
-                Iterator rowIter = Iterator( currBasicVar.startEntry(), mpEntries );
-                while( true )
+                T2 ca = T2(1);
+                T2 g = T2(1);
+                if( Settings::omit_division )
                 {
-                    (*rowIter).rContent() *= cb;
-                    if( rowIter.hEnd( false ) ) break;
-                    rowIter.hMove( false );
+                    T2 l = carl::lcm( (*pivotingColumnIter).content(), pivotingRowFactor );
+                    assert( l > 0 );
+                    if( (*pivotingColumnIter).content() < 0 && pivotingRowFactor < 0 )
+                        l *= T2( -1 );
+                    ca = carl::div( l, pivotingRowFactor );
+                    T2 cb = carl::div( l, (*pivotingColumnIter).content() );
+                    currBasicVar.rFactor() *= cb;
+                    Iterator rowIter = Iterator( currBasicVar.startEntry(), mpEntries );
+                    while( true )
+                    {
+                        (*rowIter).rContent() *= cb;
+                        if( rowIter.hEnd( false ) ) break;
+                        rowIter.hMove( false );
+                    }
+                    g = carl::abs( currBasicVar.factor() );
                 }
-                T2 g = carl::abs( currBasicVar.factor() );
-                #endif
                 auto pivotingRowIter = _pivotingRowLeftSide.begin();
                 for( auto currentColumnIter = leftColumnIters.begin(); currentColumnIter != leftColumnIters.end(); ++currentColumnIter )
                 {
@@ -1758,11 +1744,10 @@ namespace smtrat
                     {
                         currentRowIter.hMove( true );
                     }
-                    #ifdef LRA_NO_DIVISION
-                    addToEntry( ca * (**pivotingRowIter).content(), currentRowIter, true, *currentColumnIter, _downwards );
-                    #else
-                    addToEntry( (*pivotingColumnIter).content() * (**pivotingRowIter).content(), currentRowIter, true, *currentColumnIter, _downwards );
-                    #endif
+                    if( Settings::omit_division )
+                        addToEntry( ca * (**pivotingRowIter).content(), currentRowIter, true, *currentColumnIter, _downwards );
+                    else
+                        addToEntry( (*pivotingColumnIter).content() * (**pivotingRowIter).content(), currentRowIter, true, *currentColumnIter, _downwards );
                     ++pivotingRowIter;
                 }
                 currentRowIter = pivotingColumnIter;
@@ -1779,37 +1764,37 @@ namespace smtrat
                     {
                         currentRowIter.hMove( false );
                     }
-                    #ifdef LRA_NO_DIVISION
-                    addToEntry( ca * (**pivotingRowIter).content(), currentRowIter, false, *currentColumnIter, _downwards );
-                    #else
-                    addToEntry( (*pivotingColumnIter).content() * (**pivotingRowIter).content(), currentRowIter, false, *currentColumnIter, _downwards );
-                    #endif
+                    if( Settings::omit_division )
+                        addToEntry( ca * (**pivotingRowIter).content(), currentRowIter, false, *currentColumnIter, _downwards );
+                    else
+                        addToEntry( (*pivotingColumnIter).content() * (**pivotingRowIter).content(), currentRowIter, false, *currentColumnIter, _downwards );
                     ++pivotingRowIter;
                 }
-                #ifdef LRA_NO_DIVISION
-                (*pivotingColumnIter).rContent() = ca * (*mpEntries)[_pivotingElement].content();
-                rowIter = Iterator( currBasicVar.startEntry(), mpEntries );
-                while( !(g == 1) )
+                if( Settings::omit_division )
                 {
-                    carl::gcd_assign( g, (*rowIter).content() );
-                    if( rowIter.hEnd( false ) ) break;
-                    rowIter.hMove( false );
-                }
-                if( !(g == 1) )
-                {
-                    assert( g > 0 );
-                    rowIter = Iterator( currBasicVar.startEntry(), mpEntries );
-                    while( true )
+                    (*pivotingColumnIter).rContent() = ca * (*mpEntries)[_pivotingElement].content();
+                    Iterator rowIter = Iterator( currBasicVar.startEntry(), mpEntries );
+                    while( !(g == 1) )
                     {
-                        carl::div_assign( (*rowIter).rContent(), g );
+                        carl::gcd_assign( g, (*rowIter).content() );
                         if( rowIter.hEnd( false ) ) break;
-                        else rowIter.hMove( false );
+                        rowIter.hMove( false );
                     }
-                    carl::div_assign( currBasicVar.rFactor(), g );
+                    if( !(g == 1) )
+                    {
+                        assert( g > 0 );
+                        rowIter = Iterator( currBasicVar.startEntry(), mpEntries );
+                        while( true )
+                        {
+                            carl::div_assign( (*rowIter).rContent(), g );
+                            if( rowIter.hEnd( false ) ) break;
+                            else rowIter.hMove( false );
+                        }
+                        carl::div_assign( currBasicVar.rFactor(), g );
+                    }
                 }
-                #else
-                (*pivotingColumnIter).rContent() *= (*mpEntries)[_pivotingElement].content();
-                #endif
+                else
+                    (*pivotingColumnIter).rContent() *= (*mpEntries)[_pivotingElement].content();
                 if( !_optimizing && (currBasicVar.supremum() > currBasicVar.assignment() || currBasicVar.infimum() < currBasicVar.assignment()) )
                 {
                     if( Settings::pivot_into_local_conflict )
@@ -1831,11 +1816,7 @@ namespace smtrat
             {
                 // Entry already exists, so update it only and maybe remove it.
                 T2& currentRowContent = (*_horiIter).rContent();
-                #ifdef LRA_NO_DIVISION
                 currentRowContent += _toAdd;
-                #else
-                currentRowContent += _toAdd;
-                #endif
                 if( currentRowContent == 0 )
                 {
                     EntryID toRemove = _horiIter.entryID();
@@ -1912,16 +1893,11 @@ namespace smtrat
             std::vector<const Bound<T1, T2>*>* uPremise = new std::vector<const Bound<T1, T2>*>();
             std::vector<const Bound<T1, T2>*>* lPremise = new std::vector<const Bound<T1, T2>*>();
             Iterator rowEntry = Iterator( basicVar.startEntry(), mpEntries );
-            #ifdef LRA_NO_DIVISION
-            const T2& rowFactor = basicVar.factor();
-            #endif
+            const T2& rowFactor = Settings::omit_division ? basicVar.factor() : T2(1);
             while( true )
             {
-                #ifdef LRA_NO_DIVISION
-                if( ((*rowEntry).content() > 0 && rowFactor > 0) || ((*rowEntry).content() < 0 && rowFactor < 0) )
-                #else
-                if( (*rowEntry).content() > 0 )
-                #endif
+                if( (!Settings::omit_division || ((*rowEntry).content() > 0 && rowFactor > 0) || ((*rowEntry).content() < 0 && rowFactor < 0))
+                 && (Settings::omit_division || (*rowEntry).content() > 0) )
                 {
                     if( uPremise != NULL )
                     {
@@ -2004,11 +1980,8 @@ namespace smtrat
                 auto ubound = upperBounds.begin();
                 while( ubound != upperBounds.end() )
                 {
-                    #ifdef LRA_NO_DIVISION
-                    if( **ubound > (*newlimit)/rowFactor && (*ubound)->type() != Bound<T1, T2>::EQUAL && !(*ubound)->deduced() )
-                    #else
-                    if( **ubound > *newlimit && (*ubound)->type() != Bound<T1, T2>::EQUAL && !(*ubound)->deduced() )
-                    #endif
+                    if( (!Settings::omit_division || (**ubound > (*newlimit)/rowFactor && (*ubound)->type() != Bound<T1, T2>::EQUAL && !(*ubound)->deduced()))
+                     && (Settings::omit_division || (**ubound > *newlimit && (*ubound)->type() != Bound<T1, T2>::EQUAL && !(*ubound)->deduced())) )
                     {
                         break;
                     }
@@ -2029,17 +2002,12 @@ namespace smtrat
                     delete uPremise;
                     if( Settings::introduce_new_constraint_in_refinement )
                     {
-                        #ifdef LRA_NO_DIVISION
-                        if( newlimit->mainPart() > (*ubound)->limit().mainPart()*rowFactor || (*ubound)->limit().deltaPart() == 0 )
-                        #else
-                        if( newlimit->mainPart() > (*ubound)->limit().mainPart() || (*ubound)->limit().deltaPart() == 0 )
-                        #endif
+                        if( (!Settings::omit_division || newlimit->mainPart() > (*ubound)->limit().mainPart()*rowFactor || (*ubound)->limit().deltaPart() == 0)
+                         && (Settings::omit_division || newlimit->mainPart() > (*ubound)->limit().mainPart() || (*ubound)->limit().deltaPart() == 0) )
                         {
-                            #ifdef LRA_NO_DIVISION
-                            typename Poly::PolyType lhs = (*ubound)->variable().expression()*(Rational)rowFactor - (Rational)newlimit->mainPart();
-                            #else
-                            typename Poly::PolyType lhs = (*ubound)->variable().expression() - (Rational)newlimit->mainPart();
-                            #endif
+                            typename Poly::PolyType lhs = Settings::omit_division ?
+                                (*ubound)->variable().expression()*(Rational)rowFactor - (Rational)newlimit->mainPart() :
+                                (*ubound)->variable().expression() - (Rational)newlimit->mainPart();
                             carl::Relation rel = newlimit->deltaPart() != 0 ? carl::Relation::LESS : carl::Relation::LEQ;
                             FormulaT constraint = FormulaT( smtrat::ConstraintT( lhs, rel ) );
                             learnedBound.newBound = basicVar.addUpperBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
@@ -2094,11 +2062,8 @@ namespace smtrat
                 auto lbound = lowerBounds.rbegin();
                 while( lbound != lowerBounds.rend() )
                 {
-                    #ifdef LRA_NO_DIVISION
-                    if( **lbound < (*newlimit)/rowFactor && (*lbound)->type() != Bound<T1, T2>::EQUAL && !(*lbound)->deduced() )
-                    #else
-                    if( **lbound < *newlimit && (*lbound)->type() != Bound<T1, T2>::EQUAL && !(*lbound)->deduced() )
-                    #endif
+                    if( (!Settings::omit_division || (**lbound < (*newlimit)/rowFactor && (*lbound)->type() != Bound<T1, T2>::EQUAL && !(*lbound)->deduced()))
+                     && (Settings::omit_division || (**lbound < *newlimit && (*lbound)->type() != Bound<T1, T2>::EQUAL && !(*lbound)->deduced())) )
                     {
                         break;
                     }
@@ -2119,17 +2084,12 @@ namespace smtrat
                     delete lPremise;
                     if( Settings::introduce_new_constraint_in_refinement )
                     {
-                        #ifdef LRA_NO_DIVISION
-                        if( newlimit->mainPart() > (*lbound)->limit().mainPart()*rowFactor || (*lbound)->limit().deltaPart() == 0 )
-                        #else
-                        if( newlimit->mainPart() > (*lbound)->limit().mainPart() || (*lbound)->limit().deltaPart() == 0 )
-                        #endif
+                        if( (!Settings::omit_division || newlimit->mainPart() > (*lbound)->limit().mainPart()*rowFactor || (*lbound)->limit().deltaPart() == 0)
+                         && (Settings::omit_division || newlimit->mainPart() > (*lbound)->limit().mainPart() || (*lbound)->limit().deltaPart() == 0) )
                         {
-                            #ifdef LRA_NO_DIVISION
-                            typename Poly::PolyType lhs = (*lbound)->variable().expression()*(Rational)rowFactor - (Rational)newlimit->mainPart();
-                            #else
-                            typename Poly::PolyType lhs = (*lbound)->variable().expression() - (Rational)newlimit->mainPart();
-                            #endif
+                            typename Poly::PolyType lhs = Settings::omit_division ?
+                                (*lbound)->variable().expression()*(Rational)rowFactor - (Rational)newlimit->mainPart() :
+                                (*lbound)->variable().expression() - (Rational)newlimit->mainPart();
                             carl::Relation rel = newlimit->deltaPart() != 0 ? carl::Relation::GREATER : carl::Relation::GEQ;
                             FormulaT constraint = FormulaT( smtrat::ConstraintT( lhs, rel ) );
                             learnedBound.newBound = basicVar.addLowerBound( newlimit, mDefaultBoundPosition, constraint, true ).first;
@@ -2290,11 +2250,10 @@ namespace smtrat
                 return false;
             }
             sumOfNonbasics += (*((*rowEntry).columnVar()->pExpression())) * typename Poly::PolyType( (*rowEntry).content() );
-            #ifdef LRA_NO_DIVISION
-            sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * typename Poly::PolyType( mRows[_rowNumber]->factor() ) * MINUS_ONE_RATIONAL;
-            #else
-            sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * MINUS_ONE_RATIONAL;
-            #endif
+            if( Settings::omit_division )
+                sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * typename Poly::PolyType( mRows[_rowNumber]->factor() ) * MINUS_ONE_RATIONAL;
+            else
+                sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * MINUS_ONE_RATIONAL;
             if( !sumOfNonbasics.isZero() ) 
             {
                 return false;
@@ -2645,16 +2604,18 @@ namespace smtrat
                 if( rowVar != NULL )
                 {
                     std::stringstream outA;
-                    #ifdef LRA_NO_DIVISION
-                    if( !(rowVar->factor() == 1) )
-                        outA << rowVar->factor();
-                    #endif
+                    if( Settings::omit_division )
+                    {
+                        if( !(rowVar->factor() == 1) )
+                            outA << rowVar->factor();
+                    }
                     outA << rowVar->expression().toString( true, _friendlyNames );
                     size_t rowVarNameSize = outA.str().size();
-                    #ifdef LRA_NO_DIVISION
-                    if( !(rowVar->factor() == 1) )
-                        rowVarNameSize += 5;
-                    #endif
+                    if( Settings::omit_division )
+                    {
+                        if( !(rowVar->factor() == 1) )
+                            rowVarNameSize += 5;
+                    }
                     if( rowVarNameSize > basic_var_name_width )
                         basic_var_name_width = rowVarNameSize;
                     if( rowVar->assignment().toString().size() > basic_var_assign_width )
@@ -2731,15 +2692,17 @@ namespace smtrat
                 if( rowVar != NULL )
                 {
                     std::stringstream out;
-                    #ifdef LRA_NO_DIVISION
-                    if( !(rowVar->factor() == 1) )
-                        out << "(" << rowVar->factor() << ")*(";
-                    #endif
+                    if( Settings::omit_division )
+                    {
+                        if( !(rowVar->factor() == 1) )
+                            out << "(" << rowVar->factor() << ")*(";
+                    }
                     out << rowVar->expression().toString( true, _friendlyNames );
-                    #ifdef LRA_NO_DIVISION
-                    if( !(rowVar->factor() == 1) )
-                        out << ")";
-                    #endif
+                    if( Settings::omit_division )
+                    {
+                        if( !(rowVar->factor() == 1) )
+                            out << ")";
+                    }
                     _out << std::setw( (int) basic_var_name_width ) << out.str();
                     if( _pivotingElement != LAST_ENTRY_ID && pivotingRow == rowVar->position() )
                         _out << " " << pivoting_separator;

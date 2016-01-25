@@ -46,9 +46,18 @@ namespace smtrat
              */
             static const bool introduce_new_constraint_in_refinement = false;
             /**
+             * 
+             */
+            static const bool omit_division = true;
+            /**
              *
              */
             static constexpr NBCS nonbasic_var_choice_strategy = NBCS::LESS_COLUMN_ENTRIES;
+        };
+        
+        struct TableauSettings2 : TableauSettings1
+        {
+            static const bool omit_division = false;
         };
     }
 }

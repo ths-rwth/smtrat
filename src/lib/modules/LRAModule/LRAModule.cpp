@@ -419,10 +419,8 @@ namespace smtrat
                     #ifdef SMTRAT_DEVOPTION_Statistics
                     mpStatistics->pivotStep();
                     #endif
-                    #ifdef LRA_REFINEMENT
-                    // Learn all bounds which have been deduced during the pivoting process.
-                    processLearnedBounds();
-                    #endif
+                    if( Settings::learn_refinements ) // Learn all bounds which have been deduced during the pivoting process.
+                        processLearnedBounds();
                     // Maybe an easy conflict occurred with the learned bounds.
                     if( !mInfeasibleSubsets.empty() )
                         return processResult( UNSAT );
@@ -443,9 +441,8 @@ namespace smtrat
     template<class Settings>
     Answer LRAModule<Settings>::processResult( Answer _result )
     {
-        #ifdef LRA_REFINEMENT
-        learnRefinements();
-        #endif
+        if( Settings::learn_refinements )
+            learnRefinements();
         #ifdef SMTRAT_DEVOPTION_Statistics
         if( _result != UNKNOWN )
         {
@@ -616,7 +613,13 @@ namespace smtrat
             assert( consistency != 2 );
             if( consistency == 0 )
             {
-                splitUnequalConstraint( iter->first );
+                if( mFinalCheck )
+                {
+                    #ifdef SMTRAT_DEVOPTION_Statistics
+                    mpStatistics->splitUnequalConstraint();
+                    #endif
+                    splitUnequalConstraint( iter->first );
+                }
                 return UNKNOWN;
             }
         }
@@ -629,7 +632,13 @@ namespace smtrat
                 assert( consistency != 2 );
                 if( consistency == 0 )
                 {
-                    splitUnequalConstraint( iter->first );
+                    if( mFinalCheck )
+                    {
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        mpStatistics->splitUnequalConstraint();
+                        #endif
+                        splitUnequalConstraint( iter->first );
+                    }
                     return UNKNOWN;
                 }
             }
@@ -640,7 +649,7 @@ namespace smtrat
     
     template<class Settings>
     void LRAModule<Settings>::processLearnedBounds()
-    {   
+    {
         while( !mTableau.rNewLearnedBounds().empty() )
         {
             FormulasT originSet;
@@ -655,7 +664,7 @@ namespace smtrat
                     originSet.insert( originSet.end(), boundOrigins.subformulas().begin(), boundOrigins.subformulas().end() );
                     for( auto origin = boundOrigins.subformulas().begin(); origin != boundOrigins.subformulas().end(); ++origin )
                     {
-                        auto constrBoundIter = mTableau.rConstraintToBound().find( boundOrigins );
+                        auto constrBoundIter = mTableau.rConstraintToBound().find( *origin );
                         assert( constrBoundIter != mTableau.constraintToBound().end() );
                         std::vector< const LRABound* >* constraintToBounds = constrBoundIter->second;
                         constraintToBounds->push_back( learnedBound.nextWeakerBound );
@@ -761,7 +770,6 @@ namespace smtrat
         return result;
     }
     
-    #ifdef LRA_REFINEMENT
     template<class Settings>
     void LRAModule<Settings>::learnRefinements()
     {
@@ -771,18 +779,18 @@ namespace smtrat
             for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
             {
                 const FormulaT& origin = *(*bound)->origins().begin();
-                if( origin.getType() == carl::VariableType::AND )
+                if( origin.getType() == carl::FormulaType::AND )
                 {
                     for( auto& subformula : origin.subformulas() )
                     {
-                        assert( subformula.getType() == carl::VariableType::CONSTRAINT );
+                        assert( subformula.getType() == carl::FormulaType::CONSTRAINT );
                         subformulas.emplace_back( carl::FormulaType::NOT, subformula );
                     }
                 }
                 else
                 {
-                    assert( origin.getType() == carl::VariableType::CONSTRAINT );
-                    subformulas.emplace_back( carl::FormulaType::NOT, origin )
+                    assert( origin.getType() == carl::FormulaType::CONSTRAINT );
+                    subformulas.emplace_back( carl::FormulaType::NOT, origin );
                 }
             }
             subformulas.push_back( iter->second.nextWeakerBound->asConstraint() );
@@ -799,17 +807,17 @@ namespace smtrat
             for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
             {
                 const FormulaT& origin = *(*bound)->origins().begin();
-                if( origin.getType() == carl::VariableType::AND )
+                if( origin.getType() == carl::FormulaType::AND )
                 {
                     for( auto& subformula : origin.subformulas() )
                     {
-                        assert( subformula.getType() == carl::VariableType::CONSTRAINT );
+                        assert( subformula.getType() == carl::FormulaType::CONSTRAINT );
                         subformulas.emplace_back( carl::FormulaType::NOT, subformula );
                     }
                 }
                 else
                 {
-                    assert( origin.getType() == carl::VariableType::CONSTRAINT );
+                    assert( origin.getType() == carl::FormulaType::CONSTRAINT );
                     subformulas.emplace_back( carl::FormulaType::NOT, origin );
                 }
             }
@@ -822,7 +830,6 @@ namespace smtrat
         }
         mTableau.rLearnedUpperBounds().clear();
     }
-    #endif
 
     template<class Settings>
     void LRAModule<Settings>::adaptPassedFormula()
