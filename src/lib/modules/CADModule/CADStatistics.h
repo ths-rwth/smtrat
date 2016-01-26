@@ -26,6 +26,9 @@ private:
     std::size_t mMISSize;
     std::size_t mSamples = 0;
     std::size_t mSkippedSamples = 0;
+	
+	std::size_t mBBCount = 0;
+	std::size_t mBranches = 0;
     
     void collect() {
         Statistics::addKeyValuePair("calls", mCalls);
@@ -34,6 +37,8 @@ private:
         Statistics::addKeyValuePair("mis-size", mMISSize);
         Statistics::addKeyValuePair("samples", mSamples);
         Statistics::addKeyValuePair("skippedsamples", mSkippedSamples);
+		Statistics::addKeyValuePair("bb-count", mBBCount);
+		Statistics::addKeyValuePair("bb-branches", mBranches);
     }
  public:
     CADStatistics() : Statistics("CADModule", this),
@@ -57,6 +62,12 @@ private:
     void setSkipped(std::size_t skippedSamples) {
         mSkippedSamples = skippedSamples;
     }
+	void addBBStats(std::size_t branches) {
+		if (branches > 0) {
+			mBBCount++;
+			mBranches += branches;
+		}
+	}
 };
 
 }
