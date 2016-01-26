@@ -30,6 +30,9 @@ private:
 	void parseDirectory(const fs::path& dir);
 public:
 	BenchmarkSet(const fs::path& baseDir);
+	std::size_t size() const {
+		return mFilesList.size();
+	}
 	auto begin() const -> decltype(mFilesList.begin()) {
 		return mFilesList.begin();
 	}

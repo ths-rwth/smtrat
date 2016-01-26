@@ -31,6 +31,7 @@ public:
 		for (const Tool* tool: tools) {
 			this->startTool(tool);
 			for (const BenchmarkSet& set: benchmarks) {
+				mExpectedJobs += set.size();
 				for (const fs::path& file: set) {
 					if (tool->canHandle(file)) {
 						//BENCHMAX_LOG_DEBUG("benchmax", "Calling " << tool->binary().native() << " on " << file.native());
