@@ -276,11 +276,17 @@ namespace smtrat
                         ConstraintT boundA( var, carl::Relation::LESS, Settings::exclude_negative_numbers ? Rational(2)*mHalfOfCurrentWidth : Rational( mHalfOfCurrentWidth ) );
                         auto ret = addToICP( FormulaT( boundA ), false );
                         if( ret.second )
+                        {
                             icpsAddedBounds.push_back( ret.first );
+                            boundAdded = true;
+                        }
                         ConstraintT boundB( var, carl::Relation::GEQ, Settings::exclude_negative_numbers ? ZERO_RATIONAL : -Rational( mHalfOfCurrentWidth ) );
-                        ret = addToICP( FormulaT( boundB ) );
+                        ret = addToICP( FormulaT( boundB ), false );
                         if( ret.second )
+                        {
                             icpsAddedBounds.push_back( ret.first );
+                            boundAdded = true;
+                        }
                     }
                     else
                     {
@@ -288,9 +294,12 @@ namespace smtrat
                         bool intervalHalfOpen = vb->second.lowerBoundType() == carl::BoundType::INFTY || vb->second.upperBoundType() == carl::BoundType::INFTY;
                         if( intervalHalfOpen || currentWidth <= (vb->second.lowerBoundType() != carl::BoundType::INFTY ? -vb->second.lower() : vb->second.upper()) )
                         {
-                            auto ret = addToICP( FormulaT( ConstraintT( var, carl::Relation::LESS, currentWidth ) ) );
+                            auto ret = addToICP( FormulaT( ConstraintT( var, carl::Relation::LESS, currentWidth ) ), false );
                             if( ret.second )
+                            {
                                 icpsAddedBounds.push_back( ret.first );
+                                boundAdded = true;
+                            }
                         }
                     }
                 }
