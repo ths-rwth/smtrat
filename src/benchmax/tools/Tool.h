@@ -48,7 +48,7 @@ protected:
 	std::map<std::string,std::string> mAttributes;
 public:
 	Tool(const std::string& name, const fs::path& binary, const std::string& arguments): mName(name), mBinary(binary), mArguments(arguments) {}
-	virtual ~Tool(){}
+	virtual ~Tool() {}
 
 	std::string name() const {
 		return mName;
