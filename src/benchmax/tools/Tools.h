@@ -9,7 +9,6 @@
 
 #pragma once
 
-#include "../cli/config.h"
 #ifdef __VS
 #pragma warning(push, 0)
 #include <boost/filesystem/path.hpp>

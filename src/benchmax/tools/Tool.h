@@ -13,7 +13,7 @@
 #include <string>
 #include <stdexcept>
 #include <vector>
-#include "../cli/config.h"
+
 #ifdef __VS
 #pragma warning(push, 0)
 #include <boost/functional/hash.hpp>
