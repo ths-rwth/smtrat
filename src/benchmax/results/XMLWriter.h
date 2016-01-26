@@ -29,9 +29,18 @@ public:
 				auto it = results.find(resultID);
 				if (it == results.end()) continue;
 				mFile << "\t\t\t<run solver_id=\"" << tool.first.name() << "\" timeout=\"" << Settings::timeLimit << "\">" << std::endl;
+				if (!it->second.additional.empty()) {
+					mFile << "\t\t\t\t<runtimestats>" << std::endl;
+					mFile << "\t\t\t\t\t<module name=\"All\">" << std::endl;
+					for (const auto& stat: it->second.additional) {
+						mFile << "\t\t\t\t\t\t<stat name=\"" << stat.first << "\" value=\"" << stat.second << "\" />" << std::endl;
+					}
+					mFile << "\t\t\t\t\t</module>" << std::endl;
+					mFile << "\t\t\t\t</runtimestats>" << std::endl;
+				}
 				mFile << "\t\t\t\t<results>" << std::endl;
-				mFile << "\t\t\t\t<result name=\"runtime\" type=\"msec\">" << it->second.time << "</result>" << std::endl;
-				mFile << "\t\t\t\t<result name=\"answer\" type=\"\">";
+				mFile << "\t\t\t\t\t<result name=\"runtime\" type=\"msec\">" << it->second.time << "</result>" << std::endl;
+				mFile << "\t\t\t\t\t<result name=\"answer\" type=\"\">";
 				switch (it->second.exitCode) {
 					case 2: mFile << "sat"; break;
 					case 3: mFile << "unsat"; break;
