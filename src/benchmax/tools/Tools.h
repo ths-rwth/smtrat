@@ -31,7 +31,7 @@ namespace benchmax {
 
 template<typename T>
 void createTools(const std::vector<std::string>& arguments, std::vector<Tool*>& tools) {
-	regex r("([^ ]+)(.*)");
+	regex r("([^ ]+) *(.*)");
 	for (const auto& arg: arguments) {
 		smatch matches;
 		if (regex_match(arg, matches, r)) {
@@ -45,7 +45,7 @@ void createTools(const std::vector<std::string>& arguments, std::vector<Tool*>& 
 				BENCHMAX_LOG_WARN("benchmax", "The tool " << path << " does not seem to be executable. We skip it.");
 				continue;
 			}
-			BENCHMAX_LOG_DEBUG("benchmax.tools", "Adding tool " << path.native());
+			BENCHMAX_LOG_DEBUG("benchmax.tools", "Adding tool " << path.native() << " with arguments \"" << matches[2] << "\".");
 			tools.push_back(new T(path, matches[2]));
 		}
 	}

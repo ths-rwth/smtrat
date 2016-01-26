@@ -17,15 +17,7 @@ namespace benchmax {
 
 class SMTRAT: public Tool {
 public:
-	SMTRAT(const fs::path& binary, const std::string& arguments): Tool("SMTRAT", binary, arguments) {
-		std::string output;
-		callProgram(binary.native() + " --settings", output);
-		auto options = parseOptions(output);
-		mAttributes.insert(options.begin(), options.end());
-		if (Settings::UseStats) {
-			mArguments += " -s";
-		}
-	}
+	SMTRAT(const fs::path& binary, const std::string& arguments): Tool("SMTRAT", binary, arguments) {}
 
 	virtual bool canHandle(const fs::path& path) const override {
 		return isExtension(path, ".smt2");
