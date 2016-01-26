@@ -35,7 +35,7 @@ namespace smtrat
 //                        addBackend<CubeLIAModule<CubeLIASettings1>>(
                             addBackend<LRAModule<LRASettings1>>(
                                 addBackend<VSModule<VSSettings234>>(
-                                    addBackend<CADModule<CADSettingsSplitPath>>()
+                                    addBackend<CADModule<CADSettingsSplitAssignment>>()
                                 )
                             )
 //                        )
