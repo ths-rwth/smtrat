@@ -15,6 +15,7 @@
 #include "carl/core/logging.h"
 
 #include "MISGeneration.h"
+#include "SplitVariableSelector.h"
 
 using carl::UnivariatePolynomial;
 using carl::cad::EliminationSet;
@@ -232,16 +233,22 @@ namespace smtrat
 		SMTRAT_LOG_DEBUG("smtrat.cad", "Variables: " << mCAD.getVariables());
 		mInfeasibleSubsets.clear();
 		if (Settings::integerHandling == carl::cad::IntegerHandling::SPLIT_ASSIGNMENT) {
-			std::cout << "Splitting on assignment" << std::endl;
-			// Check whether the found assignment is integer. Split on first non-integral assignment.
-			const std::vector<carl::Variable>& vars = mCAD.getVariables();
-			Rational r;
-			for (std::size_t d = 0; d < mRealAlgebraicSolution.dim(); d++) {
-				if (!validateIntegrality(vars, d)) {
-					auto r = this->mRealAlgebraicSolution[d].branchingPoint();
-					if (mFinalCheck) branchAt(vars[d], r);
-					return UNKNOWN;
+#ifdef SMTRAT_DEVOPTION_Statistics
+			{
+				std::size_t branches = 0;
+				for (std::size_t d = 0; d < mRealAlgebraicSolution.dim(); d++) {
+					if (mCAD.getVariables()[d].getType() != carl::VariableType::VT_INT) continue;
+					if (carl::isInteger(mRealAlgebraicSolution[d])) continue;
+					branches++;
 				}
+				mStats->addBBStats(branches);
+			}
+#endif
+			cad::SplitVariableSelector<Settings::splitHeuristic> svs;
+			int d = svs.select(mCAD.getVariables(), mRealAlgebraicSolution);
+			if (d != -1) {
+				if (mFinalCheck) branchAt(mCAD.getVariables()[d], mRealAlgebraicSolution[d].branchingPoint());
+				return UNKNOWN;
 			}
 		} else if (Settings::integerHandling == carl::cad::IntegerHandling::SPLIT_PATH) {
 			// Check whether the found assignment is integer. Split path to first non-integral assignment
