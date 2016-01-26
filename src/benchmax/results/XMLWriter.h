@@ -51,7 +51,7 @@ public:
 	}
 	
 	~XMLWriter() {
-		mFile << "<benchmarksets>" << std::endl;
+		mFile << "</benchmarksets>" << std::endl;
 		mFile.close();
 	}
 };
