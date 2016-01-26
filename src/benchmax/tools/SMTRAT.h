@@ -22,6 +22,9 @@ public:
 		callProgram(binary.native() + " --settings", output);
 		auto options = parseOptions(output);
 		mAttributes.insert(options.begin(), options.end());
+		if (Settings::UseStats) {
+			mArguments += " -s";
+		}
 	}
 
 	virtual bool canHandle(const fs::path& path) const override {
