@@ -68,6 +68,7 @@ public:
 #else
 			jobs.front().join();
 #endif
+			madeProgress();
 			jobs.pop();
 		}
 	}
