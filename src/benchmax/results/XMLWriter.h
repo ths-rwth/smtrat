@@ -43,7 +43,7 @@ public:
 				std::pair<std::size_t, std::size_t> resultID(tool.second, file.second);
 				auto it = results.find(resultID);
 				if (it == results.end()) continue;
-				mFile << "\t\t\t<run solver_id=\"" << sanitize(tool.first->name()) << "\" timeout=\"" << Settings::timeLimit << "\">" << std::endl;
+				mFile << "\t\t\t<run solver_id=\"" << sanitize(tool.first->binary().native()) << "\" timeout=\"" << Settings::timeLimit << "\">" << std::endl;
 				if (!it->second.additional.empty()) {
 					mFile << "\t\t\t\t<runtimestats>" << std::endl;
 					mFile << "\t\t\t\t\t<module name=\"All\">" << std::endl;
