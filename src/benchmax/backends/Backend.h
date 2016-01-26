@@ -30,7 +30,7 @@ public:
 				}
 			}
 		}
-		BENCHMAX_LOG_INFO("benchmax", "Finished, waiting for termination.");
+		BENCHMAX_LOG_INFO("benchmax", "Scheduled all jobs, waiting for termination.");
 	}
 	virtual ~Backend() {
 		//Database db;
