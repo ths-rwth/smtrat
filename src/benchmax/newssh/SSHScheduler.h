@@ -66,8 +66,8 @@ private:
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
 	}
-	std::string tmpDirName(const fs::path& file) const {
-		return "benchmax-" + std::to_string(Settings::startTime) + "-" + std::to_string(std::hash<std::string>()(file.native()));
+	std::string tmpDirName(const Tool* tool, const fs::path& file) const {
+		return "benchmax-" + std::to_string(Settings::startTime) + "-" + std::to_string(std::size_t(tool)) + "-" + std::to_string(std::hash<std::string>()(file.native()));
 	}
 public:
 	SSHScheduler() {
@@ -96,7 +96,7 @@ public:
 		SSHConnection* c = get();
 		BENCHMAX_LOG_INFO("benchmax.ssh", "Executing " << file);
 		// Create temporary directory
-		std::string folder = c->createTmpDir(tmpDirName(file));
+		std::string folder = c->createTmpDir(tmpDirName(tool,file));
 		// Upload benchmark file
 		c->uploadFile(file, folder, file.filename().native());
 		// Execute benchmark run
