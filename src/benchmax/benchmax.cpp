@@ -174,6 +174,8 @@ int main(int argc, char** argv)
 	} else {
 		BENCHMAX_LOG_ERROR("benchmax", "Invalid backend \"" << Settings::backend << "\".");
 	}
+	
+	for (auto& tp: tools) delete tp;
 
 	return 0;
 }

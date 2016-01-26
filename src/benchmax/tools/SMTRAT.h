@@ -33,6 +33,10 @@ public:
 		}
 		return res;
 	}
+	
+	virtual void additionalResults(const fs::path&, BenchmarkResult&) const override {
+		std::cout << "SMTRAT: Getting additional results" << std::endl;
+	}
 };
 
 }

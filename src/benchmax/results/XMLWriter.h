@@ -14,10 +14,10 @@ public:
 		mFile << "<benchmarksets>" << std::endl;
 	}
 	
-	void write(const std::map<Tool, std::size_t>& tools, const std::map<fs::path, std::size_t>& files, const std::map<std::pair<std::size_t,std::size_t>, BenchmarkResults>& results) {
+	void write(const std::map<const Tool*, std::size_t>& tools, const std::map<fs::path, std::size_t>& files, const std::map<std::pair<std::size_t,std::size_t>, BenchmarkResult>& results) {
 		mFile << "\t<solvers>" << std::endl;
 		for (const auto& tool: tools) {
-			mFile << "\t\t<solver solver_id=\"" << tool.first.name() << "\" />" << std::endl;
+			mFile << "\t\t<solver solver_id=\"" << tool.first->name() << "\" />" << std::endl;
 		}
 		mFile << "\t</solvers>" << std::endl;
 		
@@ -28,7 +28,7 @@ public:
 				std::pair<std::size_t, std::size_t> resultID(tool.second, file.second);
 				auto it = results.find(resultID);
 				if (it == results.end()) continue;
-				mFile << "\t\t\t<run solver_id=\"" << tool.first.name() << "\" timeout=\"" << Settings::timeLimit << "\">" << std::endl;
+				mFile << "\t\t\t<run solver_id=\"" << tool.first->name() << "\" timeout=\"" << Settings::timeLimit << "\">" << std::endl;
 				if (!it->second.additional.empty()) {
 					mFile << "\t\t\t\t<runtimestats>" << std::endl;
 					mFile << "\t\t\t\t\t<module name=\"All\">" << std::endl;

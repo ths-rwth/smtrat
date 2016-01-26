@@ -224,7 +224,7 @@ public:
 		return true;
 	}
 	
-	bool executeCommand(const std::string& cmd, BenchmarkResults& result) {
+	bool executeCommand(const std::string& cmd, BenchmarkResult& result) {
 		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Executing command " << cmd);
 		ssh_channel channel = getChannel();
 		std::stringstream call;

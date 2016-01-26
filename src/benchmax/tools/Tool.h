@@ -48,6 +48,7 @@ protected:
 	std::map<std::string,std::string> mAttributes;
 public:
 	Tool(const std::string& name, const fs::path& binary, const std::string& arguments): mName(name), mBinary(binary), mArguments(arguments) {}
+	Tool(const Tool&) = delete;
 	virtual ~Tool() {}
 
 	std::string name() const {
@@ -93,7 +94,7 @@ public:
 		return lhs.mBinary < rhs.mBinary;
 	}
 	
-	virtual void additionalResults(const fs::path&, BenchmarkResults&) const {}
+	virtual void additionalResults(const fs::path&, BenchmarkResult&) const {}
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Tool& tool) {

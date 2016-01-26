@@ -74,10 +74,10 @@ private:
 	ssh::SSHScheduler* scheduler;
 	
 protected:
-	virtual void startTool(const Tool& tool) {
+	virtual void startTool(const Tool* tool) {
 		scheduler->uploadTool(tool);
 	}
-	virtual void execute(const Tool& tool, const fs::path& file) {
+	virtual void execute(const Tool* tool, const fs::path& file) {
 		//BENCHMAX_LOG_WARN("benchmax", "Executing...");
 #if 1
 #ifdef USE_STD_ASYNC

@@ -37,7 +37,7 @@ std::string benchmarkStatusToString(BenchmarkStatus status)
 	}
 }
 
-std::string benchmarkResultToString(BenchmarkResult result)
+std::string benchmarkResultToString(BenchmarkResultCode result)
 {
 	switch(result)
 	{

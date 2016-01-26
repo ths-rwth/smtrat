@@ -19,17 +19,17 @@ public:
 	
 	typedef DBAL::Index Index;
 	
-	Index addTool(const Tool& tool) {
-		Index id = conn.insert("INSERT INTO main_tool (`interface`, `hash`) VALUES (%0q, %1q)", tool.name(), tool.attributeHash());
+	Index addTool(const Tool* tool) {
+		Index id = conn.insert("INSERT INTO main_tool (`interface`, `hash`) VALUES (%0q, %1q)", tool->name(), tool->attributeHash());
 		DBAL::Statement stmt = conn.prepare("INSERT INTO main_toolattribute (`key`, `value`, `tool_id`) VALUES (%0q, %1q, %2q)");
-		for (const auto& it: tool.attributes()) {
+		for (const auto& it: tool->attributes()) {
 			conn.execute(stmt, it.first, it.second, id);
 		}
 		return id;
 	}
 	
-	Index getToolID(const Tool& tool) {
-		DBAL::Results res = conn.select("SELECT id FROM main_tool WHERE `interface` = %0q AND `hash` = %1q", tool.name(), tool.attributeHash());
+	Index getToolID(const Tool* tool) {
+		DBAL::Results res = conn.select("SELECT id FROM main_tool WHERE `interface` = %0q AND `hash` = %1q", tool->name(), tool->attributeHash());
 		if (conn.size(res) == 0) {
 			return addTool(tool);
 		}

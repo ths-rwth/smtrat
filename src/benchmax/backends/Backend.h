@@ -15,17 +15,17 @@ namespace benchmax {
 class Backend {
 protected:
 	Results mResults;
-	virtual void startTool(const Tool&) {}
-	virtual void execute(const Tool&, const fs::path&) {}
+	virtual void startTool(const Tool*) {}
+	virtual void execute(const Tool*, const fs::path&) {}
 public:
 	void run(const std::vector<Tool*>& tools, const std::vector<BenchmarkSet>& benchmarks) {
 		for (const Tool* tool: tools) {
-			this->startTool(*tool);
+			this->startTool(tool);
 			for (const BenchmarkSet& set: benchmarks) {
 				for (const fs::path& file: set) {
 					if (tool->canHandle(file)) {
 						//BENCHMAX_LOG_DEBUG("benchmax", "Calling " << tool->binary().native() << " on " << file.native());
-						this->execute(*tool, file);
+						this->execute(tool, file);
 					}
 				}
 			}

@@ -14,17 +14,18 @@
 #include "../BenchmarkStatus.h"
 #include "Database.h"
 #include "XMLWriter.h"
+#include "BenchmarkResult.h"
 
 namespace benchmax {
 
 class Results {
 private:
 	std::mutex mMutex;
-	std::map<Tool, std::size_t> mTools;
+	std::map<const Tool*, std::size_t> mTools;
 	std::map<fs::path, std::size_t> mFiles;
-	std::map<std::pair<std::size_t,std::size_t>, BenchmarkResults> mResults;
+	std::map<std::pair<std::size_t,std::size_t>, BenchmarkResult> mResults;
 public:
-	void addResult(const Tool& tool, const fs::path& file, const BenchmarkResults& results) {
+	void addResult(const Tool* tool, const fs::path& file, const BenchmarkResult& results) {
 		std::lock_guard<std::mutex> lock(mMutex);
 		auto toolIt = mTools.find(tool);
 		if (toolIt == mTools.end()) {
@@ -63,11 +64,7 @@ public:
 		xml.write(mTools, mFiles, mResults);
 	}
 	
-	~Results() {
-		std::cout << "Gathered results for " << mTools << std::endl;
-		std::cout << "On files " << mFiles << std::endl;
-		//std::cout << mResults << std::endl;
-	}
+	~Results() {}
 };
 
 }

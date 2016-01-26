@@ -10,6 +10,8 @@
 #include <iostream>
 #include <map>
 
+#include "results/BenchmarkResult.h"
+
 namespace benchmax {
 
 enum BenchmarkStatus
@@ -20,28 +22,13 @@ enum BenchmarkStatus
 BenchmarkStatus benchmarkStatusFromParser(int parserStatus);
 std::string benchmarkStatusToString(BenchmarkStatus status);
 
-struct BenchmarkResults {
-	int exitCode;
-	std::size_t time;
-	std::string stdout;
-	std::string stderr;
-	std::map<std::string, std::string> additional;
-};
-
-inline std::ostream& operator<<(std::ostream& os, const BenchmarkResults& results) {
-	os << "(" << results.exitCode << ", " << results.time << ")" << std::endl;
-	os << results.stdout << std::endl;
-	os << results.stderr << std::endl;
-	return os;
-}
-
-enum BenchmarkResult
+enum BenchmarkResultCode
 {
 	BR_SAT = 0, BR_UNSAT = 1, BR_UNKNOWN = 2, BR_INVALID = -1, BR_TIMEOUT = 3, BR_MEMOUT = 4, BR_WRONG = 5, BR_ABORT = 6, BR_SEGFAULT = 7,
 	BR_SOLVERERROR = 8, BR_UNEXPECTEDERROR = 9, BR_NORESULT = 100
 };
 
-std::string benchmarkResultToString(BenchmarkResult result);
+std::string benchmarkResultToString(BenchmarkResultCode result);
 
 enum ValidationResult { NOTVALIDATED = -1, FOUNDERROR = 1, OKAY = 0 };
 
