@@ -20,8 +20,6 @@
 #include "Tool.h"
 
 #include "IsatTool.h"
-#include "QepcadTool.h"
-#include "RedlogTool.h"
 #include "Z3.h"
 #include "SMTRAT.h"
 
