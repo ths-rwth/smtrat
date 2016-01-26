@@ -30,11 +30,13 @@ public:
 				}
 			}
 		}
+		BENCHMAX_LOG_INFO("benchmax", "Finished, waiting for termination.");
 	}
 	virtual ~Backend() {
 		//Database db;
 		//mResults.store(db);
-		XMLWriter xml("stats.xml");
+		BENCHMAX_LOG_INFO("benchmax", "Writing results to " << Settings::StatsXMLFile);
+		XMLWriter xml(Settings::StatsXMLFile);
 		mResults.store(xml);
 	}
 };
