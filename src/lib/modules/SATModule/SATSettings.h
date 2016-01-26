@@ -102,4 +102,9 @@ namespace smtrat
     {
 		static const bool remove_satisfied = false;
 	};
+	
+	struct SATSettingsStopAfterUnknown : SATSettings1
+    {
+		static const bool stop_search_after_first_unknown = true;
+	};
 }
