@@ -32,8 +32,10 @@ public:
 		}
 	}
 	virtual ~Backend() {
-		Database db;
-		mResults.store(db);
+		//Database db;
+		//mResults.store(db);
+		XMLWriter xml("stats.xml");
+		mResults.store(xml);
 	}
 };
 

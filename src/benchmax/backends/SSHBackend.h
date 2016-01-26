@@ -31,7 +31,7 @@ using std::regex_match;
 
 namespace benchmax {
 
-//#define USE_STD_ASYNC
+#define USE_STD_ASYNC
 
 /**
  * Parses a node identifier of the format `server[:port]@[numberOfCores]@user@password`
