@@ -11,6 +11,7 @@
 
 #include "../logging.h"
 #include "../BenchmarkSet.h"
+#include "../Stats.h"
 
 #include "../tools/Tool.h"
 

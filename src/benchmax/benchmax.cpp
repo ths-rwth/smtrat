@@ -17,6 +17,7 @@
 #else
 #include <boost/filesystem/path.hpp>
 #endif
+namespace fs = boost::filesystem;
 
 #include <signal.h>
 
@@ -119,7 +120,7 @@ void loadBenchmarks(std::vector<benchmax::BenchmarkSet>& benchmarks) {
 		fs::path path(p);
 		if (fs::exists(path)) {
 			BENCHMAX_LOG_INFO("benchmax.benchmarks", "Adding benchmark " << path.native());
-			benchmarks.emplace_back(path, Settings::ProduceLatex);
+			benchmarks.emplace_back(path);
 		} else {
 			BENCHMAX_LOG_WARN("benchmax", "Benchmark path " << p << " does not exist.");
 		}
