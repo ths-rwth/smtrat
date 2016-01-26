@@ -26,43 +26,11 @@ using std::regex_match;
 #endif
 
 #include "BackendData.h"
-#include "../ssh/Node.h"
 #include "../newssh/SSHScheduler.h"
 
 namespace benchmax {
 
 #define USE_STD_ASYNC
-
-/**
- * Parses a node identifier of the format `server[:port]@[numberOfCores]@user@password`
- * @param _nodeAsString
- * @return 
- */
-benchmax::Node getNode(const string& _nodeAsString)
-{
-	regex noderegex("([^:]+):([^@]+)@([^:@]+)(?::(\\d+))?(?:@(\\d+))?");
-	std::smatch matches;
-	if (regex_match(_nodeAsString, matches, noderegex)) {
-		std::string username = matches[1];
-		std::string password = matches[2];
-		std::string hostname = matches[3];
-		unsigned long port = 22;
-		unsigned long cores = 1;
-		try {
-			if (matches[4] != "") port = std::stoul(matches[4]);
-			if (matches[5] != "") cores = std::stoul(matches[5]);
-		} catch (std::out_of_range) {
-			BENCHMAX_LOG_ERROR("benchmax", "Value for port or number of cores is out of range.");
-			BENCHMAX_LOG_ERROR("benchmax", "\tPort: " << matches[4]);
-			BENCHMAX_LOG_ERROR("benchmax", "\tCores: " << matches[5]);
-		}
-		return benchmax::Node(hostname, username, password, (unsigned short)cores, (unsigned short)port);
-	} else {
-		BENCHMAX_LOG_ERROR("benchmax", "Invalid format for node specification. Use the following format:");
-		BENCHMAX_LOG_ERROR("benchmax", "\t<user>:<password>@<hostname>[:<port = 22>][@<cores = 1>]");
-		exit(1);
-	}
-}
 
 class SSHBackend: public Backend {
 private:

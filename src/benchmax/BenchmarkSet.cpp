@@ -37,37 +37,15 @@ BenchmarkSet::BenchmarkSet(const fs::path& path,
 					 bool latex):
 	mPathToDirectory(path),
 	mFilesList(),
-	mNrSolved(0),
 	mNrSatSolved(0),
 	mNrUnsatSolved(0),
 	mNrSatInstances(0),
-	mNrUnsatInstances(0),
-	mAccumulatedTime(0),
-	mProduceLaTeX(latex),
-	mTimeStamp("")
+	mNrUnsatInstances(0)
 {
 	parseDirectory();
 	mNextInstanceToTry = mFilesList.begin();
 }
 BenchmarkSet::~BenchmarkSet(){}
-
-list<fs::path> BenchmarkSet::pop(unsigned _nrOfExamples)
-{
-	list<fs::path> result = list<fs::path>();
-	if(!done())
-	{
-		for(unsigned i = 0; i < _nrOfExamples; ++i)
-		{
-			result.push_back(*mNextInstanceToTry);
-			++mNextInstanceToTry;
-			if(done())
-			{
-				return result;
-			}
-		}
-	}
-	return result;
-}
 
 /**
  *
@@ -103,40 +81,6 @@ int BenchmarkSet::parseDirectory()
 		return 1;
 	}
 	return 0;
-}
-
-void BenchmarkSet::createTimestamp()
-{
-	stringstream	timestamp;
-	pt::time_facet* facet = new pt::time_facet("%Y%m%dT%H%M%S");
-	timestamp.imbue(std::locale(timestamp.getloc(), facet));
-	timestamp << pt::second_clock::local_time().date();
-	mTimeStamp = timestamp.str();
-}
-
-/**
- *
- */
-void BenchmarkSet::printSettings() const
-{
-	BENCHMAX_LOG_INFO("benchmax", "+-");
-	BENCHMAX_LOG_INFO("benchmax", "| Benchmark: " << benchmarkName());
-	BENCHMAX_LOG_INFO("benchmax", "| Timeout: " << Settings::timeLimit << " seconds");
-	//BENCHMAX_LOG_INFO("benchmax", "| Solver: " << solverName());
-	BENCHMAX_LOG_INFO("benchmax", "+-");
-}
-
-/**
- *
- */
-void BenchmarkSet::printResults() const
-{
-	BENCHMAX_LOG_INFO("benchmax", "**************************************************");
-	//BENCHMAX_LOG_INFO("benchmax", "Result: " << solverName() << " solved " << mNrSolved << " out of " << benchmarkCount());
-	BENCHMAX_LOG_INFO("benchmax", "sat instances: " << mNrSatSolved << "/" << mNrSatInstances << ", unsat instances: " << mNrUnsatSolved << "/" << mNrUnsatInstances);
-	BENCHMAX_LOG_INFO("benchmax", "Accumulated time: " << mAccumulatedTime << " msec");
-	BENCHMAX_LOG_INFO("benchmax", "Results: " << mResults);
-	BENCHMAX_LOG_INFO("benchmax", "**************************************************");
 }
 
 }

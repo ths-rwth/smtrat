@@ -103,14 +103,10 @@ class BenchmarkSet
 	std::list<fs::path> mFilesList;
 	std::list<fs::path>::iterator mNextInstanceToTry;
 	std::vector<std::pair<std::string, doublestring>> mResults;
-	std::size_t mNrSolved;
 	std::size_t mNrSatSolved;
 	std::size_t mNrUnsatSolved;
 	std::size_t mNrSatInstances;
 	std::size_t mNrUnsatInstances;
-	std::size_t mAccumulatedTime;
-	bool mProduceLaTeX;
-	std::string mTimeStamp;
 
 	public:
 
@@ -128,59 +124,15 @@ class BenchmarkSet
 		// Selectors //
 		///////////////
 
-		bool produceLaTeX() const
-		{
-			return mProduceLaTeX;
-		}
-		std::size_t benchmarkCount() const
-		{
-			return mFilesList.size();
-		}
-
-		std::size_t nrSolved() const
-		{
-			return mNrSolved;
-		}
-
-		std::size_t accumulatedTimeInMillis() const
-		{
-			return mAccumulatedTime;
-		}
-
-		double accumulatedTimeInSecs() const
-		{
-			return mAccumulatedTime / 1000.0;
-		}
-
 		bool done() const
 		{
 			return mNextInstanceToTry == mFilesList.end();
-		}
-
-		const std::string& timeStamp() const
-		{
-			return mTimeStamp;
-		}
-
-		std::string benchmarkName() const
-		{
-			fs::path p(mPathToDirectory);
-			if(fs::is_directory(p))
-			{
-				return p.parent_path().filename().string();
-			}
-			else
-			{
-				return p.parent_path().filename().string();
-			}
-
 		}
 
 		/////////////
 		// Methods //
 		/////////////
 
-		std::list<fs::path> pop(unsigned _nrOfExamples);
 		int run();
 		
 		std::list<fs::path>::const_iterator begin() const {
@@ -190,12 +142,8 @@ class BenchmarkSet
 			return mFilesList.end();
 		}
 
-		void printSettings() const;
-		void printResults() const;
-
 	protected:
 		int parseDirectory();
-		void createTimestamp();
 
 };
 
