@@ -13,6 +13,7 @@
 #include "../logging.h"
 #include "../BenchmarkStatus.h"
 #include "Database.h"
+#include "XMLWriter.h"
 
 namespace benchmax {
 
@@ -56,6 +57,10 @@ public:
 				db.addBenchmarkAttribute(id, attr.first, attr.second);
 			}
 		}
+	}
+	
+	void store(XMLWriter& xml) {
+		xml.write(mTools, mFiles, mResults);
 	}
 	
 	~Results() {
