@@ -32,7 +32,7 @@ public:
 	void write(const std::map<const Tool*, std::size_t>& tools, const std::map<fs::path, std::size_t>& files, const std::map<std::pair<std::size_t,std::size_t>, BenchmarkResult>& results) {
 		mFile << "\t<solvers>" << std::endl;
 		for (const auto& tool: tools) {
-			mFile << "\t\t<solver solver_id=\"" << sanitize(tool.first->name()) << "\" />" << std::endl;
+			mFile << "\t\t<solver solver_id=\"" << sanitize(tool.first->binary().native()) << "\" />" << std::endl;
 		}
 		mFile << "\t</solvers>" << std::endl;
 		
