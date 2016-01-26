@@ -17,18 +17,8 @@ using std::string;
 using std::unordered_map;
 
 QepcadTool::QepcadTool(const std::string& pathToTool):
-	Tool(TI_QEPCAD, pathToTool, ".smt2")
+	Tool("QEPCAD", pathToTool, "")
 {}
-
-std::string QepcadTool::getCallToTool(const std::string& extraArguments) const
-{
-	return Tool::getCallToTool(extraArguments + " < ");
-}
-
-BenchmarkResult QepcadTool::getAnswer(const std::string& output) const
-{
-	return extractAnswerFromOutput(output, "TRUE", "FALSE", "UNKNOWN"); // the "UNKNOWN" case never happens
-}
 
 #ifdef BENCHMAX_USE_SMTPARSER
 #include <ginac/ginac.h>

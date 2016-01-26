@@ -27,19 +27,9 @@ ToolInterface redlogModeToToolInterface(RedlogMode mode)
 }
 
 RedlogTool::RedlogTool(const std::string& pathToTool, RedlogMode mode):
-	Tool(redlogModeToToolInterface(mode), pathToTool, ".smt2"),
+	Tool("RedLog", pathToTool, ""),
 	mMode(mode)
 {}
-
-std::string RedlogTool::getCallToTool(const std::string& extraArguments) const
-{
-	return Tool::getCallToTool(extraArguments + " < ");
-}
-
-BenchmarkResult RedlogTool::getAnswer(const std::string& output) const
-{
-	return extractAnswerFromOutput(output, "true", "false", "unknown"); // the "unknown" case never happens
-}
 
 #ifdef BENCHMAX_USE_SMTPARSER
 #include <../src/solver/parser/Driver.h>
