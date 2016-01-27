@@ -26,10 +26,10 @@ void BenchmarkSet::parseDirectory(const fs::path& dir)
 		{
 			if (fs::is_directory(dir)) {
 				// If it is a directory, we add all the contents
-				std::copy(fs::directory_iterator(dir), fs::directory_iterator(), back_inserter(mFilesList));
-				// Remove all files but those with the right extension.
-				std::sort(mFilesList.begin(), mFilesList.end());
-				BENCHMAX_LOG_DEBUG("benchmax", dir << " is a directory containing " << mFilesList);
+				BENCHMAX_LOG_DEBUG("benchmax", dir << " is a directory.");
+				for (auto it = fs::directory_iterator(dir); it != fs::directory_iterator(); it++) {
+					parseDirectory(*it);
+				}
 			} else if (fs::is_symlink(dir)) {
 				// A symlink. Resolve symlink and call recursively.
 				fs::path r = fs::read_symlink(dir);
