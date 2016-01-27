@@ -17,14 +17,19 @@ protected:
 	Results mResults;
 	std::size_t mExpectedJobs;
 	std::atomic<std::size_t> mFinishedJobs;
+	std::atomic<std::size_t> mLastPercent;
 	
-	Backend(): mExpectedJobs(0), mFinishedJobs(0) {}
+	Backend(): mExpectedJobs(0), mFinishedJobs(0), mLastPercent(0) {}
 	
 	virtual void startTool(const Tool*) {}
 	virtual void execute(const Tool*, const fs::path&) {}
 	void madeProgress(std::size_t files = 1) {
 		mFinishedJobs += files;
-		BENCHMAX_LOG_INFO("benchmax", "Progress: " << mFinishedJobs << " / " << mExpectedJobs);
+		std::size_t newPercent = mFinishedJobs * 100 / mExpectedJobs;
+		if (newPercent > mLastPercent) {
+			mLastPercent = newPercent;
+			BENCHMAX_LOG_INFO("benchmax", "Progress: " << mLastPercent << "% (" << mFinishedJobs << " / " << mExpectedJobs << ")");
+		}
 	}
 public:
 	void run(const std::vector<Tool*>& tools, const std::vector<BenchmarkSet>& benchmarks) {
