@@ -27,7 +27,7 @@ matrix:
     - os: osx
       env: USE=g++-4.9
     - os: osx
-      env: USE=g++-5.1
+      env: USE=g++-5
     - os: osx
       env: USE=clang++-3.4
     - os: osx

@@ -20,29 +20,28 @@ BenchmarkSet::BenchmarkSet(const fs::path& baseDir): mFilesList() {
 
 void BenchmarkSet::parseDirectory(const fs::path& dir)
 {
-	try
-	{
+	try {
 		// does p actually exist?
 		if(fs::exists(dir))
 		{
-			// If it is a directory, we add all the contents
-			if(fs::is_directory(dir))
-			{
-				std::copy(fs::directory_iterator(dir), fs::directory_iterator(), back_inserter(mFilesList));
-				// Remove all files but those with the right extension.
-				std::sort(mFilesList.begin(), mFilesList.end());
-				BENCHMAX_LOG_DEBUG("benchmax", dir << " is a directory containing " << mFilesList);
-			}
-			// Not a directory, so (we assume?) it is a file.
-			else
-			{
+			if (fs::is_directory(dir)) {
+				// If it is a directory, we add all the contents
+				BENCHMAX_LOG_DEBUG("benchmax", dir << " is a directory.");
+				for (auto it = fs::directory_iterator(dir); it != fs::directory_iterator(); it++) {
+					parseDirectory(*it);
+				}
+			} else if (fs::is_symlink(dir)) {
+				// A symlink. Resolve symlink and call recursively.
+				fs::path r = fs::read_symlink(dir);
+				BENCHMAX_LOG_DEBUG("benchmax", dir << " is a symlink to " << r);
+				parseDirectory(r);
+			} else {
+				// Not a directory, so (we assume?) it is a file.
 				mFilesList.push_back(dir);
 			}
 		}
 		else BENCHMAX_LOG_WARN("benchmax", dir << " does not exist.");
-	}
-	catch(const fs::filesystem_error& ex)
-	{
+	} catch(const fs::filesystem_error& ex) {
 		BENCHMAX_LOG_ERROR("benchmax", "Filesystem error: " << ex.what());
 	}
 }

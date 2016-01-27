@@ -46,15 +46,10 @@ protected:
 		scheduler->uploadTool(tool);
 	}
 	virtual void execute(const Tool* tool, const fs::path& file) {
-		//BENCHMAX_LOG_WARN("benchmax", "Executing...");
-#if 1
 #ifdef USE_STD_ASYNC
 		jobs.push(std::async(std::launch::async, &ssh::SSHScheduler::executeJob, scheduler, tool, file, std::ref(mResults)));
 #else
 		jobs.push(std::thread(&ssh::SSHScheduler::executeJob, scheduler, tool, file, std::ref(mResults)));
-#endif
-#else
-		scheduler->executeJob(tool, file, mResults);
 #endif
 	}
 public:
