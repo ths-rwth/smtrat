@@ -22,8 +22,8 @@ protected:
 	
 	virtual void startTool(const Tool*) {}
 	virtual void execute(const Tool*, const fs::path&) {}
-	void madeProgress() {
-		mFinishedJobs += 1;
+	void madeProgress(std::size_t files = 1) {
+		mFinishedJobs += files;
 		BENCHMAX_LOG_INFO("benchmax", "Progress: " << mFinishedJobs << " / " << mExpectedJobs);
 	}
 public:
