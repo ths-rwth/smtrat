@@ -58,6 +58,7 @@ namespace smtrat
 		setting.simplifyByRootcounting  = true;
 		setting.splitInteger = false;
 		setting.integerHandling = Settings::integerHandling;
+		setting.ignoreRoots = Settings::ignoreRoots;
 
 		#ifdef SMTRAT_CAD_DISABLE_MIS
 			setting.computeConflictGraph = false;
@@ -247,7 +248,8 @@ namespace smtrat
 			cad::SplitVariableSelector<Settings::splitHeuristic> svs;
 			int d = svs.select(mCAD.getVariables(), mRealAlgebraicSolution);
 			if (d != -1) {
-				if (mFinalCheck) branchAt(mCAD.getVariables()[d], mRealAlgebraicSolution[d].branchingPoint());
+				if (mFinalCheck) branchAt(mCAD.getVariables()[std::size_t(d)], mRealAlgebraicSolution[std::size_t(d)].branchingPoint());
+				SMTRAT_LOG_DEBUG("smtrat.cad", "Returning unknown with split");
 				return UNKNOWN;
 			}
 		} else if (Settings::integerHandling == carl::cad::IntegerHandling::SPLIT_PATH) {
@@ -268,6 +270,7 @@ namespace smtrat
 						addLemma(FormulaT(carl::OR, {FormulaT(rReceivedFormula()).negated(), std::move(lemma)}));
 						addLemma(enforcer);
 					}
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Returning unknown with lemma");
 					return UNKNOWN;
 				}
 				auto r = this->mRealAlgebraicSolution[d].branchingPoint();
@@ -281,10 +284,14 @@ namespace smtrat
 		} else if (Settings::integerHandling == carl::cad::IntegerHandling::NONE) {
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
 			for (std::size_t d = 0; d < mRealAlgebraicSolution.dim(); d++) {
-				if (!validateIntegrality(vars, d)) return UNKNOWN;
+				if (!validateIntegrality(vars, d)) {
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Returning unknown without split");
+					return UNKNOWN;
+				}
 			}
 		}
 		assert(checkSatisfiabilityOfAssignment());
+		SMTRAT_LOG_DEBUG("smtrat.cad", "Returning sat");
 		return SAT;
 	}
 
@@ -370,13 +377,13 @@ namespace smtrat
 	template<typename Settings>
 	void CADModule<Settings>::updateModel() const
 	{
-		SMTRAT_LOG_FUNC("smtrat.cad", "");
+		SMTRAT_LOG_FUNC("smtrat.cad", "Updating model");
 		clearModel();
 		if (this->solverState() == SAT) {
 			// bound-independent part of the model
 			std::vector<carl::Variable> vars(mCAD.getVariables());
 			for (unsigned varID = 0; varID < vars.size(); ++varID) {
-				if (varID != mRealAlgebraicSolution.dim()) break;
+				if (varID == mRealAlgebraicSolution.dim()) break;
 				ModelValue ass = mRealAlgebraicSolution[varID];
 				mModel.insert(std::make_pair(vars[varID], ass));
 			}
@@ -393,6 +400,7 @@ namespace smtrat
 				}
 			}
 		}
+		SMTRAT_LOG_DEBUG("smtrat.cad", "Model of CAD: " << mModel);
 	}
 
 	///////////////////////

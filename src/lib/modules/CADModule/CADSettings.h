@@ -31,6 +31,7 @@ namespace smtrat
 		static constexpr auto moduleName = "CADModule<CADSettingsReal>";
 		static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::NONE;
 		static constexpr SplitHeuristic splitHeuristic = SplitHeuristic::FIRST;
+		static constexpr bool ignoreRoots = false;
 
 		static constexpr MISHeuristic mis_heuristic = MISHeuristic::GREEDY;
 		static constexpr bool computeConflictGraph = (mis_heuristic != MISHeuristic::TRIVIAL);
@@ -55,5 +56,12 @@ namespace smtrat
 	{
 		static constexpr auto moduleName = "CADModule<SplitPath>";
 		static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::SPLIT_PATH;
+	};
+	struct CADSettingsNoRoots : CADSettingsReal
+	{
+		static constexpr auto moduleName = "CADModule<NoRoots>";
+		static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::SPLIT_ASSIGNMENT;
+		static constexpr SplitHeuristic splitHeuristic = SplitHeuristic::FIRST;
+		static constexpr bool ignoreRoots = true;
 	};
 }

@@ -11,12 +11,12 @@ public:
 	using Variables = std::vector<carl::Variable>;
 	using RAPoint = carl::RealAlgebraicPoint<smtrat::Rational>;
 private:
-	std::vector<std::size_t> collectIndices(const Variables& vars, const RAPoint& rap) const {
-		std::vector<std::size_t> res;
+	std::vector<int> collectIndices(const Variables& vars, const RAPoint& rap) const {
+		std::vector<int> res;
 		for (std::size_t d = 0; d < rap.dim(); d++) {
 			if (vars[d].getType() != carl::VariableType::VT_INT) continue;
 			if (carl::isInteger(rap[d])) continue;
-			res.push_back(d);
+			res.push_back(int(d));
 		}
 		return res;
 	}
