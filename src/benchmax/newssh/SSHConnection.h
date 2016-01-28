@@ -21,7 +21,7 @@ private:
 	Node node;
 	std::size_t curChannels;
 	std::size_t maxChannels;
-	std::size_t curJobs;
+	std::atomic<std::size_t> curJobs;
 	ssh_session session;
 	std::mutex mutex;
 	int verbosity;
