@@ -504,8 +504,9 @@ namespace smtrat
         return false;
     }
     
-    bool Module::branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak, bool _preferLeftCase )
+    bool Module::branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak, bool _preferLeftCase, bool _useReceivedFormulaAsPremise )
     {
+        assert( !_useReceivedFormulaAsPremise || _premise.empty() );
         assert( !_polynomial.hasConstantTerm() );
         ConstraintT constraintA;
         ConstraintT constraintB;
@@ -562,8 +563,19 @@ namespace smtrat
             OLD_SPLITTING_VARS_UNLOCK
             // Create _premise -> (s1 or s2)
             FormulasT subformulas;
-            for( const FormulaT premForm : _premise )
-                subformulas.push_back( premForm.negated() );
+            if( _useReceivedFormulaAsPremise )
+            {
+                for( const auto& fwo : rReceivedFormula() )
+                    subformulas.push_back( fwo.formula().negated() );
+            }
+            else
+            {
+                for( const FormulaT& premForm : _premise )
+                {
+                    assert( rReceivedFormula().contains( premForm ) );
+                    subformulas.push_back( premForm.negated() );
+                }
+            }
             subformulas.push_back( s1 );
             subformulas.push_back( s2 );
             addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ), LemmaType::NORMAL, _preferLeftCase ? s1 : s2 );

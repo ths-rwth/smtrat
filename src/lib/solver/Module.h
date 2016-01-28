@@ -1059,35 +1059,35 @@ namespace smtrat
              *                      false, if a branching in the form of (or (< p b) (>= p b)) is desired.
              * @param _preferLeftCase true, if the left case (polynomial less(or equal) 0 shall be chosen first.
              *                        false, otherwise.
-             * @param _isolateBranchValue true, if a branching in the form of (or (= p b) (< p b) (> p b)) is desired. (Currently only supported for reals)
+             * @param _useReceivedFormulaAsPremise true, if the whole received formula should be used as premise
              */
-            bool branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak = true, bool _preferLeftCase = true );
+            bool branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak = true, bool _preferLeftCase = true, bool _useReceivedFormulaAsPremise = false );
             
-            bool branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
+            bool branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, bool _useReceivedFormulaAsPremise = false, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
             {
-                return branchAt( _polynomial, _integral, _value, std::vector<FormulaT>( _premise ), _leftCaseWeak, _preferLeftCase );
+                return branchAt( _polynomial, _integral, _value, std::vector<FormulaT>( _premise ), _leftCaseWeak, _preferLeftCase, _useReceivedFormulaAsPremise );
             }
             
-            bool branchAt( carl::Variable::Arg _var, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak = true, bool _preferLeftCase = true )
+            bool branchAt( carl::Variable::Arg _var, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak = true, bool _preferLeftCase = true, bool _useReceivedFormulaAsPremise = false )
             {
-                return branchAt( carl::makePolynomial<Poly>( _var ), _var.getType() == carl::VariableType::VT_INT, _value, std::move( _premise ), _leftCaseWeak, _preferLeftCase );
+                return branchAt( carl::makePolynomial<Poly>( _var ), _var.getType() == carl::VariableType::VT_INT, _value, std::move( _premise ), _leftCaseWeak, _preferLeftCase, _useReceivedFormulaAsPremise );
             }
             
-            bool branchAt( carl::Variable::Arg _var, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
+            bool branchAt( carl::Variable::Arg _var, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, bool _useReceivedFormulaAsPremise = false, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
             {
-                return branchAt( carl::makePolynomial<Poly>( _var ), _var.getType() == carl::VariableType::VT_INT, _value, std::vector<FormulaT>( _premise ), _leftCaseWeak, _preferLeftCase );
-            }
-            
-            template<typename P = Poly, carl::EnableIf<carl::needs_cache<P>> = carl::dummy>
-            bool branchAt( const typename P::PolyType& _poly, bool _integral, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak = true, bool _preferLeftCase = true )
-            {
-                return branchAt( carl::makePolynomial<P>( _poly ), _integral, _value, std::move( _premise ), _leftCaseWeak, _preferLeftCase );
+                return branchAt( carl::makePolynomial<Poly>( _var ), _var.getType() == carl::VariableType::VT_INT, _value, std::vector<FormulaT>( _premise ), _leftCaseWeak, _preferLeftCase, _useReceivedFormulaAsPremise );
             }
             
             template<typename P = Poly, carl::EnableIf<carl::needs_cache<P>> = carl::dummy>
-            bool branchAt( const typename P::PolyType& _poly, bool _integral, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
+            bool branchAt( const typename P::PolyType& _poly, bool _integral, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak = true, bool _preferLeftCase = true, bool _useReceivedFormulaAsPremise = false )
             {
-                return branchAt( carl::makePolynomial<P>( _poly ), _integral, _value, std::move( std::vector<FormulaT>( _premise ) ), _leftCaseWeak, _preferLeftCase );
+                return branchAt( carl::makePolynomial<P>( _poly ), _integral, _value, std::move( _premise ), _leftCaseWeak, _preferLeftCase, _useReceivedFormulaAsPremise );
+            }
+            
+            template<typename P = Poly, carl::EnableIf<carl::needs_cache<P>> = carl::dummy>
+            bool branchAt( const typename P::PolyType& _poly, bool _integral, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, bool _useReceivedFormulaAsPremise = false, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
+            {
+                return branchAt( carl::makePolynomial<P>( _poly ), _integral, _value, std::move( std::vector<FormulaT>( _premise ) ), _leftCaseWeak, _preferLeftCase, _useReceivedFormulaAsPremise );
             }
             
             /**
