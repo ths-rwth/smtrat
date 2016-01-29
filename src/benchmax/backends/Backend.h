@@ -33,10 +33,12 @@ protected:
 	}
 public:
 	void run(const std::vector<Tool*>& tools, const std::vector<BenchmarkSet>& benchmarks) {
+		for (const BenchmarkSet& set: benchmarks) {
+			mExpectedJobs += tools.size() * set.size();
+		}
 		for (const Tool* tool: tools) {
 			this->startTool(tool);
 			for (const BenchmarkSet& set: benchmarks) {
-				mExpectedJobs += set.size();
 				for (const fs::path& file: set) {
 					if (tool->canHandle(file)) {
 						//BENCHMAX_LOG_DEBUG("benchmax", "Calling " << tool->binary().native() << " on " << file.native());
