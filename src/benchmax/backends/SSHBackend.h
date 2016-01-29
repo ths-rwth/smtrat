@@ -39,6 +39,16 @@ private:
 #else
 	std::queue<std::thread> jobs;
 #endif
+
+	void waitAndPop() {
+#ifdef USE_STD_ASYNC
+		jobs.front().wait();
+#else
+		jobs.front().join();
+#endif
+		jobs.pop();
+		madeProgress();
+	}
 	ssh::SSHScheduler* scheduler;
 	
 protected:
@@ -46,6 +56,10 @@ protected:
 		scheduler->uploadTool(tool);
 	}
 	virtual void execute(const Tool* tool, const fs::path& file) {
+		while (jobs.size() > scheduler->workerCount()) {
+			waitAndPop();
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		}
 #ifdef USE_STD_ASYNC
 		jobs.push(std::async(std::launch::async, &ssh::SSHScheduler::executeJob, scheduler, tool, file, std::ref(mResults)));
 #else
@@ -57,15 +71,7 @@ public:
 		scheduler = new ssh::SSHScheduler();
 	}
 	~SSHBackend() {
-		while (!jobs.empty()) {
-#ifdef USE_STD_ASYNC
-			jobs.front().wait();
-#else
-			jobs.front().join();
-#endif
-			madeProgress();
-			jobs.pop();
-		}
+		while (!jobs.empty()) waitAndPop();
 	}
 };
 
