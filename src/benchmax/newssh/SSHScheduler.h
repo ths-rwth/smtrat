@@ -53,6 +53,7 @@ class SSHScheduler {
 private:
 	std::vector<SSHConnection*> connections;
 	std::mutex mutex;
+	std::size_t mWorkerCount;
 	
 	SSHConnection* get() {
 		std::lock_guard<std::mutex> lock(mutex);
@@ -76,10 +77,15 @@ public:
 			for (std::size_t i = 0; i < n.connections; i++) {
 				connections.push_back(new SSHConnection(n));
 			}
+			mWorkerCount += n.connections * n.cores;
 		}
 	}
 	~SSHScheduler() {
 		for (auto& c: connections) delete c;
+	}
+	
+	std::size_t workerCount() const {
+		return mWorkerCount;
 	}
 	
 	void uploadTool(const Tool* tool) {
