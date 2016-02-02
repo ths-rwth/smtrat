@@ -26,7 +26,7 @@ using std::regex_match;
 #endif
 
 #include "BackendData.h"
-#include "../newssh/SSHScheduler.h"
+#include "../ssh/SSHScheduler.h"
 
 namespace benchmax {
 
@@ -56,7 +56,8 @@ protected:
 		scheduler->uploadTool(tool);
 	}
 	virtual void execute(const Tool* tool, const fs::path& file) {
-		while (jobs.size() > scheduler->workerCount()) {
+		// Make sure enough jobs are active.
+		while (jobs.size() > scheduler->workerCount() * 5) {
 			waitAndPop();
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
