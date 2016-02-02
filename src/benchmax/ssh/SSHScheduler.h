@@ -6,6 +6,8 @@
 #include <sys/stat.h>
 #include <thread>
 
+#include <libssh/callbacks.h>
+
 #include "Node.h"
 #include "SSHConnection.h"
 #include "../Settings.h"
@@ -73,6 +75,8 @@ private:
 	}
 public:
 	SSHScheduler(): mWorkerCount(0), mRunningJobs(0) {
+		ssh_threads_set_callbacks(ssh_threads_get_noop());
+		ssh_init();
 		for (const auto& s: Settings::ssh_nodes) {
 			Node n = getNode(s);
 			for (std::size_t i = 0; i < n.connections; i++) {
@@ -121,6 +125,7 @@ public:
 		c->removeDir(folder);
 		// Store result
 		res.addResult(tool, file, result);
+		BENCHMAX_LOG_INFO("benchmax.ssh", "Finishing " << file);
 		c->finishJob();
 		mRunningJobs--;
 		return true;

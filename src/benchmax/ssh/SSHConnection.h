@@ -151,7 +151,7 @@ public:
 	}
 	bool busy() {
 		//BENCHMAX_LOG_DEBUG("benchmax.ssh", "Currently " << curChannels << " / " << maxChannels);
-		return curChannels == maxChannels;
+		return curChannels >= maxChannels;
 	}
 	
 	std::string createTmpDir(const string& folder) {
