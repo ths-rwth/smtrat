@@ -55,6 +55,7 @@ public:
 				}
 				mFile << "\t\t\t\t<results>" << std::endl;
 				mFile << "\t\t\t\t\t<result name=\"runtime\" type=\"msec\">" << it->second.time << "</result>" << std::endl;
+				mFile << "\t\t\t\t\t<result name=\"exitcode\" type=\"int\">" << it->second.exitCode << "</result>" << std::endl;
 				mFile << "\t\t\t\t\t<result name=\"answer\" type=\"\">";
 				switch (it->second.exitCode) {
 					case 2: mFile << "sat"; break;
