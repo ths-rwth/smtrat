@@ -4,7 +4,6 @@ option( BENCHMAX_LOGGING "Use logging in benchmax. Strongly encouraged!" ON )
 configure_file( ${CMAKE_SOURCE_DIR}/src/benchmax/config.h.in ${CMAKE_SOURCE_DIR}/src/benchmax/config.h )
 
 add_subdirectory(backends)
-add_subdirectory(ssh)
 add_subdirectory(tools)
 
 add_executable( benchmax benchmax.cpp BenchmarkSet.h BenchmarkSet.cpp Stats.cpp
@@ -28,25 +27,18 @@ find_library(ALIBBPO NAMES libboost_program_options.${STATIC_EXT})
 find_library(SLIBBPO NAMES libboost_program_options.${DYNAMIC_EXT})
 find_library(ALIBBSY NAMES libboost_system.${STATIC_EXT})
 find_library(SLIBBSY NAMES libboost_system.${DYNAMIC_EXT})
-find_library(ALIBMYSQL NAMES libmysqlclient.${DYNAMIC_EXT})
-find_library(SLIBMYSQL NAMES libmysqlclient.${DYNAMIC_EXT})
+#find_library(ALIBMYSQL NAMES libmysqlclient.${DYNAMIC_EXT})
+#find_library(SLIBMYSQL NAMES libmysqlclient.${DYNAMIC_EXT})
 find_library(ALIBSSH NAMES libssh.${STATIC_EXT})
 find_library(SLIBSSH NAMES libssh.${DYNAMIC_EXT})
-find_library(ALIBSSH2 NAMES libssh2.${DYNAMIC_EXT})
-find_library(SLIBSSH2 NAMES libssh2.${DYNAMIC_EXT})
 
 
 
 if(${STATICLIB_SWITCH} STREQUAL "ON")
-	set(LIBS ${ALIBBCH} ${ALIBBFS} ${ALIBBPO} ${ALIBBSY} ${ALIBMYSQL} ${ALIBSSH} ${ALIBSSH2} mysqlpp)
-	message("${LIBS}")
-	message("${libraries}")
-	set(libraries lib_carl_static)
-	target_link_libraries( benchmax ${LIBS} mysqlcppconn-static ssl crypto dl z pthread ${libraries} )
+	set(LIBS ${ALIBBCH} ${ALIBBFS} ${ALIBBPO} ${ALIBBSY} ${ALIBMYSQL} ${ALIBSSH})
+	target_link_libraries( benchmax ${LIBS} ssl crypto dl z pthread ${libraries} )
 else()
-	set(LIBS ${SLIBBCH} ${SLIBBFS} ${SLIBBPO} ${SLIBBSY} ${SLIBMYSQL} ${SLIBSSH} ${SLIBSSH2} mysqlpp)
-	message("${LIBS}")
-	message("${libraries}")
+	set(LIBS ${SLIBBCH} ${SLIBBFS} ${SLIBBPO} ${SLIBBSY} ${SLIBMYSQL} ${SLIBSSH})
 	target_link_libraries( benchmax ${LIBS} mysqlcppconn pthread ${libraries} )
 endif()
 
