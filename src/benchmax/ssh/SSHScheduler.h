@@ -57,7 +57,7 @@ private:
 	std::mutex mMutex;
 	std::size_t mWorkerCount;
 	std::atomic<std::size_t> mRunningJobs;
-	
+		
 	SSHConnection* get() {
 		std::lock_guard<std::mutex> lock(mMutex);
 		while (true) {
@@ -97,11 +97,15 @@ public:
 	}
 	
 	void uploadTool(const Tool* tool) {
+		std::lock_guard<std::mutex> lock(mMutex);
 		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Uploading " << tool);
 		std::set<std::string> nodes;
 		for (SSHConnection* c: mConnections) {
 			// Check if we have already uploaded to this host
 			if (!nodes.insert(c->getNode().hostname).second) continue;
+			while (!c->jobFree()) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			}
 			c->uploadFile(tool->binary().native(), Settings::ssh_basedir, tool->binary().filename().native(), S_IRWXU);
 		}
 	}
