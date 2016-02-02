@@ -25,8 +25,8 @@ namespace fs = boost::filesystem;
 #include "BenchmarkSet.h"
 #include "tools/Tools.h"
 #include "Settings.h"
+#include "Stats.h"
 
-#include "backends/BackendData.h"
 #include "backends/CondorBackend.h"
 #include "backends/LocalBackend.h"
 #include "backends/SSHBackend.h"

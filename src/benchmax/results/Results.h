@@ -1,5 +1,5 @@
 /**
- * @file Stats.h
+ * @file Results.h
  * @author Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
  */
 

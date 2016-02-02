@@ -6,6 +6,7 @@
 #pragma once
 
 #include <future>
+#include <queue>
 
 #ifdef USE_BOOST_REGEX
 #include "../../cli/config.h"
@@ -24,7 +25,6 @@ using std::regex;
 using std::regex_match;
 #endif
 
-#include "BackendData.h"
 #include "../ssh/SSHScheduler.h"
 
 namespace benchmax {

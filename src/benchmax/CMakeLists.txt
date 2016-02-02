@@ -36,10 +36,10 @@ find_library(SLIBSSH NAMES libssh.${DYNAMIC_EXT})
 
 if(${STATICLIB_SWITCH} STREQUAL "ON")
 	set(LIBS ${ALIBBCH} ${ALIBBFS} ${ALIBBPO} ${ALIBBSY} ${ALIBMYSQL} ${ALIBSSH})
-	target_link_libraries( benchmax ${LIBS} ssl crypto dl z pthread ${libraries} )
+	target_link_libraries( benchmax ${LIBS} ssl crypto dl z pthread ${libraries} ssh_threads)
 else()
 	set(LIBS ${SLIBBCH} ${SLIBBFS} ${SLIBBPO} ${SLIBBSY} ${SLIBMYSQL} ${SLIBSSH})
-	target_link_libraries( benchmax ${LIBS} mysqlcppconn pthread ${libraries} )
+	target_link_libraries( benchmax ${LIBS} mysqlcppconn pthread ${libraries} ssh_threads)
 endif()
 
 # stripping

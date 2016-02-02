@@ -23,7 +23,7 @@ namespace ssh {
  * @param _nodeAsString
  * @return 
  */
-Node getNode(const string& _nodeAsString)
+Node getNode(const std::string& _nodeAsString)
 {
 	regex noderegex("([^:@]+)(?::([^@]+))?@([^:@]+)(?::(\\d+))?(?:@(\\d+))?(?:#(\\d+))?");
 	std::smatch matches;

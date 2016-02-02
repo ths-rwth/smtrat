@@ -11,7 +11,6 @@
 #include <future>
 
 #include "Backend.h"
-#include "BackendData.h"
 
 #include "../logging.h"
 #include "../Settings.h"

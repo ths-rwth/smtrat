@@ -154,7 +154,7 @@ public:
 		return curChannels >= maxChannels;
 	}
 	
-	std::string createTmpDir(const string& folder) {
+	std::string createTmpDir(const std::string& folder) {
 		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Creating directory " << folder);
 		ssh_scp scp = getSCP(SSH_SCP_WRITE | SSH_SCP_RECURSIVE, Settings::ssh_tmpdir.c_str());
 		int rc;
