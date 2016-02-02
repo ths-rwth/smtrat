@@ -74,7 +74,8 @@ bool initApplication(int argc, char** argv) {
 	}
 	if (s.has("verbose")) {
 		carl::logging::logger().filter("stdout")
-			("benchmax", carl::logging::LogLevel::LVL_DEBUG)
+			("benchmax", carl::logging::LogLevel::LVL_INFO)
+			("benchmax.backend", carl::logging::LogLevel::LVL_DEBUG)
 			("benchmax.benchmarks", carl::logging::LogLevel::LVL_DEBUG)
 		;
 	}
