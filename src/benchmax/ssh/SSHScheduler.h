@@ -75,7 +75,7 @@ private:
 	}
 public:
 	SSHScheduler(): mWorkerCount(0), mRunningJobs(0) {
-		ssh_threads_set_callbacks(ssh_threads_get_noop());
+		ssh_threads_set_callbacks(ssh_threads_get_pthread());
 		ssh_init();
 		for (const auto& s: Settings::ssh_nodes) {
 			Node n = getNode(s);
