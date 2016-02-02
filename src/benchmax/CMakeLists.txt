@@ -7,7 +7,7 @@ add_subdirectory(backends)
 add_subdirectory(tools)
 
 add_executable( benchmax benchmax.cpp BenchmarkSet.h BenchmarkSet.cpp Stats.cpp
-			Settings.cpp Smt2Input.cpp BenchmarkStatus.cpp ${backends_sources} ${ssh_sources} ${tool_sources})
+			Settings.cpp BenchmarkStatus.cpp ${backends_sources} ${ssh_sources} ${tool_sources})
 include_directories(${carl_INCLUDE_DIR})
 
 set(DYNAMIC_EXT "so")

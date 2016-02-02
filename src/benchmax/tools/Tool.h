@@ -27,7 +27,6 @@
 #endif
 
 #include "../BenchmarkStatus.h"
-#include "../Smt2Input.h"
 
 namespace benchmax {
 
@@ -37,8 +36,6 @@ enum ToolInterface
 {
 	TI_SMTRAT, TI_OPENSMT, TI_Z3, TI_ISAT, TI_REDLOG_RLQE, TI_REDLOG_RLCAD, TI_QEPCAD, TI_INVALID
 };
-
-class Smt2Input;
 
 class Tool {
 protected:
