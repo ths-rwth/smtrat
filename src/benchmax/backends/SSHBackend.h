@@ -47,11 +47,11 @@ protected:
 	virtual void execute(const Tool* tool, const fs::path& file) {
 		// Make sure enough jobs are active.
 		while (scheduler->runningJobs() > scheduler->workerCount() * 2) {
-			if (jobs.front().valid()) {
+			if (jobs.front().wait_for(std::chrono::milliseconds(10)) == std::future_status::ready) {
 				waitAndPop();
 			}
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
+		BENCHMAX_LOG_DEBUG("benchmax.backend", "Starting job.");
 		jobs.push(std::async(std::launch::async, &ssh::SSHScheduler::executeJob, scheduler, tool, file, std::ref(mResults)));
 	}
 public:
