@@ -169,7 +169,6 @@ int main(int argc, char** argv)
 		backend.run(tools, benchmarks);
 	} else if (Settings::backend == "ssh") {
 		BENCHMAX_LOG_INFO("benchmax", "Using ssh backend.");
-		BENCHMAX_LOG_ERROR("benchmax.ssh", "The ssh backend is not tested and most probably disfunctional.");
 		// libssh is needed.
 		benchmax::SSHBackend backend;
 		backend.run(tools, benchmarks);
