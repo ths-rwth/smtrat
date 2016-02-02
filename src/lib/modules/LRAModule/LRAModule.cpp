@@ -68,12 +68,25 @@ namespace smtrat
             const ConstraintT& constraint = _constraint.constraint();
             if( !constraint.lhs().isConstant() && constraint.lhs().isLinear() )
             {
-                mLinearConstraints.push_back( _constraint );
+                mLinearConstraints.insert( _constraint );
                 setBound( _constraint );
             }
             return constraint.isConsistent() != 0;
         }
         return true;
+    }
+
+    template<class Settings>
+    void LRAModule<Settings>::deinformCore( const FormulaT& _constraint )
+    {
+        #ifdef DEBUG_LRA_MODULE
+        cout << "LRAModule::deinform  " << "deinform about " << _constraint << endl;
+        #endif
+        if( _constraint.constraint().lhs().isLinear() )
+        {
+            mLinearConstraints.erase( _constraint );
+            mTableau.removeBound( _constraint );
+        }
     }
 
     template<class Settings>
@@ -191,7 +204,7 @@ namespace smtrat
                     else
                     {
                         addSubformulaToPassedFormula( formula, formula );
-                        mNonlinearConstraints.push_back( formula );
+                        mNonlinearConstraints.insert( formula );
                         return true;
                     }
                 }
@@ -338,9 +351,7 @@ namespace smtrat
                 }
                 else
                 {
-                    auto nonLinearConstraint = std::find(mNonlinearConstraints.begin(), mNonlinearConstraints.end(), pformula);
-                    assert( nonLinearConstraint != mNonlinearConstraints.end() );
-                    mNonlinearConstraints.erase( nonLinearConstraint );
+                    mNonlinearConstraints.erase( pformula );
                 }
             }
         }

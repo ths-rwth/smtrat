@@ -20,6 +20,7 @@ namespace smtrat
             Bound<T1, T2>::Bound(const Value<T1>* const _limit, Variable<T1, T2>* const _var, Type _type, const FormulaT& _constraint, Bound<T1, T2>::Info* _boundInfo, bool _deduced) :
 #endif
             mDeduced( _deduced ),
+            mMarkedAsDeleted( false ),
             mType( _type ),
             mLimit( _limit ),
             mVar( _var ),

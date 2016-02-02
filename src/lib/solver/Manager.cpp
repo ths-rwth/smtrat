@@ -97,25 +97,33 @@ namespace smtrat
         return mpPrimaryBackend->inform( _constraint );
     }
     
-    bool Manager::add( const FormulaT& _subformula )
+    void Manager::deinform( const FormulaT& _constraint )
     {
-        if( _subformula.getType() == carl::FormulaType::CONSTRAINT )
-            mpPrimaryBackend->inform( _subformula );
-        else if( _subformula.isNary() )
+        mpPrimaryBackend->deinform( _constraint );
+    }
+    
+    bool Manager::add( const FormulaT& _subformula, bool _containsUnknownConstraints )
+    {
+        if( _containsUnknownConstraints )
         {
-            vector<FormulaT> constraints;
-            _subformula.getConstraints( constraints );
-            for( auto& c : constraints )
-                mpPrimaryBackend->inform( c );
+            if( _subformula.getType() == carl::FormulaType::CONSTRAINT )
+                mpPrimaryBackend->inform( _subformula );
+            else if( _subformula.isNary() )
+            {
+                vector<FormulaT> constraints;
+                _subformula.getConstraints( constraints );
+                for( auto& c : constraints )
+                    mpPrimaryBackend->inform( c );
+            }
         }
         auto res = mpPassedFormula->add( _subformula );
         if( res.second )
         {
-			bool r = true;
-			for (auto it = res.first; it != mpPassedFormula->end(); it++) {
-				r = r && mpPrimaryBackend->add( it );
-			}
-			return r;
+            bool r = true;
+            for (auto it = res.first; it != mpPassedFormula->end(); it++) {
+                r = r && mpPrimaryBackend->add( it );
+            }
+            return r;
         }
         return true;
     }

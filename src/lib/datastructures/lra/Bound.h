@@ -68,6 +68,8 @@ namespace smtrat
                 ///
                 bool mDeduced;
                 ///
+                mutable bool mMarkedAsDeleted;
+                ///
                 Type mType;
                 ///
                 const Value<T1>* mLimit;
@@ -209,6 +211,30 @@ namespace smtrat
                 /**
                  * @return 
                  */
+                bool markedAsDeleted() const
+                {
+                    return mMarkedAsDeleted;
+                }
+
+                /**
+                 * @return 
+                 */
+                void markAsDeleted() const
+                {
+                    mMarkedAsDeleted = true;
+                }
+
+                /**
+                 * @return 
+                 */
+                void unmarkAsDeleted() const
+                {
+                    mMarkedAsDeleted = false;
+                }
+
+                /**
+                 * @return 
+                 */
                 const Value<T1>& limit() const
                 {
                     return *mLimit;
@@ -305,6 +331,11 @@ namespace smtrat
                     {
                         mpInfo->neqRepresentation = _constraint;
                     }
+                }
+                
+                void resetNeqRepresentation() const
+                {
+                    mpInfo->neqRepresentation = FormulaT( carl::FormulaType::TRUE );
                 }
                 
                 /**

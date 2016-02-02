@@ -151,6 +151,13 @@ namespace smtrat
         addConstraintToInform( _constraint );
         return informCore( _constraint );
     }
+
+    void Module::deinform( const FormulaT& _constraint )
+    {
+        SMTRAT_LOG_DEBUG("smtrat.module", __func__ << " " << moduleName() << " (" << mId << ") about: " << _constraint);
+        mConstraintsToInform.erase( _constraint );
+        deinformCore( _constraint );
+    }
     
     bool Module::add( ModuleInput::const_iterator _receivedSubformula )
     {
@@ -272,7 +279,7 @@ namespace smtrat
                 backend->inform( *iter );
             backend->init();
         }
-        mInformedConstraints.insert(mInformedConstraints.end(), mConstraintsToInform.begin(), mConstraintsToInform.end() );
+        mInformedConstraints.insert( mConstraintsToInform.begin(), mConstraintsToInform.end() );
         mConstraintsToInform.clear();
     }
 
@@ -793,7 +800,7 @@ namespace smtrat
                     #endif
                 }
                 mFirstSubformulaToPass = mpPassedFormula->end();
-                mInformedConstraints.insert(mInformedConstraints.end(), mConstraintsToInform.begin(), mConstraintsToInform.end() );
+                mInformedConstraints.insert( mConstraintsToInform.begin(), mConstraintsToInform.end() );
                 mConstraintsToInform.clear();
                 if( assertionFailed )
                 {
@@ -942,7 +949,7 @@ namespace smtrat
     {
         // We can give the hint that this constraint will probably be inserted in the end of this container,
         // as it is compared by an id which gets incremented every time a new constraint is constructed.
-        mConstraintsToInform.insert( mConstraintsToInform.end(), constraint );
+        mConstraintsToInform.insert( constraint );
     }
     
     void Module::excludeNotReceivedVariablesFromModel() const

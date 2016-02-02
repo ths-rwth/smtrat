@@ -92,9 +92,9 @@ namespace smtrat
              */
             LRATableau mTableau;
             /// Stores all linear constraints of which this module has been once informed.
-            FormulasT mLinearConstraints;
+            carl::FastSet<FormulaT> mLinearConstraints;
             /// Stores all non-linear constraints which are currently added (by assertSubformula) to this module.
-            FormulasT mNonlinearConstraints;
+            carl::FastSet<FormulaT> mNonlinearConstraints;
             /**
              * Those constraints p!=0, which are added to this module (part of the received formula), which 
              * are resolved by a constraints as p<0, p<=0, p>=0 or p>0.
@@ -150,6 +150,14 @@ namespace smtrat
              *         true,  otherwise.
              */
             bool informCore( const FormulaT& _constraint );
+            
+            /**
+             * The inverse of informing about a constraint. All data structures which were kept regarding this
+             * constraint are going to be removed. Note, that this makes only sense if it is not likely enough
+             * that a formula with this constraint must be solved again.
+             * @param _constraint The constraint to remove from internal data structures.
+             */
+            void deinformCore( const FormulaT& _constraint );
             
             /**
              * Initializes the tableau according to all linear constraints, of which this module has been informed.

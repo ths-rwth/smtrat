@@ -114,15 +114,25 @@ namespace smtrat
              *          true, otherwise.
              */
             bool inform( const FormulaT& _constraint );
+            
+            /**
+             * The inverse of informing about a constraint. All data structures which were kept regarding this
+             * constraint are going to be removed. Note, that this makes only sense if it is not likely enough
+             * that a formula with this constraint must be solved again.
+             * @param _constraint The constraint to remove from internal data structures.
+             */
+            void deinform( const FormulaT& _constraint );
 
             /**
              * Adds the given formula to the conjunction of formulas, which will be considered for the next 
              * satisfiability check.
              * @param _subformula The formula to add.
+             * @param _containsUnknownConstraints true, if the formula to add contains constraints, about which this solver 
+             *                                    was not yet informed.
              * @return false, if it is easy to decide whether adding this formula creates a conflict;
              *          true, otherwise.
              */
-            bool add( const FormulaT& _subformula );
+            bool add( const FormulaT& _subformula, bool _containsUnknownConstraints = true );
 
             /**
              * Checks the so far added formulas for satisfiability.
