@@ -137,6 +137,24 @@ namespace smtrat
                 return std::pair<const Bound<T1, T2>*, bool>( *result.first, true );
             }
         }
+        
+        template<typename T1, typename T2>
+        void Variable<T1, T2>::removeBound( const Bound<T1, T2>* _bound )
+        {
+            switch( _bound->type() )
+            {
+                case Bound<T1, T2>::LOWER:
+                    mLowerbounds.erase( _bound );
+                    break;
+                case Bound<T1, T2>::UPPER:
+                    mUpperbounds.erase( _bound );
+                    break;
+                default:
+                    mLowerbounds.erase( _bound );
+                    mUpperbounds.erase( _bound );
+                    break;
+            }
+        }
 
         template<typename T1, typename T2>
         bool Variable<T1, T2>::deactivateBound( const Bound<T1, T2>* bound, ModuleInput::iterator _position )

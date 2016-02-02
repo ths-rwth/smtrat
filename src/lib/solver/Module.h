@@ -165,9 +165,9 @@ namespace smtrat
             /// Stores the position of the first sub-formula in the passed formula, which has not yet been considered for a consistency check of the backends.
             ModuleInput::iterator mFirstSubformulaToPass;
             /// Stores the constraints which the backends must be informed about.
-            FormulasT mConstraintsToInform;
+            carl::FastSet<FormulaT> mConstraintsToInform;
             /// Stores the position of the first constraint of which no backend has been informed about.
-            FormulasT mInformedConstraints;
+            carl::FastSet<FormulaT> mInformedConstraints;
             /// Stores the position of the first (by this module) unchecked sub-formula of the received formula.
             ModuleInput::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
@@ -235,7 +235,15 @@ namespace smtrat
              * @return false, if it can be easily decided whether the given constraint is inconsistent;
              *          true, otherwise.
              */
-            bool inform( const FormulaT& );
+            bool inform( const FormulaT& _constraint );
+            
+            /**
+             * The inverse of informing about a constraint. All data structures which were kept regarding this
+             * constraint are going to be removed. Note, that this makes only sense if it is not likely enough
+             * that a formula with this constraint must be solved again.
+             * @param _constraint The constraint to remove from internal data structures.
+             */
+            void deinform( const FormulaT& _constraint );
             
             /**
              * Informs all backends about the so far encountered constraints, which have not yet been communicated.
@@ -433,7 +441,7 @@ namespace smtrat
             /**
              * @return The constraints which the backends must be informed about.
              */
-            const FormulasT& constraintsToInform() const
+            const carl::FastSet<FormulaT>& constraintsToInform() const
             {
                 return mConstraintsToInform;
             }
@@ -441,7 +449,7 @@ namespace smtrat
             /**
              * @return The position of the first constraint of which no backend has been informed about.
              */
-            const FormulasT& informedConstraints() const
+            const carl::FastSet<FormulaT>& informedConstraints() const
             {
                 return mInformedConstraints;
             }
@@ -681,6 +689,14 @@ namespace smtrat
             {
                 return true;
             }
+            
+            /**
+             * The inverse of informing about a constraint. All data structures which were kept regarding this
+             * constraint are going to be removed. Note, that this makes only sense if it is not likely enough
+             * that a formula with this constraint must be solved again.
+             * @param _constraint The constraint to remove from internal data structures.
+             */
+            virtual void deinformCore( const FormulaT& ) {}
             
             /**
              * The module has to take the given sub-formula of the received formula into account.

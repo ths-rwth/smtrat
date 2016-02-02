@@ -551,6 +551,12 @@ namespace smtrat
                 
                 /**
                  * 
+                 * @param _bound
+                 */
+                void removeBound( const Bound<T1, T2>* _bound );
+                
+                /**
+                 * 
                  * @param bound
                  * @param _position
                  * @return 

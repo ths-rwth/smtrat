@@ -361,6 +361,65 @@ namespace smtrat
         }
         
         template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::removeBound( const FormulaT& _constraint )
+        {
+            auto iter = mConstraintToBound.find( _constraint );
+            if( iter != mConstraintToBound.end() )
+            {
+                std::vector< const Bound<T1,T2>* >* boundVector = iter->second;
+                Variable<T1, T2>* boundVar = boundVector->back()->pVariable();
+                if( _constraint.constraint().relation() == carl::Relation::NEQ )
+                {
+                    assert( boundVector->size() == 4 );
+                    for( const Bound<T1,T2>* bound : *boundVector )
+                    {
+                        bound->resetNeqRepresentation();
+                        if( bound->markedAsDeleted() )
+                        {
+                            auto iterB = mConstraintToBound.find( bound->asConstraint() );
+                            assert( iterB != mConstraintToBound.end() );
+                            std::vector< const Bound<T1,T2>* >* boundVectorB = iter->second;
+                            assert( boundVectorB->size() == 1 );
+                            const Bound<T1,T2>* boundB = boundVectorB->back();
+                            assert( !boundB->isActive() );
+                            assert( boundVar == boundB->pVariable() );
+                            boundVar->removeBound( boundB );
+                            boundVectorB->pop_back();
+                            delete boundB;
+                            delete boundVectorB;
+                            mConstraintToBound.erase( iterB );
+                        }
+                    }
+                    boundVector->clear();
+                    delete boundVector;
+                }
+                else
+                {
+                    assert( boundVector->size() == 1 );
+                    const Bound<T1,T2>* bound = boundVector->back();
+                    if( bound->neqRepresentation().isTrue() )
+                    {
+                        bound->markAsDeleted();
+                    }
+                    else
+                    {
+                        assert( !bound->isActive() );
+                        Variable<T1, T2>* boundVar = bound->pVariable();
+                        boundVar->removeBound( bound );
+                        boundVector->pop_back();
+                        delete bound;
+                        delete boundVector;
+                    }
+                }
+                mConstraintToBound.erase( iter ); 
+                if( boundVar->lowerbounds().size() == 1 && boundVar->upperbounds().size() == 1 )
+                {
+                    delete boundVar;
+                }
+            }
+        }
+        
+        template<class Settings, typename T1, typename T2>
         Variable<T1, T2>* Tableau<Settings,T1,T2>::newNonbasicVariable( const typename Poly::PolyType* _poly, bool _isInteger )
         {
             Variable<T1, T2>* var = new Variable<T1, T2>( mWidth++, _poly, mDefaultBoundPosition, _isInteger );

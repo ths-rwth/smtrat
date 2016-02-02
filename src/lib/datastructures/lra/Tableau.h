@@ -540,6 +540,7 @@ namespace smtrat
                  * @return 
                  */
                 std::pair<const Bound<T1,T2>*, bool> newBound( const FormulaT& _constraint );
+                void removeBound( const FormulaT& _constraint );
                 
                 /**
                  * 
