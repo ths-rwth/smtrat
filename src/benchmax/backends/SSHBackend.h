@@ -6,7 +6,6 @@
 #pragma once
 
 #include <future>
-#include <thread>
 
 #ifdef USE_BOOST_REGEX
 #include "../../cli/config.h"
@@ -30,22 +29,12 @@ using std::regex_match;
 
 namespace benchmax {
 
-#define USE_STD_ASYNC
-
 class SSHBackend: public Backend {
 private:
-#ifdef USE_STD_ASYNC
 	std::queue<std::future<bool>> jobs;
-#else
-	std::queue<std::thread> jobs;
-#endif
 
 	void waitAndPop() {
-#ifdef USE_STD_ASYNC
 		jobs.front().wait();
-#else
-		jobs.front().join();
-#endif
 		jobs.pop();
 		madeProgress();
 	}
@@ -57,15 +46,13 @@ protected:
 	}
 	virtual void execute(const Tool* tool, const fs::path& file) {
 		// Make sure enough jobs are active.
-		while (jobs.size() > scheduler->workerCount() * 5) {
-			waitAndPop();
+		while (scheduler->runningJobs() > scheduler->workerCount() * 2) {
+			if (jobs.front().valid()) {
+				waitAndPop();
+			}
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
-#ifdef USE_STD_ASYNC
 		jobs.push(std::async(std::launch::async, &ssh::SSHScheduler::executeJob, scheduler, tool, file, std::ref(mResults)));
-#else
-		jobs.push(std::thread(&ssh::SSHScheduler::executeJob, scheduler, tool, file, std::ref(mResults)));
-#endif
 	}
 public:
 	SSHBackend(): Backend() {

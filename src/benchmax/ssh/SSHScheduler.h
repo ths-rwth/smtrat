@@ -51,14 +51,15 @@ Node getNode(const string& _nodeAsString)
 
 class SSHScheduler {
 private:
-	std::vector<SSHConnection*> connections;
-	std::mutex mutex;
+	std::vector<SSHConnection*> mConnections;
+	std::mutex mMutex;
 	std::size_t mWorkerCount;
+	std::atomic<std::size_t> mRunningJobs;
 	
 	SSHConnection* get() {
-		std::lock_guard<std::mutex> lock(mutex);
+		std::lock_guard<std::mutex> lock(mMutex);
 		while (true) {
-			for (auto& c: connections) {
+			for (auto& c: mConnections) {
 				if (c->jobFree()) {
 					c->newJob();
 					return c;
@@ -71,27 +72,30 @@ private:
 		return "benchmax-" + std::to_string(Settings::startTime) + "-" + std::to_string(std::size_t(tool)) + "-" + std::to_string(std::hash<std::string>()(file.native()));
 	}
 public:
-	SSHScheduler() {
+	SSHScheduler(): mWorkerCount(0), mRunningJobs(0) {
 		for (const auto& s: Settings::ssh_nodes) {
 			Node n = getNode(s);
 			for (std::size_t i = 0; i < n.connections; i++) {
-				connections.push_back(new SSHConnection(n));
+				mConnections.push_back(new SSHConnection(n));
 			}
 			mWorkerCount += n.connections * n.cores;
 		}
 	}
 	~SSHScheduler() {
-		for (auto& c: connections) delete c;
+		for (auto& c: mConnections) delete c;
 	}
 	
 	std::size_t workerCount() const {
 		return mWorkerCount;
 	}
+	std::size_t runningJobs() const {
+		return mRunningJobs;
+	}
 	
 	void uploadTool(const Tool* tool) {
 		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Uploading " << tool);
 		std::set<std::string> nodes;
-		for (SSHConnection* c: connections) {
+		for (SSHConnection* c: mConnections) {
 			// Check if we have already uploaded to this host
 			if (!nodes.insert(c->getNode().hostname).second) continue;
 			c->uploadFile(tool->binary().native(), Settings::ssh_basedir, tool->binary().filename().native(), S_IRWXU);
@@ -99,6 +103,7 @@ public:
 	}
 	
 	bool executeJob(const Tool* tool, const fs::path& file, Results& res) {
+		mRunningJobs++;
 		SSHConnection* c = get();
 		BENCHMAX_LOG_INFO("benchmax.ssh", "Executing " << file);
 		// Create temporary directory
@@ -117,6 +122,7 @@ public:
 		// Store result
 		res.addResult(tool, file, result);
 		c->finishJob();
+		mRunningJobs--;
 		return true;
 	}
 };
