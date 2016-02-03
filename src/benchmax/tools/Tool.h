@@ -32,11 +32,6 @@ namespace benchmax {
 
 namespace fs = boost:: filesystem;
 
-enum ToolInterface
-{
-	TI_SMTRAT, TI_OPENSMT, TI_Z3, TI_ISAT, TI_REDLOG_RLQE, TI_REDLOG_RLCAD, TI_QEPCAD, TI_INVALID
-};
-
 class Tool {
 protected:
 	std::string mName;

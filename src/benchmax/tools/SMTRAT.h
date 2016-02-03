@@ -51,6 +51,8 @@ public:
 				results.additional.emplace(name, (*j)[2]);
 			}
 		}
+		results.stdout = "";
+		results.stderr = "";
 	}
 };
 

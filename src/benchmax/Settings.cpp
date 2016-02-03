@@ -28,7 +28,8 @@ namespace benchmax {
 	std::size_t Settings::ssh_maxchannels;
 	
 	std::vector<std::string> Settings::pathes;
-	std::size_t Settings::timeLimit;
+	std::string Settings::pathPrefix;
+	std::chrono::seconds Settings::timeLimit;
 	std::size_t Settings::memoryLimit;
 	std::string Settings::validationtoolpath;
 	std::string Settings::WrongResultPath;

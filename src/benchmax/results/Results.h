@@ -12,6 +12,7 @@
 
 #include "../logging.h"
 #include "../BenchmarkStatus.h"
+#include "../utils/durations.h"
 #include "Database.h"
 #include "XMLWriter.h"
 #include "BenchmarkResult.h"
@@ -53,7 +54,7 @@ public:
 		for (const auto& it: mResults) {
 			std::size_t tool = toolIDs[it.first.first];
 			std::size_t file = fileIDs[it.first.second];
-			std::size_t id = db.addBenchmarkResult(benchmarkID, tool, file, it.second.exitCode, it.second.time);
+			std::size_t id = db.addBenchmarkResult(benchmarkID, tool, file, it.second.exitCode, milliseconds(it.second.time).count());
 			for (const auto& attr: it.second.additional) {
 				db.addBenchmarkAttribute(id, attr.first, attr.second);
 			}

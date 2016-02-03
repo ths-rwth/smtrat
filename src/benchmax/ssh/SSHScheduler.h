@@ -57,7 +57,7 @@ private:
 	std::mutex mMutex;
 	std::size_t mWorkerCount;
 	std::atomic<std::size_t> mRunningJobs;
-	
+		
 	SSHConnection* get() {
 		std::lock_guard<std::mutex> lock(mMutex);
 		while (true) {
@@ -67,7 +67,8 @@ private:
 					return c;
 				}
 			}
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			std::this_thread::yield();
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
 	}
 	std::string tmpDirName(const Tool* tool, const fs::path& file) const {
@@ -97,11 +98,15 @@ public:
 	}
 	
 	void uploadTool(const Tool* tool) {
+		std::lock_guard<std::mutex> lock(mMutex);
 		BENCHMAX_LOG_DEBUG("benchmax.ssh", "Uploading " << tool);
 		std::set<std::string> nodes;
 		for (SSHConnection* c: mConnections) {
 			// Check if we have already uploaded to this host
 			if (!nodes.insert(c->getNode().hostname).second) continue;
+			while (!c->jobFree()) {
+				std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			}
 			c->uploadFile(tool->binary().native(), Settings::ssh_basedir, tool->binary().filename().native(), S_IRWXU);
 		}
 	}
@@ -109,7 +114,7 @@ public:
 	bool executeJob(const Tool* tool, const fs::path& file, Results& res) {
 		mRunningJobs++;
 		SSHConnection* c = get();
-		BENCHMAX_LOG_INFO("benchmax.ssh", "Executing " << file);
+		BENCHMAX_LOG_INFO("benchmax.ssh", "Executing " << removePrefix(file.native(), Settings::pathPrefix));
 		// Create temporary directory
 		std::string folder = c->createTmpDir(tmpDirName(tool,file));
 		// Upload benchmark file
@@ -125,7 +130,6 @@ public:
 		c->removeDir(folder);
 		// Store result
 		res.addResult(tool, file, result);
-		BENCHMAX_LOG_INFO("benchmax.ssh", "Finishing " << file);
 		c->finishJob();
 		mRunningJobs--;
 		return true;
