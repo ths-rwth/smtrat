@@ -57,7 +57,9 @@ public:
 				mFile << "\t\t\t\t\t<result name=\"runtime\" type=\"msec\">" << it->second.time << "</result>" << std::endl;
 				mFile << "\t\t\t\t\t<result name=\"exitcode\" type=\"int\">" << it->second.exitCode << "</result>" << std::endl;
 				mFile << "\t\t\t\t\t<result name=\"answer\" type=\"\">";
-				switch (it->second.exitCode) {
+				int exitcode = it->second.exitCode;
+				if (it->second.time > Settings::timeLimit) exitcode = 11;
+				switch (exitcode) {
 					case 2: mFile << "sat"; break;
 					case 3: mFile << "unsat"; break;
 					case 4: mFile << "unknown"; break;
