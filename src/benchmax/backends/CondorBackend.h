@@ -14,6 +14,7 @@
 
 #include "../logging.h"
 #include "../Settings.h"
+#include "../utils/durations.h"
 
 namespace benchmax {
 
@@ -26,7 +27,7 @@ private:
 	std::string generateSubmitFile(std::size_t ID, const Tool& tool, const BenchmarkSet& b) {
 		std::ofstream wrapper(".wrapper_" + std::to_string(ID));
 		wrapper << "#!/bin/sh" << std::endl;
-		wrapper << "ulimit -S -t " << Settings::timeLimit << std::endl;
+		wrapper << "ulimit -S -t " << seconds(Settings::timeLimit).count() << std::endl;
 		wrapper << "ulimit -S -v " << (Settings::memoryLimit * 1024) << std::endl;
 		wrapper << "date +\"Start: %s%3N\"" << std::endl;
 		wrapper << tool.getCommandline("$*") << std::endl;
@@ -38,7 +39,7 @@ private:
 		out << "output = out/out." << ID << ".$(cluster).$(process)" << std::endl;
 		out << "error = out/err." << ID << ".$(cluster).$(process)" << std::endl;
 		out << "log = out/log." << ID << std::endl;
-		out << "periodic_hold = (time() - JobCurrentStartExecutingDate) > " << Settings::timeLimit << std::endl;
+		out << "periodic_hold = (time() - JobCurrentStartExecutingDate) > " << seconds(Settings::timeLimit).count() << std::endl;
 		
 		for (const auto& file: b) {
 			if (!tool.canHandle(file)) continue;

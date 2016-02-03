@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <ctime>
 #include <fstream>
 #include <memory>
@@ -20,6 +21,7 @@
 #endif
 
 #include "tools/Tool.h"
+#include "utils/commonPrefix.h"
 
 namespace benchmax {
 
@@ -78,7 +80,7 @@ public:
 		
 		benchmarkOptions.add_options()
 			("include-directory,D", po::value<std::vector<std::string>>(&pathes), "path to look for benchmarks (several are possible)")
-			("timeout,T", po::value<std::size_t>(&timeLimit)->default_value(60), "timeout for all competing solvers in seconds")
+			("timeout,T", po::value<std::size_t>()->default_value(60), "timeout for all competing solvers in seconds")
 			("memory,M", po::value<std::size_t>(&memoryLimit)->default_value(1024), "memory limit for all competing solvers in mega bytes")
 			("validation,V", po::value<std::string>(&validationtoolpath), "tool to check assumptions")
 			("wrong-result-path,W", po::value<std::string>(&WrongResultPath)->default_value("wrong_result/"), "path to the directory to store the wrong results")
@@ -110,6 +112,10 @@ public:
 		if (validationtoolpath != "") {
 			//ValidationTool.emplace(createTool(benchmax::TI_Z3, validationtoolpath));
 		}
+		
+		timeLimit = std::chrono::seconds(vm["timeout"].as<std::size_t>());
+		pathPrefix = commonPrefix(pathes);
+		std::cout << "Common prefix is " << pathPrefix << std::endl;
 	}
 	
 	bool has(const std::string& s) const {
@@ -138,7 +144,8 @@ public:
     
     /// Benchmark Options
 	static std::vector<std::string> pathes;
-	static std::size_t timeLimit;
+	static std::string pathPrefix;
+	static std::chrono::seconds timeLimit;
 	static std::size_t memoryLimit;
 	static std::string validationtoolpath;
 	static std::string WrongResultPath;

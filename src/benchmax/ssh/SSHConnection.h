@@ -10,6 +10,7 @@
 #include "../logging.h"
 #include "../BenchmarkStatus.h"
 #include "../utils/backend.h"
+#include "../utils/durations.h"
 
 #define SSH_LOCKED(expr) { std::lock_guard<std::mutex> guard(mutex); expr; }
 
@@ -229,7 +230,7 @@ public:
 		ssh_channel channel = getChannel();
 		std::stringstream call;
 		call << "date +\"Start: %s%3N\" ; ";
-		call << "ulimit -S -t " << Settings::timeLimit << " && ";
+		call << "ulimit -S -t " << seconds(Settings::timeLimit).count() << " && ";
 		call << "ulimit -S -v " << (Settings::memoryLimit * 1024) << " && ";
 		call << cmd << " ; rc=$? ;";
 		call << "date +\"End: %s%3N\" ; exit $rc";

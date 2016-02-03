@@ -10,8 +10,8 @@
 #include "Backend.h"
 
 #include "../Settings.h"
-
 #include "../utils/Execute.h"
+#include "../utils/durations.h"
 
 namespace benchmax {
 
@@ -19,7 +19,7 @@ class LocalBackend: public Backend {
 protected:
 	virtual void execute(const Tool* tool, const fs::path& file) {
 		std::stringstream call;
-		call << "ulimit -S -t " << Settings::timeLimit << " && ";
+		call << "ulimit -S -t " << seconds(Settings::timeLimit).count() << " && ";
 		call << "ulimit -S -v " << (Settings::memoryLimit * 1024) << " && ";
 		call << "date +\"Start: %s%3N\" && ";
 		call << tool->getCommandline(file.native()) << " 2> stderr.log && ";
@@ -32,7 +32,7 @@ protected:
 		results.exitCode = WEXITSTATUS(exitCode);
 		
 		auto end = std::chrono::high_resolution_clock::now();
-		results.time = (std::size_t)std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		results.time = milliseconds(end - start);
 	
 		tool->additionalResults(file, results);
 		
