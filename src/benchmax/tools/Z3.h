@@ -15,6 +15,9 @@ namespace benchmax {
 class Z3: public Tool {
 public:
 	Z3(const fs::path& binary, const std::string& arguments): Tool("Z3", binary, arguments) {}
+	virtual bool canHandle(const fs::path& path) const override {
+		return isExtension(path, ".smt2");
+	}
 };
 
 }
