@@ -275,7 +275,7 @@ namespace smtrat
         }
     }
     
-    ModuleInput::iterator Manager::remove( ModuleInput::iterator _subformula )
+    ModuleInput::iterator Manager::remove( ModuleInput::const_iterator _subformula )
     {
         assert( _subformula != mpPassedFormula->end() );
         mpPrimaryBackend->remove( _subformula );

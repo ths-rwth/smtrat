@@ -434,7 +434,7 @@ namespace smtrat
 //            return _out << _mi.toString()
 //        }
         
-        iterator erase( iterator _formula );
+        iterator erase( const_iterator _formula );
         
         void clearOrigins( iterator _formula )
         {

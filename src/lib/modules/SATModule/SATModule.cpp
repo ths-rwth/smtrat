@@ -52,8 +52,8 @@ namespace smtrat
     static IntOption    opt_phase_saving( _cat, "phase-saving", "Controls the level of phase saving (0=none, 1=limited, 2=full)", 2, IntRange( 0, 2 ) );
     static BoolOption   opt_rnd_init_act( _cat, "rnd-init", "Randomize the initial activity", false );
     static BoolOption   opt_luby_restart( _cat, "luby", "Use the Luby restart sequence", true );
-    static IntOption    opt_restart_first( _cat, "rfirst", "The base restart interval", 100, IntRange( 1, INT32_MAX ) );
-    static DoubleOption opt_restart_inc( _cat, "rinc", "Restart interval increase factor", 2, DoubleRange( 1, false, HUGE_VAL, false ) );
+    static IntOption    opt_restart_first( _cat, "rfirst", "The base restart interval", 25, IntRange( 1, INT32_MAX ) );
+    static DoubleOption opt_restart_inc( _cat, "rinc", "Restart interval increase factor", 3, DoubleRange( 1, false, HUGE_VAL, false ) );
     static DoubleOption opt_garbage_frac( _cat, "gc-frac", "The fraction of wasted memory allowed before a garbage collection is triggered", 0.20,
                                           DoubleRange( 0, false, HUGE_VAL, false ) );
 
@@ -75,8 +75,8 @@ namespace smtrat
         restart_first( opt_restart_first ),
         restart_inc( opt_restart_inc ),
         // Parameters (the rest):
-        learntsize_factor( (double)1 / (double)3 ),
-        learntsize_inc( 1.1 ),
+        learntsize_factor( 1 ),
+        learntsize_inc( 1.5 ),
         // Parameters (experimental):
         learntsize_adjust_start_confl( 100 ),
         learntsize_adjust_inc( 1.5 ),
