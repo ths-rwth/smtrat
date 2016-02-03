@@ -14,7 +14,7 @@ std::chrono::milliseconds parseDuration(const std::string& output) {
 		std::size_t p;
 		std::size_t start = std::stoull(m[1].str(), &p);
 		std::size_t end = std::stoull(m[2].str(), &p);
-		return milliseconds(end - start);
+		return std::chrono::milliseconds(end - start);
 	} else {
 		return std::chrono::milliseconds(0);
 	}
