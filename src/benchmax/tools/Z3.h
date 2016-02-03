@@ -18,6 +18,12 @@ public:
 	virtual bool canHandle(const fs::path& path) const override {
 		return isExtension(path, ".smt2");
 	}
+	std::string getStatus(const BenchmarkResult& result) const override {
+		if (result.stdout.find("unsat")) return "unsat";
+		if (result.stdout.find("sat")) return "sat";
+		if (result.stdout.find("unknown")) return "unknown";
+		return "invalid";
+	}
 };
 
 }

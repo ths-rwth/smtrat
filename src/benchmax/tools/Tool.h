@@ -82,6 +82,10 @@ public:
 		return false;
 	}
 	
+	virtual std::string getStatus(const BenchmarkResult& result) const {
+		return "invalid";
+	}
+	
 	friend bool operator<(const Tool& lhs, const Tool& rhs) {
 		return lhs.mBinary < rhs.mBinary;
 	}

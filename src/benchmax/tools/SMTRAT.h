@@ -23,6 +23,18 @@ public:
 		return isExtension(path, ".smt2");
 	}
 	
+	std::string getStatus(const BenchmarkResult& result) const override {
+		switch (result.exitCode) {
+			case 2: return "sat";
+			case 3: return "unsat";
+			case 4: return "unknown";
+			case 5: return "error";
+			case 11: return "timeout";
+			case 12: return "memout";
+			default: return "segfault";
+		}
+	}
+	
 	std::map<std::string,std::string> parseOptions(const std::string& options) const {
 		std::map<std::string,std::string> res;
 		regex r("^(.+) = (.+)\n");

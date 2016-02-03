@@ -13,8 +13,9 @@
 namespace benchmax {
 
 class Backend {
-protected:
+private:
 	Results mResults;
+protected:
 	std::size_t mExpectedJobs;
 	std::atomic<std::size_t> mFinishedJobs;
 	std::atomic<std::size_t> mLastPercent;
@@ -32,6 +33,10 @@ protected:
 		}
 	}
 public:
+	void addResult(const Tool* tool, const fs::path& file, BenchmarkResult& results) {
+		results.cleanup(tool, Settings::timeLimit);
+		mResults.addResult(tool, file, results);
+	}
 	void run(const std::vector<Tool*>& tools, const std::vector<BenchmarkSet>& benchmarks) {
 		for (const BenchmarkSet& set: benchmarks) {
 			mExpectedJobs += tools.size() * set.size();

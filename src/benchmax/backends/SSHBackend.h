@@ -52,7 +52,7 @@ protected:
 			}
 		}
 		BENCHMAX_LOG_DEBUG("benchmax.backend", "Starting job.");
-		jobs.push(std::async(std::launch::async, &ssh::SSHScheduler::executeJob, scheduler, tool, file, std::ref(mResults)));
+		jobs.push(std::async(std::launch::async, &ssh::SSHScheduler::executeJob, scheduler, tool, file, this));
 	}
 public:
 	SSHBackend(): Backend() {

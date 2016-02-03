@@ -13,6 +13,7 @@
 #include "../Settings.h"
 #include "../logging.h"
 #include "../BenchmarkStatus.h"
+#include "../backends/Backend.h"
 
 namespace benchmax {
 namespace ssh {
@@ -111,7 +112,7 @@ public:
 		}
 	}
 	
-	bool executeJob(const Tool* tool, const fs::path& file, Results& res) {
+	bool executeJob(const Tool* tool, const fs::path& file, Backend* backend) {
 		mRunningJobs++;
 		SSHConnection* c = get();
 		BENCHMAX_LOG_INFO("benchmax.ssh", "Executing " << removePrefix(file.native(), Settings::pathPrefix));
@@ -129,7 +130,7 @@ public:
 		// Remove temporary directory
 		c->removeDir(folder);
 		// Store result
-		res.addResult(tool, file, result);
+		backend->addResult(tool, file, result);
 		c->finishJob();
 		mRunningJobs--;
 		return true;

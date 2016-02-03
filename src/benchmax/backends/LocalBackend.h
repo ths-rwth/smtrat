@@ -36,7 +36,7 @@ protected:
 	
 		tool->additionalResults(file, results);
 		
-		mResults.addResult(tool, file, results);
+		addResult(tool, file, results);
 	}
 };
 
