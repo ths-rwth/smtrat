@@ -442,7 +442,7 @@ namespace smtrat
              *          end of the conjunction of formulas, which will be considered for the 
              *          next satisfiability check is returned.
              */
-            ModuleInput::iterator remove( ModuleInput::iterator _subformula );
+            ModuleInput::iterator remove( ModuleInput::const_iterator _subformula );
             
         protected:
 
