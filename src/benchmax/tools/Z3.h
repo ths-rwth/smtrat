@@ -19,9 +19,9 @@ public:
 		return isExtension(path, ".smt2");
 	}
 	std::string getStatus(const BenchmarkResult& result) const override {
-		if (result.stdout.find("unsat")) return "unsat";
-		if (result.stdout.find("sat")) return "sat";
-		if (result.stdout.find("unknown")) return "unknown";
+		if (result.stdout.find("unsat") != std::string::npos) return "unsat";
+		if (result.stdout.find("sat") != std::string::npos) return "sat";
+		if (result.stdout.find("unknown") != std::string::npos) return "unknown";
 		return "invalid";
 	}
 };
