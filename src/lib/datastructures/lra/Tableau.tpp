@@ -414,6 +414,11 @@ namespace smtrat
                 mConstraintToBound.erase( iter ); 
                 if( boundVar->lowerbounds().size() == 1 && boundVar->upperbounds().size() == 1 )
                 {
+                    if( boundVar->positionInNonActives() != mNonActiveBasics.end() )
+                    {
+                        mNonActiveBasics.erase( boundVar->positionInNonActives() );
+                        boundVar->setPositionInNonActives( mNonActiveBasics.end() );
+                    }
                     delete boundVar;
                 }
             }
