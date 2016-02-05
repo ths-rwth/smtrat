@@ -71,6 +71,6 @@ namespace smtrat
 		static constexpr auto moduleName = "LRAModule<LRASettings2>";
         typedef Rational BoundType;
         typedef Rational EntryType;
-        struct Tableau_settings : lra::TableauSettings2 {};
+        struct Tableau_settings : lra::TableauSettings1 {};
     };
 }
