@@ -262,7 +262,7 @@ namespace smtrat
                                     assert( origin->getType() == carl::FormulaType::CONSTRAINT );
                                     origin = (*bound)->pOrigins()->erase( origin );
                                     // ensures that only one main origin is removed, in the case that a formula is contained more than once in the module input
-                                    mainOriginRemains = false; 
+                                    mainOriginRemains = false;
                                 }
                                 else
                                 {
@@ -448,7 +448,7 @@ namespace smtrat
         assert( false );
         return UNKNOWN;
     }
-    
+
     template<class Settings>
     Answer LRAModule<Settings>::processResult( Answer _result )
     {
@@ -507,7 +507,7 @@ namespace smtrat
         }
         return mRationalAssignment;
     }
-    
+
     template<class Settings>
     unsigned LRAModule<Settings>::currentlySatisfied( const FormulaT& _formula ) const
     {
@@ -549,7 +549,7 @@ namespace smtrat
         }
         return 2;
     }
-    
+
     template<class Settings>
     Answer LRAModule<Settings>::optimize( Answer _result )
     {
@@ -611,7 +611,7 @@ namespace smtrat
         // @todo Branch if assignment does not fulfill integer domains.
         return _result;
     }
-    
+
     template<class Settings>
     Answer LRAModule<Settings>::checkNotEqualConstraints( Answer _result )
     {
@@ -657,7 +657,7 @@ namespace smtrat
         assert( assignmentCorrect() );
         return SAT;
     }
-    
+
     template<class Settings>
     void LRAModule<Settings>::processLearnedBounds()
     {
@@ -669,7 +669,7 @@ namespace smtrat
             std::vector<const LRABound*>& bounds = learnedBound.premise;
             for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
             {
-                const FormulaT& boundOrigins = *(*bound)->origins().begin(); 
+                const FormulaT& boundOrigins = *(*bound)->origins().begin();
                 if( boundOrigins.getType() == carl::FormulaType::AND )
                 {
                     originSet.insert( originSet.end(), boundOrigins.subformulas().begin(), boundOrigins.subformulas().end() );
@@ -713,7 +713,7 @@ namespace smtrat
             #endif
         }
     }
-    
+
     template<class Settings>
     void LRAModule<Settings>::createInfeasibleSubsets( EntryID _tableauEntry )
     {
@@ -780,7 +780,7 @@ namespace smtrat
         }
         return result;
     }
-    
+
     template<class Settings>
     void LRAModule<Settings>::learnRefinements()
     {
@@ -947,7 +947,7 @@ namespace smtrat
             mpStatistics->addConflict( mInfeasibleSubsets );
         #endif
     }
-    
+
     template<class Settings>
     void LRAModule<Settings>::activateStrictBound( const FormulaT& _neqOrigin, const LRABound& _weakBound, const LRABound* _strictBound )
     {
@@ -1023,7 +1023,7 @@ namespace smtrat
             }
         }
     }
-    
+
     template<class Settings>
     void LRAModule<Settings>::addSimpleBoundDeduction( const LRABound* _bound, bool _exhaustively, bool _boundNeq )
     {
@@ -1046,7 +1046,7 @@ namespace smtrat
                     {
                         FormulasT subformulas
                         {
-                            FormulaT(carl::FormulaType::NOT, (*currentBound)->asConstraint()), 
+                            FormulaT(carl::FormulaType::NOT, (*currentBound)->asConstraint()),
                             (_boundNeq ? _bound->neqRepresentation() : _bound->asConstraint())
                         };
                         addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
@@ -1130,7 +1130,7 @@ namespace smtrat
             }
         }
     }
-    
+
     template<class Settings>
     void LRAModule<Settings>::addSimpleBoundConflict( const LRABound& _caseA, const LRABound& _caseB, bool _caseBneq )
     {
@@ -1229,20 +1229,20 @@ namespace smtrat
             mTableau.setBlandsRuleStart( 1000 );//(unsigned) mTableau.columns().size() );
         }
     }
-    
+
     template<class Settings>
     bool LRAModule<Settings>::gomory_cut()
     {
         const EvalRationalMap& rMap_ = getRationalModel();
         bool all_int = true;
         for( LRAVariable* basicVar : mTableau.rows() )
-        {   
+        {
             if( basicVar->isOriginal() )
             {
                 carl::Variables vars;
                 basicVar->expression().gatherVariables( vars );
                 assert( vars.size() == 1 );
-                auto found_ex = rMap_.find(*vars.begin()); 
+                auto found_ex = rMap_.find(*vars.begin());
                 const Rational& ass = found_ex->second;
                 if( !carl::isInteger( ass ) )
                 {
@@ -1251,14 +1251,14 @@ namespace smtrat
                     all_int = false;
                     const Poly::PolyType* gomory_poly = mTableau.gomoryCut(ass, basicVar);
                     if( *gomory_poly != ZERO_RATIONAL )
-                    { 
+                    {
                         ConstraintT gomory_constr = ConstraintT( *gomory_poly , carl::Relation::GEQ );
                         ConstraintT neg_gomory_constr = ConstraintT( *gomory_poly - (*gomory_poly).evaluate( rMap_ ), carl::Relation::LESS );
                         //std::cout << gomory_constr << endl;
                         assert( !gomory_constr.satisfiedBy( rMap_ ) );
                         assert( !neg_gomory_constr.satisfiedBy( rMap_ ) );
                         /*
-                        FormulaSetT subformulas; 
+                        FormulaSetT subformulas;
                         mTableau.collect_premises( basicVar, subformulas );
                         FormulaSetT premisesOrigins;
                         for( auto& pf : subformulas )
@@ -1277,19 +1277,19 @@ namespace smtrat
                         FormulaT branch_formula = FormulaT( carl::FormulaType::OR, std::move( subformulas ) );
                         //premise.insert( gomory_formula );
                         addLemma( branch_formula );
-                    } 
+                    }
                 }
-            }    
-        }          
+            }
+        }
         return !all_int;
     }
-    
+
     template<class Settings>
     bool LRAModule<Settings>::branch_and_bound()
     {
         return most_infeasible_var( Settings::support_bb_with_gc );
     }
-    
+
     template<class Settings>
     bool LRAModule<Settings>::maybeGomoryCut( const LRAVariable* _lraVar, const Rational& _branchingValue )
     {
@@ -1300,9 +1300,9 @@ namespace smtrat
         branchAt( _lraVar->expression(), true, _branchingValue );
         return true;
     }
-    
+
     template<class Settings>
-    bool LRAModule<Settings>::most_infeasible_var( bool _gc_support ) 
+    bool LRAModule<Settings>::most_infeasible_var( bool _gc_support )
     {
         const EvalRationalMap& _rMap = getRationalModel();
         auto branch_var = mTableau.originalVars().begin();
@@ -1313,7 +1313,7 @@ namespace smtrat
         {
             auto var = mTableau.originalVars().find( map_iterator->first );
             assert( var->first == map_iterator->first );
-            const Rational& ass = map_iterator->second; 
+            const Rational& ass = map_iterator->second;
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
                 if( mFinalCheck )
@@ -1322,9 +1322,9 @@ namespace smtrat
                     if( curr_diff < diff )
                     {
                         result = true;
-                        diff = curr_diff; 
+                        diff = curr_diff;
                         branch_var = var;
-                        ass_ = ass;                   
+                        ass_ = ass;
                     }
                 }
                 else
@@ -1336,7 +1336,7 @@ namespace smtrat
             if( _gc_support )
                 return maybeGomoryCut( branch_var->second, ass_ );
 //            FormulaSetT premises;
-//            mTableau.collect_premises( branch_var->second , premises  ); 
+//            mTableau.collect_premises( branch_var->second , premises  );
 //            FormulaSetT premisesOrigins;
 //            for( auto& pf : premises )
 //            {
@@ -1348,7 +1348,7 @@ namespace smtrat
         else
             return false;
     }
-    
+
     template<class Settings>
     bool LRAModule<Settings>::assignmentConsistentWithTableau( const EvalRationalMap& _assignment, const LRABoundType& _delta ) const
     {
@@ -1364,7 +1364,7 @@ namespace smtrat
         }
         return true;
     }
-    
+
     template<class Settings>
     bool LRAModule<Settings>::assignmentCorrect() const
     {
@@ -1388,7 +1388,7 @@ namespace smtrat
         }
         return true;
     }
-    
+
     #ifdef DEBUG_METHODS_LRA_MODULE
 
     template<class Settings>
