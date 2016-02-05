@@ -155,6 +155,14 @@ namespace smtrat
     void Module::deinform( const FormulaT& _constraint )
     {
         SMTRAT_LOG_DEBUG("smtrat.module", __func__ << " " << moduleName() << " (" << mId << ") about: " << _constraint);
+        if( mpManager != NULL )
+        {
+            mAllBackends = mpManager->getAllBackends( this );
+            for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+            {
+                (*module)->deinform( _constraint );
+            }
+        }
         mConstraintsToInform.erase( _constraint );
         deinformCore( _constraint );
     }
