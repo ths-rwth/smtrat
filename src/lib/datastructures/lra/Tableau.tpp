@@ -399,6 +399,7 @@ namespace smtrat
 
                     assert( boundVector->size() == 1 );
                     const Bound<T1,T2>* bound = boundVector->back();
+                    assert(!bound->isActive());
                     if( !bound->neqRepresentation().isTrue() )
                     {
                         bound->markAsDeleted();
@@ -419,6 +420,14 @@ namespace smtrat
                     {
                         mNonActiveBasics.erase( boundVar->positionInNonActives() );
                         boundVar->setPositionInNonActives( mNonActiveBasics.end() );
+                    }
+                    if( boundVar->isOriginal() )
+                    {
+                        mOriginalVars.erase( boundVar->expression().getSingleVariable() );
+                    }
+                    else
+                    {
+                        mSlackVars.erase( boundVar->pExpression() );
                     }
                     delete boundVar;
                 }
