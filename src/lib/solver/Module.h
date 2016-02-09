@@ -180,7 +180,7 @@ namespace smtrat
             std::vector<std::size_t> mVariableCounters;
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             /// a mutex for exclusive access to the old splitting variables
-            mutable std::mutex mOldSplittingVarMutex;
+            static std::mutex mOldSplittingVarMutex;
             #define OLD_SPLITTING_VARS_LOCK_GUARD std::lock_guard<std::mutex> lock( mOldSplittingVarMutex );
             #define OLD_SPLITTING_VARS_LOCK mOldSplittingVarMutex.lock();
             #define OLD_SPLITTING_VARS_UNLOCK mOldSplittingVarMutex.unlock();

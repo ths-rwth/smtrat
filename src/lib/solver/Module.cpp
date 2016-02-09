@@ -29,8 +29,8 @@ using namespace carl;
 namespace smtrat
 {
     
-    vector<string> Module::mAssumptionToCheck = vector<string>();
-    set<string> Module::mVariablesInAssumptionToCheck = set<string>();
+    vector<string> Module::mAssumptionToCheck;
+    set<string> Module::mVariablesInAssumptionToCheck;
     size_t Module::mNumOfBranchVarsToStore = 10;
 #ifdef __VS
     vector<Branching> Module::mLastBranches = vector<Branching>( mNumOfBranchVarsToStore, Branching(Poly::PolyType(ZERO_RATIONAL), ZERO_RATIONAL) );
@@ -38,7 +38,8 @@ namespace smtrat
 	vector<Branching> Module::mLastBranches = vector<Branching>(mNumOfBranchVarsToStore, Branching(typename Poly::PolyType(ZERO_RATIONAL), ZERO_RATIONAL));
 #endif
     size_t Module::mFirstPosInLastBranches = 0;
-    vector<FormulaT> Module::mOldSplittingVariables = vector<FormulaT>();
+    vector<FormulaT> Module::mOldSplittingVariables;
+	std::mutex  Module::mOldSplittingVarMutex;
 
     #ifdef SMTRAT_DEVOPTION_Validation
     ValidationSettings* Module::validationSettings = new ValidationSettings();
@@ -833,12 +834,12 @@ namespace smtrat
                 vector< std::future<Answer> > futures( highestIndex );
                 for( size_t i=0; i<highestIndex; ++i )
                 {
-                    SMTRAT_LOG_INFO("smtrat.module","Call to module " << moduleName( mUsedBackends[ i ]->type() ));
+                    SMTRAT_LOG_INFO("smtrat.module","Call to module " << mUsedBackends[ i ]->moduleName());
                     mUsedBackends[ i ]->print();
-                    futures[ i ] = mpManager->submitBackend( mUsedBackends[ i ], _full, _minimize );
+                    futures[ i ] = mpManager->submitBackend( mUsedBackends[ i ], _final, _full, _minimize );
                 }
                 mpManager->checkBackendPriority( mUsedBackends[ highestIndex ] );
-                SMTRAT_LOG_INFO("smtrat.module", "Call to module " << moduleName( mUsedBackends[ highestIndex ]->type() ));
+                SMTRAT_LOG_INFO("smtrat.module", "Call to module " << mUsedBackends[ highestIndex ]->moduleName());
                 mUsedBackends[ highestIndex ]->print();
                 result = mUsedBackends[ highestIndex ]->check( _final, _full, _minimize );
                 mUsedBackends[ highestIndex ]->receivedFormulaChecked();
