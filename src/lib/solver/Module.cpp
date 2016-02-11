@@ -39,7 +39,9 @@ namespace smtrat
 #endif
     size_t Module::mFirstPosInLastBranches = 0;
     vector<FormulaT> Module::mOldSplittingVariables;
+#ifdef SMTRAT_STRAT_PARALLEL_MODE
 	std::mutex  Module::mOldSplittingVarMutex;
+#endif
 
     #ifdef SMTRAT_DEVOPTION_Validation
     ValidationSettings* Module::validationSettings = new ValidationSettings();
