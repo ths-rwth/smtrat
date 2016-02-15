@@ -534,7 +534,7 @@ namespace smtrat
              * @param _minimize
              * @return A future containing the answer, as soon as the enquiry has been processed.
              */
-            std::future<Answer> submitBackend( Module* _module, bool _full, bool _minimize );
+            std::future<Answer> submitBackend( Module* _module, bool _final, bool _full, bool _minimize );
             
             /**
              * 

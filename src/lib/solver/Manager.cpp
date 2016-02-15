@@ -356,25 +356,19 @@ namespace smtrat
     #ifdef SMTRAT_STRAT_PARALLEL_MODE
     void Manager::initialize()
     {
-#if 1
-		if (mStrategyGraph.hasBranches()) {
-			// TODO
-		}
-#else
         mNumberOfBranches = mStrategyGraph.numberOfBranches();
         if( mNumberOfBranches > 1 )
         {
             mNumberOfCores = std::thread::hardware_concurrency();
             if( mNumberOfCores > 1 )
             {
-                mStrategyGraph.setThreadAndBranchIds();
+                //mStrategyGraph.setThreadAndBranchIds();
 //                mStrategyGraph.tmpPrint();
 //                std::this_thread::sleep_for(std::chrono::seconds(29));
                 mRunsParallel = true;
                 mpThreadPool = new ThreadPool( mNumberOfBranches, mNumberOfCores );
             }
         }
-#endif
     }
     #endif
     
@@ -486,10 +480,10 @@ namespace smtrat
     }
 
     #ifdef SMTRAT_STRAT_PARALLEL_MODE
-    std::future<Answer> Manager::submitBackend( Module* _pModule, bool _full, bool _minimize )
+    std::future<Answer> Manager::submitBackend( Module* _pModule, bool _final, bool _full, bool _minimize )
     {
         assert( mRunsParallel );
-        return mpThreadPool->submitBackend( _pModule, _full, _minimize );
+        return mpThreadPool->submitBackend( _pModule, _final, _full, _minimize );
     }
 
     void Manager::checkBackendPriority( Module* _pModule )
