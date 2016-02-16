@@ -368,7 +368,6 @@ namespace smtrat
             {
                 std::vector< const Bound<T1,T2>* >* boundVector = iter->second;
                 Variable<T1, T2>* boundVar = boundVector->back()->pVariable();
-
                 if( _constraint.constraint().relation() == carl::Relation::NEQ )
                 {
                     assert( boundVector->size() == 4 );
@@ -386,6 +385,9 @@ namespace smtrat
                             assert( boundVar == boundB->pVariable() );
                             boundVar->removeBound( boundB );
                             boundVectorB->pop_back();
+                            assert( !boundB->isActive() );
+                            assert( boundVar->pInfimum() != boundB );
+                            assert( boundVar->pSupremum() != boundB );
                             delete boundB;
                             delete boundVectorB;
                             mConstraintToBound.erase( iterB );
@@ -396,8 +398,13 @@ namespace smtrat
                 }
                 else
                 {
-
-                    assert( boundVector->size() == 1 );
+                    while( boundVector->size() > 1 )
+                    {
+                        const Bound<T1,T2>* toDel = boundVector->back();
+                        boundVar->removeBound( toDel );
+                        boundVector->pop_back();
+                        delete toDel;
+                    }
                     const Bound<T1,T2>* bound = boundVector->back();
                     assert(!bound->isActive());
                     if( !bound->neqRepresentation().isTrue() )
@@ -407,6 +414,8 @@ namespace smtrat
                     else
                     {
                         assert( !bound->isActive() );
+                        assert( boundVar->pInfimum() != bound );
+                        assert( boundVar->pSupremum() != bound );
                         boundVar->removeBound( bound );
                         boundVector->pop_back();
                         delete bound;
@@ -414,24 +423,29 @@ namespace smtrat
                     }
                 }
                 mConstraintToBound.erase( iter );
-                if( boundVar->lowerbounds().size() == 1 && boundVar->upperbounds().size() == 1 )
+                if( !boundVar->isOriginal() && boundVar->isBasic() && boundVar->lowerbounds().size() == 1 && boundVar->upperbounds().size() == 1 )
                 {
-                    if( !boundVar->hasBound() && boundVar->isBasic() && !boundVar->isOriginal() && boundVar->positionInNonActives() != mNonActiveBasics.end() )
-                    {
-                        mNonActiveBasics.erase( boundVar->positionInNonActives() );
-                        boundVar->setPositionInNonActives( mNonActiveBasics.end() );
-                    }
-                    if( boundVar->isOriginal() )
-                    {
-                        mOriginalVars.erase( boundVar->expression().getSingleVariable() );
-                    }
-                    else
-                    {
-                        mSlackVars.erase( boundVar->pExpression() );
-                    }
-                    delete boundVar;
+                    deleteVariable( boundVar );
                 }
             }
+        }
+        
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::deleteVariable( Variable<T1, T2>* _variable, bool _optimizationVar )
+        {
+            assert( !_variable->isOriginal() && _variable->isBasic() && _variable->lowerbounds().size() == 1 && _variable->upperbounds().size() == 1 );
+            if( _variable->positionInNonActives() == mNonActiveBasics.end() )
+            {
+                deactivateBasicVar( _variable );
+                compressRows();
+            }
+            assert( !_variable->hasBound() );
+            mNonActiveBasics.erase( _variable->positionInNonActives() );
+            _variable->setPositionInNonActives( mNonActiveBasics.end() );
+            if( !_optimizationVar )
+                mSlackVars.erase( _variable->pExpression() );
+            assert( _variable->isBasic() );
+            delete _variable;
         }
 
         template<class Settings, typename T1, typename T2>
@@ -627,7 +641,10 @@ namespace smtrat
                 lastInsertedEntry = entryID;
                 _var->rAssignment() += mColumns[coeff->first]->assignment() * coeff->second;
             }
-            _var->rAssignment() /= _var->factor();
+            if( Settings::omit_division )
+            {
+                _var->rAssignment() /= _var->factor();
+            }
             assert( checkCorrectness() == mRows.size() );
             assert( _var->positionInNonActives() == mNonActiveBasics.end() );
         }
@@ -1747,14 +1764,25 @@ namespace smtrat
                 update( false, _pivotingElement, pivotingRowLeftSide, pivotingRowRightSide, _optimizing );
             }
             ++mPivotingSteps;
-            if( !_optimizing && !basicVar.hasBound() && !basicVar.isOriginal() )
+            if( !basicVar.hasBound() && !basicVar.isOriginal() )
             {
                 deactivateBasicVar( columnVar );
                 compressRows();
+                if( basicVar.lowerbounds().size() == 1 && basicVar.upperbounds().size() == 1 )
+                {
+                    mSlackVars.erase( basicVar.pExpression() );
+                    mNonActiveBasics.erase( basicVar.positionInNonActives() );
+                    basicVar.setPositionInNonActives( mNonActiveBasics.end() );
+                    assert( columnVar->isBasic() );
+                    delete columnVar;
+                }
             }
-            assert( basicVar.supremum() >= basicVar.assignment() || basicVar.infimum() <= basicVar.assignment() );
-//                assert( nonbasicVar.supremum() == nonbasicVar.assignment() || nonbasicVar.infimum() == nonbasicVar.assignment() );
-            assert( checkCorrectness() == mRows.size() );
+            else
+            {
+                assert( basicVar.supremum() >= basicVar.assignment() || basicVar.infimum() <= basicVar.assignment() );
+    //                assert( nonbasicVar.supremum() == nonbasicVar.assignment() || nonbasicVar.infimum() == nonbasicVar.assignment() );
+                assert( checkCorrectness() == mRows.size() );
+            }
             return columnVar;
         }
 
