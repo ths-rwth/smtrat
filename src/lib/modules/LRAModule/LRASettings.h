@@ -76,6 +76,6 @@ namespace smtrat
         static const bool simple_conflict_search = false;
         static const bool simple_conflicts_and_propagation_on_demand = false;
         static const bool one_conflict_reason = true;
-        struct Tableau_settings : lra::TableauSettings1 {};
+        struct Tableau_settings : lra::TableauSettings3 {};
     };
 }
