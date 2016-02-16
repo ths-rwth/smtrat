@@ -551,6 +551,12 @@ namespace smtrat
                 
                 /**
                  * 
+                 * @param _variable
+                 */
+                void deleteVariable( Variable<T1, T2>* _variable, bool _optimizationVar = false );
+                
+                /**
+                 * 
                  * @param _poly
                  * @param _isInteger
                  * @return 

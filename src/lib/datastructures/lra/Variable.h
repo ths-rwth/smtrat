@@ -43,13 +43,7 @@ namespace smtrat
                 ///
                 size_t mPosition;
                 ///
-#ifdef __VS
-                //Use pointer as VS cannot handle unrestricted unions right now
-                typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator* mpPositionInNonActivesVS;
-#else
-                ///
                 typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator mPositionInNonActives;
-#endif
                 ///
                 typename Bound<T1, T2>::BoundSet mUpperbounds;
                 ///
@@ -233,7 +227,7 @@ namespace smtrat
                  */
                 const Bound<T1, T2>* pSupremum() const
                 {
-                    assert( !mpSupremum->origins().empty() );
+//                    assert( !mpSupremum->origins().empty() );
                     return mpSupremum;
                 }
 
@@ -305,11 +299,7 @@ namespace smtrat
                  */
                 typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator positionInNonActives() const
                 {
-#ifdef __VS
-                    return *mpPositionInNonActivesVS;
-#else
                     return mPositionInNonActives;
-#endif
                 }
                 
                 /**
@@ -318,11 +308,8 @@ namespace smtrat
                  */
                 void setPositionInNonActives( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives )
                 {
-#ifdef __VS
-                    mpPositionInNonActivesVS = new typename std::list<std::list<std::pair<Variable<T1, T2>*, T2>>>::iterator(_positionInNonActives);
-#else
+                    assert( !isOriginal() );
                     mPositionInNonActives = _positionInNonActives;
-#endif
                 }
 
                 /**

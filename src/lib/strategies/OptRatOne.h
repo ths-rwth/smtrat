@@ -36,7 +36,7 @@ namespace smtrat
                     {
 //                        addBackend<CubeLIAModule<CubeLIASettings1>>(
 //                        {   
-                            addBackend<LRAModule<LRASettings1>>(
+                            addBackend<LRAModule<LRASettings2>>(
                             {
 //                                addBackend<VSModule<VSSettings234>>(
 //                                {

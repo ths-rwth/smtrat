@@ -44,9 +44,7 @@ namespace smtrat
             mStartEntry( LAST_ENTRY_ID ),
             mSize( 0 ),
             mConflictActivity( 0 ),
-#ifndef __VS
             mPositionInNonActives( _positionInNonActives ),
-#endif
             mUpperbounds(),
             mLowerbounds(),
             mExpression( _expression),
@@ -57,9 +55,6 @@ namespace smtrat
             mFactor( 1 )
             #endif
         {
-#ifdef __VS
-            mpPositionInNonActivesVS = new typename std::list<std::list<std::pair<Variable<T1, T2>*, T2>>>::iterator(_positionInNonActives),
-#endif
             mpSupremum = addUpperBound( NULL, _defaultBoundPosition, FormulaT( carl::FormulaType::TRUE ) ).first;
             mpInfimum  = addLowerBound( NULL, _defaultBoundPosition, FormulaT( carl::FormulaType::TRUE ) ).first;
         }
@@ -141,6 +136,8 @@ namespace smtrat
         template<typename T1, typename T2>
         void Variable<T1, T2>::removeBound( const Bound<T1, T2>* _bound )
         {
+            assert( _bound != mpInfimum );
+            assert( _bound != mpSupremum );
             switch( _bound->type() )
             {
                 case Bound<T1, T2>::LOWER:

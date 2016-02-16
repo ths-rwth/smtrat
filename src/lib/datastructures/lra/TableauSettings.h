@@ -59,5 +59,10 @@ namespace smtrat
         {
             static const bool omit_division = false;
         };
+        
+        struct TableauSettings3 : TableauSettings1
+        {
+            static const bool use_refinement = false;
+        };
     }
 }

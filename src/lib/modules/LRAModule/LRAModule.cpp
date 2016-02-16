@@ -32,8 +32,6 @@ namespace smtrat
         mActiveUnresolvedNEQConstraints(),
         mDelta( carl::freshRealVariable( "delta_" + to_string( id() ) ) ),
         mBoundCandidatesToPass(),
-        mCreatedObjectiveLRAVars(),
-        mObjectiveLRAVar( mCreatedObjectiveLRAVars.end() ),
         mRationalAssignment()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
@@ -46,12 +44,6 @@ namespace smtrat
     template<class Settings>
     LRAModule<Settings>::~LRAModule()
     {
-        while( !mCreatedObjectiveLRAVars.empty() )
-        {
-            LRAVariable* toDel = mCreatedObjectiveLRAVars.begin()->second.first;
-            mCreatedObjectiveLRAVars.erase( mCreatedObjectiveLRAVars.begin() );
-            delete toDel;
-        }
         #ifdef SMTRAT_DEVOPTION_Statistics
         delete mpStatistics;
         #endif
@@ -134,19 +126,6 @@ namespace smtrat
                         {
                             if( constraint.hasVariable( objective() ) )
                             {
-                                if( constraint.relation() == carl::Relation::EQ )
-                                {
-                                    if( !objectiveFunction().isConstant() )
-                                    {
-                                        mObjectiveLRAVar = mCreatedObjectiveLRAVars.find( objectiveFunction() );
-                                        if( mObjectiveLRAVar == mCreatedObjectiveLRAVars.end() )
-                                        {
-                                            Rational denominator = carl::abs( carl::getNum( objectiveFunction().coprimeFactor() ) );
-                                            LRAVariable* lraVar = mTableau.getObjectiveVariable( objectiveFunction()*denominator );
-                                            mObjectiveLRAVar = mCreatedObjectiveLRAVars.emplace( objectiveFunction(), std::make_pair( lraVar, std::move(denominator) ) ).first;
-                                        }
-                                    }
-                                }
                                 return true;
                             }
                             auto constrBoundIter = mTableau.constraintToBound().find( formula );
@@ -564,17 +543,18 @@ namespace smtrat
                 mOptimumComputed = true;
                 return _result;
             }
-            assert( mObjectiveLRAVar != mCreatedObjectiveLRAVars.end() );
-            assert( mObjectiveLRAVar->second.first->isBasic() );
-            mTableau.activateBasicVar( mObjectiveLRAVar->second.first );
+            Rational denominator = carl::abs( carl::getNum( objectiveFunction().coprimeFactor() ) );
+            LRAVariable* optVar = mTableau.getObjectiveVariable( objectiveFunction()*denominator );
+            assert( optVar->isBasic() );
+            mTableau.activateBasicVar( optVar );
             for( ; ; )
             {
-                std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElementForOptimizing( *(mObjectiveLRAVar->second.first) );
+                std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElementForOptimizing( *optVar );
                 if( pivotingElement.second )
                 {
                     if( pivotingElement.first == lra::LAST_ENTRY_ID )
                     {
-                        assert( mObjectiveLRAVar->second.first->infimum().isInfinite() );
+                        assert( optVar->infimum().isInfinite() );
                         #ifdef DEBUG_LRA_MODULE
                         std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: -oo" << std::endl;
                         #endif
@@ -597,7 +577,7 @@ namespace smtrat
                     mOptimumComputed = false;
                     updateModel();
                     const EvalRationalMap& ratModel = getRationalModel();
-                    Rational opti = mObjectiveLRAVar->second.first->expression().evaluate( ratModel )/mObjectiveLRAVar->second.second;
+                    Rational opti = optVar->expression().evaluate( ratModel )/denominator;
                     #ifdef DEBUG_LRA_MODULE
                     std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: " << opti << std::endl;
                     #endif
@@ -606,7 +586,7 @@ namespace smtrat
                     break;
                 }
             }
-            mTableau.deactivateBasicVar( mObjectiveLRAVar->second.first );
+            mTableau.deleteVariable( optVar, true );
         }
         // @todo Branch if assignment does not fulfill integer domains.
         return _result;
