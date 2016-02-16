@@ -34,6 +34,7 @@ protected:
 	}
 public:
 	void addResult(const Tool* tool, const fs::path& file, BenchmarkResult& results) {
+		tool->additionalResults(file, results);
 		results.cleanup(tool, Settings::timeLimit);
 		mResults.addResult(tool, file, results);
 	}

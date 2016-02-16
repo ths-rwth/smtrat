@@ -34,8 +34,6 @@ protected:
 		auto end = std::chrono::high_resolution_clock::now();
 		results.time = milliseconds(end - start);
 	
-		tool->additionalResults(file, results);
-		
 		addResult(tool, file, results);
 	}
 };

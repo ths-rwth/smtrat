@@ -15,12 +15,14 @@ struct BenchmarkResult {
 	std::map<std::string, std::string> additional;
 	
 	template<typename Tool, typename TimeLimit>
-	void cleanup(const Tool& tool, const TimeLimit& limit) {
+	void cleanup(const Tool* tool, const TimeLimit& limit) {
 		if (time > limit) {
 			status = "timeout";
 		} else {
 			status = tool->getStatus(*this);
 		}
+		stdout = "";
+		stderr = "";
 	}
 };
 

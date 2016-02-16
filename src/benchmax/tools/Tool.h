@@ -82,7 +82,7 @@ public:
 		return false;
 	}
 	
-	virtual std::string getStatus(const BenchmarkResult& result) const {
+	virtual std::string getStatus(const BenchmarkResult&) const {
 		return "invalid";
 	}
 	
