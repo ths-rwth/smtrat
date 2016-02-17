@@ -319,7 +319,11 @@ int main( int argc, char* argv[] )
 		}
 	} else {
 		// Parse input.
-    	exitCode = executeFile(pathToInputFile, solver, settingsManager);
+		try {
+			exitCode = executeFile(pathToInputFile, solver, settingsManager);
+		} catch (const std::bad_alloc& e) {
+			std::raise(ENOMEM);
+		}
 	}
 
     if( settingsManager.doPrintTimings() )
