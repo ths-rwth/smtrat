@@ -275,22 +275,10 @@ namespace smtrat
         }
     }
     
-    ModuleInput::iterator Manager::remove( ModuleInput::const_iterator _subformula, bool _containsUnknownConstraints )
+    ModuleInput::iterator Manager::remove( ModuleInput::const_iterator _subformula )
     {
         assert( _subformula != mpPassedFormula->end() );
         mpPrimaryBackend->remove( _subformula );
-        if( _containsUnknownConstraints )
-        {
-            if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT )
-                mpPrimaryBackend->deinform( _subformula->formula() );
-            else if( _subformula->formula().isNary() )
-            {
-                vector<FormulaT> constraints;
-                _subformula->formula().getConstraints( constraints );
-                for( auto& c : constraints )
-                    mpPrimaryBackend->deinform( c );
-            }
-        }
         return mpPassedFormula->erase( _subformula );
     }
     

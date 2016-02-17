@@ -437,14 +437,12 @@ namespace smtrat
              * Removes the formula at the given position in the conjunction of formulas,
              * which will be considered for the next satisfiability check.
              * @param _subformula The position of the formula to remove.
-             * @param _containsUnknownConstraints true, if the formula to add contains constraints, about which this solver 
-             *                                    was not yet informed.
              * @return An iterator to the formula after the position of the just removed
              *          formula. If the removed formula has been the last element, the 
              *          end of the conjunction of formulas, which will be considered for the 
              *          next satisfiability check is returned.
              */
-            ModuleInput::iterator remove( ModuleInput::const_iterator _subformula, bool _containsUnknownConstraints = true );
+            ModuleInput::iterator remove( ModuleInput::const_iterator _subformula );
             
         protected:
 
