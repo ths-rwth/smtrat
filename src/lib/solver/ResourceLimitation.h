@@ -45,7 +45,7 @@ inline void signalHandler(int signal) {
 		std::cerr << "(error \"CPU resource out\")" << std::endl;
 		std::quick_exit(SMTRAT_EXIT_TIMEOUT);
 	} else if (signal == ENOMEM) {
-		std::cerr << "(error \"Mem resource out\")" << std::endl;
+		std::cerr << "(error \"Memory resource out\")" << std::endl;
 		std::quick_exit(SMTRAT_EXIT_MEMOUT);
 	} else {
 		std::cerr << "(error \"Unknown abort in resource limitation module\")" << std::endl;
