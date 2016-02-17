@@ -126,7 +126,6 @@ public:
 		if (!c->executeCommand(cmdLine, result)) {
 			BENCHMAX_LOG_ERROR("benchmax.ssh", "Failed to execute command.");
 		}
-		tool->additionalResults(file, result);
 		// Remove temporary directory
 		c->removeDir(folder);
 		// Store result
