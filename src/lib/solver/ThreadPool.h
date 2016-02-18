@@ -82,13 +82,8 @@ namespace smtrat
             
             // Members.
             std::mutex mMutex;
-#ifdef __VS
             std::atomic<bool> mDone;
             std::atomic<bool> mPossibleOversubscription;
-#else
-            std::atomic_bool mDone;
-            std::atomic_bool mPossibleOversubscription;
-#endif
             std::size_t mNumberOfCores;
             std::size_t mNumberOfThreads;
             std::size_t mNumberOfRunningThreads;

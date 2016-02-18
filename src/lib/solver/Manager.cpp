@@ -47,7 +47,7 @@ namespace smtrat
         ,
         mpThreadPool( nullptr ),
         mNumberOfBranches( 0 ),
-        mNumberOfCores( 1 ),
+        mNumberOfCores( 0 ),
         mRunsParallel( false )
         #endif
     {
@@ -56,9 +56,6 @@ namespace smtrat
         typedef void (*Func)( Module*, const FormulaT& );
         Func f = [] ( Module* _module, const FormulaT& _constraint ) { _module->inform( _constraint ); };
         carl::FormulaPool<Poly>::getInstance().forallDo<Module>( f, mpPrimaryBackend );
-        #ifdef SMTRAT_STRAT_PARALLEL_MODE
-        initialize();
-        #endif
     }
 
     // Destructor.
@@ -344,6 +341,7 @@ namespace smtrat
     #ifdef SMTRAT_STRAT_PARALLEL_MODE
     void Manager::initialize()
     {
+		if (mNumberOfCores != 0) return;
         mNumberOfBranches = mStrategyGraph.numberOfBranches();
         if( mNumberOfBranches > 1 )
         {

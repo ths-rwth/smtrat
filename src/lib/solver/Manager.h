@@ -466,6 +466,7 @@ namespace smtrat
 				std::size_t priority = mpPrimaryBackend->threadPriority().first;
 				mpPrimaryBackend->setThreadPriority(thread_priority(priority, id));
 				SMTRAT_LOG_INFO("smtrat.strategygraph", "Strategygraph:" << std::endl << mStrategyGraph);
+				SMTRAT_LOG_INFO("smtrat.strategygraph", "Branches: " << mStrategyGraph.numberOfBranches());
 			}
 			void setStrategy(const BackendLink& backend) {
 				setStrategy({backend});
@@ -502,8 +503,9 @@ namespace smtrat
              * @return true, if we might run in parallel eventually;
              *         false, otherwise.
              */
-            bool runsParallel() const
+            bool runsParallel()
             {
+				initialize();
                 return mRunsParallel;
             }
             #endif

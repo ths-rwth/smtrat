@@ -97,7 +97,7 @@ namespace smtrat {
 		std::vector<AbstractModuleFactory*> mVertices;
 		std::vector<std::vector<BackendLink>> mEdges;
 		bool mHasBranches = false;
-		std::size_t mNumberOfBranches = 0;
+		std::size_t mNumberOfBranches = 1;
 		std::size_t nextPriority = 1;
 		std::size_t mRoot = 0;
 		
@@ -109,9 +109,9 @@ namespace smtrat {
 			mEdges.emplace_back(backends);
 			if (backends.size() > 1) {
 				mHasBranches = true;
-				mNumberOfBranches += backends.size()-1;
+				mNumberOfBranches += backends.size() - 1;
 			}
-			return mVertices.size()-1;
+			return mVertices.size() - 1;
 		}
 		std::size_t getPriority(std::size_t priority) {
 			if (priority == 0) priority = nextPriority;
@@ -160,11 +160,11 @@ namespace smtrat {
 		}
 		
 		bool hasBranches() const {
-			assert(mHasBranches == (mNumberOfBranches > 0));
+			assert(mHasBranches == (mNumberOfBranches > 1));
 			return mHasBranches;
 		}
 		std::size_t numberOfBranches() const {
-			assert(mHasBranches == (mNumberOfBranches > 0));
+			assert(mHasBranches == (mNumberOfBranches > 1));
 			return mNumberOfBranches;
 		}
 		std::size_t getRoot() const {
