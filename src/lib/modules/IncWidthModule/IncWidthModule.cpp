@@ -280,7 +280,7 @@ namespace smtrat
                             icpsAddedBounds.push_back( ret.first );
                             boundAdded = true;
                         }
-                        ConstraintT boundB( var, carl::Relation::GEQ, Settings::exclude_negative_numbers ? ZERO_RATIONAL : -Rational( mHalfOfCurrentWidth ) );
+                        ConstraintT boundB( var, carl::Relation::GEQ, Settings::exclude_negative_numbers ? ZERO_RATIONAL : Rational(-Rational( mHalfOfCurrentWidth )) );
                         ret = addToICP( FormulaT( boundB ), false );
                         if( ret.second )
                         {
@@ -292,7 +292,7 @@ namespace smtrat
                     {
                         Rational currentWidth = Rational(2)*mHalfOfCurrentWidth;
                         bool intervalHalfOpen = vb->second.lowerBoundType() == carl::BoundType::INFTY || vb->second.upperBoundType() == carl::BoundType::INFTY;
-                        if( intervalHalfOpen || currentWidth <= (vb->second.lowerBoundType() != carl::BoundType::INFTY ? -vb->second.lower() : vb->second.upper()) )
+                        if( intervalHalfOpen || currentWidth <= (vb->second.lowerBoundType() != carl::BoundType::INFTY ? Rational(-vb->second.lower()) : vb->second.upper()) )
                         {
                             auto ret = addToICP( FormulaT( ConstraintT( var, carl::Relation::LESS, currentWidth ) ), false );
                             if( ret.second )
@@ -393,7 +393,7 @@ namespace smtrat
                             std::cout << "   add  " << res.first->formula() << std::endl;
                             #endif
                         }
-                        ConstraintT boundB( var, carl::Relation::GEQ, Settings::exclude_negative_numbers ? ZERO_RATIONAL : -Rational( mHalfOfCurrentWidth ) );
+                        ConstraintT boundB( var, carl::Relation::GEQ, Settings::exclude_negative_numbers ? ZERO_RATIONAL : Rational(-Rational( mHalfOfCurrentWidth )) );
                         res = addSubformulaToPassedFormula( FormulaT( boundB ) );
                         if( res.second )
                         {
@@ -408,7 +408,7 @@ namespace smtrat
                     {
                         Rational currentWidth = Rational(2)*mHalfOfCurrentWidth;
                         bool intervalHalfOpen = vb->second.lowerBoundType() == carl::BoundType::INFTY || vb->second.upperBoundType() == carl::BoundType::INFTY;
-                        if( intervalHalfOpen || currentWidth <= (vb->second.lowerBoundType() != carl::BoundType::INFTY ? -vb->second.lower() : vb->second.upper()) )
+                        if( intervalHalfOpen || currentWidth <= (vb->second.lowerBoundType() != carl::BoundType::INFTY ? Rational(-vb->second.lower()) : vb->second.upper()) )
                         {
                             auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LESS, currentWidth ) ) );
                             if( res.second )
