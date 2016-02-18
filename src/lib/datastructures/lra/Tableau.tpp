@@ -195,7 +195,7 @@ namespace smtrat
                 constantPart *= _factor;
                 (*linearPart) *= _factor;
 //                linearPart->makeOrdered();
-                _boundValue = (negative ? constantPart : -constantPart);
+                _boundValue = (negative ? constantPart : T1(-constantPart));
                 typename carl::FastPointerMap<typename Poly::PolyType, Variable<T1, T2>*>::iterator slackIter = mSlackVars.find( linearPart );
                 if( slackIter == mSlackVars.end() )
                 {
@@ -208,7 +208,7 @@ namespace smtrat
                     result = slackIter->second;
                 }
                 if( negative )
-                    _factor = -_factor;
+                    _factor = T1(-_factor);
             }
             return result;
         }
