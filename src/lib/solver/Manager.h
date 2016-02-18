@@ -283,7 +283,7 @@ namespace smtrat
             }
 
             // @todo: we want a const_iterator here, but gcc 4.8 doesn't allow us :( even though it should
-            ModuleInput:iterator formulaBegin()
+            ModuleInput::iterator formulaBegin()
             {
                 return mpPassedFormula->begin();
             }
