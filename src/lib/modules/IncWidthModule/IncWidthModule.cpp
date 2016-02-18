@@ -152,7 +152,7 @@ namespace smtrat
                     bool varWithNegCoeff = carl::isNegative( varShiftIter->second.lcoeff() );
                     if( ass.second.isRational() )
                     {
-                        mModel.assign(ass.first, (varWithNegCoeff ? -ass.second.asRational() : ass.second.asRational()) + varShiftIter->second.constantPart());
+                        mModel.assign(ass.first, (varWithNegCoeff ? Rational(-ass.second.asRational()) : ass.second.asRational()) + varShiftIter->second.constantPart());
                     }
                     else if( ass.second.isSqrtEx() )
                     {
