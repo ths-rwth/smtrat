@@ -1298,7 +1298,7 @@ namespace smtrat
             {
                 if( mFinalCheck )
                 {
-                    Rational curr_diff = carl::abs( (ass - carl::floor(ass)) - ONE_RATIONAL/Rational(2) );
+                    Rational curr_diff = carl::abs( Rational( Rational(ass - carl::floor(ass)) - ONE_RATIONAL/Rational(2)) );
                     if( curr_diff < diff )
                     {
                         result = true;
