@@ -434,7 +434,8 @@ namespace smtrat
 //            return _out << _mi.toString()
 //        }
         
-        iterator erase( const_iterator _formula );
+        // @todo: we want a const_iterator here, but gcc 4.8 doesn't allow us :( even though it should
+        iterator erase( iterator _formula );
         
         void clearOrigins( iterator _formula )
         {

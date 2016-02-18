@@ -115,7 +115,7 @@ namespace smtrat
         }
     }
     
-    ModuleInput::iterator ModuleInput::erase( const_iterator _formula )
+    ModuleInput::iterator ModuleInput::erase( iterator _formula )
     {
         assert( _formula != end() );
         mPropertiesUpdated = false;

@@ -281,6 +281,12 @@ namespace smtrat
             {
                 return *mpPassedFormula;
             }
+
+            // @todo: we want a const_iterator here, but gcc 4.8 doesn't allow us :( even though it should
+            ModuleInput:iterator formulaBegin()
+            {
+                return mpPassedFormula->begin();
+            }
             
             /**
              * Prints the currently found assignment of variables occurring in the so far 
@@ -442,7 +448,7 @@ namespace smtrat
              *          end of the conjunction of formulas, which will be considered for the 
              *          next satisfiability check is returned.
              */
-            ModuleInput::iterator remove( ModuleInput::const_iterator _subformula );
+            ModuleInput::iterator remove( ModuleInput::iterator _subformula ); // @todo: we want a const_iterator here, but gcc 4.8 doesn't allow us :( even though it should
             
         protected:
 
