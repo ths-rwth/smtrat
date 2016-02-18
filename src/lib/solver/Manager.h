@@ -287,6 +287,10 @@ namespace smtrat
             {
                 return mpPassedFormula->begin();
             }
+            ModuleInput::iterator formulaEnd()
+            {
+                return mpPassedFormula->end();
+            }
             
             /**
              * Prints the currently found assignment of variables occurring in the so far 
