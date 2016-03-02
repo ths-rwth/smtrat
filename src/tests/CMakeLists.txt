@@ -51,3 +51,4 @@ target_link_libraries( parserTest
 )
 
 add_subdirectory(datastructures)
+add_subdirectory(cad)
