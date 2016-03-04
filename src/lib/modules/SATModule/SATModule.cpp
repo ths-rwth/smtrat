@@ -1396,22 +1396,17 @@ namespace smtrat
         }
         else
         {
-            for( CRef cl_r : mChangedActivities )
+            for( signed v : mChangedActivities )
             {
-                Clause& cl = ca[cl_r];
-                for( int i = 0; i < cl.size(); ++i )
+                if( mBooleanConstraintMap[v].first != nullptr )
                 {
-                    int v = var( cl[i] );
-                    if( mBooleanConstraintMap[v].first != nullptr )
-                    {
-                         assert( mBooleanConstraintMap[v].second != nullptr );
-                        auto posInPasForm = mBooleanConstraintMap[v].first->position;
-                        if( posInPasForm != rPassedFormula().end() )
-                            posInPasForm->formula().setActivity(activity[v]);
-                        posInPasForm = mBooleanConstraintMap[v].second->position;
-                        if( posInPasForm != rPassedFormula().end() )
-                            posInPasForm->formula().setActivity(activity[v]);
-                    }
+                     assert( mBooleanConstraintMap[v].second != nullptr );
+                    auto posInPasForm = mBooleanConstraintMap[v].first->position;
+                    if( posInPasForm != rPassedFormula().end() )
+                        posInPasForm->formula().setActivity(activity[v]);
+                    posInPasForm = mBooleanConstraintMap[v].second->position;
+                    if( posInPasForm != rPassedFormula().end() )
+                        posInPasForm->formula().setActivity(activity[v]);
                 }
             }
         }
@@ -1534,8 +1529,6 @@ namespace smtrat
                 cr = ca.alloc( add_tmp, _type );
                 learnts.push( cr );
                 decrementLearntSizeAdjustCnt();
-                if( !mReceivedFormulaPurelyPropositional )
-                    mChangedActivities.push_back( cr );
                 claBumpActivity( ca[cr] );
             }
             else
@@ -1856,11 +1849,6 @@ SetWatches:
             vardata[var( c[0] )].reason = CRef_Undef;
         c.mark( 1 );
         ca.free( cr );
-        if( !mReceivedFormulaPurelyPropositional )
-        {
-            mChangedActivities.clear();
-            mAllActivitiesChanged = true;
-        }
     }
 
     template<class Settings>
@@ -2312,8 +2300,6 @@ SetWatches:
                 learnts.push( _confl );
                 attachClause( _confl );
             }
-            if( !mReceivedFormulaPurelyPropositional )
-                mChangedActivities.push_back( _confl );
             claBumpActivity( ca[_confl] );
             uncheckedEnqueue( learnt_clause[0], _confl );
             decrementLearntSizeAdjustCnt();
@@ -2532,11 +2518,8 @@ SetWatches:
             assert( confl != CRef_Undef );    // (otherwise should be UIP)
             Clause& c = ca[confl];
 
-//            if( c.learnt() ) // TODO: Find out, why the hell am I doing this.
-//            {  
-//                mChangedActivities.push_back( confl );
-//                claBumpActivity( c );
-//            }
+            if( c.learnt() )
+                claBumpActivity( c );
 
             for( int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++ )
             {

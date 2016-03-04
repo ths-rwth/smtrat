@@ -496,7 +496,7 @@ namespace smtrat
             /// Is true, if we have to communicate all activities to the backends. (This might be the case after rescaling the activities.)
             bool mAllActivitiesChanged;
             /// Stores all clauses in which the activities have been changed.
-            std::vector<Minisat::CRef> mChangedActivities;
+            std::vector<signed> mChangedActivities;
             /// Stores the just introduced Boolean variables for theory splitting decisions.
             std::vector<signed> mNewSplittingVars;
             /// Stores for each variable the corresponding formulas which control its value
@@ -1189,6 +1189,12 @@ namespace smtrat
                     for( int i = 0; i < nVars(); i++ )
                         activity[i] *= 1e-100;
                     var_inc *= 1e-100;
+                    if( !mReceivedFormulaPurelyPropositional )
+                        mAllActivitiesChanged = true;
+                }
+                else if( !mReceivedFormulaPurelyPropositional )
+                {
+                    mChangedActivities.push_back( (signed) v );
                 }
 
                 // Update order_heap with respect to new activity:
@@ -1221,8 +1227,6 @@ namespace smtrat
             {
                 if( (c.activity() += (float)cla_inc) > 1e20 )
                 {
-                    if( !mReceivedFormulaPurelyPropositional )
-                        mAllActivitiesChanged = true;
                     // Rescale:
                     for( int i = 0; i < learnts.size(); i++ )
                     {
