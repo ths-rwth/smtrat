@@ -20,6 +20,7 @@ namespace cad {
 		std::vector<std::vector<std::pair<UPoly,Bitset>>> mPolynomials;
 		
 		void addToProjection(std::size_t level, const UPoly& p, const Bitset& origin) {
+			if (p.isZero() || p.isNumber()) return;
 			assert(level < dim());
 			assert(p.mainVar() == var(level));
 			auto it = mPolynomialIDs[level].find(p);
@@ -36,7 +37,7 @@ namespace cad {
 				}
 			}
 			std::size_t newID = mPolynomials[level].size();
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Adding " << p << " to projection level " << level);
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			mPolynomials[level].emplace_back(p, origin);
 			mPolynomialIDs[level].emplace(p, newID);
 			mLiftingQueues[level].insert(newID);
@@ -99,11 +100,10 @@ namespace cad {
 		template<typename S>
 		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::NONE, Backtracking::ORDERED, S>& p) {
 			for (std::size_t level = 0; level < p.dim(); level++) {
-				os << level << " " << p.var(level) << ":";
+				os << level << " " << p.var(level) << ":" << std::endl;
 				for (const auto& it: p.mPolynomials[level]) {
-					os << " " << it.first << "[" << it.second << "]";
+					os << "\t" << it.first << " [" << it.second << "]" << std::endl;
 				}
-				os << std::endl;
 			}
 			return os;
 		}
