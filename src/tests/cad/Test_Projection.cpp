@@ -30,7 +30,8 @@ BOOST_AUTO_TEST_CASE(Test_Projection_NO)
 		std::cout << *op << std::endl;
 	}
 
-	CAD<NewCADSettings1> cad({x,y});
+	CAD<NewCADSettings1> cad;
+	cad.reset({x,y});
 	cad.addConstraint(ConstraintT(p, carl::Relation::GEQ));
 	cad.addConstraint(ConstraintT(q, carl::Relation::LEQ));
 	cad.check();
@@ -43,7 +44,8 @@ BOOST_AUTO_TEST_CASE(Test_CAD)
 	Poly p = Poly(x*y)+Poly(y)+Rational(1);
 	Poly q = Poly(y*y*y)+Poly(x*x*y)+Rational(2);
 	
-	CAD<NewCADSettings1> cad({x,y});
+	CAD<NewCADSettings1> cad;
+	cad.reset({x,y});
 	cad.addConstraint(ConstraintT(p, carl::Relation::GEQ));
 	cad.addConstraint(ConstraintT(q, carl::Relation::LEQ));
 	cad.check();
