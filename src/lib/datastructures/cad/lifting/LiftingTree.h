@@ -20,6 +20,7 @@ namespace cad {
 		Tree mTree;
 		SampleIteratorQueue<Iterator, FullSampleComparator> mCheckingQueue;
 		SampleIteratorQueue<Iterator, SampleComparator> mLiftingQueue;
+		std::vector<Iterator> mRemovedFromLiftingQueue;
 		LiftingOperator<Iterator, Settings> mLifting;
 		SampleSelector<Settings> mSelector;
 		
@@ -99,9 +100,12 @@ namespace cad {
 		}
 		
 	public:
-		LiftingTree(Variables&& vars): mVariables(vars) {
+		LiftingTree() {
 			auto it = mTree.setRoot(Sample(RAN(0)));
 			mLiftingQueue.addNewSample(it);
+		}
+		void reset(Variables&& vars) {
+			mVariables = std::move(vars);
 		}
 		
 		bool hasFullSamples() const {
@@ -110,36 +114,63 @@ namespace cad {
 		Iterator getNextFullSample() {
 			return mCheckingQueue.removeNextSample();
 		}
+		void resetFullSamples() {
+			mCheckingQueue.assign(mTree.begin_depth(dim()), mTree.end_depth(dim()));
+		}
 		
+		bool hasNextSample() const {
+			return !mLiftingQueue.empty();
+		}
 		Iterator getNextSample() {
 			mLiftingQueue.restoreOrder();
 			return mLiftingQueue.getNextSample();
 		}
-		Iterator removeNextSample() {
-			return mLiftingQueue.removeNextSample();
+		void removeNextSample() {
+			mRemovedFromLiftingQueue.emplace_back(mLiftingQueue.removeNextSample());
+		}
+		void restoreRemovedSamples() {
+			mLiftingQueue.addNewSamples(mRemovedFromLiftingQueue.begin(), mRemovedFromLiftingQueue.end());
+			mRemovedFromLiftingQueue.clear();
 		}
 		
 		bool liftSample(Iterator sample, const UPoly& p) {
 			auto m = extractSampleMap(sample);
 			RationalInterval bounds;
-			SMTRAT_LOG_TRACE("smtrat.cad", "Lifting " << m << " on " << p);
+			SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Lifting " << m << " on " << p);
 			std::vector<Sample> newSamples;
 			for (const auto& r: carl::rootfinder::realRoots(p, m, bounds, Settings::rootSplittingStrategy)) {
 				newSamples.emplace_back(r);
 			}
 			return mergeRootSamples(sample, newSamples);
 		}
-		std::map<carl::Variable, RAN> extractSampleMap(Iterator it) const {
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Extracting sample from" << std::endl << mTree);
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Variables: " << mVariables);
-			std::map<carl::Variable, RAN> res;
+		Assignment extractSampleMap(Iterator it) const {
+			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Extracting sample from" << std::endl << mTree);
+			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Variables: " << mVariables);
+			Assignment res;
 			auto cur = mTree.begin_path(it);
 			while (cur != mTree.end_path() && !cur.isRoot()) {
 				res.emplace(mVariables[cur.depth()-1], it->value());
 				cur++;
 			}
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Result: " << res);
+			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Result: " << res);
 			return res;
+		}
+		
+		std::string printSample(Iterator sample) const {
+			std::vector<Sample> chunks(mTree.begin_path(sample), mTree.end_path());
+			std::stringstream ss;
+			for (std::size_t d = 0; d < sample.depth(); d++) {
+				if (d != 0) ss << " -> ";
+				ss << mVariables[d] << " = " << chunks[chunks.size()-2-d];
+			}
+			return ss.str();
+		}
+		std::string printFullSamples() const {
+			std::stringstream ss;
+			for (const auto& it: mCheckingQueue) {
+				ss << "\t" << printSample(it) << std::endl;
+			}
+			return ss.str();
 		}
 	};
 }
