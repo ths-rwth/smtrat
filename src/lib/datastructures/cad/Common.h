@@ -3,6 +3,7 @@
 #include <boost/optional.hpp>
 
 #include <carl/core/RealAlgebraicNumber.h>
+#include <carl/core/RealAlgebraicNumberEvaluation.h>
 
 #include "../../Common.h"
 #include "Settings.h"
@@ -16,5 +17,6 @@ namespace cad {
 	using SampleLiftedWith = Bitset;
 	using SampleRootOf = Bitset;
 	using OptionalPoly = boost::optional<const UPoly&>;
+	using Assignment = std::map<carl::Variable, RAN>;
 }
 }
