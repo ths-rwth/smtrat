@@ -17,10 +17,19 @@ namespace cad {
 		LiftingTree<Settings> mLifting;
 		std::vector<ConstraintT> mConstraints;
 		
+	public:
 		std::size_t dim() const {
 			return mVariables.size();
 		}
-	public:
+		auto getProjection() const {
+			return mProjection;
+		}
+		auto getLifting() const {
+			return mLifting;
+		}
+		auto getConstraints() const {
+			return mConstraints;
+		}
 		void reset(const Variables& vars) {
 			mVariables = vars;
 			mProjection.reset(mVariables);
@@ -39,40 +48,58 @@ namespace cad {
 				case Backtracking::ORDERED:
 					assert(mConstraints.back() == c);
 					mConstraints.pop_back();
-					mProjection.removePolynomial(c.lhs().toUnivariatePolynomial(mVariables.front()));
+					mProjection.removePolynomial(
+						c.lhs().toUnivariatePolynomial(mVariables.front()),
+						[&](std::size_t level, const SampleLiftedWith& mask){ mLifting.removeLiftedWithFlags(level, mask); }
+					);
+					
+					break;
+				case Backtracking::UNORDERED:
+					SMTRAT_LOG_ERROR("smtrat.cad", "Unordered backtracking is not supported yet.");
+					break;
 				default:
 					assert(false);
 			}
 		}
 		
 		Answer checkFullSamples(Assignment& assignment) {
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Checking for full satisfying samples...");
 			SMTRAT_LOG_TRACE("smtrat.cad", "Full sample queue:" << std::endl << mLifting.printFullSamples());
 			while (mLifting.hasFullSamples()) {
 				auto it = mLifting.getNextFullSample();
 				auto m = mLifting.extractSampleMap(it);
 				assert(m.size() == it.depth());
+				bool sat = true;
 				for (const auto& c: mConstraints) {
-					SMTRAT_LOG_DEBUG("smtrat.cad", "Checking " << m << " against " << c);
+					Assignment a = m;
 					// TODO: m is cleared by the call to evaluate() ... 
-					auto assignment = m;
-					auto res = carl::RealAlgebraicNumberEvaluation::evaluate(c.lhs(), assignment);
-					bool sat = carl::evaluate(res, c.relation());
-					if (!sat) return Answer::UNSAT;
+					auto res = carl::RealAlgebraicNumberEvaluation::evaluate(c.lhs(), a);
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Evaluating " << c.lhs() << " on " << m << " -> " << res);
+					sat = sat && carl::evaluate(res, c.relation());
+					if (!sat) break;
 				}
-				SMTRAT_LOG_INFO("smtrat.cad", "Found satisfying sample " << m);
-				assignment = m;
-				return Answer::SAT;
+				if (sat) {
+					SMTRAT_LOG_INFO("smtrat.cad", "Found satisfying sample " << m);
+					assignment = m;
+					return Answer::SAT;
+				}
 			}
+			SMTRAT_LOG_DEBUG("smtrat.cad", "No full satisfying sample found.");
 			return Answer::UNSAT;
 		}
 		
 		Answer check(Assignment& assignment) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
+			mLifting.resetFullSamples();
+			mLifting.restoreRemovedSamples();
 			while (true) {
 				Answer res = checkFullSamples(assignment);
 				if (res == Answer::SAT) return Answer::SAT;
 				
-				if (!mLifting.hasNextSample()) break;
+				if (!mLifting.hasNextSample()) {
+					SMTRAT_LOG_DEBUG("smtrat.cad", "There is no sample to be lifted.");
+					break;
+				}
 				auto it = mLifting.getNextSample();
 				assert(0 <= it.depth() && it.depth() < dim());
 				Sample& s = *it;
@@ -86,12 +113,19 @@ namespace cad {
 					SMTRAT_LOG_DEBUG("smtrat.cad", "Got no polynomial for " << s << ", projecting into level " << (dim() - 1 - it.depth()) << " ...");
 					bool gotNewPolys = mProjection.projectNewPolynomial(dim() - 1 - it.depth());
 					if (gotNewPolys) {
+						SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 						mLifting.restoreRemovedSamples();
+					} else if(mProjection.empty(dim() - 1 - it.depth())) {
+						if (!mLifting.addTrivialSample(it)) {
+							mLifting.removeNextSample();
+						}
 					} else {
 						mLifting.removeNextSample();
 					}
 				}
 			}
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Current sampletree:" << std::endl << mLifting.getTree());
 			return Answer::UNSAT;
 		}
 	};
