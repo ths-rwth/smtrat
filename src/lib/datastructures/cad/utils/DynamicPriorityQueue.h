@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <iostream>
 #include <queue>
 #include <vector>
 
@@ -10,9 +11,31 @@ namespace smtrat {
 	class PriorityQueue: public std::priority_queue<T,std::vector<T>,Compare> {
 		using super = std::priority_queue<T,std::vector<T>,Compare>;
 	public:
+		explicit PriorityQueue(): super() {}
 		explicit PriorityQueue(const Compare& comp): super(comp) {}
 		const typename super::container_type& data() const {
 			return super::c;
+		}
+		typename std::vector<T>::const_iterator find(const T& t) const {
+			return std::find(data().begin(), data().end(), t);
+		}
+		typename std::vector<T>::const_iterator end() const {
+			return data().end();
+		}
+		void erase(typename std::vector<T>::const_iterator it) {
+			super::c.erase(it);
+		}
+		void clear() {
+			super::c.clear();
+		}
+		template<typename TT, typename C>
+		friend std::ostream& operator<<(std::ostream& os, const PriorityQueue<TT,C>& pq) {
+			os << "[";
+			for (auto it = pq.data().begin(); it != pq.data().end(); it++) {
+				if (it != pq.data().begin()) os << ", ";
+				os << *it;
+			}
+			return os << "]";
 		}
 	};
 	
