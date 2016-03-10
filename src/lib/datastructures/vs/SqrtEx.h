@@ -103,12 +103,40 @@ namespace vs
             }
 
             /**
+             * @return true, if the square root expression can be expressed as a polynomial;
+             *          false, otherwise.
+             */
+            bool isPolynomial() const
+            {
+                return mFactor.isZero() && mDenominator.isConstant();
+            }
+
+            /**
+             * @return The square root expression as a polynomial (note that there must be no square root nor denominator
+             */
+            smtrat::Poly asPolynomial() const
+            {
+                assert( isPolynomial() );
+                assert( !mDenominator.isZero() );
+                return mConstantPart / mDenominator.constantPart();
+            }
+
+            /**
              * @return true, if there is no variable in this square root expression;
              *          false, otherwise.
              */
             bool isConstant() const
             {
                 return mConstantPart.isConstant() && mDenominator.isConstant() && mFactor.isConstant() && mRadicand.isConstant();
+            }
+            
+            /**
+             * @return This sqrtEx as an integer (note, that it must actually represent an integer then).
+             */
+            smtrat::Rational asConstant() const
+            {
+                assert( isConstant() );
+                return mConstantPart.constantPart();
             }
 
             /**
@@ -118,6 +146,17 @@ namespace vs
             bool isRational() const
             {
                 return mConstantPart.isConstant() && mDenominator.isConstant() && mRadicand == smtrat::ZERO_POLYNOMIAL;
+            }
+            
+            /**
+             * @return This sqrtEx as a rational (note, that it must actually represent a rational then).
+             */
+            smtrat::Rational asRational() const
+            {
+                if( isConstant() )
+                    return asConstant();
+                assert( isRational() );
+                return mConstantPart.constantPart()/mFactor.constantPart();
             }
             
         private:

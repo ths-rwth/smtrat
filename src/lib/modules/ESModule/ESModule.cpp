@@ -41,7 +41,38 @@ namespace smtrat
             for( const auto& iter : mArithSubs )
             {
                 assert( mModel.find( iter.first ) == mModel.end() );
-                mModel.emplace( iter.first, vs::SqrtEx( iter.second ) );
+                mModel.emplace( iter.first, ModelSubstitution::create<ModelPolynomialSubstitution>( iter.second ) );
+            }
+            // All variables which occur in the root of the constructed state tree but were incidentally eliminated
+            // (during the elimination of another variable) can have an arbitrary assignment. If the variable has the
+            // real domain, we leave at as a parameter, and, if it has the integer domain we assign 0 to it.
+            carl::Variables receivedVars;
+            rReceivedFormula().vars( receivedVars );
+            if( solverState() != SAT && appliedPreprocessing() )
+            {
+                carl::Variables passedVars;
+                rPassedFormula().vars( passedVars );
+                auto rvIter = receivedVars.begin();
+                auto pvIter = passedVars.begin();
+                while( rvIter != receivedVars.end() && pvIter != passedVars.end() )
+                {
+                    if( *rvIter < *pvIter )
+                        ++rvIter;
+                    else if( *pvIter < *rvIter )
+                        ++pvIter;
+                    else
+                    {
+                        rvIter = receivedVars.erase( rvIter );
+                        ++pvIter;
+                    }
+                }
+            }
+            for( auto var : receivedVars )
+            {
+                if( var.getType() == carl::VariableType::VT_BOOL )
+                    mModel.insert(std::make_pair(var, false));
+                else
+                    mModel.insert(std::make_pair(var, ModelSubstitution::create<ModelPolynomialSubstitution>( ZERO_POLYNOMIAL )));
             }
         }
     }

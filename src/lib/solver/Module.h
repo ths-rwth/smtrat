@@ -768,6 +768,14 @@ namespace smtrat
 			}
             
             /**
+             * Substitutes variable occurrences by its model value in the model values of other variables.
+             */
+            void cleanModel() const
+            {
+                mModel.clean();
+            }
+            
+            /**
              * @return An iterator to the end of the passed formula.
              * TODO: disable this method
              */

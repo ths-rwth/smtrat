@@ -158,7 +158,29 @@ namespace smtrat
             }
             else
             {
-                mpPrimaryBackend->updateModel();
+                const Model& curModel = model();
+                auto objectivesIter = mObjectives.begin();
+                for( auto ass = curModel.begin(); ass != curModel.end(); ++ass )
+                {
+                    if( ass->first.isVariable() )
+                    {
+                        if( objectivesIter != mObjectives.end() && ass->first.asVariable() == objectivesIter->second.first )
+                        {
+                            if( ass->second.isMinusInfinity() )
+                            {
+                                string opt = objectivesIter->second.second ? toString( ass->second.asInfinity(), false ) : toString( InfinityValue(true), false );
+                                cout << objectivesIter->first.toString( false, true ) << " |-> " << opt << endl;
+                            }
+                            else
+                            {
+                                assert( ass->second.isRational() );
+                                Rational opt = (objectivesIter->second.second ? ass->second.asRational() : Rational(-(ass->second.asRational())));
+                                cout << objectivesIter->first.toString( false, true ) << " |-> " << carl::toString( opt, false ) << endl;
+                            }
+                            ++objectivesIter;
+                        }
+                    }
+                }
                 pop( 2 );
                 return result;
             }
@@ -232,43 +254,30 @@ namespace smtrat
             mpPrimaryBackend->printModel();
         else
         {
-            const Model& curModel = model();
+            Model curModel = model();
             auto objectivesIter = mObjectives.begin();
-            cout << "(";
-            for( auto ass = curModel.begin(); ass != curModel.end(); ++ass )
+            for( auto ass = curModel.begin(); ass != curModel.end(); )
             {
-                if (ass != curModel.begin()) cout << " ";
                 if (ass->first.isVariable() || ass->first.isBVVariable())
                 {
                     if( objectivesIter != mObjectives.end() && ass->first.asVariable() == objectivesIter->second.first )
                     {
                         if( ass->second.isMinusInfinity() )
-                        {
-                            string opt = objectivesIter->second.second ? toString( ass->second.asInfinity(), false ) : toString( InfinityValue(true), false );
-                            cout << "(" << objectivesIter->first.toString( false, true ) << " " << opt << ")" << endl;
-                        }
-                        else if( !objectivesIter->first.isVariable() )
-                        {
-                            assert( ass->second.isRational() );
-                            Rational opt = (objectivesIter->second.second ? ass->second.asRational() : Rational(-(ass->second.asRational())));
-                            cout << "(" << objectivesIter->first.toString( false, true ) << " " << opt << ")" << endl;
-                        }
+                            return;
                         ++objectivesIter;
+                        ass = curModel.erase( ass );
                     }
                     else
-                    {
-                        cout << "(" << ass->first << " " << ass->second << ")" << endl;
-                    }
+                        ++ass;
                 }
-                else if( ass->first.isUVariable() )
-                    cout << "(define-fun " << ass->first << " () " << ass->first.asUVariable().domain() << " " << ass->second << ")" << endl;
                 else
-                {
-                    assert(ass->first.isFunction());
-                    cout << ass->second.asUFModel() << endl;
-                }
+                    ++ass;
             }
-            cout << ")" << endl;
+            curModel.clean();
+            if( !curModel.empty() )
+            {
+                cout << curModel;
+            }
         }
     }
     

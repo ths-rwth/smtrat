@@ -76,6 +76,15 @@ namespace smtrat
 			}
 			return mData.erase(it);
 		}
+        void clean() {
+            for (auto& m: mData) {
+				const auto& val = m.second;
+				if (!val.isSubstitution()) continue;
+				const auto& subs = val.asSubstitution();
+                SMTRAT_LOG_DEBUG("smtrat.model", "Evaluating " << m.first << " ->  " << subs << " as.");
+                m.second = subs->evaluate(*this);
+			}
+        }
 		// Lookup
 		auto find(const Map::key_type& key) const -> decltype(mData.find(key)) {
 			return mData.find(key);

@@ -21,13 +21,22 @@ namespace smtrat
 				if (a.second >= mDefault) mDefault = carl::ceil(a.second) + 1;
 			}
 		}
+		virtual void multiplyBy( const Rational& _number )
+                {
+                    for (auto& a: mAssignments)
+                        a.second *= _number;
+                }
+		virtual void add( const Rational& _number )
+                {
+                    for (auto& a: mAssignments)
+                        a.second += _number;
+                }
 		virtual ModelValue evaluate(Model& model) {
 			auto selection = mAssignments.end();
 			for (auto it = mAssignments.begin(); it != mAssignments.end(); it++) {
-				auto mit = model.find(ModelVariable(it->first));
-				assert(mit != model.end());
-				assert(mit->second.isBool());
-				if (mit->second.asBool()) {
+				const ModelValue& mv = getModelValue(ModelVariable(it->first),model);
+				assert(mv.isBool());
+				if (mv.asBool()) {
 					assert(selection == mAssignments.end());
 					selection = it;
 					SMTRAT_LOG_DEBUG("smtrat.mcb", "Evaluating " << *this << " to " << selection->second << " on " << model);

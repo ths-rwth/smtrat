@@ -35,7 +35,7 @@ namespace smtrat
             mICPFoundAnswer.push_back( new std::atomic_bool( false ) );
             mICPRuntimeSettings = new RuntimeSettings();
             mICP = new ICPModule<ICPSettings4>( mICPFormula, mICPRuntimeSettings, mICPFoundAnswer );
-            
+
         }
     }
 
@@ -91,7 +91,7 @@ namespace smtrat
             }
         }
     }
-    
+
     template<class Settings>
     std::pair<ModuleInput::iterator,bool> IncWidthModule<Settings>::addToICP( const FormulaT& _formula, bool _guaranteedNew )
     {
@@ -109,7 +109,7 @@ namespace smtrat
         mICP->add( ret.first );
         return ret;
     }
-    
+
     template<class Settings>
     void IncWidthModule<Settings>::removeFromICP( const FormulaT& _formula )
     {
@@ -121,7 +121,7 @@ namespace smtrat
         mICPFormula->erase( icpformpos->second );
         mICPFormulaPositions.erase( icpformpos );
     }
-    
+
     template<class Settings>
     void IncWidthModule<Settings>::clearICP()
     {
@@ -153,6 +153,13 @@ namespace smtrat
                     if( ass.second.isRational() )
                     {
                         mModel.assign(ass.first, (varWithNegCoeff ? Rational(-ass.second.asRational()) : ass.second.asRational()) + varShiftIter->second.constantPart());
+                    }
+                    else if( ass.second.isSubstitution() )
+                    {
+                        if( varWithNegCoeff )
+                            ass.second.asSubstitution()->multiplyBy( MINUS_ONE_RATIONAL );
+                        else
+                            ass.second.asSubstitution()->add( varShiftIter->second.constantPart() );
                     }
                     else if( ass.second.isSqrtEx() )
                     {
@@ -254,7 +261,7 @@ namespace smtrat
             // Check if we exceed the maximally allowed width
             if( Settings::max_width > 0 && mHalfOfCurrentWidth > carl::pow( Rational(Settings::increment), Settings::max_width-1 ) )
             {
-                mHalfOfCurrentWidth /= Settings::increment;
+                mHalfOfCurrentWidth /= Rational(Settings::increment);
                 #ifdef DEBUG_INC_WIDTH_MODULE
                 std::cout << "Reached maximal width" << std::endl;
                 #endif
@@ -435,7 +442,7 @@ namespace smtrat
             #ifdef DEBUG_INC_WIDTH_MODULE
             std::cout << "Update half of width from " << mHalfOfCurrentWidth;
             #endif
-            mHalfOfCurrentWidth *= Settings::increment;
+            mHalfOfCurrentWidth *= Rational(Settings::increment);
             #ifdef DEBUG_INC_WIDTH_MODULE
             std::cout << " to " << mHalfOfCurrentWidth << std::endl;
             #endif
@@ -559,7 +566,7 @@ namespace smtrat
         }
         return ans;
     }
-    
+
     template<class Settings>
     void IncWidthModule<Settings>::reset()
     {

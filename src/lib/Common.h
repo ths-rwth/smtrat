@@ -36,9 +36,9 @@ namespace smtrat
 	using carl::operator<<;
 
     // Enumerations.
-    
+
     enum class Variable_Domain: unsigned { BOOLEAN = 0, REAL = 1, INTEGER = 2 };
-    
+
     enum class Logic : unsigned { UNDEFINED, QF_NRA, QF_LRA, QF_NIA, QF_LIA, QF_UF, QF_BV };
 	inline std::ostream& operator<<(std::ostream& os, const Logic& l) {
 	switch (l) {
@@ -52,8 +52,8 @@ namespace smtrat
 	}
 	return os;
 }
-    
-    
+
+
     ///An enum with the possible answers a Module can give
     enum Answer { SAT = 0, UNSAT = 1, UNKNOWN = 2, ABORTED = 3 };
 	inline std::ostream& operator<<(std::ostream& os, const Answer& a) {
@@ -67,47 +67,47 @@ namespace smtrat
 
     /// An enum with the levels for lemma generation
     enum LemmaLevel { NONE = 0, NORMAL = 1, ADVANCED = 2 };
-    
+
     // Further type definitions.
 
     typedef mpq_class Rational;
-    
+
 	typedef carl::IntegralType<Rational>::type Integer;
-    
+
     typedef carl::Term<Rational> TermT;
-    
+
     typedef carl::MultivariatePolynomial<Rational> Poly;
 //    typedef carl::FactorizedPolynomial<carl::MultivariatePolynomial<Rational>> Poly;
-    
+
     typedef carl::Constraint<Poly> ConstraintT;
-    
+
     typedef carl::Constraints<Poly> ConstraintsT;
-    
+
     typedef carl::Formula<Poly> FormulaT;
-    
+
     typedef carl::Formulas<Poly> FormulasT;
-	
+
 	typedef carl::FormulaSet<Poly> FormulaSetT;
 
 	typedef carl::FormulasMulti<Poly> FormulasMultiT;
 
     typedef carl::EvaluationMap<Rational> EvalRationalMap;
-    
+
     typedef carl::Interval<Rational> RationalInterval;
-    
+
     typedef carl::EvaluationMap<RationalInterval> EvalRationalIntervalMap;
 
     typedef carl::Interval<double> DoubleInterval;
-    
+
     typedef carl::EvaluationMap<DoubleInterval> EvalDoubleIntervalMap;
-    
+
     typedef carl::VarInfo<Poly> VarPolyInfo;
-    
+
     typedef carl::VarInfoMap<Poly> VarPolyInfoMap;
-    
+
     template<template<typename> class Operator>
     using Contractor = carl::Contraction<Operator, Poly>;
-    
+
     typedef carl::Factors<Poly> Factorization;
 
 #ifdef __VS
@@ -115,66 +115,66 @@ namespace smtrat
 #else
     typedef std::vector<std::atomic_bool*> Conditionals;
 #endif
-    
+
 	// Pair of priority and module id (within the respective strategy graph)
     typedef std::pair<std::size_t, std::size_t> thread_priority;
-    
+
     // Constants.
     ///@todo move static variables to own cpp
     static const Rational ZERO_RATIONAL = Rational( 0 );
-    
+
     static const Rational ONE_RATIONAL = Rational( 1 );
-    
+
     static const Rational MINUS_ONE_RATIONAL = Rational( -1 );
-    
+
     static const Poly ZERO_POLYNOMIAL = Poly( ZERO_RATIONAL );
-    
+
     static const Poly ONE_POLYNOMIAL = Poly( ONE_RATIONAL );
-    
+
     static const Poly MINUS_ONE_POLYNOMIAL = Poly( MINUS_ONE_RATIONAL );
-    
+
     static const unsigned MAX_DEGREE_FOR_FACTORIZATION = 6;
-    
+
     static const unsigned MIN_DEGREE_FOR_FACTORIZATION = 2;
-    
+
     static const unsigned MAX_DIMENSION_FOR_FACTORIZATION = 6;
-    
+
     static const unsigned MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION = 7;
-    
+
     // Macros.
-    
+
     #define ANSWER_TO_STRING(_ans) (_ans == SAT ? "SAT" : (_ans == UNSAT ? "UNSAT" : (_ans == UNKNOWN ? "UNKNOWN" : (_ans == ABORTED ? "ABORTED" : "Undefined"))))
 
     // Function wrapper.
-    
+
     inline carl::Variable newVariable( const std::string& _name, const carl::VariableType& _type )
     {
         return carl::freshVariable( _name, _type );
     }
-    
+
     inline carl::Sort newSort( const std::string& _name, size_t _arity = 0 )
     {
         carl::SortManager::getInstance().declare( _name, _arity );
         return carl::SortManager::getInstance().getSort( _name );
     }
-    
+
     inline carl::UninterpretedFunction newUF( const std::string& _name, std::vector<carl::Sort>&& _dom, const carl::Sort& _codom )
     {
         return carl::UFManager::getInstance().newUninterpretedFunction( _name, std::move(_dom), _codom );
     }
-    
+
     inline carl::UninterpretedFunction newUF( const std::string& _name, const std::vector<carl::Sort>& _dom, const carl::Sort& _codom )
     {
         return newUF( _name, std::vector<carl::Sort>( _dom ), _codom );
     }
-    
+
     inline carl::UninterpretedFunction newUF( const std::string& _name, const carl::Sort& _dom, const carl::Sort& _codom )
     {
         std::vector<carl::Sort> dom;
         dom.push_back( _dom );
         return smtrat::newUF( _name, std::move( dom ), _codom );
     }
-    
+
     inline carl::UninterpretedFunction newUF( const std::string& _name, const carl::Sort& _domA, const carl::Sort& _domB, const carl::Sort& _codom )
     {
         std::vector<carl::Sort> dom;
@@ -182,32 +182,32 @@ namespace smtrat
         dom.push_back( _domB );
         return smtrat::newUF(_name, std::move( dom ), _codom);
     }
-    
+
     inline carl::UFInstance newUFInstance( const carl::UninterpretedFunction& _function, std::vector<carl::UVariable>&& _args )
     {
         return carl::UFInstanceManager::getInstance().newUFInstance( _function, std::move(_args) );
     }
-    
+
     inline carl::UFInstance newUFInstance( const carl::UninterpretedFunction& _function, const std::vector<carl::UVariable>& _args )
     {
         return smtrat::newUFInstance( _function, std::vector<carl::UVariable>(_args));
     }
-    
+
     inline carl::UFInstance newUFInstance( const carl::UninterpretedFunction& _function, const carl::UVariable& _arg )
-    {   
+    {
         std::vector<carl::UVariable> args;
         args.push_back( _arg );
         return smtrat::newUFInstance( _function, std::move(args) );
     }
-    
+
     inline carl::UFInstance newUFInstance( const carl::UninterpretedFunction& _function, const carl::UVariable& _argA, const carl::UVariable& _argB )
-    {   
+    {
         std::vector<carl::UVariable> args;
         args.push_back( _argA );
         args.push_back( _argB );
         return smtrat::newUFInstance( _function, std::move(args) );
     }
-    
+
 }    // namespace smtrat
 
 extern template class carl::Term<smtrat::Rational>;
