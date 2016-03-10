@@ -53,3 +53,4 @@ namespace cad {
 }
 
 #include "Projection_NO.h"
+#include "Projection_SO.h"
