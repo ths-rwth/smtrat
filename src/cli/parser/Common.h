@@ -41,7 +41,7 @@
 
 namespace smtrat {
 namespace parser {
-	
+
 	enum OptimizationType { Maximize, Minimize };
 	inline std::ostream& operator<<(std::ostream& os, OptimizationType ot) {
 		switch (ot) {
@@ -50,12 +50,12 @@ namespace parser {
 		}
 		return os << "???";
 	}
-	
+
 	namespace spirit = boost::spirit;
 	namespace qi = boost::spirit::qi;
 	namespace px = boost::phoenix;
 	namespace mpl = boost::mpl;
-		
+
 	struct Identifier {
 		std::string symbol;
 		std::vector<std::size_t>* indices;
@@ -113,7 +113,7 @@ namespace parser {
 			return *this;
 		}
 	};
-	
+
 	inline bool isOneOf(const std::string& s, const std::string& set) {
 		return boost::iequals(s, set);
 	}
