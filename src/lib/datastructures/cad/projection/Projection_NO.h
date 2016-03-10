@@ -63,6 +63,7 @@ namespace cad {
 				while (mPolynomials[lvl].back().second.test(cid)) {
 					auto it = mPolynomialIDs[lvl].find(mPolynomials[lvl].back().first);
 					assert(it != mPolynomialIDs[lvl].end());
+					mLiftingQueues[lvl].erase(it->second);
 					mPolynomialIDs[lvl].erase(it);
 					mPolynomials[lvl].pop_back();
 				}
@@ -107,6 +108,8 @@ namespace cad {
 		}
 		
 		const UPoly& getPolynomialById(std::size_t level, std::size_t id) const {
+			assert(level < mPolynomials.size());
+			assert(id < mPolynomials[level].size());
 			return mPolynomials[level][id].first;
 		}
 		
