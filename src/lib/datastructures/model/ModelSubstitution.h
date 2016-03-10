@@ -27,6 +27,12 @@ namespace smtrat {
 		virtual void print(std::ostream& os) const {
 			os << "substitution";
 		}
+		/// Multiplies this model substitution by a rational.
+		virtual void multiplyBy( const Rational& _number ) = 0;
+		/// Adds a rational to this model substitution.
+		virtual void add( const Rational& _number ) = 0;
+        
+        const ModelValue& getModelValue( const ModelVariable& _mvar, Model& _model );
 		
 		template<typename Substitution, typename... Args>
 		static ModelValue create(Args&&... args) {
@@ -49,6 +55,8 @@ namespace smtrat {
 	public:
 		ModelPolynomialSubstitution(const Poly& p): ModelSubstitution(), mPoly(p), mVars(p.gatherVariables())
 		{}
+		virtual void multiplyBy( const Rational& _number );
+		virtual void add( const Rational& _number );
 		virtual ModelValue evaluate(Model& model);
 		virtual bool dependsOn(const ModelVariable& var) const {
 			if (!var.isVariable()) return false;

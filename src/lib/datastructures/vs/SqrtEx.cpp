@@ -42,6 +42,7 @@ namespace vs
 
     void SqrtEx::normalize()
     {
+//        std::cout << *this << std::endl;
         smtrat::Poly gcdA;
         if( mFactor.isZero() )
         {
@@ -263,9 +264,9 @@ namespace vs
         }
         else
         {
-            string result = "(/ (+";
+            string result = "(/ (+ ";
             result += mConstantPart.toString( false, _friendlyNames );
-            result +=  " (*";
+            result +=  " (* ";
             result +=  mFactor.toString( false, _friendlyNames );
             result +=  " ";
             result +=  "(sqrt ";

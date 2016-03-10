@@ -703,15 +703,22 @@ namespace smtrat
                 else
                 {
                     assert( sub.type() != Substitution::PLUS_INFINITY );
-                    ass = SqrtEx( sub.term().substitute( rationalAssignments ) );
+                    SqrtEx substitutedTerm = sub.term().substitute( rationalAssignments );
                     if( sub.type() == Substitution::PLUS_EPSILON )
                     {
                         assert( state->substitution().variable().getType() != carl::VariableType::VT_INT );
-                        ass = ass.asSqrtEx() + SqrtEx( mVariableVector.at( state->treeDepth()-1 ).second );
+                        ass = substitutedTerm + SqrtEx( mVariableVector.at( state->treeDepth()-1 ).second );
+                    }
+                    else
+                    {
+                        if( substitutedTerm.isRational() )
+                            ass = substitutedTerm.asRational();
+                        if( substitutedTerm.isPolynomial() )
+                            ass = ModelSubstitution::create<ModelPolynomialSubstitution>( substitutedTerm.asPolynomial() );
+                        else
+                            ass = substitutedTerm;
                     }
                 }
-                if( ass.asSqrtEx().isRational() )
-                    rationalAssignments.insert(std::make_pair(state->substitution().variable(), ass.asSqrtEx().constantPart().constantPart()/ass.asSqrtEx().denominator().constantPart()));
                 mModel.insert(std::make_pair(state->substitution().variable(), ass));
                 state = state->pFather();
             }
@@ -722,13 +729,7 @@ namespace smtrat
             // real domain, we leave at as a parameter, and, if it has the integer domain we assign 0 to it.
             for( auto var = allVarsInRoot.begin(); var != allVarsInRoot.end(); ++var )
             {
-                ModelValue ass;
-                if( var->getType() == carl::VariableType::VT_INT )
-                    ass = SqrtEx( ZERO_POLYNOMIAL );
-                else
-                    ass = SqrtEx( *var );
-                // Note, that this assignment won't take effect if the variable got an assignment by a backend module.
-                mModel.insert(std::make_pair(*var, ass));
+                mModel.insert(std::make_pair(*var, ModelSubstitution::create<ModelPolynomialSubstitution>( ZERO_POLYNOMIAL )));
             }
         }
     }

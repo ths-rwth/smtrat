@@ -861,7 +861,6 @@ namespace smtrat
         if( mUpperBoundOnMinimal != passedFormulaEnd() )
         {
             FormulaT bound = mUpperBoundOnMinimal->formula();
-            auto clIter = mConstraintLiteralMap.find( bound );
             eraseSubformulaFromPassedFormula( mUpperBoundOnMinimal, true );
         }
     }

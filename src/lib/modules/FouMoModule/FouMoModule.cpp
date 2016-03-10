@@ -625,7 +625,7 @@ namespace smtrat
                 auto iter_ass = mVarAss.begin();
                 while( iter_ass != mVarAss.end() )
                 {
-                    ModelValue ass = vs::SqrtEx( (Poly)iter_ass->second );
+                    ModelValue ass = ModelSubstitution::create<ModelPolynomialSubstitution>( (Poly)iter_ass->second );
                     mModel.emplace( iter_ass->first, ass );
                     ++iter_ass;
                 }
@@ -672,7 +672,7 @@ namespace smtrat
                         auto iter_help = temp_solution.find( iter_sol->first );
                         if( iter_help == temp_solution.end() )
                         {
-                            ModelValue assignment = vs::SqrtEx( Poly( iter_sol->second ) );
+                            ModelValue assignment = ModelSubstitution::create<ModelPolynomialSubstitution>( Poly( iter_sol->second ) );
                             mModel.emplace(iter_sol->first, assignment);
                         }
                         ++iter_sol;

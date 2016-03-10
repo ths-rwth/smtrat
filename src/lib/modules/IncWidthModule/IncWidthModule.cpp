@@ -154,6 +154,13 @@ namespace smtrat
                     {
                         mModel.assign(ass.first, (varWithNegCoeff ? Rational(-ass.second.asRational()) : ass.second.asRational()) + varShiftIter->second.constantPart());
                     }
+                    else if( ass.second.isSubstitution() )
+                    {
+                        if( varWithNegCoeff )
+                            ass.second.asSubstitution()->multiplyBy( MINUS_ONE_RATIONAL );
+                        else
+                            ass.second.asSubstitution()->add( varShiftIter->second.constantPart() );
+                    }
                     else if( ass.second.isSqrtEx() )
                     {
                         mModel.assign(ass.first, (varWithNegCoeff ? ass.second.asSqrtEx()*vs::SqrtEx( Poly( MINUS_ONE_RATIONAL ) ) : ass.second.asSqrtEx()) + vs::SqrtEx( Poly( varShiftIter->second.constantPart() ) ));
