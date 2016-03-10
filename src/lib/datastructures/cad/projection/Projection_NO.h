@@ -54,7 +54,7 @@ namespace cad {
 			assert(p.mainVar() == var(0));
 			addToProjection(0, p, Bitset().set(mPolynomials[0].size()));
 		}
-		void removePolynomial(const UPoly& p) {
+		void removePolynomial(const UPoly& p, const std::function<void(std::size_t,SampleLiftedWith)>& callback) {
 			assert(mPolynomials[0].back().first == p);
 			mPolynomials[0].pop_back();
 			std::size_t cid = mPolynomials[0].size();
@@ -65,6 +65,7 @@ namespace cad {
 					mPolynomialIDs[lvl].erase(it);
 					mPolynomials[lvl].pop_back();
 				}
+				callback(lvl, SampleLiftedWith().set(cid));
 			}
 		}
 		
