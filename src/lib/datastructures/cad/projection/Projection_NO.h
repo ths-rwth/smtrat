@@ -21,6 +21,7 @@ namespace cad {
 		
 		void addToProjection(std::size_t level, const UPoly& p, const Bitset& origin) {
 			if (p.isZero() || p.isNumber()) return;
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			assert(level < dim());
 			assert(p.mainVar() == var(level));
 			auto it = mPolynomialIDs[level].find(p);
@@ -37,7 +38,6 @@ namespace cad {
 				}
 			}
 			std::size_t newID = mPolynomials[level].size();
-			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			mPolynomials[level].emplace_back(p, origin);
 			mPolynomialIDs[level].emplace(p, newID);
 			mLiftingQueues[level].insert(newID);
@@ -75,9 +75,13 @@ namespace cad {
 		
 		OptionalPoly getPolyForLifting(std::size_t level, SampleLiftedWith& slw) {
 			for (const auto& pid: mLiftingQueues[level]) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking " << mPolynomials[level][pid].first);
 				if (!slw.test(pid)) {
+					SMTRAT_LOG_DEBUG("smtrat.cad.projection", mPolynomials[level][pid].first << " can be used.");
 					slw.set(pid);
 					return OptionalPoly(mPolynomials[level][pid].first);
+				} else {
+					SMTRAT_LOG_DEBUG("smtrat.cad.projection", mPolynomials[level][pid].first << " was already used.");
 				}
 			}
 			return OptionalPoly();
