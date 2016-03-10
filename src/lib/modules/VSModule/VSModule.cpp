@@ -323,7 +323,7 @@ namespace smtrat
                     #endif
                     if( currentState->refreshConditions( mRanking ) )
                         addStateToRanking( currentState );
-                    else 
+                    else
                         addStatesToRanking( currentState );
                     currentState->rTakeSubResultCombAgain() = false;
                     #ifdef VS_DEBUG
@@ -390,7 +390,7 @@ namespace smtrat
                                 if( currentState->cannotBeSolved( true ) )
                                 {
                                     return UNKNOWN;
-                                }  
+                                }
                                 removeStatesFromRanking( *currentState );
                                 currentState->rCannotBeSolvedLazy() = true;
                                 addStateToRanking( currentState );
@@ -441,7 +441,7 @@ namespace smtrat
                                 {
                                     if( currentState->refreshConditions( mRanking ) )
                                         addStateToRanking( currentState );
-                                    else 
+                                    else
                                         addStatesToRanking( currentState );
                                     #ifdef VS_DEBUG
                                     currentState->printAlone( "   ", cout );
@@ -464,7 +464,7 @@ namespace smtrat
                             case State::TEST_CANDIDATE_TO_GENERATE:
                             {
                                 // Set the index, if not already done, to the best variable to eliminate next.
-                                if( currentState->index() == carl::Variable::NO_VARIABLE ) 
+                                if( currentState->index() == carl::Variable::NO_VARIABLE )
                                     currentState->initIndex( mAllVariables, Settings::prefer_equation_over_all, false, Settings::use_fixed_variable_order );
                                 else if( currentState->tryToRefreshIndex() )
                                 {
@@ -502,9 +502,9 @@ namespace smtrat
                                                 removeStatesFromRanking( *unfinishedAncestor );
                                                 unfinishedAncestor->extendSubResultCombination();
                                                 unfinishedAncestor->rType() = State::COMBINE_SUBRESULTS;
-                                                if( unfinishedAncestor->refreshConditions( mRanking ) ) 
+                                                if( unfinishedAncestor->refreshConditions( mRanking ) )
                                                     addStateToRanking( unfinishedAncestor );
-                                                else 
+                                                else
                                                     addStatesToRanking( unfinishedAncestor );
                                                 #ifdef VS_DEBUG
                                                 cout << "*** Found an unfinished ancestor:" << endl;
@@ -538,7 +538,7 @@ namespace smtrat
                                                         addStateToRanking( *child );
                                                     if( !(**child).cannotBeSolved( mLazyMode ) && !(**child).markedAsDeleted() )
                                                         currentStateHasChildrenToConsider = true;
-                                                    else 
+                                                    else
                                                         currentStateHasChildrenWithToHighDegree = true;
                                                 }
                                                 child++;
@@ -733,7 +733,7 @@ namespace smtrat
             }
         }
     }
-    
+
     template<class Settings>
     Answer VSModule<Settings>::consistencyTrue()
     {
@@ -1246,7 +1246,7 @@ namespace smtrat
     template<class Settings>
     void VSModule<Settings>::propagateNewConditions( State* _currentState )
     {
-        
+
         removeStatesFromRanking( *_currentState );
         // Collect the recently added conditions and mark them as not recently added.
         bool deleteExistingTestCandidates = false;
@@ -1368,11 +1368,11 @@ namespace smtrat
         }
         _currentState->rHasRecentlyAddedConditions() = false;
     }
-    
+
     template<class Settings>
     void VSModule<Settings>::addStateToRanking( State* _state )
     {
-        if( !_state->markedAsDeleted() 
+        if( !_state->markedAsDeleted()
             && !(_state->isInconsistent() && _state->conflictSets().empty() && _state->conditionsSimplified()))
         {
             if( _state->id() != 0 )
@@ -1437,7 +1437,7 @@ namespace smtrat
         for( auto dt = _state.rChildren().begin(); dt != _state.children().end(); ++dt )
             removeStatesFromRanking( **dt );
     }
-    
+
     template<class Settings>
     bool VSModule<Settings>::checkRanking() const
     {
@@ -1536,7 +1536,7 @@ namespace smtrat
         }
         return result;
     }
-    
+
     template<class Settings>
     void VSModule<Settings>::updateInfeasibleSubset( bool _includeInconsistentTestCandidates )
     {
@@ -1569,7 +1569,7 @@ namespace smtrat
         assert( !mInfeasibleSubsets.empty() );
         assert( !mInfeasibleSubsets.back().empty() );
     }
-    
+
     template<class Settings>
     bool VSModule<Settings>::solutionInDomain()
     {
@@ -1641,7 +1641,7 @@ namespace smtrat
                                     Rational cp = subPolyPartiallySubstituted.coprimeFactorWithoutConstant();
                                     assert( carl::getNum( cp ) == ONE_RATIONAL || carl::getNum( cp ) == MINUS_ONE_RATIONAL );
                                     Rational g = carl::getDenom( cp );
-                                    if( g > ZERO_RATIONAL && carl::mod( Integer( subPolyPartiallySubstituted.constantPart() ), Integer( g ) ) != 0 )
+                                    if( g > ZERO_RATIONAL && carl::mod( carl::toInt<Integer>( subPolyPartiallySubstituted.constantPart() ), carl::toInt<Integer>( g ) ) != 0 )
                                     {
                                         Poly branchEx = (subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * cp;
                                         Rational branchValue = subPolyPartiallySubstituted.constantPart() * cp;
@@ -1969,7 +1969,7 @@ namespace smtrat
             }
         }
     }
-    
+
     #ifdef VS_DEBUG_METHODS
 
     template<class Settings>

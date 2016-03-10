@@ -14,7 +14,6 @@ namespace cad {
 	class BaseProjection {
 	public:
 		using PolynomialSelection = Bitset;
-		using ConstraintSelection = Bitset;
 	protected:
 		Variables mVariables;
 		std::vector<IDPool> mIDPools;
@@ -54,10 +53,10 @@ namespace cad {
 			addPolynomial(p.toUnivariatePolynomial(var(0)));
 		}
 		virtual void addPolynomial(const UPoly& p) = 0;
-		void removePolynomial(const Poly& p) {
-			removePolynomial(p.toUnivariatePolynomial(var(0)));
+		void removePolynomial(const Poly& p, const std::function<void(std::size_t,SampleLiftedWith)>& callback) {
+			removePolynomial(p.toUnivariatePolynomial(var(0)), callback);
 		}
-		virtual void removePolynomial(const UPoly& p) = 0;
+		virtual void removePolynomial(const UPoly& p, const std::function<void(std::size_t,SampleLiftedWith)>& callback) = 0;
 		
 		void cleanLiftedWith(std::size_t level, SampleLiftedWith& slw) const {
 			mIDPools[level].purgeUnusedIDs(slw);

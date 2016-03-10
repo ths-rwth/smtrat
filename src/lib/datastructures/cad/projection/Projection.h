@@ -18,7 +18,7 @@ namespace cad {
 		// Add a new constraint to the projection.
 		void addPolynomial(const UPoly& p) {}
 		// Remove an existing constraint from the projection.
-		void removePolynomial(const UPoly& p) {}
+		void removePolynomial(const UPoly& p, const std::function<void(std::size_t,SampleLiftedWith)>& callback) {}
 		
 		bool projectNewPolynomial(std::size_t level, const ConstraintSelection& ps = Bitset(true)) {}
 		
@@ -53,3 +53,4 @@ namespace cad {
 }
 
 #include "Projection_NO.h"
+#include "Projection_SO.h"
