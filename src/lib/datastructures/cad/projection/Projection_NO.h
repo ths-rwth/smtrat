@@ -59,6 +59,7 @@ namespace cad {
 			mPolynomials[0].pop_back();
 			std::size_t cid = mPolynomials[0].size();
 			for (std::size_t lvl = 0; lvl < dim(); lvl++) {
+				if (mPolynomials[lvl].empty()) continue;
 				while (mPolynomials[lvl].back().second.test(cid)) {
 					auto it = mPolynomialIDs[lvl].find(mPolynomials[lvl].back().first);
 					assert(it != mPolynomialIDs[lvl].end());
@@ -67,6 +68,13 @@ namespace cad {
 				}
 				callback(lvl, SampleLiftedWith().set(cid));
 			}
+		}
+		
+		std::size_t size(std::size_t level) const {
+			return mPolynomials[level].size();
+		}
+		bool empty(std::size_t level) const {
+			return mPolynomials[level].empty();
 		}
 		
 		bool projectNewPolynomial(std::size_t level, const ConstraintSelection& ps = Bitset(true)) {
