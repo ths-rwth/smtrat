@@ -19,7 +19,7 @@ namespace cad {
 		
 		struct PolynomialComparator {
 			bool operator()(const UPoly& lhs, const UPoly& rhs) const {
-				return lhs < rhs;
+				return rhs < lhs;
 			}
 		};
 		
@@ -44,6 +44,7 @@ namespace cad {
 		bool projectNewPolynomial(std::size_t level, const ConstraintSelection& ps = Bitset(true)) {
 			std::size_t oldSize = Super::size(level);
 			while (!mQueue.empty()) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Using next polynomial " << mQueue.top() << " from " << mQueue);
 				Super::addPolynomial(mQueue.top());
 				mQueue.pop();
 				if (Super::size(level) != oldSize) return true;
