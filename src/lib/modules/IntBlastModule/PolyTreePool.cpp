@@ -36,7 +36,7 @@ namespace smtrat
         Rational coeff = term.coeff();
 
         if(term.isConstant()) {
-            return create(Integer(coeff));
+            return create(carl::toInt<Integer>(coeff));
         }
 
         const carl::Monomial::Arg monomial = term.monomial();

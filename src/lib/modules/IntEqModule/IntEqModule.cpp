@@ -694,7 +694,7 @@ namespace smtrat
             value = value.substitute( temp_map );
             assert( value.isConstant() );
             temp_map[ iter_vars->first ] = (Rational)value.constantPart();
-            ModelValue assignment = vs::SqrtEx( value );
+            ModelValue assignment = ModelSubstitution::create<ModelPolynomialSubstitution>( value );
             mTemp_Model.emplace(iter_vars->first, assignment);
             if( iter_vars != mSubstitutions.begin() )
             {

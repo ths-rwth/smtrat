@@ -37,6 +37,7 @@ namespace cad {
 		}
 		
 		bool insertRootSamples(Iterator parent, std::vector<Sample>& samples) {
+			if (samples.empty()) return false;
 			std::sort(samples.begin(), samples.end());
 			bool gotNewSamples = false;
 			auto tbegin = mTree.begin_children(parent);
@@ -67,10 +68,15 @@ namespace cad {
 		}
 		
 		bool mergeRootSamples(Iterator parent, std::vector<Sample>& samples) {
-			SMTRAT_LOG_TRACE("smtrat.cad", "Merging " << samples << " into" << std::endl << mTree);
+			SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Merging " << samples << " into" << std::endl << mTree);
 			bool gotNewSamples = insertRootSamples(parent, samples);
 			if (!gotNewSamples) {
-				SMTRAT_LOG_TRACE("smtrat.cad", "Nothing to merge");
+				SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Nothing to merge");
+				if (mTree.is_leaf(parent)) {
+					SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Inserting zero node.");
+					auto it = mTree.append(parent, Sample(RAN(), false));
+					addToQueue(it);
+				}
 				return false;
 			}
 			// Add samples
@@ -95,14 +101,17 @@ namespace cad {
 				addToQueue(it);
 			}
 			
-			SMTRAT_LOG_TRACE("smtrat.cad", "Result: " << std::endl << mTree);
+			SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Result: " << std::endl << mTree);
 			return true;
 		}
 		
 	public:
 		LiftingTree() {
-			auto it = mTree.setRoot(Sample(RAN(0)));
+			auto it = mTree.setRoot(Sample(RAN(0), false));
 			mLiftingQueue.addNewSample(it);
+		}
+		auto getTree() const {
+			return mTree;
 		}
 		void reset(Variables&& vars) {
 			mVariables = std::move(vars);
@@ -115,7 +124,12 @@ namespace cad {
 			return mCheckingQueue.removeNextSample();
 		}
 		void resetFullSamples() {
-			mCheckingQueue.assign(mTree.begin_depth(dim()), mTree.end_depth(dim()));
+			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Resetting samples of full dimension.");
+			mCheckingQueue.clear();
+			for (auto it = mTree.begin_depth(dim()); it != mTree.end_depth(); it++) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tadding " << *it);
+				mCheckingQueue.addNewSample(it);
+			}
 		}
 		
 		bool hasNextSample() const {
@@ -135,25 +149,39 @@ namespace cad {
 		
 		bool liftSample(Iterator sample, const UPoly& p) {
 			auto m = extractSampleMap(sample);
-			RationalInterval bounds;
-			SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Lifting " << m << " on " << p);
+			RationalInterval bounds = RationalInterval::unboundedInterval();
+			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Lifting " << m << " on " << p);
 			std::vector<Sample> newSamples;
 			for (const auto& r: carl::rootfinder::realRoots(p, m, bounds, Settings::rootSplittingStrategy)) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tnew root sample: " << r);
 				newSamples.emplace_back(r);
 			}
+			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tmerging...");
 			return mergeRootSamples(sample, newSamples);
 		}
+		bool addTrivialSample(Iterator sample) {
+			if (!mTree.is_leaf(sample)) return false;
+			auto it = mTree.append(sample, Sample(RAN(0), false));
+			addToQueue(it);
+			return true;
+		}
 		Assignment extractSampleMap(Iterator it) const {
-			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Extracting sample from" << std::endl << mTree);
-			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Variables: " << mVariables);
+			SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Extracting sample from" << std::endl << mTree);
+			SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Variables: " << mVariables);
 			Assignment res;
 			auto cur = mTree.begin_path(it);
 			while (cur != mTree.end_path() && !cur.isRoot()) {
-				res.emplace(mVariables[cur.depth()-1], it->value());
+				res.emplace(mVariables[cur.depth()-1], cur->value());
 				cur++;
 			}
-			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Result: " << res);
+			SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Result: " << res);
 			return res;
+		}
+		
+		void removeLiftedWithFlags(std::size_t level, const SampleLiftedWith& mask) {
+			for (auto it = mTree.begin_depth(level); it != mTree.end_depth(); it++) {
+				it->liftedWith() -= mask;
+			}
 		}
 		
 		std::string printSample(Iterator sample) const {

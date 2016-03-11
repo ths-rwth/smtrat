@@ -403,14 +403,37 @@ namespace smtrat
 
     std::ostream& operator<<( std::ostream& _out, const Model& _model )
     {
-        _out << "(";
+        _out << "(model" << endl;
         for( auto ass = _model.begin(); ass != _model.end(); ++ass )
         {
-            if (ass != _model.begin()) _out << " ";
-			if (ass->first.isVariable() || ass->first.isBVVariable())
-                _out << "(" << ass->first << " " << ass->second << ")" << endl;
+            if( ass->first.isVariable() )
+            {
+                _out << "  (define-fun " << ass->first << " () " << ass->first.asVariable().getType() << endl;
+                if( ass->second.isBool() )
+                    _out << "    " << (ass->second.asBool() ? "true" : "false") << ")" << endl;
+                else if( ass->second.isRational() )
+                {
+                    _out << "    " << carl::toString( ass->second.asRational(), false ) << ")" << endl;
+                }
+                else if( ass->second.isSqrtEx() )
+                {
+                    _out << "    " << ass->second.asSqrtEx().toString(false, true) << ")" << endl;
+                }
+                else
+                {
+                    _out << "    " << ass->second << ")" << endl;
+                }
+            }
+            else if( ass->first.isBVVariable() )
+            {
+                _out << "  (define-fun " << ass->first << " () " << ass->first.asBVVariable().sort() << endl;
+                _out << "    " << ass->second << ")" << endl;
+            }
             else if( ass->first.isUVariable() )
-                _out << "(define-fun " << ass->first << " () " << ass->first.asUVariable().domain() << " " << ass->second << ")" << endl;
+            {
+                _out << "  (define-fun " << ass->first << " () " << ass->first.asUVariable().domain() << endl;
+                _out << "    " << ass->second << ")" << endl;
+            }
             else
             {
                 assert( ass->first.isFunction() );

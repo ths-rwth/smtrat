@@ -23,6 +23,10 @@ namespace cad {
 			mQueue.assign(begin, end);
 			restoreOrder(true);
 		}
+		void clear() {
+			mQueue.clear();
+			mChunkCounter = 0;
+		}
 		bool empty() const {
 			return mQueue.empty();
 		}

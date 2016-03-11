@@ -16,6 +16,7 @@ namespace cad {
 	using RAN = carl::RealAlgebraicNumber<Rational>;
 	using SampleLiftedWith = Bitset;
 	using SampleRootOf = Bitset;
+	using ConstraintSelection = Bitset;
 	using OptionalPoly = boost::optional<const UPoly&>;
 	using Assignment = std::map<carl::Variable, RAN>;
 }

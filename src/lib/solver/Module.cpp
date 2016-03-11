@@ -1348,9 +1348,10 @@ namespace smtrat
     void Module::printModel( ostream& _out ) const
     {
         this->updateModel();
-        if( !model().empty() )
+        mModel.clean();
+        if( !mModel.empty() )
         {
-            _out << model() << std::endl;
+            _out << mModel;
         }
     }
     

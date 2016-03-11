@@ -35,7 +35,7 @@ namespace cad {
 		}
 		
 		friend std::ostream& operator<<(std::ostream& os, const Sample& s) {
-			return os << s.mValue;
+			return os << s.mValue << "[" << s.mLiftedWith << "]";
 		}
 	};
 }
