@@ -25,6 +25,18 @@ namespace cad {
 			else i.set(lower.upper(), lower.upper());
 			if (upper.isNumeric()) i.setUpper(upper.value());
 			else i.setUpper(upper.lower());
+			while (i.isEmpty()) {
+				if (!lower.isNumeric()) {
+					lower.refine();
+					if (lower.isNumeric()) i.setLower(lower.value());
+					else i.setLower(lower.upper());
+				}
+				if (!upper.isNumeric()) {
+					upper.refine();
+					if (upper.isNumeric()) i.setUpper(upper.value());
+					else i.setUpper(upper.lower());
+				}
+			}
 			SMTRAT_LOG_TRACE("smtrat.cad.sampling", "-> " << i.sample(false) << " from " << i);
 			return RAN(i.sample(false), false);
 		}

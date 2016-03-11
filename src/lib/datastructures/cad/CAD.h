@@ -68,6 +68,7 @@ namespace cad {
 			while (mLifting.hasFullSamples()) {
 				auto it = mLifting.getNextFullSample();
 				auto m = mLifting.extractSampleMap(it);
+				SMTRAT_LOG_DEBUG("smtrat.cad", "Checking full sample " << m);
 				assert(m.size() == it.depth());
 				bool sat = true;
 				for (const auto& c: mConstraints) {
