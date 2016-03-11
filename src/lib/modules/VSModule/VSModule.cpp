@@ -977,6 +977,7 @@ namespace smtrat
         }
         #endif
         if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
+//        if( _eliminationVar.getType() != carl::VariableType::VT_INT && !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
         {
             // Create state ( Conditions, [x -> -infinity]):
             Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, carl::PointerSet<vs::Condition>(oConditions) );
@@ -1605,6 +1606,8 @@ namespace smtrat
                 {
                     for( carl::Variable::Arg v : tVars )
                         varSolutions.insert( std::make_pair( v, ZERO_RATIONAL ) );
+//                    assert( currentState->substitution().type() != Substitution::MINUS_INFINITY );
+//                    assert( currentState->substitution().type() != Substitution::PLUS_INFINITY );
                     if( currentState->substitution().type() == Substitution::MINUS_INFINITY || currentState->substitution().type() == Substitution::PLUS_INFINITY )
                     {
                         Rational nextIntTCinRange;
