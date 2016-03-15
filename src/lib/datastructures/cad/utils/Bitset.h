@@ -60,22 +60,33 @@ namespace cad {
 			return mData.any();
 		}
 		
-		auto size() const -> decltype(mData.size()) {
+		auto size() const {
 			return mData.size();
 		}
-		auto num_blocks() const -> decltype(mData.num_blocks()) {
+		auto num_blocks() const {
 			return mData.num_blocks();
 		}
-		auto find_first() const -> decltype(mData.find_first()) {
+		auto find_first() const {
 			return mData.find_first();
 		}
-		auto find_next(std::size_t pos) const -> decltype(mData.find_next(pos)) {
+		auto find_next(std::size_t pos) const {
 			return mData.find_next(pos);
 		}
 		
 		friend void alignSize(const Bitset& lhs, const Bitset& rhs) {
 			if (lhs.size() < rhs.size()) lhs.resize(rhs.size());
 			else if (lhs.size() > rhs.size()) rhs.resize(lhs.size());
+		}
+		
+		friend bool operator==(const Bitset& lhs, const Bitset& rhs) {
+			assert(lhs.mDefault == rhs.mDefault);
+			alignSize(lhs, rhs);
+			return lhs.mData == rhs.mData;
+		}
+		friend bool operator<(const Bitset& lhs, const Bitset& rhs) {
+			if (lhs.size() < rhs.size()) return true;
+			if (lhs.size() > rhs.size()) return false;
+			return lhs.mData < rhs.mData;
 		}
 		
 		friend Bitset operator&(const Bitset& lhs, const Bitset& rhs) {
