@@ -5,6 +5,7 @@
 #include "Common.h"
 #include "projection/Projection.h"
 #include "lifting/LiftingTree.h"
+#include "helper/CADConstraints.h"
 
 namespace smtrat {
 namespace cad {
@@ -13,11 +14,22 @@ namespace cad {
 	class CAD {
 	private:
 		Variables mVariables;
+		CADConstraints<Settings::backtracking> mConstraints;
 		ProjectionT<Settings> mProjection;
 		LiftingTree<Settings> mLifting;
-		std::vector<ConstraintT> mConstraints;
 		
 	public:
+		CAD():
+			mConstraints(
+				[&](const UPoly& p, std::size_t cid){ mProjection.addPolynomial(p, cid); },
+				[&](const UPoly& p, std::size_t cid){
+					mProjection.removePolynomial(p, cid,
+						[&](std::size_t level, const SampleLiftedWith& mask){ mLifting.removeLiftedWithFlags(level, mask); }
+					);
+				}
+			)
+		{
+		}
 		std::size_t dim() const {
 			return mVariables.size();
 		}
@@ -28,38 +40,21 @@ namespace cad {
 			return mLifting;
 		}
 		auto getConstraints() const {
-			return mConstraints;
+			return mConstraints.get();
 		}
 		void reset(const Variables& vars) {
 			mVariables = vars;
+			mConstraints.reset(mVariables);
 			mProjection.reset(mVariables);
 			mLifting.reset(Variables(vars.rbegin(), vars.rend()));
 		}
 		void addConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Adding " << c);
-			assert(!mVariables.empty());
-			mConstraints.push_back(c);
-			mProjection.addPolynomial(c.lhs().toUnivariatePolynomial(mVariables.front()));
+			mConstraints.add(c);
 		}
 		void removeConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing " << c);
-			assert(!mVariables.empty());
-			switch (Settings::backtracking) {
-				case Backtracking::ORDERED:
-					assert(mConstraints.back() == c);
-					mConstraints.pop_back();
-					mProjection.removePolynomial(
-						c.lhs().toUnivariatePolynomial(mVariables.front()),
-						[&](std::size_t level, const SampleLiftedWith& mask){ mLifting.removeLiftedWithFlags(level, mask); }
-					);
-					
-					break;
-				case Backtracking::UNORDERED:
-					SMTRAT_LOG_ERROR("smtrat.cad", "Unordered backtracking is not supported yet.");
-					break;
-				default:
-					assert(false);
-			}
+			mConstraints.remove(c);
 		}
 		
 		Answer checkFullSamples(Assignment& assignment) {
