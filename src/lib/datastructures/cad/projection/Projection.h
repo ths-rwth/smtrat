@@ -16,9 +16,9 @@ namespace cad {
 	class Projection: public BaseProjection {
 	public:
 		// Add a new constraint to the projection.
-		void addPolynomial(const UPoly& p) {}
+		void addPolynomial(const UPoly& p, std::size_t origin) {}
 		// Remove an existing constraint from the projection.
-		void removePolynomial(const UPoly& p, const std::function<void(std::size_t,SampleLiftedWith)>& callback) {}
+		void removePolynomial(const UPoly& p, std::size_t origin, const std::function<void(std::size_t,SampleLiftedWith)>& callback) {}
 		
 		bool projectNewPolynomial(std::size_t level, const ConstraintSelection& ps = Bitset(true)) {}
 		
@@ -28,29 +28,11 @@ namespace cad {
 		void cleanLiftedWith(std::size_t level, SampleLiftedWith& slw) const {}
 	};
 	
-	
-	template<Backtracking backtracking, typename Settings>
-	class Projection<Incrementality::SIMPLE, backtracking, Settings>: public BaseProjection {
-	private:
-		std::list<UPoly> mQueue;
-	public:
-		void addPolynomial(const UPoly& p) {
-			mQueue.push_back(p);
-		}
-		void removePolynomial(const UPoly& p) {
-			auto it = std::find(mQueue.begin(), mQueue.end(), p);
-			if (it != mQueue.end()) {
-				mQueue.erase(it);
-			} else {
-				// Erase from projection
-			}
-		}
-	};
-	
 	template<typename Settings>
 	using ProjectionT = Projection<Settings::incrementality, Settings::backtracking, Settings>;
 }
 }
 
 #include "Projection_NO.h"
+#include "Projection_NU.h"
 #include "Projection_SO.h"

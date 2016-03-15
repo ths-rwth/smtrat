@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "../Common.h"
-#include "../utils/DynamicPriorityQueue.h"
 #include "BaseProjection.h"
 #include "Projection_NO.h"
 
@@ -16,28 +15,29 @@ namespace cad {
 	class Projection<Incrementality::SIMPLE, Backtracking::ORDERED, Settings>: public Projection<Incrementality::NONE, Backtracking::ORDERED, Settings> {
 	private:
 		using Super = Projection<Incrementality::NONE, Backtracking::ORDERED, Settings>;
+		using QueueEntry = std::pair<UPoly,std::size_t>;
 		
 		struct PolynomialComparator {
-			bool operator()(const UPoly& lhs, const UPoly& rhs) const {
-				return rhs < lhs;
+			bool operator()(const QueueEntry& lhs, const QueueEntry& rhs) const {
+				return rhs.first < lhs.first;
 			}
 		};
 		
-		PriorityQueue<UPoly, PolynomialComparator> mQueue;
+		PriorityQueue<QueueEntry, PolynomialComparator> mQueue;
 	public:
 		void reset(const std::vector<carl::Variable>& vars) {
 			Super::reset(vars);
 			mQueue.clear();
 		}
-		void addPolynomial(const UPoly& p) {
-			mQueue.push(p);
+		void addPolynomial(const UPoly& p, std::size_t cid) {
+			mQueue.push(QueueEntry(p, cid));
 		}
-		void removePolynomial(const UPoly& p, const std::function<void(std::size_t,SampleLiftedWith)>& callback) {
-			auto it = mQueue.find(p);
+		void removePolynomial(const UPoly& p, std::size_t cid, const std::function<void(std::size_t,SampleLiftedWith)>& callback) {
+			auto it = mQueue.find(QueueEntry(p, cid));
 			if (it != mQueue.end()) {
 				mQueue.erase(it);
 			} else {
-				Super::removePolynomial(p, callback);
+				Super::removePolynomial(p, cid, callback);
 			}
 		}
 		
@@ -45,7 +45,7 @@ namespace cad {
 			std::size_t oldSize = Super::size(level);
 			while (!mQueue.empty()) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Using next polynomial " << mQueue.top() << " from " << mQueue);
-				Super::addPolynomial(mQueue.top());
+				Super::addPolynomial(mQueue.top().first, mQueue.top().second);
 				mQueue.pop();
 				if (Super::size(level) != oldSize) return true;
 			}
