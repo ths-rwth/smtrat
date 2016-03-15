@@ -8,6 +8,9 @@
 #include "../../Common.h"
 #include "Settings.h"
 #include "utils/Bitset.h"
+#include "utils/DynamicPriorityQueue.h"
+#include "utils/IDPool.h"
+#include "utils/Origin.h"
 
 namespace smtrat {
 namespace cad {
