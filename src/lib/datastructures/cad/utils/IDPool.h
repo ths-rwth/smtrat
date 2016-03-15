@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+
 #include "Bitset.h"
 
 namespace smtrat {
@@ -23,6 +25,9 @@ namespace cad {
 		}
 		void purgeUnusedIDs(Bitset& b) const {
 			b -= mFreeIDs;
+		}
+		friend std::ostream& operator<<(std::ostream& os, const IDPool& p) {
+			return os << "Free: " << p.mFreeIDs;
 		}
 	};
 }
