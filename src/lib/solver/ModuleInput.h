@@ -250,6 +250,15 @@ namespace smtrat
         }
 
         /**
+         * @return true, if this formula contains Boolean variables;
+         *         false, otherwise.
+         */
+        bool containsBooleanVariables() const
+        {
+            return carl::PROP_CONTAINS_BOOLEAN <= mProperties;
+        }
+
+        /**
          * @return true, if this formula contains uninterpreted equations;
          *         false, otherwise.
          */

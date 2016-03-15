@@ -993,7 +993,7 @@ namespace smtrat
              * Stores the model of a backend which determined satisfiability of the passed 
              * formula in the model of this module.
              */
-            Model backendsModel() const;
+            const Model& backendsModel() const;
             void getBackendsModel() const;
             
             /**

@@ -128,7 +128,9 @@ namespace smtrat
         if( solverState() != SAT )
             return;
         if( !Settings::incremental_flattening || !mModelComputed )
+        {
             transferBackendModel();
+        }
         if( Settings::incremental_flattening && !mModelComputed )
             mModelComputed = true;
     }
@@ -138,8 +140,7 @@ namespace smtrat
     void BVModule<Settings>::transferBackendModel() const
     {
         clearModel();
-        getBackendsModel();
-
+        const Model& bModel = backendsModel();
         // Build bitvector values from the values of the single bits
         auto& blastings = mEncoder.bitvectorBlastings();
 
@@ -149,19 +150,23 @@ namespace smtrat
 
             for(std::size_t i=0;i<bitvectorToBits.second.size();++i)
             {
-                auto iter = mModel.find( bitvectorToBits.second[i] );
-                assert( iter != mModel.end() );
+                auto iter = bModel.find( bitvectorToBits.second[i] );
+                assert( iter != bModel.end() );
                 composedValue[i] = iter->second.asBool();
             }
             mModel.emplace(bitvectorToBits.first, composedValue);
         }
-
-        // Remove internal variables which have been introduced by blasting
-        auto& introducedVariables = mEncoder.introducedVariables();
-
-        for(auto const & introducedVariable : introducedVariables)
+        if( rReceivedFormula().containsBooleanVariables() )
         {
-            mModel.erase(introducedVariable);
+            carl::Variables bvars;
+            rReceivedFormula().booleanVars( bvars );
+            auto modelIter = mModel.begin();
+            for( carl::Variable::Arg var : bvars )
+            {
+                auto bmodelIter = bModel.find( var );
+                assert( bmodelIter != bModel.end() );
+                modelIter = mModel.emplace_hint( modelIter, var, bmodelIter->second.asBool() );
+            }
         }
     }
 
@@ -209,7 +214,7 @@ namespace smtrat
                     case SAT:
                     {
                         transferBackendModel();
-                        Model currentModel = model();
+                        const Model& currentModel = model();
                         #ifdef DEBUG_BVMODULE
                         std::cout << "current model: " << std::endl;
                         std::cout << currentModel << std::endl;

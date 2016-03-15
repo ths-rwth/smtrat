@@ -671,7 +671,7 @@ namespace smtrat
         return true;
     }
 
-    Model Module::backendsModel() const
+    const Model& Module::backendsModel() const
     {
         auto module = mUsedBackends.begin();
         while( module != mUsedBackends.end() )
@@ -690,7 +690,7 @@ namespace smtrat
             (*mUsedBackends.begin())->updateModel();
             return (*mUsedBackends.begin())->model();
         }
-        return Model();
+        return EMPTY_MODEL;
     }
 
     void Module::getBackendsModel() const
