@@ -69,8 +69,15 @@ namespace smtrat
     enum LemmaLevel { NONE = 0, NORMAL = 1, ADVANCED = 2 };
 
     // Further type definitions.
-
+#ifdef SMTRAT_STRAT_PARALLEL_MODE
     typedef mpq_class Rational;
+#else
+#ifdef USE_GINAC
+    typedef cln::cl_RA Rational;
+#else
+    typedef mpq_class Rational;
+#endif
+#endif
 
 	typedef carl::IntegralType<Rational>::type Integer;
 

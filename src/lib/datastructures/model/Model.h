@@ -113,7 +113,10 @@ namespace smtrat
 			}
 		}
 	};
+
+    static const Model EMPTY_MODEL = Model(); 
 	
 }
 
 #include "ModelSubstitution.h"
+    

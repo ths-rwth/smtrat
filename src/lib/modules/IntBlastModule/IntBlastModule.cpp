@@ -207,7 +207,7 @@ namespace smtrat
             if(_value[position]) {
                 converted += summand;
             }
-            summand *= 2;
+            summand *= Integer(2);
         }
 
         // For negative numbers in two's complement, subtract 2^width from result
