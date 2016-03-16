@@ -145,6 +145,7 @@ namespace smtrat
             }
         }
         #endif
+		receivedFormulaChecked();
         return foundAnswer( result );
     }
 
@@ -832,6 +833,7 @@ namespace smtrat
                 // Run the backend solver parallel until the first answers true or false.
                 if( anAnswerFound() )
                     return ABORTED;
+				return mpManager->runBackends(mUsedBackends, _final, _full, _minimize);
                 size_t highestIndex = numberOfUsedBackends-1;
                 vector< std::future<Answer> > futures( highestIndex );
                 for( size_t i=0; i<highestIndex; ++i )

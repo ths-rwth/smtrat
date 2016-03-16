@@ -46,6 +46,7 @@ namespace smtrat
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         ,
         mpThreadPool( nullptr ),
+		mpThreadManager(nullptr),
         mNumberOfBranches( 0 ),
         mNumberOfCores( 0 ),
         mRunsParallel( false )
@@ -85,6 +86,8 @@ namespace smtrat
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         if( mpThreadPool != nullptr )
             delete mpThreadPool;
+		if (mpThreadManager != nullptr)
+			delete mpThreadManager;
         #endif
         delete mpPassedFormula;
     }
@@ -362,6 +365,7 @@ namespace smtrat
 //                std::this_thread::sleep_for(std::chrono::seconds(29));
                 mRunsParallel = true;
                 mpThreadPool = new ThreadPool( mNumberOfBranches, mNumberOfCores );
+				mpThreadManager = new ThreadManager(mNumberOfCores);
             }
         }
     }
@@ -475,14 +479,19 @@ namespace smtrat
     }
 
     #ifdef SMTRAT_STRAT_PARALLEL_MODE
+	Answer Manager::runBackends(const std::vector<Module*>& modules, bool final, bool full, bool minimize) {
+		return mpThreadManager->runBackends(modules, final, full, minimize);
+	}
     std::future<Answer> Manager::submitBackend( Module* _pModule, bool _final, bool _full, bool _minimize )
     {
+		assert(false);
         assert( mRunsParallel );
         return mpThreadPool->submitBackend( _pModule, _final, _full, _minimize );
     }
 
     void Manager::checkBackendPriority( Module* _pModule )
     {
+		assert(false);
         assert( mRunsParallel );
         mpThreadPool->checkBackendPriority( _pModule );
     }
