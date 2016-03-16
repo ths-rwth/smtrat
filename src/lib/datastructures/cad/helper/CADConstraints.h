@@ -77,9 +77,19 @@ public:
 
 template<>
 class CADConstraints<Backtracking::UNORDERED>: public BaseCADConstraints {
+public:
+	template<typename Key, typename Value>
+	struct MapKeyIterator : std::map<Key,Value>::const_iterator {
+		using Super = typename std::map<Key,Value>::const_iterator;
+		MapKeyIterator(): Super() {};
+		MapKeyIterator(Super it_): Super(it_) {};
+		Key *operator->() { return (Key*const) &(Super::operator->()->first); }
+		Key operator*() { return Super::operator*().first; }
+	};
 private:
 	using Super = BaseCADConstraints;
 	using Super::Callback;
+	using MapIt = MapKeyIterator<ConstraintT,std::size_t>;
 	std::map<ConstraintT, std::size_t> mConstraints;
 	IDPool mIDPool;
 public:
@@ -92,10 +102,10 @@ public:
 		return mConstraints;
 	}
 	auto begin() const {
-		return mConstraints.begin();
+		return MapIt(mConstraints.begin());
 	}
 	auto end() const {
-		return mConstraints.end();
+		return MapIt(mConstraints.end());
 	}
 	void add(const ConstraintT& c) {
 		assert(!mVariables.empty());
