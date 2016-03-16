@@ -1,5 +1,8 @@
 #pragma once
 
+#include <map>
+#include <vector>
+
 #include "../Common.h"
 
 namespace smtrat {
@@ -48,8 +51,8 @@ public:
 	}
 	void add(const ConstraintT& c) {
 		assert(!mVariables.empty());
-		callCallback(mAddCallback, c, mConstraints.size());
 		mConstraints.push_back(c);
+		callCallback(mAddCallback, c, mConstraints.size()-1);
 	}
 	void remove(const ConstraintT& c) {
 		std::stack<ConstraintT> cache;
@@ -77,7 +80,8 @@ class CADConstraints<Backtracking::UNORDERED>: public BaseCADConstraints {
 private:
 	using Super = BaseCADConstraints;
 	using Super::Callback;
-	std::set<ConstraintT> mConstraints;
+	std::map<ConstraintT, std::size_t> mConstraints;
+	IDPool mIDPool;
 public:
 	CADConstraints(const Callback& onAdd, const Callback& onRemove): Super(onAdd, onRemove) {}
 	void reset(const Variables& vars) {
@@ -95,17 +99,18 @@ public:
 	}
 	void add(const ConstraintT& c) {
 		assert(!mVariables.empty());
-		std::size_t id = mConstraints.size();
-		auto res = mConstraints.insert(c);
+		std::size_t id = mIDPool.get();
+		auto res = mConstraints.emplace(c, id);
 		assert(res.second);
-		mAddCallback(c.lhs().toUnivariatePolynomial(mVariables.front()), id);
+		callCallback(mAddCallback, c, id);
 	}
 	void remove(const ConstraintT& c) {
 		auto it = mConstraints.find(c);
 		assert(it != mConstraints.end());
+		std::size_t id = it->second;
+		callCallback(mRemoveCallback, c, id);
 		mConstraints.erase(it);
-		std::size_t id = mConstraints.size();
-		mRemoveCallback(c.lhs().toUnivariatePolynomial(mVariables.front()), id);
+		mIDPool.free(id);
 	}
 };
 	
