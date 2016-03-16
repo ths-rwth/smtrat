@@ -6,7 +6,6 @@
  * @version 2013-07-10
  */
 
-#include "../../solver/Manager.h"
 #include "CADModule.h"
 
 #include <memory>
@@ -248,7 +247,7 @@ namespace smtrat
 			cad::SplitVariableSelector<Settings::splitHeuristic> svs;
 			int d = svs.select(mCAD.getVariables(), mRealAlgebraicSolution);
 			if (d != -1) {
-				if (mFinalCheck) branchAt(mCAD.getVariables()[std::size_t(d)], mRealAlgebraicSolution[std::size_t(d)].branchingPoint());
+				if (mFinalCheck) branchAt(mCAD.getVariables()[std::size_t(d)], mRealAlgebraicSolution[std::size_t(d)].branchingPoint(), true, true, true);
 				SMTRAT_LOG_DEBUG("smtrat.cad", "Returning unknown with split");
 				return UNKNOWN;
 			}
