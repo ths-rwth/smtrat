@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <vector>
 
 #include "../Common.h"
@@ -22,6 +23,8 @@ namespace cad {
 		std::vector<PolynomialLiftingQueue<BaseProjection>> mLiftingQueues;
 		/// The projection operator.
 		ProjectionOperator mOperator;
+		/// Callback to be called when polynomials are removed. The arguments are the projection level and a bitset that indicate which polynomials were removed in this level.
+		std::function<void(std::size_t,const SampleLiftedWith&)> mRemoveCallback;
 		
 		/// Returns the dimension of the projection.
 		std::size_t dim() const {
@@ -66,6 +69,11 @@ namespace cad {
 				mLiftingQueues.emplace_back(this, i);
 			}
 		}
+		/// Sets a callback that is called whenever polynomials are removed.
+		template<typename F>
+		void setRemoveCallback(F&& f) {
+			mRemoveCallback = f;
+		}
 		/// Adds the given polynomial to the projection. Converts to a UPoly and calls the appropriate overload.
 		void addPolynomial(const Poly& p, std::size_t cid) {
 			addPolynomial(p.toUnivariatePolynomial(var(0)), cid);
@@ -73,11 +81,11 @@ namespace cad {
 		/// Adds the given polynomial to the projection.
 		virtual void addPolynomial(const UPoly& p, std::size_t cid) = 0;
 		/// Removes the given polynomial from the projection. Converts to a UPoly and calls the appropriate overload.
-		void removePolynomial(const Poly& p, std::size_t cid, const std::function<void(std::size_t,SampleLiftedWith)>& callback) {
-			removePolynomial(p.toUnivariatePolynomial(var(0)), cid, callback);
+		void removePolynomial(const Poly& p, std::size_t cid) {
+			removePolynomial(p.toUnivariatePolynomial(var(0)), cid);
 		}
 		/// Removes the given polynomial from the projection.
-		virtual void removePolynomial(const UPoly& p, std::size_t cid, const std::function<void(std::size_t,SampleLiftedWith)>& callback) = 0;
+		virtual void removePolynomial(const UPoly& p, std::size_t cid) = 0;
 		
 		/// Cleans up the given list of polynomial ids a sample was lifted with from polynomials that got removed in the meantime.
 		void cleanLiftedWith(std::size_t level, SampleLiftedWith& slw) const {

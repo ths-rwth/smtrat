@@ -32,12 +32,12 @@ namespace cad {
 		void addPolynomial(const UPoly& p, std::size_t cid) {
 			mQueue.push(QueueEntry(p, cid));
 		}
-		void removePolynomial(const UPoly& p, std::size_t cid, const std::function<void(std::size_t,SampleLiftedWith)>& callback) {
+		void removePolynomial(const UPoly& p, std::size_t cid) {
 			auto it = mQueue.find(QueueEntry(p, cid));
 			if (it != mQueue.end()) {
 				mQueue.erase(it);
 			} else {
-				Super::removePolynomial(p, cid, callback);
+				Super::removePolynomial(p, cid);
 			}
 		}
 		

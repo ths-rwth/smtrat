@@ -106,12 +106,12 @@ namespace cad {
 		 * Asserts that this polynomial was the one added last and has the given constraint id as origin.
 		 * Calls the callback function for every level with a mask designating the polynomials removed from this level.
 		 */
-		void removePolynomial(const UPoly& p, std::size_t cid, const std::function<void(std::size_t,SampleLiftedWith)>& callback) {
+		void removePolynomial(const UPoly& p, std::size_t cid) {
 			assert(mPolynomials[0].back().first == p);
 			assert(mPolynomials[0].back().second == cid);
 			removePolynomial(0);
 			std::size_t origin = mPolynomials[0].size();
-			callback(0, SampleLiftedWith().set(origin));
+			mRemoveCallback(0, SampleLiftedWith().set(origin));
 			// Remove all polynomials from all levels that have the removed polynomial as origin.
 			for (std::size_t level = 1; level < dim(); level++) {
 				Bitset removed;
@@ -121,7 +121,7 @@ namespace cad {
 					removed.set(mPolynomials[level].size());
 				}
 				assert(mPolynomials[level].back().second < origin);
-				callback(level, removed);
+				mRemoveCallback(level, removed);
 			}
 		}
 		

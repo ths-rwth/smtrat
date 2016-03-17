@@ -66,7 +66,7 @@ namespace cad {
 			assert(p.mainVar() == var(0));
 			addToProjection(0, p, Origin::BaseType(cid));
 		}
-		void removePolynomial(const UPoly& p, std::size_t cid, const std::function<void(std::size_t,SampleLiftedWith)>& callback) {
+		void removePolynomial(const UPoly& p, std::size_t cid) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << cid);
 			Bitset filter = Bitset().set(cid);
 			for (std::size_t level = 0; level < dim(); level++) {
@@ -86,7 +86,7 @@ namespace cad {
 					}
 				}
 				SMTRAT_LOG_TRACE("smtrat.cad.projection", "Calling callback for level " << level << ", removed [" << removed << "]");
-				callback(level, removed);
+				mRemoveCallback(level, removed);
 				filter = removed;
 			}
 		}

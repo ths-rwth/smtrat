@@ -22,13 +22,10 @@ namespace cad {
 		CAD():
 			mConstraints(
 				[&](const UPoly& p, std::size_t cid){ mProjection.addPolynomial(p, cid); },
-				[&](const UPoly& p, std::size_t cid){
-					mProjection.removePolynomial(p, cid,
-						[&](std::size_t level, const SampleLiftedWith& mask){ mLifting.removeLiftedWithFlags(dim() - level - 1, mask); }
-					);
-				}
+				[&](const UPoly& p, std::size_t cid){ mProjection.removePolynomial(p, cid); }
 			)
 		{
+			mProjection.setRemoveCallback([&](std::size_t level, const SampleLiftedWith& mask){ mLifting.removeLiftedWithFlags(dim() - level - 1, mask); });
 		}
 		std::size_t dim() const {
 			return mVariables.size();
