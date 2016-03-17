@@ -24,7 +24,7 @@ namespace cad {
 				[&](const UPoly& p, std::size_t cid){ mProjection.addPolynomial(p, cid); },
 				[&](const UPoly& p, std::size_t cid){
 					mProjection.removePolynomial(p, cid,
-						[&](std::size_t level, const SampleLiftedWith& mask){ mLifting.removeLiftedWithFlags(level, mask); }
+						[&](std::size_t level, const SampleLiftedWith& mask){ mLifting.removeLiftedWithFlags(dim() - level - 1, mask); }
 					);
 				}
 			)
@@ -54,7 +54,9 @@ namespace cad {
 		}
 		void removeConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing " << c);
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Before removal:" << std::endl << mProjection << std::endl << mLifting.getTree());
 			mConstraints.remove(c);
+			SMTRAT_LOG_DEBUG("smtrat.cad", "After removal:" << std::endl << mProjection << std::endl << mLifting.getTree());
 		}
 		
 		Answer checkFullSamples(Assignment& assignment) {
@@ -63,14 +65,14 @@ namespace cad {
 			while (mLifting.hasFullSamples()) {
 				auto it = mLifting.getNextFullSample();
 				auto m = mLifting.extractSampleMap(it);
-				SMTRAT_LOG_DEBUG("smtrat.cad", "Checking full sample " << m);
+				SMTRAT_LOG_TRACE("smtrat.cad", "Checking full sample " << m);
 				assert(m.size() == it.depth());
 				bool sat = true;
 				for (const auto& c: mConstraints) {
 					Assignment a = m;
 					// TODO: m is cleared by the call to evaluate() ... 
 					auto res = carl::RealAlgebraicNumberEvaluation::evaluate(c.lhs(), a);
-					SMTRAT_LOG_DEBUG("smtrat.cad", "Evaluating " << c.lhs() << " on " << m << " -> " << res);
+					SMTRAT_LOG_TRACE("smtrat.cad", "Evaluating " << c.lhs() << " on " << m << " -> " << res);
 					sat = sat && carl::evaluate(res, c.relation());
 					if (!sat) break;
 				}
@@ -85,10 +87,12 @@ namespace cad {
 		}
 		
 		Answer check(Assignment& assignment) {
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Checking constraints:" << std::endl << mConstraints);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 			mLifting.resetFullSamples();
 			mLifting.restoreRemovedSamples();
 			while (true) {
+				SMTRAT_LOG_DEBUG("smtrat.cad", "Current sample tree:" << std::endl << mLifting.getTree());
 				Answer res = checkFullSamples(assignment);
 				if (res == Answer::SAT) return Answer::SAT;
 				
