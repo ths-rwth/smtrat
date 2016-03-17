@@ -73,6 +73,11 @@ public:
 			cache.pop();
 		}
 	}
+	friend std::ostream& operator<<(std::ostream& os, const CADConstraints<Backtracking::ORDERED>& cadc) {
+		std::size_t id = 0;
+		for (const auto& c: cadc.mConstraints) os << "\t" << id++ << ": " << c << std::endl;
+		return os;
+	}
 };
 
 template<>
@@ -122,7 +127,12 @@ public:
 		mConstraints.erase(it);
 		mIDPool.free(id);
 	}
+	friend std::ostream& operator<<(std::ostream& os, const CADConstraints<Backtracking::UNORDERED>& cadc) {
+		for (const auto& c: cadc.mConstraints) os << "\t" << c.second << ": " << c.first << std::endl;
+		return os;
+	}
 };
+
 	
 }
 }
