@@ -55,7 +55,8 @@ private:
 			task->run();
 			SMTRAT_LOG_DEBUG("smtrat.parallel", "done.");
 			delete task;
-			std::lock_guard<std::mutex> lock(mMutex);
+			std::lock_guard<std::mutex> lockA(mMutex);
+			std::lock_guard<std::mutex> lockB(mContinueMutex);
 			if (!mContinues.empty()) {
 				mCounter--;
 				mContinues.top().second = true;
