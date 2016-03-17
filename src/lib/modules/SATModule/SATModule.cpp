@@ -2089,12 +2089,16 @@ SetWatches:
                             }
                             break;
                         }
-                        default:
+                        case UNKNOWN:
                         {
-                            assert( mCurrentAssignmentConsistent == UNKNOWN );
                             if( Settings::allow_theory_propagation )
                                 lemmasLearned = processLemmas(); // Theory propagation.
                             break;
+                        }
+                        default:
+                        {
+                            mCurrentAssignmentConsistent = UNKNOWN;
+                            return CRef_Undef;
                         }
                     }
                 }
@@ -2125,6 +2129,8 @@ SetWatches:
             bool madeTheoryCall = false;
             bool foundConflictOfSizeOne = false;
             CRef confl = propagateConsistently( madeTheoryCall, foundConflictOfSizeOne );
+            if( !mComputeAllSAT && anAnswerFound() )
+                return l_Undef;
             if( qhead < trail.size() )
                 continue;
             if( !ok )

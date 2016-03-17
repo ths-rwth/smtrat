@@ -87,11 +87,16 @@ public:
 	}
 	
 	Answer runBackends(const std::vector<Module*>& modules, bool final, bool full, bool minimize) {
+        if( modules.empty() )
+        {
+            SMTRAT_LOG_DEBUG("smtrat.parallel", "Returning " << UNKNOWN);
+            return UNKNOWN;
+        }
 		assert(mCounter > 0);
 		mCounter--;
 		std::condition_variable cv;
-		mContinues.emplace(&cv, false);
 		std::unique_lock<std::mutex> lock(mContinueMutex);
+		mContinues.emplace(&cv, false);
 		std::vector<std::future<Answer>> futures;
 		for (const auto& m: modules) {
 			SMTRAT_LOG_DEBUG("smtrat.parallel", "\tCreating task for " << m->moduleName());
@@ -105,7 +110,8 @@ public:
 		Answer res = Answer::ABORTED;
 		for (auto& f: futures) {
 			if (f.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-				switch (f.get()) {
+                Answer ans = f.get();
+				switch (ans) {
 				case Answer::ABORTED: break;
 				case Answer::UNKNOWN: res = Answer::UNKNOWN; break;
 				case Answer::SAT: return Answer::SAT;

@@ -134,7 +134,7 @@ namespace smtrat
         #ifdef SMTRAT_DEVOPTION_MeasureTime
         stopCheckTimer();
         #endif
-        assert(result == UNKNOWN || result == UNSAT || result == SAT);
+//        assert(result == UNKNOWN || result == UNSAT || result == SAT);
         assert( result != UNSAT || hasValidInfeasibleSubset() );
         #ifdef SMTRAT_DEVOPTION_Validation
         if( validationSettings->logTCalls() )
@@ -833,7 +833,7 @@ namespace smtrat
                 // Run the backend solver parallel until the first answers true or false.
                 if( anAnswerFound() )
                     return ABORTED;
-				return mpManager->runBackends(mUsedBackends, _final, _full, _minimize);
+                return mpManager->runBackends(mUsedBackends, _final, _full, _minimize);
                 size_t highestIndex = numberOfUsedBackends-1;
                 vector< std::future<Answer> > futures( highestIndex );
                 for( size_t i=0; i<highestIndex; ++i )
@@ -943,7 +943,8 @@ namespace smtrat
     {
         mSolverState = _answer;
         // If we are in the SMT environment:
-        if( mpManager != nullptr && _answer != UNKNOWN )
+        assert( _answer != ABORTED || anAnswerFound() );
+        if( mpManager != nullptr && _answer != UNKNOWN && _answer != ABORTED )
         {
             if( !anAnswerFound() )
                 *mFoundAnswer.back() = true;
