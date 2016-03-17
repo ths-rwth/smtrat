@@ -121,7 +121,7 @@ void GBModule<Settings>::handleConstraintToGBQueue(ModuleInput::const_iterator _
 		newPol = transformIntoEquality( _formula );
         
     }
-	newPol.setReasons((unsigned)(mBacktrackPoints.size() - 1));
+	newPol.setReasons(carl::BitVector(unsigned(mBacktrackPoints.size() - 1)));
 	mBasis.addPolynomial( newPol );
     saveState( );
 
