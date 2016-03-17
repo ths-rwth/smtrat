@@ -11,8 +11,8 @@
 namespace smtrat {
 namespace cad {
 	
-	template<typename Settings>
-	class Projection<Incrementality::SIMPLE, Backtracking::ORDERED, Settings>: public Projection<Incrementality::NONE, Backtracking::UNORDERED, Settings> {
+	template<typename Settings, Backtracking BT>
+	class Projection<Incrementality::SIMPLE, BT, Settings>: public Projection<Incrementality::NONE, Backtracking::UNORDERED, Settings> {
 	private:
 		using Super = Projection<Incrementality::NONE, Backtracking::UNORDERED, Settings>;
 		using QueueEntry = std::pair<UPoly,std::size_t>;
@@ -52,8 +52,8 @@ namespace cad {
 			return false;
 		}
 		
-		template<typename S>
-		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::SIMPLE, Backtracking::ORDERED, S>& p) {
+		template<typename S, Backtracking B>
+		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::SIMPLE, B, S>& p) {
 			os << "Queue: " << p.mQueue << std::endl;
 			return os << Projection<Incrementality::NONE, Backtracking::UNORDERED, S>(p);
 		}

@@ -111,14 +111,17 @@ namespace cad {
 			assert(mPolynomials[0].back().second == cid);
 			removePolynomial(0);
 			std::size_t origin = mPolynomials[0].size();
+			callback(0, SampleLiftedWith().set(origin));
 			// Remove all polynomials from all levels that have the removed polynomial as origin.
 			for (std::size_t level = 1; level < dim(); level++) {
+				Bitset removed;
 				if (mPolynomials[level].empty()) continue;
 				while (mPolynomials[level].back().second == origin) {
 					removePolynomial(level);
+					removed.set(mPolynomials[level].size());
 				}
 				assert(mPolynomials[level].back().second < origin);
-				callback(level, SampleLiftedWith().set(origin));
+				callback(level, removed);
 			}
 		}
 		
