@@ -67,6 +67,7 @@ namespace cad {
 			addToProjection(0, p, Origin::BaseType(cid));
 		}
 		void removePolynomial(const UPoly& p, std::size_t cid, const std::function<void(std::size_t,SampleLiftedWith)>& callback) {
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << cid);
 			Bitset filter = Bitset().set(cid);
 			for (std::size_t level = 0; level < dim(); level++) {
 				Bitset removed;
@@ -84,6 +85,7 @@ namespace cad {
 						it++;
 					}
 				}
+				SMTRAT_LOG_TRACE("smtrat.cad.projection", "Calling callback for level " << level << ", removed [" << removed << "]");
 				callback(level, removed);
 				filter = removed;
 			}
@@ -103,13 +105,13 @@ namespace cad {
 		OptionalPoly getPolyForLifting(std::size_t level, SampleLiftedWith& slw) {
 			for (const auto& pid: mLiftingQueues[level]) {
 				assert(mPolynomials[level][pid]);
-				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking " << mPolynomials[level][pid]->first);
+				SMTRAT_LOG_TRACE("smtrat.cad.projection", "Checking " << mPolynomials[level][pid]->first);
 				if (!slw.test(pid)) {
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", mPolynomials[level][pid]->first << " can be used.");
 					slw.set(pid);
 					return OptionalPoly(mPolynomials[level][pid]->first);
 				} else {
-					SMTRAT_LOG_DEBUG("smtrat.cad.projection", mPolynomials[level][pid]->first << " was already used.");
+					SMTRAT_LOG_TRACE("smtrat.cad.projection", mPolynomials[level][pid]->first << " was already used.");
 				}
 			}
 			return OptionalPoly();
@@ -139,7 +141,7 @@ namespace cad {
 				os << level << " " << p.var(level) << ":" << std::endl;
 				for (const auto& it: p.mPolynomialIDs[level]) {
 					assert(p.mPolynomials[level][it.second]);
-					os << "\t" << p.mPolynomials[level][it.second]->first << " [" << p.mPolynomials[level][it.second]->second << "]" << std::endl;
+					os << "\t" << it.second << ": " << p.mPolynomials[level][it.second]->first << " " << p.mPolynomials[level][it.second]->second << std::endl;
 				}
 			}
 			return os;
