@@ -53,30 +53,21 @@ public:
 class BackendSynchronisation {
 private:
 	std::condition_variable mConditionVariable;
-	std::mutex mCVMutex;
+	std::mutex mMutex;
     bool mFireFlag;
 public:
-	BackendSynchronisation(): mConditionVariable(), mFireFlag(false) {}
-    
-    const std::condition_variable& conditionVariable() const {
-        return mConditionVariable;
-    }
-    
-    std::condition_variable& rConditionVariable() {
-        return mConditionVariable;
-    }
-    
-    bool fireFlag() const {
-        return mFireFlag;
-    }
-    
-    bool& rFireFlag() {
-        return mFireFlag;
-    }
-    
-    std::mutex& rCVMutex() {
-        return mCVMutex;
-    }
+	BackendSynchronisation(): mConditionVariable(), mMutex(), mFireFlag(false) {}
+	void wait() {
+		std::unique_lock<std::mutex> lock(mMutex);
+		mConditionVariable.wait(lock, [&](){ return mFireFlag; });
+	}
+	void notify() {
+		{
+			std::lock_guard<std::mutex> lock(mMutex);
+			mFireFlag = true;
+		}
+		mConditionVariable.notify_one();
+	}
 };
 
 class ThreadPool {
@@ -88,11 +79,24 @@ private:
     ///
 	std::mutex mBackendSynchrosMutex;
     ///
-	std::mutex mMutex;
-    ///
 	std::vector<BackendSynchronisation*> mBackendSynchros;
     ///
+	std::mutex mQueueMutex;
+	///
 	std::priority_queue<Task*> mQueue;
+	
+	bool shallBeSkipped(std::size_t index) {
+		std::lock_guard<std::mutex> bsLock(mBackendSynchrosMutex);
+		return index >= mBackendSynchros.size() || mBackendSynchros[index] == nullptr;
+	}
+	bool notify(std::size_t index) {
+		std::lock_guard<std::mutex> bsLock(mBackendSynchrosMutex);
+		if (index < mBackendSynchros.size() && mBackendSynchros[index] != nullptr) {
+			mBackendSynchros[index]->notify();
+			return true;
+		}
+		return false;
+	}
 	
     /**
      * 

@@ -17,22 +17,21 @@ namespace smtrat
     void ThreadPool::runTask(Task* task) {
 		mCounter++;
 		while (true) {
-			SMTRAT_LOG_DEBUG("smtrat.parallel", "Executing " << task->getModule()->moduleName());
-			task->run();
-			SMTRAT_LOG_DEBUG("smtrat.parallel", "done.");
-            std::size_t index = task->conditionalIndex();
-			delete task;
-			std::lock_guard<std::mutex> lock(mMutex);
-            {
-                std::lock_guard<std::mutex> bsLock(mBackendSynchrosMutex);
-                if(index < mBackendSynchros.size() && mBackendSynchros[index] != nullptr) {
-                    mCounter--;
-                    std::lock_guard<std::mutex> cvLock( mBackendSynchros[index]->rCVMutex() );
-                    mBackendSynchros[index]->rFireFlag() = true;
-                    mBackendSynchros[index]->rConditionVariable().notify_one();
-                    return;
-                }
-            }
+			std::size_t index = task->conditionalIndex();
+			bool skipTask = shallBeSkipped(index);
+			if (!skipTask) {
+				SMTRAT_LOG_DEBUG("smtrat.parallel", "Executing " << task->getModule()->moduleName());
+				task->run();
+				SMTRAT_LOG_DEBUG("smtrat.parallel", "done.");
+				delete task;
+				if (notify(index)) {
+					mCounter--;
+					return;
+				}
+			} else {
+				delete task;
+			}
+			std::lock_guard<std::mutex> lock(mQueueMutex);
 			if (mQueue.empty()) {
 				mCounter--;
 				return;
@@ -44,10 +43,10 @@ namespace smtrat
     
     void ThreadPool::submitBackend(Task* task) {
 		SMTRAT_LOG_DEBUG("smtrat.parallel", "Submitting " << task->getModule()->moduleName());
-		std::lock_guard<std::mutex> lock(mMutex);
 		if (mCounter < mMaxThreads) {
 			std::thread(&ThreadPool::runTask, this, task).detach();
 		} else {
+			std::lock_guard<std::mutex> lock(mQueueMutex);
 			mQueue.push(task);
 		}
 	}
@@ -59,7 +58,7 @@ namespace smtrat
             return UNKNOWN;
         }
 		assert(mCounter > 0);
-        std::size_t index;
+        std::size_t index = 0;
 		mCounter--;
 		{
             std::lock_guard<std::mutex> bsLock(mBackendSynchrosMutex);
@@ -74,15 +73,14 @@ namespace smtrat
 			submitBackend(task);
 		}
         // wait until one task (backend check) fires the condition variable which means it has finished its check
+		mBackendSynchros[index]->wait();
 		{
             std::lock_guard<std::mutex> bsLock(mBackendSynchrosMutex);
-            std::unique_lock<std::mutex> lock(mBackendSynchros[index]->rCVMutex());
-            mBackendSynchros[index]->rConditionVariable().wait(lock, [&](){ return mBackendSynchros[index]->fireFlag(); });
-            delete mBackendSynchros[index];
-            if( index == mBackendSynchros.size()-1 )
-                mBackendSynchros.pop_back();
-            else
-                mBackendSynchros[index] = nullptr;
+			delete mBackendSynchros[index];
+			mBackendSynchros[index] = nullptr;
+			while (!mBackendSynchros.empty() && mBackendSynchros.back() == nullptr) {
+				mBackendSynchros.pop_back();
+			}
         }
 		mCounter++;
 		Answer res = Answer::ABORTED;
