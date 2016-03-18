@@ -101,7 +101,6 @@ namespace smtrat
         mConstraintsToInform.clear();
         mInformedConstraints.clear();
         delete mpPassedFormula;
-        mFoundAnswer.clear();
         delete mBackendsFoundAnswer;
     }
     
@@ -923,7 +922,7 @@ namespace smtrat
         if( mpManager != nullptr && _answer != UNKNOWN && _answer != ABORTED )
         {
             if( !anAnswerFound() )
-                *mFoundAnswer.back() = true;
+                mFoundAnswer.back()->store( true );
         }
         SMTRAT_LOG_INFO("smtrat.module", __func__ << " of " << moduleName() << " (" << mId << ") is " << ANSWER_TO_STRING( _answer ));
         if( _answer == SAT || _answer == UNKNOWN )

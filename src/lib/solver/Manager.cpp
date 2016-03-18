@@ -63,15 +63,23 @@ namespace smtrat
     Manager::~Manager()
     {
         Module::storeAssumptionsToCheck( *this );
+        #ifdef SMTRAT_STRAT_PARALLEL_MODE
+        std::cout << __func__ << ":" << __LINE__ << std::endl;
+        if( mpThreadPool != nullptr )
+            delete mpThreadPool;
+        #endif
         #ifdef SMTRAT_DEVOPTION_Statistics
         delete mpStatistics;
         #endif
+        std::cout << __func__ << ":" << __LINE__ << std::endl;
         while( !mGeneratedModules.empty() )
         {
             Module* ptsmodule = mGeneratedModules.back();
+            std::cout << __func__ << ":" << __LINE__ << ": delete " << ptsmodule->moduleName() << " [" <<  ptsmodule->id() << "]" << std::endl;
             mGeneratedModules.pop_back();
             delete ptsmodule;
         }
+        std::cout << __func__ << ":" << __LINE__ << std::endl;
         while( !mPrimaryBackendFoundAnswer.empty() )
         {
 #ifdef __VS
@@ -82,10 +90,6 @@ namespace smtrat
             mPrimaryBackendFoundAnswer.pop_back();
             delete toDelete;
         }
-        #ifdef SMTRAT_STRAT_PARALLEL_MODE
-        if( mpThreadPool != nullptr )
-            delete mpThreadPool;
-        #endif
         delete mpPassedFormula;
     }
     

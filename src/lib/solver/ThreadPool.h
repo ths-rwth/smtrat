@@ -76,6 +76,12 @@ private:
 	const std::size_t mMaxThreads;
 	/// Initialized with 1: There is always the main thread in the beginning.
 	std::atomic<std::size_t> mCounter;
+	/// Initialized with 1: There is always the main thread in the beginning.
+	std::atomic<std::size_t> mNumberThreads;
+    ///
+    std::condition_variable mTaskDeleted;
+    ///
+	std::mutex mTaskDeleteMutex;
     ///
 	std::mutex mBackendSynchrosMutex;
     ///
@@ -103,6 +109,15 @@ private:
      * @param task
      */
 	void runTask(Task* task);
+    void deleteTask(Task* task) {
+        delete task;
+        --mNumberThreads;
+//		{
+//			std::lock_guard<std::mutex> lock(mTaskDeleteMutex);
+//            --mNumberThreads;
+//		}
+//		mTaskDeleted.notify_one();
+    }
 	
     /**
      * 
@@ -110,9 +125,15 @@ private:
      */
 	void submitBackend(Task* task);
 public:	
-	ThreadPool(std::size_t maxThreads): mMaxThreads(maxThreads), mCounter(1) {}
+	ThreadPool(std::size_t maxThreads): mMaxThreads(maxThreads), mCounter(1), mNumberThreads(1), mTaskDeleted() {}
     
-	~ThreadPool() {}
+	~ThreadPool()
+    {
+        while(mNumberThreads>1);
+        // TODO: The following should use less cpu, however it does not work yet
+//        std::unique_lock<std::mutex> lock(mTaskDeleteMutex);
+//		mTaskDeleted.wait(lock, [&](){ return mNumberThreads<=1; });
+    }
 	
     /**
      * @param _modules

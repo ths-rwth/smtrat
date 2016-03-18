@@ -21,15 +21,17 @@ namespace smtrat
 			bool skipTask = shallBeSkipped(index);
 			if (!skipTask) {
 				SMTRAT_LOG_DEBUG("smtrat.parallel", "Executing " << task->getModule()->moduleName());
+                std::cout << "Executing " << task->getModule()->moduleName() << " [" << task->getModule()->id() << "]" << std::endl;
 				task->run();
+                std::cout << "Stopping " << task->getModule()->moduleName() << " [" << task->getModule()->id() << "]" << std::endl;
 				SMTRAT_LOG_DEBUG("smtrat.parallel", "done.");
-				delete task;
+				deleteTask(task);
 				if (notify(index)) {
 					mCounter--;
 					return;
 				}
 			} else {
-				delete task;
+				deleteTask(task);
 			}
 			std::lock_guard<std::mutex> lock(mQueueMutex);
 			if (mQueue.empty()) {
@@ -59,7 +61,6 @@ namespace smtrat
         }
 		assert(mCounter > 0);
         std::size_t index = 0;
-		mCounter--;
 		{
             std::lock_guard<std::mutex> bsLock(mBackendSynchrosMutex);
             index = mBackendSynchros.size();
@@ -69,11 +70,18 @@ namespace smtrat
 		for (const auto& m: _modules) {
 			SMTRAT_LOG_DEBUG("smtrat.parallel", "\tCreating task for " << m->moduleName());
 			Task* task = new Task(std::bind(&Module::check, m, _final, _full, _minimize), m, index);
+            ++mNumberThreads;
 			futures.emplace_back(task->getFuture());
 			submitBackend(task);
 		}
         // wait until one task (backend check) fires the condition variable which means it has finished its check
-		mBackendSynchros[index]->wait();
+        BackendSynchronisation* bs;
+		{
+            std::lock_guard<std::mutex> bsLock(mBackendSynchrosMutex);
+            bs = mBackendSynchros[index];
+        }
+		mCounter--;
+        bs->wait();
 		{
             std::lock_guard<std::mutex> bsLock(mBackendSynchrosMutex);
 			delete mBackendSynchros[index];

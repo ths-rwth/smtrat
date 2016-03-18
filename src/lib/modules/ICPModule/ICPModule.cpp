@@ -416,6 +416,8 @@ namespace smtrat
                     pushBoundsToPassedFormula();
                     // lazy call of the backends on found box
                     Answer lazyResult = callBackends( mFinalCheck, false, mMinimizingCheck );
+                    if( lazyResult == ABORTED )
+                        return lazyResult;
                     // if it led to a result or the backends require a splitting
                     if( lazyResult != UNKNOWN || !lemmas().empty() )
                         return lazyResult;
@@ -731,6 +733,8 @@ namespace smtrat
         #endif
         ++mCountBackendCalls;
         Answer a = runBackends( _final, _full, _minimize );
+        if( a == ABORTED )
+            return a;
         updateLemmas();
         std::vector<Module*>::const_iterator backend = usedBackends().begin();
         while( backend != usedBackends().end() )

@@ -431,6 +431,8 @@ namespace smtrat
     template<class Settings>
     Answer LRAModule<Settings>::processResult( Answer _result )
     {
+        if( _result == ABORTED )
+            return _result;
         if( Settings::learn_refinements )
             learnRefinements();
         #ifdef SMTRAT_DEVOPTION_Statistics

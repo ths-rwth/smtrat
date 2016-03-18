@@ -614,6 +614,10 @@ namespace smtrat
                                                 {
                                                     return UNKNOWN;
                                                 }
+                                                case ABORTED:
+                                                {
+                                                    return ABORTED;
+                                                }
                                                 default:
                                                 {
                                                     cout << "Error: UNKNOWN answer in method " << __func__ << " line " << __LINE__ << endl;
@@ -1923,6 +1927,10 @@ namespace smtrat
             case UNKNOWN:
             {
                 return UNKNOWN;
+            }
+            case ABORTED:
+            {
+                return ABORTED;
             }
             default:
             {
