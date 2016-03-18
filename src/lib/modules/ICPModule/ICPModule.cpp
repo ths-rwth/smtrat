@@ -377,6 +377,8 @@ namespace smtrat
             printIntervals( false );
             #endif
             contractCurrentBox();
+            if( anAnswerFound() )
+                return ABORTED;
             #ifdef ICP_MODULE_DEBUG_0
             std::cout << std::endl;
             #endif
@@ -439,8 +441,7 @@ namespace smtrat
                     }
                     if( furtherContractionOccurred )
                         continue;
-                    assert( lemmas().size() == 1 );
-                    return UNKNOWN; // Splitting required
+                    return UNKNOWN;
                 }
             }
         }
@@ -638,6 +639,8 @@ namespace smtrat
         mOriginalVariableIntervalContracted = false;
         for( ; ; )
         {
+            if( anAnswerFound() )
+                return;
             while(!mBoxStorage.empty())
                 mBoxStorage.pop();
             icp::set_icpVariable icpVariables;

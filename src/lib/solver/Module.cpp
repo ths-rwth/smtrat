@@ -832,7 +832,9 @@ namespace smtrat
                 // Run the backend solver parallel until the first answers true or false.
                 if( anAnswerFound() )
                     return ABORTED;
-                return mpManager->runBackends(mUsedBackends, _final, _full, _minimize);
+                Answer res = mpManager->runBackends(mUsedBackends, _final, _full, _minimize);
+//                std::cout << moduleName() << " [" << id() << "] receives answer " << res << std::endl; 
+                return res;
             }
             else
             {
@@ -930,6 +932,7 @@ namespace smtrat
             mModelComputed = false;
         }
         assert( _answer != SAT || checkModel() != 0 );
+//        std::cout << moduleName() << " [" << id() << "] returns answer " << _answer << std::endl;
         return _answer;
     }
 

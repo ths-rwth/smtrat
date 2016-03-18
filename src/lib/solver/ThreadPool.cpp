@@ -91,7 +91,10 @@ namespace smtrat
 		mCounter++;
 		Answer res = Answer::ABORTED;
 		for (auto& f: futures) {
-			if (f.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+            // TODO: This does not work. Example: qf_nra/rectangle_positioning/rectangle_positioning_02in16.smt2
+            // Problem: it returns Unknown although one of the modules has not finished and later returns SAT
+            // Maybe infinite loop until a module answers with SAT/UNSAT or all modules have answered with ABORTED/UNKNOWN
+//			if (f.wait_for(std::chrono::seconds(0)) == std::future_status::ready) { 
                 Answer ans = f.get();
 				switch (ans) {
 				case Answer::ABORTED: break;
@@ -99,7 +102,7 @@ namespace smtrat
 				case Answer::SAT: return Answer::SAT;
 				case Answer::UNSAT: return Answer::UNSAT;
 				}
-			}
+//			}
 		}
 		SMTRAT_LOG_DEBUG("smtrat.parallel", "Returning " << res);
 		return res;
