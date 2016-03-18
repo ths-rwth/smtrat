@@ -21,9 +21,7 @@ namespace smtrat
 			bool skipTask = shallBeSkipped(index);
 			if (!skipTask) {
 				SMTRAT_LOG_DEBUG("smtrat.parallel", "Executing " << task->getModule()->moduleName());
-                std::cout << "Executing " << task->getModule()->moduleName() << " [" << task->getModule()->id() << "]" << std::endl;
 				task->run();
-                std::cout << "Stopping " << task->getModule()->moduleName() << " [" << task->getModule()->id() << "]" << std::endl;
 				SMTRAT_LOG_DEBUG("smtrat.parallel", "done.");
 				deleteTask(task);
 				if (notify(index)) {
