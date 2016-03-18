@@ -20,14 +20,19 @@ namespace smtrat
 			SMTRAT_LOG_DEBUG("smtrat.parallel", "Executing " << task->getModule()->moduleName());
 			task->run();
 			SMTRAT_LOG_DEBUG("smtrat.parallel", "done.");
+            std::size_t index = task->conditionalIndex();
 			delete task;
 			std::lock_guard<std::mutex> lock(mMutex);
-			if (!mContinues.empty()) {
-				mCounter--;
-				mContinues.top().second = true;
-				mContinues.top().first->notify_one();
-				return;
-			}
+            {
+                std::lock_guard<std::mutex> bsLock(mBackendSynchrosMutex);
+                if(index < mBackendSynchros.size() && mBackendSynchros[index] != nullptr) {
+                    mCounter--;
+                    std::lock_guard<std::mutex> cvLock( mBackendSynchros[index]->rCVMutex() );
+                    mBackendSynchros[index]->rFireFlag() = true;
+                    mBackendSynchros[index]->rConditionVariable().notify_one();
+                    return;
+                }
+            }
 			if (mQueue.empty()) {
 				mCounter--;
 				return;
@@ -54,19 +59,31 @@ namespace smtrat
             return UNKNOWN;
         }
 		assert(mCounter > 0);
+        std::size_t index;
 		mCounter--;
-		std::condition_variable cv;
-		std::unique_lock<std::mutex> lock(mContinueMutex);
-		mContinues.emplace(&cv, false);
+		{
+            std::lock_guard<std::mutex> bsLock(mBackendSynchrosMutex);
+            index = mBackendSynchros.size();
+            mBackendSynchros.push_back(new BackendSynchronisation());
+        }
 		std::vector<std::future<Answer>> futures;
 		for (const auto& m: _modules) {
 			SMTRAT_LOG_DEBUG("smtrat.parallel", "\tCreating task for " << m->moduleName());
-			Task* task = new Task(std::bind(&Module::check, m, _final, _full, _minimize), m);
+			Task* task = new Task(std::bind(&Module::check, m, _final, _full, _minimize), m, index);
 			futures.emplace_back(task->getFuture());
 			submitBackend(task);
 		}
-		cv.wait(lock, [&](){ return mContinues.top().second; });
-		mContinues.pop();
+        // wait until one task (backend check) fires the condition variable which means it has finished its check
+		{
+            std::lock_guard<std::mutex> bsLock(mBackendSynchrosMutex);
+            std::unique_lock<std::mutex> lock(mBackendSynchros[index]->rCVMutex());
+            mBackendSynchros[index]->rConditionVariable().wait(lock, [&](){ return mBackendSynchros[index]->fireFlag(); });
+            delete mBackendSynchros[index];
+            if( index == mBackendSynchros.size()-1 )
+                mBackendSynchros.pop_back();
+            else
+                mBackendSynchros[index] = nullptr;
+        }
 		mCounter++;
 		Answer res = Answer::ABORTED;
 		for (auto& f: futures) {

@@ -26,9 +26,10 @@ class Task {
 private:
 	std::packaged_task<Answer()> mTask;
 	const Module* mModule;
+    std::size_t mConditionalIndex;
 public:
 	template<typename T>
-	Task(T&& task, const Module* module): mTask(std::move(task)), mModule(module) {}
+	Task(T&& task, const Module* module, std::size_t _index): mTask(std::move(task)), mModule(module), mConditionalIndex(_index) {}
 	
 	void run() {
 		mTask();
@@ -38,11 +39,44 @@ public:
 		return mModule;
 	}
     
+	std::size_t conditionalIndex() const {
+		return mConditionalIndex;
+	}
+    
 	std::future<Answer> getFuture() {
 		return mTask.get_future();
 	}
 	
 	bool operator<(const Task& rhs) const;
+};
+
+class BackendSynchronisation {
+private:
+	std::condition_variable mConditionVariable;
+	std::mutex mCVMutex;
+    bool mFireFlag;
+public:
+	BackendSynchronisation(): mConditionVariable(), mFireFlag(false) {}
+    
+    const std::condition_variable& conditionVariable() const {
+        return mConditionVariable;
+    }
+    
+    std::condition_variable& rConditionVariable() {
+        return mConditionVariable;
+    }
+    
+    bool fireFlag() const {
+        return mFireFlag;
+    }
+    
+    bool& rFireFlag() {
+        return mFireFlag;
+    }
+    
+    std::mutex& rCVMutex() {
+        return mCVMutex;
+    }
 };
 
 class ThreadPool {
@@ -52,11 +86,11 @@ private:
 	/// Initialized with 1: There is always the main thread in the beginning.
 	std::atomic<std::size_t> mCounter;
     ///
-	std::mutex mContinueMutex;
+	std::mutex mBackendSynchrosMutex;
     ///
 	std::mutex mMutex;
     ///
-	std::stack<std::pair<std::condition_variable*,bool>> mContinues;
+	std::vector<BackendSynchronisation*> mBackendSynchros;
     ///
 	std::priority_queue<Task*> mQueue;
 	
