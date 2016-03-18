@@ -20,7 +20,6 @@
 #include "QuantifierManager.h"
 #ifdef SMTRAT_STRAT_PARALLEL_MODE
 #include "ThreadPool.h"
-#include "ThreadManager.h"
 #endif
 
 namespace smtrat
@@ -77,7 +76,6 @@ namespace smtrat
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             /// contains all threads to assign jobs to
             ThreadPool* mpThreadPool;
-			ThreadManager* mpThreadManager;
             /// the number of branches occurring in the strategy (the same as the number of leaves)
             size_t mNumberOfBranches;
             /// the number of cores of the system we run on
@@ -547,13 +545,6 @@ namespace smtrat
              * @return A future containing the answer, as soon as the enquiry has been processed.
              */
 			Answer runBackends(const std::vector<Module*>& modules, bool final, bool full, bool minimize);
-            std::future<Answer> submitBackend( Module* _module, bool _final, bool _full, bool _minimize );
-            
-            /**
-             * 
-             * @param _module
-             */
-            void checkBackendPriority( Module* _module );
             #endif
 
 			/**

@@ -834,30 +834,6 @@ namespace smtrat
                 if( anAnswerFound() )
                     return ABORTED;
                 return mpManager->runBackends(mUsedBackends, _final, _full, _minimize);
-                size_t highestIndex = numberOfUsedBackends-1;
-                vector< std::future<Answer> > futures( highestIndex );
-                for( size_t i=0; i<highestIndex; ++i )
-                {
-                    SMTRAT_LOG_INFO("smtrat.module","Call to module " << mUsedBackends[ i ]->moduleName());
-                    mUsedBackends[ i ]->print();
-                    futures[ i ] = mpManager->submitBackend( mUsedBackends[ i ], _final, _full, _minimize );
-                }
-                mpManager->checkBackendPriority( mUsedBackends[ highestIndex ] );
-                SMTRAT_LOG_INFO("smtrat.module", "Call to module " << mUsedBackends[ highestIndex ]->moduleName());
-                mUsedBackends[ highestIndex ]->print();
-                result = mUsedBackends[ highestIndex ]->check( _final, _full, _minimize );
-                mUsedBackends[ highestIndex ]->receivedFormulaChecked();
-                for( unsigned i=0; i<highestIndex; ++i )
-                {
-                    // Futures must be received, otherwise inconsistent state.
-                    Answer res = futures[ i ].get();
-                    mUsedBackends[ i ]->receivedFormulaChecked();
-                    if( res != UNKNOWN )
-                    {
-                        assert( result == UNKNOWN || result == res );
-                        result = res;
-                    }
-                }
             }
             else
             {

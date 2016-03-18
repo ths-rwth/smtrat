@@ -1,109 +1,88 @@
 /**
  * @file ThreadPool.h
  *
- * @author  Henrik Schmitz
- * @since   2013-01-03
- * @version 2013-02-01
+ * @author  Gereon Kremer
+ * @since   2016-03-18
  */
 
 #pragma once
 
-#include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <future>
-#include <map>
-#include <mutex>
-#include <queue>
-#include <thread>
+#include <stack>
+#include <tuple>
 #include <vector>
 
 #include "../Common.h"
 
-namespace smtrat
-{
+namespace smtrat {
 
-    // pair: first = thread id, second = priority
-    typedef std::shared_ptr< std::packaged_task<Answer()> > packaged_task;
+class Module;
+
+using Priority = std::vector<std::size_t>;
+
+class Task {
+private:
+	std::packaged_task<Answer()> mTask;
+	const Module* mModule;
+public:
+	template<typename T>
+	Task(T&& task, const Module* module): mTask(std::move(task)), mModule(module) {}
+	
+	void run() {
+		mTask();
+	}
     
-    class Module;
+	const Module* getModule() const {
+		return mModule;
+	}
+    
+	std::future<Answer> getFuture() {
+		return mTask.get_future();
+	}
+	
+	bool operator<(const Task& rhs) const;
+};
 
-    class ThreadPool
-    {
-        private:
+class ThreadPool {
+private:
+    ///
+	const std::size_t mMaxThreads;
+	/// Initialized with 1: There is always the main thread in the beginning.
+	std::atomic<std::size_t> mCounter;
+    ///
+	std::mutex mContinueMutex;
+    ///
+	std::mutex mMutex;
+    ///
+	std::stack<std::pair<std::condition_variable*,bool>> mContinues;
+    ///
+	std::priority_queue<Task*> mQueue;
+	
+    /**
+     * 
+     * @param task
+     */
+	void runTask(Task* task);
+	
+    /**
+     * 
+     * @param task
+     */
+	void submitBackend(Task* task);
+public:	
+	ThreadPool(std::size_t maxThreads): mMaxThreads(maxThreads), mCounter(1) {}
+    
+	~ThreadPool() {}
+	
+    /**
+     * @param _modules
+     * @param _final
+     * @param _full
+     * @param _minimize
+     */
+	Answer runBackends(const std::vector<Module*>& _modules, bool _final, bool _full, bool _minimize);
+};
 
-            class ThreadPriorityQueue
-            {
-                private:
-                    class CompareThreadPriorities
-                    {
-                        public:
-                            bool operator()( const std::shared_ptr<thread_priority>& _rThreadPriority1, std::shared_ptr<thread_priority>& _rThreadPriority2 )
-                            {
-                                if( (_rThreadPriority1->second)>(_rThreadPriority2->second) )
-                                    return true;
-                                else
-                                    return false;
-                            }
-                    };
-
-                    std::priority_queue< std::shared_ptr<thread_priority>, std::vector< std::shared_ptr<thread_priority> >, CompareThreadPriorities > mQueue;
-
-                public:
-                    ThreadPriorityQueue(){}
-                    ~ThreadPriorityQueue(){}
-
-                    bool empty() const
-                    {
-                        return mQueue.empty();
-                    }
-
-                    bool higherPriority( std::size_t _priority ) const
-                    {
-                        return empty() || mQueue.top()->second>_priority;
-                    }
-
-                    bool pop( thread_priority& _rThreadPriority )
-                    {
-                        if( mQueue.empty() )
-                            return false;
-                        else
-                        {
-                            _rThreadPriority = std::move( *mQueue.top() );
-                            mQueue.pop();
-                            return true;
-                        }
-                    }
-
-                    void push( thread_priority _newThreadPriority )
-                    {
-                        std::shared_ptr<thread_priority> value( std::make_shared<thread_priority>( std::move( _newThreadPriority ) ) );
-                        mQueue.push( value );
-                    }
-            };
-            
-            // Members.
-            std::mutex mMutex;
-            std::atomic<bool> mDone;
-            std::atomic<bool> mPossibleOversubscription;
-            std::size_t mNumberOfCores;
-            std::size_t mNumberOfThreads;
-            std::size_t mNumberOfRunningThreads;
-            std::vector<std::thread*> mThreads;
-            std::vector<std::condition_variable> mConditionVariables;
-            // Used as protection against spurious wake ups of condition variables
-            std::vector<bool> mOversubscriptionFlags;
-            std::vector<packaged_task> mTasks;
-            ThreadPriorityQueue mThreadPriorityQueue;
-
-            // Private methods.
-            void consumeBackend( std::size_t );
-
-        public:
-            // Constructor and destructor.
-            ThreadPool( size_t, std::size_t );
-            ~ThreadPool();
-
-            // Public methods.
-            void checkBackendPriority( Module* );
-            std::future<Answer> submitBackend( Module*, bool _final, bool _full, bool _minimize );
-    };
-}    // namespace smtrat
+}
