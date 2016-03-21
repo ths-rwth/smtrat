@@ -833,7 +833,6 @@ namespace smtrat
                 if( anAnswerFound() )
                     return ABORTED;
                 Answer res = mpManager->runBackends(mUsedBackends, _final, _full, _minimize);
-//                std::cout << moduleName() << " [" << id() << "] receives answer " << res << std::endl; 
                 return res;
             }
             else
@@ -932,7 +931,6 @@ namespace smtrat
             mModelComputed = false;
         }
         assert( _answer != SAT || checkModel() != 0 );
-//        std::cout << moduleName() << " [" << id() << "] returns answer " << _answer << std::endl;
         return _answer;
     }
 
