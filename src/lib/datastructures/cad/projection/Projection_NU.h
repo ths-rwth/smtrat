@@ -86,7 +86,7 @@ namespace cad {
 					}
 				}
 				SMTRAT_LOG_TRACE("smtrat.cad.projection", "Calling callback for level " << level << ", removed [" << removed << "]");
-				mRemoveCallback(level, removed);
+				callRemoveCallback(level, removed);
 				filter = removed;
 			}
 		}

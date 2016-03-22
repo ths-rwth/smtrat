@@ -26,6 +26,10 @@ namespace cad {
 		/// Callback to be called when polynomials are removed. The arguments are the projection level and a bitset that indicate which polynomials were removed in this level.
 		std::function<void(std::size_t,const SampleLiftedWith&)> mRemoveCallback;
 		
+		void callRemoveCallback(std::size_t level ,const SampleLiftedWith& slw) const {
+			if (mRemoveCallback) mRemoveCallback(level, slw);
+		}
+		
 		/// Returns the dimension of the projection.
 		std::size_t dim() const {
 			assert(mVariables.size() == mIDPools.size());

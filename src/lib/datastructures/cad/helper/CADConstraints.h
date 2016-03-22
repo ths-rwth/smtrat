@@ -16,7 +16,7 @@ protected:
 	Callback mAddCallback;
 	Callback mRemoveCallback;
 	void callCallback(const Callback& cb, const ConstraintT& c, std::size_t id) const {
-		cb(c.lhs().toUnivariatePolynomial(mVariables.front()), id);
+		if (cb) cb(c.lhs().toUnivariatePolynomial(mVariables.front()), id);
 	}
 public:
 	BaseCADConstraints(const Callback& onAdd, const Callback& onRemove): mAddCallback(onAdd), mRemoveCallback(onRemove) {}
