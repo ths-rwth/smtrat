@@ -809,7 +809,7 @@ namespace smtrat
                 cout << "Eliminate for " << *factor << endl;
                 #endif
                 VarPolyInfo varInfo = factor->getVarInfo<true>( _eliminationVar );
-                const std::map<unsigned, Poly>& coeffs = varInfo.coeffs();
+                const auto& coeffs = varInfo.coeffs();
                 assert( !coeffs.empty() );
                 // Generate test candidates for the chosen variable considering the chosen constraint.
                 switch( coeffs.rbegin()->first )
