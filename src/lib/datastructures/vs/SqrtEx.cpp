@@ -379,13 +379,13 @@ namespace vs
          *                           s^n
          */
         smtrat::VarPolyInfo varInfo = _substituteIn.getVarInfo<true>( _varToSubstitute );
-        const map<unsigned, smtrat::Poly>& coeffs = varInfo.coeffs();
+        const auto& coeffs = varInfo.coeffs();
         // Calculate the s^k:   (0<=k<=n)
         auto coeff = coeffs.begin();
-        unsigned lastDegree = varInfo.maxDegree();
+        carl::uint lastDegree = varInfo.maxDegree();
         vector<smtrat::Poly> sk;
         sk.push_back( smtrat::ONE_POLYNOMIAL );
-        for( unsigned i = 1; i <= lastDegree; ++i )
+        for( carl::uint i = 1; i <= lastDegree; ++i )
         {
             // s^i = s^l * s^{i-l}
             sk.push_back( sk.back() * _substituteBy.denominator() );
@@ -397,7 +397,7 @@ namespace vs
         rk.push_back( _substituteBy.factor() );
         // Let (q+r*sqrt{t})^l be (q'+r'*sqrt{t}) 
         // then (q+r*sqrt{t})^l+1  =  (q'+r'*sqrt{t}) * (q+r*sqrt{t})  =  ( q'*q+r'*r't  +  (q'*r+r'*q) * sqrt{t} )
-        for( unsigned i = 1; i < lastDegree; ++i )
+        for( carl::uint i = 1; i < lastDegree; ++i )
         {
             // q'*q+r'*r't
             qk.push_back( qk.back() * _substituteBy.constantPart() + rk.back() * _substituteBy.factor() * _substituteBy.radicand() );
