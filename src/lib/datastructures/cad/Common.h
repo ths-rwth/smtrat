@@ -21,6 +21,7 @@ namespace cad {
 	using SampleRootOf = Bitset;
 	using ConstraintSelection = Bitset;
 	using OptionalPoly = boost::optional<const UPoly&>;
+	using OptionalID = boost::optional<std::size_t>;
 	using Assignment = std::map<carl::Variable, RAN>;
 }
 }

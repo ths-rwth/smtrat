@@ -53,10 +53,8 @@ namespace cad {
 					gotNewSamples = true;
 				} else if (tit->value() == s.value()) {
 					// Replace non-root sample
-					if (!tit->isRoot()) {
-						*tit = s;
-						gotNewSamples = true;
-					}
+					if (!tit->isRoot()) gotNewSamples = true;
+					tit->merge(s);
 				} else {
 					// Insert before sample
 					auto it = mTree.insert(tit, s);
@@ -84,20 +82,20 @@ namespace cad {
 			auto tend = mTree.end_children(parent);
 			auto tit = tbegin, tlast = tbegin;
 			if (tbegin->isRoot()) {
-				auto it = mTree.insert(tbegin, Sample(mSelector.below(tlast->value()), false));
+				auto it = mTree.insert(tbegin, Sample(mSelector.below(tlast->value())));
 				addToQueue(it);
 			}
 			while (true) {
 				tit++;
 				if (tit == tend) break;
 				if (tlast->isRoot() && tit->isRoot()) {
-					auto it = mTree.insert(tit, Sample(mSelector.between(tlast->value(), tit->value()), false));
+					auto it = mTree.insert(tit, Sample(mSelector.between(tlast->value(), tit->value())));
 					addToQueue(it);
 				}
 				tlast = tit;
 			}
 			if (tlast->isRoot()) {
-				auto it = mTree.append(parent, Sample(mSelector.above(tlast->value()), false));
+				auto it = mTree.append(parent, Sample(mSelector.above(tlast->value())));
 				addToQueue(it);
 			}
 			
@@ -147,14 +145,14 @@ namespace cad {
 			mRemovedFromLiftingQueue.clear();
 		}
 		
-		bool liftSample(Iterator sample, const UPoly& p) {
+		bool liftSample(Iterator sample, const UPoly& p, std::size_t pid) {
 			auto m = extractSampleMap(sample);
 			RationalInterval bounds = RationalInterval::unboundedInterval();
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Lifting " << m << " on " << p);
 			std::vector<Sample> newSamples;
 			for (const auto& r: carl::rootfinder::realRoots(p, m, bounds, Settings::rootSplittingStrategy)) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tnew root sample: " << r);
-				newSamples.emplace_back(r);
+				newSamples.emplace_back(r, pid);
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tmerging...");
 			return mergeRootSamples(sample, newSamples);
@@ -181,6 +179,18 @@ namespace cad {
 		void removeLiftedWithFlags(std::size_t level, const SampleLiftedWith& mask) {
 			for (auto it = mTree.begin_depth(level); it != mTree.end_depth(); it++) {
 				it->liftedWith() -= mask;
+			}
+		}
+		void removeRootOfFlags(std::size_t level, const SampleRootOf& mask) {
+			std::vector<Iterator> deleteQueue;
+			for (auto it = mTree.begin_depth(level); it != mTree.end_depth(); it++) {
+				if (!it->isRoot()) continue;
+				it->rootOf() -= mask;
+				if (it->rootOf().none()) deleteQueue.emplace_back(it);
+			}
+			for (const auto& it: deleteQueue) {
+				SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Purging " << printSample(it));
+				mTree.erase(it);
 			}
 		}
 		

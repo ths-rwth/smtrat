@@ -59,6 +59,10 @@ namespace cad {
 			assert(!mDefault);
 			return mData.any();
 		}
+		bool none() const {
+			assert(!mDefault);
+			return mData.none();
+		}
 		
 		auto size() const {
 			return mData.size();
