@@ -17,6 +17,9 @@ namespace cad {
 		explicit Sample(const RAN& value): mValue(value), mIsRoot(false) {
 			setIsRoot(false);
 		}
+		explicit Sample(const RAN& value, bool isRoot): mValue(value), mIsRoot(isRoot) {
+			setIsRoot(isRoot);
+		}
 		explicit Sample(const RAN& value, std::size_t id): mValue(value), mIsRoot(true) {
 			setIsRoot(true);
 			mRootOf.set(id);

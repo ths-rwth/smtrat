@@ -72,7 +72,7 @@ namespace cad {
 				SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Nothing to merge");
 				if (mTree.is_leaf(parent)) {
 					SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Inserting zero node.");
-					auto it = mTree.append(parent, Sample(RAN(), false));
+					auto it = mTree.append(parent, Sample(RAN()));
 					addToQueue(it);
 				}
 				return false;

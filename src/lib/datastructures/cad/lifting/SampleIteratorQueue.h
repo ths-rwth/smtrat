@@ -2,6 +2,8 @@
 
 #include "../Common.h"
 
+#include <algorithm>
+
 namespace smtrat {
 namespace cad {
 	template<typename Iterator, template<typename> class Comparator>
@@ -26,6 +28,12 @@ namespace cad {
 		void clear() {
 			mQueue.clear();
 			mChunkCounter = 0;
+		}
+		template<typename Filter>
+		void cleanup(Filter&& f) {
+			auto it = std::remove_if(mQueue.begin(), mQueue.end(), f);
+			mChunkCounter += std::size_t(mQueue.end() - it);
+			mQueue.erase(it, mQueue.end());
 		}
 		bool empty() const {
 			return mQueue.empty();
