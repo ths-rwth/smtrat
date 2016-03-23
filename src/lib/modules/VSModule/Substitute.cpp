@@ -1074,13 +1074,13 @@ namespace vs
             }
         }
         // Check all cases according to the substitution rules.
-        unsigned varDegree = _cons.maxDegree( _subs.variable() );
+        carl::uint varDegree = _cons.maxDegree( _subs.variable() );
         assert( varDegree > 0 );
-        for( unsigned i = varDegree + 1; i > 0; --i )
+        for( carl::uint i = varDegree + 1; i > 0; --i )
         {
             // Add conjunction (a_n=0 and ... and a_i~0) to the substitution result.
             _result.emplace_back();
-            for( unsigned j = varDegree; j > i - 1; --j )
+            for( carl::uint j = varDegree; j > i - 1; --j )
                 _result.back().push_back( smtrat::ConstraintT( _cons.coefficient( _subs.variable(), j ), Relation::EQ ) );
             if( i > 1 )
             {
@@ -1097,18 +1097,18 @@ namespace vs
     void substituteTrivialCase( const smtrat::ConstraintT& _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result )
     {
         assert( _cons.relation() == Relation::EQ || _cons.relation() == Relation::LEQ || _cons.relation() == Relation::GEQ );
-        unsigned varDegree = _cons.maxDegree( _subs.variable() );
+        carl::uint varDegree = _cons.maxDegree( _subs.variable() );
         // Check the cases (a_0=0 and ... and a_n=0)
         _result.emplace_back();
-        for( unsigned i = 0; i <= varDegree; ++i )
+        for( carl::uint i = 0; i <= varDegree; ++i )
             _result.back().push_back( smtrat::ConstraintT( _cons.coefficient( _subs.variable(), i ), Relation::EQ ) );
     }
 
     void substituteNotTrivialCase( const smtrat::ConstraintT& _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result )
     {
         assert( _cons.relation() == Relation::NEQ );
-        unsigned varDegree = _cons.maxDegree( _subs.variable() );
-        for( unsigned i = 0; i <= varDegree; ++i )
+        carl::uint varDegree = _cons.maxDegree( _subs.variable() );
+        for( carl::uint i = 0; i <= varDegree; ++i )
         {
             // Add conjunction (a_i!=0) to the substitution result.
             _result.emplace_back();

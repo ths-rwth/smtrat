@@ -35,7 +35,7 @@ namespace smtrat {
 		template<> inline CONSTEXPR std::size_t count_leading_zeros<unsigned long>(unsigned long number) { return static_cast<std::size_t>(__builtin_clzl(number)); }
 		template<> inline CONSTEXPR std::size_t count_leading_zeros<unsigned long long>(unsigned long long number) { return static_cast<std::size_t>(__builtin_clzll(number)); }
 		*/
-		template<typename T> static CONSTEXPR inline std::size_t roundup_log2(T number) {
+		template<typename T> static CONSTEXPR inline std::size_t roundup_log2(T /*number*/) {
 			return (sizeof(T)*8 /*- count_leading_zeros(number)*/);
 		}
 	}
