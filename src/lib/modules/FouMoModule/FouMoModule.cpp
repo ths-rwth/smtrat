@@ -889,7 +889,7 @@ namespace smtrat
         // Store which variables occur at least one time non-linear
         std::set< carl::Variable > forbidden_fruits;
         // Store which variables only occur as x^i for some fixed positive integer i
-        std::map< carl::Variable, unsigned > suitable_monomials;
+        std::map< carl::Variable, carl::uint > suitable_monomials;
         while( iter_constr != curr_constraints.end() )
         {
             typename Poly::PolyType lhsExpanded = (typename Poly::PolyType)iter_constr->first.constraint().lhs();
