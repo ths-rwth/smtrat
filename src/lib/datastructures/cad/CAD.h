@@ -111,10 +111,10 @@ namespace cad {
 					break;
 				}
 				auto it = mLifting.getNextSample();
-				assert(0 <= it.depth() && it.depth() < dim());
 				Sample& s = *it;
 				SMTRAT_LOG_DEBUG("smtrat.cad", "Sample " << s << " at depth " << it.depth());
 				SMTRAT_LOG_DEBUG("smtrat.cad", "Current sample: " << mLifting.printSample(it));
+				assert(0 <= it.depth() && it.depth() < dim());
 				auto polyID = mProjection.getPolyForLifting(idLP(it.depth() + 1), s.liftedWith());
 				if (polyID) {
 					const auto& poly = mProjection.getPolynomialById(idLP(it.depth() + 1), *polyID);
