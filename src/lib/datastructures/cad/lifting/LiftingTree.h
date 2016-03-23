@@ -29,11 +29,20 @@ namespace cad {
 		}
 		
 		void addToQueue(Iterator it) {
+			assert(mTree.is_valid(it));
 			if (it.depth() < dim()) {
 				mLiftingQueue.addNewSample(it);
 			} else {
 				mCheckingQueue.addNewSample(it);
 			}
+		}
+		
+		void cleanQueuesFromExpired() {
+			auto removeIf = [&](const auto& it){ return !mTree.is_valid(it); };
+			mLiftingQueue.cleanup(removeIf);
+			mCheckingQueue.cleanup(removeIf);
+			auto it = std::remove_if(mRemovedFromLiftingQueue.begin(), mRemovedFromLiftingQueue.end(), removeIf);
+			mRemovedFromLiftingQueue.erase(it, mRemovedFromLiftingQueue.end());
 		}
 		
 		bool insertRootSamples(Iterator parent, std::vector<Sample>& samples) {
@@ -106,6 +115,7 @@ namespace cad {
 	public:
 		LiftingTree() {
 			auto it = mTree.setRoot(Sample(RAN(0), false));
+			assert(mTree.is_valid(it));
 			mLiftingQueue.addNewSample(it);
 		}
 		auto getTree() const {
@@ -135,6 +145,7 @@ namespace cad {
 		}
 		Iterator getNextSample() {
 			mLiftingQueue.restoreOrder();
+			assert(mTree.is_valid(mLiftingQueue.getNextSample()));
 			return mLiftingQueue.getNextSample();
 		}
 		void removeNextSample() {
@@ -192,6 +203,7 @@ namespace cad {
 				SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Purging " << printSample(it));
 				mTree.erase(it);
 			}
+			cleanQueuesFromExpired();
 		}
 		
 		std::string printSample(Iterator sample) const {
