@@ -88,7 +88,8 @@ public:
 	void consume(const Node& n, const std::string& message, std::size_t num) {
 		if (hasResult()) return;
 		while (jobs.size() >= std::thread::hardware_concurrency()) {
-			while (!jobs.empty() && jobs.front().valid()) jobs.pop();
+			// Todo: valid() does something different.
+			while (!jobs.empty() && jobs.front().wait_for(std::chrono::seconds(0)) == std::future_status::ready) jobs.pop();
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 		}
 		if (hasResult()) return;
