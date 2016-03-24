@@ -47,7 +47,7 @@ protected:
 	virtual void execute(const Tool* tool, const fs::path& file) {
 		// Make sure enough jobs are active.
 		while (scheduler->runningJobs() > scheduler->workerCount() * 2) {
-			if (jobs.front().wait_for(std::chrono::milliseconds(5)) == std::future_status::ready) {
+			if (jobs.front().wait_for(std::chrono::milliseconds(1)) == std::future_status::ready) {
 				waitAndPop();
 			}
 		}
