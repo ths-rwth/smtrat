@@ -93,16 +93,18 @@ namespace cad {
 		
 		/// Get a polynomial from this level suited for lifting.
 		OptionalID getPolyForLifting(std::size_t level, SampleLiftedWith& slw) {
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Getting poly for lifting from level " << level);
 			for (const auto& pid: mLiftingQueues[level]) {
-				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking " << getPolynomialById(level,pid));
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Checking " << getPolynomialById(level,pid));
 				if (!slw.test(pid)) {
-					SMTRAT_LOG_DEBUG("smtrat.cad.projection", getPolynomialById(level,pid) << " can be used.");
+					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> " << getPolynomialById(level,pid) << " can be used.");
 					slw.set(pid);
 					return OptionalID(pid);
 				} else {
-					SMTRAT_LOG_DEBUG("smtrat.cad.projection", getPolynomialById(level,pid) << " was already used.");
+					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> " << getPolynomialById(level,pid) << " was already used.");
 				}
 			}
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> None.");
 			return OptionalID();
 		}
 		

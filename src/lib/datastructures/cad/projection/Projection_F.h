@@ -17,14 +17,16 @@ namespace cad {
 		using QueueEntry = std::pair<std::size_t,std::size_t>;
 		struct ProjectionCandidateComparator {
 		public:
-			using PolyGetter = std::function<const UPoly&(std::size_t)>;
+			using PolyGetter = std::function<UPoly(std::size_t)>;
 			ProjectionCandidateComparator(const PolyGetter& pg): mPG(pg) {}
+			ProjectionCandidateComparator() = delete;
+			ProjectionCandidateComparator(const ProjectionCandidateComparator& pcc): mPG(pcc.mPG) {}
 			bool operator()(const QueueEntry& lhs, const QueueEntry& rhs) const {
 				assert(mPG);
-				const UPoly& lp = mPG(lhs.first);
-				const UPoly& lq = mPG(lhs.second);
-				const UPoly& rp = mPG(rhs.first);
-				const UPoly& rq = mPG(rhs.second);
+				UPoly lp = mPG(lhs.first);
+				UPoly lq = mPG(lhs.second);
+				UPoly rp = mPG(rhs.first);
+				UPoly rq = mPG(rhs.second);
 				return rp < lp;
 			}
 		private:
@@ -41,106 +43,140 @@ namespace cad {
 		std::vector<PriorityQueue<QueueEntry,ProjectionCandidateComparator>> mProjectionQueues;
 		
 		
-		const UPoly& getOriginalPolynomialById(std::size_t id) const {
+		UPoly getOriginalPolynomialById(std::size_t id) const {
 			assert(id < mOriginalPolynomials.size());
 			assert(mOriginalPolynomials[id]);
-			return *mOriginalPolynomials[id];
+			return *(mOriginalPolynomials[id]);
 		}
 		
 		void insertIntoProjectionQueue(std::size_t level, std::size_t id) {
-			if (level >= dim()) return;
-			mProjectionQueues[level].emplace(id, id);
-			for (const auto& it: mPolynomialIDs[level]) {
+			assert(level < dim());
+			assert(level > 0);
+			for (const auto& it: mPolynomialIDs[level-1]) {
 				mProjectionQueues[level].emplace(it.second, id);
 			}
 		}
 		void purgeFromProjectionQueue(std::size_t level, std::size_t id) {
-			if (level >= dim()) return;
-			mProjectionQueues[level].removeIf([&](const QueueEntry& qe){ return qe.first == id || qe.second == id; });
+			assert(level < dim());
+			mProjectionQueues[level].removeIf([id](const QueueEntry& qe){ return qe.first == id || qe.second == id; });
 		}
 		/// Inserts a polynomial with the given origin into the given level.
-		void insertPolynomialTo(std::size_t level, const UPoly& p, const Origin::BaseType& origin) {
+		bool insertPolynomialTo(std::size_t level, const UPoly& p, const Origin::BaseType& origin) {
+			if (canBePurged(p)) return false;
+			if ((level > 0) && (level < dim() - 1) && canBeForwarded(level, p)) {
+				return insertPolynomialTo(level+1, p.switchVariable(var(level+1)), origin);
+			}
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Inserting " << p << " into level " << level);
+			assert(level < dim());
 			auto it = mPolynomialIDs[level].find(p);
 			if (it != mPolynomialIDs[level].end()) {
 				assert(mPolynomials[level][it->second]);
 				mPolynomials[level][it->second]->second += origin;
-				return;
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Polynomial was already present, merged origins");
+				return false;
 			}
 			std::size_t id = getID(level);
-			insertIntoProjectionQueue(level + 1, id);
-			if (id >= mPolynomials.size()) mPolynomials[level].resize(id+1);
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Got new id " << id);
+			if (id >= mPolynomials[level].size()) mPolynomials[level].resize(id+1);
 			assert(!mPolynomials[level][id]);
 			mPolynomials[level][id] = std::make_pair(p, Origin(origin));
 			mLiftingQueues[level].insert(id);
 			mPolynomialIDs[level].emplace(p, id);
+			if (level < dim()-1) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Inserting into queue.");
+				insertIntoProjectionQueue(level + 1, id);
+			}
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Done.");
+			return true;
 		}
 		/// Removed the polynomial given by the iterator from all datastructures.
 		template<typename Iterator>
 		Iterator removePolynomialByIT(std::size_t level, Iterator it) {
 			assert(it != mPolynomialIDs[level].end());
 			std::size_t id = it->second;
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << id << " on " << level);
 			assert(mPolynomials[level][id]);
-			purgeFromProjectionQueue(level + 1, id);
-			mPolynomials[level][id] = boost::none;
+			if (level < dim() - 1) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purging from queue on level " << (level+1));
+				purgeFromProjectionQueue(level + 1, id);
+			}
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Removing polynomial");
 			mLiftingQueues[level].erase(id);
+			mPolynomials[level][id] = boost::none;
 			freeID(level, id);
 			return mPolynomialIDs[level].erase(it);
 		}
 		
 		bool projectIntoBase(const ConstraintSelection& cs) {
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Projecting into level 0");
 			auto& queue = mProjectionQueues[0];
-			if (queue.empty()) return false;
+			if (queue.empty()) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Nothing to project");
+				return false;
+			}
 			auto qe = queue.top();
 			queue.pop();
 			assert(qe.first == qe.second && mOriginalPolynomials[qe.first]);
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> About to project " << qe.first);
 			insertPolynomialTo(0, *mOriginalPolynomials[qe.first], Origin::BaseType(qe.first));
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Projected " << *mOriginalPolynomials[qe.first]);
 			return true;
 		}
 		bool projectInto(std::size_t level, const ConstraintSelection& cs) {
 			if (level == 0) return projectIntoBase(cs);
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Projecting into level " << level);
 			std::size_t oldSize = size(level);
 			auto& queue = mProjectionQueues[level];
 			while (true) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Current state at level " << level << ":" << std::endl << *this);
 				while (!queue.empty()) {
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Using next projection candidate " << queue.top() << " from " << queue);
-					projectCandidate(level, queue.top());
+					bool worked = projectCandidateInto(level, queue.top());
 					queue.pop();
-					if (size(level) > oldSize) return true;
+					if (worked) return true;
 				}
-				if (!projectInto(level-1, cs)) return false;
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Calling projection into above level " << (level-1));
+				if (!projectInto(level-1, cs)) {
+					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> got nothing");
+					// May have new polynomials anyway due to optimization in insertPolynomialTo()
+					return size(level) > oldSize;
+				}
 			}
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> We should not get here");
 			return false;
 		}
-		void projectCandidate(std::size_t level, const QueueEntry& qe) {
+		bool projectCandidateInto(std::size_t level, const QueueEntry& qe) {
+			bool worked = false;
 			if (qe.first == qe.second) {
+				assert(qe.first < mPolynomials[level-1].size());
 				assert(mPolynomials[level-1][qe.first]);
 				const auto& p = *mPolynomials[level-1][qe.first];
 				mOperator(Settings::projectionOperator, p.first, var(level), 
-					[&](const UPoly& np){ insertPolynomialTo(level, np, Origin::BaseType(qe.first)); }
+					[&](const UPoly& np){ worked = worked || insertPolynomialTo(level, np, Origin::BaseType(qe.first)); }
 				);
 			} else {
 				assert(mPolynomials[level-1][qe.first] && mPolynomials[level-1][qe.second]);
 				const auto& p = *mPolynomials[level-1][qe.first];
 				const auto& q = *mPolynomials[level-1][qe.second];
 				mOperator(Settings::projectionOperator, p.first, q.first, var(level), 
-					[&](const UPoly& np){ insertPolynomialTo(level, np, Origin::BaseType(qe.first,qe.second)); }
+					[&](const UPoly& np){ worked = worked || insertPolynomialTo(level, np, Origin::BaseType(qe.first,qe.second)); }
 				);
 			}
+			return worked;
 		}
 		
 	public:
 		void reset(const std::vector<carl::Variable>& vars) {
 			BaseProjection::reset(vars);
 			mOriginalPolynomials.clear();
-			mOriginalPolynomials.resize(dim());
 			mPolynomialIDs.clear();
 			mPolynomialIDs.resize(dim());
 			mPolynomials.clear();
 			mPolynomials.resize(dim());
 			mProjectionQueues.clear();
 			mProjectionQueues.emplace_back(ProjectionCandidateComparator([&](std::size_t id){ return getOriginalPolynomialById(id); }));
-			for (std::size_t level = 1; level < dim(); level++) {
-				mProjectionQueues.emplace_back(ProjectionCandidateComparator([&](std::size_t id){ return getPolynomialById(level-1,id); }));
+			for (std::size_t level = 0; level < dim() - 1; level++) {
+				mProjectionQueues.emplace_back(ProjectionCandidateComparator([level,this](std::size_t id){ return getPolynomialById(level,id); }));
 			}
 		}
 		void addPolynomial(const UPoly& p, std::size_t cid) {
@@ -154,15 +190,16 @@ namespace cad {
 		}
 		void removePolynomial(const UPoly& p, std::size_t cid) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << cid);
-			mOriginalPolynomials[cid] = boost::none;
 			Bitset filter = Bitset().set(cid);
 			for (std::size_t level = 0; level < dim(); level++) {
 				Bitset removed;
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purging from level " << level);
 				for (auto it = mPolynomialIDs[level].begin(); it != mPolynomialIDs[level].end();) {
 					std::size_t id = it->second;
 					assert(mPolynomials[level][id]);
 					mPolynomials[level][id]->second -= filter;
 					if (mPolynomials[level][id]->second.empty()) {
+						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purging " << id << " from level " << level);
 						removed.set(id);
 						it = removePolynomialByIT(level, it);
 					} else {
@@ -173,6 +210,7 @@ namespace cad {
 				callRemoveCallback(level, removed);
 				filter = removed;
 			}
+			mOriginalPolynomials[cid] = boost::none;
 		}
 		
 		std::size_t size(std::size_t level) const {
@@ -186,22 +224,23 @@ namespace cad {
 			return projectInto(level, cs);
 		}
 		
-		OptionalID getPolyForLifting(std::size_t level, SampleLiftedWith& slw) {
-			return OptionalID();
-		}
-		OptionalID getPolyForLifting(std::size_t level, SampleLiftedWith& slw, const ConstraintSelection& cs) {
-			return OptionalID();
-		}
-		
 		const UPoly& getPolynomialById(std::size_t level, std::size_t id) const {
 			assert(level < mPolynomials.size());
+			if (id >= mPolynomials[level].size()) std::exit(37);
 			assert(id < mPolynomials[level].size());
+			if (!mPolynomials[level][id]) std::exit(38);
 			assert(mPolynomials[level][id]);
 			return mPolynomials[level][id]->first;
 		}
 		
 		template<typename S, Backtracking B>
 		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::FULL, B, S>& p) {
+			os << "-1:\tP: " << p.mOriginalPolynomials << std::endl;
+			for (std::size_t level = 0; level < p.dim(); level++) {
+				os << level << ":\tP: " << p.mPolynomials[level] << std::endl;
+				os << "\tQ: " << p.mProjectionQueues[level] << std::endl;
+				os << "\tL: " << p.mLiftingQueues[level] << std::endl;
+			}
 			return os;
 		}
 	};

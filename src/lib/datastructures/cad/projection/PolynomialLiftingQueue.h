@@ -1,8 +1,9 @@
 #pragma once
 
-#include <set>
-
 #include "../Common.h"
+
+#include <iostream>
+#include <set>
 
 namespace smtrat {
 namespace cad {
@@ -47,6 +48,11 @@ namespace cad {
 		}
 		auto size() const -> decltype(mQueue.size()) {
 			return mQueue.size();
+		}
+		
+		template<typename PG>
+		friend std::ostream& operator<<(std::ostream& os, const PolynomialLiftingQueue<PG>& plq) {
+			return os << plq.mQueue;
 		}
 	};
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/optional.hpp>
+#include <boost/optional/optional_io.hpp>
 
 #include <carl/core/RealAlgebraicNumber.h>
 #include <carl/core/RealAlgebraicNumberEvaluation.h>

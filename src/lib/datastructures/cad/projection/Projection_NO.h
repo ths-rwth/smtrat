@@ -117,9 +117,9 @@ namespace cad {
 				Bitset removed;
 				if (mPolynomials[level].empty()) continue;
 				while (mPolynomials[level].back().second == origin) {
-					removePolynomial(level);
-					std::size_t id = mPolynomials[level].size();
+					std::size_t id = mPolynomials[level].size() - 1;
 					mLiftingQueues[level].erase(id);
+					removePolynomial(level);
 					removed.set(id);
 				}
 				assert(mPolynomials[level].back().second < origin);
