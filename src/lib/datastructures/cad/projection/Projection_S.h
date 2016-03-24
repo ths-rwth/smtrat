@@ -47,7 +47,7 @@ namespace cad {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Using next polynomial " << mQueue.top() << " from " << mQueue);
 				Super::addPolynomial(mQueue.top().first, mQueue.top().second);
 				mQueue.pop();
-				if (Super::size(level) != oldSize) return true;
+				if (Super::size(level) > oldSize) return true;
 			}
 			return false;
 		}

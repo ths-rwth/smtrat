@@ -77,10 +77,10 @@ namespace cad {
 					mPolynomials[level][id]->second -= filter;
 					if (mPolynomials[level][id]->second.empty()) {
 						mIDPools[level].free(id);
-						removed.set(id);
 						mLiftingQueues[level].erase(id);
-						it = mPolynomialIDs[level].erase(it);
+						removed.set(id);
 						mPolynomials[level][id] = boost::none;
+						it = mPolynomialIDs[level].erase(it);
 					} else {
 						it++;
 					}
@@ -100,32 +100,6 @@ namespace cad {
 		
 		bool projectNewPolynomial(std::size_t level, const ConstraintSelection& ps = Bitset(true)) {
 			return false;
-		}
-		
-		OptionalID getPolyForLifting(std::size_t level, SampleLiftedWith& slw) {
-			for (const auto& pid: mLiftingQueues[level]) {
-				assert(mPolynomials[level][pid]);
-				SMTRAT_LOG_TRACE("smtrat.cad.projection", "Checking " << mPolynomials[level][pid]->first);
-				if (!slw.test(pid)) {
-					SMTRAT_LOG_DEBUG("smtrat.cad.projection", mPolynomials[level][pid]->first << " can be used.");
-					slw.set(pid);
-					return OptionalID(pid);
-				} else {
-					SMTRAT_LOG_TRACE("smtrat.cad.projection", mPolynomials[level][pid]->first << " was already used.");
-				}
-			}
-			return OptionalID();
-		}
-		OptionalID getPolyForLifting(std::size_t level, SampleLiftedWith& slw, const ConstraintSelection& cs) {
-			for (const auto& pid: mLiftingQueues[level]) {
-				if (!slw.test(pid)) {
-					if ((mPolynomials[level][pid].second & cs).any()) {
-						slw.set(pid);
-						return OptionalID(pid);
-					}
-				}
-			}
-			return OptionalID();
 		}
 		
 		const UPoly& getPolynomialById(std::size_t level, std::size_t id) const {
