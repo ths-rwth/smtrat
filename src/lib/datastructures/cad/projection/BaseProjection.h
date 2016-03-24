@@ -91,9 +91,19 @@ namespace cad {
 		/// Removes the given polynomial from the projection.
 		virtual void removePolynomial(const UPoly& p, std::size_t cid) = 0;
 		
-		/// Cleans up the given list of polynomial ids a sample was lifted with from polynomials that got removed in the meantime.
-		void cleanLiftedWith(std::size_t level, SampleLiftedWith& slw) const {
-			mIDPools[level].purgeUnusedIDs(slw);
+		/// Get a polynomial from this level suited for lifting.
+		OptionalID getPolyForLifting(std::size_t level, SampleLiftedWith& slw) {
+			for (const auto& pid: mLiftingQueues[level]) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking " << getPolynomialById(level,pid));
+				if (!slw.test(pid)) {
+					SMTRAT_LOG_DEBUG("smtrat.cad.projection", getPolynomialById(level,pid) << " can be used.");
+					slw.set(pid);
+					return OptionalID(pid);
+				} else {
+					SMTRAT_LOG_DEBUG("smtrat.cad.projection", getPolynomialById(level,pid) << " was already used.");
+				}
+			}
+			return OptionalID();
 		}
 		
 		/// Retrieves a polynomial from its id.
