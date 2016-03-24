@@ -19,22 +19,16 @@ BOOST_AUTO_TEST_CASE(Test_Projection_NO)
 	Poly p = Poly(x*y)+Poly(y)+Rational(1);
 	Poly q = Poly(y*y*y)+Poly(x*x*y)+Rational(2);
 	
-	ProjectionT<NewCADSettings1> projection;
+	ProjectionT<NewCADSettingsSO> projection;
 	projection.reset({x,y});
-	projection.addPolynomial(p.toUnivariatePolynomial(x));
-	projection.addPolynomial(q.toUnivariatePolynomial(x));
+	projection.addPolynomial(p.toUnivariatePolynomial(x), 0);
+	projection.addPolynomial(q.toUnivariatePolynomial(x), 1);
 	std::cout << projection << std::endl;
 	
 	Sample s(RAN(1));
-	while (OptionalPoly op = projection.getPolyForLifting(1, s.liftedWith())) {
-		std::cout << *op << std::endl;
+	while (auto pid = projection.getPolyForLifting(1, s.liftedWith())) {
+		std::cout << projection.getPolynomialById(1, *pid) << std::endl;
 	}
-
-	CAD<NewCADSettings1> cad;
-	cad.reset({x,y});
-	cad.addConstraint(ConstraintT(p, carl::Relation::GEQ));
-	cad.addConstraint(ConstraintT(q, carl::Relation::LEQ));
-	cad.check();
 }
 
 BOOST_AUTO_TEST_CASE(Test_CAD)
@@ -44,11 +38,13 @@ BOOST_AUTO_TEST_CASE(Test_CAD)
 	Poly p = Poly(x*y)+Poly(y)+Rational(1);
 	Poly q = Poly(y*y*y)+Poly(x*x*y)+Rational(2);
 	
-	CAD<NewCADSettings1> cad;
+	CAD<NewCADSettingsSO> cad;
 	cad.reset({x,y});
 	cad.addConstraint(ConstraintT(p, carl::Relation::GEQ));
 	cad.addConstraint(ConstraintT(q, carl::Relation::LEQ));
-	cad.check();
+	
+	Assignment a;
+	cad.check(a);
 }
 
 BOOST_AUTO_TEST_SUITE_END();
