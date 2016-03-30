@@ -1,6 +1,5 @@
 #pragma once
 
-#define CMakeStrategySolver smtrat::@SMTRAT_Strategy@
 #define LICENSE_CONTENT R"licenseString(@LICENSE_CONTENT_IN@)licenseString"
 
 #cmakedefine LOGGING
