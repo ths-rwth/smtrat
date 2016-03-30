@@ -141,7 +141,7 @@ namespace smtrat {
 		
 		template<typename Module>
 		BackendLink addBackend(const std::initializer_list<BackendLink>& backends) {
-			std::size_t id = newVertex(std::make_unique<ModuleFactory<Module>>(), backends);
+			std::size_t id = newVertex(std::unique_ptr<ModuleFactory<Module>>(new ModuleFactory<Module>()), backends);
 			for (auto& backend: mEdges[id]) {
 				backend.priority(getPriority(backend.getPriority()));
 			}
