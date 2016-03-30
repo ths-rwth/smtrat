@@ -15,11 +15,13 @@ namespace cad {
 	class LiftingTree {
 		using Tree = carl::tree<Sample>;
 		using Iterator = Tree::iterator;
+		using FSC = FullSampleComparator<Iterator,Settings::fullSampleComparator>;
+		using SC = SampleComparator<Iterator,Settings::sampleComparator>;
 	private:
 		Variables mVariables;
 		Tree mTree;
-		SampleIteratorQueue<Iterator, FullSampleComparator> mCheckingQueue;
-		SampleIteratorQueue<Iterator, SampleComparator> mLiftingQueue;
+		SampleIteratorQueue<Iterator, FSC> mCheckingQueue;
+		SampleIteratorQueue<Iterator, SC> mLiftingQueue;
 		std::vector<Iterator> mRemovedFromLiftingQueue;
 		LiftingOperator<Iterator, Settings> mLifting;
 		SampleSelector<Settings> mSelector;

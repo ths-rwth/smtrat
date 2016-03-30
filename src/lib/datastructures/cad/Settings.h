@@ -4,9 +4,11 @@
 
 namespace smtrat {
 namespace cad {
-	enum class Incrementality: unsigned { NONE, SIMPLE, FULL };
-	enum class Backtracking: unsigned { ORDERED, UNORDERED, HIDE };
-	enum class ProjectionType: unsigned { Brown, McCallum, Hong };
+	enum class Incrementality { NONE, SIMPLE, FULL };
+	enum class Backtracking { ORDERED, UNORDERED, HIDE };
+	enum class ProjectionType { Brown, McCallum, Hong };
+	enum class SampleCompareStrategy { Value, Integer };
+	enum class FullSampleCompareStrategy { RootIntValue };
 	using RootSplittingStrategy = carl::rootfinder::SplittingStrategy;
 }
 }

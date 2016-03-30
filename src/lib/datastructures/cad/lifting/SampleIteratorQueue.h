@@ -6,13 +6,13 @@
 
 namespace smtrat {
 namespace cad {
-	template<typename Iterator, template<typename> class Comparator>
+	template<typename Iterator, typename Comparator>
 	class SampleIteratorQueue {
 	private:
 		static constexpr std::size_t mChunkSize = 1024;
 		std::vector<Iterator> mQueue;
 		std::size_t mChunkCounter = 0;
-		Comparator<Iterator> mComparator;
+		Comparator mComparator;
 	public:
 		auto begin() const -> decltype(mQueue.begin()) {
 			return mQueue.begin();
