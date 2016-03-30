@@ -158,29 +158,6 @@ namespace smtrat
             }
             else
             {
-                const Model& curModel = model();
-                auto objectivesIter = mObjectives.begin();
-                for( auto ass = curModel.begin(); ass != curModel.end(); ++ass )
-                {
-                    if( ass->first.isVariable() )
-                    {
-                        if( objectivesIter != mObjectives.end() && ass->first.asVariable() == objectivesIter->second.first )
-                        {
-                            if( ass->second.isMinusInfinity() )
-                            {
-                                string opt = objectivesIter->second.second ? toString( ass->second.asInfinity(), false ) : toString( InfinityValue(true), false );
-                                cout << objectivesIter->first.toString( false, true ) << " |-> " << opt << endl;
-                            }
-                            else
-                            {
-                                assert( ass->second.isRational() );
-                                Rational opt = (objectivesIter->second.second ? ass->second.asRational() : Rational(-(ass->second.asRational())));
-                                cout << objectivesIter->first.toString( false, true ) << " |-> " << carl::toString( opt, false ) << endl;
-                            }
-                            ++objectivesIter;
-                        }
-                    }
-                }
                 pop( 2 );
                 return result;
             }
