@@ -416,7 +416,7 @@ namespace smtrat
         std::vector<Module*>& allBackends = mBackendsOfModules[_requiredBy];
         _requiredBy->mpPassedFormula->updateProperties();
         // Obtain list of backends in the strategy
-        std::set<std::pair<thread_priority,AbstractModuleFactory*>> factories = mStrategyGraph.getBackends(_requiredBy->threadPriority().second, _requiredBy->pPassedFormula()->properties());
+        auto factories = mStrategyGraph.getBackends(_requiredBy->threadPriority().second, _requiredBy->pPassedFormula()->properties());
         for (const auto& iter: factories) {
             // Check if the respective module has already been created
             bool moduleExists = false;

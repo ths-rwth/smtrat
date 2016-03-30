@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <set>
 #include <tuple>
 #include <vector>
@@ -94,18 +95,18 @@ namespace smtrat {
 		}
 	private:
 
-		std::vector<AbstractModuleFactory*> mVertices;
+		std::vector<std::unique_ptr<AbstractModuleFactory>> mVertices;
 		std::vector<std::vector<BackendLink>> mEdges;
 		bool mHasBranches = false;
 		std::size_t mNumberOfBranches = 1;
 		std::size_t nextPriority = 1;
 		std::size_t mRoot = 0;
 		
-		std::size_t newVertex(AbstractModuleFactory* factory, const std::initializer_list<BackendLink>& backends) {
+		std::size_t newVertex(std::unique_ptr<AbstractModuleFactory> factory, const std::initializer_list<BackendLink>& backends) {
 			//SMTRAT_LOG_DEBUG("smtrat.strategygraph", "Creating vertex with " << backends.size() << " backends");
 			//SMTRAT_LOG_DEBUG("smtrat.strategygraph", "Current vertices: " << mVertices.size() << " vs " << mEdges.size());
 			assert(mVertices.size() == mEdges.size());
-			mVertices.push_back(factory);
+			mVertices.push_back(std::move(factory));
 			mEdges.emplace_back(backends);
 			if (backends.size() > 1) {
 				mHasBranches = true;
@@ -140,7 +141,7 @@ namespace smtrat {
 		
 		template<typename Module>
 		BackendLink addBackend(const std::initializer_list<BackendLink>& backends) {
-			std::size_t id = newVertex(new ModuleFactory<Module>(), backends);
+			std::size_t id = newVertex(std::unique_ptr<ModuleFactory<Module>>(new ModuleFactory<Module>()), backends);
 			for (auto& backend: mEdges[id]) {
 				backend.priority(getPriority(backend.getPriority()));
 			}
@@ -179,7 +180,7 @@ namespace smtrat {
 				if (it.checkCondition(condition)) {
 					SMTRAT_LOG_DEBUG("smtrat.strategygraph", "\tfound " << it.getTarget());
 					assert(mVertices[it.getTarget()] != nullptr);
-					res.emplace(thread_priority(it.getPriority(), it.getTarget()), mVertices[it.getTarget()]);
+					res.emplace(thread_priority(it.getPriority(), it.getTarget()), mVertices[it.getTarget()].get());
 				}
 			}
 			return res;
