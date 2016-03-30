@@ -179,13 +179,13 @@ public:
 		}
 		else if (key == "timeout") {
 			this->options.assertType<Rational>("timeout", std::bind(&InstructionHandler::error, this));
-			std::size_t timeout = carl::toInt<std::size_t>(options.get<Rational>("timeout"));
+			carl::uint timeout = carl::toInt<carl::uint>(options.get<Rational>("timeout"));
 			this->info() << "Setting timeout to " << timeout << " seconds";
 			smtrat::resource::Limiter::getInstance().setTimeout(timeout);
 		}
 		else if (key == "memout") {
 			this->options.assertType<Rational>("memout", std::bind(&InstructionHandler::error, this));
-			smtrat::resource::Limiter::getInstance().setMemout(carl::toInt<std::size_t>(options.get<Rational>("memout")));
+			smtrat::resource::Limiter::getInstance().setMemout(carl::toInt<carl::uint>(options.get<Rational>("memout")));
 		}
 	}
 };
