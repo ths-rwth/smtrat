@@ -18,6 +18,8 @@ namespace cad {
 	template<typename Settings>
 	class Projection<Incrementality::NONE, Backtracking::UNORDERED, Settings>: public BaseProjection {
 	private:
+		template<typename S>
+		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::NONE, Backtracking::UNORDERED, S>& p);
 		// Maps polynomials to a (per level) unique ID.
 		std::vector<std::map<UPoly,std::size_t>> mPolynomialIDs;
 		// Stores polynomials with their origins, being pairs of polynomials from the level above.
@@ -107,19 +109,19 @@ namespace cad {
 			assert(id < mPolynomials[level].size());
 			assert(mPolynomials[level][id]);
 			return mPolynomials[level][id]->first;
-		}
-		
-		template<typename S>
-		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::NONE, Backtracking::UNORDERED, S>& p) {
-			for (std::size_t level = 0; level < p.dim(); level++) {
-				os << level << " " << p.var(level) << ":" << std::endl;
-				for (const auto& it: p.mPolynomialIDs[level]) {
-					assert(p.mPolynomials[level][it.second]);
-					os << "\t" << it.second << ": " << p.mPolynomials[level][it.second]->first << " " << p.mPolynomials[level][it.second]->second << std::endl;
-				}
-			}
-			return os;
-		}
+		}	
 	};
+	
+	template<typename S>
+	std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::NONE, Backtracking::UNORDERED, S>& p) {
+		for (std::size_t level = 0; level < p.dim(); level++) {
+			os << level << " " << p.var(level) << ":" << std::endl;
+			for (const auto& it: p.mPolynomialIDs[level]) {
+				assert(p.mPolynomials[level][it.second]);
+				os << "\t" << it.second << ": " << p.mPolynomials[level][it.second]->first << " " << p.mPolynomials[level][it.second]->second << std::endl;
+			}
+		}
+		return os;
+	}
 }
 }

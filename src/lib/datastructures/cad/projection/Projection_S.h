@@ -14,6 +14,8 @@ namespace cad {
 	template<typename Settings, Backtracking BT>
 	class Projection<Incrementality::SIMPLE, BT, Settings>: public Projection<Incrementality::NONE, Backtracking::UNORDERED, Settings> {
 	private:
+		template<typename S, Backtracking B>
+		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::SIMPLE, B, S>& p);
 		using Super = Projection<Incrementality::NONE, Backtracking::UNORDERED, Settings>;
 		using QueueEntry = std::pair<UPoly,std::size_t>;
 		
@@ -50,13 +52,13 @@ namespace cad {
 				if (Super::size(level) > oldSize) return true;
 			}
 			return false;
-		}
-		
-		template<typename S, Backtracking B>
-		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::SIMPLE, B, S>& p) {
-			os << "Queue: " << p.mQueue << std::endl;
-			return os << Projection<Incrementality::NONE, Backtracking::UNORDERED, S>(p);
-		}
+		}	
 	};
+	
+	template<typename S, Backtracking B>
+	std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::SIMPLE, B, S>& p) {
+		os << "Queue: " << p.mQueue << std::endl;
+		return os << Projection<Incrementality::NONE, Backtracking::UNORDERED, S>(p);
+	}
 }
 }

@@ -25,6 +25,8 @@ namespace cad {
 	template<typename Settings>
 	class Projection<Incrementality::NONE, Backtracking::ORDERED, Settings>: public BaseProjection {
 	private:
+		template<typename S>
+		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::NONE, Backtracking::ORDERED, S>& p);
 		/// Maps polynomials to a (per level) unique ID.
 		std::vector<std::map<UPoly,std::size_t>> mPolynomialIDs;
 		/// Stores polynomials with their origin constraint ids.
@@ -146,17 +148,17 @@ namespace cad {
 			assert(id < mPolynomials[level].size());
 			return mPolynomials[level][id].first;
 		}
-		
-		template<typename S>
-		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::NONE, Backtracking::ORDERED, S>& p) {
-			for (std::size_t level = 0; level < p.dim(); level++) {
-				os << level << " " << p.var(level) << ":" << std::endl;
-				for (const auto& it: p.mPolynomials[level]) {
-					os << "\t" << it.first << " [" << it.second << "]" << std::endl;
-				}
-			}
-			return os;
-		}
 	};
+	
+	template<typename S>
+	std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::NONE, Backtracking::ORDERED, S>& p) {
+		for (std::size_t level = 0; level < p.dim(); level++) {
+			os << level << " " << p.var(level) << ":" << std::endl;
+			for (const auto& it: p.mPolynomials[level]) {
+				os << "\t" << it.first << " [" << it.second << "]" << std::endl;
+			}
+		}
+		return os;
+	}
 }
 }

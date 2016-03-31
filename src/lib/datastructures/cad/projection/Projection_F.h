@@ -13,6 +13,8 @@ namespace cad {
 	template<typename Settings, Backtracking BT>
 	class Projection<Incrementality::FULL, BT, Settings>: public BaseProjection {
 	private:
+		template<typename S, Backtracking B>
+		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::FULL, B, S>& p);
 		// A projection candidate of ids that refer to the parent level.
 		using QueueEntry = std::pair<std::size_t,std::size_t>;
 		struct ProjectionCandidateComparator {
@@ -232,17 +234,17 @@ namespace cad {
 			assert(mPolynomials[level][id]);
 			return mPolynomials[level][id]->first;
 		}
-		
-		template<typename S, Backtracking B>
-		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::FULL, B, S>& p) {
-			os << "-1:\tP: " << p.mOriginalPolynomials << std::endl;
-			for (std::size_t level = 0; level < p.dim(); level++) {
-				os << level << ":\tP: " << p.mPolynomials[level] << std::endl;
-				os << "\tQ: " << p.mProjectionQueues[level] << std::endl;
-				os << "\tL: " << p.mLiftingQueues[level] << std::endl;
-			}
-			return os;
-		}
 	};
+	
+	template<typename S, Backtracking B>
+	std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::FULL, B, S>& p) {
+		os << "-1:\tP: " << p.mOriginalPolynomials << std::endl;
+		for (std::size_t level = 0; level < p.dim(); level++) {
+			os << level << ":\tP: " << p.mPolynomials[level] << std::endl;
+			os << "\tQ: " << p.mProjectionQueues[level] << std::endl;
+			os << "\tL: " << p.mLiftingQueues[level] << std::endl;
+		}
+		return os;
+	}
 }
 }
