@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <set>
 #include <vector>
 
 #include "../Common.h"
@@ -12,9 +13,18 @@ class BaseCADConstraints {
 public:
 	using Callback = std::function<void(const UPoly&, std::size_t)>;
 protected:
+	struct ConstraintComparator {
+		std::size_t complexity(const ConstraintT& c) const {
+			return c.maxDegree() * c.variables().size() * c.lhs().size();
+		}
+		bool operator()(const ConstraintT& lhs, const ConstraintT& rhs) const {
+			return complexity(lhs) < complexity(rhs);
+		}
+	};
 	Variables mVariables;
 	Callback mAddCallback;
 	Callback mRemoveCallback;
+	std::set<ConstraintT, ConstraintComparator> mOrderedConstraints;
 	void callCallback(const Callback& cb, const ConstraintT& c, std::size_t id) const {
 		if (cb) cb(c.lhs().toUnivariatePolynomial(mVariables.front()), id);
 	}
@@ -22,6 +32,10 @@ public:
 	BaseCADConstraints(const Callback& onAdd, const Callback& onRemove): mAddCallback(onAdd), mRemoveCallback(onRemove) {}
 	void reset(const Variables& vars) {
 		mVariables = vars;
+		mOrderedConstraints.clear();
+	}
+	auto ordered() const {
+		return mOrderedConstraints;
 	}
 };
 
@@ -51,10 +65,12 @@ public:
 	}
 	void add(const ConstraintT& c) {
 		assert(!mVariables.empty());
+		mOrderedConstraints.insert(c);
 		mConstraints.push_back(c);
 		callCallback(mAddCallback, c, mConstraints.size()-1);
 	}
 	void remove(const ConstraintT& c) {
+		mOrderedConstraints.erase(c);
 		std::stack<ConstraintT> cache;
 		// Remove constraints added after c
 		while (!mConstraints.empty() && mConstraints.back() != c) {
