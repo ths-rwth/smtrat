@@ -78,7 +78,7 @@ namespace cad {
 				SMTRAT_LOG_TRACE("smtrat.cad", "Checking full sample " << m);
 				assert(m.size() == it.depth());
 				bool sat = true;
-				for (const auto& c: mConstraints) {
+				for (const auto& c: mConstraints.ordered()) {
 					Assignment a = m;
 					// TODO: m is cleared by the call to evaluate() ... 
 					auto res = carl::RealAlgebraicNumberEvaluation::evaluate(c.lhs(), a);
