@@ -34,16 +34,16 @@ namespace smtrat {
 		void clear() {
 			super::c.clear();
 		}
-		template<typename TT, typename C>
-		friend std::ostream& operator<<(std::ostream& os, const PriorityQueue<TT,C>& pq) {
-			os << "[";
-			for (auto it = pq.data().begin(); it != pq.data().end(); it++) {
-				if (it != pq.data().begin()) os << ", ";
-				os << *it;
-			}
-			return os << "]";
-		}
 	};
+	template<typename TT, typename C>
+	std::ostream& operator<<(std::ostream& os, const PriorityQueue<TT,C>& pq) {
+		os << "[";
+		for (auto it = pq.data().begin(); it != pq.data().end(); it++) {
+			if (it != pq.data().begin()) os << ", ";
+			os << *it;
+		}
+		return os << "]";
+	}
 	
 	template<typename T, typename Compare = std::less<T>>
 	class DynamicPriorityQueue {

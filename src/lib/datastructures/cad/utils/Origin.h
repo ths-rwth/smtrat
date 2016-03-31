@@ -1,13 +1,16 @@
 #pragma once
 
+#include "Bitset.h"
+
+#include <carl/io/streamingOperators.h>
+
 #include <algorithm>
 #include <iostream>
 #include <vector>
 
-#include "Bitset.h"
-
 namespace smtrat {
 namespace cad {
+using carl::operator<<;
 
 /**
  * This class represents one or more origins of some object.
