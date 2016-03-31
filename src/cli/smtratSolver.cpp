@@ -64,6 +64,20 @@ public:
 					error() << "expected unsat, but returned sat";
 					this->exitCode = SMTRAT_EXIT_WRONG_ANSWER;
 				} else {
+                    for( const auto& obj : this->solver->objectives() ) {
+                        smtrat::ModelValue mv = this->solver->optimum(obj.first);
+                        if( mv.isMinusInfinity() )
+                        {
+                            std::string opt = obj.second.second ? smtrat::toString( mv.asInfinity(), false ) : smtrat::toString( smtrat::InfinityValue(true), false );
+                            std::cout << obj.first.toString( false, true ) << " |-> " << opt << std::endl;
+                        }
+                        else
+                        {
+                            assert( mv.isRational() );
+                            smtrat::Rational opt = (obj.second.second ? mv.asRational() : smtrat::Rational(-(mv.asRational())));
+                            std::cout << obj.first.toString( false, true ) << " |-> " << carl::toString( opt, false ) << std::endl;
+                        }
+                    }
 					regular() << "sat" << std::endl;
 					this->exitCode = SMTRAT_EXIT_SAT;
 				}

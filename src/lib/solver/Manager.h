@@ -211,6 +211,11 @@ namespace smtrat
                 }
             }
             
+            const std::vector<std::pair<Poly,std::pair<carl::Variable,bool>>>& objectives() const
+            {
+                return mObjectives;
+            }
+            
             const Poly& firstObjective() const
             {
                 return mObjectives.front().first;
