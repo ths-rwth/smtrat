@@ -27,12 +27,11 @@ namespace cad {
 	};
 	
 	template<typename Iterator, FullSampleCompareStrategy Strategy>
-	struct FullSampleComparator {
-		bool operator()(const Iterator& lhs, const Iterator& rhs) const {
-			const Sample& l = *lhs;
-			const Sample& r = *rhs;
-			return l.value() < r.value();
-		}
-	};
+	struct FullSampleComparator {};
+	
+	template<typename Iterator>
+	struct FullSampleComparator<Iterator, FullSampleCompareStrategy::Value>: SampleComparator<Iterator, SampleCompareStrategy::Value> {};
+	template<typename Iterator>
+	struct FullSampleComparator<Iterator, FullSampleCompareStrategy::Integer>: SampleComparator<Iterator, SampleCompareStrategy::Integer> {};
 }
 }
