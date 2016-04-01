@@ -158,6 +158,7 @@ namespace smtrat
             }
             else
             {
+                mpPrimaryBackend->updateModel();
                 pop( 2 );
                 return result;
             }
