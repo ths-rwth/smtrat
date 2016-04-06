@@ -1,0 +1,3 @@
+#!/bin/sh
+
+smac-v2.10.03-master-778/smac $*
