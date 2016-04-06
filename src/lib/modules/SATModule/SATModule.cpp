@@ -108,6 +108,8 @@ namespace smtrat
         asynch_interrupt( false ),
         mChangedPassedFormula( false ),
         mComputeAllSAT( false ),
+        mFullAssignmentCheckedForConsistency( false ),
+        mOptimumComputed( false ),
         mCurrentAssignmentConsistent( SAT ),
         mNumberOfFullLazyCalls( 0 ),
         mCurr_Restarts( 0 ),
@@ -178,6 +180,7 @@ namespace smtrat
         if( _subformula->formula().isFalse() )
         {
             mModelComputed = false;
+            mOptimumComputed = false;
             mInfeasibleSubsets.emplace_back();
             mInfeasibleSubsets.back().insert( _subformula->formula() );
             return false;
@@ -187,6 +190,7 @@ namespace smtrat
             if( !_subformula->formula().isOnlyPropositional() )
                 mReceivedFormulaPurelyPropositional = false;
             mModelComputed = false;
+            mOptimumComputed = false;
             //TODO Matthias: better solution?
             cancelUntil( assumptions.size() );
             adaptPassedFormula();
@@ -502,11 +506,9 @@ namespace smtrat
                 assert( mv.isRational() ); // @todo: how do we handle the other model value types?
                 // Add a new upper bound on the yet computed minimum
                 removeUpperBoundOnMinimal();
-                printPassedFormula();
                 FormulaT newUpperBoundOnMinimal( objectiveFunction() - mv.asRational(), carl::Relation::LESS );
                 addConstraintToInform( newUpperBoundOnMinimal );
                 mUpperBoundOnMinimal = addSubformulaToPassedFormula( newUpperBoundOnMinimal, newUpperBoundOnMinimal ).first;
-                printPassedFormula();
                 // Exclude the last theory call with a clause.
                 vec<Lit> excludeClause;
                 for( int k = 0; k < mBooleanConstraintMap.size(); ++k )
@@ -667,7 +669,7 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::updateModel() const
     {
-        if( !mModelComputed )
+        if( !mModelComputed && !mOptimumComputed )
         {
             clearModel();
             if( solverState() != UNSAT || mMinimizingCheck )
@@ -846,6 +848,7 @@ namespace smtrat
     void SATModule<Settings>::cleanUpAfterOptimizing( const std::vector<CRef>& _excludedAssignments )
     {
         mModelComputed = true; // fix the last found model
+        mOptimumComputed = true;
         removeUpperBoundOnMinimal();
         mUpperBoundOnMinimal = passedFormulaEnd();
         // Remove the added clauses for the exclusion of Boolean assignments.
@@ -1483,16 +1486,21 @@ namespace smtrat
         sort( add_tmp );
         Lit p;
         int i, j;
-        for( i = j = 0, p = lit_Undef; i < add_tmp.size(); i++ )
+        
+        for( i = j = 0, p = lit_Undef; i < add_tmp.size(); ++i )
         {
-            if( (_type == NORMAL_CLAUSE && value( add_tmp[i] ) == l_True) || add_tmp[i] == ~p )
-            {
+            if( add_tmp[i] == ~p )
                 return false;
-            }
-            else if( !(_type == NORMAL_CLAUSE && value( add_tmp[i] ) == l_False) && add_tmp[i] != p )
+            if( _type == NORMAL_CLAUSE ) // What we want at some point is level(var(add_tmp[i])) <= assumptions.size(), however it causes problems when the clause to add gets unary
             {
-                add_tmp[j++] = p = add_tmp[i];
+                if( value( add_tmp[i] ) == l_True )
+                    return false;
+                if( value( add_tmp[i] ) == l_False )
+                    continue;
             }
+            if( add_tmp[i] == p )
+                continue;
+            add_tmp[j++] = p = add_tmp[i];
         }
         add_tmp.shrink( i - j );
 
@@ -2520,6 +2528,7 @@ SetWatches:
 
         do
         {
+            if( confl == CRef_Undef) std::cout << "TEST" << std::endl;
             assert( confl != CRef_Undef );    // (otherwise should be UIP)
             Clause& c = ca[confl];
 
@@ -3051,7 +3060,7 @@ NextClause:
                 }
                 mCurrentTheoryConflictEvaluations[std::make_pair( conflictEvaluation, ++mTheoryConflictIdCounter )] = mCurrentTheoryConflicts.size();
                 mCurrentTheoryConflicts.push_back( std::move( learnt_clause ) );
-                mCurrentTheoryConflictTypes.push_back( containsUpperBoundOnMinimal ? NORMAL_CLAUSE : CONFLICT_CLAUSE );
+                mCurrentTheoryConflictTypes.push_back( containsUpperBoundOnMinimal ? PERMANENT_CLAUSE : CONFLICT_CLAUSE );
             }
             ++backend;
         }
