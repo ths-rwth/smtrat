@@ -38,8 +38,11 @@ Module version: ${modVersion} \\n \\
 Module settings classname: ${modSettingsClass} \\n \\
 Module settings: ${moduleSettingsList_${modIndex}} \\n")
 
+	string(REPLACE "Module" "" Prefix ${modType})
+	if (EXISTS "${CMAKE_SOURCE_DIR}/src/lib/modules/${modType}/${Prefix}Settings.h.in")
+		configure_file( "${CMAKE_SOURCE_DIR}/src/lib/modules/${modType}/${Prefix}Settings.h.in" "${CMAKE_SOURCE_DIR}/src/lib/modules/${modType}/${Prefix}Settings.h" )
+	endif()
 	if (EXISTS "${CMAKE_SOURCE_DIR}/src/lib/modules/${modType}/Instantiation.h.in")
-		string(REPLACE "Module" "" Prefix ${modType})
 		file(READ "${CMAKE_SOURCE_DIR}/src/lib/modules/${modType}/${Prefix}Settings.h" Content)
 		string(REGEX MATCHALL "${Prefix}Settings[0-9a-zA-Z]+" Matches ${Content})
 		list(SORT Matches)
