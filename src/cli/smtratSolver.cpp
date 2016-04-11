@@ -92,8 +92,30 @@ public:
 				break;
 			}
 			case smtrat::Answer::UNKNOWN: {
-				regular() << "unknown" << std::endl;
+				//regular() << "unknown" << std::endl;
 				this->exitCode = SMTRAT_EXIT_UNKNOWN;
+				regular() << "(set-logic QF_NIA)" << std::endl;
+				smtrat::FormulaT formula = this->solver->getInputSimplified().second;
+				
+				smtrat::Model model = this->solver->model();
+				regular() << model << std::endl;
+				for (const auto& obj: this->solver->objectives()) {
+					smtrat::ModelPolynomialSubstitution mps(obj.first);
+					smtrat::ModelValue mv = mps.evaluate(model);
+					std::cout << "ABCSUBS: " << obj.first << std::endl;
+					std::cout << "ABCSUBS: " << mv << std::endl;
+					formula = smtrat::FormulaT(carl::FormulaType::AND, formula, smtrat::FormulaT(obj.first - mv.asPoly(), carl::Relation::EQ));
+				}
+				regular() << formula.toString( false, 1, "", false, false, true, true ) << std::endl;
+				for (const auto& obj: this->solver->objectives()) {
+					if (obj.second.second) {
+						regular() << "(minimize " << obj.first << ")" << std::endl;
+					} else {
+						regular() << "(maximize " << obj.first << ")" << std::endl;
+					}
+				}
+				regular() << "(check-sat)" << std::endl;
+				//regular() << model << std::endl;
 				break;
 			}
 			case smtrat::Answer::ABORTED: {
