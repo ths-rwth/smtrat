@@ -68,11 +68,11 @@ public:
                                     smtrat::ModelValue mv = this->solver->optimum(obj.first);
                                     if( mv.isMinusInfinity() ) {
                                         std::string opt = obj.second.second ? smtrat::toString( mv.asInfinity(), false ) : smtrat::toString( smtrat::InfinityValue(true), false );
-                                        std::cout << obj.first.toString( false, true ) << " |-> " << opt << std::endl;
+                                        regular() << obj.first.toString( false, true ) << " |-> " << opt << std::endl;
                                     } else {
                                         assert( mv.isRational() );
                                         smtrat::Rational opt = (obj.second.second ? mv.asRational() : smtrat::Rational(-(mv.asRational())));
-                                        std::cout << obj.first.toString( false, true ) << " |-> " << carl::toString( opt, false ) << std::endl;
+                                        regular() << obj.first.toString( false, true ) << " |-> " << carl::toString( opt, false ) << std::endl;
                                     }
                                 }
                                 regular() << "sat" << std::endl;
@@ -92,30 +92,8 @@ public:
 				break;
 			}
 			case smtrat::Answer::UNKNOWN: {
-				//regular() << "unknown" << std::endl;
+				regular() << "unknown" << std::endl;
 				this->exitCode = SMTRAT_EXIT_UNKNOWN;
-				regular() << "(set-logic QF_NIA)" << std::endl;
-				smtrat::FormulaT formula = this->solver->getInputSimplified().second;
-				
-				smtrat::Model model = this->solver->model();
-				regular() << model << std::endl;
-				for (const auto& obj: this->solver->objectives()) {
-					smtrat::ModelPolynomialSubstitution mps(obj.first);
-					smtrat::ModelValue mv = mps.evaluate(model);
-					std::cout << "ABCSUBS: " << obj.first << std::endl;
-					std::cout << "ABCSUBS: " << mv << std::endl;
-					formula = smtrat::FormulaT(carl::FormulaType::AND, formula, smtrat::FormulaT(obj.first - mv.asPoly(), carl::Relation::EQ));
-				}
-				regular() << formula.toString( false, 1, "", false, false, true, true ) << std::endl;
-				for (const auto& obj: this->solver->objectives()) {
-					if (obj.second.second) {
-						regular() << "(minimize " << obj.first << ")" << std::endl;
-					} else {
-						regular() << "(maximize " << obj.first << ")" << std::endl;
-					}
-				}
-				regular() << "(check-sat)" << std::endl;
-				//regular() << model << std::endl;
 				break;
 			}
 			case smtrat::Answer::ABORTED: {
@@ -232,6 +210,40 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 		if (settingsManager.printModel()) solver->printAssignment();
 		else if (settingsManager.printAllModels()) solver->printAllAssignments(std::cout);
 	}
+        else if(e->lastAnswer == smtrat::Answer::UNKNOWN) {
+            if (settingsManager.printInputSimplified())
+            {
+                std::stringstream sstream;
+                if (solver->logic() != smtrat::Logic::UNDEFINED)
+                    sstream << "(set-logic " << solver->logic() << ")" << std::endl;
+                smtrat::FormulaT formula = solver->getInputSimplified().second;
+
+                smtrat::Model model = solver->model();
+                for (const auto& obj: solver->objectives()) {
+                    smtrat::ModelPolynomialSubstitution mps(obj.first);
+                    smtrat::ModelValue mv = mps.evaluate(model);
+                    formula = smtrat::FormulaT(carl::FormulaType::AND, formula, smtrat::FormulaT(obj.first - mv.asPoly(), carl::Relation::EQ));
+                }
+                sstream << formula.toString( false, 1, "", false, false, true, true ) << std::endl;
+                for (const auto& obj: solver->objectives()) {
+                    if (obj.second.second) {
+                        sstream << "(minimize " << obj.first << ")" << std::endl;
+                    } else {
+                        sstream << "(maximize " << obj.first << ")" << std::endl;
+                    }
+                }
+                sstream << "(check-sat)" << std::endl;
+                if( settingsManager.simplifiedInputFileName() == "" )
+                    e->regular() << sstream.str();
+                else
+                {
+                    std::ofstream file;
+                    file.open(settingsManager.simplifiedInputFileName());
+                    file << sstream.str();
+                    file.close();
+                }
+            }
+        }
 	delete e;
 	return exitCode;
 }
