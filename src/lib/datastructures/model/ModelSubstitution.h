@@ -34,7 +34,16 @@ namespace smtrat {
 		virtual void add( const Rational& _number ) = 0;
         
 		template<typename Iterator>
-		const ModelValue& getModelValue( Iterator _mvit, Model& _model );
+		const ModelValue& getModelValue( Iterator _mvit, Model& _model )
+        {
+            assert( _mvit != _model.end() );
+            ModelValue& mv = _mvit->second;
+            if( mv.isSubstitution() )
+            {
+                mv = mv.asSubstitution()->evaluate( _model );
+            }
+            return mv;
+        }
 		
 		template<typename Substitution, typename... Args>
 		static ModelValue create(Args&&... args) {

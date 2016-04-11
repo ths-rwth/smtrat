@@ -3,17 +3,6 @@
 #include "Model.h"
 
 namespace smtrat {
-		template<typename Iterator>
-		const ModelValue& ModelSubstitution::getModelValue( Iterator _mvit, Model& _model )
-        {
-            assert( _mvit != _model.end() );
-            ModelValue& mv = _mvit->second;
-            if( mv.isSubstitution() )
-            {
-                mv = mv.asSubstitution()->evaluate( _model );
-            }
-            return mv;
-        }
         
         void ModelPolynomialSubstitution::multiplyBy( const Rational& _number )
         {
