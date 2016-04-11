@@ -19,6 +19,7 @@ namespace smtrat {
 		
 		/// Evaluates this substitution with respect to the given model.
 		virtual ModelValue evaluate(Model& model) = 0;
+		
 		/// Checks whether this substitution needs the given model variable.
 		virtual bool dependsOn(const ModelVariable&) const {
 			return true;
@@ -32,7 +33,8 @@ namespace smtrat {
 		/// Adds a rational to this model substitution.
 		virtual void add( const Rational& _number ) = 0;
         
-        const ModelValue& getModelValue( const ModelVariable& _mvar, Model& _model );
+		template<typename Iterator>
+		const ModelValue& getModelValue( Iterator _mvit, Model& _model );
 		
 		template<typename Substitution, typename... Args>
 		static ModelValue create(Args&&... args) {

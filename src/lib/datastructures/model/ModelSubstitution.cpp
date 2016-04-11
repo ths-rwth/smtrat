@@ -3,12 +3,11 @@
 #include "Model.h"
 
 namespace smtrat {
-    
-        const ModelValue& ModelSubstitution::getModelValue( const ModelVariable& _mvar, Model& _model )
+		template<typename Iterator>
+		const ModelValue& ModelSubstitution::getModelValue( Iterator _mvit, Model& _model )
         {
-            auto it = _model.find( _mvar );
-            assert( it != _model.end() );
-            ModelValue& mv = it->second;
+            assert( _mvit != _model.end() );
+            ModelValue& mv = _mvit->second;
             if( mv.isSubstitution() )
             {
                 mv = mv.asSubstitution()->evaluate( _model );
@@ -29,19 +28,33 @@ namespace smtrat {
 	ModelValue ModelPolynomialSubstitution::evaluate(Model& model) {
 		carl::RealAlgebraicNumberEvaluation::RANMap<Rational> map;
 		for (const auto& var: mVars) {
-			const ModelValue& mv = getModelValue(ModelVariable(var),model);
+			auto it = model.find(ModelVariable(var));
+			if (it == model.end()) {
+				return Poly(var);
+			}
+			const ModelValue& mv = getModelValue(it,model);
 			assert( !mv.isSubstitution() );
 			if (mv.isRational()) {
-				map.emplace(var, carl::RealAlgebraicNumber<Rational>(mv.asRational()));
+				SMTRAT_LOG_WARN("smtrat.model", "Substituting " << var << " = " << mv.asRational() << " into " << mPoly);
+				mPoly.substituteIn(var, Poly(mv.asRational()));
+				SMTRAT_LOG_WARN("smtrat.model", "-> " << mPoly);
 			} else if (mv.isRAN()) {
+				SMTRAT_LOG_WARN("smtrat.model", "Substituting " << var << " = " << mv.asRAN() << " into " << mPoly);
 				map.emplace(var, mv.asRAN());
+			} else if (mv.isPoly()) {
+				SMTRAT_LOG_WARN("smtrat.model", "Substituting " << var << " = " << mv.asPoly() << " into " << mPoly);
+				mPoly.substituteIn(var, mv.asPoly());
+				SMTRAT_LOG_WARN("smtrat.model", "-> " << mPoly);
 			} else {
                             return this;
 			}	
 		}
+		if (map.size() > 0) {
                 carl::RealAlgebraicNumber<smtrat::Rational> ran = carl::RealAlgebraicNumberEvaluation::evaluate(mPoly, map);
                 if( ran.isNumeric() )
                     return ModelValue (ran.value() );
-		return ModelValue(ran);
+					return ModelValue(ran);
+				}
+		return mPoly;
 	}
 }

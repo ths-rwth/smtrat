@@ -34,7 +34,8 @@ namespace smtrat
 		virtual ModelValue evaluate(Model& model) {
 			auto selection = mAssignments.end();
 			for (auto it = mAssignments.begin(); it != mAssignments.end(); it++) {
-				const ModelValue& mv = getModelValue(ModelVariable(it->first),model);
+				auto mvit = model.find(ModelVariable(it->first));
+				const ModelValue& mv = getModelValue(mvit,model);
 				assert(mv.isBool());
 				if (mv.asBool()) {
 					assert(selection == mAssignments.end());
