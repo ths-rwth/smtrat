@@ -19,6 +19,9 @@ namespace smtrat
     {
         private:
             bool mAppliedPreprocessing;
+			std::pair<bool,FormulaT> mSimplifiedFormula;
+			
+			void collectSimplifiedFormula();
         public:
             
             PModule( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager = NULL );
@@ -60,6 +63,8 @@ namespace smtrat
              * @param _subformula The sub formula of the received formula to remove.
              */
             void remove( ModuleInput::const_iterator _subformula );
+			
+			Answer check( bool _final = false, bool _full = true, bool _minimize = false );
             
             /**
              * Runs the backend solvers on the passed formula.

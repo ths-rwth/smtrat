@@ -273,7 +273,7 @@ namespace smtrat
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            Answer check( bool _final = false, bool _full = true, bool _minimize = false );
+            virtual Answer check( bool _final = false, bool _full = true, bool _minimize = false );
             
             /**
              * Removes everything related to the given sub-formula of the received formula. However,
@@ -282,7 +282,7 @@ namespace smtrat
              *
              * @param _subformula The sub formula of the received formula to remove.
              */
-            void remove( ModuleInput::const_iterator _subformula );
+            virtual void remove( ModuleInput::const_iterator _subformula );
             
             /**
              * Updates the model, if the solver has detected the consistency of the received formula, beforehand.
@@ -1010,10 +1010,10 @@ namespace smtrat
              *          False,   if the passed formula is inconsistent;
              *          Unknown, otherwise.
              */
-            Answer runBackends( bool _final, bool _full, bool _minimize );
-            Answer runBackends()
+            virtual Answer runBackends( bool _final, bool _full, bool _minimize );
+            virtual Answer runBackends()
             {
-                return runBackends( mFinalCheck, mFullCheck, mMinimizingCheck );
+                return Module::runBackends( mFinalCheck, mFullCheck, mMinimizingCheck );
             }
             
             /**

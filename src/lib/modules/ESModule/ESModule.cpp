@@ -135,7 +135,7 @@ namespace smtrat
                             {
                                 carl::Variable subVar;
                                 Poly subPoly;
-                                if( tmp.constraint().getSubstitution( subVar, subPoly ) )
+                                if( tmp.constraint().getSubstitution( subVar, subPoly, false, objective() ) )
                                 {
                                     SMTRAT_LOG_DEBUG("smtrat.es", "found substitution [" << subVar << " -> " << subPoly << "]");
                                     assert( mArithSubs.find( subVar ) == mArithSubs.end() );
@@ -364,12 +364,14 @@ namespace smtrat
                     result = FormulaT(_formula.getType(), _formula.quantifiedVariables(), sub);
             }
         }
-        iter = mBoolSubs.find( result );
-        if( iter != mBoolSubs.end() )
-        {
-			SMTRAT_LOG_DEBUG("smtrat.es", _formula << " ----> " << (iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE )));
-            return iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE );
-        }
+		if (!_outermost) {
+	        iter = mBoolSubs.find( result );
+	        if( iter != mBoolSubs.end() )
+	        {
+				SMTRAT_LOG_DEBUG("smtrat.es", _formula << " ----> " << (iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE )));
+	            return iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE );
+	        }
+		}
 		SMTRAT_LOG_DEBUG("smtrat.es", _formula << " ----> " << result);
         return result;
     }

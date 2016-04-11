@@ -18,6 +18,32 @@ namespace smtrat
         mAppliedPreprocessing( false )
     {
     }
+	
+	void PModule::collectSimplifiedFormula() {
+		if( solverState() == UNSAT ) {
+			SMTRAT_LOG_WARN("smtrat.pmodule", moduleName() << ": Returning FALSE");
+			mSimplifiedFormula = std::make_pair( true, FormulaT( carl::FormulaType::FALSE ) );
+			return;
+		}
+		for( auto& backend : usedBackends() )
+		{
+			pair<bool,FormulaT> simplifiedPassedFormula = backend->getReceivedFormulaSimplified();
+			if( simplifiedPassedFormula.first )
+			{
+				SMTRAT_LOG_WARN("smtrat.pmodule", moduleName() << ": Returning from backend: " << simplifiedPassedFormula.second);
+				mSimplifiedFormula = simplifiedPassedFormula;
+				return;
+			}
+		}
+		if( mAppliedPreprocessing )
+		{
+			SMTRAT_LOG_WARN("smtrat.pmodule", moduleName() << ": Returning " << FormulaT(rPassedFormula()));
+			mSimplifiedFormula = std::make_pair( true, (FormulaT) rPassedFormula() );
+			return;
+		}
+		SMTRAT_LOG_WARN("smtrat.pmodule", moduleName() << ": No simplifications");
+		mSimplifiedFormula = std::make_pair( false, FormulaT( carl::FormulaType::TRUE ) );
+	}
     
     bool PModule::add( ModuleInput::const_iterator _subformula )
     {
@@ -30,35 +56,24 @@ namespace smtrat
         mAppliedPreprocessing = false;
         return Module::remove( _subformula );
     }
+	
+	Answer PModule::check( bool _final, bool _full, bool _minimize )
+	{
+		Answer res = Module::check(_final, _full, _minimize);
+		collectSimplifiedFormula();
+		SMTRAT_LOG_WARN("smtrat.pmodule", moduleName() << ": Simplified = " << mSimplifiedFormula);
+		return res;
+	}
     
     Answer PModule::runBackends( bool _final, bool _full, bool _minimize )
     {
         mAppliedPreprocessing = true;
-        return Module::runBackends();
+        return Module::runBackends( _final, _full, _minimize );
     }
     
-    pair<bool,FormulaT> PModule::getReceivedFormulaSimplified()
+    std::pair<bool,FormulaT> PModule::getReceivedFormulaSimplified()
     {
-        if( solverState() == UNSAT ) {
-			SMTRAT_LOG_WARN("smtrat.pmodule", moduleName() << ": Returning FALSE");
-            return make_pair( true, FormulaT( carl::FormulaType::FALSE ) );
-		}
-        for( auto& backend : usedBackends() )
-        {
-            pair<bool,FormulaT> simplifiedPassedFormula = backend->getReceivedFormulaSimplified();
-            if( simplifiedPassedFormula.first )
-            {
-				SMTRAT_LOG_WARN("smtrat.pmodule", moduleName() << ": Returning from backend: " << simplifiedPassedFormula.second);
-                return simplifiedPassedFormula;
-            }
-        }
-        if( mAppliedPreprocessing )
-        {
-			SMTRAT_LOG_WARN("smtrat.pmodule", moduleName() << ": Returning " << FormulaT(rPassedFormula()));
-            return make_pair( true, (FormulaT) rPassedFormula() );
-        }
-		SMTRAT_LOG_WARN("smtrat.pmodule", moduleName() << ": No simplifications");
-        return make_pair( false, FormulaT( carl::FormulaType::TRUE ) );
+		return mSimplifiedFormula;
     }
 	
 	void PModule::updateModel() const {
