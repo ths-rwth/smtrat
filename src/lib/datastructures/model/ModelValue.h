@@ -45,12 +45,12 @@ namespace smtrat
      * It is implemented as subclass of a boost::variant.
      * Possible value types are bool, vs::SqrtEx and carl::RealAlgebraicNumberPtr.
      */
-    class ModelValue : public boost::variant<bool, Rational, vs::SqrtEx, carl::RealAlgebraicNumber<smtrat::Rational>, carl::BVValue, SortValue, UFModel, InfinityValue, ModelSubstitutionPtr>
+    class ModelValue : public boost::variant<bool, Rational, Poly, vs::SqrtEx, carl::RealAlgebraicNumber<smtrat::Rational>, carl::BVValue, SortValue, UFModel, InfinityValue, ModelSubstitutionPtr>
     {
         /**
          * Base type we are deriving from.
          */
-        using Super = boost::variant<bool, Rational, vs::SqrtEx, carl::RealAlgebraicNumber<smtrat::Rational>, carl::BVValue, SortValue, UFModel, InfinityValue, ModelSubstitutionPtr>;
+        using Super = boost::variant<bool, Rational, Poly, vs::SqrtEx, carl::RealAlgebraicNumber<smtrat::Rational>, carl::BVValue, SortValue, UFModel, InfinityValue, ModelSubstitutionPtr>;
         
     public:
         /**
@@ -102,7 +102,11 @@ namespace smtrat
             else if( isRational() && _mval.isRational() )
             {
                 return asRational() == _mval.asRational();
-            } 
+            }
+			else if( isPoly() && _mval.isPoly() )
+			{
+				return asPoly() == _mval.asPoly();
+			}
             else if( isSqrtEx() && _mval.isSqrtEx() )
             {
                 return asSqrtEx() == _mval.asSqrtEx();
@@ -141,6 +145,10 @@ namespace smtrat
         {
             return type() == typeid(Rational);
         }
+		
+		bool isPoly() const {
+			return type() == typeid(Poly);
+		}
         
         /**
          * @return true, if the stored value is a square root expression.
@@ -215,6 +223,12 @@ namespace smtrat
             assert( isRational() );
             return boost::get<Rational>(*this);
         }
+		
+		const Poly& asPoly() const
+		{
+			assert( isPoly() );
+			return boost::get<Poly>(*this);
+		}
         
         /**
          * @return The stored value as a square root expression.
