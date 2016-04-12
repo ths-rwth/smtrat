@@ -9,146 +9,117 @@
 namespace smtrat {
 namespace cad {
 
-class BaseCADConstraints {
+template<Backtracking BT>
+class CADConstraints {
 public:
 	using Callback = std::function<void(const UPoly&, std::size_t)>;
+	template<Backtracking B>
+	friend std::ostream& operator<<(std::ostream& os, const CADConstraints<B>& cc);
 protected:
 	struct ConstraintComparator {
 		std::size_t complexity(const ConstraintT& c) const {
 			return c.maxDegree() * c.variables().size() * c.lhs().size();
 		}
 		bool operator()(const ConstraintT& lhs, const ConstraintT& rhs) const {
-			return complexity(lhs) < complexity(rhs);
+			auto cl = complexity(lhs);
+			auto cr = complexity(rhs);
+			if (cl != cr) return cl < cr;
+			return lhs < rhs;
 		}
 	};
+	using ConstraintMap = std::map<ConstraintT, std::size_t, ConstraintComparator>;
+	
 	Variables mVariables;
 	Callback mAddCallback;
 	Callback mRemoveCallback;
-	std::set<ConstraintT, ConstraintComparator> mOrderedConstraints;
+	ConstraintMap mConstraintMap;
+	std::vector<typename ConstraintMap::iterator> mConstraintIts;
+	IDPool mIDPool;
+	
 	void callCallback(const Callback& cb, const ConstraintT& c, std::size_t id) const {
 		if (cb) cb(c.lhs().toUnivariatePolynomial(mVariables.front()), id);
 	}
 public:
-	BaseCADConstraints(const Callback& onAdd, const Callback& onRemove): mAddCallback(onAdd), mRemoveCallback(onRemove) {}
+	CADConstraints(const Callback& onAdd, const Callback& onRemove): mAddCallback(onAdd), mRemoveCallback(onRemove) {}
 	void reset(const Variables& vars) {
 		mVariables = vars;
-		mOrderedConstraints.clear();
+		mConstraintMap.clear();
+		mConstraintIts.clear();
+		mIDPool = IDPool();
 	}
-	auto ordered() const {
-		return mOrderedConstraints;
+	const auto& ordered() const {
+		return mConstraintMap;
+	}
+	std::size_t add(const ConstraintT& c) {
+		SMTRAT_LOG_DEBUG("smtrat.cad.constraints", "Adding " << c);
+		assert(!mVariables.empty());
+		std::size_t id = 0;
+		if (BT == Backtracking::ORDERED) {
+			id = mConstraintIts.size();
+			mConstraintIts.push_back(mConstraintMap.end());
+		} else {
+			id = mIDPool.get();
+			mConstraintIts.resize(id+1, mConstraintMap.end());
+		}
+		auto r = mConstraintMap.emplace(c, id);
+		assert(r.second);
+		mConstraintIts[id] = r.first;
+		callCallback(mAddCallback, c, id);
+		SMTRAT_LOG_DEBUG("smtrat.cad.constraints", "Result:" << std::endl << *this);
+		return id;
+	}
+	std::size_t remove(const ConstraintT& c) {
+		SMTRAT_LOG_DEBUG("smtrat.cad.constraints", "Removing " << c);
+		auto it = mConstraintMap.find(c);
+		assert(it != mConstraintMap.end());
+		std::size_t id = it->second;
+		assert(mConstraintIts[id] == it);
+		if (BT == Backtracking::ORDERED) {
+			SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Removing " << id << " in ordered mode");
+			std::stack<typename ConstraintMap::iterator> cache;
+			// Remove constraints added after c
+			while (mConstraintIts.back()->second > id) {
+				SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Preliminary removal of " << mConstraintIts.back()->first);
+				callCallback(mRemoveCallback, mConstraintIts.back()->first, mConstraintIts.back()->second);
+				cache.push(mConstraintIts.back());
+				mConstraintIts.pop_back();
+			}
+			// Remove c
+			SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Actual removal of " << mConstraintIts.back()->first);
+			callCallback(mRemoveCallback, mConstraintIts.back()->first, mConstraintIts.back()->second);
+			mConstraintMap.erase(mConstraintIts.back());
+			mConstraintIts.pop_back();
+			if (mConstraintIts.size() != id) std::exit(45);
+			assert(mConstraintIts.size() == id);
+			// Add constraints removed before
+			while (!cache.empty()) {
+				SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Readding of " << cache.top()->first);
+				callCallback(mAddCallback, cache.top()->first, cache.top()->second);
+				mConstraintIts.push_back(cache.top());
+				cache.pop();
+			}
+		} else {
+			callCallback(mRemoveCallback, c, id);
+			mConstraintMap.erase(it);
+			mConstraintIts[id] = mConstraintMap.end();
+			mIDPool.free(id);
+		}
+		return id;
+	}
+	const ConstraintT& operator[](std::size_t id) const {
+		assert(id < mConstraintIts.size());
+		assert(mConstraintIts[id] != mConstraintMap.end());
+		return mConstraintIts[id]->first;
 	}
 };
 
 template<Backtracking BT>
-class CADConstraints {};
-
-template<>
-class CADConstraints<Backtracking::ORDERED>: public BaseCADConstraints {
-private:
-	using Super = BaseCADConstraints;
-	using Super::Callback;
-	std::vector<ConstraintT> mConstraints;
-public:
-	CADConstraints(const Callback& onAdd, const Callback& onRemove): Super(onAdd, onRemove) {}
-	void reset(const Variables& vars) {
-		Super::reset(vars);
-		mConstraints.clear();
+std::ostream& operator<<(std::ostream& os, const CADConstraints<BT>& cc) {
+	for (const auto& c: cc.mConstraintIts) {
+		os << "\t" << c->second << ": " << c->first << std::endl;
 	}
-	auto get() const {
-		return mConstraints;
-	}
-	auto begin() const {
-		return mConstraints.begin();
-	}
-	auto end() const {
-		return mConstraints.end();
-	}
-	void add(const ConstraintT& c) {
-		assert(!mVariables.empty());
-		mOrderedConstraints.insert(c);
-		mConstraints.push_back(c);
-		callCallback(mAddCallback, c, mConstraints.size()-1);
-	}
-	void remove(const ConstraintT& c) {
-		mOrderedConstraints.erase(c);
-		std::stack<ConstraintT> cache;
-		// Remove constraints added after c
-		while (!mConstraints.empty() && mConstraints.back() != c) {
-			callCallback(mRemoveCallback, mConstraints.back(), mConstraints.size()-1);
-			cache.push(mConstraints.back());
-			mConstraints.pop_back();
-		}
-		assert(mConstraints.back() == c);
-		// Remove c
-		callCallback(mRemoveCallback, mConstraints.back(), mConstraints.size()-1);
-		mConstraints.pop_back();
-		// Add constraints removed before
-		while (!cache.empty()) {
-			callCallback(mAddCallback, cache.top(), mConstraints.size());
-			mConstraints.push_back(cache.top());
-			cache.pop();
-		}
-	}
-	friend std::ostream& operator<<(std::ostream& os, const CADConstraints<Backtracking::ORDERED>& cadc) {
-		std::size_t id = 0;
-		for (const auto& c: cadc.mConstraints) os << "\t" << id++ << ": " << c << std::endl;
-		return os;
-	}
-};
-
-template<>
-class CADConstraints<Backtracking::UNORDERED>: public BaseCADConstraints {
-public:
-	template<typename Key, typename Value>
-	struct MapKeyIterator : std::map<Key,Value>::const_iterator {
-		using Super = typename std::map<Key,Value>::const_iterator;
-		MapKeyIterator(): Super() {};
-		MapKeyIterator(Super it_): Super(it_) {};
-		Key *operator->() { return (Key*const) &(Super::operator->()->first); }
-		Key operator*() { return Super::operator*().first; }
-	};
-private:
-	using Super = BaseCADConstraints;
-	using Super::Callback;
-	using MapIt = MapKeyIterator<ConstraintT,std::size_t>;
-	std::map<ConstraintT, std::size_t> mConstraints;
-	IDPool mIDPool;
-public:
-	CADConstraints(const Callback& onAdd, const Callback& onRemove): Super(onAdd, onRemove) {}
-	void reset(const Variables& vars) {
-		Super::reset(vars);
-		mConstraints.clear();
-	}
-	auto get() const {
-		return mConstraints;
-	}
-	auto begin() const {
-		return MapIt(mConstraints.begin());
-	}
-	auto end() const {
-		return MapIt(mConstraints.end());
-	}
-	void add(const ConstraintT& c) {
-		assert(!mVariables.empty());
-		std::size_t id = mIDPool.get();
-		auto res = mConstraints.emplace(c, id);
-		assert(res.second);
-		callCallback(mAddCallback, c, id);
-	}
-	void remove(const ConstraintT& c) {
-		auto it = mConstraints.find(c);
-		assert(it != mConstraints.end());
-		std::size_t id = it->second;
-		callCallback(mRemoveCallback, c, id);
-		mConstraints.erase(it);
-		mIDPool.free(id);
-	}
-	friend std::ostream& operator<<(std::ostream& os, const CADConstraints<Backtracking::UNORDERED>& cadc) {
-		for (const auto& c: cadc.mConstraints) os << "\t" << c.second << ": " << c.first << std::endl;
-		return os;
-	}
-};
-
+	return os;
+}
 	
 }
 }
