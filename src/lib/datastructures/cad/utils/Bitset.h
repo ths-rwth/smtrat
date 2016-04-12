@@ -41,9 +41,9 @@ namespace cad {
 			return *this;
 		}
 		
-		Bitset& set(std::size_t n) {
+		Bitset& set(std::size_t n, bool value = true) {
 			ensureSize(n);
-			mData.set(n);
+			mData.set(n, value);
 			return *this;
 		}
 		Bitset& reset(std::size_t n) {
@@ -62,6 +62,10 @@ namespace cad {
 		bool none() const {
 			assert(!mDefault);
 			return mData.none();
+		}
+		
+		auto count() const noexcept {
+			return mData.count();
 		}
 		
 		auto size() const {
