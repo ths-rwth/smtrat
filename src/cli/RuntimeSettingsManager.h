@@ -24,6 +24,8 @@ namespace smtrat
         bool mDoPrintTimings;
         bool mPrintModel;
         bool mPrintAllModels;
+        bool mPrintSimplifiedInput;
+        std::string mSimplifiedInputFileName;
         bool mPrintStatistics;
         bool mPrintStrategy;
         bool mExportDIMACS;
@@ -50,6 +52,16 @@ namespace smtrat
         bool printAllModels() const
         {
             return mPrintAllModels;
+        }
+        
+        bool printInputSimplified() const
+        {
+            return mPrintSimplifiedInput;
+        }
+        
+        const std::string& simplifiedInputFileName() const
+        {
+            return mSimplifiedInputFileName;
         }
         
         bool printStatistics() const

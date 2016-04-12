@@ -34,7 +34,9 @@ RuntimeSettingsManager::RuntimeSettingsManager() :
     mSettingObjects(),
     mDoPrintTimings( false ), 
     mPrintModel( false ),
-	mPrintAllModels( false ),
+    mPrintAllModels( false ),
+    mPrintSimplifiedInput( false ),
+    mSimplifiedInputFileName( "" ),
     mPrintStatistics( false ),
     mPrintStrategy( false ),
     mExportDIMACS( false ),
@@ -93,7 +95,7 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
     {
         // Check if a option is passed.
         bool foundOption = strlen(argv[argi]) > 2 && argv[argi][0] == '-' && argv[argi][1] == '-';
-        bool foundOptionShortcut = strlen(argv[argi]) == 2 && argv[argi][0] == '-';
+        bool foundOptionShortcut = strlen(argv[argi]) > 1 && argv[argi][0] == '-' && argv[argi][1] != '-';
         if( foundOption || foundOptionShortcut )
         {
             std::string optionName( argv[argi] + ( foundOptionShortcut ? 1 : 2 ) );
@@ -165,6 +167,19 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
             {
                 mPrintAllModels = true;
             }
+            else if(optionName == "simplified-input" || optionName == "si")
+            {
+                mPrintSimplifiedInput = true;
+            }
+            else if(optionName.substr( 0, 17 ) == "simplified-input:" || optionName.substr( 0, 3 ) == "si:")
+            {
+                auto pos = optionName.find(":");
+                if( pos != std::string::npos )
+                {
+                    mSimplifiedInputFileName = optionName.substr( pos+1, optionName.size() - pos );
+                }
+                mPrintSimplifiedInput = true;
+            }
             else if(optionName == "statistics" || optionName == "s")
             {
                 mPrintStatistics = true;
@@ -230,18 +245,19 @@ void RuntimeSettingsManager::printHelp() const
     std::cout << std::endl;
     // Print help for the global options.
     std::cout << "Global options:" << std::endl;
-    std::cout << "\t --help (-h) \t\t prints this help." << std::endl;
-    std::cout << "\t --cmake \t\t print cmake options." << std::endl;
-    std::cout << "\t --license \t\t prints the license." << std::endl;
+    std::cout << "\t --help (-h) \t\t\t prints this help." << std::endl;
+    std::cout << "\t --cmake \t\t\t print cmake options." << std::endl;
+    std::cout << "\t --license \t\t\t prints the license." << std::endl;
 //    std::cout << "\t --toc  \t\t\t prints the terms of condition" << std::endl;
-    std::cout << "\t --info \t\t prints information about the binary" << std::endl;
-    std::cout << "\t --model (-m) \t\t prints a model is printed if the example is found to be satisfiable" << std::endl;
-    std::cout << "\t --all-models (-a) \t\t\t prints all models if the example is found to be satisfiable" << std::endl;
-    std::cout << "\t --statistics (-s) \t prints any statistics collected in the solving process" << std::endl;
-    std::cout << "\t --print-strategy \t prints the strategy of this solver" << std::endl;
+    std::cout << "\t --info \t\t\t prints information about the binary" << std::endl;
+    std::cout << "\t --model (-m) \t\t\t prints a model is printed if the example is found to be satisfiable" << std::endl;
+    std::cout << "\t --all-models (-a) \t prints all models if the example is found to be satisfiable" << std::endl;
+    std::cout << "\t --simplified-input (-si) \t prints a simplified form of the input formula (if result is unknown)" << std::endl;
+    std::cout << "\t --statistics (-s) \t\t prints any statistics collected in the solving process" << std::endl;
+    std::cout << "\t --print-strategy \t\t prints the strategy of this solver" << std::endl;
     std::cout << std::endl;
     std::cout << "Developer options:" <<std::endl;
-    std::cout << "\t --list-modules \t prints all compiled modules" << std::endl;
+    std::cout << "\t --list-modules \t\t prints all compiled modules" << std::endl;
     #ifdef SMTRAT_DEVOPTION_MeasureTime
     std::cout << "\t --print-timings \t prints the timings" << std::endl;
     #endif
