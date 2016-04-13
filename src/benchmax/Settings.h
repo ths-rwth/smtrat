@@ -88,7 +88,7 @@ public:
 			("output-file,f", po::value<std::string>(&outputFile), "output file")
 		;
 		solverOptions.add_options()
-			("tool,T", po::value<std::vector<std::string>>(&tools_generic), "any tool")
+			("tool", po::value<std::vector<std::string>>(&tools_generic), "any tool")
 			("smtrat,S", po::value<std::vector<std::string>>(&tools_smtrat), "an SMT-LIB 2.0 solver with SMT-RAT interface (multiple are possible)")
 			("z3,Z", po::value<std::vector<std::string>>(&tools_z3), "an SMT-LIB 2.0 solver with z3 interface (multiple are possible)")
 			("isat,I", po::value<std::vector<std::string>>(&tools_isat), "an .Hys solver with isat interface (multiple are possible)")
