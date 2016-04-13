@@ -36,7 +36,6 @@ namespace smtrat {
 		template<typename Iterator>
 		const ModelValue& getModelValue( Iterator _mvit, Model& _model )
         {
-            assert( _mvit != _model.end() );
             ModelValue& mv = _mvit->second;
             if( mv.isSubstitution() )
             {
