@@ -1,13 +1,15 @@
 #pragma once
 
-#include <iostream>
-
 #include "../Common.h"
+
+#include <iostream>
+#include <limits>
 
 namespace smtrat {
 namespace cad {
 	class Sample {
 	private:
+		std::size_t mID = std::numeric_limits<std::size_t>::max();
 		RAN mValue;
 		bool mIsRoot;
 		SampleLiftedWith mLiftedWith;
@@ -26,6 +28,12 @@ namespace cad {
 		}
 		const RAN& value() const {
 			return mValue;
+		}
+		const auto& id() const {
+			return mID;
+		}
+		auto& id() {
+			return mID;
 		}
 		bool isRoot() const {
 			return mIsRoot;
