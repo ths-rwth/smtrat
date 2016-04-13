@@ -9,6 +9,7 @@ namespace cad {
 	enum class ProjectionType { Brown, McCallum, Hong };
 	enum class SampleCompareStrategy { Integer, Value };
 	enum class FullSampleCompareStrategy { Integer, Value };
+	enum class MISHeuristic { TRIVIAL, GREEDY };
 	using RootSplittingStrategy = carl::rootfinder::SplittingStrategy;
 }
 }
