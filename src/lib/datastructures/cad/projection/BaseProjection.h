@@ -12,8 +12,6 @@ namespace smtrat {
 namespace cad {
 	
 	class BaseProjection {
-	public:
-		using PolynomialSelection = Bitset;
 	protected:
 		/// List of variables.
 		Variables mVariables;
