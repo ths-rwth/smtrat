@@ -80,11 +80,11 @@ public:
 		return fs::extension(path) == extension;
 	}
 	virtual bool canHandle(const fs::path&) const {
-		return false;
+		return true;
 	}
 	
 	virtual std::string getStatus(const BenchmarkResult&) const {
-		return "invalid";
+		return "";
 	}
 	
 	friend bool operator<(const Tool& lhs, const Tool& rhs) {
