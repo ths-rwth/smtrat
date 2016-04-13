@@ -36,6 +36,7 @@ namespace benchmax {
 	std::string Settings::StatsXMLFile;
 	std::string Settings::outputFile;
 	
+	std::vector<std::string> Settings::tools_generic;
 	std::vector<std::string> Settings::tools_smtrat;
 	std::vector<std::string> Settings::tools_z3;
 	std::vector<std::string> Settings::tools_isat;

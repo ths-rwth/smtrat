@@ -39,6 +39,7 @@ protected:
 	std::string mArguments;
 	std::map<std::string,std::string> mAttributes;
 public:
+	Tool(const fs::path& binary, const std::string& arguments): Tool("Generic", binary, arguments) {}
 	Tool(const std::string& name, const fs::path& binary, const std::string& arguments): mName(name), mBinary(binary), mArguments(arguments) {}
 	Tool(const Tool&) = delete;
 	virtual ~Tool() {}
