@@ -6,6 +6,7 @@
 #include "projection/Projection.h"
 #include "lifting/LiftingTree.h"
 #include "helper/CADConstraints.h"
+#include "helper/SampleEvaluation.h"
 
 namespace smtrat {
 namespace cad {
@@ -17,6 +18,7 @@ namespace cad {
 		CADConstraints<Settings::backtracking> mConstraints;
 		ProjectionT<Settings> mProjection;
 		LiftingTree<Settings> mLifting;
+		SampleEvaluation mSampleEvaluation;
 		
 		// ID scheme for variables x,y,z:
 		// Projection: x=0,y=1,z=2
@@ -60,12 +62,14 @@ namespace cad {
 		}
 		void addConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Adding " << c);
-			mConstraints.add(c);
+			std::size_t id = mConstraints.add(c);
+			mSampleEvaluation.addConstraint(id);
 		}
 		void removeConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing " << c);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Before removal:" << std::endl << mProjection << std::endl << mLifting.getTree());
-			mConstraints.remove(c);
+			std::size_t id = mConstraints.remove(c);
+			mSampleEvaluation.removeConstraint(id);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "After removal:" << std::endl << mProjection << std::endl << mLifting.getTree());
 		}
 		
@@ -81,9 +85,9 @@ namespace cad {
 				for (const auto& c: mConstraints.ordered()) {
 					Assignment a = m;
 					// TODO: m is cleared by the call to evaluate() ... 
-					auto res = carl::RealAlgebraicNumberEvaluation::evaluate(c.lhs(), a);
-					SMTRAT_LOG_TRACE("smtrat.cad", "Evaluating " << c.lhs() << " on " << m << " -> " << res);
-					sat = sat && carl::evaluate(res, c.relation());
+					auto res = carl::RealAlgebraicNumberEvaluation::evaluate(c.first.lhs(), a);
+					SMTRAT_LOG_TRACE("smtrat.cad", "Evaluating " << c.first.lhs() << " on " << m << " -> " << res);
+					sat = sat && carl::evaluate(res, c.first.relation());
 					if (!sat) break;
 				}
 				if (sat) {
