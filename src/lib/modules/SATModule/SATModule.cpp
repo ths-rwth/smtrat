@@ -2528,7 +2528,6 @@ SetWatches:
 
         do
         {
-            if( confl == CRef_Undef) std::cout << "TEST" << std::endl;
             assert( confl != CRef_Undef );    // (otherwise should be UIP)
             Clause& c = ca[confl];
 
