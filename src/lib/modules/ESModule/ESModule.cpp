@@ -114,11 +114,17 @@ namespace smtrat
                 std::vector<std::map<carl::Variable,Poly>::const_iterator> addedArithSubs;
                 std::unordered_map<FormulaT,std::unordered_map<FormulaT, bool>::const_iterator> foundBooleanSubstitutions;
                 bool foundNewSubstitution = true;
+                // we use sets, as we want the sub-formulas to be sorted according to their IDs
+                // a formula has always a greater id than its formulas (and, hence, their sub-formulas etc)
+                // then, for instance, for (and b (or a b))  we would first see that b->true and afterwards
+                // replace b for true in (or a b) as it has a higher ID
                 FormulaSetT foundSubstitutions;
-                FormulasT currentSubformulas = result.subformulas();
+                FormulaSetT currentSubformulas;
+                for( const FormulaT& subf : result.subformulas() )
+                    currentSubformulas.insert( currentSubformulas.end(), subf ); // as sub-formulas are already sorted use hint
                 while( foundNewSubstitution )
                 {
-                    FormulasT sfs;
+                    FormulaSetT sfs;
                     foundNewSubstitution = false;
                     // Process all equations first.
                     for( const auto& sf : currentSubformulas )
@@ -145,7 +151,7 @@ namespace smtrat
                                 }
                                 else
                                 {
-                                    sfs.push_back( tmp );
+                                    sfs.insert( sfs.end(), tmp );
                                 }
                             }
                         }
@@ -173,16 +179,14 @@ namespace smtrat
                                 {
                                     foundNewSubstitution = true;
                                     if( sfSimplified.getType() == carl::FormulaType::AND )
-                                    {
-                                        sfs.insert(sfs.end(), sfSimplified.subformulas().begin(), sfSimplified.subformulas().end() );
-                                    }
+                                        sfs.insert( sfSimplified.subformulas().begin(), sfSimplified.subformulas().end() );
                                     else
-                                        sfs.push_back( sfSimplified );
+                                        sfs.insert( sfs.end(), sfSimplified );
                                 }
                                 else
                                 {
-                                    if( !_outermost || !sfSimplified.isLiteral() || !sfSimplified.isOnlyPropositional() )
-                                        sfs.push_back( sfSimplified );
+                                    if( !(_outermost && sfSimplified.isLiteral() && sfSimplified.isOnlyPropositional()) )
+                                        sfs.insert( sfs.end(), sfSimplified );
                                     if( sfSimplified.getType() == carl::FormulaType::NOT )
                                     {
                                         SMTRAT_LOG_DEBUG("smtrat.es", "found boolean substitution [" << sfSimplified.subformula() << " -> false]");
@@ -213,7 +217,7 @@ namespace smtrat
                 else
                 {
                     if( !_elimSubstitutions )
-                        currentSubformulas.insert(currentSubformulas.end(), foundSubstitutions.begin(), foundSubstitutions.end() );
+                        currentSubformulas.insert( foundSubstitutions.begin(), foundSubstitutions.end() );
                     result = FormulaT( carl::FormulaType::AND, std::move(currentSubformulas) );
                 }
             Return:
