@@ -553,13 +553,6 @@ namespace vs
                         }
                     }
                 }
-                // If the state is already inconsistent update obvious conflicts.
-                if( isInconsistent() && fixedConditions != mpSubstitutionResults->end() )
-                {
-                    ConditionSetSet conflictingConditionPairs;
-                    if( !simplify( fixedConditions->back().first, conflictingConditionPairs, _ranking ) )
-                        addConflicts( NULL, std::move(conflictingConditionPairs) );
-                }
             }
             mSubResultsSimplified = true;
         }
