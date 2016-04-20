@@ -35,7 +35,13 @@ namespace smtrat
         mFormulaConditionMap(),
         mRanking(),
         mVariableVector()
-    {}
+    {
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        stringstream s;
+        s << moduleName() << "_" << id();
+        mpStatistics = new VSStatistics( s.str() );
+        #endif
+    }
 
     template<class Settings>
     VSModule<Settings>::~VSModule()
@@ -50,6 +56,9 @@ namespace smtrat
         }
         delete mpStateTree;
         delete mpConditionIdAllocator;
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        delete mpStatistics;
+        #endif
     }
 
     template<class Settings>
@@ -1620,6 +1629,9 @@ namespace smtrat
                         {
                             if( trySplitting )
                             {
+                                #ifdef SMTRAT_DEVOPTION_Statistics
+                                mpStatistics->branch();
+                                #endif
                                 branchAt( currentState->substitution().variable(), nextIntTCinRange, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
                             }
                         }
@@ -1653,7 +1665,12 @@ namespace smtrat
                                         Poly branchEx = (subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * cp;
                                         Rational branchValue = subPolyPartiallySubstituted.constantPart() * cp;
                                         if( branchAt( branchEx, true, branchValue, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) ) )
+                                        {
+                                            #ifdef SMTRAT_DEVOPTION_Statistics
+                                            mpStatistics->branch();
+                                            #endif
                                             return false;
+                                        }
                                     }
                                 }
                             }
@@ -1672,7 +1689,12 @@ namespace smtrat
                         if( !assIsInteger )
                         {
                             if( trySplitting )
+                            {
+                                #ifdef SMTRAT_DEVOPTION_Statistics
+                                mpStatistics->branch();
+                                #endif
                                 branchAt( currentState->substitution().variable(), evaluatedSubTerm, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
+                            }
                             return false;
                         }
                         assert( varSolutions.find( currentState->substitution().variable() ) == varSolutions.end() );

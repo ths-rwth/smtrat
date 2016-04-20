@@ -602,6 +602,9 @@ namespace smtrat
             addLemma( FormulaT( carl::FormulaType::OR, s1.negated(), FormulaT( constraintA ) ) );
             // Create (s2 -> constraintB)
             addLemma( FormulaT( carl::FormulaType::OR, s2.negated(), FormulaT( constraintB ) ) );
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            mpManager->mpStatistics->addBranchingLemma();
+            #endif
             return true;
         }
         assert( constraintB.isConsistent() != 2  );

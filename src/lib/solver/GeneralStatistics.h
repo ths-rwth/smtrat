@@ -9,6 +9,7 @@ namespace smtrat
 {
     class GeneralStatistics : public Statistics
     {
+        size_t mNumberOfBranchingLemmas;
        public:
          // Override Statistics::collect.
          void collect()
@@ -19,10 +20,18 @@ namespace smtrat
             Statistics::addKeyValuePair( "constraints", carl::constraintPool<Poly>().size() );
             Statistics::addKeyValuePair( "non-linear_constraints", carl::constraintPool<Poly>().nrNonLinearConstraints() );
             Statistics::addKeyValuePair( "maximal_degree", carl::constraintPool<Poly>().maxDegree() );
+            Statistics::addKeyValuePair( "number_of_learned_branching_lemmas", mNumberOfBranchingLemmas );
          }
 
-        GeneralStatistics() : Statistics("General", this)
+        GeneralStatistics() : 
+            Statistics("General", this),
+            mNumberOfBranchingLemmas( 0 )
         {}
+        
+        void addBranchingLemma()
+        {
+            ++mNumberOfBranchingLemmas;
+        }
     };
 }
 

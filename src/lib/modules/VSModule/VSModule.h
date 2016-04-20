@@ -19,6 +19,10 @@
 #include "../../solver/Module.h"
 #include "../../solver/RuntimeSettings.h"
 
+#ifdef SMTRAT_DEVOPTION_Statistics
+#include "VSStatistics.h"
+#endif
+
 namespace smtrat
 {
     template<class Settings>
@@ -64,6 +68,11 @@ namespace smtrat
              * variable for minus infinity (the first) and epsilon (the second).
              */
             mutable VarPairVector mVariableVector;
+            
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            /// Stores all collected statistics during solving.
+            VSStatistics* mpStatistics;
+            #endif
 
         public:
 			typedef Settings SettingsType;

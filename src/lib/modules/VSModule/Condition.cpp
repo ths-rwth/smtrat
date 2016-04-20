@@ -84,7 +84,7 @@ namespace vs
         double degreeWeight = (double)varInfo.maxDegree();
         if( maximum <= degreeWeight )
             degreeWeight = maximum - 1;
-        //Check the leading coefficient of the  given variable.
+        //Check the leading coefficient of the given variable.
         unsigned lCoeffWeight = 0;
         unsigned lCoeffWeightB = 2;
         if( degreeWeight <= 1 )
@@ -124,9 +124,9 @@ namespace vs
 #ifdef __VS
         smtrat::Poly::PolyType polyExpanded = (smtrat::Poly::PolyType)constraint().lhs();
 #else
-		typename smtrat::Poly::PolyType polyExpanded = (typename smtrat::Poly::PolyType)constraint().lhs();
+	typename smtrat::Poly::PolyType polyExpanded = (typename smtrat::Poly::PolyType)constraint().lhs();
 #endif
-		if( numberOfVariableOccurencesWeight == 1 && ( polyExpanded.nrTerms() == 1 || (constraint().constantPart() != smtrat::ZERO_RATIONAL && polyExpanded.nrTerms() > 1) ) )
+	if( numberOfVariableOccurencesWeight == 1 && ( polyExpanded.nrTerms() == 1 || (constraint().constantPart() != smtrat::ZERO_RATIONAL && polyExpanded.nrTerms() > 1) ) )
         {
             bool allOtherMonomialsPos = true;
             bool allOtherMonomialsNeg = true;
