@@ -10,32 +10,23 @@ os:
 env:
   global:
     - secure: "qNWFF3c/WIhwn3jBET5FiSQTJDgLMJnaXOHYMKwpNKByT1ctEnMiZ/BvR+1U5cr921kdvpSm+oR63rZNtzYJohcPiSNOZUlvKFFDYTb1u7ZkkXf8tPXIl176zBctbq2CMZ7i8JFQE4ibiMRIZaflrNANu3J9cdDkTJa/X6EWc/oqc8KSFc15epSNq8eCD442T4I/a/Vxr2NSz6AKbTxWSNla9gTaJ7lNWPgtHADxkC17OmgSbgwhBC3okHB4RtmSk9ABZzS8ZmioGBRvSPUjQec66XWEEISXmxMIjH1Fsit/DCZ7ZvRtfoPKkvIOStb5UrBcerCl7GU6IpkfewrNrPk+kLIh873BrNUHAKEK3kXoYmzbVam92Xqh/Y971IFbfxbbZSns7XBX/VfsO0aY0uqkm1trBcIAmMIMYs2KfEE7jK5Ozi847Mz34pnkKLU4cSrKYFhcDSQHWlnKzdh3SpVqwsIyiZLUHWNbJu+8t/TGHmDvD4vhwqQqoKwI1J/VawFS7IXchyUsodALFXXKJK5OOaA6qUaPGybHdQuEasCgBmZ8KRN/QN9hxocnIi3MIEgEj/+jsDfwLXWvqA/xQA3Zf/T5X8rfgYa6kkAeN8nkJNoDAPRLVOHcY+5nbDgpFVd4okS0MZAEN/akCdSY9kIFIrLNxYACymlvyXU5vV0="
-  matrix:
-    - USE=g++-4.8
-    - USE=g++-4.9
-    - USE=g++-5
-    - USE=clang++-3.4
-    - USE=clang++-3.5
-    - USE=clang++-3.6
-    - USE=clang++-3.7
-    - USE=clang++-3.5 TASK=doxygen
 
 matrix:
-  exclude:
-    - os: osx
-      env: USE=g++-4.8
-    - os: osx
+  include:
+    - os: linux
       env: USE=g++-4.9
-    - os: osx
+    - os: linux
       env: USE=g++-5
-    - os: osx
-      env: USE=clang++-3.4
-    - os: osx
+    - os: linux
       env: USE=clang++-3.6
-    - os: osx
+    - os: linux
       env: USE=clang++-3.7
+    - os: linux
+      env: USE=clang++-3.8
+    - os: linux
+      env: USE=clang++-3.6 TASK=doxygen
     - os: osx
-      env: USE=clang++-3.5 TASK=doxygen
+      env: USE=clang++-3.5
 
 before_install:
   - cd .travis/ && source setup_travis.sh && cd ../
