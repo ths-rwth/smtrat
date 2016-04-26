@@ -68,10 +68,25 @@ namespace cad {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing " << c);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Before removal:" << std::endl << mProjection << std::endl << mLifting.getTree());
 			std::size_t id = mConstraints.remove(c);
+			mLifting.removedConstraint(Bitset(id));
 			mSampleEvaluation.removeConstraint(id);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "After removal:" << std::endl << mProjection << std::endl << mLifting.getTree());
 		}
 		
+		template<typename ConstraintIt>
+		bool evaluateSample(Sample& sample, const ConstraintIt& constraint, Assignment& assignment) const {
+			std::size_t cid = constraint.second;
+			if (sample.evaluatedWith().test(cid)) {
+				return sample.evaluationResult().test(cid);
+			}
+			auto res = carl::RealAlgebraicNumberEvaluation::evaluate(constraint.first.lhs(), assignment);
+			bool evalResult = carl::evaluate(res, constraint.first.relation());
+			SMTRAT_LOG_TRACE("smtrat.cad", "Evaluating " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment << " -> " << evalResult);
+			sample.evaluatedWith().set(cid, true);
+			sample.evaluationResult().set(cid, evalResult);
+			return evalResult;
+		}
+
 		Answer checkFullSamples(Assignment& assignment) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Checking for full satisfying samples...");
 			SMTRAT_LOG_TRACE("smtrat.cad", "Full sample queue:" << std::endl << mLifting.printFullSamples());
@@ -83,10 +98,7 @@ namespace cad {
 				bool sat = true;
 				for (const auto& c: mConstraints.ordered()) {
 					Assignment a = m;
-					// TODO: m is cleared by the call to evaluate() ... 
-					auto res = carl::RealAlgebraicNumberEvaluation::evaluate(c.first.lhs(), a);
-					SMTRAT_LOG_TRACE("smtrat.cad", "Evaluating " << c.first.lhs() << " on " << m << " -> " << res);
-					sat = sat && carl::evaluate(res, c.first.relation());
+					sat = sat && evaluateSample(*it, c, a);
 					if (!sat) break;
 				}
 				if (sat) {
@@ -118,6 +130,11 @@ namespace cad {
 				SMTRAT_LOG_DEBUG("smtrat.cad", "Sample " << s << " at depth " << it.depth());
 				SMTRAT_LOG_DEBUG("smtrat.cad", "Current sample: " << mLifting.printSample(it));
 				assert(0 <= it.depth() && it.depth() < dim());
+				if (s.hasConflictWithConstraint()) {
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Sample " << s << " already has a conflict.");
+					mLifting.removeNextSample();
+					continue;
+				}
 				auto polyID = mProjection.getPolyForLifting(idLP(it.depth() + 1), s.liftedWith());
 				if (polyID) {
 					const auto& poly = mProjection.getPolynomialById(idLP(it.depth() + 1), *polyID);
