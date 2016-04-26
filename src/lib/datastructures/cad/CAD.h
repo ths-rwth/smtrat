@@ -38,8 +38,7 @@ namespace cad {
 			)
 		{
 			mProjection.setRemoveCallback([&](std::size_t level, const SampleLiftedWith& mask){
-				mLifting.removeLiftedWithFlags(idPL(level) - 1, mask);
-				mLifting.removeRootOfFlags(idPL(level), mask);
+				mLifting.removedPolynomialsFromLevel(idPL(level), mask);
 			});
 		}
 		std::size_t dim() const {
