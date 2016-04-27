@@ -22,6 +22,7 @@ matrix:
     - os: linux
       env: USE=clang++-3.6 TASK=doxygen
     - os: osx
+      osx_image: xcode7.3
       env: USE=clang++-3.5
 
 before_install:
