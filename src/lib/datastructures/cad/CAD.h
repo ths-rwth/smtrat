@@ -6,7 +6,8 @@
 #include "projection/Projection.h"
 #include "lifting/LiftingTree.h"
 #include "helper/CADConstraints.h"
-#include "helper/SampleEvaluation.h"
+#include "helper/ConflictGraph.h"
+#include "helper/MISGeneration.h"
 
 namespace smtrat {
 namespace cad {
@@ -18,7 +19,6 @@ namespace cad {
 		CADConstraints<Settings::backtracking> mConstraints;
 		ProjectionT<Settings> mProjection;
 		LiftingTree<Settings> mLifting;
-		SampleEvaluation mSampleEvaluation;
 		
 		// ID scheme for variables x,y,z:
 		// Projection: x=0,y=1,z=2
@@ -51,7 +51,7 @@ namespace cad {
 			return mLifting;
 		}
 		auto getConstraints() const {
-			return mConstraints.get();
+			return mConstraints.indexed();
 		}
 		void reset(const Variables& vars) {
 			mVariables = vars;
@@ -62,14 +62,12 @@ namespace cad {
 		void addConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Adding " << c);
 			std::size_t id = mConstraints.add(c);
-			mSampleEvaluation.addConstraint(id);
 		}
 		void removeConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing " << c);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Before removal:" << std::endl << mProjection << std::endl << mLifting.getTree());
 			std::size_t id = mConstraints.remove(c);
 			mLifting.removedConstraint(Bitset(id));
-			mSampleEvaluation.removeConstraint(id);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "After removal:" << std::endl << mProjection << std::endl << mLifting.getTree());
 		}
 		
@@ -158,6 +156,21 @@ namespace cad {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current sampletree:" << std::endl << mLifting.getTree());
 			return Answer::UNSAT;
+		}
+		
+		ConflictGraph generateConflictGraph() const {
+			ConflictGraph cg(mConstraints.size());
+			for (const auto& s: mLifting.getTree()) {
+				if (s.hasConflictWithConstraint()) {
+					cg.addSample(s);
+				}
+			}
+			return cg;
+		}
+		
+		void generateInfeasibleSubsets(std::vector<FormulaSetT>& mis) const {
+			cad::MISGeneration<Settings::misHeuristic> generator;
+			generator(*this, mis);
 		}
 	};
 }

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "../Common.h"
+#include "../lifting/Sample.h"
 
 #include <iostream>
 #include <map>
@@ -21,36 +22,22 @@ namespace cad {
  * A vertex from C and a vertex from S are connected by an edge in E iff the corresponding constraint conflicts with the corresponding sample point.
  */
 
-class SampleEvaluation {
+class ConflictGraph {
 private:
-	IDPool mIDs;
 	/// Stores for each constraints, which sample points violate the constraint.
 	std::vector<Bitset> mData;
+	std::size_t mNextSID = 0;
 public:
-	void addConstraint(std::size_t id) {
-		if (id >= mData.size()) {
-			mData.resize(id+1);
+	ConflictGraph(std::size_t constraints): mData(constraints) {}
+	void addSample(const Sample& sample) {
+		assert(sample.hasConflictWithConstraint());
+		std::size_t sid = mNextSID++;
+		const Bitset& evalWith = sample.evaluatedWith();
+		for (std::size_t pos = evalWith.find_first(); pos != Bitset::npos; pos = evalWith.find_next(pos)) {
+			if (!sample.evaluationResult().test(pos)) {
+				mData[pos].set(sid, true);
+			}
 		}
-	}
-	void removeConstraint(std::size_t id) {
-		assert(id < mData.size());
-		if (id == mData.size()-1) {
-			mData.pop_back();
-		} else {
-			mData[id] = Bitset();
-		}
-	}
-	/**
-	 * Registers a new sample point and returns its ID.
-	 */
-	std::size_t newSample() {
-		return mIDs.get();
-	}
-	void set(std::size_t constraint, std::size_t sample, bool value) {
-		if (constraint >= mData.size()) {
-			mData.resize(constraint+1);
-		}
-		mData[constraint].set(sample, value);
 	}
 	/**
 	 * Retrieves the constraint that covers the most samples.
@@ -86,7 +73,7 @@ public:
 		return false;
 	}
 	
-	friend std::ostream& operator<<(std::ostream& os, const SampleEvaluation& cg) {
+	friend std::ostream& operator<<(std::ostream& os, const ConflictGraph& cg) {
 		os << "Print CG with " << cg.mData.size() << " constraints" << std::endl;
 		for (std::size_t i = 0; i < cg.mData.size(); i++) {
 			os << i << ":" << std::endl;
