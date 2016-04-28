@@ -61,7 +61,7 @@ namespace cad {
 		}
 		void addConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Adding " << c);
-			std::size_t id = mConstraints.add(c);
+			mConstraints.add(c);
 		}
 		void removeConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing " << c);
@@ -139,8 +139,9 @@ namespace cad {
 					SMTRAT_LOG_DEBUG("smtrat.cad", "Lifting " << s << " with " << poly);
 					mLifting.liftSample(it, poly, *polyID);
 				} else {
-					SMTRAT_LOG_DEBUG("smtrat.cad", "Got no polynomial for " << s << ", projecting into level " << (dim() - 1 - it.depth()) << " ...");
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Got no polynomial for " << s << ", projecting into level " << idLP(it.depth() + 1) << " ...");
 					bool gotNewPolys = mProjection.projectNewPolynomial(idLP(it.depth() + 1));
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Tried to project polynomials into level " << idLP(it.depth() + 1) << ", result = " << gotNewPolys);
 					if (gotNewPolys) {
 						SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 						mLifting.restoreRemovedSamples();
