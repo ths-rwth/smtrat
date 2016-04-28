@@ -123,6 +123,9 @@ namespace cad {
 		auto getTree() const {
 			return mTree;
 		}
+		auto getLiftingQueue() const {
+			return mLiftingQueue;
+		}
 		void reset(Variables&& vars) {
 			mVariables = std::move(vars);
 		}
