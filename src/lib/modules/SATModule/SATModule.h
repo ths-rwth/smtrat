@@ -132,14 +132,38 @@ namespace smtrat
             {
                 bool mStoredInSatisfied;
                 int mPosition;
+                std::vector<FormulaT> mOrigins;
                 
                 ClauseInformation() = delete;
                 ClauseInformation( int _position ):
                     mStoredInSatisfied( false ),
-                    mPosition( _position )
+                    mPosition( _position ),
+                    mOrigins()
                 {}
                 ClauseInformation( const ClauseInformation& ) = default;
                 ClauseInformation( ClauseInformation&& ) = default;
+                
+                void addOrigin( const FormulaT& _formula )
+                {
+                    mOrigins.push_back( _formula );
+                }
+                
+                void removeOrigin( const FormulaT& _formula )
+                {
+                    auto iter = std::find( mOrigins.begin(), mOrigins.end(), _formula );
+                    if( iter != mOrigins.end() )
+                    {
+                        if( iter != --mOrigins.end() )
+                        {
+                            *iter = mOrigins.back();
+                            mOrigins.pop_back();
+                        }
+                        else
+                        {
+                            mOrigins.pop_back();
+                        }
+                    }
+                }
             };
 
             /// [Minisat related code]
@@ -205,6 +229,19 @@ namespace smtrat
                     activity( act )
                 {}
             };
+            
+            struct CNFInfos
+            {
+                carl::uint mCounter;
+                Minisat::Lit mLiteral;
+                std::vector<Minisat::CRef> mClauses;
+                
+                CNFInfos():
+                    mCounter( 1 ),
+                    mLiteral( Minisat::lit_Undef ),
+                    mClauses()
+                {}
+            };
 
             /**
              * Maps the constraints occurring in the SAT module to their abstractions. We store a vector of literals
@@ -225,10 +262,7 @@ namespace smtrat
             typedef Minisat::vec<std::pair<Abstraction*,Abstraction*>> BooleanConstraintMap;
             
             /// Maps the clauses in the received formula to the corresponding Minisat clause.
-            typedef carl::FastMap<FormulaT, std::vector<Minisat::CRef>> FormulaClausesMap;
-            
-            /// Maps the clauses in Minisat to the corresponding received formula.
-            typedef std::map<Minisat::CRef, FormulaT> ClauseFormulaMap;
+            typedef carl::FastMap<FormulaT, CNFInfos> FormulaCNFInfosMap;
 
             /// Maps the minisat variable to the formulas which influence its value
             typedef std::map<Minisat::Var, FormulasT> VarLemmaMap;
@@ -481,10 +515,8 @@ namespace smtrat
             MinisatVarMap mMinisatVarMap;
             ///
             carl::FastMap<FormulaT, Minisat::Lit> mFormulaAssumptionMap;
-            /// Maps the clauses in the received formula to the corresponding Minisat clause.
-            FormulaClausesMap mFormulaClausesMap;
-            /// Maps the Minisat clauses to the corresponding received formula.
-            ClauseFormulaMap mClauseFormulaMap;
+            /// Maps the clauses in the received formula to the corresponding Minisat clause and Minisat literal.
+            FormulaCNFInfosMap mFormulaCNFInfosMap;
             /// If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
             ClauseSet mLearntDeductions;
             ///
@@ -1390,8 +1422,21 @@ namespace smtrat
                 return (int)(drand( seed ) * size);
             }
             
+            void updateCNFInfoCounter( typename FormulaCNFInfosMap::iterator _iter, const FormulaT& _origin, bool _increment );
+            
+            void addClause_( const Minisat::vec<Minisat::Lit>& _clause, unsigned _type, const FormulaT& _original, std::vector<Minisat::CRef>& _addedClauses )
+            {
+                if( addClause( _clause, _type ) && _type == Minisat::NORMAL_CLAUSE )
+                {
+                    _addedClauses.push_back( clauses.last() );
+                    auto cfRet = mClauseInformation.emplace( clauses.last(), ClauseInformation( clauses.size()-1 ) );
+                    assert( cfRet.second );
+                    cfRet.first->second.addOrigin( _original );
+                }
+            }
+            
             Minisat::Lit addClauses( const FormulaT& _formula, unsigned _type, unsigned _depth = 0, const FormulaT& _original = FormulaT( carl::FormulaType::TRUE ), bool _polarity = false );
-            void addXorClauses( const Minisat::vec<Minisat::Lit>& _literals, const Minisat::vec<Minisat::Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, Minisat::vec<Minisat::Lit>& _clause, bool _ignorePolarity, bool _polarity );
+            void addXorClauses( const Minisat::vec<Minisat::Lit>& _literals, const Minisat::vec<Minisat::Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, Minisat::vec<Minisat::Lit>& _clause, bool _ignorePolarity, bool _polarity, const FormulaT& _original, std::vector<Minisat::CRef>& _addedClauses );
             
             /**
              * Creates or simply returns the literal belonging to the formula being the first argument. 
