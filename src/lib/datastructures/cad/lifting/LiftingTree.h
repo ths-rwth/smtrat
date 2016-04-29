@@ -149,7 +149,6 @@ namespace cad {
 			return !mLiftingQueue.empty();
 		}
 		Iterator getNextSample() {
-			mLiftingQueue.restoreOrder();
 			assert(mTree.is_valid(mLiftingQueue.getNextSample()));
 			return mLiftingQueue.getNextSample();
 		}
@@ -162,6 +161,7 @@ namespace cad {
 		}
 		
 		bool liftSample(Iterator sample, const UPoly& p, std::size_t pid) {
+			assert(isConsistent());
 			auto m = extractSampleMap(sample);
 			RationalInterval bounds = RationalInterval::unboundedInterval();
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Lifting " << m << " on " << p);
@@ -216,6 +216,12 @@ namespace cad {
 				s.evaluatedWith() -= mask;
 				s.evaluationResult() -= mask;
 			}
+		}
+		
+		bool isConsistent() const {
+			if (!mCheckingQueue.isConsistent()) return false;
+			if (!mLiftingQueue.isConsistent()) return false;
+			return true;
 		}
 
 		std::string printSample(Iterator sample) const {
