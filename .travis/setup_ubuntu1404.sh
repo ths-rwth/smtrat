@@ -36,6 +36,11 @@ elif [[ ${USE} == "clang++-3.7" ]]; then
 	sudo apt-get -qq update
 	install clang-3.7
 	defCXX clang-3.7 clang++-3.7
+elif [[ ${USE} == "clang++-3.8" ]]; then
+	sudo add-apt-repository -y "deb http://llvm.org/apt/precise/ llvm-toolchain-precise-3.8 main"
+	sudo apt-get -qq update
+	install clang-3.8
+	defCXX clang-3.8 clang++-3.8
 fi
 
 sudo service postgresql stop

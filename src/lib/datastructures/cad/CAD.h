@@ -6,7 +6,8 @@
 #include "projection/Projection.h"
 #include "lifting/LiftingTree.h"
 #include "helper/CADConstraints.h"
-#include "helper/SampleEvaluation.h"
+#include "helper/ConflictGraph.h"
+#include "helper/MISGeneration.h"
 
 namespace smtrat {
 namespace cad {
@@ -18,7 +19,6 @@ namespace cad {
 		CADConstraints<Settings::backtracking> mConstraints;
 		ProjectionT<Settings> mProjection;
 		LiftingTree<Settings> mLifting;
-		SampleEvaluation mSampleEvaluation;
 		
 		// ID scheme for variables x,y,z:
 		// Projection: x=0,y=1,z=2
@@ -38,8 +38,7 @@ namespace cad {
 			)
 		{
 			mProjection.setRemoveCallback([&](std::size_t level, const SampleLiftedWith& mask){
-				mLifting.removeLiftedWithFlags(idPL(level) - 1, mask);
-				mLifting.removeRootOfFlags(idPL(level), mask);
+				mLifting.removedPolynomialsFromLevel(idPL(level), mask);
 			});
 		}
 		std::size_t dim() const {
@@ -52,7 +51,7 @@ namespace cad {
 			return mLifting;
 		}
 		auto getConstraints() const {
-			return mConstraints.get();
+			return mConstraints.indexed();
 		}
 		void reset(const Variables& vars) {
 			mVariables = vars;
@@ -62,17 +61,30 @@ namespace cad {
 		}
 		void addConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Adding " << c);
-			std::size_t id = mConstraints.add(c);
-			mSampleEvaluation.addConstraint(id);
+			mConstraints.add(c);
 		}
 		void removeConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing " << c);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Before removal:" << std::endl << mProjection << std::endl << mLifting.getTree());
 			std::size_t id = mConstraints.remove(c);
-			mSampleEvaluation.removeConstraint(id);
+			mLifting.removedConstraint(Bitset(id));
 			SMTRAT_LOG_DEBUG("smtrat.cad", "After removal:" << std::endl << mProjection << std::endl << mLifting.getTree());
 		}
 		
+		template<typename ConstraintIt>
+		bool evaluateSample(Sample& sample, const ConstraintIt& constraint, Assignment& assignment) const {
+			std::size_t cid = constraint.second;
+			if (sample.evaluatedWith().test(cid)) {
+				return sample.evaluationResult().test(cid);
+			}
+			auto res = carl::RealAlgebraicNumberEvaluation::evaluate(constraint.first.lhs(), assignment);
+			bool evalResult = carl::evaluate(res, constraint.first.relation());
+			SMTRAT_LOG_TRACE("smtrat.cad", "Evaluating " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment << " -> " << evalResult);
+			sample.evaluatedWith().set(cid, true);
+			sample.evaluationResult().set(cid, evalResult);
+			return evalResult;
+		}
+
 		Answer checkFullSamples(Assignment& assignment) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Checking for full satisfying samples...");
 			SMTRAT_LOG_TRACE("smtrat.cad", "Full sample queue:" << std::endl << mLifting.printFullSamples());
@@ -84,10 +96,7 @@ namespace cad {
 				bool sat = true;
 				for (const auto& c: mConstraints.ordered()) {
 					Assignment a = m;
-					// TODO: m is cleared by the call to evaluate() ... 
-					auto res = carl::RealAlgebraicNumberEvaluation::evaluate(c.first.lhs(), a);
-					SMTRAT_LOG_TRACE("smtrat.cad", "Evaluating " << c.first.lhs() << " on " << m << " -> " << res);
-					sat = sat && carl::evaluate(res, c.first.relation());
+					sat = sat && evaluateSample(*it, c, a);
 					if (!sat) break;
 				}
 				if (sat) {
@@ -119,14 +128,20 @@ namespace cad {
 				SMTRAT_LOG_DEBUG("smtrat.cad", "Sample " << s << " at depth " << it.depth());
 				SMTRAT_LOG_DEBUG("smtrat.cad", "Current sample: " << mLifting.printSample(it));
 				assert(0 <= it.depth() && it.depth() < dim());
+				if (s.hasConflictWithConstraint()) {
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Sample " << s << " already has a conflict.");
+					mLifting.removeNextSample();
+					continue;
+				}
 				auto polyID = mProjection.getPolyForLifting(idLP(it.depth() + 1), s.liftedWith());
 				if (polyID) {
 					const auto& poly = mProjection.getPolynomialById(idLP(it.depth() + 1), *polyID);
 					SMTRAT_LOG_DEBUG("smtrat.cad", "Lifting " << s << " with " << poly);
 					mLifting.liftSample(it, poly, *polyID);
 				} else {
-					SMTRAT_LOG_DEBUG("smtrat.cad", "Got no polynomial for " << s << ", projecting into level " << (dim() - 1 - it.depth()) << " ...");
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Got no polynomial for " << s << ", projecting into level " << idLP(it.depth() + 1) << " ...");
 					bool gotNewPolys = mProjection.projectNewPolynomial(idLP(it.depth() + 1));
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Tried to project polynomials into level " << idLP(it.depth() + 1) << ", result = " << gotNewPolys);
 					if (gotNewPolys) {
 						SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 						mLifting.restoreRemovedSamples();
@@ -142,6 +157,21 @@ namespace cad {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current sampletree:" << std::endl << mLifting.getTree());
 			return Answer::UNSAT;
+		}
+		
+		ConflictGraph generateConflictGraph() const {
+			ConflictGraph cg(mConstraints.size());
+			for (const auto& s: mLifting.getTree()) {
+				if (s.hasConflictWithConstraint()) {
+					cg.addSample(s);
+				}
+			}
+			return cg;
+		}
+		
+		void generateInfeasibleSubsets(std::vector<FormulaSetT>& mis) const {
+			cad::MISGeneration<Settings::misHeuristic> generator;
+			generator(*this, mis);
 		}
 	};
 }

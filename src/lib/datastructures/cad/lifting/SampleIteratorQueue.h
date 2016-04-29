@@ -62,8 +62,16 @@ namespace cad {
 				std::sort(chunkStart, mQueue.end(), mComparator);
 			} else {
 				mChunkCounter = 0;
-				std::sort(mQueue.end(), mQueue.end(), mComparator);
+				std::sort(mQueue.begin(), mQueue.end(), mComparator);
 			}
+		}
+		
+		template<typename I, typename C>
+		friend std::ostream& operator<<(std::ostream& os, const SampleIteratorQueue<I,C>& siq) {
+			for (const auto& it: siq.mQueue) {
+				os << *it << ", ";
+			}
+			return os;
 		}
 	};
 }

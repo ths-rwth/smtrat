@@ -23,15 +23,22 @@ public:
 		return isExtension(path, ".smt2");
 	}
 	
+	std::string getStatusFromOutput(const BenchmarkResult& result) const {
+		if (result.stderr.find("GNU MP: Cannot allocate memory") != std::string::npos) return "memout";
+		return "segfault";
+	}
+	
 	std::string getStatus(const BenchmarkResult& result) const override {
 		switch (result.exitCode) {
 			case 2: return "sat";
 			case 3: return "unsat";
 			case 4: return "unknown";
-			case 5: return "error";
+			case 5: return "wrong";
+			case 9: return "nosuchfile";
+			case 10: return "parsererror";
 			case 11: return "timeout";
 			case 12: return "memout";
-			default: return "segfault";
+			default: return getStatusFromOutput(result);
 		}
 	}
 	

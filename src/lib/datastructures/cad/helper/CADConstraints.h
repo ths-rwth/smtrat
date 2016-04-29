@@ -28,6 +28,7 @@ protected:
 		}
 	};
 	using ConstraintMap = std::map<ConstraintT, std::size_t, ConstraintComparator>;
+	using ConstraintIts = std::vector<typename ConstraintMap::iterator>;
 	
 	Variables mVariables;
 	Callback mAddCallback;
@@ -46,6 +47,12 @@ public:
 		mConstraintMap.clear();
 		mConstraintIts.clear();
 		mIDPool = IDPool();
+	}
+	std::size_t size() const {
+		return mConstraintIts.size();
+	}
+	const auto& indexed() const {
+		return mConstraintIts;
 	}
 	const auto& ordered() const {
 		return mConstraintMap;

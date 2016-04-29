@@ -123,6 +123,9 @@ namespace cad {
 		auto getTree() const {
 			return mTree;
 		}
+		auto getLiftingQueue() const {
+			return mLiftingQueue;
+		}
 		void reset(Variables&& vars) {
 			mVariables = std::move(vars);
 		}
@@ -189,12 +192,11 @@ namespace cad {
 			return res;
 		}
 		
-		void removeLiftedWithFlags(std::size_t level, const SampleLiftedWith& mask) {
-			for (auto it = mTree.begin_depth(level); it != mTree.end_depth(); it++) {
+		void removedPolynomialsFromLevel(std::size_t level, const Bitset& mask) {
+			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Cleanup after removing " << mask << " from level " << level);
+			for (auto it = mTree.begin_depth(level - 1); it != mTree.end_depth(); it++) {
 				it->liftedWith() -= mask;
 			}
-		}
-		void removeRootOfFlags(std::size_t level, const SampleRootOf& mask) {
 			std::vector<Iterator> deleteQueue;
 			for (auto it = mTree.begin_depth(level); it != mTree.end_depth(); it++) {
 				if (!it->isRoot()) continue;
@@ -208,6 +210,14 @@ namespace cad {
 			cleanQueuesFromExpired();
 		}
 		
+		void removedConstraint(const Bitset& mask) {
+			for (auto& s: mTree) {
+				if (s.evaluatedWith().size() == 0) continue;
+				s.evaluatedWith() -= mask;
+				s.evaluationResult() -= mask;
+			}
+		}
+
 		std::string printSample(Iterator sample) const {
 			std::vector<Sample> chunks(mTree.begin_path(sample), mTree.end_path());
 			std::stringstream ss;

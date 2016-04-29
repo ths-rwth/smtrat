@@ -68,7 +68,7 @@ namespace smtrat
 	{
 		auto answer = mCAD.check(mLastAssignment);
 		if (answer == Answer::UNSAT) {
-			generateTrivialInfeasibleSubset();
+			mCAD.generateInfeasibleSubsets(mInfeasibleSubsets);
 		}
 		return answer;
 	}

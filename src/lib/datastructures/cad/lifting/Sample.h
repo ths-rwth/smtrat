@@ -14,6 +14,8 @@ namespace cad {
 		bool mIsRoot;
 		SampleLiftedWith mLiftedWith;
 		SampleRootOf mRootOf;
+		Bitset mEvaluatedWith;
+		Bitset mEvaluationResult;
 		
 	public:
 		explicit Sample(const RAN& value): mValue(value), mIsRoot(false) {
@@ -56,6 +58,21 @@ namespace cad {
 			assert(isRoot());
 			return mRootOf;
 		}
+		const Bitset& evaluatedWith() const {
+			return mEvaluatedWith;
+		}
+		Bitset& evaluatedWith() {
+			return mEvaluatedWith;
+		}
+		const Bitset& evaluationResult() const {
+			return mEvaluationResult;
+		}
+		Bitset& evaluationResult() {
+			return mEvaluationResult;
+		}
+		bool hasConflictWithConstraint() const {
+			return mEvaluationResult.any();
+		}
 		void merge(const Sample& s) {
 			if (s.isRoot()) setIsRoot(true);
 			mLiftedWith = mLiftedWith | s.mLiftedWith;
@@ -64,6 +81,9 @@ namespace cad {
 		
 		bool operator<(const Sample& s) const {
 			return value() < s.value();
+		}
+		bool operator>(const Sample& s) const {
+			return s.value() < value();
 		}
 		
 		friend std::ostream& operator<<(std::ostream& os, const Sample& s) {
