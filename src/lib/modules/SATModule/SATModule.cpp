@@ -119,8 +119,7 @@ namespace smtrat
         mBooleanVarMap(),
         mMinisatVarMap(),
         mFormulaAssumptionMap(),
-        mFormulaClausesMap(),
-        mClauseFormulaMap(),
+        mFormulaCNFInfosMap(),
         mClauseInformation(),
         mLiteralClausesMap(),
         mNumberOfSatisfiedClauses( 0 ),
@@ -200,19 +199,9 @@ namespace smtrat
                 assert( mFormulaAssumptionMap.find( _subformula->formula() ) == mFormulaAssumptionMap.end() );
                 mFormulaAssumptionMap.emplace( _subformula->formula(), assumptions.last() );
             }
-            else 
+            else
             {
-                assert( mFormulaClausesMap.find( _subformula->formula() ) == mFormulaClausesMap.end() );
-                auto ret = mFormulaClausesMap.emplace( _subformula->formula(), std::vector<Minisat::CRef>() );
-                int pos = clauses.size();
                 addClauses( _subformula->formula(), NORMAL_CLAUSE, 0, _subformula->formula(), false );
-                for( ; pos < clauses.size(); ++pos )
-                {
-                    ret.first->second.push_back( clauses[pos] );
-                    assert( mClauseInformation.find( clauses[pos] ) == mClauseInformation.end() );
-                    mClauseInformation.emplace( clauses[pos], ClauseInformation( pos ) );
-                    mClauseFormulaMap[ clauses[pos] ] = _subformula->formula();
-                }
             }
             if ( isLemmaLevel(NORMAL) && decisionLevel() == 0)
             {
@@ -232,9 +221,7 @@ namespace smtrat
             }
         }
         if( !ok )
-        {
             updateInfeasibleSubset();
-        }
         return ok;
     }
 
@@ -242,15 +229,10 @@ namespace smtrat
     void SATModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
         if( _subformula->formula().isFalse() || _subformula->formula().isTrue() )
-        {
             return;
-        }
-        
         cancelUntil( 0, true );  // can we do better than this?
         if( !mReceivedFormulaPurelyPropositional )
-        {
             adaptPassedFormula();
-        }
         assert( rPassedFormula().empty() );
         for( int i = 0; i < learnts.size(); ++i )
         {
@@ -278,37 +260,10 @@ namespace smtrat
         }
         else
         {
-            FormulaClausesMap::iterator iter = mFormulaClausesMap.find( _subformula->formula() );
-            assert( iter != mFormulaClausesMap.end() );
-            for( auto cref : iter->second )
-            {
-                assert( cref != CRef_Undef );
-                auto ciIter = mClauseInformation.find( cref );
-                assert( ciIter != mClauseInformation.end() );
-                vec<CRef>& cls = ciIter->second.mStoredInSatisfied ? satisfiedClauses : clauses;
-                if( ciIter->second.mPosition < cls.size() - 1 )
-                {
-                    cls[ciIter->second.mPosition] = cls.last();
-                    auto ciIterB = mClauseInformation.find( cls[ciIter->second.mPosition] );
-                    assert( ciIterB != mClauseInformation.end() );
-                    ciIterB->second.mPosition = ciIter->second.mPosition;
-                    cls.pop();
-                }
-                else
-                {
-                    cls.pop();
-                }
-                mClauseInformation.erase( ciIter );
-                if( Settings::check_if_all_clauses_are_satisfied )
-                {
-                    const Clause& c = ca[cref];
-                    for( int i = 0; i < c.size(); ++i )
-                        mLiteralClausesMap[Minisat::toInt(c[i])].erase( cref );
-                }
-                mClauseFormulaMap.erase(cref);
-                removeClause( cref );
-            }
-            mFormulaClausesMap.erase( iter );
+            auto cnfInfoIter = mFormulaCNFInfosMap.find( _subformula->formula() );
+            assert( cnfInfoIter != mFormulaCNFInfosMap.end() );
+            updateCNFInfoCounter( cnfInfoIter, _subformula->formula(), false );
+            mFormulaCNFInfosMap.erase( cnfInfoIter );
             std::vector<FormulaT> constraints;
             _subformula->formula().getConstraints( constraints );
             for( const FormulaT& constraint : constraints )
@@ -381,7 +336,7 @@ namespace smtrat
     
     template<class Settings>
     Answer SATModule<Settings>::checkCore()
-    {   
+    {
 //        cout << "Check smt:" << endl;
 //        for( const auto& f : rReceivedFormula() )
 //            std::cout << "   " << f.formula().toString() << std::endl;
@@ -887,6 +842,69 @@ namespace smtrat
     }
     
     template<class Settings>
+    void SATModule<Settings>::updateCNFInfoCounter( typename FormulaCNFInfosMap::iterator _iter, const FormulaT& _origin, bool _increment )
+    {
+        assert( _iter != mFormulaCNFInfosMap.end() );
+        if( _increment )
+            ++_iter->second.mCounter;
+        else
+            --_iter->second.mCounter;
+        for( Minisat::CRef cr : _iter->second.mClauses )
+        {
+            assert( cr != CRef_Undef );
+            auto ciIter = mClauseInformation.find( cr );
+            assert( ciIter != mClauseInformation.end() );
+            if( _increment )
+                ciIter->second.addOrigin( _origin );
+            else
+            {
+                ciIter->second.removeOrigin( _origin );
+                // if the counter becomes zero, remove the clause
+                if( _iter->second.mCounter == 0 )
+                {
+                    assert( ciIter->second.mOrigins.size() == 0 );
+                    vec<CRef>& cls = ciIter->second.mStoredInSatisfied ? satisfiedClauses : clauses;
+                    if( ciIter->second.mPosition < cls.size() - 1 )
+                    {
+                        cls[ciIter->second.mPosition] = cls.last();
+                        auto ciIterB = mClauseInformation.find( cls[ciIter->second.mPosition] );
+                        assert( ciIterB != mClauseInformation.end() );
+                        ciIterB->second.mPosition = ciIter->second.mPosition;
+                        cls.pop();
+                    }
+                    else
+                    {
+                        cls.pop();
+                    }
+                    mClauseInformation.erase( ciIter );
+                    if( Settings::check_if_all_clauses_are_satisfied )
+                    {
+                        const Clause& c = ca[cr];
+                        for( int i = 0; i < c.size(); ++i )
+                            mLiteralClausesMap[Minisat::toInt(c[i])].erase( cr );
+                    }
+                    removeClause( cr );
+                }
+            }
+        }
+        // Invoke this procedure recursively on all sub-formulas, which again contain sub-formulas
+        if( _iter->first.isNary() )
+        {
+            for( const FormulaT& formula : _iter->first.subformulas() )
+            {
+                if( formula.isNary() )
+                {
+                    auto cnfInfoIter = mFormulaCNFInfosMap.find( formula );
+                    if( cnfInfoIter != mFormulaCNFInfosMap.end() )
+                    {
+                        updateCNFInfoCounter( cnfInfoIter, _origin, _increment );
+                    }
+                }
+            }
+        }
+    }
+    
+    template<class Settings>
     Lit SATModule<Settings>::addClauses( const FormulaT& _formula, unsigned _type, unsigned _depth, const FormulaT& _original, bool _polarity )
     {
         assert( _type < 4 );
@@ -928,292 +946,312 @@ namespace smtrat
                 }
                 return l;
             }
-            case carl::FormulaType::ITE:
+            default:
             {
-                Lit condLit = addClauses( _formula.condition(), _type, nextDepth, _original );
-                Lit negCondLit = _formula.condition().isLiteral() ? addClauses( _formula.condition().negated(), _type, nextDepth, _original ) : neg( condLit );
-                Lit thenLit = addClauses( _formula.firstCase(), _type, nextDepth, _original );
-                Lit elseLit = addClauses( _formula.secondCase(), _type, nextDepth, _original );
-                vec<Lit> lits;
-                if( _depth == 0 )
+                auto cnfInfoIter = mFormulaCNFInfosMap.find( _formula );
+                if( cnfInfoIter != mFormulaCNFInfosMap.end() )
                 {
-                    // (or -cond then)
-                    lits.push( negCondLit ); lits.push( thenLit ); addClause( lits, _type );
-                    // (or cond else)
-                    lits.clear(); lits.push( condLit ); lits.push( elseLit ); addClause( lits, _type );
-                    return lit_Undef;
+                    updateCNFInfoCounter( cnfInfoIter, _original, true );
+                    return cnfInfoIter->second.mLiteral;
                 }
-                Lit negThenLit = _formula.firstCase().isLiteral() ? addClauses( _formula.firstCase().negated(), _type, nextDepth, _original ) : neg( thenLit );
-                Lit negElseLit = _formula.secondCase().isLiteral() ? addClauses( _formula.secondCase().negated(), _type, nextDepth, _original ) : neg( elseLit );
-                FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
-                Lit tsLit = getLiteral( tsVar, _original, everythingDecisionRelevant || _depth == 0 );
-                if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
+                cnfInfoIter = mFormulaCNFInfosMap.emplace( _formula, CNFInfos() ).first;
+                std::vector<Minisat::CRef>& addedClauses = cnfInfoIter->second.mClauses;
+                switch( _formula.getType() )
                 {
-                    mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
-                }
-                if( !Settings::polarity_based_cnf_transformation || !_polarity )
+                case carl::FormulaType::ITE:
                 {
-                    // (or ts -cond -then)
-                    lits.push( tsLit ); lits.push( negCondLit ); lits.push( negThenLit ); addClause( lits, _type );
-                    // (or ts cond -else)
-                    lits.clear(); lits.push( tsLit ); lits.push( condLit ); lits.push( negElseLit ); addClause( lits, _type );
-                }
-                if( !Settings::polarity_based_cnf_transformation || _polarity )
-                {
-                    // (or -ts -cond then)
-                    lits.clear(); lits.push( neg( tsLit ) ); lits.push( negCondLit ); lits.push( thenLit ); addClause( lits, _type );
-                    // (or -ts cond else)
-                    lits.clear(); lits.push( neg( tsLit ) ); lits.push( condLit ); lits.push( elseLit ); addClause( lits, _type );
-                }
-                return tsLit;
-            }
-            case carl::FormulaType::IMPLIES:
-            {
-                vec<Lit> lits;
-                Lit premLit = addClauses( _formula.premise(), _type, nextDepth, _original );
-                Lit negPremLit = _formula.premise().isLiteral() ? addClauses( _formula.premise().negated(), _type, nextDepth, _original ) : neg( premLit );
-                Lit conLit = addClauses( _formula.conclusion(), _type, nextDepth, _original );
-                if( _depth == 0 )
-                {
-                    // (or -premise conclusion)
-                    lits.push( neg( premLit ) ); lits.push( conLit ); addClause( lits, _type );
-                    return lit_Undef;
-                }
-                Lit negConLit = _formula.conclusion().isLiteral() ? addClauses( _formula.conclusion().negated(), _type, nextDepth, _original ) : neg( conLit );
-                FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
-                Lit tsLit = getLiteral( tsVar, _original, everythingDecisionRelevant || _depth == 0 );
-                if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
-                {
-                    mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
-                }
-                if( !Settings::polarity_based_cnf_transformation || !_polarity )
-                {
-                    // (or -ts -prem con)
-                    lits.push( neg( tsLit ) ); lits.push( negPremLit ); lits.push( conLit ); addClause( lits, _type );
-                }
-                if( !Settings::polarity_based_cnf_transformation || _polarity )
-                {
-                    // (or ts prem)
-                    lits.clear(); lits.push( tsLit ); lits.push( premLit ); addClause( lits, _type );
-                    // (or ts -con)
-                    lits.clear(); lits.push( tsLit ); lits.push( negConLit ); addClause( lits, _type );
-                }
-                return tsLit;
-            }
-            case carl::FormulaType::OR:
-            {
-                vec<Lit> lits;
-                for( const auto& sf : _formula.subformulas() )
-                    lits.push( addClauses( sf, _type, nextDepth, _original ) );
-                if( _depth == 0 )
-                {
-                    // (or a1 .. an)
-                    addClause( lits, _type );
-                    return lit_Undef;
-                }
-                FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
-                Lit tsLit = getLiteral( tsVar, _original, everythingDecisionRelevant || _depth == 0 );
-                if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
-                {
-                    mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
-                }
-                if( !Settings::polarity_based_cnf_transformation || !_polarity )
-                {
-                    // (or -ts a1 .. an)
-                    lits.push( neg( tsLit ) );
-                    addClause( lits, _type );
-                }
-                if( !Settings::polarity_based_cnf_transformation )
-                    lits.pop();
-                if( !Settings::polarity_based_cnf_transformation || _polarity )
-                {
-                    // (or ts -a1) .. (or ts -an)
-                    vec<Lit> litsTmp;
-                    litsTmp.push( tsLit );
-                    int i = 0;
-                    for( const auto& sf : _formula.subformulas() )
-                    {
-                        assert( i < lits.size() );
-                        litsTmp.push( sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( lits[i] ) );
-                        addClause( litsTmp, _type );
-                        litsTmp.pop();
-                        ++i;
-                    }
-                }
-                return tsLit;
-            }
-            case carl::FormulaType::AND:
-            {
-                assert( _depth != 0 ); // because, this should be split in the module input
-                FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
-                Lit tsLit = getLiteral( tsVar, _original, everythingDecisionRelevant || _depth == 0 );
-                if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
-                {
-                    mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
-                }
-                if( !Settings::polarity_based_cnf_transformation )
-                {
-                    // (or -ts a1) .. (or -ts an)
-                    // (or ts -a1 .. -an)
+                    Lit condLit = addClauses( _formula.condition(), _type, nextDepth, _original );
+                    Lit negCondLit = _formula.condition().isLiteral() ? addClauses( _formula.condition().negated(), _type, nextDepth, _original ) : neg( condLit );
+                    Lit thenLit = addClauses( _formula.firstCase(), _type, nextDepth, _original );
+                    Lit elseLit = addClauses( _formula.secondCase(), _type, nextDepth, _original );
                     vec<Lit> lits;
-                    vec<Lit> litsTmp;
-                    litsTmp.push( neg( tsLit ) );
-                    for( const auto& sf : _formula.subformulas() )
+                    if( _depth == 0 )
                     {
-                        Lit l = addClauses( sf, _type, nextDepth, _original );
-                        litsTmp.push( l );
-                        addClause( litsTmp, _type );
-                        litsTmp.pop();
-                        Lit negL = sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( l );
-                        lits.push( negL );
+                        // (or -cond then)
+                        lits.push( negCondLit ); lits.push( thenLit ); addClause_( lits, _type, _original, addedClauses );
+                        // (or cond else)
+                        lits.clear(); lits.push( condLit ); lits.push( elseLit ); addClause_( lits, _type, _original, addedClauses );
+                        return lit_Undef;
                     }
-                    lits.push( tsLit );
-                    addClause( lits, _type );
+                    Lit negThenLit = _formula.firstCase().isLiteral() ? addClauses( _formula.firstCase().negated(), _type, nextDepth, _original ) : neg( thenLit );
+                    Lit negElseLit = _formula.secondCase().isLiteral() ? addClauses( _formula.secondCase().negated(), _type, nextDepth, _original ) : neg( elseLit );
+                    FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
+                    Lit tsLit = getLiteral( tsVar, _original, everythingDecisionRelevant || _depth == 0 );
+                    if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
+                    {
+                        mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
+                    }
+                    if( !Settings::polarity_based_cnf_transformation || !_polarity )
+                    {
+                        // (or ts -cond -then)
+                        lits.push( tsLit ); lits.push( negCondLit ); lits.push( negThenLit ); addClause_( lits, _type, _original, addedClauses );
+                        // (or ts cond -else)
+                        lits.clear(); lits.push( tsLit ); lits.push( condLit ); lits.push( negElseLit ); addClause_( lits, _type, _original, addedClauses );
+                    }
+                    if( !Settings::polarity_based_cnf_transformation || _polarity )
+                    {
+                        // (or -ts -cond then)
+                        lits.clear(); lits.push( neg( tsLit ) ); lits.push( negCondLit ); lits.push( thenLit ); addClause_( lits, _type, _original, addedClauses );
+                        // (or -ts cond else)
+                        lits.clear(); lits.push( neg( tsLit ) ); lits.push( condLit ); lits.push( elseLit ); addClause_( lits, _type, _original, addedClauses );
+                    }
+                    cnfInfoIter->second.mLiteral = tsLit;
+                    return tsLit;
                 }
-                else
+                case carl::FormulaType::IMPLIES:
                 {
-                    if( _polarity )
+                    vec<Lit> lits;
+                    Lit premLit = addClauses( _formula.premise(), _type, nextDepth, _original );
+                    Lit negPremLit = _formula.premise().isLiteral() ? addClauses( _formula.premise().negated(), _type, nextDepth, _original ) : neg( premLit );
+                    Lit conLit = addClauses( _formula.conclusion(), _type, nextDepth, _original );
+                    if( _depth == 0 )
                     {
-                        // (or ts -a1 .. -an)
-                        vec<Lit> lits;
-                        for( const auto& sf : _formula.subformulas() )
-                            lits.push( sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( addClauses( sf, _type, nextDepth, _original ) ) );
-                        lits.push( tsLit );
-                        addClause( lits, _type );
+                        // (or -premise conclusion)
+                        lits.push( neg( premLit ) ); lits.push( conLit ); addClause_( lits, _type, _original, addedClauses );
+                        return lit_Undef;
                     }
-                    else
+                    Lit negConLit = _formula.conclusion().isLiteral() ? addClauses( _formula.conclusion().negated(), _type, nextDepth, _original ) : neg( conLit );
+                    FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
+                    Lit tsLit = getLiteral( tsVar, _original, everythingDecisionRelevant || _depth == 0 );
+                    if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
+                    {
+                        mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
+                    }
+                    if( !Settings::polarity_based_cnf_transformation || !_polarity )
+                    {
+                        // (or -ts -prem con)
+                        lits.push( neg( tsLit ) ); lits.push( negPremLit ); lits.push( conLit ); addClause_( lits, _type, _original, addedClauses );
+                    }
+                    if( !Settings::polarity_based_cnf_transformation || _polarity )
+                    {
+                        // (or ts prem)
+                        lits.clear(); lits.push( tsLit ); lits.push( premLit ); addClause_( lits, _type, _original, addedClauses );
+                        // (or ts -con)
+                        lits.clear(); lits.push( tsLit ); lits.push( negConLit ); addClause_( lits, _type, _original, addedClauses );
+                    }
+                    cnfInfoIter->second.mLiteral = tsLit;
+                    return tsLit;
+                }
+                case carl::FormulaType::OR:
+                {
+                    vec<Lit> lits;
+                    for( const auto& sf : _formula.subformulas() )
+                        lits.push( addClauses( sf, _type, nextDepth, _original ) );
+                    if( _depth == 0 )
+                    {
+                        // (or a1 .. an)
+                        addClause_( lits, _type, _original, addedClauses );
+                        return lit_Undef;
+                    }
+                    FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
+                    Lit tsLit = getLiteral( tsVar, _original, everythingDecisionRelevant || _depth == 0 );
+                    if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
+                    {
+                        mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
+                    }
+                    if( !Settings::polarity_based_cnf_transformation || !_polarity )
+                    {
+                        // (or -ts a1 .. an)
+                        lits.push( neg( tsLit ) );
+                        addClause_( lits, _type, _original, addedClauses );
+                    }
+                    if( !Settings::polarity_based_cnf_transformation )
+                        lits.pop();
+                    if( !Settings::polarity_based_cnf_transformation || _polarity )
+                    {
+                        // (or ts -a1) .. (or ts -an)
+                        vec<Lit> litsTmp;
+                        litsTmp.push( tsLit );
+                        int i = 0;
+                        for( const auto& sf : _formula.subformulas() )
+                        {
+                            assert( i < lits.size() );
+                            litsTmp.push( sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( lits[i] ) );
+                            addClause_( litsTmp, _type, _original, addedClauses );
+                            litsTmp.pop();
+                            ++i;
+                        }
+                    }
+                    cnfInfoIter->second.mLiteral = tsLit;
+                    return tsLit;
+                }
+                case carl::FormulaType::AND:
+                {
+                    assert( _depth != 0 ); // because, this should be split in the module input
+                    FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
+                    Lit tsLit = getLiteral( tsVar, _original, everythingDecisionRelevant || _depth == 0 );
+                    if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
+                    {
+                        mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
+                    }
+                    if( !Settings::polarity_based_cnf_transformation )
                     {
                         // (or -ts a1) .. (or -ts an)
+                        // (or ts -a1 .. -an)
+                        vec<Lit> lits;
                         vec<Lit> litsTmp;
                         litsTmp.push( neg( tsLit ) );
                         for( const auto& sf : _formula.subformulas() )
                         {
-                            litsTmp.push( addClauses( sf, _type, nextDepth, _original ) );
-                            addClause( litsTmp, _type );
+                            Lit l = addClauses( sf, _type, nextDepth, _original );
+                            litsTmp.push( l );
+                            addClause_( litsTmp, _type, _original, addedClauses );
                             litsTmp.pop();
+                            Lit negL = sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( l );
+                            lits.push( negL );
+                        }
+                        lits.push( tsLit );
+                        addClause_( lits, _type, _original, addedClauses );
+                    }
+                    else
+                    {
+                        if( _polarity )
+                        {
+                            // (or ts -a1 .. -an)
+                            vec<Lit> lits;
+                            for( const auto& sf : _formula.subformulas() )
+                                lits.push( sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( addClauses( sf, _type, nextDepth, _original ) ) );
+                            lits.push( tsLit );
+                            addClause_( lits, _type, _original, addedClauses );
+                        }
+                        else
+                        {
+                            // (or -ts a1) .. (or -ts an)
+                            vec<Lit> litsTmp;
+                            litsTmp.push( neg( tsLit ) );
+                            for( const auto& sf : _formula.subformulas() )
+                            {
+                                litsTmp.push( addClauses( sf, _type, nextDepth, _original ) );
+                                addClause_( litsTmp, _type, _original, addedClauses );
+                                litsTmp.pop();
+                            }
                         }
                     }
+                    cnfInfoIter->second.mLiteral = tsLit;
+                    return tsLit;
                 }
-                return tsLit;
-            }
-            case carl::FormulaType::IFF: 
-            {
-                vec<Lit> tmp;
-                if( _depth == 0 )
+                case carl::FormulaType::IFF: 
                 {
-                    auto sfIter = _formula.subformulas().begin();
-                    Lit l = addClauses( *sfIter, _type, nextDepth, _original );
-                    Lit negL = sfIter->isLiteral() ? addClauses( sfIter->negated(), _type, nextDepth, _original ) : neg( l );
-                    ++sfIter;
-                    for( ; sfIter != _formula.subformulas().end(); ++sfIter )
+                    vec<Lit> tmp;
+                    if( _depth == 0 )
                     {
-                        Lit k = addClauses( *sfIter, _type, nextDepth, _original );
-                        Lit negK = sfIter->isLiteral() ? addClauses( sfIter->negated(), _type, nextDepth, _original ) : neg( k );
-                        // (or -l k)
-                        tmp.clear(); tmp.push( negL ); tmp.push( k ); addClause( tmp, _type );
-                        // (or l -k)
-                        tmp.clear(); tmp.push( l ); tmp.push( negK ); addClause( tmp, _type );
-                        l = k;
-                        negL = negK;
+                        auto sfIter = _formula.subformulas().begin();
+                        Lit l = addClauses( *sfIter, _type, nextDepth, _original );
+                        Lit negL = sfIter->isLiteral() ? addClauses( sfIter->negated(), _type, nextDepth, _original ) : neg( l );
+                        ++sfIter;
+                        for( ; sfIter != _formula.subformulas().end(); ++sfIter )
+                        {
+                            Lit k = addClauses( *sfIter, _type, nextDepth, _original );
+                            Lit negK = sfIter->isLiteral() ? addClauses( sfIter->negated(), _type, nextDepth, _original ) : neg( k );
+                            // (or -l k)
+                            tmp.clear(); tmp.push( negL ); tmp.push( k ); addClause_( tmp, _type, _original, addedClauses );
+                            // (or l -k)
+                            tmp.clear(); tmp.push( l ); tmp.push( negK ); addClause_( tmp, _type, _original, addedClauses );
+                            l = k;
+                            negL = negK;
+                        }
+                        return lit_Undef;
                     }
-                    return lit_Undef;
-                }
-                vec<Lit> lits;
-                for( const auto& sf : _formula.subformulas() )
-                {
-                    Lit l = addClauses( sf, _type, nextDepth, _original );
-                    Lit negL = sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( l );
-                    lits.push( l );
-                    tmp.push( negL );
-                }
-                FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
-                Lit tsLit = getLiteral( tsVar, _original, everythingDecisionRelevant || _depth == 0 );
-                if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
-                {
-                    mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
-                }
-                if( !Settings::polarity_based_cnf_transformation || _polarity )
-                {
-                    // (or a1 .. an h)
-                    lits.push( tsLit ); addClause( lits, _type );
-                    lits.pop();
-                    // (or -a1 .. -an h)
-                    tmp.push( tsLit ); addClause( tmp, _type );
-                }
-                if( !Settings::polarity_based_cnf_transformation || !_polarity )
-                {
-                    // (or -a1 a2 -h) (or a1 -a2 -h) .. (or -a{n-1} an -h) (or a{n-1} -an -h)
-                    vec<Lit> tmpB;
-                    for( int i = 1; i < lits.size(); ++i )
+                    vec<Lit> lits;
+                    for( const auto& sf : _formula.subformulas() )
                     {
-                        tmpB.clear(); tmpB.push( tmp[i-1] ); tmpB.push( lits[i] ); tmpB.push( neg( tsLit ) ); addClause( tmpB, _type );
-                        tmpB.clear(); tmpB.push( lits[i-1] ); tmpB.push( tmp[i] ); tmpB.push( neg( tsLit ) ); addClause( tmpB, _type );
+                        Lit l = addClauses( sf, _type, nextDepth, _original );
+                        Lit negL = sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( l );
+                        lits.push( l );
+                        tmp.push( negL );
                     }
+                    FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
+                    Lit tsLit = getLiteral( tsVar, _original, everythingDecisionRelevant || _depth == 0 );
+                    if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
+                    {
+                        mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
+                    }
+                    if( !Settings::polarity_based_cnf_transformation || _polarity )
+                    {
+                        // (or a1 .. an h)
+                        lits.push( tsLit ); addClause_( lits, _type, _original, addedClauses );
+                        lits.pop();
+                        // (or -a1 .. -an h)
+                        tmp.push( tsLit ); addClause_( tmp, _type, _original, addedClauses );
+                    }
+                    if( !Settings::polarity_based_cnf_transformation || !_polarity )
+                    {
+                        // (or -a1 a2 -h) (or a1 -a2 -h) .. (or -a{n-1} an -h) (or a{n-1} -an -h)
+                        vec<Lit> tmpB;
+                        for( int i = 1; i < lits.size(); ++i )
+                        {
+                            tmpB.clear(); tmpB.push( tmp[i-1] ); tmpB.push( lits[i] ); tmpB.push( neg( tsLit ) ); addClause_( tmpB, _type, _original, addedClauses );
+                            tmpB.clear(); tmpB.push( lits[i-1] ); tmpB.push( tmp[i] ); tmpB.push( neg( tsLit ) ); addClause_( tmpB, _type, _original, addedClauses );
+                        }
+                    }
+                    cnfInfoIter->second.mLiteral = tsLit;
+                    return tsLit;
                 }
-                return tsLit;
+                case carl::FormulaType::XOR:
+                {
+                    vec<Lit> lits;
+                    vec<Lit> negLits;
+                    vec<Lit> tmp;
+                    for( const auto& sf : _formula.subformulas() )
+                    {
+                        lits.push( addClauses( sf, _type, nextDepth, _original ) );
+                        negLits.push( sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( lits.last() ) );
+                    }
+                    if( _depth == 0 )
+                    {
+                        addXorClauses( lits, negLits, 0, true, _type, tmp, true, false, _original, addedClauses );
+                        return lit_Undef;
+                    }
+                    Lit tsLit = getLiteral( carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula ), _original, everythingDecisionRelevant || _depth == 0 );
+                    if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
+                    {
+                        mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
+                    }
+                    lits.push( neg( tsLit ) );
+                    negLits.push( tsLit );
+                    addXorClauses( lits, negLits, 0, true, _type, tmp, !Settings::polarity_based_cnf_transformation, _polarity, _original, addedClauses );
+                    cnfInfoIter->second.mLiteral = tsLit;
+                    return tsLit;
+                }
+                case carl::FormulaType::EXISTS:
+                case carl::FormulaType::FORALL:
+                    assert( false );
+                    std::cerr << "Formula must be quantifier-free!" << std::endl;
+                    break;
+                default:
+                    assert( false );
+                    std::cerr << "Unexpected type of formula!" << std::endl;
+                }
             }
-            case carl::FormulaType::XOR:
-            {
-                vec<Lit> lits;
-                vec<Lit> negLits;
-                vec<Lit> tmp;
-                for( const auto& sf : _formula.subformulas() )
-                {
-                    lits.push( addClauses( sf, _type, nextDepth, _original ) );
-                    negLits.push( sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( lits.last() ) );
-                }
-                if( _depth == 0 )
-                {
-                    addXorClauses( lits, negLits, 0, true, _type, tmp, true, false );
-                    return lit_Undef;
-                }
-                Lit tsLit = getLiteral( carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula ), _original, everythingDecisionRelevant || _depth == 0 );
-                if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
-                {
-                    mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
-                }
-                lits.push( neg( tsLit ) );
-                negLits.push( tsLit );
-                addXorClauses( lits, negLits, 0, true, _type, tmp, !Settings::polarity_based_cnf_transformation, _polarity );
-                return tsLit;
-            }
-            case carl::FormulaType::EXISTS:
-            case carl::FormulaType::FORALL:
-                assert( false );
-                std::cerr << "Formula must be quantifier-free!" << std::endl;
-                break;
-            default:
-                assert( false );
-                std::cerr << "Unexpected type of formula!" << std::endl;
         }
         return lit_Undef;
     }
     
     template<class Settings>
-    void SATModule<Settings>::addXorClauses( const vec<Lit>& _literals, const vec<Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, vec<Lit>& _clause, bool _ignorePolarity, bool _polarity )
+    void SATModule<Settings>::addXorClauses( const vec<Lit>& _literals, const vec<Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, vec<Lit>& _clause, bool _ignorePolarity, bool _polarity, const FormulaT& _original, std::vector<Minisat::CRef>& _addedClauses )
     {
         if( _from == _literals.size() - 1 )
         {
             if( _ignorePolarity )
             {
                 _clause.push( _numOfNegatedLitsEven ? _literals[_from] : _negLiterals[_from] );
-                addClause( _clause, _type );
+                addClause_( _clause, _type, _original, _addedClauses );
                 _clause.pop();
             }
             else if( _polarity != _numOfNegatedLitsEven )
             {
                 _clause.push( _numOfNegatedLitsEven ? _literals[_from] : _negLiterals[_from] );
-                addClause( _clause, _type );
+                addClause_( _clause, _type, _original, _addedClauses );
                 _clause.pop();
             }
         }
         else
         {
             _clause.push( _literals[_from] );
-            addXorClauses( _literals, _negLiterals, _from+1, _numOfNegatedLitsEven, _type, _clause, _ignorePolarity, _polarity );
+            addXorClauses( _literals, _negLiterals, _from+1, _numOfNegatedLitsEven, _type, _clause, _ignorePolarity, _polarity, _original, _addedClauses );
             _clause.pop();
             _clause.push( _negLiterals[_from] );
-            addXorClauses( _literals, _negLiterals, _from+1, !_numOfNegatedLitsEven, _type, _clause, _ignorePolarity, _polarity );
+            addXorClauses( _literals, _negLiterals, _from+1, !_numOfNegatedLitsEven, _type, _clause, _ignorePolarity, _polarity, _original, _addedClauses );
             _clause.pop();
         }
     }
@@ -2755,9 +2793,9 @@ SetWatches:
         {
             if ( from != CRef_Undef) {
                 // Find corresponding formula
-                ClauseFormulaMap::iterator iter = mClauseFormulaMap.find( from );
-                assert( iter != mClauseFormulaMap.end() );
-                FormulaT formula = iter->second;
+                auto iter = mClauseInformation.find( from );
+                assert( iter != mClauseInformation.end() );
+                FormulaT formula = iter->second.mOrigins.back();
                 assert( formula.propertyHolds(carl::PROP_IS_A_CLAUSE) && formula.propertyHolds(carl::PROP_CONTAINS_BOOLEAN) );
 
                 // Get lemmas for variable
@@ -3161,15 +3199,15 @@ NextClause:
     void SATModule<Settings>::relocAll( ClauseAllocator& to )
     {
         // relocate clauses in mFormulaClausesMap
-        for( auto& iter : mFormulaClausesMap )
+        for( auto& iter : mFormulaCNFInfosMap )
         {
             std::vector<CRef> tmp;
-            for( CRef c : iter.second )
+            for( CRef c : iter.second.mClauses )
             {
                 ca.reloc( c, to );
                 tmp.insert( tmp.end(), c );
             }
-            iter.second = std::move( tmp );
+            iter.second.mClauses = std::move( tmp );
         }
         
         carl::FastMap<Minisat::CRef,ClauseInformation> tmp;
@@ -3304,14 +3342,16 @@ NextClause:
     }
     
     template<class Settings>
-    void SATModule<Settings>::printFormulaClausesMap( ostream& _out, const string _init ) const
+    void SATModule<Settings>::printFormulaCNFInfosMap( ostream& _out, const string _init ) const
     {
-        _out << _init << " FormulaClausesMap" << endl;
-        for( auto& fcsPair : mFormulaClausesMap )
+        _out << _init << " FormulaCNFInfosMap" << endl;
+        for( auto& fcsPair : mFormulaCNFInfosMap )
         {
             _out << _init << "    " << fcsPair.first << std::endl;
+            _out << _init << "        Literal: " << fcsPair.second.mLiteral << std::endl;
+            _out << _init << "        Counter: " << fcsPair.second.mCounter << std::endl;
             _out << _init << "        {";
-            for( auto cref : fcsPair.second )
+            for( auto cref : fcsPair.second.mClauses )
                 _out << " " << cref;
             _out << " }" << std::endl;
         }
