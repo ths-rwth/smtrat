@@ -120,10 +120,10 @@ namespace cad {
 			assert(mTree.is_valid(it));
 			mLiftingQueue.addNewSample(it);
 		}
-		auto getTree() const {
+		const auto& getTree() const {
 			return mTree;
 		}
-		auto getLiftingQueue() const {
+		const auto& getLiftingQueue() const {
 			return mLiftingQueue;
 		}
 		void reset(Variables&& vars) {
