@@ -13,17 +13,32 @@ namespace smtrat {
 	public:
 		explicit PriorityQueue(): super() {}
 		explicit PriorityQueue(const Compare& comp): super(comp) {}
-		const typename super::container_type& data() const {
+		const auto& data() const {
 			return super::c;
 		}
-		typename std::vector<T>::const_iterator find(const T& t) const {
+		auto& data() {
+			return super::c;
+		}
+		auto find(const T& t) const {
 			return std::find(data().begin(), data().end(), t);
 		}
-		typename std::vector<T>::const_iterator end() const {
+		auto begin() const {
+			return data().begin();
+		}
+		auto begin() {
+			return data().begin();
+		}
+		auto end() const {
+			return data().end();
+		}
+		auto end() {
 			return data().end();
 		}
 		void erase(typename std::vector<T>::const_iterator it) {
 			super::c.erase(it);
+		}
+		void erase(typename std::vector<T>::const_iterator it, typename std::vector<T>::const_iterator end) {
+			super::c.erase(it, end);
 		}
 		template<typename F>
 		void removeIf(F&& f) {
