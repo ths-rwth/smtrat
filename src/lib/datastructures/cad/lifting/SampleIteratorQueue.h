@@ -14,10 +14,10 @@ namespace cad {
 		std::size_t mChunkCounter = 0;
 		Comparator mComparator;
 	public:
-		auto begin() const -> decltype(mQueue.begin()) {
+		auto begin() const {
 			return mQueue.begin();
 		}
-		auto end() const -> decltype(mQueue.end()) {
+		auto end() const {
 			return mQueue.end();
 		}
 		template<typename InputIt>
@@ -66,13 +66,20 @@ namespace cad {
 			}
 		}
 		
-		template<typename I, typename C>
-		friend std::ostream& operator<<(std::ostream& os, const SampleIteratorQueue<I,C>& siq) {
-			for (const auto& it: siq.mQueue) {
-				os << *it << ", ";
+		bool isConsistent() const {
+			for (const auto& it: mQueue) {
+				if (!it.isValid()) return false;
 			}
-			return os;
+			return true;
 		}
+		
 	};
+	template<typename I, typename C>
+	inline std::ostream& operator<<(std::ostream& os, const SampleIteratorQueue<I,C>& siq) {
+		for (const auto& it: siq) {
+			os << *it << ", ";
+		}
+		return os;
+	}
 }
 }

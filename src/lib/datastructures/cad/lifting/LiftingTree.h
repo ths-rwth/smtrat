@@ -31,7 +31,7 @@ namespace cad {
 		}
 		
 		void addToQueue(Iterator it) {
-			assert(mTree.is_valid(it));
+			assert(it.isValid());
 			if (it.depth() < dim()) {
 				mLiftingQueue.addNewSample(it);
 			} else {
