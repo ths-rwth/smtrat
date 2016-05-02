@@ -40,7 +40,7 @@ namespace smtrat
             mpEntries = new std::vector< TableauEntry<T1,T2> >();
             mpEntries->push_back( TableauEntry<T1,T2>() );
             mpTheta = new Value<T1>();
-        };
+        }
 
         template<class Settings, typename T1, typename T2>
         Tableau<Settings,T1,T2>::~Tableau()
@@ -65,7 +65,7 @@ namespace smtrat
             }
             delete mpEntries;
             delete mpTheta;
-        };
+        }
 
         template<class Settings, typename T1, typename T2>
         EntryID Tableau<Settings,T1,T2>::newTableauEntry( const T2& _content )
@@ -429,7 +429,7 @@ namespace smtrat
                 }
             }
         }
-        
+
         template<class Settings, typename T1, typename T2>
         void Tableau<Settings,T1,T2>::deleteVariable( Variable<T1, T2>* _variable, bool _optimizationVar )
         {
