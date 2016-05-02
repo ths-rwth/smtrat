@@ -35,7 +35,6 @@ BOOST_AUTO_TEST_CASE(Test_ModelSubstitution)
 	
 	for (const auto& mv: m) {
 		if (mv.second.isSubstitution()) {
-			mv.second.asSubstitution()->value(m);
 			std::cout << mv.first << " -> " << mv.second.asSubstitution() << std::endl;
 		} else {
 			std::cout << mv.first << " -> " << mv.second << std::endl;
