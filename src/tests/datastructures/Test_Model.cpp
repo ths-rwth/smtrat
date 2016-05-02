@@ -12,15 +12,15 @@ BOOST_AUTO_TEST_CASE(Test_ModelValue)
 {
 	{
 		ModelValue mv(true);
-		BOOST_TEST((mv.isBool() && mv.asBool()), "ModelValue is true");
+		BOOST_CHECK((mv.isBool() && mv.asBool()));
 	}
 	{
 		ModelValue mv(false);
-		BOOST_TEST((mv.isBool() && !mv.asBool()), "ModelValue is false");
+		BOOST_CHECK((mv.isBool() && !mv.asBool()));
 	}
 	{
 		ModelValue mv(Rational(3));
-		BOOST_TEST((mv.isRational() && mv.asRational() == Rational(3)), "ModelValue is 3");
+		BOOST_CHECK((mv.isRational() && mv.asRational() == Rational(3)));
 	}
 }
 
