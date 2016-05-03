@@ -29,6 +29,9 @@ namespace cad {
 	public:
 		Bitset(bool defaultValue = false): mDefault(defaultValue) {}
 		Bitset(BaseType&& base, bool defaultValue): mData(std::move(base)), mDefault(defaultValue) {}
+		Bitset(const std::initializer_list<std::size_t>& bits, bool defaultValue = false): mDefault(defaultValue) {
+			for (auto b: bits) set(b);
+		}
 		
 		auto resize(std::size_t num_blocks) const -> decltype(mData.resize(num_blocks, mDefault)) {
 			return mData.resize(num_blocks, mDefault);
@@ -38,6 +41,12 @@ namespace cad {
 			assert(mDefault == rhs.mDefault);
 			alignSize(*this, rhs);
 			mData -= rhs.mData;
+			return *this;
+		}
+		Bitset& operator|=(const Bitset& rhs) {
+			assert(mDefault == rhs.mDefault);
+			alignSize(*this, rhs);
+			mData |= rhs.mData;
 			return *this;
 		}
 		
