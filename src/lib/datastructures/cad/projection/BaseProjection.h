@@ -77,11 +77,11 @@ namespace cad {
 			mRemoveCallback = f;
 		}
 		/// Adds the given polynomial to the projection. Converts to a UPoly and calls the appropriate overload.
-		void addPolynomial(const Poly& p, std::size_t cid) {
-			addPolynomial(p.toUnivariatePolynomial(var(0)), cid);
+		Bitset addPolynomial(const Poly& p, std::size_t cid) {
+			return addPolynomial(p.toUnivariatePolynomial(var(0)), cid);
 		}
 		/// Adds the given polynomial to the projection.
-		virtual void addPolynomial(const UPoly& p, std::size_t cid) = 0;
+		virtual Bitset addPolynomial(const UPoly& p, std::size_t cid) = 0;
 		/// Removes the given polynomial from the projection. Converts to a UPoly and calls the appropriate overload.
 		void removePolynomial(const Poly& p, std::size_t cid) {
 			removePolynomial(p.toUnivariatePolynomial(var(0)), cid);

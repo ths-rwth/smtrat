@@ -25,8 +25,8 @@ namespace cad {
 		// Stores polynomials with their origins, being pairs of polynomials from the level above.
 		std::vector<std::vector<boost::optional<std::pair<UPoly,Origin>>>> mPolynomials;
 		
-		void addToProjection(std::size_t level, const UPoly& p, const Origin::BaseType& origin) {
-			if (p.isZero() || p.isNumber()) return;
+		Bitset addToProjection(std::size_t level, const UPoly& p, const Origin::BaseType& origin) {
+			if (p.isZero() || p.isNumber()) return Bitset();
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			assert(level < dim());
 			assert(p.mainVar() == var(level));
@@ -34,18 +34,19 @@ namespace cad {
 			if (it != mPolynomialIDs[level].end()) {
 				assert(mPolynomials[level][it->second]);
 				mPolynomials[level][it->second]->second += origin;
-				return;
+				return Bitset();
 			}
 			std::size_t newID = mIDPools[level].get();
+			Bitset res;
 			if (level < dim() - 1) {
 				mOperator(Settings::projectionOperator, p, var(level + 1), 
-					[&](const UPoly& np){ addToProjection(level + 1, np, Origin::BaseType(newID)); }
+					[&](const UPoly& np){ res |= addToProjection(level + 1, np, Origin::BaseType(newID)); }
 				);
 				for (const auto& it: mPolynomialIDs[level]) {
 					assert(mPolynomials[level][it.second]);
 					auto newOrigin = Origin::BaseType(newID,it.second);
 					mOperator(Settings::projectionOperator, p, it.first, var(level + 1),
-						[&](const UPoly& np){ addToProjection(level + 1, np, newOrigin); }
+						[&](const UPoly& np){ res |= addToProjection(level + 1, np, newOrigin); }
 					);
 				}
 			}
@@ -55,6 +56,8 @@ namespace cad {
 			mPolynomials[level][newID] = std::make_pair(p, Origin(origin));
 			mPolynomialIDs[level].emplace(p, newID);
 			mLiftingQueues[level].insert(newID);
+			res.set(level);
+			return res;
 		}
 	public:
 		void reset(const std::vector<carl::Variable>& vars) {
@@ -64,9 +67,9 @@ namespace cad {
 			mPolynomialIDs.clear();
 			mPolynomialIDs.resize(dim());
 		}
-		void addPolynomial(const UPoly& p, std::size_t cid) {
+		Bitset addPolynomial(const UPoly& p, std::size_t cid) {
 			assert(p.mainVar() == var(0));
-			addToProjection(0, p, Origin::BaseType(cid));
+			return addToProjection(0, p, Origin::BaseType(cid));
 		}
 		void removePolynomial(const UPoly& p, std::size_t cid) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << cid);
@@ -100,8 +103,8 @@ namespace cad {
 			return mPolynomialIDs[level].empty();
 		}
 		
-		bool projectNewPolynomial(std::size_t level, const ConstraintSelection& ps = Bitset(true)) {
-			return false;
+		Bitset projectNewPolynomial(const ConstraintSelection& ps = Bitset(true)) {
+			return Bitset();
 		}
 		
 		const UPoly& getPolynomialById(std::size_t level, std::size_t id) const {
