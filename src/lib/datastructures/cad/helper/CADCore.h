@@ -112,8 +112,10 @@ struct CADCore<CoreHeuristic::PreferSampling> {
 			while (cad.mLifting.hasNextSample() || cad.mLifting.hasFullSamples()) {
 				Answer res = cad.checkFullSamples(assignment);
 				if (res == Answer::SAT) return Answer::SAT;
+				if (!cad.mLifting.hasNextSample()) break;
 				
 				auto it = cad.mLifting.getNextSample();
+				SMTRAT_LOG_DEBUG("smtrat.cad", "Queue" << std::endl << cad.mLifting.getLiftingQueue());
 				Sample& s = *it;
 				assert(0 <= it.depth() && it.depth() < cad.dim());
 				if (s.hasConflictWithConstraint()) {
@@ -126,9 +128,10 @@ struct CADCore<CoreHeuristic::PreferSampling> {
 					SMTRAT_LOG_DEBUG("smtrat.cad", "Lifting " << s << " with " << poly);
 					cad.mLifting.liftSample(it, poly, *polyID);
 				} else {
-					if (!cad.mLifting.addTrivialSample(it)) {
-						cad.mLifting.removeNextSample();
-					}
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Current lifting" << std::endl << cad.mLifting.getTree());
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Queue" << std::endl << cad.mLifting.getLiftingQueue());
+					cad.mLifting.removeNextSample();
+					cad.mLifting.addTrivialSample(it);
 				}
 			}
 			

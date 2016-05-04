@@ -10,6 +10,7 @@ namespace cad {
 	enum class SampleCompareStrategy { Integer, Numeric, Value };
 	enum class FullSampleCompareStrategy { Integer, Numeric, Value };
 	enum class MISHeuristic { TRIVIAL, GREEDY };
+	enum class CoreHeuristic { BySample, PreferProjection, PreferSampling };
 	using RootSplittingStrategy = carl::rootfinder::SplittingStrategy;
 }
 }
