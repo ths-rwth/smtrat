@@ -12,6 +12,7 @@
 
 #define DEBUG_METHODS_TABLEAU
 //#define DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+//#define LRA_PEDANTIC_CORRECTNESS_CHECKS
 
 namespace smtrat
 {
@@ -23,8 +24,10 @@ namespace smtrat
             mWidth( 0 ),
             mPivotingSteps( 0 ),
             mMaxPivotsWithoutBlandsRule( 0 ),
+            mVarIDCounter( 1 ),
             mDefaultBoundPosition( _defaultBoundPosition ),
             mUnusedIDs(),
+            mVariableIdAllocator(),
             mRows(),
             mColumns(),
             mNonActiveBasics(),
@@ -445,13 +448,14 @@ namespace smtrat
             if( !_optimizationVar )
                 mSlackVars.erase( _variable->pExpression() );
             assert( _variable->isBasic() );
+            mVariableIdAllocator.free( _variable->getId() );
             delete _variable;
         }
 
         template<class Settings, typename T1, typename T2>
         Variable<T1, T2>* Tableau<Settings,T1,T2>::newNonbasicVariable( const typename Poly::PolyType* _poly, bool _isInteger )
         {
-            Variable<T1, T2>* var = new Variable<T1, T2>( mWidth++, _poly, mDefaultBoundPosition, _isInteger );
+            Variable<T1, T2>* var = new Variable<T1, T2>( mWidth++, _poly, mDefaultBoundPosition, _isInteger, mVariableIdAllocator.get() );
             mColumns.push_back( var );
             return var;
         }
@@ -460,7 +464,7 @@ namespace smtrat
         Variable<T1, T2>* Tableau<Settings,T1,T2>::newBasicVariable( const typename Poly::PolyType* _poly, bool _isInteger )
         {
             mNonActiveBasics.emplace_front();
-            Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), _poly, mDefaultBoundPosition, _isInteger );
+            Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), _poly, mDefaultBoundPosition, _isInteger, mVariableIdAllocator.get() );
             for( auto term = _poly->begin(); term != _poly->end(); ++term )
             {
                 assert( !term->isConstant() );
@@ -1774,6 +1778,7 @@ namespace smtrat
                     mNonActiveBasics.erase( basicVar.positionInNonActives() );
                     basicVar.setPositionInNonActives( mNonActiveBasics.end() );
                     assert( columnVar->isBasic() );
+                    mVariableIdAllocator.free( columnVar->getId() );
                     delete columnVar;
                 }
             }
@@ -2098,9 +2103,7 @@ namespace smtrat
                 if( ubound != --upperBounds.end() )
                 {
                     assert( ((*ubound)->type() != Bound<T1, T2>::EQUAL) );
-                    LearnedBound learnedBound = LearnedBound();
-                    learnedBound.nextWeakerBound = *ubound;
-                    learnedBound.premise = std::vector<const Bound<T1, T2>*>( std::move( *uPremise ) );
+                    LearnedBound learnedBound( NULL, ubound, std::move( *uPremise ) );
                     delete uPremise;
                     if( Settings::introduce_new_constraint_in_refinement )
                     {
@@ -2124,19 +2127,20 @@ namespace smtrat
                         delete newlimit;
                         learnedBound.newBound = NULL;
                     }
-                    std::pair<typename std::map<Variable<T1, T2>*, LearnedBound>::iterator, bool> insertionResult = mLearnedUpperBounds.insert( std::pair<Variable<T1, T2>*, LearnedBound>( _basicVar, learnedBound ) );
-                    if( !insertionResult.second )
+                    auto iter = mLearnedUpperBounds.find( _basicVar );
+                    if( iter != mLearnedUpperBounds.end() )
                     {
-                        if( *learnedBound.nextWeakerBound < *insertionResult.first->second.nextWeakerBound )
+                        if( *learnedBound.nextWeakerBound < *iter->second.nextWeakerBound )
                         {
-                            insertionResult.first->second.nextWeakerBound = learnedBound.nextWeakerBound;
-                            insertionResult.first->second.premise = learnedBound.premise;
-                            mNewLearnedBounds.push_back( insertionResult.first );
+                            iter->second.nextWeakerBound = learnedBound.nextWeakerBound;
+                            iter->second.premise = learnedBound.premise;
+                            mNewLearnedBounds.push_back( iter );
                         }
                     }
                     else
                     {
-                        mNewLearnedBounds.push_back( insertionResult.first );
+                        iter = mLearnedUpperBounds.emplace( _basicVar, std::move(learnedBound) ).first;
+                        mNewLearnedBounds.push_back( iter );
                     }
                 }
                 else
@@ -2161,8 +2165,9 @@ namespace smtrat
                 }
                 // Learn that the strongest weaker lower bound should be activated.
                 const typename Bound<T1, T2>::BoundSet& lowerBounds = basicVar.lowerbounds();
-                auto lbound = lowerBounds.rbegin();
-                while( lbound != lowerBounds.rend() )
+                assert( !lowerBounds.empty() );
+                auto lbound = --lowerBounds.end();
+                while( true )
                 {
                     if( (!Settings::omit_division || (**lbound < (*newlimit)/rowFactor && (*lbound)->type() != Bound<T1, T2>::EQUAL && !(*lbound)->deduced()))
                      && (Settings::omit_division || (**lbound < *newlimit && (*lbound)->type() != Bound<T1, T2>::EQUAL && !(*lbound)->deduced())) )
@@ -2175,14 +2180,15 @@ namespace smtrat
                         delete lPremise;
                         return;
                     }
-                    ++lbound;
+                    if( lbound == lowerBounds.begin() )
+                        break;
+                    --lbound;
                 }
-                if( lbound != --lowerBounds.rend() )
+                
+                if( lbound != lowerBounds.begin() )
                 {
                     assert( ((*lbound)->type() != Bound<T1, T2>::EQUAL) );
-                    LearnedBound learnedBound = LearnedBound();
-                    learnedBound.nextWeakerBound = *lbound;
-                    learnedBound.premise = std::vector<const Bound<T1, T2>*>( std::move( *lPremise ) );
+                    LearnedBound learnedBound( NULL, lbound, std::move( *lPremise ) );
                     delete lPremise;
                     if( Settings::introduce_new_constraint_in_refinement )
                     {
@@ -2206,19 +2212,20 @@ namespace smtrat
                         delete newlimit;
                         learnedBound.newBound = NULL;
                     }
-                    std::pair<typename std::map<Variable<T1, T2>*, LearnedBound>::iterator, bool> insertionResult = mLearnedLowerBounds.insert( std::pair<Variable<T1, T2>*, LearnedBound>( _basicVar, learnedBound ) );
-                    if( !insertionResult.second )
+                    auto iter = mLearnedLowerBounds.find( _basicVar );
+                    if( iter != mLearnedLowerBounds.end() )
                     {
-                        if( *learnedBound.nextWeakerBound > *insertionResult.first->second.nextWeakerBound )
+                        if( *learnedBound.nextWeakerBound > *iter->second.nextWeakerBound )
                         {
-                            insertionResult.first->second.nextWeakerBound = learnedBound.nextWeakerBound;
-                            insertionResult.first->second.premise = learnedBound.premise;
-                            mNewLearnedBounds.push_back( insertionResult.first );
+                            iter->second.nextWeakerBound = learnedBound.nextWeakerBound;
+                            iter->second.premise = learnedBound.premise;
+                            mNewLearnedBounds.push_back( iter );
                         }
                     }
                     else
                     {
-                        mNewLearnedBounds.push_back( insertionResult.first );
+                        iter = mLearnedLowerBounds.emplace( _basicVar, std::move(learnedBound) ).first;
+                        mNewLearnedBounds.push_back( iter );
                     }
                 }
                 else
@@ -2324,12 +2331,16 @@ namespace smtrat
         template<class Settings, typename T1, typename T2>
         size_t Tableau<Settings,T1,T2>::checkCorrectness() const
         {
+            #ifdef LRA_PEDANTIC_CORRECTNESS_CHECKS
             size_t rowNumber = 0;
             for( ; rowNumber < mRows.size(); ++rowNumber )
             {
                 if( !rowCorrect( rowNumber ) ) return rowNumber;
             }
             return rowNumber;
+            #else
+            return mRows.size();
+            #endif
         }
 
         template<class Settings, typename T1, typename T2>

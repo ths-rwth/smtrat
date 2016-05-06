@@ -1317,13 +1317,13 @@ namespace smtrat
         SMTRAT_LOG_INFO("smtrat.module", _initiation << "Infeasible subsets:");
         for( auto infSubSet = mInfeasibleSubsets.begin(); infSubSet != mInfeasibleSubsets.end(); ++infSubSet )
         {
-			std::stringstream ss;
+            std::stringstream ss;
             ss << _initiation;
             ss << " {";
             for( auto infSubFormula = infSubSet->begin(); infSubFormula != infSubSet->end(); ++infSubFormula )
                 ss << " " << infSubFormula->toString( false, 0, "", true, true, true ) << std::endl;
             ss << " }";
-			SMTRAT_LOG_INFO("smtrat.module", "\t" << ss.str());
+            SMTRAT_LOG_INFO("smtrat.module", "\t" << ss.str());
         }
     }
     

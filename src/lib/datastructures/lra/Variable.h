@@ -45,6 +45,8 @@ namespace smtrat
                 ///
                 typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator mPositionInNonActives;
                 ///
+                size_t mId;
+                ///
                 typename Bound<T1, T2>::BoundSet mUpperbounds;
                 ///
                 typename Bound<T1, T2>::BoundSet mLowerbounds;
@@ -70,8 +72,9 @@ namespace smtrat
                  * @param _expression
                  * @param _defaultBoundPosition
                  * @param _isInteger
+                 * @param _id
                  */
-                Variable( size_t _position, const typename Poly::PolyType* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger );
+                Variable( size_t _position, const typename Poly::PolyType* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger, size_t _id );
                 
                 /**
                  * 
@@ -79,8 +82,9 @@ namespace smtrat
                  * @param _expression
                  * @param _defaultBoundPosition
                  * @param _isInteger
+                 * @param _id
                  */
-                Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives, const typename Poly::PolyType* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger );
+                Variable( typename std::list<std::list<std::pair<Variable<T1,T2>*,T2>>>::iterator _positionInNonActives, const typename Poly::PolyType* _expression, ModuleInput::iterator _defaultBoundPosition, bool _isInteger, size_t _id );
                 
                 /**
                  * 
@@ -279,6 +283,11 @@ namespace smtrat
                 size_t position() const
                 {
                     return mPosition;
+                }
+
+                size_t getId() const
+                {
+                    return mId;
                 }
                 
                 /**
@@ -571,7 +580,7 @@ namespace smtrat
                 {
                     if( this == &_variable )
                         return false;
-                    return this->expression() < _variable.expression();
+                    return this->getId() < _variable.getId();
                 }
                 
                 bool operator>( const Variable& _variable ) const
@@ -581,7 +590,7 @@ namespace smtrat
                 
                 bool operator==( const Variable& _variable ) const
                 {
-                    return &_variable == this;
+                    return _variable.getId() == this->getId();
                 }
                 
                 bool operator!=( const Variable& _variable ) const
@@ -604,5 +613,25 @@ namespace smtrat
         };
     }    // end namspace lra
 } // end namespace smtrat
+
+namespace std
+{
+    /**
+     * Implements std::hash for sort value.
+     */
+    template<typename T1, typename T2>
+    struct hash<smtrat::lra::Variable<T1,T2>>
+    {
+    public:
+        /**
+         * @param _lraVar The LRA-variable to get the hash for.
+         * @return The hash of the given LRA-variable.
+         */
+        size_t operator()( const smtrat::lra::Variable<T1,T2>& _lraVar ) const 
+        {
+            return _lraVar.getId();
+        }
+    };
+}
 
 #include "Variable.tpp"
