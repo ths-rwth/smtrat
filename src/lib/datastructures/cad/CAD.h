@@ -6,6 +6,7 @@
 #include "projection/Projection.h"
 #include "lifting/LiftingTree.h"
 #include "helper/CADConstraints.h"
+#include "helper/CADCore.h"
 #include "helper/ConflictGraph.h"
 #include "helper/MISGeneration.h"
 
@@ -14,6 +15,8 @@ namespace cad {
 	
 	template<typename Settings>
 	class CAD {
+		template<CoreHeuristic CH>
+		friend struct CADCore;
 	private:
 		Variables mVariables;
 		CADConstraints<Settings::backtracking> mConstraints;
@@ -112,51 +115,11 @@ namespace cad {
 		Answer check(Assignment& assignment) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Checking constraints:" << std::endl << mConstraints);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
-			mLifting.resetFullSamples();
-			mLifting.restoreRemovedSamples();
-			while (true) {
-				SMTRAT_LOG_DEBUG("smtrat.cad", "Current sample tree:" << std::endl << mLifting.getTree());
-				Answer res = checkFullSamples(assignment);
-				if (res == Answer::SAT) return Answer::SAT;
-				
-				if (!mLifting.hasNextSample()) {
-					SMTRAT_LOG_DEBUG("smtrat.cad", "There is no sample to be lifted.");
-					break;
-				}
-				auto it = mLifting.getNextSample();
-				Sample& s = *it;
-				SMTRAT_LOG_DEBUG("smtrat.cad", "Sample " << s << " at depth " << it.depth());
-				SMTRAT_LOG_DEBUG("smtrat.cad", "Current sample: " << mLifting.printSample(it));
-				assert(0 <= it.depth() && it.depth() < dim());
-				if (s.hasConflictWithConstraint()) {
-					SMTRAT_LOG_DEBUG("smtrat.cad", "Sample " << s << " already has a conflict.");
-					mLifting.removeNextSample();
-					continue;
-				}
-				auto polyID = mProjection.getPolyForLifting(idLP(it.depth() + 1), s.liftedWith());
-				if (polyID) {
-					const auto& poly = mProjection.getPolynomialById(idLP(it.depth() + 1), *polyID);
-					SMTRAT_LOG_DEBUG("smtrat.cad", "Lifting " << s << " with " << poly);
-					mLifting.liftSample(it, poly, *polyID);
-				} else {
-					SMTRAT_LOG_DEBUG("smtrat.cad", "Got no polynomial for " << s << ", projecting into level " << idLP(it.depth() + 1) << " ...");
-					bool gotNewPolys = mProjection.projectNewPolynomial(idLP(it.depth() + 1));
-					SMTRAT_LOG_DEBUG("smtrat.cad", "Tried to project polynomials into level " << idLP(it.depth() + 1) << ", result = " << gotNewPolys);
-					if (gotNewPolys) {
-						SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
-						mLifting.restoreRemovedSamples();
-					} else if (mProjection.empty(idLP(it.depth() + 1))) {
-						if (!mLifting.addTrivialSample(it)) {
-							mLifting.removeNextSample();
-						}
-					} else {
-						mLifting.removeNextSample();
-					}
-				}
-			}
+			CADCore<Settings::coreHeuristic> cad;
+			auto res = cad(assignment, *this);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current sampletree:" << std::endl << mLifting.getTree());
-			return Answer::UNSAT;
+			return res;
 		}
 		
 		ConflictGraph generateConflictGraph() const {

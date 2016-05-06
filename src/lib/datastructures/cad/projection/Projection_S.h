@@ -31,8 +31,9 @@ namespace cad {
 			Super::reset(vars);
 			mQueue.clear();
 		}
-		void addPolynomial(const UPoly& p, std::size_t cid) {
+		Bitset addPolynomial(const UPoly& p, std::size_t cid) {
 			mQueue.push(QueueEntry(p, cid));
+			return Bitset();
 		}
 		void removePolynomial(const UPoly& p, std::size_t cid) {
 			auto it = mQueue.find(QueueEntry(p, cid));
@@ -43,15 +44,14 @@ namespace cad {
 			}
 		}
 		
-		bool projectNewPolynomial(std::size_t level, const ConstraintSelection& ps = Bitset(true)) {
-			std::size_t oldSize = Super::size(level);
+		Bitset projectNewPolynomial(const ConstraintSelection& ps = Bitset(true)) {
 			while (!mQueue.empty()) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Using next polynomial " << mQueue.top() << " from " << mQueue);
-				Super::addPolynomial(mQueue.top().first, mQueue.top().second);
+				Bitset res = Super::addPolynomial(mQueue.top().first, mQueue.top().second);
 				mQueue.pop();
-				if (Super::size(level) > oldSize) return true;
+				if (res.any()) return res;
 			}
-			return false;
+			return Bitset();
 		}	
 	};
 	

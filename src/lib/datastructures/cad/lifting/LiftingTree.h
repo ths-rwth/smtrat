@@ -153,6 +153,7 @@ namespace cad {
 			return mLiftingQueue.getNextSample();
 		}
 		void removeNextSample() {
+			assert(hasNextSample());
 			mRemovedFromLiftingQueue.emplace_back(mLiftingQueue.removeNextSample());
 		}
 		void restoreRemovedSamples() {
@@ -177,6 +178,13 @@ namespace cad {
 			if (!mTree.is_leaf(sample)) return false;
 			auto it = mTree.append(sample, Sample(RAN(0), false));
 			addToQueue(it);
+			
+			for (std::size_t i = 1; i < Settings::trivialSampleRadius; i++) {
+				auto itpos = mTree.append(sample, Sample(RAN(i), false));
+				addToQueue(itpos);
+				auto itneg = mTree.append(sample, Sample(RAN(-i), false));
+				addToQueue(itneg);
+			}
 			return true;
 		}
 		Assignment extractSampleMap(Iterator it) const {

@@ -34,6 +34,7 @@ namespace cad {
 		
 		/// Inserts a polynomial with the given origin into the given level.
 		void insertPolynomial(std::size_t level, const UPoly& p, std::size_t origin) {
+			assert(mPolynomialIDs[level].find(p) == mPolynomialIDs[level].end());
 			std::size_t id = mPolynomials[level].size();
 			mPolynomials[level].emplace_back(p, origin);
 			mPolynomialIDs[level].emplace(p, id);
@@ -49,11 +50,10 @@ namespace cad {
 		}
 		
 		/// Adds a new polynomial to the given level and perform the projection recursively.
-		void addToProjection(std::size_t level, const UPoly& p, std::size_t origin) {
-			if (canBePurged(p)) return;
+		Bitset addToProjection(std::size_t level, const UPoly& p, std::size_t origin) {
+			if (canBePurged(p)) return Bitset();
 			if ((level > 0) && (level < dim() - 1) && canBeForwarded(level, p)) {
-				addToProjection(level+1, p.switchVariable(var(level+1)), origin);
-				return;
+				return addToProjection(level+1, p.switchVariable(var(level+1)), origin);
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			assert(level < dim());
@@ -64,25 +64,28 @@ namespace cad {
 				if (level > 0) {
 					assert(mPolynomials[level][it->second].second <= origin);
 				}
-				return;
+				return Bitset();
 			}
 			if (level == 0) {
 				// Change origin to the id of this polynomial
 				origin = mPolynomials[level].size();
 			}
+			Bitset res;
 			if (level < dim() - 1) {
 				mOperator(Settings::projectionOperator, p, var(level + 1), 
-					[&](const UPoly& np){ addToProjection(level + 1, np, origin); }
+					[&](const UPoly& np){ res |= addToProjection(level + 1, np, origin); }
 				);
 				for (const auto& it: mPolynomials[level]) {
 					std::size_t newOrigin = std::max(origin, it.second);
 					mOperator(Settings::projectionOperator, p, it.first, var(level + 1),
-						[&](const UPoly& np){ addToProjection(level + 1, np, newOrigin); }
+						[&](const UPoly& np){ res |= addToProjection(level + 1, np, newOrigin); }
 					);
 				}
 			}
 			// Actually insert afterwards to avoid pairwise projection with itself.
 			insertPolynomial(level, p, origin);
+			res.set(level);
+			return res;
 		}
 	public:
 		/**
@@ -99,9 +102,9 @@ namespace cad {
 		 * Adds the given polynomial to the projection with the given constraint id as origin.
 		 * Asserts that the main variable of the polynomial is the first variable.
 		 */
-		void addPolynomial(const UPoly& p, std::size_t cid) {
+		Bitset addPolynomial(const UPoly& p, std::size_t cid) {
 			assert(p.mainVar() == var(0));
-			addToProjection(0, p, cid);
+			return addToProjection(0, p, cid);
 		}
 		/**
 		 * Removed the given polynomial from the projection.
@@ -139,8 +142,8 @@ namespace cad {
 		}
 		
 		/// Returns false, as the projection is not incremental.
-		bool projectNewPolynomial(std::size_t level, const ConstraintSelection& ps = Bitset(true)) {
-			return false;
+		Bitset projectNewPolynomial(const ConstraintSelection& ps = Bitset(true)) {
+			return Bitset();
 		}
 		/// Get the polynomial from this level with the given id.
 		const UPoly& getPolynomialById(std::size_t level, std::size_t id) const {

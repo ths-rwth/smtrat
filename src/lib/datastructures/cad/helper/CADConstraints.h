@@ -96,7 +96,6 @@ public:
 			callCallback(mRemoveCallback, mConstraintIts.back()->first, mConstraintIts.back()->second);
 			mConstraintMap.erase(mConstraintIts.back());
 			mConstraintIts.pop_back();
-			if (mConstraintIts.size() != id) std::exit(45);
 			assert(mConstraintIts.size() == id);
 			// Add constraints removed before
 			while (!cache.empty()) {
