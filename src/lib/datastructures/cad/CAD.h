@@ -115,6 +115,10 @@ namespace cad {
 		
 		Answer check(Assignment& assignment) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Checking constraints:" << std::endl << mConstraints);
+			if (mConstraints.bounds().isConflicting()) {
+				SMTRAT_LOG_DEBUG("smtrat.cad", "Trivially unsat due to bounds.");
+				return Answer::UNSAT;
+			}
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 			CADCore<Settings::coreHeuristic> cad;
 			auto res = cad(assignment, *this);
