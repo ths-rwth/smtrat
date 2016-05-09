@@ -38,7 +38,8 @@ namespace cad {
 			mConstraints(
 				[&](const UPoly& p, std::size_t cid){ mProjection.addPolynomial(p, cid); },
 				[&](const UPoly& p, std::size_t cid){ mProjection.removePolynomial(p, cid); }
-			)
+			),
+			mLifting(mConstraints)
 		{
 			mProjection.setRemoveCallback([&](std::size_t level, const SampleLiftedWith& mask){
 				mLifting.removedPolynomialsFromLevel(idPL(level), mask);
