@@ -2909,13 +2909,15 @@ SetWatches:
         int top = analyze_toclear.size();
         while( analyze_stack.size() > 0 )
         {
-            assert( reason( var( analyze_stack.last() ) ) != CRef_Undef );
-            Clause& c = ca[reason( var( analyze_stack.last() ) )];
+            CRef c_reason = reason(var(analyze_stack.last()));
+            assert( c_reason != CRef_Undef );
+            Clause& c = ca[c_reason];
+            int c_size = c.size();
             analyze_stack.pop();
 
-            for( int i = 1; i < c.size(); i++ )
+            for( int i = 1; i < c_size; i++ )
             {
-                Lit p = c[i];
+                Lit p  = ca[c_reason][i];
                 if( !seen[var( p )] && level( var( p ) ) > 0 )
                 {
                     if( reason( var( p ) ) != CRef_Undef && (abstractLevel( var( p ) ) & abstract_levels) != 0 )
@@ -3282,6 +3284,10 @@ NextClause:
                         cout << "Learned a theory lemma from a backend module!" << endl;
                         cout << lem.mLemma.toString( false, 0, "", true, true, true ) << endl;
                         #endif
+                        #ifdef SMTRAT_DEVOPTION_Validation
+                        if( validationSettings->logLemmata() )
+                            addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, lem.mLemma ), false, (*backend)->moduleName() + "_lemma" );
+                        #endif
                         #ifdef NEW_VERSION
                         int numOfLearnts = mLemmas.size();
                         #else
@@ -3399,6 +3405,7 @@ NextClause:
                         cout << " " << infSubFormula.toString( false, 0, "", true, true, true ) << std::endl;
                     cout << " }";
                 }
+                std::cout << std::endl;
                 #endif
                 // Add the according literals to the conflict clause.
                 vec<Lit> learnt_clause;
