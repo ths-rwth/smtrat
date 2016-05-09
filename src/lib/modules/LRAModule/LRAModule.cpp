@@ -660,7 +660,7 @@ namespace smtrat
                         auto constrBoundIter = mTableau.rConstraintToBound().find( *origin );
                         assert( constrBoundIter != mTableau.constraintToBound().end() );
                         std::vector< const LRABound* >* constraintToBounds = constrBoundIter->second;
-                        constraintToBounds->push_back( learnedBound.nextWeakerBound );
+                        constraintToBounds->push_back( *learnedBound.nextWeakerBound );
                         #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                         if( learnedBound.newBound != NULL ) constraintToBounds->push_back( learnedBound.newBound );
                         #endif
@@ -673,14 +673,14 @@ namespace smtrat
                     auto constrBoundIter = mTableau.rConstraintToBound().find( boundOrigins );
                     assert( constrBoundIter != mTableau.constraintToBound().end() );
                     std::vector< const LRABound* >* constraintToBounds = constrBoundIter->second;
-                    constraintToBounds->push_back( learnedBound.nextWeakerBound );
+                    constraintToBounds->push_back( *learnedBound.nextWeakerBound );
                     #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
                     if( learnedBound.newBound != NULL ) constraintToBounds->push_back( learnedBound.newBound );
                     #endif
                 }
             }
             FormulaT origin = FormulaT( carl::FormulaType::AND, std::move(originSet) );
-            activateBound( learnedBound.nextWeakerBound, origin );
+            activateBound( *learnedBound.nextWeakerBound, origin );
             #ifdef LRA_INTRODUCE_NEW_CONSTRAINTS
             if( learnedBound.newBound != NULL )
             {
@@ -786,8 +786,10 @@ namespace smtrat
                     subformulas.emplace_back( carl::FormulaType::NOT, origin );
                 }
             }
-            subformulas.push_back( iter->second.nextWeakerBound->asConstraint() );
-            addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
+            FormulaT premise( carl::FormulaType::AND, std::move(subformulas) );
+            assert( (*iter->first->lowerbounds().begin())->isInfinite() );
+            for( auto lboundIter = iter->second.nextWeakerBound; lboundIter != iter->first->lowerbounds().begin(); --lboundIter )
+                addLemma( FormulaT( carl::FormulaType::IMPLIES, premise, (*lboundIter)->asConstraint() ) );
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
             mpStatistics->addLemma();
@@ -814,8 +816,10 @@ namespace smtrat
                     subformulas.emplace_back( carl::FormulaType::NOT, origin );
                 }
             }
-            subformulas.push_back( iter->second.nextWeakerBound->asConstraint() );
-            addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
+            FormulaT premise( carl::FormulaType::AND, std::move(subformulas) );
+            assert( (*(--(iter->first->upperbounds().end())))->isInfinite() );
+            for( auto uboundIter = iter->second.nextWeakerBound; uboundIter != --(iter->first->upperbounds().end()); ++uboundIter )
+                addLemma( FormulaT( carl::FormulaType::IMPLIES, premise, (*uboundIter)->asConstraint() ) );
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
             mpStatistics->addLemma();

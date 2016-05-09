@@ -70,6 +70,15 @@ namespace smtrat
                 
                 /// The level in which the variable has been assigned, if it is not unassigned.
                 int level;
+                
+                /// The index in the trail.
+                int mTrailIndex;
+
+                VarData( Minisat::CRef _reason, int _level, int _trailIndex ):
+                    reason( _reason ),
+                    level( _level ),
+                    mTrailIndex( _trailIndex )
+                {}
             };
 
             /**
@@ -242,6 +251,35 @@ namespace smtrat
                     mClauses()
                 {}
             };
+            
+            // Less than for literals in a lemma
+            struct lemma_lt
+            {
+                SATModule& solver;
+                lemma_lt(SATModule& solver) : solver(solver) {}
+                bool operator () (Minisat::Lit x, Minisat::Lit y) {
+                  Minisat::lbool x_value = solver.value(x);
+                  Minisat::lbool y_value = solver.value(y);
+                  // Two unassigned literals are sorted arbitrarily
+                  if (x_value == l_Undef && y_value == l_Undef) {
+                    return x < y;
+                  }
+                  // Unassigned literals are put to front
+                  if (x_value == l_Undef) return true;
+                  if (y_value == l_Undef) return false;
+                  // Literals of the same value are sorted by decreasing levels
+                  if (x_value == y_value) {
+                    return solver.trailIndex(var(x)) > solver.trailIndex(var(y));
+                  } else {
+                    // True literals go up front
+                    if (x_value == l_True) {
+                      return true;
+                    } else {
+                      return false;
+                    }
+                  }
+                }
+            };
 
             /**
              * Maps the constraints occurring in the SAT module to their abstractions. We store a vector of literals
@@ -351,13 +389,6 @@ namespace smtrat
                     return mPositives.size();
                 }
             };
-
-            /// [Minisat related code]
-            static inline VarData mkVarData( Minisat::CRef cr, int l )
-            {
-                VarData d = { cr, l };
-                return d;
-            }
             
             // Minisat related members.
 
@@ -486,6 +517,8 @@ namespace smtrat
             bool mFullAssignmentCheckedForConsistency;
             ///
             bool mOptimumComputed;
+            ///
+            bool mBusy;
             /**
              * Stores gained information about the current assignment's consistency. If we know from the last consistency check, whether the
              * current assignment is consistent, this member is SAT, if we know that it is inconsistent it is UNSAT, otherwise Unknown.
@@ -563,6 +596,10 @@ namespace smtrat
             std::vector<std::pair<size_t,size_t>> mLiteralsActivOccurrences;
             ///
             std::vector<Minisat::Lit> mPropagationFreeDecisions;
+            /// literals propagated by lemmas
+            Minisat::vec<Minisat::vec<Minisat::Lit>> mLemmas;
+            /// is the lemma removable
+            Minisat::vec<bool> mLemmasRemovable;
             
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
@@ -667,7 +704,7 @@ namespace smtrat
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printFormulaClausesMap( std::ostream& _out = std::cout, const std::string _init = "" ) const;
+            void printFormulaCNFInfosMap( std::ostream& _out = std::cout, const std::string _init = "" ) const;
             
             /**
              * Prints the clause information.
@@ -925,6 +962,13 @@ namespace smtrat
             {
                 asynch_interrupt = false;
             }
+            
+            inline void toString( std::ostream& _os, Minisat::Lit _lit ) const
+            {
+                if( Minisat::sign( _lit ) )
+                    _os << "-";
+                _os << Minisat::var( _lit );
+            }
 
             // Memory management:
             
@@ -1116,6 +1160,8 @@ namespace smtrat
              */
             Minisat::CRef learnTheoryConflict( bool& _foundConflictOfSizeOne );
             
+            void learnTheoryConflicts();
+            
             void adaptConflictEvaluation( size_t& _clauseEvaluation, Minisat::Lit _lit, bool _firstLiteral );
             
             /**
@@ -1123,7 +1169,10 @@ namespace smtrat
              * @param _madeTheoryCall A flag which is set to true, if at least one theory call has been made within this method.
              * @return A reference to a conflicting clause, if a clause has been added.
              */
-            Minisat::CRef propagateConsistently( bool& _madeTheoryCall, bool& _foundConflictOfSizeOne  );
+            Minisat::CRef propagateConsistently( bool& _madeTheoryCall, bool& _foundConflictOfSizeOne, bool _checkWithTheory = true );
+            
+            Minisat::CRef theoryCall( bool& _madeTheoryCall, bool& _foundConflictOfSizeOne, bool& _lemmasLearned );
+            void constructLemmas();
             
             /**
              * Checks the received formula for consistency.
@@ -1376,12 +1425,20 @@ namespace smtrat
             {
                 return vardata[x].level;
             }
+
+            inline int trailIndex( Minisat::Var _var ) const
+            { 
+                assert( _var < vardata.size() ); 
+                return vardata[_var].mTrailIndex;
+            }
             
             /**
              * @param _clause The clause to get the highest decision level in which assigned one of its literals has been assigned. 
              * @return The highest decision level which assigned a literal of the given clause.
              */
             int level( const Minisat::vec< Minisat::Lit >& ) const;
+            
+            Minisat::CRef storeLemmas( bool& _foundConflictOfSizeOne );
             
             /**
              * @return An estimation of the progress the SAT solver has been made, depending on how many assignments have been excluded

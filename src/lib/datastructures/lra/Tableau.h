@@ -12,6 +12,7 @@
 #include <map>
 #include <deque>
 #include "Variable.h"
+#include "carl/util/IDGenerator.h"
 
 namespace smtrat
 {
@@ -211,9 +212,24 @@ namespace smtrat
                     ///
                     const Bound<T1, T2>* newBound;
                     ///
-                    const Bound<T1, T2>* nextWeakerBound;
+                    typename Bound<T1, T2>::BoundSet::const_iterator nextWeakerBound;
                     ///
                     std::vector< const Bound<T1, T2>*> premise;
+                    
+                    LearnedBound() = delete;
+                    LearnedBound( const LearnedBound& ) = delete;
+                    LearnedBound( LearnedBound&& _toMove ) :
+                        newBound( _toMove.newBound ),
+                        nextWeakerBound( _toMove.nextWeakerBound ),
+                        premise( std::move( _toMove.premise ) )
+                    {}
+                    LearnedBound( const Bound<T1, T2>* _newBound, typename Bound<T1, T2>::BoundSet::const_iterator _nextWeakerBound, std::vector< const Bound<T1, T2>*>&& _premise ):
+                        newBound( _newBound ),
+                        nextWeakerBound( _nextWeakerBound ),
+                        premise( std::move( _premise ) )
+                    {}
+                    
+                    ~LearnedBound() {}
                 };
             private:
                 ///
@@ -225,9 +241,13 @@ namespace smtrat
                 ///
                 size_t mMaxPivotsWithoutBlandsRule;
                 ///
+                size_t mVarIDCounter;
+                ///
                 ModuleInput::iterator mDefaultBoundPosition;
                 ///
                 std::stack<EntryID> mUnusedIDs;
+                /// Id allocator for the variables.
+                carl::IDGenerator mVariableIdAllocator;
                 ///
                 std::vector<Variable<T1,T2>*> mRows;       // First element is the head of the row and the second the length of the row.
                 ///
@@ -249,11 +269,11 @@ namespace smtrat
                 ///
                 carl::FastMap<FormulaT, std::vector<const Bound<T1, T2>*>*> mConstraintToBound;
                 ///
-                std::map<Variable<T1,T2>*, LearnedBound> mLearnedLowerBounds;
+                carl::FastPointerMap<Variable<T1,T2>, LearnedBound> mLearnedLowerBounds;
                 ///
-                std::map<Variable<T1,T2>*, LearnedBound> mLearnedUpperBounds;
+                carl::FastPointerMap<Variable<T1,T2>, LearnedBound> mLearnedUpperBounds;
                 ///
-                std::vector<typename std::map<Variable<T1,T2>*, LearnedBound>::iterator> mNewLearnedBounds;
+                std::vector<typename carl::FastPointerMap<Variable<T1,T2>, LearnedBound>::iterator> mNewLearnedBounds;
 
                 /**
                  *
@@ -478,7 +498,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                std::map<Variable<T1, T2>*, LearnedBound>& rLearnedLowerBounds()
+                carl::FastPointerMap<Variable<T1,T2>, LearnedBound>& rLearnedLowerBounds()
                 {
                     return mLearnedLowerBounds;
                 }
@@ -486,7 +506,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                std::map<Variable<T1, T2>*, LearnedBound>& rLearnedUpperBounds()
+                carl::FastPointerMap<Variable<T1,T2>, LearnedBound>& rLearnedUpperBounds()
                 {
                     return mLearnedUpperBounds;
                 }
@@ -499,7 +519,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                std::vector<typename std::map<Variable<T1, T2>*, LearnedBound>::iterator>& rNewLearnedBounds()
+                std::vector<typename carl::FastPointerMap<Variable<T1,T2>, LearnedBound>::iterator>& rNewLearnedBounds()
                 {
                     return mNewLearnedBounds;
                 }
