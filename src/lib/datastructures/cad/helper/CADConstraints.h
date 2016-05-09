@@ -4,6 +4,7 @@
 #include <set>
 #include <vector>
 
+#include "../../VariableBounds.h"
 #include "../Common.h"
 
 namespace smtrat {
@@ -13,6 +14,7 @@ template<Backtracking BT>
 class CADConstraints {
 public:
 	using Callback = std::function<void(const UPoly&, std::size_t)>;
+	using VariableBounds = vb::VariableBounds<ConstraintT>;
 	template<Backtracking B>
 	friend std::ostream& operator<<(std::ostream& os, const CADConstraints<B>& cc);
 protected:
@@ -36,6 +38,7 @@ protected:
 	ConstraintMap mConstraintMap;
 	std::vector<typename ConstraintMap::iterator> mConstraintIts;
 	IDPool mIDPool;
+	VariableBounds mBounds;
 	
 	void callCallback(const Callback& cb, const ConstraintT& c, std::size_t id) const {
 		if (cb) cb(c.lhs().toUnivariatePolynomial(mVariables.front()), id);
@@ -48,6 +51,9 @@ public:
 		mConstraintIts.clear();
 		mIDPool = IDPool();
 	}
+	const Variables& vars() const {
+		return mVariables;
+	}
 	std::size_t size() const {
 		return mConstraintIts.size();
 	}
@@ -57,8 +63,12 @@ public:
 	const auto& ordered() const {
 		return mConstraintMap;
 	}
+	const auto& bounds() const {
+		return mBounds;
+	}
 	std::size_t add(const ConstraintT& c) {
 		SMTRAT_LOG_DEBUG("smtrat.cad.constraints", "Adding " << c);
+		mBounds.addBound(c, c);
 		assert(!mVariables.empty());
 		std::size_t id = 0;
 		if (BT == Backtracking::ORDERED) {
@@ -77,6 +87,7 @@ public:
 	}
 	std::size_t remove(const ConstraintT& c) {
 		SMTRAT_LOG_DEBUG("smtrat.cad.constraints", "Removing " << c);
+		mBounds.removeBound(c, c);
 		auto it = mConstraintMap.find(c);
 		assert(it != mConstraintMap.end());
 		std::size_t id = it->second;
