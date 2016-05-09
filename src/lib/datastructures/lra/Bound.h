@@ -345,6 +345,14 @@ namespace smtrat
                 {
                     mpInfo->exists = true;
                 }
+                
+                /**
+                 * 
+                 */
+                bool exists() const
+                {
+                    return mpInfo->exists;
+                }
 
                 /**
                  * @return 

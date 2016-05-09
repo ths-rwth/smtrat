@@ -778,18 +778,23 @@ namespace smtrat
                     {
                         assert( subformula.getType() == carl::FormulaType::CONSTRAINT );
                         subformulas.emplace_back( carl::FormulaType::NOT, subformula );
+                        subformulas.push_back( subformula );
                     }
                 }
                 else
                 {
                     assert( origin.getType() == carl::FormulaType::CONSTRAINT );
-                    subformulas.emplace_back( carl::FormulaType::NOT, origin );
+//                    subformulas.emplace_back( carl::FormulaType::NOT, origin );
+                    subformulas.push_back( origin );
                 }
             }
             FormulaT premise( carl::FormulaType::AND, std::move(subformulas) );
             assert( (*iter->first->lowerbounds().begin())->isInfinite() );
             for( auto lboundIter = iter->second.nextWeakerBound; lboundIter != iter->first->lowerbounds().begin(); --lboundIter )
-                addLemma( FormulaT( carl::FormulaType::IMPLIES, premise, (*lboundIter)->asConstraint() ) );
+            {
+                if( (*lboundIter)->exists() && (*lboundIter)->type() != LRABound::Type::EQUAL )
+                    addLemma( FormulaT( carl::FormulaType::IMPLIES, premise, (*lboundIter)->asConstraint() ) );
+            }
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
             mpStatistics->addLemma();
@@ -819,7 +824,10 @@ namespace smtrat
             FormulaT premise( carl::FormulaType::AND, std::move(subformulas) );
             assert( (*(--(iter->first->upperbounds().end())))->isInfinite() );
             for( auto uboundIter = iter->second.nextWeakerBound; uboundIter != --(iter->first->upperbounds().end()); ++uboundIter )
-                addLemma( FormulaT( carl::FormulaType::IMPLIES, premise, (*uboundIter)->asConstraint() ) );
+            {
+                if( (*uboundIter)->exists() && (*uboundIter)->type() != LRABound::Type::EQUAL )
+                    addLemma( FormulaT( carl::FormulaType::IMPLIES, premise, (*uboundIter)->asConstraint() ) );
+            }
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
             mpStatistics->addLemma();
@@ -1357,9 +1365,11 @@ namespace smtrat
         if( solverState() == UNSAT ) return true;
         if( !mAssignmentFullfilsNonlinearConstraints ) return true;
         const EvalRationalMap& rmodel = getRationalModel();
+        carl::Variables inputVars;
+        rReceivedFormula().arithmeticVars( inputVars );
         for( auto ass = rmodel.begin(); ass != rmodel.end(); ++ass )
         {
-            if( ass->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass->second ) )
+            if( ass->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass->second ) && inputVars.find( ass->first ) != inputVars.end() )
             {
                 return false;
             }
