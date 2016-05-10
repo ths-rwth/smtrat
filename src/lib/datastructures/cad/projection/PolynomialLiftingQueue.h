@@ -24,7 +24,8 @@ namespace cad {
 
 	template<typename PolynomialGetter>
 	class PolynomialLiftingQueue {
-		friend std::ostream& operator<<(std::ostream& os, const PolynomialLiftingQueue<PolynomialGetter>& plq);
+		template<typename PG>
+		friend std::ostream& operator<<(std::ostream& os, const PolynomialLiftingQueue<PG>& plq);
 	private:
 		PolynomialComparator<PolynomialGetter> mComparator;
 		std::set<std::size_t, PolynomialComparator<PolynomialGetter>> mQueue;
