@@ -29,6 +29,9 @@ private:
 	std::size_t mNextSID = 0;
 public:
 	ConflictGraph(std::size_t constraints): mData(constraints) {}
+	std::size_t coveredSamples(std::size_t id) const {
+		return mData[id].count();
+	}
 	void addSample(const Sample& sample) {
 		assert(sample.hasConflictWithConstraint());
 		std::size_t sid = mNextSID++;
