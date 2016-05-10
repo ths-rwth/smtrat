@@ -63,7 +63,7 @@ namespace cad {
 			return p.isZero() || p.isNumber();
 		}
 		/// Checks whether a polynomial can safely be forwarded to the next level.
-		bool canBeForwarded(std::size_t level, const UPoly& p) const {
+		bool canBeForwarded(std::size_t, const UPoly& p) const {
 			return p.isConstant();
 		}
 	public:
