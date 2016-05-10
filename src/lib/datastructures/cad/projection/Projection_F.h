@@ -11,8 +11,20 @@ namespace smtrat {
 namespace cad {
 	
 	template<typename Settings, Backtracking BT>
-	class Projection<Incrementality::FULL, BT, Settings>: public BaseProjection {
+	class Projection<Incrementality::FULL, BT, Settings>: public BaseProjection<Settings> {
 	private:
+		using Super = BaseProjection<Settings>;
+		using typename Super::Constraints;
+		using Super::mLiftingQueues;
+		using Super::mOperator;
+		using Super::callRemoveCallback;
+		using Super::canBePurged;
+		using Super::canBeForwarded;
+		using Super::getID;
+		using Super::freeID;
+		using Super::dim;
+		using Super::var;
+
 		template<typename S, Backtracking B>
 		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::FULL, B, S>& p);
 		// A projection candidate: a level to project into and two ids that refer to the level above.
@@ -141,8 +153,11 @@ namespace cad {
 		}
 		Bitset projectBaseCandidate(const QueueEntry& qe) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Projecting into level 0");
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Projecting (" << qe.first << " / " << qe.second << ")");
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Original polynomials: " << mOriginalPolynomials);
 			assert(qe.level == 0);
-			assert(qe.first == qe.second && mOriginalPolynomials[qe.first]);
+			assert(qe.first == qe.second);
+			assert(mOriginalPolynomials[qe.first]);
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> About to project " << qe.first);
 			insertPolynomialTo(0, *mOriginalPolynomials[qe.first], Origin::BaseType(qe.first));
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Projected " << *mOriginalPolynomials[qe.first]);
@@ -174,9 +189,12 @@ namespace cad {
 		}
 		
 	public:
-		Projection(): mProjectionQueue(ProjectionCandidateComparator([&](std::size_t level, std::size_t id){ return (level == 0) ? getOriginalPolynomialById(id) : getPolynomialById(level-1, id); })) {}
-		void reset(const std::vector<carl::Variable>& vars) {
-			BaseProjection::reset(vars);
+		Projection(const Constraints& c):
+			Super(c),
+			mProjectionQueue(ProjectionCandidateComparator([&](std::size_t level, std::size_t id){ return (level == 0) ? getOriginalPolynomialById(id) : getPolynomialById(level-1, id); }))
+		{}
+		void reset() {
+			Super::reset();
 			mOriginalPolynomials.clear();
 			mPolynomialIDs.clear();
 			mPolynomialIDs.resize(dim());
@@ -195,6 +213,8 @@ namespace cad {
 		}
 		void removePolynomial(const UPoly& p, std::size_t cid) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << cid);
+			mOriginalPolynomials[cid] = boost::none;
+			purgeFromProjectionQueue(0, cid);
 			Bitset filter = Bitset().set(cid);
 			for (std::size_t level = 0; level < dim(); level++) {
 				Bitset removed;
@@ -241,7 +261,8 @@ namespace cad {
 	std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::FULL, B, S>& p) {
 		os << "-1:\tP: " << p.mOriginalPolynomials << std::endl;
 		for (std::size_t level = 0; level < p.dim(); level++) {
-			os << level << ":\tP: " << p.mPolynomials[level] << std::endl;
+			os << level << " / " << p.var(level) << std::endl;
+			os << "\tP: " << p.mPolynomials[level] << std::endl;
 			os << "\tL: " << p.mLiftingQueues[level] << std::endl;
 		}
 		os << "Q: " << p.mProjectionQueue << std::endl;

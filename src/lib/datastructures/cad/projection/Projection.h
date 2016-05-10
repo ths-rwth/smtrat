@@ -13,7 +13,7 @@ namespace smtrat {
 namespace cad {
 	
 	template<Incrementality incrementality, Backtracking backtracking, typename Settings>
-	class Projection: public BaseProjection {};
+	class Projection: public BaseProjection<Settings> {};
 	
 	template<typename Settings>
 	using ProjectionT = Projection<Settings::incrementality, Settings::backtracking, Settings>;

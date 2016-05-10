@@ -27,8 +27,10 @@ namespace cad {
 		
 		PriorityQueue<QueueEntry, PolynomialComparator> mQueue;
 	public:
-		void reset(const std::vector<carl::Variable>& vars) {
-			Super::reset(vars);
+		template<typename ...Args>
+		Projection(Args&&... args): Super(std::forward<Args>(args)...) {}
+		void reset() {
+			Super::reset();
 			mQueue.clear();
 		}
 		Bitset addPolynomial(const UPoly& p, std::size_t cid) {

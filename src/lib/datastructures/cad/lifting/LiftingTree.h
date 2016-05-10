@@ -228,6 +228,7 @@ namespace cad {
 		void removedConstraint(const Bitset& mask) {
 			for (auto& s: mTree) {
 				if (s.evaluatedWith().size() == 0) continue;
+				SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Purging " << s.evaluatedWith() << " by " << mask);
 				s.evaluatedWith() -= mask;
 				s.evaluationResult() -= mask;
 			}

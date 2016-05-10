@@ -16,8 +16,19 @@ namespace cad {
 	 * This class implements a projection that supports no incrementality and allows backtracking to be out of order.
 	 */
 	template<typename Settings>
-	class Projection<Incrementality::NONE, Backtracking::UNORDERED, Settings>: public BaseProjection {
+	class Projection<Incrementality::NONE, Backtracking::UNORDERED, Settings>: public BaseProjection<Settings> {
 	private:
+		using Super = BaseProjection<Settings>;
+		using typename Super::Constraints;
+		using Super::mLiftingQueues;
+		using Super::mOperator;
+		using Super::callRemoveCallback;
+		using Super::canBePurged;
+		using Super::getID;
+		using Super::freeID;
+		using Super::dim;
+		using Super::var;
+
 		template<typename S>
 		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::NONE, Backtracking::UNORDERED, S>& p);
 		// Maps polynomials to a (per level) unique ID.
@@ -26,7 +37,7 @@ namespace cad {
 		std::vector<std::vector<boost::optional<std::pair<UPoly,Origin>>>> mPolynomials;
 		
 		Bitset addToProjection(std::size_t level, const UPoly& p, const Origin::BaseType& origin) {
-			if (p.isZero() || p.isNumber()) return Bitset();
+			if (canBePurged(p)) return Bitset();
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			assert(level < dim());
 			assert(p.mainVar() == var(level));
@@ -36,7 +47,7 @@ namespace cad {
 				mPolynomials[level][it->second]->second += origin;
 				return Bitset();
 			}
-			std::size_t newID = mIDPools[level].get();
+			std::size_t newID = getID(level);;
 			Bitset res;
 			if (level < dim() - 1) {
 				mOperator(Settings::projectionOperator, p, var(level + 1), 
@@ -60,8 +71,9 @@ namespace cad {
 			return res;
 		}
 	public:
-		void reset(const std::vector<carl::Variable>& vars) {
-			BaseProjection::reset(vars);
+		Projection(const Constraints& c): Super(c) {}
+		void reset() {
+			Super::reset();
 			mPolynomials.clear();
 			mPolynomials.resize(dim());
 			mPolynomialIDs.clear();
@@ -81,7 +93,7 @@ namespace cad {
 					assert(mPolynomials[level][id]);
 					mPolynomials[level][id]->second -= filter;
 					if (mPolynomials[level][id]->second.empty()) {
-						mIDPools[level].free(id);
+						freeID(level, id);
 						mLiftingQueues[level].erase(id);
 						removed.set(id);
 						mPolynomials[level][id] = boost::none;
