@@ -39,6 +39,7 @@ namespace cad {
 				[&](const UPoly& p, std::size_t cid){ mProjection.addPolynomial(p, cid); },
 				[&](const UPoly& p, std::size_t cid){ mProjection.removePolynomial(p, cid); }
 			),
+			mProjection(mConstraints),
 			mLifting(mConstraints)
 		{
 			mProjection.setRemoveCallback([&](std::size_t level, const SampleLiftedWith& mask){
@@ -48,30 +49,35 @@ namespace cad {
 		std::size_t dim() const {
 			return mVariables.size();
 		}
-		auto getProjection() const {
+		const auto& getProjection() const {
 			return mProjection;
 		}
-		auto getLifting() const {
+		const auto& getLifting() const {
 			return mLifting;
 		}
-		auto getConstraints() const {
+		const auto& getConstraints() const {
 			return mConstraints.indexed();
+		}
+		const auto& getBounds() const {
+			return mConstraints.bounds();
 		}
 		void reset(const Variables& vars) {
 			mVariables = vars;
 			mConstraints.reset(mVariables);
-			mProjection.reset(mVariables);
+			mProjection.reset();
 			mLifting.reset(Variables(vars.rbegin(), vars.rend()));
 		}
 		void addConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Adding " << c);
 			mConstraints.add(c);
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Current constraints:" << std::endl << mConstraints);
 		}
 		void removeConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing " << c);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Before removal:" << std::endl << mProjection << std::endl << mLifting.getTree());
 			std::size_t id = mConstraints.remove(c);
-			mLifting.removedConstraint(Bitset(id));
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Current constraints:" << std::endl << mConstraints);
+			mLifting.removedConstraint(Bitset({id}));
 			SMTRAT_LOG_DEBUG("smtrat.cad", "After removal:" << std::endl << mProjection << std::endl << mLifting.getTree());
 		}
 		
@@ -116,7 +122,7 @@ namespace cad {
 		Answer check(Assignment& assignment) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Checking constraints:" << std::endl << mConstraints);
 			if (mConstraints.bounds().isConflicting()) {
-				SMTRAT_LOG_DEBUG("smtrat.cad", "Trivially unsat due to bounds.");
+				SMTRAT_LOG_DEBUG("smtrat.cad", "Trivially unsat due to bounds" << std::endl << mConstraints.bounds());
 				return Answer::UNSAT;
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
