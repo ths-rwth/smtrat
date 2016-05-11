@@ -223,8 +223,6 @@ endif()
 # C.5. Development and debug libraries.
 # # # # # # # # # # # # # # # # # # # # # #
 
-find_package(CPPUnit)
-
 # if doxygen is installed, create the make doc target
 include(FindDoxygen)
 if(DOXYGEN)
