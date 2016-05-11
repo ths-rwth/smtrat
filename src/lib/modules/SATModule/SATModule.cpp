@@ -2343,7 +2343,7 @@ SetWatches:
         while( confl == CRef_Undef && (qhead < trail.size() || (decisionLevel() >= assumptions.size() && mCurrentAssignmentConsistent != SAT && !mChangedBooleans.empty())) );
         #else
         bool lemmasLearned = true;
-        while( lemmasLearned ) || (decisionLevel() >= assumptions.size() && mCurrentAssignmentConsistent != SAT && !mChangedBooleans.empty()) )
+        while( lemmasLearned || (decisionLevel() >= assumptions.size() && mCurrentAssignmentConsistent != SAT && !mChangedBooleans.empty()) )
         {
             lemmasLearned = false;
             // Simplify the set of problem clauses:
