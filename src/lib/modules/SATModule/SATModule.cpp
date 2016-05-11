@@ -35,6 +35,7 @@
 #endif
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
 //#define DEBUG_SATMODULE_DECISION_HEURISTIC
+//#define DEBUG_SATMODULE_LEMMA_HANDLING
 
 //#define NEW_VERSION
 
@@ -973,14 +974,17 @@ namespace smtrat
             }
             default:
             {
-                auto cnfInfoIter = mFormulaCNFInfosMap.find( _formula );
-                if( cnfInfoIter != mFormulaCNFInfosMap.end() )
+                auto cnfInfoIter = mFormulaCNFInfosMap.end();
+                if( _type == NORMAL_CLAUSE )
                 {
-                    updateCNFInfoCounter( cnfInfoIter, _original, true );
-                    return cnfInfoIter->second.mLiteral;
+                    cnfInfoIter = mFormulaCNFInfosMap.find( _formula );
+                    if( cnfInfoIter != mFormulaCNFInfosMap.end() )
+                    {
+                        updateCNFInfoCounter( cnfInfoIter, _original, true );
+                        return cnfInfoIter->second.mLiteral;
+                    }
+                    cnfInfoIter = mFormulaCNFInfosMap.emplace( _formula, CNFInfos() ).first;
                 }
-                cnfInfoIter = mFormulaCNFInfosMap.emplace( _formula, CNFInfos() ).first;
-                std::vector<Minisat::CRef>& addedClauses = cnfInfoIter->second.mClauses;
                 switch( _formula.getType() )
                 {
                 case carl::FormulaType::ITE:
@@ -993,9 +997,9 @@ namespace smtrat
                     if( _depth == 0 )
                     {
                         // (or -cond then)
-                        lits.push( negCondLit ); lits.push( thenLit ); addClause_( lits, _type, _original, addedClauses );
+                        lits.push( negCondLit ); lits.push( thenLit ); addClause_( lits, _type, _original, cnfInfoIter );
                         // (or cond else)
-                        lits.clear(); lits.push( condLit ); lits.push( elseLit ); addClause_( lits, _type, _original, addedClauses );
+                        lits.clear(); lits.push( condLit ); lits.push( elseLit ); addClause_( lits, _type, _original, cnfInfoIter );
                         return lit_Undef;
                     }
                     Lit negThenLit = _formula.firstCase().isLiteral() ? addClauses( _formula.firstCase().negated(), _type, nextDepth, _original ) : neg( thenLit );
@@ -1009,18 +1013,19 @@ namespace smtrat
                     if( !Settings::polarity_based_cnf_transformation || !_polarity )
                     {
                         // (or ts -cond -then)
-                        lits.push( tsLit ); lits.push( negCondLit ); lits.push( negThenLit ); addClause_( lits, _type, _original, addedClauses );
+                        lits.push( tsLit ); lits.push( negCondLit ); lits.push( negThenLit ); addClause_( lits, _type, _original, cnfInfoIter );
                         // (or ts cond -else)
-                        lits.clear(); lits.push( tsLit ); lits.push( condLit ); lits.push( negElseLit ); addClause_( lits, _type, _original, addedClauses );
+                        lits.clear(); lits.push( tsLit ); lits.push( condLit ); lits.push( negElseLit ); addClause_( lits, _type, _original, cnfInfoIter );
                     }
                     if( !Settings::polarity_based_cnf_transformation || _polarity )
                     {
                         // (or -ts -cond then)
-                        lits.clear(); lits.push( neg( tsLit ) ); lits.push( negCondLit ); lits.push( thenLit ); addClause_( lits, _type, _original, addedClauses );
+                        lits.clear(); lits.push( neg( tsLit ) ); lits.push( negCondLit ); lits.push( thenLit ); addClause_( lits, _type, _original, cnfInfoIter );
                         // (or -ts cond else)
-                        lits.clear(); lits.push( neg( tsLit ) ); lits.push( condLit ); lits.push( elseLit ); addClause_( lits, _type, _original, addedClauses );
+                        lits.clear(); lits.push( neg( tsLit ) ); lits.push( condLit ); lits.push( elseLit ); addClause_( lits, _type, _original, cnfInfoIter );
                     }
-                    cnfInfoIter->second.mLiteral = tsLit;
+                    if( _type == NORMAL_CLAUSE )
+                        cnfInfoIter->second.mLiteral = tsLit;
                     return tsLit;
                 }
                 case carl::FormulaType::IMPLIES:
@@ -1032,7 +1037,7 @@ namespace smtrat
                     if( _depth == 0 )
                     {
                         // (or -premise conclusion)
-                        lits.push( neg( premLit ) ); lits.push( conLit ); addClause_( lits, _type, _original, addedClauses );
+                        lits.push( neg( premLit ) ); lits.push( conLit ); addClause_( lits, _type, _original, cnfInfoIter );
                         return lit_Undef;
                     }
                     Lit negConLit = _formula.conclusion().isLiteral() ? addClauses( _formula.conclusion().negated(), _type, nextDepth, _original ) : neg( conLit );
@@ -1045,16 +1050,17 @@ namespace smtrat
                     if( !Settings::polarity_based_cnf_transformation || !_polarity )
                     {
                         // (or -ts -prem con)
-                        lits.push( neg( tsLit ) ); lits.push( negPremLit ); lits.push( conLit ); addClause_( lits, _type, _original, addedClauses );
+                        lits.push( neg( tsLit ) ); lits.push( negPremLit ); lits.push( conLit ); addClause_( lits, _type, _original, cnfInfoIter );
                     }
                     if( !Settings::polarity_based_cnf_transformation || _polarity )
                     {
                         // (or ts prem)
-                        lits.clear(); lits.push( tsLit ); lits.push( premLit ); addClause_( lits, _type, _original, addedClauses );
+                        lits.clear(); lits.push( tsLit ); lits.push( premLit ); addClause_( lits, _type, _original, cnfInfoIter );
                         // (or ts -con)
-                        lits.clear(); lits.push( tsLit ); lits.push( negConLit ); addClause_( lits, _type, _original, addedClauses );
+                        lits.clear(); lits.push( tsLit ); lits.push( negConLit ); addClause_( lits, _type, _original, cnfInfoIter );
                     }
-                    cnfInfoIter->second.mLiteral = tsLit;
+                    if( _type == NORMAL_CLAUSE )
+                        cnfInfoIter->second.mLiteral = tsLit;
                     return tsLit;
                 }
                 case carl::FormulaType::OR:
@@ -1065,7 +1071,7 @@ namespace smtrat
                     if( _depth == 0 )
                     {
                         // (or a1 .. an)
-                        addClause_( lits, _type, _original, addedClauses );
+                        addClause_( lits, _type, _original, cnfInfoIter );
                         return lit_Undef;
                     }
                     FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
@@ -1078,7 +1084,7 @@ namespace smtrat
                     {
                         // (or -ts a1 .. an)
                         lits.push( neg( tsLit ) );
-                        addClause_( lits, _type, _original, addedClauses );
+                        addClause_( lits, _type, _original, cnfInfoIter );
                     }
                     if( !Settings::polarity_based_cnf_transformation )
                         lits.pop();
@@ -1092,12 +1098,13 @@ namespace smtrat
                         {
                             assert( i < lits.size() );
                             litsTmp.push( sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( lits[i] ) );
-                            addClause_( litsTmp, _type, _original, addedClauses );
+                            addClause_( litsTmp, _type, _original, cnfInfoIter );
                             litsTmp.pop();
                             ++i;
                         }
                     }
-                    cnfInfoIter->second.mLiteral = tsLit;
+                    if( _type == NORMAL_CLAUSE )
+                        cnfInfoIter->second.mLiteral = tsLit;
                     return tsLit;
                 }
                 case carl::FormulaType::AND:
@@ -1120,13 +1127,13 @@ namespace smtrat
                         {
                             Lit l = addClauses( sf, _type, nextDepth, _original );
                             litsTmp.push( l );
-                            addClause_( litsTmp, _type, _original, addedClauses );
+                            addClause_( litsTmp, _type, _original, cnfInfoIter );
                             litsTmp.pop();
                             Lit negL = sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( l );
                             lits.push( negL );
                         }
                         lits.push( tsLit );
-                        addClause_( lits, _type, _original, addedClauses );
+                        addClause_( lits, _type, _original, cnfInfoIter );
                     }
                     else
                     {
@@ -1137,7 +1144,7 @@ namespace smtrat
                             for( const auto& sf : _formula.subformulas() )
                                 lits.push( sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( addClauses( sf, _type, nextDepth, _original ) ) );
                             lits.push( tsLit );
-                            addClause_( lits, _type, _original, addedClauses );
+                            addClause_( lits, _type, _original, cnfInfoIter );
                         }
                         else
                         {
@@ -1147,12 +1154,13 @@ namespace smtrat
                             for( const auto& sf : _formula.subformulas() )
                             {
                                 litsTmp.push( addClauses( sf, _type, nextDepth, _original ) );
-                                addClause_( litsTmp, _type, _original, addedClauses );
+                                addClause_( litsTmp, _type, _original, cnfInfoIter );
                                 litsTmp.pop();
                             }
                         }
                     }
-                    cnfInfoIter->second.mLiteral = tsLit;
+                    if( _type == NORMAL_CLAUSE )
+                        cnfInfoIter->second.mLiteral = tsLit;
                     return tsLit;
                 }
                 case carl::FormulaType::IFF: 
@@ -1169,9 +1177,9 @@ namespace smtrat
                             Lit k = addClauses( *sfIter, _type, nextDepth, _original );
                             Lit negK = sfIter->isLiteral() ? addClauses( sfIter->negated(), _type, nextDepth, _original ) : neg( k );
                             // (or -l k)
-                            tmp.clear(); tmp.push( negL ); tmp.push( k ); addClause_( tmp, _type, _original, addedClauses );
+                            tmp.clear(); tmp.push( negL ); tmp.push( k ); addClause_( tmp, _type, _original, cnfInfoIter );
                             // (or l -k)
-                            tmp.clear(); tmp.push( l ); tmp.push( negK ); addClause_( tmp, _type, _original, addedClauses );
+                            tmp.clear(); tmp.push( l ); tmp.push( negK ); addClause_( tmp, _type, _original, cnfInfoIter );
                             l = k;
                             negL = negK;
                         }
@@ -1194,10 +1202,10 @@ namespace smtrat
                     if( !Settings::polarity_based_cnf_transformation || _polarity )
                     {
                         // (or a1 .. an h)
-                        lits.push( tsLit ); addClause_( lits, _type, _original, addedClauses );
+                        lits.push( tsLit ); addClause_( lits, _type, _original, cnfInfoIter );
                         lits.pop();
                         // (or -a1 .. -an h)
-                        tmp.push( tsLit ); addClause_( tmp, _type, _original, addedClauses );
+                        tmp.push( tsLit ); addClause_( tmp, _type, _original, cnfInfoIter );
                     }
                     if( !Settings::polarity_based_cnf_transformation || !_polarity )
                     {
@@ -1205,11 +1213,12 @@ namespace smtrat
                         vec<Lit> tmpB;
                         for( int i = 1; i < lits.size(); ++i )
                         {
-                            tmpB.clear(); tmpB.push( tmp[i-1] ); tmpB.push( lits[i] ); tmpB.push( neg( tsLit ) ); addClause_( tmpB, _type, _original, addedClauses );
-                            tmpB.clear(); tmpB.push( lits[i-1] ); tmpB.push( tmp[i] ); tmpB.push( neg( tsLit ) ); addClause_( tmpB, _type, _original, addedClauses );
+                            tmpB.clear(); tmpB.push( tmp[i-1] ); tmpB.push( lits[i] ); tmpB.push( neg( tsLit ) ); addClause_( tmpB, _type, _original, cnfInfoIter );
+                            tmpB.clear(); tmpB.push( lits[i-1] ); tmpB.push( tmp[i] ); tmpB.push( neg( tsLit ) ); addClause_( tmpB, _type, _original, cnfInfoIter );
                         }
                     }
-                    cnfInfoIter->second.mLiteral = tsLit;
+                    if( _type == NORMAL_CLAUSE )
+                        cnfInfoIter->second.mLiteral = tsLit;
                     return tsLit;
                 }
                 case carl::FormulaType::XOR:
@@ -1224,7 +1233,7 @@ namespace smtrat
                     }
                     if( _depth == 0 )
                     {
-                        addXorClauses( lits, negLits, 0, true, _type, tmp, true, false, _original, addedClauses );
+                        addXorClauses( lits, negLits, 0, true, _type, tmp, true, false, _original, cnfInfoIter );
                         return lit_Undef;
                     }
                     Lit tsLit = getLiteral( carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula ), _original, everythingDecisionRelevant || _depth == 0 );
@@ -1234,8 +1243,9 @@ namespace smtrat
                     }
                     lits.push( neg( tsLit ) );
                     negLits.push( tsLit );
-                    addXorClauses( lits, negLits, 0, true, _type, tmp, !Settings::polarity_based_cnf_transformation, _polarity, _original, addedClauses );
-                    cnfInfoIter->second.mLiteral = tsLit;
+                    addXorClauses( lits, negLits, 0, true, _type, tmp, !Settings::polarity_based_cnf_transformation, _polarity, _original, cnfInfoIter );
+                    if( _type == NORMAL_CLAUSE )
+                        cnfInfoIter->second.mLiteral = tsLit;
                     return tsLit;
                 }
                 case carl::FormulaType::EXISTS:
@@ -1253,30 +1263,30 @@ namespace smtrat
     }
     
     template<class Settings>
-    void SATModule<Settings>::addXorClauses( const vec<Lit>& _literals, const vec<Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, vec<Lit>& _clause, bool _ignorePolarity, bool _polarity, const FormulaT& _original, std::vector<Minisat::CRef>& _addedClauses )
+    void SATModule<Settings>::addXorClauses( const vec<Lit>& _literals, const vec<Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, vec<Lit>& _clause, bool _ignorePolarity, bool _polarity, const FormulaT& _original, typename FormulaCNFInfosMap::iterator _formulaCNFInfoIter )
     {
         if( _from == _literals.size() - 1 )
         {
             if( _ignorePolarity )
             {
                 _clause.push( _numOfNegatedLitsEven ? _literals[_from] : _negLiterals[_from] );
-                addClause_( _clause, _type, _original, _addedClauses );
+                addClause_( _clause, _type, _original, _formulaCNFInfoIter );
                 _clause.pop();
             }
             else if( _polarity != _numOfNegatedLitsEven )
             {
                 _clause.push( _numOfNegatedLitsEven ? _literals[_from] : _negLiterals[_from] );
-                addClause_( _clause, _type, _original, _addedClauses );
+                addClause_( _clause, _type, _original, _formulaCNFInfoIter );
                 _clause.pop();
             }
         }
         else
         {
             _clause.push( _literals[_from] );
-            addXorClauses( _literals, _negLiterals, _from+1, _numOfNegatedLitsEven, _type, _clause, _ignorePolarity, _polarity, _original, _addedClauses );
+            addXorClauses( _literals, _negLiterals, _from+1, _numOfNegatedLitsEven, _type, _clause, _ignorePolarity, _polarity, _original, _formulaCNFInfoIter );
             _clause.pop();
             _clause.push( _negLiterals[_from] );
-            addXorClauses( _literals, _negLiterals, _from+1, !_numOfNegatedLitsEven, _type, _clause, _ignorePolarity, _polarity, _original, _addedClauses );
+            addXorClauses( _literals, _negLiterals, _from+1, !_numOfNegatedLitsEven, _type, _clause, _ignorePolarity, _polarity, _original, _formulaCNFInfoIter );
             _clause.pop();
         }
     }
@@ -1330,9 +1340,6 @@ namespace smtrat
                 Abstraction& abstr = sign(constraintLiteralPair->second.front()) ? *abstrPair.second : *abstrPair.first;
                 if( !_origin.isTrue() || !negated )
                 {
-//                    if( abstr.origins != nullptr )
-//                        std::cout << *abstr.origins << std::endl;
-//                    assert( abstr.origins == nullptr || std::find( abstr.origins->begin(), abstr.origins->end(), _origin ) == abstr.origins->end() );
                     if( !abstr.consistencyRelevant )
                     {
                         addConstraintToInform( abstr.reabstraction );
@@ -1478,6 +1485,7 @@ namespace smtrat
         mChangedActivities.clear();
         if( mChangedPassedFormula )
             mCurrentAssignmentConsistent = SAT;
+//        assert( passedFormulaCorrect() );
     }
     
     template<class Settings>
@@ -1503,6 +1511,41 @@ namespace smtrat
             mChangedPassedFormula = true;
         }
         _abstr.updateInfo = 0;
+    }
+    
+    template<class Settings>
+    bool SATModule<Settings>::passedFormulaCorrect() const
+    {
+        for( int k = 0; k < mBooleanConstraintMap.size(); ++k )
+        {
+            if( assigns[k] != l_Undef )
+            {
+                if( mBooleanConstraintMap[k].first != nullptr )
+                {
+                    assert( mBooleanConstraintMap[k].second != nullptr );
+                    const Abstraction& abstr = assigns[k] == l_False ? *mBooleanConstraintMap[k].second : *mBooleanConstraintMap[k].first;
+                    if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == carl::FormulaType::UEQ || abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().isConsistent() != 1))
+                    {
+                        if( !rPassedFormula().contains( abstr.reabstraction ) )
+                        {
+//                            cout << "does not contain  " << abstr.reabstraction << endl;
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
+        {
+            auto iter = mConstraintLiteralMap.find( subformula->formula() );
+            assert( iter != mConstraintLiteralMap.end() );
+            if( value( iter->second.front() ) != l_True )
+            {
+//                cout << "should not contain  " << iter->first << endl;
+                return false;
+            }
+        }
+        return true;
     }
 
     template<class Settings>
@@ -1537,6 +1580,10 @@ namespace smtrat
     template<class Settings>
     bool SATModule<Settings>::addClause( const vec<Lit>& _clause, unsigned _type, bool force  )
     {
+        #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
+        std::cout << "add clause ";
+        printClause(_clause,true);
+        #endif
         assert( _clause.size() != 0 );
         assert(_type < 4);
         add_tmp.clear();
@@ -1577,6 +1624,9 @@ namespace smtrat
         add_tmp.shrink( i - j );
         if( mBusy || decisionLevel() > assumptions.size() )
         {
+            #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
+            std::cout << "add to mLemmas" << std::endl;
+            #endif
             mLemmas.push();
             add_tmp.copyTo( mLemmas.last() );
             mLemmasRemovable.push( _type != NORMAL_CLAUSE );
@@ -1889,12 +1939,18 @@ SetWatches:
     template<class Settings>
     CRef SATModule<Settings>::storeLemmas( bool& _foundConflictOfSizeOne )
     {
+        #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
+        std::cout << __func__ << std::endl;
+        #endif
         CRef conflict = CRef_Undef;
         // decision level to backtrack to
         int backtrackLevel = decisionLevel();
         // we use this comparison operator
         lemma_lt lt( *this );
         // check for propagation and level to backtrack to
+        #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
+        std::cout << "mLemmas.size() = " << mLemmas.size() << std::endl;
+        #endif
         int i = 0;
         while( i < mLemmas.size() )
         {
@@ -1903,6 +1959,10 @@ SetWatches:
             {
                 // The current lemma
                 vec<Lit>& lemma = mLemmas[i];
+                #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
+                std::cout << "add the lemma  ";
+                printClause(lemma,true);
+                #endif
                 // if it's an empty lemma, we have a conflict at zero level
                 if( lemma.size() == 0 )
                 {
@@ -1927,6 +1987,9 @@ SetWatches:
             }
             // pop so that propagation would be current
             cancelUntil( backtrackLevel );
+            #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
+            std::cout << "backtrack to " << backtrackLevel << std::endl;
+            #endif
         }
         // last index in the trail
         int backtrack_index = trail.size();
@@ -1935,6 +1998,10 @@ SetWatches:
         {
             // the current lemma
             vec<Lit>& lemma = mLemmas[i];
+            #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
+            std::cout << "use the lemma  ";
+            printClause(lemma,true);
+            #endif
             bool removable = mLemmasRemovable[i];
             // attach it if non-unit
             CRef lemma_ref = CRef_Undef;
@@ -1956,12 +2023,19 @@ SetWatches:
                     {
                         // we have a conflict
                         if( lemma.size() > 1 )
+                        {
+                            #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
+                            std::cout << "lemma is better as conflict" << std::endl;
+                            #endif
                             conflict = lemma_ref;
+                        }
                         else 
                             _foundConflictOfSizeOne = true;
                     }
                     else
+                    {
                         uncheckedEnqueue(lemma[0], lemma_ref);
+                    }
                 }
             }
         }
@@ -2264,11 +2338,12 @@ SetWatches:
                         confl = CRef_Undef; // Otherwise, the Boolean conflict is canceled in the case we popped the trail
                 }
             }
+            assert( mChangedBooleans.empty() || _checkWithTheory );
         }
-        while( confl == CRef_Undef && qhead < trail.size() );
+        while( confl == CRef_Undef && (qhead < trail.size() || (decisionLevel() >= assumptions.size() && mCurrentAssignmentConsistent != SAT && !mChangedBooleans.empty())) );
         #else
         bool lemmasLearned = true;
-        while( lemmasLearned ) // || !mChangedBooleans.empty() )
+        while( lemmasLearned ) || (decisionLevel() >= assumptions.size() && mCurrentAssignmentConsistent != SAT && !mChangedBooleans.empty()) )
         {
             lemmasLearned = false;
             // Simplify the set of problem clauses:
@@ -2298,9 +2373,9 @@ SetWatches:
         #ifdef DEBUG_SATMODULE
         cout << "### Sat iteration" << endl;
         cout << "######################################################################" << endl;
-        cout << "###" << endl; printClauses( clauses, "Clauses", cout, "### ", 0, false, false );
-        cout << "###" << endl; printClauses( learnts, "Learnts", cout, "### ", 0, false, false );
-        cout << "###" << endl; printCurrentAssignment( cout, "### " );
+//        cout << "###" << endl; printClauses( clauses, "Clauses", cout, "### ", 0, false, false );
+//        cout << "###" << endl; printClauses( learnts, "Learnts", cout, "### ", 0, false, false );
+//        cout << "###" << endl; printCurrentAssignment( cout, "### " );
         cout << "###" << endl; printDecisions( cout, "### " );
         cout << "###" << endl;
         #endif
@@ -2508,8 +2583,16 @@ SetWatches:
                                     }
                                     if( addClause( learnt_clause, DEDUCTED_CLAUSE ) )
                                     {
+                                        #ifdef NEW_VERSION
+                                        bool foundConflictOfSizeOne = false;
+                                        confl = storeLemmas( foundConflictOfSizeOne );
+                                        assert( !foundConflictOfSizeOne );
+                                        assert( confl != CRef_Undef );
+                                        unknown_excludes.push( confl );
+                                        #else
                                         unknown_excludes.push( learnts.last() );
                                         confl = learnts.last();
+                                        #endif
                                     }
                                     else
                                         assert( false );
@@ -3789,8 +3872,12 @@ NextClause:
         {
             if( !_onlyNotSatisfied || !satisfied(ca[_clauses[i]]) )
             {
-                _out << i << ": ";
-                printClause( _clauses[i], _withAssignment, _out, _init  );
+                _out << _init << i;
+                if( !_onlyNotSatisfied )
+                    _out << (satisfied(ca[_clauses[i]]) ? " (ok)" : "     ");
+                _out << ": ";
+                printClause( _clauses[i], _withAssignment, _out, ""  );
+                
             }
         }
 

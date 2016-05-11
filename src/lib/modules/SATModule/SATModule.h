@@ -151,6 +151,7 @@ namespace smtrat
                 {}
                 ClauseInformation( const ClauseInformation& ) = default;
                 ClauseInformation( ClauseInformation&& ) = default;
+                ~ClauseInformation(){}
                 
                 void addOrigin( const FormulaT& _formula )
                 {
@@ -1481,11 +1482,12 @@ namespace smtrat
             
             void updateCNFInfoCounter( typename FormulaCNFInfosMap::iterator _iter, const FormulaT& _origin, bool _increment );
             
-            void addClause_( const Minisat::vec<Minisat::Lit>& _clause, unsigned _type, const FormulaT& _original, std::vector<Minisat::CRef>& _addedClauses )
+            void addClause_( const Minisat::vec<Minisat::Lit>& _clause, unsigned _type, const FormulaT& _original, typename FormulaCNFInfosMap::iterator _formulaCNFInfoIter )
             {
                 if( addClause( _clause, _type ) && _type == Minisat::NORMAL_CLAUSE )
                 {
-                    _addedClauses.push_back( clauses.last() );
+                    assert( _formulaCNFInfoIter != mFormulaCNFInfosMap.end() );
+                    _formulaCNFInfoIter->second.mClauses.push_back( clauses.last() );
                     auto cfRet = mClauseInformation.emplace( clauses.last(), ClauseInformation( clauses.size()-1 ) );
                     assert( cfRet.second );
                     cfRet.first->second.addOrigin( _original );
@@ -1493,7 +1495,7 @@ namespace smtrat
             }
             
             Minisat::Lit addClauses( const FormulaT& _formula, unsigned _type, unsigned _depth = 0, const FormulaT& _original = FormulaT( carl::FormulaType::TRUE ), bool _polarity = false );
-            void addXorClauses( const Minisat::vec<Minisat::Lit>& _literals, const Minisat::vec<Minisat::Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, Minisat::vec<Minisat::Lit>& _clause, bool _ignorePolarity, bool _polarity, const FormulaT& _original, std::vector<Minisat::CRef>& _addedClauses );
+            void addXorClauses( const Minisat::vec<Minisat::Lit>& _literals, const Minisat::vec<Minisat::Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, Minisat::vec<Minisat::Lit>& _clause, bool _ignorePolarity, bool _polarity, const FormulaT& _original, typename FormulaCNFInfosMap::iterator _formulaCNFInfoIter );
             
             /**
              * Creates or simply returns the literal belonging to the formula being the first argument. 
@@ -1517,6 +1519,13 @@ namespace smtrat
              *               information, if the Boolean does not correspond to a constraint's abstraction).
              */
             void adaptPassedFormula( Abstraction& _abstr );
+            
+            
+            /**
+             * @return true, if the passed formula coincides with the constraints whose abstractions (literals)
+             *               are assigned to true.
+             */
+            bool passedFormulaCorrect() const;
 
 			/**
 			 * Updates the model, if the solver has detected the consistency of the received formula, beforehand.
