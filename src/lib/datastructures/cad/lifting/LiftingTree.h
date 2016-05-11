@@ -17,7 +17,9 @@ namespace cad {
 		using Iterator = Tree::iterator;
 		using FSC = FullSampleComparator<Iterator,Settings::fullSampleComparator>;
 		using SC = SampleComparator<Iterator,Settings::sampleComparator>;
+		using Constraints = CADConstraints<Settings::backtracking>;
 	private:
+		const Constraints& mConstraints;
 		Variables mVariables;
 		Tree mTree;
 		SampleIteratorQueue<Iterator, FSC> mCheckingQueue;
@@ -115,7 +117,7 @@ namespace cad {
 		}
 		
 	public:
-		LiftingTree() {
+		LiftingTree(const Constraints& c): mConstraints(c) {
 			auto it = mTree.setRoot(Sample(RAN(0), false));
 			assert(mTree.is_valid(it));
 			mLiftingQueue.addNewSample(it);
@@ -176,13 +178,18 @@ namespace cad {
 		}
 		bool addTrivialSample(Iterator sample) {
 			if (!mTree.is_leaf(sample)) return false;
-			auto it = mTree.append(sample, Sample(RAN(0), false));
+			SMTRAT_LOG_INFO("smtrat.cad.lifting", "Variables: " << mVariables);
+			SMTRAT_LOG_INFO("smtrat.cad.lifting", "For " << printSample(sample));
+			auto variable = mVariables[sample.depth()];
+			auto center = mConstraints.bounds().getInterval(variable).sample();
+			SMTRAT_LOG_INFO("smtrat.cad.lifting", "Bounds for " << variable << " = " << mConstraints.bounds().getInterval(variable));
+			auto it = mTree.append(sample, Sample(RAN(center), false));
 			addToQueue(it);
 			
 			for (std::size_t i = 1; i < Settings::trivialSampleRadius; i++) {
-				auto itpos = mTree.append(sample, Sample(RAN(i), false));
+				auto itpos = mTree.append(sample, Sample(RAN(center + i), false));
 				addToQueue(itpos);
-				auto itneg = mTree.append(sample, Sample(RAN(-i), false));
+				auto itneg = mTree.append(sample, Sample(RAN(center - i), false));
 				addToQueue(itneg);
 			}
 			return true;
@@ -221,6 +228,7 @@ namespace cad {
 		void removedConstraint(const Bitset& mask) {
 			for (auto& s: mTree) {
 				if (s.evaluatedWith().size() == 0) continue;
+				SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Purging " << s.evaluatedWith() << " by " << mask);
 				s.evaluatedWith() -= mask;
 				s.evaluationResult() -= mask;
 			}

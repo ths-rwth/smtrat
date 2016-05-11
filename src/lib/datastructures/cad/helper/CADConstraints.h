@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <map>
 #include <set>
 #include <vector>
@@ -57,6 +58,9 @@ public:
 	std::size_t size() const {
 		return mConstraintIts.size();
 	}
+	bool valid(std::size_t id) const {
+		return mConstraintIts[id] != mConstraintMap.end();
+	}
 	const auto& indexed() const {
 		return mConstraintIts;
 	}
@@ -76,7 +80,9 @@ public:
 			mConstraintIts.push_back(mConstraintMap.end());
 		} else {
 			id = mIDPool.get();
-			mConstraintIts.resize(id+1, mConstraintMap.end());
+			if (id >= mConstraintIts.size()) {
+				mConstraintIts.resize(id+1, mConstraintMap.end());
+			}
 		}
 		auto r = mConstraintMap.emplace(c, id);
 		assert(r.second);
@@ -116,6 +122,7 @@ public:
 				cache.pop();
 			}
 		} else {
+			SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Removing " << id << " in unordered mode");
 			callCallback(mRemoveCallback, c, id);
 			mConstraintMap.erase(it);
 			mConstraintIts[id] = mConstraintMap.end();
@@ -133,8 +140,10 @@ public:
 template<Backtracking BT>
 std::ostream& operator<<(std::ostream& os, const CADConstraints<BT>& cc) {
 	for (const auto& c: cc.mConstraintIts) {
+		if (c == cc.mConstraintMap.end()) continue;
 		os << "\t" << c->second << ": " << c->first << std::endl;
 	}
+	assert(long(cc.mConstraintMap.size()) == std::count_if(cc.mConstraintIts.begin(), cc.mConstraintIts.end(), [&cc](auto it){ return it != cc.mConstraintMap.end(); }));
 	return os;
 }
 	

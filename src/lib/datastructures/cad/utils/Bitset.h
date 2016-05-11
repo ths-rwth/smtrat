@@ -118,7 +118,7 @@ namespace cad {
 		}
 		
 		friend std::ostream& operator<<(std::ostream& os, const Bitset& b) {
-			return os << b.mData;
+			return os << b.mData << "@" << b.mDefault;
 		}
 	};
 }

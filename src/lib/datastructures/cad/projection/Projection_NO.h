@@ -23,8 +23,18 @@ namespace cad {
 	 * If a polynomial is derived from multiple projection operations, the origin is the earliest and thus smallest, at least for this non-incremental setting.
 	 */
 	template<typename Settings>
-	class Projection<Incrementality::NONE, Backtracking::ORDERED, Settings>: public BaseProjection {
+	class Projection<Incrementality::NONE, Backtracking::ORDERED, Settings>: public BaseProjection<Settings> {
 	private:
+		using Super = BaseProjection<Settings>;
+		using typename Super::Constraints;
+		using Super::mLiftingQueues;
+		using Super::mOperator;
+		using Super::callRemoveCallback;
+		using Super::canBePurged;
+		using Super::canBeForwarded;
+		using Super::dim;
+		using Super::var;
+		
 		template<typename S>
 		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::NONE, Backtracking::ORDERED, S>& p);
 		/// Maps polynomials to a (per level) unique ID.
@@ -88,11 +98,12 @@ namespace cad {
 			return res;
 		}
 	public:
+		Projection(const Constraints& c): Super(c) {}
 		/**
 		 * Resets all datastructures, use the given variables from now on.
 		 */
-		void reset(const std::vector<carl::Variable>& vars) {
-			BaseProjection::reset(vars);
+		void reset() {
+			Super::reset();
 			mPolynomials.clear();
 			mPolynomials.resize(dim());
 			mPolynomialIDs.clear();

@@ -3,7 +3,10 @@
 #include <functional>
 #include <vector>
 
+#include <carl/interval/IntervalEvaluation.h>
+
 #include "../Common.h"
+#include "../helper/CADConstraints.h"
 
 #include "ProjectionOperator.h"
 #include "PolynomialLiftingQueue.h"
@@ -11,12 +14,16 @@
 namespace smtrat {
 namespace cad {
 	
+	template<typename Settings>
 	class BaseProjection {
 	protected:
-		/// List of variables.
-		Variables mVariables;
+		using Constraints = CADConstraints<Settings::backtracking>;
+	private:
 		/// Lift of id pools to generate fresh IDs for polynomials.
 		std::vector<IDPool> mIDPools;
+		
+	protected:
+		const Constraints& mConstraints;
 		/// List of lifting queues that can be used for incremental projection.
 		std::vector<PolynomialLiftingQueue<BaseProjection>> mLiftingQueues;
 		/// The projection operator.
@@ -24,15 +31,17 @@ namespace cad {
 		/// Callback to be called when polynomials are removed. The arguments are the projection level and a bitset that indicate which polynomials were removed in this level.
 		std::function<void(std::size_t,const SampleLiftedWith&)> mRemoveCallback;
 		
-		void callRemoveCallback(std::size_t level ,const SampleLiftedWith& slw) const {
+		BaseProjection(const Constraints& c): mConstraints(c) {}
+		
+		void callRemoveCallback(std::size_t level, const SampleLiftedWith& slw) const {
 			if (mRemoveCallback) mRemoveCallback(level, slw);
 		}
 		
 		/// Returns the dimension of the projection.
 		std::size_t dim() const {
-			assert(mVariables.size() == mIDPools.size());
-			assert(mVariables.size() == mLiftingQueues.size());
-			return mVariables.size();
+			assert(vars().size() == mIDPools.size());
+			assert(vars().size() == mLiftingQueues.size());
+			return vars().size();
 		}
 		/// Returns a fresh polynomial id for the given level.
 		std::size_t getID(std::size_t level) {
@@ -47,27 +56,26 @@ namespace cad {
 		/// Returns the variable that corresponds to the given level, that is the variable eliminated in this level.
 		carl::Variable var(std::size_t level) const {
 			assert(level < dim());
-			return mVariables[level];
+			return vars()[level];
 		}
 		/// Checks whether a polynomial can safely be ignored.
 		bool canBePurged(const UPoly& p) const {
 			return p.isZero() || p.isNumber();
 		}
 		/// Checks whether a polynomial can safely be forwarded to the next level.
-		bool canBeForwarded(std::size_t level, const UPoly& p) const {
+		bool canBeForwarded(std::size_t, const UPoly& p) const {
 			return p.isConstant();
 		}
 	public:
 		/// Returns the variables used for projection.
 		const Variables& vars() const {
-			return mVariables;
+			return mConstraints.vars();
 		}
 		/// Resets all datastructures, use the given variables from now on.
-		void reset(const Variables& vars) {
-			mVariables = vars;
-			mIDPools = std::vector<IDPool>(vars.size());
+		void reset() {
+			mIDPools = std::vector<IDPool>(vars().size());
 			mLiftingQueues.clear();
-			for (std::size_t i = 0; i < vars.size(); i++) {
+			for (std::size_t i = 0; i < vars().size(); i++) {
 				mLiftingQueues.emplace_back(this, i);
 			}
 		}
