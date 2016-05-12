@@ -260,6 +260,12 @@ namespace smtrat
                     assert( mConstraintToBound.find( _constraint ) == mConstraintToBound.end() );
                     mConstraintToBound[_constraint] = boundVector;
                     result.first->boundExists();
+                    // create the complement
+                    Value<T1>* vc = new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
+                    FormulaT complConstr( _constraint.constraint().lhs(), carl::invertRelation( _constraint.constraint().relation() ) );
+                    const Bound<T1,T2>* complement = negative ? newVar->addUpperBound( vc, mDefaultBoundPosition, complConstr ).first : newVar->addLowerBound( vc, mDefaultBoundPosition, complConstr ).first;
+                    result.first->setComplement( complement );
+                    complement->setComplement( result.first );
                     break;
                 }
                 case carl::Relation::GEQ:
@@ -271,6 +277,12 @@ namespace smtrat
                     assert( mConstraintToBound.find( _constraint ) == mConstraintToBound.end() );
                     mConstraintToBound[_constraint] = boundVector;
                     result.first->boundExists();
+                    // create the complement
+                    Value<T1>* vc = new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
+                    FormulaT complConstr( _constraint.constraint().lhs(), carl::invertRelation( _constraint.constraint().relation() ) );
+                    const Bound<T1,T2>* complement = negative ? newVar->addLowerBound( vc, mDefaultBoundPosition, complConstr ).first : newVar->addUpperBound( vc, mDefaultBoundPosition, complConstr ).first;
+                    result.first->setComplement( complement );
+                    complement->setComplement( result.first );
                     break;
                 }
                 case carl::Relation::LESS:
@@ -282,6 +294,12 @@ namespace smtrat
                     assert( mConstraintToBound.find( _constraint ) == mConstraintToBound.end() );
                     mConstraintToBound[_constraint] = boundVector;
                     result.first->boundExists();
+                    // create the complement
+                    Value<T1>* vc = new Value<T1>( boundValue );
+                    FormulaT complConstr( _constraint.constraint().lhs(), carl::invertRelation( _constraint.constraint().relation() ) );
+                    const Bound<T1,T2>* complement = negative ? newVar->addUpperBound( vc, mDefaultBoundPosition, complConstr ).first : newVar->addLowerBound( vc, mDefaultBoundPosition, complConstr ).first;
+                    result.first->setComplement( complement );
+                    complement->setComplement( result.first );
                     break;
                 }
                 case carl::Relation::GREATER:
@@ -293,6 +311,12 @@ namespace smtrat
                     assert( mConstraintToBound.find( _constraint ) == mConstraintToBound.end() );
                     mConstraintToBound[_constraint] = boundVector;
                     result.first->boundExists();
+                    // create the complement
+                    Value<T1>* vc = new Value<T1>( boundValue );
+                    FormulaT complConstr( _constraint.constraint().lhs(), carl::invertRelation( _constraint.constraint().relation() ) );
+                    const Bound<T1,T2>* complement = negative ? newVar->addLowerBound( vc, mDefaultBoundPosition, complConstr ).first : newVar->addUpperBound( vc, mDefaultBoundPosition, complConstr ).first;
+                    result.first->setComplement( complement );
+                    complement->setComplement( result.first );
                     break;
                 }
                 case carl::Relation::NEQ:

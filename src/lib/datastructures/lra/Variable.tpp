@@ -82,12 +82,8 @@ namespace smtrat
         template<typename T1, typename T2>
         std::pair<const Bound<T1, T2>*, bool> Variable<T1, T2>::addUpperBound( Value<T1>* const _val, ModuleInput::iterator _position, const FormulaT& _constraint, bool _deduced )
         {
-            struct Bound<T1, T2>::Info* boundInfo = new struct Bound<T1, T2>::Info();
-            boundInfo->updated = 0;
-            boundInfo->position = _position;
-            boundInfo->neqRepresentation = FormulaT( carl::FormulaType::TRUE );
-            boundInfo->exists = false;
-            const Bound<T1, T2>* newBound = new Bound<T1, T2>( _val, this, Bound<T1, T2>::UPPER, _constraint, boundInfo, _deduced );
+            struct Bound<T1, T2>::Info* boundInfo = new struct Bound<T1, T2>::Info( _position );
+            Bound<T1, T2>* newBound = new Bound<T1, T2>( _val, this, Bound<T1, T2>::UPPER, _constraint, boundInfo, _deduced );
             std::pair<typename Bound<T1, T2>::BoundSet::iterator, bool> result = mUpperbounds.insert( newBound );
             if( !result.second )
             {
@@ -99,11 +95,8 @@ namespace smtrat
         template<typename T1, typename T2>
         std::pair<const Bound<T1, T2>*, bool> Variable<T1, T2>::addLowerBound( Value<T1>* const _val, ModuleInput::iterator _position, const FormulaT& _constraint, bool _deduced )
         {
-            struct Bound<T1, T2>::Info* boundInfo = new struct Bound<T1, T2>::Info();
-            boundInfo->updated = 0;
-            boundInfo->position = _position;
-            boundInfo->neqRepresentation = FormulaT( carl::FormulaType::TRUE );
-            const Bound<T1, T2>* newBound = new Bound<T1, T2>( _val, this, Bound<T1, T2>::LOWER, _constraint, boundInfo, _deduced );
+            struct Bound<T1, T2>::Info* boundInfo = new struct Bound<T1, T2>::Info( _position );
+            Bound<T1, T2>* newBound = new Bound<T1, T2>( _val, this, Bound<T1, T2>::LOWER, _constraint, boundInfo, _deduced );
             std::pair<typename Bound<T1, T2>::BoundSet::iterator, bool> result = mLowerbounds.insert( newBound );
             if( !result.second )
             {
@@ -115,12 +108,8 @@ namespace smtrat
         template<typename T1, typename T2>
         std::pair<const Bound<T1, T2>*, bool> Variable<T1, T2>::addEqualBound( Value<T1>* const _val, ModuleInput::iterator _position, const FormulaT& _constraint )
         {
-            struct Bound<T1, T2>::Info* boundInfo = new struct Bound<T1, T2>::Info();
-            boundInfo->updated = 0;
-            boundInfo->position = _position;
-            boundInfo->neqRepresentation = FormulaT( carl::FormulaType::TRUE );
-            boundInfo->exists = false;
-            const Bound<T1, T2>* newBound = new Bound<T1, T2>( _val, this, Bound<T1, T2>::EQUAL, _constraint, boundInfo );
+            struct Bound<T1, T2>::Info* boundInfo = new struct Bound<T1, T2>::Info( _position );
+            Bound<T1, T2>* newBound = new Bound<T1, T2>( _val, this, Bound<T1, T2>::EQUAL, _constraint, boundInfo );
             std::pair<typename Bound<T1, T2>::BoundSet::iterator, bool> result = mLowerbounds.insert( newBound );
             if( !result.second )
             {

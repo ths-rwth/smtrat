@@ -339,25 +339,8 @@ namespace smtrat
             
             /**
              * Adds simple deduction being lemmas of the form (=> c_1 c_2) with, e.g. c_1 being p>=1 and c_2 being p>0.
-             * @param _bound The bound, for which to make the deductions for (corresponds to one of the aforementioned constraints).
-             * @param _exhaustively This is false, if only the next weaker bound on the linear polynomial p is implied, if the given bound is on p.
-             * @param _boundNeq This is true, if the deductions should be made on a constraint with != as relation symbol.
              */
-            void addSimpleBoundDeduction( const LRABound* _bound, bool _exhaustively, bool _boundNeq = false );
-            
-            /**
-             * Adds simple conflicts being lemmas of the form (or (not c_1) (not c_2)) with, e.g. c_1 being p>=1 and c_2 being p<0.
-             * @param _caseA The bound corresponding to the first aforementioned constraint.
-             * @param _caseB The bound corresponding to the second aforementioned constraint.
-             * @param _boundNeq This is true, if the second bound came from a constraint with != as relation symbol.
-             */
-            void addSimpleBoundConflict( const LRABound& _caseA, const LRABound& _caseB, bool _boundNeq = false );
-            
-            /**
-             * Finds all conflicts between lower resp. upper bounds and the given upper resp. lower bound and adds them to the deductions.
-             * @param _bound The bound to find conflicts for.
-             */
-            void findSimpleConflicts( const LRABound& _bound );
+            void simpleTheoryPropagation();
             
             /**
              * @return true, if a branching occurred.

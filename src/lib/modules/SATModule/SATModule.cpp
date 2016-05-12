@@ -934,6 +934,7 @@ namespace smtrat
     Lit SATModule<Settings>::addClauses( const FormulaT& _formula, unsigned _type, unsigned _depth, const FormulaT& _original, bool _polarity )
     {
         assert( _type < 4 );
+        bool polarityBased = Settings::polarity_based_cnf_transformation || _type != NORMAL_CLAUSE;
         bool everythingDecisionRelevant = !Settings::formula_guided_decision_heuristic;
         unsigned nextDepth = _depth+1;
         assert( _depth != 0 || !_polarity );
@@ -953,7 +954,7 @@ namespace smtrat
                 Lit l = lit_Undef; 
                 if( _formula.isLiteral() )
                 {
-                    if( Settings::polarity_based_cnf_transformation && _formula.subformula().getType() == carl::FormulaType::CONSTRAINT )
+                    if( polarityBased && _formula.subformula().getType() == carl::FormulaType::CONSTRAINT )
                     {
                         const ConstraintT& cons = _formula.subformula().constraint();
                         l = getLiteral( FormulaT( cons.lhs(), carl::invertRelation( cons.relation() ) ), _original, everythingDecisionRelevant || _depth <= 1 );
@@ -1010,14 +1011,14 @@ namespace smtrat
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
                     }
-                    if( !Settings::polarity_based_cnf_transformation || !_polarity )
+                    if( !polarityBased || !_polarity )
                     {
                         // (or ts -cond -then)
                         lits.push( tsLit ); lits.push( negCondLit ); lits.push( negThenLit ); addClause_( lits, _type, _original, cnfInfoIter );
                         // (or ts cond -else)
                         lits.clear(); lits.push( tsLit ); lits.push( condLit ); lits.push( negElseLit ); addClause_( lits, _type, _original, cnfInfoIter );
                     }
-                    if( !Settings::polarity_based_cnf_transformation || _polarity )
+                    if( !polarityBased || _polarity )
                     {
                         // (or -ts -cond then)
                         lits.clear(); lits.push( neg( tsLit ) ); lits.push( negCondLit ); lits.push( thenLit ); addClause_( lits, _type, _original, cnfInfoIter );
@@ -1047,12 +1048,12 @@ namespace smtrat
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
                     }
-                    if( !Settings::polarity_based_cnf_transformation || !_polarity )
+                    if( !polarityBased || !_polarity )
                     {
                         // (or -ts -prem con)
                         lits.push( neg( tsLit ) ); lits.push( negPremLit ); lits.push( conLit ); addClause_( lits, _type, _original, cnfInfoIter );
                     }
-                    if( !Settings::polarity_based_cnf_transformation || _polarity )
+                    if( !polarityBased || _polarity )
                     {
                         // (or ts prem)
                         lits.clear(); lits.push( tsLit ); lits.push( premLit ); addClause_( lits, _type, _original, cnfInfoIter );
@@ -1080,15 +1081,15 @@ namespace smtrat
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
                     }
-                    if( !Settings::polarity_based_cnf_transformation || !_polarity )
+                    if( !polarityBased || !_polarity )
                     {
                         // (or -ts a1 .. an)
                         lits.push( neg( tsLit ) );
                         addClause_( lits, _type, _original, cnfInfoIter );
                     }
-                    if( !Settings::polarity_based_cnf_transformation )
+                    if( !polarityBased )
                         lits.pop();
-                    if( !Settings::polarity_based_cnf_transformation || _polarity )
+                    if( !polarityBased || _polarity )
                     {
                         // (or ts -a1) .. (or ts -an)
                         vec<Lit> litsTmp;
@@ -1116,7 +1117,7 @@ namespace smtrat
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
                     }
-                    if( !Settings::polarity_based_cnf_transformation )
+                    if( !polarityBased )
                     {
                         // (or -ts a1) .. (or -ts an)
                         // (or ts -a1 .. -an)
@@ -1199,7 +1200,7 @@ namespace smtrat
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
                     }
-                    if( !Settings::polarity_based_cnf_transformation || _polarity )
+                    if( !polarityBased || _polarity )
                     {
                         // (or a1 .. an h)
                         lits.push( tsLit ); addClause_( lits, _type, _original, cnfInfoIter );
@@ -1207,7 +1208,7 @@ namespace smtrat
                         // (or -a1 .. -an h)
                         tmp.push( tsLit ); addClause_( tmp, _type, _original, cnfInfoIter );
                     }
-                    if( !Settings::polarity_based_cnf_transformation || !_polarity )
+                    if( !polarityBased || !_polarity )
                     {
                         // (or -a1 a2 -h) (or a1 -a2 -h) .. (or -a{n-1} an -h) (or a{n-1} -an -h)
                         vec<Lit> tmpB;
@@ -1243,7 +1244,7 @@ namespace smtrat
                     }
                     lits.push( neg( tsLit ) );
                     negLits.push( tsLit );
-                    addXorClauses( lits, negLits, 0, true, _type, tmp, !Settings::polarity_based_cnf_transformation, _polarity, _original, cnfInfoIter );
+                    addXorClauses( lits, negLits, 0, true, _type, tmp, !polarityBased, _polarity, _original, cnfInfoIter );
                     if( _type == NORMAL_CLAUSE )
                         cnfInfoIter->second.mLiteral = tsLit;
                     return tsLit;

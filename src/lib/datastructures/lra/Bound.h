@@ -61,6 +61,16 @@ namespace smtrat
                  * relation symbol, i.e. p!=0, and not yet for the constraint p<0 or p>0.
                  */
                 bool exists;
+                ///
+                const Bound<T1, T2>* complement;
+                
+                Info( ModuleInput::iterator _position ):
+                    updated( 0 ),
+                    position( _position ),
+                    neqRepresentation( FormulaT( carl::FormulaType::TRUE ) ),
+                    exists( false ),
+                    complement( nullptr )
+                {}
             };
 
             private:
@@ -349,6 +359,14 @@ namespace smtrat
                 /**
                  * 
                  */
+                void setComplement( const Bound<T1, T2>* _complement ) const
+                {
+                    mpInfo->complement = _complement;
+                }
+                
+                /**
+                 * 
+                 */
                 bool exists() const
                 {
                     return mpInfo->exists;
@@ -376,6 +394,14 @@ namespace smtrat
                 bool isActive() const
                 {
                     return !mpOrigins->empty();
+                }
+
+                /**
+                 * @return 
+                 */
+                bool isComplementActive() const
+                {
+                    return mpInfo->complement != nullptr && mpInfo->complement->isActive();
                 }
 
                 /**

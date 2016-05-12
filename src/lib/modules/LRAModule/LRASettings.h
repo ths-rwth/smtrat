@@ -27,14 +27,6 @@ namespace smtrat
         /**
          *
          */
-        static const bool simple_conflict_search = true;
-        /**
-         *
-         */
-        static const bool simple_conflicts_and_propagation_on_demand = true;
-        /**
-         *
-         */
         static const bool one_conflict_reason = false;
         /**
          *
@@ -73,8 +65,6 @@ namespace smtrat
         typedef Rational EntryType;
         static const bool simple_theory_propagation = false;
         static const bool learn_refinements = false;
-        static const bool simple_conflict_search = false;
-        static const bool simple_conflicts_and_propagation_on_demand = false;
         static const bool one_conflict_reason = true;
         struct Tableau_settings : lra::TableauSettings3 {};
     };

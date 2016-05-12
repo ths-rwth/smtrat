@@ -349,6 +349,8 @@ namespace smtrat
             return processResult( UNKNOWN );
         if( !mInfeasibleSubsets.empty() )
             return processResult( UNSAT );
+        if( Settings::simple_theory_propagation )
+            simpleTheoryPropagation();
         if( rReceivedFormula().isRealConstraintConjunction() )
             containsIntegerValuedVariables = false;
         assert( !mTableau.isConflicting() );
@@ -432,7 +434,11 @@ namespace smtrat
     Answer LRAModule<Settings>::processResult( Answer _result )
     {
         if( _result == ABORTED )
+        {
+            mBoundCandidatesToPass.clear();
             return _result;
+        }
+        mBoundCandidatesToPass.clear();
         if( Settings::learn_refinements )
             learnRefinements();
         #ifdef SMTRAT_DEVOPTION_Statistics
@@ -768,6 +774,7 @@ namespace smtrat
     {
         for( auto iter = mTableau.rLearnedLowerBounds().begin(); iter != mTableau.rLearnedLowerBounds().end(); ++iter )
         {
+            bool premiseOnlyEqualities = true;
             FormulasT subformulas;
             for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
             {
@@ -777,20 +784,21 @@ namespace smtrat
                     for( auto& subformula : origin.subformulas() )
                     {
                         assert( subformula.getType() == carl::FormulaType::CONSTRAINT );
-                        subformulas.emplace_back( carl::FormulaType::NOT, subformula );
                         subformulas.push_back( subformula );
+                        if( subformula.constraint().relation() != carl::Relation::EQ )
+                            premiseOnlyEqualities = false;
                     }
                 }
                 else
                 {
                     assert( origin.getType() == carl::FormulaType::CONSTRAINT );
-//                    subformulas.emplace_back( carl::FormulaType::NOT, origin );
                     subformulas.push_back( origin );
+                    if( origin.constraint().relation() != carl::Relation::EQ )
+                        premiseOnlyEqualities = false;
                 }
             }
             FormulaT premise( carl::FormulaType::AND, std::move(subformulas) );
-            assert( (*iter->first->lowerbounds().begin())->isInfinite() );
-            for( auto lboundIter = iter->second.nextWeakerBound; lboundIter != iter->first->lowerbounds().begin(); --lboundIter )
+            for( auto lboundIter = iter->second.nextWeakerBound; !(*lboundIter)->isActive() && !(*lboundIter)->deduced(); --lboundIter )
             {
                 if( (*lboundIter)->exists() && (*lboundIter)->type() != LRABound::Type::EQUAL )
                     addLemma( FormulaT( carl::FormulaType::IMPLIES, premise, (*lboundIter)->asConstraint() ) );
@@ -803,6 +811,7 @@ namespace smtrat
         mTableau.rLearnedLowerBounds().clear();
         for( auto iter = mTableau.rLearnedUpperBounds().begin(); iter != mTableau.rLearnedUpperBounds().end(); ++iter )
         {
+            bool premiseOnlyEqualities = true;
             FormulasT subformulas;
             for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
             {
@@ -812,18 +821,21 @@ namespace smtrat
                     for( auto& subformula : origin.subformulas() )
                     {
                         assert( subformula.getType() == carl::FormulaType::CONSTRAINT );
-                        subformulas.emplace_back( carl::FormulaType::NOT, subformula );
+                        subformulas.push_back( subformula );
+                        if( subformula.constraint().relation() != carl::Relation::EQ )
+                            premiseOnlyEqualities = false;
                     }
                 }
                 else
                 {
                     assert( origin.getType() == carl::FormulaType::CONSTRAINT );
-                    subformulas.emplace_back( carl::FormulaType::NOT, origin );
+                    subformulas.push_back( origin );
+                    if( origin.constraint().relation() != carl::Relation::EQ )
+                        premiseOnlyEqualities = false;
                 }
             }
             FormulaT premise( carl::FormulaType::AND, std::move(subformulas) );
-            assert( (*(--(iter->first->upperbounds().end())))->isInfinite() );
-            for( auto uboundIter = iter->second.nextWeakerBound; uboundIter != --(iter->first->upperbounds().end()); ++uboundIter )
+            for( auto uboundIter = iter->second.nextWeakerBound; !(*uboundIter)->isActive() && !(*uboundIter)->deduced(); ++uboundIter )
             {
                 if( (*uboundIter)->exists() && (*uboundIter)->type() != LRABound::Type::EQUAL )
                     addLemma( FormulaT( carl::FormulaType::IMPLIES, premise, (*uboundIter)->asConstraint() ) );
@@ -839,21 +851,19 @@ namespace smtrat
     template<class Settings>
     void LRAModule<Settings>::adaptPassedFormula()
     {
-        while( !mBoundCandidatesToPass.empty() )
+        for( const LRABound* bound : mBoundCandidatesToPass )
         {
-            const LRABound& bound = *mBoundCandidatesToPass.back();
-            if( bound.pInfo()->updated > 0 )
+            if( bound->pInfo()->updated > 0 )
             {
-                bound.pInfo()->position = addSubformulaToPassedFormula( bound.asConstraint(), bound.pOrigins() ).first;
-                bound.pInfo()->updated = 0;
+                bound->pInfo()->position = addSubformulaToPassedFormula( bound->asConstraint(), bound->pOrigins() ).first;
+                bound->pInfo()->updated = 0;
             }
-            else if( bound.pInfo()->updated < 0 )
+            else if( bound->pInfo()->updated < 0 )
             {
-                eraseSubformulaFromPassedFormula( bound.pInfo()->position, true );
-                bound.pInfo()->position = passedFormulaEnd();
-                bound.pInfo()->updated = 0;
+                eraseSubformulaFromPassedFormula( bound->pInfo()->position, true );
+                bound->pInfo()->position = passedFormulaEnd();
+                bound->pInfo()->updated = 0;
             }
-            mBoundCandidatesToPass.pop_back();
         }
     }
 
@@ -884,17 +894,6 @@ namespace smtrat
     template<class Settings>
     void LRAModule<Settings>::activateBound( const LRABound* _bound, const FormulaT& _formula )
     {
-        if( Settings::simple_conflicts_and_propagation_on_demand )
-        {
-            if( Settings::simple_theory_propagation )
-            {
-                addSimpleBoundDeduction( _bound, true, false );
-            }
-            if( Settings::simple_conflict_search )
-            {
-                findSimpleConflicts( *_bound );
-            }
-        }
         // If the bounds constraint has already been passed to the backend, add the given formulas to it's origins
         const LRAVariable& var = _bound->variable();
         const LRABound* psup = var.pSupremum();
@@ -905,12 +904,15 @@ namespace smtrat
         mTableau.activateBound( _bound, _formula );
         if( bound.isUpperBound() )
         {
-            if( inf > bound.limit() && !bound.deduced() )
+            auto iter = var.lowerbounds().find( pinf );
+            while( (**iter).isActive() && (**iter) > bound.limit() )
             {
                 FormulaSetT infsubset;
                 collectOrigins( *bound.origins().begin(), infsubset );
-                collectOrigins( inf.pOrigins()->back(), infsubset );
+                collectOrigins( *(**iter).pOrigins()->begin(), infsubset );
                 mInfeasibleSubsets.push_back( std::move(infsubset) );
+                assert( iter != var.lowerbounds().begin() );
+                --iter;
             }
             if( sup > bound )
             {
@@ -921,12 +923,15 @@ namespace smtrat
         }
         if( bound.isLowerBound() )
         {
-            if( sup < bound.limit() && !bound.deduced() )
+            auto iter = var.upperbounds().find( psup );
+            while( (**iter).isActive() && (**iter) < bound.limit() )
             {
                 FormulaSetT infsubset;
                 collectOrigins( *bound.origins().begin(), infsubset );
-                collectOrigins( sup.pOrigins()->back(), infsubset );
+                collectOrigins( *(**iter).pOrigins()->begin(), infsubset );
                 mInfeasibleSubsets.push_back( std::move(infsubset) );
+                ++iter;
+                assert( iter != var.upperbounds().end() );
             }
             if( inf < bound )
             {
@@ -997,213 +1002,80 @@ namespace smtrat
     {
         if( _constraint.constraint().hasVariable( objective() ) )
             return;
-        if( Settings::simple_conflicts_and_propagation_on_demand )
-        {
-            mTableau.newBound( _constraint );
-        }
-        else
-        {
-            std::pair<const LRABound*, bool> retValue = mTableau.newBound( _constraint );
-            if( retValue.second )
-            {
-                if( Settings::simple_theory_propagation )
-                {
-                    addSimpleBoundDeduction( retValue.first, true, _constraint.constraint().relation() == carl::Relation::NEQ );
-                }
-                if( Settings::simple_conflict_search )
-                {
-                    findSimpleConflicts( *retValue.first );
-                }
-            }
-        }
+        mTableau.newBound( _constraint );
     }
 
     template<class Settings>
-    void LRAModule<Settings>::addSimpleBoundDeduction( const LRABound* _bound, bool _exhaustively, bool _boundNeq )
+    void LRAModule<Settings>::simpleTheoryPropagation()
     {
-        const LRAVariable& lraVar = _bound->variable();
-        if( _bound->isUpperBound() )
+        for( const LRABound* bound : mBoundCandidatesToPass )
         {
-            typename LRABound::BoundSet::const_iterator boundPos = lraVar.upperbounds().find( _bound );
-            assert( boundPos != lraVar.upperbounds().end() );
-            typename LRABound::BoundSet::const_iterator currentBound = lraVar.upperbounds().begin();
-            if( _bound->type() == LRABound::Type::EQUAL )
+            const LRAVariable& lraVar = bound->variable();
+            if( bound->isUpperBound() )
             {
-                currentBound = boundPos;
-                ++currentBound;
-            }
-            else
-            {
-                while( currentBound != boundPos )
+                if( !Settings::learn_refinements || mTableau.rLearnedLowerBounds().find( bound->pVariable() ) == mTableau.rLearnedLowerBounds().end() )
                 {
-                    if( _exhaustively && (*currentBound)->pInfo()->exists )
-                    {
-                        FormulasT subformulas
-                        {
-                            FormulaT(carl::FormulaType::NOT, (*currentBound)->asConstraint()),
-                            (_boundNeq ? _bound->neqRepresentation() : _bound->asConstraint())
-                        };
-                        addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
-                        #ifdef SMTRAT_DEVOPTION_Statistics
-                        mpStatistics->addLemma();
-                        #endif
-                    }
+                    auto boundPos = lraVar.upperbounds().find( bound );
+                    assert( boundPos != lraVar.upperbounds().end() );
+                    auto currentBound = boundPos;
                     ++currentBound;
-                }
-                ++currentBound;
-            }
-            if( !_boundNeq )
-            {
-                while( currentBound != lraVar.upperbounds().end() )
-                {
-                    if( (*currentBound)->pInfo()->exists && (*currentBound)->type() != LRABound::Type::EQUAL )
+                    while( currentBound != lraVar.upperbounds().end() )
                     {
-                        FormulasT subformulas
+                        if( (*currentBound)->exists() && !(*currentBound)->isActive() && !(*currentBound)->isComplementActive() && (*currentBound)->type() != LRABound::Type::EQUAL )
                         {
-                            FormulaT( carl::FormulaType::NOT, _bound->asConstraint() ),
-                            (*currentBound)->asConstraint()
-                        };
-                        addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
-                        #ifdef SMTRAT_DEVOPTION_Statistics
-                        mpStatistics->addLemma();
-                        #endif
-                    }
-                    ++currentBound;
-                }
-            }
-        }
-        if( _bound->isLowerBound() )
-        {
-            typename LRABound::BoundSet::const_iterator boundPos = lraVar.lowerbounds().find( _bound );
-            assert( boundPos != lraVar.lowerbounds().end() );
-            typename LRABound::BoundSet::const_iterator currentBound = lraVar.lowerbounds().begin();
-            if( _boundNeq )
-            {
-                currentBound = boundPos;
-                ++currentBound;
-            }
-            else
-            {
-                while( currentBound != boundPos )
-                {
-                    if( (*currentBound)->pInfo()->exists && (*currentBound)->type() != LRABound::Type::EQUAL )
-                    {
-                        FormulasT subformulas
-                        {
-                            FormulaT( carl::FormulaType::NOT, _bound->asConstraint() ),
-                            (*currentBound)->asConstraint()
-                        };
-                        addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
-                        #ifdef SMTRAT_DEVOPTION_Statistics
-                        mpStatistics->addLemma();
-                        #endif
-                    }
-                    ++currentBound;
-                }
-                if( _exhaustively )
-                    ++currentBound;
-            }
-            if( _exhaustively && _bound->type() != LRABound::Type::EQUAL )
-            {
-                while( currentBound != lraVar.lowerbounds().end() )
-                {
-                    if( (*currentBound)->pInfo()->exists )
-                    {
-                        FormulasT subformulas
-                        {
-                            FormulaT( carl::FormulaType::NOT, (*currentBound)->asConstraint() ),
-                            ( _boundNeq ? _bound->neqRepresentation() : _bound->asConstraint() )
-                        };
-                        addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
-                        #ifdef SMTRAT_DEVOPTION_Statistics
-                        mpStatistics->addLemma();
-                        #endif
-                    }
-                    ++currentBound;
-                }
-            }
-        }
-    }
-
-    template<class Settings>
-    void LRAModule<Settings>::addSimpleBoundConflict( const LRABound& _caseA, const LRABound& _caseB, bool _caseBneq )
-    {
-        FormulasT subformulas
-        {
-            FormulaT( carl::FormulaType::NOT, _caseA.asConstraint() ),
-            FormulaT( carl::FormulaType::NOT, _caseBneq ? _caseB.neqRepresentation() : _caseB.asConstraint() )
-        };
-        addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
-        #ifdef SMTRAT_DEVOPTION_Statistics
-        mpStatistics->addLemma();
-        #endif
-    }
-
-    template<class Settings>
-    void LRAModule<Settings>::findSimpleConflicts( const LRABound& _bound )
-    {
-        assert( !_bound.deduced() );
-        if( _bound.isUpperBound() )
-        {
-            const typename LRABound::BoundSet& lbounds = _bound.variable().lowerbounds();
-            for( auto lbound = lbounds.rbegin(); lbound != --lbounds.rend(); ++lbound )
-            {
-                if( **lbound > _bound.limit() && !(*lbound)->asConstraint().isTrue() )
-                {
-                    if( !(*lbound)->neqRepresentation().isTrue() )
-                    {
-                        if( _bound.type() == LRABound::EQUAL && (*lbound)->limit().mainPart() == _bound.limit().mainPart() )
-                        {
-                            addSimpleBoundConflict( _bound, **lbound, true );
+                            addLemma( FormulaT( carl::FormulaType::OR, bound->asConstraint().negated(), (*currentBound)->asConstraint() ) );
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                            mpStatistics->addLemma();
+                            #endif
                         }
+                        ++currentBound;
                     }
-                    else if( !_bound.neqRepresentation().isTrue() )
+                    currentBound = --lraVar.lowerbounds().end();
+                    while( !(*currentBound)->isActive() && !(*currentBound)->isComplementActive() && !(*currentBound)->deduced() && (**currentBound) > bound->limit() )
                     {
-                        if( (*lbound)->type() == LRABound::EQUAL && (*lbound)->limit().mainPart() == _bound.limit().mainPart() )
+                        if( (*currentBound)->exists() )
                         {
-                            addSimpleBoundConflict( **lbound, _bound, true );
+                            addLemma( FormulaT( carl::FormulaType::OR, bound->asConstraint().negated(), (*currentBound)->asConstraint().negated() ) );
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                            mpStatistics->addLemma();
+                            #endif
                         }
+                        assert( currentBound != lraVar.lowerbounds().begin() );
+                        --currentBound;
                     }
-                    else
-                    {
-                        addSimpleBoundConflict( _bound, **lbound );
-                    }
-                }
-                else
-                {
-                    break;
                 }
             }
-        }
-        if( _bound.isLowerBound() )
-        {
-            const typename LRABound::BoundSet& ubounds = _bound.variable().upperbounds();
-            for( auto ubound = ubounds.begin(); ubound != --ubounds.end(); ++ubound )
+            if( bound->isLowerBound() )
             {
-                if( **ubound < _bound.limit() && !(*ubound)->asConstraint().isTrue() )
+                if( !Settings::learn_refinements || mTableau.rLearnedUpperBounds().find( bound->pVariable() ) == mTableau.rLearnedUpperBounds().end() )
                 {
-                    if( !(*ubound)->neqRepresentation().isTrue() )
+                    auto boundPos = lraVar.lowerbounds().find( bound );
+                    assert( boundPos != lraVar.lowerbounds().end() );
+                    auto currentBound = lraVar.lowerbounds().begin();
+                    while( currentBound != boundPos )
                     {
-                        if( _bound.type() == LRABound::EQUAL && (*ubound)->limit().mainPart() == _bound.limit().mainPart() )
+                        if( (*currentBound)->exists() && !(*currentBound)->isActive() && !(*currentBound)->isComplementActive() && (*currentBound)->type() != LRABound::Type::EQUAL )
                         {
-                            addSimpleBoundConflict( _bound, **ubound, true );
+                            addLemma( FormulaT( carl::FormulaType::OR, bound->asConstraint().negated(), (*currentBound)->asConstraint() ) );
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                            mpStatistics->addLemma();
+                            #endif
                         }
+                        ++currentBound;
                     }
-                    else if( !_bound.neqRepresentation().isTrue() )
+                    currentBound = lraVar.upperbounds().begin();
+                    while( !(*currentBound)->isActive() && !(*currentBound)->isComplementActive() && !(*currentBound)->deduced() && (**currentBound) < bound->limit() )
                     {
-                        if( (*ubound)->type() == LRABound::EQUAL && (*ubound)->limit().mainPart() == _bound.limit().mainPart() )
+                        if( (*currentBound)->exists() )
                         {
-                            addSimpleBoundConflict( **ubound, _bound, true );
+                            addLemma( FormulaT( carl::FormulaType::OR, bound->asConstraint().negated(), (*currentBound)->asConstraint().negated() ) );
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                            mpStatistics->addLemma();
+                            #endif
                         }
+                        ++currentBound;
+                        assert( currentBound != lraVar.lowerbounds().end() );
                     }
-                    else
-                    {
-                        addSimpleBoundConflict( _bound, **ubound );
-                    }
-                }
-                else
-                {
-                    break;
                 }
             }
         }
