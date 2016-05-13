@@ -73,11 +73,15 @@ namespace smtrat
                 
                 /// The index in the trail.
                 int mTrailIndex;
+                
+                /// Position of explanation.
+                int mExpPos;
 
                 VarData( Minisat::CRef _reason, int _level, int _trailIndex ):
                     reason( _reason ),
                     level( _level ),
-                    mTrailIndex( _trailIndex )
+                    mTrailIndex( _trailIndex ),
+                    mExpPos( -1 )
                 {}
             };
 
@@ -508,6 +512,8 @@ namespace smtrat
             bool asynch_interrupt;
             /// For temporary usage.
             Minisat::vec<Minisat::Lit> learnt_clause;
+            /// Variable representing true.
+            Minisat::Var mTrueVar;
 
             // Module related members.
             /// A flag, which is set to true, if anything has been changed in the passed formula between now and the last consistency check.
@@ -672,6 +678,12 @@ namespace smtrat
             
             void removeUpperBoundOnMinimal();
             
+            void addConstraintToInform( const FormulaT& ) {}
+            void addConstraintToInform_( const FormulaT& _formula )
+            {
+                Module::addConstraintToInform( _formula );
+            }
+            
             /**
              * Adds the Boolean assignments to the given assignments, which were determined by the Minisat procedure.
              * Note: Assignments in the given map are not overwritten.
@@ -807,7 +819,7 @@ namespace smtrat
             /**
              * Adds the clause of the given type with the given literals to the clauses managed by Minisat.
              * @param _clause The clause to add.
-             * @param _type The type of the clause (NORMAL_CLAUSE, DEDUCTED_CLAUSE or CONFLICT_CLAUSE).
+             * @param _type The type of the clause (NORMAL_CLAUSE, LEMMA_CLAUSE or CONFLICT_CLAUSE).
              * @param _force If true backtracking won't stop at the first assumption-decision-level.
              * @return  true, if a clause has been added;
              *          false, otherwise.
@@ -1171,9 +1183,10 @@ namespace smtrat
              * @return A reference to a conflicting clause, if a clause has been added.
              */
             Minisat::CRef propagateConsistently( bool& _madeTheoryCall, bool& _foundConflictOfSizeOne, bool _checkWithTheory = true );
-            
+            void propagateTheory();
             Minisat::CRef theoryCall( bool& _madeTheoryCall, bool& _foundConflictOfSizeOne, bool& _lemmasLearned );
             void constructLemmas();
+            bool expPositionsCorrect() const;
             
             /**
              * Checks the received formula for consistency.
@@ -1345,7 +1358,7 @@ namespace smtrat
              * @param c [Minisat related code]
              * @return TRUE if a clause is a reason for some implication in the current state.
              */
-            inline bool locked( const Minisat::Clause& c ) const
+            inline bool locked( const Minisat::Clause& c )
             {
                 return value( c[0] ) == l_True && reason( Minisat::var( c[0] ) ) != Minisat::CRef_Undef && ca.lea( reason( Minisat::var( c[0] ) ) ) == &c;
             }
@@ -1413,10 +1426,9 @@ namespace smtrat
              *         It is not defined, if the assignment of the variable follows from a clause of size 0
              *         or if the variable is unassigned.
              */
-            Minisat::CRef reason( Minisat::Var x ) const
-            {
-                return vardata[x].reason;
-            }
+            Minisat::CRef reason( Minisat::Var x );
+            
+            void removeTheoryPropagation( int _position );
             
             /**
              * @param x The variable for which we to get the level in which it has been assigned to a value.
@@ -1430,6 +1442,7 @@ namespace smtrat
             inline int trailIndex( Minisat::Var _var ) const
             { 
                 assert( _var < vardata.size() ); 
+                assert( var(trail[vardata[_var].mTrailIndex]) == _var );
                 return vardata[_var].mTrailIndex;
             }
             
@@ -1497,6 +1510,11 @@ namespace smtrat
             Minisat::Lit addClauses( const FormulaT& _formula, unsigned _type, unsigned _depth = 0, const FormulaT& _original = FormulaT( carl::FormulaType::TRUE ), bool _polarity = false );
             void addXorClauses( const Minisat::vec<Minisat::Lit>& _literals, const Minisat::vec<Minisat::Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, Minisat::vec<Minisat::Lit>& _clause, bool _ignorePolarity, bool _polarity, const FormulaT& _original, typename FormulaCNFInfosMap::iterator _formulaCNFInfoIter );
             
+            bool supportedConstraintType( const FormulaT& _formula ) const
+            {
+                return _formula.getType() == carl::FormulaType::CONSTRAINT || _formula.getType() == carl::FormulaType::UEQ || _formula.getType() == carl::FormulaType::BITVECTOR;
+            }
+            
             /**
              * Creates or simply returns the literal belonging to the formula being the first argument. 
              * @param _formula The formula to get the literal for.
@@ -1504,7 +1522,8 @@ namespace smtrat
              * @param _decisionRelevant true, if the variable of the literal needs to be involved in the decision process of the SAT solving.
              * @return The corresponding literal.
              */
-            Minisat::Lit getLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant = true );
+            Minisat::Lit createLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant = true );
+            Minisat::Lit getLiteral( const FormulaT& _formula ) const;
             
             /**
              * Adapts the passed formula according to the current assignment within the SAT solver.

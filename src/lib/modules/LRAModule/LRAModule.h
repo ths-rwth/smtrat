@@ -341,6 +341,7 @@ namespace smtrat
              * Adds simple deduction being lemmas of the form (=> c_1 c_2) with, e.g. c_1 being p>=1 and c_2 being p>0.
              */
             void simpleTheoryPropagation();
+            void simpleTheoryPropagation( const LRABound* _bound );
             
             /**
              * @return true, if a branching occurred.

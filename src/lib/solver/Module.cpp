@@ -1029,6 +1029,26 @@ namespace smtrat
             mLemmas.insert( mLemmas.end(), (*module)->mLemmas.begin(), (*module)->mLemmas.end() );
         }
     }
+
+    void Module::collectTheoryPropagations()
+    {
+        for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
+        {
+            (*module)->collectTheoryPropagations();
+            #ifdef SMTRAT_DEVOPTION_Validation
+            if( validationSettings->logLemmata() )
+            {
+                for( const auto& tp : (*module)->mTheoryPropagations )
+                {
+                    FormulaT theoryPropagation( FormulaType::IMPLIES, FormulaT( FormulaType::AND, tp.mPremise ), tp.mConclusion );
+                    addAssumptionToCheck( FormulaT( FormulaType::NOT, theoryPropagation ), false, (*module)->moduleName() + "_theory_propagation" );
+                }
+            }
+            #endif
+            std::move( (*module)->mTheoryPropagations.begin(), (*module)->mTheoryPropagations.end(), std::back_inserter( mTheoryPropagations ) );
+            (*module)->mTheoryPropagations.clear();
+        }
+    }
     
     pair<bool,FormulaT> Module::getReceivedFormulaSimplified()
     {

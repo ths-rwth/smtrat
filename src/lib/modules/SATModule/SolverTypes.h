@@ -124,7 +124,7 @@ class Clause;
 typedef RegionAllocator<uint32_t>::Ref CRef;
 
 static const unsigned NORMAL_CLAUSE = 0;
-static const unsigned DEDUCTED_CLAUSE = 1;
+static const unsigned LEMMA_CLAUSE = 1;
 static const unsigned CONFLICT_CLAUSE = 2;
 static const unsigned PERMANENT_CLAUSE = 3;
 
@@ -215,6 +215,7 @@ public:
 
 
 const CRef CRef_Undef = RegionAllocator<uint32_t>::Ref_Undef;
+const CRef CRef_Lazy  = RegionAllocator<uint32_t>::Ref_Undef - 1;
 class ClauseAllocator : public RegionAllocator<uint32_t>
 {
     static int clauseWord32Size(int size, bool has_extra){

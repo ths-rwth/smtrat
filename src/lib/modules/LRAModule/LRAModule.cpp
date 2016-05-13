@@ -353,6 +353,8 @@ namespace smtrat
             simpleTheoryPropagation();
         if( rReceivedFormula().isRealConstraintConjunction() )
             containsIntegerValuedVariables = false;
+//        if( mTableau.isConflicting() )
+//            exit(77);
         assert( !mTableau.isConflicting() );
         mTableau.setBlandsRuleStart( 1000 );//(unsigned) mTableau.columns().size() );
         mTableau.compressRows();
@@ -797,15 +799,17 @@ namespace smtrat
                         premiseOnlyEqualities = false;
                 }
             }
-            FormulaT premise( carl::FormulaType::AND, std::move(subformulas) );
             for( auto lboundIter = iter->second.nextWeakerBound; !(*lboundIter)->isActive() && !(*lboundIter)->deduced(); --lboundIter )
             {
                 if( (*lboundIter)->exists() && (*lboundIter)->type() != LRABound::Type::EQUAL )
-                    addLemma( FormulaT( carl::FormulaType::IMPLIES, premise, (*lboundIter)->asConstraint() ) );
+                {
+                    mTheoryPropagations.emplace_back( std::move(subformulas), (*lboundIter)->asConstraint() );
+                    std::cout << "theory propagation (5):  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
+                }
             }
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
-            mpStatistics->addLemma();
+            mpStatistics->propagateTheory();
             #endif
         }
         mTableau.rLearnedLowerBounds().clear();
@@ -834,15 +838,17 @@ namespace smtrat
                         premiseOnlyEqualities = false;
                 }
             }
-            FormulaT premise( carl::FormulaType::AND, std::move(subformulas) );
             for( auto uboundIter = iter->second.nextWeakerBound; !(*uboundIter)->isActive() && !(*uboundIter)->deduced(); ++uboundIter )
             {
                 if( (*uboundIter)->exists() && (*uboundIter)->type() != LRABound::Type::EQUAL )
-                    addLemma( FormulaT( carl::FormulaType::IMPLIES, premise, (*uboundIter)->asConstraint() ) );
+                {
+                    mTheoryPropagations.emplace_back( std::move(subformulas), (*uboundIter)->asConstraint() );
+                    std::cout << "theory propagation (6):  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
+                }
             }
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpStatistics->addRefinement();
-            mpStatistics->addLemma();
+            mpStatistics->propagateTheory();
             #endif
         }
         mTableau.rLearnedUpperBounds().clear();
@@ -1004,78 +1010,130 @@ namespace smtrat
             return;
         mTableau.newBound( _constraint );
     }
-
+    
     template<class Settings>
     void LRAModule<Settings>::simpleTheoryPropagation()
     {
-        for( const LRABound* bound : mBoundCandidatesToPass )
+        for( const LRAVariable* rowVar : mTableau.rows() )
         {
-            const LRAVariable& lraVar = bound->variable();
-            if( bound->isUpperBound() )
+            if( rowVar != NULL )
             {
-                if( !Settings::learn_refinements || mTableau.rLearnedLowerBounds().find( bound->pVariable() ) == mTableau.rLearnedLowerBounds().end() )
+                if( !rowVar->infimum().isInfinite() )
+                    simpleTheoryPropagation( rowVar->pInfimum() );
+                if( !rowVar->supremum().isInfinite() )
+                    simpleTheoryPropagation( rowVar->pSupremum() );
+            }
+        }
+        for( const LRAVariable* columnVar : mTableau.columns() )
+        {
+            if( !columnVar->infimum().isInfinite() )
+                simpleTheoryPropagation( columnVar->pInfimum() );
+            if( !columnVar->supremum().isInfinite() )
+                simpleTheoryPropagation( columnVar->pSupremum() );
+        }
+    }
+
+//    #define LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
+    template<class Settings>
+    void LRAModule<Settings>::simpleTheoryPropagation( const LRABound* _bound )
+    {
+        if( !_bound->exists() || (!_bound->isActive() && !_bound->isComplementActive()) )
+        {
+            return;
+        }
+        const LRAVariable& lraVar = _bound->variable();
+        if( _bound->isUpperBound() )
+        {
+            if( !Settings::learn_refinements || mTableau.rLearnedLowerBounds().find( _bound->pVariable() ) == mTableau.rLearnedLowerBounds().end() )
+            {
+                auto boundPos = lraVar.upperbounds().find( _bound );
+                assert( boundPos != lraVar.upperbounds().end() );
+                auto currentBound = boundPos;
+                ++currentBound;
+                while( currentBound != lraVar.upperbounds().end() )
                 {
-                    auto boundPos = lraVar.upperbounds().find( bound );
-                    assert( boundPos != lraVar.upperbounds().end() );
-                    auto currentBound = boundPos;
+                    if( (*currentBound)->exists() && !(*currentBound)->isActive() && !(*currentBound)->isComplementActive() && (*currentBound)->type() != LRABound::Type::EQUAL )
+                    {
+                        #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
+                        (*currentBound)->print( true, std::cout );
+                        std::cout << std::endl;
+                        #endif
+                        mTheoryPropagations.emplace_back( FormulasT{_bound->asConstraint()}, (*currentBound)->asConstraint() );
+                        #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
+                        std::cout << "theory propagation (1):  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
+                        #endif
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        mpStatistics->propagateTheory();
+                        #endif
+                    }
                     ++currentBound;
-                    while( currentBound != lraVar.upperbounds().end() )
+                }
+                currentBound = --lraVar.lowerbounds().end();
+                while( !(*currentBound)->isActive() && !(*currentBound)->isComplementActive() && !(*currentBound)->deduced() && (**currentBound) > _bound->limit() )
+                {
+                    if( (*currentBound)->exists() )
                     {
-                        if( (*currentBound)->exists() && !(*currentBound)->isActive() && !(*currentBound)->isComplementActive() && (*currentBound)->type() != LRABound::Type::EQUAL )
-                        {
-                            addLemma( FormulaT( carl::FormulaType::OR, bound->asConstraint().negated(), (*currentBound)->asConstraint() ) );
-                            #ifdef SMTRAT_DEVOPTION_Statistics
-                            mpStatistics->addLemma();
-                            #endif
-                        }
-                        ++currentBound;
+                        #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
+                        (*currentBound)->print( true, std::cout );
+                        std::cout << std::endl;
+                        #endif
+                        mTheoryPropagations.emplace_back( FormulasT{_bound->asConstraint()}, (*currentBound)->asConstraint().negated() );
+                        #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
+                        std::cout << "theory propagation (2):  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
+                        #endif
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        mpStatistics->propagateTheory();
+                        #endif
                     }
-                    currentBound = --lraVar.lowerbounds().end();
-                    while( !(*currentBound)->isActive() && !(*currentBound)->isComplementActive() && !(*currentBound)->deduced() && (**currentBound) > bound->limit() )
-                    {
-                        if( (*currentBound)->exists() )
-                        {
-                            addLemma( FormulaT( carl::FormulaType::OR, bound->asConstraint().negated(), (*currentBound)->asConstraint().negated() ) );
-                            #ifdef SMTRAT_DEVOPTION_Statistics
-                            mpStatistics->addLemma();
-                            #endif
-                        }
-                        assert( currentBound != lraVar.lowerbounds().begin() );
-                        --currentBound;
-                    }
+                    assert( currentBound != lraVar.lowerbounds().begin() );
+                    --currentBound;
                 }
             }
-            if( bound->isLowerBound() )
+        }
+        if( _bound->isLowerBound() )
+        {
+            if( !Settings::learn_refinements || mTableau.rLearnedUpperBounds().find( _bound->pVariable() ) == mTableau.rLearnedUpperBounds().end() )
             {
-                if( !Settings::learn_refinements || mTableau.rLearnedUpperBounds().find( bound->pVariable() ) == mTableau.rLearnedUpperBounds().end() )
+                auto boundPos = lraVar.lowerbounds().find( _bound );
+                assert( boundPos != lraVar.lowerbounds().end() );
+                auto currentBound = lraVar.lowerbounds().begin();
+                while( currentBound != boundPos )
                 {
-                    auto boundPos = lraVar.lowerbounds().find( bound );
-                    assert( boundPos != lraVar.lowerbounds().end() );
-                    auto currentBound = lraVar.lowerbounds().begin();
-                    while( currentBound != boundPos )
+                    if( (*currentBound)->exists() && !(*currentBound)->isActive() && !(*currentBound)->isComplementActive() && (*currentBound)->type() != LRABound::Type::EQUAL )
                     {
-                        if( (*currentBound)->exists() && !(*currentBound)->isActive() && !(*currentBound)->isComplementActive() && (*currentBound)->type() != LRABound::Type::EQUAL )
-                        {
-                            addLemma( FormulaT( carl::FormulaType::OR, bound->asConstraint().negated(), (*currentBound)->asConstraint() ) );
-                            #ifdef SMTRAT_DEVOPTION_Statistics
-                            mpStatistics->addLemma();
-                            #endif
-                        }
-                        ++currentBound;
+                        #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
+                        (*currentBound)->print( true, std::cout );
+                        std::cout << std::endl;
+                        #endif
+                        mTheoryPropagations.emplace_back( FormulasT{_bound->asConstraint()}, (*currentBound)->asConstraint() );
+                        #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
+                        std::cout << "theory propagation (3):  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
+                        #endif
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        mpStatistics->propagateTheory();
+                        #endif
                     }
-                    currentBound = lraVar.upperbounds().begin();
-                    while( !(*currentBound)->isActive() && !(*currentBound)->isComplementActive() && !(*currentBound)->deduced() && (**currentBound) < bound->limit() )
+                    ++currentBound;
+                }
+                currentBound = lraVar.upperbounds().begin();
+                while( !(*currentBound)->isActive() && !(*currentBound)->isComplementActive() && !(*currentBound)->deduced() && (**currentBound) < _bound->limit() )
+                {
+                    if( (*currentBound)->exists() )
                     {
-                        if( (*currentBound)->exists() )
-                        {
-                            addLemma( FormulaT( carl::FormulaType::OR, bound->asConstraint().negated(), (*currentBound)->asConstraint().negated() ) );
-                            #ifdef SMTRAT_DEVOPTION_Statistics
-                            mpStatistics->addLemma();
-                            #endif
-                        }
-                        ++currentBound;
-                        assert( currentBound != lraVar.lowerbounds().end() );
+                        #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
+                        (*currentBound)->print( true, std::cout );
+                        std::cout << std::endl;
+                        #endif
+                        mTheoryPropagations.emplace_back( FormulasT{_bound->asConstraint()}, (*currentBound)->asConstraint().negated() );
+                        #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
+                        std::cout << "theory propagation (4):  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
+                        #endif
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        mpStatistics->propagateTheory();
+                        #endif
                     }
+                    ++currentBound;
+                    assert( currentBound != lraVar.lowerbounds().end() );
                 }
             }
         }

@@ -116,6 +116,40 @@ namespace smtrat
                     mPreferredFormula( _preferredFormula )
                 {}
             };
+            
+            struct TheoryPropagation
+            {
+                /// The constraints under which the propagated constraint holds.
+                FormulasT mPremise;
+                /// The propagated constraint.
+                FormulaT mConclusion;
+                
+                /**
+                 * Constructor.
+                 */
+                TheoryPropagation( FormulasT&& _premise, const FormulaT& _conclusion ):
+                    mPremise( std::move( _premise ) ),
+                    mConclusion( _conclusion )
+                {}
+                
+                TheoryPropagation() = delete;
+                TheoryPropagation( const TheoryPropagation& ) = delete;
+                TheoryPropagation( TheoryPropagation&& _toMove ):
+                    mPremise( std::move( _toMove.mPremise ) ),
+                    mConclusion( std::move(_toMove.mConclusion) )
+                {}
+                
+                
+                TheoryPropagation& operator=( const TheoryPropagation& _toMove ) = delete;
+                TheoryPropagation& operator=( TheoryPropagation&& _toMove )
+                {
+                    mPremise = std::move( _toMove.mPremise );
+                    mConclusion = std::move( _toMove.mConclusion );
+                    return *this;
+                }
+                
+                ~TheoryPropagation() {}
+            };
 
         // Members.
         private:
@@ -144,6 +178,8 @@ namespace smtrat
             bool mFullCheck;
             /// true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
             bool mMinimizingCheck;
+            ///
+            std::vector<TheoryPropagation> mTheoryPropagations;
 
         private:
             /// States whether the received formula is known to be satisfiable or unsatisfiable otherwise it is set to unknown.
@@ -584,6 +620,7 @@ namespace smtrat
              * Stores all lemmas of any backend of this module in its own lemma vector.
              */
             void updateLemmas();
+            void collectTheoryPropagations();
             
             /**
              * Collects the formulas in the given formula, which are part of the received formula. If the given formula directly
@@ -848,7 +885,7 @@ namespace smtrat
              * freshly generated backend.
              * @param _constraint The constraint to add.
              */
-           void addConstraintToInform( const FormulaT& _constraint );
+           virtual void addConstraintToInform( const FormulaT& _constraint );
             
             /**
              * Copies the given sub-formula of the received formula to the passed formula. Note, that

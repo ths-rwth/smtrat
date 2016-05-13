@@ -20,6 +20,7 @@ namespace smtrat
         size_t mConflicts;
         size_t mAllConflictsSizes;
         size_t mDeductions;
+        size_t mTheoryPropagations;
         size_t mChecks;
         size_t mAllChecksSizes;
         size_t mUnequalConstrainSplittings;
@@ -37,6 +38,7 @@ namespace smtrat
            Statistics::addKeyValuePair( "conflicts", mConflicts );
            Statistics::addKeyValuePair( "average-conflict-size", mConflicts == 0 ? 0 : (double)mAllConflictsSizes/(double)mConflicts );
            Statistics::addKeyValuePair( "lemmas", mDeductions );
+           Statistics::addKeyValuePair( "theory-propagations", mTheoryPropagations );
            Statistics::addKeyValuePair( "checks", mChecks );
            Statistics::addKeyValuePair( "checks-with-pivots", mChecksWithPivoting );
            Statistics::addKeyValuePair( "average-check-size", mChecks == 0 ? 0 : (double)mAllChecksSizes/(double)mChecks );
@@ -84,6 +86,11 @@ namespace smtrat
             ++mDeductions;
         }
         
+        void propagateTheory()
+        {
+            ++mTheoryPropagations;
+        }
+        
         void addRefinement()
         {
             ++mRefinements;
@@ -116,6 +123,7 @@ namespace smtrat
             mConflicts( 0 ),
             mAllConflictsSizes( 0 ),
             mDeductions( 0 ),
+            mTheoryPropagations( 0 ),
             mChecks( 0 ),
             mAllChecksSizes( 0 ),
             mUnequalConstrainSplittings( 0 )
