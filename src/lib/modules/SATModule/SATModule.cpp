@@ -1704,7 +1704,7 @@ namespace smtrat
         if( add_tmp.size() == 1 )
         {
             // Do not store the clause as it is of size one and implies an assignment directly
-            cancelUntil( assumptions.size(), force  );
+            cancelUntil( assumptions.size(), force );
             if( value( add_tmp[0] ) == l_Undef )
             {
                 uncheckedEnqueue( add_tmp[0] );
@@ -2004,7 +2004,7 @@ SetWatches:
                 }
             }
             // pop so that propagation would be current
-            cancelUntil( backtrackLevel );
+            cancelUntil( backtrackLevel, true );
             #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
             std::cout << "backtrack to " << backtrackLevel << std::endl;
             #endif
@@ -2177,7 +2177,7 @@ SetWatches:
         if( level < assumptions.size() && !force )
             level = assumptions.size();
         #ifdef DEBUG_SATMODULE
-	SMTRAT_LOG_TRACE("smtrat.sat", "cancel until " << level);
+	std::cout << "### cancel until " << level << std::endl;
         #endif
         if( decisionLevel() > level )
         {
@@ -2422,7 +2422,7 @@ SetWatches:
                     for( const auto& subformula : tp.mPremise )
                         explanation.push( neg( getLiteral( subformula ) ) );
                     explanation.push( neg( conclLit ) );
-                    addClause( explanation, LEMMA_CLAUSE );
+                    addClause( explanation, LEMMA_CLAUSE, true );
                 }
                 if( (std::size_t) pos != mTheoryPropagations.size()-1 )
                     tp = std::move( mTheoryPropagations.back() );
@@ -2440,7 +2440,7 @@ SetWatches:
                 for( const auto& subformula : tp.mPremise )
                     explanation.push( neg( getLiteral( subformula ) ) );
                 explanation.push( value(conclLit) == l_False ? neg( conclLit ) : conclLit );
-                addClause( explanation, LEMMA_CLAUSE );
+                addClause( explanation, LEMMA_CLAUSE, true );
             }
         }
         mTheoryPropagations.clear();
