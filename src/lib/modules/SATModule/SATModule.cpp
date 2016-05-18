@@ -37,7 +37,7 @@
 //#define DEBUG_SATMODULE_DECISION_HEURISTIC
 //#define DEBUG_SATMODULE_LEMMA_HANDLING
 
-#define NEW_VERSION
+//#define NEW_VERSION
 
 using namespace Minisat;
 
