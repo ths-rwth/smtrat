@@ -2957,7 +2957,7 @@ SetWatches:
     Lit SATModule<Settings>::bestBranchLit()
     {
         #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
-        std::cout << "bestBranchLit with _conflictFirst = " << _conflictFirst << std::endl;
+        std::cout << __func__ << std::endl;
         #endif
         Var next = var_Undef;
         vec<Var> varsToRestore;
