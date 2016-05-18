@@ -56,7 +56,7 @@ namespace smtrat
         /**
          * 
          */
-        static const bool polarity_based_cnf_transformation = true;
+        static const bool polarity_based_cnf_transformation = false;
 		/**
 		 *
 		 */
