@@ -415,21 +415,27 @@ namespace smtrat
                 bool isSatisfied( const T1& _delta ) const
                 {
                     if( isInfinite() )
+                    {
                         return true;
+                    }
                     const Value<T1>& ass = variable().lastConsistentAssignment();
                     switch( mType )
                     {
                         case UPPER:
                             if( isWeak() )
-                                return limit().mainPart() >= ass.mainPart();
+                            {
+                                return limit().mainPart() >= ass.mainPart() + (ass.deltaPart() * _delta);
+                            }
                             return limit().mainPart() + (limit().deltaPart() * _delta) > ass.mainPart() + (ass.deltaPart() * _delta);
                         case LOWER:
                             if( isWeak() )
-                                return limit().mainPart() <= ass.mainPart();
+                            {
+                                return limit().mainPart() <= ass.mainPart() + (ass.deltaPart() * _delta);
+                            }
                             return limit().mainPart() + (limit().deltaPart() * _delta) < ass.mainPart() + (ass.deltaPart() * _delta);
                         default:
                             assert( mType == EQUAL );
-                            return limit().mainPart() == ass.mainPart();
+                            return limit().mainPart() == ass.mainPart() + (ass.deltaPart() * _delta);
                     }
                 }
 
