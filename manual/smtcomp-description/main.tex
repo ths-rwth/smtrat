@@ -21,17 +21,6 @@ The SAT solving within \texttt{SMT-RAT} takes place in an adaption of the SAT so
 
 The main focus of \texttt{SMT-RAT} is nonlinear arithmetic. For the linear constraints we use the Simplex method equipped with (currently very naively implemented) branch-and-bound and cutting-plane procedures as presented in \cite{DM06}. For the nonlinear constraints \texttt{SMT-RAT} uses Gr\"obner bases~\cite{JLCA_CAI13}, virtual substitution~\cite{Article_Corzilius_FCT2011} and the cylindrical algebraic decomposition~\cite{Article_Loup_TubeCAD}. Moreover, it uses interval constraint propagation similar as presented in~\cite{GGIGSC10}, lifting splitting decisions and contraction lemmas to the SAT solving and aided by the aforementioned approaches for nonlinear constraints in case it cannot determine whether a box contains a solution or not. Furthermore, we apply some naive preprocessing, (1) using factorizations and sum-of-square decompositions of polynomials to simplify them and (2) applying substitutions gained by constraints being equations. We also normalize and simplify formulas if it is obvious.
 
-Our current implementation for the logic of uninterpreted functions is the
-result of a practical course within the winter term 2014/2015. The theory
-solver as well as the preprocessing techniques for this logic have been
-implemented and optimized solely by four master students that are listed
-below.
-
-To broaden the scope of \texttt{SMT-RAT} and demonstrate its expandability to other
-logics, we offered a master thesis to implement a decision procedure for
-bit-vector logic. Our current implementation for this logic was solely
-written by the master student listed below.
-
 \paragraph{Authors}
 \begin{itemize}
 \item Erika \'Abrah\'am
@@ -39,11 +28,6 @@ written by the master student listed below.
 \item Gereon Kremer
 \item Sebastian Junges
 \item Stefan Schupp
-\item Phillip Keldenich (uninterpreted functions)
-\item Oliver Major (uninterpreted functions)
-\item Sascha M\"uller (uninterpreted functions)
-\item Daniel Neuen (uninterpreted functions)
-\item Andreas Kr\"uger (bit-vector)
 \end{itemize}
 
 \bibliographystyle{plain}

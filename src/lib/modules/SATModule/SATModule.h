@@ -1050,7 +1050,7 @@ namespace smtrat
             /**
              * @return The best decision variable under consideration of the decision heuristic.
              */
-            Minisat::Lit bestBranchLit( bool _conflictFirst );
+            Minisat::Lit bestBranchLit();
             
             /**
              * Begins a new decision level.

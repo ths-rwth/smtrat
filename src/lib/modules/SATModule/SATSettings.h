@@ -12,7 +12,7 @@
     
 namespace smtrat
 {
-    enum class TheoryGuidedDecisionHeuristicLevel : unsigned { CONFLICT_FIRST, NON_SATISFIED_FIRST, DISABLED };
+    enum class TheoryGuidedDecisionHeuristicLevel : unsigned { CONFLICT_FIRST, SATISFIED_FIRST, DISABLED };
     
     enum class CCES : unsigned { SECOND_LEVEL_MINIMIZER, LITERALS_BLOCKS_DISTANCE, SECOND_LEVEL_MINIMIZER_PLUS_LBD };
     
@@ -56,7 +56,7 @@ namespace smtrat
         /**
          * 
          */
-        static const bool polarity_based_cnf_transformation = false;
+        static const bool polarity_based_cnf_transformation = true;
 		/**
 		 *
 		 */
@@ -82,7 +82,7 @@ namespace smtrat
         /**
          * 
          */
-        static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::CONFLICT_FIRST;
+        static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::SATISFIED_FIRST;
         /**
          * 
          */

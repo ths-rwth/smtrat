@@ -9,7 +9,7 @@
 #include "../../../cli/ExitCodes.h"
 
 #ifdef DEBUG_METHODS_TABLEAU
-//#define DEBUG_METHODS_LRA_MODULE
+#define DEBUG_METHODS_LRA_MODULE
 #endif
 //#define DEBUG_LRA_MODULE
 
@@ -288,7 +288,7 @@ namespace smtrat
                                     {
                                         FormulaSetT infsubset;
                                         collectOrigins( *var.supremum().origins().begin(), infsubset );
-                                        collectOrigins( var.infimum().pOrigins()->back(), infsubset );
+                                        collectOrigins( *var.infimum().origins().begin(), infsubset );
                                         mInfeasibleSubsets.push_back( std::move(infsubset) );
                                     }
                                 }
@@ -509,7 +509,10 @@ namespace smtrat
             case carl::FormulaType::CONSTRAINT:
             {
                 if( mCheckedWithBackends )
-                    return satisfies( model(), _formula );
+                {
+                    auto res = satisfies( model(), _formula );
+                    return res;
+                }
                 else
                 {
                     if( _formula.constraint().lhs().isLinear() && _formula.constraint().relation() != carl::Relation::NEQ )
@@ -521,15 +524,24 @@ namespace smtrat
                             const LRAVariable& lravar = bound.variable();
                             if( lravar.hasBound() || (lravar.isOriginal() && receivedVariable( lravar.expression().getSingleVariable() )) )
                             {
-                                if( bound.isSatisfied( mTableau.currentDelta() ) )
+                                const auto& cd = mTableau.currentDelta();
+                                if( bound.isSatisfied( cd ) )
+                                {
                                     return 1;
+                                }
                                 else
+                                {
                                     return 0;
+                                }
                             }
                         }
                     }
                     else
-                        return _formula.satisfiedBy( getRationalModel() );
+                    {
+                        const auto& m = getRationalModel();
+                        auto res = _formula.satisfiedBy( m );
+                        return res;
+                    }
                 }
                 break;
             }
@@ -1058,7 +1070,9 @@ namespace smtrat
                         (*currentBound)->print( true, std::cout );
                         std::cout << std::endl;
                         #endif
-                        mTheoryPropagations.emplace_back( FormulasT{_bound->asConstraint()}, (*currentBound)->asConstraint() );
+                        FormulasT premise;
+                        collectOrigins( *_bound->origins().begin(), premise );
+                        mTheoryPropagations.emplace_back( std::move(premise), (*currentBound)->asConstraint() );
                         #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
                         std::cout << "theory propagation (1):  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
                         #endif
@@ -1077,7 +1091,9 @@ namespace smtrat
                         (*currentBound)->print( true, std::cout );
                         std::cout << std::endl;
                         #endif
-                        mTheoryPropagations.emplace_back( FormulasT{_bound->asConstraint()}, (*currentBound)->asConstraint().negated() );
+                        FormulasT premise;
+                        collectOrigins( *_bound->origins().begin(), premise );
+                        mTheoryPropagations.emplace_back( std::move(premise), (*currentBound)->asConstraint().negated() );
                         #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
                         std::cout << "theory propagation (2):  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
                         #endif
@@ -1105,7 +1121,9 @@ namespace smtrat
                         (*currentBound)->print( true, std::cout );
                         std::cout << std::endl;
                         #endif
-                        mTheoryPropagations.emplace_back( FormulasT{_bound->asConstraint()}, (*currentBound)->asConstraint() );
+                        FormulasT premise;
+                        collectOrigins( *_bound->origins().begin(), premise );
+                        mTheoryPropagations.emplace_back( std::move(premise), (*currentBound)->asConstraint() );
                         #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
                         std::cout << "theory propagation (3):  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
                         #endif
@@ -1124,7 +1142,9 @@ namespace smtrat
                         (*currentBound)->print( true, std::cout );
                         std::cout << std::endl;
                         #endif
-                        mTheoryPropagations.emplace_back( FormulasT{_bound->asConstraint()}, (*currentBound)->asConstraint().negated() );
+                        FormulasT premise;
+                        collectOrigins( *_bound->origins().begin(), premise );
+                        mTheoryPropagations.emplace_back( std::move(premise), (*currentBound)->asConstraint().negated() );
                         #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
                         std::cout << "theory propagation (4):  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
                         #endif
