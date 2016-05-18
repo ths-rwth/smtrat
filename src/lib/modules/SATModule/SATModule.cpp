@@ -37,7 +37,7 @@
 //#define DEBUG_SATMODULE_DECISION_HEURISTIC
 //#define DEBUG_SATMODULE_LEMMA_HANDLING
 
-//#define NEW_VERSION
+#define NEW_VERSION
 
 using namespace Minisat;
 
@@ -1504,7 +1504,9 @@ namespace smtrat
         }
         mChangedActivities.clear();
         if( mChangedPassedFormula )
+        {
             mCurrentAssignmentConsistent = SAT;
+        }
 //        assert( passedFormulaCorrect() );
     }
     
@@ -2512,14 +2514,13 @@ SetWatches:
         vardata[x] = VarData( real_reason, level(x), trailIndex(x) );
         learnts.push(real_reason);
         attachClause(real_reason);
-        
         return real_reason;
     }
     
     template<class Settings>
     void SATModule<Settings>::removeTheoryPropagation( int _position )
     {
-        assert( _position > 0 );
+        assert( _position >= 0 );
         assert( (std::size_t)_position < mTheoryPropagations.size() );
         if( (std::size_t) _position != mTheoryPropagations.size()-1 )
         {
@@ -2946,14 +2947,14 @@ SetWatches:
                 }
             }
             else
-                return bestBranchLit( Settings::theory_conflict_guided_decision_heuristic == TheoryGuidedDecisionHeuristicLevel::CONFLICT_FIRST );
+                return bestBranchLit();
         }
         return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
         //return next == var_Undef ? lit_Undef : mkLit( next, rnd_pol ? drand( random_seed ) < 0.5 : polarity[next] );
     }
     
     template<class Settings>
-    Lit SATModule<Settings>::bestBranchLit( bool _conflictFirst )
+    Lit SATModule<Settings>::bestBranchLit()
     {
         #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
         std::cout << "bestBranchLit with _conflictFirst = " << _conflictFirst << std::endl;
@@ -3002,7 +3003,25 @@ SetWatches:
                         #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
                         std::cout << "consistency = " << consistency << std::endl;
                         #endif
-                        if( consistency == 2 )//(_conflictFirst && consistency != 0) || (!_conflictFirst && consistency == 1) )
+                        bool skipVariable = false;
+                        switch( Settings::theory_conflict_guided_decision_heuristic )
+                        {
+                            case TheoryGuidedDecisionHeuristicLevel::CONFLICT_FIRST:
+                                if( consistency != 0 )
+                                    skipVariable = true;
+                                skipVariable = true;
+                                break;
+                            case TheoryGuidedDecisionHeuristicLevel::SATISFIED_FIRST:
+                                if( consistency != 1 )
+                                    skipVariable = true;
+                                break;
+                            default:
+                                assert( Settings::theory_conflict_guided_decision_heuristic == TheoryGuidedDecisionHeuristicLevel::DISABLED );
+                                if( consistency == 2 )
+                                    skipVariable = true;
+                                break;
+                        }
+                        if( skipVariable )
                         {
                             #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
                             std::cout << "store variable for restorage" << std::endl;
@@ -3035,9 +3054,7 @@ SetWatches:
         }
         if( next == var_Undef )
         {
-            if( _conflictFirst )
-                return bestBranchLit( false );
-            else if( !order_heap.empty() )
+            if( !order_heap.empty() )
             {
                 next = order_heap.removeMin();
                 assert( value( next ) == l_Undef );
@@ -3062,7 +3079,6 @@ SetWatches:
         {
             assert( confl != CRef_Undef );    // (otherwise should be UIP)
             Clause& c = ca[confl];
-
             if( c.learnt() )
                 claBumpActivity( c );
 
