@@ -259,6 +259,24 @@ namespace smtrat
         }
 
         /**
+         * @return true, if this formula contains Boolean variables;
+         *         false, otherwise.
+         */
+        bool containsRealVariables() const
+        {
+            return carl::PROP_CONTAINS_REAL_VALUED_VARS <= mProperties;
+        }
+
+        /**
+         * @return true, if this formula contains Boolean variables;
+         *         false, otherwise.
+         */
+        bool containsIntegerVariables() const
+        {
+            return carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= mProperties;
+        }
+
+        /**
          * @return true, if this formula contains uninterpreted equations;
          *         false, otherwise.
          */

@@ -56,8 +56,8 @@ namespace smtrat
         /**
          * 
          */
-        static const bool polarity_based_cnf_transformation = true;
-		/**
+        static const bool polarity_based_cnf_transformation = false; // currently buggy if true
+ 		/**
 		 *
 		 */
 		static const bool remove_satisfied = false; // This cannot be true as otherwise incremental sat solving won't work

@@ -301,7 +301,11 @@ namespace smtrat
              * Adds the refinements learned during pivoting to the deductions.
              */
             void learnRefinements();
+            
+            void learnRefinement( const typename LRATableau::LearnedBound& _learnedBound, bool _upperBound );
 
+            FormulasT createPremise( const std::vector< const LRABound*>& _premiseBounds, bool& _premiseOnlyEqualities ) const;
+            
             /**
              * Adapt the passed formula, such that it consists of the finite infimums and supremums
              * of all variables and the non linear constraints.

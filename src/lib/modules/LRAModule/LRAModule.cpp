@@ -9,7 +9,7 @@
 #include "../../../cli/ExitCodes.h"
 
 #ifdef DEBUG_METHODS_TABLEAU
-#define DEBUG_METHODS_LRA_MODULE
+//#define DEBUG_METHODS_LRA_MODULE
 #endif
 //#define DEBUG_LRA_MODULE
 
@@ -437,10 +437,8 @@ namespace smtrat
     {
         if( _result == ABORTED )
         {
-            mBoundCandidatesToPass.clear();
             return _result;
         }
-        mBoundCandidatesToPass.clear();
         if( Settings::learn_refinements )
             learnRefinements();
         #ifdef SMTRAT_DEVOPTION_Statistics
@@ -786,84 +784,109 @@ namespace smtrat
     template<class Settings>
     void LRAModule<Settings>::learnRefinements()
     {
-        for( auto iter = mTableau.rLearnedLowerBounds().begin(); iter != mTableau.rLearnedLowerBounds().end(); ++iter )
-        {
-            bool premiseOnlyEqualities = true;
-            FormulasT subformulas;
-            for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
-            {
-                const FormulaT& origin = *(*bound)->origins().begin();
-                if( origin.getType() == carl::FormulaType::AND )
-                {
-                    for( auto& subformula : origin.subformulas() )
-                    {
-                        assert( subformula.getType() == carl::FormulaType::CONSTRAINT );
-                        subformulas.push_back( subformula );
-                        if( subformula.constraint().relation() != carl::Relation::EQ )
-                            premiseOnlyEqualities = false;
-                    }
-                }
-                else
-                {
-                    assert( origin.getType() == carl::FormulaType::CONSTRAINT );
-                    subformulas.push_back( origin );
-                    if( origin.constraint().relation() != carl::Relation::EQ )
-                        premiseOnlyEqualities = false;
-                }
-            }
-            for( auto lboundIter = iter->second.nextWeakerBound; !(*lboundIter)->isActive() && !(*lboundIter)->deduced(); --lboundIter )
-            {
-                if( (*lboundIter)->exists() && (*lboundIter)->type() != LRABound::Type::EQUAL )
-                {
-                    mTheoryPropagations.emplace_back( std::move(subformulas), (*lboundIter)->asConstraint() );
-                    std::cout << "theory propagation (5):  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
-                }
-            }
-            #ifdef SMTRAT_DEVOPTION_Statistics
-            mpStatistics->addRefinement();
-            mpStatistics->propagateTheory();
-            #endif
-        }
+        for( const auto& lbound : mTableau.rLearnedLowerBounds() )
+            learnRefinement( lbound.second, false );
         mTableau.rLearnedLowerBounds().clear();
-        for( auto iter = mTableau.rLearnedUpperBounds().begin(); iter != mTableau.rLearnedUpperBounds().end(); ++iter )
+        for( const auto& ubound : mTableau.rLearnedUpperBounds() )
+            learnRefinement( ubound.second, true );
+        mTableau.rLearnedUpperBounds().clear();
+    }
+    
+    template<class Settings>
+    void LRAModule<Settings>::learnRefinement( const typename LRATableau::LearnedBound& _learnedBound, bool _upperBound )
+    {
+        bool premiseOnlyEqualities = true;
+        FormulasT subformulas = createPremise( _learnedBound.premise, premiseOnlyEqualities );
+        auto boundIter = _learnedBound.nextWeakerBound;
+        if( _upperBound )
+            ++boundIter;
+        else
+            --boundIter;
+        while( !(*boundIter)->isActive() )
         {
-            bool premiseOnlyEqualities = true;
-            FormulasT subformulas;
-            for( auto bound = iter->second.premise.begin(); bound != iter->second.premise.end(); ++bound )
+            const LRABound& bound = **boundIter;
+            if( bound.exists() && !bound.isComplementActive() )
             {
-                const FormulaT& origin = *(*bound)->origins().begin();
-                if( origin.getType() == carl::FormulaType::AND )
+                if( bound.type() != LRABound::Type::EQUAL )
                 {
-                    for( auto& subformula : origin.subformulas() )
+                    mTheoryPropagations.emplace_back( std::move(FormulasT(subformulas)), bound.asConstraint() );
+//                    std::cout << "theory propagation [" << (_upperBound ? "upper" : "lower") << "]:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
+                }
+                else if( premiseOnlyEqualities )
+                {
+//                    std::cout << _learnedBound.newLimit << " == " << bound.limit() << std::endl;
+                    if( _learnedBound.newLimit == bound.limit() )
                     {
-                        assert( subformula.getType() == carl::FormulaType::CONSTRAINT );
-                        subformulas.push_back( subformula );
-                        if( subformula.constraint().relation() != carl::Relation::EQ )
-                            premiseOnlyEqualities = false;
+                        mTheoryPropagations.emplace_back( std::move(FormulasT(subformulas)), bound.asConstraint() );
+//                        std::cout << "### theory propagation [" << (_upperBound ? "upper" : "lower") << "]:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
                     }
+                    else
+                    {
+                        mTheoryPropagations.emplace_back( std::move(FormulasT(subformulas)), bound.asConstraint().negated() );
+//                        std::cout << "### theory propagation [" << (_upperBound ? "upper" : "lower") << "]:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
+                    }
+                }
+            }
+            if( _upperBound )
+                ++boundIter;
+            else
+                --boundIter;
+        }
+        const LRABound& nextWeakerBound = **_learnedBound.nextWeakerBound;
+        if( nextWeakerBound.exists() && !nextWeakerBound.isComplementActive() )
+        {
+            if( nextWeakerBound.type() != LRABound::Type::EQUAL )
+            {
+                mTheoryPropagations.emplace_back( std::move(subformulas), nextWeakerBound.asConstraint() );
+//                std::cout << "theory propagation [" << (_upperBound ? "upper" : "lower") << "]:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
+            }
+            else if( premiseOnlyEqualities )
+            {
+                if( _learnedBound.newLimit == nextWeakerBound.limit() )
+                {
+                    mTheoryPropagations.emplace_back( std::move(FormulasT(subformulas)), nextWeakerBound.asConstraint() );
+//                        std::cout << "### theory propagation [" << (_upperBound ? "upper" : "lower") << "]:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
                 }
                 else
                 {
-                    assert( origin.getType() == carl::FormulaType::CONSTRAINT );
-                    subformulas.push_back( origin );
-                    if( origin.constraint().relation() != carl::Relation::EQ )
-                        premiseOnlyEqualities = false;
+                    mTheoryPropagations.emplace_back( std::move(FormulasT(subformulas)), nextWeakerBound.asConstraint().negated() );
+//                        std::cout << "### theory propagation [" << (_upperBound ? "upper" : "lower") << "]:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
                 }
             }
-            for( auto uboundIter = iter->second.nextWeakerBound; !(*uboundIter)->isActive() && !(*uboundIter)->deduced(); ++uboundIter )
-            {
-                if( (*uboundIter)->exists() && (*uboundIter)->type() != LRABound::Type::EQUAL )
-                {
-                    mTheoryPropagations.emplace_back( std::move(subformulas), (*uboundIter)->asConstraint() );
-                    std::cout << "theory propagation (6):  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
-                }
-            }
-            #ifdef SMTRAT_DEVOPTION_Statistics
-            mpStatistics->addRefinement();
-            mpStatistics->propagateTheory();
-            #endif
         }
-        mTableau.rLearnedUpperBounds().clear();
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        mpStatistics->addRefinement();
+        mpStatistics->propagateTheory();
+        #endif
+    }
+
+    template<class Settings>
+    FormulasT LRAModule<Settings>::createPremise( const std::vector< const LRABound*>& _premiseBounds, bool& _premiseOnlyEqualities ) const
+    {
+        FormulasT subformulas;
+        _premiseOnlyEqualities = true;
+        for( const LRABound* bound : _premiseBounds )
+        {
+            const FormulaT& origin = *bound->origins().begin();
+            if( origin.getType() == carl::FormulaType::AND )
+            {
+                for( auto& subformula : origin.subformulas() )
+                {
+                    assert( subformula.getType() == carl::FormulaType::CONSTRAINT );
+                    subformulas.push_back( subformula );
+                    if( subformula.constraint().relation() != carl::Relation::EQ )
+                        _premiseOnlyEqualities = false;
+                }
+            }
+            else
+            {
+                assert( origin.getType() == carl::FormulaType::CONSTRAINT );
+                subformulas.push_back( origin );
+                if( origin.constraint().relation() != carl::Relation::EQ )
+                    _premiseOnlyEqualities = false;
+            }
+        }
+        return subformulas;
     }
 
     template<class Settings>
@@ -883,6 +906,7 @@ namespace smtrat
                 bound->pInfo()->updated = 0;
             }
         }
+        mBoundCandidatesToPass.clear();
     }
 
     template<class Settings>
@@ -897,9 +921,9 @@ namespace smtrat
         {
             const EvalRationalMap& assignments = getRationalModel();
             // Check whether the assignment satisfies the non linear constraints.
-            for( auto constraint = mNonlinearConstraints.begin(); constraint != mNonlinearConstraints.end(); ++constraint )
+            for( const auto& constraint : mNonlinearConstraints )
             {
-                if( constraint->satisfiedBy( assignments ) != 1 )
+                if( constraint.satisfiedBy( assignments ) != 1 )
                 {
                     return false;
                 }
