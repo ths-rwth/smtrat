@@ -649,6 +649,8 @@ namespace smtrat
             //updateOutsideRestrictionConstraint(icpAnswer == UNSAT);
             return callBackends();
         }
+        if( rReceivedFormula().containsRealVariables() )
+            return UNKNOWN;
         bool originalBoundsCovered = true;
         for(auto variableWO : mInputVariables)
         {
