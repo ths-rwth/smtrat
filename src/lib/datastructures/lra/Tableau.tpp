@@ -2165,7 +2165,7 @@ namespace smtrat
                 if( ubound != --upperBounds.end() )
                 {
                     assert( ((*ubound)->type() != Bound<T1, T2>::EQUAL) );
-                    LearnedBound learnedBound( NULL, ubound, std::move( *uPremise ) );
+                    LearnedBound learnedBound( *newlimit, NULL, ubound, std::move( *uPremise ) );
                     delete uPremise;
                     if( Settings::introduce_new_constraint_in_refinement )
                     {
@@ -2250,7 +2250,7 @@ namespace smtrat
                 if( lbound != lowerBounds.begin() )
                 {
                     assert( ((*lbound)->type() != Bound<T1, T2>::EQUAL) );
-                    LearnedBound learnedBound( NULL, lbound, std::move( *lPremise ) );
+                    LearnedBound learnedBound( *newlimit, NULL, lbound, std::move( *lPremise ) );
                     delete lPremise;
                     if( Settings::introduce_new_constraint_in_refinement )
                     {

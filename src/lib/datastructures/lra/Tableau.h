@@ -212,6 +212,8 @@ namespace smtrat
                     ///
                     const Bound<T1, T2>* newBound;
                     ///
+                    Value<T1> newLimit;
+                    ///
                     typename Bound<T1, T2>::BoundSet::const_iterator nextWeakerBound;
                     ///
                     std::vector< const Bound<T1, T2>*> premise;
@@ -220,11 +222,13 @@ namespace smtrat
                     LearnedBound( const LearnedBound& ) = delete;
                     LearnedBound( LearnedBound&& _toMove ) :
                         newBound( _toMove.newBound ),
+                        newLimit( std::move( _toMove.newLimit ) ),
                         nextWeakerBound( _toMove.nextWeakerBound ),
                         premise( std::move( _toMove.premise ) )
                     {}
-                    LearnedBound( const Bound<T1, T2>* _newBound, typename Bound<T1, T2>::BoundSet::const_iterator _nextWeakerBound, std::vector< const Bound<T1, T2>*>&& _premise ):
+                    LearnedBound( const Value<T1>& _limit, const Bound<T1, T2>* _newBound, typename Bound<T1, T2>::BoundSet::const_iterator _nextWeakerBound, std::vector< const Bound<T1, T2>*>&& _premise ):
                         newBound( _newBound ),
+                        newLimit( _limit ),
                         nextWeakerBound( _nextWeakerBound ),
                         premise( std::move( _premise ) )
                     {}
