@@ -41,17 +41,21 @@ namespace cad {
             if (def == carl::Definiteness::NEGATIVE) return true;
             return false;
         }
+		
+		UPoly normalize(const UPoly& p) const {
+			return p.squareFreePart().normalized();
+		}
 
 		template<typename Callback>
 		void Brown(const UPoly& p, const UPoly& q, carl::Variable::Arg variable, Callback& cb) const {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "resultant(" << p << ", " << q << ")");
-			cb(p.resultant(q).switchVariable(variable));
+			cb(normalize(p.resultant(q).switchVariable(variable)));
 		}
 		template<typename Callback>
 		void Brown(const UPoly& p, carl::Variable::Arg variable, Callback& cb) const {
 			// Insert discriminant
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "discriminant(" << p << ")");
-			cb(p.discriminant().switchVariable(variable));
+			cb(normalize(p.discriminant().switchVariable(variable)));
 			if (doesNotVanish(p.lcoeff())) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "lcoeff = " << p.lcoeff() << " does not vanish. No further UPolynomials needed.");
 				return;
@@ -59,7 +63,7 @@ namespace cad {
 			for (const auto& coeff: p.coefficients()) {
 				if (doesNotVanish(coeff)) {
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "coeff " << coeff << " does not vanish. We only need the lcoeff()");
-					cb(p.lcoeff().toUnivariatePolynomial(variable));
+					cb(normalize(p.lcoeff().toUnivariatePolynomial(variable)));
 					return;
 				}
 			}
@@ -67,13 +71,13 @@ namespace cad {
 			for (const auto& coeff: p.coefficients()) {
 				if (coeff.isConstant()) continue;
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "\t-> " << coeff);
-				cb(coeff.toUnivariatePolynomial(variable));
+				cb(normalize(coeff.toUnivariatePolynomial(variable)));
 			}
 		}
         template<typename Callback>
         void McCallum(const UPoly& p, const UPoly& q, carl::Variable::Arg variable, Callback& cb) const {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "resultant(" << p << ", " << q << ")");
-            cb(p.resultant(q).switchVariable(variable));
+            cb(normalize(p.resultant(q).switchVariable(variable)));
         }
         template<typename Callback>
         void McCallum(const UPoly& p, carl::Variable::Arg variable, Callback& cb) const {
@@ -83,7 +87,7 @@ namespace cad {
             for (const auto& coeff: p.coefficients()) {
 				if (coeff.isConstant()) continue;
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "\t-> " << coeff);
-                cb(coeff.toUnivariatePolynomial(variable));
+                cb(normalize(coeff.toUnivariatePolynomial(variable)));
             }
         }
     };
