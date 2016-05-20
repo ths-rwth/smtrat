@@ -29,7 +29,7 @@ namespace cad {
 		/// The projection operator.
 		ProjectionOperator mOperator;
 		/// Callback to be called when polynomials are removed. The arguments are the projection level and a bitset that indicate which polynomials were removed in this level.
-		std::function<void(std::size_t,const SampleLiftedWith&)> mRemoveCallback;
+		std::function<void(std::size_t, const SampleLiftedWith&)> mRemoveCallback;
 		
 		BaseProjection(const Constraints& c): mConstraints(c) {}
 		
@@ -96,6 +96,10 @@ namespace cad {
 		}
 		/// Removes the given polynomial from the projection.
 		virtual void removePolynomial(const UPoly& p, std::size_t cid) = 0;
+		
+		UPoly normalize(const UPoly& p) const {
+			return mOperator.normalize(p);
+		}
 		
 		/// Get a polynomial from this level suited for lifting.
 		OptionalID getPolyForLifting(std::size_t level, SampleLiftedWith& slw) {
