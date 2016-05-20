@@ -289,10 +289,13 @@ namespace smtrat
         }
         else
         {
-            auto cnfInfoIter = mFormulaCNFInfosMap.find( _subformula->formula() );
+            auto cnfInfoIter = mFormulaCNFInfosMap.find( _subformula->formula().removeNegations() );
             assert( cnfInfoIter != mFormulaCNFInfosMap.end() );
             updateCNFInfoCounter( cnfInfoIter, _subformula->formula(), false );
-            mFormulaCNFInfosMap.erase( cnfInfoIter );
+            if( cnfInfoIter->second.mClauses.empty() )
+            {
+                mFormulaCNFInfosMap.erase( cnfInfoIter );
+            }
             std::vector<FormulaT> constraints;
             _subformula->formula().getConstraints( constraints );
             for( const FormulaT& constraint : constraints )
@@ -873,13 +876,17 @@ namespace smtrat
             ++_iter->second.mCounter;
         else
             --_iter->second.mCounter;
-        for( Minisat::CRef cr : _iter->second.mClauses )
+        for( std::size_t pos = 0; pos < _iter->second.mClauses.size(); )
         {
+            Minisat::CRef cr = _iter->second.mClauses[pos];
             assert( cr != CRef_Undef );
             auto ciIter = mClauseInformation.find( cr );
             assert( ciIter != mClauseInformation.end() );
             if( _increment )
+            {
                 ciIter->second.addOrigin( _origin );
+                ++pos;
+            }
             else
             {
                 ciIter->second.removeOrigin( _origin );
@@ -908,7 +915,12 @@ namespace smtrat
                             mLiteralClausesMap[Minisat::toInt(c[i])].erase( cr );
                     }
                     removeClause( cr );
+                    if( pos < _iter->second.mClauses.size() - 1 )
+                        _iter->second.mClauses[pos] = _iter->second.mClauses.back();
+                    _iter->second.mClauses.pop_back();
                 }
+                else
+                    ++pos;
             }
         }
         // Invoke this procedure recursively on all sub-formulas, which again contain sub-formulas
@@ -918,10 +930,14 @@ namespace smtrat
             {
                 if( formula.isNary() )
                 {
-                    auto cnfInfoIter = mFormulaCNFInfosMap.find( formula );
+                    auto cnfInfoIter = mFormulaCNFInfosMap.find( formula.removeNegations() );
                     if( cnfInfoIter != mFormulaCNFInfosMap.end() )
                     {
                         updateCNFInfoCounter( cnfInfoIter, _origin, _increment );
+                        if( !_increment && cnfInfoIter->second.mClauses.empty() )
+                        {
+                            mFormulaCNFInfosMap.erase( cnfInfoIter );
+                        }
                     }
                 }
             }
@@ -1449,10 +1465,6 @@ namespace smtrat
         }
         assert( supportedConstraintType( content ) );
         ConstraintLiteralsMap::const_iterator constraintLiteralPair = mConstraintLiteralMap.find( content );
-        if( !( constraintLiteralPair != mConstraintLiteralMap.end() ) )
-        {
-            std::cout << _formula << std::endl;
-        }
         assert( constraintLiteralPair != mConstraintLiteralMap.end() );
         return negated ? neg( constraintLiteralPair->second.front() ) : constraintLiteralPair->second.front();
     }
