@@ -148,7 +148,7 @@ namespace smtrat
                 auto varShiftIter = mVariableShifts.find( ass.first.asVariable() );
                 if( varShiftIter != mVariableShifts.end() )
                 {
-                    assert( ass.second.isRational() || ass.second.isSqrtEx() || ass.second.isRAN() );
+                    assert( ass.second.isRational() || ass.second.isSqrtEx() || ass.second.isRAN() || ass.second.isSubstitution() || ass.second.isPoly() );
                     bool varWithNegCoeff = carl::isNegative( varShiftIter->second.lcoeff() );
                     if( ass.second.isRational() )
                     {
@@ -164,6 +164,10 @@ namespace smtrat
                     else if( ass.second.isSqrtEx() )
                     {
                         mModel.assign(ass.first, (varWithNegCoeff ? ass.second.asSqrtEx()*vs::SqrtEx( Poly( MINUS_ONE_RATIONAL ) ) : ass.second.asSqrtEx()) + vs::SqrtEx( Poly( varShiftIter->second.constantPart() ) ));
+                    }
+                    else if( ass.second.isPoly() )
+                    {
+                        mModel.assign(ass.first, (varWithNegCoeff ? -ass.second.asPoly() : ass.second.asPoly()) + varShiftIter->second.constantPart());
                     }
                     else // ass.second.isRAN()
                     {
