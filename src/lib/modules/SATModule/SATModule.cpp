@@ -135,7 +135,6 @@ namespace smtrat
         mRelevantVariables(),
         mNonTseitinShadowedOccurrences(),
         mTseitinVarShadows(),
-        mFormulaTseitinVarMap(),
         mTseitinVarFormulaMap(),
         mCurrentTheoryConflicts(),
         mCurrentTheoryConflictTypes(),
@@ -1013,9 +1012,13 @@ namespace smtrat
                     Lit negElseLit = _formula.secondCase().isLiteral() ? addClauses( _formula.secondCase().negated(), _type, nextDepth, _original ) : neg( elseLit );
                     FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
                     Lit tsLit = createLiteral( tsVar, _original, everythingDecisionRelevant || _depth <= 1 );
-                    if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
+                    if( !mReceivedFormulaPurelyPropositional && Settings::initiate_activities )
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
+                    }
+                    if( !mReceivedFormulaPurelyPropositional && Settings::formula_guided_decision_heuristic )
+                    {
+                        mTseitinVarShadows.emplace( (signed)var(tsLit), std::vector<signed>{ (signed)var(condLit), (signed)var(thenLit), (signed)var(elseLit)} ); 
                     }
                     // (or ts -cond -then)
                     lits.push( tsLit ); lits.push( negCondLit ); lits.push( negThenLit ); addClause_( lits, _type, _original, cnfInfoIter );
@@ -1044,9 +1047,13 @@ namespace smtrat
                     Lit negConLit = _formula.conclusion().isLiteral() ? addClauses( _formula.conclusion().negated(), _type, nextDepth, _original ) : neg( conLit );
                     FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
                     Lit tsLit = createLiteral( tsVar, _original, everythingDecisionRelevant || _depth <= 1 );
-                    if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
+                    if( !mReceivedFormulaPurelyPropositional && Settings::initiate_activities )
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
+                    }
+                    if( !mReceivedFormulaPurelyPropositional && Settings::formula_guided_decision_heuristic )
+                    {
+                        mTseitinVarShadows.emplace( (signed)var(tsLit), std::vector<signed>{ (signed)var(premLit), (signed)var(conLit)} ); 
                     }
                     // (or -ts -prem con)
                     lits.push( neg( tsLit ) ); lits.push( negPremLit ); lits.push( conLit ); addClause_( lits, _type, _original, cnfInfoIter );
@@ -1071,9 +1078,16 @@ namespace smtrat
                     }
                     FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
                     Lit tsLit = createLiteral( tsVar, _original, everythingDecisionRelevant || _depth <= 1 );
-                    if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
+                    if( !mReceivedFormulaPurelyPropositional && Settings::initiate_activities )
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
+                    }
+                    if( !mReceivedFormulaPurelyPropositional && Settings::formula_guided_decision_heuristic )
+                    {
+                        std::vector<signed> vars;
+                        for( int pos = 0; pos < lits.size(); ++pos )
+                            vars.push_back( (signed)var(lits[pos]) );
+                        mTseitinVarShadows.emplace( (signed)var(tsLit), std::move(vars) ); 
                     }
                     // (or -ts a1 .. an)
                     lits.push( neg( tsLit ) );
@@ -1099,7 +1113,7 @@ namespace smtrat
                     assert( _depth != 0 ); // because, this should be split in the module input
                     FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
                     Lit tsLit = createLiteral( tsVar, _original, everythingDecisionRelevant || _depth <= 1 );
-                    if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
+                    if( !mReceivedFormulaPurelyPropositional && Settings::initiate_activities )
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
                     }
@@ -1116,6 +1130,13 @@ namespace smtrat
                         litsTmp.pop();
                         Lit negL = sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( l );
                         lits.push( negL );
+                    }
+                    if( !mReceivedFormulaPurelyPropositional && Settings::formula_guided_decision_heuristic )
+                    {
+                        std::vector<signed> vars;
+                        for( int pos = 0; pos < lits.size(); ++pos )
+                            vars.push_back( (signed)var(lits[pos]) );
+                        mTseitinVarShadows.emplace( (signed)var(tsLit), std::move(vars) ); 
                     }
                     lits.push( tsLit );
                     addClause_( lits, _type, _original, cnfInfoIter );
@@ -1155,9 +1176,16 @@ namespace smtrat
                     }
                     FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
                     Lit tsLit = createLiteral( tsVar, _original, everythingDecisionRelevant || _depth <= 1 );
-                    if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
+                    if( !mReceivedFormulaPurelyPropositional && Settings::initiate_activities )
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
+                    }
+                    if( !mReceivedFormulaPurelyPropositional && Settings::formula_guided_decision_heuristic )
+                    {
+                        std::vector<signed> vars;
+                        for( int pos = 0; pos < lits.size(); ++pos )
+                            vars.push_back( (signed)var(lits[pos]) );
+                        mTseitinVarShadows.emplace( (signed)var(tsLit), std::move(vars) ); 
                     }
                     // (or a1 .. an h)
                     lits.push( tsLit ); addClause_( lits, _type, _original, cnfInfoIter );
@@ -1191,9 +1219,16 @@ namespace smtrat
                         return lit_Undef;
                     }
                     Lit tsLit = createLiteral( carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula ), _original, everythingDecisionRelevant || _depth <= 1 );
-                    if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
+                    if( !mReceivedFormulaPurelyPropositional && Settings::initiate_activities )
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
+                    }
+                    if( !mReceivedFormulaPurelyPropositional && Settings::formula_guided_decision_heuristic )
+                    {
+                        std::vector<signed> vars;
+                        for( int pos = 0; pos < lits.size(); ++pos )
+                            vars.push_back( (signed)var(lits[pos]) );
+                        mTseitinVarShadows.emplace( (signed)var(tsLit), std::move(vars) ); 
                     }
                     lits.push( neg( tsLit ) );
                     negLits.push( tsLit );
@@ -1377,7 +1412,8 @@ namespace smtrat
                 mConstraintLiteralMap.insert( std::make_pair( invertedConstraint, std::move( litsB ) ) );
                 // we return the abstraction variable as literal, if the negated flag was negative,
                 // otherwise we return the abstraction variable's negation 
-                return negated ? litNegative : litPositive;
+                Lit res = negated ? litNegative : litPositive;
+                return res;
             }
         }
     }
@@ -2183,9 +2219,9 @@ SetWatches:
             auto iter = mTseitinVarShadows.find( (signed) _var );
             if( iter != mTseitinVarShadows.end() )
             {
-                for( signed v : iter->second )
+                for( signed var : iter->second )
                 {
-                    decrementTseitinShadowOccurrences(v);
+                    decrementTseitinShadowOccurrences(var);
                 }
             }
         }
@@ -3290,9 +3326,9 @@ SetWatches:
             auto iter = mTseitinVarShadows.find( (signed) var(p) );
             if( iter != mTseitinVarShadows.end() )
             {
-                for( signed v : iter->second )
+                for( signed var : iter->second )
                 {
-                    incrementTseitinShadowOccurrences(v);
+                    incrementTseitinShadowOccurrences(var);
                 }
             }
         }

@@ -317,7 +317,7 @@ namespace smtrat
             typedef std::set<std::vector<int>> ClauseSet;
             
             ///
-            typedef carl::FastMap<signed,std::unordered_set<signed>> TseitinVarShadows;
+            typedef carl::FastMap<signed,std::vector<signed>> TseitinVarShadows;
             
             ///
             struct LiteralClauses
@@ -581,8 +581,6 @@ namespace smtrat
             Minisat::vec<unsigned> mNonTseitinShadowedOccurrences;
             ///
             TseitinVarShadows mTseitinVarShadows;
-            ///
-            carl::FastMap<FormulaT, TseitinVarShadows::iterator> mFormulaTseitinVarMap;
             ///
             carl::FastMap<int, FormulaT> mTseitinVarFormulaMap;
             ///
