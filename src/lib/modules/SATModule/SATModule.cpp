@@ -1012,7 +1012,7 @@ namespace smtrat
                     Lit negThenLit = _formula.firstCase().isLiteral() ? addClauses( _formula.firstCase().negated(), _type, nextDepth, _original ) : neg( thenLit );
                     Lit negElseLit = _formula.secondCase().isLiteral() ? addClauses( _formula.secondCase().negated(), _type, nextDepth, _original ) : neg( elseLit );
                     FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
-                    Lit tsLit = createLiteral( tsVar, _original, everythingDecisionRelevant || _depth == 0 );
+                    Lit tsLit = createLiteral( tsVar, _original, everythingDecisionRelevant || _depth <= 1 );
                     if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
@@ -1043,7 +1043,7 @@ namespace smtrat
                     }
                     Lit negConLit = _formula.conclusion().isLiteral() ? addClauses( _formula.conclusion().negated(), _type, nextDepth, _original ) : neg( conLit );
                     FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
-                    Lit tsLit = createLiteral( tsVar, _original, everythingDecisionRelevant || _depth == 0 );
+                    Lit tsLit = createLiteral( tsVar, _original, everythingDecisionRelevant || _depth <= 1 );
                     if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
@@ -1070,7 +1070,7 @@ namespace smtrat
                         return lit_Undef;
                     }
                     FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
-                    Lit tsLit = createLiteral( tsVar, _original, everythingDecisionRelevant || _depth == 0 );
+                    Lit tsLit = createLiteral( tsVar, _original, everythingDecisionRelevant || _depth <= 1 );
                     if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
@@ -1098,7 +1098,7 @@ namespace smtrat
                 {
                     assert( _depth != 0 ); // because, this should be split in the module input
                     FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
-                    Lit tsLit = createLiteral( tsVar, _original, everythingDecisionRelevant || _depth == 0 );
+                    Lit tsLit = createLiteral( tsVar, _original, everythingDecisionRelevant || _depth <= 1 );
                     if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
@@ -1154,7 +1154,7 @@ namespace smtrat
                         tmp.push( negL );
                     }
                     FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
-                    Lit tsLit = createLiteral( tsVar, _original, everythingDecisionRelevant || _depth == 0 );
+                    Lit tsLit = createLiteral( tsVar, _original, everythingDecisionRelevant || _depth <= 1 );
                     if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
@@ -1190,7 +1190,7 @@ namespace smtrat
                         addXorClauses( lits, negLits, 0, true, _type, tmp, _original, cnfInfoIter );
                         return lit_Undef;
                     }
-                    Lit tsLit = createLiteral( carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula ), _original, everythingDecisionRelevant || _depth == 0 );
+                    Lit tsLit = createLiteral( carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula ), _original, everythingDecisionRelevant || _depth <= 1 );
                     if( !mReceivedFormulaPurelyPropositional && (Settings::formula_guided_decision_heuristic || Settings::initiate_activities) )
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
