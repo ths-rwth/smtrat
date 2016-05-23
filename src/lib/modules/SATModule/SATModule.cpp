@@ -3001,13 +3001,12 @@ SetWatches:
                     if( abstrPair.first != nullptr )
                     {
                         assert( abstrPair.second != nullptr );
-                        bool takeNegation = polarity[next];
                         if( Settings::check_active_literal_occurrences )
                         {
-                            const auto& litActOccs = mLiteralsActivOccurrences[(size_t)next];
-                            takeNegation = litActOccs.second > litActOccs.first;
+//                            const auto& litActOccs = mLiteralsActivOccurrences[(size_t)next];
+//                            takeNegation = litActOccs.second > litActOccs.first;
                         }
-                        const Abstraction& abstr = takeNegation ? *abstrPair.second : *abstrPair.first;
+                        const Abstraction& abstr = *abstrPair.first;
                         #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
                         std::cout << "corresponds to constraint: " << abstr.reabstraction << std::endl;
                         #endif
@@ -3019,18 +3018,39 @@ SetWatches:
                         switch( Settings::theory_conflict_guided_decision_heuristic )
                         {
                             case TheoryGuidedDecisionHeuristicLevel::CONFLICT_FIRST:
-                                if( consistency != 0 )
-                                    skipVariable = true;
-                                skipVariable = true;
+                            {
+                                switch( consistency )
+                                {
+                                    case 0:
+                                        polarity[next] = false;
+                                        break;
+                                    case 1:
+                                        polarity[next] = true;
+                                        break;
+                                    default:
+                                        skipVariable = true;
+                                        break;
+                                }
                                 break;
+                            }
                             case TheoryGuidedDecisionHeuristicLevel::SATISFIED_FIRST:
-                                if( consistency != 1 )
-                                    skipVariable = true;
+                            {
+                                switch( consistency )
+                                {
+                                    case 0:
+                                        polarity[next] = true;
+                                        break;
+                                    case 1:
+                                        polarity[next] = false;
+                                        break;
+                                    default:
+                                        skipVariable = true;
+                                        break;
+                                }
                                 break;
+                            }
                             default:
                                 assert( Settings::theory_conflict_guided_decision_heuristic == TheoryGuidedDecisionHeuristicLevel::DISABLED );
-                                if( consistency == 2 )
-                                    skipVariable = true;
                                 break;
                         }
                         if( skipVariable )
@@ -3041,17 +3061,6 @@ SetWatches:
                             varsToRestore.push(next);
                             next = var_Undef;
                         }
-//                        else if( consistency != 3 )
-//                        {
-//                            if( Settings::check_active_literal_occurrences )
-//                            {
-//                                polarity[next] = !takeNegation;
-//                            }
-//                            else
-//                            {
-//                                polarity[next] = (consistency == 0);
-//                            }
-//                        }
                     }
                 }
             }
