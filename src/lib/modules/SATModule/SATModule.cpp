@@ -230,7 +230,7 @@ namespace smtrat
             }
             else
             {
-                addClauses( _subformula->formula(), NORMAL_CLAUSE, 0, _subformula->formula(), false );
+                addClauses( _subformula->formula(), NORMAL_CLAUSE, 0, _subformula->formula() );
             }
             if ( isLemmaLevel(NORMAL) && decisionLevel() == 0)
             {
@@ -945,13 +945,11 @@ namespace smtrat
     }
     
     template<class Settings>
-    Lit SATModule<Settings>::addClauses( const FormulaT& _formula, unsigned _type, unsigned _depth, const FormulaT& _original, bool _polarity )
+    Lit SATModule<Settings>::addClauses( const FormulaT& _formula, unsigned _type, unsigned _depth, const FormulaT& _original )
     {
         assert( _type < 4 );
-        bool polarityBased = Settings::polarity_based_cnf_transformation || _type != NORMAL_CLAUSE;
         bool everythingDecisionRelevant = !Settings::formula_guided_decision_heuristic;
         unsigned nextDepth = _depth+1;
-        assert( _depth != 0 || !_polarity );
         switch( _formula.getType() )
         {
             case carl::FormulaType::TRUE:
@@ -968,16 +966,10 @@ namespace smtrat
                 Lit l = lit_Undef; 
                 if( _formula.isLiteral() )
                 {
-                    if( polarityBased && _formula.subformula().getType() == carl::FormulaType::CONSTRAINT )
-                    {
-                        const ConstraintT& cons = _formula.subformula().constraint();
-                        l = createLiteral( FormulaT( cons.lhs(), carl::invertRelation( cons.relation() ) ), _original, everythingDecisionRelevant || _depth <= 1 );
-                    }
-                    else
-                        l = createLiteral( _formula, _original, everythingDecisionRelevant || _depth <= 1 );
+                    l = createLiteral( _formula, _original, everythingDecisionRelevant || _depth <= 1 );
                 }
                 else
-                    l = neg( addClauses( _formula.subformula(), _type, nextDepth, _original, !_polarity ) );
+                    l = neg( addClauses( _formula.subformula(), _type, nextDepth, _original ) );
                 if( _depth == 0 )
                 {
                     assumptions.push( l );
@@ -1025,20 +1017,14 @@ namespace smtrat
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
                     }
-                    if( !polarityBased || !_polarity )
-                    {
-                        // (or ts -cond -then)
-                        lits.push( tsLit ); lits.push( negCondLit ); lits.push( negThenLit ); addClause_( lits, _type, _original, cnfInfoIter );
-                        // (or ts cond -else)
-                        lits.clear(); lits.push( tsLit ); lits.push( condLit ); lits.push( negElseLit ); addClause_( lits, _type, _original, cnfInfoIter );
-                    }
-                    if( !polarityBased || _polarity )
-                    {
-                        // (or -ts -cond then)
-                        lits.clear(); lits.push( neg( tsLit ) ); lits.push( negCondLit ); lits.push( thenLit ); addClause_( lits, _type, _original, cnfInfoIter );
-                        // (or -ts cond else)
-                        lits.clear(); lits.push( neg( tsLit ) ); lits.push( condLit ); lits.push( elseLit ); addClause_( lits, _type, _original, cnfInfoIter );
-                    }
+                    // (or ts -cond -then)
+                    lits.push( tsLit ); lits.push( negCondLit ); lits.push( negThenLit ); addClause_( lits, _type, _original, cnfInfoIter );
+                    // (or ts cond -else)
+                    lits.clear(); lits.push( tsLit ); lits.push( condLit ); lits.push( negElseLit ); addClause_( lits, _type, _original, cnfInfoIter );
+                    // (or -ts -cond then)
+                    lits.clear(); lits.push( neg( tsLit ) ); lits.push( negCondLit ); lits.push( thenLit ); addClause_( lits, _type, _original, cnfInfoIter );
+                    // (or -ts cond else)
+                    lits.clear(); lits.push( neg( tsLit ) ); lits.push( condLit ); lits.push( elseLit ); addClause_( lits, _type, _original, cnfInfoIter );
                     if( _type == NORMAL_CLAUSE )
                         cnfInfoIter->second.mLiteral = tsLit;
                     return tsLit;
@@ -1062,18 +1048,12 @@ namespace smtrat
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
                     }
-                    if( !polarityBased || !_polarity )
-                    {
-                        // (or -ts -prem con)
-                        lits.push( neg( tsLit ) ); lits.push( negPremLit ); lits.push( conLit ); addClause_( lits, _type, _original, cnfInfoIter );
-                    }
-                    if( !polarityBased || _polarity )
-                    {
-                        // (or ts prem)
-                        lits.clear(); lits.push( tsLit ); lits.push( premLit ); addClause_( lits, _type, _original, cnfInfoIter );
-                        // (or ts -con)
-                        lits.clear(); lits.push( tsLit ); lits.push( negConLit ); addClause_( lits, _type, _original, cnfInfoIter );
-                    }
+                    // (or -ts -prem con)
+                    lits.push( neg( tsLit ) ); lits.push( negPremLit ); lits.push( conLit ); addClause_( lits, _type, _original, cnfInfoIter );
+                    // (or ts prem)
+                    lits.clear(); lits.push( tsLit ); lits.push( premLit ); addClause_( lits, _type, _original, cnfInfoIter );
+                    // (or ts -con)
+                    lits.clear(); lits.push( tsLit ); lits.push( negConLit ); addClause_( lits, _type, _original, cnfInfoIter );
                     if( _type == NORMAL_CLAUSE )
                         cnfInfoIter->second.mLiteral = tsLit;
                     return tsLit;
@@ -1095,28 +1075,20 @@ namespace smtrat
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
                     }
-                    if( !polarityBased || !_polarity )
+                    // (or -ts a1 .. an)
+                    lits.push( neg( tsLit ) );
+                    addClause_( lits, _type, _original, cnfInfoIter );
+                    // (or ts -a1) .. (or ts -an)
+                    vec<Lit> litsTmp;
+                    litsTmp.push( tsLit );
+                    int i = 0;
+                    for( const auto& sf : _formula.subformulas() )
                     {
-                        // (or -ts a1 .. an)
-                        lits.push( neg( tsLit ) );
-                        addClause_( lits, _type, _original, cnfInfoIter );
-                    }
-                    if( !polarityBased )
-                        lits.pop();
-                    if( !polarityBased || _polarity )
-                    {
-                        // (or ts -a1) .. (or ts -an)
-                        vec<Lit> litsTmp;
-                        litsTmp.push( tsLit );
-                        int i = 0;
-                        for( const auto& sf : _formula.subformulas() )
-                        {
-                            assert( i < lits.size() );
-                            litsTmp.push( sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( lits[i] ) );
-                            addClause_( litsTmp, _type, _original, cnfInfoIter );
-                            litsTmp.pop();
-                            ++i;
-                        }
+                        assert( i < lits.size() );
+                        litsTmp.push( sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( lits[i] ) );
+                        addClause_( litsTmp, _type, _original, cnfInfoIter );
+                        litsTmp.pop();
+                        ++i;
                     }
                     if( _type == NORMAL_CLAUSE )
                         cnfInfoIter->second.mLiteral = tsLit;
@@ -1131,49 +1103,22 @@ namespace smtrat
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
                     }
-                    if( !polarityBased )
+                    // (or -ts a1) .. (or -ts an)
+                    // (or ts -a1 .. -an)
+                    vec<Lit> lits;
+                    vec<Lit> litsTmp;
+                    litsTmp.push( neg( tsLit ) );
+                    for( const auto& sf : _formula.subformulas() )
                     {
-                        // (or -ts a1) .. (or -ts an)
-                        // (or ts -a1 .. -an)
-                        vec<Lit> lits;
-                        vec<Lit> litsTmp;
-                        litsTmp.push( neg( tsLit ) );
-                        for( const auto& sf : _formula.subformulas() )
-                        {
-                            Lit l = addClauses( sf, _type, nextDepth, _original );
-                            litsTmp.push( l );
-                            addClause_( litsTmp, _type, _original, cnfInfoIter );
-                            litsTmp.pop();
-                            Lit negL = sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( l );
-                            lits.push( negL );
-                        }
-                        lits.push( tsLit );
-                        addClause_( lits, _type, _original, cnfInfoIter );
+                        Lit l = addClauses( sf, _type, nextDepth, _original );
+                        litsTmp.push( l );
+                        addClause_( litsTmp, _type, _original, cnfInfoIter );
+                        litsTmp.pop();
+                        Lit negL = sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( l );
+                        lits.push( negL );
                     }
-                    else
-                    {
-                        if( _polarity )
-                        {
-                            // (or ts -a1 .. -an)
-                            vec<Lit> lits;
-                            for( const auto& sf : _formula.subformulas() )
-                                lits.push( sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( addClauses( sf, _type, nextDepth, _original ) ) );
-                            lits.push( tsLit );
-                            addClause_( lits, _type, _original, cnfInfoIter );
-                        }
-                        else
-                        {
-                            // (or -ts a1) .. (or -ts an)
-                            vec<Lit> litsTmp;
-                            litsTmp.push( neg( tsLit ) );
-                            for( const auto& sf : _formula.subformulas() )
-                            {
-                                litsTmp.push( addClauses( sf, _type, nextDepth, _original ) );
-                                addClause_( litsTmp, _type, _original, cnfInfoIter );
-                                litsTmp.pop();
-                            }
-                        }
-                    }
+                    lits.push( tsLit );
+                    addClause_( lits, _type, _original, cnfInfoIter );
                     if( _type == NORMAL_CLAUSE )
                         cnfInfoIter->second.mLiteral = tsLit;
                     return tsLit;
@@ -1214,23 +1159,17 @@ namespace smtrat
                     {
                         mTseitinVarFormulaMap.emplace( (int)var(tsLit), _formula );
                     }
-                    if( !polarityBased || _polarity )
+                    // (or a1 .. an h)
+                    lits.push( tsLit ); addClause_( lits, _type, _original, cnfInfoIter );
+                    lits.pop();
+                    // (or -a1 .. -an h)
+                    tmp.push( tsLit ); addClause_( tmp, _type, _original, cnfInfoIter );
+                    // (or -a1 a2 -h) (or a1 -a2 -h) .. (or -a{n-1} an -h) (or a{n-1} -an -h)
+                    vec<Lit> tmpB;
+                    for( int i = 1; i < lits.size(); ++i )
                     {
-                        // (or a1 .. an h)
-                        lits.push( tsLit ); addClause_( lits, _type, _original, cnfInfoIter );
-                        lits.pop();
-                        // (or -a1 .. -an h)
-                        tmp.push( tsLit ); addClause_( tmp, _type, _original, cnfInfoIter );
-                    }
-                    if( !polarityBased || !_polarity )
-                    {
-                        // (or -a1 a2 -h) (or a1 -a2 -h) .. (or -a{n-1} an -h) (or a{n-1} -an -h)
-                        vec<Lit> tmpB;
-                        for( int i = 1; i < lits.size(); ++i )
-                        {
-                            tmpB.clear(); tmpB.push( tmp[i-1] ); tmpB.push( lits[i] ); tmpB.push( neg( tsLit ) ); addClause_( tmpB, _type, _original, cnfInfoIter );
-                            tmpB.clear(); tmpB.push( lits[i-1] ); tmpB.push( tmp[i] ); tmpB.push( neg( tsLit ) ); addClause_( tmpB, _type, _original, cnfInfoIter );
-                        }
+                        tmpB.clear(); tmpB.push( tmp[i-1] ); tmpB.push( lits[i] ); tmpB.push( neg( tsLit ) ); addClause_( tmpB, _type, _original, cnfInfoIter );
+                        tmpB.clear(); tmpB.push( lits[i-1] ); tmpB.push( tmp[i] ); tmpB.push( neg( tsLit ) ); addClause_( tmpB, _type, _original, cnfInfoIter );
                     }
                     if( _type == NORMAL_CLAUSE )
                         cnfInfoIter->second.mLiteral = tsLit;
@@ -1248,7 +1187,7 @@ namespace smtrat
                     }
                     if( _depth == 0 )
                     {
-                        addXorClauses( lits, negLits, 0, true, _type, tmp, true, false, _original, cnfInfoIter );
+                        addXorClauses( lits, negLits, 0, true, _type, tmp, _original, cnfInfoIter );
                         return lit_Undef;
                     }
                     Lit tsLit = createLiteral( carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula ), _original, everythingDecisionRelevant || _depth == 0 );
@@ -1258,7 +1197,7 @@ namespace smtrat
                     }
                     lits.push( neg( tsLit ) );
                     negLits.push( tsLit );
-                    addXorClauses( lits, negLits, 0, true, _type, tmp, !polarityBased, _polarity, _original, cnfInfoIter );
+                    addXorClauses( lits, negLits, 0, true, _type, tmp, _original, cnfInfoIter );
                     if( _type == NORMAL_CLAUSE )
                         cnfInfoIter->second.mLiteral = tsLit;
                     return tsLit;
@@ -1278,30 +1217,21 @@ namespace smtrat
     }
     
     template<class Settings>
-    void SATModule<Settings>::addXorClauses( const vec<Lit>& _literals, const vec<Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, vec<Lit>& _clause, bool _ignorePolarity, bool _polarity, const FormulaT& _original, typename FormulaCNFInfosMap::iterator _formulaCNFInfoIter )
+    void SATModule<Settings>::addXorClauses( const vec<Lit>& _literals, const vec<Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, vec<Lit>& _clause, const FormulaT& _original, typename FormulaCNFInfosMap::iterator _formulaCNFInfoIter )
     {
         if( _from == _literals.size() - 1 )
         {
-            if( _ignorePolarity )
-            {
-                _clause.push( _numOfNegatedLitsEven ? _literals[_from] : _negLiterals[_from] );
-                addClause_( _clause, _type, _original, _formulaCNFInfoIter );
-                _clause.pop();
-            }
-            else if( _polarity != _numOfNegatedLitsEven )
-            {
-                _clause.push( _numOfNegatedLitsEven ? _literals[_from] : _negLiterals[_from] );
-                addClause_( _clause, _type, _original, _formulaCNFInfoIter );
-                _clause.pop();
-            }
+            _clause.push( _numOfNegatedLitsEven ? _literals[_from] : _negLiterals[_from] );
+            addClause_( _clause, _type, _original, _formulaCNFInfoIter );
+            _clause.pop();
         }
         else
         {
             _clause.push( _literals[_from] );
-            addXorClauses( _literals, _negLiterals, _from+1, _numOfNegatedLitsEven, _type, _clause, _ignorePolarity, _polarity, _original, _formulaCNFInfoIter );
+            addXorClauses( _literals, _negLiterals, _from+1, _numOfNegatedLitsEven, _type, _clause, _original, _formulaCNFInfoIter );
             _clause.pop();
             _clause.push( _negLiterals[_from] );
-            addXorClauses( _literals, _negLiterals, _from+1, !_numOfNegatedLitsEven, _type, _clause, _ignorePolarity, _polarity, _original, _formulaCNFInfoIter );
+            addXorClauses( _literals, _negLiterals, _from+1, !_numOfNegatedLitsEven, _type, _clause, _original, _formulaCNFInfoIter );
             _clause.pop();
         }
     }

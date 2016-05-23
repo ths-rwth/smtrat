@@ -53,10 +53,6 @@ namespace smtrat
          * 
          */
         static const bool initiate_activities = false;
-        /**
-         * 
-         */
-        static const bool polarity_based_cnf_transformation = false; // currently buggy if true
  		/**
 		 *
 		 */

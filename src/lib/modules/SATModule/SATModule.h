@@ -1507,8 +1507,8 @@ namespace smtrat
                 }
             }
             
-            Minisat::Lit addClauses( const FormulaT& _formula, unsigned _type, unsigned _depth = 0, const FormulaT& _original = FormulaT( carl::FormulaType::TRUE ), bool _polarity = false );
-            void addXorClauses( const Minisat::vec<Minisat::Lit>& _literals, const Minisat::vec<Minisat::Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, Minisat::vec<Minisat::Lit>& _clause, bool _ignorePolarity, bool _polarity, const FormulaT& _original, typename FormulaCNFInfosMap::iterator _formulaCNFInfoIter );
+            Minisat::Lit addClauses( const FormulaT& _formula, unsigned _type, unsigned _depth = 0, const FormulaT& _original = FormulaT( carl::FormulaType::TRUE ) );
+            void addXorClauses( const Minisat::vec<Minisat::Lit>& _literals, const Minisat::vec<Minisat::Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, Minisat::vec<Minisat::Lit>& _clause, const FormulaT& _original, typename FormulaCNFInfosMap::iterator _formulaCNFInfoIter );
             
             bool supportedConstraintType( const FormulaT& _formula ) const
             {
