@@ -317,7 +317,7 @@ namespace smtrat
             typedef std::set<std::vector<int>> ClauseSet;
             
             ///
-            typedef carl::FastMap<signed,std::unordered_set<signed>> TseitinVarShadows;
+            typedef carl::FastMap<signed,std::vector<signed>> TseitinVarShadows;
             
             ///
             struct LiteralClauses
@@ -581,8 +581,6 @@ namespace smtrat
             Minisat::vec<unsigned> mNonTseitinShadowedOccurrences;
             ///
             TseitinVarShadows mTseitinVarShadows;
-            ///
-            carl::FastMap<FormulaT, TseitinVarShadows::iterator> mFormulaTseitinVarMap;
             ///
             carl::FastMap<int, FormulaT> mTseitinVarFormulaMap;
             ///
@@ -1507,8 +1505,8 @@ namespace smtrat
                 }
             }
             
-            Minisat::Lit addClauses( const FormulaT& _formula, unsigned _type, unsigned _depth = 0, const FormulaT& _original = FormulaT( carl::FormulaType::TRUE ), bool _polarity = false );
-            void addXorClauses( const Minisat::vec<Minisat::Lit>& _literals, const Minisat::vec<Minisat::Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, Minisat::vec<Minisat::Lit>& _clause, bool _ignorePolarity, bool _polarity, const FormulaT& _original, typename FormulaCNFInfosMap::iterator _formulaCNFInfoIter );
+            Minisat::Lit addClauses( const FormulaT& _formula, unsigned _type, unsigned _depth = 0, const FormulaT& _original = FormulaT( carl::FormulaType::TRUE ) );
+            void addXorClauses( const Minisat::vec<Minisat::Lit>& _literals, const Minisat::vec<Minisat::Lit>& _negLiterals, int _from, bool _numOfNegatedLitsEven, unsigned _type, Minisat::vec<Minisat::Lit>& _clause, const FormulaT& _original, typename FormulaCNFInfosMap::iterator _formulaCNFInfoIter );
             
             bool supportedConstraintType( const FormulaT& _formula ) const
             {

@@ -1077,108 +1077,154 @@ namespace smtrat
         {
             return;
         }
-        const LRAVariable& lraVar = _bound->variable();
-        if( _bound->isUpperBound() )
+        switch( _bound->type() )
         {
-            if( !Settings::learn_refinements || mTableau.rLearnedLowerBounds().find( _bound->pVariable() ) == mTableau.rLearnedLowerBounds().end() )
+            case LRABound::Type::EQUAL:
+                propagateEqualBound( _bound );
+                break;
+            case LRABound::Type::LOWER:
+                propagateLowerBound( _bound );
+                break;
+            default:
+                assert( _bound->type() == LRABound::Type::UPPER );
+                propagateUpperBound( _bound );
+                break;
+        }
+    }
+    
+    template<class Settings>
+    void LRAModule<Settings>::propagate( const LRABound* _premise, const FormulaT& _conclusion )
+    {
+        FormulasT premise;
+        collectOrigins( *_premise->origins().begin(), premise );
+        mTheoryPropagations.emplace_back( std::move(premise), _conclusion );
+        #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
+        std::cout << "theory propagation:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
+        #endif
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        mpStatistics->propagateTheory();
+        #endif
+    }
+    
+    template<class Settings>
+    void LRAModule<Settings>::propagateLowerBound( const LRABound* _bound )
+    {
+        const LRAVariable& lraVar = _bound->variable();
+        auto cbIter = lraVar.upperbounds().begin();
+        for(; !(*cbIter)->isInfinite() && (*cbIter)->limit() < _bound->limit(); ++cbIter )
+        {
+            if( (*cbIter)->isUnassigned() && (*cbIter)->type() != LRABound::Type::EQUAL )
             {
-                auto boundPos = lraVar.upperbounds().find( _bound );
-                assert( boundPos != lraVar.upperbounds().end() );
-                auto currentBound = boundPos;
-                ++currentBound;
-                while( currentBound != lraVar.upperbounds().end() )
-                {
-                    if( (*currentBound)->exists() && !(*currentBound)->isActive() && !(*currentBound)->isComplementActive() && (*currentBound)->type() != LRABound::Type::EQUAL )
-                    {
-                        #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
-                        (*currentBound)->print( true, std::cout );
-                        std::cout << std::endl;
-                        #endif
-                        FormulasT premise;
-                        collectOrigins( *_bound->origins().begin(), premise );
-                        mTheoryPropagations.emplace_back( std::move(premise), (*currentBound)->asConstraint() );
-                        #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
-                        std::cout << "theory propagation (1):  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
-                        #endif
-                        #ifdef SMTRAT_DEVOPTION_Statistics
-                        mpStatistics->propagateTheory();
-                        #endif
-                    }
-                    ++currentBound;
-                }
-                currentBound = --lraVar.lowerbounds().end();
-                while( !(*currentBound)->isActive() && !(*currentBound)->isComplementActive() && !(*currentBound)->deduced() && (**currentBound) > _bound->limit() )
-                {
-                    if( (*currentBound)->exists() )
-                    {
-                        #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
-                        (*currentBound)->print( true, std::cout );
-                        std::cout << std::endl;
-                        #endif
-                        FormulasT premise;
-                        collectOrigins( *_bound->origins().begin(), premise );
-                        mTheoryPropagations.emplace_back( std::move(premise), (*currentBound)->asConstraint().negated() );
-                        #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
-                        std::cout << "theory propagation (2):  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
-                        #endif
-                        #ifdef SMTRAT_DEVOPTION_Statistics
-                        mpStatistics->propagateTheory();
-                        #endif
-                    }
-                    assert( currentBound != lraVar.lowerbounds().begin() );
-                    --currentBound;
-                }
+                // p>b => not(p<c)    if     b>=c
+                // p>b => not(p<=c)   if     b>=c
+                // p>=b => not(p<c)   if     b>=c
+                // p>=b => not(p<=c)  if     b>c
+                propagate( _bound, (*cbIter)->asConstraint().negated() );
             }
         }
-        if( _bound->isLowerBound() )
+        cbIter = lraVar.lowerbounds().find( _bound );
+        assert( cbIter != lraVar.lowerbounds().end() );
+        assert( cbIter != lraVar.lowerbounds().begin() );
+        --cbIter;
+        for(;;)
         {
-            if( !Settings::learn_refinements || mTableau.rLearnedUpperBounds().find( _bound->pVariable() ) == mTableau.rLearnedUpperBounds().end() )
+            if( (*cbIter)->isUnassigned() )
             {
-                auto boundPos = lraVar.lowerbounds().find( _bound );
-                assert( boundPos != lraVar.lowerbounds().end() );
-                auto currentBound = lraVar.lowerbounds().begin();
-                while( currentBound != boundPos )
-                {
-                    if( (*currentBound)->exists() && !(*currentBound)->isActive() && !(*currentBound)->isComplementActive() && (*currentBound)->type() != LRABound::Type::EQUAL )
-                    {
-                        #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
-                        (*currentBound)->print( true, std::cout );
-                        std::cout << std::endl;
-                        #endif
-                        FormulasT premise;
-                        collectOrigins( *_bound->origins().begin(), premise );
-                        mTheoryPropagations.emplace_back( std::move(premise), (*currentBound)->asConstraint() );
-                        #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
-                        std::cout << "theory propagation (3):  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
-                        #endif
-                        #ifdef SMTRAT_DEVOPTION_Statistics
-                        mpStatistics->propagateTheory();
-                        #endif
-                    }
-                    ++currentBound;
-                }
-                currentBound = lraVar.upperbounds().begin();
-                while( !(*currentBound)->isActive() && !(*currentBound)->isComplementActive() && !(*currentBound)->deduced() && (**currentBound) < _bound->limit() )
-                {
-                    if( (*currentBound)->exists() )
-                    {
-                        #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
-                        (*currentBound)->print( true, std::cout );
-                        std::cout << std::endl;
-                        #endif
-                        FormulasT premise;
-                        collectOrigins( *_bound->origins().begin(), premise );
-                        mTheoryPropagations.emplace_back( std::move(premise), (*currentBound)->asConstraint().negated() );
-                        #ifdef LRA_DEBUG_SIMPLE_THEORY_PROPAGATION
-                        std::cout << "theory propagation (4):  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
-                        #endif
-                        #ifdef SMTRAT_DEVOPTION_Statistics
-                        mpStatistics->propagateTheory();
-                        #endif
-                    }
-                    ++currentBound;
-                    assert( currentBound != lraVar.lowerbounds().end() );
-                }
+                // p>b => p>c       if     b>c
+                // p>b => p>=c      if     b>=c
+                // p>b => not(p=c)  if     b>=c
+                // p>=b => p>c      if     b>c
+                // p>=b => p>=c     if     b>c
+                // p>=b => not(p=c) if     b>c
+                propagate( _bound, (*cbIter)->type() == LRABound::Type::EQUAL ?  (*cbIter)->asConstraint().negated() : (*cbIter)->asConstraint() );
+            }
+            if( cbIter == lraVar.lowerbounds().begin() )
+                break;
+            --cbIter;
+        }
+    }
+    
+    template<class Settings>
+    void LRAModule<Settings>::propagateUpperBound( const LRABound* _bound )
+    {
+        const LRAVariable& lraVar = _bound->variable();
+        auto cbIter = lraVar.lowerbounds().end();
+        --cbIter;
+        for(; !(*cbIter)->isInfinite() && (*cbIter)->limit() > _bound->limit(); --cbIter )
+        {
+            if( (*cbIter)->isUnassigned() && (*cbIter)->type() != LRABound::Type::EQUAL )
+            {
+                // p<b => not(p>c)    if     b<=c
+                // p<b => not(p>=c)   if     b<=c
+                // p<=b => not(p>c)   if     b<=c
+                // p<=b => not(p>=c)  if     b<c
+                propagate( _bound, (*cbIter)->asConstraint().negated() );
+            }
+        }
+        cbIter = lraVar.upperbounds().find( _bound );
+        assert( cbIter != lraVar.upperbounds().end() );
+        ++cbIter;
+        for(; cbIter != lraVar.upperbounds().end(); ++cbIter )
+        {
+            if( (*cbIter)->isUnassigned() )
+            {
+                // p<b => p<c       if     b<c
+                // p<b => p<=c      if     b<=c
+                // p<b => not(p=c)  if     b<=c
+                // p<=b => p<c      if     b<c
+                // p<=b => p<=c     if     b<c
+                // p<=b => not(p=c) if     b<c
+                propagate( _bound, (*cbIter)->type() == LRABound::Type::EQUAL ?  (*cbIter)->asConstraint().negated() : (*cbIter)->asConstraint() );
+            }
+        }
+    }
+    
+    template<class Settings>
+    void LRAModule<Settings>::propagateEqualBound( const LRABound* _bound )
+    {
+        const LRAVariable& lraVar = _bound->variable();
+        auto cbIter = lraVar.lowerbounds().begin();
+        for(; *cbIter != _bound; ++cbIter )
+        {
+            if( (*cbIter)->isUnassigned() )
+            {
+                // p=b => p>c        if     b>c
+                // p=b => not(p=c)   if     b>c
+                // p=b => p>=c       if     b>=c
+                propagate( _bound, (*cbIter)->type() == LRABound::Type::EQUAL ?  (*cbIter)->asConstraint().negated() : (*cbIter)->asConstraint() );
+            }
+        }
+        ++cbIter;
+        for(; cbIter != lraVar.lowerbounds().end(); ++cbIter )
+        {
+            if( (*cbIter)->isUnassigned() )
+            {
+                // p=b => not(p>c)   if     b<c
+                // p=b => not(p=c)   if     b<c
+                // p=b => not(p>=c)  if     b<c
+                propagate( _bound, (*cbIter)->asConstraint().negated() );
+            }
+        }
+        cbIter = lraVar.upperbounds().begin();
+        for(; *cbIter != _bound; ++cbIter )
+        {
+            if( (*cbIter)->isUnassigned() )
+            {
+                // p=b => not(p<c)    if     b>c
+                // p=b => not(p=c)    if     b>c
+                // p=b => not(p<=c)   if     b>c
+                propagate( _bound, (*cbIter)->asConstraint().negated() );
+            }
+        }
+        ++cbIter;
+        for(; cbIter != lraVar.upperbounds().end(); ++cbIter )
+        {
+            if( (*cbIter)->isUnassigned() )
+            {
+                // p=b => p>c       if     b<c
+                // p=b => not(p=c)  if     b<c
+                // p=b => p>=c      if     b<=c
+                propagate( _bound, (*cbIter)->type() == LRABound::Type::EQUAL ?  (*cbIter)->asConstraint().negated() : (*cbIter)->asConstraint() );
             }
         }
     }

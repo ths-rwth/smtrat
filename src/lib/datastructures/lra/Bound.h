@@ -403,6 +403,11 @@ namespace smtrat
                 {
                     return mpInfo->complement != nullptr && mpInfo->complement->isActive();
                 }
+                
+                bool isUnassigned() const
+                {
+                    return exists() && !isActive() && !isComplementActive();
+                }
 
                 /**
                  * @return 

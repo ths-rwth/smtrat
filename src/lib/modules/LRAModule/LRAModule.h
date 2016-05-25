@@ -346,6 +346,10 @@ namespace smtrat
              */
             void simpleTheoryPropagation();
             void simpleTheoryPropagation( const LRABound* _bound );
+            void propagate( const LRABound* _premise, const FormulaT& _conclusion );
+            void propagateLowerBound( const LRABound* _bound );
+            void propagateUpperBound( const LRABound* _bound );
+            void propagateEqualBound( const LRABound* _bound );
             
             /**
              * @return true, if a branching occurred.
