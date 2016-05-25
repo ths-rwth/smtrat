@@ -325,6 +325,14 @@ namespace smtrat
                 /**
                  * @return 
                  */
+                bool hasNeqRepresentation() const
+                {
+                    return mpInfo->neqRepresentation.isTrue();
+                }
+                
+                /**
+                 * @return 
+                 */
                 const FormulaT& neqRepresentation() const
                 {
                     return mpInfo->neqRepresentation;

@@ -1056,7 +1056,7 @@ namespace smtrat
             {
                 if( !rowVar->infimum().isInfinite() )
                     simpleTheoryPropagation( rowVar->pInfimum() );
-                if( !rowVar->supremum().isInfinite() )
+                if( !rowVar->supremum().isInfinite() && rowVar->supremum().type() != LRABound::Type::EQUAL )
                     simpleTheoryPropagation( rowVar->pSupremum() );
             }
         }
@@ -1064,7 +1064,7 @@ namespace smtrat
         {
             if( !columnVar->infimum().isInfinite() )
                 simpleTheoryPropagation( columnVar->pInfimum() );
-            if( !columnVar->supremum().isInfinite() )
+            if( !columnVar->supremum().isInfinite() && columnVar->supremum().type() != LRABound::Type::EQUAL )
                 simpleTheoryPropagation( columnVar->pSupremum() );
         }
     }
@@ -1130,13 +1130,24 @@ namespace smtrat
         {
             if( (*cbIter)->isUnassigned() )
             {
-                // p>b => p>c       if     b>c
-                // p>b => p>=c      if     b>=c
-                // p>b => not(p=c)  if     b>=c
-                // p>=b => p>c      if     b>c
-                // p>=b => p>=c     if     b>c
-                // p>=b => not(p=c) if     b>c
-                propagate( _bound, (*cbIter)->type() == LRABound::Type::EQUAL ?  (*cbIter)->asConstraint().negated() : (*cbIter)->asConstraint() );
+                if( (*cbIter)->type() == LRABound::Type::EQUAL )
+                {
+                    if( mActiveUnresolvedNEQConstraints.find( (*cbIter)->asConstraint().negated() ) == mActiveUnresolvedNEQConstraints.end()
+                     && mActiveResolvedNEQConstraints.find( (*cbIter)->asConstraint().negated() ) == mActiveResolvedNEQConstraints.end() )
+                    {
+                        // p>b => not(p=c)  if     b>=c
+                        // p>=b => not(p=c) if     b>c
+                        propagate( _bound, (*cbIter)->asConstraint().negated() );
+                    }
+                }
+                else
+                {
+                    // p>b => p>c       if     b>c
+                    // p>b => p>=c      if     b>=c
+                    // p>=b => p>c      if     b>c
+                    // p>=b => p>=c     if     b>c
+                    propagate( _bound, (*cbIter)->asConstraint() );
+                }
             }
             if( cbIter == lraVar.lowerbounds().begin() )
                 break;
@@ -1168,13 +1179,24 @@ namespace smtrat
         {
             if( (*cbIter)->isUnassigned() )
             {
-                // p<b => p<c       if     b<c
-                // p<b => p<=c      if     b<=c
-                // p<b => not(p=c)  if     b<=c
-                // p<=b => p<c      if     b<c
-                // p<=b => p<=c     if     b<c
-                // p<=b => not(p=c) if     b<c
-                propagate( _bound, (*cbIter)->type() == LRABound::Type::EQUAL ?  (*cbIter)->asConstraint().negated() : (*cbIter)->asConstraint() );
+                if( (*cbIter)->type() == LRABound::Type::EQUAL )
+                {
+                    if( mActiveUnresolvedNEQConstraints.find( (*cbIter)->asConstraint().negated() ) == mActiveUnresolvedNEQConstraints.end()
+                     && mActiveResolvedNEQConstraints.find( (*cbIter)->asConstraint().negated() ) == mActiveResolvedNEQConstraints.end() )
+                    {
+                        // p<b => not(p=c)  if     b<=c
+                        // p<=b => not(p=c) if     b<c
+                        propagate( _bound, (*cbIter)->asConstraint().negated() );
+                    }
+                }
+                else
+                {
+                    // p<b => p<c       if     b<c
+                    // p<b => p<=c      if     b<=c
+                    // p<=b => p<c      if     b<c
+                    // p<=b => p<=c     if     b<c
+                    propagate( _bound, (*cbIter)->asConstraint() );
+                }
             }
         }
     }
@@ -1188,10 +1210,21 @@ namespace smtrat
         {
             if( (*cbIter)->isUnassigned() )
             {
-                // p=b => p>c        if     b>c
-                // p=b => not(p=c)   if     b>c
-                // p=b => p>=c       if     b>=c
-                propagate( _bound, (*cbIter)->type() == LRABound::Type::EQUAL ?  (*cbIter)->asConstraint().negated() : (*cbIter)->asConstraint() );
+                if( (*cbIter)->type() == LRABound::Type::EQUAL )
+                {
+                    if( mActiveUnresolvedNEQConstraints.find( (*cbIter)->asConstraint().negated() ) == mActiveUnresolvedNEQConstraints.end()
+                     && mActiveResolvedNEQConstraints.find( (*cbIter)->asConstraint().negated() ) == mActiveResolvedNEQConstraints.end() )
+                    {
+                        // p=b => not(p=c)   if     b>c
+                        propagate( _bound, (*cbIter)->asConstraint().negated() );
+                    }
+                }
+                else
+                {
+                    // p=b => p>c        if     b>c
+                    // p=b => p>=c       if     b>=c
+                    propagate( _bound, (*cbIter)->asConstraint() );
+                }
             }
         }
         ++cbIter;
@@ -1199,19 +1232,30 @@ namespace smtrat
         {
             if( (*cbIter)->isUnassigned() )
             {
-                // p=b => not(p>c)   if     b<c
-                // p=b => not(p=c)   if     b<c
-                // p=b => not(p>=c)  if     b<c
-                propagate( _bound, (*cbIter)->asConstraint().negated() );
+                if( (*cbIter)->type() == LRABound::Type::EQUAL )
+                {
+                    if( mActiveUnresolvedNEQConstraints.find( (*cbIter)->asConstraint().negated() ) == mActiveUnresolvedNEQConstraints.end()
+                     && mActiveResolvedNEQConstraints.find( (*cbIter)->asConstraint().negated() ) == mActiveResolvedNEQConstraints.end() )
+                    {
+                        // p=b => not(p=c)   if     b<c
+                        propagate( _bound, (*cbIter)->asConstraint().negated() );
+                    }
+                }
+                else
+                {
+                    // p=b => not(p>c)   if     b<c
+                    // p=b => not(p>=c)  if     b<c
+                    propagate( _bound, (*cbIter)->asConstraint().negated() );
+                }
             }
         }
         cbIter = lraVar.upperbounds().begin();
         for(; *cbIter != _bound; ++cbIter )
         {
-            if( (*cbIter)->isUnassigned() )
+            if( (*cbIter)->isUnassigned() && (*cbIter)->type() != LRABound::Type::EQUAL )
             {
                 // p=b => not(p<c)    if     b>c
-                // p=b => not(p=c)    if     b>c
+                // [p=b => not(p=c)    if     b>c] is already covered as p=c us also a lower bound
                 // p=b => not(p<=c)   if     b>c
                 propagate( _bound, (*cbIter)->asConstraint().negated() );
             }
@@ -1219,12 +1263,12 @@ namespace smtrat
         ++cbIter;
         for(; cbIter != lraVar.upperbounds().end(); ++cbIter )
         {
-            if( (*cbIter)->isUnassigned() )
+            if( (*cbIter)->isUnassigned() && (*cbIter)->type() != LRABound::Type::EQUAL )
             {
                 // p=b => p>c       if     b<c
-                // p=b => not(p=c)  if     b<c
+                // [p=b => not(p=c)  if     b<c] is already covered as p=c us also a lower bound
                 // p=b => p>=c      if     b<=c
-                propagate( _bound, (*cbIter)->type() == LRABound::Type::EQUAL ?  (*cbIter)->asConstraint().negated() : (*cbIter)->asConstraint() );
+                propagate( _bound, (*cbIter)->asConstraint() );
             }
         }
     }
