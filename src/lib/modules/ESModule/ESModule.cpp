@@ -6,8 +6,6 @@
  * Created on 2015-09-09.
  */
 
-//#define DEBUG_ELIMINATE_SUBSTITUTIONS
-
 #include "ESModule.h"
 
 namespace smtrat
@@ -103,7 +101,7 @@ namespace smtrat
         auto iter = mBoolSubs.find( _formula );
         if( iter != mBoolSubs.end() )
         {
-			SMTRAT_LOG_DEBUG("smtrat.es", _formula << " ----> " << (iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE )));
+	    SMTRAT_LOG_DEBUG("smtrat.es", _formula << " ----> " << (iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE )));
             return iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE );
         }
         FormulaT result = _formula;
@@ -246,22 +244,16 @@ namespace smtrat
                     Poly subPoly;
                     if( cond.constraint().getSubstitution( subVar, subPoly, false ) )
                     {
-                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                        std::cout << __LINE__ << "   found substitution [" << subVar << " -> " << subPoly << "]" << std::endl;
-                        #endif
+                        SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found substitution [" << subVar << " -> " << subPoly << "]" );
                         auto addedBoolSub = cond.getType() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), false ) : mBoolSubs.emplace( cond, true );
-                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                        std::cout <<  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" << std::endl;
-                        #endif
+                        SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]");
                         assert( addedBoolSub.second );
                         auto iterB = mArithSubs.emplace( subVar, subPoly ).first;
                         FormulaT firstCaseTmp = elimSubstitutions( _formula.firstCase() );
                         mArithSubs.erase( iterB );
                         mBoolSubs.erase( addedBoolSub.first );
                         addedBoolSub = cond.getType() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), true ) : mBoolSubs.emplace( cond, false );
-                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                        std::cout <<  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" << std::endl;
-                        #endif
+                        SMTRAT_LOG_DEBUG("smtrat.es",  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" );
                         assert( addedBoolSub.second );
                         FormulaT secondCaseTmp = elimSubstitutions( _formula.secondCase() );
                         mBoolSubs.erase( addedBoolSub.first );
@@ -270,20 +262,14 @@ namespace smtrat
                     }
                     else if( cond.constraint().getSubstitution( subVar, subPoly, true ) )
                     {
-                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                        std::cout << __LINE__ << "   found substitution [" << subVar << " -> " << subPoly << "]" << std::endl;
-                        #endif
+                        SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found substitution [" << subVar << " -> " << subPoly << "]" );
                         auto addedBoolSub = cond.getType() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), false ) : mBoolSubs.emplace( cond, true );
-                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                        std::cout <<  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" << std::endl;
-                        #endif
+                        SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" );
                         assert( addedBoolSub.second );
                         FormulaT firstCaseTmp = elimSubstitutions( _formula.firstCase() );
                         mBoolSubs.erase( addedBoolSub.first );
                         addedBoolSub = cond.getType() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), true ) : mBoolSubs.emplace( cond, false );
-                        #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                        std::cout <<  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" << std::endl;
-                        #endif
+                        SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" );
                         assert( addedBoolSub.second );
                         auto iterB = mArithSubs.emplace( subVar, subPoly ).first;
                         FormulaT secondCaseTmp = elimSubstitutions( _formula.secondCase() );
@@ -304,16 +290,12 @@ namespace smtrat
                 else
                 {
                     auto addedBoolSub = cond.getType() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), false ) : mBoolSubs.emplace( cond, true );
-                    #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                    std::cout <<  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" << std::endl;
-                    #endif
+                    SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]");
                     assert( addedBoolSub.second );
                     FormulaT firstCaseTmp = elimSubstitutions( _formula.firstCase() );
                     mBoolSubs.erase( addedBoolSub.first );
                     addedBoolSub = cond.getType() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), true ) : mBoolSubs.emplace( cond, false );
-                    #ifdef DEBUG_ELIMINATE_SUBSTITUTIONS
-                    std::cout <<  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" << std::endl;
-                    #endif
+                    SMTRAT_LOG_DEBUG("smtrat.es",  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]");
                     assert( addedBoolSub.second );
                     FormulaT secondCaseTmp = elimSubstitutions( _formula.secondCase() );
                     mBoolSubs.erase( addedBoolSub.first );
