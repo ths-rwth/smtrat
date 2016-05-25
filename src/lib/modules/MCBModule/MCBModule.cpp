@@ -183,6 +183,13 @@ namespace smtrat
 				SMTRAT_LOG_DEBUG("smtrat.mcb", "Adding " << var << " = " << assignment);
 				mAssignments.emplace(var, ModelSubstitution::create<MCBModelSubstitution>(assignment));
 			}
+			for (const auto& c1: mChoices.at(v)) {
+				for (const auto& c2: mChoices.at(v)) {
+					if (c1.second.first >= c2.second.first) continue;
+					equiv.push_back(FormulaT(carl::FormulaType::OR, {FormulaT(c1.second.first).negated(), FormulaT(c2.second.first).negated()}));
+					SMTRAT_LOG_DEBUG("smtrat.mcb", "Adding exclusion " << equiv.back());
+				}
+			}
 		}
 		if (equiv.empty()) return res;
 		SMTRAT_LOG_DEBUG("smtrat.mcb", "Adding equivalences " << equiv);
