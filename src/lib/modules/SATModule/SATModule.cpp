@@ -1824,6 +1824,11 @@ namespace smtrat
         {
             // the current lemma
             vec<Lit>& lemma = mLemmas[i];
+            if( lemma.size() == 0 )
+            {
+                ok = false;
+                return CRef_Undef;
+            }
             #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
             std::cout << "use the lemma  ";
             printClause(lemma,true);
@@ -2140,6 +2145,8 @@ namespace smtrat
             confl = storeLemmas( _foundConflictOfSizeOne );
             if( confl != CRef_Undef || _foundConflictOfSizeOne )
                 return confl;
+            if( !ok )
+                return CRef_Undef;
         }
         // keep running until we have checked everything, we have no conflict and no new literals have been asserted
         do
@@ -2175,6 +2182,8 @@ namespace smtrat
                         confl = CRef_Undef; // Otherwise, the Boolean conflict is canceled in the case we popped the trail
                 }
             }
+            if( !ok )
+                return CRef_Undef;
             assert( mChangedBooleans.empty() || _checkWithTheory );
         }
         while( confl == CRef_Undef && (qhead < trail.size() || (decisionLevel() >= assumptions.size() && mCurrentAssignmentConsistent != SAT && !mChangedBooleans.empty())) );
