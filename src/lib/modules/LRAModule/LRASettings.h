@@ -31,11 +31,7 @@ namespace smtrat
         /**
          *
          */
-        static const bool use_gomory_cuts = false;
-        /**
-         *
-         */
-        static const bool support_bb_with_gc = false;
+        static const bool use_gomory_cuts = true;
         /**
          *
          */

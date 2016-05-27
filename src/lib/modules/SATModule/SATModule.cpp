@@ -2155,8 +2155,8 @@ namespace smtrat
                 // propagate theory
                 propagateTheory();
                 // if there are lemmas (or conflicts) update them
-                assert( lemmasLearned == (mLemmas.size() > 0) );
-                if( lemmasLearned )
+//                assert( lemmasLearned == (mLemmas.size() > 0) );
+//                if( lemmasLearned )
                     confl = storeLemmas( _foundConflictOfSizeOne );
             }
             else
@@ -2345,8 +2345,8 @@ namespace smtrat
         #ifdef DEBUG_SATMODULE
         cout << "### Sat iteration" << endl;
         cout << "######################################################################" << endl;
-//        cout << "###" << endl; printClauses( clauses, "Clauses", cout, "### ", 0, false, false );
-//        cout << "###" << endl; printClauses( learnts, "Learnts", cout, "### ", 0, false, false );
+        cout << "###" << endl; printClauses( clauses, "Clauses", cout, "### ", 0, false, false );
+        cout << "###" << endl; printClauses( learnts, "Learnts", cout, "### ", 0, false, false );
         cout << "###" << endl; printCurrentAssignment( cout, "### " );
         cout << "###" << endl; printDecisions( cout, "### " );
         cout << "###" << endl;
@@ -2623,7 +2623,8 @@ namespace smtrat
         #endif
 
         int backtrack_level;
-        bool conflictClauseNotAsserting = analyze( _confl, learnt_clause, backtrack_level );
+//        bool conflictClauseNotAsserting = analyze( _confl, learnt_clause, backtrack_level );
+        analyze( _confl, learnt_clause, backtrack_level );
         assert( learnt_clause.size() > 0 );
 
         #ifdef DEBUG_SATMODULE
@@ -2644,12 +2645,12 @@ namespace smtrat
         else
         {
             // learnt clause is the asserting clause.
-            if( conflictClauseNotAsserting )
-            {
+//            if( conflictClauseNotAsserting )
+//            {
                 _confl = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
                 learnts.push( _confl );
                 attachClause( _confl );
-            }
+//            }
             claBumpActivity( ca[_confl] );
             uncheckedEnqueue( learnt_clause[0], _confl );
             decrementLearntSizeAdjustCnt();
@@ -2857,13 +2858,12 @@ namespace smtrat
                 }
             }
         }
-        while( varsToRestore.size() > 0 )
+        for( int pos = 0; pos < varsToRestore.size(); ++pos )
         {
             #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
-            std::cout << "restore to heap: " << varsToRestore.last() << std::endl;
+            std::cout << "restore to heap: " << varsToRestore[pos] << std::endl;
             #endif
-            insertVarOrder( varsToRestore.last() );
-            varsToRestore.pop();
+            insertVarOrder( varsToRestore[pos] );
         }
         if( next == var_Undef )
         {
@@ -2891,6 +2891,7 @@ namespace smtrat
 
         do
         {
+            if( confl == CRef_Undef ) exit(77);
             assert( confl != CRef_Undef );    // (otherwise should be UIP)
             Clause& c = ca[confl];
             if( c.learnt() )

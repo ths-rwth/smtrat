@@ -260,7 +260,7 @@ namespace smtrat
                     mConstraintToBound[_constraint] = boundVector;
                     result.first->boundExists();
                     // create the complement
-                    Value<T1>* vc = new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
+                    Value<T1>* vc = constraint.integerValued() ? new Value<T1>( boundValue + (negative ? T1( -1 ) : T1( 1 )) ) : new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
                     FormulaT complConstr( _constraint.constraint().lhs(), carl::invertRelation( _constraint.constraint().relation() ) );
                     const Bound<T1,T2>* complement = negative ? newVar->addUpperBound( vc, mDefaultBoundPosition, complConstr ).first : newVar->addLowerBound( vc, mDefaultBoundPosition, complConstr ).first;
                     auto ctbInsertRes = mConstraintToBound.insert( std::make_pair( complConstr, nullptr ) );
@@ -284,7 +284,7 @@ namespace smtrat
                     mConstraintToBound[_constraint] = boundVector;
                     result.first->boundExists();
                     // create the complement
-                    Value<T1>* vc = new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
+                    Value<T1>* vc = constraint.integerValued() ? new Value<T1>( boundValue + (negative ? T1( 1 ) : T1( -1 )) ) : new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
                     FormulaT complConstr( _constraint.constraint().lhs(), carl::invertRelation( _constraint.constraint().relation() ) );
                     const Bound<T1,T2>* complement = negative ? newVar->addLowerBound( vc, mDefaultBoundPosition, complConstr ).first : newVar->addUpperBound( vc, mDefaultBoundPosition, complConstr ).first;
                     auto ctbInsertRes = mConstraintToBound.insert( std::make_pair( complConstr, nullptr ) );
@@ -344,12 +344,6 @@ namespace smtrat
                         result.first->setComplement( complement );
                         complement->setComplement( result.first );
                     }
-                    std::cout << "   ";
-                    result.first->print( true, std::cout );
-                    std::cout << std::endl;
-                    std::cout << "   ";
-                    complement->print( true, std::cout );
-                    std::cout << std::endl;
                     break;
                 }
                 case carl::Relation::NEQ:
@@ -2628,7 +2622,7 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        void Tableau<Settings,T1,T2>::collect_premises( const Variable<T1,T2>* _rowVar, FormulasT& premises )
+        void Tableau<Settings,T1,T2>::collect_premises( const Variable<T1,T2>* _rowVar, FormulasT& premises ) const
         {
             Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
             while( true )

@@ -31,7 +31,7 @@ namespace smtrat
     
     vector<string> Module::mAssumptionToCheck;
     set<string> Module::mVariablesInAssumptionToCheck;
-    size_t Module::mNumOfBranchVarsToStore = 10;
+    size_t Module::mNumOfBranchVarsToStore = 5;
 #ifdef __VS
     vector<Branching> Module::mLastBranches = vector<Branching>( mNumOfBranchVarsToStore, Branching(Poly::PolyType(ZERO_RATIONAL), ZERO_RATIONAL) );
 #else
@@ -481,11 +481,11 @@ namespace smtrat
             {
                 if( iter->mIncreasing > 0 )
                 {
-                    if( _branchingValue > iter->mValue )
+                    if( _branchingValue >= iter->mValue )
                     {
                         ++(iter->mRepetitions);
                     }
-                    else if( _branchingValue < iter->mValue )
+                    else if( _branchingValue <= iter->mValue )
                     {
                         iter->mIncreasing = -1;
                         iter->mRepetitions = 1;
@@ -493,11 +493,11 @@ namespace smtrat
                 }
                 else if( iter->mIncreasing < 0 )
                 {
-                    if( _branchingValue < iter->mValue )
+                    if( _branchingValue <= iter->mValue )
                     {
                         ++(iter->mRepetitions);
                     }
-                    else if( _branchingValue > iter->mValue )
+                    else if( _branchingValue >= iter->mValue )
                     {
                         iter->mIncreasing = 1;
                         iter->mRepetitions = 1;
@@ -506,10 +506,10 @@ namespace smtrat
                 else if( _branchingValue != iter->mValue )
                 {
                     iter->mRepetitions = 1;
-                    iter->mIncreasing = _branchingValue > iter->mValue ? 1 : -1;
+                    iter->mIncreasing = _branchingValue >= iter->mValue ? 1 : -1;
                 }
                 iter->mValue = _branchingValue;
-                if( iter->mRepetitions > 50 ) return true;
+                if( iter->mRepetitions > 10 ) return true;
                 break;
             }
         }
