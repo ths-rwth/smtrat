@@ -1,5 +1,5 @@
 /**
- * @file RatComp2016.h
+ * @file RatComp2016PL.h
  */
 #pragma once
 
@@ -21,6 +21,12 @@
 #include "../modules/ICPModule/ICPModule.h"
 #include "../modules/VSModule/VSModule.h"
 #include "../modules/CADModule/CADModule.h"
+#include "../modules/FPPModule/FPPModule.h"
+#include "../modules/SATModule/SATModule.h"
+#include "../modules/LRAModule/LRAModule.h"
+#include "../modules/CADModule/CADModule.h"
+#include "../modules/VSModule/VSModule.h"
+#include "../modules/CADModule/CADModule.h"
 #include "../modules/IncWidthModule/IncWidthModule.h"
 #include "../modules/IntBlastModule/IntBlastModule.h"
 #include "../modules/SATModule/SATModule.h"
@@ -38,7 +44,7 @@ namespace smtrat
      * @version
      *
      */
-    class RatComp2016:
+    class RatComp2016PL:
         public Manager
     {
         static bool conditionEvaluation0( carl::Condition _condition )
@@ -46,24 +52,9 @@ namespace smtrat
             return (  !(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL <= _condition) );
         }
 
-        static bool conditionEvaluation1( carl::Condition _condition )
-        {
-            return ( (carl::PROP_IS_LITERAL_CONJUNCTION <= _condition) );
-        }
-
-        static bool conditionEvaluation2( carl::Condition _condition )
-        {
-            return (  !(carl::PROP_IS_LITERAL_CONJUNCTION <= _condition) );
-        }
-
         static bool conditionEvaluation10( carl::Condition _condition )
         {
             return ( (carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL <= _condition) );
-        }
-
-        static bool conditionEvaluation17( carl::Condition _condition )
-        {
-            return (  !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= _condition) );
         }
 
         static bool conditionEvaluation11( carl::Condition _condition )
@@ -73,7 +64,7 @@ namespace smtrat
 
         public:
 
-        RatComp2016(): Manager()
+        RatComp2016PL(): Manager()
         {
             setStrategy(
             {
@@ -91,7 +82,7 @@ namespace smtrat
                                 })
                             })
                         })
-                    }).condition( &conditionEvaluation1 ),
+                    }),
                     addBackend<SATModule<SATSettings1>>(
                     {
                         addBackend<LRAModule<LRASettings1>>(
@@ -101,7 +92,7 @@ namespace smtrat
                                 addBackend<CADModule<CADSettingsSplitFirst>>()
                             })
                         })
-                    }).condition( &conditionEvaluation2 )
+                    })
                 }).condition( &conditionEvaluation0 ),
                 addBackend<FPPModule<FPPSettings1>>(
                 {
@@ -120,7 +111,21 @@ namespace smtrat
                                 })
                             })
                         })
-                    }).condition( &conditionEvaluation17 ),
+                    }),
+                    addBackend<FPPModule<FPPSettings1>>(
+                    {
+                        addBackend<SATModule<SATSettings1>>(
+                        {
+                            addBackend<LRAModule<LRASettings1>>(
+                            {
+                                addBackend<CADModule<CADSettingsSplitFirst>>(),
+                                addBackend<VSModule<VSSettings234>>(
+                                {
+                                    addBackend<CADModule<CADSettingsSplitFirst>>()
+                                })
+                            })
+                        })
+                    }),
                     addBackend<IncWidthModule<IncWidthSettings1>>(
                     {
                         addBackend<IntBlastModule<IntBlastSettings2>>(
