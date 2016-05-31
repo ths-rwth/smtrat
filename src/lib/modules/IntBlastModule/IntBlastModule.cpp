@@ -89,11 +89,11 @@ namespace smtrat
          */
 
         for(const ConstraintT& constraint : containedConstraints) {
-            // Retrieve all integer-valued variables in formula
+            // Retrieve all arithmetic variables in formula
             carl::Variables variablesInFormula;
             carl::Variables nonlinearVariablesInFormula;
             const Poly& poly = constraint.lhs();
-            formula.integerValuedVars(variablesInFormula);
+            formula.arithmeticVars(variablesInFormula);
             for(auto termIt = poly.begin();termIt != poly.end();++termIt) {
                 if(termIt->getNrVariables() > 1 || ! termIt->isLinear()) {
                     termIt->gatherVariables(nonlinearVariablesInFormula);
@@ -121,7 +121,7 @@ namespace smtrat
          * Steps that are applied if the formula is only a single constraint
          */
 
-        if(formula.getType() == carl::FormulaType::CONSTRAINT && formula.constraint().integerValued()) {
+        if(formula.getType() == carl::FormulaType::CONSTRAINT) {
             // Update mBoundsFromInput using the new formula
             mBoundsFromInput.addBound(formula.constraint(), formula);
 
@@ -153,7 +153,7 @@ namespace smtrat
         mInputVariables.removeOrigin(formula);
         mNonlinearInputVariables.removeOrigin(formula);
 
-        if(formula.getType() == carl::FormulaType::CONSTRAINT && formula.constraint().integerValued()) {
+        if(formula.getType() == carl::FormulaType::CONSTRAINT) {
             mBoundsFromInput.removeBound(formula.constraint(), formula);
         }
         // mBoundsInRestriction: updated by updateBoundsFromICP() in next check

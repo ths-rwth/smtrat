@@ -824,15 +824,6 @@ namespace smtrat
              */
             bool addClause( const Minisat::vec<Minisat::Lit>& _clause, unsigned _type = 0, bool _force = false );
             
-            /**
-             * Moves two literals which are not assigned to false to the beginning of the clause.
-             * If only one literal is not assigned to false, it is moved to the beginning.
-             * If all literals are false, the first literal is one of the literals with the highest decision level.
-             * If all literals are false but the first one, the second literal has the highest decision level.
-             * @param _clause The clause in which the literals shall be reordered.
-             */
-            void arrangeForWatches( Minisat::Clause& _clause );
-            
             void removeLiteralOrigin( Minisat::Lit _litToRemove, const FormulaT& _origin );
             
             /**
@@ -1146,8 +1137,9 @@ namespace smtrat
              * @param confl A reference to the conflicting clause.
              * @param out_learnt The asserting clause derived by this method.
              * @param out_btlevel The level to backtrack to according the analysis of this method.
+             * @return true, if the asserting clause does not equal the conflict clause given by confl
              */
-            void analyze( Minisat::CRef confl, Minisat::vec<Minisat::Lit>& out_learnt, int& out_btlevel );
+            bool analyze( Minisat::CRef confl, Minisat::vec<Minisat::Lit>& out_learnt, int& out_btlevel );
             
             
             /**

@@ -355,28 +355,18 @@ namespace smtrat
              * @return true, if a branching occurred.
              *         false, otherwise.
              */
-            bool gomory_cut();
+            bool gomoryCut();
             
             /**
-             * Constructs a Gomory cut, if branch and bound is probably looping, otherwise branch and bound is performed.
-             * @param _lraVar The variable at which to branch.
-             * @param _branchingValue The value at which to branch the variable at.
-             * @return true, if a branching occurred.
+             * @param _varsToExclude The variable on which we do not want to branch.
+             * @return true,  if the solution is not in the domain,
              *         false, otherwise.
-             */
-            bool maybeGomoryCut( const LRAVariable* _lraVar, const Rational& _branchingValue );
-            
-            /**
-             * @param gc_support true, if Gomory cut construction is enabled.
-             * @return true,  if a branching occurred with an original variable that has to be fixed 
-             *                which is most infeasible.
-             *         false, if no branching occurred.
              */   
-            bool most_infeasible_var( bool _gc_support );
+            bool mostInfeasibleVar( bool _tryGomoryCut, carl::Variables& _varsToExclude );
             
             /**
              * Creates a branch and bound lemma.
-             * @return true, if a branching occurred.
+             * @return true,  if the solution is not in the domain,
              *         false, otherwise.
              */
             bool branch_and_bound();

@@ -120,7 +120,7 @@ public:
     
 	~ThreadPool()
     {
-        while(mNumberThreads>1) std::cout << "Waiting for thread!" << std::endl;
+        while(mNumberThreads>1);
     }
 	
     /**

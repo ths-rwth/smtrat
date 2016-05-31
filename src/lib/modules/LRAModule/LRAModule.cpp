@@ -388,9 +388,7 @@ namespace smtrat
                     {
                         if( containsIntegerValuedVariables )
                         {
-                            if( Settings::use_gomory_cuts && gomory_cut() )
-                                return processResult( UNKNOWN );
-                            if( !Settings::use_gomory_cuts && branch_and_bound() )
+                            if( branch_and_bound() )
                                 return processResult( UNKNOWN );
                         }
                         return processResult( SAT );
@@ -1056,7 +1054,7 @@ namespace smtrat
             {
                 if( !rowVar->infimum().isInfinite() )
                     simpleTheoryPropagation( rowVar->pInfimum() );
-                if( !rowVar->supremum().isInfinite() )
+                if( !rowVar->supremum().isInfinite() && rowVar->supremum().type() != LRABound::Type::EQUAL )
                     simpleTheoryPropagation( rowVar->pSupremum() );
             }
         }
@@ -1064,7 +1062,7 @@ namespace smtrat
         {
             if( !columnVar->infimum().isInfinite() )
                 simpleTheoryPropagation( columnVar->pInfimum() );
-            if( !columnVar->supremum().isInfinite() )
+            if( !columnVar->supremum().isInfinite() && columnVar->supremum().type() != LRABound::Type::EQUAL )
                 simpleTheoryPropagation( columnVar->pSupremum() );
         }
     }
@@ -1130,13 +1128,24 @@ namespace smtrat
         {
             if( (*cbIter)->isUnassigned() )
             {
-                // p>b => p>c       if     b>c
-                // p>b => p>=c      if     b>=c
-                // p>b => not(p=c)  if     b>=c
-                // p>=b => p>c      if     b>c
-                // p>=b => p>=c     if     b>c
-                // p>=b => not(p=c) if     b>c
-                propagate( _bound, (*cbIter)->type() == LRABound::Type::EQUAL ?  (*cbIter)->asConstraint().negated() : (*cbIter)->asConstraint() );
+                if( (*cbIter)->type() == LRABound::Type::EQUAL )
+                {
+                    if( mActiveUnresolvedNEQConstraints.find( (*cbIter)->asConstraint().negated() ) == mActiveUnresolvedNEQConstraints.end()
+                     && mActiveResolvedNEQConstraints.find( (*cbIter)->asConstraint().negated() ) == mActiveResolvedNEQConstraints.end() )
+                    {
+                        // p>b => not(p=c)  if     b>=c
+                        // p>=b => not(p=c) if     b>c
+                        propagate( _bound, (*cbIter)->asConstraint().negated() );
+                    }
+                }
+                else
+                {
+                    // p>b => p>c       if     b>c
+                    // p>b => p>=c      if     b>=c
+                    // p>=b => p>c      if     b>c
+                    // p>=b => p>=c     if     b>c
+                    propagate( _bound, (*cbIter)->asConstraint() );
+                }
             }
             if( cbIter == lraVar.lowerbounds().begin() )
                 break;
@@ -1168,13 +1177,24 @@ namespace smtrat
         {
             if( (*cbIter)->isUnassigned() )
             {
-                // p<b => p<c       if     b<c
-                // p<b => p<=c      if     b<=c
-                // p<b => not(p=c)  if     b<=c
-                // p<=b => p<c      if     b<c
-                // p<=b => p<=c     if     b<c
-                // p<=b => not(p=c) if     b<c
-                propagate( _bound, (*cbIter)->type() == LRABound::Type::EQUAL ?  (*cbIter)->asConstraint().negated() : (*cbIter)->asConstraint() );
+                if( (*cbIter)->type() == LRABound::Type::EQUAL )
+                {
+                    if( mActiveUnresolvedNEQConstraints.find( (*cbIter)->asConstraint().negated() ) == mActiveUnresolvedNEQConstraints.end()
+                     && mActiveResolvedNEQConstraints.find( (*cbIter)->asConstraint().negated() ) == mActiveResolvedNEQConstraints.end() )
+                    {
+                        // p<b => not(p=c)  if     b<=c
+                        // p<=b => not(p=c) if     b<c
+                        propagate( _bound, (*cbIter)->asConstraint().negated() );
+                    }
+                }
+                else
+                {
+                    // p<b => p<c       if     b<c
+                    // p<b => p<=c      if     b<=c
+                    // p<=b => p<c      if     b<c
+                    // p<=b => p<=c     if     b<c
+                    propagate( _bound, (*cbIter)->asConstraint() );
+                }
             }
         }
     }
@@ -1188,10 +1208,21 @@ namespace smtrat
         {
             if( (*cbIter)->isUnassigned() )
             {
-                // p=b => p>c        if     b>c
-                // p=b => not(p=c)   if     b>c
-                // p=b => p>=c       if     b>=c
-                propagate( _bound, (*cbIter)->type() == LRABound::Type::EQUAL ?  (*cbIter)->asConstraint().negated() : (*cbIter)->asConstraint() );
+                if( (*cbIter)->type() == LRABound::Type::EQUAL )
+                {
+                    if( mActiveUnresolvedNEQConstraints.find( (*cbIter)->asConstraint().negated() ) == mActiveUnresolvedNEQConstraints.end()
+                     && mActiveResolvedNEQConstraints.find( (*cbIter)->asConstraint().negated() ) == mActiveResolvedNEQConstraints.end() )
+                    {
+                        // p=b => not(p=c)   if     b>c
+                        propagate( _bound, (*cbIter)->asConstraint().negated() );
+                    }
+                }
+                else
+                {
+                    // p=b => p>c        if     b>c
+                    // p=b => p>=c       if     b>=c
+                    propagate( _bound, (*cbIter)->asConstraint() );
+                }
             }
         }
         ++cbIter;
@@ -1199,19 +1230,30 @@ namespace smtrat
         {
             if( (*cbIter)->isUnassigned() )
             {
-                // p=b => not(p>c)   if     b<c
-                // p=b => not(p=c)   if     b<c
-                // p=b => not(p>=c)  if     b<c
-                propagate( _bound, (*cbIter)->asConstraint().negated() );
+                if( (*cbIter)->type() == LRABound::Type::EQUAL )
+                {
+                    if( mActiveUnresolvedNEQConstraints.find( (*cbIter)->asConstraint().negated() ) == mActiveUnresolvedNEQConstraints.end()
+                     && mActiveResolvedNEQConstraints.find( (*cbIter)->asConstraint().negated() ) == mActiveResolvedNEQConstraints.end() )
+                    {
+                        // p=b => not(p=c)   if     b<c
+                        propagate( _bound, (*cbIter)->asConstraint().negated() );
+                    }
+                }
+                else
+                {
+                    // p=b => not(p>c)   if     b<c
+                    // p=b => not(p>=c)  if     b<c
+                    propagate( _bound, (*cbIter)->asConstraint().negated() );
+                }
             }
         }
         cbIter = lraVar.upperbounds().begin();
         for(; *cbIter != _bound; ++cbIter )
         {
-            if( (*cbIter)->isUnassigned() )
+            if( (*cbIter)->isUnassigned() && (*cbIter)->type() != LRABound::Type::EQUAL )
             {
                 // p=b => not(p<c)    if     b>c
-                // p=b => not(p=c)    if     b>c
+                // [p=b => not(p=c)    if     b>c] is already covered as p=c us also a lower bound
                 // p=b => not(p<=c)   if     b>c
                 propagate( _bound, (*cbIter)->asConstraint().negated() );
             }
@@ -1219,12 +1261,12 @@ namespace smtrat
         ++cbIter;
         for(; cbIter != lraVar.upperbounds().end(); ++cbIter )
         {
-            if( (*cbIter)->isUnassigned() )
+            if( (*cbIter)->isUnassigned() && (*cbIter)->type() != LRABound::Type::EQUAL )
             {
                 // p=b => p>c       if     b<c
-                // p=b => not(p=c)  if     b<c
+                // [p=b => not(p=c)  if     b<c] is already covered as p=c us also a lower bound
                 // p=b => p>=c      if     b<=c
-                propagate( _bound, (*cbIter)->type() == LRABound::Type::EQUAL ?  (*cbIter)->asConstraint().negated() : (*cbIter)->asConstraint() );
+                propagate( _bound, (*cbIter)->asConstraint() );
             }
         }
     }
@@ -1245,53 +1287,40 @@ namespace smtrat
     }
 
     template<class Settings>
-    bool LRAModule<Settings>::gomory_cut()
+    bool LRAModule<Settings>::gomoryCut()
     {
         const EvalRationalMap& rMap_ = getRationalModel();
         bool all_int = true;
         for( LRAVariable* basicVar : mTableau.rows() )
         {
-            if( basicVar->isOriginal() )
+            carl::Variables vars;
+            basicVar->expression().gatherVariables( vars );
+            assert( vars.size() == 1 );
+            auto found_ex = rMap_.find(*vars.begin());
+            const Rational& ass = found_ex->second;
+            if( !carl::isInteger( ass ) )
             {
-                carl::Variables vars;
-                basicVar->expression().gatherVariables( vars );
-                assert( vars.size() == 1 );
-                auto found_ex = rMap_.find(*vars.begin());
-                const Rational& ass = found_ex->second;
-                if( !carl::isInteger( ass ) )
+                all_int = false;
+                const Poly::PolyType* gomory_poly = mTableau.gomoryCut(ass, basicVar);
+                if( *gomory_poly != ZERO_RATIONAL )
                 {
-                    if( !mFinalCheck )
-                        return true;
-                    all_int = false;
-                    const Poly::PolyType* gomory_poly = mTableau.gomoryCut(ass, basicVar);
-                    if( *gomory_poly != ZERO_RATIONAL )
-                    {
-                        ConstraintT gomory_constr = ConstraintT( *gomory_poly , carl::Relation::GEQ );
-                        ConstraintT neg_gomory_constr = ConstraintT( *gomory_poly - (*gomory_poly).evaluate( rMap_ ), carl::Relation::LESS );
-                        //std::cout << gomory_constr << endl;
-                        assert( !gomory_constr.satisfiedBy( rMap_ ) );
-                        assert( !neg_gomory_constr.satisfiedBy( rMap_ ) );
-                        /*
-                        FormulaSetT subformulas;
-                        mTableau.collect_premises( basicVar, subformulas );
-                        FormulaSetT premisesOrigins;
-                        for( auto& pf : subformulas )
-                        {
-                            collectOrigins( pf, premisesOrigins );
-                        }
-                        FormulaSetT premise;
-                        for( const Formula* pre : premisesOrigins )
-                        {
-                            premise.insert( FormulaT( carl::FormulaType::NOT, pre ) );
-                        }
-                        */
-                        FormulaT gomory_formula = FormulaT( gomory_constr );
-                        FormulaT neg_gomory_formula = FormulaT( neg_gomory_constr );
-                        FormulasT subformulas = { gomory_formula, neg_gomory_formula };
-                        FormulaT branch_formula = FormulaT( carl::FormulaType::OR, std::move( subformulas ) );
-                        //premise.insert( gomory_formula );
-                        addLemma( branch_formula );
-                    }
+                    ConstraintT gomory_constr = ConstraintT( *gomory_poly , carl::Relation::GEQ );
+                    ConstraintT neg_gomory_constr = ConstraintT( *gomory_poly - (*gomory_poly).evaluate( rMap_ ), carl::Relation::LESS );
+                    //std::cout << gomory_constr << endl;
+                    assert( !gomory_constr.satisfiedBy( rMap_ ) );
+                    assert( !neg_gomory_constr.satisfiedBy( rMap_ ) );
+                    FormulasT subformulas;
+                    mTableau.collect_premises( basicVar, subformulas );
+                    FormulasT premisesOrigins;
+                    for( const FormulaT& pf : subformulas )
+                        collectOrigins( pf, premisesOrigins );
+                    FormulasT premise;
+                    for( const FormulaT& pre : premisesOrigins )
+                        premise.push_back( pre.negated() );
+                    premise.push_back( FormulaT( gomory_constr ) );
+                    FormulaT lemma( carl::FormulaType::OR, std::move( premise ) );
+//                    std::cout << "  >>> found gomory cut:  " << lemma << std::endl;
+                    addLemma( lemma );
                 }
             }
         }
@@ -1301,22 +1330,12 @@ namespace smtrat
     template<class Settings>
     bool LRAModule<Settings>::branch_and_bound()
     {
-        return most_infeasible_var( Settings::support_bb_with_gc );
+        carl::Variables varsToExclude;
+        return mostInfeasibleVar( Settings::use_gomory_cuts, varsToExclude );
     }
 
     template<class Settings>
-    bool LRAModule<Settings>::maybeGomoryCut( const LRAVariable* _lraVar, const Rational& _branchingValue )
-    {
-        if( probablyLooping( _lraVar->expression(), _branchingValue ) )
-        {
-            return gomory_cut();
-        }
-        branchAt( _lraVar->expression(), true, _branchingValue );
-        return true;
-    }
-
-    template<class Settings>
-    bool LRAModule<Settings>::most_infeasible_var( bool _gc_support )
+    bool LRAModule<Settings>::mostInfeasibleVar( bool _tryGomoryCut, carl::Variables& _varsToExclude )
     {
         const EvalRationalMap& _rMap = getRationalModel();
         auto branch_var = mTableau.originalVars().begin();
@@ -1326,6 +1345,8 @@ namespace smtrat
         for( auto map_iterator = _rMap.begin(); map_iterator != _rMap.end(); ++map_iterator )
         {
             auto var = mTableau.originalVars().find( map_iterator->first );
+            if( _varsToExclude.find( var->first ) != _varsToExclude.end() )
+                continue;
             assert( var->first == map_iterator->first );
             const Rational& ass = map_iterator->second;
             if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
@@ -1347,8 +1368,16 @@ namespace smtrat
         }
         if( result )
         {
-            if( _gc_support )
-                return maybeGomoryCut( branch_var->second, ass_ );
+//            std::cout << "try to branch at  (" << branch_var->second->expression() << ", " << ass_ << ")" << std::endl; 
+            if( probablyLooping( branch_var->second->expression(), ass_ ) )
+            {
+//                std::cout << "   >>> probably looping!" << std::endl;
+                if( _tryGomoryCut && gomoryCut() )
+                    return true;
+                _varsToExclude.insert( branch_var->first );
+//                std::cout << "   >>> exclude variable " << branch_var->first << std::endl;
+                return mostInfeasibleVar( false, _varsToExclude );
+            }
 //            FormulaSetT premises;
 //            mTableau.collect_premises( branch_var->second , premises  );
 //            FormulaSetT premisesOrigins;
@@ -1360,7 +1389,7 @@ namespace smtrat
             return true;
         }
         else
-            return false;
+            return !_varsToExclude.empty();
     }
 
     template<class Settings>

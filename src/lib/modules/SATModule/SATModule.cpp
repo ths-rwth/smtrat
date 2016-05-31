@@ -37,7 +37,7 @@
 //#define DEBUG_SATMODULE_DECISION_HEURISTIC
 //#define DEBUG_SATMODULE_LEMMA_HANDLING
 
-//#define NEW_VERSION
+#define NEW_VERSION
 
 using namespace Minisat;
 
@@ -1701,6 +1701,8 @@ namespace smtrat
         else
         {
             // Store the clause
+            lemma_lt lt( *this );
+            sort( add_tmp, lt );
             CRef cr;
             if( _type != NORMAL_CLAUSE )
             {
@@ -1722,7 +1724,6 @@ namespace smtrat
                 }
             }
             Clause& c = ca[cr];
-            arrangeForWatches( c );
             if( value( c[1] ) == l_False )
             {
                 int lev = level( var( c[1] ) );
@@ -1733,7 +1734,6 @@ namespace smtrat
                         lev = level(var(c[0]));
                     }
                     cancelUntil( lev, force );
-                    arrangeForWatches( c );
                     assert( !(value(c[0]) == l_False && value( c[1] ) == l_Undef) );
                     if( value(c[0]) == l_Undef && value( c[1] ) == l_False )
                     {
@@ -1745,178 +1745,6 @@ namespace smtrat
         }
         return true;
         #endif
-    }
-    
-    template<class Settings>
-    void SATModule<Settings>::arrangeForWatches( Clause& _clause )
-    {
-        if( _clause.size() < 2 )
-        {
-            return;
-        }
-        int l1 = -1;
-        int l2 = -1;
-        int levelL1 = -1;
-        int levelL2 = -1;
-        int i = 0;
-        // Search for a literal which is not assigned or assigned to true.
-        for( ; i < _clause.size(); ++i )
-        {
-            lbool lb = value( _clause[i] );
-            if( lb == l_Undef )
-            {
-                l2 = l1;
-                l1 = i;
-                levelL2 = levelL1;
-                levelL1 = level( var( _clause[i] ) );
-                goto FirstUndefSecondFalse;
-            }
-            else if( lb == l_True )
-            {
-                l2 = l1;
-                l1 = i;
-                levelL2 = levelL1;
-                levelL1 = level( var( _clause[i] ) );
-                goto FirstTrue;
-            }
-            else if( level( var( _clause[i] ) ) > levelL1 )
-            {
-                l2 = l1;
-                l1 = i;
-                levelL2 = levelL1;
-                levelL1 = level( var( _clause[i] ) );
-            }
-            else if( level( var( _clause[i] ) ) > levelL2 )
-            {
-                l2 = i;
-                levelL2 = level( var( _clause[i] ) );
-            }
-        }
-        goto SetWatches;
-FirstTrue:
-        // If we have already found a literal which is assigned to true.
-        ++i;
-        for( ; i < _clause.size(); ++i )
-        {
-            lbool lb = value( _clause[i] );
-            if( lb == l_Undef )
-            {
-                l2 = l1;
-                l1 = i;
-                levelL2 = levelL1;
-                levelL1 = level( var( _clause[i] ) );
-                goto FirstUndefSecondTrue;            }
-            else if( lb == l_True )
-            {
-                if( level( var( _clause[i] ) ) > levelL1 )
-                {
-                    l2 = l1;
-                    l1 = i;
-                    levelL2 = levelL1;
-                    levelL1 = level( var( _clause[i] ) );
-                }
-                else
-                {
-                    l2 = i;
-                    levelL2 = level( var( _clause[i] ) );
-                }
-                goto BothTrue;
-            }
-            else if( level( var( _clause[i] ) ) > levelL2 )
-            {
-                l2 = i;
-                levelL2 = level( var( _clause[i] ) );
-            }
-        }
-        goto SetWatches;
-BothTrue:
-        // If we have already found two literals which are assigned to true.
-        ++i;
-        for( ; i < _clause.size(); ++i )
-        {
-            lbool lb = value( _clause[i] );
-            if( lb == l_Undef )
-            {
-                l2 = l1;
-                l1 = i;
-                levelL2 = levelL1;
-                levelL1 = level( var( _clause[i] ) );
-                goto FirstUndefSecondTrue;
-            }
-            else if( lb == l_True )
-            {
-                if( level( var( _clause[i] ) ) > levelL1 )
-                {
-                    l2 = l1;
-                    l1 = i;
-                    levelL2 = levelL1;
-                    levelL1 = level( var( _clause[i] ) );
-                }
-                else if( level( var( _clause[i] ) ) > levelL2 )
-                {
-                    l2 = i;
-                    levelL2 = level( var( _clause[i] ) );
-                }
-            }
-        }
-        goto SetWatches;
-FirstUndefSecondFalse:
-        ++i;
-        for( ; i < _clause.size(); ++i )
-        {
-            lbool lb = value( _clause[i] );
-            if( lb == l_Undef )
-            {
-                l2 = i;
-                goto SetWatches;
-            }
-            else if( lb == l_True )
-            {
-                l2 = i;
-                levelL2 = level( var( _clause[i] ) );
-                goto FirstUndefSecondTrue;
-            }
-            else if( level( var( _clause[i] ) ) > levelL2 )
-            {
-                l2 = i;
-                levelL2 = level( var( _clause[i] ) );
-            }
-        }
-        goto SetWatches;
-FirstUndefSecondTrue:
-        ++i;
-        for( ; i < _clause.size(); ++i )
-        {
-            lbool lb = value( _clause[i] );
-            if( lb == l_Undef )
-            {
-                l2 = i;
-                goto SetWatches;
-            }
-            else if( lb == l_True )
-            {
-                if( level( var( _clause[i] ) ) > levelL2 )
-                {
-                    l2 = i;
-                    levelL2 = level( var( _clause[i] ) );
-                }
-            }
-        }
-SetWatches:
-        assert( l1 >= 0 && l2 >= 0 );
-        Lit first = _clause[l1];
-        Lit second = _clause[l2];
-        if( l1 != 0 )
-        {
-            _clause[l1] = _clause[0];
-            _clause[0] = first;
-            if( l2 == 0 ) l2 = l1;
-        }
-        if( l2 != 1 )
-        {
-            _clause[l2] = _clause[1];
-            _clause[1] = second;
-        }
     }
 
     template<class Settings>
@@ -1996,6 +1824,11 @@ SetWatches:
         {
             // the current lemma
             vec<Lit>& lemma = mLemmas[i];
+            if( lemma.size() == 0 )
+            {
+                ok = false;
+                return CRef_Undef;
+            }
             #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
             std::cout << "use the lemma  ";
             printClause(lemma,true);
@@ -2312,6 +2145,8 @@ SetWatches:
             confl = storeLemmas( _foundConflictOfSizeOne );
             if( confl != CRef_Undef || _foundConflictOfSizeOne )
                 return confl;
+            if( !ok )
+                return CRef_Undef;
         }
         // keep running until we have checked everything, we have no conflict and no new literals have been asserted
         do
@@ -2327,8 +2162,8 @@ SetWatches:
                 // propagate theory
                 propagateTheory();
                 // if there are lemmas (or conflicts) update them
-                assert( lemmasLearned == (mLemmas.size() > 0) );
-                if( lemmasLearned )
+//                assert( lemmasLearned == (mLemmas.size() > 0) );
+//                if( lemmasLearned )
                     confl = storeLemmas( _foundConflictOfSizeOne );
             }
             else
@@ -2347,12 +2182,14 @@ SetWatches:
                         confl = CRef_Undef; // Otherwise, the Boolean conflict is canceled in the case we popped the trail
                 }
             }
+            if( !ok )
+                return CRef_Undef;
             assert( mChangedBooleans.empty() || _checkWithTheory );
         }
         while( confl == CRef_Undef && (qhead < trail.size() || (decisionLevel() >= assumptions.size() && mCurrentAssignmentConsistent != SAT && !mChangedBooleans.empty())) );
         #else
         bool lemmasLearned = true;
-        while( lemmasLearned || (decisionLevel() >= assumptions.size() && mCurrentAssignmentConsistent != SAT && !mChangedBooleans.empty()) )
+        while( confl == CRef_Undef && (qhead < trail.size() || (decisionLevel() >= assumptions.size() && mCurrentAssignmentConsistent != SAT && !mChangedBooleans.empty())) )
         {
             lemmasLearned = false;
             // Simplify the set of problem clauses:
@@ -2401,7 +2238,7 @@ SetWatches:
                     vec<Lit> explanation;
                     for( const auto& subformula : tp.mPremise )
                         explanation.push( neg( getLiteral( subformula ) ) );
-                    explanation.push( neg( conclLit ) );
+                    explanation.push( conclLit );
                     addClause( explanation, LEMMA_CLAUSE, true );
                 }
                 if( (std::size_t) pos != mTheoryPropagations.size()-1 )
@@ -2419,7 +2256,7 @@ SetWatches:
                 vec<Lit> explanation;
                 for( const auto& subformula : tp.mPremise )
                     explanation.push( neg( getLiteral( subformula ) ) );
-                explanation.push( value(conclLit) == l_False ? neg( conclLit ) : conclLit );
+                explanation.push( conclLit );
                 addClause( explanation, LEMMA_CLAUSE, true );
             }
         }
@@ -2517,9 +2354,9 @@ SetWatches:
         #ifdef DEBUG_SATMODULE
         cout << "### Sat iteration" << endl;
         cout << "######################################################################" << endl;
-//        cout << "###" << endl; printClauses( clauses, "Clauses", cout, "### ", 0, false, false );
-//        cout << "###" << endl; printClauses( learnts, "Learnts", cout, "### ", 0, false, false );
-//        cout << "###" << endl; printCurrentAssignment( cout, "### " );
+        cout << "###" << endl; printClauses( clauses, "Clauses", cout, "### ", 0, false, false );
+        cout << "###" << endl; printClauses( learnts, "Learnts", cout, "### ", 0, false, false );
+        cout << "###" << endl; printCurrentAssignment( cout, "### " );
         cout << "###" << endl; printDecisions( cout, "### " );
         cout << "###" << endl;
         #endif
@@ -2646,8 +2483,6 @@ SetWatches:
             CRef confl = propagateConsistently( madeTheoryCall, foundConflictOfSizeOne );
             if( !mComputeAllSAT && anAnswerFound() )
                 return l_Undef;
-            if( qhead < trail.size() )
-                continue;
             if( !ok )
             {
                 if( !Settings::stop_search_after_first_unknown && unknown_excludes.size() > 0 )
@@ -2797,6 +2632,7 @@ SetWatches:
         #endif
 
         int backtrack_level;
+//        bool conflictClauseNotAsserting = analyze( _confl, learnt_clause, backtrack_level );
         analyze( _confl, learnt_clause, backtrack_level );
         assert( learnt_clause.size() > 0 );
 
@@ -2818,12 +2654,12 @@ SetWatches:
         else
         {
             // learnt clause is the asserting clause.
-            if( learnt_clause != ca[_confl] )
-            {
+//            if( conflictClauseNotAsserting )
+//            {
                 _confl = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
                 learnts.push( _confl );
                 attachClause( _confl );
-            }
+//            }
             claBumpActivity( ca[_confl] );
             uncheckedEnqueue( learnt_clause[0], _confl );
             decrementLearntSizeAdjustCnt();
@@ -3031,13 +2867,12 @@ SetWatches:
                 }
             }
         }
-        while( varsToRestore.size() > 0 )
+        for( int pos = 0; pos < varsToRestore.size(); ++pos )
         {
             #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
-            std::cout << "restore to heap: " << varsToRestore.last() << std::endl;
+            std::cout << "restore to heap: " << varsToRestore[pos] << std::endl;
             #endif
-            insertVarOrder( varsToRestore.last() );
-            varsToRestore.pop();
+            insertVarOrder( varsToRestore[pos] );
         }
         if( next == var_Undef )
         {
@@ -3052,9 +2887,10 @@ SetWatches:
     }
     
     template<class Settings>
-    void SATModule<Settings>::analyze( CRef confl, vec<Lit>& out_learnt, int& out_btlevel )
+    bool SATModule<Settings>::analyze( CRef confl, vec<Lit>& out_learnt, int& out_btlevel )
     {
         int pathC = 0;
+        int resolutionSteps = -1;
         Lit p = lit_Undef;
 
         // Generate conflict clause:
@@ -3064,6 +2900,7 @@ SetWatches:
 
         do
         {
+            if( confl == CRef_Undef ) exit(77);
             assert( confl != CRef_Undef );    // (otherwise should be UIP)
             Clause& c = ca[confl];
             if( c.learnt() )
@@ -3090,7 +2927,7 @@ SetWatches:
             confl          = reason( var( p ) );
             seen[var( p )] = 0;
             pathC--;
-
+            ++resolutionSteps;
         }
         while( pathC > 0 );
         out_learnt[0] = ~p;
@@ -3157,6 +2994,7 @@ SetWatches:
 
         for( int j = 0; j < analyze_toclear.size(); j++ )
             seen[var( analyze_toclear[j] )] = 0;    // ('seen[]' is now cleared)
+        return resolutionSteps > 0;
     }
 
     template<class Settings>

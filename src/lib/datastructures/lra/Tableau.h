@@ -791,7 +791,7 @@ namespace smtrat
                  * @param _rowVar
                  * @param premises
                  */
-                void collect_premises( const Variable<T1,T2>* _rowVar, FormulasT& premises );
+                void collect_premises( const Variable<T1,T2>* _rowVar, FormulasT& premises ) const;
                 
                 /**
                  * 
