@@ -129,14 +129,26 @@ struct CADCore<CoreHeuristic::PreferSampling> {
 					cad.mLifting.liftSample(it, poly, *polyID);
 				} else {
 					SMTRAT_LOG_DEBUG("smtrat.cad", "Current lifting" << std::endl << cad.mLifting.getTree());
-					SMTRAT_LOG_DEBUG("smtrat.cad", "Queue" << std::endl << cad.mLifting.getLiftingQueue());
+					SMTRAT_LOG_TRACE("smtrat.cad", "Queue" << std::endl << cad.mLifting.getLiftingQueue());
 					cad.mLifting.removeNextSample();
 					cad.mLifting.addTrivialSample(it);
 				}
 			}
-			
+			if (CAD::SettingsT::debugProjection) {
+				static std::size_t counter = 0;
+				counter++;
+				std::ofstream out("projection_" + std::to_string(counter) + ".dot");
+				out << "digraph G {" << std::endl;
+				cad.mProjection.exportAsDot(out);
+				out << "}" << std::endl;
+				out.close();
+			}
 			auto r = cad.mProjection.projectNewPolynomial();
-			if (r.none()) return Answer::UNSAT;
+			if (r.none()) {
+				SMTRAT_LOG_INFO("smtrat.cad", "Projection has finished, returning UNSAT");
+				return Answer::UNSAT;
+			}
+			SMTRAT_LOG_INFO("smtrat.cad", "Projected into " << r << ", new projection is" << std::endl << cad.mProjection);
 		}
 	}
 };
