@@ -63,7 +63,7 @@ option(${PROJECT_NAME}_DOC_CREATE_PDF "Create PDF reference manual" ON )
 
 # Strategy
 option( SMTRAT_STRAT_Factorization "Factorization" ON )
-set(SMTRAT_Strategy "RatOne" CACHE STRING "Used strategy in the solver")
+set(SMTRAT_Strategy "RatComp2016" CACHE STRING "Used strategy in the solver")
 option( SMTRAT_STRAT_PARALLEL_MODE "Parallel mode" OFF )
 
 # Development options
