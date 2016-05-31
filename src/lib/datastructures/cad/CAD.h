@@ -15,8 +15,10 @@ namespace cad {
 	
 	template<typename Settings>
 	class CAD {
+	public:
 		template<CoreHeuristic CH>
 		friend struct CADCore;
+		using SettingsT = Settings;
 	private:
 		Variables mVariables;
 		CADConstraints<Settings::backtracking> mConstraints;
@@ -36,8 +38,8 @@ namespace cad {
 	public:
 		CAD():
 			mConstraints(
-				[&](const UPoly& p, std::size_t cid){ mProjection.addPolynomial(p, cid); },
-				[&](const UPoly& p, std::size_t cid){ mProjection.removePolynomial(p, cid); }
+				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(mProjection.normalize(p), cid, isBound); },
+				[&](const UPoly& p, std::size_t cid){ mProjection.removePolynomial(mProjection.normalize(p), cid); }
 			),
 			mProjection(mConstraints),
 			mLifting(mConstraints)
@@ -96,6 +98,7 @@ namespace cad {
 		}
 
 		Answer checkFullSamples(Assignment& assignment) {
+			if (!mLifting.hasFullSamples()) return Answer::UNSAT;
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Checking for full satisfying samples...");
 			SMTRAT_LOG_TRACE("smtrat.cad", "Full sample queue:" << std::endl << mLifting.printFullSamples());
 			while (mLifting.hasFullSamples()) {
@@ -138,6 +141,9 @@ namespace cad {
 			for (const auto& s: mLifting.getTree()) {
 				if (s.hasConflictWithConstraint()) {
 					cg.addSample(s);
+				}
+				for (std::size_t id = 0; id < mConstraints.size(); id++) {
+					assert(mConstraints.valid(id) || cg.coveredSamples(id) == 0);
 				}
 			}
 			return cg;
