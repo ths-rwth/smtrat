@@ -52,6 +52,7 @@ namespace cad {
 		bool insertRootSamples(Iterator parent, std::vector<Sample>& samples) {
 			if (samples.empty()) return false;
 			std::sort(samples.begin(), samples.end());
+			samples.erase(std::unique(samples.begin(), samples.end()), samples.end());
 			bool gotNewSamples = false;
 			auto tbegin = mTree.begin_children(parent);
 			auto tit = tbegin;
@@ -122,6 +123,11 @@ namespace cad {
 			assert(mTree.is_valid(it));
 			mLiftingQueue.addNewSample(it);
 		}
+		LiftingTree(const LiftingTree&) = delete;
+		LiftingTree(LiftingTree&&) = delete;
+		LiftingTree& operator=(const LiftingTree&) = delete;
+		LiftingTree& operator=(LiftingTree&&) = delete;
+		
 		const auto& getTree() const {
 			return mTree;
 		}
