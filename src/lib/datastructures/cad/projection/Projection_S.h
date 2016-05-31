@@ -17,11 +17,22 @@ namespace cad {
 		template<typename S, Backtracking B>
 		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::SIMPLE, B, S>& p);
 		using Super = Projection<Incrementality::NONE, Backtracking::UNORDERED, Settings>;
-		using QueueEntry = std::pair<UPoly,std::size_t>;
+		struct QueueEntry {
+			UPoly poly;
+			std::size_t cid;
+			bool isBound;
+			QueueEntry(const UPoly& p, std::size_t c, bool b): poly(p), cid(c), isBound(b) {}
+			bool operator==(const QueueEntry& qe) const {
+				return (cid == qe.cid) && (poly == qe.poly);
+			}
+			friend std::ostream& operator<<(std::ostream& os, const QueueEntry& qe) {
+				return os << "(" << qe.poly << "," << qe.cid << ")";
+			}
+		};
 		
 		struct PolynomialComparator {
 			bool operator()(const QueueEntry& lhs, const QueueEntry& rhs) const {
-				return rhs.first < lhs.first;
+				return rhs.poly < lhs.poly;
 			}
 		};
 		
@@ -33,12 +44,12 @@ namespace cad {
 			Super::reset();
 			mQueue.clear();
 		}
-		Bitset addPolynomial(const UPoly& p, std::size_t cid) {
-			mQueue.push(QueueEntry(p, cid));
+		Bitset addPolynomial(const UPoly& p, std::size_t cid, bool isBound) {
+			mQueue.push(QueueEntry(p, cid, isBound));
 			return Bitset();
 		}
 		void removePolynomial(const UPoly& p, std::size_t cid) {
-			auto it = mQueue.find(QueueEntry(p, cid));
+			auto it = mQueue.find(QueueEntry(p, cid, false));
 			if (it != mQueue.end()) {
 				mQueue.erase(it);
 			} else {
@@ -49,7 +60,7 @@ namespace cad {
 		Bitset projectNewPolynomial(const ConstraintSelection& ps = Bitset(true)) {
 			while (!mQueue.empty()) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Using next polynomial " << mQueue.top() << " from " << mQueue);
-				Bitset res = Super::addPolynomial(mQueue.top().first, mQueue.top().second);
+				Bitset res = Super::addPolynomial(mQueue.top().poly, mQueue.top().cid, mQueue.top().isBound);
 				mQueue.pop();
 				if (res.any()) return res;
 			}

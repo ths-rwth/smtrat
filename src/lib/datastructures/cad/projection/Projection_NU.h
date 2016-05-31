@@ -23,7 +23,7 @@ namespace cad {
 		using Super::mLiftingQueues;
 		using Super::mOperator;
 		using Super::callRemoveCallback;
-		using Super::canBePurged;
+		using Super::canBeRemoved;
 		using Super::getID;
 		using Super::freeID;
 		using Super::dim;
@@ -37,7 +37,7 @@ namespace cad {
 		std::vector<std::vector<boost::optional<std::pair<UPoly,Origin>>>> mPolynomials;
 		
 		Bitset addToProjection(std::size_t level, const UPoly& p, const Origin::BaseType& origin) {
-			if (canBePurged(p)) return Bitset();
+			if (canBeRemoved(p)) return Bitset();
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			assert(level < dim());
 			assert(p.mainVar() == var(level));
@@ -51,11 +51,11 @@ namespace cad {
 			Bitset res;
 			if (level < dim() - 1) {
 				mOperator(Settings::projectionOperator, p, var(level + 1), 
-					[&](const UPoly& np){ res |= addToProjection(level + 1, np, Origin::BaseType(newID)); }
+					[&](const UPoly& np){ res |= addToProjection(level + 1, np, Origin::BaseType(level + 1, newID)); }
 				);
 				for (const auto& it: mPolynomialIDs[level]) {
 					assert(mPolynomials[level][it.second]);
-					auto newOrigin = Origin::BaseType(newID,it.second);
+					auto newOrigin = Origin::BaseType(level + 1,newID,it.second);
 					mOperator(Settings::projectionOperator, p, it.first, var(level + 1),
 						[&](const UPoly& np){ res |= addToProjection(level + 1, np, newOrigin); }
 					);
@@ -79,9 +79,9 @@ namespace cad {
 			mPolynomialIDs.clear();
 			mPolynomialIDs.resize(dim());
 		}
-		Bitset addPolynomial(const UPoly& p, std::size_t cid) {
+		Bitset addPolynomial(const UPoly& p, std::size_t cid, bool) {
 			assert(p.mainVar() == var(0));
-			return addToProjection(0, p, Origin::BaseType(cid));
+			return addToProjection(0, p, Origin::BaseType(0, cid));
 		}
 		void removePolynomial(const UPoly& p, std::size_t cid) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << cid);
@@ -107,6 +107,8 @@ namespace cad {
 				filter = removed;
 			}
 		}
+		
+		void boundsChanged() {}
 		
 		std::size_t size(std::size_t level) const {
 			return mPolynomialIDs[level].size();

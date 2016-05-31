@@ -59,12 +59,23 @@ namespace cad {
 			return vars()[level];
 		}
 		/// Checks whether a polynomial can safely be ignored.
-		bool canBePurged(const UPoly& p) const {
+		bool canBeRemoved(const UPoly& p) const {
 			return p.isZero() || p.isNumber();
 		}
 		/// Checks whether a polynomial can safely be forwarded to the next level.
 		bool canBeForwarded(std::size_t, const UPoly& p) const {
 			return p.isConstant();
+		}
+		/// Checks whether a polynomial can safely be ignored due to the bounds.
+		bool canBePurgedByBounds(const UPoly& p) const {
+			if (Settings::simplifyProjectionByBounds) {
+				auto res = carl::IntervalEvaluation::evaluate(p, mConstraints.bounds().getEvalIntervalMap());
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Bounds:" << std::endl << mConstraints.bounds());
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking polynomial " << p << " against bounds, results in " << res);
+				if (res.isPositive() || res.isNegative()) return true;
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "No.");
+			}
+			return false;
 		}
 	public:
 		/// Returns the variables used for projection.
@@ -85,17 +96,19 @@ namespace cad {
 			mRemoveCallback = f;
 		}
 		/// Adds the given polynomial to the projection. Converts to a UPoly and calls the appropriate overload.
-		Bitset addPolynomial(const Poly& p, std::size_t cid) {
-			return addPolynomial(p.toUnivariatePolynomial(var(0)), cid);
+		Bitset addPolynomial(const Poly& p, std::size_t cid, bool isBound) {
+			return addPolynomial(p.toUnivariatePolynomial(var(0)), cid, isBound);
 		}
 		/// Adds the given polynomial to the projection.
-		virtual Bitset addPolynomial(const UPoly& p, std::size_t cid) = 0;
+		virtual Bitset addPolynomial(const UPoly& p, std::size_t cid, bool isBound) = 0;
 		/// Removes the given polynomial from the projection. Converts to a UPoly and calls the appropriate overload.
 		void removePolynomial(const Poly& p, std::size_t cid) {
 			removePolynomial(p.toUnivariatePolynomial(var(0)), cid);
 		}
 		/// Removes the given polynomial from the projection.
 		virtual void removePolynomial(const UPoly& p, std::size_t cid) = 0;
+		
+		virtual void boundsChanged() = 0;
 		
 		UPoly normalize(const UPoly& p) const {
 			return mOperator.normalize(p);
