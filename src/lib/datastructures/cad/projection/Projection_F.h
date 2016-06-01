@@ -319,6 +319,8 @@ namespace full {
 		}
 		void removePolynomial(const UPoly& p, std::size_t cid) override {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << cid);
+			assert(mOriginalPolynomials[cid]);
+			assert(*mOriginalPolynomials[cid] == p);
 			mOriginalPolynomials[cid] = boost::none;
 			removeFromProjectionQueue(0, cid);
 			Bitset filter = Bitset().set(cid);
