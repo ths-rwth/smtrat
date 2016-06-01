@@ -131,6 +131,8 @@ namespace cad {
 		
 		/// Retrieves a polynomial from its id.
 		virtual const UPoly& getPolynomialById(std::size_t level, std::size_t id) const = 0;
+		
+		virtual void exportAsDot(std::ostream& out) const {}
 	};
 	
 }

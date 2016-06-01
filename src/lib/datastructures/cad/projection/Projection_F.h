@@ -353,11 +353,47 @@ namespace full {
 			return project(cs);
 		}
 		
-		const UPoly& getPolynomialById(std::size_t level, std::size_t id) const {
+		const UPoly& getPolynomialById(std::size_t level, std::size_t id) const override {
 			assert(level < mPolynomials.size());
 			assert(id < mPolynomials[level].size());
 			assert(mPolynomials[level][id]);
 			return mPolynomials[level][id]->first;
+		}
+		
+		void exportAsDot(std::ostream& out) const override {
+			mConstraints.exportAsDot(out);
+			debug::DotSubgraph dsg("originals");
+			for (std::size_t id = 0; id < mOriginalPolynomials.size(); id++) {
+				const auto& p = mOriginalPolynomials[id];
+				if (!p) continue;
+				out << "\t\torig_" << id << " [label=\"" << *p << "\"];" << std::endl;
+				out << "\t\tc_" << id << " -> orig_" << id << ";" << std::endl;
+				dsg.add("orig_" + std::to_string(id));
+			}
+			out << "\t" << dsg << std::endl;
+			std::size_t originID = 0;
+			for (std::size_t level = 0; level < dim(); level++) {
+				debug::DotSubgraph dsg("level_" + std::to_string(level));
+				for (std::size_t id = 0; id < mPolynomials[level].size(); id++) {
+					const auto& p = mPolynomials[level][id];
+					if (!p) continue;
+					out << "\t\tp_" << level << "_" << id << " [label=\"" << p->first << "\"];" << std::endl;
+					dsg.add("p_" + std::to_string(level) + "_" + std::to_string(id));
+					for (const auto& origin: p->second) {
+						std::string target = (origin.level == 0 ? "orig_" : "p_" + std::to_string(origin.level-1) + "_");
+						if (origin.first != origin.second) {
+							out << "\t\torigin_" << originID << " [label=\"\", shape=point];" << std::endl;
+							out << "\t\torigin_" << originID << " -> p_" << level << "_" << id << ";" << std::endl;
+							out << "\t\t" << target << origin.first << " -> origin_" << originID << ";" << std::endl;
+							out << "\t\t" << target << origin.second << " -> origin_" << originID << ";" << std::endl;
+						} else {
+							out << "\t\t" << target << origin.first << " -> p_" << level << "_" << id << ";" << std::endl;
+						}
+						originID++;
+					}
+				}
+				out << "\t" << dsg << std::endl;
+			}
 		}
 	};
 	
