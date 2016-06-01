@@ -104,20 +104,24 @@ namespace full {
 			}
 			bool isPurged(std::size_t level, std::size_t id) const {
 				assert(level < mData.size());
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking whether " << level << "/" << id << " is purged.");
 				if (mData[level].bounds.test(id)) {
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Do not purge as " << level << "/" << id << " is a bound.");
 					return false;
 				}
 				if (!mData[level].evaluated.test(id)) {
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking if " << level << "/" << id << " can be purged.");
-					mData[level].purged.set(id, mCanBePurged(level, id));
+					mData[level].purged.set(id, mCanBePurged(level + 1, id));
 					mData[level].evaluated.set(id);
 				}
 				return mData[level].purged.test(id);
 			}
 			bool isPurged(const QueueEntry& qe) const {
 				assert(qe.level < mData.size());
-				if (qe.level == 0) return false;
+				if (qe.level == 0) {
+					assert(qe.first == qe.second);
+					return mCanBePurged(0, qe.first);
+				}
 				return isPurged(qe.level-1, qe.first) || isPurged(qe.level-1, qe.second);
 			}
 			template<typename Restorer>
@@ -285,7 +289,10 @@ namespace full {
 		Projection(const Constraints& c):
 			Super(c),
 			mProjectionQueue(ProjectionCandidateComparator([&](std::size_t level, std::size_t id){ return (level == 0) ? getOriginalPolynomialById(id) : getPolynomialById(level-1, id); })),
-			mPurgedPolys([this](std::size_t level, std::size_t id){ return canBePurgedByBounds(getPolynomialById(level, id)); })
+			mPurgedPolys([this](std::size_t level, std::size_t id){
+				if (level == 0) return canBePurgedByBounds(getOriginalPolynomialById(id));
+				return canBePurgedByBounds(getPolynomialById(level-1, id));
+			})
 		{}
 		void reset() {
 			Super::reset();
