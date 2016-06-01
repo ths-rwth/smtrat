@@ -43,7 +43,8 @@ namespace cad {
         }
 		
 		UPoly normalize(const UPoly& p) const {
-			return p.squareFreePart().normalized();
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Normalizing " << p << " to " << p.squareFreePart().pseudoPrimpart().normalized());
+			return p.squareFreePart().pseudoPrimpart().normalized();
 		}
 
 		template<typename Callback>
