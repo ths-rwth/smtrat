@@ -70,7 +70,7 @@ namespace cad {
 		bool canBePurgedByBounds(const UPoly& p) const {
 			if (Settings::simplifyProjectionByBounds) {
 				auto res = carl::IntervalEvaluation::evaluate(p, mConstraints.bounds().getEvalIntervalMap());
-				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Bounds:" << std::endl << mConstraints.bounds());
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Bounds:" << std::endl << mConstraints.bounds().getEvalIntervalMap());
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking polynomial " << p << " against bounds, results in " << res);
 				if (res.isPositive() || res.isNegative()) return true;
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "No.");
@@ -109,6 +109,22 @@ namespace cad {
 		virtual void removePolynomial(const UPoly& p, std::size_t cid) = 0;
 		
 		virtual void boundsChanged() = 0;
+		
+		virtual std::size_t size(std::size_t level) const = 0;
+		std::size_t size() const {
+			std::size_t sum = 0;
+			for (std::size_t level = 0; level < dim(); level++) {
+				sum += size(level);
+			}
+			return sum;
+		}
+		virtual bool empty(std::size_t level) const = 0;
+		virtual bool empty() {
+			for (std::size_t level = 0; level < dim(); level++) {
+				if (!empty(level)) return false;
+			}
+			return true;
+		}
 		
 		UPoly normalize(const UPoly& p) const {
 			return mOperator.normalize(p);

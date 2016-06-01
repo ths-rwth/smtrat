@@ -34,6 +34,9 @@ namespace cad {
 		using Super::canBeForwarded;
 		using Super::dim;
 		using Super::var;
+	public:
+		using Super::size;
+	private:
 		
 		template<typename S>
 		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::NONE, Backtracking::ORDERED, S>& p);

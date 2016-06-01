@@ -33,6 +33,8 @@ namespace full {
 		using Super::freeID;
 		using Super::dim;
 		using Super::var;
+	public:
+		using Super::size;
 	private:
 
 		template<typename S, Backtracking B>
@@ -229,6 +231,7 @@ namespace full {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Using next projection candidate " << mProjectionQueue.top());
 				QueueEntry qe = mProjectionQueue.top();
 				mProjectionQueue.pop();
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Checking if can be purge: " << Settings::simplifyProjectionByBounds);
 				if (Settings::simplifyProjectionByBounds && mPurgedPolys.isPurged(qe)) {
 					mPurgedPolys.add(qe);
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purged.");
@@ -342,10 +345,10 @@ namespace full {
 			}
 		}
 		
-		std::size_t size(std::size_t level) const {
+		std::size_t size(std::size_t level) const override {
 			return mPolynomialIDs[level].size();
 		}
-		bool empty(std::size_t level) const {
+		bool empty(std::size_t level) const override {
 			return mPolynomialIDs[level].empty();
 		}
 		
