@@ -37,8 +37,6 @@
 //#define DEBUG_SATMODULE_DECISION_HEURISTIC
 //#define DEBUG_SATMODULE_LEMMA_HANDLING
 
-#define NEW_VERSION
-
 using namespace Minisat;
 
 namespace smtrat
@@ -147,11 +145,9 @@ namespace smtrat
     {
         mCurrentTheoryConflicts.reserve(100);
         mCurrentTheoryConflictTypes.reserve(100);
-        #ifdef NEW_VERSION
         mTrueVar = newVar();
         uncheckedEnqueue( mkLit( mTrueVar, false ) );
         mBooleanConstraintMap.push( std::make_pair( nullptr, nullptr ) );
-        #endif
         #ifdef SMTRAT_DEVOPTION_Statistics
         stringstream s;
         s << moduleName() << "_" << id();
@@ -368,7 +364,6 @@ namespace smtrat
     template<class Settings>
     Answer SATModule<Settings>::checkCore()
     {
-//        cout << "Check smt:" << endl;
 //        for( const auto& f : rReceivedFormula() )
 //            std::cout << "   " << f.formula().toString() << std::endl;
 //        std::cout << ((FormulaT) rReceivedFormula()).toString( false, 1, "", true, false, true, true ) << std::endl;
@@ -779,7 +774,7 @@ namespace smtrat
                 printClause( excludeClause );
                 #endif
                 CRef clause;
-                if( addClause( excludeClause, LEMMA_CLAUSE, true ) )
+                if( addClause( excludeClause, PERMANENT_CLAUSE, true ) )
                     clause = learnts.last();
                 else if( excludeClause.size() == 1)
                     break; // already unsat
@@ -892,6 +887,7 @@ namespace smtrat
                 // if the counter becomes zero, remove the clause
                 if( _iter->second.mCounter == 0 )
                 {
+                    // remove this clause and each information we stored for it
                     assert( ciIter->second.mOrigins.size() == 0 );
                     vec<CRef>& cls = ciIter->second.mStoredInSatisfied ? satisfiedClauses : clauses;
                     if( ciIter->second.mPosition < cls.size() - 1 )
@@ -1592,47 +1588,51 @@ namespace smtrat
         #endif
         // Check if clause is satisfied and remove false/duplicate literals:
         sort( add_tmp );
-        Lit p;
-        int i, j;
-        #ifdef NEW_VERSION
-        // check the clause for tautologies and similar
         int falseLiteralsCount = 0;
-        for( i = j = 0, p = lit_Undef; i < add_tmp.size(); ++i )
+        // check the clause for tautologies and similar
+        // note, that we do not change original clauses, as due to incrementality we
+        // want to know the clauses of a formula regardless of the context of other formulas
+        if( _type != NORMAL_CLAUSE )
         {
-            // tautologies are ignored
-            if( add_tmp[i] == ~p )
-                return true; // clause can be ignored
-            // clauses with 0-level true literals are also ignored
-            if( value( add_tmp[i] ) == l_True && level( var( add_tmp[i] ) ) == 0 )
-                return true;
-            // ignore repeated literals
-            if( add_tmp[i] == p )
-                continue;
-            // if a literal is false at 0 level (both sat and user level) we also ignore it
-            if( value( add_tmp[i] ) == l_False )
+            Lit p;
+            int i, j;
+            for( i = j = 0, p = lit_Undef; i < add_tmp.size(); ++i )
             {
-                if( level( var( add_tmp[i] ) ) == 0 )
+                // tautologies are ignored
+                if( add_tmp[i] == ~p )
+                    return true; // clause can be ignored
+                // clauses with 0-level true literals are also ignored
+                if( value( add_tmp[i] ) == l_True && level( var( add_tmp[i] ) ) == 0 )
+                    return true;
+                // ignore repeated literals
+                if( add_tmp[i] == p )
                     continue;
-                else
-                    ++falseLiteralsCount; // if we decide to keep it, we count it into the false literals
+                // if a literal is false at 0 level (both sat and user level) we also ignore it
+                if( value( add_tmp[i] ) == l_False )
+                {
+                    if( level( var( add_tmp[i] ) ) == 0 )
+                        continue;
+                    else
+                        ++falseLiteralsCount; // if we decide to keep it, we count it into the false literals
+                }
+                // this literal is a keeper
+                add_tmp[j++] = p = add_tmp[i];
             }
-            // this literal is a keeper
-            add_tmp[j++] = p = add_tmp[i];
+            add_tmp.shrink( i - j );
+            if( mBusy || decisionLevel() > assumptions.size() )
+            {
+                #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
+                std::cout << "add to mLemmas" << std::endl;
+                #endif
+                mLemmas.push();
+                add_tmp.copyTo( mLemmas.last() );
+                mLemmasRemovable.push( _type != NORMAL_CLAUSE );
+                return true;
+            }
+            // if all false, we're in conflict
+            if( add_tmp.size() == falseLiteralsCount )
+                return ok = false;
         }
-        add_tmp.shrink( i - j );
-        if( mBusy || decisionLevel() > assumptions.size() )
-        {
-            #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
-            std::cout << "add to mLemmas" << std::endl;
-            #endif
-            mLemmas.push();
-            add_tmp.copyTo( mLemmas.last() );
-            mLemmasRemovable.push( _type != NORMAL_CLAUSE );
-            return true;
-        }
-        // if all false, we're in conflict
-        if( add_tmp.size() == falseLiteralsCount )
-            return ok = false;
         CRef cr = CRef_Undef;
         // if not unit, add the clause
         if( add_tmp.size() > 1 )
@@ -1659,92 +1659,6 @@ namespace smtrat
                 return ok;
         }
         return true;
-        #else
-        for( i = j = 0, p = lit_Undef; i < add_tmp.size(); ++i )
-        {
-            if( add_tmp[i] == ~p )
-                return false;
-            if( _type == NORMAL_CLAUSE ) // What we want at some point is level(var(add_tmp[i])) <= assumptions.size(), however it causes problems when the clause to add gets unary
-            {
-                if( value( add_tmp[i] ) == l_True )
-                    return false;
-                if( value( add_tmp[i] ) == l_False )
-                    continue;
-            }
-            if( add_tmp[i] == p )
-                continue;
-            add_tmp[j++] = p = add_tmp[i];
-        }
-        add_tmp.shrink( i - j );
-        if( add_tmp.size() == 0 )
-        {
-            ok = false;
-            return false;
-        }
-        if( add_tmp.size() == 1 )
-        {
-            // Do not store the clause as it is of size one and implies an assignment directly
-            cancelUntil( assumptions.size(), force );
-            if( value( add_tmp[0] ) == l_Undef )
-            {
-                uncheckedEnqueue( add_tmp[0] );
-                if( propagate() != CRef_Undef )
-                    ok = false;
-            }
-            else
-            {
-                if( value( add_tmp[0] ) == l_False )
-                    ok = false;
-            }
-            return false;
-        }
-        else
-        {
-            // Store the clause
-            lemma_lt lt( *this );
-            sort( add_tmp, lt );
-            CRef cr;
-            if( _type != NORMAL_CLAUSE )
-            {
-                // Store it as learned clause
-                cr = ca.alloc( add_tmp, _type );
-                learnts.push( cr );
-                decrementLearntSizeAdjustCnt();
-                claBumpActivity( ca[cr] );
-            }
-            else
-            {
-                // Store it as normal clause
-                cr = ca.alloc( add_tmp, NORMAL_CLAUSE );
-                clauses.push( cr );
-                if( Settings::check_if_all_clauses_are_satisfied )
-                {
-                    for( int i = 0; i < add_tmp.size(); ++i )
-                        mLiteralClausesMap[Minisat::toInt(add_tmp[i])].insert( cr );
-                }
-            }
-            Clause& c = ca[cr];
-            if( value( c[1] ) == l_False )
-            {
-                int lev = level( var( c[1] ) );
-                if( value(c[0]) != l_True || lev < level(var(c[0])) )
-                {
-                    if( value(c[0]) == l_False && lev < level(var(c[0])) )
-                    {
-                        lev = level(var(c[0]));
-                    }
-                    cancelUntil( lev, force );
-                    assert( !(value(c[0]) == l_False && value( c[1] ) == l_Undef) );
-                    if( value(c[0]) == l_Undef && value( c[1] ) == l_False )
-                    {
-                        qhead = decisionLevel() == 0 ? 0 : trail_lim[decisionLevel()-1];
-                    }
-                }
-            }
-            attachClause( cr );
-        }
-        return true;
-        #endif
     }
 
     template<class Settings>
@@ -2010,14 +1924,12 @@ namespace smtrat
             Var x = var( trail[c] );
             resetVariableAssignment( x );
             VarData& vd = vardata[x];
-            #ifdef NEW_VERSION
             if( vd.mExpPos > 0 )
             {
                 removeTheoryPropagation( vd.mExpPos );
                 vd.mExpPos = -1;
             }
             vd.reason = CRef_Undef;
-            #endif
             vd.mTrailIndex = -1;
             if( (phase_saving > 1 || (phase_saving == 1)) && c > trail_lim.last() )
                 polarity[x] = sign( trail[c] );
@@ -2134,10 +2046,7 @@ namespace smtrat
     CRef SATModule<Settings>::propagateConsistently( bool& _madeTheoryCall, bool& _foundConflictOfSizeOne, bool _checkWithTheory )
     {
         CRef confl = CRef_Undef;
-        #ifdef NEW_VERSION
-//        recheck = false;
-//        theoryConflict = false;
-//
+        
         ScopedBool scopedBool( mBusy, true );
         // add lemmas that we're left behind
         if( mLemmas.size() > 0 )
@@ -2187,38 +2096,12 @@ namespace smtrat
             assert( mChangedBooleans.empty() || _checkWithTheory );
         }
         while( confl == CRef_Undef && (qhead < trail.size() || (decisionLevel() >= assumptions.size() && mCurrentAssignmentConsistent != SAT && !mChangedBooleans.empty())) );
-        #else
-        bool lemmasLearned = true;
-        while( confl == CRef_Undef && (qhead < trail.size() || (decisionLevel() >= assumptions.size() && mCurrentAssignmentConsistent != SAT && !mChangedBooleans.empty())) )
-        {
-            lemmasLearned = false;
-            // Simplify the set of problem clauses:
-            if( decisionLevel() == assumptions.size() )
-            {
-                simplify();
-                if( !ok )
-                    return confl;
-                // Build lemmas
-                if( isLemmaLevel(LemmaLevel::NORMAL) )
-                    constructLemmas();
-            }
-            else
-                confl = propagate();
-            // If a Boolean conflict occurred.
-            if( confl != CRef_Undef )
-                break;
-            confl = theoryCall( _madeTheoryCall, _foundConflictOfSizeOne, lemmasLearned );
-            // propagate theory
-            propagateTheory();
-        }
-        #endif
         return confl;
     }
     
     template<class Settings>
     void SATModule<Settings>::propagateTheory()
     {
-        #ifdef NEW_VERSION
         carl::uint pos = mTheoryPropagations.size();
         collectTheoryPropagations();
         while( pos < mTheoryPropagations.size() )
@@ -2246,22 +2129,6 @@ namespace smtrat
                 mTheoryPropagations.pop_back();
             }
         }
-        #else
-        collectTheoryPropagations();
-        for( const auto& tp : mTheoryPropagations )
-        {
-            Lit conclLit = getLiteral( tp.mConclusion );
-            if( value(conclLit) != l_True )
-            {
-                vec<Lit> explanation;
-                for( const auto& subformula : tp.mPremise )
-                    explanation.push( neg( getLiteral( subformula ) ) );
-                explanation.push( conclLit );
-                addClause( explanation, LEMMA_CLAUSE, true );
-            }
-        }
-        mTheoryPropagations.clear();
-        #endif
     }
     
     template<class Settings>
@@ -2392,22 +2259,11 @@ namespace smtrat
                     }
                     case UNSAT:
                     {
-                        #ifdef NEW_VERSION
                         learnTheoryConflicts();
                         if( Settings::allow_theory_propagation )
                             processLemmas();
                         _lemmasLearned = true;
                         break;
-                        #else
-                        CRef confl = learnTheoryConflict( _foundConflictOfSizeOne );
-                        if( confl == CRef_Undef )
-                        {
-                            if( !ok )
-                                return CRef_Undef;
-                            processLemmas();
-                        }
-                        return confl;
-                        #endif
                     }
                     case UNKNOWN:
                     {
@@ -2567,21 +2423,12 @@ namespace smtrat
                                 {
                                     for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
                                         learnt_clause.push( neg( getLiteral( subformula->formula() ) ) );
-                                    if( addClause( learnt_clause, LEMMA_CLAUSE ) )
-                                    {
-                                        #ifdef NEW_VERSION
-                                        bool foundConflictOfSizeOne = false;
-                                        confl = storeLemmas( foundConflictOfSizeOne );
-                                        assert( !foundConflictOfSizeOne );
-                                        assert( confl != CRef_Undef );
-                                        unknown_excludes.push( confl );
-                                        #else
-                                        unknown_excludes.push( learnts.last() );
-                                        confl = learnts.last();
-                                        #endif
-                                    }
-                                    else
-                                        assert( false );
+                                    addClause( learnt_clause, LEMMA_CLAUSE );
+                                    bool foundConflictOfSizeOne = false;
+                                    confl = storeLemmas( foundConflictOfSizeOne );
+                                    assert( !foundConflictOfSizeOne );
+                                    assert( confl != CRef_Undef );
+                                    unknown_excludes.push( confl );
                                 }
                             }
                             if( Settings::stop_search_after_first_unknown || confl == CRef_Undef )
@@ -2900,7 +2747,6 @@ namespace smtrat
 
         do
         {
-            if( confl == CRef_Undef ) exit(77);
             assert( confl != CRef_Undef );    // (otherwise should be UIP)
             Clause& c = ca[confl];
             if( c.learnt() )
@@ -3384,19 +3230,10 @@ NextClause:
                         if( validationSettings->logLemmata() )
                             addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, lem.mLemma ), false, (*backend)->moduleName() + "_lemma" );
                         #endif
-                        #ifdef NEW_VERSION
                         int numOfLearnts = mLemmas.size();
-                        #else
-                        int numOfLearnts = learnts.size();
-                        #endif
                         addClauses( lem.mLemma, lem.mLemmaType == LemmaType::PERMANENT ? PERMANENT_CLAUSE : LEMMA_CLAUSE );
-                        #ifdef NEW_VERSION
                         if( numOfLearnts < mLemmas.size() )
                             lemmasLearned = true;
-                        #else
-                        if( numOfLearnts < learnts.size() )
-                            lemmasLearned = true;
-                        #endif
                     }
                 }
             }
