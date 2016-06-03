@@ -54,6 +54,8 @@ namespace cad {
 		static constexpr cad::RootSplittingStrategy rootSplittingStrategy = cad::RootSplittingStrategy::DEFAULT;
 		static constexpr cad::CoreHeuristic coreHeuristic = cad::CoreHeuristic::PreferSampling;
 		static constexpr std::size_t trivialSampleRadius = 1;
+		static constexpr bool simplifyProjectionByBounds = false;
+		static constexpr bool debugProjection = false;
 	};
 	struct NewCADSettingsNO: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareInteger {
 		static constexpr auto moduleName = "NewCADModule<NewCADNO>";
@@ -78,14 +80,10 @@ namespace cad {
 		static constexpr auto moduleName = "NewCADModule<NewCADFO>";
 		static constexpr std::size_t trivialSampleRadius = 1;
 	};
-	
-	struct NewCADSettingsF2: NewCADBaseSettings, cad::IncrementalityF, cad::ProjectionBrown, cad::SampleCompareInteger {
-		static constexpr auto moduleName = "NewCADModule<NewCADF>";
-		static constexpr std::size_t trivialSampleRadius = 2;
-	};
-	struct NewCADSettingsFO2: NewCADBaseSettings, cad::IncrementalityFO, cad::ProjectionBrown, cad::SampleCompareInteger {
+	struct NewCADSettingsFOS: NewCADBaseSettings, cad::IncrementalityFO, cad::ProjectionBrown, cad::SampleCompareInteger {
 		static constexpr auto moduleName = "NewCADModule<NewCADFO>";
-		static constexpr std::size_t trivialSampleRadius = 2;
+		static constexpr std::size_t trivialSampleRadius = 1;
+		static constexpr bool simplifyProjectionByBounds = true;
 	};
 	
 	struct NewCADSettingsFV: NewCADBaseSettings, cad::IncrementalityF, cad::ProjectionBrown, cad::SampleCompareValue {
@@ -105,6 +103,8 @@ namespace cad {
 		
 		static constexpr cad::MISHeuristic misHeuristic = cad::MISHeuristic::GREEDY;
 		static constexpr std::size_t trivialSampleRadius = 1;
+		static constexpr bool simplifyProjectionByBounds = true;
+		static constexpr bool debugProjection = false;
 		
 		static constexpr cad::SampleCompareStrategy sampleComparator = cad::SampleCompareStrategy::Integer;
 		static constexpr cad::FullSampleCompareStrategy fullSampleComparator = cad::FullSampleCompareStrategy::Integer;

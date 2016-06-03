@@ -21,11 +21,24 @@ using carl::operator<<;
  */
 class Origin {
 public:
-	struct BaseType: public std::pair<std::size_t,std::size_t> {
-		using Super = std::pair<std::size_t,std::size_t>;
-		explicit BaseType(std::size_t id): Super(id,id) {}
-		BaseType(std::size_t id1, std::size_t id2): Super(id1,id2) {
-			if (id1 > id2) std::swap(first, second);
+	struct BaseType {
+		std::size_t level;
+		std::size_t first;
+		std::size_t second;
+		explicit BaseType(std::size_t level, std::size_t id): BaseType(level,id,id) {}
+		BaseType(std::size_t lvl, std::size_t id1, std::size_t id2): level(lvl),first(id1),second(id2) {
+			if (first > second) std::swap(first, second);
+		}
+		bool operator==(const BaseType& bt) const {
+			return (level == bt.level) && (first == bt.first) && (second == bt.second);
+		}
+		bool operator<(const BaseType& bt) const {
+			if (level != bt.level) return level < bt.level;
+			if (first != bt.first) return first < bt.first;
+			return second < bt.second;
+		}
+		friend std::ostream& operator<<(std::ostream& os, const BaseType& bt) {
+			return os << "(" << bt.first << "," << bt.second << ")@" << bt.level;
 		}
 	};
 private:
@@ -45,8 +58,15 @@ public:
 	Origin(const Origin& po): mData(po.mData) {}
 	Origin(Origin&& po): mData(std::move(po.mData)) {}
 	
-	explicit Origin(std::size_t id): mData(1, BaseType(id)) {}
+	explicit Origin(std::size_t level, std::size_t id): mData(1, BaseType(level, id)) {}
 	explicit Origin(const BaseType& bt): mData(1, bt) {}
+	
+	auto begin() const {
+		return mData.begin();
+	}
+	auto end() const {
+		return mData.end();
+	}
 	
 	Origin& operator=(const Origin& rhs) {
 		mData = rhs.mData;

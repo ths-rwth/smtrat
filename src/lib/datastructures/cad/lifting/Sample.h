@@ -85,9 +85,12 @@ namespace cad {
 		bool operator>(const Sample& s) const {
 			return s.value() < value();
 		}
+		bool operator==(const Sample& s) const {
+			return value() == s.value();
+		}
 		
 		friend std::ostream& operator<<(std::ostream& os, const Sample& s) {
-			return os << s.mValue << "[" << s.mLiftedWith << "][" << s.mRootOf << "]";
+			return os << s.mValue << "[" << s.mEvaluatedWith << "][" << s.mEvaluationResult << "]";
 		}
 	};
 }

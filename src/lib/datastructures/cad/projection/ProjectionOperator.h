@@ -43,27 +43,31 @@ namespace cad {
         }
 		
 		UPoly normalize(const UPoly& p) const {
-			return p.squareFreePart().normalized();
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Normalizing " << p << " to " << p.squareFreePart().pseudoPrimpart().normalized());
+			return p.squareFreePart().pseudoPrimpart().normalized();
 		}
 
 		template<typename Callback>
 		void Brown(const UPoly& p, const UPoly& q, carl::Variable::Arg variable, Callback& cb) const {
-			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "resultant(" << p << ", " << q << ")");
-			cb(normalize(p.resultant(q).switchVariable(variable)));
+			auto res = normalize(p.resultant(q).switchVariable(variable));
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "resultant(" << p << ", " << q << ") = " << res);
+			cb(res);
 		}
 		template<typename Callback>
 		void Brown(const UPoly& p, carl::Variable::Arg variable, Callback& cb) const {
 			// Insert discriminant
-			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "discriminant(" << p << ")");
-			cb(normalize(p.discriminant().switchVariable(variable)));
+			auto dis = normalize(p.discriminant().switchVariable(variable));
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "discriminant(" << p << ") = " << dis);
+			cb(dis);
 			if (doesNotVanish(p.lcoeff())) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "lcoeff = " << p.lcoeff() << " does not vanish. No further UPolynomials needed.");
 				return;
 			}
 			for (const auto& coeff: p.coefficients()) {
 				if (doesNotVanish(coeff)) {
-					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "coeff " << coeff << " does not vanish. We only need the lcoeff()");
-					cb(normalize(p.lcoeff().toUnivariatePolynomial(variable)));
+					auto lcoeff = normalize(p.lcoeff().toUnivariatePolynomial(variable));
+					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "coeff " << coeff << " does not vanish. We only need the lcoeff() = " << lcoeff);
+					cb(lcoeff);
 					return;
 				}
 			}

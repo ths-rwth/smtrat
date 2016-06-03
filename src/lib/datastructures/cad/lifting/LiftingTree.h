@@ -52,6 +52,7 @@ namespace cad {
 		bool insertRootSamples(Iterator parent, std::vector<Sample>& samples) {
 			if (samples.empty()) return false;
 			std::sort(samples.begin(), samples.end());
+			samples.erase(std::unique(samples.begin(), samples.end()), samples.end());
 			bool gotNewSamples = false;
 			auto tbegin = mTree.begin_children(parent);
 			auto tit = tbegin;
@@ -122,6 +123,11 @@ namespace cad {
 			assert(mTree.is_valid(it));
 			mLiftingQueue.addNewSample(it);
 		}
+		LiftingTree(const LiftingTree&) = delete;
+		LiftingTree(LiftingTree&&) = delete;
+		LiftingTree& operator=(const LiftingTree&) = delete;
+		LiftingTree& operator=(LiftingTree&&) = delete;
+		
 		const auto& getTree() const {
 			return mTree;
 		}
@@ -166,14 +172,21 @@ namespace cad {
 		bool liftSample(Iterator sample, const UPoly& p, std::size_t pid) {
 			assert(isConsistent());
 			auto m = extractSampleMap(sample);
-			RationalInterval bounds = RationalInterval::unboundedInterval();
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Lifting " << m << " on " << p);
 			std::vector<Sample> newSamples;
-			for (const auto& r: carl::rootfinder::realRoots(p, m, bounds, Settings::rootSplittingStrategy)) {
+			// TODO: Check whether the polynomials becomes zero (check if McCallum is safe)
+			for (const auto& r: carl::rootfinder::realRoots(p, m, RationalInterval::unboundedInterval(), Settings::rootSplittingStrategy)) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tnew root sample: " << r);
 				newSamples.emplace_back(r, pid);
 			}
-			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tmerging...");
+			auto bounds = mConstraints.bounds().getInterval(mVariables[sample.depth()]);
+			if (bounds.lowerBoundType() != carl::BoundType::INFTY) {
+				newSamples.emplace_back(RAN(bounds.lower()), true);
+			}
+			if (bounds.upperBoundType() != carl::BoundType::INFTY) {
+				newSamples.emplace_back(RAN(bounds.upper()), true);
+			}
+			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tmerging " << newSamples);
 			return mergeRootSamples(sample, newSamples);
 		}
 		bool addTrivialSample(Iterator sample) {

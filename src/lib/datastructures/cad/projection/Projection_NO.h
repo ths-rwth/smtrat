@@ -30,10 +30,13 @@ namespace cad {
 		using Super::mLiftingQueues;
 		using Super::mOperator;
 		using Super::callRemoveCallback;
-		using Super::canBePurged;
+		using Super::canBeRemoved;
 		using Super::canBeForwarded;
 		using Super::dim;
 		using Super::var;
+	public:
+		using Super::size;
+	private:
 		
 		template<typename S>
 		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::NONE, Backtracking::ORDERED, S>& p);
@@ -61,7 +64,7 @@ namespace cad {
 		
 		/// Adds a new polynomial to the given level and perform the projection recursively.
 		Bitset addToProjection(std::size_t level, const UPoly& p, std::size_t origin) {
-			if (canBePurged(p)) return Bitset();
+			if (canBeRemoved(p)) return Bitset();
 			if ((level > 0) && (level < dim() - 1) && canBeForwarded(level, p)) {
 				return addToProjection(level+1, p.switchVariable(var(level+1)), origin);
 			}
@@ -113,7 +116,7 @@ namespace cad {
 		 * Adds the given polynomial to the projection with the given constraint id as origin.
 		 * Asserts that the main variable of the polynomial is the first variable.
 		 */
-		Bitset addPolynomial(const UPoly& p, std::size_t cid) {
+		Bitset addPolynomial(const UPoly& p, std::size_t cid, bool) {
 			assert(p.mainVar() == var(0));
 			return addToProjection(0, p, cid);
 		}
@@ -142,6 +145,8 @@ namespace cad {
 				callRemoveCallback(level, removed);
 			}
 		}
+		
+		void boundsChanged() {}
 		
 		/// Returns the number of polynomials in this level.
 		std::size_t size(std::size_t level) const {

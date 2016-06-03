@@ -7,6 +7,7 @@
 
 #include "../../VariableBounds.h"
 #include "../Common.h"
+#include "../debug/DotHelper.h"
 
 namespace smtrat {
 namespace cad {
@@ -14,7 +15,8 @@ namespace cad {
 template<Backtracking BT>
 class CADConstraints {
 public:
-	using Callback = std::function<void(const UPoly&, std::size_t)>;
+	using AddCallback = std::function<void(const UPoly&, std::size_t, bool)>;
+	using RemoveCallback = std::function<void(const UPoly&, std::size_t)>;
 	using VariableBounds = vb::VariableBounds<ConstraintT>;
 	template<Backtracking B>
 	friend std::ostream& operator<<(std::ostream& os, const CADConstraints<B>& cc);
@@ -34,18 +36,22 @@ protected:
 	using ConstraintIts = std::vector<typename ConstraintMap::iterator>;
 	
 	Variables mVariables;
-	Callback mAddCallback;
-	Callback mRemoveCallback;
+	AddCallback mAddCallback;
+	RemoveCallback mRemoveCallback;
 	ConstraintMap mConstraintMap;
 	std::vector<typename ConstraintMap::iterator> mConstraintIts;
 	IDPool mIDPool;
 	VariableBounds mBounds;
 	
-	void callCallback(const Callback& cb, const ConstraintT& c, std::size_t id) const {
+	void callCallback(const AddCallback& cb, const ConstraintT& c, std::size_t id, bool isBound) const {
+		if (cb) cb(c.lhs().toUnivariatePolynomial(mVariables.front()), id, isBound);
+	}
+	void callCallback(const RemoveCallback& cb, const ConstraintT& c, std::size_t id) const {
 		if (cb) cb(c.lhs().toUnivariatePolynomial(mVariables.front()), id);
 	}
 public:
-	CADConstraints(const Callback& onAdd, const Callback& onRemove): mAddCallback(onAdd), mRemoveCallback(onRemove) {}
+	CADConstraints(const AddCallback& onAdd, const RemoveCallback& onRemove): mAddCallback(onAdd), mRemoveCallback(onRemove) {}
+	CADConstraints(const CADConstraints&) = delete;
 	void reset(const Variables& vars) {
 		mVariables = vars;
 		mConstraintMap.clear();
@@ -72,7 +78,7 @@ public:
 	}
 	std::size_t add(const ConstraintT& c) {
 		SMTRAT_LOG_DEBUG("smtrat.cad.constraints", "Adding " << c);
-		mBounds.addBound(c, c);
+		bool isBound = mBounds.addBound(c, c);
 		assert(!mVariables.empty());
 		std::size_t id = 0;
 		if (BT == Backtracking::ORDERED) {
@@ -87,8 +93,7 @@ public:
 		auto r = mConstraintMap.emplace(c, id);
 		assert(r.second);
 		mConstraintIts[id] = r.first;
-		callCallback(mAddCallback, c, id);
-		SMTRAT_LOG_DEBUG("smtrat.cad.constraints", "Result:" << std::endl << *this);
+		callCallback(mAddCallback, c, id, isBound);
 		return id;
 	}
 	std::size_t remove(const ConstraintT& c) {
@@ -104,6 +109,7 @@ public:
 			// Remove constraints added after c
 			while (mConstraintIts.back()->second > id) {
 				SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Preliminary removal of " << mConstraintIts.back()->first);
+				mBounds.removeBound(c, c);
 				callCallback(mRemoveCallback, mConstraintIts.back()->first, mConstraintIts.back()->second);
 				cache.push(mConstraintIts.back());
 				mConstraintIts.pop_back();
@@ -117,7 +123,8 @@ public:
 			// Add constraints removed before
 			while (!cache.empty()) {
 				SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Readding of " << cache.top()->first);
-				callCallback(mAddCallback, cache.top()->first, cache.top()->second);
+				bool isBound = mBounds.addBound(c, c);
+				callCallback(mAddCallback, cache.top()->first, cache.top()->second, isBound);
 				mConstraintIts.push_back(cache.top());
 				cache.pop();
 			}
@@ -134,6 +141,14 @@ public:
 		assert(id < mConstraintIts.size());
 		assert(mConstraintIts[id] != mConstraintMap.end());
 		return mConstraintIts[id]->first;
+	}
+	void exportAsDot(std::ostream& out) const {
+		debug::DotSubgraph dsg("constraints");
+		for (const auto& c: mConstraintMap) {
+			out << "\t\tc_" << c.second << " [label=\"" << c.first << "\"];" << std::endl;
+			dsg.add("c_" + std::to_string(c.second));
+		}
+		out << "\t" << dsg << std::endl;
 	}
 };
 
