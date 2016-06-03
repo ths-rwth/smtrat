@@ -86,6 +86,7 @@ namespace smtrat
     protected:
         void printHelp() const;
         void printLicense() const;
+        void printVersion() const;
         void printToC() const;
         void printWelcome() const;
         void printInfo() const;

@@ -159,6 +159,11 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
                 printInfo();
                 exit(SMTRAT_EXIT_SUCCESS);
             }
+            else if(optionName == "version" || optionName == "v")
+            {
+                printVersion();
+                exit(SMTRAT_EXIT_SUCCESS);
+            }
             else if(optionName == "model" || optionName == "m")
             {
                 mPrintModel = true;
@@ -245,16 +250,20 @@ void RuntimeSettingsManager::printHelp() const
     std::cout << std::endl;
     // Print help for the global options.
     std::cout << "Global options:" << std::endl;
-    std::cout << "\t --help (-h) \t\t\t prints this help." << std::endl;
-    std::cout << "\t --cmake \t\t\t print cmake options." << std::endl;
-    std::cout << "\t --license \t\t\t prints the license." << std::endl;
-//    std::cout << "\t --toc  \t\t\t prints the terms of condition" << std::endl;
+    std::cout << "\t --cmake \t\t\t print cmake options" << std::endl;
+    std::cout << "\t --help (-h) \t\t\t prints this help" << std::endl;
     std::cout << "\t --info \t\t\t prints information about the binary" << std::endl;
-    std::cout << "\t --model (-m) \t\t\t prints a model is printed if the example is found to be satisfiable" << std::endl;
-    std::cout << "\t --all-models (-a) \t prints all models if the example is found to be satisfiable" << std::endl;
-    std::cout << "\t --simplified-input (-si) \t prints a simplified form of the input formula (if result is unknown)" << std::endl;
+    std::cout << "\t --license \t\t\t prints the license" << std::endl;
+    std::cout << "\t --version (-v) \t\t prints the current version" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Solver information:" << std::endl;
     std::cout << "\t --statistics (-s) \t\t prints any statistics collected in the solving process" << std::endl;
     std::cout << "\t --print-strategy \t\t prints the strategy of this solver" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Solving options:" << std::endl;
+    std::cout << "\t --model (-m) \t\t\t prints a model is printed if the example is found to be satisfiable" << std::endl;
+    std::cout << "\t --all-models (-a) \t\t prints all models if the example is found to be satisfiable" << std::endl;
+    std::cout << "\t --simplified-input (-si) \t prints a simplified form of the input formula (if result is unknown)" << std::endl;
     std::cout << std::endl;
     std::cout << "Developer options:" <<std::endl;
     std::cout << "\t --list-modules \t\t prints all compiled modules" << std::endl;
@@ -263,15 +272,18 @@ void RuntimeSettingsManager::printHelp() const
     #endif
     std::cout << std::endl;
     // Print help for all known modules.
-    std::cout << "Module options:" << std::endl;
-    for( std::map<std::string, RuntimeSettings*>::const_iterator it = mSettingObjects.begin(); it != mSettingObjects.end(); ++it )
+    if( !mSettingObjects.empty() )
     {
-        std::cout << "- Module: " << it->first << std::endl;
-        it->second->printHelp("\t");
+        std::cout << "Module options:" << std::endl;
+        for( std::map<std::string, RuntimeSettings*>::const_iterator it = mSettingObjects.begin(); it != mSettingObjects.end(); ++it )
+        {
+            std::cout << "- Module: " << it->first << std::endl;
+            it->second->printHelp("\t");
+            std::cout << std::endl;
+        }
         std::cout << std::endl;
     }
     // Print reference to website.
-    std::cout << std::endl;
     std::cout << "For more information, please visit our website at " << SMTRAT_WEBSITE << std::endl;
 }
 
@@ -283,6 +295,14 @@ void RuntimeSettingsManager::printLicense() const
     std::string license = LICENSE_CONTENT;
     std::replace( license.begin(), license.end(), ';', '\n');
     std::cout << license << std::endl;
+}
+
+/**
+ * Print version.
+ */
+void RuntimeSettingsManager::printVersion() const 
+{
+    std::cout << SMTRAT_VERSION << std::endl;
 }
 
 /**
@@ -311,6 +331,7 @@ void RuntimeSettingsManager::printInfo() const
     std::cout << "Build type:" << smtrat::CompileInfo::BuildType << std::endl;   
     std::cout << "Code is based on commit " << smtrat::CompileInfo::GitRevisionSHA1 << ". " << std::endl;
     std::cout << "Build on a " << smtrat::CompileInfo::SystemName << " (" << CompileInfo::SystemVersion << ") machine." << std::endl;
+    std::cout << "Version: " << SMTRAT_VERSION << std::endl;
 }
 
 }
