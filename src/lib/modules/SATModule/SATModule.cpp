@@ -774,7 +774,7 @@ namespace smtrat
                 printClause( excludeClause );
                 #endif
                 CRef clause;
-                if( addClause( excludeClause, PERMANENT_CLAUSE, true ) )
+                if( addClause( excludeClause, PERMANENT_CLAUSE ) )
                     clause = learnts.last();
                 else if( excludeClause.size() == 1)
                     break; // already unsat
@@ -1572,7 +1572,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    bool SATModule<Settings>::addClause( const vec<Lit>& _clause, unsigned _type, bool force  )
+    bool SATModule<Settings>::addClause( const vec<Lit>& _clause, unsigned _type  )
     {
         #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
         std::cout << "add clause ";
@@ -2067,7 +2067,7 @@ namespace smtrat
             {
                 bool lemmasLearned = false;
                 // do the theory check
-                confl = theoryCall( _madeTheoryCall, _foundConflictOfSizeOne, lemmasLearned );
+                confl = theoryCall( _madeTheoryCall, lemmasLearned );
                 // propagate theory
                 propagateTheory();
                 // if there are lemmas (or conflicts) update them
@@ -2122,7 +2122,7 @@ namespace smtrat
                     for( const auto& subformula : tp.mPremise )
                         explanation.push( neg( getLiteral( subformula ) ) );
                     explanation.push( conclLit );
-                    addClause( explanation, LEMMA_CLAUSE, true );
+                    addClause( explanation, LEMMA_CLAUSE );
                 }
                 if( (std::size_t) pos != mTheoryPropagations.size()-1 )
                     tp = std::move( mTheoryPropagations.back() );
@@ -2216,7 +2216,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    CRef SATModule<Settings>::theoryCall( bool& _madeTheoryCall, bool& _foundConflictOfSizeOne, bool& _lemmasLearned )
+    CRef SATModule<Settings>::theoryCall( bool& _madeTheoryCall, bool& _lemmasLearned )
     {
         #ifdef DEBUG_SATMODULE
         cout << "### Sat iteration" << endl;

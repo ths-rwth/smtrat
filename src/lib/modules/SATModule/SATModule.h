@@ -822,7 +822,7 @@ namespace smtrat
              * @return  true, if a clause has been added;
              *          false, otherwise.
              */
-            bool addClause( const Minisat::vec<Minisat::Lit>& _clause, unsigned _type = 0, bool _force = false );
+            bool addClause( const Minisat::vec<Minisat::Lit>& _clause, unsigned _type = 0 );
             
             void removeLiteralOrigin( Minisat::Lit _litToRemove, const FormulaT& _origin );
             
@@ -1174,7 +1174,7 @@ namespace smtrat
              */
             Minisat::CRef propagateConsistently( bool& _madeTheoryCall, bool& _foundConflictOfSizeOne, bool _checkWithTheory = true );
             void propagateTheory();
-            Minisat::CRef theoryCall( bool& _madeTheoryCall, bool& _foundConflictOfSizeOne, bool& _lemmasLearned );
+            Minisat::CRef theoryCall( bool& _madeTheoryCall, bool& _lemmasLearned );
             void constructLemmas();
             bool expPositionsCorrect() const;
             
