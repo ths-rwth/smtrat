@@ -56,6 +56,9 @@ namespace vs
         mRealVarVals(),
         mIntVarVals(),
         mBestVarVals()
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        , mpStatistics( nullptr )
+        #endif
     {}
 
     State::State( State* const _father, const Substitution& _substitution, carl::IDGenerator* _conditionIdAllocator, bool _withVariableBounds ):
@@ -93,6 +96,9 @@ namespace vs
         mRealVarVals(),
         mIntVarVals(),
         mBestVarVals()
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        , mpStatistics( nullptr )
+        #endif
     {}
 
     State::~State()
@@ -1401,55 +1407,6 @@ namespace vs
             }
         }
     }
-
-    bool State::checkConditions() const 
-    {
-        for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
-        {
-            if( *cond == NULL )
-                return false;
-            for( auto oCond = (*cond)->originalConditions().begin(); oCond != (*cond)->originalConditions().end(); ++oCond )
-                if( *oCond == NULL ) 
-                    return false;
-        }
-        for( auto conflictSet = conflictSets().begin(); conflictSet != conflictSets().end(); ++conflictSet )
-        {
-            for( auto condSetSet = conflictSet->second.begin(); condSetSet != conflictSet->second.end(); ++condSetSet )
-            {
-                for( auto condSet = condSetSet->begin(); condSet != condSetSet->end(); ++condSet )
-                {
-                    for( auto cond = condSet->begin(); cond != condSet->end(); ++cond )
-                    {
-                        if( *cond == NULL ) 
-                            return false;
-                        if( (*cond)->pOriginalConditions() == NULL ) 
-                            return false;
-                        for( auto oCond = (*cond)->originalConditions().begin(); oCond != (*cond)->originalConditions().end(); ++oCond )
-                            if( *oCond == NULL )
-                                return false;
-                    }
-                }
-            }
-        }
-        if( hasSubstitutionResults() )
-        {
-            for( auto subResult = substitutionResults().begin(); subResult != substitutionResults().end(); ++subResult )
-            {
-                for( auto condConj = subResult->begin(); condConj != subResult->end(); ++condConj )
-                {
-                    for( auto cond = condConj->first.begin(); cond != condConj->first.end(); ++cond )
-                    {
-                        if( *cond == NULL )
-                            return false;
-                        for( auto oCond = (**cond).pOriginalConditions()->begin(); oCond != (**cond).originalConditions().end(); ++oCond )
-                            if( *oCond == NULL )
-                                return false;
-                    }
-                }
-            }
-        }
-        return true;
-    }
     
     bool State::checkSubresultCombinations() const
     {
@@ -1931,6 +1888,10 @@ namespace vs
                 }
             }
             State* state = new State( this, _substitution, mpConditionIdAllocator, mpVariableBounds != NULL );
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            state->setStatistics( mpStatistics );
+            mpStatistics->createTestCandidate();
+            #endif
             const smtrat::ConstraintsT& sideConds = _substitution.sideCondition();
             for( auto sideCond = sideConds.begin(); sideCond != sideConds.end(); ++sideCond )
             {
@@ -2053,6 +2014,9 @@ namespace vs
                     confSets.insert( confSet->second.begin(), confSet->second.end() );
             }
             coveringSet( confSets, covSet, treeDepth() );
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            mpStatistics->coveringSet( covSet.size(), conditions().size() );
+            #endif
             #ifdef VS_LOG_INFSUBSETS
             smtrat::ConstraintsT constraints;
             for( auto cond = covSet.begin(); cond != covSet.end(); ++cond )
@@ -2098,10 +2062,15 @@ namespace vs
             assert( !coverSetOConds.empty() );
             conflictSet.insert( std::move(coverSetOConds) );
             // Add the original conditions of the covering set as a conflict set to the father.
-            if( !coverSetOCondsContainIndexOfFather )
-                rFather().addConflictSet( NULL, std::move(conflictSet) );
-            else
+            if( coverSetOCondsContainIndexOfFather )
                 rFather().addConflictSet( pSubstitution(), std::move(conflictSet) );
+            else
+            {
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                mpStatistics->backjumping( numberOfUnusedConditions() );
+                #endif
+                rFather().addConflictSet( NULL, std::move(conflictSet) );
+            }
             // Delete the conflict sets.
             mpConflictSets->clear();
         }
@@ -2111,7 +2080,7 @@ namespace vs
             State* toDelete = rChildren().back();
             rChildren().pop_back();
             if( toDelete == mpInfinityChild ) mpInfinityChild = NULL;
-            delete toDelete; // DELETE STATE
+            delete toDelete;
         }
         mpTooHighDegreeConditions->clear();
         while( !conditions().empty() )
@@ -2231,6 +2200,9 @@ namespace vs
             ConditionSetSet localConflict;
             localConflict.insert( infSubset );
             addConflictSet( NULL, std::move(localConflict) );
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            mpStatistics->localConflict( numberOfUnusedConditions() );
+            #endif
             return true;
         }
         else
@@ -2255,6 +2227,9 @@ namespace vs
                 ConditionSetSet conflicts;
                 conflicts.insert( std::move(conflict) );
                 pFather()->addConflictSet( pSubstitution(), std::move(conflicts) );
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                mpStatistics->omittedTestCandidateWithVB( numberOfUnusedConditions() );
+                #endif
                 return false;
             }
         }

@@ -7,7 +7,6 @@
 
 #pragma once
 
-//#define VS_STATISTICS
 //#define VS_PRINT_ANSWERS
 //#define VS_LOG_INTERMEDIATE_STEPS
 
@@ -15,13 +14,10 @@
 #include "Substitute.h"
 #include "State.h"
 #include "VSSettings.h"
+#include "VSStatistics.h"
 #include "carl/util/IDGenerator.h"
 #include "../../solver/Module.h"
 #include "../../solver/RuntimeSettings.h"
-
-#ifdef SMTRAT_DEVOPTION_Statistics
-#include "VSStatistics.h"
-#endif
 
 namespace smtrat
 {
@@ -49,10 +45,6 @@ namespace smtrat
             size_t mIDCounter;
             ///
             size_t mLazyCheckThreshold;
-            #ifdef VS_STATISTICS
-            /// 
-            size_t mStepCounter;
-            #endif
             /// Id allocator for the conditions.
             carl::IDGenerator* mpConditionIdAllocator;
             ///

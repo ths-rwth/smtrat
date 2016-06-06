@@ -26,9 +26,6 @@ namespace smtrat
         mLazyMode( false ),
         mIDCounter( 0 ),
         mLazyCheckThreshold( Settings::lazy_check_threshold ),
-        #ifdef VS_STATISTICS
-        mStepCounter( 0 ),
-        #endif
         mpConditionIdAllocator(new carl::IDGenerator() ),
         mpStateTree( new State( mpConditionIdAllocator, Settings::use_variable_bounds ) ),
         mAllVariables(),
@@ -40,6 +37,7 @@ namespace smtrat
         stringstream s;
         s << moduleName() << "_" << id();
         mpStatistics = new VSStatistics( s.str() );
+        mpStateTree->setStatistics( mpStatistics );
         #endif
     }
 
@@ -165,14 +163,17 @@ namespace smtrat
     template<class Settings>
     Answer VSModule<Settings>::checkCore()
     {
-        #ifdef VS_STATISTICS
-        mStepCounter = 0;
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        mpStatistics->check();
         #endif
         if( !Settings::incremental_solving )
         {
             removeStatesFromRanking( *mpStateTree );
             delete mpStateTree;
             mpStateTree = new State( mpConditionIdAllocator, Settings::use_variable_bounds );
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            mpStateTree->setStatistics( mpStatistics );
+            #endif
             for( auto iter = mFormulaConditionMap.begin(); iter != mFormulaConditionMap.end(); ++iter )
             {
                 carl::PointerSet<vs::Condition> oConds;
@@ -265,8 +266,8 @@ namespace smtrat
                 return ABORTED;
 //            else
 //                cout << "VSModule iteration" << endl;
-            #ifdef VS_STATISTICS
-            ++mStepCounter;
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            mpStatistics->considerState();
             #endif
             State* currentState = mRanking.begin()->second;
             #ifdef VS_DEBUG
@@ -449,7 +450,12 @@ namespace smtrat
                                 if( currentState->nextSubResultCombination() )
                                 {
                                     if( currentState->refreshConditions( mRanking ) )
+                                    {
+                                        #ifdef SMTRAT_DEVOPTION_Statistics
+                                        mpStatistics->considerCase();
+                                        #endif
                                         addStateToRanking( currentState );
+                                    }
                                     else
                                         addStatesToRanking( currentState );
                                     #ifdef VS_DEBUG

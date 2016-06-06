@@ -13,6 +13,11 @@
 #include "Substitution.h"
 #include "carl/util/IDGenerator.h"
 #include "../../datastructures/VariableBounds.h"
+
+#ifdef SMTRAT_DEVOPTION_Statistics
+#include "VSStatistics.h"
+#endif
+
 #ifdef SMTRAT_VS_VARIABLEBOUNDS
 #define SMTRAT_VS_VARIABLEBOUNDS_B
 #endif
@@ -170,6 +175,11 @@ namespace vs
         std::vector<std::pair<carl::Variable,multiset<double>>> mIntVarVals;
         ///
         std::vector<size_t> mBestVarVals;
+            
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        /// Stores all collected statistics during solving.
+        smtrat::VSStatistics* mpStatistics;
+        #endif
         
     public:
         
@@ -692,6 +702,25 @@ namespace vs
             mpInfinityChild = _state;
         }
         
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        void setStatistics( smtrat::VSStatistics* _stats )
+        {
+            assert( mpStatistics == nullptr );
+            mpStatistics = _stats;
+        }
+        
+        carl::uint numberOfUnusedConditions() const
+        {
+            carl::uint result = 0;
+            for( const Condition* cond : conditions() )
+            {
+                if( !cond->flag() )
+                    ++result;
+            }
+            return result;
+        }
+        #endif
+        
         static void removeStatesFromRanking( const State& toRemove, ValuationMap& _ranking );
         
         void resetCannotBeSolvedLazyFlags();
@@ -936,12 +965,6 @@ namespace vs
          * @sideeffect The state can obtain a new condition.
          */
         void addCondition( const smtrat::ConstraintT& _constraint, const carl::PointerSet<Condition>& _originalConditions, size_t _valutation, bool _recentlyAdded, ValuationMap& _ranking );
-            
-        /**
-         * This is just for debug purpose.
-         * @return true, if no condition in this state points to a deleted condition.
-         */
-        bool checkConditions() const;
         
         /**
          * This is just for debug purpose.
