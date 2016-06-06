@@ -84,9 +84,13 @@ namespace smtrat
             Answer checkCore();
             
         private:
+            
             void reset();
             std::pair<ModuleInput::iterator,bool> addToICP( const FormulaT& _formula, bool _guaranteedNew = true );
+            bool tryToAddBounds( const EvalRationalIntervalMap& _varBounds, const carl::Variables& _allArithmeticVariables, std::vector<ModuleInput::iterator>& _addedBounds );
+            inline void addBound( std::vector<ModuleInput::iterator>& _addedBounds, ModuleInput::iterator _iterToBound ) const;
             void removeFromICP( const FormulaT& _formula );
+            void useInfSubsetIfNoAddedBoundsAreContained( const Module& _module, const std::vector<ModuleInput::iterator>& _addedBounds );
             void clearICP();
     };
 }
