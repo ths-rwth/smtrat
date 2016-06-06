@@ -595,13 +595,13 @@ namespace smtrat
             }
             subformulas.push_back( s1 );
             subformulas.push_back( s2 );
-            addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ), LemmaType::NORMAL, _preferLeftCase ? s1 : s2 );
+            mLemmas.emplace_back( FormulaT( carl::FormulaType::OR, std::move(subformulas) ), LemmaType::NORMAL, _preferLeftCase ? s1 : s2 );
             // Create (not s1 or not s2)
-            addLemma( FormulaT( carl::FormulaType::OR, s1.negated(), s2.negated() ) );
+            mLemmas.emplace_back( FormulaT( carl::FormulaType::OR, s1.negated(), s2.negated() ), LemmaType::NORMAL, FormulaT( carl::FormulaType::TRUE ) );
             // Create (s1 -> constraintA)
-            addLemma( FormulaT( carl::FormulaType::OR, s1.negated(), FormulaT( constraintA ) ) );
+            mLemmas.emplace_back( FormulaT( carl::FormulaType::OR, s1.negated(), FormulaT( constraintA ) ), LemmaType::NORMAL, FormulaT( carl::FormulaType::TRUE ) );
             // Create (s2 -> constraintB)
-            addLemma( FormulaT( carl::FormulaType::OR, s2.negated(), FormulaT( constraintB ) ) );
+            mLemmas.emplace_back( FormulaT( carl::FormulaType::OR, s2.negated(), FormulaT( constraintB ) ), LemmaType::NORMAL, FormulaT( carl::FormulaType::TRUE ) );
             #ifdef SMTRAT_DEVOPTION_Statistics
             mpManager->mpStatistics->addBranchingLemma();
             #endif
@@ -625,13 +625,13 @@ namespace smtrat
         subformulas.push_back( FormulaT( FormulaType::NOT, _unequalConstraint ) );
         subformulas.push_back( lessConstraint );
         subformulas.push_back( greaterConstraint );
-        addLemma( FormulaT( FormulaType::OR, std::move( subformulas ) ), LemmaType::PERMANENT );
+        mLemmas.emplace_back( FormulaT( FormulaType::OR, std::move( subformulas ) ), LemmaType::PERMANENT, FormulaT( carl::FormulaType::TRUE ) );
         // (not p<0 or p!=0)
-        addLemma( FormulaT( FormulaType::OR, {notLessConstraint, _unequalConstraint} ), LemmaType::PERMANENT );
+        mLemmas.emplace_back( FormulaT( FormulaType::OR, {notLessConstraint, _unequalConstraint} ), LemmaType::PERMANENT, FormulaT( carl::FormulaType::TRUE ) );
         // (not p>0 or p!=0)
-        addLemma( FormulaT( FormulaType::OR, {notGreaterConstraint, _unequalConstraint} ), LemmaType::PERMANENT );
+        mLemmas.emplace_back( FormulaT( FormulaType::OR, {notGreaterConstraint, _unequalConstraint} ), LemmaType::PERMANENT, FormulaT( carl::FormulaType::TRUE ) );
         // (not p>0 or not p<0)
-        addLemma( FormulaT( FormulaType::OR, {notGreaterConstraint, notLessConstraint} ), LemmaType::PERMANENT );
+        mLemmas.emplace_back( FormulaT( FormulaType::OR, {notGreaterConstraint, notLessConstraint} ), LemmaType::PERMANENT, FormulaT( carl::FormulaType::TRUE ) );
     }
 
     unsigned Module::checkModel() const
@@ -1019,13 +1019,6 @@ namespace smtrat
         for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
         {
             (*module)->updateLemmas();
-            #ifdef SMTRAT_DEVOPTION_Validation
-            if( validationSettings->logLemmata() )
-            {
-                for( const auto& lem : (*module)->lemmas() )
-                    addAssumptionToCheck( FormulaT( FormulaType::NOT, lem.mLemma ), false, (*module)->moduleName() + "_lemma" );
-            }
-            #endif
             mLemmas.insert( mLemmas.end(), (*module)->mLemmas.begin(), (*module)->mLemmas.end() );
         }
     }

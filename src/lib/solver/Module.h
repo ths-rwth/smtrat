@@ -503,6 +503,10 @@ namespace smtrat
              */
             void addLemma( const FormulaT& _lemma, const LemmaType& _lt = LemmaType::NORMAL, const FormulaT& _preferredFormula = FormulaT( carl::FormulaType::TRUE ) )
             {
+                #ifdef SMTRAT_DEVOPTION_Validation
+                if( validationSettings->logLemmata() )
+                    addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, _lemma ), false, moduleName() + "_lemma" );
+                #endif
                 mLemmas.emplace_back( _lemma, _lt, _preferredFormula );
             }
 
