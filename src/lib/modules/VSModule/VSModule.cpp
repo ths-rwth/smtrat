@@ -679,6 +679,13 @@ namespace smtrat
                 }
             }
         }
+        if( mpStateTree->markedAsDeleted() )
+        {
+            #ifdef VS_DEBUG
+            printAll();
+            #endif
+            return UNKNOWN;
+        }
         #ifdef VS_LOG_INTERMEDIATE_STEPS
         if( mpStateTree->conflictSets().empty() ) logConditions( *mpStateTree, false, "Intermediate_conflict_of_VSModule" );
         #endif
@@ -1879,7 +1886,7 @@ namespace smtrat
         cout << "Ask backend      : ";
         printPassedFormula();
         cout << endl;
-        cout << "Answer           : " << (result == SAT) << std::endl;
+        cout << "Answer           : " << result << std::endl;
         #endif
         switch( result )
         {
