@@ -2214,7 +2214,6 @@ namespace smtrat
         }
         bool boxContainsOnlyOneSolution = true;
         auto origVarsIter = originalRealVariables.begin();
-        assert( mInitialIntervals == mLRA.getVariableBounds() );
         for( auto iter = antipoint.begin(); iter != antipoint.end(); ++iter )
         {
             // Add an assignment for variables only occurring in constraints with != as relation symbol
