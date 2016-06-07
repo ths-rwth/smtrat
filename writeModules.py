@@ -120,13 +120,11 @@ namespace smtrat
 
 			/**
 			 * Checks the received formula for consistency.
-			 * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
-                         * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
 			 * @return True,	if the received formula is satisfiable;
 			 *		 False,   if the received formula is not satisfiable;
 			 *		 Unknown, otherwise.
 			 */
-			Answer checkCore( bool _full = true, bool _minimize = false );
+			Answer checkCore();
 	};
 }
 """
@@ -185,7 +183,7 @@ namespace smtrat
 	}
 	
 	template<class Settings>
-	Answer <CLASSNAME><Settings>::checkCore( bool _full, bool _minimize )
+	Answer <CLASSNAME><Settings>::checkCore()
 	{
 		// Your code.
 		return Unknown; // This should be adapted according to your implementation.
