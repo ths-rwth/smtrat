@@ -16,6 +16,7 @@
 #include "ContractionCandidateManager.h"
 #include "IcpVariable.h"
 #include "../LRAModule/LRAModule.h"
+#include "../LRAModule/LRASettings.h"
 #include "../../Common.h"
 #include "../../datastructures/VariableBounds.h"
 #include "IcpVariable.h"
@@ -101,7 +102,7 @@ namespace smtrat
             ModuleInput* mValidationFormula; // ReceivedFormula of the internal LRA Module
             smtrat::Conditionals mLRAFoundAnswer;
             RuntimeSettings* mLraRuntimeSettings;
-            LRAModule<LRASettings1> mLRA; // internal LRA module
+            LRAModule<LRASettingsICP> mLRA; // internal LRA module
             
             std::queue<FormulasT> mBoxStorage; // keeps the box before contraction
             bool mIsIcpInitialized; // initialized ICPModule?

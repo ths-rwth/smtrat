@@ -64,4 +64,13 @@ namespace smtrat
         static const bool one_conflict_reason = true;
         struct Tableau_settings : lra::TableauSettings3 {};
     };
+    
+    struct LRASettingsICP : LRASettings1
+    {
+		static constexpr auto moduleName = "LRAModule<LRASettingsICP>";
+        static const bool simple_theory_propagation = false;
+        static const bool learn_refinements = false;
+        static const bool one_conflict_reason = true;
+        struct Tableau_settings : lra::TableauSettings3 {};
+    };
 }

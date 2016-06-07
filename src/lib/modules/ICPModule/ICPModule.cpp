@@ -2364,7 +2364,7 @@ namespace smtrat
             #ifdef ICP_MODULE_DEBUG_1
             std::cout << (*constraintIt).first << ": " << (*constraintIt).second << std::endl;
             #endif
-            RationalInterval tmp = (*constraintIt).second;
+            const RationalInterval& tmp = (*constraintIt).second;
             DoubleInterval newInterval = DoubleInterval(tmp.lower(), tmp.lowerBoundType(), tmp.upper(), tmp.upperBoundType());
             mHistoryRoot->addInterval((*constraintIt).first, newInterval );
             if( Settings::original_polynomial_contraction && mVariables.find(constraintIt->first) == mVariables.end() )
