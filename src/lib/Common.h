@@ -69,7 +69,7 @@ namespace smtrat
     enum LemmaLevel { NONE = 0, NORMAL = 1, ADVANCED = 2 };
 
     // Further type definitions.
-#ifdef SMTRAT_STRAT_PARALLEL_MODE
+/*#ifdef SMTRAT_STRAT_PARALLEL_MODE
     typedef mpq_class Rational;
 #else
 #ifdef USE_GINAC
@@ -77,7 +77,8 @@ namespace smtrat
 #else
     typedef mpq_class Rational;
 #endif
-#endif
+#endif*/
+    typedef mpq_class Rational; // Use always GMP as CLN does not work for rationalize 
 
 	typedef carl::IntegralType<Rational>::type Integer;
 
