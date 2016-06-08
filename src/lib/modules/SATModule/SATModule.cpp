@@ -112,6 +112,7 @@ namespace smtrat
         mFullAssignmentCheckedForConsistency( false ),
         mOptimumComputed( false ),
         mBusy( false ),
+        mExcludedAssignments( false ),
         mCurrentAssignmentConsistent( SAT ),
         mNumberOfFullLazyCalls( 0 ),
         mCurr_Restarts( 0 ),
@@ -458,7 +459,10 @@ namespace smtrat
                 computeAdvancedLemmas();
             }
             if( !Settings::stop_search_after_first_unknown )
+            {
                 unknown_excludes.clear();
+                mExcludedAssignments = false;
+            }
             if( !mMinimizingCheck )
                 break;
             std::vector<CRef> excludedAssignments;
@@ -2041,6 +2045,82 @@ namespace smtrat
             }
         }
     }
+   
+/*CRef Solver::propagate(TheoryCheckType type)
+{
+    CRef confl = CRef_Undef;
+    recheck = false;
+    theoryConflict = false;
+
+    ScopedBool scoped_bool(minisat_busy, true);
+
+    // Add lemmas that we're left behind
+    if (lemmas.size() > 0) {
+      confl = updateLemmas();
+      if (confl != CRef_Undef) {
+        return confl;
+      }
+    }
+
+    // If this is the final check, no need for Boolean propagation and
+    // theory propagation
+    if (type == CHECK_FINAL) {
+      // Do the theory check
+      theoryCheck(CVC4::theory::Theory::EFFORT_FULL);
+      // Pick up the theory propagated literals (there could be some, if new lemmas are added)
+      propagateTheory();
+      // If there are lemmas (or conflicts) update them
+      if (lemmas.size() > 0) {
+        recheck = true;
+        confl = updateLemmas();
+        return confl; 
+      } else {
+        recheck = proxy->theoryNeedCheck();
+        return confl;
+      }
+    }
+
+    // Keep running until we have checked everything, we
+    // have no conflict and no new literals have been asserted
+    do {
+        // Propagate on the clauses
+        confl = propagateBool();
+        // If no conflict, do the theory check
+        if (confl == CRef_Undef && type != CHECK_WITHOUT_THEORY) {
+            // Do the theory check
+            if (type == CHECK_FINAL_FAKE) {
+              theoryCheck(CVC4::theory::Theory::EFFORT_FULL);
+            } else {
+              theoryCheck(CVC4::theory::Theory::EFFORT_STANDARD);
+            }
+            // Pick up the theory propagated literals
+            propagateTheory();
+            // If there are lemmas (or conflicts) update them
+            if (lemmas.size() > 0) {
+                confl = updateLemmas();
+            }
+        } else {
+          // Even though in conflict, we still need to discharge the lemmas
+          if (lemmas.size() > 0) {
+            // Remember the trail size
+            int oldLevel = decisionLevel();
+            // Update the lemmas
+            CRef lemmaConflict = updateLemmas();
+            // If we get a conflict, we prefer it since it's earlier in the trail
+            if (lemmaConflict != CRef_Undef) {
+              // Lemma conflict takes precedence, since it's earlier in the trail
+              confl = lemmaConflict;
+            } else {
+              // Otherwise, the Boolean conflict is canceled in the case we popped the trail
+              if (oldLevel > decisionLevel()) {
+                confl = CRef_Undef;
+              }
+            }
+          }
+        }
+    } while (confl == CRef_Undef && qhead < trail.size());
+    return confl;
+}*/
     
     template<class Settings>
     CRef SATModule<Settings>::propagateConsistently( bool& _madeTheoryCall, bool& _foundConflictOfSizeOne, bool _checkWithTheory )
@@ -2048,6 +2128,7 @@ namespace smtrat
         CRef confl = CRef_Undef;
         
         ScopedBool scopedBool( mBusy, true );
+        
         // add lemmas that we're left behind
         if( mLemmas.size() > 0 )
         {
@@ -2064,19 +2145,18 @@ namespace smtrat
             confl = propagate();
             // If no conflict, do the theory check
             if( confl == CRef_Undef && _checkWithTheory )
-            {
+            {   
                 bool lemmasLearned = false;
                 // do the theory check
                 confl = theoryCall( _madeTheoryCall, lemmasLearned );
                 // propagate theory
                 propagateTheory();
                 // if there are lemmas (or conflicts) update them
-//                assert( lemmasLearned == (mLemmas.size() > 0) );
-//                if( lemmasLearned )
+                if( mLemmas.size() > 0 )
                     confl = storeLemmas( _foundConflictOfSizeOne );
             }
             else
-            {
+            {   
                 // even though in conflict, we still need to discharge the lemmas
                 if( mLemmas.size() > 0 )
                 {
@@ -2341,7 +2421,7 @@ namespace smtrat
                 return l_Undef;
             if( !ok )
             {
-                if( !Settings::stop_search_after_first_unknown && unknown_excludes.size() > 0 )
+                if( !Settings::stop_search_after_first_unknown && mExcludedAssignments )
                     return l_Undef;
                 return l_False;
             }
@@ -2388,7 +2468,8 @@ namespace smtrat
                     }
                     else if( value( p ) == l_False )
                     {
-                        return l_False;
+                        if( !Settings::stop_search_after_first_unknown && mExcludedAssignments )
+                            return l_Undef;
                     }
                     else
                     {
@@ -2416,29 +2497,24 @@ namespace smtrat
                         else
                         {
                             assert( mCurrentAssignmentConsistent == UNKNOWN );
-                            if( !Settings::stop_search_after_first_unknown )
-                            {
-                                learnt_clause.clear();
-                                if( rPassedFormula().size() > 1 )
-                                {
-                                    for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
-                                        learnt_clause.push( neg( getLiteral( subformula->formula() ) ) );
-                                    addClause( learnt_clause, LEMMA_CLAUSE );
-                                    bool foundConflictOfSizeOne = false;
-                                    confl = storeLemmas( foundConflictOfSizeOne );
-                                    assert( !foundConflictOfSizeOne );
-                                    assert( confl != CRef_Undef );
-                                    unknown_excludes.push( confl );
-                                }
-                            }
-                            if( Settings::stop_search_after_first_unknown || confl == CRef_Undef )
-                            {
+                            if( Settings::stop_search_after_first_unknown )
                                 return l_Undef;
+                            else
+                            {
+                                mExcludedAssignments = true;
+                                learnt_clause.clear();
+                                for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
+                                    learnt_clause.push( neg( getLiteral( subformula->formula() ) ) );
+                                addClause( learnt_clause, LEMMA_CLAUSE );
+                                bool foundConflictOfSizeOne = false;
+                                confl = storeLemmas( foundConflictOfSizeOne );
+                                if( confl != CRef_Undef )
+                                    unknown_excludes.push( confl );
                             }
                         }
                     }
                 }
-                if( Settings::stop_search_after_first_unknown || confl == CRef_Undef )
+                if( Settings::stop_search_after_first_unknown || next != lit_Undef )
                 {
                     // Increase decision level and enqueue 'next'
                     newDecisionLevel();
@@ -2457,10 +2533,8 @@ namespace smtrat
                 
                 if( decisionLevel() <= assumptions.size() )
                 {
-                    if( !Settings::stop_search_after_first_unknown && unknown_excludes.size() > 0 )
-                    {
+                    if( !Settings::stop_search_after_first_unknown && mExcludedAssignments )
                         return l_Undef;
-                    }
                     return l_False;
                 }
 

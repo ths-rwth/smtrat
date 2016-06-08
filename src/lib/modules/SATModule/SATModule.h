@@ -526,6 +526,8 @@ namespace smtrat
             bool mOptimumComputed;
             ///
             bool mBusy;
+            ///
+            bool mExcludedAssignments;
             /**
              * Stores gained information about the current assignment's consistency. If we know from the last consistency check, whether the
              * current assignment is consistent, this member is SAT, if we know that it is inconsistent it is UNSAT, otherwise Unknown.
