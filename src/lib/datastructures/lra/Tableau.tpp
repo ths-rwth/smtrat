@@ -947,42 +947,42 @@ namespace smtrat
                     }
                     if( upperBoundViolated || lowerBoundViolated )
                     {
-                        std::pair<EntryID,bool> result = isSuitable( bVar, upperBoundViolated );
-                        if( !result.second )
+                        EntryID result = isSuitable( bVar, lowerBoundViolated );
+                        if( result == LAST_ENTRY_ID )
                         {
                             bestTableauEntry = LAST_ENTRY_ID;
                             // Found a conflicting row.
                             if( beginOfFirstConflictRow == LAST_ENTRY_ID )
                             {
-                                beginOfFirstConflictRow = result.first;
+                                beginOfFirstConflictRow = bVar.startEntry();
                                 bestVar = basicVar;
                                 break;
                             }
                         }
-                        else if( result.first != LAST_ENTRY_ID )
+                        else
                         {
                             if( bestVar == rowsToConsider.end() )
                             {
-                                bestTableauEntry = result.first;
+                                bestTableauEntry = result;
                                 bestVar = basicVar;
                                 bestDiff = diff;
                                 bestThetaB = thetaB;
                             }
                             else
                             {
-                                assert( result.first != LAST_ENTRY_ID );
+                                assert( result != LAST_ENTRY_ID );
                                 assert( bestVar != rowsToConsider.end() );
                                 assert( bestTableauEntry != LAST_ENTRY_ID );
                                 if( Settings::prefer_equations )
                                 {
                                     if( !(*bestVar)->involvesEquation() && bVar.involvesEquation() )
                                     {
-                                        bestTableauEntry = result.first;
+                                        bestTableauEntry = result;
                                         bestVar = basicVar;
                                     }
                                     else if( (*bestVar)->involvesEquation() || !bVar.involvesEquation() )
                                     {
-                                        bestTableauEntry = result.first;
+                                        bestTableauEntry = result;
                                         bestThetaB = thetaB;
                                         bestDiff = diff;
                                         if( Settings::pivot_into_local_conflict && initialSearch && (*bestVar)->involvesEquation() )
@@ -993,7 +993,7 @@ namespace smtrat
                                 else
                                 {
 
-                                    bestTableauEntry = result.first;
+                                    bestTableauEntry = result;
                                     bestThetaB = thetaB;
                                     bestDiff = diff;
                                     bestVar = basicVar;
@@ -1054,13 +1054,13 @@ namespace smtrat
                     }
                     if( upperBoundViolated || lowerBoundViolated )
                     {
-                        std::pair<EntryID,bool> result = isSuitable( bVar, upperBoundViolated );
-                        if( !result.second )
+                        EntryID result = isSuitable( bVar, lowerBoundViolated );
+                        if( result == LAST_ENTRY_ID )
                         {
                             // Found a conflicting row.
-                            return std::pair<EntryID,bool>( result.first, false );
+                            return std::pair<EntryID,bool>( bVar.startEntry(), false );
                         }
-                        else if( result.first != LAST_ENTRY_ID )
+                        else
                         {
                             if( bestBasicVar == nullptr || *basicVar < *bestBasicVar )
                             {
@@ -1069,8 +1069,8 @@ namespace smtrat
                                 *mpTheta = thetaB;
                                 if( Settings::omit_division )
                                     (*mpTheta) *= bVar.factor();
-                                (*mpTheta) /= (*mpEntries)[result.first].content();
-                                bestResult = std::pair<EntryID,bool>( result.first, true );
+                                (*mpTheta) /= (*mpEntries)[result].content();
+                                bestResult = std::pair<EntryID,bool>( result, true );
                             }
                         }
                     }
@@ -1335,110 +1335,30 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        std::pair<EntryID,bool> Tableau<Settings,T1,T2>::isSuitable( const Variable<T1, T2>& _basicVar, bool supremumViolated ) const
+        EntryID Tableau<Settings,T1,T2>::isSuitable( const Variable<T1, T2>& _basicVar, bool _forIncreasingAssignment ) const
         {
             EntryID bestEntry = LAST_ENTRY_ID;
-            const Bound<T1, T2>& basicVarSupremum = _basicVar.supremum();
-            const Value<T1>& basicVarAssignment = _basicVar.assignment();
-            const Bound<T1, T2>& basicVarInfimum = _basicVar.infimum();
-            EntryID rowStartEntry = _basicVar.startEntry();
-            // Upper bound is violated
-            if( supremumViolated )
+            // Check all entries in the row / nonbasic variables
+            Iterator rowIter = Iterator( _basicVar.startEntry(), mpEntries );
+            while( true )
             {
-                assert( basicVarSupremum < basicVarAssignment );
-                // Check all entries in the row / nonbasic variables
-                Iterator rowIter = Iterator( rowStartEntry, mpEntries );
-                while( true )
+                const Variable<T1, T2>& nonBasicVar = *(*rowIter).columnVar();
+                if( (_forIncreasingAssignment || entryIsNegative( *rowIter )) && (!_forIncreasingAssignment || entryIsPositive( *rowIter )) )
                 {
-                    const Variable<T1, T2>& nonBasicVar = *(*rowIter).columnVar();
-                    if( (!Settings::omit_division || ((*rowIter).content() < 0 && _basicVar.factor() > 0) || ((*rowIter).content() > 0 && _basicVar.factor() < 0))
-                     && (Settings::omit_division || (*rowIter).content() < 0) )
-                    {
-                        if( nonBasicVar.supremum() > nonBasicVar.assignment() )
-                        {
-                            // Nonbasic variable suitable
-                            assert( (*rowIter).content() != 0 );
-                            if( betterEntry( rowIter.entryID(), bestEntry ) )
-                            {
-                                bestEntry = rowIter.entryID();
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if( nonBasicVar.infimum() < nonBasicVar.assignment()  )
-                        {
-                            // Nonbasic variable suitable
-                            assert( (*rowIter).content() != 0 );
-                            if( betterEntry( rowIter.entryID(), bestEntry ) )
-                            {
-                                bestEntry = rowIter.entryID();
-                            }
-                        }
-                    }
-                    if( rowIter.hEnd( false ) )
-                    {
-                        if( bestEntry == LAST_ENTRY_ID )
-                        {
-                            return std::pair<EntryID,bool>( rowStartEntry, false );
-                        }
-                        break;
-                    }
-                    else
-                    {
-                        rowIter.hMove( false );
-                    }
+                    if( nonBasicVar.supremum() > nonBasicVar.assignment() && betterEntry( rowIter.entryID(), bestEntry ) )
+                        bestEntry = rowIter.entryID(); // Nonbasic variable suitable
                 }
-            }
-            // Lower bound is violated
-            else
-            {
-                assert( basicVarInfimum > basicVarAssignment );
-                // Check all entries in the row / nonbasic variables
-                Iterator rowIter = Iterator( rowStartEntry, mpEntries );
-                while( true )
+                else
                 {
-                    const Variable<T1, T2>& nonBasicVar = *(*rowIter).columnVar();
-                    if( (!Settings::omit_division || ((*rowIter).content() > 0 && _basicVar.factor() > 0) || ((*rowIter).content() < 0 && _basicVar.factor() < 0))
-                     && (Settings::omit_division || (*rowIter).content() > 0) )
-                    {
-                        if( nonBasicVar.supremum() > nonBasicVar.assignment() )
-                        {
-                            // Nonbasic variable suitable
-                            assert( (*rowIter).content() != 0 );
-                            if( betterEntry( rowIter.entryID(), bestEntry ) )
-                            {
-                                bestEntry = rowIter.entryID();
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if( nonBasicVar.infimum() < nonBasicVar.assignment() )
-                        {
-                            // Nonbasic variable suitable
-                            assert( (*rowIter).content() != 0 );
-                            if( betterEntry( rowIter.entryID(), bestEntry ) )
-                            {
-                                bestEntry = rowIter.entryID();
-                            }
-                        }
-                    }
-                    if( rowIter.hEnd( false ) )
-                    {
-                        if( bestEntry == LAST_ENTRY_ID )
-                        {
-                            return std::pair<EntryID,bool>( rowStartEntry, false );
-                        }
-                        break;
-                    }
-                    else
-                    {
-                        rowIter.hMove( false );
-                    }
+                    if( nonBasicVar.infimum() < nonBasicVar.assignment() && betterEntry( rowIter.entryID(), bestEntry ) )
+                        bestEntry = rowIter.entryID(); // Nonbasic variable suitable
                 }
+                if( rowIter.hEnd( false ) )
+                    break;
+                else
+                    rowIter.hMove( false );
             }
-            return std::pair<EntryID,bool>( bestEntry, true );
+            return bestEntry;
         }
 
         template<class Settings, typename T1, typename T2>

@@ -527,6 +527,28 @@ namespace smtrat
                 {
                     return mNewLearnedBounds;
                 }
+                
+                bool entryIsPositive( const TableauEntry<T1,T2>& _entry ) const
+                {
+                    if( Settings::omit_division )
+                    {
+                        const Variable<T1, T2>& basicVar = *_entry.rowVar();
+                        return (_entry.content() > 0 && basicVar.factor() > 0) || (_entry.content() < 0 && basicVar.factor() < 0);
+                    }
+                    else
+                        return _entry.content() > 0;
+                }
+                
+                bool entryIsNegative( const TableauEntry<T1,T2>& _entry ) const
+                {
+                    if( Settings::omit_division )
+                    {
+                        const Variable<T1, T2>& basicVar = *_entry.rowVar();
+                        return (_entry.content() < 0 && basicVar.factor() > 0) || (_entry.content() > 0 && basicVar.factor() < 0);
+                    }
+                    else
+                        return _entry.content() < 0;
+                }
 
                 /**
                  * @return 
@@ -653,10 +675,10 @@ namespace smtrat
                 /**
                  * 
                  * @param _basicVar
-                 * @param supremumViolated
+                 * @param _forIncreasingAssignment
                  * @return 
                  */
-                std::pair<EntryID, bool> isSuitable( const Variable<T1, T2>& _basicVar, bool supremumViolated ) const;
+                EntryID isSuitable( const Variable<T1, T2>& _basicVar, bool _forIncreasingAssignment ) const;
                 
                 /**
                  * 
