@@ -2421,7 +2421,7 @@ namespace smtrat
                 return l_Undef;
             if( !ok )
             {
-                if( !Settings::stop_search_after_first_unknown && mExcludedAssignments )
+                if( !mReceivedFormulaPurelyPropositional && !Settings::stop_search_after_first_unknown && mExcludedAssignments )
                     return l_Undef;
                 return l_False;
             }
@@ -2468,8 +2468,9 @@ namespace smtrat
                     }
                     else if( value( p ) == l_False )
                     {
-                        if( !Settings::stop_search_after_first_unknown && mExcludedAssignments )
+                        if( !mReceivedFormulaPurelyPropositional && !Settings::stop_search_after_first_unknown && mExcludedAssignments )
                             return l_Undef;
+                        return l_False;
                     }
                     else
                     {
@@ -2489,7 +2490,7 @@ namespace smtrat
 
                     if( next == lit_Undef )
                     {
-                        if( mCurrentAssignmentConsistent == SAT )
+                        if( mReceivedFormulaPurelyPropositional || mCurrentAssignmentConsistent == SAT )
                         {
                             // Model found:
                             return l_True;
@@ -2514,7 +2515,7 @@ namespace smtrat
                         }
                     }
                 }
-                if( Settings::stop_search_after_first_unknown || next != lit_Undef )
+                if( mReceivedFormulaPurelyPropositional || Settings::stop_search_after_first_unknown || next != lit_Undef )
                 {
                     // Increase decision level and enqueue 'next'
                     newDecisionLevel();
@@ -2533,7 +2534,7 @@ namespace smtrat
                 
                 if( decisionLevel() <= assumptions.size() )
                 {
-                    if( !Settings::stop_search_after_first_unknown && mExcludedAssignments )
+                    if( !mReceivedFormulaPurelyPropositional && !Settings::stop_search_after_first_unknown && mExcludedAssignments )
                         return l_Undef;
                     return l_False;
                 }
