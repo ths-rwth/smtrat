@@ -148,6 +148,8 @@ namespace smtrat
     static const unsigned MAX_DIMENSION_FOR_FACTORIZATION = 6;
 
     static const unsigned MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION = 7;
+    
+    static const EvalDoubleIntervalMap EMPTY_EVAL_DOUBLE_INTERVAL_MAP = EvalDoubleIntervalMap();
 
     // Macros.
 
