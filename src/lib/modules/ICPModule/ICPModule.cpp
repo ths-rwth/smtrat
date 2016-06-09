@@ -1107,9 +1107,9 @@ namespace smtrat
             // construct new box
             FormulasT boxFormulas = createBoxFormula();
             // push lemma
+            auto lastFormula = --boxFormulas.end();
             if( boxFormulas.size() > 1 )
             {
-                auto lastFormula = --boxFormulas.end();
                 for( auto iter = boxFormulas.begin(); iter != lastFormula; ++iter )
                 {
                     FormulasT subFormulaSetTmp = subformulas;
@@ -1117,6 +1117,8 @@ namespace smtrat
                     addLemma( FormulaT( carl::FormulaType::OR, std::move(subFormulaSetTmp) ) );
                 }
             }
+            subformulas.push_back( *lastFormula );
+            addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
             #ifdef ICP_MODULE_SHOW_PROGRESS
             addProgress( mInitialBoxSize - calculateCurrentBoxSize() );
             #endif
