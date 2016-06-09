@@ -353,15 +353,13 @@ namespace smtrat
                 }
                 else
                 {
-                    #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                    if( !currentState->checkTestCandidatesForBounds() )
+                    if( Settings::use_variable_bounds && !currentState->checkTestCandidatesForBounds() )
                     {
                         currentState->rInconsistent() = true;
                         removeStatesFromRanking( *currentState );
                     }
                     else
                     {
-                        #endif
                         if( mLazyMode && currentState->getNumberOfCurrentSubresultCombination() > mLazyCheckThreshold )
                         {
                             if( mFullCheck )
@@ -673,9 +671,7 @@ namespace smtrat
                             default:
                                 assert( false );
                         }
-                        #ifdef SMTRAT_VS_VARIABLEBOUNDS
                     }
-                    #endif
                 }
             }
         }
@@ -785,10 +781,8 @@ namespace smtrat
         unsigned numberOfAddedChildren = 0;
         carl::PointerSet<vs::Condition> oConditions;
         oConditions.insert( _condition );
-        #ifdef SMTRAT_VS_VARIABLEBOUNDS
         if( !Settings::use_variable_bounds || _currentState->hasRootsInVariableBounds( _condition, Settings::sturm_sequence_for_root_check ) )
         {
-            #endif
             carl::Relation relation = (*_condition).constraint().relation();
             if( !Settings::use_strict_inequalities_for_test_candidate_generation )
             {
@@ -1000,9 +994,7 @@ namespace smtrat
                     }
                 }
             }
-        #ifdef SMTRAT_VS_VARIABLEBOUNDS
         }
-        #endif
         if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
 //        if( _eliminationVar.getType() != carl::VariableType::VT_INT && !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
         {
@@ -1095,12 +1087,7 @@ namespace smtrat
         bool anySubstitutionFailed = false;
         bool allSubstitutionsApplied = true;
         ConditionSetSet conflictSet;
-        #ifdef SMTRAT_VS_VARIABLEBOUNDS
-//        EvalDoubleIntervalMap solBox = (currentSubs.type() == Substitution::MINUS_INFINITY ? EvalDoubleIntervalMap() : _currentState->rFather().rVariableBounds().getIntervalMap());
-        EvalDoubleIntervalMap solBox = _currentState->father().variableBounds().getIntervalMap();
-        #else
-        EvalDoubleIntervalMap solBox = EvalDoubleIntervalMap();
-        #endif
+        const EvalDoubleIntervalMap& solBox = Settings::use_variable_bounds ? _currentState->father().variableBounds().getIntervalMap() : EMPTY_EVAL_DOUBLE_INTERVAL_MAP;
         // Apply the substitution to the given conditions.
         for( auto cond = _conditions.begin(); cond != _conditions.end(); ++cond )
         {
@@ -1130,10 +1117,11 @@ namespace smtrat
                     condSet.insert( *cond );
                     if( _currentState->pOriginalCondition() != NULL )
                         condSet.insert( _currentState->pOriginalCondition() );
-                    #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                    auto conflictingBounds = _currentState->father().variableBounds().getOriginsOfBounds( conflVars );
-                    condSet.insert( conflictingBounds.begin(), conflictingBounds.end() );
-                    #endif
+                    if( Settings::use_variable_bounds )
+                    {
+                        auto conflictingBounds = _currentState->father().variableBounds().getOriginsOfBounds( conflVars );
+                        condSet.insert( conflictingBounds.begin(), conflictingBounds.end() );
+                    }
                     conflictSet.insert( condSet );
                 }
                 else
@@ -1183,9 +1171,8 @@ namespace smtrat
             {
                 const vs::Condition* pCond = _currentState->rConditions().back();
                 _currentState->rConditions().pop_back();
-                #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                _currentState->rVariableBounds().removeBound( pCond->constraint(), pCond );
-                #endif
+                if( Settings::use_variable_bounds )
+                    _currentState->rVariableBounds().removeBound( pCond->constraint(), pCond );
                 mpConditionIdAllocator->free( pCond->getId() );
                 delete pCond;
                 pCond = NULL;
@@ -1223,9 +1210,8 @@ namespace smtrat
                     {
                         const vs::Condition* pCond = _currentState->rConditions().back();
                         _currentState->rConditions().pop_back();
-                        #ifdef SMTRAT_VS_VARIABLEBOUNDS
-                        _currentState->rVariableBounds().removeBound( pCond->constraint(), pCond );
-                        #endif
+                        if( Settings::use_variable_bounds )
+                            _currentState->rVariableBounds().removeBound( pCond->constraint(), pCond );
                         mpConditionIdAllocator->free( pCond->getId() );
                         delete pCond;
                         pCond = NULL;

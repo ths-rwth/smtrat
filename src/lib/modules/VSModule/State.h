@@ -18,10 +18,6 @@
 #include "VSStatistics.h"
 #endif
 
-#ifdef SMTRAT_VS_VARIABLEBOUNDS
-#define SMTRAT_VS_VARIABLEBOUNDS_B
-#endif
-
 #define VS_STATE_DEBUG_METHODS
 
 namespace vs

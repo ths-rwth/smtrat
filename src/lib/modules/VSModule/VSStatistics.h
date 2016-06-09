@@ -58,6 +58,7 @@ namespace smtrat
             Statistics::addKeyValuePair( "considered-states", mConsideredStates );
             Statistics::addKeyValuePair( "considered-cases", mConsideredCases );
             Statistics::addKeyValuePair( "omitted-test-candidates-by-variable-bounds", mVBOmittedTCs );
+            Statistics::addKeyValuePair( "omitted-constraints-by-variable-bounds", mVBOmittedConstraints );
             Statistics::addKeyValuePair( "created-covering-sets", mCoveringSets );
             Statistics::addKeyValuePair( "average-covering-set-gain", (mCoveringSetSavings/mCoveringSets) );
             Statistics::addKeyValuePair( "local-conflicts", mLocalConflicts );
@@ -82,9 +83,9 @@ namespace smtrat
             ++mCreatedTCs;
         }
         
-        void eliminatedConstraintByVB()
+        void omittedConstraintByVB( carl::uint _numberOfOmittedConstraints = 1 )
         {
-            ++mVBOmittedConstraints;
+            mVBOmittedConstraints += _numberOfOmittedConstraints;
         }
         
         void localConflict( carl::uint _numberOfOmittedConstraints )

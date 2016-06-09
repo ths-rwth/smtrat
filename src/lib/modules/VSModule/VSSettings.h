@@ -140,4 +140,15 @@ namespace smtrat
 		static constexpr auto moduleName = "VSModule<VSSettings5>";
         static const bool sturm_sequence_for_root_check                         = use_variable_bounds && true;
     };
+    
+    struct VSSettingsPlain : VSSettings1
+    {
+        static const bool use_variable_bounds                                   = false;
+        static const bool use_fixed_variable_order                              = true;
+    };
+    
+    struct VSSettingsOnlyVB : VSSettingsPlain
+    {
+        static const bool use_variable_bounds                                   = true;
+    };
 }

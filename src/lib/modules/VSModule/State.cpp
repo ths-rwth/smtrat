@@ -578,7 +578,7 @@ namespace vs
     bool State::simplify( ConditionList& _conditionVectorToSimplify, ConditionSetSet& _conflictSet, ValuationMap& _ranking, bool _stateConditions )
     {
         carl::PointerSet<Condition> redundantConditionSet;
-        if( _stateConditions && !mpVariableBounds->isConflicting() )
+        if( mpVariableBounds != NULL && _stateConditions && !mpVariableBounds->isConflicting() )
         {
             smtrat::EvalDoubleIntervalMap varIntervals = mpVariableBounds->getIntervalMap();
             for( auto iter = _conditionVectorToSimplify.begin(); iter != _conditionVectorToSimplify.end(); ++iter )
@@ -600,6 +600,9 @@ namespace vs
                         case 1:
                         {
                             redundantConditionSet.insert( *iter );
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                            mpStatistics->omittedConstraintByVB();
+                            #endif
                             break;
                         }
                         default:
@@ -656,34 +659,6 @@ namespace vs
                     const Condition* condA = *iterA;
                     const Condition* condB = *iterB;
                     signed strongProp = carl::compare<smtrat::Poly>( condA->constraint(), condB->constraint() );
-//                    std::cout << "compare(  " << condA->constraint() << "  ,  " << condB->constraint() << "  ) = ";
-//                    if( strongProp != 0 )
-//                    {
-//                        switch(strongProp)
-//                        {
-//                            case carl::A_IFF_B:
-//                                std::cout << "A_IFF_B";
-//                                break;
-//                            case carl::A_IMPLIES_B:
-//                                std::cout << "A_IMPLIES_B";
-//                                break;
-//                            case carl::B_IMPLIES_A:
-//                                std::cout << "B_IMPLIES_A";
-//                                break;
-//                            case carl::NOT__A_AND_B:
-//                                std::cout << "NOT__A_AND_B";
-//                                break;
-//                            case carl::A_AND_B__IFF_C:
-//                                std::cout << "A_AND_B__IFF_C";
-//                                break;
-//                            case carl::A_XOR_B:
-//                                std::cout << "A_XOR_B";
-//                                break;
-//                            default:
-//                                std::cout << "Nothing";
-//                        }
-//                    } 
-//                    std::cout << std::endl;
                     // If the two conditions have the same solution space.
                     if( strongProp == 2 )
                     {
