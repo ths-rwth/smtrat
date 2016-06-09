@@ -514,8 +514,7 @@ namespace smtrat
                     }
                 }
                 addClause( excludeClause, PERMANENT_CLAUSE );
-                bool foundConflictOfSizeOne = false;
-                CRef confl = storeLemmas( foundConflictOfSizeOne );
+                CRef confl = storeLemmas();
                 if( confl != CRef_Undef )
                     excludedAssignments.push_back( confl );
                 if( !ok || decisionLevel() <= assumptions.size() )
@@ -1656,9 +1655,7 @@ namespace smtrat
             {
                 assert( assigns[var(add_tmp[0])] != l_False );
                 uncheckedEnqueue( add_tmp[0], cr );
-                bool madeTheoryCall = false;
-                bool foundConflictOfSizeOne = false;
-                propagateConsistently( madeTheoryCall, foundConflictOfSizeOne, false );
+                propagateConsistently( false );
                 return ok;
             }
             else
@@ -1683,7 +1680,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    CRef SATModule<Settings>::storeLemmas( bool& _foundConflictOfSizeOne )
+    CRef SATModule<Settings>::storeLemmas()
     {
         #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
         std::cout << __func__ << std::endl;
@@ -1712,7 +1709,6 @@ namespace smtrat
                 // if it's an empty lemma, we have a conflict at zero level
                 if( lemma.size() == 0 )
                 {
-                    _foundConflictOfSizeOne = true;
                     backtrackLevel = 0;
                     continue;
                 }
@@ -1780,8 +1776,6 @@ namespace smtrat
                             #endif
                             conflict = lemma_ref;
                         }
-                        else 
-                            _foundConflictOfSizeOne = true;
                     }
                     else
                     {
@@ -2049,7 +2043,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    CRef SATModule<Settings>::propagateConsistently( bool& _madeTheoryCall, bool& _foundConflictOfSizeOne, bool _checkWithTheory )
+    CRef SATModule<Settings>::propagateConsistently( bool _checkWithTheory )
     {
         CRef confl = CRef_Undef;
         
@@ -2058,8 +2052,8 @@ namespace smtrat
         // add lemmas that we're left behind
         if( mLemmas.size() > 0 )
         {
-            confl = storeLemmas( _foundConflictOfSizeOne );
-            if( confl != CRef_Undef || _foundConflictOfSizeOne )
+            confl = storeLemmas();
+            if( confl != CRef_Undef )
                 return confl;
             if( !ok )
                 return CRef_Undef;
@@ -2071,15 +2065,14 @@ namespace smtrat
             confl = propagate();
             // If no conflict, do the theory check
             if( confl == CRef_Undef && _checkWithTheory )
-            {   
-                bool lemmasLearned = false;
+            {
                 // do the theory check
-                confl = theoryCall( _madeTheoryCall, lemmasLearned );
+                theoryCall();
                 // propagate theory
                 propagateTheory();
                 // if there are lemmas (or conflicts) update them
                 if( mLemmas.size() > 0 )
-                    confl = storeLemmas( _foundConflictOfSizeOne );
+                    confl = storeLemmas();
             }
             else
             {   
@@ -2089,7 +2082,7 @@ namespace smtrat
                     // remember the trail size
                     int oldLevel = decisionLevel();
                     // update the lemmas
-                    CRef lemmaConflict = storeLemmas( _foundConflictOfSizeOne );
+                    CRef lemmaConflict = storeLemmas();
                     // if we get a conflict, we prefer it since it's earlier in the trail
                     if( lemmaConflict != CRef_Undef )
                         confl = lemmaConflict; // lemma conflict takes precedence, since it's earlier in the trail
@@ -2222,7 +2215,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    CRef SATModule<Settings>::theoryCall( bool& _madeTheoryCall, bool& _lemmasLearned )
+    void SATModule<Settings>::theoryCall()
     {
         #ifdef DEBUG_SATMODULE
         cout << "### Sat iteration" << endl;
@@ -2246,7 +2239,6 @@ namespace smtrat
             bool finalCheck = fullAssignment();
             if( mChangedPassedFormula || finalCheck )
             {
-                _madeTheoryCall = true;
                 #ifdef DEBUG_SATMODULE
                 cout << "### Check the constraints: { "; for( auto& subformula : rPassedFormula() ) cout << subformula.formula() << " "; cout << "}" << endl;
                 #endif
@@ -2260,7 +2252,7 @@ namespace smtrat
                     case SAT:
                     {
                         if( Settings::allow_theory_propagation )
-                            _lemmasLearned = processLemmas();
+                            processLemmas();
                         break;
                     }
                     case UNSAT:
@@ -2268,13 +2260,12 @@ namespace smtrat
                         learnTheoryConflicts();
                         if( Settings::allow_theory_propagation )
                             processLemmas();
-                        _lemmasLearned = true;
                         break;
                     }
                     case UNKNOWN:
                     {
                         if( Settings::allow_theory_propagation )
-                            _lemmasLearned = processLemmas();
+                            processLemmas();
                         break;
                     }
                     default:
@@ -2285,7 +2276,6 @@ namespace smtrat
                 }
             }
         }
-        return CRef_Undef;
     }
     
     template<class Settings>
@@ -2340,9 +2330,7 @@ namespace smtrat
         {
             if( !mComputeAllSAT && anAnswerFound() )
                 return l_Undef;
-            bool madeTheoryCall = false;
-            bool foundConflictOfSizeOne = false;
-            CRef confl = propagateConsistently( madeTheoryCall, foundConflictOfSizeOne );
+            CRef confl = propagateConsistently();
             if( !mComputeAllSAT && anAnswerFound() )
                 return l_Undef;
             if( !ok )
@@ -2352,7 +2340,7 @@ namespace smtrat
                 return l_False;
             }
 
-            if( !foundConflictOfSizeOne && confl == CRef_Undef )
+            if( confl == CRef_Undef )
             {
                 // NO CONFLICT
                 if( Settings::check_if_all_clauses_are_satisfied && !mReceivedFormulaPurelyPropositional )
@@ -2433,8 +2421,7 @@ namespace smtrat
                                 for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
                                     learnt_clause.push( neg( getLiteral( subformula->formula() ) ) );
                                 addClause( learnt_clause, LEMMA_CLAUSE );
-                                bool foundConflictOfSizeOne = false;
-                                confl = storeLemmas( foundConflictOfSizeOne );
+                                confl = storeLemmas();
                                 if( confl != CRef_Undef )
                                     unknown_excludes.push( confl );
                             }
@@ -2502,12 +2489,9 @@ namespace smtrat
         else
         {
             // learnt clause is the asserting clause.
-//            if( conflictClauseNotAsserting )
-//            {
-                _confl = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
-                learnts.push( _confl );
-                attachClause( _confl );
-//            }
+            _confl = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
+            learnts.push( _confl );
+            attachClause( _confl );
             claBumpActivity( ca[_confl] );
             uncheckedEnqueue( learnt_clause[0], _confl );
             decrementLearntSizeAdjustCnt();
@@ -3242,76 +3226,6 @@ NextClause:
             ++backend;
         }
         return lemmasLearned;
-    }
-
-    template<class Settings>
-    CRef SATModule<Settings>::learnTheoryConflict( bool& _foundConflictOfSizeOne )
-    {
-        CRef conflictClause = CRef_Undef;
-        std::vector<Module*>::const_iterator backend = usedBackends().begin();
-        while( backend != usedBackends().end() )
-        {
-            const std::vector<FormulaSetT>& infSubsets = (*backend)->infeasibleSubsets();
-            assert( (*backend)->solverState() != UNSAT || !infSubsets.empty() );
-            for( auto infsubset = infSubsets.begin(); infsubset != infSubsets.end(); ++infsubset )
-            {
-                assert( !infsubset->empty() );
-                #ifdef SMTRAT_DEVOPTION_Validation
-                if( validationSettings->logInfSubsets() )
-                    addAssumptionToCheck( *infsubset, false, (*backend)->moduleName() + "_infeasible_subset" );
-                #endif
-                #ifdef DEBUG_SATMODULE
-                (*backend)->printInfeasibleSubsets();
-                #endif
-                // Add the according literals to the conflict clause.
-                vec<Lit> explanation;
-                size_t conflictEvaluation;
-                bool containsUpperBoundOnMinimal = false;
-                for( auto subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
-                {
-                    if( mUpperBoundOnMinimal != passedFormulaEnd() && mUpperBoundOnMinimal->formula() == *subformula )
-                    {
-                        containsUpperBoundOnMinimal = true;
-                        continue;
-                    }
-                    // Add literal to clause
-                    explanation.push( neg( getLiteral( *subformula ) ) );
-                    // Update quality of clause regarding this literal
-                    adaptConflictEvaluation( conflictEvaluation, explanation.last(), subformula == infsubset->begin() );
-                }
-                mCurrentTheoryConflictEvaluations[std::make_pair( conflictEvaluation, ++mTheoryConflictIdCounter )] = mCurrentTheoryConflicts.size();
-                mCurrentTheoryConflicts.push_back( std::move( explanation ) );
-                mCurrentTheoryConflictTypes.push_back( containsUpperBoundOnMinimal ? PERMANENT_CLAUSE : CONFLICT_CLAUSE );
-            }
-            ++backend;
-        }
-        if( addClause( mCurrentTheoryConflicts[mCurrentTheoryConflictEvaluations.begin()->second], mCurrentTheoryConflictTypes[mCurrentTheoryConflictEvaluations.begin()->second] ) )
-        {
-            _foundConflictOfSizeOne = false;
-            conflictClause = learnts.last();
-        }
-        else
-            _foundConflictOfSizeOne = true;
-        auto tcIter = mCurrentTheoryConflictEvaluations.begin();
-        ++tcIter;
-        size_t addedClauses = 1;
-#ifdef __VS
-        size_t threshold = (size_t)(Settings::getPercentage_of_conflicts_to_add() * (double) mCurrentTheoryConflictEvaluations.size());
-#else
-        size_t threshold = (size_t)(Settings::percentage_of_conflicts_to_add * (double)mCurrentTheoryConflictEvaluations.size());
-#endif
-        for( ; tcIter != mCurrentTheoryConflictEvaluations.end(); ++tcIter )
-        {
-            if( addedClauses > threshold )
-                break;
-            addClause( mCurrentTheoryConflicts[tcIter->second], mCurrentTheoryConflictTypes[tcIter->second] );
-            ++addedClauses;
-        }
-        mCurrentTheoryConflicts.clear();
-        mCurrentTheoryConflictTypes.clear();
-        mCurrentTheoryConflictEvaluations.clear();
-        mTheoryConflictIdCounter = 0;
-        return conflictClause;
     }
     
     template<class Settings>
