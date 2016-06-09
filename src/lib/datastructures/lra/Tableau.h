@@ -671,6 +671,7 @@ namespace smtrat
                  * @return 
                  */
                 std::pair<EntryID,bool> nextPivotingElementForOptimizing( const Variable<T1, T2>& _objective );
+                std::pair<EntryID,bool> nextZeroPivotingElementForOptimizing( const Variable<T1, T2>& _objective ) const;
                 
                 /**
                  * 

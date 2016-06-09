@@ -10,7 +10,7 @@
 #include "Tableau.h"
 #include "TableauSettings.h"
 
-#define DEBUG_METHODS_TABLEAU
+//#define DEBUG_METHODS_TABLEAU
 //#define DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
 //#define LRA_PEDANTIC_CORRECTNESS_CHECKS
 
@@ -1312,9 +1312,9 @@ namespace smtrat
             {
                 // We could not find any suitable column variable for pivoting -> Minimum reached.
                 #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                std::cout << "No non-basic variable is suitable." << std::endl;
+                std::cout << "No non-basic variable is suitable to actually gain something." << std::endl;
                 #endif
-                return std::make_pair( LAST_ENTRY_ID, false );
+                return nextZeroPivotingElementForOptimizing( _objective );
             }
             assert( bestImprovement != infinityValue );
             assert( bestImprovement > T1(0) );
@@ -1332,6 +1332,93 @@ namespace smtrat
             std::cout << " where theta (change on non-basic variable) is " << *mpTheta << "." << std::endl;
             #endif
             return std::make_pair( bestPivotingEntry, true );
+        }
+        
+        template<class Settings, typename T1, typename T2>
+        std::pair<EntryID,bool> Tableau<Settings,T1,T2>::nextZeroPivotingElementForOptimizing( const Variable<T1, T2>& _objective ) const
+        {
+            #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+            std::cout << "Try to find a pivoting candidate, such that the non-basic (column) variable might improve the objective later." << std::endl;
+            #endif
+            EntryID smallestPivotingElement = LAST_ENTRY_ID;
+            // find the smallest non-basic variable, which allows us to gain optimization
+            const Variable<T1, T2>* bestNonBasicVar = nullptr;
+            Iterator objectiveIter = Iterator( _objective.startEntry(), mpEntries );
+            while( true )
+            {
+                const Variable<T1, T2>* varForMinimizaton = (*objectiveIter).columnVar();
+                #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                std::cout << "Checking " << std::endl; varForMinimizaton->print(); std::cout << " .. " << std::endl;
+                #endif
+                if( (*mpEntries)[varForMinimizaton->startEntry()].vNext( false ) != LAST_ENTRY_ID ) // Non-basic variable only occurs in objective function
+                {
+                    if( bestNonBasicVar == nullptr || *varForMinimizaton < *bestNonBasicVar )
+                    {
+                        bool increaseVar = Settings::omit_division ?
+                            ((*objectiveIter).content() < 0 && _objective.factor() > 0) || ((*objectiveIter).content() > 0 && _objective.factor() < 0) :
+                            (*objectiveIter).content() < 0;
+                        if( increaseVar )
+                        {
+                            if( varForMinimizaton->supremum().isInfinite() || varForMinimizaton->supremum() > varForMinimizaton->assignment() )
+                            {
+                                #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                                std::cout << "Is smaller!" << std::endl;
+                                #endif
+                                bestNonBasicVar = varForMinimizaton;
+                            }
+                        }
+                        else
+                        {
+                            if( varForMinimizaton->infimum().isInfinite() || varForMinimizaton->infimum() < varForMinimizaton->assignment() )
+                            {
+                                bestNonBasicVar = varForMinimizaton;
+                                #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                                std::cout << "Is smaller!" << std::endl;
+                                #endif
+                            }
+                        }
+                    }
+                }
+                if( objectiveIter.hEnd( false ) )
+                    break;
+                else
+                    objectiveIter.hMove( false );
+            }
+            if( bestNonBasicVar != nullptr )
+            {
+                #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                std::cout << "Smallest non-basic variable which might allow to improve the objective later: ";
+                bestNonBasicVar->print(); std::cout << std::endl;
+                std::cout << "Search for smallest basic variable to pivot with." << std::endl;
+                #endif
+                Iterator columnIter = Iterator( bestNonBasicVar->startEntry(), mpEntries );
+                const Variable<T1, T2>* bestRowVar = nullptr;
+                assert( columnIter.vEnd( true ) ); // Is the lowest row.
+                assert( !columnIter.vEnd( false ) ); // There should be at least one more row containing this column variable.
+                // Skip the objective function's row.
+                columnIter.vMove( false );
+                while( true )
+                {
+                    const Variable<T1, T2>* rowVar = (*columnIter).rowVar();
+                    #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                    std::cout << "Checking " << std::endl; rowVar->print(); std::cout << " .. " << std::endl;
+                    #endif
+                    if( bestRowVar == nullptr || *rowVar < *bestRowVar )
+                    {
+                        #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                        std::cout << "Is smaller!" << std::endl;
+                        #endif
+                        smallestPivotingElement = columnIter.entryID();
+                        bestRowVar = rowVar;
+                    }
+                    if( columnIter.vEnd( false ) )
+                        break;
+                    else
+                        columnIter.vMove( false );
+                }
+                
+            }
+            return std::make_pair( smallestPivotingElement, smallestPivotingElement != LAST_ENTRY_ID );
         }
 
         template<class Settings, typename T1, typename T2>

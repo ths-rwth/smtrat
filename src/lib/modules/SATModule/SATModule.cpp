@@ -513,16 +513,18 @@ namespace smtrat
                         }
                     }
                 }
-                if( addClause( excludeClause, PERMANENT_CLAUSE ) )
-                {
-                    excludedAssignments.push_back( learnts.last() );
-                }
+                addClause( excludeClause, PERMANENT_CLAUSE );
+                bool foundConflictOfSizeOne = false;
+                CRef confl = storeLemmas( foundConflictOfSizeOne );
+                if( confl != CRef_Undef )
+                    excludedAssignments.push_back( confl );
                 if( !ok || decisionLevel() <= assumptions.size() )
                 {
                     cleanUpAfterOptimizing( excludedAssignments );
                     break;
                 }
-                handleConflict( learnts.last() );
+                if( confl != CRef_Undef )
+                    handleConflict( confl );
             }
         }
         
