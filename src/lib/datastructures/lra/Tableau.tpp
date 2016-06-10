@@ -1418,6 +1418,8 @@ namespace smtrat
                 }
                 
             }
+            if( smallestPivotingElement != LAST_ENTRY_ID )
+                *mpTheta = T1(0);
             return std::make_pair( smallestPivotingElement, smallestPivotingElement != LAST_ENTRY_ID );
         }
 
