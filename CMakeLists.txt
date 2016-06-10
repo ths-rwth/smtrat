@@ -45,6 +45,7 @@ set(smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
 set(ADDITIONAL_INCLUDE_DIRS "" CACHE STRING "Additional directories added to the include directories.")
 set(ADDITIONAL_LINK_DIRS "" CACHE STRING "Additional directories added to the link directories.")
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 
 # # # # # # # # # # # # # # # # # # # # # #
 # B. Options
