@@ -24,6 +24,9 @@ namespace cad {
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::GREEDY>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		mis.emplace_back();
+		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
+			mis.back().emplace(c);
+		}
 		auto cg = cad.generateConflictGraph();
 		while (cg.hasRemainingSamples()) {
 			std::size_t c = cg.getMaxDegreeConstraint();
