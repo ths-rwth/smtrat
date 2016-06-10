@@ -133,6 +133,11 @@ struct CADCore<CoreHeuristic::PreferSampling> {
 					cad.mLifting.removeNextSample();
 					cad.mLifting.addTrivialSample(it);
 				}
+				if (CAD::SettingsT::debugStepsToTikz) {
+					cad.thp.addLifting(cad.mLifting);
+					cad.thp.addProjection(cad.mProjection);
+					cad.thp.step();
+				}
 			}
 			if (CAD::SettingsT::debugProjection) {
 				static std::size_t counter = 0;
