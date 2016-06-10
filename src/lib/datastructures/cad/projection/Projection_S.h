@@ -48,12 +48,12 @@ namespace cad {
 			mQueue.push(QueueEntry(p, cid, isBound));
 			return Bitset();
 		}
-		void removePolynomial(const UPoly& p, std::size_t cid) {
+		void removePolynomial(const UPoly& p, std::size_t cid, bool isBound) {
 			auto it = mQueue.find(QueueEntry(p, cid, false));
 			if (it != mQueue.end()) {
 				mQueue.erase(it);
 			} else {
-				Super::removePolynomial(p, cid);
+				Super::removePolynomial(p, cid, isBound);
 			}
 		}
 		

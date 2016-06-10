@@ -26,9 +26,9 @@ namespace cad {
 		using Super::canBeRemoved;
 		using Super::getID;
 		using Super::freeID;
-		using Super::dim;
 		using Super::var;
 	public:
+		using Super::dim;
 		using Super::size;
 	private:
 
@@ -39,37 +39,54 @@ namespace cad {
 		// Stores polynomials with their origins, being pairs of polynomials from the level above.
 		std::vector<std::vector<boost::optional<std::pair<UPoly,Origin>>>> mPolynomials;
 		
+		auto& polyIDs(std::size_t level) {
+			assert(level > 0 && level <= dim());
+			return mPolynomialIDs[level - 1];
+		}
+		const auto& polyIDs(std::size_t level) const {
+			assert(level > 0 && level <= dim());
+			return mPolynomialIDs[level - 1];
+		}
+		auto& polys(std::size_t level) {
+			assert(level > 0 && level <= dim());
+			return mPolynomials[level - 1];
+		}
+		const auto& polys(std::size_t level) const {
+			assert(level > 0 && level <= dim());
+			return mPolynomials[level - 1];
+		}
+		
 		Bitset addToProjection(std::size_t level, const UPoly& p, const Origin::BaseType& origin) {
+			assert(level > 0 && level <= dim());
 			if (canBeRemoved(p)) return Bitset();
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
-			assert(level < dim());
 			assert(p.mainVar() == var(level));
-			auto it = mPolynomialIDs[level].find(p);
-			if (it != mPolynomialIDs[level].end()) {
-				assert(mPolynomials[level][it->second]);
-				mPolynomials[level][it->second]->second += origin;
+			auto it = polyIDs(level).find(p);
+			if (it != polyIDs(level).end()) {
+				assert(polys(level)[it->second]);
+				polys(level)[it->second]->second += origin;
 				return Bitset();
 			}
 			std::size_t newID = getID(level);;
 			Bitset res;
-			if (level < dim() - 1) {
+			if (level < dim()) {
 				mOperator(Settings::projectionOperator, p, var(level + 1), 
-					[&](const UPoly& np){ res |= addToProjection(level + 1, np, Origin::BaseType(level + 1, newID)); }
+					[&](const UPoly& np){ res |= addToProjection(level + 1, np, Origin::BaseType(level, newID)); }
 				);
-				for (const auto& it: mPolynomialIDs[level]) {
-					assert(mPolynomials[level][it.second]);
-					auto newOrigin = Origin::BaseType(level + 1,newID,it.second);
+				for (const auto& it: polyIDs(level)) {
+					assert(polys(level)[it.second]);
+					auto newOrigin = Origin::BaseType(level, newID, it.second);
 					mOperator(Settings::projectionOperator, p, it.first, var(level + 1),
 						[&](const UPoly& np){ res |= addToProjection(level + 1, np, newOrigin); }
 					);
 				}
 			}
-			if (newID >= mPolynomials[level].size()) {
-				mPolynomials[level].resize(newID+1);
+			if (newID >= polys(level).size()) {
+				polys(level).resize(newID + 1);
 			}
-			mPolynomials[level][newID] = std::make_pair(p, Origin(origin));
-			mPolynomialIDs[level].emplace(p, newID);
-			mLiftingQueues[level].insert(newID);
+			polys(level)[newID] = std::make_pair(p, Origin(origin));
+			polyIDs(level).emplace(p, newID);
+			mLiftingQueues[level - 1].insert(newID);
 			res.set(level);
 			return res;
 		}
@@ -82,25 +99,30 @@ namespace cad {
 			mPolynomialIDs.clear();
 			mPolynomialIDs.resize(dim());
 		}
-		Bitset addPolynomial(const UPoly& p, std::size_t cid, bool) {
-			assert(p.mainVar() == var(0));
-			return addToProjection(0, p, Origin::BaseType(0, cid));
+		Bitset addPolynomial(const UPoly& p, std::size_t cid, bool) override {
+			assert(p.mainVar() == var(1));
+			return addToProjection(1, p, Origin::BaseType(0, cid));
 		}
-		void removePolynomial(const UPoly& p, std::size_t cid) {
+		void removePolynomial(const UPoly& p, std::size_t cid, bool) override {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << cid);
 			Bitset filter = Bitset().set(cid);
-			for (std::size_t level = 0; level < dim(); level++) {
+			for (std::size_t level = 1; level <= dim(); level++) {
+				for (std::size_t lvl = level; lvl <= dim(); lvl++) {
+					for (auto it = polyIDs(level).begin(); it != polyIDs(level).end(); it++) {
+						assert(polys(level)[it->second]);
+						polys(level)[it->second]->second.erase(level, filter);
+					}
+				}
 				Bitset removed;
-				for (auto it = mPolynomialIDs[level].begin(); it != mPolynomialIDs[level].end();) {
+				for (auto it = polyIDs(level).begin(); it != polyIDs(level).end();) {
 					std::size_t id = it->second;
-					assert(mPolynomials[level][id]);
-					mPolynomials[level][id]->second -= filter;
-					if (mPolynomials[level][id]->second.empty()) {
+					assert(polys(level)[id]);
+					if (polys(level)[id]->second.empty()) {
 						freeID(level, id);
-						mLiftingQueues[level].erase(id);
+						mLiftingQueues[level - 1].erase(id);
 						removed.set(id);
-						mPolynomials[level][id] = boost::none;
-						it = mPolynomialIDs[level].erase(it);
+						polys(level)[id] = boost::none;
+						it = polyIDs(level).erase(it);
 					} else {
 						it++;
 					}
@@ -111,34 +133,38 @@ namespace cad {
 			}
 		}
 		
-		void boundsChanged() {}
-		
-		std::size_t size(std::size_t level) const {
-			return mPolynomialIDs[level].size();
+		std::size_t size(std::size_t level) const override {
+			return polyIDs(level).size();
 		}
-		bool empty(std::size_t level) const {
-			return mPolynomialIDs[level].empty();
+		bool empty(std::size_t level) const override {
+			return polyIDs(level).empty();
 		}
 		
 		Bitset projectNewPolynomial(const ConstraintSelection& ps = Bitset(true)) {
 			return Bitset();
 		}
 		
-		const UPoly& getPolynomialById(std::size_t level, std::size_t id) const {
-			assert(level < mPolynomials.size());
-			assert(id < mPolynomials[level].size());
-			assert(mPolynomials[level][id]);
-			return mPolynomials[level][id]->first;
+		
+		bool hasPolynomialById(std::size_t level, std::size_t id) const override {
+			assert(level > 0 && level <= dim());
+			assert(id < polys(level).size());
+			return bool(polys(level)[id]);
+		}
+		const UPoly& getPolynomialById(std::size_t level, std::size_t id) const override {
+			assert(level > 0 && level <= dim());
+			assert(id < polys(level).size());
+			assert(polys(level)[id]);
+			return polys(level)[id]->first;
 		}	
 	};
 	
 	template<typename S>
 	std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::NONE, Backtracking::UNORDERED, S>& p) {
-		for (std::size_t level = 0; level < p.dim(); level++) {
+		for (std::size_t level = 1; level <= p.dim(); level++) {
 			os << level << " " << p.var(level) << ":" << std::endl;
-			for (const auto& it: p.mPolynomialIDs[level]) {
-				assert(p.mPolynomials[level][it.second]);
-				os << "\t" << it.second << ": " << p.mPolynomials[level][it.second]->first << " " << p.mPolynomials[level][it.second]->second << std::endl;
+			for (const auto& it: p.polyIDs(level)) {
+				assert(p.polys(level)[it.second]);
+				os << "\t" << it.second << ": " << p.polys(level)[it.second]->first << " " << p.polys(level)[it.second]->second << std::endl;
 			}
 		}
 		return os;
