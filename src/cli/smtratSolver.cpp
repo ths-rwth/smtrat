@@ -64,18 +64,21 @@ public:
                                 error() << "expected unsat, but returned sat";
                                 this->exitCode = SMTRAT_EXIT_WRONG_ANSWER;
                             } else {
-                                for( const auto& obj : this->solver->objectives() ) {
-                                    smtrat::ModelValue mv = this->solver->optimum(obj.first);
-                                    if( mv.isMinusInfinity() ) {
-                                        std::string opt = obj.second.second ? smtrat::toString( mv.asInfinity(), false ) : smtrat::toString( smtrat::InfinityValue(true), false );
-                                        regular() << obj.first.toString( false, true ) << " |-> " << opt << std::endl;
-                                    } else {
-                                        assert( mv.isRational() );
-                                        smtrat::Rational opt = (obj.second.second ? mv.asRational() : smtrat::Rational(-(mv.asRational())));
-                                        regular() << obj.first.toString( false, true ) << " |-> " << carl::toString( opt, false ) << std::endl;
-                                    }
-                                }
                                 regular() << "sat" << std::endl;
+                                if( !this->solver->objectives().empty() )
+                                {
+                                    regular() << "(objectives" << std::endl;
+                                    for( const auto& obj : this->solver->objectives() ) {
+                                        smtrat::ModelValue mv = this->solver->optimum(obj.first);
+                                        if( mv.isMinusInfinity() || mv.isPlusInfinity() ) {
+                                            regular() << " (" << obj.first.toString( false, true ) << " " << smtrat::toString( mv.asInfinity(), false ) << ")" << std::endl;
+                                        } else {
+                                            assert( mv.isRational() );
+                                            regular() << " (" << obj.first.toString( false, true ) << " " << carl::toString( mv.asRational(), false ) << ")" << std::endl;
+                                        }
+                                    }
+                                    regular() << ")" << std::endl;
+                                }
                                 this->exitCode = SMTRAT_EXIT_SAT;
                             }
                             //if (settingsManager.printModel()) this->solver->printAssignment(std::cout);
