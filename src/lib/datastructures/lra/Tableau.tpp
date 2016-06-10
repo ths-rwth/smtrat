@@ -1343,6 +1343,7 @@ namespace smtrat
             EntryID smallestPivotingElement = LAST_ENTRY_ID;
             // find the smallest non-basic variable, which allows us to gain optimization
             const Variable<T1, T2>* bestNonBasicVar = nullptr;
+            bool increaseBestNonbasicVar = true;
             Iterator objectiveIter = Iterator( _objective.startEntry(), mpEntries );
             while( true )
             {
@@ -1365,16 +1366,18 @@ namespace smtrat
                                 std::cout << "Is smaller!" << std::endl;
                                 #endif
                                 bestNonBasicVar = varForMinimizaton;
+                                increaseBestNonbasicVar = increaseVar;
                             }
                         }
                         else
                         {
                             if( varForMinimizaton->infimum().isInfinite() || varForMinimizaton->infimum() < varForMinimizaton->assignment() )
                             {
-                                bestNonBasicVar = varForMinimizaton;
                                 #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
                                 std::cout << "Is smaller!" << std::endl;
                                 #endif
+                                bestNonBasicVar = varForMinimizaton;
+                                increaseBestNonbasicVar = increaseVar;
                             }
                         }
                     }
@@ -1389,7 +1392,7 @@ namespace smtrat
                 #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
                 std::cout << "Smallest non-basic variable which might allow to improve the objective later: ";
                 bestNonBasicVar->print(); std::cout << std::endl;
-                std::cout << "Search for smallest basic variable to pivot with." << std::endl;
+                std::cout << "Search for smallest basic variable, which is on its bound, to pivot with." << std::endl;
                 #endif
                 Iterator columnIter = Iterator( bestNonBasicVar->startEntry(), mpEntries );
                 const Variable<T1, T2>* bestRowVar = nullptr;
@@ -1405,11 +1408,16 @@ namespace smtrat
                     #endif
                     if( bestRowVar == nullptr || *rowVar < *bestRowVar )
                     {
-                        #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-                        std::cout << "Is smaller!" << std::endl;
-                        #endif
-                        smallestPivotingElement = columnIter.entryID();
-                        bestRowVar = rowVar;
+                        if( ((increaseBestNonbasicVar == entryIsNegative( *columnIter )) ?
+                                (rowVar->infimum() == rowVar->assignment()) :
+                                (rowVar->supremum() == rowVar->supremum().limit())) )
+                        {
+                            #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+                            std::cout << "Is smaller!" << std::endl;
+                            #endif
+                            smallestPivotingElement = columnIter.entryID();
+                            bestRowVar = rowVar;
+                        }
                     }
                     if( columnIter.vEnd( false ) )
                         break;
