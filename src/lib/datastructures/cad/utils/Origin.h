@@ -95,14 +95,8 @@ public:
 		removeFiltered([&](const BaseType& bt){ return bt == rhs; });
 		return *this;
 	}
-	// Removes all pairs that contain rhs.
-	Origin& operator-=(std::size_t rhs) {
-		removeFiltered([&](const BaseType& bt){ return bt.first == rhs || bt.second == rhs; });
-		return *this;
-	}
-	// Removes all pairs that contain any bit from rhs.
-	Origin& operator-=(const Bitset& rhs) {
-		removeFiltered([&](const BaseType& bt){ return rhs.test(bt.first) || rhs.test(bt.second); });
+	Origin& erase(std::size_t level, const Bitset& rhs) {
+		removeFiltered([&](const BaseType& bt){ return (bt.level == level) && (rhs.test(bt.first) || rhs.test(bt.second)); });
 		return *this;
 	}
 	
