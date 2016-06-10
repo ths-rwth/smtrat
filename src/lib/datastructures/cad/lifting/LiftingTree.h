@@ -229,7 +229,10 @@ namespace cad {
 			for (auto it = mTree.begin_depth(level); it != mTree.end_depth(); it++) {
 				if (!it->isRoot()) continue;
 				it->rootOf() -= mask;
-				if (it->rootOf().none()) deleteQueue.emplace_back(it);
+				if (it->rootOf().none()) {
+					deleteQueue.emplace_back(it);
+					deleteQueue.emplace_back(mTree.left_sibling(it));
+				}
 			}
 			for (const auto& it: deleteQueue) {
 				SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Purging " << printSample(it));
