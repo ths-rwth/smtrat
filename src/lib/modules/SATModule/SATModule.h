@@ -1511,7 +1511,7 @@ namespace smtrat
              * @param _decisionRelevant true, if the variable of the literal needs to be involved in the decision process of the SAT solving.
              * @return The corresponding literal.
              */
-            Minisat::Lit createLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant = true );
+            Minisat::Lit createLiteral( const FormulaT& _formula, const FormulaT& _origin = FormulaT( carl::FormulaType::TRUE ), bool _decisionRelevant = true );
             Minisat::Lit getLiteral( const FormulaT& _formula ) const;
             
             /**

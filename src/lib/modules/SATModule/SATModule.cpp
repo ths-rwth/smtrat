@@ -2106,7 +2106,7 @@ namespace smtrat
         while( pos < mTheoryPropagations.size() )
         {
             TheoryPropagation& tp = mTheoryPropagations[pos];
-            Lit conclLit = getLiteral( tp.mConclusion );
+            Lit conclLit = createLiteral( tp.mConclusion );
             if( value(conclLit) == l_Undef )
             {
                 uncheckedEnqueue( conclLit, CRef_Lazy );
