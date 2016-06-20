@@ -10,7 +10,7 @@
 #include "Tableau.h"
 #include "TableauSettings.h"
 
-//#define DEBUG_METHODS_TABLEAU
+#define DEBUG_METHODS_TABLEAU
 //#define DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
 //#define LRA_PEDANTIC_CORRECTNESS_CHECKS
 
@@ -1410,7 +1410,7 @@ namespace smtrat
                     {
                         if( ((increaseBestNonbasicVar == entryIsNegative( *columnIter )) ?
                                 (rowVar->infimum() == rowVar->assignment()) :
-                                (rowVar->supremum() == rowVar->supremum().limit())) )
+                                (rowVar->supremum() == rowVar->assignment())) )
                         {
                             #ifdef DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
                             std::cout << "Is smaller!" << std::endl;
