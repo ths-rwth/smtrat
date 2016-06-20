@@ -9,6 +9,7 @@
 #include "helper/CADCore.h"
 #include "helper/ConflictGraph.h"
 #include "helper/MISGeneration.h"
+#include "debug/TikzHistoryPrinter.h"
 
 namespace smtrat {
 namespace cad {
@@ -26,20 +27,22 @@ namespace cad {
 		LiftingTree<Settings> mLifting;
 		
 		// ID scheme for variables x,y,z:
-		// Projection: x=0,y=1,z=2
+		// Projection: x=1,y=2,z=3
 		// Lifting: x=3,y=2,z=1,anonymous=0
 		std::size_t idPL(std::size_t level) const {
-			return dim() - level;
+			assert(level > 0 && level <= dim());
+			return dim() - level + 1;
 		}
 		std::size_t idLP(std::size_t level) const {
-			assert(level > 0);
-			return dim() - level;
+			assert(level > 0 && level <= dim());
+			return dim() - level + 1;
 		}
 	public:
+		debug::TikzHistoryPrinter thp;
 		CAD():
 			mConstraints(
 				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(mProjection.normalize(p), cid, isBound); },
-				[&](const UPoly& p, std::size_t cid){ mProjection.removePolynomial(mProjection.normalize(p), cid); }
+				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(mProjection.normalize(p), cid, isBound); }
 			),
 			mProjection(mConstraints),
 			mLifting(mConstraints)
@@ -47,6 +50,17 @@ namespace cad {
 			mProjection.setRemoveCallback([&](std::size_t level, const SampleLiftedWith& mask){
 				mLifting.removedPolynomialsFromLevel(idPL(level), mask);
 			});
+			
+			if (Settings::debugStepsToTikz) {
+				thp.configure<debug::TikzTreePrinter>("Lifting");
+				thp.configure<debug::TikzDAGPrinter>("Projection");
+			}
+		}
+		~CAD() {
+			if (Settings::debugStepsToTikz) {
+				thp.layout();
+				thp.writeTo("cad_debug.tex");
+			}
 		}
 		std::size_t dim() const {
 			return mVariables.size();

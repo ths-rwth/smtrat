@@ -15,8 +15,7 @@ namespace cad {
 template<Backtracking BT>
 class CADConstraints {
 public:
-	using AddCallback = std::function<void(const UPoly&, std::size_t, bool)>;
-	using RemoveCallback = std::function<void(const UPoly&, std::size_t)>;
+	using Callback = std::function<void(const UPoly&, std::size_t, bool)>;
 	using VariableBounds = vb::VariableBounds<ConstraintT>;
 	template<Backtracking B>
 	friend std::ostream& operator<<(std::ostream& os, const CADConstraints<B>& cc);
@@ -36,21 +35,18 @@ protected:
 	using ConstraintIts = std::vector<typename ConstraintMap::iterator>;
 	
 	Variables mVariables;
-	AddCallback mAddCallback;
-	RemoveCallback mRemoveCallback;
+	Callback mAddCallback;
+	Callback mRemoveCallback;
 	ConstraintMap mConstraintMap;
 	std::vector<typename ConstraintMap::iterator> mConstraintIts;
 	IDPool mIDPool;
 	VariableBounds mBounds;
 	
-	void callCallback(const AddCallback& cb, const ConstraintT& c, std::size_t id, bool isBound) const {
+	void callCallback(const Callback& cb, const ConstraintT& c, std::size_t id, bool isBound) const {
 		if (cb) cb(c.lhs().toUnivariatePolynomial(mVariables.front()), id, isBound);
 	}
-	void callCallback(const RemoveCallback& cb, const ConstraintT& c, std::size_t id) const {
-		if (cb) cb(c.lhs().toUnivariatePolynomial(mVariables.front()), id);
-	}
 public:
-	CADConstraints(const AddCallback& onAdd, const RemoveCallback& onRemove): mAddCallback(onAdd), mRemoveCallback(onRemove) {}
+	CADConstraints(const Callback& onAdd, const Callback& onRemove): mAddCallback(onAdd), mRemoveCallback(onRemove) {}
 	CADConstraints(const CADConstraints&) = delete;
 	void reset(const Variables& vars) {
 		mVariables = vars;
@@ -98,7 +94,7 @@ public:
 	}
 	std::size_t remove(const ConstraintT& c) {
 		SMTRAT_LOG_DEBUG("smtrat.cad.constraints", "Removing " << c);
-		mBounds.removeBound(c, c);
+		bool isBound = mBounds.removeBound(c, c);
 		auto it = mConstraintMap.find(c);
 		assert(it != mConstraintMap.end());
 		std::size_t id = it->second;
@@ -109,14 +105,14 @@ public:
 			// Remove constraints added after c
 			while (mConstraintIts.back()->second > id) {
 				SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Preliminary removal of " << mConstraintIts.back()->first);
-				mBounds.removeBound(c, c);
-				callCallback(mRemoveCallback, mConstraintIts.back()->first, mConstraintIts.back()->second);
+				bool isBound = mBounds.removeBound(c, c);
+				callCallback(mRemoveCallback, mConstraintIts.back()->first, mConstraintIts.back()->second, isBound);
 				cache.push(mConstraintIts.back());
 				mConstraintIts.pop_back();
 			}
 			// Remove c
 			SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Actual removal of " << mConstraintIts.back()->first);
-			callCallback(mRemoveCallback, mConstraintIts.back()->first, mConstraintIts.back()->second);
+			callCallback(mRemoveCallback, mConstraintIts.back()->first, mConstraintIts.back()->second, isBound);
 			mConstraintMap.erase(mConstraintIts.back());
 			mConstraintIts.pop_back();
 			assert(mConstraintIts.size() == id);
@@ -130,7 +126,7 @@ public:
 			}
 		} else {
 			SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Removing " << id << " in unordered mode");
-			callCallback(mRemoveCallback, c, id);
+			callCallback(mRemoveCallback, c, id, isBound);
 			mConstraintMap.erase(it);
 			mConstraintIts[id] = mConstraintMap.end();
 			mIDPool.free(id);

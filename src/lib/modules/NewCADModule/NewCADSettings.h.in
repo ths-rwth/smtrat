@@ -56,6 +56,7 @@ namespace cad {
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = false;
 		static constexpr bool debugProjection = false;
+		static constexpr bool debugStepsToTikz = false;
 	};
 	struct NewCADSettingsNO: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareInteger {
 		static constexpr auto moduleName = "NewCADModule<NewCADNO>";
@@ -105,6 +106,7 @@ namespace cad {
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = true;
 		static constexpr bool debugProjection = false;
+		static constexpr bool debugStepsToTikz = false;
 		
 		static constexpr cad::SampleCompareStrategy sampleComparator = cad::SampleCompareStrategy::Integer;
 		static constexpr cad::FullSampleCompareStrategy fullSampleComparator = cad::FullSampleCompareStrategy::Integer;

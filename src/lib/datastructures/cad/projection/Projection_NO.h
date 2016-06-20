@@ -32,9 +32,9 @@ namespace cad {
 		using Super::callRemoveCallback;
 		using Super::canBeRemoved;
 		using Super::canBeForwarded;
-		using Super::dim;
 		using Super::var;
 	public:
+		using Super::dim;
 		using Super::size;
 	private:
 		
@@ -45,50 +45,65 @@ namespace cad {
 		/// Stores polynomials with their origin constraint ids.
 		std::vector<std::vector<std::pair<UPoly,std::size_t>>> mPolynomials;
 		
+		auto& polyIDs(std::size_t level) {
+			assert(level > 0 && level <= dim());
+			return mPolynomialIDs[level - 1];
+		}
+		const auto& polyIDs(std::size_t level) const {
+			assert(level > 0 && level <= dim());
+			return mPolynomialIDs[level - 1];
+		}
+		auto& polys(std::size_t level) {
+			assert(level > 0 && level <= dim());
+			return mPolynomials[level - 1];
+		}
+		const auto& polys(std::size_t level) const {
+			assert(level > 0 && level <= dim());
+			return mPolynomials[level - 1];
+		}
+		
 		/// Inserts a polynomial with the given origin into the given level.
 		void insertPolynomial(std::size_t level, const UPoly& p, std::size_t origin) {
-			assert(mPolynomialIDs[level].find(p) == mPolynomialIDs[level].end());
-			std::size_t id = mPolynomials[level].size();
-			mPolynomials[level].emplace_back(p, origin);
-			mPolynomialIDs[level].emplace(p, id);
-			mLiftingQueues[level].insert(id);
+			assert(level > 0 && level <= dim());
+			assert(polyIDs(level).find(p) == polyIDs(level).end());
+			std::size_t id = polys(level).size();
+			polys(level).emplace_back(p, origin);
+			polyIDs(level).emplace(p, id);
+			mLiftingQueues[level - 1].insert(id);
 		}
 		/// Removed the last polynomial from the given level.
 		void removePolynomial(std::size_t level) {
-			auto it = mPolynomialIDs[level].find(mPolynomials[level].back().first);
-			assert(it != mPolynomialIDs[level].end());
-			mLiftingQueues[level].erase(it->second);
-			mPolynomialIDs[level].erase(it);
-			mPolynomials[level].pop_back();
+			assert(level > 0 && level <= dim());
+			auto it = polyIDs(level).find(polys(level).back().first);
+			assert(it != polyIDs(level).end());
+			mLiftingQueues[level - 1].erase(it->second);
+			polyIDs(level).erase(it);
+			polys(level).pop_back();
 		}
 		
 		/// Adds a new polynomial to the given level and perform the projection recursively.
 		Bitset addToProjection(std::size_t level, const UPoly& p, std::size_t origin) {
+			assert(level > 0 && level <= dim());
 			if (canBeRemoved(p)) return Bitset();
-			if ((level > 0) && (level < dim() - 1) && canBeForwarded(level, p)) {
-				return addToProjection(level+1, p.switchVariable(var(level+1)), origin);
+			if ((level > 1) && (level < dim()) && canBeForwarded(level, p)) {
+				return addToProjection(level + 1, p.switchVariable(var(level+1)), origin);
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
-			assert(level < dim());
 			assert(p.mainVar() == var(level));
-			auto it = mPolynomialIDs[level].find(p);
-			if (it != mPolynomialIDs[level].end()) {
+			auto it = polyIDs(level).find(p);
+			if (it != polyIDs(level).end()) {
 				// We already have this polynomial.
 				if (level > 0) {
-					assert(mPolynomials[level][it->second].second <= origin);
+					assert(polys(level)[it->second].second <= origin);
 				}
 				return Bitset();
 			}
-			if (level == 0) {
-				// Change origin to the id of this polynomial
-				origin = mPolynomials[level].size();
-			}
 			Bitset res;
-			if (level < dim() - 1) {
+			if (level < dim()) {
 				mOperator(Settings::projectionOperator, p, var(level + 1), 
 					[&](const UPoly& np){ res |= addToProjection(level + 1, np, origin); }
 				);
-				for (const auto& it: mPolynomials[level]) {
+				for (const auto& it: polys(level)) {
 					std::size_t newOrigin = std::max(origin, it.second);
 					mOperator(Settings::projectionOperator, p, it.first, var(level + 1),
 						[&](const UPoly& np){ res |= addToProjection(level + 1, np, newOrigin); }
@@ -116,64 +131,69 @@ namespace cad {
 		 * Adds the given polynomial to the projection with the given constraint id as origin.
 		 * Asserts that the main variable of the polynomial is the first variable.
 		 */
-		Bitset addPolynomial(const UPoly& p, std::size_t cid, bool) {
-			assert(p.mainVar() == var(0));
-			return addToProjection(0, p, cid);
+		Bitset addPolynomial(const UPoly& p, std::size_t cid, bool) override {
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " from constraint " << cid);
+			assert(p.mainVar() == var(1));
+			return addToProjection(1, p, cid);
 		}
 		/**
 		 * Removed the given polynomial from the projection.
 		 * Asserts that this polynomial was the one added last and has the given constraint id as origin.
 		 * Calls the callback function for every level with a mask designating the polynomials removed from this level.
 		 */
-		void removePolynomial(const UPoly& p, std::size_t cid) {
-			assert(mPolynomials[0].back().first == p);
-			assert(mPolynomials[0].back().second == cid);
-			removePolynomial(0);
-			std::size_t origin = mPolynomials[0].size();
-			callRemoveCallback(0, SampleLiftedWith().set(origin));
+		void removePolynomial(const UPoly& p, std::size_t cid, bool) override {
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << p << " from constraint " << cid);
+			assert(polys(1).back().first == p);
+			assert(polys(1).back().second == cid);
+			removePolynomial(1);
+			std::size_t origin = cid;
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Origin is " << origin);
+			callRemoveCallback(1, SampleLiftedWith().set(cid));
 			// Remove all polynomials from all levels that have the removed polynomial as origin.
-			for (std::size_t level = 1; level < dim(); level++) {
+			for (std::size_t level = 2; level <= dim(); level++) {
 				Bitset removed;
-				if (mPolynomials[level].empty()) continue;
-				while (mPolynomials[level].back().second == origin) {
-					std::size_t id = mPolynomials[level].size() - 1;
-					mLiftingQueues[level].erase(id);
+				if (polys(level).empty()) continue;
+				while (polys(level).back().second == origin) {
+					std::size_t id = polys(level).size() - 1;
+					mLiftingQueues[level - 1].erase(id);
 					removePolynomial(level);
 					removed.set(id);
 				}
-				assert(mPolynomials[level].back().second < origin);
+				assert(polys(level).empty() || polys(level).back().second < origin);
 				callRemoveCallback(level, removed);
 			}
 		}
 		
-		void boundsChanged() {}
-		
 		/// Returns the number of polynomials in this level.
-		std::size_t size(std::size_t level) const {
-			return mPolynomials[level].size();
+		std::size_t size(std::size_t level) const override {
+			return polys(level).size();
 		}
 		/// Returns whether the number of polynomials in this level is zero.
-		bool empty(std::size_t level) const {
-			return mPolynomials[level].empty();
+		bool empty(std::size_t level) const override {
+			return polys(level).empty();
 		}
 		
 		/// Returns false, as the projection is not incremental.
 		Bitset projectNewPolynomial(const ConstraintSelection& ps = Bitset(true)) {
 			return Bitset();
 		}
+		bool hasPolynomialById(std::size_t level, std::size_t id) const override {
+			assert(level > 0 && level <= dim());
+			return id < polys(level).size();
+		}
 		/// Get the polynomial from this level with the given id.
-		const UPoly& getPolynomialById(std::size_t level, std::size_t id) const {
-			assert(level < mPolynomials.size());
-			assert(id < mPolynomials[level].size());
-			return mPolynomials[level][id].first;
+		const UPoly& getPolynomialById(std::size_t level, std::size_t id) const override {
+			assert(level > 0 && level <= dim());
+			assert(id < polys(level).size());
+			return polys(level)[id].first;
 		}
 	};
 	
 	template<typename S>
 	std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::NONE, Backtracking::ORDERED, S>& p) {
-		for (std::size_t level = 0; level < p.dim(); level++) {
-			os << level << " " << p.var(level) << ":" << std::endl;
-			for (const auto& it: p.mPolynomials[level]) {
+		for (std::size_t level = 1; level <= p.dim(); level++) {
+			os << level << " / " << p.var(level) << ":" << std::endl;
+			for (const auto& it: p.polys(level)) {
 				os << "\t" << it.first << " [" << it.second << "]" << std::endl;
 			}
 		}

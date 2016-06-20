@@ -36,27 +36,20 @@ namespace cad {
 		void callRemoveCallback(std::size_t level, const SampleLiftedWith& slw) const {
 			if (mRemoveCallback) mRemoveCallback(level, slw);
 		}
-		
-		/// Returns the dimension of the projection.
-		std::size_t dim() const {
-			assert(vars().size() == mIDPools.size());
-			assert(vars().size() == mLiftingQueues.size());
-			return vars().size();
-		}
 		/// Returns a fresh polynomial id for the given level.
 		std::size_t getID(std::size_t level) {
-			assert(level < dim());
+			assert(level <= dim());
 			return mIDPools[level].get();
 		}
 		/// Frees a currently used polynomial id for the given level.
 		void freeID(std::size_t level, std::size_t id) {
-			assert(level < dim());
+			assert(level <= dim());
 			mIDPools[level].free(id);
 		}
 		/// Returns the variable that corresponds to the given level, that is the variable eliminated in this level.
 		carl::Variable var(std::size_t level) const {
-			assert(level < dim());
-			return vars()[level];
+			assert(level > 0 && level <= dim());
+			return vars()[level - 1];
 		}
 		/// Checks whether a polynomial can safely be ignored.
 		bool canBeRemoved(const UPoly& p) const {
@@ -78,15 +71,21 @@ namespace cad {
 			return false;
 		}
 	public:
+		/// Returns the dimension of the projection.
+		std::size_t dim() const {
+			assert(vars().size() + 1 == mIDPools.size());
+			assert(vars().size() == mLiftingQueues.size());
+			return vars().size();
+		}
 		/// Returns the variables used for projection.
 		const Variables& vars() const {
 			return mConstraints.vars();
 		}
 		/// Resets all datastructures, use the given variables from now on.
 		void reset() {
-			mIDPools = std::vector<IDPool>(vars().size());
+			mIDPools = std::vector<IDPool>(vars().size() + 1);
 			mLiftingQueues.clear();
-			for (std::size_t i = 0; i < vars().size(); i++) {
+			for (std::size_t i = 1; i <= vars().size(); i++) {
 				mLiftingQueues.emplace_back(this, i);
 			}
 		}
@@ -102,25 +101,23 @@ namespace cad {
 		/// Adds the given polynomial to the projection.
 		virtual Bitset addPolynomial(const UPoly& p, std::size_t cid, bool isBound) = 0;
 		/// Removes the given polynomial from the projection. Converts to a UPoly and calls the appropriate overload.
-		void removePolynomial(const Poly& p, std::size_t cid) {
-			removePolynomial(p.toUnivariatePolynomial(var(0)), cid);
+		void removePolynomial(const Poly& p, std::size_t cid, bool isBound) {
+			removePolynomial(p.toUnivariatePolynomial(var(0)), cid, isBound);
 		}
 		/// Removes the given polynomial from the projection.
-		virtual void removePolynomial(const UPoly& p, std::size_t cid) = 0;
-		
-		virtual void boundsChanged() = 0;
+		virtual void removePolynomial(const UPoly& p, std::size_t cid, bool isBound) = 0;
 		
 		virtual std::size_t size(std::size_t level) const = 0;
 		std::size_t size() const {
 			std::size_t sum = 0;
-			for (std::size_t level = 0; level < dim(); level++) {
+			for (std::size_t level = 1; level <= dim(); level++) {
 				sum += size(level);
 			}
 			return sum;
 		}
 		virtual bool empty(std::size_t level) const = 0;
 		virtual bool empty() {
-			for (std::size_t level = 0; level < dim(); level++) {
+			for (std::size_t level = 1; level <= dim(); level++) {
 				if (!empty(level)) return false;
 			}
 			return true;
@@ -132,8 +129,10 @@ namespace cad {
 		
 		/// Get a polynomial from this level suited for lifting.
 		OptionalID getPolyForLifting(std::size_t level, SampleLiftedWith& slw) {
+			assert(level > 0);
+			assert(level <= dim());
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Getting poly for lifting from level " << level);
-			for (const auto& pid: mLiftingQueues[level]) {
+			for (const auto& pid: mLiftingQueues[level - 1]) {
 				SMTRAT_LOG_TRACE("smtrat.cad.projection", "-> Checking " << getPolynomialById(level,pid));
 				if (!slw.test(pid)) {
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> " << getPolynomialById(level,pid) << " can be used.");
@@ -145,10 +144,14 @@ namespace cad {
 			return OptionalID();
 		}
 		
+		virtual bool hasPolynomialById(std::size_t level, std::size_t id) const = 0;
 		/// Retrieves a polynomial from its id.
 		virtual const UPoly& getPolynomialById(std::size_t level, std::size_t id) const = 0;
 		
 		virtual void exportAsDot(std::ostream&) const {}
+		virtual Origin getOrigin(std::size_t level, std::size_t id) const {
+			return Origin();
+		}
 	};
 	
 }
