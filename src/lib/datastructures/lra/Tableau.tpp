@@ -10,7 +10,7 @@
 #include "Tableau.h"
 #include "TableauSettings.h"
 
-#define DEBUG_METHODS_TABLEAU
+//#define DEBUG_METHODS_TABLEAU
 //#define DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
 //#define LRA_PEDANTIC_CORRECTNESS_CHECKS
 
@@ -664,17 +664,17 @@ namespace smtrat
             _var->rAssignment() = Value<T1>( 0 );
             EntryID lastInsertedEntry = LAST_ENTRY_ID;
             _var->rSize() = 0;
-            for( auto coeff = coeffs.begin(); coeff != coeffs.end(); ++coeff  )
+            for( const auto& coeff : coeffs  )
             {
-                if( coeff->second == T2( 0 ) )
+                if( coeff.second == T2( 0 ) )
                     continue;
                 ++(_var->rSize());
-                EntryID entryID = newTableauEntry( coeff->second );
+                EntryID entryID = newTableauEntry( coeff.second );
                 TableauEntry<T1,T2>& entry = (*mpEntries)[entryID];
                 // Fix the position.
-                entry.setColumnVar( mColumns[coeff->first] );
+                entry.setColumnVar( mColumns[coeff.first] );
                 entry.setRowVar( _var );
-                EntryID& columnStart = mColumns[coeff->first]->rStartEntry();
+                EntryID& columnStart = mColumns[coeff.first]->rStartEntry();
                 // Set it as column end.
                 if( columnStart != LAST_ENTRY_ID )
                 {
@@ -682,7 +682,7 @@ namespace smtrat
                 }
                 entry.setVNext( false, columnStart );
                 columnStart = entryID;
-                ++(mColumns[coeff->first]->rSize());
+                ++(mColumns[coeff.first]->rSize());
                 entry.setVNext( true, LAST_ENTRY_ID );
                 // Put it in the row.
                 if( lastInsertedEntry == LAST_ENTRY_ID )
@@ -693,13 +693,13 @@ namespace smtrat
                 else
                 {
                     Iterator rowIter = Iterator( lastInsertedEntry, mpEntries );
-                    // Entry will be the rightmost in this row.
                     (*rowIter).setHNext( false, entryID );
                     entry.setHNext( true, rowIter.entryID() );
-                    entry.setHNext( false, LAST_ENTRY_ID );
                 }
+                // For now, the entry will be the rightmost in this row.
+                entry.setHNext( false, LAST_ENTRY_ID );
                 lastInsertedEntry = entryID;
-                _var->rAssignment() += mColumns[coeff->first]->assignment() * coeff->second;
+                _var->rAssignment() += mColumns[coeff.first]->assignment() * coeff.second;
             }
             if( Settings::omit_division )
             {
@@ -2900,6 +2900,7 @@ namespace smtrat
                     {
                         for( size_t i = currentColumn; i < (*rowIter).columnVar()->position(); ++i )
                         {
+                            assert( columnNumber < mColumns.size() );
                             if( mColumns[columnNumber]->size() != 0 )
                             {
                                 _out << " ";
