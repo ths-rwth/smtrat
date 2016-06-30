@@ -6,7 +6,6 @@
 
 #include "LiftingOperator.h"
 #include "SampleIteratorQueue.h"
-#include "SampleSelector.h"
 #include "SampleComparator.h"
 
 namespace smtrat {
@@ -26,7 +25,6 @@ namespace cad {
 		SampleIteratorQueue<Iterator, SC> mLiftingQueue;
 		std::vector<Iterator> mRemovedFromLiftingQueue;
 		LiftingOperator<Iterator, Settings> mLifting;
-		SampleSelector<Settings> mSelector;
 		
 		std::size_t dim() const {
 			return mVariables.size();
@@ -96,20 +94,20 @@ namespace cad {
 			auto tend = mTree.end_children(parent);
 			auto tit = tbegin, tlast = tbegin;
 			if (tbegin->isRoot()) {
-				auto it = mTree.insert(tbegin, Sample(mSelector.below(tlast->value())));
+				auto it = mTree.insert(tbegin, Sample(RAN::sampleBelow(tlast->value())));
 				addToQueue(it);
 			}
 			while (true) {
 				tit++;
 				if (tit == tend) break;
 				if (tlast->isRoot() && tit->isRoot()) {
-					auto it = mTree.insert(tit, Sample(mSelector.between(tlast->value(), tit->value())));
+					auto it = mTree.insert(tit, Sample(RAN::sampleBetween(tlast->value(), tit->value())));
 					addToQueue(it);
 				}
 				tlast = tit;
 			}
 			if (tlast->isRoot()) {
-				auto it = mTree.append(parent, Sample(mSelector.above(tlast->value())));
+				auto it = mTree.append(parent, Sample(RAN::sampleAbove(tlast->value())));
 				addToQueue(it);
 			}
 			
