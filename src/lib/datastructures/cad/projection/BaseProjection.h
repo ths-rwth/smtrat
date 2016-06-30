@@ -149,7 +149,7 @@ namespace cad {
 		virtual const UPoly& getPolynomialById(std::size_t level, std::size_t id) const = 0;
 		
 		virtual void exportAsDot(std::ostream&) const {}
-		virtual Origin getOrigin(std::size_t level, std::size_t id) const {
+		virtual Origin getOrigin(std::size_t, std::size_t) const {
 			return Origin();
 		}
 	};
