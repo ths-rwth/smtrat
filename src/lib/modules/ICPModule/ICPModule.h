@@ -335,9 +335,10 @@ return SettingsType::moduleName;
             
             /**
              * 
+             * @param _onlyOriginalVariables
              * @return 
              */
-            FormulasT createBoxFormula();
+            FormulasT createBoxFormula( bool _onlyOriginalVariables );
                         
             /**
              * 

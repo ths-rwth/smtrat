@@ -229,7 +229,7 @@ namespace cad {
 				it->rootOf() -= mask;
 				if (it->rootOf().none()) {
 					deleteQueue.emplace_back(it);
-					deleteQueue.emplace_back(mTree.left_sibling(it));
+					deleteQueue.emplace_back(mTree.left_sibling(Iterator(it)));
 				}
 			}
 			for (const auto& it: deleteQueue) {
