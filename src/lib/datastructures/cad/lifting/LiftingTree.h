@@ -189,11 +189,11 @@ namespace cad {
 		}
 		bool addTrivialSample(Iterator sample) {
 			if (!mTree.is_leaf(sample)) return false;
-			SMTRAT_LOG_INFO("smtrat.cad.lifting", "Variables: " << mVariables);
-			SMTRAT_LOG_INFO("smtrat.cad.lifting", "For " << printSample(sample));
+			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Variables: " << mVariables);
+			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "For " << printSample(sample));
 			auto variable = mVariables[sample.depth()];
 			auto center = mConstraints.bounds().getInterval(variable).sample();
-			SMTRAT_LOG_INFO("smtrat.cad.lifting", "Bounds for " << variable << " = " << mConstraints.bounds().getInterval(variable));
+			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Bounds for " << variable << " = " << mConstraints.bounds().getInterval(variable));
 			auto it = mTree.append(sample, Sample(RAN(center), false));
 			addToQueue(it);
 			
