@@ -106,6 +106,9 @@ namespace cad {
 			return lhs.mData < rhs.mData;
 		}
 		
+		friend Bitset operator~(const Bitset& lhs) {
+			return Bitset(~lhs.mData, lhs.mDefault);
+		}
 		friend Bitset operator&(const Bitset& lhs, const Bitset& rhs) {
 			assert(lhs.mDefault == rhs.mDefault);
 			alignSize(lhs, rhs);
