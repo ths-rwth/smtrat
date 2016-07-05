@@ -136,17 +136,39 @@ namespace cad {
 			return Answer::UNSAT;
 		}
 		
-		Answer check(Assignment& assignment) {
+		template<typename Iterator>
+		Answer checkPartialSample(Iterator& it, std::size_t level) {
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Checking partial sample " << *it << " against level " << level);
+			if (it->hasConflictWithConstraint()) {
+				SMTRAT_LOG_DEBUG("smtrat.cad", "\tAlready has conflict...");
+				return Answer::UNSAT;
+			}
+			for (const auto& c: mConstraints.ordered()) {
+				if (mConstraints.level(c.second) != level) continue;
+				auto a = mLifting.extractSampleMap(it);
+				if (!evaluateSample(*it, c, a)) {
+					SMTRAT_LOG_DEBUG("smtrat.cad", "\tConflicts with " << c.first);
+					return Answer::UNSAT;
+				}
+			}
+			return Answer::SAT;
+		}
+
+		Answer check(Assignment& assignment, std::vector<FormulaSetT>& mis) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Checking constraints:" << std::endl << mConstraints);
-			if (mConstraints.bounds().isConflicting()) {
-				SMTRAT_LOG_DEBUG("smtrat.cad", "Trivially unsat due to bounds" << std::endl << mConstraints.bounds());
+			if (mConstraints.checkForTrivialConflict(mis)) {
 				return Answer::UNSAT;
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 			CADCore<Settings::coreHeuristic> cad;
 			auto res = cad(assignment, *this);
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Result: " << res);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current sampletree:" << std::endl << mLifting.getTree());
+			if (res == Answer::UNSAT) {
+				cad::MISGeneration<Settings::misHeuristic> generator;
+				generator(*this, mis);
+			}
 			return res;
 		}
 		
