@@ -22,28 +22,18 @@ include_directories(${CMAKE_SOURCE_DIR}/src
 link_directories( ${PROJECT_BINARY_DIR}/src/lib
                   ${PROJECT_BINARY_DIR} )
 
-# write config.h
-#######################
-file(STRINGS ${CMAKE_SOURCE_DIR}/LICENSE LICENSE_CONTENT_IN)
 
-configure_file( ${CMAKE_SOURCE_DIR}/src/cli/config.h.in ${CMAKE_SOURCE_DIR}/src/cli/config.h )
-
-foreach(name parser)
-  collect_files(cli ${name})
+file(GLOB_RECURSE smtrat_cli_tpl "*.in")
+foreach(tpl ${smtrat_cli_tpl})
+	string(REGEX REPLACE ".in$" "" file ${tpl})
+	configure_file("${tpl}" "${file}")
 endforeach()
 
-# executable solver
-# # # # # # # # # #
+file(GLOB_RECURSE smtrat_cli_sources "*.cpp")
 
-add_executable( smtrat
-    parser/theories/Arithmetic.cpp
-    parser/theories/Bitvector.cpp
-    parser/theories/Core.cpp
-    parser/theories/Uninterpreted.cpp
-	parser/ParserWrapper.cpp
-    smtratSolver.cpp
-    RuntimeSettingsManager.cpp
-)
+file(STRINGS ${CMAKE_SOURCE_DIR}/LICENSE LICENSE_CONTENT_IN)
+
+add_executable( smtrat ${smtrat_cli_sources})
 
 target_link_libraries( smtrat
                         lib_${PROJECT_NAME} # smtrat library

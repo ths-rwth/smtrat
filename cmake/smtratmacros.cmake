@@ -9,22 +9,6 @@
 # List handling macros
 # Source: http://www.cmake.org/pipermail/cmake/2004-June/005187.html 12.6.2015
 
-MACRO(LIST_PREPEND var value)
-     SET(${var} ${value} ${${var}})
-ENDMACRO(LIST_PREPEND)
-
-MACRO(LIST_PREPEND_UNIQUE var value)
-     SET(LIST_ADD_UNIQUE_FLAG 0)
-     FOREACH(i ${${var}})
-         IF ("${i}" MATCHES "${value}")
-             SET(LIST_ADD_UNIQUE_FLAG 1)
-         ENDIF("${i}" MATCHES "${value}")
-     ENDFOREACH(i)
-     IF(NOT LIST_ADD_UNIQUE_FLAG)
-         SET(${var} ${value} ${${var}})
-     ENDIF(NOT LIST_ADD_UNIQUE_FLAG)
-ENDMACRO(LIST_PREPEND_UNIQUE)
-
 MACRO(LIST_APPEND var value)
      SET(${var} ${${var}} ${value})
 ENDMACRO(LIST_APPEND)
