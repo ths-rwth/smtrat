@@ -174,7 +174,7 @@ public:
 		const auto& intervalmap = mBounds.getIntervalMap();
 		for (const auto& c: mConstraintIts) {
 			if (c == mConstraintMap.end()) continue;
-			std::cout << "Checking " << c->first << " against " << intervalmap << std::endl;
+			SMTRAT_LOG_TRACE("smtrat.cad", "Checking " << c->first << " against " << intervalmap);
 			switch (c->first.consistentWith(intervalmap)) {
 				case 0: {
 					SMTRAT_LOG_INFO("smtrat.cad", "Single constraint conflicts with bounds: " << c->first << std::endl << bounds());
