@@ -14,27 +14,19 @@
 
 namespace smtrat
 {
-	class NewCADStatistics : public Statistics
-	{
+	class NewCADStatistics : public Statistics {
 	private:
-		// Members.
-		/**
-		 * Example for a statistic.
-		 */
-		size_t mExampleStatistic;
+		std::size_t mMaxProjectionSize = 0;
 	public:
-		// Override Statistics::collect.
 		void collect()
 		{
-		   Statistics::addKeyValuePair( "example_statistic", mExampleStatistic );
+		   Statistics::addKeyValuePair("max_projection_size", mMaxProjectionSize);
 		}
-		void foo()
-		{
-			++mExampleStatistic;
+		void currentProjectionSize(std::size_t size) {
+			mMaxProjectionSize = std::max(mMaxProjectionSize, size);
 		}
 		NewCADStatistics( const std::string& _statisticName ):
-			Statistics( _statisticName, this ),
-			mExampleStatistic( 0 )
+			Statistics( _statisticName, this )
 		{}
 		~NewCADStatistics() {}
 	};
