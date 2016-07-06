@@ -263,6 +263,7 @@ namespace smtrat
                 SATModule& solver;
                 lemma_lt(SATModule& solver) : solver(solver) {}
                 bool operator () (Minisat::Lit x, Minisat::Lit y) {
+                  if( x == y ) return false;
                   Minisat::lbool x_value = solver.value(x);
                   Minisat::lbool y_value = solver.value(y);
                   // Two unassigned literals are sorted arbitrarily
@@ -972,7 +973,11 @@ namespace smtrat
                 if( Minisat::sign( _lit ) )
                     _os << "-";
                 _os << Minisat::var( _lit );
-            }
+                _os << "[";
+                if( Minisat::sign( ~_lit ) )
+                    _os << "-";
+                _os << Minisat::var( ~_lit ) << "]";
+           }
 
             // Memory management:
             
@@ -1489,6 +1494,7 @@ namespace smtrat
                 if( addClause( _clause, _type ) && _type == Minisat::NORMAL_CLAUSE )
                 {
                     assert( _formulaCNFInfoIter != mFormulaCNFInfosMap.end() );
+                    assert( clauses.size() > 0 );
                     _formulaCNFInfoIter->second.mClauses.push_back( clauses.last() );
                     auto cfRet = mClauseInformation.emplace( clauses.last(), ClauseInformation( clauses.size()-1 ) );
                     assert( cfRet.second );
