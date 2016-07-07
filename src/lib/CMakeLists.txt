@@ -30,10 +30,10 @@ foreach(tpl ${smtrat_lib_tpl})
 	configure_file("${tpl}" "${file}")
 endforeach()
 
-file(GLOB_RECURSE smtrat_lib_sources "*.cpp")
-
 add_subdirectory(modules)
 add_subdirectory(utilities)
+
+file(GLOB_RECURSE smtrat_lib_sources "*.cpp")
 
 set(STATICLIB "SHARED")
 if(STATICLIB_SWITCH)
