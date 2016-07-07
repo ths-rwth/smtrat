@@ -16,7 +16,15 @@ include_directories( ${carl_INCLUDE_DIR} )
 
 
 # Configure all .in files
-file(GLOB_RECURSE smtrat_lib_tpl "*.in")
+# Omit modules directories! (Special care is taken there)
+# If modules/*.in is included here, this triggers rebuilds all the time.
+file(GLOB_RECURSE smtrat_lib_tpl
+	"datastructures/*.in"
+	"solver/*.in"
+	"strategies/*.in"
+	"utilities/*.in"
+	"config.h.in"
+)
 foreach(tpl ${smtrat_lib_tpl})
 	string(REGEX REPLACE ".in$" "" file ${tpl})
 	configure_file("${tpl}" "${file}")
