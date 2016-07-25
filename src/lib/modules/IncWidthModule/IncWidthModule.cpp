@@ -163,7 +163,7 @@ namespace smtrat
                     }
                     else if( ass.second.isSqrtEx() )
                     {
-                        mModel.assign(ass.first, (varWithNegCoeff ? ass.second.asSqrtEx()*vs::SqrtEx( Poly( MINUS_ONE_RATIONAL ) ) : ass.second.asSqrtEx()) + vs::SqrtEx( Poly( varShiftIter->second.constantPart() ) ));
+                        mModel.assign(ass.first, (varWithNegCoeff ? ass.second.asSqrtEx()*SqrtEx( Poly( MINUS_ONE_RATIONAL ) ) : ass.second.asSqrtEx()) + SqrtEx( Poly( varShiftIter->second.constantPart() ) ));
                     }
                     else if( ass.second.isPoly() )
                     {

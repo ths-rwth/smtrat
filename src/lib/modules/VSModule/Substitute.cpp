@@ -607,7 +607,7 @@ namespace vs
             {
                 return false;
             }
-            SqrtEx sub = SqrtEx::subBySqrtEx( _cons.lhs(), _subs.variable(), _subs.term() );
+            smtrat::SqrtEx sub = smtrat::SqrtEx::subBySqrtEx( _cons.lhs(), _subs.variable(), _subs.term() );
             #ifdef VS_DEBUG_SUBSTITUTION
             cout << "Result of common substitution:" << sub << endl;
             #endif

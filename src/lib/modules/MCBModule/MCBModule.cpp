@@ -7,7 +7,6 @@
  */
 
 #include "MCBModule.h"
-#include "../../datastructures/model/Model.h"
 
 namespace smtrat
 {
