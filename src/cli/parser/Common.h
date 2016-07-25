@@ -5,8 +5,8 @@
 
 #pragma once
 
+#include <carl/formula/model/Assignment.h>
 #include "../../lib/Common.h"
-#include "../../lib/datastructures/Assignment.h"
 #include "../../lib/solver/ResourceLimitation.h"
 
 #include <functional>
