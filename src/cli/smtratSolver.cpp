@@ -144,7 +144,7 @@ public:
 		this->solver->printInfeasibleSubset(std::cout);
 	}
 	void getValue(const std::vector<carl::Variable>&) {
-		error() << "(get-value <variables>) is not implemented.";
+		error() << "(get-value (<variables>)) is not implemented.";
 	}
 	void addObjective(const smtrat::Poly& p, smtrat::parser::OptimizationType ot) {
             this->solver->addObjective( p, ot == smtrat::parser::OptimizationType::Minimize );
