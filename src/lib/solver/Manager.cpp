@@ -318,7 +318,6 @@ namespace smtrat
             delete toDelete;
         }
         mLogic = Logic::UNDEFINED;
-		assert(mpPrimaryBackend == nullptr);
         mpPrimaryBackend = new Module( mpPassedFormula, mPrimaryBackendFoundAnswer, this );
         mGeneratedModules.push_back( mpPrimaryBackend );
     }
