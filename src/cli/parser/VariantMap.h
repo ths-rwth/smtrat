@@ -92,7 +92,7 @@ public:
 			out() << "No value was set for " << key << ".";
 			assert(it != this->end());
 		} else if (boost::get<T>(&(it->second)) == nullptr) {
-			out() << "The type of " << key << " should be \"" << demangle(typeid(T).name()) << "\" but is \"" << demangle(it->second.type().name()) << "\".";
+			out() << "The type of " << key << " should be '" << demangle(typeid(T).name()) << "' but is '" << demangle(it->second.type().name()) << "'.";
 			assert(boost::get<T>(&(it->second)) != nullptr);
 		}
 	}
