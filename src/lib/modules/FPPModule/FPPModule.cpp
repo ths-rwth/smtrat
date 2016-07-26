@@ -53,7 +53,7 @@ namespace smtrat
 		if( solverState() != UNSAT )
 		{
 			getBackendsModel();
-			mModel.merge(mPartialModel, true);
+			mModel.update(mPartialModel);
 			excludeNotReceivedVariablesFromModel();
 		}
 	}
@@ -80,7 +80,7 @@ namespace smtrat
                 SMTRAT_LOG_INFO("smtrat.fpp", "Retrieving simplified input and partial model...");
                 std::pair<bool,FormulaT> res = mPreprocessor.getInputSimplified();
                 SMTRAT_LOG_INFO("smtrat.fpp", "Preprocessor model:" << std::endl << mPreprocessor.model());
-                mPartialModel.merge(mPreprocessor.model());
+                mPartialModel.update(mPreprocessor.model());
                 SMTRAT_LOG_INFO("smtrat.fpp", "Backtracking");
                 mPreprocessor.pop();
                 if (res.first && (formulaBeforePreprocessing != res.second)) {

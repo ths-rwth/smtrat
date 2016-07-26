@@ -706,7 +706,7 @@ namespace smtrat
                 //@todo models should be disjoint, but this breaks CAD on certain inputs.
                 //assert( modelsDisjoint( mModel, (*module)->model() ) );
                 (*module)->updateModel();
-                mModel.merge((*module)->model());
+                mModel.update((*module)->model());
                 break;
             }
             ++module;

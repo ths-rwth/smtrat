@@ -30,11 +30,10 @@ namespace smtrat
                     for (auto& a: mAssignments)
                         a.second += _number;
                 }
-		virtual ModelValue evaluate(Model& model) {
+		virtual ModelValue evaluateSubstitution(const Model& model) const {
 			auto selection = mAssignments.end();
 			for (auto it = mAssignments.begin(); it != mAssignments.end(); it++) {
-				auto mvit = model.find(ModelVariable(it->first));
-				const ModelValue& mv = getModelValue(mvit,model);
+				const ModelValue& mv = model.evaluated(ModelVariable(it->first));
 				assert(mv.isBool());
 				if (mv.asBool()) {
 					assert(selection == mAssignments.end());
@@ -104,7 +103,7 @@ namespace smtrat
 		clearModel();
 		if (solverState() == SAT || (solverState() != UNSAT && appliedPreprocessing())) {
 			getBackendsModel();
-			mModel.merge(mAssignments);
+			mModel.update(mAssignments);
 			mAssignments.clear();
 		}
 	}
