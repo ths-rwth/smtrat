@@ -225,7 +225,7 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
                 for (const auto& obj: solver->objectives()) {
                     smtrat::ModelPolynomialSubstitution mps(obj.first);
                     smtrat::ModelValue mv = mps.evaluate(model);
-                    formula = smtrat::FormulaT(carl::FormulaType::AND, formula, smtrat::FormulaT(obj.first - mv.asPoly(), carl::Relation::EQ));
+                    formula = smtrat::FormulaT(carl::FormulaType::AND, formula, smtrat::FormulaT(obj.first - mv.asRational(), carl::Relation::EQ));
                 }
                 sstream << formula.toString( false, 1, "", false, false, true, true ) << std::endl;
                 for (const auto& obj: solver->objectives()) {
