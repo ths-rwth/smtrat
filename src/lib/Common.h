@@ -118,6 +118,7 @@ namespace smtrat
 	
 	using ModelSubstitution = carl::ModelSubstitution<Rational, Poly>;
 	
+	using ModelMVRootSubstitution = carl::ModelMVRootSubstitution<Rational, Poly>;
 	using ModelPolynomialSubstitution = carl::ModelPolynomialSubstitution<Rational, Poly>;
 	
 	using ModelVariable = carl::ModelVariable;
