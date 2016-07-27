@@ -54,7 +54,7 @@ public:
 		for (const auto& it: mResults) {
 			std::size_t tool = toolIDs[it.first.first];
 			std::size_t file = fileIDs[it.first.second];
-			std::size_t id = db.addBenchmarkResult(benchmarkID, tool, file, it.second.exitCode, milliseconds(it.second.time).count());
+			std::size_t id = db.addBenchmarkResult(benchmarkID, tool, file, it.second.exitCode, std::size_t(milliseconds(it.second.time).count()));
 			for (const auto& attr: it.second.additional) {
 				db.addBenchmarkAttribute(id, attr.first, attr.second);
 			}

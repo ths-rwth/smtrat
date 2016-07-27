@@ -693,7 +693,7 @@ namespace smtrat
             (*mUsedBackends.begin())->updateModel();
             return (*mUsedBackends.begin())->model();
         }
-        return carl::EMPTY_MODEL<Rational, Poly>;
+        return EMPTY_MODEL;
     }
 
     void Module::getBackendsModel() const

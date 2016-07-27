@@ -54,8 +54,8 @@ public:
 		return conn.insert("INSERT INTO main_benchmark () VALUES ()");
 	}
 	
-	Index addBenchmarkResult(Index benchmark, Index tool, Index file, int exitCode, long time) {
-		return conn.insert("INSERT INTO main_benchmarkresult (`exitcode`, `time`, `memory`, `benchmark_id`, `tool_id`, `file_id`) VALUES (%0q, %1q, %2q, %3q, %4q, %5q)", exitCode, time, 0, benchmark, tool, file);
+	Index addBenchmarkResult(Index benchmark, Index tool, Index file, int exitCode, std::size_t time) {
+		return conn.insert("INSERT INTO main_benchmarkresult (`exitcode`, `time`, `memory`, `benchmark_id`, `tool_id`, `file_id`) VALUES (%0q, %1q, %2q, %3q, %4q, %5q)", exitCode, time, std::size_t(0), benchmark, tool, file);
 	}
 	
 	void addBenchmarkAttribute(Index benchmarkResult, const std::string& key, const std::string& value) {
