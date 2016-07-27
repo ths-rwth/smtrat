@@ -123,8 +123,6 @@ namespace smtrat
         }
     };
     
-    class Model; // forward declaration
-    
     /**
      * The input formula a module has to consider for it's satisfiability check. It is a list of formulas
      * and semantically considered as their conjunction.

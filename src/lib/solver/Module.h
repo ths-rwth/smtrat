@@ -24,9 +24,9 @@
 #include <chrono>
 #include <atomic>
 #include <mutex>
+#include <carl/formula/model/Assignment.h>
 #include "ModuleInput.h"
 #include "ValidationSettings.h"
-#include "../datastructures/Assignment.h"
 #include "../config.h"
 #include "ModuleSettings.h"
 

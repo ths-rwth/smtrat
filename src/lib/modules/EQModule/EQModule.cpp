@@ -6,7 +6,7 @@
  * Created on 2014-10-19.
  */
 
-#include "../../datastructures/SortValueManager.h"
+#include <carl/formula/model/uninterpreted/SortValueManager.h>
 
 #include <iostream>
 #include <iterator>
@@ -565,16 +565,16 @@ namespace smtrat {
 	}
 
 	template<class Settings>
-		bool EQModule<Settings>::P_check_model_extension(UFModel& ufModel, g_iterator term, const std::vector<SortValue>& args, const SortValue& result) const
+		bool EQModule<Settings>::P_check_model_extension(carl::UFModel& ufModel, g_iterator term, const std::vector<carl::SortValue>& args, const carl::SortValue& result) const
 	{
-		auto&& findVariableFor = [&] (const SortValue& value) -> g_iterator {
-			auto&& iter = std::find_if(mClassToSortValue.begin(), mClassToSortValue.end(), [&] (const std::pair<std::size_t, SortValue>& entry) { return entry.second == value; } );
+		auto&& findVariableFor = [&] (const carl::SortValue& value) -> g_iterator {
+			auto&& iter = std::find_if(mClassToSortValue.begin(), mClassToSortValue.end(), [&] (const std::pair<std::size_t, carl::SortValue>& entry) { return entry.second == value; } );
 
 			assert(iter != mClassToSortValue.end());
 			return mUnionFind[iter->first];
 		};
 
-		SortValue val = ufModel.get(args);
+		carl::SortValue val = ufModel.get(args);
 
 		if(!(val == result) && !(val == defaultSortValue(boost::get<UFInstance>(term->first).uninterpretedFunction().codomain()))) {
 			std::cerr << "Failure: Trying to map " << term->first << "(arguments";
@@ -595,14 +595,14 @@ namespace smtrat {
 		void EQModule<Settings>::P_update_model_function()
 	{
 		for(typename function_map_type::iterator i = mFunctionMap.begin(), e = mFunctionMap.end(); i != e; ++i) {
-			UFModel &ufModel = boost::get<UFModel>(mModel.emplace(i->first, UFModel(i->first)).first->second);
+			carl::UFModel &ufModel = boost::get<carl::UFModel>(mModel.emplace(i->first, carl::UFModel(i->first)).first->second);
 
 			for(g_iterator entry : i->second.mInstances) {
-				std::vector<SortValue> args;
+				std::vector<carl::SortValue> args;
 				args.reserve(arityof(entry));
 				for(std::size_t i = 0, s = arityof(entry); i < s; ++i) {
 					const UVariable& var = boost::get<UVariable>(argsof(entry)[i]->first);
-					args.push_back(boost::get<SortValue>(mModel.find(var())->second));
+					args.push_back(boost::get<carl::SortValue>(mModel.find(var())->second));
 				}
 
 				std::size_t eqClass = mUnionFind.find(entry->second.mUFIndex);

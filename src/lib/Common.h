@@ -24,12 +24,13 @@
 #include <carl/io/streamingOperators.h>
 #include <carl/util/Common.h>
 #include <carl/formula/FormulaPool.h>
-#include <carl/formula/uninterpreted/UFManager.h>
-#include <carl/formula/uninterpreted/UFInstanceManager.h>
 #include <carl/formula/bitvector/BVTerm.h>
 #include <carl/formula/bitvector/BVTermPool.h>
 #include <carl/formula/bitvector/BVConstraintPool.h>
 #include <carl/formula/bitvector/BVConstraint.h>
+#include <carl/formula/uninterpreted/UFManager.h>
+#include <carl/formula/uninterpreted/UFInstanceManager.h>
+#include <carl/formula/model/Model.h>
 
 namespace smtrat
 {
@@ -112,6 +113,21 @@ namespace smtrat
     typedef carl::VarInfo<Poly> VarPolyInfo;
 
     typedef carl::VarInfoMap<Poly> VarPolyInfoMap;
+	
+	using Model = carl::Model<Rational, Poly>;
+	
+	using ModelSubstitution = carl::ModelSubstitution<Rational, Poly>;
+	
+	using ModelMVRootSubstitution = carl::ModelMVRootSubstitution<Rational, Poly>;
+	using ModelPolynomialSubstitution = carl::ModelPolynomialSubstitution<Rational, Poly>;
+	
+	using ModelVariable = carl::ModelVariable;
+	
+	using ModelValue = carl::ModelValue<Rational, Poly>;
+	
+	using InfinityValue = carl::InfinityValue;
+	
+	using SqrtEx = carl::SqrtEx<smtrat::Poly>;
 
     template<template<typename> class Operator>
     using Contractor = carl::Contraction<Operator, Poly>;

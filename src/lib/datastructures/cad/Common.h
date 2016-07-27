@@ -3,8 +3,8 @@
 #include <boost/optional.hpp>
 #include <boost/optional/optional_io.hpp>
 
-#include <carl/core/RealAlgebraicNumber.h>
-#include <carl/core/RealAlgebraicNumberEvaluation.h>
+#include <carl/formula/model/ran/RealAlgebraicNumber.h>
+#include <carl/formula/model/ran/RealAlgebraicNumberEvaluation.h>
 
 #include "../../Common.h"
 #include "Settings.h"

@@ -7,7 +7,7 @@
  */
 
 #include "EQPreprocessingModule.h"
-#include "../../datastructures/SortValueManager.h"
+#include <carl/formula/model/uninterpreted/SortValueManager.h>
 
 namespace smtrat
 {
@@ -304,9 +304,9 @@ namespace smtrat
 					const UFInstance& instance = pair.first;
 					const UVariable& helper = pair.second;
 
-					UFModel &ufModel = boost::get<UFModel>(mModel.emplace(instance.uninterpretedFunction(), UFModel(instance.uninterpretedFunction())).first->second);
+					carl::UFModel &ufModel = boost::get<carl::UFModel>(mModel.emplace(instance.uninterpretedFunction(), carl::UFModel(instance.uninterpretedFunction())).first->second);
 
-					std::vector<SortValue> args;
+					std::vector<carl::SortValue> args;
 					args.reserve(instance.args().size());
 					for(std::size_t i = 0, s = instance.args().size(); i < s; ++i) {
 						const UVariable& var = instance.args()[i];
@@ -318,13 +318,13 @@ namespace smtrat
 							args.push_back(newSortValue(var.domain()));
 						} else {
 							// use the model value of the variable
-							args.push_back(boost::get<SortValue>(model_iter->second));
+							args.push_back(boost::get<carl::SortValue>(model_iter->second));
 						}
 					}
 
 					auto modelItr = mModel.find(helper());
 					assert(modelItr != mModel.end());
-					ufModel.extend(std::move(args), boost::get<SortValue>(modelItr->second));
+					ufModel.extend(std::move(args), boost::get<carl::SortValue>(modelItr->second));
 					mModel.erase(modelItr);
 				}
 			}

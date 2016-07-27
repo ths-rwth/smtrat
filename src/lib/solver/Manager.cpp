@@ -318,8 +318,8 @@ namespace smtrat
             delete toDelete;
         }
         mLogic = Logic::UNDEFINED;
-		assert(mpPrimaryBackend == nullptr);
         mpPrimaryBackend = new Module( mpPassedFormula, mPrimaryBackendFoundAnswer, this );
+		mpPrimaryBackend->setThreadPriority(thread_priority(0, mStrategyGraph.getRoot()));
         mGeneratedModules.push_back( mpPrimaryBackend );
     }
 
