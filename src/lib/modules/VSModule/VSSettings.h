@@ -145,6 +145,7 @@ namespace smtrat
     {
         static const bool use_variable_bounds                                   = false;
         static const bool use_fixed_variable_order                              = true;
+        static const bool local_conflict_search                                 = true;
     };
     
     struct VSSettingsOnlyVB : VSSettingsPlain
