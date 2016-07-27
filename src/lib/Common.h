@@ -115,6 +115,7 @@ namespace smtrat
     typedef carl::VarInfoMap<Poly> VarPolyInfoMap;
 	
 	using Model = carl::Model<Rational, Poly>;
+	static const Model EMPTY_MODEL = Model();
 	
 	using ModelSubstitution = carl::ModelSubstitution<Rational, Poly>;
 	
