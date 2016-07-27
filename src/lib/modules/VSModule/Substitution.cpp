@@ -13,9 +13,9 @@ namespace vs
 {
     Substitution::Substitution( const carl::Variable& _variable, const Type& _type, carl::PointerSet<Condition>&& _oConditions, smtrat::ConstraintsT&& _sideCondition ):
         mVariable( _variable ),
-        mpTerm( new SqrtEx() ),
+        mpTerm( new smtrat::SqrtEx() ),
         mType( _type ),
-        mpTermVariables( NULL ),
+        mpTermVariables( nullptr ),
         mOriginalConditions( std::move( _oConditions ) ),
         mSideCondition( std::move(_sideCondition) )
     {
@@ -26,11 +26,11 @@ namespace vs
         }
     }
 
-    Substitution::Substitution( const carl::Variable& _variable, const SqrtEx& _term, const Type& _type, carl::PointerSet<Condition>&& _oConditions, smtrat::ConstraintsT&& _sideCondition ):
+    Substitution::Substitution( const carl::Variable& _variable, const smtrat::SqrtEx& _term, const Type& _type, carl::PointerSet<Condition>&& _oConditions, smtrat::ConstraintsT&& _sideCondition ):
         mVariable( _variable ),
-        mpTerm( new SqrtEx( _term ) ),
+        mpTerm( new smtrat::SqrtEx( _term ) ),
         mType( _type ),
-        mpTermVariables( NULL ),
+        mpTermVariables( nullptr ),
         mOriginalConditions( std::move( _oConditions ) ),
         mSideCondition( std::move( _sideCondition ) )
     {
@@ -43,16 +43,16 @@ namespace vs
 
     Substitution::Substitution( const Substitution& _sub ):
         mVariable( _sub.variable() ),
-        mpTerm( new SqrtEx( _sub.term() ) ),
+        mpTerm( new smtrat::SqrtEx( _sub.term() ) ),
         mType( _sub.type() ),
-        mpTermVariables( _sub.mpTermVariables == NULL ? NULL : new carl::Variables( *_sub.mpTermVariables ) ),
+        mpTermVariables( _sub.mpTermVariables == nullptr ? nullptr : new carl::Variables( *_sub.mpTermVariables ) ),
         mOriginalConditions( _sub.originalConditions() ),
         mSideCondition( _sub.sideCondition() )
     {}
 
     Substitution::~Substitution()
     {
-        if( mpTermVariables != NULL )
+        if( mpTermVariables != nullptr )
             delete mpTermVariables;
         delete mpTerm;
     }
@@ -217,4 +217,3 @@ namespace vs
         _out << endl;
     }
 } // end namspace vs
-

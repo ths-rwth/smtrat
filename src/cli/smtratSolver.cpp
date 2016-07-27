@@ -71,7 +71,7 @@ public:
                                     for( const auto& obj : this->solver->objectives() ) {
                                         smtrat::ModelValue mv = this->solver->optimum(obj.first);
                                         if( mv.isMinusInfinity() || mv.isPlusInfinity() ) {
-                                            regular() << " (" << obj.first.toString( false, true ) << " " << smtrat::toString( mv.asInfinity(), false ) << ")" << std::endl;
+                                            regular() << " (" << obj.first.toString( false, true ) << " " << carl::toString( mv.asInfinity(), false ) << ")" << std::endl;
                                         } else {
                                             assert( mv.isRational() );
                                             regular() << " (" << obj.first.toString( false, true ) << " " << carl::toString( mv.asRational(), false ) << ")" << std::endl;
@@ -144,7 +144,7 @@ public:
 		this->solver->printInfeasibleSubset(std::cout);
 	}
 	void getValue(const std::vector<carl::Variable>&) {
-		error() << "(get-value <variables>) is not implemented.";
+		error() << "(get-value (<variables>)) is not implemented.";
 	}
 	void addObjective(const smtrat::Poly& p, smtrat::parser::OptimizationType ot) {
             this->solver->addObjective( p, ot == smtrat::parser::OptimizationType::Minimize );
@@ -225,7 +225,7 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
                 for (const auto& obj: solver->objectives()) {
                     smtrat::ModelPolynomialSubstitution mps(obj.first);
                     smtrat::ModelValue mv = mps.evaluate(model);
-                    formula = smtrat::FormulaT(carl::FormulaType::AND, formula, smtrat::FormulaT(obj.first - mv.asPoly(), carl::Relation::EQ));
+                    formula = smtrat::FormulaT(carl::FormulaType::AND, formula, smtrat::FormulaT(obj.first - mv.asRational(), carl::Relation::EQ));
                 }
                 sstream << formula.toString( false, 1, "", false, false, true, true ) << std::endl;
                 for (const auto& obj: solver->objectives()) {

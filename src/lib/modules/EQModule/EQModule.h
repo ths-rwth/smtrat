@@ -582,7 +582,7 @@ namespace smtrat
 			std::size_t mGlobalSplitAge;
 			map_type mEqualityGraph;
 			component_vector_type mEqualityComponent; // list of all vertices visited in the last bfs search
-			std::unordered_map<std::size_t, SortValue> mClassToSortValue; // mapping from union find indices to sort values
+			std::unordered_map<std::size_t, carl::SortValue> mClassToSortValue; // mapping from union find indices to sort values
 			function_map_type mFunctionMap; // maps uninterpreted functions to the list of their instances and hash buckets
 			std::vector<variable_type> mVariables; // list of all variables; used in updateModel to assign a sort to value to each variable
 			boost::circular_buffer<g_iterator> mBfsQueue; // queue for breath first search in equality graph
@@ -736,7 +736,7 @@ namespace smtrat
 			void P_print_bucket_sets();
 
 			// check whether model extension satisfies functional consistency (called in debug-version only)
-			bool P_check_model_extension(UFModel& model, g_iterator term, const std::vector<SortValue>& args, const SortValue& result) const;
+			bool P_check_model_extension(carl::UFModel& model, g_iterator term, const std::vector<carl::SortValue>& args, const carl::SortValue& result) const;
 
 		public:
 			typedef Settings SettingsType;

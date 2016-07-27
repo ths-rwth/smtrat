@@ -6,7 +6,8 @@
  */
 
 #include "ModuleInput.h"
-#include "../datastructures/Assignment.h"
+
+#include <carl/formula/model/Assignment.h>
 
 using namespace std;
 using namespace carl;

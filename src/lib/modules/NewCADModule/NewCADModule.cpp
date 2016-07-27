@@ -66,9 +66,13 @@ namespace smtrat
 	template<class Settings>
 	Answer NewCADModule<Settings>::checkCore()
 	{
-		auto answer = mCAD.check(mLastAssignment);
+		auto answer = mCAD.check(mLastAssignment, mInfeasibleSubsets);
+#ifdef SMTRAT_DEVOPTION_Statistics
+		mStatistics.currentProjectionSize(mCAD.getProjection().size());
+#endif
 		if (answer == Answer::UNSAT) {
-			mCAD.generateInfeasibleSubsets(mInfeasibleSubsets);
+			//mCAD.generateInfeasibleSubsets(mInfeasibleSubsets);
+			SMTRAT_LOG_INFO("smtrat.cad", "Infeasible subset: " << mInfeasibleSubsets);
 		}
 		return answer;
 	}

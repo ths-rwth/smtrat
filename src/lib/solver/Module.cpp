@@ -693,7 +693,7 @@ namespace smtrat
             (*mUsedBackends.begin())->updateModel();
             return (*mUsedBackends.begin())->model();
         }
-        return EMPTY_MODEL;
+        return carl::EMPTY_MODEL<Rational, Poly>;
     }
 
     void Module::getBackendsModel() const
@@ -706,7 +706,7 @@ namespace smtrat
                 //@todo models should be disjoint, but this breaks CAD on certain inputs.
                 //assert( modelsDisjoint( mModel, (*module)->model() ) );
                 (*module)->updateModel();
-                mModel.merge((*module)->model());
+                mModel.update((*module)->model());
                 break;
             }
             ++module;

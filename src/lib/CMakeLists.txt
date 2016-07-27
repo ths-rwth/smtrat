@@ -14,42 +14,26 @@
 
 include_directories( ${carl_INCLUDE_DIR} )
 
-# Core library
-# # # # # # # # # # #
-set(lib_core_src
-    Common.cpp
+
+# Configure all .in files
+# Omit modules directories! (Special care is taken there)
+# If modules/*.in is included here, this triggers rebuilds all the time.
+file(GLOB_RECURSE smtrat_lib_tpl
+	"datastructures/*.in"
+	"solver/*.in"
+	"strategies/*.in"
+	"utilities/*.in"
+	"config.h.in"
 )
-
-set(lib_core_headers
-    Common.h
-)
-
-# Include modules
-#######################
-add_subdirectory(modules)
-
-# write config.h
-#######################
-configure_file( ${CMAKE_SOURCE_DIR}/src/lib/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/config.h )
-configure_file( ${CMAKE_SOURCE_DIR}/src/lib/strategies/config.h.in ${CMAKE_SOURCE_DIR}/src/lib/strategies/config.h )
-
-add_subdirectory(utilities)
-
-foreach(name datastructures solver strategies utilities)
-  collect_files(lib ${name})
+foreach(tpl ${smtrat_lib_tpl})
+	string(REGEX REPLACE ".in$" "" file ${tpl})
+	configure_file("${tpl}" "${file}")
 endforeach()
 
-set(lib_${PROJECT_NAME}_SRCS
-    ${lib_core_src}
-    ${lib_datastructures_src}
-    ${lib_modules_src}
-    ${lib_solver_src}
-    ${lib_strategies_src}
-    ${lib_utilities_src}
-)
+add_subdirectory(modules)
+add_subdirectory(utilities)
 
-# set linking flags
-# # # # # # # # # #
+file(GLOB_RECURSE smtrat_lib_sources "*.cpp")
 
 set(STATICLIB "SHARED")
 if(STATICLIB_SWITCH)
@@ -59,7 +43,7 @@ endif()
 # library target
 # # # # # # # # #
 
-add_library(lib_${PROJECT_NAME} ${STATICLIB} ${lib_${PROJECT_NAME}_SRCS} )
+add_library(lib_${PROJECT_NAME} ${STATICLIB} ${smtrat_lib_sources} )
 set_target_properties( lib_${PROJECT_NAME} PROPERTIES
 #		# create *nix style library versions + symbolic links
 		VERSION "${${PROJECT_NAME}_MAJORVERSION}.${${PROJECT_NAME}_MINORVERSION}.${${PROJECT_NAME}_MAINTENANCEVERSION}"

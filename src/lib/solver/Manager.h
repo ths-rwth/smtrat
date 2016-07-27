@@ -26,7 +26,6 @@ namespace smtrat
 {   
     class Module; // forward declaration
     //class ModuleFactory; // forward declaration
-    class Model; // forward declaration
     
     /**
      * Base class for solvers. This is the interface to the user.

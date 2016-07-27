@@ -39,8 +39,13 @@ protected:
 	Callback mRemoveCallback;
 	ConstraintMap mConstraintMap;
 	std::vector<typename ConstraintMap::iterator> mConstraintIts;
+	std::vector<std::size_t> mConstraintLevels;
 	IDPool mIDPool;
 	VariableBounds mBounds;
+	/// List of constraints that are satisfied by bounds.
+	Bitset mSatByBounds;
+	/// List of constraints that are infeasible due to bounds.
+	Bitset mUnsatByBounds;
 	
 	void callCallback(const Callback& cb, const ConstraintT& c, std::size_t id, bool isBound) const {
 		if (cb) cb(c.lhs().toUnivariatePolynomial(mVariables.front()), id, isBound);
@@ -72,6 +77,9 @@ public:
 	const auto& bounds() const {
 		return mBounds;
 	}
+	const auto& unsatByBounds() const {
+		return mUnsatByBounds;
+	}
 	std::size_t add(const ConstraintT& c) {
 		SMTRAT_LOG_DEBUG("smtrat.cad.constraints", "Adding " << c);
 		bool isBound = mBounds.addBound(c, c);
@@ -80,15 +88,26 @@ public:
 		if (BT == Backtracking::ORDERED) {
 			id = mConstraintIts.size();
 			mConstraintIts.push_back(mConstraintMap.end());
+			mConstraintLevels.emplace_back(0);
 		} else {
 			id = mIDPool.get();
 			if (id >= mConstraintIts.size()) {
 				mConstraintIts.resize(id+1, mConstraintMap.end());
+				mConstraintLevels.resize(id+1);
 			}
 		}
 		auto r = mConstraintMap.emplace(c, id);
 		assert(r.second);
 		mConstraintIts[id] = r.first;
+		auto vars = c.variables();
+		for (std::size_t level = mVariables.size(); level > 0; level--) {
+			vars.erase(mVariables[level - 1]);
+			if (vars.empty()) {
+				mConstraintLevels[id] = level;
+				break;
+			}
+		}
+		SMTRAT_LOG_DEBUG("smtrat.cad.constraints", "Identified " << c << " as level " << mConstraintLevels[id]);
 		callCallback(mAddCallback, c, id, isBound);
 		return id;
 	}
@@ -98,6 +117,8 @@ public:
 		auto it = mConstraintMap.find(c);
 		assert(it != mConstraintMap.end());
 		std::size_t id = it->second;
+		mSatByBounds.reset(id);
+		mUnsatByBounds.reset(id);
 		assert(mConstraintIts[id] == it);
 		if (BT == Backtracking::ORDERED) {
 			SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Removing " << id << " in ordered mode");
@@ -137,6 +158,37 @@ public:
 		assert(id < mConstraintIts.size());
 		assert(mConstraintIts[id] != mConstraintMap.end());
 		return mConstraintIts[id]->first;
+	}
+	std::size_t level(std::size_t id) const {
+		return mConstraintLevels[id];
+	}
+	bool checkForTrivialConflict(std::vector<FormulaSetT>& mis) const {
+		if (bounds().isConflicting()) {
+			SMTRAT_LOG_INFO("smtrat.cad", "Trivially unsat due to bounds" << std::endl << bounds());
+			mis.emplace_back();
+			for (const auto& c: bounds().getOriginsOfBounds()) {
+				mis.back().emplace(c);
+			}
+			return true;
+		}
+		const auto& intervalmap = mBounds.getIntervalMap();
+		for (const auto& c: mConstraintIts) {
+			if (c == mConstraintMap.end()) continue;
+			SMTRAT_LOG_TRACE("smtrat.cad", "Checking " << c->first << " against " << intervalmap);
+			switch (c->first.consistentWith(intervalmap)) {
+				case 0: {
+					SMTRAT_LOG_INFO("smtrat.cad", "Single constraint conflicts with bounds: " << c->first << std::endl << bounds());
+					mis.emplace_back();
+					for (const auto& b: bounds().getOriginsOfBounds()) {
+						mis.back().emplace(b);
+					}
+					mis.back().emplace(c->first);
+					return true;
+				}
+				default: break;
+			}
+		}
+		return false;
 	}
 	void exportAsDot(std::ostream& out) const {
 		debug::DotSubgraph dsg("constraints");

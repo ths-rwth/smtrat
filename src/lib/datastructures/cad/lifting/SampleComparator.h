@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Sample.h"
+#include "../Common.h"
 #include "../Settings.h"
 
 namespace smtrat {

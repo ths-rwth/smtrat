@@ -1092,6 +1092,7 @@ namespace smtrat
             #ifdef ICP_MODULE_DEBUG_2
             std::cout << "Split occurred: " << resultA << " and " << resultB << std::endl;
             #endif
+            setContraction( _selection, icpVar, resultA.convexHull( resultB ) );
             icp::set_icpVariable variables;
             for( auto variableIt = _selection->constraint().variables().begin(); variableIt != _selection->constraint().variables().end(); ++variableIt )
             {
@@ -1105,20 +1106,18 @@ namespace smtrat
             for( const FormulaT& subformula : splitPremise )
                 subformulas.emplace_back( carl::FormulaType::NOT, subformula );
             // construct new box
-            FormulasT boxFormulas = createBoxFormula();
+            FormulasT boxFormulas = createBoxFormula( true );
             // push lemma
-            auto lastFormula = --boxFormulas.end();
-            if( boxFormulas.size() > 1 )
+            if( !boxFormulas.empty() )
             {
-                for( auto iter = boxFormulas.begin(); iter != lastFormula; ++iter )
+                auto lastFormula = --boxFormulas.end();
+                if( boxFormulas.size() > 1 )
                 {
-                    FormulasT subFormulaSetTmp = subformulas;
-                    subFormulaSetTmp.push_back( *iter );
-                    addLemma( FormulaT( carl::FormulaType::OR, std::move(subFormulaSetTmp) ) );
+                    for( auto iter = boxFormulas.begin(); iter != lastFormula; ++iter )
+                        mTheoryPropagations.emplace_back( std::move(FormulasT(subformulas)), *iter );
                 }
+                mTheoryPropagations.emplace_back( std::move(subformulas), *lastFormula );
             }
-            subformulas.push_back( *lastFormula );
-            addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
             #ifdef ICP_MODULE_SHOW_PROGRESS
             addProgress( mInitialBoxSize - calculateCurrentBoxSize() );
             #endif
@@ -1129,8 +1128,6 @@ namespace smtrat
             #ifdef ICP_MODULE_DEBUG_1
             std::cout << "division causes split on " << variable << " at " << bound << "!" << std::endl << std::endl;
             #endif
-            updateRelativeContraction( icpVarIntervalBefore, resultA );
-            updateAbsoluteContraction( icpVarIntervalBefore, resultA );
             #ifdef ICP_MODULE_DEBUG_0
             printContraction( *_selection, icpVarIntervalBefore, resultA, resultB );
             #endif
@@ -1640,14 +1637,14 @@ namespace smtrat
     }
 
     template<class Settings>
-    FormulasT ICPModule<Settings>::createBoxFormula()
+    FormulasT ICPModule<Settings>::createBoxFormula( bool _onlyOriginalVariables )
     {
         carl::Variables originalRealVariables;
         rReceivedFormula().realValuedVars(originalRealVariables); // TODO: store original variables as member, updating them efficiently with assert and remove
         FormulasT subformulas;
         for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
         {
-            if( originalRealVariables.find( (*intervalIt).first ) != originalRealVariables.end() )
+            if( !_onlyOriginalVariables || originalRealVariables.find( (*intervalIt).first ) != originalRealVariables.end() )
             {
                 std::pair<ConstraintT, ConstraintT> boundaries = icp::intervalToConstraint(carl::makePolynomial<Poly>((*intervalIt).first), (*intervalIt).second);
                 if( boundaries.first != ConstraintT() )
@@ -1693,7 +1690,7 @@ namespace smtrat
                 for( auto formulaIt = splitPremise.begin(); formulaIt != splitPremise.end(); ++formulaIt )
                     subformulas.emplace_back( carl::FormulaType::NOT, *formulaIt );
                 // construct new box
-                subformulas.emplace_back( carl::FormulaType::AND, std::move( createBoxFormula() ) ); // TODO: only add this lemma if any contraction took place!!!
+                subformulas.emplace_back( carl::FormulaType::AND, std::move( createBoxFormula( true ) ) ); // TODO: only add this lemma if any contraction took place!!!
                 // push lemma
                 addLemma( FormulaT( carl::FormulaType::OR, std::move(subformulas) ) );
                 #ifdef ICP_MODULE_SHOW_PROGRESS

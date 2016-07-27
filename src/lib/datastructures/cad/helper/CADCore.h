@@ -45,7 +45,7 @@ struct CADCore<CoreHeuristic::BySample> {
 					SMTRAT_LOG_DEBUG("smtrat.cad", "Got nothing to lift anymore, projecting into level " << idLP(it.depth() + 1) << " ...");
 					Bitset gotNewPolys = cad.mProjection.projectNewPolynomial();
 					if (gotNewPolys.any()) {
-						SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << cad.mProjection);
+						SMTRAT_LOG_TRACE("smtrat.cad", "Current projection:" << std::endl << cad.mProjection);
 						cad.mLifting.restoreRemovedSamples();
 					}
 				}
@@ -110,22 +110,25 @@ struct CADCore<CoreHeuristic::PreferSampling> {
 		while (true) {
 			cad.mLifting.restoreRemovedSamples();
 			while (cad.mLifting.hasNextSample() || cad.mLifting.hasFullSamples()) {
+				//SMTRAT_LOG_INFO("smtrat.cad", "Current Projection:" << std::endl << cad.mProjection);
+				//SMTRAT_LOG_INFO("smtrat.cad", "Current lifting" << std::endl << cad.mLifting.getTree());
 				Answer res = cad.checkFullSamples(assignment);
 				if (res == Answer::SAT) return Answer::SAT;
 				if (!cad.mLifting.hasNextSample()) break;
 				
 				auto it = cad.mLifting.getNextSample();
-				SMTRAT_LOG_DEBUG("smtrat.cad", "Queue" << std::endl << cad.mLifting.getLiftingQueue());
+				SMTRAT_LOG_TRACE("smtrat.cad", "Queue" << std::endl << cad.mLifting.getLiftingQueue());
 				Sample& s = *it;
 				assert(0 <= it.depth() && it.depth() < cad.dim());
-				if (s.hasConflictWithConstraint()) {
+				SMTRAT_LOG_DEBUG("smtrat.cad", "Processing " << cad.mLifting.extractSampleMap(it));
+				if (it.depth() > 0 && cad.checkPartialSample(it, cad.idLP(it.depth())) == Answer::UNSAT) {
 					cad.mLifting.removeNextSample();
 					continue;
 				}
 				auto polyID = cad.mProjection.getPolyForLifting(cad.idLP(it.depth() + 1), s.liftedWith());
 				if (polyID) {
 					const auto& poly = cad.mProjection.getPolynomialById(cad.idLP(it.depth() + 1), *polyID);
-					SMTRAT_LOG_DEBUG("smtrat.cad", "Lifting " << s << " with " << poly);
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Lifting " << cad.mLifting.extractSampleMap(it) << " with " << poly);
 					cad.mLifting.liftSample(it, poly, *polyID);
 				} else {
 					SMTRAT_LOG_DEBUG("smtrat.cad", "Current lifting" << std::endl << cad.mLifting.getTree());

@@ -83,7 +83,8 @@ public:
 		return true;
 	}
 	
-	virtual std::string getStatus(const BenchmarkResult&) const {
+	virtual std::string getStatus(const BenchmarkResult& res) const {
+		if (res.exitCode == 0) return "sat";
 		return "";
 	}
 	

@@ -71,7 +71,7 @@ namespace cad {
 			return mEvaluationResult;
 		}
 		bool hasConflictWithConstraint() const {
-			return mEvaluationResult.any();
+			return (mEvaluatedWith & ~mEvaluationResult).any();
 		}
 		void merge(const Sample& s) {
 			if (s.isRoot()) setIsRoot(true);

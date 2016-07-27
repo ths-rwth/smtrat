@@ -9,7 +9,6 @@
 
 #include "../../Common.h"
 #include "Condition.h"
-#include "../../datastructures/vs/SqrtEx.h"
 
 namespace vs
 {
@@ -26,7 +25,7 @@ namespace vs
             /// The variable to substitute.
             carl::Variable mVariable;
             /// The pointer (if != NULL) to the square root term to substitute the variable for.
-            SqrtEx* mpTerm;
+            smtrat::SqrtEx* mpTerm;
             /// The type.
             Type mType;
             /// The variables occurring in the term to substitute for.
@@ -55,7 +54,7 @@ namespace vs
              * @param _oConditions The original conditions of the substitution to construct.
              * @param _sideCondition The side conditions of the substitution to construct.
              */
-            Substitution( const carl::Variable&, const SqrtEx& _term, const Type& _type, carl::PointerSet<Condition>&& _oConditions, smtrat::ConstraintsT&& _sideCondition = smtrat::ConstraintsT() );
+            Substitution( const carl::Variable&, const smtrat::SqrtEx& _term, const Type& _type, carl::PointerSet<Condition>&& _oConditions, smtrat::ConstraintsT&& _sideCondition = smtrat::ConstraintsT() );
             
             /**
              * Copy constructor.
@@ -78,7 +77,7 @@ namespace vs
             /**
              * @return A constant reference to the term this substitution maps its variable to.
              */
-            const SqrtEx& term() const
+            const smtrat::SqrtEx& term() const
             {
                 return *mpTerm;
             }
@@ -90,7 +89,7 @@ namespace vs
             void setTerm( const smtrat::Rational& _value )
             {
                 assert( mType == Type::MINUS_INFINITY );
-                *mpTerm = SqrtEx( smtrat::Poly( _value ) );
+                *mpTerm = smtrat::SqrtEx( smtrat::Poly( _value ) );
                 mType = Type::NORMAL;
             }
 
@@ -205,7 +204,7 @@ namespace std
     public:
         size_t operator()( const vs::Substitution& _substitution ) const 
         {
-            return ((hash<vs::SqrtEx>()(_substitution.term()) << 7) ^ hash<carl::Variable>()( _substitution.variable() ) << 2) ^ _substitution.type();
+            return ((hash<smtrat::SqrtEx>()(_substitution.term()) << 7) ^ hash<carl::Variable>()( _substitution.variable() ) << 2) ^ _substitution.type();
         }
     };
 } // namespace std
@@ -233,4 +232,3 @@ namespace vs
     template<typename T> 
     using SubstitutionFastPointerMap = std::unordered_map<const smtrat::Poly*, T, substitutionPointerHash, substitutionPointerEqual>;
 }
-

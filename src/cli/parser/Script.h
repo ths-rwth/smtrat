@@ -73,7 +73,7 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 			|	(qi::lit("get-option") > keyword > ")")[px::bind(&Callee::getOption, px::ref(callee), qi::_1)]
 			|	(qi::lit("get-proof") > ")")[px::bind(&Callee::getProof, px::ref(callee))]
 			|	(qi::lit("get-unsat-core") > ")")[px::bind(&Callee::getUnsatCore, px::ref(callee))]
-			|	(qi::lit("get-value") > +term > ")")[px::bind(&Callee::getValue, px::ref(callee), qi::_1)]
+			|	(qi::lit("get-value") > "(" > +term > ")" > ")")[px::bind(&Callee::getValue, px::ref(callee), qi::_1)]
 			|	(qi::lit("maximize") > term > ")")[px::bind(&Callee::addObjective, px::ref(callee), qi::_1, Maximize)]
 			|	(qi::lit("minimize") > term > ")")[px::bind(&Callee::addObjective, px::ref(callee), qi::_1, Minimize)]
 			|	(qi::lit("pop") > (numeral | qi::attr(carl::constant_one<Integer>::get())) > ")")[px::bind(&Callee::pop, px::ref(callee), qi::_1)]

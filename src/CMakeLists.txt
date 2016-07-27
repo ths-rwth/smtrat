@@ -19,6 +19,8 @@ endif()
 # unit tests
 # # # # # # #
 
+#add_subdirectory(benchmax EXCLUDE_FROM_ALL)
+
 add_subdirectory(tests EXCLUDE_FROM_ALL)
 
 add_subdirectory(gui EXCLUDE_FROM_ALL)
