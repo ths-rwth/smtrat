@@ -244,7 +244,7 @@ namespace full {
 			return mPolynomialIDs[level].erase(it);
 		}
 		
-		Bitset project(const ConstraintSelection& cs) {
+		Bitset project(const ConstraintSelection&) {
 			while (!mProjectionQueue.empty()) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Projecting" << std::endl << *this);
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Using next projection candidate " << mProjectionQueue.top());
