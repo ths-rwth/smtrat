@@ -20,7 +20,7 @@ namespace benchmax {
 
 class CondorBackend: public Backend {
 protected:
-	virtual void execute(const Tool*, const fs::path&, const fs::path& baseDir) {}
+	virtual void execute(const Tool*, const fs::path&, const fs::path&) {}
 private:
 	std::list<std::atomic<bool>> processes;
 
