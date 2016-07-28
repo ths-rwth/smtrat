@@ -16,9 +16,6 @@
 namespace benchmax {
 
 BenchmarkSet::BenchmarkSet(const fs::path& baseDir): mBaseDir(baseDir), mFilesList() {
-	if (mBaseDir.native().back() == '/') {
-		mBaseDir = mBaseDir.native().substr(0, mBaseDir.native().length() - 1);
-	}
 	parseDirectory(mBaseDir);
 }
 
