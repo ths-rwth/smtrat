@@ -41,7 +41,7 @@ public:
 		mFile << "\t</solvers>" << std::endl;
 		
 		for (const auto& res: results) {
-			mFile << "\t<benchmarkset name=\"" << sanitize(removePrefix(fs::canonical(res.first.native()), Settings::pathPrefix)) << "\">" << std::endl;
+			mFile << "\t<benchmarkset name=\"" << sanitize(removePrefix(fs::canonical(res.first).native(), Settings::pathPrefix)) << "\">" << std::endl;
 			for (const auto& file: res.second.files) {
 				mFile << "\t\t<benchmarkfile name=\"" << sanitize(removePrefix(file.first.native(), res.first.native())) << "\">" << std::endl;
 				for (const auto& tool: tools) {

@@ -16,8 +16,9 @@
 				</style:style>
 			</office:automatic-styles>
 			<office:body>
-				<xsl:apply-templates select="benchmarksets/benchmarkset" mode="summary"/>
-				<xsl:apply-templates select="benchmarksets/benchmarkset" mode="details"/>
+				<xsl:apply-templates select="benchmarksets" mode="summary"/>
+				<xsl:apply-templates select="benchmarksets/benchmarkset" mode="single"/>
+				<xsl:apply-templates select="benchmarksets/benchmarkset" mode="single-details"/>
 			</office:body>
 		</office:document-content>
 	</xsl:template>
@@ -40,9 +41,155 @@
 			</xsl:for-each>
 		</table:table-row>
 	</xsl:template>
+	
+	<xsl:template name="allSummaryAggregates">
+		<xsl:param name="nrOfBenchmarks" />
+		<xsl:call-template name="summaryAggregates">
+			<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
+			<xsl:with-param name="curStatus" select="'sat'" />
+		</xsl:call-template>
+		<xsl:call-template name="summaryAggregates">
+			<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
+			<xsl:with-param name="curStatus" select="'unsat'" />
+		</xsl:call-template>
+		<xsl:call-template name="summaryAggregates">
+			<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
+			<xsl:with-param name="curStatus" select="'unknown'" />
+		</xsl:call-template>
+		<xsl:call-template name="summaryAggregates">
+			<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
+			<xsl:with-param name="curStatus" select="'wrong'" />
+		</xsl:call-template>
+		<xsl:call-template name="summaryAggregates">
+			<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
+			<xsl:with-param name="curStatus" select="'error'" />
+		</xsl:call-template>
+		<xsl:call-template name="summaryAggregates">
+			<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
+			<xsl:with-param name="curStatus" select="'timeout'" />
+		</xsl:call-template>
+		<xsl:call-template name="summaryAggregates">
+			<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
+			<xsl:with-param name="curStatus" select="'memout'" />
+		</xsl:call-template>
+		<xsl:call-template name="summaryAggregates">
+			<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
+			<xsl:with-param name="curStatus" select="'no answer'" />
+		</xsl:call-template>
+		<xsl:call-template name="summaryAggregates">
+			<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
+			<xsl:with-param name="curStatus" select="'segmentation fault'" />
+		</xsl:call-template>
+		<xsl:call-template name="summaryAggregates">
+			<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
+			<xsl:with-param name="curStatus" select="'segfault'" />
+		</xsl:call-template>
+		<xsl:call-template name="summaryAggregates">
+			<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
+			<xsl:with-param name="curStatus" select="'abort'" />
+		</xsl:call-template>
+	</xsl:template>
+	
+	<xsl:template name="singleResultRow">
+		<xsl:param name="FILE" />
+		<xsl:for-each select="/benchmarksets/solvers/solver">
+			<xsl:variable name="id"><xsl:value-of select='@solver_id'/></xsl:variable>
+			<table:table-cell office:value-type="float">
+				<xsl:attribute name="office:value">
+					<xsl:value-of select="$FILE/run[@solver_id=$id]/results/result[@name='runtime']"/>
+				</xsl:attribute>
+				<text:p>
+					<xsl:value-of select="translate($FILE/run[@solver_id=$id]/results/result[@name='runtime'], '\smsec', ' ')"/>
+				</text:p>
+			</table:table-cell>
+			<table:table-cell>
+				<xsl:attribute name="office:value">
+					<xsl:value-of select="$FILE/run[@solver_id=$id]/results/result[@name='answer']"/>
+				</xsl:attribute>
+				<xsl:attribute name="table:style-name">
+					<xsl:choose>
+						<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'sat'">nbg</xsl:when>
+						<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'unsat'">nbg</xsl:when>
+						<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'unknown'">nbg</xsl:when>
+						<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'error'">rbg</xsl:when>
+						<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'wrong'">rbg</xsl:when>
+						<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'timeout'">nbg</xsl:when>
+						<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'memout'">nbg</xsl:when>
+						<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'no answer'">rbg</xsl:when>
+						<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'segmentation fault'">rbg</xsl:when>
+						<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'segfault'">rbg</xsl:when>
+						<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'abort'">rbg</xsl:when>
+						<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='validated'] = 'true'">gbg</xsl:when>
+						<xsl:otherwise>nbg</xsl:otherwise>
+					</xsl:choose>
+				</xsl:attribute>
+				<text:p>
+					<xsl:value-of select="$FILE/run[@solver_id=$id]/results/result[@name='answer']"/>
+				</text:p>
+			</table:table-cell>
+		</xsl:for-each>
+	</xsl:template>
 
 	<!-- summary sheet -->
-	<xsl:template match="benchmarkset" mode="summary">
+	<xsl:template match="benchmarksets" mode="summary">
+		<xsl:variable name="nrOfBenchmarks" select="count(benchmarkset/benchmarkfile)"/>
+		<office:spreadsheet>
+			<table:table>
+				<xsl:attribute name="table:name">
+					<xsl:value-of select='all'/>
+				</xsl:attribute>
+				
+				<!-- header -->
+				<table:table-row>
+					<table:table-cell/>
+					<xsl:for-each select="//solvers/solver">
+						<table:table-cell>
+							<xsl:attribute name="office:value">
+								<xsl:value-of select='@solver_id'/>
+							</xsl:attribute>
+							<text:p>
+								<xsl:value-of select="@solver_id"/>
+							</text:p>
+						</table:table-cell>
+						<table:table-cell/>
+					</xsl:for-each>
+				</table:table-row>
+				<xsl:for-each select="benchmarkset/benchmarkfile">
+					<table:table-row>
+						<table:table-cell>
+							<xsl:attribute name="office:value">
+								<xsl:value-of select="../@name"/>/<xsl:value-of select="@name"/>
+							</xsl:attribute>
+							<text:p>
+								<xsl:value-of select="../@name"/>/<xsl:value-of select="@name"/>
+							</text:p>
+						</table:table-cell>
+						<xsl:call-template name="singleResultRow">
+							<xsl:with-param name="FILE" select="." />
+						</xsl:call-template>
+					</table:table-row>	
+				</xsl:for-each>
+				
+				<table:table-row>
+					<table:table-cell>
+						<xsl:attribute name="office:value">count</xsl:attribute>
+						<text:p>count</text:p>
+					</table:table-cell>
+					<xsl:for-each select="/benchmarksets/solvers/solver">
+						<table:table-cell />
+						<table:table-cell><xsl:attribute name="table:formula">=COUNT(INDIRECT(ADDRESS(1; CELL("COL")-1) &amp; ":" &amp; ADDRESS(<xsl:value-of select="$nrOfBenchmarks+1"/>; CELL("COL")-1)))</xsl:attribute></table:table-cell>
+					</xsl:for-each>
+				</table:table-row>
+				
+				<xsl:call-template name="allSummaryAggregates">
+					<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
+				</xsl:call-template>
+			</table:table>
+		</office:spreadsheet>
+	</xsl:template>
+
+	<!-- single benchmarkset sheet -->
+	<xsl:template match="benchmarkset" mode="single">
 		<xsl:variable name="nrOfBenchmarks" select="count(benchmarkfile)"/>
 		<office:spreadsheet>
 			<table:table>
@@ -65,53 +212,15 @@
 						<table:table-cell/>
 					</xsl:for-each>
 				</table:table-row>
-				<xsl:for-each select="benchmarkfile[generate-id() = generate-id(key('bsbbf_sum', @name)[1])]">
+				<xsl:for-each select="benchmarkfile">
 					<table:table-row>
 						<table:table-cell>
-							<xsl:attribute name="office:value">
-								<xsl:value-of select="key('bsbbf_sum', @name)/@name"/>
-							</xsl:attribute>
-							<text:p>
-								<xsl:value-of select="key('bsbbf_sum', @name)/@name"/>
-							</text:p>
+							<xsl:attribute name="office:value"><xsl:value-of select="@name"/></xsl:attribute>
+							<text:p><xsl:value-of select="@name"/></text:p>
 						</table:table-cell>
-						<xsl:variable name="FILE" select="."/>
-						<xsl:for-each select="/benchmarksets/solvers/solver">
-							<xsl:variable name="id"><xsl:value-of select='@solver_id'/></xsl:variable>
-							<table:table-cell office:value-type="float">
-								<xsl:attribute name="office:value">
-									<xsl:value-of select="$FILE/run[@solver_id=$id]/results/result[@name='runtime']"/>
-								</xsl:attribute>
-								<text:p>
-									<xsl:value-of select="translate($FILE/run[@solver_id=$id]/results/result[@name='runtime'], '\smsec', ' ')"/>
-								</text:p>
-							</table:table-cell>
-							<table:table-cell>
-								<xsl:attribute name="office:value">
-									<xsl:value-of select="$FILE/run[@solver_id=$id]/results/result[@name='answer']"/>
-								</xsl:attribute>
-								<xsl:attribute name="table:style-name">
-									<xsl:choose>
-										<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'sat'">nbg</xsl:when>
-										<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'unsat'">nbg</xsl:when>
-										<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'unknown'">nbg</xsl:when>
-										<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'error'">rbg</xsl:when>
-										<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'wrong'">rbg</xsl:when>
-										<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'timeout'">nbg</xsl:when>
-										<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'memout'">nbg</xsl:when>
-										<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'no answer'">rbg</xsl:when>
-										<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'segmentation fault'">rbg</xsl:when>
-										<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'segfault'">rbg</xsl:when>
-										<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='answer'] = 'abort'">rbg</xsl:when>
-										<xsl:when test="$FILE/run[@solver_id=$id]/results/result[@name='validated'] = 'true'">gbg</xsl:when>
-										<xsl:otherwise>nbg</xsl:otherwise>
-									</xsl:choose>
-								</xsl:attribute>
-								<text:p>
-									<xsl:value-of select="$FILE/run[@solver_id=$id]/results/result[@name='answer']"/>
-								</text:p>
-							</table:table-cell>
-						</xsl:for-each>
+						<xsl:call-template name="singleResultRow">
+							<xsl:with-param name="FILE" select="." />
+						</xsl:call-template>
 					</table:table-row>	
 				</xsl:for-each>
 				
@@ -126,56 +235,15 @@
 					</xsl:for-each>
 				</table:table-row>
 				
-				<xsl:call-template name="summaryAggregates">
+				<xsl:call-template name="allSummaryAggregates">
 					<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
-					<xsl:with-param name="curStatus" select="'sat'" />
-				</xsl:call-template>
-				<xsl:call-template name="summaryAggregates">
-					<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
-					<xsl:with-param name="curStatus" select="'unsat'" />
-				</xsl:call-template>
-				<xsl:call-template name="summaryAggregates">
-					<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
-					<xsl:with-param name="curStatus" select="'unknown'" />
-				</xsl:call-template>
-				<xsl:call-template name="summaryAggregates">
-					<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
-					<xsl:with-param name="curStatus" select="'wrong'" />
-				</xsl:call-template>
-				<xsl:call-template name="summaryAggregates">
-					<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
-					<xsl:with-param name="curStatus" select="'error'" />
-				</xsl:call-template>
-				<xsl:call-template name="summaryAggregates">
-					<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
-					<xsl:with-param name="curStatus" select="'timeout'" />
-				</xsl:call-template>
-				<xsl:call-template name="summaryAggregates">
-					<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
-					<xsl:with-param name="curStatus" select="'memout'" />
-				</xsl:call-template>
-				<xsl:call-template name="summaryAggregates">
-					<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
-					<xsl:with-param name="curStatus" select="'no answer'" />
-				</xsl:call-template>
-				<xsl:call-template name="summaryAggregates">
-					<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
-					<xsl:with-param name="curStatus" select="'segmentation fault'" />
-				</xsl:call-template>
-				<xsl:call-template name="summaryAggregates">
-					<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
-					<xsl:with-param name="curStatus" select="'segfault'" />
-				</xsl:call-template>
-				<xsl:call-template name="summaryAggregates">
-					<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
-					<xsl:with-param name="curStatus" select="'abort'" />
 				</xsl:call-template>
 			</table:table>
 		</office:spreadsheet>
 	</xsl:template>
 	
 	<!-- detail sheet for every solver -->
-	<xsl:template match="benchmarkset" mode="details">
+	<xsl:template match="benchmarkset" mode="single-details">
 		<xsl:variable name="SET" select="."/>
 		<xsl:for-each select="/benchmarksets/solvers/solver">
 			<xsl:variable name="SolverID" select="@solver_id"/>
