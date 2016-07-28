@@ -15,6 +15,7 @@
 namespace benchmax {
 
 BenchmarkSet::BenchmarkSet(const fs::path& baseDir): mBaseDir(baseDir), mFilesList() {
+	mBaseDir.remove_trailing_separator();
 	parseDirectory(mBaseDir);
 }
 
