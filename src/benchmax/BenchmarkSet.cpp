@@ -19,7 +19,6 @@ BenchmarkSet::BenchmarkSet(const fs::path& baseDir): mBaseDir(baseDir), mFilesLi
 	if (mBaseDir.native().back() == '/') {
 		mBaseDir = mBaseDir.native().substr(0, mBaseDir.native().length() - 1);
 	}
-	mBaseDir.remove_trailing_separator();
 	parseDirectory(mBaseDir);
 }
 
