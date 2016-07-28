@@ -135,9 +135,7 @@
 		<xsl:variable name="nrOfBenchmarks" select="count(benchmarkset/benchmarkfile)"/>
 		<office:spreadsheet>
 			<table:table>
-				<xsl:attribute name="table:name">
-					<xsl:value-of select='all'/>
-				</xsl:attribute>
+				<xsl:attribute name="table:name">all</xsl:attribute>
 				
 				<!-- header -->
 				<table:table-row>
