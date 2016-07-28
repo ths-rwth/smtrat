@@ -399,6 +399,7 @@ namespace smtrat
 				}
 			}
 		}
+        excludeNotReceivedVariablesFromModel(); // TODO: try to avoid this
 		SMTRAT_LOG_DEBUG("smtrat.cad", "Model of CAD: " << mModel);
 	}
 
