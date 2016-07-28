@@ -110,8 +110,11 @@ namespace smtrat
 	
 	template<class Settings>
 	Answer ICEModule<Settings>::processConstraints() {
+		if (mBounds.isConflicting()) {
+			mInfeasibleSubsets.emplace_back(mBounds.getConflict());
+			return Answer::UNSAT;
+		}
 		FHG graph;
-		
 		TermT src;
 		std::vector<TermT> dest;
 		Coefficient coeff;
