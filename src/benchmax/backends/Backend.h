@@ -23,7 +23,7 @@ protected:
 	Backend(): mExpectedJobs(0), mFinishedJobs(0), mLastPercent(0) {}
 	
 	virtual void startTool(const Tool*) {}
-	virtual void execute(const Tool*, const fs::path&) {}
+	virtual void execute(const Tool*, const fs::path&, const fs::path&) {}
 	void madeProgress(std::size_t files = 1) {
 		mFinishedJobs += files;
 		std::size_t newPercent = mFinishedJobs * 100 / mExpectedJobs;
@@ -33,10 +33,10 @@ protected:
 		}
 	}
 public:
-	void addResult(const Tool* tool, const fs::path& file, BenchmarkResult& results) {
+	void addResult(const Tool* tool, const fs::path& file, const fs::path& baseDir, BenchmarkResult& results) {
 		tool->additionalResults(file, results);
 		results.cleanup(tool, Settings::timeLimit);
-		mResults.addResult(tool, file, results);
+		mResults.addResult(tool, file, baseDir, results);
 	}
 	void run(const std::vector<Tool*>& tools, const std::vector<BenchmarkSet>& benchmarks) {
 		for (const BenchmarkSet& set: benchmarks) {
@@ -48,7 +48,7 @@ public:
 				for (const fs::path& file: set) {
 					if (tool->canHandle(file)) {
 						//BENCHMAX_LOG_DEBUG("benchmax", "Calling " << tool->binary().native() << " on " << file.native());
-						this->execute(tool, file);
+						this->execute(tool, file, set.baseDir());
 					}
 				}
 			}
