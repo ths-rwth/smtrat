@@ -14,8 +14,8 @@
 
 namespace benchmax {
 
-BenchmarkSet::BenchmarkSet(const fs::path& baseDir): mFilesList() {
-	parseDirectory(baseDir);
+BenchmarkSet::BenchmarkSet(const fs::path& baseDir): mBaseDir(baseDir), mFilesList() {
+	parseDirectory(mBaseDir);
 }
 
 void BenchmarkSet::parseDirectory(const fs::path& dir)

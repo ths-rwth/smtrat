@@ -17,7 +17,7 @@ namespace benchmax {
 
 class LocalBackend: public Backend {
 protected:
-	virtual void execute(const Tool* tool, const fs::path& file) {
+	virtual void execute(const Tool* tool, const fs::path& file, const fs::path& baseDir) {
 		std::stringstream call;
 		call << "ulimit -S -t " << seconds(Settings::timeLimit).count() << " && ";
 		call << "ulimit -S -v " << (Settings::memoryLimit * 1024) << " && ";
@@ -34,7 +34,7 @@ protected:
 		auto end = std::chrono::high_resolution_clock::now();
 		results.time = milliseconds(end - start);
 	
-		addResult(tool, file, results);
+		addResult(tool, file, baseDir, results);
 	}
 };
 
