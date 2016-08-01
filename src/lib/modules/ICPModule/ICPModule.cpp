@@ -141,7 +141,7 @@ namespace smtrat
             {
                 const ConstraintT& constr = _formula->formula().constraint();
                 // create and initialize slackvariables
-                if( constr.satisfiedBy( mFoundSolution ) != 1 )
+                if (carl::model::satisfiedBy(constr, mFoundSolution) != 1 )
                     mFoundSolution.clear();
                 if( !mIsIcpInitialized )
                 {
@@ -613,7 +613,7 @@ namespace smtrat
     {
         for( auto& constraint : mNotEqualConstraints )
         {
-            if( constraint.satisfiedBy(mFoundSolution) == 0 )
+            if( carl::model::satisfiedBy(constraint, mFoundSolution) == 0 )
             {
                 if( mFinalCheck )
                 {
@@ -1510,12 +1510,12 @@ namespace smtrat
             }
             else
             {
-                for( auto assignmentIt = mFoundSolution.begin(); assignmentIt != mFoundSolution.end(); ++assignmentIt )
+                for (const auto& assignment: mFoundSolution)
                 {
-                    auto varIt = mVariables.find((*assignmentIt).first);
+                    auto varIt = mVariables.find(assignment.first.asVariable());
                     if( varIt != mVariables.end() && (*varIt).second->isOriginal() )
                     {
-                        mModel.emplace( assignmentIt->first, assignmentIt->second );
+                        mModel.emplace(assignment.first, assignment.second);
                     }
                 }
             }
@@ -2218,7 +2218,7 @@ namespace smtrat
             // Add an assignment for variables only occurring in constraints with != as relation symbol
             while( origVarsIter != originalRealVariables.end() && *origVarsIter < iter->first )
             {
-                mFoundSolution.insert( std::make_pair( *origVarsIter, ZERO_RATIONAL ) ); // TODO: find a rational assignment which most probably satisfies this inequality
+                mFoundSolution.emplace(*origVarsIter, ZERO_RATIONAL); // TODO: find a rational assignment which most probably satisfies this inequality
                 ++origVarsIter;
             }
             if( origVarsIter != originalRealVariables.end() )
@@ -2269,12 +2269,12 @@ namespace smtrat
             #ifdef ICP_MODULE_DEBUG_0
             std::cout << "    " << iter->first << " -> " << std::setprecision(10) << iter->second << "  [" << value << "]" << std::endl;
             #endif
-            mFoundSolution[iter->first] = value;
+            mFoundSolution.emplace(iter->first, value);
         }
         for( const auto& rf : rReceivedFormula() )
         {
             assert( rf.formula().getType() == carl::FormulaType::CONSTRAINT );
-            unsigned isSatisfied = rf.formula().constraint().satisfiedBy( mFoundSolution );
+            unsigned isSatisfied = carl::model::satisfiedBy(rf.formula().constraint(), mFoundSolution);
             assert( isSatisfied != 2 );
             if( isSatisfied == 0 )
             {

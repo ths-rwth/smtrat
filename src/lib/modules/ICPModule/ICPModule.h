@@ -88,7 +88,7 @@ namespace smtrat
             std::map<carl::Variable, icp::IcpVariable*> mVariables; // list of occurring variables
             EvalDoubleIntervalMap mIntervals; // actual intervals relevant for contraction
             EvalRationalIntervalMap mInitialIntervals; // intervals after linear check
-            EvalRationalMap mFoundSolution;
+            Model mFoundSolution;
             std::set<std::pair<double, unsigned>, comp> mIcpRelevantCandidates; // candidates considered for contraction 
             
             carl::FastMap<FormulaT,FormulaT> mLinearizations; // linearized constraint -> original constraint
