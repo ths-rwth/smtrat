@@ -535,8 +535,7 @@ namespace smtrat
                     else
                     {
                         const auto& m = getRationalModel();
-                        auto res = _formula.satisfiedBy( m );
-                        return res;
+						return carl::model::satisfiedBy(_formula, Model(m));
                     }
                 }
                 break;
@@ -618,7 +617,8 @@ namespace smtrat
         const EvalRationalMap& ass = getRationalModel();
         for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
         {
-            unsigned consistency = iter->first.satisfiedBy( ass );
+            //unsigned consistency = iter->first.satisfiedBy( ass );
+			unsigned consistency = carl::model::satisfiedBy(iter->first, Model(ass));
             assert( consistency != 2 );
             if( consistency == 0 )
             {
@@ -637,7 +637,8 @@ namespace smtrat
         {
             for( auto iter = mActiveResolvedNEQConstraints.begin(); iter != mActiveResolvedNEQConstraints.end(); ++iter )
             {
-                unsigned consistency = iter->first.satisfiedBy( ass );
+                //unsigned consistency = iter->first.satisfiedBy( ass );
+				unsigned consistency = carl::model::satisfiedBy(iter->first, Model(ass));
                 assert( consistency != 2 );
                 if( consistency == 0 )
                 {
@@ -917,11 +918,11 @@ namespace smtrat
         }
         else
         {
-            const EvalRationalMap& assignments = getRationalModel();
+            auto assignments = Model(getRationalModel());
             // Check whether the assignment satisfies the non linear constraints.
             for( const auto& constraint : mNonlinearConstraints )
             {
-                if( constraint.satisfiedBy( assignments ) != 1 )
+                if( carl::model::satisfiedBy(constraint, assignments) != 1 )
                 {
                     return false;
                 }
