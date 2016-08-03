@@ -70,9 +70,9 @@ namespace full {
 		struct PurgedPolynomials {
 		private:
 			struct PurgedLevel {
-				mutable Bitset evaluated;
-				mutable Bitset purged;
-				Bitset bounds;
+				mutable carl::Bitset evaluated;
+				mutable carl::Bitset purged;
+				carl::Bitset bounds;
 				std::vector<QueueEntry> entries;
 			};
 			std::vector<PurgedLevel> mData;
@@ -137,8 +137,8 @@ namespace full {
 			void restore(const Restorer& r) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Resetting evaluation data and restoring entries.");
 				for (auto& lvl: mData) {
-					lvl.evaluated = Bitset();
-					lvl.purged = Bitset();
+					lvl.evaluated = carl::Bitset();
+					lvl.purged = carl::Bitset();
 				}
 				for (auto& lvl: mData) {
 					auto it = std::remove_if(lvl.entries.begin(), lvl.entries.end(),
@@ -189,11 +189,11 @@ namespace full {
 			}
 		}
 		/// Inserts a polynomial with the given origin into the given level.
-		Bitset insertPolynomialTo(std::size_t level, const UPoly& p, const Origin::BaseType& origin, bool setBound = false) {
+		carl::Bitset insertPolynomialTo(std::size_t level, const UPoly& p, const Origin::BaseType& origin, bool setBound = false) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "Receiving " << p << " for level " << level);
 			if (canBeRemoved(p)) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> but is safely removed.");
-				return Bitset();
+				return carl::Bitset();
 			}
 			if ((level < dim()) && canBeForwarded(level, p)) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> but is forwarded to " << (level+1));
@@ -206,7 +206,7 @@ namespace full {
 				assert(mPolynomials[level][it->second]);
 				mPolynomials[level][it->second]->second += origin;
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Polynomial was already present, merged origins");
-				return Bitset();
+				return carl::Bitset();
 			}
 			std::size_t id = getID(level);
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Got new id " << id);
@@ -224,7 +224,7 @@ namespace full {
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Done.");
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Now:" << std::endl << *this);
-			return Bitset({level});
+			return carl::Bitset({level});
 		}
 		/// Removes the polynomial given by the iterator from all datastructures.
 		template<typename Iterator>
@@ -244,7 +244,7 @@ namespace full {
 			return mPolynomialIDs[level].erase(it);
 		}
 		
-		Bitset project(const ConstraintSelection&) {
+		carl::Bitset project(const ConstraintSelection&) {
 			while (!mProjectionQueue.empty()) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Projecting" << std::endl << *this);
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Using next projection candidate " << mProjectionQueue.top());
@@ -255,15 +255,15 @@ namespace full {
 					mPurgedPolys.add(qe);
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purged.");
 				} else {
-					Bitset res = projectCandidate(qe);
+					carl::Bitset res = projectCandidate(qe);
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> res = " << res);
 					if (res.any()) return res;
 				}
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Projection is finished.");
-			return Bitset();
+			return carl::Bitset();
 		}
-		Bitset projectCandidate(const QueueEntry& qe) {
+		carl::Bitset projectCandidate(const QueueEntry& qe) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Projecting " << qe);
 			assert(qe.level < dim());
 			if (qe.level == 0) {
@@ -271,9 +271,9 @@ namespace full {
 				assert(mPolynomials[qe.level][qe.first]);
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Moving into level 1: " << mPolynomials[qe.level][qe.first]->first);
 				insertPolynomialTo(1, mPolynomials[qe.level][qe.first]->first, Origin::BaseType(qe.level, qe.first));
-				return Bitset({1});
+				return carl::Bitset({1});
 			}
-			Bitset res;
+			carl::Bitset res;
 			if (qe.first == qe.second) {
 				assert(qe.first < mPolynomials[qe.level].size());
 				assert(mPolynomials[qe.level][qe.first]);
@@ -313,7 +313,7 @@ namespace full {
 			mProjectionQueue.clear();
 			mPurgedPolys.reset(dim() + 1);
 		}
-		Bitset addPolynomial(const UPoly& p, std::size_t cid, bool isBound) override {
+		carl::Bitset addPolynomial(const UPoly& p, std::size_t cid, bool isBound) override {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " with id " << cid);
 			if (cid >= mPolynomials[0].size()) {
 				mPolynomials[0].resize(cid + 1);
@@ -326,7 +326,7 @@ namespace full {
 			} else {
 				mProjectionQueue.emplace(0, cid, cid);
 			}
-			return Bitset();
+			return carl::Bitset();
 		}
 		void removePolynomial(const UPoly& p, std::size_t cid, bool isBound) override {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << cid);
@@ -334,7 +334,7 @@ namespace full {
 			assert(mPolynomials[0][cid]->first == p);
 			mPolynomials[0][cid] = boost::none;
 			removeFromProjectionQueue(0, cid);
-			Bitset filter = Bitset().set(cid);
+			carl::Bitset filter = carl::Bitset().set(cid);
 			for (std::size_t level = 1; level <= dim(); level++) {
 				for (std::size_t lvl = level; lvl <= dim(); lvl++) {
 					for (auto it = mPolynomialIDs[level].begin(); it != mPolynomialIDs[level].end(); it++) {
@@ -342,7 +342,7 @@ namespace full {
 						mPolynomials[level][it->second]->second.erase(level, filter);
 					}
 				}
-				Bitset removed;
+				carl::Bitset removed;
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purging from level " << level << " with filter " << filter);
 				for (auto it = mPolynomialIDs[level].begin(); it != mPolynomialIDs[level].end();) {
 					std::size_t id = it->second;
@@ -375,7 +375,7 @@ namespace full {
 			return mPolynomialIDs[level].empty();
 		}
 		
-		Bitset projectNewPolynomial(const ConstraintSelection& cs = Bitset(true)) {
+		carl::Bitset projectNewPolynomial(const ConstraintSelection& cs = carl::Bitset(true)) {
 			return project(cs);
 		}
 		

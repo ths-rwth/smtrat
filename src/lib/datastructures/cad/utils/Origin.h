@@ -1,8 +1,7 @@
 #pragma once
 
-#include "Bitset.h"
-
 #include <carl/io/streamingOperators.h>
+#include <carl/util/Bitset.h>
 
 #include <algorithm>
 #include <iostream>
@@ -95,7 +94,7 @@ public:
 		removeFiltered([&](const BaseType& bt){ return bt == rhs; });
 		return *this;
 	}
-	Origin& erase(std::size_t level, const Bitset& rhs) {
+	Origin& erase(std::size_t level, const carl::Bitset& rhs) {
 		removeFiltered([&](const BaseType& bt){ return (bt.level == level) && (rhs.test(bt.first) || rhs.test(bt.second)); });
 		return *this;
 	}

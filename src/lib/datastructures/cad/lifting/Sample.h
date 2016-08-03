@@ -14,8 +14,8 @@ namespace cad {
 		bool mIsRoot;
 		SampleLiftedWith mLiftedWith;
 		SampleRootOf mRootOf;
-		Bitset mEvaluatedWith;
-		Bitset mEvaluationResult;
+		carl::Bitset mEvaluatedWith;
+		carl::Bitset mEvaluationResult;
 		
 	public:
 		explicit Sample(const RAN& value): mValue(value), mIsRoot(false) {
@@ -58,16 +58,16 @@ namespace cad {
 			assert(isRoot());
 			return mRootOf;
 		}
-		const Bitset& evaluatedWith() const {
+		const carl::Bitset& evaluatedWith() const {
 			return mEvaluatedWith;
 		}
-		Bitset& evaluatedWith() {
+		carl::Bitset& evaluatedWith() {
 			return mEvaluatedWith;
 		}
-		const Bitset& evaluationResult() const {
+		const carl::Bitset& evaluationResult() const {
 			return mEvaluationResult;
 		}
-		Bitset& evaluationResult() {
+		carl::Bitset& evaluationResult() {
 			return mEvaluationResult;
 		}
 		bool hasConflictWithConstraint() const {

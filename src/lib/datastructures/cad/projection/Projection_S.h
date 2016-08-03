@@ -44,9 +44,9 @@ namespace cad {
 			Super::reset();
 			mQueue.clear();
 		}
-		Bitset addPolynomial(const UPoly& p, std::size_t cid, bool isBound) {
+		carl::Bitset addPolynomial(const UPoly& p, std::size_t cid, bool isBound) {
 			mQueue.push(QueueEntry(p, cid, isBound));
-			return Bitset();
+			return carl::Bitset();
 		}
 		void removePolynomial(const UPoly& p, std::size_t cid, bool isBound) {
 			auto it = mQueue.find(QueueEntry(p, cid, false));
@@ -57,14 +57,14 @@ namespace cad {
 			}
 		}
 		
-		Bitset projectNewPolynomial(const ConstraintSelection& ps = Bitset(true)) {
+		carl::Bitset projectNewPolynomial(const ConstraintSelection& ps = carl::Bitset(true)) {
 			while (!mQueue.empty()) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Using next polynomial " << mQueue.top() << " from " << mQueue);
-				Bitset res = Super::addPolynomial(mQueue.top().poly, mQueue.top().cid, mQueue.top().isBound);
+				carl::Bitset res = Super::addPolynomial(mQueue.top().poly, mQueue.top().cid, mQueue.top().isBound);
 				mQueue.pop();
 				if (res.any()) return res;
 			}
-			return Bitset();
+			return carl::Bitset();
 		}	
 	};
 	
