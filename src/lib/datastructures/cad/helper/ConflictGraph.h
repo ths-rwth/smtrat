@@ -25,7 +25,7 @@ namespace cad {
 class ConflictGraph {
 private:
 	/// Stores for each constraints, which sample points violate the constraint.
-	std::vector<Bitset> mData;
+	std::vector<carl::Bitset> mData;
 	std::size_t mNextSID = 0;
 public:
 	ConflictGraph(std::size_t constraints): mData(constraints) {}
@@ -35,8 +35,8 @@ public:
 	void addSample(const Sample& sample) {
 		assert(sample.hasConflictWithConstraint());
 		std::size_t sid = mNextSID++;
-		const Bitset& evalWith = sample.evaluatedWith();
-		for (std::size_t pos = evalWith.find_first(); pos != Bitset::npos; pos = evalWith.find_next(pos)) {
+		const carl::Bitset& evalWith = sample.evaluatedWith();
+		for (std::size_t pos = evalWith.find_first(); pos != carl::Bitset::npos; pos = evalWith.find_next(pos)) {
 			if (!sample.evaluationResult().test(pos)) {
 				mData[pos].set(sid, true);
 			}
@@ -63,7 +63,7 @@ public:
 	 */
 	void selectConstraint(std::size_t id) {
 		assert(mData.size() > id);
-		Bitset selection = mData[id];
+		carl::Bitset selection = mData[id];
 		for (auto& d: mData) d -= mData[id];
 	}
 	/**

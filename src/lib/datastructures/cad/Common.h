@@ -5,12 +5,12 @@
 
 #include <carl/formula/model/ran/RealAlgebraicNumber.h>
 #include <carl/formula/model/ran/RealAlgebraicNumberEvaluation.h>
+#include <carl/util/Bitset.h>
+#include <carl/util/IDPool.h>
 
 #include "../../Common.h"
 #include "Settings.h"
-#include "utils/Bitset.h"
 #include "utils/DynamicPriorityQueue.h"
-#include "utils/IDPool.h"
 #include "utils/Origin.h"
 
 namespace smtrat {
@@ -18,9 +18,9 @@ namespace cad {
 	using Variables = std::vector<carl::Variable>;
 	using UPoly = carl::UnivariatePolynomial<Poly>;
 	using RAN = carl::RealAlgebraicNumber<Rational>;
-	using SampleLiftedWith = Bitset;
-	using SampleRootOf = Bitset;
-	using ConstraintSelection = Bitset;
+	using SampleLiftedWith = carl::Bitset;
+	using SampleRootOf = carl::Bitset;
+	using ConstraintSelection = carl::Bitset;
 	using OptionalPoly = boost::optional<const UPoly&>;
 	using OptionalID = boost::optional<std::size_t>;
 	using Assignment = std::map<carl::Variable, RAN>;
