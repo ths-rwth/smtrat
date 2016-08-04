@@ -27,6 +27,8 @@ public:
 	}
 	void process() {
 		std::sort(mRoots.begin(), mRoots.end());
+		mRoots.erase(std::unique(mRoots.begin(), mRoots.end()), mRoots.end());
+		SMTRAT_LOG_TRACE("smtrat.nlsat", "Roots: " << mRoots);
 		for (std::size_t i = 0; i < mRoots.size(); i++) {
 			mMap.emplace(mRoots[i], i);
 		}
@@ -37,6 +39,7 @@ public:
 			mSamples.emplace_back(mRoots[n]);
 		}
 		mSamples.emplace_back(RAN::sampleAbove(mRoots.back()));
+		SMTRAT_LOG_TRACE("smtrat.nlsat", "Samples: " << mSamples);
 	}
 	std::size_t size() const {
 		return mRoots.size();
@@ -90,6 +93,23 @@ public:
 	std::size_t satisfyingInterval() const {
 		return mOkay.find_first();
 	}
+	void buildConflictingCore(std::vector<ConstraintT>& core) const {
+		std::map<ConstraintT, carl::Bitset> data = mData;
+		carl::Bitset covered;
+		covered.resize(mOkay.size(), true);
+		while (covered.any()) {
+			auto maxit = data.begin();
+			for (auto it = data.begin(); it != data.end(); it++) {
+				if (maxit->second.count() < it->second.count()) maxit = it;
+			}
+			core.push_back(maxit->first);
+			covered -= maxit->second;
+			data.erase(maxit);
+			for (auto& d: data) {
+				d.second &= covered;
+			}
+		}
+	}
 };
 std::ostream& operator<<(std::ostream& os, const Covering& ri) {
 	os << "Covering: " << ri.mOkay << std::endl;
@@ -103,11 +123,12 @@ std::ostream& operator<<(std::ostream& os, const Covering& ri) {
 class AssignmentGenerator {
 private:
 	using RAN = carl::RealAlgebraicNumber<Rational>;
-	struct ConstraintData {
-	};
-	std::map<ConstraintT, ConstraintData> mConstraints;
+	std::set<ConstraintT> mConstraints;
 	std::vector<carl::Variable> mVariables;
 	Model mModel;
+	
+	boost::optional<ModelValue> mAssignment;
+	boost::optional<std::vector<ConstraintT>> mConflictingCore;
 
 	bool isUnivariate(const ConstraintT& c, carl::Variable v) const {
 		auto vars = c.variables();
@@ -137,24 +158,33 @@ public:
 		mVariables.pop_back();
 	}
 	void pushConstraint(const ConstraintT& c) {
-		mConstraints.emplace(c, ConstraintData());
+		mConstraints.emplace(c);
 	}
 	void popConstraint(const ConstraintT& c) {
 		mConstraints.erase(c);
 	}
 	
-	boost::optional<ModelValue> getAssignment(carl::Variable v) {
+	const ModelValue& getAssignment() const {
+		assert(mAssignment);
+		return *mAssignment;
+	}
+	const std::vector<ConstraintT>& getConflictingCore() const {
+		assert(mConflictingCore);
+		return *mConflictingCore;
+	}
+	
+	bool getAssignment(carl::Variable v) {
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Assignment for " << v);
 		RootIndexer ri;
 		std::map<ConstraintT, std::pair<std::list<RAN>, ConstraintT>> rootMap;
 		for (const auto& c: mConstraints) {
-			if (!isUnivariate(c.first, v)) continue;
-			ConstraintT cnew(carl::model::substitute(c.first.lhs(), mModel), c.first.relation());
+			if (!isUnivariate(c, v)) continue;
+			ConstraintT cnew(carl::model::substitute(c.lhs(), mModel), c.relation());
 			auto list = carl::model::realRoots(cnew.lhs(), v, mModel);
 			ri.add(list);
-			rootMap.emplace(c.first, std::make_pair(std::move(list), cnew));
+			rootMap.emplace(c, std::make_pair(std::move(list), cnew));
 		}
 		ri.process();
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", ri);
 		Covering cover(ri.size() * 2 + 1);
 		Model m = mModel;
 		for (const auto& c: rootMap) {
@@ -187,8 +217,14 @@ public:
 			cover.add(constraint, b);
 		}
 		SMTRAT_LOG_DEBUG("smtrat.nlsat", cover);
-		if (cover.conflicts()) return boost::none;
-		return ModelValue(ri.sampleFrom(cover.satisfyingInterval()));
+		if (cover.conflicts()) {
+			mConflictingCore = std::vector<ConstraintT>();
+			cover.buildConflictingCore(*mConflictingCore);
+			return false;
+		} else {
+			mAssignment = ri.sampleFrom(cover.satisfyingInterval());
+			return true;
+		}
 	}
 };
 
