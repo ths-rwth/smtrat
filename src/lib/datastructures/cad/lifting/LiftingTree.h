@@ -218,7 +218,7 @@ namespace cad {
 			return res;
 		}
 		
-		void removedPolynomialsFromLevel(std::size_t level, const Bitset& mask) {
+		void removedPolynomialsFromLevel(std::size_t level, const carl::Bitset& mask) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Cleanup after removing " << mask << " from level " << level);
 			for (auto it = mTree.begin_depth(level - 1); it != mTree.end_depth(); it++) {
 				it->liftedWith() -= mask;
@@ -239,7 +239,7 @@ namespace cad {
 			cleanQueuesFromExpired();
 		}
 		
-		void removedConstraint(const Bitset& mask) {
+		void removedConstraint(const carl::Bitset& mask) {
 			for (auto& s: mTree) {
 				if (s.evaluatedWith().size() == 0) continue;
 				SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Purging " << s.evaluatedWith() << " by " << mask);

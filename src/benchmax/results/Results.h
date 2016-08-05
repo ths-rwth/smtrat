@@ -21,22 +21,26 @@ namespace benchmax {
 
 class Results {
 private:
+	struct ResultSet {
+		std::map<fs::path, std::size_t> files;
+		std::map<std::pair<std::size_t,std::size_t>, BenchmarkResult> data;
+	};
 	std::mutex mMutex;
 	std::map<const Tool*, std::size_t> mTools;
-	std::map<fs::path, std::size_t> mFiles;
-	std::map<std::pair<std::size_t,std::size_t>, BenchmarkResult> mResults;
+	std::map<fs::path, ResultSet> mResults;
 public:
-	void addResult(const Tool* tool, const fs::path& file, const BenchmarkResult& results) {
+	void addResult(const Tool* tool, const fs::path& file, const fs::path& baseDir, const BenchmarkResult& results) {
 		std::lock_guard<std::mutex> lock(mMutex);
 		auto toolIt = mTools.find(tool);
 		if (toolIt == mTools.end()) {
 			toolIt = mTools.emplace(tool, mTools.size()).first;
 		}
-		auto fileIt = mFiles.find(file);
-		if (fileIt == mFiles.end()) {
-			fileIt = mFiles.emplace(file, mFiles.size()).first;
+		auto& files = mResults[baseDir].files;
+		auto fileIt = files.find(file);
+		if (fileIt == files.end()) {
+			fileIt = files.emplace(file, files.size()).first;
 		}
-		mResults.emplace(std::make_pair(toolIt->second, fileIt->second), results);
+		mResults[baseDir].data.emplace(std::make_pair(toolIt->second, fileIt->second), results);
 	}
 	
 	void store(Database& db) {
@@ -47,22 +51,24 @@ public:
 			toolIDs[it.second] = db.getToolID(it.first);
 			std::cout << toolIDs << std::endl;
 		}
-		for (const auto& it: mFiles) {
-			fileIDs[it.second] = db.getFileID(it.first);
-		}
 		std::size_t benchmarkID = db.createBenchmark();
-		for (const auto& it: mResults) {
-			std::size_t tool = toolIDs[it.first.first];
-			std::size_t file = fileIDs[it.first.second];
-			std::size_t id = db.addBenchmarkResult(benchmarkID, tool, file, it.second.exitCode, std::size_t(milliseconds(it.second.time).count()));
-			for (const auto& attr: it.second.additional) {
-				db.addBenchmarkAttribute(id, attr.first, attr.second);
+		for (const auto& set: mResults) {
+			for (const auto& it: set.second.files) {
+				fileIDs[it.second] = db.getFileID(it.first);
+			}
+			for (const auto& it: set.second.data) {
+				std::size_t tool = toolIDs[it.first.first];
+				std::size_t file = fileIDs[it.first.second];
+				std::size_t id = db.addBenchmarkResult(benchmarkID, tool, file, it.second.exitCode, std::size_t(milliseconds(it.second.time).count()));
+				for (const auto& attr: it.second.additional) {
+					db.addBenchmarkAttribute(id, attr.first, attr.second);
+				}
 			}
 		}
 	}
 	
 	void store(XMLWriter& xml) {
-		xml.write(mTools, mFiles, mResults);
+		xml.write(mTools, mResults);
 	}
 	
 	~Results() {}

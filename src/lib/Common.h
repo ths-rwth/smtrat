@@ -31,6 +31,7 @@
 #include <carl/formula/uninterpreted/UFManager.h>
 #include <carl/formula/uninterpreted/UFInstanceManager.h>
 #include <carl/formula/model/Model.h>
+#include <carl/formula/model/evaluation/ModelEvaluation.h>
 
 namespace smtrat
 {

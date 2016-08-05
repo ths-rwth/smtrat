@@ -86,15 +86,15 @@ namespace cad {
 		void addConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Adding " << c);
 			mConstraints.add(c);
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Current constraints:" << std::endl << mConstraints);
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Current sampletree:" << std::endl << mLifting.getTree());
 		}
 		void removeConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing " << c);
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Before removal:" << std::endl << mProjection << std::endl << mLifting.getTree());
 			std::size_t id = mConstraints.remove(c);
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Current constraints:" << std::endl << mConstraints);
-			mLifting.removedConstraint(Bitset({id}));
-			SMTRAT_LOG_DEBUG("smtrat.cad", "After removal:" << std::endl << mProjection << std::endl << mLifting.getTree());
+			mLifting.removedConstraint(carl::Bitset({id}));
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Current sampletree:" << std::endl << mLifting.getTree());
 		}
 		
 		template<typename ConstraintIt>

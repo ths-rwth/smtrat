@@ -43,7 +43,7 @@ struct CADCore<CoreHeuristic::BySample> {
 				cad.mLifting.removeNextSample();
 				if (!cad.mLifting.hasNextSample()) {
 					SMTRAT_LOG_DEBUG("smtrat.cad", "Got nothing to lift anymore, projecting into level " << idLP(it.depth() + 1) << " ...");
-					Bitset gotNewPolys = cad.mProjection.projectNewPolynomial();
+					carl::Bitset gotNewPolys = cad.mProjection.projectNewPolynomial();
 					if (gotNewPolys.any()) {
 						SMTRAT_LOG_TRACE("smtrat.cad", "Current projection:" << std::endl << cad.mProjection);
 						cad.mLifting.restoreRemovedSamples();

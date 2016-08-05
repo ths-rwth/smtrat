@@ -82,9 +82,9 @@ namespace cad {
 		}
 		
 		/// Adds a new polynomial to the given level and perform the projection recursively.
-		Bitset addToProjection(std::size_t level, const UPoly& p, std::size_t origin) {
+		carl::Bitset addToProjection(std::size_t level, const UPoly& p, std::size_t origin) {
 			assert(level > 0 && level <= dim());
-			if (canBeRemoved(p)) return Bitset();
+			if (canBeRemoved(p)) return carl::Bitset();
 			if ((level > 1) && (level < dim()) && canBeForwarded(level, p)) {
 				return addToProjection(level + 1, p.switchVariable(var(level+1)), origin);
 			}
@@ -96,9 +96,9 @@ namespace cad {
 				if (level > 0) {
 					assert(polys(level)[it->second].second <= origin);
 				}
-				return Bitset();
+				return carl::Bitset();
 			}
-			Bitset res;
+			carl::Bitset res;
 			if (level < dim()) {
 				mOperator(Settings::projectionOperator, p, var(level + 1), 
 					[&](const UPoly& np){ res |= addToProjection(level + 1, np, origin); }
@@ -131,7 +131,7 @@ namespace cad {
 		 * Adds the given polynomial to the projection with the given constraint id as origin.
 		 * Asserts that the main variable of the polynomial is the first variable.
 		 */
-		Bitset addPolynomial(const UPoly& p, std::size_t cid, bool) override {
+		carl::Bitset addPolynomial(const UPoly& p, std::size_t cid, bool) override {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " from constraint " << cid);
 			assert(p.mainVar() == var(1));
 			return addToProjection(1, p, cid);
@@ -151,7 +151,7 @@ namespace cad {
 			callRemoveCallback(1, SampleLiftedWith().set(cid));
 			// Remove all polynomials from all levels that have the removed polynomial as origin.
 			for (std::size_t level = 2; level <= dim(); level++) {
-				Bitset removed;
+				carl::Bitset removed;
 				if (polys(level).empty()) continue;
 				while (polys(level).back().second == origin) {
 					std::size_t id = polys(level).size() - 1;
@@ -174,8 +174,8 @@ namespace cad {
 		}
 		
 		/// Returns false, as the projection is not incremental.
-		Bitset projectNewPolynomial(const ConstraintSelection& ps = Bitset(true)) {
-			return Bitset();
+		carl::Bitset projectNewPolynomial(const ConstraintSelection& ps = carl::Bitset(true)) {
+			return carl::Bitset();
 		}
 		bool hasPolynomialById(std::size_t level, std::size_t id) const override {
 			assert(level > 0 && level <= dim());

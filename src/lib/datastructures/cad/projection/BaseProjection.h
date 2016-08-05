@@ -20,7 +20,7 @@ namespace cad {
 		using Constraints = CADConstraints<Settings::backtracking>;
 	private:
 		/// Lift of id pools to generate fresh IDs for polynomials.
-		std::vector<IDPool> mIDPools;
+		std::vector<carl::IDPool> mIDPools;
 		
 	protected:
 		const Constraints& mConstraints;
@@ -83,7 +83,7 @@ namespace cad {
 		}
 		/// Resets all datastructures, use the given variables from now on.
 		void reset() {
-			mIDPools = std::vector<IDPool>(vars().size() + 1);
+			mIDPools = std::vector<carl::IDPool>(vars().size() + 1);
 			mLiftingQueues.clear();
 			for (std::size_t i = 1; i <= vars().size(); i++) {
 				mLiftingQueues.emplace_back(this, i);
@@ -95,11 +95,11 @@ namespace cad {
 			mRemoveCallback = f;
 		}
 		/// Adds the given polynomial to the projection. Converts to a UPoly and calls the appropriate overload.
-		Bitset addPolynomial(const Poly& p, std::size_t cid, bool isBound) {
+		carl::Bitset addPolynomial(const Poly& p, std::size_t cid, bool isBound) {
 			return addPolynomial(p.toUnivariatePolynomial(var(0)), cid, isBound);
 		}
 		/// Adds the given polynomial to the projection.
-		virtual Bitset addPolynomial(const UPoly& p, std::size_t cid, bool isBound) = 0;
+		virtual carl::Bitset addPolynomial(const UPoly& p, std::size_t cid, bool isBound) = 0;
 		/// Removes the given polynomial from the projection. Converts to a UPoly and calls the appropriate overload.
 		void removePolynomial(const Poly& p, std::size_t cid, bool isBound) {
 			removePolynomial(p.toUnivariatePolynomial(var(0)), cid, isBound);

@@ -112,7 +112,7 @@ public:
 		}
 	}
 	
-	bool executeJob(const Tool* tool, const fs::path& file, Backend* backend) {
+	bool executeJob(const Tool* tool, const fs::path& file, const fs::path& baseDir, Backend* backend) {
 		mRunningJobs++;
 		SSHConnection* c = get();
 		BENCHMAX_LOG_INFO("benchmax.ssh", "Executing " << removePrefix(file.native(), Settings::pathPrefix));
@@ -129,7 +129,7 @@ public:
 		// Remove temporary directory
 		c->removeDir(folder);
 		// Store result
-		backend->addResult(tool, file, result);
+		backend->addResult(tool, file, baseDir, result);
 		c->finishJob();
 		mRunningJobs--;
 		return true;

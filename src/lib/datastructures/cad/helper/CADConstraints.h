@@ -40,12 +40,12 @@ protected:
 	ConstraintMap mConstraintMap;
 	std::vector<typename ConstraintMap::iterator> mConstraintIts;
 	std::vector<std::size_t> mConstraintLevels;
-	IDPool mIDPool;
+	carl::IDPool mIDPool;
 	VariableBounds mBounds;
 	/// List of constraints that are satisfied by bounds.
-	Bitset mSatByBounds;
+	carl::Bitset mSatByBounds;
 	/// List of constraints that are infeasible due to bounds.
-	Bitset mUnsatByBounds;
+	carl::Bitset mUnsatByBounds;
 	
 	void callCallback(const Callback& cb, const ConstraintT& c, std::size_t id, bool isBound) const {
 		if (cb) cb(c.lhs().toUnivariatePolynomial(mVariables.front()), id, isBound);
@@ -57,7 +57,7 @@ public:
 		mVariables = vars;
 		mConstraintMap.clear();
 		mConstraintIts.clear();
-		mIDPool = IDPool();
+		mIDPool = carl::IDPool();
 	}
 	const Variables& vars() const {
 		return mVariables;

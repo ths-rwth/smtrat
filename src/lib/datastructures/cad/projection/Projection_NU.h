@@ -56,19 +56,19 @@ namespace cad {
 			return mPolynomials[level - 1];
 		}
 		
-		Bitset addToProjection(std::size_t level, const UPoly& p, const Origin::BaseType& origin) {
+		carl::Bitset addToProjection(std::size_t level, const UPoly& p, const Origin::BaseType& origin) {
 			assert(level > 0 && level <= dim());
-			if (canBeRemoved(p)) return Bitset();
+			if (canBeRemoved(p)) return carl::Bitset();
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			assert(p.mainVar() == var(level));
 			auto it = polyIDs(level).find(p);
 			if (it != polyIDs(level).end()) {
 				assert(polys(level)[it->second]);
 				polys(level)[it->second]->second += origin;
-				return Bitset();
+				return carl::Bitset();
 			}
 			std::size_t newID = getID(level);;
-			Bitset res;
+			carl::Bitset res;
 			if (level < dim()) {
 				mOperator(Settings::projectionOperator, p, var(level + 1), 
 					[&](const UPoly& np){ res |= addToProjection(level + 1, np, Origin::BaseType(level, newID)); }
@@ -99,13 +99,13 @@ namespace cad {
 			mPolynomialIDs.clear();
 			mPolynomialIDs.resize(dim());
 		}
-		Bitset addPolynomial(const UPoly& p, std::size_t cid, bool) override {
+		carl::Bitset addPolynomial(const UPoly& p, std::size_t cid, bool) override {
 			assert(p.mainVar() == var(1));
 			return addToProjection(1, p, Origin::BaseType(0, cid));
 		}
 		void removePolynomial(const UPoly& p, std::size_t cid, bool) override {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << cid);
-			Bitset filter = Bitset().set(cid);
+			carl::Bitset filter = carl::Bitset().set(cid);
 			for (std::size_t level = 1; level <= dim(); level++) {
 				for (std::size_t lvl = level; lvl <= dim(); lvl++) {
 					for (auto it = polyIDs(level).begin(); it != polyIDs(level).end(); it++) {
@@ -113,7 +113,7 @@ namespace cad {
 						polys(level)[it->second]->second.erase(level, filter);
 					}
 				}
-				Bitset removed;
+				carl::Bitset removed;
 				for (auto it = polyIDs(level).begin(); it != polyIDs(level).end();) {
 					std::size_t id = it->second;
 					assert(polys(level)[id]);
@@ -140,8 +140,8 @@ namespace cad {
 			return polyIDs(level).empty();
 		}
 		
-		Bitset projectNewPolynomial(const ConstraintSelection& ps = Bitset(true)) {
-			return Bitset();
+		carl::Bitset projectNewPolynomial(const ConstraintSelection& ps = carl::Bitset(true)) {
+			return carl::Bitset();
 		}
 		
 		

@@ -50,5 +50,6 @@ target_link_libraries( parserTest
                         ${libraries} # libraries definied in top-level CMakeLists.txt
 )
 
-add_subdirectory(datastructures)
 add_subdirectory(cad)
+add_subdirectory(datastructures)
+add_subdirectory(nlsat)
