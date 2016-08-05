@@ -146,13 +146,40 @@ namespace smtrat
     
     struct VSSettingsPlain : VSSettings1
     {
+        static constexpr auto moduleName = "VSModule<VSSettingsPlain>";
         static const bool use_variable_bounds                                   = false;
         static const bool use_fixed_variable_order                              = true;
         static const bool local_conflict_search                                 = true;
     };
     
+    struct VSSettingsNotSMTCompliant : VSSettingsPlain
+    {
+        static constexpr auto moduleName = "VSModule<VSSettingsNotSMTCompliant>";
+        static const bool incremental_solving                                   = false;
+        static const bool infeasible_subset_generation                          = false;
+    };
+    
+    struct VSSettingsOnlyInc : VSSettingsNotSMTCompliant
+    {
+        static constexpr auto moduleName = "VSModule<VSSettingsOnlyInc>";
+        static const bool incremental_solving                                   = true;
+    };
+    
+    struct VSSettingsOnlyIS : VSSettingsNotSMTCompliant
+    {
+        static constexpr auto moduleName = "VSModule<VSSettingsOnlyIS>";
+        static const bool infeasible_subset_generation                          = true;
+    };
+    
     struct VSSettingsOnlyVB : VSSettingsPlain
     {
+        static constexpr auto moduleName = "VSModule<VSSettingsOnlyVB>";
         static const bool use_variable_bounds                                   = true;
+    };
+    
+    struct VSSettingsOnlyLC : VSSettingsPlain
+    {
+        static constexpr auto moduleName = "VSModule<VSSettingsOnlyLC>";
+        static const bool local_conflict_search                                 = true;
     };
 }
