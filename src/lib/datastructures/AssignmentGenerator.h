@@ -158,10 +158,15 @@ public:
 		mVariables.pop_back();
 	}
 	void pushConstraint(const ConstraintT& c) {
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding " << c);
 		mConstraints.emplace(c);
 	}
 	void popConstraint(const ConstraintT& c) {
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Removing " << c);
 		mConstraints.erase(c);
+	}
+	const Model& getModel() {
+		return mModel;
 	}
 	
 	const ModelValue& getAssignment() const {
@@ -173,7 +178,7 @@ public:
 		return *mConflictingCore;
 	}
 	
-	bool getAssignment(carl::Variable v) {
+	bool hasAssignment(carl::Variable v) {
 		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Assignment for " << v);
 		RootIndexer ri;
 		std::map<ConstraintT, std::pair<std::list<RAN>, ConstraintT>> rootMap;
@@ -197,13 +202,13 @@ public:
 				SMTRAT_LOG_TRACE("smtrat.nlsat", constraint << " vs " << ri.sampleFrom(2*cur));
 				if (!satisfies(constraint, m, v, ri.sampleFrom(2*cur))) {
 					// Refutes interval left of this root
-					SMTRAT_LOG_DEBUG("smtrat.nlsat", constraint << " refutes " << ri.sampleFrom(2*cur) << " -> " << last << ".." << (2*cur));
+					SMTRAT_LOG_TRACE("smtrat.nlsat", constraint << " refutes " << ri.sampleFrom(2*cur) << " -> " << last << ".." << (2*cur));
 					setBitsForInterval(b, last, 2*cur);
 				}
 				SMTRAT_LOG_TRACE("smtrat.nlsat", constraint << " vs " << ri.sampleFrom(2*cur+1));
 				if (!satisfies(constraint, m, v, r)) {
 					// Refutes root
-					SMTRAT_LOG_DEBUG("smtrat.nlsat", constraint << " refutes " << r << " -> " << 2*cur+1);
+					SMTRAT_LOG_TRACE("smtrat.nlsat", constraint << " refutes " << r << " -> " << 2*cur+1);
 					setBitsForInterval(b, 2*cur+1, 2*cur+1);
 				}
 				last = 2*cur + 2;
@@ -211,12 +216,12 @@ public:
 			SMTRAT_LOG_TRACE("smtrat.nlsat", constraint << " vs " << ri.sampleFrom(last));
 			if (!satisfies(constraint, m, v, ri.sampleFrom(last))) {
 				// Refutes interval right of largest root
-				SMTRAT_LOG_DEBUG("smtrat.nlsat", constraint << " refutes " << ri.sampleFrom(roots.size()*2) << " -> " << last << ".." << (ri.size()*2));
+				SMTRAT_LOG_TRACE("smtrat.nlsat", constraint << " refutes " << ri.sampleFrom(roots.size()*2) << " -> " << last << ".." << (ri.size()*2));
 				setBitsForInterval(b, last, ri.size()*2);
 			}
-			cover.add(constraint, b);
+			cover.add(c.first, b);
 		}
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", cover);
+		SMTRAT_LOG_TRACE("smtrat.nlsat", cover);
 		if (cover.conflicts()) {
 			mConflictingCore = std::vector<ConstraintT>();
 			cover.buildConflictingCore(*mConflictingCore);
