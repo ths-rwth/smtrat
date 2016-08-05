@@ -11,7 +11,9 @@
 #include "../../config.h"
     
 namespace smtrat
-{   
+{
+    enum class VariableValuationStrategy : unsigned { OPTIMIZE_BEST, OPTIMIZE_AVERAGE, OPTIMIZE_WORST };
+    
     struct VSSettings1 : ModuleSettings
     {
 		static constexpr auto moduleName = "VSModule<VSSettings1>";
@@ -38,6 +40,7 @@ namespace smtrat
         static const bool only_split_in_final_call                              = true;
         static const bool branch_and_bound_at_origin                            = false;
         static const bool use_fixed_variable_order                              = false;
+        static constexpr auto variable_valuation_strategy = VariableValuationStrategy::OPTIMIZE_BEST;
     };
     
     struct VSSettings2 : VSSettings1

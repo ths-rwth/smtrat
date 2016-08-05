@@ -372,7 +372,7 @@ namespace smtrat
                                     addStatesToRanking( mpStateTree );
                                     continue;
                                 }
-                                if( currentState->initIndex( mAllVariables, Settings::prefer_equation_over_all, true, Settings::use_fixed_variable_order ) )
+                                if( currentState->initIndex( mAllVariables, VariableValuationStrategy::OPTIMIZE_BEST, Settings::prefer_equation_over_all, true, Settings::use_fixed_variable_order ) )
                                 {
                                     currentState->initConditionFlags();
                                     currentState->resetConflictSets();
@@ -478,10 +478,10 @@ namespace smtrat
                             {
                                 // Set the index, if not already done, to the best variable to eliminate next.
                                 if( currentState->index() == carl::Variable::NO_VARIABLE )
-                                    currentState->initIndex( mAllVariables, Settings::prefer_equation_over_all, false, Settings::use_fixed_variable_order );
+                                    currentState->initIndex( mAllVariables, VariableValuationStrategy::OPTIMIZE_BEST, Settings::prefer_equation_over_all, false, Settings::use_fixed_variable_order );
                                 else if( currentState->tryToRefreshIndex() )
                                 {
-                                    if( currentState->initIndex( mAllVariables, Settings::prefer_equation_over_all, false, Settings::use_fixed_variable_order ) )
+                                    if( currentState->initIndex( mAllVariables, VariableValuationStrategy::OPTIMIZE_BEST, Settings::prefer_equation_over_all, false, Settings::use_fixed_variable_order ) )
                                     {
                                         currentState->initConditionFlags();
                                         currentState->resetConflictSets();
@@ -1283,7 +1283,7 @@ namespace smtrat
         addStateToRanking( _currentState );
         if( !_currentState->children().empty() )
         {
-            if( deleteExistingTestCandidates || _currentState->initIndex( mAllVariables, Settings::prefer_equation_over_all, false, Settings::use_fixed_variable_order ) )
+            if( deleteExistingTestCandidates || _currentState->initIndex( mAllVariables, VariableValuationStrategy::OPTIMIZE_BEST, Settings::prefer_equation_over_all, false, Settings::use_fixed_variable_order ) )
             {
                 _currentState->initConditionFlags();
                 // If the recently added conditions make another variable being the best to eliminate next delete all children.

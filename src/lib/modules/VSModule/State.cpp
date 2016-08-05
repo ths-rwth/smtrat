@@ -1180,7 +1180,7 @@ namespace vs
         }
     }
 
-    bool State::initIndex( const carl::Variables& _allVariables, bool _preferEquation, bool _tryDifferentVarOrder, bool _useFixedVariableOrder )
+    bool State::initIndex( const carl::Variables& _allVariables, const smtrat::VariableValuationStrategy& _vvstrat, bool _preferEquation, bool _tryDifferentVarOrder, bool _useFixedVariableOrder )
     {
         assert( !_tryDifferentVarOrder || !mTryToRefreshIndex );
         if( conditions().empty() )
@@ -1255,12 +1255,40 @@ namespace vs
             }
             return false;
         }
+        mBestVarVals.clear();
+        switch( _vvstrat )
+        {
+            case smtrat::VariableValuationStrategy::OPTIMIZE_BEST:
+                bestConstraintValuation( varVals );
+                break;
+            case smtrat::VariableValuationStrategy::OPTIMIZE_AVERAGE:
+                averageConstraintValuation( varVals );
+                break;
+            default:
+                assert( _vvstrat == smtrat::VariableValuationStrategy::OPTIMIZE_WORST );
+                worstConstraintValuation( varVals );
+                break;
+        }
+        assert( !mBestVarVals.empty() );
+        size_t bestVar = mBestVarVals.back();
+        mBestVarVals.pop_back();
+        if( index() != varVals[bestVar].first )
+        {
+            setIndex( varVals[bestVar].first );
+            return true;
+        }
+        return false;
+    }
+    
+    void State::bestConstraintValuation( const vector<pair<carl::Variable, multiset<double>>>& _varVals )
+    {
+        assert( _varVals.size() > 1 );
         size_t var = 1;
         mBestVarVals.push_back(0);
-        while( var < varVals.size() )
+        while( var < _varVals.size() )
         {
-            const auto& vv = varVals[var];
-            const auto& bv = varVals[mBestVarVals.back()];
+            const auto& vv = _varVals[var];
+            const auto& bv = _varVals[mBestVarVals.back()];
             if( !vv.second.empty() && !bv.second.empty() )
             {
                 if( vv.second.size() == 1 && bv.second.size() == 1 )
@@ -1271,9 +1299,7 @@ namespace vs
                         mBestVarVals.push_back(var);
                     }
                     else if( *vv.second.begin() == *bv.second.begin() )
-                    {
                         mBestVarVals.push_back(var);
-                    }
                 }
                 else
                 {
@@ -1288,18 +1314,14 @@ namespace vs
                             break;
                         }
                         else if( *varInConsVal > *bestVarInConsVal )
-                        {
                             break;
-                        }
                         ++varInConsVal;
                         ++bestVarInConsVal;
                     }
                     if( varInConsVal == vv.second.end() )
                     {
                         if( bestVarInConsVal == bv.second.end() )
-                        {
                             mBestVarVals.push_back(var);
-                        }
                         else
                         {
                             mBestVarVals.clear();
@@ -1315,15 +1337,93 @@ namespace vs
             }
             ++var;
         }
-        assert( !mBestVarVals.empty() );
-        size_t bestVar = mBestVarVals.back();
-        mBestVarVals.pop_back();
-        if( index() != varVals[bestVar].first )
+    }
+    
+    void State::averageConstraintValuation( const vector<pair<carl::Variable, multiset<double>>>& _varVals )
+    {
+        assert( _varVals.size() > 1 );
+        size_t var = 0;
+        mBestVarVals.push_back(0);
+        double bestAvgVal = 0;
+        const multiset<double>& vals = _varVals[var].second;
+        for( double val : vals )
+            bestAvgVal += val;
+        bestAvgVal /= vals.size();
+        ++var;
+        for(; var < _varVals.size(); ++var )
         {
-            setIndex( varVals[bestVar].first );
-            return true;
+            double curAvgVal = 0;
+            const multiset<double>& valsB = _varVals[var].second;
+            for( double val : valsB )
+                curAvgVal += val;
+            curAvgVal /= valsB.size();
+            if( curAvgVal > 0 && (bestAvgVal == 0 || curAvgVal < bestAvgVal) )
+            {
+                mBestVarVals.clear();
+                mBestVarVals.push_back(var);
+            }
+            else if( curAvgVal == bestAvgVal )
+                mBestVarVals.push_back(var);
         }
-        return false;
+    }
+    
+    void State::worstConstraintValuation( const vector<pair<carl::Variable, multiset<double>>>& _varVals )
+    {
+        assert( _varVals.size() > 1 );
+        size_t var = 1;
+        mBestVarVals.push_back(0);
+        while( var < _varVals.size() )
+        {
+            const auto& vv = _varVals[var];
+            const auto& bv = _varVals[mBestVarVals.back()];
+            if( !vv.second.empty() && !bv.second.empty() )
+            {
+                if( vv.second.size() == 1 && bv.second.size() == 1 )
+                {
+                    if( *vv.second.begin() < *bv.second.begin() )
+                    {
+                        mBestVarVals.clear();
+                        mBestVarVals.push_back(var);
+                    }
+                    else if( *vv.second.begin() == *bv.second.begin() )
+                        mBestVarVals.push_back(var);
+                }
+                else
+                {
+                    auto varInConsVal = vv.second.rbegin();
+                    auto bestVarInConsVal = bv.second.rbegin();
+                    while( varInConsVal != vv.second.rend() && bestVarInConsVal != bv.second.rend() )
+                    {
+                        if( *varInConsVal < *bestVarInConsVal )
+                        {
+                            mBestVarVals.clear();
+                            mBestVarVals.push_back(var);
+                            break;
+                        }
+                        else if( *varInConsVal > *bestVarInConsVal )
+                            break;
+                        ++varInConsVal;
+                        ++bestVarInConsVal;
+                    }
+                    if( varInConsVal == vv.second.rend() )
+                    {
+                        if( bestVarInConsVal == bv.second.rend() )
+                            mBestVarVals.push_back(var);
+                        else
+                        {
+                            mBestVarVals.clear();
+                            mBestVarVals.push_back(var);
+                        }
+                    }
+                }
+            }
+            else if( !vv.second.empty() && bv.second.empty() )
+            {
+                mBestVarVals.clear();
+                mBestVarVals.push_back(var);
+            }
+            ++var;
+        }
     }
 
     void State::addCondition( const smtrat::ConstraintT& _constraint, const carl::PointerSet<Condition>& _originalConditions, size_t _valutation, bool _recentlyAdded, ValuationMap& _ranking )

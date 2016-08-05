@@ -13,7 +13,6 @@
 #include "../../Common.h"
 #include "Substitute.h"
 #include "State.h"
-#include "VSSettings.h"
 #include "VSStatistics.h"
 #include "carl/util/IDGenerator.h"
 #include "../../solver/Module.h"
