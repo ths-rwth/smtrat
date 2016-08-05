@@ -1,0 +1,2 @@
+/* #undef BENCHMAX_USE_SMTPARSER */
+#define BENCHMAX_LOGGING
