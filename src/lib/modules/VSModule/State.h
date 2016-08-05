@@ -13,6 +13,7 @@
 #include "Substitution.h"
 #include "carl/util/IDGenerator.h"
 #include "../../datastructures/VariableBounds.h"
+#include "VSSettings.h"
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "VSStatistics.h"
@@ -947,10 +948,14 @@ namespace vs
          * Sets, if it has not already happened, the index of the state to the name of the
          * most adequate variable. Which variable is taken depends on heuristics.
          * @param _allVariables All globally known variables.
+         * @param _vvstrat The strategy according which we choose the variable.
          * @param _preferEquation A flag that indicates to prefer equations in the heuristics of this method.
          * @param _tryDifferentVarOrder
          */
-        bool initIndex( const carl::Variables& _allVariables, bool _preferEquation, bool _tryDifferentVarOrder = false, bool _useFixedVariableOrder = false );
+        bool initIndex( const carl::Variables& _allVariables, const smtrat::VariableValuationStrategy& _vvstrat, bool _preferEquation, bool _tryDifferentVarOrder = false, bool _useFixedVariableOrder = false );
+        void bestConstraintValuation( const std::vector<std::pair<carl::Variable, std::multiset<double>>>& _varVals );
+        void averageConstraintValuation( const std::vector<std::pair<carl::Variable, std::multiset<double>>>& _varVals );
+        void worstConstraintValuation( const std::vector<std::pair<carl::Variable, std::multiset<double>>>& _varVals );
         
         /**
          * Adds a constraint to the conditions of this state.

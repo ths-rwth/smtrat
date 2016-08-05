@@ -60,7 +60,7 @@ namespace smtrat
             Statistics::addKeyValuePair( "omitted-test-candidates-by-variable-bounds", mVBOmittedTCs );
             Statistics::addKeyValuePair( "omitted-constraints-by-variable-bounds", mVBOmittedConstraints );
             Statistics::addKeyValuePair( "created-covering-sets", mCoveringSets );
-            Statistics::addKeyValuePair( "average-covering-set-gain", (mCoveringSetSavings/mCoveringSets) );
+            Statistics::addKeyValuePair( "average-covering-set-gain", (mCoveringSetSavings/(double)mCoveringSets) );
             Statistics::addKeyValuePair( "local-conflicts", mLocalConflicts );
             Statistics::addKeyValuePair( "omitted-constraints-by-local-conflicts", mLCOmittedConstraints );
             Statistics::addKeyValuePair( "backjumpings", mBackjumpings );
