@@ -9,6 +9,7 @@
 #pragma once
 
 #include "../../datastructures/cad/CAD.h"
+#include "../../datastructures/cad/helper/EqualityReplacer.h"
 #include "../../datastructures/VariableBounds.h"
 
 #include "../../solver/Module.h"
@@ -27,6 +28,7 @@ namespace smtrat
 			carl::Variables mVariables;
 			cad::CAD<Settings> mCAD;
 			cad::Assignment mLastAssignment;
+			cad::EqualityReplacer<cad::CAD<Settings>> mReplacer;
 			
 		public:
 			typedef Settings SettingsType;
