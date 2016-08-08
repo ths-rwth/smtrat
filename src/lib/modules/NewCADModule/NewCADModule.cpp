@@ -9,14 +9,18 @@
 #include "NewCADModule.h"
 #include "../../datastructures/cad/projection/Projection.h"
 
+#include "../../datastructures/AssignmentGenerator.h"
+
 namespace smtrat
 {
 	template<class Settings>
 	NewCADModule<Settings>::NewCADModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager):
-		Module( _formula, _conditionals, _manager )
+		Module( _formula, _conditionals, _manager ),
 #ifdef SMTRAT_DEVOPTION_Statistics
-		, mStatistics(Settings::moduleName)
+		mStatistics(Settings::moduleName),
 #endif
+		mCAD(),
+		mReplacer(mCAD)
 	{}
 	
 	template<class Settings>
@@ -40,7 +44,8 @@ namespace smtrat
 	bool NewCADModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 	{
 		assert(_subformula->formula().getType() == carl::FormulaType::CONSTRAINT);
-		mCAD.addConstraint(_subformula->formula().constraint());
+		//mCAD.addConstraint(_subformula->formula().constraint());
+		mReplacer.addConstraint(_subformula->formula().constraint());
 		return true; // This should be adapted according to your implementation.
 	}
 	
@@ -48,7 +53,8 @@ namespace smtrat
 	void NewCADModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
 	{
 		assert(_subformula->formula().getType() == carl::FormulaType::CONSTRAINT);
-		mCAD.removeConstraint(_subformula->formula().constraint());
+		//mCAD.removeConstraint(_subformula->formula().constraint());
+		mReplacer.removeConstraint(_subformula->formula().constraint());
 	}
 	
 	template<class Settings>
@@ -66,6 +72,7 @@ namespace smtrat
 	template<class Settings>
 	Answer NewCADModule<Settings>::checkCore()
 	{
+		mReplacer.commit();
 		auto answer = mCAD.check(mLastAssignment, mInfeasibleSubsets);
 #ifdef SMTRAT_DEVOPTION_Statistics
 		mStatistics.currentProjectionSize(mCAD.getProjection().size());
