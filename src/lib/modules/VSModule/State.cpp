@@ -1346,24 +1346,30 @@ namespace vs
         mBestVarVals.push_back(0);
         double bestAvgVal = 0;
         const multiset<double>& vals = _varVals[var].second;
-        for( double val : vals )
-            bestAvgVal += val;
-        bestAvgVal /= vals.size();
+        if( !vals.empty() )
+        {
+            for( double val : vals )
+                bestAvgVal += val;
+            bestAvgVal /= vals.size();
+        }
         ++var;
         for(; var < _varVals.size(); ++var )
         {
-            double curAvgVal = 0;
             const multiset<double>& valsB = _varVals[var].second;
-            for( double val : valsB )
-                curAvgVal += val;
-            curAvgVal /= valsB.size();
-            if( curAvgVal > 0 && (bestAvgVal == 0 || curAvgVal < bestAvgVal) )
+            if( !valsB.empty() )
             {
-                mBestVarVals.clear();
-                mBestVarVals.push_back(var);
+                double curAvgVal = 0;
+                for( double val : valsB )
+                    curAvgVal += val;
+                curAvgVal /= valsB.size();
+                if( curAvgVal > 0 && (bestAvgVal == 0 || curAvgVal < bestAvgVal) )
+                {
+                    mBestVarVals.clear();
+                    mBestVarVals.push_back(var);
+                }
+                else if( curAvgVal == bestAvgVal )
+                    mBestVarVals.push_back(var);
             }
-            else if( curAvgVal == bestAvgVal )
-                mBestVarVals.push_back(var);
         }
     }
     

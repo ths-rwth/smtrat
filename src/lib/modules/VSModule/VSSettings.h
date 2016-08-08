@@ -148,8 +148,8 @@ namespace smtrat
     {
         static constexpr auto moduleName = "VSModule<VSSettingsPlain>";
         static const bool use_variable_bounds                                   = false;
-        static const bool use_fixed_variable_order                              = true;
-        static const bool local_conflict_search                                 = true;
+        static const bool use_fixed_variable_order                              = false;
+        static const bool local_conflict_search                                 = false;
     };
     
     struct VSSettingsNotSMTCompliant : VSSettingsPlain
