@@ -91,6 +91,10 @@ namespace smtrat
          * 
          */
         static constexpr VARIABLE_ACTIVITY_STRATEGY initial_variable_activities = VARIABLE_ACTIVITY_STRATEGY::NONE;
+        /**
+         * 
+         */
+        static const bool mc_sat = false;
 #endif
     };
 
@@ -103,4 +107,9 @@ namespace smtrat
     {
 		static const bool stop_search_after_first_unknown = true;
 	};
+    
+    struct SATSettingsMCSAT : SATSettings1
+    {
+        static const bool mc_sat = true;
+    };
 }

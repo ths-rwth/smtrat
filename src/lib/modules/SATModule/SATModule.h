@@ -608,6 +608,11 @@ namespace smtrat
             Minisat::vec<Minisat::vec<Minisat::Lit>> mLemmas;
             /// is the lemma removable
             Minisat::vec<bool> mLemmasRemovable;
+            /*
+             * MC-SAT related members.
+             */
+            ///
+            std::map<Minisat::Var,std::vector<Minisat::CRef>> mUnivariateClauses;
             
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
