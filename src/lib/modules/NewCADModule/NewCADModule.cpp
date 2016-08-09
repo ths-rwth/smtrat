@@ -9,8 +9,6 @@
 #include "NewCADModule.h"
 #include "../../datastructures/cad/projection/Projection.h"
 
-#include "../../datastructures/AssignmentGenerator.h"
-
 namespace smtrat
 {
 	template<class Settings>
