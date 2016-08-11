@@ -30,6 +30,10 @@ namespace smtrat
                     for (auto& a: mAssignments)
                         a.second += _number;
                 }
+		virtual FormulaT representingFormula( const ModelVariable& mv ) {
+			assert(false);
+			return FormulaT();
+		}
 		virtual ModelValue evaluateSubstitution(const Model& model) const {
 			auto selection = mAssignments.end();
 			for (auto it = mAssignments.begin(); it != mAssignments.end(); it++) {
