@@ -174,7 +174,7 @@ namespace cad {
 		}
 		
 		/// Returns false, as the projection is not incremental.
-		carl::Bitset projectNewPolynomial(const ConstraintSelection& ps = carl::Bitset(true)) {
+		carl::Bitset projectNewPolynomial(const ConstraintSelection& = carl::Bitset(true)) {
 			return carl::Bitset();
 		}
 		bool hasPolynomialById(std::size_t level, std::size_t id) const override {
