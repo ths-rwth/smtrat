@@ -535,7 +535,7 @@ namespace smtrat
                     else
                     {
                         const auto& m = getRationalModel();
-						return carl::model::satisfiedBy(_formula, Model(m));
+						return carl::model::satisfiedBy(_formula, Model(m)); // TODO: Isn't this an unnecessary copy operation, Gereon?
                     }
                 }
                 break;
@@ -618,7 +618,7 @@ namespace smtrat
         for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
         {
             //unsigned consistency = iter->first.satisfiedBy( ass );
-			unsigned consistency = carl::model::satisfiedBy(iter->first, Model(ass));
+			unsigned consistency = carl::model::satisfiedBy(iter->first, Model(ass)); // TODO: Isn't this an unnecessary copy operation, Gereon?
             assert( consistency != 2 );
             if( consistency == 0 )
             {
@@ -918,7 +918,7 @@ namespace smtrat
         }
         else
         {
-            auto assignments = Model(getRationalModel());
+            auto assignments = Model(getRationalModel());  // TODO: Isn't this an unnecessary copy operation, Gereon?
             // Check whether the assignment satisfies the non linear constraints.
             for( const auto& constraint : mNonlinearConstraints )
             {
