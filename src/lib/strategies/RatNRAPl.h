@@ -72,7 +72,7 @@ namespace smtrat
                             addBackend<CADModule<CADSettingsSplitPath>>()
                         })
                     })
-                }),
+                })
             });
         }
     };

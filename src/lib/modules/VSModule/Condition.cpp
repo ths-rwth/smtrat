@@ -196,8 +196,8 @@ namespace vs
         weightFactorTmp *= maximum;
         result += relationSymbolWeight/weightFactorTmp;
         weightFactorTmp *= maximum;
-        result += (degreeWeight <= 2 && numberOfVariableWeight == 1 ? 1 : 2) /weightFactorTmp;
-        weightFactorTmp *= maximum;
+        //result += (degreeWeight <= 2 && numberOfVariableWeight == 1 ? 1 : 2) /weightFactorTmp;
+        //weightFactorTmp *= maximum;
         result += degreeWeight/weightFactorTmp;
         weightFactorTmp *= maximum;
         result += lCoeffWeight/weightFactorTmp;
@@ -207,8 +207,8 @@ namespace vs
             result += lCoeffWeightB/weightFactorTmp;
             weightFactorTmp *= maximum;
         }
-        result += numberOfVariableWeight/weightFactorTmp;
-        weightFactorTmp *= maximum;
+        //result += numberOfVariableWeight/weightFactorTmp;
+        //weightFactorTmp *= maximum;
         result += numberOfVariableOccurencesWeight/weightFactorTmp;
         weightFactorTmp *= maximum;
         result += otherMonomialsPositiveWeight/weightFactorTmp;

@@ -1313,7 +1313,7 @@ namespace smtrat
                         {
                             bool worseConditionFound = false;
                             auto child = _currentState->rChildren().begin();
-                            while( !worseConditionFound && child != _currentState->children().end() )
+                            while( child != _currentState->children().end() )
                             {
                                 if( (**child).substitution().type() != Substitution::MINUS_INFINITY || (**child).substitution().type() != Substitution::PLUS_INFINITY)
                                 {
@@ -1337,6 +1337,8 @@ namespace smtrat
                                         }
                                         ++oCond;
                                     }
+                                    if( worseConditionFound )
+                                        break;
                                 }
                                 ++child;
                             }

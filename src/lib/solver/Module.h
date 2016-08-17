@@ -181,9 +181,9 @@ namespace smtrat
             ///
             std::vector<TheoryPropagation> mTheoryPropagations;
 
-        private:
+        //private:
             /// States whether the received formula is known to be satisfiable or unsatisfiable otherwise it is set to unknown.
-            Answer mSolverState;
+            std::atomic<Answer> mSolverState;
             /// This flag is passed to any backend and if it determines an answer to a prior check call, this flag is fired.
 #ifdef __VS
             std::atomic<bool>* mBackendsFoundAnswer;
@@ -214,6 +214,8 @@ namespace smtrat
             Poly mObjectiveFunction;
             /// Maps variables to the number of their occurrences
             std::vector<std::size_t> mVariableCounters;
+
+        public:
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             /// a mutex for exclusive access to the old splitting variables
             static std::mutex mOldSplittingVarMutex;
@@ -225,8 +227,6 @@ namespace smtrat
             #define OLD_SPLITTING_VARS_LOCK
             #define OLD_SPLITTING_VARS_UNLOCK
             #endif
-
-        public:
 
             /**
              * Constructs a module.
@@ -371,7 +371,7 @@ namespace smtrat
              */
             inline Answer solverState() const
             {
-                return mSolverState;
+                return mSolverState.load();
             }
 
             /**
