@@ -8,8 +8,9 @@
 
 #pragma once
 
-#include "../../utilities/stats/Statistics.h"
 #ifdef SMTRAT_DEVOPTION_Statistics
+#include "../../config.h"
+#include "../../utilities/stats/Statistics.h"
 
 namespace smtrat
 {
@@ -18,8 +19,10 @@ namespace smtrat
     private:
         // Members.
         carl::uint mChecks;
+        carl::uint mConflicts;
         carl::uint mCoveringSets;
         double mCoveringSetSavings;
+        double mInfSubsetsSavings;
         carl::uint mCreatedTCs;
         carl::uint mConsideredStates;
         carl::uint mConsideredCases;
@@ -35,8 +38,10 @@ namespace smtrat
         VSStatistics( const std::string& _name ) : 
             Statistics( _name, this ),
             mChecks( 0 ),
+            mConflicts( 0 ),
             mCoveringSets( 0 ),
             mCoveringSetSavings( 0.0 ),
+            mInfSubsetsSavings( 0.0 ),
             mCreatedTCs( 0 ),
             mConsideredStates( 0 ),
             mConsideredCases( 0 ),
@@ -60,7 +65,8 @@ namespace smtrat
             Statistics::addKeyValuePair( "omitted-test-candidates-by-variable-bounds", mVBOmittedTCs );
             Statistics::addKeyValuePair( "omitted-constraints-by-variable-bounds", mVBOmittedConstraints );
             Statistics::addKeyValuePair( "created-covering-sets", mCoveringSets );
-            Statistics::addKeyValuePair( "average-covering-set-gain", (mCoveringSetSavings/(double)mCoveringSets) );
+            Statistics::addKeyValuePair( "average-covering-set-gain", mCoveringSets == 0 ? 0 : (mCoveringSetSavings/(double)mCoveringSets) );
+            Statistics::addKeyValuePair( "average-infeasible-subset-gain", mConflicts == 0 ? 0 : (mInfSubsetsSavings/(double)mConflicts) );
             Statistics::addKeyValuePair( "local-conflicts", mLocalConflicts );
             Statistics::addKeyValuePair( "omitted-constraints-by-local-conflicts", mLCOmittedConstraints );
             Statistics::addKeyValuePair( "backjumpings", mBackjumpings );
@@ -71,6 +77,16 @@ namespace smtrat
         void check()
         {
             ++mChecks;
+        }
+        
+        void addConflict( const ModuleInput& _formula, const std::vector<FormulaSetT>& _infSubSets )
+        {
+            assert( !_formula.empty() );
+            for( const auto& iss : _infSubSets )
+            {
+                ++mConflicts;
+                mInfSubsetsSavings += (double)(_formula.size()-iss.size())/(double)_formula.size();
+            }
         }
 
         void branch()
@@ -103,7 +119,8 @@ namespace smtrat
         void coveringSet( carl::uint _coveringSetSize, carl::uint _numberOfConstraintsToSolve )
         {
             ++mCoveringSets;
-            mCoveringSetSavings += (double)(_numberOfConstraintsToSolve-_coveringSetSize)/(double)_numberOfConstraintsToSolve;
+            if( _numberOfConstraintsToSolve > 0 )
+                mCoveringSetSavings += (double)(_numberOfConstraintsToSolve-_coveringSetSize)/(double)_numberOfConstraintsToSolve;
         }
         
         void considerState()

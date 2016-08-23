@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "../../solver/ModuleInput.h"
 #include "../../solver/ModuleSettings.h"
 #include "../../config.h"
     
@@ -19,6 +20,7 @@ namespace smtrat
 		static constexpr auto moduleName = "VSModule<VSSettings1>";
         static const bool elimination_with_factorization                        = false;
         static const bool local_conflict_search                                 = false;
+        static const bool use_backjumping                                       = true;
         static const bool use_strict_inequalities_for_test_candidate_generation = true;
         #ifdef SMTRAT_VS_VARIABLEBOUNDS
         static const bool use_variable_bounds                                   = true;
@@ -60,6 +62,7 @@ namespace smtrat
 		static constexpr auto moduleName = "VSModule<VSSettings234>";
         static const bool check_conflict_for_side_conditions                    = true;
         static const bool prefer_equation_over_all                              = true;
+        static const bool use_variable_bounds                                   = false;
     };
     
     struct VSSettings2346 : VSSettings234
@@ -150,6 +153,7 @@ namespace smtrat
         static const bool use_variable_bounds                                   = false;
         static const bool use_fixed_variable_order                              = false;
         static const bool local_conflict_search                                 = false;
+        static const bool use_backjumping                                       = false;
     };
     
     struct VSSettingsNotSMTCompliant : VSSettingsPlain
@@ -181,5 +185,11 @@ namespace smtrat
     {
         static constexpr auto moduleName = "VSModule<VSSettingsOnlyLC>";
         static const bool local_conflict_search                                 = true;
+    };
+    
+    struct VSSettingsOnlyBJ : VSSettingsPlain
+    {
+        static constexpr auto moduleName = "VSModule<VSSettingsOnlyBJ>";
+        static const bool use_backjumping                                       = true;
     };
 }

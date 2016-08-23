@@ -95,9 +95,24 @@ namespace smtrat
             Answer ans = f.get();
             switch (ans) {
 				case Answer::ABORTED: break;
-				case Answer::UNKNOWN: res = Answer::UNKNOWN; break;
-				case Answer::SAT: return Answer::SAT;
-				case Answer::UNSAT: return Answer::UNSAT;
+				case Answer::UNKNOWN:
+                {
+                    if( res == Answer::ABORTED )
+                        res = Answer::UNKNOWN;
+                    break;
+                }
+				case Answer::SAT:
+                {
+                    assert( res != Answer::UNSAT );
+                    res = Answer::SAT;
+                    break;
+                }
+				case Answer::UNSAT:
+                {
+                    assert( res != Answer::SAT );
+                    res = Answer::UNSAT;
+                    break;
+                }
             }
 		}
 		SMTRAT_LOG_DEBUG("smtrat.parallel", "Returning " << res);

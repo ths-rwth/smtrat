@@ -67,10 +67,7 @@ namespace smtrat
                 {
                     addBackend<LRAModule<LRASettings1>>(
                     {
-                        addBackend<VSModule<VSSettings234>>(
-                        {
-                            addBackend<CADModule<CADSettingsSplitPath>>()
-                        })
+                        addBackend<VSModule<VSSettings234>>({})
                     })
                 })
             });
