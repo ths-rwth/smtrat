@@ -21,6 +21,8 @@
 #include "../lib/solver/Module.h"
 #include "../lib/Common.h"
 
+#include "../lib/datastructures/unsatcore/UnsatCore.h"
+
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "../lib/utilities/stats/CollectStatistics.h"
 #include "lib/utilities/stats/StatisticSettings.h"
@@ -141,7 +143,11 @@ public:
 		error() << "(get-proof) is not implemented.";
 	}
 	void getUnsatCore() {
-		this->solver->printInfeasibleSubset(std::cout);
+		//this->solver->printInfeasibleSubset(std::cout);
+		smtrat::FormulasT core = computeUnsatCore(this->solver, smtrat::UnsatCoreStrategy::ModelExclusion);
+		regular() << "(and";
+		for (const auto& f: core) regular() << f << " ";
+		regular() << ")" << std::endl;
 	}
 	void getValue(const std::vector<carl::Variable>&) {
 		error() << "(get-value (<variables>)) is not implemented.";
