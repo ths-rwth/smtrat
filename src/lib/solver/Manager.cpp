@@ -70,6 +70,9 @@ namespace smtrat
         #ifdef SMTRAT_DEVOPTION_Statistics
         delete mpStatistics;
         #endif
+        #ifndef SMTRAT_STRAT_PARALLEL_MODE
+        // TODO: Parallel solving causes for some reason segfaults in the modules' destructors 
+        // after the specific module's destructor and before entering ~Module()
         while( !mGeneratedModules.empty() )
         {
             Module* ptsmodule = mGeneratedModules.back();
@@ -87,6 +90,7 @@ namespace smtrat
             delete toDelete;
         }
         delete mpPassedFormula;
+        #endif
     }
     
     bool Manager::inform( const FormulaT& _constraint )

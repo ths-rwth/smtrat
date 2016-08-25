@@ -2075,7 +2075,7 @@ namespace vs
         mBackendCallValuation += conditions().size();
     }
 
-    void State::passConflictToFather( bool _checkConflictForSideCondition, bool _includeInconsistentTestCandidates )
+    void State::passConflictToFather( bool _checkConflictForSideCondition, bool _useBackjumping, bool _includeInconsistentTestCandidates )
     {
         assert( isInconsistent() );
         bool coverSetOCondsContainIndexOfFather = false;
@@ -2143,7 +2143,7 @@ namespace vs
             assert( !coverSetOConds.empty() );
             conflictSet.insert( std::move(coverSetOConds) );
             // Add the original conditions of the covering set as a conflict set to the father.
-            if( coverSetOCondsContainIndexOfFather )
+            if( _useBackjumping || coverSetOCondsContainIndexOfFather )
                 rFather().addConflictSet( pSubstitution(), std::move(conflictSet) );
             else
             {

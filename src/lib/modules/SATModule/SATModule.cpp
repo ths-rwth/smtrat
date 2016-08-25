@@ -2051,6 +2051,11 @@ namespace smtrat
             {
                 // do the theory check
                 theoryCall();
+                if( mCurrentAssignmentConsistent == ABORTED )
+                {
+                    mCurrentAssignmentConsistent = UNKNOWN;
+                    return CRef_Undef;
+                }
                 // propagate theory
                 propagateTheory();
                 // if there are lemmas (or conflicts) update them
@@ -2253,7 +2258,6 @@ namespace smtrat
                     }
                     default:
                     {
-                        mCurrentAssignmentConsistent = UNKNOWN;
                         break;
                     }
                 }
@@ -3199,6 +3203,11 @@ NextClause:
                             addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, lem.mLemma ), false, (*backend)->moduleName() + "_lemma" );
                         #endif
                         int numOfLearnts = mLemmas.size();
+                        /*{
+                            std::lock_guard<std::mutex> lock( Module::mOldSplittingVarMutex );
+                            std::cout << __func__ << ":" << __LINE__ << ": " << (*backend)->moduleName() << " (" <<(*backend)->id() << ")" << std::endl;
+                            std::cout << lem.mLemma << std::endl;
+                        }*/
                         addClauses( lem.mLemma, lem.mLemmaType == LemmaType::PERMANENT ? PERMANENT_CLAUSE : LEMMA_CLAUSE );
                         if( numOfLearnts < mLemmas.size() )
                             lemmasLearned = true;
