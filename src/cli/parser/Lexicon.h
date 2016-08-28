@@ -67,7 +67,7 @@ struct BinaryParser: public qi::grammar<Iterator, FixedWidthConstant<Integer>(),
  */
 struct StringParser: public qi::grammar<Iterator, std::string(), Skipper> {
     StringParser(): StringParser::base_type(main, "string") {
-        main = qi::no_skip[qi::char_('"') > +(escapes | ~qi::char_('"')) > qi::char_('"')];
+        main = qi::lexeme[qi::char_('"') > +(escapes | ~qi::char_('"')) > qi::char_('"')];
         main.name("string");
         escapes.add("\\\\", '\\');
         escapes.add("\\\"", '"');
