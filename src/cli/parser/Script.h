@@ -65,6 +65,7 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 			|	(qi::lit("declare-sort") > symbol > numeral > ")")[px::bind(&Callee::declareSort, px::ref(callee), qi::_1, qi::_2)]
 			|	(qi::lit("define-fun") > functionDefinition)
 			//|	(qi::lit("define-sort") > symbol > "(" > (*symbol)[px::bind(&SortParser::setParameters, px::ref(sort), qi::_1)] > ")" > sort > ")")[px::bind(&ScriptParser::defineSort, px::ref(callee), qi::_1, qi::_2, qi::_3)]
+			|	(qi::lit("echo") > string > ")")[px::bind(&Callee::echo, px::ref(callee), qi::_1)]
 			|	(qi::lit("exit") > ")")[px::bind(&Callee::exit, px::ref(callee))]
 			|	(qi::lit("get-assertions") > ")")[px::bind(&Callee::getAssertions, px::ref(callee))]
 			|	(qi::lit("get-assignment") > ")")[px::bind(&Callee::getAssignment, px::ref(callee))]
@@ -98,6 +99,7 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 	NumeralParser numeral;
 	SortParser sort;
 	SortedVariableParser sortedvariable;
+	StringParser string;
 	SymbolParser symbol;
 	TermParser term;
 	
