@@ -92,7 +92,16 @@ namespace smtrat
 		mCounter++;
 		Answer res = Answer::ABORTED;
 		for (auto& f: futures) {
-            Answer ans = f.get();
+            Answer ans = Answer::ABORTED;
+            try
+            {
+                ans = f.get();
+            }
+            catch(const std::exception& e)
+            {
+                // If backend A returned before backend B 
+                // TODO: This might also happen, if A return Unknown .. see for notify(..)
+            }
             switch (ans) {
 				case Answer::ABORTED: break;
 				case Answer::UNKNOWN:

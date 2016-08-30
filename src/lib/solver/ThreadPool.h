@@ -62,10 +62,8 @@ public:
 		mConditionVariable.wait(lock, [&](){ return mFireFlag; });
 	}
 	void notify() {
-		{
-			std::lock_guard<std::mutex> lock(mMutex);
-			mFireFlag = true;
-		}
+		std::lock_guard<std::mutex> lock(mMutex);
+		mFireFlag = true;
 		mConditionVariable.notify_one();
 	}
 };
@@ -84,6 +82,8 @@ private:
 	std::vector<BackendSynchronisation*> mBackendSynchros;
     ///
 	std::mutex mQueueMutex;
+    ///
+	std::mutex mThreadCreationMutex;
 	///
 	std::priority_queue<Task*> mQueue;
 	
