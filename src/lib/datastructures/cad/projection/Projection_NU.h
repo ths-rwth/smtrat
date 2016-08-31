@@ -103,7 +103,7 @@ namespace cad {
 			assert(p.mainVar() == var(1));
 			return addToProjection(1, p, Origin::BaseType(0, cid));
 		}
-		void removePolynomial(const UPoly& p, std::size_t cid, bool) override {
+		void removePolynomial(const UPoly&, std::size_t cid, bool) override {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << cid);
 			carl::Bitset filter = carl::Bitset().set(cid);
 			for (std::size_t level = 1; level <= dim(); level++) {
@@ -140,7 +140,7 @@ namespace cad {
 			return polyIDs(level).empty();
 		}
 		
-		carl::Bitset projectNewPolynomial(const ConstraintSelection& ps = carl::Bitset(true)) {
+		carl::Bitset projectNewPolynomial(const ConstraintSelection& = carl::Bitset(true)) {
 			return carl::Bitset();
 		}
 		

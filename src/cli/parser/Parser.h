@@ -97,6 +97,10 @@ public:
 			SMTRAT_LOG_ERROR("smtrat.parser", "A sort \"" << name << "\" with arity " << arity << " has already been declared.");
 		}
 	}
+	void echo(const std::string& s) {
+		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(echo \"" << s << "\")");
+		callHandler(&InstructionHandler::echo, s);
+	}
 	void exit() {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(exit)");
 		this->mInputStream->setstate(std::ios::eofbit);

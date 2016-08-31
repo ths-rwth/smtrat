@@ -3,6 +3,7 @@
 #include "../Common.h"
 
 #include <carl/util/Bitset.h>
+#include <carl/util/Covering.h>
 
 #include <boost/optional.hpp>
 
@@ -74,51 +75,7 @@ std::ostream& operator<<(std::ostream& os, const RootIndexer& ri) {
  * The space is divided into a number of intervals: (-oo,a)[a,a](a,b)[b,b](b,oo)
  * A bit is set if the constraints refutes the corresponding interval
  */
-class Covering {
-	friend std::ostream& operator<<(std::ostream& os, const Covering& ri);
-private:
-	std::map<ConstraintT, carl::Bitset> mData;
-	carl::Bitset mOkay;
-public:
-	Covering(std::size_t intervals) {
-		mOkay.resize(intervals, true);
-	}
-	void add(const ConstraintT& c, const carl::Bitset& b) {
-		mData.emplace(c, b);
-		mOkay -= b;
-	}
-	bool conflicts() const {
-		return mOkay.none();
-	}
-	std::size_t satisfyingInterval() const {
-		return mOkay.find_first();
-	}
-	void buildConflictingCore(std::vector<ConstraintT>& core) const {
-		std::map<ConstraintT, carl::Bitset> data = mData;
-		carl::Bitset covered;
-		covered.resize(mOkay.size(), true);
-		while (covered.any()) {
-			auto maxit = data.begin();
-			for (auto it = data.begin(); it != data.end(); it++) {
-				if (maxit->second.count() < it->second.count()) maxit = it;
-			}
-			core.push_back(maxit->first);
-			covered -= maxit->second;
-			data.erase(maxit);
-			for (auto& d: data) {
-				d.second &= covered;
-			}
-		}
-	}
-};
-std::ostream& operator<<(std::ostream& os, const Covering& ri) {
-	os << "Covering: " << ri.mOkay << std::endl;
-	for (const auto& d: ri.mData) {
-		os << "\t" << d.first << " -> " << d.second << std::endl;
-	}
-	return os;
-}
-
+using Covering = carl::Covering<ConstraintT>;
 
 class AssignmentGenerator {
 private:

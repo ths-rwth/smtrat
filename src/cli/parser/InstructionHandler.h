@@ -119,6 +119,9 @@ public:
 	virtual void declareFun(const carl::Variable&) = 0;
 	virtual void declareSort(const std::string&, const unsigned&) = 0;
 	virtual void defineSort(const std::string&, const std::vector<std::string>&, const carl::Sort&) = 0;
+	virtual void echo(const std::string& s) {
+		regular() << s << std::endl;
+	}
 	virtual void exit() = 0;
 	virtual void getAssertions() = 0;
 	virtual void getAssignment() = 0;

@@ -116,6 +116,9 @@ namespace smtrat
             mInfeasibleSubsets.clear();
             mInfeasibleSubsets.emplace_back();
             mInfeasibleSubsets.back().insert( _subformula->formula() );
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            mpStatistics->addConflict( rReceivedFormula(), mInfeasibleSubsets );
+            #endif
             mInconsistentConstraintAdded = true;
             assert( checkRanking() );
             return false;
@@ -1313,7 +1316,7 @@ namespace smtrat
                         {
                             bool worseConditionFound = false;
                             auto child = _currentState->rChildren().begin();
-                            while( !worseConditionFound && child != _currentState->children().end() )
+                            while( child != _currentState->children().end() )
                             {
                                 if( (**child).substitution().type() != Substitution::MINUS_INFINITY || (**child).substitution().type() != Substitution::PLUS_INFINITY)
                                 {
@@ -1337,6 +1340,8 @@ namespace smtrat
                                         }
                                         ++oCond;
                                     }
+                                    if( worseConditionFound )
+                                        break;
                                 }
                                 ++child;
                             }
@@ -1559,6 +1564,9 @@ namespace smtrat
             mInfeasibleSubsets.emplace_back();
             for( auto cons = rReceivedFormula().begin(); cons != rReceivedFormula().end(); ++cons )
                 mInfeasibleSubsets.back().insert( cons->formula() );
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            mpStatistics->addConflict( rReceivedFormula(), mInfeasibleSubsets );
+            #endif
             return;
         }
         // Determine the minimum covering sets of the conflict sets, i.e. the infeasible subsets of the root.
@@ -1581,6 +1589,9 @@ namespace smtrat
         }
         assert( !mInfeasibleSubsets.empty() );
         assert( !mInfeasibleSubsets.back().empty() );
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        mpStatistics->addConflict( rReceivedFormula(), mInfeasibleSubsets );
+        #endif
     }
 
     template<class Settings>

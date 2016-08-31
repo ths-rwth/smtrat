@@ -1,5 +1,5 @@
 /**
- * @file RatFour.h
+ * @file RatNRAPl.h
  */
 #pragma once
 
@@ -24,12 +24,12 @@ namespace smtrat
      * @version
      *
      */
-    class RatFour:
+    class RatNRAPl:
         public Manager
     {
         public:
 
-        RatFour(): Manager()
+        RatNRAPl(): Manager()
         {
             setStrategy(
             {
@@ -41,7 +41,7 @@ namespace smtrat
                         {
                             addBackend<VSModule<VSSettings234>>(
                             {
-                                addBackend<CADModule<CADSettingsSplitFirst>>()
+                                addBackend<CADModule<CADSettingsSplitPath>>()
                             })
                         })
                     }),
@@ -51,9 +51,23 @@ namespace smtrat
                         {
                             addBackend<VSModule<VSSettings234>>(
                             {
-                                addBackend<CADModule<CADSettingsSplitFirst>>()
+                                addBackend<CADModule<CADSettingsSplitPath>>()
                             })
                         })
+                    }),
+                    addBackend<SATModule<SATSettings1>>(
+                    {
+                        addBackend<ICPModule<ICPSettings1>>(
+                        {
+                            addBackend<VSModule<VSSettings234>>({})
+                        })
+                    })
+                }),
+                addBackend<SATModule<SATSettings1>>(
+                {
+                    addBackend<LRAModule<LRASettings1>>(
+                    {
+                        addBackend<VSModule<VSSettings234>>({})
                     })
                 })
             });

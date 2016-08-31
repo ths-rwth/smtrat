@@ -65,6 +65,7 @@ namespace smtrat
 			case Answer::UNKNOWN:	return os << "UNKNOWN";
 			case Answer::ABORTED:	return os << "ABORTED";
 		}
+		return os << "???";
 	}
 
     /// An enum with the levels for lemma generation

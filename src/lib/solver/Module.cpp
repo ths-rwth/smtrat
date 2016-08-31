@@ -242,7 +242,7 @@ namespace smtrat
             }
         }
         if( mInfeasibleSubsets.empty() ) 
-            mSolverState = UNKNOWN;
+            mSolverState.store(UNKNOWN);
     }
 
     Answer Module::checkCore()
@@ -307,7 +307,7 @@ namespace smtrat
     void Module::updateAllModels()
     {
         clearModel();
-        if( mSolverState == SAT )
+        if( solverState() == SAT )
         {
             //TODO Matthias: set all models
             getBackendsAllModels();
@@ -920,7 +920,7 @@ namespace smtrat
 
     Answer Module::foundAnswer( Answer _answer )
     {
-        mSolverState = _answer;
+        mSolverState.store(_answer);
         // If we are in the SMT environment:
         assert( _answer != ABORTED || anAnswerFound() );
         if( mpManager != nullptr && _answer != UNKNOWN && _answer != ABORTED )
@@ -1045,7 +1045,7 @@ namespace smtrat
     
     pair<bool,FormulaT> Module::getReceivedFormulaSimplified()
     {
-        if( mSolverState == UNSAT )
+        if( solverState() == UNSAT )
             return make_pair( true, FormulaT( carl::FormulaType::FALSE ) );
         for( auto& backend : usedBackends() )
         {

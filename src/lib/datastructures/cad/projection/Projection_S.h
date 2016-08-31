@@ -57,7 +57,7 @@ namespace cad {
 			}
 		}
 		
-		carl::Bitset projectNewPolynomial(const ConstraintSelection& ps = carl::Bitset(true)) {
+		carl::Bitset projectNewPolynomial(const ConstraintSelection& = carl::Bitset(true)) {
 			while (!mQueue.empty()) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Using next polynomial " << mQueue.top() << " from " << mQueue);
 				carl::Bitset res = Super::addPolynomial(mQueue.top().poly, mQueue.top().cid, mQueue.top().isBound);

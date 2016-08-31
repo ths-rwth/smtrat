@@ -1037,8 +1037,9 @@ namespace vs
          * @param _includeInconsistentTestCandidates If this flag is set to true the conflict analysis takes also the
          *                                            invalid test candidates' conflict sets into account. Recommendation: set 
          *                                            it to false.
+         * @param _useBackjumping If true, we use the backjumping technique.
          */
-        void passConflictToFather( bool _checkConflictForSideCondition, bool _includeInconsistentTestCandidates = false );
+        void passConflictToFather( bool _checkConflictForSideCondition, bool _useBackjumping = true, bool _includeInconsistentTestCandidates = false );
            
         /**
          * Checks whether the currently considered conditions, which have been considered for test candidate 

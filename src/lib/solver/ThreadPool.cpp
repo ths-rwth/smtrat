@@ -21,9 +21,9 @@ namespace smtrat
 			bool skipTask = shallBeSkipped(index);
 			if (!skipTask) {
 				SMTRAT_LOG_DEBUG("smtrat.parallel", "Executing " << task->getModule()->moduleName());
-				task->run();
+                task->run();
 				SMTRAT_LOG_DEBUG("smtrat.parallel", "done.");
-				deleteTask(task);
+                deleteTask(task);
 				if (notify(index)) {
 					mCounter--;
 					return;
@@ -43,12 +43,13 @@ namespace smtrat
     
     void ThreadPool::submitBackend(Task* task) {
 		SMTRAT_LOG_DEBUG("smtrat.parallel", "Submitting " << task->getModule()->moduleName());
-		if (mCounter < mMaxThreads) {
-			std::thread(&ThreadPool::runTask, this, task).detach();
-		} else {
+        auto tmpCounter = mCounter.load();
+		//if (tmpCounter < mMaxThreads) { // TODO: Counter does currently not work correctly
+            std::thread(&ThreadPool::runTask, this, task).detach();
+		/*} else {
 			std::lock_guard<std::mutex> lock(mQueueMutex);
 			mQueue.push(task);
-		}
+		}*/
 	}
     
 	Answer ThreadPool::runBackends(const std::vector<Module*>& _modules, bool _final, bool _full, bool _minimize) {
@@ -67,7 +68,7 @@ namespace smtrat
 		std::vector<std::future<Answer>> futures;
 		for (const auto& m: _modules) {
 			SMTRAT_LOG_DEBUG("smtrat.parallel", "\tCreating task for " << m->moduleName());
-			Task* task = new Task(std::bind(&Module::check, m, _final, _full, _minimize), m, index);
+            Task* task = new Task(std::bind(&Module::check, m, _final, _full, _minimize), m, index);
             ++mNumberThreads;
 			futures.emplace_back(task->getFuture());
 			submitBackend(task);
@@ -91,15 +92,39 @@ namespace smtrat
 		mCounter++;
 		Answer res = Answer::ABORTED;
 		for (auto& f: futures) {
-            Answer ans = f.get();
+            Answer ans = Answer::ABORTED;
+            try
+            {
+                ans = f.get();
+            }
+            catch(const std::exception& e)
+            {
+                // If backend A returned before backend B 
+                // TODO: This might also happen, if A return Unknown .. see for notify(..)
+            }
             switch (ans) {
 				case Answer::ABORTED: break;
-				case Answer::UNKNOWN: res = Answer::UNKNOWN; break;
-				case Answer::SAT: return Answer::SAT;
-				case Answer::UNSAT: return Answer::UNSAT;
+				case Answer::UNKNOWN:
+                {
+                    if( res == Answer::ABORTED )
+                        res = Answer::UNKNOWN;
+                    break;
+                }
+				case Answer::SAT:
+                {
+                    assert( res != Answer::UNSAT );
+                    res = Answer::SAT;
+                    break;
+                }
+				case Answer::UNSAT:
+                {
+                    assert( res != Answer::SAT );
+                    res = Answer::UNSAT;
+                    break;
+                }
             }
 		}
 		SMTRAT_LOG_DEBUG("smtrat.parallel", "Returning " << res);
-		return res;
+        return res;
 	}
 }    // namespace smtrat
