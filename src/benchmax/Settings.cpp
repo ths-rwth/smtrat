@@ -30,6 +30,7 @@ namespace benchmax {
 	std::vector<std::string> Settings::pathes;
 	std::string Settings::pathPrefix;
 	std::chrono::seconds Settings::timeLimit;
+	bool Settings::wallclock;
 	std::size_t Settings::memoryLimit;
 	std::string Settings::validationtoolpath;
 	std::string Settings::WrongResultPath;

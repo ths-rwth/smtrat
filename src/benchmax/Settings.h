@@ -81,6 +81,7 @@ public:
 		benchmarkOptions.add_options()
 			("include-directory,D", po::value<std::vector<std::string>>(&pathes), "path to look for benchmarks (several are possible)")
 			("timeout,T", po::value<std::size_t>()->default_value(60), "timeout for all competing solvers in seconds")
+			("wallclock", po::value<bool>(&wallclock)->default_value(false), "Use wall clock for timeout")
 			("memory,M", po::value<std::size_t>(&memoryLimit)->default_value(1024), "memory limit for all competing solvers in mega bytes")
 			("validation,V", po::value<std::string>(&validationtoolpath), "tool to check assumptions")
 			("wrong-result-path,W", po::value<std::string>(&WrongResultPath)->default_value("wrong_result/"), "path to the directory to store the wrong results")
@@ -147,6 +148,7 @@ public:
 	static std::vector<std::string> pathes;
 	static std::string pathPrefix;
 	static std::chrono::seconds timeLimit;
+	static bool wallclock;
 	static std::size_t memoryLimit;
 	static std::string validationtoolpath;
 	static std::string WrongResultPath;
