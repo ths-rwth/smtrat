@@ -230,7 +230,7 @@ public:
 		ssh_channel channel = getChannel();
 		std::stringstream call;
 		call << "date +\"Start: %s%3N\" ; ";
-		if (wallclock) call << "timeout " << seconds(Settings::timeLimit).count() << "s ";
+		if (Settings::wallclock) call << "timeout " << seconds(Settings::timeLimit).count() << "s ";
 		else call << "ulimit -S -t " << seconds(Settings::timeLimit).count() << " && ";
 		call << "ulimit -S -v " << (Settings::memoryLimit * 1024) << " && ";
 		call << cmd << " ; rc=$? ;";
