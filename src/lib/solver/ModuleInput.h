@@ -312,6 +312,10 @@ namespace smtrat
          *            the conjunction of the stored formulas.
          */
         unsigned satisfiedBy( const EvalRationalMap& _assignment ) const;
+
+		const auto& back() const {
+			return super::back();
+		}
         
         iterator begin()
         {
