@@ -107,15 +107,19 @@ namespace smtrat
     {
         if( _containsUnknownConstraints )
         {
-            if( _subformula.getType() == carl::FormulaType::CONSTRAINT )
-                mpPrimaryBackend->inform( _subformula );
-            else if( _subformula.isNary() )
-            {
-                vector<FormulaT> constraints;
-                _subformula.getConstraints( constraints );
-                for( auto& c : constraints )
-                    mpPrimaryBackend->inform( c );
-            }
+			carl::FormulaVisitor<FormulaT> visitor;
+			visitor.visit(_subformula, [this](const FormulaT& f){
+				switch (f.getType()) {
+					case carl::FormulaType::CONSTRAINT:
+					case carl::FormulaType::VARCOMPARE:
+					case carl::FormulaType::BITVECTOR:
+					case carl::FormulaType::UEQ:
+						mpPrimaryBackend->inform(f);
+						break;
+					default:
+						break;
+				}
+			});
         }
         auto res = mpPassedFormula->add( _subformula );
         if( res.second )
