@@ -42,24 +42,9 @@ namespace smtrat
         for( const FormulaWithOrigins& fwo : *this )
         {
 //            std::cout << fwo.formula() << " satisfied = ";
-            switch( satisfies( _assignment, fwo.formula() ) )
-            {
-                case 0:
-                {
-//                    std::cout << "0" << std::endl;
-                    return 0;
-                }
-                case 1:
-                {
-//                    std::cout << "1" << std::endl;
-                    break;
-                }
-                default:
-                {
-//                    std::cout << "2" << std::endl;
-                    if( result != 2 ) result = 2;
-                }
-            }
+			auto res = carl::model::substitute(fwo.formula(), _assignment);
+			if (res.isFalse()) return 0;
+			if (!res.isTrue()) result = 2;
         }
         return result;
     }
