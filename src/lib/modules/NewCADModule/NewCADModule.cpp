@@ -47,7 +47,7 @@ namespace smtrat
 				carl::Variable v;
 				Rational r;
 				if (c.getAssignment(v, r)) {
-					mReplacer.addAssignment(v, r);
+					mReplacer.addAssignment(v, r, c);
 				} else {
 					mReplacer.addConstraint(c);
 				}
@@ -56,7 +56,7 @@ namespace smtrat
 			case carl::FormulaType::VARCOMPARE: {
 				const auto& vc = _subformula->formula().variableComparison();
 				if (vc.relation() == carl::Relation::EQ) {
-					mReplacer.addAssignment(vc.var(), vc.value());
+					//mReplacer.addAssignment(vc.var(), vc.value());
 				} else {
 					//mReplacer.addConstraint(vc);
 				}
@@ -92,7 +92,12 @@ namespace smtrat
 	template<class Settings>
 	Answer NewCADModule<Settings>::checkCore()
 	{
-		mReplacer.commit();
+		if (!mReplacer.commit()) {
+			// Assignments simplified a constraint to false
+			mInfeasibleSubsets.emplace_back();
+			mReplacer.buildInfeasibleSubset(mInfeasibleSubsets.back());
+			return Answer::UNSAT;
+		}
 		auto answer = mCAD.check(mLastAssignment, mInfeasibleSubsets);
 #ifdef SMTRAT_DEVOPTION_Statistics
 		mStatistics.currentProjectionSize(mCAD.getProjection().size());
