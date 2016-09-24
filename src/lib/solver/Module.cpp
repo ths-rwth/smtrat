@@ -134,6 +134,7 @@ namespace smtrat
         stopCheckTimer();
         #endif
 //        assert(result == UNKNOWN || result == UNSAT || result == SAT);
+		SMTRAT_LOG_DEBUG("smtrat.module", "Status: " << result);
         assert( result != UNSAT || hasValidInfeasibleSubset() );
         #ifdef SMTRAT_DEVOPTION_Validation
         if( validationSettings->logTCalls() )
@@ -1195,6 +1196,7 @@ namespace smtrat
     
     bool Module::hasValidInfeasibleSubset() const
     {
+		SMTRAT_LOG_DEBUG("smtrat.module", "InfSubsets: " << mInfeasibleSubsets);
         if( mInfeasibleSubsets.empty() ) return false;
         for( auto& infSubset : mInfeasibleSubsets )
         {

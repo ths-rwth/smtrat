@@ -39,10 +39,12 @@ namespace smtrat
 //        std::cout << "Assignment:" << std::endl;
 //        for( const auto& a : _assignment )
 //            std::cout << a.first << " -> " << a.second << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.module", "Module: " << _assignment);
         for( const FormulaWithOrigins& fwo : *this )
         {
 //            std::cout << fwo.formula() << " satisfied = ";
 			auto res = carl::model::substitute(fwo.formula(), _assignment);
+			SMTRAT_LOG_DEBUG("smtrat.module", "Checking whether model satisfies " << fwo.formula() << " -> " << res);
 			if (res.isFalse()) return 0;
 			if (!res.isTrue()) result = 2;
         }
