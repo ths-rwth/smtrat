@@ -94,6 +94,16 @@ public:
 			mis.insert(FormulaT(ass.second));
 		}
 	}
+	void preprocessInfeasibleSubset(FormulaSetT& mis) const {
+		for (const auto& cons: mConstraints) {
+			if (cons.second) {
+				auto it = mis.find(FormulaT(*cons.second));
+				if (it == mis.end()) continue;
+				mis.erase(it);
+				mis.emplace(cons.first);
+			}
+		}
+	}
 };
 
 }
