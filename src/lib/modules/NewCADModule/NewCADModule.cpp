@@ -104,6 +104,7 @@ namespace smtrat
 #endif
 		if (answer == Answer::UNSAT) {
 			//mCAD.generateInfeasibleSubsets(mInfeasibleSubsets);
+			mReplacer.preprocessInfeasibleSubset(mInfeasibleSubsets.back());
 			SMTRAT_LOG_INFO("smtrat.cad", "Infeasible subset: " << mInfeasibleSubsets);
 		}
 		return answer;
