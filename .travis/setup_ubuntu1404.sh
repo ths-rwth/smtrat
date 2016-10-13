@@ -12,8 +12,6 @@ elif [[ ${USE} == "g++-5" ]]; then
 	defCXX gcc-5 g++-5
 elif [[ ${USE} == "g++-6" ]]; then
 	defCXX gcc-6 g++-6
-elif [[ ${USE} == "clang++-3.4" ]]; then
-	defCXX clang clang++
 elif [[ ${USE} == "clang++-3.5" ]]; then
 	defCXX clang-3.5 clang++-3.5
 elif [[ ${USE} == "clang++-3.6" ]]; then
@@ -22,4 +20,6 @@ elif [[ ${USE} == "clang++-3.7" ]]; then
 	defCXX clang-3.7 clang++-3.7
 elif [[ ${USE} == "clang++-3.8" ]]; then
 	defCXX clang-3.8 clang++-3.8
+elif [[ ${USE} == "clang++-3.9" ]]; then
+	defCXX clang-3.9 clang++-3.9
 fi

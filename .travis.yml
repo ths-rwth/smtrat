@@ -18,6 +18,8 @@ addons:
       - llvm-toolchain-precise-3.6
       - llvm-toolchain-precise-3.7
       - llvm-toolchain-precise-3.8
+      - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-3.9 main'
+        key_url: 'http://apt.llvm.org/llvm-snapshot.gpg.key'
       - ubuntu-toolchain-r-test
     packages:
       - cmake
@@ -31,9 +33,11 @@ addons:
       - g++-4.8
       - g++-4.9
       - g++-5
+      - g++-6
       - clang-3.6
       - clang-3.7
       - clang-3.8
+      - clang-3.9
       - time
 
 matrix:
@@ -43,11 +47,15 @@ matrix:
     - os: linux
       env: USE=g++-5
     - os: linux
+      env: USE=g++-6
+    - os: linux
       env: USE=clang++-3.6
     - os: linux
       env: USE=clang++-3.7
     - os: linux
       env: USE=clang++-3.8
+    - os: linux
+      env: USE=clang++-3.9
     - os: linux
       env: USE=clang++-3.6 TASK=doxygen
     - os: osx
