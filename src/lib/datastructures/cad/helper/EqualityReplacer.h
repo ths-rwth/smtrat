@@ -24,6 +24,8 @@ private:
 	std::set<ConstraintT> mForwardedConstraints;
 	/// Current assignment that is used for simplication.
 	std::map<carl::Variable, ConstraintT> mAssignments;
+	/// Assignments to variables already assigned.
+	std::map<ConstraintT, std::pair<carl::Variable, ModelValue>> mDuplicateAssignments;
 	/// Current model that matches mAssignments.
 	Model mModel;
 	/// A constraint that is trivially false under the current model.
@@ -62,29 +64,48 @@ public:
 	 */
 	void addAssignment(carl::Variable v, const ModelValue& n, const ConstraintT& c) {
 		SMTRAT_LOG_DEBUG("smtrat.cad", "Adding " << c);
-		mModel.emplace(v, n);
-		mAssignments.emplace(v, c);
+		auto it = mAssignments.find(v);
+		if (it == mAssignments.end()) {
+			mModel.emplace(v, n);
+			mAssignments.emplace(v, c);
+		} else {
+			mDuplicateAssignments.emplace(c, std::make_pair(v, n));
+		}
 	}
 	/**
 	 * Removes an assignment.
 	 *
 	 * Simplified constraints are updated in the next call to commit().
 	 */
-	void removeAssignment(carl::Variable v) {
+	void removeAssignment(carl::Variable v, const ConstraintT& c) {
 		SMTRAT_LOG_DEBUG("smtrat.cad", "Removing assignment for " << v);
-		auto it = mModel.find(v);
-		assert(it != mModel.end());
-		mModel.erase(it);
-		auto ait = mAssignments.find(v);
-		assert(ait != mAssignments.end());
-		SMTRAT_LOG_DEBUG("smtrat.cad", "Removing assignment " << ait->second);
-		//mCAD.removeConstraint(ait->second);
-		mAssignments.erase(ait);
+		auto dait = mDuplicateAssignments.find(c);
+		if (dait != mDuplicateAssignments.end()) {
+			mDuplicateAssignments.erase(dait);
+		} else {
+			auto it = mModel.find(v);
+			if (it == mModel.end()) std::exit(55);
+			assert(it != mModel.end());
+			mModel.erase(it);
+			auto ait = mAssignments.find(v);
+			assert(ait != mAssignments.end());
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing assignment " << ait->second);
+			//mCAD.removeConstraint(ait->second);
+			mAssignments.erase(ait);
+		}
 	}
 	/**
 	 * Actually commits new constraints and simplications to CAD.
 	 */
 	bool commit() {
+		for (auto it = mDuplicateAssignments.begin(); it != mDuplicateAssignments.end();) {
+			if (mAssignments.find(it->second.first) == mAssignments.end()) {
+				addAssignment(it->second.first, it->second.second, it->first);
+				it = mDuplicateAssignments.erase(it);
+			} else {
+				it++;
+			}
+		}
 		SMTRAT_LOG_INFO("smtrat.cad", "Using " << mModel << " to simplify");
 		for (auto& c: mConstraints) {
 			auto res = carl::model::substitute(c.first, mModel);
