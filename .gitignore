@@ -1,13 +1,14 @@
-/build/**
-/nbproject/
 **/config.h
 **/config.txt
 **/CompileInfo.cpp
 **/CMakeOptions.cpp
+/build/**
+/nbproject/
+/src/gui/Config.java
 /src/lib/modules/ModuleType.h
 /src/lib/modules/ModuleType.cpp
 /src/lib/modules/MODULETYPES.txt
 /src/lib/modules/AddModules.h
 /src/lib/modules/Modules.cpp
 /src/lib/modules/Modules.h
-/src/gui/Config.java
+/src/lib/modules/NewCADModule/NewCADSettings.h
