@@ -36,7 +36,6 @@
 #include "SolverTypes.h"
 #include "Sort.h"
 #include <math.h>
-#include <carl/formula/DIMACSExporter.h>
 #include "../../solver/Module.h"
 #include "../../solver/RuntimeSettings.h"
 

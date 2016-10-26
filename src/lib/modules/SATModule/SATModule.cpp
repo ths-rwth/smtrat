@@ -27,7 +27,6 @@
 
 #include "SATModule.h"
 #include <iomanip>
-#include <carl/formula/DIMACSExporter.h>
 
 //#define DEBUG_METHODS_SATMODULE
 #ifdef DEBUG_METHODS_SATMODULE
