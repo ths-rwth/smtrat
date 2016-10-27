@@ -31,8 +31,8 @@
 
 #include "parser/ParserWrapper.h"
 #include "../lib/Common.h"
-#include <carl/formula/DIMACSExporter.h>
-#include <carl/formula/DIMACSImporter.h>
+#include <carl/formula/parser/DIMACSExporter.h>
+#include <carl/formula/parser/DIMACSImporter.h>
 
 class Executor : public smtrat::parser::InstructionHandler {
 	CMakeStrategySolver* solver;
