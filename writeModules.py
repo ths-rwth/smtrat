@@ -176,7 +176,7 @@ namespace smtrat
 	void <CLASSNAME><Settings>::updateModel() const
 	{
 		mModel.clear();
-		if( solverState() == True )
+		if( solverState() == Answer::SAT )
 		{
 			// Your code.
 		}
@@ -186,7 +186,7 @@ namespace smtrat
 	Answer <CLASSNAME><Settings>::checkCore()
 	{
 		// Your code.
-		return Unknown; // This should be adapted according to your implementation.
+		return Answer::UNKNOWN; // This should be adapted according to your implementation.
 	}
 }
 
