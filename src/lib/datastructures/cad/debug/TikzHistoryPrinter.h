@@ -283,7 +283,7 @@ private:
 		std::stringstream ss;
 		if (asTex) ss << "$";
 		if (s.value().isNumeric()) ss << s.value().value();
-		else ss << s.value().getIntervalContent().interval;
+		else ss << s.value().getInterval();
 		if (asTex) {
 			if (s.isRoot()) ss << "_R";
 			ss << "$";
@@ -293,7 +293,7 @@ private:
 	std::string sampleID(const Sample& s) const {
 		double val = 0;
 		if (s.value().isNumeric()) val = carl::toDouble(s.value().value());
-		else val = carl::toDouble(s.value().getIntervalContent().interval.center());
+		else val = carl::toDouble(s.value().getInterval().center());
 		if (val < 0) val = -1 / (val - 1);
 		else val = val + 1;
 		return std::to_string(val);
