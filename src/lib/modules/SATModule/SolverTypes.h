@@ -209,6 +209,7 @@ public:
     operator const Lit* (void) const         { return (Lit*)data; }
 
     float&       activity    ()              { assert(header.has_extra); return data[header.size].act; }
+	float        activity    () const        { assert(header.has_extra); return data[header.size].act; }
     uint32_t     abstraction () const        { assert(header.has_extra); return data[header.size].abs; }
 
     Lit          subsumes    (const Clause& other) const;
