@@ -69,6 +69,12 @@ inline  int  toInt     (Var v)              { return v; }
 inline  int  toInt     (Lit p)              { return p.x; }
 inline  Lit  toLit     (int i)              { Lit p; p.x = i; return p; }
 
+
+inline std::ostream& operator<<(std::ostream& os, const Lit& l) {
+	if (Minisat::sign(l)) os << "-";
+	return os << Minisat::var(l);
+};
+
 //const Lit lit_Undef = mkLit(var_Undef, false);  // }- Useful special constants.
 //const Lit lit_Error = mkLit(var_Undef, true );  // }
 
