@@ -41,40 +41,30 @@ namespace smtrat
 	template<class Settings>
 	bool NewCADModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 	{
-		switch (_subformula->formula().getType()) {
-			case carl::FormulaType::CONSTRAINT: {
-				const ConstraintT& c = _subformula->formula().constraint();
-				carl::Variable v;
-				Rational r;
-				if (c.getAssignment(v, r)) {
-					mReplacer.addAssignment(v, r, c);
-				} else {
-					mReplacer.addConstraint(c);
-				}
-				break;
-			}
-			case carl::FormulaType::VARCOMPARE: {
-				const auto& vc = _subformula->formula().variableComparison();
-				if (vc.relation() == carl::Relation::EQ) {
-					//mReplacer.addAssignment(vc.var(), vc.value());
-				} else {
-					//mReplacer.addConstraint(vc);
-				}
-				break;
-			}
-			default:
-				SMTRAT_LOG_ERROR("smtrat.cad", "Unsupported formula type for CAD: " << _subformula->formula().getType());
+		assert(_subformula->formula().getType() == carl::FormulaType::CONSTRAINT);
+		const ConstraintT& c = _subformula->formula().constraint();
+		carl::Variable v;
+		Rational r;
+		if (c.getAssignment(v, r)) {
+			mReplacer.addAssignment(v, r, c);
+		} else {
+			mReplacer.addConstraint(c);
 		}
-		//mCAD.addConstraint(_subformula->formula().constraint());
-		return true; // This should be adapted according to your implementation.
+		return true;
 	}
 	
 	template<class Settings>
 	void NewCADModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
 	{
 		assert(_subformula->formula().getType() == carl::FormulaType::CONSTRAINT);
-		//mCAD.removeConstraint(_subformula->formula().constraint());
-		mReplacer.removeConstraint(_subformula->formula().constraint());
+		const ConstraintT& c = _subformula->formula().constraint();
+		carl::Variable v;
+		Rational r;
+		if (c.getAssignment(v, r)) {
+			mReplacer.removeAssignment(v, _subformula->formula().constraint());
+		} else {
+			mReplacer.removeConstraint(_subformula->formula().constraint());
+		}
 	}
 	
 	template<class Settings>
