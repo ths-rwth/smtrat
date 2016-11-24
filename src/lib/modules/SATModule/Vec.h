@@ -22,6 +22,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define Minisat_Vec_h
 
 #include <assert.h>
+#include <iostream>
 #include <new>
 
 #include "IntTypes.h"
@@ -215,6 +216,16 @@ namespace Minisat
                 cap       = 0;
             }
     };
+	
+	template<typename T>
+	inline std::ostream& operator<<(std::ostream& os, const vec<T>& v) {
+		os << "[";
+		for (int i = 0; i < v.size(); i++) {
+			if (i > 0) os << ", ";
+			os << v[i];
+		}
+		return os << "]";
+	}
 
     template<class T>
     void vec<T>::capacity( int min_cap )
