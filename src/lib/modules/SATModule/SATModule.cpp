@@ -3034,7 +3034,7 @@ namespace smtrat
 		cout << "### trail = " << trail << endl;
         cout << "### trail.size() = " << trail.size() << endl;
 		cout << "### trail_lim = " << trail_lim << endl;
-		cout << "### theory stack = " << mTheoryVariableStack << endl;
+		//cout << "### theory stack = " << mTheoryVariableStack << endl;
 		cout << "###" << endl; printBooleanConstraintMap(cout, "###");
 		cout << "###" << endl; printClauses( clauses, "Clauses", cout, "### ", 0, false, false );
 		cout << "###" << endl; printClauses( learnts, "Learnts", cout, "### ", 0, false, false );
