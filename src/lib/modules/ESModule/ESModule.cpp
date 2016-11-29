@@ -39,7 +39,7 @@ namespace smtrat
             for( const auto& iter : mArithSubs )
             {
                 assert( mModel.find( iter.first ) == mModel.end() );
-                mModel.emplace( iter.first, ModelSubstitution::create<ModelPolynomialSubstitution>( iter.second ) );
+                mModel.emplace( iter.first, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>( iter.second ) );
             }
             // All variables which occur in the root of the constructed state tree but were incidentally eliminated
             // (during the elimination of another variable) can have an arbitrary assignment. If the variable has the
@@ -70,7 +70,7 @@ namespace smtrat
                 if( var.getType() == carl::VariableType::VT_BOOL )
                     mModel.insert(std::make_pair(var, false));
                 else
-                    mModel.insert(std::make_pair(var, ModelSubstitution::create<ModelPolynomialSubstitution>( ZERO_POLYNOMIAL )));
+                    mModel.insert(std::make_pair(var, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>( ZERO_POLYNOMIAL )));
             }
         }
     }
