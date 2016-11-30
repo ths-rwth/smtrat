@@ -101,6 +101,21 @@ namespace parser {
 			scriptScopes.top().discharge(*this);
 			scriptScopes.pop();
 		}
+		
+		void reset() {
+			auxiliary_variables.clear();
+			bindings.clear();
+			constants.clear();
+			variables.clear();
+			declared_functions.clear();
+			defined_functions.clear();
+			defined_indexed_functions.clear();
+			defined_user_functions.clear();
+			global_formulas.clear();
+			artificialVariables.clear();
+			while (!expressionScopes.empty()) expressionScopes.pop();
+			while (!scriptScopes.empty()) scriptScopes.pop();
+		}
 
 		
 		void errorMessage(const std::string& msg) {
