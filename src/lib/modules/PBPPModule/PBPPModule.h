@@ -22,6 +22,10 @@ namespace smtrat
 			PBPPStatistics mStatistics;
 #endif
 			// Members.
+			std::map<FormulaT, FormulaT> mConstraintCache;
+			std::map<carl::Variable, carl::Variable> mVariablesCache;
+			carl::FormulaVisitor<FormulaT> mVisitor;
+			int mVariableNameCounter = 0;
 			
 		public:
 			typedef Settings SettingsType;
@@ -82,5 +86,12 @@ namespace smtrat
 			 *		 Unknown, otherwise.
 			 */
 			Answer checkCore();
+
+		private:
+			bool isEasyBooleanConstraint(const FormulaT& formula);
+			FormulaT forwardAsBoolean(const FormulaT& formula);
+			FormulaT forwardAsArithmetic(const FormulaT& formula);
+			FormulaT checkFormulaType(const FormulaT& formula);
+			std::function<FormulaT(FormulaT)> checkFormulaTypeFunction;
 	};
 }
