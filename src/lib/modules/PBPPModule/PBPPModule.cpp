@@ -42,9 +42,10 @@ namespace smtrat
 	{
 		// auto receivedFormula = _subformula;	
 		// while(receivedFormula != rReceivedFormula().end()){
-		// 	FormulaT formula = mVisitor.visitResult(receivedFormula->formula(), checkFormulaTypeFunction);
-	
+		FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeFunction);
+		addSubformulaToPassedFormula(formula, _subformula->formula());
 		// }
+		return true;
 	}
 	
 	template<class Settings>
@@ -59,15 +60,18 @@ namespace smtrat
 		mModel.clear();
 		if( solverState() == Answer::SAT )
 		{
-			// Your code.
+			getBackendsModel();
 		}
 	}
 	
 	template<class Settings>
 	Answer PBPPModule<Settings>::checkCore()
 	{
-
-		return Answer::UNKNOWN; // This should be adapted according to your implementation.
+		Answer ans = runBackends();
+		if (ans == UNSAT) {
+			generateTrivialInfeasibleSubset();
+		}
+		return ans;
 	}
 
 	// template<typename Settings>
@@ -77,12 +81,13 @@ namespace smtrat
  //            return true;
  //        }
  //        return false;
-	}
+//	}
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaType(const FormulaT& formula){
+		if(formula.getType() != carl::FormulaType::PBCONSTRAINT) return formula;
 		carl::PBConstraint c = formula.pbConstraint();
-		if(c.geteLHS().size() < 4){
+		if(c.getLHS().size() < 4){
 			return forwardAsBoolean(formula);
 		}
 		return forwardAsArithmetic(formula);
@@ -105,10 +110,12 @@ namespace smtrat
 		if(c.isTrue()){
 			//All coefficients on the lhs are >= 0, the rhs is <= 0 and the relation is GEQ
 			FormulaT f = FormulaT(carl::FormulaType::TRUE);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " is true.");
 			return f;
 		}else if(c.isFalse()){
 			//All coefficients on the lhs are <= 1, the rhs is > 0 and the relation is GEQ
 			FormulaT f = FormulaT(carl::FormulaType::FALSE);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " is false.");
 			return f;
 		}else if(cLHS.size() == 1 && cRel == carl::Relation::GEQ){
 			if(cLHS.begin()->second == cRHS && cRHS < 0){
@@ -116,21 +123,25 @@ namespace smtrat
 				FormulaT subformulaA = FormulaT(carl::FormulaType::FALSE);
 				FormulaT subformulaB = FormulaT(cLHS.begin()->first);
 				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
 				return f;
 			}else if(cLHS.begin()->second < 0 && cRHS == 0){
 				// - x1 >= 0 => x1 -> false
 				FormulaT subformulaA = FormulaT(cLHS.begin()->first);
 				FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
 				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
 				return f;
 			}else if(cLHS.begin()->second == cRHS && cRHS > 0){
 				// k x1 >= k => true -> x1
 				FormulaT subformulaA = FormulaT(carl::FormulaType::TRUE);
 				FormulaT subformulaB = FormulaT(cLHS.begin()->first);
 				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
 				return f;
 			}
 		}
+		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << formula);
 		return formula;
 	}
 
@@ -139,32 +150,30 @@ namespace smtrat
 	*/
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::forwardAsArithmetic(const FormulaT& formula){
-		if(formula.getType() == carl::FormulaType::PBCONSTRAINT){
-			carl::Variables variables;
-			formula.allVars(variables);
-			for(auto it = variables.begin(); it != variables.end(); it++){
-				auto finderIt = mVariablesCache.find(*it);
-				if(finderIt == mVariablesCache.end()){
-					auto varCacheEnd = mVariablesCache.rbegin();
-					std::string varName = "y" + std::to_string(mVariableNameCounter);
-					mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(*it, newVariable(varName, carl::VariableType::VT_INT)));
-					mVariableNameCounter++;
-				}
+		carl::Variables variables;
+		formula.allVars(variables);
+		for(auto it = variables.begin(); it != variables.end(); it++){
+			auto finderIt = mVariablesCache.find(*it);
+			if(finderIt == mVariablesCache.end()){
+				auto varCacheEnd = mVariablesCache.rbegin();
+				std::string varName = "y" + std::to_string(mVariableNameCounter);
+				mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(*it, newVariable(varName, carl::VariableType::VT_INT)));
+				mVariableNameCounter++;
 			}
-			Poly lhs;
-			carl::PBConstraint c = formula.pbConstraint();
-			std::vector<std::pair<carl::Variable, int>> cLHS = c.getLHS();
-			for(auto it = cLHS.begin(); it != cLHS.end(); it++){
-				auto finder = mVariablesCache.find(it->first);	
-				carl::Variable curVariable = finder->second; 
-				Poly pol(curVariable);
-				lhs =  lhs + Rational(it->second) * pol;
-			}
-			lhs = lhs - Rational(c.getRHS());
-			FormulaT f = FormulaT(lhs, c.getRelation());
-            return f;
 		}
-		
+		Poly lhs;
+		carl::PBConstraint c = formula.pbConstraint();
+		std::vector<std::pair<carl::Variable, int>> cLHS = c.getLHS();
+		for(auto it = cLHS.begin(); it != cLHS.end(); it++){
+			auto finder = mVariablesCache.find(it->first);	
+			carl::Variable curVariable = finder->second; 
+			Poly pol(curVariable);
+			lhs =  lhs + Rational(it->second) * pol;
+		}
+		lhs = lhs - Rational(c.getRHS());
+		FormulaT f = FormulaT(lhs, c.getRelation());
+		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+        return f;
 	}
 }
 
