@@ -33,6 +33,8 @@
 #include "../lib/Common.h"
 #include <carl/formula/parser/DIMACSExporter.h>
 #include <carl/formula/parser/DIMACSImporter.h>
+#include <carl/formula/parser/OPBImporter.h>
+
 
 class Executor : public smtrat::parser::InstructionHandler {
 	CMakeStrategySolver* solver;
@@ -370,6 +372,32 @@ int main( int argc, char* argv[] )
 				}
 			}
 			if (dimacs.hasNext()) solver->reset();
+		}
+	} else if (settingsManager.readOPB()) {
+		carl::OPBImporter<smtrat::Poly> opb(pathToInputFile);
+		std::cout << "Parsing " << pathToInputFile << " using OPB" << std::endl;
+		solver->add(opb.parse());
+		switch (solver->check()) {
+			case smtrat::Answer::SAT: {
+				std::cout << "sat" << std::endl;
+				exitCode = SMTRAT_EXIT_SAT;
+				break;
+			}
+			case smtrat::Answer::UNSAT: {
+				std::cout << "unsat" << std::endl;
+				exitCode = SMTRAT_EXIT_UNSAT;
+				break;
+			}
+			case smtrat::Answer::UNKNOWN: {
+				std::cout << "unknown" << std::endl;
+				exitCode = SMTRAT_EXIT_UNKNOWN;
+				break;
+			}
+			default: {
+				std::cerr << "unexpected output!";
+				exitCode = SMTRAT_EXIT_UNEXPECTED_ANSWER;
+				break;
+			}
 		}
 	} else {
 		// Parse input.
