@@ -40,10 +40,11 @@ namespace smtrat
 	template<class Settings>
 	bool PBPPModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 	{
-		if(_subformula->formula().isTrue()){
-			return true;
-		}
-		return false;
+		// auto receivedFormula = _subformula;	
+		// while(receivedFormula != rReceivedFormula().end()){
+		// 	FormulaT formula = mVisitor.visitResult(receivedFormula->formula(), checkFormulaTypeFunction);
+	
+		// }
 	}
 	
 	template<class Settings>
@@ -65,28 +66,30 @@ namespace smtrat
 	template<class Settings>
 	Answer PBPPModule<Settings>::checkCore()
 	{
-		auto receivedFormula = firstUncheckedReceivedSubformula();	
-		while(receivedFormula != rReceivedFormula().end()){
-			FormulaT formula = mVisitor.visitResult(receivedFormula->formula(), checkFormulaTypeFunction);
-		}
+
 		return Answer::UNKNOWN; // This should be adapted according to your implementation.
 	}
 
-	template<typename Settings>
-	bool PBPPModule<Settings>::isEasyBooleanConstraint(const FormulaT& formula){
-        carl::PBConstraint c = formula.pbConstraint();
-        if(c.getLHS().size() < 4){
-            return true;
-        }
-        return false;
+	// template<typename Settings>
+	// bool PBPPModule<Settings>::isEasyBooleanConstraint(const FormulaT& formula){
+ //        carl::PBConstraint c = formula.pbConstraint();
+ //        if(c.getLHS().size() < 4){
+ //            return true;
+ //        }
+ //        return false;
 	}
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaType(const FormulaT& formula){
-		if(isEasyBooleanConstraint(formula)){
+		carl::PBConstraint c = formula.pbConstraint();
+		if(c.geteLHS().size() < 4){
 			return forwardAsBoolean(formula);
 		}
 		return forwardAsArithmetic(formula);
+		// if(isEasyBooleanConstraint(formula)){
+		// 	return forwardAsBoolean(formula);
+		// }
+		// return forwardAsArithmetic(formula);
 	}
 
 

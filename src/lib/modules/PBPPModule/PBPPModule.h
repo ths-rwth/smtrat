@@ -88,7 +88,7 @@ namespace smtrat
 			Answer checkCore();
 
 		private:
-			bool isEasyBooleanConstraint(const FormulaT& formula);
+		//	bool isEasyBooleanConstraint(const FormulaT& formula);
 			FormulaT forwardAsBoolean(const FormulaT& formula);
 			FormulaT forwardAsArithmetic(const FormulaT& formula);
 			FormulaT checkFormulaType(const FormulaT& formula);

@@ -2,16 +2,16 @@
 
 #include "../solver/Manager.h"
 
-#include "../modules/BEModule/PBPPModule.h"
+#include "../modules/PBPPModule/PBPPModule.h"
 
 
 namespace smtrat
 {
-    class AllModulesStrategy:
+    class PBPPStrategy:
         public Manager
     {
         public:
-            AllModulesStrategy(): Manager() {
+            PBPPStrategy(): Manager() {
 				setStrategy({
 					addBackend<PBPPModule<PBPPSettings1>>(),
 
