@@ -2,7 +2,9 @@
 
 #include "../solver/Manager.h"
 
+#include "../modules/LRAModule/LRAModule.h"
 #include "../modules/PBPPModule/PBPPModule.h"
+#include "../modules/SATModule/SATModule.h"
 
 
 namespace smtrat
@@ -13,8 +15,11 @@ namespace smtrat
         public:
             PBPPStrategy(): Manager() {
 				setStrategy({
-					addBackend<PBPPModule<PBPPSettings1>>(),
-
+					addBackend<PBPPModule<PBPPSettings1>>(
+						addBackend<SATModule<SATSettings1>>(
+							addBackend<LRAModule<LRASettings1>>()
+						)
+					),
 				});
 			}
     };
