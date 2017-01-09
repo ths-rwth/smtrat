@@ -96,6 +96,182 @@ namespace smtrat
 	}
 
 
+	// /*
+	// / Converts PBConstraint into a boolean formula.
+	// */
+	// template<typename Settings>
+	// FormulaT PBPPModule<Settings>::forwardAsBoolean(const FormulaT& formula){
+	// 	std::cout << "FORWARDASBOOLEAN" << std::endl;
+	// 	carl::PBConstraint c = formula.pbConstraint();
+	// 	std::vector<std::pair<carl::Variable, int>> cLHS = c.getLHS();
+	// 	carl::Relation cRel = c.getRelation();
+	// 	int cRHS = c.getRHS();
+
+	// 	if(cLHS.size() == 1){
+	// 		if(cLHS.begin()->second > 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && cRHS < 0){
+	// 			// 5 x1 >= -2 or 5 x1 > -2 ===> false -> x1  
+	// 			FormulaT subformulaA = FormulaT(carl::FormulaType::FALSE);
+	// 			FormulaT subformulaB = FormulaT(cLHS.begin()->first);
+	// 			FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+	// 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+	// 			return f;
+	// 		}else if(cLHS.begin()->second > 0 && cRel == carl::Relation::GEQ && cRHS == 0){
+	// 			//5 x1 >= 0 ===> false -> x1
+	// 			FormulaT subformulaA = FormulaT(carl::FormulaType::FALSE);
+	// 			FormulaT subformulaB = FormulaT(cLHS.begin()->first);
+	// 			FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+	// 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+	// 			return f;
+	// 		}else if(cLHS.begin()->second > 0 && cRel == carl::Relation::GREATER && cRHS == 0){
+	// 			//5 x1 > 0 ===> true -> x1
+	// 			FormulaT subformulaA = FormulaT(carl::FormulaType::TRUE);
+	//  			FormulaT subformulaB = FormulaT(cLHS.begin()->first);
+	//  			FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+	//  			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+	//  			return f;
+	// 		}else if(cLHS.begin()->second > 0 && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ) && cRHS > 0){
+	// 			if((cLHS.begin()->second > cRHS) || (cLHS.begin()->second == cRHS && cRel == carl::Relation::GEQ)){
+	// 				//5 x1 >= 2 or 5 x1 > 2 or 5 x1 >= 5 ===> true -> x1
+	// 				FormulaT subformulaA = FormulaT(carl::FormulaType::TRUE);
+	//  				FormulaT subformulaB = FormulaT(cLHS.begin()->first);
+	//  				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+	//  				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+	//  				return f;
+	// 			}else if((cLHS.begin()->second < cRHS) ||(cLHS.begin()->second == cRHS && cRel == carl::Relation::GREATER)){
+	// 				//2 x1 >= 5 or 2 x1 > 5 or 5 x1 > 5 ===> FALSE
+	// 			}else{
+	// 				//Do nothing
+	// 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << formula);
+	//  				return formula;
+	// 			}
+	// 		}else if(cLHS.begin()->second < 0 && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ) && cRHS < 0){
+	// 			if((cLHS.begin()->second < cRHS) || (cLHS.begin()->second == cRHS && cRel == carl::Relation::GREATER)){
+	// 				//-5 x1 >= -2 or -5 x1 > -2 or -5 x1 > -5 ===> x1 -> false
+	// 				FormulaT subformulaA = FormulaT(cLHS.begin()->first);
+	// 				FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
+	// 				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+	// 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+	// 				return f;
+	// 			}else if((cLHS.begin()->second > cRHS) || (cLHS.begin()->second == cRHS && cRel == carl::Relation::GEQ)){
+	// 				//-2 x1 >= -5 or -2 x1 > -5 or -5 x1 >= -5 ===> false -> x1
+	// 				FormulaT subformulaA = FormulaT(carl::FormulaType::FALSE);
+	// 				FormulaT subformulaB = FormulaT(cLHS.begin()->first);
+	// 				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+	// 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+	// 				return f;
+	// 			}else{
+	// 				//Do nothing
+	// 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << formula);
+	//  				return formula;
+	// 			}
+	// 		}else if(cLHS.begin()->second < 0 && cRel == carl::Relation:: GEQ && cRHS == 0){
+	// 			//-5 x1 >= 0 ===> x1 -> false 
+	// 			FormulaT subformulaA = FormulaT(cLHS.begin()->first);
+	// 			FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
+	// 			FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+	// 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+	// 			return f;
+	// 		}else if(cLHS.begin()->second < 0 && cRel == carl::Relation::GREATER && cRHS == 0){
+	// 			// -5 x1 > 0 ===> false 
+	// 			FormulaT f = FormulaT(carl::FormulaType::FALSE);
+	// 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> FALSE");
+	// 			return f;
+	// 		}else if(cLHS.begin()->second < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && cRHS == 0){
+	// 			//-5 x1 >= 2 or -5 x1 > 2 ===> FALSE
+	// 			FormulaT f = FormulaT(carl::FormulaType::FALSE);
+	// 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> FALSE");
+	// 			return f;
+	// 		}else if(cLHS.begin()->second > 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && cRHS < 0){
+	// 			// 5 x1 <= -2 or 5 x1 < -2 ===> FALSE
+	// 			FormulaT f = FormulaT(carl::FormulaType::FALSE);
+	// 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> FALSE");
+	// 			return f;
+	// 		}else if(cLHS.begin()->second > 0 && cRel == carl::Relation::LEQ && cRHS == 0){
+	// 			//5 x1 <= 0 ===> x1 -> false 
+	// 			FormulaT subformulaA = FormulaT(cLHS.begin()->first);
+	// 			FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
+	// 			FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+	// 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+	// 			return f;
+	// 		}else if(cLHS.begin()->second > 0 && cRel == carl::Relation::LESS && cRHS == 0){
+	// 			//5 x1 < 0 ===> FALSE
+	// 			FormulaT f = FormulaT(carl::FormulaType::FALSE);
+	// 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> FALSE");
+	// 			return f;
+	// 		}else if(cLHS.begin()->second > 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && cRHS > 0){
+	// 			if((cLHS.begin()->second > cRHS) || (cLHS.begin()->second > cRHS && cRel == carl::Relation:: LESS)){
+	// 				//5 x1 <= 2 or 5 x1 < 2 ===> x1 -> false 
+	// 				FormulaT subformulaA = FormulaT(cLHS.begin()->first);
+	// 				FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
+	// 				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+	// 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+	// 				return f;
+	// 			}else if((cLHS.begin()->second < cRHS) ||(cLHS.begin()->second > cRHS && cRel == carl::Relation:: LEQ)){
+	// 				//2 x1 <= 5 or 2 x1 < 5 or 5 x1 <= 5 ===> false -> x1
+	// 				FormulaT subformulaA = FormulaT(carl::FormulaType::FALSE);
+	// 				FormulaT subformulaB = FormulaT(cLHS.begin()->first);
+	// 				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+	// 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+	// 				return f;
+	// 			}else {
+	// 				//Do nothing
+	// 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << formula);
+	//  				return formula;
+	// 			}
+	// 		}else if(cLHS.begin()->second < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && cRHS < 0){
+	// 			if((cLHS.begin()->second < cRHS) || (cLHS.begin()->second == cRHS && cRel == carl::Relation::LEQ)){
+	// 				//-5 x1 <= -2 or -5 x1 < -2 or -5 x1 <= -5 ===> true -> x1
+	// 				FormulaT subformulaA = FormulaT(carl::FormulaType::TRUE);
+	//  				FormulaT subformulaB = FormulaT(cLHS.begin()->first);
+	//  				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+	//  				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+	//  				return f;
+	// 			}else if((cLHS.begin()-> second > cRHS) || (cLHS.begin()->second == cRHS && cRel == carl::Relation::LESS)){
+	// 				//-2 x1 <= -5 or -2 x1 < -5 or -5 x1 < -5 ===> FALSE
+	// 				FormulaT f = FormulaT(carl::FormulaType::FALSE);
+	// 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> FALSE");
+	// 				return f;
+	// 			}else{
+	// 				//Do nothing
+	// 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << formula);
+	//  				return formula;
+	// 			}
+	// 		}else if(cLHS.begin()->second < 0 && cRel == carl::Relation::LEQ && cRHS == 0){
+	// 			//-5 x1 <= 0 ===> false -> x1
+	// 			FormulaT subformulaA = FormulaT(carl::FormulaType::FALSE);
+	// 			FormulaT subformulaB = FormulaT(cLHS.begin()->first);
+	// 			FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+	// 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+	// 			return f;
+	// 		}else if(cLHS.begin()->second < 0 && cRel == carl::Relation::LESS && cRHS == 0){
+	// 			//-5 x1 < 0 ===> true -> x1
+	// 			FormulaT subformulaA = FormulaT(carl::FormulaType::TRUE);
+	//  			FormulaT subformulaB = FormulaT(cLHS.begin()->first);
+	//  			FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+	//  			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+	//  			return f;
+	// 		}else if(cLHS.begin()->second < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && cRHS > 0){
+	// 			//-5 x1 <= 2 or -5 x1 < 2 ===> false -> x1
+	// 			FormulaT subformulaA = FormulaT(carl::FormulaType::FALSE);
+	// 			FormulaT subformulaB = FormulaT(cLHS.begin()->first);
+	// 			FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+	// 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+	// 			return f;
+	// 		}else if(cRel == carl::Relation::EQ && cLHS.begin()->second == cRHS){
+	// 			//a x1 == a ===> true -> x1
+	// 			FormulaT subformulaA = FormulaT(carl::FormulaType::TRUE);
+	//  			FormulaT subformulaB = FormulaT(cLHS.begin()->first);
+	//  			FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+	//  			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+	//  			return f;
+	// 		}
+	// 	}
+	// 	SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << formula);
+	//  	return formula;
+	// }
+
+
+
 	/*
 	/ Converts PBConstraint into a boolean formula.
 	*/
@@ -108,189 +284,63 @@ namespace smtrat
 		int cRHS = c.getRHS();
 
 		if(cLHS.size() == 1){
-			if(cLHS.begin()->second > 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && cRHS < 0){
-				// 5 x1 >= -2 or 5 x1 > -2 ===> false -> x1  
+			if((cLHS.begin()->second > 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && cRHS < 0) /* 5 x1 >= -2 or 5 x1 > -2*/ 
+					|| (cLHS.begin()->second > 0 && cRel == carl::Relation::GEQ && cRHS == 0) /*5 x1 >= 0*/
+						|| (cLHS.begin()->second < 0 && cRel == carl::Relation::LEQ && cRHS == 0) /*-5 x1 <= 0*/
+							|| (cLHS.begin()->second < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && cRHS > 0) /*-5 x1 <= 2 or -5 x1 < 2*/
+								|| ((cLHS.begin()->second < 0 && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ) && cRHS < 0) 
+									&& ((cLHS.begin()->second > cRHS) || (cLHS.begin()->second == cRHS && cRel == carl::Relation::GEQ))) /*-2 x1 >= -5 or -2 x1 > -5 or -5 x1 >= -5*/
+									|| ((cLHS.begin()->second > 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && cRHS > 0) 
+										&& ((cLHS.begin()->second < cRHS) ||(cLHS.begin()->second > cRHS && cRel == carl::Relation:: LEQ)))/*2 x1 <= 5 or 2 x1 < 5 or 5 x1 <= 5*/
+									){
+				//===> false -> x1
 				FormulaT subformulaA = FormulaT(carl::FormulaType::FALSE);
 				FormulaT subformulaB = FormulaT(cLHS.begin()->first);
 				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
 				return f;
-			}else if(cLHS.begin()->second > 0 && cRel == carl::Relation::GEQ && cRHS == 0){
-				//5 x1 >= 0 ===> false -> x1
-				FormulaT subformulaA = FormulaT(carl::FormulaType::FALSE);
-				FormulaT subformulaB = FormulaT(cLHS.begin()->first);
-				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-				return f;
-			}else if(cLHS.begin()->second > 0 && cRel == carl::Relation::GREATER && cRHS == 0){
-				//5 x1 > 0 ===> true -> x1
+			}else if((cLHS.begin()->second > 0 && cRel == carl::Relation::GREATER && cRHS == 0) /*5 x1 > 0*/
+						|| (cLHS.begin()->second < 0 && cRel == carl::Relation::LESS && cRHS == 0) /*-5 x1 < 0*/
+							|| (cRel == carl::Relation::EQ && cLHS.begin()->second == cRHS) /*a x1 == a*/
+								|| ((cLHS.begin()->second > 0 && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ) && cRHS > 0) 
+									&& ((cLHS.begin()->second > cRHS) || (cLHS.begin()->second == cRHS && cRel == carl::Relation::GEQ))) /*5 x1 >= 2 or 5 x1 > 2 or 5 x1 >= 5*/
+									|| ((cLHS.begin()->second < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && cRHS < 0) 
+										&& ((cLHS.begin()->second < cRHS) || (cLHS.begin()->second == cRHS && cRel == carl::Relation::LEQ))) /*-5 x1 <= -2 or -5 x1 < -2 or -5 x1 <= -5*/
+									){
+				//===> true -> x1
 				FormulaT subformulaA = FormulaT(carl::FormulaType::TRUE);
 	 			FormulaT subformulaB = FormulaT(cLHS.begin()->first);
 	 			FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
 	 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
 	 			return f;
-			}else if(cLHS.begin()->second > 0 && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ) && cRHS > 0){
-				if(cLHS.begin()->second > cRHS){
-					//5 x1 >= 2 or 5 x1 > 2 ===> true -> x1
-					FormulaT subformulaA = FormulaT(carl::FormulaType::TRUE);
-	 				FormulaT subformulaB = FormulaT(cLHS.begin()->first);
-	 				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-	 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-	 				return f;
-				}
-				// 2 x1 >= 5 or 2 x1 > 5 ===> false
-				FormulaT f = FormulaT(carl::FormulaType::FALSE);
-				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> FALSE");
-				return f;
-			}else if(cLHS.begin()->second < 0 && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ) && cRHS < 0){
-				if(cLHS.begin()->second < cRHS){
-					//-5 x1 >= -2 or -5 x1 > -2 ===> x1 -> false
-					FormulaT subformulaA = FormulaT(cLHS.begin()->first);
-					FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
-					FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-					SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-					return f;
-				}else if(cLHS.begin()->second > cRHS){
-					//-2 x1 >= -5 or -2 x1 > -5 ===> true -> x1
-					FormulaT subformulaA = FormulaT(carl::FormulaType::TRUE);
-	 				FormulaT subformulaB = FormulaT(cLHS.begin()->first);
-	 				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-	 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-	 				return f;
-				}else if(cRel == carl::Relation::GEQ){
-					//-5 x1 >= -5 ===> false -> x1
-					FormulaT subformulaA = FormulaT(carl::FormulaType::FALSE);
-					FormulaT subformulaB = FormulaT(cLHS.begin()->first);
-					FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-					SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-					return f;
-				}else{
-					//-5 x1 > -5 ===> x1 -> false 
-					FormulaT subformulaA = FormulaT(cLHS.begin()->first);
-					FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
-					FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-					SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-					return f;
-				}
-			}else if(cLHS.begin()->second < 0 && cRel == carl::Relation:: GEQ && cRHS == 0){
-				//-5 x1 >= 0 ===> x1 -> false 
+			}else if((cLHS.begin()->second < 0 && cRel == carl::Relation:: GEQ && cRHS == 0) /*-5 x1 >= 0 */
+						|| (cLHS.begin()->second > 0 && cRel == carl::Relation::LEQ && cRHS == 0) /*5 x1 <= 0*/
+							|| ((cLHS.begin()->second < 0 && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ) && cRHS < 0) 
+								&& ((cLHS.begin()->second < cRHS) || (cLHS.begin()->second == cRHS && cRel == carl::Relation::GREATER))) /*-5 x1 >= -2 or -5 x1 > -2 or -5 x1 > -5*/
+								|| ((cLHS.begin()->second > 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && cRHS > 0) 
+									&& ((cLHS.begin()->second > cRHS) || (cLHS.begin()->second > cRHS && cRel == carl::Relation:: LESS))) /*5 x1 <= 2 or 5 x1 < 2*/
+								){
+				//===> x1 -> false 
 				FormulaT subformulaA = FormulaT(cLHS.begin()->first);
 				FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
 				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
 				return f;
-			}else if(cLHS.begin()->second < 0 && cRel == carl::Relation::GREATER && cRHS == 0){
-				// -5 x1 > 0 ===> false 
+			}else if((cLHS.begin()->second < 0 && cRel == carl::Relation::GREATER && cRHS == 0) /* -5 x1 > 0*/
+						|| (cLHS.begin()->second < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && cRHS == 0)/*-5 x1 >= 2 or -5 x1 > 2*/
+							|| (cLHS.begin()->second > 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && cRHS < 0) /*5 x1 <= -2 or 5 x1 < -2*/
+								|| (cLHS.begin()->second > 0 && cRel == carl::Relation::LESS && cRHS == 0) /*5 x1 < 0*/
+									|| ((cLHS.begin()->second > 0 && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ) && cRHS > 0) 
+										&& ((cLHS.begin()->second < cRHS) ||(cLHS.begin()->second == cRHS && cRel == carl::Relation::GREATER)))	/*2 x1 >= 5 or 2 x1 > 5 or 5 x1 > 5*/
+										|| ((cLHS.begin()->second < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && cRHS < 0) 
+											&& ((cLHS.begin()-> second > cRHS) || (cLHS.begin()->second == cRHS && cRel == carl::Relation::LESS))) /*-2 x1 <= -5 or -2 x1 < -5 or -5 x1 < -5*/
+										){
+				//===> false 
 				FormulaT f = FormulaT(carl::FormulaType::FALSE);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> FALSE");
 				return f;
-			}else if(cLHS.begin()->second < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && cRHS == 0){
-				//-5 x1 >= 2 or -5 x1 > 2 ===> FALSE
-				FormulaT f = FormulaT(carl::FormulaType::FALSE);
-				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> FALSE");
-				return f;
-			}else if(cLHS.begin()->second > 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && cRHS < 0){
-				// 5 x1 <= -2 or 5 x1 < -2 ===> FALSE
-				FormulaT f = FormulaT(carl::FormulaType::FALSE);
-				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> FALSE");
-				return f;
-			}else if(cLHS.begin()->second > 0 && cRel == carl::Relation::LEQ && cRHS == 0){
-				//5 x1 <= 0 ===> x1 -> false 
-				FormulaT subformulaA = FormulaT(cLHS.begin()->first);
-				FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
-				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-				return f;
-			}else if(cLHS.begin()->second > 0 && cRel == carl::Relation::LESS && cRHS == 0){
-				//5 x1 < 0 ===> FALSE
-				FormulaT f = FormulaT(carl::FormulaType::FALSE);
-				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> FALSE");
-				return f;
-			}else if(cLHS.begin()->second > 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && cRHS > 0){
-				if(cLHS.begin()->second > cRHS){
-					//5 x1 <= 2 or 5 x1 < 2 ===> x1 -> false 
-					FormulaT subformulaA = FormulaT(cLHS.begin()->first);
-					FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
-					FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-					SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-					return f;
-				}else if(cLHS.begin()->second < cRHS){
-					//2 x1 <= 5 or 2 x1 < 5 ===> false -> x1
-					FormulaT subformulaA = FormulaT(carl::FormulaType::FALSE);
-					FormulaT subformulaB = FormulaT(cLHS.begin()->first);
-					FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-					SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-					return f;
-				}else if(cRel == carl::Relation:: LEQ){
-					//5 x1 <= 5 ===> false -> x1
-					FormulaT subformulaA = FormulaT(carl::FormulaType::FALSE);
-					FormulaT subformulaB = FormulaT(cLHS.begin()->first);
-					FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-					SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-					return f;
-				}else {
-					//5 x1 < 5 ==> x1 -> false
-					FormulaT subformulaA = FormulaT(cLHS.begin()->first);
-					FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
-					FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-					SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-					return f;
-				}
-			}else if(cLHS.begin()->second < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && cRHS < 0){
-				if(cLHS.begin()->second < cRHS){
-					//-5 x1 <= -2 or -5 x1 < -2 ===> true -> x1
-					FormulaT subformulaA = FormulaT(carl::FormulaType::TRUE);
-	 				FormulaT subformulaB = FormulaT(cLHS.begin()->first);
-	 				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-	 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-	 				return f;
-				}else if(cLHS.begin()-> second > cRHS){
-					//-2 x1 <= -5 or -2 x1 < -5 ===> FALSE
-					FormulaT f = FormulaT(carl::FormulaType::FALSE);
-					SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> FALSE");
-					return f;
-				}else if(cRel == carl::Relation::LEQ){
-					//-5 x1 <= -5 ===> true -> x1
-					FormulaT subformulaA = FormulaT(carl::FormulaType::TRUE);
-	 				FormulaT subformulaB = FormulaT(cLHS.begin()->first);
-	 				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-	 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-	 				return f;
-				}else{
-					//-5 x1 < -5 ===> FALSE
-					FormulaT f = FormulaT(carl::FormulaType::FALSE);
-					SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> FALSE");
-					return f;
-				}
-			}else if(cLHS.begin()->second < 0 && cRel == carl::Relation::LEQ && cRHS == 0){
-				//-5 x1 <= 0 ===> false -> x1
-				FormulaT subformulaA = FormulaT(carl::FormulaType::FALSE);
-				FormulaT subformulaB = FormulaT(cLHS.begin()->first);
-				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-				return f;
-			}else if(cLHS.begin()->second < 0 && cRel == carl::Relation::LESS && cRHS == 0){
-				//-5 x1 < 0 ===> true -> x1
-				FormulaT subformulaA = FormulaT(carl::FormulaType::TRUE);
-	 			FormulaT subformulaB = FormulaT(cLHS.begin()->first);
-	 			FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-	 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-	 			return f;
-			}else if(cLHS.begin()->second < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && cRHS > 0){
-				//-5 x1 <= 2 or -5 x1 < 2 ===> false -> x1
-				FormulaT subformulaA = FormulaT(carl::FormulaType::FALSE);
-				FormulaT subformulaB = FormulaT(cLHS.begin()->first);
-				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-				return f;
-			}else if(cRel == carl::Relation::EQ && cLHS.begin()->second == cRHS){
-				//a x1 == a ===> true -> x1
-				FormulaT subformulaA = FormulaT(carl::FormulaType::TRUE);
-	 			FormulaT subformulaB = FormulaT(cLHS.begin()->first);
-	 			FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-	 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-	 			return f;
 			}
+				
 		}
 		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << formula);
 	 	return formula;
