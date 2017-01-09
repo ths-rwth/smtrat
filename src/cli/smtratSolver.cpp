@@ -207,7 +207,7 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 	Executor* e = new Executor(solver);
 	if (settingsManager.exportDIMACS()) e->exportDIMACS = true;
 	{
-		if (!smtrat::parseSMT2File(e, true, infile)) {
+		if (!smtrat::parseSMT2File(e, false, infile)) {
             std::cerr << "Parse error" << std::endl;
             delete e;
             exit(SMTRAT_EXIT_PARSERFAILURE);
@@ -318,30 +318,30 @@ int main( int argc, char* argv[] )
 
     // Parse command line.
     pathToInputFile = settingsManager.parseCommandline( argc, argv );
-    
+
     #ifdef SMTRAT_DEVOPTION_Statistics
     smtrat::CollectStatistics::settings->setPrintStats( settingsManager.printStatistics() );
     #endif
 
     // Construct solver.
     CMakeStrategySolver* solver = new CMakeStrategySolver();
-    
+
     if( settingsManager.printStrategy() )
     {
         solver->printStrategyGraph();
         delete solver;
         return (int)SMTRAT_EXIT_SUCCESS;
     }
-	    
+
     #ifdef SMTRAT_DEVOPTION_Statistics
     //smtrat::CollectStatistics::settings->rOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
     #endif
-    
+
     // Introduce the settingsObjects from the modules to the manager.
     //settingsManager.addSettingsObject( settingsObjects );
     //settingsObjects.clear();
-	
-	
+
+
 	unsigned exitCode = 0;
 	if (settingsManager.readDIMACS()) {
 		carl::DIMACSImporter<smtrat::Poly> dimacs(pathToInputFile);
@@ -384,18 +384,18 @@ int main( int argc, char* argv[] )
     {
         printTimings( solver );
     }
-    
+
     #ifdef SMTRAT_DEVOPTION_Statistics
     smtrat::CollectStatistics::collect();
     smtrat::CollectStatistics::print( true );
     #endif
-        
+
     #ifdef SMTRAT_DEVOPTION_Statistics
     // Export statistics.
     smtrat::CollectStatistics::exportXML();
     #endif
-    
-    
+
+
     // Delete the solver and the formula.
     delete solver;
 
