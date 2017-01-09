@@ -375,8 +375,10 @@ int main( int argc, char* argv[] )
 		}
 	} else if (settingsManager.readOPB()) {
 		carl::OPBImporter<smtrat::Poly> opb(pathToInputFile);
-		std::cout << "Parsing " << pathToInputFile << " using OPB" << std::endl;
-		solver->add(opb.parse());
+		SMTRAT_LOG_INFO("smtrat", "Parsing " << pathToInputFile << " using OPB");
+		auto input = opb.parse();
+		SMTRAT_LOG_INFO("smtrat", "Parsed " << input);
+		solver->add(input);
 		switch (solver->check()) {
 			case smtrat::Answer::SAT: {
 				std::cout << "sat" << std::endl;
