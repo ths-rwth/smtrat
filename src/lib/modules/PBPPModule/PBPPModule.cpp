@@ -30,6 +30,7 @@ namespace smtrat
 	bool PBPPModule<Settings>::informCore( const FormulaT& _constraint )
 	{
 		// Your code.
+		std::cout << "INFORMCORE" << std::endl;
 		return true; // This should be adapted according to your implementation.
 	}
 	
@@ -40,23 +41,25 @@ namespace smtrat
 	template<class Settings>
 	bool PBPPModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 	{
-		// auto receivedFormula = _subformula;	
-		// while(receivedFormula != rReceivedFormula().end()){
+		std::cout << "ADDCORE" << std::endl;
+		std::cout << "Formel: ";
+		std::cout << _subformula->formula() << std::endl;
 		FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeFunction);
 		addSubformulaToPassedFormula(formula, _subformula->formula());
-		// }
 		return true;
 	}
 	
 	template<class Settings>
 	void PBPPModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
 	{
+		std::cout << "REMOVECORE" << std::endl;		
 		// Your code.
 	}
 	
 	template<class Settings>
 	void PBPPModule<Settings>::updateModel() const
 	{
+		std::cout << "UPDATEMODEL" << std::endl;
 		mModel.clear();
 		if( solverState() == Answer::SAT )
 		{
@@ -67,6 +70,7 @@ namespace smtrat
 	template<class Settings>
 	Answer PBPPModule<Settings>::checkCore()
 	{
+		std::cout << "CHECKCORE" << std::endl;
 		Answer ans = runBackends();
 		if (ans == UNSAT) {
 			generateTrivialInfeasibleSubset();
@@ -74,27 +78,21 @@ namespace smtrat
 		return ans;
 	}
 
-	// template<typename Settings>
-	// bool PBPPModule<Settings>::isEasyBooleanConstraint(const FormulaT& formula){
- //        carl::PBConstraint c = formula.pbConstraint();
- //        if(c.getLHS().size() < 4){
- //            return true;
- //        }
- //        return false;
-//	}
-
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaType(const FormulaT& formula){
-		if(formula.getType() != carl::FormulaType::PBCONSTRAINT) return formula;
+		std::cout << "CHECKFORMULATYPE: ";
+		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
+			std::cout << formula;
+			std::cout << " - Kein pbConstraint" << std::endl;
+			return formula;
+		} 
 		carl::PBConstraint c = formula.pbConstraint();
 		if(c.getLHS().size() < 4){
+							std::cout << "boolean" << std::endl;
 			return forwardAsBoolean(formula);
 		}
+						std::cout << "arithmetic" << std::endl;
 		return forwardAsArithmetic(formula);
-		// if(isEasyBooleanConstraint(formula)){
-		// 	return forwardAsBoolean(formula);
-		// }
-		// return forwardAsArithmetic(formula);
 	}
 
 
@@ -103,6 +101,7 @@ namespace smtrat
 	*/
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::forwardAsBoolean(const FormulaT& formula){
+		std::cout << "FORWARDASBOOLEAN" << std::endl;
 		carl::PBConstraint c = formula.pbConstraint();
 		std::vector<std::pair<carl::Variable, int>> cLHS = c.getLHS();
 		carl::Relation cRel = c.getRelation();
@@ -118,29 +117,31 @@ namespace smtrat
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " is false.");
 			return f;
 		}else if(cLHS.size() == 1 && cRel == carl::Relation::GEQ){
-			if(cLHS.begin()->second == cRHS && cRHS < 0){
-				// -k x1 >= -k  => false -> x1
-				FormulaT subformulaA = FormulaT(carl::FormulaType::FALSE);
-				FormulaT subformulaB = FormulaT(cLHS.begin()->first);
-				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-				return f;
-			}else if(cLHS.begin()->second < 0 && cRHS == 0){
-				// - x1 >= 0 => x1 -> false
-				FormulaT subformulaA = FormulaT(cLHS.begin()->first);
-				FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
-				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-				return f;
-			}else if(cLHS.begin()->second == cRHS && cRHS > 0){
-				// k x1 >= k => true -> x1
-				FormulaT subformulaA = FormulaT(carl::FormulaType::TRUE);
-				FormulaT subformulaB = FormulaT(cLHS.begin()->first);
-				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-				return f;
-			}
+				if(cLHS.begin()->second == cRHS && cRHS < 0){
+					// -k x1 >= -k  => false -> x1
+					FormulaT subformulaA = FormulaT(carl::FormulaType::FALSE);
+					FormulaT subformulaB = FormulaT(cLHS.begin()->first);
+					FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+					SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+					return f;
+				}else if(cLHS.begin()->second < 0 && cRHS == 0){
+					// -k x1 >= 0 => x1 -> false
+					FormulaT subformulaA = FormulaT(cLHS.begin()->first);
+					FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
+					FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+					SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+					return f;
+				}else if(cLHS.begin()->second == cRHS && cRHS > 0){
+					// k x1 >= k => true -> x1
+					FormulaT subformulaA = FormulaT(carl::FormulaType::TRUE);
+					FormulaT subformulaB = FormulaT(cLHS.begin()->first);
+					FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+					SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
+					return f;
+				}
 		}
+			
+	
 		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << formula);
 		return formula;
 	}
@@ -150,15 +151,13 @@ namespace smtrat
 	*/
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::forwardAsArithmetic(const FormulaT& formula){
+		std::cout << "FORWARDASARITHMETIC" << std::endl;
 		carl::Variables variables;
 		formula.allVars(variables);
 		for(auto it = variables.begin(); it != variables.end(); it++){
 			auto finderIt = mVariablesCache.find(*it);
 			if(finderIt == mVariablesCache.end()){
-				auto varCacheEnd = mVariablesCache.rbegin();
-				std::string varName = "y" + std::to_string(mVariableNameCounter);
-				mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(*it, newVariable(varName, carl::VariableType::VT_INT)));
-				mVariableNameCounter++;
+				mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(*it, carl::freshVariable(carl::VariableType::VT_INT)));
 			}
 		}
 		Poly lhs;
@@ -175,6 +174,7 @@ namespace smtrat
 		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
         return f;
 	}
+
 }
 
 #include "Instantiation.h"
