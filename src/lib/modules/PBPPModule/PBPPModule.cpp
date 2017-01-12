@@ -42,7 +42,6 @@ namespace smtrat
 	bool PBPPModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 	{
 		std::cout << "ADDCORE" << std::endl;
-		std::cout << "Formel: ";
 		std::cout << _subformula->formula() << std::endl;
 		FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeFunction);
 		addSubformulaToPassedFormula(formula, _subformula->formula());
@@ -405,7 +404,6 @@ namespace smtrat
 	 	return formula;
 	}
 
-
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::generateVarChain(std::vector<carl::Variable> vars, carl::FormulaType type){
 		FormulaT first = FormulaT(*vars.begin());
@@ -445,8 +443,32 @@ namespace smtrat
 		}
 		lhs = lhs - Rational(c.getRHS());
 		FormulaT f = FormulaT(lhs, c.getRelation());
-		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-        return f;
+		//Adding auxiliary constraint to ensure variables are assigned to 1 or 0.
+		
+		std::vector<carl::Variable> intVars;
+		for(auto it = mVariablesCache.begin(); it != mVariablesCache.end(); it++){
+			intVars.push_back(it->second);
+		}
+		FormulaT subformulaA = createAuxiliaryConstraint(intVars);
+		FormulaT finalFormula = FormulaT(carl::FormulaType::AND, f, subformulaA);
+
+		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << finalFormula);
+        return finalFormula;
+	}
+
+	template<typename Settings>
+	FormulaT PBPPModule<Settings>::createAuxiliaryConstraint(std::vector<carl::Variable> vars){
+		Poly pf(*vars.begin());
+		FormulaT subformulaA = FormulaT(pf, carl::Relation::EQ);
+		FormulaT subformulaB = FormulaT(pf - Rational(1), carl::Relation::EQ);
+		FormulaT first = FormulaT(carl::FormulaType::XOR, subformulaA, subformulaB);
+		if(vars.size() == 1){
+			return first;
+		}else{
+			vars.erase(vars.begin());
+			FormulaT f = FormulaT(carl::FormulaType::AND, first, createAuxiliaryConstraint(vars));
+			return f;
+		}
 	}
 
 }

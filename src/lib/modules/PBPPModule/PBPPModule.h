@@ -22,7 +22,7 @@ namespace smtrat
 			PBPPStatistics mStatistics;
 #endif
 			// Members.
-			std::map<carl::Variable, carl::Variable> mVariablesCache;
+			std::map<carl::Variable, carl::Variable> mVariablesCache; //bool, int
 			carl::FormulaVisitor<FormulaT> mVisitor;
 			
 
@@ -93,6 +93,7 @@ namespace smtrat
 			FormulaT checkFormulaType(const FormulaT& formula);
 			std::function<FormulaT(FormulaT)> checkFormulaTypeFunction;
 			FormulaT generateVarChain(std::vector<carl::Variable> vars, carl::FormulaType type);
+			FormulaT createAuxiliaryConstraint(std::vector<carl::Variable> vars);
 
 	};
 }
