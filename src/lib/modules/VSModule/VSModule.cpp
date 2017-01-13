@@ -739,7 +739,7 @@ namespace smtrat
                         if( substitutedTerm.isRational() )
                             ass = substitutedTerm.asRational();
                         if( substitutedTerm.isPolynomial() )
-                            ass = ModelSubstitution::create<ModelPolynomialSubstitution>( substitutedTerm.asPolynomial() );
+                            ass = carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>( substitutedTerm.asPolynomial() );
                         else
                             ass = substitutedTerm;
                     }
@@ -754,7 +754,7 @@ namespace smtrat
             // real domain, we leave at as a parameter, and, if it has the integer domain we assign 0 to it.
             for( auto var = allVarsInRoot.begin(); var != allVarsInRoot.end(); ++var )
             {
-                mModel.insert(std::make_pair(*var, ModelSubstitution::create<ModelPolynomialSubstitution>( ZERO_POLYNOMIAL )));
+                mModel.insert(std::make_pair(*var, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>( ZERO_POLYNOMIAL )));
             }
         }
     }

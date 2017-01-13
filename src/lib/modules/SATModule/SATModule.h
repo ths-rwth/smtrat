@@ -205,6 +205,9 @@ namespace smtrat
                 {
                     return cref != w.cref;
                 }
+				friend std::ostream& operator<<(std::ostream& os, const Watcher& w) {
+					return os << "watch(" << w.cref << ", " << w.blocker << ")";
+				};
             };
 
             /// [Minisat related code]
@@ -1511,7 +1514,11 @@ namespace smtrat
             
             bool supportedConstraintType( const FormulaT& _formula ) const
             {
-                return _formula.getType() == carl::FormulaType::CONSTRAINT || _formula.getType() == carl::FormulaType::UEQ || _formula.getType() == carl::FormulaType::BITVECTOR;
+                return
+					_formula.getType() == carl::FormulaType::CONSTRAINT ||
+					_formula.getType() == carl::FormulaType::VARCOMPARE ||
+					_formula.getType() == carl::FormulaType::UEQ ||
+					_formula.getType() == carl::FormulaType::BITVECTOR;
             }
             
             /**

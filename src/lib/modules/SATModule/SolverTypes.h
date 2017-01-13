@@ -69,6 +69,12 @@ inline  int  toInt     (Var v)              { return v; }
 inline  int  toInt     (Lit p)              { return p.x; }
 inline  Lit  toLit     (int i)              { Lit p; p.x = i; return p; }
 
+
+inline std::ostream& operator<<(std::ostream& os, const Lit& l) {
+	if (Minisat::sign(l)) os << "-";
+	return os << Minisat::var(l);
+};
+
 //const Lit lit_Undef = mkLit(var_Undef, false);  // }- Useful special constants.
 //const Lit lit_Error = mkLit(var_Undef, true );  // }
 
@@ -203,6 +209,7 @@ public:
     operator const Lit* (void) const         { return (Lit*)data; }
 
     float&       activity    ()              { assert(header.has_extra); return data[header.size].act; }
+	float        activity    () const        { assert(header.has_extra); return data[header.size].act; }
     uint32_t     abstraction () const        { assert(header.has_extra); return data[header.size].abs; }
 
     Lit          subsumes    (const Clause& other) const;

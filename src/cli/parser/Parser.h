@@ -159,6 +159,7 @@ public:
 	}
 	void reset() {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(reset)");
+		state.reset();
 		callHandler(&InstructionHandler::reset);
 	}
 	void setInfo(const Attribute& attribute) {

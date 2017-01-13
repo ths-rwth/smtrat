@@ -69,6 +69,7 @@ public:
 			mModel.emplace(v, n);
 			mAssignments.emplace(v, c);
 		} else {
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Is duplicate " << c);
 			mDuplicateAssignments.emplace(c, std::make_pair(v, n));
 		}
 	}
@@ -90,7 +91,7 @@ public:
 			auto ait = mAssignments.find(v);
 			assert(ait != mAssignments.end());
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing assignment " << ait->second);
-			//mCAD.removeConstraint(ait->second);
+			mCAD.removeConstraint(ait->second);
 			mAssignments.erase(ait);
 		}
 	}
@@ -98,11 +99,25 @@ public:
 	 * Actually commits new constraints and simplications to CAD.
 	 */
 	bool commit() {
+		SMTRAT_LOG_DEBUG("smtrat.cad", "Commit ");
 		for (auto it = mDuplicateAssignments.begin(); it != mDuplicateAssignments.end();) {
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Looking at duplicate " << it->first);
 			if (mAssignments.find(it->second.first) == mAssignments.end()) {
+				SMTRAT_LOG_DEBUG("smtrat.cad", "Duplicate is now first one, adding assignment");
 				addAssignment(it->second.first, it->second.second, it->first);
 				it = mDuplicateAssignments.erase(it);
 			} else {
+				SMTRAT_LOG_DEBUG("smtrat.cad", "Model: " << mModel);
+				auto res = carl::model::evaluate(it->first, mModel);
+				SMTRAT_LOG_DEBUG("smtrat.cad", "Evaluated to " << res);
+				assert(res.isBool());
+				if (!res.asBool()) {
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Duplicate constraint is a conflict: " << it->first);
+					mConflict = it->first;
+					return false;
+				} else {
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Evaluated to true:" << res);
+				}
 				it++;
 			}
 		}

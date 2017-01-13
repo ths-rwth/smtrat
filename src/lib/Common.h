@@ -96,6 +96,8 @@ namespace smtrat
 	
 	typedef carl::MultivariateRoot<Poly> MultivariateRootT;
 	
+	typedef carl::VariableAssignment<Poly> VariableAssignmentT;
+	
 	typedef carl::VariableComparison<Poly> VariableComparisonT;
 
     typedef carl::Formula<Poly> FormulaT;
@@ -189,31 +191,6 @@ namespace smtrat
     {
         carl::SortManager::getInstance().declare( _name, _arity );
         return carl::SortManager::getInstance().getSort( _name );
-    }
-
-    inline carl::UninterpretedFunction newUF( const std::string& _name, std::vector<carl::Sort>&& _dom, const carl::Sort& _codom )
-    {
-        return carl::UFManager::getInstance().newUninterpretedFunction( _name, std::move(_dom), _codom );
-    }
-
-    inline carl::UninterpretedFunction newUF( const std::string& _name, const std::vector<carl::Sort>& _dom, const carl::Sort& _codom )
-    {
-        return newUF( _name, std::vector<carl::Sort>( _dom ), _codom );
-    }
-
-    inline carl::UninterpretedFunction newUF( const std::string& _name, const carl::Sort& _dom, const carl::Sort& _codom )
-    {
-        std::vector<carl::Sort> dom;
-        dom.push_back( _dom );
-        return smtrat::newUF( _name, std::move( dom ), _codom );
-    }
-
-    inline carl::UninterpretedFunction newUF( const std::string& _name, const carl::Sort& _domA, const carl::Sort& _domB, const carl::Sort& _codom )
-    {
-        std::vector<carl::Sort> dom;
-        dom.push_back( _domA );
-        dom.push_back( _domB );
-        return smtrat::newUF(_name, std::move( dom ), _codom);
     }
 
     inline carl::UFInstance newUFInstance( const carl::UninterpretedFunction& _function, std::vector<carl::UVariable>&& _args )

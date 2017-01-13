@@ -56,7 +56,10 @@ matrix:
       env: USE=clang++-3.6 TASK=doxygen
     - os: osx
       osx_image: xcode7.3
-      env: USE=clang++-3.5
+      env: USE=clang++-7.4
+    - os: osx
+      osx_image: xcode8.2
+      env: USE=clang++-8.0
 
 before_install:
   - cd .travis/ && source setup_travis.sh && cd ../

@@ -1,4 +1,4 @@
-/* 
+/*
  * @file   ParserState.h
  * @author Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
  */
@@ -11,9 +11,9 @@
 
 namespace smtrat {
 namespace parser {
-	
+
 	class InstructionHandler;
-	
+
 	struct ParserState {
 
 		struct ExpressionScope {
@@ -28,7 +28,7 @@ namespace parser {
 				state.bindings = std::move(this->bindings);
 			}
 		};
-		
+
 		struct ScriptScope {
 		private:
 			std::map<std::string, types::TermType> constants;
@@ -56,7 +56,7 @@ namespace parser {
 				state.defined_user_functions = std::move(this->defined_user_functions);
 			}
 		};
-		
+
 		std::set<types::VariableType> auxiliary_variables;
 		std::map<std::string, types::TermType> bindings;
 		std::map<std::string, types::TermType> constants;
@@ -67,12 +67,12 @@ namespace parser {
 		std::map<std::string, const UserFunctionInstantiator*> defined_user_functions;
 		FormulasT global_formulas;
 		std::vector<smtrat::ModelVariable> artificialVariables;
-		
+
 		InstructionHandler* handler;
-		
+
 		std::stack<ExpressionScope> expressionScopes;
 		std::stack<ScriptScope> scriptScopes;
-		
+
 		ParserState(InstructionHandler* ih): handler(ih) {
 		}
 		~ParserState() {
@@ -84,7 +84,7 @@ namespace parser {
 			defined_indexed_functions.clear();
 			defined_user_functions.clear();
 		}
-		
+
 		void pushExpressionScope() {
 			expressionScopes.emplace(*this);
 		}
@@ -102,7 +102,20 @@ namespace parser {
 			scriptScopes.pop();
 		}
 
-		
+		void reset() {
+			auxiliary_variables.clear();
+			bindings.clear();
+			constants.clear();
+			variables.clear();
+			declared_functions.clear();
+			defined_user_functions.clear();
+			global_formulas.clear();
+			artificialVariables.clear();
+			while (!expressionScopes.empty()) expressionScopes.pop();
+			while (!scriptScopes.empty()) scriptScopes.pop();
+		}
+
+
 		void errorMessage(const std::string& msg) {
 			std::cerr << "Parser error: " << msg << std::endl;
 		}
@@ -120,7 +133,7 @@ namespace parser {
 				if (output) SMTRAT_LOG_ERROR("smtrat.parser", out.str());
 				return false;
 		}
-		
+
 		template<typename Res, typename T>
 		bool resolveSymbol(const std::string& name, const std::map<std::string, T>& map, Res& result) const {
 			auto it = map.find(name);
@@ -128,14 +141,14 @@ namespace parser {
 			result = it->second;
 			return true;
 		}
-		
+
 		bool resolveSymbol(const std::string& name, types::TermType& r) const {
 			if (resolveSymbol(name, variables, r)) return true;
 			if (resolveSymbol(name, bindings, r)) return true;
 			if (resolveSymbol(name, constants, r)) return true;
 			return false;
 		}
-		
+
 		void registerFunction(const std::string& name, const FunctionInstantiator* fi) {
 			if (!isSymbolFree(name)) {
 				SMTRAT_LOG_ERROR("smtrat.parser", "Failed to register function \"" << name << "\", name is already used.");

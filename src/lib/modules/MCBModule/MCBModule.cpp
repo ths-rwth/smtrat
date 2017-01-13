@@ -183,7 +183,7 @@ namespace smtrat
 					assignment.emplace(c.second.first, c.first);
 				}
 				SMTRAT_LOG_DEBUG("smtrat.mcb", "Adding " << var << " = " << assignment);
-				mAssignments.emplace(var, ModelSubstitution::create<MCBModelSubstitution>(assignment));
+				mAssignments.emplace(var, carl::createSubstitution<Rational,Poly,MCBModelSubstitution>(assignment));
 			}
 			for (const auto& c1: mChoices.at(v)) {
 				for (const auto& c2: mChoices.at(v)) {
