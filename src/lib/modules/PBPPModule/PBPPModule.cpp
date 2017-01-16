@@ -442,19 +442,25 @@ namespace smtrat
 			lhs =  lhs + Rational(it->second) * pol;
 		}
 		lhs = lhs - Rational(c.getRHS());
-		FormulaT f = FormulaT(lhs, c.getRelation());
+		FormulaT subformulaA = FormulaT(lhs, c.getRelation());
+
 		//Adding auxiliary constraint to ensure variables are assigned to 1 or 0.
-		
 		std::vector<carl::Variable> intVars;
 		for(auto it = mVariablesCache.begin(); it != mVariablesCache.end(); it++){
 			intVars.push_back(it->second);
 		}
-		FormulaT subformulaA = createAuxiliaryConstraint(intVars);
-		FormulaT finalFormula = FormulaT(carl::FormulaType::AND, f, subformulaA);
+		FormulaT subformulaB = createAuxiliaryConstraint(intVars);
+		FormulaT subformulaC = FormulaT(carl::FormulaType::AND, subformulaA, subformulaB);
 
+		//Adding auxiliary constraint to interconnect the bool and int variables
+		FormulaT subformulaD = interconnectVariables(mVariablesCache);
+
+		FormulaT finalFormula = FormulaT(carl::FormulaType::AND, subformulaC, subformulaD);
 		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << finalFormula);
         return finalFormula;
 	}
+
+
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::createAuxiliaryConstraint(std::vector<carl::Variable> vars){
@@ -467,6 +473,25 @@ namespace smtrat
 		}else{
 			vars.erase(vars.begin());
 			FormulaT f = FormulaT(carl::FormulaType::AND, first, createAuxiliaryConstraint(vars));
+			return f;
+		}
+	}
+
+	template<typename Settings>
+	FormulaT PBPPModule<Settings>::interconnectVariables(std::map<carl::Variable, carl::Variable> vars){
+		FormulaT boolVar = FormulaT(vars.begin()->first);
+		carl::Variable intVar = vars.begin()->second;
+		Poly pf(intVar);
+		FormulaT subformulaA = FormulaT(pf - Rational(1), carl::Relation::EQ);
+		FormulaT subformulaB = FormulaT(carl::FormulaType::IMPLIES, boolVar, subformulaA);
+		FormulaT subformulaC = FormulaT(pf, carl::Relation::EQ);
+		FormulaT subformulaD = FormulaT(carl::FormulaType::IMPLIES, subformulaC, boolVar);
+		FormulaT first = FormulaT(carl::FormulaType::XOR, subformulaB, subformulaD);
+		if(vars.size() == 1){
+			return first;
+		}else{
+			vars.erase(vars.begin());
+			FormulaT f = FormulaT(carl::FormulaType::AND, first, interconnectVariables(vars));
 			return f;
 		}
 	}

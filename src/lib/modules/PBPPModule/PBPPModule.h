@@ -94,6 +94,7 @@ namespace smtrat
 			std::function<FormulaT(FormulaT)> checkFormulaTypeFunction;
 			FormulaT generateVarChain(std::vector<carl::Variable> vars, carl::FormulaType type);
 			FormulaT createAuxiliaryConstraint(std::vector<carl::Variable> vars);
+			FormulaT interconnectVariables(std::map<carl::Variable, carl::Variable> vars);
 
 	};
 }
