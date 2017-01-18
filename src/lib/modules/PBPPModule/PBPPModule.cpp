@@ -110,7 +110,9 @@ namespace smtrat
 								&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
 									&& (negative || positive)
 			){
-			return forwardAsBoolean(formula);
+			auto res = forwardAsBoolean(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
 		}
 		return forwardAsArithmetic(formula);
 	}
@@ -152,11 +154,7 @@ namespace smtrat
 										&& ((cLHS.begin()->second < cRHS) ||(cLHS.begin()->second == cRHS && cRel == carl::Relation:: LEQ))) /*2 x1 <= 5 or 2 x1 < 5 or 5 x1 <= 5*/
 									){
 				//===> false -> x1
-				FormulaT subformulaA = FormulaT(carl::FormulaType::FALSE);
-				FormulaT subformulaB = FormulaT(cLHS.begin()->first);
-				FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-				return f;
+				return FormulaT(carl::FormulaType::TRUE);
 			}else if((cLHS.begin()->second > 0 && cRel == carl::Relation::GREATER && cRHS == 0) /*5 x1 > 0*/
 						|| (cLHS.begin()->second < 0 && cRel == carl::Relation::LESS && cRHS == 0) /*-5 x1 < 0*/
 							|| (cRel == carl::Relation::EQ && cLHS.begin()->second == cRHS) /*a x1 == a*/
@@ -166,11 +164,7 @@ namespace smtrat
 										&& ((cLHS.begin()->second < cRHS) || (cLHS.begin()->second == cRHS && cRel == carl::Relation::LEQ))) /*-5 x1 <= -2 or -5 x1 < -2 or -5 x1 <= -5*/
 									){
 				//===> true -> x1
-				FormulaT subformulaA = FormulaT(carl::FormulaType::TRUE);
-	 			FormulaT subformulaB = FormulaT(cLHS.begin()->first);
-	 			FormulaT f = FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-	 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << f);
-	 			return f;
+	 			return FormulaT(cLHS.begin()->first);
 			}else if((cLHS.begin()->second < 0 && cRel == carl::Relation:: GEQ && cRHS == 0) /*-5 x1 >= 0 */
 						|| (cLHS.begin()->second > 0 && cRel == carl::Relation::LEQ && cRHS == 0) /*5 x1 <= 0*/
 							|| ((cLHS.begin()->second < 0 && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ) && cRHS < 0) 
