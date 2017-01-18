@@ -473,14 +473,19 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::interconnectVariables(std::map<carl::Variable, carl::Variable> vars){
+		// FormulasT newSubformulas;
+		// for (...) {
+		// 	newSubformulas.push_back(newFormula);
+		// }
+		// result = FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
 		FormulaT boolVar = FormulaT(vars.begin()->first);
 		carl::Variable intVar = vars.begin()->second;
 		Poly pf(intVar);
 		FormulaT subformulaA = FormulaT(pf - Rational(1), carl::Relation::EQ);
 		FormulaT subformulaB = FormulaT(carl::FormulaType::IMPLIES, boolVar, subformulaA);
 		FormulaT subformulaC = FormulaT(pf, carl::Relation::EQ);
-		FormulaT subformulaD = FormulaT(carl::FormulaType::IMPLIES, subformulaC, boolVar);
-		FormulaT first = FormulaT(carl::FormulaType::XOR, subformulaB, subformulaD);
+		FormulaT subformulaD = FormulaT(carl::FormulaType::IMPLIES, boolVar.negated(), subformulaC);
+		FormulaT first = FormulaT(carl::FormulaType::AND, subformulaB, subformulaD);
 		if(vars.size() == 1){
 			return first;
 		}else{
