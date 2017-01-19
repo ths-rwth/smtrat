@@ -86,17 +86,17 @@ namespace smtrat
 			return formula;
 		} 
 		carl::PBConstraint c = formula.pbConstraint();
-		std::vector<std::pair<carl::Variable, int>> cLHS = c.getLHS();
+		const auto& cLHS = c.getLHS();
 		carl::Relation cRel = c.getRelation();
 		int cRHS = c.getRHS();
 		int sum = 0;
 		bool positive = true;
 		bool negative = true;
 		for(auto it = cLHS.begin(); it != cLHS.end(); it++){
-			sum += it->second;
-			if(it->second < 0){
+			sum += it->first;
+			if(it->first < 0){
 				positive = false;
-			}else if(it->second > 0){
+			}else if(it->first > 0){
 				negative = false;
 			}
 		}
@@ -121,25 +121,24 @@ namespace smtrat
 	FormulaT PBPPModule<Settings>::forwardAsBoolean(const FormulaT& formula){
 		std::cout << "FORWARDASBOOLEAN" << std::endl;
 		carl::PBConstraint c = formula.pbConstraint();
-		std::vector<std::pair<carl::Variable, int>> cLHS = c.getLHS();
+		const auto& cLHS = c.getLHS();
 		carl::Relation cRel = c.getRelation();
 		int cRHS = c.getRHS();
 		std::vector<carl::Variable> cVars= c.gatherVariables();
 		bool positive = true;
 		bool negative = true;
 		int sum = 0;
-		std::pair<carl::Variable, int> varsMinimum = *cLHS.begin();
+		std::pair<carl::Variable,int> varsMinimum = cLHS.front();
 
 		for(auto it = cLHS.begin(); it != cLHS.end(); it++){
-			if(it->second < 0){
+			if(it->first < 0){
 				positive = false;
-			}else if(it->second > 0){
+			}else if(it->first > 0){
 				negative = false;
 			}
-			sum += it->second;
-			if(it->second < varsMinimum.second){
-				varsMinimum.first = it->first;
-				varsMinimum.second = it->second;
+			sum += it->first;
+			if(it->first < varsMinimum.first){
+				varsMinimum = *it;
 			}
 		}
 
