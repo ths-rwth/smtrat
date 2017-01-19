@@ -87,6 +87,7 @@ namespace smtrat
 		} 
 		carl::PBConstraint c = formula.pbConstraint();
 		std::vector<std::pair<int, carl::Variable>> cLHS = c.getLHS();
+		const auto& cLHS = c.getLHS();
 		carl::Relation cRel = c.getRelation();
 		int cRHS = c.getRHS();
 		int sum = 0;
@@ -123,14 +124,20 @@ namespace smtrat
 	FormulaT PBPPModule<Settings>::convertSmallFormulaToBoolean(const FormulaT& formula){
 		carl::PBConstraint c = formula.pbConstraint();
 		std::vector<std::pair<int, carl::Variable>> cLHS = c.getLHS();
+		const auto& cLHS = c.getLHS();
+
 		carl::Relation cRel = c.getRelation();
 		int cRHS = c.getRHS();
 		std::vector<carl::Variable> cVars= c.gatherVariables();
 		bool positive = true;
 		bool negative = true;
 		int sum = 0;
+
 		std::pair<int, carl::Variable> varsMinimum = *cLHS.begin();
 		int lhsCoeff = cLHS.begin()->first;
+
+		std::pair<carl::Variable,int> varsMinimum = cLHS.front();
+
 
 		for(auto it = cLHS.begin(); it != cLHS.end(); it++){
 			if(it->first < 0){
@@ -140,8 +147,10 @@ namespace smtrat
 			}
 			sum += it->first;
 			if(it->first < varsMinimum.first){
+
 				varsMinimum.first = it->first;
 				varsMinimum.second = it->second;
+				varsMinimum = *it;
 			}
 		}
 
@@ -527,8 +536,6 @@ namespace smtrat
 		return formula;
 	}
 
-
-
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::forwardAsBoolean(const FormulaT& formula){
 		std::cout << "FORWARDASBOOLEAN" << std::endl;
@@ -562,7 +569,6 @@ namespace smtrat
 		}
 	 	return formula;
 	}
-
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::generateVarChain(std::vector<carl::Variable>& vars, carl::FormulaType type){
@@ -617,8 +623,6 @@ namespace smtrat
         return finalFormula;
 	}
 
-
-
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::createAuxiliaryConstraint(std::vector<carl::Variable>& vars){
 		Poly pf(*vars.begin());
@@ -633,30 +637,6 @@ namespace smtrat
 			return f;
 		}
 	}
-
-	// template<typename Settings>
-	// FormulaT PBPPModule<Settings>::interconnectVariables(std::map<carl::Variable, carl::Variable>& vars){
-	// 	// FormulasT newSubformulas;
-	// 	// for (...) {
-	// 	// 	newSubformulas.push_back(newFormula);
-	// 	// }
-	// 	// result = FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
-	// 	FormulaT boolVar = FormulaT(vars.begin()->first);
-	// 	carl::Variable intVar = vars.begin()->second;
-	// 	Poly pf(intVar);
-	// 	FormulaT subformulaA = FormulaT(pf - Rational(1), carl::Relation::EQ);
-	// 	FormulaT subformulaB = FormulaT(carl::FormulaType::IMPLIES, boolVar, subformulaA);
-	// 	FormulaT subformulaC = FormulaT(pf, carl::Relation::EQ);
-	// 	FormulaT subformulaD = FormulaT(carl::FormulaType::IMPLIES, boolVar.negated(), subformulaC);
-	// 	FormulaT first = FormulaT(carl::FormulaType::AND, subformulaB, subformulaD);
-	// 	if(vars.size() == 1){
-	// 		return first;
-	// 	}else{
-	// 		vars.erase(vars.begin());
-	// 		FormulaT f = FormulaT(carl::FormulaType::AND, first, interconnectVariables(vars));
-	// 		return f;
-	// 	}
-	// }
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::interconnectVariables(std::map<carl::Variable, carl::Variable>& vars){
@@ -676,7 +656,7 @@ namespace smtrat
 		FormulaT result = FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
 		return result;
 	}
-
 }
 
 #include "Instantiation.h"
+
