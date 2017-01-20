@@ -19,7 +19,6 @@ namespace smtrat
 #endif
 	{
 		checkFormulaTypeFunction = std::bind(&PBPPModule<Settings>::checkFormulaType, this, std::placeholders::_1);
-
 	}
 	
 	template<class Settings>
@@ -29,8 +28,6 @@ namespace smtrat
 	template<class Settings>
 	bool PBPPModule<Settings>::informCore( const FormulaT& _constraint )
 	{
-		// Your code.
-		std::cout << "INFORMCORE" << std::endl;
 		return true; // This should be adapted according to your implementation.
 	}
 	
@@ -41,7 +38,6 @@ namespace smtrat
 	template<class Settings>
 	bool PBPPModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 	{
-		std::cout << "ADDCORE" << std::endl;
 		std::cout << _subformula->formula() << std::endl;
 		FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeFunction);
 		addSubformulaToPassedFormula(formula, _subformula->formula());
@@ -50,15 +46,13 @@ namespace smtrat
 	
 	template<class Settings>
 	void PBPPModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
-	{
-		std::cout << "REMOVECORE" << std::endl;		
+	{	
 		// Your code.
 	}
 	
 	template<class Settings>
 	void PBPPModule<Settings>::updateModel() const
 	{
-		std::cout << "UPDATEMODEL" << std::endl;
 		mModel.clear();
 		if( solverState() == Answer::SAT )
 		{
@@ -69,7 +63,6 @@ namespace smtrat
 	template<class Settings>
 	Answer PBPPModule<Settings>::checkCore()
 	{
-		std::cout << "CHECKCORE" << std::endl;
 		Answer ans = runBackends();
 		if (ans == UNSAT) {
 			generateTrivialInfeasibleSubset();
@@ -79,17 +72,17 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaType(const FormulaT& formula){
-		std::cout << "CHECKFORMULATYPE: ";
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
 			return formula;
 		} 
 		carl::PBConstraint c = formula.pbConstraint();
-		const auto& cLHS = c.getLHS();
-		carl::Relation cRel = c.getRelation();
-		int cRHS = c.getRHS();
-		int sum = 0;
+		carl::Relation cRel  = c.getRelation();
+		const auto& cLHS	 = c.getLHS();
 		bool positive = true;
 		bool negative = true;
+		int cRHS = c.getRHS();
+		int sum  = 0;
+
 		for(auto it = cLHS.begin(); it != cLHS.end(); it++){
 			sum += it->first;
 			if(it->first < 0){
@@ -116,8 +109,6 @@ namespace smtrat
 		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 		return res;
 	}
-
-
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::convertSmallFormulaToBoolean(const FormulaT& formula){
@@ -275,253 +266,133 @@ namespace smtrat
 				//5 x1 + 2 x2 + 3 x3 >= -5 or 5 x1 + 2 x2 + 3 x3 > -5 
 				//===> false -> x1 AND x2 AND x3 ===> TRUE
 				return FormulaT(carl::FormulaType::TRUE);
-				}else if(cRHS == 0){
-					if(cRel == carl::Relation::GEQ){
-						// 5 x1 + 2 x2 + 3 x3 >= 0 ===> false -> x1 AND x2 AND x3 ===> TRUE
-						return FormulaT(carl::FormulaType::TRUE);
-					}
-					// 5 x1 + 2 x2 + 3 x3 > 0 ===> x1 or x2 or x3
-					return generateVarChain(cVars, carl::FormulaType::OR);
-				}//RHS > 0
-					if(sum < cRHS){
-						//5 x1 + 2 x2 + 3 x3 >= 20 or 5 x1 + 2 x2 + 3 x3 > 20 ===> FALSE
-						return FormulaT(carl::FormulaType::FALSE);
-					}else if(sum == cRHS && cRel == carl::Relation::GEQ){
-						//5 x1 + 2 x2 + 3 x3 >= 10 ===> x1 and x2 and x3
-						return generateVarChain(cVars, carl::FormulaType::AND);
-					}else if(sum == cRHS && cRel == carl::Relation::GREATER){
-						//5 x1 + 2 x2 + 3 x3 > 10 ===> FALSE
-						return FormulaT(carl::FormulaType::FALSE);				}
-			}else if(negative && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ)){
-				if(cRHS > 0){
-					//-5 x1 - 2 x2 - 3 x3 >= 5 or -5 x1 - 2 x2 - 3 x3 > 5 ===> FALSE
+			}else if(cRHS == 0){
+				if(cRel == carl::Relation::GEQ){
+					// 5 x1 + 2 x2 + 3 x3 >= 0 ===> false -> x1 AND x2 AND x3 ===> TRUE
+					return FormulaT(carl::FormulaType::TRUE);
+				}
+				// 5 x1 + 2 x2 + 3 x3 > 0 ===> x1 or x2 or x3
+				return generateVarChain(cVars, carl::FormulaType::OR);
+			}else{
+				//RHS > 0
+				if(sum < cRHS){
+					//5 x1 + 2 x2 + 3 x3 >= 20 or 5 x1 + 2 x2 + 3 x3 > 20 ===> FALSE
 					return FormulaT(carl::FormulaType::FALSE);
-				}else if(cRHS == 0){
-					if(cRel == carl::Relation::GEQ){
-						//-5 x1 - 2 x2 - 3 x3 >= 0 ===> (x1 or x2 or x3) -> false
-						FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::OR);
-						FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
-						return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-					}
+				}else if(sum == cRHS && cRel == carl::Relation::GEQ){
+					//5 x1 + 2 x2 + 3 x3 >= 10 ===> x1 and x2 and x3
+					return generateVarChain(cVars, carl::FormulaType::AND);
+				}else if(sum == cRHS && cRel == carl::Relation::GREATER){
+					//5 x1 + 2 x2 + 3 x3 > 10 ===> FALSE
+					return FormulaT(carl::FormulaType::FALSE);
+				}
+			}
+		}else if(negative && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ)){
+			if(cRHS > 0){
+				//-5 x1 - 2 x2 - 3 x3 >= 5 or -5 x1 - 2 x2 - 3 x3 > 5 ===> FALSE
+				return FormulaT(carl::FormulaType::FALSE);
+			}else if(cRHS == 0){
+				if(cRel == carl::Relation::GEQ){
+					//-5 x1 - 2 x2 - 3 x3 >= 0 ===> (x1 or x2 or x3) -> false
+					FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::OR);
+					FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
+					return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+				}else if(cRel == carl::Relation::GREATER){
 					//-5 x1 - 2 x2 - 3 x3 > 0 ===> FALSE
 					return FormulaT(carl::FormulaType::FALSE);
-				}else if(cRHS < 0){
-					if(sum < cRHS){
-						//-5 x1 - 2 x2 - 3 x3 >= -5 or -5 x1 - 2 x2 - 3 x3 > -5 ===> FALSE
-						return FormulaT(carl::FormulaType::FALSE);
-					}else if(sum == cRHS && cRel == carl::Relation::GEQ){
-						//-5 x1 - 2 x2 - 3 x3 >= -10  ===> false -> x1 and x2 and x3 ===> TRUE
-						return FormulaT(carl::FormulaType::TRUE);
-					}else if(sum == cRHS && cRel == carl::Relation::GREATER){
-						//-5 x1 - 2 x2 - 3 x3 > -10  ===> x1 and x2 and x3 -> false
-						FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::AND);
-						FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
-						return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-					}
 				}
-			}else if(positive && (cRel == carl::Relation::LESS || cRel == carl::Relation::LEQ)){
-				if(cRHS < 0){
-					//5 x1 +2 x2 +3 x3 <= -5 or 5 x1 +2 x2 +3 x3 < -5 ===> FALSE
-					return FormulaT(carl::FormulaType::FALSE);
-				}else if(cRHS == 0){
-					if(cRel == carl::Relation::LEQ){
-						//5 x1 +2 x2 +3 x3 <= 0 ===> (x1 or x2 or x3) -> false
-						FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::OR);
-						FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
-						return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-					}
-					//5 x1 +2 x2 +3 x3 < 0 ===> FALSE
-					return FormulaT(carl::FormulaType::FALSE);
-				}else if(cRHS > 0){
-					if(sum > cRHS){
-						//5 x1 +2 x2 +3 x3 < 0 ===> FALSE
-						return FormulaT(carl::FormulaType::FALSE);
-					}else if(sum == cRHS && cRel == carl::Relation::LEQ){
-						//5 x1 +2 x2 +3 x3 <= 10 ===> false -> x1 and x2 and x3 ===> TRUE
-						return FormulaT(carl::FormulaType::TRUE);
-					}else if(sum == cRHS && cRel == carl::Relation::LESS){
-						//5 x1 +2 x2 +3 x3 < 10 ===> x1 and x2 and x3 -> false
-						FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::AND);
-						FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
-						return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-					}else if(sum < cRHS){
-						//5 x1 +2 x2 +3 x3 <= 20 or 5 x1 +2 x2 +3 x3 < 20 ===> false -> x1 and x2 and x3 ===> TRUE
-						return FormulaT(carl::FormulaType::TRUE);
-					}
-				}
-			}else if(negative && (cRel == carl::Relation::LESS || cRel == carl::Relation::LEQ)){
-				if(cRHS > 0){
-					//-5 x1 -2 x2 -3 x3 <= 5 or -5 x1 -2 x2 -3 x3 < 5 ===> false -> x1 and x2 and x3 ===> TRUE
+			}else if(cRHS < 0){
+				if(sum == cRHS && cRel == carl::Relation::GEQ){
+					//-5 x1 - 2 x2 - 3 x3 >= -10  ===> false -> x1 and x2 and x3 ===> TRUE
 					return FormulaT(carl::FormulaType::TRUE);
-				}else if(cRHS == 0){
-					if(cRel == carl::Relation::LEQ){
-						//-5 x1 -2 x2 -3 x3 <= 0 ===> false -> x1 and x2 and x3 ===> TRUE
-						return FormulaT(carl::FormulaType::TRUE);
-					}
+				}else if(sum == cRHS && cRel == carl::Relation::GREATER){
+					//-5 x1 - 2 x2 - 3 x3 > -10  ===> x1 and x2 and x3 -> false
+					FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::AND);
+					FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
+					return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+				}else if(sum > cRHS){
+					//-3 x1 -3 x2 -1 x3 >= -20 or -3 x1 -3 x2 -1 x3 > -20 ===> TRUE
+					return FormulaT(carl::FormulaType::TRUE);
+				}
+			}
+		}else if(positive && (cRel == carl::Relation::LESS || cRel == carl::Relation::LEQ)){
+			if(cRHS < 0){
+				//5 x1 +2 x2 +3 x3 <= -5 or 5 x1 +2 x2 +3 x3 < -5 ===> FALSE
+				return FormulaT(carl::FormulaType::FALSE);
+			}else if(cRHS == 0){
+				if(cRel == carl::Relation::LEQ){
+					//5 x1 +2 x2 +3 x3 <= 0 ===> (x1 or x2 or x3) -> false
+					FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::OR);
+					FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
+					return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+				}else if(cRel == carl::Relation::LESS){
+					//5 x1 +2 x2 +3 x3 < 0 ===> FALSE
+					return FormulaT(carl::FormulaType::FALSE);	
+				}
+			}else if(cRHS > 0){
+				if(sum == cRHS && cRel == carl::Relation::LEQ){
+					//5 x1 +2 x2 +3 x3 <= 10 ===> false -> x1 and x2 and x3 ===> TRUE
+					return FormulaT(carl::FormulaType::TRUE);
+				}else if(sum == cRHS && cRel == carl::Relation::LESS){
+					//5 x1 +2 x2 +3 x3 < 10 ===> x1 and x2 and x3 -> false
+					FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::AND);
+					FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
+					return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+				}else if(sum < cRHS){
+					//5 x1 +2 x2 +3 x3 <= 20 or 5 x1 +2 x2 +3 x3 < 20 ===> false -> x1 and x2 and x3 ===> TRUE
+					return FormulaT(carl::FormulaType::TRUE);
+				}
+			}
+		}else if(negative && (cRel == carl::Relation::LESS || cRel == carl::Relation::LEQ)){
+			if(cRHS > 0){
+				//-5 x1 -2 x2 -3 x3 <= 5 or -5 x1 -2 x2 -3 x3 < 5 ===> false -> x1 and x2 and x3 ===> TRUE
+				return FormulaT(carl::FormulaType::TRUE);
+			}else if(cRHS == 0){
+				if(cRel == carl::Relation::LEQ){
+					//-5 x1 -2 x2 -3 x3 <= 0 ===> false -> x1 and x2 and x3 ===> TRUE
+					return FormulaT(carl::FormulaType::TRUE);
+				}else if(cRel == carl::Relation::LESS){
 					//-5 x1 -2 x2 -3 x3 < 0 ===> true -> x1 or x2 or x3
 					FormulaT subformulaA = FormulaT(carl::FormulaType::TRUE);
 					FormulaT subformulaB = generateVarChain(cVars, carl::FormulaType::OR);
 					return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-				}else if(cRHS < 0){
-					if(sum > cRHS){
-						//-5 x1 -2 x2 -3 x3 < -15 or -5 x1 -2 x2 -3 x3 <= -15 ===> FALSE
-						return FormulaT(carl::FormulaType::FALSE);
-					}else if(sum == cRHS && cRel == carl::Relation::LEQ){
-						//-5 x1 -2 x2 -3 x3 <= -10 ===> x1 and x2 and x3 -> false
-						FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::AND);
-						FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
-						return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-					}else if(sum == cRHS && cRel == carl::Relation::LESS){
-						//-5 x1 -2 x2 -3 x3 < -10 ===> FALSE
-						return FormulaT(carl::FormulaType::FALSE);
-					}
 				}
-			}else if(cRel == carl::Relation::EQ){
-				if(sum != cRHS && cRHS != 0){
-					//5 x1 +2 x2 +3 x3 = 5 ===> FALSE
-						return FormulaT(carl::FormulaType::FALSE);
-				}else if(sum != cRHS && cRHS == 0){
-					//5 x1 +2 x2 +3 x3 = 0 ===> (x1 or x2 or x3 -> false)
-					FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::OR);
-					FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
-					return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);				
-				}
-				//5 x1 +2 x2 +3 x3 = 10 ===> x1 and x2 and x3
-					return generateVarChain(cVars, carl::FormulaType::AND);
-			}else if(cRel == carl::Relation::NEQ){
-				if(sum != cRHS && cRHS == 0){
-					//5 x1 +2 x2 +3 x3 = 0 ===> x1 and x2 and x3 
-					return generateVarChain(cVars, carl::FormulaType::AND);
-				}	
-			}if(positive && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ)){
-				if(cRHS < 0){
-					//5 x1 + 2 x2 + 3 x3 >= -5 or 5 x1 + 2 x2 + 3 x3 > -5 
-					//===> false -> x1 AND x2 AND x3 ===> TRUE
-					return FormulaT(carl::FormulaType::TRUE);
-				}else if(cRHS == 0){
-					if(cRel == carl::Relation::GEQ){
-						// 5 x1 + 2 x2 + 3 x3 >= 0 ===> false -> x1 AND x2 AND x3 ===> TRUE
-						return FormulaT(carl::FormulaType::TRUE);
-					}
-					// 5 x1 + 2 x2 + 3 x3 > 0 ===> x1 or x2 or x3
-					return generateVarChain(cVars, carl::FormulaType::OR);
-				}//RHS > 0
-					if(sum < cRHS){
-						//5 x1 + 2 x2 + 3 x3 >= 20 or 5 x1 + 2 x2 + 3 x3 > 20 ===> FALSE
-						return FormulaT(carl::FormulaType::FALSE);
-					}else if(sum == cRHS && cRel == carl::Relation::GEQ){
-						//5 x1 + 2 x2 + 3 x3 >= 10 ===> x1 and x2 and x3
-						return generateVarChain(cVars, carl::FormulaType::AND);
-					}else if(sum == cRHS && cRel == carl::Relation::GREATER){
-						//5 x1 + 2 x2 + 3 x3 > 10 ===> FALSE
-						return FormulaT(carl::FormulaType::FALSE);				}
-			}else if(negative && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ)){
-				if(cRHS > 0){
-					//-5 x1 - 2 x2 - 3 x3 >= 5 or -5 x1 - 2 x2 - 3 x3 > 5 ===> FALSE
+			}else if(cRHS < 0){
+				if(sum > cRHS){
+					//-5 x1 -2 x2 -3 x3 < -15 or -5 x1 -2 x2 -3 x3 <= -15 ===> FALSE
 					return FormulaT(carl::FormulaType::FALSE);
-				}else if(cRHS == 0){
-					if(cRel == carl::Relation::GEQ){
-						//-5 x1 - 2 x2 - 3 x3 >= 0 ===> (x1 or x2 or x3) -> false
-						FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::OR);
-						FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
-						return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-					}
-					//-5 x1 - 2 x2 - 3 x3 > 0 ===> FALSE
-					return FormulaT(carl::FormulaType::FALSE);
-				}else if(cRHS < 0){
-					if(sum < cRHS){
-						//-5 x1 - 2 x2 - 3 x3 >= -5 or -5 x1 - 2 x2 - 3 x3 > -5 ===> FALSE
-						return FormulaT(carl::FormulaType::FALSE);
-					}else if(sum == cRHS && cRel == carl::Relation::GEQ){
-						//-5 x1 - 2 x2 - 3 x3 >= -10  ===> false -> x1 and x2 and x3 ===> TRUE
-						return FormulaT(carl::FormulaType::TRUE);
-					}else if(sum == cRHS && cRel == carl::Relation::GREATER){
-						//-5 x1 - 2 x2 - 3 x3 > -10  ===> x1 and x2 and x3 -> false
-						FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::AND);
-						FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
-						return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-					}
-				}
-			}else if(positive && (cRel == carl::Relation::LESS || cRel == carl::Relation::LEQ)){
-				if(cRHS < 0){
-					//5 x1 +2 x2 +3 x3 <= -5 or 5 x1 +2 x2 +3 x3 < -5 ===> FALSE
-					return FormulaT(carl::FormulaType::FALSE);
-				}else if(cRHS == 0){
-					if(cRel == carl::Relation::LEQ){
-						//5 x1 +2 x2 +3 x3 <= 0 ===> (x1 or x2 or x3) -> false
-						FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::OR);
-						FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
-						return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-					}
-					//5 x1 +2 x2 +3 x3 < 0 ===> FALSE
-					return FormulaT(carl::FormulaType::FALSE);
-				}else if(cRHS > 0){
-					if(sum > cRHS){
-						//5 x1 +2 x2 +3 x3 < 0 ===> FALSE
-						return FormulaT(carl::FormulaType::FALSE);
-					}else if(sum == cRHS && cRel == carl::Relation::LEQ){
-						//5 x1 +2 x2 +3 x3 <= 10 ===> false -> x1 and x2 and x3 ===> TRUE
-						return FormulaT(carl::FormulaType::TRUE);
-					}else if(sum == cRHS && cRel == carl::Relation::LESS){
-						//5 x1 +2 x2 +3 x3 < 10 ===> x1 and x2 and x3 -> false
-						FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::AND);
-						FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
-						return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-					}else if(sum < cRHS){
-						//5 x1 +2 x2 +3 x3 <= 20 or 5 x1 +2 x2 +3 x3 < 20 ===> false -> x1 and x2 and x3 ===> TRUE
-						return FormulaT(carl::FormulaType::TRUE);
-					}
-				}
-			}else if(negative && (cRel == carl::Relation::LESS || cRel == carl::Relation::LEQ)){
-				if(cRHS > 0){
-					//-5 x1 -2 x2 -3 x3 <= 5 or -5 x1 -2 x2 -3 x3 < 5 ===> false -> x1 and x2 and x3 ===> TRUE
-					return FormulaT(carl::FormulaType::TRUE);
-				}else if(cRHS == 0){
-					if(cRel == carl::Relation::LEQ){
-						//-5 x1 -2 x2 -3 x3 <= 0 ===> false -> x1 and x2 and x3 ===> TRUE
-						return FormulaT(carl::FormulaType::TRUE);
-					}
-					//-5 x1 -2 x2 -3 x3 < 0 ===> x1 or x2 or x3
-					return generateVarChain(cVars, carl::FormulaType::OR);
-				}else if(cRHS < 0){
-					if(sum > cRHS){
-						//-5 x1 -2 x2 -3 x3 < -15 or -5 x1 -2 x2 -3 x3 <= -15 ===> FALSE
-						return FormulaT(carl::FormulaType::FALSE);
-					}else if(sum == cRHS && cRel == carl::Relation::LEQ){
-						//-5 x1 -2 x2 -3 x3 <= -10 ===> x1 and x2 and x3 -> false
-						FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::AND);
-						FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
-						return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
-						 
-					}else if(sum == cRHS && cRel == carl::Relation::LESS){
-						//-5 x1 -2 x2 -3 x3 < -10 ===> FALSE
-						return FormulaT(carl::FormulaType::FALSE);
-					}
-				}
-			}else if(cRel == carl::Relation::EQ){
-				if(sum != cRHS && cRHS != 0){
-					//5 x1 +2 x2 +3 x3 = 5 ===> FALSE
-						return FormulaT(carl::FormulaType::FALSE);
-				}else if(sum != cRHS && cRHS == 0){
-					//5 x1 +2 x2 +3 x3 = 0 ===> (x1 or x2 or x3 -> false)
-					FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::OR);
+				}else if(sum == cRHS && cRel == carl::Relation::LEQ){
+					//-5 x1 -2 x2 -3 x3 <= -10 ===> x1 and x2 and x3 -> false
+					FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::AND);
 					FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
 					return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);
+				}else if(sum == cRHS && cRel == carl::Relation::LESS){
+					//-5 x1 -2 x2 -3 x3 < -10 ===> FALSE
+					return FormulaT(carl::FormulaType::FALSE);
 				}
-				//5 x1 +2 x2 +3 x3 = 10 ===> x1 and x2 and x3
-				return generateVarChain(cVars, carl::FormulaType::AND);
-			}else if(cRel == carl::Relation::NEQ){
-				if(sum != cRHS && cRHS == 0){
-					//5 x1 +2 x2 +3 x3 = 0 ===> x1 and x2 and x3 
-					return generateVarChain(cVars, carl::FormulaType::AND);
-				}	
 			}
-		return formula;
+		}else if(cRel == carl::Relation::EQ){
+			if(sum != cRHS && cRHS != 0){
+				//5 x1 +2 x2 +3 x3 = 5 ===> FALSE
+				return FormulaT(carl::FormulaType::FALSE);
+			}else if(sum != cRHS && cRHS == 0){
+				//5 x1 +2 x2 +3 x3 = 0 ===> (x1 or x2 or x3 -> false)
+				FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::OR);
+				FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
+				return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);				
+			}
+			//5 x1 +2 x2 +3 x3 = 10 ===> x1 and x2 and x3
+			return generateVarChain(cVars, carl::FormulaType::AND);
+		}else if(cRel == carl::Relation::NEQ){
+			if(sum != cRHS && cRHS == 0){
+				//5 x1 +2 x2 +3 x3 = 0 ===> x1 and x2 and x3 
+				return generateVarChain(cVars, carl::FormulaType::AND);
+			}	
+		}
+	return formula;
 	}
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::forwardAsBoolean(const FormulaT& formula){
-		std::cout << "FORWARDASBOOLEAN" << std::endl;
 		carl::PBConstraint c = formula.pbConstraint();
 		const auto& cLHS 	 = c.getLHS();
 
@@ -548,7 +419,6 @@ namespace smtrat
 	*/
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::forwardAsArithmetic(const FormulaT& formula){
-		std::cout << "FORWARDASARITHMETIC" << std::endl;
 		carl::Variables variables;
 		formula.allVars(variables);
 		std::vector<carl::Variable> currentVars;
