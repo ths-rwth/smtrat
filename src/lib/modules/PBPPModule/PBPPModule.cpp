@@ -104,7 +104,8 @@ namespace smtrat
 			auto res = forwardAsBoolean(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
-		}
+		 }
+
 		auto res = forwardAsArithmetic(formula);
 		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 		return res;
@@ -121,9 +122,12 @@ namespace smtrat
 
 		if(cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER){
 			if(lhsCoeff > 0){
-				if(cRHS < lhsCoeff){
+				if(cRHS < lhsCoeff && cRHS < 0){
 					//5 x1 >= -3 or 5 x1 > -3 ===> TRUE
 					return FormulaT(carl::FormulaType::TRUE);
+				}else if(cRHS < lhsCoeff && cRHS > 0){
+					//5 x1 >= 3 or 5 x1 > 3 ===> x1
+					return FormulaT(lhsVar);
 				}else if(cRHS == 0 && cRel == carl::Relation::GEQ){
 					//5 x1 >= 0 ===> TRUE
 					return FormulaT(carl::FormulaType::TRUE);
@@ -156,6 +160,9 @@ namespace smtrat
 				}else if(cRHS > lhsCoeff && cRHS < 0){
 					//-20 x1 >= -3 or -20 x1 > -3 ===> not x1
 					return FormulaT(lhsVar.negated());
+				}else if(cRHS > lhsCoeff && cRHS > 0){
+					//-20 x1 >= 3 ===> FALSE
+					return FormulaT(carl::FormulaType::FALSE);
  				}else if(cRHS == lhsCoeff && cRel == carl::Relation::GEQ){
  					//-20 x1 >= -20 ===> TRUE
  					return FormulaT(carl::FormulaType::TRUE);
