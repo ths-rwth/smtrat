@@ -30,8 +30,6 @@ addons:
       - libeigen3-dev
       - libgmp-dev
       - libgtest-dev
-      - g++-4.8
-      - g++-4.9
       - g++-5
       - g++-6
       - clang-3.6
@@ -42,8 +40,6 @@ addons:
 
 matrix:
   include:
-    - os: linux
-      env: USE=g++-4.9
     - os: linux
       env: USE=g++-5
     - os: linux

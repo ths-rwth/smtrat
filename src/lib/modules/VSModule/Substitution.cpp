@@ -21,7 +21,7 @@ namespace vs
     {
         if( mType == PLUS_EPSILON && mVariable.getType() == carl::VariableType::VT_INT )
         {
-            *mpTerm = *mpTerm + smtrat::ONE_POLYNOMIAL;
+            *mpTerm = *mpTerm + smtrat::SqrtEx(smtrat::ONE_POLYNOMIAL);
             mType = NORMAL;
         }
     }
@@ -36,7 +36,7 @@ namespace vs
     {
         if( mType == PLUS_EPSILON && mVariable.getType() == carl::VariableType::VT_INT )
         {
-            *mpTerm = *mpTerm + smtrat::ONE_POLYNOMIAL;
+            *mpTerm = *mpTerm + smtrat::SqrtEx(smtrat::ONE_POLYNOMIAL);
             mType = NORMAL;
         }
     }
