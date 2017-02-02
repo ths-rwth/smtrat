@@ -38,6 +38,7 @@ namespace smtrat
 	template<class Settings>
 	bool PBPPModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 	{
+		std::cout << "ADDCORE" << std::endl;
 		std::cout << _subformula->formula() << std::endl;
 		FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeFunction);
 		addSubformulaToPassedFormula(formula, _subformula->formula());
@@ -63,6 +64,7 @@ namespace smtrat
 	template<class Settings>
 	Answer PBPPModule<Settings>::checkCore()
 	{
+		std::cout << "CHECKCORE" << std::endl;
 		Answer ans = runBackends();
 		if (ans == UNSAT) {
 			generateTrivialInfeasibleSubset();
@@ -72,6 +74,7 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaType(const FormulaT& formula){
+		std::cout << "CHECKFORMULATYPE" << std::endl;
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
 			return formula;
 		} 
@@ -91,28 +94,31 @@ namespace smtrat
 				negative = false;
 			}
 		}
+
 		if(cLHS.size() < 4 
 			&& !((cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum > cRHS && cLHS.size() > 1) 
 				&& !(positive && cRHS > 0 && sum > cRHS 
 						&& (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
 					&& !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum > cRHS)
-						&& !(negative && cRHS < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum < cRHS)
-							&& !((positive || negative) && cRel == carl::Relation::NEQ && sum != cRHS && cRHS != 0)
-								&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
-									&& (negative || positive)
+						&&  !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum < cRHS && cLHS.size() > 1)
+							&& !(negative && cRHS < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum < cRHS)
+								&& !((positive || negative) && cRel == carl::Relation::NEQ && sum != cRHS && cRHS != 0)
+									&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
+										&& (negative || positive)
 			){
 			auto res = forwardAsBoolean(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
-		 }
-
+			}
 		auto res = forwardAsArithmetic(formula);
 		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 		return res;
+		
 	}
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::convertSmallFormulaToBoolean(const FormulaT& formula){
+		std::cout << "CONVERTSMALLFORMULA" << std::endl;
 		carl::PBConstraint c  = formula.pbConstraint();
 		carl::Relation cRel   = c.getRelation();
 		const auto& cLHS      = c.getLHS();
@@ -250,6 +256,7 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::convertBigFormulaToBoolean(const FormulaT& formula){
+		std::cout << "CONVERTBIGFORMULA" << std::endl;
 		carl::PBConstraint c = formula.pbConstraint();
 		const auto& cLHS 	 = c.getLHS();
 		carl::Relation cRel  = c.getRelation();
@@ -400,6 +407,7 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::forwardAsBoolean(const FormulaT& formula){
+		std::cout << "FORWARDASBOOLEAN" << std::endl;
 		carl::PBConstraint c = formula.pbConstraint();
 		const auto& cLHS 	 = c.getLHS();
 
@@ -413,6 +421,7 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::generateVarChain(const std::vector<carl::Variable>& vars, carl::FormulaType type){
+		std::cout << "GENERATEVARCHAIN" << std::endl;
 		FormulasT newSubformulas;
 		for(auto var: vars){
 			FormulaT newFormula = FormulaT(var);
@@ -426,6 +435,7 @@ namespace smtrat
 	*/
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::forwardAsArithmetic(const FormulaT& formula){
+		std::cout << "FORWARDASARITHMETIC" << std::endl;
 		carl::Variables variables;
 		formula.allVars(variables);
 		std::vector<carl::Variable> currentVars;
@@ -460,6 +470,7 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::createAuxiliaryConstraint(const FormulaT& formula){
+		std::cout << "CREATEAUXILIARYCONSTRAINT" << std::endl;
 		carl::PBConstraint c = formula.pbConstraint();
 		auto boolVars        = c.gatherVariables();
 		std::vector<carl::Variable> intVars;
@@ -480,6 +491,7 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::interconnectVariables(const FormulaT& formula){
+		std::cout << "INTERCONNECTVARIABLES" << std::endl;
 		carl::PBConstraint c = formula.pbConstraint();
 		auto boolVars 		 = c.gatherVariables();
 		std::map<carl::Variable, carl::Variable> varsMap;
@@ -500,6 +512,7 @@ namespace smtrat
 		}
 		return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
 	}
+
 }
 
 #include "Instantiation.h"
