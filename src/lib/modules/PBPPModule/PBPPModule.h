@@ -25,8 +25,6 @@ namespace smtrat
 			std::map<carl::Variable, carl::Variable> mVariablesCache; //bool, int
 			carl::FormulaVisitor<FormulaT> mVisitor;
 			
-
-			
 		public:
 			typedef Settings SettingsType;
 			std::string moduleName() const {
@@ -97,6 +95,7 @@ namespace smtrat
 			FormulaT interconnectVariables(const FormulaT& formula);
 			FormulaT convertSmallFormulaToBoolean(const FormulaT& formula);
 			FormulaT convertBigFormulaToBoolean(const FormulaT& formula);
+			FormulaT convertNormalizedFormula(const FormulaT& formula);
 
 	};
 }

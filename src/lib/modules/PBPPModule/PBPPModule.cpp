@@ -95,7 +95,8 @@ namespace smtrat
 			}
 		}
 
-		if(cLHS.size() < 4 
+
+		if(cLHS.size() < 11 
 			&& !((cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum > cRHS && cLHS.size() > 1) 
 				&& !(positive && cRHS > 0 && sum > cRHS 
 						&& (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
@@ -104,7 +105,6 @@ namespace smtrat
 							&& !(negative && cRHS < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum < cRHS)
 								&& !((positive || negative) && cRel == carl::Relation::NEQ && sum != cRHS && cRHS != 0)
 									&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
-										&& (negative || positive)
 			){
 			auto res = forwardAsBoolean(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
@@ -275,6 +275,12 @@ namespace smtrat
 			sum += it->first;
 		}
 
+		if(!positive && !negative && cRHS >= 0 && cRel == carl::Relation::GEQ && sum >= cRHS){
+			return convertNormalizedFormula(formula);
+		}else if(!positive && !negative){
+			return forwardAsArithmetic(formula);
+		}
+
 		if(positive && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ)){
 			if(cRHS < 0){
 				//5 x1 + 2 x2 + 3 x3 >= -5 or 5 x1 + 2 x2 + 3 x3 > -5 
@@ -282,7 +288,7 @@ namespace smtrat
 				return FormulaT(carl::FormulaType::TRUE);
 			}else if(cRHS == 0){
 				if(cRel == carl::Relation::GEQ){
-					// 5 x1 + 2 x2 + 3 x3 >= 0 ===> false -> x1 AND x2 AND x3 ===> TRUE
+					// 5 x1 + 2 x2 + 3 x3 >= 0 ===> TRUE
 					return FormulaT(carl::FormulaType::TRUE);
 				}
 				// 5 x1 + 2 x2 + 3 x3 > 0 ===> x1 or x2 or x3
@@ -406,14 +412,32 @@ namespace smtrat
 	}
 
 	template<typename Settings>
+	FormulaT PBPPModule<Settings>::convertNormalizedFormula(const FormulaT& formula){
+		std::cout << "CONVERTTOPOSITIVEFORMULA" << std::endl;
+		carl::PBConstraint c = formula.pbConstraint();
+		const auto& cLHS = c.getLHS();
+		FormulasT newSubformulas;
+
+		//-1 x1 +1 x2 -1 x3 >= 0 ===> +1 not(x1) +1 x2 +1 not(x3) >= 0 ===> not(x1) or x2 or not(x3)
+		for(auto it : cLHS){
+			FormulaT f = FormulaT(it.second);
+			if(it.first < 0){
+				newSubformulas.push_back(f.negated());
+			}
+		}
+		FormulaT sub = FormulaT(carl::FormulaType::OR, std::move(newSubformulas)); //Or due to de Morgan!
+		return FormulaT(carl::FormulaType::NOT, sub);
+	} 
+
+	template<typename Settings>
 	FormulaT PBPPModule<Settings>::forwardAsBoolean(const FormulaT& formula){
 		std::cout << "FORWARDASBOOLEAN" << std::endl;
 		carl::PBConstraint c = formula.pbConstraint();
 		const auto& cLHS 	 = c.getLHS();
 
 		if(cLHS.size() == 1){
-			return convertBigFormulaToBoolean(formula);
-		}else if(cLHS.size() <= 3){
+			return convertSmallFormulaToBoolean(formula);
+		}else if(cLHS.size() < 10){
 			return convertBigFormulaToBoolean(formula);
 		}
 	 	return formula;
