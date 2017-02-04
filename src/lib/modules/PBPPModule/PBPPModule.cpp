@@ -78,7 +78,7 @@ namespace smtrat
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
 			return formula;
 		} 
-		carl::PBConstraint c = formula.pbConstraint();
+		const carl::PBConstraint& c = formula.pbConstraint();
 		carl::Relation cRel  = c.getRelation();
 		const auto& cLHS	 = c.getLHS();
 		bool positive = true;
@@ -94,18 +94,15 @@ namespace smtrat
 				negative = false;
 			}
 		}
-
-
-		if(cLHS.size() < 11 
-			&& !((cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum > cRHS && cLHS.size() > 1) 
-				&& !(positive && cRHS > 0 && sum > cRHS 
-						&& (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
-					&& !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum > cRHS)
+		if(cLHS.size() == 1 ||
+			(cLHS.size() < 4 
+					&& !(positive && cRHS > 0 && sum > cRHS 
+					&& (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
 						&&  !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum < cRHS && cLHS.size() > 1)
 							&& !(negative && cRHS < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum < cRHS)
 								&& !((positive || negative) && cRel == carl::Relation::NEQ && sum != cRHS && cRHS != 0)
 									&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
-			){
+			)){
 			auto res = forwardAsBoolean(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
@@ -119,7 +116,7 @@ namespace smtrat
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::convertSmallFormulaToBoolean(const FormulaT& formula){
 		std::cout << "CONVERTSMALLFORMULA" << std::endl;
-		carl::PBConstraint c  = formula.pbConstraint();
+		const carl::PBConstraint& c  = formula.pbConstraint();
 		carl::Relation cRel   = c.getRelation();
 		const auto& cLHS      = c.getLHS();
 		int lhsCoeff    = cLHS.begin()->first;
@@ -257,7 +254,7 @@ namespace smtrat
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::convertBigFormulaToBoolean(const FormulaT& formula){
 		std::cout << "CONVERTBIGFORMULA" << std::endl;
-		carl::PBConstraint c = formula.pbConstraint();
+		const carl::PBConstraint& c = formula.pbConstraint();
 		const auto& cLHS 	 = c.getLHS();
 		carl::Relation cRel  = c.getRelation();
 		auto cVars	  = c.gatherVariables();
@@ -414,30 +411,30 @@ namespace smtrat
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::convertNormalizedFormula(const FormulaT& formula){
 		std::cout << "CONVERTTOPOSITIVEFORMULA" << std::endl;
-		carl::PBConstraint c = formula.pbConstraint();
+		const carl::PBConstraint& c = formula.pbConstraint();
 		const auto& cLHS = c.getLHS();
 		FormulasT newSubformulas;
 
-		//-1 x1 +1 x2 -1 x3 >= 0 ===> +1 not(x1) +1 x2 +1 not(x3) >= 0 ===> not(x1) or x2 or not(x3)
+		//-1 x1 +1 x2 -1 x3 >= 0 ===> +1 not(x1) +1 x2 +1 not(x3) >= 0 ===> not(x1) or x2 or not(x3) ===> x1 and not(x2) and x3
 		for(auto it : cLHS){
 			FormulaT f = FormulaT(it.second);
-			if(it.first < 0){
+			if(it.first > 0){
 				newSubformulas.push_back(f.negated());
 			}
 		}
-		FormulaT sub = FormulaT(carl::FormulaType::OR, std::move(newSubformulas)); //Or due to de Morgan!
-		return FormulaT(carl::FormulaType::NOT, sub);
+		return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
+		
 	} 
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::forwardAsBoolean(const FormulaT& formula){
 		std::cout << "FORWARDASBOOLEAN" << std::endl;
-		carl::PBConstraint c = formula.pbConstraint();
+		const carl::PBConstraint& c = formula.pbConstraint();
 		const auto& cLHS 	 = c.getLHS();
 
 		if(cLHS.size() == 1){
 			return convertSmallFormulaToBoolean(formula);
-		}else if(cLHS.size() < 10){
+		}else if(cLHS.size() < 4){
 			return convertBigFormulaToBoolean(formula);
 		}
 	 	return formula;
@@ -471,7 +468,7 @@ namespace smtrat
 			}
 		}
 		Poly lhs;
-		carl::PBConstraint c = formula.pbConstraint();
+		const carl::PBConstraint& c = formula.pbConstraint();
 		const auto& cLHS = c.getLHS();
 		for(auto it = cLHS.begin(); it != cLHS.end(); it++){
 			auto finder = mVariablesCache.find(it->second);	
@@ -495,7 +492,7 @@ namespace smtrat
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::createAuxiliaryConstraint(const FormulaT& formula){
 		std::cout << "CREATEAUXILIARYCONSTRAINT" << std::endl;
-		carl::PBConstraint c = formula.pbConstraint();
+		const carl::PBConstraint& c = formula.pbConstraint();
 		auto boolVars        = c.gatherVariables();
 		std::vector<carl::Variable> intVars;
 		for(auto var : boolVars){
@@ -516,7 +513,7 @@ namespace smtrat
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::interconnectVariables(const FormulaT& formula){
 		std::cout << "INTERCONNECTVARIABLES" << std::endl;
-		carl::PBConstraint c = formula.pbConstraint();
+		const carl::PBConstraint& c = formula.pbConstraint();
 		auto boolVars 		 = c.gatherVariables();
 		std::map<carl::Variable, carl::Variable> varsMap;
 		for(auto var : boolVars){
