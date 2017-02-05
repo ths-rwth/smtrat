@@ -496,7 +496,11 @@ namespace smtrat
 		auto boolVars        = c.gatherVariables();
 		std::vector<carl::Variable> intVars;
 		for(auto var : boolVars){
-			intVars.push_back(mVariablesCache.find(var)->second);
+			if(std::find(mCheckedVars.begin(), mCheckedVars.end(), var) != mCheckedVars.end()){
+				//There are no auxiliary constraints for this variable
+				intVars.push_back(mVariablesCache.find(var)->second);
+				mCheckedVars.push_back(var);
+			}
 		}
 
 		FormulasT newSubformulas;
@@ -510,14 +514,19 @@ namespace smtrat
 		return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
 	}
 
-	template<typename Settings>
+		template<typename Settings>
 	FormulaT PBPPModule<Settings>::interconnectVariables(const FormulaT& formula){
 		std::cout << "INTERCONNECTVARIABLES" << std::endl;
 		const carl::PBConstraint& c = formula.pbConstraint();
 		auto boolVars 		 = c.gatherVariables();
 		std::map<carl::Variable, carl::Variable> varsMap;
 		for(auto var : boolVars){
-			varsMap.insert(*mVariablesCache.find(var));
+			if(std::find(mInterconectedVars.begin(), mInterconectedVars.end(), var) != mInterconectedVars.end()){
+				//The variable has to be interconected
+				varsMap.insert(*mVariablesCache.find(var));
+				mInterconectedVars.push_back(var);
+			}
+			//The variable is already interconected
 		}
 
 		FormulasT newSubformulas;
@@ -532,6 +541,7 @@ namespace smtrat
 			newSubformulas.push_back(newFormula);
 		}
 		return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
+
 	}
 
 }
