@@ -58,6 +58,24 @@ public:
 		}
 		return maxID;
 	}
+
+	/**
+	 * Disables all sample points that violate a superset of the constraints another sample violates.
+	 */
+	void disableSupersets(){
+		// std::sort(mData.begin(), mData.end());
+		for (std::size_t id = 0; id < mData.size(); id++) {
+			for (std::size_t next = 0; next < mData.size(); next++) {
+				if (id == next){
+					continue;
+				}
+				if (mData[id].is_subset_of(mData[next])){
+					this->selectConstraint(id);
+				}
+			}
+		}
+	}
+
 	/**
 	 * Removes the given constraint and disable all sample points covered by this constraint.
 	 */
