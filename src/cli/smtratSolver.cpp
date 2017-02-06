@@ -377,8 +377,10 @@ int main( int argc, char* argv[] )
 		carl::OPBImporter<smtrat::Poly> opb(pathToInputFile);
 		SMTRAT_LOG_INFO("smtrat", "Parsing " << pathToInputFile << " using OPB");
 		auto input = opb.parse();
-		SMTRAT_LOG_INFO("smtrat", "Parsed " << input);
-		solver->add(input);
+		SMTRAT_LOG_INFO("smtrat", "Parsed " << input.first);
+		SMTRAT_LOG_INFO("smtrat", "with objective " << input.second);
+		solver->addObjective(input.second, smtrat::parser::OptimizationType::Minimize);
+		solver->add(input.first);
 		switch (solver->check()) {
 			case smtrat::Answer::SAT: {
 				std::cout << "sat" << std::endl;
