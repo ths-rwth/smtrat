@@ -40,6 +40,11 @@ namespace smtrat
 	{
 		std::cout << "ADDCORE" << std::endl;
 		std::cout << _subformula->formula() << std::endl;
+		if (objective() != carl::Variable::NO_VARIABLE) {
+			for (auto var: objectiveFunction().gatherVariables()) {
+				mVariablesCache.emplace(carl::Variable(var.getId(), carl::VariableType::VT_BOOL), var);
+			}
+		}
 		FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeFunction);
 		addSubformulaToPassedFormula(formula, _subformula->formula());
 		return true;
@@ -547,4 +552,3 @@ namespace smtrat
 }
 
 #include "Instantiation.h"
-
