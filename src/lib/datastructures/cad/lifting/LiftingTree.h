@@ -173,7 +173,13 @@ namespace cad {
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Lifting " << m << " on " << p);
 			std::vector<Sample> newSamples;
 			// TODO: Check whether the polynomials becomes zero (check if McCallum is safe)
-			for (const auto& r: carl::rootfinder::realRoots(p, m, RationalInterval::unboundedInterval(), Settings::rootSplittingStrategy)) {
+			auto roots = carl::rootfinder::realRoots(p, m, RationalInterval::unboundedInterval(), Settings::rootSplittingStrategy);
+			std::list<RAN> rootlist = { RAN(0) };
+			if (roots) rootlist = *roots;
+			else {
+				// Here, the polynomial vanished.
+			}
+			for (const auto& r: rootlist) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tnew root sample: " << r);
 				newSamples.emplace_back(r, pid);
 			}
