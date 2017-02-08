@@ -1358,12 +1358,17 @@ namespace smtrat
                     const carl::UEquality& ueq = content.uequality();
                     invertedConstraint = FormulaT( ueq.lhs(), ueq.rhs(), !ueq.negated() );
                 }
-                else
+                else if (content.getType() == carl::FormulaType::BITVECTOR)
                 {
-                    assert( content.getType() == carl::FormulaType::BITVECTOR );
                     constraint = content;
                     invertedConstraint = FormulaT( carl::FormulaType::NOT, content );
                 }
+				else
+				{
+					assert( content.getType() == carl::FormulaType::PBCONSTRAINT );
+					constraint = content;
+					invertedConstraint = FormulaT( carl::FormulaType::NOT, content );
+				}
                 Var constraintAbstraction = newVar( !preferredToTSolver, _decisionRelevant, act );
                 // map the abstraction variable to the abstraction information for the constraint and it's negation
                 mBooleanConstraintMap.push( std::make_pair( new Abstraction( passedFormulaEnd(), constraint ), new Abstraction( passedFormulaEnd(), invertedConstraint ) ) );
