@@ -115,6 +115,8 @@ void loadTools(std::vector<benchmax::Tool*>& tools) {
 	//benchmax::createTools<benchmax::QepcadTool>(Settings::tools_qepcad, tools);
 	//benchmax::createTools<benchmax::IsatTool>(Settings::tools_redlogrlcad, tools);
 	benchmax::createTools<benchmax::SMTRAT>(Settings::tools_smtrat, tools);
+	benchmax::createTools<benchmax::SMTRAT_OPB>(Settings::tools_smtrat_opb, tools);
+	benchmax::createTools<benchmax::Minisatp>(Settings::tools_minisatp, tools);
 	benchmax::createTools<benchmax::Z3>(Settings::tools_z3, tools);
 }
 void loadBenchmarks(std::vector<benchmax::BenchmarkSet>& benchmarks) {
