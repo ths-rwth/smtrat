@@ -20,8 +20,10 @@
 #include "Tool.h"
 
 #include "IsatTool.h"
-#include "Z3.h"
+#include "Minisatp.h"
 #include "SMTRAT.h"
+#include "SMTRAT_OPB.h"
+#include "Z3.h"
 
 #include "../utils/regex.h"
 
