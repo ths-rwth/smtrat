@@ -5,6 +5,7 @@
 #include "../modules/LRAModule/LRAModule.h"
 #include "../modules/PBPPModule/PBPPModule.h"
 #include "../modules/SATModule/SATModule.h"
+#include "../modules/ICPModule/ICPModule.h"
 
 
 namespace smtrat

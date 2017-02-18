@@ -178,6 +178,20 @@ namespace smtrat
 					//-20 x1 > -20 ===> not x1
 					return FormulaT(lhsVar.negated());
 				}
+			}else if(lhsCoeff == 0){
+				if(cRHS > 0){	
+					// 0 x2 > 3 or 0 x2 >= 3 ===> FALSE
+					return FormulaT(carl::FormulaType::FALSE);
+				}else if(cRHS == 0 && cRel == carl::Relation::GEQ){
+					//0 x2 >= 0 ===> TRUE
+					return FormulaT(carl::FormulaType::TRUE);
+				}else if(cRHS == 0 && cRel == carl::Relation::GREATER){
+					//0 x2 > 0 ===> FALSE
+					return FormulaT(carl::FormulaType::FALSE);
+				}else if(cRHS < 0){
+					// 0 x2 > -3 or 0 x2 >= -3 ===> TRUE
+					return FormulaT(carl::FormulaType::TRUE);
+				}
 			}
 		}else if(cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS){
 			if(lhsCoeff > 0){
@@ -554,6 +568,10 @@ namespace smtrat
 
 	}
 
+	template<typename Settings>
+	FormulaT PBPPModule<Settings>::sortLHS(const FormulaT& formula){
+		//TODO
+	}
 }
 
 #include "Instantiation.h"

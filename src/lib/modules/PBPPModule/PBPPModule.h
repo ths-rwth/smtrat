@@ -98,6 +98,7 @@ namespace smtrat
 			FormulaT convertSmallFormulaToBoolean(const FormulaT& formula);
 			FormulaT convertBigFormulaToBoolean(const FormulaT& formula);
 			FormulaT convertNormalizedFormula(const FormulaT& formula);
+			FormulaT sortLHS(const FormulaT& formula);
 
 	};
 }
