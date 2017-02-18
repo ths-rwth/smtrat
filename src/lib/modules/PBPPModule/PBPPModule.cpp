@@ -243,28 +243,62 @@ namespace smtrat
 					//-20 x1 < -20 ===> FALSE
 					return FormulaT(carl::FormulaType::FALSE);
 				}
+			}else if(lhsCoeff == 0){
+				if(cRHS == 0 && cRel == carl::Relation::LEQ){
+					//0 x2 <= 0 ===> TRUE
+					return FormulaT(carl::FormulaType::TRUE);
+				}else if(cRHS == 0 && cRel == carl::Relation::LESS){
+					//0 x3 < 0 ===> FALSE
+					return FormulaT(carl::FormulaType::FALSE);
+				}else if(cRHS < 0){
+					//0 x2 < -3 or 0 x2 <= -3 ===> FALSE
+					return FormulaT(carl::FormulaType::FALSE);
+				}else if(cRHS > 0){
+					//0 x2 < 3 or 0 x3 <= 3 ===> TRUE
+					return FormulaT(carl::FormulaType::TRUE);
+				}
 			}
 		}else if(cRel == carl::Relation::EQ){
-			if(lhsCoeff == cRHS){
-				//-2 x1 = -2 or 3 x1 = 3 ===> x1
-				return FormulaT(lhsVar);
-			}else if(cRHS == 0){
-				//2 x1 = 0 or -3 x1 = 0 ===> not x1
-				return FormulaT(lhsVar.negated());
+			if(lhsCoeff != 0){
+				if(lhsCoeff == cRHS){
+					//-2 x1 = -2 or 3 x1 = 3 ===> x1
+					return FormulaT(lhsVar);
+				}else if(cRHS == 0){
+					//2 x1 = 0 or -3 x1 = 0 ===> not x1
+					return FormulaT(lhsVar.negated());
+				}else{
+					//2 x1 = 4 ===> FALSE
+					return FormulaT(carl::FormulaType::FALSE);
+				}
 			}else{
-				//2 x1 = 4 ===> FALSE
-				return FormulaT(carl::FormulaType::FALSE);
+				if(cRHS == 0){
+					// 0 x2 = 0 ===> TRUE
+					return FormulaT(carl::FormulaType::TRUE);
+				}else if(cRHS != 0){
+					// 0 x3 = 3 ===> FALSE
+					return FormulaT(carl::FormulaType::FALSE);
+				}
 			}
 		}else if(cRel == carl::Relation::NEQ){
-			if(lhsCoeff == cRHS){
-				//3 x1 != 3 ===> not x1
-				return FormulaT(lhsVar.negated());
-			}else if(cRHS == 0){
-				//3 x1 != 0 ===> x1
-				return FormulaT(lhsVar);
-			}else if(lhsCoeff != cRHS){
-				//3 x1 != 5 ===> TRUE
-				return FormulaT(carl::FormulaType::TRUE);
+			if(lhsCoeff != 0){
+				if(lhsCoeff == cRHS){
+					//3 x1 != 3 ===> not x1
+					return FormulaT(lhsVar.negated());
+				}else if(cRHS == 0){
+					//3 x1 != 0 ===> x1
+					return FormulaT(lhsVar);
+				}else if(lhsCoeff != cRHS){
+					//3 x1 != 5 ===> TRUE
+					return FormulaT(carl::FormulaType::TRUE);
+				}
+			}else{
+				if(cRHS == 0){
+					// 0 x2 != 0 ===> FALSE
+					return FormulaT(carl::FormulaType::FALSE);
+				}else if(cRHS != 0){
+					// 0 x3 != 3 ===> TRUE
+					return FormulaT(carl::FormulaType::TRUE);
+				}
 			}
 		}
 		return formula;
@@ -291,8 +325,29 @@ namespace smtrat
 			sum += it->first;
 		}
 
+		//Filter out variables with coefficient equal 0
+		int trashCounter = 0;
+		for(auto it : cLHS){	
+			if(it.first == 0){
+				trashCounter++;
+			}
+		}
+		if(trashCounter != 0){
+			return forwardAsArithmetic(formula);
+		}
+
 		if(!positive && !negative && cRHS >= 0 && cRel == carl::Relation::GEQ && sum >= cRHS){
-			return convertNormalizedFormula(formula);
+			//-1 x1 +1 x2 +1 x3 >= 0 ===> +1 not(x1) +1 x2 +1 x3 >= 0 ===> x1 and not(x2) and not(x3)
+			FormulasT newSubformulas;
+			for(auto it : cLHS){
+				FormulaT f = FormulaT(it.second);
+				if(it.first > 0){
+					newSubformulas.push_back(f.negated());
+				}else{
+					newSubformulas.push_back(f);
+				}
+			}
+			return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
 		}else if(!positive && !negative){
 			return forwardAsArithmetic(formula);
 		}
@@ -431,26 +486,6 @@ namespace smtrat
 	}
 
 	template<typename Settings>
-	FormulaT PBPPModule<Settings>::convertNormalizedFormula(const FormulaT& formula){
-		//std::cout << "CONVERTTOPOSITIVEFORMULA" << std::endl;
-		const carl::PBConstraint& c = formula.pbConstraint();
-		const auto& cLHS = c.getLHS();
-		FormulasT newSubformulas;
-
-		//-1 x1 +1 x2 +1 x3 >= 0 ===> +1 not(x1) +1 x2 +1 x3 >= 0 ===> x1 and not(x2) and not(x3)
-		for(auto it : cLHS){
-			FormulaT f = FormulaT(it.second);
-			if(it.first > 0){
-				newSubformulas.push_back(f.negated());
-			}else{
-				newSubformulas.push_back(f);
-			}
-		}
-		return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
-
-	} 
-
-	template<typename Settings>
 	FormulaT PBPPModule<Settings>::forwardAsBoolean(const FormulaT& formula){
 		//std::cout << "FORWARDASBOOLEAN" << std::endl;
 		const carl::PBConstraint& c = formula.pbConstraint();
@@ -568,10 +603,6 @@ namespace smtrat
 
 	}
 
-	template<typename Settings>
-	FormulaT PBPPModule<Settings>::sortLHS(const FormulaT& formula){
-		//TODO
-	}
 }
 
 #include "Instantiation.h"
