@@ -23,13 +23,13 @@ namespace cad {
 	template<>
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::GREEDY>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
+		static int x;
+		std::cout << "GREEDY invoked: " << x++ << std::endl;
 		mis.emplace_back();
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
 			mis.back().emplace(c);
-			std::cout << c << std::endl;
 		}
 		auto cg = cad.generateConflictGraph();
-		std::cout << cg << std::endl;
 		while (cg.hasRemainingSamples()) {
 			std::size_t c = cg.getMaxDegreeConstraint();
 			mis.back().emplace(cad.getConstraints()[c]->first);
@@ -59,39 +59,44 @@ namespace cad {
 	template<>
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::SAT_ACTIVITY>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
-		puts("SAT_ACTIVITY invoked.");
+		static int x;
+		std::cout << "SAT_ACTIVITY invoked: " << x++ << std::endl;
 		mis.emplace_back();
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
 			mis.back().emplace(c);
 		}
 		auto cg = cad.generateConflictGraph();
-		std::cout << cg << std::endl;
 		auto constraints = cad.getConstraints();
-		/*
+		
 		struct candidate {
 			size_t _id;
 			FormulaT _formula;
-			ConstraintT _constraint;
 		};
 
 		std::vector<candidate> candidates;
 
 		for(size_t i = 0; i < constraints.size(); i++){
-			candidates.push_back(
+			candidates.emplace_back(candidate{
 				i,
-				FormulaT(constraints[i]->first),
-				constraints[i]->first);
+				FormulaT(constraints[i]->first)
+			});
+				std::cout << "id: " << i << "\t activity: " << FormulaT(constraints[i]->first).activity() <<
+				"\t formula: " << FormulaT(constraints[i]->first) << std::endl;
 		}
 
-		std::sort(ids.begin(), ids.end(), [constraints](size_t left, size_t right) {
-			return constraints[left] ->first.activity() <
-			       constraints[right]->first.activity();
+		std::sort(candidates.begin(), candidates.end(), [](candidate left, candidate right) {
+			return left._formula.activity() < right._formula.activity();
 		});
-		while (cg.hasRemainingSamples()) {
-			mis.back().emplace(constraints[ids.back()]);
-			ids.pop_back();
-			cg = cad.generateConflictGraph();
-		}*/
+		std::cout << "Selecting:" << std::endl;
+		for(auto rit = candidates.rbegin(); rit != candidates.rend(); rit++) {
+			mis.back().emplace(rit->_formula);
+			cg.selectConstraint(rit->_id);
+			std::cout << "id: " << rit->_id << "\t activity: " << rit->_formula.activity() <<
+				"\t formula: " << rit->_formula << std::endl;
+			if(!cg.hasRemainingSamples()){
+				break;
+			}
+		}
 	}
 }
 }
