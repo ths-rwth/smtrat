@@ -100,8 +100,8 @@ namespace smtrat
 			}
 		}
 		if(cLHS.size() == 1 ||
-			(cLHS.size() < 4 
-					&& !(positive && cRHS > 0 && sum > cRHS 
+			(/*cLHS.size() < 4 
+					&& */!(positive && cRHS > 0 && sum > cRHS 
 					&& (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
 						&&  !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum < cRHS && cLHS.size() > 1)
 							&& !(negative && cRHS < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum < cRHS)
@@ -493,7 +493,7 @@ namespace smtrat
 
 		if(cLHS.size() == 1){
 			return convertSmallFormulaToBoolean(formula);
-		}else if(cLHS.size() < 4){
+		}else /*if(cLHS.size() < 4)*/{
 			return convertBigFormulaToBoolean(formula);
 		}
 	 	return formula;
