@@ -88,15 +88,14 @@ namespace smtrat
 			Answer checkCore();
 
 		private:
-			FormulaT forwardAsBoolean(const FormulaT& formula);
+			FormulaT convertSmallFormula(const FormulaT& formula);
+			FormulaT convertBigFormula(const FormulaT& formula);
 			FormulaT forwardAsArithmetic(const FormulaT& formula);
 			FormulaT checkFormulaType(const FormulaT& formula);
 			std::function<FormulaT(FormulaT)> checkFormulaTypeFunction;
 			FormulaT generateVarChain(const std::vector<carl::Variable>& vars, carl::FormulaType type);
 			FormulaT createAuxiliaryConstraint(const FormulaT& formula);
 			FormulaT interconnectVariables(const FormulaT& formula);
-			FormulaT convertSmallFormula(const FormulaT& formula);
-			FormulaT convertBigFormula(const FormulaT& formula);
 
 	};
 }

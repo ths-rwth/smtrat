@@ -99,32 +99,26 @@ namespace smtrat
 				negative = false;
 			}
 		}
-	/*	if(cLHS.size() == 1 ||
-			(cLHS.size() < 4 
-					&& !(positive && cRHS > 0 && sum > cRHS 
+
+		if(cLHS.size() == 1){
+			auto res = convertSmallFormula(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(!(positive && cRHS > 0 && sum > cRHS 
 					&& (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
 						&&  !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum < cRHS && cLHS.size() > 1)
 							&& !(negative && cRHS < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum < cRHS)
 								&& !((positive || negative) && cRel == carl::Relation::NEQ && sum != cRHS && cRHS != 0)
 									&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
-			)){
-			auto res = forwardAsBoolean(formula);
+										&& ((!positive && !negative && (cRel == carl::Relation::GEQ || cRel == carl::Relation::LEQ) && sum >= cRHS) || positive || negative)
+			){
+			auto res = convertBigFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 			}
 		auto res = forwardAsArithmetic(formula);
 		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-		*/
-
-		if(cLHS.size() == 1){
-			auto res = convertSmallFormula(formula);
-			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-		}
-		// auto res = forwardAsBoolean(formula);
-		auto res = convertBigFormula(formula);
-		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 		return res;
-		
 	}
 
 	template<typename Settings>
@@ -359,9 +353,8 @@ namespace smtrat
 			sum += it->first;
 		}
 
-
-		if(!positive && !negative && cRHS >= 0 && cRel == carl::Relation::GEQ && sum >= cRHS){
-			//-1 x1 +1 x2 +1 x3 >= 0 ===> +1 not(x1) +1 x2 +1 x3 >= 0 ===> x1 and not(x2) and not(x3)
+		if(!positive && !negative && (cRel == carl::Relation::GEQ || cRel == carl::Relation::LEQ) && sum >= cRHS){
+			//-1 x1 +1 x2 >= 0 ===> +1 not(x1) +1 x2 >= 0 ===> x1 and not(x2)
 			FormulasT newSubformulas;
 			for(auto it : cLHS){
 				FormulaT f = FormulaT(it.second);
@@ -372,8 +365,6 @@ namespace smtrat
 				}
 			}
 			return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
-		}else if(!positive && !negative){
-			return forwardAsArithmetic(formula);
 		}
 
 		if(positive && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ)){
@@ -398,9 +389,7 @@ namespace smtrat
 				}else if(sum == cRHS && cRel == carl::Relation::GREATER){
 					//5 x1 + 2 x2 + 3 x3 > 10 ===> FALSE
 					return FormulaT(carl::FormulaType::FALSE);
-				}else{ //sum > cRHS 
-					return forwardAsArithmetic(formula); 
-				}
+				}//sum > cRHS 		
 			}
 		}else if(negative && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ)){
 			if(cRHS > 0){
@@ -428,9 +417,7 @@ namespace smtrat
 				}else if(sum > cRHS){
 					//-3 x1 -3 x2 -1 x3 >= -20 or -3 x1 -3 x2 -1 x3 > -20 ===> TRUE
 					return FormulaT(carl::FormulaType::TRUE);
-				}else{ //sum < cRHS
-					return forwardAsArithmetic(formula);
-				}
+				}//sum < cRHS
 			}
 		}else if(positive && (cRel == carl::Relation::LESS || cRel == carl::Relation::LEQ)){
 			if(cRHS < 0){
@@ -458,9 +445,7 @@ namespace smtrat
 				}else if(sum < cRHS){
 					//5 x1 +2 x2 +3 x3 <= 20 or 5 x1 +2 x2 +3 x3 < 20 ===> false -> x1 and x2 and x3 ===> TRUE
 					return FormulaT(carl::FormulaType::TRUE);
-				}else{ //sum > cRHS
-					return forwardAsArithmetic(formula);
-				}
+				}//sum > cRHS
 			}
 		}else if(negative && (cRel == carl::Relation::LESS || cRel == carl::Relation::LEQ)){
 			if(cRHS > 0){
@@ -488,9 +473,7 @@ namespace smtrat
 				}else if(sum == cRHS && cRel == carl::Relation::LESS){
 					//-5 x1 -2 x2 -3 x3 < -10 ===> FALSE
 					return FormulaT(carl::FormulaType::FALSE);
-				}else{ // sum < cRHS
-					return forwardAsArithmetic(formula);
-				}
+				}// sum < cRHS
 			}
 		}else if(cRel == carl::Relation::EQ){
 			if(sum == cRHS){
@@ -515,20 +498,6 @@ namespace smtrat
 		}
 	return formula;
 	}
-
-	// template<typename Settings>
-	// FormulaT PBPPModule<Settings>::forwardAsBoolean(const FormulaT& formula){
-	// 	//std::cout << "FORWARDASBOOLEAN" << std::endl;
-	// 	const carl::PBConstraint& c = formula.pbConstraint();
-	// 	const auto& cLHS 	 = c.getLHS();
-
-	// 	if(cLHS.size() == 1){
-	// 		return convertSmallFormula(formula);
-	// 	}else /*if(cLHS.size() < 4)*/{
-	// 		return convertBigFormula(formula);
-	// 	}
-	//  	return formula;
-	// }
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::generateVarChain(const std::vector<carl::Variable>& vars, carl::FormulaType type){
