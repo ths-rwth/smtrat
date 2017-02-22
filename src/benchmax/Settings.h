@@ -91,6 +91,8 @@ public:
 		solverOptions.add_options()
 			("tool", po::value<std::vector<std::string>>(&tools_generic), "any tool")
 			("smtrat,S", po::value<std::vector<std::string>>(&tools_smtrat), "an SMT-LIB 2.0 solver with SMT-RAT interface (multiple are possible)")
+			("smtrat-opb,O", po::value<std::vector<std::string>>(&tools_smtrat_opb), "SMT-RAT with OPB interface")
+			("minisatp", po::value<std::vector<std::string>>(&tools_minisatp), "Minisatp with OPB interface")
 			("z3,Z", po::value<std::vector<std::string>>(&tools_z3), "an SMT-LIB 2.0 solver with z3 interface (multiple are possible)")
 			("isat,I", po::value<std::vector<std::string>>(&tools_isat), "an .Hys solver with isat interface (multiple are possible)")
 			("redlog_rlqe,R", po::value<std::vector<std::string>>(&tools_redlogrlqe), "Redlog solvers calling rlqe")
@@ -158,6 +160,8 @@ public:
     /// Solver Options
 	static std::vector<std::string> tools_generic;
 	static std::vector<std::string> tools_smtrat;
+	static std::vector<std::string> tools_smtrat_opb;
+	static std::vector<std::string> tools_minisatp;
 	static std::vector<std::string> tools_z3;
 	static std::vector<std::string> tools_isat;
 	static std::vector<std::string> tools_redlogrlqe;
