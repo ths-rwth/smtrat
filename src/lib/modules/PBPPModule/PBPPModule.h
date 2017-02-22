@@ -95,8 +95,8 @@ namespace smtrat
 			FormulaT generateVarChain(const std::vector<carl::Variable>& vars, carl::FormulaType type);
 			FormulaT createAuxiliaryConstraint(const FormulaT& formula);
 			FormulaT interconnectVariables(const FormulaT& formula);
-			FormulaT convertSmallFormulaToBoolean(const FormulaT& formula);
-			FormulaT convertBigFormulaToBoolean(const FormulaT& formula);
+			FormulaT convertSmallFormula(const FormulaT& formula);
+			FormulaT convertBigFormula(const FormulaT& formula);
 
 	};
 }
