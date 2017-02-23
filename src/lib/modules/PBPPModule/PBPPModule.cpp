@@ -105,7 +105,7 @@ namespace smtrat
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(!(positive && cRHS > 0 && sum > cRHS 
-					&& (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
+					&& (/*cRel == carl::Relation::GEQ || */cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
 						&&  !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum < cRHS && cLHS.size() > 1)
 							&& !(negative && cRHS < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum < cRHS)
 								&& !((positive || negative) && cRel == carl::Relation::NEQ && sum != cRHS && cRHS != 0)
@@ -389,7 +389,20 @@ namespace smtrat
 				}else if(sum == cRHS && cRel == carl::Relation::GREATER){
 					//5 x1 + 2 x2 + 3 x3 > 10 ===> FALSE
 					return FormulaT(carl::FormulaType::FALSE);
-				}//sum > cRHS 		
+				}//sum > cRHS 
+					std::vector<carl::Variable> greaterRHS;
+				int subSum = 0;
+				for(auto it : cLHS){
+					if(it.first >= cRHS){
+						greaterRHS.push_back(it.second);
+					}
+					subSum += it.first;
+				}
+				if(subSum < cRHS){
+					return FormulaT(generateVarChain(greaterRHS, carl::FormulaType::OR));
+				}else{
+					return forwardAsArithmetic(formula);
+				}
 			}
 		}else if(negative && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ)){
 			if(cRHS > 0){
@@ -485,8 +498,8 @@ namespace smtrat
 				FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
 				return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);				
 			}else{
-				return forwardAsArithmetic(formula);
-			}
+			 	return forwardAsArithmetic(formula);
+			 }		
 		}else if(cRel == carl::Relation::NEQ){
 			if(sum != cRHS && cRHS == 0){
 				//5 x1 +2 x2 +3 x3 = 0 ===> not(x1 and x2 and x3)
