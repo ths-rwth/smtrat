@@ -39,6 +39,8 @@ namespace benchmax {
 	
 	std::vector<std::string> Settings::tools_generic;
 	std::vector<std::string> Settings::tools_smtrat;
+	std::vector<std::string> Settings::tools_smtrat_opb;
+	std::vector<std::string> Settings::tools_minisatp;
 	std::vector<std::string> Settings::tools_z3;
 	std::vector<std::string> Settings::tools_isat;
 	std::vector<std::string> Settings::tools_redlogrlqe;

@@ -12,8 +12,6 @@
 
 namespace benchmax {
 
-using carl::Formula;
-
 class Stats
 {
 	public:
