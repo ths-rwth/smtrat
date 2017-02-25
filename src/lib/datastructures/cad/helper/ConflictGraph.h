@@ -64,6 +64,7 @@ public:
 	 */
 	void disableSupersets(){
 		// std::sort(mData.begin(), mData.end());
+		/*
 		for (std::size_t id = 0; id < mData.size(); id++) {
 			for (std::size_t next = 0; next < mData.size(); next++) {
 				if (id == next){
@@ -73,7 +74,7 @@ public:
 					this->selectConstraint(id);
 				}
 			}
-		}
+		}*/
 	}
 
 	/**

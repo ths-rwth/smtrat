@@ -16,6 +16,8 @@ namespace cad {
 	template<>
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::TRIVIAL>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
+		static int x;
+		std::cout << "TRIVIAL invoked: " << x++ << std::endl;
 		mis.emplace_back();
 		for (const auto& it: cad.getConstraints()) mis.back().emplace(it->first);
 	}
@@ -40,15 +42,14 @@ namespace cad {
 	template<>
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::CLOSURE>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
-		puts("CLOSURE invoked.");
+		static int x;
+		std::cout << "CLOSURE invoked: " << x++ << std::endl;
 		mis.emplace_back();
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
 			mis.back().emplace(c);
 		}
 		auto cg = cad.generateConflictGraph();
-		std::cout << cg << std::endl;
 		cg.disableSupersets();
-		std::cout << cg << std::endl;
 		while (cg.hasRemainingSamples()) {
 			std::size_t c = cg.getMaxDegreeConstraint();
 			mis.back().emplace(cad.getConstraints()[c]->first);
