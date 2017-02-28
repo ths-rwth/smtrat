@@ -18,11 +18,11 @@ namespace smtrat
 			NewCADOnly(): Manager() {
 				setStrategy({
 					addBackend<FPPModule<FPPSettings1>>({
-								addBackend<SATModule<SATSettings1>>({
-										addBackend<VSModule<VSSettings234>>({
-											addBackend<NewCADModule<NewCADSettingsConfigured>>()
-										})
-								})
+						addBackend<SATModule<SATSettings1>>({
+							addBackend<VSModule<VSSettings234>>({
+								addBackend<NewCADModule<NewCADSettingsConfigured>>()
+							})
+						})
 					})
 				});
 			}
