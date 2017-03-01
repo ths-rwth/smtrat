@@ -105,7 +105,7 @@ namespace cad {
 	void MISGeneration<MISHeuristic::GREEDY_WEIGHTED>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		const static double constant_weight   = 1.0;
 		const static double degree_weight     = 1.0;
-		const static double complexity_weight = 0.5;
+		const static double complexity_weight = -0.5;
 		const static double activity_weight   = 0.5;
 
 		static int x;
