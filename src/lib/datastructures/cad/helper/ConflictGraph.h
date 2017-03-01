@@ -95,6 +95,10 @@ public:
 		return false;
 	}
 	
+	std::size_t getDegree(std::size_t id){
+		return mData[id].count();
+	}
+	
 	friend std::ostream& operator<<(std::ostream& os, const ConflictGraph& cg) {
 		os << "Print CG with " << cg.mData.size() << " constraints" << std::endl;
 		for (std::size_t i = 0; i < cg.mData.size(); i++) {
