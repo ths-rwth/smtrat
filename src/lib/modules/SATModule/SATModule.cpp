@@ -143,8 +143,15 @@ namespace smtrat
         mTheoryConflictIdCounter( 0 ),
         mUpperBoundOnMinimal( passedFormulaEnd() ),
         mLiteralsClausesMap(),
-        mLiteralsActivOccurrences()
+        mLiteralsActivOccurrences(),
+		//mTheoryVariableStack(),
+		//mNextTheoryVariable(mTheoryVariableStack.end()),
+		mMCSAT(*this),
+		mNextDecisionIsTheory(false)
     {
+		if (Settings::mc_sat) {
+			ca.extra_clause_field = true;
+		}
         mCurrentTheoryConflicts.reserve(100);
         mCurrentTheoryConflictTypes.reserve(100);
         mTrueVar = newVar();
@@ -162,17 +169,13 @@ namespace smtrat
     {
         while( mBooleanConstraintMap.size() > 0 )
         {
-            Abstraction*& abstrAToDel = mBooleanConstraintMap.last().first;
-            Abstraction*& abstrBToDel = mBooleanConstraintMap.last().second;
+            Abstraction* abstrAToDel = mBooleanConstraintMap.last().first;
+            Abstraction* abstrBToDel = mBooleanConstraintMap.last().second;
             mBooleanConstraintMap.pop();
-            if( abstrAToDel != nullptr )
-            {
-                assert( abstrBToDel != nullptr );
-                delete abstrAToDel;
-                delete abstrBToDel;
-                abstrAToDel = nullptr;
-                abstrBToDel = nullptr;
-            }
+            delete abstrAToDel;
+            delete abstrBToDel;
+            abstrAToDel = nullptr;
+            abstrBToDel = nullptr;
         }
         #ifdef SMTRAT_DEVOPTION_Statistics
         delete mpStatistics;
@@ -378,7 +381,10 @@ namespace smtrat
 //        assumptions.clear();
         Module::init();
         processLemmas();
-
+		
+		if (Settings::mc_sat) {
+			pickTheoryBranchLit();
+		}
         ++solves;
         // compared to original minisat we add the number of clauses with size 1 (nAssigns()) and learnts, we got after init()
         max_learnts = (nAssigns() + nClauses() + nLearnts() ) * learntsize_factor;
@@ -962,6 +968,7 @@ namespace smtrat
             case carl::FormulaType::UEQ:
             case carl::FormulaType::CONSTRAINT:
 			case carl::FormulaType::VARCOMPARE:
+			case carl::FormulaType::VARASSIGN:
             case carl::FormulaType::BITVECTOR:
                 return createLiteral( _formula, _original, everythingDecisionRelevant || _depth <= 1 );
             case carl::FormulaType::NOT:
@@ -979,9 +986,13 @@ namespace smtrat
 				}
                 if( _depth == 0 )
                 {
-                    assumptions.push( l );
-                    assert( mFormulaAssumptionMap.find( _formula ) == mFormulaAssumptionMap.end() );
-                    mFormulaAssumptionMap.emplace( _formula, assumptions.last() );
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Depth is zero");
+					vec<Lit> c;
+					c.push(l);
+					addClause(c, LEMMA_CLAUSE);
+                    //assumptions.push( l );
+                    //assert( mFormulaAssumptionMap.find( _formula ) == mFormulaAssumptionMap.end() );
+                    //mFormulaAssumptionMap.emplace( _formula, assumptions.last() );
                     return lit_Undef;
                 }
                 return l;
@@ -1265,6 +1276,7 @@ namespace smtrat
     template<class Settings>
     Lit SATModule<Settings>::createLiteral( const FormulaT& _formula, const FormulaT& _origin, bool _decisionRelevant )
     {
+		//SMTRAT_LOG_DEBUG("smtrat.sat", "Creating literal for " << _formula << " with origin " << _origin << ", decisionRelevant = " << _decisionRelevant);
         assert( _formula.propertyHolds( carl::PROP_IS_A_LITERAL ) );
         bool negated = _formula.getType() == carl::FormulaType::NOT;
         const FormulaT& content = negated ? _formula.subformula() : _formula;
@@ -1284,6 +1296,9 @@ namespace smtrat
                 mBooleanVarMap[content.boolean()] = var;
                 mMinisatVarMap.emplace((int)var,content);
                 mBooleanConstraintMap.push( std::make_pair( nullptr, nullptr ) );
+				if (Settings::mc_sat) {
+					mMCSAT.addVariable(var);
+				}
                 l = mkLit( var, negated );
             }
             return l;
@@ -1296,6 +1311,8 @@ namespace smtrat
             ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _formula );
             if( constraintLiteralPair != mConstraintLiteralMap.end() )
             {
+				//SMTRAT_LOG_DEBUG("smtrat.sat", "Constraint already exists");
+				//SMTRAT_LOG_DEBUG("smtrat.sat", "negated? " << negated);
                 // Check whether the theory solver wants this literal to assigned as soon as possible.
                 int abstractionVar = var(constraintLiteralPair->second.front());
                 if( act == numeric_limits<double>::infinity() )
@@ -1309,7 +1326,7 @@ namespace smtrat
                 auto& abstrPair = mBooleanConstraintMap[abstractionVar];
                 assert( abstrPair.first != nullptr && abstrPair.second != nullptr );
                 Abstraction& abstr = sign(constraintLiteralPair->second.front()) ? *abstrPair.second : *abstrPair.first;
-                if( !_origin.isTrue() || !negated )
+				if( !_origin.isTrue() || !negated )
                 {
                     if( !abstr.consistencyRelevant )
                     {
@@ -1352,6 +1369,11 @@ namespace smtrat
 					constraint = content;
 					invertedConstraint = FormulaT( content.variableComparison().negation() );
 				}
+				else if (content.getType() == carl::FormulaType::VARASSIGN )
+				{
+					constraint = content;
+					invertedConstraint = FormulaT( content.variableAssignment().negation() );
+				}
                 else if( content.getType() == carl::FormulaType::UEQ )
                 {
                     constraint = content;
@@ -1372,6 +1394,9 @@ namespace smtrat
                 Var constraintAbstraction = newVar( !preferredToTSolver, _decisionRelevant, act );
                 // map the abstraction variable to the abstraction information for the constraint and it's negation
                 mBooleanConstraintMap.push( std::make_pair( new Abstraction( passedFormulaEnd(), constraint ), new Abstraction( passedFormulaEnd(), invertedConstraint ) ) );
+				if (Settings::mc_sat) {
+					mMCSAT.addVariable(constraintAbstraction);
+				}
                 // add the constraint and its negation to the constraints to inform backends about
                 if( !_origin.isTrue() )
                 {
@@ -1394,11 +1419,14 @@ namespace smtrat
                         addConstraintToInform_( constraint );
                     }
                 }
-                else if( !negated )
+                else
                 {
                     assert( mBooleanConstraintMap.last().first != nullptr );
                     mBooleanConstraintMap.last().first->consistencyRelevant = true;
                     addConstraintToInform_( constraint );
+					assert( mBooleanConstraintMap.last().second != nullptr );
+                    mBooleanConstraintMap.last().second->consistencyRelevant = true;
+                    addConstraintToInform_( invertedConstraint );
                 }
                 // create a literal for the constraint and its negation
                 Lit litPositive = mkLit( constraintAbstraction, false );
@@ -1422,7 +1450,7 @@ namespace smtrat
     template<class Settings>
     Lit SATModule<Settings>::getLiteral( const FormulaT& _formula ) const
     {
-        bool negated = _formula.getType() == carl::FormulaType::NOT;
+		bool negated = _formula.getType() == carl::FormulaType::NOT;
         const FormulaT& content = negated ? _formula.subformula() : _formula;
         if( content.getType() == carl::FormulaType::BOOL )
         {
@@ -1431,7 +1459,7 @@ namespace smtrat
             return mkLit( booleanVarPair->second, negated );
         }
         assert( supportedConstraintType( content ) );
-        ConstraintLiteralsMap::const_iterator constraintLiteralPair = mConstraintLiteralMap.find( content );
+		ConstraintLiteralsMap::const_iterator constraintLiteralPair = mConstraintLiteralMap.find( content );
         assert( constraintLiteralPair != mConstraintLiteralMap.end() );
         return negated ? neg( constraintLiteralPair->second.front() ) : constraintLiteralPair->second.front();
     }
@@ -1439,12 +1467,37 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::adaptPassedFormula()
     {
+		SMTRAT_LOG_TRACE("smtrat.sat", "...");
         // Adapt the constraints in the passed formula for the just assigned Booleans being abstractions of constraints.
         for( signed posInAssigns : mChangedBooleans )
         {
-            assert( mBooleanConstraintMap[posInAssigns].first != nullptr && mBooleanConstraintMap[posInAssigns].second != nullptr );
-            adaptPassedFormula( *mBooleanConstraintMap[posInAssigns].first );
-            adaptPassedFormula( *mBooleanConstraintMap[posInAssigns].second );
+			if (Settings::mc_sat) {
+				const auto& abstr1 = mBooleanConstraintMap[posInAssigns].first;
+				assert( abstr1 != nullptr );
+				const auto& abstr2 = mBooleanConstraintMap[posInAssigns].second;
+				assert( abstr2 != nullptr );
+				checkAbstractionsConsistency();
+				SMTRAT_LOG_TRACE("smtrat.sat.mc", "abstr1: " << abstr1->reabstraction << " with " << abstr1->updateInfo);
+				SMTRAT_LOG_TRACE("smtrat.sat.mc", "abstr2: " << abstr2->reabstraction << " with " << abstr2->updateInfo);
+				if (abstr1->updateInfo > 0 && !mMCSAT.isFormulaUnivariate(abstr1->reabstraction)) {
+					SMTRAT_LOG_TRACE("smtrat.sat.mc", "Postponing changes to " << abstr1->reabstraction);
+					mFutureChangedBooleans[mMCSAT.currentVariable()].push_back(posInAssigns);
+				} else {
+					SMTRAT_LOG_TRACE("smtrat.sat.mc", "Adapting " << abstr1->reabstraction);
+					adaptPassedFormula(*abstr1);
+				}
+				if (abstr2->updateInfo > 0 && !mMCSAT.isFormulaUnivariate(abstr2->reabstraction)) {
+					SMTRAT_LOG_TRACE("smtrat.sat.mc", "Postponing changes to " << abstr2->reabstraction);
+					mFutureChangedBooleans[mMCSAT.currentVariable()].push_back(posInAssigns);
+				} else {
+					SMTRAT_LOG_TRACE("smtrat.sat.mc", "Adapting " << abstr2->reabstraction);
+					adaptPassedFormula(*abstr2);
+				}
+			} else {
+	            assert( mBooleanConstraintMap[posInAssigns].first != nullptr && mBooleanConstraintMap[posInAssigns].second != nullptr );
+	            adaptPassedFormula( *mBooleanConstraintMap[posInAssigns].first );
+	            adaptPassedFormula( *mBooleanConstraintMap[posInAssigns].second );
+			}
         }
         mChangedBooleans.clear();
         // Update the activities of the constraints in the passed formula according to the activity of the SAT solving process.
@@ -1492,7 +1545,7 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::adaptPassedFormula( Abstraction& _abstr )
     {
-        if( _abstr.updateInfo < 0 )
+        if( _abstr.updatedReabstraction || _abstr.updateInfo < 0 )
         {
             assert( !_abstr.reabstraction.isTrue() );
             if( _abstr.position != rPassedFormula().end() )
@@ -1502,16 +1555,24 @@ namespace smtrat
                 mChangedPassedFormula = true;
             }
         }
-        else if( _abstr.updateInfo > 0 )
+        if( _abstr.updatedReabstraction || _abstr.updateInfo > 0 )
         {
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Updating " << _abstr.reabstraction);
             assert( !_abstr.reabstraction.isTrue() );
-            assert( _abstr.reabstraction.getType() == carl::FormulaType::UEQ || _abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR || (_abstr.reabstraction.getType() == carl::FormulaType::CONSTRAINT && _abstr.reabstraction.constraint().isConsistent() == 2) );
+            assert( 
+				_abstr.reabstraction.getType() == carl::FormulaType::UEQ ||
+				_abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR ||
+				(_abstr.reabstraction.getType() == carl::FormulaType::CONSTRAINT && _abstr.reabstraction.constraint().isConsistent() == 2) || 
+				_abstr.reabstraction.getType() == carl::FormulaType::VARCOMPARE ||
+				_abstr.reabstraction.getType() == carl::FormulaType::VARASSIGN
+			);
             auto res = addSubformulaToPassedFormula( _abstr.reabstraction, _abstr.origins );
             _abstr.position = res.first;
             _abstr.position->setDeducted( _abstr.isDeduction );
             mChangedPassedFormula = true;
         }
         _abstr.updateInfo = 0;
+		_abstr.updatedReabstraction = false;
     }
     
     template<class Settings>
@@ -1626,19 +1687,29 @@ namespace smtrat
                 add_tmp[j++] = p = add_tmp[i];
             }
             add_tmp.shrink( i - j );
+			SMTRAT_LOG_DEBUG("smtrat.sat", "add_tmp = " << add_tmp);
+			SMTRAT_LOG_DEBUG("smtrat.sat", "false literals: " << falseLiteralsCount);
             if( mBusy || decisionLevel() > assumptions.size() )
             {
-                #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
-                std::cout << "add to mLemmas" << std::endl;
-                #endif
-                mLemmas.push();
-                add_tmp.copyTo( mLemmas.last() );
-                mLemmasRemovable.push( _type != NORMAL_CLAUSE );
-                return true;
+				if (!Settings::mc_sat || _type != CONFLICT_CLAUSE) {
+	                #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
+	                std::cout << "add to mLemmas:" << add_tmp << std::endl;
+	                #endif
+	                mLemmas.push();
+	                add_tmp.copyTo( mLemmas.last() );
+	                mLemmasRemovable.push( _type != NORMAL_CLAUSE );
+	                return true;
+				}
             }
             // if all false, we're in conflict
             if( add_tmp.size() == falseLiteralsCount )
-                return ok = false;
+			{
+				SMTRAT_LOG_DEBUG("smtrat.sat", "ok = false");
+				mLemmas.push();
+				add_tmp.copyTo( mLemmas.last() );
+				mLemmasRemovable.push( _type != NORMAL_CLAUSE );
+                return false;
+			}
         }
         CRef cr = CRef_Undef;
         // if not unit, add the clause
@@ -1684,131 +1755,263 @@ namespace smtrat
     template<class Settings>
     CRef SATModule<Settings>::storeLemmas()
     {
-		SMTRAT_LOG_DEBUG("smtrat.sat", "Storing lemmas");
-        #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
-        std::cout << __func__ << std::endl;
-        #endif
-        CRef conflict = CRef_Undef;
-        // decision level to backtrack to
-        int backtrackLevel = decisionLevel();
-        // we use this comparison operator
-        lemma_lt lt( *this );
-        // check for propagation and level to backtrack to
-        #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
-        std::cout << "mLemmas.size() = " << mLemmas.size() << std::endl;
-        #endif
-        int i = 0;
-        while( i < mLemmas.size() )
-        {
-            // we need this loop as when we backtrack, due to registration more lemmas could be added
-            for( ; i < mLemmas.size(); ++i )
-            {
-                // The current lemma
-                vec<Lit>& lemma = mLemmas[i];
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Adding a lemma " << lemma);
-                #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
-                std::cout << "add the lemma  ";
-                printClause(lemma,true);
-                #endif
-                // if it's an empty lemma, we have a conflict at zero level
-                if( lemma.size() == 0 )
-                {
-                    backtrackLevel = 0;
-                    continue;
-                }
-                // sort the lemma to be able to attach
-                sort( lemma, lt );
-                // see if the lemma propagates something
-                if( lemma.size() == 1 || value(lemma[1]) == l_False )
-                {
-                    // this lemma propagates, see which level we need to backtrack to
-                    int currentBacktrackLevel = lemma.size() == 1 ? 0 : level(var(lemma[1]));
-                    // even if the first literal is true, we should propagate it at this level (unless it's set at a lower level)
-                    if( value(lemma[0]) != l_True || level(var(lemma[0])) > currentBacktrackLevel )
-                    {
-                        if( currentBacktrackLevel < backtrackLevel )
-                            backtrackLevel = currentBacktrackLevel;
-                    }
-					SMTRAT_LOG_DEBUG("smtrat.sat", "Lemma is propagating on level " << backtrackLevel);
-                }
-            }
-            // pop so that propagation would be current
-            cancelUntil( backtrackLevel, true );
-            #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
-            std::cout << "backtrack to " << backtrackLevel << std::endl;
-            #endif
-        }
-        // last index in the trail
-        int backtrack_index = trail.size();
-        // attach all the clauses and enqueue all the propagations
-        for( int i = 0; i < mLemmas.size(); ++i )
-        {
-            // the current lemma
-            vec<Lit>& lemma = mLemmas[i];
-            if( lemma.size() == 0 )
-            {
-				SMTRAT_LOG_DEBUG("smtrat.sat", "ok = false");
-                ok = false;
-                return CRef_Undef;
-            }
-            #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
-            std::cout << "use the lemma  ";
-            printClause(lemma,true);
-            #endif
-            bool removable = mLemmasRemovable[i];
-            // attach it if non-unit
-            CRef lemma_ref = CRef_Undef;
-            if( lemma.size() > 1 )
-            {
-                lemma_ref = ca.alloc( lemma, removable );
-                if( removable )
-                    learnts.push( lemma_ref );
-                else
-                    clauses.push( lemma_ref );
-                attachClause( lemma_ref );
-            }
-            // if the lemma is propagating enqueue its literal (or set the conflict)
-	        #ifdef DEBUG_SATMODULE
-	        cout << "######################################################################" << endl;
-			cout << "###" << endl; printBooleanConstraintMap(cout, "###");
-	        cout << "###" << endl; printClauses( clauses, "Clauses", cout, "### ", 0, false, false );
-	        cout << "###" << endl; printClauses( learnts, "Learnts", cout, "### ", 0, false, false );
-	        cout << "###" << endl; printCurrentAssignment( cout, "### " );
-	        cout << "###" << endl; printDecisions( cout, "### " );
-	        cout << "###" << endl;
-	        #endif
-            if( conflict == CRef_Undef && value(lemma[0]) != l_True )
-            {
-                if( lemma.size() == 1 || (value(lemma[1]) == l_False && trailIndex(var(lemma[1])) < backtrack_index) )
-                {
-                    if( value(lemma[0]) == l_False )
-                    {
-                        // we have a conflict
-                        if( lemma.size() > 1 )
-                        {
-                            #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
-                            std::cout << "lemma is better as conflict" << std::endl;
-                            #endif
-                            conflict = lemma_ref;
-                        }
-                    }
-                    else
-                    {
-                        uncheckedEnqueue(lemma[0], lemma_ref);
-                    }
-                }
-            }
-        }
-        // clear the lemmas
-        mLemmas.clear();
-        mLemmasRemovable.clear();
-		SMTRAT_LOG_DEBUG("smtrat.sat", "Stored lemmas, returning conflict " << conflict);
-        return conflict;
+		// decision level to backtrack to
+		int backtrackLevel = decisionLevel();
+		SMTRAT_LOG_DEBUG("smtrat.sat", "Storing " << mLemmas.size() << " lemmas");
+		
+		// First phase:
+		// - Sort lemmas (only for analyzing, order may change due to backtracking again...)
+		// - Figure out whether one is conflicting
+		// - Determine decision level to backtrack to
+		// Backtrack
+		// Second phase:
+		// - Sort lemmas again
+		// - Add lemma as clause
+		// - If conflicting: use as conflict
+		// - If propagating: propagate manually
+		
+		// In general, we have the following cases for the first two literals:
+		// - UU, UT, TT, TF: lemma is neither unit nor conflicting
+		// - UF: unit
+		// - FF: conflicting
+		// TU, FU, FT: Can not occur due to sorting
+		
+		for (int i = 0; i < mLemmas.size(); i++) {
+			auto& lemma = mLemmas[i];
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Analyzing lemma " << lemma);
+			// if it's an empty lemma, we have a conflict at zero level
+			if (lemma.size() == 0) {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is trivial conflict, backtrack immediately");
+				backtrackLevel = 0;
+				break;
+			}
+			if (Settings::mc_sat) {
+				// Evaluate literals according to current theory model
+				for (int i = 0; i < lemma.size(); i++) {
+					valueAndUpdate(lemma[i]);
+				}
+			}
+			// Sort to make sure watches are at the front
+			sort(lemma, lemma_lt(*this));
+			if (lemma.size() == 1) {
+				// Backtrack to DL0 if (a) it is not assigned to true or (b) assigned to true later than DL0
+				if (value(lemma[0]) != l_True || level(var(lemma[0])) > 0) {
+					SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is singleton, backtrack to DL0");
+					backtrackLevel = 0;
+					break;
+				} else {
+					SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is singleton, but was already propagated at DL0");
+				}
+			} else if (value(lemma[0]) == l_False) {
+				// Conflicting
+				assert(value(lemma[1]) == l_False);
+				// Backtrack to highest DL such that it looks like a regular conflict
+				int lvl = level(var(lemma[0]));
+				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is conflicting on DL" << lvl);
+				if (lvl < backtrackLevel) {
+					backtrackLevel = lvl;
+				}
+			} else if (value(lemma[0]) == l_Undef && value(lemma[1]) == l_False) {
+				// Unit
+				int lvl = level(var(lemma[1]));
+				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is propagating on DL" << lvl);
+				if (lvl < backtrackLevel) {
+					backtrackLevel = lvl;
+				}
+			}
+		}
+		SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking to " << backtrackLevel);
+		cancelUntil(backtrackLevel, false);
+
+		CRef conflict = CRef_Undef;
+		for (int i = mLemmas.size()-1; i >= 0; i--) {
+			auto lemma = std::move(mLemmas[i]);
+			bool removable = mLemmasRemovable[i];
+			mLemmas.pop();
+			mLemmasRemovable.pop();
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Processing lemma " << lemma);
+			if (lemma.size() == 0) {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is trivial conflict, ok = false");
+				ok = false;
+				return CRef_Undef;
+			}
+			if (Settings::mc_sat) {
+				// Evaluate literals according to current theory model
+				for (int i = 0; i < lemma.size(); i++) {
+					valueAndUpdate(lemma[i]);
+				}
+			}
+			// Resort in case the backtracking changed the order
+			sort(lemma, lemma_lt(*this));
+			// If lemma is not a single literal, attach it
+			CRef lemma_ref = CRef_Undef;
+			if (lemma.size() > 1) {
+				lemma_ref = ca.alloc(lemma, removable);
+				if (removable) {
+					learnts.push(lemma_ref);
+				} else {
+					clauses.push(lemma_ref);
+				}
+				attachClause(lemma_ref);
+				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Added lemma as clause " << lemma_ref);
+			}
+			if (lemma.size() == 1) {
+				// Only a single literal
+				assert(decisionLevel() == 0);
+				assert(lemma_ref == CRef_Undef);
+				if (value(lemma[0]) == l_False) {
+					SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is singleton conflict, ok = false");
+					ok = false;
+					return CRef_Undef;
+				} else if (value(lemma[0]) == l_Undef) {
+					SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is singleton, add as assumption");
+					assumptions.push(lemma[0]);
+					uncheckedEnqueue(lemma[0], CRef_Undef);
+				} else {
+					SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is singleton, but was already propagated at DL0");
+				}
+			} else if (value(lemma[0]) == l_Undef && value(lemma[1]) == l_False) {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is unit, propagating " << lemma[0]);
+				uncheckedEnqueue(lemma[0], lemma_ref);
+			} else if (value(lemma[0]) == l_False) {
+				assert(value(lemma[1]) == l_False);
+				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is conflicting, use as conflict");
+				conflict = lemma_ref;
+			}
+		}
+		return conflict;
+		
+		// Wenn conflicting:
+		// 		wenn nur ein lit auf letztem DL: zu vorletztem DL backtracken, einfügen, per hand propagieren
+		// 		sonst: zu letztem DL backtracken, einfügen, analyze aufrufen
+		// check for propagation and level to backtrack to
+//        int i = 0;
+//        while( i < mLemmas.size() )
+//        {
+//            // we need this loop as when we backtrack, due to registration more lemmas could be added
+//            for( ; i < mLemmas.size(); ++i )
+//            {
+//                // The current lemma
+//                vec<Lit>& lemma = mLemmas[i];
+//				SMTRAT_LOG_DEBUG("smtrat.sat", "Analyzing lemma " << lemma);
+//                // if it's an empty lemma, we have a conflict at zero level
+//                if( lemma.size() == 0 )
+//                {
+//                    backtrackLevel = 0;
+//                    continue;
+//                }
+//				for (int i = 0; i < lemma.size(); i++) {
+//					valueAndUpdate(lemma[i]);
+//				}
+//                // sort the lemma to be able to attach
+//                sort( lemma, lt );
+//                // see if the lemma propagates something
+//				SMTRAT_LOG_DEBUG("smtrat.sat", "Model: " << mCurrentTheoryModel);
+//				SMTRAT_LOG_DEBUG("smtrat.sat", "Lemma: " << lemma);
+//				SMTRAT_LOG_DEBUG("smtrat.sat", "value(lemma[1]) " << value(lemma[1]));
+//				SMTRAT_LOG_DEBUG("smtrat.sat", "level(lemma[1]) " << level(var(lemma[1])));
+//                if( lemma.size() == 1 || value(lemma[1]) == l_False )
+//                {
+//                    // this lemma propagates, see which level we need to backtrack to
+//                    int currentBacktrackLevel = lemma.size() == 1 ? 0 : level(var(lemma[0]));
+//                    // even if the first literal is true, we should propagate it at this level (unless it's set at a lower level)
+//                    if( value(lemma[0]) != l_True || level(var(lemma[0])) > currentBacktrackLevel )
+//                    {
+//						SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking to " << backtrackLevel);
+//                        if( currentBacktrackLevel < backtrackLevel )
+//                            backtrackLevel = currentBacktrackLevel;
+//                    }
+//                }
+//            }
+//            // pop so that propagation would be current
+//			SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking to " << backtrackLevel);
+//            cancelUntil( backtrackLevel, true );
+//            #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
+//            std::cout << "backtrack to " << backtrackLevel << std::endl;
+//            #endif
+//        }
+//        // last index in the trail
+//        int backtrack_index = trail.size();
+//        // attach all the clauses and enqueue all the propagations
+//        for( int i = 0; i < mLemmas.size(); ++i )
+//        {
+//            // the current lemma
+//            vec<Lit>& lemma = mLemmas[i];
+//            if( lemma.size() == 0 )
+//            {
+//				SMTRAT_LOG_DEBUG("smtrat.sat", "ok = false");
+//                ok = false;
+//                return CRef_Undef;
+//            }
+//			for (int i = 0; i < lemma.size(); i++) {
+//				valueAndUpdate(lemma[i]);
+//			}
+//			SMTRAT_LOG_DEBUG("smtrat.sat", "Adding lemma " << lemma);
+//            bool removable = mLemmasRemovable[i];
+//            // attach it if non-unit
+//            CRef lemma_ref = CRef_Undef;
+//            if( lemma.size() > 1 )
+//            {
+//                lemma_ref = ca.alloc( lemma, removable );
+//                if( removable )
+//                    learnts.push( lemma_ref );
+//                else
+//                    clauses.push( lemma_ref );
+//                attachClause( lemma_ref );
+//            }
+//            // if the lemma is propagating enqueue its literal (or set the conflict)
+//	        #ifdef DEBUG_SATMODULE
+//	        cout << "######################################################################" << endl;
+//			cout << "###" << endl; printBooleanConstraintMap(cout, "###");
+//	        cout << "###" << endl; printClauses( clauses, "Clauses", cout, "### ", 0, false, false );
+//	        cout << "###" << endl; printClauses( learnts, "Learnts", cout, "### ", 0, false, false );
+//	        cout << "###" << endl; printCurrentAssignment( cout, "### " );
+//	        cout << "###" << endl; printDecisions( cout, "### " );
+//	        cout << "###" << endl;
+//	        #endif
+//            if( conflict == CRef_Undef && value(lemma[0]) != l_True )
+//            {
+//                if( lemma.size() == 1 || (value(lemma[1]) == l_False && trailIndex(var(lemma[1])) < backtrack_index) )
+//                {
+//                    if( value(lemma[0]) == l_False )
+//                    {
+//                        // we have a conflict
+//                        if( lemma.size() > 1 )
+//                        {
+//                            #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
+//                            std::cout << "lemma is better as conflict" << std::endl;
+//                            #endif
+//                            conflict = lemma_ref;
+//                        } else {
+//							SMTRAT_LOG_DEBUG("smtrat.sat", "Unit conflict " << conflict);
+//							cancelUntil(0);
+//							if (value(lemma[0]) == l_False) {
+//								SMTRAT_LOG_DEBUG("smtrat.sat", "ok = false");
+//								ok = false;
+//								return CRef_Undef;
+//							}
+//							uncheckedEnqueue(lemma[0]);
+//							break;
+//						}
+//                    }
+//                    else
+//                    {
+//                        uncheckedEnqueue(lemma[0], lemma_ref);
+//                    }
+//                }
+//            }
+//        }
+//        // clear the lemmas
+//        mLemmas.clear();
+//        mLemmasRemovable.clear();
+//		SMTRAT_LOG_DEBUG("smtrat.sat", "Stored lemmas, returning conflict " << conflict);
+//        return conflict;
     }
 
     template<class Settings>
     void SATModule<Settings>::attachClause( CRef cr )
     {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Prop: " << mReceivedFormulaPurelyPropositional);
         Clause& c = ca[cr];
         assert( c.size() > 1 );
         watches[~c[0]].push( Watcher( cr, c[1] ) );
@@ -1839,6 +2042,9 @@ namespace smtrat
                 }
             }
         }
+		if (Settings::mc_sat && !mReceivedFormulaPurelyPropositional) {
+			mMCSAT.addClause(cr);
+		}
     }
 
     template<class Settings>
@@ -1887,8 +2093,11 @@ namespace smtrat
                     }
                     mLiteralsClausesMap[v].removePositive( cr );
                 }
-            }
-        }
+            
+        }}
+		if (Settings::mc_sat && !mReceivedFormulaPurelyPropositional) {
+			mMCSAT.removeClause(cr);
+		}
     }
 
     template<class Settings>
@@ -1938,6 +2147,13 @@ namespace smtrat
     {
         for( int c = trail.size() - 1; c >= trail_lim[level]; --c )
         {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Backtracking " << trail[c]);
+			if (Settings::mc_sat) {
+				if (mMCSAT.backtrackTo(trail[c])) {
+					fixTheoryPassedFormulas();
+					adaptPassedFormula();
+				}
+			}
             Var x = var( trail[c] );
             resetVariableAssignment( x );
             VarData& vd = vardata[x];
@@ -1961,8 +2177,9 @@ namespace smtrat
         bool wasAssignedToFalse = ass == l_False;
         if( !mReceivedFormulaPurelyPropositional && mBooleanConstraintMap[_var].first != nullptr )
         {
-            assert( mBooleanConstraintMap[_var].second != nullptr );
-            Abstraction& abstr = wasAssignedToFalse ? *mBooleanConstraintMap[_var].second : *mBooleanConstraintMap[_var].first;
+            Abstraction* abstrptr = wasAssignedToFalse ? mBooleanConstraintMap[_var].second : mBooleanConstraintMap[_var].first;
+			assert( abstrptr != nullptr );
+			Abstraction& abstr = *abstrptr;
             if( abstr.position != rPassedFormula().end() )
             {
                 if( abstr.updateInfo >=0 && --abstr.updateInfo < 0 )
@@ -2071,6 +2288,7 @@ namespace smtrat
         {
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Storing lemmas");
             confl = storeLemmas();
+			SMTRAT_LOG_DEBUG("smtrat.sat", "-> " << confl);
             if( confl != CRef_Undef )
                 return confl;
             if( !ok )
@@ -2093,15 +2311,23 @@ namespace smtrat
                 }
                 // propagate theory
                 propagateTheory();
+				if( Settings::allow_theory_propagation ) {
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Processing lemmas");
+					processLemmas();
+				}
                 // if there are lemmas (or conflicts) update them
-                if( mLemmas.size() > 0 )
+                if( mLemmas.size() > 0 ) {
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Storing lemmas");
                     confl = storeLemmas();
+					SMTRAT_LOG_DEBUG("smtrat.sat", "-> " << confl);
+				}
             }
             else
             {   
                 // even though in conflict, we still need to discharge the lemmas
                 if( mLemmas.size() > 0 )
                 {
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Storing lemmas");
                     // remember the trail size
                     int oldLevel = decisionLevel();
                     // update the lemmas
@@ -2129,9 +2355,13 @@ namespace smtrat
     {
         carl::uint pos = mTheoryPropagations.size();
         collectTheoryPropagations();
+		for (const auto& tp: mTheoryPropagations) {
+			std::cout << "SAT: " << tp.mPremise << " -> " << tp.mConclusion << std::endl;
+		}
         while( pos < mTheoryPropagations.size() )
         {
             TheoryPropagation& tp = mTheoryPropagations[pos];
+			std::cout << "Propagating " << tp.mPremise << " -> " << tp.mConclusion << std::endl;
             Lit conclLit = createLiteral( tp.mConclusion );
             if( value(conclLit) == l_Undef )
             {
@@ -2277,28 +2507,14 @@ namespace smtrat
                 switch( mCurrentAssignmentConsistent )
                 {
                     case SAT:
-                    {
-                        if( Settings::allow_theory_propagation )
-                            processLemmas();
+						break;
+                    case UNSAT: learnTheoryConflicts();
                         break;
-                    }
-                    case UNSAT:
-                    {
-                        learnTheoryConflicts();
-                        if( Settings::allow_theory_propagation )
-                            processLemmas();
-                        break;
-                    }
                     case UNKNOWN:
-                    {
-                        if( Settings::allow_theory_propagation )
-                            processLemmas();
                         break;
-                    }
                     default:
-                    {
+                        mCurrentAssignmentConsistent = UNKNOWN;
                         break;
-                    }
                 }
             }
         }
@@ -2358,6 +2574,7 @@ namespace smtrat
             if( !mComputeAllSAT && anAnswerFound() )
                 return l_Undef;
             CRef confl = propagateConsistently();
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Continuing after propagation, ok = " << ok << ", confl = " << confl);
             if( !mComputeAllSAT && anAnswerFound() )
                 return l_Undef;
             if( !ok )
@@ -2369,6 +2586,7 @@ namespace smtrat
 
             if( confl == CRef_Undef )
             {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "No conflict");
                 // NO CONFLICT
                 if( Settings::check_if_all_clauses_are_satisfied && !mReceivedFormulaPurelyPropositional )
                 {
@@ -2396,7 +2614,7 @@ namespace smtrat
                      // Reduce the set of learned clauses:
                      reduceDB();
                 }
-                
+                SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for next literal");
                 Lit next = lit_Undef;
                 while( decisionLevel() < assumptions.size() )
                 {
@@ -2427,7 +2645,44 @@ namespace smtrat
                     #ifdef SMTRAT_DEVOPTION_Statistics
                     mpStatistics->decide();
                     #endif
-                    next = pickBranchLit();
+					if (Settings::mc_sat) {
+						auto it = mFutureChangedBooleans.find(mMCSAT.currentVariable());
+						SMTRAT_LOG_TRACE("smtrat.sat.mc", "Current: " << mChangedBooleans);
+						if (it != mFutureChangedBooleans.end() && !it->second.empty()) {
+							std::sort(it->second.begin(), it->second.end());
+							it->second.erase(std::unique(it->second.begin(), it->second.end()), it->second.end());
+							for (const auto& var: it->second) {
+								mChangedBooleans.push_back(var);
+								SMTRAT_LOG_TRACE("smtrat.sat.mc", "Restoring changes to " << var);
+							}
+							it->second.clear();
+							// make sure that passed formula is updated.
+							mCurrentAssignmentConsistent = UNKNOWN;
+						}
+						next = mMCSAT.pickLiteralForDecision();
+						if (next == lit_Undef) {
+							if (!mMCSAT.hasNextVariable()) {
+								SMTRAT_LOG_DEBUG("smtrat.sat.mc", "All theory variables assigned: SAT!");
+								return l_True;
+							} else {
+								SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Do next theory assignment.");
+								mMCSAT.updateModel(backendsModel(), Rational(0));
+								SMTRAT_LOG_DEBUG("smtrat.sat.mc", "New model: " << mMCSAT.model());
+								next = prepareTheoryLitDecision();
+								auto litval = value(next);
+								SMTRAT_LOG_TRACE("smtrat.sat.mc", "Next theory literal: " << next);
+								if (litval == l_False) std::exit(82);
+								assert(litval != l_False);
+								if (litval == l_True) {
+									pickTheoryBranchLit();
+									mNextDecisionIsTheory = false;
+									continue;
+								}
+							}
+						}
+					} else {
+                    	next = pickBranchLit();
+					}
 
                     if( next == lit_Undef )
                     {
@@ -2503,10 +2758,37 @@ namespace smtrat
         cout << "###" << endl;
         #endif
         cancelUntil( backtrack_level );
+		
+		if (false && Settings::mc_sat) {
+			while (true) {
+				bool isConflicting = true;
+				// Check whether the asserting clause is conflicting in the current decision level.
+				SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Current model: " << mMCSAT.model());
+				for (int i = 0; i < learnt_clause.size(); i++) {
+					auto lit = learnt_clause[i];
+					Abstraction* abstrptr = sign(lit) ? mBooleanConstraintMap[var(lit)].second : mBooleanConstraintMap[var(lit)].first;
+					assert(abstrptr != nullptr);
+					auto res = carl::model::evaluate(abstrptr->reabstraction, mMCSAT.model());
+					SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Evaluated " << abstrptr->reabstraction << " to " << res);
+					if (!res.isBool() || res.asBool()) {
+						isConflicting = false;
+						break;
+					}
+				}
+				if (isConflicting) {
+					SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Asserting clause is still conflicting, backtracking to " << (decisionLevel() - 1));
+					assert(decisionLevel() > 0);
+					cancelUntil( decisionLevel() - 1 );
+				} else {
+					break;
+				}
+			}
+		}
 
         #ifdef SMTRAT_DEVOPTION_Validation // this is often an indication that something is wrong with our theory, so we do store our assumptions.
         if( value( learnt_clause[0] ) != l_Undef ) Module::storeAssumptionsToCheck( *mpManager );
         #endif
+		if (value( learnt_clause[0] ) != l_Undef) std::exit(31);
         assert( value( learnt_clause[0] ) == l_Undef );
         if( learnt_clause.size() == 1 )
         {
@@ -2519,7 +2801,13 @@ namespace smtrat
             learnts.push( _confl );
             attachClause( _confl );
             claBumpActivity( ca[_confl] );
-            uncheckedEnqueue( learnt_clause[0], _confl );
+			if (Settings::mc_sat) {
+				if (value(learnt_clause[1]) == l_False) {
+					uncheckedEnqueue( learnt_clause[0], _confl );
+				}
+			} else {
+            	uncheckedEnqueue( learnt_clause[0], _confl );
+			}
             decrementLearntSizeAdjustCnt();
         }
 
@@ -2624,11 +2912,33 @@ namespace smtrat
         return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
         //return next == var_Undef ? lit_Undef : mkLit( next, rnd_pol ? drand( random_seed ) < 0.5 : polarity[next] );
     }
+
+	template<class Settings>
+    Lit SATModule<Settings>::prepareTheoryLitDecision()
+	{
+		FormulaT f = mMCSAT.buildDecisionFormula();
+		mNextDecisionIsTheory = true;
+		Lit lit = createLiteral(f);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Theory literal for " << f << " is " << lit);
+		return lit;
+	}
+	
+	template<class Settings>
+    void SATModule<Settings>::pickTheoryBranchLit() {
+		if (!mMCSAT.hasNextVariable()) {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mc", "No next theory variable.");
+			return;
+		}
+		carl::Variable nextVar = mMCSAT.nextVariable();
+		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Next theory variable is " << nextVar);
+		mMCSAT.pushLevel(nextVar);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Current state " << mMCSAT);
+	}
     
     template<class Settings>
     Lit SATModule<Settings>::bestBranchLit()
     {
-        #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
+        #ifdef DEBUG_SATMODULE_1_HEURISTIC
         std::cout << __func__ << std::endl;
         #endif
         Var next = var_Undef;
@@ -2747,8 +3057,19 @@ namespace smtrat
     template<class Settings>
     bool SATModule<Settings>::analyze( CRef confl, vec<Lit>& out_learnt, int& out_btlevel )
     {
+		#ifdef DEBUG_SATMODULE
+		cout << "### Analyze" << endl;
+		cout << "######################################################################" << endl;
+		cout << "###" << endl; printBooleanConstraintMap(cout, "###");
+		cout << "###" << endl; printClauses( clauses, "Clauses", cout, "### ", 0, false, false );
+		cout << "###" << endl; printClauses( learnts, "Learnts", cout, "### ", 0, false, false );
+		cout << "###" << endl; printCurrentAssignment( cout, "### " );
+		cout << "###" << endl; printDecisions( cout, "### " );
+		cout << "###" << endl;
+		#endif
 		assert( confl != CRef_Undef );
-        int pathC = 0;
+		SMTRAT_LOG_DEBUG("smtrat.sat", "Analyzing conflict " << ca[confl] << " on DL" << decisionLevel());
+        int pathC = 0; // number of literals that must be resolved
         int resolutionSteps = -1;
         Lit p = lit_Undef;
 
@@ -2759,36 +3080,64 @@ namespace smtrat
 
         do
         {
-            assert( confl != CRef_Undef );    // (otherwise should be UIP)
-            Clause& c = ca[confl];
-            if( c.learnt() )
-                claBumpActivity( c );
+			// TODO: If confl is a special reason, build a clause for it
+			// Important: Implied literal at clause[0]
+			
+			//if (isTheoryReason(confl)) {
+			//	Minisat::Var v = getTheoryReason(confl);
+			//	SMTRAT_LOG_DEBUG("smtrat.sat", "Processing theory propagation for " << v);
+			//	// v represents the last theory decision that lead to the decision of p
+			//	// This corresponds to (!p or v) which is not explicit!
+			//	// We now emulate the analysis of this virtual clause...
+			//	if (!seen[v] && level(v) > 0) {
+			//		SMTRAT_LOG_DEBUG("smtrat.sat", "Not seen yet, level = " << level(v) << ", adding " << v);
+			//		seen[v] = 1;
+			//		if (level(v) >= decisionLevel()) {
+			//			pathC++;
+			//		} else {
+			//			out_learnt.push(mkLit(v, false));
+			//		}
+			//	}
+			//} else {
+				if (confl == CRef_Undef) std::exit(77);
+	            assert( confl != CRef_Undef );    // (otherwise should be UIP)
+	            Clause& c = ca[confl];
+	            if( c.learnt() )
+	                claBumpActivity( c );
 
-            for( int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++ )
-            {
-                Lit q = c[j];
-                
-                if( !seen[var( q )] && level( var( q ) ) > 0 )
-                {
-                    varBumpActivity( var( q ) );
-                    seen[var( q )] = 1;
-                    if( level( var( q ) ) >= decisionLevel() )
-                        pathC++;
-                    else
-                        out_learnt.push( q );
-                }
-            }
+	            for( int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++ )
+	            {
+	                Lit q = c[j];
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking at " << q);
+	                
+	                if( !seen[var( q )] && level( var( q ) ) > 0 )
+	                {
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Not seen yet, level = " << level(var(q)));
+	                    varBumpActivity( var( q ) );
+	                    seen[var( q )] = 1;
+	                    if( level( var( q ) ) >= decisionLevel() ) {
+							pathC++;
+							SMTRAT_LOG_DEBUG("smtrat.sat", "pathC = " << pathC << " for " << q);
+						}
+	                    else
+	                        out_learnt.push( q );
+	                }
+	            }
+			//}
 
             // Select next clause to look at:
             while( !seen[var( trail[index--] )] );
             p              = trail[index + 1];
             confl          = reason( var( p ) );
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking over " << p << " with reason " << confl);
             seen[var( p )] = 0;
             pathC--;
             ++resolutionSteps;
         }
         while( pathC > 0 );
         out_learnt[0] = ~p;
+		
+		SMTRAT_LOG_DEBUG("smtrat.sat", "Learning clause " << out_learnt);
 
         // Simplify conflict clause:
         //
@@ -2897,9 +3246,7 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::uncheckedEnqueue( Lit p, CRef from )
     {
-        #ifdef DEBUG_SATMODULE
-        cout << __func__ << " " << (sign(p) ? "-" : "") << var(p) << "  from " << from << endl;
-        #endif
+		SMTRAT_LOG_DEBUG("smtrat.sat", "Enqueue " << p << " from " << from);
         assert( value( p ) == l_Undef );
         if( Settings::check_if_all_clauses_are_satisfied && !mReceivedFormulaPurelyPropositional && mNumberOfSatisfiedClauses < (size_t)clauses.size() )
         {
@@ -2958,22 +3305,40 @@ namespace smtrat
             }
         }
         assigns[var( p )] = lbool( !sign( p ) );
+		if (Settings::mc_sat) {
+			if (mNextDecisionIsTheory) {
+				pickTheoryBranchLit();
+				mNextDecisionIsTheory = false;
+			}
+		}
         if( !mReceivedFormulaPurelyPropositional && mBooleanConstraintMap[var( p )].first != nullptr )
         {
-            assert( mBooleanConstraintMap[var( p )].second != nullptr );
-            Abstraction& abstr = sign( p ) ? *mBooleanConstraintMap[var( p )].second : *mBooleanConstraintMap[var( p )].first;
-            if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == carl::FormulaType::UEQ || abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().isConsistent() != 1)) 
-            {
-                if( ++abstr.updateInfo > 0 )
-                {
-                    unsigned res = currentlySatisfiedByBackend( abstr.reabstraction );
-                    if( res != 1 )
-                    {
-                        mCurrentAssignmentConsistent = UNKNOWN;
-                    }
-                    mChangedBooleans.push_back( var( p ) );
-                }
-            }
+            Abstraction* abstrptr = sign( p ) ? mBooleanConstraintMap[var( p )].second : mBooleanConstraintMap[var( p )].first;
+			assert(abstrptr != nullptr);
+			Abstraction& abstr = *abstrptr;
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Adding literal " << p << ": " << abstr.reabstraction);
+			if (abstr.updatedReabstraction) {
+				mChangedBooleans.push_back( var( p ) );
+			} else {
+	            if (!abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (
+						abstr.reabstraction.getType() == carl::FormulaType::UEQ ||
+						abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR ||
+						abstr.reabstraction.getType() == carl::FormulaType::VARCOMPARE ||
+						abstr.reabstraction.getType() == carl::FormulaType::VARASSIGN ||
+						abstr.reabstraction.constraint().isConsistent() != 1
+					)) 
+	            {
+	                if( ++abstr.updateInfo > 0 )
+	                {
+	                    unsigned res = currentlySatisfiedByBackend( abstr.reabstraction );
+	                    if( res != 1 )
+	                    {
+	                        mCurrentAssignmentConsistent = UNKNOWN;
+	                    }
+	                    mChangedBooleans.push_back( var( p ) );
+	                }
+	            }
+			}
             vardata[var( p )] = VarData( from, decisionLevel(), trail.size() );
             trail.push_( p );
         }
@@ -3040,7 +3405,7 @@ namespace smtrat
 		cout << "### trail = " << trail << endl;
         cout << "### trail.size() = " << trail.size() << endl;
 		cout << "### trail_lim = " << trail_lim << endl;
-		//cout << "### theory stack = " << mTheoryVariableStack << endl;
+		cout << "### mcsat: " << mMCSAT << endl;
 		cout << "###" << endl; printBooleanConstraintMap(cout, "###");
 		cout << "###" << endl; printClauses( clauses, "Clauses", cout, "### ", 0, false, false );
 		cout << "###" << endl; printClauses( learnts, "Learnts", cout, "### ", 0, false, false );
@@ -3124,6 +3489,7 @@ NextClause:
         }
         propagations += (uint64_t)num_props;
 //        simpDB_props -= (uint64_t)num_props;
+		SMTRAT_LOG_DEBUG("smtrat.sat", "Returning " << confl);
         return confl;
     }
 
@@ -3246,10 +3612,11 @@ NextClause:
                 {
                     if( lem.mLemma.getType() != carl::FormulaType::TRUE )
                     {
-                        #ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
-                        cout << "Learned a theory lemma from a backend module!" << endl;
-                        cout << lem.mLemma.toString( false, 0, "", true, true, true ) << endl;
-                        #endif
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Found a lemma: " << lem.mLemma);
+                        //#ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
+                        //cout << "Learned a theory lemma from a backend module!" << endl;
+                        //cout << lem.mLemma.toString( false, 0, "", true, true, true ) << endl;
+                        //#endif
                         #ifdef SMTRAT_DEVOPTION_Validation
                         if( validationSettings->logLemmata() )
                             addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, lem.mLemma ), false, (*backend)->moduleName() + "_lemma" );
@@ -3404,6 +3771,9 @@ NextClause:
             tmp.emplace( c, ciPair.second );
         }
         mClauseInformation = std::move( tmp );
+		if (Settings::mc_sat) {
+			mMCSAT.relocateClauses(ca, to);
+		}
         
         if( Settings::check_if_all_clauses_are_satisfied )
         {
@@ -3761,6 +4131,9 @@ NextClause:
                 _out << "   ( " << mBooleanConstraintMap[var(trail[pos])].second->reabstraction << " )";
                 _out << " [" << mBooleanConstraintMap[var(trail[pos])].second->updateInfo << "]";
             }
+			if (vardata[var(trail[pos])].reason != CRef_Undef) {
+				_out << " due to " << vardata[var(trail[pos])].reason;
+			}
             _out << endl;
         }
     }

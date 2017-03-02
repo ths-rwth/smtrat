@@ -28,6 +28,7 @@
 #pragma once
 
 #include "../../config.h"
+#include "mcsat/MCSATMixin.h"
 #include "SATSettings.h"
 #include "Vec.h"
 #include "Heap.h"
@@ -53,6 +54,7 @@ namespace smtrat
     class SATModule:
         public Module
     {
+		friend mcsat::MCSATMixin;
         private:
 
             /**
@@ -107,6 +109,8 @@ namespace smtrat
                  * 0, otherwise.
                  */
                 int updateInfo;
+				
+				bool updatedReabstraction;
                 
                 /**
                  * The position of the corresponding constraint in the passed formula. It points to the end
@@ -132,6 +136,7 @@ namespace smtrat
                     consistencyRelevant( false ),
                     isDeduction( true ),
                     updateInfo( 0 ),
+					updatedReabstraction( false ),
                     position( _position ),
                     reabstraction( _reabstraction ),
                     origins( nullptr )
@@ -180,37 +185,6 @@ namespace smtrat
             };
 
             /// [Minisat related code]
-            struct Watcher
-            {
-                /// [Minisat related code]
-                Minisat::CRef cref;
-                
-                /// [Minisat related code]
-                Minisat::Lit  blocker;
-
-                /// [Minisat related code]
-                Watcher( Minisat::CRef cr, Minisat::Lit p ):
-                    cref( cr ),
-                    blocker( p )
-                {}
-                
-                /// [Minisat related code]
-                bool operator ==( const Watcher& w ) const
-                {
-                    return cref == w.cref;
-                }
-
-                /// [Minisat related code]
-                bool operator !=( const Watcher& w ) const
-                {
-                    return cref != w.cref;
-                }
-				friend std::ostream& operator<<(std::ostream& os, const Watcher& w) {
-					return os << "watch(" << w.cref << ", " << w.blocker << ")";
-				};
-            };
-
-            /// [Minisat related code]
             struct WatcherDeleted
             {
                 /// [Minisat related code]
@@ -222,7 +196,7 @@ namespace smtrat
                 {}
                 
                 /// [Minisat related code]
-                bool operator ()( const Watcher& w ) const
+                bool operator ()( const Minisat::Watcher& w ) const
                 {
                     return ca[w.cref].mark() == 1;
                 }
@@ -460,7 +434,7 @@ namespace smtrat
             /// Amount to bump next variable with.
             double var_inc;
             /// 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-            Minisat::OccLists<Minisat::Lit, Minisat::vec<Watcher>, WatcherDeleted> watches;
+            Minisat::OccLists<Minisat::Lit, Minisat::vec<Minisat::Watcher>, WatcherDeleted> watches;
             /// The current assignments.
             Minisat::vec<Minisat::lbool> assigns;
             /// The preferred polarity of each variable.
@@ -613,8 +587,9 @@ namespace smtrat
             /*
              * MC-SAT related members.
              */
-            ///
-            std::map<Minisat::Var,std::vector<Minisat::CRef>> mUnivariateClauses;
+			mcsat::MCSATMixin mMCSAT;
+			std::map<carl::Variable, std::vector<signed>> mFutureChangedBooleans;
+			bool mNextDecisionIsTheory;
             
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
@@ -881,6 +856,17 @@ namespace smtrat
             {
                 return assigns[x];
             }
+			inline Minisat::lbool valueAndUpdate( Minisat::Var x )
+            {
+				if (assigns[x] == l_Undef) {
+					Minisat::lbool res = mMCSAT.evaluateLiteral(Minisat::mkLit(x, false));
+					if (res == l_Undef) return l_Undef;
+					else if (res == l_True) uncheckedEnqueue(Minisat::mkLit(x, false), Minisat::CRef_Undef);
+					else if (res == l_False) uncheckedEnqueue(Minisat::mkLit(x, true), Minisat::CRef_Undef);
+				}
+				SMTRAT_LOG_DEBUG("smtrat.sat", x << " -> " << assigns[x]);
+                return assigns[x];
+            }
             
             /**
              * @param p The literal to get its value for.
@@ -888,7 +874,11 @@ namespace smtrat
              */
             inline Minisat::lbool value( Minisat::Lit p ) const
             {
-                return assigns[Minisat::var( p )] ^ Minisat::sign( p );
+				return value(Minisat::var(p)) ^ Minisat::sign(p);
+            }
+			inline Minisat::lbool valueAndUpdate( Minisat::Lit p )
+            {
+				return valueAndUpdate(Minisat::var(p)) ^ Minisat::sign(p);
             }
             
             /**
@@ -1049,6 +1039,46 @@ namespace smtrat
              * @return The next decision variable.
              */
             Minisat::Lit pickBranchLit();
+			Minisat::Lit prepareTheoryLitDecision();
+			
+			void pickTheoryBranchLit();
+			void checkAbstractionsConsistency() {
+				for (int i = 0; i < mBooleanConstraintMap.size(); i++) {
+					auto ptr1 = mBooleanConstraintMap[i].first;
+					auto ptr2 = mBooleanConstraintMap[i].second;
+					if (ptr1 == nullptr) continue;
+					assert(ptr2 != nullptr);
+					if (ptr1->updateInfo * ptr2->updateInfo > 0) {
+						SMTRAT_LOG_WARN("smtrat.sat.mc", "Consistency error for " << ptr1->reabstraction << " / " << ptr2->reabstraction);
+						std::exit(24);
+					}
+					assert(ptr1->updateInfo * ptr2->updateInfo <= 0);
+				}
+			}
+			void fixTheoryPassedFormulas() {
+				std::vector<Abstraction*> toRemove;
+				for (const auto& pf: rPassedFormula()) {
+					auto it = mConstraintLiteralMap.find(pf.formula());
+					assert(it != mConstraintLiteralMap.end());
+					auto lit = it->second.front();
+					Abstraction* abstrptr = sign(lit) ? mBooleanConstraintMap[var(lit)].second : mBooleanConstraintMap[var(lit)].first;
+					assert(abstrptr != nullptr);
+					assert(abstrptr->updateInfo <= 0);
+					if (abstrptr->updateInfo < 0) continue;
+					if (!mMCSAT.isFormulaUnivariate(abstrptr->reabstraction)) {
+						SMTRAT_LOG_TRACE("smtrat.sat.mc", "Removing " << abstrptr->reabstraction << " with updateInfo " << abstrptr->updateInfo);
+						toRemove.push_back(abstrptr);
+						mFutureChangedBooleans[mMCSAT.currentVariable()].emplace_back(var(lit));
+					}
+				}
+				for (auto abstrptr: toRemove) {
+					abstrptr->updateInfo--;
+					checkAbstractionsConsistency();
+					adaptPassedFormula(*abstrptr);
+					abstrptr->updateInfo++;
+					checkAbstractionsConsistency();
+				}
+			}
             
             /**
              * @return The best decision variable under consideration of the decision heuristic.
@@ -1517,6 +1547,7 @@ namespace smtrat
                 return
 					_formula.getType() == carl::FormulaType::CONSTRAINT ||
 					_formula.getType() == carl::FormulaType::VARCOMPARE ||
+					_formula.getType() == carl::FormulaType::VARASSIGN ||
 					_formula.getType() == carl::FormulaType::UEQ ||
 					_formula.getType() == carl::FormulaType::BITVECTOR ||
 					_formula.getType() == carl::FormulaType::PBCONSTRAINT;

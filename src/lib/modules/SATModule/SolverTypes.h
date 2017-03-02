@@ -123,6 +123,15 @@ public:
 inline int   toInt  (lbool l) { return l.value; }
 inline lbool toLbool(int   v) { return lbool((uint8_t)v);  }
 
+inline std::ostream& operator<<(std::ostream& os, Minisat::lbool b) {
+	switch (toInt(b)) {
+		case 0: return os << "true";
+		case 1: return os << "false";
+		case 2: return os << "unknown";
+		default: return os << "??? (" << toInt(b) << ")";
+	}
+}
+
 //=================================================================================================
 // Clause -- a simple class for representing a clause:
 
@@ -216,6 +225,15 @@ public:
     void         strengthen  (Lit p);
 };
 
+inline std::ostream& operator<<(std::ostream& os, const Minisat::Clause& c) {
+	os << "[";
+	for (int i = 0; i < c.size(); i++) {
+		if (i != 0) os << ", ";
+		os << c[i];
+	}
+	return os << "]";
+}
+
 
 //=================================================================================================
 // ClauseAllocator -- a simple class for allocating memory for clauses:
@@ -296,7 +314,7 @@ class OccLists
     OccLists(const Deleted& d) : deleted(d) {}
 
     void  init      (const Idx& idx){ occs.growTo(toInt(idx)+1); dirty.growTo(toInt(idx)+1, 0); }
-    // Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
+    const Vec&  operator[](const Idx& idx) const { return occs[toInt(idx)]; }
     Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
     Vec&  lookup    (const Idx& idx){ if (dirty[toInt(idx)]) clean(idx); return occs[toInt(idx)]; }
 
@@ -432,6 +450,39 @@ inline void Clause::strengthen(Lit p)
     remove(*this, p);
     calcAbstraction();
 }
+
+
+
+/// [Minisat related code]
+struct Watcher
+{
+	/// [Minisat related code]
+	Minisat::CRef cref;
+	
+	/// [Minisat related code]
+	Minisat::Lit  blocker;
+
+	/// [Minisat related code]
+	Watcher( Minisat::CRef cr, Minisat::Lit p ):
+		cref( cr ),
+		blocker( p )
+	{}
+	
+	/// [Minisat related code]
+	bool operator ==( const Watcher& w ) const
+	{
+		return cref == w.cref;
+	}
+
+	/// [Minisat related code]
+	bool operator !=( const Watcher& w ) const
+	{
+		return cref != w.cref;
+	}
+	friend std::ostream& operator<<(std::ostream& os, const Watcher& w) {
+		return os << "watch(" << w.cref << ", " << w.blocker << ")";
+	};
+};
 
 //=================================================================================================
 }
