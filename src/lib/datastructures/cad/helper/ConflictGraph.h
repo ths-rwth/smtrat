@@ -97,9 +97,13 @@ public:
 	
 	friend std::ostream& operator<<(std::ostream& os, const ConflictGraph& cg) {
 		os << "Print CG with " << cg.mData.size() << " constraints" << std::endl;
+		size_t numSamples = 0;
+		for (auto c : cg.mData){
+			numSamples = std::max(numSamples, c.size());
+		}
 		for (std::size_t i = 0; i < cg.mData.size(); i++) {
 			os << i << ":" << std::endl;
-			os << "\t" << cg.mData[i] << std::endl;
+			os << "\t" << std::string(numSamples-cg.mData[i].size(), '0') << cg.mData[i] << std::endl;
 		}
 		return os;
 	}
