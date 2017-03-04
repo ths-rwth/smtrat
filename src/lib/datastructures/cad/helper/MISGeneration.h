@@ -128,7 +128,7 @@ namespace cad {
 			auto constraint = constraints[i];
 			auto formula = FormulaT(constraint->first);
 			double weight = constant_weight +
-							degree_weight * cg.getDegree(i) +
+							degree_weight * cg.coveredSamples(i) +
 							complexity_weight * formula.complexity() +
 							activity_weight * formula.activity();
 			candidates.emplace_back(candidate{
