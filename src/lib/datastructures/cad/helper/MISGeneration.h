@@ -32,6 +32,10 @@ namespace cad {
 			mis.back().emplace(c);
 		}
 		auto cg = cad.generateConflictGraph();
+		std::cout << "rows:" << cg.numConstraints() << std::endl;
+		std::cout << "columns: " << cg.numSamples() << std::endl;
+		std::cout << "trivial columns: " << cg.numTrivialColumns() << std::endl;
+		std::cout << "unique colums: " << cg.numUniqueColumns() << std::endl;
 		while (cg.hasRemainingSamples()) {
 			std::size_t c = cg.getMaxDegreeConstraint();
 			mis.back().emplace(cad.getConstraints()[c]->first);

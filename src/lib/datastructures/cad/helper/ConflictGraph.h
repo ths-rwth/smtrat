@@ -95,6 +95,55 @@ public:
 		return false;
 	}
 	
+	size_t numSamples() const{
+		size_t res = 0;
+		for(auto& c : mData){
+			res = std::max(res, c.size());
+		}
+		return res;
+	}
+	
+	size_t numConstraints() const{
+		return mData.size();
+	}
+	
+	std::vector<std::vector<uint8_t>> toMatrix() const {
+		std::vector<std::vector<uint8_t>> matrix;
+		const size_t n = numSamples();
+		for(size_t s = 0; s < n; s++){
+			std::vector<uint8_t> column (mData.size(), 0);
+			for(size_t constraint = 0; constraint < mData.size(); constraint++){
+				column[constraint] = mData[constraint].test(s);
+			}
+			matrix.push_back(std::move(column));
+		}
+		return std::move(matrix);
+	}
+	
+	size_t numTrivialColumns() const{
+		auto matrix = toMatrix();
+		size_t res = 0;
+		for (auto& c : matrix){
+			size_t numOnes = 0;
+			for(auto& r : c){
+				numOnes += r;
+			}
+			if(numOnes == 1){
+				res++;
+			}
+		}
+		return res;
+	}
+	
+	size_t numUniqueColumns() const{
+		std::set<std::vector<uint8_t>> cs;
+		auto matrix = toMatrix();
+		for(auto c : matrix){
+			cs.insert(c);
+		}
+		return cs.size();
+	}
+
 	friend std::ostream& operator<<(std::ostream& os, const ConflictGraph& cg) {
 		os << "Print CG with " << cg.mData.size() << " constraints" << std::endl;
 		size_t numSamples = 0;
