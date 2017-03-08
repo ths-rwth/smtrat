@@ -14,8 +14,12 @@ namespace cad {
 		bool operator()(const Iterator& lhs, const Iterator& rhs) const {
 			std::size_t lsize = lhs->value().size();
 			std::size_t rsize = rhs->value().size();
-			if (lsize != rsize) return lsize > rsize;
-			return *lhs > *rhs;
+			if (lsize != rsize) {
+				SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Size (" << lsize << " / " << rsize << ") " << (lsize > rsize));
+				return lsize > rsize;
+			}
+			SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Absolute " << (lhs->value().abs() > rhs->value().abs()));
+			return lhs->value().abs() > rhs->value().abs();
 		}
 	};
 	
@@ -26,7 +30,10 @@ namespace cad {
 			bool lint = lhs->value().isNumeric();
 			bool rint = rhs->value().isNumeric();
 			if (lint && rint) return Fallback()(lhs, rhs);
-			if (lint || rint) return rint;
+			if (lint || rint) {
+				SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Num " << rint);
+				return rint;
+			}
 			return Fallback()(lhs, rhs);
 		}
 	};
@@ -38,7 +45,10 @@ namespace cad {
 			bool lint = lhs->value().isIntegral();
 			bool rint = rhs->value().isIntegral();
 			if (lint && rint) return Fallback()(lhs, rhs);
-			if (lint || rint) return rint;
+			if (lint || rint) {
+				SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Int " << rint);
+				return rint;
+			}
 			return Fallback()(lhs, rhs);
 		}
 	};
