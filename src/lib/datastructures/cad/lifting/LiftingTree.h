@@ -201,7 +201,7 @@ namespace cad {
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "For " << printSample(sample));
 			auto variable = mVariables[sample.depth()];
 			auto center = mConstraints.bounds().getInterval(variable).sample();
-			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Bounds for " << variable << " = " << mConstraints.bounds().getInterval(variable));
+			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Selecting " << center << " for " << variable << " from " << mConstraints.bounds().getInterval(variable));
 			auto it = mTree.append(sample, Sample(RAN(center), false));
 			addToQueue(it);
 			
