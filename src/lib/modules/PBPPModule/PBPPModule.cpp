@@ -658,7 +658,6 @@ namespace smtrat
 					if(!flag){
 						freq.push_back(std::pair<int, carl::uint>(1, prime));
 					}
-				std::cout << "coeff: " << it.first << " freq: " << freq << std::endl;
 				}
 				flag = false;
 				prime = pFactory.nextPrime();
@@ -685,7 +684,6 @@ namespace smtrat
 		 		break;
 		 	}
 		 }
-		 std::cout << "Base: " << base << std::endl;
 
 		return base;
 	}
