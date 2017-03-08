@@ -2,13 +2,14 @@
 
 #include <iostream>
 
-#include "../../lib/datastructures/AssignmentGenerator.h"
-#include "../../lib/datastructures/ExplanationGenerator.h"
+#include "../../lib/modules/NLSATModule/AssignmentGenerator.h"
+#include "../../lib/modules/NLSATModule/ExplanationGenerator.h"
+#include "../../lib/modules/NLSATModule/LemmaBuilder.h"
 
 using namespace smtrat;
 
 BOOST_AUTO_TEST_SUITE(Test_AssignmentGenerator);
-(or (<= x (NR -1 R)) (>= x (NR 1 R)) (>= y root(_z^2+x^2+(-1), 1, _z)) (<= (+ (* (- 1) (* z z)) (* (- 1) (* y y)) (* (- 1) (* x x)) 1) 0))
+
 BOOST_AUTO_TEST_CASE(Test_NLSATPaper_Ex6)
 {
 	carl::Variable x = carl::freshRealVariable("x");
@@ -19,14 +20,20 @@ BOOST_AUTO_TEST_CASE(Test_NLSATPaper_Ex6)
 	ConstraintT c(p, carl::Relation::LESS);
 	
 	AssignmentGenerator ag;
-	ag.pushAssignment(x, Rational(3)/Rational(4));
-	ag.pushAssignment(y, -Rational(3)/Rational(4));
-	ag.pushConstraint(c);
+	FormulaT fx(ConstraintT(Poly(x) - Rational(Rational(3)/Rational(4)), carl::Relation::EQ));
+	ag.pushAssignment(x, Rational(3)/Rational(4), fx);
+	FormulaT fy(ConstraintT(Poly(y) + Rational(Rational(3)/Rational(4)), carl::Relation::EQ));
+	ag.pushAssignment(y, -Rational(3)/Rational(4), fy);
+	ag.pushConstraint(FormulaT(c));
 	BOOST_CHECK(!ag.hasAssignment(z));
 	
 	ExplanationGenerator eg(ag.getConflictingCore(), {z,y,x}, ag.getModel());
-	FormulaT res = eg.generateExplanation(c);
-	std::cout << res << std::endl;
+	
+	std::vector<std::pair<carl::Variable,FormulaT>> assignment;
+	assignment.emplace_back(x, fx);
+	assignment.emplace_back(y, fy);
+	NLSATLemmaBuilder lb(assignment, [this](const FormulaT& f){ std::cout << "-> " << f << std::endl; });
+	lb.generateLemmas(FormulaT(c).negated(), eg, NLSATLemmaStrategy::ORIGINAL);
 }
 
 BOOST_AUTO_TEST_CASE(Test_NLSATPaper)
@@ -42,23 +49,27 @@ BOOST_AUTO_TEST_CASE(Test_NLSATPaper)
 	
 	AssignmentGenerator ag;
 	// Select c1, Decide c1
-	ag.pushConstraint(c1);
+	ag.pushConstraint(FormulaT(c1));
 	BOOST_CHECK(ag.hasAssignment(x));
 	BOOST_CHECK(ag.getAssignment() == carl::RealAlgebraicNumber<Rational>(-2));
 	// Lift-Level -> x = -1
-	ag.pushAssignment(x, Rational(-1));
+	FormulaT fx(ConstraintT(Poly(x) + Rational(1), carl::Relation::EQ));
+	ag.pushAssignment(x, Rational(-1), fx);
 	
 	// Select c3, Decide c3
-	ag.pushConstraint(c3);
+	ag.pushConstraint(FormulaT(c3));
 	// R-Propagate !c4
-	ag.pushConstraint(c4);
+	ag.pushConstraint(FormulaT(c4));
 	
 	BOOST_CHECK(!ag.hasAssignment(y));
 	BOOST_CHECK(ag.getConflictingCore().size() == 2);
 	
 	ExplanationGenerator eg(ag.getConflictingCore(), {y,x}, ag.getModel());
-	FormulaT res = eg.generateExplanation(c4);
-	std::cout << res << std::endl;
+	std::vector<std::pair<carl::Variable,FormulaT>> assignment;
+	assignment.emplace_back(x, fx);
+
+	NLSATLemmaBuilder lb(assignment, [this](const FormulaT& f){ std::cout << "-> " << f << std::endl; });
+	lb.generateLemmas(FormulaT(c4).negated(), eg, NLSATLemmaStrategy::ORIGINAL);
 }
 
 BOOST_AUTO_TEST_SUITE_END();
