@@ -11,6 +11,7 @@
 #include "../../solver/Module.h"
 #include "PBPPStatistics.h"
 #include "PBPPSettings.h"
+#include <carl/numbers/PrimeFactory.h>
 
 namespace smtrat
 {
@@ -96,6 +97,8 @@ namespace smtrat
 			FormulaT generateVarChain(const std::vector<carl::Variable>& vars, carl::FormulaType type);
 			FormulaT createAuxiliaryConstraint(const FormulaT& formula);
 			FormulaT interconnectVariables(const FormulaT& formula);
+			FormulaT RNSTransformation(const FormulaT& formula);
+			std::vector<carl::uint> calculateRNSBase(const FormulaT& formula);
 
 	};
 }

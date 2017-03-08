@@ -100,6 +100,8 @@ namespace smtrat
 			}
 		}
 
+		calculateRNSBase(formula);
+
 		if(cLHS.size() == 1){
 			auto res = convertSmallFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
@@ -614,6 +616,78 @@ namespace smtrat
 		}
 		return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
 
+	}
+
+	template<typename Settings>
+	FormulaT PBPPModule<Settings>::RNSTransformation(const FormulaT& formula){
+
+	}
+
+	template<typename Settings>
+	std::vector<carl::uint> PBPPModule<Settings>::calculateRNSBase(const FormulaT& formula){
+		const carl::PBConstraint& c = formula.pbConstraint();	
+		const auto& cLHS = c.getLHS();
+		int max = INT_MIN;
+		// std::vector<std::pair<carl::uint, int>> freq;
+		std::vector<std::pair<int, carl::uint>> freq;
+		int sum = 0;
+		int product = 1;
+
+		for(auto it : cLHS){
+			if(it.first > max){
+				max = it.first;
+			}
+			sum += it.first;
+		}
+		bool flag = false;
+		bool fr = 0;
+		for(auto it : cLHS){
+			carl::PrimeFactory<carl::uint> pFactory;
+			carl::uint prime = pFactory.nextPrime();
+			while(prime < it.first){
+				if(it.first % prime == 0){
+					int count = 0;
+					for(auto i : freq){
+						if(i.second == prime){
+							flag = true;
+							freq[count].first = i.first + 1;
+							break;
+						}
+						count++;
+					}
+					if(!flag){
+						freq.push_back(std::pair<int, carl::uint>(1, prime));
+					}
+				std::cout << "coeff: " << it.first << " freq: " << freq << std::endl;
+				}
+				flag = false;
+				prime = pFactory.nextPrime();
+			}
+		}
+
+		 std::sort(freq.begin(), freq.end(),
+		 	[&](const pair<int, carl::uint> &p1, const pair<int, carl::uint> &p2)
+		 	{
+		 		if(p1.first == p2.first){
+					return (p1.second < p2.second);
+				}else{
+					return(p1.first > p2.first);
+		}
+		 	});
+
+		 std::vector<carl::uint> base;
+		 for(auto it : freq){
+		 	product *= it.second;
+		 	if(product <= sum){
+		 	base.push_back(it.second);	
+		 	}else{
+		 		base.push_back(it.second);
+		 		break;
+		 	}
+		 }
+		 std::cout << "Base: " << base << std::endl;
+
+		return base;
 	}
 
 }
