@@ -97,8 +97,9 @@ namespace smtrat
 			FormulaT generateVarChain(const std::vector<carl::Variable>& vars, carl::FormulaType type);
 			FormulaT createAuxiliaryConstraint(const FormulaT& formula);
 			FormulaT interconnectVariables(const FormulaT& formula);
-			FormulaT RNSTransformation(const FormulaT& formula);
+			FormulaT rnsTransformation(const FormulaT& formula);
 			std::vector<carl::uint> calculateRNSBase(const FormulaT& formula);
+			bool isNonRedundant(const std::vector<carl::uint>& base, const FormulaT& formula);
 
 	};
 }
