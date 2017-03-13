@@ -32,6 +32,10 @@ namespace cad {
 			mis.back().emplace(c);
 		}
 		auto cg = cad.generateConflictGraph();
+		//std::cout << "rows:" << cg.numConstraints() << std::endl;
+		//std::cout << "columns: " << cg.numSamples() << std::endl;
+		//std::cout << "trivial columns: " << cg.numTrivialColumns() << std::endl;
+		//std::cout << "unique colums: " << cg.numUniqueColumns() << std::endl;
 		while (cg.hasRemainingSamples()) {
 			std::size_t c = cg.getMaxDegreeConstraint();
 			mis.back().emplace(cad.getConstraints()[c]->first);
@@ -41,66 +45,75 @@ namespace cad {
 
 	template<>
 	template<typename CAD>
-	void MISGeneration<MISHeuristic::CLOSURE>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
+	void MISGeneration<MISHeuristic::GREEDY_PRE>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		static int x;
-		SMTRAT_LOG_DEBUG("smtrat.mis", "CLOSURE invoked: " << x++ << std::endl);
+		SMTRAT_LOG_DEBUG("smtrat.mis", "GREEDY_PRE invoked: " << x++ << std::endl);
 		mis.emplace_back();
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
 			mis.back().emplace(c);
 		}
 		auto cg = cad.generateConflictGraph();
-		cg.disableSupersets();
-		while (cg.hasRemainingSamples()) {
-			std::size_t c = cg.getMaxDegreeConstraint();
-			mis.back().emplace(cad.getConstraints()[c]->first);
-			cg.selectConstraint(c);
-		}
-	}
-
-	template<>
-	template<typename CAD>
-	void MISGeneration<MISHeuristic::SAT_ACTIVITY>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
-		static int x;
-		SMTRAT_LOG_DEBUG("smtrat.mis", "SAT_ACTIVITY invoked: " << x++ << std::endl);
-		mis.emplace_back();
-		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
-			mis.back().emplace(c);
-		}
-		auto cg = cad.generateConflictGraph();
-		auto constraints = cad.getConstraints();
+		cg = cg.removeDuplicateColumns();
 		
-		struct candidate {
-			size_t _id;
-			FormulaT _formula;
-		};
-
-		std::vector<candidate> candidates;
-
-		for(size_t i = 0; i < constraints.size(); i++){
-			if(!cad.isIdValid(i)){
-				SMTRAT_LOG_DEBUG("smtrat.mis", "scurrr");
-				continue;
-			}
-			candidates.emplace_back(candidate{
-				i,
-				FormulaT(constraints[i]->first)
-			});
-				SMTRAT_LOG_DEBUG("smtrat.mis", "id: " << i << "\t activity: " << FormulaT(constraints[i]->first).activity() <<
-				"\t formula: " << FormulaT(constraints[i]->first) << std::endl);
+		auto essentialConstrains = cg.selectEssentialConstraints();
+		for(size_t c : essentialConstrains){
+			mis.back().emplace(cad.getConstraints()[c]->first);
+		}
+		
+		while (cg.hasRemainingSamples()) {
+			std::size_t c = cg.getMaxDegreeConstraint();
+			mis.back().emplace(cad.getConstraints()[c]->first);
+			cg.selectConstraint(c);
+		}
+	}
+	
+	template<>
+	template<typename CAD>
+	void MISGeneration<MISHeuristic::HYBRID>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
+		static int x;
+		SMTRAT_LOG_DEBUG("smtrat.mis", "HYBRID invoked: " << x++ << std::endl);
+		mis.emplace_back();
+		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
+			mis.back().emplace(c);
+		}
+		auto cg = cad.generateConflictGraph();
+		auto essentialConstrains = cg.selectEssentialConstraints();
+		for(size_t c : essentialConstrains){
+			mis.back().emplace(cad.getConstraints()[c]->first);
+		}
+		cg = cg.removeDuplicateColumns();
+		if(!cg.hasRemainingSamples()){
+			return;
+		}
+		// Apply greedy algorithm as long as more than 6 constraints remain
+		while (cg.numRemainingConstraints() > 6 && cg.hasRemainingSamples()) {
+			std::size_t c = cg.getMaxDegreeConstraint();
+			mis.back().emplace(cad.getConstraints()[c]->first);
+			cg.selectConstraint(c);
 		}
 
-		std::sort(candidates.begin(), candidates.end(), [](candidate left, candidate right) {
-			return left._formula.activity() < right._formula.activity();
-		});
-		SMTRAT_LOG_DEBUG("smtrat.mis", "Selecting:" << std::endl);
-		for(auto rit = candidates.rbegin(); rit != candidates.rend(); rit++) {
-			mis.back().emplace(rit->_formula);
-			cg.selectConstraint(rit->_id);
-			SMTRAT_LOG_DEBUG("smtrat.mis", "id: " << rit->_id << "\t activity: " << rit->_formula.activity() <<
-				"\t formula: " << rit->_formula << std::endl);
-			if(!cg.hasRemainingSamples()){
-				break;
-			}
+		// Find the optimum solution for the remaining constraints
+		auto remaining = cg.getRemainingConstraints();
+		for(size_t coverSize = 0; coverSize <= remaining.size(); coverSize++){
+			std::vector<bool> selection(remaining.size() - coverSize, false);
+			selection.resize(remaining.size(), true);
+			do {
+				carl::Bitset cover(0);
+				cover.resize(cg.numSamples());
+				for(size_t i = 0; i < selection.size(); i++) {
+					if(selection[i]){
+						cover |= remaining[i].second;
+					}
+				}
+				if (cover.count() == cover.size()){
+					for(size_t i = 0; i < selection.size(); i++) {
+						if(selection[i]){
+							mis.back().emplace(cad.getConstraints()[remaining[i].first]->first);
+						}
+					}
+					return;
+				}
+			} while(std::next_permutation(selection.begin(), selection.end()));
 		}
 	}
 
@@ -129,19 +142,21 @@ namespace cad {
 
 		std::vector<candidate> candidates;
 		for(size_t i = 0; i < constraints.size(); i++){
-			auto constraint = constraints[i];
-			auto formula = FormulaT(constraint->first);
-			double weight = constant_weight +
-							degree_weight * cg.coveredSamples(i) +
-							complexity_weight * formula.complexity() +
-							activity_weight * formula.activity();
-			candidates.emplace_back(candidate{
-				i,
-				formula,
-				weight
-			});
-			SMTRAT_LOG_DEBUG("smtrat.mis", "id: " << i << "\t weight: " << candidates.back().weight <<
-			"\t formula: " << formula << std::endl);
+			if(cad.isIdValid(i)){
+				auto constraint = constraints[i];
+				auto formula = FormulaT(constraint->first);
+				double weight = constant_weight +
+								degree_weight * cg.coveredSamples(i) +
+								complexity_weight * formula.complexity() +
+								activity_weight * formula.activity();
+				candidates.emplace_back(candidate{
+					i,
+					formula,
+					weight
+				});
+				SMTRAT_LOG_DEBUG("smtrat.mis", "id: " << i << "\t weight: " << candidates.back().weight <<
+				"\t formula: " << formula << std::endl);
+			}
 		}
 
 		std::sort(candidates.begin(), candidates.end(), [](candidate left, candidate right) {
