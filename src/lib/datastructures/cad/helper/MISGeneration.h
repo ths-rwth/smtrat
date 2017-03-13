@@ -77,6 +77,10 @@ namespace cad {
 		std::vector<candidate> candidates;
 
 		for(size_t i = 0; i < constraints.size(); i++){
+			if(!cad.isIdValid(i)){
+				SMTRAT_LOG_DEBUG("smtrat.mis", "scurrr");
+				continue;
+			}
 			candidates.emplace_back(candidate{
 				i,
 				FormulaT(constraints[i]->first)

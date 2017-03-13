@@ -74,6 +74,9 @@ namespace cad {
 		const auto& getConstraints() const {
 			return mConstraints.indexed();
 		}
+		const bool isIdValid(std::size_t id) const{
+			return mConstraints.valid(id);
+		}
 		const auto& getBounds() const {
 			return mConstraints.bounds();
 		}
