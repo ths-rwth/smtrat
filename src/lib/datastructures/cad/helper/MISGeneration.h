@@ -122,7 +122,7 @@ namespace cad {
 	void MISGeneration<MISHeuristic::GREEDY_WEIGHTED>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		const static double constant_weight   = 1.0;
 		const static double complexity_weight = 0.5;
-		const static double activity_weight   = 50.0;
+		const static double activity_weight   = 10.0;
 
 		static int x;
 		SMTRAT_LOG_DEBUG("smtrat.mis", "GREEDY_WEIGHTED invoked: " << x++ << std::endl);
@@ -131,42 +131,49 @@ namespace cad {
 			mis.back().emplace(c);
 		}
 		auto cg = cad.generateConflictGraph();
+		auto essentialConstrains = cg.selectEssentialConstraints();
+		for(size_t c : essentialConstrains){
+			mis.back().emplace(cad.getConstraints()[c]->first);
+		}
+		cg = cg.removeDuplicateColumns();
+
 		auto constraints = cad.getConstraints();
 		struct candidate {
-			size_t _id;
-			FormulaT _formula;
+			size_t constraint;
+			FormulaT formula;
 			double weight;
 		};
 
-		std::vector<candidate> candidates;
+		std::map<size_t, candidate> candidates;
 		for(size_t i = 0; i < constraints.size(); i++){
 			if(cad.isIdValid(i)){
 				auto constraint = constraints[i];
 				auto formula = FormulaT(constraint->first);
-				double weight = cg.coveredSamples(i) * (
-                                constant_weight + 
+				double weight = constant_weight +
 								complexity_weight * formula.complexity() +
-								activity_weight / formula.activity());
-				candidates.emplace_back(candidate{
-					i,
+								activity_weight / (1.0 + formula.activity());
+				candidates[i] = candidate{
 					formula,
 					weight
-				});
+				};
 			}
 		}
-
-		std::sort(candidates.begin(), candidates.end(), [](candidate left, candidate right) {
-			return left.weight > right.weight;
-		});
+		SMTRAT_LOG_DEBUG("smtrat.mis", cg << std::endl);
 		SMTRAT_LOG_DEBUG("smtrat.mis", "-------------- Included: ---------------" << std::endl);
 		bool in = true;
-		for(auto it = candidates.begin(); it != candidates.end(); it++) {
+
+		while (cg.hasRemainingSamples()) {
+			auto selection = std::max_element(candidates.begin(), candidates.end(),
+				[cg](pair<size_t, candidate> left, pair<size_t, candidate>right) {
+					return cg.coveredSamples(left.first)/left.second.weight < cg.coveredSamples(right.first)/right.second.weight;
+				}
+			);
 			SMTRAT_LOG_DEBUG("smtrat.mis", 
-				"id: "            << it->_id << 
-				"\t weight: "     << it->weight <<
-				"\t degree: "     << cg.coveredSamples(it->_id) << 
-				"\t complexity: " << it->_formula.complexity() << 
-				"\t activity: "   << it->_formula.activity() <<
+				"id: "            << selection->first << 
+				"\t weight: "     << selection->second.weight <<
+				"\t degree: "     << cg.coveredSamples(selection->first) << 
+				"\t complexity: " << selection->second.formula.complexity() << 
+				"\t activity: "   << selection->second.formula.activity() <<
 				std::endl);
 			mis.back().emplace(cad.getConstraints()[selection->first]->first);
 			cg.selectConstraint(selection->first);
