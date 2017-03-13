@@ -47,7 +47,7 @@ namespace cad {
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::GREEDY_PRE>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		static int x;
-		SMTRAT_LOG_DEBUG("smtrat.mis", "GREEDY_PRE invoked: " << x++ << std::endl);
+		std::cout << "GREEDY_PRE invoked: " << x++ << std::endl;
 		mis.emplace_back();
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
 			mis.back().emplace(c);
@@ -71,7 +71,7 @@ namespace cad {
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::HYBRID>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		static int x;
-		SMTRAT_LOG_DEBUG("smtrat.mis", "HYBRID invoked: " << x++ << std::endl);
+		std::cout << "HYBRID invoked: " << x++ << std::endl;
 		mis.emplace_back();
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
 			mis.back().emplace(c);
@@ -125,7 +125,7 @@ namespace cad {
 		const static double activity_weight   = 10.0;
 
 		static int x;
-		SMTRAT_LOG_DEBUG("smtrat.mis", "GREEDY_WEIGHTED invoked: " << x++ << std::endl);
+		std::cout << "GREEDY_WEIGHTED invoked: " << x++ << std::endl;
 		mis.emplace_back();
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
 			mis.back().emplace(c);
