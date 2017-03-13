@@ -139,19 +139,20 @@ namespace cad {
 		template<typename Iterator>
 		Answer checkPartialSample(Iterator& it, std::size_t level) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Checking partial sample " << *it << " against level " << level);
+			Answer answer = Answer::SAT;
 			if (it->hasConflictWithConstraint()) {
 				SMTRAT_LOG_DEBUG("smtrat.cad", "\tAlready has conflict...");
-				return Answer::UNSAT;
+				answer = Answer::UNSAT;
 			}
 			for (const auto& c: mConstraints.ordered()) {
 				if (mConstraints.level(c.second) != level) continue;
 				auto a = mLifting.extractSampleMap(it);
 				if (!evaluateSample(*it, c, a)) {
 					SMTRAT_LOG_DEBUG("smtrat.cad", "\tConflicts with " << c.first);
-					return Answer::UNSAT;
+					answer = Answer::UNSAT;
 				}
 			}
-			return Answer::SAT;
+			return answer;
 		}
 
 		Answer check(Assignment& assignment, std::vector<FormulaSetT>& mis) {

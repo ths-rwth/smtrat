@@ -101,7 +101,7 @@ namespace cad {
 		static constexpr cad::MISHeuristic misHeuristic = cad::MISHeuristic::${NEWCAD_MISHEURISTIC};
 		
 		static constexpr cad::ProjectionType projectionOperator = cad::ProjectionType::Brown;
-		static constexpr cad::CoreHeuristic coreHeuristic = cad::CoreHeuristic::PreferProjection;
+		static constexpr cad::CoreHeuristic coreHeuristic = cad::CoreHeuristic::PreferSampling;
 		
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = false;
