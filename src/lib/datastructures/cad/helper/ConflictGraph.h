@@ -156,6 +156,10 @@ public:
 		return res;
 	}
 	
+	carl::Bitset getData(size_t id){
+		return mData[id];
+	}
+	
 	std::vector<std::pair<size_t, carl::Bitset>> getRemainingConstraints(){
 		carl::Bitset mask(0);
 		std::vector<size_t> ids;

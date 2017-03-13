@@ -168,13 +168,117 @@ namespace cad {
 				"\t complexity: " << it->_formula.complexity() << 
 				"\t activity: "   << it->_formula.activity() <<
 				std::endl);
-			if(in){
-				mis.back().emplace(it->_formula);
-				cg.selectConstraint(it->_id);
-				if(!cg.hasRemainingSamples() and (it + 1) != candidates.end()){
-					in = false;
-					SMTRAT_LOG_DEBUG("smtrat.mis", "------------ Not included: -------------" << std::endl);
+			mis.back().emplace(cad.getConstraints()[selection->first]->first);
+			cg.selectConstraint(selection->first);
+			candidates.erase(selection);
+		}
+	}
+
+	template<>
+	template<typename CAD>
+	void MISGeneration<MISHeuristic::HYBRID_WEIGHTED>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
+		const static double constant_weight   = 1.0;
+		const static double complexity_weight = 0.5;
+		const static double activity_weight   = 10.0;
+
+		static int x;
+		std::cout << "HYBRID_WEIGHTED invoked: " << x++ << std::endl;
+		mis.emplace_back();
+		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
+			mis.back().emplace(c);
+		}
+		auto cg = cad.generateConflictGraph();
+		auto essentialConstrains = cg.selectEssentialConstraints();
+		for(size_t c : essentialConstrains){
+			mis.back().emplace(cad.getConstraints()[c]->first);
+		}
+		cg = cg.removeDuplicateColumns();
+		if(!cg.hasRemainingSamples()){
+			return;
+		}
+		std::cout << "CG after preconditioning:" << std::endl;
+		std::cout << cg << std::endl;
+
+		auto constraints = cad.getConstraints();
+		struct candidate {
+			FormulaT formula;
+			double weight;
+		};
+
+		std::map<size_t, candidate> candidates;
+		for(size_t i = 0; i < constraints.size(); i++){
+			if(cad.isIdValid(i)){
+				auto constraint = constraints[i];
+				auto formula = FormulaT(constraint->first);
+				double weight = constant_weight +
+								complexity_weight * formula.complexity() +
+								activity_weight / (1.0 + formula.activity());
+				candidates[i] = candidate{
+					formula,
+					weight
+				};
+			}
+		}
+		std::cout << "-------------- selecting greedily:: ---------------" << std::endl;
+		bool in = true;
+
+		// Apply greedy algorithm as long as more than 6 constraints remain
+		while (cg.numRemainingConstraints() > 6 && cg.hasRemainingSamples()) {
+			auto selection = std::max_element(candidates.begin(), candidates.end(),
+				[cg](pair<size_t, candidate> left, pair<size_t, candidate>right) {
+					return cg.coveredSamples(left.first)/left.second.weight < cg.coveredSamples(right.first)/right.second.weight;
 				}
+			);
+			SMTRAT_LOG_DEBUG("smtrat.mis", 
+				"id: "            << selection->first << 
+				"\t weight: "     << selection->second.weight <<
+				"\t degree: "     << cg.coveredSamples(selection->first) << 
+				"\t complexity: " << selection->second.formula.complexity() << 
+				"\t activity: "   << selection->second.formula.activity() <<
+				std::endl);
+			mis.back().emplace(cad.getConstraints()[selection->first]->first);
+			cg.selectConstraint(selection->first);
+			candidates.erase(selection);
+		}
+		std::cout << "CG after greedy:" << std::endl;
+		std::cout << cg << std::endl;
+
+		// Find the optimum solution for the remaining constraints
+		double bestWeight = INFINITY;
+		auto remaining = cg.getRemainingConstraints();
+		std::vector<bool> bestSelection(remaining.size(), true);
+		for(size_t coverSize = 0; coverSize <= remaining.size(); coverSize++){
+			std::vector<bool> selection(remaining.size() - coverSize, false);
+			selection.resize(remaining.size(), true);
+			do {
+				carl::Bitset cover(0);
+				cover.resize(cg.numSamples());
+				for(size_t i = 0; i < selection.size(); i++) {
+					if(selection[i]){
+						cover |= remaining[i].second;
+					}
+				}
+				if (cover.count() == cover.size()){
+					double weight = 0.0;
+					for(size_t i = 0; i < selection.size(); i++) {
+						if(selection[i]){
+							weight += candidates[remaining[i].first].weight;
+						}
+					}
+					std::cout << "weight:     " << weight << std::endl;
+					std::cout << "bestWeight: " << bestWeight << std::endl;
+					if(weight < bestWeight){
+						bestWeight = weight;
+						bestSelection = selection;
+					}
+				}
+			} while(std::next_permutation(selection.begin(), selection.end()));
+		}
+		std::cout << "Best Selection: " << bestSelection << std::endl;
+		for(size_t i = 0; i < bestSelection.size(); i++) {
+			if(bestSelection[i]){
+				std::cout << i << " : " << remaining[i].first << std::endl;
+				mis.back().emplace(cad.getConstraints()[remaining[i].first]->first);
 			}
 		}
 	}
