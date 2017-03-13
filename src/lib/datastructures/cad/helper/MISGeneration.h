@@ -226,7 +226,7 @@ namespace cad {
 				};
 			}
 		}
-		std::cout << "-------------- selecting greedily:: ---------------" << std::endl;
+		std::cout << "-------------- selecting greedily: ---------------" << std::endl;
 		bool in = true;
 
 		// Apply greedy algorithm as long as more than 6 constraints remain
@@ -247,6 +247,7 @@ namespace cad {
 			cg.selectConstraint(selection->first);
 			candidates.erase(selection);
 		}
+		std::cout << "--------------------------------------------------" << std::endl;
 		std::cout << "CG after greedy:" << std::endl;
 		std::cout << cg << std::endl;
 
@@ -272,8 +273,6 @@ namespace cad {
 							weight += candidates[remaining[i].first].weight;
 						}
 					}
-					std::cout << "weight:     " << weight << std::endl;
-					std::cout << "bestWeight: " << bestWeight << std::endl;
 					if(weight < bestWeight){
 						bestWeight = weight;
 						bestSelection = selection;
@@ -281,10 +280,16 @@ namespace cad {
 				}
 			} while(std::next_permutation(selection.begin(), selection.end()));
 		}
-		std::cout << "Best Selection: " << bestSelection << std::endl;
+		std::cout << "-------------- selecting optimally: ---------------" << std::endl;
 		for(size_t i = 0; i < bestSelection.size(); i++) {
 			if(bestSelection[i]){
-				std::cout << i << " : " << remaining[i].first << std::endl;
+				std::cout <<
+					"id: "            << remaining[i].first << 
+					"\t weight: "     << candidates[remaining[i].first].weight <<
+					"\t degree: "     << cg.coveredSamples(remaining[i].first) << 
+					"\t complexity: " << candidates[remaining[i].first].formula.complexity() << 
+					"\t activity: "   << candidates[remaining[i].first].formula.activity() <<
+					std::endl;
 				mis.back().emplace(cad.getConstraints()[remaining[i].first]->first);
 			}
 		}
