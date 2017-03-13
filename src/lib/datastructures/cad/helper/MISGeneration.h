@@ -121,9 +121,8 @@ namespace cad {
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::GREEDY_WEIGHTED>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		const static double constant_weight   = 1.0;
-		const static double degree_weight     = 1.0;
-		const static double complexity_weight = -0.5;
-		const static double activity_weight   = 0.5;
+		const static double complexity_weight = 0.5;
+		const static double activity_weight   = 50.0;
 
 		static int x;
 		SMTRAT_LOG_DEBUG("smtrat.mis", "GREEDY_WEIGHTED invoked: " << x++ << std::endl);
@@ -133,7 +132,6 @@ namespace cad {
 		}
 		auto cg = cad.generateConflictGraph();
 		auto constraints = cad.getConstraints();
-
 		struct candidate {
 			size_t _id;
 			FormulaT _formula;
@@ -145,31 +143,38 @@ namespace cad {
 			if(cad.isIdValid(i)){
 				auto constraint = constraints[i];
 				auto formula = FormulaT(constraint->first);
-				double weight = constant_weight +
-								degree_weight * cg.coveredSamples(i) +
+				double weight = cg.coveredSamples(i) * (
+                                constant_weight + 
 								complexity_weight * formula.complexity() +
-								activity_weight * formula.activity();
+								activity_weight / formula.activity());
 				candidates.emplace_back(candidate{
 					i,
 					formula,
 					weight
 				});
-				SMTRAT_LOG_DEBUG("smtrat.mis", "id: " << i << "\t weight: " << candidates.back().weight <<
-				"\t formula: " << formula << std::endl);
 			}
 		}
 
 		std::sort(candidates.begin(), candidates.end(), [](candidate left, candidate right) {
-			return left.weight < right.weight;
+			return left.weight > right.weight;
 		});
-		SMTRAT_LOG_DEBUG("smtrat.mis", "Selecting:" << std::endl);
-		for(auto rit = candidates.rbegin(); rit != candidates.rend(); rit++) {
-			mis.back().emplace(rit->_formula);
-			cg.selectConstraint(rit->_id);
-			SMTRAT_LOG_DEBUG("smtrat.mis", "id: " << rit->_id << "\t weight: " << rit->weight <<
-				"\t formula: " << rit->_formula << std::endl);
-			if(!cg.hasRemainingSamples()){
-				break;
+		SMTRAT_LOG_DEBUG("smtrat.mis", "-------------- Included: ---------------" << std::endl);
+		bool in = true;
+		for(auto it = candidates.begin(); it != candidates.end(); it++) {
+			SMTRAT_LOG_DEBUG("smtrat.mis", 
+				"id: "            << it->_id << 
+				"\t weight: "     << it->weight <<
+				"\t degree: "     << cg.coveredSamples(it->_id) << 
+				"\t complexity: " << it->_formula.complexity() << 
+				"\t activity: "   << it->_formula.activity() <<
+				std::endl);
+			if(in){
+				mis.back().emplace(it->_formula);
+				cg.selectConstraint(it->_id);
+				if(!cg.hasRemainingSamples() and (it + 1) != candidates.end()){
+					in = false;
+					SMTRAT_LOG_DEBUG("smtrat.mis", "------------ Not included: -------------" << std::endl);
+				}
 			}
 		}
 	}
