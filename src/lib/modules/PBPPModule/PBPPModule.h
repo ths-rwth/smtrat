@@ -25,7 +25,6 @@ namespace smtrat
 			// Members.
 			std::map<carl::Variable, carl::Variable> mVariablesCache; //bool, int
 			carl::FormulaVisitor<FormulaT> mVisitor;
-			std::vector<carl::Variable> mInterconectedVars;
 			std::vector<carl::Variable> mCheckedVars;
 			
 		public:

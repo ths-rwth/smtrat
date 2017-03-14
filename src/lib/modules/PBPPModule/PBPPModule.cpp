@@ -42,7 +42,7 @@ namespace smtrat
 		std::cout << _subformula->formula() << std::endl;
 		if (objective() != carl::Variable::NO_VARIABLE) {
 			for (auto var: objectiveFunction().gatherVariables()) {
-				mVariablesCache.emplace(carl::Variable(var.getId(), carl::VariableType::VT_BOOL), var);
+					mVariablesCache.emplace(carl::Variable(var.getId(), carl::VariableType::VT_BOOL), var);
 			}
 		}
 		FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeFunction);
@@ -541,13 +541,11 @@ namespace smtrat
 		const carl::PBConstraint& c = formula.pbConstraint();
 		const auto& cLHS = c.getLHS();
 		carl::Relation cRel  = c.getRelation();
-		int cRHS 	  = c.getRHS();
+		int cRHS = c.getRHS();
 		auto variables = c.gatherVariables();
 
 		for(auto it : variables){
-			if(mVariablesCache.find(it) == mVariablesCache.end()){
-				mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(it, carl::freshVariable(carl::VariableType::VT_INT)));
-			}
+			mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(it, carl::freshVariable(carl::VariableType::VT_INT)));
 		}
 
 		Poly lhs;
@@ -577,7 +575,6 @@ namespace smtrat
 		auto boolVars        = c.gatherVariables();
 		std::vector<carl::Variable> intVars;
 		for(auto it : boolVars){
-			// if(std::find(mCheckedVars.begin(), mCheckedVars.end(), var) != mCheckedVars.end()){ // != IST FALSCH ODER??
 			if(std::find(mCheckedVars.begin(), mCheckedVars.end(), it) == mCheckedVars.end()){ 
 				//There are no auxiliary constraints for this variable
 				intVars.push_back(mVariablesCache.find(it)->second);
@@ -602,14 +599,9 @@ namespace smtrat
 		const carl::PBConstraint& c = formula.pbConstraint();
 		auto boolVars 		 = c.gatherVariables();
 		std::map<carl::Variable, carl::Variable> varsMap;
+
 		for(auto var : boolVars){
-			// if(std::find(mInterconectedVars.begin(), mInterconectedVars.end(), var) != mInterconectedVars.end()){ = IST FALSCH ODER??
-			if(std::find(mInterconectedVars.begin(), mInterconectedVars.end(), var) == mInterconectedVars.end()){
-				//The variable has to be interconected
-				varsMap.insert(*mVariablesCache.find(var));
-				mInterconectedVars.push_back(var);
-			}
-			//The variable is already interconected
+			varsMap.insert(*mVariablesCache.find(var));
 		}
 
 		FormulasT newSubformulas;
@@ -626,7 +618,7 @@ namespace smtrat
 		return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
 
 	}
-
+/*
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::rnsTransformation(const FormulaT& formula){
 
@@ -699,27 +691,28 @@ namespace smtrat
 
 	template<typename Settings>
 	bool PBPPModule<Settings>::isNonRedundant(const std::vector<carl::uint>& base, const FormulaT& formula){
-		// const carl::PBConstraint& c = formula.pbConstraint();	
-		// const auto& cLHS = c.getLHS();
-		// int max = INT_MIN;
-		// int product = 1;
+		const carl::PBConstraint& c = formula.pbConstraint();	
+		const auto& cLHS = c.getLHS();
+		int max = INT_MIN;
+		int product = 1;
 
-		// for(auto it : cLHS){
-		// 	if(&it > max){
-		// 		max = &it;
-		// 	}
-		// }
-		// for(auto it : base){
-		// 	product *= &it;
-		// }
+		for(auto it : cLHS){
+			if(&it > max){
+				max = &it;
+			}
+		}
+		for(auto it : base){
+			product *= &it;
+		}
 
-		// for(auto it : base){
-		// 	if(&it >= max){
-		// 		return false;
-		// 	}
-		// } 
-		// return true;
+		for(auto it : base){
+			if(&it >= max){
+				return false;
+			}
+		} 
+		return true;
 	}
+	*/
 
 }
 
