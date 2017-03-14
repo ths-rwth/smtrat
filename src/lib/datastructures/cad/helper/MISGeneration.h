@@ -72,32 +72,58 @@ namespace cad {
 	void MISGeneration<MISHeuristic::HYBRID>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		static int x;
 		std::cout << "HYBRID invoked: " << x++ << std::endl;
-		mis.emplace_back();
+		
+		// The set of constraints that will be included in every MIS
+		FormulaSetT misIntersection;
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
-			mis.back().emplace(c);
+			misIntersection.emplace(c);
 		}
+	
 		auto cg = cad.generateConflictGraph();
-		auto essentialConstrains = cg.selectEssentialConstraints();
+		auto essentialConstrains = cg.selectEssentialConstraints();	
 		for(size_t c : essentialConstrains){
-			mis.back().emplace(cad.getConstraints()[c]->first);
-		}
-		cg = cg.removeDuplicateColumns();
-		if(!cg.hasRemainingSamples()){
-			return;
-		}
-		// Apply greedy algorithm as long as more than 6 constraints remain
-		while (cg.numRemainingConstraints() > 6 && cg.hasRemainingSamples()) {
-			std::size_t c = cg.getMaxDegreeConstraint();
-			mis.back().emplace(cad.getConstraints()[c]->first);
-			cg.selectConstraint(c);
+			misIntersection.emplace(cad.getConstraints()[c]->first);
 		}
 
+		if(!cg.hasRemainingSamples()){
+			mis.push_back(misIntersection);
+			SMTRAT_LOG_DEBUG("smtrat.mis", "returning after precon.");
+			return;
+		}
+		cg = cg.removeDuplicateColumns();
+		
+		// Apply greedy algorithm as long as more than 8 constraints remain
+		while (cg.numRemainingConstraints() > 8 && cg.hasRemainingSamples()) {
+			std::size_t c = cg.getMaxDegreeConstraint();
+			misIntersection.emplace(cad.getConstraints()[c]->first);
+			cg.selectConstraint(c);
+		}
+		if(!cg.hasRemainingSamples()){
+			mis.push_back(misIntersection);
+			SMTRAT_LOG_DEBUG("smtrat.mis", "returning after greedy.");
+			return;
+		}
+		SMTRAT_LOG_DEBUG("smtrat.mis", cg);
 		// Find the optimum solution for the remaining constraints
 		auto remaining = cg.getRemainingConstraints();
+		std::set<carl::Bitset> misTails;
 		for(size_t coverSize = 0; coverSize <= remaining.size(); coverSize++){
 			std::vector<bool> selection(remaining.size() - coverSize, false);
 			selection.resize(remaining.size(), true);
 			do {
+				carl::Bitset selAsBitset(0);
+				selAsBitset.resize(selection.size());
+				for(size_t i = 0; i < selection.size(); i++){
+					selAsBitset.set(i, selection[i]);
+				}
+				bool skip = false;
+				for(auto tail : misTails){
+					if(tail.is_subset_of(selAsBitset)){
+						skip = true;
+					}
+				}
+				if(skip) continue;
+
 				carl::Bitset cover(0);
 				cover.resize(cg.numSamples());
 				for(size_t i = 0; i < selection.size(); i++) {
@@ -106,15 +132,27 @@ namespace cad {
 					}
 				}
 				if (cover.count() == cover.size()){
+					carl::Bitset tail(0);
 					for(size_t i = 0; i < selection.size(); i++) {
-						if(selection[i]){
-							mis.back().emplace(cad.getConstraints()[remaining[i].first]->first);
-						}
+						tail.set(i, selection[i]);
 					}
-					return;
+					misTails.insert(tail);
+					SMTRAT_LOG_DEBUG("smtrat.mis", "tail found: " << selection);
 				}
 			} while(std::next_permutation(selection.begin(), selection.end()));
 		}
+		for(auto tail : misTails){
+			mis.emplace_back();
+			for(auto f : misIntersection){
+				mis.back().insert(f);
+			}
+			for(size_t i = 0; i < tail.size(); i++){
+				if(tail.test(i)){
+					mis.back().emplace(cad.getConstraints()[remaining[i].first]->first);
+				}
+			}
+		}
+		SMTRAT_LOG_DEBUG("smtrat.mis", "returning " << mis.size() << " MISes.");
 	}
 
 	template<>
