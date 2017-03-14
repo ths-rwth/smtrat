@@ -17,7 +17,7 @@ namespace cad {
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::TRIVIAL>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		static int x;
-		SMTRAT_LOG_DEBUG("smtrat.mis", "TRIVIAL invoked: " << x++ << std::endl);
+		SMTRAT_LOG_DEBUG("smtrat.mis", "TRIVIAL invoked: " << x++);
 		mis.emplace_back();
 		for (const auto& it: cad.getConstraints()) mis.back().emplace(it->first);
 	}
@@ -47,7 +47,7 @@ namespace cad {
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::GREEDY_PRE>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		static int x;
-		std::cout << "GREEDY_PRE invoked: " << x++ << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.mis", "GREEDY_PRE invoked: " << x++);
 		mis.emplace_back();
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
 			mis.back().emplace(c);
@@ -163,7 +163,7 @@ namespace cad {
 		const static double activity_weight   = 10.0;
 
 		static int x;
-		std::cout << "GREEDY_WEIGHTED invoked: " << x++ << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.mis", "GREEDY_WEIGHTED invoked: " << x++);
 		mis.emplace_back();
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
 			mis.back().emplace(c);
@@ -228,7 +228,7 @@ namespace cad {
 		const static double activity_weight   = 10.0;
 
 		static int x;
-		std::cout << "HYBRID_WEIGHTED invoked: " << x++ << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.mis", "HYBRID_WEIGHTED invoked: " << x++);
 		mis.emplace_back();
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
 			mis.back().emplace(c);
@@ -242,8 +242,8 @@ namespace cad {
 		if(!cg.hasRemainingSamples()){
 			return;
 		}
-		std::cout << "CG after preconditioning:" << std::endl;
-		std::cout << cg << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.mis", "CG after preconditioning:");
+		SMTRAT_LOG_DEBUG("smtrat.mis", cg);
 
 		auto constraints = cad.getConstraints();
 		struct candidate {
@@ -265,7 +265,7 @@ namespace cad {
 				};
 			}
 		}
-		std::cout << "-------------- selecting greedily: ---------------" << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.mis", "-------------- selecting greedily: ---------------");
 		bool in = true;
 
 		// Apply greedy algorithm as long as more than 6 constraints remain
@@ -280,15 +280,14 @@ namespace cad {
 				"\t weight: "     << selection->second.weight <<
 				"\t degree: "     << cg.coveredSamples(selection->first) << 
 				"\t complexity: " << selection->second.formula.complexity() << 
-				"\t activity: "   << selection->second.formula.activity() <<
-				std::endl);
+				"\t activity: "   << selection->second.formula.activity());
 			mis.back().emplace(cad.getConstraints()[selection->first]->first);
 			cg.selectConstraint(selection->first);
 			candidates.erase(selection);
 		}
-		std::cout << "--------------------------------------------------" << std::endl;
-		std::cout << "CG after greedy:" << std::endl;
-		std::cout << cg << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.mis", "--------------------------------------------------");
+		SMTRAT_LOG_DEBUG("smtrat.mis", "CG after greedy:");
+		SMTRAT_LOG_DEBUG("smtrat.mis", cg);
 
 		// Find the optimum solution for the remaining constraints
 		double bestWeight = INFINITY;
@@ -319,16 +318,15 @@ namespace cad {
 				}
 			} while(std::next_permutation(selection.begin(), selection.end()));
 		}
-		std::cout << "-------------- selecting optimally: ---------------" << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.mis", "-------------- selecting optimally: ---------------");
 		for(size_t i = 0; i < bestSelection.size(); i++) {
 			if(bestSelection[i]){
-				std::cout <<
+				SMTRAT_LOG_DEBUG("smtrat.mis", 
 					"id: "            << remaining[i].first << 
 					"\t weight: "     << candidates[remaining[i].first].weight <<
 					"\t degree: "     << cg.coveredSamples(remaining[i].first) << 
 					"\t complexity: " << candidates[remaining[i].first].formula.complexity() << 
-					"\t activity: "   << candidates[remaining[i].first].formula.activity() <<
-					std::endl;
+					"\t activity: "   << candidates[remaining[i].first].formula.activity());
 				mis.back().emplace(cad.getConstraints()[remaining[i].first]->first);
 			}
 		}
