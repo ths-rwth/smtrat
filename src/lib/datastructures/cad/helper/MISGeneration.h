@@ -144,7 +144,7 @@ namespace cad {
 			double weight;
 		};
 
-		std::map<size_t, candidate> candidates;
+		std::vector<candidate> candidates;
 		for(size_t i = 0; i < constraints.size(); i++){
 			if(cad.isIdValid(i)){
 				auto constraint = constraints[i];
@@ -152,33 +152,34 @@ namespace cad {
 				double weight = constant_weight +
 								complexity_weight * formula.complexity() +
 								activity_weight / (1.0 + formula.activity());
-				candidates[i] = candidate{
+				candidates.push_back(candidate{
+					i,
 					formula,
 					weight
-				};
+				});
 			}
 		}
-		SMTRAT_LOG_DEBUG("smtrat.mis", cg << std::endl);
-		SMTRAT_LOG_DEBUG("smtrat.mis", "-------------- Included: ---------------" << std::endl);
+		SMTRAT_LOG_DEBUG("smtrat.mis", cg);
+		SMTRAT_LOG_DEBUG("smtrat.mis", "-------------- Included: ---------------");
 		bool in = true;
 
 		while (cg.hasRemainingSamples()) {
 			auto selection = std::max_element(candidates.begin(), candidates.end(),
-				[cg](pair<size_t, candidate> left, pair<size_t, candidate>right) {
-					return cg.coveredSamples(left.first)/left.second.weight < cg.coveredSamples(right.first)/right.second.weight;
+				[cg](candidate left, candidate right) {
+					return cg.coveredSamples(left.constraint)/left.weight < cg.coveredSamples(right.constraint)/right.weight;
 				}
 			);
 			SMTRAT_LOG_DEBUG("smtrat.mis", 
-				"id: "            << selection->first << 
-				"\t weight: "     << selection->second.weight <<
-				"\t degree: "     << cg.coveredSamples(selection->first) << 
-				"\t complexity: " << selection->second.formula.complexity() << 
-				"\t activity: "   << selection->second.formula.activity() <<
-				std::endl);
-			mis.back().emplace(cad.getConstraints()[selection->first]->first);
-			cg.selectConstraint(selection->first);
+				"id: "            << selection->constraint << 
+				"\t weight: "     << selection->weight <<
+				"\t degree: "     << cg.coveredSamples(selection->constraint) << 
+				"\t complexity: " << selection->formula.complexity() << 
+				"\t activity: "   << selection->formula.activity());
+			mis.back().emplace(cad.getConstraints()[selection->constraint]->first);
+			cg.selectConstraint(selection->constraint);
 			candidates.erase(selection);
 		}
+		SMTRAT_LOG_DEBUG("smtrat.mis", "----------------------------------------");
 	}
 
 	template<>
