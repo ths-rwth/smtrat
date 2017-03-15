@@ -76,12 +76,14 @@ public:
 	}
 	
 	void assign(carl::Variable v) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Assigned " << v << ", removing from queue");
 		auto it = find(v);
 		it->second.second = true;
 		assert(mQueue.back() == v);
 		mQueue.pop_back();
 	}
 	void unassign(carl::Variable v) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Unassigned " << v << ", adding to queue");
 		auto it = find(v);
 		it->second.second = false;
 		mCounterChanged = true;

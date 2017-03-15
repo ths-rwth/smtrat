@@ -72,8 +72,8 @@ private:
 	/// Store the level of a variable in mVariableLevelMap
 	void setVariableLevel(Minisat::Var var, std::size_t level) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "level(" << var << ") = " << level);
-		while (int(mVariableLevelMap.size()) < var - 1) {
-			mVariableLevelMap.push_back(0);
+		if (std::size_t(var) >= mVariableLevelMap.size()) {
+			mVariableLevelMap.insert(mVariableLevelMap.end(), std::size_t(var) - mVariableLevelMap.size() + 1, 0);
 		}
 		mVariableLevelMap[std::size_t(var)] = level;
 		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "-> " << mVariableLevelMap);
@@ -123,6 +123,7 @@ public:
 	}
 	/// Determines the level of the given variable
 	std::size_t levelOfVariable(Minisat::Var var) {
+		assert(std::size_t(var) < mVariableLevelMap.size());
 		return mVariableLevelMap[std::size_t(var)];
 	}
 	

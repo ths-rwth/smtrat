@@ -1297,7 +1297,10 @@ namespace smtrat
                 mMinisatVarMap.emplace((int)var,content);
                 mBooleanConstraintMap.push( std::make_pair( nullptr, nullptr ) );
 				if (Settings::mc_sat) {
-					mMCSAT.addVariable(var);
+                    SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << var << " that abstracts " << content << " having type " << content.getType());
+                    if (content.getType() != carl::FormulaType::VARASSIGN) {
+	                    mMCSAT.addVariable(var);
+                    }
 				}
                 l = mkLit( var, negated );
             }
@@ -1395,7 +1398,10 @@ namespace smtrat
                 // map the abstraction variable to the abstraction information for the constraint and it's negation
                 mBooleanConstraintMap.push( std::make_pair( new Abstraction( passedFormulaEnd(), constraint ), new Abstraction( passedFormulaEnd(), invertedConstraint ) ) );
 				if (Settings::mc_sat) {
-					mMCSAT.addVariable(constraintAbstraction);
+                    SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << constraintAbstraction << " that abstracts " << content << " having type " << content.getType());
+                    if (content.getType() != carl::FormulaType::VARASSIGN) {
+	                    mMCSAT.addVariable(constraintAbstraction);
+                    }
 				}
                 // add the constraint and its negation to the constraints to inform backends about
                 if( !_origin.isTrue() )
