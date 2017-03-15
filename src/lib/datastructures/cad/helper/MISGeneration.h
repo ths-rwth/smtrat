@@ -17,7 +17,7 @@ namespace cad {
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::TRIVIAL>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		static int x;
-		SMTRAT_LOG_DEBUG("smtrat.mis", "TRIVIAL invoked: " << x++ << std::endl);
+		SMTRAT_LOG_DEBUG("smtrat.mis", "TRIVIAL invoked: " << x++);
 		mis.emplace_back();
 		for (const auto& it: cad.getConstraints()) mis.back().emplace(it->first);
 	}
@@ -47,7 +47,7 @@ namespace cad {
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::GREEDY_PRE>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		static int x;
-		std::cout << "GREEDY_PRE invoked: " << x++ << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.mis", "GREEDY_PRE invoked: " << x++);
 		mis.emplace_back();
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
 			mis.back().emplace(c);
@@ -72,32 +72,58 @@ namespace cad {
 	void MISGeneration<MISHeuristic::HYBRID>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		static int x;
 		std::cout << "HYBRID invoked: " << x++ << std::endl;
-		mis.emplace_back();
+		
+		// The set of constraints that will be included in every MIS
+		FormulaSetT misIntersection;
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
-			mis.back().emplace(c);
+			misIntersection.emplace(c);
 		}
+	
 		auto cg = cad.generateConflictGraph();
-		auto essentialConstrains = cg.selectEssentialConstraints();
+		auto essentialConstrains = cg.selectEssentialConstraints();	
 		for(size_t c : essentialConstrains){
-			mis.back().emplace(cad.getConstraints()[c]->first);
-		}
-		cg = cg.removeDuplicateColumns();
-		if(!cg.hasRemainingSamples()){
-			return;
-		}
-		// Apply greedy algorithm as long as more than 6 constraints remain
-		while (cg.numRemainingConstraints() > 6 && cg.hasRemainingSamples()) {
-			std::size_t c = cg.getMaxDegreeConstraint();
-			mis.back().emplace(cad.getConstraints()[c]->first);
-			cg.selectConstraint(c);
+			misIntersection.emplace(cad.getConstraints()[c]->first);
 		}
 
+		if(!cg.hasRemainingSamples()){
+			mis.push_back(misIntersection);
+			SMTRAT_LOG_DEBUG("smtrat.mis", "returning after precon.");
+			return;
+		}
+		cg = cg.removeDuplicateColumns();
+		
+		// Apply greedy algorithm as long as more than 8 constraints remain
+		while (cg.numRemainingConstraints() > 8 && cg.hasRemainingSamples()) {
+			std::size_t c = cg.getMaxDegreeConstraint();
+			misIntersection.emplace(cad.getConstraints()[c]->first);
+			cg.selectConstraint(c);
+		}
+		if(!cg.hasRemainingSamples()){
+			mis.push_back(misIntersection);
+			SMTRAT_LOG_DEBUG("smtrat.mis", "returning after greedy.");
+			return;
+		}
+		SMTRAT_LOG_DEBUG("smtrat.mis", cg);
 		// Find the optimum solution for the remaining constraints
 		auto remaining = cg.getRemainingConstraints();
+		std::set<carl::Bitset> misTails;
 		for(size_t coverSize = 0; coverSize <= remaining.size(); coverSize++){
 			std::vector<bool> selection(remaining.size() - coverSize, false);
 			selection.resize(remaining.size(), true);
 			do {
+				carl::Bitset selAsBitset(0);
+				selAsBitset.resize(selection.size());
+				for(size_t i = 0; i < selection.size(); i++){
+					selAsBitset.set(i, selection[i]);
+				}
+				bool skip = false;
+				for(auto tail : misTails){
+					if(tail.is_subset_of(selAsBitset)){
+						skip = true;
+					}
+				}
+				if(skip) continue;
+
 				carl::Bitset cover(0);
 				cover.resize(cg.numSamples());
 				for(size_t i = 0; i < selection.size(); i++) {
@@ -106,15 +132,27 @@ namespace cad {
 					}
 				}
 				if (cover.count() == cover.size()){
+					carl::Bitset tail(0);
 					for(size_t i = 0; i < selection.size(); i++) {
-						if(selection[i]){
-							mis.back().emplace(cad.getConstraints()[remaining[i].first]->first);
-						}
+						tail.set(i, selection[i]);
 					}
-					return;
+					misTails.insert(tail);
+					SMTRAT_LOG_DEBUG("smtrat.mis", "tail found: " << selection);
 				}
 			} while(std::next_permutation(selection.begin(), selection.end()));
 		}
+		for(auto tail : misTails){
+			mis.emplace_back();
+			for(auto f : misIntersection){
+				mis.back().insert(f);
+			}
+			for(size_t i = 0; i < tail.size(); i++){
+				if(tail.test(i)){
+					mis.back().emplace(cad.getConstraints()[remaining[i].first]->first);
+				}
+			}
+		}
+		SMTRAT_LOG_DEBUG("smtrat.mis", "returning " << mis.size() << " MISes.");
 	}
 
 	template<>
@@ -125,7 +163,7 @@ namespace cad {
 		const static double activity_weight   = 10.0;
 
 		static int x;
-		std::cout << "GREEDY_WEIGHTED invoked: " << x++ << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.mis", "GREEDY_WEIGHTED invoked: " << x++);
 		mis.emplace_back();
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
 			mis.back().emplace(c);
@@ -144,7 +182,7 @@ namespace cad {
 			double weight;
 		};
 
-		std::map<size_t, candidate> candidates;
+		std::vector<candidate> candidates;
 		for(size_t i = 0; i < constraints.size(); i++){
 			if(cad.isIdValid(i)){
 				auto constraint = constraints[i];
@@ -152,33 +190,34 @@ namespace cad {
 				double weight = constant_weight +
 								complexity_weight * formula.complexity() +
 								activity_weight / (1.0 + formula.activity());
-				candidates[i] = candidate{
+				candidates.push_back(candidate{
+					i,
 					formula,
 					weight
-				};
+				});
 			}
 		}
-		SMTRAT_LOG_DEBUG("smtrat.mis", cg << std::endl);
-		SMTRAT_LOG_DEBUG("smtrat.mis", "-------------- Included: ---------------" << std::endl);
+		SMTRAT_LOG_DEBUG("smtrat.mis", cg);
+		SMTRAT_LOG_DEBUG("smtrat.mis", "-------------- Included: ---------------");
 		bool in = true;
 
 		while (cg.hasRemainingSamples()) {
 			auto selection = std::max_element(candidates.begin(), candidates.end(),
-				[cg](pair<size_t, candidate> left, pair<size_t, candidate>right) {
-					return cg.coveredSamples(left.first)/left.second.weight < cg.coveredSamples(right.first)/right.second.weight;
+				[cg](candidate left, candidate right) {
+					return cg.coveredSamples(left.constraint)/left.weight < cg.coveredSamples(right.constraint)/right.weight;
 				}
 			);
 			SMTRAT_LOG_DEBUG("smtrat.mis", 
-				"id: "            << selection->first << 
-				"\t weight: "     << selection->second.weight <<
-				"\t degree: "     << cg.coveredSamples(selection->first) << 
-				"\t complexity: " << selection->second.formula.complexity() << 
-				"\t activity: "   << selection->second.formula.activity() <<
-				std::endl);
-			mis.back().emplace(cad.getConstraints()[selection->first]->first);
-			cg.selectConstraint(selection->first);
+				"id: "            << selection->constraint << 
+				"\t weight: "     << selection->weight <<
+				"\t degree: "     << cg.coveredSamples(selection->constraint) << 
+				"\t complexity: " << selection->formula.complexity() << 
+				"\t activity: "   << selection->formula.activity());
+			mis.back().emplace(cad.getConstraints()[selection->constraint]->first);
+			cg.selectConstraint(selection->constraint);
 			candidates.erase(selection);
 		}
+		SMTRAT_LOG_DEBUG("smtrat.mis", "----------------------------------------");
 	}
 
 	template<>
@@ -189,7 +228,7 @@ namespace cad {
 		const static double activity_weight   = 10.0;
 
 		static int x;
-		std::cout << "HYBRID_WEIGHTED invoked: " << x++ << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.mis", "HYBRID_WEIGHTED invoked: " << x++);
 		mis.emplace_back();
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
 			mis.back().emplace(c);
@@ -203,8 +242,8 @@ namespace cad {
 		if(!cg.hasRemainingSamples()){
 			return;
 		}
-		std::cout << "CG after preconditioning:" << std::endl;
-		std::cout << cg << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.mis", "CG after preconditioning:");
+		SMTRAT_LOG_DEBUG("smtrat.mis", cg);
 
 		auto constraints = cad.getConstraints();
 		struct candidate {
@@ -226,7 +265,7 @@ namespace cad {
 				};
 			}
 		}
-		std::cout << "-------------- selecting greedily: ---------------" << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.mis", "-------------- selecting greedily: ---------------");
 		bool in = true;
 
 		// Apply greedy algorithm as long as more than 6 constraints remain
@@ -241,15 +280,14 @@ namespace cad {
 				"\t weight: "     << selection->second.weight <<
 				"\t degree: "     << cg.coveredSamples(selection->first) << 
 				"\t complexity: " << selection->second.formula.complexity() << 
-				"\t activity: "   << selection->second.formula.activity() <<
-				std::endl);
+				"\t activity: "   << selection->second.formula.activity());
 			mis.back().emplace(cad.getConstraints()[selection->first]->first);
 			cg.selectConstraint(selection->first);
 			candidates.erase(selection);
 		}
-		std::cout << "--------------------------------------------------" << std::endl;
-		std::cout << "CG after greedy:" << std::endl;
-		std::cout << cg << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.mis", "--------------------------------------------------");
+		SMTRAT_LOG_DEBUG("smtrat.mis", "CG after greedy:");
+		SMTRAT_LOG_DEBUG("smtrat.mis", cg);
 
 		// Find the optimum solution for the remaining constraints
 		double bestWeight = INFINITY;
@@ -280,16 +318,15 @@ namespace cad {
 				}
 			} while(std::next_permutation(selection.begin(), selection.end()));
 		}
-		std::cout << "-------------- selecting optimally: ---------------" << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.mis", "-------------- selecting optimally: ---------------");
 		for(size_t i = 0; i < bestSelection.size(); i++) {
 			if(bestSelection[i]){
-				std::cout <<
+				SMTRAT_LOG_DEBUG("smtrat.mis", 
 					"id: "            << remaining[i].first << 
 					"\t weight: "     << candidates[remaining[i].first].weight <<
 					"\t degree: "     << cg.coveredSamples(remaining[i].first) << 
 					"\t complexity: " << candidates[remaining[i].first].formula.complexity() << 
-					"\t activity: "   << candidates[remaining[i].first].formula.activity() <<
-					std::endl;
+					"\t activity: "   << candidates[remaining[i].first].formula.activity());
 				mis.back().emplace(cad.getConstraints()[remaining[i].first]->first);
 			}
 		}
