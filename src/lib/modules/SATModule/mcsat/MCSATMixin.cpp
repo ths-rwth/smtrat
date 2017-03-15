@@ -6,8 +6,9 @@ namespace mcsat {
 using carl::operator<<;
 
 void MCSATMixin::makeDecision(Minisat::Lit decisionLiteral) {
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Made theory decision for " << current().variable << ": " << decisionLiteral);
 	current().decisionLiteral = decisionLiteral;
-	pushLevel(current().variable);
+	mVariables.assign(current().variable);
 }
 
 bool MCSATMixin::backtrackTo(Minisat::Lit literal) {
@@ -23,11 +24,14 @@ bool MCSATMixin::backtrackTo(Minisat::Lit literal) {
 	}
 	
 	while (mCurrentLevel > level) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Backtracking theory assignment for " << current().variable);
-		auto it = mCurrentModel.find(current().variable);
-		assert(it != mCurrentModel.end());
-		mCurrentModel.erase(it);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Backtracking theory assignment for " << current().variable);
 		popLevel();
+		if (current().decisionLiteral != Minisat::lit_Undef) {
+			auto it = mCurrentModel.find(current().variable);
+			assert(it != mCurrentModel.end());
+			mCurrentModel.erase(it);
+			mVariables.unassign(current().variable);
+		}
 	}
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Next theory variable is " << current().variable);
 	return true;
@@ -143,8 +147,7 @@ void MCSATMixin::removeLastLevel() {
 }
 
 void MCSATMixin::pushLevel(carl::Variable var) {
-	SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Pushing new level with " << var);
-	mVariables.assign(var);
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Pushing new level with " << var);
 	// Future levels are cached and maybe should be discarded
 	if (mCurrentLevel != mTheoryStack.size() - 1) {
 		// Next level already has the right variable
@@ -160,7 +163,6 @@ void MCSATMixin::pushLevel(carl::Variable var) {
 }
 
 void MCSATMixin::popLevel() {
-	mVariables.unassign(current().variable);
 	mCurrentLevel--;
 }
 
