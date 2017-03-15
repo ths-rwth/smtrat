@@ -42,6 +42,11 @@ private:
 		return it;
 	}
 public:
+	void add(const FormulaT& formula) {
+		carl::Variables vars;
+		formula.arithmeticVars(vars);
+		add(vars);
+	}
 	void add(const carl::Variables& vars) {
 		for (auto v: vars) add(v);
 	}
