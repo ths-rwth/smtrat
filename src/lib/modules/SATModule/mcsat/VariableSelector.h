@@ -20,7 +20,7 @@ private:
 	mutable bool mCounterChanged = false;
 	
 	void fixQueue() const {
-		SMTRAT_LOG_TRACE("smtrat.sat.mc", "Rebuilding queue");
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Rebuilding queue");
 		if (mCounterChanged) {
 			mQueue.clear();
 			for (const auto& v: mCounter) {
@@ -33,7 +33,7 @@ private:
 			std::sort(mQueue.begin(), mQueue.end(), order);
 			mCounterChanged = false;
 		}
-		SMTRAT_LOG_TRACE("smtrat.sat.mc", "-> " << mQueue);
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "-> " << mQueue);
 	}
 	CounterMap::iterator find(carl::Variable v) {
 		auto it = mCounter.find(v);
@@ -51,20 +51,20 @@ public:
 		for (auto v: vars) add(v);
 	}
 	void add(carl::Variable v) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Adding " << v);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << v);
 		auto it = mCounter.find(v);
 		if (it == mCounter.end()) {
 			it = mCounter.emplace(v, std::make_pair(0,false)).first;
 			mCounterChanged = true;
 		}
 		it->second.first++;
-		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "-> " << mCounter);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << mCounter);
 	}
 	void remove(const carl::Variables& vars) {
 		for (auto v: vars) remove(v);
 	}
 	void remove(carl::Variable v) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Removing " << v);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Removing " << v);
 		auto it = find(v);
 		it->second.first--;
 		if (it->second.first == 0) {
@@ -72,18 +72,18 @@ public:
 			mCounter.erase(it);
 			mCounterChanged = true;
 		}
-		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "-> " << mCounter);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << mCounter);
 	}
 	
 	void assign(carl::Variable v) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Assigned " << v << ", removing from queue");
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Assigned " << v << ", removing from queue");
 		auto it = find(v);
 		it->second.second = true;
 		assert(mQueue.back() == v);
 		mQueue.pop_back();
 	}
 	void unassign(carl::Variable v) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Unassigned " << v << ", adding to queue");
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Unassigned " << v << ", adding to queue");
 		auto it = find(v);
 		it->second.second = false;
 		mCounterChanged = true;
