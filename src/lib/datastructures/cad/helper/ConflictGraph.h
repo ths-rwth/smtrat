@@ -174,7 +174,11 @@ public:
 			numSamples = std::max(numSamples, c.size());
 		}
 		for (std::size_t i = 0; i < cg.mData.size(); i++) {
-			os << i << "\t" << std::string(numSamples-cg.mData[i].size(), '0') << cg.mData[i] << " : " << cg.mData[i].count() << std::endl;
+			if(cg.mData[i].any()){
+				os << i << "\t" << 
+					  std::string(numSamples-cg.mData[i].size(), '0') << cg.mData[i] <<
+					  " : " << cg.mData[i].count() << std::endl;
+			}
 		}
 		return os;
 	}
