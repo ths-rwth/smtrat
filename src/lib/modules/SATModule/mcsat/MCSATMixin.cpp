@@ -107,7 +107,10 @@ void MCSATMixin::updateCurrentLevel(carl::Variable var) {
 	for (auto vit = mUndecidedVariables.begin(); vit != mUndecidedVariables.end();) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Looking at " << *vit);
 		std::size_t level = computeVariableLevel(*vit);
-		if (level != mCurrentLevel) continue;
+		if (level != mCurrentLevel) {
+			vit++;
+			continue;
+		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Associating " << *vit << " with " << var);
 		setVariableLevel(*vit, mCurrentLevel);
 		current().univariateVariables.push_back(*vit);
@@ -140,6 +143,7 @@ void MCSATMixin::removeLastLevel() {
 
 void MCSATMixin::pushLevel(carl::Variable var) {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Pushing new level with " << var);
+	mVariables.assign(var);
 	// Future levels are cached and maybe should be discarded
 	if (mCurrentLevel != mTheoryStack.size() - 1) {
 		// Next level already has the right variable
@@ -155,15 +159,20 @@ void MCSATMixin::pushLevel(carl::Variable var) {
 }
 
 void MCSATMixin::popLevel() {
+	mVariables.unassign(current().variable);
 	mCurrentLevel--;
 }
 
 std::size_t MCSATMixin::addVariable(Minisat::Var variable) {
-	SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Adding " << variable);
+	if (mGetter.isTheoryAbstraction(variable)) {
+		mVariables.add(mGetter.reabstractVariable(variable));
+	}
 	std::size_t level = computeVariableLevel(variable);
 	if (level == std::numeric_limits<std::size_t>::max()) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Adding " << variable << " to undecided");
 		mUndecidedVariables.push_back(variable);
 	} else {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Adding " << variable << " on level " << level);
 		setVariableLevel(variable, level);
 		mTheoryStack[level].univariateVariables.push_back(variable);
 	}
@@ -277,7 +286,7 @@ std::ostream& operator<<(std::ostream& os, const MCSATMixin& mcm) {
 	for (const auto& level: mcm.mTheoryStack) {
 		os << level.variable << " (" << level.decisionLiteral << ")";
 		if (level.variable == mcm.current().variable) {
-			os << " <<-- Current variable" << std::endl;
+			os << " <<-- Current variable";
 		}
 		os << std::endl;
 		os << "\tClauses:";
