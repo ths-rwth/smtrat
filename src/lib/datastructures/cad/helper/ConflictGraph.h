@@ -76,18 +76,18 @@ public:
 	 */
 	std::vector<size_t> selectEssentialConstraints(){
 		std::vector<size_t> res;
-		for (auto& column : this->toMatrix()){
-			size_t numOnes = 0;
-			size_t constraint = 0;
-			for(size_t row = 0; row < mData.size(); row++){
-				if(column[row] == 1) {
-					numOnes++;
-					constraint = row;
+		for (size_t sample = 0; sample < numSamples(); sample++){
+			size_t numConflicts = 0;
+			size_t essentialConstraint = 0;
+			for(size_t constraint = 0; constraint < mData.size(); constraint++){
+				if(mData[constraint].test(sample)) {
+					numConflicts++;
+					essentialConstraint = constraint;
 				}
 			}
-			if(numOnes == 1){
-				selectConstraint(constraint);
-				res.push_back(constraint);
+			if(numConflicts == 1){
+				selectConstraint(essentialConstraint);
+				res.push_back(essentialConstraint);
 			}
 		}
 		return res;
@@ -99,9 +99,12 @@ public:
 	 */
 	ConflictGraph removeDuplicateColumns(){
 		std::set<std::vector<uint8_t>> uniqueColumns;
-		auto matrix = toMatrix();
-		for(auto c : matrix){
-			uniqueColumns.insert(c);
+		for(size_t s = 0; s < numSamples(); s++){
+			std::vector<uint8_t> column (mData.size(), 0);
+			for(size_t constraint = 0; constraint < mData.size(); constraint++){
+				column[constraint] = mData[constraint].test(s);
+			}
+			uniqueColumns.insert(column);
 		}
 		ConflictGraph res(mData.size());
 		for(auto& b : res.mData){
@@ -133,19 +136,6 @@ public:
 			res = std::max(res, c.size());
 		}
 		return res;
-	}
-	
-	std::vector<std::vector<uint8_t>> toMatrix() const {
-		std::vector<std::vector<uint8_t>> matrix;
-		const size_t n = numSamples();
-		for(size_t s = 0; s < n; s++){
-			std::vector<uint8_t> column (mData.size(), 0);
-			for(size_t constraint = 0; constraint < mData.size(); constraint++){
-				column[constraint] = mData[constraint].test(s);
-			}
-			matrix.push_back(std::move(column));
-		}
-		return matrix;
 	}
 	
 	size_t numRemainingConstraints() const{
