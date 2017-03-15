@@ -216,7 +216,7 @@ bool MCSATMixin::isFormulaUnivariate(const FormulaT& formula, std::size_t level)
 	assert(level < mTheoryStack.size());
 	carl::Variables vars;
 	formula.arithmeticVars(vars);
-	for (std::size_t lvl = 1; lvl <= level; level++) {
+	for (std::size_t lvl = 1; lvl <= level; lvl++) {
 		vars.erase(current().variable);
 		
 	}
