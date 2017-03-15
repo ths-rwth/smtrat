@@ -1553,6 +1553,7 @@ namespace smtrat
     {
         if( _abstr.updatedReabstraction || _abstr.updateInfo < 0 )
         {
+            SMTRAT_LOG_DEBUG("smtrat.sat", "Removing " << _abstr.reabstraction);
             assert( !_abstr.reabstraction.isTrue() );
             if( _abstr.position != rPassedFormula().end() )
             {
@@ -1563,7 +1564,7 @@ namespace smtrat
         }
         if( _abstr.updatedReabstraction || _abstr.updateInfo > 0 )
         {
-			SMTRAT_LOG_DEBUG("smtrat.sat", "Updating " << _abstr.reabstraction);
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Adding " << _abstr.reabstraction);
             assert( !_abstr.reabstraction.isTrue() );
             assert( 
 				_abstr.reabstraction.getType() == carl::FormulaType::UEQ ||
@@ -2675,6 +2676,7 @@ namespace smtrat
 								mMCSAT.updateModel(backendsModel(), Rational(0));
 								SMTRAT_LOG_DEBUG("smtrat.sat.mc", "New model: " << mMCSAT.model());
 								next = prepareTheoryLitDecision();
+                                mMCSAT.makeDecision(next);
 								auto litval = value(next);
 								SMTRAT_LOG_TRACE("smtrat.sat.mc", "Next theory literal: " << next);
 								if (litval == l_False) std::exit(82);

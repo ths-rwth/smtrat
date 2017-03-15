@@ -1049,7 +1049,7 @@ namespace smtrat
 					if (ptr1 == nullptr) continue;
 					assert(ptr2 != nullptr);
 					if (ptr1->updateInfo * ptr2->updateInfo > 0) {
-						SMTRAT_LOG_WARN("smtrat.sat.mc", "Consistency error for " << ptr1->reabstraction << " / " << ptr2->reabstraction);
+						SMTRAT_LOG_WARN("smtrat.sat.mcsat", "Consistency error for " << ptr1->reabstraction << " / " << ptr2->reabstraction);
 						std::exit(24);
 					}
 					assert(ptr1->updateInfo * ptr2->updateInfo <= 0);
@@ -1066,10 +1066,12 @@ namespace smtrat
 					assert(abstrptr->updateInfo <= 0);
 					if (abstrptr->updateInfo < 0) continue;
 					if (!mMCSAT.isFormulaUnivariate(abstrptr->reabstraction)) {
-						SMTRAT_LOG_TRACE("smtrat.sat.mc", "Removing " << abstrptr->reabstraction << " with updateInfo " << abstrptr->updateInfo);
+						SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Removing " << abstrptr->reabstraction << " with updateInfo " << abstrptr->updateInfo);
 						toRemove.push_back(abstrptr);
 						mFutureChangedBooleans[mMCSAT.currentVariable()].emplace_back(var(lit));
-					}
+					} else {
+                        SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Still univariate: " << abstrptr->reabstraction);
+                    }
 				}
 				for (auto abstrptr: toRemove) {
 					abstrptr->updateInfo--;
