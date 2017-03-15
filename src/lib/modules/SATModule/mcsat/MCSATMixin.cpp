@@ -226,7 +226,7 @@ bool MCSATMixin::isFormulaUnivariate(const FormulaT& formula, std::size_t level)
 	carl::Variables vars;
 	formula.arithmeticVars(vars);
 	for (std::size_t lvl = 1; lvl <= level; lvl++) {
-		vars.erase(current().variable);
+		vars.erase(get(lvl).variable);
 		
 	}
 	SMTRAT_LOG_TRACE("smtrat.sat.mc", "Checking if " << formula << " is univariate: " << vars.empty());
