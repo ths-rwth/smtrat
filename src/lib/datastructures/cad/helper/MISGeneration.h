@@ -26,7 +26,7 @@ namespace cad {
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::GREEDY>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		static int x;
-		std::cout << "GREEDY invoked: " << x++ << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.mis", "GREEDY invoked: " << x++);
 		mis.emplace_back();
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
 			mis.back().emplace(c);
@@ -71,7 +71,7 @@ namespace cad {
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::HYBRID>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		static int x;
-		std::cout << "HYBRID invoked: " << x++ << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.mis", "HYBRID invoked: " << x++);
 		
 		// The set of constraints that will be included in every MIS
 		FormulaSetT misIntersection;
