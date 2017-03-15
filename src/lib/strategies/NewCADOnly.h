@@ -20,11 +20,11 @@ namespace smtrat
 				setStrategy(
 					addBackend<FPPModule<FPPSettings1>>(
 						addBackend<SATModule<SATSettings1>>(
-							addBackend<ICPModule<ICPSettings1>>(
+							//addBackend<ICPModule<ICPSettings1>>(
 								addBackend<VSModule<VSSettings234>>(
 									addBackend<NewCADModule<NewCADSettingsConfigured>>()
 								)
-							)
+							//)
 						)
 					)
 				);
