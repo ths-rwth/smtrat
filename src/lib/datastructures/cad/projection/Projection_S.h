@@ -71,7 +71,7 @@ namespace cad {
 	template<typename S, Backtracking B>
 	std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::SIMPLE, B, S>& p) {
 		os << "Queue: " << p.mQueue << std::endl;
-		return os << Projection<Incrementality::NONE, Backtracking::UNORDERED, S>(p);
+		return os << static_cast<const Projection<Incrementality::NONE, Backtracking::UNORDERED, S>&>(p);
 	}
 }
 }
