@@ -27,6 +27,7 @@ public:
 	}
 	
 	std::string getStatus(const BenchmarkResult& result) const override {
+		if (result.stdout.find("s OPTIMUM FOUND") != std::string::npos) return "sat";
 		if (result.stdout.find("s SATISFIABLE") != std::string::npos) return "sat";
 		if (result.stdout.find("s UNSATISFIABLE") != std::string::npos) return "unsat";
 		if (result.stdout.find("s UNKNOWN") != std::string::npos) return "unknown";
