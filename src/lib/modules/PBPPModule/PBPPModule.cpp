@@ -38,8 +38,6 @@ namespace smtrat
 	template<class Settings>
 	bool PBPPModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 	{
-		//	std::cout << "ADDCORE" << std::endl;
-		std::cout << _subformula->formula() << std::endl;
 		if (objective() != carl::Variable::NO_VARIABLE) {
 			for (auto var: objectiveFunction().gatherVariables()) {
 					mVariablesCache.emplace(carl::Variable(var.getId(), carl::VariableType::VT_BOOL), var);
@@ -69,7 +67,6 @@ namespace smtrat
 	template<class Settings>
 	Answer PBPPModule<Settings>::checkCore()
 	{
-		//std::cout << "CHECKCORE" << std::endl;
 		Answer ans = runBackends();
 		if (ans == UNSAT) {
 			generateTrivialInfeasibleSubset();
@@ -79,7 +76,6 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaType(const FormulaT& formula){
-		//std::cout << "CHECKFORMULATYPE" << std::endl;
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
 			return formula;
 		} 
@@ -132,7 +128,6 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::convertSmallFormula(const FormulaT& formula){
-		//std::cout << "CONVERTSMALLFORMULA" << std::endl;
 		const carl::PBConstraint& c  = formula.pbConstraint();
 		carl::Relation cRel   = c.getRelation();
 		const auto& cLHS      = c.getLHS();
@@ -336,7 +331,6 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::convertBigFormula(const FormulaT& formula){
-		//std::cout << "CONVERTBIGFORMULA" << std::endl;
 		const carl::PBConstraint& c = formula.pbConstraint();
 		const auto& cLHS 	 = c.getLHS();
 		carl::Relation cRel  = c.getRelation();
@@ -363,17 +357,17 @@ namespace smtrat
 		}
 
 		if(!positive && !negative && (cRel == carl::Relation::GEQ || cRel == carl::Relation::LEQ) && sum >= cRHS){
-			//-1 x1 +1 x2 >= 0 ===> +1 not(x1) +1 x2 >= 0 ===> x1 and not(x2)
+			//-1 x1 +1 x2 >= 0 ===>  not(x1) or x2
 			FormulasT newSubformulas;
 			for(auto it : cLHS){
 				FormulaT f = FormulaT(it.second);
-				if(it.first > 0){
+				if(it.first < 0){
 					newSubformulas.push_back(f.negated());
 				}else{
 					newSubformulas.push_back(f);
 				}
 			}
-			return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
+			return FormulaT(carl::FormulaType::OR, std::move(newSubformulas));
 		}
 
 		if(positive && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ)){
@@ -523,7 +517,6 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::generateVarChain(const std::vector<carl::Variable>& vars, carl::FormulaType type){
-		//std::cout << "GENERATEVARCHAIN" << std::endl;
 		FormulasT newSubformulas;
 		for(auto var: vars){
 			FormulaT newFormula = FormulaT(var);
@@ -537,7 +530,6 @@ namespace smtrat
 	*/
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::forwardAsArithmetic(const FormulaT& formula){
-		//std::cout << "FORWARDASARITHMETIC" << std::endl;
 		const carl::PBConstraint& c = formula.pbConstraint();
 		const auto& cLHS = c.getLHS();
 		carl::Relation cRel  = c.getRelation();
@@ -570,7 +562,6 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::createAuxiliaryConstraint(const FormulaT& formula){
-		//std::cout << "CREATEAUXILIARYCONSTRAINT" << std::endl;
 		const carl::PBConstraint& c = formula.pbConstraint();
 		auto boolVars        = c.gatherVariables();
 		std::vector<carl::Variable> intVars;
@@ -595,7 +586,6 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::interconnectVariables(const FormulaT& formula){
-		//std::cout << "INTERCONNECTVARIABLES" << std::endl;
 		const carl::PBConstraint& c = formula.pbConstraint();
 		auto boolVars 		 = c.gatherVariables();
 		std::map<carl::Variable, carl::Variable> varsMap;
@@ -618,101 +608,131 @@ namespace smtrat
 		return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
 
 	}
-/*
-	template<typename Settings>
-	FormulaT PBPPModule<Settings>::rnsTransformation(const FormulaT& formula){
 
-	}
-
-	template<typename Settings>
-	std::vector<carl::uint> PBPPModule<Settings>::calculateRNSBase(const FormulaT& formula){
-		const carl::PBConstraint& c = formula.pbConstraint();	
-		const auto& cLHS = c.getLHS();
-		int max = INT_MIN;
-		// std::vector<std::pair<carl::uint, int>> freq;
-		carl::PrimeFactory<carl::uint> pFactory;
-		std::vector<std::pair<int, carl::uint>> freq;
-		int sum = 0;
-		int product = 1;
-
-		for(auto it : cLHS){
-			if(it.first > max){
-				max = it.first;
-			}
-			sum += it.first;
-		}
-		bool flag = false;
-		bool fr = 0;
-		for(auto it : cLHS){
-			carl::uint prime = pFactory.nextPrime();
-			while(prime < it.first){ //Diese Bedingung koennte vielleicht staerker sein!
-				if(it.first % prime == 0){
-					int count = 0;
-					for(auto i : freq){
-						if(i.second == prime){
-							flag = true;
-							freq[count].first = i.first + 1;
-							break;
-						}
-						count++;
-					}
-					if(!flag){
-						freq.push_back(std::pair<int, carl::uint>(1, prime));
-					}
-				}
-				flag = false;
-				prime = pFactory.nextPrime();
-			}
-		}
-
-		 std::sort(freq.begin(), freq.end(),
-		 	[&](const pair<int, carl::uint> &p1, const pair<int, carl::uint> &p2)
-		 	{
-		 		if(p1.first == p2.first){
-					return (p1.second < p2.second);
-				}else{
-					return(p1.first > p2.first);
-		}
-		 	});
-
-		 std::vector<carl::uint> base;
-		 for(auto it : freq){
-		 	product *= it.second;
-		 	if(product <= sum){
-		 	base.push_back(it.second);	
-		 	}else{
-		 		base.push_back(it.second);
-		 		break;
-		 	}
-		 }
-
-		return base;
-	}
-
-	template<typename Settings>
-	bool PBPPModule<Settings>::isNonRedundant(const std::vector<carl::uint>& base, const FormulaT& formula){
-		const carl::PBConstraint& c = formula.pbConstraint();	
-		const auto& cLHS = c.getLHS();
-		int max = INT_MIN;
-		int product = 1;
-
-		for(auto it : cLHS){
-			if(&it > max){
-				max = &it;
-			}
-		}
-		for(auto it : base){
-			product *= &it;
-		}
-
-		for(auto it : base){
-			if(&it >= max){
-				return false;
-			}
-		} 
-		return true;
-	}
-	*/
+    template<typename Settings>
+    FormulaT PBPPModule<Settings>::rnsTransformation(const FormulaT& formula){
+        const carl::PBConstraint& c = formula.pbConstraint();
+        const auto& cLHS = c.getLHS();
+        int cRHS = c.getRHS();
+        std::vector<carl::uint> base = calculateRNSBase(formula);
+        
+        FormulasT subformulas;
+        for(auto i : base){
+            std::vector<std::pair<int, carl::Variable>> newLHS;
+            int newRHS = cRHS % i;
+            carl::PBConstraint newConstraint;
+            for(auto it : cLHS){
+                newLHS.push_back(std::pair<int, carl::Variable>(it.first % i, it.second));
+            }	
+            
+            int sum = 0;
+            for(auto it : newLHS){
+                sum += it.first;
+            }
+            sum -= newRHS;
+            
+            for(int i = 0; i < sum; i++){
+                newLHS.push_back(std::pair<int, carl::Variable>(-sum, carl::freshVariable(carl::VariableType::VT_BOOL)));
+            }
+            
+            newConstraint.setLHS(newLHS);
+            newConstraint.setRHS(newRHS);
+            newConstraint.setRelation(carl::Relation::EQ);
+            
+            subformulas.push_back(FormulaT(newConstraint));
+        }
+        
+        return FormulaT(carl::FormulaType::AND, std::move(subformulas));
+    }
+    
+    template<typename Settings>
+    std::vector<carl::uint> PBPPModule<Settings>::calculateRNSBase(const FormulaT& formula){
+        const carl::PBConstraint& c = formula.pbConstraint();	
+        const auto& cLHS = c.getLHS();
+        int max = INT_MIN;
+        // std::vector<std::pair<carl::uint, int>> freq;
+        carl::PrimeFactory<carl::uint> pFactory;
+        std::vector<std::pair<int, carl::uint>> freq;
+        int sum = 0;
+        int product = 1;
+        
+        for(auto it : cLHS){
+            if(it.first > max){
+                max = it.first;
+            }
+            sum += it.first;
+        }
+        bool flag = false;
+        bool fr = 0;
+        for(auto it : cLHS){
+            carl::uint prime = pFactory.nextPrime();
+            while(prime < it.first){ //Diese Bedingung koennte vielleicht staerker sein!
+                if(it.first % prime == 0){
+                    int count = 0;
+                    for(auto i : freq){
+                        if(i.second == prime){
+                            flag = true;
+                            freq[count].first = i.first + 1;
+                            break;
+                        }
+                        count++;
+                    }
+                    if(!flag){
+                        freq.push_back(std::pair<int, carl::uint>(1, prime));
+                    }
+                }
+                flag = false;
+                prime = pFactory.nextPrime();
+            }
+        }
+        
+        std::sort(freq.begin(), freq.end(),
+                  [&](const pair<int, carl::uint> &p1, const pair<int, carl::uint> &p2)
+                  {
+                      if(p1.first == p2.first){
+                          return (p1.second < p2.second);
+                      }else{
+                          return(p1.first > p2.first);
+                      }
+                  });
+        
+        std::vector<carl::uint> base;
+        for(auto it : freq){
+            product *= it.second;
+            if(product <= sum){
+                base.push_back(it.second);	
+            }else{
+                base.push_back(it.second);
+                break;
+            }
+        }
+        
+        return base;
+    }
+    
+    template<typename Settings>
+    bool PBPPModule<Settings>::isNonRedundant(const std::vector<carl::uint>& base, const FormulaT& formula){
+        const carl::PBConstraint& c = formula.pbConstraint();	
+        const auto& cLHS = c.getLHS();
+        int max = INT_MIN;
+        int product = 1;
+        
+        for(auto it : cLHS){
+            if(it.first > max){
+                max = it.first;
+            }
+        }
+        for(auto it : base){
+            product *= it;
+        }
+        
+        for(auto it : base){
+            if(it >= max){
+                return false;
+            }
+        } 
+        return true;
+    }
 
 }
 
