@@ -120,6 +120,7 @@ namespace cad {
 				for(auto tail : misTails){
 					if(tail.is_subset_of(selAsBitset)){
 						skip = true;
+						break;
 					}
 				}
 				if(skip) continue;
