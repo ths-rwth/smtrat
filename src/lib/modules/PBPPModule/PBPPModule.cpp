@@ -100,15 +100,15 @@ namespace smtrat
 			auto res = convertSmallFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
-		// }else if(cRel == carl::Relation::EQ){
-		// 	std::vector<carl::uint> base = calculateRNSBase(formula);
-		// 	if(base.size() != 0 && isNonRedundant(base)){
-		// 		auto res = rnsTransformation(formula);
-		// 	}else{
-		// 		//Hier koennte man schauen ob es doch nicht mit bigFormula geht!
-		// 		auto res = forwardAsArithmetic(formula);
-		// 		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-		// 	}
+		}else if(cRel == carl::Relation::EQ){
+			std::vector<carl::uint> base = calculateRNSBase(formula);
+			if(base.size() != 0 && isNonRedundant(base, formula)){
+				auto res = rnsTransformation(formula);
+			}else{
+				//Hier koennte man schauen ob es doch nicht mit bigFormula geht!
+				auto res = forwardAsArithmetic(formula);
+				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			}
 		}else if(!(positive && cRHS > 0 && sum > cRHS 
 					&& (/*cRel == carl::Relation::GEQ || */cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
 						&&  !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum < cRHS && cLHS.size() > 1)
@@ -619,10 +619,10 @@ namespace smtrat
         FormulasT subformulas;
         for(auto i : base){
             std::vector<std::pair<int, carl::Variable>> newLHS;
-            int newRHS = cRHS % i;
+            int newRHS = cRHS % (int) i;
             carl::PBConstraint newConstraint;
             for(auto it : cLHS){
-                newLHS.push_back(std::pair<int, carl::Variable>(it.first % i, it.second));
+                newLHS.push_back(std::pair<int, carl::Variable>(it.first % (int) i, it.second));
             }	
             
             int sum = 0;
@@ -642,7 +642,9 @@ namespace smtrat
             subformulas.push_back(FormulaT(newConstraint));
         }
         
-        return FormulaT(carl::FormulaType::AND, std::move(subformulas));
+        FormulaT f = FormulaT(carl::FormulaType::AND, std::move(subformulas));
+
+        return checkFormulaType(f);
     }
     
     template<typename Settings>
@@ -650,8 +652,7 @@ namespace smtrat
         const carl::PBConstraint& c = formula.pbConstraint();	
         const auto& cLHS = c.getLHS();
         int max = INT_MIN;
-        // std::vector<std::pair<carl::uint, int>> freq;
-        carl::PrimeFactory<carl::uint> pFactory;
+
         std::vector<std::pair<int, carl::uint>> freq;
         int sum = 0;
         int product = 1;
@@ -662,26 +663,23 @@ namespace smtrat
             }
             sum += it.first;
         }
-        bool flag = false;
-        bool fr = 0;
         for(auto it : cLHS){
+        	carl::PrimeFactory<carl::uint> pFactory;
             carl::uint prime = pFactory.nextPrime();
-            while(prime < it.first){ //Diese Bedingung koennte vielleicht staerker sein!
-                if(it.first % prime == 0){
-                    int count = 0;
-                    for(auto i : freq){
-                        if(i.second == prime){
-                            flag = true;
-                            freq[count].first = i.first + 1;
-                            break;
-                        }
-                        count++;
-                    }
-                    if(!flag){
-                        freq.push_back(std::pair<int, carl::uint>(1, prime));
-                    }
+            while((int) prime < it.first){
+                if(it.first % (int) prime == 0){
+                	auto elem = std::find_if(freq.begin(), freq.end(), 
+                		[&] (const pair<int, carl::uint>& elem){
+                			return elem.second == prime;
+                		});
+                	
+                	if(elem != freq.end()){
+                		carl::uint distance = (carl::uint) std::distance(freq.begin(), elem);
+                		freq[distance].first = freq[distance].first + 1;
+                	}else{
+                		freq.push_back(std::pair<int, carl::uint>(1, prime));
+                	}
                 }
-                flag = false;
                 prime = pFactory.nextPrime();
             }
         }
@@ -706,7 +704,7 @@ namespace smtrat
                 break;
             }
         }
-        
+
         return base;
     }
     
@@ -727,7 +725,7 @@ namespace smtrat
         }
         
         for(auto it : base){
-            if(it >= max){
+            if(it >= (carl::uint) max){
                 return false;
             }
         } 
