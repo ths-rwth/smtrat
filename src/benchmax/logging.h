@@ -6,15 +6,14 @@
 #pragma once
 
 #include "config.h"
-#include <carl/core/carlLogging.h>
-
-namespace benchmax {
-
-	using carl::operator<<;
-
-}
 
 #if defined BENCHMAX_LOGGING
+
+#include <carl/core/carlLogging.h>
+namespace benchmax {
+	using carl::operator<<;
+}
+
 	#define BENCHMAX_LOG_FATAL(channel, msg) __CARL_LOG_FATAL(channel, msg)
 	#define BENCHMAX_LOG_ERROR(channel, msg) __CARL_LOG_ERROR(channel, msg)
 	#define BENCHMAX_LOG_WARN(channel, msg) __CARL_LOG_WARN(channel, msg)

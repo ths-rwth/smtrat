@@ -23,7 +23,7 @@ namespace smtrat
      * @version
      *
      */
-    class RatNIA:
+    class RatNIAOne:
         public Manager
     {
         static bool conditionEvaluation5( carl::Condition _condition )
@@ -38,7 +38,7 @@ namespace smtrat
 
         public:
 
-        RatNIA(): Manager()
+        RatNIAOne(): Manager()
         {
             setStrategy(
             {
