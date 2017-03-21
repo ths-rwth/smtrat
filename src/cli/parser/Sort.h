@@ -19,7 +19,7 @@ struct SortParser : public qi::grammar<Iterator, carl::Sort(), Skipper> {
 				simpleSort[qi::_val = qi::_1]
 			|	parameters[qi::_val = qi::_1]
 			|	identifier[qi::_val = px::bind(&SortParser::getSort, px::ref(*this), qi::_1)]
-			|	("(" >> identifier >> +sort >> ")")[qi::_val = px::bind(&SortParser::getSort, px::ref(*this), qi::_1, qi::_2)]
+			|	("(" >> identifier >> +sort >> ")")[qi::_val = px::bind(&SortParser::getSortWithParam, px::ref(*this), qi::_1, qi::_2)]
 		;
 		sort.name("sort");
 		Theories::addSimpleSorts(simpleSort);
@@ -38,7 +38,7 @@ struct SortParser : public qi::grammar<Iterator, carl::Sort(), Skipper> {
 		if (i.indices == nullptr) return carl::getSort(i.symbol);
 		return carl::getSort(i.symbol, *i.indices);
 	}
-	carl::Sort getSort(const Identifier& i, const std::vector<carl::Sort>& params) {
+	carl::Sort getSortWithParam(const Identifier& i, const std::vector<carl::Sort>& params) {
 		if (i.indices == nullptr) return carl::getSort(i.symbol, params);
 		return carl::getSort(i.symbol, *i.indices, params);
 	}
