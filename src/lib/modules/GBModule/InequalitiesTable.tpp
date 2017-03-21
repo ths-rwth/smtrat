@@ -273,9 +273,9 @@ namespace smtrat
             if( reduced.isZero( ) || reduced.isConstant( ) )
             {
                 bool satisfied = false;
-                if( reduced.isZero( ) && !relationIsStrict( relation ) )
+                if( reduced.isZero( ) && isWeak( relation ) )
                 {
-                    assert( !relationIsStrict( relation ) );
+                    assert( isWeak( relation ) );
                     satisfied = true;
                 }
                 else if( !reduced.isZero( ) )

@@ -106,9 +106,10 @@ namespace cad {
 			if (sample.evaluatedWith().test(cid)) {
 				return sample.evaluationResult().test(cid);
 			}
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Evaluating " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment);
 			auto res = carl::RealAlgebraicNumberEvaluation::evaluate(constraint.first.lhs(), assignment);
 			bool evalResult = carl::evaluate(res, constraint.first.relation());
-			SMTRAT_LOG_TRACE("smtrat.cad", "Evaluating " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment << " -> " << evalResult);
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Evaluating " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment << " -> " << evalResult);
 			sample.evaluatedWith().set(cid, true);
 			sample.evaluationResult().set(cid, evalResult);
 			return evalResult;
@@ -116,7 +117,7 @@ namespace cad {
 
 		Answer checkFullSamples(Assignment& assignment) {
 			if (!mLifting.hasFullSamples()) return Answer::UNSAT;
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Checking for full satisfying samples...");
+			SMTRAT_LOG_TRACE("smtrat.cad", "Checking for full satisfying samples...");
 			SMTRAT_LOG_TRACE("smtrat.cad", "Full sample queue:" << std::endl << mLifting.printFullSamples());
 			while (mLifting.hasFullSamples()) {
 				auto it = mLifting.getNextFullSample();
@@ -135,7 +136,7 @@ namespace cad {
 					return Answer::SAT;
 				}
 			}
-			SMTRAT_LOG_DEBUG("smtrat.cad", "No full satisfying sample found.");
+			SMTRAT_LOG_TRACE("smtrat.cad", "No full satisfying sample found.");
 			return Answer::UNSAT;
 		}
 		
@@ -163,7 +164,7 @@ namespace cad {
 			if (mConstraints.checkForTrivialConflict(mis)) {
 				return Answer::UNSAT;
 			}
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
+			SMTRAT_LOG_INFO("smtrat.cad", "Current projection:" << std::endl << mProjection);
 			CADCore<Settings::coreHeuristic> cad;
 			auto res = cad(assignment, *this);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Result: " << res);
@@ -186,12 +187,8 @@ namespace cad {
 					assert(mConstraints.valid(id) || cg.coveredSamples(id) == 0);
 				}
 			}
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Resulting conflict graph " << cg);
 			return cg;
-		}
-		
-		void generateInfeasibleSubsets(std::vector<FormulaSetT>& mis) const {
-			cad::MISGeneration<Settings::misHeuristic> generator;
-			generator(*this, mis);
 		}
 	};
 }

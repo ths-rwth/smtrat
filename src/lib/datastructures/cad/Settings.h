@@ -9,8 +9,24 @@ namespace cad {
 	enum class ProjectionType { Brown, McCallum, Hong };
 	enum class SampleCompareStrategy { Integer, Numeric, Value };
 	enum class FullSampleCompareStrategy { Integer, Numeric, Value };
-	enum class MISHeuristic { TRIVIAL, GREEDY, GREEDY_PRE, GREEDY_WEIGHTED, HYBRID, HYBRID_WEIGHTED };
+	enum class MISHeuristic { TRIVIAL, GREEDY, GREEDY_PRE, GREEDY_WEIGHTED, HYBRID};
 	enum class CoreHeuristic { BySample, PreferProjection, PreferSampling };
 	using RootSplittingStrategy = carl::rootfinder::SplittingStrategy;
+
+	struct BaseSettings {
+		static constexpr Incrementality incrementality = Incrementality::NONE;
+		static constexpr Backtracking backtracking = Backtracking::ORDERED;
+		
+		static constexpr ProjectionType projectionOperator = cad::ProjectionType::Brown;
+		static constexpr CoreHeuristic coreHeuristic = cad::CoreHeuristic::PreferProjection;
+		
+		static constexpr MISHeuristic misHeuristic = cad::MISHeuristic::GREEDY;
+		static constexpr std::size_t trivialSampleRadius = 1;
+		static constexpr bool simplifyProjectionByBounds = true;
+		
+		static constexpr SampleCompareStrategy sampleComparator = cad::SampleCompareStrategy::Integer;
+		static constexpr FullSampleCompareStrategy fullSampleComparator = cad::FullSampleCompareStrategy::Integer;
+		static constexpr RootSplittingStrategy rootSplittingStrategy = cad::RootSplittingStrategy::DEFAULT;
+	};
 }
 }
