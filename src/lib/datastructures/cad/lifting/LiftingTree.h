@@ -83,8 +83,10 @@ namespace cad {
 			if (!gotNewSamples) {
 				SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Nothing to merge");
 				if (mTree.is_leaf(parent)) {
-					SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Inserting zero node.");
-					auto it = mTree.append(parent, Sample(RAN()));
+					auto var = mVariables[parent.depth()];
+					auto interval = mConstraints.bounds().getInterval(var);
+					SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Inserting zero node for " << var << " from " << interval);
+					auto it = mTree.append(parent, Sample(RAN(interval.sample())));
 					addToQueue(it);
 				}
 				return false;
@@ -199,7 +201,7 @@ namespace cad {
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "For " << printSample(sample));
 			auto variable = mVariables[sample.depth()];
 			auto center = mConstraints.bounds().getInterval(variable).sample();
-			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Bounds for " << variable << " = " << mConstraints.bounds().getInterval(variable));
+			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Selecting " << center << " for " << variable << " from " << mConstraints.bounds().getInterval(variable));
 			auto it = mTree.append(sample, Sample(RAN(center), false));
 			addToQueue(it);
 			
