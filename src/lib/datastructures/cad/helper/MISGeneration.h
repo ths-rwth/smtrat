@@ -183,8 +183,8 @@ namespace cad {
 	template<>
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::GREEDY_WEIGHTED>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
-		const static double constant_weight   = 1.0;
-		const static double complexity_weight = 0.5;
+		const static double constant_weight   = 5.0;
+		const static double complexity_weight = 0.1;
 		const static double activity_weight   = 10.0;
 
 		static int x;
