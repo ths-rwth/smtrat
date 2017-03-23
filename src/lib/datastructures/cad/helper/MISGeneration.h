@@ -112,7 +112,7 @@ namespace cad {
 			}
 		}
 		// Apply greedy algorithm as long as more than 8 constraints remain
-		while (cg.numRemainingConstraints() > 8 && cg.hasRemainingSamples()) {
+		while (cg.numRemainingConstraints() > 10 && cg.hasRemainingSamples()) {
 			auto selection = std::max_element(candidates.begin(), candidates.end(),
 				[cg](candidate left, candidate right) {
 					return cg.coveredSamples(left.constraint)/left.weight < cg.coveredSamples(right.constraint)/right.weight;
