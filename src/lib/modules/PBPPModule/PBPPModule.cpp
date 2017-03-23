@@ -130,22 +130,21 @@ namespace smtrat
 			/********************/
 		}else{
 			initPrimesTable();
-			quadraticSieve(102);
-			std::cout << "Integer max" << INT_MAX << std::endl;
+			quadraticSieve(766);
 
 			if(cLHS.size() == 1){
 				auto res = convertSmallFormula(formula);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				return res;
-			// }else if(cRel == carl::Relation::EQ){
-			// 	std::vector<carl::uint> base = calculateRNSBase(formula);
-			// 	if(base.size() != 0 && isNonRedundant(base, formula)){
-			// 		auto res = rnsTransformation(formula);
-			// 	}else{
-			// 		//Hier koennte man schauen ob es doch nicht mit bigFormula geht!
-			// 		auto res = forwardAsArithmetic(formula);
-			// 		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-			// 	}
+			}else if(cRel == carl::Relation::EQ){
+				std::vector<carl::uint> base = calculateRNSBase(formula);
+				if(base.size() != 0 && isNonRedundant(base, formula)){
+					auto res = rnsTransformation(formula);
+				}else{
+					//Hier koennte man schauen ob es doch nicht mit bigFormula geht!
+					auto res = forwardAsArithmetic(formula);
+					SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+				}
 			}else if(!(positive && cRHS > 0 && sum > cRHS 
 						&& (/*cRel == carl::Relation::GEQ || */cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
 							&&  !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum < cRHS && cLHS.size() > 1)
@@ -813,8 +812,11 @@ namespace smtrat
 
 
     template<typename Settings>
-    std::vector<carl::uint>PBPPModule<Settings>::quadraticSieve(const int& coeff){    	
-    	if(coeff <= 100){
+    std::vector<carl::uint>PBPPModule<Settings>::quadraticSieve(const int& coeff){ 
+
+	    if(coeff == 2){
+	    	return std::vector<carl::uint>((carl::uint) 2);
+	    }else if(coeff <= 100){
     		if(mPrimesTable.find(coeff) == mPrimesTable.end()){
     			//coeff is a prime number
     			return std::vector<carl::uint>((carl::uint) coeff);	
@@ -830,69 +832,71 @@ namespace smtrat
     	int y = (x * x) - coeff;
     	int r = (int) sqrt(y);
 
-    	while(y >  r * r){
-    		x++;
-    		y = (x * x) - coeff;
-    		r = (int) sqrt(y);
-    	}
+		if(coeff % 2 == 0){
+			primes.push_back((carl::uint) 2);
+			std::vector<carl::uint> v = quadraticSieve((carl::uint) coeff / 2);
+			primes.insert(primes.end(), v.begin(), v.end());
+		}else{
+		    while(y >  r * r){
+	    		x++;
+	    		y = (x * x) - coeff;
+	    		r = (int) sqrt(y);
+	    	}
 
-    	int first = x + r;
-    	int second  = x - r;
+	    	int first = x + r;
+	    	int second  = x - r;
 
-    	if(first <= 100){
-    		if(mPrimesTable.find(first) == mPrimesTable.end()){
-    			//first is a prime number
-    			primes.push_back(first);	
-    		}else{
-    			//first is not a prime number
-    			std::vector<carl::uint> v = mPrimesTable[(int) first];
-    			primes.insert(primes.end(), v.begin(), v.end());
-    		}		
-    	}else{
-    		carl::PrimeFactory<carl::uint> pFactory;
-    		carl::uint prime = pFactory[24];
-    		while(prime < first){
-    			prime = pFactory.nextPrime();
-    		}
-    		if(prime == first){
-    			//first is a big prime number
-    			primes.push_back(first);
-    		}else{
-    			//first is not a prime number
-    			std::vector<carl::uint> v = quadraticSieve(first);
-    			primes.insert(primes.end(), v.begin(), v.end());
-    		}
-    	}
+	    	if(first <= 100){
+	    		if(mPrimesTable.find(first) == mPrimesTable.end() && first > 1){
+	    			//first is a prime number
+	    			primes.push_back(first);	
+	    		}else{
+	    			//first is not a prime number
+	    			std::vector<carl::uint> v = mPrimesTable[(int) first];
+	    			primes.insert(primes.end(), v.begin(), v.end());
+	    		}		
+	    	}else{
+	    		carl::PrimeFactory<carl::uint> pFactory;
+	    		carl::uint prime = pFactory[24];
+	    		while(prime < first){
+	    			prime = pFactory.nextPrime();
+	    		}
+	    		if(prime == first){
+	    			//first is a big prime number
+	    			primes.push_back(first);
+	    		}else{
+	    			//first is not a prime number
+	    			std::vector<carl::uint> v = quadraticSieve(first);
+	    			primes.insert(primes.end(), v.begin(), v.end());
+	    		}
+	    	}
 
-    	if(second <= 100){
-    		if(mPrimesTable.find(second) == mPrimesTable.end()){
-    			//second is a prime number
-    			primes.push_back(second);	
-    		}else{
-    			//second is not a prime number
-    			std::vector<carl::uint> v = mPrimesTable[(int) second];
-    			primes.insert(primes.end(), v.begin(), v.end());
-    		}		
-    	}else{
-    		carl::PrimeFactory<carl::uint> pFactory;
-    		carl::uint prime = pFactory[24];
-    		while(prime < second){
-    			prime = pFactory.nextPrime();
-    		}
-    		if(prime == second){
-    			//second is a big prime number
-    			primes.push_back(second);
-    		}else{
-    			//second is not a prime number
-    			std::vector<carl::uint> v = quadraticSieve(second);
-    			primes.insert(primes.end(), v.begin(), v.end());
-    		}
-    	}
+	    	if(second <= 100){
+	    		if(mPrimesTable.find(second) == mPrimesTable.end() && second > 1){
+	    			//second is a prime number
+	    			primes.push_back(second);	
+	    		}else{
+	    			//second is not a prime number
+	    			std::vector<carl::uint> v = mPrimesTable[(int) second];
+	    			primes.insert(primes.end(), v.begin(), v.end());
+	    		}		
+	    	}else{
+	    		carl::PrimeFactory<carl::uint> pFactory;
+	    		carl::uint prime = pFactory[24];
+	    		while(prime < second){
+	    			prime = pFactory.nextPrime();
+	    		}
+	    		if(prime == second){
+	    			//second is a big prime number
+	    			primes.push_back(second);
+	    		}else{
+	    			//second is not a prime number
+	    			std::vector<carl::uint> v = quadraticSieve(second);
+	    			primes.insert(primes.end(), v.begin(), v.end());
+	    		}
+	    	}
 
-		std::cout << "primes : " << std::endl;
-    	for(auto it : primes){
-    		std::cout << it << ", " << std::endl;
-    	}
+	    }
     	return primes;
     }
 
