@@ -12,6 +12,7 @@
 #include "PBPPStatistics.h"
 #include "PBPPSettings.h"
 #include <carl/numbers/PrimeFactory.h>
+#include <boost/math/common_factor.hpp> 
 
 namespace smtrat
 {
@@ -26,7 +27,8 @@ namespace smtrat
 			std::map<carl::Variable, carl::Variable> mVariablesCache; //bool, int
 			carl::FormulaVisitor<FormulaT> mVisitor;
 			std::vector<carl::Variable> mCheckedVars;
-			bool mTestMode = true;
+			std::map<int, std::vector<carl::uint>> mPrimesTable;
+			bool mTestMode = false;
 			
 		public:
 			typedef Settings SettingsType;
@@ -100,6 +102,8 @@ namespace smtrat
 			FormulaT rnsTransformation(const FormulaT& formula);
 			std::vector<carl::uint> calculateRNSBase(const FormulaT& formula);
 			bool isNonRedundant(const std::vector<carl::uint>& base, const FormulaT& formula);
+			std::vector<carl::uint> quadraticSieve(const int& coeff);
+			void initPrimesTable();
 
 	};
 }
