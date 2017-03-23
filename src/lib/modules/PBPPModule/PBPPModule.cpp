@@ -130,7 +130,7 @@ namespace smtrat
 			/********************/
 		}else{
 			initPrimesTable();
-			quadraticSieve(766);
+			integerFactorization(766);
 
 			if(cLHS.size() == 1){
 				auto res = convertSmallFormula(formula);
@@ -761,7 +761,7 @@ namespace smtrat
         }
 
         for(auto it : cLHS){
-        	std::vector<carl::uint> v = quadraticSieve(it.first);
+        	std::vector<carl::uint> v = integerFactorization(it.first);
         	//Remove duplicates -- use emplace_back insted of push_back?
         	for(int i = 0; i < v.size(); i++){
         		if(v[i] == v[i + 1]){
@@ -812,7 +812,7 @@ namespace smtrat
 
 
     template<typename Settings>
-    std::vector<carl::uint>PBPPModule<Settings>::quadraticSieve(const int& coeff){ 
+    std::vector<carl::uint>PBPPModule<Settings>::integerFactorization(const int& coeff){ 
 
 	    if(coeff == 2){
 	    	return std::vector<carl::uint>((carl::uint) 2);
@@ -834,7 +834,7 @@ namespace smtrat
 
 		if(coeff % 2 == 0){
 			primes.push_back((carl::uint) 2);
-			std::vector<carl::uint> v = quadraticSieve((carl::uint) coeff / 2);
+			std::vector<carl::uint> v = integerFactorization((carl::uint) coeff / 2);
 			primes.insert(primes.end(), v.begin(), v.end());
 		}else{
 		    while(y >  r * r){
@@ -866,7 +866,7 @@ namespace smtrat
 	    			primes.push_back(first);
 	    		}else{
 	    			//first is not a prime number
-	    			std::vector<carl::uint> v = quadraticSieve(first);
+	    			std::vector<carl::uint> v = integerFactorization(first);
 	    			primes.insert(primes.end(), v.begin(), v.end());
 	    		}
 	    	}
@@ -891,7 +891,7 @@ namespace smtrat
 	    			primes.push_back(second);
 	    		}else{
 	    			//second is not a prime number
-	    			std::vector<carl::uint> v = quadraticSieve(second);
+	    			std::vector<carl::uint> v = integerFactorization(second);
 	    			primes.insert(primes.end(), v.begin(), v.end());
 	    		}
 	    	}

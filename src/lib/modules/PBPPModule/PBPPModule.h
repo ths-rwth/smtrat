@@ -102,7 +102,7 @@ namespace smtrat
 			FormulaT rnsTransformation(const FormulaT& formula);
 			std::vector<carl::uint> calculateRNSBase(const FormulaT& formula);
 			bool isNonRedundant(const std::vector<carl::uint>& base, const FormulaT& formula);
-			std::vector<carl::uint> quadraticSieve(const int& coeff);
+			std::vector<carl::uint> integerFactorization(const int& coeff);
 			void initPrimesTable();
 
 	};
