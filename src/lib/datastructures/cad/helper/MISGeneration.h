@@ -28,9 +28,6 @@ namespace cad {
 		static int x;
 		SMTRAT_LOG_DEBUG("smtrat.mis", "GREEDY invoked: " << x++);
 		mis.emplace_back();
-		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
-			mis.back().emplace(c);
-		}
 		auto cg = cad.generateConflictGraph();
 		//std::cout << "rows:" << cg.numConstraints() << std::endl;
 		//std::cout << "columns: " << cg.numSamples() << std::endl;
@@ -70,17 +67,14 @@ namespace cad {
 	template<>
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::HYBRID>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
-		const static double constant_weight   = 1.0;
-		const static double complexity_weight = 0.5;
+		const static double constant_weight   = 5.0;
+		const static double complexity_weight = 0.1;
 		const static double activity_weight   = 10.0;
 		static int x;
 		SMTRAT_LOG_DEBUG("smtrat.mis", "HYBRID invoked: " << x++);
 		
 		// The set of constraints that will be included in every MIS
 		FormulaSetT misIntersection;
-		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
-			misIntersection.emplace(c);
-		}
 	
 		auto cg = cad.generateConflictGraph();
 		auto essentialConstrains = cg.selectEssentialConstraints();	
@@ -112,7 +106,7 @@ namespace cad {
 			}
 		}
 		// Apply greedy algorithm as long as more than 8 constraints remain
-		while (cg.numRemainingConstraints() > 8 && cg.hasRemainingSamples()) {
+		while (cg.numRemainingConstraints() > 10 && cg.hasRemainingSamples()) {
 			auto selection = std::max_element(candidates.begin(), candidates.end(),
 				[cg](candidate left, candidate right) {
 					return cg.coveredSamples(left.constraint)/left.weight < cg.coveredSamples(right.constraint)/right.weight;
@@ -183,8 +177,8 @@ namespace cad {
 	template<>
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::GREEDY_WEIGHTED>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
-		const static double constant_weight   = 1.0;
-		const static double complexity_weight = 0.5;
+		const static double constant_weight   = 5.0;
+		const static double complexity_weight = 0.1;
 		const static double activity_weight   = 10.0;
 
 		static int x;
