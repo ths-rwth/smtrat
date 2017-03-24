@@ -28,9 +28,6 @@ namespace cad {
 		static int x;
 		SMTRAT_LOG_DEBUG("smtrat.mis", "GREEDY invoked: " << x++);
 		mis.emplace_back();
-		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
-			mis.back().emplace(c);
-		}
 		auto cg = cad.generateConflictGraph();
 		//std::cout << "rows:" << cg.numConstraints() << std::endl;
 		//std::cout << "columns: " << cg.numSamples() << std::endl;
@@ -78,9 +75,6 @@ namespace cad {
 		
 		// The set of constraints that will be included in every MIS
 		FormulaSetT misIntersection;
-		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
-			misIntersection.emplace(c);
-		}
 	
 		auto cg = cad.generateConflictGraph();
 		auto essentialConstrains = cg.selectEssentialConstraints();	
