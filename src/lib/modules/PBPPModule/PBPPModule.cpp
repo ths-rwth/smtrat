@@ -96,13 +96,13 @@ namespace smtrat
 			}
 		}
 
-		if(mTestMode){
-			/*********TEST***********/
+		if(mWithInequalities){
 			if(cLHS.size() == 1){
 				auto res = convertSmallFormula(formula);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				return res;
 			}else if((cRel == carl::Relation::EQ || cRel == carl::Relation::GEQ) && sum > (cLHS.size() * 1000)){
+				initPrimesTable();
 				std::vector<carl::uint> base = calculateRNSBase(formula);
 				if(base.size() != 0 && isNonRedundant(base, formula)){
 					initPrimesTable();
@@ -127,16 +127,13 @@ namespace smtrat
 			auto res = forwardAsArithmetic(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
-			/********************/
 		}else{
-			initPrimesTable();
-			integerFactorization(766);
-
 			if(cLHS.size() == 1){
 				auto res = convertSmallFormula(formula);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				return res;
 			}else if(cRel == carl::Relation::EQ){
+				initPrimesTable();
 				std::vector<carl::uint> base = calculateRNSBase(formula);
 				if(base.size() != 0 && isNonRedundant(base, formula)){
 					auto res = rnsTransformation(formula);
@@ -648,8 +645,8 @@ namespace smtrat
 
     template<typename Settings>
     FormulaT PBPPModule<Settings>::rnsTransformation(const FormulaT& formula){
-    	if(mTestMode){
-	    	/**********TEST************/
+    	if(mWithInequalities){
+	    	
 	    	const carl::PBConstraint& c = formula.pbConstraint();
 	        const auto& cLHS = c.getLHS();
 	        int cRHS = c.getRHS();
@@ -703,7 +700,6 @@ namespace smtrat
 	        FormulaT f = FormulaT(carl::FormulaType::AND, std::move(subformulas));
 	        FormulaT ff = FormulaT(carl::FormulaType::AND, f, a);
 	        return checkFormulaType(ff);
-			/********TEST*END*************/
     	}else{
 	    	const carl::PBConstraint& c = formula.pbConstraint();
 	        const auto& cLHS = c.getLHS();
@@ -739,7 +735,7 @@ namespace smtrat
 	        return checkFormulaType(f);
     	}
     }
-    
+
     template<typename Settings>
     std::vector<carl::uint>PBPPModule<Settings>::calculateRNSBase(const FormulaT& formula){
     	const carl::PBConstraint& c = formula.pbConstraint();	
@@ -761,43 +757,33 @@ namespace smtrat
         }
 
         for(auto it : cLHS){
-        	std::vector<carl::uint> v = integerFactorization(it.first);
-        	//Remove duplicates -- use emplace_back insted of push_back?
-        	for(int i = 0; i < v.size(); i++){
-        		if(v[i] == v[i + 1]){
-        			v.erase(v.begin() + i + 1);
-        		}
-        	}
-
-        	for(auto i : v){
+        	std::vector<carl::uint> v = integerFactorization((carl::uint) it.first);
+        	for(auto it : v){
         		auto elem = std::find_if(freq.begin(), freq.end(), 
-	                		[&] (const pair<int, carl::uint>& elem){
-	                			return elem.second == i;
-	                		});
+	            	[&] (const pair<int, carl::uint>& elem){
+	              		return elem.second == it;
+	            		});
         		if(elem != freq.end()){
-	            	carl::uint distance = (carl::uint) std::distance(freq.begin(), elem);
+	            	int distance = std::distance(freq.begin(), elem);
 	            	freq[distance].first = freq[distance].first + 1;
 	        	}else{
-	            	freq.push_back(std::pair<int, carl::uint>(1, i));
+	            	freq.push_back(std::pair<int, carl::uint>(1, it));
 	        	}
         	}
+        	
         }
 
         std::sort(freq.begin(), freq.end(),
-	             [&](const pair<int, carl::uint> &p1, const pair<int, carl::uint> &p2)
-	                {
-	                    if(p1.first == p2.first){
-	                        return (p1.second < p2.second);
-	                    }else{
-	                        return(p1.first > p2.first);
-	                    }
-	                });
+	        [&](const pair<int, carl::uint> &p1, const pair<int, carl::uint> &p2)
+	            {
+	              	if(p1.first == p2.first){
+	                    return (p1.second < p2.second);
+	                }else{
+	                   	return(p1.first > p2.first);
+	                }
+	            });
 
-	    for(auto it : freq){
-	      	std::cout << "(" << it.first << ", " << it.second << ")" << std::endl;
-	    }
-
-	    std::vector<carl::uint> base;
+       	std::vector<carl::uint> base;
 	    for(auto it : freq){
 	        product *= it.second;
 	        if(product <= sum){
@@ -808,8 +794,8 @@ namespace smtrat
 	        }
 	    }
 		return base;
-    }
-
+     }
+  
 
     template<typename Settings>
     std::vector<carl::uint>PBPPModule<Settings>::integerFactorization(const int& coeff){ 
@@ -900,78 +886,6 @@ namespace smtrat
     	return primes;
     }
 
-    // template<typename Settings>
-    // std::vector<carl::uint> PBPPModule<Settings>::calculateRNSBase(const FormulaT& formula){
-	 		// const carl::PBConstraint& c = formula.pbConstraint();	
-	   //      const auto& cLHS = c.getLHS();
-	   //      int max = INT_MIN;
-	   //      int min = INT_MAX;
-
-	   //      std::vector<std::pair<int, carl::uint>> freq;
-	   //      int sum = 0;
-	   //      int product = 1;
-	        
-	   //      for(auto it : cLHS){
-	   //          if(it.first > max){
-	   //              max = it.first;
-	   //          }else{
-	   //          	min = it.first;
-	   //          }
-	   //          sum += it.first;
-	   //      }
-	   //      for(auto it : cLHS){
-	   //      	carl::PrimeFactory<carl::uint> pFactory;
-	   //          carl::uint prime = pFactory.nextPrime();
-
-
-	   //          //while((int) prime <= it.first){ 
-	   //       //   while((int) prime <= boost::math::gcd(min, max)){
-	   //       	while((int) prime <= min){
-	   //              if(it.first % (int) prime == 0){
-	   //              	auto elem = std::find_if(freq.begin(), freq.end(), 
-	   //              		[&] (const pair<int, carl::uint>& elem){
-	   //              			return elem.second == prime;
-	   //              		});
-	                	
-	   //              	if(elem != freq.end()){
-	   //              		carl::uint distance = (carl::uint) std::distance(freq.begin(), elem);
-	   //              		freq[distance].first = freq[distance].first + 1;
-	   //              	}else{
-	   //              		freq.push_back(std::pair<int, carl::uint>(1, prime));
-	   //              	}
-	   //              }
-	   //              prime = pFactory.nextPrime();
-	           
-	   //          }
-	   //      }
-	        
-	   //      std::sort(freq.begin(), freq.end(),
-	   //                [&](const pair<int, carl::uint> &p1, const pair<int, carl::uint> &p2)
-	   //                {
-	   //                    if(p1.first == p2.first){
-	   //                        return (p1.second < p2.second);
-	   //                    }else{
-	   //                        return(p1.first > p2.first);
-	   //                    }
-	   //                });
-
-	   //      // for(auto it : freq){
-	   //      // 	std::cout << "(" << it.first << ", " << it.second << ")" << std::endl;
-	   //      // }
-
-	   //      std::vector<carl::uint> base;
-	   //      for(auto it : freq){
-	   //          product *= it.second;
-	   //          if(product <= sum){
-	   //              base.push_back(it.second);	
-	   //          }else{
-	   //              base.push_back(it.second);
-	   //              break;
-	   //          }
-	   //      }
-
-	   //      return base;     
-    // }
     
     template<typename Settings>
     bool PBPPModule<Settings>::isNonRedundant(const std::vector<carl::uint>& base, const FormulaT& formula){
@@ -997,82 +911,9 @@ namespace smtrat
         return true;
     }
 
+
     template<typename Settings>
 	void PBPPModule<Settings>::initPrimesTable(){
-		// 		mPrimesTable[4] = {2, 2};
-		// mPrimesTable[6] = {2, 3};
-		// mPrimesTable[8] = {2};
-		// mPrimesTable[9] = {3};
-		// mPrimesTable[10] = {2, 5};
-		// mPrimesTable[12] = {2, 3};
-		// mPrimesTable[14] = {2, 7};
-		// mPrimesTable[15] = {3, 5};
-		// mPrimesTable[16] = {2};
-		// mPrimesTable[18] = {2, 3};
-		// mPrimesTable[20] = {2, 5};
-		// mPrimesTable[21] = {3, 7};
-		// mPrimesTable[22] = {2, 11};
-		// mPrimesTable[24] = {2, 3};
-		// mPrimesTable[25] = {5};
-		// mPrimesTable[26] = {2, 13};
-		// mPrimesTable[27] = {3};
-		// mPrimesTable[28] = {2, 7};
-		// mPrimesTable[30] = {2, 3, 5};
-		// mPrimesTable[32] = {2};
-		// mPrimesTable[33] = {3, 11};
-		// mPrimesTable[34] = {2, 17};
-		// mPrimesTable[35] = {5, 7};
-		// mPrimesTable[36] = {2, 3};
-		// mPrimesTable[38] = {2, 19};
-		// mPrimesTable[39] = {3, 13};
-		// mPrimesTable[40] = {2, 5};
-		// mPrimesTable[42] = {2, 3, 7};
-		// mPrimesTable[44] = {2, 11};
-		// mPrimesTable[45] = {3, 5};
-		// mPrimesTable[46] = {2, 23};
-		// mPrimesTable[48] = {2, 3};
-		// mPrimesTable[49] = {7};
-		// mPrimesTable[50] = {2, 5};
-		// mPrimesTable[51] = {3, 17};
-		// mPrimesTable[52] = {2, 13};
-		// mPrimesTable[54] = {2, 3};
-		// mPrimesTable[55] = {5, 11};
-		// mPrimesTable[56] = {2, 7};
-		// mPrimesTable[57] = {3, 19};
-		// mPrimesTable[58] = {2, 29};
-		// mPrimesTable[60] = {2, 3, 5};
-		// mPrimesTable[62] = {2, 31};
-		// mPrimesTable[63] = {3, 7};
-		// mPrimesTable[64] = {2};
-		// mPrimesTable[65] = {5, 13};
-		// mPrimesTable[66] = {2, 3, 11};
-		// mPrimesTable[68] = {2, 17};
-		// mPrimesTable[69] = {3, 23};
-		// mPrimesTable[70] = {2, 5, 7};
-		// mPrimesTable[72] = {2, 3};
-		// mPrimesTable[74] = {2, 37};
-		// mPrimesTable[75] = {3, 5};
-		// mPrimesTable[76] = {2, 19};
-		// mPrimesTable[77] = {7, 11};
-		// mPrimesTable[78] = {2, 3, 13};
-		// mPrimesTable[80] = {2, 5};
-		// mPrimesTable[81] = {3};
-		// mPrimesTable[82] = {2, 41};
-		// mPrimesTable[84] = {2, 3, 7};
-		// mPrimesTable[85] = {5, 17};
-		// mPrimesTable[86] = {2, 43};
-		// mPrimesTable[87] = {3, 29};
-		// mPrimesTable[88] = {2, 11};
-		// mPrimesTable[90] = {2, 3, 5};
-		// mPrimesTable[91] = {7, 13};
-		// mPrimesTable[92] = {2, 23};
-		// mPrimesTable[93] = {3, 31};
-		// mPrimesTable[94] = {2, 47};
-		// mPrimesTable[95] = {5, 19};
-		// mPrimesTable[96] = {2, 3};
-		// mPrimesTable[98] = {2, 7};
-		// mPrimesTable[99] = {3, 11};
-		// mPrimesTable[100] = {2, 5};
 		mPrimesTable[4] = {2, 2};
 		mPrimesTable[6] = {2, 3};
 		mPrimesTable[8] = {2, 2, 2};

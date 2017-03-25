@@ -28,7 +28,7 @@ namespace smtrat
 			carl::FormulaVisitor<FormulaT> mVisitor;
 			std::vector<carl::Variable> mCheckedVars;
 			std::map<int, std::vector<carl::uint>> mPrimesTable;
-			bool mTestMode = false;
+			bool mWithInequaliteis = true;
 			
 		public:
 			typedef Settings SettingsType;
