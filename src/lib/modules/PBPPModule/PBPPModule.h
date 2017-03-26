@@ -103,6 +103,7 @@ namespace smtrat
 			bool isNonRedundant(const std::vector<carl::uint>& base, const FormulaT& formula);
 			std::vector<carl::uint> integerFactorization(const int& coeff);
 			void initPrimesTable();
+			FormulaT secondCheck(const FormulaT& formula);
 
 	};
 }
