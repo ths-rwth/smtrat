@@ -100,16 +100,18 @@ namespace smtrat
 			auto res = convertSmallFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
-		}else if(positive && cRel == carl::Relation::EQ && sum > cLHS.size()){
+		}else if(Settings::use_rns_transformation && positive && cRel == carl::Relation::EQ && sum > cLHS.size()){
 			initPrimesTable();
 			std::vector<carl::uint> base = calculateRNSBase(formula);
 			if(base.size() != 0 && isNonRedundant(base, formula)){
 				//std::cout << "NEW CODE" << std::endl;
 				auto res = rnsTransformation(formula);
+				return res;
 			}else{
 				//Hier koennte man schauen ob es doch nicht mit bigFormula geht!
 				auto res = forwardAsArithmetic(formula);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+				return res;
 			}
 		}else if(!(positive && cRHS > 0 && sum > cRHS 
 					&& (/*cRel == carl::Relation::GEQ || */cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
