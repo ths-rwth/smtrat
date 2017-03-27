@@ -17,6 +17,16 @@ namespace smtrat
 		/**
 		 * Example for a setting.
 		 */
-		static const bool example_setting = true;
+		static constexpr bool use_rns_transformation = false;
+	};
+	
+	struct PBPPSettingsWithRNS
+	{
+		/// Name of the Module
+		static constexpr auto moduleName = "PBPPModule<PBPPSettingsWithRNS>";
+		/**
+		 * Example for a setting.
+		 */
+		static constexpr bool use_rns_transformation = true;
 	};
 }
