@@ -651,7 +651,7 @@ namespace smtrat
 			FormulaT subformulaB = FormulaT(carl::FormulaType::IMPLIES, boolVar, subformulaA);
 			FormulaT subformulaC = FormulaT(intVar, carl::Relation::EQ);
 			FormulaT subformulaD = FormulaT(carl::FormulaType::IMPLIES, boolVar.negated(), subformulaC);
-			FormulaT newFormula  = FormulaT(carl::FormulaType::OR, subformulaB, subformulaD);
+			FormulaT newFormula  = FormulaT(carl::FormulaType::AND, subformulaB, subformulaD);
 			newSubformulas.push_back(newFormula);
 		}
 		return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
