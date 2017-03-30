@@ -207,7 +207,7 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 	Executor* e = new Executor(solver);
 	if (settingsManager.exportDIMACS()) e->exportDIMACS = true;
 	{
-		if (!smtrat::parseSMT2File(e, false, infile)) {
+		if (!smtrat::parseSMT2File(e, true, infile)) {
             std::cerr << "Parse error" << std::endl;
             delete e;
             exit(SMTRAT_EXIT_PARSERFAILURE);
