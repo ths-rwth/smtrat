@@ -11,7 +11,7 @@
 # Version: 2013-04-18                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-ListSubDirs(SUBDIRS( ${CMAKE_SOURCE_DIR}/src/lib/modules))
+ListSubDirs(SUBDIRS ${CMAKE_SOURCE_DIR}/src/lib/modules)
 foreach(subdir ${SUBDIRS})
     add_subdirectory(${subdir})
 endforeach()
