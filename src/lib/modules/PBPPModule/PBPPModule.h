@@ -27,7 +27,8 @@ namespace smtrat
 			std::map<carl::Variable, carl::Variable> mVariablesCache; //bool, int
 			carl::FormulaVisitor<FormulaT> mVisitor;
 			std::vector<carl::Variable> mCheckedVars;
-			std::map<int, std::vector<carl::uint>> mPrimesTable;
+			//std::map<int, std::vector<carl::uint>> mPrimesTable;
+			std::vector<std::vector<carl::uint>> mPrimesTable;
 			
 		public:
 			typedef Settings SettingsType;
