@@ -130,51 +130,6 @@ namespace smtrat
 		return res;
 	}
 
-	// template<typename Settings>
-	// FormulaT PBPPModule<Settings>::secondCheck(const FormulaT& formula){
-	// 	if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
-	// 		return formula;
-	// 	} 
-	// 	const carl::PBConstraint& c = formula.pbConstraint();
-	// 	carl::Relation cRel  = c.getRelation();
-	// 	const auto& cLHS	 = c.getLHS();
-	// 	bool positive = true;
-	// 	bool negative = true;
-	// 	int cRHS = c.getRHS();
-	// 	int sum  = 0;
-
-	// 	for(auto it = cLHS.begin(); it != cLHS.end(); it++){
-	// 		sum += it->first;
-	// 		if(it->first < 0){
-	// 			positive = false;
-	// 		}else if(it->first > 0){
-	// 			negative = false;
-	// 		}
-	// 	}
-
-	// 	if(cLHS.size() == 1){
-	// 		auto res = convertSmallFormula(formula);
-	// 		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-	// 		return res;
-	// 	}else if(!(positive && cRHS > 0 && sum > cRHS 
-	// 				&& (/*cRel == carl::Relation::GEQ || */cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
-	// 					&&  !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum < cRHS && cLHS.size() > 1)
-	// 						&& !(negative && cRHS < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum < cRHS)
-	// 							&& !((positive || negative) && cRel == carl::Relation::NEQ && sum != cRHS && cRHS != 0)
-	// 								&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
-	// 									&& ((!positive && !negative && (cRel == carl::Relation::GEQ || cRel == carl::Relation::LEQ) && sum >= cRHS) || positive || negative)
-	// 		){
-	// 		auto res = convertBigFormula(formula);
-	// 		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-	// 		return res;
-	// 		}
-	// 	auto res = forwardAsArithmetic(formula);
-	// 	SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-	// 	return res;
-	// }
-
-
-
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::convertSmallFormula(const FormulaT& formula){
 		const carl::PBConstraint& c  = formula.pbConstraint();
@@ -790,14 +745,7 @@ namespace smtrat
 	    if(coeff == 2){
 	    	return std::vector<carl::uint>((carl::uint) 2);
 	    }else if(coeff <= 100){
-    		if(std::find(mPrimesTable.begin(), mPrimesTable.end(), coeff) == mPrimesTable.end()){
-    			//coeff is a prime number
-    			return std::vector<carl::uint>((carl::uint) coeff);	
-    		}else{
-    			//coeff is not a prime number
-    			return mPrimesTable[coeff];
-    			
-    		}
+    		return mPrimesTable[coeff];
     	}
 
     	std::vector<carl::uint> primes;
@@ -820,14 +768,9 @@ namespace smtrat
 	    	int second  = x - r;
 
 	    	if(first <= 100){
-	    		if(std::find(mPrimesTable.begin(), mPrimesTable.end(), coeff) == mPrimesTable.end() && first > 1){
-	    			//first is a prime number
-	    			primes.push_back((carl::uint) first);	
-	    		}else{
-	    			//first is not a prime number
-	    			auto v = mPrimesTable[(int) first];
-	    			primes.insert(primes.end(), v.begin(), v.end());
-	    		}		
+	    		auto v = mPrimesTable[(int) first];
+	    		primes.insert(primes.end(), v.begin(), v.end());
+	    			
 	    	}else{
 	    		carl::PrimeFactory<carl::uint> pFactory;
 	    		carl::uint prime = pFactory[24];
@@ -845,14 +788,8 @@ namespace smtrat
 	    	}
 
 	    	if(second <= 100){
-	    		if(std::find(mPrimesTable.begin(), mPrimesTable.end(), coeff) == mPrimesTable.end() && second > 1){
-	    			//second is a prime number
-	    			primes.push_back((carl::uint)second);	
-	    		}else{
-	    			//second is not a prime number
-	    			std::vector<carl::uint> v = mPrimesTable[(int) second];
-	    			primes.insert(primes.end(), v.begin(), v.end());
-	    		}		
+	    		std::vector<carl::uint> v = mPrimesTable[(int) second];
+	    		primes.insert(primes.end(), v.begin(), v.end());		
 	    	}else{
 	    		carl::PrimeFactory<carl::uint> pFactory;
 	    		carl::uint prime = pFactory[24];
@@ -903,180 +840,18 @@ namespace smtrat
     template<typename Settings>
 	void PBPPModule<Settings>::initPrimesTable(){
 	
-
-
-		// mPrimesTable[4] = {2, 2};
-		// mPrimesTable[6] = {2, 3};
-		// mPrimesTable[8] = {2, 2, 2};
-		// mPrimesTable[9] = {3, 3};
-		// mPrimesTable[10] = {2, 5};
-		// mPrimesTable[12] = {2, 2, 3};
-		// mPrimesTable[14] = {2, 7};
-		// mPrimesTable[15] = {3, 5};
-		// mPrimesTable[16] = {2, 2, 2, 2};
-		// mPrimesTable[18] = {2, 3, 3};
-		// mPrimesTable[20] = {2, 2, 5};
-		// mPrimesTable[21] = {3, 7};
-		// mPrimesTable[22] = {2, 11};
-		// mPrimesTable[24] = {2, 2, 2, 3};
-		// mPrimesTable[25] = {5, 5};
-		// mPrimesTable[26] = {2, 13};
-		// mPrimesTable[27] = {3, 3, 3};
-		// mPrimesTable[28] = {2, 2, 7};
-		// mPrimesTable[30] = {2, 3, 5};
-		// mPrimesTable[32] = {2, 2, 2, 2, 2};
-		// mPrimesTable[33] = {3, 11};
-		// mPrimesTable[34] = {2, 17};
-		// mPrimesTable[35] = {5, 7};
-		// mPrimesTable[36] = {2, 2, 3, 3};
-		// mPrimesTable[38] = {2, 19};
-		// mPrimesTable[39] = {3, 13};
-		// mPrimesTable[40] = {2, 2, 2, 5};
-		// mPrimesTable[42] = {2, 3, 7};
-		// mPrimesTable[44] = {2, 2, 11};
-		// mPrimesTable[45] = {3, 3, 5};
-		// mPrimesTable[46] = {2, 23};
-		// mPrimesTable[48] = {2, 2, 2, 2, 3};
-		// mPrimesTable[49] = {7 ,7};
-		// mPrimesTable[50] = {2, 5, 5};
-		// mPrimesTable[51] = {3, 17};
-		// mPrimesTable[52] = {2, 2, 13};
-		// mPrimesTable[54] = {2, 3, 3, 3};
-		// mPrimesTable[55] = {5, 11};
-		// mPrimesTable[56] = {2, 2, 2, 7};
-		// mPrimesTable[57] = {3, 19};
-		// mPrimesTable[58] = {2, 29};
-		// mPrimesTable[60] = {2, 2, 3, 5};
-		// mPrimesTable[62] = {2, 31};
-		// mPrimesTable[63] = {3, 3, 7};
-		// mPrimesTable[64] = {2, 2, 2, 2, 2, 2};
-		// mPrimesTable[65] = {5, 13};
-		// mPrimesTable[66] = {2, 3, 11};
-		// mPrimesTable[68] = {2, 2, 17};
-		// mPrimesTable[69] = {3, 23};
-		// mPrimesTable[70] = {2, 5, 7};
-		// mPrimesTable[72] = {2, 2, 2, 3, 3};
-		// mPrimesTable[74] = {2, 37};
-		// mPrimesTable[75] = {3, 5, 5};
-		// mPrimesTable[76] = {2, 2, 19};
-		// mPrimesTable[77] = {7, 11};
-		// mPrimesTable[78] = {2, 3, 13};
-		// mPrimesTable[80] = {2, 2, 2, 2, 5};
-		// mPrimesTable[81] = {3, 3, 3, 3};
-		// mPrimesTable[82] = {2, 41};
-		// mPrimesTable[84] = {2, 2, 3, 7};
-		// mPrimesTable[85] = {5, 17};
-		// mPrimesTable[86] = {2, 43};
-		// mPrimesTable[87] = {3, 29};
-		// mPrimesTable[88] = {2, 2, 2, 11};
-		// mPrimesTable[90] = {2, 3, 3, 5};
-		// mPrimesTable[91] = {7, 13};
-		// mPrimesTable[92] = {2, 2, 23};
-		// mPrimesTable[93] = {3, 31};
-		// mPrimesTable[94] = {2, 47};
-		// mPrimesTable[95] = {5, 19};
-		// mPrimesTable[96] = {2, 2, 2, 2, 2, 3};
-		// mPrimesTable[98] = {2, 7, 7};
-		// mPrimesTable[99] = {3, 3, 11};
-		// mPrimesTable[100] = {2, 2, 5, 5};
-
+		mPrimesTable = {{1}, {2}, {3}, {2, 2}, {5}, {2, 3}, {7}, {2, 2, 2}, {3, 3}, {2, 5}, {11}, {2, 2, 3},
+						{13}, {2, 7}, {3, 5}, {2, 2, 2, 2}, {17}, {2, 3, 3}, {19}, {2, 2, 5}, {3, 7}, {2, 11},
+						{23}, {2, 2, 2, 3}, {5, 5}, {2, 13}, {3, 3, 3}, {2, 2, 7}, {29}, {2, 3, 5}, {31}, 
+						{2, 2, 2, 2, 2}, {3, 11}, {2, 17}, {5, 7}, {2, 2, 3, 3}, {37}, {2, 19}, {3, 13}, {2, 2, 2, 5},
+						{41}, {2, 3, 7}, {43}, {2, 2, 11}, {3, 3, 5}, {2, 23}, {47}, {2, 2, 2, 2, 3}, {7 ,7}, {2, 5, 5},
+						{3, 17}, {2, 2, 13}, {53}, {2, 3, 3, 3}, {5, 11}, {2, 2, 2, 7}, {3, 19}, {2, 29}, {59}, 
+						{2, 2, 3, 5}, {61}, {2, 31}, {3, 3, 7}, {2, 2, 2, 2, 2, 2}, {5, 13}, {2, 3, 11}, {67},
+						{2, 2, 17}, {3, 23}, {2, 5, 7}, {71}, {2, 2, 2, 3, 3}, {73}, {2, 37}, {3, 5, 5}, {2, 2, 19}, 
+						{7, 11}, {2, 3, 13}, {79}, {2, 2, 2, 2, 5}, {3, 3, 3, 3}, {2, 41}, {83}, {2, 2, 3, 7}, {5, 17},
+						{2, 43}, {3, 29}, {2, 2, 2, 11}, {89}, {2, 3, 3, 5}, {7, 13}, {2, 2, 23}, {3, 31}, {2, 47},
+						{5, 19}, {2, 2, 2, 2, 2, 3}, {97}, {2, 7, 7}, {3, 3, 11}, {2, 2, 5, 5}};
 	}
-	// template<typename Settings>
-	// FormulaT PBPPModule<Settings>::rnsTransformation(const FormulaT& formula){
-		// const carl::PBConstraint& c = formula.pbConstraint();
-	 //    const auto& cLHS = c.getLHS();
-	 //    const auto cRel = c.getRelation();
-	 //    int cRHS = c.getRHS();
-	 //    std::vector<carl::uint> base;
-	 //    FormulaT aux;
-
-		// if(mWithInequalities){
-
-		// 	carl::PBConstraint nConstr;
-		// 	std::vector<std::pair<int, carl::Variable>> nLHS;
-
-		// 	for(auto it : cLHS){
-		// 		nLHS.push_back(it);
-		// 	}
-
-		// 	if(cRel == carl::Relation::GEQ){
-		// 		//+2 x1 +3 x2 <= 5 ---> +2 x1 +3 x2 +n x3 = 5 and n >= 0
-		// 		carl::Variable x = carl::freshVariable(carl::VariableType::VT_BOOL);
-		// 		carl::Variable n = carl::freshVariable(carl::VariableType::VT_INT);
-		// 		nLHS.push_back(std::pair<int, carl::Variable>(n, x));
-		// 		nConstr.setLHS();
-		// 		nConstr.setRHS(cRHS);
-		// 		nConstr.setRelation(carl::Relation::EQ);
-		// 		aux = FormulaT(n, carl::Relation::GEQ);	
-		// 	}
-
-		// 	base = calculateRNSBase(nConstr);
-
-		// 	std::cout << "Creating new constraints...";
-	 //        FormulasT subformulas;
-	 //        for(auto i : base){
-	 //           	std::vector<std::pair<int, carl::Variable>> newLHS;
-	 //           	int newRHS = cRHS % (int) i;
-	 //            carl::PBConstraint newConstraint;
-	 //            for(auto it : nLHS){
-	 //                newLHS.push_back(std::pair<int, carl::Variable>(it.first % (int) i, it.second));
-	 //            }	
-	            
-	 //            int sum = 0;
-	 //            for(auto it : newLHS){
-	 //                sum += it.first;
-	 //            }
-	 //            sum -= newRHS;
-	            
-	 //            for(int i = 0; i < sum; i++){
-	 //                newLHS.push_back(std::pair<int, carl::Variable>(-sum, carl::freshVariable(carl::VariableType::VT_BOOL)));
-	 //            }
-	            
-	 //            newConstraint.setLHS(newLHS);
-	 //            newConstraint.setRHS(newRHS);
-	 //            newConstraint.setRelation(carl::Relation::EQ);
-	            
-	 //            subformulas.push_back(FormulaT(newConstraint));
-	 //        }
-	 //        FormulaT f = FormulaT(carl::FormulaType::AND, std::move(subformulas));
-		
-
-
-
-		// }else{
-
-	        // base = calculateRNSBase(formula);
-	        // FormulasT subformulas;
-	        // for(auto i : base){
-	        //     std::vector<std::pair<int, carl::Variable>> newLHS;
-	        //    	int newRHS = cRHS % (int) i;
-	        //     carl::PBConstraint newConstraint;
-	        //     for(auto it : cLHS){
-	        //         newLHS.push_back(std::pair<int, carl::Variable>(it.first % (int) i, it.second));
-
-	        //     }	
-	            
-	        //     int sum = 0;
-	        //     for(auto it : newLHS){
-	        //         sum += it.first;
-	        //     }
-	        //     sum -= newRHS;
-	            
-	        //     for(int i = 0; i < sum; i++){
-	        //         newLHS.push_back(std::pair<int, carl::Variable>(-sum, carl::freshVariable(carl::VariableType::VT_BOOL)));
-	        //     }
-	            
-	        //     newConstraint.setLHS(newLHS);
-	        //     newConstraint.setRHS(newRHS);
-	        //     newConstraint.setRelation(carl::Relation::EQ);
-	            
-	        //     subformulas.push_back(FormulaT(newConstraint));
-	        // }
-	        // FormulaT f = FormulaT(carl::FormulaType::AND, std::move(subformulas));
-	        // return checkFormulaType(f);
-		// }
-//	}
-
 }
 
 #include "Instantiation.h"
