@@ -76,9 +76,11 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaType(const FormulaT& formula){
+		std::cout << "CHECKCORE" << std::endl;
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
 			return formula;
 		} 
+
 		const carl::PBConstraint& c = formula.pbConstraint();
 		carl::Relation cRel  = c.getRelation();
 		const auto& cLHS	 = c.getLHS();
@@ -97,8 +99,10 @@ namespace smtrat
 		}
 
 		if(cLHS.size() == 1){
+			std::cout << "Convert small formula..." << std::endl;
 			auto res = convertSmallFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			std::cout << "OK" << std::endl;
 			return res;
 		}else if(!(positive && cRHS > 0 && sum > cRHS 
 					&& (cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
@@ -106,28 +110,35 @@ namespace smtrat
 							&& !(negative && cRHS < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum < cRHS)
 								&& !((positive || negative) && cRel == carl::Relation::NEQ && sum != cRHS && cRHS != 0)
 									&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
-										&& ((!positive && !negative && (cRel == carl::Relation::GEQ || cRel == carl::Relation::LEQ) && sum >= cRHS) || positive || negative)
+										&& ((!positive && !negative && (cRel == carl::Relation::GEQ || cRel == carl::Relation::LEQ) && sum >= cRHS) || positive || negative)	
+											|| (cRel == carl::Relation::EQ)
 			){
+			std::cout << "Convert big formula..." << std::endl;
 			auto res = convertBigFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			std::cout << "OK" << std::endl;
 			return res;
-		}else if(Settings::use_rns_transformation && positive && cRel == carl::Relation::EQ && sum > cLHS.size()){
+		}else if(Settings::use_rns_transformation && positive && cRel == carl::Relation::EQ && (sum * 2) > cLHS.size()){
 			initPrimesTable();
 			std::vector<carl::uint> base = calculateRNSBase(formula);
 			if(base.size() != 0 && isNonRedundant(base, formula)){
-				//std::cout << "NEW CODE" << std::endl;
+				std::cout << "Rns transformation..." << std::endl;
 				auto res = rnsTransformation(formula);
+				std::cout << "OK" << std::endl;
 				return res;
 			}else{
-				//Hier koennte man schauen ob es doch nicht mit bigFormula geht!
+				std::cout << "Forward as arithmetic..." << std::endl;
 				auto res = forwardAsArithmetic(formula);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+				std::cout << "OK" << std::endl;
 				return res;
 			}
+		}else{
+			auto res = forwardAsArithmetic(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
 		}
-		auto res = forwardAsArithmetic(formula);
-		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-		return res;
+
 	}
 
 	template<typename Settings>
@@ -498,13 +509,16 @@ namespace smtrat
 		}else if(cRel == carl::Relation::EQ){
 			if(sum == cRHS){
 				//5 x1 +2 x2 +3 x3 = 10 ===> x1 and x2 and x3
+				std::cout << "HIER 1" << std::endl;
 				return generateVarChain(cVars, carl::FormulaType::AND);
 			}else if(sum != cRHS && cRHS == 0){
 				//5 x1 +2 x2 +3 x3 = 0 ===> (x1 or x2 or x3 -> false)
+				std::cout << "HIER 2" << std::endl;
 				FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::OR);
 				FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
 				return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);				
 			}else{
+				std::cout << "HIER 3" << std::endl;
 			 	return forwardAsArithmetic(formula);
 			 }		
 		}else if(cRel == carl::Relation::NEQ){
@@ -620,7 +634,6 @@ namespace smtrat
 	    const int cRHS = c.getRHS();
 	    std::vector<carl::uint> base = calculateRNSBase(formula);
 
-	    // std::cout << "Calculating rns constraints...";
 	    FormulasT subformulas;
 	        for(auto i : base){
 	            std::vector<std::pair<int, carl::Variable>> newLHS;
@@ -631,41 +644,34 @@ namespace smtrat
 	            		newLHS.push_back(std::pair<int, carl::Variable>(it.first % (int) i, it.second));
 	            	}
 
-	            }	
+	            }
+
 	            if(newLHS.size() == 0 && newRHS > 0){
 	            	return FormulaT(carl::FormulaType::FALSE);
 	            }
 	            
-	            int sum = 0;
+	            int t = 0;
 	            for(auto it : newLHS){
-	                sum += it.first;
+	                t += it.first;
 	            }
-	            sum -= newRHS;
-	            
-	            for(int i = 0; i < sum; i++){
-	                newLHS.push_back(std::pair<int, carl::Variable>(-sum, carl::freshVariable(carl::VariableType::VT_BOOL)));
+	            t = std::floor((t - newRHS)/ i );
+
+	            for(int i = 0; i < t; i++){
+	                newLHS.push_back(std::pair<int, carl::Variable>(-t, carl::freshVariable(carl::VariableType::VT_BOOL)));
 	            }
 	            
 	            newConstraint.setLHS(newLHS);
 	            newConstraint.setRHS(newRHS);
 	            newConstraint.setRelation(carl::Relation::EQ);
-
-	            std::cout << "New constratint: ";
-	            for(auto it : newLHS){
-	            	std::cout << it.first << " " << it.second << " + ";
-	            }
-	            std::cout << " = " << newRHS << std::endl;
-	            
 	            subformulas.push_back(FormulaT(newConstraint));
 	        }
 	    FormulaT f = FormulaT(carl::FormulaType::AND, std::move(subformulas));
-	    // std::cout << "OK" << std::endl;
 	    return checkFormulaType(f);
 	}
 
 
     template<typename Settings>
-    std::vector<carl::uint>PBPPModule<Settings>::calculateRNSBase(const FormulaT& formula){
+    std::vector<carl::uint> PBPPModule<Settings>::calculateRNSBase(const FormulaT& formula){
     	const carl::PBConstraint& c = formula.pbConstraint();	
 	    const auto& cLHS = c.getLHS();
 	    int max = INT_MIN;
@@ -685,30 +691,25 @@ namespace smtrat
         }
 
         for(auto it : cLHS){
-        	// std::cout << "Factorize: " << it << "...";
         	std::vector<carl::uint> v = integerFactorization(it.first);
-        	// std::cout << "OK" << std::endl;
+        	std::sort(v.begin(), v.end());
+        	v.erase( unique( v.begin(), v.end() ), v.end() );
 
-        	for(auto it : v){
+        	for(auto i : v){
         		auto elem = std::find_if(freq.begin(), freq.end(), 
 	            	[&] (const pair<int, carl::uint>& elem){
-	              		return elem.second == it;
+	              		return elem.second == i;
 	            		});
         		if(elem != freq.end()){
 	            	auto distance = std::distance(freq.begin(), elem);
-	            	// std::cout << "Found and increase number...";
 	            	freq[distance].first = freq[distance].first + 1;
-	            	// std::cout << "OK" << std::endl;
 	        	}else{
-	        		// std::cout << "Not found and inserting new prime...";
-	            	freq.push_back(std::pair<int, carl::uint>(1, it));
-	            	// std::cout << "OK" << std::endl;
+	            	freq.push_back(std::pair<int, carl::uint>(1, i));
 	        	}
         	}
         	
         }
 
-        // std::cout << "Sorting...";
         std::sort(freq.begin(), freq.end(),
 	        [&](const pair<int, carl::uint> &p1, const pair<int, carl::uint> &p2)
 	            {
@@ -718,9 +719,7 @@ namespace smtrat
 	                   	return(p1.first > p2.first);
 	                }
 	            });
-        // std::cout << "OK" << std::endl;
 
-        // std::cout << "Create base...";
        	std::vector<carl::uint> base;
 	    for(auto it : freq){
 	    	if(it.second != 0){
@@ -734,17 +733,15 @@ namespace smtrat
 	    	}
 
 	    }
-	    // std::cout << "OK" << std::endl;
 		return base;
      }
   
 
     template<typename Settings>
     std::vector<carl::uint>PBPPModule<Settings>::integerFactorization(const int& coeff){ 
-
-	    if(coeff == 2){
-	    	return std::vector<carl::uint>((carl::uint) 2);
-	    }else if(coeff <= 100){
+    	if(coeff == 2){
+    		return std::vector<carl::uint>((carl::uint) 2);
+    	}else if(coeff <= 100){
     		return mPrimesTable[coeff];
     	}
 
@@ -755,8 +752,10 @@ namespace smtrat
 
 		if(coeff % 2 == 0){
 			primes.push_back((carl::uint) 2);
-			std::vector<carl::uint> v = integerFactorization(coeff / 2);
-			primes.insert(primes.end(), v.begin(), v.end());
+			if(coeff / 2 > 2){
+				std::vector<carl::uint> v = integerFactorization(coeff / 2);
+				primes.insert(primes.end(), v.begin(), v.end());
+			}
 		}else{
 		    while(y >  r * r){
 	    		x++;
@@ -767,45 +766,48 @@ namespace smtrat
 	    	int first = x + r;
 	    	int second  = x - r;
 
-	    	if(first <= 100){
-	    		auto v = mPrimesTable[(int) first];
-	    		primes.insert(primes.end(), v.begin(), v.end());
+	    	if(first > 1){
+	    		if(first <= 100){
+	    			std::vector<carl::uint> v = mPrimesTable[(int) first];
+	    			primes.insert(primes.end(), v.begin(), v.end());
 	    			
-	    	}else{
-	    		carl::PrimeFactory<carl::uint> pFactory;
-	    		carl::uint prime = pFactory[24];
-	    		while(prime < (carl::uint) first){
-	    			prime = pFactory.nextPrime();
-	    		}
-	    		if(prime == (carl::uint) first){
-	    			//first is a big prime number
-	    			primes.push_back((carl::uint)first);
 	    		}else{
-	    			//first is not a prime number
-	    			std::vector<carl::uint> v = integerFactorization(first);
-	    			primes.insert(primes.end(), v.begin(), v.end());
+	    			carl::PrimeFactory<carl::uint> pFactory;
+	    			carl::uint prime = pFactory[24];
+	    			while(prime < (carl::uint) first){
+	    				prime = pFactory.nextPrime();
+	    			}
+	    			if(prime == (carl::uint) first){
+	    				//first is a big prime number
+	    				primes.push_back((carl::uint)first);
+	    			}else{
+	    				//first is not a prime number
+	    				std::vector<carl::uint> v = integerFactorization(first);
+	    				primes.insert(primes.end(), v.begin(), v.end());
+	    			}
 	    		}
 	    	}
 
-	    	if(second <= 100){
-	    		std::vector<carl::uint> v = mPrimesTable[(int) second];
-	    		primes.insert(primes.end(), v.begin(), v.end());		
-	    	}else{
-	    		carl::PrimeFactory<carl::uint> pFactory;
-	    		carl::uint prime = pFactory[24];
-	    		while(prime < (carl::uint) second){
-	    			prime = pFactory.nextPrime();
-	    		}
-	    		if(prime == (carl::uint) second){
-	    			//second is a big prime number
-	    			primes.push_back((carl::uint) second);
+	    	if(second > 1){
+	    		if(second <= 100){
+	    			std::vector<carl::uint> v = mPrimesTable[(int) second];
+	    			primes.insert(primes.end(), v.begin(), v.end());		
 	    		}else{
-	    			//second is not a prime number
-	    			std::vector<carl::uint> v = integerFactorization(second);
-	    			primes.insert(primes.end(), v.begin(), v.end());
+	    			carl::PrimeFactory<carl::uint> pFactory;
+	    			carl::uint prime = pFactory[24];
+	    			while(prime < (carl::uint) second){
+	    				prime = pFactory.nextPrime();
+	    			}
+	    			if(prime == (carl::uint) second){
+	    				//second is a big prime number
+	    				primes.push_back((carl::uint) second);
+	    			}else{
+	    				//second is not a prime number
+	    				std::vector<carl::uint> v = integerFactorization(second);
+	    				primes.insert(primes.end(), v.begin(), v.end());
+	    			}
 	    		}
 	    	}
-
 	    }
 
     	return primes;
@@ -839,8 +841,8 @@ namespace smtrat
 
     template<typename Settings>
 	void PBPPModule<Settings>::initPrimesTable(){
-	
-		mPrimesTable = {{1}, {2}, {3}, {2, 2}, {5}, {2, 3}, {7}, {2, 2, 2}, {3, 3}, {2, 5}, {11}, {2, 2, 3},
+		//The 0 and 1 MUST be here in order to pick the right factorization!
+		mPrimesTable = {{0}, {1}, {2}, {3}, {2, 2}, {5}, {2, 3}, {7}, {2, 2, 2}, {3, 3}, {2, 5}, {11}, {2, 2, 3},
 						{13}, {2, 7}, {3, 5}, {2, 2, 2, 2}, {17}, {2, 3, 3}, {19}, {2, 2, 5}, {3, 7}, {2, 11},
 						{23}, {2, 2, 2, 3}, {5, 5}, {2, 13}, {3, 3, 3}, {2, 2, 7}, {29}, {2, 3, 5}, {31}, 
 						{2, 2, 2, 2, 2}, {3, 11}, {2, 17}, {5, 7}, {2, 2, 3, 3}, {37}, {2, 19}, {3, 13}, {2, 2, 2, 5},
