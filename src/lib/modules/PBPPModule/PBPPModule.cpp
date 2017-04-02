@@ -76,7 +76,6 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaType(const FormulaT& formula){
-		std::cout << "CHECKCORE" << std::endl;
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
 			return formula;
 		} 
@@ -99,10 +98,8 @@ namespace smtrat
 		}
 
 		if(cLHS.size() == 1){
-			std::cout << "Convert small formula..." << std::endl;
 			auto res = convertSmallFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-			std::cout << "OK" << std::endl;
 			return res;
 		}else if(!(positive && cRHS > 0 && sum > cRHS 
 					&& (cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
@@ -113,24 +110,18 @@ namespace smtrat
 										&& ((!positive && !negative && (cRel == carl::Relation::GEQ || cRel == carl::Relation::LEQ) && sum >= cRHS) || positive || negative)	
 											|| (cRel == carl::Relation::EQ)
 			){
-			std::cout << "Convert big formula..." << std::endl;
 			auto res = convertBigFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-			std::cout << "OK" << std::endl;
 			return res;
 		}else if(Settings::use_rns_transformation && positive && cRel == carl::Relation::EQ && (sum * 2) > cLHS.size()){
 			initPrimesTable();
 			std::vector<carl::uint> base = calculateRNSBase(formula);
 			if(base.size() != 0 && isNonRedundant(base, formula)){
-				std::cout << "Rns transformation..." << std::endl;
 				auto res = rnsTransformation(formula);
-				std::cout << "OK" << std::endl;
 				return res;
 			}else{
-				std::cout << "Forward as arithmetic..." << std::endl;
 				auto res = forwardAsArithmetic(formula);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-				std::cout << "OK" << std::endl;
 				return res;
 			}
 		}else{
@@ -509,16 +500,13 @@ namespace smtrat
 		}else if(cRel == carl::Relation::EQ){
 			if(sum == cRHS){
 				//5 x1 +2 x2 +3 x3 = 10 ===> x1 and x2 and x3
-				std::cout << "HIER 1" << std::endl;
 				return generateVarChain(cVars, carl::FormulaType::AND);
 			}else if(sum != cRHS && cRHS == 0){
 				//5 x1 +2 x2 +3 x3 = 0 ===> (x1 or x2 or x3 -> false)
-				std::cout << "HIER 2" << std::endl;
 				FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::OR);
 				FormulaT subformulaB = FormulaT(carl::FormulaType::FALSE);
 				return FormulaT(carl::FormulaType::IMPLIES, subformulaA, subformulaB);				
 			}else{
-				std::cout << "HIER 3" << std::endl;
 			 	return forwardAsArithmetic(formula);
 			 }		
 		}else if(cRel == carl::Relation::NEQ){
