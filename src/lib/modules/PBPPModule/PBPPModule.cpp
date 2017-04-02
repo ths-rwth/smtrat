@@ -101,19 +101,19 @@ namespace smtrat
 			auto res = convertSmallFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
-		}else if(!(positive && cRHS > 0 && sum > cRHS 
+		 }else if((!(positive && cRHS > 0 && sum > cRHS
 					&& (cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
 						&&  !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum < cRHS && cLHS.size() > 1)
 							&& !(negative && cRHS < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum < cRHS)
 								&& !((positive || negative) && cRel == carl::Relation::NEQ && sum != cRHS && cRHS != 0)
 									&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
-										&& ((!positive && !negative && (cRel == carl::Relation::GEQ || cRel == carl::Relation::LEQ) && sum >= cRHS) || positive || negative)	
-											|| (cRel == carl::Relation::EQ)
+										&& !(positive && cRel == carl::Relation::EQ && (sum * 2) > (int) cLHS.size()))
+											|| ((!positive && !negative && (cRel == carl::Relation::GEQ || cRel == carl::Relation::LEQ) && sum >= cRHS) || (positive && !negative) || (negative && !positive))
 			){
 			auto res = convertBigFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
-		}else if(Settings::use_rns_transformation && positive && cRel == carl::Relation::EQ && (sum * 2) > cLHS.size()){
+		}else if(Settings::use_rns_transformation && positive && cRel == carl::Relation::EQ && (sum * 2) > (int) cLHS.size()){
 			initPrimesTable();
 			std::vector<carl::uint> base = calculateRNSBase(formula);
 			if(base.size() != 0 && isNonRedundant(base, formula)){
@@ -129,7 +129,6 @@ namespace smtrat
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}
-
 	}
 
 	template<typename Settings>
@@ -337,6 +336,7 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::convertBigFormula(const FormulaT& formula){
+		std::cout << "Convert Big Formula" << std::endl;
 		const carl::PBConstraint& c = formula.pbConstraint();
 		const auto& cLHS 	 = c.getLHS();
 		carl::Relation cRel  = c.getRelation();
@@ -400,18 +400,19 @@ namespace smtrat
 					return FormulaT(carl::FormulaType::FALSE);
 				}//sum > cRHS 
 					std::vector<carl::Variable> greaterRHS;
-				int subSum = 0;
-				for(auto it : cLHS){
-					if(it.first >= cRHS){
-						greaterRHS.push_back(it.second);
+					int subSum = 0;
+					for(auto it : cLHS){
+						if(it.first >= cRHS){
+							greaterRHS.push_back(it.second);
+						}
+						subSum += it.first;
 					}
-					subSum += it.first;
-				}
-				if(subSum < cRHS){
-					return FormulaT(generateVarChain(greaterRHS, carl::FormulaType::OR));
-				}else{
-					return forwardAsArithmetic(formula);
-				}
+					if(subSum < cRHS){
+						return FormulaT(generateVarChain(greaterRHS, carl::FormulaType::OR));
+					}else{
+						std::cout << "HIER" << std::endl;
+						return forwardAsArithmetic(formula);
+					}
 			}
 		}else if(negative && (cRel == carl::Relation::GREATER || cRel == carl::Relation::GEQ)){
 			if(cRHS > 0){
@@ -569,7 +570,7 @@ namespace smtrat
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::createAuxiliaryConstraint(const FormulaT& formula){
 		const carl::PBConstraint& c = formula.pbConstraint();
-		auto boolVars        = c.gatherVariables();
+		auto boolVars = c.gatherVariables();
 		std::vector<carl::Variable> intVars;
 		for(auto it : boolVars){
 			if(std::find(mCheckedVars.begin(), mCheckedVars.end(), it) == mCheckedVars.end()){ 
@@ -642,7 +643,7 @@ namespace smtrat
 	            for(auto it : newLHS){
 	                t += it.first;
 	            }
-	            t = std::floor((t - newRHS)/ i );
+	            t = (int) std::floor((t - newRHS)/ (int) i );
 
 	            for(int i = 0; i < t; i++){
 	                newLHS.push_back(std::pair<int, carl::Variable>(-t, carl::freshVariable(carl::VariableType::VT_BOOL)));
@@ -690,7 +691,7 @@ namespace smtrat
 	            		});
         		if(elem != freq.end()){
 	            	auto distance = std::distance(freq.begin(), elem);
-	            	freq[distance].first = freq[distance].first + 1;
+	            	freq[(unsigned long) distance].first = freq[(unsigned long) distance].first + 1;
 	        	}else{
 	            	freq.push_back(std::pair<int, carl::uint>(1, i));
 	        	}
@@ -730,7 +731,7 @@ namespace smtrat
     	if(coeff == 2){
     		return std::vector<carl::uint>((carl::uint) 2);
     	}else if(coeff <= 100){
-    		return mPrimesTable[coeff];
+    		return mPrimesTable[(unsigned long) coeff];
     	}
 
     	std::vector<carl::uint> primes;
@@ -756,7 +757,7 @@ namespace smtrat
 
 	    	if(first > 1){
 	    		if(first <= 100){
-	    			std::vector<carl::uint> v = mPrimesTable[(int) first];
+	    			std::vector<carl::uint> v = mPrimesTable[(unsigned long) first];
 	    			primes.insert(primes.end(), v.begin(), v.end());
 	    			
 	    		}else{
@@ -778,7 +779,7 @@ namespace smtrat
 
 	    	if(second > 1){
 	    		if(second <= 100){
-	    			std::vector<carl::uint> v = mPrimesTable[(int) second];
+	    			std::vector<carl::uint> v = mPrimesTable[(unsigned long) second];
 	    			primes.insert(primes.end(), v.begin(), v.end());		
 	    		}else{
 	    			carl::PrimeFactory<carl::uint> pFactory;
@@ -797,7 +798,6 @@ namespace smtrat
 	    		}
 	    	}
 	    }
-
     	return primes;
     }
 
