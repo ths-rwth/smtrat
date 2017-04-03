@@ -95,12 +95,14 @@ namespace smtrat
 			FormulaT convertBigFormula(const FormulaT& formula);
 			FormulaT forwardAsArithmetic(const FormulaT& formula);
 			FormulaT checkFormulaType(const FormulaT& formula);
+			FormulaT checkFormulaTypeWithRNS(const FormulaT& formula);
 			std::function<FormulaT(FormulaT)> checkFormulaTypeFunction;
-			std::function<FormulaT(FormulaT)> rnsTransformationFunction;
+			std::function<FormulaT(FormulaT)> checkFormulaTypeWithRNSFunction;
 			FormulaT generateVarChain(const std::vector<carl::Variable>& vars, carl::FormulaType type);
 			FormulaT createAuxiliaryConstraint(const FormulaT& formula);
 			FormulaT interconnectVariables(const FormulaT& formula);
-			FormulaT rnsTransformation(const FormulaT& formula);
+			FormulaT rnsTransformation(const FormulaT& formula, const carl::uint prime);
+			//FormulaT rnsTransformation(const FormulaT& formula);
 			std::vector<carl::uint> calculateRNSBase(const FormulaT& formula);
 			bool isNonRedundant(const std::vector<carl::uint>& base, const FormulaT& formula);
 			std::vector<carl::uint> integerFactorization(const int& coeff);
