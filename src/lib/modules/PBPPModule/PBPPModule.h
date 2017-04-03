@@ -96,6 +96,7 @@ namespace smtrat
 			FormulaT forwardAsArithmetic(const FormulaT& formula);
 			FormulaT checkFormulaType(const FormulaT& formula);
 			std::function<FormulaT(FormulaT)> checkFormulaTypeFunction;
+			std::function<FormulaT(FormulaT)> rnsTransformationFunction;
 			FormulaT generateVarChain(const std::vector<carl::Variable>& vars, carl::FormulaType type);
 			FormulaT createAuxiliaryConstraint(const FormulaT& formula);
 			FormulaT interconnectVariables(const FormulaT& formula);
