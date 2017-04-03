@@ -36,18 +36,6 @@ namespace smtrat
 	void PBPPModule<Settings>::init()
 	{}
 	
-	// template<class Settings>
-	// bool PBPPModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
-	// {
-	// 	if (objective() != carl::Variable::NO_VARIABLE) {
-	// 		for (auto var: objectiveFunction().gatherVariables()) {
-	// 				mVariablesCache.emplace(carl::Variable(var.getId(), carl::VariableType::VT_BOOL), var);
-	// 		}
-	// 	}
-	// 	FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeFunction);
-	// 	addSubformulaToPassedFormula(formula, _subformula->formula());
-	// 	return true;
-	// }
 	template<class Settings>
 	bool PBPPModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 	{
@@ -96,7 +84,6 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaType(const FormulaT& formula){
-		std::cout << "CHECKCORE" << std::endl;
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
 			return formula;
 		} 
@@ -142,7 +129,6 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaTypeWithRNS(const FormulaT& formula){
-		std::cout << "RNS CHECKCORE" << std::endl;
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
 			return formula;
 		} 
@@ -168,7 +154,6 @@ namespace smtrat
 	    	initPrimesTable();
 	    	std::vector<carl::uint> base = calculateRNSBase(formula);
 	    	if(base.size() != 0 && isNonRedundant(base, formula)){
-	    		std::cout << "RNS transformation" << std::endl;
 	    		std::vector<FormulaT> subformulas;
 				for(auto i : base){
 					subformulas.push_back(rnsTransformation(formula, i));
@@ -177,13 +162,11 @@ namespace smtrat
 	    		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 	    		return res;
 	    	}else{
-	    		std::cout << "Forward as arithmetic" << std::endl;
 	    		auto res = forwardAsArithmetic(formula);
 		 		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 		 		return res;
 	    	}
 	    }else if(cLHS.size() == 1){
-	    	std::cout << "Convert small formula" << std::endl;
 			auto res = convertSmallFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
@@ -195,12 +178,10 @@ namespace smtrat
 									&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
 										&& !(positive && cRel == carl::Relation::EQ && (sum * 2) > (int) cLHS.size())
 			){
-			std::cout << "Convert big formula" << std::endl;
 			auto res = convertBigFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}
-		std::cout << "Forward as arithemtic" << std::endl;
 		auto res = forwardAsArithmetic(formula);
 		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 		return res;
@@ -280,11 +261,11 @@ namespace smtrat
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::convertSmallFormula(const FormulaT& formula){
 		const carl::PBConstraint& c  = formula.pbConstraint();
-		carl::Relation cRel   = c.getRelation();
-		const auto& cLHS      = c.getLHS();
-		int lhsCoeff    = cLHS.begin()->first;
+		carl::Relation cRel = c.getRelation();
+		const auto& cLHS = c.getLHS();
+		int lhsCoeff = cLHS.begin()->first;
 		FormulaT lhsVar = FormulaT(cLHS.begin()->second);
-		int cRHS 		= c.getRHS();
+		int cRHS = c.getRHS();
 
 		if(cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER){
 			if(lhsCoeff > 0){
@@ -482,17 +463,16 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::convertBigFormula(const FormulaT& formula){
-		std::cout << "Convert Big Formula" << std::endl;
 		const carl::PBConstraint& c = formula.pbConstraint();
-		const auto& cLHS 	 = c.getLHS();
-		carl::Relation cRel  = c.getRelation();
-		auto cVars	  = c.gatherVariables();
-		int cRHS 	  = c.getRHS();
+		const auto& cLHS = c.getLHS();
+		carl::Relation cRel = c.getRelation();
+		auto cVars = c.gatherVariables();
+		int cRHS = c.getRHS();
 		bool positive = true;
 		bool negative = true;
 		int sum = 0;
 
-		//Filter out constraints with coefficient equal 0
+		//Filter out coefficients equal 0
 		for(auto it : cLHS){	
 			if(it.first == 0){
 				return forwardAsArithmetic(formula);
@@ -519,6 +499,7 @@ namespace smtrat
 					newSubformulas.push_back(f);
 				}
 			}
+
 			return FormulaT(carl::FormulaType::OR, std::move(newSubformulas));
 		}
 
@@ -556,7 +537,6 @@ namespace smtrat
 					if(subSum < cRHS){
 						return FormulaT(generateVarChain(greaterRHS, carl::FormulaType::OR));
 					}else{
-						std::cout << "HIER" << std::endl;
 						return forwardAsArithmetic(formula);
 					}
 			}
@@ -709,7 +689,6 @@ namespace smtrat
 
 		//Adding auxiliary constraint to interconnect the bool and int variables
 		FormulaT subformulaD = interconnectVariables(formula);
-
 		return FormulaT(carl::FormulaType::AND, subformulaC, subformulaD);
 	}
 
@@ -734,6 +713,7 @@ namespace smtrat
 			FormulaT newFormula = FormulaT(carl::FormulaType::XOR, subformulaA, subformulaB);
 			newSubformulas.push_back(newFormula);
 		}
+
 		return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
 	}
 
@@ -761,48 +741,6 @@ namespace smtrat
 		return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
 
 	}
-
-	// template<typename Settings>
-	// FormulaT PBPPModule<Settings>::rnsTransformation(const FormulaT& formula){
-	// 	const carl::PBConstraint& c = formula.pbConstraint();
-	//     const auto& cLHS = c.getLHS();
-	//     const int cRHS = c.getRHS();
-	//     std::vector<carl::uint> base = calculateRNSBase(formula);
-
-	//     FormulasT subformulas;
-	//         for(auto i : base){
-	//             std::vector<std::pair<int, carl::Variable>> newLHS;
-	//            	int newRHS = cRHS % (int) i;
-	//             carl::PBConstraint newConstraint;
-	//             for(auto it : cLHS){
-	//             	if((it.first % (int) i) != 0){
-	//             		newLHS.push_back(std::pair<int, carl::Variable>(it.first % (int) i, it.second));
-	//             	}
-
-	//             }
-
-	//             if(newLHS.size() == 0 && newRHS > 0){
-	//             	return FormulaT(carl::FormulaType::FALSE);
-	//             }
-	            
-	//             int t = 0;
-	//             for(auto it : newLHS){
-	//                 t += it.first;
-	//             }
-	//             t = (int) std::floor((t - newRHS)/ (int) i );
-
-	//             for(int i = 0; i < t; i++){
-	//                 newLHS.push_back(std::pair<int, carl::Variable>(-t, carl::freshVariable(carl::VariableType::VT_BOOL)));
-	//             }
-	            
-	//             newConstraint.setLHS(newLHS);
-	//             newConstraint.setRHS(newRHS);
-	//             newConstraint.setRelation(carl::Relation::EQ);
-	//             subformulas.push_back(FormulaT(newConstraint));
-	//         }
-	//     FormulaT f = FormulaT(carl::FormulaType::AND, std::move(subformulas));
-	//     return checkFormulaType(f);
-	// }
 
 
     template<typename Settings>
@@ -988,6 +926,49 @@ namespace smtrat
 						{2, 43}, {3, 29}, {2, 2, 2, 11}, {89}, {2, 3, 3, 5}, {7, 13}, {2, 2, 23}, {3, 31}, {2, 47},
 						{5, 19}, {2, 2, 2, 2, 2, 3}, {97}, {2, 7, 7}, {3, 3, 11}, {2, 2, 5, 5}};
 	}
+
+
+	// template<typename Settings>
+	// FormulaT PBPPModule<Settings>::rnsTransformation(const FormulaT& formula){
+	// 	const carl::PBConstraint& c = formula.pbConstraint();
+	//     const auto& cLHS = c.getLHS();
+	//     const int cRHS = c.getRHS();
+	//     std::vector<carl::uint> base = calculateRNSBase(formula);
+
+	//     FormulasT subformulas;
+	//         for(auto i : base){
+	//             std::vector<std::pair<int, carl::Variable>> newLHS;
+	//            	int newRHS = cRHS % (int) i;
+	//             carl::PBConstraint newConstraint;
+	//             for(auto it : cLHS){
+	//             	if((it.first % (int) i) != 0){
+	//             		newLHS.push_back(std::pair<int, carl::Variable>(it.first % (int) i, it.second));
+	//             	}
+
+	//             }
+
+	//             if(newLHS.size() == 0 && newRHS > 0){
+	//             	return FormulaT(carl::FormulaType::FALSE);
+	//             }
+	            
+	//             int t = 0;
+	//             for(auto it : newLHS){
+	//                 t += it.first;
+	//             }
+	//             t = (int) std::floor((t - newRHS)/ (int) i );
+
+	//             for(int i = 0; i < t; i++){
+	//                 newLHS.push_back(std::pair<int, carl::Variable>(-t, carl::freshVariable(carl::VariableType::VT_BOOL)));
+	//             }
+	            
+	//             newConstraint.setLHS(newLHS);
+	//             newConstraint.setRHS(newRHS);
+	//             newConstraint.setRelation(carl::Relation::EQ);
+	//             subformulas.push_back(FormulaT(newConstraint));
+	//         }
+	//     FormulaT f = FormulaT(carl::FormulaType::AND, std::move(subformulas));
+	//     return checkFormulaType(f);
+	// }
 }
 
 #include "Instantiation.h"
