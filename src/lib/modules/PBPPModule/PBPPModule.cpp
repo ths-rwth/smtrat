@@ -891,15 +891,11 @@ namespace smtrat
         const carl::PBConstraint& c = formula.pbConstraint();	
         const auto& cLHS = c.getLHS();
         int max = INT_MIN;
-        int product = 1;
         
         for(auto it : cLHS){
             if(it.first > max){
                 max = it.first;
             }
-        }
-        for(auto it : base){
-            product *= it;
         }
         
         for(auto it : base){
