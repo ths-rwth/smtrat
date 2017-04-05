@@ -84,6 +84,7 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaType(const FormulaT& formula){
+
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
 			return formula;
 		} 
@@ -109,9 +110,13 @@ namespace smtrat
 			auto res = convertSmallFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
-		 }else if(!(positive && cRHS > 0 && sum > cRHS
+		}else if(cLHS.size() == 2){
+			auto res = convertTwoCoeffFormula(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(!(positive && cRHS > 0 && sum > cRHS
 					&& (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
-						&&  !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum < cRHS && cLHS.size() > 1)
+						&&  !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum < cRHS)
 							&& !(negative && cRHS < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum < cRHS)
 								&& !((positive || negative) && cRel == carl::Relation::NEQ && sum != cRHS && cRHS != 0)
 									&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
@@ -426,6 +431,86 @@ namespace smtrat
 		//std::cout << "OK" << std::endl;
 		return formula;
 	}
+
+
+	template<typename Settings>
+	FormulaT PBPPModule<Settings>::convertTwoCoeffFormula(const FormulaT& formula){
+		const carl::PBConstraint& c = formula.pbConstraint();
+		const auto& cLHS = c.getLHS();
+		carl::Relation cRel = c.getRelation();
+		auto cVars = c.gatherVariables();
+		int cRHS = c.getRHS();
+		bool positive = true;
+		bool negative = true;
+		int sum = 0;
+		int min = INT_MAX;
+		int max = INT_MIN;
+
+		for(auto it : cLHS){
+			if(it.first < 0){
+				positive = false;
+			}else if(it.first > 0){
+				negative = false;
+			}
+
+			if(it.first < min){
+				min = it.first;
+			}else if(it.first > max){
+				max = it.first;
+			}
+			sum += it.first;
+		}
+
+
+		if(!positive && !negative){
+			if(cRHS == 0 && cRel == carl::Relation::GEQ && sum == 0){
+				// +1 x1 -1 x2 >= 0 ===> x2 -> x1 ===> not x2 or x1
+				carl::Variable posVar;
+				carl::Variable negVar;
+
+				for(auto it : cLHS){
+					if(it.first > 0){
+						posVar = it.second;
+					}else if(it.first < 0){
+						negVar = it.second;
+					}
+				}
+
+				FormulaT subformulaA = FormulaT(carl::FormulaType::NOT, FormulaT(negVar));
+				return FormulaT(carl::FormulaType::OR, subformulaA, FormulaT(posVar));			
+			}else if(cRHS == max && sum == 0 && cRel == carl::Relation::GEQ){
+				//-1 x1 +1 x2 >= 1 ===> not x1 and x2
+				carl::Variable posVar;
+				carl::Variable negVar;
+
+				for(auto it : cLHS){
+					if(it.first > 0){
+						posVar = it.second;
+					}else if(it.first < 0){
+						negVar = it.second;
+					}
+				}
+
+				FormulaT subformulaA = FormulaT(carl::FormulaType::NOT, FormulaT(negVar));
+				return FormulaT(carl::FormulaType::AND, subformulaA, FormulaT(posVar));
+
+			}else{
+				forwardAsArithmetic(formula);
+			}
+		}else if(negative && sum == 2 * cRHS && cRel == carl::Relation::GEQ){
+			//-1 x1 -1 x2 >= -1 ===> (x1 -> not x2) or (x2 -> not x1) ===> (not x1 or x2) or (not x2 or x1)	
+			//Ist or wirklich richtig?			
+			FormulaT firstVar = FormulaT(cLHS[0].second);
+			FormulaT secondVar = FormulaT(cLHS[1].second);
+			FormulaT negFirst = FormulaT(carl::FormulaType::NOT, firstVar);
+			FormulaT negSecond = FormulaT(carl::FormulaType::NOT, secondVar);
+			FormulaT subformulaC = FormulaT(carl::FormulaType::OR, negFirst, secondVar);
+			FormulaT subformulaD = FormulaT(carl::FormulaType::OR, negSecond, firstVar);
+			return FormulaT(carl::FormulaType::OR, subformulaC, subformulaD);
+		}
+		return forwardAsArithmetic(formula);
+	}
+
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::convertBigFormula(const FormulaT& formula){

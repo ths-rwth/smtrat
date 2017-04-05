@@ -93,6 +93,7 @@ namespace smtrat
 		private:
 			FormulaT convertSmallFormula(const FormulaT& formula);
 			FormulaT convertBigFormula(const FormulaT& formula);
+			FormulaT convertTwoCoeffFormula(const FormulaT& formula);
 			FormulaT forwardAsArithmetic(const FormulaT& formula);
 			FormulaT checkFormulaType(const FormulaT& formula);
 			FormulaT checkFormulaTypeWithRNS(const FormulaT& formula);
