@@ -84,34 +84,111 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaType(const FormulaT& formula){
-
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
 			return formula;
 		} 
 
 		const carl::PBConstraint& c = formula.pbConstraint();
-		carl::Relation cRel  = c.getRelation();
-		const auto& cLHS	 = c.getLHS();
+		carl::Relation cRel = c.getRelation();
+		const auto& cLHS = c.getLHS();
+		auto cVars = c.gatherVariables();
 		bool positive = true;
 		bool negative = true;
+		bool eqCoef = true;
 		int cRHS = c.getRHS();
 		int sum  = 0;
+		int min = INT_MAX;
+		int max = INT_MIN;
+		int lhsSize = cLHS.size();
 
-		for(auto it = cLHS.begin(); it != cLHS.end(); it++){
-			sum += it->first;
-			if(it->first < 0){
+		for(auto it : cLHS){
+			if(it.first < 0){
 				positive = false;
-			}else if(it->first > 0){
+			}else if(it.first > 0){
 				negative = false;
+			}
+
+			if(it.first < min){
+				min = it.first;
+			}else if(it.first > max){
+				max = it.first;
+			}
+			sum += it.first;
+		}
+
+		for(int i = 0; i < lhsSize; i++){
+			if(cLHS[i].first == cLHS[i + 1].first){
+				eqCoef = false;
+				break;
 			}
 		}
 
-		if(cLHS.size() == 1){
-			auto res = convertSmallFormula(formula);
+		if(eqCoef){
+			if(cLHS[0].first != cRHS){
+				eqCoef = false;
+			}
+		}
+
+		//Filter out coefficients equal 0
+		for(auto it : cLHS){	
+			if(it.first == 0){
+				return forwardAsArithmetic(formula);
+			}
+		}
+
+		std::vector<carl::Variable> posVars;
+		std::vector<carl::Variable> negVars;
+		if((lhsSize == 2 || lhsSize == 3) && !negative && !positive){
+			for(auto it : cLHS){
+				if(it.first > 0){
+					posVars.push_back(it.second);
+				}else if(it.first < 0){
+					negVars.push_back(it.second);
+				}
+			}
+		}
+
+		if(lhsSize == 2 && cRHS == 0 && sum == 0 && cRel == carl::Relation::GEQ && !negative && !positive){
+			// +1 x1 -1 x2 >= 0 ===> x2 -> x1 ===> not x2 or x1
+			FormulaT subformulaA = FormulaT(carl::FormulaType::NOT, FormulaT(*negVars.begin()));
+			auto res = FormulaT(carl::FormulaType::OR, subformulaA, FormulaT(*posVars.begin()));	
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;		
+		}else if(lhsSize == 2 && cRHS == max && sum == 0 && cRel == carl::Relation::GEQ && !negative && !positive){
+			//-1 x1 +1 x2 >= 1 ===> not x1 and x2
+			FormulaT subformulaA = FormulaT(carl::FormulaType::NOT, FormulaT(*negVars.begin()));
+			auto res = FormulaT(carl::FormulaType::AND, subformulaA, FormulaT(*posVars.begin()));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
-		}else if(cLHS.size() == 2){
-			auto res = convertTwoCoeffFormula(formula);
+		}else if(negative && sum == 2 * cRHS && cRel == carl::Relation::GEQ){
+			//-1 x1 -1 x2 >= -1 ===> (x1 -> not x2) or (x2 -> not x1) ===> (not x1 or x2) or (not x2 or x1)	
+			FormulaT firstVar = FormulaT(cLHS[0].second);
+			FormulaT secondVar = FormulaT(cLHS[1].second);
+			FormulaT negFirst = FormulaT(carl::FormulaType::NOT, firstVar);
+			FormulaT negSecond = FormulaT(carl::FormulaType::NOT, secondVar);
+			FormulaT subformulaC = FormulaT(carl::FormulaType::OR, negFirst, secondVar);
+			FormulaT subformulaD = FormulaT(carl::FormulaType::OR, negSecond, firstVar);
+			auto res = FormulaT(carl::FormulaType::OR, subformulaC, subformulaD);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(lhsSize == 3 && sum == cRHS && cRHS == -1 && cRel == carl::Relation::GEQ && !negative && !positive){
+			//+1 x1 -1 x2 -1 x3 >= -1 ===> x1 or not x2 or not x3
+			FormulaT subformulaA = FormulaT(posVars[0]);
+			FormulaT subformulaB = FormulaT(carl::FormulaType::NOT, FormulaT(negVars[0]));
+			FormulaT subformulaC = FormulaT(carl::FormulaType::NOT, FormulaT(negVars[1]));
+			FormulaT subformulaD = FormulaT(carl::FormulaType::OR, subformulaA, subformulaB);
+			auto res = FormulaT(carl::FormulaType::OR, subformulaD, subformulaC);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(lhsSize == 3 && sum == 1 && cRHS == 0 && cRel == carl::Relation::GEQ && !negative && !positive){
+			//-1 x1 +1 x2 +1 x3 >= 0 ===> not x1 or x2 or x3
+			FormulaT subformulaA = FormulaT(carl::FormulaType::NOT, FormulaT(negVars[0]));
+			FormulaT subformulaB = FormulaT(carl::FormulaType::OR, FormulaT(posVars[0]), FormulaT(posVars[1]));
+			auto res = FormulaT(carl::FormulaType::OR, subformulaA, subformulaB);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(lhsSize == 1){
+			auto res = convertSmallFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(!(positive && cRHS > 0 && sum > cRHS
@@ -135,11 +212,9 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaTypeWithRNS(const FormulaT& formula){
-
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
 			return formula;
 		} 
-
 		const carl::PBConstraint& c = formula.pbConstraint();
 		carl::Relation cRel  = c.getRelation();
 		const auto& cLHS	 = c.getLHS();
@@ -153,6 +228,13 @@ namespace smtrat
 				positive = false;
 			}else if(it->first > 0){
 				negative = false;
+			}
+		}
+
+		//Filter out coefficients equal 0
+		for(auto it : cLHS){	
+			if(it.first == 0){
+				return forwardAsArithmetic(formula);
 			}
 		}
 
@@ -179,6 +261,7 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::rnsTransformation(const FormulaT& formula, const carl::uint prime){
+		std::cout << "Rns transformation" << std::endl;
 	    const carl::PBConstraint& c = formula.pbConstraint();
 		const auto& cLHS	 = c.getLHS();
 		bool positive = true;
@@ -229,7 +312,7 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::convertSmallFormula(const FormulaT& formula){
-		//std::cout << "Convert small formula...";
+		std::cout << "Convert small formula...";
 		const carl::PBConstraint& c  = formula.pbConstraint();
 		carl::Relation cRel = c.getRelation();
 		const auto& cLHS = c.getLHS();
@@ -434,87 +517,8 @@ namespace smtrat
 
 
 	template<typename Settings>
-	FormulaT PBPPModule<Settings>::convertTwoCoeffFormula(const FormulaT& formula){
-		const carl::PBConstraint& c = formula.pbConstraint();
-		const auto& cLHS = c.getLHS();
-		carl::Relation cRel = c.getRelation();
-		auto cVars = c.gatherVariables();
-		int cRHS = c.getRHS();
-		bool positive = true;
-		bool negative = true;
-		int sum = 0;
-		int min = INT_MAX;
-		int max = INT_MIN;
-
-		for(auto it : cLHS){
-			if(it.first < 0){
-				positive = false;
-			}else if(it.first > 0){
-				negative = false;
-			}
-
-			if(it.first < min){
-				min = it.first;
-			}else if(it.first > max){
-				max = it.first;
-			}
-			sum += it.first;
-		}
-
-
-		if(!positive && !negative){
-			if(cRHS == 0 && cRel == carl::Relation::GEQ && sum == 0){
-				// +1 x1 -1 x2 >= 0 ===> x2 -> x1 ===> not x2 or x1
-				carl::Variable posVar;
-				carl::Variable negVar;
-
-				for(auto it : cLHS){
-					if(it.first > 0){
-						posVar = it.second;
-					}else if(it.first < 0){
-						negVar = it.second;
-					}
-				}
-
-				FormulaT subformulaA = FormulaT(carl::FormulaType::NOT, FormulaT(negVar));
-				return FormulaT(carl::FormulaType::OR, subformulaA, FormulaT(posVar));			
-			}else if(cRHS == max && sum == 0 && cRel == carl::Relation::GEQ){
-				//-1 x1 +1 x2 >= 1 ===> not x1 and x2
-				carl::Variable posVar;
-				carl::Variable negVar;
-
-				for(auto it : cLHS){
-					if(it.first > 0){
-						posVar = it.second;
-					}else if(it.first < 0){
-						negVar = it.second;
-					}
-				}
-
-				FormulaT subformulaA = FormulaT(carl::FormulaType::NOT, FormulaT(negVar));
-				return FormulaT(carl::FormulaType::AND, subformulaA, FormulaT(posVar));
-
-			}else{
-				forwardAsArithmetic(formula);
-			}
-		}else if(negative && sum == 2 * cRHS && cRel == carl::Relation::GEQ){
-			//-1 x1 -1 x2 >= -1 ===> (x1 -> not x2) or (x2 -> not x1) ===> (not x1 or x2) or (not x2 or x1)	
-			//Ist or wirklich richtig?			
-			FormulaT firstVar = FormulaT(cLHS[0].second);
-			FormulaT secondVar = FormulaT(cLHS[1].second);
-			FormulaT negFirst = FormulaT(carl::FormulaType::NOT, firstVar);
-			FormulaT negSecond = FormulaT(carl::FormulaType::NOT, secondVar);
-			FormulaT subformulaC = FormulaT(carl::FormulaType::OR, negFirst, secondVar);
-			FormulaT subformulaD = FormulaT(carl::FormulaType::OR, negSecond, firstVar);
-			return FormulaT(carl::FormulaType::OR, subformulaC, subformulaD);
-		}
-		return forwardAsArithmetic(formula);
-	}
-
-
-	template<typename Settings>
 	FormulaT PBPPModule<Settings>::convertBigFormula(const FormulaT& formula){
-		//std::cout << "Convert big formula...";
+		std::cout << "Convert big formula...";
 		const carl::PBConstraint& c = formula.pbConstraint();
 		const auto& cLHS = c.getLHS();
 		carl::Relation cRel = c.getRelation();
@@ -523,14 +527,6 @@ namespace smtrat
 		bool positive = true;
 		bool negative = true;
 		int sum = 0;
-
-		//Filter out coefficients equal 0
-		for(auto it : cLHS){	
-			if(it.first == 0){
-				return forwardAsArithmetic(formula);
-			}
-		}
-
 
 		for(auto it : cLHS){
 			if(it.first < 0){
@@ -689,7 +685,7 @@ namespace smtrat
 	*/
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::forwardAsArithmetic(const FormulaT& formula){
-		//std::cout << "Forward as arithmetic...";
+		//std::cout << "Forward as arithmetic..." << std::endl;
 		const carl::PBConstraint& c = formula.pbConstraint();
 		const auto& cLHS = c.getLHS();
 		carl::Relation cRel  = c.getRelation();
@@ -698,6 +694,10 @@ namespace smtrat
 
 		for(auto it : variables){
 			mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(it, carl::freshVariable(carl::VariableType::VT_INT)));
+		}
+
+		for(auto it : mVariablesCache){
+			std::cout << "mVariablesCache " << it << std::endl; 
 		}
 
 		Poly lhs;
@@ -732,6 +732,10 @@ namespace smtrat
 			}
 		}
 
+		for(auto it : mCheckedVars){
+			std::cout << "mCheckedVars " << it << std::endl;
+		}
+
 		FormulasT newSubformulas;
 		for(auto var : intVars){
 			Poly intVar(var);
@@ -747,11 +751,19 @@ namespace smtrat
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::interconnectVariables(const FormulaT& formula){
 		const carl::PBConstraint& c = formula.pbConstraint();
-		auto boolVars 		 = c.gatherVariables();
+		auto boolVars = c.gatherVariables();
 		std::map<carl::Variable, carl::Variable> varsMap;
 
 		for(auto var : boolVars){
-			varsMap.insert(*mVariablesCache.find(var));
+			if(std::find(mConnectedVars.begin(), mConnectedVars.end(), var) == mConnectedVars.end()){
+				//The variables are not interconnected
+				varsMap.insert(*mVariablesCache.find(var));
+				mConnectedVars.push_back(var);
+			}
+		}
+
+		for(auto it : mConnectedVars){
+			std::cout << "mConnectedVars " << it << std::endl;
 		}
 
 		FormulasT newSubformulas;

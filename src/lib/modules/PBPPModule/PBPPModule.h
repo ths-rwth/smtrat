@@ -27,7 +27,7 @@ namespace smtrat
 			std::map<carl::Variable, carl::Variable> mVariablesCache; //bool, int
 			carl::FormulaVisitor<FormulaT> mVisitor;
 			std::vector<carl::Variable> mCheckedVars;
-			//std::map<int, std::vector<carl::uint>> mPrimesTable;
+			std::vector<carl::Variable> mConnectedVars;
 			std::vector<std::vector<carl::uint>> mPrimesTable;
 			
 		public:
@@ -93,7 +93,6 @@ namespace smtrat
 		private:
 			FormulaT convertSmallFormula(const FormulaT& formula);
 			FormulaT convertBigFormula(const FormulaT& formula);
-			FormulaT convertTwoCoeffFormula(const FormulaT& formula);
 			FormulaT forwardAsArithmetic(const FormulaT& formula);
 			FormulaT checkFormulaType(const FormulaT& formula);
 			FormulaT checkFormulaTypeWithRNS(const FormulaT& formula);
