@@ -84,6 +84,7 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaType(const FormulaT& formula){
+		//std::cout << "Check formula type..." << std::endl;
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
 			return formula;
 		} 
@@ -195,16 +196,19 @@ namespace smtrat
 		}else if(checkIfCardinalityConst(formula)){
 			if(lhsSize == cRHS){
 				//+1 x1 +1 x2 +1 x3 +1 x4 = 4 ===> x1 and x2 and x3 and x4
+				//std::cout << "HIER 6" << std::endl;
 				auto res = generateVarChain(cVars, carl::FormulaType::AND);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				return res;	
 			}else if(lhsSize < cRHS){
 				//+1 x1 +1 x2 +1 x3 +1 x4 = 5 ===> FALSE
+				//std::cout << "HIER 7" << std::endl;
 				auto res = FormulaT(carl::FormulaType::FALSE);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				return res;
 			}else if(cRHS == 0){
 				//+1 x1 +1 x2 +1 x3 +1 x4 = 0 ===> not(x1 or x2 or x3 or x4)
+				//std::cout << "HIER 8" << std::endl;
 				FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::OR);
 				auto res = FormulaT(carl::FormulaType::NOT, subformulaA);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
@@ -240,6 +244,7 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaTypeWithRNS(const FormulaT& formula){
+		//std::cout << "Check formula type with rns..." << std::endl;
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
 			return formula;
 		} 
@@ -249,6 +254,7 @@ namespace smtrat
 		bool positive = true;
 		bool negative = true;
 		int sum  = 0;
+
 
 		for(auto it = cLHS.begin(); it != cLHS.end(); it++){
 			sum += it->first;
@@ -265,8 +271,7 @@ namespace smtrat
 				return forwardAsArithmetic(formula);
 			}
 		}
-
-	    if(!checkIfCardinalityConst(formula) && cLHS.size() > 4){
+	    if(checkIfCardinalityConst(formula) && cLHS.size() > 4){
 	    	initPrimesTable();
 	    	std::vector<carl::uint> base = calculateRNSBase(formula);
 	    	if(base.size() != 0 && isNonRedundant(base, formula)){
@@ -831,6 +836,7 @@ namespace smtrat
 
     template<typename Settings>
     std::vector<carl::uint> PBPPModule<Settings>::calculateRNSBase(const FormulaT& formula){
+    	//std::cout << "Calculate rns base..." << formula<< std::endl;
     	const carl::PBConstraint& c = formula.pbConstraint();	
 	    const auto& cLHS = c.getLHS();
 	    int max = INT_MIN;
@@ -848,7 +854,6 @@ namespace smtrat
 	        }
 	        sum += (carl::uint) it.first;
         }
-
         for(auto it : cLHS){
         	std::vector<carl::uint> v = integerFactorization(it.first);
         	std::sort(v.begin(), v.end());
@@ -866,9 +871,7 @@ namespace smtrat
 	            	freq.push_back(std::pair<int, carl::uint>(1, i));
 	        	}
         	}
-        	
         }
-
         std::sort(freq.begin(), freq.end(),
 	        [&](const pair<int, carl::uint> &p1, const pair<int, carl::uint> &p2)
 	            {
@@ -878,7 +881,7 @@ namespace smtrat
 	                   	return(p1.first > p2.first);
 	                }
 	            });
-
+       	
        	std::vector<carl::uint> base;
 	    for(auto it : freq){
 	    	if(it.second != 0){
