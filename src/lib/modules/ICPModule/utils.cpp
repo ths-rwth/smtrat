@@ -60,7 +60,7 @@ namespace smtrat
             ConstraintT rightTmp;
             
             if (!std::isinf(_interval.upper())) {
-                bound = carl::rationalize<Rational>( _interval.upper() );
+                Rational bound = carl::rationalize<Rational>( _interval.upper() );
                 Poly rightEx = _lhs - bound;
                 
                 switch( _interval.upperBoundType() )
