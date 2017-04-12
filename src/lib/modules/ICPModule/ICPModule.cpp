@@ -425,7 +425,7 @@ namespace smtrat
                         return lazyResult;
                     // Full call of the backends, if no box has target diameter
                     bool furtherContractionOccurred = false;
-                    if( !mFinalCheck || !performSplit( mOriginalVariableIntervalContracted, furtherContractionOccurred ) )
+                    if( !performSplit( mOriginalVariableIntervalContracted, furtherContractionOccurred ) )
                         return callBackends( mFinalCheck, mFullCheck, mMinimizingCheck );
                     if( mInvalidBox )
                     {
