@@ -172,8 +172,8 @@ namespace smtrat
     
     bool Module::add( ModuleInput::const_iterator _receivedSubformula )
     {
-        SMTRAT_LOG_INFO("smtrat.module", __func__ << " to " << moduleName() << " (" << mId << "):");
-        SMTRAT_LOG_INFO("smtrat.module", "\t" << _receivedSubformula->formula());
+        SMTRAT_LOG_DEBUG("smtrat.module", __func__ << " to " << moduleName() << " (" << mId << "):");
+        SMTRAT_LOG_DEBUG("smtrat.module", "\t" << _receivedSubformula->formula());
         if( mFirstUncheckedReceivedSubformula == mpReceivedFormula->end() )
             mFirstUncheckedReceivedSubformula = _receivedSubformula;
         const carl::Variables& vars = _receivedSubformula->formula().variables();
@@ -202,8 +202,8 @@ namespace smtrat
     
     void Module::remove( ModuleInput::const_iterator _receivedSubformula )
     {
-        SMTRAT_LOG_INFO("smtrat.module", __func__ << " from " << moduleName() << " (" << mId << "):");
-        SMTRAT_LOG_INFO("smtrat.module", "\t" << _receivedSubformula->formula());
+        SMTRAT_LOG_DEBUG("smtrat.module", __func__ << " from " << moduleName() << " (" << mId << "):");
+        SMTRAT_LOG_DEBUG("smtrat.module", "\t" << _receivedSubformula->formula());
         removeCore( _receivedSubformula );
         if( mFirstUncheckedReceivedSubformula == _receivedSubformula )
             ++mFirstUncheckedReceivedSubformula;
