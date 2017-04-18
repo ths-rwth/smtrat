@@ -163,20 +163,22 @@ namespace smtrat
 			auto res = FormulaT(carl::FormulaType::AND, subformulaA, FormulaT(*posVars.begin()));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
-		}else if(negative && sum == 2 * cRHS && cRel == carl::Relation::GEQ && eqCoef){
-			//-1 x1 -1 x2 >= -1 ===> (x1 -> not x2) or (x2 -> not x1) ===> (not x1 or x2) or (not x2 or x1)
+		}else if(negative && sum == 2 * cRHS && cRel == carl::Relation::GEQ && eqCoef && lhsSize == 2){
+			//-1 x1 -1 x2 >= -1 ===> (x1 -> not x2) or (x2 -> not x1) ===> (not x1 or x2) or (not x2 or x1) ===> not(x1 and x2)
 			//std::cout << "HIER 3" << std::endl;	
-			FormulaT firstVar = FormulaT(cLHS[0].second);
-			FormulaT secondVar = FormulaT(cLHS[1].second);
-			FormulaT negFirst = FormulaT(carl::FormulaType::NOT, firstVar);
-			FormulaT negSecond = FormulaT(carl::FormulaType::NOT, secondVar);
-			FormulaT subformulaC = FormulaT(carl::FormulaType::OR, negFirst, secondVar);
-			FormulaT subformulaD = FormulaT(carl::FormulaType::OR, negSecond, firstVar);
-			auto res = FormulaT(carl::FormulaType::OR, subformulaC, subformulaD);
+			// FormulaT firstVar = FormulaT(cLHS[0].second);
+			// FormulaT secondVar = FormulaT(cLHS[1].second);
+			// FormulaT negFirst = FormulaT(carl::FormulaType::NOT, firstVar);
+			// FormulaT negSecond = FormulaT(carl::FormulaType::NOT, secondVar);
+			// FormulaT subformulaC = FormulaT(carl::FormulaType::OR, negFirst, secondVar);
+			// FormulaT subformulaD = FormulaT(carl::FormulaType::OR, negSecond, firstVar);
+			// auto res = FormulaT(carl::FormulaType::OR, subformulaC, subformulaD);
+			FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::AND);
+			auto res = FormulaT(carl::FormulaType::NOT, subformulaA);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(lhsSize == 3 && sum == cRHS && cRHS == -1 && cRel == carl::Relation::GEQ && !negative && !positive){
-			//+1 x1 -1 x2 -1 x3 >= -1 ===> x1 or not x2 or not x3
+			//+1 x1 -1 x2 -1 x3 >= -1 ===> x1 or not x2 or not x3 
 			//std::cout << "HIER 4" << std::endl;
 			FormulaT subformulaA = FormulaT(posVars[0]);
 			FormulaT subformulaB = FormulaT(carl::FormulaType::NOT, FormulaT(negVars[0]));
@@ -213,11 +215,23 @@ namespace smtrat
 				auto res = FormulaT(carl::FormulaType::NOT, subformulaA);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				return res;
+			// }else if(cRHS == 1){
+			// 	//+1 x1 +1 x2 +1 x3 +1 x4 = 1 ===> x1 or x2 or x3 or x4
+			// 	auto res = generateVarChain(cVars, carl::FormulaType::OR);
+			// 	SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			// 	return res;
 			}else{
 				auto res = forwardAsArithmetic(formula);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				return res;
-			}		
+			}
+		// }else if(eqCoef && cRHS == 1 && cRel == carl::Relation::GEQ){
+		// 	//+1 x1 +1 x2 +1 x3 +1 x4 >= 1 ===> not(not x1 and not x2 and not x3 and not x4)
+		// 	FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::OR);
+		// 	FormulaT subformulaB = FormulaT(carl::FormulaType::NOT, subformulaA);
+		// 	auto res = FormulaT(carl::FormulaType::NOT, subformulaB);
+		// 	SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+		// 	return res;
 		}else if(lhsSize == 1){
 			auto res = convertSmallFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
@@ -308,11 +322,8 @@ namespace smtrat
 
 		for(auto it = cLHS.begin(); it != cLHS.end(); it++){
 			if(it->first < 0){
-				positive = false;
+				return false;
 			}
-		}
-		if(!positive){
-			return false;
 		}
 
 		for(auto it : cLHS){
