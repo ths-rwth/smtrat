@@ -191,7 +191,19 @@ namespace smtrat
 				auto res = FormulaT(carl::FormulaType::FALSE);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				return res;
+			}else if(lhsSize == 4 && cRHS == 2){
+				//+1 x1 +1 x2 +1 x3 +1 x4 = 2 ===> (x1 and x2) xor (x1 and x3) xor (x1 and x4) ...
+				std::sort(cVars.begin(), cVars.end());
+				FormulasT subformulas;
+				do{
+					subformulas.push_back(generateVarChain(std::vector<carl::Variable>(cVars.begin(), cVars.begin()+2), carl::FormulaType::AND));
+
+				}while(std::next_permutation(cVars.begin(), cVars.begin()+2));
+				auto res = FormulaT(carl::FormulaType::XOR, std::move(subformulas));
+	    		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+	    		return res;
 			}
+
 
 			carl::PBConstraint newConstA;
 			carl::PBConstraint newConstB;
