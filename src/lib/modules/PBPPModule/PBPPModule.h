@@ -14,6 +14,7 @@
 #include <carl/numbers/PrimeFactory.h>
 #include <boost/math/common_factor.hpp> 
 
+
 namespace smtrat
 {
 	template<typename Settings>
@@ -107,7 +108,7 @@ namespace smtrat
 			bool isNonRedundant(const std::vector<carl::uint>& base, const FormulaT& formula);
 			std::vector<carl::uint> integerFactorization(const int& coeff);
 			void initPrimesTable();
-			bool checkIfCardinalityConst(const FormulaT& formula);
+			FormulaT removeZeroCoefficients(const FormulaT& formula);
 
 	};
 }
