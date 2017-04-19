@@ -160,7 +160,7 @@ namespace smtrat
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(negative && sum == 2 * cRHS && cRel == carl::Relation::GEQ && eqCoef && cLHS[0].first == cRHS && lhsSize == 2){
-			//-1 x1 -1 x2 >= -1 ===> (x1 -> not x2) or (x2 -> not x1) ===> (not x1 or x2) or (not x2 or x1) ===> not(x1 and x2)
+			//-1 x1 -1 x2 >= -1  ===> not(x1 and x2)
 			//std::cout << "HIER 3" << std::endl;
 			FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::AND);
 			auto res = FormulaT(carl::FormulaType::NOT, subformulaA);
@@ -184,7 +184,36 @@ namespace smtrat
 			auto res = FormulaT(carl::FormulaType::OR, subformulaA, subformulaB);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
-		}else if(lhsSize == 3 && eqCoef && cLHS[0].first == 1 && cRHS == 1){
+		}else if(lhsSize == 3 && eqCoef && cLHS[0].first == 1 && cRHS == 1 && cRel == carl::Relation::GEQ){
+			//+1 x1 +1 x2 +1 x3 >= 1 ===> x1 or x2 or x3
+			auto res = generateVarChain(cVars, carl::FormulaType::OR);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(lhsSize == 3 && eqCoef && cLHS[0].first == -1 && cRHS == -1 && cRel == carl::Relation::GEQ){
+			//-1 x1 -1 x2 -1 x3 >= -1 ===> (not x1 and not x2 and not x3) or  (x1 and not x2 and not x3) or (x2 and not x1 and not x3)...
+			FormulasT subformulasA;
+			for(int i = 0; i < lhsSize; i++){
+				FormulasT temp;
+				temp.push_back(FormulaT(cVars[i]));
+				for(int j = 0; j  < lhsSize; j++){
+					if(i != j){
+						temp.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(cVars[j])));
+					}
+				}
+				subformulasA.push_back(FormulaT(carl::FormulaType::AND, std::move(temp)));
+			}
+			FormulaT subformulaA = FormulaT(carl::FormulaType::OR, std::move(subformulasA));
+
+			FormulasT subformulasB;
+			for(auto it : cVars){
+				subformulasB.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it)));
+			}
+			FormulaT subformulaB = FormulaT(carl::FormulaType::AND, std::move(subformulasB));
+
+			auto res = FormulaT(carl::FormulaType::OR, subformulaA, subformulaB);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(lhsSize == 3 && eqCoef && cLHS[0].first == 1 && cRHS == 1 && cRel == carl::Relation::EQ){
 			//+1 x1 +1 x2 +1 x3 = 1 ===> (x1 and not x2 and not x3) or (x2 and not x1 and not x3)...
 
 			FormulasT subformulasA;
