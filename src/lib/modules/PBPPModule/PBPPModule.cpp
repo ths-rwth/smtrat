@@ -159,16 +159,9 @@ namespace smtrat
 			auto res = FormulaT(carl::FormulaType::AND, subformulaA, FormulaT(*posVars.begin()));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
-		}else if(negative && sum == 2 * cRHS && cRel == carl::Relation::GEQ && eqCoef && cLHS[0].first == cRHS && lhsSize == 2){
-			//-1 x1 -1 x2 >= -1  ===> not(x1 and x2)
-			//std::cout << "HIER 3" << std::endl;
-			FormulaT subformulaA = generateVarChain(cVars, carl::FormulaType::AND);
-			auto res = FormulaT(carl::FormulaType::NOT, subformulaA);
-			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-			return res;
 		}else if(lhsSize == 3 && sum == cRHS && cRHS == -1 && cRel == carl::Relation::GEQ && !negative && !positive){
 			//+1 x1 -1 x2 -1 x3 >= -1 ===> x1 or not x2 or not x3 
-			//std::cout << "HIER 4" << std::endl;
+			//std::cout << "HIER 3" << std::endl;
 			FormulaT subformulaA = FormulaT(posVars[0]);
 			FormulaT subformulaB = FormulaT(carl::FormulaType::NOT, FormulaT(negVars[0]));
 			FormulaT subformulaC = FormulaT(carl::FormulaType::NOT, FormulaT(negVars[1]));
@@ -178,67 +171,130 @@ namespace smtrat
 			return res;
 		}else if(lhsSize == 3 && sum == 1 && cRHS == 0 && cRel == carl::Relation::GEQ && !negative && !positive){
 			//-1 x1 +1 x2 +1 x3 >= 0 ===> not x1 or x2 or x3
-			//std::cout << "HIER 5" << std::endl;
+			//std::cout << "HIER 4" << std::endl;
 			FormulaT subformulaA = FormulaT(carl::FormulaType::NOT, FormulaT(negVars[0]));
 			FormulaT subformulaB = FormulaT(carl::FormulaType::OR, FormulaT(posVars[0]), FormulaT(posVars[1]));
 			auto res = FormulaT(carl::FormulaType::OR, subformulaA, subformulaB);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
-		}else if(lhsSize == 3 && eqCoef && cLHS[0].first == 1 && cRHS == 1 && cRel == carl::Relation::GEQ){
-			//+1 x1 +1 x2 +1 x3 >= 1 ===> x1 or x2 or x3
-			auto res = generateVarChain(cVars, carl::FormulaType::OR);
+		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 )){
+			//std::cout << "HIER 5" << std::endl;
+			auto res = encodeCardinalityConstratint(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;	
+		}else if(lhsSize == 1){
+			//std::cout << "HIER 6" << std::endl;
+			auto res = convertSmallFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
-		}else if(lhsSize == 3 && eqCoef && cLHS[0].first == -1 && cRHS == -1 && cRel == carl::Relation::GEQ){
-			//-1 x1 -1 x2 -1 x3 >= -1 ===> (not x1 and not x2 and not x3) or  (x1 and not x2 and not x3) or (x2 and not x1 and not x3)...
-			FormulasT subformulasA;
-			for(int i = 0; i < lhsSize; i++){
-				FormulasT temp;
-				temp.push_back(FormulaT(cVars[i]));
-				for(int j = 0; j  < lhsSize; j++){
-					if(i != j){
-						temp.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(cVars[j])));
-					}
+		}else if(!(positive && cRHS > 0 && sum > cRHS
+					&& (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
+						&&  !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum < cRHS)
+							&& !(negative && cRHS < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum < cRHS)
+								&& !((positive || negative) && cRel == carl::Relation::NEQ && sum != cRHS && cRHS != 0)
+									&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
+										&& !(!positive && !negative)
+			){
+			//std::cout << "HIER 7" << std::endl;
+			auto res = convertBigFormula(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else{
+			//std::cout << "HIER 8" << std::endl;
+			auto res = forwardAsArithmetic(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}
+	}
+
+	template<typename Settings>
+	FormulaT PBPPModule<Settings>::encodeCardinalityConstratint(const FormulaT& formula){
+		const carl::PBConstraint& c = formula.pbConstraint();
+		const auto& cLHS = c.getLHS();
+		auto cVars = c.gatherVariables();
+		int cRHS = c.getRHS();
+		carl::Relation cRel = c.getRelation();
+		int lhsSize = cLHS.size();
+		int firstCoef = cLHS[0].first;
+
+		
+		if(cRel == carl::Relation::GEQ){
+			if(firstCoef == -1 && cRHS == -1){
+				//-1 x1 -1 x2 -1 x3 -1 x4 >= 1 ===> 
+				//std::cout << "Card 1" << std::endl;
+
+				//not x1 and not x2 and not x3 and not x4 ...
+				FormulasT subformulasA;
+				for(auto it : cVars){
+					subformulasA.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it)));
 				}
-				subformulasA.push_back(FormulaT(carl::FormulaType::AND, std::move(temp)));
-			}
-			FormulaT subformulaA = FormulaT(carl::FormulaType::OR, std::move(subformulasA));
+				FormulaT subfA = FormulaT(carl::FormulaType::AND, std::move(subformulasA));
 
-			FormulasT subformulasB;
-			for(auto it : cVars){
-				subformulasB.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it)));
-			}
-			FormulaT subformulaB = FormulaT(carl::FormulaType::AND, std::move(subformulasB));
-
-			auto res = FormulaT(carl::FormulaType::OR, subformulaA, subformulaB);
-			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-			return res;
-		}else if(lhsSize == 3 && eqCoef && cLHS[0].first == 1 && cRHS == 1 && cRel == carl::Relation::EQ){
-			//+1 x1 +1 x2 +1 x3 = 1 ===> (x1 and not x2 and not x3) or (x2 and not x1 and not x3)...
-
-			FormulasT subformulasA;
-			for(int i = 0; i < lhsSize; i++){
-				FormulasT temp;
-				temp.push_back(FormulaT(cVars[i]));
-				for(int j = 0; j  < lhsSize; j++){
-					if(i != j){
-						temp.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(cVars[j])));
+				//(x1 and not x2 and not x3 and not x4) or (not x1 and x2 and not x3 and not x4) or...
+				FormulasT subformulasB;
+				for(int i = 0; i < lhsSize -1; i++){
+					FormulasT temp;
+					temp.push_back(FormulaT(cVars[i]));
+					for(int j = 0; j < lhsSize; j++){
+						if(j != i){
+							temp.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(cVars[j])));
+						}
 					}
+					subformulasB.push_back(FormulaT(carl::FormulaType::AND, std::move(temp)));
 				}
-				subformulasA.push_back(FormulaT(carl::FormulaType::AND, std::move(temp)));
-			}
-			auto res = FormulaT(carl::FormulaType::OR, std::move(subformulasA));
-			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-			return res;
-		}else if(cRHS > 0 && eqCoef && cLHS[0].first == 1 && cRel == carl::Relation::EQ && lhsSize > cRHS && lhsSize > 1 && lhsSize < 5){
-			//+1 x1 +1 x2 +1 x3 +1 x4 = 5 ===> +1 x1 +1 x2 +1 x3 +1 x4 >= 5 and +1 x1 +1 x2 +1 x3 +1 x4 <= 5
+				FormulaT subfB = FormulaT(carl::FormulaType::OR, std::move(subformulasB));
 
+				auto res = FormulaT(carl::FormulaType::OR, subfA, subfB);
+				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+				return res;
+			}else if(firstCoef == 1 && cRHS == 1){
+				//+1 x1 +1 x2 +1 x3 >= 1 ===> x1 or x2 or x3
+				//std::cout << "Card 2" << std::endl;
+				FormulasT subformulas;
+				for(auto it : cVars){
+					subformulas.push_back(FormulaT(it));
+				}
+				auto res = FormulaT(carl::FormulaType::OR, std::move(subformulas));
+				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+				return res;
+			}else if(lhsSize == 3 && firstCoef == -1 && cRHS == -2){
+				//-1 x1 -1 x2 -1 x3 >= -2 ===> not(x1 and x2 and x3)
+				//std::cout << "Card 3" << std::endl;
+				FormulaT subf = generateVarChain(cVars, carl::FormulaType::AND);
+				auto res = FormulaT(carl::FormulaType::NOT, subf);
+				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+				return res;
+			}else{
+				auto res = forwardAsArithmetic(formula);
+				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+				return res;
+			}		
+		}else if(cRel == carl::Relation::EQ){
 			if(cRHS > lhsSize){
+				//std::cout << "Card 4" << std::endl;
 				auto res = FormulaT(carl::FormulaType::FALSE);
+				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+				return res;
+			}else if(cRHS == firstCoef){
+				//+1 x1 +1 x2 +1 x3 = 1 ===> (x1 and not x2 and not x3) or (not x1 and not x2 and not x3) or ...
+				//std::cout << "Card 5" << std::endl;
+				FormulasT subformulasA;
+				for(int i = 0; i < lhsSize; i++){
+					FormulasT temp;
+					temp.push_back(FormulaT(cVars[i]));
+					for(int j = 0; j  < lhsSize; j++){
+						if(i != j){
+							temp.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(cVars[j])));
+						}
+					}
+					subformulasA.push_back(FormulaT(carl::FormulaType::AND, std::move(temp)));
+				}
+				auto res = FormulaT(carl::FormulaType::OR, std::move(subformulasA));
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				return res;
 			}else if(lhsSize == 4 && cRHS == 2){
 				//+1 x1 +1 x2 +1 x3 +1 x4 = 2 ===>  (x1 and x2) or (x1 and x3) or (x1 and x4) ...
+				//std::cout << "Card 6" << std::endl;
 				std::sort(cVars.begin(), cVars.end());
 
 				FormulasT subformulasA;
@@ -288,7 +344,9 @@ namespace smtrat
 				auto res = FormulaT(carl::FormulaType::AND, subB, subformulaD);
 	    		SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 	    		return res;
-			}else{ 
+			}else{
+				//+1 x1 +1 x2 +1 x3 +1 x4 = 3 ===> +1 x1 +1 x2 +1 x3 +1 x4 >= 3 and +1 x1 +1 x2 +1 x3 +1 x4 <= 3 
+				//std::cout << "Card 7" << std::endl;
 				carl::PBConstraint newConstA;
 				carl::PBConstraint newConstB;
 
@@ -305,33 +363,8 @@ namespace smtrat
 				auto res = FormulaT(carl::FormulaType::AND, subformulaA, subformulaB);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				return res;
-			}		
-		}else if(lhsSize == 3 && eqCoef && cLHS[0].first == -1 && cRHS == -2 && cRel == carl::Relation::GEQ){
-			//-1 x1 -1 x2 -1 x3 >= -2 ===> not(x1 and x2 and x3)
-			//std::cout << "HIER 11" << std::endl;
-			FormulaT subf = generateVarChain(cVars, carl::FormulaType::AND);
-			auto res = FormulaT(carl::FormulaType::NOT, subf);
-			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-			return res;
-		}else if(lhsSize == 1){
-			//std::cout << "HIER 12" << std::endl;
-			auto res = convertSmallFormula(formula);
-			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-			return res;
-		}else if(!(positive && cRHS > 0 && sum > cRHS
-					&& (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
-						&&  !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum < cRHS)
-							&& !(negative && cRHS < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum < cRHS)
-								&& !((positive || negative) && cRel == carl::Relation::NEQ && sum != cRHS && cRHS != 0)
-									&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
-										&& !(!positive && !negative)
-			){
-			//std::cout << "HIER 13" << std::endl;
-			auto res = convertBigFormula(formula);
-			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-			return res;
+			}
 		}else{
-			//std::cout << "HIER 14" << std::endl;
 			auto res = forwardAsArithmetic(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;

@@ -109,6 +109,8 @@ namespace smtrat
 			std::vector<carl::uint> integerFactorization(const int& coeff);
 			void initPrimesTable();
 			FormulaT removeZeroCoefficients(const FormulaT& formula);
+			FormulaT encodeCardinalityConstratint(const FormulaT& formula);
+			FormulaT checkIfCardinalityConstr(const FormulaT& formula);
 
 	};
 }
