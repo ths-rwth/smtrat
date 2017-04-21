@@ -181,7 +181,7 @@ namespace smtrat
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			//std::cout << res << std::endl;
 			return res;
-		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 )){
+		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 2){
 			//std::cout << "HIER 5" << std::endl;
 			auto res = encodeCardinalityConstratint(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
@@ -328,13 +328,14 @@ namespace smtrat
 			}else if(firstCoef == -1 && cRHS == -1){
 				//-1 x1 -1 x2 -1 x3 -1 x4 >= -1 ===> (x1 and not x2 and not x3 and not x4) or (notx1 andx2 and not x3 and not x4) or ...
 				//or (not x1 and not x2 and not x3 and not x4)
-
 				FormulasT subformulasA;
-				for(int i = 0; i < lhsSize - 1; i++){
+				for(int i = 0; i < lhsSize; i++){
 					FormulasT temp;
 					temp.push_back(FormulaT(cVars[i]));
-					for(int j = i + 1; j < lhsSize; j++){
-						temp.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(cVars[j])));
+					for(int j = 0; j < lhsSize; j++){
+						if(i != j){
+							temp.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(cVars[j])));
+						}
 					}
 					subformulasA.push_back(FormulaT(carl::FormulaType::AND, std::move(temp)));
 				}
@@ -376,7 +377,8 @@ namespace smtrat
 				auto res = FormulaT(carl::FormulaType::FALSE);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				return res;
-			}else if(firstCoef == 1 && cRHS == 0){
+			}else 
+			if(firstCoef == 1 && cRHS == 0){
 				//+1 x1 +1 x2 +1 x3 +1 x4 = 0  ===> not x1 and not x2 and not x3 and not x4
 				FormulasT subformulas;
 				for(auto it : cVars){
@@ -385,52 +387,47 @@ namespace smtrat
 				auto res = FormulaT(carl::FormulaType::AND, std::move(subformulas));
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				return res;
-			}else if(firstCoef == 1 && cRHS >= 1){
-
-				if(lhsSize == 1 && cRHS == 1){
-					auto res = FormulaT(cVars[0]);
-					SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-					return res;
-				}
-
+			}else if(firstCoef == 1 && cRHS >= 1 && lhsSize < 5){
+				//PROBLEM BEI cRHS > 1?
 				//Calculate the signs = [-1, -1, -1, 1, 1] number of 1 is equal cRHS
-				std::vector<int> signs;
+
+				//std::cout << "cRHS: " << cRHS << std::endl;
+				std::vector<int> sign;
 				for(int i = 0; i < lhsSize - cRHS; i++){
-					signs.push_back(-1);
+					sign.push_back(-1);
 				}
 				for(int i = 0; i < cRHS; i++){
-					signs.push_back(1);
+					sign.push_back(1);
 				}
-
+				//std::cout << "sign: " << sign << std::endl;
 				FormulasT subformulasA;
 				do{
 					FormulasT temp;
-					for(int i = 0; i < signs.size(); i++){
-						if(signs[i] == 1){
+					for(int i = 0; i < sign.size(); i++){
+						if(sign[i] == 1){
 							temp.push_back(FormulaT(cVars[i]));
 						}else{
-							temp.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(cVars[i])));
+							temp.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(cVars[i]))); 
 						}
 					}
 					subformulasA.push_back(FormulaT(carl::FormulaType::AND, std::move(temp)));
-					//std::cout << "Subformula: " << FormulaT(carl::FormulaType::AND, std::move(temp)) << std::endl;
-				}while(std::next_permutation(signs.begin(), signs.end()));
+					//std::cout << "sign: " << sign << std::endl;
+				}while(std::next_permutation(sign.begin(), sign.end()));
 				FormulaT subformulaA = FormulaT(carl::FormulaType::OR, std::move(subformulasA));
-
-
-
-
 
 				FormulasT subformulasB;
 				for(int j = 1; j < cRHS; j++){
 					//Calculate the signs = [-1, -1, -1, 1, 1] number of 1 is equal cRHS -j 
 					std::vector<int> signs;
-					for(int i = 0; i < lhsSize - (cRHS - j); i++){
+					//std::cout << "lhsSize - cRHS + j: " << lhsSize - cRHS + j << std::endl;
+					for(int i = 0; i < lhsSize - cRHS + j; i++){
 						signs.push_back(-1);
 					}
-					for(int i = 0; i < cRHS; i++){
+					//std::cout << "cRHS - j: " << cRHS - j << std::endl;
+					for(int i = 0; i < cRHS - j; i++){
 						signs.push_back(1);
 					}
+					//std::cout << "signs: " << signs << std::endl;
 
 					FormulasT subformulasC;
 					do{
@@ -442,16 +439,23 @@ namespace smtrat
 								temp.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(cVars[i])));
 							}
 						}
-						FormulaT subsubf = FormulaT(carl::FormulaType::AND, std::move(temp));
-						subformulasC.push_back(FormulaT(carl::FormulaType::NOT, subsubf));
-						//std::cout << "Subformula: " << FormulaT(carl::FormulaType::AND, std::move(temp)) << std::endl;
+						subformulasC.push_back(FormulaT(carl::FormulaType::AND, std::move(temp)));
+						//std::cout << "signs: " << signs << std::endl;
 					}while(std::next_permutation(signs.begin(), signs.end()));
-					FormulaT subformulaC = FormulaT(carl::FormulaType::AND, std::move(subformulasC));
+					FormulaT subformulaC = FormulaT(carl::FormulaType::OR, std::move(subformulasC));
+					//std::cout << "SubformulaC: " << subformulaC << std::endl;
+					subformulasB.push_back(FormulaT(carl::FormulaType::NOT, subformulaC));
+					//std::cout << subformulasB << std::endl;
 				}
+				// FormulaT subformulaB = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::NOT,std::move(subformulasB)));
 				FormulaT subformulaB = FormulaT(carl::FormulaType::AND, std::move(subformulasB));
+				//std::cout << "SubformulaB: " << subformulaB << std::endl;
 
 				FormulaT res = FormulaT(carl::FormulaType::AND, subformulaA, subformulaB);
+				//FormulaT res = subformulaA;
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+
+				//std::cout <<formula << " -> "<< res << std::endl;
 	     		return res;
 			}else{
 				//+1 x1 +1 x2 +1 x3 +1 x4 = 3 ===> +1 x1 +1 x2 +1 x3 +1 x4 >= 3 and +1 x1 +1 x2 +1 x3 +1 x4 <= 3 
