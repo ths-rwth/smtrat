@@ -135,9 +135,12 @@ namespace smtrat
 
 		 if(sum == 0 && cRel == carl::Relation::GEQ && cRHS == 0 && !negative && !positive){
 			int nsum = 0;
+			int psum = 0;
 			for(auto it : cLHS){
 				if(it.first == -1){
 					nsum++;
+				}else if(it.first == 1){
+					psum++;
 				}
 			}
 
@@ -155,13 +158,30 @@ namespace smtrat
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				//std::cout << res << std::endl;
 				return res;
+			}else if(psum == lhsSize - 1){
+				//1 x1 +1 x2 +1 x3 +1 x4 -4 x5 >= 0 ===> (x5 -> x1 and x2 and x3 and x4) or (x1 or x2 or x3 or x4)
+				FormulaT subfA;
+				FormulasT subfB;
+				for(auto it : cLHS){
+					if(it.first < 0){
+						subfA = FormulaT(carl::FormulaType::NOT, FormulaT(it.second));
+					}else{
+						subfB.push_back(FormulaT(it.second));
+					}
+				}
+				FormulaT subformulaB = FormulaT(carl::FormulaType::AND, std::move(subfB));
+				FormulaT subformulaC = FormulaT(carl::FormulaType::OR, subfA, subformulaB); 
+				FormulaT subformulaD = FormulaT(carl::FormulaType::OR, std::move(subfB));
+				auto res = FormulaT(carl::FormulaType::OR, subformulaD, subformulaC);
+				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+				//std::cout << res << std::endl;
+				return res;
 			}else{
 				auto res = forwardAsArithmetic(formula);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				//std::cout << res << std::endl;
 				return res;	
 			}
-		
 		}else if(lhsSize == 2 && cRHS == max && sum == 0 && cRel == carl::Relation::GEQ && !negative && !positive){
 			//-1 x1 +1 x2 >= 1 ===> not x1 and x2
 			// //std::cout << "HIER 2" << std::endl;
@@ -363,11 +383,21 @@ namespace smtrat
 				auto res = FormulaT(carl::FormulaType::OR, subformulaA, subformulaB);
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				return res;
-			}else if(lhsSize == 3 && firstCoef == -1 && cRHS == -2){
+			}else if(lhsSize >= 2 && firstCoef == -1 && cRHS == -2){
 				//-1 x1 -1 x2 -1 x3 >= -2 ===> not(x1 and x2 and x3)
 				//std::cout << "Card 3" << std::endl;
-				FormulaT subf = generateVarChain(cVars, carl::FormulaType::AND);
-				auto res = FormulaT(carl::FormulaType::NOT, subf);
+				FormulasT subf;
+				FormulasT temp;
+				for(int i = 0; i < 3; i++){
+					temp.push_back(FormulaT(cVars[i]));
+					subf.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(carl::FormulaType::AND, std::move(temp))));
+				}
+
+				for(int i = 3; i < lhsSize - 3; i++){
+					temp.push_back(FormulaT(cVars[i]));
+					subf.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(carl::FormulaType::AND, std::move(temp))));
+				}
+				auto res = FormulaT(carl::FormulaType::AND, std::move(subf));
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				return res;
 			}else{
