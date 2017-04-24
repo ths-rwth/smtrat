@@ -467,6 +467,7 @@ namespace smtrat
                 unknown_excludes.clear();
                 mExcludedAssignments = false;
             }
+            // ##### Stop here if not in optimization mode!
             if( !mMinimizingCheck )
                 break;
             std::vector<CRef> excludedAssignments;
