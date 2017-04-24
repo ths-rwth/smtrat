@@ -2,11 +2,12 @@
 
 #include <iostream>
 
-#include "../../lib/modules/NLSATModule/AssignmentGenerator.h"
-#include "../../lib/modules/NLSATModule/ExplanationGenerator.h"
-#include "../../lib/modules/NLSATModule/LemmaBuilder.h"
+#include "../../lib/datastructures/mcsat/nlsat/AssignmentGenerator.h"
+#include "../../lib/datastructures/mcsat/nlsat/ExplanationGenerator.h"
+#include "../../lib/datastructures/mcsat/nlsat/LemmaBuilder.h"
 
 using namespace smtrat;
+using namespace smtrat::nlsat;
 
 BOOST_AUTO_TEST_SUITE(Test_AssignmentGenerator);
 
@@ -32,8 +33,8 @@ BOOST_AUTO_TEST_CASE(Test_NLSATPaper_Ex6)
 	std::vector<std::pair<carl::Variable,FormulaT>> assignment;
 	assignment.emplace_back(x, fx);
 	assignment.emplace_back(y, fy);
-	NLSATLemmaBuilder lb(assignment, [this](const FormulaT& f){ std::cout << "-> " << f << std::endl; });
-	lb.generateLemmas(FormulaT(c).negated(), eg, NLSATLemmaStrategy::ORIGINAL);
+	LemmaBuilder lb(assignment, FormulaT(c).negated(), eg);
+	lb.generateLemmas([this](const FormulaT& f){ std::cout << "-> " << f << std::endl; }, LemmaStrategy::ORIGINAL);
 }
 
 BOOST_AUTO_TEST_CASE(Test_NLSATPaper)
@@ -51,7 +52,8 @@ BOOST_AUTO_TEST_CASE(Test_NLSATPaper)
 	// Select c1, Decide c1
 	ag.pushConstraint(FormulaT(c1));
 	BOOST_CHECK(ag.hasAssignment(x));
-	BOOST_CHECK(ag.getAssignment() == carl::RealAlgebraicNumber<Rational>(-2));
+	std::cout << ag.getAssignment() << std::endl; 
+	BOOST_CHECK(ag.getAssignment() == Rational(-2));
 	// Lift-Level -> x = -1
 	FormulaT fx(ConstraintT(Poly(x) + Rational(1), carl::Relation::EQ));
 	ag.pushAssignment(x, Rational(-1), fx);
@@ -68,8 +70,8 @@ BOOST_AUTO_TEST_CASE(Test_NLSATPaper)
 	std::vector<std::pair<carl::Variable,FormulaT>> assignment;
 	assignment.emplace_back(x, fx);
 
-	NLSATLemmaBuilder lb(assignment, [this](const FormulaT& f){ std::cout << "-> " << f << std::endl; });
-	lb.generateLemmas(FormulaT(c4).negated(), eg, NLSATLemmaStrategy::ORIGINAL);
+	LemmaBuilder lb(assignment, FormulaT(c4).negated(), eg);
+	lb.generateLemmas([this](const FormulaT& f){ std::cout << "-> " << f << std::endl; }, LemmaStrategy::ORIGINAL);
 }
 
 BOOST_AUTO_TEST_SUITE_END();
