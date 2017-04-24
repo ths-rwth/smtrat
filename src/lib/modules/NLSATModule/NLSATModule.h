@@ -12,9 +12,7 @@
 #include "NLSATStatistics.h"
 #include "NLSATSettings.h"
 
-#include "AssignmentGenerator.h"
-#include "ExplanationGenerator.h"
-#include "LemmaBuilder.h"
+#include "../../datastructures/mcsat/nlsat.h"
 
 namespace smtrat
 {
@@ -25,25 +23,13 @@ namespace smtrat
 #ifdef SMTRAT_DEVOPTION_Statistics
 			NLSATStatistics mStatistics;
 #endif
-			
-			std::vector<std::pair<carl::Variable,FormulaT>> mAssignedVariables;
-			Model mAssignedModel;
 			carl::Variable mCurrentVariable = carl::Variable::NO_VARIABLE;
 			
-			AssignmentGenerator mAssignmentGenerator;
-			
-			std::vector<carl::Variable> getOrderedVariables() const {
-				std::vector<carl::Variable> vars;
-				for (const auto& var: mAssignedVariables) {
-					vars.push_back(var.first);
-				}
-				vars.push_back(mCurrentVariable);
-				std::reverse(vars.begin(), vars.end());
-				return vars;
-			}
+			nlsat::AssignmentGenerator mAssignmentGenerator;
+			nlsat::Explain<nlsat::LemmaStrategy::ORIGINAL> mExplain;
 			
 			bool isVCAssignmentValid(const VariableComparisonT& vc) const {
-				Model m = mAssignedModel;
+				Model m = mExplain.getModel();
 				m.assign(vc.var(), vc.value());
 				SMTRAT_LOG_TRACE("smtrat.nlsat", m);
 				auto res = m.evaluated(vc.var());
@@ -58,7 +44,7 @@ namespace smtrat
 					c.formula().arithmeticVars(vars);
 					SMTRAT_LOG_TRACE("smtrat.nlsat", c.formula() << " -> " << vars);
 				}
-				for (const auto& v: mAssignedVariables) {
+				for (const auto& v: mExplain.getAssignedVariables()) {
 					vars.erase(v.first);
 				}
 				if (vars.size() > 1) std::exit(81);
@@ -69,24 +55,16 @@ namespace smtrat
 			}
 			
 			void explain(const FormulasT& reason, const FormulaT& implication) {
-				ExplanationGenerator eg(reason, getOrderedVariables(), mAssignedModel);
-				NLSATLemmaBuilder lb(mAssignedVariables, implication, eg);
-				lb.generateLemmas([this](const auto& f){ addLemma(f); }, NLSATLemmaStrategy::ORIGINAL);
-				//lb.generateLemmas([this](const auto& f){}, NLSATLemmaStrategy::NEW);
+				mExplain.explain(reason, implication, [this](const auto& f){ addLemma(f); }, mCurrentVariable);
 			}
 			bool checkAgainstFullModel() {
 				for (const auto& f: rReceivedFormula()) {
-					auto res = carl::model::evaluate(f.formula(), mAssignedModel);
+					auto res = carl::model::evaluate(f.formula(), mExplain.getModel());
 					if (res.isBool() && !res.asBool()) {
 						SMTRAT_LOG_DEBUG("smtrat.nlsat", "Model does not satisfy " << f.formula());
 						carl::Variables vars;
 						f.formula().arithmeticVars(vars);
 						FormulasT core;
-						//for (const auto& v: mAssignedVariables) {
-						//	if (vars.find(v.first) != vars.end()) {
-						//		core.emplace_back(v.second);
-						//	}
-						//}
 						core.emplace_back(f.formula());
 						explain(core, f.formula().negated());
 						return false;
