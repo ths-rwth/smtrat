@@ -96,7 +96,7 @@ void MCSATMixin::updateCurrentLevel(carl::Variable var) {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Undecided clauses: " << mUndecidedClauses);
 	for (auto cit = mUndecidedClauses.begin(); cit != mUndecidedClauses.end();) {
 		if (!isClauseUnivariate(*cit, mCurrentLevel)) {
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Skipping " << *cit << ": not univariate");
+			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Skipping " << *cit << ": not univariate");
 			cit++;
 			continue;
 		}
@@ -110,7 +110,7 @@ void MCSATMixin::updateCurrentLevel(carl::Variable var) {
 	// Check undecided variables whether they became univariate
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Undecided Variables: " << mUndecidedVariables);
 	for (auto vit = mUndecidedVariables.begin(); vit != mUndecidedVariables.end();) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Looking at " << *vit);
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Looking at " << *vit);
 		std::size_t level = computeVariableLevel(*vit);
 		if (level != mCurrentLevel) {
 			vit++;
@@ -224,6 +224,19 @@ void MCSATMixin::relocateClauses(Minisat::ClauseAllocator& from, Minisat::Clause
 	mClauseLevelMap = std::move(tmp);
 }
 
+bool MCSATMixin::performTheoryPropagations() {
+	if (mCurrentLevel == 0) return false;
+	for (const auto& var: current().univariateVariables) {
+		// Check whether this boolean variable is already assigned
+		if (mGetter.getVarValue(var) != l_Undef) continue;
+		// Check whether this boolean variable is an abstraction variable
+		if (!mGetter.isTheoryAbstraction(var)) continue;
+		
+		// TODO: Evaluate on model, propagate
+	}
+	return false;
+}
+
 bool MCSATMixin::isFormulaUnivariate(const FormulaT& formula, std::size_t level) const {
 	assert(level < mTheoryStack.size());
 	carl::Variables vars;
@@ -256,17 +269,17 @@ std::size_t MCSATMixin::computeVariableLevel(Minisat::Var variable) const {
 	carl::Variables vars;
 	f.arithmeticVars(vars);
 	if (vars.empty()) {
-		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Variable " << variable << " / " << f << " has no variable, thus on level 0");
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Variable " << variable << " / " << f << " has no variable, thus on level 0");
 		return 0;
 	}
 	for (std::size_t level = 1; level < mTheoryStack.size(); level++) {
 		vars.erase(get(level).variable);
 		if (vars.empty()) {
-			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Variable " << variable << " / " << f << " is univariate in " << get(level).variable);
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Variable " << variable << " / " << f << " is univariate in " << get(level).variable);
 			return level;
 		}
 	}
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Variable " << variable << " is undecided.");
+	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Variable " << variable << " is undecided.");
 	return std::numeric_limits<std::size_t>::max();
 }
 
