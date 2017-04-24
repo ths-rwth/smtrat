@@ -5,6 +5,8 @@
 #include "../SolverTypes.h"
 
 #include "VariableSelector.h"
+#include "../../../datastructures/mcsat/nlsat.h"
+#include "../../../datastructures/mcsat/nlsat/NLSAT.h"
 
 #include <carl/formula/model/Assignment.h>
 
@@ -26,9 +28,13 @@ struct InformationGetter {
 	std::function<const Minisat::vec<Minisat::Watcher>&(Minisat::Lit)> getWatches;
 };
 struct TheoryLevel {
+	/// Theory variable for this level
 	carl::Variable variable = carl::Variable::NO_VARIABLE;
+	/// Literal that assigns this theory variable
 	Minisat::Lit decisionLiteral = Minisat::lit_Undef;
+	/// Clauses univariate in this theory variable
 	std::vector<Minisat::CRef> univariateClauses;
+	/// Boolean variables univariate in this theory variable
 	std::vector<Minisat::Var> univariateVariables;
 };
 
@@ -43,6 +49,7 @@ private:
 	 */
 	using TheoryStackT = std::vector<TheoryLevel>;
 	TheoryStackT mTheoryStack;
+	/// The level for the next theory variable to be decided
 	std::size_t mCurrentLevel = 0;
 	
 	/// Clauses that are not univariate in any variable yet.
@@ -57,9 +64,16 @@ private:
 
 	/// takes care of selecting the next variable
 	VariableSelector mVariables;
+	
+	/// stores the reason for theory propagations. These are basically clauses, but not clauses from the minisat database.
+	std::map<Minisat::Var,std::vector<Minisat::Lit>> mPropagationReasons;
 
 	/// current mc-sat model
 	Model mCurrentModel;
+	
+	nlsat::Explain<nlsat::LemmaStrategy::ORIGINAL> mExplain;
+	
+	nlsat::NLSAT mNLSAT;
 
 private:
 	// ***** private helper methods
@@ -145,6 +159,9 @@ public:
 	/// Adapt to clause relocation of Minisat
 	void relocateClauses(Minisat::ClauseAllocator& from, Minisat::ClauseAllocator& to);
 	
+	/// Try to propagate all boolean variables that are univariate
+	bool performTheoryPropagations();
+	
 	// ***** Auxiliary getter
 	
 	/// Checks whether the given formula is univariate on the given level
@@ -185,6 +202,14 @@ public:
 	Minisat::lbool evaluateLiteral(Minisat::Lit lit) const;
 	
 	Minisat::Lit pickLiteralForDecision();
+	
+	void makeTheoryDecision() {
+		auto res = mNLSAT.findAssignment(currentVariable());
+		assert(carl::variant_is_type<ModelValue>(res));
+		auto value = boost::get<ModelValue>(res);
+		FormulaT repr = carl::representingFormula(currentVariable(), value);
+		mNLSAT.pushAssignment(currentVariable(), value, repr);
+	}
 	
 	// ***** Auxliary getter
 	
