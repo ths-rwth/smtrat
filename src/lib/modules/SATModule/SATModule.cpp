@@ -2307,25 +2307,37 @@ namespace smtrat
             // If no conflict, do the theory check
             if( confl == CRef_Undef && _checkWithTheory )
             {
-                // do the theory check
-                theoryCall();
-                if( mCurrentAssignmentConsistent == ABORTED )
-                {
-                    mCurrentAssignmentConsistent = UNKNOWN;
-                    return CRef_Undef;
+                if (Settings::mc_sat) {
+                    // We can make a decision. All boolean assignments before are feasible w.r.t. the theory.
+                    mMCSAT.makeTheoryDecision();
+                    SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Did a theory decision.");
+                    if (mMCSAT.hasNextVariable()) {
+                        SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Next variable: " << mMCSAT.nextVariable());
+                        mMCSAT.pushLevel(mMCSAT.nextVariable());
+                    } else {
+                        SMTRAT_LOG_ERROR("smtrat.sat.mcsat", "SAT. What now?");
+                    }
+                } else {
+                    // do the theory check
+                    theoryCall();
+                    if( mCurrentAssignmentConsistent == ABORTED )
+                    {
+                        mCurrentAssignmentConsistent = UNKNOWN;
+                        return CRef_Undef;
+                    }
+                    // propagate theory
+                    propagateTheory();
+    				if( Settings::allow_theory_propagation ) {
+    					SMTRAT_LOG_DEBUG("smtrat.sat", "Processing lemmas");
+    					processLemmas();
+    				}
+                    // if there are lemmas (or conflicts) update them
+                    if( mLemmas.size() > 0 ) {
+    					SMTRAT_LOG_DEBUG("smtrat.sat", "Storing lemmas");
+                        confl = storeLemmas();
+    					SMTRAT_LOG_DEBUG("smtrat.sat", "-> " << confl);
+    				}
                 }
-                // propagate theory
-                propagateTheory();
-				if( Settings::allow_theory_propagation ) {
-					SMTRAT_LOG_DEBUG("smtrat.sat", "Processing lemmas");
-					processLemmas();
-				}
-                // if there are lemmas (or conflicts) update them
-                if( mLemmas.size() > 0 ) {
-					SMTRAT_LOG_DEBUG("smtrat.sat", "Storing lemmas");
-                    confl = storeLemmas();
-					SMTRAT_LOG_DEBUG("smtrat.sat", "-> " << confl);
-				}
             }
             else
             {   
@@ -2361,12 +2373,12 @@ namespace smtrat
         carl::uint pos = mTheoryPropagations.size();
         collectTheoryPropagations();
 		for (const auto& tp: mTheoryPropagations) {
-			std::cout << "SAT: " << tp.mPremise << " -> " << tp.mConclusion << std::endl;
+            SMTRAT_LOG_DEBUG("smtrat.sat", "SAT: " << tp.mPremise << " -> " << tp.mConclusion);
 		}
         while( pos < mTheoryPropagations.size() )
         {
             TheoryPropagation& tp = mTheoryPropagations[pos];
-			std::cout << "Propagating " << tp.mPremise << " -> " << tp.mConclusion << std::endl;
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Propagating " << tp.mPremise << " -> " << tp.mConclusion);
             Lit conclLit = createLiteral( tp.mConclusion );
             if( value(conclLit) == l_Undef )
             {
@@ -2512,6 +2524,9 @@ namespace smtrat
                 switch( mCurrentAssignmentConsistent )
                 {
                     case SAT:
+                        if (Settings::mc_sat) {
+                            handleMCSATCall();
+                        }
 						break;
                     case UNSAT: learnTheoryConflicts();
                         break;
@@ -2576,6 +2591,7 @@ namespace smtrat
         mCurrentAssignmentConsistent = SAT;
         for( ; ; )
         {
+            SMTRAT_LOG_DEBUG("smtrat.sat", "Next iteration");
             if( !mComputeAllSAT && anAnswerFound() )
                 return l_Undef;
             CRef confl = propagateConsistently();
@@ -2670,9 +2686,6 @@ namespace smtrat
 								SMTRAT_LOG_DEBUG("smtrat.sat.mc", "All theory variables assigned: SAT!");
 								return l_True;
 							} else {
-								SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Do next theory assignment.");
-								mMCSAT.updateModel(backendsModel(), Rational(0));
-								SMTRAT_LOG_DEBUG("smtrat.sat.mc", "New model: " << mMCSAT.model());
 								next = prepareTheoryLitDecision();
                                 mMCSAT.makeDecision(next);
 								auto litval = value(next);

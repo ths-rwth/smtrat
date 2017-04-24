@@ -856,10 +856,26 @@ namespace smtrat
             {
                 return assigns[x];
             }
+            
+            void doTheoryPropagation(Minisat::Lit l) {
+                nlsat::Explain<nlsat::LemmaStrategy::ORIGINAL> explain;
+                //explain.explain()
+                
+            }
+            
+            void tryTheoryPropagation(Minisat::Var x) {
+                if (assigns[x] != l_Undef) return;
+                Minisat::lbool res = mMCSAT.evaluateLiteral(Minisat::mkLit(x, false));
+                if (res == l_Undef) return;
+                else if (res == l_True) doTheoryPropagation(Minisat::mkLit(x, false));
+                else if (res == l_False) doTheoryPropagation(Minisat::mkLit(x, true));
+            }
+            
 			inline Minisat::lbool valueAndUpdate( Minisat::Var x )
             {
 				if (assigns[x] == l_Undef) {
 					Minisat::lbool res = mMCSAT.evaluateLiteral(Minisat::mkLit(x, false));
+                    /// TODO: Reason should be computed by explain(), not Undef
 					if (res == l_Undef) return l_Undef;
 					else if (res == l_True) uncheckedEnqueue(Minisat::mkLit(x, false), Minisat::CRef_Undef);
 					else if (res == l_False) uncheckedEnqueue(Minisat::mkLit(x, true), Minisat::CRef_Undef);
@@ -1040,6 +1056,17 @@ namespace smtrat
              */
             Minisat::Lit pickBranchLit();
 			Minisat::Lit prepareTheoryLitDecision();
+            
+            Minisat::Lit handleMCSATCall() {
+                SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Theory returned SAT, collecting new theory assignment");
+                mMCSAT.updateModel(backendsModel(), Rational(0));
+                SMTRAT_LOG_DEBUG("smtrat.sat.mc", "New model: " << mMCSAT.model());
+                FormulaT f = mMCSAT.buildDecisionFormula();
+        		mNextDecisionIsTheory = true;
+        		Minisat::Lit lit = createLiteral(f);
+        		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Theory literal for " << f << " is " << lit);
+                return lit;
+            }
 			
 			void pickTheoryBranchLit();
 			void checkAbstractionsConsistency() {
