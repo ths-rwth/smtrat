@@ -50,10 +50,9 @@ namespace smtrat
 				if (va.negated()) {
 					mAssignmentGenerator.pushConstraint(FormulaT(VariableComparisonT(va)));
 				} else {
-					assert(mAssignedModel.find(va.var()) == mAssignedModel.end());
+					assert(mExplain.getModel().find(va.var()) == mExplain.getModel().end());
 					SMTRAT_LOG_DEBUG("smtrat.nlsat", "Loaded assignment: " << va.var() << " = " << va.value());
-					mAssignedVariables.emplace_back(va.var(), _subformula->formula());
-					mAssignedModel.assign(va.var(), va.value());
+					mExplain.addAssignment(va.var(), va.value(), _subformula->formula());
 					mAssignmentGenerator.pushAssignment(va.var(), va.value(), _subformula->formula());
 				}
 				break;
@@ -68,11 +67,10 @@ namespace smtrat
 	void NLSATModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
 	{
 		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Removing: " << _subformula->formula());
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Assigned: " << mAssignedVariables);
-		if (!mAssignedVariables.empty() && mAssignedVariables.back().second == _subformula->formula()) {
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Assigned: " << mExplain.getAssignedVariables());
+		if (mExplain.lastAssignmentIs(_subformula->formula())) {
 			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Removing assignment: " << _subformula->formula());
-			mAssignedModel.erase(mAssignedVariables.back().first);
-			mAssignedVariables.pop_back();
+			mExplain.removeLastAssignment();
 			mAssignmentGenerator.popAssignment();
 		} else {
 			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Removing constraint: " << _subformula->formula());
@@ -100,7 +98,7 @@ namespace smtrat
 	{
 		mModel.clear();
 		if (solverState() == Answer::SAT) {
-			mModel = mAssignedModel;
+			mModel = mExplain.getModel();
 			if (!rReceivedFormula().empty()) {
 				if (mCurrentVariable != carl::Variable::NO_VARIABLE) {
 					SMTRAT_LOG_DEBUG("smtrat.nlsat", "Generated assignment " << mCurrentVariable << " = " << mAssignmentGenerator.getAssignment());
@@ -131,7 +129,7 @@ namespace smtrat
 		if (mCurrentVariable == carl::Variable::NO_VARIABLE) {
 			assert(false);
 			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Could not identify the variable to process");
-			res = rReceivedFormula().satisfiedBy(mAssignedModel);
+			res = rReceivedFormula().satisfiedBy(mExplain.getModel());
 			assert(res == 1);
 			switch (res) {
 				case 0: {
