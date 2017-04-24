@@ -1,6 +1,9 @@
 #pragma once
 
-#include "../../Common.h"
+#include "../../../Common.h"
+
+#include "Covering.h"
+#include "RootIndexer.h"
 
 #include <carl/util/Bitset.h>
 
@@ -11,115 +14,7 @@
 #include <vector>
 
 namespace smtrat {
-
-class RootIndexer {
-public:
-	using RAN = carl::RealAlgebraicNumber<Rational>;
-private:
-	std::vector<RAN> mRoots;
-	std::map<RAN, std::size_t> mMap;
-	std::vector<RAN> mSamples;
-public:	
-	void add(const std::list<RAN>& list) {
-		for (const auto& l: list) {
-			mRoots.emplace_back(l);
-		}
-	}
-	void process() {
-		std::sort(mRoots.begin(), mRoots.end());
-		mRoots.erase(std::unique(mRoots.begin(), mRoots.end()), mRoots.end());
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Roots: " << mRoots);
-		for (std::size_t i = 0; i < mRoots.size(); i++) {
-			mMap.emplace(mRoots[i], i);
-		}
-		mSamples.reserve(2 * mRoots.size() + 1);
-		for (std::size_t n = 0; n < mRoots.size(); n++) {
-			if (n == 0) mSamples.emplace_back(RAN::sampleBelow(mRoots.front()));
-			else mSamples.emplace_back(RAN::sampleBetween(mRoots[n-1], mRoots[n]));
-			mSamples.emplace_back(mRoots[n]);
-		}
-		if (mRoots.empty()) mSamples.emplace_back(RAN(0));
-		else mSamples.emplace_back(RAN::sampleAbove(mRoots.back()));
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Samples: " << mSamples);
-	}
-	std::size_t size() const {
-		return mRoots.size();
-	}
-	std::size_t operator[](const RAN& ran) const {
-		auto it = mMap.find(ran);
-		assert(it != mMap.end());
-		return it->second;
-	}
-	const RAN& operator[](std::size_t n) const {
-		assert(n < mRoots.size());
-		return mRoots[n];
-	}
-	const RAN& sampleFrom(std::size_t n) const {
-		return mSamples[n];
-	}
-};
-inline std::ostream& operator<<(std::ostream& os, const RootIndexer& ri) {
-	os << "Roots:" << std::endl;
-	for (std::size_t i = 0; i < ri.size(); i++) {
-		os << "\t" << i << " <-> " << ri[i] << std::endl;
-	}
-	os << "Samples:" << std::endl;
-	for (std::size_t i = 0; i < ri.size()*2+1; i++) {
-		os << "\t" << ri.sampleFrom(i) << std::endl;;
-	}
-	return os;
-}
-
-/**
- * Semantics:
- * The space is divided into a number of intervals: (-oo,a)[a,a](a,b)[b,b](b,oo)
- * A bit is set if the constraints refutes the corresponding interval
- */
-class Covering {
-	friend std::ostream& operator<<(std::ostream& os, const Covering& ri);
-private:
-	std::map<FormulaT, carl::Bitset> mData;
-	carl::Bitset mOkay;
-public:
-	Covering(std::size_t intervals) {
-		mOkay.resize(intervals, true);
-	}
-	void add(const FormulaT& c, const carl::Bitset& b) {
-		mData.emplace(c, b);
-		mOkay -= b;
-	}
-	bool conflicts() const {
-		return mOkay.none();
-	}
-	std::size_t satisfyingInterval() const {
-		return mOkay.find_first();
-	}
-	void buildConflictingCore(std::vector<FormulaT>& core) const {
-		std::map<FormulaT, carl::Bitset> data = mData;
-		carl::Bitset covered;
-		covered.resize(mOkay.size(), true);
-		while (covered.any()) {
-			auto maxit = data.begin();
-			for (auto it = data.begin(); it != data.end(); it++) {
-				if (maxit->second.count() < it->second.count()) maxit = it;
-			}
-			core.push_back(maxit->first);
-			covered -= maxit->second;
-			data.erase(maxit);
-			for (auto& d: data) {
-				d.second &= covered;
-			}
-		}
-	}
-};
-inline std::ostream& operator<<(std::ostream& os, const Covering& ri) {
-	os << "Covering: " << ri.mOkay << std::endl;
-	for (const auto& d: ri.mData) {
-		os << "\t" << d.first << " -> " << d.second << std::endl;
-	}
-	return os;
-}
-
+namespace nlsat {
 
 class AssignmentGenerator {
 private:
@@ -343,4 +238,5 @@ public:
 	}
 };
 
+}
 }
