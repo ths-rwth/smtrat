@@ -2594,6 +2594,7 @@ namespace smtrat
             SMTRAT_LOG_DEBUG("smtrat.sat", "Next iteration");
             if( !mComputeAllSAT && anAnswerFound() )
                 return l_Undef;
+            // DPLL::BCP()
             CRef confl = propagateConsistently();
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Continuing after propagation, ok = " << ok << ", confl = " << confl);
             if( !mComputeAllSAT && anAnswerFound() )
@@ -2667,6 +2668,14 @@ namespace smtrat
                     mpStatistics->decide();
                     #endif
 					if (Settings::mc_sat) {
+                        /* Todo:
+                         * Pick literal for boolean decision such that:
+                         * - literal is unassigned
+                         * - literal is univariate
+                         * - decision is compatible with assignment
+                         * -> NLSAT::isInfeasible() == boost::none
+                         */
+                        // Ignore this stuff
 						auto it = mFutureChangedBooleans.find(mMCSAT.currentVariable());
 						SMTRAT_LOG_TRACE("smtrat.sat.mc", "Current: " << mChangedBooleans);
 						if (it != mFutureChangedBooleans.end() && !it->second.empty()) {
@@ -2700,9 +2709,16 @@ namespace smtrat
 							}
 						}
 					} else {
+                        // DPLL::decide()
                     	next = pickBranchLit();
 					}
-
+                    
+                    if (next == lit_Undef && Settings::mc_sat) {
+                        // No decision done yet, try with a theory decision.
+                        /* Todo:
+                         * Do a theory decision here
+                         */
+                    }
                     if( next == lit_Undef )
                     {
                         if( mReceivedFormulaPurelyPropositional || mCurrentAssignmentConsistent == SAT )
@@ -2754,6 +2770,7 @@ namespace smtrat
                     return l_False;
                 }
 
+                // DPLL::resolve_conflict()
                 handleConflict( confl );
             }
         }
