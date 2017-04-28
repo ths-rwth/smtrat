@@ -20,13 +20,21 @@ private:
 	FormulaT resolveNegation(const FormulaT& f) const;
 	
 public:
-	/// Add a new constraint
+	/**
+	 * Add a new constraint.
+	 */
 	void pushConstraint(const FormulaT& f);
-	/// Remove a constraint
+	/**
+	 * Remove the last constraint. f must be the same as the one passed to the last call of pushConstraint().
+	 */
 	void popConstraint(const FormulaT& f);
-	/// Add a new assignment
+	/**
+	 * Add a new assignment.
+	 */
 	void pushAssignment(carl::Variable v, const ModelValue& mv, const FormulaT& f);
-	/// Remove an assignment
+	/**
+	 * Remove the last assignment. v must be the same as the one passed to the last call of pushAssignment().
+	 */
 	void popAssignment(carl::Variable v);
 	
 	const auto& getModel() const {
@@ -48,7 +56,7 @@ public:
 	boost::optional<FormulasT> isInfeasible(carl::Variable var, const FormulaT& f);
 	
 	/**
-	 * Takes a conflicting core as a reason and explains it by 
+	 * Takes a conflicting core as a reason and explains it by an explanation as described in the MCSAT / NLSAT paper.
 	 */
 	FormulaT explain(carl::Variable var, const FormulasT& reason, const FormulaT& implication);
 };
