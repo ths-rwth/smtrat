@@ -55,7 +55,7 @@ namespace smtrat
 			}
 			
 			void explain(const FormulasT& reason, const FormulaT& implication) {
-				mExplain.explain(reason, implication, [this](const auto& f){ addLemma(f); }, mCurrentVariable);
+				mExplain.explain(reason, implication, [this](const auto& f){ this->addLemma(f); }, mCurrentVariable);
 			}
 			bool checkAgainstFullModel() {
 				for (const auto& f: rReceivedFormula()) {
