@@ -12,9 +12,7 @@ namespace smtrat
 		public:
 			NLSAT(): Manager() {
 				setStrategy(
-					addBackend<SATModule<SATSettingsMCSAT>>(
-						addBackend<NLSATModule<NLSATSettings1>>()
-					)
+					addBackend<SATModule<SATSettingsMCSAT>>()
 				);
 			}
 	};
