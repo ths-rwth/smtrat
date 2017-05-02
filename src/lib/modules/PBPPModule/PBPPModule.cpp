@@ -1,4 +1,4 @@
-/**
+ /**
  * @file PBPP.cpp
  * @author YOUR NAME <YOUR EMAIL ADDRESS>
  *
@@ -170,7 +170,6 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaTypeWithRNS(const FormulaT& formula){
-		//std::cout << "Check formula type with rns..." << std::endl;
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
 			return formula;
 		} 
@@ -218,10 +217,7 @@ namespace smtrat
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				return res;
 			}else{
-				auto res = forwardAsArithmetic(formula);
-	    		//std::cout << "RES: " << res << std::endl;
-				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-				return res;
+				return checkFormulaType(formula);	
 			}
 		}else{
 			return checkFormulaType(formula);
@@ -593,23 +589,11 @@ namespace smtrat
 		//std::cout << "Rns transformation" << std::endl;
 		const carl::PBConstraint& c = formula.pbConstraint();
 		const auto& cLHS = c.getLHS();
-		bool positive = true;
-		bool negative = true;
 		int cRHS = c.getRHS();
-		int sum  = 0;
-
-		for(auto it = cLHS.begin(); it != cLHS.end(); it++){
-			sum += it->first;
-			if(it->first < 0){
-				positive = false;
-			}else if(it->first > 0){
-				negative = false;
-			}
-		}
-
 		std::vector<std::pair<int, carl::Variable>> newLHS;
 		int newRHS = cRHS % (int) prime;
 		carl::PBConstraint newConstraint;
+
 		for(auto it : cLHS){
 			int newCoeff = it.first % (int) prime;
 			if(newCoeff != 0){
@@ -637,6 +621,7 @@ namespace smtrat
 
 		return checkFormulaType(FormulaT(newConstraint));		
 	}
+
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::convertSmallFormula(const FormulaT& formula){
@@ -1109,24 +1094,17 @@ namespace smtrat
 
     template<typename Settings>
 	std::vector<carl::uint> PBPPModule<Settings>::calculateRNSBase(const FormulaT& formula){
-    	//std::cout << "Calculate rns base..." << formula<< std::endl;
 		const carl::PBConstraint& c = formula.pbConstraint();	
 		const auto& cLHS = c.getLHS();
-		int max = INT_MIN;
-		int min = INT_MAX;
-
 		std::vector<std::pair<int, carl::uint>> freq;
 		carl::uint sum = 0;
 		carl::uint product = 1;
+		std::vector<carl::uint> base;
 
 		for(auto it : cLHS){
-			if(it.first > max){
-				max = it.first;
-			}else{
-				min = it.first;
-			}
 			sum += (carl::uint) it.first;
 		}
+
 		for(auto it : cLHS){
 			std::vector<carl::uint> v = integerFactorization(it.first);
 			std::sort(v.begin(), v.end());
@@ -1145,6 +1123,7 @@ namespace smtrat
 				}
 			}
 		}
+
 		std::sort(freq.begin(), freq.end(),
 			[&](const pair<int, carl::uint> &p1, const pair<int, carl::uint> &p2)
 			{
@@ -1155,7 +1134,7 @@ namespace smtrat
 				}
 			});
 
-		std::vector<carl::uint> base;
+		
 		for(auto it : freq){
 			if(it.second != 0){
 				product *= it.second;
