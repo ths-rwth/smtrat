@@ -2691,21 +2691,29 @@ namespace smtrat
                          * - literal is unassigned [value(literal) == l_Undef], univariate 
                          * - decision is compatible with assignment [NLSAT::isInfeasible() == boost::none]
                          */
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Picking a literal for a boolean decision");
                     	next = mMCSAT.pickLiteralForDecision(); 
+						SMTRAT_LOG_DEBUG("smtrat.sat", "-> " << next);
 		    } else {
                         // DPLL::decide()
                     	next = pickBranchLit(); 
+						SMTRAT_LOG_DEBUG("smtrat.sat", "DPLL::decide() -> " << next);
 		    }
                     
                     if( next == lit_Undef && Settings::mc_sat ) { 
                         // No decision done yet, try with a theory decision.
-			if(mMCSAT.hasNextVariable()) {
-     			    next = prepareTheoryLitDecision(); 
-			    SMTRAT_LOG_DEBUG("smtrat.sat", "Next theory literal: " << next);
-			    mMCSAT.makeDecision(next);
-			    pickTheoryBranchLit();
-			    mNextDecisionIsTheory = false;
-			} // TODO else with return l_True?
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Trying with next theory decision");
+						FormulaT assignment = mMCSAT.makeTheoryDecision();
+						next = createLiteral(assignment);
+						mMCSAT.makeDecision(next);
+						pickTheoryBranchLit();
+//			if(mMCSAT.hasNextVariable()) {
+//     			    next = prepareTheoryLitDecision(); 
+//			    SMTRAT_LOG_DEBUG("smtrat.sat", "Next theory literal: " << next);
+//			    mMCSAT.makeDecision(next);
+//			    pickTheoryBranchLit();
+//			    mNextDecisionIsTheory = false;
+//			} // TODO else with return l_True?
                     }
                     if( next == lit_Undef )
                     {
