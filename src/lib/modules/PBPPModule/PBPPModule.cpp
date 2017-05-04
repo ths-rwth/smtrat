@@ -130,15 +130,16 @@ namespace smtrat
 			}
 		}
 
-		if(!positive && !negative){
-			auto res = encodeMixedConstraints(formula);
-			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-			return res;
-		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
-			auto res = encodeCardinalityConstratint(formula);
-			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-			return res;	
-		}else if(lhsSize == 1){
+		// if(!positive && !negative){
+		// 	auto res = encodeMixedConstraints(formula);
+		// 	SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+		// 	return res;
+		// }else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
+		// 	auto res = encodeCardinalityConstratint(formula);
+		// 	SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+		// 	return res;	
+		// }else 
+		if(lhsSize == 1){
 			auto res = convertSmallFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
@@ -210,13 +211,7 @@ namespace smtrat
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				return res;
 			}else{
-<<<<<<< HEAD
 				return checkFormulaType(formula);	
-=======
-				auto res = checkFormulaType(formula);
-				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-				return res;
->>>>>>> 0d5003e8aacc5d974bd6ef061f643e236289788e
 			}
 		}else{
 			return checkFormulaType(formula);
@@ -401,7 +396,6 @@ namespace smtrat
 			}else if(firstCoef == 1 && cRHS == 1){
 				//+1 x1 +1 x2 +1 x3 >= 1 ===> x1 or x2 or x3
 				//std::cout << "Card 2" << std::endl;
-
 				FormulasT subformulas;
 				for(auto it : cVars){
 					subformulas.push_back(FormulaT(it));
@@ -431,7 +425,7 @@ namespace smtrat
 				FormulaT subformulaB = FormulaT(carl::FormulaType::AND, std::move(subformulasB));
 
 				return FormulaT(carl::FormulaType::OR, subformulaA, subformulaB);
-			}else if(lhsSize >= 2 && firstCoef == -1 && cRHS < 0 && cRHS > sum){
+			}else if(firstCoef == -1 && cRHS < 0 && cRHS > sum){
 				//-1 x1 -1 x2 -1 x3 -1 x4 >= -2 ===> 
 				//std::cout << "Card 3" << std::endl;
 
@@ -444,7 +438,6 @@ namespace smtrat
 					for(int i = 0; i < (cRHS* -1) - j; i++){
 						signs.push_back(1);
 					}
-					//std::cout << signs << std::endl;
 					FormulasT subformulas;
 					do{
 						FormulasT temp;
@@ -456,11 +449,11 @@ namespace smtrat
 							}
 						}
 						subformulas.push_back(FormulaT(carl::FormulaType::AND, std::move(temp)));
-						//std::cout << FormulaT(carl::FormulaType::AND, std::move(temp)) << std::endl;
 					}while(std::next_permutation(signs.begin(), signs.end()));
 					subsubformulas.push_back(FormulaT(carl::FormulaType::OR, std::move(subformulas)));
 				}
-				subsubformulas.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(generateVarChain(cVars, carl::FormulaType::OR))));
+				subsubformulas.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(generateVarChain(cVars, carl::FormulaType::AND))));
+				std::cout << formula << " -> " << FormulaT(carl::FormulaType::OR, std::move(subsubformulas)) << std::endl;
 				return FormulaT(carl::FormulaType::OR, std::move(subsubformulas));		
 			}else{
 				return forwardAsArithmetic(formula);
