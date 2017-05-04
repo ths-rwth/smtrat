@@ -1,5 +1,5 @@
 language: generic
-sudo: false
+sudo: required
 dist: trusty
 
 cache:
@@ -87,7 +87,7 @@ matrix:
       osx_image: xcode8.3
       env: USE=clang++-8.1
     - os: linux
-      env: USE=clang++-3.6 TASK=doxygen
+      env: USE=g++-6 TASK=doxygen
       addons:
         apt:
           sources: [*sources_base]
