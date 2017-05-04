@@ -205,12 +205,15 @@ public:
 	
 	Minisat::Lit pickLiteralForDecision();
 	
-	void makeTheoryDecision() {
+	FormulaT makeTheoryDecision() {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Obtaining assignment");
 		auto res = mNLSAT.findAssignment(currentVariable());
 		assert(carl::variant_is_type<ModelValue>(res));
 		auto value = boost::get<ModelValue>(res);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << value);
 		FormulaT repr = carl::representingFormula(currentVariable(), value);
 		mNLSAT.pushAssignment(currentVariable(), value, repr);
+		return repr;
 	}
 	
 	// ***** Auxliary getter
