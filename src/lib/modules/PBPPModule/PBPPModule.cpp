@@ -130,16 +130,15 @@ namespace smtrat
 			}
 		}
 
-		// if(!positive && !negative){
-		// 	auto res = encodeMixedConstraints(formula);
-		// 	SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-		// 	return res;
-		// }else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
-		// 	auto res = encodeCardinalityConstratint(formula);
-		// 	SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-		// 	return res;	
-		// }else 
-		if(lhsSize == 1){
+		if(!positive && !negative){
+			auto res = encodeMixedConstraints(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
+			auto res = encodeCardinalityConstratint(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;	
+		}else if(lhsSize == 1){
 			auto res = convertSmallFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
@@ -453,7 +452,6 @@ namespace smtrat
 					subsubformulas.push_back(FormulaT(carl::FormulaType::OR, std::move(subformulas)));
 				}
 				subsubformulas.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(generateVarChain(cVars, carl::FormulaType::AND))));
-				std::cout << formula << " -> " << FormulaT(carl::FormulaType::OR, std::move(subsubformulas)) << std::endl;
 				return FormulaT(carl::FormulaType::OR, std::move(subsubformulas));		
 			}else{
 				return forwardAsArithmetic(formula);
