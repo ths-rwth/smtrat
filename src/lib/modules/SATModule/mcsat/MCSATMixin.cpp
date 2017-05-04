@@ -75,21 +75,32 @@ bool MCSATMixin::isLiteralInUnivariateClause(Minisat::Lit literal) {
 		const auto& clause = mGetter.getClause(clauses[c]);
 		bool found = false;
 		for (int l = 0; l < clause.size(); l++) {
+			if (mGetter.getLitValue(clause[l]) == l_True) {
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", clause << " is already satisfied due to " << clause[l]);
+				found = false;
+				break;
+			}
 			if (clause[l] == literal) {
 				found = true;
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found " << literal << " in " << clause);
 			} else {
 				auto lvl = levelOfVariable(Minisat::var(clause[l]));
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Level of " << clause[l] << " is " << lvl);
-				if (lvl == 0) break;
-				if (lvl > level()) break;
+				if (lvl == 0) {
+					found = false;
+					break;
+				}
+				if (lvl > level()) {
+					found = false;
+					break;
+				}
 			}
 		}
 		if (found) {
 			return true;
 		}
 	}
-	return true;
+	return false;
 	
 	/* Here:
 	 * Iterate only over the watches of the literal.
