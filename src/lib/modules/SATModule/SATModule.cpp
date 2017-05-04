@@ -2578,38 +2578,38 @@ namespace smtrat
     {
         #ifdef DEBUG_SATMODULE
         cout << "### search()" << endl;
-		cout << "###" << endl; printBooleanConstraintMap(cout, "###");
+	cout << "###" << endl; printBooleanConstraintMap(cout, "###");
         cout << "###" << endl; printClauses( clauses, "Clauses", cout, "### " );
         cout << "###" << endl; printClauses( learnts, "Learnts", cout, "### " );
-        cout << "###" << endl; printBooleanConstraintMap( cout, "###" );
         cout << "###" << endl; printBooleanVarMap( cout, "###" );
         cout << "###" << endl;
         #endif
+
         assert( ok );
         int conflictC = 0;
         starts++;
         mCurrentAssignmentConsistent = SAT;
+
         for( ; ; )
         {
             SMTRAT_LOG_DEBUG("smtrat.sat", "Next iteration");
             if( !mComputeAllSAT && anAnswerFound() )
                 return l_Undef;
+
             // DPLL::BCP()
             CRef confl = propagateConsistently();
-			SMTRAT_LOG_DEBUG("smtrat.sat", "Continuing after propagation, ok = " << ok << ", confl = " << confl);
-            if( !mComputeAllSAT && anAnswerFound() )
-                return l_Undef;
+	    SMTRAT_LOG_DEBUG("smtrat.sat", "Continuing after propagation, ok = " << ok << ", confl = " << confl);
             if( !ok )
             {
                 if( !mReceivedFormulaPurelyPropositional && !Settings::stop_search_after_first_unknown && mExcludedAssignments )
                     return l_Undef;
                 return l_False;
-            }
+            } 
 
+	    // NO CONFLICT
             if( confl == CRef_Undef )
             {
-				SMTRAT_LOG_DEBUG("smtrat.sat", "No conflict");
-                // NO CONFLICT
+		SMTRAT_LOG_DEBUG("smtrat.sat", "No conflict");
                 if( Settings::check_if_all_clauses_are_satisfied && !mReceivedFormulaPurelyPropositional )
                 {
                     if( decisionLevel() >= assumptions.size() && mNumberOfSatisfiedClauses == (size_t)clauses.size() )
@@ -2636,6 +2636,7 @@ namespace smtrat
                      // Reduce the set of learned clauses:
                      reduceDB();
                 }
+
                 SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for next literal");
                 Lit next = lit_Undef;
                 while( decisionLevel() < assumptions.size() )
@@ -2658,7 +2659,7 @@ namespace smtrat
                         next = p;
                         break;
                     }
-                }
+                } 
                 // If we do not already have a branching literal, we pick one
                 if( next == lit_Undef )
                 {
@@ -2667,57 +2668,27 @@ namespace smtrat
                     #ifdef SMTRAT_DEVOPTION_Statistics
                     mpStatistics->decide();
                     #endif
-					if (Settings::mc_sat) {
-                        /* Todo:
+		    if ( Settings::mc_sat ) {
+                        /* 
                          * Pick literal for boolean decision such that:
-                         * - literal is unassigned
-                         * - literal is univariate
-                         * - decision is compatible with assignment
-                         * -> NLSAT::isInfeasible() == boost::none
+                         * - literal is unassigned [value(literal) == l_Undef], univariate 
+                         * - decision is compatible with assignment [NLSAT::isInfeasible() == boost::none]
                          */
-                        // Ignore this stuff
-						auto it = mFutureChangedBooleans.find(mMCSAT.currentVariable());
-						SMTRAT_LOG_TRACE("smtrat.sat.mc", "Current: " << mChangedBooleans);
-						if (it != mFutureChangedBooleans.end() && !it->second.empty()) {
-							std::sort(it->second.begin(), it->second.end());
-							it->second.erase(std::unique(it->second.begin(), it->second.end()), it->second.end());
-							for (const auto& var: it->second) {
-								mChangedBooleans.push_back(var);
-								SMTRAT_LOG_TRACE("smtrat.sat.mc", "Restoring changes to " << var);
-							}
-							it->second.clear();
-							// make sure that passed formula is updated.
-							mCurrentAssignmentConsistent = UNKNOWN;
-						}
-						next = mMCSAT.pickLiteralForDecision();
-						if (next == lit_Undef) {
-							if (!mMCSAT.hasNextVariable()) {
-								SMTRAT_LOG_DEBUG("smtrat.sat.mc", "All theory variables assigned: SAT!");
-								return l_True;
-							} else {
-								next = prepareTheoryLitDecision();
-                                mMCSAT.makeDecision(next);
-								auto litval = value(next);
-								SMTRAT_LOG_TRACE("smtrat.sat.mc", "Next theory literal: " << next);
-								if (litval == l_False) std::exit(82);
-								assert(litval != l_False);
-								if (litval == l_True) {
-									pickTheoryBranchLit();
-									mNextDecisionIsTheory = false;
-									continue;
-								}
-							}
-						}
-					} else {
+                    	next = mMCSAT.pickLiteralForDecision(); 
+		    } else {
                         // DPLL::decide()
-                    	next = pickBranchLit();
-					}
+                    	next = pickBranchLit(); 
+		    }
                     
-                    if (next == lit_Undef && Settings::mc_sat) {
+                    if( next == lit_Undef && Settings::mc_sat ) { 
                         // No decision done yet, try with a theory decision.
-                        /* Todo:
-                         * Do a theory decision here
-                         */
+			if(mMCSAT.hasNextVariable()) {
+     			    next = prepareTheoryLitDecision(); 
+			    SMTRAT_LOG_DEBUG("smtrat.sat", "Next theory literal: " << next);
+			    mMCSAT.makeDecision(next);
+			    pickTheoryBranchLit();
+			    mNextDecisionIsTheory = false;
+			} // TODO else with return l_True?
                     }
                     if( next == lit_Undef )
                     {
@@ -2738,7 +2709,7 @@ namespace smtrat
                                 for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
                                     learnt_clause.push( neg( getLiteral( subformula->formula() ) ) );
                                 addClause( learnt_clause, LEMMA_CLAUSE );
-								SMTRAT_LOG_DEBUG("smtrat.sat", "Storing lemmas");
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Storing lemmas");
                                 confl = storeLemmas();
                                 if( confl != CRef_Undef )
                                     unknown_excludes.push( confl );
@@ -2757,9 +2728,10 @@ namespace smtrat
                     uncheckedEnqueue( next );
                 }
             }
+
+	    // CONFLICT
             if( confl != CRef_Undef )
             {
-                // CONFLICT
                 conflicts++;
                 conflictC++;
                 
