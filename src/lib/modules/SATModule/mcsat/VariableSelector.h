@@ -29,7 +29,7 @@ private:
 					mQueue.push_back(v.first);
 				}
 			}
-			auto order = [](carl::Variable a, carl::Variable b) { return a < b; };
+			auto order = [](carl::Variable a, carl::Variable b) { return a > b; };
 			std::sort(mQueue.begin(), mQueue.end(), order);
 			mCounterChanged = false;
 		}
