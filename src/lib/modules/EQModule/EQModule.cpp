@@ -595,14 +595,14 @@ namespace smtrat {
 		void EQModule<Settings>::P_update_model_function()
 	{
 		for(typename function_map_type::iterator i = mFunctionMap.begin(), e = mFunctionMap.end(); i != e; ++i) {
-			carl::UFModel &ufModel = boost::get<carl::UFModel>(mModel.emplace(i->first, carl::UFModel(i->first)).first->second);
+			carl::UFModel &ufModel = mModel.emplace(i->first, carl::UFModel(i->first)).first->second.asUFModel();
 
 			for(g_iterator entry : i->second.mInstances) {
 				std::vector<carl::SortValue> args;
 				args.reserve(arityof(entry));
 				for(std::size_t i = 0, s = arityof(entry); i < s; ++i) {
 					const UVariable& var = boost::get<UVariable>(argsof(entry)[i]->first);
-					args.push_back(boost::get<carl::SortValue>(mModel.find(var())->second));
+					args.push_back(mModel.find(var())->second.asSortValue());
 				}
 
 				std::size_t eqClass = mUnionFind.find(entry->second.mUFIndex);
