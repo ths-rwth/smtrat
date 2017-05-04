@@ -56,10 +56,10 @@ Minisat::Lit MCSATMixin::pickLiteralForDecision() {
 			continue;
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking if " << var << " can be decided...");
-		if (isLiteralInUnivariateClause(Minisat::mkLit(var, false))) {
+		if (isLiteralInUnivariateClause(Minisat::mkLit(var, false)) && mNLSAT.isInfeasible(currentVariable(), mGetter.reabstractLiteral(Minisat::mkLit(var, false))) == boost::none) {
 			return Minisat::mkLit(var, false);
 		}
-		if (isLiteralInUnivariateClause(Minisat::mkLit(var, true))) {
+		if (isLiteralInUnivariateClause(Minisat::mkLit(var, true)) && mNLSAT.isInfeasible(currentVariable(), mGetter.reabstractLiteral(Minisat::mkLit(var, true))) == boost::none) {
 			return Minisat::mkLit(var, true);
 		}
 	}
