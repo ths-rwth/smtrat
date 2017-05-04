@@ -2302,6 +2302,7 @@ namespace smtrat
         // keep running until we have checked everything, we have no conflict and no new literals have been asserted
         do
         {
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Propagating");
             // Propagate on the clauses
             confl = propagate();
             // If no conflict, do the theory check
@@ -2309,14 +2310,14 @@ namespace smtrat
             {
                 if (Settings::mc_sat) {
                     // We can make a decision. All boolean assignments before are feasible w.r.t. the theory.
-                    mMCSAT.makeTheoryDecision();
-                    SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Did a theory decision.");
-                    if (mMCSAT.hasNextVariable()) {
-                        SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Next variable: " << mMCSAT.nextVariable());
-                        mMCSAT.pushLevel(mMCSAT.nextVariable());
-                    } else {
-                        SMTRAT_LOG_ERROR("smtrat.sat.mcsat", "SAT. What now?");
-                    }
+                    //mMCSAT.makeTheoryDecision();
+                    //SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Did a theory decision.");
+                    //if (mMCSAT.hasNextVariable()) {
+                    //    SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Next variable: " << mMCSAT.nextVariable());
+                    //    mMCSAT.pushLevel(mMCSAT.nextVariable());
+                    //} else {
+                    //    SMTRAT_LOG_ERROR("smtrat.sat.mcsat", "SAT. What now?");
+                    //}
                 } else {
                     // do the theory check
                     theoryCall();
@@ -2360,9 +2361,18 @@ namespace smtrat
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Aborting due to !ok");
                 return CRef_Undef;
 			}
-            assert( mChangedBooleans.empty() || _checkWithTheory );
+            assert(Settings::mc_sat || mChangedBooleans.empty() || _checkWithTheory );
+			
         }
-        while( confl == CRef_Undef && (qhead < trail.size() || (decisionLevel() >= assumptions.size() && mCurrentAssignmentConsistent != SAT && !mChangedBooleans.empty())) );
+        while (confl == CRef_Undef // We have a conflict -> leave propagation, enter conflict resoltion
+			&& (qhead < trail.size() // We did not finish propagation yet
+				|| (decisionLevel() >= assumptions.size() 
+					&& mCurrentAssignmentConsistent != SAT 
+					&& !mChangedBooleans.empty()
+					&& !Settings::mc_sat
+				)
+			) 
+		);
 		SMTRAT_LOG_TRACE("smtrat.sat", "Returning " << confl);
         return confl;
     }
@@ -2596,8 +2606,15 @@ namespace smtrat
             if( !mComputeAllSAT && anAnswerFound() )
                 return l_Undef;
 
-            // DPLL::BCP()
-            CRef confl = propagateConsistently();
+			CRef confl;
+			if (Settings::mc_sat) {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "MCSAT::BCP()");
+				confl = propagateConsistently(false);
+			} else {
+				// DPLL::BCP()
+				SMTRAT_LOG_DEBUG("smtrat.sat", "DPLL::BCP()");
+				confl = propagateConsistently();
+			}
 	    SMTRAT_LOG_DEBUG("smtrat.sat", "Continuing after propagation, ok = " << ok << ", confl = " << confl);
             if( !ok )
             {
