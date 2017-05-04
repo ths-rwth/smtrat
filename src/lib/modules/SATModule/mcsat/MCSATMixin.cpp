@@ -135,6 +135,7 @@ void MCSATMixin::updateCurrentLevel(carl::Variable var) {
 			continue;
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Associating " << *cit << " with " << var);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current level is " << level());
 		mClauseLevelMap[*cit] = mCurrentLevel;
 		current().univariateClauses.push_back(*cit);
 		cit = mUndecidedClauses.erase(cit);
@@ -151,6 +152,7 @@ void MCSATMixin::updateCurrentLevel(carl::Variable var) {
 			continue;
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Associating " << *vit << " with " << var);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current level is " << mCurrentLevel);
 		setVariableLevel(*vit, mCurrentLevel);
 		current().univariateVariables.push_back(*vit);
 		vit = mUndecidedVariables.erase(vit);
@@ -228,7 +230,7 @@ void MCSATMixin::addClause(Minisat::CRef clause) {
 		}
 	}
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", clause << " was not found to be univariate, adding to undecided.");
-	mTheoryStack[0].univariateClauses.push_back(clause);
+	mUndecidedClauses.push_back(clause);
 	mClauseLevelMap.emplace(clause, 0);
 }
 
@@ -333,8 +335,9 @@ void MCSATMixin::printClause(std::ostream& os, Minisat::CRef clause) const {
 
 std::ostream& operator<<(std::ostream& os, const MCSATMixin& mcm) {
 	os << "Theory Stack:" << std::endl;
-	for (const auto& level: mcm.mTheoryStack) {
-		os << level.variable << " (" << level.decisionLiteral << ")";
+	for (std::size_t lvl = 0; lvl < mcm.mTheoryStack.size(); lvl++) {
+		const auto& level = mcm.mTheoryStack[lvl];
+		os << lvl << " / " << level.variable << " (" << level.decisionLiteral << ")";
 		if (level.variable == mcm.current().variable) {
 			os << " <<-- Current variable";
 		}
