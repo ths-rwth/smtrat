@@ -131,19 +131,14 @@ namespace smtrat
 		}
 
 		if(!positive && !negative){
-			//std::cout << "Convert Mixed Constraint" << std::endl;
 			auto res = encodeMixedConstraints(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-			//std::cout << formula << " -> " << res << std::endl;
 			return res;
 		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
-			//std::cout << "Convert Cardinality Constraint" << std::endl;
 			auto res = encodeCardinalityConstratint(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-			//std::cout << formula << " -> " << res << std::endl;
 			return res;	
 		}else if(lhsSize == 1){
-			//std::cout << "Convert Small Constraint" << std::endl;
 			auto res = convertSmallFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
@@ -155,12 +150,10 @@ namespace smtrat
 		&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
 		&& !(!positive && !negative)
 		){
-			//std::cout << "Convert Big Formula" << std::endl;
 			auto res = convertBigFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else{
-			//std::cout << "Forward As Arithmetic" << std::endl;
 			auto res = forwardAsArithmetic(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
@@ -217,7 +210,13 @@ namespace smtrat
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				return res;
 			}else{
+<<<<<<< HEAD
 				return checkFormulaType(formula);	
+=======
+				auto res = checkFormulaType(formula);
+				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+				return res;
+>>>>>>> 0d5003e8aacc5d974bd6ef061f643e236289788e
 			}
 		}else{
 			return checkFormulaType(formula);
@@ -586,7 +585,6 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::rnsTransformation(const FormulaT& formula, const carl::uint prime){
-		//std::cout << "Rns transformation" << std::endl;
 		const carl::PBConstraint& c = formula.pbConstraint();
 		const auto& cLHS = c.getLHS();
 		int cRHS = c.getRHS();
@@ -600,9 +598,11 @@ namespace smtrat
 				newLHS.push_back(std::pair<int, carl::Variable>(newCoeff, it.second));
 			}
 		}
-
+		
 		if(newLHS.size() == 0 && newRHS > 0){
 			return FormulaT(carl::FormulaType::FALSE);
+		}else if(newLHS.size() == 0 && newRHS == 0){
+			return FormulaT(carl::FormulaType::TRUE);
 		}
 
 		int t = 0;
@@ -618,7 +618,6 @@ namespace smtrat
 		newConstraint.setLHS(newLHS);
 		newConstraint.setRHS(newRHS);
 		newConstraint.setRelation(carl::Relation::EQ);
-
 		return checkFormulaType(FormulaT(newConstraint));		
 	}
 
@@ -1146,6 +1145,12 @@ namespace smtrat
 				}
 			}
 
+		}
+
+		for(int i = 0; i < base.size(); i++){
+			if(base[i] == 1 || base[i] == 0){
+				base.erase(base.begin() + i);
+			} 
 		}
 		return base;
 	}
