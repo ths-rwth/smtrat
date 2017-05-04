@@ -11,7 +11,6 @@ namespace nlsat {
 class AssignmentFinder {
 public:
 	using RAN = carl::RealAlgebraicNumber<Rational>;
-	//using AssignmentOrConflict = boost::variant<ModelValue,FormulasT>;
 	using AssignmentOrConflict = boost::variant<ModelValue,FormulasT>;
 private:
 	carl::Variable mVar;
