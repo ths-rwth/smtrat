@@ -67,6 +67,40 @@ Minisat::Lit MCSATMixin::pickLiteralForDecision() {
 }
 
 bool MCSATMixin::isLiteralInUnivariateClause(Minisat::Lit literal) {
+	/* Here:
+	 * Stupidly iterate over all clauses.
+	 */
+	const Minisat::vec<Minisat::CRef>& clauses = mGetter.getClauses();
+	for (int c = 0; c < clauses.size(); c++) {
+		const auto& clause = mGetter.getClause(clauses[c]);
+		bool found = false;
+		for (int l = 0; l < clause.size(); l++) {
+			if (clause[l] == literal) {
+				found = true;
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found " << literal << " in " << clause);
+			} else {
+				auto lvl = levelOfVariable(Minisat::var(clause[l]));
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Level of " << clause[l] << " is " << lvl);
+				if (lvl == 0) break;
+				if (lvl > level()) break;
+			}
+		}
+		if (found) {
+			return true;
+		}
+	}
+	return true;
+	
+	/* Here:
+	 * Iterate only over the watches of the literal.
+	 * If a literal that is not a watch is non-univariate, we can move the watch.
+	 * This is not completely implemented yet!
+	 *
+	 * Problem: Only looking at the watches could miss clauses that are univariate and contain the literal.
+	 * However, another of the watched variables will be eligible for decision.
+	 * If we rearrange the watches as described and the clause is univariate, all watches are univariate!
+	 * Though this may not be a problem generally, the semantics of this single functions becomes quite shaky...
+	 */
 	for (int i = 0; i < mGetter.getWatches(literal).size(); i++) {
 		const auto& watcher = mGetter.getWatches(literal)[i];
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Watch: " << watcher);
