@@ -11,7 +11,8 @@ namespace nlsat {
 class AssignmentFinder {
 public:
 	using RAN = carl::RealAlgebraicNumber<Rational>;
-	using AssignmentOrConflict = boost::variant<boost::recursive_wrapper<ModelValue>,FormulasT>;
+	//using AssignmentOrConflict = boost::variant<ModelValue,FormulasT>;
+	using AssignmentOrConflict = boost::variant<ModelValue,FormulasT>;
 private:
 	carl::Variable mVar;
 	const Model& mModel;
@@ -146,7 +147,7 @@ public:
 				assignment = assignment.asRAN().value();
 			}
 			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Assignment: " << mVar << " = " << assignment);
-			return AssignmentOrConflict(assignment);
+			return assignment;
 		}
 	}
 	
