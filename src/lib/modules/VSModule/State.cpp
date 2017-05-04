@@ -9,6 +9,7 @@
 #include "../../solver/Module.h"
 #include <cmath>
 #include <float.h>
+#include <numeric>
 
 //#define VS_DEBUG_VARIABLE_VALUATIONS
 //#define VS_DEBUG_VARIABLE_BOUNDS
@@ -1348,9 +1349,7 @@ namespace vs
         const multiset<double>& vals = _varVals[var].second;
         if( !vals.empty() )
         {
-            for( double val : vals )
-                bestAvgVal += val;
-            bestAvgVal /= vals.size();
+			bestAvgVal = std::accumulate(vals.begin(), vals.end(), 0.0) / static_cast<double>(vals.size());
         }
         ++var;
         for(; var < _varVals.size(); ++var )
@@ -1358,10 +1357,7 @@ namespace vs
             const multiset<double>& valsB = _varVals[var].second;
             if( !valsB.empty() )
             {
-                double curAvgVal = 0;
-                for( double val : valsB )
-                    curAvgVal += val;
-                curAvgVal /= valsB.size();
+                double curAvgVal = std::accumulate(valsB.begin(), valsB.end(), 0.0) / static_cast<double>(valsB.size());
                 if( curAvgVal > 0 && (bestAvgVal == 0 || curAvgVal < bestAvgVal) )
                 {
                     mBestVarVals.clear();

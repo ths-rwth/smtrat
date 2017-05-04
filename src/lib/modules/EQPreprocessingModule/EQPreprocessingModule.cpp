@@ -304,7 +304,7 @@ namespace smtrat
 					const UFInstance& instance = pair.first;
 					const UVariable& helper = pair.second;
 
-					carl::UFModel &ufModel = boost::get<carl::UFModel>(mModel.emplace(instance.uninterpretedFunction(), carl::UFModel(instance.uninterpretedFunction())).first->second);
+					carl::UFModel &ufModel = mModel.emplace(instance.uninterpretedFunction(), carl::UFModel(instance.uninterpretedFunction())).first->second.asUFModel();
 
 					std::vector<carl::SortValue> args;
 					args.reserve(instance.args().size());
@@ -318,13 +318,13 @@ namespace smtrat
 							args.push_back(newSortValue(var.domain()));
 						} else {
 							// use the model value of the variable
-							args.push_back(boost::get<carl::SortValue>(model_iter->second));
+							args.push_back(model_iter->second.asSortValue());
 						}
 					}
 
 					auto modelItr = mModel.find(helper());
 					assert(modelItr != mModel.end());
-					ufModel.extend(std::move(args), boost::get<carl::SortValue>(modelItr->second));
+					ufModel.extend(std::move(args), modelItr->second.asSortValue());
 					mModel.erase(modelItr);
 				}
 			}

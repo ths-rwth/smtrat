@@ -5,6 +5,7 @@
  * Created on June 19, 2013, 4:06 PM
  */
 
+#include <cmath>
 #include <map>
 
 #include "utils.h"
@@ -36,38 +37,43 @@ namespace smtrat
         std::pair<ConstraintT, ConstraintT> intervalToConstraint( const Poly& _lhs, const smtrat::DoubleInterval _interval )
         {
             // left:
-            Rational bound  = carl::rationalize<Rational>( _interval.lower() );
-            
-            Poly leftEx = _lhs - bound;
-            
             ConstraintT leftTmp;
-            switch( _interval.lowerBoundType() )
-            {
-                case carl::BoundType::STRICT:
-                    leftTmp = ConstraintT(leftEx, carl::Relation::GREATER);
-                    break;
-                case carl::BoundType::WEAK:
-                    leftTmp = ConstraintT(leftEx, carl::Relation::GEQ);
-                    break;
-                default:
-                    leftTmp = ConstraintT();
+            
+            if (!std::isinf(_interval.lower())) {
+                Rational bound  = carl::rationalize<Rational>( _interval.lower() );
+                Poly leftEx = _lhs - bound;
+                
+                switch( _interval.lowerBoundType() )
+                {
+                    case carl::BoundType::STRICT:
+                        leftTmp = ConstraintT(leftEx, carl::Relation::GREATER);
+                        break;
+                    case carl::BoundType::WEAK:
+                        leftTmp = ConstraintT(leftEx, carl::Relation::GEQ);
+                        break;
+                    default:
+                        leftTmp = ConstraintT();
+                }
             }
 
             // right:
-            bound = carl::rationalize<Rational>( _interval.upper() );
-            Poly rightEx = _lhs - bound;
-            
             ConstraintT rightTmp;
-            switch( _interval.upperBoundType() )
-            {
-                case carl::BoundType::STRICT:
-                    rightTmp = ConstraintT(rightEx, carl::Relation::LESS);
-                    break;
-                case carl::BoundType::WEAK:
-                    rightTmp = ConstraintT(rightEx, carl::Relation::LEQ);
-                    break;
-                default:
-                    rightTmp = ConstraintT();
+            
+            if (!std::isinf(_interval.upper())) {
+                Rational bound = carl::rationalize<Rational>( _interval.upper() );
+                Poly rightEx = _lhs - bound;
+                
+                switch( _interval.upperBoundType() )
+                {
+                    case carl::BoundType::STRICT:
+                        rightTmp = ConstraintT(rightEx, carl::Relation::LESS);
+                        break;
+                    case carl::BoundType::WEAK:
+                        rightTmp = ConstraintT(rightEx, carl::Relation::LEQ);
+                        break;
+                    default:
+                        rightTmp = ConstraintT();
+                }
             }
 
             return std::make_pair( leftTmp, rightTmp );
