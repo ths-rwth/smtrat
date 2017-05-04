@@ -126,7 +126,11 @@ boost::optional<FormulasT> NLSAT::isInfeasible(carl::Variable var, const Formula
 	pushConstraint(f);
 	auto res = findAssignment(var);
 	popConstraint(f);
-	if (carl::variant_is_type<ModelValue>(res)) return boost::none;
+	if (carl::variant_is_type<ModelValue>(res)) {
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", f << " is feasible");
+		return boost::none;
+	}
+	SMTRAT_LOG_DEBUG("smtrat.nlsat", f << " is infeasible with reason " << boost::get<FormulasT>(res));
 	return boost::get<FormulasT>(res);
 }
 
