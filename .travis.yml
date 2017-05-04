@@ -1,5 +1,5 @@
 language: generic
-sudo: required
+sudo: false
 dist: trusty
 
 cache:
@@ -9,57 +9,89 @@ env:
   global:
     - secure: "qNWFF3c/WIhwn3jBET5FiSQTJDgLMJnaXOHYMKwpNKByT1ctEnMiZ/BvR+1U5cr921kdvpSm+oR63rZNtzYJohcPiSNOZUlvKFFDYTb1u7ZkkXf8tPXIl176zBctbq2CMZ7i8JFQE4ibiMRIZaflrNANu3J9cdDkTJa/X6EWc/oqc8KSFc15epSNq8eCD442T4I/a/Vxr2NSz6AKbTxWSNla9gTaJ7lNWPgtHADxkC17OmgSbgwhBC3okHB4RtmSk9ABZzS8ZmioGBRvSPUjQec66XWEEISXmxMIjH1Fsit/DCZ7ZvRtfoPKkvIOStb5UrBcerCl7GU6IpkfewrNrPk+kLIh873BrNUHAKEK3kXoYmzbVam92Xqh/Y971IFbfxbbZSns7XBX/VfsO0aY0uqkm1trBcIAmMIMYs2KfEE7jK5Ozi847Mz34pnkKLU4cSrKYFhcDSQHWlnKzdh3SpVqwsIyiZLUHWNbJu+8t/TGHmDvD4vhwqQqoKwI1J/VawFS7IXchyUsodALFXXKJK5OOaA6qUaPGybHdQuEasCgBmZ8KRN/QN9hxocnIi3MIEgEj/+jsDfwLXWvqA/xQA3Zf/T5X8rfgYa6kkAeN8nkJNoDAPRLVOHcY+5nbDgpFVd4okS0MZAEN/akCdSY9kIFIrLNxYACymlvyXU5vV0="
 
+_apt_packages:
+  sources_boost: &sources_boost
+    - boost-latest
+  packages_boost: &packages_boost
+    - libboost1.55-all-dev
+  sources_cmake: &sources_cmake
+    - george-edison55-precise-backports
+  packages_cmake: &packages_cmake
+    - cmake
+    - cmake-data
+
 addons:
   apt:
-    sources:
-      - boost-latest
-      - george-edison55-precise-backports
-      - llvm-toolchain-precise
-      - llvm-toolchain-precise-3.6
-      - llvm-toolchain-precise-3.7
-      - llvm-toolchain-precise-3.8
-      - sourceline: 'deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-3.9 main'
-        key_url: 'http://apt.llvm.org/llvm-snapshot.gpg.key'
+    sources: &sources_base
+      - *sources_boost
+      - *sources_cmake
       - ubuntu-toolchain-r-test
-    packages:
-      - cmake
-      - cmake-data
-      - doxygen
-      - libboost1.55-all-dev
+    packages: &packages_base
+      - *packages_boost
+      - *packages_cmake
+      - g++-6
       - libcln-dev
       - libeigen3-dev
       - libgmp-dev
       - libgtest-dev
-      - g++-5
-      - g++-6
-      - clang-3.6
-      - clang-3.7
-      - clang-3.8
-      - clang-3.9
+      - openjdk-7-jdk
       - time
 
 matrix:
   include:
     - os: linux
-      env: USE=g++-5
-    - os: linux
-      env: USE=g++-6
-    - os: linux
       env: USE=clang++-3.6
+      addons:
+        apt:
+          sources: [*sources_base, llvm-toolchain-precise-3.6]
+          packages: [*packages_base, clang-3.6]
     - os: linux
       env: USE=clang++-3.7
+      addons:
+        apt:
+          sources: [*sources_base, llvm-toolchain-precise-3.7]
+          packages: [*packages_base, clang-3.7]
     - os: linux
       env: USE=clang++-3.8
+      addons:
+        apt:
+          sources: [*sources_base, llvm-toolchain-precise-3.8]
+          packages: [*packages_base, clang-3.8]
     - os: linux
       env: USE=clang++-3.9
+      addons:
+        apt:
+          sources: [*sources_base, llvm-toolchain-trusty-3.9]
+          packages: [*packages_base, clang-3.9]
     - os: linux
-      env: USE=clang++-3.6 TASK=doxygen
+      env: USE=clang++-4.0
+      addons:
+        apt:
+          sources: [*sources_base, llvm-toolchain-trusty-4.0]
+          packages: [*packages_base, clang-4.0]
+    - os: linux
+      env: USE=g++-5
+      addons:
+        apt:
+          sources: [*sources_base]
+          packages: [*packages_base, g++-5]
+    - os: linux
+      env: USE=g++-6
     - os: osx
       osx_image: xcode7.3
       env: USE=clang++-7.4
     - os: osx
       osx_image: xcode8.2
       env: USE=clang++-8.0
+    - os: osx
+      osx_image: xcode8.3
+      env: USE=clang++-8.1
+    - os: linux
+      env: USE=clang++-3.6 TASK=doxygen
+      addons:
+        apt:
+          sources: [*sources_base]
+          packages: [*packages_base, doxygen, texinfo, texlive]
 
 before_install:
   - cd .travis/ && source setup_travis.sh && cd ../

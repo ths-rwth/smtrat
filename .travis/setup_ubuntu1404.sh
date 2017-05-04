@@ -22,4 +22,6 @@ elif [[ ${USE} == "clang++-3.8" ]]; then
 	defCXX clang-3.8 clang++-3.8
 elif [[ ${USE} == "clang++-3.9" ]]; then
 	defCXX clang-3.9 clang++-3.9
+elif [[ ${USE} == "clang++-4.0" ]]; then
+	defCXX clang-4.0 clang++-4.0
 fi
