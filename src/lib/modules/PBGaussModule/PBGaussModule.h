@@ -22,6 +22,10 @@ namespace smtrat
 			PBGaussStatistics mStatistics;
 #endif
 			// Members.
+			carl::FormulaVisitor<FormulaT> mVisitor;
+			std::vector<FormulaT> equations;
+			int numVariables;
+			std::vector<int> b;
 			
 		public:
 			typedef Settings SettingsType;

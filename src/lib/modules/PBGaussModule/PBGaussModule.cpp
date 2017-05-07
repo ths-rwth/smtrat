@@ -36,8 +36,13 @@ namespace smtrat
 	template<class Settings>
 	bool PBGaussModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 	{
-		// Your code.
-		return true; // This should be adapted according to your implementation.
+		// for( auto subformula = rReceivedFormula().begin(); subformula != rReceivedFormula().end(); ++subformula ){
+		// 	const carl::PBConstraint& c = formula.pbConstraint();
+		// 	if(c.getRelation() == carl::Relation::EQ){
+		// 		equations.push_back(subformula);
+		// 		b.push_back(c.getRHS());
+		// 	}
+		// }
 	}
 	
 	template<class Settings>
