@@ -133,14 +133,17 @@ namespace smtrat
 		if(!positive && !negative){
 			auto res = encodeMixedConstraints(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			//std::cout << formula << " -> " << res << std::endl;
 			return res;
 		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
 			auto res = encodeCardinalityConstratint(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			//std::cout << formula << " -> " << res << std::endl;
 			return res;	
 		}else if(lhsSize == 1){
 			auto res = convertSmallFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			//std::cout << formula << " -> " << res << std::endl;
 			return res;
 		}else if(!(positive && cRHS > 0 && sum > cRHS
 			&& (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
@@ -152,10 +155,12 @@ namespace smtrat
 		){
 			auto res = convertBigFormula(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			//std::cout << formula << " -> " << res << std::endl;
 			return res;
 		}else{
 			auto res = forwardAsArithmetic(formula);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			//std::cout << formula << " -> " << res << std::endl;
 			return res;
 		}
 	}
@@ -307,6 +312,17 @@ namespace smtrat
 				}
 			}
 			return FormulaT(carl::FormulaType::AND, std::move(subf));
+		}else if(lhsSize == 2 && cRHS == 0 && sum == 0 && cRel == carl::Relation::GEQ){
+			//+1 x1 -1 x2 >= 0 ==> x2 -> x1 ===> not x2 or x1
+			FormulasT subf;
+			for(auto it : cLHS){
+				if(it.first < 0){
+					subf.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it.second)));
+				}else{
+					subf.push_back(FormulaT(it.second));
+				}
+			}
+			return FormulaT(carl::FormulaType::OR, std::move(subf));
 		}else if(lhsSize == 3 && sum == 1 && cRHS == 0 && cRel == carl::Relation::GEQ){
 			//-1 x1 +1 x2 +1 x3 >= 0 ===> not x1 or x2 or x3
 			//std::cout << "HIER 4" << std::endl;
@@ -451,7 +467,12 @@ namespace smtrat
 					}while(std::next_permutation(signs.begin(), signs.end()));
 					subsubformulas.push_back(FormulaT(carl::FormulaType::OR, std::move(subformulas)));
 				}
-				subsubformulas.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(generateVarChain(cVars, carl::FormulaType::AND))));
+				FormulasT subf;
+				for(auto it : cVars){
+					subf.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it)));
+				}
+				
+				subsubformulas.push_back(FormulaT(carl::FormulaType::AND, std::move(subf)));
 				return FormulaT(carl::FormulaType::OR, std::move(subsubformulas));		
 			}else{
 				return forwardAsArithmetic(formula);
