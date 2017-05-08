@@ -164,7 +164,7 @@ public:
 			}
 		}
 		//std::cout << res << " => " << f << std::endl;
-		res.emplace_back(f);
+		if (!f.isTrue()) res.emplace_back(f);
 		return FormulaT(carl::FormulaType::OR, std::move(res));
 	}
 };
