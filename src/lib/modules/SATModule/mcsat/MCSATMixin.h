@@ -150,6 +150,31 @@ public:
 	/// Retract one level (without removing the lookups)
 	void popLevel();
 	
+	/**
+	 * Add a new constraint.
+	 */
+	void doAssignment(Minisat::Lit lit) {
+		if (!mGetter.isTheoryAbstraction(var(lit))) return;
+		const auto& f = mGetter.reabstractLiteral(lit);
+		if (f.getType() == carl::FormulaType::VARASSIGN) {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Skipping assignment.");
+			return;
+		}
+		mNLSAT.pushConstraint(f);
+	}
+	/**
+	 * Remove the last constraint. f must be the same as the one passed to the last call of pushConstraint().
+	 */
+	void undoAssignment(Minisat::Lit lit) {
+		if (!mGetter.isTheoryAbstraction(var(lit))) return;
+		const auto& f = mGetter.reabstractLiteral(lit);
+		if (f.getType() == carl::FormulaType::VARASSIGN) {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Skipping assignment.");
+			return;
+		}
+		mNLSAT.popConstraint(f);
+	}
+	
 	/// Add a variable, return the level it was inserted on
 	std::size_t addVariable(Minisat::Var variable);
 	
