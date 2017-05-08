@@ -23,9 +23,8 @@ namespace smtrat
 #endif
 			// Members.
 			carl::FormulaVisitor<FormulaT> mVisitor;
-			std::vector<FormulaT> equations;
-			int numVariables;
-			std::vector<int> b;
+			std::vector<carl::PBConstraint> equations;
+			std::vector<carl::PBConstraint> inequalities;
 			
 		public:
 			typedef Settings SettingsType;
@@ -86,5 +85,12 @@ namespace smtrat
 			 *		 Unknown, otherwise.
 			 */
 			Answer checkCore();
+
+			std::function<FormulaT(FormulaT)> gaussAlgorithmFunction;
+			FormulaT gaussAlgorithm();
+			FormulaT forwardInequalities();
+			std::vector<int> multiplyRow(int row);
+			std::vector<int> addTwoRows(int rowA, int rowB);
+			std::vector<int> swapRows(int rowA, int rowB);
 	};
 }
