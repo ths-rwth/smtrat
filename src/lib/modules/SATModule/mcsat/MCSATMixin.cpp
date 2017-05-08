@@ -40,7 +40,8 @@ bool MCSATMixin::backtrackTo(Minisat::Lit literal) {
 Minisat::lbool MCSATMixin::evaluateLiteral(Minisat::Lit lit) const {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Evaluate " << lit);
 	FormulaT f = mGetter.reabstractLiteral(lit);
-	auto res = carl::model::evaluate(f, mCurrentModel);
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Evaluate " << f << " on " << mNLSAT.getModel());
+	auto res = carl::model::evaluate(f, mNLSAT.getModel());
 	if (res.isBool()) {
 		return res.asBool() ? l_True : l_False;
 	}
