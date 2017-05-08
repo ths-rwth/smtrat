@@ -230,15 +230,21 @@ public:
 	
 	Minisat::Lit pickLiteralForDecision();
 	
-	FormulaT makeTheoryDecision() {
+	std::pair<FormulaT,bool> makeTheoryDecision() {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Obtaining assignment");
 		auto res = mNLSAT.findAssignment(currentVariable());
-		assert(carl::variant_is_type<ModelValue>(res));
-		auto value = boost::get<ModelValue>(res);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << value);
-		FormulaT repr = carl::representingFormula(currentVariable(), value);
-		mNLSAT.pushAssignment(currentVariable(), value, repr);
-		return repr;
+		if (carl::variant_is_type<ModelValue>(res)) {
+			const auto& value = boost::get<ModelValue>(res);
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << value);
+			FormulaT repr = carl::representingFormula(currentVariable(), value);
+			mNLSAT.pushAssignment(currentVariable(), value, repr);
+			return std::make_pair(repr, true);
+		} else {
+			const auto& confl = boost::get<FormulasT>(res);
+			auto explanation = mNLSAT.explain(currentVariable(), confl, FormulaT(carl::FormulaType::FALSE));
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got a conflict: " << explanation);
+			return std::make_pair(explanation, false);
+		}
 	}
 	
 	// ***** Auxliary getter
