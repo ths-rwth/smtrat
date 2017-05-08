@@ -102,7 +102,7 @@ public:
 			[&baseModule](Minisat::Lit l){ return baseModule.value(l); },
 			[&baseModule](Minisat::CRef c) -> const auto& { return baseModule.ca[c]; },
 			[&baseModule]() -> const auto& { return baseModule.clauses; },
-			[&baseModule](Minisat::Var v){ return baseModule.mBooleanConstraintMap[v].first != nullptr; },
+			[&baseModule](Minisat::Var v){ return (baseModule.mBooleanConstraintMap.size() > v) && (baseModule.mBooleanConstraintMap[v].first != nullptr); },
 			[&baseModule](Minisat::Var v) -> const auto& { return baseModule.mBooleanConstraintMap[v].first->reabstraction; },
 			[&baseModule](Minisat::Lit l) -> const auto& { return sign(l) ? baseModule.mBooleanConstraintMap[var(l)].second->reabstraction : baseModule.mBooleanConstraintMap[var(l)].first->reabstraction; },
 			[&baseModule](Minisat::Lit l) -> const auto& { return baseModule.watches[l]; }
