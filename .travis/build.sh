@@ -16,8 +16,6 @@ if [[ ${TASK} == "doxygen" ]]; then
 	# Update cloned copy
 	cp -r ../doc/html/* ./ || return 1
 	git add . || return 1
-	# Check if something has changed
-	git diff --summary --exit-code && return 0
 	# Commit and push
 	git commit -m "Updated documentation for SMT-RAT" || return 1
 	git push origin master || return 1
