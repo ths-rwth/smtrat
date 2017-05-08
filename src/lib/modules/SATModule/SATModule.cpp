@@ -3339,10 +3339,7 @@ namespace smtrat
         }
         assigns[var( p )] = lbool( !sign( p ) );
 		if (Settings::mc_sat) {
-			if (mNextDecisionIsTheory) {
-				pickTheoryBranchLit();
-				mNextDecisionIsTheory = false;
-			}
+			mMCSAT.doAssignment(p);
 		}
         if( !mReceivedFormulaPurelyPropositional && mBooleanConstraintMap[var( p )].first != nullptr )
         {
