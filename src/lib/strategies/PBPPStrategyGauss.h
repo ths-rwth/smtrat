@@ -10,11 +10,11 @@
 
 namespace smtrat
 {
-    class PBPPStrategy:
+    class PBPPStrategyGauss:
     public Manager
     {
     public:
-        PBPPStrategy(): Manager() {
+        PBPPStrategyGauss(): Manager() {
             setStrategy({
                 addBackend<PBGaussModule<PBGaussSettings1>>(
                    addBackend<PBPPModule<PBPPSettings1>>(
