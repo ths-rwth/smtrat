@@ -1463,6 +1463,7 @@ namespace smtrat
             return mkLit( booleanVarPair->second, negated );
         }
         assert( supportedConstraintType( content ) );
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Literals: " << mConstraintLiteralMap);
 		ConstraintLiteralsMap::const_iterator constraintLiteralPair = mConstraintLiteralMap.find( content );
         assert( constraintLiteralPair != mConstraintLiteralMap.end() );
         return negated ? neg( constraintLiteralPair->second.front() ) : constraintLiteralPair->second.front();
@@ -2016,7 +2017,7 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::attachClause( CRef cr )
     {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Prop: " << mReceivedFormulaPurelyPropositional);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Clause: " << cr);
         Clause& c = ca[cr];
         assert( c.size() > 1 );
         watches[~c[0]].push( Watcher( cr, c[1] ) );
@@ -2684,8 +2685,8 @@ namespace smtrat
                     decisions++;
                     #ifdef SMTRAT_DEVOPTION_Statistics
                     mpStatistics->decide();
-                    #endif
-		    if ( Settings::mc_sat ) {
+					#endif
+					if ( Settings::mc_sat ) {
                         /* 
                          * Pick literal for boolean decision such that:
                          * - literal is unassigned [value(literal) == l_Undef], univariate 
@@ -2694,11 +2695,11 @@ namespace smtrat
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Picking a literal for a boolean decision");
                     	next = mMCSAT.pickLiteralForDecision(); 
 						SMTRAT_LOG_DEBUG("smtrat.sat", "-> " << next);
-		    } else {
+					} else {
                         // DPLL::decide()
                     	next = pickBranchLit(); 
 						SMTRAT_LOG_DEBUG("smtrat.sat", "DPLL::decide() -> " << next);
-		    }
+					}
                     
                     if( next == lit_Undef && Settings::mc_sat ) { 
                         // No decision done yet, try with a theory decision.
