@@ -2703,17 +2703,36 @@ namespace smtrat
                     if( next == lit_Undef && Settings::mc_sat ) { 
                         // No decision done yet, try with a theory decision.
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Trying with next theory decision");
-						FormulaT assignment = mMCSAT.makeTheoryDecision();
-						next = createLiteral(assignment);
-						mMCSAT.makeDecision(next);
-						pickTheoryBranchLit();
-//			if(mMCSAT.hasNextVariable()) {
-//     			    next = prepareTheoryLitDecision(); 
-//			    SMTRAT_LOG_DEBUG("smtrat.sat", "Next theory literal: " << next);
-//			    mMCSAT.makeDecision(next);
-//			    pickTheoryBranchLit();
-//			    mNextDecisionIsTheory = false;
-//			} // TODO else with return l_True?
+						FormulaT res;
+						bool didDecision;
+						std::tie(res,didDecision) = mMCSAT.makeTheoryDecision();
+						if (didDecision) {
+							next = createLiteral(res);
+							mMCSAT.makeDecision(next);
+							pickTheoryBranchLit();
+						} else {
+							vec<Lit> explanation;
+							for (const auto& c: res) {
+								SMTRAT_LOG_DEBUG("smtrat.sat", "Adding " << c);
+								Minisat::Lit l = createLiteral(c);
+								explanation.push(l);
+								if (value(l) == l_Undef) {
+									assert(mMCSAT.evaluateLiteral(l) == l_False);
+									uncheckedEnqueue(neg(l));
+								}
+							}
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
+							// Add it, the next propagation will find it...
+							bool cres = addClause(explanation, CONFLICT_CLAUSE);
+							assert(!cres);
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Added clause " << explanation);
+							propagateTheory();
+							confl = storeLemmas();
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << confl);
+							// basically abort and skip the next two cases, directly go to conflict resolution and restart the loop
+							handleConflict( confl );
+							continue;
+						}
                     }
                     if( next == lit_Undef )
                     {
