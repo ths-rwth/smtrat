@@ -14,7 +14,7 @@ if [[ ${TASK} == "doxygen" ]]; then
 	cd smtrat.github.io/ || return 1
 	
 	# Update cloned copy
-	cp ../doc/html/* ./ || return 1
+	cp -r ../doc/html/* ./ || return 1
 	git add . || return 1
 	# Check if something has changed
 	git diff --summary --exit-code && return 0
