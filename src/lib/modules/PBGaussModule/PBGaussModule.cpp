@@ -84,26 +84,51 @@ namespace smtrat
 
 	template<class Settings>
 	FormulaT PBGaussModule<Settings>::gaussAlgorithm(){
-		Eigen::MatrixXi matrix;
-		int rows = equations.size();
-		int columns ;
+		const int rows = equations.size();
 		int j = 0;
 		std::vector<carl::Variable> vars;
 
 		for(auto it : equations){
-			for(auto i : it.gatherVariables())
-			vars.emplace_back(i);
+			for(auto i : it.getLHS()){
+				auto elem = std::find_if(vars.begin(), vars.end(), 
+					[&] (const carl::Variable& elem){
+						return elem.getName() == i.second.getName();
+					});
+				if(elem == vars.end()){
+					//The variable is not in the list
+					vars.push_back(i.second);
+				}
+			}
 		}
 
-		for(auto it : vars){
-			std::cout << it << std::endl;
+		const int columns = vars.size();
+		Eigen::MatrixXi matrix;
+		std::cout << vars << std::endl;
+		int counter = 0;
+		std::vector<int> coef;
+		for(auto it : equations){
+			auto lhs = it.getLHS();
+			auto lhsVars = it.gatherVariables();
+			
+			for(auto i : vars){
+				if(std::find(lhsVars.begin(), lhsVars.end(), i) == lhsVars.end()){
+					//Variable is not in the equation ==> coeff must be 0
+					coef.push_back(0);
+				}else{
+					auto elem = std::find_if(lhs.begin(), lhs.end(), 
+					[&] (const pair<int, carl::Variable>& elem){
+						return elem.second == i;
+					});
+					coef.push_back(elem->first);
+				}
+				counter++;
+			}
 		}
-		columns = vars.size();
+		matrix = Eigen::MatrixXi::Map(&coef[0], columns, rows).transpose();
 
-
-
+		//LU Decomposition
 		
-		// matrix = Eigen::Map<Matrix<int,equations.size(),columns,RowMajor> >(data);
+		
 	}
 
 	template<class Settings>
