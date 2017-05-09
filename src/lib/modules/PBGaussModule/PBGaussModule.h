@@ -24,6 +24,7 @@ namespace smtrat
 			// Members.
 			carl::FormulaVisitor<FormulaT> mVisitor;
 			std::vector<carl::PBConstraint> equations;
+			std::vector<carl::Variable> vars;
 			std::vector<carl::PBConstraint> inequalities;
 			
 		public:

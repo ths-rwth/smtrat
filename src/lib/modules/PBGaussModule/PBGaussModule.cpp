@@ -85,8 +85,6 @@ namespace smtrat
 	template<class Settings>
 	FormulaT PBGaussModule<Settings>::gaussAlgorithm(){
 		const int rows = equations.size();
-		int j = 0;
-		std::vector<carl::Variable> vars;
 
 		for(auto it : equations){
 			for(auto i : it.getLHS()){
@@ -101,9 +99,10 @@ namespace smtrat
 			}
 		}
 
+		
 		const int columns = vars.size();
+
 		Eigen::MatrixXi matrix;
-		std::cout << vars << std::endl;
 		int counter = 0;
 		std::vector<int> coef;
 		for(auto it : equations){
@@ -125,10 +124,17 @@ namespace smtrat
 			}
 		}
 		matrix = Eigen::MatrixXi::Map(&coef[0], columns, rows).transpose();
-
 		//LU Decomposition
-		
-		
+		Eigen::MatrixXi a(rows, columns);
+		a = matrix;
+		Eigen::FullPivLU<Eigen::Matrix<int, rows, columns>> lu(a);
+		int dim = 0;
+
+		Eigen::MatrixXi u(rows, columns);
+		u = lu.matrixLU().triangularView<Eigen::Upper>();
+
+		std::cout << "upper:" << std::endl;
+		std::cout << u << std::endl;
 	}
 
 	template<class Settings>
