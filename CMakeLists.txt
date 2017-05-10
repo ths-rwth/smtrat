@@ -205,7 +205,7 @@ else()
 	set( libraries ${libraries} lib_carl)
 endif()
 
-set( libraries ${libraries} boost_system)
+set( libraries ${libraries} Boost_SHARED)
 
 # # # # # # # # # # # # # # # # # # # # # #
 # C.2. required libraries
