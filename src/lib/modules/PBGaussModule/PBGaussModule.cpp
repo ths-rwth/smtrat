@@ -102,9 +102,9 @@ namespace smtrat
 		
 		const int columns = vars.size();
 
-		Eigen::MatrixXi matrix;
+		Eigen::MatrixXd matrix;
 		int counter = 0;
-		std::vector<int> coef;
+		std::vector<double> coef;
 		for(auto it : equations){
 			auto lhs = it.getLHS();
 			auto lhsVars = it.gatherVariables();
@@ -112,29 +112,70 @@ namespace smtrat
 			for(auto i : vars){
 				if(std::find(lhsVars.begin(), lhsVars.end(), i) == lhsVars.end()){
 					//Variable is not in the equation ==> coeff must be 0
-					coef.push_back(0);
+					coef.push_back(0.0);
 				}else{
 					auto elem = std::find_if(lhs.begin(), lhs.end(), 
 					[&] (const pair<int, carl::Variable>& elem){
 						return elem.second == i;
 					});
-					coef.push_back(elem->first);
+					coef.push_back((double) elem->first);
 				}
 				counter++;
 			}
 		}
-		matrix = Eigen::MatrixXi::Map(&coef[0], columns, rows).transpose();
-		//LU Decomposition
-		Eigen::MatrixXi a(rows, columns);
-		a = matrix;
-		Eigen::FullPivLU<Eigen::Matrix<int, rows, columns>> lu(a);
-		int dim = 0;
+		matrix = Eigen::MatrixXd::Map(&coef[0], columns, rows).transpose();
 
-		Eigen::MatrixXi u(rows, columns);
+		std::cout << "Matrix:" << std::endl;
+		std::cout << matrix << std::endl;
+
+		//LU Decomposition
+		int dim;
+		if(rows < columns){
+			dim = columns;
+			Eigen::MatrixXd id(dim, dim);
+			Eigen::MatrixXd::Identity(columns,dim);            
+			id.setIdentity(columns,dim);
+			Eigen::MatrixXd newMatrix(columns, columns);
+			id << matrix;
+			matrix = id;
+
+		}else{
+			dim = rows;
+		}
+
+
+		Eigen::FullPivLU<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> lu(matrix);
+
+		Eigen::MatrixXd l(dim, dim);
+		Eigen::MatrixXd::Identity(dim,dim);            
+		l.setIdentity(dim,dim);
+		l.triangularView<Eigen::StrictlyLower>() = lu.matrixLU();
+
+		std::cout << "lower:" << std::endl;
+		std::cout << l << std::endl;
+
+
+		Eigen::MatrixXd u(rows, columns);
 		u = lu.matrixLU().triangularView<Eigen::Upper>();
 
 		std::cout << "upper:" << std::endl;
 		std::cout << u << std::endl;
+
+
+		Eigen::MatrixXd p(rows, columns);
+		p = lu.permutationP();
+
+		std::cout << "permutation P:" << std::endl;
+		std::cout << p << std::endl;
+
+		Eigen::MatrixXd q(rows, columns);
+		q = lu.permutationQ();
+
+		std::cout << "permutation Q:" << std::endl;
+		std::cout << q << std::endl;
+
+		std::cout << "Let us now reconstruct the original matrix m:" << std::endl;
+		std::cout << lu.permutationP().inverse() * l * u * lu.permutationQ().inverse() << std::endl;
 	}
 
 	template<class Settings>
