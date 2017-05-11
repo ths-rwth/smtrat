@@ -148,13 +148,6 @@ namespace smtrat
 			dim = rows;
 		}
 
-		std::cout << "Matrix:" << std::endl;
-		std::cout << matrix << std::endl;
-
-		std::cout << "b:" << std::endl;
-		std::cout << b << std::endl;
-
-
 		//LU Decomposition
 
 		Eigen::FullPivLU<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> lu(matrix);
@@ -175,6 +168,10 @@ namespace smtrat
 		// l.setIdentity(dim,dim);
 		// l.triangularView<Eigen::StrictlyLower>() = lu.matrixLU();
 
+		// std::cout << "Matrix:" << std::endl;
+		// std::cout << matrix << std::endl;
+		// std::cout << "b:" << std::endl;
+		// std::cout << b << std::endl;
 		// std::cout << "upper:" << std::endl;
 		// std::cout << u << std::endl;
 		// std::cout << "permutation P:" << std::endl;
@@ -187,12 +184,16 @@ namespace smtrat
 		// std::cout << newB << std::endl;
 		// std::cout << "newUpper:" << std::endl;
 		// std::cout << newUpper << std::endl;
+		return reconstructEqSystem(newUpper, newB);
 
 	}
 
 	template<class Settings>
-	FormulaT PBGaussModule<Settings>::forwardInequalities(){
-		return FormulaT(carl::FormulaType::TRUE);
+	FormulaT PBGaussModule<Settings>::reconstructEqSystem(const Eigen::MatrixXd& u, const Eigen::VectorXd& b){
+		FormulasT subformulas;
+		Eigen::MatrixXd temp = u.transpose();
+
+
 	}
 
 }
