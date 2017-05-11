@@ -85,6 +85,7 @@ namespace smtrat
 	template<class Settings>
 	FormulaT PBGaussModule<Settings>::gaussAlgorithm(){
 		const int rows = equations.size();
+		std::vector<double> rhs;
 
 		for(auto it : equations){
 			for(auto i : it.getLHS()){
@@ -97,6 +98,7 @@ namespace smtrat
 					vars.push_back(i.second);
 				}
 			}
+			rhs.push_back(it.getRHS());
 		}
 
 		
@@ -124,11 +126,10 @@ namespace smtrat
 			}
 		}
 		matrix = Eigen::MatrixXd::Map(&coef[0], columns, rows).transpose();
+		Eigen::VectorXd b = Eigen::VectorXd::Map(&rhs[0], rhs.size());
 
-		std::cout << "Matrix:" << std::endl;
-		std::cout << matrix << std::endl;
 
-		//LU Decomposition
+
 		int dim;
 		if(rows < columns){
 			dim = columns;
@@ -139,43 +140,54 @@ namespace smtrat
 			id << matrix;
 			matrix = id;
 
+			Eigen::VectorXd temp = Eigen::VectorXd::Zero(dim);
+			temp << b;
+			b = temp;
+
 		}else{
 			dim = rows;
 		}
 
+		std::cout << "Matrix:" << std::endl;
+		std::cout << matrix << std::endl;
+
+		std::cout << "b:" << std::endl;
+		std::cout << b << std::endl;
+
+
+		//LU Decomposition
 
 		Eigen::FullPivLU<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> lu(matrix);
-
-		Eigen::MatrixXd l(dim, dim);
-		Eigen::MatrixXd::Identity(dim,dim);            
-		l.setIdentity(dim,dim);
-		l.triangularView<Eigen::StrictlyLower>() = lu.matrixLU();
-
-		std::cout << "lower:" << std::endl;
-		std::cout << l << std::endl;
-
-
 		Eigen::MatrixXd u(rows, columns);
-		u = lu.matrixLU().triangularView<Eigen::Upper>();
-
-		std::cout << "upper:" << std::endl;
-		std::cout << u << std::endl;
-
-
 		Eigen::MatrixXd p(rows, columns);
-		p = lu.permutationP();
-
-		std::cout << "permutation P:" << std::endl;
-		std::cout << p << std::endl;
-
 		Eigen::MatrixXd q(rows, columns);
+		Eigen::VectorXd newB;
+		Eigen::MatrixXd newUpper;
+
+		u = lu.matrixLU().triangularView<Eigen::Upper>();
+		p = lu.permutationP();
 		q = lu.permutationQ();
+		newB = p * b;
+		newUpper = u * q.inverse();
 
-		std::cout << "permutation Q:" << std::endl;
-		std::cout << q << std::endl;
+		// Eigen::MatrixXd l(dim, dim);
+		// Eigen::MatrixXd::Identity(dim,dim);            
+		// l.setIdentity(dim,dim);
+		// l.triangularView<Eigen::StrictlyLower>() = lu.matrixLU();
 
-		std::cout << "Let us now reconstruct the original matrix m:" << std::endl;
-		std::cout << lu.permutationP().inverse() * l * u * lu.permutationQ().inverse() << std::endl;
+		// std::cout << "upper:" << std::endl;
+		// std::cout << u << std::endl;
+		// std::cout << "permutation P:" << std::endl;
+		// std::cout << p << std::endl;
+		// std::cout << "permutation Q:" << std::endl;
+		// std::cout << q << std::endl;
+		// std::cout << "Let us now reconstruct the original matrix m:" << std::endl;
+		// std::cout << lu.permutationP().inverse() * l * u * lu.permutationQ().inverse() << std::endl;
+		// std::cout << "newB:" << std::endl;
+		// std::cout << newB << std::endl;
+		// std::cout << "newUpper:" << std::endl;
+		// std::cout << newUpper << std::endl;
+
 	}
 
 	template<class Settings>
@@ -183,20 +195,6 @@ namespace smtrat
 		return FormulaT(carl::FormulaType::TRUE);
 	}
 
-	template<class Settings>
-	std::vector<int> PBGaussModule<Settings>::multiplyRow(int row){
-
-	}
-
-	template<class Settings>
-	std::vector<int> PBGaussModule<Settings>::addTwoRows(int rowA, int rowB){
-
-	}
-
-	template<class Settings>
-	std::vector<int> PBGaussModule<Settings>::swapRows(int rowA, int rowB){
-
-	}
 }
 
 #include "Instantiation.h"
