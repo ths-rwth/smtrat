@@ -17,15 +17,19 @@ namespace smtrat
 	template<typename Settings>
 	class PBGaussModule : public Module
 	{
+	public:
+		using MatrixT = Eigen::Matrix<Rational, Eigen::Dynamic, Eigen::Dynamic>;
+		using VectorT = Eigen::Matrix<Rational, Eigen::Dynamic, 1>;
+		
 		private:
 #ifdef SMTRAT_DEVOPTION_Statistics
 			PBGaussStatistics mStatistics;
 #endif
 			// Members.
 			carl::FormulaVisitor<FormulaT> mVisitor;
-			std::vector<carl::PBConstraint> equations;
+			std::vector<PBConstraintT> equations;
 			std::vector<carl::Variable> vars;
-			std::vector<carl::PBConstraint> inequalities;
+			std::vector<PBConstraintT> inequalities;
 			
 		public:
 			typedef Settings SettingsType;
@@ -89,11 +93,8 @@ namespace smtrat
 
 			std::function<FormulaT(FormulaT)> gaussAlgorithmFunction;
 			FormulaT gaussAlgorithm();
-			FormulaT reconstructEqSystem(const Eigen::MatrixXd& u, const Eigen::VectorXd& b);
+			FormulaT reconstructEqSystem(const MatrixT& u, const VectorT& b);
 			FormulaT reduce();
-			carl::PBConstraint addConstraints(const carl::PBConstraint& i, const carl::PBConstraint e, carl::Relation rel);
-			long lcm(double a, double b);
-			long gcd(double a, double b);
-			long lcmMultiple(std::vector<double> matrix);
+			PBConstraintT addConstraints(const PBConstraintT& i, const PBConstraintT& e, carl::Relation rel);
 	};
 }
