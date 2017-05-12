@@ -29,7 +29,7 @@ namespace smtrat
 			carl::FormulaVisitor<FormulaT> mVisitor;
 			std::vector<carl::Variable> mCheckedVars;
 			std::vector<carl::Variable> mConnectedVars;
-			std::vector<std::vector<carl::uint>> mPrimesTable;
+			std::vector<std::vector<Integer>> mPrimesTable;
 			
 		public:
 			typedef Settings SettingsType;
@@ -102,11 +102,11 @@ namespace smtrat
 			FormulaT generateVarChain(const std::vector<carl::Variable>& vars, carl::FormulaType type);
 			FormulaT createAuxiliaryConstraint(const FormulaT& formula);
 			FormulaT interconnectVariables(const FormulaT& formula);
-			FormulaT rnsTransformation(const FormulaT& formula, const carl::uint prime);
+			FormulaT rnsTransformation(const FormulaT& formula, const Integer& prime);
 			//FormulaT rnsTransformation(const FormulaT& formula);
-			std::vector<carl::uint> calculateRNSBase(const FormulaT& formula);
-			bool isNonRedundant(const std::vector<carl::uint>& base, const FormulaT& formula);
-			std::vector<carl::uint> integerFactorization(const int& coeff);
+			std::vector<Integer> calculateRNSBase(const FormulaT& formula);
+			bool isNonRedundant(const std::vector<Integer>& base, const FormulaT& formula);
+			std::vector<Integer> integerFactorization(const Integer& coeff);
 			void initPrimesTable();
 			FormulaT removeZeroCoefficients(const FormulaT& formula);
 			FormulaT encodeCardinalityConstratint(const FormulaT& formula);
