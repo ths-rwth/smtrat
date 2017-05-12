@@ -36,6 +36,28 @@ namespace smtrat
 	template<class Settings>
 	bool PBGaussModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 	{
+		return true;
+	}
+	
+	template<class Settings>
+	void PBGaussModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
+	{
+		
+	}
+	
+	template<class Settings>
+	void PBGaussModule<Settings>::updateModel() const
+	{
+		mModel.clear();
+		if( solverState() == Answer::SAT )
+		{
+			getBackendsModel();
+		}
+	}
+	
+	template<class Settings>
+	Answer PBGaussModule<Settings>::checkCore()
+	{
 		FormulaT f;
 		for( const auto& subformula: rReceivedFormula()){
 			f = subformula.formula();
@@ -52,35 +74,16 @@ namespace smtrat
 			subfA = gaussAlgorithm();
 
 		}
-		else if(inequalities.size() != 0){
+		if(inequalities.size() != 0){
 		//	subfB = reduce();
 		}
 		FormulaT formula = FormulaT(carl::FormulaType::AND, subfA, subfB);
-		addSubformulaToPassedFormula(formula, _subformula->formula());
-		return true;
-	}
-	
-	template<class Settings>
-	void PBGaussModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
-	{
-		
-	}
-	
-	template<class Settings>
-	void PBGaussModule<Settings>::updateModel() const
-	{
-		mModel.clear();
-		if( solverState() == Answer::SAT )
-		{
-			
+		addSubformulaToPassedFormula(formula);
+		Answer answer = runBackends();
+		if (answer == Answer::UNSAT) {
+			generateTrivialInfeasibleSubset();
 		}
-	}
-	
-	template<class Settings>
-	Answer PBGaussModule<Settings>::checkCore()
-	{
-		
-		return Answer::UNKNOWN; 
+		return answer;
 	}
 
 	template<class Settings>
