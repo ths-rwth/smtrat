@@ -53,7 +53,7 @@ namespace smtrat
 
 		}
 		else if(inequalities.size() != 0){
-			subfB = forwardInequalities();
+		//	subfB = reduce();
 		}
 		FormulaT formula = FormulaT(carl::FormulaType::AND, subfA, subfB);
 		addSubformulaToPassedFormula(formula, _subformula->formula());
@@ -190,7 +190,7 @@ namespace smtrat
 		// std::cout << newB << std::endl;
 		// std::cout << "newUpper:" << std::endl;
 		// std::cout << newUpper << std::endl;
-		
+
 		return reconstructEqSystem(newUpper, newB);
 
 	}
@@ -204,8 +204,66 @@ namespace smtrat
 	}
 
 	template<class Settings>
-	FormulaT PBGaussModule<Settings>::forwardInequalities(){
+	FormulaT PBGaussModule<Settings>::reduce(){
+		
+		for(auto it : inequalities){
+			auto iVars = it.gatherVariables();
+			carl::Relation rel = it.getRelation();
+			for(auto i : equations){
+				auto eVars = i.gatherVariables();
 
+				for(int k = 0; k < iVars.size(); k++){
+					if(std::find(eVars.begin(), eVars.end(), iVars[k]) != eVars.end()){
+						auto iLhs = it.getLHS();
+						auto eLhs = i.getLHS();
+						if(iLhs[k].first == eLhs[k].first){
+							auto newConstraint = addConstraints(it, i, rel);
+							equations.erase(equations.begin() + k - 1);
+							inequalities.erase(inequalities.begin() + k - 1);
+							inequalities.push_back(newConstraint);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	template<class Settings>
+	carl::PBConstraint PBGaussModule<Settings>::addConstraints(const carl::PBConstraint& i, const carl::PBConstraint e, carl::Relation rel){
+
+		auto iLHS = i.getLHS();
+		auto iRHS = i.getRHS();
+		auto iVars = i.gatherVariables();
+		auto eLHS = e.getLHS();
+		auto eRHS = e.getRHS();
+		auto eVars = e.gatherVariables();
+
+		std::vector<std::pair<int, carl::Variable>> newLHS;
+		auto newRHS = iRHS + eRHS;
+
+
+		for(auto it : iLHS){
+			newLHS.push_back(std::pair<int, carl::Variable>(it.first, it.second));
+		}
+		for(auto it : eLHS){
+			carl::Variable var = it.second;
+			auto elem = std::find_if(newLHS.begin(), newLHS.end(), 
+					[&] (const pair<int, carl::Variable>& elem){
+						return elem.second == it.second;
+					});
+			if(elem != newLHS.end()){
+				std::pair<int, carl::Variable> b = *elem;
+				std::pair<int, carl::Variable> newElem = std::make_pair(it.first + b.first, var);
+				newLHS.erase(std::remove(newLHS.begin(), newLHS.end(), b), newLHS.end());
+				newLHS.push_back(newElem);
+			}
+		}
+
+		carl::PBConstraint c;
+		c.setLHS(newLHS);
+		c.setRelation(rel);
+		c.setRHS(newRHS);
+		return c;
 	}
 
 }

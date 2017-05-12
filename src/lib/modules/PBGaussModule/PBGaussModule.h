@@ -90,7 +90,8 @@ namespace smtrat
 			std::function<FormulaT(FormulaT)> gaussAlgorithmFunction;
 			FormulaT gaussAlgorithm();
 			FormulaT reconstructEqSystem(const Eigen::MatrixXd& u, const Eigen::VectorXd& b);
-			FormulaT forwardInequalities();
+			FormulaT reduce();
+			carl::PBConstraint addConstraints(const carl::PBConstraint& i, const carl::PBConstraint e, carl::Relation rel);
 			long lcm(double a, double b);
 			long gcd(double a, double b);
 			long lcmMultiple(std::vector<double> matrix);
