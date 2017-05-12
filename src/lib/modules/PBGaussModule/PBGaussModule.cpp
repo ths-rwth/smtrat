@@ -51,7 +51,8 @@ namespace smtrat
 		if(equations.size() != 0){
 			subfA = gaussAlgorithm();
 
-		}else if(inequalities.size() != 0){
+		}
+		else if(inequalities.size() != 0){
 			subfB = forwardInequalities();
 		}
 		FormulaT formula = FormulaT(carl::FormulaType::AND, subfA, subfB);
@@ -84,6 +85,8 @@ namespace smtrat
 
 	template<class Settings>
 	FormulaT PBGaussModule<Settings>::gaussAlgorithm(){
+
+		//PROBLEM WENN VARIABLE MEHRMALS VORKOMMT!!
 		const int rows = equations.size();
 		std::vector<double> rhs;
 
@@ -125,6 +128,9 @@ namespace smtrat
 				counter++;
 			}
 		}
+
+		std::cout << coef << std::endl;
+
 		matrix = Eigen::MatrixXd::Map(&coef[0], columns, rows).transpose();
 		Eigen::VectorXd b = Eigen::VectorXd::Map(&rhs[0], rhs.size());
 
@@ -184,6 +190,7 @@ namespace smtrat
 		// std::cout << newB << std::endl;
 		// std::cout << "newUpper:" << std::endl;
 		// std::cout << newUpper << std::endl;
+		
 		return reconstructEqSystem(newUpper, newB);
 
 	}
@@ -193,6 +200,11 @@ namespace smtrat
 		FormulasT subformulas;
 		Eigen::MatrixXd temp = u.transpose();
 
+
+	}
+
+	template<class Settings>
+	FormulaT PBGaussModule<Settings>::forwardInequalities(){
 
 	}
 
