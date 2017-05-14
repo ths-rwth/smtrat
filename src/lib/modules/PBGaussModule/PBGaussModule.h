@@ -30,6 +30,7 @@ namespace smtrat
 			std::vector<PBConstraintT> equations;
 			std::vector<carl::Variable> vars;
 			std::vector<PBConstraintT> inequalities;
+			VectorT b;
 			
 		public:
 			typedef Settings SettingsType;
@@ -96,5 +97,8 @@ namespace smtrat
 			FormulaT reconstructEqSystem(const MatrixT& u, const VectorT& b);
 			FormulaT reduce();
 			PBConstraintT addConstraints(const PBConstraintT& i, const PBConstraintT& e, carl::Relation rel);
+			Rational lcmMultiple(const std::vector<Rational>& v);
+			Rational lcm(const Rational a, const Rational b);
+			FormulaT forwardInequalities();
 	};
 }

@@ -99,7 +99,7 @@ namespace smtrat
 		Rational sum  = 0;
 		Rational min = INT_MAX;
 		Rational max = INT_MIN;
-		int lhsSize = cLHS.size();
+		std::size_t lhsSize = cLHS.size();
 
 		for(auto it : cLHS){
 			if(it.first < 0){
@@ -120,13 +120,6 @@ namespace smtrat
 			if(cLHS[i].first != cLHS[i + 1].first){
 				eqCoef = false;
 				break;
-			}
-		}
-
-		//Filter out coefficients equal 0
-		for(auto it : cLHS){	
-			if(it.first == 0){
-				return removeZeroCoefficients(formula);
 			}
 		}
 
@@ -189,17 +182,10 @@ namespace smtrat
 			}
 		}
 
-		for(int i = 0; i < cLHS.size() - 1; i++){
+		for(std::size_t i = 0; i < cLHS.size() - 1; i++){
 			if(cLHS[i].first != cLHS[i + 1].first){
 				eqCoef = false;
 				break;
-			}
-		}
-
-		//Filter out coefficients equal 0
-		for(auto it : cLHS){	
-			if(it.first == 0){
-				return removeZeroCoefficients(formula);
 			}
 		}
 
@@ -236,7 +222,7 @@ namespace smtrat
 		Rational sum  = 0;
 		Rational min = INT_MAX;
 		Rational max = INT_MIN;
-		int lhsSize = cLHS.size();
+		std::size_t lhsSize = cLHS.size();
 
 		for(auto it : cLHS){
 			if(it.first < 0){
@@ -374,7 +360,7 @@ namespace smtrat
 		auto cVars = c.gatherVariables();
 		Rational cRHS = c.getRHS();
 		carl::Relation cRel = c.getRelation();
-		int lhsSize = cLHS.size();
+		std::size_t lhsSize = cLHS.size();
 		Rational firstCoef = cLHS[0].first;
 		Rational sum = 0;
 		for(auto it : cLHS){
@@ -505,7 +491,7 @@ namespace smtrat
 				FormulasT subformulasA;
 				do{
 					FormulasT temp;
-					for(int i = 0; i < sign.size(); i++){
+					for(std::size_t i = 0; i < sign.size(); i++){
 						if(sign[i] == 1){
 							temp.push_back(FormulaT(cVars[i]));
 						}else{
@@ -529,7 +515,7 @@ namespace smtrat
 					FormulasT subformulasC;
 					do{
 						FormulasT temp;
-						for(int i = 0; i < signs.size(); i++){
+						for(std::size_t i = 0; i < signs.size(); i++){
 							if(signs[i] == 1){
 								temp.push_back(FormulaT(cVars[i]));
 							}else{
@@ -546,53 +532,17 @@ namespace smtrat
 				return FormulaT(carl::FormulaType::AND, subformulaA, subformulaB);
 			}else{
 				//+1 x1 +1 x2 +1 x3 +1 x4 = 3 ===> +1 x1 +1 x2 +1 x3 +1 x4 >= 3 and +1 x1 +1 x2 +1 x3 +1 x4 <= 3 
-				PBConstraintT newConstA;
-				PBConstraintT newConstB;
+				PBConstraintT newConstA(cLHS, carl::Relation::GEQ, cRHS);
+				PBConstraintT newConstB(cLHS, carl::Relation::LEQ, cRHS);
 
-				newConstA.setLHS(cLHS);
-				newConstA.setRelation(carl::Relation::GEQ);
-				newConstA.setRHS(cRHS);
 				FormulaT subformulaA = checkFormulaType(FormulaT(newConstA));
-
-				newConstB.setLHS(cLHS);
-				newConstB.setRelation(carl::Relation::LEQ);
-				newConstB.setRHS(cRHS);
 				FormulaT subformulaB = checkFormulaType(FormulaT(newConstB));
-
 				return FormulaT(carl::FormulaType::AND, subformulaA, subformulaB);
 			}
 		}else{
 			return forwardAsArithmetic(formula);
 		}
 	}
-
-	template<typename Settings>
-	FormulaT PBPPModule<Settings>::removeZeroCoefficients(const FormulaT& formula){
-		const PBConstraintT& c = formula.pbConstraint();
-		const auto& cLHS = c.getLHS();
-		Rational cRHS = c.getRHS();
-
-		if(cLHS.size() == 1 && cRHS == 0){
-			return FormulaT(carl::FormulaType::TRUE);
-		}else if(cLHS.size() == 1 && cRHS != 0){
-			return FormulaT(carl::FormulaType::FALSE);
-		}
-
-		PBConstraintT newConstr;
-		std::vector<std::pair<Rational, carl::Variable>> newLHS;
-
-		for(auto it : cLHS){
-			if(it.first != 0){
-				newLHS.push_back(std::pair<Rational, carl::Variable>(it.first, it.second));
-			}
-		}
-		newConstr.setLHS(newLHS);
-		newConstr.setRHS(cRHS);
-		newConstr.setRelation(c.getRelation());
-
-		return checkFormulaType(FormulaT(newConstr));
-
-	}	
 
 
 	template<typename Settings>
@@ -603,7 +553,7 @@ namespace smtrat
 		Integer cRHS = carl::getNum(c.getRHS());
 		std::vector<std::pair<Rational, carl::Variable>> newLHS;
 		Rational newRHS = carl::mod(cRHS, prime);
-		PBConstraintT newConstraint;
+		
 
 		for(auto it : cLHS){
 			assert(carl::isInteger(it.first));
@@ -629,9 +579,7 @@ namespace smtrat
 			newLHS.push_back(std::pair<Rational, carl::Variable>(-t, carl::freshVariable(carl::VariableType::VT_BOOL)));
 		}
 
-		newConstraint.setLHS(newLHS);
-		newConstraint.setRHS(newRHS);
-		newConstraint.setRelation(carl::Relation::EQ);
+		PBConstraintT newConstraint(newLHS, carl::Relation::EQ, newRHS);
 		return checkFormulaType(FormulaT(newConstraint));		
 	}
 
@@ -1163,7 +1111,7 @@ namespace smtrat
 
 		}
 
-		for(int i = 0; i < base.size(); i++){
+		for(std::size_t i = 0; i < base.size(); i++){
 			if(base[i] == 1 || base[i] == 0){
 				base.erase(base.begin() + i);
 			} 
