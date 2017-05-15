@@ -75,7 +75,7 @@ namespace smtrat
 
 		}
 		if(inequalities.size() != 0){
-			subfB = forwardInequalities();
+		//	subfB = reduce();
 		}
 		FormulaT formula = FormulaT(carl::FormulaType::AND, subfA, subfB);
 		addSubformulaToPassedFormula(formula);
@@ -108,7 +108,7 @@ namespace smtrat
 		}
 
 		
-		const std::size_t columns = vars.size();
+		const int columns = vars.size();
 
 		MatrixT matrix;
 		int counter = 0;
@@ -134,10 +134,8 @@ namespace smtrat
 
 		std::cout << coef << std::endl;
 
-		matrix = MatrixT::Map(coef.data(), columns, rows).transpose();
-		b = VectorT::Map(rhs.data(), rhs.size());
-		// matrix = MatrixT::Map(&coef[0], columns, rows).transpose();
-		// VectorT b = VectorT::Map(&rhs[0], rhs.size());
+		matrix = MatrixT::Map(&coef[0], columns, rows).transpose();
+		VectorT b = VectorT::Map(&rhs[0], rhs.size());
 
 
 
@@ -200,71 +198,59 @@ namespace smtrat
 
 	}
 
-	template<class Settings>
-	FormulaT PBGaussModule<Settings>::forwardInequalities(){
-		FormulasT subformulas;
-		for(auto it : inequalities){
-			subformulas.push_back((FormulaT) it);
-		}
-		return FormulaT(carl::FormulaType::AND, std::move(subformulas));
-	}
+template<class Settings>
+FormulaT PBGaussModule<Settings>::reconstructEqSystem(const MatrixT& u, const VectorT& b){
+    FormulasT subformulas;
+    const MatrixT temp = u.transpose();
+    
+    for(size_t i = 0; i < temp.cols(); i++){
+        std::vector<std::pair<Rational, carl::Variable>> newLHS;
+        auto r = temp.block(temp.rows(), 1, i, 1);
+        std::vector<Rational> row(r.data(), r.data() + r.size());
+        Rational multiplier = 1;
+        for(auto it : row){
+            if(!carl::isInteger(it)){
+                multiplier *= carl::getDenom(it);
+            }
+        }
+        
+        for(std::size_t i ; i < row.size(); i++){
+            Rational currCoef = row[i];
+            carl::Variable currVar = vars[i];
+            newLHS.push_back(std::pair<Rational, carl::Variable>(multiplier * currCoef, currVar));
+        }
+        subformulas.push_back((FormulaT) PBConstraintT(newLHS, carl::Relation::EQ, b[i] * multiplier));
+        
+    }
+    return FormulaT(carl::FormulaType::AND, std::move(subformulas));
+}
 
 
 
-	template<class Settings>
-	FormulaT PBGaussModule<Settings>::reconstructEqSystem(const MatrixT& u, const VectorT& b){
-		FormulasT subformulas;
-		const MatrixT temp = u.transpose();
-
-
-
-		for(size_t i = 0; i < temp.cols(); i++){
-			std::vector<std::pair<Rational, carl::Variable>> newLHS;
-			auto r = temp.block(temp.rows(), 1, i, 1);
-			std::vector<Rational> row(r.data(), r.data() + r.size());
-			Rational multiplier = 1;
-			for(auto it : row){
-				if(!carl::isInteger(it)){
-					multiplier *= carl::getDenom(it);
-				}
-			}
-
-			for(std::size_t i ; i < row.size(); i++){
-				Rational currCoef = row[i];
-				carl::Variable currVar = vars[i];
-				newLHS.push_back(std::pair<Rational, carl::Variable>(multiplier * currCoef, currVar));
-			}
-			subformulas.push_back((FormulaT) PBConstraintT(newLHS, carl::Relation::EQ, b[i] * multiplier));
-
-		}
-		return FormulaT(carl::FormulaType::AND, std::move(subformulas));
-	}
 
 	template<class Settings>
 	FormulaT PBGaussModule<Settings>::reduce(){
 		
-		// for(auto it : inequalities){
-		// 	auto iVars = it.gatherVariables();
-		// 	carl::Relation rel = it.getRelation();
-		// 	for(auto i : equations){
-		// 		auto eVars = i.gatherVariables();
+		for(auto it : inequalities){
+			auto iVars = it.gatherVariables();
+			carl::Relation rel = it.getRelation();
+			for(auto i : equations){
+				auto eVars = i.gatherVariables();
 
-		// 		for(int k = 0; k < iVars.size(); k++){
-		// 			if(std::find(eVars.begin(), eVars.end(), iVars[k]) != eVars.end()){
-		// 				auto iLhs = it.getLHS();
-		// 				auto eLhs = i.getLHS();
-		// 				if(iLhs[k].first == eLhs[k].first){
-		// 					auto newConstraint = addConstraints(it, i, rel);
-		// 					equations.erase(equations.begin() + k - 1);
-		// 					inequalities.erase(inequalities.begin() + k - 1);
-		// 					inequalities.push_back(newConstraint);
-		// 				}
-		// 			}
-		// 		}
-		// 	}
-		// }
-
-
+				for(int k = 0; k < iVars.size(); k++){
+					if(std::find(eVars.begin(), eVars.end(), iVars[k]) != eVars.end()){
+						auto iLhs = it.getLHS();
+						auto eLhs = i.getLHS();
+						if(iLhs[k].first == eLhs[k].first){
+							auto newConstraint = addConstraints(it, i, rel);
+							equations.erase(equations.begin() + k - 1);
+							inequalities.erase(inequalities.begin() + k - 1);
+							inequalities.push_back(newConstraint);
+						}
+					}
+				}
+			}
+		}
 	}
 
 	template<class Settings>
@@ -298,11 +284,12 @@ namespace smtrat
 			}
 		}
 
-		PBConstraintT c(newLHS, rel, newRHS);
+		PBConstraintT c;
+		c.setLHS(newLHS);
+		c.setRelation(rel);
+		c.setRHS(newRHS);
 		return c;
 	}
-
-
 
 }
 
