@@ -58,9 +58,9 @@ namespace smtrat
 	template<class Settings>
 	Answer PBGaussModule<Settings>::checkCore()
 	{
-		FormulaT f;
-		for( const auto& subformula: rReceivedFormula()){
-			f = subformula.formula();
+		
+		for( const auto& subformula : rReceivedFormula()){
+			FormulaT f = subformula.formula();
 			const PBConstraintT& c = f.pbConstraint();
 			if(c.getRelation() == carl::Relation::EQ){
 				equations.push_back(c);
@@ -68,15 +68,14 @@ namespace smtrat
 				inequalities.push_back(c);
 			}
 		}
-		FormulaT subfA = FormulaT(carl::FormulaType::TRUE);
-		FormulaT subfB = FormulaT(carl::FormulaType::TRUE);
-		if(equations.size() != 0){
-			subfA = gaussAlgorithm();
 
-		}
-		if(inequalities.size() != 0){
-		//	subfB = reduce();
-		}
+		FormulaT subfA = gaussAlgorithm();
+		FormulasT subf;
+		for(auto it : inequalities){
+			subf.push_back((FormulaT) it);
+		}	
+		FormulaT subfB = FormulaT(carl::FormulaType::AND, std::move(subf));
+
 		FormulaT formula = FormulaT(carl::FormulaType::AND, subfA, subfB);
 		addSubformulaToPassedFormula(formula);
 		Answer answer = runBackends();
@@ -89,7 +88,12 @@ namespace smtrat
 	template<class Settings>
 	FormulaT PBGaussModule<Settings>::gaussAlgorithm(){
 
-		//PROBLEM WENN VARIABLE MEHRMALS VORKOMMT!!
+		if(equations.size() == 0){
+			return FormulaT(carl::FormulaType::TRUE);
+		}else if(equations.size() == 1){
+			return (FormulaT) *(equations.begin()); 
+		}
+
 		const int rows = equations.size();
 		std::vector<Rational> rhs;
 
@@ -132,12 +136,8 @@ namespace smtrat
 			}
 		}
 
-		std::cout << coef << std::endl;
-
 		matrix = MatrixT::Map(&coef[0], columns, rows).transpose();
 		VectorT b = VectorT::Map(&rhs[0], rhs.size());
-
-
 
 		int dim;
 		if(rows < columns){
@@ -195,33 +195,33 @@ namespace smtrat
 		// std::cout << newUpper << std::endl;
 
 		return reconstructEqSystem(newUpper, newB);
-
+		return FormulaT(carl::FormulaType::TRUE);
 	}
 
 template<class Settings>
 FormulaT PBGaussModule<Settings>::reconstructEqSystem(const MatrixT& u, const VectorT& b){
     FormulasT subformulas;
-    const MatrixT temp = u.transpose();
-    
-    for(size_t i = 0; i < temp.cols(); i++){
-        std::vector<std::pair<Rational, carl::Variable>> newLHS;
-        auto r = temp.block(temp.rows(), 1, i, 1);
-        std::vector<Rational> row(r.data(), r.data() + r.size());
-        Rational multiplier = 1;
-        for(auto it : row){
-            if(!carl::isInteger(it)){
-                multiplier *= carl::getDenom(it);
-            }
-        }
-        
-        for(std::size_t i ; i < row.size(); i++){
-            Rational currCoef = row[i];
-            carl::Variable currVar = vars[i];
-            newLHS.push_back(std::pair<Rational, carl::Variable>(multiplier * currCoef, currVar));
-        }
-        subformulas.push_back((FormulaT) PBConstraintT(newLHS, carl::Relation::EQ, b[i] * multiplier));
-        
+    const MatrixT temp = u;
+
+    for(size_t i = 0; i < temp.rows(); i++){
+    	std::vector<std::pair<Rational, carl::Variable>> newLHS;
+    	auto r = temp.block(temp.cols(), 1, i, 1);
+    	std::vector<Rational> row(r.data(), r.data() + r.size());
+    	Rational m = 1;
+    	for(auto it : row){
+    		if(!carl::isInteger(it)){
+    			m *= carl::getDenom(it);
+    		}
+    	}
+
+    	for(std::size_t j = 0; j < row.size(); j++){
+    		Rational currCoef = row[j];
+    		carl::Variable currVar = vars[j];
+    		newLHS.push_back(std::pair<Rational, carl::Variable>(m * currCoef, currVar));
+    	}
+    	subformulas.push_back((FormulaT) PBConstraintT(newLHS, carl::Relation::EQ, b[i] * m));
     }
+
     return FormulaT(carl::FormulaType::AND, std::move(subformulas));
 }
 
@@ -231,26 +231,27 @@ FormulaT PBGaussModule<Settings>::reconstructEqSystem(const MatrixT& u, const Ve
 	template<class Settings>
 	FormulaT PBGaussModule<Settings>::reduce(){
 		
-		for(auto it : inequalities){
-			auto iVars = it.gatherVariables();
-			carl::Relation rel = it.getRelation();
-			for(auto i : equations){
-				auto eVars = i.gatherVariables();
+		// for(auto it : inequalities){
+		// 	auto iVars = it.gatherVariables();
+		// 	carl::Relation rel = it.getRelation();
+		// 	for(auto i : equations){
+		// 		auto eVars = i.gatherVariables();
 
-				for(int k = 0; k < iVars.size(); k++){
-					if(std::find(eVars.begin(), eVars.end(), iVars[k]) != eVars.end()){
-						auto iLhs = it.getLHS();
-						auto eLhs = i.getLHS();
-						if(iLhs[k].first == eLhs[k].first){
-							auto newConstraint = addConstraints(it, i, rel);
-							equations.erase(equations.begin() + k - 1);
-							inequalities.erase(inequalities.begin() + k - 1);
-							inequalities.push_back(newConstraint);
-						}
-					}
-				}
-			}
-		}
+		// 		for(int k = 0; k < iVars.size(); k++){
+		// 			if(std::find(eVars.begin(), eVars.end(), iVars[k]) != eVars.end()){
+		// 				auto iLhs = it.getLHS();
+		// 				auto eLhs = i.getLHS();
+		// 				if(iLhs[k].first == eLhs[k].first){
+		// 					auto newConstraint = addConstraints(it, i, rel);
+		// 					equations.erase(equations.begin() + k - 1);
+		// 					inequalities.erase(inequalities.begin() + k - 1);
+		// 					inequalities.push_back(newConstraint);
+		// 				}
+		// 			}
+		// 		}
+		// 	}
+		// }
+		return FormulaT(carl::FormulaType::TRUE);
 	}
 
 	template<class Settings>
