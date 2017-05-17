@@ -201,11 +201,12 @@ message(STATUS "Using CArL from ${carl_INCLUDE_DIR}")
 
 if(STATICLIB_SWITCH)
 	set( libraries ${libraries} lib_carl_static)
+	set( libraries ${libraries} Boost_STATIC)
 else()
 	set( libraries ${libraries} lib_carl)
+	set( libraries ${libraries} Boost_SHARED)
 endif()
 
-set( libraries ${libraries} Boost_SHARED)
 
 # # # # # # # # # # # # # # # # # # # # # #
 # C.2. required libraries
