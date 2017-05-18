@@ -97,6 +97,10 @@ public:
 		fixQueue();
 		return mQueue.back();
 	}
+	
+	friend std::ostream& operator<<(std::ostream& os, const VariableSelector& vs) {
+		return os << vs.mQueue;
+	}
 };
 
 }
