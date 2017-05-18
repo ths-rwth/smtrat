@@ -10,6 +10,8 @@ namespace smtrat {
 namespace mcsat {
 
 class VariableSelector {
+public:
+	friend std::ostream& operator<<(std::ostream& os, const VariableSelector& vs);
 private:
 	using CounterMap = std::map<carl::Variable,std::pair<std::size_t,bool>>;
 	/// Counters for every variable how often they occur in the constraints and whether they have already been decided
@@ -98,10 +100,10 @@ public:
 		return mQueue.back();
 	}
 	
-	friend std::ostream& operator<<(std::ostream& os, const VariableSelector& vs) {
-		return os << vs.mQueue;
-	}
 };
+std::ostream& operator<<(std::ostream& os, const VariableSelector& vs) {
+	return os << vs.mQueue;
+}
 
 }
 }
