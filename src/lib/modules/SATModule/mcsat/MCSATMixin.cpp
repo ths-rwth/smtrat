@@ -7,6 +7,7 @@ using carl::operator<<;
 
 void MCSATMixin::makeDecision(Minisat::Lit decisionLiteral) {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Made theory decision for " << current().variable << ": " << decisionLiteral);
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Variables: " << mVariables);
 	current().decisionLiteral = decisionLiteral;
 	mVariables.assign(current().variable);
 }
@@ -25,11 +26,10 @@ bool MCSATMixin::backtrackTo(Minisat::Lit literal) {
 	
 	while (mCurrentLevel > level) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Backtracking theory assignment for " << current().variable);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Model " << mNLSAT.getModel());
 		popLevel();
 		if (current().decisionLiteral != Minisat::lit_Undef) {
-			auto it = mCurrentModel.find(current().variable);
-			assert(it != mCurrentModel.end());
-			mCurrentModel.erase(it);
+			mNLSAT.popAssignment(current().variable);
 			mVariables.unassign(current().variable);
 		}
 	}
@@ -57,11 +57,23 @@ Minisat::Lit MCSATMixin::pickLiteralForDecision() {
 			continue;
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking if " << var << " can be decided...");
-		if (isLiteralInUnivariateClause(Minisat::mkLit(var, false)) && mNLSAT.isInfeasible(currentVariable(), mGetter.reabstractLiteral(Minisat::mkLit(var, false))) == boost::none) {
-			return Minisat::mkLit(var, false);
+		if (isLiteralInUnivariateClause(Minisat::mkLit(var, false))) {
+			const auto& f = mGetter.reabstractLiteral(Minisat::mkLit(var, false));
+			auto res = mNLSAT.isInfeasible(currentVariable(), f);
+			if (res == boost::none) {
+				return Minisat::mkLit(var, false);
+			} else {
+				// TODO: There is a conflict. Return conflict with mNLSAT.explain(currentVariable(), *res, f), perform theory propagation
+			}
 		}
-		if (isLiteralInUnivariateClause(Minisat::mkLit(var, true)) && mNLSAT.isInfeasible(currentVariable(), mGetter.reabstractLiteral(Minisat::mkLit(var, true))) == boost::none) {
-			return Minisat::mkLit(var, true);
+		if (isLiteralInUnivariateClause(Minisat::mkLit(var, true))) {
+			const auto& f = mGetter.reabstractLiteral(Minisat::mkLit(var, true));
+			auto res = mNLSAT.isInfeasible(currentVariable(), f);
+			if (res == boost::none) {
+				return Minisat::mkLit(var, true);
+			} else {
+				// TODO: There is a conflict. Return conflict with mNLSAT.explain(currentVariable(), *res, f), perform theory propagation
+			}
 		}
 	}
 	return Minisat::lit_Undef;
