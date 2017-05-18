@@ -18,6 +18,8 @@
 namespace smtrat {
 namespace mcsat {
 
+using carl::operator<<;
+
 struct InformationGetter {
 	std::function<Minisat::lbool(Minisat::Var)> getVarValue;
 	std::function<Minisat::lbool(Minisat::Lit)> getLitValue;
