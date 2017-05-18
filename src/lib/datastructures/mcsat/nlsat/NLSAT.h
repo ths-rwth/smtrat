@@ -59,6 +59,14 @@ public:
 	 * Takes a conflicting core as a reason and explains it by an explanation as described in the MCSAT / NLSAT paper.
 	 */
 	FormulaT explain(carl::Variable var, const FormulasT& reason, const FormulaT& implication);
+	
+	friend std::ostream& operator<<(std::ostream& os, const NLSAT& nl) {
+		os << "NLSAT:" << std::endl;
+		os << "## Model: " << nl.mModel << std::endl;
+		os << "## Constraints: " << nl.mConstraints << std::endl;
+		os << "## Bounds: " << nl.mMVBounds << std::endl;
+		return os;
+	}
 };
 
 }
