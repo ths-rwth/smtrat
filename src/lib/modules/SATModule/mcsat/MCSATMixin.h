@@ -232,6 +232,7 @@ public:
 	
 	std::pair<FormulaT,bool> makeTheoryDecision() {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Obtaining assignment");
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", mNLSAT);
 		auto res = mNLSAT.findAssignment(currentVariable());
 		if (carl::variant_is_type<ModelValue>(res)) {
 			const auto& value = boost::get<ModelValue>(res);

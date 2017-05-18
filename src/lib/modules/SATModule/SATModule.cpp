@@ -2135,7 +2135,7 @@ namespace smtrat
         if( level < assumptions.size() && !force )
             level = assumptions.size();
         #ifdef DEBUG_SATMODULE
-	std::cout << "### cancel until " << level << std::endl;
+	std::cout << "### cancel until " << level << " (forced: " << force << ")" << std::endl;
         #endif
         if( decisionLevel() > level )
         {
@@ -2162,6 +2162,9 @@ namespace smtrat
 			}
             Var x = var( trail[c] );
             resetVariableAssignment( x );
+			if (Settings::mc_sat) {
+				mMCSAT.undoAssignment(trail[c]);
+			}
             VarData& vd = vardata[x];
             if( vd.mExpPos > 0 )
             {
@@ -2694,6 +2697,15 @@ namespace smtrat
                          */
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Picking a literal for a boolean decision");
                     	next = mMCSAT.pickLiteralForDecision(); 
+						// TODO:
+						// Get variant<Lit,FormulaT>
+						// Prüfen: if (carl::variant_is_type<Minisat::Lit>(res))
+						// If is Lit: assign to next
+						// If is FormulaT: do theory propagation like in search():2725
+						// But we can not assume that evaluateLiteral(l) == l_False
+						// bool cres = addClause(explanation, LEMMA_CLAUSE);
+						// Brauchen wir propagateTheory() / storeLemmas() ?? 
+						// continue;
 						SMTRAT_LOG_DEBUG("smtrat.sat", "-> " << next);
 					} else {
                         // DPLL::decide()
@@ -3118,6 +3130,7 @@ namespace smtrat
 		cout << "###" << endl; printClauses( learnts, "Learnts", cout, "### ", 0, false, false );
 		cout << "###" << endl; printCurrentAssignment( cout, "### " );
 		cout << "###" << endl; printDecisions( cout, "### " );
+		cout << "###" << endl << "Assumptions: " << assumptions << endl;
 		cout << "###" << endl;
 		#endif
 		assert( confl != CRef_Undef );
@@ -3133,6 +3146,7 @@ namespace smtrat
 
         do
         {
+			SMTRAT_LOG_DEBUG("smtrat.sat", "out_learnt = " << out_learnt);
 			// TODO: If confl is a special reason, build a clause for it
 			// Important: Implied literal at clause[0]
 			
@@ -3155,6 +3169,7 @@ namespace smtrat
 				if (confl == CRef_Undef) std::exit(77);
 	            assert( confl != CRef_Undef );    // (otherwise should be UIP)
 	            Clause& c = ca[confl];
+				SMTRAT_LOG_DEBUG("smtrat.sat", "c = " << c);
 	            if( c.learnt() )
 	                claBumpActivity( c );
 
@@ -3172,8 +3187,10 @@ namespace smtrat
 							pathC++;
 							SMTRAT_LOG_DEBUG("smtrat.sat", "pathC = " << pathC << " for " << q);
 						}
-	                    else
+	                    else {
+							SMTRAT_LOG_DEBUG("smtrat.sat", "pushing = " << q << " to out_learnt");
 	                        out_learnt.push( q );
+						}
 	                }
 	            }
 			//}
