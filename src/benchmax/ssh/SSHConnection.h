@@ -210,7 +210,7 @@ public:
 		int rc;
 		SSH_LOCKED(rc = ssh_scp_push_file(scp, remote.c_str(), (std::size_t)tmp.tellg(), mode));
 		if (rc != SSH_OK) {
-			BENCHMAX_LOG_ERROR("benchmax.ssh", this << " Failed to create remote file: " << ssh_get_error(session));
+			BENCHMAX_LOG_ERROR("benchmax.ssh", this << " Failed to create remote file " << remote << " from local file " << local << ": " << ssh_get_error(session));
 			destroy(scp);
 			return false;
 		}
