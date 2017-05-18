@@ -92,13 +92,10 @@ namespace smtrat
 			 */
 			Answer checkCore();
 
-			std::function<FormulaT(FormulaT)> gaussAlgorithmFunction;
 			FormulaT gaussAlgorithm();
 			FormulaT reconstructEqSystem(const MatrixT& u, const VectorT& b);
 			FormulaT reduce();
 			PBConstraintT addConstraints(const PBConstraintT& i, const PBConstraintT& e, carl::Relation rel);
-			Rational lcmMultiple(const std::vector<Rational>& v);
-			Rational lcm(const Rational a, const Rational b);
-			FormulaT forwardInequalities();
+
 	};
 }

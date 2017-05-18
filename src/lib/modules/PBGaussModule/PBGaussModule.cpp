@@ -58,24 +58,28 @@ namespace smtrat
 	template<class Settings>
 	Answer PBGaussModule<Settings>::checkCore()
 	{
-		
-		for( const auto& subformula : rReceivedFormula()){
+		for(const auto& subformula : rReceivedFormula()){
 			FormulaT f = subformula.formula();
-			const PBConstraintT& c = f.pbConstraint();
-			if(c.getRelation() == carl::Relation::EQ){
-				equations.push_back(c);
+			
+			if(f.getType() == carl::FormulaType::PBCONSTRAINT){
+				const PBConstraintT& c = f.pbConstraint();
+				if(c.getRelation() == carl::Relation::EQ){
+					equations.push_back(c);
+				}else{
+					inequalities.push_back(c);
+				}
 			}else{
-				inequalities.push_back(c);
+				addSubformulaToPassedFormula(f);
 			}
 		}
-
+	
 		FormulaT subfA = gaussAlgorithm();
+		//std::cout << "Gauss fertig!" << std::endl;
 		FormulasT subf;
 		for(auto it : inequalities){
 			subf.push_back((FormulaT) it);
 		}	
 		FormulaT subfB = FormulaT(carl::FormulaType::AND, std::move(subf));
-
 		FormulaT formula = FormulaT(carl::FormulaType::AND, subfA, subfB);
 		addSubformulaToPassedFormula(formula);
 		Answer answer = runBackends();
@@ -85,16 +89,17 @@ namespace smtrat
 		return answer;
 	}
 
+
 	template<class Settings>
 	FormulaT PBGaussModule<Settings>::gaussAlgorithm(){
-
+		// std::cout << "Gauss" << std::endl;
 		if(equations.size() == 0){
 			return FormulaT(carl::FormulaType::TRUE);
 		}else if(equations.size() == 1){
 			return (FormulaT) *(equations.begin()); 
 		}
 
-		const int rows = equations.size();
+		const long rows = (const long) equations.size();
 		std::vector<Rational> rhs;
 
 		for(const auto& it : equations){
@@ -110,9 +115,8 @@ namespace smtrat
 			}
 			rhs.push_back(it.getRHS());
 		}
-
-		
-		const int columns = vars.size();
+				
+		const long columns = (const long) vars.size();
 
 		MatrixT matrix;
 		int counter = 0;
@@ -137,89 +141,106 @@ namespace smtrat
 		}
 
 		matrix = MatrixT::Map(&coef[0], columns, rows).transpose();
-		VectorT b = VectorT::Map(&rhs[0], rhs.size());
+		VectorT b = VectorT::Map(&rhs[0], (long) rhs.size());
 
-		int dim;
-		if(rows < columns){
-			dim = columns;
-			MatrixT id(dim, dim);
-			MatrixT::Identity(columns,dim);            
-			id.setIdentity(columns,dim);
-			MatrixT newMatrix(columns, columns);
-			id << matrix;
-			matrix = id;
+		// std::cout << "Matrix:" << std::endl;
+		// for(auto i = 0; i < matrix.rows(); i++){
+		// 	VectorT r = matrix.row(i);
+		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
+		// 	std::cout << row << std::endl;
+		// }
 
-			VectorT temp = VectorT::Zero(dim);
-			temp << b;
-			b = temp;
 
-		}else{
-			dim = rows;
-		}
+		// std::cout << "matrix:" << matrix.rows() << ", " << matrix.cols() << std::endl;
+		//Add b to matrix
+		MatrixT temp(matrix.rows(), matrix.cols() + 1);
+		temp << matrix, b; 
+		matrix = temp;
+		// std::cout << "matrix:" << matrix.rows() << ", " << matrix.cols() << std::endl;
+
+		// std::cout << "Matrix:" << std::endl;
+		// for(auto i = 0; i < matrix.rows(); i++){
+		// 	VectorT r = matrix.row(i);
+		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
+		// 	std::cout << row << std::endl;
+		// }
+
+
 
 		//LU Decomposition
 
 		Eigen::FullPivLU<MatrixT> lu(matrix);
-		MatrixT u(rows, columns);
-		MatrixT p(rows, columns);
-		MatrixT q(rows, columns);
 		VectorT newB;
 		MatrixT newUpper;
+		
+		MatrixT u = lu.matrixLU().triangularView<Eigen::Upper>();
+		MatrixT l = lu.matrixLU().triangularView<Eigen::StrictlyLower>();
+		MatrixT p = lu.permutationP();
+		MatrixT q = lu.permutationQ();
 
-		u = lu.matrixLU().triangularView<Eigen::Upper>();
-		p = lu.permutationP();
-		q = lu.permutationQ();
-		newB = p * b;
 		newUpper = u * q.inverse();
+		newB = newUpper.col(newUpper.cols() - 1);
+		newUpper.conservativeResize(newUpper.rows(), newUpper.cols() - 1);
 
-		// MatrixT l(dim, dim);
-		// MatrixT::Identity(dim,dim);            
-		// l.setIdentity(dim,dim);
-		// l.triangularView<Eigen::StrictlyLower>() = lu.matrixLU();
 
-		// std::cout << "Matrix:" << std::endl;
-		// std::cout << matrix << std::endl;
+
+		
+		// std::cout << "Upper:" << std::endl;
+		// for(auto i = 0; i < newUpper.rows(); i++){
+		// 	VectorT r = newUpper.row(i);
+		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
+		// 	std::cout << row << std::endl;
+		// }
+
+		
+		// std::cout << "Lower:" << std::endl;
+		// for(auto i = 0; i < l.rows(); i++){
+		// 	VectorT r = l.row(i);
+		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
+		// 	std::cout << row << std::endl;
+		// }
+
 		// std::cout << "b:" << std::endl;
-		// std::cout << b << std::endl;
-		// std::cout << "upper:" << std::endl;
-		// std::cout << u << std::endl;
-		// std::cout << "permutation P:" << std::endl;
-		// std::cout << p << std::endl;
-		// std::cout << "permutation Q:" << std::endl;
-		// std::cout << q << std::endl;
-		// std::cout << "Let us now reconstruct the original matrix m:" << std::endl;
-		// std::cout << lu.permutationP().inverse() * l * u * lu.permutationQ().inverse() << std::endl;
-		// std::cout << "newB:" << std::endl;
-		// std::cout << newB << std::endl;
-		// std::cout << "newUpper:" << std::endl;
-		// std::cout << newUpper << std::endl;
+		// 	std::vector<Rational> row(newB.data(), newB.data() + newB.size());
+		// 	std::cout << row << std::endl;
+		
+		
+		
 
 		return reconstructEqSystem(newUpper, newB);
-		return FormulaT(carl::FormulaType::TRUE);
 	}
 
 template<class Settings>
 FormulaT PBGaussModule<Settings>::reconstructEqSystem(const MatrixT& u, const VectorT& b){
+	// std::cout << "reconstruct" << std::endl;
     FormulasT subformulas;
     const MatrixT temp = u;
 
-    for(size_t i = 0; i < temp.rows(); i++){
+	// std::cout << "Upper:" << std::endl;
+	// 	for(auto i = 0; i < temp.rows(); i++){
+	// 		VectorT r = temp.row(i);
+	// 		std::vector<Rational> row(r.data(), r.data() + r.size());
+	// 		std::cout << row << std::endl;
+	// 	}
+
+    for(long i = 0; i < temp.rows(); i++){
     	std::vector<std::pair<Rational, carl::Variable>> newLHS;
-    	auto r = temp.block(temp.cols(), 1, i, 1);
+    	VectorT r = temp.row(i);
     	std::vector<Rational> row(r.data(), r.data() + r.size());
+    	// std::cout << "row: " << row << std::endl;
     	Rational m = 1;
     	for(auto it : row){
     		if(!carl::isInteger(it)){
     			m *= carl::getDenom(it);
     		}
     	}
-
     	for(std::size_t j = 0; j < row.size(); j++){
     		Rational currCoef = row[j];
     		carl::Variable currVar = vars[j];
     		newLHS.push_back(std::pair<Rational, carl::Variable>(m * currCoef, currVar));
     	}
-    	subformulas.push_back((FormulaT) PBConstraintT(newLHS, carl::Relation::EQ, b[i] * m));
+    	// std::cout << (FormulaT) PBConstraintT(newLHS, carl::Relation::EQ, b[(long)i] * m) << std::endl;
+    	subformulas.push_back((FormulaT) PBConstraintT(newLHS, carl::Relation::EQ, b[(long)i] * m));
     }
 
     return FormulaT(carl::FormulaType::AND, std::move(subformulas));
