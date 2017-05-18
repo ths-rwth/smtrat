@@ -93,9 +93,8 @@ namespace smtrat
 			Answer checkCore();
 
 			FormulaT gaussAlgorithm();
-			FormulaT reconstructEqSystem(const MatrixT& u, const VectorT& b);
-			FormulaT reduce();
-			PBConstraintT addConstraints(const PBConstraintT& i, const PBConstraintT& e, carl::Relation rel);
+			FormulaT reconstructEqSystem(const MatrixT& u, const std::vector<carl::Relation>& rels, const VectorT& b);
+			FormulaT reduce(const MatrixT& u);
 
 	};
 }
