@@ -73,6 +73,8 @@ option(SMTRAT_DEVOPTION_Validation "Output intermediate states in an smt2 file" 
 option(SMTRAT_DEVOPTION_MeasureTime "Measure times and number of calls" OFF)
 option(SMTRAT_DEVOPTION_Statistics "Use the Statistics gathering" OFF)
 
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "DEBUG" "RELEASE")
+
 if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE "RELEASE")
 endif()
