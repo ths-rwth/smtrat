@@ -2223,6 +2223,7 @@ namespace smtrat
             }
             if( origVarsIter != originalRealVariables.end() )
                 ++origVarsIter;
+			assert(!std::isinf(iter->second) && !std::isnan(iter->second));
             // rationalize the found test point for the given dimension
             Rational value = carl::rationalize<Rational>( iter->second );
             // check if the test point, which has been generated for double intervals, does not satisfy the rational
