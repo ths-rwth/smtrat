@@ -12,9 +12,9 @@ namespace smtrat
 {
 	template<class Settings>
 	PBGaussModule<Settings>::PBGaussModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager):
-		Module( _formula, _conditionals, _manager )
+	Module( _formula, _conditionals, _manager )
 #ifdef SMTRAT_DEVOPTION_Statistics
-		, mStatistics(Settings::moduleName)
+	, mStatistics(Settings::moduleName)
 #endif
 	{}
 	
@@ -41,9 +41,7 @@ namespace smtrat
 	
 	template<class Settings>
 	void PBGaussModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
-	{
-		
-	}
+	{}
 	
 	template<class Settings>
 	void PBGaussModule<Settings>::updateModel() const
@@ -74,14 +72,7 @@ namespace smtrat
 				addSubformulaToPassedFormula(f);
 			}
 		}
-	
-		// FormulaT subfA = gaussAlgorithm();
-		// FormulasT subf;
-		// for(auto it : inequalities){
-		// 	subf.push_back((FormulaT) it);
-		// }	
-		// FormulaT subfB = FormulaT(carl::FormulaType::AND, std::move(subf));
-		// FormulaT formula = FormulaT(carl::FormulaType::AND, subfA, subfB);
+
 		FormulaT formula;
 		if(equations.size() > 1){
 			formula = gaussAlgorithm();
@@ -108,7 +99,6 @@ namespace smtrat
 
 	template<class Settings>
 	FormulaT PBGaussModule<Settings>::gaussAlgorithm(){
-		// std::cout << "Gauss" << std::endl;
 		if(equations.size() == 0){
 			return FormulaT(carl::FormulaType::TRUE);
 		}else if(equations.size() == 1){
@@ -132,7 +122,7 @@ namespace smtrat
 			}
 			rhs.push_back(it.getRHS());
 		}
-				
+
 		const long columns = (const long) eqVars.size();
 
 		MatrixT matrix;
@@ -148,9 +138,9 @@ namespace smtrat
 					coef.push_back(0);
 				}else{
 					auto elem = std::find_if(lhs.begin(), lhs.end(), 
-					[&] (const pair<Rational, carl::Variable>& elem){
-						return elem.second == i;
-					});
+						[&] (const pair<Rational, carl::Variable>& elem){
+							return elem.second == i;
+						});
 					coef.push_back(elem->first);
 				}
 				counter++;
@@ -159,33 +149,12 @@ namespace smtrat
 
 		matrix = MatrixT::Map(&coef[0], columns, rows).transpose();
 		VectorT b = VectorT::Map(&rhs[0], (long) rhs.size());
-
-		// std::cout << "Matrix:" << std::endl;
-		// for(auto i = 0; i < matrix.rows(); i++){
-		// 	VectorT r = matrix.row(i);
-		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
-		// 	std::cout << row << std::endl;
-		// }
-
-
-		// std::cout << "matrix:" << matrix.rows() << ", " << matrix.cols() << std::endl;
 		//Add b to matrix
 		MatrixT temp(matrix.rows(), matrix.cols() + 1);
 		temp << matrix, b; 
 		matrix = temp;
-		// std::cout << "matrix:" << matrix.rows() << ", " << matrix.cols() << std::endl;
-
-		// std::cout << "Matrix:" << std::endl;
-		// for(auto i = 0; i < matrix.rows(); i++){
-		// 	VectorT r = matrix.row(i);
-		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
-		// 	std::cout << row << std::endl;
-		// }
-
-
 
 		//LU Decomposition
-
 		Eigen::FullPivLU<MatrixT> lu(matrix);
 		VectorT newB;
 		MatrixT newUpper;
@@ -198,25 +167,6 @@ namespace smtrat
 		newUpper = u * q.inverse();
 		newB = newUpper.col(newUpper.cols() - 1);
 		newUpper.conservativeResize(newUpper.rows(), newUpper.cols() - 1);
-		
-		// std::cout << "Upper:" << std::endl;
-		// for(auto i = 0; i < newUpper.rows(); i++){
-		// 	VectorT r = newUpper.row(i);
-		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
-		// 	std::cout << row << std::endl;
-		// }
-
-		// std::cout << "Lower:" << std::endl;
-		// for(auto i = 0; i < l.rows(); i++){
-		// 	VectorT r = l.row(i);
-		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
-		// 	std::cout << row << std::endl;
-		// }
-
-		// std::cout << "b:" << std::endl;
-		// 	std::vector<Rational> row(newB.data(), newB.data() + newB.size());
-		// 	std::cout << row << std::endl;
-		
 		std::vector<carl::Relation> rels;
 		for(auto i = 0; i < newUpper.rows(); i++){
 			rels.push_back(carl::Relation::EQ);
@@ -229,252 +179,156 @@ namespace smtrat
 	}
 
 template<class Settings>
-FormulaT PBGaussModule<Settings>::reconstructEqSystem(const MatrixT& u, const std::vector<carl::Variable>& vars, const std::vector<carl::Relation>& rels,  const VectorT& b){
-	 std::cout << "reconstruct" << std::endl;
-    FormulasT subformulas;
-    const MatrixT temp = u;
+	FormulaT PBGaussModule<Settings>::reconstructEqSystem(const MatrixT& u, const std::vector<carl::Variable>& vars, const std::vector<carl::Relation>& rels,  const VectorT& b){
+		FormulasT subformulas;
+		const MatrixT temp = u;
+		for(long i = 0; i < temp.rows(); i++){
+			std::vector<std::pair<Rational, carl::Variable>> newLHS;
+			VectorT r = temp.row(i);
+			std::vector<Rational> row(r.data(), r.data() + r.size());
+			Rational m = 1;
+			for(auto it : row){
+				if(!carl::isInteger(it)){
+					m *= carl::getDenom(it);
+				}
+			}
+			for(std::size_t j = 0; j < row.size(); j++){
+				Rational currCoef = row[j];
+				carl::Variable currVar = vars[j];
+				newLHS.push_back(std::pair<Rational, carl::Variable>(m * currCoef, currVar));
+			}
+			subformulas.push_back((FormulaT) PBConstraintT(newLHS, rels[(std::size_t)i], b[(long)i] * m));
+		}
 
-	// std::cout << "Upper:" << std::endl;
-	// 	for(auto i = 0; i < temp.rows(); i++){
-	// 		VectorT r = temp.row(i);
-	// 		std::vector<Rational> row(r.data(), r.data() + r.size());
-	// 		std::cout << row << std::endl;
-	// 	}
-
-    for(long i = 0; i < temp.rows(); i++){
-    	std::vector<std::pair<Rational, carl::Variable>> newLHS;
-    	VectorT r = temp.row(i);
-    	std::vector<Rational> row(r.data(), r.data() + r.size());
-    	// std::cout << "row: " << row << std::endl;
-    	Rational m = 1;
-    	for(auto it : row){
-    		if(!carl::isInteger(it)){
-    			m *= carl::getDenom(it);
-    		}
-    	}
-    	for(std::size_t j = 0; j < row.size(); j++){
-    		Rational currCoef = row[j];
-    		carl::Variable currVar = vars[j];
-    		newLHS.push_back(std::pair<Rational, carl::Variable>(m * currCoef, currVar));
-    	}
-    	//std::cout << (FormulaT) PBConstraintT(newLHS, rels[(std::size_t)i], b[(long)i] * m) << std::endl;
-    	subformulas.push_back((FormulaT) PBConstraintT(newLHS, rels[(std::size_t)i], b[(long)i] * m));
-    }
-
-    return FormulaT(carl::FormulaType::AND, std::move(subformulas));
-}
+		return FormulaT(carl::FormulaType::AND, std::move(subformulas));
+	}
 
 template<class Settings>
-FormulaT PBGaussModule<Settings>::reduce(const MatrixT& u){
-    // std::cout << "Upper:" << std::endl;
-    // for(auto i = 0; i < u.rows(); i++){
-    //     VectorT r = u.row(i);
-    //     std::vector<Rational> row(r.data(), r.data() + r.size());
-    //     std::cout << row << std::endl;
-    // }
-    
+	FormulaT PBGaussModule<Settings>::reduce(const MatrixT& u){
     //Normalize the matrix
-    std::vector<Rational> newU;
-    for(auto i = 0; i < u.rows(); i++){
-        VectorT r = u.row(i);
-        std::vector<Rational> row(r.data(), r.data() + r.size());
-        Rational div = row[(std::size_t)i];
-        for(auto i : row){
-            newU.push_back(carl::div(i, div));
-        }
-    }
-    
-    MatrixT newUpper(u.rows(), u.cols());
-    newUpper = MatrixT::Map(&newU[0], u.cols(), u.rows()).transpose();
-    // std::cout << "Upper:" << std::endl;
-    // for(auto i = 0; i < newUpper.rows(); i++){
-    //     VectorT r = newUpper.row(i);
-    //     std::vector<Rational> row(r.data(), r.data() + r.size());
-    //     std::cout << row << std::endl;
-    // }
+		std::vector<Rational> newU;
+		for(auto i = 0; i < u.rows(); i++){
+			VectorT r = u.row(i);
+			std::vector<Rational> row(r.data(), r.data() + r.size());
+			Rational div = row[(std::size_t)i];
+			for(auto i : row){
+				newU.push_back(carl::div(i, div));
+			}
+		}
 
-
-    std::vector<carl::Variable> ineqVars;
-    std::vector<Rational> rhs;
-    std::vector<carl::Relation> ineqRels;
-    for(const auto& it : inequalities){
-    	for(const auto& i : it.getLHS()){
-    		auto elem = std::find_if(ineqVars.begin(), ineqVars.end(), 
-    			[&] (const carl::Variable& elem){
-    				return elem.getName() == i.second.getName();
-    			});
-    		if(elem == ineqVars.end()){
+		MatrixT newUpper(u.rows(), u.cols());
+		newUpper = MatrixT::Map(&newU[0], u.cols(), u.rows()).transpose();
+		std::vector<carl::Variable> ineqVars;
+		std::vector<Rational> rhs;
+		std::vector<carl::Relation> ineqRels;
+		for(const auto& it : inequalities){
+			for(const auto& i : it.getLHS()){
+				auto elem = std::find_if(ineqVars.begin(), ineqVars.end(), 
+					[&] (const carl::Variable& elem){
+						return elem.getName() == i.second.getName();
+					});
+				if(elem == ineqVars.end()){
 					//The variable is not in the list
-    			ineqVars.push_back(i.second);
-    		}
-    	}
-    	rhs.push_back(it.getRHS());
-    	carl::Relation rel = it.getRelation();
-    	if(rel == carl::Relation::LESS){
-    		rel = carl::Relation::LEQ;
-    	}else if(rel == carl::Relation::GREATER){
-    		rel = carl::Relation::GEQ;
-    	}
-    	ineqRels.push_back(rel);
-    }
-    
+					ineqVars.push_back(i.second);
+				}
+			}
+			rhs.push_back(it.getRHS());
+			carl::Relation rel = it.getRelation();
+			if(rel == carl::Relation::LESS){
+				rel = carl::Relation::LEQ;
+			}else if(rel == carl::Relation::GREATER){
+				rel = carl::Relation::GEQ;
+			}
+			ineqRels.push_back(rel);
+		}
+
     //inequalities to Matrix
-    MatrixT ineqMatrix;
-    int counter = 0;
-    std::vector<Rational> coef; 
-    for(auto it : inequalities){
-        auto lhs = it.getLHS();
-        auto lhsVars = it.gatherVariables();
-        for(auto i : ineqVars){
-            if(std::find(lhsVars.begin(), lhsVars.end(), i) == lhsVars.end()){
+		MatrixT ineqMatrix;
+		int counter = 0;
+		std::vector<Rational> coef; 
+		for(auto it : inequalities){
+			auto lhs = it.getLHS();
+			auto lhsVars = it.gatherVariables();
+			for(auto i : ineqVars){
+				if(std::find(lhsVars.begin(), lhsVars.end(), i) == lhsVars.end()){
                 //Variable is not in the inequality ==> coeff must be 0
-                coef.push_back(0);
-            }else{
-                auto elem = std::find_if(lhs.begin(), lhs.end(),
-                                         [&] (const pair<Rational, carl::Variable>& elem){
-                                             return elem.second == i;
-                                         });
-                coef.push_back(elem->first);
-            }
-            counter++;
-        }
-    }
-    
-    ineqMatrix = MatrixT::Map(&coef[0], (long) ineqVars.size(), (long) inequalities.size()).transpose();
-    VectorT b = VectorT::Map(&rhs[0], (long) rhs.size());
-    MatrixT temp(ineqMatrix.rows(), ineqMatrix.cols() + 1);
-    temp << ineqMatrix, b;
-    ineqMatrix = temp;
-    
-    // std::cout << "ineqMatrix:" << std::endl;
-    // for(auto i = 0; i < ineqMatrix.rows(); i++){
-    //     VectorT r = ineqMatrix.row(i);
-    //     std::vector<Rational> row(r.data(), r.data() + r.size());
-    //     std::cout << row << std::endl;
-    // }
-    
-    // //Combine
-    // std::vector<PBConstraintT> usedEq;
-    // MatrixT result(ineqVars.size() + 1, 1);
-    // for(auto i = 0; i < ineqMatrix.rows(); i++){
-    //     VectorT r = ineqMatrix.row(i);
-    //     std::vector<Rational> row(r.data(), r.data() + r.size());
-        
-    //     //Is it possible to simplify?
-    //     std::size_t j = 0;
-    //     Rational multiplier = 1;
-    //     for(; j < row.size(); j++){
-    //         if(row[j] != 0){
-    //             multiplier = row[j];
-    //             break;
-    //         }
-    //     }
-    //     if((long) j < newUpper.rows()){
-    //         //Reduce
-    //         VectorT tmp = newUpper.row((long) j);
-    //         std::vector<Rational> tmpVector(tmp.data(), tmp.data() + tmp.size());
-    //         tmp *= -multiplier;
-    //         VectorT newVector = tmp + r;
-    //         // //Update matrix
-    //         ineqMatrix.row((long) j - 1) = newVector;
-    //         // //Update relation
-    //         if(inequalities[j].getRelation() == carl::Relation::LESS){
-    //             ineqRels[j] = carl::Relation::LEQ;
-    //         }else if(inequalities[j].getRelation() == carl::Relation::GREATER){
-    //             ineqRels[j] = carl::Relation::GEQ;
-    //         }
-    //         // result.conservativeResize(result.rows(), result.cols() + 1);
-    //         // result.col(result.cols() - 1) = newVector;
-    //     }else{
-    //         result.conservativeResize(result.rows(), result.cols() + 1);
-    //         result.col(result.cols()-1) = r;
-    //     }
-        
-    // }
+					coef.push_back(0);
+				}else{
+					auto elem = std::find_if(lhs.begin(), lhs.end(),
+						[&] (const pair<Rational, carl::Variable>& elem){
+							return elem.second == i;
+						});
+					coef.push_back(elem->first);
+				}
+				counter++;
+			}
+		}
 
+		ineqMatrix = MatrixT::Map(&coef[0], (long) ineqVars.size(), (long) inequalities.size()).transpose();
+		VectorT b = VectorT::Map(&rhs[0], (long) rhs.size());
+		MatrixT temp(ineqMatrix.rows(), ineqMatrix.cols() + 1);
+		temp << ineqMatrix, b;
+		ineqMatrix = temp;
 
-    //Combine
-    std::vector<PBConstraintT> usedEq;
-    //MatrixT result(ineqVars.size() + 1, 1);
-    MatrixT result(ineqVars.size() + 1, 0);
-    for(auto i = 0; i < ineqMatrix.rows(); i++){
-    	VectorT row = ineqMatrix.row(i);
-    	//std::vector<Rational> row(rowVec.data(), rowVec.data() + rowVec.size());
+    	//Combine
+		std::vector<PBConstraintT> usedEq;
+		MatrixT result(ineqVars.size() + 1, 0);
+		for(auto i = 0; i < ineqMatrix.rows(); i++){
+			VectorT row = ineqMatrix.row(i);
 
     	//Is it possible to simplify?
-    	Rational m;
-    	long column = 0;
-    	for(auto j = 0; j < row.size(); j++){
-    		if(ineqMatrix(i,j) != 0){
-    			m = ineqMatrix(i,j);
-    			break;
-    		}
-    		column++;
-    	}
+			Rational m;
+			long column = 0;
+			for(auto j = 0; j < row.size(); j++){
+				if(ineqMatrix(i,j) != 0){
+					m = ineqMatrix(i,j);
+					break;
+				}
+				column++;
+			}
 
-    	if(column < newUpper.rows()){
+			if(column < newUpper.rows()){
     		//Reduce
-    		VectorT eqRow = newUpper.row(column);
-
-
-    		eqRow.conservativeResize(eqRow.size() + (row.size() - eqRow.size()));
-            VectorT newVector = (-m * eqRow) + row;
-            ineqMatrix.row(i) = newVector;
-           
+				VectorT eqRow = newUpper.row(column);
+				eqRow.conservativeResize(eqRow.size() + (row.size() - eqRow.size()));
+				VectorT newVector = (-m * eqRow) + row;
+				ineqMatrix.row(i) = newVector;  
             //Update relation
-            if(inequalities[(std::size_t) i].getRelation() == carl::Relation::LESS){
-            	ineqRels[(std::size_t) i] = carl::Relation::LEQ;
-            }else if(inequalities[(std::size_t) i].getRelation() == carl::Relation::GREATER){
-            	ineqRels[(std::size_t) i] = carl::Relation::GEQ;
-            }
-
-    	}else{
+				if(inequalities[(std::size_t) i].getRelation() == carl::Relation::LESS){
+					ineqRels[(std::size_t) i] = carl::Relation::LEQ;
+				}else if(inequalities[(std::size_t) i].getRelation() == carl::Relation::GREATER){
+					ineqRels[(std::size_t) i] = carl::Relation::GEQ;
+				}
+			}else{
     		//It is not possible to simplify.
-    		result.conservativeResize(result.rows(), result.cols() + 1);
-            result.col(result.cols()-1) = row;
-    	}
+				result.conservativeResize(result.rows(), result.cols() + 1);
+				result.col(result.cols()-1) = row;
+			}
 
 
 
-    }
+		}
 
-
-
-
-    if(usedEq.size() != equations.size()){
+		if(usedEq.size() != equations.size()){
         //Add unused equations
-        for(auto it : equations){
-            auto elem = std::find_if(usedEq.begin(), usedEq.end(), 
-                                     [&] (const PBConstraintT& elem){
-                                         return elem == it;
-                                     });
-            if(elem == usedEq.end()){
+			for(auto it : equations){
+				auto elem = std::find_if(usedEq.begin(), usedEq.end(), 
+					[&] (const PBConstraintT& elem){
+						return elem == it;
+					});
+				if(elem == usedEq.end()){
                 //The eq has not been used 
-                addSubformulaToPassedFormula((FormulaT) it);
-            }
-        }
-        
-    }
-    
-    MatrixT resultT = result.transpose();
-    // std::cout << "result:" << std::endl;
-    // for(auto i = 0; i < resultT.rows(); i++){
-    //     VectorT r = resultT.row(i);
-    //     std::vector<Rational> row(r.data(), r.data() + r.size());
-    //     std::cout << row << std::endl;
-    // }
-    
-    
-    
-    
-    VectorT newB = resultT.col(resultT.cols() - 1);
-    resultT.conservativeResize(resultT.rows(), resultT.cols() - 1);
-    return  reconstructEqSystem(resultT, ineqVars, ineqRels, newB);
-    
-}	
+					addSubformulaToPassedFormula((FormulaT) it);
+				}
+			}
 
+		}
+		MatrixT resultT = result.transpose();
+		VectorT newB = resultT.col(resultT.cols() - 1);
+		resultT.conservativeResize(resultT.rows(), resultT.cols() - 1);
+		return  reconstructEqSystem(resultT, ineqVars, ineqRels, newB);
 
-
+	}	
 
 }
 
