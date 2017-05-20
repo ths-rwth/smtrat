@@ -28,7 +28,6 @@ namespace smtrat
 			// Members.
 			carl::FormulaVisitor<FormulaT> mVisitor;
 			std::vector<PBConstraintT> equations;
-			std::vector<carl::Variable> vars;
 			std::vector<PBConstraintT> inequalities;
 			VectorT b;
 			
@@ -93,7 +92,7 @@ namespace smtrat
 			Answer checkCore();
 
 			FormulaT gaussAlgorithm();
-			FormulaT reconstructEqSystem(const MatrixT& u, const std::vector<carl::Relation>& rels, const VectorT& b);
+			FormulaT reconstructEqSystem(const MatrixT& u, const std::vector<carl::Variable>& vars, const std::vector<carl::Relation>& rels, const VectorT& b);
 			FormulaT reduce(const MatrixT& u);
 
 	};

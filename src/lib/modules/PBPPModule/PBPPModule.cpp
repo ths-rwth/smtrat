@@ -116,7 +116,7 @@ namespace smtrat
 			sum += it.first;
 		}
 
-		for(int i = 0; i < lhsSize - 1; i++){
+		for(std::size_t i = 0; i < lhsSize - 1; i++){
 			if(cLHS[i].first != cLHS[i + 1].first){
 				eqCoef = false;
 				break;
@@ -217,7 +217,6 @@ namespace smtrat
 		auto cVars = c.gatherVariables();
 		bool positive = true;
 		bool negative = true;
-		bool eqCoef = true;
 		Rational cRHS = c.getRHS();
 		Rational sum  = 0;
 		Rational min = INT_MAX;
@@ -239,8 +238,8 @@ namespace smtrat
 			sum += it.first;
 		}
 		if(sum == 0 && cRel == carl::Relation::GEQ && cRHS == 0){
-			int nsum = 0;
-			int psum = 0;
+			std::size_t nsum = 0;
+			std::size_t psum = 0;
 			for(auto it : cLHS){
 				if(it.first == 1){
 					psum++;
@@ -322,8 +321,6 @@ namespace smtrat
 			}
 			return FormulaT(carl::FormulaType::OR, std::move(subf));	
 		}else if(cRel == carl::Relation::GEQ && sum == cRHS && cRHS < 0){
-			//std::cout << "HERE" << std::endl;
-			bool coef = true;
 			int nsum = 0;
 			for(auto it : cLHS){
 				if((it.first != 1) && (it.first != -1)){
@@ -381,10 +378,10 @@ namespace smtrat
 
 				//(x1 and not x2 and not x3 and not x4) or (not x1 and x2 and not x3 and not x4) or...
 				FormulasT subformulasB;
-				for(int i = 0; i < lhsSize -1; i++){
+				for(std::size_t i = 0; i < lhsSize -1; i++){
 					FormulasT temp;
 					temp.push_back(FormulaT(cVars[i]));
-					for(int j = 0; j < lhsSize; j++){
+					for(std::size_t j = 0; j < lhsSize; j++){
 						if(j != i){
 							temp.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(cVars[j])));
 						}
@@ -407,10 +404,10 @@ namespace smtrat
 				//or (not x1 and not x2 and not x3 and not x4)
 
 				FormulasT subformulasA;
-				for(int i = 0; i < lhsSize; i++){
+				for(std::size_t i = 0; i < lhsSize; i++){
 					FormulasT temp;
 					temp.push_back(FormulaT(cVars[i]));
-					for(int j = 0; j < lhsSize; j++){
+					for(std::size_t j = 0; j < lhsSize; j++){
 						if(i != j){
 							temp.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(cVars[j])));
 						}
@@ -433,7 +430,7 @@ namespace smtrat
 				FormulasT subsubformulas;
 				for(int j = 0; j < (cRHS* -1); j++){
 					std::vector<int> signs;
-					for(int i = 0; i < lhsSize - (cRHS* -1) + j; i++){
+					for(std::size_t i = 0; i < lhsSize - (cRHS* -1) + j; i++){
 						signs.push_back(-1);
 					}
 					for(int i = 0; i < (cRHS* -1) - j; i++){
@@ -442,7 +439,7 @@ namespace smtrat
 					FormulasT subformulas;
 					do{
 						FormulasT temp;
-						for(int i = 0; i < lhsSize; i++){
+						for(std::size_t i = 0; i < lhsSize; i++){
 							if(signs[i] == -1){
 								temp.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(cVars[i])));
 							}else{
@@ -593,7 +590,6 @@ namespace smtrat
 		Rational lhsCoeff = cLHS.begin()->first;
 		FormulaT lhsVar = FormulaT(cLHS.begin()->second);
 		Rational cRHS = c.getRHS();
-		std::size_t lhsSize = cLHS.size();
 
 		if(cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER){
 			if(lhsCoeff > 0){
@@ -1113,7 +1109,7 @@ namespace smtrat
 
 		for(std::size_t i = 0; i < base.size(); i++){
 			if(base[i] == 1 || base[i] == 0){
-				base.erase(base.begin() + i);
+				base.erase(base.begin() +  (long) i);
 			} 
 		}
 		return base;
