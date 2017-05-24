@@ -90,6 +90,15 @@ namespace smtrat
 			 *		 Unknown, otherwise.
 			 */
 			Answer checkCore();
+			
+			/// Convenience wrapper for Eigen::conservativeResizeLike with a zero vector.
+			static void conservativeResize(VectorT& v, long newSize) {
+				v.conservativeResizeLike(VectorT::Zero(newSize));
+			}
+			/// Convenience wrapper for Eigen::conservativeResizeLike with a zero matrix.
+			static void conservativeResize(MatrixT& m, long newRows, long newCols) {
+				m.conservativeResizeLike(MatrixT::Zero(newRows, newCols));
+			}
 
 			FormulaT gaussAlgorithm();
 			FormulaT reconstructEqSystem(const MatrixT& u, const std::vector<carl::Variable>& vars, const std::vector<carl::Relation>& rels, const VectorT& b);
