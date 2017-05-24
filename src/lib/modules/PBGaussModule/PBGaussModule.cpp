@@ -105,50 +105,29 @@ namespace smtrat
 			return FormulaT(equations.front());
 		}
 
-		const long rows = (const long) equations.size();
-		std::vector<Rational> rhs;
-		std::vector<carl::Variable> eqVars;
-
+		// Collect all variables
+		carl::Variables eqVarSet;
 		for(const auto& it : equations){
-			for(const auto& i : it.getLHS()){
-				auto elem = std::find_if(eqVars.begin(), eqVars.end(), 
-					[&] (const carl::Variable& elem){
-						return elem.getName() == i.second.getName();
-					});
-				if(elem == eqVars.end()){
-					//The variable is not in the list
-					eqVars.push_back(i.second);
-				}
-			}
-			rhs.push_back(it.getRHS());
+			it.collectVariables(eqVarSet);
 		}
-
-		const long columns = (const long) eqVars.size();
-
-		MatrixT matrix;
-		int counter = 0;
+		std::vector<carl::Variable> eqVars(eqVarSet.begin(), eqVarSet.end());
+		
+		// Collect all coefficients and rhs
 		std::vector<Rational> coef;
-		for(auto it : equations){
-			auto lhs = it.getLHS();
-			auto lhsVars = it.gatherVariables();
-			
-			for(auto i : eqVars){
-				if(std::find(lhsVars.begin(), lhsVars.end(), i) == lhsVars.end()){
-					//Variable is not in the equation ==> coeff must be 0
-					coef.push_back(0);
-				}else{
-					auto elem = std::find_if(lhs.begin(), lhs.end(), 
-						[&] (const pair<Rational, carl::Variable>& elem){
-							return elem.second == i;
-						});
-					coef.push_back(elem->first);
-				}
-				counter++;
+		std::vector<Rational> rhs;
+		for(const auto& it : equations){
+			rhs.push_back(it.getRHS());
+			for(auto var : eqVars){
+				coef.push_back(it.getCoefficient(var));
 			}
 		}
+		
+		std::size_t rows = equations.size();
+		std::size_t columns = eqVars.size();
 
-		matrix = MatrixT::Map(&coef[0], columns, rows).transpose();
-		VectorT b = VectorT::Map(&rhs[0], (long) rhs.size());
+		//TODO: Könnte man rhs nicht direkt in coef mit reinschreiben, statt diesen Umweg?
+		MatrixT matrix = MatrixT::Map(coef.data(), columns, rows).transpose();
+		VectorT b = VectorT::Map(rhs.data(), rhs.size());
 		//Add b to matrix
 		MatrixT temp(matrix.rows(), matrix.cols() + 1);
 		temp << matrix, b; 
@@ -156,24 +135,20 @@ namespace smtrat
 
 		//LU Decomposition
 		Eigen::FullPivLU<MatrixT> lu(matrix);
-		VectorT newB;
-		MatrixT newUpper;
 		
-		MatrixT u = lu.matrixLU().triangularView<Eigen::Upper>();
-		MatrixT l = lu.matrixLU().triangularView<Eigen::StrictlyLower>();
-		MatrixT p = lu.permutationP();
-		MatrixT q = lu.permutationQ();
+		const MatrixT& u = lu.matrixLU().triangularView<Eigen::Upper>();
+		const MatrixT& l = lu.matrixLU().triangularView<Eigen::StrictlyLower>();
+		const MatrixT& q = lu.permutationQ();
 
-		newUpper = u * q.inverse();
-		newB = newUpper.col(newUpper.cols() - 1);
+		MatrixT newUpper = u * q.inverse();
+		VectorT newB = newUpper.col(newUpper.cols() - 1);
 		newUpper.conservativeResize(newUpper.rows(), newUpper.cols() - 1);
-		std::vector<carl::Relation> rels;
-		for(auto i = 0; i < newUpper.rows(); i++){
-			rels.push_back(carl::Relation::EQ);
-		}
+		
+		std::vector<carl::Relation> rels(newUpper.rows(), carl::Relation::EQ);
 		if(inequalities.size() == 0){
 			return reconstructEqSystem(newUpper, eqVars, rels, newB);
 		}else{
+			//TODO: wollen wir hier u oder newUpper übergeben?
 			return reduce(u);
 		}
 	}
