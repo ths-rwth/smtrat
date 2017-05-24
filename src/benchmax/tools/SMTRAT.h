@@ -28,6 +28,7 @@ public:
 	
 	std::string getStatusFromOutput(const BenchmarkResult& result) const {
 		if (result.stderr.find("GNU MP: Cannot allocate memory") != std::string::npos) return "memout";
+		if (result.stderr.find("Minisat::OutOfMemoryException") != std::string::npos) return "memout";
 		return "segfault";
 	}
 	
