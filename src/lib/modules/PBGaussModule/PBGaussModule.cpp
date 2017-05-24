@@ -23,7 +23,7 @@ namespace smtrat
 	{}
 	
 	template<class Settings>
-	bool PBGaussModule<Settings>::informCore( const FormulaT& _constraint )
+	bool PBGaussModule<Settings>::informCore( const FormulaT& )
 	{
 
 		return true;
@@ -34,13 +34,13 @@ namespace smtrat
 	{}
 	
 	template<class Settings>
-	bool PBGaussModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
+	bool PBGaussModule<Settings>::addCore( ModuleInput::const_iterator )
 	{
 		return true;
 	}
 	
 	template<class Settings>
-	void PBGaussModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
+	void PBGaussModule<Settings>::removeCore( ModuleInput::const_iterator )
 	{}
 	
 	template<class Settings>
