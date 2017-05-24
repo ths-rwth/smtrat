@@ -180,33 +180,23 @@ template<class Settings>
 
 template<class Settings>
 	FormulaT PBGaussModule<Settings>::reduce(const MatrixT& u){
-    //Normalize the matrix
+		// Normalize the matrix, make diagonal entries one
 		std::vector<Rational> newU;
-		for(auto i = 0; i < u.rows(); i++){
-			VectorT r = u.row(i);
-			std::vector<Rational> row(r.data(), r.data() + r.size());
-			Rational div = row[(std::size_t)i];
-			for(auto i : row){
-				newU.push_back(carl::div(i, div));
+		for (auto i = 0; i < u.rows(); i++) {
+			for (long rid = 0; rid < u.row(i).size(); rid++) {
+				newU.push_back(carl::div(u.row(i)[rid], u.row(i)[i]));
 			}
 		}
 
-		MatrixT newUpper(u.rows(), u.cols());
-		newUpper = MatrixT::Map(&newU[0], u.cols(), u.rows()).transpose();
-		std::vector<carl::Variable> ineqVars;
+		MatrixT newUpper = MatrixT::Map(newU.data(), u.cols(), u.rows()).transpose();
 		std::vector<Rational> rhs;
 		std::vector<carl::Relation> ineqRels;
+		carl::Variables ineqVarSet;
 		for(const auto& it : inequalities){
-			for(const auto& i : it.getLHS()){
-				auto elem = std::find_if(ineqVars.begin(), ineqVars.end(), 
-					[&] (const carl::Variable& elem){
-						return elem.getName() == i.second.getName();
-					});
-				if(elem == ineqVars.end()){
-					//The variable is not in the list
-					ineqVars.push_back(i.second);
-				}
-			}
+			//TODO: Die Variablenreihenfolge ist *vermutlich* identisch wie in gaussAlgorithm(), wahrscheinlich aber eher nicht.
+			// Da das aber essentiell ist, damit das hier alles funktioniert, würde ich die einmal explizit in checkCore bestimmen und in einem Member speichern.
+			// Ich habe das mit collectVariables() nun erstmal in ein std::set geschrieben, d.h. die sind sortiert, aber eventuell kommt eine Variable nur in equalities vor, nicht aber in inequalities. Und dann wäre alles kaputt...
+			it.collectVariables(ineqVarSet);
 			rhs.push_back(it.getRHS());
 			carl::Relation rel = it.getRelation();
 			if(rel == carl::Relation::LESS){
@@ -216,90 +206,70 @@ template<class Settings>
 			}
 			ineqRels.push_back(rel);
 		}
+		std::vector<carl::Variable> ineqVars(ineqVarSet.begin(), ineqVarSet.end());
+		
 
-    //inequalities to Matrix
-		MatrixT ineqMatrix;
-		int counter = 0;
+		//inequalities to Matrix
 		std::vector<Rational> coef; 
 		for(auto it : inequalities){
-			auto lhs = it.getLHS();
-			auto lhsVars = it.gatherVariables();
-			for(auto i : ineqVars){
-				if(std::find(lhsVars.begin(), lhsVars.end(), i) == lhsVars.end()){
-                //Variable is not in the inequality ==> coeff must be 0
-					coef.push_back(0);
-				}else{
-					auto elem = std::find_if(lhs.begin(), lhs.end(),
-						[&] (const pair<Rational, carl::Variable>& elem){
-							return elem.second == i;
-						});
-					coef.push_back(elem->first);
-				}
-				counter++;
+			for (auto var : ineqVars){
+				coef.push_back(it.getCoefficient(var));
 			}
 		}
 
-		ineqMatrix = MatrixT::Map(&coef[0], (long) ineqVars.size(), (long) inequalities.size()).transpose();
-		VectorT b = VectorT::Map(&rhs[0], (long) rhs.size());
+		//TODO: Könnte man rhs nicht direkt in coef mit reinschreiben, statt diesen Umweg?
+		MatrixT ineqMatrix = MatrixT::Map(coef.data(), (long) ineqVars.size(), (long) inequalities.size()).transpose();
+		VectorT b = VectorT::Map(rhs.data(), (long) rhs.size());
 		MatrixT temp(ineqMatrix.rows(), ineqMatrix.cols() + 1);
 		temp << ineqMatrix, b;
 		ineqMatrix = temp;
 
-    	//Combine
-		std::vector<PBConstraintT> usedEq;
+		//Combine
 		MatrixT result(ineqVars.size() + 1, 0);
-		for(auto i = 0; i < ineqMatrix.rows(); i++){
-			VectorT row = ineqMatrix.row(i);
+		for(auto i = 0; i < ineqMatrix.rows();){
+			const VectorT& row = ineqMatrix.row(i);
 
-    	//Is it possible to simplify?
+			//Is it possible to simplify?
 			Rational m;
-			long column = 0;
+			long column = -1;
 			for(auto j = 0; j < row.size(); j++){
-				if(ineqMatrix(i,j) != 0){
-					m = ineqMatrix(i,j);
+				if(row(j) != 0){
+					m = row(j);
+					column = j;
 					break;
 				}
-				column++;
 			}
+			assert(column != -1);
 
-			if(column < newUpper.rows()){
-    		//Reduce
+			if(column >= 0 && column < newUpper.rows()){
+				//Reduce
 				VectorT eqRow = newUpper.row(column);
-				eqRow.conservativeResize(eqRow.size() + (row.size() - eqRow.size()));
-				VectorT newVector = (-m * eqRow) + row;
-				ineqMatrix.row(i) = newVector;  
-            //Update relation
+				conservativeResize(eqRow, row.size());
+				//TODO: Ich glaube hier wird rhs nicht korrekt behandelt.
+				ineqMatrix.row(i) = (-m * eqRow) + row;  
+				//Update relation
 				if(inequalities[(std::size_t) i].getRelation() == carl::Relation::LESS){
 					ineqRels[(std::size_t) i] = carl::Relation::LEQ;
 				}else if(inequalities[(std::size_t) i].getRelation() == carl::Relation::GREATER){
 					ineqRels[(std::size_t) i] = carl::Relation::GEQ;
 				}
-			}else{
-    		//It is not possible to simplify.
+				// Try again with this (simplified) row
+				continue;
+			} else {
+				//It is not possible to simplify.
 				result.conservativeResize(result.rows(), result.cols() + 1);
-				result.col(result.cols()-1) = row;
+				result.col(result.cols()-1) = ineqMatrix.row(i);
+				// Go to next row
+				i++;
 			}
-
-
-
 		}
-
-		if(usedEq.size() != equations.size()){
-        //Add unused equations
-			for(auto it : equations){
-				auto elem = std::find_if(usedEq.begin(), usedEq.end(), 
-					[&] (const PBConstraintT& elem){
-						return elem == it;
-					});
-				if(elem == usedEq.end()){
-                //The eq has not been used 
-					addSubformulaToPassedFormula((FormulaT) it);
-				}
-			}
-
+		
+		for (const auto& it: equations) {
+			addSubformulaToPassedFormula(FormulaT(it));
 		}
+		
 		MatrixT resultT = result.transpose();
-		VectorT newB = resultT.col(resultT.cols() - 1);
+		const VectorT& newB = resultT.col(resultT.cols() - 1);
 		resultT.conservativeResize(resultT.rows(), resultT.cols() - 1);
 		return  reconstructEqSystem(resultT, ineqVars, ineqRels, newB);
 
