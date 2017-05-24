@@ -57,7 +57,7 @@ namespace smtrat
 	Answer PBGaussModule<Settings>::checkCore()
 	{
 		for(const auto& subformula : rReceivedFormula()){
-			FormulaT f = subformula.formula();
+			const FormulaT& f = subformula.formula();
 			if(f.getType() == carl::FormulaType::PBCONSTRAINT){
 				const PBConstraintT& c = f.pbConstraint();
 				if(c.getRelation() == carl::Relation::EQ){
@@ -79,11 +79,11 @@ namespace smtrat
 
 		}else{
 			FormulasT subformulas;
-			for(auto it : inequalities){
-				subformulas.push_back((FormulaT) it);
+			for(const auto& it : inequalities){
+				subformulas.push_back(FormulaT(it));
 			}
 			if(equations.size() == 1){
-				subformulas.push_back((FormulaT) *equations.begin());
+				subformulas.push_back(FormulaT(equations.front()));
 			}
 			formula = FormulaT(carl::FormulaType::AND, std::move(subformulas));
 		}
@@ -102,7 +102,7 @@ namespace smtrat
 		if(equations.size() == 0){
 			return FormulaT(carl::FormulaType::TRUE);
 		}else if(equations.size() == 1){
-			return (FormulaT) *(equations.begin()); 
+			return FormulaT(equations.front());
 		}
 
 		const long rows = (const long) equations.size();
