@@ -156,23 +156,23 @@ namespace smtrat
 template<class Settings>
 	FormulaT PBGaussModule<Settings>::reconstructEqSystem(const MatrixT& u, const std::vector<carl::Variable>& vars, const std::vector<carl::Relation>& rels,  const VectorT& b){
 		FormulasT subformulas;
-		const MatrixT temp = u;
-		for(long i = 0; i < temp.rows(); i++){
+		for(long i = 0; i < u.rows(); i++){
 			std::vector<std::pair<Rational, carl::Variable>> newLHS;
-			VectorT r = temp.row(i);
-			std::vector<Rational> row(r.data(), r.data() + r.size());
+			const VectorT& r = u.row(i);
+			
+			// Compute least common multiple of all denominators
 			Rational m = 1;
-			for(auto it : row){
-				if(!carl::isInteger(it)){
-					m *= carl::getDenom(it);
+			for (long rid = 0; rid < r.size(); rid++) {
+				if (!carl::isInteger(r[rid])){
+					m = carl::lcm(m, carl::getDenom(r[rid]));
 				}
 			}
-			for(std::size_t j = 0; j < row.size(); j++){
-				Rational currCoef = row[j];
-				carl::Variable currVar = vars[j];
-				newLHS.push_back(std::pair<Rational, carl::Variable>(m * currCoef, currVar));
+			// Restore 
+			for(long j = 0; j < r.size(); j++){
+				if (carl::isZero(r[j])) continue;
+				newLHS.emplace_back(m * r[j], vars[j]);
 			}
-			subformulas.push_back((FormulaT) PBConstraintT(newLHS, rels[(std::size_t)i], b[(long)i] * m));
+			subformulas.emplace_back(PBConstraintT(newLHS, rels[std::size_t(i)], b[i] * m));
 		}
 
 		return FormulaT(carl::FormulaType::AND, std::move(subformulas));
