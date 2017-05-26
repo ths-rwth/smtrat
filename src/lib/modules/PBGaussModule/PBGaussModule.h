@@ -26,10 +26,10 @@ namespace smtrat
 			PBGaussStatistics mStatistics;
 #endif
 			// Members.
-			carl::FormulaVisitor<FormulaT> mVisitor;
-			std::vector<PBConstraintT> equations;
-			std::vector<PBConstraintT> inequalities;
-			VectorT b;
+			carl::Variables mVariables;
+			std::vector<PBConstraintT> mEquations;
+			std::vector<PBConstraintT> mInequalities;
+
 			
 		public:
 			typedef Settings SettingsType;
@@ -102,7 +102,7 @@ namespace smtrat
 
 			FormulaT gaussAlgorithm();
 			FormulaT reconstructEqSystem(const MatrixT& u, const std::vector<carl::Variable>& vars, const std::vector<carl::Relation>& rels, const VectorT& b);
-			FormulaT reduce(const MatrixT& u);
+			FormulaT reduce(const MatrixT& u, const VectorT& b, const carl::Variables vars);
 
 	};
 }
