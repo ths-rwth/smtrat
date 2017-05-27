@@ -358,39 +358,7 @@ namespace smtrat
 		}
 
 		if(cRel == carl::Relation::GEQ){
-			if(firstCoef == -1 && cRHS == 1){
-				//-1 x1 -1 x2 -1 x3 -1 x4 >= 1 ===> 
-
-				//not x1 and not x2 and not x3 and not x4 ...
-				FormulasT subformulasA;
-				for(auto it : cVars){
-					subformulasA.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it)));
-				}
-				FormulaT subfA = FormulaT(carl::FormulaType::AND, std::move(subformulasA));
-
-				//(x1 and not x2 and not x3 and not x4) or (not x1 and x2 and not x3 and not x4) or...
-				FormulasT subformulasB;
-				for(std::size_t i = 0; i < lhsSize -1; i++){
-					FormulasT temp;
-					temp.push_back(FormulaT(cVars[i]));
-					for(std::size_t j = 0; j < lhsSize; j++){
-						if(j != i){
-							temp.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(cVars[j])));
-						}
-					}
-					subformulasB.push_back(FormulaT(carl::FormulaType::AND, std::move(temp)));
-				}
-				FormulaT subfB = FormulaT(carl::FormulaType::OR, std::move(subformulasB));
-
-				return FormulaT(carl::FormulaType::OR, subfA, subfB);
-			}else if(firstCoef == 1 && cRHS == 1){
-				//+1 x1 +1 x2 +1 x3 >= 1 ===> x1 or x2 or x3
-				FormulasT subformulas;
-				for(auto it : cVars){
-					subformulas.push_back(FormulaT(it));
-				}
-				return FormulaT(carl::FormulaType::OR, std::move(subformulas));
-			}else if(firstCoef == -1 && cRHS == -1){
+			 if(firstCoef == -1 && cRHS == -1){
 				//-1 x1 -1 x2 -1 x3 -1 x4 >= -1 ===> (x1 and not x2 and not x3 and not x4) or (notx1 andx2 and not x3 and not x4) or ...
 				//or (not x1 and not x2 and not x3 and not x4)
 
