@@ -26,10 +26,10 @@ namespace smtrat
 			PBGaussStatistics mStatistics;
 #endif
 			// Members.
-			carl::FormulaVisitor<FormulaT> mVisitor;
-			std::vector<PBConstraintT> equations;
-			std::vector<PBConstraintT> inequalities;
-			VectorT b;
+			carl::Variables mVariables;
+			std::vector<PBConstraintT> mEquations;
+			std::vector<PBConstraintT> mInequalities;
+
 			
 		public:
 			typedef Settings SettingsType;
@@ -90,10 +90,19 @@ namespace smtrat
 			 *		 Unknown, otherwise.
 			 */
 			Answer checkCore();
+			
+			/// Convenience wrapper for Eigen::conservativeResizeLike with a zero vector.
+			static void conservativeResize(VectorT& v, long newSize) {
+				v.conservativeResizeLike(VectorT::Zero(newSize));
+			}
+			/// Convenience wrapper for Eigen::conservativeResizeLike with a zero matrix.
+			static void conservativeResize(MatrixT& m, long newRows, long newCols) {
+				m.conservativeResizeLike(MatrixT::Zero(newRows, newCols));
+			}
 
 			FormulaT gaussAlgorithm();
 			FormulaT reconstructEqSystem(const MatrixT& u, const std::vector<carl::Variable>& vars, const std::vector<carl::Relation>& rels, const VectorT& b);
-			FormulaT reduce(const MatrixT& u);
+			FormulaT reduce(const MatrixT& u, const VectorT& b, const carl::Variables vars);
 
 	};
 }
