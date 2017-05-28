@@ -73,11 +73,11 @@ namespace smtrat
 				addSubformulaToPassedFormula(f);
 			}
 		}
-		std::cout << "Variable order: " << mVariables << std::endl;
+		// std::cout << "Variable order: " << mVariables << std::endl;
 		FormulaT formula;
 		if(mEquations.size() > 1){
 			formula = gaussAlgorithm();
-			std::cout << "Ready" << std::endl;
+			// std::cout << "Ready" << std::endl;
 		}else{
 			FormulasT subformulas;
 			for(const auto& it : mInequalities){
@@ -127,12 +127,12 @@ namespace smtrat
 
 		MatrixT matrix = MatrixT::Map(coef.data(), (long) columns + 1, (long) rows).transpose();
 
-		std::cout << "Matrix" << std::endl;
-		for(auto i = 0; i < matrix.rows(); i++){
-			VectorT r = matrix.row(i);
-			std::vector<Rational> row(r.data(), r.data() + r.size());
-			std::cout << row << std::endl;
-		}
+		// std::cout << "Matrix" << std::endl;
+		// for(auto i = 0; i < matrix.rows(); i++){
+		// 	VectorT r = matrix.row(i);
+		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
+		// 	std::cout << row << std::endl;
+		// }
 
 		//LU Decomposition
 		Eigen::FullPivLU<MatrixT> lu(matrix);
@@ -151,20 +151,20 @@ namespace smtrat
 		
 
 
-		std::cout << "Upper" << std::endl;
-		for(auto i = 0; i < u.rows(); i++){
-			VectorT r = u.row(i);
-			std::vector<Rational> row(r.data(), r.data() + r.size());
-			std::cout << row << std::endl;
-		}
+		// std::cout << "Upper" << std::endl;
+		// for(auto i = 0; i < u.rows(); i++){
+		// 	VectorT r = u.row(i);
+		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
+		// 	std::cout << row << std::endl;
+		// }
 		
 
-		std::cout << "newUpper" << std::endl;
-		for(auto i = 0; i < newUpper.rows(); i++){
-			VectorT r = newUpper.row(i);
-			std::vector<Rational> row(r.data(), r.data() + r.size());
-			std::cout << row << std::endl;
-		}
+		// std::cout << "newUpper" << std::endl;
+		// for(auto i = 0; i < newUpper.rows(); i++){
+		// 	VectorT r = newUpper.row(i);
+		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
+		// 	std::cout << row << std::endl;
+		// }
 
 		
 		std::vector<carl::Relation> rels((std::size_t) newUpper.rows(), carl::Relation::EQ);
@@ -197,26 +197,45 @@ template<class Settings>
 			}
 			subformulas.emplace_back(PBConstraintT(newLHS, rels[std::size_t(i)], b[i] * mpl));
 		}
-		std::cout << "Reconstruc ready" << std::endl;
+		// std::cout << "Reconstruc ready" << std::endl;
 		return FormulaT(carl::FormulaType::AND, std::move(subformulas));
 	}
 
 
 template<class Settings>
 	FormulaT PBGaussModule<Settings>::reduce(const MatrixT& u, const VectorT& b, const carl::Variables vars){
-		std::cout << "Reduce" << std::endl;
+		// std::cout << "Reduce" << std::endl;
 
-		// Normalize the matrix, make diagonal entries one
+		// std::cout << "U" << std::endl;
+		// for(auto i = 0; i < u.rows(); i++){
+		// 	VectorT r = u.row(i);
+		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
+		// 	std::cout << row << std::endl;
+		// }
+
 		std::vector<Rational> normUVec;
-		for (auto i = 0; i < u.rows(); i++) {
-			for (long rid = 0; rid < u.row(i).size(); rid++) {
-				normUVec.push_back(carl::div(u.row(i)[rid], u.row(i)[i]));
+		for(auto i = 0; i < u.rows(); i++){
+			for(auto rid = 0; rid < u.row(i).size(); rid++){
+				if(u.row(i)[i] != 0){
+					normUVec.push_back(carl::div(u.row(i)[rid], u.row(i)[i]));
+				}else{
+					normUVec.push_back(u.row(i)[rid]);
+				}
 			}
 		}
 		
-		MatrixT normU = MatrixT::Map(normUVec.data(), u.cols(), u.rows()).transpose();
-
+		
+		MatrixT normU = MatrixT::Map(normUVec.data(), (long) u.cols(), (long) u.rows()).transpose();
 		std::vector<Rational> bVector(b.data(), b.data() + b.size());
+
+		// std::cout << "normU" << std::endl;
+		// for(auto i = 0; i < normU.rows(); i++){
+		// 	VectorT r = normU.row(i);
+		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
+		// 	std::cout << row << std::endl;
+		// }
+
+		
 		//Resize normU and add b 
 		std::vector<Rational> upperCoef;
 		for(auto i = 0; i < normU.rows(); i++){
@@ -227,19 +246,19 @@ template<class Settings>
 				if(elem != vars.end()){
 					upperCoef.push_back(row[(std::size_t) std::distance(vars.begin(), elem)]);
 				}else{
-					upperCoef.push_back(0);
+					upperCoef.push_back((Rational) 0);
 				}
 			}
 			upperCoef.push_back(bVector[(std::size_t) i]);
 		}
 
 		MatrixT uMatrix = MatrixT::Map(upperCoef.data(), (long) mVariables.size() + 1, (long) mEquations.size()).transpose();
-		std::cout << "uMatrix" << std::endl;
-		for(auto i = 0; i < uMatrix.rows(); i++){
-			VectorT r = uMatrix.row(i);
-			std::vector<Rational> row(r.data(), r.data() + r.size());
-			std::cout << row << std::endl;
-		}
+		// std::cout << "uMatrix" << std::endl;
+		// for(auto i = 0; i < uMatrix.rows(); i++){
+		// 	VectorT r = uMatrix.row(i);
+		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
+		// 	std::cout << row << std::endl;
+		// }
 
 
 		//Inequalities to matrix
@@ -264,19 +283,19 @@ template<class Settings>
 
 
 		MatrixT ineqMatrix = MatrixT::Map(ineqCoef.data(), (long) mVariables.size() + 1, (long) mInequalities.size()).transpose();
-		std::cout << "ineqMatrix" << std::endl;
-		for(auto i = 0; i < ineqMatrix.rows(); i++){
-			VectorT r = ineqMatrix.row(i);
-			std::vector<Rational> row(r.data(), r.data() + r.size());
-			std::cout << row << std::endl;
-		}
+		// std::cout << "ineqMatrix" << std::endl;
+		// for(auto i = 0; i < ineqMatrix.rows(); i++){
+		// 	VectorT r = ineqMatrix.row(i);
+		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
+		// 	std::cout << row << std::endl;
+		// }
 
-		//Reduce
+
 		MatrixT result(mVariables.size() + 1, 0);
-		for(auto i = 0; i < ineqMatrix.rows();){
+		for(auto i = 0; i < ineqMatrix.rows(); i++){
 			const VectorT& row = ineqMatrix.row(i);
 
-			//Is it possible to simplify?
+			//Check if possible to simplify
 			Rational m;
 			long column = -1;
 			for(auto j = 0; j < row.size(); j++){
@@ -286,12 +305,50 @@ template<class Settings>
 					break;
 				}
 			}
+			//std::cout << "m: " << m << " column: " << column << std::endl;
 			assert(column != -1);
 
 			if(column >= 0 && column < u.rows()){
 				//Reduce
-				VectorT eqRow = u.row(column);
-				conservativeResize(eqRow, row.size());
+
+				//Look for row in u which can reduce the inequality
+				VectorT eqRow;
+				for(auto it = 0; it < uMatrix.rows();){
+					const VectorT& r = uMatrix.row(it);
+					if(column == 0){
+						if(r(0) == 1){
+							eqRow = uMatrix.row(it);
+							break;
+						}else{
+							continue;
+						}
+					}else{
+						if(r(column) == 1){
+							//Check if entries before column-th column are 0
+							bool zeros = true;
+							for(auto i = 0; i < column; i++){
+								if(r(i) != 0){
+									zeros = false;
+									break;
+								}
+							}
+							if(zeros){
+								eqRow = uMatrix.row(it);
+								break;
+							}
+						}else{
+							continue;
+						}
+						
+					}
+				}
+
+				std::vector<Rational> rowVec(row.data(), row.data() + row.size());
+				std::vector<Rational> eqRowVec(eqRow.data(), eqRow.data() + eqRow.size());
+
+				// std::cout << "Ineq: " << rowVec << std::endl;
+				// std::cout << "Eq: " << eqRowVec << std::endl;
+
 				//TODO: Ich glaube hier wird rhs nicht korrekt behandelt.
 				ineqMatrix.row(i) = (-m * eqRow) + row;  
 				//Update relation
@@ -309,6 +366,12 @@ template<class Settings>
 				// Go to next row
 				i++;
 			}
+			// std::cout << "ineqMatrix" << std::endl;
+			// for(auto i = 0; i < ineqMatrix.rows(); i++){
+			// VectorT r = ineqMatrix.row(i);
+			// std::vector<Rational> row(r.data(), r.data() + r.size());
+			// std::cout << row << std::endl;
+			// }
 		}
 		
 		for (const auto& it : mEquations) {
@@ -318,8 +381,74 @@ template<class Settings>
 		MatrixT resultT = result.transpose();
 		const VectorT& newB = resultT.col(resultT.cols() - 1);
 		resultT.conservativeResize(resultT.rows(), resultT.cols() - 1);
-		std::cout << "Reduce ready" << std::endl;
+		//std::cout << "Reduce ready" << std::endl;
 		return  reconstructEqSystem(resultT, newB, mVariables, ineqRels);
+
+
+
+
+
+
+
+
+
+
+
+		//Simplify
+		// MatrixT result(mVariables.size() + 1, 0);
+		// for(auto i = 0; i < ineqMatrix.rows();){
+		// 	const VectorT& row = ineqMatrix.row(i);
+
+		// 	//Check if possible to simplify
+		// 	Rational m;
+		// 	long column = -1;
+		// 	for(auto j = 0; j < row.size(); j++){
+		// 		if(row(j) != 0){
+		// 			m = row(j);
+		// 			column = j;
+		// 			break;
+		// 		}
+		// 	}
+		// 	assert(column != -1);
+
+		// 	if(column >= 0 && column < u.rows()){
+		// 		//Reduce
+		// 		VectorT eqRow = u.row(column);
+		// 		conservativeResize(eqRow, row.size());
+		// 		//TODO: Ich glaube hier wird rhs nicht korrekt behandelt.
+		// 		ineqMatrix.row(i) = (-m * eqRow) + row;  
+		// 		//Update relation
+		// 		if(mInequalities[(std::size_t) i].getRelation() == carl::Relation::LESS){
+		// 			ineqRels[(std::size_t) i] = carl::Relation::LEQ;
+		// 		}else if(mInequalities[(std::size_t) i].getRelation() == carl::Relation::GREATER){
+		// 			ineqRels[(std::size_t) i] = carl::Relation::GEQ;
+		// 		}
+		// 		// Try again with this (simplified) row
+		// 		continue;
+		// 	} else {
+		// 		//It is not possible to simplify.
+		// 		result.conservativeResize(result.rows(), result.cols() + 1);
+		// 		result.col(result.cols()-1) = ineqMatrix.row(i);
+		// 		// Go to next row
+		// 		i++;
+		// 	}
+		// 	std::cout << "ineqMatrix" << std::endl;
+		// 	for(auto i = 0; i < ineqMatrix.rows(); i++){
+		// 	VectorT r = ineqMatrix.row(i);
+		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
+		// 	std::cout << row << std::endl;
+		// 	}
+		// }
+		
+		// for (const auto& it : mEquations) {
+		// 	addSubformulaToPassedFormula(FormulaT(it));
+		// }
+		
+		// MatrixT resultT = result.transpose();
+		// const VectorT& newB = resultT.col(resultT.cols() - 1);
+		// resultT.conservativeResize(resultT.rows(), resultT.cols() - 1);
+		// std::cout << "Reduce ready" << std::endl;
+		// return  reconstructEqSystem(resultT, newB, mVariables, ineqRels);
 	}
 
 // template<class Settings>
