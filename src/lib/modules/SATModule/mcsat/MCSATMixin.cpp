@@ -64,7 +64,7 @@ boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision() {
 				return Minisat::mkLit(var, false);
 			} else {
 				// There is a conflict. Return conflict. 
-                                return mNLSAT.explain(currentVariable(), *res, f);
+                                return mNLSAT.explain(currentVariable(), *res, FormulaT(carl::FormulaType::FALSE));
                                 // Perform theory propagation (in search)
 			}
 		}
