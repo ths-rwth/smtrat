@@ -19,7 +19,7 @@ namespace smtrat {
 namespace mcsat {
 
 using carl::operator<<;
-
+    
 struct InformationGetter {
 	std::function<Minisat::lbool(Minisat::Var)> getVarValue;
 	std::function<Minisat::lbool(Minisat::Lit)> getLitValue;
@@ -42,6 +42,7 @@ struct TheoryLevel {
 };
 
 class MCSATMixin {
+  
 private:
 	InformationGetter mGetter;
 	
@@ -230,7 +231,7 @@ public:
 	/// Evaluate a literal in the theory, set lastReason to last theory decision involved.
 	Minisat::lbool evaluateLiteral(Minisat::Lit lit) const;
 	
-	Minisat::Lit pickLiteralForDecision();
+	boost::variant<Minisat::Lit,FormulaT> pickLiteralForDecision(); 
 	
 	std::pair<FormulaT,bool> makeTheoryDecision() {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Obtaining assignment");
