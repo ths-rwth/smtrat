@@ -14,7 +14,7 @@ public:
 	friend std::ostream& operator<<(std::ostream& os, const VariableSelector& vs);
 private:
 	using CounterMap = std::map<carl::Variable,std::pair<std::size_t,bool>>;
-	/// Counters for every variable how often they occur in the constraints and whether they have already been decided
+	/// Counts for every variable how often they occur in the constraints and whether they have already been decided
 	CounterMap mCounter;
 	/// A sorted list of variables still to consider
 	mutable std::vector<carl::Variable> mQueue;
@@ -22,7 +22,7 @@ private:
 	mutable bool mCounterChanged = false;
 	
 	void fixQueue() const {
-		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Rebuilding queue");
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Rebuilding queue " << *this);
 		if (mCounterChanged) {
 			mQueue.clear();
 			for (const auto& v: mCounter) {
@@ -78,14 +78,15 @@ public:
 	}
 	
 	void assign(carl::Variable v) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Assigned " << v << ", removing from queue");
+		fixQueue();
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Assigned " << v << ", removing from queue " << *this);
 		auto it = find(v);
 		it->second.second = true;
 		assert(mQueue.back() == v);
 		mQueue.pop_back();
 	}
 	void unassign(carl::Variable v) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Unassigned " << v << ", adding to queue");
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Unassigned " << v << ", adding to queue " << *this);
 		auto it = find(v);
 		it->second.second = false;
 		mCounterChanged = true;
