@@ -2702,31 +2702,32 @@ namespace smtrat
                         // Prüfen: if (carl::variant_is_type<Minisat::Lit>(res))
                         if(carl::variant_is_type<Minisat::Lit>(lit)) {
                             // If is Lit: assign to next
+							mCurrentAssignmentConsistent = SAT;
                             next = boost::get<Minisat::Lit>(lit);
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next);
                         } else if(carl::variant_is_type<FormulaT>(lit)) {
-                            // If is FormulaT: do theory propagation 
+                            // If is FormulaT: do theory propagation
                             vec<Lit> explanation;
                             const auto& res = boost::get<FormulaT>(lit);
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Got a theory propagation " << res);
+							int count_not_to_false_evaluated_literals = 0;
                             for (const auto& c: res) {
-                                    SMTRAT_LOG_DEBUG("smtrat.sat", "Adding " << c);
                                     Minisat::Lit l = createLiteral(c);
                                     explanation.push(l);
-                                    int count_not_to_false_evaluated_literals = 0;
                                     if (value(l) == l_Undef) {
                                             // We can not assume that evaluateLiteral(l) == l_False
                                             if(mMCSAT.evaluateLiteral(l) == l_False) {
-                                                uncheckedEnqueue(neg(l)); 
+                                                uncheckedEnqueue(neg(l));
+					                            SMTRAT_LOG_DEBUG("smtrat.sat", "Setting " << l << " to false due to theory");
                                             } else {
                                                 count_not_to_false_evaluated_literals++;
-                                                uncheckedEnqueue(l); 
                                             }
                                     }
                                     assert(count_not_to_false_evaluated_literals <= 1);
                             }
                             SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
                             // Add it, the next propagation will find it...
-                            bool cres = addClause(explanation, LEMMA_CLAUSE);
-                            assert(!cres);
+                            addClause(explanation, LEMMA_CLAUSE);
                             SMTRAT_LOG_DEBUG("smtrat.sat", "Added clause " << explanation);
                             propagateTheory();
                             confl = storeLemmas();
@@ -2745,17 +2746,19 @@ namespace smtrat
 						SMTRAT_LOG_DEBUG("smtrat.sat", "DPLL::decide() -> " << next);
 					}
                     
-                    if( next == lit_Undef && Settings::mc_sat ) { 
+                    if( next == lit_Undef && Settings::mc_sat && mMCSAT.hasNextVariable()) { 
                         // No decision done yet, try with a theory decision.
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Trying with next theory decision");
 						FormulaT res;
 						bool didDecision;
 						std::tie(res,didDecision) = mMCSAT.makeTheoryDecision();
 						if (didDecision) {
+							mCurrentAssignmentConsistent = SAT;
 							next = createLiteral(res);
 							mMCSAT.makeDecision(next);
 							pickTheoryBranchLit();
 						} else {
+							mCurrentAssignmentConsistent = UNSAT;
 							vec<Lit> explanation;
 							for (const auto& c: res) {
 								SMTRAT_LOG_DEBUG("smtrat.sat", "Adding " << c);
@@ -2779,8 +2782,10 @@ namespace smtrat
 							continue;
 						}
                     }
+					SMTRAT_LOG_DEBUG("smtrat.sat", "-> " << next);
                     if( next == lit_Undef )
                     {
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Entering SAT case");
                         if( mReceivedFormulaPurelyPropositional || mCurrentAssignmentConsistent == SAT )
                         {
                             // Model found:
@@ -3016,20 +3021,20 @@ namespace smtrat
 		FormulaT f = mMCSAT.buildDecisionFormula();
 		mNextDecisionIsTheory = true;
 		Lit lit = createLiteral(f);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Theory literal for " << f << " is " << lit);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Theory literal for " << f << " is " << lit);
 		return lit;
 	}
 	
 	template<class Settings>
     void SATModule<Settings>::pickTheoryBranchLit() {
 		if (!mMCSAT.hasNextVariable()) {
-			SMTRAT_LOG_DEBUG("smtrat.sat.mc", "No next theory variable.");
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "No next theory variable.");
 			return;
 		}
 		carl::Variable nextVar = mMCSAT.nextVariable();
-		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Next theory variable is " << nextVar);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Next theory variable is " << nextVar);
 		mMCSAT.pushLevel(nextVar);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Current state " << mMCSAT);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state " << mMCSAT);
 	}
     
     template<class Settings>
