@@ -2704,35 +2704,37 @@ namespace smtrat
                             // If is Lit: assign to next
                             next = boost::get<Minisat::Lit>(lit);
                         } else if(carl::variant_is_type<FormulaT>(lit)) {
-                            // If is FormulaT: do theory propagation like in search():2725
+                            // If is FormulaT: do theory propagation 
                             vec<Lit> explanation;
                             const auto& res = boost::get<FormulaT>(lit);
                             for (const auto& c: res) {
                                     SMTRAT_LOG_DEBUG("smtrat.sat", "Adding " << c);
                                     Minisat::Lit l = createLiteral(c);
                                     explanation.push(l);
+                                    int count_not_to_false_evaluated_literals = 0;
                                     if (value(l) == l_Undef) {
-                                            // But we can not assume that evaluateLiteral(l) == l_False
-                                            //was genau macht uncheckedEnqueue?
+                                            // We can not assume that evaluateLiteral(l) == l_False
                                             if(mMCSAT.evaluateLiteral(l) == l_False) {
                                                 uncheckedEnqueue(neg(l)); 
                                             } else {
-                                                uncheckedEnqueue(l);
+                                                count_not_to_false_evaluated_literals++;
+                                                uncheckedEnqueue(l); 
                                             }
-                                            
                                     }
+                                    assert(count_not_to_false_evaluated_literals <= 1);
                             }
                             SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
                             // Add it, the next propagation will find it...
                             bool cres = addClause(explanation, LEMMA_CLAUSE);
                             assert(!cres);
                             SMTRAT_LOG_DEBUG("smtrat.sat", "Added clause " << explanation);
-                            // TODO: Brauchen wir propagateTheory() / storeLemmas() ??
                             propagateTheory();
                             confl = storeLemmas();
                             SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << confl);
                             // basically abort and skip the next cases, directly go to conflict resolution and restart the loop
-                            handleConflict( confl );
+                            if(confl != CRef_Undef) {
+                                handleConflict( confl );
+                            }
                             continue;
                         }			
 						 
