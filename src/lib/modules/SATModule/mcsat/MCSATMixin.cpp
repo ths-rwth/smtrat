@@ -48,7 +48,7 @@ Minisat::lbool MCSATMixin::evaluateLiteral(Minisat::Lit lit) const {
 	return l_Undef;
 }
 
-Minisat::Lit MCSATMixin::pickLiteralForDecision() {
+boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision() {
 	const auto& variables = current().univariateVariables;
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Univariate variables: " << variables);
 	for (auto var: variables) {
@@ -63,7 +63,9 @@ Minisat::Lit MCSATMixin::pickLiteralForDecision() {
 			if (res == boost::none) {
 				return Minisat::mkLit(var, false);
 			} else {
-				// TODO: There is a conflict. Return conflict with mNLSAT.explain(currentVariable(), *res, f), perform theory propagation
+				// There is a conflict. Return conflict. 
+                                return mNLSAT.explain(currentVariable(), *res, f);
+                                // Perform theory propagation (in search)
 			}
 		}
 		if (isLiteralInUnivariateClause(Minisat::mkLit(var, true))) {
@@ -72,7 +74,9 @@ Minisat::Lit MCSATMixin::pickLiteralForDecision() {
 			if (res == boost::none) {
 				return Minisat::mkLit(var, true);
 			} else {
-				// TODO: There is a conflict. Return conflict with mNLSAT.explain(currentVariable(), *res, f), perform theory propagation
+				// There is a conflict. Return conflict.
+                                return mNLSAT.explain(currentVariable(), *res, f);
+                                // Perform theory propagation (in search)
 			}
 		}
 	}

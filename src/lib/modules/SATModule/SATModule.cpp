@@ -2695,17 +2695,47 @@ namespace smtrat
                          * - literal is unassigned [value(literal) == l_Undef], univariate 
                          * - decision is compatible with assignment [NLSAT::isInfeasible() == boost::none]
                          */
-						SMTRAT_LOG_DEBUG("smtrat.sat", "Picking a literal for a boolean decision");
-                    	next = mMCSAT.pickLiteralForDecision(); 
-						// TODO:
-						// Get variant<Lit,FormulaT>
-						// Prüfen: if (carl::variant_is_type<Minisat::Lit>(res))
-						// If is Lit: assign to next
-						// If is FormulaT: do theory propagation like in search():2725
-						// But we can not assume that evaluateLiteral(l) == l_False
-						// bool cres = addClause(explanation, LEMMA_CLAUSE);
-						// Brauchen wir propagateTheory() / storeLemmas() ?? 
-						// continue;
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "Picking a literal for a boolean decision");
+                    	//next = mMCSAT.pickLiteralForDecision(); 
+			// Get Variant<Minisat::Lit,FormulaT>
+                        boost::variant<Minisat::Lit,FormulaT> lit = mMCSAT.pickLiteralForDecision(); 
+                        // Prüfen: if (carl::variant_is_type<Minisat::Lit>(res))
+                        if(carl::variant_is_type<Minisat::Lit>(lit)) {
+                            // If is Lit: assign to next
+                            next = boost::get<Minisat::Lit>(lit);
+                        } else if(carl::variant_is_type<FormulaT>(lit)) {
+                            // If is FormulaT: do theory propagation like in search():2725
+                            vec<Lit> explanation;
+                            const auto& res = boost::get<FormulaT>(lit);
+                            for (const auto& c: res) {
+                                    SMTRAT_LOG_DEBUG("smtrat.sat", "Adding " << c);
+                                    Minisat::Lit l = createLiteral(c);
+                                    explanation.push(l);
+                                    if (value(l) == l_Undef) {
+                                            // But we can not assume that evaluateLiteral(l) == l_False
+                                            //was genau macht uncheckedEnqueue?
+                                            if(mMCSAT.evaluateLiteral(l) == l_False) {
+                                                uncheckedEnqueue(neg(l)); 
+                                            } else {
+                                                uncheckedEnqueue(l);
+                                            }
+                                            
+                                    }
+                            }
+                            SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
+                            // Add it, the next propagation will find it...
+                            bool cres = addClause(explanation, LEMMA_CLAUSE);
+                            assert(!cres);
+                            SMTRAT_LOG_DEBUG("smtrat.sat", "Added clause " << explanation);
+                            // TODO: Brauchen wir propagateTheory() / storeLemmas() ??
+                            propagateTheory();
+                            confl = storeLemmas();
+                            SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << confl);
+                            // basically abort and skip the next cases, directly go to conflict resolution and restart the loop
+                            handleConflict( confl );
+                            continue;
+                        }			
+						 
 						SMTRAT_LOG_DEBUG("smtrat.sat", "-> " << next);
 					} else {
                         // DPLL::decide()
