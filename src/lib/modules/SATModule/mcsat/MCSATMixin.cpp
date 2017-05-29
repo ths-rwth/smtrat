@@ -3,8 +3,6 @@
 namespace smtrat {
 namespace mcsat {
 
-using carl::operator<<;
-
 void MCSATMixin::makeDecision(Minisat::Lit decisionLiteral) {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Made theory decision for " << current().variable << ": " << decisionLiteral);
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Variables: " << mVariables);
@@ -61,6 +59,7 @@ boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision() {
 			const auto& f = mGetter.reabstractLiteral(Minisat::mkLit(var, false));
 			auto res = mNLSAT.isInfeasible(currentVariable(), f);
 			if (res == boost::none) {
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning " << Minisat::mkLit(var, false));
 				return Minisat::mkLit(var, false);
 			} else {
 				// There is a conflict. Return conflict. 
@@ -72,14 +71,16 @@ boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision() {
 			const auto& f = mGetter.reabstractLiteral(Minisat::mkLit(var, true));
 			auto res = mNLSAT.isInfeasible(currentVariable(), f);
 			if (res == boost::none) {
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning " << Minisat::mkLit(var, true));
 				return Minisat::mkLit(var, true);
 			} else {
 				// There is a conflict. Return conflict.
-                                return mNLSAT.explain(currentVariable(), *res, f);
+                                return mNLSAT.explain(currentVariable(), *res, FormulaT(carl::FormulaType::FALSE));
                                 // Perform theory propagation (in search)
 			}
 		}
 	}
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning undef.");
 	return Minisat::lit_Undef;
 }
 
