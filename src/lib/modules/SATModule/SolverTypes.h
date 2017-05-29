@@ -69,17 +69,21 @@ inline  int  toInt     (Var v)              { return v; }
 inline  int  toInt     (Lit p)              { return p.x; }
 inline  Lit  toLit     (int i)              { Lit p; p.x = i; return p; }
 
+const Lit lit_Undef = { -2 };  // }- Useful special constants.
+const Lit lit_Error = { -1 };  // }
 
 inline std::ostream& operator<<(std::ostream& os, const Lit& l) {
-	if (Minisat::sign(l)) os << "-";
-	return os << Minisat::var(l);
+	if (l == lit_Undef) os << "lit_Undef";
+	else if (l == lit_Error) os << "lit_Error";
+	else {
+		if (Minisat::sign(l)) os << "-";
+		os << Minisat::var(l);
+	}
+	return os;
 };
 
 //const Lit lit_Undef = mkLit(var_Undef, false);  // }- Useful special constants.
 //const Lit lit_Error = mkLit(var_Undef, true );  // }
-
-const Lit lit_Undef = { -2 };  // }- Useful special constants.
-const Lit lit_Error = { -1 };  // }
 
 
 //=================================================================================================
