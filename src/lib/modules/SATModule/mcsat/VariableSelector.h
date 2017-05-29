@@ -101,7 +101,8 @@ public:
 	}
 	
 };
-std::ostream& operator<<(std::ostream& os, const VariableSelector& vs) {
+
+inline std::ostream& operator<<(std::ostream& os, const VariableSelector& vs) {
 	return os << vs.mQueue;
 }
 

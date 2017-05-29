@@ -63,7 +63,7 @@ public:
 	FormulaT explain(carl::Variable var, const FormulasT& reason, const FormulaT& implication);
 };
 
-std::ostream& operator<<(std::ostream& os, const NLSAT& nl) {
+inline std::ostream& operator<<(std::ostream& os, const NLSAT& nl) {
 	os << "NLSAT:" << std::endl;
 	os << "## Model: " << nl.mModel << std::endl;
 	os << "## Constraints: " << nl.mConstraints << std::endl;
