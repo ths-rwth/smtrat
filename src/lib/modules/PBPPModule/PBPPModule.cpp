@@ -358,7 +358,20 @@ namespace smtrat
 		}
 
 		if(cRel == carl::Relation::GEQ){
-			 if(firstCoef == -1 && cRHS == -1){
+			if(firstCoef == -1 && cRHS == 1){
+				//-1 x1 -1 x2 -1 x3 -1 x4 >= 1 
+				return FormulaT(carl::FormulaType::FALSE);
+			}else if(firstCoef == 1 && cRHS > sum){
+				//x1 + x2 + x3 + x4 >= 5
+				return FormulaT(carl::FormulaType::FALSE);
+			}else if(firstCoef == 1 && cRHS == 1){
+				//+1 x1 +1 x2 +1 x3 >= 1 ===> x1 or x2 or x3
+				FormulasT subformulas;
+				for(auto it : cVars){
+					subformulas.push_back(FormulaT(it));
+				}
+				return FormulaT(carl::FormulaType::OR, std::move(subformulas));
+			}else if(firstCoef == -1 && cRHS == -1){
 				//-1 x1 -1 x2 -1 x3 -1 x4 >= -1 ===> (x1 and not x2 and not x3 and not x4) or (notx1 andx2 and not x3 and not x4) or ...
 				//or (not x1 and not x2 and not x3 and not x4)
 
@@ -418,11 +431,11 @@ namespace smtrat
 				return forwardAsArithmetic(formula);
 			}		
 		}else if(cRel == carl::Relation::EQ){
-			if(cRHS > lhsSize && firstCoef == 1){
+			if((cRHS > lhsSize && firstCoef == 1) || (firstCoef == 1 && cRHS < 0)){
+				//x1 + x2 + x3 + x4 = 5 or x1 + x2 + x3 + x4 = -2 
 				return FormulaT(carl::FormulaType::FALSE);
-			}else if(cRHS < lhsSize && firstCoef == -1){
-				return FormulaT(carl::FormulaType::FALSE);
-			}else if((firstCoef == 1 && cRHS < 0) || (firstCoef == -1 && cRHS > 0)){
+			}else if((cRHS < lhsSize && firstCoef == -1) || (cRHS > 0 && firstCoef == -1)){
+				//-x1 - x2 - x3 - x4 = -5 || -x1 - x2 - x3 - x4 = 5
 				return FormulaT(carl::FormulaType::FALSE);
 			}else if(firstCoef == 1 && cRHS == 0){
 				//+1 x1 +1 x2 +1 x3 +1 x4 = 0  ===> not x1 and not x2 and not x3 and not x4
