@@ -20,6 +20,9 @@ namespace smtrat
 	{
 		checkFormulaTypeFunction = std::bind(&PBPPModule<Settings>::checkFormulaType, this, std::placeholders::_1);
 		checkFormulaTypeWithRNSFunction = std::bind(&PBPPModule<Settings>::checkFormulaTypeWithRNS, this, std::placeholders::_1);
+		checkFormulaTypeWithCardConstrFunction = std::bind(&PBPPModule<Settings>::checkFormulaTypeWithCardConstr, this, std::placeholders::_1);
+		checkFormulaTypeWithMixedConstrFunction = std::bind(&PBPPModule<Settings>::checkFormulaTypeWithMixedConstr, this, std::placeholders::_1);
+		checkFormulaTypeBasicFunction = std::bind(&PBPPModule<Settings>::checkFormulaTypeBasic, this, std::placeholders::_1);
 	}
 	
 	template<class Settings>
@@ -46,6 +49,18 @@ namespace smtrat
 		}
 		if(Settings::use_rns_transformation){
 			FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeWithRNSFunction);
+			addSubformulaToPassedFormula(formula, _subformula->formula());
+			return true;
+		}else if(Settings::use_card_transformation){
+			FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeWithCardConstrFunction);
+			addSubformulaToPassedFormula(formula, _subformula->formula());
+			return true;
+		}else if(Settings::use_mixed_transformation){
+			FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeWithMixedConstrFunction);
+			addSubformulaToPassedFormula(formula, _subformula->formula());
+			return true;
+		}else if(Settings::use_basic_transformation){
+			FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeBasicFunction);
 			addSubformulaToPassedFormula(formula, _subformula->formula());
 			return true;
 		}else{
@@ -203,6 +218,221 @@ namespace smtrat
 		}		
 	}
 
+	template<typename Settings>
+	FormulaT PBPPModule<Settings>::checkFormulaTypeWithCardConstr(const FormulaT& formula){
+		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
+			return formula;
+		} 
+
+		const PBConstraintT& c = formula.pbConstraint();
+		carl::Relation cRel = c.getRelation();
+		const auto& cLHS = c.getLHS();
+		auto cVars = c.gatherVariables();
+		bool positive = true;
+		bool negative = true;
+		bool eqCoef = true;
+		Rational cRHS = c.getRHS();
+		Rational sum  = 0;
+		Rational min = INT_MAX;
+		Rational max = INT_MIN;
+		std::size_t lhsSize = cLHS.size();
+
+		for(auto it : cLHS){
+			if(it.first < 0){
+				positive = false;
+			}else if(it.first > 0){
+				negative = false;
+			}
+
+			if(it.first < min){
+				min = it.first;
+			}else if(it.first > max){
+				max = it.first;
+			}
+			sum += it.first;
+		}
+
+		for(std::size_t i = 0; i < lhsSize - 1; i++){
+			if(cLHS[i].first != cLHS[i + 1].first){
+				eqCoef = false;
+				break;
+			}
+		}
+
+		if(!positive && !negative){
+			auto res = forwardAsArithmetic(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
+			auto res = encodeCardinalityConstratint(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;	
+		}else if(lhsSize == 1){
+			auto res = convertSmallFormula(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(!(positive && cRHS > 0 && sum > cRHS
+			&& (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
+		&&  !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum < cRHS)
+		&& !(negative && cRHS < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum < cRHS)
+		&& !((positive || negative) && cRel == carl::Relation::NEQ && sum != cRHS && cRHS != 0)
+		&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
+		&& !(!positive && !negative)
+		){
+			auto res = convertBigFormula(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else{
+			auto res = forwardAsArithmetic(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}
+	}
+
+template<typename Settings>
+	FormulaT PBPPModule<Settings>::checkFormulaTypeWithMixedConstr(const FormulaT& formula){
+		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
+			return formula;
+		} 
+
+		const PBConstraintT& c = formula.pbConstraint();
+		carl::Relation cRel = c.getRelation();
+		const auto& cLHS = c.getLHS();
+		auto cVars = c.gatherVariables();
+		bool positive = true;
+		bool negative = true;
+		bool eqCoef = true;
+		Rational cRHS = c.getRHS();
+		Rational sum  = 0;
+		Rational min = INT_MAX;
+		Rational max = INT_MIN;
+		std::size_t lhsSize = cLHS.size();
+
+		for(auto it : cLHS){
+			if(it.first < 0){
+				positive = false;
+			}else if(it.first > 0){
+				negative = false;
+			}
+
+			if(it.first < min){
+				min = it.first;
+			}else if(it.first > max){
+				max = it.first;
+			}
+			sum += it.first;
+		}
+
+		for(std::size_t i = 0; i < lhsSize - 1; i++){
+			if(cLHS[i].first != cLHS[i + 1].first){
+				eqCoef = false;
+				break;
+			}
+		}
+
+		if(!positive && !negative){
+			auto res = encodeMixedConstraints(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
+			auto res = forwardAsArithmetic(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(lhsSize == 1){
+			auto res = convertSmallFormula(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(!(positive && cRHS > 0 && sum > cRHS
+			&& (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
+		&&  !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum < cRHS)
+		&& !(negative && cRHS < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum < cRHS)
+		&& !((positive || negative) && cRel == carl::Relation::NEQ && sum != cRHS && cRHS != 0)
+		&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
+		&& !(!positive && !negative)
+		){
+			auto res = convertBigFormula(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else{
+			auto res = forwardAsArithmetic(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}
+	}
+
+template<typename Settings>
+	FormulaT PBPPModule<Settings>::checkFormulaTypeBasic(const FormulaT& formula){
+		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
+			return formula;
+		} 
+
+		const PBConstraintT& c = formula.pbConstraint();
+		carl::Relation cRel = c.getRelation();
+		const auto& cLHS = c.getLHS();
+		auto cVars = c.gatherVariables();
+		bool positive = true;
+		bool negative = true;
+		bool eqCoef = true;
+		Rational cRHS = c.getRHS();
+		Rational sum  = 0;
+		Rational min = INT_MAX;
+		Rational max = INT_MIN;
+		std::size_t lhsSize = cLHS.size();
+
+		for(auto it : cLHS){
+			if(it.first < 0){
+				positive = false;
+			}else if(it.first > 0){
+				negative = false;
+			}
+
+			if(it.first < min){
+				min = it.first;
+			}else if(it.first > max){
+				max = it.first;
+			}
+			sum += it.first;
+		}
+
+		for(std::size_t i = 0; i < lhsSize - 1; i++){
+			if(cLHS[i].first != cLHS[i + 1].first){
+				eqCoef = false;
+				break;
+			}
+		}
+
+		if(!positive && !negative){
+			auto res = forwardAsArithmetic(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
+			auto res = forwardAsArithmetic(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(lhsSize == 1){
+			auto res = convertSmallFormula(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(!(positive && cRHS > 0 && sum > cRHS
+			&& (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
+		&&  !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum < cRHS)
+		&& !(negative && cRHS < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum < cRHS)
+		&& !((positive || negative) && cRel == carl::Relation::NEQ && sum != cRHS && cRHS != 0)
+		&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
+		&& !(!positive && !negative)
+		){
+			auto res = convertBigFormula(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else{
+			auto res = forwardAsArithmetic(formula);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}
+	}
+
+
+
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::encodeMixedConstraints(const FormulaT& formula){
@@ -238,6 +468,8 @@ namespace smtrat
 		}
 
 		//-1 x1 -1x2 -1x3 -1x4 +4x5 >= 0  und 1 x1 +1 x2 +1 x3 +1 x4 -4 x5 >= 0 geloescht
+
+
 		 if(lhsSize == 2 && cRHS == max && sum == 0 && cRel == carl::Relation::GEQ){
 			//-1 x1 +1 x2 >= 1 ===> not x1 and x2
 			FormulasT subf;
