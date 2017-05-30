@@ -214,6 +214,8 @@ namespace smtrat
 		bool negative = true;
 		Rational cRHS = c.getRHS();
 		Rational sum  = 0;
+		Rational sumNegCoef = 0;
+		Rational sumPosCoef = 0;
 		Rational min = INT_MAX;
 		Rational max = INT_MIN;
 		std::size_t lhsSize = cLHS.size();
@@ -221,8 +223,10 @@ namespace smtrat
 		for(auto it : cLHS){
 			if(it.first < 0){
 				positive = false;
+				sumNegCoef = - it.first;
 			}else if(it.first > 0){
 				negative = false;
+				sumPosCoef += it.first;
 			}
 
 			if(it.first < min){
@@ -232,55 +236,9 @@ namespace smtrat
 			}
 			sum += it.first;
 		}
-		if(sum == 0 && cRel == carl::Relation::GEQ && cRHS == 0){
-			std::size_t nsum = 0;
-			std::size_t psum = 0;
-			for(auto it : cLHS){
-				if(it.first == 1){
-					psum++;
-				}else if(it.first == -1){
-					nsum++;
-				}
-			}
-			if(nsum == lhsSize - 1){
- 				//-1 x1 -1x2 -1x3 -1x4 +4x5 >= 0 ===> not x1 or not x2 or not x3 or not x4 or x5
-				int nsum = 0;
-				int psum = 0;
-				for(auto it : cLHS){
-					if(it.first == 1){
-						psum++;
-					}else if(it.first == -1){
-						nsum++;
-					}
-				}
-				FormulasT subf;
-				for(auto it : cLHS){
-					if(it.first < 0){
-						subf.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it.second)));
-					}else{
-						subf.push_back(FormulaT(it.second));
-					}
-				}
-				return FormulaT(carl::FormulaType::OR, std::move(subf));
-			}else if(psum == lhsSize - 1){
-				//1 x1 +1 x2 +1 x3 +1 x4 -4 x5 >= 0 ===> (x5 -> x1 and x2 and x3 and x4) or (x1 or x2 or x3 or x4)
-				FormulaT subfA;
-				FormulasT subfB;
-				for(auto it : cLHS){
-					if(it.first < 0){
-						subfA = FormulaT(carl::FormulaType::NOT, FormulaT(it.second));
-					}else{
-						subfB.push_back(FormulaT(it.second));
-					}
-				}
-				FormulaT subformulaB = FormulaT(carl::FormulaType::AND, std::move(subfB));
-				FormulaT subformulaC = FormulaT(carl::FormulaType::OR, subfA, subformulaB); 
-				FormulaT subformulaD = FormulaT(carl::FormulaType::OR, std::move(subfB));
-				return FormulaT(carl::FormulaType::OR, subformulaD, subformulaC);
-			}else{
-				return forwardAsArithmetic(formula);
-			}
-		}else if(lhsSize == 2 && cRHS == max && sum == 0 && cRel == carl::Relation::GEQ){
+
+		//-1 x1 -1x2 -1x3 -1x4 +4x5 >= 0  und 1 x1 +1 x2 +1 x3 +1 x4 -4 x5 >= 0 geloescht
+		 if(lhsSize == 2 && cRHS == max && sum == 0 && cRel == carl::Relation::GEQ){
 			//-1 x1 +1 x2 >= 1 ===> not x1 and x2
 			FormulasT subf;
 			for(auto it : cLHS){
