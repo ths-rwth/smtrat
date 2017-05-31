@@ -42,6 +42,8 @@ private:
 	std::atomic<unsigned> jobcount;
 	/// Number of jobs that have terminated.
 	std::atomic<unsigned> progress;
+	/// Number of jobs to run in parallel.
+	std::size_t concurrency;
 
 	/**
 	 * Calls the checker and checks the result.
@@ -70,8 +72,9 @@ public:
 	 * Constructor.
      * @param tempPrefix Prefix for temporary files.
      */
-	Consumer(const std::string& tempPrefix, const Checker& checker): temp(tempPrefix), checker(checker), found(false) {
+	Consumer(const std::string& tempPrefix, std::size_t threads, const Checker& checker): temp(tempPrefix), checker(checker), found(false), concurrency(threads) {
 		reset();
+		if (concurrency == 0) concurrency = std::thread::hardware_concurrency();
 	}
 	/**
 	 * Destructor.
@@ -87,7 +90,6 @@ public:
      */
 	void consume(const Node& n, const std::string& message, std::size_t num) {
 		if (hasResult()) return;
-		std::size_t concurrency = std::thread::hardware_concurrency();
 		while (jobs.size() >= concurrency) {
 			while (!jobs.empty() && jobs.front().wait_for(std::chrono::seconds(0)) == std::future_status::ready) jobs.pop();
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
