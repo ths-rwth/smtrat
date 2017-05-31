@@ -65,6 +65,7 @@ public:
 	 */
 	std::size_t operator()(Node& root) {
 		std::size_t skip = 0;
+		if (settings.has("skip")) skip = settings.as<std::size_t>("skip");
 		for (std::size_t i = 1; ; i++) {
 			consumer.reset();
 			progress(0, root.complexity());
