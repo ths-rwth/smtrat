@@ -49,9 +49,11 @@ public:
 		;
 		bpo::options_description finetuning("Finetuning");
 		finetuning.add_options()
-			("dfs,d", "use DFS instead of BFS")
+			("dfs", "use DFS instead of BFS")
 			("delay-declare-fun", bpo::value<bool>()->default_value(true), "delay removal of declare-fun")
-			("temp-file,T", bpo::value<std::string>()->default_value(".delta.smt2"), "temporary filename")
+			("temp-file", bpo::value<std::string>()->default_value(".delta.smt2"), "temporary filename")
+			("skip", bpo::value<std::size_t>()->default_value(0), "skip the first n nodes")
+			("threads", bpo::value<std::size_t>()->default_value(0), "number of parallel threads")
 		;
 		bpo::options_description operators("Node operators");
 		operators.add_options()
