@@ -10,7 +10,7 @@
 #include "../modules/SATModule/SATModule.h"
 #include "../modules/LRAModule/LRAModule.h"
 #include "../modules/VSModule/VSModule.h"
-#include "../modules/CADModule/CADModule.h"
+#include "../modules/NewCADModule/NewCADModule.h"
 #include "../modules/FPPModule/FPPModule.h"
 #include "../modules/SATModule/SATModule.h"
 #include "../modules/ICPModule/ICPModule.h"
@@ -102,7 +102,7 @@ namespace smtrat
                         {
                             addBackend<VSModule<VSSettings234>>(
                             {
-                                addBackend<CADModule<CADSettingsSplitFirst>>()
+                                addBackend<NewCADModule<NewCADSettingsFOS>>()
                             })
                         })
                     })
