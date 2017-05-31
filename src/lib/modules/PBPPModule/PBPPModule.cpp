@@ -446,6 +446,8 @@ template<typename Settings>
 		Rational sum  = 0;
 		Rational sumNegCoef = 0;
 		Rational sumPosCoef = 0;
+		Rational numberNegCoef = 0;
+		Rational numberPosCoef = 0;
 		Rational min = INT_MAX;
 		Rational max = INT_MIN;
 		std::size_t lhsSize = cLHS.size();
@@ -454,9 +456,11 @@ template<typename Settings>
 			if(it.first < 0){
 				positive = false;
 				sumNegCoef = - it.first;
+				numberNegCoef++;
 			}else if(it.first > 0){
 				negative = false;
 				sumPosCoef += it.first;
+				numberNegCoef++;
 			}
 
 			if(it.first < min){
@@ -469,66 +473,129 @@ template<typename Settings>
 
 		//-1 x1 -1x2 -1x3 -1x4 +4x5 >= 0  und 1 x1 +1 x2 +1 x3 +1 x4 -4 x5 >= 0 geloescht
 
-
-		 if(lhsSize == 2 && cRHS == max && sum == 0 && cRel == carl::Relation::GEQ){
-			//-1 x1 +1 x2 >= 1 ===> not x1 and x2
-			FormulasT subf;
-			for(auto it : cLHS){
-				if(it.first < 0){
-					subf.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it.second)));
+		if(cRel == carl::Relation::GEQ){
+			if(lhsSize == 2){
+				if(cRHS == max && sum == 0){
+					//-1 x1 +1 x2 >= 1 ===> not x1 and x2
+					FormulasT subf;
+					for(auto it : cLHS){
+						if(it.first < 0){
+							subf.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it.second)));
+						}else{
+							subf.push_back(FormulaT(it.second));
+						}
+					}
+					return FormulaT(carl::FormulaType::AND, std::move(subf));
+				}else if(cRHS == 0 && sum == 0){
+				//+1 x1 -1 x2 >= 0 ==> x2 -> x1 ===> not x2 or x1
+					FormulasT subf;
+					for(auto it : cLHS){
+						if(it.first < 0){
+							subf.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it.second)));
+						}else{
+							subf.push_back(FormulaT(it.second));
+						}
+					}
+					return FormulaT(carl::FormulaType::OR, std::move(subf));
+				}else if(cRHS == min && sum == 0){
+					//-1 x1 + 1 x2 >= -1 ===> TRUE
+					return FormulaT(carl::FormulaType::TRUE);
 				}else{
-					subf.push_back(FormulaT(it.second));
-				}
-			}
-			return FormulaT(carl::FormulaType::AND, std::move(subf));
-		}else if(lhsSize == 2 && cRHS == 0 && sum == 0 && cRel == carl::Relation::GEQ){
-			//+1 x1 -1 x2 >= 0 ==> x2 -> x1 ===> not x2 or x1
-			FormulasT subf;
-			for(auto it : cLHS){
-				if(it.first < 0){
-					subf.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it.second)));
-				}else{
-					subf.push_back(FormulaT(it.second));
-				}
-			}
-			return FormulaT(carl::FormulaType::OR, std::move(subf));
-		}else if(lhsSize == 3 && sum == 1 && cRHS == 0 && cRel == carl::Relation::GEQ){
-			//-1 x1 +1 x2 +1 x3 >= 0 ===> not x1 or x2 or x3
-			FormulasT subf;
-			for(auto it : cLHS){
-				if(it.first < 0){
-					subf.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it.second)));
-				}else{
-					subf.push_back(FormulaT(it.second));
-				}
-			}
-			return FormulaT(carl::FormulaType::OR, std::move(subf));	
-		}else if(cRel == carl::Relation::GEQ && sum == cRHS && cRHS < 0){
-			int nsum = 0;
-			for(auto it : cLHS){
-				if((it.first != 1) && (it.first != -1)){
 					return forwardAsArithmetic(formula);
-				}else if(it.first == -1){
-					nsum--;
 				}
-			}
-
-			if(nsum == cRHS - 1){
-				//+1 x1 -1 x2 -1 x3 -1 x4 -1x5 >= -3 ===> not(not x1 and x2 and x3 and x4 and x5)
-				FormulasT subf;
-				for(auto it : cLHS){
-					if(it.first < 0){
-						subf.push_back(FormulaT(it.second));
+			}else if(lhsSize == 3){
+				if(numberNegCoef == 2 && (sumNegCoef/numberNegCoef) == 1 && sum == min &&  min == - max){
+					if(cRHS == 0){
+					//-1 x1 -1 x2 +1 x3 >= 0 ===> not(x1 and x2) and ((x1 or x2) -> x3)
+						std::vector<carl::Variable> nVars;
+						carl::Variable pVar;
+						for(auto it : cLHS){
+							if(it.first < 0){
+								nVars.push_back(it.second);
+							}else{
+								pVar = it.second;
+							}
+						}
+						FormulaT subfA = FormulaT(carl::FormulaType::NOT, generateVarChain(nVars, carl::FormulaType::AND));
+						FormulaT subfB = FormulaT(carl::FormulaType::IMPLIES, generateVarChain(nVars, carl::FormulaType::OR), FormulaT(pVar));
+						return FormulaT(carl::FormulaType::AND, subfA, subfB);
+					}else if(cRHS == max){
+						//-1 x1 -1 x2 +1 x3 >= 1 ===> x3
+						carl::Variable posVar;
+						for(auto it : cLHS){
+							if(it.first > 0){
+								posVar = it.second;
+								break;
+							}
+						}
+						return FormulaT(posVar);
+					}else if(cRHS == min){
+						//-1 x1 -1 x2 +1 x3 >= -1 ===> (x1 and x2) -> x3 ===> not x1 or not x2 or x3
+						FormulasT subformulas;
+						for(auto it : cLHS){
+							if(it.first < 0){
+								subformulas.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it.second)));
+							}else{
+								subformulas.push_back(FormulaT(it.second));
+							}
+						}
+						return FormulaT(carl::FormulaType::OR, std::move(subformulas));
 					}else{
-						subf.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it.second)));
+						return forwardAsArithmetic(formula);
+					}
+				}else if(numberPosCoef == 2 && (sumPosCoef/numberPosCoef) == 1 && sum == max && min == - max){
+					if(cRHS == 0){
+						//-1 x1 +1 x2 +1 x3 >= 0 ===> x1 -> (x2 or x3) ===> not x1 or x2 or x3
+						FormulasT subformulas;
+						for(auto it : cLHS){
+							if(it.first < 0){
+								subformulas.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it.second)));
+							}else{
+								subformulas.push_back(FormulaT(it.second));
+							}
+						}
+						return FormulaT(carl::FormulaType::OR, std::move(subformulas));
+					}else if(cRHS == min){
+						//-1 x1 +1 x2 +1 x3 >= -1 ===> true
+						return FormulaT(carl::FormulaType::TRUE);
+					}else if(cRHS == max){
+						//-1 x1 +1 x2 +1 x3 >= 1 ===> x1 -> (x2 and x3) and (x1 or x2 or x3)
+						FormulaT subfA = generateVarChain(cVars, carl::FormulaType::OR);
+						carl::Variable nVar;
+						std::vector<carl::Variable> pVars;
+						for(auto it : cLHS){
+							if(it.first > 0){
+								pVars.push_back(it.second);
+							}else{
+								nVar = it.second;
+							}
+						}
+						FormulaT subfB = FormulaT(carl::FormulaType::IMPLIES, FormulaT(nVar), generateVarChain(pVars, carl::FormulaType::AND));
+						return FormulaT(carl::FormulaType::AND, subfA, subfB);
+					}else{
+						return forwardAsArithmetic(formula);
+					}
+				}else{
+					return forwardAsArithmetic(formula);
+				}
+			}else if(numberPosCoef == lhsSize - 1 && (sumPosCoef / numberPosCoef) == 1 && cRHS == 0 && sum == lhsSize - 1){	
+			//+1 x513 +1 x417 -1 x257 +1 x65 +1 x1 >= 0  ===> +1 x513 +1 x417 +1 x65 +1 x1 >= 1 or +1 x513 +1 x417 +1 x65 +1 x1 >= 0
+				std::vector<std::pair<Rational, carl::Variable>> newLHS;
+				for(auto it : cLHS){
+					if(it.first > 0){
+						newLHS.push_back(it);
 					}
 				}
-				return FormulaT(carl::FormulaType::NOT, FormulaT(carl::FormulaType::AND, std::move(subf)));
+
+				PBConstraintT constrA(newLHS, carl::Relation::GEQ, 1);
+				PBConstraintT constrB(newLHS, carl::Relation::GEQ, 0);
+				FormulaT f = FormulaT(carl::FormulaType::OR, FormulaT(constrA), FormulaT(constrB));
+				return convertBigFormula(f);
+			}else if(sum == cRHS && cRHS < 0){
+
 			}else{
 				return forwardAsArithmetic(formula);
 			}
-		}else{
-			return forwardAsArithmetic(formula);
 		}
 	}
 
@@ -614,7 +681,7 @@ template<typename Settings>
 				for(auto it : cVars){
 					subf.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it)));
 				}
-				
+
 				subsubformulas.push_back(FormulaT(carl::FormulaType::AND, std::move(subf)));
 				return FormulaT(carl::FormulaType::OR, std::move(subsubformulas));		
 			}else{
@@ -708,7 +775,7 @@ template<typename Settings>
 		Integer cRHS = carl::getNum(c.getRHS());
 		std::vector<std::pair<Rational, carl::Variable>> newLHS;
 		Rational newRHS = carl::mod(cRHS, prime);
-		
+
 
 		for(auto it : cLHS){
 			assert(carl::isInteger(it.first));
@@ -717,7 +784,7 @@ template<typename Settings>
 				newLHS.push_back(std::pair<Rational, carl::Variable>(newCoeff, it.second));
 			}
 		}
-		
+
 		if(newLHS.size() == 0 && newRHS > 0){
 			return FormulaT(carl::FormulaType::FALSE);
 		}else if(newLHS.size() == 0 && newRHS == 0){
