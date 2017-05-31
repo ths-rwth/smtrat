@@ -42,7 +42,7 @@ public:
 	 * @param settings Settings object.
 	 */
 	Producer(const Checker& checker, const Settings& settings):
-		consumer(settings.as<std::string>("temp-file"), checker), settings(settings), interrupted(false)
+		consumer(settings.as<std::string>("temp-file"), settings.as<std::size_t>("threads"), checker), settings(settings), interrupted(false)
 	{
 		if (!settings.has("no-constants")) operators.emplace_back(&constant, "Replaced variable ", " by constant ", ".");
 		if (!settings.has("no-children")) operators.emplace_back(&children, "Replaced ", " by child ", ".");
