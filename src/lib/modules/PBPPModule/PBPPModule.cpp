@@ -471,8 +471,6 @@ template<typename Settings>
 			sum += it.first;
 		}
 
-		//-1 x1 -1x2 -1x3 -1x4 +4x5 >= 0  und 1 x1 +1 x2 +1 x3 +1 x4 -4 x5 >= 0 geloescht
-
 		if(cRel == carl::Relation::GEQ){
 			if(lhsSize == 2){
 				if(cRHS == max && sum == 0){
@@ -591,11 +589,11 @@ template<typename Settings>
 				PBConstraintT constrB(newLHS, carl::Relation::GEQ, 0);
 				FormulaT f = FormulaT(carl::FormulaType::OR, FormulaT(constrA), FormulaT(constrB));
 				return convertBigFormula(f);
-			}else if(sum == cRHS && cRHS < 0){
-
 			}else{
 				return forwardAsArithmetic(formula);
 			}
+		}else{
+			return forwardAsArithmetic(formula);
 		}
 	}
 
