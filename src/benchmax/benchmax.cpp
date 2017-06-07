@@ -111,9 +111,6 @@ bool initApplication(int argc, char** argv) {
 
 void loadTools(std::vector<benchmax::Tool*>& tools) {
 	benchmax::createTools<benchmax::Tool>(Settings::tools_generic, tools);
-	benchmax::createTools<benchmax::IsatTool>(Settings::tools_isat, tools);
-	//benchmax::createTools<benchmax::QepcadTool>(Settings::tools_qepcad, tools);
-	//benchmax::createTools<benchmax::IsatTool>(Settings::tools_redlogrlcad, tools);
 	benchmax::createTools<benchmax::SMTRAT>(Settings::tools_smtrat, tools);
 	benchmax::createTools<benchmax::SMTRAT_OPB>(Settings::tools_smtrat_opb, tools);
 	benchmax::createTools<benchmax::Minisatp>(Settings::tools_minisatp, tools);
