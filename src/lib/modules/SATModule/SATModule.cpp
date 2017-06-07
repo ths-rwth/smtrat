@@ -1697,15 +1697,16 @@ namespace smtrat
 			SMTRAT_LOG_DEBUG("smtrat.sat", "false literals: " << falseLiteralsCount);
             if( mBusy || decisionLevel() > assumptions.size() )
             {
-				if (!Settings::mc_sat || _type != CONFLICT_CLAUSE) {
+				//if (_type != CONFLICT_CLAUSE) { //!Settings::mc_sat || 
 	                #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
 	                std::cout << "add to mLemmas:" << add_tmp << std::endl;
 	                #endif
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "add_lemma = " << add_tmp);
 	                mLemmas.push();
 	                add_tmp.copyTo( mLemmas.last() );
 	                mLemmasRemovable.push( _type != NORMAL_CLAUSE );
 	                return true;
-				}
+				//}
             }
             // if all false, we're in conflict
             if( add_tmp.size() == falseLiteralsCount )
@@ -1812,7 +1813,7 @@ namespace smtrat
 				// Conflicting
 				assert(value(lemma[1]) == l_False);
 				// Backtrack to highest DL such that it looks like a regular conflict
-				int lvl = level(var(lemma[0]));
+				int lvl = level(var(lemma[1])); // instead of 0
 				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is conflicting on DL" << lvl);
 				if (lvl < backtrackLevel) {
 					backtrackLevel = lvl;
@@ -2772,9 +2773,10 @@ namespace smtrat
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
 							// Add it, the next propagation will find it...
 							bool cres = addClause(explanation, CONFLICT_CLAUSE);
-							assert(!cres);
+							//assert(!cres);
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Added clause " << explanation);
-							propagateTheory();
+							processLemmas();
+                                                        propagateTheory();
 							confl = storeLemmas();
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << confl);
 							// basically abort and skip the next two cases, directly go to conflict resolution and restart the loop
