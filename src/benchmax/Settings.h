@@ -21,7 +21,7 @@
 #endif
 
 #include "tools/Tool.h"
-#include "utils/commonPrefix.h"
+#include "utils/strings.h"
 
 namespace benchmax {
 
@@ -94,10 +94,6 @@ public:
 			("smtrat-opb,O", po::value<std::vector<std::string>>(&tools_smtrat_opb), "SMT-RAT with OPB interface")
 			("minisatp", po::value<std::vector<std::string>>(&tools_minisatp), "Minisatp with OPB interface")
 			("z3,Z", po::value<std::vector<std::string>>(&tools_z3), "an SMT-LIB 2.0 solver with z3 interface (multiple are possible)")
-			("isat,I", po::value<std::vector<std::string>>(&tools_isat), "an .Hys solver with isat interface (multiple are possible)")
-			("redlog_rlqe,R", po::value<std::vector<std::string>>(&tools_redlogrlqe), "Redlog solvers calling rlqe")
-			("redlog_rlcad,C", po::value<std::vector<std::string>>(&tools_redlogrlcad), "Redlog solvers calling rlcad")
-			("qepcad,Q", po::value<std::vector<std::string>>(&tools_qepcad), "the tool QEPCAD B")
 		;
 		// commandline options
 		desc_cmdline.add(coreOptions).add(toolOptions).add(backendOptions).add(benchmarkOptions).add(solverOptions);
@@ -119,7 +115,9 @@ public:
 		
 		timeLimit = std::chrono::seconds(vm["timeout"].as<std::size_t>());
 		pathPrefix = commonPrefix(pathes);
-		std::cout << "Common prefix is " << pathPrefix << std::endl;
+		std::cout << "Common path prefix is " << pathPrefix << std::endl;
+		toolsPrefix = commonPrefix({tools_generic, tools_smtrat, tools_smtrat_opb, tools_minisatp, tools_z3});
+		std::cout << "Common tools prefix is " << toolsPrefix << std::endl;
 	}
 	
 	bool has(const std::string& s) const {
@@ -163,10 +161,7 @@ public:
 	static std::vector<std::string> tools_smtrat_opb;
 	static std::vector<std::string> tools_minisatp;
 	static std::vector<std::string> tools_z3;
-	static std::vector<std::string> tools_isat;
-	static std::vector<std::string> tools_redlogrlqe;
-	static std::vector<std::string> tools_redlogrlcad;
-	static std::vector<std::string> tools_qepcad;
+	static std::string toolsPrefix;
     
 	static std::string RemoteOutputDirectory;
 	static std::string PathOfBenchmarkTool;

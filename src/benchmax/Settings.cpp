@@ -42,10 +42,7 @@ namespace benchmax {
 	std::vector<std::string> Settings::tools_smtrat_opb;
 	std::vector<std::string> Settings::tools_minisatp;
 	std::vector<std::string> Settings::tools_z3;
-	std::vector<std::string> Settings::tools_isat;
-	std::vector<std::string> Settings::tools_redlogrlqe;
-	std::vector<std::string> Settings::tools_redlogrlcad;
-	std::vector<std::string> Settings::tools_qepcad;
+	std::string Settings::toolsPrefix;
 	
 	std::string Settings::RemoteOutputDirectory;
 	std::string Settings::PathOfBenchmarkTool;
