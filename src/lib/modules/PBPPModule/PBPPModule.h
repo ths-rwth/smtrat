@@ -25,7 +25,7 @@ namespace smtrat
 			PBPPStatistics mStatistics;
 #endif
 			// Members.
-			std::map<carl::Variable, carl::Variable> mVariablesCache; //bool, int
+			std::map<carl::Variable, carl::Variable> mVariablesCache; //int, bool
 			carl::FormulaVisitor<FormulaT> mVisitor;
 			std::vector<carl::Variable> mCheckedVars;
 			std::vector<carl::Variable> mConnectedVars;
@@ -92,9 +92,10 @@ namespace smtrat
 			Answer checkCore();
 
 		private:
-			FormulaT convertSmallFormula(const FormulaT& formula);
-			FormulaT convertBigFormula(const FormulaT& formula);
-			FormulaT forwardAsArithmetic(const FormulaT& formula);
+			FormulaT convertSmallFormula(const PBConstraintT& formula);
+			FormulaT convertBigFormula(const PBConstraintT& formula);
+			FormulaT forwardAsArithmetic(const PBConstraintT& formula);
+			PBConstraintT changeVarTypeToBool(const FormulaT& formula);
 			FormulaT checkFormulaType(const FormulaT& formula);
 			FormulaT checkFormulaTypeWithRNS(const FormulaT& formula);
 			FormulaT checkFormulaTypeWithCardConstr(const FormulaT& formula);
@@ -107,17 +108,17 @@ namespace smtrat
 			std::function<FormulaT(FormulaT)> checkFormulaTypeBasicFunction;
 
 			FormulaT generateVarChain(const std::vector<carl::Variable>& vars, carl::FormulaType type);
-			FormulaT createAuxiliaryConstraint(const FormulaT& formula);
-			FormulaT interconnectVariables(const FormulaT& formula);
-			FormulaT rnsTransformation(const FormulaT& formula, const Integer& prime);
-			//FormulaT rnsTransformation(const FormulaT& formula);
-			std::vector<Integer> calculateRNSBase(const FormulaT& formula);
-			bool isNonRedundant(const std::vector<Integer>& base, const FormulaT& formula);
+			FormulaT createAuxiliaryConstraint(const std::vector<carl::Variable>& variables);
+			FormulaT interconnectVariables(const std::vector<carl::Variable>& variables);
+			FormulaT rnsTransformation(const PBConstraintT& formula, const Integer& prime);
+			std::vector<Integer> calculateRNSBase(const PBConstraintT& formula);
+			bool isNonRedundant(const std::vector<Integer>& base, const PBConstraintT& formula);
+
 			std::vector<Integer> integerFactorization(const Integer& coeff);
 			void initPrimesTable();
-			FormulaT removeZeroCoefficients(const FormulaT& formula);
-			FormulaT encodeCardinalityConstratint(const FormulaT& formula);
-			FormulaT encodeMixedConstraints(const FormulaT& formula);
+			FormulaT removeZeroCoefficients(const PBConstraintT& formula);
+			FormulaT encodeCardinalityConstratint(const PBConstraintT& formula);
+			FormulaT encodeMixedConstraints(const PBConstraintT& formula);
 
 	};
 }

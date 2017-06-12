@@ -44,7 +44,8 @@ namespace smtrat
 	{
 		if (objective() != carl::Variable::NO_VARIABLE) {
 			for (auto var: objectiveFunction().gatherVariables()) {
-				mVariablesCache.emplace(carl::Variable(var.getId(), carl::VariableType::VT_BOOL), var);
+				// mVariablesCache.emplace(carl::Variable(var.getId(), carl::VariableType::VT_BOOL), var);
+				mVariablesCache.emplace(var, carl::freshVariable(carl::VariableType::VT_BOOL));
 			}
 		}
 		if(Settings::use_rns_transformation){
@@ -100,7 +101,7 @@ namespace smtrat
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaType(const FormulaT& formula){
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
-			return formula;
+			return FormulaT(formula);
 		} 
 
 		const PBConstraintT& c = formula.pbConstraint();
@@ -137,17 +138,19 @@ namespace smtrat
 				break;
 			}
 		}
+		// auto sub = forwardAsArithmetic(interconnectVariables(cVars));
 
 		if(!positive && !negative){
-			auto res = encodeMixedConstraints(formula);
+			auto res = encodeMixedConstraints(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
+			// return FormulaT(carl::FormulaType::AND, res, sub);
 		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
-			auto res = encodeCardinalityConstratint(formula);
+			auto res = encodeCardinalityConstratint(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;	
 		}else if(lhsSize == 1){
-			auto res = convertSmallFormula(formula);
+			auto res = convertSmallFormula(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(!(positive && cRHS > 0 && sum > cRHS
@@ -158,11 +161,11 @@ namespace smtrat
 		&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
 		&& !(!positive && !negative)
 		){
-			auto res = convertBigFormula(formula);
+			auto res = convertBigFormula(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else{
-			auto res = forwardAsArithmetic(formula);
+			auto res = forwardAsArithmetic(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}
@@ -172,7 +175,7 @@ namespace smtrat
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaTypeWithRNS(const FormulaT& formula){
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
-			return formula;
+			return FormulaT(formula);
 		} 
 		const PBConstraintT& c = formula.pbConstraint();
 		carl::Relation cRel  = c.getRelation();
@@ -201,11 +204,11 @@ namespace smtrat
 
 		if(positive && !(eqCoef && cLHS[0].first == 1) && cRel == carl::Relation::EQ && cLHS.size() > 4){
 			initPrimesTable();
-			std::vector<Integer> base = calculateRNSBase(formula);
-			if(base.size() != 0 && isNonRedundant(base, formula)){
+			std::vector<Integer> base = calculateRNSBase(changeVarTypeToBool(formula));
+			if(base.size() != 0 && isNonRedundant(base, changeVarTypeToBool(formula))){
 				std::vector<FormulaT> subformulas;
 				for(auto i : base){
-					subformulas.push_back(rnsTransformation(formula, i));
+					subformulas.push_back(rnsTransformation(changeVarTypeToBool(formula), i));
 				}
 				auto res = FormulaT(carl::FormulaType::AND, std::move(subformulas));
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
@@ -221,7 +224,7 @@ namespace smtrat
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaTypeWithCardConstr(const FormulaT& formula){
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
-			return formula;
+			return FormulaT(formula);
 		} 
 
 		const PBConstraintT& c = formula.pbConstraint();
@@ -260,15 +263,15 @@ namespace smtrat
 		}
 
 		if(!positive && !negative){
-			auto res = forwardAsArithmetic(formula);
+			auto res = forwardAsArithmetic(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
-			auto res = encodeCardinalityConstratint(formula);
+			auto res = encodeCardinalityConstratint(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;	
 		}else if(lhsSize == 1){
-			auto res = convertSmallFormula(formula);
+			auto res = convertSmallFormula(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(!(positive && cRHS > 0 && sum > cRHS
@@ -279,11 +282,11 @@ namespace smtrat
 		&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
 		&& !(!positive && !negative)
 		){
-			auto res = convertBigFormula(formula);
+			auto res = convertBigFormula(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else{
-			auto res = forwardAsArithmetic(formula);
+			auto res = forwardAsArithmetic(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}
@@ -292,7 +295,7 @@ namespace smtrat
 template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaTypeWithMixedConstr(const FormulaT& formula){
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
-			return formula;
+			return FormulaT(formula);
 		} 
 
 		const PBConstraintT& c = formula.pbConstraint();
@@ -331,15 +334,15 @@ template<typename Settings>
 		}
 
 		if(!positive && !negative){
-			auto res = encodeMixedConstraints(formula);
+			auto res = encodeMixedConstraints(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
-			auto res = forwardAsArithmetic(formula);
+			auto res = forwardAsArithmetic(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(lhsSize == 1){
-			auto res = convertSmallFormula(formula);
+			auto res = convertSmallFormula(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(!(positive && cRHS > 0 && sum > cRHS
@@ -350,11 +353,11 @@ template<typename Settings>
 		&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
 		&& !(!positive && !negative)
 		){
-			auto res = convertBigFormula(formula);
+			auto res = convertBigFormula(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else{
-			auto res = forwardAsArithmetic(formula);
+			auto res = forwardAsArithmetic(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}
@@ -363,7 +366,7 @@ template<typename Settings>
 template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaTypeBasic(const FormulaT& formula){
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
-			return formula;
+			return FormulaT(formula);
 		} 
 
 		const PBConstraintT& c = formula.pbConstraint();
@@ -402,15 +405,15 @@ template<typename Settings>
 		}
 
 		if(!positive && !negative){
-			auto res = forwardAsArithmetic(formula);
+			auto res = forwardAsArithmetic(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
-			auto res = forwardAsArithmetic(formula);
+			auto res = forwardAsArithmetic(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(lhsSize == 1){
-			auto res = convertSmallFormula(formula);
+			auto res = convertSmallFormula(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(!(positive && cRHS > 0 && sum > cRHS
@@ -421,11 +424,11 @@ template<typename Settings>
 		&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
 		&& !(!positive && !negative)
 		){
-			auto res = convertBigFormula(formula);
+			auto res = convertBigFormula(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else{
-			auto res = forwardAsArithmetic(formula);
+			auto res = forwardAsArithmetic(changeVarTypeToBool(formula));
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}
@@ -435,14 +438,13 @@ template<typename Settings>
 
 
 	template<typename Settings>
-	FormulaT PBPPModule<Settings>::encodeMixedConstraints(const FormulaT& formula){
-		const PBConstraintT& c = formula.pbConstraint();
-		carl::Relation cRel = c.getRelation();
-		const auto& cLHS = c.getLHS();
-		auto cVars = c.gatherVariables();
+	FormulaT PBPPModule<Settings>::encodeMixedConstraints(const PBConstraintT& formula){
+		carl::Relation cRel = formula.getRelation();
+		const auto& cLHS = formula.getLHS();
+		auto cVars = formula.gatherVariables();
 		bool positive = true;
 		bool negative = true;
-		Rational cRHS = c.getRHS();
+		Rational cRHS = formula.getRHS();
 		Rational sum  = 0;
 		Rational sumNegCoef = 0;
 		Rational sumPosCoef = 0;
@@ -588,7 +590,7 @@ template<typename Settings>
 				PBConstraintT constrA(newLHS, carl::Relation::GEQ, 1);
 				PBConstraintT constrB(newLHS, carl::Relation::GEQ, 0);
 				FormulaT f = FormulaT(carl::FormulaType::OR, FormulaT(constrA), FormulaT(constrB));
-				return convertBigFormula(f);
+				return convertBigFormula(changeVarTypeToBool(f));
 			}else{
 				return forwardAsArithmetic(formula);
 			}
@@ -599,12 +601,11 @@ template<typename Settings>
 
 
 	template<typename Settings>
-	FormulaT PBPPModule<Settings>::encodeCardinalityConstratint(const FormulaT& formula){
-		const PBConstraintT& c = formula.pbConstraint();
-		const auto& cLHS = c.getLHS();
-		auto cVars = c.gatherVariables();
-		Rational cRHS = c.getRHS();
-		carl::Relation cRel = c.getRelation();
+	FormulaT PBPPModule<Settings>::encodeCardinalityConstratint(const PBConstraintT& formula){
+		const auto& cLHS = formula.getLHS();
+		auto cVars = formula.gatherVariables();
+		Rational cRHS = formula.getRHS();
+		carl::Relation cRel = formula.getRelation();
 		std::size_t lhsSize = cLHS.size();
 		Rational firstCoef = cLHS[0].first;
 		Rational sum = 0;
@@ -766,11 +767,10 @@ template<typename Settings>
 
 
 	template<typename Settings>
-	FormulaT PBPPModule<Settings>::rnsTransformation(const FormulaT& formula, const Integer& prime) {
-		const PBConstraintT& c = formula.pbConstraint();
-		const auto& cLHS = c.getLHS();
-		assert(carl::isInteger(c.getRHS()));
-		Integer cRHS = carl::getNum(c.getRHS());
+	FormulaT PBPPModule<Settings>::rnsTransformation(const PBConstraintT& formula, const Integer& prime) {
+		const auto& cLHS = formula.getLHS();
+		assert(carl::isInteger(formula.getRHS()));
+		Integer cRHS = carl::getNum(formula.getRHS());
 		std::vector<std::pair<Rational, carl::Variable>> newLHS;
 		Rational newRHS = carl::mod(cRHS, prime);
 
@@ -805,13 +805,12 @@ template<typename Settings>
 
 
 	template<typename Settings>
-	FormulaT PBPPModule<Settings>::convertSmallFormula(const FormulaT& formula){
-		const PBConstraintT& c  = formula.pbConstraint();
-		carl::Relation cRel = c.getRelation();
-		const auto& cLHS = c.getLHS();
+	FormulaT PBPPModule<Settings>::convertSmallFormula(const PBConstraintT& formula){
+		carl::Relation cRel = formula.getRelation();
+		const auto& cLHS = formula.getLHS();
 		Rational lhsCoeff = cLHS.begin()->first;
 		FormulaT lhsVar = FormulaT(cLHS.begin()->second);
-		Rational cRHS = c.getRHS();
+		Rational cRHS = formula.getRHS();
 
 		if(cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER){
 			if(lhsCoeff > 0){
@@ -1004,17 +1003,16 @@ template<typename Settings>
 				}
 			}
 		}
-		return formula;
+		return FormulaT(formula);
 	}
 
 
 	template<typename Settings>
-	FormulaT PBPPModule<Settings>::convertBigFormula(const FormulaT& formula){
-		const PBConstraintT& c = formula.pbConstraint();
-		const auto& cLHS = c.getLHS();
-		carl::Relation cRel = c.getRelation();
-		auto cVars = c.gatherVariables();
-		Rational cRHS = c.getRHS();
+	FormulaT PBPPModule<Settings>::convertBigFormula(const PBConstraintT& formula){
+		const auto& cLHS = formula.getLHS();
+		carl::Relation cRel = formula.getRelation();
+		auto cVars = formula.gatherVariables();
+		Rational cRHS = formula.getRHS();
 		bool positive = true;
 		bool negative = true;
 		bool eqCoef = true;
@@ -1165,7 +1163,7 @@ template<typename Settings>
 				return forwardAsArithmetic(formula);
 			}	
 		}
-		return formula;
+		return FormulaT(formula);
 	}
 
 	template<typename Settings>
@@ -1178,98 +1176,81 @@ template<typename Settings>
 		return FormulaT(type, std::move(newSubformulas));
 	}
 
-	/*
-	/ Converts PBConstraint into a LRA formula.
-	*/
+
 	template<typename Settings>
-	FormulaT PBPPModule<Settings>::forwardAsArithmetic(const FormulaT& formula){
+	FormulaT PBPPModule<Settings>::forwardAsArithmetic(const PBConstraintT& formula){
+		auto variables = formula.gatherVariables();
+
+    	//Add auxiliary constraint to ensure that variables are assigned to 1 or 0.
+		FormulaT subf = createAuxiliaryConstraint(variables);
+		return FormulaT(carl::FormulaType::AND, FormulaT(formula), subf);
+	}
+
+	template<typename Settings>
+	PBConstraintT PBPPModule<Settings>::changeVarTypeToBool(const FormulaT& formula){
 		const PBConstraintT& c = formula.pbConstraint();
 		const auto& cLHS = c.getLHS();
 		carl::Relation cRel  = c.getRelation();
 		Rational cRHS = c.getRHS();
-		auto variables = c.gatherVariables();
-
-		for(auto it : variables){
-			mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(it, carl::freshVariable(carl::VariableType::VT_INT)));
-		}
-
-		Poly lhs;
+		std::vector<std::pair<Rational, carl::Variable>> newLHS;
 		for(auto it : cLHS){
 			auto finder = mVariablesCache.find(it.second);
-			carl::Variable curVariable = finder->second;
-			Poly pol(curVariable);
-			lhs = lhs + Rational(it.first) * pol;
-		}
-		lhs = lhs - Rational(cRHS);
-		FormulaT subformulaA = FormulaT(lhs, cRel);
-
-		//Adding auxiliary constraint to ensure variables are assigned to 1 or 0.
-		FormulaT subformulaB = createAuxiliaryConstraint(formula);
-		FormulaT subformulaC = FormulaT(carl::FormulaType::AND, subformulaA, subformulaB);
-
-		//Adding auxiliary constraint to interconnect the bool and int variables
-		FormulaT subformulaD = interconnectVariables(formula);
-		return FormulaT(carl::FormulaType::AND, subformulaC, subformulaD);
-	}
-
-	template<typename Settings>
-	FormulaT PBPPModule<Settings>::createAuxiliaryConstraint(const FormulaT& formula){
-		const PBConstraintT& c = formula.pbConstraint();
-		auto boolVars = c.gatherVariables();
-		std::vector<carl::Variable> intVars;
-		for(auto it : boolVars){
-			if(std::find(mCheckedVars.begin(), mCheckedVars.end(), it) == mCheckedVars.end()){ 
-				//There are no auxiliary constraints for this variable
-				intVars.push_back(mVariablesCache.find(it)->second);
-				mCheckedVars.push_back(it);
+			if(finder == mVariablesCache.end()){
+				carl::Variable newVar = carl::freshVariable(carl::VariableType::VT_BOOL);
+				mVariablesCache.emplace(it.second, newVar);
+				newLHS.push_back(std::pair<Rational, carl::Variable>(it.first, newVar));
+			}else{
+				newLHS.push_back(std::pair<Rational, carl::Variable>(it.first, finder->second));
 			}
-		}
 
-		FormulasT newSubformulas;
-		for(auto var : intVars){
-			Poly intVar(var);
-			FormulaT subformulaA = FormulaT(intVar, carl::Relation::EQ);
-			FormulaT subformulaB = FormulaT(intVar - Rational(1), carl::Relation::EQ);
-			FormulaT newFormula = FormulaT(carl::FormulaType::XOR, subformulaA, subformulaB);
-			newSubformulas.push_back(newFormula);
 		}
-		return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
+		return PBConstraintT(newLHS, cRel, cRHS);
 	}
 
 	template<typename Settings>
-	FormulaT PBPPModule<Settings>::interconnectVariables(const FormulaT& formula){
-		const PBConstraintT& c = formula.pbConstraint();
-		auto boolVars = c.gatherVariables();
-		std::map<carl::Variable, carl::Variable> varsMap;
-
-		for(auto var : boolVars){
+	FormulaT PBPPModule<Settings>::interconnectVariables(const std::vector<carl::Variable>& variables){
+		FormulasT subformulas;
+		for(auto var : variables){
 			if(std::find(mConnectedVars.begin(), mConnectedVars.end(), var) == mConnectedVars.end()){
-				//The variables are not interconnected
-				varsMap.insert(*mVariablesCache.find(var));
+            //The variables are not interconnected
 				mConnectedVars.push_back(var);
+				FormulaT boolVar = FormulaT(mVariablesCache.find(var)->second);
+				Poly intVar(var);
+				FormulaT subformulaA = FormulaT(intVar - Rational(1), carl::Relation::EQ);
+				FormulaT subformulaB = FormulaT(carl::FormulaType::IMPLIES, boolVar, subformulaA);
+				FormulaT subformulaC = FormulaT(intVar, carl::Relation::EQ);
+				FormulaT subformulaD = FormulaT(carl::FormulaType::IMPLIES, boolVar.negated(), subformulaC);
+				FormulaT newFormula  = FormulaT(carl::FormulaType::AND, subformulaB, subformulaD);
+				subformulas.push_back(newFormula);
+
 			}
 		}
-
-		FormulasT newSubformulas;
-		for(auto var : varsMap){
-			FormulaT boolVar = FormulaT(var.first);
-			Poly intVar(var.second);
-			FormulaT subformulaA = FormulaT(intVar - Rational(1), carl::Relation::EQ);
-			FormulaT subformulaB = FormulaT(carl::FormulaType::IMPLIES, boolVar, subformulaA);
-			FormulaT subformulaC = FormulaT(intVar, carl::Relation::EQ);
-			FormulaT subformulaD = FormulaT(carl::FormulaType::IMPLIES, boolVar.negated(), subformulaC);
-			FormulaT newFormula  = FormulaT(carl::FormulaType::AND, subformulaB, subformulaD);
-			newSubformulas.push_back(newFormula);
-		}
-		return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
-
+		return FormulaT(carl::FormulaType::AND, std::move(subformulas));
 	}
+
+	template<typename Settings>
+	FormulaT PBPPModule<Settings>::createAuxiliaryConstraint(const std::vector<carl::Variable>& variables){
+		FormulasT subformulas;
+		for(auto it : variables){
+			if(std::find(mCheckedVars.begin(), mCheckedVars.end(), it) == mCheckedVars.end()){
+				//There are no auxiliary constraints for this variable
+				mCheckedVars.push_back(it);
+				Poly intVar(it);
+				FormulaT subformulaA = FormulaT(intVar, carl::Relation::EQ);
+				FormulaT subformulaB = FormulaT(intVar - Rational(1), carl::Relation::EQ);
+				FormulaT newFormula = FormulaT(carl::FormulaType::XOR, subformulaA, subformulaB);
+				subformulas.push_back(newFormula);
+			}
+		}
+		return FormulaT(carl::FormulaType::AND, std::move(subformulas));
+	}
+
+
 
 
     template<typename Settings>
-	std::vector<Integer> PBPPModule<Settings>::calculateRNSBase(const FormulaT& formula){
-		const PBConstraintT& c = formula.pbConstraint();	
-		const auto& cLHS = c.getLHS();
+	std::vector<Integer> PBPPModule<Settings>::calculateRNSBase(const PBConstraintT& formula){	
+		const auto& cLHS = formula.getLHS();
 		std::vector<std::pair<int, Integer>> freq;
 		Rational sum = 0;
 		Rational product = 1;
@@ -1408,15 +1389,19 @@ template<typename Settings>
 
 
     template<typename Settings>
-	bool PBPPModule<Settings>::isNonRedundant(const std::vector<Integer>& base, const FormulaT& formula){
-		const PBConstraintT& c = formula.pbConstraint();	
-		const auto& cLHS = c.getLHS();
+	bool PBPPModule<Settings>::isNonRedundant(const std::vector<Integer>& base, const PBConstraintT& formula){
+		const auto& cLHS = formula.getLHS();
 		Rational max = INT_MIN;
+		Rational sum = 0;
+		Rational product = 1;
+		carl::PrimeFactory<Integer> pFactory;
+
 
 		for(auto it : cLHS){
 			if(it.first > max){
 				max = it.first;
 			}
+			sum += it.first;
 		}
 
 		for(auto it : base){
@@ -1424,6 +1409,15 @@ template<typename Settings>
 				return false;
 			}
 		} 
+
+		for(Rational i = 0; i < max; i++){
+			product *= pFactory.nextPrime();
+		}
+
+		if(sum > product){
+			return false;
+		}
+
 		return true;
 	}
 
@@ -1443,6 +1437,96 @@ template<typename Settings>
 		{2, 43}, {3, 29}, {2, 2, 2, 11}, {89}, {2, 3, 3, 5}, {7, 13}, {2, 2, 23}, {3, 31}, {2, 47},
 		{5, 19}, {2, 2, 2, 2, 2, 3}, {97}, {2, 7, 7}, {3, 3, 11}, {2, 2, 5, 5}};
 	}
+		// template<typename Settings>
+	// FormulaT PBPPModule<Settings>::createAuxiliaryConstraint(const FormulaT& formula){
+	// 	const PBConstraintT& c = formula.pbConstraint();
+	// 	auto boolVars = c.gatherVariables();
+	// 	std::vector<carl::Variable> intVars;
+	// 	for(auto it : boolVars){
+	// 		if(std::find(mCheckedVars.begin(), mCheckedVars.end(), it) == mCheckedVars.end()){ 
+	// 			//There are no auxiliary constraints for this variable
+	// 			intVars.push_back(mVariablesCache.find(it)->second);
+	// 			mCheckedVars.push_back(it);
+	// 		}
+	// 	}
+
+	// 	FormulasT newSubformulas;
+	// 	for(auto var : intVars){
+	// 		Poly intVar(var);
+	// 		FormulaT subformulaA = FormulaT(intVar, carl::Relation::EQ);
+	// 		FormulaT subformulaB = FormulaT(intVar - Rational(1), carl::Relation::EQ);
+	// 		FormulaT newFormula = FormulaT(carl::FormulaType::XOR, subformulaA, subformulaB);
+	// 		newSubformulas.push_back(newFormula);
+	// 	}
+	// 	return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
+	// }
+		// template<typename Settings>
+	// FormulaT PBPPModule<Settings>::interconnectVariables(const FormulaT& formula){
+	// 	const PBConstraintT& c = formula.pbConstraint();
+	// 	auto boolVars = c.gatherVariables();
+	// 	std::map<carl::Variable, carl::Variable> varsMap;
+
+	// 	for(auto var : boolVars){
+	// 		if(std::find(mConnectedVars.begin(), mConnectedVars.end(), var) == mConnectedVars.end()){
+	// 			//The variables are not interconnected
+	// 			varsMap.insert(*mVariablesCache.find(var));
+	// 			mConnectedVars.push_back(var);
+	// 		}
+	// 	}
+
+	// 	FormulasT newSubformulas;
+	// 	for(auto var : varsMap){
+	// 		FormulaT boolVar = FormulaT(var.first);
+	// 		Poly intVar(var.second);
+	// 		FormulaT subformulaA = FormulaT(intVar - Rational(1), carl::Relation::EQ);
+	// 		FormulaT subformulaB = FormulaT(carl::FormulaType::IMPLIES, boolVar, subformulaA);
+	// 		FormulaT subformulaC = FormulaT(intVar, carl::Relation::EQ);
+	// 		FormulaT subformulaD = FormulaT(carl::FormulaType::IMPLIES, boolVar.negated(), subformulaC);
+	// 		FormulaT newFormula  = FormulaT(carl::FormulaType::AND, subformulaB, subformulaD);
+	// 		newSubformulas.push_back(newFormula);
+	// 	}
+	// 	return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
+
+	// }
+
+
+
+
+
+		/*
+	/ Converts PBConstraint into a LRA formula.
+	*/
+	// template<typename Settings>
+	// FormulaT PBPPModule<Settings>::forwardAsArithmetic(const FormulaT& formula){
+	// 	const PBConstraintT& c = formula.pbConstraint();
+	// 	const auto& cLHS = c.getLHS();
+	// 	carl::Relation cRel  = c.getRelation();
+	// 	Rational cRHS = c.getRHS();
+	// 	auto variables = c.gatherVariables();
+
+	// 	for(auto it : variables){
+	// 		mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(it, carl::freshVariable(carl::VariableType::VT_INT)));
+	// 	}
+
+	// 	Poly lhs;
+	// 	for(auto it : cLHS){
+	// 		auto finder = mVariablesCache.find(it.second);
+	// 		carl::Variable curVariable = finder->second;
+	// 		Poly pol(curVariable);
+	// 		lhs = lhs + Rational(it.first) * pol;
+	// 	}
+	// 	lhs = lhs - Rational(cRHS);
+	// 	FormulaT subformulaA = FormulaT(lhs, cRel);
+
+	// 	//Adding auxiliary constraint to ensure variables are assigned to 1 or 0.
+	// 	FormulaT subformulaB = createAuxiliaryConstraint(formula);
+	// 	FormulaT subformulaC = FormulaT(carl::FormulaType::AND, subformulaA, subformulaB);
+
+	// 	//Adding auxiliary constraint to interconnect the bool and int variables
+	// 	FormulaT subformulaD = interconnectVariables(formula);
+	// 	return FormulaT(carl::FormulaType::AND, subformulaC, subformulaD);
+	// }
+
 }
 
 #include "Instantiation.h"
