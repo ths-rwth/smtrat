@@ -45,7 +45,7 @@ namespace smtrat
 		if (objective() != carl::Variable::NO_VARIABLE) {
 			for (auto var: objectiveFunction().gatherVariables()) {
 				// mVariablesCache.emplace(carl::Variable(var.getId(), carl::VariableType::VT_BOOL), var);
-				mVariablesCache.emplace(var, carl::freshVariable(carl::VariableType::VT_BOOL));
+				mVariablesCache.emplace(var, carl::Variable());
 			}
 		}
 		if(Settings::use_rns_transformation){
@@ -796,7 +796,8 @@ template<typename Settings>
 		t = carl::floor((t - newRHS) / prime );
 
 		for(int i = 0; i < t; i++){
-			newLHS.push_back(std::pair<Rational, carl::Variable>(-t, carl::freshVariable(carl::VariableType::VT_BOOL)));
+			// newLHS.push_back(std::pair<Rational, carl::Variable>(-t, carl::freshVariable(carl::VariableType::VT_BOOL)));
+			newLHS.push_back(std::pair<Rational, carl::Variable>(-t, carl::Variable()));
 		}
 
 		PBConstraintT newConstraint(newLHS, carl::Relation::EQ, newRHS);
@@ -1180,7 +1181,6 @@ template<typename Settings>
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::forwardAsArithmetic(const PBConstraintT& formula){
 		auto variables = formula.gatherVariables();
-
     	//Add auxiliary constraint to ensure that variables are assigned to 1 or 0.
 		FormulaT subf = createAuxiliaryConstraint(variables);
 		return FormulaT(carl::FormulaType::AND, FormulaT(formula), subf);
@@ -1196,7 +1196,8 @@ template<typename Settings>
 		for(auto it : cLHS){
 			auto finder = mVariablesCache.find(it.second);
 			if(finder == mVariablesCache.end()){
-				carl::Variable newVar = carl::freshVariable(carl::VariableType::VT_BOOL);
+				// carl::Variable newVar = carl::freshVariable(carl::VariableType::VT_BOOL);
+				carl::Variable newVar = carl::Variable();
 				mVariablesCache.emplace(it.second, newVar);
 				newLHS.push_back(std::pair<Rational, carl::Variable>(it.first, newVar));
 			}else{
