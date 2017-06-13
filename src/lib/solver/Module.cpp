@@ -1213,6 +1213,10 @@ namespace smtrat
     
     void Module::checkInfSubsetForMinimality( std::vector<FormulaSetT>::const_iterator _infsubset, const string& _filename, unsigned _maxSizeDifference ) const
     {
+		carl::Variables vars;
+		for( auto it = _infsubset->begin(); it != _infsubset->end(); ++it ) {
+			it->arithmeticVars(vars);
+		}
         stringstream filename;
         filename << _filename << "_" << moduleName() << "_" << mSmallerMusesCheckCounter << ".smt2";
         ofstream smtlibFile;
@@ -1234,9 +1238,9 @@ namespace smtrat
                 smtlibFile << "(set-logic " << mpManager->logic() << ")\n";
                 smtlibFile << "(set-option :interactive-mode true)\n";
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
-                // Add all real-valued variables.
-				for (std::size_t varID = 1; varID <= carl::VariablePool::getInstance().nrVariables(carl::VariableType::VT_REAL); varID++) {
-					smtlibFile << "(declare-fun " << carl::Variable(varID, carl::VariableType::VT_REAL) << " () " << carl::VariableType::VT_REAL << ")\n";
+                // Add all arithmetic variables.
+				for (auto v: vars) {
+					smtlibFile << "(declare-fun " << v << " () " << v.getType() << ")\n";
 				}
                 string assumption = "";
                 assumption += "(set-info :status sat)\n";
