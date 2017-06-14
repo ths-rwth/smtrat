@@ -47,7 +47,6 @@ namespace smtrat
 				mVariablesCache.emplace(var, carl::freshBooleanVariable());
 			}
 		}
-		std::cout << "ob mVariablesCache: " << mVariablesCache << std::endl;
 		if(Settings::use_rns_transformation){
 			FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeWithRNSFunction);
 			addSubformulaToPassedFormula(formula, _subformula->formula());
