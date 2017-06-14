@@ -95,6 +95,7 @@ namespace smtrat
 			FormulaT convertSmallFormula(const PBConstraintT& formula);
 			FormulaT convertBigFormula(const PBConstraintT& formula);
 			FormulaT forwardAsArithmetic(const PBConstraintT& formula);
+			FormulaT forwardAsArithmetic(const FormulaT& formula);
 			PBConstraintT changeVarTypeToBool(const FormulaT& formula);
 			FormulaT checkFormulaType(const FormulaT& formula);
 			FormulaT checkFormulaTypeWithRNS(const FormulaT& formula);
