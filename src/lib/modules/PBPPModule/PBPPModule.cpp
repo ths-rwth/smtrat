@@ -139,7 +139,7 @@ namespace smtrat
 			}
 		}
 
-		return forwardAsArithmetic(c);
+		return forwardAsArithmetic(changeVarTypeToBool(c));
 		// PBConstraintT constraint = changeVarTypeToBool(c);
 		// // auto subB = interconnectVariables(cVars);
 
@@ -1201,9 +1201,11 @@ template<typename Settings>
 			FormulaT newFormula = FormulaT(var);
 			newSubformulas.push_back(newFormula);
 		}
-		return FormulaT(type, std::move(newSubformulas));
+		return FormulaT(type, std::move(newSubformulas));	
 	}
-		/*
+
+
+	/*
 	/ Converts PBConstraint into a LRA formula.
 	*/
 	template<typename Settings>
@@ -1213,10 +1215,14 @@ template<typename Settings>
 		Rational cRHS = formula.getRHS();
 		auto variables = formula.gatherVariables();
 
+		for(auto it : variables){
+			mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(it, carl::freshBooleanVariable()));
+		}
+
 		Poly lhs;
 		for(auto it : cLHS){
-			Poly pol(it.second);
-			lhs = lhs + it.first * pol;
+			// Poly pol(it.second);
+			lhs = lhs + it.first * it.second;
 		}
 		lhs = lhs - cRHS;
 		FormulaT subformulaA = FormulaT(lhs, cRel);
