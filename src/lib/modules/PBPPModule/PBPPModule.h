@@ -25,7 +25,7 @@ namespace smtrat
 			PBPPStatistics mStatistics;
 #endif
 			// Members.
-			std::map<carl::Variable, carl::Variable> mVariablesCache; //int, bool
+			std::map<carl::Variable, carl::Variable> mVariablesCache; // int, bool
 			carl::FormulaVisitor<FormulaT> mVisitor;
 			std::vector<carl::Variable> mCheckedVars;
 			std::vector<carl::Variable> mConnectedVars;
@@ -92,11 +92,10 @@ namespace smtrat
 			Answer checkCore();
 
 		private:
-			FormulaT convertSmallFormula(const PBConstraintT& formula);
-			FormulaT convertBigFormula(const PBConstraintT& formula);
+			FormulaT convertSmallFormula(const PBConstraintT& formula, const PBConstraintT& c);
+			FormulaT convertBigFormula(const PBConstraintT& formula, const PBConstraintT& c);
 			FormulaT forwardAsArithmetic(const PBConstraintT& formula);
-			FormulaT forwardAsArithmetic(const FormulaT& formula);
-			PBConstraintT changeVarTypeToBool(const FormulaT& formula);
+			PBConstraintT changeVarTypeToBool(const PBConstraintT& formula);
 			FormulaT checkFormulaType(const FormulaT& formula);
 			FormulaT checkFormulaTypeWithRNS(const FormulaT& formula);
 			FormulaT checkFormulaTypeWithCardConstr(const FormulaT& formula);
@@ -118,8 +117,8 @@ namespace smtrat
 			std::vector<Integer> integerFactorization(const Integer& coeff);
 			void initPrimesTable();
 			FormulaT removeZeroCoefficients(const PBConstraintT& formula);
-			FormulaT encodeCardinalityConstratint(const PBConstraintT& formula);
-			FormulaT encodeMixedConstraints(const PBConstraintT& formula);
+			FormulaT encodeCardinalityConstratint(const PBConstraintT& formula, const PBConstraintT& c);
+			FormulaT encodeMixedConstraints(const PBConstraintT& formula, const PBConstraintT& c);
 
 	};
 }
