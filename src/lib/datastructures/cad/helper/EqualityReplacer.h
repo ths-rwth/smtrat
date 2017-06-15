@@ -92,6 +92,7 @@ public:
 			assert(ait != mAssignments.end());
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing assignment " << ait->second);
 			mCAD.removeConstraint(ait->second);
+			mForwardedConstraints.erase(ait->second);
 			mAssignments.erase(ait);
 		}
 	}
