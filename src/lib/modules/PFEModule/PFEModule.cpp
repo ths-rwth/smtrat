@@ -51,7 +51,10 @@ namespace smtrat
 				continue;
 			}
 			FormulaT formula = visitor.visitResult(receivedFormula->formula(), removeFactorsFunction);
-			SMTRAT_LOG_DEBUG("smtrat.pfe", "Simplified " << receivedFormula->formula() << " to " << formula);
+			if (receivedFormula->formula() != formula) {
+				SMTRAT_LOG_DEBUG("smtrat.pfe", "Simplified " << receivedFormula->formula());
+				SMTRAT_LOG_DEBUG("smtrat.pfe", "to " << formula);
+			}
 			
 			if (formula.isFalse()) {
 				mInfeasibleSubsets.clear();
@@ -76,7 +79,8 @@ namespace smtrat
 			++receivedFormula;
 		}
 		generateVariableAssignments();
-		SMTRAT_LOG_DEBUG("smtrat.pfe", "Simplification: " << FormulaT(rReceivedFormula()) << " to " << FormulaT(rPassedFormula()));
+		SMTRAT_LOG_DEBUG("smtrat.pfe", "Simplification: " << FormulaT(rReceivedFormula()));
+		SMTRAT_LOG_DEBUG("smtrat.pfe", "to " << FormulaT(rPassedFormula()));
 		Answer ans = runBackends();
 		if (ans == UNSAT) {
 			getInfeasibleSubsets();
