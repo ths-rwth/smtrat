@@ -1118,6 +1118,19 @@ namespace smtrat
         mAssumptionToCheck.push_back( assumption );
         mVariablesInAssumptionToCheck.insert( _label );
     }
+	
+    void Module::addAssumptionToCheck( const ModuleInput& _subformulas, Answer _status, const std::string& _label )
+    {
+        std::stringstream assumption;
+        assumption << "(set-info :status " << _status << ")\n";
+        assumption << "(declare-fun " << _label << " () Bool)\n";
+        assumption << ((FormulaT) _subformulas).toString( false, 1, "", true, false, true, true );
+        assumption << "(assert " << _label << ")\n";
+        assumption << "(get-assertions)\n";
+        assumption << "(check-sat)\n";
+        mAssumptionToCheck.push_back( assumption.str() );
+        mVariablesInAssumptionToCheck.insert( _label );
+    }
 
     void Module::addAssumptionToCheck( const FormulasT& _formulas, bool _consistent, const string& _label )
     {
