@@ -1729,6 +1729,7 @@ namespace smtrat
                         if( currentBacktrackLevel < backtrackLevel )
                             backtrackLevel = currentBacktrackLevel;
                     }
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Lemma is propagating on level " << backtrackLevel);
                 }
             }
             // pop so that propagation would be current
