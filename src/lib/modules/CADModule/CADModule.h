@@ -17,9 +17,7 @@
 #include "carl/cad/CAD.h"
 
 #include "../../datastructures/VariableBounds.h"
-#ifdef SMTRAT_DEVOPTION_Statistics
 #include "CADStatistics.h"
-#endif
 #include "CADSettings.h"
 
 namespace smtrat

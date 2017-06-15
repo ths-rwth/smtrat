@@ -14,8 +14,6 @@
 
 #include "../../solver/ModuleSettings.h"
 
-#include "../../utilities/SettingsManager.h"
-
 namespace smtrat
 {
 	enum class MISHeuristic {

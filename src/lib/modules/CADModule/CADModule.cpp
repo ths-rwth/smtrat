@@ -11,7 +11,7 @@
 #include <memory>
 #include <iostream>
 
-#include "carl/core/logging.h"
+#include <carl/core/logging.h>
 
 #include "MISGeneration.h"
 #include "SplitVariableSelector.h"
