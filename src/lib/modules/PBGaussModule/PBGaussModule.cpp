@@ -127,12 +127,12 @@ namespace smtrat
 
 		MatrixT matrix = MatrixT::Map(coef.data(), (long) columns + 1, (long) rows).transpose();
 
-		// std::cout << "Matrix" << std::endl;
-		// for(auto i = 0; i < matrix.rows(); i++){
-		// 	VectorT r = matrix.row(i);
-		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
-		// 	std::cout << row << std::endl;
-		// }
+		std::cout << "Matrix" << std::endl;
+		for(auto i = 0; i < matrix.rows(); i++){
+			VectorT r = matrix.row(i);
+			std::vector<Rational> row(r.data(), r.data() + r.size());
+			std::cout << row << std::endl;
+		}
 
 		//LU Decomposition
 		Eigen::FullPivLU<MatrixT> lu(matrix);
@@ -151,20 +151,20 @@ namespace smtrat
 		
 
 
-		// std::cout << "Upper" << std::endl;
-		// for(auto i = 0; i < u.rows(); i++){
-		// 	VectorT r = u.row(i);
-		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
-		// 	std::cout << row << std::endl;
-		// }
+		std::cout << "Upper" << std::endl;
+		for(auto i = 0; i < u.rows(); i++){
+			VectorT r = u.row(i);
+			std::vector<Rational> row(r.data(), r.data() + r.size());
+			std::cout << row << std::endl;
+		}
 		
 
-		// std::cout << "newUpper" << std::endl;
-		// for(auto i = 0; i < newUpper.rows(); i++){
-		// 	VectorT r = newUpper.row(i);
-		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
-		// 	std::cout << row << std::endl;
-		// }
+		std::cout << "newUpper" << std::endl;
+		for(auto i = 0; i < newUpper.rows(); i++){
+			VectorT r = newUpper.row(i);
+			std::vector<Rational> row(r.data(), r.data() + r.size());
+			std::cout << row << std::endl;
+		}
 
 		
 		std::vector<carl::Relation> rels((std::size_t) newUpper.rows(), carl::Relation::EQ);
@@ -204,14 +204,14 @@ template<class Settings>
 
 template<class Settings>
 	FormulaT PBGaussModule<Settings>::reduce(const MatrixT& u, const VectorT& b, const carl::Variables vars){
-		// std::cout << "Reduce" << std::endl;
+		std::cout << "Reduce" << std::endl;
 
-		// std::cout << "U" << std::endl;
-		// for(auto i = 0; i < u.rows(); i++){
-		// 	VectorT r = u.row(i);
-		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
-		// 	std::cout << row << std::endl;
-		// }
+		std::cout << "U" << std::endl;
+		for(auto i = 0; i < u.rows(); i++){
+			VectorT r = u.row(i);
+			std::vector<Rational> row(r.data(), r.data() + r.size());
+			std::cout << row << std::endl;
+		}
 
 		std::vector<Rational> normUVec;
 		for(auto i = 0; i < u.rows(); i++){
@@ -228,12 +228,12 @@ template<class Settings>
 		MatrixT normU = MatrixT::Map(normUVec.data(), (long) u.cols(), (long) u.rows()).transpose();
 		std::vector<Rational> bVector(b.data(), b.data() + b.size());
 
-		// std::cout << "normU" << std::endl;
-		// for(auto i = 0; i < normU.rows(); i++){
-		// 	VectorT r = normU.row(i);
-		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
-		// 	std::cout << row << std::endl;
-		// }
+		std::cout << "normU" << std::endl;
+		for(auto i = 0; i < normU.rows(); i++){
+			VectorT r = normU.row(i);
+			std::vector<Rational> row(r.data(), r.data() + r.size());
+			std::cout << row << std::endl;
+		}
 
 
 		//Resize normU and add b 
@@ -253,12 +253,12 @@ template<class Settings>
 		}
 
 		MatrixT uMatrix = MatrixT::Map(upperCoef.data(), (long) mVariables.size() + 1, (long) mEquations.size()).transpose();
-		// std::cout << "uMatrix" << std::endl;
-		// for(auto i = 0; i < uMatrix.rows(); i++){
-		// 	VectorT r = uMatrix.row(i);
-		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
-		// 	std::cout << row << std::endl;
-		// }
+		std::cout << "uMatrix" << std::endl;
+		for(auto i = 0; i < uMatrix.rows(); i++){
+			VectorT r = uMatrix.row(i);
+			std::vector<Rational> row(r.data(), r.data() + r.size());
+			std::cout << row << std::endl;
+		}
 
 
 		//Inequalities to matrix
@@ -283,12 +283,12 @@ template<class Settings>
 
 
 		MatrixT ineqMatrix = MatrixT::Map(ineqCoef.data(), (long) mVariables.size() + 1, (long) mInequalities.size()).transpose();
-		// std::cout << "ineqMatrix" << std::endl;
-		// for(auto i = 0; i < ineqMatrix.rows(); i++){
-		// 	VectorT r = ineqMatrix.row(i);
-		// 	std::vector<Rational> row(r.data(), r.data() + r.size());
-		// 	std::cout << row << std::endl;
-		// }
+		std::cout << "ineqMatrix" << std::endl;
+		for(auto i = 0; i < ineqMatrix.rows(); i++){
+			VectorT r = ineqMatrix.row(i);
+			std::vector<Rational> row(r.data(), r.data() + r.size());
+			std::cout << row << std::endl;
+		}
 
 		MatrixT result(mVariables.size() + 1, 0);
 		for(auto i = 0; i < ineqMatrix.rows();){
@@ -306,10 +306,10 @@ template<class Settings>
 			}
 			// assert(column != -1);
 			// std::cout << "column: " << column << std::endl;
-			// for(auto colIterator = column; colIterator < row.size(); colIterator++)
 			Rational multiplier;
 			if(column >= 0 && column < u.rows()){
 				//Reduce
+
 				//Look for row in u which can reduce the inequality
 				VectorT eqRow;
 				for(auto it = 0; it < uMatrix.rows(); it++){
@@ -318,29 +318,29 @@ template<class Settings>
 					// std::cout << "Check eq: " << testrowVec << std::endl;
 					for(auto colIterator = column; colIterator < row.size(); colIterator++){
 						if(row(colIterator) == 0){
+							it++;
 							break;
 						}else{
 							bool found = false;
 							if(colIterator == 0){
 								if(r(0) == 1){
-							// std::cout << "found" << std::endl;
+								// std::cout << "found" << std::endl;
 									eqRow = uMatrix.row(it);
 									std::vector<Rational> eqRowVec(eqRow.data(), eqRow.data() + eqRow.size());
-							// std::cout << "Equality: " << eqRowVec << std::endl;
-							//Check which sign the multiplier must have
+									// std::cout << "Equality: " << eqRowVec << std::endl;
+									//Check which sign the multiplier must have
 									if((eqRow(colIterator) > 0 && row(colIterator) > 0) || (eqRow(colIterator) < 0 && row(colIterator) < 0)){
-										multiplier = - eqRow(colIterator);
+										multiplier = - row(colIterator);
 									}else{
-										multiplier = eqRow(colIterator);
+										multiplier = row(colIterator);
 									}
-							// std::cout << "multiplier: " << multiplier << std::endl;
+									std::cout << "multiplier: " << multiplier << std::endl;
 									found = true;
 									break;
 								}
 							}else{
-						 // std::cout << "6" << std::endl;
 								if(r(colIterator) == 1){
-							//Check if entries before column-th column are 0
+									//Check if entries before column-th column are 0
 									bool zeros = true;
 									for(auto k = 0; k < colIterator; k++){
 										if(r(k) != 0){
@@ -349,17 +349,17 @@ template<class Settings>
 										}
 									}
 									if(zeros){
-								// std::cout << " found 2" << std::endl;
+										// std::cout << " found 2" << std::endl;
 										eqRow = uMatrix.row(it);
 										std::vector<Rational> eqRowVec(eqRow.data(), eqRow.data() + eqRow.size());
-							// std::cout << "Equality2: " << eqRowVec << std::endl;
-								//Check which sign the multiplier must have
+										// std::cout << "Equality2: " << eqRowVec << std::endl;
+										//Check which sign the multiplier must have
 										if((eqRow(colIterator) > 0 && row(colIterator) > 0) || (eqRow(colIterator) < 0 && row(colIterator) < 0)){
-											multiplier = - eqRow(colIterator);
+											multiplier = - row(colIterator);
 										}else{
-											multiplier = eqRow(colIterator);
+											multiplier = row(colIterator);
 										}
-								// std::cout << "multiplier: " << multiplier << std::endl;
+										std::cout << "multiplier: " << multiplier << std::endl;
 										found = true;
 										break;
 									}
@@ -372,12 +372,12 @@ template<class Settings>
 				}
 
 
-				// std::vector<Rational> rowVec(row.data(), row.data() + row.size());
+				std::vector<Rational> rowVec(row.data(), row.data() + row.size());
 				std::vector<Rational> eqRowVec(eqRow.data(), eqRow.data() + eqRow.size());
 
 
-				// std::cout << "Ineq: " << rowVec << std::endl;
-				// std::cout << "Eq: " << eqRowVec << std::endl;
+				std::cout << "Ineq: " << rowVec << std::endl;
+				std::cout << "Eq: " << eqRowVec << std::endl;
 
 				if(eqRowVec.size() != 0){
 					ineqMatrix.row(i) = (multiplier * eqRow) + row; 

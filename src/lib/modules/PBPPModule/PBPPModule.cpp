@@ -97,6 +97,7 @@ namespace smtrat
 		return ans;
 	}
 
+
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::checkFormulaType(const FormulaT& formula){
 		if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
@@ -137,7 +138,7 @@ namespace smtrat
 				break;
 			}
 		}
-
+		std::cout << formula << std::endl;
 		PBConstraintT constraint = changeVarTypeToBool(c);
 
 		if(!positive && !negative){
