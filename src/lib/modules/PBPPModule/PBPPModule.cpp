@@ -138,42 +138,36 @@ namespace smtrat
 			}
 		}
 
-		return forwardAsArithmetic(changeVarTypeToBool(c));
-		// PBConstraintT constraint = changeVarTypeToBool(c);
-		// // auto subB = interconnectVariables(cVars);
+		PBConstraintT constraint = changeVarTypeToBool(c);
 
-		// if(!positive && !negative){
-		// 	auto res = encodeMixedConstraints(constraint, c);
-		// 	// auto res  = FormulaT(carl::FormulaType::AND, subA, subB);
-		// 	SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-		// 	return res;
-		// }else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
-		// 	auto res = encodeCardinalityConstratint(constraint, c);
-		// 	// auto res  = FormulaT(carl::FormulaType::AND, subA, subB);
-		// 	SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-		// 	return res;
-		// }else if(lhsSize == 1){
-		// 	auto res = convertSmallFormula(constraint, c);
-		// 	// auto res  = FormulaT(carl::FormulaType::AND, subA, subB);
-		// 	SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-		// 	return res;
-		// }else if(!(positive && cRHS > 0 && sum > cRHS
-		// 	&& (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
-		// &&  !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum < cRHS)
-		// && !(negative && cRHS < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum < cRHS)
-		// && !((positive || negative) && cRel == carl::Relation::NEQ && sum != cRHS && cRHS != 0)
-		// && !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
-		// && !(!positive && !negative)
-		// ){
-		// 	auto res = convertBigFormula(constraint, c);
-		// 	// auto res  = FormulaT(carl::FormulaType::AND, subA, subB);
-		// 	SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-		// 	return res;
-		// }else{
-		// 	auto res = forwardAsArithmetic(c);
-		// 	SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
-		// 	return res;
-		// }
+		if(!positive && !negative){
+			auto res = encodeMixedConstraints(constraint, c);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
+			auto res = encodeCardinalityConstratint(constraint, c);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(lhsSize == 1){
+			auto res = convertSmallFormula(constraint, c);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else if(!(positive && cRHS > 0 && sum > cRHS
+			&& (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
+		&&  !(negative && cRHS < 0 && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER) && sum < cRHS)
+		&& !(negative && cRHS < 0 && (cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS) && sum < cRHS)
+		&& !((positive || negative) && cRel == carl::Relation::NEQ && sum != cRHS && cRHS != 0)
+		&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
+		&& !(!positive && !negative)
+		){
+			auto res = convertBigFormula(constraint, c);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}else{
+			auto res = forwardAsArithmetic(c);
+			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+			return res;
+		}
 	}
 
 
@@ -215,9 +209,7 @@ namespace smtrat
 				for(auto i : base){
 					subformulas.push_back(rnsTransformation(constraint, i));
 				}
-				auto subA = FormulaT(carl::FormulaType::AND, std::move(subformulas));
-				auto subB = interconnectVariables(cVars);
-				auto res  = FormulaT(carl::FormulaType::AND, subA, subB);
+				auto res = FormulaT(carl::FormulaType::AND, std::move(subformulas));
 				SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 				return res;
 			}else{
@@ -272,21 +264,15 @@ namespace smtrat
 		}
 
 		if(!positive && !negative){
-			auto subA = forwardAsArithmetic(c);
-			auto subB = interconnectVariables(cVars);
-			auto res  = FormulaT(carl::FormulaType::AND, subA, subB);
+			auto res = forwardAsArithmetic(c);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
-			auto subA = encodeCardinalityConstratint(constraint, c);
-			auto subB = interconnectVariables(cVars);
-			auto res  = FormulaT(carl::FormulaType::AND, subA, subB);
+			auto res = encodeCardinalityConstratint(constraint, c);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;	
 		}else if(lhsSize == 1){
-			auto subA = convertSmallFormula(constraint, c);
-			auto subB = interconnectVariables(cVars);
-			auto res  = FormulaT(carl::FormulaType::AND, subA, subB);
+			auto res = convertSmallFormula(constraint, c);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(!(positive && cRHS > 0 && sum > cRHS
@@ -297,9 +283,7 @@ namespace smtrat
 		&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
 		&& !(!positive && !negative)
 		){
-			auto subA = convertBigFormula(constraint, c);
-			auto subB = interconnectVariables(cVars);
-			auto res  = FormulaT(carl::FormulaType::AND, subA, subB);
+			auto res = convertBigFormula(constraint, c);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else{
@@ -353,21 +337,15 @@ template<typename Settings>
 		}
 
 		if(!positive && !negative){
-			auto subA = encodeMixedConstraints(constraint, c);
-			auto subB = interconnectVariables(cVars);
-			auto res  = FormulaT(carl::FormulaType::AND, subA, subB);
+			auto res = encodeMixedConstraints(constraint, c);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
-			auto subA = forwardAsArithmetic(c);
-			auto subB = interconnectVariables(cVars);
-			auto res  = FormulaT(carl::FormulaType::AND, subA, subB);
+			auto res = forwardAsArithmetic(c);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(lhsSize == 1){
-			auto subA = convertSmallFormula(constraint, c);
-			auto subB = interconnectVariables(cVars);
-			auto res  = FormulaT(carl::FormulaType::AND, subA, subB);
+			auto res = convertSmallFormula(constraint, c);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(!(positive && cRHS > 0 && sum > cRHS
@@ -378,9 +356,7 @@ template<typename Settings>
 		&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
 		&& !(!positive && !negative)
 		){
-			auto subA = convertBigFormula(constraint, c);
-			auto subB = interconnectVariables(cVars);
-			auto res  = FormulaT(carl::FormulaType::AND, subA, subB);
+			auto res = convertBigFormula(constraint, c);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else{
@@ -434,21 +410,15 @@ template<typename Settings>
 		}
 
 		if(!positive && !negative){
-			auto subA = forwardAsArithmetic(c);
-			auto subB = interconnectVariables(cVars);
-			auto res  = FormulaT(carl::FormulaType::AND, subA, subB);
+			auto res = forwardAsArithmetic(c);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
-			auto subA = forwardAsArithmetic(c);
-			auto subB = interconnectVariables(cVars);
-			auto res  = FormulaT(carl::FormulaType::AND, subA, subB);
+			auto res = forwardAsArithmetic(c);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(lhsSize == 1){
-			auto subA = convertSmallFormula(constraint, c);
-			auto subB = interconnectVariables(cVars);
-			auto res  = FormulaT(carl::FormulaType::AND, subA, subB);
+			auto res = convertSmallFormula(constraint, c);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(!(positive && cRHS > 0 && sum > cRHS
@@ -459,15 +429,11 @@ template<typename Settings>
 		&& !((positive || negative) && cRel == carl::Relation::NEQ && sum == cRHS && cRHS != 0)
 		&& !(!positive && !negative)
 		){
-			auto subA = convertBigFormula(constraint, c);
-			auto subB = interconnectVariables(cVars);
-			auto res  = FormulaT(carl::FormulaType::AND, subA, subB);
+			auto res = convertBigFormula(constraint, c);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else{
-			auto subA = forwardAsArithmetic(c);
-			auto subB = interconnectVariables(cVars);
-			auto res  = FormulaT(carl::FormulaType::AND, subA, subB);
+			auto res = forwardAsArithmetic(c);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}

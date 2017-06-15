@@ -103,6 +103,7 @@ namespace smtrat
 			FormulaT gaussAlgorithm();
 			FormulaT reconstructEqSystem(const MatrixT& m, const VectorT& b, const carl::Variables& vars, const std::vector<carl::Relation>& rels);
 			FormulaT reduce(const MatrixT& u, const VectorT& b, const carl::Variables vars);
+			std::vector<Rational> lookForReductionRow(const MatrixT& uMatrix, const VectorT& ineqRow, long column);
 
 	};
 }
