@@ -660,6 +660,7 @@ namespace smtrat
              * @see Module::storeAssumptionsToCheck
              */
             static void addAssumptionToCheck( const ModuleInput& _formula, bool _consistent, const std::string& _label );
+			static void addAssumptionToCheck( const ModuleInput& _subformulas, Answer _status, const std::string& _label );
             
             /**
              * Add a conjunction of formulas to the assumption vector and its predetermined consistency status.
