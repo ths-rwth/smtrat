@@ -205,15 +205,24 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
             exit(SMTRAT_EXIT_NOSUCHFILE);
 	}
 	Executor* e = new Executor(solver);
+	bool queueInstructions = false;
 	if (settingsManager.exportDIMACS()) e->exportDIMACS = true;
 	{
-		if (!smtrat::parseSMT2File(e, true, infile)) {
+		SMTRAT_LOG_DEBUG("smtrat", "Starting to parse " << pathToInputFile);
+		if (!smtrat::parseSMT2File(e, queueInstructions, infile)) {
             std::cerr << "Parse error" << std::endl;
             delete e;
             exit(SMTRAT_EXIT_PARSERFAILURE);
         }
 	}
-	if (e->hasInstructions()) e->runInstructions();
+	if (queueInstructions) {
+		if (e->hasInstructions()) {
+			SMTRAT_LOG_WARN("smtrat", "Running queued instructions.");
+			e->runInstructions();
+		} else {
+			SMTRAT_LOG_WARN("smtrat", "Did not parse any instructions.");
+		}
+	}
 	unsigned exitCode = e->getExitCode();
 	if (e->lastAnswer == smtrat::Answer::SAT) {
 		if (settingsManager.printModel()) solver->printAssignment();
