@@ -85,6 +85,9 @@ public:
 				root = std::get<0>(r);
 				skip = std::get<2>(r); // skip until this node
 				std::cout << GREEN << "Success: " << std::get<1>(r) << END << std::endl;
+				std::ofstream out("delta.last.smt2");
+				out << root;
+				out.close();
 			} else if (skip > 0) {
 				skip = 0;
 				std::cout << BGREEN << "Finished successful iteration, starting over." << END << std::endl << std::endl;
