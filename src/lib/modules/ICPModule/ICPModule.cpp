@@ -689,7 +689,8 @@ namespace smtrat
                 if( !candidate->isLinear() )
                     addCandidateToRelevant(candidate); // TODO: Improve - no need to add irrelevant candidates (see below)
                 assert(mIntervals.find(candidate->derivationVar()) != mIntervals.end() );
-                if ( (mRelativeContraction < mContractionThreshold && !mSplitOccurred) || fulfillsTarget(*candidate) )
+				/// TODO: compare against mRelativeContraction or candidate->RWA()
+				if ( (mRelativeContraction < mContractionThreshold && !mSplitOccurred) || fulfillsTarget(*candidate) )
                     removeCandidateFromRelevant(candidate);
                 else if ( mRelativeContraction >= mContractionThreshold )
                 {
@@ -715,7 +716,7 @@ namespace smtrat
             {
                 mInvalidBox = !checkBoxAgainstLinearFeasibleRegion();
                 #ifdef ICP_MODULE_DEBUG_1
-                std::cout << "Invalid against linear region: " << (invalidBox ? "yes!" : "no!") << std::endl;
+                std::cout << "Invalid against linear region: " << (mInvalidBox ? "yes!" : "no!") << std::endl;
                 #endif
             }
             if( mInvalidBox )
@@ -1678,8 +1679,10 @@ namespace smtrat
             default:
                 assert(false);
         }
+		SMTRAT_LOG_DEBUG("smtrat.icp", "Contraction applied? " << _furtherContractionApplied);
         if( !_furtherContractionApplied && variable != carl::Variable::NO_VARIABLE )
         {
+			SMTRAT_LOG_DEBUG("smtrat.icp", "Creating split");
             // create split: (not h_b OR (Not x<b AND x>=b) OR (x<b AND Not x>=b) )
             // first the premise: ((oldBox AND CCs) -> newBox) in CNF: (oldBox OR CCs) OR newBox
             std::vector<FormulaT> splitPremise = createPremise();
@@ -1705,6 +1708,7 @@ namespace smtrat
             #endif
             return true;
         }
+	assert(false);
         return false;
     }
 
@@ -2402,7 +2406,9 @@ namespace smtrat
         mHistoryRoot->rStateInfeasibleConstraints().clear();
         mHistoryRoot->rStateInfeasibleVariables().clear();
         #ifdef ICP_MODULE_DEBUG_1
-        std::cout << "Id actual box: " << mHistoryActual->id() << " Size subtree: " << mHistoryActual->sizeSubtree() << std::endl;
+        std::cout << "actual box: ";
+		mHistoryActual->print(std::cout);
+		std::cout << std::endl;
         #endif
         return false;
     }
@@ -2965,7 +2971,9 @@ namespace smtrat
     {
         assert(_selection != nullptr);
         #ifdef ICP_MODULE_DEBUG_1
-        std::cout << "Set box -> " << _selection->id() << ", #intervals: " << mIntervals.size() << " -> " << _selection->intervals().size() << std::endl;
+        std::cout << "Set box -> ";
+		_selection->print(std::cout);
+		std::cout << ", #intervals: " << mIntervals.size() << " -> " << _selection->intervals().size() << std::endl;
         #endif
         // set intervals - currently we don't change not contained intervals.
         for ( auto constraintIt = _selection->rIntervals().begin(); constraintIt != _selection->rIntervals().end(); ++constraintIt )
@@ -3180,7 +3188,7 @@ namespace smtrat
             s2 << std::setprecision(20) << _afterA << " or " << std::setprecision(20) << _afterB;
         }
         _out << "  ->  " << std::setw(50) << std::left << s2.str();
-        _out << std::right << " with " << _cc.contractor().polynomial() << std::endl;
+		_out << std::right << " with " << _cc.contractor().polynomial() << " (" << _cc.RWA() << ")" << std::endl;
     }
     #endif
 } // namespace smtrat
