@@ -1401,4 +1401,12 @@ namespace smtrat
                 return mNrConsistencyChecks;
             }
     };
+
+	inline std::ostream& operator<<(std::ostream& os, Module::LemmaType lt) {
+		switch (lt) {
+			case Module::LemmaType::NORMAL: return os << "NORMAL";
+			case Module::LemmaType::PERMANENT: return os << "PERMANENT";
+		}
+		return os << "???";
+	}
 }    // namespace smtrat
