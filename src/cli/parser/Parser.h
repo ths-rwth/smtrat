@@ -51,8 +51,7 @@ public:
 			handler->setArtificialVariables(std::move(state.artificialVariables));
 			return true;
 		} else {
-			//std::cout << "Remaining to parse:" << std::endl;
-			//std::cout << std::string(begin, end) << std::endl;
+			SMTRAT_LOG_WARN("smtrat.parser", "Remaining to parse: \"" << std::string(begin, end) << "\"");
 			return false;
 		}
 	}
