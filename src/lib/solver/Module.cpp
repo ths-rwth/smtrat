@@ -141,7 +141,7 @@ namespace smtrat
         {
             if( result != UNKNOWN && !mpReceivedFormula->empty() )
             {
-                addAssumptionToCheck( *mpReceivedFormula, result == SAT, moduleName() );
+                addAssumptionToCheck( *mpReceivedFormula, result, moduleName() );
             }
         }
         #endif
@@ -1188,7 +1188,7 @@ namespace smtrat
         {
             ofstream smtlibFile;
             smtlibFile.open( validationSettings->path() );
-            for( const auto& assum : boost::adaptors::reverse(Module::mAssumptionToCheck) )
+            for( const auto& assum : Module::mAssumptionToCheck )
             { 
                 // For each assumption add a new solver-call by resetting the search state.
                 #ifndef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
