@@ -4,13 +4,13 @@
 \usepackage[pdfpagelabels=true,linktocpage]{hyperref}
 \usepackage{color}
 
-\title{\texttt{SMT-RAT 2.0}}
+\title{\texttt{SMT-RAT 2.1}}
 
 \begin{document}
 
 \maketitle
 
-\texttt{SMT-RAT} is an open-source \texttt{C++} toolbox for strategic and parallel SMT solving
+\texttt{SMT-RAT}~\cite{Corzilius2015} is an open-source \texttt{C++} toolbox for strategic and parallel SMT solving
 consisting of a collection of SMT compliant implementations of methods for
 solving quantifier-free (non)linear real and integer arithmetic as well as
 the logics of bit-vectors and uninterpreted functions. A more detailed description of \texttt{SMT-RAT} can be found at \href{https://github.com/smtrat/smtrat/wiki}{\color{blue}https://github.com/smtrat/smtrat/wiki}.
@@ -19,13 +19,14 @@ the logics of bit-vectors and uninterpreted functions. A more detailed descripti
 
 The SAT solving within \texttt{SMT-RAT} takes place in an adaption of the SAT solver \texttt{minisat}~\cite{minisat} and we use it for SMT solving in a less-lazy fashion~\cite{sebastiani2007lazy}.
 
-The main focus of \texttt{SMT-RAT} is nonlinear arithmetic. For the linear constraints we use the Simplex method equipped with (currently very naively implemented) branch-and-bound and cutting-plane procedures as presented in \cite{DM06}. For the nonlinear constraints \texttt{SMT-RAT} uses Gr\"obner bases~\cite{JLCA_CAI13}, virtual substitution~\cite{Article_Corzilius_FCT2011} and the cylindrical algebraic decomposition~\cite{Article_Loup_TubeCAD}. Moreover, it uses interval constraint propagation similar as presented in~\cite{GGIGSC10}, lifting splitting decisions and contraction lemmas to the SAT solving and aided by the aforementioned approaches for nonlinear constraints in case it cannot determine whether a box contains a solution or not. Furthermore, we apply some naive preprocessing, (1) using factorizations and sum-of-square decompositions of polynomials to simplify them and (2) applying substitutions gained by constraints being equations. We also normalize and simplify formulas if it is obvious.
+The main focus of \texttt{SMT-RAT} is nonlinear arithmetic. For the linear constraints we use the Simplex method equipped with (currently very naively implemented) branch-and-bound and cutting-plane procedures as presented in \cite{DM06}. For the nonlinear constraints \texttt{SMT-RAT} uses virtual substitution~\cite{Article_Corzilius_FCT2011} and the cylindrical algebraic decomposition~\cite{Article_Loup_TubeCAD}. Moreover, it uses interval constraint propagation similar as presented in~\cite{GGIGSC10}, lifting splitting decisions and contraction lemmas to the SAT solving and aided by the aforementioned approaches for nonlinear constraints in case it cannot determine whether a box contains a solution or not. For nonlinear integer problems, we employ bit blasting up to some fixed number of bits and use branch-and-bound~\cite{Kremer2016} afterwards.
+Furthermore, we apply some naive preprocessing, (1) using factorizations and sum-of-square decompositions of polynomials to simplify them and (2) applying substitutions gained by constraints being equations. We also normalize and simplify formulas if it is obvious.
 
 \paragraph{Authors}
 \begin{itemize}
 \item Erika \'Abrah\'am
-\item Florian Corzilius
 \item Gereon Kremer
+\item Florian Corzilius
 \item Sebastian Junges
 \item Stefan Schupp
 \end{itemize}
