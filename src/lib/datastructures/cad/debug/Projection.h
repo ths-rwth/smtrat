@@ -18,7 +18,7 @@ namespace debug {
 		Projection(const Variables& vars):
 			mConstraints(
 				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(mProjection.normalize(p), cid, isBound); },
-				[&](const UPoly& p, std::size_t cid){ mProjection.removePolynomial(mProjection.normalize(p), cid); }
+				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(mProjection.normalize(p), cid, isBound); }
 			),
 			mProjection(mConstraints)
 		{
