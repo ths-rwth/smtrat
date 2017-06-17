@@ -138,7 +138,7 @@ namespace smtrat
 				break;
 			}
 		}
-		std::cout << formula << std::endl;
+		
 		PBConstraintT constraint = changeVarTypeToBool(c);
 
 		if(!positive && !negative){
