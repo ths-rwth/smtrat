@@ -66,6 +66,7 @@ public:
 			("stats,s", po::bool_switch(&UseStats), "run solver with statistics")
 			("output-dir,o", po::value<std::string>(&outputDir), "output directory")
 			("compose,c", po::value<std::vector<std::string> >(&composeFiles), "Compose a list of stats files together")
+			("convert", po::value<std::string>(), "Convert a XML result file to .ods")
 		;
 		backendOptions.add_options()
 			("backend,b", po::value<std::string>(&backend), "Backend to be used. Possible values: \"condor\", \"local\", \"ssh\".")
