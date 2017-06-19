@@ -2861,7 +2861,13 @@ namespace smtrat
         cout << "### Backtrack to level " << backtrack_level << endl;
         cout << "###" << endl;
         #endif
-        cancelUntil( backtrack_level );
+       
+        if(Settings::mc_sat) {
+            // TODO testing necessary
+            cancelUntil( backtrack_level, true );
+        } else {
+            cancelUntil( backtrack_level );
+        }
 		
 		if (false && Settings::mc_sat) {
 			while (true) {
