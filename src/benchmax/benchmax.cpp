@@ -97,9 +97,9 @@ bool initApplication(int argc, char** argv) {
 	}
 	
 	if (s.has("convert")) {
-		BENCHMAX_LOG_INFO("benchmax", "Converting " << s.as<std::string>("convert") << " to ods");
+		BENCHMAX_LOG_INFO("benchmax", "Converting " << s.as<std::string>("convert") << " to ods using import filer " << s.as<std::string>("convert-filter"));
 		std::stringstream ss;
-		ss << "libreoffice --headless --infilter=Benchmax --convert-to ods " << s.as<std::string>("convert");
+		ss << "libreoffice --headless --infilter=" << s.as<std::string>("convert-filter") << " --convert-to ods " << s.as<std::string>("convert");
 		system(ss.str().c_str());
 		return false;
 	}
