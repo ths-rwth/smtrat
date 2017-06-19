@@ -123,6 +123,10 @@ public:
 	bool has(const std::string& s) const {
 		return vm.count(s);
 	}
+	template<typename T>
+	const T& as(const std::string& s) const {
+		return vm[s].as<T>();
+	}
 
 	/// Core Options
 	static bool verbose;
