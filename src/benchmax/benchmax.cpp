@@ -95,6 +95,14 @@ bool initApplication(int argc, char** argv) {
 					+ Settings::StatsXMLFile).c_str());
 		fs::remove(fs::path(Settings::outputDir + "latexCompose.xsl"));
 	}
+	
+	if (s.has("convert")) {
+		BENCHMAX_LOG_INFO("benchmax", "Converting " << s.as<std::string>("convert") << " to ods");
+		std::stringstream ss;
+		ss << "libreoffice --headless --infilter=Benchmax --convert-to ods " << s.as<std::string>("convert");
+		system(ss.str().c_str());
+		return false;
+	}
 
 	if(Settings::outputDir != "")
 	{
