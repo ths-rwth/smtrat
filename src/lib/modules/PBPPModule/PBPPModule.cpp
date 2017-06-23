@@ -138,7 +138,7 @@ namespace smtrat
 				break;
 			}
 		}
-		
+
 		PBConstraintT constraint = changeVarTypeToBool(c);
 
 		if(!positive && !negative){
@@ -146,7 +146,7 @@ namespace smtrat
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
-			auto res = encodeCardinalityConstratint(constraint, c);
+			auto res = encodeCardinalityConstraint(constraint, c);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(lhsSize == 1){
@@ -240,7 +240,6 @@ namespace smtrat
 		Rational max = INT_MIN;
 		std::size_t lhsSize = cLHS.size();
 
-		PBConstraintT constraint = changeVarTypeToBool(c);
 
 		for(auto it : cLHS){
 			if(it.first < 0){
@@ -264,12 +263,14 @@ namespace smtrat
 			}
 		}
 
+		PBConstraintT constraint = changeVarTypeToBool(c);
+
 		if(!positive && !negative){
 			auto res = forwardAsArithmetic(c);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;
 		}else if(eqCoef && (cLHS[0].first == 1 || cLHS[0].first == -1 ) && lhsSize > 1){
-			auto res = encodeCardinalityConstratint(constraint, c);
+			auto res = encodeCardinalityConstraint(constraint, c);
 			SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
 			return res;	
 		}else if(lhsSize == 1){
@@ -602,7 +603,7 @@ template<typename Settings>
 
 
 	template<typename Settings>
-	FormulaT PBPPModule<Settings>::encodeCardinalityConstratint(const PBConstraintT& formula, const PBConstraintT& c){
+	FormulaT PBPPModule<Settings>::encodeCardinalityConstraint(const PBConstraintT& formula, const PBConstraintT& c){
 		const auto& cLHS = formula.getLHS();
 		auto cVars = formula.gatherVariables();
 		Rational cRHS = formula.getRHS();
@@ -1454,95 +1455,6 @@ template<typename Settings>
 		{2, 43}, {3, 29}, {2, 2, 2, 11}, {89}, {2, 3, 3, 5}, {7, 13}, {2, 2, 23}, {3, 31}, {2, 47},
 		{5, 19}, {2, 2, 2, 2, 2, 3}, {97}, {2, 7, 7}, {3, 3, 11}, {2, 2, 5, 5}};
 	}
-		// template<typename Settings>
-	// FormulaT PBPPModule<Settings>::createAuxiliaryConstraint(const FormulaT& formula){
-	// 	const PBConstraintT& c = formula.pbConstraint();
-	// 	auto boolVars = c.gatherVariables();
-	// 	std::vector<carl::Variable> intVars;
-	// 	for(auto it : boolVars){
-	// 		if(std::find(mCheckedVars.begin(), mCheckedVars.end(), it) == mCheckedVars.end()){ 
-	// 			//There are no auxiliary constraints for this variable
-	// 			intVars.push_back(mVariablesCache.find(it)->second);
-	// 			mCheckedVars.push_back(it);
-	// 		}
-	// 	}
-
-	// 	FormulasT newSubformulas;
-	// 	for(auto var : intVars){
-	// 		Poly intVar(var);
-	// 		FormulaT subformulaA = FormulaT(intVar, carl::Relation::EQ);
-	// 		FormulaT subformulaB = FormulaT(intVar - Rational(1), carl::Relation::EQ);
-	// 		FormulaT newFormula = FormulaT(carl::FormulaType::XOR, subformulaA, subformulaB);
-	// 		newSubformulas.push_back(newFormula);
-	// 	}
-	// 	return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
-	// }
-		// template<typename Settings>
-	// FormulaT PBPPModule<Settings>::interconnectVariables(const FormulaT& formula){
-	// 	const PBConstraintT& c = formula.pbConstraint();
-	// 	auto boolVars = c.gatherVariables();
-	// 	std::map<carl::Variable, carl::Variable> varsMap;
-
-	// 	for(auto var : boolVars){
-	// 		if(std::find(mConnectedVars.begin(), mConnectedVars.end(), var) == mConnectedVars.end()){
-	// 			//The variables are not interconnected
-	// 			varsMap.insert(*mVariablesCache.find(var));
-	// 			mConnectedVars.push_back(var);
-	// 		}
-	// 	}
-
-	// 	FormulasT newSubformulas;
-	// 	for(auto var : varsMap){
-	// 		FormulaT boolVar = FormulaT(var.first);
-	// 		Poly intVar(var.second);
-	// 		FormulaT subformulaA = FormulaT(intVar - Rational(1), carl::Relation::EQ);
-	// 		FormulaT subformulaB = FormulaT(carl::FormulaType::IMPLIES, boolVar, subformulaA);
-	// 		FormulaT subformulaC = FormulaT(intVar, carl::Relation::EQ);
-	// 		FormulaT subformulaD = FormulaT(carl::FormulaType::IMPLIES, boolVar.negated(), subformulaC);
-	// 		FormulaT newFormula  = FormulaT(carl::FormulaType::AND, subformulaB, subformulaD);
-	// 		newSubformulas.push_back(newFormula);
-	// 	}
-	// 	return FormulaT(carl::FormulaType::AND, std::move(newSubformulas));
-
-	// }
-
-
-
-
-
-		/*
-	/ Converts PBConstraint into a LRA formula.
-	*/
-	// template<typename Settings>
-	// FormulaT PBPPModule<Settings>::forwardAsArithmetic(const FormulaT& formula){
-	// 	const PBConstraintT& c = formula.pbConstraint();
-	// 	const auto& cLHS = c.getLHS();
-	// 	carl::Relation cRel  = c.getRelation();
-	// 	Rational cRHS = c.getRHS();
-	// 	auto variables = c.gatherVariables();
-
-	// 	for(auto it : variables){
-	// 		mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(it, carl::freshVariable(carl::VariableType::VT_INT)));
-	// 	}
-
-	// 	Poly lhs;
-	// 	for(auto it : cLHS){
-	// 		auto finder = mVariablesCache.find(it.second);
-	// 		carl::Variable curVariable = finder->second;
-	// 		Poly pol(curVariable);
-	// 		lhs = lhs + Rational(it.first) * pol;
-	// 	}
-	// 	lhs = lhs - Rational(cRHS);
-	// 	FormulaT subformulaA = FormulaT(lhs, cRel);
-
-	// 	//Adding auxiliary constraint to ensure variables are assigned to 1 or 0.
-	// 	FormulaT subformulaB = createAuxiliaryConstraint(formula);
-	// 	FormulaT subformulaC = FormulaT(carl::FormulaType::AND, subformulaA, subformulaB);
-
-	// 	//Adding auxiliary constraint to interconnect the bool and int variables
-	// 	FormulaT subformulaD = interconnectVariables(formula);
-	// 	return FormulaT(carl::FormulaType::AND, subformulaC, subformulaD);
-	// }
 
 }
 

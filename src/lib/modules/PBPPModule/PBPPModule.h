@@ -117,7 +117,7 @@ namespace smtrat
 			std::vector<Integer> integerFactorization(const Integer& coeff);
 			void initPrimesTable();
 			FormulaT removeZeroCoefficients(const PBConstraintT& formula);
-			FormulaT encodeCardinalityConstratint(const PBConstraintT& formula, const PBConstraintT& c);
+			FormulaT encodeCardinalityConstraint(const PBConstraintT& formula, const PBConstraintT& c);
 			FormulaT encodeMixedConstraints(const PBConstraintT& formula, const PBConstraintT& c);
 
 	};
