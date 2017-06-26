@@ -1194,13 +1194,13 @@ template<typename Settings>
 		lhs = lhs - cRHS;
 		FormulaT subformulaA = FormulaT(lhs, cRel);
 
-		//Adding auxiliary constraint to ensure variables are assigned to 1 or 0.
-		FormulaT subformulaB = createAuxiliaryConstraint(variables);
-		FormulaT subformulaC = FormulaT(carl::FormulaType::AND, subformulaA, subformulaB);
+		// //Adding auxiliary constraint to ensure variables are assigned to 1 or 0.
+		// FormulaT subformulaB = createAuxiliaryConstraint(variables);
+		// FormulaT subformulaC = FormulaT(carl::FormulaType::AND, subformulaA, subformulaB);
 
 		//Adding auxiliary constraint to interconnect the bool and int variables
 		FormulaT subformulaD = interconnectVariables(variables);
-		return FormulaT(carl::FormulaType::AND, subformulaC, subformulaD);
+		return FormulaT(carl::FormulaType::AND, subformulaA, subformulaD);
 	}
 
 
