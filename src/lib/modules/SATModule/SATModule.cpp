@@ -2157,8 +2157,8 @@ namespace smtrat
 			SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Backtracking " << trail[c]);
 			if (Settings::mc_sat) {
 				if (mMCSAT.backtrackTo(trail[c])) {
-					fixTheoryPassedFormulas();
-					adaptPassedFormula();
+					//fixTheoryPassedFormulas();
+					//adaptPassedFormula();
 				}
 			}
             Var x = var( trail[c] );
@@ -2776,11 +2776,13 @@ namespace smtrat
 							//assert(!cres);
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Added clause " << explanation);
 							processLemmas();
-                                                        propagateTheory();
+							propagateTheory();
 							confl = storeLemmas();
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << confl);
-							// basically abort and skip the next two cases, directly go to conflict resolution and restart the loop
-							handleConflict( confl );
+							if (confl != CRef_Undef) {
+								SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << confl);
+								// basically abort and skip the next two cases, directly go to conflict resolution and restart the loop
+								handleConflict( confl );
+							}
 							continue;
 						}
                     }

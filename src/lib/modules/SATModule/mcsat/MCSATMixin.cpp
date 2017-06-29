@@ -23,9 +23,9 @@ bool MCSATMixin::backtrackTo(Minisat::Lit literal) {
 	}
 	
 	while (mCurrentLevel > level) {
+		popLevel();
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Backtracking theory assignment for " << current().variable);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Model " << mNLSAT.getModel());
-		popLevel();
 		if (current().decisionLiteral != Minisat::lit_Undef) {
 			mNLSAT.popAssignment(current().variable);
 			mVariables.unassign(current().variable);
