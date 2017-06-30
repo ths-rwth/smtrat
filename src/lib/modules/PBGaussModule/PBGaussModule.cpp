@@ -72,7 +72,7 @@ namespace smtrat
 			}else{
 				addSubformulaToPassedFormula(f);
 			}
-		}< std::endl;
+		}
 		FormulaT formula;
 		if(mEquations.size() > 1){
 			formula = gaussAlgorithm();
