@@ -857,20 +857,6 @@ namespace smtrat
                 return assigns[x];
             }
             
-            void doTheoryPropagation(Minisat::Lit l) {
-                nlsat::Explain<nlsat::LemmaStrategy::ORIGINAL> explain;
-                //explain.explain()
-                
-            }
-            
-            void tryTheoryPropagation(Minisat::Var x) {
-                if (assigns[x] != l_Undef) return;
-                Minisat::lbool res = mMCSAT.evaluateLiteral(Minisat::mkLit(x, false));
-                if (res == l_Undef) return;
-                else if (res == l_True) doTheoryPropagation(Minisat::mkLit(x, false));
-                else if (res == l_False) doTheoryPropagation(Minisat::mkLit(x, true));
-            }
-            
 			inline Minisat::lbool valueAndUpdate( Minisat::Var x )
             {
 				if (assigns[x] == l_Undef) {
