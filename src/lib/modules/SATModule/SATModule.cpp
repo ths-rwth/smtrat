@@ -1828,7 +1828,7 @@ namespace smtrat
 			}
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking to " << backtrackLevel);
-		cancelUntil(backtrackLevel, false);
+		cancelUntil(backtrackLevel, true);
 
 		CRef conflict = CRef_Undef;
 		for (int i = mLemmas.size()-1; i >= 0; i--) {
@@ -2716,13 +2716,13 @@ namespace smtrat
                                     Minisat::Lit l = createLiteral(c);
                                     explanation.push(l);
                                     if (value(l) == l_Undef) {
-                                            // We can not assume that evaluateLiteral(l) == l_False
-                                            if(mMCSAT.evaluateLiteral(l) == l_False) {
-                                                uncheckedEnqueue(neg(l));
-					                            SMTRAT_LOG_DEBUG("smtrat.sat", "Setting " << l << " to false due to theory");
-                                            } else {
-                                                count_not_to_false_evaluated_literals++;
-                                            }
+                                        // We can not assume that evaluateLiteral(l) == l_False
+                                        if(mMCSAT.evaluateLiteral(l) == l_False) {
+                                            uncheckedEnqueue(neg(l), CRef_TPropagation);
+				                            SMTRAT_LOG_DEBUG("smtrat.sat", "Setting " << l << " to false due to theory");
+                                        } else {
+                                            count_not_to_false_evaluated_literals++;
+                                        }
                                     }
                                     assert(count_not_to_false_evaluated_literals <= 1);
                             }
@@ -2760,19 +2760,32 @@ namespace smtrat
 							pickTheoryBranchLit();
 						} else {
 							mCurrentAssignmentConsistent = UNSAT;
+							SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << mMCSAT.level());
+							Lit lastTheoryDecision = mMCSAT.get(mMCSAT.level()-1).decisionLiteral;
+							if (lastTheoryDecision != lit_Undef) {
+								int level = vardata[var(lastTheoryDecision)].level-1;
+								SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking " << lastTheoryDecision << ", to level " << level);
+								cancelUntil(level);
+							}
 							vec<Lit> explanation;
-							for (const auto& c: res) {
+							for (const auto& c: (res.isNary() ? res.subformulas() : FormulasT({res}))) {
 								SMTRAT_LOG_DEBUG("smtrat.sat", "Adding " << c);
 								Minisat::Lit l = createLiteral(c);
 								explanation.push(l);
 								if (value(l) == l_Undef) {
-									assert(mMCSAT.evaluateLiteral(l) == l_False);
-									uncheckedEnqueue(neg(l));
+									// We can not assume that evaluateLiteral(l) == l_False
+									auto res = mMCSAT.evaluateLiteral(l);
+									if(res == l_False) {
+										uncheckedEnqueue(neg(l), CRef_TPropagation);
+										SMTRAT_LOG_DEBUG("smtrat.sat", "Setting " << l << " to false due to theory");
+									} else {
+										assert(res == l_Undef);
+									}
 								}
 							}
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
 							// Add it, the next propagation will find it...
-							bool cres = addClause(explanation, CONFLICT_CLAUSE);
+							/*bool cres = */addClause(explanation, LEMMA_CLAUSE);
 							//assert(!cres);
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Added clause " << explanation);
 							processLemmas();
@@ -4244,6 +4257,7 @@ NextClause:
                 _out << "   ( " << mBooleanConstraintMap[var(trail[pos])].second->reabstraction << " )";
                 _out << " [" << mBooleanConstraintMap[var(trail[pos])].second->updateInfo << "]";
             }
+			assert(vardata[var(trail[pos])].mTrailIndex == pos);
 			if (vardata[var(trail[pos])].reason != CRef_Undef) {
 				_out << " due to " << vardata[var(trail[pos])].reason;
 			}
