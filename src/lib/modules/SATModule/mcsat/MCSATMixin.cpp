@@ -100,8 +100,8 @@ bool MCSATMixin::isLiteralInUnivariateClause(Minisat::Lit literal) {
 			}
 			if (clause[l] == literal) {
 				found = true;
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found " << literal << " in " << clause);
-			} else {
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found " << literal << " in " << clause << "[" << l << "]");
+			}/* else {
 				auto lvl = levelOfVariable(Minisat::var(clause[l]));
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Level of " << clause[l] << " is " << lvl);
 				if (lvl == 0) {
@@ -112,7 +112,7 @@ bool MCSATMixin::isLiteralInUnivariateClause(Minisat::Lit literal) {
 					found = false;
 					break;
 				}
-			}
+			}*/
 		}
 		if (found) {
 			return true;
