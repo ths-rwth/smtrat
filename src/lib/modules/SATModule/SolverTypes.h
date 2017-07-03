@@ -245,6 +245,7 @@ inline std::ostream& operator<<(std::ostream& os, const Minisat::Clause& c) {
 
 const CRef CRef_Undef = RegionAllocator<uint32_t>::Ref_Undef;
 const CRef CRef_Lazy  = RegionAllocator<uint32_t>::Ref_Undef - 1;
+const CRef CRef_TPropagation  = RegionAllocator<uint32_t>::Ref_Undef - 2;
 class ClauseAllocator : public RegionAllocator<uint32_t>
 {
     static int clauseWord32Size(int size, bool has_extra){
