@@ -3238,10 +3238,11 @@ namespace smtrat
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Not seen yet, level = " << level(var(q)));
 	                    varBumpActivity( var( q ) );
 	                    seen[var( q )] = 1;
-						if (Settings::mc_sat) {
+						if (Settings::mc_sat && reason(var(q)) == CRef_TPropagation) {
 							// TODO
-							// if is theory propagation:
-							// out_learnt.push(q);
+							// if is theory propagation: 
+                                                        SMTRAT_LOG_DEBUG("smtrat.sat", "pushing = " << q << " to out_learnt");
+                                                        out_learnt.push(q);
 						} else {
 		                    if( level( var( q ) ) >= decisionLevel() ) {
 								pathC++;
@@ -3267,16 +3268,17 @@ namespace smtrat
             ++resolutionSteps;
         }
         while( pathC > 0 );
-		if (Settings::mc_sat) {
+		if (Settings::mc_sat && reason(var(p)) == CRef_TPropagation) {
 			// TODO
 			// if p is theory propagation
 			// do not insert:	
-				// out_learnt[0] = out_learnt[out_learnt.size()-1]
-				// out_learnt.shrink(out_learnt.size()-1)	
-				// lemma_lt lt( *this ); sort( out_learnt, lt );
+			out_learnt[0] = out_learnt[out_learnt.size()-1];
+			out_learnt.shrink(out_learnt.size()-1);	
+			lemma_lt lt( *this ); 
+                        sort( out_learnt, lt );
 			// else out_learnt[0] = ~p;
 		} else {
-        	out_learnt[0] = ~p;
+                    out_learnt[0] = ~p;
 		}
 		
 		SMTRAT_LOG_DEBUG("smtrat.sat", "Learning clause " << out_learnt);
@@ -3341,7 +3343,16 @@ namespace smtrat
 				// if (lvl == 0) ???
 				// lit = mMCSAT.get(level).decisionLiteral
 				// level(var(lit))
-                if( level( var( out_learnt[i] ) ) > level( var( out_learnt[max_i] ) ) )
+                int currentLitLevel;
+                if(reason(var(out_learnt[i])) == CRef_TPropagation) {
+                    FormulaT f = mBooleanConstraintMap[var(out_learnt[i])].first->reabstraction;
+                    size_t lvl = mMCSAT.penultimateTheoryLevel(f);
+                    Minisat::Lit lit = mMCSAT.get(lvl).decisionLiteral;
+                    currentLitLevel = level(var(lit));
+                } else {
+                    currentLitLevel = level( var( out_learnt[i] ) );
+                }
+                if( currentLitLevel > level( var( out_learnt[max_i] ) ) )
                     max_i = i;
 			}
             // Swap-in this literal at index 1:
