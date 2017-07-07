@@ -263,6 +263,18 @@ public:
 	
 	std::size_t computeVariableLevel(Minisat::Var variable) const;
 	
+	std::size_t penultimateTheoryLevel(const FormulaT& f) const {
+		carl::Variables vars;
+		f.arithmeticVars(vars);
+		assert(vars.find(current().variable) != vars.end());
+		for (std::size_t lvl = level()-1; lvl > 0; lvl--) {
+			if (vars.find(get(lvl).variable) != vars.end()) {
+				return lvl;
+			}
+		}
+		return 0;
+	}
+	
 	// ***** Output
 	/// Prints a single clause
 	void printClause(std::ostream& os, Minisat::CRef clause) const;
