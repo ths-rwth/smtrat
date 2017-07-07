@@ -2761,27 +2761,21 @@ namespace smtrat
 						} else {
 							mCurrentAssignmentConsistent = UNSAT;
 							SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << mMCSAT.level());
-							Lit lastTheoryDecision = mMCSAT.get(mMCSAT.level()-1).decisionLiteral;
-							if (lastTheoryDecision != lit_Undef) {
-								int level = vardata[var(lastTheoryDecision)].level-1;
-								SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking " << lastTheoryDecision << ", to level " << level);
-								cancelUntil(level);
+							// Todo: backtrack to last relevant theory decision, not last one
+							std::size_t level = mMCSAT.penultimateTheoryLevel(res);
+							if (level != 0) {
+								Lit lastTheoryDecision = mMCSAT.get(level).decisionLiteral;
+								if (lastTheoryDecision != lit_Undef) {
+									int level = vardata[var(lastTheoryDecision)].level-1;
+									SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking " << lastTheoryDecision << ", to level " << level);
+									cancelUntil(level);
+								}
 							}
 							vec<Lit> explanation;
 							for (const auto& c: (res.isNary() ? res.subformulas() : FormulasT({res}))) {
 								SMTRAT_LOG_DEBUG("smtrat.sat", "Adding " << c);
 								Minisat::Lit l = createLiteral(c);
 								explanation.push(l);
-								if (value(l) == l_Undef) {
-									// We can not assume that evaluateLiteral(l) == l_False
-									auto res = mMCSAT.evaluateLiteral(l);
-									if(res == l_False) {
-										uncheckedEnqueue(neg(l), CRef_TPropagation);
-										SMTRAT_LOG_DEBUG("smtrat.sat", "Setting " << l << " to false due to theory");
-									} else {
-										assert(res == l_Undef);
-									}
-								}
 							}
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
 							// Add it, the next propagation will find it...
@@ -3233,6 +3227,7 @@ namespace smtrat
 	            if( c.learnt() )
 	                claBumpActivity( c );
 
+				// assert that c[0] is actually p
 	            for( int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++ )
 	            {
 	                Lit q = c[j];
@@ -3243,13 +3238,19 @@ namespace smtrat
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Not seen yet, level = " << level(var(q)));
 	                    varBumpActivity( var( q ) );
 	                    seen[var( q )] = 1;
-	                    if( level( var( q ) ) >= decisionLevel() ) {
-							pathC++;
-							SMTRAT_LOG_DEBUG("smtrat.sat", "pathC = " << pathC << " for " << q);
-						}
-	                    else {
-							SMTRAT_LOG_DEBUG("smtrat.sat", "pushing = " << q << " to out_learnt");
-	                        out_learnt.push( q );
+						if (Settings::mc_sat) {
+							// TODO
+							// if is theory propagation:
+							// out_learnt.push(q);
+						} else {
+		                    if( level( var( q ) ) >= decisionLevel() ) {
+								pathC++;
+								SMTRAT_LOG_DEBUG("smtrat.sat", "pathC = " << pathC << " for " << q);
+							}
+		                    else {
+								SMTRAT_LOG_DEBUG("smtrat.sat", "pushing = " << q << " to out_learnt");
+		                        out_learnt.push( q );
+							}
 						}
 	                }
 	            }
@@ -3262,10 +3263,21 @@ namespace smtrat
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking over " << p << " with reason " << confl);
             seen[var( p )] = 0;
             pathC--;
+			SMTRAT_LOG_DEBUG("smtrat.sat", "pathC = " << pathC);
             ++resolutionSteps;
         }
         while( pathC > 0 );
-        out_learnt[0] = ~p;
+		if (Settings::mc_sat) {
+			// TODO
+			// if p is theory propagation
+			// do not insert:	
+				// out_learnt[0] = out_learnt[out_learnt.size()-1]
+				// out_learnt.shrink(out_learnt.size()-1)	
+				// lemma_lt lt( *this ); sort( out_learnt, lt );
+			// else out_learnt[0] = ~p;
+		} else {
+        	out_learnt[0] = ~p;
+		}
 		
 		SMTRAT_LOG_DEBUG("smtrat.sat", "Learning clause " << out_learnt);
 
@@ -3319,9 +3331,19 @@ namespace smtrat
         {
             int max_i = 1;
             // Find the first literal assigned at the next-highest level:
-            for( int i = 2; i < out_learnt.size(); i++ )
+            for( int i = 2; i < out_learnt.size(); i++ ) {
+				// TODO
+				// if out_learnt[i] was a theory propagation, do not use level(var(...)), but
+				// Level of last theory decision relevant for out_learnt[i]
+				// reason(var(out_learnt[i])) == CRef_TPropagation
+				// FormulaT f = mBooleanConstraintMap[var(out_learnt[i])].first->reabstraction
+				// lvl = mMCSAT.penultimateTheoryLevel(f)
+				// if (lvl == 0) ???
+				// lit = mMCSAT.get(level).decisionLiteral
+				// level(var(lit))
                 if( level( var( out_learnt[i] ) ) > level( var( out_learnt[max_i] ) ) )
                     max_i = i;
+			}
             // Swap-in this literal at index 1:
             Lit p             = out_learnt[max_i];
             out_learnt[max_i] = out_learnt[1];
