@@ -98,11 +98,11 @@ namespace cad {
 		static constexpr auto moduleName = "NewCADModule<NewCADConfigured>";
 		static constexpr cad::Incrementality incrementality = cad::Incrementality::${NEWCAD_INCREMENTALITY};
 		static constexpr cad::Backtracking backtracking = cad::Backtracking::${NEWCAD_BACKTRACKING};
+		static constexpr cad::MISHeuristic misHeuristic = cad::MISHeuristic::${NEWCAD_MISHEURISTIC};
 		
 		static constexpr cad::ProjectionType projectionOperator = cad::ProjectionType::Brown;
-		static constexpr cad::CoreHeuristic coreHeuristic = cad::CoreHeuristic::PreferProjection;
+		static constexpr cad::CoreHeuristic coreHeuristic = cad::CoreHeuristic::PreferSampling;
 		
-		static constexpr cad::MISHeuristic misHeuristic = cad::MISHeuristic::GREEDY;
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = false;
 		static constexpr bool debugProjection = false;
