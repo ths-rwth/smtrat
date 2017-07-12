@@ -176,7 +176,7 @@ namespace cad {
 			std::vector<Sample> newSamples;
 			// TODO: Check whether the polynomials becomes zero (check if McCallum is safe)
 			auto roots = carl::rootfinder::realRoots(p, m, RationalInterval::unboundedInterval(), Settings::rootSplittingStrategy);
-			std::list<RAN> rootlist = { RAN(0) };
+			std::vector<RAN> rootlist = { RAN(0) };
 			if (roots) rootlist = *roots;
 			else {
 				// Here, the polynomial vanished.
