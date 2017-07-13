@@ -1813,7 +1813,7 @@ namespace smtrat
             {
                 basicVar.rFactor() = pivotContent;
                 pivotContent = nonbasicVar.factor();
-                nonbasicVar.rFactor() = 1;
+                nonbasicVar.rFactor() = carl::fromInt<Rational>(1);
             }
             else
             {
