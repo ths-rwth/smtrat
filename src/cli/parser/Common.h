@@ -64,7 +64,7 @@ namespace parser {
 		Identifier(const std::string& symbol, const std::vector<std::size_t>& indices): symbol(symbol), indices(new std::vector<std::size_t>(indices)) {}
 		Identifier(const std::string& symbol, const std::vector<Integer>& indices): symbol(symbol), indices(new std::vector<std::size_t>(indices.size())) {
 			for (std::size_t i = 0; i < indices.size(); i++) {
-				(*this->indices)[i] = carl::toInt<std::size_t>(indices[i]);
+				(*this->indices)[i] = carl::toInt<carl::uint>(indices[i]);
 			}
 		}
 		Identifier& operator=(const Identifier& i) {
