@@ -239,7 +239,9 @@ public:
 	/// Evaluate a literal in the theory, set lastReason to last theory decision involved.
 	Minisat::lbool evaluateLiteral(Minisat::Lit lit) const;
 	
-	boost::variant<Minisat::Lit,FormulaT> pickLiteralForDecision(); 
+	boost::variant<Minisat::Lit,FormulaT> checkLiteralForDecision(Minisat::Var var, Minisat::Lit lit);
+	boost::variant<Minisat::Lit,FormulaT> pickLiteralForDecision(const std::vector<Minisat::Var>& vars);
+	boost::variant<Minisat::Lit,FormulaT> pickLiteralForDecision();
 	
 	std::pair<FormulaT,bool> makeTheoryDecision() {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Obtaining assignment");

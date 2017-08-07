@@ -46,63 +46,81 @@ Minisat::lbool MCSATMixin::evaluateLiteral(Minisat::Lit lit) const {
 	return l_Undef;
 }
 
-boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision() {
-	const auto& variables = current().univariateVariables;
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Univariate variables: " << variables);
-	for (auto var: variables) {
+boost::variant<Minisat::Lit,FormulaT> MCSATMixin::checkLiteralForDecision(Minisat::Var var, Minisat::Lit lit) {
+	if (isLiteralInUnivariateClause(lit)) {
+		if (!mGetter.isTheoryAbstraction(var)) {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning boolean literal " << lit);
+			return lit;
+		}
+		const auto& f = mGetter.reabstractLiteral(lit);
+		auto res = mNLSAT.isInfeasible(currentVariable(), f);
+		if (res == boost::none) {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning feasible theory literal " << lit);
+			return lit;
+		} else {
+			// There is a conflict. Return conflict. 
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning theory propagation for " << lit);
+			return mNLSAT.explain(currentVariable(), *res, FormulaT(carl::FormulaType::FALSE));
+			// Perform theory propagation (in search)
+		}
+	} else {
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", lit << " is not in a univariate clause");
+		return Minisat::lit_Undef;
+	}
+}
+
+boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision(const std::vector<Minisat::Var>& vars) {
+	for (auto var: vars) {
 		if (mGetter.getVarValue(var) != l_Undef) {
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", var << " is already assigned.");
+			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", var << " is already assigned.");
 			continue;
 		}
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking if " << var << " can be decided...");
-		if (isLiteralInUnivariateClause(Minisat::mkLit(var, false))) {
-			const auto& f = mGetter.reabstractLiteral(Minisat::mkLit(var, false));
-			auto res = mNLSAT.isInfeasible(currentVariable(), f);
-			if (res == boost::none) {
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning " << Minisat::mkLit(var, false));
-				return Minisat::mkLit(var, false);
-			} else {
-				// There is a conflict. Return conflict. 
-				return mNLSAT.explain(currentVariable(), *res, FormulaT(carl::FormulaType::FALSE));
-				// Perform theory propagation (in search)
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Checking if " << var << " can be decided...");
+		
+		for (auto sign: {false, true}) {
+			auto res = checkLiteralForDecision(var, Minisat::mkLit(var, sign));
+			if (carl::variant_is_type<Minisat::Lit>(res)) {
+				if (boost::get<Minisat::Lit>(res) == Minisat::lit_Undef) {
+					// No literal was eligible
+					continue;
+				}
 			}
-		} else {
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", Minisat::mkLit(var, false) << " is not in a univariate clause");
-		}
-		if (isLiteralInUnivariateClause(Minisat::mkLit(var, true))) {
-			const auto& f = mGetter.reabstractLiteral(Minisat::mkLit(var, true));
-			auto res = mNLSAT.isInfeasible(currentVariable(), f);
-			if (res == boost::none) {
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning " << Minisat::mkLit(var, true));
-				return Minisat::mkLit(var, true);
-			} else {
-				// There is a conflict. Return conflict.
-				return mNLSAT.explain(currentVariable(), *res, FormulaT(carl::FormulaType::FALSE));
-				// Perform theory propagation (in search)
-			}
-		} else {
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", Minisat::mkLit(var, true) << " is not in a univariate clause");
+			return res;
 		}
 	}
+	return Minisat::lit_Undef;
+}
+
+boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision() {
+	for (const auto& vars: {get(0).univariateVariables, current().univariateVariables}) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "trying variables: " << vars);
+		auto res = pickLiteralForDecision(vars);
+		if (carl::variant_is_type<Minisat::Lit>(res)) {
+			if (boost::get<Minisat::Lit>(res) == Minisat::lit_Undef) {
+				// No literal was eligible
+				continue;
+			}
+		}
+		return res;
+	}
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning undef.");
-	//assert(variables.size() != 2 || variables.front() != 5);
 	return Minisat::lit_Undef;
 }
 
 bool MCSATMixin::isLiteralInUnivariateClause(Minisat::Lit literal, const Minisat::vec<Minisat::CRef>& clauses) {
 	for (int c = 0; c < clauses.size(); c++) {
 		const auto& clause = mGetter.getClause(clauses[c]);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Considering " << clause);
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Considering " << clause);
 		bool found = false;
 		for (int l = 0; l < clause.size(); l++) {
 			if (mGetter.getLitValue(clause[l]) == l_True) {
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", clause << " is already satisfied due to " << clause[l]);
+				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", clause << " is already satisfied due to " << clause[l]);
 				found = false;
 				break;
 			}
 			if (clause[l] == literal) {
 				found = true;
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found " << literal << " in " << clause << "[" << l << "]");
+				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Found " << literal << " in " << clause << "[" << l << "]");
 			}/* else {
 				auto lvl = levelOfVariable(Minisat::var(clause[l]));
 				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Level of " << clause[l] << " is " << lvl);
