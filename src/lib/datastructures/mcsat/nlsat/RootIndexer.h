@@ -19,10 +19,8 @@ private:
 	std::map<RAN, std::size_t> mMap;
 	std::vector<RAN> mSamples;
 public:	
-	void add(const std::list<RAN>& list) {
-		for (const auto& l: list) {
-			mRoots.emplace_back(l);
-		}
+	void add(const std::vector<RAN>& list) {
+		mRoots.insert(mRoots.end(), list.begin(), list.end());
 	}
 	void process() {
 		std::sort(mRoots.begin(), mRoots.end());

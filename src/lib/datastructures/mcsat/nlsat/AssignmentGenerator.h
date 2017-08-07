@@ -119,13 +119,13 @@ public:
 		mIsUnsat = false;
 		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Searching for an assignment for " << v);
 		RootIndexer ri;
-		std::map<FormulaT, std::pair<std::list<RAN>, FormulaT>> rootMap;
+		std::map<FormulaT, std::pair<std::vector<RAN>, FormulaT>> rootMap;
 		for (const auto& f: mConstraints) {
 			assert(f.getType() == carl::FormulaType::CONSTRAINT);
 			if (!isUnivariate(f, v)) continue;
 			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Evaluating " << f);
 			FormulaT fnew(carl::model::substitute(f, mModel));
-			std::list<RAN> list;
+			std::vector<RAN> list;
 			if (fnew.getType() == carl::FormulaType::CONSTRAINT) {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Real roots of " << fnew.constraint().lhs() << " in " << v);
 				const auto& poly = fnew.constraint().lhs();
@@ -169,7 +169,7 @@ public:
 				value = res;
 			}
 			if (!value.isRational() && !value.isRAN()) continue;
-			std::list<RAN> list;
+			std::vector<RAN> list;
 			if (value.isRational()) list.emplace_back(value.asRational());
 			else list.push_back(value.asRAN().changeVariable(v));
 			ri.add(list);

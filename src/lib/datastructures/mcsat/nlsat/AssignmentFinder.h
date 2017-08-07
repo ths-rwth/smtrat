@@ -16,7 +16,7 @@ private:
 	carl::Variable mVar;
 	const Model& mModel;
 	RootIndexer mRI;
-	std::map<FormulaT, std::pair<std::list<RAN>, FormulaT>> mRootMap;
+	std::map<FormulaT, std::pair<std::vector<RAN>, FormulaT>> mRootMap;
 	
 	/// Checks whether a formula is univariate, meaning it contains mVar and only variables from mModel otherwise.
 	bool isUnivariate(const FormulaT& f) const {
@@ -49,7 +49,7 @@ public:
 			return true;
 		}
 		FormulaT fnew(carl::model::substitute(f, mModel));
-		std::list<RAN> list;
+		std::vector<RAN> list;
 		if (fnew.getType() == carl::FormulaType::CONSTRAINT) {
 			const auto& poly = fnew.constraint().lhs();
 			SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Real roots of " << poly << " in " << mVar);
@@ -86,7 +86,7 @@ public:
 			value = res;
 		}
 		if (!value.isRational() && !value.isRAN()) return;
-		std::list<RAN> list;
+		std::vector<RAN> list;
 		if (value.isRational()) list.emplace_back(value.asRational());
 		else list.push_back(value.asRAN().changeVariable(mVar));
 		mRI.add(list);
