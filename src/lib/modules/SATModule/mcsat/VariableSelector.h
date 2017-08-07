@@ -22,7 +22,6 @@ private:
 	mutable bool mCounterChanged = false;
 	
 	void fixQueue() const {
-		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Rebuilding queue " << *this);
 		if (mCounterChanged) {
 			mQueue.clear();
 			for (const auto& v: mCounter) {
@@ -35,7 +34,7 @@ private:
 			std::sort(mQueue.begin(), mQueue.end(), order);
 			mCounterChanged = false;
 		}
-		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "-> " << mQueue);
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Rebuilt queue: " << mQueue);
 	}
 	CounterMap::iterator find(carl::Variable v) {
 		auto it = mCounter.find(v);
@@ -53,20 +52,18 @@ public:
 		for (auto v: vars) add(v);
 	}
 	void add(carl::Variable v) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << v);
 		auto it = mCounter.find(v);
 		if (it == mCounter.end()) {
 			it = mCounter.emplace(v, std::make_pair(0,false)).first;
 			mCounterChanged = true;
 		}
 		it->second.first++;
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << mCounter);
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Added " << v << " -> " << mCounter);
 	}
 	void remove(const carl::Variables& vars) {
 		for (auto v: vars) remove(v);
 	}
 	void remove(carl::Variable v) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Removing " << v);
 		auto it = find(v);
 		it->second.first--;
 		if (it->second.first == 0) {
@@ -74,22 +71,22 @@ public:
 			mCounter.erase(it);
 			mCounterChanged = true;
 		}
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << mCounter);
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Removed " << v << " -> " << mCounter);
 	}
 	
 	void assign(carl::Variable v) {
 		fixQueue();
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Assigned " << v << ", removing from queue " << *this);
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Assigned " << v << ", removing from queue " << *this);
 		auto it = find(v);
 		it->second.second = true;
 		assert(mQueue.back() == v);
 		mQueue.pop_back();
 	}
 	void unassign(carl::Variable v) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Unassigned " << v << ", adding to queue " << *this);
 		auto it = find(v);
 		it->second.second = false;
 		mCounterChanged = true;
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Unassigned " << v << ", added to queue " << *this);
 	}
 	
 	bool empty() const {
