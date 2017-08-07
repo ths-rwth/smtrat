@@ -63,9 +63,11 @@ boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision() {
 				return Minisat::mkLit(var, false);
 			} else {
 				// There is a conflict. Return conflict. 
-                                return mNLSAT.explain(currentVariable(), *res, FormulaT(carl::FormulaType::FALSE));
-                                // Perform theory propagation (in search)
+				return mNLSAT.explain(currentVariable(), *res, FormulaT(carl::FormulaType::FALSE));
+				// Perform theory propagation (in search)
 			}
+		} else {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", Minisat::mkLit(var, false) << " is not in a univariate clause");
 		}
 		if (isLiteralInUnivariateClause(Minisat::mkLit(var, true))) {
 			const auto& f = mGetter.reabstractLiteral(Minisat::mkLit(var, true));
@@ -75,32 +77,70 @@ boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision() {
 				return Minisat::mkLit(var, true);
 			} else {
 				// There is a conflict. Return conflict.
-                                return mNLSAT.explain(currentVariable(), *res, FormulaT(carl::FormulaType::FALSE));
-                                // Perform theory propagation (in search)
+				return mNLSAT.explain(currentVariable(), *res, FormulaT(carl::FormulaType::FALSE));
+				// Perform theory propagation (in search)
 			}
+		} else {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", Minisat::mkLit(var, true) << " is not in a univariate clause");
 		}
 	}
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning undef.");
+	//assert(variables.size() != 2 || variables.front() != 5);
 	return Minisat::lit_Undef;
 }
 
+bool MCSATMixin::isLiteralInUnivariateClause(Minisat::Lit literal, const Minisat::vec<Minisat::CRef>& clauses) {
+	for (int c = 0; c < clauses.size(); c++) {
+		const auto& clause = mGetter.getClause(clauses[c]);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Considering " << clause);
+		bool found = false;
+		for (int l = 0; l < clause.size(); l++) {
+			if (mGetter.getLitValue(clause[l]) == l_True) {
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", clause << " is already satisfied due to " << clause[l]);
+				found = false;
+				break;
+			}
+			if (clause[l] == literal) {
+				found = true;
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found " << literal << " in " << clause << "[" << l << "]");
+			}/* else {
+				auto lvl = levelOfVariable(Minisat::var(clause[l]));
+				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Level of " << clause[l] << " is " << lvl);
+				if (lvl == 0 || lvl > level()) {
+					found = false;
+					break;
+				}
+			}*/
+		}
+		if (found) {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool MCSATMixin::isLiteralInUnivariateClause(Minisat::Lit literal) {
+	
+	return
+		isLiteralInUnivariateClause(literal, mGetter.getClauses())
+	||	isLiteralInUnivariateClause(literal, mGetter.getLearntClauses());
 	/* Here:
 	 * Stupidly iterate over all clauses.
 	 */
 	const Minisat::vec<Minisat::CRef>& clauses = mGetter.getClauses();
 	for (int c = 0; c < clauses.size(); c++) {
 		const auto& clause = mGetter.getClause(clauses[c]);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Considering " << clause);
 		bool found = false;
 		for (int l = 0; l < clause.size(); l++) {
 			if (mGetter.getLitValue(clause[l]) == l_True) {
-				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", clause << " is already satisfied due to " << clause[l]);
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", clause << " is already satisfied due to " << clause[l]);
 				found = false;
 				break;
 			}
 			if (clause[l] == literal) {
 				found = true;
-				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Found " << literal << " in " << clause << "[" << l << "]");
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found " << literal << " in " << clause << "[" << l << "]");
 			}/* else {
 				auto lvl = levelOfVariable(Minisat::var(clause[l]));
 				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Level of " << clause[l] << " is " << lvl);
@@ -159,8 +199,7 @@ void MCSATMixin::updateCurrentLevel(carl::Variable var) {
 			cit++;
 			continue;
 		}
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Associating " << *cit << " with " << var);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current level is " << level());
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Associating " << *cit << " with " << var << " at " << level());
 		mClauseLevelMap[*cit] = mCurrentLevel;
 		current().univariateClauses.push_back(*cit);
 		cit = mUndecidedClauses.erase(cit);
@@ -176,8 +215,7 @@ void MCSATMixin::updateCurrentLevel(carl::Variable var) {
 			vit++;
 			continue;
 		}
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Associating " << *vit << " with " << var);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current level is " << mCurrentLevel);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Associating " << *vit << " with " << var << " at " << mCurrentLevel);
 		setVariableLevel(*vit, mCurrentLevel);
 		current().univariateVariables.push_back(*vit);
 		vit = mUndecidedVariables.erase(vit);
