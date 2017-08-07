@@ -123,6 +123,7 @@ public:
 				mCADConstraints.add(f.constraint());
 			} else if (f.getType() == carl::FormulaType::VARCOMPARE) {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << f);
+				mCADConstraints.add(ConstraintT(f.variableComparison().definingPolynomial(), carl::Relation::GEQ));
 			} else if (f.getType() == carl::FormulaType::VARASSIGN) {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding assignment " << f);
 			} else {
@@ -156,11 +157,11 @@ public:
 		FormulasT res;
 		for (const auto& e: expl) {
 			for (const auto& f: e) {
-				if (f.getType() == carl::FormulaType::VARCOMPARE) {
-					res.emplace_back(f.variableComparison().invertRelation());
-				} else {
+				//if (f.getType() == carl::FormulaType::VARCOMPARE) {
+				//	res.emplace_back(f.variableComparison().invertRelation());
+				//} else {
 					res.emplace_back(f.negated());
-				}
+				//}
 			}
 		}
 		//std::cout << res << " => " << f << std::endl;
