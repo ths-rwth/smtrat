@@ -1701,7 +1701,7 @@ namespace smtrat
 	                #ifdef DEBUG_SATMODULE_LEMMA_HANDLING
 	                std::cout << "add to mLemmas:" << add_tmp << std::endl;
 	                #endif
-                        SMTRAT_LOG_DEBUG("smtrat.sat", "add_lemma = " << add_tmp);
+                    SMTRAT_LOG_DEBUG("smtrat.sat", "add_lemma = " << add_tmp);
 	                mLemmas.push();
 	                add_tmp.copyTo( mLemmas.last() );
 	                mLemmasRemovable.push( _type != NORMAL_CLAUSE );
@@ -1837,6 +1837,21 @@ namespace smtrat
 			mLemmas.pop();
 			mLemmasRemovable.pop();
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Processing lemma " << lemma);
+			
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Checking for existing clause " << lemma);
+			std::size_t dups = 0;
+			for (int i = 0; i < learnts.size(); i++) {
+				const auto& c = ca[learnts[i]];
+				if (lemma.size() != c.size()) continue;
+				bool different = false;
+				for (int j = 0; j < lemma.size(); j++) {
+					different = different || (c[j] != lemma[j]);
+				}
+				if (!different) dups++;
+			}
+			if (dups > 1) std::exit(91);
+			assert(dups <= 1);
+			
 			if (lemma.size() == 0) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is trivial conflict, ok = false");
 				ok = false;
@@ -2712,7 +2727,7 @@ namespace smtrat
                             const auto& res = boost::get<FormulaT>(lit);
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Got a theory propagation " << res);
 							int count_not_to_false_evaluated_literals = 0;
-                            for (const auto& c: res) {
+                            for (const auto& c: (res.isNary() ? res.subformulas() : FormulasT({res}))) {
                                     Minisat::Lit l = createLiteral(c);
                                     explanation.push(l);
                                     if (value(l) == l_Undef) {
@@ -2763,14 +2778,15 @@ namespace smtrat
 							SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << mMCSAT.level());
 							// Todo: backtrack to last relevant theory decision, not last one
 							std::size_t level = mMCSAT.penultimateTheoryLevel(res);
-							if (level != 0) {
-								Lit lastTheoryDecision = mMCSAT.get(level).decisionLiteral;
-								if (lastTheoryDecision != lit_Undef) {
-									int level = vardata[var(lastTheoryDecision)].level-1;
-									SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking " << lastTheoryDecision << ", to level " << level);
-									cancelUntil(level);
-								}
-							}
+							cancelUntil(int(level));
+							//if (level != 0) {
+							//	Lit lastTheoryDecision = mMCSAT.get(level).decisionLiteral;
+							//	if (lastTheoryDecision != lit_Undef) {
+							//		int level = vardata[var(lastTheoryDecision)].level-1;
+							//		SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking " << lastTheoryDecision << ", to level " << level);
+							//		cancelUntil(level);
+							//	}
+							//}
 							vec<Lit> explanation;
 							for (const auto& c: (res.isNary() ? res.subformulas() : FormulasT({res}))) {
 								SMTRAT_LOG_DEBUG("smtrat.sat", "Adding " << c);
