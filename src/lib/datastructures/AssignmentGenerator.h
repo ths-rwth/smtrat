@@ -21,10 +21,8 @@ private:
 	std::map<RAN, std::size_t> mMap;
 	std::vector<RAN> mSamples;
 public:	
-	void add(const std::list<RAN>& list) {
-		for (const auto& l: list) {
-			mRoots.emplace_back(l);
-		}
+	void add(const std::vector<RAN>& list) {
+		mRoots.insert(mRoots.end(), list.begin(), list.end());
 	}
 	void process() {
 		std::sort(mRoots.begin(), mRoots.end());
@@ -138,7 +136,7 @@ public:
 	bool hasAssignment(carl::Variable v) {
 		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Assignment for " << v);
 		RootIndexer ri;
-		std::map<ConstraintT, std::pair<std::list<RAN>, ConstraintT>> rootMap;
+		std::map<ConstraintT, std::pair<std::vector<RAN>, ConstraintT>> rootMap;
 		for (const auto& c: mConstraints) {
 			if (!isUnivariate(c, v)) continue;
 			ConstraintT cnew(carl::model::substitute(c.lhs(), mModel), c.relation());
