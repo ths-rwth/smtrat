@@ -23,9 +23,13 @@ using carl::operator<<;
 struct InformationGetter {
 	std::function<Minisat::lbool(Minisat::Var)> getVarValue;
 	std::function<Minisat::lbool(Minisat::Lit)> getLitValue;
+	std::function<int(Minisat::Var)> getDecisionLevel;
 	std::function<const Minisat::Clause&(Minisat::CRef)> getClause;
 	std::function<const Minisat::vec<Minisat::CRef>&()> getClauses;
+	std::function<const Minisat::vec<Minisat::CRef>&()> getLearntClauses;
 	std::function<bool(Minisat::Var)> isTheoryAbstraction;
+	std::function<bool(const FormulaT&)> isAbstractedFormula;
+	std::function<Minisat::Var(const FormulaT&)> abstractVariable;
 	std::function<const FormulaT&(Minisat::Var)> reabstractVariable;
 	std::function<const FormulaT&(Minisat::Lit)> reabstractLiteral;
 	std::function<const Minisat::vec<Minisat::Watcher>&(Minisat::Lit)> getWatches;
@@ -89,12 +93,12 @@ private:
 
 	/// Store the level of a variable in mVariableLevelMap
 	void setVariableLevel(Minisat::Var var, std::size_t level) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "level(" << var << ") = " << level);
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "level(" << var << ") = " << level);
 		if (std::size_t(var) >= mVariableLevelMap.size()) {
 			mVariableLevelMap.insert(mVariableLevelMap.end(), std::size_t(var) - mVariableLevelMap.size() + 1, 0);
 		}
 		mVariableLevelMap[std::size_t(var)] = level;
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << mVariableLevelMap);
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "-> " << mVariableLevelMap);
 	}
 public:
 	
@@ -103,9 +107,13 @@ public:
 		mGetter({
 			[&baseModule](Minisat::Var v){ return baseModule.value(v); },
 			[&baseModule](Minisat::Lit l){ return baseModule.value(l); },
+			[&baseModule](Minisat::Var v){ return baseModule.vardata[v].level; },
 			[&baseModule](Minisat::CRef c) -> const auto& { return baseModule.ca[c]; },
 			[&baseModule]() -> const auto& { return baseModule.clauses; },
+			[&baseModule]() -> const auto& { return baseModule.learnts; },
 			[&baseModule](Minisat::Var v){ return (baseModule.mBooleanConstraintMap.size() > v) && (baseModule.mBooleanConstraintMap[v].first != nullptr); },
+			[&baseModule](const FormulaT& f) { return baseModule.mConstraintLiteralMap.count(f) > 0; },
+			[&baseModule](const FormulaT& f) { return var(baseModule.mConstraintLiteralMap.at(f).front()); },
 			[&baseModule](Minisat::Var v) -> const auto& { return baseModule.mBooleanConstraintMap[v].first->reabstraction; },
 			[&baseModule](Minisat::Lit l) -> const auto& { return sign(l) ? baseModule.mBooleanConstraintMap[var(l)].second->reabstraction : baseModule.mBooleanConstraintMap[var(l)].first->reabstraction; },
 			[&baseModule](Minisat::Lit l) -> const auto& { return baseModule.watches[l]; }
@@ -254,6 +262,7 @@ public:
 	// ***** Auxliary getter
 	
 	/// Check whether a literal is in a univariate clause, try to change the watch to a non-univariate literal.
+	bool isLiteralInUnivariateClause(Minisat::Lit literal, const Minisat::vec<Minisat::CRef>& clauses);
 	bool isLiteralInUnivariateClause(Minisat::Lit literal);
 	
 	/// Checks whether the given formula is currently univariate
@@ -263,7 +272,45 @@ public:
 	
 	std::size_t computeVariableLevel(Minisat::Var variable) const;
 	
+	/**
+	 * Compute the penultimate relevant decision level for the given formula.
+	 * This is used to determine the level to backtrack to if f is a conflict clause.
+	 * If a literal was assigned by boolean decision or propagation, this level is to be used.
+	 */
 	std::size_t penultimateTheoryLevel(const FormulaT& f) const {
+		const auto& formulas = f.isNary() ? f.subformulas() : FormulasT({f});
+		std::vector<std::size_t> levels;
+		for (const auto& formula: formulas) {
+			// Figure out whether formula is false from boolean or theory assignment 
+			boost::optional<Minisat::Var> decisionVar;
+			if (mGetter.isAbstractedFormula(formula)) {
+				auto minisatvar = mGetter.abstractVariable(formula);
+				if (mGetter.getVarValue(minisatvar) != l_Undef) {
+					decisionVar = minisatvar;
+				}
+			}
+			if (decisionVar) {
+				levels.push_back(mGetter.getDecisionLevel(*decisionVar) - 1);
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", formula << " becomes unassigned at " << levels.back());
+			} else {
+				carl::Variables vars;
+				formula.arithmeticVars(vars);
+				for (std::size_t lvl = level()-1; lvl > 0; lvl--) {
+					if (vars.find(get(lvl).variable) != vars.end()) {
+						Minisat::Lit declit = get(lvl).decisionLiteral;
+						if (declit != Minisat::lit_Undef) {
+							levels.push_back(mGetter.getDecisionLevel(var(declit)) - 1);
+							SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", formula << " becomes unassigned at " << levels.back());
+						}
+					}
+				}
+			}
+		}
+		
+		auto res = *std::max_element(levels.begin(), levels.end());
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> returning " << res);
+		return res;
+		
 		carl::Variables vars;
 		f.arithmeticVars(vars);
 		assert(vars.find(current().variable) != vars.end());
