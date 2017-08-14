@@ -3260,7 +3260,7 @@ namespace smtrat
         //
         int i, j;
         out_learnt.copyTo( analyze_toclear );
-        if( ccmin_mode == 2 )
+        if( !Settings::mc_sat && ccmin_mode == 2 )
         {
             uint32_t abstract_level = 0;
             for( i = 1; i < out_learnt.size(); i++ )
@@ -3271,7 +3271,7 @@ namespace smtrat
                     out_learnt[j++] = out_learnt[i];
 
         }
-        else if( ccmin_mode == 1 )
+        else if( !Settings::mc_sat && ccmin_mode == 1 )
         {
             for( i = j = 1; i < out_learnt.size(); i++ )
             {
