@@ -2713,20 +2713,20 @@ namespace smtrat
                             vec<Lit> explanation;
                             const auto& res = boost::get<FormulaT>(lit);
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Got a theory propagation " << res);
-							int count_not_to_false_evaluated_literals = 0;
+							//int count_not_to_false_evaluated_literals = 0;
                             for (const auto& c: (res.isNary() ? res.subformulas() : FormulasT({res}))) {
                                     Minisat::Lit l = createLiteral(c);
                                     explanation.push(l);
-                                    if (value(l) == l_Undef) {
-                                        // We can not assume that evaluateLiteral(l) == l_False
-                                        if(mMCSAT.evaluateLiteral(l) == l_False) {
-                                            uncheckedEnqueue(neg(l), CRef_TPropagation);
-				                            SMTRAT_LOG_DEBUG("smtrat.sat", "Setting " << l << " to false due to theory");
-                                        } else {
-                                            count_not_to_false_evaluated_literals++;
-                                        }
-                                    }
-                                    assert(count_not_to_false_evaluated_literals <= 1);
+                                    //if (value(l) == l_Undef) {
+                                    //    // We can not assume that evaluateLiteral(l) == l_False
+                                    //    if(mMCSAT.evaluateLiteral(l) == l_False) {
+                                    //        uncheckedEnqueue(neg(l), CRef_TPropagation);
+				                    //        SMTRAT_LOG_DEBUG("smtrat.sat", "Setting " << l << " to false due to theory");
+                                    //    } else {
+                                    //        count_not_to_false_evaluated_literals++;
+                                    //    }
+                                    //}
+                                    //assert(count_not_to_false_evaluated_literals <= 1);
                             }
                             SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
                             // Add it, the next propagation will find it...
