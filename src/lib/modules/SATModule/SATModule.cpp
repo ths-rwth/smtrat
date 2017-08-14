@@ -3312,26 +3312,31 @@ namespace smtrat
             out_btlevel = 0;
         else
         {
-            int max_i = 1;
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Figuring out level to backtrack to for " << out_learnt);
+            int max_i = 0;
+			int max_lvl = 0;
             // Find the first literal assigned at the next-highest level:
-            for( int i = 2; i < out_learnt.size(); i++ ) {
+            for( int i = 1; i < out_learnt.size(); i++ ) {
                 int currentLitLevel;
                 if (reason(var(out_learnt[i])) == CRef_TPropagation) {
                     const FormulaT& f = mBooleanConstraintMap[var(out_learnt[i])].first->reabstraction;
-                    std::size_t lvl = mMCSAT.penultimateTheoryLevel(f);
-                    Minisat::Lit lit = mMCSAT.get(lvl).decisionLiteral;
-                    currentLitLevel = level(var(lit));
+                    currentLitLevel = mMCSAT.penultimateTheoryLevel(f);
                 } else {
                     currentLitLevel = level(var(out_learnt[i]));
                 }
-                if (currentLitLevel > level(var(out_learnt[max_i])))
-                    max_i = i;
+				SMTRAT_LOG_DEBUG("smtrat.sat", out_learnt[i] << " gets unassigned at " << currentLitLevel);
+                if (currentLitLevel > max_lvl) {
+					max_i = i;
+					max_lvl = currentLitLevel;
+				}
 			}
+			SMTRAT_LOG_DEBUG("smtrat.sat", out_learnt[max_i] << " is max-level literal at " << max_lvl);
             // Swap-in this literal at index 1:
             Lit p             = out_learnt[max_i];
             out_learnt[max_i] = out_learnt[1];
             out_learnt[1]     = p;
-            out_btlevel       = level( var( p ) );
+            out_btlevel       = max_lvl;
+			SMTRAT_LOG_DEBUG("smtrat.sat", "-> " << out_btlevel << " (" << out_learnt << ")");
         }
 
         for( int j = 0; j < analyze_toclear.size(); j++ )
