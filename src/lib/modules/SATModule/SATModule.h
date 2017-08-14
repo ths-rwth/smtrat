@@ -860,6 +860,8 @@ namespace smtrat
 			inline Minisat::lbool valueAndUpdate( Minisat::Var x )
             {
 				if (assigns[x] == l_Undef) {
+					if (mBooleanConstraintMap.size() <= x) return l_Undef;
+					if (mBooleanConstraintMap[x].first == nullptr) return l_Undef;
 					Minisat::lbool res = mMCSAT.evaluateLiteral(Minisat::mkLit(x, false));
                     /// TODO: Reason should be computed by explain(), not Undef
 					if (res == l_True) uncheckedEnqueue(Minisat::mkLit(x, false), Minisat::CRef_TPropagation);
