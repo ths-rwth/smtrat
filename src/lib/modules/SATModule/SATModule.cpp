@@ -2873,6 +2873,12 @@ namespace smtrat
             cancelUntil( backtrack_level );
         }
 		
+		if (Settings::mc_sat) {
+			for (int i = 0; i < learnt_clause.size(); i++) {
+				valueAndUpdate(learnt_clause[i]);
+			}
+		}
+		
 		if (false && Settings::mc_sat) {
 			while (true) {
 				bool isConflicting = true;
