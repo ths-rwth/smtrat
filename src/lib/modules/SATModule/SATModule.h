@@ -862,8 +862,8 @@ namespace smtrat
 				if (assigns[x] == l_Undef) {
 					Minisat::lbool res = mMCSAT.evaluateLiteral(Minisat::mkLit(x, false));
                     /// TODO: Reason should be computed by explain(), not Undef
-					if (res == l_True) uncheckedEnqueue(Minisat::mkLit(x, false), Minisat::CRef_Undef);
-					else if (res == l_False) uncheckedEnqueue(Minisat::mkLit(x, true), Minisat::CRef_Undef);
+					if (res == l_True) uncheckedEnqueue(Minisat::mkLit(x, false), Minisat::CRef_TPropagation);
+					else if (res == l_False) uncheckedEnqueue(Minisat::mkLit(x, true), Minisat::CRef_TPropagation);
 				}
 				SMTRAT_LOG_DEBUG("smtrat.sat", x << " -> " << assigns[x]);
                 return assigns[x];
