@@ -3199,60 +3199,62 @@ namespace smtrat
 			
 			if (confl == CRef_Undef) std::exit(77);
             assert( confl != CRef_Undef );    // (otherwise should be UIP)
-            Clause& c = ca[confl];
-			SMTRAT_LOG_DEBUG("smtrat.sat", "c = " << c);
-            if( c.learnt() )
-                claBumpActivity( c );
+			if (confl == CRef_TPropagation) {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Found " << p << " to be result of theory propagation.");
+				// if is theory propagation: 
+				if (!seen[var( p )]) {
+					SMTRAT_LOG_DEBUG("smtrat.sat", "pushing " << ~p << " to out_learnt as a theory propagation");
+					out_learnt.push(~p);
+					pathC++;
+				}
+			}  else {
+	            Clause& c = ca[confl];
+				SMTRAT_LOG_DEBUG("smtrat.sat", "c = " << c);
+	            if( c.learnt() )
+	                claBumpActivity( c );
 
-			// assert that c[0] is actually p
-            for( int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++ )
-            {
-                Lit q = c[j];
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Looking at " << q);
-                
-                if( !seen[var( q )] && level( var( q ) ) > 0 )
-                {
-					SMTRAT_LOG_DEBUG("smtrat.sat", "Not seen yet, level = " << level(var(q)));
-                    varBumpActivity( var( q ) );
-                    seen[var( q )] = 1;
-					if (Settings::mc_sat && reason(var(q)) == CRef_TPropagation) {
-						// TODO
-						// if is theory propagation: 
-                                                    SMTRAT_LOG_DEBUG("smtrat.sat", "pushing = " << q << " to out_learnt");
-                                                    out_learnt.push(q);
-					} else {
-	                    if( level( var( q ) ) >= decisionLevel() ) {
+				// assert that c[0] is actually p
+	            for( int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++ )
+	            {
+	                Lit q = c[j];
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking at literal " << q);
+	                
+	                if( !seen[var( q )] && level( var( q ) ) > 0 )
+	                {
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Not seen yet, level = " << level(var(q)));
+	                    varBumpActivity( var( q ) );
+						seen[var( q )] = 1;
+						if (Settings::mc_sat && reason(var(q)) == CRef_TPropagation) {
 							pathC++;
-							SMTRAT_LOG_DEBUG("smtrat.sat", "pathC = " << pathC << " for " << q);
+							SMTRAT_LOG_DEBUG("smtrat.sat", "To process: "  << q << ", pathC = " << pathC);
+						} else {
+		                    if( level( var( q ) ) >= decisionLevel() ) {
+								pathC++;
+								SMTRAT_LOG_DEBUG("smtrat.sat", "To process: "  << q << ", pathC = " << pathC);
+							}
+		                    else {
+								SMTRAT_LOG_DEBUG("smtrat.sat", "pushing = " << q << " to out_learnt");
+		                        out_learnt.push( q );
+							}
 						}
-	                    else {
-							SMTRAT_LOG_DEBUG("smtrat.sat", "pushing = " << q << " to out_learnt");
-	                        out_learnt.push( q );
-						}
-					}
-                }
-            }
+	                }
+	            }
+			}
 
             // Select next clause to look at:
             while( !seen[var( trail[index--] )] );
             p              = trail[index + 1];
             confl          = reason( var( p ) );
-			SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking over " << p << " with reason " << confl);
+			if (Settings::mc_sat && confl == CRef_Undef) break;
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking " << p << " with reason " << confl);
             seen[var( p )] = 0;
             pathC--;
-			SMTRAT_LOG_DEBUG("smtrat.sat", "pathC = " << pathC);
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Still on highest DL, pathC = " << pathC);
             ++resolutionSteps;
         }
         while( pathC > 0 );
-		if (Settings::mc_sat && reason(var(p)) == CRef_TPropagation) {
-			// Reason for p was a theory propagation, do not insert
-			out_learnt[0] = out_learnt[out_learnt.size()-1];
-			out_learnt.shrink(out_learnt.size()-1);
-			sort(out_learnt, lemma_lt(*this));
-		} else {
-			// Do regular insertion
-			out_learnt[0] = ~p;
-		}
+	
+		out_learnt[0] = ~p;
 		
 		SMTRAT_LOG_DEBUG("smtrat.sat", "Learning clause " << out_learnt);
 
