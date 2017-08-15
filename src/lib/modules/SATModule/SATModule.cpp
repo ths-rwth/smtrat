@@ -3262,6 +3262,10 @@ namespace smtrat
 	
 		out_learnt[0] = ~p;
 		
+		if (Settings::mc_sat) {
+			sort(out_learnt, lemma_lt(*this));
+		}
+		
 		SMTRAT_LOG_DEBUG("smtrat.sat", "Learning clause " << out_learnt);
 
         // Simplify conflict clause:
