@@ -251,7 +251,17 @@ namespace smtrat
                   if (y_value == l_Undef) return false;
                   // Literals of the same value are sorted by decreasing levels
                   if (x_value == y_value) {
-                    return solver.trailIndex(var(x)) > solver.trailIndex(var(y));
+					  int xid = solver.trailIndex(var(x));
+					  int yid = solver.trailIndex(var(y));
+					  if (Settings::mc_sat && solver.reason(var(x)) == Minisat::CRef_TPropagation) {
+						  const FormulaT& f = solver.mBooleanConstraintMap[var(x)].first->reabstraction;
+	                      xid = solver.mMCSAT.penultimateTheoryLevel(f);
+					  }
+					  if (Settings::mc_sat && solver.reason(var(y)) == Minisat::CRef_TPropagation) {
+						  const FormulaT& f = solver.mBooleanConstraintMap[var(y)].first->reabstraction;
+	                      yid = solver.mMCSAT.penultimateTheoryLevel(f);
+					  }
+                    return xid > yid;
                   } else {
                     // True literals go up front
                     if (x_value == l_True) {
