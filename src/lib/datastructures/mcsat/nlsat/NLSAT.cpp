@@ -114,21 +114,26 @@ AssignmentFinder::AssignmentOrConflict NLSAT::findAssignment(carl::Variable var)
         FormulasT conflict;
 	for (const auto& c: mConstraints) {
 		if (c.getType() == carl::FormulaType::NOT) {
+			std::exit(29);
 			const auto& constraint = c.subformula().constraint();
-                        if(!af.addConstraint(FormulaT(constraint.lhs(), carl::invertRelation(constraint.relation())))) {
-                            conflict.push_back(FormulaT(constraint.lhs(), carl::invertRelation(constraint.relation())));
-                            SMTRAT_LOG_DEBUG("smtrat.nlsat", "No Assignment, built conflicting core " << conflict << " under model " << mModel);
-                            return conflict;
-                        }
+			if(!af.addConstraint(FormulaT(constraint.lhs(), carl::invertRelation(constraint.relation())))) {
+				conflict.push_back(FormulaT(constraint.lhs(), carl::invertRelation(constraint.relation())));
+				SMTRAT_LOG_DEBUG("smtrat.nlsat", "No Assignment, built conflicting core " << conflict << " under model " << mModel);
+				return conflict;
+			}
 		} else {
+			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding Constraint " << c);
 			if(!af.addConstraint(c)){
-                            conflict.push_back(c);
-                            SMTRAT_LOG_DEBUG("smtrat.nlsat", "No Assignment, built conflicting core " << conflict << " under model " << mModel);
-                            return conflict;
-                        }
+				conflict.push_back(c);
+				SMTRAT_LOG_DEBUG("smtrat.nlsat", "No Assignment, built conflicting core " << conflict << " under model " << mModel);
+				return conflict;
+			}
 		}
 	}
-	for (const auto& b: mMVBounds) af.addMVBound(b);
+	for (const auto& b: mMVBounds) {
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding MVBound " << b);
+		af.addMVBound(b);
+	}
 	SMTRAT_LOG_DEBUG("smtrat.nlsat", "Calling AssignmentFinder...");
 	return af.findAssignment();
 }
