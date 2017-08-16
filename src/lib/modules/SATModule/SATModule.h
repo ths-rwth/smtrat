@@ -254,12 +254,10 @@ namespace smtrat
 					  int xid = solver.trailIndex(var(x));
 					  int yid = solver.trailIndex(var(y));
 					  if (Settings::mc_sat && solver.reason(var(x)) == Minisat::CRef_TPropagation) {
-						  const FormulaT& f = solver.mBooleanConstraintMap[var(x)].first->reabstraction;
-	                      xid = solver.mMCSAT.penultimateTheoryLevel(f);
+	                      xid = solver.mMCSAT.computeVariableLevel(var(x));
 					  }
 					  if (Settings::mc_sat && solver.reason(var(y)) == Minisat::CRef_TPropagation) {
-						  const FormulaT& f = solver.mBooleanConstraintMap[var(y)].first->reabstraction;
-	                      yid = solver.mMCSAT.penultimateTheoryLevel(f);
+	                      yid = solver.mMCSAT.computeVariableLevel(var(y));
 					  }
                     return xid > yid;
                   } else {
