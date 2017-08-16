@@ -362,7 +362,7 @@ bool MCSATMixin::isFormulaUnivariate(const FormulaT& formula, std::size_t level)
 		vars.erase(get(lvl).variable);
 		
 	}
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking if " << formula << " is univariate on level " << level << ": " << vars.empty());
+	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Checking if " << formula << " is univariate on level " << level << ": " << vars.empty());
 	return vars.empty();
 }
 

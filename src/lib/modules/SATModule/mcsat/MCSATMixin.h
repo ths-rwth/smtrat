@@ -293,18 +293,19 @@ public:
 					decisionVar = minisatvar;
 				}
 			}
-			if (decisionVar) {
+			if (decisionVar && mGetter.getReason(*decisionVar) != Minisat::CRef_TPropagation) {
 				levels.push_back(mGetter.getDecisionLevel(*decisionVar) - 1);
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", formula << " becomes unassigned at " << levels.back());
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", formula << " becomes unassigned from boolean assignment at " << levels.back());
 			} else {
 				carl::Variables vars;
 				formula.arithmeticVars(vars);
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", formula << " contains " << vars);
 				for (std::size_t lvl = level()-1; lvl > 0; lvl--) {
 					if (vars.find(get(lvl).variable) != vars.end()) {
 						Minisat::Lit declit = get(lvl).decisionLiteral;
 						if (declit != Minisat::lit_Undef) {
 							levels.push_back(mGetter.getDecisionLevel(var(declit)) - 1);
-							SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", formula << " becomes unassigned at " << levels.back());
+							SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", formula << " becomes unassigned from theory assignment at " << levels.back());
 						}
 					}
 				}
