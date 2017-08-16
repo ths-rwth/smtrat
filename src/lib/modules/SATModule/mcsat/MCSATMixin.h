@@ -24,6 +24,7 @@ struct InformationGetter {
 	std::function<Minisat::lbool(Minisat::Var)> getVarValue;
 	std::function<Minisat::lbool(Minisat::Lit)> getLitValue;
 	std::function<int(Minisat::Var)> getDecisionLevel;
+	std::function<Minisat::CRef(Minisat::Var)> getReason;
 	std::function<const Minisat::Clause&(Minisat::CRef)> getClause;
 	std::function<const Minisat::vec<Minisat::CRef>&()> getClauses;
 	std::function<const Minisat::vec<Minisat::CRef>&()> getLearntClauses;
@@ -103,11 +104,12 @@ private:
 public:
 	
 	template<typename BaseModule>
-	MCSATMixin(const BaseModule& baseModule):
+	MCSATMixin(BaseModule& baseModule):
 		mGetter({
 			[&baseModule](Minisat::Var v){ return baseModule.value(v); },
 			[&baseModule](Minisat::Lit l){ return baseModule.value(l); },
 			[&baseModule](Minisat::Var v){ return baseModule.vardata[v].level; },
+			[&baseModule](Minisat::Var v){ return baseModule.reason(v); },
 			[&baseModule](Minisat::CRef c) -> const auto& { return baseModule.ca[c]; },
 			[&baseModule]() -> const auto& { return baseModule.clauses; },
 			[&baseModule]() -> const auto& { return baseModule.learnts; },
