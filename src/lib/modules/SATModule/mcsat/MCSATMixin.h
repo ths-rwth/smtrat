@@ -275,6 +275,16 @@ public:
 	}
 	
 	std::size_t computeVariableLevel(Minisat::Var variable) const;
+	std::size_t TL2DL(std::size_t level) const {
+		if (level >= mTheoryStack.size()) {
+			return std::numeric_limits<std::size_t>::max();
+		}
+		Minisat::Lit lit = get(level).decisionLiteral;
+		if (lit == Minisat::lit_Undef) {
+			return std::numeric_limits<std::size_t>::max();
+		}
+		return mGetter.getDecisionLevel(var(lit));
+	}
 	
 	/**
 	 * Compute the penultimate relevant decision level for the given formula.
