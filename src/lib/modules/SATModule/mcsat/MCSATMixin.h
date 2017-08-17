@@ -307,17 +307,17 @@ public:
 			}
 			if (decisionVar && mGetter.getReason(*decisionVar) != Minisat::CRef_TPropagation) {
 				levels.push_back(mGetter.getDecisionLevel(*decisionVar) - 1);
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", formula << " becomes unassigned from boolean assignment at " << levels.back());
+				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", formula << " becomes unassigned from boolean assignment at " << levels.back());
 			} else {
 				carl::Variables vars;
 				formula.arithmeticVars(vars);
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", formula << " contains " << vars);
+				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", formula << " contains " << vars);
 				for (std::size_t lvl = level()-1; lvl > 0; lvl--) {
 					if (vars.find(get(lvl).variable) != vars.end()) {
 						Minisat::Lit declit = get(lvl).decisionLiteral;
 						if (declit != Minisat::lit_Undef) {
 							levels.push_back(mGetter.getDecisionLevel(var(declit)) - 1);
-							SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", formula << " becomes unassigned from theory assignment at " << levels.back());
+							SMTRAT_LOG_TRACE("smtrat.sat.mcsat", formula << " becomes unassigned from theory assignment at " << levels.back());
 						}
 					}
 				}
@@ -325,7 +325,7 @@ public:
 		}
 		
 		auto res = *std::max_element(levels.begin(), levels.end());
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> returning " << res);
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "-> returning " << res);
 		return res;
 		
 		carl::Variables vars;

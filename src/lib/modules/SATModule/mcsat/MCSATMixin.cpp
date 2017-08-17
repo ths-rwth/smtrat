@@ -5,7 +5,7 @@ namespace mcsat {
 
 void MCSATMixin::makeDecision(Minisat::Lit decisionLiteral) {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Made theory decision for " << current().variable << ": " << decisionLiteral);
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Variables: " << mVariables);
+	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Variables: " << mVariables);
 	current().decisionLiteral = decisionLiteral;
 	mVariables.assign(current().variable);
 }
@@ -200,7 +200,7 @@ bool MCSATMixin::isLiteralInUnivariateClause(Minisat::Lit literal) {
 
 
 void MCSATMixin::updateCurrentLevel(carl::Variable var) {
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Updating current level for " << var);
+	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Updating current level for " << var);
 	assert(mCurrentLevel <= mTheoryStack.size());
 	if (mCurrentLevel == mTheoryStack.size()) {
 		mTheoryStack.emplace_back();
@@ -210,7 +210,7 @@ void MCSATMixin::updateCurrentLevel(carl::Variable var) {
 	}
 	
 	// Check undecided clauses whether they became univariate
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Undecided clauses: " << mUndecidedClauses);
+	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Undecided clauses: " << mUndecidedClauses);
 	for (auto cit = mUndecidedClauses.begin(); cit != mUndecidedClauses.end();) {
 		if (!isClauseUnivariate(*cit, mCurrentLevel)) {
 			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Skipping " << *cit << ": not univariate");
@@ -222,10 +222,10 @@ void MCSATMixin::updateCurrentLevel(carl::Variable var) {
 		current().univariateClauses.push_back(*cit);
 		cit = mUndecidedClauses.erase(cit);
 	}
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << mUndecidedClauses);
+	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "-> " << mUndecidedClauses);
 	
 	// Check undecided variables whether they became univariate
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Undecided Variables: " << mUndecidedVariables);
+	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Undecided Variables: " << mUndecidedVariables);
 	for (auto vit = mUndecidedVariables.begin(); vit != mUndecidedVariables.end();) {
 		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Looking at " << *vit);
 		std::size_t level = computeVariableLevel(*vit);
@@ -238,7 +238,7 @@ void MCSATMixin::updateCurrentLevel(carl::Variable var) {
 		current().univariateVariables.push_back(*vit);
 		vit = mUndecidedVariables.erase(vit);
 	}
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << mUndecidedVariables);
+	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "-> " << mUndecidedVariables);
 }
 
 void MCSATMixin::removeLastLevel() {
