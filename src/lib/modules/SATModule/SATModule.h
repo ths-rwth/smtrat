@@ -255,9 +255,11 @@ namespace smtrat
 					  int yid = solver.trailIndex(var(y));
 					  if (Settings::mc_sat && solver.reason(var(x)) == Minisat::CRef_TPropagation) {
 	                      xid = solver.mMCSAT.computeVariableLevel(var(x));
+						  xid = solver.mMCSAT.TL2DL(xid);
 					  }
 					  if (Settings::mc_sat && solver.reason(var(y)) == Minisat::CRef_TPropagation) {
 	                      yid = solver.mMCSAT.computeVariableLevel(var(y));
+						  yid = solver.mMCSAT.TL2DL(yid);
 					  }
                     return xid > yid;
                   } else {
