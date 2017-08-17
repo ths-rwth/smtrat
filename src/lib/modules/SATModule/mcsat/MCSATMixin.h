@@ -24,6 +24,7 @@ struct InformationGetter {
 	std::function<Minisat::lbool(Minisat::Var)> getVarValue;
 	std::function<Minisat::lbool(Minisat::Lit)> getLitValue;
 	std::function<int(Minisat::Var)> getDecisionLevel;
+	std::function<int(Minisat::Var)> getTrailIndex;
 	std::function<Minisat::CRef(Minisat::Var)> getReason;
 	std::function<const Minisat::Clause&(Minisat::CRef)> getClause;
 	std::function<const Minisat::vec<Minisat::CRef>&()> getClauses;
@@ -109,6 +110,7 @@ public:
 			[&baseModule](Minisat::Var v){ return baseModule.value(v); },
 			[&baseModule](Minisat::Lit l){ return baseModule.value(l); },
 			[&baseModule](Minisat::Var v){ return baseModule.vardata[v].level; },
+			[&baseModule](Minisat::Var v){ return baseModule.vardata[v].mTrailIndex; },
 			[&baseModule](Minisat::Var v){ return baseModule.reason(v); },
 			[&baseModule](Minisat::CRef c) -> const auto& { return baseModule.ca[c]; },
 			[&baseModule]() -> const auto& { return baseModule.clauses; },
@@ -283,7 +285,7 @@ public:
 		if (lit == Minisat::lit_Undef) {
 			return std::numeric_limits<std::size_t>::max();
 		}
-		return mGetter.getDecisionLevel(var(lit));
+		return mGetter.getTrailIndex(var(lit));
 	}
 	
 	/**

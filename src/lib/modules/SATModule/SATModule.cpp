@@ -3260,13 +3260,18 @@ namespace smtrat
         }
         while( pathC > 0 );
 	
-		out_learnt[0] = ~p;
+		if (!seen[var(p)]) {
+			out_learnt[0] = ~p;
+		} else {
+			out_learnt[0] = out_learnt.last();
+			out_learnt.pop();
+		}
 		
+		SMTRAT_LOG_DEBUG("smtrat.sat", "Before sorting " << out_learnt);
 		if (Settings::mc_sat) {
 			sort(out_learnt, lemma_lt(*this));
 		}
-		
-		SMTRAT_LOG_DEBUG("smtrat.sat", "Learning clause " << out_learnt);
+		SMTRAT_LOG_DEBUG("smtrat.sat", "After sorting " << out_learnt);
 
         // Simplify conflict clause:
         //
