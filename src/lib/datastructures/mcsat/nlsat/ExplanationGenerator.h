@@ -123,7 +123,7 @@ public:
 				mCADConstraints.add(f.constraint());
 			} else if (f.getType() == carl::FormulaType::VARCOMPARE) {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << f);
-				mCADConstraints.add(ConstraintT(f.variableComparison().definingPolynomial(), carl::Relation::GEQ));
+				mCADConstraints.add(ConstraintT(f.variableComparison().definingPolynomial(), f.variableComparison().relation()));
 			} else if (f.getType() == carl::FormulaType::VARASSIGN) {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding assignment " << f);
 			} else {

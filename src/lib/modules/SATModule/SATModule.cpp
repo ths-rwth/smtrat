@@ -3260,12 +3260,7 @@ namespace smtrat
         }
         while( pathC > 0 );
 	
-		if (!seen[var(p)]) {
-			out_learnt[0] = ~p;
-		} else {
-			out_learnt[0] = out_learnt.last();
-			out_learnt.pop();
-		}
+		out_learnt[0] = ~p;
 		
 		SMTRAT_LOG_DEBUG("smtrat.sat", "Before sorting " << out_learnt);
 		if (Settings::mc_sat) {
