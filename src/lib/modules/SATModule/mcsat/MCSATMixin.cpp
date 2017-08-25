@@ -16,9 +16,9 @@ bool MCSATMixin::backtrackTo(Minisat::Lit literal) {
 		if (get(level).decisionLiteral == literal) break;
 		level--;
 	}
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Backtracking until " << literal << " on level " << level);
+	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Backtracking until " << literal << " on level " << level);
 	if (level == 0 || level == mCurrentLevel) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Nothing to backtrack for " << literal);
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Nothing to backtrack for " << literal);
 		return false;
 	}
 	
@@ -37,7 +37,7 @@ bool MCSATMixin::backtrackTo(Minisat::Lit literal) {
 
 Minisat::lbool MCSATMixin::evaluateLiteral(Minisat::Lit lit) const {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Evaluate " << lit);
-	FormulaT f = mGetter.reabstractLiteral(lit);
+	const FormulaT& f = mGetter.reabstractLiteral(lit);
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Evaluate " << f << " on " << mNLSAT.getModel());
 	auto res = carl::model::evaluate(f, mNLSAT.getModel());
 	if (res.isBool()) {
@@ -382,7 +382,7 @@ std::size_t MCSATMixin::computeVariableLevel(Minisat::Var variable) const {
 		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Variable " << variable << " is not a theory abstraction, thus on level 0");
 		return 0;
 	}
-	FormulaT f = mGetter.reabstractVariable(variable);
+	const FormulaT& f = mGetter.reabstractVariable(variable);
 	carl::Variables vars;
 	f.arithmeticVars(vars);
 	if (vars.empty()) {
