@@ -20,7 +20,6 @@ private:
 	cad::CADConstraints<ProjectionSettings::backtracking> mCADConstraints;
 	cad::ProjectionT<ProjectionSettings> mProjection;
 	Model mModel;
-	carl::Variable mTmpVar = carl::freshRealVariable("__z");
 	
 	bool isEqual(const RAN& ran, const ModelValue& mv) const {
 		if (mv.isRational()) return ran == RAN(mv.asRational());
@@ -41,18 +40,18 @@ private:
 	}
 	template<typename MV>
 	FormulaT buildEquality(carl::Variable v, const MV& mv) const {
-		SMTRAT_LOG_TRACE("smtrat.nlsat", "building: " << v << " = " << MultivariateRootT(mv.first, mv.second, mTmpVar));
-		return buildFormulaFromVC(VariableComparisonT(v, MultivariateRootT(mv.first, mv.second, mTmpVar), carl::Relation::EQ));
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << v << " = " << MultivariateRootT(mv.first, mv.second));
+		return buildFormulaFromVC(VariableComparisonT(v, MultivariateRootT(mv.first, mv.second), carl::Relation::EQ));
 	}
 	template<typename MV>
 	FormulaT buildBelow(carl::Variable v, const MV& mv) const {
-		SMTRAT_LOG_TRACE("smtrat.nlsat", "building: " << v << " < " << MultivariateRootT(mv.first, mv.second, mTmpVar));
-		return buildFormulaFromVC(VariableComparisonT(v, MultivariateRootT(mv.first, mv.second, mTmpVar), carl::Relation::LESS));
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << v << " < " << MultivariateRootT(mv.first, mv.second));
+		return buildFormulaFromVC(VariableComparisonT(v, MultivariateRootT(mv.first, mv.second), carl::Relation::LESS));
 	}
 	template<typename MV>
 	FormulaT buildAbove(carl::Variable v, const MV& mv) const {
-		SMTRAT_LOG_TRACE("smtrat.nlsat", "building: " << v << " > " << MultivariateRootT(mv.first, mv.second, mTmpVar));
-		return buildFormulaFromVC(VariableComparisonT(v, MultivariateRootT(mv.first, mv.second, mTmpVar), carl::Relation::GREATER));
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << v << " > " << MultivariateRootT(mv.first, mv.second));
+		return buildFormulaFromVC(VariableComparisonT(v, MultivariateRootT(mv.first, mv.second), carl::Relation::GREATER));
 	}
 	
 	void generateBoundsFor(FormulasT& res, carl::Variable var, std::size_t level, const Model& model) const {
@@ -75,7 +74,7 @@ private:
 			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Looking at " << poly << " with roots " << list);
 			std::size_t rootID = 1;
 			for (const auto& root: *list) {
-				auto param = std::make_pair(Poly(carl::UnivariatePolynomial<Poly>(mTmpVar, poly.coefficients())), rootID);
+				auto param = std::make_pair(Poly(carl::UnivariatePolynomial<Poly>(MultivariateRootT::var(), poly.coefficients())), rootID);
 				SMTRAT_LOG_TRACE("smtrat.nlsat", root << " -> " << param);
 				if (root < value) {
 					if (!lower || (root > lower->first)) {
