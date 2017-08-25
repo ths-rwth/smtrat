@@ -277,13 +277,13 @@ public:
 	}
 	
 	std::size_t computeVariableLevel(Minisat::Var variable) const;
-	std::size_t TL2DL(std::size_t level) const {
+	int TL2DL(std::size_t level) const {
 		if (level >= mTheoryStack.size()) {
-			return std::numeric_limits<std::size_t>::max();
+			return std::numeric_limits<int>::max();
 		}
 		Minisat::Lit lit = get(level).decisionLiteral;
 		if (lit == Minisat::lit_Undef) {
-			return std::numeric_limits<std::size_t>::max();
+			return std::numeric_limits<int>::max();
 		}
 		return mGetter.getTrailIndex(var(lit));
 	}
@@ -293,9 +293,9 @@ public:
 	 * This is used to determine the level to backtrack to if f is a conflict clause.
 	 * If a literal was assigned by boolean decision or propagation, this level is to be used.
 	 */
-	std::size_t penultimateTheoryLevel(const FormulaT& f) const {
+	int penultimateTheoryLevel(const FormulaT& f) const {
 		const auto& formulas = f.isNary() ? f.subformulas() : FormulasT({f});
-		std::vector<std::size_t> levels;
+		std::vector<int> levels;
 		for (const auto& formula: formulas) {
 			// Figure out whether formula is false from boolean or theory assignment 
 			boost::optional<Minisat::Var> decisionVar;
@@ -331,7 +331,7 @@ public:
 		carl::Variables vars;
 		f.arithmeticVars(vars);
 		assert(vars.find(current().variable) != vars.end());
-		for (std::size_t lvl = level()-1; lvl > 0; lvl--) {
+		for (int lvl = static_cast<int>(level())-1; lvl > 0; lvl--) {
 			if (vars.find(get(lvl).variable) != vars.end()) {
 				return lvl;
 			}
