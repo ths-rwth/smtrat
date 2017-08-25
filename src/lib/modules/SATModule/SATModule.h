@@ -254,13 +254,14 @@ namespace smtrat
 					  int xid = solver.trailIndex(var(x));
 					  int yid = solver.trailIndex(var(y));
 					  if (Settings::mc_sat && solver.reason(var(x)) == Minisat::CRef_TPropagation) {
-	                      xid = solver.mMCSAT.computeVariableLevel(var(x));
-						  xid = solver.mMCSAT.TL2DL(xid);
+	                      auto lvl = solver.mMCSAT.computeVariableLevel(var(x));
+						  xid = solver.mMCSAT.TL2DL(lvl);
 					  }
 					  if (Settings::mc_sat && solver.reason(var(y)) == Minisat::CRef_TPropagation) {
-	                      yid = solver.mMCSAT.computeVariableLevel(var(y));
-						  yid = solver.mMCSAT.TL2DL(yid);
+	                      auto lvl = solver.mMCSAT.computeVariableLevel(var(y));
+						  yid = solver.mMCSAT.TL2DL(lvl);
 					  }
+					SMTRAT_LOG_TRACE("smtrat.sat", x << " < " << y << "? " << xid << " > " << yid << "?");
                     return xid > yid;
                   } else {
                     // True literals go up front
