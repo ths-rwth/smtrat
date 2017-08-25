@@ -16,7 +16,7 @@ private:
 		static constexpr cad::Backtracking backtracking = cad::Backtracking::ORDERED;
 	};
 
-	std::vector<FormulaT> mConstraints;
+	std::map<FormulaT, ConstraintT> mConstraints;
 	cad::CADConstraints<ProjectionSettings::backtracking> mCADConstraints;
 	cad::ProjectionT<ProjectionSettings> mProjection;
 	Model mModel;
@@ -83,7 +83,7 @@ private:
 					}
 				} else if (root == value) {
 					lower = std::make_pair(root, buildEquality(var, param));
-					upper = lower;
+					upper = *lower;
 					SMTRAT_LOG_TRACE("smtrat.nlsat", "new exact root: " << lower->second);
 				} else {
 					if (!upper || (root < upper->first)) {
@@ -105,7 +105,7 @@ private:
 	}
 public:
 	ExplanationGenerator(const std::vector<FormulaT>& constraints, const std::vector<carl::Variable>& vars, const Model& model):
-		mConstraints(constraints),
+		mConstraints(),
 		mCADConstraints(
 			[&](const auto& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(mProjection.normalize(p), cid, isBound); },
 			[&](const auto& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(mProjection.normalize(p), cid, isBound); }
@@ -116,19 +116,25 @@ public:
 		SMTRAT_LOG_TRACE("smtrat.nlsat", "Reset to " << vars);
 		mCADConstraints.reset(vars);
 		mProjection.reset();
-		for (const auto& f: mConstraints) {
+		std::set<ConstraintT> cons;
+		for (const auto& f: constraints) {
 			if (f.getType() == carl::FormulaType::CONSTRAINT) {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding " << f);
-				mCADConstraints.add(f.constraint());
+				auto it = mConstraints.emplace(f, f.constraint());
+				cons.insert(it.first->second);
 			} else if (f.getType() == carl::FormulaType::VARCOMPARE) {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << f);
-				mCADConstraints.add(ConstraintT(f.variableComparison().definingPolynomial(), f.variableComparison().relation()));
+				auto it = mConstraints.emplace(f, ConstraintT(f.variableComparison().definingPolynomial(), f.variableComparison().relation()));
+				cons.insert(it.first->second);
 			} else if (f.getType() == carl::FormulaType::VARASSIGN) {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding assignment " << f);
 			} else {
 				SMTRAT_LOG_ERROR("smtrat.nlsat", "Unsupported formula type: " << f);
 				assert(false);
 			}
+		}
+		for (const auto& c: cons) {
+			mCADConstraints.add(c);
 		}
 		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Projection is" << std::endl << mProjection);
 	}
@@ -144,8 +150,8 @@ public:
 			m.emplace(var, mModel.evaluated(var));
 		}
 		for (const auto& c: mConstraints) {
-			if (c == f.negated()) continue;
-			explanation.back().emplace_back(c);
+			if (c.first == f.negated()) continue;
+			explanation.back().emplace_back(c.first);
 		}
 		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Final: " << explanation.back() << " -> " << f);
 	}
