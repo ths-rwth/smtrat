@@ -1276,8 +1276,8 @@ namespace smtrat
     {
 		//SMTRAT_LOG_DEBUG("smtrat.sat", "Creating literal for " << _formula << " with origin " << _origin << ", decisionRelevant = " << _decisionRelevant);
         assert( _formula.propertyHolds( carl::PROP_IS_A_LITERAL ) );
-        bool negated = _formula.getType() == carl::FormulaType::NOT;
-        const FormulaT& content = negated ? _formula.subformula() : _formula;
+        FormulaT content = _formula.baseFormula();
+		bool negated = (content != _formula);
         if( content.getType() == carl::FormulaType::BOOL )
         {
             Lit l = lit_Undef;
@@ -1308,12 +1308,11 @@ namespace smtrat
         {
             assert( supportedConstraintType( content ) );
             double act = fabs( _formula.activity() );
-            bool preferredToTSolver = false; //(_formula.activity()<0)
-            ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( _formula );
+            bool preferredToTSolver = false; //(_formula.content()<0)
+            auto constraintLiteralPair = mConstraintLiteralMap.find( _formula );
             if( constraintLiteralPair != mConstraintLiteralMap.end() )
             {
-				//SMTRAT_LOG_DEBUG("smtrat.sat", "Constraint already exists");
-				//SMTRAT_LOG_DEBUG("smtrat.sat", "negated? " << negated);
+				SMTRAT_LOG_TRACE("smtrat.sat", "Constraint " << content << " already exists");
                 // Check whether the theory solver wants this literal to assigned as soon as possible.
                 int abstractionVar = var(constraintLiteralPair->second.front());
                 if( act == numeric_limits<double>::infinity() )
@@ -1349,49 +1348,22 @@ namespace smtrat
                         abstr.origins->push_back( _origin );
                     }
                 }
+				SMTRAT_LOG_DEBUG("smtrat.sat", _formula << " -> " << constraintLiteralPair->second.front());
                 return constraintLiteralPair->second.front();
             }
             else
             {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Constraint " << content << " does not exist yet");
                 // Add a fresh Boolean variable as an abstraction of the constraint.
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 if( preferredToTSolver ) mpStatistics->initialTrue();
                 #endif
-                FormulaT constraint;
-                FormulaT invertedConstraint;
-                if( content.getType() == carl::FormulaType::CONSTRAINT )
-                {
-                    constraint = content;
-                    const ConstraintT& cons = content.constraint();
-                    invertedConstraint = FormulaT( cons.lhs(), carl::inverse( cons.relation() ) );
-                }
-				else if (content.getType() == carl::FormulaType::VARCOMPARE )
-				{
-					constraint = content;
-					invertedConstraint = FormulaT( content.variableComparison().negation() );
-				}
-				else if (content.getType() == carl::FormulaType::VARASSIGN )
-				{
-					constraint = content;
-					invertedConstraint = FormulaT( content.variableAssignment().negation() );
-				}
-                else if( content.getType() == carl::FormulaType::UEQ )
-                {
-                    constraint = content;
-                    const carl::UEquality& ueq = content.uequality();
-                    invertedConstraint = FormulaT( ueq.lhs(), ueq.rhs(), !ueq.negated() );
-                }
-                else if (content.getType() == carl::FormulaType::BITVECTOR)
-                {
-                    constraint = content;
-                    invertedConstraint = FormulaT( carl::FormulaType::NOT, content );
-                }
-				else
-				{
-					assert( content.getType() == carl::FormulaType::PBCONSTRAINT );
-					constraint = content;
-					invertedConstraint = FormulaT( carl::FormulaType::NOT, content );
-				}
+                FormulaT constraint = content;
+                FormulaT invertedConstraint = content.negated();
+				assert(constraint.getType() != carl::FormulaType::NOT);
+				assert(invertedConstraint.getType() != carl::FormulaType::NOT);
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Adding " << constraint << " / " << invertedConstraint << ", negated? " << negated);
+
                 Var constraintAbstraction = newVar( !preferredToTSolver, _decisionRelevant, act );
                 // map the abstraction variable to the abstraction information for the constraint and it's negation
                 mBooleanConstraintMap.push( std::make_pair( new Abstraction( passedFormulaEnd(), constraint ), new Abstraction( passedFormulaEnd(), invertedConstraint ) ) );
@@ -1433,6 +1405,8 @@ namespace smtrat
                     addConstraintToInform_( invertedConstraint );
                 }
                 // create a literal for the constraint and its negation
+				assert(FormulaT( carl::FormulaType::NOT, invertedConstraint ) == constraint);
+				assert((negated ? _formula : FormulaT( carl::FormulaType::NOT, constraint )) == invertedConstraint);
                 Lit litPositive = mkLit( constraintAbstraction, false );
                 std::vector<Lit> litsA;
                 litsA.push_back( litPositive );
@@ -2763,13 +2737,14 @@ namespace smtrat
 						} else {
 							mCurrentAssignmentConsistent = UNSAT;
 							SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << mMCSAT.level());
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << res);
 							// Todo: backtrack to last relevant theory decision, not last one
 							std::size_t level = mMCSAT.penultimateTheoryLevel(res);
 							cancelUntil(int(level));
 							vec<Lit> explanation;
 							for (const auto& c: (res.isNary() ? res.subformulas() : FormulasT({res}))) {
-								SMTRAT_LOG_DEBUG("smtrat.sat", "Adding " << c);
 								Minisat::Lit l = createLiteral(c);
+								SMTRAT_LOG_DEBUG("smtrat.sat", "Adding " << c << " (" << l << ")");
 								explanation.push(l);
 							}
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
@@ -3326,7 +3301,7 @@ namespace smtrat
                     const FormulaT& f = mBooleanConstraintMap[var(out_learnt[i])].first->reabstraction;
                     currentLitLevel = mMCSAT.penultimateTheoryLevel(f);
                 } else {
-                    currentLitLevel = level(var(out_learnt[i]));
+                    currentLitLevel = level(var(out_learnt[i])) - 1;
                 }
 				SMTRAT_LOG_DEBUG("smtrat.sat", out_learnt[i] << " gets unassigned at " << currentLitLevel);
                 if (currentLitLevel > max_lvl) {
@@ -3616,11 +3591,15 @@ namespace smtrat
                 }
                 else
                 {
-                    assert( value( first ) == l_Undef );
-                    uncheckedEnqueue( first, cr );
-                    #ifdef SMTRAT_DEVOPTION_Statistics
-                    mpStatistics->propagate();
-                    #endif
+					if (Settings::mc_sat && valueAndUpdate(first) != l_Undef) {
+						assert(value(first) != l_Undef);
+					} else {
+	                    assert( value( first ) == l_Undef );
+	                    uncheckedEnqueue( first, cr );
+	                    #ifdef SMTRAT_DEVOPTION_Statistics
+	                    mpStatistics->propagate();
+	                    #endif
+					}
                 }
 
 NextClause:
