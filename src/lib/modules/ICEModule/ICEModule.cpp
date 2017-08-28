@@ -70,7 +70,7 @@ namespace smtrat
 			case carl::FormulaType::NOT: {
 				if (f.subformula().getType() == carl::FormulaType::CONSTRAINT) {
 					const ConstraintT& c = f.subformula().constraint();
-					ConstraintT newC(c.lhs(), invertRelation(c.relation()));
+					ConstraintT newC(c.lhs(), inverse(c.relation()));
 					mBounds.addBound(newC, f);
 					if (!newC.isBound()) {
 						mConstraints.emplace(f, newC);
@@ -95,7 +95,7 @@ namespace smtrat
 			case carl::FormulaType::NOT: {
 				if (f.subformula().getType() == carl::FormulaType::CONSTRAINT) {
 					const ConstraintT& c = f.subformula().constraint();
-					ConstraintT newC(c.lhs(), invertRelation(c.relation()));
+					ConstraintT newC(c.lhs(), inverse(c.relation()));
 					mBounds.removeBound(newC, f);
 					if (!newC.isBound()) {
 						mConstraints.erase(f);

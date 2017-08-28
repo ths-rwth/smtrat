@@ -261,7 +261,7 @@ namespace smtrat
                     result.first->boundExists();
                     // create the complement
                     Value<T1>* vc = constraint.integerValued() ? new Value<T1>( boundValue + (negative ? T1( -1 ) : T1( 1 )) ) : new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
-                    FormulaT complConstr( _constraint.constraint().lhs(), carl::invertRelation( _constraint.constraint().relation() ) );
+                    FormulaT complConstr( _constraint.constraint().lhs(), carl::inverse( _constraint.constraint().relation() ) );
                     const Bound<T1,T2>* complement = negative ? newVar->addUpperBound( vc, mDefaultBoundPosition, complConstr ).first : newVar->addLowerBound( vc, mDefaultBoundPosition, complConstr ).first;
                     auto ctbInsertRes = mConstraintToBound.insert( std::make_pair( complConstr, nullptr ) );
                     if( ctbInsertRes.second )
@@ -285,7 +285,7 @@ namespace smtrat
                     result.first->boundExists();
                     // create the complement
                     Value<T1>* vc = constraint.integerValued() ? new Value<T1>( boundValue + (negative ? T1( 1 ) : T1( -1 )) ) : new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
-                    FormulaT complConstr( _constraint.constraint().lhs(), carl::invertRelation( _constraint.constraint().relation() ) );
+                    FormulaT complConstr( _constraint.constraint().lhs(), carl::inverse( _constraint.constraint().relation() ) );
                     const Bound<T1,T2>* complement = negative ? newVar->addLowerBound( vc, mDefaultBoundPosition, complConstr ).first : newVar->addUpperBound( vc, mDefaultBoundPosition, complConstr ).first;
                     auto ctbInsertRes = mConstraintToBound.insert( std::make_pair( complConstr, nullptr ) );
                     if( ctbInsertRes.second )
@@ -309,7 +309,7 @@ namespace smtrat
                     result.first->boundExists();
                     // create the complement
                     Value<T1>* vc = new Value<T1>( boundValue );
-                    FormulaT complConstr( _constraint.constraint().lhs(), carl::invertRelation( _constraint.constraint().relation() ) );
+                    FormulaT complConstr( _constraint.constraint().lhs(), carl::inverse( _constraint.constraint().relation() ) );
                     const Bound<T1,T2>* complement = negative ? newVar->addUpperBound( vc, mDefaultBoundPosition, complConstr ).first : newVar->addLowerBound( vc, mDefaultBoundPosition, complConstr ).first;
                     auto ctbInsertRes = mConstraintToBound.insert( std::make_pair( complConstr, nullptr ) );
                     if( ctbInsertRes.second )
@@ -333,7 +333,7 @@ namespace smtrat
                     result.first->boundExists();
                     // create the complement
                     Value<T1>* vc = new Value<T1>( boundValue );
-                    FormulaT complConstr( _constraint.constraint().lhs(), carl::invertRelation( _constraint.constraint().relation() ) );
+                    FormulaT complConstr( _constraint.constraint().lhs(), carl::inverse( _constraint.constraint().relation() ) );
                     const Bound<T1,T2>* complement = negative ? newVar->addLowerBound( vc, mDefaultBoundPosition, complConstr ).first : newVar->addUpperBound( vc, mDefaultBoundPosition, complConstr ).first;
                     auto ctbInsertRes = mConstraintToBound.insert( std::make_pair( complConstr, nullptr ) );
                     if( ctbInsertRes.second )
