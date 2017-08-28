@@ -2833,6 +2833,7 @@ namespace smtrat
         int backtrack_level;
 //        bool conflictClauseNotAsserting = analyze( _confl, learnt_clause, backtrack_level );
         analyze( _confl, learnt_clause, backtrack_level );
+		if (learnt_clause.size() == 0) std::exit(32);
         assert( learnt_clause.size() > 0 );
 
         #ifdef DEBUG_SATMODULE
