@@ -17,7 +17,7 @@ FormulaT NLSAT::resolveNegation(const FormulaT& f) const {
 	switch (f.subformula().getType()) {
 		case carl::FormulaType::CONSTRAINT: {
 			const auto& c = f.subformula().constraint();
-			return FormulaT(c.lhs(), carl::invertRelation(c.relation()));
+			return FormulaT(c.lhs(), carl::inverse(c.relation()));
 		}
 		case carl::FormulaType::VARCOMPARE:
 			return FormulaT(f.subformula().variableComparison().negation());
@@ -116,8 +116,8 @@ AssignmentFinder::AssignmentOrConflict NLSAT::findAssignment(carl::Variable var)
 		if (c.getType() == carl::FormulaType::NOT) {
 			std::exit(29);
 			const auto& constraint = c.subformula().constraint();
-			if(!af.addConstraint(FormulaT(constraint.lhs(), carl::invertRelation(constraint.relation())))) {
-				conflict.push_back(FormulaT(constraint.lhs(), carl::invertRelation(constraint.relation())));
+			if(!af.addConstraint(FormulaT(constraint.lhs(), carl::inverse(constraint.relation())))) {
+				conflict.push_back(FormulaT(constraint.lhs(), carl::inverse(constraint.relation())));
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "No Assignment, built conflicting core " << conflict << " under model " << mModel);
 				return conflict;
 			}
