@@ -72,7 +72,7 @@ namespace smtrat
         }
         if( constraintF.getType() == carl::FormulaType::CONSTRAINT )
         {
-            const ConstraintT& constraint = negated ? ConstraintT( constraintF.constraint().lhs(), carl::invertRelation( constraintF.constraint().relation() ) ) : constraintF.constraint();
+            const ConstraintT& constraint = negated ? ConstraintT( constraintF.constraint().lhs(), carl::inverse( constraintF.constraint().relation() ) ) : constraintF.constraint();
             const vs::Condition* condition = new vs::Condition( constraint, mpConditionIdAllocator->get() );
             mFormulaConditionMap[constraintF] = condition;
             assert( constraint.isConsistent() == 2 );
@@ -1500,7 +1500,7 @@ namespace smtrat
                 else if( receivedConstraint->formula().getType() == carl::FormulaType::NOT && receivedConstraint->formula().subformula().getType() == carl::FormulaType::CONSTRAINT )
                 {
                     ConstraintT recConstraint = receivedConstraint->formula().subformula().constraint();
-                    if( (**oCond).constraint() == ConstraintT( recConstraint.lhs(), carl::invertRelation( recConstraint.relation() ) ) )
+                    if( (**oCond).constraint() == ConstraintT( recConstraint.lhs(), carl::inverse( recConstraint.relation() ) ) )
                         break;
                 }
                 ++receivedConstraint;
@@ -1544,7 +1544,7 @@ namespace smtrat
                 else if( receivedConstraint->formula().getType() == carl::FormulaType::NOT && receivedConstraint->formula().subformula().getType() == carl::FormulaType::CONSTRAINT )
                 {
                     ConstraintT recConstraint = receivedConstraint->formula().subformula().constraint();
-                    if( (**oCond).constraint() == ConstraintT( recConstraint.lhs(), carl::invertRelation( recConstraint.relation() ) ) )
+                    if( (**oCond).constraint() == ConstraintT( recConstraint.lhs(), carl::inverse( recConstraint.relation() ) ) )
                         break;
                 }
                 ++receivedConstraint;
