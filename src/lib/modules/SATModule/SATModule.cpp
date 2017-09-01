@@ -1345,7 +1345,7 @@ namespace smtrat
                 {
                     constraint = content;
                     const ConstraintT& cons = content.constraint();
-                    invertedConstraint = FormulaT( cons.lhs(), carl::invertRelation( cons.relation() ) );
+                    invertedConstraint = FormulaT( cons.lhs(), carl::inverse( cons.relation() ) );
                 }
 				else if (content.getType() == carl::FormulaType::VARCOMPARE )
 				{
