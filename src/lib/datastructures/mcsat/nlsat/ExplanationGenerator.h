@@ -35,8 +35,11 @@ private:
 	}
 	FormulaT buildFormulaFromVC(VariableComparisonT&& vc) const {
 		auto constraint = vc.asConstraint();
-		if (constraint) return FormulaT(*constraint);
-		else return FormulaT(std::move(vc));
+		if (constraint) {
+			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Simplified " << vc << " to " << *constraint);
+			return FormulaT(*constraint);
+		}
+		return FormulaT(std::move(vc));
 	}
 	template<typename MV>
 	FormulaT buildEquality(carl::Variable v, const MV& mv) const {
