@@ -18,7 +18,7 @@ private:
 
 	std::map<FormulaT, ConstraintT> mConstraints;
 	cad::CADConstraints<ProjectionSettings::backtracking> mCADConstraints;
-	cad::ProjectionT<ProjectionSettings> mProjection;
+	cad::ModelBasedProjectionT<ProjectionSettings> mProjection;
 	Model mModel;
 	
 	bool isEqual(const RAN& ran, const ModelValue& mv) const {
@@ -57,7 +57,7 @@ private:
 		return buildFormulaFromVC(VariableComparisonT(v, MultivariateRootT(mv.first, mv.second), carl::Relation::GREATER));
 	}
 	
-	void generateBoundsFor(FormulasT& res, carl::Variable var, std::size_t level, const Model& model) const {
+	void generateBoundsFor(FormulasT& res, carl::Variable var, std::size_t level, const Model& model, std::pair<std::size_t, std::size_t>& pids) const {
 		auto val = mModel.evaluated(var);
 		assert(val.isRational() || val.isRAN());
 		RAN value = val.isRational() ? RAN(val.asRational()) : val.asRAN();
@@ -83,15 +83,22 @@ private:
 					if (!lower || (root > lower->first)) {
 						lower = std::make_pair(root, buildAbove(var, param));
 						SMTRAT_LOG_TRACE("smtrat.nlsat", "new lower bound: " << lower->second);
+                                                // save pid (lower)
+                                                pids.first = pid;
 					}
 				} else if (root == value) {
 					lower = std::make_pair(root, buildEquality(var, param));
 					upper = *lower;
 					SMTRAT_LOG_TRACE("smtrat.nlsat", "new exact root: " << lower->second);
+                                        // save pid (upper und lower)
+                                        pids.first = pid;
+                                        pids.second = pid;
 				} else {
 					if (!upper || (root < upper->first)) {
 						upper = std::make_pair(root, buildBelow(var, param));
 						SMTRAT_LOG_TRACE("smtrat.nlsat", "new upper bound: " << upper->second);
+                                                // save pid (upper)
+                                                pids.second = pid;
 					}
 				}
 				rootID++;
@@ -113,7 +120,7 @@ public:
 			[&](const auto& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(mProjection.normalize(p), cid, isBound); },
 			[&](const auto& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(mProjection.normalize(p), cid, isBound); }
 		),
-		mProjection(mCADConstraints), 
+		mProjection(mCADConstraints, model), 
 		mModel(model)
 	{
 		SMTRAT_LOG_TRACE("smtrat.nlsat", "Reset to " << vars);
@@ -136,22 +143,32 @@ public:
 				assert(false);
 			}
 		}
+
 		for (const auto& c: cons) {
 			mCADConstraints.add(c);
 		}
+                
+                for (std::size_t level = 2; level < mCADConstraints.vars().size(); level++) {
+                    mProjection.projectNextLevel(level); 
+                }
+
 		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Projection is" << std::endl << mProjection);
 	}
+                
 	void generateExplanation(const FormulaT& f, std::vector<FormulasT>& explanation) const {
 		FormulasT subs;
 		Model m;
 		explanation.resize(mCADConstraints.vars().size());
-		// Start from the bottom to incrementally build up model m and generate bound constraints.
-		for (std::size_t level = mCADConstraints.vars().size() - 1; level > 0; level--) {
-			carl::Variable var = mCADConstraints.vars()[level];
-			generateBoundsFor(explanation[level-1], var, level+1, m);
+		
+                // Start from the bottom to generate bound constraints. 
+                std::pair<std::size_t, std::size_t> pids;
+                for (std::size_t level = mCADConstraints.vars().size() - 1; level > 0; level--) {
+                        carl::Variable var = mCADConstraints.vars()[level];
+			generateBoundsFor(explanation[level-1], var, level+1, m, pids); 
 			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Cell bounds for " << var << ": " << explanation[level-1]);
 			m.emplace(var, mModel.evaluated(var));
-		}
+                }
+                
 		for (const auto& c: mConstraints) {
 			if (c.first == f.negated()) continue;
 			explanation.back().emplace_back(c.first);
