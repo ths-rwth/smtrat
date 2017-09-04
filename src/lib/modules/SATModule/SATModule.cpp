@@ -1769,7 +1769,10 @@ namespace smtrat
 			if (Settings::mc_sat) {
 				// Evaluate literals according to current theory model
 				for (int i = 0; i < lemma.size(); i++) {
-					valueAndUpdate(lemma[i]);
+					if (value(lemma[i]) != l_Undef) continue;
+					if (theoryValue(lemma[i]) == l_False) {
+						uncheckedEnqueue(neg(lemma[i]), Minisat::CRef_TPropagation);
+					}
 				}
 			}
 			// Sort to make sure watches are at the front
@@ -1834,7 +1837,10 @@ namespace smtrat
 			if (Settings::mc_sat) {
 				// Evaluate literals according to current theory model
 				for (int i = 0; i < lemma.size(); i++) {
-					valueAndUpdate(lemma[i]);
+					if (value(lemma[i]) != l_Undef) continue;
+					if (theoryValue(lemma[i]) == l_False) {
+						uncheckedEnqueue(neg(lemma[i]), Minisat::CRef_TPropagation);
+					}
 				}
 			}
 			// Resort in case the backtracking changed the order
