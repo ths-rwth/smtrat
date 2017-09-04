@@ -1818,16 +1818,24 @@ namespace smtrat
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Checking for existing clause " << lemma);
 			std::size_t dups = 0;
 			for (int i = 0; i < learnts.size(); i++) {
-				const auto& c = ca[learnts[i]];
-				if (lemma.size() != c.size()) continue;
+				const auto& corig = ca[learnts[i]];
+				if (lemma.size() != corig.size()) continue;
+				Minisat::vec<Minisat::Lit> c;
+				for (int j = 0; j < corig.size(); j++) {
+					c.push(corig[j]);
+				}
+	            sort(c, lemma_lt(*this));
 				bool different = false;
 				for (int j = 0; j < lemma.size(); j++) {
 					different = different || (c[j] != lemma[j]);
 				}
-				if (!different) dups++;
+				if (!different) {
+					SMTRAT_LOG_DEBUG("smtrat.sat", lemma << " is a duplicate of " << corig);
+					dups++;
+				}
 			}
-			if (dups > 1) std::exit(91);
-			assert(dups <= 1);
+			if (dups > 0) std::exit(91);
+			assert(dups == 0);
 			
 			if (lemma.size() == 0) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is trivial conflict, ok = false");
