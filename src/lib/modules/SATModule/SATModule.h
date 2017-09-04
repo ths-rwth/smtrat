@@ -868,19 +868,26 @@ namespace smtrat
                 return assigns[x];
             }
             
-			inline Minisat::lbool valueAndUpdate( Minisat::Var x )
-            {
-				if (assigns[x] == l_Undef) {
+			inline Minisat::lbool theoryValue( Minisat::Var x ) {
+				Minisat::lbool res = assigns[x];
+				if (res == l_Undef) {
 					if (mBooleanConstraintMap.size() <= x) return l_Undef;
 					if (mBooleanConstraintMap[x].first == nullptr) return l_Undef;
-					Minisat::lbool res = mMCSAT.evaluateLiteral(Minisat::mkLit(x, false));
-                    /// TODO: Reason should be computed by explain(), not Undef
+					res = mMCSAT.evaluateLiteral(Minisat::mkLit(x, false));
+				}
+				SMTRAT_LOG_DEBUG("smtrat.sat", x << " -> " << res);
+				return res;
+			}
+			inline Minisat::lbool valueAndUpdate( Minisat::Var x )
+			{
+				if (assigns[x] == l_Undef) {
+					Minisat::lbool res = theoryValue(x);
 					if (res == l_True) uncheckedEnqueue(Minisat::mkLit(x, false), Minisat::CRef_TPropagation);
 					else if (res == l_False) uncheckedEnqueue(Minisat::mkLit(x, true), Minisat::CRef_TPropagation);
 				}
 				SMTRAT_LOG_DEBUG("smtrat.sat", x << " -> " << assigns[x]);
-                return assigns[x];
-            }
+				return assigns[x];
+			}
             
             /**
              * @param p The literal to get its value for.
@@ -890,6 +897,9 @@ namespace smtrat
             {
 				return value(Minisat::var(p)) ^ Minisat::sign(p);
             }
+			inline Minisat::lbool theoryValue( Minisat::Lit p ) {
+				return theoryValue(Minisat::var(p)) ^ Minisat::sign(p);
+			}
 			inline Minisat::lbool valueAndUpdate( Minisat::Lit p )
             {
 				return valueAndUpdate(Minisat::var(p)) ^ Minisat::sign(p);
