@@ -81,8 +81,6 @@ private:
 	/// current mc-sat model
 	Model mCurrentModel;
 	
-	nlsat::Explain<nlsat::LemmaStrategy::ORIGINAL> mExplain;
-	
 	nlsat::NLSAT mNLSAT;
 
 private:
