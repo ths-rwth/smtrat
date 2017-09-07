@@ -3255,7 +3255,19 @@ namespace smtrat
         }
         while( pathC > 0 );
 	
-		out_learnt[0] = ~p;
+		if (Settings::mc_sat) {
+			bool found = false;
+			for (int i = 1; i < out_learnt.size(); i++) {
+				if (out_learnt[i] == ~p) found = true;
+			}
+			if (!found) out_learnt[0] = ~p;
+			else {
+				out_learnt[0] = out_learnt[out_learnt.size()-1];
+				out_learnt.pop();
+			}
+		} else {
+			out_learnt[0] = ~p;
+		}
 		
 		SMTRAT_LOG_DEBUG("smtrat.sat", "Before sorting " << out_learnt);
 		if (Settings::mc_sat) {
