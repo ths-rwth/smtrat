@@ -2896,6 +2896,7 @@ namespace smtrat
 			}
 		}
 
+		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Learning clause " << learnt_clause);
         #ifdef SMTRAT_DEVOPTION_Validation // this is often an indication that something is wrong with our theory, so we do store our assumptions.
         if( value( learnt_clause[0] ) != l_Undef ) Module::storeAssumptionsToCheck( *mpManager );
         #endif
@@ -3214,23 +3215,23 @@ namespace smtrat
 	            for( int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++ )
 	            {
 	                Lit q = c[j];
-					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking at literal " << q);
+					SMTRAT_LOG_DEBUG("smtrat.sat", "\tLooking at literal " << q);
 	                
 	                if( !seen[var( q )] && level( var( q ) ) > 0 )
 	                {
-						SMTRAT_LOG_DEBUG("smtrat.sat", "Not seen yet, level = " << level(var(q)));
+						SMTRAT_LOG_DEBUG("smtrat.sat", "\tNot seen yet, level = " << level(var(q)));
 	                    varBumpActivity( var( q ) );
 						seen[var( q )] = 1;
 						if (Settings::mc_sat && reason(var(q)) == CRef_TPropagation) {
 							pathC++;
-							SMTRAT_LOG_DEBUG("smtrat.sat", "To process: "  << q << ", pathC = " << pathC);
+							SMTRAT_LOG_DEBUG("smtrat.sat", "\tTo process: "  << q << ", pathC = " << pathC);
 						} else {
 		                    if( level( var( q ) ) >= decisionLevel() ) {
 								pathC++;
-								SMTRAT_LOG_DEBUG("smtrat.sat", "To process: "  << q << ", pathC = " << pathC);
+								SMTRAT_LOG_DEBUG("smtrat.sat", "\tTo process: "  << q << ", pathC = " << pathC);
 							}
 		                    else {
-								SMTRAT_LOG_DEBUG("smtrat.sat", "pushing = " << q << " to out_learnt");
+								SMTRAT_LOG_DEBUG("smtrat.sat", "\tpushing = " << q << " to out_learnt");
 		                        out_learnt.push( q );
 							}
 						}
@@ -3242,8 +3243,11 @@ namespace smtrat
             while( !seen[var( trail[index--] )] );
             p              = trail[index + 1];
             confl          = reason( var( p ) );
-			if (Settings::mc_sat && confl == CRef_Undef) break;
-			SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking " << p << " with reason " << confl);
+			if (Settings::mc_sat && confl == CRef_Undef) {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Aborting conflict analysis");
+				break;
+			}
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking to " << p << " with reason " << confl);
             seen[var( p )] = 0;
             pathC--;
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Still on highest DL, pathC = " << pathC);
@@ -3559,10 +3563,12 @@ namespace smtrat
 
             for( i = j = (Watcher*)ws, end = i + ws.size(); i != end; )
             {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Considering clause " << i->cref);
                 // Try to avoid inspecting the clause:
                 Lit blocker = i->blocker;
                 if( value( blocker ) == l_True )
                 {
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Skipping clause " << i->cref << " due to blocker " << i->blocker);
                     *j++ = *i++;
                     continue;
                 }
@@ -3570,35 +3576,49 @@ namespace smtrat
                 // Make sure the false literal is data[1]:
                 CRef cr = i->cref;
                 Clause& c = ca[cr];
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Analyzing clause " << c);
                 Lit false_lit = ~p;
                 if( c[0] == false_lit )
                     c[0]              = c[1], c[1] = false_lit;
                 assert( c[1] == false_lit );
                 i++;
+				
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Clause is now " << c << " after moving the false literal");
 
                 // If 0th watch is true, then clause is already satisfied.
                 Lit first = c[0];
                 Watcher w = Watcher( cr, first );
                 if( first != blocker && value( first ) == l_True )
                 {
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Clause " << c << " is satisfied by " << first);
                     *j++ = w;
                     continue;
                 }
 
                 // Look for new watch:
-                for( int k = 2; k < c.size(); k++ )
+                for( int k = 2; k < c.size(); k++ ) {
+					if (Settings::mc_sat) {
+						if (value(c[k]) == l_Undef && theoryValue(c[k]) == l_False) {
+							uncheckedEnqueue(neg(c[k]), Minisat::CRef_TPropagation);
+						}
+					}
                     if( value( c[k] ) != l_False )
                     {
                         c[1] = c[k];
                         c[k] = false_lit;
                         watches[~c[1]].push( w );
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Clause is now " << c << " after setting " << c[k] << " as new watch");
                         goto NextClause;
                     }
+				}
+				
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Clause is now " << c << " after no new watch was found");
 
                 // Did not find watch -- clause is unit under assignment:
                 *j++ = w;
                 if( value( first ) == l_False )
                 {
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Clause is conflicting " << c);
                     confl = cr;
                     qhead = trail.size();
                     // Copy the remaining watches:
@@ -3607,6 +3627,7 @@ namespace smtrat
                 }
                 else
                 {
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Clause is propagating " << c);
 					if (Settings::mc_sat && valueAndUpdate(first) != l_Undef) {
 						assert(value(first) != l_Undef);
 					} else {
