@@ -128,14 +128,15 @@ namespace cad {
 			if (canBeRemoved(p)) return;
                         if ((level > 1) && (level < dim()) && canBeForwarded(level, p)) {
 				addToCorrectLevel(level + 1, p.switchVariable(var(level+1)), origin);
-			}
+                                return;
+			} 
                         SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			assert(p.mainVar() == var(level));
 			auto it = polyIDs(level).find(p);
 			if (it != polyIDs(level).end()) {
 				// We already have this polynomial.
-				if (level > 0) {
-					assert(polys(level)[it->second].second <= origin);
+				if (level > 0 && !(polys(level)[it->second].second <= origin)) {
+                                        polys(level)[it->second].second = origin;
 				}
 				return;
 			}
@@ -149,7 +150,7 @@ namespace cad {
                         // TODO warum > 1 und nicht > 0?
 			if ((level > 1) && (level < dim()) && canBeForwarded(level, p)) {
 				return addToProjection(level + 1, p.switchVariable(var(level+1)), origin);
-			}
+			} 
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			assert(p.mainVar() == var(level));
 			auto it = polyIDs(level).find(p);
