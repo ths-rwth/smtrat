@@ -2671,7 +2671,26 @@ namespace smtrat
                         next = p;
                         break;
                     }
-                } 
+                }
+
+				if (Settings::mc_sat) {
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for theory propagations...");
+					bool didTheoryPropagation = false;
+					for (std::size_t level = 0; !didTheoryPropagation && level < mMCSAT.level(); level++) {
+						for (auto v: mMCSAT.get(level).univariateVariables) {
+							if (value(v) != l_Undef) continue;
+							auto tv = theoryValue(v);
+							if (tv == l_Undef) continue;
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Propagating " << v << " = " << tv);
+							if (tv == l_True) uncheckedEnqueue(mkLit(v, false), Minisat::CRef_TPropagation);
+							else if (tv == l_False) uncheckedEnqueue(mkLit(v, true), Minisat::CRef_TPropagation);
+							didTheoryPropagation = true;
+							break;
+						}
+					}
+					if (didTheoryPropagation) continue;
+				}
+				
                 // If we do not already have a branching literal, we pick one
                 if( next == lit_Undef )
                 {
