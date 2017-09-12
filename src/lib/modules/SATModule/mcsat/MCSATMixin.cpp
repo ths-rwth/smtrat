@@ -25,7 +25,7 @@ bool MCSATMixin::backtrackTo(Minisat::Lit literal) {
 	while (mCurrentLevel > level) {
 		popLevel();
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Backtracking theory assignment for " << current().variable);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Model " << mNLSAT.getModel());
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Model " << model());
 		if (current().decisionLiteral != Minisat::lit_Undef) {
 			mNLSAT.popAssignment(current().variable);
 			mVariables.unassign(current().variable);
@@ -38,8 +38,8 @@ bool MCSATMixin::backtrackTo(Minisat::Lit literal) {
 Minisat::lbool MCSATMixin::evaluateLiteral(Minisat::Lit lit) const {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Evaluate " << lit);
 	const FormulaT& f = mGetter.reabstractLiteral(lit);
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Evaluate " << f << " on " << mNLSAT.getModel());
-	auto res = carl::model::evaluate(f, mNLSAT.getModel());
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Evaluate " << f << " on " << model());
+	auto res = carl::model::evaluate(f, model());
 	if (res.isBool()) {
 		return res.asBool() ? l_True : l_False;
 	}
@@ -419,6 +419,9 @@ std::ostream& operator<<(std::ostream& os, const MCSATMixin& mcm) {
 	for (std::size_t lvl = 0; lvl < mcm.mTheoryStack.size(); lvl++) {
 		const auto& level = mcm.mTheoryStack[lvl];
 		os << lvl << " / " << level.variable << " (" << level.decisionLiteral << ")";
+		if (mcm.model().find(level.variable) != mcm.model().end()) {
+			os << " = " << mcm.model().at(level.variable);
+		}
 		if (level.variable == mcm.current().variable) {
 			os << " <<-- Current variable";
 		}
