@@ -4310,16 +4310,20 @@ NextClause:
             tmpStream << (sign( trail[pos] ) ? "-" : "") << var( trail[pos] );
             _out << setw( 6 ) << tmpStream.str() << " @ " << level;
             // if it is not a Boolean variable
-            if( assigns[var(trail[pos])] == l_True && mBooleanConstraintMap[var(trail[pos])].first != nullptr && mBooleanConstraintMap[var(trail[pos])].first->consistencyRelevant  )
+			auto v = var(trail[pos]);
+            if (assigns[v] == l_True && mBooleanConstraintMap[v].first != nullptr)
             {
-                _out << "   ( " << mBooleanConstraintMap[var(trail[pos])].first->reabstraction << " )";
-                _out << " [" << mBooleanConstraintMap[var(trail[pos])].first->updateInfo << "]";
+                _out << "   ( " << mBooleanConstraintMap[v].first->reabstraction << " )";
+                _out << " [" << mBooleanConstraintMap[v].first->updateInfo << "]";
             }
-            else if( assigns[var(trail[pos])] == l_False && mBooleanConstraintMap[var(trail[pos])].second != nullptr && mBooleanConstraintMap[var(trail[pos])].second->consistencyRelevant  )
+            else if (assigns[v] == l_False && mBooleanConstraintMap[v].second != nullptr)
             {
-                _out << "   ( " << mBooleanConstraintMap[var(trail[pos])].second->reabstraction << " )";
-                _out << " [" << mBooleanConstraintMap[var(trail[pos])].second->updateInfo << "]";
+                _out << "   ( " << mBooleanConstraintMap[v].second->reabstraction << " )";
+                _out << " [" << mBooleanConstraintMap[v].second->updateInfo << "]";
             }
+			else {
+				_out << "   ( " << static_cast<const void*>(mBooleanConstraintMap[v].first) << " / " << static_cast<const void*>(mBooleanConstraintMap[v].second) << " )";
+			}
 			assert(vardata[var(trail[pos])].mTrailIndex == pos);
 			if (vardata[var(trail[pos])].reason != CRef_Undef) {
 				_out << " due to " << vardata[var(trail[pos])].reason;
