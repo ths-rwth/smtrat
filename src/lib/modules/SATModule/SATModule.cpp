@@ -1353,7 +1353,7 @@ namespace smtrat
             }
             else
             {
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Constraint " << content << " does not exist yet");
+				SMTRAT_LOG_TRACE("smtrat.sat", "Constraint " << content << " does not exist yet");
                 // Add a fresh Boolean variable as an abstraction of the constraint.
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 if( preferredToTSolver ) mpStatistics->initialTrue();
@@ -1362,13 +1362,13 @@ namespace smtrat
                 FormulaT invertedConstraint = content.negated();
 				assert(constraint.getType() != carl::FormulaType::NOT);
 				assert(invertedConstraint.getType() != carl::FormulaType::NOT);
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Adding " << constraint << " / " << invertedConstraint << ", negated? " << negated);
+				SMTRAT_LOG_TRACE("smtrat.sat", "Adding " << constraint << " / " << invertedConstraint << ", negated? " << negated);
 
                 Var constraintAbstraction = newVar( !preferredToTSolver, _decisionRelevant, act );
                 // map the abstraction variable to the abstraction information for the constraint and it's negation
                 mBooleanConstraintMap.push( std::make_pair( new Abstraction( passedFormulaEnd(), constraint ), new Abstraction( passedFormulaEnd(), invertedConstraint ) ) );
 				if (Settings::mc_sat) {
-                    SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << constraintAbstraction << " that abstracts " << content << " having type " << content.getType());
+                    SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Adding " << constraintAbstraction << " that abstracts " << content << " having type " << content.getType());
                     if (content.getType() != carl::FormulaType::VARASSIGN) {
 	                    mMCSAT.addVariable(constraintAbstraction);
                     }
@@ -2668,10 +2668,30 @@ namespace smtrat
                     }
                     else
                     {
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Deciding assumption " << p);
                         next = p;
                         break;
                     }
-                } 
+                }
+
+				if (Settings::mc_sat) {
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for theory propagations...");
+					bool didTheoryPropagation = false;
+					for (std::size_t level = 0; !didTheoryPropagation && level < mMCSAT.level(); level++) {
+						for (auto v: mMCSAT.get(level).univariateVariables) {
+							if (value(v) != l_Undef) continue;
+							auto tv = theoryValue(v);
+							if (tv == l_Undef) continue;
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Propagating " << v << " = " << tv);
+							if (tv == l_True) uncheckedEnqueue(mkLit(v, false), Minisat::CRef_TPropagation);
+							else if (tv == l_False) uncheckedEnqueue(mkLit(v, true), Minisat::CRef_TPropagation);
+							didTheoryPropagation = true;
+							break;
+						}
+					}
+					if (didTheoryPropagation) continue;
+				}
+				
                 // If we do not already have a branching literal, we pick one
                 if( next == lit_Undef )
                 {
@@ -2760,6 +2780,7 @@ namespace smtrat
 								Minisat::Lit l = createLiteral(c);
 								SMTRAT_LOG_DEBUG("smtrat.sat", "Adding " << c << " (" << l << ")");
 								explanation.push(l);
+								assert(theoryValue(l) != l_True);
 							}
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
 							// Add it, the next propagation will find it...
@@ -3571,16 +3592,16 @@ namespace smtrat
             vec<Watcher>& ws = watches[p];
             Watcher * i, *j, *end;
             num_props++;
-			SMTRAT_LOG_DEBUG("smtrat.sat", "Current literal: " << p);
+			SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Current literal: " << p);
 
             for( i = j = (Watcher*)ws, end = i + ws.size(); i != end; )
             {
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Considering clause " << i->cref);
+				SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Considering clause " << i->cref);
                 // Try to avoid inspecting the clause:
                 Lit blocker = i->blocker;
                 if( value( blocker ) == l_True )
                 {
-					SMTRAT_LOG_DEBUG("smtrat.sat", "Skipping clause " << i->cref << " due to blocker " << i->blocker);
+					SMTRAT_LOG_TRACE("smtrat.sat.bcp", "Skipping clause " << i->cref << " due to blocker " << i->blocker);
                     *j++ = *i++;
                     continue;
                 }
@@ -3588,21 +3609,21 @@ namespace smtrat
                 // Make sure the false literal is data[1]:
                 CRef cr = i->cref;
                 Clause& c = ca[cr];
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Analyzing clause " << c);
+				SMTRAT_LOG_TRACE("smtrat.sat.bcp", "Analyzing clause " << c);
                 Lit false_lit = ~p;
                 if( c[0] == false_lit )
                     c[0]              = c[1], c[1] = false_lit;
                 assert( c[1] == false_lit );
                 i++;
 				
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Clause is now " << c << " after moving the false literal");
+				SMTRAT_LOG_TRACE("smtrat.sat.bcp", "Clause is now " << c << " after moving the false literal");
 
                 // If 0th watch is true, then clause is already satisfied.
                 Lit first = c[0];
                 Watcher w = Watcher( cr, first );
                 if( first != blocker && value( first ) == l_True )
                 {
-					SMTRAT_LOG_DEBUG("smtrat.sat", "Clause " << c << " is satisfied by " << first);
+					SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Clause " << c << " is satisfied by " << first);
                     *j++ = w;
                     continue;
                 }
@@ -3619,18 +3640,18 @@ namespace smtrat
                         c[1] = c[k];
                         c[k] = false_lit;
                         watches[~c[1]].push( w );
-						SMTRAT_LOG_DEBUG("smtrat.sat", "Clause is now " << c << " after setting " << c[k] << " as new watch");
+						SMTRAT_LOG_TRACE("smtrat.sat.bcp", "Clause is now " << c << " after setting " << c[k] << " as new watch");
                         goto NextClause;
                     }
 				}
 				
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Clause is now " << c << " after no new watch was found");
+				SMTRAT_LOG_TRACE("smtrat.sat.bcp", "Clause is now " << c << " after no new watch was found");
 
                 // Did not find watch -- clause is unit under assignment:
                 *j++ = w;
                 if( value( first ) == l_False )
                 {
-					SMTRAT_LOG_DEBUG("smtrat.sat", "Clause is conflicting " << c);
+					SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Clause is conflicting " << c);
                     confl = cr;
                     qhead = trail.size();
                     // Copy the remaining watches:
@@ -3639,7 +3660,7 @@ namespace smtrat
                 }
                 else
                 {
-					SMTRAT_LOG_DEBUG("smtrat.sat", "Clause is propagating " << c);
+					SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Clause is propagating " << c);
 					if (Settings::mc_sat && valueAndUpdate(first) != l_Undef) {
 						assert(value(first) != l_Undef);
 					} else {
@@ -3658,7 +3679,7 @@ NextClause:
         }
         propagations += (uint64_t)num_props;
 //        simpDB_props -= (uint64_t)num_props;
-		SMTRAT_LOG_DEBUG("smtrat.sat", "Returning " << confl);
+		SMTRAT_LOG_TRACE("smtrat.sat.bcp", "Returning " << confl);
         return confl;
     }
 
@@ -4289,16 +4310,20 @@ NextClause:
             tmpStream << (sign( trail[pos] ) ? "-" : "") << var( trail[pos] );
             _out << setw( 6 ) << tmpStream.str() << " @ " << level;
             // if it is not a Boolean variable
-            if( assigns[var(trail[pos])] == l_True && mBooleanConstraintMap[var(trail[pos])].first != nullptr && mBooleanConstraintMap[var(trail[pos])].first->consistencyRelevant  )
+			auto v = var(trail[pos]);
+            if (assigns[v] == l_True && mBooleanConstraintMap[v].first != nullptr)
             {
-                _out << "   ( " << mBooleanConstraintMap[var(trail[pos])].first->reabstraction << " )";
-                _out << " [" << mBooleanConstraintMap[var(trail[pos])].first->updateInfo << "]";
+                _out << "   ( " << mBooleanConstraintMap[v].first->reabstraction << " )";
+                _out << " [" << mBooleanConstraintMap[v].first->updateInfo << "]";
             }
-            else if( assigns[var(trail[pos])] == l_False && mBooleanConstraintMap[var(trail[pos])].second != nullptr && mBooleanConstraintMap[var(trail[pos])].second->consistencyRelevant  )
+            else if (assigns[v] == l_False && mBooleanConstraintMap[v].second != nullptr)
             {
-                _out << "   ( " << mBooleanConstraintMap[var(trail[pos])].second->reabstraction << " )";
-                _out << " [" << mBooleanConstraintMap[var(trail[pos])].second->updateInfo << "]";
+                _out << "   ( " << mBooleanConstraintMap[v].second->reabstraction << " )";
+                _out << " [" << mBooleanConstraintMap[v].second->updateInfo << "]";
             }
+			else {
+				_out << "   ( " << static_cast<const void*>(mBooleanConstraintMap[v].first) << " / " << static_cast<const void*>(mBooleanConstraintMap[v].second) << " )";
+			}
 			assert(vardata[var(trail[pos])].mTrailIndex == pos);
 			if (vardata[var(trail[pos])].reason != CRef_Undef) {
 				_out << " due to " << vardata[var(trail[pos])].reason;

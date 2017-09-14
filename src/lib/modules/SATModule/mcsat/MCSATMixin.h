@@ -133,7 +133,7 @@ public:
 		return mCurrentLevel;
 	}
 	const Model& model() const {
-		return mCurrentModel;
+		return mBackend.getModel();
 	}
 	/// Returns the respective theory level
 	const TheoryLevel& get(std::size_t level) const {
