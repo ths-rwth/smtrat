@@ -5,8 +5,9 @@
 #include "../SolverTypes.h"
 
 #include "VariableSelector.h"
-#include "../../../datastructures/mcsat/nlsat.h"
-#include "../../../datastructures/mcsat/nlsat/NLSAT.h"
+#include "MCSATBackend.h"
+//#include "../../../datastructures/mcsat/nlsat.h"
+//#include "../../../datastructures/mcsat/nlsat/NLSAT.h"
 
 #include <carl/formula/model/Assignment.h>
 
@@ -81,7 +82,7 @@ private:
 	/// current mc-sat model
 	Model mCurrentModel;
 	
-	nlsat::NLSAT mNLSAT;
+        MCSATBackend<BackendSettings1> mBackend;
 
 private:
 	// ***** private helper methods
@@ -173,7 +174,7 @@ public:
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Skipping assignment.");
 			return;
 		}
-		mNLSAT.pushConstraint(f);
+		mBackend.pushConstraint(f);
 	}
 	/**
 	 * Remove the last constraint. f must be the same as the one passed to the last call of pushConstraint().
@@ -185,7 +186,7 @@ public:
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Skipping assignment.");
 			return;
 		}
-		mNLSAT.popConstraint(f);
+		mBackend.popConstraint(f);
 	}
 	
 	/// Add a variable, return the level it was inserted on
@@ -247,17 +248,17 @@ public:
 	
 	std::pair<FormulaT,bool> makeTheoryDecision() {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Obtaining assignment");
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", mNLSAT);
-		auto res = mNLSAT.findAssignment(currentVariable());
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", mBackend);
+		auto res = mBackend.findAssignment(currentVariable());
 		if (carl::variant_is_type<ModelValue>(res)) {
 			const auto& value = boost::get<ModelValue>(res);
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << value);
 			FormulaT repr = carl::representingFormula(currentVariable(), value);
-			mNLSAT.pushAssignment(currentVariable(), value, repr);
+			mBackend.pushAssignment(currentVariable(), value, repr);
 			return std::make_pair(repr, true);
 		} else {
 			const auto& confl = boost::get<FormulasT>(res);
-			auto explanation = mNLSAT.explain(currentVariable(), confl, FormulaT(carl::FormulaType::FALSE));
+			auto explanation = mBackend.explain(currentVariable(), confl, FormulaT(carl::FormulaType::FALSE));
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got a conflict: " << explanation);
 			return std::make_pair(explanation, false);
 		}
