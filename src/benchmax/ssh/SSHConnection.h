@@ -99,7 +99,7 @@ private:
 		curChannels--;
 	}
 public:
-	SSHConnection(const Node& n): node(n), curChannels(0), maxChannels(node.cores) {
+	SSHConnection(const Node& n): node(n), curChannels(0), maxChannels(node.cores), curJobs(0) {
 		session = ssh_new();
 		if (session == nullptr) {
 			BENCHMAX_LOG_ERROR("benchmax.ssh", this << " Failed to create SSH session.");
