@@ -20,11 +20,14 @@ private:
 	
 	/// Checks whether a formula is univariate, meaning it contains mVar and only variables from mModel otherwise.
 	bool isUnivariate(const FormulaT& f) const {
+		SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", "is " << f << " univariate in " << mVar << "?");
 		carl::Variables vars;
 		f.arithmeticVars(vars);
+		SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", "Collected " << vars);
 		auto it = vars.find(mVar);
 		if (it == vars.end()) return false;
 		vars.erase(it);
+		SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", "Checking whether " << mModel << " covers " << vars);
 		return mModel.contains(vars);
 	}
 	bool satisfies(const FormulaT& f, const RAN& r) const {
@@ -95,6 +98,7 @@ public:
 	
 	Covering computeCover() {
 		mRI.process();
+		SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", mRI);
 		Covering cover(mRI.size() * 2 + 1);
 		for (const auto& c: mRootMap) {
 			carl::Bitset b;
@@ -106,23 +110,21 @@ public:
 				SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", constraint << " vs " << mRI.sampleFrom(2*cur));
 				if (!satisfies(constraint, mRI.sampleFrom(2*cur))) {
 					// Refutes interval left of this root
-					SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", constraint << " refutes " << mRI.sampleFrom(2*cur) << " -> " << last << ".." << (2*cur));
+					SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", constraint << " refutes " << mRI.sampleFrom(2*cur) << " -> " << last << ".." << (2*cur));
 					b.set_interval(last, 2*cur);
 				}
 				SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", constraint << " vs " << mRI.sampleFrom(2*cur+1));
-				SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", mRI);
 				if (!satisfies(constraint, r)) {
 					// Refutes root
-					SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", constraint << " refutes " << r << " -> " << 2*cur+1);
+					SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", constraint << " refutes " << r << " -> " << 2*cur+1);
 					b.set(2*cur+1, 2*cur+1);
 				}
-				SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", mRI);
 				last = 2*cur + 2;
 			}
 			SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", constraint << " vs " << mRI.sampleFrom(last));
 			if (!satisfies(constraint, mRI.sampleFrom(last))) {
 				// Refutes interval right of largest root
-				SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", constraint << " refutes " << mRI.sampleFrom(roots.size()*2) << " -> " << last << ".." << (mRI.size()*2));
+				SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", constraint << " refutes " << mRI.sampleFrom(roots.size()*2) << " -> " << last << ".." << (mRI.size()*2));
 				b.set_interval(last, mRI.size()*2);
 			}
 			cover.add(c.first, b);
@@ -140,7 +142,7 @@ public:
 			return conflict;
 		} else {
 			ModelValue assignment = mRI.sampleFrom(cover.satisfyingInterval());
-			SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Assignment: " << mVar << " = " << assignment);
+			SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Assignment: " << mVar << " = " << assignment << " from interval " << cover.satisfyingInterval());
 			assert(assignment.isRAN());
 			if (assignment.asRAN().isNumeric()) {
 				assignment = assignment.asRAN().value();
