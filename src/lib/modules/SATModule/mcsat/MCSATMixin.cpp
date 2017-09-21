@@ -25,9 +25,11 @@ bool MCSATMixin::backtrackTo(Minisat::Lit literal) {
 	while (mCurrentLevel > level) {
 		popLevel();
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Backtracking theory assignment for " << current().variable);
+
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Model " << model());
+
 		if (current().decisionLiteral != Minisat::lit_Undef) {
-			mNLSAT.popAssignment(current().variable);
+			mBackend.popAssignment(current().variable);
 			mVariables.unassign(current().variable);
 		}
 	}
@@ -38,6 +40,7 @@ bool MCSATMixin::backtrackTo(Minisat::Lit literal) {
 Minisat::lbool MCSATMixin::evaluateLiteral(Minisat::Lit lit) const {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Evaluate " << lit);
 	const FormulaT& f = mGetter.reabstractLiteral(lit);
+
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Evaluate " << f << " on " << model());
 	auto res = carl::model::evaluate(f, model());
 	if (res.isBool()) {
@@ -53,14 +56,14 @@ boost::variant<Minisat::Lit,FormulaT> MCSATMixin::checkLiteralForDecision(Minisa
 			return lit;
 		}
 		const auto& f = mGetter.reabstractLiteral(lit);
-		auto res = mNLSAT.isInfeasible(currentVariable(), f);
+		auto res = mBackend.isInfeasible(currentVariable(), f);
 		if (res == boost::none) {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning feasible theory literal " << lit);
 			return lit;
 		} else {
 			// There is a conflict. Return conflict. 
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning theory propagation for " << lit);
-			return mNLSAT.explain(currentVariable(), *res, FormulaT(carl::FormulaType::FALSE));
+			return mBackend.explain(currentVariable(), *res, FormulaT(carl::FormulaType::FALSE));
 			// Perform theory propagation (in search)
 		}
 	} else {
