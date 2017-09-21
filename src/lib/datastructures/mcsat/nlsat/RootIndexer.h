@@ -58,11 +58,11 @@ public:
 inline std::ostream& operator<<(std::ostream& os, const RootIndexer& ri) {
 	os << "Roots:" << std::endl;
 	for (std::size_t i = 0; i < ri.size(); i++) {
-		os << "\t" << i << " <-> " << ri[i] << std::endl;
+		os << "\t" << i << ": " << ri[i] << std::endl;
 	}
 	os << "Samples:" << std::endl;
 	for (std::size_t i = 0; i < ri.size()*2+1; i++) {
-		os << "\t" << ri.sampleFrom(i) << std::endl;;
+		os << "\t" << i << ": " << ri.sampleFrom(i) << std::endl;;
 	}
 	return os;
 }
