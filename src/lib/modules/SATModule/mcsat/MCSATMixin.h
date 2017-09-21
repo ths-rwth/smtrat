@@ -305,37 +305,34 @@ public:
 				}
 			}
 			if (decisionVar && mGetter.getReason(*decisionVar) != Minisat::CRef_TPropagation) {
-				levels.push_back(mGetter.getDecisionLevel(*decisionVar) - 1);
-				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", formula << " becomes unassigned from boolean assignment at " << levels.back());
+				levels.push_back(mGetter.getDecisionLevel(*decisionVar));
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", formula << " was assigned by boolean assignment at " << levels.back());
 			} else {
 				carl::Variables vars;
 				formula.arithmeticVars(vars);
-				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", formula << " contains " << vars);
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", formula << " contains " << vars);
 				for (std::size_t lvl = level()-1; lvl > 0; lvl--) {
 					if (vars.find(get(lvl).variable) != vars.end()) {
 						Minisat::Lit declit = get(lvl).decisionLiteral;
 						if (declit != Minisat::lit_Undef) {
-							levels.push_back(mGetter.getDecisionLevel(var(declit)) - 1);
-							SMTRAT_LOG_TRACE("smtrat.sat.mcsat", formula << " becomes unassigned from theory assignment at " << levels.back());
+							levels.push_back(mGetter.getDecisionLevel(var(declit)));
+							SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", formula << " was assigned by theory assignment at " << levels.back());
 						}
 					}
 				}
 			}
 		}
+		std::sort(levels.rbegin(), levels.rend());
+		levels.erase(std::unique(levels.begin(), levels.end()), levels.end());
 		
-		auto res = *std::max_element(levels.begin(), levels.end());
-		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "-> returning " << res);
-		return res;
-		
-		carl::Variables vars;
-		f.arithmeticVars(vars);
-		assert(vars.find(current().variable) != vars.end());
-		for (int lvl = static_cast<int>(level())-1; lvl > 0; lvl--) {
-			if (vars.find(get(lvl).variable) != vars.end()) {
-				return lvl;
-			}
+		assert(levels.size() > 0);
+		if (levels.size() > 1) {
+			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "-> returning " << levels[1]);
+			return levels[1];
+		} else {
+			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "-> returning " << levels[0]);
+			return levels[0];
 		}
-		return 0;
 	}
 	
 	// ***** Output
