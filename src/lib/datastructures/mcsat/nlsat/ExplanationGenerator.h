@@ -16,10 +16,10 @@ private:
 		static constexpr cad::Backtracking backtracking = cad::Backtracking::ORDERED;
 	};
 
-	std::map<FormulaT, ConstraintT> mConstraints;
+	Model mModel;
+	std::map<FormulaT,ConstraintT> mConstraints;
 	cad::CADConstraints<ProjectionSettings::backtracking> mCADConstraints;
 	cad::ModelBasedProjectionT<ProjectionSettings> mProjection;
-	Model mModel;
 	
 	bool isEqual(const RAN& ran, const ModelValue& mv) const {
 		if (mv.isRational()) return ran == RAN(mv.asRational());
@@ -115,42 +115,41 @@ private:
 	}
 public:
 	ExplanationGenerator(const std::vector<FormulaT>& constraints, const std::vector<carl::Variable>& vars, const Model& model):
+		mModel(model),
 		mConstraints(),
 		mCADConstraints(
 			[&](const auto& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(mProjection.normalize(p), cid, isBound); },
 			[&](const auto& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(mProjection.normalize(p), cid, isBound); }
 		),
-		mProjection(mCADConstraints, model), 
-		mModel(model)
+		mProjection(mCADConstraints, mModel)
 	{
 		SMTRAT_LOG_TRACE("smtrat.nlsat", "Reset to " << vars);
 		mCADConstraints.reset(vars);
 		mProjection.reset();
-		std::set<ConstraintT> cons;
 		for (const auto& f: constraints) {
 			if (f.getType() == carl::FormulaType::CONSTRAINT) {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding " << f);
-				auto it = mConstraints.emplace(f, f.constraint());
-				cons.insert(it.first->second);
+				mConstraints.emplace(f, f.constraint());
 			} else if (f.getType() == carl::FormulaType::VARCOMPARE) {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << f);
-				auto it = mConstraints.emplace(f, ConstraintT(f.variableComparison().definingPolynomial(), f.variableComparison().relation()));
-				cons.insert(it.first->second);
+				mConstraints.emplace(f, ConstraintT(f.variableComparison().definingPolynomial(), f.variableComparison().relation()));
 			} else if (f.getType() == carl::FormulaType::VARASSIGN) {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding assignment " << f);
+				const VariableComparisonT& vc = f.variableAssignment();
+				mConstraints.emplace(f, ConstraintT(vc.definingPolynomial(), carl::Relation::EQ));
 			} else {
 				SMTRAT_LOG_ERROR("smtrat.nlsat", "Unsupported formula type: " << f);
 				assert(false);
 			}
 		}
 
-		for (const auto& c: cons) {
-			mCADConstraints.add(c);
+		for (const auto& c: mConstraints) {
+			mCADConstraints.add(c.second);
 		}
-                
-                for (std::size_t level = 2; level < mCADConstraints.vars().size(); level++) {
-                    mProjection.projectNextLevel(level); 
-                }
+		
+		for (std::size_t level = 2; level < mCADConstraints.vars().size(); level++) {
+			mProjection.projectNextLevel(level);
+		}
 
 		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Projection is" << std::endl << mProjection);
 	}
