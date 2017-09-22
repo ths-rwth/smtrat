@@ -246,17 +246,18 @@ public:
 		result.stderr = "";
 		char buf[512];
 		int n;
-		int eof;
-		SSH_LOCKED(eof = ssh_channel_is_eof(channel));
+		int eof = 0;
 		while (eof == 0) {
+			SSH_LOCKED(eof = ssh_channel_is_eof(channel));
 			SSH_LOCKED(n = ssh_channel_read_nonblocking(channel, buf, sizeof(buf), 0));
 			if (n > 0) result.stdout += std::string(buf, std::size_t(n));
 			SSH_LOCKED(n = ssh_channel_read_nonblocking(channel, buf, sizeof(buf), 1));
 			if (n > 0) result.stderr += std::string(buf, std::size_t(n));
-			SSH_LOCKED(eof = ssh_channel_is_eof(channel));
 			std::this_thread::yield();
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
+		BENCHMAX_LOG_DEBUG("benchmax.ssh", "stdout = " << result.stdout);
+		BENCHMAX_LOG_DEBUG("benchmax.ssh", "stderr = " << result.stderr);
 		SSH_LOCKED(result.exitCode = ssh_channel_get_exit_status(channel));
 		result.time = parseDuration(result.stdout);
 		destroy(channel);
