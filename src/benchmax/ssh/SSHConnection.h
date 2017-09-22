@@ -230,7 +230,7 @@ public:
 		ssh_channel channel = getChannel();
 		std::stringstream call;
 		call << "date +\"Start: %s%3N\" ; ";
-		std::size_t timeout = (seconds(Settings::timeLimit) + std::chrono::seconds(3)).count();
+		auto timeout = (seconds(Settings::timeLimit) + std::chrono::seconds(3)).count();
 		if (Settings::wallclock) call << "timeout " << timeout << "s ";
 		else call << "ulimit -S -t " << timeout << " && ";
 		call << "ulimit -S -v " << (Settings::memoryLimit * 1024) << " && ";
