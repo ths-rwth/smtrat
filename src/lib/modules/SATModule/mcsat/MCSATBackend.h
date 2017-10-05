@@ -14,8 +14,10 @@ namespace mcsat {
         
         public:
         
-            // TODO
-        friend std::ostream& operator<<(std::ostream& os, const MCSATBackend<Settings>& backend);
+        template<typename Settings2>
+        friend std::ostream& operator<<(std::ostream& os, const MCSATBackend<Settings2>& backend) {
+            return operator<<(os, backend.mBackend);
+        }
         
         void pushConstraint(const FormulaT& f) {
             mBackend.pushConstraint(f);
@@ -60,8 +62,15 @@ namespace mcsat {
                 
             using B = std::tuple<Backends...>;
             B mBackends;
-                
-            //friend std::ostream& operator<<(std::ostream& os, const MultiBackend<Backends...>& backend);
+            
+            template<typename... Backends2>
+            friend std::ostream& operator<<(std::ostream& os, const MultiBackend<Backends2...>& backends) {
+                    auto output = carl::tuple_foreach(
+                        [&os](const auto& b){ return operator<<(os, b); },
+                        backends.mBackends
+                    ); 
+                    return std::get<0>(output);
+            }
             
             void pushConstraint(const FormulaT& f) {
                     carl::tuple_foreach( 
@@ -96,7 +105,7 @@ namespace mcsat {
                             [](const auto& b){ return b.getModel(); },
                             mBackends
                     );
-                    return std::get<0>(models); //TODO was mit den anderen? 
+                    return std::get<0>(models); 
             }
 
             auto findAssignment(carl::Variable var) const { //AssignmentFinder::AssignmentOrConflict
@@ -104,7 +113,7 @@ namespace mcsat {
                             [var](const auto& b){ return b.findAssignment(var); },
                             mBackends
                     );
-                    return std::get<0>(assignments); //TODO was mit den anderen? 
+                    return std::get<0>(assignments); 
             }
 
             boost::optional<FormulasT> isInfeasible(carl::Variable var, const FormulaT& f) {
@@ -112,7 +121,7 @@ namespace mcsat {
                             [var,f](auto& b){ return b.isInfeasible(var, f); },
                             mBackends
                     );
-                    return std::get<0>(infeasible); //TODO was mit den anderen? 
+                    return std::get<0>(infeasible); 
             }
 
             FormulaT explain(carl::Variable var, const FormulasT& reason, const FormulaT& implication) {
@@ -120,7 +129,7 @@ namespace mcsat {
                             [var,reason,implication](auto& b){ return b.explain(var, reason, implication); },
                             mBackends
                     );
-                    return std::get<0>(expl); //TODO was mit den anderen? 
+                    return std::get<0>(expl); 
             }
            
     };
@@ -128,32 +137,14 @@ namespace mcsat {
     struct BackendSettings1
     {
         using BackendType = nlsat::NLSAT;
-	//typedef nlsat::NLSAT BackendType;
     };
     
-    //TODO
-    inline std::ostream& operator<<(std::ostream& os, const MCSATBackend<BackendSettings1>& backend) {
-            return operator<<(os, backend.mBackend);
-    } 
     
     struct MultiBackendSettings1
     {
         using BackendType = MultiBackend<nlsat::NLSAT>;
-	//typedef MultiBackend<nlsat::NLSAT> BackendType;
     };
     
-
-    /*inline std::ostream& operator<<(std::ostream& os, const MultiBackend<nlsat::NLSAT>& backends) {
-            auto output = carl::tuple_foreach(
-                    [&os](const auto& b){ return operator<<(os, b); },
-                    backends.mBackends
-            ); 
-            return std::get<0>(output);
-    } */
-    
-    inline std::ostream& operator<<(std::ostream& os, const MCSATBackend<MultiBackendSettings1>& backend) {
-            return operator<<(os, std::get<0>(backend.mBackend.mBackends));
-    } 
     
 }
 }
