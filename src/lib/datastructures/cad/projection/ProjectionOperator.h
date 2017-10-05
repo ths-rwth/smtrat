@@ -9,8 +9,10 @@ namespace cad {
         template<typename Callback>
         void operator()(ProjectionType pt, const UPoly& p, carl::Variable::Arg variable, Callback&& cb) const {
             switch (pt) {
-				case ProjectionType::Brown: return Brown(p, variable, cb);
+		case ProjectionType::Brown: return Brown(p, variable, cb);
                 case ProjectionType::McCallum: return McCallum(p, variable, cb);
+                case ProjectionType::Collins: return Collins(p, variable, cb);
+                case ProjectionType::Hong: return Hong(p,variable, cb);
                 default:
                     SMTRAT_LOG_ERROR("smtrat.cad", "Selected a projection operator that is not implemented.");
                     return;
@@ -19,8 +21,10 @@ namespace cad {
         template<typename Callback>
         void operator()(ProjectionType pt, const UPoly& p, const UPoly& q, carl::Variable::Arg variable, Callback&& i) const {
             switch (pt) {
-				case ProjectionType::Brown: return Brown(p, q, variable, i);
+		case ProjectionType::Brown: return Brown(p, q, variable, i);
                 case ProjectionType::McCallum: return McCallum(p, q, variable, i);
+                case ProjectionType::Collins: return Collins(p, q, variable, i);
+                case ProjectionType::Hong: return Hong(p, q, variable, i);
                 default:
                     SMTRAT_LOG_ERROR("smtrat.cad", "Selected a projection operator that is not implemented.");
                     return;
@@ -78,6 +82,7 @@ namespace cad {
 				cb(normalize(coeff.toUnivariatePolynomial(variable)));
 			}
 		}
+                
         template<typename Callback>
         void McCallum(const UPoly& p, const UPoly& q, carl::Variable::Arg variable, Callback& cb) const {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "resultant(" << p << ", " << q << ")");
@@ -92,6 +97,79 @@ namespace cad {
 				if (coeff.isConstant()) continue;
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "\t-> " << coeff);
                 cb(normalize(coeff.toUnivariatePolynomial(variable)));
+            }
+        }
+        
+        template<typename Callback>
+        void Collins(const UPoly& p, const UPoly& q, carl::Variable::Arg variable, Callback& cb) const {
+            SMTRAT_LOG_DEBUG("smtrat.cad.projection","Collins ");
+            UPoly reducta_p = p;
+            while(!reducta_p.isZero()) {
+                UPoly reducta_q = q;
+                while(!reducta_q.isZero()) {
+                    // Insert psc of reducta combinations of p and q
+                    for(const auto& psc: UPoly::principalSubresultantsCoefficients(reducta_p, reducta_q)) {
+                        SMTRAT_LOG_DEBUG("smtrat.cad.projection", "reducta psc(" << psc << ")");
+                        cb(normalize(psc.switchVariable(variable)));
+                    }
+                    reducta_q.truncate();
+                }
+                reducta_p.truncate();
+            }
+        }
+        template<typename Callback>
+        void Collins(const UPoly& p, carl::Variable::Arg variable, Callback& cb) const {
+            SMTRAT_LOG_DEBUG("smtrat.cad.projection","Collins ");
+            UPoly reducta = p;
+            UPoly reducta_derivative = p.derivative();
+            // reducta_derivative instead of reducta because principalSubresultantsCoefficients would fail otherwise
+            while(!reducta_derivative.isZero()) {
+                //Insert psc of reducta and its derivative
+                for(const auto& psc: UPoly::principalSubresultantsCoefficients(reducta, reducta_derivative)) {
+                    SMTRAT_LOG_DEBUG("smtrat.cad.projection", "reducta psc(" << psc << ")");
+                    cb(normalize(psc.switchVariable(variable)));
+                }
+                // Insert reducta coefficients
+                SMTRAT_LOG_DEBUG("smtrat.cad.projection", "reductum ldc(" << reducta.lcoeff() << ")");
+                cb(normalize(reducta.lcoeff().toUnivariatePolynomial(variable)));
+                // switch to next reducta
+                reducta.truncate();
+                reducta_derivative.truncate();
+            }
+ 
+        }
+ 
+        template<typename Callback>
+        void Hong(const UPoly& p, const UPoly& q, carl::Variable::Arg variable, Callback& cb) const {
+            SMTRAT_LOG_DEBUG("smtrat.cad.projection","Hong ");
+            UPoly reducta_p = p;
+            while(!reducta_p.isZero()) {
+                // Insert psc of reducta combinations of p and q
+                for(const auto& psc: UPoly::principalSubresultantsCoefficients(reducta_p, q)) {
+                    SMTRAT_LOG_DEBUG("smtrat.cad.projection", "reducta psc(" << psc << ")");
+                    cb(normalize(psc.switchVariable(variable)));
+                }
+                reducta_p.truncate();
+            }
+        }
+        template<typename Callback>
+        void Hong(const UPoly& p, carl::Variable::Arg variable, Callback& cb) const {
+            SMTRAT_LOG_DEBUG("smtrat.cad.projection","Hong ");
+            UPoly reducta = p;
+            UPoly reducta_derivative = p.derivative();
+            // reducta_derivative instead of reducta because principalSubresultantsCoefficients would fail otherwise
+            while(!reducta_derivative.isZero()) {
+                // Insert psc of reducta and its derivative
+                for(const auto& psc: UPoly::principalSubresultantsCoefficients(reducta, reducta_derivative)) {
+                    SMTRAT_LOG_DEBUG("smtrat.cad.projection", "reducta psc(" << psc << ")");
+                    cb(normalize(psc.switchVariable(variable)));
+                }
+                // Insert reducta coefficients
+                SMTRAT_LOG_DEBUG("smtrat.cad.projection", "reductum ldc(" << reducta.lcoeff() << ")");
+                cb(normalize(reducta.lcoeff().toUnivariatePolynomial(variable)));
+                // switch to next reducta
+                reducta.truncate();
+                reducta_derivative.truncate();
             }
         }
     };
