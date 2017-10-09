@@ -327,11 +327,11 @@ public:
 		
 		assert(levels.size() > 0);
 		if (levels.size() > 1) {
-			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "-> returning " << levels[1]);
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> returning " << levels[1]);
 			return levels[1];
 		} else {
-			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "-> returning " << levels[0]);
-			return levels[0];
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> returning " << levels[0]-1);
+			return levels[0]-1;
 		}
 	}
 	
