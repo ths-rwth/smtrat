@@ -47,25 +47,20 @@ Minisat::lbool MCSATMixin::evaluateLiteral(Minisat::Lit lit) const {
 }
 
 boost::variant<Minisat::Lit,FormulaT> MCSATMixin::checkLiteralForDecision(Minisat::Var var, Minisat::Lit lit) {
-	if (isLiteralInUnivariateClause(lit)) {
-		if (!mGetter.isTheoryAbstraction(var)) {
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning boolean literal " << lit);
-			return lit;
-		}
-		const auto& f = mGetter.reabstractLiteral(lit);
-		auto res = mBackend.isInfeasible(currentVariable(), f);
-		if (res == boost::none) {
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning feasible theory literal " << lit);
-			return lit;
-		} else {
-			// There is a conflict. Return conflict. 
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning theory propagation for " << lit);
-			return mBackend.explain(currentVariable(), *res, FormulaT(carl::FormulaType::FALSE));
-			// Perform theory propagation (in search)
-		}
+	if (!mGetter.isTheoryAbstraction(var)) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning boolean literal " << lit);
+		return lit;
+	}
+	const auto& f = mGetter.reabstractLiteral(lit);
+	auto res = mBackend.isInfeasible(currentVariable(), f);
+	if (res == boost::none) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning feasible theory literal " << lit);
+		return lit;
 	} else {
-		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", lit << " is not in a univariate clause");
-		return Minisat::lit_Undef;
+		// There is a conflict. Return conflict. 
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning theory propagation for " << lit);
+		return mBackend.explain(currentVariable(), *res, FormulaT(carl::FormulaType::FALSE));
+		// Perform theory propagation (in search)
 	}
 }
 
