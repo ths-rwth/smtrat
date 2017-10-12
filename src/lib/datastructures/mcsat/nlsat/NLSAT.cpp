@@ -151,7 +151,7 @@ boost::optional<FormulasT> NLSAT::isInfeasible(carl::Variable var, const Formula
 	return boost::get<FormulasT>(res);
 }
 
-FormulaT NLSAT::explain(carl::Variable var, const FormulasT& reason, const FormulaT& implication) {
+FormulaT NLSAT::explain(carl::Variable var, const FormulasT& reason, const FormulaT& implication) const {
 	SMTRAT_LOG_DEBUG("smtrat.nlsat", "Explaining " << implication << " by " << reason);
 	std::vector<carl::Variable> orderedVars(mVariables.begin(), mVariables.end());
 	orderedVars.push_back(var);
