@@ -264,6 +264,14 @@ public:
 		}
 	}
 	
+	FormulaT explainTheoryPropagation(Minisat::Lit literal) const {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << literal << " under " << mBackend.getModel());
+		auto f = mGetter.reabstractLiteral(literal);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f);
+		auto res = mBackend.explain(currentVariable(), {f}, FormulaT(carl::FormulaType::FALSE));
+		return f;
+	}
+	
 	// ***** Auxliary getter
 	
 	/// Check whether a literal is in a univariate clause, try to change the watch to a non-univariate literal.
@@ -285,6 +293,24 @@ public:
 			return std::numeric_limits<int>::max();
 		}
 		return mGetter.getTrailIndex(var(lit));
+	}
+	
+	int theoryLevel(const FormulaT& f) const {
+		carl::Variables vars;
+		f.arithmeticVars(vars);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", f << " contains " << vars);
+		for (std::size_t lvl = level()-1; lvl > 0; lvl--) {
+			if (vars.find(get(lvl).variable) != vars.end()) {
+				Minisat::Lit declit = get(lvl).decisionLiteral;
+				if (declit != Minisat::lit_Undef) {
+					int res = mGetter.getDecisionLevel(var(declit));
+					SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", f << " was assigned by theory assignment at " << res);
+					return res;
+				}
+			}
+		}
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", f << " was not assigned by any theory assignment");
+		return 0;
 	}
 	
 	/**
