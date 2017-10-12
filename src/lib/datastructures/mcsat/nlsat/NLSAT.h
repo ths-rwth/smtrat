@@ -60,7 +60,7 @@ public:
 	/**
 	 * Takes a conflicting core as a reason and explains it by an explanation as described in the MCSAT / NLSAT paper.
 	 */
-	FormulaT explain(carl::Variable var, const FormulasT& reason, const FormulaT& implication);
+	FormulaT explain(carl::Variable var, const FormulasT& reason, const FormulaT& implication) const;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const NLSAT& nl) {
