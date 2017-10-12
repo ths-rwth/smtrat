@@ -47,7 +47,7 @@ namespace mcsat {
             return mBackend.isInfeasible(var, f);
         }
         
-        FormulaT explain(carl::Variable var, const FormulasT& reason, const FormulaT& implication) {
+        FormulaT explain(carl::Variable var, const FormulasT& reason, const FormulaT& implication) const {
             return mBackend.explain(var, reason, implication);
         }
         
@@ -148,5 +148,3 @@ namespace mcsat {
     
 }
 }
-
-
