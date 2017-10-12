@@ -88,7 +88,6 @@ boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision(const s
 
 boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision() {
 	for (const auto& vars: {get(0).univariateVariables, current().univariateVariables}) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "trying variables: " << vars);
 		auto res = pickLiteralForDecision(vars);
 		if (carl::variant_is_type<Minisat::Lit>(res)) {
 			if (boost::get<Minisat::Lit>(res) == Minisat::lit_Undef) {
@@ -96,9 +95,10 @@ boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision() {
 				continue;
 			}
 		}
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", res << " can be decided upon.");
 		return res;
 	}
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning undef.");
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "No variable can be used for decision.");
 	return Minisat::lit_Undef;
 }
 

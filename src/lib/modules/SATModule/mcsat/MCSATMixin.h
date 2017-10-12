@@ -322,6 +322,7 @@ public:
 				}
 			}
 		}
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> Levels " << levels);
 		std::sort(levels.rbegin(), levels.rend());
 		levels.erase(std::unique(levels.begin(), levels.end()), levels.end());
 		
