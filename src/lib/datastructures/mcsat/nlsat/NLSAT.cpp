@@ -13,7 +13,7 @@ namespace nlsat {
 
 FormulaT NLSAT::resolveNegation(const FormulaT& f) const {
 	assert(f.getType() == carl::FormulaType::NOT);
-	SMTRAT_LOG_DEBUG("smtrat.nlsat", "Resolving negation of " << f);
+	SMTRAT_LOG_TRACE("smtrat.nlsat", "Resolving negation of " << f);
 	switch (f.subformula().getType()) {
 		case carl::FormulaType::CONSTRAINT: {
 			const auto& c = f.subformula().constraint();
@@ -29,7 +29,7 @@ FormulaT NLSAT::resolveNegation(const FormulaT& f) const {
 }
 
 void NLSAT::pushConstraint(const FormulaT& f) {
-	SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding " << f);
+	SMTRAT_LOG_TRACE("smtrat.nlsat", "Adding " << f);
 	switch (f.getType()) {
 		case carl::FormulaType::NOT:
 			switch (f.subformula().getType()) {
@@ -57,7 +57,7 @@ void NLSAT::pushConstraint(const FormulaT& f) {
 }
 
 void NLSAT::popConstraint(const FormulaT& f) {
-	SMTRAT_LOG_DEBUG("smtrat.nlsat", "Removing " << f);
+	SMTRAT_LOG_TRACE("smtrat.nlsat", "Removing " << f);
 	switch (f.getType()) {
 		case carl::FormulaType::NOT:
 			switch (f.subformula().getType()) {
@@ -90,7 +90,7 @@ void NLSAT::popConstraint(const FormulaT& f) {
 }
 
 void NLSAT::pushAssignment(carl::Variable v, const ModelValue& mv, const FormulaT& f) {
-	SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding " << v << " = " << mv);
+	SMTRAT_LOG_TRACE("smtrat.nlsat", "Adding " << v << " = " << mv);
         if(mModel.find(v) != mModel.end()) {
             std::exit(27);
         }
@@ -101,7 +101,7 @@ void NLSAT::pushAssignment(carl::Variable v, const ModelValue& mv, const Formula
 }
 
 void NLSAT::popAssignment(carl::Variable v) {
-	SMTRAT_LOG_DEBUG("smtrat.nlsat", "Removing " << v << " = " << mModel.evaluated(v));
+	SMTRAT_LOG_TRACE("smtrat.nlsat", "Removing " << v << " = " << mModel.evaluated(v));
 	assert(!mVariables.empty() && mVariables.back() == v);
 	mModel.erase(v);
 	mVariables.pop_back();
@@ -111,7 +111,7 @@ void NLSAT::popAssignment(carl::Variable v) {
 AssignmentFinder::AssignmentOrConflict NLSAT::findAssignment(carl::Variable var) const {
 	SMTRAT_LOG_DEBUG("smtrat.nlsat", "Looking for an assignment for " << var);
 	AssignmentFinder af(var, mModel);
-        FormulasT conflict;
+	FormulasT conflict;
 	for (const auto& c: mConstraints) {
 		if (c.getType() == carl::FormulaType::NOT) {
 			std::exit(29);
@@ -122,7 +122,7 @@ AssignmentFinder::AssignmentOrConflict NLSAT::findAssignment(carl::Variable var)
 				return conflict;
 			}
 		} else {
-			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding Constraint " << c);
+			SMTRAT_LOG_TRACE("smtrat.nlsat", "Adding Constraint " << c);
 			if(!af.addConstraint(c)){
 				conflict.push_back(c);
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "No Assignment, built conflicting core " << conflict << " under model " << mModel);
@@ -131,7 +131,7 @@ AssignmentFinder::AssignmentOrConflict NLSAT::findAssignment(carl::Variable var)
 		}
 	}
 	for (const auto& b: mMVBounds) {
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding MVBound " << b);
+		SMTRAT_LOG_TRACE("smtrat.nlsat", "Adding MVBound " << b);
 		af.addMVBound(b);
 	}
 	SMTRAT_LOG_DEBUG("smtrat.nlsat", "Calling AssignmentFinder...");
