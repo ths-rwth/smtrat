@@ -3221,11 +3221,13 @@ namespace smtrat
 			if (confl == CRef_TPropagation) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Found " << p << " to be result of theory propagation.");
 				// if is theory propagation: 
-				if (!seen[var( p )]) {
+				//if (!seen[var( p )]) {
 					SMTRAT_LOG_DEBUG("smtrat.sat", "pushing " << ~p << " to out_learnt as a theory propagation");
+					std::exit(38);
 					out_learnt.push(~p);
-					pathC++;
-				}
+					//pathC++;
+				//}
+				auto explanation = mMCSAT.explainTheoryPropagation(p);
 			}  else {
 	            Clause& c = ca[confl];
 				SMTRAT_LOG_DEBUG("smtrat.sat", "c = " << c);
@@ -3243,10 +3245,10 @@ namespace smtrat
 						SMTRAT_LOG_DEBUG("smtrat.sat", "\tNot seen yet, level = " << level(var(q)));
 	                    varBumpActivity( var( q ) );
 						seen[var( q )] = 1;
-						if (Settings::mc_sat && reason(var(q)) == CRef_TPropagation) {
-							pathC++;
-							SMTRAT_LOG_DEBUG("smtrat.sat", "\tTo process: "  << q << ", pathC = " << pathC);
-						} else {
+						//if (Settings::mc_sat && reason(var(q)) == CRef_TPropagation) {
+						//	pathC++;
+						//	SMTRAT_LOG_DEBUG("smtrat.sat", "\tTo process: "  << q << ", pathC = " << pathC);
+						//} else {
 		                    if( level( var( q ) ) >= decisionLevel() ) {
 								pathC++;
 								SMTRAT_LOG_DEBUG("smtrat.sat", "\tTo process: "  << q << ", pathC = " << pathC);
@@ -3255,7 +3257,7 @@ namespace smtrat
 								SMTRAT_LOG_DEBUG("smtrat.sat", "\tpushing = " << q << " to out_learnt");
 		                        out_learnt.push( q );
 							}
-						}
+						//}
 	                }
 	            }
 			}
@@ -3352,11 +3354,11 @@ namespace smtrat
                 int currentLitLevel;
                 if (reason(var(out_learnt[i])) == CRef_TPropagation) {
                     const FormulaT& f = mBooleanConstraintMap[var(out_learnt[i])].first->reabstraction;
-                    currentLitLevel = mMCSAT.penultimateTheoryLevel(f);
+                    currentLitLevel = mMCSAT.theoryLevel(f);
                 } else {
-                    currentLitLevel = level(var(out_learnt[i])) - 1;
+                    currentLitLevel = level(var(out_learnt[i]));
                 }
-				SMTRAT_LOG_DEBUG("smtrat.sat", out_learnt[i] << " gets unassigned at " << currentLitLevel);
+				SMTRAT_LOG_DEBUG("smtrat.sat", out_learnt[i] << " is assigned at " << currentLitLevel);
                 if (currentLitLevel > max_lvl) {
 					max_i = i;
 					max_lvl = currentLitLevel;
