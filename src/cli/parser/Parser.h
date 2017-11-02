@@ -129,11 +129,7 @@ public:
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-unsat-core)");
 		callHandler(&InstructionHandler::getUnsatCore);
 	}
-	void getValue(const std::vector<types::TermType>&
-        #if defined LOGGING
-        vars
-        #endif
-    ) {
+	void getValue(const std::vector<types::TermType>& vars) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-value " << vars << ")");
 	}
 	void addObjective(const types::TermType& t, OptimizationType ot) {
