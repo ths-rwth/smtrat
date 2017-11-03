@@ -1,8 +1,21 @@
 #pragma once
 
+/**
+ * @file
+ * Construct a single open CAD Cell around a given point that is sign-invariant
+ * on a given set of polynomials.
+ *
+ * References:
+ * [1] Christopher W. Brown. 2013. Constructing a single open cell in a
+ * cylindrical algebraic decomposition. In Proceedings of the 38th
+ * International Symposium on Symbolic and Algebraic Computation (ISSAC '13).
+ * ACM
+ */
+
 #include <vector>
 #include <unordered_map>
 #include <set>
+#include <algorithm>
 
 #include <boost/optional.hpp>
 
@@ -15,8 +28,9 @@
 #include <carl/core/rootfinder/RootFinder.h>
 #include <carl/core/UnivariatePolynomial.h>
 #include <carl/core/MultivariatePolynomial.h>
-#include <carl/converter/CoCoaAdaptor.h>
-/* #include "Common.h" */
+#include <carl/converter/CoCoAAdaptor.h>
+
+#include "../../Common.h" // type alias for Rational number representation
 /* #include "projection/Projection.h" */
 /* #include "lifting/LiftingTree.h" */
 /* #include "helper/CADConstraints.h" */
@@ -27,22 +41,26 @@
 
 namespace smtrat {
 namespace opencad {
+  // Forward declarations
+  struct Sector;
+  struct Section;
 
-	using UnivarPoly = carl::UnivariatePolynomial<Rational>;
-	using MultivarPoly = carl::MultivariatePolynomial<Rational>;
-	using MultiUnivarPoly = carl::UnivariatePolynomial<MultivarPoly>;
+	using UniPoly = carl::UnivariatePolynomial<Rational>;
+	using MultiPoly = carl::MultivariatePolynomial<Rational>;
+	using MultiUnivarPoly = carl::UnivariatePolynomial<MultiPoly>;
 	using RAN = carl::RealAlgebraicNumber<Rational>;
 	using RANPoint = carl::RealAlgebraicPoint<Rational>;
 	using RANMap = std::map<carl::Variable, RAN>;
   /**
-   * Represent the "OpenCell Data Structure" from the 2012 Brown paper.
+   * Represent an "open cell" [1]
+   * TODO reduce phrasing
    * Design decision:
    * To reduce memory usage and improve performance we leave the variables,
    * variable order, universe dimension and cell dimension implicit
    * (they have to be stored in some form by the user if needed), since creating
    * multiple open cells would lead to multiple copies of variable lists/maps.
    */
-  using OpenCADCell = std::vector<Sector>;
+  using OpenCell = std::vector<Sector>;
 	/* using SampleLiftedWith = carl::Bitset; */
 	/* using SampleRootOf = carl::Bitset; */
 	/* using ConstraintSelection = carl::Bitset; */
@@ -51,8 +69,9 @@ namespace opencad {
 	/* using Assignment = std::map<carl::Variable, RAN>; */
 
   /**
+   * TODO check phrasing
    * Represent the algebraic boundaries (an open interval)
-   * of a CADCell along a single axis k of the universe space.
+   * of a OpenCell along a single axis k of the universe space.
    * This implies that the boundary polynomials are of level k, i.e.,
    * at most they mention the first k variables in the cell's variable ordering.
    * Design decision:
@@ -62,10 +81,10 @@ namespace opencad {
    * Note that if 'lowBound' or 'highBound' is not defined, then this
    * represents negative and positive infinity, respectively.
    */
-  struct sector {
-    boost::optional<AlgebraicBound> lowBound;
+  struct Sector {
+    boost::optional<Section> lowBound;
 
-    boost::optional<AlgebraicBound> highBound;
+    boost::optional<Section> highBound;
 
     bool isLowBoundNegativeInfty() {
       return lowBound == boost::none;
@@ -77,111 +96,132 @@ namespace opencad {
   };
 
   /**
-   * Weird combination of a polynomial and a real algebraic number found in the
-   * Brown 2012 OpenCADCell paper.
+   * TODO check phrasing and compare to implementation.
+   * TODO enable representing +-infty?
+   * Cell section with cached value similar to [1].
+   * This is basically a function f: algReal^{k-1} -> algReal; from
+   * multi-dimensional point of level k-1 (whose components are algebraic reals)
+   * to an algebraic real. [1] uses an unnecessary complicated way to represent
+   * this function. For performance we cache the result of plugging in the
+   * first k-1 components of a special point (called alpha in [1]).
+   * If the plugged-in point is of level k-1, then this section is said to be
+   * of level k, because it defines the boundaries along the k-th axis.
    */
-  struct AlgebraicBound {
+  struct Section {
+    /**
+     * Must be an irreducible poly of level k.
+     * TODO explain design choice
+     */
     MultiUnivarPoly poly;
-    RAN number;
-  };
+    /**
+     * TODO after plugging in a special point called alpha in [1].
+     * TODO refactor out if section is usefull without cached point.
+     */
+    RAN cachedPoint;
+  }
+
 
   /**
-   * Construct a CADCell for the specified set of polynomials 'polySet'
-   * that contains the specified 'point'. The returned cell represents
+   * TODO check phrasing
+   * Construct a OpenCell for the given set of polynomials 'polySet'
+   * that contains the given 'point'. The returned cell represents
    * the largest region that is sign-invariant on all polynomials in
    * the 'polySet' and is cylindrical only with respect to the
-	 * variables ordering specified in 'orderedVariables'.
+	 * variables ordering given in 'variableOrder'.
 	 * Note that this construction is only correct if plugging in
    * the 'point' into any polynomial of the 'polySet' yields a non-zero
    * value, i.e. 'point' is not a root of any polynomial in 'polySet',
-	 * otherwise no CADCell is returned.
+	 * otherwise no OpenCell is returned.
    * Note that the dimension (number of components) of the 'point' == the number of variables
-   * in 'orderedVariables'
+   * in 'variableOrder'
    * and that  any polynomial of the 'polySet' must be irreducible and
-   * mention only variables from 'orderedVariables'.
+   * mention only variables from 'variableOrder'.
 	 *
    */
-  boost::optional<CADCell> constructOpenCADCell(
-    const std::vector<MultiUnivarPoly> polySet,
+  boost::optional<OpenCell> constructOpenCADCell(
+    const std::vector<MultiPoly> polySet,
     const RANPoint& point,
-    const std::vector<carl::Variable> orderedVariables)
+    const std::vector<carl::Variable> variableOrder)
   {
-		// Note that combining 'orderedVariables' and 'point' into
+		// Note that combining 'variableOrder' and 'point' into
 		// a single object like Variable-to-RAN-map
 		// is bad because a map may rearrange the variables and destroy
     // any desired variable ordering.
-    assert(orderedVariables.size() == point.dim());
+    assert(variableOrder.size() == point.dim());
 
-    CADCell cell = createUniverseCoveringOpenCADCell(point.dim());
+    OpenCell cell = createFullspaceCoveringCell(point.dim());
 
     for(const auto& poly : polySet){
-      if(boost::optional<CADCell> optionalCell
-          = mergeCADCellWithPoly(cell, point, orderedVariables, poly)) {
+      if(boost::optional<OpenCell> optionalCell
+          = mergeCellWithPoly(cell, point, variableOrder, poly)) {
         cell = optionalCell.value();
       }
       else {// If any merge fails, this whole construction fails too
-        boost::optional<CADCell> fail;
+        boost::optional<OpenCell> fail;
         return fail;
       }
     }
-    return boost::optional<CADCell>(cell);
+    return boost::optional<OpenCell>(cell);
   }
 
 
 
   /**
-   * Merge the specified open CADCell 'cell' that contains the specified 'point'
+   * Merge the given open OpenCell 'cell' that contains the given 'point'
    * (called "alpha" in the paper) with a polynomial 'poly'.
    * Before the merge 'cell' represents a region that is sign-invariant
    * on other (previously merged) polynomials (all signs are non-zero).
    * The returned cell represents a region that is additionally sign-invariant on
    * 'poly' (also with non-zero sign).
-   * @return either a CADCell or nothing (representing FAIL but not an exception)
+   * @return either a OpenCell or nothing (representing FAIL but not an exception)
    */
-  boost::optional<CADCell> mergeCADCellWithPoly(
-    CADCell& cell,
+  boost::optional<OpenCell> mergeCellWithPoly(
+    OpenCell& cell,
     const RANPoint& point,
-    const std::vector<carl::Variable> orderedVariables,
-    const MultivarPoly poly)
+    const std::vector<carl::Variable> variableOrder,
+    const MultiPoly poly)
 	{
-    size_t polyLevel = polyLevelOf(poly,orderedVariables);
+    size_t polyLevel = polyLevel(poly,variableOrder);
     if(polyLevel == 0) // non-zero-constant-poly, no roots, so nothing to do
-      return boost::optional<CADCell>(cell);
+      return boost::optional<OpenCell>(cell);
 		carl::Variable mainVariable =
-      orderedVariables[polyLevel];
-    /* std::map<carl::Variable, Interval<Rational>> dummyMap; */
+      variableOrder[polyLevel-1];
 
-    RAN evaluation = carl::evaluate(poly, point, orderedVariables);
+    // Use a special function because we plug in algebraic reals into the poly.
+    RAN evaluation = carl::evaluate(poly,
+        reduceLevel(point, polyLevel),
+        reduceLevel(variableOrder, polyLevel));
     // This merge function is only correct for a full-dimensional CADCells,
     // i.e. the 'point' is not allowed to be a root of 'poly'
     // since this implies a lower-dimensional cell.
     if(evaluation.isZero()) {
-      boost::optional<CADCell> fail;
+      boost::optional<OpenCell> fail;
       return fail;
     }
 
-		CADCell newCell = cell;
+		OpenCell newCell = cell;
 		if (polyLevel > 1) {
-      // The "Open-McCallum projection closure" 'F' in the paper.
-      std::vector<MultivarPoly> projectionPolys;
-      // Add leading coefficient and discrimant
-      projectionPolys.emplace_back(poly.lcoeff(mainVariable));
       MultiUnivarPoly polyAsUnivar = poly.toUnivariatePolynomial(mainVariable);
-      projectionPolys.emplace_back(MultivarPoly(polyAsUnivar.discrimant()));
+      // The "Open-McCallum projection" (called 'F' in [1]) of the to-be-merged
+      // poly.
+      std::vector<MultiPoly> projectionPolys;
+      // Add leading coefficient and discrimant
+      projectionPolys.emplace_back(polyAsUnivar.lcoeff());
+      projectionPolys.emplace_back(MultiPoly(polyAsUnivar.discrimant()));
 
       // Add lowerBoundPoly resultant
-      Sector& currentSector = cell[polyLevel]; // Called D[k] in the paper.
+      Sector& currentSector = cell[polyLevel-1]; // Called D[k] in [1]
       if (!currentSector.isLowBoundNegativeInfty()) {
-        UnivarPoly resultant = currentSector.lowBound.poly
+        UniPoly resultant = currentSector.lowBound.poly
           .toUnivariatePolynomial(mainVariable).resultant(polyAsUnivar);
-        projectionPolys.push_back(MultivarPoly(resultant));
+        projectionPolys.push_back(MultiPoly(resultant));
       }
 
       // Add upperBoundPoly resultant
       if (!currentSector.isHighBoundInfty()) {
-        UnivarPoly resultant = currentSector.highBound.poly
+        UniPoly resultant = currentSector.highBound.poly
           .toUnivariatePolynomial(mainVariable).resultant(polyAsUnivar);
-        projectionPolys.push_back(MultivarPoly(resultant));
+        projectionPolys.push_back(MultiPoly(resultant));
       }
 
       // Each poly in 'projectionPolys' must be factorized into its irreducible
@@ -190,84 +230,87 @@ namespace opencad {
       // the fastest and most reliable library. Thus we need to enable
       // carl::cocoa in carl ccmake. Note that CoCoA needs to know the variable
       // names of the polynomials in every computation. The stateful
-      // 'CoCoaAdaptor' takes care of that.
-      CoCoAAdaptor<MultivarPoly> cocoaLib(projectionPolys);
-      // Constant factors are irrelevant for root computations, so leave them out.
-      const bool includeConstantFactors = false;
-      for(MultivarPoly projPoly : projectionPolys) {
-        for(const MultivarPoly& factor :
-            cocoaLib.factorize(projPoly, includeConstantFactors))
+      // 'CoCoaAdaptor' and its constructor take care of that.
+      CoCoAAdaptor<MultiPoly> cocoaLib(projectionPolys);
+      for(MultiPoly& projPoly : projectionPolys) {
+        // Constant factors are irrelevant for root computations, so leave them out.
+        const bool keepConstFactorsFlag = false;
+        for(const MultiPoly& factor :
+            cocoaLib.factorize(projPoly, keepConstFactorsFlag))
         {
-          if(boost::optional<CADCell> optionalCell
-              = mergeCADCellWithPoly(newCell, point, projPoly)) {
+          if(boost::optional<OpenCell> optionalCell
+              = mergeCellWithPoly(newCell, point, projPoly))
+          {
             newCell = optionalCell.value();
           }
           else {// If submerge fails, this merge fails too
-            boost::optional<CADCell> fail;
+            boost::optional<OpenCell> fail;
             return fail;
           }
         }
       }
     }
 
-		// Isolate real roots of 'poly'.
-		// 'alongPointPoly' is now a real univariate polynomial that only mentions the
-		// 'mainVariable'
-    std::unordered_map<carl::Variable, RAN> variableMap;
-    for(int i = 0; i < polyLevel; i++)
-      variableMap[orderedVariables[i]] = point[i];
-    auto& roots = carl::rootfinder::realRoots(poly, reduceOneLevel(point), variableMap);
+    std::unordered_map<carl::Variable, RAN> pointAsMap;
+    for(int i = 0; i < polyLevel-1; i++)
+      pointAsMap[variableOrder[i]] = point[i];
 
-    RAN& lastPointCoordinate = point[point.size()-1];
-    RAN& lowBoundNumber = newCell[polyLevel].lowBound.number;
-    RAN& highBoundNumber = newCell[polyLevel].highBound.number;
-    roots.push_back(lowBoundNumber);
-    roots.push_back(highBoundNumber);
-    roots.push_back(lastPointCoordinate);
-    // TODO make unique
-    sort(roots.begin(), roots.end(), roots);
+		// Isolate real roots of level-k 'poly' after plugin in a level-(k-1) point.
+    // polyLevel is >= 1
+    RAN point_k = point[polyLevel-1]; // called alpha_k in [1]
+    // Roots are represented as algebraic reals.
+    auto& roots = carl::rootfinder::realRoots(poly, pointAsMap);
+    std::sort(roots.begin(), roots.end());
 
-		// Compare levelSectors and update levelSectors if there is a smaller sector
-		RAN* previousRoot = nullptr;
-		for(auto& root : roots) {
-      if(root == lastPointCoordinate) {
-        if(previousRoot != nullptr && *previousRoot != lowBoundNumber
-            && *previousRoot != highBoundNumber)
-          newCell[polyLevel].lowBound = {poly, *previousRoot};
-        afterwardsRoot = root++;
-        if(afterwardsRoot != nullptr && *afterwardsRoot != lowBoundNumber
-            && *afterwardsRoot != highBoundNumber)
-          newCell[polyLevel].highBound = {poly, *afterwardsRoot};
-				break;
-      }
-      previousRoot = &root;
-		}
-
+    // Search for roots that are closest to point_k s.t.
+    // someRoot ... < root_lower < point_k < root_higher < ... someOtherRoot
+    auto root_higher = std::find_if(
+        roots.begin(),
+        roots.end(),
+        [&point_k] (const RAN& otherPoint) { return otherPoint > point_k; });
+    // Update high bound if a tighter root is found s.t.
+    // point_k < root_higher < old_root_higher
+    if(root_higher != roots.end() &&
+        *root_higher < currentSector.highBound.cachedPoint) {
+      currentSector.highBound.poly = poly;
+      currentSector.highBound.cachedPoint = *root_higher;
+    }
+    // Update low bound if a tighter root is found s.t.
+    // old_root_lower < root_lower < point_k
+    if(root_higher != roots.begin()) {
+      auto root_lower = --root_higher;
+      if(*root_lower > currentSector.lowBound.cachedPoint) {
+      currentSector.lowBound.poly = poly;
+      currentSector.lowBound.cachedPoint = *root_lower;
+    }
 
     return newCell;
   }
 
-  OpenCADCell createUniverseCoveringOpenCADCell(size_t universeDimension) {
-    return OpenCADCell(universeDimension);
+  OpenCell createFullspaceCoveringCell(size_t level) {
+    return OpenCell(level);
   }
 
   /**
-   * Find the highest variable (with respect to the implicit variable ordering
-   * in 'orderedVariables') that occurs with positive degree in 'poly' and
-   * return its index in that variable ordering. This is called a polynomial's
-   * level.
+   * Find the highest variable (with respect to the ordering
+   * in 'variableOrder') that occurs with positive degree in 'poly' and
+   * return its index+1 in that variable ordering.
+   * +1 because level count starts at 1, but index at 0.
    */
-  size_t polyLevelOf(const MultivarPoly& poly,
-      const std::vector<carl::Variable> orderedVariables)
+  size_t polyLevel(const MultiPoly& poly,
+      const std::vector<carl::Variable> variableOrder)
   {
     std::vector<carl::Variable> polyVariables(
         poly.gatherVariables().begin(),
         poly.gatherVariables.end());
+
     std::sort(polyVariables.begin(), polyVariables.end(),
-        [&orderedVariables] (const carl::Variable& a, const carl::Variable& b) {
-          return indexOf(a, orderedVariables) < indexOf(b, orderedVariables);
+        [&variableOrder] (const carl::Variable& a, const carl::Variable& b)
+        {
+          return indexOf(a, variableOrder) < indexOf(b, variableOrder);
+          /* std:distance(values.begin(), std::find(values.begin(), values.end(), value) */
         });
-    return indexOf(*polyVariables.last(), orderedVariables);
+    return 1+indexOf(*polyVariables.last(), variableOrder);
   }
 
 
@@ -284,23 +327,12 @@ namespace opencad {
 		return lowerDimPoint;
 	}
 
-	RANPoint& reduceOneLevel(const RANPoint& point) {
-    return reduceLevel(point, point.size()-1);
-  }
-
   template<class T>
   std::vector<T> reduceLevel(const std::vector<T> v, Size_Type<T> newLevel) {
 		assert( 0 <= newLevel && newLevel <= v.size());
     std::vector<T> newV;
 		for(size_t i = 0; i < newLevel; i++)
 			newV[i] = v[i];
-		return newV;
-  }
-
-  template<class T>
-  std::vector<T> reduceOneLevel(const std::vector<T> v) {
-		assert( 0 <= newLevel && newLevel <= v.size());
-    std::vector<T> newV(v.begin(), --v.end());
 		return newV;
   }
 
