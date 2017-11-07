@@ -2141,6 +2141,40 @@ namespace smtrat
             ok = true;
         }
     }
+	
+	template<class Settings>
+	void SATModule<Settings>::cancelIncludingLiteral( Minisat::Lit lit ) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Backtracking until we hit " << lit);
+		for (int c = trail.size() - 1; c >= 0; --c) {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Backtracking " << trail[c]);
+			if (Settings::mc_sat) {
+				mMCSAT.backtrackTo(trail[c]);
+			}
+            Var x = var( trail[c] );
+            resetVariableAssignment( x );
+			if (Settings::mc_sat) {
+				mMCSAT.undoAssignment(trail[c]);
+			}
+            VarData& vd = vardata[x];
+            if( vd.mExpPos > 0 )
+            {
+                removeTheoryPropagation( vd.mExpPos );
+                vd.mExpPos = -1;
+            }
+            vd.reason = CRef_Undef;
+            vd.mTrailIndex = -1;
+            if( (phase_saving > 1 || (phase_saving == 1)) && c > trail_lim.last() )
+                polarity[x] = sign( trail[c] );
+            insertVarOrder( x );
+			qhead = c;
+			Minisat::Lit curlit = trail[c];
+			assert(lit != neg(curlit));
+			if (trail_lim.last() == c) trail_lim.pop();
+			trail.pop();
+			if (curlit == lit) break;
+        }
+		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Done.");
+	}
 
     template<class Settings>
     void SATModule<Settings>::cancelAssignmentUntil( int level )
