@@ -2741,47 +2741,44 @@ namespace smtrat
 					}
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Deciding upon " << next);
                     
-                    if( next == lit_Undef && Settings::mc_sat && mMCSAT.hasNextVariable()) { 
-                        // No decision done yet, try with a theory decision.
-						SMTRAT_LOG_DEBUG("smtrat.sat", "Trying with next theory decision");
-						FormulaT res;
-						bool didDecision;
-						std::tie(res,didDecision) = mMCSAT.makeTheoryDecision();
-						if (didDecision) {
-							mCurrentAssignmentConsistent = SAT;
-							next = createLiteral(res);
-							mMCSAT.makeDecision(next);
-							pickTheoryBranchLit();
+                    if( next == lit_Undef && Settings::mc_sat) {
+						if (mMCSAT.hasNextVariable()) { 
+							// No decision done yet, try with a theory decision.
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Trying with next theory decision");
+							FormulaT res;
+							bool didDecision;
+							std::tie(res,didDecision) = mMCSAT.makeTheoryDecision();
+							if (didDecision) {
+								mCurrentAssignmentConsistent = SAT;
+								next = createLiteral(res, FormulaT(carl::FormulaType::TRUE), false);
+								mMCSAT.makeDecision(next);
+								pickTheoryBranchLit();
+								
+								SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still feasible with this theory decision");
+								auto conflict = mMCSAT.isFeasible();
+								if (conflict) {
+									newDecisionLevel();
+									uncheckedEnqueue(next);
+									SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
+									handleTheoryConflict(conflict->isNary() ? conflict->subformulas() : FormulasT({*conflict}));
+									mMCSAT.undoAssignment(next);
+									next = lit_Undef;
+									continue;
+								}
+							} else {
+								mCurrentAssignmentConsistent = UNSAT;
+								SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << mMCSAT.level());
+								SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << res);
+								// Todo: backtrack to last relevant theory decision, not last one
+								int level = mMCSAT.penultimateTheoryLevel(res);
+								cancelUntil(level);
+								handleTheoryConflict(res.isNary() ? res.subformulas() : FormulasT({res}));
+								continue;
+							}
 						} else {
-							mCurrentAssignmentConsistent = UNSAT;
-							SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << mMCSAT.level());
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << res);
-							// Todo: backtrack to last relevant theory decision, not last one
-							std::size_t level = mMCSAT.penultimateTheoryLevel(res);
-							cancelUntil(int(level));
-							vec<Lit> explanation;
-							for (const auto& c: (res.isNary() ? res.subformulas() : FormulasT({res}))) {
-								Minisat::Lit l = createLiteral(c);
-								SMTRAT_LOG_DEBUG("smtrat.sat", "Adding " << c << " (" << l << ")");
-								explanation.push(l);
-								assert(theoryValue(l) != l_True);
-							}
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
-							// Add it, the next propagation will find it...
-							/*bool cres = */addClause(explanation, LEMMA_CLAUSE);
-							//assert(!cres);
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Added clause " << explanation);
-							processLemmas();
-							propagateTheory();
-							confl = storeLemmas();
-							if (confl != CRef_Undef) {
-								SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << confl);
-								// basically abort and skip the next two cases, directly go to conflict resolution and restart the loop
-								handleConflict( confl );
-							}
-							continue;
+							mCurrentAssignmentConsistent = SAT;
 						}
-                    }
+					}
 					SMTRAT_LOG_DEBUG("smtrat.sat", "-> " << next);
                     if( next == lit_Undef )
                     {
