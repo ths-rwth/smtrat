@@ -238,39 +238,48 @@ namespace smtrat
             {
                 SATModule& solver;
                 lemma_lt(SATModule& solver) : solver(solver) {}
+				int levelOf(Minisat::Var v) {
+					if (solver.bool_value(v) != l_Undef) {
+						return solver.trailIndex(v);
+					} else {
+						assert(Settings::mc_sat);
+						auto lvl = solver.mMCSAT.computeVariableLevel(v);
+						return solver.mMCSAT.TL2DL(lvl);
+					}
+				}
                 bool operator () (Minisat::Lit x, Minisat::Lit y) {
-                  if( x == y ) return false;
-                  Minisat::lbool x_value = solver.value(x);
-                  Minisat::lbool y_value = solver.value(y);
-                  // Two unassigned literals are sorted arbitrarily
-                  if (x_value == l_Undef && y_value == l_Undef) {
-                    return x < y;
-                  }
-                  // Unassigned literals are put to front
-                  if (x_value == l_Undef) return true;
-                  if (y_value == l_Undef) return false;
-                  // Literals of the same value are sorted by decreasing levels
-                  if (x_value == y_value) {
-					  int xid = solver.trailIndex(var(x));
-					  int yid = solver.trailIndex(var(y));
-					  if (Settings::mc_sat && solver.reason(var(x)) == Minisat::CRef_TPropagation) {
-	                      auto lvl = solver.mMCSAT.computeVariableLevel(var(x));
-						  xid = solver.mMCSAT.TL2DL(lvl);
-					  }
-					  if (Settings::mc_sat && solver.reason(var(y)) == Minisat::CRef_TPropagation) {
-	                      auto lvl = solver.mMCSAT.computeVariableLevel(var(y));
-						  yid = solver.mMCSAT.TL2DL(lvl);
-					  }
-					SMTRAT_LOG_TRACE("smtrat.sat", x << " < " << y << "? " << xid << " > " << yid << "?");
-                    return xid > yid;
-                  } else {
-                    // True literals go up front
-                    if (x_value == l_True) {
-                      return true;
-                    } else {
-                      return false;
-                    }
-                  }
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Doing comparison " << x << " < " << y << "?");
+					if (x == y) return false;
+					
+					/* We want the following order:
+					 * First: Undef < True < False
+					 * Second: Larger level < Smaller level
+					 */
+					Minisat::lbool x_value = solver.value(x);
+					Minisat::lbool y_value = solver.value(y);
+					if (x_value == l_Undef) {
+						if (y_value == l_Undef) {
+							// arbitrary
+							return x < y;
+						} else {
+							// x < y
+							return true;
+						}
+					}
+					if (y_value == l_Undef) {
+						// y < x
+						return false;
+					}
+					assert(x_value != l_Undef && y_value != l_Undef);
+					if (x_value != y_value) {
+						return x_value == l_True;
+					}
+					assert(x_value == y_value);
+					int x_level = levelOf(var(x));
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Level of " << x << ": " << x_level);
+					int y_level = levelOf(var(y));
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Level of " << y << ": " << y_level);
+					return x_level > y_level;
                 }
             };
 
