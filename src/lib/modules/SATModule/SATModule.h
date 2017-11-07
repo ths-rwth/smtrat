@@ -858,24 +858,28 @@ namespace smtrat
             }
 
             // Read state:
-            
+			inline Minisat::lbool bool_value( Minisat::Var x ) const
+            {
+                return assigns[x];
+            }
             /**
              * @param x The variable to get its value for.
              * @return The current value of a variable.
              */
             inline Minisat::lbool value( Minisat::Var x ) const
             {
+				return theoryValue(x);
                 return assigns[x];
             }
             
-			inline Minisat::lbool theoryValue( Minisat::Var x ) {
+			inline Minisat::lbool theoryValue( Minisat::Var x ) const {
 				Minisat::lbool res = assigns[x];
 				if (res == l_Undef) {
 					if (mBooleanConstraintMap.size() <= x) return l_Undef;
 					if (mBooleanConstraintMap[x].first == nullptr) return l_Undef;
 					res = mMCSAT.evaluateLiteral(Minisat::mkLit(x, false));
 				}
-				SMTRAT_LOG_DEBUG("smtrat.sat", x << " -> " << res);
+				//SMTRAT_LOG_DEBUG("smtrat.sat", x << " -> " << res);
 				return res;
 			}
 			inline Minisat::lbool valueAndUpdate( Minisat::Var x )
@@ -888,7 +892,27 @@ namespace smtrat
 				SMTRAT_LOG_DEBUG("smtrat.sat", x << " -> " << assigns[x]);
 				return assigns[x];
 			}
+			
+			void handleTheoryConflict(const FormulasT& clause) {
+				Minisat::vec<Minisat::Lit> explanation;
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict clause " << clause);
+				CARL_CHECKPOINT("nlsat", "theory-conflict", clause);
+				for (const auto& c: clause) {
+					explanation.push(createLiteral(c));
+				}
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
+				addClause(explanation, Minisat::LEMMA_CLAUSE);
+				propagateTheory();
+				Minisat::CRef confl = storeLemmas();
+				if (confl != Minisat::CRef_Undef) {
+					handleConflict(confl);
+				}
+			}
             
+			inline Minisat::lbool bool_value( Minisat::Lit p ) const
+            {
+				return bool_value(Minisat::var(p)) ^ Minisat::sign(p);
+            }
             /**
              * @param p The literal to get its value for.
              * @return The current value of a literal.
@@ -1505,6 +1529,11 @@ namespace smtrat
             int level( Minisat::Var x ) const
             {
                 return vardata[x].level;
+            }
+			int theory_level( Minisat::Var x ) const
+            {
+                if (level(x) >= 0) return level(x);
+				return mMCSAT.theoryLevel(x);
             }
 
             inline int trailIndex( Minisat::Var _var ) const
