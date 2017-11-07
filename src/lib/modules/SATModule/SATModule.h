@@ -690,49 +690,49 @@ namespace smtrat
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void print( std::ostream& _out = std::cout, const std::string _init = "" ) const;
+            void print( std::ostream& _out = std::cout, const std::string& _init = "" ) const;
             
             /**
              * Prints the current assignment of the SAT solver.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printCurrentAssignment( std::ostream& = std::cout, const std::string = "" ) const;
+            void printCurrentAssignment( std::ostream& = std::cout, const std::string& = "" ) const;
             
             /**
              * Prints the constraints to literal map.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printConstraintLiteralMap( std::ostream& _out = std::cout, const std::string _init = "" ) const;
+            void printConstraintLiteralMap( std::ostream& _out = std::cout, const std::string& _init = "" ) const;
             
             /**
              * Prints the formulas to clauses map.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printFormulaCNFInfosMap( std::ostream& _out = std::cout, const std::string _init = "" ) const;
+            void printFormulaCNFInfosMap( std::ostream& _out = std::cout, const std::string& _init = "" ) const;
             
             /**
              * Prints the clause information.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printClauseInformation( std::ostream& _out = std::cout, const std::string _init = "" ) const;
+            void printClauseInformation( std::ostream& _out = std::cout, const std::string& _init = "" ) const;
             
             /**
              * Prints map of the Boolean within the SAT solver to the given Booleans.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printBooleanVarMap( std::ostream& _out = std::cout, const std::string _init = "" ) const;
+            void printBooleanVarMap( std::ostream& _out = std::cout, const std::string& _init = "" ) const;
             
             /**
              * Prints the literal to constraint map.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printBooleanConstraintMap( std::ostream& _out = std::cout, const std::string _init = "" ) const;
+            void printBooleanConstraintMap( std::ostream& _out = std::cout, const std::string& _init = "" ) const;
             
             /**
              * Prints the clause at the given reference.
@@ -761,28 +761,28 @@ namespace smtrat
              * @param _from The position of the first clause to print within the given vector of clauses.
              * @param _withAssignment A flag indicating if true, that the assignments should be printed too.
              */
-            void printClauses( const Minisat::vec<Minisat::CRef>& _clauses, const std::string _name, std::ostream& _out = std::cout, const std::string _init = "", int = 0, bool _withAssignment = false, bool _onlyNotSatisfied = false ) const;
+            void printClauses( const Minisat::vec<Minisat::CRef>& _clauses, const std::string _name, std::ostream& _out = std::cout, const std::string& _init = "", int = 0, bool _withAssignment = false, bool _onlyNotSatisfied = false ) const;
             
             /**
              * Prints the decisions the SAT solver has made.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printDecisions( std::ostream& _out = std::cout, std::string _init = "" ) const;
+            void printDecisions( std::ostream& _out = std::cout, const std::string& _init = "" ) const;
 
             /**
              * Prints the propagated lemmas for each variables which influence its value.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printPropagatedLemmas( std::ostream& _out = std::cout, std::string _init = "" ) const;
+            void printPropagatedLemmas( std::ostream& _out = std::cout, const std::string& _init = "" ) const;
             
             /**
              * Prints the literals' active occurrences in all clauses.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printLiteralsActiveOccurrences( std::ostream& _out = std::cout, std::string _init = "" ) const;
+            void printLiteralsActiveOccurrences( std::ostream& _out = std::cout, const std::string& _init = "" ) const;
 
             /**
              * Collects the taken statistics.
@@ -897,7 +897,7 @@ namespace smtrat
             {
 				return value(Minisat::var(p)) ^ Minisat::sign(p);
             }
-			inline Minisat::lbool theoryValue( Minisat::Lit p ) {
+			inline Minisat::lbool theoryValue( Minisat::Lit p ) const {
 				return theoryValue(Minisat::var(p)) ^ Minisat::sign(p);
 			}
 			inline Minisat::lbool valueAndUpdate( Minisat::Lit p )
