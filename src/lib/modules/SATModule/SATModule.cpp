@@ -3227,18 +3227,19 @@ namespace smtrat
 	            for( int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++ )
 	            {
 	                Lit q = c[j];
-					SMTRAT_LOG_DEBUG("smtrat.sat", "\tLooking at literal " << q);
+					auto qlevel = theory_level(var(q));
+					SMTRAT_LOG_DEBUG("smtrat.sat", "\tLooking at literal " << q << " from level " << qlevel);
 	                
-	                if( !seen[var( q )] && level( var( q ) ) > 0 )
+	                if( !seen[var( q )] && qlevel > 0 )
 	                {
-						SMTRAT_LOG_DEBUG("smtrat.sat", "\tNot seen yet, level = " << level(var(q)));
+						SMTRAT_LOG_DEBUG("smtrat.sat", "\tNot seen yet, level = " << qlevel);
 	                    varBumpActivity( var( q ) );
 						seen[var( q )] = 1;
 						//if (Settings::mc_sat && reason(var(q)) == CRef_TPropagation) {
 						//	pathC++;
 						//	SMTRAT_LOG_DEBUG("smtrat.sat", "\tTo process: "  << q << ", pathC = " << pathC);
 						//} else {
-		                    if( level( var( q ) ) >= decisionLevel() ) {
+		                    if( level(var(q)) == qlevel && qlevel >= decisionLevel() ) {
 								pathC++;
 								SMTRAT_LOG_DEBUG("smtrat.sat", "\tTo process: "  << q << ", pathC = " << pathC);
 							}
@@ -3249,7 +3250,6 @@ namespace smtrat
 						//}
 	                }
 	            }
-			}
 
             // Select next clause to look at:
             while( !seen[var( trail[index--] )] );
