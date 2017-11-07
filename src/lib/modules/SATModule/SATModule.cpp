@@ -2634,7 +2634,7 @@ namespace smtrat
 				SMTRAT_LOG_DEBUG("smtrat.sat", "DPLL::BCP()");
 				confl = propagateConsistently();
 			}
-	    SMTRAT_LOG_DEBUG("smtrat.sat", "Continuing after propagation, ok = " << ok << ", confl = " << confl);
+			SMTRAT_LOG_TRACE("smtrat.sat", "Continuing after propagation, ok = " << ok << ", confl = " << confl);
             if( !ok )
             {
                 if( !mReceivedFormulaPurelyPropositional && !Settings::stop_search_after_first_unknown && mExcludedAssignments )
@@ -2645,7 +2645,7 @@ namespace smtrat
 	    // NO CONFLICT
             if( confl == CRef_Undef )
             {
-		SMTRAT_LOG_DEBUG("smtrat.sat", "No conflict");
+				SMTRAT_LOG_TRACE("smtrat.sat", "No conflict");
                 if( Settings::check_if_all_clauses_are_satisfied && !mReceivedFormulaPurelyPropositional )
                 {
                     if( decisionLevel() >= assumptions.size() && mNumberOfSatisfiedClauses == (size_t)clauses.size() )
@@ -2702,9 +2702,12 @@ namespace smtrat
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for theory propagations...");
 					bool didTheoryPropagation = false;
 					for (std::size_t level = 0; !didTheoryPropagation && level < mMCSAT.level(); level++) {
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Considering " << mMCSAT.get(level).univariateVariables);
 						for (auto v: mMCSAT.get(level).univariateVariables) {
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Considering " << v);
 							if (value(v) != l_Undef) continue;
 							auto tv = theoryValue(v);
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Undef, theory value is " << tv);
 							if (tv == l_Undef) continue;
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Propagating " << v << " = " << tv);
 							if (tv == l_True) uncheckedEnqueue(mkLit(v, false), Minisat::CRef_TPropagation);
@@ -2833,6 +2836,7 @@ namespace smtrat
                         }
                         else
                         {
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Current assignment is unknown");
                             assert( mCurrentAssignmentConsistent == UNKNOWN );
                             if( Settings::stop_search_after_first_unknown )
                                 return l_Undef;
