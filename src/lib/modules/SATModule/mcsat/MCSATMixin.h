@@ -334,6 +334,13 @@ public:
 		return 0;
 	}
 	
+	int theoryLevel(Minisat::Var var) const {
+		if (!mGetter.isTheoryAbstraction(var)) {
+			return 0;
+		}
+		return theoryLevel(mGetter.reabstractVariable(var));
+	}
+	
 	/**
 	 * Compute the penultimate relevant decision level for the given formula.
 	 * This is used to determine the level to backtrack to if f is a conflict clause.
