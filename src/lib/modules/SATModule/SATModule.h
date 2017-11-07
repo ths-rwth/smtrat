@@ -905,7 +905,7 @@ namespace smtrat
 			void handleTheoryConflict(const FormulasT& clause) {
 				Minisat::vec<Minisat::Lit> explanation;
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict clause " << clause);
-				CARL_CHECKPOINT("nlsat", "theory-conflict", clause);
+				//CARL_CHECKPOINT("nlsat", "theory-conflict", clause);
 				for (const auto& c: clause) {
 					explanation.push(createLiteral(c));
 				}
