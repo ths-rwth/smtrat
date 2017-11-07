@@ -104,6 +104,19 @@ boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision() {
 	return Minisat::lit_Undef;
 }
 
+boost::optional<FormulasT> MCSATMixin::isDecisionPossible(Minisat::Lit lit) {
+	auto var = Minisat::var(lit);
+	if (!mGetter.isTheoryAbstraction(var)) return boost::none;
+	const auto& f = mGetter.reabstractLiteral(lit);
+	auto res = mBackend.isInfeasible(currentVariable(), f);
+	if (res == boost::none) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " is possible");
+	} else {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " is impossible due to " << *res);
+	}
+	return res;
+}
+
 bool MCSATMixin::isLiteralInUnivariateClause(Minisat::Lit literal, const Minisat::vec<Minisat::CRef>& clauses) {
 	for (int c = 0; c < clauses.size(); c++) {
 		const auto& clause = mGetter.getClause(clauses[c]);
