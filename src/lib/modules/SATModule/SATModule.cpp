@@ -1766,17 +1766,10 @@ namespace smtrat
 				backtrackLevel = 0;
 				break;
 			}
-			if (Settings::mc_sat) {
-				// Evaluate literals according to current theory model
-				for (int i = 0; i < lemma.size(); i++) {
-					if (value(lemma[i]) != l_Undef) continue;
-					if (theoryValue(lemma[i]) == l_False) {
-						uncheckedEnqueue(neg(lemma[i]), Minisat::CRef_TPropagation);
-					}
-				}
-			}
 			// Sort to make sure watches are at the front
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Sorting lemma   " << lemma);
 			sort(lemma, lemma_lt(*this));
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Resulting lemma " << lemma);
 			if (lemma.size() == 1) {
 				// Backtrack to DL0 if (a) it is not assigned to true or (b) assigned to true later than DL0
 				if (value(lemma[0]) != l_True || level(var(lemma[0])) > 0) {
@@ -1790,14 +1783,14 @@ namespace smtrat
 				// Conflicting
 				assert(value(lemma[1]) == l_False);
 				// Backtrack to highest DL such that it looks like a regular conflict
-				int lvl = level(var(lemma[1])); // instead of 0
+				int lvl = theory_level(var(lemma[1])); // instead of 0
 				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is conflicting on DL" << lvl);
 				if (lvl < backtrackLevel) {
 					backtrackLevel = lvl;
 				}
 			} else if (value(lemma[0]) == l_Undef && value(lemma[1]) == l_False) {
 				// Unit
-				int lvl = level(var(lemma[1]));
+				int lvl = theory_level(var(lemma[1]));
 				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is propagating on DL" << lvl);
 				if (lvl < backtrackLevel) {
 					backtrackLevel = lvl;
@@ -1842,17 +1835,9 @@ namespace smtrat
 				ok = false;
 				return CRef_Undef;
 			}
-			if (Settings::mc_sat) {
-				// Evaluate literals according to current theory model
-				for (int i = 0; i < lemma.size(); i++) {
-					if (value(lemma[i]) != l_Undef) continue;
-					if (theoryValue(lemma[i]) == l_False) {
-						uncheckedEnqueue(neg(lemma[i]), Minisat::CRef_TPropagation);
-					}
-				}
-			}
 			// Resort in case the backtracking changed the order
 			sort(lemma, lemma_lt(*this));
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Sorted -> " << lemma);
 			// If lemma is not a single literal, attach it
 			CRef lemma_ref = CRef_Undef;
 			if (lemma.size() > 1) {
@@ -1865,6 +1850,10 @@ namespace smtrat
 				attachClause(lemma_ref);
 				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Added lemma as clause " << lemma_ref);
 			}
+			#ifdef DEBUG_SATMODULE
+			cout << "### Processing clause" << endl;
+			print(cout, "###");
+			#endif
 			if (lemma.size() == 1) {
 				// Only a single literal
 				assert(decisionLevel() == 0);
@@ -1884,6 +1873,7 @@ namespace smtrat
 				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is unit, propagating " << lemma[0]);
 				uncheckedEnqueue(lemma[0], lemma_ref);
 			} else if (value(lemma[0]) == l_False) {
+				SMTRAT_LOG_DEBUG("smtrat.sat", lemma[0] << " is false, hence " << lemma[1] << " should also be false...");
 				assert(value(lemma[1]) == l_False);
 				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is conflicting, use as conflict");
 				conflict = lemma_ref;
@@ -2831,7 +2821,7 @@ namespace smtrat
                 {
                     // Increase decision level and enqueue 'next'
                     newDecisionLevel();
-                    assert( value( next ) == l_Undef );
+                    assert( bool_value( next ) == l_Undef );
                     #ifdef DEBUG_SATMODULE
                     std::cout << "### Decide " <<  (sign(next) ? "-" : "" ) << var(next) << std::endl;
                     #endif
@@ -2842,6 +2832,7 @@ namespace smtrat
 	    // CONFLICT
             if( confl != CRef_Undef )
             {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Hit conflicting clause " << confl);
                 conflicts++;
                 conflictC++;
                 
@@ -3356,7 +3347,7 @@ namespace smtrat
                     const FormulaT& f = mBooleanConstraintMap[var(out_learnt[i])].first->reabstraction;
                     currentLitLevel = mMCSAT.theoryLevel(f);
                 } else {
-                    currentLitLevel = level(var(out_learnt[i]));
+                    currentLitLevel = theory_level(var(out_learnt[i]));
                 }
 				SMTRAT_LOG_DEBUG("smtrat.sat", out_learnt[i] << " is assigned at " << currentLitLevel);
                 if (currentLitLevel > max_lvl) {
@@ -3421,7 +3412,7 @@ namespace smtrat
     void SATModule<Settings>::uncheckedEnqueue( Lit p, CRef from )
     {
 		SMTRAT_LOG_DEBUG("smtrat.sat", "Enqueue " << p << " from " << from);
-        assert( value( p ) == l_Undef );
+		assert( bool_value( p ) == l_Undef );
         if( Settings::check_if_all_clauses_are_satisfied && !mReceivedFormulaPurelyPropositional && mNumberOfSatisfiedClauses < (size_t)clauses.size() )
         {
             auto litClausesIter = mLiteralClausesMap.find( Minisat::toInt( p ) );
@@ -3572,18 +3563,8 @@ namespace smtrat
         #ifdef DEBUG_SATMODULE
 		cout << "######################################################################" << endl;
         cout << "### Propagate" << endl;
-        cout << "### qhead = " << qhead << endl;
-		cout << "### trail = " << trail << endl;
-        cout << "### trail.size() = " << trail.size() << endl;
-		cout << "### trail_lim = " << trail_lim << endl;
-		cout << "### mcsat: " << mMCSAT << endl;
-		cout << "###" << endl; printBooleanConstraintMap(cout, "###");
-		cout << "###" << endl; printClauses( clauses, "Clauses", cout, "### ", 0, false, false );
-		cout << "###" << endl; printClauses( learnts, "Learnts", cout, "### ", 0, false, false );
-		cout << "###" << endl; printCurrentAssignment( cout, "### " );
-		cout << "###" << endl; printDecisions( cout, "### " );
-		cout << "###" << endl;
-        #endif
+		print(cout, "###");
+    	#endif
         CRef confl = CRef_Undef;
         int num_props = 0;
         watches.cleanAll();
@@ -4052,24 +4033,24 @@ NextClause:
     }
 
     template<class Settings>
-    void SATModule<Settings>::print( ostream& _out, const string _init ) const
+    void SATModule<Settings>::print( ostream& _out, const string& _init ) const
     {
-        printConstraintLiteralMap( _out, _init );
-        printBooleanVarMap( _out, _init );
         printBooleanConstraintMap( _out, _init );
-        printConstraintLiteralMap( _out, _init );
-        printBooleanConstraintMap( _out, _init );
-        printBooleanVarMap( _out, _init );
+		_out << _init << std::endl;
         printClauses( clauses, "Clauses", _out, _init );
+		_out << _init << std::endl;
         printClauses( learnts, "Learnts", _out, _init );
+		_out << _init << std::endl;
+		printCurrentAssignment( _out, _init );
+		_out << _init << std::endl;
         printDecisions( _out, _init );
-        printPassedFormula( _init );
-        for(int i = 0; i < vardata.size(); i++ )
-            _out << _init << i << " -> " << ((uint32_t) vardata[i].reason) << endl;
+		_out << _init << std::endl;
+		_out << _init << " mcsat: " << mMCSAT << endl;
+		_out << _init << std::endl;
     }
 
     template<class Settings>
-    void SATModule<Settings>::printConstraintLiteralMap( ostream& _out, const string _init ) const
+    void SATModule<Settings>::printConstraintLiteralMap( ostream& _out, const std::string& _init ) const
     {
         _out << _init << " ConstraintLiteralMap" << endl;
         for( ConstraintLiteralsMap::const_iterator clPair = mConstraintLiteralMap.begin(); clPair != mConstraintLiteralMap.end(); ++clPair )
@@ -4089,7 +4070,7 @@ NextClause:
     }
     
     template<class Settings>
-    void SATModule<Settings>::printFormulaCNFInfosMap( ostream& _out, const string _init ) const
+    void SATModule<Settings>::printFormulaCNFInfosMap( ostream& _out, const std::string& _init ) const
     {
         _out << _init << " FormulaCNFInfosMap" << endl;
         for( const auto& fcsPair : mFormulaCNFInfosMap )
@@ -4107,7 +4088,7 @@ NextClause:
     }
     
     template<class Settings>
-    void SATModule<Settings>::printClauseInformation( ostream& _out, const string _init ) const
+    void SATModule<Settings>::printClauseInformation( ostream& _out, const std::string& _init ) const
     {
         _out << _init << " ClauseInformation" << endl;
         for( auto& ciPair : mClauseInformation )
@@ -4117,7 +4098,7 @@ NextClause:
     }
 
     template<class Settings>
-    void SATModule<Settings>::printBooleanVarMap( ostream& _out, const string _init ) const
+    void SATModule<Settings>::printBooleanVarMap( ostream& _out, const std::string& _init ) const
     {
         _out << _init << " BooleanVarMap" << endl;
         for( BooleanVarMap::const_iterator clPair = mBooleanVarMap.begin(); clPair != mBooleanVarMap.end(); ++clPair )
@@ -4131,7 +4112,7 @@ NextClause:
     }
 
     template<class Settings>
-    void SATModule<Settings>::printBooleanConstraintMap( ostream& _out, const string _init ) const
+    void SATModule<Settings>::printBooleanConstraintMap( ostream& _out, const std::string& _init ) const
     {
         _out << _init << " BooleanConstraintMap" << endl;
         for( int k = 0; k < mBooleanConstraintMap.size(); ++k )
@@ -4184,7 +4165,7 @@ NextClause:
     }
 
     template<class Settings>
-    void SATModule<Settings>::printClauses( const vec<CRef>& _clauses, const string _name, ostream& _out, const string _init, int _from, bool _withAssignment, bool _onlyNotSatisfied ) const
+    void SATModule<Settings>::printClauses( const vec<CRef>& _clauses, const string _name, ostream& _out, const std::string& _init, int _from, bool _withAssignment, bool _onlyNotSatisfied ) const
     {
         _out << _init << " " << _name << ":" << endl;
         // Handle case when solver is in contradictory state:
@@ -4230,7 +4211,7 @@ NextClause:
         {
             if( !_onlyNotSatisfied || !satisfied(ca[_clauses[i]]) )
             {
-                _out << _init << i;
+                _out << _init << " " << i;
                 if( !_onlyNotSatisfied )
                     _out << (satisfied(ca[_clauses[i]]) ? " (ok)" : "     ");
                 _out << ": ";
@@ -4244,7 +4225,7 @@ NextClause:
     }
 
     template<class Settings>
-    void SATModule<Settings>::printCurrentAssignment( ostream& _out, string _init ) const
+    void SATModule<Settings>::printCurrentAssignment( ostream& _out, const std::string& _init ) const
     {
         _out << _init << " Assignments:  ";
         for( int pos = 0; pos < assigns.size(); ++pos )
@@ -4291,7 +4272,7 @@ NextClause:
     }
 
     template<class Settings>
-    void SATModule<Settings>::printDecisions( ostream& _out, string _init ) const
+    void SATModule<Settings>::printDecisions( ostream& _out, const std::string& _init ) const
     {
         _out << _init << " Decisions:  ";
         int level = 0;
@@ -4335,7 +4316,7 @@ NextClause:
     }
 
     template<class Settings>
-    void SATModule<Settings>::printPropagatedLemmas( ostream& _out, string _init ) const
+    void SATModule<Settings>::printPropagatedLemmas( ostream& _out, const std::string& _init ) const
     {
         _out << _init << " Propagated lemmas:" << endl;
         for( VarLemmaMap::const_iterator itFormulas = mPropagatedLemmas.begin(); itFormulas != mPropagatedLemmas.end(); ++itFormulas )
@@ -4357,7 +4338,7 @@ NextClause:
     }
     
     template<class Settings>
-    void SATModule<Settings>::printLiteralsActiveOccurrences( ostream& _out, string _init ) const
+    void SATModule<Settings>::printLiteralsActiveOccurrences( ostream& _out, const std::string& _init ) const
     {
         _out << _init << "Literals' active occurrences:" << std::endl;
         for( std::size_t pos = 0; pos < mLiteralsActivOccurrences.size(); ++pos )
