@@ -247,6 +247,17 @@ public:
 	boost::variant<Minisat::Lit,FormulaT> checkLiteralForDecision(Minisat::Var var, Minisat::Lit lit);
 	boost::variant<Minisat::Lit,FormulaT> pickLiteralForDecision(const std::vector<Minisat::Var>& vars);
 	boost::variant<Minisat::Lit,FormulaT> pickLiteralForDecision();
+	boost::optional<FormulasT> isDecisionPossible(Minisat::Lit lit);
+	
+	boost::optional<FormulaT> isFeasible() {
+		auto res = mBackend.findAssignment(currentVariable());
+		if (carl::variant_is_type<ModelValue>(res)) {
+			return boost::none;
+		} else {
+			const auto& confl = boost::get<FormulasT>(res);
+			return mBackend.explain(currentVariable(), confl, FormulaT(carl::FormulaType::FALSE));
+		}
+	}
 	
 	std::pair<FormulaT,bool> makeTheoryDecision() {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Obtaining assignment");
