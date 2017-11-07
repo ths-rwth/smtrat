@@ -87,7 +87,9 @@ boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision(const s
 }
 
 boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision() {
-	for (const auto& vars: {get(0).univariateVariables, current().univariateVariables}) {
+	//for (const auto& vars: {get(0).univariateVariables, current().univariateVariables}) {
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Looking for decision variable from " << mUndecidedVariables);
+	for (auto vars: { mUndecidedVariables }) {
 		auto res = pickLiteralForDecision(vars);
 		if (carl::variant_is_type<Minisat::Lit>(res)) {
 			if (boost::get<Minisat::Lit>(res) == Minisat::lit_Undef) {
