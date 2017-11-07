@@ -3203,15 +3203,21 @@ namespace smtrat
             assert( confl != CRef_Undef );    // (otherwise should be UIP)
 			if (confl == CRef_TPropagation) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Found " << p << " to be result of theory propagation.");
-				// if is theory propagation: 
-				//if (!seen[var( p )]) {
-					SMTRAT_LOG_DEBUG("smtrat.sat", "pushing " << ~p << " to out_learnt as a theory propagation");
-					std::exit(38);
-					out_learnt.push(~p);
-					//pathC++;
-				//}
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << mMCSAT);
+				cancelIncludingLiteral(p);
 				auto explanation = mMCSAT.explainTheoryPropagation(p);
-			}  else {
+				
+				vec<Lit> expClause;
+				for (const auto& f: explanation)
+					expClause.push(getLiteral(f));
+				assert(expClause.size() > 1);
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Explanation for " << p << ": " << expClause);
+				sort(expClause, lemma_lt(*this));
+				confl = ca.alloc(expClause, LEMMA_CLAUSE);
+				clauses.push(confl);
+				attachClause(confl);
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Explanation for " << p << ": " << ca[confl]);
+			}
 	            Clause& c = ca[confl];
 				SMTRAT_LOG_DEBUG("smtrat.sat", "c = " << c);
 	            if( c.learnt() )
