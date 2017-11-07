@@ -277,12 +277,17 @@ public:
 		}
 	}
 	
-	FormulaT explainTheoryPropagation(Minisat::Lit literal) const {
+	FormulaT explainTheoryPropagation(Minisat::Lit literal) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << literal << " under " << mBackend.getModel());
 		auto f = mGetter.reabstractLiteral(literal);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f);
-		auto res = mBackend.explain(currentVariable(), {f}, FormulaT(carl::FormulaType::FALSE));
-		return f;
+		//mBackend.popConstraint(f);
+		auto conflict = mBackend.isInfeasible(currentVariable(), !f);
+		assert(conflict);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " from " << *conflict);
+		auto res = mBackend.explain(currentVariable(), *conflict, f);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " by " << res);
+		//mBackend.pushConstraint(f);
+		return res;
 	}
 	
 	// ***** Auxliary getter
