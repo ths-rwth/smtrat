@@ -2727,62 +2727,19 @@ namespace smtrat
                     #ifdef SMTRAT_DEVOPTION_Statistics
                     mpStatistics->decide();
 					#endif
-					if ( Settings::mc_sat ) {
-                        /* 
-                         * Pick literal for boolean decision such that:
-                         * - literal is unassigned [value(literal) == l_Undef], univariate 
-                         * - decision is compatible with assignment [NLSAT::isInfeasible() == boost::none]
-                         */
-                        SMTRAT_LOG_DEBUG("smtrat.sat", "Picking a literal for a boolean decision");
-                    	//next = mMCSAT.pickLiteralForDecision(); 
-			// Get Variant<Minisat::Lit,FormulaT>
-                        boost::variant<Minisat::Lit,FormulaT> lit = mMCSAT.pickLiteralForDecision(); 
-                        // Prüfen: if (carl::variant_is_type<Minisat::Lit>(res))
-                        if(carl::variant_is_type<Minisat::Lit>(lit)) {
-                            // If is Lit: assign to next
-							mCurrentAssignmentConsistent = SAT;
-                            next = boost::get<Minisat::Lit>(lit);
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next);
-                        } else if(carl::variant_is_type<FormulaT>(lit)) {
-                            // If is FormulaT: do theory propagation
-                            vec<Lit> explanation;
-                            const auto& res = boost::get<FormulaT>(lit);
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Got a theory propagation " << res);
-							//int count_not_to_false_evaluated_literals = 0;
-                            for (const auto& c: (res.isNary() ? res.subformulas() : FormulasT({res}))) {
-                                    Minisat::Lit l = createLiteral(c);
-                                    explanation.push(l);
-                                    //if (value(l) == l_Undef) {
-                                    //    // We can not assume that evaluateLiteral(l) == l_False
-                                    //    if(mMCSAT.evaluateLiteral(l) == l_False) {
-                                    //        uncheckedEnqueue(neg(l), CRef_TPropagation);
-				                    //        SMTRAT_LOG_DEBUG("smtrat.sat", "Setting " << l << " to false due to theory");
-                                    //    } else {
-                                    //        count_not_to_false_evaluated_literals++;
-                                    //    }
-                                    //}
-                                    //assert(count_not_to_false_evaluated_literals <= 1);
-                            }
-                            SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
-                            // Add it, the next propagation will find it...
-                            addClause(explanation, LEMMA_CLAUSE);
-                            SMTRAT_LOG_DEBUG("smtrat.sat", "Added clause " << explanation);
-                            propagateTheory();
-                            confl = storeLemmas();
-                            SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << confl);
-                            // basically abort and skip the next cases, directly go to conflict resolution and restart the loop
-                            if(confl != CRef_Undef) {
-                                handleConflict( confl );
-                            }
-                            continue;
-                        }			
-						 
-						SMTRAT_LOG_DEBUG("smtrat.sat", "-> " << next);
-					} else {
-                        // DPLL::decide()
-                    	next = pickBranchLit(); 
-						SMTRAT_LOG_DEBUG("smtrat.sat", "DPLL::decide() -> " << next);
+					
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Picking a literal for a boolean decision");
+					next = pickBranchLit();
+					if (Settings::mc_sat && next != lit_Undef) {
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << ", checking for theory consistency...");
+						auto res = mMCSAT.isDecisionPossible(next);
+						if (res != boost::none) {
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict " << *res);
+							handleTheoryConflict(*res);
+							continue;
+						}
 					}
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Deciding upon " << next);
                     
                     if( next == lit_Undef && Settings::mc_sat && mMCSAT.hasNextVariable()) { 
                         // No decision done yet, try with a theory decision.
