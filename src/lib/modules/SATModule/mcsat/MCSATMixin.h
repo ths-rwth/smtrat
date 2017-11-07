@@ -82,7 +82,7 @@ private:
 	/// current mc-sat model
 	Model mCurrentModel;
 	
-        MCSATBackend<BackendSettings1> mBackend;
+	MCSATBackend<BackendSettings1> mBackend;
 
 private:
 	// ***** private helper methods
@@ -168,6 +168,7 @@ public:
 	 * Add a new constraint.
 	 */
 	void doAssignment(Minisat::Lit lit) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Assigned " << lit);
 		if (!mGetter.isTheoryAbstraction(var(lit))) return;
 		const auto& f = mGetter.reabstractLiteral(lit);
 		if (f.getType() == carl::FormulaType::VARASSIGN) {
@@ -180,6 +181,7 @@ public:
 	 * Remove the last constraint. f must be the same as the one passed to the last call of pushConstraint().
 	 */
 	void undoAssignment(Minisat::Lit lit) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Unassigned " << lit);
 		if (!mGetter.isTheoryAbstraction(var(lit))) return;
 		const auto& f = mGetter.reabstractLiteral(lit);
 		if (f.getType() == carl::FormulaType::VARASSIGN) {
@@ -286,12 +288,15 @@ public:
 	std::size_t computeVariableLevel(Minisat::Var variable) const;
 	int TL2DL(std::size_t level) const {
 		if (level >= mTheoryStack.size()) {
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Theory level " << level << " is out of bounds");
 			return std::numeric_limits<int>::max();
 		}
 		Minisat::Lit lit = get(level).decisionLiteral;
 		if (lit == Minisat::lit_Undef) {
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Theory level " << level << " does not have a decision literal yet");
 			return std::numeric_limits<int>::max();
 		}
+		SMTRAT_LOG_DEBUG("smtrat.sat", "Theory level " << level << " has literal with trail index " << mGetter.getTrailIndex(var(lit)));
 		return mGetter.getTrailIndex(var(lit));
 	}
 	
@@ -299,9 +304,9 @@ public:
 		carl::Variables vars;
 		f.arithmeticVars(vars);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", f << " contains " << vars);
-		for (std::size_t lvl = level()-1; lvl > 0; lvl--) {
-			if (vars.find(get(lvl).variable) != vars.end()) {
-				Minisat::Lit declit = get(lvl).decisionLiteral;
+		for (std::size_t lvl = level(); lvl > 1; --lvl) {
+			if (vars.find(get(lvl-1).variable) != vars.end()) {
+				Minisat::Lit declit = get(lvl-1).decisionLiteral;
 				if (declit != Minisat::lit_Undef) {
 					int res = mGetter.getDecisionLevel(var(declit));
 					SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", f << " was assigned by theory assignment at " << res);

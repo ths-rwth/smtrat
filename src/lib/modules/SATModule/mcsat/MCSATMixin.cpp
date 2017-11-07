@@ -36,7 +36,7 @@ bool MCSATMixin::backtrackTo(Minisat::Lit literal) {
 }
 
 Minisat::lbool MCSATMixin::evaluateLiteral(Minisat::Lit lit) const {
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Evaluate " << lit);
+	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Evaluate " << lit);
 	const FormulaT& f = mGetter.reabstractLiteral(lit);
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Evaluate " << f << " on " << mBackend.getModel());
 	auto res = carl::model::evaluate(f, mBackend.getModel());
@@ -431,7 +431,8 @@ std::ostream& operator<<(std::ostream& os, const MCSATMixin& mcm) {
 		os << std::endl;
 		os << "\tVariables: " << level.univariateVariables << std::endl;
 	}
-	os << mcm.mCurrentModel << std::endl;
+	os << "Backend:" << std::endl;
+	os << mcm.mBackend << std::endl;
 	return os;
 }
 
