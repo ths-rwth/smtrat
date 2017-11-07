@@ -907,7 +907,7 @@ namespace smtrat
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict clause " << clause);
 				//CARL_CHECKPOINT("nlsat", "theory-conflict", clause);
 				for (const auto& c: clause) {
-					explanation.push(createLiteral(c));
+					explanation.push(neg(createLiteral(c)));
 				}
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
 				addClause(explanation, Minisat::LEMMA_CLAUSE);
