@@ -107,7 +107,7 @@ boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision() {
 	return Minisat::lit_Undef;
 }
 
-boost::optional<FormulasT> MCSATMixin::isDecisionPossible(Minisat::Lit lit) {
+boost::optional<FormulaT> MCSATMixin::isDecisionPossible(Minisat::Lit lit) {
 	auto var = Minisat::var(lit);
 	if (!mGetter.isTheoryAbstraction(var)) return boost::none;
 	const auto& f = mGetter.reabstractLiteral(lit);
@@ -116,8 +116,9 @@ boost::optional<FormulasT> MCSATMixin::isDecisionPossible(Minisat::Lit lit) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " is possible");
 	} else {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " is impossible due to " << *res);
+		return mBackend.explain(currentVariable(), *res, FormulaT(carl::FormulaType::FALSE));
 	}
-	return res;
+	return boost::none;
 }
 
 bool MCSATMixin::isLiteralInUnivariateClause(Minisat::Lit literal, const Minisat::vec<Minisat::CRef>& clauses) {
