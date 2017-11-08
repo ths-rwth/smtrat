@@ -19,7 +19,7 @@
 #endif
 namespace fs = boost::filesystem;
 
-#include <signal.h>
+#include <csignal>
 
 #include "logging.h"
 #include "BenchmarkSet.h"

@@ -8,7 +8,8 @@
 
 #pragma once
 
-#include "carl/formula/Formula.h"
+#include <string>
+#include <vector>
 
 namespace benchmax {
 
