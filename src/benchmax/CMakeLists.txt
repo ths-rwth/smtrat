@@ -9,7 +9,9 @@ add_executable( benchmax ${benchmax_sources})
 target_link_libraries(benchmax pthread lib_carl)
 
 find_package(Boost 1.55 REQUIRED COMPONENTS chrono filesystem program_options system)
-target_link_libraries(benchmax ${Boost_LIBRARIES})
+if(Boost_FOUND)
+	target_link_libraries(benchmax ${Boost_LIBRARIES})
+endif()
 
 if(BENCHMAX_DATABASE)
 	find_library(LIBMYSQL NAMES libmysqlclient)
@@ -18,4 +20,6 @@ endif()
 
 find_library(LIBSSH NAMES ssh)
 find_library(LIBSSH_THREADS NAMES ssh_threads)
-target_link_libraries(benchmax ${LIBSSH} ${LIBSSH_THREADS})
+if(LIBSSH AND LIBSSH_THREADS)
+	target_link_libraries(benchmax ${LIBSSH} ${LIBSSH_THREADS})
+endif()
