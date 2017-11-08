@@ -2735,7 +2735,7 @@ namespace smtrat
 						auto res = mMCSAT.isDecisionPossible(next);
 						if (res != boost::none) {
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict " << *res);
-							handleTheoryConflict(*res);
+							handleTheoryConflict(res->isNary() ? res->subformulas() : FormulasT({*res}));
 							continue;
 						}
 					}
