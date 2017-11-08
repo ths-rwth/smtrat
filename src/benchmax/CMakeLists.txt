@@ -1,5 +1,6 @@
 option( BENCHMAX_USE_SMTPARSER "Use parser for smtlib files." OFF )
 option( BENCHMAX_LOGGING "Use logging in benchmax. Strongly encouraged!" ON )
+option( BENCHMAX_DATABASE "Store results in a database." OFF )
 
 configure_file( ${CMAKE_SOURCE_DIR}/src/benchmax/config.h.in ${CMAKE_SOURCE_DIR}/src/benchmax/config.h )
 
@@ -27,8 +28,10 @@ find_library(ALIBBPO NAMES libboost_program_options.${STATIC_EXT})
 find_library(SLIBBPO NAMES libboost_program_options.${DYNAMIC_EXT})
 find_library(ALIBBSY NAMES libboost_system.${STATIC_EXT})
 find_library(SLIBBSY NAMES libboost_system.${DYNAMIC_EXT})
-#find_library(ALIBMYSQL NAMES libmysqlclient.${DYNAMIC_EXT})
-#find_library(SLIBMYSQL NAMES libmysqlclient.${DYNAMIC_EXT})
+if(BENCHMAX_DATABASE)
+find_library(ALIBMYSQL NAMES libmysqlclient.${DYNAMIC_EXT})
+find_library(SLIBMYSQL NAMES libmysqlclient.${DYNAMIC_EXT})
+endif()
 find_library(ALIBSSH NAMES libssh.${STATIC_EXT})
 find_library(SLIBSSH NAMES libssh.${DYNAMIC_EXT})
 
