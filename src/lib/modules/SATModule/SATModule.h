@@ -276,9 +276,9 @@ namespace smtrat
 					}
 					assert(x_value == y_value);
 					int x_level = levelOf(var(x));
-					SMTRAT_LOG_DEBUG("smtrat.sat", "Level of " << x << ": " << x_level);
+					SMTRAT_LOG_TRACE("smtrat.sat", "Level of " << x << ": " << x_level);
 					int y_level = levelOf(var(y));
-					SMTRAT_LOG_DEBUG("smtrat.sat", "Level of " << y << ": " << y_level);
+					SMTRAT_LOG_TRACE("smtrat.sat", "Level of " << y << ": " << y_level);
 					return x_level > y_level;
                 }
             };
