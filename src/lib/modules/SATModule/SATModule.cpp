@@ -2850,7 +2850,7 @@ namespace smtrat
 
         int backtrack_level;
 //        bool conflictClauseNotAsserting = analyze( _confl, learnt_clause, backtrack_level );
-        analyze( _confl, learnt_clause, backtrack_level );
+        bool newClause = analyze( _confl, learnt_clause, backtrack_level );
 		if (learnt_clause.size() == 0) std::exit(32);
         assert( learnt_clause.size() > 0 );
 
@@ -2912,11 +2912,13 @@ namespace smtrat
         }
         else
         {
-            // learnt clause is the asserting clause.
-            _confl = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
-            learnts.push( _confl );
-            attachClause( _confl );
-            claBumpActivity( ca[_confl] );
+			if (newClause) {
+	            // learnt clause is the asserting clause.
+	            _confl = ca.alloc( learnt_clause, CONFLICT_CLAUSE );
+	            learnts.push( _confl );
+	            attachClause( _confl );
+	            claBumpActivity( ca[_confl] );
+			}
 			if (Settings::mc_sat) {
 				if (value(learnt_clause[1]) == l_False) {
 					uncheckedEnqueue( learnt_clause[0], _confl );
@@ -3333,8 +3335,23 @@ namespace smtrat
         //
         if( out_learnt.size() == 1 )
             out_btlevel = 0;
-        else
-        {
+        else if (Settings::mc_sat) {
+			SMTRAT_LOG_DEBUG("smtrat.sat", "Figuring out level to backtrack to for " << out_learnt);
+			std::vector<int> levels;
+			for( int i = 0; i < out_learnt.size(); i++ ) {
+                levels.emplace_back(theory_level(var(out_learnt[i])));
+				SMTRAT_LOG_DEBUG("smtrat.sat", out_learnt[i] << " is assigned at " << levels.back());
+			}
+			std::sort(levels.rbegin(), levels.rend());
+			levels.erase(std::unique(levels.begin(), levels.end()), levels.end());
+			assert(levels.size() > 0);
+			if (levels.size() > 1) {
+				out_btlevel = levels[1];
+			} else {
+				out_btlevel = levels[0]-1;
+			}
+			SMTRAT_LOG_DEBUG("smtrat.sat", "-> " << out_btlevel << " (" << out_learnt << ")");
+		} else {
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Figuring out level to backtrack to for " << out_learnt);
             int max_i = 0;
 			int max_lvl = 0;
