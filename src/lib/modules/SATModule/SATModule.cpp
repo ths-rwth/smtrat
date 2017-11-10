@@ -3013,7 +3013,7 @@ namespace smtrat
             if( mReceivedFormulaPurelyPropositional || Settings::theory_conflict_guided_decision_heuristic == TheoryGuidedDecisionHeuristicLevel::DISABLED || mCurrentAssignmentConsistent != SAT )
             {
                 // Activity based decision:
-                while( next == var_Undef || value( next ) != l_Undef || !decision[next] )
+                while( next == var_Undef || bool_value( next ) != l_Undef || !decision[next] )
                 {
                     if( order_heap.empty() )
                     {
