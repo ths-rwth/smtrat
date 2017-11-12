@@ -176,7 +176,7 @@ namespace smtrat
                 if( basicIter == mOriginalVars.end() )
                 {
                     typename Poly::PolyType* varPoly = new typename Poly::PolyType( var );
-                    result = newNonbasicVariable( varPoly, var.getType() == carl::VariableType::VT_INT );
+                    result = newNonbasicVariable( varPoly, var.type() == carl::VariableType::VT_INT );
                     mOriginalVars.insert( std::pair<carl::Variable, Variable<T1, T2>*>( var, result ) );
                 }
                 else
@@ -531,7 +531,7 @@ namespace smtrat
                 if( mOriginalVars.end() == nonBasicIter )
                 {
                     typename Poly::PolyType* varPoly = new typename Poly::PolyType( var );
-                    nonBasic = newNonbasicVariable( varPoly, var.getType() == carl::VariableType::VT_INT );
+                    nonBasic = newNonbasicVariable( varPoly, var.type() == carl::VariableType::VT_INT );
                     mOriginalVars.insert( std::pair<carl::Variable, Variable<T1, T2>*>( var, nonBasic ) );
                 }
                 else

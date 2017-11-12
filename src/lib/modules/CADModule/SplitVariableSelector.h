@@ -14,7 +14,7 @@ private:
 	std::vector<int> collectIndices(const Variables& vars, const RAPoint& rap) const {
 		std::vector<int> res;
 		for (std::size_t d = 0; d < rap.dim(); d++) {
-			if (vars[d].getType() != carl::VariableType::VT_INT) continue;
+			if (vars[d].type() != carl::VariableType::VT_INT) continue;
 			if (carl::isInteger(rap[d])) continue;
 			res.push_back(int(d));
 		}
