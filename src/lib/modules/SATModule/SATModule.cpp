@@ -2873,9 +2873,9 @@ namespace smtrat
         }
 		
 		if (Settings::mc_sat) {
-			for (int i = 0; i < learnt_clause.size(); i++) {
-				valueAndUpdate(learnt_clause[i]);
-			}
+			//for (int i = 0; i < learnt_clause.size(); i++) {
+			//	valueAndUpdate(learnt_clause[i]);
+			//}
 			sort(learnt_clause, lemma_lt(*this));
 		}
 		
