@@ -2872,6 +2872,10 @@ namespace smtrat
             cancelUntil( backtrack_level );
         }
 		
+		#ifdef DEBUG_SATMODULE
+		print(std::cout, "###");
+		#endif
+		
 		if (Settings::mc_sat) {
 			//for (int i = 0; i < learnt_clause.size(); i++) {
 			//	valueAndUpdate(learnt_clause[i]);
@@ -3017,16 +3021,19 @@ namespace smtrat
             }
             if( mReceivedFormulaPurelyPropositional || Settings::theory_conflict_guided_decision_heuristic == TheoryGuidedDecisionHeuristicLevel::DISABLED || mCurrentAssignmentConsistent != SAT )
             {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Retrieving next variable from the heap");
                 // Activity based decision:
                 while( next == var_Undef || bool_value( next ) != l_Undef || !decision[next] )
                 {
                     if( order_heap.empty() )
                     {
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Empty.");
                         next = var_Undef;
                         break;
                     }
                     else
                         next = order_heap.removeMin();
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Got " << next);
                 }
             }
             else

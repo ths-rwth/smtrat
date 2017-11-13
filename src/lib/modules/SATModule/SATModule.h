@@ -240,11 +240,14 @@ namespace smtrat
                 lemma_lt(SATModule& solver) : solver(solver) {}
 				int levelOf(Minisat::Var v) {
 					if (solver.bool_value(v) != l_Undef) {
+						SMTRAT_LOG_TRACE("smtrat.sat", "Level of " << v << ": " << solver.trailIndex(v) << " (trail index from boolean assignment)");
 						return solver.trailIndex(v);
 					} else {
 						assert(Settings::mc_sat);
 						auto lvl = solver.mMCSAT.computeVariableLevel(v);
-						return solver.mMCSAT.TL2DL(lvl);
+						auto res = solver.mMCSAT.TL2DL(lvl);
+						SMTRAT_LOG_TRACE("smtrat.sat", "Level of " << v << ": " << res << " (theory level " << lvl << " and dl " << res << ")");
+						return res;
 					}
 				}
                 bool operator () (Minisat::Lit x, Minisat::Lit y) {
@@ -260,25 +263,30 @@ namespace smtrat
 					if (x_value == l_Undef) {
 						if (y_value == l_Undef) {
 							// arbitrary
+							SMTRAT_LOG_TRACE("smtrat.sat", "Both unassigned, using arbitrary order: " << (x < y));
 							return x < y;
 						} else {
 							// x < y
+							SMTRAT_LOG_TRACE("smtrat.sat", x << " unassigned but " << y << " assigned, hence true");
 							return true;
 						}
 					}
 					if (y_value == l_Undef) {
 						// y < x
+						SMTRAT_LOG_TRACE("smtrat.sat", x << " assigned but " << y << " unassigned, hence false");
 						return false;
 					}
 					assert(x_value != l_Undef && y_value != l_Undef);
 					if (x_value != y_value) {
 						return x_value == l_True;
+						SMTRAT_LOG_TRACE("smtrat.sat", "Both assigned but differently: " << (x_value == l_True));
 					}
 					assert(x_value == y_value);
 					int x_level = levelOf(var(x));
 					SMTRAT_LOG_TRACE("smtrat.sat", "Level of " << x << ": " << x_level);
 					int y_level = levelOf(var(y));
 					SMTRAT_LOG_TRACE("smtrat.sat", "Level of " << y << ": " << y_level);
+					SMTRAT_LOG_TRACE("smtrat.sat", "Comparing levels: " << (x_level > y_level));
 					return x_level > y_level;
                 }
             };
