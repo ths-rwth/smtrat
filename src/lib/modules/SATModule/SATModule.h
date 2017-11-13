@@ -1546,6 +1546,11 @@ namespace smtrat
                 if (level(x) >= 0) return level(x);
 				return mMCSAT.theoryLevel(x);
             }
+			int min_theory_level(Minisat::Var x) const {
+				int tl = mMCSAT.theoryLevel(x);
+				if (level(x) >= 0) return std::min(level(x), tl);
+				return tl;
+			}
 
             inline int trailIndex( Minisat::Var _var ) const
             { 
