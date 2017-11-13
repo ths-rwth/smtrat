@@ -104,6 +104,20 @@ boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision() {
 	return Minisat::lit_Undef;
 }
 
+Minisat::Lit MCSATMixin::isFullyAssigned(Minisat::Lit lit) {
+	auto var = Minisat::var(lit);
+	if (!mGetter.isTheoryAbstraction(var)) return Minisat::lit_Undef;
+	const auto& f = mGetter.reabstractLiteral(lit);
+	
+	if (mcsat::constraint_type::isAssigned(f, model())) {
+		FormulaT res(carl::model::substitute(f, model()));
+		if (res.isTrue()) return lit;
+		assert(res.isFalse());
+		return neg(lit);
+	}
+	return Minisat::lit_Undef;
+}
+
 boost::optional<FormulaT> MCSATMixin::isDecisionPossible(Minisat::Lit lit) {
 	auto var = Minisat::var(lit);
 	if (!mGetter.isTheoryAbstraction(var)) return boost::none;
@@ -403,7 +417,7 @@ std::size_t MCSATMixin::computeVariableLevel(Minisat::Var variable) const {
 	for (std::size_t level = 1; level < mTheoryStack.size(); level++) {
 		vars.erase(get(level).variable);
 		if (vars.empty()) {
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Variable " << variable << " / " << f << " is univariate in " << get(level).variable);
+			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Variable " << variable << " / " << f << " is univariate in " << get(level).variable);
 			return level;
 		}
 	}
