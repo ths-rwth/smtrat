@@ -3345,7 +3345,9 @@ namespace smtrat
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Figuring out level to backtrack to for " << out_learnt);
 			std::vector<int> levels;
 			for( int i = 0; i < out_learnt.size(); i++ ) {
-                levels.emplace_back(theory_level(var(out_learnt[i])));
+				// Attention: theory_level gives the latest level that a literal was assigned (first from theory, then by decision)
+				// Here, we need the earliest!
+                levels.emplace_back(min_theory_level(var(out_learnt[i])));
 				SMTRAT_LOG_DEBUG("smtrat.sat", out_learnt[i] << " is assigned at " << levels.back());
 			}
 			std::sort(levels.rbegin(), levels.rend());
