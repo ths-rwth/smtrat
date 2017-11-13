@@ -1350,7 +1350,7 @@ namespace smtrat
                 continue;
             assert( var->first == map_iterator->first );
             const Rational& ass = map_iterator->second;
-            if( var->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
+            if( var->first.type() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
             {
                 if( mFinalCheck )
                 {
@@ -1419,7 +1419,7 @@ namespace smtrat
         rReceivedFormula().arithmeticVars( inputVars );
         for( auto ass = rmodel.begin(); ass != rmodel.end(); ++ass )
         {
-            if( ass->first.getType() == carl::VariableType::VT_INT && !carl::isInteger( ass->second ) && inputVars.find( ass->first ) != inputVars.end() )
+            if( ass->first.type() == carl::VariableType::VT_INT && !carl::isInteger( ass->second ) && inputVars.find( ass->first ) != inputVars.end() )
             {
                 return false;
             }

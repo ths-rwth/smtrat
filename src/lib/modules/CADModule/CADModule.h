@@ -101,11 +101,11 @@ return SettingsType::moduleName;
 
         private:
 			bool validateIntegrality(const std::vector<carl::Variable>& vars, std::size_t d) {
-				if (vars[d].getType() != carl::VariableType::VT_INT) return true;
+				if (vars[d].type() != carl::VariableType::VT_INT) return true;
 				return carl::isInteger(this->mRealAlgebraicSolution[d].branchingPoint());
 			}
 			bool checkIntegerAssignment(const std::vector<carl::Variable>& vars, std::size_t d, bool createBranch) {
-				if (vars[d].getType() != carl::VariableType::VT_INT) return false;
+				if (vars[d].type() != carl::VariableType::VT_INT) return false;
 				auto r = this->mRealAlgebraicSolution[d].branchingPoint();
 				if (createBranch) {
 					if (!carl::isInteger(r)) {

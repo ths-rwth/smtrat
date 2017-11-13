@@ -181,6 +181,20 @@ public:
 	}
 };
 
+bool parseInput(const std::string& pathToInputFile, Executor* e, bool queueInstructions) {
+	if (pathToInputFile == "-") {
+		SMTRAT_LOG_DEBUG("smtrat", "Using stdin");
+		return smtrat::parseSMT2File(e, queueInstructions, std::cin);
+	}
+
+	std::ifstream infile(pathToInputFile);
+	if (!infile.good()) {
+		std::cerr << "Could not open file: " << pathToInputFile << std::endl;
+		exit(SMTRAT_EXIT_NOSUCHFILE);
+	}
+	return smtrat::parseSMT2File(e, queueInstructions, infile);
+}
+
 /**
  * Parse the file and save it in formula.
  * @param pathToInputFile The path to the input smt2 file.
@@ -199,17 +213,12 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 	setrlimit(RLIMIT_STACK, &rl);
 #endif
 
-	std::ifstream infile(pathToInputFile);
-	if (!infile.good()) {
-            std::cerr << "Could not open file: " << pathToInputFile << std::endl;
-            exit(SMTRAT_EXIT_NOSUCHFILE);
-	}
+	constexpr bool queueInstructions = false;
 	Executor* e = new Executor(solver);
-	bool queueInstructions = false;
 	if (settingsManager.exportDIMACS()) e->exportDIMACS = true;
 	{
 		SMTRAT_LOG_DEBUG("smtrat", "Starting to parse " << pathToInputFile);
-		if (!smtrat::parseSMT2File(e, queueInstructions, infile)) {
+		if (!parseInput(pathToInputFile, e, queueInstructions)) {
             std::cerr << "Parse error" << std::endl;
             delete e;
             exit(SMTRAT_EXIT_PARSERFAILURE);

@@ -50,7 +50,7 @@ namespace smtrat
                 }
                 if( !iter_poly->isConstant() && mDom != INT )
                 {
-                    if( iter_poly->monomial()->begin()->first.getType() == carl::VariableType::VT_INT )
+                    if( iter_poly->monomial()->begin()->first.type() == carl::VariableType::VT_INT )
                     {
                         mDom = INT;
                     }

@@ -56,7 +56,7 @@ namespace smtrat
                     carl::Variables vars = constraint.lhs().gatherVariables();
                     for( carl::Variable::Arg var : vars )
                     {
-                        if( var.getType() == carl::VariableType::VT_INT )
+                        if( var.type() == carl::VariableType::VT_INT )
                         {
                             auto iter = mIntToRealVarMap.find( var );
                             if( iter == mIntToRealVarMap.end() )

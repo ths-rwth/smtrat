@@ -9,7 +9,7 @@ namespace cad {
 	enum class ProjectionType { Brown, McCallum, Collins, Hong };
 	enum class SampleCompareStrategy { Integer, Numeric, Value };
 	enum class FullSampleCompareStrategy { Integer, Numeric, Value };
-	enum class MISHeuristic { TRIVIAL, GREEDY };
+	enum class MISHeuristic { TRIVIAL, GREEDY, GREEDY_PRE, GREEDY_WEIGHTED, HYBRID};
 	enum class CoreHeuristic { BySample, PreferProjection, PreferSampling };
 	using RootSplittingStrategy = carl::rootfinder::SplittingStrategy;
 

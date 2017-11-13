@@ -5,14 +5,17 @@
 
 #pragma once
 
+#ifdef BENCHMAX_DATABASE
 // Include exactly one implementation.
 #include "Database_mysqlconnector.h"
 //#include "Database_mysqlpp.h"
+#endif
 
 #include "../logging.h"
 
 namespace benchmax {
 
+#ifdef BENCHMAX_DATABASE
 class Database {
 	DBAL conn;
 public:
@@ -68,7 +71,19 @@ public:
 			exit(1);
 		}
 	}
-	
 };
+#else
+class Database {
+public:
+	typedef int Index;
+	Index addTool(const Tool* tool) { return -1; }
+	Index getToolID(const Tool* tool) { return -1; }
+	Index addFile(const fs::path& file) { return -1; }
+	Index getFileID(const fs::path& file) { return -1; }
+	Index createBenchmark() { return -1; }
+	Index addBenchmarkResult(Index benchmark, Index tool, Index file, int exitCode, std::size_t time) { return -1; }
+	void addBenchmarkAttribute(Index benchmarkResult, const std::string& key, const std::string& value) {}
+};
+#endif
 
 }

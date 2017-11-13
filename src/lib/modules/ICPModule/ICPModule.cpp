@@ -812,14 +812,12 @@ namespace smtrat
                 carl::Variables variables;
                 monom.gatherVariables( variables );
                 bool hasRealVar = false;
-                for( auto var = variables.begin(); var != variables.end(); ++var )
-                {
-                    if( var->getType() == carl::VariableType::VT_REAL )
-                    {
-                        hasRealVar = true;
-                        break;
-                    }
-                }
+				for (auto var: variables) {
+					if (var.type() == carl::VariableType::VT_REAL) {
+						hasRealVar = true;
+						break;
+					}
+				}
                 carl::Variable newVar = hasRealVar ? carl::freshRealVariable() : carl::freshIntegerVariable();
                 mVariableLinearizations.insert( std::make_pair( monom, newVar ) );
                 mSubstitutions.insert( std::make_pair( newVar, monom ) );
@@ -911,9 +909,9 @@ namespace smtrat
         {
             carl::Variables variables = Settings::original_polynomial_contraction ? _original.constraint().variables() : _constraint.constraint().variables();
             bool hasRealVar = false;
-            for( carl::Variable::Arg var : variables )
+            for( auto var : variables )
             {
-                if( var.getType() == carl::VariableType::VT_REAL )
+                if( var.type() == carl::VariableType::VT_REAL )
                 {
                     hasRealVar = true;
                     break;
@@ -2243,8 +2241,8 @@ namespace smtrat
                 }
                 else
                 {
-                    assert( iter->first.getType() != carl::VariableType::VT_INT || varBounds.isUnbounded() || varBounds.diameter() >= ONE_RATIONAL );
-                    if( iter->first.getType() != carl::VariableType::VT_INT )
+                    assert( iter->first.type() != carl::VariableType::VT_INT || varBounds.isUnbounded() || varBounds.diameter() >= ONE_RATIONAL );
+                    if( iter->first.type() != carl::VariableType::VT_INT )
                         boxContainsOnlyOneSolution = false;
                     if( varBounds.lowerBoundType() != carl::BoundType::INFTY && value < varBounds.lower() )
                     {

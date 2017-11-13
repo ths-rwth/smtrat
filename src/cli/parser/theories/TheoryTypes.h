@@ -1,7 +1,10 @@
 #pragma once
 
 #include "../Common.h"
-#include "config.h"
+
+#define PARSER_ENABLE_ARITHMETIC
+#define PARSER_ENABLE_BITVECTOR
+#define PARSER_ENABLE_UNINTERPRETED
 
 namespace smtrat {
 namespace parser {

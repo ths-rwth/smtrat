@@ -99,7 +99,7 @@ private:
 		curChannels--;
 	}
 public:
-	SSHConnection(const Node& n): node(n), curChannels(0), maxChannels(node.cores) {
+	SSHConnection(const Node& n): node(n), curChannels(0), maxChannels(node.cores), curJobs(0) {
 		session = ssh_new();
 		if (session == nullptr) {
 			BENCHMAX_LOG_ERROR("benchmax.ssh", this << " Failed to create SSH session.");
@@ -230,7 +230,7 @@ public:
 		ssh_channel channel = getChannel();
 		std::stringstream call;
 		call << "date +\"Start: %s%3N\" ; ";
-		std::size_t timeout = (seconds(Settings::timeLimit) + std::chrono::seconds(3)).count();
+		auto timeout = (seconds(Settings::timeLimit) + std::chrono::seconds(3)).count();
 		if (Settings::wallclock) call << "timeout " << timeout << "s ";
 		else call << "ulimit -S -t " << timeout << " && ";
 		call << "ulimit -S -v " << (Settings::memoryLimit * 1024) << " && ";
@@ -246,17 +246,18 @@ public:
 		result.stderr = "";
 		char buf[512];
 		int n;
-		int eof;
-		SSH_LOCKED(eof = ssh_channel_is_eof(channel));
+		int eof = 0;
 		while (eof == 0) {
+			SSH_LOCKED(eof = ssh_channel_is_eof(channel));
 			SSH_LOCKED(n = ssh_channel_read_nonblocking(channel, buf, sizeof(buf), 0));
 			if (n > 0) result.stdout += std::string(buf, std::size_t(n));
 			SSH_LOCKED(n = ssh_channel_read_nonblocking(channel, buf, sizeof(buf), 1));
 			if (n > 0) result.stderr += std::string(buf, std::size_t(n));
-			SSH_LOCKED(eof = ssh_channel_is_eof(channel));
 			std::this_thread::yield();
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
+		BENCHMAX_LOG_DEBUG("benchmax.ssh", "stdout = " << result.stdout);
+		BENCHMAX_LOG_DEBUG("benchmax.ssh", "stderr = " << result.stderr);
 		SSH_LOCKED(result.exitCode = ssh_channel_get_exit_status(channel));
 		result.time = parseDuration(result.stdout);
 		destroy(channel);
