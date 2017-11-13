@@ -3,6 +3,8 @@
 #include "Covering.h"
 #include "RootIndexer.h"
 
+#include "../utils/ConstraintCategorization.h"
+
 #include <boost/variant.hpp>
 
 namespace smtrat {
@@ -20,6 +22,7 @@ private:
 	
 	/// Checks whether a formula is univariate, meaning it contains mVar and only variables from mModel otherwise.
 	bool isUnivariate(const FormulaT& f) const {
+		return mcsat::constraint_type::isUnivariate(f, mModel, mVar);
 		SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", "is " << f << " univariate in " << mVar << "?");
 		carl::Variables vars;
 		f.arithmeticVars(vars);
@@ -47,9 +50,31 @@ public:
 	
 	bool addConstraint(const FormulaT& f) {
 		assert(f.getType() == carl::FormulaType::CONSTRAINT);
-		if (!isUnivariate(f)) {
-			SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Ignoring non-univariate constraint " << f);
-			return true;
+		auto category = mcsat::constraint_type::categorize(f, mModel, mVar);
+		switch (category) {
+			case mcsat::constraint_type::ConstraintType::Constant:
+				assert(f.isTrue() || f.isFalse());
+				if (f.isFalse()) return false;
+				break;
+			case mcsat::constraint_type::ConstraintType::Assigned: {
+				SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Checking fully assigned " << f);
+				FormulaT fnew = carl::model::substitute(f, mModel);
+				if (fnew.isTrue()) {
+					SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Ignoring " << f << " which simplified to true.");
+				} else {
+					assert(fnew.isFalse());
+					SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
+					return false;
+				}
+				break;
+			}
+			case mcsat::constraint_type::ConstraintType::Univariate:
+				SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Considering univariate constraint " << f);
+				break;
+			case mcsat::constraint_type::ConstraintType::Unassigned:
+				SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Considering unassigned constraint " << f << " (which may still become univariate)");
+				return true;
+				break;
 		}
 		FormulaT fnew(carl::model::substitute(f, mModel));
 		std::vector<RAN> list;
@@ -62,9 +87,10 @@ public:
 			} else {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Failed to compute roots, or polynomial becomes zero.");
 			}
-		} else if (fnew.getType() == carl::FormulaType::TRUE) {
+		} else if (fnew.isTrue()) {
 			SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Ignoring " << f << " which simplified to true.");
 		} else {
+			assert(fnew.isFalse());
 			SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Constraint " << f << " simplified to false.");
 			return false;
 		}
