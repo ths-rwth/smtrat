@@ -247,6 +247,7 @@ public:
 	boost::variant<Minisat::Lit,FormulaT> checkLiteralForDecision(Minisat::Var var, Minisat::Lit lit);
 	boost::variant<Minisat::Lit,FormulaT> pickLiteralForDecision(const std::vector<Minisat::Var>& vars);
 	boost::variant<Minisat::Lit,FormulaT> pickLiteralForDecision();
+	Minisat::Lit isFullyAssigned(Minisat::Lit lit);
 	boost::optional<FormulaT> isDecisionPossible(Minisat::Lit lit);
 	
 	boost::optional<FormulaT> isFeasible() {
@@ -312,7 +313,7 @@ public:
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Theory level " << level << " does not have a decision literal yet");
 			return std::numeric_limits<int>::max();
 		}
-		SMTRAT_LOG_DEBUG("smtrat.sat", "Theory level " << level << " has literal with trail index " << mGetter.getTrailIndex(var(lit)));
+		SMTRAT_LOG_TRACE("smtrat.sat", "Theory level " << level << " has literal with trail index " << mGetter.getTrailIndex(var(lit)));
 		return mGetter.getTrailIndex(var(lit));
 	}
 	
