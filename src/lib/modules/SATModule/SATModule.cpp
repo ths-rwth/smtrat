@@ -2732,11 +2732,16 @@ namespace smtrat
 					next = pickBranchLit();
 					if (Settings::mc_sat && next != lit_Undef) {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << ", checking for theory consistency...");
-						auto res = mMCSAT.isDecisionPossible(next);
-						if (res != boost::none) {
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict " << *res);
-							handleTheoryConflict(res->isNary() ? res->subformulas() : FormulasT({*res}));
-							continue;
+						auto declit = mMCSAT.isFullyAssigned(next);
+						if (declit != lit_Undef) {
+							next = declit;
+						} else {
+							auto res = mMCSAT.isDecisionPossible(next);
+							if (res != boost::none) {
+								SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict " << *res);
+								handleTheoryConflict(res->isNary() ? res->subformulas() : FormulasT({*res}));
+								continue;
+							}
 						}
 					}
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Deciding upon " << next);
@@ -3045,6 +3050,7 @@ namespace smtrat
     void SATModule<Settings>::pickTheoryBranchLit() {
 		if (!mMCSAT.hasNextVariable()) {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "No next theory variable.");
+			mMCSAT.pushLevel(carl::Variable::NO_VARIABLE);
 			return;
 		}
 		carl::Variable nextVar = mMCSAT.nextVariable();
@@ -4050,6 +4056,10 @@ NextClause:
     template<class Settings>
     void SATModule<Settings>::print( ostream& _out, const string& _init ) const
     {
+		_out << _init << std::endl;
+		_out << _init << " ";
+		order_heap.print();
+		_out << _init << std::endl;
         printBooleanConstraintMap( _out, _init );
 		_out << _init << std::endl;
         printClauses( clauses, "Clauses", _out, _init );
