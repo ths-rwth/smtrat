@@ -2729,11 +2729,20 @@ namespace smtrat
 					#endif
 					
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Picking a literal for a boolean decision");
-					next = pickBranchLit();
+					if (Settings::mc_sat) {
+						next = mMCSAT.getFullyAssignedForDecision();
+						SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found: " << next);
+						if (next == lit_Undef) {
+							next = pickBranchLit();
+						}
+					} else {
+						next = pickBranchLit();
+					}
 					if (Settings::mc_sat && next != lit_Undef) {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << ", checking for theory consistency...");
 						auto declit = mMCSAT.isFullyAssigned(next);
 						if (declit != lit_Undef) {
+							SMTRAT_LOG_DEBUG("smtrat.sat", next << " is fully assigned and evaluates to " << declit);
 							next = declit;
 						} else {
 							auto res = mMCSAT.isDecisionPossible(next);
