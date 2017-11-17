@@ -343,7 +343,7 @@ public:
 			}
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", f << " was not assigned by any theory assignment");
-		return 0;
+		return std::numeric_limits<int>::max();
 	}
 	
 	int theoryLevel(Minisat::Var var) const {
