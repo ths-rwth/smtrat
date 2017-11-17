@@ -24,6 +24,7 @@ using carl::operator<<;
 struct InformationGetter {
 	std::function<Minisat::lbool(Minisat::Var)> getVarValue;
 	std::function<Minisat::lbool(Minisat::Lit)> getLitValue;
+	std::function<Minisat::lbool(Minisat::Var)> getBoolVarValue;
 	std::function<int(Minisat::Var)> getDecisionLevel;
 	std::function<int(Minisat::Var)> getTrailIndex;
 	std::function<Minisat::CRef(Minisat::Var)> getReason;
@@ -108,6 +109,7 @@ public:
 		mGetter({
 			[&baseModule](Minisat::Var v){ return baseModule.value(v); },
 			[&baseModule](Minisat::Lit l){ return baseModule.value(l); },
+			[&baseModule](Minisat::Var l){ return baseModule.bool_value(l); },
 			[&baseModule](Minisat::Var v){ return baseModule.vardata[v].level; },
 			[&baseModule](Minisat::Var v){ return baseModule.vardata[v].mTrailIndex; },
 			[&baseModule](Minisat::Var v){ return baseModule.reason(v); },
@@ -247,10 +249,19 @@ public:
 	boost::variant<Minisat::Lit,FormulaT> checkLiteralForDecision(Minisat::Var var, Minisat::Lit lit);
 	boost::variant<Minisat::Lit,FormulaT> pickLiteralForDecision(const std::vector<Minisat::Var>& vars);
 	boost::variant<Minisat::Lit,FormulaT> pickLiteralForDecision();
+	/// Retrieve literal that is a fully assigned, but not yet assigned in the boolean
+	Minisat::Lit getFullyAssignedForDecision() {
+		assert(level() > 0);
+		for (auto v: get(level()-1).univariateVariables) {
+			if (mGetter.getBoolVarValue(v) == l_Undef) return Minisat::mkLit(v);
+		}
+		return Minisat::lit_Undef;
+	}
 	Minisat::Lit isFullyAssigned(Minisat::Lit lit);
 	boost::optional<FormulaT> isDecisionPossible(Minisat::Lit lit);
 	
 	boost::optional<FormulaT> isFeasible() {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking whether trail is feasible (w.r.t. " << currentVariable() << ")");
 		auto res = mBackend.findAssignment(currentVariable());
 		if (carl::variant_is_type<ModelValue>(res)) {
 			return boost::none;
