@@ -348,7 +348,7 @@ public:
 	
 	int theoryLevel(Minisat::Var var) const {
 		if (!mGetter.isTheoryAbstraction(var)) {
-			return 0;
+			return std::numeric_limits<int>::max();
 		}
 		return theoryLevel(mGetter.reabstractVariable(var));
 	}
