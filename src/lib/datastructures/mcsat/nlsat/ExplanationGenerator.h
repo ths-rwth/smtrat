@@ -134,6 +134,8 @@ public:
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << f);
 				mConstraints.emplace(f, ConstraintT(f.variableComparison().definingPolynomial(), f.variableComparison().relation()));
 			} else if (f.getType() == carl::FormulaType::VARASSIGN) {
+				SMTRAT_LOG_WARN("smtrat.nlsat", "Variable assignment " << f << " should never get here!");
+				assert(false);
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding assignment " << f);
 				const VariableComparisonT& vc = f.variableAssignment();
 				mConstraints.emplace(f, ConstraintT(vc.definingPolynomial(), carl::Relation::EQ));
