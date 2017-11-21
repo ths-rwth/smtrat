@@ -57,10 +57,11 @@ public:
 				if (f.isFalse()) return false;
 				break;
 			case mcsat::constraint_type::ConstraintType::Assigned: {
-				SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Checking fully assigned " << f);
+				SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", "Checking fully assigned " << f);
 				FormulaT fnew = carl::model::substitute(f, mModel);
 				if (fnew.isTrue()) {
-					SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Ignoring " << f << " which simplified to true.");
+					SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", "Ignoring " << f << " which simplified to true.");
+					return true;
 				} else {
 					assert(fnew.isFalse());
 					SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
@@ -88,10 +89,11 @@ public:
 				SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Failed to compute roots, or polynomial becomes zero.");
 			}
 		} else if (fnew.isTrue()) {
-			SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Ignoring " << f << " which simplified to true.");
+			SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", "Ignoring " << f << " which simplified to true.");
+			return true;
 		} else {
 			assert(fnew.isFalse());
-			SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Constraint " << f << " simplified to false.");
+			SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
 			return false;
 		}
 		
