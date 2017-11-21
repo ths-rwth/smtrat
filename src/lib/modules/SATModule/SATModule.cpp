@@ -2700,23 +2700,26 @@ namespace smtrat
 
 				if (Settings::mc_sat) {
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for theory propagations...");
-					bool didTheoryPropagation = false;
-					for (std::size_t level = 0; !didTheoryPropagation && level < mMCSAT.level(); level++) {
+					//bool didTheoryPropagation = false;
+					for (std::size_t level = 0; level < mMCSAT.level(); level++) {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Considering " << mMCSAT.get(level).univariateVariables);
 						for (auto v: mMCSAT.get(level).univariateVariables) {
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Considering " << v);
-							if (value(v) != l_Undef) continue;
+							if (bool_value(v) != l_Undef) continue;
 							auto tv = theoryValue(v);
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Undef, theory value is " << tv);
 							if (tv == l_Undef) continue;
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Propagating " << v << " = " << tv);
-							if (tv == l_True) uncheckedEnqueue(mkLit(v, false), Minisat::CRef_TPropagation);
-							else if (tv == l_False) uncheckedEnqueue(mkLit(v, true), Minisat::CRef_TPropagation);
-							didTheoryPropagation = true;
+							//if (tv == l_True) uncheckedEnqueue(mkLit(v, false), Minisat::CRef_TPropagation);
+							//else if (tv == l_False) uncheckedEnqueue(mkLit(v, true), Minisat::CRef_TPropagation);
+							if (tv == l_True) next = mkLit(v, false);
+							else if (tv == l_False) next = mkLit(v, true);
+							//CARL_CHECKPOINT("nlsat", "theory-propagation", v, tv);
+							//didTheoryPropagation = true;
 							break;
 						}
 					}
-					if (didTheoryPropagation) continue;
+					//if (didTheoryPropagation) continue;
 				}
 				
                 // If we do not already have a branching literal, we pick one
@@ -3218,6 +3221,7 @@ namespace smtrat
         //
         out_learnt.push();    // (leave room for the asserting literal)
         int index = trail.size() - 1;
+		for (int i = 0; i < seen.size(); i++) seen[i] = 0;
 
         do
         {
@@ -3226,6 +3230,7 @@ namespace smtrat
 			if (confl == CRef_Undef) std::exit(77);
             assert( confl != CRef_Undef );    // (otherwise should be UIP)
 			if (confl == CRef_TPropagation) {
+				assert(false);
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Found " << p << " to be result of theory propagation.");
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << mMCSAT);
 				cancelIncludingLiteral(p);
@@ -3253,6 +3258,8 @@ namespace smtrat
 	                Lit q = c[j];
 					auto qlevel = theory_level(var(q));
 					SMTRAT_LOG_DEBUG("smtrat.sat", "\tLooking at literal " << q << " from level " << qlevel);
+					SMTRAT_LOG_DEBUG("smtrat.sat", "\tseen? " << static_cast<bool>(seen[var(q)]));
+					assert(value(q) == l_False);
 	                
 	                if( !seen[var( q )] && qlevel > 0 )
 	                {
@@ -3263,7 +3270,11 @@ namespace smtrat
 						//	pathC++;
 						//	SMTRAT_LOG_DEBUG("smtrat.sat", "\tTo process: "  << q << ", pathC = " << pathC);
 						//} else {
-		                    if( level(var(q)) == qlevel && qlevel >= decisionLevel() ) {
+						if (bool_value(q) == l_Undef) {
+							out_learnt.push(q);
+							SMTRAT_LOG_DEBUG("smtrat.sat", "\tq is false by theory assignment, forwarding to out_learnt.");
+						}
+						else if( level(var(q)) == qlevel && qlevel >= decisionLevel() ) {
 								pathC++;
 								SMTRAT_LOG_DEBUG("smtrat.sat", "\tTo process: "  << q << ", pathC = " << pathC);
 							}
@@ -3654,6 +3665,7 @@ namespace smtrat
                 for( int k = 2; k < c.size(); k++ ) {
 					if (Settings::mc_sat) {
 						if (value(c[k]) == l_Undef && theoryValue(c[k]) == l_False) {
+							assert(false);
 							uncheckedEnqueue(neg(c[k]), Minisat::CRef_TPropagation);
 						}
 					}
