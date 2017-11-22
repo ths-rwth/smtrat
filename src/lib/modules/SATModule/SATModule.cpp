@@ -3253,9 +3253,10 @@ namespace smtrat
 	                claBumpActivity( c );
 
 				// assert that c[0] is actually p
-	            for( int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++ )
+	            for( int j = (p == lit_Undef) ? 0 : 0; j < c.size(); j++ )
 	            {
 	                Lit q = c[j];
+					if (q == p) continue;
 					auto qlevel = theory_level(var(q));
 					SMTRAT_LOG_DEBUG("smtrat.sat", "\tLooking at literal " << q << " from level " << qlevel);
 					SMTRAT_LOG_DEBUG("smtrat.sat", "\tseen? " << static_cast<bool>(seen[var(q)]));
@@ -3290,10 +3291,10 @@ namespace smtrat
             while( !seen[var( trail[index--] )] );
             p              = trail[index + 1];
             confl          = reason( var( p ) );
-			if (Settings::mc_sat && confl == CRef_Undef) {
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Aborting conflict analysis");
-				break;
-			}
+			//if (Settings::mc_sat && confl == CRef_Undef) {
+			//	SMTRAT_LOG_DEBUG("smtrat.sat", "Aborting conflict analysis");
+			//	break;
+			//}
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking to " << p << " with reason " << confl);
             seen[var( p )] = 0;
             pathC--;
