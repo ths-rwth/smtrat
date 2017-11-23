@@ -1783,8 +1783,8 @@ namespace smtrat
 				// Conflicting
 				assert(value(lemma[1]) == l_False);
 				// Backtrack to highest DL such that it looks like a regular conflict
-				int lvl = theory_level(var(lemma[1])); // instead of 0
-				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is conflicting on DL" << lvl);
+				int lvl = min_theory_level(var(lemma[1])); // instead of 0
+				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is conflicting, propagates on DL" << lvl);
 				if (lvl < backtrackLevel) {
 					backtrackLevel = lvl;
 				}
