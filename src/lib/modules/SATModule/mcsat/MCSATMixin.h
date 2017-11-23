@@ -332,14 +332,13 @@ public:
 		carl::Variables vars;
 		f.arithmeticVars(vars);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", f << " contains " << vars);
-		for (std::size_t lvl = level(); lvl > 1; --lvl) {
-			if (vars.find(get(lvl-1).variable) != vars.end()) {
-				Minisat::Lit declit = get(lvl-1).decisionLiteral;
-				if (declit != Minisat::lit_Undef) {
-					int res = mGetter.getDecisionLevel(var(declit));
-					SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", f << " was assigned by theory assignment at " << res);
-					return res;
-				}
+		for (std::size_t lvl = 1; lvl <= level(); ++lvl) {
+			if (get(lvl).decisionLiteral == Minisat::lit_Undef) break;
+			vars.erase(get(lvl).variable);
+			if (vars.empty()) {
+				int res = mGetter.getDecisionLevel(var(get(lvl).decisionLiteral));
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", f << " was assigned by theory assignment at " << res);
+				return res;
 			}
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", f << " was not assigned by any theory assignment");
