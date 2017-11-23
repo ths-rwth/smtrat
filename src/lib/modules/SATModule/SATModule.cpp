@@ -2698,14 +2698,14 @@ namespace smtrat
                     }
                 }
 
-				if (Settings::mc_sat) {
+				if (Settings::mc_sat && next != lit_Undef) {
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for theory propagations...");
 					//bool didTheoryPropagation = false;
 					for (std::size_t level = 0; level < mMCSAT.level(); level++) {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Considering " << mMCSAT.get(level).univariateVariables);
 						for (auto v: mMCSAT.get(level).univariateVariables) {
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Considering " << v);
 							if (bool_value(v) != l_Undef) continue;
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Considering " << v);
 							auto tv = theoryValue(v);
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Undef, theory value is " << tv);
 							if (tv == l_Undef) continue;
@@ -2714,12 +2714,11 @@ namespace smtrat
 							//else if (tv == l_False) uncheckedEnqueue(mkLit(v, true), Minisat::CRef_TPropagation);
 							if (tv == l_True) next = mkLit(v, false);
 							else if (tv == l_False) next = mkLit(v, true);
-							//CARL_CHECKPOINT("nlsat", "theory-propagation", v, tv);
-							//didTheoryPropagation = true;
+							assert(next != lit_Undef);
 							break;
 						}
+						if (next != lit_Undef) break;
 					}
-					//if (didTheoryPropagation) continue;
 				}
 				
                 // If we do not already have a branching literal, we pick one
@@ -2786,9 +2785,6 @@ namespace smtrat
 								mCurrentAssignmentConsistent = UNSAT;
 								SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << mMCSAT.level());
 								SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << res);
-								// Todo: backtrack to last relevant theory decision, not last one
-								int level = mMCSAT.penultimateTheoryLevel(res);
-								cancelUntil(level);
 								handleTheoryConflict(res.isNary() ? res.subformulas() : FormulasT({res}));
 								continue;
 							}
