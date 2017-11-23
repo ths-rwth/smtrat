@@ -247,12 +247,12 @@ namespace cad {
                             std::pair<std::size_t, std::size_t> pids;
                             findPIDsForProjection(var(level), level, m, pids); 
                             for (const auto& itPID: polys(level)) {
-                                if(itPID.second == pids.first || itPID.second == pids.second) {
+                                //if(itPID.second == pids.first || itPID.second == pids.second) {
                                     std::size_t newOrigin = std::max(it.second, itPID.second);
                                     mOperator(Settings::projectionOperator, it.first, itPID.first, var(level + 1),
                                             [&](const UPoly& np){ addToCorrectLevel(level + 1, np, newOrigin); } 
                                     );
-                                }
+                                //}
                             }
                         }
                 }
