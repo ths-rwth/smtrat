@@ -2698,7 +2698,7 @@ namespace smtrat
                     }
                 }
 
-				if (Settings::mc_sat && next != lit_Undef) {
+				if (Settings::mc_sat && next == lit_Undef) {
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for theory propagations...");
 					//bool didTheoryPropagation = false;
 					for (std::size_t level = 0; level < mMCSAT.level(); level++) {
