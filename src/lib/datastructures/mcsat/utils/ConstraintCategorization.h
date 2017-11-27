@@ -2,6 +2,8 @@
 
 #include "../../../Common.h"
 
+#include <iostream>
+
 namespace smtrat {
 namespace mcsat {
 
@@ -16,6 +18,16 @@ namespace constraint_type {
 		Univariate,	/// The constraint has a single unassigned variable being the next one.
 		Unassigned	/// The constraint has an unassigned variable that is not the next one.
 	};
+	inline std::ostream& operator<<(std::ostream& os, ConstraintType ct) {
+		switch (ct) {
+			case ConstraintType::Constant: os << "constant"; break;
+			case ConstraintType::Assigned: os << "assigned"; break;
+			case ConstraintType::Univariate: os << "univariate"; break;
+			case ConstraintType::Unassigned: os << "unassigned"; break;
+		}
+		return os;
+	}
+	
 	
 	inline void collectVariables(carl::Variables& vars, const FormulaT& f) {
 		f.arithmeticVars(vars);
