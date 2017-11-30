@@ -20,6 +20,7 @@ namespace smtrat
 	template<typename Settings>
 	class CoCoAGBModule : public Module
 	{
+#ifdef USE_COCOA
 		struct VariableOrdering {
 		private:
 			std::vector<carl::Variable> mOrdering;
@@ -157,5 +158,6 @@ namespace smtrat
 			 *		 Unknown, otherwise.
 			 */
 			Answer checkCore();
+#endif
 	};
 }

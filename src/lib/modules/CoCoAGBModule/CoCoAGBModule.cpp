@@ -10,6 +10,8 @@
 
 #include <carl/converter/CoCoAAdaptor.h>
 
+#ifdef USE_COCOA
+
 namespace smtrat
 {
 	template<class Settings>
@@ -103,5 +105,7 @@ namespace smtrat
 		return Answer::UNKNOWN;
 	}
 }
+
+#endif
 
 #include "Instantiation.h"
