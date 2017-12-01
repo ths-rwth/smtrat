@@ -86,13 +86,13 @@ namespace smtrat
 			VariableOrdering vo(polys);
 			carl::CoCoAAdaptor<Poly> cocoa(polys);
 			cocoa.resetVariableOrdering(vo.getOrdering());
-			std::cout << "Ordering: " << vo.getOrdering() << std::endl;
-			std::cout << "Computing GB of " << polys << std::endl;
+			SMTRAT_LOG_DEBUG("smtrat.cocoagb", "Ordering: " << vo.getOrdering());
+			SMTRAT_LOG_DEBUG("smtrat.cocoagb", "Computing GB of " << polys);
 			auto gb = cocoa.GBasis(polys);
-			std::cout << "-> " << gb << std::endl;
+			SMTRAT_LOG_DEBUG("smtrat.cocoagb", "-> " << gb);
 			
 			if (gb.size() == 1 && gb[0].isOne()) {
-				std::cout << "Returning UNSAT" << std::endl;
+				SMTRAT_LOG_DEBUG("smtrat.cocoagb", "Returning UNSAT");
 				generateTrivialInfeasibleSubset();
 				return Answer::UNSAT;
 			}
@@ -100,7 +100,7 @@ namespace smtrat
 			std::cerr << e << std::endl;
 		}
 		
-		std::cout << "Returning Unknown" << std::endl;
+		SMTRAT_LOG_DEBUG("smtrat.cocoagb", "Returning Unknown");
 		return Answer::UNKNOWN;
 	}
 }
