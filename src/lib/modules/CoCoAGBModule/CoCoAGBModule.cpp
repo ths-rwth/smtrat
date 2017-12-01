@@ -44,6 +44,7 @@ namespace smtrat
 		auto p = getPoly(_subformula->formula().constraint());
 		if (p) {
 			mGBPolys.emplace(_subformula->formula().constraint(), *p);
+			mLastBasis.clear();
 		} else {
 			addReceivedSubformulaToPassedFormula(_subformula);
 		}
@@ -57,6 +58,7 @@ namespace smtrat
 		auto it = mGBPolys.find(_subformula->formula().constraint());
 		if (it != mGBPolys.end()) {
 			mGBPolys.erase(it);
+			mLastBasis.clear();
 		}
 	}
 	
@@ -73,33 +75,33 @@ namespace smtrat
 	template<class Settings>
 	Answer CoCoAGBModule<Settings>::checkCore()
 	{
-		std::vector<Poly> polys;
-		for (const auto& p: mGBPolys) {
-			polys.emplace_back(p.second);
-		}
+		if (mGBPolys.empty()) return Answer::UNKNOWN;
+		if (mLastBasis.empty()) {
+			std::vector<Poly> polys;
+			for (const auto& p: mGBPolys) {
+				polys.emplace_back(p.second);
+			};
 		
-		if (polys.empty()) {
-			return Answer::UNKNOWN;
-		}
-		
-		try {
-			VariableOrdering vo(polys);
-			carl::CoCoAAdaptor<Poly> cocoa(polys);
-			cocoa.resetVariableOrdering(vo.getOrdering());
-			SMTRAT_LOG_DEBUG("smtrat.cocoagb", "Ordering: " << vo.getOrdering());
-			SMTRAT_LOG_DEBUG("smtrat.cocoagb", "Computing GB of " << polys);
-			auto gb = cocoa.GBasis(polys);
-			SMTRAT_LOG_DEBUG("smtrat.cocoagb", "-> " << gb);
-			
-			if (gb.size() == 1 && gb[0].isOne()) {
-				SMTRAT_LOG_DEBUG("smtrat.cocoagb", "Returning UNSAT");
-				generateTrivialInfeasibleSubset();
-				return Answer::UNSAT;
+			try {
+				VariableOrdering vo(polys);
+				carl::CoCoAAdaptor<Poly> cocoa(polys);
+				cocoa.resetVariableOrdering(vo.getOrdering());
+				SMTRAT_LOG_DEBUG("smtrat.cocoagb", "Ordering: " << vo.getOrdering());
+				SMTRAT_LOG_DEBUG("smtrat.cocoagb", "Computing GB of " << polys);
+				mLastBasis = cocoa.GBasis(polys);
+				SMTRAT_LOG_DEBUG("smtrat.cocoagb", "-> " << mLastBasis);
+			} catch (const CoCoA::ErrorInfo& e) {
+				std::cerr << e << std::endl;
 			}
-		} catch (const CoCoA::ErrorInfo& e) {
-			std::cerr << e << std::endl;
+		} else {
+			SMTRAT_LOG_DEBUG("smtrat.cocoagb", "Reusing basis from last call.");
 		}
 		
+		if (mLastBasis.size() == 1 && mLastBasis[0].isOne()) {
+			SMTRAT_LOG_DEBUG("smtrat.cocoagb", "Returning UNSAT");
+			generateTrivialInfeasibleSubset();
+			return Answer::UNSAT;
+		}
 		SMTRAT_LOG_DEBUG("smtrat.cocoagb", "Returning Unknown");
 		return Answer::UNKNOWN;
 	}

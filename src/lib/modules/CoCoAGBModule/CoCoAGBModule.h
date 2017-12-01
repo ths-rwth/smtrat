@@ -65,6 +65,8 @@ namespace smtrat
 			// Polys constructed from constraints
 			std::map<ConstraintT, Poly> mGBPolys;
 			
+			std::vector<Poly> mLastBasis;
+			
 			// Create a unique auxiliary variable for every constraint
 			carl::Variable getAuxVar(const ConstraintT& c) {
 				auto it = mAuxVariables.find(c);
