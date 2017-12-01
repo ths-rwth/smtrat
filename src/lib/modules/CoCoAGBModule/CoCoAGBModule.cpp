@@ -73,7 +73,6 @@ namespace smtrat
 	template<class Settings>
 	Answer CoCoAGBModule<Settings>::checkCore()
 	{
-		return Answer::UNKNOWN;
 		std::vector<Poly> polys;
 		for (const auto& p: mGBPolys) {
 			polys.emplace_back(p.second);
