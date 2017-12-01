@@ -75,6 +75,7 @@ namespace smtrat
 	template<class Settings>
 	Answer CoCoAGBModule<Settings>::checkCore()
 	{
+		if (Settings::always_return_unknown) return Answer::UNKNOWN;
 		if (mGBPolys.empty()) return Answer::UNKNOWN;
 		if (mLastBasis.empty()) {
 			std::vector<Poly> polys;
