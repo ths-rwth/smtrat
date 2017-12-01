@@ -24,5 +24,5 @@ namespace smtrat
 	
 	struct CoCoAGBSettings2: CoCoAGBSettings1 {
 		static constexpr bool always_return_unknown = true;
-	}
+	};
 }
