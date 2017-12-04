@@ -67,46 +67,6 @@ boost::variant<Minisat::Lit,FormulaT> MCSATMixin::checkLiteralForDecision(Minisa
 	}
 }
 
-boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision(const std::vector<Minisat::Var>& vars) {
-	for (auto var: vars) {
-		if (mGetter.getVarValue(var) != l_Undef) {
-			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", var << " is already assigned.");
-			continue;
-		}
-		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Checking if " << var << " can be decided...");
-		
-		for (auto sign: {false, true}) {
-			auto res = checkLiteralForDecision(var, Minisat::mkLit(var, sign));
-			if (carl::variant_is_type<Minisat::Lit>(res)) {
-				if (boost::get<Minisat::Lit>(res) == Minisat::lit_Undef) {
-					// No literal was eligible
-					continue;
-				}
-			}
-			return res;
-		}
-	}
-	return Minisat::lit_Undef;
-}
-
-boost::variant<Minisat::Lit,FormulaT> MCSATMixin::pickLiteralForDecision() {
-	//for (const auto& vars: {get(0).univariateVariables, current().univariateVariables}) {
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Looking for decision variable from " << mUndecidedVariables);
-	for (auto vars: { mUndecidedVariables }) {
-		auto res = pickLiteralForDecision(vars);
-		if (carl::variant_is_type<Minisat::Lit>(res)) {
-			if (boost::get<Minisat::Lit>(res) == Minisat::lit_Undef) {
-				// No literal was eligible
-				continue;
-			}
-		}
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", res << " can be decided upon.");
-		return res;
-	}
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "No variable can be used for decision.");
-	return Minisat::lit_Undef;
-}
-
 Minisat::Lit MCSATMixin::isFullyAssigned(Minisat::Lit lit) {
 	auto var = Minisat::var(lit);
 	if (!mGetter.isTheoryAbstraction(var)) return Minisat::lit_Undef;
@@ -134,98 +94,6 @@ boost::optional<FormulaT> MCSATMixin::isDecisionPossible(Minisat::Lit lit) {
 	}
 	return boost::none;
 }
-
-bool MCSATMixin::isLiteralInUnivariateClause(Minisat::Lit literal, const Minisat::vec<Minisat::CRef>& clauses) {
-	for (int c = 0; c < clauses.size(); c++) {
-		const auto& clause = mGetter.getClause(clauses[c]);
-		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Considering " << clause);
-		bool found = false;
-		for (int l = 0; l < clause.size(); l++) {
-			if (mGetter.getLitValue(clause[l]) == l_True) {
-				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", clause << " is already satisfied due to " << clause[l]);
-				found = false;
-				break;
-			}
-			if (clause[l] == literal) {
-				found = true;
-				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Found " << literal << " in " << clause << "[" << l << "]");
-			}/* else {
-				auto lvl = levelOfVariable(Minisat::var(clause[l]));
-				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Level of " << clause[l] << " is " << lvl);
-				if (lvl == 0 || lvl > level()) {
-					found = false;
-					break;
-				}
-			}*/
-		}
-		if (found) {
-			return true;
-		}
-	}
-	return false;
-}
-
-bool MCSATMixin::isLiteralInUnivariateClause(Minisat::Lit literal) {
-	
-	return
-		isLiteralInUnivariateClause(literal, mGetter.getClauses())
-	||	isLiteralInUnivariateClause(literal, mGetter.getLearntClauses());
-	/* Here:
-	 * Stupidly iterate over all clauses.
-	 */
-	const Minisat::vec<Minisat::CRef>& clauses = mGetter.getClauses();
-	for (int c = 0; c < clauses.size(); c++) {
-		const auto& clause = mGetter.getClause(clauses[c]);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Considering " << clause);
-		bool found = false;
-		for (int l = 0; l < clause.size(); l++) {
-			if (mGetter.getLitValue(clause[l]) == l_True) {
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", clause << " is already satisfied due to " << clause[l]);
-				found = false;
-				break;
-			}
-			if (clause[l] == literal) {
-				found = true;
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found " << literal << " in " << clause << "[" << l << "]");
-			}/* else {
-				auto lvl = levelOfVariable(Minisat::var(clause[l]));
-				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Level of " << clause[l] << " is " << lvl);
-				if (lvl == 0 || lvl > level()) {
-					found = false;
-					break;
-				}
-			}*/
-		}
-		if (found) {
-			return true;
-		}
-	}
-	return false;
-	
-	/* Here:
-	 * Iterate only over the watches of the literal.
-	 * If a literal that is not a watch is non-univariate, we can move the watch.
-	 * This is not completely implemented yet!
-	 *
-	 * Problem: Only looking at the watches could miss clauses that are univariate and contain the literal.
-	 * However, another of the watched variables will be eligible for decision.
-	 * If we rearrange the watches as described and the clause is univariate, all watches are univariate!
-	 * Though this may not be a problem generally, the semantics of this single functions becomes quite shaky...
-	 */
-	for (int i = 0; i < mGetter.getWatches(literal).size(); i++) {
-		const auto& watcher = mGetter.getWatches(literal)[i];
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Watch: " << watcher);
-		auto cref = watcher.cref;
-		auto blocker = watcher.blocker;
-		if (mGetter.getLitValue(blocker) == l_True) continue;
-		if (mGetter.getLitValue(blocker) == l_False) {
-			// Check if there is another undecided, non-univariate literal in this clause
-			if (levelOfVariable(var(blocker)) == 0) continue;
-		}
-	}
-	return false;
-}
-
 
 void MCSATMixin::updateCurrentLevel(carl::Variable var) {
 	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Updating current level for " << var);
@@ -367,19 +235,6 @@ void MCSATMixin::relocateClauses(Minisat::ClauseAllocator& from, Minisat::Clause
 		tmp.emplace(c, cl.second);
 	}
 	mClauseLevelMap = std::move(tmp);
-}
-
-bool MCSATMixin::performTheoryPropagations() {
-	if (mCurrentLevel == 0) return false;
-	for (const auto& var: current().univariateVariables) {
-		// Check whether this boolean variable is already assigned
-		if (mGetter.getVarValue(var) != l_Undef) continue;
-		// Check whether this boolean variable is an abstraction variable
-		if (!mGetter.isTheoryAbstraction(var)) continue;
-		
-		// TODO: Evaluate on model, propagate
-	}
-	return false;
 }
 
 bool MCSATMixin::isFormulaUnivariate(const FormulaT& formula, std::size_t level) const {
