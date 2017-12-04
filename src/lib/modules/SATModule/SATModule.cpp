@@ -2736,6 +2736,8 @@ namespace smtrat
 						SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found: " << next);
 						if (next == lit_Undef) {
 							next = pickBranchLit();
+						} else {
+							std::quick_exit(94);
 						}
 					} else {
 						next = pickBranchLit();
