@@ -204,9 +204,6 @@ public:
 	/// Adapt to clause relocation of Minisat
 	void relocateClauses(Minisat::ClauseAllocator& from, Minisat::ClauseAllocator& to);
 	
-	/// Try to propagate all boolean variables that are univariate
-	bool performTheoryPropagations();
-	
 	// ***** Auxiliary getter
 	
 	/// Checks whether the given formula is univariate on the given level
@@ -247,8 +244,6 @@ public:
 	Minisat::lbool evaluateLiteral(Minisat::Lit lit) const;
 	
 	boost::variant<Minisat::Lit,FormulaT> checkLiteralForDecision(Minisat::Var var, Minisat::Lit lit);
-	boost::variant<Minisat::Lit,FormulaT> pickLiteralForDecision(const std::vector<Minisat::Var>& vars);
-	boost::variant<Minisat::Lit,FormulaT> pickLiteralForDecision();
 	/// Retrieve literal that is a fully assigned, but not yet assigned in the boolean
 	Minisat::Lit getFullyAssignedForDecision() {
 		assert(level() > 0);
@@ -304,10 +299,6 @@ public:
 	
 	// ***** Auxliary getter
 	
-	/// Check whether a literal is in a univariate clause, try to change the watch to a non-univariate literal.
-	bool isLiteralInUnivariateClause(Minisat::Lit literal, const Minisat::vec<Minisat::CRef>& clauses);
-	bool isLiteralInUnivariateClause(Minisat::Lit literal);
-	
 	/// Checks whether the given formula is currently univariate
 	bool isFormulaUnivariate(const FormulaT& formula) const {
 		return isFormulaUnivariate(formula, mCurrentLevel);
@@ -350,55 +341,6 @@ public:
 			return std::numeric_limits<int>::max();
 		}
 		return theoryLevel(mGetter.reabstractVariable(var));
-	}
-	
-	/**
-	 * Compute the penultimate relevant decision level for the given formula.
-	 * This is used to determine the level to backtrack to if f is a conflict clause.
-	 * If a literal was assigned by boolean decision or propagation, this level is to be used.
-	 */
-	int penultimateTheoryLevel(const FormulaT& f) const {
-		const auto& formulas = f.isNary() ? f.subformulas() : FormulasT({f});
-		std::vector<int> levels;
-		for (const auto& formula: formulas) {
-			// Figure out whether formula is false from boolean or theory assignment 
-			boost::optional<Minisat::Var> decisionVar;
-			if (mGetter.isAbstractedFormula(formula)) {
-				auto minisatvar = mGetter.abstractVariable(formula);
-				if (mGetter.getVarValue(minisatvar) != l_Undef) {
-					decisionVar = minisatvar;
-				}
-			}
-			if (decisionVar && mGetter.getReason(*decisionVar) != Minisat::CRef_TPropagation) {
-				levels.push_back(mGetter.getDecisionLevel(*decisionVar));
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", formula << " was assigned by boolean assignment at " << levels.back());
-			} else {
-				carl::Variables vars;
-				formula.arithmeticVars(vars);
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", formula << " contains " << vars);
-				for (std::size_t lvl = level()-1; lvl > 0; lvl--) {
-					if (vars.find(get(lvl).variable) != vars.end()) {
-						Minisat::Lit declit = get(lvl).decisionLiteral;
-						if (declit != Minisat::lit_Undef) {
-							levels.push_back(mGetter.getDecisionLevel(var(declit)));
-							SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", formula << " was assigned by theory assignment at " << levels.back());
-						}
-					}
-				}
-			}
-		}
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> Levels " << levels);
-		std::sort(levels.rbegin(), levels.rend());
-		levels.erase(std::unique(levels.begin(), levels.end()), levels.end());
-		
-		assert(levels.size() > 0);
-		if (levels.size() > 1) {
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> returning " << levels[1]);
-			return levels[1];
-		} else {
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> returning " << levels[0]-1);
-			return levels[0]-1;
-		}
 	}
 	
 	// ***** Output
