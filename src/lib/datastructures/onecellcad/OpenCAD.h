@@ -16,8 +16,8 @@
 #include <unordered_map>
 #include <set>
 #include <algorithm>
-
-#include <boost/optional.hpp>
+#include <experimental/optional>
+/* #include <boost/optional.hpp> */
 
 #include <carl/formula/model/ran/RealAlgebraicNumber.h>
 #include <carl/formula/model/ran/RealAlgebraicNumberEvaluation.h>
@@ -31,15 +31,7 @@
 #include <carl/converter/CoCoAAdaptor.h>
 
 #include "../../Common.h" // type alias for Rational number representation
-/* #include "projection/Projection.h" */
-/* #include "lifting/LiftingTree.h" */
-/* #include "helper/CADConstraints.h" */
-/* #include "helper/CADCore.h" */
-/* #include "helper/ConflictGraph.h" */
-/* #include "helper/MISGeneration.h" */
-/* #include "debug/TikzHistoryPrinter.h" */
 
-namespace smtrat {
 namespace onecellcad {
 
   using UniPoly = carl::UnivariatePolynomial<Rational>;
@@ -48,95 +40,54 @@ namespace onecellcad {
   using RAN = carl::RealAlgebraicNumber<Rational>;
   using RANPoint = carl::RealAlgebraicPoint<Rational>;
   using RANMap = std::map<carl::Variable, RAN>;
-  using boost::optional;
-  using boost::none;
-
-  // Forward declarations
-  struct Sector;
-  std::ostream& operator<<(std::ostream& o, const Sector& s);
+  /* using boost::optional; */
+  /* using boost::none; */
 
   /**
-   * Represent an "open cell" [1]
-   * TODO reduce phrasing
-   * Design decision:
-   * To reduce memory usage and improve performance we leave the variables,
-   * variable order, universe dimension and cell dimension implicit
-   * (they have to be stored in some form by the user if needed), since creating
-   * multiple open cells would lead to multiple copies of variable lists/maps.
+   * Represent a cell's closed-interval-boundary along one single axis by an
+   * irreducible, multivariate poly of level k.
+   * A section is an algebraic/"moving" boundary, because it's basically a
+   * function f: algReal^{k-1} -> algReal; from a multi-dimensional input point
+   * of level k-1 (whose components are algebraic reals) to an algebraic real
+   * (the bound along k-th axis that changes depending on the input point).
    */
-  using OpenCell = std::vector<Sector>;
-  std::ostream& operator<<(std::ostream& o, const OpenCell& c){
-    o << "(cell (level " << c.size() << ") ";
-    for(auto& sector : c){
-      o << sector << " ";
-    }
-    return  o << ")";
-  }
-
-	/* using SampleLiftedWith = carl::Bitset; */
-	/* using SampleRootOf = carl::Bitset; */
-	/* using ConstraintSelection = carl::Bitset; */
-	/* using OptionalPoly = boost::optional<const UPoly&>; */
-	/* using OptionalID = boost::optional<std::size_t>; */
-	/* using Assignment = std::map<carl::Variable, RAN>; */
-
-  /**
-   * TODO check phrasing and compare to implementation.
-   * TODO enable representing +-infty?
-   * Cell section with cached value similar to [1].
-   * This is basically a function f: algReal^{k-1} -> algReal; from
-   * multi-dimensional point of level k-1 (whose components are algebraic reals)
-   * to an algebraic real. [1] uses an unnecessary complicated way to represent
-   * this function. For performance we cache the result of plugging in the
-   * first k-1 components of a special point (called alpha in [1]).
-   * If the plugged-in point is of level k-1, then this section is said to be
-   * of level k, because it defines the boundaries along the k-th axis.
-   */
+  using Section = MultiPoly;
   struct Section {
-    /**
-     * TODO after plugging in a special point called alpha in [1].
-     * TODO refactor out if section is usefull without cached point.
-     */
-    RAN cachedPoint;
-
-    /**
-     * Must be an irreducible poly of level k.
-     * TODO explain design choice
-     */
-    /* MultiCoeffUniPoly poly; */
     MultiPoly poly;
 
-  };
+    /**
+     * A single, special bound after having plugged a specific point of level k-1
+     * can be cached for performance (needed for [1]).
+     */
+    RAN cachedPoint;
+  }
 
   std::ostream& operator<<(std::ostream& o, const Section& s) {
     return o << "(section " << s.poly << " " << s.cachedPoint << ")";
   }
 
-
   /**
-   * TODO check phrasing
-   * Represent the algebraic boundaries (an open interval)
-   * of a OpenCell along a single axis k of the universe space.
-   * This implies that the boundary polynomials are of level k, i.e.,
-   * at most they mention the first k variables in the cell's variable ordering.
-   * Design decision:
-   * To reduce memory usage and improve performance we leave variable ordering,
-   * the axis number k and thus the polynomials level implicit
-   * (they have to be stored in some form by the user if needed).
+   * Represent a cell's open-interval-boundary along one single axis by two
+   * irreducible, multivariate polys of level k.
+   * A sector is an algebraic/"moving" boundary, because it's basically a
+   * function f: algReal^{k-1} -> (algReal,algReal); from a multi-dimensional
+   * input point of level k-1 (whose components are algebraic reals) to a pair
+   * of algebraic reals (the lower and upper bound for an open interval along
+   * k-th axis that changes depending on the input point).
    * Note that if 'lowBound' or 'highBound' is not defined, then this
    * represents negative and positive infinity, respectively.
    */
   struct Sector {
-    optional<Section> lowBound;
+    std::optional<Section> lowBound;
 
-    optional<Section> highBound;
+    std::optional<Section> highBound;
 
     bool isLowBoundNegInfty() const {
-      return lowBound == none;
+      return lowBound == std::none;
     }
 
     bool isHighBoundInfty() const {
-      return highBound == none;
+      return highBound == std::none;
     }
 
   };
@@ -147,6 +98,21 @@ namespace onecellcad {
     o << "(high ";
     s.isHighBoundInfty() ? o << "infty)" : o << s.highBound.value() << ")" ;
     return o << ")";
+  }
+
+  /**
+   * Represent a single open cell [1].
+   * A cell is a collection of boundary objects along each axis.
+   * In case of an open cell, the boundary objects are all sectors.
+   */
+  using OpenCell = std::vector<Sector>;
+
+  std::ostream& operator<<(std::ostream& o, const OpenCell& c){
+    o << "(cell (level " << c.size() << ") ";
+    for(auto& sector : c){
+      o << sector << " ";
+    }
+    return  o << ")";
   }
 
   OpenCell createFullspaceCoveringCell(size_t level) {
@@ -198,14 +164,14 @@ namespace onecellcad {
 
   /**
    * Merge the given open OpenCell 'cell' that contains the given 'point'
-   * (called "alpha" in the paper) with a polynomial 'poly'.
+   * (called "alpha" in [1]) with a polynomial 'poly'.
    * Before the merge 'cell' represents a region that is sign-invariant
    * on other (previously merged) polynomials (all signs are non-zero).
    * The returned cell represents a region that is additionally sign-invariant on
    * 'poly' (also with non-zero sign).
-   * @return either a OpenCell or nothing (representing a failed construction)
+   * @return either an OpenCell or nothing (representing a failed construction)
    */
-  optional<OpenCell> mergeCellWithPoly(
+  std::optional<OpenCell> mergeCellWithPoly(
     OpenCell& cell,
     const RANPoint& point,
     const std::vector<carl::Variable> variableOrder,
@@ -218,7 +184,7 @@ namespace onecellcad {
     size_t levelIdx = level-1;
     SMTRAT_LOG_DEBUG("smtrat.opencad", "At level " << level << " merge it with " << cell);
     if(level == 0) // We have a non-zero, constant-poly, so no roots and nothing to do
-      return optional<OpenCell>(cell);
+      return std::optional<OpenCell>(cell);
 
 
     std::vector<carl::Variable> variableOrder4Lvl(level);
@@ -234,37 +200,35 @@ namespace onecellcad {
     );
     if(result.isZero()) {
       SMTRAT_LOG_WARN("smtrat.opencad", "Poly vanished at point.");
-      return none;
+      return std::none;
     }
 
-		optional<OpenCell> newCell(cell);
+    std::optional<OpenCell> newCell(cell);
     carl::Variable mainVariable = variableOrder[levelIdx];
     SMTRAT_LOG_TRACE("smtrat.opencad", "Current level variable: " << mainVariable);
     MultiCoeffUniPoly polyAsUnivar = poly.toUnivariatePolynomial(mainVariable);
 		if (level > 1) {
       SMTRAT_LOG_INFO("smtrat.opencad", "Do Open-McCallum projection of this poly into level " << level - 1);
-      // The "Open-McCallum projection" (called 'F' in [1]) of the to-be-merged
-      // polys.
-      std::vector<MultiPoly> projectionPolys;
-      // Add leading coefficient and discriminant
-      projectionPolys.emplace_back(polyAsUnivar.lcoeff());
-      projectionPolys.emplace_back(MultiPoly(polyAsUnivar.discriminant()));
+      std::vector<MultiPoly> projectionPolys(4)
+        .emplace_back(polyAsUnivar.lcoeff());
+        .emplace_back(MultiPoly(polyAsUnivar.discriminant()));
       SMTRAT_LOG_TRACE("smtrat.opencad", "Add leading coeff: " << polyAsUnivar.lcoeff());
       SMTRAT_LOG_TRACE("smtrat.opencad", "Add discriminant: " << polyAsUnivar.discriminant());
 
 
-      Sector& currentSector = (*newCell)[levelIdx]; // Called D[k] in [1]
+      Sector& sectorAtLvl = (*newCell)[levelIdx];
       // Add resultant of poly and lower sector bound
-      if (!currentSector.isLowBoundNegInfty()) {
-        MultiCoeffUniPoly resultant = (currentSector.lowBound->poly
-          .toUnivariatePolynomial(mainVariable).resultant(polyAsUnivar));
-        projectionPolys.push_back(MultiPoly(resultant));
+      if (!sectorAtLvl.isLowBoundNegInfty()) {
+        projectionPolys.emplace_back(MultiPoly(
+          sectorAtLvl.lowBound->poly
+            .toUnivariatePolynomial(mainVariable)
+            .resultant(polyAsUnivar)));
         SMTRAT_LOG_TRACE("smtrat.opencad", "Add resultant with cell's low bound: " << resultant);
       }
 
       // Add resultant of poly and higher sector bound
-      if (!currentSector.isHighBoundInfty()) {
-        MultiCoeffUniPoly resultant = currentSector.highBound->poly
+      if (!sectorAtLvl.isHighBoundInfty()) {
+        MultiCoeffUniPoly resultant = sectorAtLvl.highBound->poly
           .toUnivariatePolynomial(mainVariable).resultant(polyAsUnivar);
         projectionPolys.push_back(MultiPoly(resultant));
         SMTRAT_LOG_TRACE("smtrat.opencad", "Add resultant with cell's high bound: " << resultant);
@@ -274,28 +238,19 @@ namespace onecellcad {
 
       // Each poly in 'projectionPolys' must be factorized into its irreducible
       // factors.
-      // Design decision: We use the CoCoA library as it seems to be
-      // the fastest and most reliable library. Thus we need to enable
-      // carl::cocoa in carl ccmake. Note that CoCoA needs to know the variable
-      // names of the polynomials in every computation. The stateful
-      // 'CoCoaAdaptor' and its constructor take care of that.
-      carl::CoCoAAdaptor<MultiPoly> cocoaLib(projectionPolys);
-      for(const MultiPoly& projPoly : projectionPolys) {
-        // Constant factors are irrelevant for root computations, so leave them out.
-        const bool keepConstFactorsFlag = false;
-        for(const auto& factorAndSomeInt:
-            cocoaLib.factorize(projPoly, keepConstFactorsFlag))
+      for(const MultiPoly& factor :
+            carl::CoCoAAdatpro<MultiPoly>(projectionPolys)
+              .irreducibleFactors(projectionPolys))
+      {
+        SMTRAT_LOG_DEBUG("smtrat.opencad", "Merge irreducible factor: " << factorAndSomeInt.first);
+        if(!(newCell = mergeCellWithPoly(
+              *newCell,
+              point,
+              variableOrder,
+              factor)))
         {
-          SMTRAT_LOG_DEBUG("smtrat.opencad", "Merge irreducible factor: " << factorAndSomeInt.first);
-          if(!(newCell = mergeCellWithPoly(
-                *newCell,
-                point,
-                variableOrder,
-                factorAndSomeInt.first)))
-          {
-            // If submerge fails, this merge fails too
-            return none;
-          }
+          // If submerge fails, this merge fails too
+          return std::none;
         }
       }
     }
@@ -318,8 +273,8 @@ namespace onecellcad {
 
     std::sort(roots.begin(), roots.end());
     SMTRAT_LOG_DEBUG("smtrat.opencad", "Bound candidates: " << roots);
-    Sector& currentSector = (*newCell)[levelIdx]; // Called D[k] in [1]
-    SMTRAT_LOG_DEBUG("smtrat.opencad", "Bounds before: " << currentSector);
+    Sector& sectorAtLvl = (*newCell)[levelIdx]; // Called D[k] in [1]
+    SMTRAT_LOG_DEBUG("smtrat.opencad", "Bounds before: " << sectorAtLvl);
 
     // Search for closest roots to point_k, i.e.
     // someRoot ... < root_lower < point_k < root_higher < ... someOtherRoot
@@ -331,9 +286,9 @@ namespace onecellcad {
     // Update high bound if a tighter root is found s.t.
     // point_k < root_higher < cell_highBound
     if(root_higher != roots.end() &&
-        ( currentSector.isHighBoundInfty() ||
-          *root_higher < currentSector.highBound->cachedPoint)) {
-      currentSector.highBound = Section {*root_higher, poly};
+        ( sectorAtLvl.isHighBoundInfty() ||
+          *root_higher < sectorAtLvl.highBound->cachedPoint)) {
+      sectorAtLvl.highBound = Section {*root_higher, poly};
     }
 
     // Update low bound if a tighter root is found s.t.
@@ -341,13 +296,13 @@ namespace onecellcad {
     if(root_higher != roots.begin()) {
       auto root_lower = --root_higher;
       assert(*root_lower != point_k);
-      if( currentSector.isLowBoundNegInfty() ||
-        *root_lower > currentSector.lowBound->cachedPoint)
+      if( sectorAtLvl.isLowBoundNegInfty() ||
+        *root_lower > sectorAtLvl.lowBound->cachedPoint)
       {
-        currentSector.lowBound = Section {*root_lower, poly};
+        sectorAtLvl.lowBound = Section {*root_lower, poly};
       }
     }
-    SMTRAT_LOG_DEBUG("smtrat.opencad", "Bounds after: " << currentSector);
+    SMTRAT_LOG_DEBUG("smtrat.opencad", "Bounds after: " << sectorAtLvl);
     return newCell;
   }
 
@@ -368,7 +323,7 @@ namespace onecellcad {
    * mention only variables from 'variableOrder'.
 	 *
    */
-  optional<OpenCell> createBrownOpenOneCell(
+  std::optional<OpenCell> createBrownOpenOneCell(
     const std::vector<MultiPoly> polySet,
     const RANPoint& point,
     const std::vector<carl::Variable>& variableOrder)
@@ -381,14 +336,14 @@ namespace onecellcad {
     SMTRAT_LOG_INFO("smtrat.opencad", "Create BrownOpenOneCell");
     SMTRAT_LOG_DEBUG("smtrat.opencad", "Use point " << point << " wrt. variable order " << variableOrder);
 
-    optional<OpenCell> cell = createFullspaceCoveringCell(point.dim());
+    std::optional<OpenCell> cell = createFullspaceCoveringCell(point.dim());
     for(const auto& poly : polySet){
       SMTRAT_LOG_INFO("smtrat.opencad", "Merge input poly");
       SMTRAT_LOG_DEBUG("smtrat.opencad", "Input poly: " << poly);
       if (! (cell = mergeCellWithPoly(*cell, point, variableOrder, poly))) {
         // If any merge fails, this whole construction fails too
         SMTRAT_LOG_WARN("smtrat.opencad", "Construction failed");
-        return none;
+        return std::none;
       }
     }
     SMTRAT_LOG_DEBUG("smtrat.opencad", "Final cell: " << cell.value());
