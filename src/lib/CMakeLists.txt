@@ -63,6 +63,11 @@ else()
 	target_link_libraries( lib_${PROJECT_NAME} lib_carl ${libraries} ) # libraries definied in top-level CMakeLists.txt
 endif()
 
+target_include_directories( lib_${PROJECT_NAME} PUBLIC
+	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/smtrat>
+	$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
+)
+
 
 if(USE_COTIRE)
     cotire( lib_${PROJECT_NAME} )
