@@ -244,15 +244,6 @@ public:
 	Minisat::lbool evaluateLiteral(Minisat::Lit lit) const;
 	
 	boost::variant<Minisat::Lit,FormulaT> checkLiteralForDecision(Minisat::Var var, Minisat::Lit lit);
-	/// Retrieve literal that is a fully assigned, but not yet assigned in the boolean
-	Minisat::Lit getFullyAssignedForDecision() {
-		if (level() <= 1) return Minisat::lit_Undef;
-		assert(level() > 0);
-		for (auto v: get(level()-1).univariateVariables) {
-			if (mGetter.getBoolVarValue(v) == l_Undef) return Minisat::mkLit(v);
-		}
-		return Minisat::lit_Undef;
-	}
 	Minisat::Lit isFullyAssigned(Minisat::Lit lit);
 	boost::optional<FormulaT> isDecisionPossible(Minisat::Lit lit);
 	
