@@ -127,7 +127,6 @@ void MCSATMixin::updateCurrentLevel(carl::Variable var) {
 			continue;
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Associating " << *vit << " with " << var << " at " << mCurrentLevel);
-		setVariableLevel(*vit, mCurrentLevel);
 		current().univariateVariables.push_back(*vit);
 		vit = mUndecidedVariables.erase(vit);
 	}
@@ -139,9 +138,6 @@ void MCSATMixin::removeLastLevel() {
 	assert(mCurrentLevel < mTheoryStack.size() - 1);
 	for (auto c: mTheoryStack.back().univariateClauses) {
 		mClauseLevelMap[c] = 0;
-	}
-	for (auto v: mTheoryStack.back().univariateVariables) {
-		setVariableLevel(v, 0);
 	}
 	mUndecidedClauses.insert(
 		mUndecidedClauses.end(),
@@ -186,7 +182,6 @@ std::size_t MCSATMixin::addVariable(Minisat::Var variable) {
 		mUndecidedVariables.push_back(variable);
 	} else {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << variable << " on level " << level);
-		setVariableLevel(variable, level);
 		mTheoryStack[level].univariateVariables.push_back(variable);
 	}
 	return level;
