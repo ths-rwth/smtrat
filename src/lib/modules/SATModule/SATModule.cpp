@@ -2698,20 +2698,21 @@ namespace smtrat
                     }
                 }
 
+				/**
+				 * Look for literals that are
+				 * - fully assigned in the theory
+				 * - unassigned in boolean
+				 */
 				if (Settings::mc_sat && next == lit_Undef) {
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for theory propagations...");
-					//bool didTheoryPropagation = false;
 					for (std::size_t level = 0; level < mMCSAT.level(); level++) {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Considering " << mMCSAT.get(level).univariateVariables);
 						for (auto v: mMCSAT.get(level).univariateVariables) {
 							if (bool_value(v) != l_Undef) continue;
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Considering " << v);
 							auto tv = theoryValue(v);
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Undef, theory value is " << tv);
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Undef, theory value of " << v << " is " << tv);
 							if (tv == l_Undef) continue;
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Propagating " << v << " = " << tv);
-							//if (tv == l_True) uncheckedEnqueue(mkLit(v, false), Minisat::CRef_TPropagation);
-							//else if (tv == l_False) uncheckedEnqueue(mkLit(v, true), Minisat::CRef_TPropagation);
 							if (tv == l_True) next = mkLit(v, false);
 							else if (tv == l_False) next = mkLit(v, true);
 							assert(next != lit_Undef);
@@ -2731,17 +2732,8 @@ namespace smtrat
 					#endif
 					
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Picking a literal for a boolean decision");
-					if (Settings::mc_sat) {
-						next = mMCSAT.getFullyAssignedForDecision();
-						SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found: " << next);
-						if (next == lit_Undef) {
-							next = pickBranchLit();
-						} else {
-							std::quick_exit(94);
-						}
-					} else {
-						next = pickBranchLit();
-					}
+					next = pickBranchLit();
+					
 					if (Settings::mc_sat && next != lit_Undef) {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << ", checking for theory consistency...");
 						auto declit = mMCSAT.isFullyAssigned(next);
@@ -2758,69 +2750,70 @@ namespace smtrat
 						}
 					}
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Deciding upon " << next);
-                    
-                    if( next == lit_Undef && Settings::mc_sat) {
-						if (mMCSAT.hasNextVariable()) { 
-							// No decision done yet, try with a theory decision.
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Trying with next theory decision");
-							FormulaT res;
-							bool didDecision;
-							std::tie(res,didDecision) = mMCSAT.makeTheoryDecision();
-							if (didDecision) {
-								mCurrentAssignmentConsistent = SAT;
-								next = createLiteral(res, FormulaT(carl::FormulaType::TRUE), false);
-								mMCSAT.makeDecision(next);
-								pickTheoryBranchLit();
-								
-								SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still feasible with this theory decision");
-								auto conflict = mMCSAT.isFeasible();
-								if (conflict) {
-									newDecisionLevel();
-									uncheckedEnqueue(next);
-									SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
-									handleTheoryConflict(conflict->isNary() ? conflict->subformulas() : FormulasT({*conflict}));
-									mMCSAT.undoAssignment(next);
-									next = lit_Undef;
-									continue;
-								}
-							} else {
-								mCurrentAssignmentConsistent = UNSAT;
-								SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << mMCSAT.level());
-								SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << res);
-								handleTheoryConflict(res.isNary() ? res.subformulas() : FormulasT({res}));
+				}
+
+				// Checking whether we can do a theory decision
+                if (Settings::mc_sat && next == lit_Undef) {
+					if (mMCSAT.hasNextVariable()) { 
+						// No decision done yet, try with a theory decision.
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Trying with next theory decision");
+						FormulaT res;
+						bool didDecision;
+						std::tie(res,didDecision) = mMCSAT.makeTheoryDecision();
+						if (didDecision) {
+							mCurrentAssignmentConsistent = SAT;
+							next = createLiteral(res, FormulaT(carl::FormulaType::TRUE), false);
+							mMCSAT.makeDecision(next);
+							pickTheoryBranchLit();
+							
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still feasible with this theory decision");
+							auto conflict = mMCSAT.isFeasible();
+							if (conflict) {
+								newDecisionLevel();
+								uncheckedEnqueue(next);
+								SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
+								handleTheoryConflict(conflict->isNary() ? conflict->subformulas() : FormulasT({*conflict}));
+								mMCSAT.undoAssignment(next);
+								next = lit_Undef;
 								continue;
 							}
 						} else {
-							mCurrentAssignmentConsistent = SAT;
+							mCurrentAssignmentConsistent = UNSAT;
+							SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << mMCSAT.level());
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << res);
+							handleTheoryConflict(res.isNary() ? res.subformulas() : FormulasT({res}));
+							continue;
 						}
+					} else {
+						mCurrentAssignmentConsistent = SAT;
 					}
-					SMTRAT_LOG_DEBUG("smtrat.sat", "-> " << next);
-                    if( next == lit_Undef )
+				}
+				SMTRAT_LOG_DEBUG("smtrat.sat", "-> " << next);
+                if( next == lit_Undef )
+                {
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Entering SAT case");
+                    if( mReceivedFormulaPurelyPropositional || mCurrentAssignmentConsistent == SAT )
                     {
-						SMTRAT_LOG_DEBUG("smtrat.sat", "Entering SAT case");
-                        if( mReceivedFormulaPurelyPropositional || mCurrentAssignmentConsistent == SAT )
-                        {
-                            // Model found:
-                            return l_True;
-                        }
+                        // Model found:
+                        return l_True;
+                    }
+                    else
+                    {
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Current assignment is unknown");
+                        assert( mCurrentAssignmentConsistent == UNKNOWN );
+                        if( Settings::stop_search_after_first_unknown )
+                            return l_Undef;
                         else
                         {
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Current assignment is unknown");
-                            assert( mCurrentAssignmentConsistent == UNKNOWN );
-                            if( Settings::stop_search_after_first_unknown )
-                                return l_Undef;
-                            else
-                            {
-                                mExcludedAssignments = true;
-                                learnt_clause.clear();
-                                for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
-                                    learnt_clause.push( neg( getLiteral( subformula->formula() ) ) );
-                                addClause( learnt_clause, LEMMA_CLAUSE );
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Storing lemmas");
-                                confl = storeLemmas();
-                                if( confl != CRef_Undef )
-                                    unknown_excludes.push( confl );
-                            }
+                            mExcludedAssignments = true;
+                            learnt_clause.clear();
+                            for( auto subformula = rPassedFormula().begin(); subformula != rPassedFormula().end(); ++subformula )
+                                learnt_clause.push( neg( getLiteral( subformula->formula() ) ) );
+                            addClause( learnt_clause, LEMMA_CLAUSE );
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Storing lemmas");
+                            confl = storeLemmas();
+                            if( confl != CRef_Undef )
+                                unknown_excludes.push( confl );
                         }
                     }
                 }
