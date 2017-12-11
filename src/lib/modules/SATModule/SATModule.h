@@ -1104,18 +1104,6 @@ namespace smtrat
              * @return The next decision variable.
              */
             Minisat::Lit pickBranchLit();
-			Minisat::Lit prepareTheoryLitDecision();
-            
-            Minisat::Lit handleMCSATCall() {
-                SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Theory returned SAT, collecting new theory assignment");
-                mMCSAT.updateModel(backendsModel(), Rational(0));
-                SMTRAT_LOG_DEBUG("smtrat.sat.mc", "New model: " << mMCSAT.model());
-                FormulaT f = mMCSAT.buildDecisionFormula();
-        		mNextDecisionIsTheory = true;
-        		Minisat::Lit lit = createLiteral(f);
-        		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Theory literal for " << f << " is " << lit);
-                return lit;
-            }
 			
 			void pickTheoryBranchLit();
 			void checkAbstractionsConsistency() {
