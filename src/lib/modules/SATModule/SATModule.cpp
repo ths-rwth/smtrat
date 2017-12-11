@@ -2554,6 +2554,7 @@ namespace smtrat
                 {
                     case SAT:
                         if (Settings::mc_sat) {
+							std::quick_exit(95);
                             handleMCSATCall();
                         }
 						break;
