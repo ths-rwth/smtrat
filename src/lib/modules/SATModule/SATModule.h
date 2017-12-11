@@ -251,7 +251,7 @@ namespace smtrat
 					}
 				}
                 bool operator () (Minisat::Lit x, Minisat::Lit y) {
-					SMTRAT_LOG_DEBUG("smtrat.sat", "Doing comparison " << x << " < " << y << "?");
+					SMTRAT_LOG_TRACE("smtrat.sat", "Doing comparison " << x << " < " << y << "?");
 					if (x == y) return false;
 					
 					/* We want the following order:
@@ -1556,6 +1556,7 @@ namespace smtrat
             }
 			int min_theory_level(Minisat::Var x) const {
 				int tl = mMCSAT.theoryLevel(x);
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Theory level of " << x << " is " << tl);
 				if (level(x) >= 0) return std::min(level(x), tl);
 				return tl;
 			}

@@ -71,14 +71,9 @@ private:
 	
 	/// maps clauses to the level that they are univariate in
 	std::map<Minisat::CRef,std::size_t> mClauseLevelMap;
-	/// maps variables to the level that they are univariate in
-	std::vector<std::size_t> mVariableLevelMap;
 
 	/// takes care of selecting the next variable
 	VariableSelector mVariables;
-	
-	/// stores the reason for theory propagations. These are basically clauses, but not clauses from the minisat database.
-	std::map<Minisat::Var,std::vector<Minisat::Lit>> mPropagationReasons;
 
 	/// current mc-sat model
 	Model mCurrentModel;
@@ -92,16 +87,6 @@ private:
 	void updateCurrentLevel(carl::Variable var);
 	/// Remove lookups of the last level
 	void removeLastLevel();
-
-	/// Store the level of a variable in mVariableLevelMap
-	void setVariableLevel(Minisat::Var var, std::size_t level) {
-		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "level(" << var << ") = " << level);
-		if (std::size_t(var) >= mVariableLevelMap.size()) {
-			mVariableLevelMap.insert(mVariableLevelMap.end(), std::size_t(var) - mVariableLevelMap.size() + 1, 0);
-		}
-		mVariableLevelMap[std::size_t(var)] = level;
-		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "-> " << mVariableLevelMap);
-	}
 public:
 	
 	template<typename BaseModule>
@@ -152,11 +137,6 @@ public:
 	/// Retrieve the current theory variable
 	carl::Variable currentVariable() const {
 		return current().variable;
-	}
-	/// Determines the level of the given variable
-	std::size_t levelOfVariable(Minisat::Var var) {
-		assert(std::size_t(var) < mVariableLevelMap.size());
-		return mVariableLevelMap[std::size_t(var)];
 	}
 	
 	// ***** Modifier
