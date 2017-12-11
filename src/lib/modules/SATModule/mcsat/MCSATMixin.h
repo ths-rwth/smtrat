@@ -74,9 +74,6 @@ private:
 
 	/// takes care of selecting the next variable
 	VariableSelector mVariables;
-
-	/// current mc-sat model
-	Model mCurrentModel;
 	
 	MCSATBackend<BackendSettings1> mBackend;
 
@@ -191,14 +188,6 @@ public:
 	/// Checks whether the given clause is univariate on the given level
 	bool isClauseUnivariate(Minisat::CRef clause, std::size_t level) const;
 	
-	/// Updates the model. If the current theory variable is not set, use the given default value
-	void updateModel(const Model& model, const ModelValue& defaultValue) {
-		mCurrentModel = model;
-		if (mCurrentModel.find(currentVariable()) == mCurrentModel.end()) {
-			mCurrentModel.assign(currentVariable(), defaultValue);
-		}
-	}
-	
 	bool hasNextVariable() {
 		return !mVariables.empty();
 	}
@@ -211,14 +200,6 @@ public:
 	bool backtrackTo(Minisat::Lit literal);
 	
 	// ***** Helper methods
-	
-	FormulaT buildDecisionFormula() const {
-		auto it = mCurrentModel.find(currentVariable());
-		assert(it != mCurrentModel.end());
-		FormulaT f = carl::representingFormula(currentVariable(), it->second);
-		assert(f.getType() == carl::FormulaType::VARASSIGN);
-		return f;
-	}
 	
 	/// Evaluate a literal in the theory, set lastReason to last theory decision involved.
 	Minisat::lbool evaluateLiteral(Minisat::Lit lit) const;

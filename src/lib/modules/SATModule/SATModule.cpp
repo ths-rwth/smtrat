@@ -1306,9 +1306,11 @@ namespace smtrat
         }
         else
         {
+			SMTRAT_LOG_TRACE("smtrat.sat", "Looking for constraint " << content);
             assert( supportedConstraintType( content ) );
             double act = fabs( _formula.activity() );
             bool preferredToTSolver = false; //(_formula.content()<0)
+			SMTRAT_LOG_TRACE("smtrat.sat", "Looking for " << _formula << " in " << mConstraintLiteralMap);
             auto constraintLiteralPair = mConstraintLiteralMap.find( _formula );
             if( constraintLiteralPair != mConstraintLiteralMap.end() )
             {
@@ -1827,7 +1829,7 @@ namespace smtrat
 					dups++;
 				}
 			}
-			if (dups > 0) std::exit(91);
+			if (dups > 0) std::quick_exit(91);
 			assert(dups == 0);
 			
 			if (lemma.size() == 0) {
@@ -2553,10 +2555,6 @@ namespace smtrat
                 switch( mCurrentAssignmentConsistent )
                 {
                     case SAT:
-                        if (Settings::mc_sat) {
-							std::quick_exit(95);
-                            handleMCSATCall();
-                        }
 						break;
                     case UNSAT: learnTheoryConflicts();
                         break;
@@ -2860,6 +2858,7 @@ namespace smtrat
         int backtrack_level;
 //        bool conflictClauseNotAsserting = analyze( _confl, learnt_clause, backtrack_level );
         bool newClause = analyze( _confl, learnt_clause, backtrack_level );
+		SMTRAT_LOG_DEBUG("smtrat.sat", "Analyze produces new clause? " << newClause);
 		if (learnt_clause.size() == 0) std::exit(32);
         assert( learnt_clause.size() > 0 );
 
@@ -2914,6 +2913,7 @@ namespace smtrat
 		}
 
 		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Learning clause " << learnt_clause);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Conflict clause " << _confl);
         #ifdef SMTRAT_DEVOPTION_Validation // this is often an indication that something is wrong with our theory, so we do store our assumptions.
         if( value( learnt_clause[0] ) != l_Undef ) Module::storeAssumptionsToCheck( *mpManager );
         #endif
@@ -3046,16 +3046,6 @@ namespace smtrat
         return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
         //return next == var_Undef ? lit_Undef : mkLit( next, rnd_pol ? drand( random_seed ) < 0.5 : polarity[next] );
     }
-
-	template<class Settings>
-    Lit SATModule<Settings>::prepareTheoryLitDecision()
-	{
-		FormulaT f = mMCSAT.buildDecisionFormula();
-		mNextDecisionIsTheory = true;
-		Lit lit = createLiteral(f);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Theory literal for " << f << " is " << lit);
-		return lit;
-	}
 	
 	template<class Settings>
     void SATModule<Settings>::pickTheoryBranchLit() {
@@ -3252,6 +3242,7 @@ namespace smtrat
 					auto qlevel = theory_level(var(q));
 					SMTRAT_LOG_DEBUG("smtrat.sat", "\tLooking at literal " << q << " from level " << qlevel);
 					SMTRAT_LOG_DEBUG("smtrat.sat", "\tseen? " << static_cast<bool>(seen[var(q)]));
+					if (value(q) != l_False) std::quick_exit(64);
 					assert(value(q) == l_False);
 	                
 	                if( !seen[var( q )] && qlevel > 0 )
@@ -3379,6 +3370,7 @@ namespace smtrat
 				out_btlevel = levels[0]-1;
 			}
 			SMTRAT_LOG_DEBUG("smtrat.sat", "-> " << out_btlevel << " (" << out_learnt << ")");
+			if (out_btlevel < 0) std::quick_exit(49);
 		} else {
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Figuring out level to backtrack to for " << out_learnt);
             int max_i = 0;
@@ -3409,6 +3401,7 @@ namespace smtrat
 
         for( int j = 0; j < analyze_toclear.size(); j++ )
             seen[var( analyze_toclear[j] )] = 0;    // ('seen[]' is now cleared)
+		SMTRAT_LOG_DEBUG("smtrat.sat", "Performed " << resolutionSteps << " steps");
         return resolutionSteps > 0;
     }
 
@@ -3635,14 +3628,14 @@ namespace smtrat
                 // Make sure the false literal is data[1]:
                 CRef cr = i->cref;
                 Clause& c = ca[cr];
-				SMTRAT_LOG_TRACE("smtrat.sat.bcp", "Analyzing clause " << c);
+				SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Analyzing clause " << c);
                 Lit false_lit = ~p;
                 if( c[0] == false_lit )
                     c[0]              = c[1], c[1] = false_lit;
                 assert( c[1] == false_lit );
                 i++;
 				
-				SMTRAT_LOG_TRACE("smtrat.sat.bcp", "Clause is now " << c << " after moving the false literal");
+				SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Clause is now " << c << " after moving the false literal");
 
                 // If 0th watch is true, then clause is already satisfied.
                 Lit first = c[0];
@@ -3667,12 +3660,12 @@ namespace smtrat
                         c[1] = c[k];
                         c[k] = false_lit;
                         watches[~c[1]].push( w );
-						SMTRAT_LOG_TRACE("smtrat.sat.bcp", "Clause is now " << c << " after setting " << c[k] << " as new watch");
+						SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Clause is now " << c << " after setting " << c[1] << " as new watch");
                         goto NextClause;
                     }
 				}
 				
-				SMTRAT_LOG_TRACE("smtrat.sat.bcp", "Clause is now " << c << " after no new watch was found");
+				SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Clause is now " << c << " after no new watch was found");
 
                 // Did not find watch -- clause is unit under assignment:
                 *j++ = w;
