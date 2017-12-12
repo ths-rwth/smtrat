@@ -18,6 +18,9 @@ private:
 	carl::Variable mVar;
 	const Model& mModel;
 	RootIndexer mRI;
+	/**
+	 * Maps the input formula to the list of real roots and the simplified formula where mModel was substituted.
+	 */
 	std::map<FormulaT, std::pair<std::vector<RAN>, FormulaT>> mRootMap;
 	
 	/// Checks whether a formula is univariate, meaning it contains mVar and only variables from mModel otherwise.
@@ -34,23 +37,32 @@ private:
 		return mModel.contains(vars);
 	}
 	bool satisfies(const FormulaT& f, const RAN& r) const {
-		SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", f << ", " << mModel << ", " << mVar << ", " << r);
+		SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", f << ", " << mModel << ", " << mVar << ", " << r);
 		Model m = mModel;
 		m.assign(mVar, r);
-		SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", r);
 		auto res = carl::model::evaluate(f, m);
-		SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", r);
-		SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", "Evaluating " << f << " -> " << res);
+		SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Evaluating " << f << " on " << m << " -> " << res);
 		if (!res.isBool()) std::exit(75);
 		assert(res.isBool());
 		return res.asBool();
 	}
+	
+	ModelValue selectAssignment(const Covering& cover) const {
+		std::vector<std::size_t> samples;
+		for (auto b: cover.satisfyingSamples()) {
+			samples.push_back(b);
+		}
+		assert(samples.size() > 0);
+		return mRI.sampleFrom(samples[samples.size() / 2]);	
+	}
+	
 public:
 	AssignmentFinder(carl::Variable var, const Model& model): mVar(var), mModel(model) {}
 	
 	bool addConstraint(const FormulaT& f) {
 		assert(f.getType() == carl::FormulaType::CONSTRAINT);
 		auto category = mcsat::constraint_type::categorize(f, mModel, mVar);
+		SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", f << " is " << category << " under " << mModel << " w.r.t. " << mVar);
 		switch (category) {
 			case mcsat::constraint_type::ConstraintType::Constant:
 				assert(f.isTrue() || f.isFalse());
@@ -81,10 +93,11 @@ public:
 		std::vector<RAN> list;
 		if (fnew.getType() == carl::FormulaType::CONSTRAINT) {
 			const auto& poly = fnew.constraint().lhs();
-			SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Real roots of " << poly << " in " << mVar);
+			SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Real roots of " << poly << " in " << mVar << " w.r.t. " << mModel);
 			auto roots = carl::model::tryRealRoots(poly, mVar, mModel);
 			if (roots) {
 				list = *roots;
+				SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Got roots " << list);
 			} else {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Failed to compute roots, or polynomial becomes zero.");
 			}
@@ -127,6 +140,9 @@ public:
 	Covering computeCover() {
 		mRI.process();
 		SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", mRI);
+		for (const auto& r: mRootMap) {
+			SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", std::endl << r.first << " -> " << r.second);
+		}
 		Covering cover(mRI.size() * 2 + 1);
 		for (const auto& c: mRootMap) {
 			carl::Bitset b;
@@ -149,8 +165,9 @@ public:
 				}
 				last = 2*cur + 2;
 			}
-			SMTRAT_LOG_TRACE("smtrat.nlsat.assignmentfinder", constraint << " vs " << mRI.sampleFrom(last));
+			SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", constraint << " vs " << mRI.sampleFrom(last));
 			if (!satisfies(constraint, mRI.sampleFrom(last))) {
+				SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", constraint << " refutes " << mRI.sampleFrom(last) << " which is " << mRI.sampleFrom(roots.size()*2));
 				// Refutes interval right of largest root
 				SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", constraint << " refutes " << mRI.sampleFrom(roots.size()*2) << " -> " << last << ".." << (mRI.size()*2));
 				b.set_interval(last, mRI.size()*2);
@@ -169,7 +186,7 @@ public:
 			SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "No Assignment, built conflicting core " << conflict << " under model " << mModel);
 			return conflict;
 		} else {
-			ModelValue assignment = mRI.sampleFrom(cover.satisfyingInterval());
+			ModelValue assignment = selectAssignment(cover);
 			SMTRAT_LOG_DEBUG("smtrat.nlsat.assignmentfinder", "Assignment: " << mVar << " = " << assignment << " from interval " << cover.satisfyingInterval());
 			assert(assignment.isRAN());
 			if (assignment.asRAN().isNumeric()) {

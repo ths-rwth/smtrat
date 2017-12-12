@@ -35,6 +35,9 @@ public:
 	std::size_t satisfyingInterval() const {
 		return mOkay.find_first();
 	}
+	const auto& satisfyingSamples() const {
+		return mOkay;
+	}
 	void buildConflictingCore(std::vector<FormulaT>& core) const {
 		std::map<FormulaT, carl::Bitset> data = mData;
 		carl::Bitset covered;
