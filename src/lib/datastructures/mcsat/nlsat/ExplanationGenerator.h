@@ -6,6 +6,7 @@
 #include <carl/util/Common.h>
 
 namespace smtrat {
+namespace mcsat {
 namespace nlsat {
 
 class ExplanationGenerator {
@@ -14,6 +15,7 @@ private:
 	struct ProjectionSettings: public cad::BaseSettings {	
 		static constexpr cad::Incrementality incrementality = cad::Incrementality::NONE;
 		static constexpr cad::Backtracking backtracking = cad::Backtracking::ORDERED;
+		static constexpr cad::ProjectionType projectionOperator = cad::ProjectionType::Hong;
 	};
 
 	Model mModel;
@@ -196,5 +198,6 @@ public:
 	}
 };
 
+}
 }
 }

@@ -2,7 +2,6 @@
 
 #include "../solver/Manager.h"
 
-#include "../modules/NLSATModule/NLSATModule.h"
 #include "../modules/SATModule/SATModule.h"
 
 namespace smtrat
