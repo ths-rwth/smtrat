@@ -153,20 +153,24 @@ namespace cad {
             }
         }
         template<typename Callback>
-        void Hong(const UPoly& p, carl::Variable::Arg variable, Callback& cb) const {
-            SMTRAT_LOG_DEBUG("smtrat.cad.projection","Hong ");
+        void Hong(const UPoly& p, carl::Variable variable, Callback& cb) const {
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Single of " << p << " on " << variable);
+			// Separate into
+			// - leading coefficients of reducta which are all coefficients
+			// - PSC of all reducta
+			for (const auto& c: p.coefficients()) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "\tAdding " << c);
+                cb(normalize(c.toUnivariatePolynomial(variable)));
+			}
             UPoly reducta = p;
             UPoly reducta_derivative = p.derivative();
             // reducta_derivative instead of reducta because principalSubresultantsCoefficients would fail otherwise
             while(!reducta_derivative.isZero()) {
                 // Insert psc of reducta and its derivative
                 for(const auto& psc: UPoly::principalSubresultantsCoefficients(reducta, reducta_derivative)) {
-                    SMTRAT_LOG_DEBUG("smtrat.cad.projection", "reducta psc(" << psc << ")");
+                    SMTRAT_LOG_DEBUG("smtrat.cad.projection", "\tAdding " << psc);
                     cb(normalize(psc.switchVariable(variable)));
                 }
-                // Insert reducta coefficients
-                SMTRAT_LOG_DEBUG("smtrat.cad.projection", "reductum ldc(" << reducta.lcoeff() << ")");
-                cb(normalize(reducta.lcoeff().toUnivariatePolynomial(variable)));
                 // switch to next reducta
                 reducta.truncate();
                 reducta_derivative.truncate();
