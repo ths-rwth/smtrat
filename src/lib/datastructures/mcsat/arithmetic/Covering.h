@@ -8,7 +8,8 @@
 #include <map>
 
 namespace smtrat {
-namespace nlsat {
+namespace mcsat {
+namespace arithmetic {
 
 	
 /**
@@ -64,5 +65,6 @@ inline std::ostream& operator<<(std::ostream& os, const Covering& ri) {
 	return os;
 }
 
+}
 }
 }

@@ -5,9 +5,7 @@
 #include "../SolverTypes.h"
 
 #include "VariableSelector.h"
-#include "MCSATBackend.h"
-//#include "../../../datastructures/mcsat/nlsat.h"
-//#include "../../../datastructures/mcsat/nlsat/NLSAT.h"
+#include "BaseBackend.h"
 
 #include <carl/formula/model/Assignment.h>
 
@@ -87,7 +85,7 @@ private:
 public:
 	
 	template<typename BaseModule>
-	MCSATMixin(BaseModule& baseModule):
+	explicit MCSATMixin(BaseModule& baseModule):
 		mGetter({
 			[&baseModule](Minisat::Var v){ return baseModule.value(v); },
 			[&baseModule](Minisat::Lit l){ return baseModule.value(l); },

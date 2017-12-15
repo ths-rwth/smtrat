@@ -3,17 +3,18 @@
 #include "Covering.h"
 #include "RootIndexer.h"
 
+#include "../common.h"
 #include "../utils/ConstraintCategorization.h"
 
 #include <boost/variant.hpp>
 
 namespace smtrat {
-namespace nlsat {
+namespace mcsat {
+namespace arithmetic {
 
-class AssignmentFinder {
+class AssignmentFinder_detail {
 public:
 	using RAN = carl::RealAlgebraicNumber<Rational>;
-	using AssignmentOrConflict = boost::variant<ModelValue,FormulasT>;
 private:
 	carl::Variable mVar;
 	const Model& mModel;
@@ -57,7 +58,7 @@ private:
 	}
 	
 public:
-	AssignmentFinder(carl::Variable var, const Model& model): mVar(var), mModel(model) {}
+	AssignmentFinder_detail(carl::Variable var, const Model& model): mVar(var), mModel(model) {}
 	
 	bool addConstraint(const FormulaT& f) {
 		assert(f.getType() == carl::FormulaType::CONSTRAINT);
@@ -199,5 +200,6 @@ public:
 	
 };
 
+}
 }
 }

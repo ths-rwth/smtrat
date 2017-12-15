@@ -8,7 +8,8 @@
 #include <vector>
 
 namespace smtrat {
-namespace nlsat {
+namespace mcsat {
+namespace arithmetic {
 
 	
 class RootIndexer {
@@ -68,5 +69,6 @@ inline std::ostream& operator<<(std::ostream& os, const RootIndexer& ri) {
 }
 
 
+}
 }
 }
