@@ -244,9 +244,9 @@ namespace smtrat
 						return solver.trailIndex(v);
 					} else {
 						assert(Settings::mc_sat);
-						auto lvl = solver.mMCSAT.computeVariableLevel(v);
-						auto res = solver.mMCSAT.TL2DL(lvl);
-						SMTRAT_LOG_TRACE("smtrat.sat", "Level of " << v << ": " << res << " (theory level " << lvl << " and dl " << res << ")");
+						//auto lvl = solver.mMCSAT.computeVariableLevel(v);
+						auto res = solver.mMCSAT.assignedAtTrailIndex(v);
+						SMTRAT_LOG_TRACE("smtrat.sat", "Index of " << v << ": " << res);
 						return res;
 					}
 				}
