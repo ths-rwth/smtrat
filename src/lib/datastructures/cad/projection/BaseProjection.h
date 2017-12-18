@@ -124,7 +124,7 @@ namespace cad {
 		}
 		
 		UPoly normalize(const UPoly& p) const {
-			return mOperator.normalize(p);
+			return projection::normalize(p);
 		}
 		
 		/// Get a polynomial from this level suited for lifting.
