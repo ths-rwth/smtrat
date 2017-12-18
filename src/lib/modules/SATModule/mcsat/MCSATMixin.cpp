@@ -121,9 +121,9 @@ void MCSATMixin::updateCurrentLevel(carl::Variable var) {
 	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Undecided Variables: " << mUndecidedVariables);
 	for (auto vit = mUndecidedVariables.begin(); vit != mUndecidedVariables.end();) {
 		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Looking at " << *vit);
-		std::size_t level = computeVariableLevel(*vit);
+		std::size_t level = theoryLevel(*vit);
 		if (level != mCurrentLevel) {
-			vit++;
+			++vit;
 			continue;
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Associating " << *vit << " with " << var << " at " << mCurrentLevel);
@@ -176,7 +176,7 @@ std::size_t MCSATMixin::addVariable(Minisat::Var variable) {
 	if (mGetter.isTheoryAbstraction(variable)) {
 		mVariables.add(mGetter.reabstractVariable(variable));
 	}
-	std::size_t level = computeVariableLevel(variable);
+	std::size_t level = theoryLevel(variable);
 	if (level == std::numeric_limits<std::size_t>::max()) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << variable << " to undecided");
 		mUndecidedVariables.push_back(variable);
@@ -250,29 +250,6 @@ bool MCSATMixin::isClauseUnivariate(Minisat::CRef clause, std::size_t level) con
 		}
 	}
 	return true;
-}
-
-std::size_t MCSATMixin::computeVariableLevel(Minisat::Var variable) const {
-	if (!mGetter.isTheoryAbstraction(variable)) {
-		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Variable " << variable << " is not a theory abstraction, thus on level 0");
-		return 0;
-	}
-	const FormulaT& f = mGetter.reabstractVariable(variable);
-	carl::Variables vars;
-	f.arithmeticVars(vars);
-	if (vars.empty()) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Variable " << variable << " / " << f << " has no variable, thus on level 0");
-		return 0;
-	}
-	for (std::size_t level = 1; level < mTheoryStack.size(); level++) {
-		vars.erase(get(level).variable);
-		if (vars.empty()) {
-			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Variable " << variable << " / " << f << " is univariate in " << get(level).variable);
-			return level;
-		}
-	}
-	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Variable " << variable << " is undecided.");
-	return std::numeric_limits<std::size_t>::max();
 }
 
 void MCSATMixin::printClause(std::ostream& os, Minisat::CRef clause) const {
