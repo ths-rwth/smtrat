@@ -6,7 +6,7 @@ namespace smtrat {
 namespace cad {
 	enum class Incrementality { NONE, SIMPLE, FULL };
 	enum class Backtracking { ORDERED, UNORDERED, HIDE };
-	enum class ProjectionType { Brown, McCallum, Collins, Hong };
+	enum class ProjectionType { Collins, Hong, McCallum, McCallum_partial, Brown,  };
 	enum class SampleCompareStrategy { Integer, Numeric, Value };
 	enum class FullSampleCompareStrategy { Integer, Numeric, Value };
 	enum class MISHeuristic { TRIVIAL, GREEDY, GREEDY_PRE, GREEDY_WEIGHTED, HYBRID};
