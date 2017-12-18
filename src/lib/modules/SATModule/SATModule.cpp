@@ -3380,7 +3380,7 @@ namespace smtrat
                 int currentLitLevel;
                 if (reason(var(out_learnt[i])) == CRef_TPropagation) {
                     const FormulaT& f = mBooleanConstraintMap[var(out_learnt[i])].first->reabstraction;
-                    currentLitLevel = mMCSAT.theoryLevel(f);
+                    currentLitLevel = mMCSAT.decisionLevel(f);
                 } else {
                     currentLitLevel = theory_level(var(out_learnt[i]));
                 }

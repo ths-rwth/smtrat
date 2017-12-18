@@ -255,6 +255,31 @@ public:
 		return isFormulaUnivariate(formula, mCurrentLevel);
 	}
 	
+	std::size_t theoryLevel(Minisat::Var var) const {
+		if (!mGetter.isTheoryAbstraction(var)) {
+			return 0;
+		}
+		return theoryLevel(mGetter.reabstractVariable(var));
+	}
+	
+	std::size_t theoryLevel(const FormulaT& f) const {
+		carl::Variables vars;
+		f.arithmeticVars(vars);
+		if (vars.empty()) {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", f << " has no variable, thus on level 0");
+			return 0;
+		}
+		for (std::size_t level = 1; level < mTheoryStack.size(); level++) {
+			vars.erase(get(level).variable);
+			if (vars.empty()) {
+				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is univariate in " << get(level).variable);
+				return level;
+			}
+		}
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is undecided.");
+		return std::numeric_limits<std::size_t>::max();
+	}
+	
 	Minisat::Lit getDecisionLiteral(Minisat::Var var) const {
 		if (!mGetter.isTheoryAbstraction(var)) {
 			return Minisat::lit_Undef;
@@ -262,22 +287,11 @@ public:
 		return getDecisionLiteral(mGetter.reabstractVariable(var));
 	}
 	Minisat::Lit getDecisionLiteral(const FormulaT& f) const {
-		carl::Variables vars;
-		f.arithmeticVars(vars);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", f << " contains " << vars);
-		for (std::size_t lvl = 1; lvl <= level(); ++lvl) {
-			if (get(lvl).decisionLiteral == Minisat::lit_Undef) break;
-			vars.erase(get(lvl).variable);
-			if (vars.empty()) {
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", f << " was assigned by theory assignment at " << lvl);
-				return get(lvl).decisionLiteral;
-			}
-		}
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", f << " was not assigned by any theory assignment");
-		return Minisat::lit_Undef;
+		std::size_t level = theoryLevel(f);
+		if (level >= mTheoryStack.size()) return Minisat::lit_Undef;
+		return get(level).decisionLiteral;
 	}
 	
-	std::size_t computeVariableLevel(Minisat::Var variable) const;
 	int assignedAtTrailIndex(Minisat::Var variable) const {
 		auto lit = getDecisionLiteral(variable);
 		if (lit == Minisat::lit_Undef) {
@@ -286,7 +300,14 @@ public:
 		return mGetter.getTrailIndex(var(lit));
 	}
 	
-	int theoryLevel(const FormulaT& f) const {
+	int decisionLevel(Minisat::Var var) const {
+		if (!mGetter.isTheoryAbstraction(var)) {
+			return std::numeric_limits<int>::max();
+		}
+		return decisionLevel(mGetter.reabstractVariable(var));
+	}
+	
+	int decisionLevel(const FormulaT& f) const {
 		auto lit = getDecisionLiteral(f);
 		if (lit == Minisat::lit_Undef) {
 			return std::numeric_limits<int>::max();
@@ -294,7 +315,7 @@ public:
 		return mGetter.getDecisionLevel(var(lit));
 	}
 	
-	int theoryLevel(Minisat::Var var) const {
+	int decisionLevel(Minisat::Var var) const {
 		if (!mGetter.isTheoryAbstraction(var)) {
 			return std::numeric_limits<int>::max();
 		}

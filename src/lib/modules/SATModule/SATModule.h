@@ -244,7 +244,6 @@ namespace smtrat
 						return solver.trailIndex(v);
 					} else {
 						assert(Settings::mc_sat);
-						//auto lvl = solver.mMCSAT.computeVariableLevel(v);
 						auto res = solver.mMCSAT.assignedAtTrailIndex(v);
 						SMTRAT_LOG_TRACE("smtrat.sat", "Index of " << v << ": " << res);
 						return res;
@@ -1540,10 +1539,10 @@ namespace smtrat
 			int theory_level( Minisat::Var x ) const
             {
                 if (level(x) >= 0) return level(x);
-				return mMCSAT.theoryLevel(x);
+				return mMCSAT.decisionLevel(x);
             }
 			int min_theory_level(Minisat::Var x) const {
-				int tl = mMCSAT.theoryLevel(x);
+				int tl = mMCSAT.decisionLevel(x);
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Theory level of " << x << " is " << tl);
 				if (level(x) >= 0) return std::min(level(x), tl);
 				return tl;
