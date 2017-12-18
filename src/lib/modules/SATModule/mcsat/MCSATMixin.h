@@ -41,8 +41,6 @@ struct TheoryLevel {
 	carl::Variable variable = carl::Variable::NO_VARIABLE;
 	/// Literal that assigns this theory variable
 	Minisat::Lit decisionLiteral = Minisat::lit_Undef;
-	/// Clauses univariate in this theory variable
-	std::vector<Minisat::CRef> univariateClauses;
 	/// Boolean variables univariate in this theory variable
 	std::vector<Minisat::Var> univariateVariables;
 };
@@ -61,14 +59,9 @@ private:
 	TheoryStackT mTheoryStack;
 	/// The level for the next theory variable to be decided
 	std::size_t mCurrentLevel = 0;
-	
-	/// Clauses that are not univariate in any variable yet.
-	std::vector<Minisat::CRef> mUndecidedClauses;
+
 	/// Variables that are not univariate in any variable yet.
 	std::vector<Minisat::Var> mUndecidedVariables;
-	
-	/// maps clauses to the level that they are univariate in
-	std::map<Minisat::CRef,std::size_t> mClauseLevelMap;
 
 	/// takes care of selecting the next variable
 	VariableSelector mVariables;

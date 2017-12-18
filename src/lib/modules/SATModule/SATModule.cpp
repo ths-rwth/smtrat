@@ -2045,7 +2045,7 @@ namespace smtrat
             }
         }
 		if (Settings::mc_sat && !mReceivedFormulaPurelyPropositional) {
-			mMCSAT.addClause(cr);
+			//mMCSAT.addClause(cr);
 		}
     }
 
@@ -2098,7 +2098,7 @@ namespace smtrat
             
         }}
 		if (Settings::mc_sat && !mReceivedFormulaPurelyPropositional) {
-			mMCSAT.removeClause(cr);
+			//mMCSAT.removeClause(cr);
 		}
     }
 
@@ -3982,7 +3982,7 @@ NextClause:
         }
         mClauseInformation = std::move( tmp );
 		if (Settings::mc_sat) {
-			mMCSAT.relocateClauses(ca, to);
+			//mMCSAT.relocateClauses(ca, to);
 		}
         
         if( Settings::check_if_all_clauses_are_satisfied )
