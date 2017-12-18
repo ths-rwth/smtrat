@@ -102,21 +102,6 @@ void MCSATMixin::updateCurrentLevel(carl::Variable var) {
 		assert(current().variable == var);
 	}
 	
-	// Check undecided clauses whether they became univariate
-	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Undecided clauses: " << mUndecidedClauses);
-	for (auto cit = mUndecidedClauses.begin(); cit != mUndecidedClauses.end();) {
-		if (!isClauseUnivariate(*cit, mCurrentLevel)) {
-			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Skipping " << *cit << ": not univariate");
-			cit++;
-			continue;
-		}
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Associating " << *cit << " with " << var << " at " << level());
-		mClauseLevelMap[*cit] = mCurrentLevel;
-		current().univariateClauses.push_back(*cit);
-		cit = mUndecidedClauses.erase(cit);
-	}
-	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "-> " << mUndecidedClauses);
-	
 	// Check undecided variables whether they became univariate
 	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Undecided Variables: " << mUndecidedVariables);
 	for (auto vit = mUndecidedVariables.begin(); vit != mUndecidedVariables.end();) {
@@ -136,14 +121,7 @@ void MCSATMixin::updateCurrentLevel(carl::Variable var) {
 void MCSATMixin::removeLastLevel() {
 	assert(!mTheoryStack.empty());
 	assert(mCurrentLevel < mTheoryStack.size() - 1);
-	for (auto c: mTheoryStack.back().univariateClauses) {
-		mClauseLevelMap[c] = 0;
-	}
-	mUndecidedClauses.insert(
-		mUndecidedClauses.end(),
-		mTheoryStack.back().univariateClauses.begin(),
-		mTheoryStack.back().univariateClauses.end()
-	);
+	
 	mUndecidedVariables.insert(
 		mUndecidedVariables.end(),
 		mTheoryStack.back().univariateVariables.begin(),
@@ -185,48 +163,6 @@ std::size_t MCSATMixin::addVariable(Minisat::Var variable) {
 		mTheoryStack[level].univariateVariables.push_back(variable);
 	}
 	return level;
-}
-
-void MCSATMixin::addClause(Minisat::CRef clause) {
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << clause);
-	for (std::size_t level = 1; level < mTheoryStack.size(); level++) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking if " << clause << " is univariate in " << mTheoryStack[level].variable);
-		if (isClauseUnivariate(clause, level)) {
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", clause << " is univariate in " << mTheoryStack[level].variable);
-			mTheoryStack[level].univariateClauses.push_back(clause);
-			mClauseLevelMap.emplace(clause, level);
-			return;
-		}
-	}
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", clause << " was not found to be univariate, adding to undecided.");
-	mUndecidedClauses.push_back(clause);
-	mClauseLevelMap.emplace(clause, 0);
-}
-
-void MCSATMixin::removeClause(Minisat::CRef clause) {
-	auto it = mClauseLevelMap.find(clause);
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Erasing " << clause << " from level " << it->second);
-	auto& clist = mTheoryStack[it->second].univariateClauses;
-	clist.erase(std::find(clist.begin(), clist.end(), clause));
-	mClauseLevelMap.erase(it);
-}
-
-void MCSATMixin::relocateClauses(Minisat::ClauseAllocator& from, Minisat::ClauseAllocator& to) {
-	for (auto& level: mTheoryStack) {
-		for (auto& c: level.univariateClauses) {
-			from.reloc(c, to);
-		}
-	}
-	for (auto& c: mUndecidedClauses) {
-		from.reloc(c, to);
-	}
-	std::map<Minisat::CRef,std::size_t> tmp;
-	for (const auto& cl: mClauseLevelMap) {
-		Minisat::CRef c = cl.first;
-		from.reloc(c, to);
-		tmp.emplace(c, cl.second);
-	}
-	mClauseLevelMap = std::move(tmp);
 }
 
 bool MCSATMixin::isFormulaUnivariate(const FormulaT& formula, std::size_t level) const {
@@ -276,12 +212,6 @@ std::ostream& operator<<(std::ostream& os, const MCSATMixin& mcm) {
 		}
 		if (level.variable == mcm.current().variable) {
 			os << " <<-- Current variable";
-		}
-		os << std::endl;
-		os << "\tClauses:";
-		for (const auto& c: level.univariateClauses) {
-			os << " ";
-			mcm.printClause(os, c);
 		}
 		os << std::endl;
 		os << "\tVariables: " << level.univariateVariables << std::endl;
