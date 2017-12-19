@@ -2044,9 +2044,6 @@ namespace smtrat
                 }
             }
         }
-		if (Settings::mc_sat && !mReceivedFormulaPurelyPropositional) {
-			//mMCSAT.addClause(cr);
-		}
     }
 
     template<class Settings>
@@ -2095,10 +2092,7 @@ namespace smtrat
                     }
                     mLiteralsClausesMap[v].removePositive( cr );
                 }
-            
-        }}
-		if (Settings::mc_sat && !mReceivedFormulaPurelyPropositional) {
-			//mMCSAT.removeClause(cr);
+            }
 		}
     }
 
@@ -2604,14 +2598,6 @@ namespace smtrat
     template<class Settings>
     lbool SATModule<Settings>::search( int nof_conflicts )
     {
-        #ifdef DEBUG_SATMODULE
-        cout << "### search()" << endl;
-	cout << "###" << endl; printBooleanConstraintMap(cout, "###");
-        cout << "###" << endl; printClauses( clauses, "Clauses", cout, "### " );
-        cout << "###" << endl; printClauses( learnts, "Learnts", cout, "### " );
-        cout << "###" << endl; printBooleanVarMap( cout, "###" );
-        cout << "###" << endl;
-        #endif
 
         assert( ok );
         int conflictC = 0;
@@ -2620,7 +2606,11 @@ namespace smtrat
 
         for( ; ; )
         {
-            SMTRAT_LOG_DEBUG("smtrat.sat", "Next iteration");
+			#ifdef DEBUG_SATMODULE
+			cout << "######################################################################" << endl;
+			cout << "### Next iteration" << endl;
+			print(cout, "###");
+			#endif
             if( !mComputeAllSAT && anAnswerFound() )
                 return l_Undef;
 
@@ -2680,11 +2670,13 @@ namespace smtrat
                     Lit p = assumptions[decisionLevel()];
                     if( value( p ) == l_True )
                     {
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Assumption " << p << " is already true");
                         // Dummy decision level:
                         newDecisionLevel();
                     }
                     else if( value( p ) == l_False )
                     {
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Assumption " << p << " is already false");
                         if( !mReceivedFormulaPurelyPropositional && !Settings::stop_search_after_first_unknown && mExcludedAssignments )
                             return l_Undef;
                         return l_False;
@@ -2740,6 +2732,7 @@ namespace smtrat
 							SMTRAT_LOG_DEBUG("smtrat.sat", next << " is fully assigned and evaluates to " << declit);
 							next = declit;
 						} else {
+							std::quick_exit(97);
 							auto res = mMCSAT.isDecisionPossible(next);
 							if (res != boost::none) {
 								SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict " << *res);
@@ -3596,11 +3589,6 @@ namespace smtrat
     template<class Settings>
     CRef SATModule<Settings>::propagate()
     {
-        #ifdef DEBUG_SATMODULE
-		cout << "######################################################################" << endl;
-        cout << "### Propagate" << endl;
-		print(cout, "###");
-    	#endif
         CRef confl = CRef_Undef;
         int num_props = 0;
         watches.cleanAll();
@@ -3981,9 +3969,6 @@ NextClause:
             tmp.emplace( c, ciPair.second );
         }
         mClauseInformation = std::move( tmp );
-		if (Settings::mc_sat) {
-			//mMCSAT.relocateClauses(ca, to);
-		}
         
         if( Settings::check_if_all_clauses_are_satisfied )
         {
