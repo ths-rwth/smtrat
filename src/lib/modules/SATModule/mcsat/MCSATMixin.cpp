@@ -49,24 +49,6 @@ Minisat::lbool MCSATMixin::evaluateLiteral(Minisat::Lit lit) const {
 	return l_Undef;
 }
 
-boost::variant<Minisat::Lit,FormulaT> MCSATMixin::checkLiteralForDecision(Minisat::Var var, Minisat::Lit lit) {
-	if (!mGetter.isTheoryAbstraction(var)) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning boolean literal " << lit);
-		return lit;
-	}
-	const auto& f = mGetter.reabstractLiteral(lit);
-	auto res = mBackend.isInfeasible(currentVariable(), f);
-	if (res == boost::none) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning feasible theory literal " << lit);
-		return lit;
-	} else {
-		// There is a conflict. Return conflict. 
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Returning theory propagation for " << lit);
-		return mBackend.explain(currentVariable(), *res, FormulaT(carl::FormulaType::FALSE));
-		// Perform theory propagation (in search)
-	}
-}
-
 Minisat::Lit MCSATMixin::isFullyAssigned(Minisat::Lit lit) {
 	auto var = Minisat::var(lit);
 	if (!mGetter.isTheoryAbstraction(var)) return Minisat::lit_Undef;
@@ -178,17 +160,6 @@ bool MCSATMixin::isFormulaUnivariate(const FormulaT& formula, std::size_t level)
 	}
 	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Checking if " << formula << " is univariate on level " << level << ": " << vars.empty());
 	return vars.empty();
-}
-
-bool MCSATMixin::isClauseUnivariate(Minisat::CRef clause, std::size_t level) const {
-	const Minisat::Clause& c = mGetter.getClause(clause);
-	for (int i = 0; i < c.size(); i++) {
-		if (!mGetter.isTheoryAbstraction(var(c[i]))) continue;
-		if (!isFormulaUnivariate(mGetter.reabstractVariable(var(c[i])), level)) {
-			return false;
-		}
-	}
-	return true;
 }
 
 void MCSATMixin::printClause(std::ostream& os, Minisat::CRef clause) const {

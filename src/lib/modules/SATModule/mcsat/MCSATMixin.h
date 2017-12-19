@@ -53,7 +53,7 @@ private:
 	/**
 	 * The first entry of the stack always contains an entry for the non-theory
 	 * variables: the variable is set to NO_VARIABLE and the lists contain
-	 * clauses and variables that do not contain any theory variables.
+	 * variables that do not contain any theory variables.
 	 */
 	using TheoryStackT = std::vector<TheoryLevel>;
 	TheoryStackT mTheoryStack;
@@ -98,11 +98,6 @@ public:
 		}),
 		mTheoryStack(1, TheoryLevel())
 	{}
-	
-	// ***** simple getters
-	bool empty() const {
-		return mCurrentLevel == 0;;
-	}
 	
 	std::size_t level() const {
 		return mCurrentLevel;
@@ -163,21 +158,11 @@ public:
 	
 	/// Add a variable, return the level it was inserted on
 	std::size_t addVariable(Minisat::Var variable);
-	
-	/// Add a clause
-	void addClause(Minisat::CRef clause);
-	/// Remove a clause
-	void removeClause(Minisat::CRef clause);
-	
-	/// Adapt to clause relocation of Minisat
-	void relocateClauses(Minisat::ClauseAllocator& from, Minisat::ClauseAllocator& to);
-	
+
 	// ***** Auxiliary getter
 	
 	/// Checks whether the given formula is univariate on the given level
 	bool isFormulaUnivariate(const FormulaT& formula, std::size_t level) const;
-	/// Checks whether the given clause is univariate on the given level
-	bool isClauseUnivariate(Minisat::CRef clause, std::size_t level) const;
 	
 	bool hasNextVariable() {
 		return !mVariables.empty();
@@ -195,7 +180,6 @@ public:
 	/// Evaluate a literal in the theory, set lastReason to last theory decision involved.
 	Minisat::lbool evaluateLiteral(Minisat::Lit lit) const;
 	
-	boost::variant<Minisat::Lit,FormulaT> checkLiteralForDecision(Minisat::Var var, Minisat::Lit lit);
 	Minisat::Lit isFullyAssigned(Minisat::Lit lit);
 	boost::optional<FormulaT> isDecisionPossible(Minisat::Lit lit);
 	
@@ -231,13 +215,11 @@ public:
 	FormulaT explainTheoryPropagation(Minisat::Lit literal) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << literal << " under " << mBackend.getModel());
 		auto f = mGetter.reabstractLiteral(literal);
-		//mBackend.popConstraint(f);
 		auto conflict = mBackend.isInfeasible(currentVariable(), !f);
 		assert(conflict);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " from " << *conflict);
 		auto res = mBackend.explain(currentVariable(), *conflict, f);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " by " << res);
-		//mBackend.pushConstraint(f);
 		return res;
 	}
 	
@@ -306,13 +288,6 @@ public:
 			return std::numeric_limits<int>::max();
 		}
 		return mGetter.getDecisionLevel(var(lit));
-	}
-	
-	int decisionLevel(Minisat::Var var) const {
-		if (!mGetter.isTheoryAbstraction(var)) {
-			return std::numeric_limits<int>::max();
-		}
-		return theoryLevel(mGetter.reabstractVariable(var));
 	}
 	
 	// ***** Output
