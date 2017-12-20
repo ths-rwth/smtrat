@@ -2728,7 +2728,7 @@ namespace smtrat
 					if (Settings::mc_sat && next != lit_Undef) {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << ", checking for theory consistency...");
 						assert(mMCSAT.isFullyAssigned(next) == lit_Undef);
-						if (declit != lit_Undef) {
+						if (mMCSAT.isFullyAssigned(next) != lit_Undef) {
 							SMTRAT_LOG_DEBUG("smtrat.sat", next << " is fully assigned and evaluates to " << declit);
 							std::quick_exit(97);
 						}
