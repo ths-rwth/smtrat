@@ -2727,18 +2727,16 @@ namespace smtrat
 					
 					if (Settings::mc_sat && next != lit_Undef) {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << ", checking for theory consistency...");
-						auto declit = mMCSAT.isFullyAssigned(next);
+						assert(mMCSAT.isFullyAssigned(next) == lit_Undef);
 						if (declit != lit_Undef) {
 							SMTRAT_LOG_DEBUG("smtrat.sat", next << " is fully assigned and evaluates to " << declit);
-							next = declit;
-						} else {
 							std::quick_exit(97);
-							auto res = mMCSAT.isDecisionPossible(next);
-							if (res != boost::none) {
-								SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict " << *res);
-								handleTheoryConflict(res->isNary() ? res->subformulas() : FormulasT({*res}));
-								continue;
-							}
+						}
+						auto res = mMCSAT.isDecisionPossible(next);
+						if (res != boost::none) {
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict " << *res);
+							handleTheoryConflict(res->isNary() ? res->subformulas() : FormulasT({*res}));
+							continue;
 						}
 					}
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Deciding upon " << next);
