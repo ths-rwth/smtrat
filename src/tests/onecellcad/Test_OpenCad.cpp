@@ -1,14 +1,16 @@
 #define BOOST_TEST_MODULE test_opencellcad
-#include <boost/test/included/unit_test.hpp>
 
-/* #include <carl/core/UnivariatePolynomial.h> */
+#include <experimental/optional>
+
+#include <boost/test/unit_test.hpp>
+
 #include <carl/core/MultivariatePolynomial.h>
 #include <carl/core/Variable.h>
 #include <carl/formula/model/ran/RealAlgebraicPoint.h>
 
 #include "../lib/Common.h"
-
 #include "../../lib/datastructures/onecellcad/OpenCAD.h"
+
 /**
   * References:
   * [1] Christopher W. Brown. 2013. Constructing a single open cell in a
@@ -20,6 +22,7 @@
 namespace {
   using std::cout;
   using std::endl;
+  using std::experimental::optional;
 
   using smtrat::Rational;
   using namespace smtrat::onecellcad;
@@ -38,15 +41,15 @@ BOOST_FIXTURE_TEST_CASE(polylevel, VariableFixture) {
   BOOST_TEST_MESSAGE("Test polyLevel");
 
   std::vector<Variable> variableOrder {x,y,z};
-  BOOST_TEST(levelOf(MultiPoly(1),variableOrder) == 0);
-  BOOST_TEST(levelOf(MultiPoly(x)*Rational(0),variableOrder) == 0);
-  BOOST_TEST(levelOf(MultiPoly(x*y)*Rational(0),variableOrder) == 0);
-  BOOST_TEST(levelOf(MultiPoly(x),variableOrder) == 1);
-  BOOST_TEST(levelOf(MultiPoly(y),variableOrder) == 2);
-  BOOST_TEST(levelOf(MultiPoly(x*y),variableOrder) == 2);
-  BOOST_TEST(levelOf(MultiPoly(z),variableOrder) == 3);
-  BOOST_TEST(levelOf(MultiPoly(x*z),variableOrder) == 3);
-  BOOST_TEST(levelOf(MultiPoly(x*y*z),variableOrder) == 3);
+  BOOST_CHECK(levelOf(MultiPoly(1),variableOrder) == 0);
+  BOOST_CHECK(levelOf(MultiPoly(x)*Rational(0),variableOrder) == 0);
+  BOOST_CHECK(levelOf(MultiPoly(x*y)*Rational(0),variableOrder) == 0);
+  BOOST_CHECK(levelOf(MultiPoly(x),variableOrder) == 1);
+  BOOST_CHECK(levelOf(MultiPoly(y),variableOrder) == 2);
+  BOOST_CHECK(levelOf(MultiPoly(x*y),variableOrder) == 2);
+  BOOST_CHECK(levelOf(MultiPoly(z),variableOrder) == 3);
+  BOOST_CHECK(levelOf(MultiPoly(x*z),variableOrder) == 3);
+  BOOST_CHECK(levelOf(MultiPoly(x*y*z),variableOrder) == 3);
 }
 
 BOOST_FIXTURE_TEST_CASE(cell2d, VariableFixture) {
@@ -59,9 +62,9 @@ BOOST_FIXTURE_TEST_CASE(cell2d, VariableFixture) {
   RANPoint alpha { RAN(Rational(-1)/3), RAN(Rational(1)/3) };
   std::vector<Variable> variableOrder {x,y};
 
-  boost::optional<OpenCell> c = createBrownOpenOneCell(polys, alpha, variableOrder);
+  optional<OpenCADCell> c = createOpenCADCell(polys, alpha, variableOrder);
 
-  BOOST_TEST(c);
+  BOOST_CHECK(c);
 }
 
 

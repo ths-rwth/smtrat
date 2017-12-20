@@ -17,6 +17,7 @@
 #include <set>
 #include <algorithm>
 #include <experimental/optional>
+/* #include <optional> */
 /* #include <boost/optional.hpp> */
 
 #include <carl/formula/model/ran/RealAlgebraicNumber.h>
@@ -40,8 +41,8 @@ namespace onecellcad {
   using RAN = carl::RealAlgebraicNumber<Rational>;
   using RANPoint = carl::RealAlgebraicPoint<Rational>;
   using RANMap = std::map<carl::Variable, RAN>;
-  /* using boost::optional; */
-  /* using boost::none; */
+  using std::experimental::optional;
+  using std::experimental::nullopt;
 
   /**
    * Represent a cell's closed-interval-boundary along one single axis by an
@@ -78,16 +79,16 @@ namespace onecellcad {
    * represents negative and positive infinity, respectively.
    */
   struct Sector {
-    std::optional<Section> lowBound;
+    optional<Section> lowBound;
 
-    std::optional<Section> highBound;
+    optional<Section> highBound;
 
     bool isLowBoundNegInfty() const {
-      return lowBound == std::none;
+      return lowBound == nullopt;
     }
 
     bool isHighBoundInfty() const {
-      return highBound == std::none;
+      return highBound == nullopt;
     }
 
   };
@@ -171,8 +172,8 @@ namespace onecellcad {
    * 'poly' (also with non-zero sign).
    * @return either an OpenCell or nothing (representing a failed construction)
    */
-  std::optional<OpenCell> mergeCellWithPoly(
-    OpenCell& cell,
+  optional<OpenCADCell> mergeCellWithPoly(
+    OpenCADCell& cell,
     const RANPoint& point,
     const std::vector<carl::Variable> variableOrder,
     const MultiPoly poly)
@@ -184,7 +185,7 @@ namespace onecellcad {
     size_t levelIdx = level-1;
     SMTRAT_LOG_DEBUG("smtrat.opencad", "At level " << level << " merge it with " << cell);
     if(level == 0) // We have a non-zero, constant-poly, so no roots and nothing to do
-      return std::optional<OpenCell>(cell);
+      return optional<OpenCADCell>(cell);
 
 
     std::vector<carl::Variable> variableOrder4Lvl(level);
@@ -200,11 +201,11 @@ namespace onecellcad {
     );
     if(result.isZero()) {
       SMTRAT_LOG_WARN("smtrat.opencad", "Poly vanished at point.");
-      return std::none;
+      return nullopt;
     }
 
-    std::optional<OpenCell> newCell(cell);
-    carl::Variable mainVariable = variableOrder[levelIdx];
+    optional<OpenCADCell> newCell(cell);
+    carl::Variable mainVariable = variableOrder[levelVariableIdx];
     SMTRAT_LOG_TRACE("smtrat.opencad", "Current level variable: " << mainVariable);
     MultiCoeffUniPoly polyAsUnivar = poly.toUnivariatePolynomial(mainVariable);
 		if (level > 1) {
@@ -323,7 +324,7 @@ namespace onecellcad {
    * mention only variables from 'variableOrder'.
 	 *
    */
-  std::optional<OpenCell> createBrownOpenOneCell(
+  optional<OpenCADCell> createOpenCADCell(
     const std::vector<MultiPoly> polySet,
     const RANPoint& point,
     const std::vector<carl::Variable>& variableOrder)
@@ -336,14 +337,14 @@ namespace onecellcad {
     SMTRAT_LOG_INFO("smtrat.opencad", "Create BrownOpenOneCell");
     SMTRAT_LOG_DEBUG("smtrat.opencad", "Use point " << point << " wrt. variable order " << variableOrder);
 
-    std::optional<OpenCell> cell = createFullspaceCoveringCell(point.dim());
+    optional<OpenCADCell> cell = createFullspaceCoveringCell(point.dim());
     for(const auto& poly : polySet){
       SMTRAT_LOG_INFO("smtrat.opencad", "Merge input poly");
       SMTRAT_LOG_DEBUG("smtrat.opencad", "Input poly: " << poly);
       if (! (cell = mergeCellWithPoly(*cell, point, variableOrder, poly))) {
         // If any merge fails, this whole construction fails too
         SMTRAT_LOG_WARN("smtrat.opencad", "Construction failed");
-        return std::none;
+        return nullopt;
       }
     }
     SMTRAT_LOG_DEBUG("smtrat.opencad", "Final cell: " << cell.value());
