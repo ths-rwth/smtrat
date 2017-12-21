@@ -5,5 +5,7 @@ smtrat is the main namespace for the library. Everything included in this librar
 @namespace smtrat::parser
 Contains the parser for smtlib files and everything related.
 
+@namespace smtrat::cad::projection
+Contains everyting related to CAD projections.
 
 */
