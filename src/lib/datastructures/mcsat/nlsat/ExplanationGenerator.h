@@ -19,7 +19,7 @@ private:
 	};
 
 	Model mModel;
-	std::map<FormulaT,ConstraintT> mConstraints;
+	std::map<ConstraintT,FormulaT> mConstraints;
 	cad::CADConstraints<ProjectionSettings::backtracking> mCADConstraints;
 	cad::ModelBasedProjectionT<ProjectionSettings> mProjection;
 	
@@ -131,16 +131,16 @@ public:
 		for (const auto& f: constraints) {
 			if (f.getType() == carl::FormulaType::CONSTRAINT) {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding " << f);
-				mConstraints.emplace(f, f.constraint());
+				mConstraints.emplace(f.constraint(), f);
 			} else if (f.getType() == carl::FormulaType::VARCOMPARE) {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << f);
-				mConstraints.emplace(f, ConstraintT(f.variableComparison().definingPolynomial(), f.variableComparison().relation()));
+				mConstraints.emplace(ConstraintT(f.variableComparison().definingPolynomial(), f.variableComparison().relation()), f);
 			} else if (f.getType() == carl::FormulaType::VARASSIGN) {
 				SMTRAT_LOG_WARN("smtrat.nlsat", "Variable assignment " << f << " should never get here!");
 				assert(false);
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding assignment " << f);
 				const VariableComparisonT& vc = f.variableAssignment();
-				mConstraints.emplace(f, ConstraintT(vc.definingPolynomial(), carl::Relation::EQ));
+				mConstraints.emplace(ConstraintT(vc.definingPolynomial(), carl::Relation::EQ), f);
 			} else {
 				SMTRAT_LOG_ERROR("smtrat.nlsat", "Unsupported formula type: " << f);
 				assert(false);
@@ -148,7 +148,7 @@ public:
 		}
 
 		for (const auto& c: mConstraints) {
-			mCADConstraints.add(c.second);
+			mCADConstraints.add(c.first);
 		}
 		
 		for (std::size_t level = 2; level < mCADConstraints.vars().size(); level++) {
@@ -173,8 +173,8 @@ public:
                 }
                 
 		for (const auto& c: mConstraints) {
-			if (c.first == f.negated()) continue;
-			explanation.back().emplace_back(c.first);
+			if (c.second == f.negated()) continue;
+			explanation.back().emplace_back(c.second);
 		}
 		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Final: " << explanation.back() << " -> " << f);
 	}
