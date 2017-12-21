@@ -180,7 +180,6 @@ public:
 	/// Evaluate a literal in the theory, set lastReason to last theory decision involved.
 	Minisat::lbool evaluateLiteral(Minisat::Lit lit) const;
 	
-	Minisat::Lit isFullyAssigned(Minisat::Lit lit);
 	boost::optional<FormulaT> isDecisionPossible(Minisat::Lit lit);
 	
 	boost::optional<FormulaT> isFeasible() {
