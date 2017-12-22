@@ -2771,6 +2771,7 @@ namespace smtrat
 							continue;
 						}
 					} else {
+						SMTRAT_LOG_DEBUG("smtrat.sat", "No further theory variable to assign.");
 						mCurrentAssignmentConsistent = SAT;
 					}
 				}
