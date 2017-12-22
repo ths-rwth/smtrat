@@ -4,10 +4,9 @@ namespace smtrat {
 namespace mcsat {
 
 void MCSATMixin::makeDecision(Minisat::Lit decisionLiteral) {
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Made theory decision for " << current().variable << ": " << decisionLiteral);
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Made theory decision for " << currentVariable() << ": " << decisionLiteral);
 	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Variables: " << mVariables);
 	current().decisionLiteral = decisionLiteral;
-	mVariables.assign(current().variable);
 }
 
 bool MCSATMixin::backtrackTo(Minisat::Lit literal) {
@@ -24,14 +23,15 @@ bool MCSATMixin::backtrackTo(Minisat::Lit literal) {
 	
 	while (mCurrentLevel > level) {
 		popLevel();
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Backtracking theory assignment for " << current().variable);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Model " << mBackend.getModel());
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Backtracking theory assignment for " << currentVariable());
+
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Model " << model());
+
 		if (current().decisionLiteral != Minisat::lit_Undef) {
-			mBackend.popAssignment(current().variable);
-			mVariables.unassign(current().variable);
+			mBackend.popAssignment(currentVariable());
 		}
 	}
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Next theory variable is " << current().variable);
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Next theory variable is " << currentVariable());
 	return true;
 }
 
@@ -119,9 +119,6 @@ void MCSATMixin::popLevel() {
 }
 
 std::size_t MCSATMixin::addVariable(Minisat::Var variable) {
-	if (mGetter.isTheoryAbstraction(variable)) {
-		mVariables.add(mGetter.reabstractVariable(variable));
-	}
 	std::size_t level = theoryLevel(variable);
 	if (level == std::numeric_limits<std::size_t>::max()) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << variable << " to undecided");
@@ -138,8 +135,7 @@ bool MCSATMixin::isFormulaUnivariate(const FormulaT& formula, std::size_t level)
 	carl::Variables vars;
 	formula.arithmeticVars(vars);
 	for (std::size_t lvl = 1; lvl <= level; lvl++) {
-		vars.erase(get(lvl).variable);
-		
+		vars.erase(variable(lvl));
 	}
 	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Checking if " << formula << " is univariate on level " << level << ": " << vars.empty());
 	return vars.empty();
