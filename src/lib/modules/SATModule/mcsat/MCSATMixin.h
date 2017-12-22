@@ -130,7 +130,7 @@ public:
 	
 	bool hasNextVariable() {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current level: " << mCurrentLevel << " with variables " << mVariables);
-		return mCurrentLevel <= mVariables.size();
+		return mCurrentLevel < mVariables.size();
 	}
 	carl::Variable nextVariable() {
 		return mVariables[mCurrentLevel];
