@@ -129,7 +129,8 @@ public:
 	}
 	
 	bool hasNextVariable() {
-		return mCurrentLevel < mVariables.size();
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current level: " << mCurrentLevel << " with variables " << mVariables);
+		return mCurrentLevel <= mVariables.size();
 	}
 	carl::Variable nextVariable() {
 		return mVariables[mCurrentLevel];
@@ -231,6 +232,7 @@ public:
 	template<typename Constraints>
 	void updateVariableOrdering(const Constraints& c) {
 		mVariables = mcsat::constructVariableOrdering(c);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variable ordering " << mVariables);
 	}
 	
 	// ***** Auxliary getter
