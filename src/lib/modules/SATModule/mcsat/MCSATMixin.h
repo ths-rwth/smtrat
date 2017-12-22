@@ -231,8 +231,10 @@ public:
 	
 	template<typename Constraints>
 	void updateVariableOrdering(const Constraints& c) {
-		mVariables = mcsat::constructVariableOrdering(c);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variable ordering " << mVariables);
+		if (mVariables.empty()) {
+			mVariables = mcsat::constructVariableOrdering(c);
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variable ordering " << mVariables);
+		}
 	}
 	
 	// ***** Auxliary getter
