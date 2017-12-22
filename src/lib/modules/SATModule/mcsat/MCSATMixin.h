@@ -6,6 +6,7 @@
 
 #include "VariableSelector.h"
 #include "BaseBackend.h"
+#include "../../../datastructures/mcsat/utils/VariableOrdering.h"
 
 #include <carl/formula/model/Assignment.h>
 
@@ -63,8 +64,8 @@ private:
 	/// Variables that are not univariate in any variable yet.
 	std::vector<Minisat::Var> mUndecidedVariables;
 
-	/// takes care of selecting the next variable
-	VariableSelector mVariables;
+	/// The current variable ordering.
+	std::vector<carl::Variable> mVariables;
 	
 	MCSATBackend<BackendSettings1> mBackend;
 
@@ -119,9 +120,20 @@ public:
 	}
 	/// Retrieve the current theory variable
 	carl::Variable currentVariable() const {
-		return current().variable;
+		return variable(level());
+	}
+	carl::Variable variable(std::size_t level) const {
+		if (level == 0) return carl::Variable::NO_VARIABLE;
+		assert(level <= mVariables.size());
+		return mVariables[level - 1];
 	}
 	
+	bool hasNextVariable() {
+		return mCurrentLevel < mVariables.size();
+	}
+	carl::Variable nextVariable() {
+		return mVariables[mCurrentLevel];
+	}
 	// ***** Modifier
 	
 	/// Advance to the next level using this variable
@@ -164,12 +176,6 @@ public:
 	/// Checks whether the given formula is univariate on the given level
 	bool isFormulaUnivariate(const FormulaT& formula, std::size_t level) const;
 	
-	bool hasNextVariable() {
-		return !mVariables.empty();
-	}
-	carl::Variable nextVariable() {
-		return mVariables.top();
-	}
 	/// Make a decision and push a new level
 	void makeDecision(Minisat::Lit decisionLiteral);
 	/// Backtracks to the theory decision represented by the given literal. 
@@ -222,6 +228,11 @@ public:
 		return res;
 	}
 	
+	template<typename Constraints>
+	void updateVariableOrdering(const Constraints& c) {
+		mVariables = mcsat::constructVariableOrdering(c);
+	}
+	
 	// ***** Auxliary getter
 	
 	/// Checks whether the given formula is currently univariate
@@ -244,9 +255,9 @@ public:
 			return 0;
 		}
 		for (std::size_t level = 1; level < mTheoryStack.size(); level++) {
-			vars.erase(get(level).variable);
+			vars.erase(variable(level));
 			if (vars.empty()) {
-				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is univariate in " << get(level).variable);
+				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is univariate in " << variable(level));
 				return level;
 			}
 		}
