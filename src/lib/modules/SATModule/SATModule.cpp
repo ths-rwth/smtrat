@@ -2740,7 +2740,7 @@ namespace smtrat
 
 				// Checking whether we can do a theory decision
                 if (Settings::mc_sat && next == lit_Undef) {
-					if (!mMCSAT.isCurrentAssigned()) {
+					if (mMCSAT.mayDoAssignment()) {
 						// No decision done yet, try with a theory decision.
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Trying with next theory decision");
 						FormulaT res;

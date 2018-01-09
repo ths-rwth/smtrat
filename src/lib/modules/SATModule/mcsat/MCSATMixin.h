@@ -135,10 +135,11 @@ public:
 		return level() < mVariables.size();
 	}
 	carl::Variable nextVariable() const {
+		assert(hasNextVariable());
 		return mVariables[level()];
 	}
-	bool isCurrentAssigned() const {
-		return current().decisionLiteral != Minisat::lit_Undef;
+	bool mayDoAssignment() const {
+		return current().variable != carl::Variable::NO_VARIABLE && current().decisionLiteral == Minisat::lit_Undef;
 	}
 	// ***** Modifier
 	
@@ -195,6 +196,10 @@ public:
 	boost::optional<FormulaT> isDecisionPossible(Minisat::Lit lit);
 	
 	boost::optional<FormulaT> isFeasible() {
+		if (!hasNextVariable()) {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Trail is feasible as there is no next variable to be assigned.");
+			return boost::none;
+		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking whether trail is feasible (w.r.t. " << currentVariable() << ")");
 		auto res = mBackend.findAssignment(currentVariable());
 		if (carl::variant_is_type<ModelValue>(res)) {
