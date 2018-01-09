@@ -123,17 +123,21 @@ public:
 		return variable(level());
 	}
 	carl::Variable variable(std::size_t level) const {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Obtaining variable " << level << " from " << mVariables);
 		if (level == 0) return carl::Variable::NO_VARIABLE;
 		assert(level <= mVariables.size());
 		return mVariables[level - 1];
 	}
 	
-	bool hasNextVariable() {
+	bool hasNextVariable() const {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current level: " << mCurrentLevel << " with variables " << mVariables);
 		return mCurrentLevel < mVariables.size();
 	}
-	carl::Variable nextVariable() {
+	carl::Variable nextVariable() const {
 		return mVariables[mCurrentLevel];
+	}
+	bool isCurrentAssigned() const {
+		return current().decisionLiteral != Minisat::lit_Undef;
 	}
 	// ***** Modifier
 	
