@@ -113,10 +113,10 @@ public:
 	}
 	/// Returns the current theory level
 	const TheoryLevel& current() const {
-		return mTheoryStack[mCurrentLevel];
+		return mTheoryStack[level()];
 	}
 	TheoryLevel& current() {
-		return mTheoryStack[mCurrentLevel];
+		return mTheoryStack[level()];
 	}
 	/// Retrieve the current theory variable
 	carl::Variable currentVariable() const {
@@ -125,16 +125,17 @@ public:
 	carl::Variable variable(std::size_t level) const {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Obtaining variable " << level << " from " << mVariables);
 		if (level == 0) return carl::Variable::NO_VARIABLE;
+		if (level > mVariables.size()) std::exit(102);
 		assert(level <= mVariables.size());
 		return mVariables[level - 1];
 	}
 	
 	bool hasNextVariable() const {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current level: " << mCurrentLevel << " with variables " << mVariables);
-		return mCurrentLevel < mVariables.size();
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current level: " << level() << " with variables " << mVariables);
+		return level() < mVariables.size();
 	}
 	carl::Variable nextVariable() const {
-		return mVariables[mCurrentLevel];
+		return mVariables[level()];
 	}
 	bool isCurrentAssigned() const {
 		return current().decisionLiteral != Minisat::lit_Undef;
@@ -245,7 +246,7 @@ public:
 	
 	/// Checks whether the given formula is currently univariate
 	bool isFormulaUnivariate(const FormulaT& formula) const {
-		return isFormulaUnivariate(formula, mCurrentLevel);
+		return isFormulaUnivariate(formula, level());
 	}
 	
 	std::size_t theoryLevel(Minisat::Var var) const {
