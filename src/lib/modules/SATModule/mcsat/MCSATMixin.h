@@ -196,7 +196,7 @@ public:
 	boost::optional<FormulaT> isDecisionPossible(Minisat::Lit lit);
 	
 	boost::optional<FormulaT> isFeasible() {
-		if (!hasNextVariable()) {
+		if (!mayDoAssignment()) {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Trail is feasible as there is no next variable to be assigned.");
 			return boost::none;
 		}
