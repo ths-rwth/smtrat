@@ -9,6 +9,46 @@ namespace smtrat {
 namespace mcsat {
 namespace nlsat {
 
+namespace helper {
+	/**
+	 * Construct a formula representing a variable comparison.
+	 * If possible, this is simplified to a regular constraint.
+	 */
+	inline FormulaT buildFormulaFromVC(VariableComparisonT&& vc) {
+		auto constraint = vc.asConstraint();
+		if (constraint) {
+			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Simplified " << vc << " to " << *constraint);
+			return FormulaT(*constraint);
+		}
+		return FormulaT(std::move(vc));
+	}
+
+	/**
+	 * Construct a formula representing a variable being equal to the given multivariate root.
+	 */
+	template<typename MV>
+	FormulaT buildEquality(carl::Variable v, const MV& mv) {
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << v << " = " << MultivariateRootT(mv.first, mv.second));
+		return buildFormulaFromVC(VariableComparisonT(v, MultivariateRootT(mv.first, mv.second), carl::Relation::EQ));
+	}
+	/**
+	 * Construct a formula representing a variable being less than the given multivariate root.
+	 */
+	template<typename MV>
+	FormulaT buildBelow(carl::Variable v, const MV& mv) {
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << v << " < " << MultivariateRootT(mv.first, mv.second));
+		return buildFormulaFromVC(VariableComparisonT(v, MultivariateRootT(mv.first, mv.second), carl::Relation::LESS));
+	}
+	/**
+	 * Construct a formula representing a variable being greater than the given multivariate root.
+	 */
+	template<typename MV>
+	FormulaT buildAbove(carl::Variable v, const MV& mv) {
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << v << " > " << MultivariateRootT(mv.first, mv.second));
+		return buildFormulaFromVC(VariableComparisonT(v, MultivariateRootT(mv.first, mv.second), carl::Relation::GREATER));
+	}
+}
+
 class ExplanationGenerator {
 private:
 	using RAN = carl::RealAlgebraicNumber<Rational>;
@@ -19,47 +59,11 @@ private:
 	};
 
 	Model mModel;
-	std::map<ConstraintT,FormulaT> mConstraints;
+	std::map<FormulaT, ConstraintT> mConstraints;
 	cad::CADConstraints<ProjectionSettings::backtracking> mCADConstraints;
 	cad::ModelBasedProjectionT<ProjectionSettings> mProjection;
 	
-	bool isEqual(const RAN& ran, const ModelValue& mv) const {
-		if (mv.isRational()) return ran == RAN(mv.asRational());
-		if (mv.isRAN()) return ran == mv.asRAN();
-		assert(false);
-		return false;
-	}
-	bool isGreater(const RAN& ran, const ModelValue& mv) const {
-		if (mv.isRational()) return ran > RAN(mv.asRational());
-		if (mv.isRAN()) return ran > mv.asRAN();
-		assert(false);
-		return false;
-	}
-	FormulaT buildFormulaFromVC(VariableComparisonT&& vc) const {
-		auto constraint = vc.asConstraint();
-		if (constraint) {
-			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Simplified " << vc << " to " << *constraint);
-			return FormulaT(*constraint);
-		}
-		return FormulaT(std::move(vc));
-	}
-	template<typename MV>
-	FormulaT buildEquality(carl::Variable v, const MV& mv) const {
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << v << " = " << MultivariateRootT(mv.first, mv.second));
-		return buildFormulaFromVC(VariableComparisonT(v, MultivariateRootT(mv.first, mv.second), carl::Relation::EQ));
-	}
-	template<typename MV>
-	FormulaT buildBelow(carl::Variable v, const MV& mv) const {
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << v << " < " << MultivariateRootT(mv.first, mv.second));
-		return buildFormulaFromVC(VariableComparisonT(v, MultivariateRootT(mv.first, mv.second), carl::Relation::LESS));
-	}
-	template<typename MV>
-	FormulaT buildAbove(carl::Variable v, const MV& mv) const {
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << v << " > " << MultivariateRootT(mv.first, mv.second));
-		return buildFormulaFromVC(VariableComparisonT(v, MultivariateRootT(mv.first, mv.second), carl::Relation::GREATER));
-	}
-	
-	void generateBoundsFor(FormulasT& res, carl::Variable var, std::size_t level, const Model& model, std::pair<std::size_t, std::size_t>& pids) const {
+	void generateBoundsFor(FormulasT& res, carl::Variable var, std::size_t level, const Model& model) const {
 		auto val = mModel.evaluated(var);
 		assert(val.isRational() || val.isRAN());
 		RAN value = val.isRational() ? RAN(val.asRational()) : val.asRAN();
@@ -83,24 +87,17 @@ private:
 				SMTRAT_LOG_TRACE("smtrat.nlsat", root << " -> " << param);
 				if (root < value) {
 					if (!lower || (root > lower->first)) {
-						lower = std::make_pair(root, buildAbove(var, param));
+						lower = std::make_pair(root, helper::buildAbove(var, param));
 						SMTRAT_LOG_TRACE("smtrat.nlsat", "new lower bound: " << lower->second);
-                                                // save pid (lower)
-                                                pids.first = pid;
 					}
 				} else if (root == value) {
-					lower = std::make_pair(root, buildEquality(var, param));
+					lower = std::make_pair(root, helper::buildEquality(var, param));
 					upper = *lower;
 					SMTRAT_LOG_TRACE("smtrat.nlsat", "new exact root: " << lower->second);
-                                        // save pid (upper und lower)
-                                        pids.first = pid;
-                                        pids.second = pid;
 				} else {
 					if (!upper || (root < upper->first)) {
-						upper = std::make_pair(root, buildBelow(var, param));
+						upper = std::make_pair(root, helper::buildBelow(var, param));
 						SMTRAT_LOG_TRACE("smtrat.nlsat", "new upper bound: " << upper->second);
-                                                // save pid (upper)
-                                                pids.second = pid;
 					}
 				}
 				rootID++;
@@ -129,26 +126,32 @@ public:
 		mCADConstraints.reset(vars);
 		mProjection.reset();
 		for (const auto& f: constraints) {
+			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding " << f << " to " << mConstraints);
+			assert(mConstraints.find(f) == mConstraints.end());
 			if (f.getType() == carl::FormulaType::CONSTRAINT) {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding " << f);
-				mConstraints.emplace(f.constraint(), f);
+				mConstraints.emplace(f, f.constraint());
 			} else if (f.getType() == carl::FormulaType::VARCOMPARE) {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << f);
-				mConstraints.emplace(ConstraintT(f.variableComparison().definingPolynomial(), f.variableComparison().relation()), f);
+				mConstraints.emplace(f, ConstraintT(f.variableComparison().definingPolynomial(), f.variableComparison().relation()));
 			} else if (f.getType() == carl::FormulaType::VARASSIGN) {
 				SMTRAT_LOG_WARN("smtrat.nlsat", "Variable assignment " << f << " should never get here!");
 				assert(false);
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding assignment " << f);
 				const VariableComparisonT& vc = f.variableAssignment();
-				mConstraints.emplace(ConstraintT(vc.definingPolynomial(), carl::Relation::EQ), f);
+				mConstraints.emplace(f, ConstraintT(vc.definingPolynomial(), carl::Relation::EQ));
 			} else {
 				SMTRAT_LOG_ERROR("smtrat.nlsat", "Unsupported formula type: " << f);
 				assert(false);
 			}
+			SMTRAT_LOG_DEBUG("smtrat.nlsat", "-> " << mConstraints);
 		}
-
+		std::set<ConstraintT> cons;
 		for (const auto& c: mConstraints) {
-			mCADConstraints.add(c.first);
+			cons.insert(c.second);
+		}
+		for (const auto& c: cons) {
+			mCADConstraints.add(c);
 		}
 		
 		for (std::size_t level = 2; level < mCADConstraints.vars().size(); level++) {
@@ -157,24 +160,28 @@ public:
 
 		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Projection is" << std::endl << mProjection);
 	}
-                
+
 	void generateExplanation(const FormulaT& f, std::vector<FormulasT>& explanation) const {
 		FormulasT subs;
 		Model m;
 		explanation.resize(mCADConstraints.vars().size());
 		
-                // Start from the bottom to generate bound constraints. 
-                std::pair<std::size_t, std::size_t> pids;
-                for (std::size_t level = mCADConstraints.vars().size() - 1; level > 0; level--) {
-                        carl::Variable var = mCADConstraints.vars()[level];
-			generateBoundsFor(explanation[level-1], var, level+1, m, pids); 
+		// Start from the bottom to generate bound constraints. 
+		for (std::size_t level = mCADConstraints.vars().size() - 1; level > 0; level--) {
+			carl::Variable var = mCADConstraints.vars()[level];
+			generateBoundsFor(explanation[level-1], var, level+1, m); 
 			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Cell bounds for " << var << ": " << explanation[level-1]);
 			m.emplace(var, mModel.evaluated(var));
-                }
-                
+		}
+
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Collecing constraints from " << mConstraints);
 		for (const auto& c: mConstraints) {
-			if (c.second == f.negated()) continue;
-			explanation.back().emplace_back(c.second);
+			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Considering " << c.first);
+			if (c.first == f.negated()) {
+				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Skipping " << c.first);
+				continue;
+			}
+			explanation.back().emplace_back(c.first);
 		}
 		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Final: " << explanation.back() << " -> " << f);
 	}
