@@ -123,9 +123,9 @@ public:
 		return variable(level());
 	}
 	carl::Variable variable(std::size_t level) const {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Obtaining variable " << level << " from " << mVariables);
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Obtaining variable " << level << " from " << mVariables);
 		if (level == 0) return carl::Variable::NO_VARIABLE;
-		if (level > mVariables.size()) std::exit(102);
+		if (level > mVariables.size()) return carl::Variable::NO_VARIABLE;
 		assert(level <= mVariables.size());
 		return mVariables[level - 1];
 	}
@@ -262,12 +262,30 @@ public:
 	}
 	
 	std::size_t theoryLevel(const FormulaT& f) const {
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Computing theory level for " << f);
 		carl::Variables vars;
 		f.arithmeticVars(vars);
 		if (vars.empty()) {
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", f << " has no variable, thus on level 0");
+			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " has no variable, thus on level 0");
 			return 0;
 		}
+	
+		Model m = model();
+		if (!carl::model::evaluate(f, m).isBool()) {
+			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is undecided.");
+			return std::numeric_limits<std::size_t>::max();
+		}
+		for (std::size_t lvl = level(); lvl > 0; lvl--) {
+			if (variable(lvl) == carl::Variable::NO_VARIABLE) continue;
+			m.erase(variable(lvl));
+			if (vars.count(variable(lvl)) == 0) continue;
+			if (!carl::model::evaluate(f, m).isBool()) {
+				return lvl;
+			}
+		}
+		assert(false);
+		return 0;
+		
 		for (std::size_t level = 1; level < mTheoryStack.size(); level++) {
 			vars.erase(variable(level));
 			if (vars.empty()) {
