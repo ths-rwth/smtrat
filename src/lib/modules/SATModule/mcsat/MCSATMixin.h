@@ -63,9 +63,6 @@ private:
 
 	/// Variables that are not univariate in any variable yet.
 	std::vector<Minisat::Var> mUndecidedVariables;
-
-	/// The current variable ordering.
-	std::vector<carl::Variable> mVariables;
 	
 	MCSATBackend<BackendSettings1> mBackend;
 
@@ -123,20 +120,20 @@ public:
 		return variable(level());
 	}
 	carl::Variable variable(std::size_t level) const {
-		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Obtaining variable " << level << " from " << mVariables);
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Obtaining variable " << level << " from " << mBackend.variableOrder());
 		if (level == 0) return carl::Variable::NO_VARIABLE;
-		if (level > mVariables.size()) return carl::Variable::NO_VARIABLE;
-		assert(level <= mVariables.size());
-		return mVariables[level - 1];
+		if (level > mBackend.variableOrder().size()) return carl::Variable::NO_VARIABLE;
+		assert(level <= mBackend.variableOrder().size());
+		return mBackend.variableOrder()[level - 1];
 	}
 	
 	bool hasNextVariable() const {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current level: " << level() << " with variables " << mVariables);
-		return level() < mVariables.size();
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current level: " << level() << " with variables " << mBackend.variableOrder());
+		return level() < mBackend.variableOrder().size();
 	}
 	carl::Variable nextVariable() const {
 		assert(hasNextVariable());
-		return mVariables[level()];
+		return mBackend.variableOrder()[level()];
 	}
 	bool mayDoAssignment() const {
 		return current().variable != carl::Variable::NO_VARIABLE && current().decisionLiteral == Minisat::lit_Undef;
@@ -241,10 +238,7 @@ public:
 	
 	template<typename Constraints>
 	void updateVariableOrdering(const Constraints& c) {
-		if (mVariables.empty()) {
-			mVariables = mcsat::constructVariableOrdering(c);
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variable ordering " << mVariables);
-		}
+		mBackend.updateVariableOrdering(c);
 	}
 	
 	// ***** Auxliary getter
@@ -312,6 +306,7 @@ public:
 	int assignedAtTrailIndex(Minisat::Var variable) const {
 		auto lit = getDecisionLiteral(variable);
 		if (lit == Minisat::lit_Undef) {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", variable << " was not assigned yet.");
 			return std::numeric_limits<int>::max();
 		}
 		return mGetter.getTrailIndex(var(lit));

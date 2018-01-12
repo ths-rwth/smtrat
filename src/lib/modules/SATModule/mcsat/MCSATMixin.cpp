@@ -5,7 +5,7 @@ namespace mcsat {
 
 void MCSATMixin::makeDecision(Minisat::Lit decisionLiteral) {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Made theory decision for " << currentVariable() << ": " << decisionLiteral);
-	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Variables: " << mVariables);
+	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Variables: " << mBackend.variableOrder());
 	current().decisionLiteral = decisionLiteral;
 }
 
@@ -62,7 +62,7 @@ boost::optional<FormulaT> MCSATMixin::isDecisionPossible(Minisat::Lit lit) {
 }
 
 void MCSATMixin::updateCurrentLevel(carl::Variable var) {
-	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Updating current level for " << var);
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Updating current level for " << var);
 	assert(level() <= mTheoryStack.size());
 	if (level() == mTheoryStack.size()) {
 		mTheoryStack.emplace_back();
@@ -72,9 +72,9 @@ void MCSATMixin::updateCurrentLevel(carl::Variable var) {
 	}
 	
 	// Check undecided variables whether they became univariate
-	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Undecided Variables: " << mUndecidedVariables);
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Undecided Variables: " << mUndecidedVariables);
 	for (auto vit = mUndecidedVariables.begin(); vit != mUndecidedVariables.end();) {
-		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Looking at " << *vit);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Looking at " << *vit);
 		if (theoryLevel(*vit) != level()) {
 			++vit;
 			continue;
@@ -83,7 +83,7 @@ void MCSATMixin::updateCurrentLevel(carl::Variable var) {
 		current().univariateVariables.push_back(*vit);
 		vit = mUndecidedVariables.erase(vit);
 	}
-	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "-> " << mUndecidedVariables);
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << mUndecidedVariables);
 }
 
 void MCSATMixin::removeLastLevel() {
