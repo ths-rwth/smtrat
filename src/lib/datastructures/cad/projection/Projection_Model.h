@@ -234,8 +234,10 @@ namespace cad {
                         Model m;
                         for(std::size_t l = dim(); l > level; l--) {
                             carl::Variable v = var(l);
+                            if (mModel.find(v) == mModel.end()) continue;
                             m.emplace(v, mModel.evaluated(v));
                         }
+                        bool modelBased = m.find(var(level)) != m.end();
                         
                         for(const auto& it: polys(level)) {
                             assert(it.first.mainVar() == var(level));
@@ -244,15 +246,7 @@ namespace cad {
                                 [&](const UPoly& np){ addToCorrectLevel(level + 1, np, it.second); }
                             );
 							
-							if (mModel.find(var(level)) == mModel.end()) {
-								// Regular full projection
-								for (const auto& itPID: polys(level)) {
-									std::size_t newOrigin = std::max(it.second, itPID.second);
-									mOperator(Settings::projectionOperator, it.first, itPID.first, var(level + 1),
-										[&](const UPoly& np){ addToCorrectLevel(level + 1, np, newOrigin); } 
-									);
-								}
-							} else {
+							if (modelBased) {
 								// Model-based projection
 								std::pair<std::size_t, std::size_t> pids;
 								findPIDsForProjection(var(level), level, m, pids); 
@@ -263,6 +257,14 @@ namespace cad {
 											[&](const UPoly& np){ addToCorrectLevel(level + 1, np, newOrigin); } 
 										);
 									//}
+								}
+							} else {
+								// Regular full projection
+								for (const auto& itPID: polys(level)) {
+									std::size_t newOrigin = std::max(it.second, itPID.second);
+									mOperator(Settings::projectionOperator, it.first, itPID.first, var(level + 1),
+										[&](const UPoly& np){ addToCorrectLevel(level + 1, np, newOrigin); } 
+									);
 								}
 							}
 							
