@@ -113,7 +113,7 @@ private:
 		}
 	}
 public:
-	ExplanationGenerator(const std::vector<FormulaT>& constraints, const std::vector<carl::Variable>& vars, const Model& model):
+	ExplanationGenerator(const std::vector<FormulaT>& constraints, const std::vector<carl::Variable>& vars, carl::Variable targetVar, const Model& model):
 		mModel(model),
 		mConstraints(),
 		mCADConstraints(
@@ -169,6 +169,7 @@ public:
 		// Start from the bottom to generate bound constraints. 
 		for (std::size_t level = mCADConstraints.vars().size() - 1; level > 0; level--) {
 			carl::Variable var = mCADConstraints.vars()[level];
+			if (mModel.find(var) == mModel.end()) continue;
 			generateBoundsFor(explanation[level-1], var, level+1, m); 
 			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Cell bounds for " << var << ": " << explanation[level-1]);
 			m.emplace(var, mModel.evaluated(var));
