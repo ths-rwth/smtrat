@@ -57,7 +57,14 @@ namespace cad {
 		static constexpr bool simplifyProjectionByBounds = false;
 		static constexpr bool debugProjection = false;
 		static constexpr bool debugStepsToTikz = false;
+		static constexpr bool force_nonincremental = false;
 	};
+	
+	struct NewCADSettingsNaive: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareInteger {
+		static constexpr auto moduleName = "NewCADModule<Naive>";
+		static constexpr bool force_nonincremental = true;
+	};
+	
 	struct NewCADSettingsNO: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareInteger {
 		static constexpr auto moduleName = "NewCADModule<NewCADNO>";
 	};
@@ -107,6 +114,7 @@ namespace cad {
 		static constexpr bool simplifyProjectionByBounds = false;
 		static constexpr bool debugProjection = false;
 		static constexpr bool debugStepsToTikz = false;
+		static constexpr bool force_nonincremental = false;
 		
 		static constexpr cad::SampleCompareStrategy sampleComparator = cad::SampleCompareStrategy::Integer;
 		static constexpr cad::FullSampleCompareStrategy fullSampleComparator = cad::FullSampleCompareStrategy::Integer;
