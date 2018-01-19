@@ -20,8 +20,8 @@ namespace cad {
 	};
 	using IncrementalityNO = IncrementalityMixin<Incrementality::NONE,Backtracking::ORDERED>;
 	using IncrementalityNU = IncrementalityMixin<Incrementality::NONE,Backtracking::UNORDERED>;
-	using IncrementalityS = IncrementalityMixin<Incrementality::SIMPLE,Backtracking::UNORDERED>;
-	using IncrementalitySO = IncrementalityMixin<Incrementality::SIMPLE,Backtracking::UNORDERED>;
+	using IncrementalitySO = IncrementalityMixin<Incrementality::SIMPLE,Backtracking::ORDERED>;
+	using IncrementalitySU = IncrementalityMixin<Incrementality::SIMPLE,Backtracking::UNORDERED>;
 	using IncrementalityF = IncrementalityMixin<Incrementality::FULL,Backtracking::UNORDERED>;
 	using IncrementalityFO = IncrementalityMixin<Incrementality::FULL,Backtracking::UNORDERED>;
 	
@@ -73,11 +73,11 @@ namespace cad {
 		static constexpr auto moduleName = "NewCADModule<NewCADNU>";
 	};
 	
-	struct NewCADSettingsS: NewCADBaseSettings, cad::IncrementalityS, cad::ProjectionBrown, cad::SampleCompareInteger {
-		static constexpr auto moduleName = "NewCADModule<NewCADS>";
-	};
 	struct NewCADSettingsSO: NewCADBaseSettings, cad::IncrementalitySO, cad::ProjectionBrown, cad::SampleCompareInteger {
 		static constexpr auto moduleName = "NewCADModule<NewCADSO>";
+	};
+	struct NewCADSettingsSU: NewCADBaseSettings, cad::IncrementalitySU, cad::ProjectionBrown, cad::SampleCompareInteger {
+		static constexpr auto moduleName = "NewCADModule<NewCADSU>";
 	};
 	
 	struct NewCADSettingsF1: NewCADBaseSettings, cad::IncrementalityF, cad::ProjectionBrown, cad::SampleCompareInteger {
