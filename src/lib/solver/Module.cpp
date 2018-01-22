@@ -179,9 +179,9 @@ namespace smtrat
         const carl::Variables& vars = _receivedSubformula->formula().variables();
         for( carl::Variable::Arg var : vars )
         {
-            if( var.getId() >= mVariableCounters.size() )
-                mVariableCounters.resize( var.getId()+1, 0 );
-            ++mVariableCounters[var.getId()];
+            if( var.id() >= mVariableCounters.size() )
+                mVariableCounters.resize( var.id()+1, 0 );
+            ++mVariableCounters[var.id()];
         }
         if( _receivedSubformula->formula().getType() == carl::FormulaType::CONSTRAINT )
         {
@@ -210,8 +210,8 @@ namespace smtrat
         const carl::Variables& vars = _receivedSubformula->formula().variables();
         for( carl::Variable::Arg var : vars )
         {
-            assert( mVariableCounters[var.getId()] > 0 );
-            --mVariableCounters[var.getId()];
+            assert( mVariableCounters[var.id()] > 0 );
+            --mVariableCounters[var.id()];
         }
         // Check if the constraint to delete is an original constraint of constraints in the vector
         // of passed constraints.
@@ -1253,7 +1253,7 @@ namespace smtrat
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
                 // Add all arithmetic variables.
 				for (auto v: vars) {
-					smtlibFile << "(declare-fun " << v << " () " << v.getType() << ")\n";
+					smtlibFile << "(declare-fun " << v << " () " << v.type() << ")\n";
 				}
                 string assumption = "";
                 assumption += "(set-info :status sat)\n";
