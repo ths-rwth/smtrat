@@ -6,6 +6,7 @@
 
 #include <boost/optional.hpp>
 
+#include <cstdlib>
 #include <map>
 
 namespace smtrat {
