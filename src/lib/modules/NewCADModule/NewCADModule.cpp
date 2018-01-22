@@ -90,7 +90,7 @@ namespace smtrat
 #endif
 		if (answer == Answer::UNSAT) {
 			//mCAD.generateInfeasibleSubsets(mInfeasibleSubsets);
-			for(auto mis : mInfeasibleSubsets)
+			for(auto& mis : mInfeasibleSubsets)
 				mReplacer.preprocessInfeasibleSubset(mis);
 			SMTRAT_LOG_INFO("smtrat.cad", "Infeasible subset: " << mInfeasibleSubsets);
 		}

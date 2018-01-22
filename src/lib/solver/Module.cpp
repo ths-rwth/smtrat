@@ -1211,12 +1211,13 @@ namespace smtrat
     {
 		SMTRAT_LOG_DEBUG("smtrat.module", "InfSubsets: " << mInfeasibleSubsets);
         if( mInfeasibleSubsets.empty() ) return false;
-        for( auto& infSubset : mInfeasibleSubsets )
+        for( const auto& infSubset : mInfeasibleSubsets )
         {
-            for( auto& subFormula : infSubset )
+            for( const auto& subFormula : infSubset )
             {
                 if( !mpReceivedFormula->contains( subFormula ) )
                 {
+					SMTRAT_LOG_DEBUG("smtrat.module", "Subset " << infSubset << " has " << subFormula << " that we don't know.");
                     return false;
                 }
             }
