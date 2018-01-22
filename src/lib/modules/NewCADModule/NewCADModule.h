@@ -55,9 +55,9 @@ namespace smtrat
 				}
 			}
 			void removeConstraintsFromReplacer() {
-				for (const auto& f: rReceivedFormula()) {
-					assert(f.formula().getType() == carl::FormulaType::CONSTRAINT);
-					removeConstraint(f.formula().constraint());
+				for (auto it = rReceivedFormula().rbegin(); it != rReceivedFormula().rend(); ++it) {
+					assert(it->formula().getType() == carl::FormulaType::CONSTRAINT);
+					removeConstraint(it->formula().constraint());
 				}
 			}
 
