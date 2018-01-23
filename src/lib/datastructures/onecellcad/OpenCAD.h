@@ -211,7 +211,7 @@ namespace onecellcad {
     // since this implies a lower-dimensional cell.
     // Use this special eval function because we plug in algebraic reals into the poly.
     RAN result = carl::RealAlgebraicNumberEvaluation::evaluate(poly,
-      point.prefix(level),
+      point.subpoint(level),
       variableOrder4Lvl
     );
     if(result.isZero()) {
@@ -257,7 +257,7 @@ namespace onecellcad {
       // factors.
       carl::CoCoAAdaptor<MultiPoly> factorizer(projectionPolys);
       for(auto& p : projectionPolys) {
-        for (const auto &factor : factorizer.irreducibleFactors(p)) {
+        for (const auto &factor : factorizer.irreducibleFactorsOf(p)) {
           SMTRAT_LOG_DEBUG("smtrat.opencad", "Merge irreducible factor: " << factor);
           if (!(newCell = mergeCellWithPoly(
             *newCell,
