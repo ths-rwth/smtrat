@@ -9,6 +9,7 @@ namespace cad {
 	enum class ProjectionType { Brown, McCallum, Hong };
 	enum class SampleCompareStrategy { Integer, Numeric, Value };
 	enum class FullSampleCompareStrategy { Integer, Numeric, Value };
+	using SampleHeuristic = carl::RANSampleHeuristic;
 	enum class MISHeuristic { TRIVIAL, GREEDY, GREEDY_PRE, GREEDY_WEIGHTED, HYBRID};
 	enum class CoreHeuristic { BySample, PreferProjection, PreferSampling };
 	using RootSplittingStrategy = carl::rootfinder::SplittingStrategy;
@@ -24,6 +25,7 @@ namespace cad {
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = true;
 		
+		static constexpr SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Default;
 		static constexpr SampleCompareStrategy sampleComparator = cad::SampleCompareStrategy::Integer;
 		static constexpr FullSampleCompareStrategy fullSampleComparator = cad::FullSampleCompareStrategy::Integer;
 		static constexpr RootSplittingStrategy rootSplittingStrategy = cad::RootSplittingStrategy::DEFAULT;

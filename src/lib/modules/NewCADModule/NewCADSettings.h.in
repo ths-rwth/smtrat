@@ -24,6 +24,7 @@ namespace cad {
 	using IncrementalitySU = IncrementalityMixin<Incrementality::SIMPLE,Backtracking::UNORDERED>;
 	using IncrementalityF = IncrementalityMixin<Incrementality::FULL,Backtracking::UNORDERED>;
 	using IncrementalityFO = IncrementalityMixin<Incrementality::FULL,Backtracking::UNORDERED>;
+	using IncrementalityFU = IncrementalityMixin<Incrementality::FULL,Backtracking::UNORDERED>;
 	
 	/// Mixin that provides settings for the projection operator.
 	template<ProjectionType P>
@@ -51,6 +52,7 @@ namespace cad {
 }
 
 	struct NewCADBaseSettings: cad::MISHeuristicGreedy {
+		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Default;
 		static constexpr cad::RootSplittingStrategy rootSplittingStrategy = cad::RootSplittingStrategy::DEFAULT;
 		static constexpr cad::CoreHeuristic coreHeuristic = cad::CoreHeuristic::PreferSampling;
 		static constexpr std::size_t trivialSampleRadius = 1;
@@ -80,6 +82,27 @@ namespace cad {
 		static constexpr auto moduleName = "NewCADModule<NewCADSU>";
 	};
 	
+	struct NewCADSettingsFU: NewCADBaseSettings, cad::IncrementalityFU, cad::ProjectionBrown, cad::SampleCompareInteger {
+		static constexpr auto moduleName = "NewCADModule<NewCADFU>";
+	};
+	
+	struct NewCADSettingsFU_SC: NewCADSettingsFU {
+		static constexpr auto moduleName = "NewCADModule<NewCADFU_SC>";
+		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Center;
+	};
+	struct NewCADSettingsFU_SI: NewCADSettingsFU {
+		static constexpr auto moduleName = "NewCADModule<NewCADFU_SI>";
+		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::CenterInt;
+	};
+	struct NewCADSettingsFU_SL: NewCADSettingsFU {
+		static constexpr auto moduleName = "NewCADModule<NewCADFU_SL>";
+		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::LeftInt;
+	};
+	struct NewCADSettingsFU_SR: NewCADSettingsFU {
+		static constexpr auto moduleName = "NewCADModule<NewCADFU_SR>";
+		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::RightInt;
+	};
+	
 	struct NewCADSettingsF1: NewCADBaseSettings, cad::IncrementalityF, cad::ProjectionBrown, cad::SampleCompareInteger {
 		static constexpr auto moduleName = "NewCADModule<NewCADF>";
 		static constexpr std::size_t trivialSampleRadius = 1;
@@ -105,17 +128,18 @@ namespace cad {
 		static constexpr auto moduleName = "NewCADModule<NewCADConfigured>";
 		static constexpr cad::Incrementality incrementality = cad::Incrementality::${NEWCAD_INCREMENTALITY};
 		static constexpr cad::Backtracking backtracking = cad::Backtracking::${NEWCAD_BACKTRACKING};
-		static constexpr cad::MISHeuristic misHeuristic = cad::MISHeuristic::${NEWCAD_MISHEURISTIC};
 		
 		static constexpr cad::ProjectionType projectionOperator = cad::ProjectionType::Brown;
-		static constexpr cad::CoreHeuristic coreHeuristic = cad::CoreHeuristic::PreferSampling;
+		static constexpr cad::CoreHeuristic coreHeuristic = cad::CoreHeuristic::PreferProjection;
 		
+		static constexpr cad::MISHeuristic misHeuristic = cad::MISHeuristic::GREEDY;
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = false;
 		static constexpr bool debugProjection = false;
 		static constexpr bool debugStepsToTikz = false;
 		static constexpr bool force_nonincremental = false;
 		
+		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Default;
 		static constexpr cad::SampleCompareStrategy sampleComparator = cad::SampleCompareStrategy::Integer;
 		static constexpr cad::FullSampleCompareStrategy fullSampleComparator = cad::FullSampleCompareStrategy::Integer;
 		static constexpr cad::RootSplittingStrategy rootSplittingStrategy = cad::RootSplittingStrategy::DEFAULT;
