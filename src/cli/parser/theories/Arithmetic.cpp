@@ -28,7 +28,7 @@ namespace parser {
 			result = Poly(boost::get<Rational>(term));
 			return true;
 		} else if (boost::get<carl::Variable>(&term) != nullptr) {
-			switch (boost::get<carl::Variable>(term).getType()) {
+			switch (boost::get<carl::Variable>(term).type()) {
 				case carl::VariableType::VT_REAL:
 				case carl::VariableType::VT_INT:
 					result = Poly(boost::get<carl::Variable>(term));
@@ -231,8 +231,8 @@ namespace parser {
 			errors.next() << "The variable is not an arithmetic variable.";
 			return false;
 		}
-		if ((v.getType() != carl::VariableType::VT_INT) && (v.getType() != carl::VariableType::VT_REAL)) {
-			errors.next() << "Sort is neither \"Int\" nor \"Real\" but \"" << v.getType() << "\".";
+		if ((v.type() != carl::VariableType::VT_INT) && (v.type() != carl::VariableType::VT_REAL)) {
+			errors.next() << "Sort is neither \"Int\" nor \"Real\" but \"" << v.type() << "\".";
 			return false;
 		}
 		Poly repl;
