@@ -11,7 +11,7 @@ namespace cad {
 	enum class FullSampleCompareStrategy { Integer, Numeric, Value };
 	using SampleHeuristic = carl::RANSampleHeuristic;
 	enum class MISHeuristic { TRIVIAL, GREEDY, GREEDY_PRE, GREEDY_WEIGHTED, HYBRID};
-	enum class CoreHeuristic { BySample, PreferProjection, PreferSampling };
+	enum class CoreHeuristic { BySample, PreferProjection, PreferSampling, EnumerateAll };
 	using RootSplittingStrategy = carl::rootfinder::SplittingStrategy;
 
 	struct BaseSettings {

@@ -161,5 +161,46 @@ struct CADCore<CoreHeuristic::PreferSampling> {
 	}
 };
 
+template<>
+struct CADCore<CoreHeuristic::EnumerateAll> {
+	template<typename CAD>
+	Answer operator()(Assignment& assignment, CAD& cad) {
+		cad.mLifting.resetFullSamples();
+		cad.mLifting.restoreRemovedSamples();
+		while (true) {
+			carl::Bitset gotNewPolys = cad.mProjection.projectNewPolynomial();
+			if (gotNewPolys.none()) break;
+		}
+		while (cad.mLifting.hasNextSample()) {
+			auto it = cad.mLifting.getNextSample();
+			Sample& s = *it;
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Sample " << s << " at depth " << it.depth());
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Current sample: " << cad.mLifting.printSample(it));
+			assert(0 <= it.depth() && it.depth() < cad.dim());
+			if (s.hasConflictWithConstraint()) {
+				SMTRAT_LOG_DEBUG("smtrat.cad", "Sample " << s << " already has a conflict.");
+				cad.mLifting.removeNextSample();
+				continue;
+			}
+			auto polyID = cad.mProjection.getPolyForLifting(cad.idLP(it.depth() + 1), s.liftedWith());
+			if (polyID) {
+				const auto& poly = cad.mProjection.getPolynomialById(cad.idLP(it.depth() + 1), *polyID);
+				SMTRAT_LOG_DEBUG("smtrat.cad", "Lifting " << s << " with " << poly);
+				cad.mLifting.liftSample(it, poly, *polyID);
+			} else {
+				cad.mLifting.removeNextSample();
+			}
+		}
+		std::size_t number_of_cells = 0;
+		const auto& tree = cad.mLifting.getTree();
+		for (auto it = tree.begin_leaf(); it != tree.end_leaf(); ++it) {
+			++number_of_cells;
+		}
+		SMTRAT_LOG_INFO("smtrat.cad", "Got " << number_of_cells << " cells");
+		
+		return cad.checkFullSamples(assignment);
+	}
+};
+
 }
 }

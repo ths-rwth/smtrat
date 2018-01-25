@@ -124,6 +124,11 @@ namespace cad {
 		static constexpr auto moduleName = "NewCADModule<NewCADFOV>";
 	};
 	
+	struct NewCADSettingsEnumerateAll: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareInteger {
+		static constexpr auto moduleName = "NewCADModule<NewCADEnumAll>";
+		static constexpr cad::CoreHeuristic coreHeuristic = cad::CoreHeuristic::EnumerateAll;
+	};
+	
 	struct NewCADSettingsConfigured {
 		static constexpr auto moduleName = "NewCADModule<NewCADConfigured>";
 		static constexpr cad::Incrementality incrementality = cad::Incrementality::${NEWCAD_INCREMENTALITY};
