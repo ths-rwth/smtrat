@@ -102,6 +102,14 @@ namespace cad {
 		static constexpr auto moduleName = "NewCADModule<NewCADFU_SR>";
 		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::RightInt;
 	};
+	struct NewCADSettingsFU_SZ: NewCADSettingsFU {
+		static constexpr auto moduleName = "NewCADModule<NewCADFU_SZ>";
+		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::ZeroInt;
+	};
+	struct NewCADSettingsFU_SInf: NewCADSettingsFU {
+		static constexpr auto moduleName = "NewCADModule<NewCADFU_SInf>";
+		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::InftyInt;
+	};
 	
 	struct NewCADSettingsF1: NewCADBaseSettings, cad::IncrementalityF, cad::ProjectionBrown, cad::SampleCompareInteger {
 		static constexpr auto moduleName = "NewCADModule<NewCADF>";
