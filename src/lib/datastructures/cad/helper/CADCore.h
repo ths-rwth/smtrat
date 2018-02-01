@@ -196,9 +196,14 @@ struct CADCore<CoreHeuristic::EnumerateAll> {
 		for (auto it = tree.begin_leaf(); it != tree.end_leaf(); ++it) {
 			++number_of_cells;
 		}
-		SMTRAT_LOG_INFO("smtrat.cad", "Got " << number_of_cells << " cells");
+		SMTRAT_LOG_WARN("smtrat.cad", "Got " << number_of_cells << " cells");
 		
-		return cad.checkFullSamples(assignment);
+		auto assignments = cad.enumerateSolutions();
+		for (const auto& a: assignments) {
+			SMTRAT_LOG_WARN("smtrat.cad", "Solution: " << a);
+		}
+		
+		return assignments.empty() ? Answer::UNSAT : Answer::SAT;
 	}
 };
 
