@@ -203,7 +203,9 @@ struct CADCore<CoreHeuristic::EnumerateAll> {
 			SMTRAT_LOG_WARN("smtrat.cad", "Solution: " << a);
 		}
 		
-		return assignments.empty() ? Answer::UNSAT : Answer::SAT;
+		if (assignments.empty()) return Answer::UNSAT;
+		assignment = assignments.front();
+		return Answer::SAT;
 	}
 };
 
