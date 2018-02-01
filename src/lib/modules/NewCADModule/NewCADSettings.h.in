@@ -42,6 +42,17 @@ namespace cad {
 	using SampleCompareValue = SampleCompareMixin<SampleCompareStrategy::Value, FullSampleCompareStrategy::Value>;
 	using SampleCompareInteger = SampleCompareMixin<SampleCompareStrategy::Integer, FullSampleCompareStrategy::Integer>;
 	
+	using SampleCompareI = SampleCompareMixin<SampleCompareStrategy::I, FullSampleCompareStrategy::I>;
+	using SampleCompareILSA = SampleCompareMixin<SampleCompareStrategy::ILSA, FullSampleCompareStrategy::ILSA>;
+	using SampleCompareISA = SampleCompareMixin<SampleCompareStrategy::ISA, FullSampleCompareStrategy::ISA>;
+	using SampleCompareIS = SampleCompareMixin<SampleCompareStrategy::IS, FullSampleCompareStrategy::IS>;
+	using SampleCompareLI = SampleCompareMixin<SampleCompareStrategy::LI, FullSampleCompareStrategy::LI>;
+	using SampleCompareLIA = SampleCompareMixin<SampleCompareStrategy::LIA, FullSampleCompareStrategy::LIA>;
+	using SampleCompareLIS = SampleCompareMixin<SampleCompareStrategy::LIS, FullSampleCompareStrategy::LIS>;
+	using SampleCompareLISA = SampleCompareMixin<SampleCompareStrategy::LISA, FullSampleCompareStrategy::LISA>;
+	using SampleCompareLS = SampleCompareMixin<SampleCompareStrategy::LS, FullSampleCompareStrategy::LS>;
+	using SampleCompareS = SampleCompareMixin<SampleCompareStrategy::S, FullSampleCompareStrategy::S>;	
+	
 	/// Mixin that provides settings for MIS generation
 	template<MISHeuristic MIS>
 	struct MISHeuristicMixin {
@@ -109,6 +120,37 @@ namespace cad {
 	struct NewCADSettingsFU_SInf: NewCADSettingsFU {
 		static constexpr auto moduleName = "NewCADModule<NewCADFU_SInf>";
 		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::InftyInt;
+	};
+	
+	struct NewCADSettingsFU_SCI: NewCADSettingsFU, SampleCompareI {
+		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCI>";
+	};
+	struct NewCADSettingsFU_SCILSA: NewCADSettingsFU, SampleCompareILSA {
+		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCILSA>";
+	};
+	struct NewCADSettingsFU_SCISA: NewCADSettingsFU, SampleCompareISA {
+		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCISA>";
+	};
+	struct NewCADSettingsFU_SCIS: NewCADSettingsFU, SampleCompareIS {
+		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCIS>";
+	};
+	struct NewCADSettingsFU_SCLI: NewCADSettingsFU, SampleCompareLI {
+		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCLI>";
+	};
+	struct NewCADSettingsFU_SCLIA: NewCADSettingsFU, SampleCompareLIA {
+		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCLIA>";
+	};
+	struct NewCADSettingsFU_SCLIS: NewCADSettingsFU, SampleCompareLIS {
+		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCLIS>";
+	};
+	struct NewCADSettingsFU_SCLISA: NewCADSettingsFU, SampleCompareLISA {
+		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCLISA>";
+	};
+	struct NewCADSettingsFU_SCLS: NewCADSettingsFU, SampleCompareLS {
+		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCLS>";
+	};
+	struct NewCADSettingsFU_SCS: NewCADSettingsFU, SampleCompareS {
+		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCS>";
 	};
 	
 	struct NewCADSettingsF1: NewCADBaseSettings, cad::IncrementalityF, cad::ProjectionBrown, cad::SampleCompareInteger {
