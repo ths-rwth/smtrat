@@ -94,8 +94,8 @@ namespace cad {
 		}
 		void removeConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing " << c);
-			std::size_t id = mConstraints.remove(c);
-			mLifting.removedConstraint(carl::Bitset({id}));
+			auto mask = mConstraints.remove(c);
+			mLifting.removedConstraint(mask);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current sampletree:" << std::endl << mLifting.getTree());
 		}

@@ -112,12 +112,18 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.cad.constraints", "Added " << c << " to " << std::endl << *this);
 		return id;
 	}
-	std::size_t remove(const ConstraintT& c) {
+	
+	/**
+	 * Removes a constraint.
+	 * Returns the set of constraint ids that have (possibly) been reassigned and should be cleared from the sample evaluations.
+	 */
+	carl::Bitset remove(const ConstraintT& c) {
 		SMTRAT_LOG_DEBUG("smtrat.cad.constraints", "Removing " << c << " from " << std::endl << *this);
 		bool isBound = mBounds.removeBound(c, c);
 		auto it = mConstraintMap.find(c);
 		assert(it != mConstraintMap.end());
 		std::size_t id = it->second;
+		carl::Bitset res = {id};
 		mSatByBounds.reset(id);
 		mUnsatByBounds.reset(id);
 		assert(mConstraintIts[id] == it);
@@ -128,7 +134,7 @@ public:
 			while (mConstraintIts.back()->second > id) {
 				SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Preliminary removal of " << mConstraintIts.back()->first);
 				cache.push(mConstraintIts.back()->first);
-				remove(mConstraintIts.back()->first);
+				res |= remove(mConstraintIts.back()->first);
 			}
 			// Remove c
 			SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Actual removal of " << mConstraintIts.back()->first);
@@ -150,7 +156,7 @@ public:
 			mIDPool.free(id);
 		}
 		SMTRAT_LOG_DEBUG("smtrat.cad.constraints", "Removed " << c << " from " << std::endl << *this);
-		return id;
+		return res;
 	}
 	const ConstraintT& operator[](std::size_t id) const {
 		assert(id < mConstraintIts.size());
