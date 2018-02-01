@@ -50,10 +50,10 @@ namespace sample_compare {
 		auto l = get(lhs, t);
 		auto r = get(rhs, t);
 		if (l == r) {
-			SMTRAT_LOG_DEBUG("smtrat.cad.samplecompare", "Comparing " << l << " < " << r << " -> 0");
+			SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", "Comparing " << l << " < " << r << " -> 0");
 			return 0;
 		}
-		SMTRAT_LOG_DEBUG("smtrat.cad.samplecompare", "Comparing " << l << " < " << r << " ? " << (f(l, r) ? -1 : 1));
+		SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", "Comparing " << l << " < " << r << " ? " << (f(l, r) ? -1 : 1));
 		return f(l, r) ? -1 : 1;
 	}
 	
@@ -72,7 +72,7 @@ namespace sample_compare {
 	struct SampleComparator_impl {
 		bool operator()(const It& lhs, const It& rhs) const {
 			auto res = compare<It, Args...>(lhs, rhs);
-			SMTRAT_LOG_DEBUG("smtrat.cad.samplecompare", *lhs << " < " << *rhs << " ? " << res);
+			SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", *lhs << " < " << *rhs << " ? " << res);
 			return res;
 		}
 	};
@@ -94,6 +94,37 @@ namespace sample_compare {
 	template<typename Iterator>
 	struct SampleComparator<Iterator, SampleCompareStrategy::Integer>:
 		SampleComparator_impl<Iterator, integer, gt, numeric, gt, size, lt> {};
+	
+	template<typename Iterator>
+	struct SampleComparator<Iterator, SampleCompareStrategy::I>:
+		SampleComparator_impl<Iterator, integer, gt> {};
+	template<typename Iterator>
+	struct SampleComparator<Iterator, SampleCompareStrategy::ILSA>:
+		SampleComparator_impl<Iterator, integer, gt, level, gt, size, lt, absvalue, lt> {};
+	template<typename Iterator>
+	struct SampleComparator<Iterator, SampleCompareStrategy::ISA>:
+		SampleComparator_impl<Iterator, integer, gt, size, lt, absvalue, lt> {};
+	template<typename Iterator>
+	struct SampleComparator<Iterator, SampleCompareStrategy::IS>:
+		SampleComparator_impl<Iterator, integer, gt, size, lt> {};
+	template<typename Iterator>
+	struct SampleComparator<Iterator, SampleCompareStrategy::LI>:
+		SampleComparator_impl<Iterator, level, gt, integer, gt> {};
+	template<typename Iterator>
+	struct SampleComparator<Iterator, SampleCompareStrategy::LIA>:
+		SampleComparator_impl<Iterator, level, gt, integer, gt, absvalue, lt> {};
+	template<typename Iterator>
+	struct SampleComparator<Iterator, SampleCompareStrategy::LIS>:
+		SampleComparator_impl<Iterator, level, gt, integer, gt, size, lt> {};
+	template<typename Iterator>
+	struct SampleComparator<Iterator, SampleCompareStrategy::LISA>:
+		SampleComparator_impl<Iterator, level, gt, integer, gt, size, lt, absvalue, lt> {};
+	template<typename Iterator>
+	struct SampleComparator<Iterator, SampleCompareStrategy::LS>:
+		SampleComparator_impl<Iterator, level, gt, size, lt> {};
+	template<typename Iterator>
+	struct SampleComparator<Iterator, SampleCompareStrategy::S>:
+		SampleComparator_impl<Iterator, size, lt> {};
 }
 
 	using sample_compare::SampleComparator;

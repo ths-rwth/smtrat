@@ -7,7 +7,19 @@ namespace cad {
 	enum class Incrementality { NONE, SIMPLE, FULL };
 	enum class Backtracking { ORDERED, UNORDERED, HIDE };
 	enum class ProjectionType { Brown, McCallum, Hong };
-	enum class SampleCompareStrategy { Integer, Numeric, Value };
+	enum class SampleCompareStrategy { 
+		I,
+		ILSA,
+		ISA,
+		IS,
+		LI,
+		LIA,
+		LIS,
+		LISA,
+		LS,
+		S,
+		Integer, Numeric, Value
+	};
 	enum class FullSampleCompareStrategy { Integer, Numeric, Value };
 	using SampleHeuristic = carl::RANSampleHeuristic;
 	enum class MISHeuristic { TRIVIAL, GREEDY, GREEDY_PRE, GREEDY_WEIGHTED, HYBRID};
