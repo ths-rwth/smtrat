@@ -86,7 +86,6 @@ public:
 			mDuplicateAssignments.erase(dait);
 		} else {
 			auto it = mModel.find(v);
-			if (it == mModel.end()) std::quick_exit(55);
 			assert(it != mModel.end());
 			mModel.erase(it);
 			auto ait = mAssignments.find(v);
