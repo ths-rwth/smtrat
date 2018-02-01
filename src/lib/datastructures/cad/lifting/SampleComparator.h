@@ -38,7 +38,9 @@ namespace sample_compare {
 	}
 	template<typename It>
 	auto get(const It& it, integer) {
-		return it->value().isIntegral();
+		if (!it->value().isNumeric()) return 0;
+		if (!it->value().isIntegral()) return 1;
+		return 2;
 	}
 
 	/**
@@ -93,7 +95,7 @@ namespace sample_compare {
 
 	template<typename Iterator>
 	struct SampleComparator<Iterator, SampleCompareStrategy::Integer>:
-		SampleComparator_impl<Iterator, integer, gt, numeric, gt, size, lt> {};
+		SampleComparator_impl<Iterator, integer, gt, size, lt> {};
 	
 	template<typename Iterator>
 	struct SampleComparator<Iterator, SampleCompareStrategy::I>:
