@@ -73,27 +73,27 @@ namespace cad {
 		static constexpr bool force_nonincremental = false;
 	};
 	
-	struct NewCADSettingsNaive: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareInteger {
+	struct NewCADSettingsNaive: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareType {
 		static constexpr auto moduleName = "NewCADModule<Naive>";
 		static constexpr bool force_nonincremental = true;
 	};
 	
-	struct NewCADSettingsNO: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareInteger {
+	struct NewCADSettingsNO: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareType {
 		static constexpr auto moduleName = "NewCADModule<NewCADNO>";
 	};
 	
-	struct NewCADSettingsNU: NewCADBaseSettings, cad::IncrementalityNU, cad::ProjectionBrown, cad::SampleCompareInteger {
+	struct NewCADSettingsNU: NewCADBaseSettings, cad::IncrementalityNU, cad::ProjectionBrown, cad::SampleCompareType {
 		static constexpr auto moduleName = "NewCADModule<NewCADNU>";
 	};
 	
-	struct NewCADSettingsSO: NewCADBaseSettings, cad::IncrementalitySO, cad::ProjectionBrown, cad::SampleCompareInteger {
+	struct NewCADSettingsSO: NewCADBaseSettings, cad::IncrementalitySO, cad::ProjectionBrown, cad::SampleCompareType {
 		static constexpr auto moduleName = "NewCADModule<NewCADSO>";
 	};
-	struct NewCADSettingsSU: NewCADBaseSettings, cad::IncrementalitySU, cad::ProjectionBrown, cad::SampleCompareInteger {
+	struct NewCADSettingsSU: NewCADBaseSettings, cad::IncrementalitySU, cad::ProjectionBrown, cad::SampleCompareType {
 		static constexpr auto moduleName = "NewCADModule<NewCADSU>";
 	};
 	
-	struct NewCADSettingsFU: NewCADBaseSettings, cad::IncrementalityFU, cad::ProjectionBrown, cad::SampleCompareInteger {
+	struct NewCADSettingsFU: NewCADBaseSettings, cad::IncrementalityFU, cad::ProjectionBrown, cad::SampleCompareType {
 		static constexpr auto moduleName = "NewCADModule<NewCADFU>";
 	};
 	
@@ -163,15 +163,15 @@ namespace cad {
 	};
 	// end of lifting order heuristics
 	
-	struct NewCADSettingsF1: NewCADBaseSettings, cad::IncrementalityF, cad::ProjectionBrown, cad::SampleCompareInteger {
+	struct NewCADSettingsF1: NewCADBaseSettings, cad::IncrementalityF, cad::ProjectionBrown, cad::SampleCompareType {
 		static constexpr auto moduleName = "NewCADModule<NewCADF>";
 		static constexpr std::size_t trivialSampleRadius = 1;
 	};
-	struct NewCADSettingsFO1: NewCADBaseSettings, cad::IncrementalityFO, cad::ProjectionBrown, cad::SampleCompareInteger {
+	struct NewCADSettingsFO1: NewCADBaseSettings, cad::IncrementalityFO, cad::ProjectionBrown, cad::SampleCompareType {
 		static constexpr auto moduleName = "NewCADModule<NewCADFO>";
 		static constexpr std::size_t trivialSampleRadius = 1;
 	};
-	struct NewCADSettingsFOS: NewCADBaseSettings, cad::IncrementalityFO, cad::ProjectionBrown, cad::SampleCompareInteger {
+	struct NewCADSettingsFOS: NewCADBaseSettings, cad::IncrementalityFO, cad::ProjectionBrown, cad::SampleCompareType {
 		static constexpr auto moduleName = "NewCADModule<NewCADFO>";
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = false;
@@ -184,7 +184,7 @@ namespace cad {
 		static constexpr auto moduleName = "NewCADModule<NewCADFOV>";
 	};
 	
-	struct NewCADSettingsEnumerateAll: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareInteger {
+	struct NewCADSettingsEnumerateAll: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareType {
 		static constexpr auto moduleName = "NewCADModule<NewCADEnumAll>";
 		static constexpr cad::CoreHeuristic coreHeuristic = cad::CoreHeuristic::EnumerateAll;
 	};
@@ -205,8 +205,8 @@ namespace cad {
 		static constexpr bool force_nonincremental = false;
 		
 		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Default;
-		static constexpr cad::SampleCompareStrategy sampleComparator = cad::SampleCompareStrategy::Integer;
-		static constexpr cad::FullSampleCompareStrategy fullSampleComparator = cad::FullSampleCompareStrategy::Integer;
+		static constexpr cad::SampleCompareStrategy sampleComparator = cad::SampleCompareStrategy::Default;
+		static constexpr cad::FullSampleCompareStrategy fullSampleComparator = cad::FullSampleCompareStrategy::Default;
 		static constexpr cad::RootSplittingStrategy rootSplittingStrategy = cad::RootSplittingStrategy::DEFAULT;
 	};
 }

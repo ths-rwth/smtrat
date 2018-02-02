@@ -8,19 +8,20 @@ namespace cad {
 	enum class Backtracking { ORDERED, UNORDERED, HIDE };
 	enum class ProjectionType { Brown, McCallum, Hong };
 	enum class SampleCompareStrategy { 
-		I,
-		ILSA,
-		ISA,
-		IS,
-		LI,
-		LIA,
-		LIS,
-		LISA,
+		T,
+		TLSA,
+		TSA,
+		TS,
+		LT,
+		LTA,
+		LTS,
+		LTSA,
 		LS,
 		S,
-		Type, Value
+		Type, Value,
+		Default = Type
 	};
-	enum class FullSampleCompareStrategy { Type, Value };
+	enum class FullSampleCompareStrategy { Type, Value, Default = Type };
 	using SampleHeuristic = carl::RANSampleHeuristic;
 	enum class MISHeuristic { TRIVIAL, GREEDY, GREEDY_PRE, GREEDY_WEIGHTED, HYBRID};
 	enum class CoreHeuristic { BySample, PreferProjection, PreferSampling, EnumerateAll };
@@ -38,8 +39,8 @@ namespace cad {
 		static constexpr bool simplifyProjectionByBounds = true;
 		
 		static constexpr SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Default;
-		static constexpr SampleCompareStrategy sampleComparator = cad::SampleCompareStrategy::Integer;
-		static constexpr FullSampleCompareStrategy fullSampleComparator = cad::FullSampleCompareStrategy::Integer;
+		static constexpr SampleCompareStrategy sampleComparator = cad::SampleCompareStrategy::Default;
+		static constexpr FullSampleCompareStrategy fullSampleComparator = cad::FullSampleCompareStrategy::Default;
 		static constexpr RootSplittingStrategy rootSplittingStrategy = cad::RootSplittingStrategy::DEFAULT;
 	};
 }

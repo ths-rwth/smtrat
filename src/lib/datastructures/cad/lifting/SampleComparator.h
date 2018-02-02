@@ -90,31 +90,31 @@ namespace sample_compare {
 	
 	template<typename Iterator>
 	struct SampleComparator<Iterator, SampleCompareStrategy::Type> {
-		bool operator()(const It& lhs, const It& rhs) const {
+		bool operator()(const Iterator& lhs, const Iterator& rhs) const {
 			assert(compare(lhs, rhs) == reference(lhs, rhs));
 			return compare(lhs, rhs);
 		}
-		bool reference(const It& lhs, const It& rhs) const {
+		bool reference(const Iterator& lhs, const Iterator& rhs) const {
 			SampleComparator_impl<Iterator, type, gt, size, lt, absvalue, lt> sc;
 			return sc(lhs, rhs);
 		}
-		bool compare(const It& lhs, const It& rhs) const {
+		bool compare(const Iterator& lhs, const Iterator& rhs) const {
 			bool l1 = lhs->value().isIntegral();
 			bool r1 = rhs->value().isIntegral();
 			if (l1 != r1) {
-				SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Int " << rint);
+				SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Int " << r1);
 				return r1;
 			}
 			bool l2 = lhs->value().isNumeric();
 			bool r2 = rhs->value().isNumeric();
 			if (l2 != r2) {
-				SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Num " << rint);
+				SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Num " << r2);
 				return r2;
 			}
 			std::size_t l3 = lhs->value().size();
 			std::size_t r3 = rhs->value().size();
 			if (l3 != r3) {
-				SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Size (" << lsize << " / " << rsize << ") " << (lsize > rsize));
+				SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Size (" << l3 << " / " << r3 << ") " << (l3 > r3));
 				return l3 > r3;
 			}
 			SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Absolute " << (lhs->value().abs() > rhs->value().abs()));
@@ -123,28 +123,28 @@ namespace sample_compare {
 	};
 	
 	template<typename Iterator>
-	struct SampleComparator<Iterator, SampleCompareStrategy::I>:
+	struct SampleComparator<Iterator, SampleCompareStrategy::T>:
 		SampleComparator_impl<Iterator, type, gt> {};
 	template<typename Iterator>
-	struct SampleComparator<Iterator, SampleCompareStrategy::ILSA>:
+	struct SampleComparator<Iterator, SampleCompareStrategy::TLSA>:
 		SampleComparator_impl<Iterator, type, gt, level, gt, size, lt, absvalue, lt> {};
 	template<typename Iterator>
-	struct SampleComparator<Iterator, SampleCompareStrategy::ISA>:
+	struct SampleComparator<Iterator, SampleCompareStrategy::TSA>:
 		SampleComparator_impl<Iterator, type, gt, size, lt, absvalue, lt> {};
 	template<typename Iterator>
-	struct SampleComparator<Iterator, SampleCompareStrategy::IS>:
+	struct SampleComparator<Iterator, SampleCompareStrategy::TS>:
 		SampleComparator_impl<Iterator, type, gt, size, lt> {};
 	template<typename Iterator>
-	struct SampleComparator<Iterator, SampleCompareStrategy::LI>:
+	struct SampleComparator<Iterator, SampleCompareStrategy::LT>:
 		SampleComparator_impl<Iterator, level, gt, type, gt> {};
 	template<typename Iterator>
-	struct SampleComparator<Iterator, SampleCompareStrategy::LIA>:
+	struct SampleComparator<Iterator, SampleCompareStrategy::LTA>:
 		SampleComparator_impl<Iterator, level, gt, type, gt, absvalue, lt> {};
 	template<typename Iterator>
-	struct SampleComparator<Iterator, SampleCompareStrategy::LIS>:
+	struct SampleComparator<Iterator, SampleCompareStrategy::LTS>:
 		SampleComparator_impl<Iterator, level, gt, type, gt, size, lt> {};
 	template<typename Iterator>
-	struct SampleComparator<Iterator, SampleCompareStrategy::LISA>:
+	struct SampleComparator<Iterator, SampleCompareStrategy::LTSA>:
 		SampleComparator_impl<Iterator, level, gt, type, gt, size, lt, absvalue, lt> {};
 	template<typename Iterator>
 	struct SampleComparator<Iterator, SampleCompareStrategy::LS>:
