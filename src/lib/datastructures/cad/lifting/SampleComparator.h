@@ -61,7 +61,7 @@ namespace sample_compare {
 	template<typename It, typename tag, typename F, typename... Tail>
 	bool compare(const It& lhs, const It& rhs) {
 		int res = compareCriterion(lhs, rhs, tag{}, F{});
-		if (res != 0) return res < 0;
+		if (res != 0) return res > 0;
 		return compare<It, Tail...>(lhs, rhs);
 	}
 	
@@ -91,34 +91,41 @@ namespace sample_compare {
 	template<typename Iterator>
 	struct SampleComparator<Iterator, SampleCompareStrategy::Type> {
 		bool operator()(const Iterator& lhs, const Iterator& rhs) const {
-			assert(compare(lhs, rhs) == reference(lhs, rhs));
-			return compare(lhs, rhs);
+			SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", *lhs << " < " << *rhs << "?");
+			auto c = compare(lhs, rhs);
+			auto r = reference(lhs, rhs);
+			SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", "-> " << c << " / " << r);
+			assert(c == r);
+			return c;
 		}
 		bool reference(const Iterator& lhs, const Iterator& rhs) const {
 			SampleComparator_impl<Iterator, type, gt, size, lt, absvalue, lt> sc;
-			return sc(lhs, rhs);
+			auto res = sc(lhs, rhs);
+			SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", *lhs << " < " << *rhs << " -> " << res);
+			return res;
 		}
 		bool compare(const Iterator& lhs, const Iterator& rhs) const {
 			bool l1 = lhs->value().isIntegral();
 			bool r1 = rhs->value().isIntegral();
 			if (l1 != r1) {
-				SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Int " << r1);
+				SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", lhs->value() << " < " << rhs->value() << ": Int " << r1);
 				return r1;
 			}
 			bool l2 = lhs->value().isNumeric();
 			bool r2 = rhs->value().isNumeric();
 			if (l2 != r2) {
-				SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Num " << r2);
+				SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", lhs->value() << " < " << rhs->value() << ": Num " << r2);
 				return r2;
 			}
 			std::size_t l3 = lhs->value().size();
 			std::size_t r3 = rhs->value().size();
 			if (l3 != r3) {
-				SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Size (" << l3 << " / " << r3 << ") " << (l3 > r3));
+				SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", lhs->value() << " < " << rhs->value() << ": Size (" << l3 << " / " << r3 << ") " << (l3 > r3));
 				return l3 > r3;
 			}
-			SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Absolute " << (lhs->value().abs() > rhs->value().abs()));
-			return lhs->value().abs() > rhs->value().abs();
+			SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", lhs->value() << " < " << rhs->value() << ": Absolute " << (lhs->value().abs() >= rhs->value().abs()));
+			if (lhs->value().abs() != rhs->value().abs()) return lhs->value().abs() >= rhs->value().abs();
+			return lhs < rhs;
 		}
 	};
 	
