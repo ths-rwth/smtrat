@@ -124,41 +124,41 @@ namespace cad {
 	
 	
 	//
-	// Settings to test different sample comparator heuristics
+	// Settings to test different lifting order heuristics
 	//
-	struct NewCADBaseSettingsFU_SC: NewCADBaseSettings, cad::IncrementalityFU, cad::ProjectionBrown {};
+	struct NewCADBaseSettingsLO: NewCADBaseSettings, cad::IncrementalityFU, cad::ProjectionBrown {};
 	
-	struct NewCADSettingsFU_SCI: NewCADBaseSettingsFU_SC, cad::SampleCompareI {
+	struct NewCADSettings_LOI: NewCADBaseSettingsLO, cad::SampleCompareI {
 		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCI>";
 	};
-	struct NewCADSettingsFU_SCILSA: NewCADBaseSettingsFU_SC, cad::SampleCompareILSA {
+	struct NewCADSettings_LOILSA: NewCADBaseSettingsLO, cad::SampleCompareILSA {
 		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCILSA>";
 	};
-	struct NewCADSettingsFU_SCISA: NewCADBaseSettingsFU_SC, cad::SampleCompareISA {
+	struct NewCADSettings_LOISA: NewCADBaseSettingsLO, cad::SampleCompareISA {
 		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCISA>";
 	};
-	struct NewCADSettingsFU_SCIS: NewCADBaseSettingsFU_SC, cad::SampleCompareIS {
+	struct NewCADSettings_LOIS: NewCADBaseSettingsLO, cad::SampleCompareIS {
 		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCIS>";
 	};
-	struct NewCADSettingsFU_SCLI: NewCADBaseSettingsFU_SC, cad::SampleCompareLI {
+	struct NewCADSettings_LOLI: NewCADBaseSettingsLO, cad::SampleCompareLI {
 		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCLI>";
 	};
-	struct NewCADSettingsFU_SCLIA: NewCADBaseSettingsFU_SC, cad::SampleCompareLIA {
+	struct NewCADSettings_LOLIA: NewCADBaseSettingsLO, cad::SampleCompareLIA {
 		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCLIA>";
 	};
-	struct NewCADSettingsFU_SCLIS: NewCADBaseSettingsFU_SC, cad::SampleCompareLIS {
+	struct NewCADSettings_LOLIS: NewCADBaseSettingsLO, cad::SampleCompareLIS {
 		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCLIS>";
 	};
-	struct NewCADSettingsFU_SCLISA: NewCADBaseSettingsFU_SC, cad::SampleCompareLISA {
+	struct NewCADSettings_LOLISA: NewCADBaseSettingsLO, cad::SampleCompareLISA {
 		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCLISA>";
 	};
-	struct NewCADSettingsFU_SCLS: NewCADBaseSettingsFU_SC, cad::SampleCompareLS {
+	struct NewCADSettings_LOLS: NewCADBaseSettingsLO, cad::SampleCompareLS {
 		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCLS>";
 	};
-	struct NewCADSettingsFU_SCS: NewCADBaseSettingsFU_SC, cad::SampleCompareS {
+	struct NewCADSettings_LOS: NewCADBaseSettingsLO, cad::SampleCompareS {
 		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCS>";
 	};
-	// end of sample comparator heuristics
+	// end of lifting order heuristics
 	
 	struct NewCADSettingsF1: NewCADBaseSettings, cad::IncrementalityF, cad::ProjectionBrown, cad::SampleCompareInteger {
 		static constexpr auto moduleName = "NewCADModule<NewCADF>";
