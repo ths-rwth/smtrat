@@ -84,9 +84,43 @@ namespace sample_compare {
 	struct SampleComparator<Iterator, SampleCompareStrategy::Value>:
 		SampleComparator_impl<Iterator, size, lt> {};
 
+	//template<typename Iterator>
+	//struct SampleComparator<Iterator, SampleCompareStrategy::Type>:
+	//	SampleComparator_impl<Iterator, type, gt, size, lt> {};
+	
 	template<typename Iterator>
-	struct SampleComparator<Iterator, SampleCompareStrategy::Type>:
-		SampleComparator_impl<Iterator, type, gt, size, lt> {};
+	struct SampleComparator<Iterator, SampleCompareStrategy::Type> {
+		bool operator()(const It& lhs, const It& rhs) const {
+			assert(compare(lhs, rhs) == reference(lhs, rhs));
+			return compare(lhs, rhs);
+		}
+		bool reference(const It& lhs, const It& rhs) const {
+			SampleComparator_impl<Iterator, type, gt, size, lt, absvalue, lt> sc;
+			return sc(lhs, rhs);
+		}
+		bool compare(const It& lhs, const It& rhs) const {
+			bool l1 = lhs->value().isIntegral();
+			bool r1 = rhs->value().isIntegral();
+			if (l1 != r1) {
+				SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Int " << rint);
+				return r1;
+			}
+			bool l2 = lhs->value().isNumeric();
+			bool r2 = rhs->value().isNumeric();
+			if (l2 != r2) {
+				SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Num " << rint);
+				return r2;
+			}
+			std::size_t l3 = lhs->value().size();
+			std::size_t r3 = rhs->value().size();
+			if (l3 != r3) {
+				SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Size (" << lsize << " / " << rsize << ") " << (lsize > rsize));
+				return l3 > r3;
+			}
+			SMTRAT_LOG_TRACE("smtrat.cad.lifting", lhs->value() << " < " << rhs->value() << ": Absolute " << (lhs->value().abs() > rhs->value().abs()));
+			return lhs->value().abs() > rhs->value().abs();
+		}
+	};
 	
 	template<typename Iterator>
 	struct SampleComparator<Iterator, SampleCompareStrategy::I>:

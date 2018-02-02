@@ -40,18 +40,18 @@ namespace cad {
 		static constexpr cad::FullSampleCompareStrategy fullSampleComparator = FSCS;
 	};
 	using SampleCompareValue = SampleCompareMixin<SampleCompareStrategy::Value, FullSampleCompareStrategy::Value>;
-	using SampleCompareInteger = SampleCompareMixin<SampleCompareStrategy::Integer, FullSampleCompareStrategy::Integer>;
+	using SampleCompareType = SampleCompareMixin<SampleCompareStrategy::Type, FullSampleCompareStrategy::Type>;
 	
-	using SampleCompareI = SampleCompareMixin<SampleCompareStrategy::I, FullSampleCompareStrategy::Integer>;
-	using SampleCompareILSA = SampleCompareMixin<SampleCompareStrategy::ILSA, FullSampleCompareStrategy::Integer>;
-	using SampleCompareISA = SampleCompareMixin<SampleCompareStrategy::ISA, FullSampleCompareStrategy::Integer>;
-	using SampleCompareIS = SampleCompareMixin<SampleCompareStrategy::IS, FullSampleCompareStrategy::Integer>;
-	using SampleCompareLI = SampleCompareMixin<SampleCompareStrategy::LI, FullSampleCompareStrategy::Integer>;
-	using SampleCompareLIA = SampleCompareMixin<SampleCompareStrategy::LIA, FullSampleCompareStrategy::Integer>;
-	using SampleCompareLIS = SampleCompareMixin<SampleCompareStrategy::LIS, FullSampleCompareStrategy::Integer>;
-	using SampleCompareLISA = SampleCompareMixin<SampleCompareStrategy::LISA, FullSampleCompareStrategy::Integer>;
-	using SampleCompareLS = SampleCompareMixin<SampleCompareStrategy::LS, FullSampleCompareStrategy::Integer>;
-	using SampleCompareS = SampleCompareMixin<SampleCompareStrategy::S, FullSampleCompareStrategy::Integer>;	
+	using SampleCompareT = SampleCompareMixin<SampleCompareStrategy::T, FullSampleCompareStrategy::Type>;
+	using SampleCompareTLSA = SampleCompareMixin<SampleCompareStrategy::TLSA, FullSampleCompareStrategy::Type>;
+	using SampleCompareTSA = SampleCompareMixin<SampleCompareStrategy::TSA, FullSampleCompareStrategy::Type>;
+	using SampleCompareTS = SampleCompareMixin<SampleCompareStrategy::TS, FullSampleCompareStrategy::Type>;
+	using SampleCompareLT = SampleCompareMixin<SampleCompareStrategy::LT, FullSampleCompareStrategy::Type>;
+	using SampleCompareLTA = SampleCompareMixin<SampleCompareStrategy::LTA, FullSampleCompareStrategy::Type>;
+	using SampleCompareLTS = SampleCompareMixin<SampleCompareStrategy::LTS, FullSampleCompareStrategy::Type>;
+	using SampleCompareLTSA = SampleCompareMixin<SampleCompareStrategy::LTSA, FullSampleCompareStrategy::Type>;
+	using SampleCompareLS = SampleCompareMixin<SampleCompareStrategy::LS, FullSampleCompareStrategy::Type>;
+	using SampleCompareS = SampleCompareMixin<SampleCompareStrategy::S, FullSampleCompareStrategy::Type>;
 	
 	/// Mixin that provides settings for MIS generation
 	template<MISHeuristic MIS>
@@ -128,35 +128,38 @@ namespace cad {
 	//
 	struct NewCADBaseSettingsLO: NewCADBaseSettings, cad::IncrementalityFU, cad::ProjectionBrown {};
 	
-	struct NewCADSettings_LOI: NewCADBaseSettingsLO, cad::SampleCompareI {
-		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCI>";
+	struct NewCADSettings_LOType: NewCADBaseSettingsLO, cad::SampleCompareType {
+		static constexpr auto moduleName = "NewCADModule<NewCAD_LOType>";
 	};
-	struct NewCADSettings_LOILSA: NewCADBaseSettingsLO, cad::SampleCompareILSA {
-		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCILSA>";
+	struct NewCADSettings_LOT: NewCADBaseSettingsLO, cad::SampleCompareT {
+		static constexpr auto moduleName = "NewCADModule<NewCAD_LOT>";
 	};
-	struct NewCADSettings_LOISA: NewCADBaseSettingsLO, cad::SampleCompareISA {
-		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCISA>";
+	struct NewCADSettings_LOTLSA: NewCADBaseSettingsLO, cad::SampleCompareTLSA {
+		static constexpr auto moduleName = "NewCADModule<NewCAD_LOTLSA>";
 	};
-	struct NewCADSettings_LOIS: NewCADBaseSettingsLO, cad::SampleCompareIS {
-		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCIS>";
+	struct NewCADSettings_LOTSA: NewCADBaseSettingsLO, cad::SampleCompareTSA {
+		static constexpr auto moduleName = "NewCADModule<NewCAD_LOTSA>";
 	};
-	struct NewCADSettings_LOLI: NewCADBaseSettingsLO, cad::SampleCompareLI {
-		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCLI>";
+	struct NewCADSettings_LOTS: NewCADBaseSettingsLO, cad::SampleCompareTS {
+		static constexpr auto moduleName = "NewCADModule<NewCAD_LOTS>";
 	};
-	struct NewCADSettings_LOLIA: NewCADBaseSettingsLO, cad::SampleCompareLIA {
-		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCLIA>";
+	struct NewCADSettings_LOLT: NewCADBaseSettingsLO, cad::SampleCompareLT {
+		static constexpr auto moduleName = "NewCADModule<NewCAD_LOLT>";
 	};
-	struct NewCADSettings_LOLIS: NewCADBaseSettingsLO, cad::SampleCompareLIS {
-		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCLIS>";
+	struct NewCADSettings_LOLTA: NewCADBaseSettingsLO, cad::SampleCompareLTA {
+		static constexpr auto moduleName = "NewCADModule<NewCADLOLTA>";
 	};
-	struct NewCADSettings_LOLISA: NewCADBaseSettingsLO, cad::SampleCompareLISA {
-		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCLISA>";
+	struct NewCADSettings_LOLTS: NewCADBaseSettingsLO, cad::SampleCompareLTS {
+		static constexpr auto moduleName = "NewCADModule<NewCAD_LOLTS>";
+	};
+	struct NewCADSettings_LOLTSA: NewCADBaseSettingsLO, cad::SampleCompareLTSA {
+		static constexpr auto moduleName = "NewCADModule<NewCAD_LOLTSA>";
 	};
 	struct NewCADSettings_LOLS: NewCADBaseSettingsLO, cad::SampleCompareLS {
-		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCLS>";
+		static constexpr auto moduleName = "NewCADModule<NewCADLOLS>";
 	};
 	struct NewCADSettings_LOS: NewCADBaseSettingsLO, cad::SampleCompareS {
-		static constexpr auto moduleName = "NewCADModule<NewCADFU_SCS>";
+		static constexpr auto moduleName = "NewCADModule<NewCAD_LOS>";
 	};
 	// end of lifting order heuristics
 	
