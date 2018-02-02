@@ -7,13 +7,13 @@
 
 namespace smtrat
 {
-	class NewCAD_LOLISA: public Manager
+	class NewCAD_LOLTA: public Manager
 	{
 		public:
-			NewCAD_LOLISA(): Manager() {
+			NewCAD_LOLTA(): Manager() {
 				setStrategy(
 					addBackend<SATModule<SATSettings1>>(
-						addBackend<NewCADModule<NewCADSettings_LOLISA>>()
+						addBackend<NewCADModule<NewCADSettings_LOLTA>>()
 					)
 				);
 			}

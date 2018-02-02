@@ -18,9 +18,9 @@ namespace cad {
 		LISA,
 		LS,
 		S,
-		Integer, Numeric, Value
+		Type, Value
 	};
-	enum class FullSampleCompareStrategy { Integer, Numeric, Value };
+	enum class FullSampleCompareStrategy { Type, Value };
 	using SampleHeuristic = carl::RANSampleHeuristic;
 	enum class MISHeuristic { TRIVIAL, GREEDY, GREEDY_PRE, GREEDY_WEIGHTED, HYBRID};
 	enum class CoreHeuristic { BySample, PreferProjection, PreferSampling, EnumerateAll };
