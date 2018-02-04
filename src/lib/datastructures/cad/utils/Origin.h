@@ -24,6 +24,9 @@ public:
 		std::size_t level;
 		std::size_t first;
 		std::size_t second;
+                bool f_act = true;
+                bool s_act = true;
+                bool e_act = true;
 		explicit BaseType(std::size_t level, std::size_t id): BaseType(level,id,id) {}
 		BaseType(std::size_t lvl, std::size_t id1, std::size_t id2): level(lvl),first(id1),second(id2) {
 			if (first > second) std::swap(first, second);
@@ -52,6 +55,7 @@ private:
 		auto it = std::remove_if(mData.begin(), mData.end(), f);
 		mData.erase(it, mData.end());
 	}
+ 
 public:
 	Origin() {}
 	Origin(const Origin& po): mData(po.mData) {}
@@ -66,6 +70,60 @@ public:
 	auto end() const {
 		return mData.end();
 	}
+        
+        // returns true, if Origin contains at least one active BaseType
+        bool isActive() {
+                for(const auto& it : mData) {
+                        if(it.f_act && it.s_act && it.e_act) {
+                            return true;
+                        }
+                }
+                return false;
+        }
+        
+        // deactivates BaseTypes due to inactive polynomials 
+        void deactivate(std::size_t level, const carl::Bitset& rhs) {
+                for(auto& it : mData) {
+                        if(it.level == level) {
+                                if(rhs.test(it.first)) {
+                                        it.f_act = false;
+                                } else if(rhs.test(it.second)) {
+                                        it.s_act = false;
+                                }
+                        }
+                }
+        }
+        
+        // deactivates BaseTypes due to equational constraint 
+        void deactivateEC(std::size_t level, const carl::Bitset& rhs) {
+                for(auto& it : mData) {
+                        if((it.level == level) && !rhs.test(it.first) && !rhs.test(it.second)) {
+                                it.e_act = false;
+                        }
+                }
+        }
+        
+        // activates BaseTypes due to activated polynomials 
+        void activate(std::size_t level, const carl::Bitset& rhs) {
+                for(auto& it : mData) {
+                        if(it.level == level) {
+                                if(rhs.test(it.first)) {
+                                        it.f_act = true;
+                                } else if(rhs.test(it.second)) {
+                                        it.s_act = true;
+                                }
+                        }
+                }
+        }
+        
+        // activates BaseTypes due to equational constraint that is not used for restricted projection anymore 
+        void activateEC(std::size_t level, const carl::Bitset& rhs) {
+                for(auto& it : mData) {
+                        if((it.level == level) && !rhs.test(it.first) && !rhs.test(it.second)) {
+                                it.e_act = true;
+                        }
+                }
+        }
 	
 	Origin& operator=(const Origin& rhs) {
 		mData = rhs.mData;
