@@ -24,6 +24,7 @@ namespace cad {
 	using IncrementalitySO = IncrementalityMixin<Incrementality::SIMPLE,Backtracking::UNORDERED>;
 	using IncrementalityF = IncrementalityMixin<Incrementality::FULL,Backtracking::UNORDERED>;
 	using IncrementalityFO = IncrementalityMixin<Incrementality::FULL,Backtracking::UNORDERED>;
+	using IncrementalityEQ = IncrementalityMixin<Incrementality::FULL,Backtracking::HIDE>;	
 	
 	/// Mixin that provides settings for the projection operator.
 	template<ProjectionType P>
@@ -83,6 +84,11 @@ namespace cad {
 	};
 	struct NewCADSettingsFOS: NewCADBaseSettings, cad::IncrementalityFO, cad::ProjectionBrown, cad::SampleCompareInteger {
 		static constexpr auto moduleName = "NewCADModule<NewCADFO>";
+		static constexpr std::size_t trivialSampleRadius = 1;
+		static constexpr bool simplifyProjectionByBounds = false;
+	};
+	struct NewCADSettingsEQ: NewCADBaseSettings, cad::IncrementalityEQ, cad::ProjectionBrown, cad::SampleCompareInteger {
+		static constexpr auto moduleName = "NewCADModule<NewCADEQ>";
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = false;
 	};
