@@ -36,6 +36,7 @@ protected:
 	
 	Variables mVariables;
 	Callback mAddCallback;
+        Callback mAddEqCallback; 
 	Callback mRemoveCallback;
 	ConstraintMap mConstraintMap;
 	std::vector<typename ConstraintMap::iterator> mConstraintIts;
@@ -51,7 +52,7 @@ protected:
 		if (cb) cb(c.lhs().toUnivariatePolynomial(mVariables.front()), id, isBound);
 	}
 public:
-	CADConstraints(const Callback& onAdd, const Callback& onRemove): mAddCallback(onAdd), mRemoveCallback(onRemove) {}
+	CADConstraints(const Callback& onAdd, const Callback& onAddEq, const Callback& onRemove): mAddCallback(onAdd), mAddEqCallback(onAddEq), mRemoveCallback(onRemove) {}
 	CADConstraints(const CADConstraints&) = delete;
 	void reset(const Variables& vars) {
 		mVariables = vars;
@@ -108,7 +109,11 @@ public:
 			}
 		}
 		SMTRAT_LOG_DEBUG("smtrat.cad.constraints", "Identified " << c << " as level " << mConstraintLevels[id]);
-		callCallback(mAddCallback, c, id, isBound);
+                if(c.relation() == carl::Relation::EQ) {
+                        callCallback(mAddEqCallback, c, id, isBound);
+                } else {
+                        callCallback(mAddCallback, c, id, isBound);
+                }
 		return id;
 	}
 	std::size_t remove(const ConstraintT& c) {
