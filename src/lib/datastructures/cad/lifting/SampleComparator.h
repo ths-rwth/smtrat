@@ -170,5 +170,7 @@ namespace sample_compare {
 	struct FullSampleComparator<Iterator, FullSampleCompareStrategy::Value>: SampleComparator<Iterator, SampleCompareStrategy::Value> {};
 	template<typename Iterator>
 	struct FullSampleComparator<Iterator, FullSampleCompareStrategy::Type>: SampleComparator<Iterator, SampleCompareStrategy::Type> {};
+	template<typename Iterator>
+	struct FullSampleComparator<Iterator, FullSampleCompareStrategy::T>: SampleComparator<Iterator, SampleCompareStrategy::T> {};
 }
 }

@@ -21,7 +21,7 @@ namespace cad {
 		Type, Value,
 		Default = Type
 	};
-	enum class FullSampleCompareStrategy { Type, Value, Default = Type };
+	enum class FullSampleCompareStrategy { Type, Value, T, Default = T };
 	using SampleHeuristic = carl::RANSampleHeuristic;
 	enum class MISHeuristic { TRIVIAL, GREEDY, GREEDY_PRE, GREEDY_WEIGHTED, HYBRID};
 	enum class CoreHeuristic { BySample, PreferProjection, PreferSampling, EnumerateAll };
