@@ -42,16 +42,16 @@ namespace cad {
 	using SampleCompareValue = SampleCompareMixin<SampleCompareStrategy::Value, FullSampleCompareStrategy::Value>;
 	using SampleCompareType = SampleCompareMixin<SampleCompareStrategy::Type, FullSampleCompareStrategy::Type>;
 	
-	using SampleCompareT = SampleCompareMixin<SampleCompareStrategy::T, FullSampleCompareStrategy::Type>;
-	using SampleCompareTLSA = SampleCompareMixin<SampleCompareStrategy::TLSA, FullSampleCompareStrategy::Type>;
-	using SampleCompareTSA = SampleCompareMixin<SampleCompareStrategy::TSA, FullSampleCompareStrategy::Type>;
-	using SampleCompareTS = SampleCompareMixin<SampleCompareStrategy::TS, FullSampleCompareStrategy::Type>;
-	using SampleCompareLT = SampleCompareMixin<SampleCompareStrategy::LT, FullSampleCompareStrategy::Type>;
-	using SampleCompareLTA = SampleCompareMixin<SampleCompareStrategy::LTA, FullSampleCompareStrategy::Type>;
-	using SampleCompareLTS = SampleCompareMixin<SampleCompareStrategy::LTS, FullSampleCompareStrategy::Type>;
-	using SampleCompareLTSA = SampleCompareMixin<SampleCompareStrategy::LTSA, FullSampleCompareStrategy::Type>;
-	using SampleCompareLS = SampleCompareMixin<SampleCompareStrategy::LS, FullSampleCompareStrategy::Type>;
-	using SampleCompareS = SampleCompareMixin<SampleCompareStrategy::S, FullSampleCompareStrategy::Type>;
+	using SampleCompareT = SampleCompareMixin<SampleCompareStrategy::T, FullSampleCompareStrategy::T>;
+	using SampleCompareTLSA = SampleCompareMixin<SampleCompareStrategy::TLSA, FullSampleCompareStrategy::T>;
+	using SampleCompareTSA = SampleCompareMixin<SampleCompareStrategy::TSA, FullSampleCompareStrategy::T>;
+	using SampleCompareTS = SampleCompareMixin<SampleCompareStrategy::TS, FullSampleCompareStrategy::T>;
+	using SampleCompareLT = SampleCompareMixin<SampleCompareStrategy::LT, FullSampleCompareStrategy::T>;
+	using SampleCompareLTA = SampleCompareMixin<SampleCompareStrategy::LTA, FullSampleCompareStrategy::T>;
+	using SampleCompareLTS = SampleCompareMixin<SampleCompareStrategy::LTS, FullSampleCompareStrategy::T>;
+	using SampleCompareLTSA = SampleCompareMixin<SampleCompareStrategy::LTSA, FullSampleCompareStrategy::T>;
+	using SampleCompareLS = SampleCompareMixin<SampleCompareStrategy::LS, FullSampleCompareStrategy::T>;
+	using SampleCompareS = SampleCompareMixin<SampleCompareStrategy::S, FullSampleCompareStrategy::T>;
 	
 	/// Mixin that provides settings for MIS generation
 	template<MISHeuristic MIS>
@@ -73,27 +73,27 @@ namespace cad {
 		static constexpr bool force_nonincremental = false;
 	};
 	
-	struct NewCADSettingsNaive: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareType {
+	struct NewCADSettingsNaive: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareT {
 		static constexpr auto moduleName = "NewCADModule<Naive>";
 		static constexpr bool force_nonincremental = true;
 	};
 	
-	struct NewCADSettingsNO: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareType {
+	struct NewCADSettingsNO: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareT {
 		static constexpr auto moduleName = "NewCADModule<NewCADNO>";
 	};
 	
-	struct NewCADSettingsNU: NewCADBaseSettings, cad::IncrementalityNU, cad::ProjectionBrown, cad::SampleCompareType {
+	struct NewCADSettingsNU: NewCADBaseSettings, cad::IncrementalityNU, cad::ProjectionBrown, cad::SampleCompareT {
 		static constexpr auto moduleName = "NewCADModule<NewCADNU>";
 	};
 	
-	struct NewCADSettingsSO: NewCADBaseSettings, cad::IncrementalitySO, cad::ProjectionBrown, cad::SampleCompareType {
+	struct NewCADSettingsSO: NewCADBaseSettings, cad::IncrementalitySO, cad::ProjectionBrown, cad::SampleCompareT {
 		static constexpr auto moduleName = "NewCADModule<NewCADSO>";
 	};
-	struct NewCADSettingsSU: NewCADBaseSettings, cad::IncrementalitySU, cad::ProjectionBrown, cad::SampleCompareType {
+	struct NewCADSettingsSU: NewCADBaseSettings, cad::IncrementalitySU, cad::ProjectionBrown, cad::SampleCompareT {
 		static constexpr auto moduleName = "NewCADModule<NewCADSU>";
 	};
 	
-	struct NewCADSettingsFU: NewCADBaseSettings, cad::IncrementalityFU, cad::ProjectionBrown, cad::SampleCompareType {
+	struct NewCADSettingsFU: NewCADBaseSettings, cad::IncrementalityFU, cad::ProjectionBrown, cad::SampleCompareT {
 		static constexpr auto moduleName = "NewCADModule<NewCADFU>";
 	};
 	
@@ -163,15 +163,15 @@ namespace cad {
 	};
 	// end of lifting order heuristics
 	
-	struct NewCADSettingsF1: NewCADBaseSettings, cad::IncrementalityF, cad::ProjectionBrown, cad::SampleCompareType {
+	struct NewCADSettingsF1: NewCADBaseSettings, cad::IncrementalityF, cad::ProjectionBrown, cad::SampleCompareT {
 		static constexpr auto moduleName = "NewCADModule<NewCADF>";
 		static constexpr std::size_t trivialSampleRadius = 1;
 	};
-	struct NewCADSettingsFO1: NewCADBaseSettings, cad::IncrementalityFO, cad::ProjectionBrown, cad::SampleCompareType {
+	struct NewCADSettingsFO1: NewCADBaseSettings, cad::IncrementalityFO, cad::ProjectionBrown, cad::SampleCompareT {
 		static constexpr auto moduleName = "NewCADModule<NewCADFO>";
 		static constexpr std::size_t trivialSampleRadius = 1;
 	};
-	struct NewCADSettingsFOS: NewCADBaseSettings, cad::IncrementalityFO, cad::ProjectionBrown, cad::SampleCompareType {
+	struct NewCADSettingsFOS: NewCADBaseSettings, cad::IncrementalityFO, cad::ProjectionBrown, cad::SampleCompareT {
 		static constexpr auto moduleName = "NewCADModule<NewCADFO>";
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = false;
@@ -184,7 +184,7 @@ namespace cad {
 		static constexpr auto moduleName = "NewCADModule<NewCADFOV>";
 	};
 	
-	struct NewCADSettingsEnumerateAll: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareType {
+	struct NewCADSettingsEnumerateAll: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareT {
 		static constexpr auto moduleName = "NewCADModule<NewCADEnumAll>";
 		static constexpr cad::CoreHeuristic coreHeuristic = cad::CoreHeuristic::EnumerateAll;
 	};

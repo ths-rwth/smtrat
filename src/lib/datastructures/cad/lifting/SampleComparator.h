@@ -107,20 +107,20 @@ namespace sample_compare {
 		bool compare(const Iterator& lhs, const Iterator& rhs) const {
 			bool l1 = lhs->value().isIntegral();
 			bool r1 = rhs->value().isIntegral();
+			SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", lhs->value() << " < " << rhs->value() << ": Int " << r1);
 			if (l1 != r1) {
-				SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", lhs->value() << " < " << rhs->value() << ": Int " << r1);
 				return r1;
 			}
 			bool l2 = lhs->value().isNumeric();
 			bool r2 = rhs->value().isNumeric();
+			SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", lhs->value() << " < " << rhs->value() << ": Num " << r2);
 			if (l2 != r2) {
-				SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", lhs->value() << " < " << rhs->value() << ": Num " << r2);
 				return r2;
 			}
 			std::size_t l3 = lhs->value().size();
 			std::size_t r3 = rhs->value().size();
+			SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", lhs->value() << " < " << rhs->value() << ": Size (" << l3 << " / " << r3 << ") " << (l3 > r3));
 			if (l3 != r3) {
-				SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", lhs->value() << " < " << rhs->value() << ": Size (" << l3 << " / " << r3 << ") " << (l3 > r3));
 				return l3 > r3;
 			}
 			SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", lhs->value() << " < " << rhs->value() << ": Absolute " << (lhs->value().abs() >= rhs->value().abs()));
