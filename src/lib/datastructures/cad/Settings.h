@@ -7,6 +7,10 @@ namespace cad {
 	enum class Incrementality { NONE, SIMPLE, FULL };
 	enum class Backtracking { ORDERED, UNORDERED, HIDE };
 	enum class ProjectionType { Brown, McCallum, Hong };
+	enum class ProjectionCompareStrategy {
+		D, PD, SD, lD, LD,
+		Default = D
+	};
 	enum class SampleCompareStrategy { 
 		T,
 		TLSA,
@@ -38,6 +42,7 @@ namespace cad {
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = true;
 		
+		static constexpr ProjectionCompareStrategy projectionComparator = cad::ProjectionCompareStrategy::Default;
 		static constexpr SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Default;
 		static constexpr SampleCompareStrategy sampleComparator = cad::SampleCompareStrategy::Default;
 		static constexpr FullSampleCompareStrategy fullSampleComparator = cad::FullSampleCompareStrategy::Default;
