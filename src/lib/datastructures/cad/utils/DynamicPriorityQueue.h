@@ -40,6 +40,9 @@ namespace smtrat {
 		auto erase(typename std::vector<T>::const_iterator it, typename std::vector<T>::const_iterator end) {
 			return data().erase(it, end);
 		}
+		void fix() {
+			std::make_heap(data().begin(), data().end(), super::comp);
+		}
 		template<typename F>
 		void removeIf(F&& f) {
 			auto it = std::remove_if(data().begin(), data().end(), f);
