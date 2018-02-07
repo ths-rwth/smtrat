@@ -78,7 +78,7 @@ private:
 	NodeIDs mNodeIDs;
 	std::size_t mMaxWidth = 0;
 public:
-	void addNode(std::size_t level, const std::string& parent, const std::string& node, const std::string& data) override {
+	void addNode(std::size_t level, const std::string&, const std::string& node, const std::string& data) override {
 		while (level >= mData.size()) mData.emplace_back();
 		auto it = mNodeIDs.find(node);
 		if (it == mNodeIDs.end()) {
@@ -175,7 +175,7 @@ private:
 		for (auto cit = mTree.begin_children(it); cit != mTree.end_children(it); cit++) {
 			cit->position = cur + int(cit->subtreeWidth / 2);
 			doLayout(cit);
-			cur += cit->subtreeWidth;
+			cur += int(cit->subtreeWidth);
 		}
 	}
 	template<typename It>
@@ -375,7 +375,7 @@ public:
 		out << "\\tikzset{font=\\tiny}" << std::endl;
 		out << "\\setbeamertemplate{navigation symbols}{}" << std::endl;
 		out << "\\begin{document}" << std::endl;
-		out << "\\eject \\pdfpagewidth=" << (0.5*width + 2) << "cm" << std::endl;
+		out << "\\eject \\pdfpagewidth=" << (0.5*double(width) + 2) << "cm" << std::endl;
 		out << "\\begin{frame}<1-" << mStep << ">" << std::endl;
 		out << "\\begin{tikzpicture}[x=0.5cm, y=1cm]" << std::endl;
 		for (auto& p: mPrinter) {

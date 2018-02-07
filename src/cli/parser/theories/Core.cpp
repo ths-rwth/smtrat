@@ -54,7 +54,7 @@ namespace parser {
 			result = boost::get<FormulaT>(term);
 			return true;
 		} else if (boost::get<carl::Variable>(&term) != nullptr) {
-			if (boost::get<carl::Variable>(term).getType() == carl::VariableType::VT_BOOL) {
+			if (boost::get<carl::Variable>(term).type() == carl::VariableType::VT_BOOL) {
 				result = FormulaT(boost::get<carl::Variable>(term));
 				return true;
 			} else {

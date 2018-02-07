@@ -42,13 +42,8 @@ namespace smtrat
 	bool NewCADModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 	{
 		assert(_subformula->formula().getType() == carl::FormulaType::CONSTRAINT);
-		const ConstraintT& c = _subformula->formula().constraint();
-		carl::Variable v;
-		Rational r;
-		if (c.getAssignment(v, r)) {
-			mReplacer.addAssignment(v, r, c);
-		} else {
-			mReplacer.addConstraint(c);
+		if (!Settings::force_nonincremental) {
+			addConstraint(_subformula->formula().constraint());
 		}
 		return true;
 	}
@@ -57,13 +52,8 @@ namespace smtrat
 	void NewCADModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
 	{
 		assert(_subformula->formula().getType() == carl::FormulaType::CONSTRAINT);
-		const ConstraintT& c = _subformula->formula().constraint();
-		carl::Variable v;
-		Rational r;
-		if (c.getAssignment(v, r)) {
-			mReplacer.removeAssignment(v, _subformula->formula().constraint());
-		} else {
-			mReplacer.removeConstraint(_subformula->formula().constraint());
+		if (!Settings::force_nonincremental) {
+			removeConstraint(_subformula->formula().constraint());
 		}
 	}
 	
@@ -82,10 +72,16 @@ namespace smtrat
 	template<class Settings>
 	Answer NewCADModule<Settings>::checkCore()
 	{
+		if (Settings::force_nonincremental) {
+			pushConstraintsToReplacer();
+		}
 		if (!mReplacer.commit()) {
 			// Assignments simplified a constraint to false
 			mInfeasibleSubsets.emplace_back();
 			mReplacer.buildInfeasibleSubset(mInfeasibleSubsets.back());
+			if (Settings::force_nonincremental) {
+				removeConstraintsFromReplacer();
+			}
 			return Answer::UNSAT;
 		}
 		auto answer = mCAD.check(mLastAssignment, mInfeasibleSubsets);
@@ -94,9 +90,12 @@ namespace smtrat
 #endif
 		if (answer == Answer::UNSAT) {
 			//mCAD.generateInfeasibleSubsets(mInfeasibleSubsets);
-			for(auto mis : mInfeasibleSubsets)
+			for(auto& mis : mInfeasibleSubsets)
 				mReplacer.preprocessInfeasibleSubset(mis);
 			SMTRAT_LOG_INFO("smtrat.cad", "Infeasible subset: " << mInfeasibleSubsets);
+		}
+		if (Settings::force_nonincremental) {
+			removeConstraintsFromReplacer();
 		}
 		return answer;
 	}

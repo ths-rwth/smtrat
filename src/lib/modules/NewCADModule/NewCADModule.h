@@ -30,6 +30,37 @@ namespace smtrat
 			cad::Assignment mLastAssignment;
 			cad::EqualityReplacer<cad::CAD<Settings>> mReplacer;
 			
+			void addConstraint(const ConstraintT& c) {
+				carl::Variable v;
+				Rational r;
+				if (c.getAssignment(v, r)) {
+					mReplacer.addAssignment(v, r, c);
+				} else {
+					mReplacer.addConstraint(c);
+				}
+			}
+			void removeConstraint(const ConstraintT& c) {
+				carl::Variable v;
+				Rational r;
+				if (c.getAssignment(v, r)) {
+					mReplacer.removeAssignment(v, c);
+				} else {
+					mReplacer.removeConstraint(c);
+				}
+			}
+			void pushConstraintsToReplacer() {
+				for (const auto& f: rReceivedFormula()) {
+					assert(f.formula().getType() == carl::FormulaType::CONSTRAINT);
+					addConstraint(f.formula().constraint());
+				}
+			}
+			void removeConstraintsFromReplacer() {
+				for (auto it = rReceivedFormula().rbegin(); it != rReceivedFormula().rend(); ++it) {
+					assert(it->formula().getType() == carl::FormulaType::CONSTRAINT);
+					removeConstraint(it->formula().constraint());
+				}
+			}
+
 		public:
 			typedef Settings SettingsType;
 			std::string moduleName() const {
