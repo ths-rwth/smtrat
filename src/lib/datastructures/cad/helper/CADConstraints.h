@@ -81,7 +81,7 @@ public:
 	const auto& unsatByBounds() const {
 		return mUnsatByBounds;
 	}
-	std::size_t add(const ConstraintT& c) {
+	std::size_t add(const ConstraintT& c) { 
 		SMTRAT_LOG_DEBUG("smtrat.cad.constraints", "Adding " << c);
 		bool isBound = mBounds.addBound(c, c);
 		assert(!mVariables.empty());
@@ -90,16 +90,34 @@ public:
 			id = mConstraintIts.size();
 			mConstraintIts.push_back(mConstraintMap.end());
 			mConstraintLevels.emplace_back(0);
+                        
+                        auto r = mConstraintMap.emplace(c, id);
+                        assert(r.second);
+                        mConstraintIts[id] = r.first;
+                } else if (BT == Backtracking::HIDE) {
+                        auto it = mConstraintMap.find(c);
+			if (it != mConstraintMap.end()) {
+				id = it->second;
+			} else {
+				id = mIDPool.get();
+				if (id >= mConstraintIts.size()) {
+					mConstraintIts.resize(id+1, mConstraintMap.end());
+					mConstraintLevels.resize(id+1);
+				}
+				auto r = mConstraintMap.emplace(c, id);
+				assert(r.second);
+				mConstraintIts[id] = r.first;
+			}
 		} else {
 			id = mIDPool.get();
 			if (id >= mConstraintIts.size()) {
 				mConstraintIts.resize(id+1, mConstraintMap.end());
 				mConstraintLevels.resize(id+1);
 			}
+                        auto r = mConstraintMap.emplace(c, id);
+                        assert(r.second);
+                        mConstraintIts[id] = r.first;
 		}
-		auto r = mConstraintMap.emplace(c, id);
-		assert(r.second);
-		mConstraintIts[id] = r.first;
 		auto vars = c.variables();
 		for (std::size_t level = mVariables.size(); level > 0; level--) {
 			vars.erase(mVariables[level - 1]);
@@ -150,12 +168,15 @@ public:
 				mConstraintIts.push_back(cache.top());
 				cache.pop();
 			}
+                } else if(BT == Backtracking::HIDE) {
+                        SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Removing " << id << " in unordered mode");
+			callCallback(mRemoveCallback, c, id, isBound);
 		} else {
 			SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Removing " << id << " in unordered mode");
 			callCallback(mRemoveCallback, c, id, isBound);
 			mConstraintMap.erase(it);
 			mConstraintIts[id] = mConstraintMap.end();
-			mIDPool.free(id);
+			mIDPool.free(id); 
 		}
 		return id;
 	}

@@ -164,6 +164,7 @@ namespace full {
                 bool updateInactiveQueue;
 		
 		PurgedPolynomials mPurgedPolys;
+                carl::Bitset mInactive;
                 
                 
                 // Stores IDs of equational constraints for each level 
@@ -201,18 +202,6 @@ namespace full {
                                 }
                         }
 		}
-		/**
-		 * Remove projection candidates involving a specific polynomial.
-		 * @param level Level of the removed polynomial.
-		 * @parem id Id of the removed polynomial.
-		 */ 
-		void removeFromProjectionQueue(std::size_t level, std::size_t id) {
-			assert(level < dim());
-			mProjectionQueue.removeIf([level,id](const QueueEntry& qe){ return (qe.level == level) && (qe.first == id || qe.second == id); });
-                        if (Settings::simplifyProjectionByBounds) {
-				mPurgedPolys.remove(level, id);
-			}
-		} 
                 
                 /**
                  * Deactivate inactive polynomials in mProjection.
@@ -228,6 +217,11 @@ namespace full {
 					if (!(mPolynomials[lvl][id]->second.isActive())) {
 						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purging " << id << " from level " << lvl);
 						remove.set(id);
+                                                if (lvl < dim()) {
+                                                        if (Settings::simplifyProjectionByBounds) {
+                                                            mPurgedPolys.remove(lvl, id);
+                                                        }
+                                                }
                                                 // remove inactive polnomials from LiftingQueue 
                                                 mLiftingQueues[lvl - 1].erase(id);
 					} 
@@ -269,6 +263,7 @@ namespace full {
 					}
 				}
 			} 
+                        updateInactiveQueue = true;
                 }
                 
                 /**
@@ -346,8 +341,10 @@ namespace full {
 			assert(level <= dim());
 			auto it = mPolynomialIDs[level].find(p);
 			if (it != mPolynomialIDs[level].end()) {
-				assert(mPolynomials[level][it->second]);
+				assert(mPolynomials[level][it->second]); 
 				mPolynomials[level][it->second]->second += origin;
+                                // in case p was inactive but becomes active by new BaseType activate successors
+                                activatePolynomials(level); 
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Polynomial was already present, merged origins");
 				return carl::Bitset();
 			}
@@ -372,23 +369,6 @@ namespace full {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Done.");
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Now:" << std::endl << *this);
 			return carl::Bitset({level});
-		}
-		/// Removes the polynomial given by the iterator from all datastructures.
-		template<typename Iterator>
-		Iterator removePolynomialByIT(std::size_t level, Iterator it) {
-			assert(it != mPolynomialIDs[level].end());
-			std::size_t id = it->second;
-			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "Removing " << id << " on " << level);
-			assert(mPolynomials[level][id]);
-			if (level < dim()) {
-				SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Purging from queue on level " << (level+1));
-				removeFromProjectionQueue(level, id);
-			}
-			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Removing polynomial");
-			mLiftingQueues[level - 1].erase(id);
-			mPolynomials[level][id] = boost::none;
-			freeID(level, id);
-			return mPolynomialIDs[level].erase(it);
 		}
 		
 		carl::Bitset project(const ConstraintSelection&) {
@@ -473,13 +453,25 @@ namespace full {
                         updateInactiveQueue = false;
 		}
 		carl::Bitset addPolynomial(const UPoly& p, std::size_t cid, bool isBound) override {
-                        auto it = mPolynomialIDs[0].find(p);
-			if (it != mPolynomialIDs[0].end()) {
-				assert(mPolynomials[0][it->second]);
-				mPolynomials[0][it->second]->second.activate(0,it->second); 
-                                updateInactiveQueue = true;
+			if (mPolynomials[0][cid]) { 
+                                mInactive.reset(cid); 
+                                // activate all successors of p
+                                carl::Bitset filter = carl::Bitset().set(cid);
+                                for (const auto& it: mPolynomialIDs[1]) {
+                                        assert(mPolynomials[1][it.second]);
+                                        mPolynomials[1][it.second]->second.activate(0, filter);
+                                }
+                                activatePolynomials(1); 
+                                if(isBound) {
+                                    std::size_t level = 1;
+                                    while ((level < dim()) && canBeForwarded(level, p)) {
+                                        level += 1;
+                                    }
+                                    auto itp = mPolynomialIDs[level].find(p);
+                                    mPurgedPolys.setBound(level, itp->second, true);
+                                } 
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(0) << "-> Polynomial was already present, reactivated");
-				return carl::Bitset();
+				return carl::Bitset(); 
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " with id " << cid);
 			if (cid >= mPolynomials[0].size()) {
@@ -487,7 +479,7 @@ namespace full {
 			}
 			assert(!mPolynomials[0][cid]);
 			mPolynomials[0][cid] = std::make_pair(p, Origin());
-			mPolynomialIDs[0].emplace(p, cid);
+			mPolynomialIDs[0].emplace(p, cid); 
 			if (isBound) {
 				insertPolynomialTo(1, p, Origin::BaseType(0,cid), true, false);
 			} else {
@@ -496,14 +488,25 @@ namespace full {
 			return carl::Bitset();
 		}
                 carl::Bitset addEqConstraint(const UPoly& p, std::size_t cid, bool isBound) override {
-                        auto it = mPolynomialIDs[0].find(p);
-			if (it != mPolynomialIDs[0].end()) {
-				assert(mPolynomials[0][it->second]);
-				mPolynomials[0][it->second]->second.activate(0,it->second); 
-                                updateInactiveQueue = true;
+                        if (mPolynomials[0][cid]) { 
+                                mInactive.reset(cid); 
+                                // activate all successors of p
+                                carl::Bitset filter = carl::Bitset().set(cid);
+                                for (const auto& it: mPolynomialIDs[1]) {
+                                        assert(mPolynomials[1][it.second]);
+                                        mPolynomials[1][it.second]->second.activate(0, filter);
+                                }
+                                activatePolynomials(1);
+                                std::size_t level = 1;
+                                while ((level < dim()) && canBeForwarded(level, p)) {
+                                    level += 1;
+                                }
+                                auto itp = mPolynomialIDs[level].find(p);
+                                mEqConstraints[level].set(itp->second); 
+                                restrictProjection(level);
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(0) << "-> Polynomial was already present, reactivated");
-				return carl::Bitset();
-			}                    
+				return carl::Bitset(); 
+			}    
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " with id " << cid);
 			if (cid >= mPolynomials[0].size()) {
 				mPolynomials[0].resize(cid + 1);
@@ -518,34 +521,19 @@ namespace full {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << cid);
 			assert(mPolynomials[0][cid]);
 			assert(mPolynomials[0][cid]->first == p);
-			mPolynomials[0][cid] = boost::none;
-			removeFromProjectionQueue(0, cid); 
-                        extendProjection(p);
-			carl::Bitset filter = carl::Bitset().set(cid);
-			for (std::size_t level = 1; level <= dim(); level++) {
-				for (std::size_t lvl = level; lvl <= dim(); lvl++) {
-					for (auto it = mPolynomialIDs[level].begin(); it != mPolynomialIDs[level].end(); it++) {
-						assert(mPolynomials[level][it->second]);
-						mPolynomials[level][it->second]->second.erase(level, filter); 
-					}
-				}
-				carl::Bitset removed; 
-				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purging from level " << level << " with filter " << filter);
-				for (auto it = mPolynomialIDs[level].begin(); it != mPolynomialIDs[level].end();) {
-					std::size_t id = it->second;
-					assert(mPolynomials[level][id]);
-					if (mPolynomials[level][id]->second.empty()) { 
-						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purging " << id << " from level " << level);
-						removed.set(id);
-						it = removePolynomialByIT(level, it); 
-					} else {
-						it++;
-					}
-				}
-				SMTRAT_LOG_TRACE("smtrat.cad.projection", "Calling callback for level " << level << ", removed [" << removed << "]");
-				callRemoveCallback(level, removed); 
-				filter = removed;
+                        mInactive.set(cid);
+			if (Settings::simplifyProjectionByBounds) {
+				mPurgedPolys.remove(0, cid);
 			}
+                        // activates polynomials that were inactive due to p, if p is an equational polynomial
+                        extendProjection(p);
+                        // deactivates all successors of p   
+                        carl::Bitset filter = carl::Bitset().set(cid);
+                        for (const auto& it: mPolynomialIDs[1]) {
+                                assert(mPolynomials[1][it.second]);
+                                mPolynomials[1][it.second]->second.deactivate(0, filter);
+                        }
+                        deactivatePolynomials(1); 
 			if (Settings::simplifyProjectionByBounds && isBound) {
                                 updateInactiveQueue = true;
 				mPurgedPolys.restore([this](const QueueEntry& qe) {
