@@ -61,10 +61,10 @@ namespace cad {
 
 	using ProjectionOrderDefault = ProjectionOrderMixin<ProjectionCompareStrategy::Default>;
 	using ProjectionOrderD = ProjectionOrderMixin<ProjectionCompareStrategy::D>;
-	using ProjectionOrderPD = ProjectionOrderMixin<ProjectionCompareStrategy::D>;
-	using ProjectionOrderSD = ProjectionOrderMixin<ProjectionCompareStrategy::D>;
-	using ProjectionOrderlD = ProjectionOrderMixin<ProjectionCompareStrategy::D>;
-	using ProjectionOrderLD = ProjectionOrderMixin<ProjectionCompareStrategy::D>;
+	using ProjectionOrderPD = ProjectionOrderMixin<ProjectionCompareStrategy::PD>;
+	using ProjectionOrderSD = ProjectionOrderMixin<ProjectionCompareStrategy::SD>;
+	using ProjectionOrderlD = ProjectionOrderMixin<ProjectionCompareStrategy::lD>;
+	using ProjectionOrderLD = ProjectionOrderMixin<ProjectionCompareStrategy::LD>;
 	
 	/// Mixin that provides settings for MIS generation
 	template<MISHeuristic MIS>
