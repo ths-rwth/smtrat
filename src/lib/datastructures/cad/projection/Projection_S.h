@@ -32,7 +32,7 @@ namespace cad {
 		
 		struct PolynomialComparator {
 			bool operator()(const QueueEntry& lhs, const QueueEntry& rhs) const {
-				return rhs.poly < lhs.poly;
+				return lhs.poly.complexity() > rhs.poly.complexity();
 			}
 		};
 		
