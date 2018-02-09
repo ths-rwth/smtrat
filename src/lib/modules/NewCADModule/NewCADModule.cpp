@@ -8,6 +8,7 @@
 
 #include "NewCADModule.h"
 #include "../../datastructures/cad/projection/Projection.h"
+#include "../../datastructures/cad/variableordering/TriangularOrdering.h"
 
 namespace smtrat
 {
@@ -28,14 +29,15 @@ namespace smtrat
 	template<class Settings>
 	bool NewCADModule<Settings>::informCore( const FormulaT& _constraint )
 	{
-		_constraint.arithmeticVars(mVariables);
+		mPolynomials.emplace_back(_constraint.constraint().lhs());
 		return true; // This should be adapted according to your implementation.
 	}
 	
 	template<class Settings>
 	void NewCADModule<Settings>::init()
 	{
-		mCAD.reset(std::vector<carl::Variable>(mVariables.begin(), mVariables.end()));
+		mCAD.reset(cad::variable_ordering::triangular_ordering(mPolynomials));
+		//mCAD.reset(std::vector<carl::Variable>(mVariables.begin(), mVariables.end()));
 	}
 	
 	template<class Settings>

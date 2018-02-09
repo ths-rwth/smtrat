@@ -25,7 +25,8 @@ namespace smtrat
 #ifdef SMTRAT_DEVOPTION_Statistics
 			NewCADStatistics mStatistics;
 #endif
-			carl::Variables mVariables;
+			/// Stores the polynomials seen during inform() to build the variable ordering.
+			std::vector<Poly> mPolynomials;
 			cad::CAD<Settings> mCAD;
 			cad::Assignment mLastAssignment;
 			cad::EqualityReplacer<cad::CAD<Settings>> mReplacer;
