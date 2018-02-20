@@ -32,12 +32,12 @@ public:
 		}
 		mSamples.reserve(2 * mRoots.size() + 1);
 		for (std::size_t n = 0; n < mRoots.size(); n++) {
-			if (n == 0) mSamples.emplace_back(RAN::sampleBelow(mRoots.front()));
-			else mSamples.emplace_back(RAN::sampleBetween(mRoots[n-1], mRoots[n]));
+			if (n == 0) mSamples.emplace_back(carl::sampleBelow(mRoots.front()));
+			else mSamples.emplace_back(carl::sampleBetween(mRoots[n-1], mRoots[n]));
 			mSamples.emplace_back(mRoots[n]);
 		}
 		if (mRoots.empty()) mSamples.emplace_back(RAN(0));
-		else mSamples.emplace_back(RAN::sampleAbove(mRoots.back()));
+		else mSamples.emplace_back(carl::sampleAbove(mRoots.back()));
 		SMTRAT_LOG_DEBUG("smtrat.nlsat.rootindexer", "Samples: " << mSamples);
 	}
 	std::size_t size() const {

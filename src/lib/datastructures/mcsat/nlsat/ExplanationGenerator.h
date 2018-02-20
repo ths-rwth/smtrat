@@ -154,8 +154,11 @@ public:
 			mCADConstraints.add(c);
 		}
 		
+		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Starting with projection " << std::endl << mProjection);
+		
 		for (std::size_t level = 2; level < mCADConstraints.vars().size(); level++) {
 			mProjection.projectNextLevel(level);
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "After projecting into level " << level << std::endl << mProjection);
 		}
 
 		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Projection is" << std::endl << mProjection);
