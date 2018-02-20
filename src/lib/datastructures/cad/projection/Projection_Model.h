@@ -238,6 +238,11 @@ namespace cad {
                             m.emplace(v, mModel.evaluated(v));
                         }
                         bool modelBased = m.find(var(level)) != m.end();
+						if (modelBased) {
+							SMTRAT_LOG_INFO("smtrat.cad.projection", "Projection is model-based for " << var(level));
+						} else {
+							SMTRAT_LOG_INFO("smtrat.cad.projection", "Projection is not model-based for " << var(level));
+						}
                         
                         for(const auto& it: polys(level)) {
                             assert(it.first.mainVar() == var(level));
