@@ -42,6 +42,9 @@ public:
 	const auto& getModel() const {
 		return mBookkeeping.model();
 	}
+	const auto& getTrail() const {
+		return mBookkeeping;
+	}
 	
 	template<typename Constraints>
 	void updateVariableOrdering(const Constraints& c) {
