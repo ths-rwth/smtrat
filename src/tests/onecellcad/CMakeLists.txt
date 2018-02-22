@@ -1,6 +1,15 @@
-file(GLOB_RECURSE test_sources "*.cpp")
+add_executable(runOpenCellCadTests
+  Test_OpenCad.cpp
+)
+
+target_link_libraries(runOpenCellCadTests
+  libboost_unit_test_framework.a
+  lib_${PROJECT_NAME}
+  ${libraries}
+)
+
 add_executable(runOneCellCadTests
-  ${test_sources}
+  Test_OneCellCAD.cpp
 )
 
 target_link_libraries(runOneCellCadTests
@@ -8,5 +17,3 @@ target_link_libraries(runOneCellCadTests
   lib_${PROJECT_NAME}
   ${libraries}
 )
-
-add_test(NAME onecell COMMAND runOneCellCadTests)
