@@ -63,9 +63,6 @@ private:
 
 	/// Variables that are not univariate in any variable yet.
 	std::vector<Minisat::Var> mUndecidedVariables;
-
-	/// The current variable ordering.
-	std::vector<carl::Variable> mVariables;
 	
 	MCSATBackend<BackendSettings1> mBackend;
 
@@ -113,27 +110,33 @@ public:
 	}
 	/// Returns the current theory level
 	const TheoryLevel& current() const {
-		return mTheoryStack[mCurrentLevel];
+		return mTheoryStack[level()];
 	}
 	TheoryLevel& current() {
-		return mTheoryStack[mCurrentLevel];
+		return mTheoryStack[level()];
 	}
 	/// Retrieve the current theory variable
 	carl::Variable currentVariable() const {
 		return variable(level());
 	}
 	carl::Variable variable(std::size_t level) const {
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Obtaining variable " << level << " from " << mBackend.variableOrder());
 		if (level == 0) return carl::Variable::NO_VARIABLE;
-		assert(level <= mVariables.size());
-		return mVariables[level - 1];
+		if (level > mBackend.variableOrder().size()) return carl::Variable::NO_VARIABLE;
+		assert(level <= mBackend.variableOrder().size());
+		return mBackend.variableOrder()[level - 1];
 	}
 	
-	bool hasNextVariable() {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current level: " << mCurrentLevel << " with variables " << mVariables);
-		return mCurrentLevel < mVariables.size();
+	bool hasNextVariable() const {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current level: " << level() << " with variables " << mBackend.variableOrder());
+		return level() < mBackend.variableOrder().size();
 	}
-	carl::Variable nextVariable() {
-		return mVariables[mCurrentLevel];
+	carl::Variable nextVariable() const {
+		assert(hasNextVariable());
+		return mBackend.variableOrder()[level()];
+	}
+	bool mayDoAssignment() const {
+		return current().variable != carl::Variable::NO_VARIABLE && current().decisionLiteral == Minisat::lit_Undef;
 	}
 	// ***** Modifier
 	
@@ -190,6 +193,10 @@ public:
 	boost::optional<FormulaT> isDecisionPossible(Minisat::Lit lit);
 	
 	boost::optional<FormulaT> isFeasible() {
+		if (!mayDoAssignment()) {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Trail is feasible as there is no next variable to be assigned.");
+			return boost::none;
+		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking whether trail is feasible (w.r.t. " << currentVariable() << ")");
 		auto res = mBackend.findAssignment(currentVariable());
 		if (carl::variant_is_type<ModelValue>(res)) {
@@ -231,17 +238,14 @@ public:
 	
 	template<typename Constraints>
 	void updateVariableOrdering(const Constraints& c) {
-		if (mVariables.empty()) {
-			mVariables = mcsat::constructVariableOrdering(c);
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variable ordering " << mVariables);
-		}
+		mBackend.updateVariableOrdering(c);
 	}
 	
 	// ***** Auxliary getter
 	
 	/// Checks whether the given formula is currently univariate
 	bool isFormulaUnivariate(const FormulaT& formula) const {
-		return isFormulaUnivariate(formula, mCurrentLevel);
+		return isFormulaUnivariate(formula, level());
 	}
 	
 	std::size_t theoryLevel(Minisat::Var var) const {
@@ -252,12 +256,30 @@ public:
 	}
 	
 	std::size_t theoryLevel(const FormulaT& f) const {
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Computing theory level for " << f);
 		carl::Variables vars;
 		f.arithmeticVars(vars);
 		if (vars.empty()) {
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", f << " has no variable, thus on level 0");
+			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " has no variable, thus on level 0");
 			return 0;
 		}
+	
+		Model m = model();
+		if (!carl::model::evaluate(f, m).isBool()) {
+			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is undecided.");
+			return std::numeric_limits<std::size_t>::max();
+		}
+		for (std::size_t lvl = level(); lvl > 0; lvl--) {
+			if (variable(lvl) == carl::Variable::NO_VARIABLE) continue;
+			m.erase(variable(lvl));
+			if (vars.count(variable(lvl)) == 0) continue;
+			if (!carl::model::evaluate(f, m).isBool()) {
+				return lvl;
+			}
+		}
+		assert(false);
+		return 0;
+		
 		for (std::size_t level = 1; level < mTheoryStack.size(); level++) {
 			vars.erase(variable(level));
 			if (vars.empty()) {
@@ -284,6 +306,7 @@ public:
 	int assignedAtTrailIndex(Minisat::Var variable) const {
 		auto lit = getDecisionLiteral(variable);
 		if (lit == Minisat::lit_Undef) {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", variable << " was not assigned yet.");
 			return std::numeric_limits<int>::max();
 		}
 		return mGetter.getTrailIndex(var(lit));

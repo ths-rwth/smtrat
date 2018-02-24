@@ -3,6 +3,7 @@
 #include "../../../datastructures/mcsat/Bookkeeping.h"
 #include "../../../datastructures/mcsat/arithmetic/AssignmentFinder_arithmetic.h"
 #include "../../../datastructures/mcsat/nlsat/Explanation.h"
+#include "../../../datastructures/mcsat/utils/VariableOrdering.h"
 
 #include <carl/util/tuple_util.h>
 
@@ -12,6 +13,7 @@ namespace mcsat {
 template<typename Settings>
 class MCSATBackend {
 	mcsat::Bookkeeping mBookkeeping;
+	typename Settings::VariableOrderingBackend mVariableOrdering;
 	typename Settings::AssignmentFinderBackend mAssignmentFinder;
 	typename Settings::ExplanationBackend mExplanation;
 
@@ -40,6 +42,20 @@ public:
 	const auto& getModel() const {
 		return mBookkeeping.model();
 	}
+	const auto& getTrail() const {
+		return mBookkeeping;
+	}
+	
+	template<typename Constraints>
+	void updateVariableOrdering(const Constraints& c) {
+		if (mVariableOrdering.initialized()) return;
+		mVariableOrdering.update(c);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variable ordering " << variableOrder());
+	}
+	
+	const auto& variableOrder() const {
+		return mVariableOrdering.ordering();
+	}
 
 	auto findAssignment(carl::Variable var) const { //AssignmentFinder::AssignmentOrConflict
 		return mAssignmentFinder(mBookkeeping, var);
@@ -59,11 +75,12 @@ public:
 	}
 
 	FormulaT explain(carl::Variable var, const FormulasT& reason, const FormulaT& implication) const {
-		return mExplanation(mBookkeeping, var, reason, implication);
+		return mExplanation(mBookkeeping, variableOrder(), var, reason, implication);
 	}
 };
 
 struct BackendSettings1 {
+	using VariableOrderingBackend = mcsat::VariableOrdering;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
 	using ExplanationBackend = nlsat::Explanation;
 };

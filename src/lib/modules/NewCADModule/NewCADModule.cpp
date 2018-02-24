@@ -8,6 +8,7 @@
 
 #include "NewCADModule.h"
 #include "../../datastructures/cad/projection/Projection.h"
+#include "../../datastructures/cad/variableordering/TriangularOrdering.h"
 
 namespace smtrat
 {
@@ -28,27 +29,23 @@ namespace smtrat
 	template<class Settings>
 	bool NewCADModule<Settings>::informCore( const FormulaT& _constraint )
 	{
-		_constraint.arithmeticVars(mVariables);
+		mPolynomials.emplace_back(_constraint.constraint().lhs());
 		return true; // This should be adapted according to your implementation.
 	}
 	
 	template<class Settings>
 	void NewCADModule<Settings>::init()
 	{
-		mCAD.reset(std::vector<carl::Variable>(mVariables.begin(), mVariables.end()));
+		mCAD.reset(cad::variable_ordering::triangular_ordering(mPolynomials));
+		//mCAD.reset(std::vector<carl::Variable>(mVariables.begin(), mVariables.end()));
 	}
 	
 	template<class Settings>
 	bool NewCADModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 	{
 		assert(_subformula->formula().getType() == carl::FormulaType::CONSTRAINT);
-		const ConstraintT& c = _subformula->formula().constraint();
-		carl::Variable v;
-		Rational r;
-		if (c.getAssignment(v, r)) {
-			mReplacer.addAssignment(v, r, c);
-		} else {
-			mReplacer.addConstraint(c);
+		if (!Settings::force_nonincremental) {
+			addConstraint(_subformula->formula().constraint());
 		}
 		return true;
 	}
@@ -57,13 +54,8 @@ namespace smtrat
 	void NewCADModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
 	{
 		assert(_subformula->formula().getType() == carl::FormulaType::CONSTRAINT);
-		const ConstraintT& c = _subformula->formula().constraint();
-		carl::Variable v;
-		Rational r;
-		if (c.getAssignment(v, r)) {
-			mReplacer.removeAssignment(v, _subformula->formula().constraint());
-		} else {
-			mReplacer.removeConstraint(_subformula->formula().constraint());
+		if (!Settings::force_nonincremental) {
+			removeConstraint(_subformula->formula().constraint());
 		}
 	}
 	
@@ -82,10 +74,16 @@ namespace smtrat
 	template<class Settings>
 	Answer NewCADModule<Settings>::checkCore()
 	{
+		if (Settings::force_nonincremental) {
+			pushConstraintsToReplacer();
+		}
 		if (!mReplacer.commit()) {
 			// Assignments simplified a constraint to false
 			mInfeasibleSubsets.emplace_back();
 			mReplacer.buildInfeasibleSubset(mInfeasibleSubsets.back());
+			if (Settings::force_nonincremental) {
+				removeConstraintsFromReplacer();
+			}
 			return Answer::UNSAT;
 		}
 		auto answer = mCAD.check(mLastAssignment, mInfeasibleSubsets);
@@ -94,9 +92,12 @@ namespace smtrat
 #endif
 		if (answer == Answer::UNSAT) {
 			//mCAD.generateInfeasibleSubsets(mInfeasibleSubsets);
-			for(auto mis : mInfeasibleSubsets)
+			for(auto& mis : mInfeasibleSubsets)
 				mReplacer.preprocessInfeasibleSubset(mis);
 			SMTRAT_LOG_INFO("smtrat.cad", "Infeasible subset: " << mInfeasibleSubsets);
+		}
+		if (Settings::force_nonincremental) {
+			removeConstraintsFromReplacer();
 		}
 		return answer;
 	}

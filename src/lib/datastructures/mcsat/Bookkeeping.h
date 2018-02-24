@@ -12,7 +12,7 @@ class Bookkeeping {
 	/// The current (partial) model.
 	Model mModel;
 	/// The stack of variables being assigned.
-	std::vector<carl::Variable> mOrderedVariables;
+	std::vector<carl::Variable> mAssignedVariables;
 	/// The stack of theory assignments.
 	std::vector<FormulaT> mAssignments;
 	/// The stack of asserted constraints.
@@ -24,8 +24,8 @@ public:
 	const auto& model() const {
 		return mModel;
 	}
-	const auto& orderedVariables() const {
-		return mOrderedVariables;
+	const auto& assignedVariables() const {
+		return mAssignedVariables;
 	}
 	const auto& assignments() const {
 		return mAssignments;
@@ -74,15 +74,15 @@ public:
 		SMTRAT_LOG_TRACE("smtrat.nlsat", "Adding " << v << " = " << mv);
 		assert(mModel.find(v) == mModel.end());
 		mModel.emplace(v, mv);
-		mOrderedVariables.emplace_back(v);
+		mAssignedVariables.emplace_back(v);
 		mAssignments.emplace_back(f);
 	}
 
 	void popAssignment(carl::Variable v) {
 		SMTRAT_LOG_TRACE("smtrat.nlsat", "Removing " << v << " = " << mModel.evaluated(v));
-		assert(!mOrderedVariables.empty() && mOrderedVariables.back() == v);
+		assert(!mAssignedVariables.empty() && mAssignedVariables.back() == v);
 		mModel.erase(v);
-		mOrderedVariables.pop_back();
+		mAssignedVariables.pop_back();
 		mAssignments.pop_back();
 	}
 };

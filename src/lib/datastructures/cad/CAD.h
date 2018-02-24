@@ -74,7 +74,7 @@ namespace cad {
 		const auto& getConstraints() const {
 			return mConstraints.indexed();
 		}
-		const bool isIdValid(std::size_t id) const{
+		bool isIdValid(std::size_t id) const {
 			return mConstraints.valid(id);
 		}
 		const auto& getBounds() const {
@@ -94,8 +94,8 @@ namespace cad {
 		}
 		void removeConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing " << c);
-			std::size_t id = mConstraints.remove(c);
-			mLifting.removedConstraint(carl::Bitset({id}));
+			auto mask = mConstraints.remove(c);
+			mLifting.removedConstraint(mask);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current sampletree:" << std::endl << mLifting.getTree());
 		}
@@ -103,16 +103,39 @@ namespace cad {
 		template<typename ConstraintIt>
 		bool evaluateSample(Sample& sample, const ConstraintIt& constraint, Assignment& assignment) const {
 			std::size_t cid = constraint.second;
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Evaluating " << cid << " / " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment);
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Sample was evaluated: " << sample.evaluatedWith() << " / " << sample.evaluationResult());
 			if (sample.evaluatedWith().test(cid)) {
 				return sample.evaluationResult().test(cid);
 			}
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Evaluating " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment);
 			auto res = carl::RealAlgebraicNumberEvaluation::evaluate(constraint.first.lhs(), assignment);
 			bool evalResult = carl::evaluate(res, constraint.first.relation());
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Evaluating " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment << " -> " << evalResult);
 			sample.evaluatedWith().set(cid, true);
 			sample.evaluationResult().set(cid, evalResult);
 			return evalResult;
+		}
+		
+		std::vector<Assignment> enumerateSolutions() {
+			std::vector<Assignment> res;
+			SMTRAT_LOG_TRACE("smtrat.cad", "Enumerating satisfying samples...");
+			while (mLifting.hasFullSamples()) {
+				auto it = mLifting.getNextFullSample();
+				auto m = mLifting.extractSampleMap(it);
+				SMTRAT_LOG_TRACE("smtrat.cad", "Checking full sample " << m);
+				assert(m.size() == it.depth());
+				bool sat = true;
+				for (const auto& c: mConstraints.ordered()) {
+					Assignment a = m;
+					sat = sat && evaluateSample(*it, c, a);
+					if (!sat) break;
+				}
+				if (sat) {
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Found satisfying sample " << m);
+					res.emplace_back(m);
+				}
+			}
+			return res;
 		}
 
 		Answer checkFullSamples(Assignment& assignment) {
@@ -131,7 +154,7 @@ namespace cad {
 					if (!sat) break;
 				}
 				if (sat) {
-					SMTRAT_LOG_INFO("smtrat.cad", "Found satisfying sample " << m);
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Found satisfying sample " << m);
 					assignment = m;
 					return Answer::SAT;
 				}

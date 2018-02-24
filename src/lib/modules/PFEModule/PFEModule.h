@@ -120,6 +120,9 @@ namespace smtrat
              */
 			FormulaT removeFactors(const FormulaT& formula);
 			std::function<FormulaT(FormulaT)> removeFactorsFunction;
-
+			
+			FormulaT removeSquaresFromStrict(const FormulaT& formula);
+			FormulaT removeSquares(const FormulaT& formula);
+			std::function<FormulaT(FormulaT)> removeSquaresFunction;
     };
 }

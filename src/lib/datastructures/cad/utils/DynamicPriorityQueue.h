@@ -34,20 +34,23 @@ namespace smtrat {
 		auto end() {
 			return data().end();
 		}
-		void erase(typename std::vector<T>::const_iterator it) {
-			super::c.erase(it);
+		auto erase(typename std::vector<T>::const_iterator it) {
+			return data().erase(it);
 		}
-		void erase(typename std::vector<T>::const_iterator it, typename std::vector<T>::const_iterator end) {
-			super::c.erase(it, end);
+		auto erase(typename std::vector<T>::const_iterator it, typename std::vector<T>::const_iterator end) {
+			return data().erase(it, end);
+		}
+		void fix() {
+			std::make_heap(data().begin(), data().end(), super::comp);
 		}
 		template<typename F>
 		void removeIf(F&& f) {
-			auto it = std::remove_if(super::c.begin(), super::c.end(), f);
-			super::c.erase(it, super::c.end());
-			std::make_heap(super::c.begin(), super::c.end(), super::comp);
+			auto it = std::remove_if(data().begin(), data().end(), f);
+			data().erase(it, data().end());
+			std::make_heap(data().begin(), data().end(), super::comp);
 		}
 		void clear() {
-			super::c.clear();
+			data().clear();
 		}
 	};
 	template<typename TT, typename C>

@@ -6,6 +6,7 @@
 
 #include <boost/optional.hpp>
 
+#include <cstdlib>
 #include <map>
 
 namespace smtrat {
@@ -85,22 +86,21 @@ public:
 			mDuplicateAssignments.erase(dait);
 		} else {
 			auto it = mModel.find(v);
-			if (it == mModel.end()) std::exit(55);
 			assert(it != mModel.end());
 			mModel.erase(it);
 			auto ait = mAssignments.find(v);
 			assert(ait != mAssignments.end());
 			SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Removing assignment " << ait->second);
-			mCAD.removeConstraint(ait->second);
-			mForwardedConstraints.erase(ait->second);
+			auto fit = mForwardedConstraints.find(ait->second);
+			if (fit != mForwardedConstraints.end()) {
+				mCAD.removeConstraint(ait->second);
+				mForwardedConstraints.erase(fit);
+			}
 			mAssignments.erase(ait);
 		}
 	}
-	/**
-	 * Actually commits new constraints and simplications to CAD.
-	 */
-	bool commit() {
-		SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Commit ");
+	
+	bool considerDuplicateAssignments() {
 		for (auto it = mDuplicateAssignments.begin(); it != mDuplicateAssignments.end();) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Looking at duplicate " << it->first);
 			if (mAssignments.find(it->second.first) == mAssignments.end()) {
@@ -108,20 +108,25 @@ public:
 				addAssignment(it->second.first, it->second.second, it->first);
 				it = mDuplicateAssignments.erase(it);
 			} else {
-				SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Model: " << mModel);
 				auto res = carl::model::evaluate(it->first, mModel);
-				SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Evaluated to " << res);
+				SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Evaluates to " << res);
 				assert(res.isBool());
 				if (!res.asBool()) {
 					SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Duplicate constraint is a conflict: " << it->first);
 					mConflict = it->first;
 					return false;
-				} else {
-					SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Evaluated to true:" << res);
 				}
 				it++;
 			}
 		}
+		return true;
+	}
+	/**
+	 * Actually commits new constraints and simplications to CAD.
+	 */
+	bool commit() {
+		SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Commit ");
+		if (!considerDuplicateAssignments()) return false;
 		SMTRAT_LOG_INFO("smtrat.cad.eqreplacer", "Using " << mModel << " to simplify");
 		for (auto& c: mConstraints) {
 			auto res = carl::model::substitute(c.first, mModel);
@@ -143,6 +148,7 @@ public:
 			SMTRAT_LOG_INFO("smtrat.cad.eqreplacer", c.first << " -> " << res);
 			if (res.isConsistent() == 0) {
 				// The constraint is trivially false under the model.
+				SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Got immediate conflict");
 				mConflict = c.first;
 				return false;
 			}

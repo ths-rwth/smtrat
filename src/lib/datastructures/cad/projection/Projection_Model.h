@@ -234,8 +234,15 @@ namespace cad {
                         Model m;
                         for(std::size_t l = dim(); l > level; l--) {
                             carl::Variable v = var(l);
+                            if (mModel.find(v) == mModel.end()) continue;
                             m.emplace(v, mModel.evaluated(v));
                         }
+                        bool modelBased = m.find(var(level)) != m.end();
+						if (modelBased) {
+							SMTRAT_LOG_INFO("smtrat.cad.projection", "Projection is model-based for " << var(level));
+						} else {
+							SMTRAT_LOG_INFO("smtrat.cad.projection", "Projection is not model-based for " << var(level));
+						}
                         
                         for(const auto& it: polys(level)) {
                             assert(it.first.mainVar() == var(level));
@@ -243,17 +250,30 @@ namespace cad {
                             mOperator(Settings::projectionOperator, it.first, var(level + 1), 
                                 [&](const UPoly& np){ addToCorrectLevel(level + 1, np, it.second); }
                             );
+							
+							if (modelBased) {
+								// Model-based projection
+								std::pair<std::size_t, std::size_t> pids;
+								findPIDsForProjection(var(level), level, m, pids); 
+								for (const auto& itPID: polys(level)) {
+									//if(itPID.second == pids.first || itPID.second == pids.second) {
+										std::size_t newOrigin = std::max(it.second, itPID.second);
+										mOperator(Settings::projectionOperator, it.first, itPID.first, var(level + 1),
+											[&](const UPoly& np){ addToCorrectLevel(level + 1, np, newOrigin); } 
+										);
+									//}
+								}
+							} else {
+								// Regular full projection
+								for (const auto& itPID: polys(level)) {
+									std::size_t newOrigin = std::max(it.second, itPID.second);
+									mOperator(Settings::projectionOperator, it.first, itPID.first, var(level + 1),
+										[&](const UPoly& np){ addToCorrectLevel(level + 1, np, newOrigin); } 
+									);
+								}
+							}
+							
                             
-                            std::pair<std::size_t, std::size_t> pids;
-                            findPIDsForProjection(var(level), level, m, pids); 
-                            for (const auto& itPID: polys(level)) {
-                                //if(itPID.second == pids.first || itPID.second == pids.second) {
-                                    std::size_t newOrigin = std::max(it.second, itPID.second);
-                                    mOperator(Settings::projectionOperator, it.first, itPID.first, var(level + 1),
-                                            [&](const UPoly& np){ addToCorrectLevel(level + 1, np, newOrigin); } 
-                                    );
-                                //}
-                            }
                         }
                 }
 		

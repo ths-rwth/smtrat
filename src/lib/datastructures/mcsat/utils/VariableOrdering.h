@@ -78,22 +78,33 @@ inline void purgeVariable(std::vector<carl::Bitset>& constraints, carl::Variable
 
 }
 
-template<typename Constraints>
-std::vector<carl::Variable> constructVariableOrdering(const Constraints& c) {
-	detail::VariableIDs vids;
-	std::vector<carl::Bitset> constraints;
-	for (int i = 0; i < c.size(); ++i) {
-		if (c[i].first == nullptr) continue;
-		constraints.emplace_back(detail::variablesOf(c[i].first->reabstraction, vids));
+class VariableOrdering {
+	bool mInitialized = false;
+	std::vector<carl::Variable> mVariables;
+public:
+	bool initialized() const {
+		return mInitialized;
 	}
-	
-	std::vector<carl::Variable> order;
-	while (!constraints.empty()) {
-		order.emplace_back(findMax(constraints, vids));
-		purgeVariable(constraints, order.back(), vids);
+	template<typename Constraints>
+	void update(const Constraints& c) {
+		detail::VariableIDs vids;
+		std::vector<carl::Bitset> constraints;
+		for (int i = 0; i < c.size(); ++i) {
+			if (c[i].first == nullptr) continue;
+			constraints.emplace_back(detail::variablesOf(c[i].first->reabstraction, vids));
+		}
+		
+		mVariables.clear();
+		while (!constraints.empty()) {
+			mVariables.emplace_back(findMax(constraints, vids));
+			purgeVariable(constraints, mVariables.back(), vids);
+		}
+		mInitialized = true;
 	}
-	return order;
-}
+	const auto& ordering() const {
+		return mVariables;
+	}
+};
 
 }
 }

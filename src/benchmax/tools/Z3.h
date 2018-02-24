@@ -22,6 +22,7 @@ public:
 		if (result.stdout.find("unsat") != std::string::npos) return "unsat";
 		if (result.stdout.find("sat") != std::string::npos) return "sat";
 		if (result.stdout.find("unknown") != std::string::npos) return "unknown";
+		if (result.stdout.find("out of memory") != std::string::npos) return "memout";
 		return "invalid";
 	}
 };

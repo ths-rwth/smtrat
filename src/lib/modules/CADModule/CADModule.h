@@ -14,7 +14,7 @@
 
 #include <unordered_map>
 
-#include "carl/cad/CAD.h"
+#include <carl/cad/CAD.h>
 
 #include "../../datastructures/VariableBounds.h"
 #include "CADStatistics.h"

@@ -96,20 +96,20 @@ namespace cad {
 			auto tend = mTree.end_children(parent);
 			auto tit = tbegin, tlast = tbegin;
 			if (tbegin->isRoot()) {
-				auto it = mTree.insert(tbegin, Sample(RAN::sampleBelow(tlast->value())));
+				auto it = mTree.insert(tbegin, Sample(carl::sampleBelow(tlast->value())));
 				addToQueue(it);
 			}
 			while (true) {
 				tit++;
 				if (tit == tend) break;
 				if (tlast->isRoot() && tit->isRoot()) {
-					auto it = mTree.insert(tit, Sample(RAN::sampleBetween(tlast->value(), tit->value())));
+					auto it = mTree.insert(tit, Sample(carl::sampleBetween(tlast->value(), tit->value(), Settings::sampleHeuristic)));
 					addToQueue(it);
 				}
 				tlast = tit;
 			}
 			if (tlast->isRoot()) {
-				auto it = mTree.append(parent, Sample(RAN::sampleAbove(tlast->value())));
+				auto it = mTree.append(parent, Sample(carl::sampleAbove(tlast->value())));
 				addToQueue(it);
 			}
 			
