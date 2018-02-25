@@ -117,7 +117,7 @@ namespace full {
                                 if(cbp) {
                                     carl::Bitset purged = carl::Bitset().set(id);
                                     mLiftingQueues[level - 1].erase(id);
-                                    callRemoveCallback(level, purged);
+                                    callRemoveCallback(level, purged); 
                                 }
                                 mEvaluated[level].set(id); 
                         }
@@ -375,7 +375,7 @@ namespace full {
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purged.");
                                 } else if(!active(qe.level, qe.first) || !active(qe.level, qe.second)) {
                                         mInactiveQueue.push(qe); 
-                                } else if(Settings::restrictProjectionByEC && mRestricted[qe.level].first == true && (qe.first != mRestricted[qe.level].second && qe.second != mRestricted[qe.level].second)) {
+                                } else if(Settings::restrictProjectionByEC && qe.level != 0 && mRestricted[qe.level].first == true && (qe.first != mRestricted[qe.level].second && qe.second != mRestricted[qe.level].second)) {
                                         mInactiveQueue.push(qe); 
 				} else {
 					carl::Bitset res = projectCandidate(qe);
@@ -485,6 +485,7 @@ namespace full {
                                     mEvaluated[level] &= mPurged[level];
                                     level += 1;
                                 }
+                                SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> ComputePurgedPolynomials, until level" << level);
                                 computePurgedPolynomials(level);
                                 deactivatePolynomials(1);
 			} else {

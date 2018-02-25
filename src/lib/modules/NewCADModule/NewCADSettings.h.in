@@ -216,8 +216,8 @@ namespace cad {
 	struct NewCADSettingsEQ: NewCADBaseSettings, cad::IncrementalityEQ, cad::ProjectionBrown, cad::SampleCompareT {
 		static constexpr auto moduleName = "NewCADModule<NewCADEQ>";
 		static constexpr std::size_t trivialSampleRadius = 1;
-		static constexpr bool simplifyProjectionByBounds = false;
-		static constexpr bool restrictProjectionByEC = false;
+		static constexpr bool simplifyProjectionByBounds = true;
+		static constexpr bool restrictProjectionByEC = true;
 	};
 	
 	struct NewCADSettingsFV: NewCADBaseSettings, cad::IncrementalityF, cad::ProjectionBrown, cad::SampleCompareValue, cad::ProjectionOrderDefault {
