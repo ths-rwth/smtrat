@@ -27,7 +27,7 @@ namespace projection_compare {
 	}
 	template<typename Poly>
 	auto get(const Candidate<Poly>& c, degree) {
-		return std::max(std::get<0>(c).totalDegree(), std::get<1>(c).totalDegree());
+		return std::max(std::get<0>(c).complexity(), std::get<1>(c).complexity());
 	}
 	template<typename Poly>
 	auto get(const Candidate<Poly>& c, type) {

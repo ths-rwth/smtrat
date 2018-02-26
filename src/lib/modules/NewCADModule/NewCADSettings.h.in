@@ -88,30 +88,33 @@ namespace cad {
 		static constexpr bool force_nonincremental = false;
 	};
 	
-	struct NewCADSettingsNaive: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareT, cad::ProjectionOrderDefault {
+	struct NewCADSettingsNaive: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareLT, cad::ProjectionOrderDefault {
 		static constexpr auto moduleName = "NewCADModule<Naive>";
 		static constexpr bool force_nonincremental = true;
 	};
 	
-	struct NewCADSettingsNO: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareT, cad::ProjectionOrderDefault {
+	struct NewCADSettingsNO: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareLT, cad::ProjectionOrderDefault {
 		static constexpr auto moduleName = "NewCADModule<NewCADNO>";
 	};
 	
-	struct NewCADSettingsNU: NewCADBaseSettings, cad::IncrementalityNU, cad::ProjectionBrown, cad::SampleCompareT, cad::ProjectionOrderDefault {
+	struct NewCADSettingsNU: NewCADBaseSettings, cad::IncrementalityNU, cad::ProjectionBrown, cad::SampleCompareLT, cad::ProjectionOrderDefault {
 		static constexpr auto moduleName = "NewCADModule<NewCADNU>";
 	};
 	
-	struct NewCADSettingsSO: NewCADBaseSettings, cad::IncrementalitySO, cad::ProjectionBrown, cad::SampleCompareT, cad::ProjectionOrderDefault {
+	struct NewCADSettingsSO: NewCADBaseSettings, cad::IncrementalitySO, cad::ProjectionBrown, cad::SampleCompareLT, cad::ProjectionOrderDefault {
 		static constexpr auto moduleName = "NewCADModule<NewCADSO>";
 	};
-	struct NewCADSettingsSU: NewCADBaseSettings, cad::IncrementalitySU, cad::ProjectionBrown, cad::SampleCompareT, cad::ProjectionOrderDefault {
+	struct NewCADSettingsSU: NewCADBaseSettings, cad::IncrementalitySU, cad::ProjectionBrown, cad::SampleCompareLT, cad::ProjectionOrderDefault {
 		static constexpr auto moduleName = "NewCADModule<NewCADSU>";
 	};
 	
-	struct NewCADSettingsFU: NewCADBaseSettings, cad::IncrementalityFU, cad::ProjectionBrown, cad::SampleCompareT, cad::ProjectionOrderDefault {
+	struct NewCADSettingsFU: NewCADBaseSettings, cad::IncrementalityFU, cad::ProjectionBrown, cad::SampleCompareLT, cad::ProjectionOrderDefault {
 		static constexpr auto moduleName = "NewCADModule<NewCADFU>";
 	};
 	
+	//
+	// Settings to test different sampling heuristics
+	//
 	struct NewCADSettingsFU_SC: NewCADSettingsFU {
 		static constexpr auto moduleName = "NewCADModule<NewCADFU_SC>";
 		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Center;
@@ -136,7 +139,7 @@ namespace cad {
 		static constexpr auto moduleName = "NewCADModule<NewCADFU_SInf>";
 		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::InftyInt;
 	};
-	
+	// end of sampling heuristics
 	
 	//
 	// Settings to test different lifting order heuristics

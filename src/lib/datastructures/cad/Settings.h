@@ -9,7 +9,7 @@ namespace cad {
 	enum class ProjectionType { Brown, McCallum, Hong };
 	enum class ProjectionCompareStrategy {
 		D, PD, SD, lD, LD,
-		Default = D
+		Default = lD
 	};
 	enum class SampleCompareStrategy { 
 		T,
@@ -23,7 +23,7 @@ namespace cad {
 		LS,
 		S,
 		Type, Value,
-		Default = Type
+		Default = LT
 	};
 	enum class FullSampleCompareStrategy { Type, Value, T, Default = T };
 	using SampleHeuristic = carl::RANSampleHeuristic;
