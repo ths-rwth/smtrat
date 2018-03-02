@@ -35,12 +35,12 @@ struct VariableFixture {
   Variable x = carl::freshRealVariable("x");
   Variable y = carl::freshRealVariable("y");
   Variable z = carl::freshRealVariable("z");
-  std::vector<Variable> variableOrder {x,y,z};
 };
 
 BOOST_FIXTURE_TEST_CASE(polylevel, VariableFixture) {
   BOOST_TEST_MESSAGE("Test polyLevel");
 
+  std::vector<Variable> variableOrder {x,y,z};
   BOOST_CHECK(levelOf(variableOrder, MultiPoly(1)) == nullopt);
   BOOST_CHECK(levelOf(variableOrder, MultiPoly(x) * Rational(0)) == nullopt);
   BOOST_CHECK(levelOf(variableOrder, MultiPoly(x * y) * Rational(0)) == nullopt);
@@ -54,6 +54,7 @@ BOOST_FIXTURE_TEST_CASE(polylevel, VariableFixture) {
 
 BOOST_FIXTURE_TEST_CASE(cell2d, VariableFixture) {
   BOOST_TEST_MESSAGE("Test 2D example from [1]");
+  std::vector<Variable> variableOrder {x,y};
   MultiPoly p = MultiPoly(x*x) + MultiPoly(y*y) - Rational(1) ;
   MultiPoly q = MultiPoly(y*y)*Rational(2) - MultiPoly(x*x) * (MultiPoly(x)*Rational(2) + Rational(3)) ;
   MultiPoly r = MultiPoly(y) + MultiPoly(x)*Rational(0.5) - Rational(0.5) ;
