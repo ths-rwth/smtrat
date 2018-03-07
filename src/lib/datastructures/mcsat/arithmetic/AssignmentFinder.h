@@ -44,7 +44,7 @@ private:
 		m.assign(mVar, r);
 		auto res = carl::model::evaluate(f, m);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Evaluating " << f << " on " << m << " -> " << res);
-		if (!res.isBool()) std::quick_exit(75);
+		if (!res.isBool()) return true;
 		assert(res.isBool());
 		return res.asBool();
 	}
