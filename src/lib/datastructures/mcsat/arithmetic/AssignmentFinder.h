@@ -88,6 +88,7 @@ public:
 				break;
 			case mcsat::constraint_type::ConstraintType::Unassigned:
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Considering unassigned constraint " << f << " (which may still become univariate)");
+				return true;
 				break;
 		}
 		FormulaT fnew(carl::model::substitute(f, mModel));
@@ -100,7 +101,7 @@ public:
 				list = *roots;
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "-> " << list);
 			} else {
-				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Failed to compute roots, or polynomial becomes zero.");
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Failed to compute roots because polynomial is not univariate or became zero.");
 				mMVBounds.emplace_back(f);
 				return true;
 			}
