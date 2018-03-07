@@ -23,6 +23,7 @@ private:
 	 * Maps the input formula to the list of real roots and the simplified formula where mModel was substituted.
 	 */
 	std::map<FormulaT, std::pair<std::vector<RAN>, FormulaT>> mRootMap;
+	std::vector<FormulaT> mMVBounds;
 	
 	/// Checks whether a formula is univariate, meaning it contains mVar and only variables from mModel otherwise.
 	bool isUnivariate(const FormulaT& f) const {
@@ -43,7 +44,7 @@ private:
 		m.assign(mVar, r);
 		auto res = carl::model::evaluate(f, m);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Evaluating " << f << " on " << m << " -> " << res);
-		if (!res.isBool()) std::exit(75);
+		if (!res.isBool()) std::quick_exit(75);
 		assert(res.isBool());
 		return res.asBool();
 	}
@@ -100,6 +101,7 @@ public:
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "-> " << list);
 			} else {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Failed to compute roots, or polynomial becomes zero.");
+				mMVBounds.emplace_back(f);
 				return true;
 			}
 		} else if (fnew.isTrue()) {
@@ -118,11 +120,17 @@ public:
 	
 	void addMVBound(const FormulaT& f) {
 		assert(f.getType() == carl::FormulaType::VARCOMPARE);
-		if (!isUnivariate(f)) {
-			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Ignoring non-univariate bound " << f);
+		//if (!isUnivariate(f)) {
+		//	SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Ignoring non-univariate bound " << f);
+		//	return;
+		//}
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Adding univariate bound " << f);
+		FormulaT fnew(carl::model::substitute(f, mModel));
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "-> " << fnew);
+		if (fnew.isTrue()) {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Bound evaluated to true, we can ignore it.");
 			return;
 		}
-		FormulaT fnew(carl::model::substitute(f, mModel));
 		assert(fnew.getType() == carl::FormulaType::VARCOMPARE);
 		ModelValue value = fnew.variableComparison().value();
 		if (value.isSubstitution()) {
@@ -130,11 +138,21 @@ public:
 			auto res = value.asSubstitution()->evaluate(mModel);
 			value = res;
 		}
-		if (!value.isRational() && !value.isRAN()) return;
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Evaluated to " << value);
+		if (!value.isRational() && !value.isRAN()) {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Value is neither rational nor RAN, cannot generate roots from it");
+			if (value.isBool()) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "But it is bool");
+				assert(false);
+			}
+			mMVBounds.emplace_back(fnew);
+			return;
+		}
 		std::vector<RAN> list;
 		if (value.isRational()) list.emplace_back(value.asRational());
 		else list.push_back(value.asRAN().changeVariable(mVar));
 		mRI.add(list);
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Adding " << list << " with " << fnew);
 		mRootMap.emplace(f, std::make_pair(std::move(list), fnew));
 	}
 	
@@ -142,7 +160,7 @@ public:
 		mRI.process();
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", mRI);
 		for (const auto& r: mRootMap) {
-			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", std::endl << r.first << " -> " << r.second);
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", r.first << " -> " << r.second);
 		}
 		Covering cover(mRI.size() * 2 + 1);
 		for (const auto& c: mRootMap) {
@@ -173,9 +191,31 @@ public:
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", constraint << " refutes " << mRI.sampleFrom(roots.size()*2) << " -> " << last << ".." << (mRI.size()*2));
 				b.set_interval(last, mRI.size()*2);
 			}
-			cover.add(c.first, b);
+			if (b.any()) {
+				cover.add(c.first, b);
+			}
 		}
-		SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", cover);
+		for (const auto& c: mMVBounds) {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Computing cover for " << c);
+			carl::Bitset b;
+			for (std::size_t i = 0; i < mRI.size() * 2 + 1; ++i) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", c << " vs " << mRI.sampleFrom(i));
+				
+				Model m = mModel;
+				m.assign(mVar, mRI.sampleFrom(i));
+				auto res = carl::model::evaluate(c, m);
+				if (!res.isBool()) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", c << " is inconclusive on " << mRI.sampleFrom(i));
+				} else if (!res.asBool()) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", c << " refutes " << mRI.sampleFrom(i));
+					b.set(i);
+				}
+			}
+			if (b.any()) {
+				cover.add(c, b);
+			}
+		}
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", cover);
 		return cover;
 	}
 	
