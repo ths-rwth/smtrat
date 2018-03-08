@@ -216,6 +216,8 @@ public:
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << value);
 			FormulaT repr = carl::representingFormula(currentVariable(), value);
 			mBackend.pushAssignment(currentVariable(), value, repr);
+			if (!trailIsConsistent()) std::quick_exit(74);
+			assert(trailIsConsistent());
 			return std::make_pair(repr, true);
 		} else {
 			const auto& confl = boost::get<FormulasT>(res);
@@ -299,6 +301,7 @@ public:
 	}
 	Minisat::Lit getDecisionLiteral(const FormulaT& f) const {
 		std::size_t level = theoryLevel(f);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Theory level of " << f << " is " << level);
 		if (level >= mTheoryStack.size()) return Minisat::lit_Undef;
 		return get(level).decisionLiteral;
 	}
@@ -325,6 +328,30 @@ public:
 			return std::numeric_limits<int>::max();
 		}
 		return mGetter.getDecisionLevel(var(lit));
+	}
+	
+	bool trailIsConsistent() const {
+		const auto& trail = mBackend.getTrail();
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking trail against " << trail.model());
+		auto evaluator = [&trail](const auto& c){
+			auto res = carl::model::evaluate(c, trail.model());
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", c << " evaluates to " << res);
+			if (res.isBool()) {
+				if (!res.asBool()) return false;
+			}
+			return true;
+		};
+		for (const auto& c: trail.constraints()) {
+			auto category = mcsat::constraint_type::categorize(c, model(), carl::Variable::NO_VARIABLE);
+			if (category != mcsat::constraint_type::ConstraintType::Assigned) continue;
+			if (!evaluator(c)) return false;
+		}
+		for (const auto& b: trail.mvBounds()) {
+			auto category = mcsat::constraint_type::categorize(b, model(), carl::Variable::NO_VARIABLE);
+			if (category != mcsat::constraint_type::ConstraintType::Assigned) continue;
+			if (!evaluator(b)) return false;
+		}
+		return true;
 	}
 	
 	// ***** Output
