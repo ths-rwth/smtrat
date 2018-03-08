@@ -216,7 +216,6 @@ public:
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << value);
 			FormulaT repr = carl::representingFormula(currentVariable(), value);
 			mBackend.pushAssignment(currentVariable(), value, repr);
-			if (!trailIsConsistent()) std::quick_exit(74);
 			assert(trailIsConsistent());
 			return std::make_pair(repr, true);
 		} else {
@@ -265,6 +264,16 @@ public:
 			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " has no variable, thus on level 0");
 			return 0;
 		}
+		
+		for (std::size_t lvl = level(); lvl > 0; lvl--) {
+			if (variable(lvl) == carl::Variable::NO_VARIABLE) continue;
+			if (vars.count(variable(lvl)) > 0) {
+				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is univariate in " << variable(lvl));
+				return lvl;
+			}
+		}
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " contains undecided variables.");
+		return std::numeric_limits<std::size_t>::max();
 	
 		Model m = model();
 		if (!carl::model::evaluate(f, m).isBool()) {
