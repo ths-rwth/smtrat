@@ -2750,6 +2750,7 @@ namespace smtrat
 							mCurrentAssignmentConsistent = SAT;
 							next = createLiteral(res, FormulaT(carl::FormulaType::TRUE), false);
 							mMCSAT.makeDecision(next);
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Picking the next literal");
 							pickTheoryBranchLit();
 							
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still feasible with this theory decision");
@@ -2757,6 +2758,11 @@ namespace smtrat
 							if (conflict) {
 								newDecisionLevel();
 								uncheckedEnqueue(next);
+								#ifdef DEBUG_SATMODULE
+								cout << "######################################################################" << endl;
+								cout << "### Before handling conflict" << endl;
+								print(cout, "###");
+								#endif
 								SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
 								handleTheoryConflict(conflict->isNary() ? conflict->subformulas() : FormulasT({*conflict}));
 								mMCSAT.undoAssignment(next);
@@ -2905,7 +2911,7 @@ namespace smtrat
         #ifdef SMTRAT_DEVOPTION_Validation // this is often an indication that something is wrong with our theory, so we do store our assumptions.
         if( value( learnt_clause[0] ) != l_Undef ) Module::storeAssumptionsToCheck( *mpManager );
         #endif
-		if (value( learnt_clause[0] ) != l_Undef) std::exit(31);
+		if (value( learnt_clause[0] ) != l_Undef) std::quick_exit(31);
         assert( value( learnt_clause[0] ) == l_Undef );
         if( learnt_clause.size() == 1 )
         {
@@ -3013,24 +3019,25 @@ namespace smtrat
             }
             if( mReceivedFormulaPurelyPropositional || Settings::theory_conflict_guided_decision_heuristic == TheoryGuidedDecisionHeuristicLevel::DISABLED || mCurrentAssignmentConsistent != SAT )
             {
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Retrieving next variable from the heap");
+				SMTRAT_LOG_TRACE("smtrat.sat", "Retrieving next variable from the heap");
                 // Activity based decision:
                 while( next == var_Undef || bool_value( next ) != l_Undef || !decision[next] )
                 {
                     if( order_heap.empty() )
                     {
-						SMTRAT_LOG_DEBUG("smtrat.sat", "Empty.");
+						SMTRAT_LOG_TRACE("smtrat.sat", "Empty.");
                         next = var_Undef;
                         break;
                     }
                     else
                         next = order_heap.removeMin();
-					SMTRAT_LOG_DEBUG("smtrat.sat", "Got " << next);
+					SMTRAT_LOG_TRACE("smtrat.sat", "Current " << next);
                 }
             }
             else
                 return bestBranchLit();
         }
+		SMTRAT_LOG_DEBUG("smtrat.sat", "Got " << next);
         return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
         //return next == var_Undef ? lit_Undef : mkLit( next, rnd_pol ? drand( random_seed ) < 0.5 : polarity[next] );
     }
