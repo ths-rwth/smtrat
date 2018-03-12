@@ -27,6 +27,9 @@ namespace smtrat
 	template<class Settings>
 	Answer SymmetryModule<Settings>::checkCore()
 	{
+		for (auto it = rReceivedFormula().begin(); it != rReceivedFormula().end(); ++it) {
+			addReceivedSubformulaToPassedFormula(it);
+		}
 		auto symm = carl::formula::breakSymmetries(FormulaT(rPassedFormula()));
 		addSubformulaToPassedFormula(symm);
 		
