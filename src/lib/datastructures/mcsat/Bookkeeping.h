@@ -90,6 +90,8 @@ public:
 inline std::ostream& operator<<(std::ostream& os, const Bookkeeping& bk) {
 	os << "MCSAT:" << std::endl;
 	os << "## Model: " << bk.model() << std::endl;
+	os << "## Assigned Vars: " << bk.assignedVariables() << std::endl;
+	os << "## Assignments: " << bk.assignments() << std::endl;
 	os << "## Constraints: " << bk.constraints() << std::endl;
 	os << "## Bounds: " << bk.mvBounds() << std::endl;
 	return os;
