@@ -31,7 +31,9 @@ namespace smtrat
 			addReceivedSubformulaToPassedFormula(it);
 		}
 		auto symm = carl::formula::breakSymmetries(FormulaT(rPassedFormula()));
-		addSubformulaToPassedFormula(symm);
+		if (!symm.isTrue()) {
+			addSubformulaToPassedFormula(symm);
+		}
 		
 		Answer ans = runBackends();
 		if (ans == UNSAT) {
