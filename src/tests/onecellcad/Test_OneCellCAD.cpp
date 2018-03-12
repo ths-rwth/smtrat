@@ -62,7 +62,7 @@ BOOST_FIXTURE_TEST_CASE(cell2d, VariableFixture) {
 
   RANPoint alpha { RAN(Rational(-1)/3), RAN(Rational(1)/3) };
 
-  optional<CADCell> c = pointEnclosingCADCell(variableOrder, alpha, polys);
+  optional<CADCell> c = OneCellCAD().pointEnclosingCADCell(variableOrder, alpha, polys);
 
   BOOST_CHECK(c);
 }
