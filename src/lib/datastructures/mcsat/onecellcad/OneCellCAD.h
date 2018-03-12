@@ -75,7 +75,7 @@ namespace onecellcad {
       return o;
     }
 
-    struct TaggedPoly {
+    struct TagPoly2 {
       PolyTag tag;
 
       MultiPoly poly;
@@ -85,27 +85,27 @@ namespace onecellcad {
     };
 
     inline
-    std::ostream &operator<<(std::ostream &o, const TaggedPoly &p) {
+    std::ostream &operator<<(std::ostream &o, const TagPoly2 &p) {
       return o << "(poly " << p.tag << " " << p.poly << ")";
     }
 
     inline
-    bool operator==(const TaggedPoly &lhs, const TaggedPoly &rhs) {
+    bool operator==(const TagPoly2 &lhs, const TagPoly2 &rhs) {
       return lhs.tag == rhs.tag && lhs.poly == rhs.poly;
     }
 
-    struct TaggedPoly2 {
+    struct TagPoly {
       PolyTag tag;
       MultiPoly poly;
     };
 
     inline
-    std::ostream &operator<<(std::ostream &o, const TaggedPoly2 &p) {
+    std::ostream &operator<<(std::ostream &o, const TagPoly &p) {
       return o << "(poly " << p.tag << " " << p.poly << ")";
     }
 
     inline
-    std::vector<MultiPoly> asMultiPolys(const std::vector<TaggedPoly> polys){
+    std::vector<MultiPoly> asMultiPolys(const std::vector<TagPoly2> polys){
       std::vector<MultiPoly> mPolys;
       for (const auto& poly : polys)
         mPolys.emplace_back(poly.poly);
@@ -113,7 +113,7 @@ namespace onecellcad {
     }
 
     inline
-    std::vector<MultiPoly> asMultiPolys(const std::vector<TaggedPoly2> polys){
+    std::vector<MultiPoly> asMultiPolys(const std::vector<TagPoly> polys){
       std::vector<MultiPoly> mPolys;
       for (const auto& poly : polys)
         mPolys.emplace_back(poly.poly);
@@ -228,10 +228,10 @@ namespace onecellcad {
      */
     struct PolyLog {
       /** This collection is called "P_prj" in [1] */
-      std::vector<TaggedPoly> projectionPolys;
+      std::vector<TagPoly2> projectionPolys;
 
       /** Only delinating polys. This collection is called "P_dln" in [1] */
-      std::vector<TaggedPoly> delineators;
+      std::vector<TagPoly2> delineators;
     };
 
 
@@ -325,21 +325,21 @@ namespace onecellcad {
     }
 
     inline
-    bool contains(const std::vector<TaggedPoly> &polys, const MultiPoly &poly) {
-      auto isMatch = [&poly](const TaggedPoly &taggedPoly) {
+    bool contains(const std::vector<TagPoly2> &polys, const MultiPoly &poly) {
+      auto isMatch = [&poly](const TagPoly2 &taggedPoly) {
         return taggedPoly.poly == poly;
       };
       return std::find_if(polys.begin(), polys.end(), isMatch) != polys.end();
     }
 
     inline
-    bool contains(const std::vector<TaggedPoly> &polys, const TaggedPoly &poly) {
+    bool contains(const std::vector<TagPoly2> &polys, const TagPoly2 &poly) {
       return std::find(polys.begin(), polys.end(), poly) != polys.end();
     }
 
-    bool isAlreadyProcessed(const PolyLog &log, const TaggedPoly &poly) {
+    bool isAlreadyProcessed(const PolyLog &log, const TagPoly2 &poly) {
       // matches if poly is found with its tag or an oi-tag
-      auto isMatch = [&poly](const TaggedPoly &processedPoly) {
+      auto isMatch = [&poly](const TagPoly2 &processedPoly) {
         return processedPoly.poly == poly.poly &&
                (processedPoly.tag == poly.tag
                 || processedPoly.tag == PolyTag::ORD_INV);
@@ -401,7 +401,7 @@ namespace onecellcad {
     bool isPointRootOfPoly(
       const std::vector<carl::Variable> &variableOrder,
       const RANPoint &point,
-      const TaggedPoly &poly) {
+      const TagPoly2 &poly) {
       return isPointRootOfPoly(variableOrder, point, poly.level, poly.poly);
     }
 
@@ -539,7 +539,7 @@ namespace onecellcad {
     std::vector<MultiPoly> partialDerivativesLayerWithSomeNonEarlyVanishingPoly(
       const std::vector<carl::Variable> &variableOrder,
       const RANPoint &point,
-      const TaggedPoly &mainPoly) {
+      const TagPoly2 &mainPoly) {
       assert(!mainPoly.poly.isConstant());
       // We search for this set of partial derivatives "layer by layer".
       // The layer of 0-th partial derivatives is the mainPoly itself.
@@ -580,7 +580,7 @@ namespace onecellcad {
     ShrinkResult refineNull(
       const ShrinkContext &ctx,
       PolyLog &polyLog,
-      const TaggedPoly &boundCandidate,
+      const TagPoly2 &boundCandidate,
       CADCell &cell) {
       // This function is called "RefNull" in [1]
       // precondition:
@@ -590,19 +590,19 @@ namespace onecellcad {
       const auto mainVariable = ctx.variableOrder[boundCandidate.level];
       const auto boundCandidateUniPoly =
         boundCandidate.poly.toUnivariatePolynomial(mainVariable);
-      std::vector<TaggedPoly> projectionResult;
+      std::vector<TagPoly2> projectionResult;
 
-      projectionResult.emplace_back(TaggedPoly{
+      projectionResult.emplace_back(TagPoly2{
         PolyTag::ORD_INV,
         discriminant(mainVariable, boundCandidate.poly),
         0}); // hack: we compute the level later in this function
 
-      projectionResult.emplace_back(TaggedPoly{
+      projectionResult.emplace_back(TagPoly2{
         PolyTag::ORD_INV,
         boundCandidateUniPoly.lcoeff(),
         0}); // hack: we compute the level later in this function
 
-      projectionResult.emplace_back(TaggedPoly{
+      projectionResult.emplace_back(TagPoly2{
         PolyTag::ORD_INV,
         boundCandidateUniPoly.tcoeff(),
         0}); // hack: we compute the level later in this function
@@ -625,7 +625,7 @@ namespace onecellcad {
     ShrinkResult shrinkCellWithEarlyVanishingPoly(
       const ShrinkContext &ctx,
       PolyLog &polyLog,
-      const TaggedPoly &boundCandidate,
+      const TagPoly2 &boundCandidate,
       CADCell &cell) {
       // This function is called MergeNull in [1]
       // precondition:
@@ -658,7 +658,7 @@ namespace onecellcad {
           const size_t delineatorLevel = *levelOf(ctx.variableOrder, delineator);
           shrinkSingleComponent(ctx, delineatorLevel, delineator, cell);
 
-          const TaggedPoly taggedDelineator{
+          const TagPoly2 taggedDelineator{
             PolyTag::ORD_INV,
             delineator,
             delineatorLevel};
@@ -680,7 +680,7 @@ namespace onecellcad {
     ShrinkResult shrinkCellWithIrreducibleFactorsOfPoly(
       const ShrinkContext &ctx,
       PolyLog &polyLog,
-      const TaggedPoly &poly,
+      const TagPoly2 &poly,
       CADCell &cell) {
       for (const auto &factor : ctx.factorizer.irreducibleFactorsOf(poly.poly)) {
         SMTRAT_LOG_TRACE("smtrat.cad", "Shrink with irreducible factor: Poly: "
@@ -689,7 +689,7 @@ namespace onecellcad {
           continue;
 
         const std::size_t factorLevel = *levelOf(ctx.variableOrder, factor);
-        TaggedPoly factorWithInheritedTag{poly.tag, factor, factorLevel};
+        TagPoly2 factorWithInheritedTag{poly.tag, factor, factorLevel};
         if (shrinkCell(ctx, polyLog, factorWithInheritedTag, cell)
             == ShrinkResult::FAIL)
           return ShrinkResult::FAIL;
@@ -700,7 +700,7 @@ namespace onecellcad {
     ShrinkResult refineNonNull(
       const ShrinkContext &ctx,
       PolyLog &polyLog,
-      const TaggedPoly &boundCandidate,
+      const TagPoly2 &boundCandidate,
       CADCell &cell) {
       // This function is called "RefNonNull" in [1]
       // precondition:
@@ -754,7 +754,7 @@ namespace onecellcad {
     ShrinkResult shrinkCellWithPolyHavingPointAsRoot(
       const ShrinkContext &ctx,
       PolyLog &polyLog,
-      const TaggedPoly &boundCandidate,
+      const TagPoly2 &boundCandidate,
       CADCell &cell) {
       // This function is called MergeRoot in [1]
       // precondition:
@@ -763,10 +763,10 @@ namespace onecellcad {
       SMTRAT_LOG_TRACE("smtrat.cad", "ShrinkWithPolyHavingPointAsRoot");
 
       // Do a "model-based" Brown-McCallum projection.
-      std::vector<TaggedPoly> projectionResult;
+      std::vector<TagPoly2> projectionResult;
       const auto mainVariable = ctx.variableOrder[boundCandidate.level];
       if (mpark::holds_alternative<Section>(cell[boundCandidate.level])) {
-        projectionResult.emplace_back(TaggedPoly{
+        projectionResult.emplace_back(TagPoly2{
           PolyTag::ORD_INV,
           resultant(
             mainVariable,
@@ -775,21 +775,21 @@ namespace onecellcad {
           0}); // hack: we compute the level later in this function
 
         if (boundCandidate.tag == PolyTag::ORD_INV) {
-          projectionResult.emplace_back(TaggedPoly{
+          projectionResult.emplace_back(TagPoly2{
             PolyTag::SGN_INV,
             boundCandidate.poly.lcoeff(mainVariable),
             0}); // hack: we compute the level later in this function
-          projectionResult.emplace_back(TaggedPoly{
+          projectionResult.emplace_back(TagPoly2{
             PolyTag::ORD_INV,
             discriminant(mainVariable, boundCandidate.poly),
             0}); // hack: we compute the level later in this function
         }
       } else { // cellComponent is a Sector at 'boundCandidate's level
-        projectionResult.emplace_back(TaggedPoly{
+        projectionResult.emplace_back(TagPoly2{
           PolyTag::SGN_INV,
           boundCandidate.poly.lcoeff(mainVariable),
           0}); // hack: we compute the level later in this function
-        projectionResult.emplace_back(TaggedPoly{
+        projectionResult.emplace_back(TagPoly2{
           PolyTag::ORD_INV,
           discriminant(mainVariable, boundCandidate.poly),
           0}); // hack: we compute the level later in this function
@@ -797,7 +797,7 @@ namespace onecellcad {
         Sector &sectorAtLvl = mpark::get<Sector>(cell[boundCandidate.level]);
 
         if (sectorAtLvl.lowBound) {
-          projectionResult.emplace_back(TaggedPoly{
+          projectionResult.emplace_back(TagPoly2{
             PolyTag::ORD_INV,
             resultant(
               mainVariable,
@@ -806,7 +806,7 @@ namespace onecellcad {
             0}); // hack: we compute the level later in this function
         }
         if (sectorAtLvl.highBound) {
-          projectionResult.emplace_back(TaggedPoly{
+          projectionResult.emplace_back(TagPoly2{
             PolyTag::ORD_INV,
             resultant(
               mainVariable,
@@ -836,7 +836,7 @@ namespace onecellcad {
         shrinkSingleComponent(ctx, boundCandidate.level, boundCandidate.poly, cell);
       }
 
-      polyLog.projectionPolys.emplace_back(TaggedPoly{
+      polyLog.projectionPolys.emplace_back(TagPoly2{
         PolyTag::SGN_INV,
         boundCandidate.poly,
         boundCandidate.level});
@@ -865,7 +865,7 @@ namespace onecellcad {
     ShrinkResult shrinkCellWithNonRootPoint(
       const ShrinkContext &ctx,
       PolyLog &polyLog,
-      const TaggedPoly &boundCandidate,
+      const TagPoly2 &boundCandidate,
       CADCell &cell) {
       // This function is called "MergeNotRoot" in [1]
       // precondition:
@@ -874,16 +874,16 @@ namespace onecellcad {
       SMTRAT_LOG_TRACE("smtrat.cad", "ShrinkWithNonRootPoint");
 
       // Do a "model-based" Brown-McCallum projection.
-      std::vector<TaggedPoly> projectionResult;
+      std::vector<TagPoly2> projectionResult;
       const auto mainVariable = ctx.variableOrder[boundCandidate.level];
       if (mpark::holds_alternative<Section>(cell[boundCandidate.level])) {
         Section sectionAtLvl = mpark::get<Section>(cell[boundCandidate.level]);
-        projectionResult.emplace_back(TaggedPoly{
+        projectionResult.emplace_back(TagPoly2{
           PolyTag::ORD_INV,
           resultant(mainVariable, boundCandidate.poly, sectionAtLvl.poly),
           0}); // hack: we compute the level later in this function});
       } else { // cellComponent is a Sector at 'boundCandidate's level
-        projectionResult.emplace_back(TaggedPoly{
+        projectionResult.emplace_back(TagPoly2{
           PolyTag::ORD_INV,
           discriminant(mainVariable, boundCandidate.poly),
           0}); // hack: we compute the level later in this function});
@@ -896,14 +896,14 @@ namespace onecellcad {
               sectorAtLvl.highBound->lastVarCachedRoot,
               boundCandidate.poly,
               boundCandidate.level)) {
-          projectionResult.emplace_back(TaggedPoly{
+          projectionResult.emplace_back(TagPoly2{
             PolyTag::SGN_INV,
             boundCandidate.poly.lcoeff(mainVariable),
             0}); // hack: we compute the level later in this function});
         }
 
         if (sectorAtLvl.lowBound) {
-          projectionResult.emplace_back(TaggedPoly{
+          projectionResult.emplace_back(TagPoly2{
             PolyTag::ORD_INV,
             resultant(
               mainVariable,
@@ -912,7 +912,7 @@ namespace onecellcad {
             0}); // hack: we compute the level later in this function});
         }
         if (sectorAtLvl.highBound) {
-          projectionResult.emplace_back(TaggedPoly{
+          projectionResult.emplace_back(TagPoly2{
             PolyTag::ORD_INV,
             resultant(
               mainVariable,
@@ -942,7 +942,7 @@ namespace onecellcad {
         shrinkSingleComponent(ctx, boundCandidate.level, boundCandidate.poly, cell);
       }
 
-      polyLog.projectionPolys.emplace_back(TaggedPoly{
+      polyLog.projectionPolys.emplace_back(TagPoly2{
         PolyTag::SGN_INV,
         boundCandidate.poly,
         boundCandidate.level});
@@ -963,7 +963,7 @@ namespace onecellcad {
     ShrinkResult shrinkCell(
       const ShrinkContext &ctx,
       PolyLog &polyLog,
-      const TaggedPoly &boundCandidate,
+      const TagPoly2 &boundCandidate,
       CADCell &cell) {
       // This function is called "Merge" in [1]
       // precondition:
@@ -977,14 +977,14 @@ namespace onecellcad {
         return ShrinkResult::SUCCESS;
 
       if (cellDimension(cell, boundCandidate.level) == 0) {
-        polyLog.projectionPolys.emplace_back(TaggedPoly{PolyTag::ORD_INV, boundCandidate.poly, boundCandidate.level});
+        polyLog.projectionPolys.emplace_back(TagPoly2{PolyTag::ORD_INV, boundCandidate.poly, boundCandidate.level});
         return ShrinkResult::SUCCESS;
       }
 
       if (boundCandidate.level == 0) {
         if (mpark::holds_alternative<Sector>(cell[boundCandidate.level]))
           shrinkSingleComponent(ctx, boundCandidate.level, boundCandidate.poly, cell);
-        polyLog.projectionPolys.emplace_back(TaggedPoly{PolyTag::ORD_INV, boundCandidate.poly, boundCandidate.level});
+        polyLog.projectionPolys.emplace_back(TagPoly2{PolyTag::ORD_INV, boundCandidate.poly, boundCandidate.level});
         return ShrinkResult::SUCCESS;
       }
 
@@ -994,7 +994,7 @@ namespace onecellcad {
       // lower level subcell
       if (cellDimension(cell, boundCandidate.level - 1) == 0) {
         shrinkSingleComponent(ctx, boundCandidate.level, boundCandidate.poly, cell);
-        polyLog.projectionPolys.emplace_back(TaggedPoly{PolyTag::ORD_INV, boundCandidate.poly, boundCandidate.level});
+        polyLog.projectionPolys.emplace_back(TagPoly2{PolyTag::ORD_INV, boundCandidate.poly, boundCandidate.level});
         return ShrinkResult::SUCCESS;
       }
 
@@ -1004,30 +1004,30 @@ namespace onecellcad {
         return shrinkCellWithNonRootPoint(ctx, polyLog, boundCandidate, cell);
     }
 
-    std::vector<TaggedPoly2> oneLevelFullBrowMcCallumProjection(
+    std::vector<TagPoly> oneLevelFullBrowMcCallumProjection(
       carl::CoCoAAdaptor<MultiPoly> factorizer,
       carl::Variable mainVar,
-      std::vector<TaggedPoly2> polys) {
+      std::vector<TagPoly> polys) {
 
-      std::vector<TaggedPoly2> projectionResult;
+      std::vector<TagPoly> projectionResult;
       for (int i = 0; i < polys.size(); i++) {
         auto poly1 = polys[i];
-        projectionResult.emplace_back(TaggedPoly2{
+        projectionResult.emplace_back(TagPoly{
           PolyTag::ORD_INV,
           discriminant(mainVar, poly1.poly)});
-        projectionResult.emplace_back(TaggedPoly2{
+        projectionResult.emplace_back(TagPoly{
           PolyTag::SGN_INV,
           poly1.poly.lcoeff(mainVar)});
         for (int j = i + 1; j < polys.size(); j++) {
           auto poly2 = polys[j];
           auto resultantPoly =
             resultant(mainVar, poly1.poly, poly2.poly);
-          projectionResult.emplace_back(TaggedPoly2{
+          projectionResult.emplace_back(TagPoly{
             PolyTag::ORD_INV,
             resultantPoly});
         }
       }
-      std::vector<TaggedPoly2> nextLevelNonConstIrreducibles;
+      std::vector<TagPoly> nextLevelNonConstIrreducibles;
       for (auto &poly : projectionResult) {
         if (poly.poly.isConstant())
           continue;
@@ -1039,7 +1039,7 @@ namespace onecellcad {
             continue;
 
           nextLevelNonConstIrreducibles.emplace_back(
-            TaggedPoly2{poly.tag, factor});
+            TagPoly{poly.tag, factor});
         }
 
       }
@@ -1084,7 +1084,7 @@ namespace onecellcad {
 
       for (const auto &poly : polys) {
         const auto polyLevel = *levelOf(ctx.variableOrder, poly);
-        TaggedPoly taggedPoly = {PolyTag::SGN_INV, poly, polyLevel};
+        TagPoly2 taggedPoly = {PolyTag::SGN_INV, poly, polyLevel};
         if (shrinkCell(ctx, emptyLog, taggedPoly, cell) == ShrinkResult::FAIL) {
           SMTRAT_LOG_WARN("smtrat.cad", "Building failed");
           return std::experimental::nullopt;

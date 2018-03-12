@@ -82,8 +82,8 @@ struct Explanation {
     SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Normal max poly level: " << data.model().size() - 1);
     auto maxNormalPolyLevel = data.model().size()-1;
     auto maxHigherPolyLevel = variableOrder.size()-1;
-    std::vector<std::vector<onecellcad::TaggedPoly2>> higherLevelPolys(variableOrder.size()-1 - maxNormalPolyLevel);
-    std::vector<onecellcad::TaggedPoly> normalLevelPolys;
+    std::vector<std::vector<onecellcad::TagPoly>> higherLevelPolys(variableOrder.size()-1 - maxNormalPolyLevel);
+    std::vector<onecellcad::TagPoly2> normalLevelPolys;
     for (const auto& poly : polys) {
       auto polyLevel = *onecellcad::levelOf(variableOrder, poly);
       if (polyLevel > maxNormalPolyLevel)
