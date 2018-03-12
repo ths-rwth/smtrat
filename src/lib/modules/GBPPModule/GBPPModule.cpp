@@ -62,7 +62,9 @@ namespace smtrat
 			auto res = visitor.visitResult(f.formula(), simplifyInequalityFunction);
 			
 			SMTRAT_LOG_INFO("smtrat.gbpp", "Reduced " << f.formula() << " to " << res);
-			addSubformulaToPassedFormula(res, f.formula());
+			if (!res.isTrue()) {
+				addSubformulaToPassedFormula(res, f.formula());
+			}
 		}
 		
 		// Forward basis to backend
