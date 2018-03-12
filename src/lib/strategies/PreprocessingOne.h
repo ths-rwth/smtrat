@@ -10,6 +10,8 @@
 #include "../modules/ESModule/ESModule.h"
 #include "../modules/ICEModule/ICEModule.h"
 #include "../modules/MCBModule/MCBModule.h"
+#include "../modules/GBPPModule/GBPPModule.h"
+#include "../modules/SymmetryModule/SymmetryModule.h"
 
 namespace smtrat
 {
@@ -27,13 +29,17 @@ namespace smtrat
         public:
             PreprocessingOne(): Manager() {
 				setStrategy({
-					addBackend<MCBModule<MCBSettings1>>(
-						addBackend<ICEModule<ICESettings1>>(
-							addBackend<EMModule<EMSettings1>>(
-								addBackend<PFEModule<PFESettings1>>(
-							//		addBackend<SplitSOSModule<SplitSOSSettings1>>({
-										addBackend<ESModule<ESSettings1>>()
-							//		})
+					addBackend<SymmetryModule<SymmetrySettings1>>(
+						addBackend<GBPPModule<GBPPSettings1>>(
+							addBackend<MCBModule<MCBSettings1>>(
+								addBackend<ICEModule<ICESettings1>>(
+									addBackend<EMModule<EMSettings1>>(
+										addBackend<PFEModule<PFESettings1>>(
+									//		addBackend<SplitSOSModule<SplitSOSSettings1>>({
+												addBackend<ESModule<ESSettings1>>()
+									//		})
+										)
+									)
 								)
 							)
 						)
