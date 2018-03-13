@@ -119,18 +119,21 @@ public:
 		return true;
 	}
 	
-	void addMVBound(const FormulaT& f) {
+	bool addMVBound(const FormulaT& f) {
 		assert(f.getType() == carl::FormulaType::VARCOMPARE);
 		if (!isUnivariate(f)) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Ignoring non-univariate bound " << f);
-			return;
+			return true;
 		}
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Adding univariate bound " << f);
 		FormulaT fnew(carl::model::substitute(f, mModel));
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "-> " << fnew);
 		if (fnew.isTrue()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Bound evaluated to true, we can ignore it.");
-			return;
+			return true;
+		} else if (fnew.isFalse()) {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
+			return false;
 		}
 		assert(fnew.getType() == carl::FormulaType::VARCOMPARE);
 		ModelValue value = fnew.variableComparison().value();
@@ -147,7 +150,7 @@ public:
 				assert(false);
 			}
 			mMVBounds.emplace_back(fnew);
-			return;
+			return true;
 		}
 		std::vector<RAN> list;
 		if (value.isRational()) list.emplace_back(value.asRational());
@@ -155,6 +158,7 @@ public:
 		mRI.add(list);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Adding " << list << " with " << fnew);
 		mRootMap.emplace(f, std::make_pair(std::move(list), fnew));
+		return true;
 	}
 	
 	Covering computeCover() {

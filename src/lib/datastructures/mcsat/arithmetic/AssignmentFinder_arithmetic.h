@@ -24,7 +24,11 @@ struct AssignmentFinder {
 		}
 		for (const auto& b: data.mvBounds()) {
 			SMTRAT_LOG_TRACE("smtrat.mcsat.arithmetic", "Adding MVBound " << b);
-			af.addMVBound(b);
+			if (!af.addMVBound(b)) {
+				conflict.push_back(b);
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.arithmetic", "No Assignment, built conflicting core " << conflict << " under model " << data.model());
+				return conflict;
+			}
 		}
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.arithmetic", "Calling AssignmentFinder...");
 		return af.findAssignment();
