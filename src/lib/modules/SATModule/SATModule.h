@@ -240,17 +240,17 @@ namespace smtrat
                 lemma_lt(SATModule& solver) : solver(solver) {}
 				int levelOf(Minisat::Var v) {
 					if (solver.bool_value(v) != l_Undef) {
-						SMTRAT_LOG_TRACE("smtrat.sat", "Level of " << v << ": " << solver.trailIndex(v) << " (trail index from boolean assignment)");
+						SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", "Level of " << v << ": " << solver.trailIndex(v) << " (trail index from boolean assignment)");
 						return solver.trailIndex(v);
 					} else {
 						assert(Settings::mc_sat);
 						auto res = solver.mMCSAT.assignedAtTrailIndex(v);
-						SMTRAT_LOG_TRACE("smtrat.sat", "Index of " << v << ": " << res);
+						SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", "Index of " << v << ": " << res);
 						return res;
 					}
 				}
                 bool operator () (Minisat::Lit x, Minisat::Lit y) {
-					SMTRAT_LOG_TRACE("smtrat.sat", "Doing comparison " << x << " < " << y << "?");
+					SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", "Doing comparison " << x << " < " << y << "?");
 					if (x == y) return false;
 					
 					/* We want the following order:
@@ -262,30 +262,30 @@ namespace smtrat
 					if (x_value == l_Undef) {
 						if (y_value == l_Undef) {
 							// arbitrary
-							SMTRAT_LOG_TRACE("smtrat.sat", "Both unassigned, using arbitrary order: " << (x < y));
+							SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", "Both unassigned, using arbitrary order: " << (x < y));
 							return x < y;
 						} else {
 							// x < y
-							SMTRAT_LOG_TRACE("smtrat.sat", x << " unassigned but " << y << " assigned, hence true");
+							SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", x << " unassigned but " << y << " assigned, hence true");
 							return true;
 						}
 					}
 					if (y_value == l_Undef) {
 						// y < x
-						SMTRAT_LOG_TRACE("smtrat.sat", x << " assigned but " << y << " unassigned, hence false");
+						SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", x << " assigned but " << y << " unassigned, hence false");
 						return false;
 					}
 					assert(x_value != l_Undef && y_value != l_Undef);
 					if (x_value != y_value) {
 						return x_value == l_True;
-						SMTRAT_LOG_TRACE("smtrat.sat", "Both assigned but differently: " << (x_value == l_True));
+						SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", "Both assigned but differently: " << (x_value == l_True));
 					}
 					assert(x_value == y_value);
 					int x_level = levelOf(var(x));
-					SMTRAT_LOG_TRACE("smtrat.sat", "Level of " << x << ": " << x_level);
+					SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", "Level of " << x << ": " << x_level);
 					int y_level = levelOf(var(y));
-					SMTRAT_LOG_TRACE("smtrat.sat", "Level of " << y << ": " << y_level);
-					SMTRAT_LOG_TRACE("smtrat.sat", "Comparing levels: " << (x_level > y_level));
+					SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", "Level of " << y << ": " << y_level);
+					SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", "Comparing levels: " << (x_level > y_level));
 					return x_level > y_level;
                 }
             };
@@ -911,10 +911,14 @@ namespace smtrat
 			
 			void handleTheoryConflict(const FormulasT& clause) {
 				Minisat::vec<Minisat::Lit> explanation;
+				#ifdef DEBUG_SATMODULE
+				print(std::cout, "###");
+				#endif
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict clause " << clause);
 				//CARL_CHECKPOINT("nlsat", "theory-conflict", clause);
 				for (const auto& c: clause) {
 					explanation.push(createLiteral(c));
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Created literal from " << c << " -> " << explanation.last());
 				}
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
 				addClause(explanation, Minisat::LEMMA_CLAUSE);
