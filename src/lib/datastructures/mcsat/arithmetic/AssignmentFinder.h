@@ -121,10 +121,10 @@ public:
 	
 	void addMVBound(const FormulaT& f) {
 		assert(f.getType() == carl::FormulaType::VARCOMPARE);
-		//if (!isUnivariate(f)) {
-		//	SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Ignoring non-univariate bound " << f);
-		//	return;
-		//}
+		if (!isUnivariate(f)) {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Ignoring non-univariate bound " << f);
+			return;
+		}
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Adding univariate bound " << f);
 		FormulaT fnew(carl::model::substitute(f, mModel));
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "-> " << fnew);
