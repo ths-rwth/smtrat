@@ -32,6 +32,7 @@ namespace smtrat
 		}
 		auto symm = carl::formula::breakSymmetries(FormulaT(rPassedFormula()));
 		if (!symm.isTrue()) {
+			SMTRAT_LOG_DEBUG("smtrat.symmetry", "Broke symmetries by" << std::endl << symm);
 			addSubformulaToPassedFormula(symm);
 		}
 		
