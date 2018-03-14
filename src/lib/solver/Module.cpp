@@ -159,7 +159,7 @@ namespace smtrat
     void Module::deinform( const FormulaT& _constraint )
     {
         SMTRAT_LOG_DEBUG("smtrat.module", __func__ << " " << moduleName() << " (" << mId << ") about: " << _constraint);
-        if( mpManager != NULL )
+        if( mpManager != nullptr )
         {
             for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
             {
@@ -280,7 +280,7 @@ namespace smtrat
     
     void Module::init()
     {
-        if( mpManager == NULL || mConstraintsToInform.empty() ) return;
+        if( mpManager == nullptr || mConstraintsToInform.empty() ) return;
         // Get the backends to be considered from the manager.
         mUsedBackends = mpManager->getBackends( this, mBackendsFoundAnswer );
         mAllBackends = mpManager->getAllBackends( this );
@@ -473,7 +473,7 @@ namespace smtrat
     bool Module::probablyLooping( const typename Poly::PolyType& _branchingPolynomial, const Rational& _branchingValue ) const
 #endif
     {
-        if( mpManager == NULL ) return false;
+        if( mpManager == nullptr ) return false;
         assert( _branchingPolynomial.constantPart() == 0 );
         auto iter = mLastBranches.begin();
         for( ; iter != mLastBranches.end(); ++iter )
@@ -604,7 +604,7 @@ namespace smtrat
             // Create (s2 -> constraintB)
             mLemmas.emplace_back( FormulaT( carl::FormulaType::OR, s2.negated(), FormulaT( constraintB ) ), LemmaType::NORMAL, FormulaT( carl::FormulaType::TRUE ) );
             #ifdef SMTRAT_DEVOPTION_Statistics
-            mpManager->mpStatistics->addBranchingLemma();
+			if (mpManager != nullptr) { mpManager->mpStatistics->addBranchingLemma(); }
             #endif
             return true;
         }
@@ -775,7 +775,7 @@ namespace smtrat
 
     Answer Module::runBackends( bool _final, bool _full, bool _minimize )
     {
-        if( mpManager == NULL ) return UNKNOWN;
+        if( mpManager == nullptr ) return UNKNOWN;
         *mBackendsFoundAnswer = false;
         Answer result = UNKNOWN;
         // Update the propositions of the passed formula
@@ -890,7 +890,7 @@ namespace smtrat
         // Remove the sub-formula from the backends, if it was considered in their consistency checks.
         if( subformulaChecked )
         {
-            if( mpManager != NULL )
+            if( mpManager != nullptr )
             {
                 mAllBackends = mpManager->getAllBackends( this );
                 for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
@@ -1279,17 +1279,19 @@ namespace smtrat
 
     void Module::addInformationRelevantFormula( const FormulaT& formula )
     {
-            mpManager->addInformationRelevantFormula( formula );
+		if (mpManager == nullptr) return;
+		mpManager->addInformationRelevantFormula( formula );
     }
 
     const std::set<FormulaT>& Module::getInformationRelevantFormulas()
     {
-            return mpManager->getInformationRelevantFormulas();
+        return mpManager->getInformationRelevantFormulas();
     }
 
     bool Module::isLemmaLevel(LemmaLevel level)
     {
-            return mpManager->isLemmaLevel(level);
+		if (mpManager == nullptr) return true;
+		return mpManager->isLemmaLevel(level);
     }
 
     void Module::print( const string 
