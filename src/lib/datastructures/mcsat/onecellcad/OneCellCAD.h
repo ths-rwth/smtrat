@@ -32,15 +32,14 @@
 #include <carl/core/MultivariatePolynomial.h>
 #include <carl/converter/CoCoAAdaptor.h>
 
-#include "../../../Common.h" // type alias for Rational number representation
+#include "../../../Common.h" // useful short type aliases
 #include "Assertables.h"
 
 namespace smtrat {
 namespace onecellcad {
 
     using UniPoly = carl::UnivariatePolynomial<smtrat::Rational>;
-    using MultiPoly = carl::MultivariatePolynomial<smtrat::Rational>;
-    using MultiCoeffUniPoly = carl::UnivariatePolynomial<MultiPoly>;
+    using MultiCoeffUniPoly = carl::UnivariatePolynomial<Poly>;
     using RAN = carl::RealAlgebraicNumber<smtrat::Rational>;
     using RANPoint = carl::RealAlgebraicPoint<smtrat::Rational>;
     using RANMap = std::map<carl::Variable, RAN>;
@@ -78,7 +77,7 @@ namespace onecellcad {
     struct TagPoly2 {
       PolyTag tag;
 
-      MultiPoly poly;
+      Poly poly;
 
       /** Workaround: Cache the poly's level to avoid recomputing it in many places. */
       std::size_t level;
@@ -96,7 +95,7 @@ namespace onecellcad {
 
     struct TagPoly {
       PolyTag tag;
-      MultiPoly poly;
+      Poly poly;
     };
 
     inline
@@ -105,16 +104,16 @@ namespace onecellcad {
     }
 
     inline
-    std::vector<MultiPoly> asMultiPolys(const std::vector<TagPoly2> polys){
-      std::vector<MultiPoly> mPolys;
+    std::vector<Poly> asMultiPolys(const std::vector<TagPoly2> polys){
+      std::vector<Poly> mPolys;
       for (const auto& poly : polys)
         mPolys.emplace_back(poly.poly);
       return mPolys;
     }
 
     inline
-    std::vector<MultiPoly> asMultiPolys(const std::vector<TagPoly> polys){
-      std::vector<MultiPoly> mPolys;
+    std::vector<Poly> asMultiPolys(const std::vector<TagPoly> polys){
+      std::vector<Poly> mPolys;
       for (const auto& poly : polys)
         mPolys.emplace_back(poly.poly);
       return mPolys;
@@ -130,7 +129,7 @@ namespace onecellcad {
      */
     struct Section {
       // A section is always finite, a sector may have infty bounds!
-      MultiPoly poly;
+      Poly poly;
 
       RAN lastVarCachedRoot;
 
@@ -219,7 +218,7 @@ namespace onecellcad {
 
       /** The CoCoAAdaptor transforms variables into an internal format that we want have done only once
        * and cached. */
-      const carl::CoCoAAdaptor<MultiPoly> factorizer;
+      const carl::CoCoAAdaptor<Poly> factorizer;
     };
 
 
@@ -257,7 +256,7 @@ namespace onecellcad {
     inline
     std::experimental::optional<std::size_t> levelOf(
       const std::vector<carl::Variable> &variableOrder,
-      const MultiPoly &poly) {
+      const Poly &poly) {
       // precondition:
       assert(isSubset(asVector(poly.gatherVariables()), variableOrder));
 
@@ -312,7 +311,7 @@ namespace onecellcad {
       const std::vector<carl::Variable> &variableOrder,
       const RANPoint &point,
       const std::size_t polyLevel,
-      const MultiPoly &poly) {
+      const Poly &poly) {
       // 'realRoots' returns std::nullopt if poly vanishes
       // early, but here we don't care
       auto rootsOpt = carl::rootfinder::realRoots(
@@ -325,7 +324,7 @@ namespace onecellcad {
     }
 
     inline
-    bool contains(const std::vector<TagPoly2> &polys, const MultiPoly &poly) {
+    bool contains(const std::vector<TagPoly2> &polys, const Poly &poly) {
       auto isMatch = [&poly](const TagPoly2 &taggedPoly) {
         return taggedPoly.poly == poly;
       };
@@ -362,7 +361,7 @@ namespace onecellcad {
       const std::vector<carl::Variable> &variableOrder,
       const RANPoint &point,
       const std::size_t polyLevel,
-      const MultiPoly &poly) {
+      const Poly &poly) {
       // precondition:
       assert(!poly.isConstant());
       if (poly.isLinear())
@@ -382,7 +381,7 @@ namespace onecellcad {
       const std::vector<carl::Variable> &variableOrder,
       const RANPoint &point,
       const std::size_t polyLevel,
-      const MultiPoly &poly) {
+      const Poly &poly) {
       const std::size_t componentCount = polyLevel + 1;
       std::vector<carl::Variable> subVariableOrder(
         variableOrder.begin(),
@@ -461,7 +460,7 @@ namespace onecellcad {
     void shrinkSingleComponent(
       const ShrinkContext &ctx,
       const std::size_t polyLevel,
-      const MultiPoly &poly,
+      const Poly &poly,
       CADCell &cell) {
       // This function is called "Update" in [1]
       // precondition:
@@ -536,19 +535,19 @@ namespace onecellcad {
      * does not terminate.
      * @return Actually only returns the set S
      */
-    std::vector<MultiPoly> partialDerivativesLayerWithSomeNonEarlyVanishingPoly(
+    std::vector<Poly> partialDerivativesLayerWithSomeNonEarlyVanishingPoly(
       const std::vector<carl::Variable> &variableOrder,
       const RANPoint &point,
       const TagPoly2 &mainPoly) {
       assert(!mainPoly.poly.isConstant());
       // We search for this set of partial derivatives "layer by layer".
       // The layer of 0-th partial derivatives is the mainPoly itself.
-      std::vector<MultiPoly> layerOfDerivatives;
+      std::vector<Poly> layerOfDerivatives;
       layerOfDerivatives.emplace_back(mainPoly.poly);
       bool foundSomeNonEarlyVanishingDerivative = false;
 
       do {
-        std::vector<MultiPoly> nextLayer;
+        std::vector<Poly> nextLayer;
         for (const auto &poly : layerOfDerivatives) {
           // Derive poly wrt to each variable (variables with idx 0 to 'mainPoly.level')
           for (std::size_t varIdx = 0; varIdx <= mainPoly.level; varIdx++) {
@@ -572,8 +571,8 @@ namespace onecellcad {
     }
 
     inline
-    MultiPoly discriminant(const carl::Variable &mainVariable, const MultiPoly &p) {
-      return MultiPoly(p.toUnivariatePolynomial(mainVariable).discriminant());
+    Poly discriminant(const carl::Variable &mainVariable, const Poly &p) {
+      return Poly(p.toUnivariatePolynomial(mainVariable).discriminant());
     }
 
 
@@ -646,7 +645,7 @@ namespace onecellcad {
 
         // Construct a delineating poly as the sum of all non-earlyVanishing,
         // squared m-th partial derivatives.
-        MultiPoly delineator(0);
+        Poly delineator(0);
         for (const auto &poly :
           partialDerivativesLayerWithSomeNonEarlyVanishingPoly(
             ctx.variableOrder, ctx.point, boundCandidate)) {
@@ -671,10 +670,10 @@ namespace onecellcad {
 
     /** Compute the resultant of two multivariate polynomials wrt. a given 'mainVariable' */
     inline
-    MultiPoly resultant(const carl::Variable &mainVariable, const MultiPoly &p1, const MultiPoly &p2) {
+    Poly resultant(const carl::Variable &mainVariable, const Poly &p1, const Poly &p2) {
       const auto p1UPoly = p1.toUnivariatePolynomial(mainVariable);
       const auto p2UPoly = p2.toUnivariatePolynomial(mainVariable);
-      return MultiPoly(p1UPoly.resultant(p2UPoly));
+      return Poly(p1UPoly.resultant(p2UPoly));
     }
 
     ShrinkResult shrinkCellWithIrreducibleFactorsOfPoly(
@@ -852,7 +851,7 @@ namespace onecellcad {
       const ShrinkContext &ctx,
       const RAN &low,
       const RAN &high,
-      const MultiPoly &poly,
+      const Poly &poly,
       const std::size_t polyLevel) {
       for (const RAN &candidate :
         allLastVariableRoots(ctx.variableOrder, ctx.point, polyLevel, poly)) {
@@ -1005,7 +1004,7 @@ namespace onecellcad {
     }
 
     std::vector<TagPoly> oneLevelFullBrowMcCallumProjection(
-      carl::CoCoAAdaptor<MultiPoly> factorizer,
+      carl::CoCoAAdaptor<Poly> factorizer,
       carl::Variable mainVar,
       std::vector<TagPoly> polys) {
 
@@ -1062,12 +1061,15 @@ namespace onecellcad {
     std::experimental::optional<CADCell> pointEnclosingCADCell(
       const std::vector<carl::Variable> &variableOrder,
       const RANPoint &point,
-      const std::vector<MultiPoly> &polys) {
+      const std::vector<Poly> &polys) {
+//      const std::vector<TagPoly> &polys) {
       // precondition:
       assert(!variableOrder.empty());
       assert(hasUniqElems(variableOrder));
       assert(variableOrder.size() == point.dim());
       assert(hasOnlyNonConstIrreducibles(polys));
+      SMTRAT_LOG_DEBUG("smtrat.cad", "Variable order: " << variableOrder);
+      SMTRAT_LOG_DEBUG("smtrat.cad", "Polys: " << polys);
       assert(polyVarsAreAllInList(polys, variableOrder));
 
       SMTRAT_LOG_INFO("smtrat.cad", "Build point enclosing CADcell");
@@ -1078,7 +1080,7 @@ namespace onecellcad {
       CADCell cell = fullSpaceCoveringCell(point.dim());
       SMTRAT_LOG_DEBUG("smtrat.cad", "Cell: " << cell);
 
-      carl::CoCoAAdaptor<MultiPoly> factorizer(polys);
+      carl::CoCoAAdaptor<Poly> factorizer(polys);
       const ShrinkContext ctx{point, variableOrder, factorizer};
       PolyLog emptyLog;
 
