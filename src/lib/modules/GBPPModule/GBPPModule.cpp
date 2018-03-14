@@ -37,6 +37,10 @@ namespace smtrat
 	template<class Settings>
 	Answer GBPPModule<Settings>::checkCore()
 	{
+		mEqualities.clear();
+		mEqualityComplexity = 0;
+		mBasis.reset();
+		
 		// Extract top-level Equalities
 		for (const auto& f: rReceivedFormula()) {
 			if (f.formula().getType() == carl::FormulaType::CONSTRAINT) {
@@ -50,6 +54,7 @@ namespace smtrat
 		
 		// Compute GBasis
 		for (const auto& eq: mEqualities) {
+			SMTRAT_LOG_DEBUG("smtrat.gbpp", "Adding to Gröbner Basis: " << gpoly(eq.constraint().lhs()));
 			mBasis.addPolynomial(gpoly(eq.constraint().lhs()));
 		}
 		mBasis.calculate();
