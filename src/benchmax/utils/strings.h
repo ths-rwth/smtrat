@@ -1,5 +1,7 @@
 #pragma once
 
+#include <boost/filesystem.hpp>
+
 #include <vector>
 
 namespace benchmax {
@@ -46,6 +48,12 @@ inline std::string removeDanglingSlashes(const std::string& s) {
 	if (res.front() == '/') res = res.substr(1);
 	if (res.back() == '/') res = res.substr(0, res.length() - 1);
 	return res;
+}
+
+/// Checks whether the extension of the filename is as specified.
+inline bool isExtension(const fs::path& path, const std::string& extension) {
+	if (!boost::filesystem::is_regular_file(path)) return false;
+	return boost::filesystem::extension(path) == extension;
 }
 
 }

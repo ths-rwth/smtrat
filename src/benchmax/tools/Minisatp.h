@@ -26,12 +26,12 @@ public:
 		return isExtension(path, ".opb");
 	}
 	
-	std::string getStatus(const BenchmarkResult& result) const override {
-		if (result.stdout.find("s OPTIMUM FOUND") != std::string::npos) return "sat";
-		if (result.stdout.find("s SATISFIABLE") != std::string::npos) return "sat";
-		if (result.stdout.find("s UNSATISFIABLE") != std::string::npos) return "unsat";
-		if (result.stdout.find("s UNKNOWN") != std::string::npos) return "unknown";
-		return "timeout";
+	virtual void additionalResults(const fs::path&, BenchmarkResult& result) const override {
+		if (result.stdout.find("s OPTIMUM FOUND") != std::string::npos) result.additional["answer"] = "sat";
+		else if (result.stdout.find("s SATISFIABLE") != std::string::npos) result.additional["answer"] = "sat";
+		else if (result.stdout.find("s UNSATISFIABLE") != std::string::npos) result.additional["answer"] = "unsat";
+		else if (result.stdout.find("s UNKNOWN") != std::string::npos) result.additional["answer"] = "unknown";
+		else result.additional["answer"] = "timeout";
 	}
 };
 
