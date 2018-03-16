@@ -18,8 +18,8 @@ namespace debug {
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = true;
 		
-		static constexpr SampleCompareStrategy sampleComparator = cad::SampleCompareStrategy::Integer;
-		static constexpr FullSampleCompareStrategy fullSampleComparator = cad::FullSampleCompareStrategy::Integer;
+		static constexpr SampleCompareStrategy sampleComparator = cad::SampleCompareStrategy::Default;
+		static constexpr FullSampleCompareStrategy fullSampleComparator = cad::FullSampleCompareStrategy::Default;
 		static constexpr RootSplittingStrategy rootSplittingStrategy = cad::RootSplittingStrategy::DEFAULT;
 	};
 	
