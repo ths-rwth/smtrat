@@ -1,7 +1,6 @@
 #include <boost/test/unit_test.hpp>
 
-#include <lib/datastructures/mcsat/nlsat/AssignmentFinder.h>
-#include <lib/datastructures/mcsat/nlsat/NLSAT.h>
+#include <lib/modules/SATModule/mcsat/BaseBackend.h>
 #include <lib/logging.h>
 
 using namespace smtrat;
@@ -30,7 +29,7 @@ BOOST_AUTO_TEST_CASE(Test_NLSATPaper_Ex3)
 	// Explanation for second conflict
 	FormulaT ex2(carl::FormulaType::OR, { c1.negated(), c5 });
 	
-	nlsat::NLSAT nlsat;
+	mcsat::MCSATBackend<mcsat::BackendSettings1> nlsat;
 	
 	// Decide x+1<=0
 	SMTRAT_LOG_INFO("smtrat.test.nlsat", "Decide " << c1);
@@ -42,7 +41,7 @@ BOOST_AUTO_TEST_CASE(Test_NLSATPaper_Ex3)
 		auto res = nlsat.findAssignment(x);
 		BOOST_CHECK(carl::variant_is_type<ModelValue>(res));
 		auto value = boost::get<ModelValue>(res);
-		BOOST_CHECK(value == Rational(-2));
+		BOOST_CHECK(value == ModelValue(Rational(-2)));
 	}
 	FormulaT fx(Poly(x) + Rational(2), carl::Relation::EQ);
 	nlsat.pushAssignment(x, Rational(-2), fx);
@@ -73,6 +72,41 @@ BOOST_AUTO_TEST_CASE(Test_NLSATPaper_Ex3)
 		auto explanation = nlsat.explain(x, *res, c5);
 		BOOST_CHECK(ex2 == explanation);
 	}
+}
+
+BOOST_AUTO_TEST_CASE(CoverComputation)
+{
+	carl::Variable a = carl::freshRealVariable("a");
+	carl::Variable b = carl::freshRealVariable("b");
+	Poly p = Poly(20)*a*a*b - Poly(a)*a*a*a*b - Poly(120)*b;
+	carl::UnivariatePolynomial<Rational> q(a, {
+		Rational(900),
+		Rational(0),
+		Rational(-2550),
+		Rational(0),
+		Rational(1055)/2,
+		Rational(0),
+		Rational(-40),
+		Rational(0),
+		Rational(1)
+	});
+	carl::Interval<Rational> i(Rational(633)/1025, carl::BoundType::STRICT, Rational(2533)/4096, carl::BoundType::STRICT);
+	FormulaT f(p, carl::Relation::LESS);
+	
+	std::cout << "Constructing RAN on " << q << " / " << i << std::endl;
+	carl::RealAlgebraicNumber<Rational> ran(q, i);
+	std::cout << "-> " << ran << std::endl;
+	
+	Model model;
+	model.assign(a, ran);
+	model.assign(b, Rational(-3));
+	
+	auto res = carl::model::evaluate(f, model);
+	std::cout << f << " on " << model << " -> " << res << std::endl;
+	
+	model.assign(b, Rational(1));
+	res = carl::model::evaluate(f, model);
+	std::cout << f << " on " << model << " -> " << res << std::endl;
 }
 
 BOOST_AUTO_TEST_SUITE_END();
