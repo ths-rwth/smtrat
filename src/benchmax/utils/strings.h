@@ -51,7 +51,7 @@ inline std::string removeDanglingSlashes(const std::string& s) {
 }
 
 /// Checks whether the extension of the filename is as specified.
-inline bool isExtension(const fs::path& path, const std::string& extension) {
+inline bool isExtension(const boost::filesystem::path& path, const std::string& extension) {
 	if (!boost::filesystem::is_regular_file(path)) return false;
 	return boost::filesystem::extension(path) == extension;
 }
