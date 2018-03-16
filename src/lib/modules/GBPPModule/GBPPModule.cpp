@@ -54,8 +54,8 @@ namespace smtrat
 		
 		// Compute GBasis
 		for (const auto& eq: mEqualities) {
-			SMTRAT_LOG_DEBUG("smtrat.gbpp", "Adding to Gröbner Basis: " << gpoly(eq.constraint().lhs()));
-			mBasis.addPolynomial(gpoly(eq.constraint().lhs()));
+			SMTRAT_LOG_DEBUG("smtrat.gbpp", "Adding to Gröbner Basis: " << gpoly(eq.constraint().lhs().normalize()));
+			mBasis.addPolynomial(gpoly(eq.constraint().lhs().normalize()));
 		}
 		mBasis.calculate();
 		SMTRAT_LOG_DEBUG("smtrat.gbpp", "Constructed Gröbner Basis:" << std::endl << mBasis.getIdeal());
