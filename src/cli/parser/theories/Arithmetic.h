@@ -11,7 +11,7 @@ namespace parser {
  * Implements the theory of arithmetic, including LRA, LIA, NRA and NIA.
  */
 struct ArithmeticTheory: public AbstractTheory  {
-	typedef boost::variant<Poly::ConstructorOperation, carl::Relation> OperatorType;
+	using OperatorType = boost::variant<Poly::ConstructorOperation, carl::Relation>;
 	
 	static void addSimpleSorts(qi::symbols<char, carl::Sort>& sorts);
 	

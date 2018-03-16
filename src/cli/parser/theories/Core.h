@@ -13,7 +13,7 @@ struct ParserState;
  * Implements the core theory of the booleans.
  */
 struct CoreTheory: public AbstractTheory {
-	typedef boost::variant<carl::FormulaType> OperatorType;
+	using OperatorType = boost::variant<carl::FormulaType>;
 	
 	static void addSimpleSorts(qi::symbols<char, carl::Sort>& sorts);
 	static void addConstants(qi::symbols<char, types::ConstType>& constants);
