@@ -29,6 +29,7 @@ namespace parser {
 			return true;
 		} else if (boost::get<carl::Variable>(&term) != nullptr) {
 			switch (boost::get<carl::Variable>(term).type()) {
+				case carl::VariableType::VT_BOOL:
 				case carl::VariableType::VT_REAL:
 				case carl::VariableType::VT_INT:
 					result = Poly(boost::get<carl::Variable>(term));
@@ -46,7 +47,7 @@ namespace parser {
 		for (std::size_t i = 0; i < arguments.size(); i++) {
 			Poly res;
 			if (!convertTerm(arguments[i], res)) {
-				errors.next() << "Operator \"" << op << "\" expects arguments to be formulas, but argument " << (i+1) << " is not: \"" << arguments[i] << "\".";
+				errors.next() << "Operator \"" << op << "\" expects arguments to be polynomials, but argument " << (i+1) << " is not: \"" << arguments[i] << "\".";
 				return false;
 			}
 			result.push_back(res);
