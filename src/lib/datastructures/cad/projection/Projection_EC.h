@@ -117,7 +117,7 @@ namespace full {
                                 if(cbp) {
                                     carl::Bitset purged = carl::Bitset().set(id);
                                     mLiftingQueues[level - 1].erase(id);
-                                    callRemoveCallback(level, purged); 
+                                    //callRemoveCallback(level, purged); 
                                 }
                                 mEvaluated[level].set(id); 
                         }
@@ -206,7 +206,7 @@ namespace full {
 					} 
 				}
 				SMTRAT_LOG_TRACE("smtrat.cad.projection", "Calling callback for level " << level << ", removed [" << remove << "]");
-				callRemoveCallback(lvl, remove);
+				//callRemoveCallback(lvl, remove);
                                 // deactivate polynomials in following levels due to the inactive polynomials in lvl_rec
 				for (std::size_t l = lvl+1; l <= dim(); l++) {
 					for (const auto& it: mPolynomialIDs[l]) {
