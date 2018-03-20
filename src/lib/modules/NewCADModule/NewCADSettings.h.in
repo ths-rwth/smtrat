@@ -216,7 +216,7 @@ namespace cad {
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = false;
 	};
-	struct NewCADSettingsEQ: NewCADBaseSettings, cad::IncrementalityEQ, cad::ProjectionBrown, cad::SampleCompareT {
+	struct NewCADSettingsEQ: NewCADBaseSettings, cad::IncrementalityEQ, cad::ProjectionBrown, cad::SampleCompareT, cad::ProjectionOrderDefault {
 		static constexpr auto moduleName = "NewCADModule<NewCADEQ>";
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = true;
