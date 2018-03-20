@@ -114,10 +114,10 @@ namespace full {
                                 SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Do not purge as " << level << "/" << id << " is a bound.");
                                 return false;
                         }
-						if (mEqConstraints[level].test(id)) {
-							SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Do not purge as " << level << "/" << id << " is an equational constraint.");
-							return false;
-						}
+                        if (mEqConstraints[level].test(id)) {
+                                SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Do not purge as " << level << "/" << id << " is an equational constraint.");
+                                return false;
+                        }
                         if (!mEvaluated[level].test(id)) {
                                 SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking if " << level << "/" << id << " can be purged.");
                                 bool cbp = mCanBePurged(level, id); 
@@ -125,7 +125,7 @@ namespace full {
                                 if(cbp) {
                                     carl::Bitset purged = carl::Bitset().set(id);
                                     mLiftingQueues[level - 1].erase(id);
-                                    //callRemoveCallback(level, purged); 
+                                    callRemoveCallback(level, purged); 
                                 }
                                 mEvaluated[level].set(id); 
                         }
@@ -221,7 +221,7 @@ namespace full {
 					} 
 				}
 				SMTRAT_LOG_TRACE("smtrat.cad.projection", "Calling callback for level " << level << ", removed [" << remove << "]");
-				//callRemoveCallback(lvl, remove);
+				callRemoveCallback(lvl, remove);
                                 // deactivate polynomials in following levels due to the inactive polynomials in lvl_rec
 				for (std::size_t l = lvl+1; l <= dim(); l++) {
 					for (const auto& it: mPolynomialIDs[l]) {
