@@ -110,6 +110,10 @@ namespace full {
                                 SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Do not purge as " << level << "/" << id << " is a bound.");
                                 return false;
                         }
+						if (mEqConstraints[level].test(id)) {
+							SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Do not purge as " << level << "/" << id << " is an equational constraint.");
+							return false;
+						}
                         if (!mEvaluated[level].test(id)) {
                                 SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking if " << level << "/" << id << " can be purged.");
                                 bool cbp = mCanBePurged(level, id); 
