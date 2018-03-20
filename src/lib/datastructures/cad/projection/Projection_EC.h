@@ -6,6 +6,7 @@
 
 #include "../Common.h"
 #include "BaseProjection.h"
+#include "../../../modules/NewCADModule/NewCADStatistics.h"
 
 namespace smtrat {
 namespace cad {
@@ -37,6 +38,9 @@ namespace full {
 		using Super::size;
 	private:
 
+#ifdef SMTRAT_DEVOPTION_Statistics
+		NewCADStatistics mStatistics;
+#endif
 		template<typename S>
 		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::FULL, Backtracking::HIDE, S>& p);
 		// A projection candidate: a level to project into and two ids that refer to the level above.
@@ -148,6 +152,13 @@ namespace full {
                             isPurged(lvl,it.second);
                         }
                     }
+#ifdef SMTRAT_DEVOPTION_Statistics
+                    std::size_t number = 0;
+                    for(std::size_t lvl = 1; lvl <= dim(); lvl++) {
+                        number += mPurged[lvl].count();
+                    }
+                    mStatistics.currentlyPurgedPolynomials(number);
+#endif
                 }
                 
                 /*
@@ -257,6 +268,9 @@ namespace full {
                         std::size_t lvl = level;
                         bool restricted = false;
                         while(lvl < dim() && mRestricted[lvl].first == false && mRestricted[lvl-1].first == true && mEqConstraints[lvl].any()){
+#ifdef SMTRAT_DEVOPTION_Statistics
+                            mStatistics.usedRestrictedProjection();
+#endif
                             restricted = true;
                             mRestricted[lvl].first = true;
                             mRestricted[lvl].second = mEqConstraints[lvl].find_first(); 
@@ -391,6 +405,9 @@ namespace full {
 			return carl::Bitset();
 		}
 		carl::Bitset projectCandidate(const QueueEntry& qe) {
+#ifdef SMTRAT_DEVOPTION_Statistics
+                        mStatistics.computePolynomial();
+#endif
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Projecting " << qe);
 			assert(qe.level < dim());
 			if (qe.level == 0) {
@@ -430,7 +447,10 @@ namespace full {
                         mInactiveQueue(ProjectionCandidateComparator([&](std::size_t level, std::size_t id){ return getPolynomialById(level, id); })),
 			mCanBePurged([this](std::size_t level, std::size_t id){
 				return canBePurgedByBounds(getPolynomialById(level, id));
-			})
+			}),
+#ifdef SMTRAT_DEVOPTION_Statistics
+                        mStatistics(Settings::moduleName)
+#endif
 		{}
 		void reset() {
 			Super::reset();
@@ -498,6 +518,9 @@ namespace full {
 			return carl::Bitset();
 		}
                 carl::Bitset addEqConstraint(const UPoly& p, std::size_t cid, bool isBound) override {
+#ifdef SMTRAT_DEVOPTION_Statistics
+    mStatistics.addedECtoCAD();
+#endif
                         if (cid >= mPolynomials[0].size()) {
 				mPolynomials[0].resize(cid + 1);
 			} else if (mPolynomials[0][cid]) { 
