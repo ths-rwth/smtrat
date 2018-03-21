@@ -2016,6 +2016,7 @@ namespace smtrat
     {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Clause: " << cr);
         Clause& c = ca[cr];
+		sat::detail::validateClause(c, mBooleanConstraintMap, Settings::validate_clauses);
         assert( c.size() > 1 );
         watches[~c[0]].push( Watcher( cr, c[1] ) );
         watches[~c[1]].push( Watcher( cr, c[0] ) );
@@ -2764,6 +2765,7 @@ namespace smtrat
 								print(cout, "###");
 								#endif
 								SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
+								sat::detail::validateClause(*conflict, Settings::validate_clauses);
 								handleTheoryConflict(conflict->isNary() ? conflict->subformulas() : FormulasT({*conflict}));
 								mMCSAT.undoAssignment(next);
 								next = lit_Undef;
@@ -3190,6 +3192,7 @@ namespace smtrat
 		#endif
 		assert( confl != CRef_Undef );
 		SMTRAT_LOG_DEBUG("smtrat.sat", "Analyzing conflict " << ca[confl] << " on DL" << decisionLevel());
+		sat::detail::validateClause(ca[confl], mBooleanConstraintMap, Settings::validate_clauses);
         int pathC = 0; // number of literals that must be resolved
         int resolutionSteps = -1;
         Lit p = lit_Undef;
@@ -3225,6 +3228,7 @@ namespace smtrat
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Explanation for " << p << ": " << ca[confl]);
 			}
 	            Clause& c = ca[confl];
+				sat::detail::validateClause(c, mBooleanConstraintMap, Settings::validate_clauses);
 				SMTRAT_LOG_DEBUG("smtrat.sat", "c = " << c);
 	            if( c.learnt() )
 	                claBumpActivity( c );

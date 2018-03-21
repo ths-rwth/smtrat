@@ -95,6 +95,8 @@ namespace smtrat
          * 
          */
         static const bool mc_sat = false;
+		
+		static constexpr bool validate_clauses = false;
 #endif
     };
 

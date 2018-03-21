@@ -915,7 +915,7 @@ namespace smtrat
 				print(std::cout, "###");
 				#endif
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict clause " << clause);
-				//CARL_CHECKPOINT("nlsat", "theory-conflict", clause);
+				sat::detail::validateClause(clause, Settings::validate_clauses);
 				for (const auto& c: clause) {
 					explanation.push(createLiteral(c));
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Created literal from " << c << " -> " << explanation.last());

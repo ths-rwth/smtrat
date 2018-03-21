@@ -6,6 +6,8 @@
 
 #include "VariableSelector.h"
 #include "BaseBackend.h"
+#include "../ClauseChecker.h"
+
 #include "../../../datastructures/mcsat/utils/VariableOrdering.h"
 
 #include <carl/formula/model/Assignment.h>
@@ -203,6 +205,7 @@ public:
 			return boost::none;
 		} else {
 			const auto& confl = boost::get<FormulasT>(res);
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << confl);
 			return mBackend.explain(currentVariable(), confl, FormulaT(carl::FormulaType::FALSE));
 		}
 	}
