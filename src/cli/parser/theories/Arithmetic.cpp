@@ -20,7 +20,7 @@ namespace parser {
 		sorts.add("Real", sm.getInterpreted(carl::VariableType::VT_REAL));
 	}
 
-	bool ArithmeticTheory::convertTerm(const types::TermType& term, Poly& result) {
+	bool ArithmeticTheory::convertTerm(const types::TermType& term, Poly& result, bool allow_bool) {
 		if (boost::get<Poly>(&term) != nullptr) {
 			result = boost::get<Poly>(term);
 			return true;
@@ -29,11 +29,15 @@ namespace parser {
 			return true;
 		} else if (boost::get<carl::Variable>(&term) != nullptr) {
 			switch (boost::get<carl::Variable>(term).type()) {
-				case carl::VariableType::VT_BOOL:
 				case carl::VariableType::VT_REAL:
 				case carl::VariableType::VT_INT:
 					result = Poly(boost::get<carl::Variable>(term));
 					return true;
+				case carl::VariableType::VT_BOOL:
+					if (allow_bool) {
+						result = Poly(boost::get<carl::Variable>(term));
+						return true;
+					}
 				default:
 					return false;
 			}
