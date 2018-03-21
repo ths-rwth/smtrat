@@ -28,6 +28,14 @@ struct VariableIDs {
 		return mIDs.find(v)->second;
 	}
 };
+inline std::ostream& operator<<(std::ostream& os, const VariableIDs& vids) {
+	std::vector<carl::Variable> v(vids.mIDs.size());
+	for (const auto& var: vids.mIDs) {
+		assert(var.second >= 0 && var.second < v.size());
+		v[var.second] = var.first;
+	}
+	return os << v;
+}
 
 inline carl::Bitset variablesOf(const FormulaT& c, VariableIDs& vids) {
 	carl::Bitset res;
@@ -92,7 +100,9 @@ public:
 		for (int i = 0; i < c.size(); ++i) {
 			if (c[i].first == nullptr) continue;
 			constraints.emplace_back(detail::variablesOf(c[i].first->reabstraction, vids));
+			SMTRAT_LOG_DEBUG("smtrat.mcsat", "Constraint " << c[i].first->reabstraction << " -> " << constraints.back());
 		}
+		SMTRAT_LOG_DEBUG("smtrat.mcsat", "Collected variables " << vids);
 		
 		mVariables.clear();
 		while (!constraints.empty()) {
@@ -100,6 +110,7 @@ public:
 			purgeVariable(constraints, mVariables.back(), vids);
 		}
 		mInitialized = true;
+		SMTRAT_LOG_DEBUG("smtrat.mcsat", "Calculated variable ordering " << mVariables);
 	}
 	const auto& ordering() const {
 		return mVariables;
