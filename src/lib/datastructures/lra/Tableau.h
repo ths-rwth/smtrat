@@ -410,8 +410,6 @@ namespace smtrat
                     mRows.reserve( _expectedHeight );
                     mColumns.reserve( _expectedWidth );
                     mpEntries->reserve( _expectedHeight*_expectedWidth+1 );
-                    carl::reserve<T1>( 2*(_expectedNumberOfBounds+1) );
-                    carl::reserve<T2>( _expectedHeight*_expectedWidth+1 );
                 }
                 
                 /**
@@ -871,4 +869,3 @@ namespace smtrat
 }    // end namspace smtrat
 
 #include "Tableau.tpp"
-

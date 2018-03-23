@@ -66,6 +66,8 @@ public:
 			("stats,s", po::bool_switch(&UseStats), "run solver with statistics")
 			("output-dir,o", po::value<std::string>(&outputDir), "output directory")
 			("compose,c", po::value<std::vector<std::string> >(&composeFiles), "Compose a list of stats files together")
+			("convert", po::value<std::string>(), "Convert a XML result file to .ods")
+			("convert-filter", po::value<std::string>()->default_value("Benchmax"), "XSLT filter name to import XML file into libreoffice")
 		;
 		backendOptions.add_options()
 			("backend,b", po::value<std::string>(&backend), "Backend to be used. Possible values: \"condor\", \"local\", \"ssh\".")
@@ -122,6 +124,10 @@ public:
 	
 	bool has(const std::string& s) const {
 		return vm.count(s);
+	}
+	template<typename T>
+	const T& as(const std::string& s) const {
+		return vm[s].as<T>();
 	}
 
 	/// Core Options

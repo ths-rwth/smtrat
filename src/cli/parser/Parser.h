@@ -51,8 +51,7 @@ public:
 			handler->setArtificialVariables(std::move(state.artificialVariables));
 			return true;
 		} else {
-			//std::cout << "Remaining to parse:" << std::endl;
-			//std::cout << std::string(begin, end) << std::endl;
+			SMTRAT_LOG_WARN("smtrat.parser", "Remaining to parse: \"" << std::string(begin, end) << "\"");
 			return false;
 		}
 	}
@@ -93,7 +92,7 @@ public:
 	}
 	void declareSort(const std::string& name, Integer arity) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(declare-sort " << name << " " << arity << ")");
-		if (!carl::SortManager::getInstance().declare(name, carl::toInt<std::size_t>(arity))) {
+		if (!carl::SortManager::getInstance().declare(name, carl::toInt<carl::uint>(arity))) {
 			SMTRAT_LOG_ERROR("smtrat.parser", "A sort \"" << name << "\" with arity " << arity << " has already been declared.");
 		}
 	}
@@ -130,11 +129,7 @@ public:
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-unsat-core)");
 		callHandler(&InstructionHandler::getUnsatCore);
 	}
-	void getValue(const std::vector<types::TermType>&
-        #if defined LOGGING
-        vars
-        #endif
-    ) {
+	void getValue(const std::vector<types::TermType>& vars) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-value " << vars << ")");
 	}
 	void addObjective(const types::TermType& t, OptimizationType ot) {
@@ -149,13 +144,13 @@ public:
 	}
 	void pop(const Integer& n) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(pop " << n << ")");
-		theories.popScriptScope(carl::toInt<std::size_t>(n));
-		callHandler(&InstructionHandler::pop, carl::toInt<std::size_t>(n));
+		theories.popScriptScope(carl::toInt<carl::uint>(n));
+		callHandler(&InstructionHandler::pop, carl::toInt<carl::uint>(n));
 	}
 	void push(const Integer& n) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(push " << n << ")");
-		theories.pushScriptScope(carl::toInt<std::size_t>(n));
-		callHandler(&InstructionHandler::push, carl::toInt<std::size_t>(n));
+		theories.pushScriptScope(carl::toInt<carl::uint>(n));
+		callHandler(&InstructionHandler::push, carl::toInt<carl::uint>(n));
 	}
 	void reset() {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(reset)");

@@ -389,7 +389,7 @@ namespace smtrat
 				case carl::FormulaType::NOT: {
 	                if (_formula.subformula().getType() == carl::FormulaType::CONSTRAINT) {
 	                    const ConstraintT& c = _formula.subformula().constraint();
-	                    return addBound(ConstraintT(c.lhs(), invertRelation(c.relation())), _origin);
+	                    return addBound(ConstraintT(c.lhs(), carl::inverse(c.relation())), _origin);
 	                }
 	                break;
 				}
@@ -470,7 +470,7 @@ namespace smtrat
 				case carl::FormulaType::NOT: {
 	                if (_formula.subformula().getType() == carl::FormulaType::CONSTRAINT) {
 	                    const ConstraintT& c = _formula.subformula().constraint();
-	                    return removeBound(ConstraintT(c.lhs(), invertRelation(c.relation())), _origin);
+	                    return removeBound(ConstraintT(c.lhs(), carl::inverse(c.relation())), _origin);
 	                }
 	                break;
 				}

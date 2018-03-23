@@ -336,6 +336,14 @@ namespace smtrat
         {
             return super::end();
         }
+
+        auto rbegin() const {
+            return super::rbegin();
+        }
+        
+        auto rend() const {
+            return super::rend();
+        }
         
         bool empty() const
         {

@@ -66,6 +66,12 @@ matrix:
           sources: [*sources_base, llvm-toolchain-trusty-4.0]
           packages: [*packages_base, clang-4.0]
     - os: linux
+      env: USE=clang++-5.0
+      addons:
+        apt:
+          sources: [*sources_base, llvm-toolchain-trusty-5.0]
+          packages: [*packages_base, clang-5.0]
+    - os: linux
       env: USE=g++-5
       addons:
         apt:

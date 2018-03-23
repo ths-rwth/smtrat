@@ -72,7 +72,7 @@ namespace smtrat
         }
         if( constraintF.getType() == carl::FormulaType::CONSTRAINT )
         {
-            const ConstraintT& constraint = negated ? ConstraintT( constraintF.constraint().lhs(), carl::invertRelation( constraintF.constraint().relation() ) ) : constraintF.constraint();
+            const ConstraintT& constraint = negated ? ConstraintT( constraintF.constraint().lhs(), carl::inverse( constraintF.constraint().relation() ) ) : constraintF.constraint();
             const vs::Condition* condition = new vs::Condition( constraint, mpConditionIdAllocator->get() );
             mFormulaConditionMap[constraintF] = condition;
             assert( constraint.isConsistent() == 2 );
@@ -651,7 +651,7 @@ namespace smtrat
                                 // Generate test candidates for the chosen variable and the chosen condition.
                                 else
                                 {
-                                    if( Settings::local_conflict_search && currentState->index().getType() == carl::VariableType::VT_REAL && currentState->hasLocalConflict() )
+                                    if( Settings::local_conflict_search && currentState->index().type() == carl::VariableType::VT_REAL && currentState->hasLocalConflict() )
                                     {
                                         removeStatesFromRanking( *currentState );
                                         addStateToRanking( currentState );
@@ -731,7 +731,7 @@ namespace smtrat
                     SqrtEx substitutedTerm = sub.term().substitute( rationalAssignments );
                     if( sub.type() == Substitution::PLUS_EPSILON )
                     {
-                        assert( state->substitution().variable().getType() != carl::VariableType::VT_INT );
+                        assert( state->substitution().variable().type() != carl::VariableType::VT_INT );
                         ass = substitutedTerm + SqrtEx( mVariableVector.at( state->treeDepth()-1 ).second );
                     }
                     else
@@ -999,7 +999,7 @@ namespace smtrat
             }
         }
         if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
-//        if( _eliminationVar.getType() != carl::VariableType::VT_INT && !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
+//        if( _eliminationVar.type() != carl::VariableType::VT_INT && !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
         {
             // Create state ( Conditions, [x -> -infinity]):
             Substitution sub = Substitution( _eliminationVar, Substitution::MINUS_INFINITY, carl::PointerSet<vs::Condition>(oConditions) );
@@ -1018,7 +1018,7 @@ namespace smtrat
                 #endif
             }
         }
-//        if( _eliminationVar.getType() == carl::VariableType::VT_INT )
+//        if( _eliminationVar.type() == carl::VariableType::VT_INT )
 //        {
 //            if( !generatedTestCandidateBeingASolution && !_currentState->isInconsistent() )
 //            {
@@ -1500,7 +1500,7 @@ namespace smtrat
                 else if( receivedConstraint->formula().getType() == carl::FormulaType::NOT && receivedConstraint->formula().subformula().getType() == carl::FormulaType::CONSTRAINT )
                 {
                     ConstraintT recConstraint = receivedConstraint->formula().subformula().constraint();
-                    if( (**oCond).constraint() == ConstraintT( recConstraint.lhs(), carl::invertRelation( recConstraint.relation() ) ) )
+                    if( (**oCond).constraint() == ConstraintT( recConstraint.lhs(), carl::inverse( recConstraint.relation() ) ) )
                         break;
                 }
                 ++receivedConstraint;
@@ -1544,7 +1544,7 @@ namespace smtrat
                 else if( receivedConstraint->formula().getType() == carl::FormulaType::NOT && receivedConstraint->formula().subformula().getType() == carl::FormulaType::CONSTRAINT )
                 {
                     ConstraintT recConstraint = receivedConstraint->formula().subformula().constraint();
-                    if( (**oCond).constraint() == ConstraintT( recConstraint.lhs(), carl::invertRelation( recConstraint.relation() ) ) )
+                    if( (**oCond).constraint() == ConstraintT( recConstraint.lhs(), carl::inverse( recConstraint.relation() ) ) )
                         break;
                 }
                 ++receivedConstraint;
@@ -1626,7 +1626,7 @@ namespace smtrat
             while( !currentState->isRoot() )
             {
                 const carl::Variables& tVars = currentState->substitution().termVariables();
-                if( currentState->substitution().variable().getType() == carl::VariableType::VT_INT )
+                if( currentState->substitution().variable().type() == carl::VariableType::VT_INT )
                 {
                     for( carl::Variable::Arg v : tVars )
                         varSolutions.insert( std::make_pair( v, ZERO_RATIONAL ) );

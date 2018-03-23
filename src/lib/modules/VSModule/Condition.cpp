@@ -92,7 +92,7 @@ namespace vs
             smtrat::Poly coeff = constraint().coefficient( _consideredVariable, varInfo.maxDegree() );
             if( coeff.isConstant() )
             {
-                if( _consideredVariable.getType() == carl::VariableType::VT_INT && (coeff == smtrat::ONE_POLYNOMIAL || coeff == smtrat::MINUS_ONE_POLYNOMIAL) )
+                if( _consideredVariable.type() == carl::VariableType::VT_INT && (coeff == smtrat::ONE_POLYNOMIAL || coeff == smtrat::MINUS_ONE_POLYNOMIAL) )
                 {
                     lCoeffWeightB = 1;
                 }
@@ -202,7 +202,7 @@ namespace vs
         weightFactorTmp *= maximum;
         result += lCoeffWeight/weightFactorTmp;
         weightFactorTmp *= maximum;
-        if( _consideredVariable.getType() == carl::VariableType::VT_INT )
+        if( _consideredVariable.type() == carl::VariableType::VT_INT )
         {
             result += lCoeffWeightB/weightFactorTmp;
             weightFactorTmp *= maximum;

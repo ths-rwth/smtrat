@@ -19,7 +19,7 @@
 #endif
 namespace fs = boost::filesystem;
 
-#include <signal.h>
+#include <csignal>
 
 #include "logging.h"
 #include "BenchmarkSet.h"
@@ -94,6 +94,14 @@ bool initApplication(int argc, char** argv) {
 		std::string("xsltproc -o " + Settings::outputDir + "results.tex " + Settings::outputDir + "latexCompose.xsl "
 					+ Settings::StatsXMLFile).c_str());
 		fs::remove(fs::path(Settings::outputDir + "latexCompose.xsl"));
+	}
+	
+	if (s.has("convert")) {
+		BENCHMAX_LOG_INFO("benchmax", "Converting " << s.as<std::string>("convert") << " to ods using import filer " << s.as<std::string>("convert-filter"));
+		std::stringstream ss;
+		ss << "libreoffice --headless --infilter=" << s.as<std::string>("convert-filter") << " --convert-to ods " << s.as<std::string>("convert");
+		system(ss.str().c_str());
+		return false;
 	}
 
 	if(Settings::outputDir != "")

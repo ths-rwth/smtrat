@@ -67,7 +67,7 @@ namespace smtrat
             }
             for( auto var : receivedVars )
             {
-                if( var.getType() == carl::VariableType::VT_BOOL )
+                if( var.type() == carl::VariableType::VT_BOOL )
                     mModel.insert(std::make_pair(var, false));
                 else
                     mModel.insert(std::make_pair(var, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>( ZERO_POLYNOMIAL )));
@@ -141,7 +141,7 @@ namespace smtrat
                                 Poly subPoly;
                                 if( tmp.constraint().getSubstitution( subVar, subPoly, false, objective() ) )
                                 {
-                                    SMTRAT_LOG_DEBUG("smtrat.es", "found substitution [" << subVar << " -> " << subPoly << "]");
+                                    SMTRAT_LOG_TRACE("smtrat.es", "found substitution [" << subVar << " -> " << subPoly << "]");
                                     assert( mArithSubs.find( subVar ) == mArithSubs.end() );
                                     addedArithSubs.push_back( mArithSubs.emplace( subVar, subPoly ).first );
                                     foundSubstitutions.insert( tmp );
@@ -187,14 +187,14 @@ namespace smtrat
                                         sfs.insert( sfs.end(), sfSimplified );
                                     if( sfSimplified.getType() == carl::FormulaType::NOT )
                                     {
-                                        SMTRAT_LOG_DEBUG("smtrat.es", "found boolean substitution [" << sfSimplified.subformula() << " -> false]");
+                                        SMTRAT_LOG_TRACE("smtrat.es", "found boolean substitution [" << sfSimplified.subformula() << " -> false]");
                                         assert( mBoolSubs.find( sfSimplified.subformula() ) == mBoolSubs.end() );
                                         assert( foundBooleanSubstitutions.find( sfSimplified ) == foundBooleanSubstitutions.end() );
                                         foundBooleanSubstitutions.emplace( sfSimplified, mBoolSubs.insert( std::make_pair( sfSimplified.subformula(), false ) ).first );
                                     }
                                     else
                                     {
-                                        SMTRAT_LOG_DEBUG("smtrat.es", "found boolean substitution [" << sfSimplified << " -> true]");
+                                        SMTRAT_LOG_TRACE("smtrat.es", "found boolean substitution [" << sfSimplified << " -> true]");
                                         assert( mBoolSubs.find( sfSimplified ) == mBoolSubs.end() );
                                         assert( foundBooleanSubstitutions.find( sfSimplified ) == foundBooleanSubstitutions.end() );
                                         foundBooleanSubstitutions.emplace( sfSimplified, mBoolSubs.insert( std::make_pair( sfSimplified, true ) ).first );
@@ -341,7 +341,9 @@ namespace smtrat
             case carl::FormulaType::UEQ: 
             case carl::FormulaType::TRUE:
             case carl::FormulaType::FALSE:
-				SMTRAT_LOG_DEBUG("smtrat.es", _formula << " ----> " << result);
+				if (_formula != result) {
+					SMTRAT_LOG_DEBUG("smtrat.es", _formula << " ----> " << result);
+				}
                 return result;
             case carl::FormulaType::EXISTS:
             case carl::FormulaType::FORALL: {
@@ -358,7 +360,9 @@ namespace smtrat
 	            return iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE );
 	        }
 		}
-		SMTRAT_LOG_DEBUG("smtrat.es", _formula << " ----> " << result);
+		if (_formula != result) {
+			SMTRAT_LOG_DEBUG("smtrat.es", _formula << " ----> " << result);
+		}
         return result;
     }
 }

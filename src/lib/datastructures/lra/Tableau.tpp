@@ -176,7 +176,7 @@ namespace smtrat
                 if( basicIter == mOriginalVars.end() )
                 {
                     typename Poly::PolyType* varPoly = new typename Poly::PolyType( var );
-                    result = newNonbasicVariable( varPoly, var.getType() == carl::VariableType::VT_INT );
+                    result = newNonbasicVariable( varPoly, var.type() == carl::VariableType::VT_INT );
                     mOriginalVars.insert( std::pair<carl::Variable, Variable<T1, T2>*>( var, result ) );
                 }
                 else
@@ -261,7 +261,7 @@ namespace smtrat
                     result.first->boundExists();
                     // create the complement
                     Value<T1>* vc = constraint.integerValued() ? new Value<T1>( boundValue + (negative ? T1( -1 ) : T1( 1 )) ) : new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
-                    FormulaT complConstr( _constraint.constraint().lhs(), carl::invertRelation( _constraint.constraint().relation() ) );
+                    FormulaT complConstr( _constraint.constraint().lhs(), carl::inverse( _constraint.constraint().relation() ) );
                     const Bound<T1,T2>* complement = negative ? newVar->addUpperBound( vc, mDefaultBoundPosition, complConstr ).first : newVar->addLowerBound( vc, mDefaultBoundPosition, complConstr ).first;
                     auto ctbInsertRes = mConstraintToBound.insert( std::make_pair( complConstr, nullptr ) );
                     if( ctbInsertRes.second )
@@ -285,7 +285,7 @@ namespace smtrat
                     result.first->boundExists();
                     // create the complement
                     Value<T1>* vc = constraint.integerValued() ? new Value<T1>( boundValue + (negative ? T1( 1 ) : T1( -1 )) ) : new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
-                    FormulaT complConstr( _constraint.constraint().lhs(), carl::invertRelation( _constraint.constraint().relation() ) );
+                    FormulaT complConstr( _constraint.constraint().lhs(), carl::inverse( _constraint.constraint().relation() ) );
                     const Bound<T1,T2>* complement = negative ? newVar->addLowerBound( vc, mDefaultBoundPosition, complConstr ).first : newVar->addUpperBound( vc, mDefaultBoundPosition, complConstr ).first;
                     auto ctbInsertRes = mConstraintToBound.insert( std::make_pair( complConstr, nullptr ) );
                     if( ctbInsertRes.second )
@@ -309,7 +309,7 @@ namespace smtrat
                     result.first->boundExists();
                     // create the complement
                     Value<T1>* vc = new Value<T1>( boundValue );
-                    FormulaT complConstr( _constraint.constraint().lhs(), carl::invertRelation( _constraint.constraint().relation() ) );
+                    FormulaT complConstr( _constraint.constraint().lhs(), carl::inverse( _constraint.constraint().relation() ) );
                     const Bound<T1,T2>* complement = negative ? newVar->addUpperBound( vc, mDefaultBoundPosition, complConstr ).first : newVar->addLowerBound( vc, mDefaultBoundPosition, complConstr ).first;
                     auto ctbInsertRes = mConstraintToBound.insert( std::make_pair( complConstr, nullptr ) );
                     if( ctbInsertRes.second )
@@ -333,7 +333,7 @@ namespace smtrat
                     result.first->boundExists();
                     // create the complement
                     Value<T1>* vc = new Value<T1>( boundValue );
-                    FormulaT complConstr( _constraint.constraint().lhs(), carl::invertRelation( _constraint.constraint().relation() ) );
+                    FormulaT complConstr( _constraint.constraint().lhs(), carl::inverse( _constraint.constraint().relation() ) );
                     const Bound<T1,T2>* complement = negative ? newVar->addLowerBound( vc, mDefaultBoundPosition, complConstr ).first : newVar->addUpperBound( vc, mDefaultBoundPosition, complConstr ).first;
                     auto ctbInsertRes = mConstraintToBound.insert( std::make_pair( complConstr, nullptr ) );
                     if( ctbInsertRes.second )
@@ -531,7 +531,7 @@ namespace smtrat
                 if( mOriginalVars.end() == nonBasicIter )
                 {
                     typename Poly::PolyType* varPoly = new typename Poly::PolyType( var );
-                    nonBasic = newNonbasicVariable( varPoly, var.getType() == carl::VariableType::VT_INT );
+                    nonBasic = newNonbasicVariable( varPoly, var.type() == carl::VariableType::VT_INT );
                     mOriginalVars.insert( std::pair<carl::Variable, Variable<T1, T2>*>( var, nonBasic ) );
                 }
                 else
@@ -1813,7 +1813,7 @@ namespace smtrat
             {
                 basicVar.rFactor() = pivotContent;
                 pivotContent = nonbasicVar.factor();
-                nonbasicVar.rFactor() = 1;
+                nonbasicVar.rFactor() = Rational(1);
             }
             else
             {

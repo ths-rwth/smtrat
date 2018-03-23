@@ -360,7 +360,7 @@ namespace smtrat
             
             bool receivedVariable( carl::Variable::Arg _var ) const
             {
-                return _var.getId() < mVariableCounters.size() && mVariableCounters[_var.getId()] > 0;
+                return _var.id() < mVariableCounters.size() && mVariableCounters[_var.id()] > 0;
             }
 
             // Methods to read and write on the members.
@@ -660,6 +660,7 @@ namespace smtrat
              * @see Module::storeAssumptionsToCheck
              */
             static void addAssumptionToCheck( const ModuleInput& _formula, bool _consistent, const std::string& _label );
+			static void addAssumptionToCheck( const ModuleInput& _subformulas, Answer _status, const std::string& _label );
             
             /**
              * Add a conjunction of formulas to the assumption vector and its predetermined consistency status.
@@ -1135,12 +1136,12 @@ namespace smtrat
             
             bool branchAt( carl::Variable::Arg _var, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak = true, bool _preferLeftCase = true, bool _useReceivedFormulaAsPremise = false )
             {
-                return branchAt( carl::makePolynomial<Poly>( _var ), _var.getType() == carl::VariableType::VT_INT, _value, std::move( _premise ), _leftCaseWeak, _preferLeftCase, _useReceivedFormulaAsPremise );
+                return branchAt( carl::makePolynomial<Poly>( _var ), _var.type() == carl::VariableType::VT_INT, _value, std::move( _premise ), _leftCaseWeak, _preferLeftCase, _useReceivedFormulaAsPremise );
             }
             
             bool branchAt( carl::Variable::Arg _var, const Rational& _value, bool _leftCaseWeak = true, bool _preferLeftCase = true, bool _useReceivedFormulaAsPremise = false, const std::vector<FormulaT>& _premise = std::vector<FormulaT>() )
             {
-                return branchAt( carl::makePolynomial<Poly>( _var ), _var.getType() == carl::VariableType::VT_INT, _value, std::vector<FormulaT>( _premise ), _leftCaseWeak, _preferLeftCase, _useReceivedFormulaAsPremise );
+                return branchAt( carl::makePolynomial<Poly>( _var ), _var.type() == carl::VariableType::VT_INT, _value, std::vector<FormulaT>( _premise ), _leftCaseWeak, _preferLeftCase, _useReceivedFormulaAsPremise );
             }
             
             template<typename P = Poly, carl::EnableIf<carl::needs_cache<P>> = carl::dummy>
@@ -1401,4 +1402,12 @@ namespace smtrat
                 return mNrConsistencyChecks;
             }
     };
+
+	inline std::ostream& operator<<(std::ostream& os, Module::LemmaType lt) {
+		switch (lt) {
+			case Module::LemmaType::NORMAL: return os << "NORMAL";
+			case Module::LemmaType::PERMANENT: return os << "PERMANENT";
+		}
+		return os << "???";
+	}
 }    // namespace smtrat

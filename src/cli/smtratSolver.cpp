@@ -183,6 +183,20 @@ public:
 	}
 };
 
+bool parseInput(const std::string& pathToInputFile, Executor* e, bool queueInstructions) {
+	if (pathToInputFile == "-") {
+		SMTRAT_LOG_DEBUG("smtrat", "Using stdin");
+		return smtrat::parseSMT2File(e, queueInstructions, std::cin);
+	}
+
+	std::ifstream infile(pathToInputFile);
+	if (!infile.good()) {
+		std::cerr << "Could not open file: " << pathToInputFile << std::endl;
+		exit(SMTRAT_EXIT_NOSUCHFILE);
+	}
+	return smtrat::parseSMT2File(e, queueInstructions, infile);
+}
+
 /**
  * Parse the file and save it in formula.
  * @param pathToInputFile The path to the input smt2 file.
@@ -201,21 +215,25 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 	setrlimit(RLIMIT_STACK, &rl);
 #endif
 
-	std::ifstream infile(pathToInputFile);
-	if (!infile.good()) {
-            std::cerr << "Could not open file: " << pathToInputFile << std::endl;
-            exit(SMTRAT_EXIT_NOSUCHFILE);
-	}
+	constexpr bool queueInstructions = false;
 	Executor* e = new Executor(solver);
 	if (settingsManager.exportDIMACS()) e->exportDIMACS = true;
 	{
-		if (!smtrat::parseSMT2File(e, true, infile)) {
+		SMTRAT_LOG_DEBUG("smtrat", "Starting to parse " << pathToInputFile);
+		if (!parseInput(pathToInputFile, e, queueInstructions)) {
             std::cerr << "Parse error" << std::endl;
             delete e;
             exit(SMTRAT_EXIT_PARSERFAILURE);
         }
 	}
-	if (e->hasInstructions()) e->runInstructions();
+	if (queueInstructions) {
+		if (e->hasInstructions()) {
+			SMTRAT_LOG_WARN("smtrat", "Running queued instructions.");
+			e->runInstructions();
+		} else {
+			SMTRAT_LOG_WARN("smtrat", "Did not parse any instructions.");
+		}
+	}
 	unsigned exitCode = e->getExitCode();
 	if (e->lastAnswer == smtrat::Answer::SAT) {
 		if (settingsManager.printModel()) solver->printAssignment();
@@ -298,7 +316,7 @@ int main( int argc, char* argv[] )
 		("smtrat", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.module", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.parser", carl::logging::LogLevel::LVL_INFO)
-		("smtrat.cad", carl::logging::LogLevel::LVL_DEBUG)
+		("smtrat.cad", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.strategygraph", carl::logging::LogLevel::LVL_DEBUG)
 	;

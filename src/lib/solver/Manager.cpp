@@ -289,11 +289,11 @@ namespace smtrat
             // Remove until the list is either empty or the backtrack point is hit.
             if (--pos == mBacktrackPoints.back().second) break;
             carl::Variable objVar = mObjectives.back().second.first;
-            if( objVar.getType() == carl::VariableType::VT_INT )
+            if( objVar.type() == carl::VariableType::VT_INT )
                 mReusableIntObjectiveVars.push( objVar );
             else
             {
-                assert( objVar.getType() == carl::VariableType::VT_REAL );
+                assert( objVar.type() == carl::VariableType::VT_REAL );
                 mReusableRealObjectiveVars.push( objVar );
             }
             mObjectives.pop_back();

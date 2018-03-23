@@ -53,7 +53,8 @@ BOOST_AUTO_TEST_CASE(Test_CAD)
 	cad.addConstraint(ConstraintT(q, carl::Relation::LEQ));
 	
 	Assignment a;
-	cad.check(a);
+	std::vector<FormulaSetT> mis;
+	cad.check(a, mis);
 }
 
 BOOST_AUTO_TEST_SUITE_END();

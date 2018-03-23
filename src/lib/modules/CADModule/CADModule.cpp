@@ -11,7 +11,7 @@
 #include <memory>
 #include <iostream>
 
-#include "carl/core/logging.h"
+#include <carl/core/logging.h>
 
 #include "MISGeneration.h"
 #include "SplitVariableSelector.h"
@@ -214,7 +214,7 @@ namespace smtrat
 			// Pass on branch from CAD.
 			const std::vector<carl::Variable>& vars = mCAD.getVariables();
 			std::size_t d = vars.size() - mRealAlgebraicSolution.dim();
-			assert(vars[d].getType() == carl::VariableType::VT_INT);
+			assert(vars[d].type() == carl::VariableType::VT_INT);
 			auto r = mRealAlgebraicSolution[0].branchingPoint();
 			assert(!carl::isInteger(r));
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Variables: " << vars);
@@ -237,7 +237,7 @@ namespace smtrat
 			{
 				std::size_t branches = 0;
 				for (std::size_t d = 0; d < mRealAlgebraicSolution.dim(); d++) {
-					if (mCAD.getVariables()[d].getType() != carl::VariableType::VT_INT) continue;
+					if (mCAD.getVariables()[d].type() != carl::VariableType::VT_INT) continue;
 					if (carl::isInteger(mRealAlgebraicSolution[d])) continue;
 					branches++;
 				}

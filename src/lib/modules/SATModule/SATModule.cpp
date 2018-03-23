@@ -1345,7 +1345,7 @@ namespace smtrat
                 {
                     constraint = content;
                     const ConstraintT& cons = content.constraint();
-                    invertedConstraint = FormulaT( cons.lhs(), carl::invertRelation( cons.relation() ) );
+                    invertedConstraint = FormulaT( cons.lhs(), carl::inverse( cons.relation() ) );
                 }
 				else if (content.getType() == carl::FormulaType::VARCOMPARE )
 				{
@@ -1729,6 +1729,7 @@ namespace smtrat
                         if( currentBacktrackLevel < backtrackLevel )
                             backtrackLevel = currentBacktrackLevel;
                     }
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Lemma is propagating on level " << backtrackLevel);
                 }
             }
             // pop so that propagation would be current

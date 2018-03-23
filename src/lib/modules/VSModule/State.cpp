@@ -315,7 +315,7 @@ namespace vs
     bool State::getNextIntTestCandidate( smtrat::Rational& _nextIntTestCandidate, size_t _maxIntRange )
     {
         assert( _maxIntRange > 0 );
-        assert( father().index().getType() == carl::VariableType::VT_INT );
+        assert( father().index().type() == carl::VariableType::VT_INT );
         assert( substitution().type() == Substitution::MINUS_INFINITY || substitution().type() == Substitution::PLUS_INFINITY );
         if( mCurrentIntRange >= _maxIntRange ) return false;
         if( substitution().type() == Substitution::MINUS_INFINITY )
@@ -873,7 +873,7 @@ namespace vs
             // getting nasty.
             if( (**child).substitution() == _substitution )
             {
-                if( index().getType() == carl::VariableType::VT_INT && mpInfinityChild == *child )
+                if( index().type() == carl::VariableType::VT_INT && mpInfinityChild == *child )
                 {
                     mpInfinityChild = NULL;
                     (**child).rSubstitution().rOriginalConditions().clear();
@@ -881,7 +881,7 @@ namespace vs
                 (**child).rSubstitution().rOriginalConditions().insert( _substitution.originalConditions().begin(), _substitution.originalConditions().end() );
                 return true;
             }
-            else if( index().getType() == carl::VariableType::VT_INT && _substitution.term().isInteger() )
+            else if( index().type() == carl::VariableType::VT_INT && _substitution.term().isInteger() )
             {
                 smtrat::Rational intTc = _substitution.term().constantPart().constantPart();
                 if( (**child).substitution().type() == Substitution::MINUS_INFINITY )
@@ -1211,7 +1211,7 @@ namespace vs
         mIntVarVals.clear();
         for( auto var = _allVariables.begin(); var != _allVariables.end(); ++var )
         {
-            if( var->getType() == carl::VariableType::VT_INT )
+            if( var->type() == carl::VariableType::VT_INT )
                 mIntVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, multiset<double>() ) );
             else
                 mRealVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, multiset<double>() ) );
@@ -1683,7 +1683,7 @@ namespace vs
                 initConditionFlags();
             if( result < 1 )
             {
-                if( index().getType() == carl::VariableType::VT_INT && (*child)->substitution().type() != Substitution::MINUS_INFINITY 
+                if( index().type() == carl::VariableType::VT_INT && (*child)->substitution().type() != Substitution::MINUS_INFINITY 
                     && (*child)->substitution().type() != Substitution::PLUS_INFINITY && (*child)->substitution().term().isInteger() )
                 {
                     childWithIntTcDeleted = true;
@@ -1952,7 +1952,7 @@ namespace vs
         vector<State*> result;
         if( !updateOCondsOfSubstitutions( _substitution, result ) )
         {
-            if( index().getType() == carl::VariableType::VT_INT && _substitution.type() == Substitution::NORMAL && _substitution.term().isInteger() )
+            if( index().type() == carl::VariableType::VT_INT && _substitution.type() == Substitution::NORMAL && _substitution.term().isInteger() )
             {
                 smtrat::Rational intTC = _substitution.term().constantPart().constantPart();
                 if( intTC > mMaxIntTestCanidate )
@@ -1972,7 +1972,7 @@ namespace vs
             const smtrat::ConstraintsT& sideConds = _substitution.sideCondition();
             for( auto sideCond = sideConds.begin(); sideCond != sideConds.end(); ++sideCond )
             {
-//                if( _substitution.variable().getType() != carl::VariableType::VT_INT || sideCond->relation() != carl::Relation::NEQ )
+//                if( _substitution.variable().type() != carl::VariableType::VT_INT || sideCond->relation() != carl::Relation::NEQ )
 //                {
                     std::vector<DisjunctionOfConditionConjunctions> subResults;
                     subResults.emplace_back();
@@ -2027,7 +2027,7 @@ namespace vs
         else
         {
             if( !isRoot() ) 
-                mValuation += 100 * treeDepth() + 10 * substitution().valuate( substitution().variable().getType() == carl::VariableType::VT_REAL );
+                mValuation += 100 * treeDepth() + 10 * substitution().valuate( substitution().variable().type() == carl::VariableType::VT_REAL );
             else 
                 mValuation += 1;
             if( isInconsistent() ) 
@@ -2075,7 +2075,7 @@ namespace vs
     {
         assert( isInconsistent() );
         bool coverSetOCondsContainIndexOfFather = false;
-        if( index().getType() != carl::VariableType::VT_INT || !mpConflictSets->empty() )
+        if( index().type() != carl::VariableType::VT_INT || !mpConflictSets->empty() )
         {
             // Determine a covering set of the conflict sets.
             carl::PointerSet<Condition> covSet;
@@ -2631,7 +2631,7 @@ namespace vs
         {
             _out << _initiation << "                           infinity child: " << mpInfinityChild << endl;
         }
-        _out << _initiation << "                                    index: " << index() << " " << index().getType() << "  )" << endl;
+        _out << _initiation << "                                    index: " << index() << " " << index().type() << "  )" << endl;
         printConditions( _initiation + "   ", _out );
         if( !isRoot() )
         {

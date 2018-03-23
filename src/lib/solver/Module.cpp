@@ -141,7 +141,7 @@ namespace smtrat
         {
             if( result != UNKNOWN && !mpReceivedFormula->empty() )
             {
-                addAssumptionToCheck( *mpReceivedFormula, result == SAT, moduleName() );
+                addAssumptionToCheck( *mpReceivedFormula, result, moduleName() );
             }
         }
         #endif
@@ -179,9 +179,9 @@ namespace smtrat
         const carl::Variables& vars = _receivedSubformula->formula().variables();
         for( carl::Variable::Arg var : vars )
         {
-            if( var.getId() >= mVariableCounters.size() )
-                mVariableCounters.resize( var.getId()+1, 0 );
-            ++mVariableCounters[var.getId()];
+            if( var.id() >= mVariableCounters.size() )
+                mVariableCounters.resize( var.id()+1, 0 );
+            ++mVariableCounters[var.id()];
         }
         if( _receivedSubformula->formula().getType() == carl::FormulaType::CONSTRAINT )
         {
@@ -210,8 +210,8 @@ namespace smtrat
         const carl::Variables& vars = _receivedSubformula->formula().variables();
         for( carl::Variable::Arg var : vars )
         {
-            assert( mVariableCounters[var.getId()] > 0 );
-            --mVariableCounters[var.getId()];
+            assert( mVariableCounters[var.id()] > 0 );
+            --mVariableCounters[var.id()];
         }
         // Check if the constraint to delete is an original constraint of constraints in the vector
         // of passed constraints.
@@ -1118,6 +1118,19 @@ namespace smtrat
         mAssumptionToCheck.push_back( assumption );
         mVariablesInAssumptionToCheck.insert( _label );
     }
+	
+    void Module::addAssumptionToCheck( const ModuleInput& _subformulas, Answer _status, const std::string& _label )
+    {
+        std::stringstream assumption;
+        assumption << "(set-info :status " << _status << ")\n";
+        assumption << "(declare-fun " << _label << " () Bool)\n";
+        assumption << ((FormulaT) _subformulas).toString( false, 1, "", true, false, true, true );
+        assumption << "(assert " << _label << ")\n";
+        assumption << "(get-assertions)\n";
+        assumption << "(check-sat)\n";
+        mAssumptionToCheck.push_back( assumption.str() );
+        mVariablesInAssumptionToCheck.insert( _label );
+    }
 
     void Module::addAssumptionToCheck( const FormulasT& _formulas, bool _consistent, const string& _label )
     {
@@ -1175,7 +1188,7 @@ namespace smtrat
         {
             ofstream smtlibFile;
             smtlibFile.open( validationSettings->path() );
-            for( const auto& assum : boost::adaptors::reverse(Module::mAssumptionToCheck) )
+            for( const auto& assum : Module::mAssumptionToCheck )
             { 
                 // For each assumption add a new solver-call by resetting the search state.
                 #ifndef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
@@ -1198,12 +1211,13 @@ namespace smtrat
     {
 		SMTRAT_LOG_DEBUG("smtrat.module", "InfSubsets: " << mInfeasibleSubsets);
         if( mInfeasibleSubsets.empty() ) return false;
-        for( auto& infSubset : mInfeasibleSubsets )
+        for( const auto& infSubset : mInfeasibleSubsets )
         {
-            for( auto& subFormula : infSubset )
+            for( const auto& subFormula : infSubset )
             {
                 if( !mpReceivedFormula->contains( subFormula ) )
                 {
+					SMTRAT_LOG_DEBUG("smtrat.module", "Subset " << infSubset << " has " << subFormula << " that we don't know.");
                     return false;
                 }
             }
@@ -1240,7 +1254,7 @@ namespace smtrat
                 smtlibFile << "(set-info :smt-lib-version 2.0)\n";
                 // Add all arithmetic variables.
 				for (auto v: vars) {
-					smtlibFile << "(declare-fun " << v << " () " << v.getType() << ")\n";
+					smtlibFile << "(declare-fun " << v << " () " << v.type() << ")\n";
 				}
                 string assumption = "";
                 assumption += "(set-info :status sat)\n";
