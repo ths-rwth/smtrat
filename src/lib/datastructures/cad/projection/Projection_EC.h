@@ -449,7 +449,7 @@ namespace full {
 				return canBePurgedByBounds(getPolynomialById(level, id));
 			}),
 #ifdef SMTRAT_DEVOPTION_Statistics
-                        mStatistics(Settings::moduleName)
+                        mStatistics("CAD")
 #endif
 		{}
 		void reset() {
@@ -528,7 +528,15 @@ namespace full {
                                 activatePolynomials(0);
                                 std::size_t level = 1;
                                 while ((level < dim()) && canBeForwarded(level, p)) {
+                                    if (Settings::simplifyProjectionByBounds && isBound) {
+                                        mEvaluated[level] &= mPurged[level];
+                                    }
                                     level += 1;
+                                }
+                                if (Settings::simplifyProjectionByBounds && isBound) { 
+                                        SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> ComputePurgedPolynomials, until level" << level);
+                                        computePurgedPolynomials(level);
+                                        deactivatePolynomials(1);
                                 }
                                 auto itp = mPolynomialIDs[level].find(p);
                                 if(Settings::restrictProjectionByEC) {
@@ -542,7 +550,17 @@ namespace full {
 			assert(!mPolynomials[0][cid]);
 			mPolynomials[0][cid] = std::make_pair(p, Origin());
 			mPolynomialIDs[0].emplace(p, cid);
-			insertPolynomialTo(1, p, Origin::BaseType(0,cid), false, true);
+			insertPolynomialTo(1, p, Origin::BaseType(0,cid), isBound, true);
+                        if (Settings::simplifyProjectionByBounds && isBound) { 
+                                std::size_t level = 1;
+                                while ((level < dim()) && canBeForwarded(level, p)) {
+                                    mEvaluated[level] &= mPurged[level];
+                                    level += 1;
+                                }
+                                SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> ComputePurgedPolynomials, until level" << level);
+                                computePurgedPolynomials(level);
+                                deactivatePolynomials(1);
+			}
                         return carl::Bitset();
 		}
 		void removePolynomial(const UPoly& p, std::size_t cid, bool isBound) override {
