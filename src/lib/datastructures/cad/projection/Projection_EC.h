@@ -166,7 +166,7 @@ namespace full {
                  * @param level Level of the polynomial.
                  * @param id Id of the polynomial.
                  */
-                bool active(std::size_t level, std::size_t id) {
+                bool active(std::size_t level, std::size_t id) const {
                     if(level == 0) {
                         return !mInactive.test(id) && !mPurged[0].test(id);
                     } else {
@@ -588,7 +588,14 @@ namespace full {
 		
 		std::size_t size(std::size_t level) const override {
 			assert(level <= dim());
-			return mPolynomialIDs[level].size();
+                        std::size_t number = 0;
+                        for (const auto& it: mPolynomialIDs[level]) {
+                                assert(mPolynomials[level][it.second]);
+                                if(active(level,it.second)) {
+                                    number += 1;
+                                }
+                        }
+			return number;
 		}
 		bool empty(std::size_t level) const override {
 			assert(level <= dim());

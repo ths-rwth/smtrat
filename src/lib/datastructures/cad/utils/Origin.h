@@ -72,7 +72,7 @@ public:
 	}
         
         // returns true, if Origin contains at least one active BaseType
-        bool isActive() {
+        bool isActive() const {
                 for(const auto& it : mData) {
                         if(it.f_act && it.s_act && it.e_act) {
                             return true;

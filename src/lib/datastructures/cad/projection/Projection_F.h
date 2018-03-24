@@ -7,6 +7,7 @@
 #include "../Common.h"
 #include "BaseProjection.h"
 #include "ProjectionComparator.h"
+#include "../../../modules/NewCADModule/NewCADStatistics.h"
 
 namespace smtrat {
 namespace cad {
@@ -37,6 +38,10 @@ namespace full {
 		using Super::dim;
 		using Super::size;
 	private:
+
+#ifdef SMTRAT_DEVOPTION_Statistics
+		NewCADStatistics mStatistics;
+#endif
 
 		template<typename S, Backtracking B>
 		friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::FULL, B, S>& p);
@@ -267,6 +272,9 @@ namespace full {
 			return carl::Bitset();
 		}
 		carl::Bitset projectCandidate(const QueueEntry& qe) {
+#ifdef SMTRAT_DEVOPTION_Statistics
+                        mStatistics.computePolynomial();
+#endif
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Projecting " << qe);
 			assert(qe.level < dim());
 			if (qe.level == 0) {
@@ -305,7 +313,10 @@ namespace full {
 			mProjectionQueue(ProjectionCandidateComparator([&](std::size_t level, std::size_t id){ return getPolynomialById(level, id); })),
 			mPurgedPolys([this](std::size_t level, std::size_t id){
 				return canBePurgedByBounds(getPolynomialById(level, id));
-			})
+			}),
+#ifdef SMTRAT_DEVOPTION_Statistics
+                        mStatistics("CAD")
+#endif
 		{}
 		void reset() {
 			Super::reset();
