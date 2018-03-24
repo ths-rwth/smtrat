@@ -16,7 +16,7 @@ namespace smtrat
 {
 	class NewCADStatistics : public Statistics {
 	private:
-		bool mUsedCAD = false;
+		size_t mUsedCAD = 0;
 		bool mECInCAD = false;
 		std::size_t mComputedPolynomials = 0;
 		std::size_t mUsedRestrictedProj = 0;
@@ -35,7 +35,7 @@ namespace smtrat
 		   Statistics::addKeyValuePair("max_projection_size", mMaxProjectionSize);
 		}
 		void usedCAD() {
-			mUsedCAD = true;
+			mUsedCAD += 1;
 		}
 		void addedECtoCAD() {
 			mECInCAD = true;
