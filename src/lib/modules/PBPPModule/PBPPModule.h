@@ -92,10 +92,10 @@ namespace smtrat
 			Answer checkCore();
 
 		private:
-			FormulaT convertSmallFormula(const PBConstraintT& formula, const PBConstraintT& c);
-			FormulaT convertBigFormula(const PBConstraintT& formula, const PBConstraintT& c);
-			FormulaT forwardAsArithmetic(const PBConstraintT& formula);
-			PBConstraintT changeVarTypeToBool(const PBConstraintT& formula);
+			FormulaT convertSmallFormula(const ConstraintT& formula, const ConstraintT& c);
+			FormulaT convertBigFormula(const ConstraintT& formula, const ConstraintT& c);
+			FormulaT forwardAsArithmetic(const ConstraintT& formula);
+			ConstraintT changeVarTypeToBool(const ConstraintT& formula);
 			FormulaT checkFormulaType(const FormulaT& formula);
 			FormulaT checkFormulaTypeWithRNS(const FormulaT& formula);
 			FormulaT checkFormulaTypeWithCardConstr(const FormulaT& formula);
@@ -110,15 +110,15 @@ namespace smtrat
 			FormulaT generateVarChain(const std::vector<carl::Variable>& vars, carl::FormulaType type);
 			FormulaT createAuxiliaryConstraint(const std::vector<carl::Variable>& variables);
 			FormulaT interconnectVariables(const std::vector<carl::Variable>& variables);
-			FormulaT rnsTransformation(const PBConstraintT& formula, const Integer& prime);
-			std::vector<Integer> calculateRNSBase(const PBConstraintT& formula);
-			bool isNonRedundant(const std::vector<Integer>& base, const PBConstraintT& formula);
+			FormulaT rnsTransformation(const ConstraintT& formula, const Integer& prime);
+			std::vector<Integer> calculateRNSBase(const ConstraintT& formula);
+			bool isNonRedundant(const std::vector<Integer>& base, const ConstraintT& formula);
 
 			std::vector<Integer> integerFactorization(const Integer& coeff);
 			void initPrimesTable();
-			FormulaT removeZeroCoefficients(const PBConstraintT& formula);
-			FormulaT encodeCardinalityConstraint(const PBConstraintT& formula, const PBConstraintT& c);
-			FormulaT encodeMixedConstraints(const PBConstraintT& formula, const PBConstraintT& c);
+			FormulaT removeZeroCoefficients(const ConstraintT& formula);
+			FormulaT encodeCardinalityConstraint(const ConstraintT& formula, const ConstraintT& c);
+			FormulaT encodeMixedConstraints(const ConstraintT& formula, const ConstraintT& c);
 
 	};
 }
