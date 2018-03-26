@@ -8,6 +8,8 @@
 
 #include <boost/variant.hpp>
 
+#include <algorithm>
+
 namespace smtrat {
 namespace mcsat {
 namespace arithmetic {
@@ -49,13 +51,23 @@ private:
 		return res.asBool();
 	}
 	
+	bool compare_assignments(std::size_t lhs, std::size_t rhs) const {
+		const auto& l = mRI.sampleFrom(lhs);
+		const auto& r = mRI.sampleFrom(rhs);
+		if (l.isIntegral() != r.isIntegral()) return l.isIntegral();
+		if (l.isNumeric() != r.isNumeric()) return l.isNumeric();
+		if (l.size() != r.size()) return l.size() < r.size();
+		return l < r;
+	}
+	
 	ModelValue selectAssignment(const Covering& cover) const {
 		std::vector<std::size_t> samples;
 		for (auto b: cover.satisfyingSamples()) {
 			samples.push_back(b);
 		}
 		assert(samples.size() > 0);
-		return mRI.sampleFrom(samples[samples.size() / 2]);	
+		auto min = std::min_element(samples.begin(), samples.end(), [this](auto lhs, auto rhs){ return compare_assignments(lhs, rhs); });
+		return mRI.sampleFrom(*min);	
 	}
 	
 public:
