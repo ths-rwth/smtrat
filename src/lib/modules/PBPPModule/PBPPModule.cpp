@@ -474,7 +474,7 @@ namespace smtrat
             Rational max = INT_MIN;
             std::size_t lhsSize = cLHS.size();
 
-            for(auto it : cLHS){
+            for(const auto& it : cLHS){
                 if(it.coeff() < 0){
                     sumNegCoef -= it.coeff();
                     numberNegCoef++;
@@ -497,9 +497,9 @@ namespace smtrat
                         //-1 x1 +1 x2 >= 1 ===> not x1 and x2
                         FormulasT subf;
                         for(const auto& it : cLHS){
-                            // TODO do this properly using carl data structures
                             if(it.coeff() < 0){
-                                subf.push_back(FormulaT(carl::FormulaType::NOT, it.getSingleVariable()));
+                                FormulaT variableFormula = FormulaT(it.getSingleVariable());
+                                subf.push_back(FormulaT(carl::FormulaType::NOT, variableFormula));
                             }else{
                                 subf.push_back(FormulaT(it.getSingleVariable()));
                             }
@@ -510,7 +510,8 @@ namespace smtrat
                         FormulasT subf;
                         for(auto it : cLHS){
                             if(it.coeff() < 0){
-                                subf.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it.getSingleVariable())));
+                                FormulaT variableFormula = FormulaT(it.getSingleVariable());
+                                subf.push_back(FormulaT(carl::FormulaType::NOT, variableFormula));
                             }else{
                                 subf.push_back(FormulaT(it.getSingleVariable()));
                             }
@@ -526,11 +527,11 @@ namespace smtrat
                     if(numberNegCoef == 2 && (sumNegCoef/numberNegCoef) == 1 && sum == min &&  min == - max){
                         if(cRHS == 0){
                             //-1 x1 -1 x2 +1 x3 >= 0 ===> not(x1 and x2) and ((x1 or x2) -> x3)
-                            std::vector<carl::Variable> nVars;
+                            std::set<carl::Variable> nVars;
                             carl::Variable pVar;
                             for(auto it : cLHS){
                                 if(it.coeff() < 0){
-                                    nVars.push_back(it.getSingleVariable());
+                                    nVars.insert(it.getSingleVariable());
                                 }else{
                                     pVar = it.getSingleVariable();
                                 }
@@ -581,10 +582,10 @@ namespace smtrat
                             //-1 x1 +1 x2 +1 x3 >= 1 ===> x1 -> (x2 and x3) and (x1 or x2 or x3)
                             FormulaT subfA = generateVarChain(cVars, carl::FormulaType::OR);
                             carl::Variable nVar;
-                            std::vector<carl::Variable> pVars;
+                            std::set<carl::Variable> pVars;
                             for(auto it : cLHS){
                                 if(it.coeff() > 0){
-                                    pVars.push_back(it.getSingleVariable());
+                                    pVars.insert(it.getSingleVariable());
                                 }else{
                                     nVar = it.getSingleVariable();
                                 }
@@ -606,8 +607,9 @@ namespace smtrat
                         }
                     }
 
-                    ConstraintT constrA(newLHS, carl::Relation::GEQ, 1);
-                    ConstraintT constrB(newLHS, carl::Relation::GEQ, 0);
+                    // actually newLHS - 1 in the next line
+                    ConstraintT constrA(newLHS + Poly(-1), carl::Relation::GEQ);
+                    ConstraintT constrB(newLHS, carl::Relation::GEQ);
                     FormulaT f = FormulaT(carl::FormulaType::OR, FormulaT(constrA), FormulaT(constrB));
                     ConstraintT PBf = f.constraint();
                     return convertBigFormula(changeVarTypeToBool(PBf), c);
@@ -777,8 +779,8 @@ namespace smtrat
                     return FormulaT(carl::FormulaType::AND, subformulaA, subformulaB);
                 }else{
                     //+1 x1 +1 x2 +1 x3 +1 x4 = 3 ===> +1 x1 +1 x2 +1 x3 +1 x4 >= 3 and +1 x1 +1 x2 +1 x3 +1 x4 <= 3 
-                    ConstraintT newConstA(cLHS, carl::Relation::GEQ, cRHS);
-                    ConstraintT newConstB(cLHS, carl::Relation::LEQ, cRHS);
+                    ConstraintT newConstA(cLHS - cRHS, carl::Relation::GEQ);
+                    ConstraintT newConstB(cLHS - cRHS, carl::Relation::LEQ);
 
                     FormulaT subformulaA = checkFormulaType(FormulaT(newConstA));
                     FormulaT subformulaB = checkFormulaType(FormulaT(newConstB));
@@ -825,17 +827,18 @@ namespace smtrat
                 newLHS += TermT(-t, carl::freshBooleanVariable(), 1);
             }
 
-            ConstraintT newConstraint(newLHS, carl::Relation::EQ, newRHS);
+            ConstraintT newConstraint(newLHS - newRHS, carl::Relation::EQ);
             return checkFormulaType(FormulaT(newConstraint));
         }
 
 
     template<typename Settings>
         FormulaT PBPPModule<Settings>::convertSmallFormula(const ConstraintT& formula, const ConstraintT& c){
+            // TODO assert what small means here
             carl::Relation cRel = formula.relation();
             const auto& cLHS = formula.lhs();
-            Rational lhsCoeff = cLHS.begin()->first;
-            FormulaT lhsVar = FormulaT(cLHS.begin()->second);
+            Rational lhsCoeff = cLHS.begin()->coeff();
+            FormulaT lhsVar = FormulaT(cLHS.begin()->getSingleVariable());
             Rational cRHS = formula.constantPart();
 
             if(cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER){
@@ -1037,7 +1040,7 @@ namespace smtrat
         FormulaT PBPPModule<Settings>::convertBigFormula(const ConstraintT& formula, const ConstraintT& c){
             const auto& cLHS = formula.lhs();
             carl::Relation cRel = formula.relation();
-            auto cVars = formula.gatherVariables();
+            std::set<carl::Variable> cVars = formula.variables();
             Rational cRHS = formula.constantPart();
             bool positive = true;
             bool negative = true;
@@ -1185,9 +1188,9 @@ namespace smtrat
         }
 
     template<typename Settings>
-        FormulaT PBPPModule<Settings>::generateVarChain(const std::vector<carl::Variable>& vars, carl::FormulaType type){
+        FormulaT PBPPModule<Settings>::generateVarChain(const std::set<carl::Variable>& vars, carl::FormulaType type){
             FormulasT newSubformulas;
-            for(auto var: vars){
+            for(const auto& var: vars){
                 FormulaT newFormula = FormulaT(var);
                 newSubformulas.push_back(newFormula);
             }
@@ -1203,7 +1206,7 @@ namespace smtrat
             const auto& cLHS = formula.lhs();
             carl::Relation cRel  = formula.relation();
             Rational cRHS = formula.constantPart();
-            auto variables = formula.gatherVariables();
+            auto variables = formula.variables();
 
             for(auto it : variables){
                 mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(it, carl::freshBooleanVariable()));
@@ -1212,7 +1215,7 @@ namespace smtrat
             Poly lhs;
             for(auto it : cLHS){
                 // Poly pol(it.second);
-                lhs = lhs + it.coeff() * it.second;
+                lhs = lhs + it.coeff() * it.getSingleVariable();
             }
             lhs = lhs - cRHS;
             FormulaT subformulaA = FormulaT(lhs, cRel);
@@ -1235,18 +1238,18 @@ namespace smtrat
             // TODO this does not exist! Instead, find the constant part of the formula.
             Rational cRHS = formula.constantPart();
             // TODO this is not the type for LHS
-            std::vector<std::pair<Rational, carl::Variable>> newLHS;
+            Poly newLHS;
             // TODO check whether we actually need the variable cache.
             // For each monome,
             for(const auto& it : cLHS){
-                auto finder = mVariablesCache.find(it.second);
+                auto finder = mVariablesCache.find(it.getSingleVariable());
                 if(finder == mVariablesCache.end()){
                     // create a new bool variable
                     carl::Variable newVar = carl::freshBooleanVariable();
-                    mVariablesCache.emplace(it.second, newVar);
-                    newLHS.push_back(std::pair<Rational, carl::Variable>(it.coeff(), newVar));
+                    mVariablesCache.emplace(it.getSingleVariable(), newVar);
+                    newLHS = newLHS + it.coeff() * newVar;
                 } else {
-                    newLHS.push_back(std::pair<Rational, carl::Variable>(it.coeff(), finder->second));
+                    newLHS = newLHS + it.coeff() * finder->second;
                 }
 
             }
@@ -1258,9 +1261,9 @@ namespace smtrat
 
 
     template<typename Settings>
-        FormulaT PBPPModule<Settings>::interconnectVariables(const std::vector<carl::Variable>& variables){
+        FormulaT PBPPModule<Settings>::interconnectVariables(const std::set<carl::Variable>& variables){
             FormulasT subformulas;
-            for(auto var : variables){
+            for(const auto& var : variables){
                 if(std::find(mConnectedVars.begin(), mConnectedVars.end(), var) == mConnectedVars.end()){
                     //The variables are not interconnected
                     mConnectedVars.push_back(var);

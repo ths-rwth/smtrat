@@ -107,9 +107,9 @@ namespace smtrat
 			std::function<FormulaT(FormulaT)> checkFormulaTypeWithMixedConstrFunction;
 			std::function<FormulaT(FormulaT)> checkFormulaTypeBasicFunction;
 
-			FormulaT generateVarChain(const std::vector<carl::Variable>& vars, carl::FormulaType type);
+			FormulaT generateVarChain(const std::set<carl::Variable>& vars, carl::FormulaType type);
 			FormulaT createAuxiliaryConstraint(const std::vector<carl::Variable>& variables);
-			FormulaT interconnectVariables(const std::vector<carl::Variable>& variables);
+			FormulaT interconnectVariables(const std::set<carl::Variable>& variables);
 			FormulaT rnsTransformation(const ConstraintT& formula, const Integer& prime);
 			std::vector<Integer> calculateRNSBase(const ConstraintT& formula);
 			bool isNonRedundant(const std::vector<Integer>& base, const ConstraintT& formula);
