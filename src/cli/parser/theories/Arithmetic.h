@@ -11,11 +11,11 @@ namespace parser {
  * Implements the theory of arithmetic, including LRA, LIA, NRA and NIA.
  */
 struct ArithmeticTheory: public AbstractTheory  {
-	typedef boost::variant<Poly::ConstructorOperation, carl::Relation> OperatorType;
+	using OperatorType = boost::variant<Poly::ConstructorOperation, carl::Relation>;
 	
 	static void addSimpleSorts(qi::symbols<char, carl::Sort>& sorts);
 	
-	static bool convertTerm(const types::TermType& term, Poly& result);
+	static bool convertTerm(const types::TermType& term, Poly& result, bool allow_bool = false);
 	static bool convertArguments(const OperatorType& op, const std::vector<types::TermType>& arguments, std::vector<Poly>& result, TheoryError& errors);
 	
 	std::map<std::string, OperatorType> ops;
@@ -31,6 +31,7 @@ struct ArithmeticTheory: public AbstractTheory  {
 	FormulaT makeConstraint(const Poly& lhs, const Poly& rhs, carl::Relation rel);
 
 	bool instantiate(const types::VariableType& var, const types::TermType& replacement, types::TermType& result, TheoryError& errors);
+	bool isBooleanIdentity(const OperatorType& op, const std::vector<types::TermType>& arguments, TheoryError& errors);
 	bool functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors);
 };
 	

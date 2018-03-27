@@ -14,7 +14,7 @@ struct BitvectorTheory: public AbstractTheory  {
 	carl::Sort bvSort;
 	conversion::VectorVariantConverter<types::BVTerm> vectorConverter;
 	conversion::VariantConverter<types::BVTerm> termConverter;
-	typedef carl::BVTermType OperatorType;
+	using OperatorType = carl::BVTermType;
 	static void addSimpleSorts(qi::symbols<char, carl::Sort>& sorts);
 	
 	BitvectorTheory(ParserState* state);

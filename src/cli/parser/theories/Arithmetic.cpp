@@ -20,7 +20,7 @@ namespace parser {
 		sorts.add("Real", sm.getInterpreted(carl::VariableType::VT_REAL));
 	}
 
-	bool ArithmeticTheory::convertTerm(const types::TermType& term, Poly& result) {
+	bool ArithmeticTheory::convertTerm(const types::TermType& term, Poly& result, bool allow_bool) {
 		if (boost::get<Poly>(&term) != nullptr) {
 			result = boost::get<Poly>(term);
 			return true;
@@ -33,6 +33,12 @@ namespace parser {
 				case carl::VariableType::VT_INT:
 					result = Poly(boost::get<carl::Variable>(term));
 					return true;
+				case carl::VariableType::VT_BOOL:
+					if (allow_bool) {
+						result = Poly(boost::get<carl::Variable>(term));
+						return true;
+					}
+					return false;
 				default:
 					return false;
 			}
@@ -45,8 +51,8 @@ namespace parser {
 		result.clear();
 		for (std::size_t i = 0; i < arguments.size(); i++) {
 			Poly res;
-			if (!convertTerm(arguments[i], res)) {
-				errors.next() << "Operator \"" << op << "\" expects arguments to be formulas, but argument " << (i+1) << " is not: \"" << arguments[i] << "\".";
+			if (!convertTerm(arguments[i], res, true)) {
+				errors.next() << "Operator \"" << op << "\" expects arguments to be polynomials, but argument " << (i+1) << " is not: \"" << arguments[i] << "\".";
 				return false;
 			}
 			result.push_back(res);
@@ -243,6 +249,17 @@ namespace parser {
 		Instantiator<carl::Variable,Poly> instantiator;
 		return instantiator.instantiate(v, repl, result);
 	}
+	
+	bool ArithmeticTheory::isBooleanIdentity(const OperatorType& op, const std::vector<types::TermType>& arguments, TheoryError& errors) {
+		if (boost::get<carl::Relation>(&op) == nullptr) return false;
+		if (boost::get<carl::Relation>(op) != carl::Relation::EQ) return false;
+		for (const auto& a: arguments) {
+			if (boost::get<carl::Variable>(&a) == nullptr) return false;
+			if (boost::get<carl::Variable>(a).type() != carl::VariableType::VT_BOOL) return false;
+		}
+		errors.next() << "Operator \"" << op << "\" only has boolean variables which is handled by the core theory.";
+		return true;
+	}
 
 	bool ArithmeticTheory::functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
 		std::vector<Poly> args;
@@ -303,6 +320,7 @@ namespace parser {
 			return false;
 		}
 		OperatorType op = it->second;
+		if (isBooleanIdentity(op, arguments, errors)) return false;
 		if (!convertArguments(op, arguments, args, errors)) return false;
 		
 		if (boost::get<Poly::ConstructorOperation>(&op) != nullptr) {
