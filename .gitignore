@@ -1,3 +1,4 @@
+*.swp
 **/config.h
 **/config.txt
 **/CompileInfo.cpp
