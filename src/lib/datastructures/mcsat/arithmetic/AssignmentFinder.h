@@ -41,11 +41,11 @@ private:
 		return mModel.contains(vars);
 	}
 	bool satisfies(const FormulaT& f, const RAN& r) const {
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << ", " << mModel << ", " << mVar << ", " << r);
+		SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", f << ", " << mModel << ", " << mVar << ", " << r);
 		Model m = mModel;
 		m.assign(mVar, r);
 		auto res = carl::model::evaluate(f, m);
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Evaluating " << f << " on " << m << " -> " << res);
+		SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Evaluating " << f << " on " << m << " -> " << res);
 		if (!res.isBool()) return true;
 		assert(res.isBool());
 		return res.asBool();
@@ -57,6 +57,7 @@ private:
 		if (l.isIntegral() != r.isIntegral()) return l.isIntegral();
 		if (l.isNumeric() != r.isNumeric()) return l.isNumeric();
 		if (l.size() != r.size()) return l.size() < r.size();
+		if (l.abs() != r.abs()) return l.abs() < r.abs();
 		return l < r;
 	}
 	
@@ -107,11 +108,11 @@ public:
 		std::vector<RAN> list;
 		if (fnew.getType() == carl::FormulaType::CONSTRAINT) {
 			const auto& poly = fnew.constraint().lhs();
-			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Real roots of " << poly << " in " << mVar << " w.r.t. " << mModel);
+			SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Real roots of " << poly << " in " << mVar << " w.r.t. " << mModel);
 			auto roots = carl::model::tryRealRoots(poly, mVar, mModel);
 			if (roots) {
 				list = *roots;
-				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "-> " << list);
+				SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "-> " << list);
 			} else {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Failed to compute roots because polynomial is not univariate or became zero.");
 				mMVBounds.emplace_back(f);
@@ -201,7 +202,7 @@ public:
 				}
 				last = 2*cur + 2;
 			}
-			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", constraint << " vs " << mRI.sampleFrom(last));
+			SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", constraint << " vs " << mRI.sampleFrom(last));
 			if (!satisfies(constraint, mRI.sampleFrom(last))) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", constraint << " refutes " << mRI.sampleFrom(last) << " which is " << mRI.sampleFrom(roots.size()*2));
 				// Refutes interval right of largest root

@@ -18,7 +18,7 @@ struct Explanation {
 		// However, the CAD implementation starts eliminating at the front:
 		std::vector<carl::Variable> orderedVars(variableOrdering);
 		std::reverse(orderedVars.begin(), orderedVars.end());
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Ascending variable order" << variableOrdering << " and eliminating down from " << var);
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Ascending variable order " << variableOrdering << " and eliminating down from " << var);
 
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Bookkeep: " << data);
 		ExplanationGenerator eg(reason, orderedVars, var, data.model());
