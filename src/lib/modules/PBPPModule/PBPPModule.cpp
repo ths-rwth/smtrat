@@ -42,11 +42,25 @@ namespace smtrat
     template<class Settings>
         bool PBPPModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
         {
+            // TODO double check objective stuff
             if (objective() != carl::Variable::NO_VARIABLE) {
-                for (auto var: objectiveFunction().gatherVariables()) {
+                for (const auto& var: objectiveFunction().gatherVariables()) {
                     mVariablesCache.emplace(var, carl::freshBooleanVariable());
                 }
             }
+
+            // TODO refactor - most of the check is very similar to each other
+            // TODO why are these cases mutually exclusive. Couldn't we transform the formula in
+            // different ways?
+//            for (const auto& transformation : Settings:transformations) {
+//                switch (transformation) {
+//                    case Settings::use_rns_transformation:
+//                        break;
+//                    case default:
+//                        // unknown transformation
+//                        return false
+//            }
+
             if(Settings::use_rns_transformation){
                 FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeWithRNSFunction);
                 addSubformulaToPassedFormula(formula, _subformula->formula());
@@ -73,7 +87,7 @@ namespace smtrat
 
     template<class Settings>
         void PBPPModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
-        {	
+        {
 
         }
 
@@ -97,25 +111,86 @@ namespace smtrat
             return ans;
         }
 
+    template<typename Settings>
+        FormulaT PBPPModule<Settings>::convertPbConstraintToConstraintFormula(const FormulaT& formula) {
+            assert(formula.getType() == carl::FormulaType::PBCONSTRAINT);
+
+            const PBConstraintT& pbConstraint = formula.pbConstraint();
+            // extract the parts we are working with
+            const std::vector<std::pair<Rational, carl::Variable>>& pbLhs = pbConstraint.getLHS();
+            const Rational& rhs = pbConstraint.getRHS();
+
+            Poly lhs;
+            for (const auto& term : pbLhs) {
+                auto it = mVariablesCache.find(term.second);
+                if (it == mVariablesCache.end()) {
+                    // We haven't seen this variable, yet. Create a new map entry for it.
+                    mVariablesCache[term.second] = carl::freshBooleanVariable();
+                }
+
+                const carl::Variable& booleanVariable = mVariablesCache[term.second];
+                lhs += Poly(term.first) * Poly(booleanVariable);
+            }
+
+            // the new constraint, based on the pbConstraint
+            ConstraintT constraint(lhs - Poly(rhs), pbConstraint.getRelation());
+
+            SMTRAT_LOG_INFO("smtrat.pbc", "converted PBConstraint " << pbConstraint
+                    << " to arithmetic constraint "
+                    << constraint);
+
+            return FormulaT(constraint);
+        }
 
     template<typename Settings>
-        FormulaT PBPPModule<Settings>::checkFormulaType(const FormulaT& formula){
-            // TODO we should probably make sure that we deal with pseudo boolean constraints
+        bool PBPPModule<Settings>::isPseudoBoolean(const ConstraintT& constraint) {
+            for (const auto& term : constraint.lhs()) {
+                std::set<carl::Variable> variables;
+                term.gatherVariables(variables);
+                for (const auto& var : variables) {
+                    if (var.getType() != carl::VariableType::VT_BOOL) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+    template<typename Settings>
+        FormulaT PBPPModule<Settings>::checkFormulaType(const FormulaT& inputFormula){
+            FormulaT formula;
+            SMTRAT_LOG_DEBUG("smtrat.pbc", "Got formula type " << inputFormula.getType());
+            if (inputFormula.getType() == carl::FormulaType::PBCONSTRAINT) {
+                // We get an old input Format. Instead of PBCONSTRAINT we would like to work
+                // with CONSTRAINTs
+                // Hence, for compatibility, we convert the Formula to the correct type.
+                formula = convertPbConstraintToConstraintFormula(inputFormula);
+            } else {
+                // pass through.
+                formula = inputFormula;
+            }
+
             if(formula.getType() != carl::FormulaType::CONSTRAINT){
                 return formula;
             }
 
-            const ConstraintT& c = formula.constraint();
-            carl::Relation cRel = c.relation();
-            const Poly& lhs = c.lhs();
+            // TODO at this point we also have to check whether we actually have a pseudo boolean constraint
+            // e.g. we could end up with an objective, which can not be transformed to any meaningful boolean representation
+            const ConstraintT& constraint = formula.constraint();
+            if (!isPseudoBoolean(constraint)) {
+                return formula;
+            }
 
-            // TODO what does this mean?
+            carl::Relation cRel = constraint.relation();
+            const Poly& lhs = constraint.lhs();
+
             bool positive = true;
             bool negative = true;
             bool isAllCoeffEqual = true;
             Rational rhs = lhs.constantPart(); // TODO extract constant or check whether we actually need it.
             Rational sum  = 0;
-            Rational min = INT_MAX; // TODO I guess, this should be zero each. See TODO below
+            Rational min = INT_MAX;
             Rational max = INT_MIN;
 
             // TODO check whether there is a better way to get the number of terms in a poly
@@ -130,14 +205,12 @@ namespace smtrat
                     negative = false;
                 }
 
-                // TODO this will only work if we find coefficients which exceed the integer limits
                 if(it.coeff() < min){
                     min = it.coeff();
                 }else if(it.coeff() > max){
                     max = it.coeff();
                 }
 
-                // sum monome coefficient
                 sum += it.coeff();
             }
 
@@ -149,22 +222,18 @@ namespace smtrat
                 }
             }
 
-            // TODO what for? 
-            ConstraintT constraint = changeVarTypeToBool(c);
-
             if(!positive && !negative){
-                auto res = encodeMixedConstraints(constraint, c);
+                auto res = encodeMixedConstraints(constraint, constraint);
                 SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
                 return res;
             }else if(isAllCoeffEqual && (lhs.lcoeff() == 1 || lhs.lcoeff() == -1 ) && lhsSize > 1){
                 // x1 + x2 - x3 ~ b
-                auto res = encodeCardinalityConstraint(constraint, c);
+                auto res = encodeCardinalityConstraint(constraint, constraint);
                 SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
                 return res;
-            }else if(lhsSize == 1){
-                // TODO only one term, probably this case will never be reached. 
-                // TODO rename method. Yes, the formula is small
-                auto res = convertSmallFormula(constraint, c);
+            }else if(lhsSize == 1 && !lhs.begin()->isConstant() || lhsSize == 2){
+                // TODO only one term, probably this case will never be reached.
+                auto res = convertSmallFormula(constraint, constraint);
                 SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
                 return res;
             }else if(!(positive && rhs > 0 && sum > rhs
@@ -175,12 +244,11 @@ namespace smtrat
                     && !((positive || negative) && cRel == carl::Relation::NEQ && sum == rhs && rhs != 0)
                     && !(!positive && !negative)
                     ){
-                // TODO rename method - what does big actually mean here?
-                auto res = convertBigFormula(constraint, c);
+                auto res = convertBigFormula(constraint, constraint);
                 SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
                 return res;
             }else{
-                auto res = forwardAsArithmetic(c);
+                auto res = forwardAsArithmetic(constraint);
                 SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
                 return res;
             }
@@ -214,7 +282,6 @@ namespace smtrat
                 }
             }
 
-            // TODO refactor for Constraint
             ConstraintT constraint = changeVarTypeToBool(c);
             // TODO we want to further distinguish whether we need 4 or 5 since we might have a constant term
             if(positive && !(isAllCoeffEqual && cLHS.lcoeff() == 1) && cRel == carl::Relation::EQ && cLHS.size() > 4){
@@ -240,7 +307,7 @@ namespace smtrat
         FormulaT PBPPModule<Settings>::checkFormulaTypeWithCardConstr(const FormulaT& formula){
             if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
                 return FormulaT(formula);
-            } 
+            }
 
             const ConstraintT& c = formula.constraint();
             carl::Relation cRel = c.relation();
@@ -314,20 +381,21 @@ namespace smtrat
 
     template<typename Settings>
         FormulaT PBPPModule<Settings>::checkFormulaTypeWithMixedConstr(const FormulaT& formula){
-            if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
+            // preprocess this legacy type first
+            assert(formula.getType() != carl::FormulaType::PBCONSTRAINT);
+            if(formula.getType() != carl::FormulaType::CONSTRAINT){
                 return FormulaT(formula);
-            } 
+            }
 
             const ConstraintT& c = formula.constraint();
             carl::Relation cRel = c.relation();
-            const auto& cLHS = c.lhs();
+            const Poly& cLHS = c.lhs();
             bool positive = true;
             bool negative = true;
             bool isAllCoeffEqual = true;
             Rational cRHS = c.constantPart();
             Rational sum  = 0;
-            Rational min = INT_MAX;
-            Rational max = INT_MIN;
+
             // TODO substract 1 if we have a constant term
             std::size_t lhsSize = cLHS.size();
 
@@ -340,11 +408,6 @@ namespace smtrat
                     negative = false;
                 }
 
-                if(it.coeff() < min){
-                    min = it.coeff();
-                }else if(it.coeff() > max){
-                    max = it.coeff();
-                }
                 sum += it.coeff();
             }
 
@@ -508,7 +571,7 @@ namespace smtrat
                     }else if(cRHS == 0 && sum == 0){
                         //+1 x1 -1 x2 >= 0 ==> x2 -> x1 ===> not x2 or x1
                         FormulasT subf;
-                        for(auto it : cLHS){
+                        for(const auto& it : cLHS){
                             if(it.coeff() < 0){
                                 FormulaT variableFormula = FormulaT(it.getSingleVariable());
                                 subf.push_back(FormulaT(carl::FormulaType::NOT, variableFormula));
@@ -529,7 +592,7 @@ namespace smtrat
                             //-1 x1 -1 x2 +1 x3 >= 0 ===> not(x1 and x2) and ((x1 or x2) -> x3)
                             std::set<carl::Variable> nVars;
                             carl::Variable pVar;
-                            for(auto it : cLHS){
+                            for(const auto& it : cLHS){
                                 if(it.coeff() < 0){
                                     nVars.insert(it.getSingleVariable());
                                 }else{
@@ -552,7 +615,7 @@ namespace smtrat
                         }else if(cRHS == min){
                             //-1 x1 -1 x2 +1 x3 >= -1 ===> (x1 and x2) -> x3 ===> not x1 or not x2 or x3
                             FormulasT subformulas;
-                            for(auto it : cLHS){
+                            for(const auto& it : cLHS){
                                 if(it.coeff() < 0){
                                     subformulas.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it.getSingleVariable())));
                                 }else{
@@ -567,7 +630,7 @@ namespace smtrat
                         if(cRHS == 0){
                             //-1 x1 +1 x2 +1 x3 >= 0 ===> x1 -> (x2 or x3) ===> not x1 or x2 or x3
                             FormulasT subformulas;
-                            for(auto it : cLHS){
+                            for(const auto& it : cLHS){
                                 if(it.coeff() < 0){
                                     subformulas.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it.getSingleVariable())));
                                 }else{
@@ -583,7 +646,7 @@ namespace smtrat
                             FormulaT subfA = generateVarChain(cVars, carl::FormulaType::OR);
                             carl::Variable nVar;
                             std::set<carl::Variable> pVars;
-                            for(auto it : cLHS){
+                            for(const auto& it : cLHS){
                                 if(it.coeff() > 0){
                                     pVars.insert(it.getSingleVariable());
                                 }else{
@@ -801,7 +864,7 @@ namespace smtrat
             Rational newRHS = carl::mod(cRHS, prime);
 
 
-            for(auto it : cLHS){
+            for(const auto& it : cLHS){
                 // TODO actually, we only modify the coefficient. Is it enough to modify the coefficient?
                 assert(carl::isInteger(it.coeff()));
                 Integer newCoeff = carl::mod(carl::getNum(it.coeff()), prime);
@@ -817,7 +880,7 @@ namespace smtrat
             }
 
             Rational t = 0;
-            for(auto it : newLHS){
+            for(const auto& it : newLHS){
                 t += it.coeff();
             }
             t = carl::floor((t - newRHS) / prime );
@@ -834,7 +897,9 @@ namespace smtrat
 
     template<typename Settings>
         FormulaT PBPPModule<Settings>::convertSmallFormula(const ConstraintT& formula, const ConstraintT& c){
-            // TODO assert what small means here
+            SMTRAT_LOG_DEBUG("smtrat.pbc", "Trying to convert small formula: " << formula);
+            assert(!formula.lhs().begin()->isConstant());
+
             carl::Relation cRel = formula.relation();
             const auto& cLHS = formula.lhs();
             Rational lhsCoeff = cLHS.begin()->coeff();
@@ -1208,16 +1273,20 @@ namespace smtrat
             Rational cRHS = formula.constantPart();
             auto variables = formula.variables();
 
-            for(auto it : variables){
+            for(const auto& it : variables){
                 mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(it, carl::freshBooleanVariable()));
             }
 
             Poly lhs;
-            for(auto it : cLHS){
+            for(const auto& it : cLHS){
                 // Poly pol(it.second);
-                lhs = lhs + it.coeff() * it.getSingleVariable();
+                if (!it.isConstant()) {
+                  lhs = lhs + it.coeff() * it.getSingleVariable();
+                } else {
+                    lhs = lhs + it.coeff();
+                }
             }
-            lhs = lhs - cRHS;
+
             FormulaT subformulaA = FormulaT(lhs, cRel);
 
             // Adding auxiliary constraint to ensure variables are assigned to 1 or 0.
@@ -1232,31 +1301,29 @@ namespace smtrat
 
     template<typename Settings>
         ConstraintT PBPPModule<Settings>::changeVarTypeToBool(const ConstraintT& formula){
-            // this is actually the underlying polynomial
-            const auto& cLHS = formula.lhs();
-            carl::Relation cRel  = formula.relation();
-            // TODO this does not exist! Instead, find the constant part of the formula.
-            Rational cRHS = formula.constantPart();
-            // TODO this is not the type for LHS
-            Poly newLHS;
-            // TODO check whether we actually need the variable cache.
-            // For each monome,
-            for(const auto& it : cLHS){
-                auto finder = mVariablesCache.find(it.getSingleVariable());
-                if(finder == mVariablesCache.end()){
-                    // create a new bool variable
-                    carl::Variable newVar = carl::freshBooleanVariable();
-                    mVariablesCache.emplace(it.getSingleVariable(), newVar);
-                    newLHS = newLHS + it.coeff() * newVar;
-                } else {
-                    newLHS = newLHS + it.coeff() * finder->second;
-                }
+            // TODO for testing purposes we could double check whether we only have VT_BOOL
+            return formula;
+            // TODO This should now be obsolete!! Discuss
 
-            }
-
-            // TODO substract cRHS from newLHS since constraints are always of the form lhs ~ 0
-
-            return ConstraintT(newLHS, cRel);
+//            // this is actually the underlying polynomial
+//            const auto& cLHS = formula.lhs();
+//            carl::Relation cRel  = formula.relation();
+//            Rational cRHS = formula.constantPart();
+//            Poly newLHS;
+//            for(const auto& it : cLHS){
+//                auto finder = mVariablesCache.find(it.getSingleVariable());
+//                if(finder == mVariablesCache.end()){
+//                    // create a new bool variable
+//                    carl::Variable newVar = carl::freshBooleanVariable();
+//                    mVariablesCache.emplace(it.getSingleVariable(), newVar);
+//                    newLHS = newLHS + it.coeff() * newVar;
+//                } else {
+//                    newLHS = newLHS + it.coeff() * finder->second;
+//                }
+//
+//            }
+//
+//            return ConstraintT(newLHS, cRel);
         }
 
 
@@ -1439,7 +1506,17 @@ namespace smtrat
             }
             return primes;
         }
+    template<typename Settings>
+        bool PBPPModule<Settings>::isAllCoefficientsEqual(const ConstraintT& constraint) {
+            Rational coefficient = constraint.lhs().lcoeff();
+            for (const auto& term : constraint.lhs()) {
+                if (term.coeff() != coefficient) {
+                    return false;
+                }
+            }
 
+            return true;
+        }
 
     template<typename Settings>
         bool PBPPModule<Settings>::isNonRedundant(const std::vector<Integer>& base, const ConstraintT& formula){
