@@ -221,6 +221,7 @@ namespace cad {
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = true;
 		static constexpr bool restrictProjectionByEC = true;
+		static constexpr bool deletePolynomials = true;
 	};
 	
 	struct NewCADSettingsFV: NewCADBaseSettings, cad::IncrementalityF, cad::ProjectionBrown, cad::SampleCompareValue, cad::ProjectionOrderDefault {
