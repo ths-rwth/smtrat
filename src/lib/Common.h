@@ -23,6 +23,7 @@
 #include <carl/interval/Contraction.h>
 #include <carl/io/streamingOperators.h>
 #include <carl/util/Common.h>
+#include <carl/formula/Logic.h>
 #include <carl/formula/FormulaPool.h>
 #include <carl/formula/bitvector/BVTerm.h>
 #include <carl/formula/bitvector/BVTermPool.h>
@@ -42,22 +43,7 @@ namespace smtrat
     // Enumerations.
 
     enum class Variable_Domain: unsigned { BOOLEAN = 0, REAL = 1, INTEGER = 2 };
-
-    enum class Logic : unsigned { UNDEFINED, QF_NRA, QF_LRA, QF_NIA, QF_LIA, QF_UF, QF_BV };
-	inline std::ostream& operator<<(std::ostream& os, const Logic& l) {
-	switch (l) {
-		case Logic::UNDEFINED:	os << "undefined"; break;
-		case Logic::QF_NRA:		os << "QF_NRA"; break;
-		case Logic::QF_LRA:		os << "QF_LRA"; break;
-		case Logic::QF_NIA:		os << "QF_NIA"; break;
-		case Logic::QF_LIA:		os << "QF_LIA"; break;
-		case Logic::QF_UF:		os << "QF_UF"; break;
-		case Logic::QF_BV:		os << "QF_BV"; break;
-	}
-	return os;
-}
-
-
+    using Logic = carl::Logic;
     ///An enum with the possible answers a Module can give
     enum Answer { SAT = 0, UNSAT = 1, UNKNOWN = 2, ABORTED = 3 };
 	inline std::ostream& operator<<(std::ostream& os, const Answer& a) {
