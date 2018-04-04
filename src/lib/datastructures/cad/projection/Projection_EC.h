@@ -313,7 +313,7 @@ namespace full {
 		void restrictProjection(std::size_t level) {
                         std::size_t lvl = level;
                         bool restricted = false;
-                        while(lvl < dim() && mRestricted[lvl].first == false && mRestricted[lvl-1].first == true && mEqConstraints[lvl].any()){
+                        while(lvl < dim() && mRestricted[lvl].first == false && mEqConstraints[lvl].any()){ // && mRestricted[lvl-1].first == true
 #ifdef SMTRAT_DEVOPTION_Statistics
                             mStatistics.usedRestrictedProjection();
 #endif
@@ -352,7 +352,7 @@ namespace full {
                         if(mEqConstraints[level].none()) { 
                                 std::size_t lvl = level;
                                 carl::Bitset eqc;
-                                while(mRestricted[lvl].first == true){
+                                //while(mRestricted[lvl].first == true){
                                         mRestricted[lvl].first = false;
                                         eqc = carl::Bitset().set(mRestricted[lvl].second);
                                         for (std::size_t l = lvl + 1; l <= dim(); l++) {
@@ -362,7 +362,7 @@ namespace full {
                                             }
                                         }
                                         lvl++;
-                                }
+                                //}
                                 activatePolynomials(level+1);
                         } else {
                                 mRestricted[level].first = false;
