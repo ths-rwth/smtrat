@@ -35,7 +35,7 @@ struct ClauseChecker {
 				allFalse = allFalse && !res.asBool();
 			} else return;
 		}
-		if (allFalse) std::quick_exit(66);
+		//if (allFalse) std::quick_exit(66);
 		assert(!allFalse);
 	}
 	template<typename TT>
