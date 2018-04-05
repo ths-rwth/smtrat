@@ -18,11 +18,7 @@ namespace smtrat
             , mStatistics(Settings::moduleName)
 #endif
             {
-                checkFormulaTypeFunction = std::bind(&PBPPModule<Settings>::checkFormulaType, this, std::placeholders::_1);
-                checkFormulaTypeWithRNSFunction = std::bind(&PBPPModule<Settings>::checkFormulaTypeWithRNS, this, std::placeholders::_1);
-                checkFormulaTypeWithCardConstrFunction = std::bind(&PBPPModule<Settings>::checkFormulaTypeWithCardConstr, this, std::placeholders::_1);
-                checkFormulaTypeWithMixedConstrFunction = std::bind(&PBPPModule<Settings>::checkFormulaTypeWithMixedConstr, this, std::placeholders::_1);
-                checkFormulaTypeBasicFunction = std::bind(&PBPPModule<Settings>::checkFormulaTypeBasic, this, std::placeholders::_1);
+                checkFormulaAndApplyTransformationsCallback = std::bind(&PBPPModule<Settings>::checkFormulaAndApplyTransformations, this, std::placeholders::_1);
             }
 
     template<class Settings>
@@ -30,7 +26,7 @@ namespace smtrat
         {}
 
     template<class Settings>
-        bool PBPPModule<Settings>::informCore( const FormulaT& _constraint )
+        bool PBPPModule<Settings>::informCore( const FormulaT& )
         {
             return true; // This should be adapted according to your implementation.
         }
@@ -49,44 +45,13 @@ namespace smtrat
                 }
             }
 
-            // TODO refactor - most of the check is very similar to each other
-            // TODO why are these cases mutually exclusive. Couldn't we transform the formula in
-            // different ways?
-//            for (const auto& transformation : Settings:transformations) {
-//                switch (transformation) {
-//                    case Settings::use_rns_transformation:
-//                        break;
-//                    case default:
-//                        // unknown transformation
-//                        return false
-//            }
-
-            if(Settings::use_rns_transformation){
-                FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeWithRNSFunction);
-                addSubformulaToPassedFormula(formula, _subformula->formula());
-                return true;
-            }else if(Settings::use_card_transformation){
-                FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeWithCardConstrFunction);
-                addSubformulaToPassedFormula(formula, _subformula->formula());
-                return true;
-            }else if(Settings::use_mixed_transformation){
-                FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeWithMixedConstrFunction);
-                addSubformulaToPassedFormula(formula, _subformula->formula());
-                return true;
-            }else if(Settings::use_basic_transformation){
-                FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeBasicFunction);
-                addSubformulaToPassedFormula(formula, _subformula->formula());
-                return true;
-            }else{
-                FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaTypeFunction);
-                addSubformulaToPassedFormula(formula, _subformula->formula());
-                return true;
-            }
+            FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaAndApplyTransformationsCallback);
+            addSubformulaToPassedFormula(formula, _subformula->formula());
             return true;
         }
 
     template<class Settings>
-        void PBPPModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
+        void PBPPModule<Settings>::removeCore( ModuleInput::const_iterator )
         {
 
         }
@@ -109,6 +74,56 @@ namespace smtrat
                 generateTrivialInfeasibleSubset();
             }
             return ans;
+        }
+
+    template<class Settings>
+        FormulaT PBPPModule<Settings>::checkFormulaAndApplyTransformations(const FormulaT& subformula) {
+            SMTRAT_LOG_DEBUG("smtrat.pbc", "Got formula type " << subformula.getType());
+
+            FormulaT formula;
+            if (subformula.getType() == carl::FormulaType::PBCONSTRAINT) {
+                // We get an old input Format. Instead of PBCONSTRAINT we would like to work
+                // with CONSTRAINTs
+                // Hence, for compatibility, we convert the Formula to the correct type.
+                formula = convertPbConstraintToConstraintFormula(subformula);
+            } else {
+                // pass through.
+                formula = subformula;
+            }
+
+            if(formula.getType() != carl::FormulaType::CONSTRAINT){
+                return formula;
+            }
+
+            const ConstraintT& constraint = formula.constraint();
+            if (!isPseudoBoolean(constraint)) { // eg an objective function
+                return formula;
+            }
+
+            assertAssumptionsForTransformation(formula);
+
+            // extract important information: lhs, rhs, hasRhs
+            const Poly& lhs = constraint.lhs();
+            const Rational rhs = constraint.constantPart();
+            const carl::Relation relation = constraint.relation();
+
+            // actually apply transformations
+            if (Settings::use_rns_transformation){
+                return checkFormulaTypeWithRNS(formula);
+            } else if (Settings::use_card_transformation){
+                return checkFormulaTypeWithCardConstr(formula);
+            } else if (Settings::use_mixed_transformation){
+                return checkFormulaTypeWithMixedConstr(formula);
+            } else if (Settings::use_basic_transformation){
+                return checkFormulaTypeBasic(formula);
+            } else {
+                return checkFormulaType(formula);
+            }
+
+            // IDEA apply more than one tranformation and take the one with most "gain"
+            // however, we need a notion of gain first.
+
+            assert(false);
         }
 
     template<typename Settings>
@@ -157,31 +172,17 @@ namespace smtrat
             return true;
         }
 
+    template<class Settings>
+        void PBPPModule<Settings>::assertAssumptionsForTransformation(const FormulaT& subformula) {
+            assert(subformula.getType() == carl::FormulaType::CONSTRAINT);
+            assert(isPseudoBoolean(subformula.constraint()));
+            assert(subformula.constraint().relation() != carl::Relation::GEQ);
+            assert(subformula.constraint().relation() != carl::Relation::GREATER);
+        }
+
     template<typename Settings>
         FormulaT PBPPModule<Settings>::checkFormulaType(const FormulaT& inputFormula){
-            FormulaT formula;
-            SMTRAT_LOG_DEBUG("smtrat.pbc", "Got formula type " << inputFormula.getType());
-            if (inputFormula.getType() == carl::FormulaType::PBCONSTRAINT) {
-                // We get an old input Format. Instead of PBCONSTRAINT we would like to work
-                // with CONSTRAINTs
-                // Hence, for compatibility, we convert the Formula to the correct type.
-                formula = convertPbConstraintToConstraintFormula(inputFormula);
-            } else {
-                // pass through.
-                formula = inputFormula;
-            }
-
-            if(formula.getType() != carl::FormulaType::CONSTRAINT){
-                return formula;
-            }
-
-            // TODO at this point we also have to check whether we actually have a pseudo boolean constraint
-            // e.g. we could end up with an objective, which can not be transformed to any meaningful boolean representation
-            const ConstraintT& constraint = formula.constraint();
-            if (!isPseudoBoolean(constraint)) {
-                return formula;
-            }
-
+            const ConstraintT& constraint = inputFormula.constraint();
             carl::Relation cRel = constraint.relation();
             const Poly& lhs = constraint.lhs();
 
@@ -214,7 +215,7 @@ namespace smtrat
                 sum += it.coeff();
             }
 
-            for(std::size_t i = 0; i < lhsSize - 1; i++){
+            for(unsigned i = 0; i < lhsSize - 1; i++){
                 // check whether the coefficients are all the same
                 if(lhs[i].coeff() != lhs[i + 1].coeff()){
                     isAllCoeffEqual = false;
@@ -224,17 +225,17 @@ namespace smtrat
 
             if(!positive && !negative){
                 auto res = encodeMixedConstraints(constraint, constraint);
-                SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+                SMTRAT_LOG_INFO("smtrat.pbc", inputFormula << " -> " << res);
                 return res;
             }else if(isAllCoeffEqual && (lhs.lcoeff() == 1 || lhs.lcoeff() == -1 ) && lhsSize > 1){
                 // x1 + x2 - x3 ~ b
                 auto res = encodeCardinalityConstraint(constraint, constraint);
-                SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+                SMTRAT_LOG_INFO("smtrat.pbc", inputFormula << " -> " << res);
                 return res;
-            }else if(lhsSize == 1 && !lhs.begin()->isConstant() || lhsSize == 2){
+            }else if((lhsSize == 1 && !lhs.begin()->isConstant()) || lhsSize == 2){
                 // TODO only one term, probably this case will never be reached.
                 auto res = convertSmallFormula(constraint, constraint);
-                SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+                SMTRAT_LOG_INFO("smtrat.pbc", inputFormula << " -> " << res);
                 return res;
             }else if(!(positive && rhs > 0 && sum > rhs
                         && (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
@@ -245,11 +246,11 @@ namespace smtrat
                     && !(!positive && !negative)
                     ){
                 auto res = convertBigFormula(constraint, constraint);
-                SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+                SMTRAT_LOG_INFO("smtrat.pbc", inputFormula << " -> " << res);
                 return res;
             }else{
                 auto res = forwardAsArithmetic(constraint);
-                SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
+                SMTRAT_LOG_INFO("smtrat.pbc", inputFormula << " -> " << res);
                 return res;
             }
         }
@@ -275,7 +276,7 @@ namespace smtrat
                 }
             }
 
-            for(std::size_t i = 0; i < cLHS.size() - 1; i++){
+            for(unsigned i = 0; i < cLHS.size() - 1; i++){
                 if(cLHS[i].coeff() != cLHS[i + 1].coeff()){
                     isAllCoeffEqual = false;
                     break;
@@ -296,7 +297,7 @@ namespace smtrat
                     SMTRAT_LOG_INFO("smtrat.pbc", formula << " -> " << res);
                     return res;
                 }else{
-                    return checkFormulaType(formula);	
+                    return checkFormulaType(formula);
                 }
             }else{
                 return checkFormulaType(formula);
@@ -305,9 +306,7 @@ namespace smtrat
 
     template<typename Settings>
         FormulaT PBPPModule<Settings>::checkFormulaTypeWithCardConstr(const FormulaT& formula){
-            if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
-                return FormulaT(formula);
-            }
+            assert(formula.getType() == carl::FormulaType::CONSTRAINT);
 
             const ConstraintT& c = formula.constraint();
             carl::Relation cRel = c.relation();
@@ -322,7 +321,6 @@ namespace smtrat
 
             // TODO substract 1 if there is a constant term
             std::size_t lhsSize = cLHS.size();
-
 
             for(auto it : cLHS){
                 if(it.coeff() < 0){
@@ -339,7 +337,7 @@ namespace smtrat
                 sum += it.coeff();
             }
 
-            for(std::size_t i = 0; i < lhsSize - 1; i++){
+            for(unsigned i = 0; i < lhsSize - 1; i++){
                 // TODO this might blow up if we check the constant term
                 if(cLHS[i].coeff() != cLHS[i + 1].coeff()){
                     isAllCoeffEqual = false;
@@ -382,10 +380,7 @@ namespace smtrat
     template<typename Settings>
         FormulaT PBPPModule<Settings>::checkFormulaTypeWithMixedConstr(const FormulaT& formula){
             // preprocess this legacy type first
-            assert(formula.getType() != carl::FormulaType::PBCONSTRAINT);
-            if(formula.getType() != carl::FormulaType::CONSTRAINT){
-                return FormulaT(formula);
-            }
+            assert(formula.getType() == carl::FormulaType::CONSTRAINT);
 
             const ConstraintT& c = formula.constraint();
             carl::Relation cRel = c.relation();
@@ -411,7 +406,7 @@ namespace smtrat
                 sum += it.coeff();
             }
 
-            for(std::size_t i = 0; i < lhsSize - 1; i++){
+            for(unsigned i = 0; i < lhsSize - 1; i++){
                 if(cLHS[i].coeff() != cLHS[i + 1].coeff()){
                     isAllCoeffEqual = false;
                     break;
@@ -450,9 +445,7 @@ namespace smtrat
 
     template<typename Settings>
         FormulaT PBPPModule<Settings>::checkFormulaTypeBasic(const FormulaT& formula){
-            if(formula.getType() != carl::FormulaType::PBCONSTRAINT){
-                return FormulaT(formula);
-            } 
+            assert(formula.getType() == carl::FormulaType::CONSTRAINT);
 
             const ConstraintT& c = formula.constraint();
             carl::Relation cRel = c.relation();
@@ -484,7 +477,7 @@ namespace smtrat
                 sum += it.coeff();
             }
 
-            for(std::size_t i = 0; i < lhsSize - 1; i++){
+            for(unsigned i = 0; i < lhsSize - 1; i++){
                 if(cLHS[i].coeff() != cLHS[i + 1].coeff()){
                     isAllCoeffEqual = false;
                     break;
@@ -696,6 +689,9 @@ namespace smtrat
             Rational firstCoef = cLHS[0].coeff();
             Rational sum = 0;
 
+            // since the constraint is normalized, we should never have GEQ or GREATER
+            assert(cRel != carl::Relation::GEQ && cRel != carl::Relation::GREATER);
+
             for(const auto& it : cLHS){
                 sum += it.coeff();
             }
@@ -720,10 +716,10 @@ namespace smtrat
 
                     // TODO rename me
                     FormulasT subformulasA;
-                    for(std::size_t i = 0; i < lhsSize; i++){
+                    for(unsigned i = 0; i < lhsSize; i++){
                         FormulasT temp;
                         temp.push_back(FormulaT(cLHS[i].getSingleVariable()));
-                        for(std::size_t j = 0; j < lhsSize; j++){
+                        for(unsigned j = 0; j < lhsSize; j++){
                             if(i != j){
                                 temp.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(cLHS[j].getSingleVariable())));
                             }
@@ -733,7 +729,7 @@ namespace smtrat
                     FormulaT subformulaA = FormulaT(carl::FormulaType::OR, std::move(subformulasA));
 
                     FormulasT subformulasB;
-                    for(auto it : cVars){
+                    for(const auto& it : cVars){
                         subformulasB.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it)));
                     }
                     FormulaT subformulaB = FormulaT(carl::FormulaType::AND, std::move(subformulasB));
@@ -753,7 +749,7 @@ namespace smtrat
                         FormulasT subformulas;
                         do{
                             FormulasT temp;
-                            for(std::size_t i = 0; i < lhsSize; i++){
+                            for(unsigned i = 0; i < lhsSize; i++){
                                 if(signs[i] == -1){
                                     temp.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(cLHS[i].getSingleVariable())));
                                 }else{
@@ -765,7 +761,7 @@ namespace smtrat
                         subsubformulas.push_back(FormulaT(carl::FormulaType::OR, std::move(subformulas)));
                     }
                     FormulasT subf;
-                    for(auto it : cVars){
+                    for(const auto& it : cVars){
                         subf.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(it)));
                     }
 
@@ -773,7 +769,7 @@ namespace smtrat
                     return FormulaT(carl::FormulaType::OR, std::move(subsubformulas));
                 }else{
                     return forwardAsArithmetic(c);
-                }		
+                }
             }else if(cRel == carl::Relation::EQ){
                 if((cRHS > lhsSize && firstCoef == 1) || (firstCoef == 1 && cRHS < 0)){
                     //x1 + x2 + x3 + x4 = 5 or x1 + x2 + x3 + x4 = -2 
@@ -801,7 +797,7 @@ namespace smtrat
                     FormulasT subformulasA;
                     do{
                         FormulasT temp;
-                        for(std::size_t i = 0; i < sign.size(); i++){
+                        for(unsigned i = 0; i < sign.size(); i++){
                             if(sign[i] == 1){
                                 temp.push_back(FormulaT(cLHS[i].getSingleVariable()));
                             }else{
@@ -825,7 +821,7 @@ namespace smtrat
                         FormulasT subformulasC;
                         do{
                             FormulasT temp;
-                            for(std::size_t i = 0; i < signs.size(); i++){
+                            for(unsigned i = 0; i < signs.size(); i++){
                                 if(signs[i] == 1){
                                     temp.push_back(FormulaT(cLHS[i].getSingleVariable()));
                                 }else{

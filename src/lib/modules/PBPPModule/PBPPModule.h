@@ -103,13 +103,12 @@ namespace smtrat
             FormulaT checkFormulaTypeWithCardConstr(const FormulaT& formula);
             FormulaT checkFormulaTypeWithMixedConstr(const FormulaT& formula);
             FormulaT checkFormulaTypeBasic(const FormulaT& formula);
-            std::function<FormulaT(FormulaT)> checkFormulaTypeFunction;
-            std::function<FormulaT(FormulaT)> checkFormulaTypeWithRNSFunction;
-            std::function<FormulaT(FormulaT)> checkFormulaTypeWithCardConstrFunction;
-            std::function<FormulaT(FormulaT)> checkFormulaTypeWithMixedConstrFunction;
-            std::function<FormulaT(FormulaT)> checkFormulaTypeBasicFunction;
+
+            std::function<FormulaT(FormulaT)> checkFormulaAndApplyTransformationsCallback;
 
             bool isPseudoBoolean(const ConstraintT& constraint);
+            FormulaT checkFormulaAndApplyTransformations(const FormulaT& subformula);
+            void assertAssumptionsForTransformation(const FormulaT& subformula);
             FormulaT generateVarChain(const std::set<carl::Variable>& vars, carl::FormulaType type);
             FormulaT createAuxiliaryConstraint(const std::vector<carl::Variable>& variables);
             FormulaT interconnectVariables(const std::set<carl::Variable>& variables);
