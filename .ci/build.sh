@@ -4,7 +4,19 @@ mkdir build || return 1
 cd build/ || return 1
 cmake -D DEVELOPER=ON -D SMTRAT_Strategy=AllModulesStrategy ../ || return 1
 
-if [[ ${TASK} == "doxygen" ]]; then
+function keep_waiting() {
+  while true; do
+    echo -e "."
+    sleep 60
+  done
+}
+if [[ ${TASK} == "dependencies" ]]; then
+	
+	keep_waiting &
+	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
+	kill $!
+	
+elif [[ ${TASK} == "doxygen" ]]; then
 	make doc
 	
 	git config --global user.email "gereon.kremer@cs.rwth-aachen.de"
