@@ -49,7 +49,7 @@ namespace smtrat
                     && separator.mRelations.count(carl::Relation::LEQ)))
                 ++mRelationalConflicts;
             
-            /// Check if the asserted relation trivially conflicts with another asserted relation
+            /// Check if the asserted relation trivially conflicts with other asserted relations
             switch (relation)
             {
                 case carl::Relation::EQ:
@@ -222,8 +222,30 @@ namespace smtrat
         if (!mInfeasibleSubsets.empty())
             return Answer::UNSAT;
         
-        /// Skip application of method if the asserted formula is undecidable
-        if (!isConflicting())
+        /// Predicate that decides if the given conflict is a subset of the asserted constraints
+        const auto hasConflict = 
+            [&](const Conflict& conflict)
+            {
+                return std::all_of(conflict.begin(), conflict.end(),
+                    [&](const auto& conflictEntry)
+                    {
+                        return ((conflictEntry.second == Direction::NEGATIVE
+                                || conflictEntry.second == Direction::BOTH)
+                                    && (conflictEntry.first->mRelations.count(carl::Relation::LESS)
+                                        || conflictEntry.first->mRelations.count(carl::Relation::LEQ)))
+                            || ((conflictEntry.second == Direction::POSITIVE
+                                || conflictEntry.second == Direction::BOTH)
+                                    && (conflictEntry.first->mRelations.count(carl::Relation::GREATER)
+                                        || conflictEntry.first->mRelations.count(carl::Relation::GEQ)))
+                            || (conflictEntry.second == Direction::BOTH
+                                && conflictEntry.first->mRelations.count(carl::Relation::NEQ));
+                    });
+            };
+        
+        /// Apply the method only if the asserted formula is not trivially undecidable
+        if (!mRelationalConflicts
+            && rReceivedFormula().isConstraintConjunction()
+            && std::none_of(mLinearizationConflicts.begin(), mLinearizationConflicts.end(), hasConflict))
         {
             /// Update the linearization of all changed separators
             for (Separator *separatorPtr : mChangedSeparators)
@@ -241,7 +263,25 @@ namespace smtrat
                         || separator.mRelations.count(carl::Relation::GEQ))))
                     direction = Direction::POSITIVE;
                 else if (!separator.mRelations.empty())
-                    direction = relationToDirection(*separator.mRelations.rbegin());
+                    switch (*separator.mRelations.rbegin())
+                    {
+                        case carl::Relation::EQ:
+                            direction = Direction::NONE;
+                            break;
+                        case carl::Relation::NEQ:
+                            direction = Direction::BOTH;
+                            break;
+                        case carl::Relation::LESS:
+                        case carl::Relation::LEQ:
+                            direction = Direction::NEGATIVE;
+                            break;
+                        case carl::Relation::GREATER:
+                        case carl::Relation::GEQ:
+                            direction = Direction::POSITIVE;
+                            break;
+                        default:
+                            assert(false);
+                    }
                 
                 /// Update the linearization if the direction has changed
                 if (separator.mActiveDirection != Direction::NONE
@@ -279,17 +319,22 @@ namespace smtrat
             }
             else
             {
-                const std::vector<FormulaSetT> conflicts{mLRAModule.infeasibleSubsets()};
-                for (const FormulaSetT& conflict : conflicts)
+                /// Learn the conflicting set of separators to avoid its recheck in the future
+                const std::vector<FormulaSetT> LRAConflicts{mLRAModule.infeasibleSubsets()};
+                for (const FormulaSetT& LRAConflict : LRAConflicts)
                 {
                     carl::Variables variables;
-                    for (const FormulaT& formula : conflict)
+                    for (const FormulaT& formula : LRAConflict)
                         formula.allVars(variables);
-                    std::vector<std::pair<Separator *, Direction>> lemma;
-                    for (auto& separatorsEntry : mSeparators)
-                        if (variables.count(separatorsEntry.second.mBias))
-                            lemma.emplace_back(&(separatorsEntry.second), separatorsEntry.second.mActiveDirection);
-                    mLinearizationConflicts.emplace_back(lemma);
+                    Conflict conflict;
+                    for (const auto& separatorsEntry : mSeparators)
+                    {
+                        const Separator& separator{separatorsEntry.second};
+                        if (separator.mActiveDirection != Direction::NONE
+                            && variables.count(separator.mBias))
+                            conflict.emplace_back(&separator, separator.mActiveDirection);
+                    }
+                    mLinearizationConflicts.emplace_back(std::move(conflict));
                 }
             }
         }
@@ -301,63 +346,6 @@ namespace smtrat
             getInfeasibleSubsets();
         return answer;
 	}
-    
-    template<class Settings>
-    inline bool STropModule<Settings>::isDecidable()
-    {
-        if (!mRelationalConflicts
-            && rReceivedFormula().isConstraintConjunction()
-            && std::none_of(mLinearizationConflicts.begin(), mLinearizationConflicts.end(),
-                [](auto& conflict){
-                    
-                })
-            
-            )
-            return true;
-        else
-            return std::
-        
-        
-        
-        {
-            for (auto& conflict : mLinearizationConflicts)
-            {
-                bool conflicting = true;
-                for (auto& entry : conflict)
-                {
-                    if (entry.second == Direc)
-                    
-                    if (entry.first->mActiveRelation != entry.second)
-                    {
-                        conflicting = false;
-                        break;
-                    }
-                }
-                if (conflicting)
-                    return true;
-            }
-        }
-    }
-    
-    template<class Settings>
-    inline typename STropModule<Settings>::Direction STropModule<Settings>::relationToDirection(const carl::Relation relation)
-    {
-        switch (relation)
-        {
-            case carl::Relation::EQ:
-                return Direction::NONE;
-            case carl::Relation::NEQ:
-                return Direction::BOTH;
-            case carl::Relation::LESS:
-            case carl::Relation::LEQ:
-                return Direction::NEGATIVE;
-            case carl::Relation::GREATER:
-            case carl::Relation::GEQ:
-                return Direction::POSITIVE;
-            default:
-                assert(false);
-        }
-    }
     
     template<class Settings>
     inline FormulaT STropModule<Settings>::createLinearization(const Separator& separator)

@@ -69,6 +69,7 @@ namespace smtrat
                 {}
             };
             
+            /// Subdivides the relations into classes with the same linearization result
             enum class Direction {NONE, BOTH, NEGATIVE, POSITIVE};
             
             /**
@@ -99,13 +100,13 @@ namespace smtrat
             std::unordered_map<Poly, Separator> mSeparators;
             /// Stores the Separators that were updated since the last check call
             std::unordered_set<Separator *> mChangedSeparators;
-            /// Stores whether the last consistency check was done by the backends
-            bool mCheckedWithBackends;
             /// Counts the number of relation pairs that prohibit an application of this method
             size_t mRelationalConflicts;
-            
-            std::vector<std::vector<std::pair<Separator *, Direction>>> mLinearizationConflicts;
-            
+            /// Stores the sets of separators that were found to be undecidable by the LRA solver
+            typedef std::vector<std::pair<const Separator *, const Direction>> Conflict;
+            std::vector<Conflict> mLinearizationConflicts;
+            /// Stores whether the last consistency check was done by the backends
+            bool mCheckedWithBackends;
             
             /**
              * Linear arithmetic module to call for the linearized formula
@@ -167,10 +168,6 @@ namespace smtrat
 			Answer checkCore();
         
         private:
-            inline bool isConflicting();
-        
-            inline Direction relationToDirection(const carl::Relation relation);
-        
             /**
              * Creates the linearization for the given separator with the active relation
              * @param separator The separator object that stores the construction information.
