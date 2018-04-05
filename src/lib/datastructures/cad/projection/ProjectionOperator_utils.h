@@ -1,5 +1,8 @@
 #pragma once
 
+#include <carl/core/polynomialfunctions/Resultant.h>
+#include <carl/core/polynomialfunctions/SquareFreePart.h>
+
 namespace smtrat {
 namespace cad {
 namespace projection {
@@ -24,8 +27,9 @@ bool doesNotVanish(const Poly& p) {
  */
 template<typename Poly>
 Poly normalize(const Poly& p) {
-	SMTRAT_LOG_TRACE("smtrat.cad.projection", "Normalizing " << p << " to " << p.squareFreePart().pseudoPrimpart().normalized());
-	return p.squareFreePart().pseudoPrimpart().normalized();
+	auto res = carl::squareFreePart(p).pseudoPrimpart().normalized();
+	SMTRAT_LOG_TRACE("smtrat.cad.projection", "Normalizing " << p << " to " << res);
+	return res;
 }
 
 /**
@@ -33,7 +37,7 @@ Poly normalize(const Poly& p) {
  */
 template<typename Poly>
 Poly resultant(carl::Variable variable, const Poly& p, const Poly& q) {
-	auto res = normalize(p.resultant(q).switchVariable(variable));
+	auto res = normalize(carl::resultant(p,q).switchVariable(variable));
 	SMTRAT_LOG_TRACE("smtrat.cad.projection", "resultant(" << p << ", " << q << ") = " << res);
 	return res;
 }
@@ -43,7 +47,7 @@ Poly resultant(carl::Variable variable, const Poly& p, const Poly& q) {
  */
 template<typename Poly>
 Poly discriminant(carl::Variable variable, const Poly& p) {
-	auto dis = normalize(p.discriminant().switchVariable(variable));
+	auto dis = normalize(carl::discriminant(p).switchVariable(variable));
 	SMTRAT_LOG_TRACE("smtrat.cad.projection", "discriminant(" << p << ") = " << dis);
 	return dis;
 }
@@ -70,7 +74,7 @@ struct Reducta : std::vector<Poly> {
  */
 template<typename Poly>
 std::vector<Poly> PSC(const Poly& p, const Poly& q) {
-	return Poly::principalSubresultantsCoefficients(p, q);
+	return carl::principalSubresultantsCoefficients(p, q);
 }
 
 } // namespace projection

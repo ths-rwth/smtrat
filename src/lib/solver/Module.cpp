@@ -1164,7 +1164,7 @@ namespace smtrat
         std::stringstream os;
         os << "(declare-fun " << _label << " () " << "Bool" << ")\n";
         for( auto var : vars )
-            os << "(declare-fun " << var << " () " << var.getType() << ")\n";
+            os << "(declare-fun " << var << " () " << var.type() << ")\n";
         assumption += os.str();
         assumption += "(assert (and";
         for( auto constraint = _constraints.begin(); constraint != _constraints.end(); ++constraint )

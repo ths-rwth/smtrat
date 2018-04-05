@@ -2423,7 +2423,7 @@ namespace vs
         if( cons.lhs().isUnivariate() )
         {
             smtrat::DoubleInterval varDomain = variableBounds().getDoubleInterval( index() );
-            smtrat::Rational cb = cons.lhs().toUnivariatePolynomial().cauchyBound();
+            smtrat::Rational cb = carl::cauchyBound(cons.lhs().toUnivariatePolynomial());
             #ifdef VS_DEBUG_ROOTS_CHECK
             cout << "Cauchy bound of  " << cons.lhs() << "  is  " << cb << "." << endl;
             #endif
