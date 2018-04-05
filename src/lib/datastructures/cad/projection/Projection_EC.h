@@ -193,7 +193,8 @@ namespace full {
                         } else {
                                 for (const auto& it: mPolynomialIDs[level]) {
                                         assert(mPolynomials[level][it.second]);
-                                        if(it.second == mRestricted[level].second) {
+                                        //ohne it.second == id restricted, mit semi-restricted (+ldc) 
+                                        if(it.second == mRestricted[level].second || it.second == id) { 
                                                 mProjectionQueue.emplace(level, mRestricted[level].second, id);
                                         } else {
                                                 mInactiveQueue.emplace(level, it.second, id);
