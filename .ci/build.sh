@@ -10,6 +10,7 @@ function keep_waiting() {
     sleep 60
   done
 }
+
 if [[ ${TASK} == "dependencies" ]]; then
 	
 	keep_waiting &
