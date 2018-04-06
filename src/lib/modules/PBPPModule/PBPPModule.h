@@ -94,10 +94,11 @@ namespace smtrat
         private:
             bool isAllCoefficientsEqual(const ConstraintT& constraint);
             FormulaT convertPbConstraintToConstraintFormula(const FormulaT& formula);
-            FormulaT convertSmallFormula(const ConstraintT& formula, const ConstraintT& c);
-            FormulaT convertBigFormula(const ConstraintT& formula, const ConstraintT& c);
+            FormulaT convertSmallFormula(const ConstraintT& formula);
+            FormulaT convertBigFormula(const ConstraintT& formula);
+
             FormulaT forwardAsArithmetic(const ConstraintT& formula);
-            ConstraintT changeVarTypeToBool(const ConstraintT& formula);
+
             FormulaT checkFormulaType(const FormulaT& formula);
             FormulaT checkFormulaTypeWithRNS(const FormulaT& formula);
             FormulaT checkFormulaTypeWithCardConstr(const FormulaT& formula);
@@ -119,8 +120,8 @@ namespace smtrat
             std::vector<Integer> integerFactorization(const Integer& coeff);
             void initPrimesTable();
             FormulaT removeZeroCoefficients(const ConstraintT& formula);
-            FormulaT encodeCardinalityConstraint(const ConstraintT& formula, const ConstraintT& c);
-            FormulaT encodeMixedConstraints(const ConstraintT& formula, const ConstraintT& c);
+            FormulaT encodeCardinalityConstraint(const ConstraintT& formula);
+            FormulaT encodeMixedConstraints(const ConstraintT& formula);
 
             };
     }
