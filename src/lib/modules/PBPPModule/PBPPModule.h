@@ -12,7 +12,7 @@
 #include "PBPPStatistics.h"
 #include "PBPPSettings.h"
 #include <carl/numbers/PrimeFactory.h>
-#include <boost/math/common_factor.hpp> 
+#include <boost/math/common_factor.hpp>
 
 
 namespace smtrat
@@ -29,7 +29,6 @@ namespace smtrat
             carl::FormulaVisitor<FormulaT> mVisitor;
             std::vector<carl::Variable> mCheckedVars;
             std::vector<carl::Variable> mConnectedVars;
-            std::vector<std::vector<Integer>> mPrimesTable;
 
         public:
             typedef Settings SettingsType;
@@ -113,12 +112,7 @@ namespace smtrat
             FormulaT generateVarChain(const std::set<carl::Variable>& vars, carl::FormulaType type);
             FormulaT createAuxiliaryConstraint(const std::vector<carl::Variable>& variables);
             FormulaT interconnectVariables(const std::set<carl::Variable>& variables);
-            FormulaT rnsTransformation(const ConstraintT& formula, const Integer& prime);
-            std::vector<Integer> calculateRNSBase(const ConstraintT& formula);
-            bool isNonRedundant(const std::vector<Integer>& base, const ConstraintT& formula);
 
-            std::vector<Integer> integerFactorization(const Integer& coeff);
-            void initPrimesTable();
             FormulaT removeZeroCoefficients(const ConstraintT& formula);
             FormulaT encodeCardinalityConstraint(const ConstraintT& formula);
             FormulaT encodeMixedConstraints(const ConstraintT& formula);
