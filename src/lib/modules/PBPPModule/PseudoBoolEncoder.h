@@ -1,13 +1,5 @@
 #pragma once
 
-/**
- * @file ProcessorRule.h
- * @author Johannes Neuhaus
- *
- * @version 2018-
- * @created 2018-03-28
- */
-
 #include <boost/optional.hpp>
 
 #include "../../Common.h"
@@ -25,5 +17,6 @@ namespace smtrat {
              * @return encoded formula
              */
             virtual boost::optional<FormulaT> encode(const ConstraintT& constraint) = 0;
+
     };
 }

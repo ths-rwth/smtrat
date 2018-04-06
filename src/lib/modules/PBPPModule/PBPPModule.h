@@ -8,11 +8,17 @@
 
 #pragma once
 
+#include <carl/numbers/PrimeFactory.h>
+#include <boost/math/common_factor.hpp>
+
+#include "CardinalityEncoder.h"
+#include "LongFormulaEncoder.h"
+#include "MixedSignEncoder.h"
 #include "../../solver/Module.h"
 #include "PBPPStatistics.h"
 #include "PBPPSettings.h"
-#include <carl/numbers/PrimeFactory.h>
-#include <boost/math/common_factor.hpp>
+#include "RNSEncoder.h"
+#include "ShortFormulaEncoder.h"
 
 
 namespace smtrat
@@ -29,6 +35,12 @@ namespace smtrat
             carl::FormulaVisitor<FormulaT> mVisitor;
             std::vector<carl::Variable> mCheckedVars;
             std::vector<carl::Variable> mConnectedVars;
+
+            RNSEncoder mRNSEncoder;
+            ShortFormulaEncoder mShortFormulaEncoder;
+            LongFormulaEncoder mLongFormulaEncoder;
+            CardinalityEncoder mCardinalityEncoder;
+            MixedSignEncoder mMixedSignEncoder;
 
         public:
             typedef Settings SettingsType;

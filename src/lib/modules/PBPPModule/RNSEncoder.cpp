@@ -3,7 +3,6 @@
 namespace smtrat {
 
     boost::optional<FormulaT> RNSEncoder::encode(const ConstraintT& constraint) {
-        initPrimesTable();
         std::vector<Integer> base = calculateRNSBase(constraint);
         if(base.size() != 0 && isNonRedundant(base, constraint)){
             std::vector<FormulaT> subformulas;
@@ -13,10 +12,9 @@ namespace smtrat {
             auto res = FormulaT(carl::FormulaType::AND, std::move(subformulas));
             SMTRAT_LOG_INFO("smtrat.pbc", constraint << " -> " << res);
             return res;
-        }else{
-            return {};
         }
 
+        return {};
     }
 
     bool RNSEncoder::isNonRedundant(const std::vector<Integer>& base, const ConstraintT& formula){
@@ -227,9 +225,9 @@ namespace smtrat {
         return primes;
     }
 
-    void RNSEncoder::initPrimesTable(){
+    std::vector<std::vector<Integer>> RNSEncoder::primesTable() {
         //The 0 and 1 MUST be here in order to pick the right factorization!
-        mPrimesTable = {{0}, {1}, {2}, {3}, {2, 2}, {5}, {2, 3}, {7}, {2, 2, 2}, {3, 3}, {2, 5}, {11}, {2, 2, 3},
+        return {{0}, {1}, {2}, {3}, {2, 2}, {5}, {2, 3}, {7}, {2, 2, 2}, {3, 3}, {2, 5}, {11}, {2, 2, 3},
             {13}, {2, 7}, {3, 5}, {2, 2, 2, 2}, {17}, {2, 3, 3}, {19}, {2, 2, 5}, {3, 7}, {2, 11},
             {23}, {2, 2, 2, 3}, {5, 5}, {2, 13}, {3, 3, 3}, {2, 2, 7}, {29}, {2, 3, 5}, {31},
             {2, 2, 2, 2, 2}, {3, 11}, {2, 17}, {5, 7}, {2, 2, 3, 3}, {37}, {2, 19}, {3, 13}, {2, 2, 2, 5},
