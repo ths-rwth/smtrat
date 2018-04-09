@@ -75,7 +75,14 @@ public:
 	}
 
 	FormulaT explain(carl::Variable var, const FormulasT& reason, const FormulaT& implication) const {
-		return mExplanation(mBookkeeping, variableOrder(), var, reason, implication);
+		auto res = mExplanation(mBookkeeping, variableOrder(), var, reason, implication);
+		if (res) {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat", "Got explanation " << *res);
+			return *res;
+		} else {
+			SMTRAT_LOG_ERROR("smtrat.mcsat", "Explanation backend failed.");
+			return FormulaT(carl::FormulaType::FALSE);
+		}
 	}
 };
 
