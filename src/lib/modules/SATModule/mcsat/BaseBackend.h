@@ -5,7 +5,8 @@
 #include "../../../datastructures/mcsat/nlsat/Explanation.h"
 #include "../../../datastructures/mcsat/utils/VariableOrdering.h"
 
-#include <carl/util/tuple_util.h>
+#include "../../../datastructures/mcsat/explanations/ParallelExplanation.h"
+#include "../../../datastructures/mcsat/explanations/SequentialExplanation.h"
 
 namespace smtrat {
 namespace mcsat {

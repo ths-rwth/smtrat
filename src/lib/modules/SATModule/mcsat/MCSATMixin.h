@@ -4,7 +4,6 @@
 
 #include "../SolverTypes.h"
 
-#include "VariableSelector.h"
 #include "BaseBackend.h"
 #include "../ClauseChecker.h"
 
