@@ -14,7 +14,7 @@
 #include "Substitute.h"
 #include "State.h"
 #include "VSStatistics.h"
-#include "carl/util/IDGenerator.h"
+#include <carl/util/IDPool.h>
 #include "../../solver/Module.h"
 #include "../../solver/RuntimeSettings.h"
 
@@ -45,7 +45,7 @@ namespace smtrat
             ///
             size_t mLazyCheckThreshold;
             /// Id allocator for the conditions.
-            carl::IDGenerator* mpConditionIdAllocator;
+            carl::IDPool* mpConditionIdAllocator;
             ///
             vs::State* mpStateTree;
             ///

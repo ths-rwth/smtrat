@@ -10,14 +10,19 @@
 #include <utility>
 #include <vector>
 
+#include <boost/filesystem.hpp>
+
 #include "../logging.h"
 #include "../BenchmarkStatus.h"
+#include "../tools/Tool.h"
 #include "../utils/durations.h"
 #include "Database.h"
 #include "XMLWriter.h"
 #include "BenchmarkResult.h"
 
 namespace benchmax {
+
+namespace fs = boost:: filesystem;
 
 class Results {
 private:

@@ -48,8 +48,9 @@ protected:
 	/// List of constraints that are infeasible due to bounds.
 	carl::Bitset mUnsatByBounds;
 	
-	void callCallback(const Callback& cb, const ConstraintT& c, std::size_t id, bool isBound) const {
-		if (cb) cb(c.lhs().toUnivariatePolynomial(mVariables.front()), id, isBound);
+	template<typename CB, typename... Args>
+	void callCallback(const CB& cb, const ConstraintT& c, Args... args) const {
+		if (cb) cb(c.lhs().toUnivariatePolynomial(mVariables.front()), std::forward<Args>(args)...);
 	}
 public:
 	CADConstraints(const Callback& onAdd, const Callback& onAddEq, const Callback& onRemove): mAddCallback(onAdd), mAddEqCallback(onAddEq), mRemoveCallback(onRemove) {}
@@ -58,7 +59,7 @@ public:
 		mVariables = vars;
 		mConstraintMap.clear();
 		mConstraintIts.clear();
-		mIDPool = carl::IDPool();
+		mIDPool.clear();
 	}
 	const Variables& vars() const {
 		return mVariables;

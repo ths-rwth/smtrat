@@ -28,6 +28,7 @@
 #pragma once
 
 #include "../../config.h"
+#include "mcsat/MCSATMixin.h"
 #include "SATSettings.h"
 #include "Vec.h"
 #include "Heap.h"
@@ -53,6 +54,7 @@ namespace smtrat
     class SATModule:
         public Module
     {
+		friend mcsat::MCSATMixin;
         private:
 
             /**
@@ -107,6 +109,8 @@ namespace smtrat
                  * 0, otherwise.
                  */
                 int updateInfo;
+				
+				bool updatedReabstraction;
                 
                 /**
                  * The position of the corresponding constraint in the passed formula. It points to the end
@@ -132,6 +136,7 @@ namespace smtrat
                     consistencyRelevant( false ),
                     isDeduction( true ),
                     updateInfo( 0 ),
+					updatedReabstraction( false ),
                     position( _position ),
                     reabstraction( _reabstraction ),
                     origins( nullptr )
@@ -180,37 +185,6 @@ namespace smtrat
             };
 
             /// [Minisat related code]
-            struct Watcher
-            {
-                /// [Minisat related code]
-                Minisat::CRef cref;
-                
-                /// [Minisat related code]
-                Minisat::Lit  blocker;
-
-                /// [Minisat related code]
-                Watcher( Minisat::CRef cr, Minisat::Lit p ):
-                    cref( cr ),
-                    blocker( p )
-                {}
-                
-                /// [Minisat related code]
-                bool operator ==( const Watcher& w ) const
-                {
-                    return cref == w.cref;
-                }
-
-                /// [Minisat related code]
-                bool operator !=( const Watcher& w ) const
-                {
-                    return cref != w.cref;
-                }
-				friend std::ostream& operator<<(std::ostream& os, const Watcher& w) {
-					return os << "watch(" << w.cref << ", " << w.blocker << ")";
-				};
-            };
-
-            /// [Minisat related code]
             struct WatcherDeleted
             {
                 /// [Minisat related code]
@@ -222,7 +196,7 @@ namespace smtrat
                 {}
                 
                 /// [Minisat related code]
-                bool operator ()( const Watcher& w ) const
+                bool operator ()( const Minisat::Watcher& w ) const
                 {
                     return ca[w.cref].mark() == 1;
                 }
@@ -264,28 +238,55 @@ namespace smtrat
             {
                 SATModule& solver;
                 lemma_lt(SATModule& solver) : solver(solver) {}
+				int levelOf(Minisat::Var v) {
+					if (solver.bool_value(v) != l_Undef) {
+						SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", "Level of " << v << ": " << solver.trailIndex(v) << " (trail index from boolean assignment)");
+						return solver.trailIndex(v);
+					} else {
+						assert(Settings::mc_sat);
+						auto res = solver.mMCSAT.assignedAtTrailIndex(v);
+						SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", "Index of " << v << ": " << res);
+						return res;
+					}
+				}
                 bool operator () (Minisat::Lit x, Minisat::Lit y) {
-                  if( x == y ) return false;
-                  Minisat::lbool x_value = solver.value(x);
-                  Minisat::lbool y_value = solver.value(y);
-                  // Two unassigned literals are sorted arbitrarily
-                  if (x_value == l_Undef && y_value == l_Undef) {
-                    return x < y;
-                  }
-                  // Unassigned literals are put to front
-                  if (x_value == l_Undef) return true;
-                  if (y_value == l_Undef) return false;
-                  // Literals of the same value are sorted by decreasing levels
-                  if (x_value == y_value) {
-                    return solver.trailIndex(var(x)) > solver.trailIndex(var(y));
-                  } else {
-                    // True literals go up front
-                    if (x_value == l_True) {
-                      return true;
-                    } else {
-                      return false;
-                    }
-                  }
+					SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", "Doing comparison " << x << " < " << y << "?");
+					if (x == y) return false;
+					
+					/* We want the following order:
+					 * First: Undef < True < False
+					 * Second: Larger level < Smaller level
+					 */
+					Minisat::lbool x_value = solver.value(x);
+					Minisat::lbool y_value = solver.value(y);
+					if (x_value == l_Undef) {
+						if (y_value == l_Undef) {
+							// arbitrary
+							SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", "Both unassigned, using arbitrary order: " << (x < y));
+							return x < y;
+						} else {
+							// x < y
+							SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", x << " unassigned but " << y << " assigned, hence true");
+							return true;
+						}
+					}
+					if (y_value == l_Undef) {
+						// y < x
+						SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", x << " assigned but " << y << " unassigned, hence false");
+						return false;
+					}
+					assert(x_value != l_Undef && y_value != l_Undef);
+					if (x_value != y_value) {
+						return x_value == l_True;
+						SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", "Both assigned but differently: " << (x_value == l_True));
+					}
+					assert(x_value == y_value);
+					int x_level = levelOf(var(x));
+					SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", "Level of " << x << ": " << x_level);
+					int y_level = levelOf(var(y));
+					SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", "Level of " << y << ": " << y_level);
+					SMTRAT_LOG_TRACE("smtrat.sat.lemma_lt", "Comparing levels: " << (x_level > y_level));
+					return x_level > y_level;
                 }
             };
 
@@ -460,7 +461,7 @@ namespace smtrat
             /// Amount to bump next variable with.
             double var_inc;
             /// 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-            Minisat::OccLists<Minisat::Lit, Minisat::vec<Watcher>, WatcherDeleted> watches;
+            Minisat::OccLists<Minisat::Lit, Minisat::vec<Minisat::Watcher>, WatcherDeleted> watches;
             /// The current assignments.
             Minisat::vec<Minisat::lbool> assigns;
             /// The preferred polarity of each variable.
@@ -613,8 +614,9 @@ namespace smtrat
             /*
              * MC-SAT related members.
              */
-            ///
-            std::map<Minisat::Var,std::vector<Minisat::CRef>> mUnivariateClauses;
+			mcsat::MCSATMixin mMCSAT;
+			std::map<carl::Variable, std::vector<signed>> mFutureChangedBooleans;
+			bool mNextDecisionIsTheory;
             
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
@@ -635,7 +637,7 @@ namespace smtrat
              * @param _foundAnswer Vector of Booleans: If any of them is true, we have to terminate a running check procedure.
              * @param _manager A reference to the manager of the solver using this module.
              */
-            SATModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _foundAnswer, Manager* const _manager = NULL );
+            SATModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _foundAnswer, Manager* const _manager = nullptr );
 
             /**
              * Destructs this SATModule.
@@ -704,49 +706,49 @@ namespace smtrat
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void print( std::ostream& _out = std::cout, const std::string _init = "" ) const;
+            void print( std::ostream& _out = std::cout, const std::string& _init = "" ) const;
             
             /**
              * Prints the current assignment of the SAT solver.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printCurrentAssignment( std::ostream& = std::cout, const std::string = "" ) const;
+            void printCurrentAssignment( std::ostream& = std::cout, const std::string& = "" ) const;
             
             /**
              * Prints the constraints to literal map.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printConstraintLiteralMap( std::ostream& _out = std::cout, const std::string _init = "" ) const;
+            void printConstraintLiteralMap( std::ostream& _out = std::cout, const std::string& _init = "" ) const;
             
             /**
              * Prints the formulas to clauses map.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printFormulaCNFInfosMap( std::ostream& _out = std::cout, const std::string _init = "" ) const;
+            void printFormulaCNFInfosMap( std::ostream& _out = std::cout, const std::string& _init = "" ) const;
             
             /**
              * Prints the clause information.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printClauseInformation( std::ostream& _out = std::cout, const std::string _init = "" ) const;
+            void printClauseInformation( std::ostream& _out = std::cout, const std::string& _init = "" ) const;
             
             /**
              * Prints map of the Boolean within the SAT solver to the given Booleans.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printBooleanVarMap( std::ostream& _out = std::cout, const std::string _init = "" ) const;
+            void printBooleanVarMap( std::ostream& _out = std::cout, const std::string& _init = "" ) const;
             
             /**
              * Prints the literal to constraint map.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printBooleanConstraintMap( std::ostream& _out = std::cout, const std::string _init = "" ) const;
+            void printBooleanConstraintMap( std::ostream& _out = std::cout, const std::string& _init = "" ) const;
             
             /**
              * Prints the clause at the given reference.
@@ -775,28 +777,28 @@ namespace smtrat
              * @param _from The position of the first clause to print within the given vector of clauses.
              * @param _withAssignment A flag indicating if true, that the assignments should be printed too.
              */
-            void printClauses( const Minisat::vec<Minisat::CRef>& _clauses, const std::string _name, std::ostream& _out = std::cout, const std::string _init = "", int = 0, bool _withAssignment = false, bool _onlyNotSatisfied = false ) const;
+            void printClauses( const Minisat::vec<Minisat::CRef>& _clauses, const std::string _name, std::ostream& _out = std::cout, const std::string& _init = "", int = 0, bool _withAssignment = false, bool _onlyNotSatisfied = false ) const;
             
             /**
              * Prints the decisions the SAT solver has made.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printDecisions( std::ostream& _out = std::cout, std::string _init = "" ) const;
+            void printDecisions( std::ostream& _out = std::cout, const std::string& _init = "" ) const;
 
             /**
              * Prints the propagated lemmas for each variables which influence its value.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printPropagatedLemmas( std::ostream& _out = std::cout, std::string _init = "" ) const;
+            void printPropagatedLemmas( std::ostream& _out = std::cout, const std::string& _init = "" ) const;
             
             /**
              * Prints the literals' active occurrences in all clauses.
              * @param _out  The output stream where the answer should be printed.
              * @param _init The line initiation.
              */
-            void printLiteralsActiveOccurrences( std::ostream& _out = std::cout, std::string _init = "" ) const;
+            void printLiteralsActiveOccurrences( std::ostream& _out = std::cout, const std::string& _init = "" ) const;
 
             /**
              * Collects the taken statistics.
@@ -872,23 +874,79 @@ namespace smtrat
             }
 
             // Read state:
-            
+			inline Minisat::lbool bool_value( Minisat::Var x ) const
+            {
+                return assigns[x];
+            }
             /**
              * @param x The variable to get its value for.
              * @return The current value of a variable.
              */
             inline Minisat::lbool value( Minisat::Var x ) const
             {
+				return theoryValue(x);
                 return assigns[x];
             }
             
+			inline Minisat::lbool theoryValue( Minisat::Var x ) const {
+				Minisat::lbool res = assigns[x];
+				if (res == l_Undef) {
+					if (mBooleanConstraintMap.size() <= x) return l_Undef;
+					if (mBooleanConstraintMap[x].first == nullptr) return l_Undef;
+					res = mMCSAT.evaluateLiteral(Minisat::mkLit(x, false));
+				}
+				//SMTRAT_LOG_DEBUG("smtrat.sat", x << " -> " << res);
+				return res;
+			}
+			inline Minisat::lbool valueAndUpdate( Minisat::Var x )
+			{
+				if (assigns[x] == l_Undef) {
+					Minisat::lbool res = theoryValue(x);
+					if (res == l_True) uncheckedEnqueue(Minisat::mkLit(x, false), Minisat::CRef_TPropagation);
+					else if (res == l_False) uncheckedEnqueue(Minisat::mkLit(x, true), Minisat::CRef_TPropagation);
+				}
+				SMTRAT_LOG_DEBUG("smtrat.sat", x << " -> " << assigns[x]);
+				return assigns[x];
+			}
+			
+			void handleTheoryConflict(const FormulasT& clause) {
+				Minisat::vec<Minisat::Lit> explanation;
+				#ifdef DEBUG_SATMODULE
+				print(std::cout, "###");
+				#endif
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict clause " << clause);
+				sat::detail::validateClause(clause, Settings::validate_clauses);
+				for (const auto& c: clause) {
+					explanation.push(createLiteral(c));
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Created literal from " << c << " -> " << explanation.last());
+				}
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
+				addClause(explanation, Minisat::LEMMA_CLAUSE);
+				propagateTheory();
+				Minisat::CRef confl = storeLemmas();
+				if (confl != Minisat::CRef_Undef) {
+					handleConflict(confl);
+				}
+			}
+            
+			inline Minisat::lbool bool_value( Minisat::Lit p ) const
+            {
+				return bool_value(Minisat::var(p)) ^ Minisat::sign(p);
+            }
             /**
              * @param p The literal to get its value for.
              * @return The current value of a literal.
              */
             inline Minisat::lbool value( Minisat::Lit p ) const
             {
-                return assigns[Minisat::var( p )] ^ Minisat::sign( p );
+				return value(Minisat::var(p)) ^ Minisat::sign(p);
+            }
+			inline Minisat::lbool theoryValue( Minisat::Lit p ) const {
+				return theoryValue(Minisat::var(p)) ^ Minisat::sign(p);
+			}
+			inline Minisat::lbool valueAndUpdate( Minisat::Lit p )
+            {
+				return valueAndUpdate(Minisat::var(p)) ^ Minisat::sign(p);
             }
             
             /**
@@ -1049,6 +1107,47 @@ namespace smtrat
              * @return The next decision variable.
              */
             Minisat::Lit pickBranchLit();
+			
+			void pickTheoryBranchLit();
+			void checkAbstractionsConsistency() {
+				for (int i = 0; i < mBooleanConstraintMap.size(); i++) {
+					auto ptr1 = mBooleanConstraintMap[i].first;
+					auto ptr2 = mBooleanConstraintMap[i].second;
+					if (ptr1 == nullptr) continue;
+					assert(ptr2 != nullptr);
+					if (ptr1->updateInfo * ptr2->updateInfo > 0) {
+						SMTRAT_LOG_WARN("smtrat.sat.mcsat", "Consistency error for " << ptr1->reabstraction << " / " << ptr2->reabstraction);
+						std::exit(24);
+					}
+					assert(ptr1->updateInfo * ptr2->updateInfo <= 0);
+				}
+			}
+			void fixTheoryPassedFormulas() {
+				std::vector<Abstraction*> toRemove;
+				for (const auto& pf: rPassedFormula()) {
+					auto it = mConstraintLiteralMap.find(pf.formula());
+					assert(it != mConstraintLiteralMap.end());
+					auto lit = it->second.front();
+					Abstraction* abstrptr = sign(lit) ? mBooleanConstraintMap[var(lit)].second : mBooleanConstraintMap[var(lit)].first;
+					assert(abstrptr != nullptr);
+					assert(abstrptr->updateInfo <= 0);
+					if (abstrptr->updateInfo < 0) continue;
+					if (!mMCSAT.isFormulaUnivariate(abstrptr->reabstraction)) {
+						SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Removing " << abstrptr->reabstraction << " with updateInfo " << abstrptr->updateInfo);
+						toRemove.push_back(abstrptr);
+						mFutureChangedBooleans[mMCSAT.currentVariable()].emplace_back(var(lit));
+					} else {
+                        SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Still univariate: " << abstrptr->reabstraction);
+                    }
+				}
+				for (auto abstrptr: toRemove) {
+					abstrptr->updateInfo--;
+					checkAbstractionsConsistency();
+					adaptPassedFormula(*abstrptr);
+					abstrptr->updateInfo++;
+					checkAbstractionsConsistency();
+				}
+			}
             
             /**
              * @return The best decision variable under consideration of the decision heuristic.
@@ -1124,6 +1223,8 @@ namespace smtrat
              * @param level The level to backtrack to.
              */
             void cancelUntil( int level, bool force = false );
+			
+			void cancelIncludingLiteral( Minisat::Lit lit );
             
             /**
              * Revert the variables assignment until a given level (keeping all assignments at 'level')
@@ -1439,6 +1540,17 @@ namespace smtrat
             {
                 return vardata[x].level;
             }
+			int theory_level( Minisat::Var x ) const
+            {
+                if (level(x) >= 0) return level(x);
+				return mMCSAT.decisionLevel(x);
+            }
+			int min_theory_level(Minisat::Var x) const {
+				int tl = mMCSAT.decisionLevel(x);
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Theory level of " << x << " is " << tl);
+				if (level(x) >= 0) return std::min(level(x), tl);
+				return tl;
+			}
 
             inline int trailIndex( Minisat::Var _var ) const
             { 
@@ -1517,6 +1629,7 @@ namespace smtrat
                 return
 					_formula.getType() == carl::FormulaType::CONSTRAINT ||
 					_formula.getType() == carl::FormulaType::VARCOMPARE ||
+					_formula.getType() == carl::FormulaType::VARASSIGN ||
 					_formula.getType() == carl::FormulaType::UEQ ||
 					_formula.getType() == carl::FormulaType::BITVECTOR ||
 					_formula.getType() == carl::FormulaType::PBCONSTRAINT;

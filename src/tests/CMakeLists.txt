@@ -51,5 +51,6 @@ target_link_libraries( parserTest
 )
 
 add_subdirectory(cad)
+add_subdirectory(onecellcad)
 add_subdirectory(datastructures)
 add_subdirectory(nlsat)

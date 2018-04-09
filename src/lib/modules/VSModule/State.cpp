@@ -22,7 +22,7 @@ using namespace std;
 
 namespace vs
 {   
-    State::State( carl::IDGenerator* _conditionIdAllocator, bool _withVariableBounds ):
+    State::State( carl::IDPool* _conditionIdAllocator, bool _withVariableBounds ):
         mConditionsSimplified( false ),
         mHasChildrenToInsert( false ),
         mHasRecentlyAddedConditions( false ),
@@ -62,7 +62,7 @@ namespace vs
         #endif
     {}
 
-    State::State( State* const _father, const Substitution& _substitution, carl::IDGenerator* _conditionIdAllocator, bool _withVariableBounds ):
+    State::State( State* const _father, const Substitution& _substitution, carl::IDPool* _conditionIdAllocator, bool _withVariableBounds ):
         mConditionsSimplified( false ),
         mHasChildrenToInsert( false ),
         mHasRecentlyAddedConditions( false ),
@@ -2423,7 +2423,7 @@ namespace vs
         if( cons.lhs().isUnivariate() )
         {
             smtrat::DoubleInterval varDomain = variableBounds().getDoubleInterval( index() );
-            smtrat::Rational cb = cons.lhs().toUnivariatePolynomial().cauchyBound();
+            smtrat::Rational cb = carl::cauchyBound(cons.lhs().toUnivariatePolynomial());
             #ifdef VS_DEBUG_ROOTS_CHECK
             cout << "Cauchy bound of  " << cons.lhs() << "  is  " << cb << "." << endl;
             #endif

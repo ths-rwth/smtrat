@@ -33,10 +33,10 @@ protected:
 		}
 	}
 public:
-	void addResult(const Tool* tool, const fs::path& file, const fs::path& baseDir, BenchmarkResult& results) {
-		tool->additionalResults(file, results);
-		results.cleanup(tool, Settings::timeLimit);
-		mResults.addResult(tool, file, baseDir, results);
+	void addResult(const Tool* tool, const fs::path& file, const fs::path& baseDir, BenchmarkResult& result) {
+		tool->additionalResults(file, result);
+		result.cleanup(Settings::timeLimit);
+		mResults.addResult(tool, file, baseDir, result);
 	}
 	void run(const std::vector<Tool*>& tools, const std::vector<BenchmarkSet>& benchmarks) {
 		for (const BenchmarkSet& set: benchmarks) {

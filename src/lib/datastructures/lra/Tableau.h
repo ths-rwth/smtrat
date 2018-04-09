@@ -12,7 +12,7 @@
 #include <map>
 #include <deque>
 #include "Variable.h"
-#include "carl/util/IDGenerator.h"
+#include <carl/util/IDPool.h>
 
 namespace smtrat
 {
@@ -251,7 +251,7 @@ namespace smtrat
                 ///
                 std::stack<EntryID> mUnusedIDs;
                 /// Id allocator for the variables.
-                carl::IDGenerator mVariableIdAllocator;
+                carl::IDPool mVariableIdAllocator;
                 ///
                 std::vector<Variable<T1,T2>*> mRows;       // First element is the head of the row and the second the length of the row.
                 ///

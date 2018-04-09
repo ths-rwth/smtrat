@@ -18,6 +18,7 @@ namespace smtrat
 		varbounds()
 	{   
 		removeFactorsFunction = std::bind(&PFEModule<Settings>::removeFactors, this, std::placeholders::_1);
+		removeSquaresFunction = std::bind(&PFEModule<Settings>::removeSquares, this, std::placeholders::_1);
 	}
 
 	template<class Settings>
@@ -51,6 +52,7 @@ namespace smtrat
 				continue;
 			}
 			FormulaT formula = visitor.visitResult(receivedFormula->formula(), removeFactorsFunction);
+			formula = visitor.visitResult(formula, removeSquaresFunction);
 			if (receivedFormula->formula() != formula) {
 				SMTRAT_LOG_DEBUG("smtrat.pfe", "Simplified " << receivedFormula->formula());
 				SMTRAT_LOG_DEBUG("smtrat.pfe", "to " << formula);
@@ -98,7 +100,7 @@ namespace smtrat
 	template<typename Settings>
 	FormulaT PFEModule<Settings>::removeFactors(const FormulaT& formula){
 		if(formula.getType() == carl::FormulaType::CONSTRAINT) {
-			auto factors = formula.constraint().factorization();
+			const auto& factors = formula.constraint().factorization();
 			SMTRAT_LOG_TRACE("smtrat.pfe", "Factorization of " << formula << " = " << factors);
 			std::vector<Factorization::const_iterator> Pq;
 			std::vector<Factorization::const_iterator> Pr;
@@ -163,6 +165,54 @@ namespace smtrat
 			}
 		}
 		return formula;
+	}
+	
+	template<typename Settings>
+	FormulaT PFEModule<Settings>::removeSquaresFromStrict(const FormulaT& formula) {
+		const auto& factors = formula.constraint().factorization();
+		std::vector<Factorization::const_iterator> Pq;
+		std::vector<Factorization::const_iterator> Pr;
+		
+		for (auto it = factors.begin(); it != factors.end(); ++it) {
+			if (it->second % 2 == 0) {
+				// This implies that this factor is (strictly) positive and essentially reduces to factor != 0
+				SMTRAT_LOG_TRACE("smtrat.pfe", "Eliminating factors " << it->first << " ^ " << it->second);
+				Pq.push_back(it);
+			} else {
+				Pr.push_back(it);
+			}
+		}
+		
+		if (Pq.empty()) return formula;
+		
+		FormulasT res;
+		for (const auto& q: Pq) {
+			res.emplace_back(ConstraintT(q->first, carl::Relation::NEQ));
+		}
+		auto polyrest = std::accumulate(Pr.begin(), Pr.end(), Poly(1), [](const auto& a, const auto& b){ return a * carl::pow(b->first, b->second); });
+		res.emplace_back(ConstraintT(polyrest, formula.constraint().relation()));
+		return FormulaT(carl::FormulaType::AND, std::move(res));
+	}
+	
+	template<typename Settings>
+	FormulaT PFEModule<Settings>::removeSquares(const FormulaT& formula) {
+		if(formula.getType() != carl::FormulaType::CONSTRAINT) return formula;
+		
+		carl::Relation rel = formula.constraint().relation();
+		
+		switch (rel) {
+			case carl::Relation::GREATER:
+			case carl::Relation::LESS:
+				SMTRAT_LOG_TRACE("smtrat.pfe", "Eliminating squares from " << formula);
+				return removeSquaresFromStrict(formula);
+			case carl::Relation::EQ:
+			case carl::Relation::NEQ:
+			case carl::Relation::GEQ:
+			case carl::Relation::LEQ:
+			default:
+				SMTRAT_LOG_TRACE("smtrat.pfe", "Nothing to do for " << formula);
+				return formula;
+		}
 	}
 }
 

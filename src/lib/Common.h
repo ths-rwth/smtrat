@@ -1,19 +1,19 @@
-/**
- * Common.h
- * @author Florian Corzilius
- * @since 2013-10-07
- * @version 2013-10-21
- */
-
 #pragma once
 
+/**
+ * @file
+ * Provide useful type aliases, especially for the performance 
+ * critical underlying coefficient types of polynomials, as well as 
+ * enums and constants.
+ */
+ 
 #include <vector>
 #include <set>
 #include <string.h>
 #include <unordered_set>
 #include <unordered_map>
 #include <atomic>
-#include "logging.h"
+
 #include <carl/core/MultivariatePolynomial.h>
 #include <carl/core/FactorizedPolynomial.h>
 #include <carl/core/Variable.h>
@@ -23,6 +23,7 @@
 #include <carl/interval/Contraction.h>
 #include <carl/io/streamingOperators.h>
 #include <carl/util/Common.h>
+#include <carl/formula/Logic.h>
 #include <carl/formula/FormulaPool.h>
 #include <carl/formula/bitvector/BVTerm.h>
 #include <carl/formula/bitvector/BVTermPool.h>
@@ -33,6 +34,8 @@
 #include <carl/formula/model/Model.h>
 #include <carl/formula/model/evaluation/ModelEvaluation.h>
 
+#include "logging.h"
+
 namespace smtrat
 {
 	using carl::operator<<;
@@ -40,22 +43,7 @@ namespace smtrat
     // Enumerations.
 
     enum class Variable_Domain: unsigned { BOOLEAN = 0, REAL = 1, INTEGER = 2 };
-
-    enum class Logic : unsigned { UNDEFINED, QF_NRA, QF_LRA, QF_NIA, QF_LIA, QF_UF, QF_BV };
-	inline std::ostream& operator<<(std::ostream& os, const Logic& l) {
-	switch (l) {
-		case Logic::UNDEFINED:	os << "undefined"; break;
-		case Logic::QF_NRA:		os << "QF_NRA"; break;
-		case Logic::QF_LRA:		os << "QF_LRA"; break;
-		case Logic::QF_NIA:		os << "QF_NIA"; break;
-		case Logic::QF_LIA:		os << "QF_LIA"; break;
-		case Logic::QF_UF:		os << "QF_UF"; break;
-		case Logic::QF_BV:		os << "QF_BV"; break;
-	}
-	return os;
-}
-
-
+    using Logic = carl::Logic;
     ///An enum with the possible answers a Module can give
     enum Answer { SAT = 0, UNSAT = 1, UNKNOWN = 2, ABORTED = 3 };
 	inline std::ostream& operator<<(std::ostream& os, const Answer& a) {
