@@ -58,7 +58,7 @@ public:
 		mVariables = vars;
 		mConstraintMap.clear();
 		mConstraintIts.clear();
-		mIDPool = carl::IDPool();
+		mIDPool.clear();
 	}
 	const Variables& vars() const {
 		return mVariables;
