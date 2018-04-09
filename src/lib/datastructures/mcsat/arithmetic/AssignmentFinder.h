@@ -67,7 +67,7 @@ private:
 			samples.push_back(b);
 		}
 		assert(samples.size() > 0);
-		auto min = std::min_element(samples.begin(), samples.end(), [this](auto lhs, auto rhs){ return compare_assignments(lhs, rhs); });
+		auto min = std::min_element(samples.begin(), samples.end(), [this](auto lhs, auto rhs){ return this->compare_assignments(lhs, rhs); });
 		return mRI.sampleFrom(*min);	
 	}
 	
