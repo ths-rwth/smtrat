@@ -196,8 +196,10 @@ namespace full {
                         } else {
                                 for (const auto& it: mPolynomialIDs[level]) {
                                         assert(mPolynomials[level][it.second]);
-                                        //ohne it.second == id restricted, mit semi-restricted (+ldc) 
-                                        if(it.second == mRestricted[level].second || it.second == id) { 
+                                        if(it.second == mRestricted[level].second) { 
+                                                mProjectionQueue.emplace(level, mRestricted[level].second, id);
+                                        //Semi-restricted projection (+ldc)
+                                        } else if (Settings::semiRestrictedProjection && it.second == id) {
                                                 mProjectionQueue.emplace(level, mRestricted[level].second, id);
                                         } else {
                                                 mInactiveQueue.emplace(level, it.second, id);
@@ -317,7 +319,7 @@ namespace full {
 		void restrictProjection(std::size_t level) {
                         std::size_t lvl = level;
                         bool restricted = false;
-                        while(lvl < dim() && mRestricted[lvl].first == false && mEqConstraints[lvl].any()){ // && mRestricted[lvl-1].first == true
+                        while(lvl < dim() && mRestricted[lvl].first == false && mEqConstraints[lvl].any() && (Settings::interruptions || mRestricted[lvl-1].first == true)){ 
 #ifdef SMTRAT_DEVOPTION_Statistics
                             mStatistics.usedRestrictedProjection();
 #endif

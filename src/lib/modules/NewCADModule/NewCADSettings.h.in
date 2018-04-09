@@ -222,6 +222,8 @@ namespace cad {
 		static constexpr bool simplifyProjectionByBounds = true;
 		static constexpr bool restrictProjectionByEC = true;
 		static constexpr bool deletePolynomials = true;
+		static constexpr bool interruptions = true;
+		static constexpr bool semiRestrictedProjection = true;
 	};
 	
 	struct NewCADSettingsFV: NewCADBaseSettings, cad::IncrementalityF, cad::ProjectionBrown, cad::SampleCompareValue, cad::ProjectionOrderDefault {
