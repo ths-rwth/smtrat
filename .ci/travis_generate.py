@@ -25,4 +25,10 @@ jobs = [
 	job("3-docs", ["build", "linux", "g++-6", "task.doxygen", "j1", "build.sh"]),
 ]
 
-render_template(jobs)
+
+cached = [
+	"$HOME/usr/",
+	"$HOME/carl/",
+]
+
+render_template(jobs, cached)
