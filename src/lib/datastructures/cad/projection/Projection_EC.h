@@ -6,6 +6,7 @@
 
 #include "../Common.h"
 #include "BaseProjection.h"
+#include "ProjectionComparator.h"
 #include "../../../modules/NewCADModule/NewCADStatistics.h"
 
 namespace smtrat {
@@ -66,10 +67,12 @@ namespace full {
 				UPoly lq = mPG(lhs.level, lhs.second);
 				UPoly rp = mPG(rhs.level, rhs.first);
 				UPoly rq = mPG(rhs.level, rhs.second);
-				return rp < lp;
+                                return mComparator(cad::candidate(lp, lq, lhs.level), cad::candidate(rp, rq, rhs.level));
+				//return rp < lp;
 			}
 		private:
 			PolyGetter mPG;
+                        ProjectionComparator<Settings::projectionComparator> mComparator;
 		};
                 
                 std::vector<carl::Bitset> mBounds;
