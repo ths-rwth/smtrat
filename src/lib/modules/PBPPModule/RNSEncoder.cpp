@@ -17,7 +17,7 @@ namespace smtrat {
         return {};
     }
 
-    bool RNSEncoder::isNonRedundant(const std::vector<Integer>& base, const ConstraintT& formula){
+    bool RNSEncoder::isNonRedundant(const std::vector<Integer>& base, const ConstraintT& formula) {
         const auto& cLHS = formula.lhs();
         Rational max = INT_MIN;
         Rational sum = 0;
@@ -89,7 +89,7 @@ namespace smtrat {
         return FormulaT(newConstraint);
     }
 
-    std::vector<Integer> RNSEncoder::calculateRNSBase(const ConstraintT& formula){
+    std::vector<Integer> RNSEncoder::calculateRNSBase(const ConstraintT& formula) {
         const auto& cLHS = formula.lhs();
         std::vector<std::pair<int, Integer>> freq;
         Rational sum = 0;
@@ -153,7 +153,7 @@ namespace smtrat {
         return base;
     }
 
-    std::vector<Integer> RNSEncoder::integerFactorization(const Integer& coeff){
+    std::vector<Integer> RNSEncoder::integerFactorization(const Integer& coeff) {
         if(coeff <= 100){
             return mPrimesTable[carl::toInt<std::size_t>(coeff)];
         }

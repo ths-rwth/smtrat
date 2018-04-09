@@ -18,5 +18,9 @@ namespace smtrat {
              */
             virtual boost::optional<FormulaT> encode(const ConstraintT& constraint) = 0;
 
+        protected:
+            FormulaT generateVarChain(const std::set<carl::Variable>& vars, carl::FormulaType type);
+
+
     };
 }

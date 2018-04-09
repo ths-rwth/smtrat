@@ -128,6 +128,7 @@ namespace smtrat
             FormulaT removeZeroCoefficients(const ConstraintT& formula);
             FormulaT encodeCardinalityConstraint(const ConstraintT& formula);
             FormulaT encodeMixedConstraints(const ConstraintT& formula);
+            FormulaT encodeConstraintOrForwardAsArithmetic(const ConstraintT& constraint, PseudoBoolEncoder& encoder);
 
             };
     }
