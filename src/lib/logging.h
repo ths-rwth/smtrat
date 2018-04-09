@@ -1,9 +1,15 @@
-/**
- * @file logging.h
- * @author Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
- */
-
 #pragma once
+
+/**
+ * @file
+ * Use your own judgement for the following log levels:
+ * TRACE 	Finer-grained informational events than the DEBUG.
+ * DEBUG  Fine-grained informational events that are most useful to debug an application.
+ * INFO   Informational messages that highlight the progress of the application at coarse-grained level.
+ * WARN 	Potentially harmful situations.
+ * ERROR 	Error events that might still allow the application to continue running.
+ * FATAL 	Severe error events that will presumably lead the application to abort.
+ */
 
 #include "config.h"
 

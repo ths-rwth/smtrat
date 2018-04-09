@@ -1,0 +1,13 @@
+/**
+ * @file SymmetryInstantiation.h.in
+ * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ *
+ * @version 2018-03-12
+ * Created on 2018-03-12.
+ */
+
+#include "${Prefix}Module.h"
+
+namespace smtrat {
+${INSTANTIATIONS}
+}

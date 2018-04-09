@@ -1,4 +1,4 @@
-#include "../cli/newparser/Parser.h"
+#include "../cli/parser/Parser.h"
 
 class Executor : public smtrat::parser::InstructionHandler {
 	//CMakeStrategySolver* solver;
@@ -83,7 +83,7 @@ public:
 	void push(std::size_t) {
 		//for (unsigned i = 0; i < n; i++) this->solver->push();
 	}
-	void setLogic(const std::string& logic) {
+	void setLogic(const smtrat::Logic& logic) {
 		std::cout << "set logic to " << logic << std::endl;
 		//if (this->solver->logic() != smtrat::Logic::UNDEFINED) {
 		//	error() << "The logic has already been set!";
@@ -93,6 +93,10 @@ public:
 	}
 	unsigned getExitCode() const {
 		//return this->exitCode;
+	}
+	void reset() {
+	}
+	void addObjective(const smtrat::Poly& p, smtrat::parser::OptimizationType ot) {
 	}
 };
 
@@ -106,4 +110,5 @@ int main(int argc, char* argv[]) {
 	
 	std::ifstream infile(argv[1]);
 	p.parse(infile);
+	return 0;
 }

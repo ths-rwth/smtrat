@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <boost/filesystem.hpp>
+
 #ifdef BENCHMAX_DATABASE
 // Include exactly one implementation.
 #include "Database_mysqlconnector.h"
@@ -12,8 +14,11 @@
 #endif
 
 #include "../logging.h"
+#include "../tools/Tool.h"
 
 namespace benchmax {
+
+namespace fs = boost:: filesystem;
 
 #ifdef BENCHMAX_DATABASE
 class Database {
@@ -75,14 +80,14 @@ public:
 #else
 class Database {
 public:
-	typedef int Index;
-	Index addTool(const Tool* tool) { return -1; }
-	Index getToolID(const Tool* tool) { return -1; }
-	Index addFile(const fs::path& file) { return -1; }
-	Index getFileID(const fs::path& file) { return -1; }
-	Index createBenchmark() { return -1; }
-	Index addBenchmarkResult(Index benchmark, Index tool, Index file, int exitCode, std::size_t time) { return -1; }
-	void addBenchmarkAttribute(Index benchmarkResult, const std::string& key, const std::string& value) {}
+	typedef std::size_t Index;
+	Index addTool(const Tool*) { return 0; }
+	Index getToolID(const Tool*) { return 0; }
+	Index addFile(const fs::path&) { return 0; }
+	Index getFileID(const fs::path&) { return 0; }
+	Index createBenchmark() { return 0; }
+	Index addBenchmarkResult(Index, Index, Index, int, std::size_t) { return 0; }
+	void addBenchmarkAttribute(Index, const std::string&, const std::string&) {}
 };
 #endif
 

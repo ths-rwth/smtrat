@@ -17,8 +17,16 @@ namespace cad {
 	
 	template<typename Settings>
 	using ProjectionT = Projection<Settings::incrementality, Settings::backtracking, Settings>;
+        
+        template<Incrementality incrementality, Backtracking backtracking, typename Settings>
+	class ModelBasedProjection: public BaseProjection<Settings> {};
+	
+	template<typename Settings>
+	using ModelBasedProjectionT = ModelBasedProjection<Settings::incrementality, Settings::backtracking, Settings>;
 }
 }
+
+#include "Projection_Model.h"
 
 #include "Projection_NO.h"
 #include "Projection_NU.h"

@@ -11,7 +11,7 @@
 #include <limits.h>
 #include "config.h"
 #include "Substitution.h"
-#include "carl/util/IDGenerator.h"
+#include <carl/util/IDPool.h>
 #include "../../datastructures/VariableBounds.h"
 #include "VSSettings.h"
 
@@ -165,7 +165,7 @@ namespace vs
         ///
         size_t mCurrentIntRange;
         ///
-        carl::IDGenerator* mpConditionIdAllocator;
+        carl::IDPool* mpConditionIdAllocator;
         ///
         std::vector<std::pair<carl::Variable,multiset<double>>> mRealVarVals;
         ///
@@ -185,7 +185,7 @@ namespace vs
          * tree which is going to be formed when applying the satisfiability check based on virtual substitution.
          * @param _withVariableBounds A flag that indicates whether to use optimizations based on variable bounds.
          */
-        State( carl::IDGenerator* _conditionIdAllocator, bool _withVariableBounds );
+        State( carl::IDPool* _conditionIdAllocator, bool _withVariableBounds );
         
         /**
          * Constructs a state being a child of the given state and containing the given substitution, which maps
@@ -194,7 +194,7 @@ namespace vs
          * @param _substitution The substitution of the state to be constructed.
          * @param _withVariableBounds A flag that indicates whether to use optimizations based on variable bounds.
          */
-        State( State* const _father, const Substitution& _substitution, carl::IDGenerator* _conditionIdAllocator, bool _withVariableBounds );
+        State( State* const _father, const Substitution& _substitution, carl::IDPool* _conditionIdAllocator, bool _withVariableBounds );
         
         State( const State& ) = delete;
 

@@ -6,7 +6,7 @@ namespace smtrat {
 namespace cad {
 	enum class Incrementality { NONE, SIMPLE, FULL };
 	enum class Backtracking { ORDERED, UNORDERED, HIDE };
-	enum class ProjectionType { Brown, McCallum, Hong };
+	enum class ProjectionType { Collins, Hong, McCallum, McCallum_partial, Brown };
 	enum class ProjectionCompareStrategy {
 		D, PD, SD, lD, LD,
 		Default = lD
@@ -35,7 +35,7 @@ namespace cad {
 		static constexpr Incrementality incrementality = Incrementality::NONE;
 		static constexpr Backtracking backtracking = Backtracking::ORDERED;
 		
-		static constexpr ProjectionType projectionOperator = cad::ProjectionType::Brown;
+		static constexpr ProjectionType projectionOperator = cad::ProjectionType::McCallum;
 		static constexpr CoreHeuristic coreHeuristic = cad::CoreHeuristic::PreferProjection;
 		
 		static constexpr MISHeuristic misHeuristic = cad::MISHeuristic::GREEDY;

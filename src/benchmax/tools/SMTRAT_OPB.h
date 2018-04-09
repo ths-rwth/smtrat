@@ -29,21 +29,8 @@ public:
 	
 	std::string getStatusFromOutput(const BenchmarkResult& result) const {
 		if (result.stderr.find("GNU MP: Cannot allocate memory") != std::string::npos) return "memout";
+		if (result.stderr.find("Minisat::OutOfMemoryException") != std::string::npos) return "memout";
 		return "segfault";
-	}
-	
-	std::string getStatus(const BenchmarkResult& result) const override {
-		switch (result.exitCode) {
-			case 2: return "sat";
-			case 3: return "unsat";
-			case 4: return "unknown";
-			case 5: return "wrong";
-			case 9: return "nosuchfile";
-			case 10: return "parsererror";
-			case 11: return "timeout";
-			case 12: return "memout";
-			default: return getStatusFromOutput(result);
-		}
 	}
 	
 	std::map<std::string,std::string> parseOptions(const std::string& options) const {
@@ -57,11 +44,23 @@ public:
 		return res;
 	}
 	
-	virtual void additionalResults(const fs::path&, BenchmarkResult& results) const override {
+	virtual void additionalResults(const fs::path&, BenchmarkResult& result) const override {
+		switch (result.exitCode) {
+			case 2: result.additional["answer"] = "sat"; break;
+			case 3: result.additional["answer"] = "unsat"; break;
+			case 4: result.additional["answer"] = "unknown"; break;
+			case 5: result.additional["answer"] = "wrong"; break;
+			case 9: result.additional["answer"] = "nosuchfile"; break;
+			case 10: result.additional["answer"] = "parsererror"; break;
+			case 11: result.additional["answer"] = "timeout"; break;
+			case 12: result.additional["answer"] = "memout"; break;
+			default: result.additional["answer"] = getStatusFromOutput(result);
+		}
+		
 		regex topRegex("\\(\\:(\\S+)\\s*\\(((?:\\:\\S+\\s*\\S+\\s*)+)\\)\\)");
 		regex subRegex("\\s*\\:(\\S+)\\s*(\\S+)");
 
-		auto topBegin = sregex_iterator(results.stdout.begin(), results.stdout.end(), topRegex);
+		auto topBegin = sregex_iterator(result.stdout.begin(), result.stdout.end(), topRegex);
 		auto topEnd = sregex_iterator();
 		for (auto i = topBegin; i != topEnd; ++i) {
 			const std::string& prefix = (*i)[1];
@@ -71,11 +70,11 @@ public:
 			auto subEnd = sregex_iterator();
 			for (auto j = subBegin; j != subEnd; ++j) {
 				std::string name = prefix + "_" + std::string((*j)[1]);
-				results.additional.emplace(name, (*j)[2]);
+				result.additional.emplace(name, (*j)[2]);
 			}
 		}
-		results.stdout = "";
-		results.stderr = "";
+		result.stdout = "";
+		result.stderr = "";
 	}
 };
 

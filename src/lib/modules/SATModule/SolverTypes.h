@@ -69,17 +69,21 @@ inline  int  toInt     (Var v)              { return v; }
 inline  int  toInt     (Lit p)              { return p.x; }
 inline  Lit  toLit     (int i)              { Lit p; p.x = i; return p; }
 
+const Lit lit_Undef = { -2 };  // }- Useful special constants.
+const Lit lit_Error = { -1 };  // }
 
 inline std::ostream& operator<<(std::ostream& os, const Lit& l) {
-	if (Minisat::sign(l)) os << "-";
-	return os << Minisat::var(l);
+	if (l == lit_Undef) os << "lit_Undef";
+	else if (l == lit_Error) os << "lit_Error";
+	else {
+		if (Minisat::sign(l)) os << "-";
+		os << Minisat::var(l);
+	}
+	return os;
 };
 
 //const Lit lit_Undef = mkLit(var_Undef, false);  // }- Useful special constants.
 //const Lit lit_Error = mkLit(var_Undef, true );  // }
-
-const Lit lit_Undef = { -2 };  // }- Useful special constants.
-const Lit lit_Error = { -1 };  // }
 
 
 //=================================================================================================
@@ -122,6 +126,15 @@ public:
 };
 inline int   toInt  (lbool l) { return l.value; }
 inline lbool toLbool(int   v) { return lbool((uint8_t)v);  }
+
+inline std::ostream& operator<<(std::ostream& os, Minisat::lbool b) {
+	switch (toInt(b)) {
+		case 0: return os << "true";
+		case 1: return os << "false";
+		case 2: return os << "unknown";
+		default: return os << "??? (" << toInt(b) << ")";
+	}
+}
 
 //=================================================================================================
 // Clause -- a simple class for representing a clause:
@@ -216,6 +229,15 @@ public:
     void         strengthen  (Lit p);
 };
 
+inline std::ostream& operator<<(std::ostream& os, const Minisat::Clause& c) {
+	os << "[";
+	for (int i = 0; i < c.size(); i++) {
+		if (i != 0) os << ", ";
+		os << c[i];
+	}
+	return os << "]";
+}
+
 
 //=================================================================================================
 // ClauseAllocator -- a simple class for allocating memory for clauses:
@@ -223,6 +245,7 @@ public:
 
 const CRef CRef_Undef = RegionAllocator<uint32_t>::Ref_Undef;
 const CRef CRef_Lazy  = RegionAllocator<uint32_t>::Ref_Undef - 1;
+const CRef CRef_TPropagation  = RegionAllocator<uint32_t>::Ref_Undef - 2;
 class ClauseAllocator : public RegionAllocator<uint32_t>
 {
     static int clauseWord32Size(int size, bool has_extra){
@@ -296,7 +319,7 @@ class OccLists
     OccLists(const Deleted& d) : deleted(d) {}
 
     void  init      (const Idx& idx){ occs.growTo(toInt(idx)+1); dirty.growTo(toInt(idx)+1, 0); }
-    // Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
+    const Vec&  operator[](const Idx& idx) const { return occs[toInt(idx)]; }
     Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
     Vec&  lookup    (const Idx& idx){ if (dirty[toInt(idx)]) clean(idx); return occs[toInt(idx)]; }
 
@@ -432,6 +455,39 @@ inline void Clause::strengthen(Lit p)
     remove(*this, p);
     calcAbstraction();
 }
+
+
+
+/// [Minisat related code]
+struct Watcher
+{
+	/// [Minisat related code]
+	Minisat::CRef cref;
+	
+	/// [Minisat related code]
+	Minisat::Lit  blocker;
+
+	/// [Minisat related code]
+	Watcher( Minisat::CRef cr, Minisat::Lit p ):
+		cref( cr ),
+		blocker( p )
+	{}
+	
+	/// [Minisat related code]
+	bool operator ==( const Watcher& w ) const
+	{
+		return cref == w.cref;
+	}
+
+	/// [Minisat related code]
+	bool operator !=( const Watcher& w ) const
+	{
+		return cref != w.cref;
+	}
+	friend std::ostream& operator<<(std::ostream& os, const Watcher& w) {
+		return os << "watch(" << w.cref << ", " << w.blocker << ")";
+	};
+};
 
 //=================================================================================================
 }

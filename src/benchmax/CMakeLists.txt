@@ -6,12 +6,7 @@ configure_file(${CMAKE_SOURCE_DIR}/src/benchmax/config.h.in ${CMAKE_SOURCE_DIR}/
 
 file(GLOB_RECURSE benchmax_sources "*.cpp")
 add_executable( benchmax ${benchmax_sources})
-target_link_libraries(benchmax pthread lib_carl)
-
-find_package(Boost 1.55 REQUIRED COMPONENTS chrono filesystem program_options system)
-if(Boost_FOUND)
-	target_link_libraries(benchmax ${Boost_LIBRARIES})
-endif()
+target_link_libraries(benchmax pthread lib_carl ${Boost_SHARED})
 
 if(BENCHMAX_DATABASE)
 	find_library(LIBMYSQL NAMES libmysqlclient)

@@ -1,106 +1,145 @@
 language: generic
-sudo: required
+sudo: false
 dist: trusty
 
 cache:
   apt: true
-
-_apt_packages:
-  sources_boost: &sources_boost
-    - boost-latest
-  packages_boost: &packages_boost
-    - libboost1.55-all-dev
-  sources_cmake: &sources_cmake
-    - george-edison55-precise-backports
-  packages_cmake: &packages_cmake
-    - cmake
-    - cmake-data
+  directories:
+    - $HOME/usr/
+    - $HOME/carl/
 
 addons:
   apt:
     sources: &sources_base
-      - *sources_boost
-      - *sources_cmake
       - ubuntu-toolchain-r-test
     packages: &packages_base
-      - *packages_boost
-      - *packages_cmake
       - g++-6
       - libcln-dev
-      - libeigen3-dev
       - libgmp-dev
       - libgtest-dev
       - openjdk-7-jdk
       - time
+      - uuid-dev
 
 matrix:
   include:
-    - os: linux
-      env: USE=clang++-3.6
-      addons:
-        apt:
-          sources: [*sources_base, llvm-toolchain-precise-3.6]
-          packages: [*packages_base, clang-3.6]
-    - os: linux
-      env: USE=clang++-3.7
-      addons:
-        apt:
-          sources: [*sources_base, llvm-toolchain-precise-3.7]
-          packages: [*packages_base, clang-3.7]
-    - os: linux
-      env: USE=clang++-3.8
-      addons:
-        apt:
-          sources: [*sources_base, llvm-toolchain-precise-3.8]
-          packages: [*packages_base, clang-3.8]
-    - os: linux
-      env: USE=clang++-3.9
-      addons:
-        apt:
-          sources: [*sources_base, llvm-toolchain-trusty-3.9]
-          packages: [*packages_base, clang-3.9]
-    - os: linux
-      env: USE=clang++-4.0
-      addons:
-        apt:
-          sources: [*sources_base, llvm-toolchain-trusty-4.0]
-          packages: [*packages_base, clang-4.0]
-    - os: linux
-      env: USE=clang++-5.0
-      addons:
-        apt:
-          sources: [*sources_base, llvm-toolchain-trusty-5.0]
-          packages: [*packages_base, clang-5.0]
-    - os: linux
-      env: USE=g++-5
+    - stage: dependencies
+      os: linux
+      compiler: g++-5
+      env: CC=gcc-5 CXX=g++-5
+      script: TASK=dependencies MAKE_PARALLEL=-j1 source .ci/build.sh
       addons:
         apt:
           sources: [*sources_base]
           packages: [*packages_base, g++-5]
-    - os: linux
-      env: USE=g++-6
-    - os: osx
-      osx_image: xcode7.3
-      env: USE=clang++-7.4
-    - os: osx
-      osx_image: xcode8.2
-      env: USE=clang++-8.0
-    - os: osx
-      osx_image: xcode8.3
-      env: USE=clang++-8.1
-    - os: linux
-      env: USE=g++-6 TASK=doxygen
+    - stage: dependencies
+      os: linux
+      compiler: g++-6
+      env: CC=gcc-6 CXX=g++-6
+      script: TASK=dependencies MAKE_PARALLEL=-j1 source .ci/build.sh
+    - stage: dependencies
+      os: linux
+      compiler: g++-7
+      env: CC=gcc-7 CXX=g++-7
+      script: TASK=dependencies MAKE_PARALLEL=-j1 source .ci/build.sh
       addons:
         apt:
           sources: [*sources_base]
-          packages: [*packages_base, doxygen, texinfo, texlive]
+          packages: [*packages_base, g++-7]
+    - stage: build
+      os: linux
+      compiler: clang++-3.8
+      env: CC=clang-3.8 CXX=clang++-3.8
+      script: source .ci/build.sh
+      addons:
+        apt:
+          sources: [*sources_base, llvm-toolchain-precise-3.8]
+          packages: [*packages_base, clang-3.8]
+    - stage: build
+      os: linux
+      compiler: clang++-3.9
+      env: CC=clang-3.9 CXX=clang++-3.9
+      script: source .ci/build.sh
+      addons:
+        apt:
+          sources: [*sources_base, llvm-toolchain-trusty-3.9]
+          packages: [*packages_base, clang-3.9]
+    - stage: build
+      os: linux
+      compiler: clang++-4.0
+      env: CC=clang-4.0 CXX=clang++-4.0
+      script: source .ci/build.sh
+      addons:
+        apt:
+          sources: [*sources_base, llvm-toolchain-trusty-4.0]
+          packages: [*packages_base, clang-4.0]
+    - stage: build
+      os: linux
+      compiler: clang++-5.0
+      env: CC=clang-5.0 CXX=clang++-5.0
+      script: source .ci/build.sh
+      addons:
+        apt:
+          sources: [*sources_base, llvm-toolchain-trusty-5.0]
+          packages: [*packages_base, clang-5.0]
+    - stage: build
+      os: linux
+      compiler: clang++-6.0
+      env: CC=clang-6.0 CXX=clang++-6.0
+      script: source .ci/build.sh
+      addons:
+        apt:
+          sources: [*sources_base, llvm-toolchain-trusty-6.0]
+          packages: [*packages_base, clang-6.0]
+    - stage: build
+      os: linux
+      compiler: g++-5
+      env: CC=gcc-5 CXX=g++-5
+      script: MAKE_PARALLEL=-j1 source .ci/build.sh
+      addons:
+        apt:
+          sources: [*sources_base]
+          packages: [*packages_base, g++-5]
+    - stage: build
+      os: linux
+      compiler: g++-6
+      env: CC=gcc-6 CXX=g++-6
+      script: MAKE_PARALLEL=-j1 source .ci/build.sh
+    - stage: build
+      os: linux
+      compiler: g++-7
+      env: CC=gcc-7 CXX=g++-7
+      script: MAKE_PARALLEL=-j1 source .ci/build.sh
+      addons:
+        apt:
+          sources: [*sources_base]
+          packages: [*packages_base, g++-7]
+    - stage: build
+      os: osx
+      osx_image: xcode7.3
+      script: source .ci/build.sh
+    - stage: build
+      os: osx
+      osx_image: xcode8.2
+      script: source .ci/build.sh
+    - stage: build
+      os: osx
+      osx_image: xcode8.3
+      script: source .ci/build.sh
+    - stage: build
+      os: linux
+      compiler: g++-6
+      env: CC=gcc-6 CXX=g++-6 TASK=doxygen
+      script: MAKE_PARALLEL=-j1 source .ci/build.sh
+      addons:
+        apt:
+          sources: [*sources_base]
+          packages: [*packages_base, doxygen, texinfo, texlive, texlive-font-utils, texlive-latex-extra, latex-xcolor, ghostscript]
+  allow_failures:
 
 before_install:
-  - cd .travis/ && source setup_travis.sh && cd ../
+  - cd .ci/ && source setup_travis.sh && cd ../
 
-script:
-  - source .travis/build.sh
-  
 notifications:
   email:
     on_failure: always
@@ -112,3 +151,6 @@ notifications:
       - "Commit to %{repository_name}/%{branch} from %{author}"
       - "%{commit_message}"
       - "Build: %{message} %{duration} %{build_url}"
+  slack:
+    rooms:
+      secure: "mL8Ku2omjsseTL5P2R2P3ddCedg8u9qSTKRjKNBhOYRJvpKNrIWr9fouP1tGsah9GBF+HL/JFWlA2sckCL9pURx6TdICHSgik1V/48QhpPKrV+ZkCmKenw3+hdXQY3YP36Xpj/SCCSMyRovA6kacWL3k0gRGJ++dxZYrYF7oVd8ltwxNC6+1o9HCmJnueCME5GBCKCgtOhYOr7izkjQ9wtFJvCmxHcI9EZxMQjWXmcHfItaWD1YFhR0/7AbsxJ9xtYZD0OMJrOgRBau671wV603a0EctIPcv0uKzjSsvB3yLndGOcMRsA8x/OPrFoOHbpLZ9d4O9gY3lvW5oueV+KTbbvHMSxJtvB9q3F0ZJSDHoG7cn1E2xb4gOHRdu4FhwqYy9abUM0DVUI/f7GaL+DMgzKeTduLB6h4GhtGR7fcWaBpCJYN1k8o33Vf/OPwaoPVCeiDRQIFqrqjDRcBc7ONe096WAf61albpMW6iCr5cBHy/j9XqEAGHu6sYftogWm/YVRqSF9+vnZy41cfQU+SYlFtWusUepqX1X/Kei+MCwESuddBnWj+oX8N8nreI8ql2IHG79IQVeEZZKMowxmo2IMsNnvkMyRTQsOmFY2u4NMRGga71QRCSbNvl01KxQ2ilyQ8Gu9Kjbs1QJ76jhOutChCzwOBAgc5aREdNCaV0="

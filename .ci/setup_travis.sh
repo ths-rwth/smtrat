@@ -1,23 +1,29 @@
 #!/usr/bin/env bash
 
-if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
+function keep_waiting() {
+  while true; do
+    echo -e "."
+    sleep 60
+  done
+}
 
-	source setup_ubuntu1404.sh
-
-elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
-
-	source setup_osx.sh
-
-fi
+git fetch --unshallow
 
 git clone https://github.com/smtrat/carl.git
 
 pushd `pwd`
-cd carl/
+cd ~/carl/
 echo "Checked out CArL version $(git describe --always)"
 mkdir build || return 1
 cd build/ || return 1
 cmake -D DEVELOPER=ON ../ || return 1
+
+keep_waiting &
 make resources -j1 || return 1
 make -j1 lib_carl || return 1
+kill $!
+
 popd
+
+export CC=$CC
+export CXX=$CXX

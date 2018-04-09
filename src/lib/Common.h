@@ -1,19 +1,19 @@
-/**
- * Common.h
- * @author Florian Corzilius
- * @since 2013-10-07
- * @version 2013-10-21
- */
-
 #pragma once
 
+/**
+ * @file
+ * Provide useful type aliases, especially for the performance 
+ * critical underlying coefficient types of polynomials, as well as 
+ * enums and constants.
+ */
+ 
 #include <vector>
 #include <set>
 #include <string.h>
 #include <unordered_set>
 #include <unordered_map>
 #include <atomic>
-#include "logging.h"
+
 #include <carl/core/MultivariatePolynomial.h>
 #include <carl/core/FactorizedPolynomial.h>
 #include <carl/core/Variable.h>
@@ -33,6 +33,8 @@
 #include <carl/formula/uninterpreted/UFInstanceManager.h>
 #include <carl/formula/model/Model.h>
 #include <carl/formula/model/evaluation/ModelEvaluation.h>
+
+#include "logging.h"
 
 namespace smtrat
 {

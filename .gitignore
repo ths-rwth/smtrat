@@ -4,6 +4,8 @@
 **/CompileInfo.cpp
 **/CMakeOptions.cpp
 /build/**
+/cmake-build-debug/
+/.idea/
 /nbproject/
 /src/gui/Config.java
 /src/lib/modules/ModuleType.h

@@ -19,7 +19,7 @@ namespace vs
         mOriginalConditions( std::move( _oConditions ) ),
         mSideCondition( std::move(_sideCondition) )
     {
-        if( mType == PLUS_EPSILON && mVariable.getType() == carl::VariableType::VT_INT )
+        if( mType == PLUS_EPSILON && mVariable.type() == carl::VariableType::VT_INT )
         {
             *mpTerm = *mpTerm + smtrat::SqrtEx(smtrat::ONE_POLYNOMIAL);
             mType = NORMAL;
@@ -34,7 +34,7 @@ namespace vs
         mOriginalConditions( std::move( _oConditions ) ),
         mSideCondition( std::move( _sideCondition ) )
     {
-        if( mType == PLUS_EPSILON && mVariable.getType() == carl::VariableType::VT_INT )
+        if( mType == PLUS_EPSILON && mVariable.type() == carl::VariableType::VT_INT )
         {
             *mpTerm = *mpTerm + smtrat::SqrtEx(smtrat::ONE_POLYNOMIAL);
             mType = NORMAL;

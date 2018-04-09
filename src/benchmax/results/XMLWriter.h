@@ -1,10 +1,13 @@
 #pragma once
 
+
+#include "../Settings.h"
+#include "../utils/durations.h"
+#include "../utils/strings.h"
+
 #include <fstream>
 #include <map>
 #include <string>
-#include "../utils/durations.h"
-#include "../utils/strings.h"
 
 namespace benchmax {
 
@@ -71,7 +74,9 @@ public:
 					mFile << "\t\t\t\t<results>" << std::endl;
 					mFile << "\t\t\t\t\t<result name=\"runtime\" type=\"msec\">" << milliseconds(it->second.time).count() << "</result>" << std::endl;
 					mFile << "\t\t\t\t\t<result name=\"exitcode\" type=\"int\">" << it->second.exitCode << "</result>" << std::endl;
-					mFile << "\t\t\t\t\t<result name=\"answer\" type=\"\">" << it->second.status << "</result>" << std::endl;
+					for (const auto& stat: it->second.additional) {
+						mFile << "\t\t\t\t\t<result name=\"" << stat.first << "\" type=\"\">" << stat.second << "</result>" << std::endl;
+					}
 					mFile << "\t\t\t\t</results>" << std::endl;
 					mFile << "\t\t\t</run>" << std::endl;
 				}

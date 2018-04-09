@@ -39,23 +39,32 @@ protected:
 	std::string mArguments;
 	std::map<std::string,std::string> mAttributes;
 public:
+	Tool() = delete;
+	Tool(const Tool&) = delete;
+	Tool(Tool&&) = delete;
 	Tool(const fs::path& binary, const std::string& arguments): Tool("Generic", binary, arguments) {}
 	Tool(const std::string& name, const fs::path& binary, const std::string& arguments): mName(name), mBinary(binary), mArguments(arguments) {}
-	Tool(const Tool&) = delete;
-	virtual ~Tool() {}
+	
+	virtual ~Tool() = default;
+	Tool& operator=(const Tool&) = delete;
+	Tool& operator=(Tool&&) = delete;
 
+	/// Common name of this tool.
 	std::string name() const {
 		return mName;
 	}
 	
+	/// Full path to the binary.
 	fs::path binary() const {
 		return mBinary;
 	}
 	
+	/// A set of attributes, for example compilation options.
 	const std::map<std::string,std::string>& attributes() const {
 		return mAttributes;
 	}
 	
+	/// Hash of the attributes.
 	std::size_t attributeHash() const {
 		std::size_t res = 0;
 		for (const auto& it: mAttributes) {
@@ -65,33 +74,26 @@ public:
 		return res;
 	}
 	
+	/// Compose commandline for this tool and the given input file.
 	virtual std::string getCommandline(const std::string& file) const {
 		return mBinary.native() + " " + mArguments + " " + file;
 	}
+	/// Compose commandline for this tool with another binary name and the given input file.
 	virtual std::string getCommandline(const std::string& file, const std::string& localBinary) const {
 		return localBinary + " " + mArguments + " " + file;
 	}
 
-	/**
-	 * Checks if the file extension of the given path matches the given extension.
-	 */
-	bool isExtension(const fs::path& path, const std::string& extension) const {
-		if (!fs::is_regular_file(path)) return false;
-		return fs::extension(path) == extension;
-	}
+	/// Checks whether this cool can handle this file type.
 	virtual bool canHandle(const fs::path&) const {
 		return true;
 	}
 	
-	virtual std::string getStatus(const BenchmarkResult& res) const {
-		if (res.exitCode == 0) return "sat";
-		return "";
-	}
-	
+	/// Compare two tools.
 	friend bool operator<(const Tool& lhs, const Tool& rhs) {
 		return lhs.mBinary < rhs.mBinary;
 	}
 	
+	/// Recover additional results from the tool output.
 	virtual void additionalResults(const fs::path&, BenchmarkResult&) const {}
 };
 

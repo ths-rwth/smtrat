@@ -47,6 +47,7 @@ set(ADDITIONAL_LINK_DIRS "" CACHE STRING "Additional directories added to the li
 
 # set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR} CACHE PATH "Directory for built executables")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # # # # # # # # # # # # # # # # # # # # # #
 # B. Options
@@ -327,3 +328,5 @@ set( CPACK_SOURCE_IGNORE_FILES ${CPACK_SOURCE_IGNORE_FILES};\\\\.log$;\\\\.out$;
 set( CPACK_SOURCE_IGNORE_FILES ${CPACK_SOURCE_IGNORE_FILES};opensmt-1\\\\.0.1_smtrat-0\\\\.1\\\\.1;) # opensmt binary
 #message("CPACK_SOURCE_IGNORE_FILES = ${CPACK_SOURCE_IGNORE_FILES}")
 include(CPack)
+
+include(prepare-ci)

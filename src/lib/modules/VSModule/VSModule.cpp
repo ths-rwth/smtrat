@@ -26,7 +26,7 @@ namespace smtrat
         mLazyMode( false ),
         mIDCounter( 0 ),
         mLazyCheckThreshold( Settings::lazy_check_threshold ),
-        mpConditionIdAllocator(new carl::IDGenerator() ),
+        mpConditionIdAllocator(new carl::IDPool() ),
         mpStateTree( new State( mpConditionIdAllocator, Settings::use_variable_bounds ) ),
         mAllVariables(),
         mFormulaConditionMap(),

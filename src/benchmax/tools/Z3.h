@@ -18,12 +18,12 @@ public:
 	virtual bool canHandle(const fs::path& path) const override {
 		return isExtension(path, ".smt2");
 	}
-	std::string getStatus(const BenchmarkResult& result) const override {
-		if (result.stdout.find("unsat") != std::string::npos) return "unsat";
-		if (result.stdout.find("sat") != std::string::npos) return "sat";
-		if (result.stdout.find("unknown") != std::string::npos) return "unknown";
-		if (result.stdout.find("out of memory") != std::string::npos) return "memout";
-		return "invalid";
+	virtual void additionalResults(const fs::path&, BenchmarkResult& result) const override {
+		if (result.stdout.find("unsat") != std::string::npos) result.additional["answer"] = "unsat";
+		else if (result.stdout.find("sat") != std::string::npos) result.additional["answer"] = "sat";
+		else if (result.stdout.find("unknown") != std::string::npos) result.additional["answer"] = "unknown";
+		else if (result.stdout.find("out of memory") != std::string::npos) result.additional["answer"] = "memout";
+		else result.additional["answer"] = "invalid";
 	}
 };
 
