@@ -9,10 +9,11 @@ function keep_waiting() {
 
 git fetch --unshallow
 
+pushd `pwd`
+cd ~/
 git clone https://github.com/smtrat/carl.git
 
-pushd `pwd`
-cd ~/carl/
+cd carl/
 echo "Checked out CArL version $(git describe --always)"
 mkdir build || return 1
 cd build/ || return 1
