@@ -1830,7 +1830,6 @@ namespace smtrat
 					dups++;
 				}
 			}
-			if (dups > 0) std::quick_exit(91);
 			assert(dups == 0);
 			
 			if (lemma.size() == 0) {
@@ -2913,7 +2912,6 @@ namespace smtrat
         #ifdef SMTRAT_DEVOPTION_Validation // this is often an indication that something is wrong with our theory, so we do store our assumptions.
         if( value( learnt_clause[0] ) != l_Undef ) Module::storeAssumptionsToCheck( *mpManager );
         #endif
-		if (value( learnt_clause[0] ) != l_Undef) std::quick_exit(31);
         assert( value( learnt_clause[0] ) == l_Undef );
         if( learnt_clause.size() == 1 )
         {
@@ -3241,7 +3239,6 @@ namespace smtrat
 					auto qlevel = theory_level(var(q));
 					SMTRAT_LOG_DEBUG("smtrat.sat", "\tLooking at literal " << q << " from level " << qlevel);
 					SMTRAT_LOG_DEBUG("smtrat.sat", "\tseen? " << static_cast<bool>(seen[var(q)]));
-					if (value(q) != l_False) std::quick_exit(64);
 					assert(value(q) == l_False);
 	                
 	                if( !seen[var( q )] && qlevel > 0 )
@@ -3369,7 +3366,7 @@ namespace smtrat
 				out_btlevel = levels[0]-1;
 			}
 			SMTRAT_LOG_DEBUG("smtrat.sat", "-> " << out_btlevel << " (" << out_learnt << ")");
-			if (out_btlevel < 0) std::quick_exit(49);
+			assert(out_btlevel >= 0);
 		} else {
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Figuring out level to backtrack to for " << out_learnt);
             int max_i = 0;
