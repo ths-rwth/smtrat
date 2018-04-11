@@ -136,6 +136,24 @@ matrix:
           sources: [*sources_base]
           packages: [*packages_base, doxygen, texinfo, texlive, texlive-font-utils, texlive-latex-extra, latex-xcolor, ghostscript]
   allow_failures:
+    - stage: dependencies
+      os: linux
+      env: CC=gcc-5 CXX=g++-5
+    - stage: dependencies
+      os: linux
+      env: CC=gcc-6 CXX=g++-6
+    - stage: dependencies
+      os: linux
+      env: CC=gcc-7 CXX=g++-7
+    - stage: build
+      os: linux
+      env: CC=gcc-5 CXX=g++-5
+    - stage: build
+      os: linux
+      env: CC=gcc-6 CXX=g++-6
+    - stage: build
+      os: linux
+      env: CC=gcc-7 CXX=g++-7
 
 before_install:
   - cd .ci/ && source setup_travis.sh && cd ../
