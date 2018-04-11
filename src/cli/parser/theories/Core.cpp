@@ -1,6 +1,8 @@
 #include "Core.h"
 #include "ParserState.h"
 
+#include <boost/algorithm/string/predicate.hpp>
+
 namespace smtrat {
 namespace parser {
 

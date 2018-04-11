@@ -3,6 +3,9 @@
 #include "Conversions.h"
 #include "FunctionInstantiator.h"
 
+#define BOOST_SPIRIT_USE_PHOENIX_V3
+#include <boost/spirit/include/qi.hpp>
+
 namespace smtrat {
 namespace parser {
 	

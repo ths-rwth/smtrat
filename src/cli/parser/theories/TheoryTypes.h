@@ -1,6 +1,12 @@
 #pragma once
 
-#include "../Common.h"
+#include "Common.h"
+
+#include <carl/util/mpl_utils.h>
+
+#include <boost/mpl/for_each.hpp>
+#include <boost/mpl/vector.hpp>
+#include <boost/spirit/include/support_unused.hpp>
 
 #define PARSER_ENABLE_ARITHMETIC
 #define PARSER_ENABLE_BITVECTOR
@@ -8,6 +14,7 @@
 
 namespace smtrat {
 namespace parser {
+	namespace mpl = boost::mpl;
 
 #ifdef PARSER_ENABLE_ARITHMETIC
 	#define ARITHMETIC(...) __VA_ARGS__
@@ -161,7 +168,7 @@ namespace types {
 				SExpressionSequence<types::ConstType>,
 				std::string,
 				bool,
-				boost::spirit::qi::unused_type
+				boost::spirit::unused_type
 			>
 		>::type AttributeTypes;
     /**

@@ -3,7 +3,7 @@
 #include <vector>
 #include <boost/variant.hpp>
 
-#include "../Common.h"
+#include "Common.h"
 
 #include "TheoryTypes.h"
 
