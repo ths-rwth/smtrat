@@ -25,10 +25,6 @@
 #include <carl/util/Common.h>
 #include <carl/formula/Logic.h>
 #include <carl/formula/FormulaPool.h>
-#include <carl/formula/bitvector/BVTerm.h>
-#include <carl/formula/bitvector/BVTermPool.h>
-#include <carl/formula/bitvector/BVConstraintPool.h>
-#include <carl/formula/bitvector/BVConstraint.h>
 #include <carl/formula/uninterpreted/UFManager.h>
 #include <carl/formula/uninterpreted/UFInstanceManager.h>
 #include <carl/formula/model/Model.h>
@@ -40,9 +36,6 @@ namespace smtrat
 {
 	using carl::operator<<;
 
-    // Enumerations.
-
-    enum class Variable_Domain: unsigned { BOOLEAN = 0, REAL = 1, INTEGER = 2 };
     using Logic = carl::Logic;
     ///An enum with the possible answers a Module can give
     enum Answer { SAT = 0, UNSAT = 1, UNKNOWN = 2, ABORTED = 3 };
