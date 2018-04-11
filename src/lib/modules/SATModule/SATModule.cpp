@@ -2545,7 +2545,7 @@ namespace smtrat
                 mChangedPassedFormula = false;
                 mCurrentAssignmentConsistent = runBackends( finalCheck, mFullCheck, false );
                 #ifdef DEBUG_SATMODULE
-                cout << "### Result: " << ANSWER_TO_STRING( mCurrentAssignmentConsistent ) << "!" << endl;
+                cout << "### Result: " << mCurrentAssignmentConsistent << "!" << endl;
                 #endif
                 switch( mCurrentAssignmentConsistent )
                 {

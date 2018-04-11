@@ -280,7 +280,7 @@ namespace smtrat
                 #ifdef DEBUG_INC_WIDTH_MODULE
                 std::cout << "Calling backends on:" << std::endl;
                 for( const auto& f : rPassedFormula() ) std::cout << "   " << f.formula() << std::endl;
-                std::cout << "results in " << ANSWER_TO_STRING(ans) << std::endl;
+                std::cout << "results in " << ans << std::endl;
                 #endif
 
                 if( ans == UNSAT )
@@ -364,10 +364,10 @@ namespace smtrat
         Answer ans = runBackends();
         
         #ifdef DEBUG_INC_WIDTH_MODULE
-        std::cout << "Final call of backends results in " << ANSWER_TO_STRING(ans) << std::endl;
+        std::cout << "Final call of backends results in " << ans << std::endl;
         std::cout << "Calling backends on:" << std::endl;
         for( const auto& f : rPassedFormula() ) std::cout << "   " << f.formula() << std::endl;
-        std::cout << "results in " << ANSWER_TO_STRING(ans) << std::endl;
+        std::cout << "results in " << ans << std::endl;
         #endif
 
         if( ans == UNSAT )

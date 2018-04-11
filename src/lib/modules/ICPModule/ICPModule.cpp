@@ -747,7 +747,7 @@ namespace smtrat
             ++backend;
         }
         #ifdef ICP_MODULE_DEBUG_0
-        std::cout << "  Backend's answer: " << ANSWER_TO_STRING( a ) << std::endl;
+        std::cout << "  Backend's answer: " << a << std::endl;
         #endif
         if( a == UNSAT )
         {
@@ -2433,7 +2433,7 @@ namespace smtrat
         Answer boxCheck = mLRA.check( false, true, false );
         #ifdef ICP_MODULE_DEBUG_1
         mLRA.print();
-        std::cout << "Boxcheck: " << ANSWER_TO_STRING(boxCheck) << std::endl;
+        std::cout << "Boxcheck: " << boxCheck << std::endl;
         #endif
         #ifdef SMTRAT_DEVOPTION_VALIDATION_ICP
         if ( boxCheck == UNSAT )
