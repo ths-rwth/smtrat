@@ -9,13 +9,13 @@
 
 namespace smtrat
 {
-	class NewCADEQ: public Manager
+	class NewCADEQ_BSID: public Manager
 	{
 		public:
-			NewCADEQ(): Manager() {
+			NewCADEQ_BSID(): Manager() {
 				setStrategy(
 					addBackend<SATModule<SATSettings1>>(
-						addBackend<NewCADModule<NewCADSettingsEQ>>()
+						addBackend<NewCADModule<NewCADSettingsEQ_BSID>>()
 					)
 				);
 			}
