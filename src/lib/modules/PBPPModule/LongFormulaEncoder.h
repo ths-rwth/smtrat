@@ -3,11 +3,12 @@
 #include "PseudoBoolEncoder.h"
 
 namespace smtrat {
-    class LongFormulaEncoder : public PseudoBoolEncoder {
-        public:
-            LongFormulaEncoder() : PseudoBoolEncoder () {}
+	class LongFormulaEncoder : public PseudoBoolEncoder {
+		public:
+			LongFormulaEncoder() : PseudoBoolEncoder () {}
 
-            boost::optional<FormulaT> encode(const ConstraintT& constraint);
+		protected:
+			boost::optional<FormulaT> doEncode(const ConstraintT& constraint);
 
-    };
+	};
 }

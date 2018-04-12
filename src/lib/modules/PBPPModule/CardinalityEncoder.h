@@ -3,11 +3,12 @@
 #include "PseudoBoolEncoder.h"
 
 namespace smtrat {
-    class CardinalityEncoder : public PseudoBoolEncoder {
-        public:
-            CardinalityEncoder() : PseudoBoolEncoder () {}
+	class CardinalityEncoder : public PseudoBoolEncoder {
+		public:
+			CardinalityEncoder() : PseudoBoolEncoder () {}
 
-            boost::optional<FormulaT> encode(const ConstraintT& constraint);
+		protected:
+			boost::optional<FormulaT> doEncode(const ConstraintT& constraint);
 
-    };
+	};
 }

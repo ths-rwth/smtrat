@@ -4,14 +4,15 @@
 #include "LongFormulaEncoder.h"
 
 namespace smtrat {
-    class MixedSignEncoder : public PseudoBoolEncoder {
-        public:
-            MixedSignEncoder() : PseudoBoolEncoder () {}
+	class MixedSignEncoder : public PseudoBoolEncoder {
+		public:
+			MixedSignEncoder() : PseudoBoolEncoder () {}
 
-            boost::optional<FormulaT> encode(const ConstraintT& constraint);
+		protected:
+			boost::optional<FormulaT> doEncode(const ConstraintT& constraint);
 
-        private:
-            LongFormulaEncoder mLongFormulaEncoder;
+		private:
+			LongFormulaEncoder mLongFormulaEncoder;
 
-    };
+	};
 }
