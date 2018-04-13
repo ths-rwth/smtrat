@@ -15,7 +15,7 @@ set(CMAKE_FIND_FRAMEWORK "LAST")
 ###############
 
 ##### CArL
-#find_package(carl)
+find_package(carl)
 if(NOT carl_FOUND)
 	include(resources/carl.cmake)
 endif()
