@@ -14,7 +14,7 @@ function keep_waiting() {
 if [[ ${TASK} == "dependencies" ]]; then
 	
 	keep_waiting &
-	#/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
+	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
 	kill $!
 	
 elif [[ ${TASK} == "doxygen" ]]; then
@@ -34,6 +34,9 @@ elif [[ ${TASK} == "doxygen" ]]; then
 	git push origin master || return 1
 
 else
+	keep_waiting &
+	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
+	kill $!
 	/usr/bin/time make -j1 || return 1
 fi
 
