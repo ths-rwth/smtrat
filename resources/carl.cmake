@@ -20,6 +20,7 @@ add_library(lib_carl_static INTERFACE IMPORTED GLOBAL)
 add_dependencies(lib_carl CArL_STATIC)
 set_target_properties(lib_carl_static PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${INSTALL_DIR}/include")
 
+add_dependencies(CArL-EP Boost_SHARED)
 add_dependencies(CArL_SHARED CArL-EP)
 add_dependencies(CArL_STATIC CArL-EP)
 add_dependencies(resources CArL_SHARED CArL_STATIC)
