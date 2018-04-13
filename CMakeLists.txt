@@ -198,9 +198,11 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 # C.1. Required libraries for core.
 # # # # # # # # # # # # # # # # # # # # # #
 
+include(resources/resources.cmake)
+
 # use carl, carl pulls in the required libraries.
-find_package( carl REQUIRED )
-message(STATUS "Using CArL from ${carl_INCLUDE_DIR}")
+#find_package( carl REQUIRED )
+#message(STATUS "Using CArL from ${carl_INCLUDE_DIR}")
 
 if(STATICLIB_SWITCH)
 	set( libraries ${libraries} lib_carl_static)
