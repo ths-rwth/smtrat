@@ -23,10 +23,10 @@ namespace smtrat
 	template<class Settings>
 	bool STropModule<Settings>::addCore(ModuleInput::const_iterator _subformula)
 	{   
-		const FormulaT& formula{_subformula->formula()};
 		addReceivedSubformulaToPassedFormula(_subformula);
+		const FormulaT& formula{_subformula->formula()};
 		if (formula.getType() == carl::FormulaType::FALSE)
-			mInfeasibleSubsets.push_back({_subformula->formula()});
+			mInfeasibleSubsets.push_back({formula});
 		else if (formula.getType() == carl::FormulaType::CONSTRAINT)
 		{
 			/// Normalize the left hand side of the constraint and turn the relation accordingly

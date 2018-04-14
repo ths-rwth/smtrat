@@ -22,14 +22,16 @@ namespace smtrat
 	template<class Settings>
 	bool CSplitModule<Settings>::addCore(ModuleInput::const_iterator _subformula)
 	{
-		const FormulaT& formula{_subformula->formula()};
+		//std::cout << "ADDCORE CALLED" << std::endl;
 		addReceivedSubformulaToPassedFormula(_subformula);
+		const FormulaT& formula{_subformula->formula()};
 		if (formula.getType() == carl::FormulaType::FALSE)
-			mInfeasibleSubsets.push_back({_subformula->formula()});
+			mInfeasibleSubsets.push_back({formula});
 		else if (formula.getType() == carl::FormulaType::CONSTRAINT)
 		{
 			const ConstraintT& constraint{formula.constraint()};
 			
+			// TODO: Nach resetExpansions verschieben
 			for (const auto& variable : constraint.variables())
 			{
 				carl::Variable& discretization{mDiscretizations[variable]};
@@ -48,28 +50,30 @@ namespace smtrat
 			}
 			else
 			{
-				auto linearizationIter{mLinearizations.find(formula)};
+				/// Normalize the left hand side of the constraint and turn the relation accordingly
+				const Poly normalization{constraint.lhs().normalize()};
+				carl::Relation relation{constraint.relation()};
+				if (carl::isNegative(constraint.lhs().lcoeff()))
+					relation = carl::turnAroundRelation(relation);
+				
+				auto linearizationIter{mLinearizations.find(normalization)};
 				if (linearizationIter == mLinearizations.end())
 				{
-					const Poly& origPoly{constraint.lhs()};
-					
 					// Discretize real valued variables
-					map<carl::Variable, TermT> discretizations;
-					for (const auto& variable : origPoly.gatherVariables())
+					std::map<carl::Variable, TermT> discretizations;
+					for (const auto& variable : normalization.gatherVariables())
 						if (variable.type() == carl::VariableType::VT_REAL)
-						{
 							discretizations.emplace(
 								piecewise_construct,
 								forward_as_tuple(variable),
 								forward_as_tuple(Rational{1, Settings::discrDenom}, mDiscretizations.at(variable), 1)
 							);
-						}
-					Poly discrPoly{origPoly.substitute(discretizations)};
+					Poly discrPoly{normalization.substitute(discretizations)};
 					
 					// Purify discretized polynomial
 					Poly purePoly;
-					vector<Purification *> purifications;
-					for (auto term : discrPoly)
+					std::vector<Purification *> purifications;
+					for (TermT term : discrPoly)
 						if (term.isLinear())
 							purePoly += Poly(move(term));
 						else
@@ -82,19 +86,80 @@ namespace smtrat
 							purifications.push_back(&iter->second);
 						}
 					linearizationIter = mLinearizations.emplace(
-						piecewise_construct,
-						forward_as_tuple(formula),
-						forward_as_tuple(FormulaT(move(purePoly), constraint.relation()), move(purifications))
+						std::piecewise_construct,
+						std::forward_as_tuple(normalization),
+						std::forward_as_tuple(std::move(purePoly), std::move(purifications), !discretizations.empty())
 					).first;
 				}
 				Linearization& linearization{linearizationIter->second};
-				if (linearization.mUsage == 0)
+				linearization.mRelations.emplace(relation);
+				
+				/// Check if the asserted relation trivially conflicts with other asserted relations
+				switch (relation)
 				{
-					propagateFormula(linearization.mLinearization, true);
-					for (Purification *purification : linearization.mPurifications)
-						++purification->mUsage;
+					case carl::Relation::EQ:
+						if (linearization.mRelations.count(carl::Relation::NEQ))
+							mInfeasibleSubsets.push_back({
+								FormulaT(normalization, carl::Relation::EQ),
+								FormulaT(normalization, carl::Relation::NEQ)
+							});
+						if (linearization.mRelations.count(carl::Relation::LESS))
+							mInfeasibleSubsets.push_back({
+								FormulaT(normalization, carl::Relation::EQ),
+								FormulaT(normalization, carl::Relation::LESS)
+							});
+						if (linearization.mRelations.count(carl::Relation::GREATER))
+							mInfeasibleSubsets.push_back({
+								FormulaT(normalization, carl::Relation::EQ),
+								FormulaT(normalization, carl::Relation::GREATER)
+							});
+						break;
+					case carl::Relation::NEQ:
+						if (linearization.mRelations.count(carl::Relation::EQ))
+							mInfeasibleSubsets.push_back({
+								FormulaT(normalization, carl::Relation::NEQ),
+								FormulaT(normalization, carl::Relation::EQ)
+							});
+						break;
+					case carl::Relation::LESS:
+						if (linearization.mRelations.count(carl::Relation::EQ))
+							mInfeasibleSubsets.push_back({
+								FormulaT(normalization, carl::Relation::LESS),
+								FormulaT(normalization, carl::Relation::EQ)
+							});
+						if (linearization.mRelations.count(carl::Relation::GEQ))
+							mInfeasibleSubsets.push_back({
+								FormulaT(normalization, carl::Relation::LESS),
+								FormulaT(normalization, carl::Relation::GEQ)
+							});
+					case carl::Relation::LEQ:
+						if (linearization.mRelations.count(carl::Relation::GREATER))
+							mInfeasibleSubsets.push_back({
+								FormulaT(normalization, relation),
+								FormulaT(normalization, carl::Relation::GREATER)
+							});
+						break;
+					case carl::Relation::GREATER:
+						if (linearization.mRelations.count(carl::Relation::EQ))
+							mInfeasibleSubsets.push_back({
+								FormulaT(normalization, carl::Relation::GREATER),
+								FormulaT(normalization, carl::Relation::EQ)
+							});
+						if (linearization.mRelations.count(carl::Relation::LEQ))
+							mInfeasibleSubsets.push_back({
+								FormulaT(normalization, carl::Relation::GREATER),
+								FormulaT(normalization, carl::Relation::LEQ)
+							});
+					case carl::Relation::GEQ:
+						if (linearization.mRelations.count(carl::Relation::LESS))
+							mInfeasibleSubsets.push_back({
+								FormulaT(normalization, relation),
+								FormulaT(normalization, carl::Relation::LESS)
+							});
+						break;
+					default:
+						assert(false);
 				}
-				++linearization.mUsage;
 			}
 		}
 		return mInfeasibleSubsets.empty();
@@ -103,6 +168,7 @@ namespace smtrat
 	template<class Settings>
 	void CSplitModule<Settings>::removeCore(ModuleInput::const_iterator _subformula)
 	{
+		//std::cout << "REMOVECORE CALLED" << std::endl;
 		const FormulaT& formula{_subformula->formula()};
 		if (formula.getType() == carl::FormulaType::CONSTRAINT)
 		{
@@ -112,14 +178,15 @@ namespace smtrat
 				mVariableBounds.removeBound(constraint, formula);
 			else
 			{
-				Linearization& linearization{mLinearizations.at(formula)};
-				--linearization.mUsage;
-				if (linearization.mUsage == 0)
-				{
-					propagateFormula(linearization.mLinearization, false);
-					for (Purification *purification : linearization.mPurifications)
-						--purification->mUsage;
-				}
+				/// Normalize the left hand side of the constraint and turn the relation accordingly
+				const Poly normalization{constraint.lhs().normalize()};
+				carl::Relation relation{constraint.relation()};
+				if (carl::isNegative(constraint.lhs().lcoeff()))
+					relation = carl::turnAroundRelation(relation);
+				
+				/// Retrieve the normalized constraint and mark the separator object as changed
+				Linearization& linearization{mLinearizations.at(normalization)};
+				linearization.mRelations.erase(relation);
 			}
 		}
 	}
@@ -134,7 +201,8 @@ namespace smtrat
 			else
 			{
 				mModel.clear();
-				for (const auto& assignment : mLastModel)
+				const Model& LRAModel{mLRAModule.model()};
+				for (const auto& assignment : LRAModel)
 				{
 					const auto expansionIter{mExpansions.find(assignment.first.asVariable())};
 					if (expansionIter != mExpansions.end())
@@ -154,6 +222,7 @@ namespace smtrat
 	template<class Settings>
 	Answer CSplitModule<Settings>::checkCore()
 	{
+		//std::cout << "CHECKCORE CALLED" << std::endl;
 		/// Report unsatisfiability if the already found conflicts are still unresolved
 		if (!mInfeasibleSubsets.empty())
 			return Answer::UNSAT;
@@ -164,7 +233,6 @@ namespace smtrat
 			//cout << "CHECKCORE CALLED" << endl;
 			static size_t runs = 0;
 			mCheckedWithBackends = false;
-			mLRAModule.push();
 			
 			if (resetExpansions())
 			{/*
@@ -178,13 +246,12 @@ namespace smtrat
 					//cout << "CALLING LRA SOLVER" << endl;
 					if (mLRAModule.check(true) == Answer::SAT)
 					{
-						//cout << "ANSWERED SAT" << endl << endl;
-						mLastModel = mLRAModule.model();
-						answer = Answer::SAT;
-						break;
+						//std::cout << "SAT GENERATED" << std::endl;
+						return Answer::SAT;
 					}
 					else
 					{
+						//std::cout << "AUSGABE" << std::endl;
 						// Analyze infeasible subset
 						FormulaSetT conflict{mLRAModule.infeasibleSubsets()[0]};
 						if (bloatDomains(conflict) == 0)
@@ -192,8 +259,8 @@ namespace smtrat
 							answer = analyzeConflict(conflict);
 							break;
 						}
-	/*
-							cout << "-------------- THE BOUNDS (AFTER CHANGE) ---------------------" << endl;
+	
+							/*cout << "-------------- THE BOUNDS (AFTER CHANGE) ---------------------" << endl;
 							for (auto& expansion : mExpansions)
 							{
 								cout << "VAR: " << expansion.first << "   MAX: " << expansion.second.mMaximalDomain << "   ACTIVE: " << expansion.second.mActiveDomain << endl;
@@ -203,7 +270,6 @@ namespace smtrat
 					}
 				}
 			}
-			mLRAModule.pop();
 		}
 		
 		if (answer == Answer::UNKNOWN)
@@ -220,6 +286,33 @@ namespace smtrat
 	template<class Settings>
 	bool CSplitModule<Settings>::resetExpansions()
 	{
+		//std::cout << "RESET EXPANSION CALLED" << std::endl;
+		while (mLRAModule.formulaBegin() != mLRAModule.formulaEnd())
+		{
+			//std::cout << "ES WIRD GELÖSCHT!!!!!!!!!" << std::endl;
+			mLRAModule.remove(mLRAModule.formulaBegin());
+			//exit(0);
+		}
+		
+		//std::cout << "LAAAAAAAAAAAAAAAAAAAST" << std::endl;
+		// TODO: Linearisierung propagieren
+		// HIER NOCH EINIGES OPTIMIEREN, mUsage als bool...
+		// Aktive Purifikationen in eine map?
+		for (auto& purificationsEntry : mPurifications)
+			purificationsEntry.second.mUsed = false;
+		
+		for (auto& linearizationsEntry : mLinearizations)
+		{
+			Linearization& linearization{linearizationsEntry.second};
+			
+			// TODO: Bessere Analyse der relationen, mActiveRelation setzen
+			for (const carl::Relation relation : linearization.mRelations)
+				propagateFormula(FormulaT(linearization.mLinearization, relation), true);
+			if (!linearization.mRelations.empty())
+				for (Purification *purification : linearization.mPurifications)
+					purification->mUsed = true;
+		}
+		
 		for (auto& expansionPair : mExpansions)
 		{
 			expansionPair.second.mPurifications.clear();
@@ -240,14 +333,14 @@ namespace smtrat
 			if (maximalDomain.isEmpty())
 				return false;
 			else
-				mExpansions.at(variable).mMaximalDomain = move(maximalDomain);
+				mExpansions.at(variable).mMaximalDomain = std::move(maximalDomain);
 		}
 		
 		// Activate all asserted purifications bottom-up
 		for (auto backwardIter = mPurifications.rbegin(); backwardIter != mPurifications.rend(); ++backwardIter)
 		{
 			Purification& purification{backwardIter->second};
-			if (purification.mUsage > 0)
+			if (purification.mUsed)
 			{
 				carl::Monomial::Arg monomial{backwardIter->first};
 				// Find set of variables with maximal domain
@@ -282,13 +375,13 @@ namespace smtrat
 				// Find locally optimal reduction for monomial
 				auto forwardIter{backwardIter.base()};
 				function<bool()> isReducible = [&] () bool {
-						if (forwardIter->second.mUsage > 0
-							&& monomial->divisible(forwardIter->first))
-							for (const auto& variable : maxVariables)
-								if (forwardIter->first->has(variable))
-									return true;
-						return false;
-					};
+					if (forwardIter->second.mUsed
+						&& monomial->divisible(forwardIter->first))
+						for (const auto& variable : maxVariables)
+							if (forwardIter->first->has(variable))
+								return true;
+					return false;
+				};
 				while (forwardIter != mPurifications.end() && !isReducible())
 					++forwardIter;
 				// Construct sequence of purifications
@@ -361,8 +454,6 @@ namespace smtrat
 			changeActiveDomain(expansion, domain);
 		}
 		
-		mLastModel.clear();
-		
 		return true;
 	}
 	
@@ -416,7 +507,7 @@ namespace smtrat
 					{
 						Candidate candidate(&expansion, direction);
 						if (candidate.mRadius <= Settings::maximalRadius)
-							candidates.push_back(candidate);
+							candidates.emplace_back(std::move(candidate));
 					}
 				}
 			}
@@ -446,15 +537,17 @@ namespace smtrat
 	Answer CSplitModule<Settings>::analyzeConflict(const FormulaSetT& conflict)
 	{
 		FormulaSetT infeasibleSubset;
-		for (const auto& transformation : mLinearizations)
+		for (const auto& linearizationsEntry : mLinearizations)
 		{
-			const FormulaT& origin{transformation.first};
-			const Linearization& linearization{transformation.second};
-			if (linearization.mUsage > 0)
-				if (origin.constraint().hasRealValuedVariable())
-					return Answer::UNKNOWN;
-				else if (conflict.count(linearization.mLinearization) > 0)
-					infeasibleSubset.emplace_hint(infeasibleSubset.cend(), origin);
+			const Poly& normalization{linearizationsEntry.first};
+			const Linearization& linearization{linearizationsEntry.second};
+			for (const carl::Relation relation : linearization.mRelations)
+				if (conflict.count(FormulaT(linearization.mLinearization, relation)) > 0)
+					if (linearization.mHasRealVariables)
+						return Answer::UNKNOWN;
+					else
+						//infeasibleSubset.emplace_hint(infeasibleSubset.cend(), FormulaT(normalization, relation));
+						infeasibleSubset.emplace(normalization, relation);
 		}
 		for (const FormulaT& formula : conflict)
 			if (formula.isBound())
@@ -475,7 +568,7 @@ namespace smtrat
 					}
 				}
 			}
-		mInfeasibleSubsets.push_back(infeasibleSubset);
+		mInfeasibleSubsets.emplace_back(std::move(infeasibleSubset));
 		return Answer::UNSAT;
 	}
 	

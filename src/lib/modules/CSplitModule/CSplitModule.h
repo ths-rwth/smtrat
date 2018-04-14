@@ -33,13 +33,12 @@ namespace smtrat
 				std::vector<carl::Variable> mSubstitutions;
 				Purification *mReduction;
 				Expansion *mExpansion;
-				size_t mUsage;
+				bool mUsed;
 				
 				Purification(const carl::Variable& variable)
-					: mSubstitutions()
-					, mReduction(nullptr)
+					: mReduction(nullptr)
 					, mExpansion(nullptr)
-					, mUsage(0)
+					, mUsed(false)
 				{
 					mSubstitutions.push_back(variable);
 				}
@@ -53,7 +52,7 @@ namespace smtrat
 				const carl::Variable mDiscretization, mRationalization;
 				RationalInterval mMaximalDomain, mActiveDomain;
 				std::vector<carl::Variable> mQuotients, mRemainders;
-				std::set<Purification *> mPurifications;
+				std::unordered_set<Purification *> mPurifications;
 				
 				Expansion(const carl::Variable& discretization, const carl::Variable& rationalization)
 					: mNucleus(ZERO_RATIONAL)
@@ -61,37 +60,35 @@ namespace smtrat
 					, mRationalization(rationalization)
 					, mMaximalDomain(RationalInterval::unboundedInterval())
 					, mActiveDomain(RationalInterval::emptyInterval())
-					, mQuotients()
-					, mRemainders()
-					, mPurifications()
 				{
 					mQuotients.push_back(discretization);
 				}
 			};
 			
-			carl::FastMap<carl::Variable, carl::Variable> mDiscretizations;
-			std::map<carl::Variable, Expansion> mExpansions;
+			std::unordered_map<carl::Variable, carl::Variable> mDiscretizations;
+			std::unordered_map<carl::Variable, Expansion> mExpansions;
 			
 			struct Linearization
 			{
-				FormulaT mLinearization;
+				const Poly mLinearization;
 				std::vector<Purification *> mPurifications;
-				size_t mUsage;
+				std::set<carl::Relation> mRelations;
+				carl::Relation mActiveRelation;
+				const bool mHasRealVariables;
 				
-				Linearization(FormulaT&& linearization, std::vector<Purification *>&& purifications)
+				Linearization(const Poly&& linearization, const std::vector<Purification *>&& purifications, const bool hasRealVariables)
 					: mLinearization(linearization)
 					, mPurifications(purifications)
-					, mUsage(0)
+					, mHasRealVariables(hasRealVariables)
 				{}
 			};
 			
-			std::map<FormulaT, Linearization> mLinearizations;
+			std::unordered_map<Poly, Linearization> mLinearizations;
 			
 			vb::VariableBounds<FormulaT> mVariableBounds;
 			
 			// Stores whether the last consistency check was done by the backends
 			bool mCheckedWithBackends;
-			Model mLastModel;
 			
 			/**
 			 * Linear arithmetic module to call for the linearized formula
