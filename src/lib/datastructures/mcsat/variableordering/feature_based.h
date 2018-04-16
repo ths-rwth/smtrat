@@ -15,21 +15,44 @@ namespace variableordering {
 
 namespace detail {
 
-template<typename Constraints>
+using carl::operator<<;
+
+/**
+ * This class manages features that are used to valuate variables on objects.
+ * Each feature consists of a valuation function, a level and a weight.
+ * All feature valuations of a certain level are combined linearly using the respective weights.
+ * Valuations are then compared lexicographically.
+ */
+template<typename Objects>
 struct FeatureCollector {
-	using Extractor = std::function<double(Constraints, carl::Variable)>;
-	std::vector<std::pair<Extractor,double>> mFeatures;
+	using Extractor = std::function<double(Objects, carl::Variable)>;
+	using Valuation = std::vector<double>;
+	std::vector<std::tuple<Extractor,std::size_t,double>> mFeatures;
 	
-	void addFeature(Extractor&& e, double weight) {
-		mFeatures.emplace_back(std::move(e), weight);
+	void addFeature(Extractor&& e, std::size_t level, double weight) {
+		mFeatures.emplace_back(std::move(e), level, weight);
 	}
 	
-	double valuateVariable(const Constraints& c, carl::Variable v) const {
-		return std::accumulate(mFeatures.begin(), mFeatures.end(), 0.0, 
-			[&c, v](double cur, const auto& feature) {
-				return cur + feature.second * feature.first(c, v);
+	Valuation valuateVariable(const Objects& o, carl::Variable v) const {
+		Valuation res;
+		for (const auto& f: mFeatures) {
+			if (res.size() <= std::get<1>(f)) {
+				res.resize(std::get<1>(f) + 1);
 			}
-		);
+			res[std::get<1>(f)] += std::get<2>(f) * std::get<0>(f)(o, v);
+		}
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Valuation of " << v << " is " << res);
+		return res;
+	}
+	std::vector<carl::Variable> sortVariables(const Objects& o, std::vector<carl::Variable> vars) const {
+		std::vector<std::pair<Valuation,carl::Variable>> valuations;
+		for (auto v: vars) {
+			valuations.emplace_back(valuateVariable(o, v), v);
+		}
+		std::sort(valuations.begin(), valuations.end());
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Evaluated to " << valuations);
+		std::transform(valuations.begin(), valuations.end(), vars.begin(), [](const auto& p){ return p.second; });
+		return vars;
 	}
 };
 
@@ -70,19 +93,12 @@ template<typename Constraints>
 std::vector<carl::Variable> feature_based(const Constraints& c) {
 	detail::FeatureCollector<Constraints> features;
 	
-	features.addFeature(detail::max_degree<Constraints>, -1.0);
-	features.addFeature(detail::max_term_total_degree<Constraints>, -0.5);
+	features.addFeature(detail::max_degree<Constraints>, 0, -1.0);
+	features.addFeature(detail::max_term_total_degree<Constraints>, 0, -0.5);
 	
 	std::vector<carl::Variable> vars = collectVariables(c);
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Collected variables " << vars);
-	std::vector<std::pair<double,carl::Variable>> valuations;
-	for (auto v: vars) {
-		valuations.emplace_back(features.valuateVariable(c, v), v);
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Valuation of " << v << " is " << valuations.back().first);
-	}
-	std::sort(valuations.begin(), valuations.end());
-	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Evaluated to " << valuations);
-	std::transform(valuations.begin(), valuations.end(), vars.begin(), [](const auto& p){ return p.second; });
+	vars = features.sortVariables(c, vars);
 	
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Calculated variable ordering " << vars);
 	return vars;
