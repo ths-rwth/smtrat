@@ -40,11 +40,27 @@ double abstract_feature(const Constraints& constraints, double initial, std::fun
 	);
 }
 
+/// The maximum degree of this variable.
 template<typename Constraints>
 double max_degree(const Constraints& constraints, carl::Variable v) {
 	return abstract_feature(constraints, 0.0,
 		[](double a, double b){ return std::max(a, b); },
 		[v](const auto& c){ return static_cast<double>(c.maxDegree(v)); }
+	);
+}
+
+/// The maximum total degree of a term involving this variable.
+template<typename Constraints>
+double max_term_total_degree(const Constraints& constraints, carl::Variable v) {
+	return abstract_feature(constraints, 0.0,
+		[](double a, double b){ return std::max(a, b); },
+		[v](const auto& c){
+			std::size_t max = 0;
+			for (const auto& t: c.lhs()) {
+				if (t.has(v)) max = std::max(max, t.tdeg());
+			}
+			return static_cast<double>(max);
+		}
 	);
 }
 
@@ -55,6 +71,7 @@ std::vector<carl::Variable> feature_based(const Constraints& c) {
 	detail::FeatureCollector<Constraints> features;
 	
 	features.addFeature(detail::max_degree<Constraints>, -1.0);
+	features.addFeature(detail::max_term_total_degree<Constraints>, -0.5);
 	
 	std::vector<carl::Variable> vars = collectVariables(c);
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Collected variables " << vars);
