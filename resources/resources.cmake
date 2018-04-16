@@ -33,7 +33,7 @@ endif()
 ##### CoCoALib
 if(USE_COCOA)
 	if(NOT FORCE_SHIPPED_RESOURCES)
-		load_library(carl CoCoA 0.99542)
+		load_library(smtrat CoCoA 0.99542)
 	endif()
 	if(COCOA_FOUND)
 		message(STATUS "Use system version of CoCoA ${COCOA_VERSION}")
