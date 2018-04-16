@@ -30,8 +30,27 @@ else()
 	message(STATUS "Use shipped version of Boost ${BOOST_VERSION}")
 endif()
 
+##### CoCoALib
+if(USE_COCOA)
+	if(NOT FORCE_SHIPPED_RESOURCES)
+		load_library(carl CoCoA 0.99542)
+	endif()
+	if(COCOA_FOUND)
+		message(STATUS "Use system version of CoCoA ${COCOA_VERSION}")
+	else()
+		# Depends on GMP
+		set(COCOA_VERSION "0.99551")
+		set(COCOA_TGZHASH "0e75ba96e627f955adbb17c037d5bcdf")
+		include(resources/cocoa.cmake)
+		unset(COCOA_TGZHASH)
+		message(STATUS "Use shipped version of CoCoA ${COCOA_VERSION}")
+	endif()
+else()
+	message(STATUS "Usage of CoCoA is disabled")
+endif()
+
 ##### CArL
-#find_package(carl)
+find_package(carl)
 if(carl_FOUND)
 	message(STATUS "Use system version of carl ${carl_VERSION}")
 else()
