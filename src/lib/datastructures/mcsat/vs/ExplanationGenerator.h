@@ -11,84 +11,6 @@ namespace smtrat {
 namespace mcsat {
 namespace vs {
 
-struct SymbolicZero {
-	smtrat::SqrtEx sqrtExpression;
-	ConstraintsT sideConditions;
-
-	SymbolicZero(smtrat::SqrtEx sqrtExpression, ConstraintsT sideConditions):
-		sqrtExpression(sqrtExpression),
-		sideConditions(sideConditions)
-	{
-	}
-}
-
-/**
- * Functions returning formulas describing the region represented by the current variable and assignment.
- */
-namespace regiondescr {
-	struct lowerbound { // according to Def 3.3
-		FormulaT operator()(const carl::Variable& var, const vs::Substitution& substitution, const Model& model, const std::vector<vs::SymbolicZeros>& zeros) {
-			// TODO
-
-			switch(substitution.type())
-			{
-				case vs::Substitution::Type::MINUS_INFINITY:
-					smtrat::FormulasT subformulas;
-					for (auto zero = zeros.begin(); zero != zeros.end(); ++zero)
-					{
-						smtrat::FormulaT sideCond(carl::FormulaType::AND, zero->sideConditions);
-						smtrat::Poly xSmallerThanZeroPol = var - zero->sqrtExpression; // TODO substitute sqrtExpr into formula
-						ConstraintT xSmallerThanZeroConstr(xSmallerThanZeroPol, carl::Relation:LESS);
-						smtrat::FormulaT xSmallerThanZero(xSmallerThanZeroConstr);
-						subformulas.emplace_back(carl::FormulaType::IMPLIES, sideCond, xSmallerThanZero);
-					}
-					return smtrat::FormulaT(carl::FormulaType::AND, subformulas);
-				case vs::Substitution::Type::NORMAL:
-
-					break;
-				case vs::Substitution::Type::PLUS_EPSILON:
-
-					break;
-				default:
-					assert(false);
-			}
-    	}
-	};
-
-    struct lowerupperbounds {
-		FormulaT operator()(const carl::Variable& var, const vs::Substitution& substitution, const Model& model, const std::vector<vs::SymbolicZeros>& zeros) {
-			// TODO
-    	}
-	};
-
-	struct allzeros {
-		FormulaT operator()(const carl::Variable& var, const vs::Substitution& substitution, const Model& model, const std::vector<vs::SymbolicZeros>& zeros) {
-			// TODO
-    	}
-	};
-}
-
-namespace breakheuristic {
-	struct none {
-		bool operator()() {
-			return false;
-    	}
-	};
-
-	struct representedByTestCandidate {
-		bool operator()() {
-			// TODO
-    	}
-	};
-}
-
-namespace representativechoice {    
-    struct first {
-		int operator()() {
-			// TODO
-    	}
-	};
-}
 
 class ExplanationGenerator {
 private:
@@ -112,94 +34,6 @@ public:
 	{}
 
 private:
-
-	/**
-     * Get a representative for the given variable under the current assignment.
-	 * Returns false iff VS is not applicable.
-     */
-    bool chooseRepresenative(const std::vector<ConstraintsT*>& constraints, const carl::variable& eliminationVar, vs::Substitution& result, std::vector<SymbolicZero>& symbolicZeros) const {
-        ConstraintsT sideCondition;
-        SqrtEx sqrtExpression;
-
-        for (auto constraint = constraints.begin(); constraint != constraints.end(); ++constraint)
-        {
-            bool res = generateZeros(**constraint, eliminationVar, [&](const SqrtEx&& sqrtExpression, const ConstraintsT&& sideConditions)) {
-                // check if valid under current model
-				//carl::model::evaluate(mModel, )
-                if (/*TODO check if sideCondition is valid*/)
-                {
-                    // TODO compare sqrtExpression with current best representative under current model
-					// TODO use heuristic
-				}
-
-				// collect zeros
-				symbolicZeros.emplace_back(sqrtExpression, sideConditions);
-            });
-
-			if (!res) {
-				return false;
-			}
-        }
-
-		result = vs::Substitution(/*TODO winner */);
-
-		return true;
-    }
-	
-	FormulaT generatePath(const FormulaT& inputFormula) const
-	{
-		// get the variable to eliminate
-		std::vector<carl::Variable>::reverse_iterator currentVar = std::find(mVariableOrdering.rbegin(), mVariableOrdering.rend(), mTargetVar);
-		
-		FormulaT currentFormula(formula);
-
-		FormulasT regionDescriptions;
-
-		while (++currentVar != mVariableOrdering.rend())
-		{
-			// if currentVar is notr contained in currentFormula, skip to the next variable
-			const Variables& currentFormulaVars = currentFormula.variables();
-			if (std::find(currentFormulaVars.begin(), currentFormulaVars.end(), *currentVar) == currentFormulaVars.end())
-			{
-				continue;
-			}
-
-			// get conditions from formula
-			std::vector<vs::ConstraintT*> constraints;
-			// TODO get constraints from formula
-			
-
-			// choose representative 
-			vs::Substitution representative;
-			std::vector<SymbolicZero> symbolicZeros;
-			// TODO maybe collect all zeros and then choose representative
-			bool res = chooseRepresenative(constraints, *currentVar, representative, symbolicZeros);
-			if (!res)
-			{
-				return false;
-			}
-
-			// break according to heuristic
-			if (McsatVsSettings::BreakHeuristic(/*TODO break heuristic parameter (x, φ, α)*/))
-			{
-				break;
-			}
-
-			// generate region description
-			FormulaT regiondesc = McsatVsSettings::RegionDescr(*currentVar, representative, mModel, symbolicZeros);
-			regionDescriptions.push_back(std::move(regiondesc));
-
-			// TODO substitution
-			/*
-				φ ← φ[t//x] ∧ sc (t)
-			*/
-		}
-
-		// return final explanation
-		FormulaT region = FormulaT(carl::FormulaType::AND, std::move(regionDescriptions));
-		FormulaT formula = currentFormula;
-		return smtrat::FormulaT(carl::FormulaType::IMPLIES, region, formula);
-    }
 	
 	boost::optional<FormulaT> generateExplanation() const
 	{
@@ -208,22 +42,32 @@ private:
 		for (auto constr = mConstraints.begin(); constr != mConstraints.end(); ++constr)
 		{
 			assert(constr->getType() == carl::FormulaType::CONSTRAINT)
-
 			constraints.push_back(&(constr->constraint()));
 		}
 
 		// generate test candidates
-		std::vector<vs::Substitution>& testCandidates;
+		std::vector<vs::Substitution> testCandidates;
 		if (helper::generateTestCandidates(testCandidates, mTargetVar, constraints))
 		{
 			FormulasT res;
 			for (auto tc = testCandidates.begin(); tc != testCandidates.end(); ++tc)
 			{
-				// TODO substitute
+				// substitute tc into each input constraint
+				FormulasT substitutionResults;
 
-				FormulaT partial = generatePath(...); // TODO generate input to this call
+				for (auto constr = mConstraints.begin(); constr != mConstraints.end(); ++constr)
+				{
+					ConstraintT& constraint = constr->constraint();
+					DisjunctionOfConstraintConjunctions result;
+            		bool success = substitute(constraint, tc, result, false, carl::Variables(), smtrat::EvalDoubleIntervalMap());
+					if (!success)
+					{
+						return boost::none;
+					}
+					substitutionResults.push_back(helper::doccToFormula(result));
+				}
 				
-				res.emplace_back(partial);
+				res.emplace_back(carl::FormulaType::AND, std::move(substitutionResults));
 			}
 			return FormulaT(carl::FormulaType::OR, std::move(res));
 		}

@@ -1,25 +1,23 @@
 #include "../../../Common.h"
 #include <carl/util/Common.h>
 
-// TODO ggf in explanationgenerator
 
 namespace smtrat {
 namespace mcsat {
 namespace vs {
 namespace helper {    
 
-
-    boost::optional<FormulaT> substitute(const FormulaT& input, const vs::Substitution& substitution) {
-        // TODO substitute
-
-        for(/*TODO each constraint in formula*/)
+    /**
+     * Converts a DisjunctionOfConstraintConjunctions to a regular Formula.
+     */
+    FormulaT doccToFormula(const DisjunctionOfConstraintConjunctions& docc)
+    {
+        FormulasT constraintConjunctions;
+        for (auto conjunction = docc.begin(); conjunction != docc.end(); ++conjunction)
         {
-            DisjunctionOfConstraintConjunctions result;
-            substitute( const smtrat::ConstraintT&, substitution, result, false, carl::Variables(), smtrat::EvalDoubleIntervalMap() );
-
-            // TODO somehow store the result ...
+            constraintConjunctions.emplace_back(carl::FormulaType::AND, *conjunction);
         }
-
+        return FormulaT(carl::FormulaType::OR, std::move(constraintConjunctions))
     }
 
     /**
@@ -34,7 +32,7 @@ namespace helper {
             return true;
         }
 
-        if (/* TODO degree of constraint too high*/)
+        if (constraint.maxDegree() > 2)
         {
             return false;
         }
@@ -67,8 +65,6 @@ namespace helper {
         {
             factors.push_back( constraint.lhs() );
         }
-
-        // TODO degree check before yield result ?
 
         for( auto factor = factors.begin(); factor != factors.end(); ++factor )
         {
@@ -150,8 +146,8 @@ namespace helper {
                 //degree > 2 (> 3)
                 default:
                 {
-                    // degree to high
-                    return false;
+                    // degree to high - should not occur, because degree is checked earlier
+                    assert(false)
                     break;
                 }
             }
