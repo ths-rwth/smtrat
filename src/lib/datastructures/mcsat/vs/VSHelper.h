@@ -45,7 +45,7 @@ namespace helper {
         if( constraint.hasFactorization() )
         {
             for( auto iter = constraint.factorization().begin(); iter != constraint.factorization().end(); ++iter )
-            {
+            {ConstraintT
                 carl::Variables factorVars;
                 iter->first.gatherVariables( factorVars );
                 if( factorVars.find( eliminationVar ) != factorVars.end() )
@@ -128,7 +128,7 @@ namespace helper {
                     ConstraintT cons21 = ConstraintT( radicand, carl::Relation::GEQ );
                     if( cons21 != ConstraintT( false ) )
                     {
-                        ConstraintT cons22 = ConstraintT( coeffs.rbegin()->second, carl::Relation::NEQ );
+                        ConstraintT cons22 = ConstraintT( cConstraintsToeffs.rbegin()->second, carl::Relation::NEQ );
                         if( cons22 != ConstraintT( false ) )
                         {
                             ConstraintsT sideCond = sideConditions;
@@ -187,29 +187,22 @@ namespace helper {
      * Generate all test candidates according to "vanilla" virtual substitution.
      * Returns false iff VS is not applicable.
      */
-    bool generateTestCandidates( std::vector<vs::Substitution>& results, const carl::Variable& eliminationVar, const std::vector<vs::Condition*>& conditions) {
+    bool generateTestCandidates( std::vector<vs::Substitution>& results, const carl::Variable& eliminationVar, const std::vector<ConstraintT*>& constraints) {
         // add minus infinity
-        {
-            carl::PointerSet<vs::Condition> conds;
-            conds.insert(conditions.begin(), conditions.end());
-            Substitution sub = Substitution( eliminationVar, Substitution::MINUS_INFINITY, conds );
-        }
+        Substitution sub = Substitution( eliminationVar, Substitution::MINUS_INFINITY, carl::PointerSet<vs::Condition>());
+        results.push_back(std::move(sub));
 
         // scan through conditions for test candidates
-        for (auto condition = conditions.begin(); condition != conditions.end(); ++condition)
+        for (auto constraint = constraints.begin(); constraint != constraints.end(); ++constraint)
         {
-            const ConstraintT& constraint = (*condition)->constraint();
-
             // Determine the substitution type: normal or +epsilon
-            const carl::Relation& relation = constraint.relation();
+            const carl::Relation& relation = (*constraint)->relation();
             bool weakConstraint = (relation == carl::Relation::EQ || relation == carl::Relation::LEQ || relation == carl::Relation::GEQ);
             Substitution::Type subType = weakConstraint ? Substitution::NORMAL : Substitution::PLUS_EPSILON;
 
             // factorize
-            bool res = generateZeros(constraint, eliminationVar, [&](const SqrtEx&& sqrtExpression, const ConstraintsT&& sideConditions)) {
-                carl::PointerSet<vs::Condition> oConditions;
-                oConditions.insert( condition );
-                Substitution sub = Substitution( eliminationVar, sqrtExpression, subType, std::move(oConditions), std::move(sideConditions) );
+            bool res = generateZeros(**constraint, eliminationVar, [&](const SqrtEx&& sqrtExpression, const ConstraintsT&& sideConditions)) {
+                Substitution sub = Substitution( eliminationVar, sqrtExpression, subType, carl::PointerSet<vs::Condition>(), std::move(sideConditions) );
                 addOrMergeTestCandidate(results, sub);
             });
 
