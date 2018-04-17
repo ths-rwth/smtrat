@@ -14,6 +14,18 @@ set(CMAKE_FIND_FRAMEWORK "LAST")
 ##### Load resources
 ###############
 
+##### GMP / GMPXX
+if(NOT FORCE_SHIPPED_RESOURCES)
+	load_library(smtrat GMP 5.1)
+	load_library(smtrat GMPXX 5.1)
+endif()
+if(GMP_FOUND)
+	message(STATUS "Use system version of GMP/GMPXX ${GMP_VERSION}")
+else()
+	set(GMP_VERSION "6.1.0")
+	include(resources/gmp.cmake)
+	message(STATUS "Use shipped version of GMP/GMPXX ${GMP_VERSION}")
+endif()
 
 ##### Boost
 set(BOOST_COMPONENTS "filesystem;system;program_options;regex")
