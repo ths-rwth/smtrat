@@ -118,14 +118,11 @@ namespace smtrat
 
 			std::function<FormulaT(FormulaT)> checkFormulaAndApplyTransformationsCallback;
 
-			bool isPseudoBoolean(const ConstraintT& constraint);
 			FormulaT checkFormulaAndApplyTransformations(const FormulaT& subformula);
-			void assertAssumptionsForTransformation(const FormulaT& subformula);
 			FormulaT generateVarChain(const std::set<carl::Variable>& vars, carl::FormulaType type);
 			FormulaT createAuxiliaryConstraint(const std::vector<carl::Variable>& variables);
 			FormulaT interconnectVariables(const std::set<carl::Variable>& variables);
 
-			FormulaT removeZeroCoefficients(const ConstraintT& formula);
 			FormulaT encodeCardinalityConstraint(const ConstraintT& formula);
 			FormulaT encodeMixedConstraints(const ConstraintT& formula);
 			FormulaT encodeConstraintOrForwardAsArithmetic(const ConstraintT& constraint, PseudoBoolEncoder& encoder);

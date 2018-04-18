@@ -162,10 +162,6 @@ namespace smtrat
 			return FormulaT(constraint);
 		}
 
-	template<class Settings>
-		void PBPPModule<Settings>::assertAssumptionsForTransformation(const FormulaT& subformula) {
-		}
-
 	template<typename Settings>
 		FormulaT PBPPModule<Settings>::checkFormulaType(const FormulaT& inputFormula){
 			const ConstraintT& constraint = inputFormula.constraint();
@@ -209,7 +205,7 @@ namespace smtrat
 				}
 			}
 
-			if(!positive && !negative){ 
+			if(!positive && !negative){
 				// not only positive and not only negative -> has both, positive and negative coeff
 				auto res = encodeMixedConstraints(constraint);
 				SMTRAT_LOG_INFO("smtrat.pbc", inputFormula << " -> " << res);
@@ -483,7 +479,6 @@ namespace smtrat
 			}
 		}
 
-
 	template<typename Settings>
 		FormulaT PBPPModule<Settings>::encodeMixedConstraints(const ConstraintT& constraint){
 			return encodeConstraintOrForwardAsArithmetic(constraint, mMixedSignEncoder);
@@ -505,8 +500,8 @@ namespace smtrat
 		}
 
 	/*
-	   / Converts Constraint into a LRA formula.
-	   */
+	* Converts Constraint into a LRA formula.
+	*/
 	template<typename Settings>
 		FormulaT PBPPModule<Settings>::forwardAsArithmetic(const ConstraintT& formula){
 			const auto& cLHS = formula.lhs();

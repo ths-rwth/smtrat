@@ -21,10 +21,6 @@ include_directories(${CMAKE_SOURCE_DIR}/src
                     ${carl_INCLUDE_DIR}
  )
 
-enable_testing()
-
-add_test(NAME whoop COMMAND runPseudoBoolTests)
-
 add_subdirectory(cad)
 add_subdirectory(parser)
 add_subdirectory(pseudobool)
