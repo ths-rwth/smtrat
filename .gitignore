@@ -1,3 +1,7 @@
+# CMake
+CMakeCache.txt
+CMakeFiles
+
 *.swp
 **/config.h
 **/config.txt
