@@ -61,7 +61,9 @@ option( LOGGING_CARL "Compile with the logging facility of the carl library" OFF
 option( USE_COTIRE "Use cotire to generate and use precompiled headers" OFF )
 option( BUILD_SOLVER "Build the SMT-RAT Solver" ON )
 option( BUILD_GUI "Build the GUI" OFF )
+option( FORCE_SHIPPED_RESOURCES "Do not look in system for resources which are included" OFF )
 option( USE_GINAC "If disabled, all implementations using the ginac library are disabled." OFF )
+option( USE_COCOA "Use CoCoALib" OFF )
 option(${PROJECT_NAME}_DOC_CREATE_PDF "Create PDF reference manual" ON )
 
 # Strategy
@@ -139,6 +141,16 @@ message("-- CXX Flags: ${CMAKE_CXX_FLAGS}")
 message("-- CXX Debug Flags: ${CMAKE_CXX_DEBUG_FLAGS}")
 message("-- CXX Release Flags: ${CMAKE_CXX_RELEASE_FLAGS}")
 
+set(DYNAMIC_EXT ".so")
+set(STATIC_EXT ".a")
+if(APPLE)
+	set(DYNAMIC_EXT ".dylib")
+	set(STATIC_EXT ".a")
+elseif (WIN32)
+	set(DYNAMIC_EXT ".dll")
+	set(STATIC_EXT ".lib")
+endif()
+
 if(STATICLIB_SWITCH)
     message("-- linking static")
     if (APPLE)
@@ -153,7 +165,7 @@ if(STATICLIB_SWITCH)
 	set(LINK_SEARCH_START_STATIC "")
 	set(LINK_SEARCH_END_STATIC "")
     endif()
-    set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.so")
+    set(CMAKE_FIND_LIBRARY_SUFFIXES "${STATIC_EXT};${DYNAMIC_EXT}")
 endif()
 
 if(SMTRAT_STRAT_PARALLEL_MODE)
@@ -198,9 +210,9 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 # C.1. Required libraries for core.
 # # # # # # # # # # # # # # # # # # # # # #
 
+include(resources/resources.cmake)
+
 # use carl, carl pulls in the required libraries.
-find_package( carl REQUIRED )
-message(STATUS "Using CArL from ${carl_INCLUDE_DIR}")
 
 if(STATICLIB_SWITCH)
 	set( libraries ${libraries} lib_carl_static)

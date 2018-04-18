@@ -380,7 +380,7 @@ namespace smtrat
         processLemmas();
 		
 		if (Settings::mc_sat) {
-			mMCSAT.updateVariableOrdering(mBooleanConstraintMap);
+			mMCSAT.resetVariableOrdering(mBooleanConstraintMap);
 			pickTheoryBranchLit();
 		}
         ++solves;

@@ -29,6 +29,7 @@ jobs = [
 cached = [
 	"$HOME/usr/",
 	"$HOME/carl/",
+	"build/resources",
 ]
 
 render_template(jobs, cached)
