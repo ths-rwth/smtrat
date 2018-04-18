@@ -79,6 +79,8 @@ namespace full {
                 std::vector<carl::Bitset> mEvaluated;
                 std::vector<carl::Bitset> mPurged;
                 std::function<bool(std::size_t,std::size_t)> mCanBePurged; 
+                // Stores until which level some polynomials might be (not anymore) purged due to adding / removing bounds.
+                std::size_t checkPurged;
 
 
 		// Maps polynomials to a (per level) unique ID.
@@ -536,6 +538,7 @@ namespace full {
                             mRestricted[i].first = false;
                         }
                         updateInactiveQueue = false;
+                        checkPurged = 0;
 		}
 		carl::Bitset addPolynomial(const UPoly& p, std::size_t cid, bool isBound) override {
 			if (cid >= mPolynomials[0].size()) {
@@ -551,8 +554,7 @@ namespace full {
                                         mEvaluated[level] &= mPurged[level];
                                         level += 1;
                                     }
-                                    computePurgedPolynomials(level);
-                                    deactivatePolynomials(1);
+                                    checkPurged = std::max(level, checkPurged);
                                 } 
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(0) << "-> Polynomial was already present, reactivated");
 				return carl::Bitset(); 
@@ -568,9 +570,7 @@ namespace full {
                                     mEvaluated[level] &= mPurged[level];
                                     level += 1;
                                 }
-                                SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> ComputePurgedPolynomials, until level" << level);
-                                computePurgedPolynomials(level);
-                                deactivatePolynomials(1);
+                                checkPurged = std::max(level, checkPurged);
 			} else {
 				mProjectionQueue.emplace(0, cid, cid);
 			}
@@ -593,9 +593,7 @@ namespace full {
                                     level += 1;
                                 }
                                 if (Settings::simplifyProjectionByBounds && isBound) { 
-                                        SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> ComputePurgedPolynomials, until level" << level);
-                                        computePurgedPolynomials(level);
-                                        deactivatePolynomials(1);
+                                        checkPurged = std::max(level, checkPurged);
                                 }
                                 auto itp = mPolynomialIDs[level].find(p);
                                 if(Settings::restrictProjectionByEC) {
@@ -616,9 +614,7 @@ namespace full {
                                     mEvaluated[level] &= mPurged[level];
                                     level += 1;
                                 }
-                                SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> ComputePurgedPolynomials, until level" << level);
-                                computePurgedPolynomials(level);
-                                deactivatePolynomials(1);
+                                checkPurged = std::max(level, checkPurged);
 			}
                         return carl::Bitset();
 		}
@@ -644,8 +640,7 @@ namespace full {
                                     mEvaluated[level] -= mPurged[level];
                                     level += 1;
                                 }
-                                computePurgedPolynomials(level);
-                                activatePolynomials(1);
+                                checkPurged = std::max(level, checkPurged);
 			}
 		}
 		
@@ -685,6 +680,13 @@ namespace full {
                             }
                             mInactiveQueue.fix();
                             updateInactiveQueue = false;
+                        }
+                        if(checkPurged > 0) {
+                            SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> ComputePurgedPolynomials, until level" << checkPurged);
+                            computePurgedPolynomials(checkPurged);
+                            deactivatePolynomials(1);
+                            activatePolynomials(1);
+                            checkPurged = 0;
                         }
 			return project(cs);
 		}
