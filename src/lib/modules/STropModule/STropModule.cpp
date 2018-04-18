@@ -150,10 +150,14 @@ namespace smtrat
 	template<class Settings>
 	void STropModule<Settings>::updateModel() const
 	{
-		if(solverState() == Answer::SAT)
+		if (!mModelComputed)
 		{
 			if (mCheckedWithBackends)
+			{
+				clearModel();
 				getBackendsModel();
+				excludeNotReceivedVariablesFromModel();
+			}
 			else
 			{
 				/// Stores all informations retrieved from the LRA solver to construct the model
@@ -200,7 +204,7 @@ namespace smtrat
 				do
 				{
 					++base;
-					mModel.clear();
+					clearModel();
 					for (const Weight& weight : weights)
 					{
 						Rational value{carl::isNegative(weight.mExponent) ? carl::reciprocal(base) : base};
@@ -212,6 +216,7 @@ namespace smtrat
 				}
 				while (!rReceivedFormula().satisfiedBy(mModel));
 			}
+			mModelComputed = true;
 		}
 	}
 	
@@ -223,24 +228,24 @@ namespace smtrat
 			return Answer::UNSAT;
 		
 		/// Predicate that decides if the given conflict is a subset of the asserted constraints
-		const auto hasConflict = 
-			[&](const Conflict& conflict)
-			{
-				return std::all_of(conflict.begin(), conflict.end(),
-					[&](const auto& conflictEntry)
-					{
-						return ((conflictEntry.second == Direction::NEGATIVE
-								|| conflictEntry.second == Direction::BOTH)
-									&& (conflictEntry.first->mRelations.count(carl::Relation::LESS)
-										|| conflictEntry.first->mRelations.count(carl::Relation::LEQ)))
-							|| ((conflictEntry.second == Direction::POSITIVE
-								|| conflictEntry.second == Direction::BOTH)
-									&& (conflictEntry.first->mRelations.count(carl::Relation::GREATER)
-										|| conflictEntry.first->mRelations.count(carl::Relation::GEQ)))
-							|| (conflictEntry.second == Direction::BOTH
-								&& conflictEntry.first->mRelations.count(carl::Relation::NEQ));
-					});
-			};
+		const auto hasConflict = [&](const Conflict& conflict) {
+			return std::all_of(
+				conflict.begin(),
+				conflict.end(),
+				[&](const auto& conflictEntry) {
+					return ((conflictEntry.second == Direction::NEGATIVE
+						|| conflictEntry.second == Direction::BOTH)
+							&& (conflictEntry.first->mRelations.count(carl::Relation::LESS)
+								|| conflictEntry.first->mRelations.count(carl::Relation::LEQ)))
+						|| ((conflictEntry.second == Direction::POSITIVE
+							|| conflictEntry.second == Direction::BOTH)
+								&& (conflictEntry.first->mRelations.count(carl::Relation::GREATER)
+									|| conflictEntry.first->mRelations.count(carl::Relation::GEQ)))
+						|| (conflictEntry.second == Direction::BOTH
+							&& conflictEntry.first->mRelations.count(carl::Relation::NEQ));
+				}
+			);
+		};
 		
 		/// Apply the method only if the asserted formula is not trivially undecidable
 		if (!mRelationalConflicts
@@ -253,47 +258,47 @@ namespace smtrat
 				Separator& separator{*separatorPtr};
 				
 				/// Determine the direction that shall be active
-				Direction direction{Direction::NONE};
-				if (separator.mActiveDirection == Direction::NEGATIVE
-					&& ((separator.mRelations.count(carl::Relation::LESS)
-						|| separator.mRelations.count(carl::Relation::LEQ))))
-					direction = Direction::NEGATIVE;
-				else if (separator.mActiveDirection == Direction::POSITIVE
-					&& ((separator.mRelations.count(carl::Relation::GREATER)
-						|| separator.mRelations.count(carl::Relation::GEQ))))
-					direction = Direction::POSITIVE;
-				else if (!separator.mRelations.empty())
-					switch (*separator.mRelations.rbegin())
-					{
-						case carl::Relation::EQ:
-							direction = Direction::NONE;
-							break;
-						case carl::Relation::NEQ:
-							direction = Direction::BOTH;
-							break;
-						case carl::Relation::LESS:
-						case carl::Relation::LEQ:
-							direction = Direction::NEGATIVE;
-							break;
-						case carl::Relation::GREATER:
-						case carl::Relation::GEQ:
-							direction = Direction::POSITIVE;
-							break;
-						default:
-							assert(false);
-					}
+				boost::optional<Direction> direction;
+				if (!separator.mRelations.empty())
+				{
+					if (*separator.mActiveDirection == Direction::NEGATIVE
+						&& ((separator.mRelations.count(carl::Relation::LESS)
+							|| separator.mRelations.count(carl::Relation::LEQ))))
+						direction = Direction::NEGATIVE;
+					else if (*separator.mActiveDirection == Direction::POSITIVE
+						&& ((separator.mRelations.count(carl::Relation::GREATER)
+							|| separator.mRelations.count(carl::Relation::GEQ))))
+						direction = Direction::POSITIVE;
+					else
+						switch (*separator.mRelations.rbegin())
+						{
+							case carl::Relation::EQ:
+								direction = boost::none;
+								break;
+							case carl::Relation::NEQ:
+								direction = Direction::BOTH;
+								break;
+							case carl::Relation::LESS:
+							case carl::Relation::LEQ:
+								direction = Direction::NEGATIVE;
+								break;
+							case carl::Relation::GREATER:
+							case carl::Relation::GEQ:
+								direction = Direction::POSITIVE;
+								break;
+							default:
+								assert(false);
+						}
+				}
 				
 				/// Update the linearization if the direction has changed
-				if (separator.mActiveDirection != Direction::NONE
-					&& separator.mActiveDirection != direction)
-				{
-					propagateFormula(createLinearization(separator), false);
-					separator.mActiveDirection = Direction::NONE;
-				}
 				if (separator.mActiveDirection != direction)
 				{
+					if (separator.mActiveDirection)
+						propagateFormula(createLinearization(separator), false);
 					separator.mActiveDirection = direction;
-					propagateFormula(createLinearization(separator), true);
+					if (direction)
+						propagateFormula(createLinearization(separator), true);
 				}
 			}
 			mChangedSeparators.clear();
@@ -330,9 +335,9 @@ namespace smtrat
 					for (const auto& separatorsEntry : mSeparators)
 					{
 						const Separator& separator{separatorsEntry.second};
-						if (separator.mActiveDirection != Direction::NONE
+						if (separator.mActiveDirection
 							&& variables.count(separator.mBias))
-							conflict.emplace_back(&separator, separator.mActiveDirection);
+							conflict.emplace_back(&separator, *separator.mActiveDirection);
 					}
 					mLinearizationConflicts.emplace_back(std::move(conflict));
 				}
@@ -350,7 +355,7 @@ namespace smtrat
 	template<class Settings>
 	inline FormulaT STropModule<Settings>::createLinearization(const Separator& separator)
 	{
-		switch (separator.mActiveDirection)
+		switch (*separator.mActiveDirection)
 		{
 			case Direction::POSITIVE:
 				return createSeparator(separator, false);

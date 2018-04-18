@@ -25,22 +25,18 @@ namespace smtrat
 #ifdef SMTRAT_DEVOPTION_Statistics
 			CSplitStatistics mStatistics;
 #endif
-			
-			struct Expansion;
-			
+
 			struct Purification
 			{
 				std::vector<carl::Variable> mSubstitutions;
-				Purification *mReduction;
-				Expansion *mExpansion;
-				bool mUsed;
+				carl::Variable mReduction;
+				size_t mUsage;
 				
-				Purification(const carl::Variable& variable)
-					: mReduction(nullptr)
-					, mExpansion(nullptr)
-					, mUsed(false)
+				Purification()
+					: mReduction(carl::Variable::NO_VARIABLE)
+					, mUsage(0)
 				{
-					mSubstitutions.push_back(variable);
+					mSubstitutions.emplace_back(carl::freshIntegerVariable());
 				}
 			};
 			
@@ -49,41 +45,35 @@ namespace smtrat
 			struct Expansion
 			{
 				Rational mNucleus;
-				const carl::Variable mDiscretization, mRationalization;
 				RationalInterval mMaximalDomain, mActiveDomain;
 				std::vector<carl::Variable> mQuotients, mRemainders;
 				std::unordered_set<Purification *> mPurifications;
+				bool mBoundsChanged;
 				
-				Expansion(const carl::Variable& discretization, const carl::Variable& rationalization)
+				Expansion()
 					: mNucleus(ZERO_RATIONAL)
-					, mDiscretization(discretization)
-					, mRationalization(rationalization)
 					, mMaximalDomain(RationalInterval::unboundedInterval())
 					, mActiveDomain(RationalInterval::emptyInterval())
+					, mBoundsChanged(false)
 				{
-					mQuotients.push_back(discretization);
+					mQuotients.emplace_back(carl::freshIntegerVariable());
 				}
 			};
 			
-			std::unordered_map<carl::Variable, carl::Variable> mDiscretizations;
 			std::unordered_map<carl::Variable, Expansion> mExpansions;
 			
 			struct Linearization
 			{
-				const Poly mLinearization;
+				Poly mLinearization;
 				std::vector<Purification *> mPurifications;
 				std::set<carl::Relation> mRelations;
-				carl::Relation mActiveRelation;
-				const bool mHasRealVariables;
-				
-				Linearization(const Poly&& linearization, const std::vector<Purification *>&& purifications, const bool hasRealVariables)
-					: mLinearization(linearization)
-					, mPurifications(purifications)
-					, mHasRealVariables(hasRealVariables)
-				{}
+				bool mHasRealVariables;
+				boost::optional<carl::Relation> mActiveRelation;
 			};
 			
 			std::unordered_map<Poly, Linearization> mLinearizations;
+			
+			std::unordered_set<Linearization *> mChangedLinearizations;
 			
 			vb::VariableBounds<FormulaT> mVariableBounds;
 			
@@ -151,7 +141,7 @@ namespace smtrat
 		
 		private:
 			bool resetExpansions();
-			size_t bloatDomains(const FormulaSetT& conflict);
+			bool bloatDomains(const FormulaSetT& conflict);
 			Answer analyzeConflict(const FormulaSetT& conflict);
 			
 			void changeActiveDomain(Expansion& expansion, RationalInterval domain);

@@ -70,7 +70,7 @@ namespace smtrat
 			};
 			
 			/// Subdivides the relations into classes with the same linearization result
-			enum class Direction {NONE, BOTH, NEGATIVE, POSITIVE};
+			enum class Direction {BOTH, NEGATIVE, POSITIVE};
 			
 			/**
 			 * Represents the class of all original constraints with the same
@@ -87,12 +87,12 @@ namespace smtrat
 				/// Relations of constraints with the same left hand side
 				std::set<carl::Relation> mRelations;
 				/// Relation currently used for linearization
-				Direction mActiveDirection;
+				boost::optional<Direction> mActiveDirection;
 				
 				Separator(const Poly& normalization)
 					: mBias(carl::freshRealVariable())
 					, mVertices(normalization.begin(), normalization.end())
-					, mActiveDirection(Direction::NONE)
+					, mActiveDirection(boost::none)
 				{}
 			};
 			
