@@ -14,54 +14,44 @@ namespace vs {
 
 class ExplanationGenerator {
 private:
-	using RAN = carl::RealAlgebraicNumber<Rational>;
-	struct McsatVsSettings {	
-		using RegionDescr = regiondescr::lowerbound;
-		using BreakHeuristic = breakheuristic::none;
-		using RepresentativeChoice = representativechoice::first;
-	};
-
-	const Model& mModel;
 	const std::vector<FormulaT>& mConstraints;
-	const carl::Variable& mTargetVar;
 	const std::vector<carl::Variable>& mVariableOrdering; 
+	const carl::Variable& mTargetVar;
+	const Model& mModel;
     
 public:
 	ExplanationGenerator(const std::vector<FormulaT>& constraints, const std::vector<carl::Variable>& variableOrdering, const carl::Variable& targetVar, const Model& model):
-		mModel(model),
 		mConstraints(constraints),
-		mTargetVar(targetVar)
+		mVariableOrdering(variableOrdering),
+		mTargetVar(targetVar),
+		mModel(model)
 	{}
 
 private:
 	
-	boost::optional<FormulaT> generateExplanation() const
-	{
+	boost::optional<FormulaT> generateExplanation() const {
 		// get constraints from formula
-		std::vector<vs::ConstraintT*> constraints;
-		for (auto constr = mConstraints.begin(); constr != mConstraints.end(); ++constr)
-		{
-			assert(constr->getType() == carl::FormulaType::CONSTRAINT)
+		std::vector<const ConstraintT*> constraints;
+		for (auto constr = mConstraints.begin(); constr != mConstraints.end(); ++constr) {
+			assert(constr->getType() == carl::FormulaType::CONSTRAINT);
 			constraints.push_back(&(constr->constraint()));
 		}
 
 		// generate test candidates
-		std::vector<vs::Substitution> testCandidates;
-		if (helper::generateTestCandidates(testCandidates, mTargetVar, constraints))
-		{
+		std::vector<::vs::Substitution> testCandidates;
+		if (helper::generateTestCandidates(testCandidates, mTargetVar, constraints)) {
 			FormulasT res;
-			for (auto tc = testCandidates.begin(); tc != testCandidates.end(); ++tc)
-			{
+			for (auto tc = testCandidates.begin(); tc != testCandidates.end(); ++tc) {
 				// substitute tc into each input constraint
 				FormulasT substitutionResults;
 
-				for (auto constr = mConstraints.begin(); constr != mConstraints.end(); ++constr)
-				{
-					ConstraintT& constraint = constr->constraint();
-					DisjunctionOfConstraintConjunctions result;
-            		bool success = substitute(constraint, tc, result, false, carl::Variables(), smtrat::EvalDoubleIntervalMap());
-					if (!success)
-					{
+				for (auto constr = mConstraints.begin(); constr != mConstraints.end(); ++constr) {
+					const ConstraintT& constraint = constr->constraint();
+					::vs::DisjunctionOfConstraintConjunctions result;
+					carl::Variables dummy_vars; // we do not make use of this feature here
+					smtrat::EvalDoubleIntervalMap dummy_map;
+            		bool success = substitute(constraint, *tc, result, false, dummy_vars, dummy_map);
+					if (!success) {
 						return boost::none;
 					}
 					substitutionResults.push_back(helper::doccToFormula(result));
@@ -71,22 +61,17 @@ private:
 			}
 			return FormulaT(carl::FormulaType::OR, std::move(res));
 		}
-		else
-		{
+		else {
 			return boost::none;
 		}
     }
 
 public:
-	boost::optional<FormulaT> getExplanation(const FormulaT& f) const
-	{
+	boost::optional<FormulaT> getExplanation(const FormulaT& f) const {
 		// this module only explains conflicts
 		assert( f != FormulaT( ConstraintT( false ) ) );
-
         return generateExplanation();
 	}
-	
-	
 };
 
 }
