@@ -66,22 +66,6 @@ find_package(carl)
 if(carl_FOUND)
 	message(STATUS "Use system version of carl ${carl_VERSION}")
 else()
-	set(CARL_BUILD_DIR "${CMAKE_BINARY_DIR}/resources/src/CArL-config-EP-build")
-	file(MAKE_DIRECTORY ${CARL_BUILD_DIR})
-	execute_process(
-		COMMAND ${CMAKE_COMMAND} -DTARGETDIR=${CMAKE_BINARY_DIR}/resources ${CMAKE_SOURCE_DIR}/resources/carl
-		WORKING_DIRECTORY ${CARL_BUILD_DIR}
-		OUTPUT_QUIET
-	)
-	message(STATUS "Cloning carl to ${CARL_BUILD_DIR}")
-	execute_process(
-		COMMAND ${CMAKE_COMMAND} --build . --target CArL-EP
-		WORKING_DIRECTORY ${CARL_BUILD_DIR}
-		OUTPUT_QUIET
-	)
 	include(resources/carl.cmake)
-	include(${CMAKE_BINARY_DIR}/resources/src/CArL-EP-build/carlConfig.cmake)
-	add_dependencies(lib_carl CArL-EP)
-	add_dependencies(lib_carl_static CArL-EP)
 	message(STATUS "Use shipped version of carl ${carl_VERSION}")
 endif()
