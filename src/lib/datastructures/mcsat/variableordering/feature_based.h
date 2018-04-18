@@ -78,11 +78,11 @@ double max_term_total_degree(const Constraints& constraints, carl::Variable v) {
 	return abstract_feature(constraints, 0.0,
 		[](double a, double b){ return std::max(a, b); },
 		[v](const auto& c){
-			std::size_t max = 0;
+			double max = 0;
 			for (const auto& t: c.lhs()) {
-				if (t.has(v)) max = std::max(max, t.tdeg());
+				if (t.has(v)) max = std::max(max, static_cast<double>(t.tdeg()));
 			}
-			return static_cast<double>(max);
+			return max;
 		}
 	);
 }
