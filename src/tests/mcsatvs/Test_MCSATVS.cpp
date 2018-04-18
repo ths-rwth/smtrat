@@ -6,7 +6,7 @@
 
 struct MCSATVSFixture {
 	MCSATVSFixture() {
-		std::cout << "Fixture" << std::endl;
+		// std::cout << "Fixture" << std::endl;
 		if (!carl::logging::logger().has("stdout")) {
 			carl::logging::logger().configure("stdout", std::cout);
 		}
