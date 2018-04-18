@@ -63,6 +63,7 @@ option( BUILD_SOLVER "Build the SMT-RAT Solver" ON )
 option( BUILD_GUI "Build the GUI" OFF )
 option( USE_GINAC "If disabled, all implementations using the ginac library are disabled." OFF )
 option(${PROJECT_NAME}_DOC_CREATE_PDF "Create PDF reference manual" ON )
+option( ENABLE_TESTING "Enables test target" OFF)
 
 # Strategy
 option( SMTRAT_STRAT_Factorization "Factorization" ON )
@@ -98,6 +99,11 @@ else()
 	message("-- not using cotire")
 	function(cotire)
 	endfunction(cotire)
+endif()
+
+if(ENABLE_TESTING)
+    message("-- testing enabled")
+    enable_testing()
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
