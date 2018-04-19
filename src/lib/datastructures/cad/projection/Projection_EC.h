@@ -348,11 +348,11 @@ namespace full {
 		 */
                 void extendProjection(const UPoly& p) {
                         std::size_t level = 1;
-                        while(canBeForwarded(level, p)){
+                        while((level < dim()) && canBeForwarded(level, p.switchVariable(var(level)))){
                                 level += 1;
                         }
-                        assert(mPolynomialIDs[level].find(p) != mPolynomialIDs[level].end());
-                        std::size_t id = mPolynomialIDs[level].find(p)->second;
+                        assert(mPolynomialIDs[level].find(p.switchVariable(var(level))) != mPolynomialIDs[level].end());
+                        std::size_t id = mPolynomialIDs[level].find(p.switchVariable(var(level)))->second;
                         mEqConstraints[level].reset(id);
                         if(!mRestricted[level].first || id != mRestricted[level].second) {
                             return; 
@@ -360,7 +360,7 @@ namespace full {
                         if(mEqConstraints[level].none()) { 
                                 std::size_t lvl = level;
                                 carl::Bitset eqc;
-                                //while(mRestricted[lvl].first == true){
+                                while(lvl == level || (mRestricted[lvl].first == true && !Settings::interruptions)){
                                         mRestricted[lvl].first = false;
                                         eqc = carl::Bitset().set(mRestricted[lvl].second);
                                         for (std::size_t l = lvl + 1; l <= dim(); l++) {
@@ -370,7 +370,7 @@ namespace full {
                                             }
                                         }
                                         lvl++;
-                                //}
+                                }
                                 activatePolynomials(level+1);
                         } else {
                                 mRestricted[level].first = false;
@@ -550,7 +550,7 @@ namespace full {
                                 if(Settings::simplifyProjectionByBounds && isBound) { 
                                     mEvaluated[0] &= mPurged[0];
                                     std::size_t level = 1; 
-                                    while ((level < dim()) && canBeForwarded(level, p)) {
+                                    while ((level < dim()) && canBeForwarded(level, p.switchVariable(var(level)))) {
                                         mEvaluated[level] &= mPurged[level];
                                         level += 1;
                                     }
@@ -566,7 +566,7 @@ namespace full {
 			if (Settings::simplifyProjectionByBounds && isBound) { 
                                 insertPolynomialTo(1, p, Origin::BaseType(0,cid), true, false);
                                 std::size_t level = 1;
-                                while ((level < dim()) && canBeForwarded(level, p)) {
+                                while ((level < dim()) && canBeForwarded(level, p.switchVariable(var(level)))) {
                                     mEvaluated[level] &= mPurged[level];
                                     level += 1;
                                 }
@@ -586,7 +586,7 @@ namespace full {
                                 mInactive.reset(cid); 
                                 activatePolynomials(0);
                                 std::size_t level = 1;
-                                while ((level < dim()) && canBeForwarded(level, p)) {
+                                while ((level < dim()) && canBeForwarded(level, p.switchVariable(var(level)))) {
                                     if (Settings::simplifyProjectionByBounds && isBound) {
                                         mEvaluated[level] &= mPurged[level];
                                     }
@@ -595,7 +595,7 @@ namespace full {
                                 if (Settings::simplifyProjectionByBounds && isBound) { 
                                         checkPurged = std::max(level, checkPurged);
                                 }
-                                auto itp = mPolynomialIDs[level].find(p);
+                                auto itp = mPolynomialIDs[level].find(p.switchVariable(var(level)));
                                 if(Settings::restrictProjectionByEC) {
                                     mEqConstraints[level].set(itp->second); 
                                     restrictProjection(level);
@@ -610,7 +610,7 @@ namespace full {
 			insertPolynomialTo(1, p, Origin::BaseType(0,cid), isBound, true);
                         if (Settings::simplifyProjectionByBounds && isBound) { 
                                 std::size_t level = 1;
-                                while ((level < dim()) && canBeForwarded(level, p)) {
+                                while ((level < dim()) && canBeForwarded(level, p.switchVariable(var(level)))) {
                                     mEvaluated[level] &= mPurged[level];
                                     level += 1;
                                 }
@@ -636,7 +636,7 @@ namespace full {
 			if (Settings::simplifyProjectionByBounds && isBound) {
                                 updateInactiveQueue = true;  
                                 std::size_t level = 1;
-                                while ((level < dim()) && canBeForwarded(level, p)) {
+                                while ((level < dim()) && canBeForwarded(level, p.switchVariable(var(level)))) {
                                     mEvaluated[level] -= mPurged[level];
                                     level += 1;
                                 }
