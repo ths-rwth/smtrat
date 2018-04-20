@@ -99,6 +99,7 @@ public:
                         auto it = mConstraintMap.find(c);
 			if (it != mConstraintMap.end()) {
 				id = it->second;
+				mConstraintIts[id] = it;
 			} else {
 				id = mIDPool.get();
 				if (id >= mConstraintIts.size()) {
@@ -175,6 +176,7 @@ public:
                 } else if(BT == Backtracking::HIDE) {
                         SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Removing " << id << " in unordered mode");
 			callCallback(mRemoveCallback, c, id, isBound);
+			mConstraintIts[id] = mConstraintMap.end();
 		} else {
 			SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Removing " << id << " in unordered mode");
 			callCallback(mRemoveCallback, c, id, isBound);
