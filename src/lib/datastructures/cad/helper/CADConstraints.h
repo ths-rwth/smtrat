@@ -241,7 +241,7 @@ public:
 template<Backtracking BT>
 std::ostream& operator<<(std::ostream& os, const CADConstraints<BT>& cc) {
 	for (const auto& c: cc.mConstraintIts) {
-		if (c == cc.mActiveConstraintMap.end()) continue;
+		if (c == cc.mConstraintMap.end()) continue;
 		os << "\t" << c->second << ": " << c->first << std::endl;
 	}
 	assert(long(cc.mActiveConstraintMap.size()) == std::count_if(cc.mConstraintIts.begin(), cc.mConstraintIts.end(), [&cc](auto it){ return it != cc.mConstraintMap.end(); }));
