@@ -25,10 +25,6 @@
 #include <carl/util/Common.h>
 #include <carl/formula/Logic.h>
 #include <carl/formula/FormulaPool.h>
-#include <carl/formula/bitvector/BVTerm.h>
-#include <carl/formula/bitvector/BVTermPool.h>
-#include <carl/formula/bitvector/BVConstraintPool.h>
-#include <carl/formula/bitvector/BVConstraint.h>
 #include <carl/formula/uninterpreted/UFManager.h>
 #include <carl/formula/uninterpreted/UFInstanceManager.h>
 #include <carl/formula/model/Model.h>
@@ -40,9 +36,6 @@ namespace smtrat
 {
 	using carl::operator<<;
 
-    // Enumerations.
-
-    enum class Variable_Domain: unsigned { BOOLEAN = 0, REAL = 1, INTEGER = 2 };
     using Logic = carl::Logic;
     ///An enum with the possible answers a Module can give
     enum Answer { SAT = 0, UNSAT = 1, UNKNOWN = 2, ABORTED = 3 };
@@ -163,48 +156,6 @@ namespace smtrat
     static const unsigned MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION = 7;
     
     static const EvalDoubleIntervalMap EMPTY_EVAL_DOUBLE_INTERVAL_MAP = EvalDoubleIntervalMap();
-
-    // Macros.
-
-    #define ANSWER_TO_STRING(_ans) (_ans == SAT ? "SAT" : (_ans == UNSAT ? "UNSAT" : (_ans == UNKNOWN ? "UNKNOWN" : (_ans == ABORTED ? "ABORTED" : "Undefined"))))
-
-    // Function wrapper.
-
-    inline carl::Variable newVariable( const std::string& _name, const carl::VariableType& _type )
-    {
-        return carl::freshVariable( _name, _type );
-    }
-
-    inline carl::Sort newSort( const std::string& _name, size_t _arity = 0 )
-    {
-        carl::SortManager::getInstance().declare( _name, _arity );
-        return carl::SortManager::getInstance().getSort( _name );
-    }
-
-    inline carl::UFInstance newUFInstance( const carl::UninterpretedFunction& _function, std::vector<carl::UVariable>&& _args )
-    {
-        return carl::UFInstanceManager::getInstance().newUFInstance( _function, std::move(_args) );
-    }
-
-    inline carl::UFInstance newUFInstance( const carl::UninterpretedFunction& _function, const std::vector<carl::UVariable>& _args )
-    {
-        return smtrat::newUFInstance( _function, std::vector<carl::UVariable>(_args));
-    }
-
-    inline carl::UFInstance newUFInstance( const carl::UninterpretedFunction& _function, const carl::UVariable& _arg )
-    {
-        std::vector<carl::UVariable> args;
-        args.push_back( _arg );
-        return smtrat::newUFInstance( _function, std::move(args) );
-    }
-
-    inline carl::UFInstance newUFInstance( const carl::UninterpretedFunction& _function, const carl::UVariable& _argA, const carl::UVariable& _argB )
-    {
-        std::vector<carl::UVariable> args;
-        args.push_back( _argA );
-        args.push_back( _argB );
-        return smtrat::newUFInstance( _function, std::move(args) );
-    }
 
 }    // namespace smtrat
 

@@ -9,7 +9,7 @@ namespace mcsat {
 namespace nlsat {
 
 struct Explanation {
-	FormulaT operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason, const FormulaT& implication) const {
+	boost::optional<FormulaT> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason, const FormulaT& implication) const {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "With " << reason << " explain " << implication);
 
 		// 'variableOrder' is ordered 'x0,.., xk, .., xn', the relevant variables that appear in the

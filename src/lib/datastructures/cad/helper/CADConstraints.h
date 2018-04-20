@@ -38,6 +38,7 @@ protected:
 	Callback mAddCallback;
         Callback mAddEqCallback; 
 	Callback mRemoveCallback;
+	ConstraintMap mActiveConstraintMap;
 	ConstraintMap mConstraintMap;
 	std::vector<typename ConstraintMap::iterator> mConstraintIts;
 	std::vector<std::size_t> mConstraintLevels;
@@ -57,6 +58,7 @@ public:
 	CADConstraints(const CADConstraints&) = delete;
 	void reset(const Variables& vars) {
 		mVariables = vars;
+		mActiveConstraintMap.clear();
 		mConstraintMap.clear();
 		mConstraintIts.clear();
 		mIDPool.clear();
@@ -74,7 +76,7 @@ public:
 		return mConstraintIts;
 	}
 	const auto& ordered() const {
-		return mConstraintMap;
+		return mActiveConstraintMap;
 	}
 	const auto& bounds() const {
 		return mBounds;
@@ -120,6 +122,7 @@ public:
                         assert(r.second);
                         mConstraintIts[id] = r.first;
 		}
+		mActiveConstraintMap.emplace(c, id);
 		auto vars = c.variables();
 		for (std::size_t level = mVariables.size(); level > 0; level--) {
 			vars.erase(mVariables[level - 1]);
@@ -164,6 +167,7 @@ public:
 			// Remove c
 			SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Actual removal of " << mConstraintIts.back()->first);
 			callCallback(mRemoveCallback, mConstraintIts.back()->first, mConstraintIts.back()->second, isBound);
+			mActiveConstraintMap.erase(mConstraintIts.back()->first);
 			mConstraintMap.erase(mConstraintIts.back());
 			mConstraintIts.pop_back();
 			assert(mConstraintIts.size() == id);
@@ -180,6 +184,7 @@ public:
 		} else {
 			SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Removing " << id << " in unordered mode");
 			callCallback(mRemoveCallback, c, id, isBound);
+			mActiveConstraintMap.erase(it->first);
 			mConstraintMap.erase(it);
 			mConstraintIts[id] = mConstraintMap.end();
 			mIDPool.free(id); 
@@ -225,7 +230,7 @@ public:
 	}
 	void exportAsDot(std::ostream& out) const {
 		debug::DotSubgraph dsg("constraints");
-		for (const auto& c: mConstraintMap) {
+		for (const auto& c: mActiveConstraintMap) {
 			out << "\t\tc_" << c.second << " [label=\"" << c.first << "\"];" << std::endl;
 			dsg.add("c_" + std::to_string(c.second));
 		}
@@ -236,10 +241,11 @@ public:
 template<Backtracking BT>
 std::ostream& operator<<(std::ostream& os, const CADConstraints<BT>& cc) {
 	for (const auto& c: cc.mConstraintIts) {
-		if (c == cc.mConstraintMap.end()) continue;
+		if (c == cc.mActiveConstraintMap.end()) continue;
 		os << "\t" << c->second << ": " << c->first << std::endl;
 	}
-	assert(long(cc.mConstraintMap.size()) == std::count_if(cc.mConstraintIts.begin(), cc.mConstraintIts.end(), [&cc](auto it){ return it != cc.mConstraintMap.end(); }));
+	assert(long(cc.mActiveConstraintMap.size()) == std::count_if(cc.mConstraintIts.begin(), cc.mConstraintIts.end(), [&cc](auto it){ return it != cc.mConstraintMap.end(); }));
+	assert(long(cc.mConstraintMap.size()) >= std::count_if(cc.mConstraintIts.begin(), cc.mConstraintIts.end(), [&cc](auto it){ return it != cc.mConstraintMap.end(); }));
 	return os;
 }
 	

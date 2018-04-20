@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Common.h"
+#include "Common.h"
 #include "AbstractTheory.h"
 #include "ParserState.h"
 
@@ -17,10 +17,6 @@ struct CoreTheory: public AbstractTheory {
 	
 	static void addSimpleSorts(qi::symbols<char, carl::Sort>& sorts);
 	static void addConstants(qi::symbols<char, types::ConstType>& constants);
-	
-	static bool convertTerm(const types::TermType& term, FormulaT& result);
-	
-	static bool convertArguments(const std::vector<types::TermType>& arguments, std::vector<FormulaT>& result, TheoryError& errors);
 	
 	CoreTheory(ParserState* state);
 	

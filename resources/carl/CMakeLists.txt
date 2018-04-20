@@ -1,0 +1,15 @@
+project(CArL-config-EP)
+cmake_minimum_required(VERSION 3.3)
+
+message(STATUS "Target is ${TARGETDIR}")
+
+include(ExternalProject)
+set_directory_properties(PROPERTIES EP_PREFIX ${TARGETDIR})
+
+ExternalProject_Add(
+	CArL-EP
+	GIT_REPOSITORY https://github.com/smtrat/carl
+	CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> -DCMAKE_PREFIX_PATH=<INSTALL_DIR> -DBUILD_STATIC=ON -DBOOST_INCLUDEDIR=${BOOST_INCLUDEDIR} -DUSE_BLISS=ON -DUSE_COCOA=ON -DEXPORT_TO_CMAKE=OFF
+	BUILD_COMMAND ""
+	INSTALL_COMMAND ""
+)

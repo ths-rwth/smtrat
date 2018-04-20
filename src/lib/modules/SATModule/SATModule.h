@@ -884,7 +884,9 @@ namespace smtrat
              */
             inline Minisat::lbool value( Minisat::Var x ) const
             {
-				return theoryValue(x);
+				if (Settings::mc_sat) {
+					return theoryValue(x);
+				}
                 return assigns[x];
             }
             

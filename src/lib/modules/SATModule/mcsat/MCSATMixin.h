@@ -4,11 +4,8 @@
 
 #include "../SolverTypes.h"
 
-#include "VariableSelector.h"
 #include "BaseBackend.h"
 #include "../ClauseChecker.h"
-
-#include "../../../datastructures/mcsat/utils/VariableOrdering.h"
 
 #include <carl/formula/model/Assignment.h>
 
@@ -241,8 +238,8 @@ public:
 	}
 	
 	template<typename Constraints>
-	void updateVariableOrdering(const Constraints& c) {
-		mBackend.updateVariableOrdering(c);
+	void resetVariableOrdering(const Constraints& c) {
+		mBackend.resetVariableOrdering(c);
 	}
 	
 	// ***** Auxliary getter

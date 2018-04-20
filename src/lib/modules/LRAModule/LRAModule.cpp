@@ -458,7 +458,7 @@ namespace smtrat
                 _result = checkNotEqualConstraints( _result );
         }
         #ifdef DEBUG_LRA_MODULE
-        std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << ANSWER_TO_STRING( _result ) << std::endl;
+        std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << _result << std::endl;
         #endif
         return _result;
     }

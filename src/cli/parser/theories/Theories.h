@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Common.h"
+#include "Common.h"
 #include "TheoryTypes.h"
 #include "AbstractTheory.h"
 #include "ParserState.h"

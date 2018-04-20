@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../Common.h"
+#include "Common.h"
 #include "TheoryTypes.h"
 #include "FunctionInstantiator.h"
 

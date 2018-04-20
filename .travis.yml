@@ -6,7 +6,7 @@ cache:
   apt: true
   directories:
     - $HOME/usr/
-    - $HOME/.sonar/cache
+    - $HOME/carl/
     - build/resources
 
 addons:
@@ -24,6 +24,51 @@ addons:
 
 matrix:
   include:
+    - stage: dependencies
+      os: linux
+      compiler: clang++-3.8
+      env: CC=clang-3.8 CXX=clang++-3.8
+      script: TASK=dependencies source .ci/build.sh
+      addons:
+        apt:
+          sources: [*sources_base, llvm-toolchain-precise-3.8]
+          packages: [*packages_base, clang-3.8]
+    - stage: dependencies
+      os: linux
+      compiler: clang++-3.9
+      env: CC=clang-3.9 CXX=clang++-3.9
+      script: TASK=dependencies source .ci/build.sh
+      addons:
+        apt:
+          sources: [*sources_base, llvm-toolchain-trusty-3.9]
+          packages: [*packages_base, clang-3.9]
+    - stage: dependencies
+      os: linux
+      compiler: clang++-4.0
+      env: CC=clang-4.0 CXX=clang++-4.0
+      script: TASK=dependencies source .ci/build.sh
+      addons:
+        apt:
+          sources: [*sources_base, llvm-toolchain-trusty-4.0]
+          packages: [*packages_base, clang-4.0]
+    - stage: dependencies
+      os: linux
+      compiler: clang++-5.0
+      env: CC=clang-5.0 CXX=clang++-5.0
+      script: TASK=dependencies source .ci/build.sh
+      addons:
+        apt:
+          sources: [*sources_base, llvm-toolchain-trusty-5.0]
+          packages: [*packages_base, clang-5.0]
+    - stage: dependencies
+      os: linux
+      compiler: clang++-6.0
+      env: CC=clang-6.0 CXX=clang++-6.0
+      script: TASK=dependencies source .ci/build.sh
+      addons:
+        apt:
+          sources: [*sources_base, llvm-toolchain-trusty-6.0]
+          packages: [*packages_base, clang-6.0]
     - stage: dependencies
       os: linux
       compiler: g++-5
@@ -137,6 +182,24 @@ matrix:
           sources: [*sources_base]
           packages: [*packages_base, doxygen, texinfo, texlive, texlive-font-utils, texlive-latex-extra, latex-xcolor, ghostscript]
   allow_failures:
+    - stage: dependencies
+      os: linux
+      env: CC=gcc-5 CXX=g++-5
+    - stage: dependencies
+      os: linux
+      env: CC=gcc-6 CXX=g++-6
+    - stage: dependencies
+      os: linux
+      env: CC=gcc-7 CXX=g++-7
+    - stage: build
+      os: linux
+      env: CC=gcc-5 CXX=g++-5
+    - stage: build
+      os: linux
+      env: CC=gcc-6 CXX=g++-6
+    - stage: build
+      os: linux
+      env: CC=gcc-7 CXX=g++-7
 
 before_install:
   - cd .ci/ && source setup_travis.sh && cd ../
