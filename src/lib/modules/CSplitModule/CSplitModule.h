@@ -8,6 +8,10 @@
 
 #pragma once
 
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/optional.hpp>
 #include "../../datastructures/VariableBounds.h"
 #include "../../solver/Module.h"
 #include "../../solver/Manager.h"
@@ -25,7 +29,29 @@ namespace smtrat
 #ifdef SMTRAT_DEVOPTION_Statistics
 			CSplitStatistics mStatistics;
 #endif
-
+			template<typename Key, typename Value>
+			using MultiIndex = boost::multi_index_container<
+				Value,
+				boost::multi_index::indexed_by<
+					boost::multi_index::hashed_unique<
+						boost::multi_index::member<Value, const Key, &Value::mSource>,
+						std::hash<Key>,
+						std::equal_to<Key>
+					>,
+					boost::multi_index::hashed_unique<
+						boost::multi_index::member<Value, const Key, &Value::mTarget>,
+						std::hash<Key>,
+						std::equal_to<Key>
+					>
+				>
+			>;
+			
+			template<typename Key, typename Value>
+			using SourceIndex = typename MultiIndex<Key, Value>::template nth_index<0>::type&;
+			
+			template<typename Key, typename Value>
+			using TargetIndex = typename MultiIndex<Key, Value>::template nth_index<1>::type&;
+			
 			struct Purification
 			{
 				std::vector<carl::Variable> mSubstitutions;
@@ -40,38 +66,52 @@ namespace smtrat
 				}
 			};
 			
-			std::map<carl::Monomial::Arg, Purification, std::greater<carl::Monomial::Arg>> mPurifications;
+			std::map<carl::Monomial::Arg, Purification> mPurifications;
 			
 			struct Expansion
 			{
-				Rational mNucleus;
-				RationalInterval mMaximalDomain, mActiveDomain;
-				std::vector<carl::Variable> mQuotients, mRemainders;
-				std::unordered_set<Purification *> mPurifications;
-				bool mBoundsChanged;
+				const carl::Variable mSource, mTarget;
+				mutable Rational mNucleus;
+				mutable RationalInterval mMaximalDomain, mActiveDomain;
+				mutable std::vector<carl::Variable> mQuotients, mRemainders;
+				mutable std::unordered_set<Purification *> mPurifications;
+				mutable bool mChangedBounds;
 				
-				Expansion()
+				Expansion(const carl::Variable& source)
 					: mNucleus(ZERO_RATIONAL)
+					, mSource(source)
+					, mTarget(source.type() == carl::VariableType::VT_INT ? source : carl::freshIntegerVariable())
 					, mMaximalDomain(RationalInterval::unboundedInterval())
 					, mActiveDomain(RationalInterval::emptyInterval())
-					, mBoundsChanged(false)
+					, mChangedBounds(false)
 				{
-					mQuotients.emplace_back(carl::freshIntegerVariable());
+					mQuotients.emplace_back(mTarget);
 				}
 			};
 			
-			std::unordered_map<carl::Variable, Expansion> mExpansions;
+			MultiIndex<carl::Variable, Expansion> mExpansions;
+			const SourceIndex<carl::Variable, Expansion> mExpansionsSource;
+			const TargetIndex<carl::Variable, Expansion> mExpansionsTarget;
 			
 			struct Linearization
 			{
-				Poly mLinearization;
-				std::vector<Purification *> mPurifications;
-				std::set<carl::Relation> mRelations;
-				bool mHasRealVariables;
-				boost::optional<carl::Relation> mActiveRelation;
+				const Poly mSource, mTarget;
+				const std::vector<Purification *> mPurifications;
+				const bool mHasRealVariables;
+				mutable std::set<carl::Relation> mRelations;
+				mutable boost::optional<carl::Relation> mActiveRelation;
+				
+				Linearization(const Poly& source, Poly&& target, std::vector<Purification *>&& purifications, bool hasRealVariables)
+					: mSource(source)
+					, mTarget(std::move(target))
+					, mPurifications(std::move(purifications))
+					, mHasRealVariables(std::move(hasRealVariables))
+				{}
 			};
 			
-			std::unordered_map<Poly, Linearization> mLinearizations;
+			MultiIndex<Poly, Linearization> mLinearizations;
+			const SourceIndex<Poly, Linearization> mLinearizationsSource;
+			const TargetIndex<Poly, Linearization> mLinearizationsTarget;
 			
 			std::unordered_set<Linearization *> mChangedLinearizations;
 			
@@ -141,13 +181,9 @@ namespace smtrat
 		
 		private:
 			bool resetExpansions();
-			bool bloatDomains(const FormulaSetT& conflict);
-			Answer analyzeConflict(const FormulaSetT& conflict);
-			
-			void changeActiveDomain(Expansion& expansion, RationalInterval domain);
-			
-			inline void propagateLinearCaseSplits(const Purification& purification, const RationalInterval& interval, size_t i, bool assert);
-			inline void propagateLogarithmicCaseSplits(const Purification& purification, size_t i, bool assert);
+			bool bloatDomains(const FormulaSetT& LRAConflict);
+			Answer analyzeConflict(const FormulaSetT& LRAConflict);
+			void changeActiveDomain(const Expansion& expansion, RationalInterval&& domain);
 			inline void propagateFormula(const FormulaT& formula, bool assert);
 	};
 }
