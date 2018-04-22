@@ -19,6 +19,6 @@ namespace smtrat
 		/// Name of the Module
 		static constexpr auto moduleName = "STropModule<STropSettings1>";
 		/// Type of linear separating hyperplane to search for
-		static constexpr SeparatorType separatorType = SeparatorType::WEAK;
+		static constexpr SeparatorType separatorType = SeparatorType::STRICT;
 	};
 }

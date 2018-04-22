@@ -46,7 +46,7 @@ namespace smtrat
 			};
 			
 			/// Maps a variable to the components of the moment function
-			std::unordered_map<carl::Variable, Moment> mMoments;
+			std::map<carl::Variable, Moment> mMoments;
 			
 			/**
 			 * Represents a term of an original constraint and assigns
@@ -87,7 +87,7 @@ namespace smtrat
 				const std::vector<Vertex> mVertices;
 				/// Relations of constraints with the same left hand side
 				std::set<carl::Relation> mRelations;
-				/// Relation currently used for linearization
+				/// Direction currently used for linearization
 				boost::optional<Direction> mActiveDirection;
 				
 				Separator(const Poly& normalization)
@@ -98,9 +98,9 @@ namespace smtrat
 			};
 			
 			/// Maps a normalized left hand side of a constraint to its separator
-			std::unordered_map<Poly, Separator> mSeparators;
+			std::map<Poly, Separator> mSeparators;
 			/// Stores the Separators that were updated since the last check call
-			std::unordered_set<Separator *> mChangedSeparators;
+			std::set<Separator *> mChangedSeparators;
 			/// Counts the number of relation pairs that prohibit an application of this method
 			size_t mRelationalConflicts;
 			/// Stores the sets of separators that were found to be undecidable by the LRA solver
