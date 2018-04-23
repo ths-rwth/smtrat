@@ -169,7 +169,7 @@ namespace smtrat
 		if (formula.isBound())
 		{
 			mVariableBounds.removeBound(formula, formula);
-			mExpansions.firstFind(*formula.variables().begin())->mChangedBounds = true;
+			mExpansions.firstAt(*formula.variables().begin()).mChangedBounds = true;
 		}
 		else if (formula.getType() == carl::FormulaType::CONSTRAINT)
 		{
@@ -181,7 +181,7 @@ namespace smtrat
 				relation = carl::turnAroundRelation(relation);
 			
 			/// Retrieve the normalized constraint and mark the separator object as changed
-			Linearization& linearization{*mLinearizations.firstFind(normalization)};
+			Linearization& linearization{mLinearizations.firstAt(normalization)};
 			propagateFormula(FormulaT(linearization.mTarget, relation), false);
 			linearization.mRelations.erase(relation);
 			if (linearization.mRelations.empty())
@@ -219,7 +219,6 @@ namespace smtrat
 	template<class Settings>
 	Answer CSplitModule<Settings>::checkCore()
 	{
-		//std::cout << "CHECKCORE CALLED" << std::endl;
 		/// Report unsatisfiability if the already found conflicts are still unresolved
 		if (!mInfeasibleSubsets.empty())
 			return Answer::UNSAT;
@@ -330,33 +329,29 @@ namespace smtrat
 				};
 				auto reductionIter{std::find_if(std::make_reverse_iterator(purificationIter), mPurifications.rend(), isReducible)};
 				
-				// Construct sequence of purifications
-				carl::Variable reduction;
-				if (reductionIter == mPurifications.rend())
-				{
-					const carl::Variable& maxVariable{*maxVariables.begin()};
-					reduction = mExpansions.firstFind(maxVariable)->mQuotients[0];
-					monomial = carl::createMonomial(maxVariable, 1);
-				}
-				else
-				{
-					reduction = reductionIter->second.mSubstitutions[0];
-					monomial = reductionIter->first;
-				}
 				carl::Monomial::Arg guidance;
-				purificationIter->first->divide(monomial, guidance);
+				if (reductionIter == mPurifications.rend())
+					monomial->divide(*maxVariables.begin(), guidance);
+				else
+					monomial->divide(reductionIter->first, guidance);
 				
+				auto hintIter{purificationIter};
 				for (const auto& exponentPair : guidance->exponents())
 				{
 					const carl::Variable& variable{exponentPair.first};
-					Expansion& expansion{*mExpansions.firstFind(variable)};
+					Expansion& expansion{mExpansions.firstAt(variable)};
 					for (carl::exponent exponent = 1; exponent <= exponentPair.second; ++exponent)
 					{
-						monomial = monomial*variable;
-						Purification& purification{mPurifications[monomial]};
-						purification.mReduction = reduction;
-						reduction = purification.mSubstitutions[0];
-						expansion.mPurifications.emplace(&purification);
+						expansion.mPurifications.emplace(&hintIter->second);
+						monomial->divide(variable, monomial);
+						if (monomial->isAtMostLinear())
+							hintIter->second.mReduction = mExpansions.firstAt(monomial->getSingleVariable()).mQuotients[0];
+						else
+						{
+							auto temp{mPurifications.emplace_hint(hintIter, std::piecewise_construct, std::make_tuple(monomial), std::make_tuple())};
+							hintIter->second.mReduction = temp->second.mSubstitutions[0];
+							hintIter = temp;
+						}
 					}
 				}
 			}

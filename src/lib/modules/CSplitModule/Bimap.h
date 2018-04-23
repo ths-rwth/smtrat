@@ -80,6 +80,16 @@ namespace smtrat
 				return mData.end();
 			}
 			
+			Class& firstAt(const FirstKeyType& firstKey)
+			{
+				return *(*mFirstMap.find(firstKey));
+			}
+			
+			Class& secondAt(const SecondKeyType& secondKey)
+			{
+				return *(*mSecondMap.find(secondKey));
+			}
+			
 			Iterator firstFind(const FirstKeyType& firstKey)
 			{
 				auto firstIter{mFirstMap.find(firstKey)};
