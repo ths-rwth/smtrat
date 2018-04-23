@@ -8,17 +8,15 @@
 
 #pragma once
 
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/member.hpp>
 #include <boost/optional.hpp>
 #include "../../datastructures/VariableBounds.h"
 #include "../../solver/Module.h"
 #include "../../solver/Manager.h"
-#include "CSplitStatistics.h"
-#include "CSplitSettings.h"
 #include "../SATModule/SATModule.h"
 #include "../LRAModule/LRAModule.h"
+#include "Bimap.h"
+#include "CSplitStatistics.h"
+#include "CSplitSettings.h"
 
 namespace smtrat
 {
@@ -29,29 +27,6 @@ namespace smtrat
 #ifdef SMTRAT_DEVOPTION_Statistics
 			CSplitStatistics mStatistics;
 #endif
-			template<typename Key, typename Value>
-			using MultiIndex = boost::multi_index_container<
-				Value,
-				boost::multi_index::indexed_by<
-					boost::multi_index::hashed_unique<
-						boost::multi_index::member<Value, const Key, &Value::mSource>,
-						std::hash<Key>,
-						std::equal_to<Key>
-					>,
-					boost::multi_index::hashed_unique<
-						boost::multi_index::member<Value, const Key, &Value::mTarget>,
-						std::hash<Key>,
-						std::equal_to<Key>
-					>
-				>
-			>;
-			
-			template<typename Key, typename Value>
-			using SourceIndex = typename MultiIndex<Key, Value>::template nth_index<0>::type&;
-			
-			template<typename Key, typename Value>
-			using TargetIndex = typename MultiIndex<Key, Value>::template nth_index<1>::type&;
-			
 			struct Purification
 			{
 				std::vector<carl::Variable> mSubstitutions;
@@ -68,19 +43,23 @@ namespace smtrat
 			
 			std::map<carl::Monomial::Arg, Purification> mPurifications;
 			
+			enum DomainSize{SMALL = 0, LARGE = 1, UNBOUNDED = 2};
+			
 			struct Expansion
 			{
 				const carl::Variable mSource, mTarget;
-				mutable Rational mNucleus;
-				mutable RationalInterval mMaximalDomain, mActiveDomain;
-				mutable std::vector<carl::Variable> mQuotients, mRemainders;
-				mutable std::unordered_set<Purification *> mPurifications;
-				mutable bool mChangedBounds;
+				Rational mNucleus;
+				DomainSize mMaximalDomainSize;
+				RationalInterval mMaximalDomain, mActiveDomain;
+				std::vector<carl::Variable> mQuotients, mRemainders;
+				std::unordered_set<Purification *> mPurifications;
+				bool mChangedBounds;
 				
 				Expansion(const carl::Variable& source)
 					: mNucleus(ZERO_RATIONAL)
 					, mSource(source)
 					, mTarget(source.type() == carl::VariableType::VT_INT ? source : carl::freshIntegerVariable())
+					, mMaximalDomainSize(DomainSize::UNBOUNDED)
 					, mMaximalDomain(RationalInterval::unboundedInterval())
 					, mActiveDomain(RationalInterval::emptyInterval())
 					, mChangedBounds(false)
@@ -89,17 +68,15 @@ namespace smtrat
 				}
 			};
 			
-			MultiIndex<carl::Variable, Expansion> mExpansions;
-			const SourceIndex<carl::Variable, Expansion> mExpansionsSource;
-			const TargetIndex<carl::Variable, Expansion> mExpansionsTarget;
+			Bimap<Expansion, const carl::Variable, &Expansion::mSource, const carl::Variable, &Expansion::mTarget> mExpansions;
 			
 			struct Linearization
 			{
-				const Poly mSource, mTarget;
+				const Poly mSource, mTarget; // TODO: Speichere MonicPolynomials statt polynomials
 				const std::vector<Purification *> mPurifications;
 				const bool mHasRealVariables;
-				mutable std::set<carl::Relation> mRelations;
-				mutable boost::optional<carl::Relation> mActiveRelation;
+				std::set<carl::Relation> mRelations;
+				boost::optional<carl::Relation> mActiveRelation;
 				
 				Linearization(const Poly& source, Poly&& target, std::vector<Purification *>&& purifications, bool hasRealVariables)
 					: mSource(source)
@@ -109,11 +86,9 @@ namespace smtrat
 				{}
 			};
 			
-			MultiIndex<Poly, Linearization> mLinearizations;
-			const SourceIndex<Poly, Linearization> mLinearizationsSource;
-			const TargetIndex<Poly, Linearization> mLinearizationsTarget;
+			Bimap<Linearization, const Poly, &Linearization::mSource, const Poly, &Linearization::mTarget> mLinearizations;
 			
-			std::unordered_set<Linearization *> mChangedLinearizations;
+			std::set<Linearization *> mChangedLinearizations;
 			
 			vb::VariableBounds<FormulaT> mVariableBounds;
 			
@@ -183,7 +158,10 @@ namespace smtrat
 			bool resetExpansions();
 			bool bloatDomains(const FormulaSetT& LRAConflict);
 			Answer analyzeConflict(const FormulaSetT& LRAConflict);
-			void changeActiveDomain(const Expansion& expansion, RationalInterval&& domain);
+			void changeActiveDomain(Expansion& expansion, RationalInterval&& domain);
 			inline void propagateFormula(const FormulaT& formula, bool assert);
+			
+			inline void propagateLinearCaseSplits(const Expansion& expansion, const Purification& purification, const RationalInterval& interval, size_t i, bool assert);
+			inline void propagateLogarithmicCaseSplits(const Expansion& expansion, const Purification& purification, size_t i, bool assert);
 	};
 }

@@ -71,7 +71,7 @@ namespace smtrat
 			};
 			
 			/// Subdivides the relations into classes with the same linearization result
-			enum class Direction {BOTH, NEGATIVE, POSITIVE};
+			enum class Direction {BOTH = 0, NEGATIVE = 1, POSITIVE = 2};
 			
 			/**
 			 * Represents the class of all original constraints with the same

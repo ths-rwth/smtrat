@@ -14,12 +14,6 @@ namespace smtrat
 	CSplitModule<Settings>::CSplitModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager)
 		: Module( _formula, _conditionals, _manager )
 		, mCheckedWithBackends(false)
-		, mExpansions()
-		, mExpansionsSource(mExpansions.template get<0>())
-		, mExpansionsTarget(mExpansions.template get<1>())
-		, mLinearizations()
-		, mLinearizationsSource(mLinearizations.template get<0>())
-		, mLinearizationsTarget(mLinearizations.template get<1>())
 #ifdef SMTRAT_DEVOPTION_Statistics
 		, mStatistics(Settings::moduleName)
 #endif
@@ -28,6 +22,7 @@ namespace smtrat
 	template<class Settings>
 	bool CSplitModule<Settings>::addCore(ModuleInput::const_iterator _subformula)
 	{
+		//std::cout << "ADDCORE CALLED" << std::endl;
 		addReceivedSubformulaToPassedFormula(_subformula);
 		const FormulaT& formula{_subformula->formula()};
 		if (formula.getType() == carl::FormulaType::FALSE)
@@ -35,20 +30,19 @@ namespace smtrat
 		else if (formula.getType() == carl::FormulaType::CONSTRAINT)
 		{
 			const ConstraintT& constraint{formula.constraint()};
-			
 			if (constraint.isBound())
 			{
 				mVariableBounds.addBound(constraint, formula);
 				const carl::Variable& variable{*constraint.variables().begin()};
-				auto expansionIter{mExpansionsSource.find(variable)};
-				if (expansionIter == mExpansionsSource.end())
-					expansionIter = mExpansionsSource.emplace(variable).first;
+				auto expansionIter{mExpansions.firstFind(variable)};
+				if (expansionIter == mExpansions.end())
+					expansionIter = mExpansions.emplace(variable);
 				expansionIter->mChangedBounds = true;
 				if (mVariableBounds.isConflicting())
 					mInfeasibleSubsets.emplace_back(mVariableBounds.getConflict());
 			}
 			else
-			{/*
+			{
 				/// Normalize the left hand side of the constraint and turn the relation accordingly
 				const Poly normalization{constraint.lhs().normalize()};
 				carl::Relation relation{constraint.relation()};
@@ -61,42 +55,40 @@ namespace smtrat
 					Poly discretization;
 					std::vector<Purification *> purifications;
 					bool hasRealVariables{false};
-					for (const TermT& term : normalization)
+					for (TermT term : normalization)
 					{
-						const carl::Monomial::Arg& monomial{term.monomial()};
-						if (monomial)
+						if (!term.isConstant())
 						{
-							Rational coefficient{term.coeff()};
 							size_t realVariables{0};
-							for (const auto& exponent : monomial->exponents())
+							for (const auto& exponent : term.monomial()->exponents())
 								if (exponent.first.type() == carl::VariableType::VT_REAL)
 									realVariables += exponent.second;
 							if (realVariables)
 							{
-								coefficient *= carl::pow(Rational(1, Settings::discrDenom), realVariables);
+								term.coeff() /= carl::pow(Rational(Settings::discrDenom), realVariables);
 								hasRealVariables = true;
 							}
 							
-							carl::Variable substitution;
-							if (!monomial->isLinear())
+							if (!term.isLinear())
 							{
-								Purification& purification{mPurifications[monomial]};
+								Purification& purification{mPurifications[term.monomial()]};
 								purifications.emplace_back(&purification);
-								substitution = purification.mSubstitutions[0];
+								term = term.coeff()*purification.mSubstitutions[0];
 							}
 							else if (realVariables)
-								substitution = mExpansions.firstFind(monomial->getSingleVariable())->first.second;
-							else
-								substitution = monomial->getSingleVariable();
-							
-							discretization += coefficient*substitution;
+							{
+								const carl::Variable variable{term.getSingleVariable()};
+								auto expansionIter{mExpansions.firstFind(variable)};
+								if (expansionIter == mExpansions.end())
+									expansionIter = mExpansions.emplace(variable);
+								term = term.coeff()*expansionIter->mQuotients[0];
+							}
 						}
-						else
-							discretization += term;
+						discretization += term;
 					}
-					linearizationIter = mLinearizations.emplace(normalization, discretization, std::move(purifications), std::move(hasRealVariables));
+					linearizationIter = mLinearizations.emplace(normalization, std::move(discretization.normalize()), std::move(purifications), hasRealVariables);
 				}
-				Linearization& linearization{linearizationIter->second};
+				Linearization& linearization{*linearizationIter};
 				linearization.mRelations.emplace(relation);
 				mChangedLinearizations.emplace(&linearization);
 				
@@ -165,7 +157,7 @@ namespace smtrat
 						break;
 					default:
 						assert(false);
-				}*/
+				}
 			}
 		}
 		return mInfeasibleSubsets.empty();
@@ -173,16 +165,16 @@ namespace smtrat
 	
 	template<class Settings>
 	void CSplitModule<Settings>::removeCore(ModuleInput::const_iterator _subformula)
-	{/*
+	{
+		//std::cout << "REMOVECORE CALLED" << std::endl;
 		const FormulaT& formula{_subformula->formula()};
 		if (formula.getType() == carl::FormulaType::CONSTRAINT)
 		{
 			const ConstraintT& constraint{formula.constraint()};
-			
 			if (constraint.isBound())
 			{
-				mVariableBounds.removeBound(constraint, formula);
-				mExpansions.firstFind(*constraint.variables().begin())->second.mChangedBounds = true;
+				mVariableBounds.removeBound(constraint, formula); // TODO: analyze return value to predict changes of strictest active bounds
+				mExpansions.firstFind(*constraint.variables().begin())->mChangedBounds = true;
 			}
 			else
 			{
@@ -193,11 +185,11 @@ namespace smtrat
 					relation = carl::turnAroundRelation(relation);
 				
 				/// Retrieve the normalized constraint and mark the separator object as changed
-				Linearization& linearization{mLinearizations.at(normalization)};
+				Linearization& linearization{*mLinearizations.firstFind(normalization)};
 				linearization.mRelations.erase(relation);
 				mChangedLinearizations.insert(&linearization);
 			}
-		}*/
+		}
 	}
 	
 	template<class Settings>
@@ -230,6 +222,7 @@ namespace smtrat
 	template<class Settings>
 	Answer CSplitModule<Settings>::checkCore()
 	{
+		//std::cout << "CHECKCORE CALLED" << std::endl;
 		/// Report unsatisfiability if the already found conflicts are still unresolved
 		if (!mInfeasibleSubsets.empty())
 			return Answer::UNSAT;
@@ -258,32 +251,61 @@ namespace smtrat
 	
 	template<class Settings>
 	bool CSplitModule<Settings>::resetExpansions()
-	{/*
+	{
+		//std::cout << "RESETEXPANSIONS CALLED" << std::endl;
 		// Update bounds and check for discretization conflict
-		for (auto& expansionsEntry : mExpansions)
+		for (Expansion& expansion : mExpansions)
 		{
-			Expansion& expansion{expansionsEntry.second};
 			RationalInterval& maximalDomain{expansion.mMaximalDomain};
-			if (expansion.mBoundsChanged)
+			if (expansion.mChangedBounds)
 			{
-				const carl::Variable& variable{expansionsEntry.first};
-				maximalDomain = mVariableBounds.getInterval(variable);
-				if (variable.type() == carl::VariableType::VT_REAL)
+				maximalDomain = mVariableBounds.getInterval(expansion.mSource);
+				if (expansion.mSource.type() == carl::VariableType::VT_REAL)
 					maximalDomain *= Rational(Settings::discrDenom);
 				maximalDomain.integralPart_assign();
-				expansion.mBoundsChanged = false;
+				if (expansion.mMaximalDomain.isUnbounded())
+					expansion.mMaximalDomainSize = DomainSize::UNBOUNDED;
+				else if (expansion.mMaximalDomain.diameter() > Settings::maxDomainSize)
+					expansion.mMaximalDomainSize = DomainSize::LARGE;
+				else
+					expansion.mMaximalDomainSize = DomainSize::SMALL;
+				expansion.mChangedBounds = false;
 			}
 			if (maximalDomain.isEmpty())
 				return false;
+			expansion.mActiveDomain = RationalInterval::emptyInterval();
 			expansion.mPurifications.clear();
 		}
+		
+		//////////////////////////////////////////////////////////////////////////////
+		/*while (mLRAModule.formulaBegin() != mLRAModule.formulaEnd())
+			mLRAModule.remove(mLRAModule.formulaBegin());
+		for (auto& purification : mPurifications)
+			purification.second.mUsage = 0;
+		for (Linearization& linearization : mLinearizations)
+		{
+			
+			boost::optional<carl::Relation> relation;
+			if (!linearization.mRelations.empty())
+			{
+				for (Purification *purification : linearization.mPurifications)
+					++purification->mUsage;
+			}
+			
+			for (auto relation : linearization.mRelations)
+				propagateFormula(FormulaT(linearization.mTarget, relation), true);
+		}*/
+		////////////////////////////////////////////////////////////////////////////
+		
+		
+		
 		
 		mLRAModule.pop();
 		for (Linearization *linearizationPtr : mChangedLinearizations)
 		{
 			Linearization& linearization{*linearizationPtr};
 			
-			boost::optional<carl::Relation> relation; 
+			boost::optional<carl::Relation> relation;
 			if (!linearization.mRelations.empty())
 			{
 				if (!linearization.mActiveRelation)
@@ -303,21 +325,21 @@ namespace smtrat
 			else if (linearization.mActiveRelation)
 				for (Purification *purification : linearization.mPurifications)
 					--purification->mUsage;
-							
+			
 			if (linearization.mActiveRelation != relation)
 			{
 				if (linearization.mActiveRelation)
-					propagateFormula(FormulaT(linearization.mLinearization, *linearization.mActiveRelation), false);
+					propagateFormula(FormulaT(linearization.mTarget, *linearization.mActiveRelation), false);
 				linearization.mActiveRelation = relation;
-				if (relation)
-					propagateFormula(FormulaT(linearization.mLinearization, *relation), true);
+				if (linearization.mActiveRelation)
+					propagateFormula(FormulaT(linearization.mTarget, *linearization.mActiveRelation), true);
 			}
 		}
 		mChangedLinearizations.clear();
 		mLRAModule.push();
 		
 		// Activate all asserted purifications bottom-up
-		for (auto purificationIter = mPurifications.rbegin(); purificationIter != mPurifications.rend(); ++purificationIter)
+		for (auto purificationIter = mPurifications.begin(); purificationIter != mPurifications.end(); ++purificationIter)
 		{
 			Purification& purification{purificationIter->second};
 			if (purification.mUsage)
@@ -325,30 +347,23 @@ namespace smtrat
 				carl::Monomial::Arg monomial{purificationIter->first};
 				
 				// Find set of variables with maximal domain
-				enum DomainSize{SMALL = 0, LARGE = 1, UNBOUNDED = 2};
 				carl::Variables maxVariables;
 				DomainSize maxDomainSize{SMALL};
 				for (const auto& exponent : monomial->exponents())
 				{
 					const carl::Variable& variable{exponent.first};
-					const RationalInterval& maximalDomain{mExpansions[variable].mMaximalDomain};
-					
-					// Find size of the current variable domain
-					DomainSize domainSize;
-					if (maximalDomain.isUnbounded())
-						domainSize = UNBOUNDED;
-					else if (maximalDomain.diameter() > Settings::maxDomainSize)
-						domainSize = LARGE;
-					else
-						domainSize = SMALL;
+					auto expansionIter{mExpansions.firstFind(variable)};
+					if (expansionIter == mExpansions.end())
+						expansionIter = mExpansions.emplace(variable);
+					Expansion& expansion{*expansionIter};
 					
 					// Update maximal domain
-					if (maxDomainSize <= domainSize)
+					if (maxDomainSize <= expansion.mMaximalDomainSize)
 					{
-						if (maxDomainSize < domainSize)
+						if (maxDomainSize < expansion.mMaximalDomainSize)
 						{
 							maxVariables.clear();
-							maxDomainSize = domainSize;
+							maxDomainSize = expansion.mMaximalDomainSize;
 						}
 						maxVariables.emplace(variable);
 					}
@@ -366,14 +381,14 @@ namespace smtrat
 							}
 						);
 				};
-				auto reductionIter{std::find_if(purificationIter.base(), mPurifications.end(), isReducible)};
+				auto reductionIter{std::find_if(std::make_reverse_iterator(purificationIter), mPurifications.rend(), isReducible)};
 				
 				// Construct sequence of purifications
 				carl::Variable reduction;
-				if (reductionIter == mPurifications.end())
+				if (reductionIter == mPurifications.rend())
 				{
 					const carl::Variable& maxVariable{*maxVariables.begin()};
-					reduction = mExpansions.at(maxVariable).mQuotients[0];
+					reduction = mExpansions.firstFind(maxVariable)->mQuotients[0];
 					monomial = carl::createMonomial(maxVariable, 1);
 				}
 				else
@@ -387,7 +402,7 @@ namespace smtrat
 				for (const auto& exponentPair : guidance->exponents())
 				{
 					const carl::Variable& variable{exponentPair.first};
-					Expansion& expansion{mExpansions.at(variable)};
+					Expansion& expansion{*mExpansions.firstFind(variable)};
 					for (carl::exponent exponent = 1; exponent <= exponentPair.second; ++exponent)
 					{
 						monomial = monomial*variable;
@@ -401,10 +416,8 @@ namespace smtrat
 		}
 		
 		// Activate expansions that are used for case splits and deactivate them otherwise
-		for (auto& expansionsEntry : mExpansions)
+		for (Expansion& expansion : mExpansions)
 		{
-			Expansion& expansion{expansionsEntry.second};
-			
 			// Calculate the nucleus where the initial domain is located
 			expansion.mNucleus = ZERO_RATIONAL;
 			if (expansion.mMaximalDomain.lowerBoundType() != carl::BoundType::INFTY
@@ -419,24 +432,26 @@ namespace smtrat
 			domain.mul_assign(Rational(Settings::initialRadius));
 			domain.add_assign(expansion.mNucleus);
 			domain.intersect_assign(expansion.mMaximalDomain);
-			expansion.mActiveDomain = RationalInterval::emptyInterval();
+			//std::cout << "ACTIVE DOMAIN BEFORE: " << expansion.mActiveDomain << "  TO: " << domain << std::endl;
 			changeActiveDomain(expansion, std::move(domain));
+			//std::cout << "AFTER: " << expansion.mActiveDomain << std::endl;
 		}
-		*/
+		
 		return true;
 	}
 	
 	template<class Settings>
 	bool CSplitModule<Settings>::bloatDomains(const FormulaSetT& LRAConflict)
 	{
+		//std::cout << "BLOATDOMAINS CALLED" << std::endl;
 		// Data structure for potential bloating candidates
 		struct Candidate
 		{
-			const Expansion& mExpansion;
+			Expansion& mExpansion;
 			const Rational mDirection;
 			const Rational mRadius;
 			
-			Candidate(const Expansion& expansion, Rational&& direction, Rational&& radius)
+			Candidate(Expansion& expansion, Rational&& direction, Rational&& radius)
 				: mExpansion(expansion)
 				, mDirection(std::move(direction))
 				, mRadius(std::move(radius))
@@ -459,10 +474,10 @@ namespace smtrat
 			{
 				const ConstraintT& constraint{formula.constraint()};
 				const carl::Variable& variable{*constraint.variables().begin()};
-				auto expansionIter{mExpansionsTarget.find(variable)};
-				if (expansionIter != mExpansionsTarget.end())
+				auto expansionIter{mExpansions.secondFind(variable)};
+				if (expansionIter != mExpansions.end())
 				{
-					const Expansion& expansion{*expansionIter};
+					Expansion& expansion{*expansionIter};
 					Rational direction;
 					if (constraint.isLowerBound()
 						&& (expansion.mMaximalDomain.lowerBoundType() == carl::BoundType::INFTY
@@ -506,49 +521,228 @@ namespace smtrat
 	template<class Settings>
 	Answer CSplitModule<Settings>::analyzeConflict(const FormulaSetT& LRAConflict)
 	{
+		//std::cout << "ANALYZECONFLICT CALLED" << std::endl;
 		FormulaSetT infeasibleSubset;
 		for (const FormulaT& formula : LRAConflict)
-			if (formula.getType() == carl::FormulaType::CONSTRAINT)
+		{
+			if (formula.isBound())
 			{
-				const ConstraintT& constraint{formula.constraint()};
-				if (formula.isBound())
+				//std::cout << "CASE C WURDE BETRETEN #############: " << formula << std::endl;
+				auto expansionIter{mExpansions.secondFind(*formula.variables().begin())};
+				if (expansionIter != mExpansions.end())
 				{
-					const carl::Variable& variable{*constraint.variables().begin()};
-					auto expansionIter{mExpansionsTarget.find(variable)};
-					if (expansionIter != mExpansionsTarget.end())
+					const Expansion& expansion{*expansionIter};
+					if (expansion.mSource.type() == carl::VariableType::VT_REAL
+						|| expansion.mMaximalDomain != expansion.mActiveDomain)
+						return Answer::UNKNOWN;
+					else
 					{
-						const Expansion& expansion{*expansionIter};
-						if (expansion.mSource.type() == carl::VariableType::VT_REAL
-							|| expansion.mMaximalDomain != expansion.mActiveDomain)
-							return Answer::UNKNOWN;
-						else
-						{
-							FormulaSetT boundOrigins{mVariableBounds.getOriginSetOfBounds(variable)};
-							infeasibleSubset.insert(boundOrigins.begin(), boundOrigins.end());
-						}
+						FormulaSetT boundOrigins{mVariableBounds.getOriginSetOfBounds(expansion.mSource)};
+						infeasibleSubset.insert(boundOrigins.begin(), boundOrigins.end());
 					}
 				}
-				else
+			}
+			else if (formula.getType() == carl::FormulaType::CONSTRAINT)
+			{
+				//std::cout << "CASE E WURDE BETRETEN #############: " << formula << std::endl;
+				const ConstraintT& constraint{formula.constraint()};
+				auto linearizationIter{mLinearizations.secondFind(constraint.lhs().normalize())};
+				if (linearizationIter != mLinearizations.end())
 				{
-					const Poly& polynomial{constraint.lhs().normalize()};
-					auto linearizationIter{mLinearizationsTarget.find(polynomial)};
-					if (linearizationIter != mLinearizationsTarget.end())
+					//std::cout << "CASE B WURDE BETRETEN #############" << std::endl;
+					const Linearization& linearization{*linearizationIter};
+					if (linearization.mHasRealVariables)
+						return Answer::UNKNOWN;
+					else
 					{
-						const Linearization& linearization{*linearizationIter};
-						if (linearization.mHasRealVariables)
-							return Answer::UNKNOWN;
+						//std::cout << "CASE A WURDE BETRETEN #############" << std::endl;
+						/////////////////////////////////////////////////////////////////////////////////////
+						/*carl::Relation relation{constraint.relation()};
+						if (carl::isNegative(constraint.lhs().lcoeff()))
+							relation = carl::turnAroundRelation(relation);
+						infeasibleSubset.emplace(linearization.mSource, relation);*/
+						/////////////////////////////////////////////////////////////////////////////////////
+						
+						if (*linearization.mActiveRelation == carl::Relation::EQ &&
+							!linearization.mRelations.count(carl::Relation::EQ))
+						{
+							infeasibleSubset.emplace(linearization.mSource, carl::Relation::LEQ);
+							infeasibleSubset.emplace(linearization.mSource, carl::Relation::GEQ);
+						}
 						else
 							infeasibleSubset.emplace(linearization.mSource, *linearization.mActiveRelation);
 					}
 				}
 			}
+		}
 		mInfeasibleSubsets.emplace_back(std::move(infeasibleSubset));
 		return Answer::UNSAT;
 	}
 	
+	
 	template<class Settings>
-	void CSplitModule<Settings>::changeActiveDomain(const Expansion& expansion, RationalInterval&& domain)
+	void CSplitModule<Settings>::changeActiveDomain(Expansion& expansion, RationalInterval&& domain)
 	{
+		RationalInterval activeDomain{move(expansion.mActiveDomain)};
+		expansion.mActiveDomain = domain;
+		
+		// Update variable bounds
+		if (!activeDomain.isEmpty())
+		{
+			if (activeDomain.lowerBoundType() != carl::BoundType::INFTY
+				&& (domain.lowerBoundType() == carl::BoundType::INFTY
+					|| domain.lower() != activeDomain.lower()
+					|| domain.isEmpty()))
+				propagateFormula(FormulaT(expansion.mQuotients[0]-Poly(activeDomain.lower()), carl::Relation::GEQ), false);
+			if (activeDomain.upperBoundType() != carl::BoundType::INFTY
+				&& (domain.upperBoundType() == carl::BoundType::INFTY
+					|| domain.upper() != activeDomain.upper()
+					|| domain.isEmpty()))
+				propagateFormula(FormulaT(expansion.mQuotients[0]-Poly(activeDomain.upper()), carl::Relation::LEQ), false);
+		}
+		if (!domain.isEmpty())
+		{
+			if (domain.lowerBoundType() != carl::BoundType::INFTY
+				&& (activeDomain.lowerBoundType() == carl::BoundType::INFTY
+					|| activeDomain.lower() != domain.lower()
+					|| activeDomain.isEmpty()))
+				propagateFormula(FormulaT(expansion.mQuotients[0]-Poly(domain.lower()), carl::Relation::GEQ), true);
+			if (domain.upperBoundType() != carl::BoundType::INFTY
+				&& (activeDomain.upperBoundType() == carl::BoundType::INFTY
+					|| activeDomain.upper() != domain.upper()
+					|| activeDomain.isEmpty()))
+				propagateFormula(FormulaT(expansion.mQuotients[0]-Poly(domain.upper()), carl::Relation::LEQ), true);
+		}
+		
+		// Check if digits need to be encoded
+		if (expansion.mPurifications.empty())
+		{
+			activeDomain = RationalInterval::emptyInterval();
+			domain = RationalInterval::emptyInterval();
+		}
+		
+		// Update case splits
+		for (size_t i = 0; activeDomain != domain; ++i)
+		{
+			if (activeDomain.diameter() <= Settings::maxDomainSize)
+				if (domain.diameter() <= Settings::maxDomainSize)
+				{
+					// Update existing linear encoding
+					RationalInterval intervalA, intervalB;
+					bool assertA{true}, assertB{false};
+					if (!domain.isEmpty())
+						assertB = domain.difference(activeDomain, intervalA, intervalB);
+					if (!assertB && !activeDomain.isEmpty())
+						assertA = !activeDomain.difference(domain, intervalB, intervalA);
+					intervalA.integralPart_assign();
+					intervalB.integralPart_assign();
+					for (Purification *purification : expansion.mPurifications)
+					{
+						propagateLinearCaseSplits(expansion, *purification, intervalA, i, assertA);
+						propagateLinearCaseSplits(expansion, *purification, intervalB, i, assertB);
+					}
+				}
+				else
+				{
+					// Switch from linear to logarithmic encoding
+					if (expansion.mQuotients.size() <= i+1)
+					{
+						expansion.mQuotients.push_back(carl::freshIntegerVariable());
+						expansion.mRemainders.push_back(carl::freshIntegerVariable());
+					}
+					for (Purification *purification : expansion.mPurifications)
+					{
+						while (purification->mSubstitutions.size() <= i+1)
+							purification->mSubstitutions.push_back(carl::freshIntegerVariable());
+						propagateLinearCaseSplits(expansion, *purification, activeDomain, i, false);
+						propagateLogarithmicCaseSplits(expansion, *purification, i, true);
+					}
+					propagateFormula(FormulaT(Poly(expansion.mQuotients[i])-Poly(Settings::expansionBase)*Poly(expansion.mQuotients[i+1])-Poly(expansion.mRemainders[i]), carl::Relation::EQ), true);
+					propagateFormula(FormulaT(Poly(expansion.mRemainders[i]), carl::Relation::GEQ), true);
+					propagateFormula(FormulaT(Poly(expansion.mRemainders[i])-Poly(Settings::expansionBase-1), carl::Relation::LEQ), true);
+				}
+			else if (domain.diameter() <= Settings::maxDomainSize)
+			{
+				// Switch from logarithmic to linear encoding
+				for (Purification *purification : expansion.mPurifications)
+				{
+					propagateLogarithmicCaseSplits(expansion, *purification, i, false);
+					propagateLinearCaseSplits(expansion, *purification, domain, i, true);
+				}
+				propagateFormula(FormulaT(Poly(expansion.mQuotients[i])-Poly(Settings::expansionBase)*Poly(expansion.mQuotients[i+1])-Poly(expansion.mRemainders[i]), carl::Relation::EQ), false);
+				propagateFormula(FormulaT(Poly(expansion.mRemainders[i]), carl::Relation::GEQ), false);
+				propagateFormula(FormulaT(Poly(expansion.mRemainders[i])-Poly(Settings::expansionBase-1), carl::Relation::LEQ), false);
+			}
+			
+			// Calculate domain of next digit
+			if (!activeDomain.isEmpty())
+				if (activeDomain.diameter() <= Settings::maxDomainSize)
+					activeDomain = RationalInterval::emptyInterval();
+				else
+					activeDomain = carl::floor(activeDomain/Rational(Settings::expansionBase));
+			if (!domain.isEmpty())
+				if (domain.diameter() <= Settings::maxDomainSize)
+					domain = RationalInterval::emptyInterval();
+				else
+					domain = carl::floor(domain/Rational(Settings::expansionBase));
+			
+			// Update variable bounds
+			if (!activeDomain.isEmpty())
+			{
+				if (domain.isEmpty() || domain.lower() != activeDomain.lower())
+					propagateFormula(FormulaT(expansion.mQuotients[i+1]-Poly(activeDomain.lower()), carl::Relation::GEQ), false);
+				if (domain.isEmpty() || domain.upper() != activeDomain.upper())
+					propagateFormula(FormulaT(expansion.mQuotients[i+1]-Poly(activeDomain.upper()), carl::Relation::LEQ), false);
+			}
+			if (!domain.isEmpty())
+			{
+				if (activeDomain.isEmpty() || activeDomain.lower() != domain.lower())
+					propagateFormula(FormulaT(expansion.mQuotients[i+1]-Poly(domain.lower()), carl::Relation::GEQ), true);
+				if (activeDomain.isEmpty() || activeDomain.upper() != domain.upper())
+					propagateFormula(FormulaT(expansion.mQuotients[i+1]-Poly(domain.upper()), carl::Relation::LEQ), true);
+			}
+		}
+	}
+	
+	template<class Settings>
+	inline void CSplitModule<Settings>::propagateLinearCaseSplits(const Expansion& expansion, const Purification& purification, const RationalInterval& interval, size_t i, bool assert)
+	{
+		if (!interval.isEmpty())
+			for (Rational alpha = interval.lower(); alpha <= interval.upper(); ++alpha)
+				propagateFormula(
+					FormulaT(
+						carl::FormulaType::IMPLIES,
+						FormulaT(Poly(expansion.mQuotients[i])-Poly(alpha), carl::Relation::EQ),
+						FormulaT(Poly(purification.mSubstitutions[i])-Poly(alpha)*Poly(purification.mReduction), carl::Relation::EQ)
+					),
+					assert
+				);
+	}
+	
+	template<class Settings>
+	inline void CSplitModule<Settings>::propagateLogarithmicCaseSplits(const Expansion& expansion, const Purification& purification, size_t i, bool assert)
+	{
+		for (Rational alpha = 0; alpha < Settings::expansionBase; ++alpha)
+			propagateFormula(
+				FormulaT(
+					carl::FormulaType::IMPLIES,
+					FormulaT(Poly(expansion.mRemainders[i])-Poly(alpha), carl::Relation::EQ),
+					FormulaT(Poly(purification.mSubstitutions[i])-Poly(Settings::expansionBase)*Poly(purification.mSubstitutions[i+1])-Poly(alpha)*Poly(purification.mReduction), carl::Relation::EQ)
+				),
+				assert
+			);
+	}
+
+	
+	
+	
+	
+	
+	/*
+	template<class Settings>
+	void CSplitModule<Settings>::changeActiveDomain(Expansion& expansion, RationalInterval&& domain)
+	{
+		std::cout << "CHANGEACTIVEDOMAIN CALLED" << std::endl;
 		// Update variable bounds
 		if (!expansion.mActiveDomain.isEmpty())
 		{
@@ -677,15 +871,21 @@ namespace smtrat
 				}
 			}
 		}
-	}
+	}*/
 	
 	template<class Settings>
 	inline void CSplitModule<Settings>::propagateFormula(const FormulaT& formula, bool assert)
 	{
 		if (assert)
+		{
+			//std::cout << "ASSERTING: " << formula << std::endl;
 			mLRAModule.add(formula);
+		}
 		else
-			mLRAModule.remove(find(mLRAModule.formulaBegin(), mLRAModule.formulaEnd(), formula));
+		{
+			//std::cout << "REMOVING: " << formula << std::endl;
+			mLRAModule.remove(std::find(mLRAModule.formulaBegin(), mLRAModule.formulaEnd(), formula));
+		}
 	}
 }
 

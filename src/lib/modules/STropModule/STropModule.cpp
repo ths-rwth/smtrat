@@ -297,7 +297,7 @@ namespace smtrat
 					if (separator.mActiveDirection)
 						propagateFormula(createLinearization(separator), false);
 					separator.mActiveDirection = direction;
-					if (direction)
+					if (separator.mActiveDirection)
 						propagateFormula(createLinearization(separator), true);
 				}
 			}

@@ -12,13 +12,13 @@
 
 namespace smtrat
 {
-	enum class SeparatorType {STRICT, WEAK};
+	enum class SeparatorType {STRICT = 0, WEAK = 1};
 	
 	struct STropSettings1
 	{
 		/// Name of the Module
 		static constexpr auto moduleName = "STropModule<STropSettings1>";
 		/// Type of linear separating hyperplane to search for
-		static constexpr SeparatorType separatorType = SeparatorType::STRICT;
+		static constexpr SeparatorType separatorType = SeparatorType::WEAK;
 	};
 }
