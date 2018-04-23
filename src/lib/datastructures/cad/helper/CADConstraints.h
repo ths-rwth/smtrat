@@ -93,7 +93,8 @@ public:
 			id = mConstraintIts.size();
 			mConstraintIts.push_back(mConstraintMap.end());
 			mConstraintLevels.emplace_back(0);
-                        
+                       
+		       	mActiveConstraintMap.emplace(c, id);	
                         auto r = mConstraintMap.emplace(c, id);
                         assert(r.second);
                         mConstraintIts[id] = r.first;
@@ -101,6 +102,7 @@ public:
                         auto it = mConstraintMap.find(c);
 			if (it != mConstraintMap.end()) {
 				id = it->second;
+				mActiveConstraintMap.emplace(c, id);
 				mConstraintIts[id] = it;
 			} else {
 				id = mIDPool.get();
@@ -108,6 +110,7 @@ public:
 					mConstraintIts.resize(id+1, mConstraintMap.end());
 					mConstraintLevels.resize(id+1);
 				}
+				mActiveConstraintMap.emplace(c, id);
 				auto r = mConstraintMap.emplace(c, id);
 				assert(r.second);
 				mConstraintIts[id] = r.first;
@@ -118,11 +121,11 @@ public:
 				mConstraintIts.resize(id+1, mConstraintMap.end());
 				mConstraintLevels.resize(id+1);
 			}
+			mActiveConstraintMap.emplace(c, id);
                         auto r = mConstraintMap.emplace(c, id);
                         assert(r.second);
                         mConstraintIts[id] = r.first;
 		}
-		mActiveConstraintMap.emplace(c, id);
 		auto vars = c.variables();
 		for (std::size_t level = mVariables.size(); level > 0; level--) {
 			vars.erase(mVariables[level - 1]);
@@ -180,6 +183,7 @@ public:
                 } else if(BT == Backtracking::HIDE) {
                         SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Removing " << id << " in unordered mode");
 			callCallback(mRemoveCallback, c, id, isBound);
+			mActiveConstraintMap.erase(it->first);
 			mConstraintIts[id] = mConstraintMap.end();
 		} else {
 			SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Removing " << id << " in unordered mode");
@@ -245,7 +249,6 @@ std::ostream& operator<<(std::ostream& os, const CADConstraints<BT>& cc) {
 		os << "\t" << c->second << ": " << c->first << std::endl;
 	}
 	assert(long(cc.mActiveConstraintMap.size()) == std::count_if(cc.mConstraintIts.begin(), cc.mConstraintIts.end(), [&cc](auto it){ return it != cc.mConstraintMap.end(); }));
-	assert(long(cc.mConstraintMap.size()) >= std::count_if(cc.mConstraintIts.begin(), cc.mConstraintIts.end(), [&cc](auto it){ return it != cc.mConstraintMap.end(); }));
 	return os;
 }
 	

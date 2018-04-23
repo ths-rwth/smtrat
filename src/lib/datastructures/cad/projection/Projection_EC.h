@@ -271,11 +271,15 @@ namespace full {
 						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purging " << id << " from level " << lvl);
 						remove.set(id);
                                                 // remove inactive polnomials from LiftingQueue 
-                                                mLiftingQueues[lvl - 1].erase(id);
+                                                if(lvl > 0) {
+							mLiftingQueues[lvl - 1].erase(id);
+						}
 					} 
 				}
 				SMTRAT_LOG_TRACE("smtrat.cad.projection", "Calling callback for level " << level << ", removed [" << remove << "]");
-				callRemoveCallback(lvl, remove);
+				if(lvl > 0) {
+					callRemoveCallback(lvl, remove);
+				}
                                 // deactivate polynomials in following levels due to the inactive polynomials in lvl
 				for (std::size_t l = lvl+1; l <= dim(); l++) {
 					for (const auto& it: mPolynomialIDs[l]) {
