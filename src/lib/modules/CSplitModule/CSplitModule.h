@@ -75,8 +75,7 @@ namespace smtrat
 				const Poly mSource, mTarget; // TODO: Speichere MonicPolynomials statt polynomials
 				const std::vector<Purification *> mPurifications;
 				const bool mHasRealVariables;
-				std::set<carl::Relation> mRelations;
-				boost::optional<carl::Relation> mActiveRelation;
+				std::unordered_set<carl::Relation> mRelations;
 				
 				Linearization(const Poly& source, Poly&& target, std::vector<Purification *>&& purifications, bool hasRealVariables)
 					: mSource(source)
@@ -88,9 +87,9 @@ namespace smtrat
 			
 			Bimap<Linearization, const Poly, &Linearization::mSource, const Poly, &Linearization::mTarget> mLinearizations;
 			
-			std::set<Linearization *> mChangedLinearizations;
-			
 			vb::VariableBounds<FormulaT> mVariableBounds;
+			
+			Model mLRAModel;
 			
 			// Stores whether the last consistency check was done by the backends
 			bool mCheckedWithBackends;

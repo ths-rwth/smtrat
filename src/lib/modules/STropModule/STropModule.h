@@ -46,7 +46,7 @@ namespace smtrat
 			};
 			
 			/// Maps a variable to the components of the moment function
-			std::map<carl::Variable, Moment> mMoments;
+			std::unordered_map<carl::Variable, Moment> mMoments;
 			
 			/**
 			 * Represents a term of an original constraint and assigns
@@ -98,9 +98,9 @@ namespace smtrat
 			};
 			
 			/// Maps a normalized left hand side of a constraint to its separator
-			std::map<Poly, Separator> mSeparators;
+			std::unordered_map<Poly, Separator> mSeparators;
 			/// Stores the Separators that were updated since the last check call
-			std::set<Separator *> mChangedSeparators;
+			std::unordered_set<Separator *> mChangedSeparators;
 			/// Counts the number of relation pairs that prohibit an application of this method
 			size_t mRelationalConflicts;
 			/// Stores the sets of separators that were found to be undecidable by the LRA solver
