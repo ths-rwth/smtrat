@@ -512,9 +512,9 @@ namespace full {
                         mInactiveQueue(ProjectionCandidateComparator([&](std::size_t level, std::size_t id){ return getPolynomialById(level, id); })),
 			mCanBePurged([this](std::size_t level, std::size_t id){
 				return canBePurgedByBounds(getPolynomialById(level, id));
-			}),
+			})
 #ifdef SMTRAT_DEVOPTION_Statistics
-                        mStatistics("CAD")
+                        ,mStatistics("CAD")
 #endif
 		{}
 		void reset() {
