@@ -1,11 +1,22 @@
-#ifndef BIMAP_HPP
-#define BIMAP_HPP
+/**
+ * @file CSplitModule.h
+ * @author Ömer Sali <oemer.sali@rwth-aachen.de>
+ *
+ * @version 2018-04-04
+ * Created on 2017-11-01.
+ */
+
+#pragma once
 
 #include <forward_list>
 #include <set>
 
 namespace smtrat
 {
+	/**
+	 * Container that stores expensive to construct objects and allows the
+	 * fast lookup with respect to two independent keys within the objects.
+	 */
 	template<class Class, typename FirstKeyType, FirstKeyType Class::*FirstKeyName, typename SecondKeyType, SecondKeyType Class::*SecondKeyName>
 	class Bimap
 	{
@@ -15,6 +26,7 @@ namespace smtrat
 			typedef typename Data::const_iterator ConstIterator;
 		
 		private:
+			/// Comparator that performs a heterogeneous lookup on the first key
 			struct FirstCompare
 			{
 				using is_transparent = void;
@@ -35,6 +47,7 @@ namespace smtrat
 				}
 			};
 			
+			/// Comparator that performs a heterogeneous lookup on the second key
 			struct SecondCompare
 			{
 				using is_transparent = void;
@@ -118,5 +131,3 @@ namespace smtrat
 			}
 	};
 }
-
-#endif

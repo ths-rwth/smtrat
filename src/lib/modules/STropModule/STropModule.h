@@ -163,15 +163,15 @@ namespace smtrat
 			
 			/**
 			 * Checks the received formula for consistency.
-			 * @return True,	if the received formula is satisfiable;
-			 *		   False,   if the received formula is not satisfiable;
-			 *		   Unknown, otherwise.
+			 * @return SAT,		if the received formula is satisfiable;
+			 *		   UNSAT,   if the received formula is not satisfiable;
+			 *		   UNKNOWN, otherwise.
 			 */
 			Answer checkCore();
 		
 		private:
 			/**
-			 * Creates the linearization for the given separator with the active relation
+			 * Creates the linearization for the given separator with the active relation.
 			 * @param separator The separator object that stores the construction information.
 			 * @return Formula that is satisfiable iff such a separating hyperplane exists.
 			 */
@@ -183,7 +183,7 @@ namespace smtrat
 			 * weak separator is searched, the corresponding rating is included.
 			 * @param separator The separator object that stores the construction information.
 			 * @param negated True, if the formula for the negated polynomial shall be constructed.
-			 *				False, if the formula for the original polynomial shall be constructed.
+			 * 				  False, if the formula for the original polynomial shall be constructed.
 			 * @return Formula that is satisfiable iff such a separating hyperplane exists.
 			 */
 			FormulaT createSeparator(const Separator& separator, bool negated);
@@ -191,8 +191,8 @@ namespace smtrat
 			/**
 			 * Asserts/Removes the given formula to/from the LRA solver.
 			 * @param formula The formula to assert/remove to the LRA solver.
-			 * @param assert True, if formula shall be asserted.
-			 *			   False, if formula shall be removed.
+			 * @param assert True, if formula shall be asserted;
+			 * 				 False, if formula shall be removed.
 			 */
 			inline void propagateFormula(const FormulaT& formula, bool assert);
 	};
