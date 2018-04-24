@@ -288,6 +288,7 @@ namespace smtrat
 		for (auto purificationIter = mPurifications.begin(); purificationIter != mPurifications.end(); ++purificationIter)
 		{
 			Purification& purification{purificationIter->second};
+			purification.mActive = false;
 			if (purification.mUsage)
 			{
 				carl::Monomial::Arg monomial{purificationIter->first};
@@ -317,7 +318,7 @@ namespace smtrat
 				
 				// Find locally optimal reduction for monomial
 				const auto isReducible = [&](const auto& purificationsEntry) {
-					return purificationsEntry.second.mUsage
+					return purificationsEntry.second.mActive
 						&& monomial->divisible(purificationsEntry.first)
 						&& std::any_of(
 							maxVariables.begin(),
@@ -342,7 +343,8 @@ namespace smtrat
 					Expansion& expansion{mExpansions.firstAt(variable)};
 					for (carl::exponent exponent = 1; exponent <= exponentPair.second; ++exponent)
 					{
-						expansion.mPurifications.emplace(&hintIter->second);
+						hintIter->second.mActive = true;
+						expansion.mPurifications.emplace_back(&hintIter->second);
 						monomial->divide(variable, monomial);
 						if (monomial->isAtMostLinear())
 							hintIter->second.mReduction = mExpansions.firstAt(monomial->getSingleVariable()).mQuotients[0];

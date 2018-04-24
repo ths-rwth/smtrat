@@ -32,10 +32,12 @@ namespace smtrat
 				std::vector<carl::Variable> mSubstitutions;
 				carl::Variable mReduction;
 				size_t mUsage;
+				bool mActive;
 				
 				Purification()
 					: mReduction(carl::Variable::NO_VARIABLE)
 					, mUsage(0)
+					, mActive(false)
 				{
 					mSubstitutions.emplace_back(carl::freshIntegerVariable());
 				}
@@ -52,7 +54,7 @@ namespace smtrat
 				DomainSize mMaximalDomainSize;
 				RationalInterval mMaximalDomain, mActiveDomain;
 				std::vector<carl::Variable> mQuotients, mRemainders;
-				std::unordered_set<Purification *> mPurifications;
+				std::vector<Purification *> mPurifications;
 				bool mChangedBounds;
 				
 				Expansion(const carl::Variable& source)
