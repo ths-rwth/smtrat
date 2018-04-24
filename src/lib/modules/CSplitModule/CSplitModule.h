@@ -27,6 +27,10 @@ namespace smtrat
 #ifdef SMTRAT_DEVOPTION_Statistics
 			CSplitStatistics mStatistics;
 #endif
+			/**
+			 * Represents the substitution variables of a nonlinear monomial
+			 * in a positional notation to the basis Settings::expansionBase.
+			 */
 			struct Purification
 			{
 				std::vector<carl::Variable> mSubstitutions;
@@ -35,7 +39,8 @@ namespace smtrat
 				bool mActive;
 				
 				Purification()
-					: mReduction(carl::Variable::NO_VARIABLE)
+					: mSubstitutions()
+					, mReduction(carl::Variable::NO_VARIABLE)
 					, mUsage(0)
 					, mActive(false)
 				{
@@ -45,8 +50,16 @@ namespace smtrat
 			
 			std::map<carl::Monomial::Arg, Purification> mPurifications;
 			
+			/// Subdivides the size of a variable domain into three classes:
+			/// - SMALL, 	 if domain size <= Settings::maxDomainSize
+			/// - LARGE, 	 if Settings::maxDomainSize < domain size < infinity
+			/// - UNBOUNDED, if domain size = infinity
 			enum DomainSize{SMALL = 0, LARGE = 1, UNBOUNDED = 2};
 			
+			/**
+			 * Represents the quotients and remainders of a variable in
+			 * a positional notation to the basis Settings::expansionBase.
+			 */
 			struct Expansion
 			{
 				const carl::Variable mSource, mTarget;
@@ -58,9 +71,9 @@ namespace smtrat
 				bool mChangedBounds;
 				
 				Expansion(const carl::Variable& source)
-					: mNucleus(ZERO_RATIONAL)
-					, mSource(source)
+					: mSource(source)
 					, mTarget(source.type() == carl::VariableType::VT_INT ? source : carl::freshIntegerVariable())
+					, mNucleus(ZERO_RATIONAL)
 					, mMaximalDomainSize(DomainSize::UNBOUNDED)
 					, mMaximalDomain(RationalInterval::unboundedInterval())
 					, mActiveDomain(RationalInterval::emptyInterval())
@@ -72,9 +85,14 @@ namespace smtrat
 			
 			Bimap<Expansion, const carl::Variable, &Expansion::mSource, const carl::Variable, &Expansion::mTarget> mExpansions;
 			
+			/**
+			 * Represents the class of all original constraints with the same
+			 * left hand side after a normalization. Here, the set of all received
+			 * relations of constraints with the same left hand side is stored.
+			 */
 			struct Linearization
 			{
-				const Poly mSource, mTarget; // TODO: Speichere MonicPolynomials statt polynomials
+				const Poly mSource, mTarget;
 				const std::vector<Purification *> mPurifications;
 				const bool mHasRealVariables;
 				std::unordered_set<carl::Relation> mRelations;
@@ -89,15 +107,15 @@ namespace smtrat
 			
 			Bimap<Linearization, const Poly, &Linearization::mSource, const Poly, &Linearization::mTarget> mLinearizations;
 			
+			/// Helper class that extracts the variable domains
 			vb::VariableBounds<FormulaT> mVariableBounds;
-			
+			/// Stores the last model for the linearization that was found by the LRA solver
 			Model mLRAModel;
-			
-			// Stores whether the last consistency check was done by the backends
+			/// Stores whether the last consistency check was done by the backends
 			bool mCheckedWithBackends;
 			
 			/**
-			 * Linear arithmetic module to call for the linearized formula
+			 * Linear arithmetic module to call for the linearized formula.
 			 */
 			struct LAModule : public Manager
 			{
@@ -161,8 +179,5 @@ namespace smtrat
 			Answer analyzeConflict(const FormulaSetT& LRAConflict);
 			void changeActiveDomain(Expansion& expansion, RationalInterval&& domain);
 			inline void propagateFormula(const FormulaT& formula, bool assert);
-			
-			inline void propagateLinearCaseSplits(const Expansion& expansion, const Purification& purification, const RationalInterval& interval, size_t i, bool assert);
-			inline void propagateLogarithmicCaseSplits(const Expansion& expansion, const Purification& purification, size_t i, bool assert);
 	};
 }

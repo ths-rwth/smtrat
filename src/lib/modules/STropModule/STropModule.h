@@ -28,7 +28,7 @@ namespace smtrat
 			/**
 			 * Represents the normal vector component and the sign variable
 			 * assigned to a variable in an original constraint.
-			 **/
+			 */
 			struct Moment
 			{
 				/// Normal vector component of the separating hyperplane
@@ -93,6 +93,7 @@ namespace smtrat
 				Separator(const Poly& normalization)
 					: mBias(carl::freshRealVariable())
 					, mVertices(normalization.begin(), normalization.end())
+					, mRelations()
 					, mActiveDirection(boost::none)
 				{}
 			};
@@ -110,7 +111,7 @@ namespace smtrat
 			bool mCheckedWithBackends;
 			
 			/**
-			 * Linear arithmetic module to call for the linearized formula
+			 * Linear arithmetic module to call for the linearized formula.
 			 */
 			struct LAModule : public Manager
 			{

@@ -13,7 +13,11 @@ namespace smtrat
 	template<class Settings>
 	STropModule<Settings>::STropModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager)
 		: Module(_formula, _conditionals, _manager)
+		, mMoments()
+		, mSeparators()
+		, mChangedSeparators()
 		, mRelationalConflicts(0)
+		, mLinearizationConflicts()
 		, mCheckedWithBackends(false)
 #ifdef SMTRAT_DEVOPTION_Statistics
 		, mStatistics(Settings::moduleName)
