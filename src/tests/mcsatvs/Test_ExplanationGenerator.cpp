@@ -1,5 +1,4 @@
-#include <boost/test/included/unit_test.hpp> // TODO this is an ugly workaround
-//#include <boost/test/unit_test.hpp>
+#include <boost/test/unit_test.hpp>
 
 
 #include <lib/datastructures/mcsat/vs/ExplanationGenerator.h>
