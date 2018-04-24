@@ -1,8 +1,8 @@
+#pragma once
+
 #include "../../../Common.h"
 #include <carl/util/Common.h>
-
 #include "../../../modules/VSModule/Substitute.h"
-
 
 namespace smtrat {
 namespace mcsat {
@@ -12,7 +12,7 @@ namespace helper {
     /**
      * Converts a DisjunctionOfConstraintConjunctions to a regular Formula.
      */
-    FormulaT doccToFormula(const ::vs::DisjunctionOfConstraintConjunctions& docc) {
+    inline FormulaT doccToFormula(const ::vs::DisjunctionOfConstraintConjunctions& docc) {
         FormulasT constraintConjunctions;
         for (auto conjunction = docc.begin(); conjunction != docc.end(); ++conjunction) {
             FormulasT constraintConjunction;
@@ -29,7 +29,7 @@ namespace helper {
      * 
      * Kind of a generator function. Passes generated zeros to a callback function to avoid copying.
      */
-    bool generateZeros(const ConstraintT& constraint, const carl::Variable& eliminationVar, std::function<void(SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions)> yield_result) {
+    static bool generateZeros(const ConstraintT& constraint, const carl::Variable& eliminationVar, std::function<void(SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions)> yield_result) {
         // TODO clean this function up, reduce cases
 
         if (!constraint.hasVariable(eliminationVar)) {
@@ -153,7 +153,7 @@ namespace helper {
      * Adds a new substitution to the given list of substitutions or merges it to an existing one.
      * Returns true if a new substitution was created.
      */
-    bool addOrMergeTestCandidate(std::vector<::vs::Substitution>& results, const ::vs::Substitution& newSubstitution) {
+    static bool addOrMergeTestCandidate(std::vector<::vs::Substitution>& results, const ::vs::Substitution& newSubstitution) {
         if(!(std::find(results.begin(), results.end(), newSubstitution) != results.end())) {
             results.push_back(newSubstitution);
             return true;
@@ -165,7 +165,7 @@ namespace helper {
      * Generate all test candidates according to "vanilla" virtual substitution.
      * Returns false iff VS is not applicable.
      */
-    bool generateTestCandidates( std::vector<::vs::Substitution>& results, const carl::Variable& eliminationVar, const std::vector<const ConstraintT*>& constraints) {
+    static bool generateTestCandidates( std::vector<::vs::Substitution>& results, const carl::Variable& eliminationVar, const std::vector<const ConstraintT*>& constraints) {
         // add minus infinity
         ::vs::Substitution sub (eliminationVar, ::vs::Substitution::MINUS_INFINITY, carl::PointerSet<::vs::Condition>());
         results.push_back(std::move(sub));

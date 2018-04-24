@@ -1,10 +1,11 @@
 #pragma once
 
-#include "../../../Common.h"
+// #include "../../../Common.h"
+// #include <carl/util/Common.h>
 
 #include "VSHelper.h"
 
-#include <carl/util/Common.h>
+
 
 
 namespace smtrat {
