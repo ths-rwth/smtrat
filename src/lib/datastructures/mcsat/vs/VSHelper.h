@@ -30,6 +30,8 @@ namespace helper {
      * Kind of a generator function. Passes generated zeros to a callback function to avoid copying.
      */
     bool generateZeros(const ConstraintT& constraint, const carl::Variable& eliminationVar, std::function<void(SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions)> yield_result) {
+        // TODO clean this function up, reduce cases
+
         if (!constraint.hasVariable(eliminationVar)) {
             return true;
         }

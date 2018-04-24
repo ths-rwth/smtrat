@@ -69,7 +69,8 @@ private:
 public:
 	boost::optional<FormulaT> getExplanation(const FormulaT& f) const {
 		// this module only explains conflicts
-		assert( f != FormulaT( ConstraintT( false ) ) );
+		// assert( f == FormulaT( ConstraintT( false ) ) );
+		assert(f == FormulaT(carl::FormulaType::FALSE));
         return generateExplanation();
 	}
 };
