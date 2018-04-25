@@ -115,6 +115,7 @@ namespace full {
                 bool isPurged(std::size_t level, std::size_t id) {
                         assert(level > 0 && level <= dim());
                         SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking whether " << level << "/" << id << " is purged.");
+                        SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Current bounds are " << mBounds[level]);
                         if (mBounds[level].test(id)) {
                                 SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Do not purge as " << level << "/" << id << " is a bound.");
                                 return false;
@@ -304,7 +305,9 @@ namespace full {
 						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purging " << id << " from level " << lvl);
 						activate.set(id);
                                                 // add active polynomials to LiftingQueue
-                                                mLiftingQueues[lvl - 1].insert(id);
+                                                if(lvl > 0) {
+							mLiftingQueues[lvl - 1].insert(id);
+						}
 					} 
 				}
                                 // activate polynomials in following levels due to the active polynomials in lvl
@@ -407,6 +410,11 @@ namespace full {
 			auto it = mPolynomialIDs[level].find(p);
 			if (it != mPolynomialIDs[level].end()) {
 				assert(mPolynomials[level][it->second]); 
+				if (Settings::simplifyProjectionByBounds && setBound) {
+                                assert(level > 0 && level <= dim());
+                                SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Setting " << level << "/" << it->second << " is a bound.");
+                                mBounds[level].set(it->second);
+				}
                                 bool activated = active(level,it->second);
 				mPolynomials[level][it->second]->second += origin;
                                 // in case p was inactive but becomes active by new BaseType activate successors
