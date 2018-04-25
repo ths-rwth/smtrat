@@ -359,7 +359,7 @@ namespace full {
                         while((level < dim()) && canBeForwarded(level, p.switchVariable(var(level)))){
                                 level += 1;
                         }
-                        if(mPolynomialIDs[level].find(p.switchVariable(var(level))) != mPolynomialIDs[level].end()) {
+                        if(mPolynomialIDs[level].find(p.switchVariable(var(level))) == mPolynomialIDs[level].end()) {
 				return;
 			}
                         std::size_t id = mPolynomialIDs[level].find(p.switchVariable(var(level)))->second;
