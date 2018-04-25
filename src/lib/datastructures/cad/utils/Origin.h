@@ -40,6 +40,7 @@ public:
 			return second < bt.second;
 		}
 		friend std::ostream& operator<<(std::ostream& os, const BaseType& bt) {
+			if (!bt.f_act || !bt.s_act || !bt.e_act) os << "!";
 			return os << "(" << bt.first << "," << bt.second << ")@" << bt.level;
 		}
 	};
@@ -109,7 +110,8 @@ public:
                         if(it.level == level) {
                                 if(rhs.test(it.first)) {
                                         it.f_act = true;
-                                } else if(rhs.test(it.second)) {
+                                }
+								if(rhs.test(it.second)) {
                                         it.s_act = true;
                                 }
                         }

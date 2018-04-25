@@ -302,7 +302,7 @@ namespace full {
 					std::size_t id = it.second;
 					assert(mPolynomials[lvl][id]);
 					if (active(lvl, id)) {
-						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purging " << id << " from level " << lvl);
+						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> " << id << " from level " << lvl << " is active");
 						activate.set(id);
                                                 // add active polynomials to LiftingQueue
                                                 if(lvl > 0) {
@@ -314,6 +314,7 @@ namespace full {
 				for (std::size_t l = lvl+1; l <= dim(); l++) {
 					for (const auto& it: mPolynomialIDs[l]) {
 						assert(mPolynomials[l][it.second]);
+						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Activating origins for " << it.second << " from level " << lvl << " with " << activate);
 						mPolynomials[l][it.second]->second.activate(lvl, activate);
 					}
 				}
@@ -517,10 +518,10 @@ namespace full {
 		Projection(const Constraints& c):
 			Super(c),
 			mProjectionQueue(ProjectionCandidateComparator([&](std::size_t level, std::size_t id){ return getPolynomialById(level, id); })),
-                        mInactiveQueue(ProjectionCandidateComparator([&](std::size_t level, std::size_t id){ return getPolynomialById(level, id); })),
 			mCanBePurged([this](std::size_t level, std::size_t id){
 				return canBePurgedByBounds(getPolynomialById(level, id));
-			})
+			}),
+			mInactiveQueue(ProjectionCandidateComparator([&](std::size_t level, std::size_t id){ return getPolynomialById(level, id); }))
 #ifdef SMTRAT_DEVOPTION_Statistics
                         ,mStatistics("CAD")
 #endif
@@ -546,7 +547,7 @@ namespace full {
                         mRestricted.clear();
                         mRestricted.resize(dim()+ 1);
                         mRestricted[0].first = true;
-                        for(int i = 1; i <= dim(); i++) {
+                        for(std::size_t i = 1; i <= dim(); i++) {
                             mRestricted[i].first = false;
                         }
                         updateInactiveQueue = false;
