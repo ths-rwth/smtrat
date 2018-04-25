@@ -3,8 +3,9 @@
 
 namespace smtrat {
 namespace parser {
+namespace uninterpreted {
 
-	bool UninterpretedTheory::convertTerm(const types::TermType& term, types::UninterpretedTheory::TermType& result) {
+	inline bool convertTerm(const types::TermType& term, types::UninterpretedTheory::TermType& result) {
 		if (boost::get<carl::UVariable>(&term) != nullptr) {
 			result = boost::get<carl::UVariable>(term);
 			return true;
@@ -16,7 +17,7 @@ namespace parser {
 		}
 	}
 
-	bool UninterpretedTheory::convertArguments(const std::vector<types::TermType>& arguments, std::vector<types::UninterpretedTheory::TermType>& result, TheoryError& errors) {
+	inline bool convertArguments(const std::vector<types::TermType>& arguments, std::vector<types::UninterpretedTheory::TermType>& result, TheoryError& errors) {
 		result.clear();
 		for (std::size_t i = 0; i < arguments.size(); i++) {
 			types::UninterpretedTheory::TermType res;
@@ -28,6 +29,23 @@ namespace parser {
 		}
 		return true;
 	}
+	
+	template<bool negated>
+	struct EqualityGenerator: public boost::static_visitor<FormulaT> {
+		FormulaT operator()(const carl::UVariable& lhs, const carl::UVariable& rhs) {
+			return FormulaT(lhs, rhs, negated);
+		}
+		FormulaT operator()(const carl::UVariable& lhs, const carl::UFInstance& rhs) {
+			return FormulaT(lhs, rhs, negated);
+		}
+		FormulaT operator()(const carl::UFInstance& lhs, const carl::UVariable& rhs) {
+			return FormulaT(lhs, rhs, negated);
+		}
+		FormulaT operator()(const carl::UFInstance& lhs, const carl::UFInstance& rhs) {
+			return FormulaT(lhs, rhs, negated);
+		}
+	};
+}
 
 	UninterpretedTheory::UninterpretedTheory(ParserState* state):
 		AbstractTheory(state), 
@@ -56,11 +74,11 @@ namespace parser {
 	bool UninterpretedTheory::handleITE(const FormulaT&, const types::TermType& thenterm, const types::TermType& elseterm, types::TermType&, TheoryError& errors) {
 		types::UninterpretedTheory::TermType thenf;
 		types::UninterpretedTheory::TermType elsef;
-		if (!convertTerm(thenterm, thenf)) {
+		if (!uninterpreted::convertTerm(thenterm, thenf)) {
 			errors.next() << "Failed to construct ITE, the then-term \"" << thenterm << "\" is unsupported.";
 			return false;
 		}
-		if (!convertTerm(elseterm, elsef)) {
+		if (!uninterpreted::convertTerm(elseterm, elsef)) {
 			errors.next() << "Failed to construct ITE, the else-term \"" << elseterm << "\" is unsupported.";
 			return false;
 		}
@@ -121,8 +139,8 @@ namespace parser {
 	}
 	bool UninterpretedTheory::handleDistinct(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
 		std::vector<types::UninterpretedTheory::TermType> args;
-		if (!convertArguments(arguments, args, errors)) return false;
-		EqualityGenerator<true> eg;
+		if (!uninterpreted::convertArguments(arguments, args, errors)) return false;
+		uninterpreted::EqualityGenerator<true> eg;
 		result = expandDistinct(args, [&eg](const types::UninterpretedTheory::TermType& a, const types::UninterpretedTheory::TermType& b){ 
 			return boost::apply_visitor(eg, a, b); 
 		});
@@ -136,9 +154,9 @@ namespace parser {
 		}
 		if (identifier.symbol == "=") {
 			std::vector<types::UninterpretedTheory::TermType> args;
-			if (!convertArguments(arguments, args, errors)) return false;
+			if (!uninterpreted::convertArguments(arguments, args, errors)) return false;
 			FormulasT subformulas;
-			EqualityGenerator<false> eg;
+			uninterpreted::EqualityGenerator<false> eg;
 			for (std::size_t i = 0; i < args.size() - 1; i++) {
 				subformulas.push_back(boost::apply_visitor(eg, args[i], args[i+1]));
 			}

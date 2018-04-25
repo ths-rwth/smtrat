@@ -202,7 +202,7 @@ namespace smtrat
                 #endif
                 Answer backendAnswer = runBackends();
                 #ifdef DEBUG_BVMODULE
-                std::cout << " --> " << ANSWER_TO_STRING(backendAnswer) << std::endl << std::endl;
+                std::cout << " --> " << backendAnswer << std::endl << std::endl;
                 #endif
                 switch( backendAnswer )
                 {

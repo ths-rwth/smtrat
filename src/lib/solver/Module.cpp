@@ -929,7 +929,7 @@ namespace smtrat
             if( !anAnswerFound() )
                 mFoundAnswer.back()->store( true );
         }
-        SMTRAT_LOG_INFO("smtrat.module", __func__ << " of " << moduleName() << " (" << mId << ") is " << ANSWER_TO_STRING( _answer ));
+        SMTRAT_LOG_INFO("smtrat.module", __func__ << " of " << moduleName() << " (" << mId << ") is " << _answer);
         if( _answer == SAT || _answer == UNKNOWN )
         {
             mModelComputed = false;

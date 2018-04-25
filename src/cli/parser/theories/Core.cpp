@@ -1,8 +1,40 @@
 #include "Core.h"
 #include "ParserState.h"
 
+#include <boost/algorithm/string/predicate.hpp>
+
 namespace smtrat {
 namespace parser {
+namespace core {
+	inline bool convertTerm(const types::TermType& term, FormulaT& result) {
+		if (boost::get<FormulaT>(&term) != nullptr) {
+			result = boost::get<FormulaT>(term);
+			return true;
+		} else if (boost::get<carl::Variable>(&term) != nullptr) {
+			if (boost::get<carl::Variable>(term).type() == carl::VariableType::VT_BOOL) {
+				result = FormulaT(boost::get<carl::Variable>(term));
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
+	}
+
+	inline bool convertArguments(const std::vector<types::TermType>& arguments, std::vector<FormulaT>& result, TheoryError& errors) {
+		result.clear();
+		for (std::size_t i = 0; i < arguments.size(); i++) {
+			FormulaT res;
+			if (!convertTerm(arguments[i], res)) {
+				errors.next() << "Arguments are expected to be formulas, but argument " << (i+1) << " is not: \"" << arguments[i] << "\".";
+				return false;
+			}
+			result.push_back(res);
+		}
+		return true;
+	}
+}
 
 	struct CoreInstantiator: public FunctionInstantiator {
 		bool operator()(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) const {
@@ -49,35 +81,6 @@ namespace parser {
 		constants.add("false", types::ConstType(FormulaT(carl::FormulaType::FALSE)));
 	}
 
-	bool CoreTheory::convertTerm(const types::TermType& term, FormulaT& result) {
-		if (boost::get<FormulaT>(&term) != nullptr) {
-			result = boost::get<FormulaT>(term);
-			return true;
-		} else if (boost::get<carl::Variable>(&term) != nullptr) {
-			if (boost::get<carl::Variable>(term).type() == carl::VariableType::VT_BOOL) {
-				result = FormulaT(boost::get<carl::Variable>(term));
-				return true;
-			} else {
-				return false;
-			}
-		} else {
-			return false;
-		}
-	}
-
-	bool CoreTheory::convertArguments(const std::vector<types::TermType>& arguments, std::vector<FormulaT>& result, TheoryError& errors) {
-		result.clear();
-		for (std::size_t i = 0; i < arguments.size(); i++) {
-			FormulaT res;
-			if (!convertTerm(arguments[i], res)) {
-				errors.next() << "Arguments are expected to be formulas, but argument " << (i+1) << " is not: \"" << arguments[i] << "\".";
-				return false;
-			}
-			result.push_back(res);
-		}
-		return true;
-	}
-
 	CoreTheory::CoreTheory(ParserState* state): AbstractTheory(state) {
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		sm.addInterpretedSort("Bool", carl::VariableType::VT_BOOL);
@@ -110,11 +113,11 @@ namespace parser {
 	bool CoreTheory::handleITE(const FormulaT& ifterm, const types::TermType& thenterm, const types::TermType& elseterm, types::TermType& result, TheoryError& errors) {
 		FormulaT thenf;
 		FormulaT elsef;
-		if (!convertTerm(thenterm, thenf)) {
+		if (!core::convertTerm(thenterm, thenf)) {
 			errors.next() << "Failed to construct ITE, the then-term \"" << thenterm << "\" is unsupported.";
 			return false;
 		}
-		if (!convertTerm(elseterm, elsef)) {
+		if (!core::convertTerm(elseterm, elsef)) {
 			errors.next() << "Failed to construct ITE, the else-term \"" << elseterm << "\" is unsupported.";
 			return false;
 		}
@@ -123,7 +126,7 @@ namespace parser {
 	}
 	bool CoreTheory::handleDistinct(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
 		std::vector<FormulaT> args;
-		if (!convertArguments(arguments, args, errors)) return false;
+		if (!core::convertArguments(arguments, args, errors)) return false;
 		result = expandDistinct(args, [](const FormulaT& a, const FormulaT& b){
 			return FormulaT(carl::FormulaType::XOR, {a, b});
 		});
@@ -132,7 +135,7 @@ namespace parser {
 
 	bool CoreTheory::functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
 		std::vector<FormulaT> args;
-		if (!convertArguments(arguments, args, errors)) return false;
+		if (!core::convertArguments(arguments, args, errors)) return false;
 		
 		if (boost::iequals(identifier.symbol, "=")) {
 			result = FormulaT(carl::FormulaType::IFF, FormulasT(args.begin(), args.end()));

@@ -3,7 +3,7 @@
 #include "../../../datastructures/mcsat/Bookkeeping.h"
 #include "../../../datastructures/mcsat/arithmetic/AssignmentFinder_arithmetic.h"
 #include "../../../datastructures/mcsat/nlsat/Explanation.h"
-#include "../../../datastructures/mcsat/utils/VariableOrdering.h"
+#include "../../../datastructures/mcsat/variableordering/VariableOrdering.h"
 
 #include "../../../datastructures/mcsat/explanations/ParallelExplanation.h"
 #include "../../../datastructures/mcsat/explanations/SequentialExplanation.h"
@@ -14,7 +14,7 @@ namespace mcsat {
 template<typename Settings>
 class MCSATBackend {
 	mcsat::Bookkeeping mBookkeeping;
-	typename Settings::VariableOrderingBackend mVariableOrdering;
+	std::vector<carl::Variable> mVariableOrdering;
 	typename Settings::AssignmentFinderBackend mAssignmentFinder;
 	typename Settings::ExplanationBackend mExplanation;
 
@@ -48,14 +48,13 @@ public:
 	}
 	
 	template<typename Constraints>
-	void updateVariableOrdering(const Constraints& c) {
-		if (mVariableOrdering.initialized()) return;
-		mVariableOrdering.update(c);
+	void resetVariableOrdering(const Constraints& c) {
+		mVariableOrdering = calculateVariableOrder<Settings::variable_ordering>(c);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variable ordering " << variableOrder());
 	}
 	
 	const auto& variableOrder() const {
-		return mVariableOrdering.ordering();
+		return mVariableOrdering;
 	}
 
 	auto findAssignment(carl::Variable var) const { //AssignmentFinder::AssignmentOrConflict
@@ -88,7 +87,7 @@ public:
 };
 
 struct BackendSettings1 {
-	using VariableOrderingBackend = mcsat::VariableOrdering;
+	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
 	using ExplanationBackend = nlsat::Explanation;
 };

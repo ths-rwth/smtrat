@@ -3,6 +3,8 @@
 find_package(PythonInterp 3)
 
 if(PYTHONINTERP_FOUND)
+	get_target_property(carl_INCLUDE_DIR lib_carl INTERFACE_INCLUDE_DIRECTORIES)
+	message(STATUS "Using carl from ${carl_INCLUDE_DIR}")
 	add_custom_target(.travis.yml)
 	add_custom_command(
 		TARGET .travis.yml

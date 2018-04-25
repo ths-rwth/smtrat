@@ -66,7 +66,9 @@ namespace smtrat
 			if (mEqualities.find(f.formula()) != mEqualities.end()) continue;
 			auto res = visitor.visitResult(f.formula(), simplifyInequalityFunction);
 			
-			SMTRAT_LOG_INFO("smtrat.gbpp", "Reduced " << f.formula() << " to " << res);
+			if (res != f.formula()) {
+				SMTRAT_LOG_INFO("smtrat.gbpp", "Reduced " << f.formula() << " to " << res);
+			}
 			if (!res.isTrue()) {
 				addSubformulaToPassedFormula(res, f.formula());
 			}
@@ -102,7 +104,7 @@ namespace smtrat
 		
 		typename Settings::Reductor reductor(mBasis.getIdeal(), gpoly(c.lhs()));
 		auto reduced = reductor.fullReduce();
-		SMTRAT_LOG_INFO("smtrat.gbpp", "Reduced " << c.lhs() << " to " << reduced);
+		SMTRAT_LOG_DEBUG("smtrat.gbpp", "Reduced " << c.lhs() << " to " << reduced);
 		
 		if (reduced.nrTerms() >= c.lhs().nrTerms()) return formula;
 		return FormulaT(ConstraintT(Poly(reduced), c.relation()));

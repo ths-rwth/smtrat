@@ -127,7 +127,7 @@ namespace smtrat
                     // Process all equations first.
                     for( const auto& sf : currentSubformulas )
                     {
-                        if( sf.getType() == carl::FormulaType::CONSTRAINT && sf.constraint().relation() == carl::Relation::EQ && sf.constraint().lhs().isLinear() )
+                        if( sf.getType() == carl::FormulaType::CONSTRAINT && sf.constraint().relation() == carl::Relation::EQ )
                         {
                             FormulaT tmp = elimSubstitutions( sf );
                             if( tmp.getType() == carl::FormulaType::FALSE )
@@ -141,7 +141,7 @@ namespace smtrat
                                 Poly subPoly;
                                 if( tmp.constraint().getSubstitution( subVar, subPoly, false, objective() ) )
                                 {
-                                    SMTRAT_LOG_TRACE("smtrat.es", "found substitution [" << subVar << " -> " << subPoly << "]");
+                                    SMTRAT_LOG_INFO("smtrat.es", "found substitution [" << subVar << " -> " << subPoly << "]");
                                     assert( mArithSubs.find( subVar ) == mArithSubs.end() );
                                     addedArithSubs.push_back( mArithSubs.emplace( subVar, subPoly ).first );
                                     foundSubstitutions.insert( tmp );

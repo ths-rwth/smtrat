@@ -1,11 +1,15 @@
 #pragma once
 
-#include "../Common.h"
+#include "Common.h"
 #include "TheoryTypes.h"
 #include "ParserState.h"
 
+#include <boost/spirit/include/qi_symbols.hpp>
+
 namespace smtrat {
 namespace parser {
+
+	namespace qi = boost::spirit::qi;
 
 /**
  * Base class for all theories.
@@ -30,9 +34,8 @@ namespace parser {
  * A theory may override any of the following methods.
  */
 struct AbstractTheory {
-protected:
 	ParserState* state;
-public:
+	
 	AbstractTheory(ParserState* state): state(state) {}
 	virtual ~AbstractTheory() {}
 
