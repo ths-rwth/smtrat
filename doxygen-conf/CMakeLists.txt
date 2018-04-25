@@ -122,27 +122,28 @@ STRING(REGEX REPLACE ";" " " DOXYGEN_INPUT_LIST "${DOXYGEN_SOURCE_DIR}" )
 # Generate doxygen.conf
 # # # # # # # # # # # #
 
-configure_file( doxygen.conf.in ${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf )
-add_custom_target( doxygen-doc
-		           ${DOXYGEN} ${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf
-		           DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf )
+configure_file(doxygen.conf.in ${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf)
 
-# Add "doc" target depending on whether pdflatex is available or not
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# Target for running doxygen
+add_custom_target(doc-doxygen
+	${DOXYGEN} ${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf
+	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf
+)
 
-if( DOXYGEN_PDFLATEX )
-  set( TEX_DIR ${CMAKE_CURRENT_BINARY_DIR}/../${DOXYGEN_OUTPUT_DIR}/latex )
-  set( PDF_OUTPUT ${TEX_DIR}/refman.pdf )
-  add_custom_command( OUTPUT ${PDF_OUTPUT}
-					  POST_BUILD
-                      COMMAND ${PDFLATEX_COMPILER}
-                      ARGS refman.tex
-                      WORKING_DIRECTORY ${TEX_DIR}
-                      DEPENDS doxygen-doc )
-  add_custom_target( doc
-                     COMMAND mv -T ${PDF_OUTPUT} ${CMAKE_CURRENT_BINARY_DIR}/doc_${PROJECT_NAME}-${PROJECT_VERSION}.pdf
-                     DEPENDS ${PDF_OUTPUT} )
-else( DOXYGEN_PDFLATEX )
-  add_custom_target( doc 
-                     DEPENDS doxygen-doc )
-endif( DOXYGEN_PDFLATEX )
+# Target for building the whole documentation
+add_custom_target(doc
+	DEPENDS doc-doxygen
+)
+
+if(DOXYGEN_PDFLATEX)
+	set(TEX_DIR ${DOXYGEN_OUTPUT_DIR}/latex)
+	add_custom_target(doc-pdf
+		BYPRODUCTS ${TEX_DIR}/refman.pdf
+		COMMAND ${PDFLATEX_COMPILER} refman.tex
+		COMMAND ${PDFLATEX_COMPILER} refman.tex
+		COMMAND mv ${TEX_DIR}/refman.pdf ${DOXYGEN_OUTPUT_DIR}/doc_${PROJECT_NAME}-${PROJECT_VERSION}.pdf
+		WORKING_DIRECTORY ${TEX_DIR}
+		DEPENDS doc-doxygen
+	)
+	add_dependencies(doc doc-pdf)
+endif(DOXYGEN_PDFLATEX)
