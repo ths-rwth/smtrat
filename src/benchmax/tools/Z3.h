@@ -1,6 +1,5 @@
 /**
  * @file   Z3Tool.h
- *         Created on April 14, 2013, 6:10 PM
  * @author: Sebastian Junges
  *
  *

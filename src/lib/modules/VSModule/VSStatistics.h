@@ -1,6 +1,5 @@
 /** 
  * @file   VSStatistics.h
- *         Created on April 20, 2016, 11:15 PM
  * @author: Florian Corzilius
  *
  * 
