@@ -16,6 +16,16 @@
 
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/manual.tex.in ${CMAKE_CURRENT_SOURCE_DIR}/manual.tex )
 
+set(MODULE_INCLUDES "")
+ListSubDirs(MODULES ${CMAKE_SOURCE_DIR}/src/lib/modules)
+foreach(module ${MODULES})
+	if(EXISTS ${CMAKE_SOURCE_DIR}/src/lib/modules/${module}/${module}.tex)
+		set(MODULE_INCLUDES "${MODULE_INCLUDES}\n\\subsection{The \\texttt{${module}}}\n\\input{../src/lib/modules/${module}/${module}.tex}\n")
+	endif()
+endforeach()
+
+configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/module_list.tex.in ${CMAKE_CURRENT_SOURCE_DIR}/module_list.tex )
+
 # Cmake modules needed
 # # # # # # # # # # # #
 
@@ -69,4 +79,3 @@ if( MANUAL_PDFLATEX )
                      COMMAND rm ${CMAKE_CURRENT_BINARY_DIR}/*.bib ${CMAKE_CURRENT_BINARY_DIR}/*.aux ${CMAKE_CURRENT_BINARY_DIR}/*.bbl ${CMAKE_CURRENT_BINARY_DIR}/*.out ${CMAKE_CURRENT_BINARY_DIR}/*.toc
                      DEPENDS manual )
 endif( MANUAL_PDFLATEX )
-
