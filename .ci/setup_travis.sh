@@ -4,7 +4,7 @@ git fetch --unshallow
 
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 
-	mkdir -p ~/usr
+	mkdir -p ~/usr/bin/
 	PREFIX=`cd ~/usr; pwd`
 	
 	if [ ! -f $PREFIX/bin/doxygen ]; then
