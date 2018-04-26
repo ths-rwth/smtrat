@@ -41,7 +41,7 @@ private:
 		// generate test candidates
 		std::vector<::vs::Substitution> testCandidates;
 		if (helper::generateTestCandidates(testCandidates, mTargetVar, constraints)) {
-			FormulasT res;
+			FormulasT res; // TODO resize?
 			for (auto tc = testCandidates.begin(); tc != testCandidates.end(); ++tc) {
 				// substitute tc into each input constraint
 				FormulasT substitutionResults;
@@ -60,6 +60,12 @@ private:
 				
 				res.emplace_back(carl::FormulaType::AND, std::move(substitutionResults));
 			}
+
+			// collect input constraints
+			for (const auto& c: mConstraints) {
+				res.emplace_back(c.negated());
+			}
+
 			return FormulaT(carl::FormulaType::OR, std::move(res));
 		}
 		else {
