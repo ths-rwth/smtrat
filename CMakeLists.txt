@@ -241,16 +241,9 @@ endif()
 # C.5. Development and debug libraries.
 # # # # # # # # # # # # # # # # # # # # # #
 
-# if doxygen is installed, create the make doc target
-include(FindDoxygen)
-if(DOXYGEN)
-  add_subdirectory(doxygen-conf)
-else()
-  message(WARNING, "Doxygen not found")
-endif()
 # add_subdirectory(examples EXCLUDE_FROM_ALL) # offer as an optional target
 add_subdirectory(manual EXCLUDE_FROM_ALL)
-
+add_subdirectory(doxygen-conf EXCLUDE_FROM_ALL)
 
 # # # # # # # # # # # # # # # # # # # # # #
 # D. Writen information files

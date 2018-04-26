@@ -18,7 +18,6 @@ if("${PROJECT_NAME}" STREQUAL "")
 	set(CMAKE_CURRENT_BINARY_DIR "build")
 	set(CMAKE_SOURCE_DIR "..")
 	set(PROJECT_SOURCE_DIR "..")
-	include(FindDoxygen)
 endif()
 
 # Cmake doxygen settings
@@ -122,12 +121,14 @@ STRING(REGEX REPLACE ";" " " DOXYGEN_INPUT_LIST "${DOXYGEN_SOURCE_DIR}" )
 # Generate doxygen.conf
 # # # # # # # # # # # #
 
+get_target_property(DOXYGEN_BIN Doxygen::doxygen IMPORTED_LOCATION)
+
 configure_file(doxygen.conf.in ${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf)
 
 # Target for running doxygen
 add_custom_target(doc-doxygen
-	${DOXYGEN} ${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf
-	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf
+	${DOXYGEN_BIN} ${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf
+	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf Doxygen::doxygen
 )
 
 # Target for building the whole documentation
