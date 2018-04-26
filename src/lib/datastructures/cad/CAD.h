@@ -206,7 +206,7 @@ namespace cad {
 			for (auto it = mLifting.getTree().begin_preorder(); it != mLifting.getTree().end_preorder();) {
 				if (it->hasConflictWithConstraint()) {
 					// Skip subtrees of already conflicting samples
-					SMTRAT_LOG_DEBUG("smtrat.cad", "Adding sample " << *it);
+					SMTRAT_LOG_TRACE("smtrat.cad", "Adding sample " << *it);
 					cg.addSample(*it);
 					it.skipChildren();
 				} else {
@@ -214,7 +214,7 @@ namespace cad {
 				}
 				for (std::size_t id = 0; id < mConstraints.size(); id++) {
 					if (!mConstraints.valid(id)) {
-						SMTRAT_LOG_DEBUG("smtrat.cad", "Invalid constraint: " << id << ", cur graph:" << std::endl << cg);
+						SMTRAT_LOG_TRACE("smtrat.cad", "Invalid constraint: " << id << ", cur graph:" << std::endl << cg);
 					}
 					assert(mConstraints.valid(id) || cg.coveredSamples(id) == 0);
 				}
