@@ -778,7 +778,7 @@ namespace full {
 		for (std::size_t level = 0; level <= p.dim(); level++) {
 			if (level == 0) os << level << std::endl;
 			else os << level << " / " << p.var(level) << std::endl;
-			os << "\tP: " << p.mPolynomials[level] << " (purged " << p.mPurged[level] << " / " << p.mEvaluated[level] << ")" << std::endl;
+			os << "\tP: " << p.mPolynomials[level] << " (purged " << p.mPurged[level] << " / " << p.mEvaluated[level] << ")(ec " << p.mEqConstraints[level] << ")" << std::endl;
 			if (level > 0) {
 				os << "\tL: " << p.mLiftingQueues[level - 1] << std::endl;
 			}
