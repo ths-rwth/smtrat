@@ -305,8 +305,10 @@ namespace full {
 					if (active(lvl, id)) {
 						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> " << id << " from level " << lvl << " is active");
 						activate.set(id);
-					changed_levels.set(lvl);
-					} 
+						changed_levels.set(lvl);
+					} else {
+						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> " << id << " from level " << lvl << " remains inactive");
+					}
 				}
                                 // activate polynomials in following levels due to the active polynomials in lvl
 				for (std::size_t l = lvl+1; l <= dim(); l++) {
@@ -714,7 +716,7 @@ namespace full {
                             updateInactiveQueue = false;
                         }
                         if(checkPurged > 0) {
-                            SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> ComputePurgedPolynomials, until level" << checkPurged);
+                            SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> ComputePurgedPolynomials, until level " << checkPurged);
                             computePurgedPolynomials(checkPurged);
                             deactivatePolynomials(1);
                             carl::Bitset levels = activatePolynomials(1);
