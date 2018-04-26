@@ -271,10 +271,6 @@ namespace full {
 					if (!active(lvl, id)) {
 						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purging " << id << " from level " << lvl);
 						remove.set(id);
-                                                // remove inactive polnomials from LiftingQueue 
-                                                if(lvl > 0) {
-							mLiftingQueues[lvl - 1].erase(id);
-						}
 					} 
 				}
 				SMTRAT_LOG_TRACE("smtrat.cad.projection", "Calling callback for level " << level << ", removed [" << remove << "]");
@@ -286,6 +282,10 @@ namespace full {
 					for (const auto& it: mPolynomialIDs[l]) {
 						assert(mPolynomials[l][it.second]);
 						mPolynomials[l][it.second]->second.deactivate(lvl, remove);
+						// remove inactive polynomials from LiftingQueue
+						if(!active(l,it.second)) {
+							mLiftingQueues[l-1].erase(it.second);
+						}
 					}
 				}
 			} 
@@ -306,10 +306,6 @@ namespace full {
 						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> " << id << " from level " << lvl << " is active");
 						activate.set(id);
 					changed_levels.set(lvl);
-                                                // add active polynomials to LiftingQueue
-                                                if(lvl > 0) {
-							mLiftingQueues[lvl - 1].insert(id);
-						}
 					} 
 				}
                                 // activate polynomials in following levels due to the active polynomials in lvl
@@ -318,6 +314,10 @@ namespace full {
 						assert(mPolynomials[l][it.second]);
 						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Activating origins for " << it.second << " from level " << lvl << " with " << activate);
 						mPolynomials[l][it.second]->second.activate(lvl, activate);
+						//add active polynomials to LiftingQueue
+						if(active(l,it.second)) {
+							mLiftingQueues[l-1].insert(it.second);
+						}
 					}
 				}
 			} 
@@ -344,6 +344,9 @@ namespace full {
                                 for (const auto& it: mPolynomialIDs[l]) {
                                         assert(mPolynomials[l][it.second]);
                                         mPolynomials[l][it.second]->second.deactivateEC(lvl, eqc);
+					if(!active(l,it.second)) {
+						mLiftingQueues[l-1].erase(it.second);
+					}
                                 }
                             }
                             lvl++;
@@ -380,6 +383,9 @@ namespace full {
                                             for (const auto& it: mPolynomialIDs[l]) {
                                                     assert(mPolynomials[l][it.second]);
                                                     mPolynomials[l][it.second]->second.activateEC(lvl, eqc);
+						    if(active(l,it.second)) {
+							    mLiftingQueues[l-1].insert(it.second);
+						    }
                                             }
                                         }
                                         lvl++;
@@ -393,6 +399,9 @@ namespace full {
                                     for (const auto& it: mPolynomialIDs[l]) {
                                             assert(mPolynomials[l][it.second]);
                                             mPolynomials[l][it.second]->second.activateEC(level, eqc);
+					    if(active(l,it.second)) {
+						    mLiftingQueues[l-1].insert(it.second);
+					    }
                                     }
                                 }         
                                 activatePolynomials(level+1);
