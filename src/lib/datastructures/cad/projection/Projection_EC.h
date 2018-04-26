@@ -294,7 +294,8 @@ namespace full {
                  * Activate active polynomials in mProjection.
                  * @param level Level at which first activation occured.
                  */
-                void activatePolynomials(std::size_t level) {
+                carl::Bitset activatePolynomials(std::size_t level) {
+						carl::Bitset changed_levels;
                         for (std::size_t lvl = level; lvl < dim(); lvl++) {
                                 // find active polynomials in lvl
                                 carl::Bitset activate;
@@ -304,6 +305,7 @@ namespace full {
 					if (active(lvl, id)) {
 						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> " << id << " from level " << lvl << " is active");
 						activate.set(id);
+					changed_levels.set(lvl);
                                                 // add active polynomials to LiftingQueue
                                                 if(lvl > 0) {
 							mLiftingQueues[lvl - 1].insert(id);
@@ -320,6 +322,7 @@ namespace full {
 				}
 			} 
                         updateInactiveQueue = true;
+		return changed_levels;
                 }
                 
                 /**
@@ -565,8 +568,9 @@ namespace full {
                                 if(Settings::simplifyProjectionByBounds && isBound) { 
                                     mEvaluated[0] &= mPurged[0];
                                     std::size_t level = 1; 
-                                    while ((level < dim()) && canBeForwarded(level, p.switchVariable(var(level)))) {
+                                    while (level < dim()) {
                                         mEvaluated[level] &= mPurged[level];
+										if (!canBeForwarded(level, p.switchVariable(var(level)))) break;
                                         level += 1;
                                     }
                                     checkPurged = std::max(level, checkPurged);
@@ -581,8 +585,9 @@ namespace full {
 			if (Settings::simplifyProjectionByBounds && isBound) { 
                                 insertPolynomialTo(1, p, Origin::BaseType(0,cid), true, false);
                                 std::size_t level = 1;
-                                while ((level < dim()) && canBeForwarded(level, p.switchVariable(var(level)))) {
+                                while (level < dim()) {
                                     mEvaluated[level] &= mPurged[level];
+									if (!canBeForwarded(level, p.switchVariable(var(level)))) break;
                                     level += 1;
                                 }
                                 checkPurged = std::max(level, checkPurged);
@@ -601,10 +606,11 @@ namespace full {
                                 mInactive.reset(cid); 
                                 activatePolynomials(0);
                                 std::size_t level = 1;
-                                while ((level < dim()) && canBeForwarded(level, p.switchVariable(var(level)))) {
+                                while (level < dim()) {
                                     if (Settings::simplifyProjectionByBounds && isBound) {
                                         mEvaluated[level] &= mPurged[level];
                                     }
+									if (!canBeForwarded(level, p.switchVariable(var(level)))) break;
                                     level += 1;
                                 }
                                 if (Settings::simplifyProjectionByBounds && isBound) { 
@@ -625,8 +631,9 @@ namespace full {
 			insertPolynomialTo(1, p, Origin::BaseType(0,cid), isBound, true);
                         if (Settings::simplifyProjectionByBounds && isBound) { 
                                 std::size_t level = 1;
-                                while ((level < dim()) && canBeForwarded(level, p.switchVariable(var(level)))) {
+                                while (level < dim()) {
                                     mEvaluated[level] &= mPurged[level];
+									if (!canBeForwarded(level, p.switchVariable(var(level)))) break;
                                     level += 1;
                                 }
                                 checkPurged = std::max(level, checkPurged);
@@ -651,8 +658,9 @@ namespace full {
 			if (Settings::simplifyProjectionByBounds && isBound) {
                                 updateInactiveQueue = true;  
                                 std::size_t level = 1;
-                                while ((level < dim()) && canBeForwarded(level, p.switchVariable(var(level)))) {
+                                while (level < dim()) {
                                     mEvaluated[level] -= mPurged[level];
+									if (!canBeForwarded(level, p.switchVariable(var(level)))) break;
                                     level += 1;
                                 }
                                 checkPurged = std::max(level, checkPurged);
@@ -700,8 +708,9 @@ namespace full {
                             SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> ComputePurgedPolynomials, until level" << checkPurged);
                             computePurgedPolynomials(checkPurged);
                             deactivatePolynomials(1);
-                            activatePolynomials(1);
+                            carl::Bitset levels = activatePolynomials(1);
                             checkPurged = 0;
+							if (levels.any()) return levels;
                         }
 			return project(cs);
 		}
@@ -758,7 +767,7 @@ namespace full {
 		for (std::size_t level = 0; level <= p.dim(); level++) {
 			if (level == 0) os << level << std::endl;
 			else os << level << " / " << p.var(level) << std::endl;
-			os << "\tP: " << p.mPolynomials[level] << std::endl;
+			os << "\tP: " << p.mPolynomials[level] << " (purged " << p.mPurged[level] << " / " << p.mEvaluated[level] << ")" << std::endl;
 			if (level > 0) {
 				os << "\tL: " << p.mLiftingQueues[level - 1] << std::endl;
 			}
