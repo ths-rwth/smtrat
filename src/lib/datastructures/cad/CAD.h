@@ -104,14 +104,14 @@ namespace cad {
 		template<typename ConstraintIt>
 		bool evaluateSample(Sample& sample, const ConstraintIt& constraint, Assignment& assignment) const {
 			std::size_t cid = constraint.second;
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Evaluating " << cid << " / " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment);
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Sample was evaluated: " << sample.evaluatedWith() << " / " << sample.evaluationResult());
+			SMTRAT_LOG_TRACE("smtrat.cad", "Evaluating " << cid << " / " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment);
+			SMTRAT_LOG_TRACE("smtrat.cad", "Sample was evaluated: " << sample.evaluatedWith() << " / " << sample.evaluationResult());
 			if (sample.evaluatedWith().test(cid)) {
 				return sample.evaluationResult().test(cid);
 			}
 			auto res = carl::RealAlgebraicNumberEvaluation::evaluate(constraint.first.lhs(), assignment);
 			bool evalResult = carl::evaluate(res, constraint.first.relation());
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Evaluating " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment << " -> " << evalResult);
+			SMTRAT_LOG_TRACE("smtrat.cad", "Evaluating " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment << " -> " << evalResult);
 			sample.evaluatedWith().set(cid, true);
 			sample.evaluationResult().set(cid, evalResult);
 			return evalResult;
