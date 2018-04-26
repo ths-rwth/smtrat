@@ -531,10 +531,10 @@ namespace full {
 	public:
 		Projection(const Constraints& c):
 			Super(c),
-			mProjectionQueue(ProjectionCandidateComparator([&](std::size_t level, std::size_t id){ return getPolynomialById(level, id); })),
 			mCanBePurged([this](std::size_t level, std::size_t id){
 				return canBePurgedByBounds(getPolynomialById(level, id));
 			}),
+			mProjectionQueue(ProjectionCandidateComparator([&](std::size_t level, std::size_t id){ return getPolynomialById(level, id); })),
 			mInactiveQueue(ProjectionCandidateComparator([&](std::size_t level, std::size_t id){ return getPolynomialById(level, id); }))
 #ifdef SMTRAT_DEVOPTION_Statistics
                         ,mStatistics("CAD")

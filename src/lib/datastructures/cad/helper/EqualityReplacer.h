@@ -190,6 +190,9 @@ public:
 				mis.emplace(cons.first);
 			}
 		}
+		for (const auto& ass: mAssignments) {
+			mis.insert(FormulaT(ass.second));
+		}
 	}
 };
 
