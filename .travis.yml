@@ -174,13 +174,13 @@ matrix:
       script: source .ci/build.sh
     - stage: build
       os: linux
-      compiler: g++-6
-      env: CC=gcc-6 CXX=g++-6 TASK=doxygen
+      compiler: clang++-6.0
+      env: CC=clang-6.0 CXX=clang++-6.0 TASK=doxygen
       script: MAKE_PARALLEL=-j1 source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base]
-          packages: [*packages_base, doxygen, texinfo, texlive, texlive-font-utils, texlive-latex-extra, latex-xcolor, ghostscript]
+          sources: [*sources_base, llvm-toolchain-trusty-6.0, *sources_base]
+          packages: [*packages_base, clang-6.0, *packages_base, doxygen, texinfo, texlive, texlive-font-utils, texlive-latex-extra, latex-xcolor, ghostscript]
   allow_failures:
     - stage: dependencies
       os: linux
