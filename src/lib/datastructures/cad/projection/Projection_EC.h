@@ -174,8 +174,10 @@ namespace full {
                  */
                 bool active(std::size_t level, std::size_t id) const {
                     if(level == 0) {
+						SMTRAT_LOG_DEBUG("smtrat.cad.projection", level << "/" << id << " active? !" << mInactive.test(id) << " && !" << mPurged[0].test(id));
                         return !mInactive.test(id) && !mPurged[0].test(id);
                     } else {
+						SMTRAT_LOG_DEBUG("smtrat.cad.projection", level << "/" << id << " active? " << mPolynomials[level][id]->second.isActive() << " && !" << mPurged[level].test(id));
                         return mPolynomials[level][id]->second.isActive() && !mPurged[level].test(id);
                     }
                 }
@@ -265,9 +267,8 @@ namespace full {
                         for (std::size_t lvl = level; lvl < dim(); lvl++) {
                                 // find inactive polynomials in lvl
                                 carl::Bitset remove;
-				for (const auto& it: mPolynomialIDs[lvl]) {
-					std::size_t id = it.second;
-					assert(mPolynomials[lvl][id]);
+				for (std::size_t id = 0; id < mPolynomials[lvl].size(); ++id) {
+					if (!mPolynomials[lvl][id]) continue;
 					if (!active(lvl, id)) {
 						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purging " << id << " from level " << lvl);
 						remove.set(id);
@@ -281,6 +282,7 @@ namespace full {
 				for (std::size_t l = lvl+1; l <= dim(); l++) {
 					for (const auto& it: mPolynomialIDs[l]) {
 						assert(mPolynomials[l][it.second]);
+						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purging " << l << "/" << it.second << " with " << lvl << " / " << remove);
 						mPolynomials[l][it.second]->second.deactivate(lvl, remove);
 						// remove inactive polynomials from LiftingQueue
 						if(!active(l,it.second)) {
@@ -299,9 +301,8 @@ namespace full {
                         for (std::size_t lvl = level; lvl < dim(); lvl++) {
                                 // find active polynomials in lvl
                                 carl::Bitset activate;
-				for (const auto& it: mPolynomialIDs[lvl]) {
-					std::size_t id = it.second;
-					assert(mPolynomials[lvl][id]);
+				for (std::size_t id = 0; id < mPolynomials[lvl].size(); ++id) {
+					if (!mPolynomials[lvl][id]) continue;
 					if (active(lvl, id)) {
 						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> " << id << " from level " << lvl << " is active");
 						activate.set(id);
@@ -580,7 +581,7 @@ namespace full {
                                 if(Settings::simplifyProjectionByBounds && isBound) { 
                                     mEvaluated[0] &= mPurged[0];
                                     std::size_t level = 1; 
-                                    while (level < dim()) {
+                                    while (level <= dim()) {
                                         mEvaluated[level] &= mPurged[level];
 										if (!canBeForwarded(level, p.switchVariable(var(level)))) break;
                                         level += 1;
@@ -594,10 +595,11 @@ namespace full {
 			assert(!mPolynomials[0][cid]);
 			mPolynomials[0][cid] = std::make_pair(p, Origin());
 			mPolynomialIDs[0].emplace(p, cid); 
+			printPolynomialIDs();
 			if (Settings::simplifyProjectionByBounds && isBound) { 
                                 insertPolynomialTo(1, p, Origin::BaseType(0,cid), true, false);
                                 std::size_t level = 1;
-                                while (level < dim()) {
+                                while (level <= dim()) {
                                     mEvaluated[level] &= mPurged[level];
 									if (!canBeForwarded(level, p.switchVariable(var(level)))) break;
                                     level += 1;
@@ -616,7 +618,7 @@ namespace full {
 				mPolynomials[0].resize(cid + 1);
 			} else if (mPolynomials[0][cid]) { 
                                 std::size_t level = 1;
-                                while (level < dim()) {
+                                while (level <= dim()) {
                                     if (Settings::simplifyProjectionByBounds && isBound) {
                                         mEvaluated[level] &= mPurged[level];
                                     }
@@ -644,7 +646,7 @@ namespace full {
 			insertPolynomialTo(1, p, Origin::BaseType(0,cid), isBound, true);
                         if (Settings::simplifyProjectionByBounds && isBound) { 
                                 std::size_t level = 1;
-                                while (level < dim()) {
+                                while (level <= dim()) {
                                     mEvaluated[level] &= mPurged[level];
 									if (!canBeForwarded(level, p.switchVariable(var(level)))) break;
                                     level += 1;
@@ -655,6 +657,7 @@ namespace full {
 		}
 		void removePolynomial(const UPoly& p, std::size_t cid, bool isBound) override {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << cid);
+			printPolynomialIDs();
 			assert(mPolynomials[0][cid]);
 			assert(mPolynomials[0][cid]->first == p);
                         mInactive.set(cid);
@@ -665,13 +668,15 @@ namespace full {
                         if(Settings::deletePolynomials) {
                             deletePolynomials(p, cid);
                         } else {
+							printPolynomialIDs();
                             // deactivates all successors of p   
                             deactivatePolynomials(0);
                         }
 			if (Settings::simplifyProjectionByBounds && isBound) {
                                 updateInactiveQueue = true;  
                                 std::size_t level = 1;
-                                while (level < dim()) {
+                                while (level <= dim()) {
+									SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Resetting evaluated on level " << level << ": " << mEvaluated[level] << " -= " << mPurged[level]);
                                     mEvaluated[level] -= mPurged[level];
 									if (!canBeForwarded(level, p.switchVariable(var(level)))) break;
                                     level += 1;
@@ -764,6 +769,13 @@ namespace full {
 					}
 				}
 				out << "\t" << dsg << std::endl;
+			}
+		}
+		
+		void printPolynomialIDs() const {
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "PolynomialIDs:");
+			for (std::size_t lvl = 0; lvl <= dim(); lvl++) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", lvl << ":" << mPolynomialIDs[lvl]);
 			}
 		}
 		
