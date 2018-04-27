@@ -121,6 +121,42 @@ public:
 		}
 		return true;
 	}
+	
+	template<typename C>
+	int commitConstraint(C& c) {
+		auto res = carl::model::substitute(c.first, mModel);
+		if (c.second) {
+			// Constraint has already been simplified
+			assert(c.second != boost::none);
+			if (res == c.second) return 1;
+			// Old simplication is invalid, remove it.
+			SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Actually Erasing " << *c.second);
+			mCAD.removeConstraint(*c.second);
+			mForwardedConstraints.erase(*c.second);
+			c.second = boost::none;
+		}
+		if (mForwardedConstraints.find(res) != mForwardedConstraints.end()) {
+			// The (simplified?) constraint has already been forwarded.
+			SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Not considering " << res);
+			return 2;
+		}
+		SMTRAT_LOG_INFO("smtrat.cad.eqreplacer", c.first << " -> " << res);
+		if (res.isConsistent() == 0) {
+			// The constraint is trivially false under the model.
+			SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Got immediate conflict");
+			mConflict = c.first;
+			return -1;
+		}
+		if (res.isConsistent() == 2) {
+			// The constraint is forwarded to the CAD.
+			c.second = res;
+			SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Actually Adding " << *c.second);
+			mCAD.addConstraint(*c.second);
+			mForwardedConstraints.insert(*c.second);
+		}
+		return 1;
+	}
+	
 	/**
 	 * Actually commits new constraints and simplications to CAD.
 	 */
@@ -128,37 +164,15 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Commit ");
 		if (!considerDuplicateAssignments()) return false;
 		SMTRAT_LOG_INFO("smtrat.cad.eqreplacer", "Using " << mModel << " to simplify");
+		std::vector<ConstraintT> toReconsider;
 		for (auto& c: mConstraints) {
-			auto res = carl::model::substitute(c.first, mModel);
-			if (c.second) {
-				// Constraint has already been simplified
-				assert(c.second != boost::none);
-				if (res == c.second) continue;
-				// Old simplication is invalid, remove it.
-				SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Actually Erasing " << *c.second);
-				mCAD.removeConstraint(*c.second);
-				mForwardedConstraints.erase(*c.second);
-				c.second = boost::none;
-			}
-			if (mForwardedConstraints.find(res) != mForwardedConstraints.end()) {
-				// The (simplified?) constraint has already been forwarded.
-				SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Not considering " << res);
-				continue;
-			}
-			SMTRAT_LOG_INFO("smtrat.cad.eqreplacer", c.first << " -> " << res);
-			if (res.isConsistent() == 0) {
-				// The constraint is trivially false under the model.
-				SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Got immediate conflict");
-				mConflict = c.first;
-				return false;
-			}
-			if (res.isConsistent() == 2) {
-				// The constraint is forwarded to the CAD.
-				c.second = res;
-				SMTRAT_LOG_DEBUG("smtrat.cad.eqreplacer", "Actually Adding " << *c.second);
-				mCAD.addConstraint(*c.second);
-				mForwardedConstraints.insert(*c.second);
-			}
+			int res = commitConstraint(c);
+			if (res == -1) return false;
+			if (res == 2) toReconsider.emplace_back(c.first);
+		}
+		for (const auto& c: toReconsider) {
+			int res = commitConstraint(*mConstraints.find(c));
+			if (res == -1) return false;
 		}
 		for (const auto& ass: mAssignments) {
 			// Forward the assignment to the CAD.

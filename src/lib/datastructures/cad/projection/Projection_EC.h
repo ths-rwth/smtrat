@@ -775,7 +775,7 @@ namespace full {
 		void printPolynomialIDs() const {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "PolynomialIDs:");
 			for (std::size_t lvl = 0; lvl <= dim(); lvl++) {
-				SMTRAT_LOG_DEBUG("smtrat.cad.projection", lvl << ":" << mPolynomialIDs[lvl]);
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", lvl << ": " << mPolynomialIDs[lvl]);
 			}
 		}
 		
