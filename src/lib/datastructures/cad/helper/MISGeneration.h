@@ -28,6 +28,9 @@ namespace cad {
 		static int x;
 		SMTRAT_LOG_DEBUG("smtrat.mis", "GREEDY invoked: " << x++);
 		mis.emplace_back();
+		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
+			mis.back().emplace(c);
+		}
 		auto cg = cad.generateConflictGraph();
 		//std::cout << "rows:" << cg.numConstraints() << std::endl;
 		//std::cout << "columns: " << cg.numSamples() << std::endl;
