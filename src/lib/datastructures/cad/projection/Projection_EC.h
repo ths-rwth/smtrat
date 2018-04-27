@@ -436,7 +436,8 @@ namespace full {
 				mPolynomials[level][it->second]->second += origin;
                                 // in case p was inactive but becomes active by new BaseType activate successors
                                 if(activated == false && active(level,it->second)) {
-                                    activatePolynomials(level); 
+                                    activatePolynomials(level);
+				    mLiftingQueues[level-1].insert(it->second); 
                                     updateInactiveQueue = true; 
                                 }
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Polynomial was already present, merged origins");
@@ -614,8 +615,6 @@ namespace full {
                         if (cid >= mPolynomials[0].size()) {
 				mPolynomials[0].resize(cid + 1);
 			} else if (mPolynomials[0][cid]) { 
-                                mInactive.reset(cid); 
-                                activatePolynomials(0);
                                 std::size_t level = 1;
                                 while (level < dim()) {
                                     if (Settings::simplifyProjectionByBounds && isBound) {
@@ -630,8 +629,11 @@ namespace full {
                                 auto itp = mPolynomialIDs[level].find(p.switchVariable(var(level)));
                                 if(Settings::restrictProjectionByEC) {
                                     mEqConstraints[level].set(itp->second); 
-                                    restrictProjection(level);
+                                    mPurged[level].reset(itp->second);
+				    restrictProjection(level);
                                 }
+				mInactive.reset(cid);
+				activatePolynomials(0);
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(0) << "-> Polynomial was already present, reactivated");
 				return carl::Bitset(); 
 			}    
