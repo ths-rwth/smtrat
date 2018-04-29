@@ -200,7 +200,7 @@ BOOST_AUTO_TEST_CASE(Test_getExplanation_substitution) {
 	BOOST_CHECK(result);
 	std::stringstream ss;
 	ss << result.value();
-	BOOST_CHECK(ss.str() == "(< (+ (* 2 (* x x)) (* (- 8) x) 7) 0)");
+	BOOST_CHECK(ss.str() == "(or (<= (+ (* (- 1) (* y y)) (* 4 y) (* (- 1) (* x x)) (* 4 x) (- 7)) 0) (!= (+ y (* (- 1) x)) 0) (< (+ (* 2 (* x x)) (* (- 8) x) 7) 0))");
 }
 
 
