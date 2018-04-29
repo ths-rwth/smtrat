@@ -2731,7 +2731,7 @@ namespace smtrat
 						auto res = mMCSAT.isDecisionPossible(next);
 						if (res != boost::none) {
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict " << *res);
-							handleTheoryConflict(res->isNary() ? res->subformulas() : FormulasT({*res}));
+							handleTheoryConflict(*res);
 							continue;
 						}
 					}
@@ -2764,8 +2764,8 @@ namespace smtrat
 								print(cout, "###");
 								#endif
 								SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
-								sat::detail::validateClause(*conflict, Settings::validate_clauses);
-								handleTheoryConflict(conflict->isNary() ? conflict->subformulas() : FormulasT({*conflict}));
+								// sat::detail::validateClause(*conflict, Settings::validate_clauses); //TODO!!
+								handleTheoryConflict(*conflict);
 								mMCSAT.undoAssignment(next);
 								next = lit_Undef;
 								continue;
@@ -2774,7 +2774,7 @@ namespace smtrat
 							mCurrentAssignmentConsistent = UNSAT;
 							SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << mMCSAT.level());
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << res);
-							handleTheoryConflict(res.isNary() ? res.subformulas() : FormulasT({res}));
+							handleTheoryConflict(res);
 							continue;
 						}
 					} else {

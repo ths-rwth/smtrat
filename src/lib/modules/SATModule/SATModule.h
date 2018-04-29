@@ -910,14 +910,14 @@ namespace smtrat
 				SMTRAT_LOG_DEBUG("smtrat.sat", x << " -> " << assigns[x]);
 				return assigns[x];
 			}
-			
-			void handleTheoryConflict(const FormulasT& clause) {
-				Minisat::vec<Minisat::Lit> explanation;
-				#ifdef DEBUG_SATMODULE
-				print(std::cout, "###");
-				#endif
+
+            void handleTheoryConflictClause(const FormulasT& clause) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict clause " << clause);
-				sat::detail::validateClause(clause, Settings::validate_clauses);
+
+                // TODO duplicate check: do not add if duplicate. but make sure that during each explanation call, at least 1 new clause is added
+
+				sat::detail::validateClause(clause, Settings::validate_clauses); // TODO can this lead to errors for multiple explanations???
+                Minisat::vec<Minisat::Lit> explanation;
 				for (const auto& c: clause) {
 					explanation.push(createLiteral(c));
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Created literal from " << c << " -> " << explanation.last());
@@ -929,6 +929,31 @@ namespace smtrat
 				if (confl != Minisat::CRef_Undef) {
 					handleConflict(confl);
 				}
+			}
+			
+			void handleTheoryConflict(const FormulaT& explanation) {
+                #ifdef DEBUG_SATMODULE
+                print(std::cout, "###");
+                #endif
+                SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict explanation " << explanation);
+                FormulaT cnf = explanation.toCNF();
+                if (cnf.getType() == carl::FormulaType::OR) { // clause
+                    handleTheoryConflictClause(cnf.subformulas());
+                }
+                else if (cnf.getType() == carl::FormulaType::AND) { // conjunction of clauses
+                    for (const auto& clause : cnf.subformulas()) {
+                        if (clause.getType() == carl::FormulaType::OR) { // clause
+                            handleTheoryConflictClause(clause.subformulas());
+                        }
+                        else { // single literal
+                            handleTheoryConflictClause(FormulasT({clause}));
+                        }
+                    }
+                }
+                else { // single literal
+                    handleTheoryConflictClause(FormulasT({cnf}));
+                }
+                SMTRAT_LOG_DEBUG("smtrat.sat", "Handled theory conflict explanation");
 			}
             
 			inline Minisat::lbool bool_value( Minisat::Lit p ) const
