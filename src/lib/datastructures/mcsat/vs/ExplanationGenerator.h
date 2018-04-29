@@ -43,9 +43,9 @@ private:
 		if (helper::generateTestCandidates(testCandidates, mTargetVar, constraints)) {
 			FormulasT res; // TODO resize?
 			for (const auto& tc : testCandidates) {
-				// substitute tc into each input constraint
 				FormulasT substitutionResults;
 
+				// substitute tc into each input constraint
 				for (const auto& constr : mConstraints) {
 					const ConstraintT& constraint = constr.constraint();
 					::vs::DisjunctionOfConstraintConjunctions result;
@@ -56,11 +56,18 @@ private:
 						return boost::none;
 					}
 					substitutionResults.push_back(helper::doccToFormula(result));
+					if (substitutionResults.back() == FormulaT(carl::FormulaType::FALSE)) {
+						break; // since this is part of a conjunction, and we got false, we can ignore future substitutions
+					}
 				}
 
-				std::cout << "**SUBSTITUTION RESULTS: " << substitutionResults << "**" << std::endl;//TODO
+				// add side condition
+				for (const auto& sc : tc.sideCondition()) {
+					substitutionResults.emplace_back(sc);
+				}
 				
 				res.emplace_back(carl::FormulaType::AND, std::move(substitutionResults));
+				assert(res.back() != FormulaT(carl::FormulaType::TRUE));
 			}
 
 			// collect input constraints
