@@ -33,30 +33,32 @@ private:
 	boost::optional<FormulaT> generateExplanation() const {
 		// get constraints from formula
 		std::vector<const ConstraintT*> constraints;
-		for (auto constr = mConstraints.begin(); constr != mConstraints.end(); ++constr) {
-			assert(constr->getType() == carl::FormulaType::CONSTRAINT);
-			constraints.push_back(&(constr->constraint()));
+		for (const auto& constr : mConstraints) {
+			assert(constr.getType() == carl::FormulaType::CONSTRAINT);
+			constraints.push_back(&(constr.constraint()));
 		}
 
 		// generate test candidates
 		std::vector<::vs::Substitution> testCandidates;
 		if (helper::generateTestCandidates(testCandidates, mTargetVar, constraints)) {
 			FormulasT res; // TODO resize?
-			for (auto tc = testCandidates.begin(); tc != testCandidates.end(); ++tc) {
+			for (const auto& tc : testCandidates) {
 				// substitute tc into each input constraint
 				FormulasT substitutionResults;
 
-				for (auto constr = mConstraints.begin(); constr != mConstraints.end(); ++constr) {
-					const ConstraintT& constraint = constr->constraint();
+				for (const auto& constr : mConstraints) {
+					const ConstraintT& constraint = constr.constraint();
 					::vs::DisjunctionOfConstraintConjunctions result;
 					carl::Variables dummy_vars; // we do not make use of this feature here
 					smtrat::EvalDoubleIntervalMap dummy_map;
-            		bool success = substitute(constraint, *tc, result, false, dummy_vars, dummy_map);
+            		bool success = substitute(constraint, tc, result, false, dummy_vars, dummy_map);
 					if (!success) {
 						return boost::none;
 					}
 					substitutionResults.push_back(helper::doccToFormula(result));
 				}
+
+				std::cout << "**SUBSTITUTION RESULTS: " << substitutionResults << "**" << std::endl;//TODO
 				
 				res.emplace_back(carl::FormulaType::AND, std::move(substitutionResults));
 			}

@@ -14,10 +14,10 @@ namespace helper {
      */
     inline FormulaT doccToFormula(const ::vs::DisjunctionOfConstraintConjunctions& docc) {
         FormulasT constraintConjunctions;
-        for (auto conjunction = docc.begin(); conjunction != docc.end(); ++conjunction) {
+        for (const auto& conjunction : docc) {
             FormulasT constraintConjunction;
-            for (auto constraint = (*conjunction).begin(); constraint != (*conjunction).end(); ++constraint) {
-                constraintConjunction.emplace_back(*constraint);
+            for (const auto& constraint : conjunction) {
+                constraintConjunction.emplace_back(constraint);
             }
             constraintConjunctions.emplace_back(carl::FormulaType::AND, std::move(constraintConjunction));
         }
@@ -44,14 +44,14 @@ namespace helper {
         ConstraintsT sideConditions;
 
         if(constraint.hasFactorization()) {
-            for(auto iter = constraint.factorization().begin(); iter != constraint.factorization().end(); ++iter) {
+            for(const auto& iter : constraint.factorization()) {
                 carl::Variables factorVars;
-                iter->first.gatherVariables( factorVars );
+                iter.first.gatherVariables( factorVars );
                 if(factorVars.find( eliminationVar ) != factorVars.end()) {
-                    factors.push_back( iter->first );
+                    factors.push_back( iter.first );
                 }
                 else {
-                    ConstraintT cons = ConstraintT( iter->first, carl::Relation::NEQ );
+                    ConstraintT cons = ConstraintT( iter.first, carl::Relation::NEQ );
                     if( cons != ConstraintT( true ) ) {
                         assert( cons != ConstraintT( false ) );
                         sideConditions.insert( cons );
@@ -63,8 +63,8 @@ namespace helper {
             factors.push_back( constraint.lhs() );
         }
 
-        for( auto factor = factors.begin(); factor != factors.end(); ++factor ) {
-            VarPolyInfo varInfo = factor->getVarInfo<true>( eliminationVar );
+        for(const auto& factor : factors) {
+            VarPolyInfo varInfo = factor.getVarInfo<true>( eliminationVar );
             const auto& coeffs = varInfo.coeffs();
             assert( !coeffs.empty() );
 
@@ -171,14 +171,14 @@ namespace helper {
         results.push_back(std::move(sub));
 
         // scan through conditions for test candidates
-        for (auto constraint = constraints.begin(); constraint != constraints.end(); ++constraint) {
+        for (const auto& constraint : constraints) {
             // Determine the substitution type: normal or +epsilon
-            const carl::Relation& relation = (*constraint)->relation();
+            const carl::Relation& relation = constraint->relation();
             bool weakConstraint = (relation == carl::Relation::EQ || relation == carl::Relation::LEQ || relation == carl::Relation::GEQ);
             ::vs::Substitution::Type subType = weakConstraint ? ::vs::Substitution::NORMAL : ::vs::Substitution::PLUS_EPSILON;
 
             // factorize
-            bool res = generateZeros(**constraint, eliminationVar, [&](SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions) {
+            bool res = generateZeros(*constraint, eliminationVar, [&](SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions) {
                 ::vs::Substitution sub(eliminationVar, sqrtExpression, subType, carl::PointerSet<::vs::Condition>(), std::move(sideConditions));
                 addOrMergeTestCandidate(results, sub);
             });
