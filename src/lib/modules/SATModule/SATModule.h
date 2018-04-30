@@ -911,10 +911,31 @@ namespace smtrat
 				return assigns[x];
 			}
 
-            void handleTheoryConflictClause(const FormulasT& clause) {
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict clause " << clause);
+            bool isDuplicate(Minisat::vec<Minisat::Lit>& lemma) {
+                sort(lemma, lemma_lt(*this));
+                std::size_t dups = 0;
+                for (int i = 0; i < learnts.size(); i++) {
+                    const auto& corig = ca[learnts[i]];
+                    if (lemma.size() != corig.size()) continue;
+                    Minisat::vec<Minisat::Lit> c;
+                    for (int j = 0; j < corig.size(); j++) {
+                        c.push(corig[j]);
+                    }
+                    sort(c, lemma_lt(*this));
+                    bool different = false;
+                    for (int j = 0; j < lemma.size(); j++) {
+                        different = different || (c[j] != lemma[j]);
+                    }
+                    if (!different) {
+                        SMTRAT_LOG_DEBUG("smtrat.sat", lemma << " is a duplicate of " << corig);
+                        dups++;
+                    }
+                }
+                return dups>0;
+            }
 
-                // TODO duplicate check: do not add if duplicate. but make sure that during each explanation call, at least 1 new clause is added
+            bool handleTheoryConflictClause(const FormulasT& clause) {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict clause " << clause);
 
 				sat::detail::validateClause(clause, Settings::validate_clauses); // TODO can this lead to errors for multiple explanations???
                 Minisat::vec<Minisat::Lit> explanation;
@@ -922,13 +943,21 @@ namespace smtrat
 					explanation.push(createLiteral(c));
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Created literal from " << c << " -> " << explanation.last());
 				}
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
-				addClause(explanation, Minisat::LEMMA_CLAUSE);
-				propagateTheory();
-				Minisat::CRef confl = storeLemmas();
-				if (confl != Minisat::CRef_Undef) {
-					handleConflict(confl);
-				}
+
+                if (isDuplicate(explanation)) { // TODO also checked in storeLemmas - double work!
+                    SMTRAT_LOG_DEBUG("smtrat.sat", "Skipping duplicate clause " << explanation);
+                    return false;
+                }
+                else {
+                    SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
+                    addClause(explanation, Minisat::LEMMA_CLAUSE);
+                    propagateTheory();
+                    Minisat::CRef confl = storeLemmas();
+                    if (confl != Minisat::CRef_Undef) {
+                        handleConflict(confl);
+                    }
+                    return true;
+                }
 			}
 			
 			void handleTheoryConflict(const FormulaT& explanation) {
@@ -938,20 +967,24 @@ namespace smtrat
                 SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict explanation " << explanation);
                 FormulaT cnf = explanation.toCNF();
                 if (cnf.getType() == carl::FormulaType::OR) { // clause
-                    handleTheoryConflictClause(cnf.subformulas());
+                    bool added = handleTheoryConflictClause(cnf.subformulas());
+                    assert(added);
                 }
                 else if (cnf.getType() == carl::FormulaType::AND) { // conjunction of clauses
+                    bool added = false;
                     for (const auto& clause : cnf.subformulas()) {
                         if (clause.getType() == carl::FormulaType::OR) { // clause
-                            handleTheoryConflictClause(clause.subformulas());
+                            added |= handleTheoryConflictClause(clause.subformulas());
                         }
                         else { // single literal
-                            handleTheoryConflictClause(FormulasT({clause}));
+                            added |= handleTheoryConflictClause(FormulasT({clause}));
                         }
                     }
+                    assert(added);
                 }
                 else { // single literal
-                    handleTheoryConflictClause(FormulasT({cnf}));
+                    bool added = handleTheoryConflictClause(FormulasT({cnf}));
+                    assert(added);
                 }
                 SMTRAT_LOG_DEBUG("smtrat.sat", "Handled theory conflict explanation");
 			}
