@@ -6,7 +6,10 @@ namespace smtrat {
 		assert(constraint.isPseudoBoolean());
 		assert(constraint.relation() != carl::Relation::GEQ);
 		assert(constraint.relation() != carl::Relation::GREATER);
-		// However, we can still have LEQ, LESS, EQUAL, NEQ
+		// since we are implicitly in an integer context, we can normalize the constraints
+		assert(constraint.relation() != carl::Relation::LESS);
+		assert(constraint.relation() != carl::Relation::NEQ);
+		// However, we can still have LEQ, EQUAL
 
 		return doEncode(constraint);
 	}

@@ -1,43 +1,250 @@
 #include <boost/test/unit_test.hpp>
+#include <boost/optional/optional_io.hpp>
 
 #include <iostream>
 
-#include "../../lib/datastructures/cad/projection/Projection.h"
-#include "../../lib/datastructures/cad/lifting/Sample.h"
-#include "../../lib/datastructures/cad/debug/Projection.h"
-#include "../../lib/modules/NewCADModule/NewCADSettings.h"
-#include "../../lib/datastructures/cad/CAD.h"
+#include "../../lib/modules/PBPPModule/CardinalityEncoder.h"
 
 using namespace smtrat;
-using namespace smtrat::cad;
 
-BOOST_AUTO_TEST_SUITE(Test_CardinalityEncoder);
+/**
+ * Description of test cases for cardinality:
+ * 1. x1 + x2 - 1 <= 0 -> (x1 or x2) and (!x1 or !x2)
+ * 2. exactly
+ * 3. atleast
+ * 4. atmost
+ * 5. long formula
+ * 6. true evaluating
+ * 7. false evaluating
+ */
+struct CardinalityFixture {
+    CardinalityFixture() { }
 
-BOOST_AUTO_TEST_CASE(CardinalityEncoder)
+    CardinalityEncoder encoder;
+};
+
+BOOST_FIXTURE_TEST_SUITE( s, CardinalityFixture )
+
+BOOST_AUTO_TEST_SUITE( CardinalityEncoder )
+
+BOOST_AUTO_TEST_CASE(CardinalityEncoder_Simple_LEQ)
 {
-	carl::Variable x = carl::freshRealVariable("x");
-	carl::Variable y = carl::freshRealVariable("y");
+	carl::Variable x = carl::freshBooleanVariable("x");
+	carl::Variable y = carl::freshBooleanVariable("y");
 	
-	debug::Projection p({x,y});
+	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Rational(-1), carl::Relation::LEQ);
+
+	boost::optional<FormulaT> result = encoder.encode(constraint);
+
+	if (!result) {
+		BOOST_FAIL("result != {} expected, but got {}.");
+	}
+
+	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x), FormulaT(y)), FormulaT(carl::FormulaType::OR, !FormulaT(x), !FormulaT(y)));
+	BOOST_TEST_MESSAGE(expected);
+
+	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
+}
+
+BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ )
+{
+	carl::Variable x = carl::freshBooleanVariable("x");
+	carl::Variable y = carl::freshBooleanVariable("y");
 	
-	p.add(ConstraintT(Poly(x) + Poly(y), carl::Relation::LEQ));
-	p.add(ConstraintT(Poly(y), carl::Relation::GREATER));
-	p.add(ConstraintT(Poly(x) + Poly(1), carl::Relation::GREATER));
+	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Rational(-1), carl::Relation::EQ);
+
+	boost::optional<FormulaT> result = encoder.encode(constraint);
+
+	if (!result) {
+		BOOST_FAIL("result != {} expected, but got {}.");
+	}
+
+	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x), !FormulaT(y)), FormulaT(carl::FormulaType::OR, !FormulaT(x), FormulaT(y)));
+	BOOST_TEST_MESSAGE(expected);
+
+	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
+}
+
+BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost)
+{
+	carl::Variable x1 = carl::freshBooleanVariable("x1");
+	carl::Variable x2 = carl::freshBooleanVariable("x2");
+	carl::Variable x3 = carl::freshBooleanVariable("x3");
+	carl::Variable x4 = carl::freshBooleanVariable("x4");
+
+	// x1 + x2 + x3 + x4 <= 2
+	ConstraintT constraint = ConstraintT(Poly(x1) + Poly(x2) + Poly(x3) + Poly(x4) + Rational(-2), carl::Relation::LEQ);
+
+	boost::optional<FormulaT> result = encoder.encode(constraint);
+
+	if (!result) {
+		BOOST_FAIL("result != {} expected, but got {}.");
+	}
+
+	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x1), FormulaT(x2)), FormulaT(carl::FormulaType::OR, !FormulaT(x1), !FormulaT(x2)));
+	BOOST_TEST_MESSAGE(expected);
+
+	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
+}
+
+BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost_Strict)
+{
+	carl::Variable x1 = carl::freshBooleanVariable("x1");
+	carl::Variable x2 = carl::freshBooleanVariable("x2");
+	carl::Variable x3 = carl::freshBooleanVariable("x3");
+
+	// x1 + x2 + x3 < 3
+	ConstraintT constraint = ConstraintT(Poly(x1) + Poly(x2) + Poly(x3) + Rational(-3), carl::Relation::LESS);
+
+	boost::optional<FormulaT> result = encoder.encode(constraint);
+
+	if (!result) {
+		BOOST_FAIL("result != {} expected, but got {}.");
+	}
+
+	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x1), FormulaT(x2)), FormulaT(carl::FormulaType::OR, !FormulaT(x1), !FormulaT(x2)));
+	BOOST_TEST_MESSAGE(expected);
+
+	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
+}
+
+BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost_True)
+{
+	carl::Variable x1 = carl::freshBooleanVariable("x1");
+	carl::Variable x2 = carl::freshBooleanVariable("x2");
+	carl::Variable x3 = carl::freshBooleanVariable("x3");
+	carl::Variable x4 = carl::freshBooleanVariable("x4");
+
+	// x1 + x2 + x3 + x4 <= 10
+	ConstraintT constraint = ConstraintT(Poly(x1) + Poly(x2) + Poly(x3) + Poly(x4) + Rational(-10), carl::Relation::LEQ);
+
+	boost::optional<FormulaT> result = encoder.encode(constraint);
+
+	if (!result) {
+		BOOST_FAIL("result != {} expected, but got {}.");
+	}
+
+	FormulaT expected = FormulaT(carl::FormulaType::TRUE);
+	BOOST_TEST_MESSAGE(expected);
+
+	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
+}
+
+BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost_False)
+{
+	carl::Variable x1 = carl::freshBooleanVariable("x1");
+	carl::Variable x2 = carl::freshBooleanVariable("x2");
+	carl::Variable x3 = carl::freshBooleanVariable("x3");
+	carl::Variable x4 = carl::freshBooleanVariable("x4");
+
+	// x1 + x2 + x3 + x4 <= -1
+	ConstraintT constraint = ConstraintT(Poly(x1) + Poly(x2) + Poly(x3) + Poly(x4) + Rational(1), carl::Relation::LEQ);
+
+	boost::optional<FormulaT> result = encoder.encode(constraint);
+
+	if (!result) {
+		BOOST_FAIL("result != {} expected, but got {}.");
+	}
+
+	FormulaT expected = FormulaT(carl::FormulaType::TRUE);
+	BOOST_TEST_MESSAGE(expected);
+
+	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
+}
+
+BOOST_AUTO_TEST_CASE(CardinalityEncoder_Simple2)
+{
+	carl::Variable x = carl::freshBooleanVariable("y");
+	carl::Variable y = carl::freshBooleanVariable("y");
 	
-	std::cout << p.getProjection() << std::endl;
+	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Rational(-1), carl::Relation::LEQ);
+
+	boost::optional<FormulaT> result = encoder.encode(constraint);
+
+	if (!result) {
+		BOOST_FAIL("result != {} expected, but got {}.");
+	}
+
+	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x), FormulaT(y)), FormulaT(carl::FormulaType::OR, !FormulaT(x), !FormulaT(y)));
+	BOOST_TEST_MESSAGE(expected);
+
+	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
+}
+
+BOOST_AUTO_TEST_CASE(CardinalityEncoder_Simple3)
+{
+	carl::Variable x = carl::freshBooleanVariable("y");
+	carl::Variable y = carl::freshBooleanVariable("y");
 	
+	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Rational(-1), carl::Relation::LEQ);
+
+	boost::optional<FormulaT> result = encoder.encode(constraint);
+
+	if (!result) {
+		BOOST_FAIL("result != {} expected, but got {}.");
+	}
+
+	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x), FormulaT(y)), FormulaT(carl::FormulaType::OR, !FormulaT(x), !FormulaT(y)));
+	BOOST_TEST_MESSAGE(expected);
+
+	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
+}
+
+BOOST_AUTO_TEST_CASE(CardinalityEncoder_Simple4)
+{
+	carl::Variable x = carl::freshBooleanVariable("y");
+	carl::Variable y = carl::freshBooleanVariable("y");
 	
+	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Rational(-1), carl::Relation::LEQ);
+
+	boost::optional<FormulaT> result = encoder.encode(constraint);
+
+	if (!result) {
+		BOOST_FAIL("result != {} expected, but got {}.");
+	}
+
+	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x), FormulaT(y)), FormulaT(carl::FormulaType::OR, !FormulaT(x), !FormulaT(y)));
+	BOOST_TEST_MESSAGE(expected);
+
+	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
+}
+
+BOOST_AUTO_TEST_CASE(CardinalityEncoder_Simple5)
+{
+	carl::Variable x = carl::freshBooleanVariable("y");
+	carl::Variable y = carl::freshBooleanVariable("y");
 	
-	//ProjectionT<NewCADSettingsSO> projection;
-	//projection.reset({x,y});
-	//projection.addPolynomial(p.toUnivariatePolynomial(x), 0);
-	//projection.addPolynomial(q.toUnivariatePolynomial(x), 1);
-	//std::cout << projection << std::endl;
-	//
-	//Sample s(RAN(1));
-	//while (auto pid = projection.getPolyForLifting(1, s.liftedWith())) {
-	//	std::cout << projection.getPolynomialById(1, *pid) << std::endl;
-	//}
+	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Rational(-1), carl::Relation::LEQ);
+
+	boost::optional<FormulaT> result = encoder.encode(constraint);
+
+	if (!result) {
+		BOOST_FAIL("result != {} expected, but got {}.");
+	}
+
+	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x), FormulaT(y)), FormulaT(carl::FormulaType::OR, !FormulaT(x), !FormulaT(y)));
+	BOOST_TEST_MESSAGE(expected);
+
+	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
+}
+
+BOOST_AUTO_TEST_CASE(CardinalityEncoder_Simple6)
+{
+	carl::Variable x = carl::freshBooleanVariable("y");
+	carl::Variable y = carl::freshBooleanVariable("y");
+	
+	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Rational(-1), carl::Relation::LEQ);
+
+	boost::optional<FormulaT> result = encoder.encode(constraint);
+
+	if (!result) {
+		BOOST_FAIL("result != {} expected, but got {}.");
+	}
+
+	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x), FormulaT(y)), FormulaT(carl::FormulaType::OR, !FormulaT(x), !FormulaT(y)));
+	BOOST_TEST_MESSAGE(expected);
+
+	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
 }
 
 // BOOST_AUTO_TEST_CASE(Test_CAD)
@@ -57,4 +264,5 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder)
 // 	cad.check(a, mis);
 // }
 
+BOOST_AUTO_TEST_SUITE_END();
 BOOST_AUTO_TEST_SUITE_END();
