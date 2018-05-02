@@ -26,6 +26,132 @@ struct CardinalityFixture {
 BOOST_FIXTURE_TEST_SUITE( s, CardinalityFixture )
 
 BOOST_AUTO_TEST_SUITE( CardinalityEncoder )
+BOOST_AUTO_TEST_SUITE( Equality );
+
+BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ )
+{
+	carl::Variable x = carl::freshBooleanVariable("x");
+	carl::Variable y = carl::freshBooleanVariable("y");
+	
+	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Rational(-1), carl::Relation::EQ);
+
+	boost::optional<FormulaT> result = encoder.encode(constraint);
+
+	if (!result) {
+		BOOST_FAIL("result != {} expected, but got {}.");
+	}
+
+	FormulaT expected = FormulaT(carl::FormulaType::OR, FormulaT(carl::FormulaType::AND, FormulaT(x), !FormulaT(y)), FormulaT(carl::FormulaType::AND, !FormulaT(x), FormulaT(y)));
+
+	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
+}
+
+BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ_3_1 )
+{
+	carl::Variable x = carl::freshBooleanVariable("x");
+	carl::Variable y = carl::freshBooleanVariable("y");
+	carl::Variable z = carl::freshBooleanVariable("z");
+	
+	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Poly(z) + Rational(-1), carl::Relation::EQ);
+
+	boost::optional<FormulaT> result = encoder.encode(constraint);
+
+	if (!result) {
+		BOOST_FAIL("result != {} expected, but got {}.");
+	}
+
+	FormulaT expected = FormulaT(carl::FormulaType::OR,
+			FormulaT(carl::FormulaType::AND, !FormulaT(x), !FormulaT(y), FormulaT(z)),
+			FormulaT(carl::FormulaType::AND, FormulaT(x), !FormulaT(y), !FormulaT(z)),
+			FormulaT(carl::FormulaType::AND, !FormulaT(x), FormulaT(y), !FormulaT(z)));
+
+	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
+}
+
+BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ_3_2 )
+{
+	carl::Variable x = carl::freshBooleanVariable("x");
+	carl::Variable y = carl::freshBooleanVariable("y");
+	carl::Variable z = carl::freshBooleanVariable("z");
+	
+	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Poly(z) + Rational(-2), carl::Relation::EQ);
+
+	boost::optional<FormulaT> result = encoder.encode(constraint);
+
+	if (!result) {
+		BOOST_FAIL("result != {} expected, but got {}.");
+	}
+
+	FormulaT expected = FormulaT(carl::FormulaType::OR,
+			FormulaT(carl::FormulaType::AND, !FormulaT(x), FormulaT(y), FormulaT(z)),
+			FormulaT(carl::FormulaType::AND, FormulaT(x), !FormulaT(y), FormulaT(z)),
+			FormulaT(carl::FormulaType::AND, FormulaT(x), FormulaT(y), !FormulaT(z)));
+
+	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
+}
+
+BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ_3_2_Negative )
+{
+	carl::Variable x = carl::freshBooleanVariable("x");
+	carl::Variable y = carl::freshBooleanVariable("y");
+	carl::Variable z = carl::freshBooleanVariable("z");
+
+	ConstraintT constraint = ConstraintT(-Poly(x) - Poly(y) - Poly(z) - Rational(-2), carl::Relation::EQ);
+
+	boost::optional<FormulaT> result = encoder.encode(constraint);
+
+	if (!result) {
+		BOOST_FAIL("result != {} expected, but got {}.");
+	}
+
+	FormulaT expected = FormulaT(carl::FormulaType::OR,
+			FormulaT(carl::FormulaType::AND, !FormulaT(x), FormulaT(y), FormulaT(z)),
+			FormulaT(carl::FormulaType::AND, FormulaT(x), !FormulaT(y), FormulaT(z)),
+			FormulaT(carl::FormulaType::AND, FormulaT(x), FormulaT(y), !FormulaT(z)));
+
+	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
+}
+
+BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ_FALSE )
+{
+	carl::Variable x = carl::freshBooleanVariable("x");
+	carl::Variable y = carl::freshBooleanVariable("y");
+	carl::Variable z = carl::freshBooleanVariable("z");
+	
+	ConstraintT constraint = ConstraintT(-Poly(x) - Poly(y) - Poly(z) - Rational(-4), carl::Relation::EQ);
+
+	boost::optional<FormulaT> result = encoder.encode(constraint);
+
+	if (!result) {
+		BOOST_FAIL("result != {} expected, but got {}.");
+	}
+
+	FormulaT expected = FormulaT(carl::FormulaType::FALSE);
+
+	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
+}
+
+// END TEST SUITE EQ
+BOOST_AUTO_TEST_SUITE_END();
+
+BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_LEQ_TRUE )
+{
+	carl::Variable x = carl::freshBooleanVariable("x");
+	carl::Variable y = carl::freshBooleanVariable("y");
+	carl::Variable z = carl::freshBooleanVariable("z");
+	
+	ConstraintT constraint = ConstraintT(-Poly(x) - Poly(y) - Poly(z) - Rational(-4), carl::Relation::EQ);
+
+	boost::optional<FormulaT> result = encoder.encode(constraint);
+
+	if (!result) {
+		BOOST_FAIL("result != {} expected, but got {}.");
+	}
+
+	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x), !FormulaT(y)), FormulaT(carl::FormulaType::OR, !FormulaT(x), FormulaT(y)));
+
+	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
+}
 
 BOOST_AUTO_TEST_CASE(CardinalityEncoder_Simple_LEQ)
 {
@@ -41,29 +167,10 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_Simple_LEQ)
 	}
 
 	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x), FormulaT(y)), FormulaT(carl::FormulaType::OR, !FormulaT(x), !FormulaT(y)));
-	BOOST_TEST_MESSAGE(expected);
 
 	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
 }
 
-BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ )
-{
-	carl::Variable x = carl::freshBooleanVariable("x");
-	carl::Variable y = carl::freshBooleanVariable("y");
-	
-	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Rational(-1), carl::Relation::EQ);
-
-	boost::optional<FormulaT> result = encoder.encode(constraint);
-
-	if (!result) {
-		BOOST_FAIL("result != {} expected, but got {}.");
-	}
-
-	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x), !FormulaT(y)), FormulaT(carl::FormulaType::OR, !FormulaT(x), FormulaT(y)));
-	BOOST_TEST_MESSAGE(expected);
-
-	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
-}
 
 BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost)
 {
@@ -82,7 +189,6 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost)
 	}
 
 	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x1), FormulaT(x2)), FormulaT(carl::FormulaType::OR, !FormulaT(x1), !FormulaT(x2)));
-	BOOST_TEST_MESSAGE(expected);
 
 	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
 }
@@ -103,7 +209,6 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost_Strict)
 	}
 
 	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x1), FormulaT(x2)), FormulaT(carl::FormulaType::OR, !FormulaT(x1), !FormulaT(x2)));
-	BOOST_TEST_MESSAGE(expected);
 
 	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
 }
@@ -125,7 +230,6 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost_True)
 	}
 
 	FormulaT expected = FormulaT(carl::FormulaType::TRUE);
-	BOOST_TEST_MESSAGE(expected);
 
 	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
 }
@@ -147,7 +251,6 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost_False)
 	}
 
 	FormulaT expected = FormulaT(carl::FormulaType::TRUE);
-	BOOST_TEST_MESSAGE(expected);
 
 	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
 }
@@ -166,7 +269,6 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_Simple2)
 	}
 
 	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x), FormulaT(y)), FormulaT(carl::FormulaType::OR, !FormulaT(x), !FormulaT(y)));
-	BOOST_TEST_MESSAGE(expected);
 
 	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
 }
@@ -185,7 +287,6 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_Simple3)
 	}
 
 	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x), FormulaT(y)), FormulaT(carl::FormulaType::OR, !FormulaT(x), !FormulaT(y)));
-	BOOST_TEST_MESSAGE(expected);
 
 	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
 }
@@ -204,7 +305,6 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_Simple4)
 	}
 
 	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x), FormulaT(y)), FormulaT(carl::FormulaType::OR, !FormulaT(x), !FormulaT(y)));
-	BOOST_TEST_MESSAGE(expected);
 
 	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
 }
@@ -223,7 +323,6 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_Simple5)
 	}
 
 	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x), FormulaT(y)), FormulaT(carl::FormulaType::OR, !FormulaT(x), !FormulaT(y)));
-	BOOST_TEST_MESSAGE(expected);
 
 	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
 }
@@ -242,7 +341,6 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_Simple6)
 	}
 
 	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x), FormulaT(y)), FormulaT(carl::FormulaType::OR, !FormulaT(x), !FormulaT(y)));
-	BOOST_TEST_MESSAGE(expected);
 
 	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
 }

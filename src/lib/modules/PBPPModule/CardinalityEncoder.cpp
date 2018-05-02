@@ -248,12 +248,10 @@ namespace smtrat {
 				}
 			}
 
-			resultFormulaSet.push_back(FormulaT(carl::FormulaType::OR, std::move(terms)));
-			SMTRAT_LOG_INFO("smtrat.pbc", resultFormulaSet);
+			resultFormulaSet.push_back(FormulaT(carl::FormulaType::AND, std::move(terms)));
 		} while(std::next_permutation(std::begin(signs), std::end(signs)));
 
-		SMTRAT_LOG_INFO("smtrat.pbc", resultFormulaSet);
-		FormulaT resultFormula = FormulaT(carl::FormulaType::AND, resultFormulaSet);
+		FormulaT resultFormula = FormulaT(carl::FormulaType::OR, resultFormulaSet);
 		SMTRAT_LOG_INFO("smtrat.pbc", "Encoded " << constraint << " using exactly as " << resultFormula);
 
 		return resultFormula;
