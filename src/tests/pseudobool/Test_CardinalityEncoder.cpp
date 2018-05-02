@@ -7,16 +7,6 @@
 
 using namespace smtrat;
 
-/**
- * Description of test cases for cardinality:
- * 1. x1 + x2 - 1 <= 0 -> (x1 or x2) and (!x1 or !x2)
- * 2. exactly
- * 3. atleast
- * 4. atmost
- * 5. long formula
- * 6. true evaluating
- * 7. false evaluating
- */
 struct CardinalityFixture {
     CardinalityFixture() { }
 
