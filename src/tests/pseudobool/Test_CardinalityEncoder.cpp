@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_LEQ_TRUE )
 		BOOST_FAIL("result != {} expected, but got {}.");
 	}
 
-	FormulaT expected = FormulaT(carl::FormulaType::AND, FormulaT(carl::FormulaType::OR, FormulaT(x), !FormulaT(y)), FormulaT(carl::FormulaType::OR, !FormulaT(x), FormulaT(y)));
+	FormulaT expected = FormulaT(carl::FormulaType::TRUE);
 
 	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
 }
@@ -240,7 +240,7 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost_False)
 		BOOST_FAIL("result != {} expected, but got {}.");
 	}
 
-	FormulaT expected = FormulaT(carl::FormulaType::TRUE);
+	FormulaT expected = FormulaT(carl::FormulaType::FALSE);
 
 	BOOST_TEST(expected == *result, "expected " << expected << " but got " << result);
 }
