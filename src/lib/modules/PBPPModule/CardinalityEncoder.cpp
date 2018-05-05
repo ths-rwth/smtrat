@@ -20,6 +20,8 @@ namespace smtrat {
 			numberOfTerms += 1;
 		}
 
+		assert(!allCoeffNegative || !allCoeffNegative);
+
 		bool mixedCoeff = !allCoeffNegative && !allCoeffPositive;
 		Rational constant = -constraint.constantPart();
 
@@ -34,7 +36,7 @@ namespace smtrat {
 			}
 
 			// x1 + x2 + x3 = -1 or -x1 - x2 - x3 = 1
-			if (allCoeffPositive && constant < 0) return FormulaT(carl::FormulaType::FALSE);
+			if (constant < 0) return FormulaT(carl::FormulaType::FALSE);
 			// x1 + x2 + x3 = 4 or -x1 - x2 - x3 = -4
 			if (numberOfTerms < constant) return FormulaT(carl::FormulaType::FALSE);
 
@@ -56,13 +58,15 @@ namespace smtrat {
 			if (allCoeffNegative) return encodeAtLeast(constraint);
 			else if (allCoeffPositive) return encodeAtMost(constraint);
 			else assert(false);
+
 		} else {
 			assert(mixedCoeff);
 
+			// TODO we probably want to put more thought into this
 			return {};
 		}
 
-		return {};
+		assert(false && "All cases should have been handled - a return statement is missing");
 
 	}
 
@@ -72,6 +76,7 @@ namespace smtrat {
 
 	FormulaT CardinalityEncoder::encodeExactly(const std::set<carl::Variable>& variables, const Rational constant) {
 		assert(variables.size() > constant && "This should have been handled before!");
+		assert(constant >= 0 && "This should have been handled before!");
 
 		// either a permutation contains the negation of the variable or the positive variable
 		// This has nothing to do with the actual coefficient signs!
@@ -114,7 +119,6 @@ namespace smtrat {
 		}
 
 		FormulasT result;
-		// TODO we don't really want to use Rational here. Convert to unsigned?
 		Rational constant = -constraint.constantPart();
 		for (Rational i = constant - 1; i > 0; i--) {
 			result.push_back(FormulaT(carl::FormulaType::NOT,
@@ -128,7 +132,7 @@ namespace smtrat {
 
 	FormulaT CardinalityEncoder::encodeAtMost(const ConstraintT& constraint) {
 		FormulasT result;
-		// TODO we don't really want to use Rational here. Convert to unsigned?
+
 		Rational constant = -constraint.constantPart();
 		for (unsigned i = 0 ; i <= constant; i++) {
 			result.push_back(FormulaT(encodeExactly(constraint.variables(), i)));
