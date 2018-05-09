@@ -176,11 +176,11 @@ namespace smtrat
 			Rational min = INT_MAX;
 			Rational max = INT_MIN;
 
-			// TODO check whether there is a better way to get the number of terms in a poly
-			const std::size_t lhsSize = lhs.size() - lhs.hasConstantTerm() ? 1 : 0;
+			const std::size_t lhsSize = constraint.variables().size();
 
 			// check each monome for negative/positive coefficient
 			for(const auto& it : lhs){
+				if (it.isConstant()) continue;
 				// TODO make sure we do not take a constant part into account
 				if(it.coeff() < 0){
 					positive = false;
@@ -190,16 +190,19 @@ namespace smtrat
 
 				if(it.coeff() < min){
 					min = it.coeff();
-				}else if(it.coeff() > max){
+				}
+
+				if(it.coeff() > max){
 					max = it.coeff();
 				}
 
 				sum += it.coeff();
 			}
 
-			for(unsigned i = 0; i < lhsSize - 1; i++){
+			for(const auto& term : lhs) {
+				if (term.isConstant()) continue;
 				// check whether the coefficients are all the same
-				if(lhs[i].coeff() != lhs[i + 1].coeff()){
+				if(term.coeff() != min){
 					isAllCoeffEqual = false;
 					break;
 				}
@@ -208,16 +211,16 @@ namespace smtrat
 			if(!positive && !negative){
 				// not only positive and not only negative -> has both, positive and negative coeff
 				auto res = encodeMixedConstraints(constraint);
-				SMTRAT_LOG_INFO("smtrat.pbc", inputFormula << " -> " << res);
+				SMTRAT_LOG_INFO("smtrat.pbc", "Encoded mixed: " << inputFormula << " -> " << res);
 				return res;
-			}else if(isAllCoeffEqual && (lhs.lcoeff() == 1 || lhs.lcoeff() == -1 ) && lhsSize > 1){
+			}else if(isAllCoeffEqual && (((max == min) && (min == -1 || max == 1)))){
 				// x1 + x2 - x3 ~ b
 				auto res = encodeCardinalityConstraint(constraint);
-				SMTRAT_LOG_INFO("smtrat.pbc", inputFormula << " -> " << res);
+				SMTRAT_LOG_INFO("smtrat.pbc", "Encoded cardinality: " << inputFormula << " -> " << res);
 				return res;
 			}else if((lhsSize == 1 && !lhs.begin()->isConstant()) || lhsSize == 2){
 				auto res = convertSmallFormula(constraint);
-				SMTRAT_LOG_INFO("smtrat.pbc", inputFormula << " -> " << res);
+				SMTRAT_LOG_INFO("smtrat.pbc", "Encoded Small: " << inputFormula << " -> " << res);
 				return res;
 			}else if(!(positive && rhs > 0 && sum > rhs
 						&& (cRel == carl::Relation::GEQ || cRel == carl::Relation::GREATER || cRel == carl::Relation::LEQ || cRel == carl::Relation::LESS))
@@ -228,11 +231,11 @@ namespace smtrat
 					&& !(!positive && !negative)
 					){
 				auto res = convertBigFormula(constraint);
-				SMTRAT_LOG_INFO("smtrat.pbc", inputFormula << " -> " << res);
+				SMTRAT_LOG_INFO("smtrat.pbc", "Converted big: " << inputFormula << " -> " << res);
 				return res;
 			}else{
 				auto res = forwardAsArithmetic(constraint);
-				SMTRAT_LOG_INFO("smtrat.pbc", inputFormula << " -> " << res);
+				SMTRAT_LOG_INFO("smtrat.pbc", "Encoded as Arithmetic: " << inputFormula << " -> " << res);
 				return res;
 			}
 		}
