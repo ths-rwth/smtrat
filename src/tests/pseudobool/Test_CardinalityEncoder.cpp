@@ -325,8 +325,9 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_AtLeast_2)
 	}
 
 	FormulaT expected = FormulaT(carl::FormulaType::AND,
+			// anything but at least one
 			FormulaT(carl::FormulaType::OR, FormulaT(x1), FormulaT(x2), FormulaT(x3)),
-			// not exactly 1
+			// and not not exactly 1
 			!FormulaT(carl::FormulaType::OR,
 				FormulaT(carl::FormulaType::AND, FormulaT(x1), !FormulaT(x2), !FormulaT(x3)),
 				FormulaT(carl::FormulaType::AND, !FormulaT(x1), FormulaT(x2), !FormulaT(x3)),
