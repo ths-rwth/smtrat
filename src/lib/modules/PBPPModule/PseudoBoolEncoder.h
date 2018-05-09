@@ -23,6 +23,8 @@ namespace smtrat {
 
 			FormulaT generateVarChain(const std::set<carl::Variable>& vars, carl::FormulaType type);
 
+		private:
+			ConstraintT normalizeLessConstraint(const ConstraintT& constraint);
 
 	};
 }

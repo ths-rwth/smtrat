@@ -20,7 +20,7 @@ namespace smtrat {
 			numberOfTerms += 1;
 		}
 
-		assert(!allCoeffNegative || !allCoeffNegative);
+		assert(!allCoeffNegative || !allCoeffPositive);
 
 		bool mixedCoeff = !allCoeffNegative && !allCoeffPositive;
 		Rational constant = -constraint.constantPart();
@@ -45,6 +45,9 @@ namespace smtrat {
 			// we only expect normalized constraints!
 			assert(constraint.relation() == carl::Relation::LEQ);
 
+			// -x1 -x2 -x3 <= -4 iff x1 + x2 + x3 >= 4
+			if (allCoeffNegative && carl::abs(constant) > constraint.variables().size())
+				return FormulaT(carl::FormulaType::FALSE);
 			// -x1 - x2 - x3 <= 1 iff. x1 + x2 + x3 >= -1
 			if (allCoeffNegative && constant > 0) return FormulaT(carl::FormulaType::FALSE);
 			// x1 + x2 + x3 + x4 <= -1
@@ -119,10 +122,12 @@ namespace smtrat {
 		}
 
 		FormulasT result;
-		Rational constant = -constraint.constantPart();
+		Rational constant = constraint.constantPart();
+		assert(constant > 0);
 		for (Rational i = constant - 1; i > 0; i--) {
 			result.push_back(FormulaT(carl::FormulaType::NOT,
 						encodeExactly(constraint.variables(), i)));
+			SMTRAT_LOG_DEBUG("smtrat.pbc", "current encosing result " << result);
 		}
 
 		return FormulaT(carl::FormulaType::AND,
