@@ -68,7 +68,7 @@ public:
 		}
 	}
 	
-	boost::optional<ConstraintT> operator()() {
+	boost::optional<FormulasT> operator()() {
 		assert(hasNext());
 		
 		const Bound& lower = mLower[mNext.first];
@@ -82,18 +82,21 @@ public:
 		if (lr < ur) {
 			return boost::none;
 		}
+		FormulasT res;
 		if (lr == ur && !strict) {
-			if (mInequalities.find(lr) != mInequalities.end()) {
+			auto it = mInequalities.find(lr);
+			if (it != mInequalities.end()) {
 				// Only allows for a point solution which is excluded by an inequality.
 				strict = true;
+				res.emplace_back(it->second);
 			} else {
 				return boost::none;
 			}
 		}
 		
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "-> " << std::get<1>(lower) << " vs. " << std::get<1>(upper));
-		
-		return ConstraintT(lp - up, strict ? carl::Relation::LESS : carl::Relation::LEQ);
+		res.emplace_back(ConstraintT(lp - up, strict ? carl::Relation::LESS : carl::Relation::LEQ));
+		return res;
 	}
 };
 
@@ -112,10 +115,8 @@ struct Explanation {
 			auto res = cg();
 			if (res) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Found conflict " << *res);
-				FormulasT expl;
-				for (const auto& r: reason) expl.emplace_back(r.negated());
-				expl.emplace_back(*res);
-				return FormulaT(carl::FormulaType::OR, std::move(expl));
+				for (const auto& r: reason) res->emplace_back(r.negated());
+				return FormulaT(carl::FormulaType::OR, std::move(*res));
 			}
 			cg.next();
 		}
