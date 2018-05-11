@@ -6,11 +6,12 @@
  * on a given set of polynomials.
  *
  * References:
- * [1] Christopher W. Brown. 2013. Constructing a single open cell in a
- * cylindrical algebraic decomposition. In Proceedings of the 38th
- * International Symposium on Symbolic and Algebraic Computation (ISSAC '13).
- * ACM
- * [2] McCallum .. something about well-oriented
+ * [brown15] Brown, Christopher W., and Marek Košta.
+ * "Constructing a single cell in cylindrical algebraic decomposition."
+ * Journal of Symbolic Computation 70 (2015): 14-48.
+ * [mccallum84] Scott McCallum.
+ * "An Improved Projection Operation for Cylindrical Algebraic Decomposition"
+ * Ph.D. Dissertation. 1984. The University of Wisconsin - Madison
  */
 
 #include <vector>
@@ -32,7 +33,7 @@
 #include <carl/core/MultivariatePolynomial.h>
 #include <carl/converter/CoCoAAdaptor.h>
 
-#include "../../../Common.h" // useful short type aliases
+#include "../../../Common.h" // useful short type aliases and constants
 #include "Assertables.h"
 
 namespace smtrat {
