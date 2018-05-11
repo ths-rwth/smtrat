@@ -99,8 +99,29 @@ namespace onecellcad {
     };
 
     inline
+    bool operator==(const TagPoly &lhs, const TagPoly &rhs) {
+      return lhs.tag == rhs.tag && lhs.poly == rhs.poly;
+    }
+
+    inline
     std::ostream &operator<<(std::ostream &o, const TagPoly &p) {
       return o << "(poly " << p.tag << " " << p.poly << ")";
+    }
+
+    inline
+    std::ostream &operator<<(std::ostream &o, const std::vector<TagPoly> &polys) {
+      o << "[ " << polys.size() << ": ";
+      for (const auto& poly : polys)
+        o << poly.tag << " " << poly.poly << ", ";
+      return o << "]";
+    }
+
+    inline
+    std::ostream &operator<<(std::ostream &o, const std::vector<TagPoly2> &polys) {
+      o << "[ " << polys.size() << ": ";
+      for (const auto& poly : polys)
+        o << poly.tag << " " << poly.poly << ", ";
+      return o << "]";
     }
 
     inline
@@ -139,7 +160,7 @@ namespace onecellcad {
 
     inline
     std::ostream &operator<<(std::ostream &o, const Section &s) {
-      return o << "(section " << s.lastVarCachedRoot << " " << s.poly << ")";
+      return o << "(section " << s.poly << " " << s.lastVarCachedRoot << ")";
     }
 
     /**
@@ -331,8 +352,8 @@ namespace onecellcad {
       return std::find_if(polys.begin(), polys.end(), isMatch) != polys.end();
     }
 
-    inline
-    bool contains(const std::vector<TagPoly2> &polys, const TagPoly2 &poly) {
+    template<typename T>
+    bool contains(const std::vector<T> &polys, const T &poly) {
       return std::find(polys.begin(), polys.end(), poly) != polys.end();
     }
 
@@ -1032,13 +1053,11 @@ namespace onecellcad {
           continue;
 
         for (const auto &factor : factorizer.irreducibleFactorsOf(poly.poly)) {
-          SMTRAT_LOG_TRACE("smtrat.cad", "Shrink with irreducible factor: Poly: "
-            << poly.poly << " Factor: " << factor);
-          if (factor.isConstant())
+          TagPoly tFactor{poly.tag, factor};
+          if (factor.isConstant() || contains(nextLevelNonConstIrreducibles, tFactor))
             continue;
 
-          nextLevelNonConstIrreducibles.emplace_back(
-            TagPoly{poly.tag, factor});
+          nextLevelNonConstIrreducibles.emplace_back(tFactor);
         }
 
       }
@@ -1062,40 +1081,50 @@ namespace onecellcad {
       const std::vector<carl::Variable> &variableOrder,
       const RANPoint &point,
       const std::vector<Poly> &polys) {
-//      const std::vector<TagPoly> &polys) {
-      // precondition:
-      assert(!variableOrder.empty());
-      assert(hasUniqElems(variableOrder));
-      assert(variableOrder.size() == point.dim());
-      assert(hasOnlyNonConstIrreducibles(polys));
-      SMTRAT_LOG_DEBUG("smtrat.cad", "Variable order: " << variableOrder);
-      SMTRAT_LOG_DEBUG("smtrat.cad", "Polys: " << polys);
-      assert(polyVarsAreAllInList(polys, variableOrder));
 
-      SMTRAT_LOG_INFO("smtrat.cad", "Build point enclosing CADcell");
-      SMTRAT_LOG_DEBUG("smtrat.cad", "Variable order: " << variableOrder);
-      SMTRAT_LOG_DEBUG("smtrat.cad", "Point: " << point);
-      SMTRAT_LOG_DEBUG("smtrat.cad", "Polys: " << polys);
-
-      CADCell cell = fullSpaceCoveringCell(point.dim());
-      SMTRAT_LOG_DEBUG("smtrat.cad", "Cell: " << cell);
-
-      carl::CoCoAAdaptor<Poly> factorizer(polys);
-      const ShrinkContext ctx{point, variableOrder, factorizer};
-      PolyLog emptyLog;
-
+      std::vector<TagPoly2> tPolys;
       for (const auto &poly : polys) {
-        const auto polyLevel = *levelOf(ctx.variableOrder, poly);
+        const auto polyLevel = *levelOf(variableOrder, poly);
         TagPoly2 taggedPoly = {PolyTag::SGN_INV, poly, polyLevel};
-        if (shrinkCell(ctx, emptyLog, taggedPoly, cell) == ShrinkResult::FAIL) {
-          SMTRAT_LOG_WARN("smtrat.cad", "Building failed");
-          return std::experimental::nullopt;
-        }
+        tPolys.emplace_back(taggedPoly);
       }
 
-      SMTRAT_LOG_DEBUG("smtrat.cad", "Finished Cell: " << cell);
-      return cell;
+      return pointEnclosingCADCell(variableOrder,point,tPolys);
     }
-  };
+
+  std::experimental::optional<CADCell> pointEnclosingCADCell(
+    const std::vector<carl::Variable> &variableOrder,
+    const RANPoint &point,
+    const std::vector<TagPoly2> &polys) {
+    // precondition:
+    assert(!variableOrder.empty());
+    assert(hasUniqElems(variableOrder));
+    assert(variableOrder.size() == point.dim());
+    assert(hasOnlyNonConstIrreducibles(asMultiPolys(polys)));
+    assert(polyVarsAreAllInList(asMultiPolys(polys), variableOrder));
+
+    SMTRAT_LOG_INFO("smtrat.cad", "Build point enclosing CADcell");
+    SMTRAT_LOG_DEBUG("smtrat.cad", "Variable order: " << variableOrder);
+    SMTRAT_LOG_DEBUG("smtrat.cad", "Point: " << point);
+    SMTRAT_LOG_DEBUG("smtrat.cad", "Polys: " << asMultiPolys(polys));
+
+    CADCell cell = fullSpaceCoveringCell(point.dim());
+    SMTRAT_LOG_DEBUG("smtrat.cad", "Cell: " << cell);
+
+    carl::CoCoAAdaptor<Poly> factorizer(asMultiPolys(polys));
+    const ShrinkContext ctx{point, variableOrder, factorizer};
+    PolyLog emptyLog;
+
+    for (const auto &poly : polys) {
+      if (shrinkCell(ctx, emptyLog, poly, cell) == ShrinkResult::FAIL) {
+        SMTRAT_LOG_WARN("smtrat.cad", "Building failed");
+        return std::experimental::nullopt;
+      }
+    }
+
+    SMTRAT_LOG_DEBUG("smtrat.cad", "Finished Cell: " << cell);
+    return cell;
+  }
+};
 } // namespace onecellcad
 } // namespace smtrat
