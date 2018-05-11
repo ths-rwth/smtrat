@@ -1,5 +1,7 @@
 #include "RNSEncoder.h"
 
+#include <carl/numbers/PrimeFactory.h>
+
 namespace smtrat {
 
 	boost::optional<FormulaT> RNSEncoder::doEncode(const ConstraintT& constraint) {
