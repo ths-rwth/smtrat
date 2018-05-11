@@ -1,9 +1,6 @@
 /**
  * @file   Stats.cpp
- *		 Created on November 28, 2012, 2:42 PM
  * @author: Sebastian Junges
- *
- *
  */
 
 #include "Stats.h"

@@ -27,7 +27,7 @@ jobs = [
 	job("2-macos", ["build", "xcode7.3", "build.sh"]),
 	job("2-macos", ["build", "xcode8.2", "build.sh"]),
 	job("2-macos", ["build", "xcode8.3", "build.sh"]),
-	job("3-docs", ["build", "linux", "g++-6", "task.doxygen", "j1", "build.sh"]),
+	job("3-docs", ["build", "linux", "clang-6.0", "task.doxygen", "j1", "build.sh"]),
 ]
 
 
