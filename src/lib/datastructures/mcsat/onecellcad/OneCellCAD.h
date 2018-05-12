@@ -594,7 +594,7 @@ namespace onecellcad {
 
     inline
     Poly discriminant(const carl::Variable &mainVariable, const Poly &p) {
-      return Poly(p.toUnivariatePolynomial(mainVariable).discriminant());
+      return Poly(carl::discriminant(p.toUnivariatePolynomial(mainVariable)));
     }
 
 
@@ -695,7 +695,7 @@ namespace onecellcad {
     Poly resultant(const carl::Variable &mainVariable, const Poly &p1, const Poly &p2) {
       const auto p1UPoly = p1.toUnivariatePolynomial(mainVariable);
       const auto p2UPoly = p2.toUnivariatePolynomial(mainVariable);
-      return Poly(p1UPoly.resultant(p2UPoly));
+      return Poly(carl::resultant(p1UPoly, p2UPoly));
     }
 
     ShrinkResult shrinkCellWithIrreducibleFactorsOfPoly(
