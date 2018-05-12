@@ -27,7 +27,7 @@
 #include <carl/formula/model/ran/RealAlgebraicPoint.h>
 #include <carl/core/Variable.h>
 #include <carl/core/VariablePool.h>
-#include <carl/core/Resultant.h>
+#include <carl/core/polynomialfunctions/Resultant.h>
 #include <carl/core/rootfinder/RootFinder.h>
 #include <carl/core/UnivariatePolynomial.h>
 #include <carl/core/MultivariatePolynomial.h>
