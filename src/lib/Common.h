@@ -70,6 +70,8 @@ namespace smtrat
 
   using Poly = carl::MultivariatePolynomial<Rational>;
 
+  template<typename Coeff> using UPoly = carl::UnivariatePolynomial<Coeff>;
+
   typedef carl::Constraint<Poly> ConstraintT;
 
   typedef carl::Constraints<Poly> ConstraintsT;
