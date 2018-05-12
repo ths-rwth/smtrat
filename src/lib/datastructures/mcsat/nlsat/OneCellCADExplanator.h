@@ -70,7 +70,7 @@ std::vector<carl::Variable> prefix(const std::vector<carl::Variable> vars, std::
 }
 
 struct Explanation {
-  FormulaT
+  boost::optional<FormulaT>
   operator()(const mcsat::Bookkeeping &data, const std::vector<carl::Variable> &variableOrder, carl::Variable var,
              const FormulasT &reason, const FormulaT &implication) const {
     SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "With: " << reason << " explain: " << implication);
