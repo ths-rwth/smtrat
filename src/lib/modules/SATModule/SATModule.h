@@ -623,6 +623,18 @@ namespace smtrat
             SATModuleStatistics* mpStatistics;
             #endif
 
+            // learnt clause set for duplicate checks
+            struct hashClause {
+                size_t operator() (const std::set<Minisat::Lit>& cl) const {
+                    size_t res = 0;
+                    for (const auto& lit : cl) {
+                        res = res ^ lit.x;
+                    }
+                    return res;
+                }
+            };
+            std::unordered_set<std::set<Minisat::Lit>, hashClause> learnts_set;
+
         public:
 			typedef Settings SettingsType;
 			std::string moduleName() const {
@@ -911,45 +923,26 @@ namespace smtrat
 				return assigns[x];
 			}
 
-            bool isDuplicate(Minisat::vec<Minisat::Lit>& lemma) { // TODO improve performance
-                sort(lemma, lemma_lt(*this));
-                std::size_t dups = 0;
-                for (int i = 0; i < learnts.size(); i++) {
-                    const auto& corig = ca[learnts[i]];
-                    if (lemma.size() != corig.size()) continue;
-                    Minisat::vec<Minisat::Lit> c;
-                    for (int j = 0; j < corig.size(); j++) {
-                        c.push(corig[j]);
-                    }
-                    sort(c, lemma_lt(*this));
-                    bool different = false;
-                    for (int j = 0; j < lemma.size(); j++) {
-                        different = different || (c[j] != lemma[j]);
-                    }
-                    if (!different) {
-                        SMTRAT_LOG_DEBUG("smtrat.sat", lemma << " is a duplicate of " << corig);
-                        dups++;
-                    }
-                }
-                return dups>0;
-            }
-
             bool handleTheoryConflictClause(const FormulasT& clause) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict clause " << clause);
 
 				sat::detail::validateClause(clause, Settings::validate_clauses); // TODO can this lead to errors for multiple explanations???
                 Minisat::vec<Minisat::Lit> explanation;
+                std::set<Minisat::Lit> explanation_set;
 				for (const auto& c: clause) {
-					explanation.push(createLiteral(c));
+                    auto lit = createLiteral(c);
+					explanation.push(lit);
+                    explanation_set.insert(lit);
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Created literal from " << c << " -> " << explanation.last());
 				}
-
-                if (isDuplicate(explanation)) {
+                
+                if (learnts_set.find(explanation_set) != learnts_set.end()) {
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Skipping duplicate clause " << explanation);
                     return false;
                 }
                 else {
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
+                    learnts_set.insert(explanation_set);
                     addClause(explanation, Minisat::LEMMA_CLAUSE);
                     propagateTheory();
                     Minisat::CRef confl = storeLemmas();
