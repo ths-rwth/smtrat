@@ -90,7 +90,7 @@ public:
 struct BackendSettings1 {
 	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-	using ExplanationBackend = vs::Explanation;
+	using ExplanationBackend = SequentialExplanation<vs::Explanation, nlsat::Explanation>; // vs::Explanation;
 };
 
 } // namespace mcsat

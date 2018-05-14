@@ -31,31 +31,23 @@ public:
 private:
 	
 	boost::optional<FormulaT> generateExplanation() const {
-		// get constraints from formula
-		std::vector<const ConstraintT*> constraints;
-		for (const auto& constr : mConstraints) {
-			assert(constr.getType() == carl::FormulaType::CONSTRAINT);
-			constraints.push_back(&(constr.constraint()));
-		}
-
 		// generate test candidates
-		std::vector<::vs::Substitution> testCandidates;
-		if (helper::generateTestCandidates(testCandidates, mTargetVar, constraints)) {
-			FormulasT res; // TODO resize?
+		std::vector<::vs::Substitution> testCandidates; // TODO size: at most 2*mConstraints.size()
+		if (helper::generateTestCandidates(testCandidates, mTargetVar, mModel, mConstraints)) {
+			FormulasT res;
+			res.reserve(testCandidates.size());
 			for (const auto& tc : testCandidates) {
 				FormulasT substitutionResults;
+				substitutionResults.reserve(mConstraints.size());
 
 				// substitute tc into each input constraint
 				for (const auto& constr : mConstraints) {
-					const ConstraintT& constraint = constr.constraint();
-					::vs::DisjunctionOfConstraintConjunctions result;
-					carl::Variables dummy_vars; // we do not make use of this feature here
-					smtrat::EvalDoubleIntervalMap dummy_map;
-            		bool success = substitute(constraint, tc, result, false, dummy_vars, dummy_map);
-					if (!success) {
+					FormulaT result;
+					if (!helper::substitute(constr, tc, mModel, result)) {
 						return boost::none;
 					}
-					substitutionResults.push_back(helper::doccToFormula(result));
+					substitutionResults.push_back(std::move(result));
+					
 					if (substitutionResults.back() == FormulaT(carl::FormulaType::FALSE)) {
 						break; // since this is part of a conjunction, and we got false, we can ignore future substitutions
 					}
@@ -85,7 +77,6 @@ private:
 public:
 	boost::optional<FormulaT> getExplanation(const FormulaT& f) const {
 		// this module only explains conflicts
-		// assert( f == FormulaT( ConstraintT( false ) ) );
 		assert(f == FormulaT(carl::FormulaType::FALSE));
         return generateExplanation();
 	}
