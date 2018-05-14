@@ -249,7 +249,10 @@ endif()
 
 # add_subdirectory(examples EXCLUDE_FROM_ALL) # offer as an optional target
 add_subdirectory(manual EXCLUDE_FROM_ALL)
-add_subdirectory(doxygen-conf EXCLUDE_FROM_ALL)
+
+if (TARGET Doxygen::doxygen)
+	add_subdirectory(doxygen-conf EXCLUDE_FROM_ALL)
+endif()
 
 # # # # # # # # # # # # # # # # # # # # # #
 # D. Writen information files
