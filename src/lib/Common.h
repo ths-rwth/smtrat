@@ -72,7 +72,7 @@ namespace smtrat
 
   template<typename Coeff> using UPoly = carl::UnivariatePolynomial<Coeff>;
 
-  using RANPoint = carl::RealAlgebraicPoint<smtrat::Rational>;
+  using RANPoint = carl::RealAlgebraicPoint<Rational>;
 
   typedef carl::Constraint<Poly> ConstraintT;
 
