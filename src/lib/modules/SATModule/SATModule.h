@@ -911,7 +911,7 @@ namespace smtrat
 				return assigns[x];
 			}
 
-            bool isDuplicate(Minisat::vec<Minisat::Lit>& lemma) {
+            bool isDuplicate(Minisat::vec<Minisat::Lit>& lemma) { // TODO improve performance
                 sort(lemma, lemma_lt(*this));
                 std::size_t dups = 0;
                 for (int i = 0; i < learnts.size(); i++) {
@@ -944,7 +944,7 @@ namespace smtrat
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Created literal from " << c << " -> " << explanation.last());
 				}
 
-                if (isDuplicate(explanation)) { // TODO also checked in storeLemmas - double work!
+                if (isDuplicate(explanation)) {
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Skipping duplicate clause " << explanation);
                     return false;
                 }
