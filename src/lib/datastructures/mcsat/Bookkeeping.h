@@ -6,18 +6,23 @@ namespace smtrat {
 namespace mcsat {
 
 /**
- * This class handles all the bookkeeping necessary for all MCSAT backends.
+ * Represent the trace, i.e. the assignment/model state, of a MCSAT run in different
+ * representations (kept in sync) for a fast access.
+ * Most notably, we store literals, i.e. a polynomial (in)equality-atom or its negation,
+ * which we assert to be true. Since the negation can be represented by an atom by
+ * flipping the (in)equality, it suffices to store only atoms. Here we call atomic formulas
+ * over the theory of real arithmetic "constraints".
  */
 class Bookkeeping {
-	/// The current (partial) model.
+	/** Current (partial) model. */
 	Model mModel;
-	/// The stack of variables being assigned.
+	/** Stack of (algebraic) variables being assigned. */
 	std::vector<carl::Variable> mAssignedVariables;
-	/// The stack of theory assignments.
+	/** Stack of theory assignments, i.e. the values for the variables. */
 	std::vector<FormulaT> mAssignments;
-	/// The stack of asserted constraints.
+	/** Stack of asserted constraints/literals. */
 	std::vector<FormulaT> mConstraints;
-	/// The stack of asserted multivariate root bounds.
+	/** Stack of asserted multivariate root bounds. */
 	std::vector<FormulaT> mMVBounds;
 public:
 	
@@ -37,7 +42,7 @@ public:
 		return mMVBounds;
 	}
 	
-	
+	/** Assert a constraint/literal */
 	void pushConstraint(const FormulaT& f) {
 		SMTRAT_LOG_TRACE("smtrat.nlsat", "Adding " << f);
 		switch (f.getType()) {
@@ -88,11 +93,11 @@ public:
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Bookkeeping& bk) {
-	os << "MCSAT:" << std::endl;
+	os << "MCSAT trace:" << std::endl;
 	os << "## Model: " << bk.model() << std::endl;
 	os << "## Assigned Vars: " << bk.assignedVariables() << std::endl;
-	os << "## Assignments: " << bk.assignments() << std::endl;
-	os << "## Constraints: " << bk.constraints() << std::endl;
+	os << "## Assigned Values: " << bk.assignments() << std::endl;
+	os << "## Asserted constr/lits: " << bk.constraints() << std::endl;
 	os << "## Bounds: " << bk.mvBounds() << std::endl;
 	return os;
 }
