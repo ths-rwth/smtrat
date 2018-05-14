@@ -125,9 +125,7 @@ namespace smtrat {
 		Rational constant = constraint.constantPart();
 		assert(constant > 0);
 		for (Rational i = constant - 1; i > 0; i--) {
-			result.push_back(FormulaT(carl::FormulaType::NOT,
-						encodeExactly(constraint.variables(), i)));
-			SMTRAT_LOG_DEBUG("smtrat.pbc", "current encosing result " << result);
+			result.push_back(!encodeExactly(constraint.variables(), i));
 		}
 
 		return FormulaT(carl::FormulaType::AND,
