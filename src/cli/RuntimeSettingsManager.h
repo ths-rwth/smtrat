@@ -30,6 +30,7 @@ namespace smtrat
         bool mPrintStrategy;
         bool mExportDIMACS;
         bool mReadDIMACS;
+		bool mReadOPB;
     public:
         RuntimeSettingsManager();
         virtual ~RuntimeSettingsManager() {}
@@ -81,6 +82,10 @@ namespace smtrat
         bool readDIMACS() const
         {
             return mReadDIMACS;
+        }
+		bool readOPB() const
+        {
+            return mReadOPB;
         }
         
     protected:

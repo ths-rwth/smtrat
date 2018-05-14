@@ -80,6 +80,8 @@ namespace smtrat
 	typedef carl::VariableAssignment<Poly> VariableAssignmentT;
 	
 	typedef carl::VariableComparison<Poly> VariableComparisonT;
+	
+	typedef carl::PBConstraint<Poly> PBConstraintT;
 
     typedef carl::Formula<Poly> FormulaT;
 

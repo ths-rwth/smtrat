@@ -8,21 +8,40 @@
 
 #pragma once
 
+#include <carl/numbers/PrimeFactory.h>
+#include <boost/math/common_factor.hpp>
+
+#include "CardinalityEncoder.h"
+#include "LongFormulaEncoder.h"
+#include "MixedSignEncoder.h"
 #include "../../solver/Module.h"
 #include "PBPPStatistics.h"
 #include "PBPPSettings.h"
+#include "RNSEncoder.h"
+#include "ShortFormulaEncoder.h"
+
 
 namespace smtrat
 {
 	template<typename Settings>
-	class PBPPModule : public Module
+		class PBPPModule : public Module
 	{
 		private:
 #ifdef SMTRAT_DEVOPTION_Statistics
 			PBPPStatistics mStatistics;
 #endif
 			// Members.
-			
+			std::map<carl::Variable, carl::Variable> mVariablesCache; // int, bool
+			carl::FormulaVisitor<FormulaT> mVisitor;
+			std::vector<carl::Variable> mCheckedVars;
+			std::vector<carl::Variable> mConnectedVars;
+
+			RNSEncoder mRNSEncoder;
+			ShortFormulaEncoder mShortFormulaEncoder;
+			LongFormulaEncoder mLongFormulaEncoder;
+			CardinalityEncoder mCardinalityEncoder;
+			MixedSignEncoder mMixedSignEncoder;
+
 		public:
 			typedef Settings SettingsType;
 			std::string moduleName() const {
@@ -31,7 +50,7 @@ namespace smtrat
 			PBPPModule(const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = nullptr);
 
 			~PBPPModule();
-			
+
 			// Main interfaces.
 			/**
 			 * Informs the module about the given constraint. It should be tried to inform this
@@ -82,5 +101,31 @@ namespace smtrat
 			 *		 Unknown, otherwise.
 			 */
 			Answer checkCore();
+
+		private:
+			bool isAllCoefficientsEqual(const ConstraintT& constraint);
+			FormulaT convertPbConstraintToConstraintFormula(const FormulaT& formula);
+			FormulaT convertSmallFormula(const ConstraintT& formula);
+			FormulaT convertBigFormula(const ConstraintT& formula);
+
+			FormulaT forwardAsArithmetic(const ConstraintT& formula);
+
+			FormulaT checkFormulaType(const FormulaT& formula);
+			FormulaT checkFormulaTypeWithRNS(const FormulaT& formula);
+			FormulaT checkFormulaTypeWithCardConstr(const FormulaT& formula);
+			FormulaT checkFormulaTypeWithMixedConstr(const FormulaT& formula);
+			FormulaT checkFormulaTypeBasic(const FormulaT& formula);
+
+			std::function<FormulaT(FormulaT)> checkFormulaAndApplyTransformationsCallback;
+
+			FormulaT checkFormulaAndApplyTransformations(const FormulaT& subformula);
+			FormulaT generateVarChain(const std::set<carl::Variable>& vars, carl::FormulaType type);
+			FormulaT createAuxiliaryConstraint(const std::vector<carl::Variable>& variables);
+			FormulaT interconnectVariables(const std::set<carl::Variable>& variables);
+
+			FormulaT encodeCardinalityConstraint(const ConstraintT& formula);
+			FormulaT encodeMixedConstraints(const ConstraintT& formula);
+			FormulaT encodeConstraintOrForwardAsArithmetic(const ConstraintT& constraint, PseudoBoolEncoder& encoder);
+
 	};
 }

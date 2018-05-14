@@ -1,6 +1,5 @@
 /**
  * @file   Stats.h
- *		 Created on November 28, 2012, 2:42 PM
  * @author Sebastian Junges
  * @created 28/11/2012
  *

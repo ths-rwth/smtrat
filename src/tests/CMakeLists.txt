@@ -11,46 +11,19 @@
 # Version: 2012-07-30                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-#include_directories( ${PROJECT_SOURCE_DIR}/src )
-#link_directories( ${PROJECT_BINARY_DIR}/src
-#                  ${PROJECT_BINARY_DIR} )
+find_package(Boost COMPONENTS unit_test_framework REQUIRED)
 
-
-#add_executable( check_${PROJECT_NAME} test.cpp )
-
-# executable target
-#add_custom_target( check
-#                   COMMAND check_${PROJECT_NAME}
-#                   DEPENDS check_${PROJECT_NAME}
-#                   COMMENT "${${PROJECT_NAME}_NAME} ${${PROJECT_NAME}_VERSION} CPPUnit Test Suite"
-#)
-
-# link the libraries
-#target_link_libraries( check_${PROJECT_NAME}
-#                       ${CPPUNIT_LIBRARIES}
-#                       ${PROJECT_NAME}
-#                       ${libraries}
-#)
-
-#set_target_properties( check_${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
-
-add_executable( parserTest
-	ParserTest.cpp
-)
-
-set_target_properties( parserTest PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
+add_definitions(-DBOOST_TEST_DYN_LINK)
 
 include_directories(${CMAKE_SOURCE_DIR}/src
                     ${CMAKE_SOURCE_DIR}/src/cli
                     ${CMAKE_BINARY_DIR}/src/cli
                     ${carl_INCLUDE_DIR}
  )
-target_link_libraries( parserTest
-                        lib_${PROJECT_NAME} # smtrat library
-                        ${libraries} # libraries definied in top-level CMakeLists.txt
-)
 
 add_subdirectory(cad)
+add_subdirectory(parser)
+add_subdirectory(pseudobool)
 add_subdirectory(onecellcad)
 add_subdirectory(datastructures)
 add_subdirectory(nlsat)

@@ -65,6 +65,7 @@ option( FORCE_SHIPPED_RESOURCES "Do not look in system for resources which are i
 option( USE_GINAC "If disabled, all implementations using the ginac library are disabled." OFF )
 option( USE_COCOA "Use CoCoALib" OFF )
 option(${PROJECT_NAME}_DOC_CREATE_PDF "Create PDF reference manual" ON )
+option( ENABLE_TESTING "Enables test target" OFF)
 
 # Strategy
 option( SMTRAT_STRAT_Factorization "Factorization" ON )
@@ -100,6 +101,11 @@ else()
 	message("-- not using cotire")
 	function(cotire)
 	endfunction(cotire)
+endif()
+
+if(ENABLE_TESTING)
+    message("-- testing enabled")
+    enable_testing()
 endif()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -241,16 +247,12 @@ endif()
 # C.5. Development and debug libraries.
 # # # # # # # # # # # # # # # # # # # # # #
 
-# if doxygen is installed, create the make doc target
-include(FindDoxygen)
-if(DOXYGEN)
-  add_subdirectory(doxygen-conf)
-else()
-  message(WARNING, "Doxygen not found")
-endif()
 # add_subdirectory(examples EXCLUDE_FROM_ALL) # offer as an optional target
 add_subdirectory(manual EXCLUDE_FROM_ALL)
 
+if (TARGET Doxygen::doxygen)
+	add_subdirectory(doxygen-conf EXCLUDE_FROM_ALL)
+endif()
 
 # # # # # # # # # # # # # # # # # # # # # #
 # D. Writen information files

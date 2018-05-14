@@ -1712,7 +1712,9 @@ namespace smtrat
             {
                 assert( assigns[var(add_tmp[0])] != l_False );
                 uncheckedEnqueue( add_tmp[0], cr );
-                propagateConsistently( false );
+                if (propagateConsistently( false ) != CRef_Undef) {
+                    ok = false;
+                }
                 return ok;
             }
             else
