@@ -1085,9 +1085,15 @@ namespace smtrat
                         lits.push( addClauses( sf, _type, nextDepth, _original ) );
                     if( _depth == 0 )
                     {
-                        // (or a1 .. an)
-                        addClause_( lits, _type, _original, cnfInfoIter );
-                        return lit_Undef;
+						// Make the tseitin-variable an assumption.
+                        /*
+						 * Formerly: (or a1 .. an) to avoid the additional variable
+						 * However if the formula is reused in a nested formula somewhere else, we need the connection between tsLit and this clause.
+						 * Therefore we build the usual clause (or -ts a1 .. an) but avoid the (or ts -a1) clauses...
+						 */
+						assumptions.push(tsLit);
+		                assert(mFormulaAssumptionMap.find(_formula) == mFormulaAssumptionMap.end());
+		                mFormulaAssumptionMap.emplace(_formula, assumptions.last());
                     }
                     if( !mReceivedFormulaPurelyPropositional && Settings::initiate_activities )
                     {
@@ -1103,18 +1109,21 @@ namespace smtrat
                     // (or -ts a1 .. an)
                     lits.push( neg( tsLit ) );
                     addClause_( lits, _type, _original, cnfInfoIter );
-                    // (or ts -a1) .. (or ts -an)
-                    vec<Lit> litsTmp;
-                    litsTmp.push( tsLit );
-                    int i = 0;
-                    for( const auto& sf : _formula.subformulas() )
-                    {
-                        assert( i < lits.size() );
-                        litsTmp.push( sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( lits[i] ) );
-                        addClause_( litsTmp, _type, _original, cnfInfoIter );
-                        litsTmp.pop();
-                        ++i;
-                    }
+					// Only add on deeper levels, otherwise ts is an assumption and the clauses are immediately satisfied anyway.
+					if (_depth != 0) {
+	                    // (or ts -a1) .. (or ts -an)
+	                    vec<Lit> litsTmp;
+	                    litsTmp.push( tsLit );
+	                    int i = 0;
+	                    for( const auto& sf : _formula.subformulas() )
+	                    {
+	                        assert( i < lits.size() );
+	                        litsTmp.push( sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( lits[i] ) );
+	                        addClause_( litsTmp, _type, _original, cnfInfoIter );
+	                        litsTmp.pop();
+	                        ++i;
+	                    }
+					}
                     return tsLit;
                 }
                 case carl::FormulaType::AND:
