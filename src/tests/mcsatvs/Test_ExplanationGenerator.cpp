@@ -77,6 +77,78 @@ BOOST_AUTO_TEST_CASE(Test_generateZeros_deg2) {
 	BOOST_CHECK(result);
 }
 
+BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_eliminationVariableNotContained) {
+	carl::Variable x = carl::freshRealVariable("x");
+	carl::Variable y = carl::freshRealVariable("y");
+
+	VariableComparisonT varcomp(x, MultivariateRootT(Poly(MultivariateRootT::var())+Rational(1), 1), carl::Relation::EQ);
+	Model model;
+
+	bool result = generateZeros(varcomp, y, model, [&](const SqrtEx&& sqrtExpression, const ConstraintsT&& sideConditions) {
+    	BOOST_CHECK(false);
+    });
+	BOOST_CHECK(result);
+}
+BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_degreeTooHigh) {
+	carl::Variable x = carl::freshRealVariable("x");
+	carl::Variable y = carl::freshRealVariable("y");
+	VariableComparisonT varcomp(y, MultivariateRootT(Poly(MultivariateRootT::var())*MultivariateRootT::var()*MultivariateRootT::var()*x-Rational(1), 2), carl::Relation::EQ);
+
+	Model model;
+
+	bool result = generateZeros(varcomp, y, model, [&](const SqrtEx&& sqrtExpression, const ConstraintsT&& sideConditions) {
+    	BOOST_CHECK(false);
+    });
+	BOOST_CHECK(!result);
+}
+BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_simple) {
+	carl::Variable x = carl::freshRealVariable("x");
+	carl::Variable y = carl::freshRealVariable("y");
+	VariableComparisonT varcomp(y, MultivariateRootT(Poly(MultivariateRootT::var())*MultivariateRootT::var()*x-Rational(1), 2), carl::Relation::EQ);
+
+	Model model;
+	model.assign(x, Rational(1));
+	bool result = generateZeros(varcomp, y, model, [&](const SqrtEx&& sqrtExpression, const ConstraintsT&& sideConditions) {
+		// 0+1*sqrt(x)/(x)
+    	BOOST_CHECK(sqrtExpression == SqrtEx(Poly(Rational(0)), Poly(Rational(1)), Poly(x), Poly(x)));
+		BOOST_CHECK(sideConditions.size() > 0);
+    });
+	BOOST_CHECK(result);
+}
+BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_multivar) {
+	carl::Variable x1 = carl::freshRealVariable("x1");
+	carl::Variable x2 = carl::freshRealVariable("x2");
+	carl::Variable y = carl::freshRealVariable("y");
+	Poly poly = (Poly(MultivariateRootT::var())*x1) + (Poly(MultivariateRootT::var())*MultivariateRootT::var()*x2);
+	VariableComparisonT varcomp(y, MultivariateRootT(poly, 2), carl::Relation::EQ);
+
+	Model model;
+	model.assign(x1, Rational(-1));
+	model.assign(x2, Rational(1));
+
+	bool result = generateZeros(varcomp, y, model, [&](const SqrtEx&& sqrtExpression, const ConstraintsT&& sideConditions) {
+		// ((-1)*x1)/(x2)
+    	BOOST_CHECK(sqrtExpression == SqrtEx(Poly(Rational(0)), Poly(Rational(-1))*x1, Poly(x2), Poly(Rational(1))));
+		BOOST_CHECK(sideConditions.size() > 0);
+    });
+	BOOST_CHECK(result);
+}
+
+BOOST_AUTO_TEST_CASE(Test_compareSqrtEx) {
+	carl::Variable x = carl::freshRealVariable("x");
+	SqrtEx sqrtA(Poly(Rational(0)), Poly(Rational(1))*x, Poly(Rational(1)), Poly(Rational(1)));
+	SqrtEx sqrtB(Poly(Rational(0)), Poly(Rational(-1))*x, Poly(Rational(1)), Poly(Rational(1)));
+	Model model1;
+	model1.assign(x, Rational(-1));
+	Model model2;
+	model2.assign(x, Rational(1));
+
+	BOOST_CHECK(compareSqrtEx(sqrtA, sqrtB, model1).value());
+	BOOST_CHECK(!compareSqrtEx(sqrtB, sqrtA, model1).value());
+	BOOST_CHECK(!compareSqrtEx(sqrtA, sqrtB, model2).value());
+	BOOST_CHECK(compareSqrtEx(sqrtB, sqrtA, model2).value());
+}
+
 BOOST_AUTO_TEST_CASE(Test_doccToFormula) {
 	carl::Variable x = carl::freshRealVariable("x");
 	::vs::DisjunctionOfConstraintConjunctions docc;
@@ -101,17 +173,17 @@ BOOST_AUTO_TEST_CASE(Test_generateTestCandidates_degreeTooHigh) {
 	std::vector<::vs::Substitution> results;
 
 	ConstraintT c1(Poly(y)*y*y+Rational(1), carl::Relation::EQ);
-	std::vector<const ConstraintT*> constraints1;
-	constraints1.push_back(&c1);
+	std::vector<FormulaT> constraints1;
+	constraints1.emplace_back(c1);
 
-	bool status = generateTestCandidates(results, y, constraints1);
+	bool status = generateTestCandidates(results, y, Model(), constraints1);
 	BOOST_CHECK(!status);
 
-	ConstraintT c2(Poly(y)*y+Rational(1), carl::Relation::EQ);
-	std::vector<const ConstraintT*> constraints2;
-	constraints2.push_back(&c2);
+	ConstraintT c2(Poly(y)*y+Rational(1), carl::Relation::GEQ);
+	std::vector<FormulaT> constraints2;
+	constraints2.emplace_back(c2);
 
-	status = generateTestCandidates(results, y, constraints2);
+	status = generateTestCandidates(results, y, Model(), constraints2);
 	BOOST_CHECK(status);
 }
 BOOST_AUTO_TEST_CASE(Test_generateTestCandidates_variableNotIncluded) {
@@ -120,10 +192,10 @@ BOOST_AUTO_TEST_CASE(Test_generateTestCandidates_variableNotIncluded) {
 	std::vector<::vs::Substitution> results;
 
 	ConstraintT c(Poly(x), carl::Relation::EQ);
-	std::vector<const ConstraintT*> constraints;
-	constraints.push_back(&c);
+	std::vector<FormulaT> constraints;
+	constraints.emplace_back(c);
 
-	bool status = generateTestCandidates(results, y, constraints);
+	bool status = generateTestCandidates(results, y, Model(), constraints);
 	BOOST_CHECK(status);
 	BOOST_CHECK(results.size() == 1); // only y -> -infty
 }
@@ -134,11 +206,11 @@ BOOST_AUTO_TEST_CASE(Test_generateTestCandidates_constraintType) {
 
 	ConstraintT c1(Poly(y), carl::Relation::GEQ);
 	ConstraintT c2(Poly(y), carl::Relation::GREATER);
-	std::vector<const ConstraintT*> constraints;
-	constraints.push_back(&c1);
-	constraints.push_back(&c2);
+	std::vector<FormulaT> constraints;
+	constraints.emplace_back(c1);
+	constraints.emplace_back(c2);
 
-	bool status = generateTestCandidates(results, y, constraints);
+	bool status = generateTestCandidates(results, y, Model(), constraints);
 	BOOST_CHECK(status);
 	BOOST_CHECK(results.size() == 3);
 	BOOST_CHECK(results[1].type() == ::vs::Substitution::Type::NORMAL);
@@ -151,13 +223,32 @@ BOOST_AUTO_TEST_CASE(Test_generateTestCandidates_duplicateRemoval) {
 
 	ConstraintT c1(Poly(y) - x, carl::Relation::GEQ);
 	ConstraintT c2(Poly(y) - x, carl::Relation::GEQ);
-	std::vector<const ConstraintT*> constraints;
-	constraints.push_back(&c1);
-	constraints.push_back(&c2);
+	std::vector<FormulaT> constraints;
+	constraints.emplace_back(c1);
+	constraints.emplace_back(c2);
 
-	bool status = generateTestCandidates(results, y, constraints);
+	bool status = generateTestCandidates(results, y, Model(), constraints);
 	BOOST_CHECK(status);
 	BOOST_CHECK(results.size() == 2); // duplicates removed
+}
+BOOST_AUTO_TEST_CASE(Test_generateTestCandidates_variableComparison) {
+	carl::Variable x = carl::freshRealVariable("x");
+	carl::Variable y = carl::freshRealVariable("y");
+	VariableComparisonT varcomp(y, MultivariateRootT(Poly(MultivariateRootT::var())*MultivariateRootT::var()*x-Rational(1), 2), carl::Relation::EQ);
+	Model model;
+	model.assign(x, Rational(1));
+	std::vector<FormulaT> constraints;
+	constraints.emplace_back(varcomp);
+
+	std::vector<::vs::Substitution> results;
+	bool result = generateTestCandidates( results, y, model, constraints);
+	BOOST_CHECK(result);
+	BOOST_CHECK(results.size()==2);
+
+	// 0+1*sqrt(x)/(x)
+	// note that results[0] is -infty
+    BOOST_CHECK(results[1].term() == SqrtEx(Poly(Rational(0)), Poly(Rational(1)), Poly(x), Poly(x)));
+	BOOST_CHECK(results[1].sideCondition().size() > 0);
 }
 
 BOOST_AUTO_TEST_CASE(Test_getExplanation_degreeTooHigh) {

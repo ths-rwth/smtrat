@@ -23,7 +23,7 @@ struct Explanation {
 
 		// TODO remove, for debugging:
 		try {
-			std::cout << "**" << ret.value() << "**" << std::endl;
+			std::cout << "**VS SUCCESS " << ret.value() << "**" << std::endl;
 		}
 		catch (const boost::bad_optional_access&) {
 			std::cout << "**INCOMPLETE**" << std::endl;
