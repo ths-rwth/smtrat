@@ -13,9 +13,9 @@ namespace smtrat
     /**
      * Strategy description.
      *
-     * @author
+     * @author 
      * @since
-     * @version
+     * @version  
      *
      */
     class BVSolver:
