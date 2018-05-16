@@ -265,11 +265,13 @@ namespace smtrat
 				boost::optional<Direction> direction;
 				if (!separator.mRelations.empty())
 				{
-					if (*separator.mActiveDirection == Direction::NEGATIVE
+					if (separator.mActiveDirection
+						&& *separator.mActiveDirection == Direction::NEGATIVE
 						&& ((separator.mRelations.count(carl::Relation::LESS)
 							|| separator.mRelations.count(carl::Relation::LEQ))))
 						direction = Direction::NEGATIVE;
-					else if (*separator.mActiveDirection == Direction::POSITIVE
+					else if (separator.mActiveDirection
+						&& *separator.mActiveDirection == Direction::POSITIVE
 						&& ((separator.mRelations.count(carl::Relation::GREATER)
 							|| separator.mRelations.count(carl::Relation::GEQ))))
 						direction = Direction::POSITIVE;
@@ -392,8 +394,8 @@ namespace smtrat
 				for (const auto& exponent : vertex.mMonomial->exponents())
 				{
 					const auto& moment{mMoments[exponent.first]};
-					hyperplane += Rational(exponent.second)*moment.mNormalVector;
-					if (exponent.second%2)
+					hyperplane += carl::fromInt<Rational>(exponent.second)*moment.mNormalVector;
+					if (exponent.second % 2 == 1)
 						signChangeSubformulas.emplace_back(moment.mSignVariant);
 				}
 				signChangeFormula = FormulaT(carl::FormulaType::XOR, move(signChangeSubformulas));
