@@ -9,7 +9,7 @@
 #include "../modules/SATModule/SATModule.h"
 #include "../modules/ICPModule/ICPModule.h"
 #include "../modules/VSModule/VSModule.h"
-#include "../modules/CADModule/CADModule.h"
+#include "../modules/NewCADModule/NewCADModule.h"
 
 namespace smtrat
 {
