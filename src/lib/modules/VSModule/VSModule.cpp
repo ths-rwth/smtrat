@@ -1586,6 +1586,10 @@ namespace smtrat
         {
             assert( !minCoverSet->empty() );
             mInfeasibleSubsets.push_back( getReasons( *minCoverSet ) );
+            // TODO: Avoid adding multiple identical infeasible subsets.
+            // The following input triggers the creation of seven identical infeasible subsets.
+            // (x <= 0) and !(x < 0) and !(x = 0)
+            break;
         }
         assert( !mInfeasibleSubsets.empty() );
         assert( !mInfeasibleSubsets.back().empty() );
