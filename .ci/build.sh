@@ -19,6 +19,7 @@ if [[ ${TASK} == "dependencies" ]]; then
 	
 elif [[ ${TASK} == "doxygen" ]]; then
 	cmake -D DOCUMENTATION_CREATE_PDF=ON ../
+	make resources || return 1
 	make doc || return 1
 	make manual || return 1
 	
