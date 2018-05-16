@@ -157,7 +157,7 @@ namespace smtrat {
 
 	std::vector<Integer> RNSEncoder::integerFactorization(const Integer& coeff) {
 		if(coeff <= 100){
-			return mPrimesTable[carl::toInt<std::size_t>(coeff)];
+			return mPrimesTable[carl::toInt<carl::uint>(coeff)];
 		}
 
 		std::vector<Integer> primes;
@@ -183,7 +183,7 @@ namespace smtrat {
 
 			if(first > 1){
 				if(first <= 100){
-					std::vector<Integer> v = mPrimesTable[carl::toInt<std::size_t>(first)];
+					std::vector<Integer> v = mPrimesTable[carl::toInt<carl::uint>(first)];
 					primes.insert(primes.end(), v.begin(), v.end());
 
 				}else{
@@ -205,7 +205,7 @@ namespace smtrat {
 
 			if(second > 1){
 				if(second <= 100){
-					std::vector<Integer> v = mPrimesTable[carl::toInt<std::size_t>(second)];
+					std::vector<Integer> v = mPrimesTable[carl::toInt<carl::uint>(second)];
 					primes.insert(primes.end(), v.begin(), v.end());
 				}else{
 					carl::PrimeFactory<Integer> pFactory;
