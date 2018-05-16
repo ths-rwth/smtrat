@@ -47,11 +47,11 @@ namespace smtrat
                             {
                                 addBackend<LRAModule<LRASettings1>>()
                             })
-                        }).condition( &conditionEvaluation1 ),
+                        })/*.condition( &conditionEvaluation1 ),
                         addBackend<SATModule<SATSettings1>>(
                         {
                             addBackend<LRAModule<LRASettings1>>()
-                        }).condition( &conditionEvaluation2 )
+                        }).condition( &conditionEvaluation2 )*/
                     })
                 });
             }
