@@ -1,6 +1,5 @@
 /**
  * @file   RedlogTool.h
- *         Created on April 14, 2013, 6:10 PM
  * @author: Sebastian Junges
  * @author: Ulrich Loup
  * @version 2013-04-24

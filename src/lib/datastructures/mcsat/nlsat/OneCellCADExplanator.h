@@ -63,8 +63,14 @@ FormulaT eqFormula(const carl::Variable var, carl::MultivariateRoot<Poly> mvRoot
   return FormulaT(varCmp);
 }
 
+inline
+std::vector<carl::Variable> prefix(const std::vector<carl::Variable> vars, std::size_t prefixSize) {
+  std::vector<carl::Variable> prefixVars(vars.begin(), std::next(vars.begin(), prefixSize));
+  return prefixVars;
+}
+
 struct Explanation {
-  FormulaT
+  boost::optional<FormulaT>
   operator()(const mcsat::Bookkeeping &data, const std::vector<carl::Variable> &variableOrder, carl::Variable var,
              const FormulasT &reason, const FormulaT &implication) const {
     SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "With: " << reason << " explain: " << implication);
@@ -93,10 +99,11 @@ struct Explanation {
         normalLevelPolys.push_back(
           {onecellcad::PolyTag::SGN_INV, poly, polyLevel});
     }
-    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Normal level Polys: " << onecellcad::asMultiPolys(normalLevelPolys));
+    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Normal level Polys: " << normalLevelPolys);
+//    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Higher level Polys: " << onecellcad::asMultiPolys(higherLevelPolys));
     // Project higher level polys down to "normal" level
     carl::CoCoAAdaptor<Poly>factorizer(polys);
-    for (int levelToProject = maxHigherPolyLevel; levelToProject > maxNormalPolyLevel; levelToProject--) {
+    for (std::size_t levelToProject = maxHigherPolyLevel; levelToProject > maxNormalPolyLevel; levelToProject--) {
       for (auto& poly : onecellcad::OneCellCAD().oneLevelFullBrowMcCallumProjection(
             factorizer, variableOrder[levelToProject], higherLevelPolys[levelToProject-maxNormalPolyLevel-1])) {
         auto polyLevel = *onecellcad::levelOf(variableOrder, poly.poly);
@@ -106,9 +113,10 @@ struct Explanation {
           normalLevelPolys.push_back({poly.tag, poly.poly, polyLevel});
       }
     }
-    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "All projected level polys: " << onecellcad::asMultiPolys(normalLevelPolys));
+    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "All projected level polys: " << normalLevelPolys);
 
-    auto cellOpt = onecellcad::OneCellCAD().pointEnclosingCADCell(variableOrder, asRANPoint(data), polys);
+    auto cellOpt = onecellcad::OneCellCAD().pointEnclosingCADCell(
+      prefix(variableOrder, data.model().size()), asRANPoint(data), normalLevelPolys);
     if (!cellOpt)
       assert (false); // TODO call other explanator if onecellcad fails
 
@@ -119,7 +127,7 @@ struct Explanation {
     if (!implication.isTrue() && !implication.isFalse())
       explainLiterals.emplace_back(implication);
 
-    for (int i = 0; i < cell.size(); i++) {
+    for (std::size_t i = 0; i < cell.size(); i++) {
       auto& cellComponent = cell[i];
       auto cellVariable = variableOrder[i];
       if (mpark::holds_alternative<onecellcad::Section>(cellComponent)) {

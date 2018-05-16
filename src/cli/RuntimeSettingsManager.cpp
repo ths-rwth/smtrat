@@ -40,7 +40,8 @@ RuntimeSettingsManager::RuntimeSettingsManager() :
     mPrintStatistics( false ),
     mPrintStrategy( false ),
     mExportDIMACS( false ),
-    mReadDIMACS( false )
+    mReadDIMACS( false ),
+	mReadOPB( false )
 {}
 
 /**
@@ -132,6 +133,10 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
             else if(optionName == "dimacs")
             {
                 mReadDIMACS = true;
+            }
+			else if(optionName == "opb")
+            {
+                mReadOPB = true;
             }
             else if(optionName == "license") 
             {

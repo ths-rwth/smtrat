@@ -21,7 +21,11 @@ endif()
 
 add_subdirectory(benchmax EXCLUDE_FROM_ALL)
 
-add_subdirectory(tests EXCLUDE_FROM_ALL)
+if (ENABLE_TESTING)
+    # only build tests if we want them to be built. Do not exclude from all target, since
+    # make test won't build the tests for us!
+    add_subdirectory(tests)
+endif()
 
 add_subdirectory(gui EXCLUDE_FROM_ALL)
 

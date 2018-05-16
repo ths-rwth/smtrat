@@ -1,6 +1,5 @@
 /**
  * @file   smtratSolverTool.h
- *         Created on April 10, 2013, 3:37 PM
  * @author: Sebastian Junges
  *
  *

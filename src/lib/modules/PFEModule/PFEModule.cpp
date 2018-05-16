@@ -31,6 +31,7 @@ namespace smtrat
 			boundsChanged = true;
 		}
 		if (varbounds.isConflicting()) {
+			SMTRAT_LOG_DEBUG("smtrat.pfe", "Identified direct conflict on bounds: " << varbounds.getConflict());
 			mInfeasibleSubsets.push_back(varbounds.getConflict());
 			return false;
 		}
@@ -56,6 +57,7 @@ namespace smtrat
 			if (receivedFormula->formula() != formula) {
 				SMTRAT_LOG_DEBUG("smtrat.pfe", "Simplified " << receivedFormula->formula());
 				SMTRAT_LOG_DEBUG("smtrat.pfe", "to " << formula);
+				SMTRAT_LOG_DEBUG("smtrat.pfe", "due to bounds " << varbounds.getEvalIntervalMap());
 			}
 			
 			if (formula.isFalse()) {
@@ -107,7 +109,7 @@ namespace smtrat
 			carl::Relation qrel = carl::Relation::GREATER;
 			for (auto it = factors.begin(); it != factors.end(); it++) {
 				auto i = carl::IntervalEvaluation::evaluate(it->first, completeBounds(it->first));
-				SMTRAT_LOG_TRACE("smtrat.pfe", "Factor " << it->first << " has bounds " << i);
+				SMTRAT_LOG_TRACE("smtrat.pfe", "Considering factor " << it->first << " with bounds " << i);
 				if (i.isPositive()) {
 					qrel = combine(qrel, carl::Relation::GREATER, it->second);
 					Pq.push_back(it);
@@ -176,7 +178,7 @@ namespace smtrat
 		for (auto it = factors.begin(); it != factors.end(); ++it) {
 			if (it->second % 2 == 0) {
 				// This implies that this factor is (strictly) positive and essentially reduces to factor != 0
-				SMTRAT_LOG_TRACE("smtrat.pfe", "Eliminating factors " << it->first << " ^ " << it->second);
+				SMTRAT_LOG_DEBUG("smtrat.pfe", "Eliminating factors " << it->first << " ^ " << it->second);
 				Pq.push_back(it);
 			} else {
 				Pr.push_back(it);

@@ -86,6 +86,7 @@ struct Converter<FormulaT> {
 		return true;
 	}
 	bool operator()(const carl::Variable& from, FormulaT& to) const {
+		if (from.getType() != carl::VariableType::VT_BOOL) return false;
 		to = FormulaT(from);
 		return true;
 	}
