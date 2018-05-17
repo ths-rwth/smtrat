@@ -1005,7 +1005,24 @@ namespace smtrat
                     if( cnfInfoIter != mFormulaCNFInfosMap.end() )
                     {
                         updateCNFInfoCounter( cnfInfoIter, _original, true );
-                        return cnfInfoIter->second.mLiteral;
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Recovered literal for " << _original << ": " << cnfInfoIter->second.mLiteral);
+						Lit l = cnfInfoIter->second.mLiteral;
+						if (mNonassumedTseitinVariable.test(std::size_t(var(l)))) {
+							/*
+							 * If this literal is a tseitin variable, it may belong to a top-level clause.
+							 * In this case, it is not eagerly added to the assumptions but only lazily when it is actually reused.
+							 * This is the case now. We backtrack to DL0 (+ assumptions.size()) and add it to the assumptions now.
+							 * This can only happen if a formula is added with some boolean structure, as only then the tseitin variable will be used.
+							 * Examples are addCore() or a lemma from a backend, in these cases it is safe to reset.
+							 * In particular this can not happen for infeasible subsets or conflict clauses, where a reset might not be safe.
+							 */
+							cancelUntil(assumptions.size());
+							assumptions.push(l);
+							assert(mFormulaAssumptionMap.find(_formula) == mFormulaAssumptionMap.end());
+							mFormulaAssumptionMap.emplace(_formula, assumptions.last());
+							mNonassumedTseitinVariable.reset(std::size_t(var(l)));
+						}
+                        return l;
                     }
                     cnfInfoIter = mFormulaCNFInfosMap.emplace( _formula, CNFInfos() ).first;
                 }
@@ -1085,15 +1102,18 @@ namespace smtrat
                         lits.push( addClauses( sf, _type, nextDepth, _original ) );
                     if( _depth == 0 )
                     {
-						// Make the tseitin-variable an assumption.
-                        /*
-						 * Formerly: (or a1 .. an) to avoid the additional variable
-						 * However if the formula is reused in a nested formula somewhere else, we need the connection between tsLit and this clause.
-						 * Therefore we build the usual clause (or -ts a1 .. an) but avoid the (or ts -a1) clauses...
+						/*
+						 * This is a top-level clause. The full tseitin encoding would be:
+						 *     ts and (or -ts a1 ... an) and (or ts -a1) ... (or ts -an)
+						 * However ts will become an assumption and thus -ts can be skipped and (or ts -ak) is satisfied anyway.
+						 * We therefore only add (or a1 .. an).
+						 * However if the formula is reused in a nested formula somewhere else, we need ts to be forced to true.
+						 * To avoid work (and because always doing that induces problems when adding infeasible subsets) we do this lazily.
+						 * We add ts to mNonassumedTseitinVariable and only add it to the assumptions when it is actually reused in another formula.
 						 */
-						assumptions.push(tsLit);
-		                assert(mFormulaAssumptionMap.find(_formula) == mFormulaAssumptionMap.end());
-		                mFormulaAssumptionMap.emplace(_formula, assumptions.last());
+						mNonassumedTseitinVariable.set(std::size_t(var(tsLit)));
+	                    addClause_( lits, _type, _original, cnfInfoIter );
+						return lit_Undef;
                     }
                     if( !mReceivedFormulaPurelyPropositional && Settings::initiate_activities )
                     {
