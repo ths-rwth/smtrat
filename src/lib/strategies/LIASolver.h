@@ -23,20 +23,20 @@ namespace smtrat
     class LIASolver:
         public Manager
     {
+        //TODO je einmal auf allen Benchmarks laufen lassen und dann Kombination mit Conditions
+        static bool conditionEvaluation1( carl::Condition _condition )
+        {
+            return ( (carl::PROP_IS_LITERAL_CONJUNCTION <= _condition) );
+        }
+
+        static bool conditionEvaluation2( carl::Condition _condition )
+        {
+            return (  !(carl::PROP_IS_LITERAL_CONJUNCTION <= _condition) );
+        }
+        
         public:
             LIASolver(): Manager()
             {
-                //TODO je einmal auf allen Benchmarks laufen lassen und dann Kombination mit Conditions
-                static bool conditionEvaluation1( carl::Condition _condition )
-                {
-                    return ( (carl::PROP_IS_LITERAL_CONJUNCTION <= _condition) );
-                }
-
-                static bool conditionEvaluation2( carl::Condition _condition )
-                {
-                    return (  !(carl::PROP_IS_LITERAL_CONJUNCTION <= _condition) );
-                }
-
                 setStrategy(
                 {
                     addBackend<FPPModule<FPPSettings1>>(
