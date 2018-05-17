@@ -20,6 +20,14 @@ ExternalProject_Add(
 	INSTALL_COMMAND ${CMAKE_MAKE_PROGRAM} install/fast
 )
 
+ExternalProject_Add(
+	CArL-EP-doxygen
+	DOWNLOAD_COMMAND ""
+	CONFIGURE_COMMAND ""
+	BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} doxygen-build
+	INSTALL_COMMAND ""
+)
+
 include(${CMAKE_BINARY_DIR}/resources/src/CArL-EP-build/carlConfig.cmake)
 add_dependencies(lib_carl CArL-EP)
 add_dependencies(lib_carl_static CArL-EP)
