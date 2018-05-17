@@ -20,8 +20,11 @@ ExternalProject_Add(
 	INSTALL_COMMAND ${CMAKE_MAKE_PROGRAM} install/fast
 )
 
+ExternalProject_Get_Property(CArL-EP BINARY_DIR)
+
 ExternalProject_Add(
 	CArL-EP-doxygen
+	BINARY_DIR ${BINARY_DIR}
 	DOWNLOAD_COMMAND ""
 	CONFIGURE_COMMAND ""
 	BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} doxygen-build
