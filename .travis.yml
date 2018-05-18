@@ -184,7 +184,7 @@ matrix:
       addons:
         apt:
           sources: [*sources_base, llvm-toolchain-trusty-6.0]
-          packages: [*packages_base, clang-6.0, libstdc++-8-dev, doxygen, ghostscript, latex-xcolor, pgf, texinfo, texlive, texlive-font-utils, texlive-latex-extra]
+          packages: [*packages_base, clang-6.0, libstdc++-8-dev, doxygen, ghostscript, latex-xcolor, lmodern, pgf, texinfo, texlive, texlive-font-utils, texlive-latex-extra]
   allow_failures:
     - stage: dependencies
       os: linux
