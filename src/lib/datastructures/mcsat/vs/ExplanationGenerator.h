@@ -42,8 +42,11 @@ private:
 
 				// substitute tc into each input constraint
 				for (const auto& constr : mConstraints) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substituting " << tc << " into " << constr);
+
 					FormulaT result;
 					if (!helper::substitute(constr, tc, mModel, result)) {
+						SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution failed");
 						return boost::none;
 					}
 					substitutionResults.push_back(std::move(result));
@@ -70,6 +73,7 @@ private:
 			return FormulaT(carl::FormulaType::OR, std::move(res));
 		}
 		else {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Could not generate test candidates");
 			return boost::none;
 		}
     }

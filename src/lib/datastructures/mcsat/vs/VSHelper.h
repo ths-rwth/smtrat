@@ -25,21 +25,37 @@ namespace helper {
         return FormulaT(carl::FormulaType::OR, std::move(constraintConjunctions));
     }
 
+    inline bool substituteHelper(const ConstraintT& constraint, const ::vs::Substitution& substitution, ::vs::DisjunctionOfConstraintConjunctions& result) {
+        ::vs::DisjunctionOfConstraintConjunctions subres;
+        carl::Variables dummy_vars; // we do not make use of this feature here
+        smtrat::EvalDoubleIntervalMap dummy_map; // we do not make use of this feature here
+        bool success = substitute(constraint, substitution, result, false, dummy_vars, dummy_map);
+        if (!success) {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
     /**
      * Get zeros with side conditions of the given constraint.
      * 
      * Kind of a generator function. Passes generated zeros to a callback function to avoid copying.
      */
     inline bool generateZeros(const ConstraintT& constraint, const carl::Variable& eliminationVar, std::function<void(SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions)> yield_result) {
+        SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generating zeros of constraint " << constraint);
+
         // TODO clean this function up, reduce cases
+        // TODO test with factorization
 
         if (!constraint.hasVariable(eliminationVar)) {
             return true;
         }
 
-        if (constraint.maxDegree(eliminationVar) > 2) {
-            return false;
-        }
+        //if (constraint.maxDegree(eliminationVar) > 2) {
+        //    return false;
+        //}
 
         std::vector<Poly> factors;
         ConstraintsT sideConditions;
@@ -88,6 +104,7 @@ namespace helper {
                             sideCond.insert( cons );
                         } 
                         SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, coeffs.rbegin()->second, ZERO_POLYNOMIAL );
+                        SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generated zero " << sqEx << " with side conditions " << sideCond);
                         yield_result(std::move(sqEx), std::move(sideCond));
                     }
                     break;
@@ -112,6 +129,7 @@ namespace helper {
                             if( cons12 != ConstraintT( true ) )
                                 sideCond.insert( cons12 );
                             SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, linearCoeff, ZERO_POLYNOMIAL );
+                            SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generated zero " << sqEx << " with side conditions " << sideCond);
                             yield_result(std::move(sqEx), std::move(sideCond));
                         }
                     }
@@ -129,10 +147,12 @@ namespace helper {
                             
                             // Create ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b-sqrt(b^2-4ac))/2a]):
                             SqrtEx sqExA = SqrtEx( -linearCoeff, MINUS_ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
+                            SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generated zero " << sqExA << " with side conditions " << sideCond);
                             yield_result(std::move(sqExA), std::move(ConstraintsT(sideCond)));
 
                             // Create ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
                             SqrtEx sqExB = SqrtEx( -linearCoeff, ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
+                            SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generated zero " << sqExB << " with side conditions " << sideCond);
                             yield_result(std::move(sqExB), std::move(sideCond));
                         }
                     }
@@ -141,12 +161,14 @@ namespace helper {
                 //degree > 2 (> 3)
                 default:
                 {
-                    // degree to high - should not occur, because degree is checked earlier
-                    assert(false);
+                    // degree to high
+                    SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Degree of factor " << factor << " too high");
+                    return false;
                     break;
                 }
             }
         }
+        SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generated zeros for " << constraint << " finished");
         return true;
     }
 
@@ -154,19 +176,30 @@ namespace helper {
      * Checks if exprA < exprB under the current model
      */
     inline boost::optional<bool> compareSqrtEx(const SqrtEx& exprA, const SqrtEx& exprB, const Model& model) {
-        static carl::Variable cmpVar = carl::freshRealVariable("__cmpVar");
+        static carl::Variable subVar1 = carl::freshRealVariable("__cmpVar1");
+        static carl::Variable subVar2 = carl::freshRealVariable("__cmpVar2");
+        static ConstraintT subConstraint(Poly(subVar1) - subVar2, carl::Relation::LESS);
+            
         // calculate subRes := (x<0)[(exprA-exprB)//x]
-        SqrtEx dif = exprA - exprB;
-        ConstraintT constraint(cmpVar, carl::Relation::LEQ);
-        ::vs::Substitution sub(cmpVar, dif, ::vs::Substitution::NORMAL, carl::PointerSet<::vs::Condition>(), ConstraintsT());
-        ::vs::DisjunctionOfConstraintConjunctions result;
-        carl::Variables dummy_vars; // we do not make use of this feature here
-        smtrat::EvalDoubleIntervalMap dummy_map;
-        bool success = substitute(constraint, sub, result, false, dummy_vars, dummy_map);
-        if (!success) {
-            return boost::none;
+        ::vs::Substitution subSub1(subVar1, exprA, ::vs::Substitution::Type::NORMAL, carl::PointerSet<::vs::Condition>());
+        ::vs::Substitution subSub2(subVar2, exprB, ::vs::Substitution::Type::NORMAL, carl::PointerSet<::vs::Condition>());
+        ::vs::DisjunctionOfConstraintConjunctions subRes1;
+        if (!substituteHelper(subConstraint, subSub1, subRes1)) {
+            return false;
         }
-        FormulaT subRes = helper::doccToFormula(result);
+        std::vector<FormulaT> disjF;
+        for (const auto& conj : subRes1) {
+            std::vector<FormulaT> conjF;
+            for (const auto& constr : conj) {
+                ::vs::DisjunctionOfConstraintConjunctions subRes2;
+                if (!substituteHelper(constr, subSub2, subRes2)) {
+                    return false;
+                }
+                conjF.push_back(doccToFormula(subRes2));
+            }
+            disjF.emplace_back(carl::FormulaType::AND, std::move(conjF));
+        }
+        FormulaT subRes(carl::FormulaType::OR, std::move(disjF));
 
         // evaluate subRes
         carl::ModelValue<Rational, Poly> evalRes = carl::model::evaluate(subRes, model);
@@ -175,60 +208,85 @@ namespace helper {
         return evalRes.asBool();
     }
 
-    // TODO restructure test:
-    inline bool generateZeros(const MultivariateRootT& mvroot, const Model& model, std::function<void(SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions)> yield_result) {
-            // get zeros of mvroot.var() in mvroot.poly()
-            ConstraintT constraint(mvroot.poly(), carl::Relation::EQ);
-            std::vector<std::pair<SqrtEx, ConstraintsT>> zeros;
-            bool result = generateZeros(constraint, mvroot.var(), [&](SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions) {
-                zeros.push_back(std::make_pair(std::move(sqrtExpression), std::move(sideConditions)));
-            });
-            if (!result) {
-                return false;
-            }
-
-            // remove non-existing zeros from vector
-            zeros.erase( std::remove_if(zeros.begin(), zeros.end(), [&](const auto& zero) {
-                for (const auto& cond : zero.second) {
-                    carl::ModelValue<Rational, Poly> evalRes = carl::model::evaluate(FormulaT(cond), model);
-                    assert(evalRes.isBool());
-                    if (!evalRes.asBool()) {
-                        return true;
-                    }
-                }
-                return false;
-            }), zeros.end() );
-
-            // make sure that zero exists
-            assert(zeros.size() > 0 && mvroot.k() <= zeros.size());
-
-            // sort zeros according to current model
-            bool failed = false;
-            std::sort (zeros.begin(), zeros.end(), [&](const auto& zero1, const auto& zero2) {
-                auto res = compareSqrtEx(zero1.first, zero2.first, model);
-                if (res == boost::none) {
-                    failed = true;
-                    return false;
-                }
-                else {
-                    return res.value();
-                }
-            });
-            if (failed) {
-                return false;
-            }
-
-            // choose ith zero
-            auto res = zeros[mvroot.k()-1];
-            yield_result(std::move(res.first), std::move(res.second));
-            return true;
+    // TODO implement completely:
+    inline bool rationalSmallerThanSqrtEx(const Rational& rat, const SqrtEx& expr, const Model& model) {
+        assert(expr.factor() != 0);
+        Poly lhs = ( rat * expr.denominator() - expr.constantPart() ) / expr.factor();
+        carl::ModelValue<Rational, Poly> eval = carl::model::evaluate(lhs, model);
+        carl::ModelValue<Rational, Poly> evalRad = carl::model::evaluate(expr.radicand(), model);
+        return eval.asRational() < 0 || eval.asRational()*eval.asRational() < evalRad.asRational();
     }
 
-    // TODO test:
-    inline bool generateZeros(const carl::RealAlgebraicNumber<Rational>& ran, const Model& model, std::function<void(SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions)> yield_result) {
+    inline bool sqrtExSmallerThanRational(const SqrtEx& expr, const Rational& rat, const Model& model) {
+        assert(expr.factor() != 0);
+        Poly lhs = ( rat * expr.denominator() - expr.constantPart() ) / expr.factor();
+        carl::ModelValue<Rational, Poly> eval = carl::model::evaluate(lhs, model);
+        carl::ModelValue<Rational, Poly> evalRad = carl::model::evaluate(expr.radicand(), model);
+        return eval.asRational() >= 0 && eval.asRational()*eval.asRational() > evalRad.asRational();
+    }    
+
+    inline bool generateZeros(const MultivariateRootT& mvroot, const Model& model, std::function<void(SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions)> yield_result) {
+        SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generating zeros of VariableComparison with MultivariateRoot " << mvroot);
+
+        // get zeros of mvroot.var() in mvroot.poly()
+        ConstraintT constraint(mvroot.poly(), carl::Relation::EQ);
+        std::vector<std::pair<SqrtEx, ConstraintsT>> zeros;
+        bool result = generateZeros(constraint, mvroot.var(), [&](SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions) {
+            zeros.push_back(std::make_pair(std::move(sqrtExpression), std::move(sideConditions)));
+        });
+        if (!result) {
+            SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Could not generate zeros of polynomial of MultivariateRoot");
+            return false;
+        }
+
+        // TODO can be simplified for deg 2??
+
+        // remove non-existing zeros from vector
+        zeros.erase( std::remove_if(zeros.begin(), zeros.end(), [&](const auto& zero) {
+            for (const auto& cond : zero.second) {
+                carl::ModelValue<Rational, Poly> evalRes = carl::model::evaluate(FormulaT(cond), model);
+                assert(evalRes.isBool());
+                if (!evalRes.asBool()) {
+                    return true;
+                }
+            }
+            return false;
+        }), zeros.end() );
+
+        // make sure that zero exists
+        assert(zeros.size() > 0 && mvroot.k() <= zeros.size());
+
+        // sort zeros according to current model
+        bool failed = false;
+        std::sort (zeros.begin(), zeros.end(), [&](const auto& zero1, const auto& zero2) {
+            auto res = compareSqrtEx(zero1.first, zero2.first, model);
+            if (res == boost::none) {
+                failed = true;
+                return false;
+            }
+            else {
+                return res.value();
+            }
+        });
+        if (failed) {
+            SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Could not sort zeros of polynomial of MultivariateRoot");
+            return false;
+        }
+
+        // choose ith zero
+        auto res = zeros[mvroot.k()-1];
+        SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generated zero " << res.first << " with side conditions " << res.second);
+        yield_result(std::move(res.first), std::move(res.second));
+        return true;
+    }
+
+    inline bool generateZeros(const carl::RealAlgebraicNumber<Rational>& ran, std::function<void(SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions)> yield_result) {
+        SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generating zeros of VariableComparison with RealAlgebraicNumber");
         if (ran.isNumeric()) {
             // should have been simplified to a ConstraintT before...
+            SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Not implemented for numeric content");
             assert(false);
+            return false;
         }
         else if (ran.isInterval()) {
             // get zeros of ran.getIRPolynomial().mainVar() in ran.getIRPolynomial()
@@ -238,42 +296,33 @@ namespace helper {
                 zeros.push_back(std::make_pair(std::move(sqrtExpression), std::move(sideConditions)));
             });
             if (!result) {
+                SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Could not generate zeros of polynomial of RAN");
                 return false;
             }
-
-            // remove non-existing zeros from vector
-            zeros.erase( std::remove_if(zeros.begin(), zeros.end(), [&](const auto& zero) {
-                for (const auto& cond : zero.second) {
-                    carl::ModelValue<Rational, Poly> evalRes = carl::model::evaluate(FormulaT(cond), model);
-                    assert(evalRes.isBool());
-                    if (!evalRes.asBool()) {
-                        return true;
-                    }
-                }
-                return false;
-            }), zeros.end() );
 
             // get zero that is in interval ran.getInterval()
-            std::pair<SqrtEx,ConstraintsT> resultZero;
+            static Model model;
             for (const auto& zero : zeros) {
-                auto res1 = compareSqrtEx(SqrtEx(Poly(ran.lower())), zero.first, model);
-                auto res2 = compareSqrtEx(zero.first, SqrtEx(Poly(ran.upper())), model);
-
-                if (res1 != boost::none && res1 != boost::none && res1.value() && res2.value()) {
-                    resultZero = zero;
-                    break;
+                 // RAN uses open intervals and the polynomial has rational coefficients
+                bool res1 = rationalSmallerThanSqrtEx(ran.lower(), zero.first, model);
+                bool res2 = sqrtExSmallerThanRational(zero.first, ran.upper(), model);
+                if (res1 && res2) {
+                    SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generate zero " << zero.first << " with " << zero.second);
+                    yield_result(SqrtEx(zero.first), ConstraintsT(zero.second));
+                    return true;
                 }
             }
 
-            yield_result(std::move(resultZero.first), std::move(resultZero.second));
-            return true;
+            SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "No zero was in the specified interval!");
+            assert(false);
+            return false;
         }
         else {
+            SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Not implemented for Thom encoding");
             return false;
         }
     }
 
-    // TODO restructure test:
     inline bool generateZeros(const VariableComparisonT& variableComparison, const carl::Variable& eliminationVar, const Model& model, std::function<void(SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions)> yield_result) {
         if (variableComparison.var() != eliminationVar) {
             return true;
@@ -282,7 +331,7 @@ namespace helper {
         if (variableComparison.value().which() == 0) { // MultivariateRoot
             return generateZeros(boost::get<MultivariateRootT>(variableComparison.value()), model, yield_result);
         } else { // RealAlgebraicNumber
-            return generateZeros(boost::get<carl::RealAlgebraicNumber<Rational>>(variableComparison.value()), model, yield_result);
+            return generateZeros(boost::get<carl::RealAlgebraicNumber<Rational>>(variableComparison.value()), yield_result);
         }
     }
 
@@ -316,6 +365,8 @@ namespace helper {
      * Returns false iff VS is not applicable.
      */
     static bool generateTestCandidates( std::vector<::vs::Substitution>& results, const carl::Variable& eliminationVar, const Model& model, const std::vector<FormulaT>& constraints) {
+        SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generating test candidates for " << constraints << " and variable " << eliminationVar);
+        
         // add minus infinity
         ::vs::Substitution sub (eliminationVar, ::vs::Substitution::MINUS_INFINITY, carl::PointerSet<::vs::Condition>());
         results.push_back(std::move(sub));
@@ -329,82 +380,130 @@ namespace helper {
             bool weakConstraint = (relation == carl::Relation::EQ || relation == carl::Relation::LEQ || relation == carl::Relation::GEQ);
             ::vs::Substitution::Type subType = weakConstraint ? ::vs::Substitution::NORMAL : ::vs::Substitution::PLUS_EPSILON;
 
-            // factorize
+            // generate Zeros
             bool res = generateZeros(constraint, eliminationVar, model, [&](SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions) {
                 ::vs::Substitution sub(eliminationVar, sqrtExpression, subType, carl::PointerSet<::vs::Condition>(), std::move(sideConditions));
+                SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generated test candidate " << sub);
                 addOrMergeTestCandidate(results, sub);
             });
 
             if (!res) {
+                SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Could not generate zeros of " << eliminationVar << " in " << constraint);
                 return false;
             }
         }
 
+        SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generated test candidates successfully");
         return true;
     }
 
-    // TODO test:
     inline bool substitute(const ConstraintT& constraint, const ::vs::Substitution& substitution, FormulaT& result) {
-        ::vs::DisjunctionOfConstraintConjunctions subres;
-        carl::Variables dummy_vars; // we do not make use of this feature here
-        smtrat::EvalDoubleIntervalMap dummy_map; // we do not make use of this feature here
-        bool success = substitute(constraint, substitution, subres, false, dummy_vars, dummy_map);
-        if (!success) {
-            return false;
+        SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitute " << substitution << " into Constraint " << constraint);
+        if (constraint.hasVariable(substitution.variable())) {
+            ::vs::DisjunctionOfConstraintConjunctions subres;
+            if (!substituteHelper(constraint, substitution, subres)) {
+                SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution failed");
+                return false;
+            }
+            else {
+                result = helper::doccToFormula(subres);
+                SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution obtained " << result);
+                return true;
+            }
         }
         else {
-            result = helper::doccToFormula(subres);
+            result = FormulaT(constraint);
+            SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Variable " << substitution.variable() << " not occur in " << constraint << " - returning constraint " << result);
             return true;
         }
     }
 
-    // TODO test:
-    inline bool substitute(const VariableComparisonT& varcomp, const ::vs::Substitution& substitution, const Model& model, FormulaT& result) {
-        static carl::Variable subVar = carl::freshRealVariable("__subVar");
+    static bool substitute(const VariableComparisonT& varcomp, const ::vs::Substitution& substitution, const Model& model, FormulaT& result) {
+        SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitute " << substitution << " into VariableComparison " << varcomp);
 
-        assert(varcomp.var() == substitution.variable());
+        static carl::Variable subVar1 = carl::freshRealVariable("__subVar1");
+        static carl::Variable subVar2 = carl::freshRealVariable("__subVar2");
 
-        if (substitution.type() == ::vs::Substitution::NORMAL || substitution.type() == ::vs::Substitution::PLUS_EPSILON) {
-            // convert MVRoot/RAN to SqrtExpression with side conditions
-            SqrtEx zero;
-            ConstraintsT scs;
-            if (!generateZeros(varcomp, substitution.variable(), model, [&](SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions) {
-                zero = sqrtExpression;
-                scs = sideConditions;
-            })) {
-                return false;
-            }
+        // assert that the substitution variable occurs never in an MVRoot's polynomial...
+        assert(varcomp.value().which() == 1 || !boost::get<MultivariateRootT>(varcomp.value()).poly().has(substitution.variable()));
 
-            // substitute term-zero into subVar ~ 0
-            SqrtEx subEx = substitution.term() - zero;
-            ConstraintT subConstraint(subVar, varcomp.relation());
-            ::vs::Substitution subSub(subVar, subEx, substitution.type(), carl::PointerSet<::vs::Condition>());
-            FormulaT subRes;
-            if (!substitute(subConstraint, subSub, subRes)) {
-                return false;
-            }
-            std::vector<FormulaT> res;
-            res.push_back(std::move(subRes));
+        if (varcomp.var() == substitution.variable()) {
+            carl::Relation varcompRelation = varcomp.negated() ? carl::inverse(varcomp.relation()) : varcomp.relation();
 
-            // add side conditions scs of zero
-            for (const auto& sc : scs) {
-                res.emplace_back(sc);
-            }
+            if (substitution.type() == ::vs::Substitution::NORMAL || substitution.type() == ::vs::Substitution::PLUS_EPSILON) {
+                SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution is of type NORMAL or PLUS_EPSILON");
 
-            result = FormulaT(carl::FormulaType::AND, std::move(res));
-            return true;
-        } else if(substitution.type() == ::vs::Substitution::MINUS_INFINITY ) {
-            // square root term is irrelevant
-            ConstraintT subConstraint(subVar, varcomp.relation());
-            static ::vs::Substitution subSub(subVar, ::vs::Substitution::MINUS_INFINITY, carl::PointerSet<::vs::Condition>());
-            if (!substitute(subConstraint, subSub, result)) {
+                // convert MVRoot/RAN to SqrtExpression with side conditions
+                SqrtEx zero;
+                ConstraintsT scs;
+                if (!generateZeros(varcomp, substitution.variable(), model, [&](SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions) {
+                    zero = sqrtExpression;
+                    scs = sideConditions;
+                })) {
+                    SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Could not generate zero for contained MVRoot/RAN");
+                    return false;
+                }
+
+                // calculate subVar1-subVar2 ~ 0 [substitution.term()//subVar1][zero//subVar2] // TODO refactor to be more readable
+                ConstraintT subConstraint(Poly(subVar1) - subVar2, varcompRelation);
+                ::vs::Substitution subSub1(subVar1, substitution.term(), substitution.type(), carl::PointerSet<::vs::Condition>());
+                ::vs::Substitution subSub2(subVar2, zero, ::vs::Substitution::Type::NORMAL, carl::PointerSet<::vs::Condition>());
+
+                ::vs::DisjunctionOfConstraintConjunctions subRes1;
+                if (!substituteHelper(subConstraint, subSub1, subRes1)) {
+                    SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution failed");
+                    assert(false);
+                    return false;
+                }
+                std::vector<FormulaT> disjF;
+                for (const auto& conj : subRes1) {
+                    std::vector<FormulaT> conjF;
+                    for (const auto& constr : conj) {
+                        ::vs::DisjunctionOfConstraintConjunctions subRes2;
+                        if (!substituteHelper(constr, subSub2, subRes2)) {
+                            SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution failed");
+                            assert(false);
+                            return false;
+                        }
+                        conjF.push_back(doccToFormula(subRes2));
+                    }
+                    disjF.emplace_back(carl::FormulaType::AND, std::move(conjF));
+                }
+                FormulaT subRes(carl::FormulaType::OR, std::move(disjF));
+
+                std::vector<FormulaT> res;
+                res.push_back(std::move(subRes));
+
+                // add side conditions scs of zero
+                for (const auto& sc : scs) {
+                    res.emplace_back(sc);
+                }
+
+                result = FormulaT(carl::FormulaType::AND, std::move(res));
+                SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution obtained " << result);
+                return true;
+            } else if(substitution.type() == ::vs::Substitution::MINUS_INFINITY ) {
+                SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "MINUS_INFINITY");
+                // square root term is irrelevant
+                ConstraintT subConstraint(subVar1, varcompRelation);
+                static ::vs::Substitution subSub(subVar1, ::vs::Substitution::MINUS_INFINITY, carl::PointerSet<::vs::Condition>());
+                if (!substitute(subConstraint, subSub, result)) {
+                    SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution into constraint failed");
+                    assert(false);
+                    return false;
+                }
+                SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution obtained " << result);
+                return true;
+            } else {
+                SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Not implemented for the given substitution type " << substitution.type());
                 assert(false);
                 return false;
             }
+        }
+        else { // variable not contained in VariableComparison
+            result = FormulaT(varcomp);
+            SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Variable " << substitution.variable() << " not occur in " << varcomp << " - returning varcomp" << result);
             return true;
-        } else {
-            assert(false);
-            return false;
         }
     }
 
@@ -416,6 +515,7 @@ namespace helper {
             return substitute(constr.variableComparison(), substitution, model, result);
         }
         else {
+            SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Formula type " << constr.getType() << " not supported for substitution");
             return false;
         }
     }

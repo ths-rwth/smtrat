@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_eliminationVariableNotContained)
     });
 	BOOST_CHECK(result);
 }
-BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_degreeTooHigh) {
+BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_MVRoot_degreeTooHigh) {
 	carl::Variable x = carl::freshRealVariable("x");
 	carl::Variable y = carl::freshRealVariable("y");
 	VariableComparisonT varcomp(y, MultivariateRootT(Poly(MultivariateRootT::var())*MultivariateRootT::var()*MultivariateRootT::var()*x-Rational(1), 2), carl::Relation::EQ);
@@ -101,7 +101,7 @@ BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_degreeTooHigh) {
     });
 	BOOST_CHECK(!result);
 }
-BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_simple) {
+BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_MVRoot_simple) {
 	carl::Variable x = carl::freshRealVariable("x");
 	carl::Variable y = carl::freshRealVariable("y");
 	VariableComparisonT varcomp(y, MultivariateRootT(Poly(MultivariateRootT::var())*MultivariateRootT::var()*x-Rational(1), 2), carl::Relation::EQ);
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_simple) {
     });
 	BOOST_CHECK(result);
 }
-BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_multivar) {
+BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_MVRoot_multivar) {
 	carl::Variable x1 = carl::freshRealVariable("x1");
 	carl::Variable x2 = carl::freshRealVariable("x2");
 	carl::Variable y = carl::freshRealVariable("y");
@@ -130,6 +130,18 @@ BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_multivar) {
 		// ((-1)*x1)/(x2)
     	BOOST_CHECK(sqrtExpression == SqrtEx(Poly(Rational(0)), Poly(Rational(-1))*x1, Poly(x2), Poly(Rational(1))));
 		BOOST_CHECK(sideConditions.size() > 0);
+    });
+	BOOST_CHECK(result);
+}
+BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_RAN_simple) {
+	carl::Variable r = carl::freshRealVariable("r");
+	carl::UnivariatePolynomial<Rational> pol = (Poly(r)*r-Rational(2)).toUnivariatePolynomial();
+	carl::Interval<Rational> interval(Rational(1), carl::BoundType::STRICT, Rational(2), carl::BoundType::STRICT);
+	carl::RealAlgebraicNumber<Rational> ran(pol, interval, true);
+
+	bool result = generateZeros(ran, [&](const SqrtEx&& sqrtExpression, const ConstraintsT&& sideConditions) {
+		// sqrt(2) = 0+1*sqrt(8)/2
+    	BOOST_CHECK(sqrtExpression == SqrtEx(Poly(Rational(0)), Poly(Rational(1)), Poly(Rational(2)), Poly(Rational(8))));
     });
 	BOOST_CHECK(result);
 }
@@ -249,6 +261,53 @@ BOOST_AUTO_TEST_CASE(Test_generateTestCandidates_variableComparison) {
 	// note that results[0] is -infty
     BOOST_CHECK(results[1].term() == SqrtEx(Poly(Rational(0)), Poly(Rational(1)), Poly(x), Poly(x)));
 	BOOST_CHECK(results[1].sideCondition().size() > 0);
+}
+
+BOOST_AUTO_TEST_CASE(Test_substitute_constraint_varNotContained) {
+	carl::Variable x = carl::freshRealVariable("x");
+	carl::Variable y = carl::freshRealVariable("y");
+	
+	::vs::Substitution substitution(y, SqrtEx(Poly(Rational(1))), ::vs::Substitution::Type::NORMAL, carl::PointerSet<::vs::Condition>(), ConstraintsT());
+	ConstraintT constraint(Poly(x), carl::Relation::EQ);
+
+	FormulaT result;
+	bool status = substitute(constraint, substitution, result);
+	BOOST_CHECK(status);
+	BOOST_CHECK(result.constraint() == constraint);
+}
+BOOST_AUTO_TEST_CASE(Test_substitute_constraint_simple) {
+	carl::Variable y = carl::freshRealVariable("y");
+	
+	::vs::Substitution substitution(y, SqrtEx(Poly(Rational(1))), ::vs::Substitution::Type::NORMAL, carl::PointerSet<::vs::Condition>(), ConstraintsT());
+	ConstraintT constraint(Poly(y), carl::Relation::EQ);
+
+	FormulaT result;
+	bool status = substitute(constraint, substitution, result);
+	BOOST_CHECK(status);
+	BOOST_CHECK(result.getType() == carl::FormulaType::FALSE);
+}
+BOOST_AUTO_TEST_CASE(Test_substitute_varComp_varNotContained) {
+	carl::Variable x = carl::freshRealVariable("x");
+	carl::Variable y = carl::freshRealVariable("y");
+
+	carl::Variable r = carl::freshRealVariable("r");
+	carl::UnivariatePolynomial<Rational> pol = (Poly(r)*r-Rational(2)).toUnivariatePolynomial();
+	carl::Interval<Rational> interval(Rational(1), carl::BoundType::STRICT, Rational(2), carl::BoundType::STRICT);
+	carl::RealAlgebraicNumber<Rational> ran(pol, interval, true);
+	
+	::vs::Substitution substitution(y, SqrtEx(Poly(Rational(1))), ::vs::Substitution::Type::NORMAL, carl::PointerSet<::vs::Condition>(), ConstraintsT());
+	VariableComparisonT varcomp(x, ran, carl::Relation::EQ);
+
+	FormulaT result;
+	bool status = substitute(varcomp, substitution, Model(), result);
+	BOOST_CHECK(status);
+	BOOST_CHECK(result.variableComparison() == varcomp);
+}
+BOOST_AUTO_TEST_CASE(Test_substitute_varComp_MVRoot) {
+	// TODO	test
+}
+BOOST_AUTO_TEST_CASE(Test_substitute_varComp_RAN) {
+	// TODO test
 }
 
 BOOST_AUTO_TEST_CASE(Test_getExplanation_degreeTooHigh) {
