@@ -14,11 +14,7 @@ addons:
     sources: &sources_base
       - ubuntu-toolchain-r-test
     packages: &packages_base
-      - g++-6
-      - libcln-dev
-      - libgmp-dev
-      - libgtest-dev
-      - openjdk-7-jdk
+      - texinfo
       - time
       - uuid-dev
 
@@ -32,7 +28,7 @@ matrix:
       addons:
         apt:
           sources: [*sources_base, llvm-toolchain-precise-3.8]
-          packages: [*packages_base, clang-3.8]
+          packages: [*packages_base, clang-3.8, libstdc++-6-dev]
     - stage: dependencies
       os: linux
       compiler: clang++-3.9
@@ -41,7 +37,7 @@ matrix:
       addons:
         apt:
           sources: [*sources_base, llvm-toolchain-trusty-3.9]
-          packages: [*packages_base, clang-3.9]
+          packages: [*packages_base, clang-3.9, libstdc++-8-dev]
     - stage: dependencies
       os: linux
       compiler: clang++-4.0
@@ -50,7 +46,7 @@ matrix:
       addons:
         apt:
           sources: [*sources_base, llvm-toolchain-trusty-4.0]
-          packages: [*packages_base, clang-4.0]
+          packages: [*packages_base, clang-4.0, libstdc++-8-dev]
     - stage: dependencies
       os: linux
       compiler: clang++-5.0
@@ -59,7 +55,7 @@ matrix:
       addons:
         apt:
           sources: [*sources_base, llvm-toolchain-trusty-5.0]
-          packages: [*packages_base, clang-5.0]
+          packages: [*packages_base, clang-5.0, libstdc++-8-dev]
     - stage: dependencies
       os: linux
       compiler: clang++-6.0
@@ -68,7 +64,7 @@ matrix:
       addons:
         apt:
           sources: [*sources_base, llvm-toolchain-trusty-6.0]
-          packages: [*packages_base, clang-6.0]
+          packages: [*packages_base, clang-6.0, libstdc++-8-dev]
     - stage: dependencies
       os: linux
       compiler: g++-5
@@ -83,6 +79,10 @@ matrix:
       compiler: g++-6
       env: CC=gcc-6 CXX=g++-6
       script: TASK=dependencies MAKE_PARALLEL=-j1 source .ci/build.sh
+      addons:
+        apt:
+          sources: [*sources_base]
+          packages: [*packages_base, g++-6]
     - stage: dependencies
       os: linux
       compiler: g++-7
@@ -100,7 +100,7 @@ matrix:
       addons:
         apt:
           sources: [*sources_base, llvm-toolchain-precise-3.8]
-          packages: [*packages_base, clang-3.8]
+          packages: [*packages_base, clang-3.8, libstdc++-6-dev]
     - stage: build
       os: linux
       compiler: clang++-3.9
@@ -109,7 +109,7 @@ matrix:
       addons:
         apt:
           sources: [*sources_base, llvm-toolchain-trusty-3.9]
-          packages: [*packages_base, clang-3.9]
+          packages: [*packages_base, clang-3.9, libstdc++-8-dev]
     - stage: build
       os: linux
       compiler: clang++-4.0
@@ -118,7 +118,7 @@ matrix:
       addons:
         apt:
           sources: [*sources_base, llvm-toolchain-trusty-4.0]
-          packages: [*packages_base, clang-4.0]
+          packages: [*packages_base, clang-4.0, libstdc++-8-dev]
     - stage: build
       os: linux
       compiler: clang++-5.0
@@ -127,7 +127,7 @@ matrix:
       addons:
         apt:
           sources: [*sources_base, llvm-toolchain-trusty-5.0]
-          packages: [*packages_base, clang-5.0]
+          packages: [*packages_base, clang-5.0, libstdc++-8-dev]
     - stage: build
       os: linux
       compiler: clang++-6.0
@@ -136,7 +136,7 @@ matrix:
       addons:
         apt:
           sources: [*sources_base, llvm-toolchain-trusty-6.0]
-          packages: [*packages_base, clang-6.0]
+          packages: [*packages_base, clang-6.0, libstdc++-8-dev]
     - stage: build
       os: linux
       compiler: g++-5
@@ -151,6 +151,10 @@ matrix:
       compiler: g++-6
       env: CC=gcc-6 CXX=g++-6
       script: MAKE_PARALLEL=-j1 source .ci/build.sh
+      addons:
+        apt:
+          sources: [*sources_base]
+          packages: [*packages_base, g++-6]
     - stage: build
       os: linux
       compiler: g++-7
@@ -179,8 +183,8 @@ matrix:
       script: MAKE_PARALLEL=-j1 source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base, llvm-toolchain-trusty-6.0, *sources_base]
-          packages: [*packages_base, clang-6.0, *packages_base, doxygen, texinfo, texlive, texlive-font-utils, texlive-latex-extra, latex-xcolor, ghostscript]
+          sources: [*sources_base, llvm-toolchain-trusty-6.0]
+          packages: [*packages_base, clang-6.0, libstdc++-8-dev, doxygen, ghostscript, latex-xcolor, pgf, texinfo, texlive, texlive-font-utils, texlive-latex-extra]
   allow_failures:
     - stage: dependencies
       os: linux
