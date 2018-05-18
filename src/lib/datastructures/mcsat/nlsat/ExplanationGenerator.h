@@ -12,7 +12,7 @@ namespace nlsat {
 namespace helper {
 	/**
 	 * Construct a formula representing a variable comparison.
-	 * If possible, this is simplified to a regular constraint.
+	 * Simplify to a regular constraint if possible.
 	 */
 	inline FormulaT buildFormulaFromVC(VariableComparisonT&& vc) {
 		auto constraint = vc.asConstraint();
@@ -24,30 +24,62 @@ namespace helper {
 	}
 
 	/**
-	 * Construct a formula representing a variable being equal to the given multivariate root.
+	 * Construct an atomic formula representing a variable being equal to the given multivariate root. "v = root(..)"
 	 */
-	template<typename MV>
-	FormulaT buildEquality(carl::Variable v, const MV& mv) {
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << v << " = " << MultivariateRootT(mv.first, mv.second));
-		return buildFormulaFromVC(VariableComparisonT(v, MultivariateRootT(mv.first, mv.second), carl::Relation::EQ));
+	template<typename MVRootParams>
+	FormulaT buildEquality(carl::Variable var, const MVRootParams& mvp) {
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << var << " = " << MultivariateRootT(mvp.first, mvp.second));
+		return buildFormulaFromVC(VariableComparisonT(var, MultivariateRootT(mvp.first, mvp.second), carl::Relation::EQ));
 	}
 	/**
-	 * Construct a formula representing a variable being less than the given multivariate root.
+	 * Construct an atomic formula representing a variable being less than the given multivariate root. "v < root(..)"
 	 */
-	template<typename MV>
-	FormulaT buildBelow(carl::Variable v, const MV& mv) {
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << v << " < " << MultivariateRootT(mv.first, mv.second));
-		return buildFormulaFromVC(VariableComparisonT(v, MultivariateRootT(mv.first, mv.second), carl::Relation::LESS));
+	template<typename MVRootParams>
+	FormulaT buildBelow(carl::Variable var, const MVRootParams& mvp) {
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << var << " < " << MultivariateRootT(mvp.first, mvp.second));
+		return buildFormulaFromVC(VariableComparisonT(var, MultivariateRootT(mvp.first, mvp.second), carl::Relation::LESS));
 	}
 	/**
-	 * Construct a formula representing a variable being greater than the given multivariate root.
+	 * Construct an atomic formula representing a variable being greater than the given multivariate root. "v > root(..)"
 	 */
-	template<typename MV>
-	FormulaT buildAbove(carl::Variable v, const MV& mv) {
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << v << " > " << MultivariateRootT(mv.first, mv.second));
-		return buildFormulaFromVC(VariableComparisonT(v, MultivariateRootT(mv.first, mv.second), carl::Relation::GREATER));
+	template<typename MVRootParams>
+	FormulaT buildAbove(carl::Variable var, const MVRootParams& mvp) {
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << var << " > " << MultivariateRootT(mvp.first, mvp.second));
+		return buildFormulaFromVC(VariableComparisonT(var, MultivariateRootT(mvp.first, mvp.second), carl::Relation::GREATER));
 	}
-}
+
+	/**
+	 * Transform constraints represented as atomic formualas into the easier to
+	 * use objects of the Constraint class.
+	 */
+	inline
+	std::set<ConstraintT> convertToConstraints(std::vector<FormulaT> constraintAtoms) {
+		std::set<ConstraintT> cons;
+		for (const auto& cAtom: constraintAtoms) {
+			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding " << cAtom << " to " << cons);
+			if (cAtom.getType() == carl::FormulaType::CONSTRAINT) {
+				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding " << cAtom);
+				cons.emplace(cAtom.constraint());
+			} else if (cAtom.getType() == carl::FormulaType::VARCOMPARE) {
+				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << cAtom << " -> " << cAtom.variableComparison().definingPolynomial());
+				cons.emplace(cAtom.variableComparison().definingPolynomial(), cAtom.variableComparison().relation());
+				cons.emplace(Poly(cAtom.variableComparison().var()) - cAtom.variableComparison().definingPolynomial(), cAtom.variableComparison().relation());
+			} else if (cAtom.getType() == carl::FormulaType::VARASSIGN) {
+				SMTRAT_LOG_WARN("smtrat.nlsat", "Variable assignment " << cAtom << " should never get here!");
+				assert(false);
+				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding assignment " << cAtom);
+				const VariableComparisonT& vc = cAtom.variableAssignment();
+				cons.emplace(vc.definingPolynomial(), carl::Relation::EQ);
+			} else {
+				SMTRAT_LOG_ERROR("smtrat.nlsat", "Unsupported formula type: " << cAtom);
+				assert(false);
+			}
+			SMTRAT_LOG_DEBUG("smtrat.nlsat", "-> " << cons);
+		}
+		return cons;
+	}
+
+} // namespace helper
 
 class ExplanationGenerator {
 private:
@@ -59,6 +91,7 @@ private:
 	};
 
 	Model mModel;
+	// Store the original constraintAtoms, because they need to be added "raw" into the explanantion
 	std::vector<FormulaT> mConstraints;
 	cad::CADConstraints<ProjectionSettings::backtracking> mCADConstraints;
 	cad::ModelBasedProjectionT<ProjectionSettings> mProjection;
@@ -131,28 +164,8 @@ public:
 		SMTRAT_LOG_TRACE("smtrat.nlsat", "Reset to " << vars);
 		mCADConstraints.reset(vars);
 		mProjection.reset();
-		std::set<ConstraintT> cons;
-		for (const auto& cAtom: mConstraints) {
-			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding " << cAtom << " to " << cons);
-			if (cAtom.getType() == carl::FormulaType::CONSTRAINT) {
-				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding " << cAtom);
-				cons.emplace(cAtom.constraint());
-			} else if (cAtom.getType() == carl::FormulaType::VARCOMPARE) {
-				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << cAtom << " -> " << cAtom.variableComparison().definingPolynomial());
-				cons.emplace(cAtom.variableComparison().definingPolynomial(), cAtom.variableComparison().relation());
-				cons.emplace(Poly(cAtom.variableComparison().var()) - cAtom.variableComparison().definingPolynomial(), cAtom.variableComparison().relation());
-			} else if (cAtom.getType() == carl::FormulaType::VARASSIGN) {
-				SMTRAT_LOG_WARN("smtrat.nlsat", "Variable assignment " << cAtom << " should never get here!");
-				assert(false);
-				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding assignment " << cAtom);
-				const VariableComparisonT& vc = cAtom.variableAssignment();
-				cons.emplace(vc.definingPolynomial(), carl::Relation::EQ);
-			} else {
-				SMTRAT_LOG_ERROR("smtrat.nlsat", "Unsupported formula type: " << cAtom);
-				assert(false);
-			}
-			SMTRAT_LOG_DEBUG("smtrat.nlsat", "-> " << cons);
-		}
+		std::set<ConstraintT> cons = helper::convertToConstraints(mConstraints);
+
 		for (const auto& c: cons) {
 			mCADConstraints.add(c);
 		}
@@ -164,7 +177,7 @@ public:
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "After projecting into level " << level << "\n" << mProjection);
 		}
 
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Projection is" << std::endl << mProjection);
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "Projection is\n" << mProjection);
 	}
 
 	/**
