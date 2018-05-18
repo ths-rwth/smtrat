@@ -62,6 +62,7 @@ private:
 				}
 				
 				res.emplace_back(carl::FormulaType::AND, std::move(substitutionResults));
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution of " << tc << " into formula obtained " << res.back());
 				assert(res.back() != FormulaT(carl::FormulaType::TRUE));
 			}
 
