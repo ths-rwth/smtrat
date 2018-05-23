@@ -66,6 +66,13 @@ private:
 				assert(res.back() != FormulaT(carl::FormulaType::TRUE));
 			}
 
+			#ifndef NDEBUG
+			FormulaT tmp(carl::FormulaType::OR, std::move(res));
+			carl::ModelValue<Rational,Poly> evalRes = carl::model::evaluate(tmp, mModel);
+			assert(evalRes.isBool());
+			assert(!evalRes.asBool());
+			#endif
+
 			// collect input constraints
 			for (const auto& c: mConstraints) {
 				res.emplace_back(c.negated());

@@ -1813,7 +1813,7 @@ namespace smtrat
 			mLemmasRemovable.pop();
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Processing lemma " << lemma);
 			
-            /*
+            #ifndef NDEBUG
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Checking for existing clause " << lemma);
 			std::size_t dups = 0;
 			for (int i = 0; i < learnts.size(); i++) {
@@ -1834,7 +1834,7 @@ namespace smtrat
 				}
 			}
 			assert(dups == 0);
-            */
+            #endif
 			
 			if (lemma.size() == 0) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is trivial conflict, ok = false");
