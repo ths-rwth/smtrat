@@ -18,7 +18,7 @@ private:
 public:
 	ConflictGenerator(const std::vector<ConstraintT>& bounds, const Model& m, carl::Variable v) {
 		for (const auto& b: bounds) {
-			if (!b.coefficient(v, 1).isConstant()) {
+			if (b.varInfo(v).maxDegree() > 1) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because " << v << " occurs nonlinearly");
 				continue;
 			}
