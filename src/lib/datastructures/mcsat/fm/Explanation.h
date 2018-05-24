@@ -76,6 +76,7 @@ public:
 	}
 	
 	boost::optional<FormulasT> operator()() {
+		if (!hasNext()) return boost::none;
 		assert(hasNext());
 		
 		const Bound& lower = mLower[mNext.first];
