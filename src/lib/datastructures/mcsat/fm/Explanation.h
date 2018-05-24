@@ -114,6 +114,10 @@ struct Explanation {
 		
 		std::vector<ConstraintT> bounds;
 		for (const auto& b: reason) {
+			if (b.getType() != carl::FormulaType::CONSTRAINT) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-constraint bound " << b);
+				continue;
+			}
 			assert(b.getType() == carl::FormulaType::CONSTRAINT);
 			bounds.emplace_back(b.constraint());
 		}
