@@ -18,9 +18,16 @@ private:
 public:
 	ConflictGenerator(const std::vector<ConstraintT>& bounds, const Model& m, carl::Variable v) {
 		for (const auto& b: bounds) {
-			assert(b.coefficient(v, 1).isConstant());
+			if (!b.coefficient(v, 1).isConstant()) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because " << v << " occurs nonlinearly");
+				continue;
+			}
 			auto coeff = b.coefficient(v, 1).constantPart();
-			assert(!carl::isZero(coeff));
+			if (carl::isZero(coeff)) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because it does not contain " << v);
+				continue;
+			}
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Considering bound " << b << " for " << v);
 			auto poly = (v*coeff - b.lhs()) / coeff;
 			
 			auto res = carl::model::evaluate(poly, m);
