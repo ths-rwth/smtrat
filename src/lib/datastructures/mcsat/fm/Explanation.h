@@ -12,14 +12,15 @@ struct ConflictGenerator {
 	 * The input is a constraint c: p*x+q~0 which can be used as a bound on x with p,q multivariate polynomials.
 	 * If x only occurs linearly in c, this decomposition is possible.
 	 * We evaluate c over the partial model and obtain x~r, where r is a rational.
+	 * To properly perform the elimination step detailed below, we additionally store the sign condition (as relation) of p over the current assignment.
 	 *
-	 * We store (c,p,q,r) for each bound.
+	 * We store (c,p,q,r,rel) for each bound.
 	 *
 	 * Given a lower bound l and an upper bound u, the elimination is as follows:
 	 *   Conflict if l.r >= u.r (or strict, if both relations from c are weak)
 	 *   l.q * u.p < u.q * l.p
 	 */
-	using Bound = std::tuple<ConstraintT,Poly,Poly,Rational>;
+	using Bound = std::tuple<ConstraintT,Poly,Poly,Rational,carl::Relation>;
 private:
 	std::vector<Bound> mLower;
 	std::vector<Bound> mUpper;
@@ -41,9 +42,16 @@ public:
 			auto q = b.lhs() - p * v;
 			
 			auto evalp = carl::model::evaluate(p, m);
+			assert(evalp.isRational());
+			if (carl::isZero(evalp.asRational())) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because it does not contain " << v << " after we evaluate it");
+				continue;
+			}
+			
 			auto evalq = carl::model::evaluate(q, m);
-			assert(evalp.isRational() && evalq.isRational());
+			assert(evalq.isRational());
 			Rational r = - evalq.asRational() / evalp.asRational();
+			carl::Relation rel = (r > 0 ? carl::Relation::GREATER : carl::Relation::LESS);
 			
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Considering bound " << b << " for " << v);
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Decomposed into " << p << " * " << v << " + " << q << ", " << v << " ~ " << r);
@@ -52,25 +60,25 @@ public:
 			switch (b.relation()) {
 				case carl::Relation::LESS:
 				case carl::Relation::LEQ:
-					if (evalp.asRational() > 0) {
-						mUpper.emplace_back(b, p, q, r);
+					if (rel == carl::Relation::GREATER) {
+						mUpper.emplace_back(b, p, q, r, rel);
 					} else {
-						mLower.emplace_back(b, p, q, r);
+						mLower.emplace_back(b, p, q, r, rel);
 					}
 					break;
 				case carl::Relation::EQ:
-					mLower.emplace_back(b, p, q, r);
-					mUpper.emplace_back(b, p, q, r);
+					mLower.emplace_back(b, p, q, r, rel);
+					mUpper.emplace_back(b, p, q, r, rel);
 					break;
 				case carl::Relation::NEQ:
 					mInequalities.emplace(r, b);
 					break;
 				case carl::Relation::GEQ:
 				case carl::Relation::GREATER:
-					if (evalp.asRational() > 0) {
-						mLower.emplace_back(b, p, q, r);
+					if (rel == carl::Relation::GREATER) {
+						mLower.emplace_back(b, p, q, r, rel);
 					} else {
-						mUpper.emplace_back(b, p, q, r);
+						mUpper.emplace_back(b, p, q, r, rel);
 					}
 					break;
 			}
@@ -105,6 +113,8 @@ public:
 		const auto& uq = std::get<2>(upper);
 		const auto& lr = std::get<3>(lower);
 		const auto& ur = std::get<3>(upper);
+		const auto& lrel = std::get<4>(lower);
+		const auto& urel = std::get<4>(upper);
 		
 		if (lr < ur) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Not in conflict");
@@ -124,9 +134,11 @@ public:
 			}
 		}
 		
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "-> " << lp << " * " << uq << " " << (strict ? carl::Relation::LESS : carl::Relation::LEQ) << " " << up << " * " << lq);
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "-> " << lq << " * " << up << " " << (strict ? carl::Relation::LESS : carl::Relation::LEQ) << " " << uq << " * " << lp);
 		
 		res.emplace_back(ConstraintT(lq*up - uq*lp, strict ? carl::Relation::LESS : carl::Relation::LEQ));
+		res.emplace_back(ConstraintT(lp, lrel));
+		res.emplace_back(ConstraintT(up, urel));
 		return res;
 	}
 };
@@ -155,6 +167,7 @@ struct Explanation {
 			}
 			cg.next();
 		}
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Did not find a conflict");
 		
 		return boost::none;
 	}
