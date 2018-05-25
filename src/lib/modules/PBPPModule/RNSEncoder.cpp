@@ -166,7 +166,7 @@ namespace smtrat {
 		Integer r = carl::floor(carl::sqrt(y));
 
 		if(coeff % 2 == 0){
-			primes.emplace_back(2);
+			primes.emplace_back((carl::uint) 2);
 			if(coeff / 2 > 2){
 				std::vector<Integer> v = integerFactorization(coeff / 2);
 				primes.insert(primes.end(), v.begin(), v.end());
