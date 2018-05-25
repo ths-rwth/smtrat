@@ -1,6 +1,5 @@
 /**
  * @file FPPModule.h
- * @author YOUR NAME <YOUR EMAIL ADDRESS>
  *
  * @version 2015-09-10
  * Created on 2015-09-10.
