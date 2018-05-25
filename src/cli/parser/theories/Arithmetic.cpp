@@ -130,8 +130,11 @@ namespace arithmetic {
 		if (boost::get<carl::Relation>(&op) == nullptr) return false;
 		if (boost::get<carl::Relation>(op) != carl::Relation::EQ) return false;
 		for (const auto& a: arguments) {
-			if (boost::get<carl::Variable>(&a) == nullptr) return false;
-			if (boost::get<carl::Variable>(a).type() != carl::VariableType::VT_BOOL) return false;
+			if (boost::get<carl::Variable>(&a) != nullptr) {
+				if (boost::get<carl::Variable>(a).type() != carl::VariableType::VT_BOOL) return false;
+			} else if (boost::get<FormulaT>(&a) == nullptr) {
+				return false;
+			}
 		}
 		errors.next() << "Operator \"" << op << "\" only has boolean variables which is handled by the core theory.";
 		return true;
