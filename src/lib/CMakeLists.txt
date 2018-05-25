@@ -11,10 +11,6 @@
 # Version: 2013-03-31                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-
-include_directories( ${carl_INCLUDE_DIR} )
-
-
 # Configure all .in files
 # Omit modules directories! (Special care is taken there)
 # If modules/*.in is included here, this triggers rebuilds all the time.
@@ -55,13 +51,9 @@ set_target_properties( lib_${PROJECT_NAME} PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
         ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
-if(STATICLIB_SWITCH)
-        set(SMTRAT_TARGETS lib_smtrat CACHE STRING INTERNAL FORCE)
-	target_link_libraries( lib_${PROJECT_NAME} lib_carl_static ${libraries} ) # libraries definied in top-level CMakeLists.txt
-else()
-        set(SMTRAT_TARGETS lib_smtrat CACHE STRING INTERNAL FORCE)
-	target_link_libraries( lib_${PROJECT_NAME} lib_carl ${libraries} ) # libraries definied in top-level CMakeLists.txt
-endif()
+
+set(SMTRAT_TARGETS lib_smtrat CACHE STRING INTERNAL FORCE)
+target_link_libraries( lib_${PROJECT_NAME} ${libraries} ) # libraries defined in top-level CMakeLists.txt
 
 target_include_directories( lib_${PROJECT_NAME} PUBLIC
 	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
