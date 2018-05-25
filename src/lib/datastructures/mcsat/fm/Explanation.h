@@ -126,7 +126,7 @@ public:
 		
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "-> " << lp << " * " << uq << " " << (strict ? carl::Relation::LESS : carl::Relation::LEQ) << " " << up << " * " << lq);
 		
-		res.emplace_back(ConstraintT(lp*uq - up*lq, strict ? carl::Relation::LESS : carl::Relation::LEQ));
+		res.emplace_back(ConstraintT(lq*up - uq*lp, strict ? carl::Relation::LESS : carl::Relation::LEQ));
 		return res;
 	}
 };
