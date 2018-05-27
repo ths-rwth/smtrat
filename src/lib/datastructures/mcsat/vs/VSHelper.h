@@ -208,21 +208,50 @@ namespace helper {
         return evalRes.asBool();
     }
 
-    // TODO implement completely:
-    inline bool rationalSmallerThanSqrtEx(const Rational& rat, const SqrtEx& expr, const Model& model) {
-        assert(expr.factor() != 0);
-        Poly lhs = ( rat * expr.denominator() - expr.constantPart() ) / expr.factor();
-        carl::ModelValue<Rational, Poly> eval = carl::model::evaluate(lhs, model);
-        carl::ModelValue<Rational, Poly> evalRad = carl::model::evaluate(expr.radicand(), model);
-        return eval.asRational() < 0 || eval.asRational()*eval.asRational() < evalRad.asRational();
+    inline bool rationalLessThanSqrtEx(const Rational& rat, const SqrtEx& expr, const Model& model) {
+        if (expr.factor() == Poly(Rational(0))) {
+            Poly lhs = expr.constantPart() / expr.denominator();
+            carl::ModelValue<Rational, Poly> eval = carl::model::evaluate(lhs, model);
+            return rat < eval.asRational();
+        }
+        else {
+            Poly rs = expr.denominator() * expr.factor();
+            carl::ModelValue<Rational, Poly> evalRs = carl::model::evaluate(rs, model);
+            Poly lhs = ( rat * expr.denominator() - expr.constantPart() ) / expr.factor();
+            carl::ModelValue<Rational, Poly> eval = carl::model::evaluate(lhs, model);
+            carl::ModelValue<Rational, Poly> evalRad = carl::model::evaluate(expr.radicand(), model);
+
+            if (evalRs.asRational() > Rational(0)) {
+                return eval.asRational() < Rational(0) || eval.asRational()*eval.asRational() < evalRad.asRational();
+            } else if (evalRs.asRational() < Rational(0)) {
+                return eval.asRational() > Rational(0) && eval.asRational()*eval.asRational() > evalRad.asRational();
+            } else {
+                return false;
+            }
+        }
     }
 
-    inline bool sqrtExSmallerThanRational(const SqrtEx& expr, const Rational& rat, const Model& model) {
-        assert(expr.factor() != 0);
-        Poly lhs = ( rat * expr.denominator() - expr.constantPart() ) / expr.factor();
-        carl::ModelValue<Rational, Poly> eval = carl::model::evaluate(lhs, model);
-        carl::ModelValue<Rational, Poly> evalRad = carl::model::evaluate(expr.radicand(), model);
-        return eval.asRational() >= 0 && eval.asRational()*eval.asRational() > evalRad.asRational();
+    inline bool sqrtExLessThanRational(const SqrtEx& expr, const Rational& rat, const Model& model) {
+        if (expr.factor() == Poly(Rational(0))) {
+            Poly lhs = expr.constantPart() / expr.denominator();
+            carl::ModelValue<Rational, Poly> eval = carl::model::evaluate(lhs, model);
+            return rat > eval.asRational();
+        }
+        else {
+            Poly rs = expr.denominator() * expr.factor();
+            carl::ModelValue<Rational, Poly> evalRs = carl::model::evaluate(rs, model);
+            Poly lhs = ( rat * expr.denominator() - expr.constantPart() ) / expr.factor();
+            carl::ModelValue<Rational, Poly> eval = carl::model::evaluate(lhs, model);
+            carl::ModelValue<Rational, Poly> evalRad = carl::model::evaluate(expr.radicand(), model);
+
+            if (evalRs.asRational() > Rational(0)) {
+                return eval.asRational() > Rational(0) && eval.asRational()*eval.asRational() > evalRad.asRational();
+            } else if (evalRs.asRational() < Rational(0)) {
+                return eval.asRational() < Rational(0) || eval.asRational()*eval.asRational() < evalRad.asRational();
+            } else {
+                return false;
+            }
+        }
     }    
 
     inline bool generateZeros(const MultivariateRootT& mvroot, const Model& model, std::function<void(SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions)> yield_result) {
@@ -281,7 +310,7 @@ namespace helper {
     }
 
     inline bool generateZeros(const carl::RealAlgebraicNumber<Rational>& ran, std::function<void(SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions)> yield_result) {
-        SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generating zeros of VariableComparison with RealAlgebraicNumber");
+        SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generating zeros of VariableComparison with RealAlgebraicNumber " << ran);
         if (ran.isNumeric()) {
             // should have been simplified to a ConstraintT before...
             SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Not implemented for numeric content");
@@ -304,8 +333,8 @@ namespace helper {
             static Model model;
             for (const auto& zero : zeros) {
                  // RAN uses open intervals and the polynomial has rational coefficients
-                bool res1 = rationalSmallerThanSqrtEx(ran.lower(), zero.first, model);
-                bool res2 = sqrtExSmallerThanRational(zero.first, ran.upper(), model);
+                bool res1 = rationalLessThanSqrtEx(ran.lower(), zero.first, model);
+                bool res2 = sqrtExLessThanRational(zero.first, ran.upper(), model);
                 if (res1 && res2) {
                     SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generate zero " << zero.first << " with " << zero.second);
                     yield_result(SqrtEx(zero.first), ConstraintsT(zero.second));

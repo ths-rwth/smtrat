@@ -161,6 +161,34 @@ BOOST_AUTO_TEST_CASE(Test_compareSqrtEx) {
 	BOOST_CHECK(compareSqrtEx(sqrtB, sqrtA, model2).value());
 }
 
+BOOST_AUTO_TEST_CASE(Test_compareSqrtExWithRational) {
+	SqrtEx sqrtB(Poly(Rational(0)), Poly(Rational(-1)), Poly(Rational(10)), Poly(Rational(40)));
+	
+	Rational lower = Rational(-16) / Rational(25);
+	Rational upper = Rational(-31) / Rational(50);
+
+	Model model;
+
+	BOOST_CHECK(rationalLessThanSqrtEx(lower, sqrtB, model));
+	BOOST_CHECK(!rationalLessThanSqrtEx(upper, sqrtB, model));
+	BOOST_CHECK(!sqrtExLessThanRational(sqrtB, lower, model));
+	BOOST_CHECK(sqrtExLessThanRational(sqrtB, upper, model));
+}
+
+BOOST_AUTO_TEST_CASE(Test_compareSqrtExWithRational_fraction) {
+	SqrtEx sqrtB(Poly(Rational(2)), Poly(Rational(0)), Poly(Rational(10)), Poly(Rational(0)));
+	
+	Rational lower = Rational(1) / Rational(10);
+	Rational upper = Rational(3) / Rational(10);
+
+	Model model;
+
+	BOOST_CHECK(rationalLessThanSqrtEx(lower, sqrtB, model));
+	BOOST_CHECK(!rationalLessThanSqrtEx(upper, sqrtB, model));
+	BOOST_CHECK(!sqrtExLessThanRational(sqrtB, lower, model));
+	BOOST_CHECK(sqrtExLessThanRational(sqrtB, upper, model));
+}
+
 BOOST_AUTO_TEST_CASE(Test_doccToFormula) {
 	carl::Variable x = carl::freshRealVariable("x");
 	::vs::DisjunctionOfConstraintConjunctions docc;
