@@ -366,8 +366,8 @@ namespace smtrat
     template<class Settings>
     Answer SATModule<Settings>::checkCore()
     {
-//        for( const auto& f : rReceivedFormula() )
-//            std::cout << "   " << f.formula().toString() << std::endl;
+        //for( const auto& f : rReceivedFormula() )
+        //    std::cout << "   " << f.formula() << std::endl;
 //        std::cout << ((FormulaT) rReceivedFormula()).toString( false, 1, "", true, false, true, true ) << std::endl;
         #ifdef SMTRAT_DEVOPTION_Statistics
         mpStatistics->rNrTotalVariablesBefore() = (size_t) nVars();
@@ -954,6 +954,7 @@ namespace smtrat
     template<class Settings>
     Lit SATModule<Settings>::addClauses( const FormulaT& _formula, unsigned _type, unsigned _depth, const FormulaT& _original )
     {
+		SMTRAT_LOG_DEBUG("smtrat.sat", "Adding formula " << _formula);
         assert( _type < 4 );
         bool everythingDecisionRelevant = !Settings::formula_guided_decision_heuristic;
         unsigned nextDepth = _depth+1;
@@ -972,16 +973,16 @@ namespace smtrat
                 return createLiteral( _formula, _original, everythingDecisionRelevant || _depth <= 1 );
             case carl::FormulaType::NOT:
             {
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Adding a negation: " << _formula);
+				SMTRAT_LOG_TRACE("smtrat.sat", "Adding a negation: " << _formula);
                 Lit l = lit_Undef; 
                 if( _formula.isLiteral() )
                 {
                     l = createLiteral( _formula, _original, everythingDecisionRelevant || _depth <= 1 );
-					SMTRAT_LOG_DEBUG("smtrat.sat", "It is a literal: " << l);
+					SMTRAT_LOG_TRACE("smtrat.sat", "It is a literal: " << l);
                 }
                 else {
                     l = neg( addClauses( _formula.subformula(), _type, nextDepth, _original ) );
-					SMTRAT_LOG_DEBUG("smtrat.sat", "It is not a literal, but now: " << l);
+					SMTRAT_LOG_TRACE("smtrat.sat", "It is not a literal, but now: " << l);
 				}
                 if( _depth == 0 )
                 {
@@ -1144,6 +1145,7 @@ namespace smtrat
 	                        ++i;
 	                    }
 					}
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Added formula " << _formula << " -> " << tsLit);
                     return tsLit;
                 }
                 case carl::FormulaType::AND:
@@ -1741,7 +1743,7 @@ namespace smtrat
             {
                 assert( assigns[var(add_tmp[0])] != l_False );
                 uncheckedEnqueue( add_tmp[0], cr );
-                if (propagateConsistently( false ) != CRef_Undef) {
+                if (propagateConsistently(false) != CRef_Undef) {
                     ok = false;
                 }
                 return ok;
@@ -3650,14 +3652,14 @@ namespace smtrat
                 // Make sure the false literal is data[1]:
                 CRef cr = i->cref;
                 Clause& c = ca[cr];
-				SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Analyzing clause " << c);
+				SMTRAT_LOG_TRACE("smtrat.sat.bcp", "Analyzing clause " << c);
                 Lit false_lit = ~p;
                 if( c[0] == false_lit )
                     c[0]              = c[1], c[1] = false_lit;
                 assert( c[1] == false_lit );
                 i++;
 				
-				SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Clause is now " << c << " after moving the false literal");
+				SMTRAT_LOG_TRACE("smtrat.sat.bcp", "Clause is now " << c << " after moving the false literal");
 
                 // If 0th watch is true, then clause is already satisfied.
                 Lit first = c[0];
@@ -3682,12 +3684,12 @@ namespace smtrat
                         c[1] = c[k];
                         c[k] = false_lit;
                         watches[~c[1]].push( w );
-						SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Clause is now " << c << " after setting " << c[1] << " as new watch");
+						SMTRAT_LOG_TRACE("smtrat.sat.bcp", "Clause is now " << c << " after setting " << c[1] << " as new watch");
                         goto NextClause;
                     }
 				}
 				
-				SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Clause is now " << c << " after no new watch was found");
+				SMTRAT_LOG_TRACE("smtrat.sat.bcp", "Clause is now " << c << " after no new watch was found");
 
                 // Did not find watch -- clause is unit under assignment:
                 *j++ = w;
@@ -3878,6 +3880,11 @@ NextClause:
         while( backend != usedBackends().end() )
         {
             const std::vector<FormulaSetT>& infSubsets = (*backend)->infeasibleSubsets();
+			#ifdef DEBUG_SATMODULE
+			for (const auto& iss : infSubsets) {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Infeasible subset: " << iss);
+			}
+			#endif
             assert( (*backend)->solverState() != UNSAT || !infSubsets.empty() );
             for( auto infsubset = infSubsets.begin(); infsubset != infSubsets.end(); ++infsubset )
             {
@@ -3885,16 +3892,6 @@ NextClause:
                 #ifdef SMTRAT_DEVOPTION_Validation
                 if( validationSettings->logInfSubsets() )
                     addAssumptionToCheck( *infsubset, false, (*backend)->moduleName() + "_infeasible_subset" );
-                #endif
-                #ifdef DEBUG_SATMODULE
-                for( const auto& iss : (*backend)->infeasibleSubsets() )
-                {
-                    cout << " {";
-                    for( const auto& infSubFormula : iss )
-                        cout << " " << infSubFormula.toString( false, 0, "", true, true, true ) << std::endl;
-                    cout << " }";
-                }
-                std::cout << std::endl;
                 #endif
                 // Add the according literals to the conflict clause.
                 vec<Lit> explanation;
@@ -4185,6 +4182,11 @@ NextClause:
                 _out << _init << "  ~" << k << "  ->  " << mBooleanConstraintMap[k].second->reabstraction;
                 _out << "  (" << setw( 7 ) << activity[k] << ") [" << mBooleanConstraintMap[k].second->updateInfo << "]" << endl;
             }
+        }
+		_out << _init << " Boolean Variables" << endl;
+        for( const auto& it: mMinisatVarMap )
+        {
+            _out << _init << "   " << it.first << "  ->  " << it.second << endl;
         }
     }
 
