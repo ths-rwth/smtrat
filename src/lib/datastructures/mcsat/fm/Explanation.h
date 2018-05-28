@@ -30,6 +30,7 @@ private:
 public:
 	ConflictGenerator(const std::vector<ConstraintT>& bounds, const Model& m, carl::Variable v) {
 		for (const auto& b: bounds) {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Processing bound " << b);
 			if (b.varInfo(v).maxDegree() > 1) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because " << v << " occurs nonlinearly");
 				continue;
@@ -42,6 +43,10 @@ public:
 			auto q = b.lhs() - p * v;
 			
 			auto evalp = carl::model::evaluate(p, m);
+			if (!evalp.isRational()) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because " << p << " did not evaluate to a rational");
+				continue;
+			}
 			assert(evalp.isRational());
 			if (carl::isZero(evalp.asRational())) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because it does not contain " << v << " after we evaluate it");
@@ -49,6 +54,10 @@ public:
 			}
 			
 			auto evalq = carl::model::evaluate(q, m);
+			if (!evalq.isRational()) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because " << q << " did not evaluate to a rational");
+				continue;
+			}
 			assert(evalq.isRational());
 			Rational r = - evalq.asRational() / evalp.asRational();
 			carl::Relation rel = (r > 0 ? carl::Relation::GREATER : carl::Relation::LESS);
