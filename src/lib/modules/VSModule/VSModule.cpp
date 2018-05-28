@@ -189,10 +189,14 @@ namespace smtrat
             }
             addStateToRanking( mpStateTree );
         }
-        if( !rReceivedFormula().isConstraintLiteralConjunction() )
+        if( !rReceivedFormula().isConstraintLiteralConjunction() ) {
+            SMTRAT_LOG_DEBUG("smtrat.vs", "Is not a conjunction of literals, return unknown.");
             return UNKNOWN;
-        if( !(rReceivedFormula().isIntegerConstraintLiteralConjunction() || rReceivedFormula().isRealConstraintLiteralConjunction()) )
+        }
+        if( !(rReceivedFormula().isIntegerConstraintLiteralConjunction() || rReceivedFormula().isRealConstraintLiteralConjunction()) ) {
+            SMTRAT_LOG_DEBUG("smtrat.vs", "Is not purely real or integer, return unknown.");
             return UNKNOWN;
+        }
         if( !mFinalCheck && !mConditionsChanged && (!mFullCheck || mLastCheckFull) )
         {
             if( mInfeasibleSubsets.empty() )
