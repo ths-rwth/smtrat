@@ -60,7 +60,7 @@ public:
 			}
 			assert(evalq.isRational());
 			Rational r = - evalq.asRational() / evalp.asRational();
-			carl::Relation rel = (r > 0 ? carl::Relation::GREATER : carl::Relation::LESS);
+			carl::Relation rel = (evalp.asRational() >= 0 ? carl::Relation::GREATER : carl::Relation::LESS);
 			
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Considering bound " << b << " for " << v);
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Decomposed into " << p << " * " << v << " + " << q << ", " << v << " ~ " << r);
@@ -75,10 +75,11 @@ public:
 						mLower.emplace_back(b, p, q, r, rel);
 					}
 					break;
-				case carl::Relation::EQ:
-					mLower.emplace_back(b, p, q, r, rel);
-					mUpper.emplace_back(b, p, q, r, rel);
+				case carl::Relation::EQ: {
+					mLower.emplace_back(b, -p, -q, -r, carl::Relation::LESS);
+					mUpper.emplace_back(b, p, q, -r, carl::Relation::GREATER);
 					break;
+				}
 				case carl::Relation::NEQ:
 					mInequalities.emplace(r, b);
 					break;
@@ -146,8 +147,12 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "-> " << lq << " * " << up << " " << (strict ? carl::Relation::LESS : carl::Relation::LEQ) << " " << uq << " * " << lp);
 		
 		res.emplace_back(ConstraintT(lq*up - uq*lp, strict ? carl::Relation::LESS : carl::Relation::LEQ));
-		res.emplace_back(ConstraintT(lp, lrel));
-		res.emplace_back(ConstraintT(up, urel));
+		ConstraintT sidecond_l(lp, lrel);
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "-> " << lp << " " << lrel << " 0");
+		res.emplace_back(sidecond_l.negation());
+		ConstraintT sidecond_u(up, urel);
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "-> " << up << " " << urel << " 0");
+		res.emplace_back(sidecond_u.negation());
 		return res;
 	}
 };
