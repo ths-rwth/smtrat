@@ -22,6 +22,8 @@ namespace delta {
 class Checker {
 	/// Solver executable filename.
 	std::string executable;
+	/// Memout for a single call.
+	std::size_t memout;
 	/// Timeout for a single call.
 	std::size_t timeout;
 	/// Expected exit code.
@@ -43,6 +45,7 @@ class Checker {
 		std::stringstream ss;
 		ss << "sh -c \"";
 		ss << "ulimit -t " << timeout << ";";
+		ss << "ulimit -S -v " << memout*1024 << " ;";
 		ss << executable << " " << filename << " 2> /dev/null > /dev/null";
 		ss << "\" 2> /dev/null";
 		int code = system(ss.str().c_str());
@@ -58,8 +61,8 @@ public:
 	 * @param timeout Timeout for a single call to the solver.
 	 * @param original Filename of the original file to obtain the expected exit code.
 	 */
-	Checker(const std::string& exec, std::size_t timeout, const std::string& original):
-		executable(exec), timeout(timeout), expected(execute(original)), killed(0)
+	Checker(const std::string& exec, std::size_t memout, std::size_t timeout, const std::string& original):
+		executable(exec), memout(memout), timeout(timeout), expected(execute(original)), killed(0)
 	{}
 
 	/**
