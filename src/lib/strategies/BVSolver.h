@@ -7,6 +7,7 @@
 
 #include "../modules/BVModule/BVModule.h"
 #include "../modules/SATModule/SATModule.h"
+#include "../modules/FPPModule/FPPModule.h"
 
 namespace smtrat
 {
@@ -25,8 +26,10 @@ namespace smtrat
             BVSolver(): Manager()
 		    {
 				setStrategy({
-					addBackend<BVModule<BVSettings1>>({
-						addBackend<SATModule<SATSettings1>>()
+					addBackend<FPPModule<FPPSettings3>>({
+						addBackend<BVModule<BVSettings1>>({
+							addBackend<SATModule<SATSettings1>>()
+						})
 					})
 				});
 			}
