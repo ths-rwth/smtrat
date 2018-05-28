@@ -66,6 +66,22 @@ if(USE_COTIRE)
 endif()
 
 
+if (CLANG_TIDY)
+	add_custom_target(tidy
+		COMMAND clang-tidy -p ${CMAKE_BINARY_DIR}/compile_commands.json ${CLANG_TIDY_CHECKS} -header-filter='.*' ${smtrat_lib_sources}
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/lib/
+	)
+	file(GLOB dirs LIST_DIRECTORIES true RELATIVE "${CMAKE_SOURCE_DIR}/src/lib/" "*")
+	foreach(dir ${dirs})
+		if(IS_DIRECTORY "${CMAKE_SOURCE_DIR}/src/lib/${dir}")
+			file(GLOB_RECURSE sources_${dir} "${CMAKE_SOURCE_DIR}/src/lib/${dir}/*.cpp")
+			add_custom_target(tidy-${dir}
+				COMMAND ${CLANG_TIDY} -p ../../build/compile_commands.json ${CLANG_TIDY_CHECKS} -header-filter='.*' ${sources_${dir}}
+				WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/lib/
+			)
+		endif()
+	endforeach()
+endif()
 
 
 # Install destination and permissions for the library
