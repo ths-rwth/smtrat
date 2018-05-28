@@ -77,7 +77,7 @@ public:
 	bool addConstraint(const FormulaT& f) {
 		assert(f.getType() == carl::FormulaType::CONSTRAINT);
 		auto category = mcsat::constraint_type::categorize(f, mModel, mVar);
-		SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", f << " is " << category << " under " << mModel << " w.r.t. " << mVar);
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << " is " << category << " under " << mModel << " w.r.t. " << mVar);
 		switch (category) {
 			case mcsat::constraint_type::ConstraintType::Constant:
 				assert(f.isTrue() || f.isFalse());

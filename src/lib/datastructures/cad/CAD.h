@@ -42,7 +42,7 @@ namespace cad {
 		CAD():
 			mConstraints(
 				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(mProjection.normalize(p), cid, isBound); },
-                                [&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addEqConstraint(mProjection.normalize(p), cid, isBound); },
+				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addEqConstraint(mProjection.normalize(p), cid, isBound); },
 				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(mProjection.normalize(p), cid, isBound); }
 			),
 			mProjection(mConstraints),
