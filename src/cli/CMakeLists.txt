@@ -15,7 +15,6 @@
 include_directories(${CMAKE_SOURCE_DIR}/src
                     ${CMAKE_SOURCE_DIR}/src/cli
                     ${CMAKE_BINARY_DIR}/src/cli
-                    ${carl_INCLUDE_DIR}
  )
 
 #TODO: we only link against the library, which is copied to the binary root dir. We should somehow save that in a variable.
@@ -45,6 +44,13 @@ target_link_libraries( smtrat
 #endif()
 
 set_target_properties( smtrat PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
+
+if (CLANG_TIDY)
+	add_custom_target(tidy-cli
+		COMMAND clang-tidy -p ${CMAKE_BINARY_DIR}/compile_commands.json ${CLANG_TIDY_CHECKS} -header-filter='.*' ${smtrat_cli_sources}
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/cli/
+	)
+endif()
 
 
 #add_library( smtlibParser
