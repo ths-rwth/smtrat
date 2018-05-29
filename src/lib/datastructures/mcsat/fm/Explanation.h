@@ -136,6 +136,8 @@ public:
 		res.emplace_back(std::get<0>(lower).negation());
 		res.emplace_back(std::get<0>(upper).negation());
 		if (lr == ur && !strict) {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Not in conflict");
+			return boost::none;
 			auto it = mInequalities.find(lr);
 			if (it != mInequalities.end()) {
 				// Only allows for a point solution which is excluded by an inequality.
