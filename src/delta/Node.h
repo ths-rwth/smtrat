@@ -169,7 +169,7 @@ struct NodePrinter {
 	const Node& node;
 	NodePrinter(const Node& n): node(n) {}
 	void print(std::ostream& os, const Node& n) const {
-		if (n.name == "") {
+		if (n.name == "" && !n.brackets) {
 			for (auto c: n.children) {
 				print(os, c);
 				os << std::endl;
@@ -191,7 +191,7 @@ struct NodePrinter {
 			print(os, n);
 			return;
 		}
-		if (n.name == "") {
+		if (n.name == "" && !n.brackets) {
 			for (auto c: n.children) {
 				pretty_print(os, c, indent);
 				os << std::endl;
