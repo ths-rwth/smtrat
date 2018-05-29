@@ -624,6 +624,7 @@ namespace smtrat
             #endif
 
             // learnt clause set for duplicate checks
+            // TODO check memory usage
             struct hashClause {
                 size_t operator() (const std::set<Minisat::Lit>& cl) const {
                     size_t res = 0;
