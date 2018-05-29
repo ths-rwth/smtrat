@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
 	std::string output = s.as<std::string>("output-file");
 	std::cout << "Writing to " << output << std::endl;
 	std::ofstream out(output);
-	out << n;
+	out << delta::NodePrinter<true>(n);
 	out.close();
 
 	std::cout << "This run took " << std::chrono::duration_cast<seconds>(Clock::now() - start).count() << " seconds for " << iterations << " iterations." << std::endl;
