@@ -264,7 +264,7 @@ public:
 			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " has no variable, thus on level 0");
 			return 0;
 		}
-		
+		/*
 		for (std::size_t lvl = level(); lvl > 0; lvl--) {
 			if (variable(lvl) == carl::Variable::NO_VARIABLE) continue;
 			if (vars.count(variable(lvl)) > 0) {
@@ -273,8 +273,9 @@ public:
 			}
 		}
 		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " contains undecided variables.");
-		return std::numeric_limits<std::size_t>::max();
-	
+		return std::numeric_limits<std::size_t>::max();*/
+
+		// use this method, otherwise some constraint don't evaluate to Undef after backtracking
 		Model m = model();
 		if (!carl::model::evaluate(f, m).isBool()) {
 			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is undecided.");
