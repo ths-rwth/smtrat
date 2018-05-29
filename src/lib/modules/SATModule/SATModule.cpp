@@ -679,6 +679,9 @@ namespace smtrat
                 {
                     getDefaultModel( mModel, (FormulaT)rReceivedFormula(), false );
                 }
+                if (Settings::mc_sat) {
+                    mModel.update(mMCSAT.model());
+                }
             }
         }
     }
