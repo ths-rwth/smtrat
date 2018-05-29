@@ -30,9 +30,9 @@ namespace smtrat
         public:
             BVPreprocessing(): Manager() {
 				setStrategy({
-					addBackend<SymmetryModule<SymmetrySettings1>>(
+					//addBackend<SymmetryModule<SymmetrySettings1>>(
 						addBackend<ESModule<ESSettings1>>()	
-					)
+					//)
 				});
         	}
 
