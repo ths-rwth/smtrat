@@ -265,15 +265,15 @@ public:
 			return 0;
 		}
 		
-		for (std::size_t lvl = level(); lvl > 0; lvl--) {
-			if (variable(lvl) == carl::Variable::NO_VARIABLE) continue;
-			if (vars.count(variable(lvl)) > 0) {
-				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is univariate in " << variable(lvl));
-				return lvl;
-			}
-		}
-		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " contains undecided variables.");
-		return std::numeric_limits<std::size_t>::max();
+		//for (std::size_t lvl = level(); lvl > 0; lvl--) {
+		//	if (variable(lvl) == carl::Variable::NO_VARIABLE) continue;
+		//	if (vars.count(variable(lvl)) > 0) {
+		//		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is univariate in " << variable(lvl));
+		//		return lvl;
+		//	}
+		//}
+		//SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " contains undecided variables.");
+		//return std::numeric_limits<std::size_t>::max();
 	
 		Model m = model();
 		if (!carl::model::evaluate(f, m).isBool()) {
