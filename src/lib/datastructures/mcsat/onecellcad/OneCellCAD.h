@@ -33,16 +33,15 @@
 #include <carl/core/MultivariatePolynomial.h>
 #include <carl/converter/CoCoAAdaptor.h>
 
-#include "../../../Common.h" // useful short type aliases and constants
+//#include "../../../Common.h" // useful short type aliases and constants
+#include "lib/Common.h" // useful short type aliases and constants
 #include "Assertables.h"
+#include "lib/datastructures/cad/projection/ProjectionOperator_utils.h"
 
 namespace smtrat {
 namespace onecellcad {
 
-    using UniPoly = carl::UnivariatePolynomial<smtrat::Rational>;
-    using MultiCoeffUniPoly = carl::UnivariatePolynomial<Poly>;
     using RAN = carl::RealAlgebraicNumber<smtrat::Rational>;
-    using RANPoint = carl::RealAlgebraicPoint<smtrat::Rational>;
     using RANMap = std::map<carl::Variable, RAN>;
 
     enum class PolyTag {
@@ -193,7 +192,7 @@ namespace onecellcad {
     }
 
     /**
-     * Represent a single cell [1].
+     * Represent a single cell [brown15].
      * A cell is a collection of boundary objects along each axis, called
      * cell-components based on math. vectors and their components.
      */
@@ -248,10 +247,10 @@ namespace onecellcad {
      * Store all processed polys.
      */
     struct PolyLog {
-      /** This collection is called "P_prj" in [1] */
+      /** This collection is called "P_prj" in [brown15] */
       std::vector<TagPoly2> projectionPolys;
 
-      /** Only delinating polys. This collection is called "P_dln" in [1] */
+      /** Only delinating polys. This collection is called "P_dln" in [brown15] */
       std::vector<TagPoly2> delineators;
     };
 
@@ -306,7 +305,7 @@ namespace onecellcad {
     public:
 
     inline
-    CADCell fullSpaceCoveringCell(std::size_t cellComponentCount) {
+    CADCell fullSpaceCell(std::size_t cellComponentCount) {
       return CADCell(cellComponentCount);
     }
 
@@ -484,7 +483,7 @@ namespace onecellcad {
       const std::size_t polyLevel,
       const Poly &poly,
       CADCell &cell) {
-      // This function is called "Update" in [1]
+      // This function is called "Update" in [brown15]
       // precondition:
       assert(isNonConstIrreducible(poly));
       assert(!vanishesEarly(ctx.variableOrder, ctx.point, polyLevel, poly));
@@ -492,7 +491,7 @@ namespace onecellcad {
         return; // canot shrink further
 
       Sector &sectorAtLvl = mpark::get<Sector>(cell[polyLevel]);
-      RAN value = ctx.point[polyLevel]; // called alpha_k in [1]
+      RAN value = ctx.point[polyLevel]; // called alpha_k in [brown15]
       SMTRAT_LOG_DEBUG("smtrat.cad", "Shrink single cell sector");
       SMTRAT_LOG_TRACE("smtrat.cad", "Cell: " << cell);
       SMTRAT_LOG_TRACE("smtrat.cad", "Sector: " << polyLevel
@@ -550,7 +549,7 @@ namespace onecellcad {
     /**
      * Find the smallest index m such that in the set S of all m-th partial
      * derivatives of the given poly, such that there is a derivative that does
-     * not vanish early [1].
+     * not vanish early [brown15].
      * Note that m > 0 i.e, this function never just returns the given poly,
      * which is the 0th partial derivative of itself.
      * @param poly must not be a const-poly like 2, otherwise this function
@@ -603,7 +602,7 @@ namespace onecellcad {
       PolyLog &polyLog,
       const TagPoly2 &boundCandidate,
       CADCell &cell) {
-      // This function is called "RefNull" in [1]
+      // This function is called "RefNull" in [brown15]
       // precondition:
       assert(isNonConstIrreducible(boundCandidate.poly));
       assert(isPointRootOfPoly(ctx.variableOrder, ctx.point, boundCandidate));
@@ -648,7 +647,7 @@ namespace onecellcad {
       PolyLog &polyLog,
       const TagPoly2 &boundCandidate,
       CADCell &cell) {
-      // This function is called MergeNull in [1]
+      // This function is called MergeNull in [brown15]
       // precondition:
       assert(vanishesEarly(ctx.variableOrder, ctx.point, boundCandidate.level, boundCandidate.poly));
       assert(isNonConstIrreducible(boundCandidate.poly));
@@ -723,7 +722,7 @@ namespace onecellcad {
       PolyLog &polyLog,
       const TagPoly2 &boundCandidate,
       CADCell &cell) {
-      // This function is called "RefNonNull" in [1]
+      // This function is called "RefNonNull" in [brown15]
       // precondition:
       assert(isNonConstIrreducible(boundCandidate.poly));
       assert(!vanishesEarly(ctx.variableOrder, ctx.point, boundCandidate.level, boundCandidate.poly));
@@ -777,7 +776,7 @@ namespace onecellcad {
       PolyLog &polyLog,
       const TagPoly2 &boundCandidate,
       CADCell &cell) {
-      // This function is called MergeRoot in [1]
+      // This function is called MergeRoot in [brown15]
       // precondition:
       assert(!vanishesEarly(ctx.variableOrder, ctx.point, boundCandidate.level, boundCandidate.poly));
       assert(isPointRootOfPoly(ctx.variableOrder, ctx.point, boundCandidate));
@@ -888,7 +887,7 @@ namespace onecellcad {
       PolyLog &polyLog,
       const TagPoly2 &boundCandidate,
       CADCell &cell) {
-      // This function is called "MergeNotRoot" in [1]
+      // This function is called "MergeNotRoot" in [brown15]
       // precondition:
       assert(isNonConstIrreducible(boundCandidate.poly));
       assert(!isPointRootOfPoly(ctx.variableOrder, ctx.point, boundCandidate));
@@ -974,7 +973,7 @@ namespace onecellcad {
 
     /**
      * Merge the given open OpenCADCell 'cell' that contains the given 'point'
-     * (called "alpha" in [1]) with a polynomial 'poly'.
+     * (called "alpha" in [brown15]) with a polynomial 'poly'.
      * Before the merge 'cell' represents a region that is sign-invariant
      * on other (previously merged) polynomials (all signs are non-zero).
      * The returned cell represents a region that is additionally sign-invariant on
@@ -986,7 +985,7 @@ namespace onecellcad {
       PolyLog &polyLog,
       const TagPoly2 &boundCandidate,
       CADCell &cell) {
-      // This function is called "Merge" in [1]
+      // This function is called "Merge" in [brown15]
       // precondition:
       assert(isPointInsideCell(ctx.variableOrder, ctx.point, cell));
 
@@ -1025,50 +1024,10 @@ namespace onecellcad {
         return shrinkCellWithNonRootPoint(ctx, polyLog, boundCandidate, cell);
     }
 
-    std::vector<TagPoly> oneLevelFullBrowMcCallumProjection(
-      carl::CoCoAAdaptor<Poly> factorizer,
-      carl::Variable mainVar,
-      std::vector<TagPoly> polys) {
-
-      std::vector<TagPoly> projectionResult;
-      for (int i = 0; i < polys.size(); i++) {
-        auto poly1 = polys[i];
-        projectionResult.emplace_back(TagPoly{
-          PolyTag::ORD_INV,
-          discriminant(mainVar, poly1.poly)});
-        projectionResult.emplace_back(TagPoly{
-          PolyTag::SGN_INV,
-          poly1.poly.lcoeff(mainVar)});
-        for (int j = i + 1; j < polys.size(); j++) {
-          auto poly2 = polys[j];
-          auto resultantPoly =
-            resultant(mainVar, poly1.poly, poly2.poly);
-          projectionResult.emplace_back(TagPoly{
-            PolyTag::ORD_INV,
-            resultantPoly});
-        }
-      }
-      std::vector<TagPoly> nextLevelNonConstIrreducibles;
-      for (auto &poly : projectionResult) {
-        if (poly.poly.isConstant())
-          continue;
-
-        for (const auto &factor : factorizer.irreducibleFactorsOf(poly.poly)) {
-          TagPoly tFactor{poly.tag, factor};
-          if (factor.isConstant() || contains(nextLevelNonConstIrreducibles, tFactor))
-            continue;
-
-          nextLevelNonConstIrreducibles.emplace_back(tFactor);
-        }
-
-      }
-      return nextLevelNonConstIrreducibles;
-    }
-
     /**
      * Construct a single CADCell that contains the given 'point' and is
      * sign-invariant for the given polynomials in 'polys'.  The construction
-     * fails if 'polys' are not well-oriented [2].  Note that
+     * fails if 'polys' are not well-oriented [mccallum84].  Note that
      * this cell is cylindrical only with respect to the given 'variableOrder'.
      *
      * @param variableOrder must contain unique variables and at least one,
@@ -1109,7 +1068,7 @@ namespace onecellcad {
     SMTRAT_LOG_DEBUG("smtrat.cad", "Point: " << point);
     SMTRAT_LOG_DEBUG("smtrat.cad", "Polys: " << asMultiPolys(polys));
 
-    CADCell cell = fullSpaceCoveringCell(point.dim());
+    CADCell cell = fullSpaceCell(point.dim());
     SMTRAT_LOG_DEBUG("smtrat.cad", "Cell: " << cell);
 
     carl::CoCoAAdaptor<Poly> factorizer(asMultiPolys(polys));
@@ -1127,5 +1086,60 @@ namespace onecellcad {
     return cell;
   }
 };
+
+  inline
+  std::vector<TagPoly> singleLevelFullProjection(
+    carl::Variable mainVar,
+    std::vector<TagPoly> polys) {
+
+    std::vector<TagPoly> projectionResult;
+    for (int i = 0; i < polys.size(); i++) {
+      auto poly1 = polys[i].poly.toUnivariatePolynomial(mainVar);
+      Poly leadCoeff =
+        Poly(smtrat::cad::projection::normalize(poly1.lcoeff().toUnivariatePolynomial(mainVar)));
+      if (!leadCoeff.isConstant())
+        projectionResult.emplace_back(TagPoly{PolyTag::SGN_INV, leadCoeff});
+      Poly discr =
+        Poly(smtrat::cad::projection::discriminant(mainVar, poly1)); // already normalizes
+      if (!discr.isConstant())
+        projectionResult.emplace_back(TagPoly{PolyTag::ORD_INV, discr});
+      for (int j = i + 1; j < polys.size(); j++) {
+        auto poly2 = polys[j].poly.toUnivariatePolynomial(mainVar);
+        Poly res =
+          Poly(smtrat::cad::projection::resultant(mainVar, poly1, poly2)); // already normalizes
+        if (!res.isConstant())
+          projectionResult.emplace_back(TagPoly{PolyTag::ORD_INV, res});
+      }
+    }
+    return projectionResult;
+  }
+
+  inline
+  std::vector<TagPoly> nonConstIrreducibleFactors(
+    carl::CoCoAAdaptor<Poly> factorizer,
+    std::vector<TagPoly> polys) {
+
+    std::vector<TagPoly> factors;
+    for (auto& poly : polys) {
+      // factorizer already discards const-polys
+      for (const auto &factor : factorizer.irreducibleFactorsOf(poly.poly))
+        factors.emplace_back(TagPoly{poly.tag, factor}); // inherit poly's tag
+    }
+    return factors;
+  }
+
+  inline
+  void categorizeByLevel(
+    std::vector<std::vector<TagPoly>> projectionLevels, // output argument
+    std::vector<carl::Variable> varOrder,
+    std::vector<TagPoly> polys) { // constant-polys prohibited
+    //assert(enough Levels for polys)
+
+    for (auto& poly : polys) {
+      std::size_t level = *levelOf(varOrder, poly.poly);
+      projectionLevels[level].emplace_back(poly);
+    }
+  }
+
 } // namespace onecellcad
 } // namespace smtrat
