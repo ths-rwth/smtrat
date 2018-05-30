@@ -163,6 +163,7 @@ public:
 	}
 	void setLogic(const smtrat::Logic& name) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(set-logic " << name << ")");
+		state.logic = name;
 		callHandler(&InstructionHandler::setLogic, name);
 	}
 	void setOption(const Attribute& option) {

@@ -57,6 +57,8 @@ namespace parser {
 			}
 		};
 
+		smtrat::Logic logic;
+
 		std::set<types::VariableType> auxiliary_variables;
 		std::map<std::string, types::TermType> bindings;
 		std::map<std::string, types::TermType> constants;
