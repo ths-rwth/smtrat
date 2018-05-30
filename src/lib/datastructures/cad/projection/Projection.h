@@ -32,3 +32,4 @@ namespace cad {
 #include "Projection_NU.h"
 #include "Projection_S.h"
 #include "Projection_F.h"
+#include "Projection_EC.h"

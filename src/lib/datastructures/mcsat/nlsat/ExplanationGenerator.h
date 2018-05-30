@@ -157,6 +157,7 @@ public:
 		mConstraints(constraints),
 		mCADConstraints(
 			[&](const auto& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(mProjection.normalize(p), cid, isBound); },
+                        [&](const auto& p, std::size_t cid, bool isBound){ mProjection.addEqConstraint(mProjection.normalize(p), cid, isBound); },
 			[&](const auto& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(mProjection.normalize(p), cid, isBound); }
 		),
 		mProjection(mCADConstraints, mModel)

@@ -638,6 +638,8 @@ namespace smtrat
     unsigned Module::checkModel() const
     {
         this->updateModel();
+        SMTRAT_LOG_DEBUG("smtrat.sat", "Model: " << mModel);
+        SMTRAT_LOG_DEBUG("smtrat.sat", "Formula: " << FormulaT(*mpReceivedFormula));
         return mpReceivedFormula->satisfiedBy( mModel );
     }
 

@@ -62,7 +62,7 @@ NodeChangeSet children(const Node& n) {
  */
 NodeChangeSet mergeChild(const Node& n) {
 	if (n.children.empty()) return NodeChangeSet();
-	if ((n.name == "and") || (n.name == "or")) {
+	if ((n.name == "and") || (n.name == "or") || (n.name == "+") || (n.name == "*")) {
 		NodeChangeSet res;
 		for (auto it = n.children.begin(); it != n.children.end();) {
 			std::vector<Node> newchildren;

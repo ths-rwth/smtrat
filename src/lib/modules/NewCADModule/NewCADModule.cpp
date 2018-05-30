@@ -74,6 +74,9 @@ namespace smtrat
 	template<class Settings>
 	Answer NewCADModule<Settings>::checkCore()
 	{
+#ifdef SMTRAT_DEVOPTION_Statistics
+                mStatistics.usedCAD();
+#endif
 		if (Settings::force_nonincremental) {
 			pushConstraintsToReplacer();
 		}

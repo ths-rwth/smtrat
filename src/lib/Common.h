@@ -15,7 +15,6 @@
 #include <atomic>
 
 #include <carl/core/MultivariatePolynomial.h>
-#include <carl/core/FactorizedPolynomial.h>
 #include <carl/core/Variable.h>
 #include <carl/core/VariablePool.h>
 #include <carl/interval/Interval.h>

@@ -10,6 +10,7 @@
 
 #include "../../solver/ModuleSettings.h"
 #include "../../strategies/PreprocessingOne.h"
+#include "../../strategies/BVPreprocessing.h"
 
 namespace smtrat
 {
@@ -29,5 +30,11 @@ namespace smtrat
     {
 		static constexpr auto moduleName = "FPPModule<FPPSettings2>";
         static const int max_iterations = -1;
+    };
+
+    struct FPPSettings3 : FPPSettings1
+    {
+	static constexpr auto moduleName = "FPPModule<FPPSettings3>";
+	using Preprocessor = BVPreprocessing;
     };
 }

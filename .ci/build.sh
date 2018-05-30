@@ -18,6 +18,7 @@ if [[ ${TASK} == "dependencies" ]]; then
 	kill $!
 	
 elif [[ ${TASK} == "doxygen" ]]; then
+	
 	cmake -D DOCUMENTATION_CREATE_PDF=ON ../
 	make doc || return 1
 	make manual || return 1
@@ -40,8 +41,8 @@ elif [[ ${TASK} == "doxygen" ]]; then
 	git add . || return 1
 	
 	# Commit and push
-	git commit -m "Updated documentation for SMT-RAT" || return 1
-	git push origin master || return 1
+	git commit -q -m "Updated documentation for SMT-RAT" || return 1
+	git push -f origin master || return 1
 
 else
 	keep_waiting &
