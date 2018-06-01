@@ -411,7 +411,7 @@ namespace onecellcad {
       // 'componentCount' number of components
       RAN result = carl::RealAlgebraicNumberEvaluation::evaluate(
         poly,
-        point.subpoint(componentCount),
+        point.prefixPoint(componentCount),
         subVariableOrder
       );
       return result.isZero();
@@ -498,9 +498,9 @@ namespace onecellcad {
                                                 << " " << sectorAtLvl);
       SMTRAT_LOG_DEBUG("smtrat.cad", "Poly: " << poly);
       SMTRAT_LOG_TRACE("smtrat.cad", "Last variable: " << ctx.variableOrder[polyLevel]);
-      SMTRAT_LOG_TRACE("smtrat.cad", "Point: " << ctx.point.subpoint(polyLevel + 1));
+      SMTRAT_LOG_TRACE("smtrat.cad", "Point: " << ctx.point.prefixPoint(polyLevel + 1));
       // Isolate real roots of level-k 'poly' after plugin in a level-(k-1) point.
-      // Poly must not vanish under this subpoint!
+      // Poly must not vanish under this prefixPoint!
       auto roots =
         allLastVariableRoots(ctx.variableOrder, ctx.point, polyLevel, poly);
       if (roots.empty()) {
@@ -702,7 +702,7 @@ namespace onecellcad {
       PolyLog &polyLog,
       const TagPoly2 &poly,
       CADCell &cell) {
-      for (const auto &factor : ctx.factorizer.irreducibleFactorsOf(poly.poly)) {
+      for (const auto &factor : ctx.factorizer.nonConstIrreducibles(poly.poly)) {
         SMTRAT_LOG_TRACE("smtrat.cad", "Shrink with irreducible factor: Poly: "
           << poly.poly << " Factor: " << factor);
         if (factor.isConstant())
@@ -1121,8 +1121,7 @@ namespace onecellcad {
 
     std::vector<TagPoly> factors;
     for (auto& poly : polys) {
-      // factorizer already discards const-polys
-      for (const auto &factor : factorizer.irreducibleFactorsOf(poly.poly))
+      for (const auto &factor : factorizer.nonConstIrreducibles(poly.poly))
         factors.emplace_back(TagPoly{poly.tag, factor}); // inherit poly's tag
     }
     return factors;
