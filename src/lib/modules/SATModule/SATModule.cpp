@@ -1847,26 +1847,32 @@ namespace smtrat
 			mLemmasRemovable.pop();
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Processing lemma " << lemma);
 			
-			SMTRAT_LOG_DEBUG("smtrat.sat", "Checking for existing clause " << lemma);
-			std::size_t dups = 0;
-			for (int i = 0; i < learnts.size(); i++) {
-				const auto& corig = ca[learnts[i]];
-				if (lemma.size() != corig.size()) continue;
-				Minisat::vec<Minisat::Lit> c;
-				for (int j = 0; j < corig.size(); j++) {
-					c.push(corig[j]);
+			if (Settings::check_for_duplicate_clauses) {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Checking for existing clause " << lemma);
+				std::size_t dups = 0;
+				for (int i = 0; i < learnts.size(); i++) {
+					const auto& corig = ca[learnts[i]];
+					if (lemma.size() != corig.size()) continue;
+					Minisat::vec<Minisat::Lit> c;
+					for (int j = 0; j < corig.size(); j++) {
+						c.push(corig[j]);
+					}
+					sort(c, lemma_lt(*this));
+					bool different = false;
+					for (int j = 0; j < lemma.size(); j++) {
+						different = different || (c[j] != lemma[j]);
+					}
+					if (!different) {
+						SMTRAT_LOG_DEBUG("smtrat.sat", lemma << " is a duplicate of " << corig);
+						dups++;
+					}
 				}
-	            sort(c, lemma_lt(*this));
-				bool different = false;
-				for (int j = 0; j < lemma.size(); j++) {
-					different = different || (c[j] != lemma[j]);
+				if (dups > 0) {
+					SMTRAT_LOG_ERROR("smtrat.sat", "Adding a clause we already have: " << lemma);
+					std::quick_exit(41);
 				}
-				if (!different) {
-					SMTRAT_LOG_DEBUG("smtrat.sat", lemma << " is a duplicate of " << corig);
-					dups++;
-				}
+				assert(dups == 0);
 			}
-			assert(dups == 0);
 			
 			if (lemma.size() == 0) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is trivial conflict, ok = false");

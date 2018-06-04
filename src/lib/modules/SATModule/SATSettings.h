@@ -98,6 +98,8 @@ namespace smtrat
 		
 		static constexpr bool validate_clauses = false;
 #endif
+
+		static constexpr bool check_for_duplicate_clauses = true;
     };
 
     struct SATSettings3 : SATSettings1
