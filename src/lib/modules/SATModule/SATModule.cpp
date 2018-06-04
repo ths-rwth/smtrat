@@ -1869,7 +1869,6 @@ namespace smtrat
 				}
 				if (dups > 0) {
 					SMTRAT_LOG_ERROR("smtrat.sat", "Adding a clause we already have: " << lemma);
-					std::quick_exit(41);
 				}
 				assert(dups == 0);
 			}
