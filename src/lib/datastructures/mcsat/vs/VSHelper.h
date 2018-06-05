@@ -257,6 +257,9 @@ namespace helper {
     inline bool generateZeros(const MultivariateRootT& mvroot, const Model& model, std::function<void(SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions)> yield_result) {
         SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generating zeros of VariableComparison with MultivariateRoot " << mvroot);
 
+        SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Disabled!");
+        return false;
+
         // get zeros of mvroot.var() in mvroot.poly()
         ConstraintT constraint(mvroot.poly(), carl::Relation::EQ);
         std::vector<std::pair<SqrtEx, ConstraintsT>> zeros;
@@ -267,8 +270,6 @@ namespace helper {
             SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Could not generate zeros of polynomial of MultivariateRoot");
             return false;
         }
-
-        // TODO can be simplified for deg 2??
 
         // remove non-existing zeros from vector
         zeros.erase( std::remove_if(zeros.begin(), zeros.end(), [&](const auto& zero) {
