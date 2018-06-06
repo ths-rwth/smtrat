@@ -80,27 +80,17 @@ namespace smtrat
 
 	template<class Settings>
 		FormulaT PBPPModule<Settings>::checkFormulaAndApplyTransformations(const FormulaT& subformula) {
-			FormulaT formula;
-			if (subformula.getType() == carl::FormulaType::PBCONSTRAINT) {
-				// We get an old input Format. Instead of PBCONSTRAINT we would like to work
-				// with CONSTRAINTs
-				// Hence, for compatibility, we convert the Formula to the correct type.
-				formula = convertPbConstraintToConstraintFormula(subformula);
-			} else {
-				// pass through.
-				formula = subformula;
+
+			if(subformula.getType() != carl::FormulaType::CONSTRAINT){
+				return subformula;
 			}
 
-			if(formula.getType() != carl::FormulaType::CONSTRAINT){
-				return formula;
-			}
-
-			const ConstraintT& constraint = formula.constraint();
+			const ConstraintT& constraint = subformula.constraint();
 			if (!constraint.isPseudoBoolean()) { // eg an objective function
-				return formula;
+				return subformula;
 			}
 
-			assert(formula.getType() == carl::FormulaType::CONSTRAINT);
+			assert(subformula.getType() == carl::FormulaType::CONSTRAINT);
 
 			// extract important information: lhs, rhs, hasRhs
 			// const Poly& lhs = constraint.lhs();
@@ -109,15 +99,15 @@ namespace smtrat
 
 			// actually apply transformations
 			if (Settings::use_rns_transformation){
-				return checkFormulaTypeWithRNS(formula);
+				return checkFormulaTypeWithRNS(subformula);
 			} else if (Settings::use_card_transformation){
-				return checkFormulaTypeWithCardConstr(formula);
+				return checkFormulaTypeWithCardConstr(subformula);
 			} else if (Settings::use_mixed_transformation){
-				return checkFormulaTypeWithMixedConstr(formula);
+				return checkFormulaTypeWithMixedConstr(subformula);
 			} else if (Settings::use_basic_transformation){
-				return checkFormulaTypeBasic(formula);
+				return checkFormulaTypeBasic(subformula);
 			} else {
-				return checkFormulaType(formula);
+				return checkFormulaType(subformula);
 			}
 
 			// IDEA apply more than one tranformation and take the one with most "gain"
@@ -129,37 +119,6 @@ namespace smtrat
 			// --- relative size considering the whole formula
 
 			assert(false);
-		}
-
-	template<typename Settings>
-		FormulaT PBPPModule<Settings>::convertPbConstraintToConstraintFormula(const FormulaT& formula) {
-			assert(formula.getType() == carl::FormulaType::PBCONSTRAINT);
-
-			const PBConstraintT& pbConstraint = formula.pbConstraint();
-			// extract the parts we are working with
-			const std::vector<std::pair<Rational, carl::Variable>>& pbLhs = pbConstraint.getLHS();
-			const Rational& rhs = pbConstraint.getRHS();
-
-			Poly lhs;
-			for (const auto& term : pbLhs) {
-				auto it = mVariablesCache.find(term.second);
-				if (it == mVariablesCache.end()) {
-					// We haven't seen this variable, yet. Create a new map entry for it.
-					mVariablesCache[term.second] = carl::freshBooleanVariable();
-				}
-
-				const carl::Variable& booleanVariable = mVariablesCache[term.second];
-				lhs += Poly(term.first) * Poly(booleanVariable);
-			}
-
-			// the new constraint, based on the pbConstraint
-			ConstraintT constraint(lhs - Poly(rhs), pbConstraint.getRelation());
-
-			SMTRAT_LOG_INFO("smtrat.pbc", "converted PBConstraint " << pbConstraint
-					<< " to arithmetic constraint "
-					<< constraint);
-
-			return FormulaT(constraint);
 		}
 
 	template<typename Settings>

@@ -1,0 +1,13 @@
+/**
+ * @file OPBConverterInstantiation.h.in
+ * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ *
+ * @version 2018-06-06
+ * Created on 2018-06-06.
+ */
+
+#include "${Prefix}Module.h"
+
+namespace smtrat {
+${INSTANTIATIONS}
+}
