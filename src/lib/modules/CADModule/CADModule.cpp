@@ -26,10 +26,6 @@ using carl::cad::ConflictGraph;
 
 using namespace std;
 
-// CAD settings
-//#define SMTRAT_CAD_GENERIC_SETTING
-#define SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
-
 namespace smtrat
 {
 
@@ -58,47 +54,35 @@ namespace smtrat
 		setting.splitInteger = false;
 		setting.integerHandling = Settings::integerHandling;
 		setting.ignoreRoots = Settings::ignoreRoots;
-
-		#ifdef SMTRAT_CAD_DISABLE_MIS
-			setting.computeConflictGraph = false;
-		#else
-			setting.computeConflictGraph = true;
-		#endif
+		setting.computeConflictGraph = Settings::computeConflictGraph;
 
 //		setting.autoSeparateEquations = false; // <- @TODO: find a correct implementation of the MIS for the only-strict or only-equations optimizations
 
-		#ifndef SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
-		// variable order optimization
-		std::forward_list<symbol> variables = std::forward_list<symbol>( );
-		GiNaC::symtab allVariables = mpReceivedFormula->constraintPool().realVariables();
-		for( GiNaC::symtab::const_iterator i = allVariables.begin(); i != allVariables.end(); ++i )
-			variables.push_front( GiNaC::ex_to<symbol>( i->second ) );
-		std::forward_list<Poly> polynomials = std::forward_list<Poly>( );
-		for( fcs_const_iterator i = mpReceivedFormula->constraintPool().begin(); i != mpReceivedFormula->constraintPool().end(); ++i )
-			polynomials.push_front( (*i)->lhs() );
-		mCAD = CAD( {}, CAD::orderVariablesGreeedily( variables.begin(), variables.end(), polynomials.begin(), polynomials.end() ), _conditionals, setting );
+		if (Settings::enable_projectionorder_optimization) {
+			// variable order optimization
+			#ifdef USE_GINAC
+			std::forward_list<symbol> variables = std::forward_list<symbol>( );
+			GiNaC::symtab allVariables = mpReceivedFormula->constraintPool().realVariables();
+			for( GiNaC::symtab::const_iterator i = allVariables.begin(); i != allVariables.end(); ++i )
+				variables.push_front( GiNaC::ex_to<symbol>( i->second ) );
+			std::forward_list<Poly> polynomials = std::forward_list<Poly>( );
+			for( fcs_const_iterator i = mpReceivedFormula->constraintPool().begin(); i != mpReceivedFormula->constraintPool().end(); ++i )
+				polynomials.push_front( (*i)->lhs() );
+			mCAD = CAD( {}, CAD::orderVariablesGreeedily( variables.begin(), variables.end(), polynomials.begin(), polynomials.end() ), _conditionals, setting );
 
-		cout << "Optimizing CAD variable order from ";
-		for( forward_list<GiNaC::symbol>::const_iterator k = variables.begin(); k != variables.end(); ++k )
-			cout << *k << " ";
-		cout << "  to   ";
-		for( vector<GiNaC::symbol>::const_iterator k = mCAD.variablesScheduled().begin(); k != mCAD.variablesScheduled().end(); ++k )
-			cout << *k << " ";
-		cout << endl;;
-		#else
-		mCAD.alterSetting(setting);
-		#endif
+			cout << "Optimizing CAD variable order from ";
+			for( forward_list<GiNaC::symbol>::const_iterator k = variables.begin(); k != variables.end(); ++k )
+				cout << *k << " ";
+			cout << "  to   ";
+			for( vector<GiNaC::symbol>::const_iterator k = mCAD.variablesScheduled().begin(); k != mCAD.variablesScheduled().end(); ++k )
+				cout << *k << " ";
+			cout << endl;;
+			#endif
+		} else {
+			mCAD.alterSetting(setting);
+		}
 
 		SMTRAT_LOG_TRACE("smtrat.cad", "Initial CAD setting:" << std::endl << setting);
-		#ifdef SMTRAT_CAD_GENERIC_SETTING
-		SMTRAT_LOG_TRACE("smtrat.cad", "SMTRAT_CAD_GENERIC_SETTING set");
-		#endif
-		#ifdef SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION
-		SMTRAT_LOG_TRACE("smtrat.cad", "SMTRAT_CAD_DISABLE_PROJECTIONORDEROPTIMIZATION set");
-		#endif
-		#ifdef SMTRAT_CAD_DISABLE_MIS
-		SMTRAT_LOG_TRACE("smtrat.cad", "SMTRAT_CAD_DISABLE_MIS set");
-		#endif
 	}
 
 	template<typename Settings>
