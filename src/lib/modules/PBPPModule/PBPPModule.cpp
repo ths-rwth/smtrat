@@ -100,7 +100,7 @@ namespace smtrat
 				return formula;
 			}
 
-			assert(subformula.getType() == carl::FormulaType::CONSTRAINT);
+			assert(formula.getType() == carl::FormulaType::CONSTRAINT);
 
 			// extract important information: lhs, rhs, hasRhs
 			// const Poly& lhs = constraint.lhs();

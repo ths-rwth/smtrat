@@ -78,7 +78,7 @@ namespace smtrat {
 	}
 
 	FormulaT CardinalityEncoder::encodeExactly(const std::set<carl::Variable>& variables, const Rational constant) {
-		assert(variables.size() > constant && "This should have been handled before!");
+		// assert(variables.size() > constant && "This should have been handled before!");
 		assert(constant >= 0 && "This should have been handled before!");
 
 		// either a permutation contains the negation of the variable or the positive variable
