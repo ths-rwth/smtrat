@@ -16,7 +16,7 @@ namespace smtrat
         public:
             PBPPStrategyGroebner(): Manager() {
 				setStrategy({
-					addBackend<FPPModule<FPPSettings1>>(
+					addBackend<FPPModule<FPPSettingsPB>>(
 						addBackend<PBPPModule<PBPPSettings1>>(
 							addBackend<SATModule<SATSettings1>>(
 								addBackend<LRAModule<LRASettings1>>()
