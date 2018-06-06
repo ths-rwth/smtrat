@@ -184,6 +184,29 @@ struct Theories {
 		for (; n > 0; n--) state->popScriptScope();
 	}
 	
+	const auto& annotateTerm(const types::TermType& term, const std::vector<Attribute>& attributes) {
+		FormulaT subject;
+		conversion::VariantConverter<FormulaT> converter;
+		if (!converter(term, subject)) {
+			SMTRAT_LOG_WARN("smtrat.parser", "Ignoring annotation on unsupported expression. We only annotated formulas.");
+			return term;
+		}
+		for (const auto& attr: attributes) {
+			if (attr.key == "named") {
+				if (carl::variant_is_type<std::string>(attr.value)) {
+					const std::string& value = boost::get<std::string>(attr.value);
+					SMTRAT_LOG_DEBUG("smtrat.parser", "Naming term: " << value << " = " << term);
+					state->handler->annotateName(subject, value);
+				} else {
+					SMTRAT_LOG_WARN("smtrat.parser", "Ignoring naming with unsupported value type for term " << term);
+				}
+			} else {
+				SMTRAT_LOG_WARN("smtrat.parser", "Ignoring unsupported annotation " << attr << " for term " << term);
+			}
+		}
+		return term;
+	}
+	
 	void handleLet(const std::string& symbol, const types::TermType& term) {
 		state->bindings.emplace(symbol, term);
 	}

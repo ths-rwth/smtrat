@@ -52,6 +52,10 @@ public:
 		this->solver->add(f);
 		SMTRAT_LOG_DEBUG("smtrat", "Asserting " << f);
 	}
+	void annotateName(const smtrat::FormulaT& f, const std::string& name) {
+		SMTRAT_LOG_DEBUG("smtrat", "Naming " << name << ": " << f);
+		this->solver->namedFormulas().emplace(name, f);
+	}
 	void check() {
 		smtrat::resource::Limiter::getInstance().resetTimeout();
 		if (exportDIMACS) {
@@ -403,7 +407,7 @@ int main( int argc, char* argv[] )
 		} else {
 			SMTRAT_LOG_INFO("smtrat", "Parsed " << input->first);
 			SMTRAT_LOG_INFO("smtrat", "with objective " << input->second);
-			solver->addObjective(input->second, smtrat::parser::OptimizationType::Minimize);
+			solver->addObjective(input->second, true);
 			solver->add(input->first);
 			switch (solver->check()) {
 				case smtrat::Answer::SAT: {

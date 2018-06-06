@@ -47,11 +47,11 @@ struct TermParser: public qi::grammar<Iterator, types::TermType(), Skipper> {
 			|	(qi::lit("(") >> termop >> ")")[qi::_val = qi::_1]
 		;
 		termop = 
-				(qualifiedidentifier >> +main)[qi::_val = px::bind(&Theories::functionCall, px::ref(*theories), qi::_1, qi::_2)]
+				(qi::lit("!") >> main >> +attribute)[qi::_val = px::bind(&Theories::annotateTerm, px::ref(*theories), qi::_1, qi::_2)]
 			|	(qi::lit("let")[px::bind(&Theories::pushExpressionScope, px::ref(*theories), 1)] >> "(" >> +binding >> ")" >> main[qi::_val = qi::_1])[px::bind(&Theories::popExpressionScope, px::ref(*theories), 1)]
 			|	(qi::lit("forall") >> "(" >> +sortedvariable >> ")" >> main)[qi::_val = qi::_2]
 			|	(qi::lit("exists") >> "(" >> +sortedvariable >> ")" >> main)[qi::_val = qi::_2]
-			//|	(qi::lit("!") >> main >> +attribute)
+			|	(qualifiedidentifier >> +main)[qi::_val = px::bind(&Theories::functionCall, px::ref(*theories), qi::_1, qi::_2)]
 		;
 		binding = (qi::lit("(") >> symbol >> main >> ")")[px::bind(&Theories::handleLet, px::ref(*theories), qi::_1, qi::_2)];
 	}

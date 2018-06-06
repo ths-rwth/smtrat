@@ -126,6 +126,7 @@ public:
 		return OutputWrapper(mRegular, "(info \"", "\")\n");
 	}
 	virtual void add(const FormulaT& f) = 0;
+	virtual void annotateName(const FormulaT& f, const std::string& name) = 0;
 	virtual void check() = 0;
 	virtual void declareFun(const carl::Variable&) = 0;
 	virtual void declareSort(const std::string&, const unsigned&) = 0;
