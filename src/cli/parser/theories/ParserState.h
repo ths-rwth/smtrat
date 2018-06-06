@@ -8,11 +8,10 @@
 #include "Common.h"
 #include "TheoryTypes.h"
 #include "FunctionInstantiator.h"
+#include "../InstructionHandler.h"
 
 namespace smtrat {
 namespace parser {
-
-	class InstructionHandler;
 
 	struct ParserState {
 

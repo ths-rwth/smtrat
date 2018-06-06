@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Attribute.h"
 #include "Common.h"
 #include "Lexicon.h"
 #include "Identifier.h"
