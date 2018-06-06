@@ -8,11 +8,11 @@
 #include "../../lib/Common.h"
 #include "theories/Common.h"
 
+#include <algorithm>
 #include <functional>
 #include <iostream>
 #include <sstream>
 
-#include <boost/algorithm/string.hpp>
 #include <boost/fusion/include/std_pair.hpp>
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/spirit/include/qi.hpp>
@@ -43,16 +43,6 @@ namespace parser {
 	namespace spirit = boost::spirit;
 	namespace qi = boost::spirit::qi;
 	namespace px = boost::phoenix;
-
-	inline bool isOneOf(const std::string& s, const std::string& set) {
-		return boost::iequals(s, set);
-	}
-	inline bool isOneOf(const std::string& s, const std::initializer_list<std::string>& set) {
-		for (const auto& t: set) {
-			if (boost::iequals(s, t)) return true;
-		}
-		return false;
-	}
 
 	typedef boost::spirit::istream_iterator BaseIteratorType;
 	typedef boost::spirit::line_pos_iterator<BaseIteratorType> PositionIteratorType;
