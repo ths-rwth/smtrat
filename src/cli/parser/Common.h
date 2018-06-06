@@ -6,7 +6,6 @@
 #pragma once
 
 #include "../../lib/Common.h"
-#include "../../lib/solver/ResourceLimitation.h"
 #include "theories/Common.h"
 
 #include <functional>
@@ -40,15 +39,6 @@
 
 namespace smtrat {
 namespace parser {
-
-	enum OptimizationType { Maximize, Minimize };
-	inline std::ostream& operator<<(std::ostream& os, OptimizationType ot) {
-		switch (ot) {
-			case Maximize: return os << "maximize";
-			case Minimize: return os << "minimize";
-		}
-		return os << "???";
-	}
 
 	namespace spirit = boost::spirit;
 	namespace qi = boost::spirit::qi;

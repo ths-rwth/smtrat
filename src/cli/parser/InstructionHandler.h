@@ -1,11 +1,22 @@
 #pragma once
 
 #include "VariantMap.h"
-#include "Attribute.h"
-#include "Common.h"
+#include "theories/Attribute.h"
+#include "../../lib/solver/ResourceLimitation.h"
+
+#include <iostream>
 
 namespace smtrat {
 namespace parser {
+
+enum class OptimizationType { Maximize, Minimize };
+inline std::ostream& operator<<(std::ostream& os, OptimizationType ot) {
+	switch (ot) {
+		case OptimizationType::Maximize: return os << "maximize";
+		case OptimizationType::Minimize: return os << "minimize";
+	}
+	return os << "???";
+}
 
 class OutputWrapper {
 	std::ostream out;
