@@ -4,7 +4,6 @@
 
 #include <carl/util/mpl_utils.h>
 
-#include <boost/mpl/for_each.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/spirit/include/support_unused.hpp>
 
