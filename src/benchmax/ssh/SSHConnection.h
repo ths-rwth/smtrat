@@ -244,20 +244,26 @@ public:
 		}
 		result.stdout = "";
 		result.stderr = "";
+		bool collectOutput = true;
 		char buf[512];
 		int n;
 		int eof = 0;
 		while (eof == 0) {
 			SSH_LOCKED(eof = ssh_channel_is_eof(channel));
 			SSH_LOCKED(n = ssh_channel_read_nonblocking(channel, buf, sizeof(buf), 0));
-			if (n > 0) result.stdout += std::string(buf, std::size_t(n));
+			if (n > 0 && collectOutput) result.stdout += std::string(buf, std::size_t(n));
 			SSH_LOCKED(n = ssh_channel_read_nonblocking(channel, buf, sizeof(buf), 1));
-			if (n > 0) result.stderr += std::string(buf, std::size_t(n));
+			if (n > 0 && collectOutput) result.stderr += std::string(buf, std::size_t(n));
+			collectOutput = (result.stdout.size() < 1048576) && (result.stderr.size() < 1048576);
 			std::this_thread::yield();
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
-		BENCHMAX_LOG_DEBUG("benchmax.ssh", "stdout = " << result.stdout);
-		BENCHMAX_LOG_DEBUG("benchmax.ssh", "stderr = " << result.stderr);
+		if (!collectOutput) {
+			result.additional.emplace("output", "truncated");
+		} else {
+			BENCHMAX_LOG_DEBUG("benchmax.ssh", "stdout = " << result.stdout);
+			BENCHMAX_LOG_DEBUG("benchmax.ssh", "stderr = " << result.stderr);
+		}
 		SSH_LOCKED(result.exitCode = ssh_channel_get_exit_status(channel));
 		result.time = parseDuration(result.stdout);
 		destroy(channel);
