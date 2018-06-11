@@ -624,17 +624,26 @@ namespace smtrat
             #endif
 
             // learnt clause set for duplicate checks
-            // TODO check memory usage
-            struct hashClause {
-                size_t operator() (const std::set<Minisat::Lit>& cl) const {
-                    size_t res = 0;
-                    for (const auto& lit : cl) {
-                        res = res ^ lit.x;
-                    }
-                    return res;
-                }
-            };
-            std::unordered_set<std::set<Minisat::Lit>, hashClause> learnts_set;
+			struct UnorderedClauseLookup {
+				struct UnorderedClauseHasher {
+					std::size_t operator() (const std::vector<Minisat::Lit>& cl) const {
+						return std::accumulate(cl.begin(), cl.end(), 0, [](int a, Minisat::Lit b){ return a ^ b.x; });
+					}
+				};
+				/// Stores all clauses as sets to quickly check for duplicates.
+				std::unordered_set<std::vector<Minisat::Lit>, UnorderedClauseHasher> mData;
+				
+				void preprocess(std::vector<Minisat::Lit>& cl) const {
+					std::sort(cl.begin(), cl.end());
+				}
+				bool contains(const std::vector<Minisat::Lit>& cl) const {
+					return mData.find(cl) != mData.end();
+				}
+				void insert(const std::vector<Minisat::Lit>& cl) {
+					mData.insert(cl);
+				}
+			};
+			UnorderedClauseLookup mUnorderedClauseLookup;
 
         public:
 			typedef Settings SettingsType;
@@ -929,21 +938,22 @@ namespace smtrat
 
 				sat::detail::validateClause(clause, Settings::validate_clauses); // TODO can this lead to errors for multiple explanations???
                 Minisat::vec<Minisat::Lit> explanation;
-                std::set<Minisat::Lit> explanation_set;
+                std::vector<Minisat::Lit> explanation_set;
 				for (const auto& c: clause) {
                     auto lit = createLiteral(c);
 					explanation.push(lit);
-                    explanation_set.insert(lit);
+                    explanation_set.push_back(lit);
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Created literal from " << c << " -> " << explanation.last());
 				}
                 
-                if (learnts_set.find(explanation_set) != learnts_set.end()) {
+				mUnorderedClauseLookup.preprocess(explanation_set);
+                if (mUnorderedClauseLookup.contains(explanation_set)) {
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Skipping duplicate clause " << explanation);
                     return false;
                 }
                 else {
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
-                    learnts_set.insert(explanation_set);
+                    mUnorderedClauseLookup.insert(explanation_set);
                     addClause(explanation, Minisat::LEMMA_CLAUSE);
                     propagateTheory();
                     Minisat::CRef confl = storeLemmas();
