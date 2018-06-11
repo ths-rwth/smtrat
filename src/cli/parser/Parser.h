@@ -105,6 +105,10 @@ public:
 		this->mInputStream->setstate(std::ios::eofbit);
 		callHandler(&InstructionHandler::exit);
 	}
+	void getAllModels() {
+		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-all-models)");
+		callHandler(&InstructionHandler::getAllModels);
+	}
 	void getAssertions() {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-assertions)");
 		callHandler(&InstructionHandler::getAssertions);
@@ -116,6 +120,10 @@ public:
 	void getInfo(const std::string& key) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-info " << key << ")");
 		callHandler(&InstructionHandler::getInfo, key);
+	}
+	void getModel() {
+		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-model)");
+		callHandler(&InstructionHandler::getModel);
 	}
 	void getOption(const std::string& key) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-option " << key << ")");

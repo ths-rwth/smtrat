@@ -135,12 +135,14 @@ public:
 		regular() << s << std::endl;
 	}
 	virtual void exit() = 0;
+	virtual void getAllModels() = 0;
 	virtual void getAssertions() = 0;
 	virtual void getAssignment() = 0;
 	void getInfo(const std::string& key) {
 		if (this->infos.count(key) > 0) regular() << "(:" << key << " " << this->infos[key] << ")" << std::endl;
 		else error() << "no info set for :" << key;
 	}
+	virtual void getModel() = 0;
 	void getOption(const std::string& key) {
 		if (this->options.count(key) > 0) regular() << "(:" << key << " " << this->options[key] << ")" << std::endl;
 		else error() << "no option set for :" << key;

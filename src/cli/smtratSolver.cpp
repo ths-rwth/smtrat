@@ -34,6 +34,7 @@
 #include <carl/formula/parser/DIMACSExporter.h>
 #include <carl/formula/parser/DIMACSImporter.h>
 #include <carl/formula/parser/OPBImporter.h>
+#include <carl/io/SMTLIBStream.h>
 
 
 class Executor : public smtrat::parser::InstructionHandler {
@@ -135,6 +136,15 @@ public:
 	void getAssertions() {
 		this->solver->printAssertions(std::cout);
 	}
+	void getAllModels() {
+		if (this->lastAnswer == smtrat::Answer::SAT) {
+			for (const auto& m: this->solver->allModels()) {
+				regular() << carl::outputSMTLIB(m) << std::endl;
+			}
+		} else {
+			error() << "Can only be called after a call that returned sat.";
+		}
+	}
 	void getAssignment() {
             if (this->lastAnswer == smtrat::Answer::SAT) {
                 this->solver->printAssignment();
@@ -143,6 +153,13 @@ public:
 	void getAllAssignments() {
 		if (this->lastAnswer == smtrat::Answer::SAT) {
 			this->solver->printAllAssignments(std::cout);
+		}
+	}
+	void getModel() {
+		if (this->lastAnswer == smtrat::Answer::SAT) {
+			regular() << carl::outputSMTLIB(this->solver->model()) << std::endl;
+		} else {
+			error() << "Can only be called after a call that returned sat.";
 		}
 	}
 	void getProof() {
