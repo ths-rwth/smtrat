@@ -19,6 +19,7 @@ namespace smtrat
 	{   
 		removeFactorsFunction = std::bind(&PFEModule<Settings>::removeFactors, this, std::placeholders::_1);
 		removeSquaresFunction = std::bind(&PFEModule<Settings>::removeSquares, this, std::placeholders::_1);
+		implyDefinitenessFunction = std::bind(&PFEModule<Settings>::implyDefiniteness, this, std::placeholders::_1);
 	}
 
 	template<class Settings>
@@ -54,6 +55,7 @@ namespace smtrat
 			}
 			FormulaT formula = visitor.visitResult(receivedFormula->formula(), removeFactorsFunction);
 			formula = visitor.visitResult(formula, removeSquaresFunction);
+			//formula = visitor.visitResult(formula, implyDefinitenessFunction);
 			if (receivedFormula->formula() != formula) {
 				SMTRAT_LOG_DEBUG("smtrat.pfe", "Simplified " << receivedFormula->formula());
 				SMTRAT_LOG_DEBUG("smtrat.pfe", "to " << formula);
@@ -209,6 +211,37 @@ namespace smtrat
 				return removeSquaresFromStrict(formula);
 			case carl::Relation::EQ:
 			case carl::Relation::NEQ:
+			case carl::Relation::GEQ:
+			case carl::Relation::LEQ:
+			default:
+				SMTRAT_LOG_TRACE("smtrat.pfe", "Nothing to do for " << formula);
+				return formula;
+		}
+	}
+	
+	template<typename Settings>
+	FormulaT PFEModule<Settings>::implyDefinitenessFromStrict(const FormulaT& formula) {
+		FormulasT res;
+		res.emplace_back(formula);
+		for (const auto& f: formula.constraint().factorization()) {
+			res.emplace_back(ConstraintT(f.first, carl::Relation::NEQ));
+		}
+		return FormulaT(carl::FormulaType::AND, std::move(res));
+	}
+	
+	template<typename Settings>
+	FormulaT PFEModule<Settings>::implyDefiniteness(const FormulaT& formula) {
+		if(formula.getType() != carl::FormulaType::CONSTRAINT) return formula;
+		
+		carl::Relation rel = formula.constraint().relation();
+		
+		switch (rel) {
+			case carl::Relation::GREATER:
+			case carl::Relation::LESS:
+			case carl::Relation::NEQ:
+				SMTRAT_LOG_TRACE("smtrat.pfe", "Imply definiteness from " << formula);
+				return implyDefinitenessFromStrict(formula);
+			case carl::Relation::EQ:
 			case carl::Relation::GEQ:
 			case carl::Relation::LEQ:
 			default:

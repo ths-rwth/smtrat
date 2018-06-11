@@ -15,7 +15,6 @@
 #include <atomic>
 
 #include <carl/core/MultivariatePolynomial.h>
-#include <carl/core/FactorizedPolynomial.h>
 #include <carl/core/Variable.h>
 #include <carl/core/VariablePool.h>
 #include <carl/interval/Interval.h>
@@ -36,9 +35,9 @@ namespace smtrat
 {
 	using carl::operator<<;
 
-    using Logic = carl::Logic;
-    ///An enum with the possible answers a Module can give
-    enum Answer { SAT = 0, UNSAT = 1, UNKNOWN = 2, ABORTED = 3 };
+  using Logic = carl::Logic;
+  ///An enum with the possible answers a Module can give
+  enum Answer { SAT = 0, UNSAT = 1, UNKNOWN = 2, ABORTED = 3 };
 	inline std::ostream& operator<<(std::ostream& os, const Answer& a) {
 		switch (a) {
 			case Answer::SAT:		return os << "SAT";
@@ -49,8 +48,8 @@ namespace smtrat
 		return os << "???";
 	}
 
-    /// An enum with the levels for lemma generation
-    enum LemmaLevel { NONE = 0, NORMAL = 1, ADVANCED = 2 };
+  // An enum with the levels for lemma generation
+  enum LemmaLevel { NONE = 0, NORMAL = 1, ADVANCED = 2 };
 
     // Further type definitions.
 /*#ifdef SMTRAT_STRAT_PARALLEL_MODE
@@ -62,18 +61,21 @@ namespace smtrat
     typedef mpq_class Rational;
 #endif
 #endif*/
-    typedef mpq_class Rational; // Use always GMP as CLN does not work for rationalize 
+  using Rational = mpq_class; // Use always GMP as CLN does not work for rationalize
 
 	typedef carl::IntegralType<Rational>::type Integer;
 
-    typedef carl::Term<Rational> TermT;
+  typedef carl::Term<Rational> TermT;
 
-    typedef carl::MultivariatePolynomial<Rational> Poly;
-//    typedef carl::FactorizedPolynomial<carl::MultivariatePolynomial<Rational>> Poly;
+  using Poly = carl::MultivariatePolynomial<Rational>;
 
-    typedef carl::Constraint<Poly> ConstraintT;
+  template<typename Coeff> using UPoly = carl::UnivariatePolynomial<Coeff>;
 
-    typedef carl::Constraints<Poly> ConstraintsT;
+  using RANPoint = carl::RealAlgebraicPoint<Rational>;
+
+  typedef carl::Constraint<Poly> ConstraintT;
+
+  typedef carl::Constraints<Poly> ConstraintsT;
 	
 	typedef carl::MultivariateRoot<Poly> MultivariateRootT;
 	
@@ -83,27 +85,27 @@ namespace smtrat
 	
 	typedef carl::PBConstraint<Poly> PBConstraintT;
 
-    typedef carl::Formula<Poly> FormulaT;
+  typedef carl::Formula<Poly> FormulaT;
 
-    typedef carl::Formulas<Poly> FormulasT;
+  typedef carl::Formulas<Poly> FormulasT;
 
 	typedef carl::FormulaSet<Poly> FormulaSetT;
 
 	typedef carl::FormulasMulti<Poly> FormulasMultiT;
 
-    typedef carl::EvaluationMap<Rational> EvalRationalMap;
+  typedef carl::EvaluationMap<Rational> EvalRationalMap;
 
-    typedef carl::Interval<Rational> RationalInterval;
+  typedef carl::Interval<Rational> RationalInterval;
 
-    typedef carl::EvaluationMap<RationalInterval> EvalRationalIntervalMap;
+  typedef carl::EvaluationMap<RationalInterval> EvalRationalIntervalMap;
 
-    typedef carl::Interval<double> DoubleInterval;
+  typedef carl::Interval<double> DoubleInterval;
 
-    typedef carl::EvaluationMap<DoubleInterval> EvalDoubleIntervalMap;
+  typedef carl::EvaluationMap<DoubleInterval> EvalDoubleIntervalMap;
 
-    typedef carl::VarInfo<Poly> VarPolyInfo;
+  typedef carl::VarInfo<Poly> VarPolyInfo;
 
-    typedef carl::VarInfoMap<Poly> VarPolyInfoMap;
+  typedef carl::VarInfoMap<Poly> VarPolyInfoMap;
 	
 	using Model = carl::Model<Rational, Poly>;
 	static const Model EMPTY_MODEL = Model();
@@ -121,10 +123,10 @@ namespace smtrat
 	
 	using SqrtEx = carl::SqrtEx<smtrat::Poly>;
 
-    template<template<typename> class Operator>
-    using Contractor = carl::Contraction<Operator, Poly>;
+  template<template<typename> class Operator>
+  using Contractor = carl::Contraction<Operator, Poly>;
 
-    typedef carl::Factors<Poly> Factorization;
+  typedef carl::Factors<Poly> Factorization;
 
 #ifdef __VS
     typedef std::vector<std::atomic<bool>*> Conditionals;

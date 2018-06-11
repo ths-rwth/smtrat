@@ -63,6 +63,8 @@ namespace smtrat
 			std::set<FormulaT> mInformationRelevantFormula;
 			/// Level of lemma generation
 			LemmaLevel mLemmaLevel;
+			/// Formulas that have been named in the SMT-LIB input.
+			std::map<std::string,FormulaT> mNamedFormulas;
             ///
             std::vector<std::pair<Poly,std::pair<carl::Variable,bool>>> mObjectives;
             ///
@@ -437,6 +439,19 @@ namespace smtrat
 			inline bool isLemmaLevel(LemmaLevel level)
 			{
 				return level <= mLemmaLevel;
+			}
+			
+			/**
+			 * Return a reference to the named formulas.
+			 */
+			auto& namedFormulas() {
+				return mNamedFormulas;
+			}
+			/**
+			 * Return a reference to the named formulas.
+			 */
+			const auto& namedFormulas() const {
+				return mNamedFormulas;
 			}
 
             

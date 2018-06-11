@@ -8,7 +8,6 @@
  */
 #pragma once
 
-#include "config.h"
 #include "../../solver/Module.h"
 #include "../../solver/RuntimeSettings.h"
 

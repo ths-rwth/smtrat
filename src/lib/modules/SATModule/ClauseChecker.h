@@ -21,16 +21,16 @@ struct ClauseChecker {
 		if (formula.getType() == carl::FormulaType::OR) {
 			(*this)(formula.subformulas());
 		} else {
-			(*this)({formula});
+			(*this)(FormulasT({formula}));
 		}
 	}
 	void operator()(const FormulasT& formulas) const {
 		auto model = buildModel();
 		bool allFalse = true;
-		SMTRAT_LOG_DEBUG("smtrat.sat", "Model: " << model);
+		SMTRAT_LOG_DEBUG("smtrat.sat.clausechecker", "Model: " << model);
 		for (const auto& f: formulas) {
 			ModelValue res = carl::model::evaluate(f, model);
-			SMTRAT_LOG_DEBUG("smtrat.sat", f << " -> " << res);
+			SMTRAT_LOG_DEBUG("smtrat.sat.clausechecker", f << " -> " << res);
 			if (res.isBool()) {
 				allFalse = allFalse && !res.asBool();
 			} else return;
@@ -38,12 +38,21 @@ struct ClauseChecker {
 		//if (allFalse) std::quick_exit(66);
 		assert(!allFalse);
 	}
-	template<typename TT>
-	void operator()(const Minisat::Clause& c, const TT& bcm) const {
+	template<typename VM, typename BCM>
+	void operator()(const Minisat::Clause& c, const VM& vm, const BCM& bcm) const {
 		FormulasT f;
 		for (int i = 0; i < c.size(); i++) {
 			auto v = var(c[i]);
-			// Check wether this literal is a constraint abstraction
+			// Check whether this literal is a boolean variable
+			auto it = vm.find(v);
+			if (it != vm.end()) {
+				if (sign(c[i])) {
+					f.emplace_back(carl::FormulaType::NOT, FormulaT(it->second));
+				} else {
+					f.emplace_back(it->second);
+				}
+			}
+			// Check whether this literal is a constraint abstraction
 			if (v >= bcm.size()) continue;
 			if (bcm[v].first == nullptr) continue;
 			if (sign(c[i])) {
@@ -61,9 +70,9 @@ void validateClause(const T& t, bool enabled) {
 	if (enabled) ClauseChecker()(t);
 }
 
-template<typename T, typename TT>
-void validateClause(const T& t, const TT& tt, bool enabled) {
-	if (enabled) ClauseChecker()(t, tt);
+template<typename T, typename VM, typename BCM>
+void validateClause(const T& t, const VM& vm, const BCM& bcm, bool enabled) {
+	if (enabled) ClauseChecker()(t, vm, bcm);
 }
 
 }

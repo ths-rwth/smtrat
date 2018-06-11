@@ -8,11 +8,10 @@
 #include "Common.h"
 #include "TheoryTypes.h"
 #include "FunctionInstantiator.h"
+#include "../InstructionHandler.h"
 
 namespace smtrat {
 namespace parser {
-
-	class InstructionHandler;
 
 	struct ParserState {
 
@@ -56,6 +55,8 @@ namespace parser {
 				state.defined_user_functions = std::move(this->defined_user_functions);
 			}
 		};
+
+		smtrat::Logic logic;
 
 		std::set<types::VariableType> auxiliary_variables;
 		std::map<std::string, types::TermType> bindings;

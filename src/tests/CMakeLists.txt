@@ -18,8 +18,7 @@ add_definitions(-DBOOST_TEST_DYN_LINK)
 include_directories(${CMAKE_SOURCE_DIR}/src
                     ${CMAKE_SOURCE_DIR}/src/cli
                     ${CMAKE_BINARY_DIR}/src/cli
-                    ${carl_INCLUDE_DIR}
- )
+)
 
 add_subdirectory(cad)
 add_subdirectory(parser)

@@ -66,6 +66,7 @@ namespace smtrat
             std::size_t iterations = 0;
             Answer answer = UNKNOWN;
             FormulaT formulaBeforePreprocessing = FormulaT(rReceivedFormula());
+            mPartialModel.clear();
             while (Settings::max_iterations < 0 || iterations < (std::size_t)Settings::max_iterations) {
                 iterations++;
                 // call the preprocessing on the current formula
@@ -79,7 +80,8 @@ namespace smtrat
                 }
                 SMTRAT_LOG_INFO("smtrat.fpp", "Retrieving simplified input and partial model...");
                 std::pair<bool,FormulaT> res = mPreprocessor.getInputSimplified();
-                SMTRAT_LOG_INFO("smtrat.fpp", "Preprocessor model:" << std::endl << mPreprocessor.model());
+                SMTRAT_LOG_INFO("smtrat.fpp", "Curent model:" << mPartialModel);
+                SMTRAT_LOG_INFO("smtrat.fpp", "Preprocessor model:" << mPreprocessor.model());
                 mPartialModel.update(mPreprocessor.model());
                 SMTRAT_LOG_INFO("smtrat.fpp", "Backtracking");
                 mPreprocessor.pop();

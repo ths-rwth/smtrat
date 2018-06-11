@@ -366,8 +366,8 @@ namespace smtrat
     template<class Settings>
     Answer SATModule<Settings>::checkCore()
     {
-//        for( const auto& f : rReceivedFormula() )
-//            std::cout << "   " << f.formula().toString() << std::endl;
+        //for( const auto& f : rReceivedFormula() )
+        //    std::cout << "   " << f.formula() << std::endl;
 //        std::cout << ((FormulaT) rReceivedFormula()).toString( false, 1, "", true, false, true, true ) << std::endl;
         #ifdef SMTRAT_DEVOPTION_Statistics
         mpStatistics->rNrTotalVariablesBefore() = (size_t) nVars();
@@ -679,6 +679,9 @@ namespace smtrat
                 {
                     getDefaultModel( mModel, (FormulaT)rReceivedFormula(), false );
                 }
+                if (Settings::mc_sat) {
+                    mModel.update(mMCSAT.model());
+                }
             }
         }
     }
@@ -954,6 +957,7 @@ namespace smtrat
     template<class Settings>
     Lit SATModule<Settings>::addClauses( const FormulaT& _formula, unsigned _type, unsigned _depth, const FormulaT& _original )
     {
+		SMTRAT_LOG_DEBUG("smtrat.sat", "Adding formula " << _formula);
         assert( _type < 4 );
         bool everythingDecisionRelevant = !Settings::formula_guided_decision_heuristic;
         unsigned nextDepth = _depth+1;
@@ -972,16 +976,16 @@ namespace smtrat
                 return createLiteral( _formula, _original, everythingDecisionRelevant || _depth <= 1 );
             case carl::FormulaType::NOT:
             {
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Adding a negation: " << _formula);
+				SMTRAT_LOG_TRACE("smtrat.sat", "Adding a negation: " << _formula);
                 Lit l = lit_Undef; 
                 if( _formula.isLiteral() )
                 {
                     l = createLiteral( _formula, _original, everythingDecisionRelevant || _depth <= 1 );
-					SMTRAT_LOG_DEBUG("smtrat.sat", "It is a literal: " << l);
+					SMTRAT_LOG_TRACE("smtrat.sat", "It is a literal: " << l);
                 }
                 else {
                     l = neg( addClauses( _formula.subformula(), _type, nextDepth, _original ) );
-					SMTRAT_LOG_DEBUG("smtrat.sat", "It is not a literal, but now: " << l);
+					SMTRAT_LOG_TRACE("smtrat.sat", "It is not a literal, but now: " << l);
 				}
                 if( _depth == 0 )
                 {
@@ -1005,7 +1009,24 @@ namespace smtrat
                     if( cnfInfoIter != mFormulaCNFInfosMap.end() )
                     {
                         updateCNFInfoCounter( cnfInfoIter, _original, true );
-                        return cnfInfoIter->second.mLiteral;
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Recovered literal for " << _original << ": " << cnfInfoIter->second.mLiteral);
+						Lit l = cnfInfoIter->second.mLiteral;
+						if (mNonassumedTseitinVariable.test(std::size_t(var(l)))) {
+							/*
+							 * If this literal is a tseitin variable, it may belong to a top-level clause.
+							 * In this case, it is not eagerly added to the assumptions but only lazily when it is actually reused.
+							 * This is the case now. We backtrack to DL0 (+ assumptions.size()) and add it to the assumptions now.
+							 * This can only happen if a formula is added with some boolean structure, as only then the tseitin variable will be used.
+							 * Examples are addCore() or a lemma from a backend, in these cases it is safe to reset.
+							 * In particular this can not happen for infeasible subsets or conflict clauses, where a reset might not be safe.
+							 */
+							cancelUntil(assumptions.size());
+							assumptions.push(l);
+							assert(mFormulaAssumptionMap.find(_formula) == mFormulaAssumptionMap.end());
+							mFormulaAssumptionMap.emplace(_formula, assumptions.last());
+							mNonassumedTseitinVariable.reset(std::size_t(var(l)));
+						}
+                        return l;
                     }
                     cnfInfoIter = mFormulaCNFInfosMap.emplace( _formula, CNFInfos() ).first;
                 }
@@ -1085,9 +1106,18 @@ namespace smtrat
                         lits.push( addClauses( sf, _type, nextDepth, _original ) );
                     if( _depth == 0 )
                     {
-                        // (or a1 .. an)
-                        addClause_( lits, _type, _original, cnfInfoIter );
-                        return lit_Undef;
+						/*
+						 * This is a top-level clause. The full tseitin encoding would be:
+						 *     ts and (or -ts a1 ... an) and (or ts -a1) ... (or ts -an)
+						 * However ts will become an assumption and thus -ts can be skipped and (or ts -ak) is satisfied anyway.
+						 * We therefore only add (or a1 .. an).
+						 * However if the formula is reused in a nested formula somewhere else, we need ts to be forced to true.
+						 * To avoid work (and because always doing that induces problems when adding infeasible subsets) we do this lazily.
+						 * We add ts to mNonassumedTseitinVariable and only add it to the assumptions when it is actually reused in another formula.
+						 */
+						mNonassumedTseitinVariable.set(std::size_t(var(tsLit)));
+	                    addClause_( lits, _type, _original, cnfInfoIter );
+						return lit_Undef;
                     }
                     if( !mReceivedFormulaPurelyPropositional && Settings::initiate_activities )
                     {
@@ -1103,18 +1133,22 @@ namespace smtrat
                     // (or -ts a1 .. an)
                     lits.push( neg( tsLit ) );
                     addClause_( lits, _type, _original, cnfInfoIter );
-                    // (or ts -a1) .. (or ts -an)
-                    vec<Lit> litsTmp;
-                    litsTmp.push( tsLit );
-                    int i = 0;
-                    for( const auto& sf : _formula.subformulas() )
-                    {
-                        assert( i < lits.size() );
-                        litsTmp.push( sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( lits[i] ) );
-                        addClause_( litsTmp, _type, _original, cnfInfoIter );
-                        litsTmp.pop();
-                        ++i;
-                    }
+					// Only add on deeper levels, otherwise ts is an assumption and the clauses are immediately satisfied anyway.
+					if (_depth != 0) {
+	                    // (or ts -a1) .. (or ts -an)
+	                    vec<Lit> litsTmp;
+	                    litsTmp.push( tsLit );
+	                    int i = 0;
+	                    for( const auto& sf : _formula.subformulas() )
+	                    {
+	                        assert( i < lits.size() );
+	                        litsTmp.push( sf.isLiteral() ? addClauses( sf.negated(), _type, nextDepth, _original ) : neg( lits[i] ) );
+	                        addClause_( litsTmp, _type, _original, cnfInfoIter );
+	                        litsTmp.pop();
+	                        ++i;
+	                    }
+					}
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Added formula " << _formula << " -> " << tsLit);
                     return tsLit;
                 }
                 case carl::FormulaType::AND:
@@ -1712,7 +1746,7 @@ namespace smtrat
             {
                 assert( assigns[var(add_tmp[0])] != l_False );
                 uncheckedEnqueue( add_tmp[0], cr );
-                if (propagateConsistently( false ) != CRef_Undef) {
+                if (propagateConsistently(false) != CRef_Undef) {
                     ok = false;
                 }
                 return ok;
@@ -1813,28 +1847,31 @@ namespace smtrat
 			mLemmasRemovable.pop();
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Processing lemma " << lemma);
 			
-            #ifndef NDEBUG
-			SMTRAT_LOG_DEBUG("smtrat.sat", "Checking for existing clause " << lemma);
-			std::size_t dups = 0;
-			for (int i = 0; i < learnts.size(); i++) {
-				const auto& corig = ca[learnts[i]];
-				if (lemma.size() != corig.size()) continue;
-				Minisat::vec<Minisat::Lit> c;
-				for (int j = 0; j < corig.size(); j++) {
-					c.push(corig[j]);
+			if (Settings::check_for_duplicate_clauses) {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Checking for existing clause " << lemma);
+				std::size_t dups = 0;
+				for (int i = 0; i < learnts.size(); i++) {
+					const auto& corig = ca[learnts[i]];
+					if (lemma.size() != corig.size()) continue;
+					Minisat::vec<Minisat::Lit> c;
+					for (int j = 0; j < corig.size(); j++) {
+						c.push(corig[j]);
+					}
+					sort(c, lemma_lt(*this));
+					bool different = false;
+					for (int j = 0; j < lemma.size(); j++) {
+						different = different || (c[j] != lemma[j]);
+					}
+					if (!different) {
+						SMTRAT_LOG_DEBUG("smtrat.sat", lemma << " is a duplicate of " << corig);
+						dups++;
+					}
 				}
-	            sort(c, lemma_lt(*this));
-				bool different = false;
-				for (int j = 0; j < lemma.size(); j++) {
-					different = different || (c[j] != lemma[j]);
+				if (dups > 0) {
+					SMTRAT_LOG_ERROR("smtrat.sat", "Adding a clause we already have: " << lemma);
 				}
-				if (!different) {
-					SMTRAT_LOG_DEBUG("smtrat.sat", lemma << " is a duplicate of " << corig);
-					dups++;
-				}
+				assert(dups == 0);
 			}
-			assert(dups == 0);
-            #endif
 			
 			if (lemma.size() == 0) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is trivial conflict, ok = false");
@@ -2019,7 +2056,7 @@ namespace smtrat
     {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Clause: " << cr);
         Clause& c = ca[cr];
-		sat::detail::validateClause(c, mBooleanConstraintMap, Settings::validate_clauses);
+		sat::detail::validateClause(c, mMinisatVarMap, mBooleanConstraintMap, Settings::validate_clauses);
         assert( c.size() > 1 );
         watches[~c[0]].push( Watcher( cr, c[1] ) );
         watches[~c[1]].push( Watcher( cr, c[0] ) );
@@ -3194,7 +3231,7 @@ namespace smtrat
 		#endif
 		assert( confl != CRef_Undef );
 		SMTRAT_LOG_DEBUG("smtrat.sat", "Analyzing conflict " << ca[confl] << " on DL" << decisionLevel());
-		sat::detail::validateClause(ca[confl], mBooleanConstraintMap, Settings::validate_clauses);
+		sat::detail::validateClause(ca[confl], mMinisatVarMap, mBooleanConstraintMap, Settings::validate_clauses);
         int pathC = 0; // number of literals that must be resolved
         int resolutionSteps = -1;
         Lit p = lit_Undef;
@@ -3230,7 +3267,7 @@ namespace smtrat
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Explanation for " << p << ": " << ca[confl]);
 			}
 	            Clause& c = ca[confl];
-				sat::detail::validateClause(c, mBooleanConstraintMap, Settings::validate_clauses);
+				sat::detail::validateClause(c, mMinisatVarMap, mBooleanConstraintMap, Settings::validate_clauses);
 				SMTRAT_LOG_DEBUG("smtrat.sat", "c = " << c);
 	            if( c.learnt() )
 	                claBumpActivity( c );
@@ -3623,14 +3660,14 @@ namespace smtrat
                 // Make sure the false literal is data[1]:
                 CRef cr = i->cref;
                 Clause& c = ca[cr];
-				SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Analyzing clause " << c);
+				SMTRAT_LOG_TRACE("smtrat.sat.bcp", "Analyzing clause " << c);
                 Lit false_lit = ~p;
                 if( c[0] == false_lit )
                     c[0]              = c[1], c[1] = false_lit;
                 assert( c[1] == false_lit );
                 i++;
 				
-				SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Clause is now " << c << " after moving the false literal");
+				SMTRAT_LOG_TRACE("smtrat.sat.bcp", "Clause is now " << c << " after moving the false literal");
 
                 // If 0th watch is true, then clause is already satisfied.
                 Lit first = c[0];
@@ -3655,12 +3692,12 @@ namespace smtrat
                         c[1] = c[k];
                         c[k] = false_lit;
                         watches[~c[1]].push( w );
-						SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Clause is now " << c << " after setting " << c[1] << " as new watch");
+						SMTRAT_LOG_TRACE("smtrat.sat.bcp", "Clause is now " << c << " after setting " << c[1] << " as new watch");
                         goto NextClause;
                     }
 				}
 				
-				SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Clause is now " << c << " after no new watch was found");
+				SMTRAT_LOG_TRACE("smtrat.sat.bcp", "Clause is now " << c << " after no new watch was found");
 
                 // Did not find watch -- clause is unit under assignment:
                 *j++ = w;
@@ -3851,6 +3888,11 @@ NextClause:
         while( backend != usedBackends().end() )
         {
             const std::vector<FormulaSetT>& infSubsets = (*backend)->infeasibleSubsets();
+			#ifdef DEBUG_SATMODULE
+			for (const auto& iss : infSubsets) {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Infeasible subset: " << iss);
+			}
+			#endif
             assert( (*backend)->solverState() != UNSAT || !infSubsets.empty() );
             for( auto infsubset = infSubsets.begin(); infsubset != infSubsets.end(); ++infsubset )
             {
@@ -3858,16 +3900,6 @@ NextClause:
                 #ifdef SMTRAT_DEVOPTION_Validation
                 if( validationSettings->logInfSubsets() )
                     addAssumptionToCheck( *infsubset, false, (*backend)->moduleName() + "_infeasible_subset" );
-                #endif
-                #ifdef DEBUG_SATMODULE
-                for( const auto& iss : (*backend)->infeasibleSubsets() )
-                {
-                    cout << " {";
-                    for( const auto& infSubFormula : iss )
-                        cout << " " << infSubFormula.toString( false, 0, "", true, true, true ) << std::endl;
-                    cout << " }";
-                }
-                std::cout << std::endl;
                 #endif
                 // Add the according literals to the conflict clause.
                 vec<Lit> explanation;
@@ -4158,6 +4190,11 @@ NextClause:
                 _out << _init << "  ~" << k << "  ->  " << mBooleanConstraintMap[k].second->reabstraction;
                 _out << "  (" << setw( 7 ) << activity[k] << ") [" << mBooleanConstraintMap[k].second->updateInfo << "]" << endl;
             }
+        }
+		_out << _init << " Boolean Variables" << endl;
+        for( const auto& it: mMinisatVarMap )
+        {
+            _out << _init << "   " << it.first << "  ->  " << it.second << endl;
         }
     }
 

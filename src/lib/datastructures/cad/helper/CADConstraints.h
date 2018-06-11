@@ -36,6 +36,7 @@ protected:
 	
 	Variables mVariables;
 	Callback mAddCallback;
+        Callback mAddEqCallback; 
 	Callback mRemoveCallback;
 	ConstraintMap mActiveConstraintMap;
 	ConstraintMap mConstraintMap;
@@ -53,7 +54,7 @@ protected:
 		if (cb) cb(c.lhs().toUnivariatePolynomial(mVariables.front()), std::forward<Args>(args)...);
 	}
 public:
-	CADConstraints(const Callback& onAdd, const Callback& onRemove): mAddCallback(onAdd), mRemoveCallback(onRemove) {}
+	CADConstraints(const Callback& onAdd, const Callback& onAddEq, const Callback& onRemove): mAddCallback(onAdd), mAddEqCallback(onAddEq), mRemoveCallback(onRemove) {}
 	CADConstraints(const CADConstraints&) = delete;
 	void reset(const Variables& vars) {
 		mVariables = vars;
@@ -92,17 +93,39 @@ public:
 			id = mConstraintIts.size();
 			mConstraintIts.push_back(mConstraintMap.end());
 			mConstraintLevels.emplace_back(0);
+                       
+		       	mActiveConstraintMap.emplace(c, id);	
+                        auto r = mConstraintMap.emplace(c, id);
+                        assert(r.second);
+                        mConstraintIts[id] = r.first;
+                } else if (BT == Backtracking::HIDE) {
+                        auto it = mConstraintMap.find(c);
+			if (it != mConstraintMap.end()) {
+				id = it->second;
+				mActiveConstraintMap.emplace(c, id);
+				mConstraintIts[id] = it;
+			} else {
+				id = mIDPool.get();
+				if (id >= mConstraintIts.size()) {
+					mConstraintIts.resize(id+1, mConstraintMap.end());
+					mConstraintLevels.resize(id+1);
+				}
+				mActiveConstraintMap.emplace(c, id);
+				auto r = mConstraintMap.emplace(c, id);
+				assert(r.second);
+				mConstraintIts[id] = r.first;
+			}
 		} else {
 			id = mIDPool.get();
 			if (id >= mConstraintIts.size()) {
 				mConstraintIts.resize(id+1, mConstraintMap.end());
 				mConstraintLevels.resize(id+1);
 			}
+			mActiveConstraintMap.emplace(c, id);
+                        auto r = mConstraintMap.emplace(c, id);
+                        assert(r.second);
+                        mConstraintIts[id] = r.first;
 		}
-		mActiveConstraintMap.emplace(c, id);
-		auto r = mConstraintMap.emplace(c, id);
-		assert(r.second);
-		mConstraintIts[id] = r.first;
 		auto vars = c.variables();
 		for (std::size_t level = mVariables.size(); level > 0; level--) {
 			vars.erase(mVariables[level - 1]);
@@ -112,7 +135,11 @@ public:
 			}
 		}
 		SMTRAT_LOG_DEBUG("smtrat.cad.constraints", "Identified " << c << " as level " << mConstraintLevels[id]);
-		callCallback(mAddCallback, c, id, isBound);
+                if(c.relation() == carl::Relation::EQ) {
+                        callCallback(mAddEqCallback, c, id, isBound);
+                } else {
+                        callCallback(mAddCallback, c, id, isBound);
+                }
 		SMTRAT_LOG_DEBUG("smtrat.cad.constraints", "Added " << c << " to " << std::endl << *this);
 		return id;
 	}
@@ -153,13 +180,18 @@ public:
 				add(cache.top());
 				cache.pop();
 			}
+                } else if(BT == Backtracking::HIDE) {
+                        SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Removing " << id << " in unordered mode");
+			callCallback(mRemoveCallback, c, id, isBound);
+			mActiveConstraintMap.erase(it->first);
+			mConstraintIts[id] = mConstraintMap.end();
 		} else {
 			SMTRAT_LOG_TRACE("smtrat.cad.constraints", "Removing " << id << " in unordered mode");
 			callCallback(mRemoveCallback, c, id, isBound);
 			mActiveConstraintMap.erase(it->first);
 			mConstraintMap.erase(it);
 			mConstraintIts[id] = mConstraintMap.end();
-			mIDPool.free(id);
+			mIDPool.free(id); 
 		}
 		SMTRAT_LOG_DEBUG("smtrat.cad.constraints", "Removed " << c << " from " << std::endl << *this);
 		return res;
@@ -213,11 +245,10 @@ public:
 template<Backtracking BT>
 std::ostream& operator<<(std::ostream& os, const CADConstraints<BT>& cc) {
 	for (const auto& c: cc.mConstraintIts) {
-		if (c == cc.mActiveConstraintMap.end()) continue;
+		if (c == cc.mConstraintMap.end()) continue;
 		os << "\t" << c->second << ": " << c->first << std::endl;
 	}
 	assert(long(cc.mActiveConstraintMap.size()) == std::count_if(cc.mConstraintIts.begin(), cc.mConstraintIts.end(), [&cc](auto it){ return it != cc.mConstraintMap.end(); }));
-	assert(long(cc.mConstraintMap.size()) >= std::count_if(cc.mConstraintIts.begin(), cc.mConstraintIts.end(), [&cc](auto it){ return it != cc.mConstraintMap.end(); }));
 	return os;
 }
 	

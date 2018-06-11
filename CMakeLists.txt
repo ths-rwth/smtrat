@@ -78,6 +78,7 @@ option(SMTRAT_DEVOPTION_MeasureTime "Measure times and number of calls" OFF)
 option(SMTRAT_DEVOPTION_Statistics "Use the Statistics gathering" OFF)
 
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "DEBUG" "RELEASE")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE "RELEASE")
@@ -91,6 +92,8 @@ set(SMTRAT_MODULES_PATH ${PROJECT_SOURCE_DIR}/src/lib/modules)
 # Include own macros.
 include( smtratmacros )
 # TODO: iteratively search for cmake files and include them here.
+
+include( clang-tidy )
 
 if(USE_COTIRE)
 	# We use cotire, simply include it

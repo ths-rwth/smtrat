@@ -42,6 +42,7 @@ namespace cad {
 		CAD():
 			mConstraints(
 				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(mProjection.normalize(p), cid, isBound); },
+				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addEqConstraint(mProjection.normalize(p), cid, isBound); },
 				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(mProjection.normalize(p), cid, isBound); }
 			),
 			mProjection(mConstraints),
@@ -103,14 +104,14 @@ namespace cad {
 		template<typename ConstraintIt>
 		bool evaluateSample(Sample& sample, const ConstraintIt& constraint, Assignment& assignment) const {
 			std::size_t cid = constraint.second;
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Evaluating " << cid << " / " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment);
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Sample was evaluated: " << sample.evaluatedWith() << " / " << sample.evaluationResult());
+			SMTRAT_LOG_TRACE("smtrat.cad", "Evaluating " << cid << " / " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment);
+			SMTRAT_LOG_TRACE("smtrat.cad", "Sample was evaluated: " << sample.evaluatedWith() << " / " << sample.evaluationResult());
 			if (sample.evaluatedWith().test(cid)) {
 				return sample.evaluationResult().test(cid);
 			}
 			auto res = carl::RealAlgebraicNumberEvaluation::evaluate(constraint.first.lhs(), assignment);
 			bool evalResult = carl::evaluate(res, constraint.first.relation());
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Evaluating " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment << " -> " << evalResult);
+			SMTRAT_LOG_TRACE("smtrat.cad", "Evaluating " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment << " -> " << evalResult);
 			sample.evaluatedWith().set(cid, true);
 			sample.evaluationResult().set(cid, evalResult);
 			return evalResult;
@@ -205,12 +206,16 @@ namespace cad {
 			for (auto it = mLifting.getTree().begin_preorder(); it != mLifting.getTree().end_preorder();) {
 				if (it->hasConflictWithConstraint()) {
 					// Skip subtrees of already conflicting samples
+					SMTRAT_LOG_TRACE("smtrat.cad", "Adding sample " << *it);
 					cg.addSample(*it);
 					it.skipChildren();
 				} else {
 					it++;
 				}
 				for (std::size_t id = 0; id < mConstraints.size(); id++) {
+					if (!mConstraints.valid(id)) {
+						SMTRAT_LOG_TRACE("smtrat.cad", "Invalid constraint: " << id << ", cur graph:" << std::endl << cg);
+					}
 					assert(mConstraints.valid(id) || cg.coveredSamples(id) == 0);
 				}
 			}

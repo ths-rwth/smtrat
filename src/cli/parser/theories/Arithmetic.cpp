@@ -3,8 +3,7 @@
 
 namespace smtrat {
 namespace parser {
-namespace arithmetic {
-	inline bool convertTerm(const types::TermType& term, Poly& result, bool allow_bool = false) {
+	inline bool ArithmeticTheory::convertTerm(const types::TermType& term, Poly& result, bool allow_bool) {
 		if (boost::get<Poly>(&term) != nullptr) {
 			result = boost::get<Poly>(term);
 			return true;
@@ -26,16 +25,34 @@ namespace arithmetic {
 				default:
 					return false;
 			}
+		} else if (allow_bool && boost::get<FormulaT>(&term) != nullptr) {
+			FormulaT formula = boost::get<FormulaT>(term);
+			const auto& mappedFormulaIt = mappedFormulas.find(formula);
+
+			if (mappedFormulaIt != mappedFormulas.end()) {
+				carl::Variable var = mappedFormulaIt->second;
+				result = Poly(var);
+			} else {
+				carl::Variable var = carl::freshBooleanVariable();
+				FormulaT subst = FormulaT(carl::FormulaType::IFF, FormulaT(var), formula);
+
+				state->global_formulas.emplace_back(subst);
+				mappedFormulas[formula] = var;
+
+				result = Poly(var);
+			}
+
+			return true;
 		} else {
 			return false;
 		}
 	}
 
-	inline bool convertArguments(const OperatorType& op, const std::vector<types::TermType>& arguments, std::vector<Poly>& result, TheoryError& errors) {
+	inline bool ArithmeticTheory::convertArguments(const arithmetic::OperatorType& op, const std::vector<types::TermType>& arguments, std::vector<Poly>& result, TheoryError& errors) {
 		result.clear();
 		for (std::size_t i = 0; i < arguments.size(); i++) {
 			Poly res;
-			if (!arithmetic::convertTerm(arguments[i], res, true)) {
+			if (!convertTerm(arguments[i], res, state->logic == smtrat::Logic::QF_PB)) {
 				errors.next() << "Operator \"" << op << "\" expects arguments to be polynomials, but argument " << (i+1) << " is not: \"" << arguments[i] << "\".";
 				return false;
 			}
@@ -43,7 +60,8 @@ namespace arithmetic {
 		}
 		return true;
 	}
-	
+
+namespace arithmetic {
 	inline FormulaT makeConstraint(ArithmeticTheory& at, const Poly& lhs, const Poly& rhs, carl::Relation rel) {
 		Poly p = lhs - rhs;
 		std::set<carl::Variable> pVars = p.gatherVariables();
@@ -112,8 +130,11 @@ namespace arithmetic {
 		if (boost::get<carl::Relation>(&op) == nullptr) return false;
 		if (boost::get<carl::Relation>(op) != carl::Relation::EQ) return false;
 		for (const auto& a: arguments) {
-			if (boost::get<carl::Variable>(&a) == nullptr) return false;
-			if (boost::get<carl::Variable>(a).type() != carl::VariableType::VT_BOOL) return false;
+			if (boost::get<carl::Variable>(&a) != nullptr) {
+				if (boost::get<carl::Variable>(a).type() != carl::VariableType::VT_BOOL) return false;
+			} else if (boost::get<FormulaT>(&a) == nullptr) {
+				return false;
+			}
 		}
 		errors.next() << "Operator \"" << op << "\" only has boolean variables which is handled by the core theory.";
 		return true;
@@ -175,11 +196,11 @@ namespace arithmetic {
 	bool ArithmeticTheory::handleITE(const FormulaT& ifterm, const types::TermType& thenterm, const types::TermType& elseterm, types::TermType& result, TheoryError& errors) {
 		Poly thenpoly;
 		Poly elsepoly;
-		if (!arithmetic::convertTerm(thenterm, thenpoly)) {
+		if (!convertTerm(thenterm, thenpoly)) {
 			errors.next() << "Failed to construct ITE, the then-term \"" << thenterm << "\" is unsupported.";
 			return false;
 		}
-		if (!arithmetic::convertTerm(elseterm, elsepoly)) {
+		if (!convertTerm(elseterm, elsepoly)) {
 			errors.next() << "Failed to construct ITE, the else-term \"" << elseterm << "\" is unsupported.";
 			return false;
 		}
@@ -254,7 +275,7 @@ namespace arithmetic {
 			return false;
 		}
 		Poly repl;
-		if (!arithmetic::convertTerm(replacement, repl)) {
+		if (!convertTerm(replacement, repl)) {
 			errors.next() << "Could not convert argument \"" << replacement << "\" to an arithmetic expression.";
 			return false;
 		}
@@ -322,7 +343,7 @@ namespace arithmetic {
 		}
 		arithmetic::OperatorType op = it->second;
 		if (arithmetic::isBooleanIdentity(op, arguments, errors)) return false;
-		if (!arithmetic::convertArguments(op, arguments, args, errors)) return false;
+		if (!convertArguments(op, arguments, args, errors)) return false;
 		
 		if (boost::get<Poly::ConstructorOperation>(&op) != nullptr) {
 			result = Poly(boost::get<Poly::ConstructorOperation>(op), args);

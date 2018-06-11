@@ -127,8 +127,8 @@ configure_file(doxygen.conf.in ${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf)
 
 # Target for running doxygen
 add_custom_target(doc-doxygen
-	${DOXYGEN_BIN} ${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf
-	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf Doxygen::doxygen
+	Doxygen::doxygen ${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf
+	DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf Doxygen::doxygen doxygen-build
 )
 
 # Target for building the whole documentation

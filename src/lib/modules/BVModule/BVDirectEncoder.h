@@ -358,6 +358,16 @@ namespace smtrat
                 Bit remainderLessThanDivisor = encodeUlt(remainder, _second);
 
                 boolAssert(boolImplies(wellDefined, boolAnd(summationCorrect, remainderLessThanDivisor)));
+				if (!_returnRemainder) {
+					// bvudiv: x / 0 = 111...
+					/// TODO: Create a direct encoding of this instead of an equation to a constant.
+					Bit quotientAllOnes = encodeEq(quotient, encodeConstant(~carl::BVValue(_first.size(), 0)));
+					boolAssert(boolImplies(!wellDefined, quotientAllOnes));
+				} else {
+					// mvurem: x / 0 = x
+					Bit remainderIsFirstOp = encodeEq(remainder, _first);
+					boolAssert(boolImplies(!wellDefined, remainderIsFirstOp));
+				}
 
                 return (_returnRemainder ? remainder : quotient);
             }
@@ -367,7 +377,7 @@ namespace smtrat
                 /*
                 (bvsdiv s t) abbreviates
                 (let ((?msb_s ((_ extract |m-1| |m-1|) s))
-                        (?msb_t ((_ extract |m-1| |m-1|) t)))
+                      (?msb_t ((_ extract |m-1| |m-1|) t)))
                     (ite (and (= ?msb_s #b0) (= ?msb_t #b0))
                         (bvudiv s t)
                     (ite (and (= ?msb_s #b1) (= ?msb_t #b0))
@@ -398,7 +408,7 @@ namespace smtrat
                 /*
                 (bvsrem s t) abbreviates
                 (let ((?msb_s ((_ extract |m-1| |m-1|) s))
-                        (?msb_t ((_ extract |m-1| |m-1|) t)))
+                      (?msb_t ((_ extract |m-1| |m-1|) t)))
                     (ite (and (= ?msb_s #b0) (= ?msb_t #b0))
                         (bvurem s t)
                     (ite (and (= ?msb_s #b1) (= ?msb_t #b0))
@@ -424,9 +434,9 @@ namespace smtrat
                 /*
                 (bvsmod s t) abbreviates
                 (let ((?msb_s ((_ extract |m-1| |m-1|) s))
-                        (?msb_t ((_ extract |m-1| |m-1|) t)))
+                      (?msb_t ((_ extract |m-1| |m-1|) t)))
                     (let ((abs_s (ite (= ?msb_s #b0) s (bvneg s)))
-                        (abs_t (ite (= ?msb_t #b0) t (bvneg t))))
+                          (abs_t (ite (= ?msb_t #b0) t (bvneg t))))
                     (let ((u (bvurem abs_s abs_t)))
                         (ite (= u (_ bv0 m))
                             u

@@ -45,6 +45,7 @@ struct TheoryLevel {
 	std::vector<Minisat::Var> univariateVariables;
 };
 
+template<typename Settings>
 class MCSATMixin {
   
 private:
@@ -63,7 +64,7 @@ private:
 	/// Variables that are not univariate in any variable yet.
 	std::vector<Minisat::Var> mUndecidedVariables;
 	
-	MCSATBackend<BackendSettings1> mBackend;
+	MCSATBackend<Settings> mBackend;
 
 private:
 	// ***** private helper methods
@@ -264,18 +265,17 @@ public:
 			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " has no variable, thus on level 0");
 			return 0;
 		}
-		/*
-		for (std::size_t lvl = level(); lvl > 0; lvl--) {
-			if (variable(lvl) == carl::Variable::NO_VARIABLE) continue;
-			if (vars.count(variable(lvl)) > 0) {
-				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is univariate in " << variable(lvl));
-				return lvl;
-			}
-		}
-		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " contains undecided variables.");
-		return std::numeric_limits<std::size_t>::max();*/
-
-		// use this method, otherwise some constraint don't evaluate to Undef after backtracking
+		
+		//for (std::size_t lvl = level(); lvl > 0; lvl--) {
+		//	if (variable(lvl) == carl::Variable::NO_VARIABLE) continue;
+		//	if (vars.count(variable(lvl)) > 0) {
+		//		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is univariate in " << variable(lvl));
+		//		return lvl;
+		//	}
+		//}
+		//SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " contains undecided variables.");
+		//return std::numeric_limits<std::size_t>::max();
+	
 		Model m = model();
 		if (!carl::model::evaluate(f, m).isBool()) {
 			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is undecided.");
@@ -367,8 +367,11 @@ public:
 	// ***** Output
 	/// Prints a single clause
 	void printClause(std::ostream& os, Minisat::CRef clause) const;
-	friend std::ostream& operator<<(std::ostream& os, const MCSATMixin& mcm);
+	template<typename Sett>
+	friend std::ostream& operator<<(std::ostream& os, const MCSATMixin<Sett>& mcm);
 };
 
 }
 }
+
+#include "MCSATMixin.tpp"

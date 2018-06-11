@@ -59,7 +59,7 @@ int main(int argc, char* argv[]) {
 	// Initialize checker.
 	std::cout << "Calculating original exit code..." << std::endl;
 	auto start_exit = Clock::now();
-	delta::Checker c(s.as<std::string>("solver"), s.as<std::size_t>("timeout"), input);
+	delta::Checker c(s.as<std::string>("solver"), s.as<std::size_t>("memout"), s.as<std::size_t>("timeout"), input);
 	std::cout << BGREEN << "Original exit code is " << c.expectedCode() << END << std::endl;
 	std::size_t duration = (std::size_t)std::chrono::duration_cast<seconds>(Clock::now() - start_exit).count(); 
 	std::size_t candidate = (duration + 1) * 2;
@@ -98,7 +98,7 @@ int main(int argc, char* argv[]) {
 	std::string output = s.as<std::string>("output-file");
 	std::cout << "Writing to " << output << std::endl;
 	std::ofstream out(output);
-	out << n;
+	out << delta::NodePrinter<true>(n);
 	out.close();
 
 	std::cout << "This run took " << std::chrono::duration_cast<seconds>(Clock::now() - start).count() << " seconds for " << iterations << " iterations." << std::endl;

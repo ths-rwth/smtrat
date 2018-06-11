@@ -3,6 +3,7 @@ CMakeCache.txt
 CMakeFiles
 
 *.swp
+*~
 **/config.h
 **/config.txt
 **/CompileInfo.cpp
@@ -10,6 +11,7 @@ CMakeFiles
 /build/**
 /cmake-build-debug/
 /.idea/
+/manual/module_list.tex
 /nbproject/
 /src/gui/Config.java
 /src/lib/modules/ModuleType.h

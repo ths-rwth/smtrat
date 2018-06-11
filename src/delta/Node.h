@@ -71,24 +71,6 @@ struct Node {
 	void recalculateSize() {
 		size = std::accumulate(children.begin(), children.end(), (std::size_t)1, [](std::size_t a, const Node& b){ return a + b.complexity(); });
 	}
-
-	/**
-	 * Streaming operator.
-	 * This operator should output a representation that is syntactically identically to the one that was parsed.
-	 * @param os Output stream.
-	 * @param n Node.
-	 * @return `os`.
-	 */
-	friend inline std::ostream& operator<<(std::ostream& os, const Node& n) {
-		if (n.brackets) os << "(";
-		os << n.name;
-		for (auto c: n.children) {
-			if (n.name == "") os << c << (n.brackets ? ' ' : '\n');
-			else os << " " << c;
-		}
-		if (n.brackets) os << ")";
-		return os;
-	}
 	
 	/**
 	 * Calculates the number of nodes.
@@ -181,5 +163,80 @@ struct Node {
 		recalculateSize();
 	}
 };
+
+template<bool pretty>
+struct NodePrinter {
+	const Node& node;
+	NodePrinter(const Node& n): node(n) {}
+	void print(std::ostream& os, const Node& n) const {
+		if (n.name == "" && !n.brackets) {
+			for (auto c: n.children) {
+				print(os, c);
+				os << std::endl;
+			}
+			return;
+		}
+		if (n.brackets) os << "(";
+		os << n.name;
+		for (auto c: n.children) {
+			os << " ";
+			print(os, c);
+		}
+		if (n.brackets) os << ")";
+	}
+	
+	void pretty_print(std::ostream& os, const Node& n, std::string indent = "") const {
+		bool pretty_this = (n.name != "set-logic") && (n.name != "declare-fun");
+		if (!pretty_this) {
+			print(os, n);
+			return;
+		}
+		if (n.name == "" && !n.brackets) {
+			for (auto c: n.children) {
+				pretty_print(os, c, indent);
+				os << std::endl;
+			}
+			return;
+		}
+		
+		if (n.brackets) os << "(";
+		os << n.name;
+		if (n.brackets && !n.children.empty()) os << std::endl;
+		for (auto c: n.children) {
+			os << indent << "\t";
+			pretty_print(os, c, indent + "\t");
+			if (n.brackets) os << std::endl;
+		}
+		if (n.brackets) os << indent << ")";
+	}
+};
+
+/**
+ * Streaming operator.
+ * This operator should output a representation that is syntactically identically to the one that was parsed.
+ * @param os Output stream.
+ * @param n Node.
+ * @return `os`.
+ */
+inline std::ostream& operator<<(std::ostream& os, const Node& n) {
+	if (n.brackets) os << "(";
+	os << n.name;
+	for (auto c: n.children) {
+		if (n.name == "") os << c << (n.brackets ? ' ' : '\n');
+		else os << " " << c;
+	}
+	if (n.brackets) os << ")";
+	return os;
+}
+
+template<bool pretty>
+inline std::ostream& operator<<(std::ostream& os, const NodePrinter<pretty>& np) {
+	if (pretty) {
+		np.pretty_print(os, np.node);
+	} else {
+		np.print(os, np.node);
+	}
+	return os;
+}
 
 }

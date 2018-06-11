@@ -13,7 +13,7 @@ namespace parser {
 struct LogicParser: public qi::symbols<char, smtrat::Logic> {
 	LogicParser() {
 		add("QF_BV", smtrat::Logic::QF_BV);
-		add("QF_IDL", smtrat::Logic::QF_LIA);
+		add("QF_IDL", smtrat::Logic::QF_IDL);
 		add("QF_LIA", smtrat::Logic::QF_LIA);
 		add("QF_LIRA", smtrat::Logic::QF_LIA);
 		add("QF_LRA", smtrat::Logic::QF_LRA);
@@ -21,7 +21,7 @@ struct LogicParser: public qi::symbols<char, smtrat::Logic> {
 		add("QF_NIRA", smtrat::Logic::QF_NIA);
 		add("QF_NRA", smtrat::Logic::QF_NRA);
 		add("QF_PB", smtrat::Logic::QF_PB);
-		add("QF_RDL", smtrat::Logic::QF_LRA);
+		add("QF_RDL", smtrat::Logic::QF_RDL);
 		add("QF_UF", smtrat::Logic::QF_UF);
 	}
 };
@@ -76,8 +76,8 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 			|	(qi::lit("get-proof") > ")")[px::bind(&Callee::getProof, px::ref(callee))]
 			|	(qi::lit("get-unsat-core") > ")")[px::bind(&Callee::getUnsatCore, px::ref(callee))]
 			|	(qi::lit("get-value") > "(" > +term > ")" > ")")[px::bind(&Callee::getValue, px::ref(callee), qi::_1)]
-			|	(qi::lit("maximize") > term > ")")[px::bind(&Callee::addObjective, px::ref(callee), qi::_1, Maximize)]
-			|	(qi::lit("minimize") > term > ")")[px::bind(&Callee::addObjective, px::ref(callee), qi::_1, Minimize)]
+			|	(qi::lit("maximize") > term > ")")[px::bind(&Callee::addObjective, px::ref(callee), qi::_1, OptimizationType::Maximize)]
+			|	(qi::lit("minimize") > term > ")")[px::bind(&Callee::addObjective, px::ref(callee), qi::_1, OptimizationType::Minimize)]
 			|	(qi::lit("pop") > (numeral | qi::attr(carl::constant_one<Integer>::get())) > ")")[px::bind(&Callee::pop, px::ref(callee), qi::_1)]
 			|	(qi::lit("push") > (numeral | qi::attr(carl::constant_one<Integer>::get())) > ")")[px::bind(&Callee::push, px::ref(callee), qi::_1)]
 			|	(qi::lit("reset") > ")")[px::bind(&Callee::reset, px::ref(callee))]

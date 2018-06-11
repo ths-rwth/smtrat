@@ -3,13 +3,15 @@
 namespace smtrat {
 namespace mcsat {
 
-void MCSATMixin::makeDecision(Minisat::Lit decisionLiteral) {
+template<typename Settings>
+void MCSATMixin<Settings>::makeDecision(Minisat::Lit decisionLiteral) {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Made theory decision for " << currentVariable() << ": " << decisionLiteral);
 	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Variables: " << mBackend.variableOrder());
 	current().decisionLiteral = decisionLiteral;
 }
 
-bool MCSATMixin::backtrackTo(Minisat::Lit literal) {
+template<typename Settings>
+bool MCSATMixin<Settings>::backtrackTo(Minisat::Lit literal) {
 	std::size_t lvl = level();
 	while (lvl > 0) {
 		if (get(lvl).decisionLiteral == literal) break;
@@ -36,7 +38,8 @@ bool MCSATMixin::backtrackTo(Minisat::Lit literal) {
 	return true;
 }
 
-Minisat::lbool MCSATMixin::evaluateLiteral(Minisat::Lit lit) const {
+template<typename Settings>
+Minisat::lbool MCSATMixin<Settings>::evaluateLiteral(Minisat::Lit lit) const {
 	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Evaluate " << lit);
 	const FormulaT& f = mGetter.reabstractLiteral(lit);
 	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Evaluate " << f << " on " << mBackend.getModel());
@@ -47,7 +50,8 @@ Minisat::lbool MCSATMixin::evaluateLiteral(Minisat::Lit lit) const {
 	return l_Undef;
 }
 
-boost::optional<FormulaT> MCSATMixin::isDecisionPossible(Minisat::Lit lit) {
+template<typename Settings>
+boost::optional<FormulaT> MCSATMixin<Settings>::isDecisionPossible(Minisat::Lit lit) {
 	auto var = Minisat::var(lit);
 	if (!mGetter.isTheoryAbstraction(var)) return boost::none;
 	const auto& f = mGetter.reabstractLiteral(lit);
@@ -61,7 +65,8 @@ boost::optional<FormulaT> MCSATMixin::isDecisionPossible(Minisat::Lit lit) {
 	return boost::none;
 }
 
-void MCSATMixin::updateCurrentLevel(carl::Variable var) {
+template<typename Settings>
+void MCSATMixin<Settings>::updateCurrentLevel(carl::Variable var) {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Updating current level for " << var);
 	assert(level() <= mTheoryStack.size());
 	if (level() == mTheoryStack.size()) {
@@ -86,7 +91,8 @@ void MCSATMixin::updateCurrentLevel(carl::Variable var) {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << mUndecidedVariables);
 }
 
-void MCSATMixin::removeLastLevel() {
+template<typename Settings>
+void MCSATMixin<Settings>::removeLastLevel() {
 	assert(!mTheoryStack.empty());
 	assert(level() < mTheoryStack.size() - 1);
 	
@@ -98,7 +104,8 @@ void MCSATMixin::removeLastLevel() {
 	mTheoryStack.pop_back();
 }
 
-void MCSATMixin::pushLevel(carl::Variable var) {
+template<typename Settings>
+void MCSATMixin<Settings>::pushLevel(carl::Variable var) {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Pushing new level with " << var);
 	// Future levels are cached and maybe should be discarded
 	if (level() != mTheoryStack.size() - 1) {
@@ -114,11 +121,13 @@ void MCSATMixin::pushLevel(carl::Variable var) {
 	updateCurrentLevel(var);
 }
 
-void MCSATMixin::popLevel() {
+template<typename Settings>
+void MCSATMixin<Settings>::popLevel() {
 	mCurrentLevel--;
 }
 
-std::size_t MCSATMixin::addVariable(Minisat::Var variable) {
+template<typename Settings>
+std::size_t MCSATMixin<Settings>::addVariable(Minisat::Var variable) {
 	std::size_t level = theoryLevel(variable);
 	if (level == std::numeric_limits<std::size_t>::max()) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << variable << " to undecided");
@@ -130,7 +139,8 @@ std::size_t MCSATMixin::addVariable(Minisat::Var variable) {
 	return level;
 }
 
-bool MCSATMixin::isFormulaUnivariate(const FormulaT& formula, std::size_t level) const {
+template<typename Settings>
+bool MCSATMixin<Settings>::isFormulaUnivariate(const FormulaT& formula, std::size_t level) const {
 	assert(level < mTheoryStack.size());
 	carl::Variables vars;
 	formula.arithmeticVars(vars);
@@ -141,7 +151,8 @@ bool MCSATMixin::isFormulaUnivariate(const FormulaT& formula, std::size_t level)
 	return vars.empty();
 }
 
-void MCSATMixin::printClause(std::ostream& os, Minisat::CRef clause) const {
+template<typename Settings>
+void MCSATMixin<Settings>::printClause(std::ostream& os, Minisat::CRef clause) const {
 	const Minisat::Clause& c = mGetter.getClause(clause);
 	os << "(";
 	for (int i = 0; i < c.size(); i++) {
@@ -155,10 +166,11 @@ void MCSATMixin::printClause(std::ostream& os, Minisat::CRef clause) const {
 	os << ")";
 }
 
-std::ostream& operator<<(std::ostream& os, const MCSATMixin& mcm) {
+template<typename Settings>
+std::ostream& operator<<(std::ostream& os, const MCSATMixin<Settings>& mcm) {
 	os << "Theory Stack:" << std::endl;
 	for (std::size_t lvl = 0; lvl < mcm.mTheoryStack.size(); lvl++) {
-		const auto& level = mcm.mTheoryStack[lvl];
+		const auto& level = mcm.get(lvl);
 		os << lvl << " / " << level.variable << " (" << level.decisionLiteral << ")";
 		if (mcm.model().find(level.variable) != mcm.model().end()) {
 			os << " = " << mcm.model().at(level.variable);

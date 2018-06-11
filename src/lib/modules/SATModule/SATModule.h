@@ -54,7 +54,7 @@ namespace smtrat
     class SATModule:
         public Module
     {
-		friend mcsat::MCSATMixin;
+		friend mcsat::MCSATMixin<typename Settings::MCSATSettings>;
         private:
 
             /**
@@ -589,6 +589,9 @@ namespace smtrat
             TseitinVarShadows mTseitinVarShadows;
             ///
             carl::FastMap<int, FormulaT> mTseitinVarFormulaMap;
+            /// Stores whether a given tseitin variable was not yet added to the assumptions.
+            /// Tseitin variables for top-level clauses are only assumed lazily if they occur in another clause.
+            carl::Bitset mNonassumedTseitinVariable;
             ///
             std::vector<Minisat::vec<Minisat::Lit>> mCurrentTheoryConflicts;
             ///
@@ -614,7 +617,7 @@ namespace smtrat
             /*
              * MC-SAT related members.
              */
-			mcsat::MCSATMixin mMCSAT;
+			mcsat::MCSATMixin<typename Settings::MCSATSettings> mMCSAT;
 			std::map<carl::Variable, std::vector<signed>> mFutureChangedBooleans;
 			bool mNextDecisionIsTheory;
             

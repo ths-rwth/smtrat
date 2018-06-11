@@ -44,6 +44,7 @@ public:
 			("input-file,i", bpo::value<std::string>()->required(), "input filename")
 			("output-file,o", bpo::value<std::string>()->default_value("delta.out.smt2"), "output filename")
 			("solver,s", bpo::value<std::string>()->default_value("./smtrat"), "solver executable")
+			("memout,m", bpo::value<std::size_t>()->default_value(1024), "memout in megabytes")
 			("timeout,t", bpo::value<std::size_t>()->default_value(15), "timeout in seconds")
 			("verbose,v", "be verbose")
 		;

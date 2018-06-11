@@ -48,6 +48,16 @@ public:
 	bool operator()(const Res&) {
 		return false;
 	}
+	bool operator()(carl::Variable v) {
+		if (v == var) result = replacement;
+		return true;
+	}
+	template<typename TYPE = T>
+	typename std::enable_if<std::is_same<TYPE,Poly>::value, bool>::type
+	operator()(const Poly& p) {
+		result = p.substitute(var, replacement);
+		return true;
+	}
 	bool operator()(const FormulaT& f) {
 		carl::FormulaSubstitutor<FormulaT> subs;
 		result = subs.substitute(f, var, replacement);

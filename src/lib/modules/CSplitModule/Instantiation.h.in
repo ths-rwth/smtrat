@@ -1,0 +1,13 @@
+/**
+ * @file CSplitInstantiation.h.in
+ * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ *
+ * @version 2017-11-01
+ * Created on 2017-11-01.
+ */
+
+#include "${Prefix}Module.h"
+
+namespace smtrat {
+${INSTANTIATIONS}
+}
