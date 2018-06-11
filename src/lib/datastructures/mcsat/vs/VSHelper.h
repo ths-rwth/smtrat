@@ -148,7 +148,7 @@ namespace helper {
                             // Create ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b-sqrt(b^2-4ac))/2a]):
                             SqrtEx sqExA = SqrtEx( -linearCoeff, MINUS_ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
                             SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generated zero " << sqExA << " with side conditions " << sideCond);
-                            yield_result(std::move(sqExA), std::move(ConstraintsT(sideCond)));
+                            yield_result(std::move(sqExA), ConstraintsT(sideCond));
 
                             // Create ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
                             SqrtEx sqExB = SqrtEx( -linearCoeff, ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
