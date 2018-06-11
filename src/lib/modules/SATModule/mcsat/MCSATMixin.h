@@ -45,6 +45,7 @@ struct TheoryLevel {
 	std::vector<Minisat::Var> univariateVariables;
 };
 
+template<typename Settings>
 class MCSATMixin {
   
 private:
@@ -63,7 +64,7 @@ private:
 	/// Variables that are not univariate in any variable yet.
 	std::vector<Minisat::Var> mUndecidedVariables;
 	
-	MCSATBackend<BackendSettings1> mBackend;
+	MCSATBackend<Settings> mBackend;
 
 private:
 	// ***** private helper methods
@@ -366,8 +367,11 @@ public:
 	// ***** Output
 	/// Prints a single clause
 	void printClause(std::ostream& os, Minisat::CRef clause) const;
-	friend std::ostream& operator<<(std::ostream& os, const MCSATMixin& mcm);
+	template<typename Sett>
+	friend std::ostream& operator<<(std::ostream& os, const MCSATMixin<Sett>& mcm);
 };
 
 }
 }
+
+#include "MCSATMixin.tpp"

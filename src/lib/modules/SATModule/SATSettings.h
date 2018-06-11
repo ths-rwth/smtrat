@@ -9,6 +9,8 @@
 #pragma once
 
 #include "../../solver/ModuleSettings.h"
+
+#include "mcsat/MCSATSettings.h"
     
 namespace smtrat
 {
@@ -99,7 +101,9 @@ namespace smtrat
 		static constexpr bool validate_clauses = false;
 #endif
 
-		static constexpr bool check_for_duplicate_clauses = true;
+		static constexpr bool check_for_duplicate_clauses = false;
+		
+		using MCSATSettings = mcsat::MCSATSettings1;
     };
 
     struct SATSettings3 : SATSettings1

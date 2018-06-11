@@ -54,7 +54,7 @@ namespace smtrat
     class SATModule:
         public Module
     {
-		friend mcsat::MCSATMixin;
+		friend mcsat::MCSATMixin<typename Settings::MCSATSettings>;
         private:
 
             /**
@@ -617,7 +617,7 @@ namespace smtrat
             /*
              * MC-SAT related members.
              */
-			mcsat::MCSATMixin mMCSAT;
+			mcsat::MCSATMixin<typename Settings::MCSATSettings> mMCSAT;
 			std::map<carl::Variable, std::vector<signed>> mFutureChangedBooleans;
 			bool mNextDecisionIsTheory;
             
