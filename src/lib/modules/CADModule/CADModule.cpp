@@ -58,29 +58,7 @@ namespace smtrat
 
 //		setting.autoSeparateEquations = false; // <- @TODO: find a correct implementation of the MIS for the only-strict or only-equations optimizations
 
-		if (Settings::enable_projectionorder_optimization) {
-			// variable order optimization
-			#ifdef USE_GINAC
-			std::forward_list<symbol> variables = std::forward_list<symbol>( );
-			GiNaC::symtab allVariables = mpReceivedFormula->constraintPool().realVariables();
-			for( GiNaC::symtab::const_iterator i = allVariables.begin(); i != allVariables.end(); ++i )
-				variables.push_front( GiNaC::ex_to<symbol>( i->second ) );
-			std::forward_list<Poly> polynomials = std::forward_list<Poly>( );
-			for( fcs_const_iterator i = mpReceivedFormula->constraintPool().begin(); i != mpReceivedFormula->constraintPool().end(); ++i )
-				polynomials.push_front( (*i)->lhs() );
-			mCAD = CAD( {}, CAD::orderVariablesGreeedily( variables.begin(), variables.end(), polynomials.begin(), polynomials.end() ), _conditionals, setting );
-
-			cout << "Optimizing CAD variable order from ";
-			for( forward_list<GiNaC::symbol>::const_iterator k = variables.begin(); k != variables.end(); ++k )
-				cout << *k << " ";
-			cout << "  to   ";
-			for( vector<GiNaC::symbol>::const_iterator k = mCAD.variablesScheduled().begin(); k != mCAD.variablesScheduled().end(); ++k )
-				cout << *k << " ";
-			cout << endl;;
-			#endif
-		} else {
-			mCAD.alterSetting(setting);
-		}
+		mCAD.alterSetting(setting);
 
 		SMTRAT_LOG_TRACE("smtrat.cad", "Initial CAD setting:" << std::endl << setting);
 	}

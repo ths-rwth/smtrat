@@ -34,8 +34,6 @@ namespace smtrat
 		static constexpr MISHeuristic mis_heuristic = MISHeuristic::GREEDY;
 		static constexpr bool computeConflictGraph = (mis_heuristic != MISHeuristic::TRIVIAL);
 		static constexpr bool checkMISForMinimality = false;
-		
-		static constexpr bool enable_projectionorder_optimization = true;
 
 		static const bool dummy;
 	};
