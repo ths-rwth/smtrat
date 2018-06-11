@@ -630,7 +630,9 @@ namespace smtrat
 			struct UnorderedClauseLookup {
 				struct UnorderedClauseHasher {
 					std::size_t operator() (const std::vector<Minisat::Lit>& cl) const {
-						return std::accumulate(cl.begin(), cl.end(), 0, [](int a, Minisat::Lit b){ return a ^ b.x; });
+						return std::accumulate(cl.begin(), cl.end(), static_cast<std::size_t>(0),
+							[](std::size_t a, Minisat::Lit b){ return a ^ static_cast<std::size_t>(b.x); }
+						);
 					}
 				};
 				/// Stores all clauses as sets to quickly check for duplicates.
