@@ -46,27 +46,21 @@ ostream& operator<<(ostream& os, const Bound& b)  {
 }  
 
 std::ostream& operator<< (std::ostream& out, const std::vector<Bound>& v) {
-  if ( !v.empty() ) {
     out << '[';
-    std::copy (v.begin(), v.end(), std::ostream_iterator<Bound>(out, ", "));
+    for (const auto& b : v) {
+		out << b << ", ";
+	}
     out << "\b\b]";
-  }
-  else {
-	  out << "[]";
-  }
-  return out;
+  	return out;
 }
 
 std::ostream& operator<< (std::ostream& out, const std::multimap<Rational, Bound>& v) {
-  if ( !v.empty() ) {
     out << '[';
-    std::copy (v.begin(), v.end(), std::ostream_iterator<Bound>(out, ", "));
+    for (const auto& b : v) {
+		out << b.second << ", ";
+	}
     out << "\b\b]";
-  }
-  else {
-	  out << "[]";
-  }
-  return out;
+  	return out;
 }
 
 struct ConflictGenerator {
@@ -296,7 +290,16 @@ public:
 	}
 
 	boost::optional<FormulasT> generateExplanation() {
-		return initBounds().value_or(handleFM().value_or(handleInequalities()));
+		// TODO ugly, but I did not found anything to chain boost::optional...
+		auto res = initBounds();
+		if (res != boost::none) {
+			return res;
+		}
+		res = handleFM();
+		if (res != boost::none) {
+			return res;
+		}
+		return handleInequalities();
 	}
 };
 
