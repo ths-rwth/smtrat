@@ -29,10 +29,11 @@ public:
 	{}
 
 private:
+	bool minimizeConflictConstraints = true;
 	
 	boost::optional<FormulaT> generateExplanation() const {
 		// generate test candidates
-		std::vector<::vs::Substitution> testCandidates; // TODO size: at most 2*mConstraints.size()
+		std::vector<::vs::Substitution> testCandidates;
 		if (helper::generateTestCandidates(testCandidates, mTargetVar, mModel, mConstraints)) {
 			FormulasT res;
 			res.reserve(testCandidates.size());
@@ -49,8 +50,22 @@ private:
 						SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution failed");
 						return boost::none;
 					}
-					substitutionResults.push_back(std::move(result));
-					
+
+					// check if current constraint is part of the conflict
+					if (minimizeConflictConstraints) {
+						carl::ModelValue<Rational,Poly> eval = carl::model::evaluate(result, mModel);
+						if (eval.isBool() && !eval.asBool()) {
+							SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Use constraint " << constr << " for explanation");
+							substitutionResults.push_back(std::move(result));
+						}					
+						else {
+							SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Ignore constraint " << constr << " because it is not part of the conflict");
+						}
+					}
+					else {
+						substitutionResults.push_back(std::move(result));
+					}
+
 					if (substitutionResults.back() == FormulaT(carl::FormulaType::FALSE)) {
 						break; // since this is part of a conjunction, and we got false, we can ignore future substitutions
 					}
