@@ -54,7 +54,8 @@ private:
 					// check if current constraint is part of the conflict
 					if (minimizeConflictConstraints) {
 						carl::ModelValue<Rational,Poly> eval = carl::model::evaluate(result, mModel);
-						if (eval.isBool() && !eval.asBool()) {
+						// If evaluation result is not a bool, then the model probably contains a RAN or MVRoot. In this case, we just take the constraint in.
+						if (!eval.isBool() || !eval.asBool()) {
 							SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Use constraint " << constr << " for explanation");
 							substitutionResults.push_back(std::move(result));
 						}					
