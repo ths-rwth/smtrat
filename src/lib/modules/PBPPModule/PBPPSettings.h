@@ -22,6 +22,12 @@ namespace smtrat
 		static constexpr bool use_mixed_transformation = false;
 		static constexpr bool use_basic_transformation = false;
 
+		// For huge formulas it doesn't make sense to convert to bool but to stay with LIA.
+		// For example x1 + ... + x100 <= 55 would introduce a lot of new formulas.
+		static constexpr int max_newly_build_formulas = 30;
+		static constexpr int max_literals_in_new_formula = 50;
+		static constexpr bool formulate_large_formulas_as_lia = true;
+
 	};
 	
 	struct PBPPSettingsWithRNS
