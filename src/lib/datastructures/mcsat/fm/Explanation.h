@@ -50,7 +50,7 @@ inline std::ostream& operator<< (std::ostream& out, const std::vector<Bound>& v)
     for (const auto& b : v) {
 		out << b << ", ";
 	}
-    out << "\b\b]";
+    out << "]";
   	return out;
 }
 
@@ -59,10 +59,11 @@ inline std::ostream& operator<< (std::ostream& out, const std::multimap<Rational
     for (const auto& b : v) {
 		out << b.second << ", ";
 	}
-    out << "\b\b]";
+    out << "]";
   	return out;
 }
 
+template<class Comparator>
 struct ConflictGenerator {
 	/**
 	 * The input is a constraint c: p*x~q which can be used as a bound on x with p,q multivariate polynomials.
@@ -93,6 +94,8 @@ private:
 	std::multimap<Rational, Bound> mInequalities;
 	std::vector<Bound> mEqualities;
 	std::vector<std::pair<Bound, Bound>> mBoundPair;
+
+	Comparator comparator;
 
 
 public:
@@ -243,8 +246,16 @@ public:
 	}
 
 	boost::optional<FormulasT> handleFM() {
-		// TODO sort lower and upper bounds according to a heuristic
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Looking for conflicts between lower and upper bounds");
+
+		std::sort(mLower.begin(), mLower.end(), comparator);
+		if (comparator.symmetric) {
+			std::sort(mUpper.rbegin(), mUpper.rend(), comparator);
+		}
+		else {
+			std::sort(mUpper.begin(), mUpper.end(), comparator);
+		}
+
 		for (const Bound& lower : mLower) {
 			for (const Bound& upper : mUpper) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Combining " << lower << " and " << upper);
@@ -303,6 +314,40 @@ public:
 	}
 };
 
+/**
+ * This heuristic chooses the explanation excluding the largest interval. 
+ */
+struct MaxSizeComparator {
+	bool symmetric = true;
+
+	bool operator()(const Bound& b1, const Bound& b2) const {
+		return b1.r < b2.r;
+	}
+};
+
+/**
+ * This heuristic chooses the explanation excluding the smallest interval. 
+ */
+struct MinSizeComparator {
+	bool symmetric = true;
+
+	bool operator()(const Bound& b1, const Bound& b2) const {
+		return b1.r > b2.r;
+	}
+};
+
+/**
+ * This heuristic tries to minimize the number of variables occuring in the explanation.
+ * It is a 2-approximation to the lowest possible number of variables in an explanation.
+ */
+struct MinVarCountComparator {
+	bool symmetric = false;
+
+	bool operator()(const Bound& b1, const Bound& b2) const {
+		return b1.constr.variables().size() < b2.constr.variables().size();
+	}
+};
+
 struct Explanation {
 	boost::optional<FormulaT> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason, const FormulaT& implication) const {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "With " << reason << " explain " << implication);
@@ -316,7 +361,7 @@ struct Explanation {
 			assert(b.getType() == carl::FormulaType::CONSTRAINT);
 			bounds.emplace_back(b.constraint());
 		}
-		ConflictGenerator cg(bounds, data.model(), var);
+		ConflictGenerator<MaxSizeComparator> cg(bounds, data.model(), var);
 		auto res = cg.generateExplanation();
 		if (res) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Found conflict " << *res);
