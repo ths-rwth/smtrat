@@ -5,6 +5,7 @@
 #include "../../../datastructures/mcsat/explanations/SequentialExplanation.h"
 #include "../../../datastructures/mcsat/fm/Explanation.h"
 #include "../../../datastructures/mcsat/nlsat/Explanation.h"
+#include "../../../datastructures/mcsat/vs/Explanation.h"
 #include "../../../datastructures/mcsat/variableordering/VariableOrdering.h"
 
 namespace smtrat {

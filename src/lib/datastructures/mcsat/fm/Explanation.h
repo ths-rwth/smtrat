@@ -7,7 +7,7 @@ namespace smtrat {
 namespace mcsat {
 namespace fm {
 
-bool compare(Rational r1, Rational r2, carl::Relation rel) {
+inline bool compare(Rational r1, Rational r2, carl::Relation rel) {
 	switch (rel) {
 		case carl::Relation::LESS:
 			return r1 < r2;
@@ -40,12 +40,12 @@ struct Bound {
 	friend ostream& operator<<(ostream& os, const Bound& dt);  
 };
 
-ostream& operator<<(ostream& os, const Bound& b)  {  
+inline ostream& operator<<(ostream& os, const Bound& b)  {  
 	os << "(" << b.constr << ", " << b.p << ", " << b.q << ", " << b.r << ", " << b.neg << ")";  
 	return os;  
 }  
 
-std::ostream& operator<< (std::ostream& out, const std::vector<Bound>& v) {
+inline std::ostream& operator<< (std::ostream& out, const std::vector<Bound>& v) {
     out << '[';
     for (const auto& b : v) {
 		out << b << ", ";
@@ -54,7 +54,7 @@ std::ostream& operator<< (std::ostream& out, const std::vector<Bound>& v) {
   	return out;
 }
 
-std::ostream& operator<< (std::ostream& out, const std::multimap<Rational, Bound>& v) {
+inline std::ostream& operator<< (std::ostream& out, const std::multimap<Rational, Bound>& v) {
     out << '[';
     for (const auto& b : v) {
 		out << b.second << ", ";
