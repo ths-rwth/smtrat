@@ -23,10 +23,10 @@ namespace smtrat
 		public:
 			PBPreprocessing(): Manager() {
 				setStrategy({
-					addBackend<OPBConverterModule<OPBConverterSettings1>>(
+					//addBackend<OPBConverterModule<OPBConverterSettings1>>(
 						addBackend<GBPPModule<GBPPSettings1>>(
 						)
-					)
+					//)
 				});
 			}
 
