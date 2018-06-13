@@ -419,7 +419,7 @@ int main( int argc, char* argv[] )
 		SMTRAT_LOG_INFO("smtrat", "Parsing " << pathToInputFile << " using OPB");
 		auto input = opb.parse();
 		if (!input) {
-			SMTRAT_LOG_INFO("smtrat", "Parsing " << pathToInputFile << " failed.");
+			SMTRAT_LOG_ERROR("smtrat", "Parsing " << pathToInputFile << " failed.");
 			exitCode = SMTRAT_EXIT_UNKNOWN;
 		} else {
 			SMTRAT_LOG_INFO("smtrat", "Parsed " << input->first);
