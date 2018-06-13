@@ -5,7 +5,6 @@
 
 #include "../solver/Manager.h"
 #include "../modules/GBPPModule/GBPPModule.h"
-#include "../modules/OPBConverterModule/OPBConverterModule.h"
 
 namespace smtrat
 {
@@ -23,10 +22,8 @@ namespace smtrat
 		public:
 			PBPreprocessing(): Manager() {
 				setStrategy({
-					//addBackend<OPBConverterModule<OPBConverterSettings1>>(
 						addBackend<GBPPModule<GBPPSettings1>>(
 						)
-					//)
 				});
 			}
 
