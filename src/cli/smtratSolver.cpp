@@ -424,7 +424,9 @@ int main( int argc, char* argv[] )
 		} else {
 			SMTRAT_LOG_INFO("smtrat", "Parsed " << input->first);
 			SMTRAT_LOG_INFO("smtrat", "with objective " << input->second);
-			solver->addObjective(input->second, true);
+			if (!input->second.isConstant()) {
+				solver->addObjective(input->second, true);
+			}
 			solver->add(input->first);
 			switch (solver->check()) {
 				case smtrat::Answer::SAT: {
