@@ -139,7 +139,7 @@ public:
 	void getAllModels() {
 		if (this->lastAnswer == smtrat::Answer::SAT) {
 			for (const auto& m: this->solver->allModels()) {
-				regular() << carl::outputSMTLIB(m) << std::endl;
+				regular() << carl::asSMTLIB(m) << std::endl;
 			}
 		} else {
 			error() << "Can only be called after a call that returned sat.";
@@ -157,7 +157,7 @@ public:
 	}
 	void getModel() {
 		if (this->lastAnswer == smtrat::Answer::SAT) {
-			regular() << carl::outputSMTLIB(this->solver->model()) << std::endl;
+			regular() << carl::asSMTLIB(this->solver->model()) << std::endl;
 		} else {
 			error() << "Can only be called after a call that returned sat.";
 		}
