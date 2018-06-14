@@ -1908,7 +1908,6 @@ namespace smtrat
 				} else if (value(lemma[0]) == l_Undef) {
 					SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is singleton, add as assumption");
 					assumptions.push(lemma[0]);
-					uncheckedEnqueue(lemma[0], CRef_Undef);
 				} else {
 					SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is singleton, but was already propagated at DL0");
 				}
