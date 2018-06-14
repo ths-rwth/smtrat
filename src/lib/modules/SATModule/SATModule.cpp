@@ -3308,16 +3308,13 @@ namespace smtrat
 
             // Select next clause to look at:
             while( !seen[var( trail[index--] )] );
+            assert(index + 1 < trail.size());
             p              = trail[index + 1];
             confl          = reason( var( p ) );
-			//if (Settings::mc_sat && confl == CRef_Undef) {
-			//	SMTRAT_LOG_DEBUG("smtrat.sat", "Aborting conflict analysis");
-			//	break;
-			//}
-			SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking to " << p << " with reason " << confl);
+            SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking to " << p << " with reason " << confl);
             seen[var( p )] = 0;
             pathC--;
-			SMTRAT_LOG_DEBUG("smtrat.sat", "Still on highest DL, pathC = " << pathC);
+            SMTRAT_LOG_DEBUG("smtrat.sat", "Still on highest DL, pathC = " << pathC);
             ++resolutionSteps;
         }
         while( pathC > 0 );
