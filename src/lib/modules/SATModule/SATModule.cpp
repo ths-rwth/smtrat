@@ -1745,10 +1745,14 @@ namespace smtrat
             if( assigns[var(add_tmp[0])] == l_Undef )
             {
                 assert( assigns[var(add_tmp[0])] != l_False );
-                uncheckedEnqueue( add_tmp[0], cr );
-                if (propagateConsistently(false) != CRef_Undef) {
-                    ok = false;
-                }
+				if (add_tmp.size() == 1) {
+					assumptions.push(add_tmp[0]);
+				} else {
+	                uncheckedEnqueue( add_tmp[0], cr );
+	                if (propagateConsistently(false) != CRef_Undef) {
+	                    ok = false;
+	                }
+				}
                 return ok;
             }
             else
