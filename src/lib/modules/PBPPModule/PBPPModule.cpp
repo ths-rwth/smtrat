@@ -21,6 +21,10 @@ namespace smtrat
 #endif
 			{
 				checkFormulaAndApplyTransformationsCallback = std::bind(&PBPPModule<Settings>::checkFormulaAndApplyTransformations, this, std::placeholders::_1);
+
+				mCardinalityEncoder.use_lia = Settings::USE_LIA_MIXED;
+				mCardinalityEncoder.problem_size = _formula->size();
+				mCardinalityEncoder.max_new_relative_formula_size = Settings::MAX_NEW_RELATIVE_FORMULA_SIZE;
 			}
 
 	template<class Settings>

@@ -22,11 +22,10 @@ namespace smtrat
 		static constexpr bool use_mixed_transformation = false;
 		static constexpr bool use_basic_transformation = false;
 
-		// For huge formulas it doesn't make sense to convert to bool but to stay with LIA.
-		// For example x1 + ... + x100 <= 55 would introduce a lot of new formulas.
-		static constexpr int max_newly_build_formulas = 30;
-		static constexpr int max_literals_in_new_formula = 50;
-		static constexpr bool formulate_large_formulas_as_lia = true;
+		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
+		// new formulas.
+		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
+		static constexpr bool USE_LIA_MIXED = true;
 
 	};
 	
@@ -41,6 +40,10 @@ namespace smtrat
 		static constexpr bool use_card_transformation = false;
 		static constexpr bool use_mixed_transformation = false;
 		static constexpr bool use_basic_transformation = false;
+		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
+		// new formulas.
+		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
+		static constexpr bool USE_LIA_MIXED = true;
 	};
 
 	struct PBPPSettingsWithCardConstr
@@ -54,6 +57,10 @@ namespace smtrat
 		static constexpr bool use_card_transformation = true;
 		static constexpr bool use_mixed_transformation = false;
 		static constexpr bool use_basic_transformation = false;
+		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
+		// new formulas.
+		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
+		static constexpr bool USE_LIA_MIXED = true;
 	};
 
 	struct PBPPSettingsWithMixedConstr
@@ -67,6 +74,10 @@ namespace smtrat
 		static constexpr bool use_card_transformation = false;
 		static constexpr bool use_mixed_transformation = true;
 		static constexpr bool use_basic_transformation = false;
+		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
+		// new formulas.
+		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
+		static constexpr bool USE_LIA_MIXED = true;
 	};
 
 	struct PBPPSettingsBasic
@@ -80,6 +91,10 @@ namespace smtrat
 		static constexpr bool use_card_transformation = false;
 		static constexpr bool use_mixed_transformation = false;
 		static constexpr bool use_basic_transformation = true;
+		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
+		// new formulas.
+		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
+		static constexpr bool USE_LIA_MIXED = true;
 	};
 
 

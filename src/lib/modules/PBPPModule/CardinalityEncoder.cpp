@@ -70,10 +70,12 @@ namespace smtrat {
 		}
 
 		assert(false && "All cases should have been handled - a return statement is missing");
-
+		return {};
 	}
 
-	FormulaT CardinalityEncoder::encodeExactly(const ConstraintT& constraint) {
+	boost::optional<FormulaT> CardinalityEncoder::encodeExactly(const ConstraintT& constraint) {
+		if (!encodeAsBooleanFormula(constraint)) return boost::none;
+
 		return encodeExactly(constraint.variables(), -constraint.constantPart());
 	}
 
@@ -115,7 +117,9 @@ namespace smtrat {
 		return resultFormula;
 	}
 
-	FormulaT CardinalityEncoder::encodeAtLeast(const ConstraintT& constraint) {
+	boost::optional<FormulaT> CardinalityEncoder::encodeAtLeast(const ConstraintT& constraint) {
+		if (!encodeAsBooleanFormula(constraint)) return boost::none;
+
 		FormulasT allOrSet;
 		for (const auto& variable: constraint.variables()) {
 			allOrSet.push_back(FormulaT(variable));
@@ -133,7 +137,9 @@ namespace smtrat {
 				FormulaT(carl::FormulaType::OR, allOrSet));
 	}
 
-	FormulaT CardinalityEncoder::encodeAtMost(const ConstraintT& constraint) {
+	boost::optional<FormulaT> CardinalityEncoder::encodeAtMost(const ConstraintT& constraint) {
+		if (!encodeAsBooleanFormula(constraint)) return boost::none;
+
 		FormulasT result;
 
 		Rational constant = -constraint.constantPart();
@@ -142,6 +148,33 @@ namespace smtrat {
 		}
 
 		return FormulaT(carl::FormulaType::OR, result);
+	}
+
+	Rational factorial(Rational n);
+	Rational factorial(std::size_t);
+
+	bool CardinalityEncoder::encodeAsBooleanFormula(const ConstraintT& constraint) {
+		if (!use_lia) return true;
+
+		std::size_t nVars = constraint.variables().size();
+		Rational constantPart = carl::abs(constraint.constantPart());
+
+		Rational binom = factorial(nVars)/(factorial(constantPart) * factorial(nVars - constantPart));
+
+		return binom <= max_new_relative_formula_size * problem_size;
+	}
+
+	Rational factorial(std::size_t n) {
+		return factorial(Rational(n));
+	}
+
+	Rational factorial(Rational n) {
+		Rational res = 1;
+		for (Rational i = 1; i < n; i++) {
+			res = res * i;
+		}
+
+		return res;
 	}
 }
 
