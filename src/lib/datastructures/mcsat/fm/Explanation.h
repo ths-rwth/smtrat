@@ -7,7 +7,7 @@ namespace smtrat {
 namespace mcsat {
 namespace fm {
 
-inline bool compare(Rational r1, Rational r2, carl::Relation rel) {
+inline bool compare(const Rational& r1, const Rational& r2, const carl::Relation& rel) {
 	switch (rel) {
 		case carl::Relation::LESS:
 			return r1 < r2;
@@ -27,6 +27,9 @@ inline bool compare(Rational r1, Rational r2, carl::Relation rel) {
 		case carl::Relation::NEQ:
 			return r1 != r2;
 			break;
+		default:
+			assert(false);
+			return false;
 	}
 }
 
@@ -66,12 +69,18 @@ inline std::ostream& operator<< (std::ostream& out, const std::multimap<Rational
 template<class Comparator>
 struct ConflictGenerator {
 	/**
+	 * Preprocessing of constraints:
+	 * 
 	 * The input is a constraint c: p*x~q which can be used as a bound on x with p,q multivariate polynomials.
 	 * If x only occurs linearly in c, this decomposition is possible.
-	 * We evaluate c over the partial model and obtain x~r, where r is a rational.
+	 * If p is zero, then c is conflicting iff !(0~q). If this is the case, we can return !c && p=0 -> 0~q as explanation.
+	 * Otherwise, we evaluate c over the partial model and obtain x~r, where r is a rational.
 	 * To properly perform the elimination step detailed below, we additionally store whether p is negative over the current assignment as a Boolean.
 	 *
 	 * We store (c,p,q,r,n) for each bound.
+	 * 
+	 * 
+	 * FM elimination:
 	 *
 	 * Given a lower bound l and an upper bound u, the elimination is as follows:
 	 *   Conflict if l.r >= u.r (or strict, if both relations from c are weak)
@@ -79,9 +88,22 @@ struct ConflictGenerator {
 	 *
 	 * If exactly one of u.p and l.p was found to be negative, the relation has to be inverted.
 	 * If u.p or l.p are not constants, we additionally have to add a literal stating that their sign does not change.
+	 * 
+	 * For all bounds involved, we add b.p < 0 resp. b.p > 0 as side condition to the explanation.
+	 * 
+	 * 
+	 * Handling of "not equal":
+	 * 
+	 * For linear arithmetic, a bound i belonging to a constraint with relation != can be in conflict with
+	 * * a bound e for a constraint with = iff i.r == e.r, then we return i.c && e.c -> i.q * e.p != e.q * i.p
+	 * * two bounds l, u with > resp. < as relation and i.r == l.r == u.r, then we return i.c && l.c && u.c && (l.q * u.p = u.q * l.p) -> l.q * i.p != i.q * l.p
+	 * 
+	 * For all bounds b involved, we add b.p != 0 as side condition to the explanation. 
 	 */
 
-	//using Bound = std::tuple<ConstraintT,Poly,Poly,Rational,bool>;
+	using Callback = std::function<bool(FormulasT&&)>;
+
+	#define yield(callback, result) if (callback(std::move(result))) { return; }
 
 	
 private:
@@ -89,18 +111,12 @@ private:
 	const Model& mModel;
 	carl::Variable mVariable;
 
-	std::vector<Bound> mLower;
-	std::vector<Bound> mUpper;
-	std::multimap<Rational, Bound> mInequalities;
-	std::vector<Bound> mEqualities;
-	std::vector<std::pair<Bound, Bound>> mBoundPair;
-
 	Comparator comparator;
-
 
 public:
 	ConflictGenerator(const std::vector<ConstraintT>& bounds, const Model& m, carl::Variable v) : mBounds(bounds), mModel(m), mVariable(v) {}
 
+private: 
 	ConstraintT sideCondition(const Bound& b) {
 		ConstraintT res = ConstraintT(b.p, carl::Relation::NEQ);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Side condition on " << b.p << ": " << res);
@@ -130,7 +146,7 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "-> " << res.back());
 		res.emplace_back(sideConditionLo(lower).negation());
 		res.emplace_back(sideConditionUp(upper).negation());
-		return res;
+		return std::move(res);
 	}
 
 	FormulasT conflictEqualityAndInequality(const Bound& eq, const Bound& ineq) {
@@ -142,7 +158,7 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explanation: " << expl[0].negated() << " && " << expl[1].negated() << " -> " << expl[2]);
 		expl.emplace_back(sideCondition(eq).negation());
 		expl.emplace_back(sideCondition(ineq).negation());
-		return expl;
+		return std::move(expl);
 	}
 
 	FormulasT conflictInequalitiesAndInequality(const Bound& lower, const Bound& upper, const Bound& ineq) {
@@ -157,10 +173,19 @@ public:
 		expl.emplace_back(sideCondition(ineq).negation());
 		expl.emplace_back(sideConditionLo(lower).negation());
 		expl.emplace_back(sideConditionUp(upper).negation());
-		return expl;
+		return std::move(expl);
 	}
 
-	boost::optional<FormulasT> initBounds() {
+public:
+
+	void generateExplanation(Callback callback) {
+		std::vector<Bound> mLower;
+		std::vector<Bound> mUpper;
+		std::multimap<Rational, Bound> mInequalities;
+		std::vector<Bound> mEqualities;
+		std::vector<std::pair<Bound, Bound>> mBoundPair;
+		
+		// initialize bounds
 		for (const auto& b: mBounds) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Processing bound " << b);
 			if (b.varInfo(mVariable).maxDegree() > 1) {
@@ -198,7 +223,7 @@ public:
 					expl.emplace_back(ConstraintT(p, carl::Relation::EQ).negation());
 					expl.emplace_back(ConstraintT(-q, b.relation()));
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explanation: " << expl[0].negated() << " && " << expl[1].negated() << " -> " << expl[2]);
-					return expl;
+					yield(callback, expl);
 				}
 
 				continue;
@@ -241,11 +266,8 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Lower: " << mLower);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Upper: " << mUpper);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Inequ: " << mInequalities);
-
-		return boost::none;
-	}
-
-	boost::optional<FormulasT> handleFM() {
+	
+		// look for FM constraints
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Looking for conflicts between lower and upper bounds");
 
 		std::sort(mLower.begin(), mLower.end(), comparator);
@@ -272,20 +294,18 @@ public:
 					continue;
 				}
 
-				return conflictLowerAndUpperBound(lower, upper, strict);
+				yield(callback, conflictLowerAndUpperBound(lower, upper, strict));
 			}
 		}
-		return boost::none;
-	}
 
-	boost::optional<FormulasT> handleInequalities() { 
+		// handle inequalities
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Looking for conflicts with inequalities");
 
 		for (const auto& eq : mEqualities) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Considering equality " << eq.constr);
 			auto it = mInequalities.find(eq.r);
 			if (it != mInequalities.end()) {
-				return conflictEqualityAndInequality(eq, it->second);
+				yield(callback, conflictEqualityAndInequality(eq, it->second));
 			}
 		}
 
@@ -293,24 +313,20 @@ public:
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Considering lower bound " << bounds.first << " and upper bound " << bounds.second);
 			auto it = mInequalities.find(bounds.first.r);
 			if (it != mInequalities.end()) {
-				return conflictInequalitiesAndInequality(bounds.first, bounds.second, it->second);
+				yield(callback, conflictInequalitiesAndInequality(bounds.first, bounds.second, it->second));
 			}
 		}
-
-		return boost::none;
 	}
+};
 
-	boost::optional<FormulasT> generateExplanation() {
-		// TODO ugly, but I did not found anything to chain boost::optional...
-		auto res = initBounds();
-		if (res != boost::none) {
-			return res;
-		}
-		res = handleFM();
-		if (res != boost::none) {
-			return res;
-		}
-		return handleInequalities();
+/**
+ * Does not order anything.
+ */
+struct DefaultComparator {
+	bool symmetric = false;
+
+	bool operator()(const Bound& b1, const Bound& b2) const {
+		return false;
 	}
 };
 
@@ -351,7 +367,7 @@ struct MinVarCountComparator {
 struct Explanation {
 	boost::optional<FormulaT> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason, const FormulaT& implication) const {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "With " << reason << " explain " << implication);
-		
+
 		std::vector<ConstraintT> bounds;
 		for (const auto& b: reason) {
 			if (b.getType() != carl::FormulaType::CONSTRAINT) {
@@ -361,8 +377,13 @@ struct Explanation {
 			assert(b.getType() == carl::FormulaType::CONSTRAINT);
 			bounds.emplace_back(b.constraint());
 		}
-		ConflictGenerator<MaxSizeComparator> cg(bounds, data.model(), var);
-		auto res = cg.generateExplanation();
+
+		boost::optional<FormulasT> res = boost::none;
+		ConflictGenerator<MaxSizeComparator>(bounds, data.model(), var).generateExplanation([&](FormulasT expl) -> bool {
+			res = expl;
+			return true; // stop searching for conflicts after first conflict has been found
+		});
+
 		if (res) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Found conflict " << *res);
 			return FormulaT(carl::FormulaType::OR, std::move(*res));
