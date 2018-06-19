@@ -103,7 +103,7 @@ namespace smtrat
 
 		static constexpr bool check_for_duplicate_clauses = false;
 		
-		using MCSATSettings = mcsat::MCSATSettings1;
+		using MCSATSettings = mcsat::MCSATSettingsFMVSNL;
     };
 
     struct SATSettings3 : SATSettings1
@@ -116,8 +116,19 @@ namespace smtrat
 		static const bool stop_search_after_first_unknown = true;
 	};
     
-    struct SATSettingsMCSAT : SATSettings1
-    {
+    struct SATSettingsMCSAT : SATSettings1 {
         static const bool mc_sat = true;
+    };
+	struct SATSettingsMCSATNL : SATSettingsMCSAT {
+		using MCSATSettings = mcsat::MCSATSettingsNL;
+    };
+	struct SATSettingsMCSATFMNL : SATSettingsMCSAT {
+		using MCSATSettings = mcsat::MCSATSettingsFMNL;
+    };
+	struct SATSettingsMCSATVSNL : SATSettingsMCSAT {
+		using MCSATSettings = mcsat::MCSATSettingsVSNL;
+    };
+	struct SATSettingsMCSATFMVSNL : SATSettingsMCSAT {
+		using MCSATSettings = mcsat::MCSATSettingsFMVSNL;
     };
 }

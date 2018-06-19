@@ -139,7 +139,7 @@ public:
 	void getAllModels() {
 		if (this->lastAnswer == smtrat::Answer::SAT) {
 			for (const auto& m: this->solver->allModels()) {
-				regular() << carl::outputSMTLIB(m) << std::endl;
+				regular() << carl::asSMTLIB(m) << std::endl;
 			}
 		} else {
 			error() << "Can only be called after a call that returned sat.";
@@ -157,7 +157,7 @@ public:
 	}
 	void getModel() {
 		if (this->lastAnswer == smtrat::Answer::SAT) {
-			regular() << carl::outputSMTLIB(this->solver->model()) << std::endl;
+			regular() << carl::asSMTLIB(this->solver->model()) << std::endl;
 		} else {
 			error() << "Can only be called after a call that returned sat.";
 		}
@@ -419,12 +419,14 @@ int main( int argc, char* argv[] )
 		SMTRAT_LOG_INFO("smtrat", "Parsing " << pathToInputFile << " using OPB");
 		auto input = opb.parse();
 		if (!input) {
-			SMTRAT_LOG_INFO("smtrat", "Parsing " << pathToInputFile << " failed.");
+			SMTRAT_LOG_ERROR("smtrat", "Parsing " << pathToInputFile << " failed.");
 			exitCode = SMTRAT_EXIT_UNKNOWN;
 		} else {
 			SMTRAT_LOG_INFO("smtrat", "Parsed " << input->first);
 			SMTRAT_LOG_INFO("smtrat", "with objective " << input->second);
-			solver->addObjective(input->second, true);
+			if (!input->second.isConstant()) {
+				solver->addObjective(input->second, true);
+			}
 			solver->add(input->first);
 			switch (solver->check()) {
 				case smtrat::Answer::SAT: {
