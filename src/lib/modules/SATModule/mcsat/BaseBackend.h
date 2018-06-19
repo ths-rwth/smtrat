@@ -15,11 +15,6 @@ class MCSATBackend {
 	typename Settings::ExplanationBackend mExplanation;
 
 public:
-	template<typename Settings2>
-	friend std::ostream& operator<<(std::ostream& os, const MCSATBackend<Settings2>& backend) {
-		return operator<<(os, backend.mBookkeeping);
-	}
-
 	void pushConstraint(const FormulaT& f) {
 		mBookkeeping.pushConstraint(f);
 	}
@@ -81,6 +76,12 @@ public:
 		}
 	}
 };
+
+
+template<typename Settings>
+std::ostream& operator<<(std::ostream& os, const MCSATBackend<Settings>& backend) {
+	return os << backend.getTrail();
+}
 
 } // namespace mcsat
 } // namespace smtrat

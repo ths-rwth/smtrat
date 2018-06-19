@@ -22,6 +22,11 @@ namespace smtrat
 		static constexpr bool use_mixed_transformation = false;
 		static constexpr bool use_basic_transformation = false;
 
+		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
+		// new formulas.
+		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
+		static constexpr bool USE_LIA_MIXED = true;
+
 	};
 	
 	struct PBPPSettingsWithRNS
@@ -35,6 +40,10 @@ namespace smtrat
 		static constexpr bool use_card_transformation = false;
 		static constexpr bool use_mixed_transformation = false;
 		static constexpr bool use_basic_transformation = false;
+		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
+		// new formulas.
+		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
+		static constexpr bool USE_LIA_MIXED = true;
 	};
 
 	struct PBPPSettingsWithCardConstr
@@ -48,6 +57,10 @@ namespace smtrat
 		static constexpr bool use_card_transformation = true;
 		static constexpr bool use_mixed_transformation = false;
 		static constexpr bool use_basic_transformation = false;
+		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
+		// new formulas.
+		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
+		static constexpr bool USE_LIA_MIXED = true;
 	};
 
 	struct PBPPSettingsWithMixedConstr
@@ -61,6 +74,10 @@ namespace smtrat
 		static constexpr bool use_card_transformation = false;
 		static constexpr bool use_mixed_transformation = true;
 		static constexpr bool use_basic_transformation = false;
+		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
+		// new formulas.
+		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
+		static constexpr bool USE_LIA_MIXED = true;
 	};
 
 	struct PBPPSettingsBasic
@@ -74,6 +91,10 @@ namespace smtrat
 		static constexpr bool use_card_transformation = false;
 		static constexpr bool use_mixed_transformation = false;
 		static constexpr bool use_basic_transformation = true;
+		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
+		// new formulas.
+		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
+		static constexpr bool USE_LIA_MIXED = true;
 	};
 
 

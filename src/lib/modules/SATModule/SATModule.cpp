@@ -1745,10 +1745,14 @@ namespace smtrat
             if( assigns[var(add_tmp[0])] == l_Undef )
             {
                 assert( assigns[var(add_tmp[0])] != l_False );
-                uncheckedEnqueue( add_tmp[0], cr );
-                if (propagateConsistently(false) != CRef_Undef) {
-                    ok = false;
-                }
+				if (add_tmp.size() == 1) {
+					assumptions.push(add_tmp[0]);
+				} else {
+	                uncheckedEnqueue( add_tmp[0], cr );
+	                if (propagateConsistently(false) != CRef_Undef) {
+	                    ok = false;
+	                }
+				}
                 return ok;
             }
             else
@@ -1908,7 +1912,6 @@ namespace smtrat
 				} else if (value(lemma[0]) == l_Undef) {
 					SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is singleton, add as assumption");
 					assumptions.push(lemma[0]);
-					uncheckedEnqueue(lemma[0], CRef_Undef);
 				} else {
 					SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is singleton, but was already propagated at DL0");
 				}
@@ -3309,16 +3312,13 @@ namespace smtrat
 
             // Select next clause to look at:
             while( !seen[var( trail[index--] )] );
+            assert(index + 1 < trail.size());
             p              = trail[index + 1];
             confl          = reason( var( p ) );
-			//if (Settings::mc_sat && confl == CRef_Undef) {
-			//	SMTRAT_LOG_DEBUG("smtrat.sat", "Aborting conflict analysis");
-			//	break;
-			//}
-			SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking to " << p << " with reason " << confl);
+            SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking to " << p << " with reason " << confl);
             seen[var( p )] = 0;
             pathC--;
-			SMTRAT_LOG_DEBUG("smtrat.sat", "Still on highest DL, pathC = " << pathC);
+            SMTRAT_LOG_DEBUG("smtrat.sat", "Still on highest DL, pathC = " << pathC);
             ++resolutionSteps;
         }
         while( pathC > 0 );

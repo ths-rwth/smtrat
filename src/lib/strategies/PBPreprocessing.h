@@ -22,8 +22,8 @@ namespace smtrat
 		public:
 			PBPreprocessing(): Manager() {
 				setStrategy({
-					addBackend<GBPPModule<GBPPSettings1>>(
-					),
+						addBackend<GBPPModule<GBPPSettings1>>(
+						)
 				});
 			}
 

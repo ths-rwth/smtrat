@@ -259,7 +259,7 @@ namespace smtrat
 			 * formulas the assignment could contain other variables or freshly introduced
 			 * variables.
 			 */
-			const std::vector<Model> allModels() const
+			const std::vector<Model>& allModels() const
 			{
 				mpPrimaryBackend->updateAllModels();
 				return mpPrimaryBackend->allModels();
