@@ -1706,7 +1706,6 @@ namespace smtrat
             #endif
             return true;
         }
-	assert(false);
         return false;
     }
 
