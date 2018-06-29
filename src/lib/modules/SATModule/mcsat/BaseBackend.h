@@ -40,8 +40,10 @@ public:
 	
 	template<typename Constraints>
 	void resetVariableOrdering(const Constraints& c) {
-		mVariableOrdering = calculateVariableOrder<Settings::variable_ordering>(c);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variable ordering " << variableOrder());
+		if (mVariableOrdering.empty()) {
+			mVariableOrdering = calculateVariableOrder<Settings::variable_ordering>(c);
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variable ordering " << variableOrder());
+		}
 	}
 	
 	const auto& variableOrder() const {
