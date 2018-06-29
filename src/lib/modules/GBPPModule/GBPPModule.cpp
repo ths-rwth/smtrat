@@ -99,7 +99,8 @@ namespace smtrat
 	template<typename Settings>
 	FormulaT GBPPModule<Settings>::simplifyInequality(const FormulaT& formula) const {
 		if (formula.getType() != carl::FormulaType::CONSTRAINT) return formula;
-		assert(mEqualities.find(formula) == mEqualities.end());
+		// This case should be catched by ESModule...
+		if (mEqualities.find(formula) != mEqualities.end()) return formula;
 		const auto& c = formula.constraint();
 		
 		typename Settings::Reductor reductor(mBasis.getIdeal(), gpoly(c.lhs()));
