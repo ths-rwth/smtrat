@@ -168,7 +168,7 @@ void MCSATMixin<Settings>::printClause(std::ostream& os, Minisat::CRef clause) c
 
 template<typename Settings>
 std::ostream& operator<<(std::ostream& os, const MCSATMixin<Settings>& mcm) {
-	os << "Theory Stack:" << std::endl;
+	os << "Theory Stack: " << mcm.level() << std::endl;
 	for (std::size_t lvl = 0; lvl < mcm.mTheoryStack.size(); lvl++) {
 		const auto& level = mcm.get(lvl);
 		os << lvl << " / " << level.variable << " (" << level.decisionLiteral << ")";
