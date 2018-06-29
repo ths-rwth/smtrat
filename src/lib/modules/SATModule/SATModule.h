@@ -647,6 +647,9 @@ namespace smtrat
 				void insert(const std::vector<Minisat::Lit>& cl) {
 					mData.insert(cl);
 				}
+				void clear() {
+					mData.clear();
+				}
 			};
 			UnorderedClauseLookup mUnorderedClauseLookup;
 

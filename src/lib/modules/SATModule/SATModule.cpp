@@ -266,6 +266,7 @@ namespace smtrat
             removeClause( learnts[i] );
         }
         learnts.clear();
+        mUnorderedClauseLookup.clear();
         ok = true;
         if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
         {
@@ -380,7 +381,12 @@ namespace smtrat
         processLemmas();
 		
 		if (Settings::mc_sat) {
+			#ifdef DEBUG_SATMODULE
+			cout << "### Processing clause" << endl;
+			print(cout, "###");
+			#endif
 			mMCSAT.resetVariableOrdering(mBooleanConstraintMap);
+			assert(mMCSAT.level() <= 1);
 			pickTheoryBranchLit();
 		}
         ++solves;
