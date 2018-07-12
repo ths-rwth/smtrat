@@ -96,7 +96,7 @@ struct ConflictGenerator {
 	 * 
 	 * For linear arithmetic, a bound i belonging to a constraint with relation != can be in conflict with
 	 * * a bound e for a constraint with = iff i.r == e.r, then we return i.c && e.c -> i.q * e.p != e.q * i.p
-	 * * two bounds l, u with > resp. < as relation and i.r == l.r == u.r, then we return i.c && l.c && u.c && (l.q * u.p = u.q * l.p) -> l.q * i.p != i.q * l.p
+	 * * two bounds l, u with >= resp. <= as relation and i.r == l.r == u.r, then we return i.c && l.c && u.c && (l.q * u.p = u.q * l.p) -> l.q * i.p != i.q * l.p
 	 * 
 	 * For all bounds b involved, we add b.p != 0 as side condition to the explanation. 
 	 */
@@ -172,7 +172,7 @@ private:
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explanation: " << expl[0].negated() << " && " << expl[1].negated() << " && " << expl[2].negated() << " && " << expl[3].negated() << " -> " << expl[4]);
 		expl.emplace_back(sideCondition(ineq).negation());
 		expl.emplace_back(sideConditionLo(lower).negation());
-		expl.emplace_back(sideConditionUp(upper).negation());
+		expl.emplace_back(sideConditionUp(upper).negation()); // TODO move to struct member
 		return std::move(expl);
 	}
 
@@ -222,6 +222,8 @@ public:
 					expl.emplace_back(b.negation());
 					expl.emplace_back(ConstraintT(p, carl::Relation::EQ).negation());
 					expl.emplace_back(ConstraintT(-q, b.relation()));
+					// expl.emplace_back(ConstraintT(-q, carl::Relation::LEQ));
+
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explanation: " << expl[0].negated() << " && " << expl[1].negated() << " -> " << expl[2]);
 					yield(callback, expl);
 				}
@@ -233,7 +235,7 @@ public:
 			Rational r = evalq.asRational() / evalp.asRational();
 			
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Considering bound " << b << " for " << mVariable);
-			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Decomposed into " << p << " * " << mVariable << " + " << q << ", " << mVariable << " ~ " << r);
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Decomposed into " << p << " * " << mVariable << " ~ " << q << ", " << mVariable << " ~ " << r);
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Coefficient is " << evalp.asRational());
 			
 			switch (b.relation()) {
@@ -379,7 +381,7 @@ struct Explanation {
 		}
 
 		boost::optional<FormulasT> res = boost::none;
-		ConflictGenerator<MaxSizeComparator>(bounds, data.model(), var).generateExplanation([&](FormulasT expl) -> bool {
+		ConflictGenerator<DefaultComparator>(bounds, data.model(), var).generateExplanation([&](FormulasT expl) -> bool {
 			res = expl;
 			return true; // stop searching for conflicts after first conflict has been found
 		});
