@@ -204,9 +204,10 @@ public:
 	}
 };
 
-bool parseInput(const std::string& pathToInputFile, Executor* e, bool queueInstructions) {
+bool parseInput(const std::string& pathToInputFile, Executor* e, bool& queueInstructions) {
 	if (pathToInputFile == "-") {
-		SMTRAT_LOG_DEBUG("smtrat", "Using stdin");
+		queueInstructions = false;
+		SMTRAT_LOG_DEBUG("smtrat", "Starting to parse from stdin");
 		return smtrat::parseSMT2File(e, queueInstructions, std::cin);
 	}
 
@@ -215,6 +216,7 @@ bool parseInput(const std::string& pathToInputFile, Executor* e, bool queueInstr
 		std::cerr << "Could not open file: " << pathToInputFile << std::endl;
 		exit(SMTRAT_EXIT_NOSUCHFILE);
 	}
+	SMTRAT_LOG_DEBUG("smtrat", "Starting to parse " << pathToInputFile);
 	return smtrat::parseSMT2File(e, queueInstructions, infile);
 }
 
@@ -236,16 +238,14 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 	setrlimit(RLIMIT_STACK, &rl);
 #endif
 
-	constexpr bool queueInstructions = false;
 	Executor* e = new Executor(solver);
 	if (settingsManager.exportDIMACS()) e->exportDIMACS = true;
-	{
-		SMTRAT_LOG_DEBUG("smtrat", "Starting to parse " << pathToInputFile);
-		if (!parseInput(pathToInputFile, e, queueInstructions)) {
-            std::cerr << "Parse error" << std::endl;
-            delete e;
-            exit(SMTRAT_EXIT_PARSERFAILURE);
-        }
+	
+	bool queueInstructions = true;
+	if (!parseInput(pathToInputFile, e, queueInstructions)) {
+		std::cerr << "Parse error" << std::endl;
+		delete e;
+		exit(SMTRAT_EXIT_PARSERFAILURE);
 	}
 	if (queueInstructions) {
 		if (e->hasInstructions()) {
