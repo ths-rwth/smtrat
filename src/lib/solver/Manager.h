@@ -70,6 +70,8 @@ namespace smtrat
             ///
             std::stack<carl::Variable> mReusableRealObjectiveVars;
             std::stack<carl::Variable> mReusableIntObjectiveVars;
+			/// Number of calls to pop(), allows detection that pop() happened by modules.
+			std::size_t mNumberOfPops = 0;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all statistics for the solver this manager belongs to.
             GeneralStatistics* mpStatistics;
@@ -573,6 +575,10 @@ namespace smtrat
 			inline const std::set<FormulaT>& getInformationRelevantFormulas()
 			{
 				return mInformationRelevantFormula;
+			}
+			
+			std::size_t getNumberOfPops() const {
+				return mNumberOfPops;
 			}
     };
 }    // namespace smtrat

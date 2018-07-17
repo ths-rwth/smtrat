@@ -299,6 +299,7 @@ namespace smtrat
             mObjectives.pop_back();
         }
         mBacktrackPoints.pop_back();
+        ++mNumberOfPops;
         return true;
     }
 
