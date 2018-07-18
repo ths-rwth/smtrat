@@ -149,6 +149,10 @@ namespace parser {
 			if (resolveSymbol(name, constants, r)) return true;
 			return false;
 		}
+		bool resolveSymbol(const std::string& name, types::VariableType& r) const {
+			if (resolveSymbol(name, variables, r)) return true;
+			return false;
+		}
 
 		void registerFunction(const std::string& name, const FunctionInstantiator* fi) {
 			if (!isSymbolFree(name)) {

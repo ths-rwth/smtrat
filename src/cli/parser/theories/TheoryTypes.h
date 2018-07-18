@@ -176,5 +176,25 @@ namespace types {
 	typedef carl::mpl_variant_of<AttributeTypes>::type AttributeValue;
 	
 }
+
+enum QuantifierType { EXISTS, FORALL };
+inline std::ostream& operator<<(std::ostream& os, QuantifierType qt) {
+	switch (qt) {
+		case QuantifierType::EXISTS: os << "exists"; break;
+		case QuantifierType::FORALL: os << "forall"; break;
+	}
+	return os;
+}
+
+using QEQuery = std::vector<std::pair<QuantifierType,std::vector<types::VariableType>>>;
+inline std::ostream& operator<<(std::ostream& os, const QEQuery& q) {
+	for (const auto& qlvl: q) {
+		os << "(" << qlvl.first;
+		for (const auto& v: qlvl.second) os << " " << v;
+		os << ")";
+	}
+	return os;
+}
+
 }
 }

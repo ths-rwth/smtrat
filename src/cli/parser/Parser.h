@@ -100,6 +100,10 @@ public:
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(echo \"" << s << "\")");
 		callHandler(&InstructionHandler::echo, s);
 	}
+	void eliminateQuantifiers(const QEQuery& q) {
+		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(eliminate-quantifiers \"" << q << "\")");
+		callHandler(&InstructionHandler::eliminateQuantifiers, q);
+	}
 	void exit() {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(exit)");
 		this->mInputStream->setstate(std::ios::eofbit);

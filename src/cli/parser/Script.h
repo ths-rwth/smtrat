@@ -41,6 +41,27 @@ struct ErrorHandler {
 	}
 };
 
+struct QuantifierParser: public qi::symbols<char, QuantifierType> {
+	QuantifierParser() {
+		add("exists", QuantifierType::EXISTS);
+		add("forall", QuantifierType::FORALL);
+	}
+};
+
+struct QEParser: public qi::grammar<Iterator, QEQuery(), Skipper> {
+	QEParser(Theories* theories): QEParser::base_type(main, "qe-query"), theories(theories) {
+		var = qualifiedidentifier[qi::_val = px::bind(&Theories::resolveVariable, px::ref(*theories), qi::_1)];
+		main = +("(" > quantifier > +var > ")");
+	}
+	
+	Theories* theories;
+	QualifiedIdentifierParser qualifiedidentifier;
+	QuantifierParser quantifier;
+	
+	qi::rule<Iterator, types::VariableType(), Skipper> var;
+	qi::rule<Iterator, QEQuery(), Skipper> main;
+};
+
 template<typename Callee>
 struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 	ScriptParser(InstructionHandler* h, Theories& theories, Callee& callee):
@@ -49,6 +70,7 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 		callee(callee),
 		state(h),
 		theories(theories),
+		qeQuery(&theories),
 		term(&theories)
 	{
 		functionDefinitionArg = sortedvariable[qi::_val = px::bind(&Theories::declareFunctionArgument, px::ref(theories), qi::_1)];
@@ -67,6 +89,7 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 			|	(qi::lit("define-fun") > functionDefinition)
 			//|	(qi::lit("define-sort") > symbol > "(" > (*symbol)[px::bind(&SortParser::setParameters, px::ref(sort), qi::_1)] > ")" > sort > ")")[px::bind(&ScriptParser::defineSort, px::ref(callee), qi::_1, qi::_2, qi::_3)]
 			|	(qi::lit("echo") > string > ")")[px::bind(&Callee::echo, px::ref(callee), qi::_1)]
+			|	(qi::lit("eliminate-quantifiers") > qeQuery > ")")[px::bind(&Callee::eliminateQuantifiers, px::ref(callee), qi::_1)]
 			|	(qi::lit("exit") > ")")[px::bind(&Callee::exit, px::ref(callee))]
 			|	(qi::lit("get-all-models") > ")")[px::bind(&Callee::getAllModels, px::ref(callee))]
 			|	(qi::lit("get-assertions") > ")")[px::bind(&Callee::getAssertions, px::ref(callee))]
@@ -99,6 +122,7 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 	AttributeParser attribute;
 	KeywordParser keyword;
 	NumeralParser numeral;
+	QEParser qeQuery;
 	SortParser sort;
 	SortedVariableParser sortedvariable;
 	StringParser string;

@@ -131,6 +131,9 @@ public:
 	void defineSort(const std::string&, const std::vector<std::string>&, const carl::Sort&) {
 		//error() << "(define-sort <name> <sort>) is not implemented.";
 	}
+	void eliminateQuantifiers(const smtrat::parser::QEQuery& q) {
+		regular() << "Eliminating " << q << std::endl;
+	}
 	void exit() {
 	}
 	void getAssertions() {

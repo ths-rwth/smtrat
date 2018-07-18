@@ -173,6 +173,15 @@ struct Theories {
 		return types::TermType();
 	}
 	
+	types::VariableType resolveVariable(const Identifier& identifier) const {
+		types::VariableType result;
+		if (identifier.indices == nullptr) {
+			if (state->resolveSymbol(identifier.symbol, result)) return result;
+		}
+		HANDLE_ERROR
+		return types::VariableType();
+	}
+	
 	void pushExpressionScope(std::size_t n) {
 		for (; n > 0; n--) state->pushExpressionScope();
 	}
