@@ -12,7 +12,8 @@ namespace smtrat
 {
 	template<class Settings>
 	AbstractModule<Settings>::AbstractModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager):
-		Module( _formula, _conditionals, _manager )
+		Module( _formula, _conditionals, _manager ),
+        mLRAFormula( new ModuleInput() )
 #ifdef SMTRAT_DEVOPTION_Statistics
 		, mStatistics(Settings::moduleName)
 #endif
@@ -101,6 +102,8 @@ namespace smtrat
         cout << "\n";
 
         cout << "\n";
+
+        mLRAFormula->add(finalFormula, false);
 		return true; // This should be adapted according to your implementation.
 	}
 	
@@ -124,7 +127,14 @@ namespace smtrat
 	Answer AbstractModule<Settings>::checkCore()
 	{
 		// Your code.
-		return Answer::UNKNOWN; // This should be adapted according to your implementation.
+        for (auto it = mLRAFormula->begin(); it != mLRAFormula->end(); ++it) {
+            addReceivedSubformulaToPassedFormula(it);
+        }
+        auto ans = runBackends();
+
+        cout << "Solution: " << backendsModel();
+        cout << "\n";
+		return ans; // This should be adapted according to your implementation.
 	}
 }
 

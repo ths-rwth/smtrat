@@ -22,6 +22,7 @@ namespace smtrat
 			AbstractStatistics mStatistics;
 #endif
 			// Members.
+			ModuleInput* mLRAFormula;
 			
 		public:
 			typedef Settings SettingsType;
