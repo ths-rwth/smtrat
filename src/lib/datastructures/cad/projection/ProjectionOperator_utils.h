@@ -1,5 +1,6 @@
 #pragma once
 
+#include <carl/core/polynomialfunctions/Factorization.h>
 #include <carl/core/polynomialfunctions/Resultant.h>
 #include <carl/core/polynomialfunctions/SquareFreePart.h>
 
@@ -79,8 +80,16 @@ std::vector<Poly> PSC(const Poly& p, const Poly& q) {
 
 template<typename Poly, typename Callback>
 void returnPoly(const Poly& p, Callback&& cb) {
-	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> " << p);
-	cb(p);
+	if (true) {
+		for (const auto& fact: carl::factorization(carl::MultivariatePolynomial<Rational>(p), false)) {
+			auto uf = fact.first.toUnivariatePolynomial(p.mainVar());
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> " << uf);
+			cb(uf);
+		}
+	} else {
+		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> " << p);
+		cb(p);
+	}
 }
 
 } // namespace projection
