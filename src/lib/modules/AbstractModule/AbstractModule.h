@@ -23,7 +23,10 @@ namespace smtrat
 #endif
 			// Members.
 			ModuleInput* mLRAFormula;
-			
+		private:
+		//counter for GeneratedVariable, this is a global counter.
+		int variableCount = 0;
+
 		public:
 			typedef Settings SettingsType;
 			std::string moduleName() const {

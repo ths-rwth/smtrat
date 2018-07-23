@@ -7,6 +7,7 @@
  */
 
 #include "AbstractModule.h"
+#include "MonomialMappingByVariablePool.h"
 
 namespace smtrat
 {
@@ -34,8 +35,7 @@ namespace smtrat
 	void AbstractModule<Settings>::init()
 	{}
 
-    //counter for GeneratedVariable
-    int variableCount = 0;
+
 
 	template<class Settings>
 	bool AbstractModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
@@ -56,6 +56,8 @@ namespace smtrat
         int n = sizeof(op) / sizeof(op[0]);
         std::string VariableName = "z_";
 
+
+
         for( auto& term : poly.getTerms() )
         {
             if( !term.isConstant() )
@@ -70,12 +72,17 @@ namespace smtrat
                 cout << "GeneratedVariableName: " << GeneratedVariable;
                 cout << "\n";
 
+
                 //create new polynomial
                 carl::MultivariatePolynomial<Rational> p(term.coeff()*GeneratedVariable);
                 cout << "Generated MultiVariantPolynomial: " << p;
                 cout << "\n";
                 cout << "\n";
                 op[indexCount] = p;
+
+                std::map<carl::Variable,Poly> mIntToRealVarMap;
+
+                mIntToRealVarMap[GeneratedVariable]=p;
 
                 variableCount++;
             } else {
