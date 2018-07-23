@@ -77,6 +77,12 @@ std::vector<Poly> PSC(const Poly& p, const Poly& q) {
 	return carl::principalSubresultantsCoefficients(p, q);
 }
 
+template<typename Poly, typename Callback>
+void returnPoly(const Poly& p, Callback&& cb) {
+	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> " << p);
+	cb(p);
+}
+
 } // namespace projection
 } // namespace cad
 } // namespace smtrat

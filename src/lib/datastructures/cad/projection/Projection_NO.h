@@ -84,11 +84,11 @@ namespace cad {
 		/// Adds a new polynomial to the given level and perform the projection recursively.
 		carl::Bitset addToProjection(std::size_t level, const UPoly& p, std::size_t origin) {
 			assert(level > 0 && level <= dim());
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			if (canBeRemoved(p)) return carl::Bitset();
 			if ((level > 1) && (level < dim()) && canBeForwarded(level, p)) {
 				return addToProjection(level + 1, p.switchVariable(var(level+1)), origin);
 			}
-			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			assert(p.mainVar() == var(level));
 			auto it = polyIDs(level).find(p);
 			if (it != polyIDs(level).end()) {
