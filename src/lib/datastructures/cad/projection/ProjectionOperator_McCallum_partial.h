@@ -15,8 +15,8 @@ namespace mccallum_partial {
 
 template<typename Poly, typename Callback>
 void single(const Poly& p, carl::Variable variable, Callback&& cb) {
-	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "McCallum_partial_single(" << p << ", " << variable << ") -> Collins_single");
-	cb(projection::discriminant(variable, p));
+	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "McCallum_partial_single(" << p << ") -> Collins_single");
+	returnPoly(projection::discriminant(variable, p), cb);
 
 	for (std::size_t i = 0; i < p.coefficients().size(); ++i) {
 		const auto& coeff = p.coefficients()[i];
@@ -26,7 +26,7 @@ void single(const Poly& p, carl::Variable variable, Callback&& cb) {
 				return;
 			} else {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "coeff " << coeff << " does not vanish. We only need the lcoeff() = " << p.lcoeff());
-				cb(projection::normalize(p.lcoeff().toUnivariatePolynomial(variable)));
+				returnPoly(projection::normalize(p.lcoeff().toUnivariatePolynomial(variable)), cb);
 				return;
 			}
 		}
@@ -36,13 +36,13 @@ void single(const Poly& p, carl::Variable variable, Callback&& cb) {
 		if (coeff.isZero()) continue;
 		assert(!coeff.isConstant());
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "\t-> " << coeff);
-		cb(projection::normalize(coeff.toUnivariatePolynomial(variable)));
+		returnPoly(projection::normalize(coeff.toUnivariatePolynomial(variable)), cb);
 	}
 }
 
 template<typename Poly, typename Callback>
 void paired(const Poly& p, const UPoly& q, carl::Variable variable, Callback&& cb) {
-	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "McCallum_partial_paired(" << p << ", " << q << ", " << variable << ")");
+	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "McCallum_partial_paired(" << p << ", " << q << ")");
 	mccallum::paired(p, q, variable, std::forward<Callback>(cb));
 }
 

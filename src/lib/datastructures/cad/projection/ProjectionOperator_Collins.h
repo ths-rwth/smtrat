@@ -17,14 +17,14 @@ namespace collins {
  */
 template<typename Poly, typename Callback>
 void single(const Poly& p, carl::Variable variable, Callback&& cb) {
-	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Collins_single(" << p << ", " << variable << ")");
+	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Collins_single(" << p << ")");
 
 	// Separate into
 	// - leading coefficients of reducta which are all coefficients
 	// - PSC of all reducta
 	for (const auto& coeff : p.coefficients()) {
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "reductum lcoeff: " << coeff);
-		cb(projection::normalize(coeff.toUnivariatePolynomial(variable)));
+		returnPoly(projection::normalize(coeff.toUnivariatePolynomial(variable)), cb);
 	}
 
 	projection::Reducta<Poly> RED_p(p);
@@ -34,7 +34,7 @@ void single(const Poly& p, carl::Variable variable, Callback&& cb) {
 		const auto& reducta_derivative = RED_d[i];
 		for (const auto& psc : projection::PSC(reducta, reducta_derivative)) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "reducta psc: " << psc);
-			cb(projection::normalize(psc.switchVariable(variable)));
+			returnPoly(projection::normalize(psc.switchVariable(variable)), cb);
 		}
 	}
 }
@@ -45,14 +45,14 @@ void single(const Poly& p, carl::Variable variable, Callback&& cb) {
  */
 template<typename Poly, typename Callback>
 void paired(const Poly& p, const UPoly& q, carl::Variable variable, Callback&& cb) {
-	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Collins_paired(" << p << ", " << q << ", " << variable << ")");
+	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Collins_paired(" << p << ", " << q << ")");
 	projection::Reducta<Poly> RED_p(p);
 	projection::Reducta<Poly> RED_q(q);
 	for (const auto& reducta_p : RED_p) {
 		for (const auto& reducta_q : RED_q) {
 			for (const auto& psc : projection::PSC(reducta_p, reducta_q)) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "reducta psc: " << psc);
-				cb(projection::normalize(psc.switchVariable(variable)));
+				returnPoly(projection::normalize(psc.switchVariable(variable)), cb);
 			}
 		}
 	}
