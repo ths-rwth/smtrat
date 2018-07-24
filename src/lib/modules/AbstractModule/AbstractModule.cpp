@@ -80,10 +80,14 @@ namespace smtrat
                 cout << "\n";
                 op[indexCount] = p;
 
-                std::map<carl::Variable,Poly> mIntToRealVarMap;
-
-                mIntToRealVarMap[GeneratedVariable]=p;
-
+                // inserting the monomial to the map
+                carl::Monomial::Arg mMonomial = term.monomial();
+                smtrat::MonomialMappingByVariablePool::getInstance().InsertMonomialMapping(GeneratedVariable, mMonomial);
+                carl::Monomial::Arg mFoundMonomial  = smtrat::MonomialMappingByVariablePool::getInstance().Monomial(GeneratedVariable);
+                cout << "instance of monomial: " << mFoundMonomial;
+                cout << "\n";
+                cout << "\n";
+                // remove me end
                 variableCount++;
             } else {
                 //create new polynomial
