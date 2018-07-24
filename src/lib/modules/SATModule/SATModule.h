@@ -941,10 +941,10 @@ namespace smtrat
 				return assigns[x];
 			}
 
-            bool handleTheoryConflictClause(const FormulasT& clause) {
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict clause " << clause);
+            bool addClauseIfNew(const FormulasT& clause) {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Add theory conflict clause " << clause << " if new");
 
-				sat::detail::validateClause(clause, Settings::validate_clauses); // TODO can this lead to errors for multiple explanations???
+				//sat::detail::validateClause(clause, Settings::validate_clauses); // TODO can this lead to errors for multiple explanations???
                 Minisat::vec<Minisat::Lit> explanation;
                 std::vector<Minisat::Lit> explanation_set;
 				for (const auto& c: clause) {
@@ -963,41 +963,42 @@ namespace smtrat
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
                     mUnorderedClauseLookup.insert(explanation_set);
                     addClause(explanation, Minisat::LEMMA_CLAUSE);
-                    propagateTheory();
-                    Minisat::CRef confl = storeLemmas();
-                    if (confl != Minisat::CRef_Undef) {
-                        handleConflict(confl);
-                    }
                     return true;
                 }
 			}
 			
-			void handleTheoryConflict(const FormulaT& explanation) {
+			void handleTheoryConflict(const Explanation& explanation) {
                 #ifdef DEBUG_SATMODULE
                 print(std::cout, "###");
                 #endif
                 SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict explanation " << explanation);
-                FormulaT cnf = explanation.toCNF();
-                if (cnf.getType() == carl::FormulaType::OR) { // clause
-                    bool added = handleTheoryConflictClause(cnf.subformulas());
-                    assert(added);
+
+                bool added = false;
+
+                // add propagations
+                for (const auto& implication : explanation.second) {
+                    // TODO assert that clause is propagating
+
+                    assert(implication.first.contains(explanation.second));
+
+                    added |= addClauseIfNew(implication.first.subformulas());
+
+                    // TODO maybe not needed because all added clauses are propagating if inserted in right order:
+                    // uncheckedEnqueue(createLiteral(implication.second), /* TODO get CRef of added clause somehow */);
                 }
-                else if (cnf.getType() == carl::FormulaType::AND) { // conjunction of clauses
-                    bool added = false;
-                    for (const auto& clause : cnf.subformulas()) {
-                        if (clause.getType() == carl::FormulaType::OR) { // clause
-                            added |= handleTheoryConflictClause(clause.subformulas());
-                        }
-                        else { // single literal
-                            added |= handleTheoryConflictClause(FormulasT({clause}));
-                        }
-                    }
-                    assert(added);
+
+                // add conflict clause
+                // TODO assert that explanation.first is conflicting
+                added |= addClauseIfNew(explanation.first.subformulas());
+
+                assert(added);
+
+                propagateTheory();
+                Minisat::CRef confl = storeLemmas();
+                if (confl != Minisat::CRef_Undef) {
+                    handleConflict(confl);
                 }
-                else { // single literal
-                    bool added = handleTheoryConflictClause(FormulasT({cnf}));
-                    assert(added);
-                }
+
                 SMTRAT_LOG_DEBUG("smtrat.sat", "Handled theory conflict explanation");
 			}
             

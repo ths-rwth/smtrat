@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../../Common.h"
+#include "Common.h"
 
 #include "../SolverTypes.h"
 
@@ -190,9 +190,9 @@ public:
 	/// Evaluate a literal in the theory, set lastReason to last theory decision involved.
 	Minisat::lbool evaluateLiteral(Minisat::Lit lit) const;
 	
-	boost::optional<FormulaT> isDecisionPossible(Minisat::Lit lit);
+	boost::optional<Explanation> isDecisionPossible(Minisat::Lit lit);
 	
-	boost::optional<FormulaT> isFeasible() {
+	boost::optional<Explanation> isFeasible() {
 		if (!mayDoAssignment()) {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Trail is feasible as there is no next variable to be assigned.");
 			return boost::none;
@@ -208,7 +208,7 @@ public:
 		}
 	}
 	
-	std::pair<FormulaT,bool> makeTheoryDecision() {
+	std::pair<Explanation,bool> makeTheoryDecision() {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Obtaining assignment");
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", mBackend);
 		auto res = mBackend.findAssignment(currentVariable());
@@ -227,7 +227,7 @@ public:
 		}
 	}
 	
-	FormulaT explainTheoryPropagation(Minisat::Lit literal) {
+	Explanation explainTheoryPropagation(Minisat::Lit literal) { // TODO rework ...
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << literal << " under " << mBackend.getModel());
 		auto f = mGetter.reabstractLiteral(literal);
 		auto conflict = mBackend.isInfeasible(currentVariable(), !f);

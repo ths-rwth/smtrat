@@ -51,7 +51,7 @@ Minisat::lbool MCSATMixin<Settings>::evaluateLiteral(Minisat::Lit lit) const {
 }
 
 template<typename Settings>
-boost::optional<FormulaT> MCSATMixin<Settings>::isDecisionPossible(Minisat::Lit lit) {
+boost::optional<Explanation> MCSATMixin<Settings>::isDecisionPossible(Minisat::Lit lit) {
 	auto var = Minisat::var(lit);
 	if (!mGetter.isTheoryAbstraction(var)) return boost::none;
 	const auto& f = mGetter.reabstractLiteral(lit);
