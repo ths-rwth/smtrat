@@ -14,7 +14,8 @@ namespace smtrat
 	template<class Settings>
 	AbstractModule<Settings>::AbstractModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager):
 		Module( _formula, _conditionals, _manager ),
-        mLRAFormula( new ModuleInput() )
+        mLRAFormula( new ModuleInput()),
+        mNRAFormula( new ModuleInput())
 #ifdef SMTRAT_DEVOPTION_Statistics
 		, mStatistics(Settings::moduleName)
 #endif
@@ -87,7 +88,7 @@ namespace smtrat
                 cout << "instance of monomial: " << mFoundMonomial;
                 cout << "\n";
                 cout << "\n";
-                // remove me end
+
                 variableCount++;
             } else {
                 //create new polynomial
@@ -103,10 +104,10 @@ namespace smtrat
         cout << "\n";
         cout << "\n";
 
-        //constructo lhs of the constraint
+        //construction lhs of the constraint
         carl::MultivariatePolynomial<Rational> finalPoly(Poly::ConstructorOperation::ADD,operands);
         //create new formula
-        FormulaT  finalFormula = FormulaT(finalPoly,constraint.relation());
+        FormulaT  finalFormula = FormulaT(finalPoly, constraint.relation());
         cout << "Generated Formula: " << finalFormula;
         cout << "\n";
         cout << "Generated New constraint: " << finalFormula.constraint();
@@ -114,6 +115,14 @@ namespace smtrat
 
         cout << "\n";
 
+        ////////////////////////////////////////////////
+        //
+        // Adding the Linearized Formula to the global
+        // ModuleInput type variable. This global
+        // variable will be used to add all of the
+        // Linearized formulas to the passed formula
+        //
+        ////////////////////////////////////////////////
         mLRAFormula->add(finalFormula, false);
 		return true; // This should be adapted according to your implementation.
 	}
@@ -138,13 +147,60 @@ namespace smtrat
 	Answer AbstractModule<Settings>::checkCore()
 	{
 		// Your code.
+		////////////////////////////////////////////////
+		//
+		// Adding the Linearized Formula to the passed
+		// Formula
+		//
+		////////////////////////////////////////////////
         for (auto it = mLRAFormula->begin(); it != mLRAFormula->end(); ++it) {
             addReceivedSubformulaToPassedFormula(it);
         }
         auto ans = runBackends();
 
-        cout << "Solution: " << backendsModel();
+        Model bmodel = backendsModel();
+        cout << "Solution: " << bmodel;
         cout << "\n";
+
+        for (auto const& item : bmodel) {
+            ModelVariable modelVariable = item.first;
+            ModelValue  modelValue = item.second;
+            carl::Monomial::Arg mFoundMonomial  = smtrat::MonomialMappingByVariablePool::getInstance().Monomial(modelVariable.asVariable());
+            cout << "Found monomial: " << mFoundMonomial;
+            cout << "\n";
+            cout << "Found double: " << modelValue.asRational();
+            TermT term = TermT(modelValue.asRational());
+            cout << "created Term of the constant: " << term;
+            carl::MultivariatePolynomial<Rational> pValue(term);
+            cout << "\n";
+
+            carl::MultivariatePolynomial<Rational> p(mFoundMonomial);
+            cout << "Created Polynomial: " << p;
+            cout << "\n";
+
+            std::vector<carl::MultivariatePolynomial<Rational>> operands = {p , pValue};
+
+            cout << "operands: " << operands;
+            cout << "\n";
+
+            carl::MultivariatePolynomial<Rational> finalPoly(Poly::ConstructorOperation::SUB,operands);
+
+
+            FormulaT  createdFormula = FormulaT(finalPoly, carl::Relation::EQ);
+            cout << "Created Formula: " << createdFormula;
+            cout << "\n";
+            mNRAFormula->add(createdFormula, false);
+
+        }
+
+        for (auto it = mNRAFormula->begin(); it != mNRAFormula->end(); ++it) {
+            cout << "Adding Formula: " << it->formula();
+            cout << "\n";
+            addReceivedSubformulaToPassedFormula(it);
+        }
+
+        ans = runBackends();
+
 		return ans; // This should be adapted according to your implementation.
 	}
 }

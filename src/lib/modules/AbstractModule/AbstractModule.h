@@ -23,6 +23,7 @@ namespace smtrat
 #endif
 			// Members.
 			ModuleInput* mLRAFormula;
+			ModuleInput* mNRAFormula;
 		private:
 		//counter for GeneratedVariable, this is a global counter.
 		int variableCount = 0;
