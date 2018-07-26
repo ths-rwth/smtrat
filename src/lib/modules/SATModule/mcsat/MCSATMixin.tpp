@@ -60,7 +60,7 @@ boost::optional<Explanation> MCSATMixin<Settings>::isDecisionPossible(Minisat::L
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " is possible");
 	} else {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " is impossible due to " << *res);
-		return mBackend.explain(currentVariable(), *res, FormulaT(carl::FormulaType::FALSE));
+		return mBackend.explain(currentVariable(), *res);
 	}
 	return boost::none;
 }

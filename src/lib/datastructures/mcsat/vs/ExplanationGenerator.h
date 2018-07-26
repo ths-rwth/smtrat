@@ -86,11 +86,101 @@ private:
 		}
     }
 
+	/**
+	 * Transforms a given Boolean conjunction over AND and OR to CNF via Tseitin-Transformation
+	 * so that, if the input formula is conflicting under the current assignment, after all clauses
+	 * in "implications" have been propagated in the given order, the returned formula evaluates to false.
+	 */
+	FormulaT transformToImplicationChain(const FormulaT& formula, FormulasT& implications, bool isRoot = true) const __attribute__((noinline)) {
+		switch(formula.getType()) {
+			case carl::FormulaType::TRUE:
+			case carl::FormulaType::FALSE:
+			case carl::FormulaType::CONSTRAINT:
+			case carl::FormulaType::VARCOMPARE:
+			case carl::FormulaType::VARASSIGN:
+			{
+				return formula;
+			}
+			break;
+
+			case carl::FormulaType::OR:
+			{
+				FormulasT newFormula;
+				for (const auto& sub : formula.subformulas()) {
+					FormulaT tseitinSub = transformToImplicationChain(sub, implications, false);
+					newFormula.push_back(std::move(tseitinSub));
+				}
+
+				if (isRoot) { // handle special case that input formula is already a disjunction
+					return FormulaT(carl::FormulaType::OR, std::move(newFormula));
+				} else {
+					FormulaT tseitinVar = FormulaT(carl::freshBooleanVariable());
+
+					// newFormula_1 || ... || newFormula_n -> tseitinVar
+					for (const FormulaT& lit : newFormula) {
+						implications.emplace_back(carl::FormulaType::OR, FormulasT({lit.negated(), tseitinVar}));
+					}
+
+					// tseitinVar -> newFormula_1 || ... || newFormula_n
+					FormulasT tmp = newFormula;
+					tmp.push_back(tseitinVar.negated());
+					implications.emplace_back(carl::FormulaType::OR, tmp);
+
+					return tseitinVar;
+				}
+			}
+			break;
+
+			case carl::FormulaType::AND:
+			{
+				FormulasT newFormula;
+				for (const auto& sub : formula.subformulas()) {
+					FormulaT tseitinSub = transformToImplicationChain(sub, implications, false);
+					newFormula.push_back(std::move(tseitinSub));
+				}
+
+				FormulaT tseitinVar = FormulaT(carl::freshBooleanVariable());
+
+				// tseitinVar -> newFormula_1 && ... && newFormula_n
+				for (const FormulaT& lit : newFormula) {
+					implications.emplace_back(carl::FormulaType::OR, FormulasT({lit, tseitinVar.negated()}));
+				}
+
+				// newFormula_1 && ... && newFormula_n -> tseitinVar
+				FormulasT tmp;
+				std::transform (newFormula.begin(), newFormula.end(), std::back_inserter(tmp), [](const FormulaT& f) -> FormulaT { return f.negated(); } );
+				tmp.push_back(tseitinVar);
+				implications.emplace_back(carl::FormulaType::OR, tmp);
+
+				return tseitinVar;
+			}
+			break;
+
+			default:
+				assert(false);
+		}
+	}
+
 public:
-	boost::optional<FormulaT> getExplanation(const FormulaT& f) const {
-		// this module only explains conflicts
-		assert(f == FormulaT(carl::FormulaType::FALSE));
-        return generateExplanation();
+	boost::optional<mcsat::Explanation> getExplanation() const __attribute__((noinline)) {
+		auto expl = generateExplanation();
+
+		// TODO maybe reduce implication chain so that each clause is propagating
+		// TODO maybe perform resolution in implication chain
+
+		if (expl) {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Obtained explanation " << (*expl));
+
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Transforming to implication chain");
+			FormulasT implicationChain;
+			FormulaT conflictingClause = transformToImplicationChain(*expl, implicationChain);
+			implicationChain.push_back(std::move(conflictingClause));
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Got clauses " << implicationChain);
+
+			return mcsat::Explanation(std::move(implicationChain));
+		} else {
+			return boost::none;
+		}
 	}
 };
 

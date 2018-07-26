@@ -2793,12 +2793,12 @@ namespace smtrat
 					if (mMCSAT.mayDoAssignment()) {
 						// No decision done yet, try with a theory decision.
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Trying with next theory decision");
-						FormulaT res;
+						mcsat::Explanation res;
 						bool didDecision;
 						std::tie(res,didDecision) = mMCSAT.makeTheoryDecision();
 						if (didDecision) {
 							mCurrentAssignmentConsistent = SAT;
-							next = createLiteral(res, FormulaT(carl::FormulaType::TRUE), false);
+							next = createLiteral(boost::get<FormulaT>(res), FormulaT(carl::FormulaType::TRUE), false);
 							mMCSAT.makeDecision(next);
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Picking the next literal");
 							pickTheoryBranchLit();
@@ -3262,7 +3262,7 @@ namespace smtrat
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Found " << p << " to be result of theory propagation.");
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << mMCSAT);
 				cancelIncludingLiteral(p);
-				auto explanation = mMCSAT.explainTheoryPropagation(p);
+				auto explanation = boost::get<FormulaT>(mMCSAT.explainTheoryPropagation(p));
 				
 				vec<Lit> expClause;
 				for (const auto& f: explanation)

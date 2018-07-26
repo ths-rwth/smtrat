@@ -966,37 +966,47 @@ namespace smtrat
                     return true;
                 }
 			}
+
+            bool isConflicting(const FormulaT& clause) const { // only for assertions
+                const FormulasT& literals = clause.isNary() ? clause.subformulas() : FormulasT({clause});
+                bool clauseIsConflicting = true;
+				for (const auto& c: literals) { // TODO does not work ....
+                    auto lit = getLiteral(c);
+                    clauseIsConflicting &= (bool_value(lit) == l_False);
+				}
+                return clauseIsConflicting;
+            }
 			
-			void handleTheoryConflict(const Explanation& explanation) {
+			void handleTheoryConflict(const mcsat::Explanation& explanation) {
                 #ifdef DEBUG_SATMODULE
                 print(std::cout, "###");
                 #endif
                 SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict explanation " << explanation);
 
-                bool added = false;
+                if (explanation.type() == typeid(FormulaT)) {
+                    // add conflict clause
+                    const auto& clause = boost::get<FormulaT>(explanation);
+                    bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
+                    assert(added);
+                    //assert(isConflicting(clause));
+                } else {
+                    const FormulasT& chain = boost::get<FormulasT>(explanation);
 
-                // add propagations
-                for (const auto& implication : explanation.second) {
-                    // TODO assert that clause is propagating
-
-                    assert(implication.first.contains(explanation.second));
-
-                    added |= addClauseIfNew(implication.first.subformulas());
-
-                    // TODO maybe not needed because all added clauses are propagating if inserted in right order:
-                    // uncheckedEnqueue(createLiteral(implication.second), /* TODO get CRef of added clause somehow */);
+                    // add propagations
+                    bool added = false;
+                    for (const auto& clause : chain) {
+                        added |= addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
+                    }
+                    assert(added);
+                    //assert(isConflicting(chain.back()));
                 }
-
-                // add conflict clause
-                // TODO assert that explanation.first is conflicting
-                added |= addClauseIfNew(explanation.first.subformulas());
-
-                assert(added);
 
                 propagateTheory();
                 Minisat::CRef confl = storeLemmas();
                 if (confl != Minisat::CRef_Undef) {
                     handleConflict(confl);
+                } else {
+                    //assert(false); //TODO warum geht das hier eigentlich nicht?
                 }
 
                 SMTRAT_LOG_DEBUG("smtrat.sat", "Handled theory conflict explanation");

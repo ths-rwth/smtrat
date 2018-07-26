@@ -204,7 +204,7 @@ public:
 		} else {
 			const auto& confl = boost::get<FormulasT>(res);
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << confl);
-			return mBackend.explain(currentVariable(), confl, FormulaT(carl::FormulaType::FALSE));
+			return mBackend.explain(currentVariable(), confl);
 		}
 	}
 	
@@ -221,7 +221,7 @@ public:
 			return std::make_pair(repr, true);
 		} else {
 			const auto& confl = boost::get<FormulasT>(res);
-			auto explanation = mBackend.explain(currentVariable(), confl, FormulaT(carl::FormulaType::FALSE));
+			auto explanation = mBackend.explain(currentVariable(), confl);
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got a conflict: " << explanation);
 			return std::make_pair(explanation, false);
 		}
@@ -233,7 +233,7 @@ public:
 		auto conflict = mBackend.isInfeasible(currentVariable(), !f);
 		assert(conflict);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " from " << *conflict);
-		auto res = mBackend.explain(currentVariable(), *conflict, f);
+		auto res = mBackend.explain(currentVariable(), *conflict /*, f*/); // TODO rework!!
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " by " << res);
 		return res;
 	}

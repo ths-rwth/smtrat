@@ -367,8 +367,8 @@ struct MinVarCountComparator {
 };
 
 struct Explanation {
-	boost::optional<FormulaT> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason, const FormulaT& implication) const {
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "With " << reason << " explain " << implication);
+	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " << reason);
 
 		std::vector<ConstraintT> bounds;
 		for (const auto& b: reason) {
@@ -388,7 +388,7 @@ struct Explanation {
 
 		if (res) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Found conflict " << *res);
-			return FormulaT(carl::FormulaType::OR, std::move(*res));
+			return mcsat::Explanation(FormulaT(carl::FormulaType::OR, std::move(*res)));
 		}
 		else {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Did not find a conflict");

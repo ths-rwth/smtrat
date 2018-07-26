@@ -218,7 +218,7 @@ public:
 	/**
 	 * Compute explanation in clausal form.
 	 */
-	FormulaT getExplanation(const FormulaT& impliedAtom) const {
+	mcsat::Explanation getExplanation(const FormulaT& impliedAtom) const {
 		std::vector<FormulasT> explainAtomsInLevels;
 		generateExplanation(impliedAtom, explainAtomsInLevels);
 		// Convert e1,..,en => I into clause -e1,...,-en, I
