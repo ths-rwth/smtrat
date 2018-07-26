@@ -158,49 +158,59 @@ namespace smtrat
         }
         auto ans = runBackends();
 
-        Model bmodel = backendsModel();
-        cout << "Solution: " << bmodel;
-        cout << "\n";
-
-        for (auto const& item : bmodel) {
-            ModelVariable modelVariable = item.first;
-            ModelValue  modelValue = item.second;
-            carl::Monomial::Arg mFoundMonomial  = smtrat::MonomialMappingByVariablePool::getInstance().Monomial(modelVariable.asVariable());
-            cout << "Found monomial: " << mFoundMonomial;
-            cout << "\n";
-            cout << "Found double: " << modelValue.asRational();
-            TermT term = TermT(modelValue.asRational());
-            cout << "created Term of the constant: " << term;
-            carl::MultivariatePolynomial<Rational> pValue(term);
+        ////////////////////////////////////////////////
+        //
+        // we only find NRA solution iff
+        // the linearized formula satisfies
+        //
+        ////////////////////////////////////////////////
+        if (ans != UNSAT) {
+            Model bmodel = backendsModel();
+            cout << "Solution: " << bmodel;
             cout << "\n";
 
-            carl::MultivariatePolynomial<Rational> p(mFoundMonomial);
-            cout << "Created Polynomial: " << p;
+            for (auto const& item : bmodel) {
+                ModelVariable modelVariable = item.first;
+                ModelValue  modelValue = item.second;
+                carl::Monomial::Arg mFoundMonomial  = smtrat::MonomialMappingByVariablePool::getInstance().Monomial(modelVariable.asVariable());
+                cout << "Found monomial: " << mFoundMonomial;
+                cout << "\n";
+                cout << "Found double: " << modelValue.asRational();
+                TermT term = TermT(modelValue.asRational());
+                cout << "created Term of the constant: " << term;
+                carl::MultivariatePolynomial<Rational> pValue(term);
+                cout << "\n";
+
+                carl::MultivariatePolynomial<Rational> p(mFoundMonomial);
+                cout << "Created Polynomial: " << p;
+                cout << "\n";
+
+                std::vector<carl::MultivariatePolynomial<Rational>> operands = {p , pValue};
+
+                cout << "operands: " << operands;
+                cout << "\n";
+
+                carl::MultivariatePolynomial<Rational> finalPoly(Poly::ConstructorOperation::SUB,operands);
+
+
+                FormulaT  createdFormula = FormulaT(finalPoly, carl::Relation::EQ);
+                cout << "Created Formula: " << createdFormula;
+                cout << "\n";
+                mNRAFormula->add(createdFormula, false);
+
+            }
+
+            for (auto it = mNRAFormula->begin(); it != mNRAFormula->end(); ++it) {
+                cout << "Adding Formula: " << it->formula();
+                cout << "\n";
+                addReceivedSubformulaToPassedFormula(it);
+            }
+
+            ans = runBackends();
+
+            cout << "The formula is: " << ans;
             cout << "\n";
-
-            std::vector<carl::MultivariatePolynomial<Rational>> operands = {p , pValue};
-
-            cout << "operands: " << operands;
-            cout << "\n";
-
-            carl::MultivariatePolynomial<Rational> finalPoly(Poly::ConstructorOperation::SUB,operands);
-
-
-            FormulaT  createdFormula = FormulaT(finalPoly, carl::Relation::EQ);
-            cout << "Created Formula: " << createdFormula;
-            cout << "\n";
-            mNRAFormula->add(createdFormula, false);
-
         }
-
-        for (auto it = mNRAFormula->begin(); it != mNRAFormula->end(); ++it) {
-            cout << "Adding Formula: " << it->formula();
-            cout << "\n";
-            addReceivedSubformulaToPassedFormula(it);
-        }
-
-        ans = runBackends();
-
 		return ans; // This should be adapted according to your implementation.
 	}
 }
