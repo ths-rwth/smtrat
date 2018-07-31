@@ -30,14 +30,13 @@ namespace smtrat
 	bool NewCADModule<Settings>::informCore( const FormulaT& _constraint )
 	{
 		mPolynomials.emplace_back(_constraint.constraint().lhs());
+		_constraint.allVars(mVariables);
 		return true; // This should be adapted according to your implementation.
 	}
 	
 	template<class Settings>
 	void NewCADModule<Settings>::init()
 	{
-		mCAD.reset(cad::variable_ordering::triangular_ordering(mPolynomials));
-		//mCAD.reset(std::vector<carl::Variable>(mVariables.begin(), mVariables.end()));
 	}
 	
 	template<class Settings>
@@ -62,10 +61,15 @@ namespace smtrat
 	template<class Settings>
 	void NewCADModule<Settings>::updateModel() const
 	{
+		carl::Variables vars;
+		for (const auto& f: rReceivedFormula()) {
+			f.formula().allVars(vars);
+		}
 		mModel.clear();
 		if( solverState() == SAT )
 		{
 			for (const auto& a: mLastAssignment) {
+				if (vars.find(a.first) == vars.end()) continue;
 				mModel.emplace(a.first, a.second);
 			}
 		}
@@ -74,6 +78,11 @@ namespace smtrat
 	template<class Settings>
 	Answer NewCADModule<Settings>::checkCore()
 	{
+		if (mCAD.dim() != mVariables.size()) {
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Init with " << mPolynomials);
+			mCAD.reset(cad::variable_ordering::triangular_ordering(mPolynomials));
+			//mCAD.reset(std::vector<carl::Variable>(mVariables.begin(), mVariables.end()));
+		}
 #ifdef SMTRAT_DEVOPTION_Statistics
                 mStatistics.usedCAD();
 #endif

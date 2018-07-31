@@ -217,6 +217,12 @@ namespace cad {
 		static constexpr bool simplifyProjectionByBounds = false;
 	};
 
+
+	struct NewCADSettingsInterleave: NewCADSettingsFOS {
+		static constexpr auto moduleName = "NewCADModule<NewCADInterleave>";
+		static constexpr cad::CoreHeuristic coreHeuristic = cad::CoreHeuristic::Interleave;
+	};
+
 	struct NewCADSettingsEQ_B: NewCADBaseSettings, cad::IncrementalityEQ, cad::ProjectionBrown, cad::SampleCompareT, cad::ProjectionOrderDefault {
 		static constexpr auto moduleName = "NewCADModule<NewCADEQ_B>";
 		static constexpr std::size_t trivialSampleRadius = 1;
