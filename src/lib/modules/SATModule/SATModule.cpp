@@ -2797,6 +2797,7 @@ namespace smtrat
 						bool res = mMCSAT.isDecisionPossible(next);
 						if (!res) {
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict");
+                            // insertVarOrder(var(next)); // TODO needs to be reinserted? and ~next to be removed?
 							// handleTheoryConflict(*res);
                             uncheckedEnqueue( ~next, CRef_TPropagation );
 							continue;
