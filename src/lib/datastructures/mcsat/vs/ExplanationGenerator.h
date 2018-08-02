@@ -91,7 +91,8 @@ private:
 	 * so that, if the input formula is conflicting under the current assignment, after all clauses
 	 * in "implications" have been propagated in the given order, the returned formula evaluates to false.
 	 */
-	FormulaT transformToImplicationChain(const FormulaT& formula, FormulasT& implications, bool isRoot = true) const __attribute__((noinline)) {
+	FormulaT transformToImplicationChain(const FormulaT& formula, FormulasT& implications, bool isRoot = true) const /*__attribute__((noinline))*/ {
+		// TODO tseitin variables: use createTseitinVar as in Formula::toCNF?
 		switch(formula.getType()) {
 			case carl::FormulaType::TRUE:
 			case carl::FormulaType::FALSE:
