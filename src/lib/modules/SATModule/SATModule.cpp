@@ -3317,10 +3317,10 @@ namespace smtrat
 						SMTRAT_LOG_DEBUG("smtrat.sat", "\tNot seen yet, level = " << qlevel);
 	                    varBumpActivity( var( q ) );
 						seen[var( q )] = 1;
-						//if (Settings::mc_sat && reason(var(q)) == CRef_TPropagation) {
-						//	pathC++;
-						//	SMTRAT_LOG_DEBUG("smtrat.sat", "\tTo process: "  << q << ", pathC = " << pathC);
-						//} else {
+						if (Settings::mc_sat && reason(var(q)) == CRef_TPropagation) {
+							pathC++;
+							SMTRAT_LOG_DEBUG("smtrat.sat", "\tTo process: "  << q << ", pathC = " << pathC);
+						} else {
                             if (bool_value(q) == l_Undef) {
                                 out_learnt.push(q);
                                 SMTRAT_LOG_DEBUG("smtrat.sat", "\tq is false by theory assignment, forwarding to out_learnt.");
@@ -3333,7 +3333,7 @@ namespace smtrat
 								SMTRAT_LOG_DEBUG("smtrat.sat", "\tpushing = " << q << " to out_learnt");
 		                        out_learnt.push( q );
 							}
-						//}
+						}
 	                }
 	            }
 
