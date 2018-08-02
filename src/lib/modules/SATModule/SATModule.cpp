@@ -2764,7 +2764,7 @@ namespace smtrat
 					}
 				}
 
-                // check for feasibility // TODO makes sense here?
+                // check for feasibility // TODO makes sense here? performance? maybe check combined with T-Propagations
                 if (Settings::mc_sat && next == lit_Undef) {
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still feasible");
                     auto conflict = mMCSAT.isFeasible();
@@ -2795,6 +2795,11 @@ namespace smtrat
 					if (Settings::mc_sat && next != lit_Undef) {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << ", checking for theory consistency...");
 						bool res = mMCSAT.isDecisionPossible(next);
+                        /*
+                        alternative to probably expensive feasibility checks: assignmentfinder adds f last => if core doesn ot contain f, conflict is independent from f
+                        OR:
+                        move theory decisions up => makes that sense at all?
+                        */
 						if (!res) {
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict");
                             // insertVarOrder(var(next)); // TODO needs to be reinserted? and ~next to be removed?
@@ -3274,7 +3279,7 @@ namespace smtrat
 			SMTRAT_LOG_DEBUG("smtrat.sat", "out_learnt = " << out_learnt);
 			
             assert( confl != CRef_Undef );    // (otherwise should be UIP)
-			if (Settings::mc_sat && confl == CRef_TPropagation) { // TODO reactivate
+			if (Settings::mc_sat && confl == CRef_TPropagation) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Found " << p << " to be result of theory propagation.");
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << mMCSAT);
 				cancelIncludingLiteral(p);
