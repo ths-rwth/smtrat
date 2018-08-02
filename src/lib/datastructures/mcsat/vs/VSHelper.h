@@ -46,16 +46,11 @@ namespace helper {
     inline bool generateZeros(const ConstraintT& constraint, const carl::Variable& eliminationVar, std::function<void(SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions)> yield_result) {
         SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generating zeros of constraint " << constraint);
 
-        // TODO clean this function up, reduce cases
         // TODO test with factorization
 
         if (!constraint.hasVariable(eliminationVar)) {
             return true;
         }
-
-        //if (constraint.maxDegree(eliminationVar) > 2) {
-        //    return false;
-        //}
 
         std::vector<Poly> factors;
         ConstraintsT sideConditions;
@@ -474,7 +469,7 @@ namespace helper {
                     return false;
                 }
 
-                // calculate subVar1-subVar2 ~ 0 [substitution.term()//subVar1][zero//subVar2] // TODO refactor to be more readable
+                // calculate subVar1-subVar2 ~ 0 [substitution.term()//subVar1][zero//subVar2]
                 ConstraintT subConstraint(Poly(subVar1) - subVar2, varcompRelation);
                 ::vs::Substitution subSub1(subVar1, substitution.term(), substitution.type(), carl::PointerSet<::vs::Condition>());
                 ::vs::Substitution subSub2(subVar2, zero, ::vs::Substitution::Type::NORMAL, carl::PointerSet<::vs::Condition>());
