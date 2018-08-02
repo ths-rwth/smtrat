@@ -988,7 +988,7 @@ namespace smtrat
                     const auto& clause = boost::get<FormulaT>(explanation);
                     bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
                     assert(added);
-                    //assert(isConflicting(clause));
+                    //assert(isConflicting(clause)); // TODO why not possible?
                 } else {
                     const FormulasT& chain = boost::get<FormulasT>(explanation);
 
@@ -998,7 +998,7 @@ namespace smtrat
                         added |= addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
                     }
                     assert(added);
-                    //assert(isConflicting(chain.back()));
+                    //assert(isConflicting(chain.back())); // TODO why not possible?
                 }
 
                 propagateTheory();

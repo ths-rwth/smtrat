@@ -50,6 +50,7 @@ Minisat::lbool MCSATMixin<Settings>::evaluateLiteral(Minisat::Lit lit) const {
 	return l_Undef;
 }
 
+/*
 template<typename Settings>
 boost::optional<Explanation> MCSATMixin<Settings>::isDecisionPossible(Minisat::Lit lit) {
 	auto var = Minisat::var(lit);
@@ -63,6 +64,23 @@ boost::optional<Explanation> MCSATMixin<Settings>::isDecisionPossible(Minisat::L
 		return mBackend.explain(currentVariable(), *res);
 	}
 	return boost::none;
+}
+*/
+
+template<typename Settings>
+bool MCSATMixin<Settings>::isDecisionPossible(Minisat::Lit lit) {
+	auto var = Minisat::var(lit);
+	if (!mGetter.isTheoryAbstraction(var)) return true;
+	const auto& f = mGetter.reabstractLiteral(lit);
+	auto res = mBackend.isInfeasible(currentVariable(), f);
+	if (res == boost::none) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " (" << f << ") is possible");
+	} else {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " (" << f << ") is impossible due to " << *res);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << (*this));
+		return false;
+	}
+	return true;
 }
 
 template<typename Settings>

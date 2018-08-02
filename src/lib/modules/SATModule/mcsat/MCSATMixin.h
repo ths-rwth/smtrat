@@ -190,7 +190,8 @@ public:
 	/// Evaluate a literal in the theory, set lastReason to last theory decision involved.
 	Minisat::lbool evaluateLiteral(Minisat::Lit lit) const;
 	
-	boost::optional<Explanation> isDecisionPossible(Minisat::Lit lit);
+	// boost::optional<Explanation> isDecisionPossible(Minisat::Lit lit);
+	bool isDecisionPossible(Minisat::Lit lit);
 	
 	boost::optional<Explanation> isFeasible() {
 		if (!mayDoAssignment()) {
@@ -227,14 +228,24 @@ public:
 		}
 	}
 	
-	Explanation explainTheoryPropagation(Minisat::Lit literal) { // TODO rework ...
+	Explanation explainTheoryPropagation(Minisat::Lit literal) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << (*this));
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << literal << " under " << mBackend.getModel());
-		auto f = mGetter.reabstractLiteral(literal);
-		auto conflict = mBackend.isInfeasible(currentVariable(), !f);
+		const auto& f = mGetter.reabstractLiteral(literal);
+		boost::optional<FormulasT> conflict = mBackend.isInfeasible(currentVariable(), !f);
 		assert(conflict);
+		(*conflict).push_back(!f);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " from " << *conflict);
-		auto res = mBackend.explain(currentVariable(), *conflict /*, f*/); // TODO rework!!
+		auto res = mBackend.explain(currentVariable(), *conflict);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " by " << res);
+		// f is part of the conflict, because the trail is feasible without f:
+		if (res.type() == typeid(FormulaT)) {
+			assert(boost::get<FormulaT>(res).contains(f));
+		}
+		else {
+			assert(false);
+			assert(boost::get<FormulasT>(res).back().contains(f)); // TODO rethink
+		}
 		return res;
 	}
 	

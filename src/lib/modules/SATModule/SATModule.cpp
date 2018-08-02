@@ -2763,6 +2763,22 @@ namespace smtrat
 						if (next != lit_Undef) break;
 					}
 				}
+
+                // check for feasibility // TODO makes sense here?
+                if (Settings::mc_sat && next == lit_Undef) {
+                    SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still feasible");
+                    auto conflict = mMCSAT.isFeasible();
+                    if (conflict) {
+                        #ifdef DEBUG_SATMODULE
+                        cout << "######################################################################" << endl;
+                        cout << "### Before handling conflict" << endl;
+                        print(cout, "###");
+                        #endif
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
+                        handleTheoryConflict(*conflict);
+                        continue;
+                    }
+                }
 				
                 // If we do not already have a branching literal, we pick one
                 if( next == lit_Undef )
@@ -2778,10 +2794,11 @@ namespace smtrat
 					
 					if (Settings::mc_sat && next != lit_Undef) {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << ", checking for theory consistency...");
-						auto res = mMCSAT.isDecisionPossible(next);
-						if (res != boost::none) {
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict " << *res);
-							handleTheoryConflict(*res);
+						bool res = mMCSAT.isDecisionPossible(next);
+						if (!res) {
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict");
+							// handleTheoryConflict(*res);
+                            uncheckedEnqueue( ~next, CRef_TPropagation );
 							continue;
 						}
 					}
@@ -3255,18 +3272,16 @@ namespace smtrat
         {
 			SMTRAT_LOG_DEBUG("smtrat.sat", "out_learnt = " << out_learnt);
 			
-			if (confl == CRef_Undef) std::exit(77);
             assert( confl != CRef_Undef );    // (otherwise should be UIP)
-			if (confl == CRef_TPropagation) {
-				assert(false);
+			if (Settings::mc_sat && confl == CRef_TPropagation) { // TODO reactivate
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Found " << p << " to be result of theory propagation.");
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << mMCSAT);
 				cancelIncludingLiteral(p);
-				auto explanation = boost::get<FormulaT>(mMCSAT.explainTheoryPropagation(p));
+				auto explanation = boost::get<FormulaT>(mMCSAT.explainTheoryPropagation(p)); // TODO deal with FormulasT as response
 				
 				vec<Lit> expClause;
 				for (const auto& f: explanation)
-					expClause.push(getLiteral(f));
+					expClause.push(createLiteral(f));
 				assert(expClause.size() > 1);
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Explanation for " << p << ": " << expClause);
 				sort(expClause, lemma_lt(*this));
@@ -3300,11 +3315,11 @@ namespace smtrat
 						//	pathC++;
 						//	SMTRAT_LOG_DEBUG("smtrat.sat", "\tTo process: "  << q << ", pathC = " << pathC);
 						//} else {
-						if (bool_value(q) == l_Undef) {
-							out_learnt.push(q);
-							SMTRAT_LOG_DEBUG("smtrat.sat", "\tq is false by theory assignment, forwarding to out_learnt.");
-						}
-						else if( level(var(q)) == qlevel && qlevel >= decisionLevel() ) {
+                            if (bool_value(q) == l_Undef) {
+                                out_learnt.push(q);
+                                SMTRAT_LOG_DEBUG("smtrat.sat", "\tq is false by theory assignment, forwarding to out_learnt.");
+                            }
+                            else if( level(var(q)) == qlevel && qlevel >= decisionLevel() ) {
 								pathC++;
 								SMTRAT_LOG_DEBUG("smtrat.sat", "\tTo process: "  << q << ", pathC = " << pathC);
 							}
