@@ -3246,6 +3246,100 @@ namespace smtrat
         }
         return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
     }
+
+    template<class Settings>
+    FormulaT SATModule<Settings>::resolveConflictClauseChain(const mcsat::Explanation& explanation) const {
+        if (explanation.type() == typeid(FormulaT)) {
+            return boost::get<FormulaT>(explanation);
+        }
+        else {
+            const FormulasT& clauses = boost::get<FormulasT>(explanation);
+
+            // FIRST STEP: propagate all clauses; ignore non-propagating clauses
+            std::vector<std::pair<FormulaT, FormulaT>> propagations; // first implies second to be false
+            std::unordered_set<FormulaT> falseTseitinVars;
+            auto isTseitinVar = [](const FormulaT& f) -> const bool {
+                return f.getType() == carl::FormulaType::BOOL; // TODO replace this check ...
+            };
+            auto abstractVariable = [&](const FormulaT& f) -> const Minisat::Var { return var(mConstraintLiteralMap.at(f).front()); };
+            auto isLiteralFalse = [&](const FormulaT& f) -> const bool {
+                return falseTseitinVars.find(f) != falseTseitinVars.end() || theoryValue(abstractVariable(f)) == l_False;
+            };
+
+            for (auto iter = clauses.begin(); iter != clauses.end() - 1; iter++) {
+                const auto& clause = *iter;
+                bool isPropagating = true;
+                boost::optional<FormulaT> propagatedTseitinVar;
+                for (const auto& lit : clause) {
+                    if (isTseitinVar(lit.negated())) {
+                        propagatedTseitinVar = lit.negated();
+                    } else if (!isLiteralFalse(lit)) {
+                        isPropagating = false;
+                        break;
+                    }
+                }
+                if (isPropagating) {
+                    assert(propagatedTseitinVar);
+                    falseTseitinVars.insert(*propagatedTseitinVar);
+                    propagations.push_back(std::make_pair(clause, *propagatedTseitinVar));
+                }
+            }
+
+            // assert clauses.back() to be propagating a single literal
+            int nonFalseLiterals = 0;
+            for (const auto& lit : clauses.back()) {
+                nonFalseLiterals += !isLiteralFalse(lit);
+
+                if (!isLiteralFalse(lit)) {
+                    std::cout << lit << std::endl;
+                }
+            }
+            //assert(nonFalseLiterals == 1); // TODO was geht hier ab?!??
+            
+            // SECOND STEP: perform resolution
+            FormulasT result;
+            std::unordered_set<FormulaT> toProcess;
+
+            // initialize with conflicting clause
+            for (const auto& lit : clauses.back()) {
+                if (isTseitinVar(lit)) {
+                    toProcess.insert(lit);
+                } else {
+                    result.push_back(lit);
+                }
+            }
+
+            // resolve using propagations
+            for (auto iter = propagations.rbegin(); iter != propagations.rend(); iter++) {
+                // check if any tseitin variable can be resolved using this clause
+                if (toProcess.find(iter->second) == toProcess.end()) {
+                    continue;
+                }
+
+                // remove the processed tseitin variable
+                toProcess.erase(iter->second);
+
+                // add literals of clauses to respective sets
+                for (const auto& lit : iter->first.subformulas()) {
+                    if (lit.negated() != iter->second) {
+                        if (isTseitinVar(lit)) {
+                            toProcess.insert(lit);
+                        } else {
+                            result.push_back(lit);
+                        }
+                    }
+                }
+
+                if (toProcess.empty()) {
+                    break;
+                }
+            }
+
+            assert(toProcess.empty());
+
+            return FormulaT(carl::FormulaType::OR, std::move(result));
+        }
+    }
     
     template<class Settings>
     bool SATModule<Settings>::analyze( CRef confl, vec<Lit>& out_learnt, int& out_btlevel )
@@ -3283,7 +3377,7 @@ namespace smtrat
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Found " << p << " to be result of theory propagation.");
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << mMCSAT);
 				cancelIncludingLiteral(p);
-				auto explanation = boost::get<FormulaT>(mMCSAT.explainTheoryPropagation(p)); // TODO deal with FormulasT as response
+				auto explanation = resolveConflictClauseChain(mMCSAT.explainTheoryPropagation(p));
 				
 				vec<Lit> expClause;
 				for (const auto& f: explanation)

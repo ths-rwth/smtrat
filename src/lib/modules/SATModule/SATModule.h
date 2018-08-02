@@ -1317,6 +1317,8 @@ namespace smtrat
             void cancelAssignmentUntil( int level );
             void resetVariableAssignment( Minisat::Var _var );
 
+            FormulaT resolveConflictClauseChain(const mcsat::Explanation& explanation) const;
+
             /**
              *  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
              *

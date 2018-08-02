@@ -243,7 +243,7 @@ public:
 			assert(boost::get<FormulaT>(res).contains(f));
 		}
 		else {
-			assert(false);
+			// assert(false);
 			assert(boost::get<FormulasT>(res).back().contains(f)); // TODO rethink
 		}
 		return res;
