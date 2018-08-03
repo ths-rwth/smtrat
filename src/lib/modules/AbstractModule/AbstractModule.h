@@ -22,7 +22,12 @@ namespace smtrat
 			AbstractStatistics mStatistics;
 #endif
 			// Members.
-			
+			ModuleInput* mLRAFormula;
+			ModuleInput* mNRAFormula;
+		private:
+		//counter for GeneratedVariable, this is a global counter.
+		int variableCount = 0;
+
 		public:
 			typedef Settings SettingsType;
 			std::string moduleName() const {
