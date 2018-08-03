@@ -64,7 +64,8 @@ namespace smtrat
             if( !term.isConstant() )
             {
                 //monomials
-                cout << "Monomial is: " << term.monomial();
+                carl::Monomial::Arg monmial = term.monomial();
+                cout << "Monomial is: " << monmial;
                 cout << "\n";
 
                 //create new variables
