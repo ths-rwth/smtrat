@@ -84,11 +84,11 @@ namespace cad {
 		/// Adds a new polynomial to the given level and perform the projection recursively.
 		carl::Bitset addToProjection(std::size_t level, const UPoly& p, std::size_t origin) {
 			assert(level > 0 && level <= dim());
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			if (canBeRemoved(p)) return carl::Bitset();
-			if ((level > 1) && (level < dim()) && canBeForwarded(level, p)) {
+			if (level < dim() && canBeForwarded(level, p)) {
 				return addToProjection(level + 1, p.switchVariable(var(level+1)), origin);
 			}
-			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			assert(p.mainVar() == var(level));
 			auto it = polyIDs(level).find(p);
 			if (it != polyIDs(level).end()) {
@@ -143,23 +143,17 @@ namespace cad {
 		 */
 		void removePolynomial(const UPoly& p, std::size_t cid, bool) override {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << p << " from constraint " << cid);
-			assert(polys(1).back().first == p);
-			assert(polys(1).back().second == cid);
-			removePolynomial(1);
-			std::size_t origin = cid;
-			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Origin is " << origin);
-			callRemoveCallback(1, SampleLiftedWith().set(cid));
-			// Remove all polynomials from all levels that have the removed polynomial as origin.
-			for (std::size_t level = 2; level <= dim(); level++) {
+			// Remove all polynomials from all levels that have the removed constraint as origin.
+			for (std::size_t level = 1; level <= dim(); level++) {
 				carl::Bitset removed;
 				if (polys(level).empty()) continue;
-				while (polys(level).back().second == origin) {
+				while (polys(level).back().second == cid) {
 					std::size_t id = polys(level).size() - 1;
 					mLiftingQueues[level - 1].erase(id);
 					removePolynomial(level);
 					removed.set(id);
 				}
-				assert(polys(level).empty() || polys(level).back().second < origin);
+				assert(polys(level).empty() || polys(level).back().second < cid);
 				callRemoveCallback(level, removed);
 			}
 		}

@@ -13,7 +13,9 @@
 
 ListSubDirs(SUBDIRS ${CMAKE_SOURCE_DIR}/src/lib/modules)
 foreach(subdir ${SUBDIRS})
-    add_subdirectory(${subdir})
+	if(NOT (${subdir} STREQUAL "CMakeFiles"))
+		add_subdirectory(${subdir})
+	endif()
 endforeach()
 
 # Number of modules (for iteration)
