@@ -4,12 +4,6 @@
 #include "../modules/SATModule/SATModule.h"
 #include "../modules/LRAModule/LRAModule.h"
 #include "../modules/AbstractModule/AbstractModule.h"
-#include "../modules/FPPModule/FPPModule.h"
-#include "../modules/SATModule/SATModule.h"
-#include "../modules/STropModule/STropModule.h"
-#include "../modules/ICPModule/ICPModule.h"
-#include "../modules/VSModule/VSModule.h"
-#include "../modules/NewCADModule/NewCADModule.h"
 
 namespace smtrat
 {
@@ -33,25 +27,7 @@ namespace smtrat
                 {
                     addBackend<SATModule<SATSettings1>>(
                     {
-                        addBackend<LRAModule<LRASettings1>>(
-                        {
-                            addBackend<FPPModule<FPPSettings1>>(
-                            {
-                                addBackend<SATModule<SATSettings1>>(
-                                {
-                                    addBackend<STropModule<STropSettings1>>(
-                                    {
-                                        addBackend<ICPModule<ICPSettings1>>(
-                                        {
-                                            addBackend<VSModule<VSSettings234>>(
-                                            {
-                                                addBackend<NewCADModule<NewCADSettingsFOS>>()
-                                            })
-                                        })
-                                    })
-                                })
-                            })
-                        })
+                        addBackend<LRAModule<LRASettings1>>()
                     })
                 })
             });
