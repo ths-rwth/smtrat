@@ -476,7 +476,7 @@ namespace smtrat
 			auto variables = formula.variables();
 
 			for(const auto& it : variables){
-				mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(it, carl::freshBooleanVariable()));
+				mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(it, carl::freshIntegerVariable()));
 			}
 
 			Poly lhs;
@@ -507,8 +507,8 @@ namespace smtrat
 				if(std::find(mConnectedVars.begin(), mConnectedVars.end(), var) == mConnectedVars.end()){
 					//The variables are not interconnected
 					mConnectedVars.push_back(var);
-					FormulaT boolVar = FormulaT(mVariablesCache.find(var)->second);
-					Poly intVar(var);
+					FormulaT boolVar = FormulaT(var);
+					Poly intVar(mVariablesCache.find(var)->second);
 					FormulaT subformulaA = FormulaT(intVar - Rational(1), carl::Relation::EQ);
 					FormulaT subformulaB = FormulaT(carl::FormulaType::IMPLIES, boolVar, subformulaA);
 					FormulaT subformulaC = FormulaT(intVar, carl::Relation::EQ);
