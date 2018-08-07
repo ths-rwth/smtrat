@@ -3248,11 +3248,12 @@ namespace smtrat
     }
 
     template<class Settings>
-    FormulaT SATModule<Settings>::resolveConflictClauseChain(const mcsat::Explanation& explanation) const {
+    FormulaT SATModule<Settings>::resolveConflictClauseChain(const mcsat::Explanation& explanation, bool shouldPropagate) const {
         if (explanation.type() == typeid(FormulaT)) {
             return boost::get<FormulaT>(explanation);
         }
         else {
+            // TODO make this more robust (tseitin vars can also occur negated ...) or formalize requirement
             const FormulasT& clauses = boost::get<FormulasT>(explanation);
 
             // FIRST STEP: propagate all clauses; ignore non-propagating clauses
@@ -3261,9 +3262,31 @@ namespace smtrat
             auto isTseitinVar = [](const FormulaT& f) -> const bool {
                 return f.getType() == carl::FormulaType::BOOL; // TODO replace this check ...
             };
-            auto abstractVariable = [&](const FormulaT& f) -> const Minisat::Var { return var(mConstraintLiteralMap.at(f).front()); };
+            auto abstractLiteral = [&](const FormulaT& f) -> const boost::optional<Minisat::Lit> {
+                try {
+                    return mConstraintLiteralMap.at(f).front();
+                } catch (const std::out_of_range& e) {
+                    return boost::none;
+                }
+                
+            };
+            auto eval = [&](const FormulaT& f) -> const Minisat::lbool {
+                auto res = carl::model::evaluate(f, mMCSAT.model());
+                if (res.isBool()) {
+                    return res.asBool() ? l_True : l_False;
+                }
+                return l_Undef;
+            };
             auto isLiteralFalse = [&](const FormulaT& f) -> const bool {
-                return falseTseitinVars.find(f) != falseTseitinVars.end() || theoryValue(abstractVariable(f)) == l_False;
+                if (falseTseitinVars.find(f) != falseTseitinVars.end()) {
+                    return true;
+                }
+                auto lit = abstractLiteral(f);
+                if (lit) {
+                    return value(*lit) == l_False;
+                } else {
+                    return eval(f) == l_False;
+                }
             };
 
             for (auto iter = clauses.begin(); iter != clauses.end() - 1; iter++) {
@@ -3285,16 +3308,15 @@ namespace smtrat
                 }
             }
 
-            // assert clauses.back() to be propagating a single literal
+            // assert clauses.back() to be propagating a single literal (resp. conflicting)
             int nonFalseLiterals = 0;
             for (const auto& lit : clauses.back()) {
                 nonFalseLiterals += !isLiteralFalse(lit);
-
-                if (!isLiteralFalse(lit)) {
-                    std::cout << lit << std::endl;
-                }
             }
-            //assert(nonFalseLiterals == 1); // TODO was geht hier ab?!??
+            if (shouldPropagate) 
+                assert(nonFalseLiterals == 1);
+            else
+                assert(nonFalseLiterals == 0);
             
             // SECOND STEP: perform resolution
             FormulasT result;

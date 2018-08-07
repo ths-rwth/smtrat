@@ -970,11 +970,68 @@ namespace smtrat
             bool isConflicting(const FormulaT& clause) const { // only for assertions
                 const FormulasT& literals = clause.isNary() ? clause.subformulas() : FormulasT({clause});
                 bool clauseIsConflicting = true;
-				for (const auto& c: literals) { // TODO does not work ....
-                    auto lit = getLiteral(c);
-                    clauseIsConflicting &= (bool_value(lit) == l_False);
+				for (const auto& c: literals) {
+                    clauseIsConflicting &= (value(getLiteral(c)) == l_False);
 				}
                 return clauseIsConflicting;
+            }
+
+            void clauseEvals(const FormulaT& clause) {
+                const FormulasT& literals = clause.isNary() ? clause.subformulas() : FormulasT({clause});
+                std::cout << "---"<<std::endl;
+                int falseLiterals = 0;
+                int undefLiterals = 0;
+				for (const auto& c: literals) {
+                    auto lit = getLiteral(c);
+                    falseLiterals += value(lit) == l_False;
+                    undefLiterals += value(lit) == l_Undef;
+                    std::cout << c << " [" << lit << "] -> " << (value(lit)) << std::endl;    
+				}
+                if (falseLiterals == literals.size()) {
+                    std::cout << "CLAUSE " << clause << " IS CONFLICTING" << std::endl; 
+                } else if (falseLiterals == literals.size() - 1 && undefLiterals == 1) {
+                    std::cout << "CLAUSE " << clause << " IS PROPAGATIING" << std::endl;
+                }
+                std::cout << "---"<<std::endl;
+            }
+
+            void analyzeClauseChain(const FormulasT& clauses) {
+                auto abstractLiteral = [&](const FormulaT& f) -> const boost::optional<Minisat::Lit> {
+                    try {
+                        return mConstraintLiteralMap.at(f).front();
+                    } catch (const std::out_of_range& e) {
+                        return boost::none;
+                    }
+                    
+                };
+                auto eval = [&](const FormulaT& f) -> const Minisat::lbool {
+                    auto lit = abstractLiteral(f);
+                    if (lit) {
+                        return value(*lit);
+                    } else {
+                        auto res = carl::model::evaluate(f, mMCSAT.model());
+                        if (res.isBool()) {
+                            return res.asBool() ? l_True : l_False;
+                        }
+                        return l_Undef;
+                    }
+                };
+
+                std::cout << "---";
+
+                for (const auto& clause : clauses) {
+                    for (const auto& literal : clause) {
+                        auto res = eval(literal);
+                        if (res==l_Undef) {
+                            std::cout << " " << literal << " ";
+                        } else {
+                            std::cout << " " << res << " ";
+                        } 
+                    }
+                    std::cout << std::endl;
+                }
+
+                std::cout << "---";
             }
 			
 			void handleTheoryConflict(const mcsat::Explanation& explanation) {
@@ -988,25 +1045,37 @@ namespace smtrat
                     const auto& clause = boost::get<FormulaT>(explanation);
                     bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
                     assert(added);
-                    //assert(isConflicting(clause)); // TODO why not possible?
+                    assert(isConflicting(clause));
                 } else {
+                    /*
+                    FormulaT clause = resolveConflictClauseChain(boost::get<FormulasT>(explanation), false);
+                    bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
+                    assert(added);
+                    assert(isConflicting(clause));
+                    */
                     const FormulasT& chain = boost::get<FormulasT>(explanation);
-
+                    //analyzeClauseChain(chain);
                     // add propagations
                     bool added = false;
                     for (const auto& clause : chain) {
+                        // TODO maybe propagate clauses manually...
+                        // note: not all clauses are propagating
                         added |= addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
+                        //clauseEvals(clause);
+                        //Minisat::CRef confl = storeLemmas();
+                        //assert(confl == Minisat::CRef_Undef);
                     }
                     assert(added);
-                    //assert(isConflicting(chain.back())); // TODO why not possible?
+                    // assert(isConflicting(chain.back())); // TODO does not work here since nothing has been propagated yet ...
                 }
+
+                // TODO test: run storeLemmas and then check if lemma is conflicting -> hardly possible since storelemmas performs some backtracking...
+                // TODO can multiple conflicts occur?  (not for VS i guess... since all branches are needed for conflict) => formalize requirements somehow
 
                 propagateTheory();
                 Minisat::CRef confl = storeLemmas();
                 if (confl != Minisat::CRef_Undef) {
                     handleConflict(confl);
-                } else {
-                    //assert(false); //TODO warum geht das hier eigentlich nicht?
                 }
 
                 SMTRAT_LOG_DEBUG("smtrat.sat", "Handled theory conflict explanation");
@@ -1014,7 +1083,7 @@ namespace smtrat
             
 			inline Minisat::lbool bool_value( Minisat::Lit p ) const
             {
-				return bool_value(Minisat::var(p)) ^ Minisat::sign(p);
+				return bool_value(Minisat::var(p)) == l_Undef ? l_Undef : bool_value(Minisat::var(p)) ^ Minisat::sign(p);
             }
             /**
              * @param p The literal to get its value for.
@@ -1022,14 +1091,15 @@ namespace smtrat
              */
             inline Minisat::lbool value( Minisat::Lit p ) const
             {
-				return value(Minisat::var(p)) ^ Minisat::sign(p);
+				return value(Minisat::var(p)) == l_Undef ? l_Undef : value(Minisat::var(p)) ^ Minisat::sign(p);
             }
 			inline Minisat::lbool theoryValue( Minisat::Lit p ) const {
-				return theoryValue(Minisat::var(p)) ^ Minisat::sign(p);
+				return theoryValue(Minisat::var(p)) == l_Undef ? l_Undef : theoryValue(Minisat::var(p)) ^ Minisat::sign(p);
 			}
 			inline Minisat::lbool valueAndUpdate( Minisat::Lit p )
             {
-				return valueAndUpdate(Minisat::var(p)) ^ Minisat::sign(p);
+                auto res = valueAndUpdate(Minisat::var(p));
+				return res == l_Undef ? l_Undef : valueAndUpdate(Minisat::var(p)) ^ Minisat::sign(p);
             }
             
             /**
@@ -1317,7 +1387,7 @@ namespace smtrat
             void cancelAssignmentUntil( int level );
             void resetVariableAssignment( Minisat::Var _var );
 
-            FormulaT resolveConflictClauseChain(const mcsat::Explanation& explanation) const;
+            FormulaT resolveConflictClauseChain(const mcsat::Explanation& explanation, bool shouldPropagate = true) const;
 
             /**
              *  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
