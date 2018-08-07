@@ -2801,9 +2801,7 @@ namespace smtrat
                         move theory decisions up => makes that sense at all?
                         */
 						if (!res) {
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict");
-                            // insertVarOrder(var(next)); // TODO needs to be reinserted? and ~next to be removed?
-							// handleTheoryConflict(*res);
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict, propagate " << ~next);
                             uncheckedEnqueue( ~next, CRef_TPropagation );
 							continue;
 						}
