@@ -3391,67 +3391,87 @@ namespace smtrat
         do
         {
 			SMTRAT_LOG_DEBUG("smtrat.sat", "out_learnt = " << out_learnt);
-			
+
             assert( confl != CRef_Undef );    // (otherwise should be UIP)
+            bool gotClause = true;
 			if (Settings::mc_sat && confl == CRef_TPropagation) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Found " << p << " to be result of theory propagation.");
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << mMCSAT);
-				cancelIncludingLiteral(p); // TODO does this decrement decisionLevel() ??
+				cancelIncludingLiteral(p); // TODO does this decrement decisionLevel() -> YES; does it matter -> MAYBE ??
 				auto explanation = resolveConflictClauseChain(mMCSAT.explainTheoryPropagation(p));
 				
 				vec<Lit> expClause;
-				for (const auto& f: explanation)
-					expClause.push(createLiteral(f));
-				assert(expClause.size() > 1);
+                if (explanation.isNary()) {
+                    for (const auto& f: explanation) {
+                        expClause.push(createLiteral(f));
+                    }
+                }
+                else {
+                    expClause.push(createLiteral(explanation));
+                }
+				
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Explanation for " << p << ": " << expClause);
-				sort(expClause, lemma_lt(*this));
-				confl = ca.alloc(expClause, LEMMA_CLAUSE);
-				clauses.push(confl);
-				attachClause(confl);
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Explanation for " << p << ": " << ca[confl]);
+                if (expClause.size() > 1) {
+                    sort(expClause, lemma_lt(*this));
+                    confl = ca.alloc(expClause, LEMMA_CLAUSE);
+                    clauses.push(confl);
+                    attachClause(confl);
+                    SMTRAT_LOG_DEBUG("smtrat.sat", "Explanation for " << p << ": " << ca[confl]);
+                } else { // TODO test this stuff:
+                    // we can safely do this as we backtracked using cancelIncludingLiteral
+                    SMTRAT_LOG_DEBUG("smtrat.sat", "Literal " << p << " is an assumption");
+                    assumptions.push(expClause[0]);
+                    SMTRAT_LOG_DEBUG("smtrat.sat", "\tpushing = " << expClause[0] << " to out_learnt");
+                    out_learnt.push(expClause[0]);
+                    gotClause = false;
+                }
+				
 			}
-	            Clause& c = ca[confl];
-				sat::detail::validateClause(c, mMinisatVarMap, mBooleanConstraintMap, Settings::validate_clauses);
-				SMTRAT_LOG_DEBUG("smtrat.sat", "c = " << c);
-	            if( c.learnt() )
-	                claBumpActivity( c );
 
-				// assert that c[0] is actually p
-	            for( int j = (p == lit_Undef) ? 0 : 0; j < c.size(); j++ )
-	            {
-	                Lit q = c[j];
-					if (q == p) continue;
-					auto qlevel = theory_level(var(q));
-					SMTRAT_LOG_DEBUG("smtrat.sat", "\tLooking at literal " << q << " from level " << qlevel);
-					SMTRAT_LOG_DEBUG("smtrat.sat", "\tseen? " << static_cast<bool>(seen[var(q)]));
-					assert(value(q) == l_False);
-	                
-	                if( !seen[var( q )] && qlevel > 0 )
-	                {
-						SMTRAT_LOG_DEBUG("smtrat.sat", "\tNot seen yet, level = " << qlevel);
-	                    varBumpActivity( var( q ) );
-						seen[var( q )] = 1;
-						//if (Settings::mc_sat && reason(var(q)) == CRef_TPropagation) {
+            if (gotClause) {
+                Clause& c = ca[confl];
+                sat::detail::validateClause(c, mMinisatVarMap, mBooleanConstraintMap, Settings::validate_clauses);
+                SMTRAT_LOG_DEBUG("smtrat.sat", "c = " << c);
+                if( c.learnt() )
+                    claBumpActivity( c );
+
+                // assert that c[0] is actually p
+                for( int j = (p == lit_Undef) ? 0 : 0; j < c.size(); j++ )
+                {
+                    Lit q = c[j];
+                    if (q == p) continue;
+                    auto qlevel = theory_level(var(q));
+                    SMTRAT_LOG_DEBUG("smtrat.sat", "\tLooking at literal " << q << " from level " << qlevel);
+                    SMTRAT_LOG_DEBUG("smtrat.sat", "\tseen? " << static_cast<bool>(seen[var(q)]));
+                    assert(value(q) == l_False);
+                    
+                    if( !seen[var( q )] && qlevel > 0 )
+                    {
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "\tNot seen yet, level = " << qlevel);
+                        varBumpActivity( var( q ) );
+                        seen[var( q )] = 1;
+                        //if (Settings::mc_sat && reason(var(q)) == CRef_TPropagation) {
                         //    SMTRAT_LOG_DEBUG("smtrat.sat", "\t"  << q << " is result of theory propagation");
                             // TODO what now?
-						//	pathC++;
-						//	SMTRAT_LOG_DEBUG("smtrat.sat", "\tTo process: "  << q << ", pathC = " << pathC);
-						//} else {
+                        //	pathC++;
+                        //	SMTRAT_LOG_DEBUG("smtrat.sat", "\tTo process: "  << q << ", pathC = " << pathC);
+                        //} else {
                             if (bool_value(q) == l_Undef) {
                                 out_learnt.push(q);
                                 SMTRAT_LOG_DEBUG("smtrat.sat", "\tq is false by theory assignment, forwarding to out_learnt.");
                             }
                             else if( level(var(q)) == qlevel && qlevel >= decisionLevel() ) {
-								pathC++;
-								SMTRAT_LOG_DEBUG("smtrat.sat", "\tTo process: "  << q << ", pathC = " << pathC);
-							}
-		                    else {
-								SMTRAT_LOG_DEBUG("smtrat.sat", "\tpushing = " << q << " to out_learnt");
-		                        out_learnt.push( q );
-							}
-						//}
-	                }
-	            }
+                                pathC++;
+                                SMTRAT_LOG_DEBUG("smtrat.sat", "\tTo process: "  << q << ", pathC = " << pathC);
+                            }
+                            else {
+                                SMTRAT_LOG_DEBUG("smtrat.sat", "\tpushing = " << q << " to out_learnt");
+                                out_learnt.push( q );
+                            }
+                        //}
+                    }
+                }
+            }
 
             // Select next clause to look at:
             while( !seen[var( trail[index--] )] );
