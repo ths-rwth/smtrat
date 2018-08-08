@@ -2763,23 +2763,7 @@ namespace smtrat
 						if (next != lit_Undef) break;
 					}
 				}
-
-                // check for feasibility // TODO makes sense here? performance? maybe check combined with T-Propagations
-                if (Settings::mc_sat && next == lit_Undef) {
-                    SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still feasible");
-                    auto conflict = mMCSAT.isFeasible();
-                    if (conflict) {
-                        #ifdef DEBUG_SATMODULE
-                        cout << "######################################################################" << endl;
-                        cout << "### Before handling conflict" << endl;
-                        print(cout, "###");
-                        #endif
-                        SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
-                        handleTheoryConflict(*conflict);
-                        continue;
-                    }
-                }
-				
+			
                 // If we do not already have a branching literal, we pick one
                 if( next == lit_Undef )
                 {
@@ -2792,18 +2776,20 @@ namespace smtrat
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Picking a literal for a boolean decision");
 					next = pickBranchLit();
 					
-					if (Settings::mc_sat && next != lit_Undef) {
+					if (Settings::mc_sat && next != lit_Undef) { // TODO test this stuff:
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << ", checking for theory consistency...");
-						bool res = mMCSAT.isDecisionPossible(next);
-                        /*
-                        alternative to probably expensive feasibility checks: assignmentfinder adds f last => if core doesn ot contain f, conflict is independent from f
-                        OR:
-                        move theory decisions up => makes that sense at all?
-                        */
-						if (!res) {
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict, propagate " << ~next);
-                            uncheckedEnqueue( ~next, CRef_TPropagation );
-							continue;
+						auto res = mMCSAT.isDecisionPossible(next);                        
+						if (!res.first) {
+                            if (res.second) {
+                                SMTRAT_LOG_DEBUG("smtrat.sat", "Trail was infeasible before, resolving conflict " << *res.second);
+                                insertVarOrder(var(next));
+                                handleTheoryConflict(*res.second);
+                                continue;   
+                            } else {
+                                SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict, propagate " << ~next);
+                                uncheckedEnqueue( ~next, CRef_TPropagation );
+                                continue;
+                            }
 						}
 					}
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Deciding upon " << next);

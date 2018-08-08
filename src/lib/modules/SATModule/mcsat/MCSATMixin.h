@@ -190,8 +190,7 @@ public:
 	/// Evaluate a literal in the theory, set lastReason to last theory decision involved.
 	Minisat::lbool evaluateLiteral(Minisat::Lit lit) const;
 	
-	// boost::optional<Explanation> isDecisionPossible(Minisat::Lit lit);
-	bool isDecisionPossible(Minisat::Lit lit);
+	std::pair<bool, boost::optional<Explanation>> isDecisionPossible(Minisat::Lit lit);
 	
 	boost::optional<Explanation> isFeasible() {
 		if (!mayDoAssignment()) {
