@@ -62,7 +62,7 @@ std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isDecisionPo
 	} else {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " (" << f << ") is impossible due to " << *res);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << (*this));
-		if (std::find((*res).begin(), (*res).end(), f) != (*res).end()) {
+		if (std::find((*res).begin(), (*res).end(), f) == (*res).end()) {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflicting core " << *res << " is independent from decision " << f);
 			return std::make_pair(false, mBackend.explain(currentVariable(), *res));
 		} else {
