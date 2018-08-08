@@ -233,7 +233,8 @@ public:
 		const auto& f = mGetter.reabstractLiteral(literal);
 		boost::optional<FormulasT> conflict = mBackend.isInfeasible(currentVariable(), !f);
 		assert(conflict);
-		(*conflict).push_back(!f);
+		assert( std::find((*conflict).begin(), (*conflict).end(), !f) != (*conflict).end() );
+		//(*conflict).push_back(!f); // TODO remove
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " from " << *conflict);
 		auto res = mBackend.explain(currentVariable(), *conflict);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " by " << res);
