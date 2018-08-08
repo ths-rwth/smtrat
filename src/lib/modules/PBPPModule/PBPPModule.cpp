@@ -96,10 +96,10 @@ namespace smtrat
 
 			assert(subformula.getType() == carl::FormulaType::CONSTRAINT);
 
-			// extract important information: lhs, rhs, hasRhs
-			// const Poly& lhs = constraint.lhs();
-			// const Rational rhs = constraint.constantPart();
-			// const carl::Relation relation = constraint.relation();
+			// we can also check a mode which only uses simplex and does not encode
+			if (Settings::USE_LIA_ONLY) {
+				return forwardAsArithmetic(subformula.constraint());
+			}
 
 			// actually apply transformations
 			if (Settings::use_rns_transformation){
@@ -483,7 +483,7 @@ namespace smtrat
 			for(const auto& it : cLHS){
 				// Poly pol(it.second);
 				if (!it.isConstant()) {
-					lhs = lhs + it.coeff() * it.getSingleVariable();
+					lhs = lhs + it.coeff() * mVariablesCache.find(it.getSingleVariable())->second;
 				} else {
 					lhs = lhs + it.coeff();
 				}
