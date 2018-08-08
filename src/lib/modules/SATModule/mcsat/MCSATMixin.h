@@ -243,8 +243,7 @@ public:
 			assert(boost::get<FormulaT>(res).contains(f));
 		}
 		else {
-			// assert(false);
-			assert(boost::get<FormulasT>(res).back().contains(f)); // TODO rethink
+			assert(boost::get<FormulasT>(res).back().contains(f)); // TODO rethink [if only one conflict is allowed, then this works]
 		}
 		return res;
 	}
