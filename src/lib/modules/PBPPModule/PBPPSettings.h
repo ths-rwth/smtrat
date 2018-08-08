@@ -10,6 +10,26 @@
 
 namespace smtrat
 {
+	struct PBPPSettingsLIAOnly
+	{
+		/// Name of the Module
+		static constexpr auto moduleName = "PBPPModule<PBPPSettingsLIAOnly>";
+		/**
+		 * Example for a setting.
+		 */
+		static constexpr bool use_rns_transformation = false;
+		static constexpr bool use_card_transformation = false;
+		static constexpr bool use_mixed_transformation = false;
+		static constexpr bool use_basic_transformation = false;
+
+		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
+		// new formulas.
+		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
+		static constexpr bool USE_LIA_MIXED = false;
+		static constexpr bool USE_LIA_ONLY = true;
+
+	};
+
 	struct PBPPSettings1
 	{
 		/// Name of the Module
@@ -26,6 +46,7 @@ namespace smtrat
 		// new formulas.
 		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
 		static constexpr bool USE_LIA_MIXED = true;
+		static constexpr bool USE_LIA_ONLY = false;
 
 	};
 	
@@ -44,6 +65,7 @@ namespace smtrat
 		// new formulas.
 		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
 		static constexpr bool USE_LIA_MIXED = true;
+		static constexpr bool USE_LIA_ONLY = false;
 	};
 
 	struct PBPPSettingsWithCardConstr
@@ -61,6 +83,7 @@ namespace smtrat
 		// new formulas.
 		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
 		static constexpr bool USE_LIA_MIXED = true;
+		static constexpr bool USE_LIA_ONLY = false;
 	};
 
 	struct PBPPSettingsWithMixedConstr
@@ -78,6 +101,7 @@ namespace smtrat
 		// new formulas.
 		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
 		static constexpr bool USE_LIA_MIXED = true;
+		static constexpr bool USE_LIA_ONLY = false;
 	};
 
 	struct PBPPSettingsBasic
@@ -95,6 +119,7 @@ namespace smtrat
 		// new formulas.
 		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
 		static constexpr bool USE_LIA_MIXED = true;
+		static constexpr bool USE_LIA_ONLY = false;
 	};
 
 
