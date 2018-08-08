@@ -50,10 +50,6 @@ namespace smtrat {
 				return FormulaT(carl::FormulaType::FALSE);
 			// -x1 - x2 - x3 <= 1 iff. x1 + x2 + x3 >= -1
 			if (allCoeffNegative && constant > 0) return FormulaT(carl::FormulaType::FALSE);
-			// x1 + x2 + x3 + x4 <= -1
-			if (allCoeffPositive && constant <= 0) return FormulaT(carl::FormulaType::FALSE);
-			// -x1 - x2 - x3 <= 0 iff. x1 + x2 + x3 >= 0
-			if (allCoeffNegative && constant == 0) return FormulaT(carl::FormulaType::TRUE);
 			// x1 + x2 + x3 <= 10
 			if (allCoeffPositive && constant >= constraint.variables().size())
 				return FormulaT(carl::FormulaType::TRUE);
