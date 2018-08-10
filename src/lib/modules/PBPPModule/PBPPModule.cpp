@@ -106,6 +106,7 @@ namespace smtrat
 				}
 
 				if (encoderByConstraint.find(constraint) == encoderByConstraint.end()) {
+					SMTRAT_LOG_INFO("smtrat.pbc", "There is no encoder for constraint " << constraint);
 					// if we do not know how to encode the constraint, use LIA!
 					liaConstraints.push_back(constraint);
 					continue;
@@ -662,10 +663,10 @@ namespace smtrat
 		bool encode = true;
 
 		// we do not encode very large formulas
-		encode &= conversionSizeByConstraint[constraint] <= Settings::MAX_NEW_RELATIVE_FORMULA_SIZE * rReceivedFormula().size();
+		encode = encode && conversionSizeByConstraint[constraint] <= Settings::MAX_NEW_RELATIVE_FORMULA_SIZE * rReceivedFormula().size();
 
 		// we only add LEQ if their encoding will be at least as small as the original constraint, i.e. 1
-		encode &= constraint.relation() == carl::Relation::EQ || conversionSizeByConstraint[constraint] <= 3;
+		encode = encode && (constraint.relation() == carl::Relation::EQ || conversionSizeByConstraint[constraint] <= 1);
 
 		return encode;
 	}

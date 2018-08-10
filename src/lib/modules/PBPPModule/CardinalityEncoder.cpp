@@ -147,18 +147,19 @@ namespace smtrat {
 	}
 
 	bool CardinalityEncoder::canEncode(const ConstraintT& constraint) {
-		// test whether all coefficients are 1
 		bool encodable = true;
 		bool allCoeffPositive = true;
 		bool allCoeffNegative = true;
 
 		for (const auto& it : constraint.lhs()) {
-			encodable &= it.coeff() == 1 || it.coeff() == -1;
+			if (it.isConstant()) continue;
+
+			encodable = encodable && (it.coeff() == 1 || it.coeff() == -1);
 			if (it.coeff() < 0) allCoeffPositive = false;
 			if (it.coeff() > 0) allCoeffNegative = false;
 		}
 
-		encodable &= allCoeffNegative != allCoeffPositive;
+		encodable = encodable && allCoeffNegative != allCoeffPositive;
 
 		return encodable;
 	}
