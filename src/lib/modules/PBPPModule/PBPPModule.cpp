@@ -73,15 +73,6 @@ namespace smtrat
 					}
 				}
 
-				// Instead of blindly converting constraints to bool we
-				// 1. first check which constraints have to be encoded in LIA.
-				// 1.1 Consider encoding eg x1 + ... + xn <= n-1 as not (x1 and ... and ... xn)! 
-				//     to minify encoding
-				// 2. Add those as LIA as well since we want to refine our relaxation. We hope to
-				//    to do less roundtrips between SAT and LIA solver
-				// 3. Add all the other constraints as boolean encoding
-				// sort by number of variables in constraint
-
 				if (formula.getType() != carl::FormulaType::CONSTRAINT){
 					addSubformulaToPassedFormula(formula, subformula.formula());
 					continue;
@@ -135,8 +126,10 @@ namespace smtrat
 			std::sort(boolConstraints.begin(), boolConstraints.end(), constraintComperator);
 			std::sort(liaConstraints.begin(), liaConstraints.end(), constraintComperator);
 
-			SMTRAT_LOG_INFO("smtrat.pbc", "After Step 1 - Encoding as LIA: " << liaConstraints);
-			SMTRAT_LOG_INFO("smtrat.pbc", "After Step 1 - Encoding as Bool: " << boolConstraints);
+			#ifdef DEBUG_PBPP
+			std::cout << "After Step 1 - Encoding as LIA: " << liaConstraints << std::endl;
+			std::cout << "After Step 1 - Encoding as Bool: " << boolConstraints << std::endl;
+			#endif
 
 			// 2. forward previously determined constraints as LIA 
 			std::set<carl::Variable> variablesInLIA;
@@ -672,7 +665,7 @@ namespace smtrat
 		encode &= conversionSizeByConstraint[constraint] <= Settings::MAX_NEW_RELATIVE_FORMULA_SIZE * rReceivedFormula().size();
 
 		// we only add LEQ if their encoding will be at least as small as the original constraint, i.e. 1
-		encode &= constraint.relation() == carl::Relation::EQ || conversionSizeByConstraint[constraint] == 1;
+		encode &= constraint.relation() == carl::Relation::EQ || conversionSizeByConstraint[constraint] <= 3;
 
 		return encode;
 	}
@@ -684,7 +677,7 @@ namespace smtrat
 		trivial = trivial || constraint.variables().size() <= 1;
 		trivial = trivial || (constraint.constantPart() == 0 && mCardinalityEncoder.canEncode(constraint));
 
-		// TODO this is not actually trivial - this just forces equalities - if they are not in LIA to stay in Bool.
+		// TODO this is not actually trivial. This just forces equalities - if they are not in LIA - to stay in Bool.
 		trivial = trivial || constraint.relation() == carl::Relation::EQ;
 
 		return trivial;
