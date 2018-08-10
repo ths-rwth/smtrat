@@ -10,6 +10,8 @@
 
 #include "RNSEncoder.h"
 
+#define DEBUG_PBPP
+
 namespace smtrat
 {
 
@@ -20,11 +22,7 @@ namespace smtrat
 			, mStatistics(Settings::moduleName)
 #endif
 			{
-				checkFormulaAndApplyTransformationsCallback = std::bind(&PBPPModule<Settings>::checkFormulaAndApplyTransformations, this, std::placeholders::_1);
-
-				mCardinalityEncoder.use_lia = Settings::USE_LIA_MIXED;
 				mCardinalityEncoder.problem_size = _formula->size();
-				mCardinalityEncoder.max_new_relative_formula_size = Settings::MAX_NEW_RELATIVE_FORMULA_SIZE;
 			}
 
 	template<class Settings>
@@ -44,23 +42,12 @@ namespace smtrat
 	template<class Settings>
 		bool PBPPModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 		{
-			// TODO double check objective
-			if (objective() != carl::Variable::NO_VARIABLE) {
-				for (const auto& var: objectiveFunction().gatherVariables()) {
-					mVariablesCache.emplace(var, carl::freshBooleanVariable());
-				}
-			}
-
-			FormulaT formula = mVisitor.visitResult(_subformula->formula(), checkFormulaAndApplyTransformationsCallback);
-			addSubformulaToPassedFormula(formula, _subformula->formula());
-			return true;
+				return true;
 		}
 
 	template<class Settings>
 		void PBPPModule<Settings>::removeCore( ModuleInput::const_iterator )
-		{
-
-		}
+		{}
 
 	template<class Settings>
 		void PBPPModule<Settings>::updateModel() const
@@ -75,32 +62,154 @@ namespace smtrat
 	template<class Settings>
 		Answer PBPPModule<Settings>::checkCore()
 		{
+			// 1. Preprocessing - ignore some constraints and gather informations
+			for (const auto& subformula : rReceivedFormula()) {
+				FormulaT formula = subformula.formula();
+				
+
+				if (objective() != carl::Variable::NO_VARIABLE) {
+					for (const auto& var: objectiveFunction().gatherVariables()) {
+						mVariablesCache.emplace(var, carl::freshIntegerVariable());
+					}
+				}
+
+				// Instead of blindly converting constraints to bool we
+				// 1. first check which constraints have to be encoded in LIA.
+				// 1.1 Consider encoding eg x1 + ... + xn <= n-1 as not (x1 and ... and ... xn)! 
+				//     to minify encoding
+				// 2. Add those as LIA as well since we want to refine our relaxation. We hope to
+				//    to do less roundtrips between SAT and LIA solver
+				// 3. Add all the other constraints as boolean encoding
+				// sort by number of variables in constraint
+
+				if (formula.getType() != carl::FormulaType::CONSTRAINT){
+					addSubformulaToPassedFormula(formula, subformula.formula());
+					continue;
+				}
+
+				const ConstraintT& constraint = formula.constraint();
+				formulaByConstraint[constraint] = formula;
+				if (!constraint.isPseudoBoolean()) { // eg an objective function
+					// forward as is
+					addSubformulaToPassedFormula(formula, subformula.formula());
+					continue;
+				}
+
+				// we can also check a mode which only uses simplex and does not encode
+				if (Settings::USE_LIA_ONLY) {
+					addSubformulaToPassedFormula(forwardAsArithmetic(constraint));
+					continue;
+				} 
+				
+				// store information about the constraint
+				Rational encodingSize = std::numeric_limits<size_t>::max();
+				for (const auto& encoder : encoders) {
+					Rational curEncoderSize = encoder->encodingSize(constraint);
+					SMTRAT_LOG_DEBUG("smtrat.pbc", "got encoding size " << curEncoderSize);
+					if (encoder->canEncode(constraint) && 
+						(curEncoderSize <= encodingSize || conversionSizeByConstraint[constraint] == Rational(0))) 
+					{
+						encoderByConstraint[constraint] = encoder;
+						conversionSizeByConstraint[constraint] = curEncoderSize;
+					}
+				}
+
+				if (encoderByConstraint.find(constraint) == encoderByConstraint.end()) {
+					// if we do not know how to encode the constraint, use LIA!
+					liaConstraints.push_back(constraint);
+					continue;
+				}
+
+				// by now we know which encoder we want to use if we actually want to convert to a boolean formula.
+				// Now check whether it is "benefitial" to use the boolean encoding, i.e. whether we introduce more 
+				// new formulas than we already have.
+				if (encodeAsBooleanFormula(constraint)) {
+					boolConstraints.push_back(constraint);
+				} else {
+					liaConstraints.push_back(constraint);
+				}
+			}
+
+			auto constraintComperator = [](const ConstraintT& left, const ConstraintT& right) { return left.variables().size() < right.variables().size();};
+			// sort by number of variables ascending
+			std::sort(boolConstraints.begin(), boolConstraints.end(), constraintComperator);
+			std::sort(liaConstraints.begin(), liaConstraints.end(), constraintComperator);
+
+			SMTRAT_LOG_INFO("smtrat.pbc", "After Step 1 - Encoding as LIA: " << liaConstraints);
+			SMTRAT_LOG_INFO("smtrat.pbc", "After Step 1 - Encoding as Bool: " << boolConstraints);
+
+			// 2. forward previously determined constraints as LIA 
+			std::set<carl::Variable> variablesInLIA;
+			for (const auto& constraint : liaConstraints) {
+					for (const auto& cvar : constraint.variables()) {
+						variablesInLIA.insert(cvar);
+					}
+
+					// Encode all constraint which have to be encoded as LIA
+					// For each variable used in the formulation find a "complicated" non equality
+					// constraint covering as many variables as possible and use it in the LIA formulation
+					// Enocde all remaining constraints as bool
+					addSubformulaToPassedFormula(forwardAsArithmetic(constraint));
+			}
+
+			// 3. add more constraints to LIA part to refine the relaxation 
+
+			// since access to variablesInLIA would invalidate the iterator we instead save which variables we already inspected
+			std::set<carl::Variable> inspectedVariables;
+			std::set<ConstraintT> additionallyLIAEncodedBoolConstraints;
+			for (const auto& var : variablesInLIA) {
+				if (inspectedVariables.find(var) != inspectedVariables.end()) continue;
+				
+				for (const auto& constraint : boolConstraints) {
+					if (additionallyLIAEncodedBoolConstraints.find(constraint) != additionallyLIAEncodedBoolConstraints.end()) {
+						continue;
+					}
+
+					if (!isTrivial(constraint) && constraint.variables().find(var) != constraint.variables().end()) {
+						addSubformulaToPassedFormula(forwardAsArithmetic(constraint), formulaByConstraint[constraint]);
+						for (const auto& cvar: constraint.variables()) {
+							inspectedVariables.insert(cvar);
+						}
+
+						liaConstraints.push_back(constraint);
+						additionallyLIAEncodedBoolConstraints.insert(constraint);
+					}
+				}
+			}
+
+			for (const auto& additionalConstraint : additionallyLIAEncodedBoolConstraints) {
+				auto it = std::find(boolConstraints.begin(), boolConstraints.end(), additionalConstraint);
+				if (it != boolConstraints.end()) {
+					boolConstraints.erase(it);
+				}
+			}
+
+			#ifdef DEBUG_PBPP
+			std::cout << "After Step 3 - Encoding as LIA: " << liaConstraints << std::endl;
+			std::cout << "After Step 3 - Encoding as Bool: " << boolConstraints << std::endl;
+			#endif
+
+			// 4. encode all remaining constraints as bool
+			for (const auto& constraint : boolConstraints){
+				boost::optional<FormulaT> boolEncoding = encoderByConstraint[constraint]->encode(constraint);
+				if (!boolEncoding) {
+					addSubformulaToPassedFormula(forwardAsArithmetic(constraint), formulaByConstraint[constraint]);
+					continue;
+				}
+
+				addSubformulaToPassedFormula(*boolEncoding, formulaByConstraint[constraint]);
+			}
+
 			Answer ans = runBackends();
 			if (ans == UNSAT) {
 				generateTrivialInfeasibleSubset();
 			}
+
 			return ans;
 		}
 
 	template<class Settings>
 		FormulaT PBPPModule<Settings>::checkFormulaAndApplyTransformations(const FormulaT& subformula) {
-
-			if(subformula.getType() != carl::FormulaType::CONSTRAINT){
-				return subformula;
-			}
-
-			const ConstraintT& constraint = subformula.constraint();
-			if (!constraint.isPseudoBoolean()) { // eg an objective function
-				return subformula;
-			}
-
-			assert(subformula.getType() == carl::FormulaType::CONSTRAINT);
-
-			// we can also check a mode which only uses simplex and does not encode
-			if (Settings::USE_LIA_ONLY) {
-				return forwardAsArithmetic(subformula.constraint());
-			}
-
 			// actually apply transformations
 			if (Settings::use_rns_transformation){
 				return checkFormulaTypeWithRNS(subformula);
@@ -113,14 +222,6 @@ namespace smtrat
 			} else {
 				return checkFormulaType(subformula);
 			}
-
-			// IDEA apply more than one tranformation and take the one with most "gain"
-			// however, we need a notion of gain first.
-			// It could take into account:
-			// - number of newly created constraints
-			// - number of eliminated variables (could be expensive)
-			// --- relative size propositional constraint/arithmetic constraint
-			// --- relative size considering the whole formula
 
 			assert(false);
 		}
@@ -559,6 +660,35 @@ namespace smtrat
 
 			return forwardAsArithmetic(constraint);
 		}
+
+	Rational factorial(Rational n);
+	Rational factorial(std::size_t);
+
+	template<typename Settings>
+	bool PBPPModule<Settings>::encodeAsBooleanFormula(const ConstraintT& constraint) {
+		bool encode = true;
+
+		// we do not encode very large formulas
+		encode &= conversionSizeByConstraint[constraint] <= Settings::MAX_NEW_RELATIVE_FORMULA_SIZE * rReceivedFormula().size();
+
+		// we only add LEQ if their encoding will be at least as small as the original constraint, i.e. 1
+		encode &= constraint.relation() == carl::Relation::EQ || conversionSizeByConstraint[constraint] == 1;
+
+		return encode;
+	}
+
+	template<typename Settings>
+	bool PBPPModule<Settings>::isTrivial(const ConstraintT& constraint) {
+		bool trivial = false;
+
+		trivial = trivial || constraint.variables().size() <= 1;
+		trivial = trivial || (constraint.constantPart() == 0 && mCardinalityEncoder.canEncode(constraint));
+
+		// TODO this is not actually trivial - this just forces equalities - if they are not in LIA to stay in Bool.
+		trivial = trivial || constraint.relation() == carl::Relation::EQ;
+
+		return trivial;
+	}
 }
 
 #include "Instantiation.h"

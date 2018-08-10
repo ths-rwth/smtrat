@@ -7,6 +7,10 @@ namespace smtrat {
 		public:
 			CardinalityEncoder() : PseudoBoolEncoder () {}
 
+			Rational encodingSize(const ConstraintT& constraint);
+
+			bool canEncode(const ConstraintT& constraint);
+
 		protected:
 			boost::optional<FormulaT> doEncode(const ConstraintT& constraint);
 
@@ -15,8 +19,6 @@ namespace smtrat {
 			FormulaT encodeExactly(const std::set<carl::Variable>& variables, const Rational constant);
 			boost::optional<FormulaT> encodeAtLeast(const ConstraintT& constraint);
 			boost::optional<FormulaT> encodeAtMost(const ConstraintT& constraint);
-
-			bool encodeAsBooleanFormula(const ConstraintT& constraint);
 
 	};
 }

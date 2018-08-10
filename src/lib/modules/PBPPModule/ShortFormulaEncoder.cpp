@@ -188,4 +188,8 @@ namespace smtrat {
 		// could not convert
 		return {};
 	}
+
+	bool ShortFormulaEncoder::canEncode(const ConstraintT& constraint) {
+		return false;
+	}
 }

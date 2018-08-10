@@ -151,4 +151,9 @@ namespace smtrat {
 
 		return {};
 	}
+
+	bool MixedSignEncoder::canEncode(const ConstraintT& constraint) {
+		return false;
+	}
+
 }

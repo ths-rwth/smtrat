@@ -148,4 +148,8 @@ namespace smtrat {
 		return {};
 
 	}
+
+	bool LongFormulaEncoder::canEncode(const ConstraintT& constraint) {
+		return false;
+	}
 }

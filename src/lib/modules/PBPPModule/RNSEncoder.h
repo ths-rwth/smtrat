@@ -10,6 +10,8 @@ namespace smtrat {
 		public:
 			RNSEncoder() : PseudoBoolEncoder (), mPrimesTable(primesTable()) {}
 
+			bool canEncode(const ConstraintT& constraint);
+
 		protected:
 			boost::optional<FormulaT> doEncode(const ConstraintT& constraint);
 

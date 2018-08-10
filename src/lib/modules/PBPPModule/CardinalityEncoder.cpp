@@ -70,7 +70,7 @@ namespace smtrat {
 	}
 
 	boost::optional<FormulaT> CardinalityEncoder::encodeExactly(const ConstraintT& constraint) {
-		if (!encodeAsBooleanFormula(constraint)) return boost::none;
+		// if (!encodeAsBooleanFormula(constraint)) return boost::none;
 
 		return encodeExactly(constraint.variables(), -constraint.constantPart());
 	}
@@ -114,7 +114,7 @@ namespace smtrat {
 	}
 
 	boost::optional<FormulaT> CardinalityEncoder::encodeAtLeast(const ConstraintT& constraint) {
-		if (!encodeAsBooleanFormula(constraint)) return boost::none;
+		// if (!encodeAsBooleanFormula(constraint)) return boost::none;
 
 		FormulasT allOrSet;
 		for (const auto& variable: constraint.variables()) {
@@ -134,7 +134,7 @@ namespace smtrat {
 	}
 
 	boost::optional<FormulaT> CardinalityEncoder::encodeAtMost(const ConstraintT& constraint) {
-		if (!encodeAsBooleanFormula(constraint)) return boost::none;
+		// if (!encodeAsBooleanFormula(constraint)) return boost::none;
 
 		FormulasT result;
 
@@ -146,18 +146,36 @@ namespace smtrat {
 		return FormulaT(carl::FormulaType::OR, result);
 	}
 
+	bool CardinalityEncoder::canEncode(const ConstraintT& constraint) {
+		// test whether all coefficients are 1
+		bool encodable = true;
+		bool allCoeffPositive = true;
+		bool allCoeffNegative = true;
+
+		for (const auto& it : constraint.lhs()) {
+			encodable &= it.coeff() == 1 || it.coeff() == -1;
+			if (it.coeff() < 0) allCoeffPositive = false;
+			if (it.coeff() > 0) allCoeffNegative = false;
+		}
+
+		encodable &= allCoeffNegative != allCoeffPositive;
+
+		return encodable;
+	}
+
 	Rational factorial(Rational n);
 	Rational factorial(std::size_t);
 
-	bool CardinalityEncoder::encodeAsBooleanFormula(const ConstraintT& constraint) {
-		if (!use_lia) return true;
+	Rational CardinalityEncoder::encodingSize(const ConstraintT& constraint) {
+
+		SMTRAT_LOG_DEBUG("smtrat.pbc", "Calculating encodingSize for Cardinality.");
 
 		std::size_t nVars = constraint.variables().size();
 		Rational constantPart = carl::abs(constraint.constantPart());
 
 		Rational binom = factorial(nVars)/(factorial(constantPart) * factorial(nVars - constantPart));
 
-		return binom <= max_new_relative_formula_size * problem_size;
+		return binom;
 	}
 
 	Rational factorial(std::size_t n) {

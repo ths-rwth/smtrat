@@ -8,6 +8,8 @@ namespace smtrat {
 		public:
 			MixedSignEncoder() : PseudoBoolEncoder () {}
 
+			bool canEncode(const ConstraintT& constraint);
+
 		protected:
 			boost::optional<FormulaT> doEncode(const ConstraintT& constraint);
 
