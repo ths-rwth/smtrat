@@ -35,6 +35,25 @@ BOOST_AUTO_TEST_CASE( CardinalityEncoder_Single_Literal_False )
 	BOOST_TEST((expected == *result), "expected " << expected << " but got " << result);
 }
 
+BOOST_AUTO_TEST_CASE( CardinalityEncoder_Multi_Literal_False )
+{
+	carl::Variable x = carl::freshBooleanVariable("x");
+	carl::Variable y = carl::freshBooleanVariable("x");
+	carl::Variable z = carl::freshBooleanVariable("x");
+	
+	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Poly(z), carl::Relation::LEQ);
+
+	boost::optional<FormulaT> result = encoder.encode(constraint);
+
+	if (!result) {
+		BOOST_FAIL("result != {} expected, but got {}.");
+	}
+
+	FormulaT expected = FormulaT(carl::FormulaType::AND, !FormulaT(x), !FormulaT(y), !FormulaT(z));
+
+	BOOST_TEST((expected == *result), "expected " << expected << " but got " << result);
+}
+
 BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ )
 {
 	carl::Variable x = carl::freshBooleanVariable("x");
