@@ -27,6 +27,7 @@ namespace smtrat
 		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
 		static constexpr bool USE_LIA_MIXED = false;
 		static constexpr bool USE_LIA_ONLY = true;
+		static constexpr bool ENCODE_IF_POSSIBLE = false;
 
 	};
 
@@ -47,6 +48,8 @@ namespace smtrat
 		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
 		static constexpr bool USE_LIA_MIXED = true;
 		static constexpr bool USE_LIA_ONLY = false;
+		static constexpr bool ENCODE_IF_POSSIBLE = true;
+
 
 	};
 	
@@ -66,6 +69,7 @@ namespace smtrat
 		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
 		static constexpr bool USE_LIA_MIXED = true;
 		static constexpr bool USE_LIA_ONLY = false;
+		static constexpr bool ENCODE_IF_POSSIBLE = true;
 	};
 
 	struct PBPPSettingsWithCardConstr
@@ -84,6 +88,7 @@ namespace smtrat
 		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
 		static constexpr bool USE_LIA_MIXED = true;
 		static constexpr bool USE_LIA_ONLY = false;
+		static constexpr bool ENCODE_IF_POSSIBLE = true;
 	};
 
 	struct PBPPSettingsWithMixedConstr
@@ -102,6 +107,7 @@ namespace smtrat
 		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
 		static constexpr bool USE_LIA_MIXED = true;
 		static constexpr bool USE_LIA_ONLY = false;
+		static constexpr bool ENCODE_IF_POSSIBLE = true;
 	};
 
 	struct PBPPSettingsBasic
@@ -120,6 +126,7 @@ namespace smtrat
 		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
 		static constexpr bool USE_LIA_MIXED = true;
 		static constexpr bool USE_LIA_ONLY = false;
+		static constexpr bool ENCODE_IF_POSSIBLE = true;
 	};
 
 

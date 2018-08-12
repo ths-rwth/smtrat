@@ -37,6 +37,7 @@ namespace smtrat
 
     		std::vector<ConstraintT> liaConstraints;
 			std::vector<ConstraintT> boolConstraints;
+			std::vector<ConstraintT> mConstraints;
 
 			std::map<ConstraintT, Rational> conversionSizeByConstraint;
 			std::map<ConstraintT, PseudoBoolEncoder*> encoderByConstraint;

@@ -42,7 +42,40 @@ namespace smtrat
 	template<class Settings>
 		bool PBPPModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 		{
+
+			const FormulaT& formula = _subformula->formula();
+
+			if (objective() != carl::Variable::NO_VARIABLE) {
+				for (const auto& var: objectiveFunction().gatherVariables()) {
+					mVariablesCache.emplace(var, carl::freshIntegerVariable());
+				}
+			}
+
+			if (formula.getType() != carl::FormulaType::CONSTRAINT){
+				addSubformulaToPassedFormula(formula, formula);
 				return true;
+			}
+
+			const ConstraintT& constraint = formula.constraint();
+			
+			// if (!isTrivial(constraint) && constraint.relation() == carl::Relation::EQ) {
+			// 	// remove equality they do not work particularly well
+			// 	ConstraintT first = ConstraintT(constraint.lhs(), carl::Relation::LEQ);
+			// 	ConstraintT second = ConstraintT(-constraint.lhs(), carl::Relation::LEQ);
+			// 	mConstraints.push_back(first);
+			// 	mConstraints.push_back(second);
+			// } else {
+			mConstraints.push_back(constraint);
+			formulaByConstraint[constraint] = formula;
+			// }
+
+			if (!constraint.isPseudoBoolean()) { // eg an objective function
+				// forward as is
+				addSubformulaToPassedFormula(formula, formula);
+				return true;
+			}
+
+			return true;
 		}
 
 	template<class Settings>
@@ -62,41 +95,19 @@ namespace smtrat
 	template<class Settings>
 		Answer PBPPModule<Settings>::checkCore()
 		{
-			// 1. Preprocessing - ignore some constraints and gather informations
-			for (const auto& subformula : rReceivedFormula()) {
-				FormulaT formula = subformula.formula();
-				
-
-				if (objective() != carl::Variable::NO_VARIABLE) {
-					for (const auto& var: objectiveFunction().gatherVariables()) {
-						mVariablesCache.emplace(var, carl::freshIntegerVariable());
-					}
-				}
-
-				if (formula.getType() != carl::FormulaType::CONSTRAINT){
-					addSubformulaToPassedFormula(formula, subformula.formula());
-					continue;
-				}
-
-				const ConstraintT& constraint = formula.constraint();
-				formulaByConstraint[constraint] = formula;
-				if (!constraint.isPseudoBoolean()) { // eg an objective function
-					// forward as is
-					addSubformulaToPassedFormula(formula, subformula.formula());
-					continue;
-				}
-
+			// 1. Preprocessing - ignore some constraints and gather informations			
+			for (const auto& constraint : mConstraints) {
+								
 				// we can also check a mode which only uses simplex and does not encode
 				if (Settings::USE_LIA_ONLY) {
-					addSubformulaToPassedFormula(forwardAsArithmetic(constraint));
+					addSubformulaToPassedFormula(forwardAsArithmetic(constraint), formulaByConstraint[constraint]);
 					continue;
 				} 
-				
+
 				// store information about the constraint
 				Rational encodingSize = std::numeric_limits<size_t>::max();
 				for (const auto& encoder : encoders) {
 					Rational curEncoderSize = encoder->encodingSize(constraint);
-					SMTRAT_LOG_DEBUG("smtrat.pbc", "got encoding size " << curEncoderSize);
 					if (encoder->canEncode(constraint) && 
 						(curEncoderSize <= encodingSize || conversionSizeByConstraint[constraint] == Rational(0))) 
 					{
@@ -190,7 +201,9 @@ namespace smtrat
 					addSubformulaToPassedFormula(forwardAsArithmetic(constraint), formulaByConstraint[constraint]);
 					continue;
 				}
-
+				#ifdef DEBUG_PBPP
+				std::cout << "Encoded " << constraint << " \t as \t " << *boolEncoding << std::endl;
+				#endif
 				addSubformulaToPassedFormula(*boolEncoding, formulaByConstraint[constraint]);
 			}
 
@@ -665,8 +678,10 @@ namespace smtrat
 		// we do not encode very large formulas
 		encode = encode && conversionSizeByConstraint[constraint] <= Settings::MAX_NEW_RELATIVE_FORMULA_SIZE * rReceivedFormula().size();
 
-		// we only add LEQ if their encoding will be at least as small as the original constraint, i.e. 1
-		encode = encode && (constraint.relation() == carl::Relation::EQ || conversionSizeByConstraint[constraint] <= 1);
+		// this would be a simple encoding
+		encode = encode && (constraint.relation() == carl::Relation::EQ || carl::abs(constraint.lhs().constantPart()) <= 1);
+
+		encode = encode || Settings::ENCODE_IF_POSSIBLE;
 
 		return encode;
 	}
@@ -679,7 +694,7 @@ namespace smtrat
 		trivial = trivial || (constraint.constantPart() == 0 && mCardinalityEncoder.canEncode(constraint));
 
 		// TODO this is not actually trivial. This just forces equalities - if they are not in LIA - to stay in Bool.
-		trivial = trivial || constraint.relation() == carl::Relation::EQ;
+		// trivial = trivial || constraint.relation() == carl::Relation::EQ;
 
 		return trivial;
 	}
