@@ -53,6 +53,9 @@ namespace smtrat {
 			// x1 + x2 + x3 <= 10
 			if (allCoeffPositive && constant >= constraint.variables().size())
 				return FormulaT(carl::FormulaType::TRUE);
+			// -x1 - x2 - x3 <= 0 iff x1 + x2 + x3 >= 0
+			if (allCoeffNegative && constant == 0) return FormulaT(carl::FormulaType::TRUE);
+
 
 			if (allCoeffNegative) return encodeAtLeast(constraint);
 			else if (allCoeffPositive) return encodeAtMost(constraint);
