@@ -3244,7 +3244,7 @@ namespace smtrat
             std::vector<std::pair<FormulaT, FormulaT>> propagations; // first implies second to be false
             std::unordered_set<FormulaT> falseTseitinVars;
             auto isTseitinVar = [](const FormulaT& f) -> const bool {
-                return f.getType() == carl::FormulaType::BOOL; // TODO replace this check ...
+                return f.isTseitinVar();
             };
             auto abstractLiteral = [&](const FormulaT& f) -> const boost::optional<Minisat::Lit> {
                 try {
