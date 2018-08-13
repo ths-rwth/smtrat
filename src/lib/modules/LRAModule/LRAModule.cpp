@@ -1296,7 +1296,8 @@ namespace smtrat
         {
             carl::Variables vars;
             basicVar->expression().gatherVariables( vars );
-            assert( vars.size() == 1 );
+            // TODO JNE why should this hold? Doesn't this correspond to the variables of a tableu row?
+            assert( vars.size() >= 1 );
             auto found_ex = rMap_.find(*vars.begin());
             const Rational& ass = found_ex->second;
             if( !carl::isInteger( ass ) )
@@ -1350,7 +1351,7 @@ namespace smtrat
                 continue;
             assert( var->first == map_iterator->first );
             const Rational& ass = map_iterator->second;
-            if( var->first.type() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
+            if( (var->first.type() == carl::VariableType::VT_INT || var->first.type() == carl::VariableType::VT_BOOL) && !carl::isInteger( ass ) )
             {
                 if( mFinalCheck )
                 {
@@ -1420,6 +1421,11 @@ namespace smtrat
         for( auto ass = rmodel.begin(); ass != rmodel.end(); ++ass )
         {
             if( ass->first.type() == carl::VariableType::VT_INT && !carl::isInteger( ass->second ) && inputVars.find( ass->first ) != inputVars.end() )
+            {
+                return false;
+            }
+
+            if ( ass->first.type() == carl::VariableType::VT_BOOL && !(ass->second == Rational(0) || ass->second == Rational(1)) )
             {
                 return false;
             }

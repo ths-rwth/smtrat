@@ -208,7 +208,7 @@ namespace smtrat
          */
         bool isRealConstraintConjunction() const
         {
-            return isConstraintConjunction() && !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= mProperties);
+            return isConstraintConjunction() && !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= mProperties) && !(carl::PROP_CONTAINS_PSEUDOBOOLEAN <= mProperties);
         }
 
         /**
