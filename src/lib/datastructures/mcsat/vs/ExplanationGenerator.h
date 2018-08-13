@@ -131,7 +131,7 @@ private:
 					return FormulaT(carl::FormulaType::OR, std::move(newFormula));
 				} else {
 					// FormulaT tseitinVar = FormulaT(carl::freshBooleanVariable());
-					FormulaT tseitinVar = carl::FormulaPool<smtrat::Poly>::getInstance().createTseitinVar(formula); // TODO test tseitin vars
+					FormulaT tseitinVar = carl::FormulaPool<smtrat::Poly>::getInstance().createTseitinVar(formula);
 
 					// newFormula_1 || ... || newFormula_n -> tseitinVar
 					for (const FormulaT& lit : newFormula) {
@@ -157,7 +157,7 @@ private:
 				}
 
 				// FormulaT tseitinVar = FormulaT(carl::freshBooleanVariable());
-				FormulaT tseitinVar = carl::FormulaPool<smtrat::Poly>::getInstance().createTseitinVar(formula); // TODO test tseitin vars
+				FormulaT tseitinVar = carl::FormulaPool<smtrat::Poly>::getInstance().createTseitinVar(formula);
 
 				// tseitinVar -> newFormula_1 && ... && newFormula_n
 				for (const FormulaT& lit : newFormula) {

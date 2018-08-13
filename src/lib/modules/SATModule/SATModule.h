@@ -976,25 +976,6 @@ namespace smtrat
                 return clauseIsConflicting;
             }
 
-            void clauseEvals(const FormulaT& clause) {
-                const FormulasT& literals = clause.isNary() ? clause.subformulas() : FormulasT({clause});
-                std::cout << "---"<<std::endl;
-                int falseLiterals = 0;
-                int undefLiterals = 0;
-				for (const auto& c: literals) {
-                    auto lit = getLiteral(c);
-                    falseLiterals += value(lit) == l_False;
-                    undefLiterals += value(lit) == l_Undef;
-                    std::cout << c << " [" << lit << "] -> " << (value(lit)) << std::endl;    
-				}
-                if (falseLiterals == literals.size()) {
-                    std::cout << "CLAUSE " << clause << " IS CONFLICTING" << std::endl; 
-                } else if (falseLiterals == literals.size() - 1 && undefLiterals == 1) {
-                    std::cout << "CLAUSE " << clause << " IS PROPAGATIING" << std::endl;
-                }
-                std::cout << "---"<<std::endl;
-            }
-
             void analyzeClauseChain(const FormulasT& clauses) {
                 auto abstractLiteral = [&](const FormulaT& f) -> const boost::optional<Minisat::Lit> {
                     try {
@@ -1045,9 +1026,9 @@ namespace smtrat
                     const auto& clause = boost::get<FormulaT>(explanation);
                     bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
                     assert(added);
-                    assert(isConflicting(clause));
+                    // assert(isConflicting(clause));
                 } else {
-                    /*
+                    /* TODO switch to resolve chains instead ...
                     FormulaT clause = resolveConflictClauseChain(boost::get<FormulasT>(explanation), false);
                     bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
                     assert(added);
@@ -1058,20 +1039,11 @@ namespace smtrat
                     // add propagations
                     bool added = false;
                     for (const auto& clause : chain) {
-                        // TODO maybe propagate clauses manually...
-                        // note: not all clauses are propagating
                         added |= addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
-                        //clauseEvals(clause);
-                        //Minisat::CRef confl = storeLemmas();
-                        //assert(confl == Minisat::CRef_Undef);
                     }
                     assert(added);
-                    // assert(isConflicting(chain.back())); // TODO does not work here since nothing has been propagated yet ...
+                    // assert(isConflicting(chain.back())); // TODO won't work here...
                 }
-
-                // TODO test: run storeLemmas and then check if lemma is conflicting -> hardly possible since storelemmas performs some backtracking...
-                // TODO can multiple conflicts occur?  (not for VS i guess... since all branches are needed for conflict) => formalize requirements somehow
-                // TODO what happens if tseitin vars are used? then some clauses may be decided prior to the conflict [if it contradicts, the conflict does not occur??]
 
                 propagateTheory();
                 Minisat::CRef confl = storeLemmas();
