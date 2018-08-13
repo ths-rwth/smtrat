@@ -108,7 +108,6 @@ private:
 	 * in "implications" have been propagated in the given order, the returned formula evaluates to false.
 	 */
 	FormulaT transformToImplicationChain(const FormulaT& formula, FormulasT& implications, bool isRoot = true) const /*__attribute__((noinline))*/ {
-		// TODO tseitin variables: use createTseitinVar as in Formula::toCNF?
 		switch(formula.getType()) {
 			case carl::FormulaType::TRUE:
 			case carl::FormulaType::FALSE:
@@ -131,7 +130,8 @@ private:
 				if (isRoot) { // handle special case that input formula is already a disjunction
 					return FormulaT(carl::FormulaType::OR, std::move(newFormula));
 				} else {
-					FormulaT tseitinVar = FormulaT(carl::freshBooleanVariable());
+					// FormulaT tseitinVar = FormulaT(carl::freshBooleanVariable());
+					FormulaT tseitinVar = carl::FormulaPool<smtrat::Poly>::getInstance().createTseitinVar(formula); // TODO test tseitin vars
 
 					// newFormula_1 || ... || newFormula_n -> tseitinVar
 					for (const FormulaT& lit : newFormula) {
@@ -156,7 +156,8 @@ private:
 					newFormula.push_back(std::move(tseitinSub));
 				}
 
-				FormulaT tseitinVar = FormulaT(carl::freshBooleanVariable());
+				// FormulaT tseitinVar = FormulaT(carl::freshBooleanVariable());
+				FormulaT tseitinVar = carl::FormulaPool<smtrat::Poly>::getInstance().createTseitinVar(formula); // TODO test tseitin vars
 
 				// tseitinVar -> newFormula_1 && ... && newFormula_n
 				for (const FormulaT& lit : newFormula) {

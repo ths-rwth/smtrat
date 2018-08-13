@@ -1071,6 +1071,7 @@ namespace smtrat
 
                 // TODO test: run storeLemmas and then check if lemma is conflicting -> hardly possible since storelemmas performs some backtracking...
                 // TODO can multiple conflicts occur?  (not for VS i guess... since all branches are needed for conflict) => formalize requirements somehow
+                // TODO what happens if tseitin vars are used? then some clauses may be decided prior to the conflict [if it contradicts, the conflict does not occur??]
 
                 propagateTheory();
                 Minisat::CRef confl = storeLemmas();
