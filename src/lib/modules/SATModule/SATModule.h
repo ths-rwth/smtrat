@@ -944,7 +944,7 @@ namespace smtrat
             bool addClauseIfNew(const FormulasT& clause) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Add theory conflict clause " << clause << " if new");
 
-				//sat::detail::validateClause(clause, Settings::validate_clauses); // TODO can this lead to errors for multiple explanations???
+				sat::detail::validateClause(clause, Settings::validate_clauses);
                 Minisat::vec<Minisat::Lit> explanation;
                 std::vector<Minisat::Lit> explanation_set;
 				for (const auto& c: clause) {
@@ -967,7 +967,7 @@ namespace smtrat
                 }
 			}
 
-            bool isConflicting(const FormulaT& clause) const { // only for assertions
+            bool isConflicting(const FormulaT& clause) const { // only for assertions // TODO use clause checker instead ...
                 const FormulasT& literals = clause.isNary() ? clause.subformulas() : FormulasT({clause});
                 bool clauseIsConflicting = true;
 				for (const auto& c: literals) {

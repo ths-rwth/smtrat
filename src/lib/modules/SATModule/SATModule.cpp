@@ -2776,7 +2776,7 @@ namespace smtrat
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Picking a literal for a boolean decision");
 					next = pickBranchLit();
 					
-					if (Settings::mc_sat && next != lit_Undef) { // TODO test this stuff:
+					if (Settings::mc_sat && next != lit_Undef) {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << ", checking for theory consistency...");
 						auto res = mMCSAT.isDecisionPossible(next);                        
 						if (!res.first) {
@@ -2821,7 +2821,8 @@ namespace smtrat
 								print(cout, "###");
 								#endif
 								SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
-								// sat::detail::validateClause(*conflict, Settings::validate_clauses); //TODO!!
+                                if ((*conflict).type() == typeid(FormulaT))
+								    sat::detail::validateClause(boost::get<FormulaT>(*conflict), Settings::validate_clauses);
 								handleTheoryConflict(*conflict);
 								mMCSAT.undoAssignment(next);
 								next = lit_Undef;
@@ -3244,7 +3245,7 @@ namespace smtrat
             std::vector<std::pair<FormulaT, FormulaT>> propagations; // first implies second to be false
             std::unordered_set<FormulaT> falseTseitinVars;
             auto isTseitinVar = [](const FormulaT& f) -> const bool {
-                return f.isTseitinVar();
+                return f.getType() == carl::FormulaType::BOOL; // TODO replace this check ...
             };
             auto abstractLiteral = [&](const FormulaT& f) -> const boost::optional<Minisat::Lit> {
                 try {
@@ -3379,11 +3380,14 @@ namespace smtrat
 			SMTRAT_LOG_DEBUG("smtrat.sat", "out_learnt = " << out_learnt);
 
             assert( confl != CRef_Undef );    // (otherwise should be UIP)
+
+            bool learn_lazy_explanations = false; // TODO make available as setting
+
             bool gotClause = true;
 			if (Settings::mc_sat && confl == CRef_TPropagation) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Found " << p << " to be result of theory propagation.");
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << mMCSAT);
-				cancelIncludingLiteral(p); // TODO does this decrement decisionLevel() -> YES; does it matter -> MAYBE ??
+				cancelIncludingLiteral(p); // does not affect decision levels of literals processed later nor decisionLevel()
 				auto explanation = resolveConflictClauseChain(mMCSAT.explainTheoryPropagation(p));
 				
 				vec<Lit> expClause;
@@ -3395,15 +3399,17 @@ namespace smtrat
                 else {
                     expClause.push(createLiteral(explanation));
                 }
-				
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Explanation for " << p << ": " << expClause);
+
                 if (expClause.size() > 1) {
                     sort(expClause, lemma_lt(*this));
                     confl = ca.alloc(expClause, LEMMA_CLAUSE);
-                    clauses.push(confl);
-                    attachClause(confl);
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Explanation for " << p << ": " << ca[confl]);
-                } else { // TODO test this stuff:
+                    if (learn_lazy_explanations) {
+                        clauses.push(confl);
+                        attachClause(confl);
+                    }
+                } else {
                     // we can safely do this as we backtracked using cancelIncludingLiteral
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Literal " << p << " is an assumption");
                     assumptions.push(expClause[0]);
@@ -3411,7 +3417,6 @@ namespace smtrat
                     out_learnt.push(expClause[0]);
                     gotClause = false;
                 }
-				
 			}
 
             if (gotClause) {
@@ -3438,7 +3443,6 @@ namespace smtrat
                         seen[var( q )] = 1;
                         //if (Settings::mc_sat && reason(var(q)) == CRef_TPropagation) {
                         //    SMTRAT_LOG_DEBUG("smtrat.sat", "\t"  << q << " is result of theory propagation");
-                            // TODO what now?
                         //	pathC++;
                         //	SMTRAT_LOG_DEBUG("smtrat.sat", "\tTo process: "  << q << ", pathC = " << pathC);
                         //} else {
@@ -3456,6 +3460,10 @@ namespace smtrat
                             }
                         //}
                     }
+                }
+                
+                if (!learn_lazy_explanations) {
+                    ca.free(confl);
                 }
             }
 
