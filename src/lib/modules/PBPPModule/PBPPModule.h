@@ -49,7 +49,7 @@ namespace smtrat
 			CardinalityEncoder mCardinalityEncoder;
 			MixedSignEncoder mMixedSignEncoder;
 
-			std::vector<PseudoBoolEncoder*> encoders = { &mCardinalityEncoder };
+			std::vector<PseudoBoolEncoder*> mEncoders = { &mCardinalityEncoder };
 
 		public:
 			typedef Settings SettingsType;
@@ -117,13 +117,7 @@ namespace smtrat
 			FormulaT convertSmallFormula(const ConstraintT& formula);
 			FormulaT convertBigFormula(const ConstraintT& formula);
 
-			FormulaT forwardAsArithmetic(const ConstraintT& formula);
-
-			FormulaT checkFormulaType(const FormulaT& formula);
-			FormulaT checkFormulaTypeWithRNS(const FormulaT& formula);
-			FormulaT checkFormulaTypeWithCardConstr(const FormulaT& formula);
-			FormulaT checkFormulaTypeWithMixedConstr(const FormulaT& formula);
-			FormulaT checkFormulaTypeBasic(const FormulaT& formula);
+			FormulaT forwardAsArithmetic(const ConstraintT& formula, bool interconnect = false);
 
 			FormulaT checkFormulaAndApplyTransformations(const FormulaT& subformula);
 			FormulaT generateVarChain(const std::set<carl::Variable>& vars, carl::FormulaType type);
