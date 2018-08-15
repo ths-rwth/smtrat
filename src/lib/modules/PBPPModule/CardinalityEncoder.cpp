@@ -107,16 +107,11 @@ namespace smtrat {
 		} while(std::next_permutation(std::begin(signs), std::end(signs)));
 
 		FormulaT resultFormula = FormulaT(carl::FormulaType::OR, resultFormulaSet);
-		SMTRAT_LOG_DEBUG("smtrat.pbc", "Encoding exactly: " <<
-				variables << " = " << constant
-				<< " as " << resultFormula);
 
 		return resultFormula;
 	}
 
 	boost::optional<FormulaT> CardinalityEncoder::encodeAtLeast(const ConstraintT& constraint) {
-		// if (!encodeAsBooleanFormula(constraint)) return boost::none;
-
 		FormulasT allOrSet;
 		for (const auto& variable: constraint.variables()) {
 			allOrSet.push_back(FormulaT(variable));
@@ -135,8 +130,6 @@ namespace smtrat {
 	}
 
 	boost::optional<FormulaT> CardinalityEncoder::encodeAtMost(const ConstraintT& constraint) {
-		// if (!encodeAsBooleanFormula(constraint)) return boost::none;
-
 		FormulasT result;
 
 		Rational constant = -constraint.constantPart();
