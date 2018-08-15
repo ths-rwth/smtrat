@@ -3265,8 +3265,6 @@ namespace smtrat
 
             assert( confl != CRef_Undef );    // (otherwise should be UIP)
 
-            bool learn_lazy_explanations = false; // TODO make available as setting
-
             bool gotClause = true;
 			if (Settings::mc_sat && confl == CRef_TPropagation) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Found " << p << " to be result of theory propagation.");
@@ -3289,7 +3287,7 @@ namespace smtrat
                     sort(expClause, lemma_lt(*this));
                     confl = ca.alloc(expClause, LEMMA_CLAUSE);
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Explanation for " << p << ": " << ca[confl]);
-                    if (learn_lazy_explanations) {
+                    if (Settings::mcsat_learn_lazy_explanations) {
                         clauses.push(confl);
                         attachClause(confl);
                     }

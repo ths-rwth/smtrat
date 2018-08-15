@@ -12,7 +12,12 @@ namespace smtrat {
 namespace mcsat {
 namespace vs {
 
+struct DefaultSettings {
+	static const bool reduceConflictConstraints = true;
+	static const bool clauseChainWithEquivalences = false;
+};
 
+template<class Settings>
 class ExplanationGenerator {
 private:
 	const std::vector<FormulaT>& mConstraints;
@@ -28,11 +33,7 @@ public:
 		mModel(model)
 	{}
 
-private:
-	// TODO as parameter:
-	bool reduceConflictConstraints = true;
-	bool clauseChainWithEquivalences = true;
-	
+private:	
 	boost::optional<FormulaT> generateExplanation() const {
 		// generate test candidates
 		std::vector<::vs::Substitution> testCandidates;
@@ -47,14 +48,14 @@ private:
 				for (const auto& constr : mConstraints) {
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substituting " << tc << " into " << constr);
 
-					FormulaT result; // TODO reduceConflictConstraints maybe?
+					FormulaT result; // TODO reduceConflictConstraints?
 					if (!helper::substitute(constr, tc, mModel, result)) {
 						SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution failed");
 						return boost::none;
 					}
 
 					// check if current constraint is part of the conflict
-					if (reduceConflictConstraints) {
+					if (Settings::reduceConflictConstraints) {
 						carl::ModelValue<Rational,Poly> eval = carl::model::evaluate(result, mModel);
 						// If evaluation result is not a bool, then the model probably contains a RAN or MVRoot. In this case, we just take the constraint in.
 						if (!eval.isBool() || !eval.asBool()) {
@@ -183,7 +184,7 @@ public:
 
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Transforming to implication chain");
 			ClauseChain chain;
-			transformToImplicationChain(*expl, chain, clauseChainWithEquivalences);
+			transformToImplicationChain(*expl, chain, Settings::clauseChainWithEquivalences);
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Got clauses " << chain);
 
 			return mcsat::Explanation(std::move(chain));

@@ -16,7 +16,7 @@ struct Explanation {
 		// where VS starts its variable elimination from back ('xk') to front ('x0').
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Ascending variable order " << variableOrdering << " and eliminating down from " << var);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Bookkeep: " << data);
-		ExplanationGenerator eg(reason, variableOrdering, var, data.model());
+		ExplanationGenerator<DefaultSettings> eg(reason, variableOrdering, var, data.model());
 		auto ret = eg.getExplanation();
 		if (ret == boost::none) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Could not generate explanation");

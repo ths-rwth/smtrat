@@ -990,11 +990,10 @@ namespace smtrat
                     assert(added);
                 } else {
                     const auto& chain = boost::get<mcsat::ClauseChain>(explanation);
-                    bool resolve_clause_chains = true; // TODO make available as setting
-                    if (resolve_clause_chains) {
+                    if (Settings::mcsat_resolve_clause_chains) {
                         FormulaT clause = chain.resolve();
                         SMTRAT_LOG_DEBUG("smtrat.sat", "Resolved clause chain to " << clause);
-                        assert(isConflicting(clause)); // TODO disable ...
+                        // assert(isConflicting(clause));
                         bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
                         assert(added);
                     } else {
@@ -1004,7 +1003,6 @@ namespace smtrat
                             added |= addClauseIfNew(link.clause().isNary() ? link.clause().subformulas() : FormulasT({link.clause()}));
                         }
                         assert(added);
-                        // assert(isConflicting(chain.back())); // TODO won't work here...
                     }                    
                 }
 

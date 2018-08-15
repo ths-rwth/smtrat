@@ -102,6 +102,10 @@ namespace smtrat
 #endif
 
 		static constexpr bool check_for_duplicate_clauses = false;
+
+        static constexpr bool mcsat_resolve_clause_chains = false;
+
+        static constexpr bool mcsat_learn_lazy_explanations = true;
 		
 		using MCSATSettings = mcsat::MCSATSettingsFMVSNL;
     };

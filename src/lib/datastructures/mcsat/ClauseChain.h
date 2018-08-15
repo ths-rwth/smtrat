@@ -7,14 +7,11 @@ namespace mcsat {
 
 
 /**
-* An explanation is either a single clause or a chain of clauses, satisfying the following properties:
-* - If the clauses are inserted and propagated in the chain's order, at least the last clause should be conflicting.
-* - Each conflicting clause is already conflicting after preceding clauses have been inserted and propagated.
-* - Tseitin vars should be used...
-* TODO describe
-*/
-
-
+ * An explanation is either a single clause or a chain of clauses, satisfying the following properties:
+ * - If the clauses are inserted and propagated in the chain's order, at least the last clause should be conflicting.
+ * - Each conflicting clause is already conflicting after preceding clauses have been inserted and propagated.
+ * - Tseitin vars should be used so that a Tseitin variable C is equivalent to its corresponding subformula F (or at least C -> F).
+ */
 class ClauseChain {
     public:
         struct Link {
@@ -78,36 +75,54 @@ class ClauseChain {
             return var;
         }
 
+        /**
+         * Append a clause that implies impliedTseitinLiteral under the current assignment.
+         * Note that impliedTseitinLiteral = ~v for a Tseitin variable v obtained via createTseitinVar.
+         */
         void appendPropagating(const FormulaT&& clause, const FormulaT&& impliedTseitinLiteral) {
             mClauseChain.emplace_back(std::move(clause), std::move(impliedTseitinLiteral));
         }
 
+        /**
+         * Append a conflicting clause (regarding the current assignment).
+         */
         void appendConflicting(const FormulaT&& clause) {
             mClauseChain.emplace_back(std::move(clause), FormulaT(carl::FormulaType::FALSE));
         }
 
+        /**
+         * Append an additional clause which is neither propagating nor conflicting. Can be used to
+         * pass additional knowledge.
+         */
         void appendOptional(const FormulaT&& clause) {
             mClauseChain.emplace_back(std::move(clause));
         }
 
+        /**
+         * @return A vector representing this chain.
+         */
         const std::vector<Link>& chain() const {
             return mClauseChain;
         }
 
         /**
-         * @return A constant iterator to the beginning of the list of sub-formulas of this formula.
+         * @return A constant iterator to the beginning of this chain.
          */
         const_iterator begin() const {
             return mClauseChain.begin();
         }
 
         /**
-         * @return A constant iterator to the end of the list of sub-formulas of this formula.
+         * @return A constant iterator to the end of this chain.
          */
         const_iterator end() const {
             return mClauseChain.end();
         }
 
+        /**
+         * Performs resolution on the chain. Uses the last clause for resolution.
+         * @return A single clause conflicting under the current assignment.
+         */
         FormulaT resolve() const {
             FormulasT result;
             std::unordered_set<FormulaT> toProcess;
