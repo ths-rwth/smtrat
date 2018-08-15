@@ -1028,21 +1028,23 @@ namespace smtrat
                     assert(added);
                     // assert(isConflicting(clause));
                 } else {
-                    /* TODO switch to resolve chains instead ...
-                    FormulaT clause = resolveConflictClauseChain(boost::get<FormulasT>(explanation), false);
-                    bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
-                    assert(added);
-                    assert(isConflicting(clause));
-                    */
                     const FormulasT& chain = boost::get<FormulasT>(explanation);
-                    //analyzeClauseChain(chain);
-                    // add propagations
-                    bool added = false;
-                    for (const auto& clause : chain) {
-                        added |= addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
-                    }
-                    assert(added);
-                    // assert(isConflicting(chain.back())); // TODO won't work here...
+                    bool resolve_clause_chains = true; // TODO make available as setting
+                    if (resolve_clause_chains) {
+                        FormulaT clause = resolveConflictClauseChain(chain, false);
+                        bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
+                        assert(added);
+                        // assert(isConflicting(clause));
+                    } else {
+                        //analyzeClauseChain(chain);
+                        // add propagations
+                        bool added = false;
+                        for (const auto& clause : chain) {
+                            added |= addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
+                        }
+                        assert(added);
+                        // assert(isConflicting(chain.back())); // TODO won't work here...
+                    }                    
                 }
 
                 propagateTheory();

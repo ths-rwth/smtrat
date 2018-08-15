@@ -3278,14 +3278,24 @@ namespace smtrat
                 const auto& clause = *iter;
                 bool isPropagating = true;
                 boost::optional<FormulaT> propagatedTseitinVar;
-                for (const auto& lit : clause) {
-                    if (isTseitinVar(lit.negated())) {
-                        propagatedTseitinVar = lit.negated();
-                    } else if (!isLiteralFalse(lit)) {
+                if (clause.isNary()) {
+                    for (const auto& lit : clause) {
+                        if (isTseitinVar(lit.negated())) {
+                            propagatedTseitinVar = lit.negated();
+                        } else if (!isLiteralFalse(lit)) {
+                            isPropagating = false;
+                            break;
+                        }
+                    }
+                } else {
+                    if (isTseitinVar(clause.negated())) {
+                        propagatedTseitinVar = clause.negated();
+                        isPropagating = true;
+                    } else {
                         isPropagating = false;
-                        break;
                     }
                 }
+                
                 if (isPropagating) {
                     assert(propagatedTseitinVar);
                     falseTseitinVars.insert(*propagatedTseitinVar);
@@ -3295,8 +3305,12 @@ namespace smtrat
 
             // assert clauses.back() to be propagating a single literal (resp. conflicting)
             int nonFalseLiterals = 0;
-            for (const auto& lit : clauses.back()) {
-                nonFalseLiterals += !isLiteralFalse(lit);
+            if (clauses.back().isNary()) {
+                for (const auto& lit : clauses.back()) {
+                    nonFalseLiterals += !isLiteralFalse(lit);
+                }
+            } else {
+                nonFalseLiterals += !isLiteralFalse(clauses.back());
             }
             if (shouldPropagate) 
                 assert(nonFalseLiterals == 1);
@@ -3308,13 +3322,22 @@ namespace smtrat
             std::unordered_set<FormulaT> toProcess;
 
             // initialize with conflicting clause
-            for (const auto& lit : clauses.back()) {
-                if (isTseitinVar(lit)) {
-                    toProcess.insert(lit);
+            if (clauses.back().isNary()) {
+                for (const auto& lit : clauses.back()) {
+                    if (isTseitinVar(lit)) {
+                        toProcess.insert(lit);
+                    } else {
+                        result.push_back(lit);
+                    }
+                }
+            } else {
+                if (isTseitinVar(clauses.back())) {
+                    toProcess.insert(clauses.back());
                 } else {
-                    result.push_back(lit);
+                    result.push_back(clauses.back());
                 }
             }
+            
 
             // resolve using propagations
             for (auto iter = propagations.rbegin(); iter != propagations.rend(); iter++) {
@@ -3327,16 +3350,20 @@ namespace smtrat
                 toProcess.erase(iter->second);
 
                 // add literals of clauses to respective sets
-                for (const auto& lit : iter->first.subformulas()) {
-                    if (lit.negated() != iter->second) {
-                        if (isTseitinVar(lit)) {
-                            toProcess.insert(lit);
-                        } else {
-                            result.push_back(lit);
+                if (iter->first.isNary()) {
+                    for (const auto& lit : iter->first.subformulas()) {
+                        if (lit.negated() != iter->second) {
+                            if (isTseitinVar(lit)) {
+                                toProcess.insert(lit);
+                            } else {
+                                result.push_back(lit);
+                            }
                         }
                     }
+                } else {
+                    toProcess.insert(iter->first);
                 }
-
+                
                 if (toProcess.empty()) {
                     break;
                 }
