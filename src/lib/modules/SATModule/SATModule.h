@@ -967,52 +967,13 @@ namespace smtrat
                 }
 			}
 
-            bool isConflicting(const FormulaT& clause) const { // only for assertions // TODO use clause checker instead ...
+            bool isConflicting(const FormulaT& clause) { // only for assertions // TODO use clause checker instead ...
                 const FormulasT& literals = clause.isNary() ? clause.subformulas() : FormulasT({clause});
                 bool clauseIsConflicting = true;
 				for (const auto& c: literals) {
-                    clauseIsConflicting &= (value(getLiteral(c)) == l_False);
+                    clauseIsConflicting &= (value(createLiteral(c)) == l_False);
 				}
                 return clauseIsConflicting;
-            }
-
-            void analyzeClauseChain(const FormulasT& clauses) {
-                auto abstractLiteral = [&](const FormulaT& f) -> const boost::optional<Minisat::Lit> {
-                    try {
-                        return mConstraintLiteralMap.at(f).front();
-                    } catch (const std::out_of_range& e) {
-                        return boost::none;
-                    }
-                    
-                };
-                auto eval = [&](const FormulaT& f) -> const Minisat::lbool {
-                    auto lit = abstractLiteral(f);
-                    if (lit) {
-                        return value(*lit);
-                    } else {
-                        auto res = carl::model::evaluate(f, mMCSAT.model());
-                        if (res.isBool()) {
-                            return res.asBool() ? l_True : l_False;
-                        }
-                        return l_Undef;
-                    }
-                };
-
-                std::cout << "---";
-
-                for (const auto& clause : clauses) {
-                    for (const auto& literal : clause) {
-                        auto res = eval(literal);
-                        if (res==l_Undef) {
-                            std::cout << " " << literal << " ";
-                        } else {
-                            std::cout << " " << res << " ";
-                        } 
-                    }
-                    std::cout << std::endl;
-                }
-
-                std::cout << "---";
             }
 			
 			void handleTheoryConflict(const mcsat::Explanation& explanation) {
@@ -1024,23 +985,23 @@ namespace smtrat
                 if (explanation.type() == typeid(FormulaT)) {
                     // add conflict clause
                     const auto& clause = boost::get<FormulaT>(explanation);
+                    // assert(isConflicting(clause));
                     bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
                     assert(added);
-                    // assert(isConflicting(clause));
                 } else {
-                    const FormulasT& chain = boost::get<FormulasT>(explanation);
+                    const auto& chain = boost::get<mcsat::ClauseChain>(explanation);
                     bool resolve_clause_chains = true; // TODO make available as setting
                     if (resolve_clause_chains) {
-                        FormulaT clause = resolveConflictClauseChain(chain, false);
+                        FormulaT clause = chain.resolve();
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "Resolved clause chain to " << clause);
+                        assert(isConflicting(clause)); // TODO disable ...
                         bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
                         assert(added);
-                        // assert(isConflicting(clause));
                     } else {
-                        //analyzeClauseChain(chain);
                         // add propagations
                         bool added = false;
-                        for (const auto& clause : chain) {
-                            added |= addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
+                        for (const auto link : chain) {
+                            added |= addClauseIfNew(link.clause().isNary() ? link.clause().subformulas() : FormulasT({link.clause()}));
                         }
                         assert(added);
                         // assert(isConflicting(chain.back())); // TODO won't work here...
@@ -1361,8 +1322,6 @@ namespace smtrat
              */
             void cancelAssignmentUntil( int level );
             void resetVariableAssignment( Minisat::Var _var );
-
-            FormulaT resolveConflictClauseChain(const mcsat::Explanation& explanation, bool shouldPropagate = true) const;
 
             /**
              *  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
