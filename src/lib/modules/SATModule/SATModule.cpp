@@ -3344,7 +3344,7 @@ namespace smtrat
                     }
                 }
                 
-                if (!mcsat_learn_lazy_explanations) {
+                if (!Settings::mcsat_learn_lazy_explanations) {
                     ca.free(confl);
                 }
             }
