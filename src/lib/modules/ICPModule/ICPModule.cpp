@@ -2906,6 +2906,9 @@ namespace smtrat
             }
             return FormulaT( _deduction.getType(), subformulas );
         }
+        else if (_deduction.getType() == carl::FormulaType::BOOL) {
+            return _deduction;
+        }
         else
         {
             //should not happen
