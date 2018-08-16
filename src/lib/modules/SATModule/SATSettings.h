@@ -105,7 +105,9 @@ namespace smtrat
 
         static constexpr bool mcsat_resolve_clause_chains = false;
 
-        static constexpr bool mcsat_learn_lazy_explanations = true;
+        static constexpr bool mcsat_lazy_explanations = true;
+
+        static constexpr bool mcsat_learn_lazy_explanations = false;
 		
 		using MCSATSettings = mcsat::MCSATSettingsFMVSNL;
     };

@@ -966,15 +966,6 @@ namespace smtrat
                     return true;
                 }
 			}
-
-            bool isConflicting(const FormulaT& clause) { // only for assertions // TODO use clause checker instead ...
-                const FormulasT& literals = clause.isNary() ? clause.subformulas() : FormulasT({clause});
-                bool clauseIsConflicting = true;
-				for (const auto& c: literals) {
-                    clauseIsConflicting &= (value(createLiteral(c)) == l_False);
-				}
-                return clauseIsConflicting;
-            }
 			
 			void handleTheoryConflict(const mcsat::Explanation& explanation) {
                 #ifdef DEBUG_SATMODULE
@@ -985,7 +976,6 @@ namespace smtrat
                 if (explanation.type() == typeid(FormulaT)) {
                     // add conflict clause
                     const auto& clause = boost::get<FormulaT>(explanation);
-                    // assert(isConflicting(clause));
                     bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
                     assert(added);
                 } else {
@@ -993,7 +983,6 @@ namespace smtrat
                     if (Settings::mcsat_resolve_clause_chains) {
                         FormulaT clause = chain.resolve();
                         SMTRAT_LOG_DEBUG("smtrat.sat", "Resolved clause chain to " << clause);
-                        // assert(isConflicting(clause));
                         bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
                         assert(added);
                     } else {

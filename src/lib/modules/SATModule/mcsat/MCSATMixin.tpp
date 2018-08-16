@@ -51,7 +51,7 @@ Minisat::lbool MCSATMixin<Settings>::evaluateLiteral(Minisat::Lit lit) const {
 }
 
 template<typename Settings>
-std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isDecisionPossible(Minisat::Lit lit) {
+std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isDecisionPossible(Minisat::Lit lit, bool check_feasibility_before) {
 	auto var = Minisat::var(lit);
 	if (!mGetter.isTheoryAbstraction(var)) return std::make_pair(true, boost::none);
 	const auto& f = mGetter.reabstractLiteral(lit);
@@ -62,19 +62,24 @@ std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isDecisionPo
 	} else {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " (" << f << ") is impossible due to " << *res);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << (*this));
-		if (std::find((*res).begin(), (*res).end(), f) == (*res).end()) {
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflicting core " << *res << " is independent from decision " << f);
-			return std::make_pair(false, mBackend.explain(currentVariable(), *res));
-		} else {
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Check if trail without " << f << " was feasible");
-			auto expl = isFeasible();
-			if (expl) {
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Trail without " << f << " was infeasible");
-				return std::make_pair(false, std::move(*expl));
+		if (check_feasibility_before) {
+			if (std::find((*res).begin(), (*res).end(), f) == (*res).end()) {
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflicting core " << *res << " is independent from decision " << f);
+				return std::make_pair(false, mBackend.explain(currentVariable(), *res));
 			} else {
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict depends truly on " << f);
-				return std::make_pair(false, boost::none);
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Check if trail without " << f << " was feasible");
+				auto expl = isFeasible();
+				if (expl) {
+					SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Trail without " << f << " was infeasible");
+					return std::make_pair(false, std::move(*expl));
+				} else {
+					SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict depends truly on " << f);
+					return std::make_pair(false, boost::none);
+				}
 			}
+		} else {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " from " << *res);
+			return std::make_pair(false, mBackend.explain(currentVariable(), *res));
 		}
 	}
 }

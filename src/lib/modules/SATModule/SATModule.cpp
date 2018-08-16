@@ -2778,10 +2778,10 @@ namespace smtrat
 					
 					if (Settings::mc_sat && next != lit_Undef) {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << ", checking for theory consistency...");
-						auto res = mMCSAT.isDecisionPossible(next);                        
+						auto res = mMCSAT.isDecisionPossible(next, Settings::mcsat_lazy_explanations);                        
 						if (!res.first) {
                             if (res.second) {
-                                SMTRAT_LOG_DEBUG("smtrat.sat", "Trail was infeasible before, resolving conflict " << *res.second);
+                                SMTRAT_LOG_DEBUG("smtrat.sat", "Found conflict " << *res.second);
                                 insertVarOrder(var(next));
                                 handleTheoryConflict(*res.second);
                                 continue;   
