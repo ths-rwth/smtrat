@@ -29,6 +29,7 @@ namespace smtrat
 		static constexpr bool USE_LIA_MIXED = false;
 		static constexpr bool USE_LIA_ONLY = true;
 		static constexpr bool ENCODE_IF_POSSIBLE = false;
+		static constexpr bool NORMALIZE_CONSTRAINTS = true;
 
 	};
 
@@ -41,9 +42,9 @@ namespace smtrat
 		 */
 		static constexpr bool use_rns_transformation = false;
 		static constexpr bool use_card_transformation = true;
-		static constexpr bool use_mixed_transformation = false;
-		static constexpr bool use_long_transformation = false;
-		static constexpr bool use_short_transformation = false;
+		static constexpr bool use_mixed_transformation = true;
+		static constexpr bool use_long_transformation = true;
+		static constexpr bool use_short_transformation = true;
 
 		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
 		// new formulas.
@@ -51,6 +52,7 @@ namespace smtrat
 		static constexpr bool USE_LIA_MIXED = true;
 		static constexpr bool USE_LIA_ONLY = false;
 		static constexpr bool ENCODE_IF_POSSIBLE = false;
+		static constexpr bool NORMALIZE_CONSTRAINTS = false;
 
 
 	};
@@ -73,6 +75,8 @@ namespace smtrat
 		static constexpr bool USE_LIA_MIXED = true;
 		static constexpr bool USE_LIA_ONLY = false;
 		static constexpr bool ENCODE_IF_POSSIBLE = true;
+		static constexpr bool NORMALIZE_CONSTRAINTS = false;
+
 	};
 
 	struct PBPPSettingsWithCardConstr
@@ -93,6 +97,8 @@ namespace smtrat
 		static constexpr bool USE_LIA_MIXED = true;
 		static constexpr bool USE_LIA_ONLY = false;
 		static constexpr bool ENCODE_IF_POSSIBLE = true;
+		static constexpr bool NORMALIZE_CONSTRAINTS = false;
+
 	};
 
 	struct PBPPSettingsWithMixedConstr
@@ -113,6 +119,8 @@ namespace smtrat
 		static constexpr bool USE_LIA_MIXED = true;
 		static constexpr bool USE_LIA_ONLY = false;
 		static constexpr bool ENCODE_IF_POSSIBLE = true;
+		static constexpr bool NORMALIZE_CONSTRAINTS = false;
+
 	};
 
 	struct PBPPSettingsBasic
@@ -133,6 +141,7 @@ namespace smtrat
 		static constexpr bool USE_LIA_MIXED = true;
 		static constexpr bool USE_LIA_ONLY = false;
 		static constexpr bool ENCODE_IF_POSSIBLE = true;
+		static constexpr bool NORMALIZE_CONSTRAINTS = false;
 	};
 
 

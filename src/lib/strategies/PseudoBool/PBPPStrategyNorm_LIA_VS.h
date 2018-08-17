@@ -14,23 +14,23 @@
 
 namespace smtrat
 {
-    class PBPPStrategyGroebner:
+    class PBPPStrategyNorm_LIA_VS:
         public Manager
     {
         public:
-            PBPPStrategyGroebner(): Manager() {
+            PBPPStrategyNorm_LIA_VS(): Manager() {
 				setStrategy({
 					//addBackend<FPPModule<FPPSettingsPB>>(
 						//addBackend<PBPPModule<PBPPSettings1>>(
-							addBackend<PBPPModule<PBPPSettings1>>(
+							addBackend<PBPPModule<PBPPSettingsLIAOnly>>(
 							addBackend<FPPModule<FPPSettingsPB>>(
 							addBackend<SATModule<SATSettings1>>(
-								//addBackend<VSModule<VSSettings234>>(
+								addBackend<VSModule<VSSettings234>>(
 								//addBackend<ICPModule<ICPSettings4>>(
 									addBackend<CubeLIAModule<CubeLIASettings1>>(
 										addBackend<LRAModule<LRASettings1>>()
 									)
-								//)
+								)
 							)
 						)
 					)
