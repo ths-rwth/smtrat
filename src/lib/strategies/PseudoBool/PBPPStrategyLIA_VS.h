@@ -1,16 +1,14 @@
 #pragma once
 
-#include "../solver/Manager.h"
+#include "../../solver/Manager.h"
 
-#include "../modules/LRAModule/LRAModule.h"
-#include "../modules/FPPModule/FPPModule.h"
-#include "../modules/PBPPModule/PBPPModule.h"
-#include "../modules/SATModule/SATModule.h"
-#include "../modules/ICPModule/ICPModule.h"
-#include "../modules/VSModule/VSModule.h"
-#include "../modules/CubeLIAModule/CubeLIAModule.h"
-
-
+#include "../../modules/LRAModule/LRAModule.h"
+#include "../../modules/FPPModule/FPPModule.h"
+#include "../../modules/PBPPModule/PBPPModule.h"
+#include "../../modules/SATModule/SATModule.h"
+#include "../../modules/ICPModule/ICPModule.h"
+#include "../../modules/VSModule/VSModule.h"
+#include "../../modules/CubeLIAModule/CubeLIAModule.h"
 
 namespace smtrat
 {
