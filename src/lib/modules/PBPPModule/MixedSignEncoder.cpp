@@ -26,7 +26,7 @@ namespace smtrat {
 			rhs -= term;
 		} 
 
-		if (cRel == carl::Relation::LEQ) { // we assume mixed signs
+		if (constraint.relation() == carl::Relation::LEQ) { // we assume mixed signs
 			// x1 + x2 - x3 - x4 - 1 <= 0 iff x1 + x2 -1 <= x3 + x4
 			// lhsValues -1, 0, 1
 			// rhs Value 0, 1, 2
@@ -55,7 +55,7 @@ namespace smtrat {
 			return FormulaT(carl::FormulaType::AND, conjunction);
 		}
 
-		if (cRel == carl::Relation::EQ) {
+		if (constraint.relation() == carl::Relation::EQ) {
 			// x1 + x2 - x3 - x4 - 1= 0 iff x1 + x2 -1 = x3 + x4
 			// positiveSums: -1, 0, 1
 			// negativeSums: 0, 1, 2
