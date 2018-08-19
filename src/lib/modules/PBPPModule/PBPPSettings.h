@@ -48,7 +48,7 @@ namespace smtrat
 
 		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
 		// new formulas.
-		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
+		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 20;
 		static constexpr bool USE_LIA_MIXED = true;
 		static constexpr bool USE_LIA_ONLY = false;
 		static constexpr bool ENCODE_IF_POSSIBLE = false;
