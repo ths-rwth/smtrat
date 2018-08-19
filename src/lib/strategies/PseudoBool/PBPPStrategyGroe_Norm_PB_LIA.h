@@ -14,11 +14,11 @@
 
 namespace smtrat
 {
-    class PBPPStrategyGroebner:
+    class PBPPStrategyGroe_Norm_PB_LIA:
         public Manager
     {
         public:
-            PBPPStrategyGroebner(): Manager() {
+            PBPPStrategyGroe_Norm_PB_LIA(): Manager() {
 				setStrategy({
 					//addBackend<FPPModule<FPPSettingsPB>>(
 						//addBackend<PBPPModule<PBPPSettings1>>(
