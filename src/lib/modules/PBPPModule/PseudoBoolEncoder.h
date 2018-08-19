@@ -17,7 +17,7 @@ namespace smtrat {
 			 * @return encoded formula
 			 */
 			boost::optional<FormulaT> encode(const ConstraintT& constraint);
-			unsigned problem_size;
+			std::size_t problem_size;
 
 			virtual Rational encodingSize(const ConstraintT& constraint);
 			virtual bool canEncode(const ConstraintT& constraint) = 0;
