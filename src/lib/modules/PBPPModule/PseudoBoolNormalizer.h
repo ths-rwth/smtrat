@@ -21,10 +21,20 @@ namespace smtrat {
              */
             std::pair<boost::optional<FormulaT>, ConstraintT> normalize(const ConstraintT& constraint);
 
+            /**
+             * returns all variable substitutions done by this normalizer instance. An entry {x: y} correlates to the boolean expression
+             * y <-> not x
+             * 
+             * Useful if all occurences of the substituted variable should be substituted as well or in general when the correlation is needed.
+             */
+            std::map<carl::Variable, carl::Variable> substitutedVariables() { return mVariablesCache;}
+
+            
+            ConstraintT trim(const ConstraintT& constraint);
+
+
         private:
             std::map<carl::Variable, carl::Variable> mVariablesCache;
-
-            ConstraintT trim(const ConstraintT& constraint);
 
             std::pair<boost::optional<FormulaT>, ConstraintT> removePositiveCoeff(const ConstraintT& constraint);
 
