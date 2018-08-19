@@ -6,7 +6,7 @@
 #include "../solver/Manager.h"
 #include "../modules/GBPPModule/GBPPModule.h"
 #include "../modules/ESModule/ESModule.h"
-#include "../modules/PBPPModule/PBPPModule.h"
+// #include "../modules/PBPPModule/PBPPModule.h"
 
 namespace smtrat
 {
@@ -19,6 +19,22 @@ namespace smtrat
 	 *
 	 */
 	class PBPreprocessing:
+		public Manager
+	{
+		public:
+			PBPreprocessing(): Manager() {
+				setStrategy({
+						//addBackend<GBPPModule<GBPPSettings1>>(
+							//addBackend<PBPPModule<PBPPSettings1>>(
+								addBackend<ESModule<ESSettings1>>()
+							//)
+						//)
+				});
+			}
+
+	};
+
+	class PBPreprocessingGroebner:
 		public Manager
 	{
 		public:
