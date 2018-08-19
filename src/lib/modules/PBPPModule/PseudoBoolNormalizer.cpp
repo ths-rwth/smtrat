@@ -93,9 +93,11 @@ namespace smtrat {
                 if (mVariablesCache.find(currentVariable) == mVariablesCache.end()) {
                     // we have not seen this variable before. Add new variable for substitution and add to booleanPart
                     mVariablesCache[currentVariable] = carl::freshBooleanVariable();
-                    additionalBoolPart.push_back(FormulaT(carl::FormulaType::IFF,
-                        FormulaT(mVariablesCache[currentVariable]), 
-                        !FormulaT(currentVariable)));
+                    Poly lhs;
+                    lhs += currentVariable;
+                    lhs += mVariablesCache[currentVariable];
+                    lhs -= 1;
+                    additionalBoolPart.push_back(FormulaT(ConstraintT(lhs, carl::Relation::EQ)));
                 }
 
                 result -= term.coeff() * mVariablesCache[currentVariable];
