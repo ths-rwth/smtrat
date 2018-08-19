@@ -9,11 +9,10 @@
 #include "PBPPModule.h"
 
 #include "RNSEncoder.h"
-#include "PseudoBoolNormalizer.h"
 
 #include <boost/optional/optional_io.hpp>
 
-#define DEBUG_PBPP
+// #define DEBUG_PBPP
 
 namespace smtrat
 {
@@ -77,26 +76,32 @@ namespace smtrat
 		std::cout << "Constraint before normalization: \t" << constraint << std::endl;
 		#endif
 
-		// normalize and hence hopefully simplify the formula
-		PseudoBoolNormalizer normalizer;
-		std::pair<boost::optional<FormulaT>, ConstraintT> normalizedConstraintWithBoolPart = normalizer.normalize(constraint);
+		ConstraintT normalizedConstraint = constraint;
+		if (Settings::NORMALIZE_CONSTRAINTS) {
+			// normalize and hence hopefully simplify the formula
+			std::pair<boost::optional<FormulaT>, ConstraintT> normalizedConstraintWithBoolPart = mNormalizer.normalize(constraint);
 
-		// extract the normalized constraint and pass along the rest
-		#ifdef DEBUG_PBPP
-		std::cout << "Constraint after normalization: \t" 
-				  << normalizedConstraintWithBoolPart.first 
-				  << " and " 
-				  <<  normalizedConstraintWithBoolPart.second << std::endl;
-		#endif
+			// extract the normalized constraint and pass along the rest
+			#ifdef DEBUG_PBPP
+			std::cout << "Constraint after normalization: \t" 
+					<< normalizedConstraintWithBoolPart.first 
+					<< " and " 
+					<<  normalizedConstraintWithBoolPart.second << std::endl;
+			#endif
 
-		ConstraintT normalizedConstraint = normalizedConstraintWithBoolPart.second;
-		if (normalizedConstraintWithBoolPart.first) {
-			// TODO actually pass this only when we are sure that we do need it
-			addSubformulaToPassedFormula(*normalizedConstraintWithBoolPart.first);
+			normalizedConstraint = normalizedConstraintWithBoolPart.second;
+			if (normalizedConstraintWithBoolPart.first) {
+				for (const auto& subformula : *normalizedConstraintWithBoolPart.first) {
+					assert(subformula.getType() == carl::FormulaType::CONSTRAINT);
+
+					mConstraints.push_back(subformula.constraint());
+					formulaByConstraint[subformula.constraint()] = formula;
+				}
+			}
+		} else {
+			mConstraints.push_back(normalizedConstraint);
+			formulaByConstraint[normalizedConstraint] = formula;
 		}
-		
-		mConstraints.push_back(normalizedConstraint);
-		formulaByConstraint[normalizedConstraint] = formula;
 
 		return true;
 	}
@@ -104,12 +109,17 @@ namespace smtrat
 	template<class Settings>
 	Answer PBPPModule<Settings>::checkCore()
 	{
+		// Preprocess all equalities and join them to one such that we can handle a single constraint in Simplex
+		// if (Settings::JOIN_EQUATIONS) {
+		// 	joinEquations();
+		// }
+
 		// 1. Preprocessing - ignore some constraints and gather informations			
 		for (const auto& constraint : mConstraints) {
 							
 			// we can also check a mode which only uses simplex and does not encode
 			if (Settings::USE_LIA_ONLY) {
-				addSubformulaToPassedFormula(forwardAsArithmetic(constraint), formulaByConstraint[constraint]);
+				addSubformulaToPassedFormula(forwardAsArithmetic(constraint, {}), formulaByConstraint[constraint]);
 				continue;
 			} 
 
@@ -117,6 +127,7 @@ namespace smtrat
 			Rational encodingSize = std::numeric_limits<size_t>::max();
 			for (const auto& encoder : mEncoders) {
 				Rational curEncoderSize = encoder->encodingSize(constraint);
+				encodingSize = conversionSizeByConstraint[constraint];
 				if (encoder->canEncode(constraint) && 
 					(curEncoderSize <= encodingSize || conversionSizeByConstraint[constraint] == Rational(0))) 
 				{
@@ -152,18 +163,11 @@ namespace smtrat
 		std::cout << "After Step 1 - Encoding as Bool: " << boolConstraints << std::endl;
 		#endif
 
-		// 2. forward previously determined constraints as LIA 
 		std::set<carl::Variable> variablesInLIA;
 		for (const auto& constraint : liaConstraints) {
-				for (const auto& cvar : constraint.variables()) {
-					variablesInLIA.insert(cvar);
-				}
-
-				// Encode all constraint which have to be encoded as LIA
-				// For each variable used in the formulation find a "complicated" non equality
-				// constraint covering as many variables as possible and use it in the LIA formulation
-				// Enocde all remaining constraints as bool
-				addSubformulaToPassedFormula(forwardAsArithmetic(constraint));
+			for (const auto& cvar : constraint.variables()) {
+				variablesInLIA.insert(cvar);
+			}
 		}
 
 		// 3. add more constraints to LIA part to refine the relaxation 
@@ -178,9 +182,12 @@ namespace smtrat
 				if (additionallyLIAEncodedBoolConstraints.find(constraint) != additionallyLIAEncodedBoolConstraints.end()) {
 					continue;
 				}
+				std::map<carl::Variable, carl::Variable> variablesFromNormalization = mNormalizer.substitutedVariables();
+				bool constraintContainsVariable = constraint.variables().find(var) != constraint.variables().end();
+				bool constraintContainsSubstitutedVariable = variablesFromNormalization.find(var) != variablesFromNormalization.end() 
+						&& constraint.variables().find(variablesFromNormalization[var]) != constraint.variables().end();
 
-				if (!isTrivial(constraint) && constraint.variables().find(var) != constraint.variables().end()) {
-					addSubformulaToPassedFormula(forwardAsArithmetic(constraint), formulaByConstraint[constraint]);
+				if (!isTrivial(constraint) && (constraintContainsVariable || constraintContainsSubstitutedVariable)) {
 					for (const auto& cvar: constraint.variables()) {
 						inspectedVariables.insert(cvar);
 					}
@@ -204,16 +211,35 @@ namespace smtrat
 		#endif
 
 		// 4. encode all remaining constraints as bool
+		std::set<carl::Variable> variablesInBooleanPart;
 		for (const auto& constraint : boolConstraints){
 			boost::optional<FormulaT> boolEncoding = encoderByConstraint[constraint]->encode(constraint);
 			if (!boolEncoding) {
-				addSubformulaToPassedFormula(forwardAsArithmetic(constraint), formulaByConstraint[constraint]);
+				liaConstraints.push_back(constraint);
 				continue;
 			}
+
 			#ifdef DEBUG_PBPP
 			std::cout << "Encoded " << constraint << " \t as \t " << *boolEncoding << std::endl;
 			#endif
-			addSubformulaToPassedFormula(*boolEncoding, formulaByConstraint[constraint]);
+			for (const auto& var : constraint.variables()) {
+				variablesInBooleanPart.insert(var);
+			}
+
+			// If we find an atom like true or false, we do not need to pass it along or can already prove unsat
+			if ((*boolEncoding).getType() == carl::FormulaType::FALSE) {
+				generateTrivialInfeasibleSubset();
+				return UNSAT;
+			}
+
+			// we can safely ignore true since (true and x) = x
+			if ((*boolEncoding).getType() != carl::FormulaType::TRUE) {
+				addSubformulaToPassedFormula(*boolEncoding, formulaByConstraint[constraint]);
+			}
+		}
+
+		for (const auto& constraint : liaConstraints) {
+			addSubformulaToPassedFormula(forwardAsArithmetic(constraint, variablesInBooleanPart), formulaByConstraint[constraint]);
 		}
 
 		Answer ans = runBackends();
@@ -225,67 +251,52 @@ namespace smtrat
 	}
 
 	template<typename Settings>
-	FormulaT PBPPModule<Settings>::encodeMixedConstraints(const ConstraintT& constraint){
-		return encodeConstraintOrForwardAsArithmetic(constraint, mMixedSignEncoder);
-	}
+	ConstraintT PBPPModule<Settings>::generateZeroHalfCut(const ConstraintT& first, const ConstraintT& second) {
+		assert(first.relation() == second.relation());
+		assert(first.relation() == carl::Relation::LEQ);
 
-	template<typename Settings>
-	FormulaT PBPPModule<Settings>::encodeCardinalityConstraint(const ConstraintT& constraint){
-		return encodeConstraintOrForwardAsArithmetic(constraint, mCardinalityEncoder);
-	}
+		Poly cutPoly = first.lhs() + second.lhs() - first.lhs().constantPart() - second.constantPart();
+		cutPoly = cutPoly/2;
+		cutPoly += carl::floor((first.lhs().constantPart() + second.lhs().constantPart())/2);
 
-	template<typename Settings>
-	FormulaT PBPPModule<Settings>::convertSmallFormula(const ConstraintT& constraint){
-		return encodeConstraintOrForwardAsArithmetic(constraint, mShortFormulaEncoder);
-	}
-
-	template<typename Settings>
-	FormulaT PBPPModule<Settings>::convertBigFormula(const ConstraintT& constraint){
-		return encodeConstraintOrForwardAsArithmetic(constraint, mLongFormulaEncoder);
-	}
-
-	template<typename Settings>
-	FormulaT PBPPModule<Settings>::encodeConstraintOrForwardAsArithmetic(const ConstraintT& constraint, PseudoBoolEncoder& encoder) {
-		boost::optional<FormulaT> encodedFormula = encoder.encode(constraint);
-		if (encodedFormula) {
-			return *encodedFormula;
-		}
-
-		return forwardAsArithmetic(constraint);
+		return ConstraintT(cutPoly, first.relation());
 	}
 
 	/*
 	* Converts Constraint into a LRA formula.
 	*/
 	template<typename Settings>
-	FormulaT PBPPModule<Settings>::forwardAsArithmetic(const ConstraintT& formula, bool interconnect){
+	FormulaT PBPPModule<Settings>::forwardAsArithmetic(const ConstraintT& formula, const std::set<carl::Variable>& boolVariables){
 		const auto& cLHS = formula.lhs();
 		carl::Relation cRel  = formula.relation();
 		Rational cRHS = formula.constantPart();
 		auto variables = formula.variables();
 
-		for(const auto& it : variables){
+		std::set<carl::Variable> variableSetIntersection;
+		std::set_intersection(variables.begin(), variables.end(), 
+							  boolVariables.begin(), boolVariables.end(), 
+							  std::inserter(variableSetIntersection, variableSetIntersection.end()));
+
+		for(const auto& it : variableSetIntersection){
 			mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(it, carl::freshIntegerVariable()));
 		}
 
 		Poly lhs;
 		for(const auto& it : cLHS){
-			// Poly pol(it.second);
-			if (!it.isConstant()) {
+			if (it.isConstant()) {
+				lhs += it.coeff();
+				continue;
+			}
+
+			if (mVariablesCache.find(it.getSingleVariable()) != mVariablesCache.end()) {
 				lhs = lhs + it.coeff() * mVariablesCache.find(it.getSingleVariable())->second;
 			} else {
-				lhs = lhs + it.coeff();
+				lhs = lhs + it;
 			}
 		}
 
 		FormulaT subformulaA = FormulaT(lhs, cRel);
-
-		// Adding auxiliary constraint to ensure variables are assigned to 1 or 0.
-		// FormulaT subformulaB = createAuxiliaryConstraint(variables);
-		// FormulaT subformulaC = FormulaT(carl::FormulaType::AND, subformulaA, subformulaB);
-
-		//Adding auxiliary constraint to interconnect the bool and int variables
-		FormulaT subformulaD = interconnectVariables(variables);
+		FormulaT subformulaD = interconnectVariables(variableSetIntersection);
 		return FormulaT(carl::FormulaType::AND, subformulaA, subformulaD);
 	}
 
@@ -311,23 +322,6 @@ namespace smtrat
 	}
 
 	template<typename Settings>
-	FormulaT PBPPModule<Settings>::createAuxiliaryConstraint(const std::vector<carl::Variable>& variables){
-		FormulasT subformulas;
-		for(auto it : variables){
-			if(std::find(mCheckedVars.begin(), mCheckedVars.end(), it) == mCheckedVars.end()){
-				//There are no auxiliary constraints for this variable
-				mCheckedVars.push_back(it);
-				Poly intVar(it);
-				FormulaT subformulaA = FormulaT(intVar, carl::Relation::EQ);
-				FormulaT subformulaB = FormulaT(intVar - Rational(1), carl::Relation::EQ);
-				FormulaT newFormula = FormulaT(carl::FormulaType::XOR, subformulaA, subformulaB);
-				subformulas.push_back(newFormula);
-			}
-		}
-		return FormulaT(carl::FormulaType::AND, std::move(subformulas));
-	}
-
-	template<typename Settings>
 	bool PBPPModule<Settings>::isAllCoefficientsEqual(const ConstraintT& constraint) {
 		Rational coefficient = constraint.lhs().lcoeff();
 		for (const auto& term : constraint.lhs()) {
@@ -345,6 +339,7 @@ namespace smtrat
 
 		// we do not encode very large formulas
 		encode = encode && conversionSizeByConstraint[constraint] <= Settings::MAX_NEW_RELATIVE_FORMULA_SIZE * rReceivedFormula().size();
+		//encode = encode && constraint.variables().size() <= 3;
 
 		// this would be a simple encoding
 		//encode = encode && (constraint.relation() == carl::Relation::EQ || carl::abs(constraint.lhs().constantPart()) <= 1);
@@ -361,15 +356,48 @@ namespace smtrat
 		trivial = trivial || constraint.variables().size() <= 1;
 		trivial = trivial || (constraint.constantPart() == 0 && mCardinalityEncoder.canEncode(constraint));
 
-		// TODO this is not actually trivial. This just forces equalities - if they are not in LIA - to stay in Bool.
-		// trivial = trivial || constraint.relation() == carl::Relation::EQ;
-
 		return trivial;
 	}
 
 	template<class Settings>
-	void PBPPModule<Settings>::removeCore( ModuleInput::const_iterator )
-	{}
+	void PBPPModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
+	{
+		// remove the constraint according to the given input again
+		const FormulaT& formula = _subformula->formula();
+
+		if (formula.getType() != carl::FormulaType::CONSTRAINT){
+			return;
+		}
+		
+		const ConstraintT constraint = formula.constraint();
+		if (!constraint.isPseudoBoolean()) { 
+			return;
+		}
+
+		for (auto it = mConstraints.begin(); it != mConstraints.end(); ++it) {
+			if (*it == constraint) {
+				mConstraints.erase(it);
+				return;
+			}
+		}
+
+		for (auto it = liaConstraints.begin(); it != liaConstraints.end(); ++it) {
+			if (*it == constraint) {
+				mConstraints.erase(it);
+				return;
+			}
+		}
+
+		for (auto it = boolConstraints.begin(); it != boolConstraints.end(); ++it) {
+			if (*it == constraint) {
+				mConstraints.erase(it);
+				return;
+			}
+		}
+
+		formulaByConstraint.erase(constraint);
+
+	}
 
 	template<class Settings>
 	void PBPPModule<Settings>::updateModel() const

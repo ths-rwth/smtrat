@@ -19,6 +19,7 @@
 #include "PBPPSettings.h"
 #include "RNSEncoder.h"
 #include "ShortFormulaEncoder.h"
+#include "PseudoBoolNormalizer.h"
 
 
 namespace smtrat
@@ -49,7 +50,9 @@ namespace smtrat
 			CardinalityEncoder mCardinalityEncoder;
 			MixedSignEncoder mMixedSignEncoder;
 
-			std::vector<PseudoBoolEncoder*> mEncoders = { &mCardinalityEncoder };
+			PseudoBoolNormalizer mNormalizer;
+
+			std::vector<PseudoBoolEncoder*> mEncoders;
 
 		public:
 			typedef Settings SettingsType;
@@ -113,23 +116,18 @@ namespace smtrat
 
 		private:
 			bool isAllCoefficientsEqual(const ConstraintT& constraint);
-			FormulaT convertPbConstraintToConstraintFormula(const FormulaT& formula);
 			FormulaT convertSmallFormula(const ConstraintT& formula);
 			FormulaT convertBigFormula(const ConstraintT& formula);
 
-			FormulaT forwardAsArithmetic(const ConstraintT& formula, bool interconnect = false);
+			FormulaT forwardAsArithmetic(const ConstraintT& formula, const std::set<carl::Variable>& boolVariables);
 
-			FormulaT checkFormulaAndApplyTransformations(const FormulaT& subformula);
 			FormulaT generateVarChain(const std::set<carl::Variable>& vars, carl::FormulaType type);
-			FormulaT createAuxiliaryConstraint(const std::vector<carl::Variable>& variables);
 			FormulaT interconnectVariables(const std::set<carl::Variable>& variables);
-
-			FormulaT encodeCardinalityConstraint(const ConstraintT& formula);
-			FormulaT encodeMixedConstraints(const ConstraintT& formula);
-			FormulaT encodeConstraintOrForwardAsArithmetic(const ConstraintT& constraint, PseudoBoolEncoder& encoder);
 
 			bool encodeAsBooleanFormula(const ConstraintT& constraint);
 			bool isTrivial(const ConstraintT& constraint);
+
+			ConstraintT generateZeroHalfCut(const ConstraintT& first, const ConstraintT& second);
 
 	};
 }
