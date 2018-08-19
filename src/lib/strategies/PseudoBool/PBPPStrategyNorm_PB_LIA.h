@@ -23,7 +23,7 @@ namespace smtrat
 					//addBackend<FPPModule<FPPSettingsPB>>(
 						//addBackend<PBPPModule<PBPPSettings1>>(
 							//addBackend<FPPModule<FPPSettingsPBGroebner>>(
-							addBackend<PBPPModule<PBPPSettingsNormalize>>(
+							addBackend<PBPPModule<PBPPSettingsWithNormalize>>(
 							addBackend<FPPModule<FPPSettingsPB>>(
 							//addBackend<FPPModule<FPPSettingsPB>>(
 							addBackend<SATModule<SATSettings1>>(
