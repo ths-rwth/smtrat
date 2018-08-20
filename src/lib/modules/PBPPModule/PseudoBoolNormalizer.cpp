@@ -30,9 +30,7 @@ namespace smtrat {
         }
 
         if (trimmable(normalizedConstraint)) {
-            std::cout << normalizedConstraint << std::endl;
             normalizedConstraint = trim(normalizedConstraint);
-            std::cout << normalizedConstraint << std::endl;
         }
 
         normalizedConstraint = gcd(normalizedConstraint);
@@ -73,11 +71,6 @@ namespace smtrat {
     }
 
     std::pair<boost::optional<FormulaT>, ConstraintT> PseudoBoolNormalizer::removePositiveCoeff(const ConstraintT& constraint) {
-        if (constraint.relation() == carl::Relation::EQ) {
-            boost::optional<FormulaT> booleanPart;
-            return std::make_pair(booleanPart, constraint);
-        }
-
         Poly result;
         FormulasT additionalBoolPart;
 
@@ -93,7 +86,7 @@ namespace smtrat {
                 if (mVariablesCache.find(currentVariable) == mVariablesCache.end()) {
                     // we have not seen this variable before. Add new variable for substitution and add to booleanPart
                     mVariablesCache[currentVariable] = carl::freshBooleanVariable();
-                    Poly lhs;
+                    Poly lhs; // b1 = 1 - b2 iff b1 + b2 - 1 = 0 
                     lhs += currentVariable;
                     lhs += mVariablesCache[currentVariable];
                     lhs -= 1;
@@ -142,5 +135,5 @@ namespace smtrat {
 		// This means we need to add(!!) 1 to lhs
 		return ConstraintT(constraint.lhs() + Rational(1), carl::Relation::LEQ);
 	}
-    
+
 }
