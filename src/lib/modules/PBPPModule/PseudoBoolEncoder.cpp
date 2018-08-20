@@ -17,6 +17,7 @@ namespace smtrat {
 		}
 
 		assert(constraint.relation() != carl::Relation::LESS);
+		assert(this->canEncode(constraint));
 
 		return doEncode(constraint);
 	}
