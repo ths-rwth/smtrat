@@ -112,32 +112,51 @@ namespace smtrat {
 	}
 
 	boost::optional<FormulaT> CardinalityEncoder::encodeAtLeast(const ConstraintT& constraint) {
-		FormulasT allOrSet;
-		for (const auto& variable: constraint.variables()) {
-			allOrSet.push_back(FormulaT(variable));
-		}
-
 		FormulasT result;
 		Rational constant = constraint.constantPart();
 		assert(constant > 0);
-		for (Rational i = constant - 1; i > 0; i--) {
-			result.push_back(!encodeExactly(constraint.variables(), i));
-		}
+		if (constant <= constraint.variables().size()/2) {
+			for (Rational i = constant - 1; i > 0; i--) {
+				result.push_back(!encodeExactly(constraint.variables(), i));
+			}
 
-		return FormulaT(carl::FormulaType::AND,
-				FormulaT(carl::FormulaType::AND, result),
-				FormulaT(carl::FormulaType::OR, allOrSet));
+			FormulasT orSet;
+			for (const auto& var : constraint.variables()) {
+				orSet.push_back(FormulaT(var));
+			}
+
+			return FormulaT(carl::FormulaType::AND, 
+					FormulaT(carl::FormulaType::OR, orSet),
+					FormulaT(carl::FormulaType::AND, result));
+		} else { // constant > variables.size()/2
+			for (Rational i = constant; i <= constraint.variables().size(); i++) {
+				result.push_back(encodeExactly(constraint.variables(), i));
+			}
+
+			return FormulaT(carl::FormulaType::OR, result);
+		}		
 	}
 
 	boost::optional<FormulaT> CardinalityEncoder::encodeAtMost(const ConstraintT& constraint) {
 		FormulasT result;
 
 		Rational constant = -constraint.constantPart();
-		for (unsigned i = 0 ; i <= constant; i++) {
-			result.push_back(FormulaT(encodeExactly(constraint.variables(), i)));
+		if (constant < constraint.variables().size()/2) {
+			for (unsigned i = 0 ; i <= constant; i++) {
+				result.push_back(FormulaT(encodeExactly(constraint.variables(), i)));
+			}
+
+			return FormulaT(carl::FormulaType::OR, result);
+
+		} else {
+			for (size_t i = constraint.variables().size() ; i > constant; i--) {
+				result.push_back(FormulaT(!encodeExactly(constraint.variables(), i)));
+			}
+
+			return FormulaT(carl::FormulaType::AND, result);
 		}
 
-		return FormulaT(carl::FormulaType::OR, result);
+		
 	}
 
 	bool CardinalityEncoder::canEncode(const ConstraintT& constraint) {
