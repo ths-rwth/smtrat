@@ -4,7 +4,7 @@ namespace smtrat {
 	boost::optional<FormulaT> ShortFormulaEncoder::doEncode(const ConstraintT& constraint) {
 		SMTRAT_LOG_DEBUG("smtrat.pbc", "Trying to convert small formula: " << constraint);
 		assert(!constraint.lhs().begin()->isConstant());
-		assert(constriant.variables.size() == 1);
+		assert(constriant.variables().size() == 1);
 
 		carl::Relation cRel = constraint.relation();
 		const Poly& cLHS = constraint.lhs();
