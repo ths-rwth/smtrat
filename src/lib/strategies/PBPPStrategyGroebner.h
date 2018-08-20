@@ -27,9 +27,9 @@ namespace smtrat
 							addBackend<SATModule<SATSettings1>>(
 								//addBackend<VSModule<VSSettings234>>(
 								//addBackend<ICPModule<ICPSettings4>>(
-									addBackend<CubeLIAModule<CubeLIASettings1>>(
+									//addBackend<CubeLIAModule<CubeLIASettings1>>(
 										addBackend<LRAModule<LRASettings1>>()
-									)
+									//)
 								//)
 							)
 						)
