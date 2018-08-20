@@ -129,5 +129,7 @@ namespace smtrat
 
 			ConstraintT generateZeroHalfCut(const ConstraintT& first, const ConstraintT& second);
 
+			void extractConstraints(const FormulaT& formula);
+
 	};
 }

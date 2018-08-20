@@ -27,11 +27,10 @@ namespace smtrat {
              * 
              * Useful if all occurences of the substituted variable should be substituted as well or in general when the correlation is needed.
              */
-            std::map<carl::Variable, carl::Variable> substitutedVariables() { return mVariablesCache;}
+            std::map<carl::Variable, carl::Variable>& substitutedVariables() { return mVariablesCache;}
 
             
             ConstraintT trim(const ConstraintT& constraint);
-
 
         private:
             std::map<carl::Variable, carl::Variable> mVariablesCache;

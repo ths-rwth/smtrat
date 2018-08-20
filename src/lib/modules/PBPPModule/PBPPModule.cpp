@@ -12,7 +12,7 @@
 
 #include <boost/optional/optional_io.hpp>
 
-// #define DEBUG_PBPP
+#define DEBUG_PBPP
 
 namespace smtrat
 {
@@ -72,12 +72,13 @@ namespace smtrat
 			return true;
 		}
 		
-		#ifdef DEBUG_PBPP
-		std::cout << "Constraint before normalization: \t" << constraint << std::endl;
-		#endif
+		
 
 		ConstraintT normalizedConstraint = constraint;
 		if (Settings::NORMALIZE_CONSTRAINTS) {
+			#ifdef DEBUG_PBPP
+			std::cout << "Constraint before normalization: \t" << normalizedConstraint << std::endl;
+			#endif
 			// normalize and hence hopefully simplify the formula
 			std::pair<boost::optional<FormulaT>, ConstraintT> normalizedConstraintWithBoolPart = mNormalizer.normalize(constraint);
 
@@ -91,29 +92,37 @@ namespace smtrat
 
 			normalizedConstraint = normalizedConstraintWithBoolPart.second;
 			if (normalizedConstraintWithBoolPart.first) {
-				for (const auto& subformula : *normalizedConstraintWithBoolPart.first) {
-					assert(subformula.getType() == carl::FormulaType::CONSTRAINT);
-
-					mConstraints.push_back(subformula.constraint());
-					formulaByConstraint[subformula.constraint()] = formula;
-				}
+				extractConstraints(*normalizedConstraintWithBoolPart.first);						
 			}
-		} else {
-			mConstraints.push_back(normalizedConstraint);
-			formulaByConstraint[normalizedConstraint] = formula;
 		}
 
+		mConstraints.push_back(normalizedConstraint);
+		formulaByConstraint[normalizedConstraint] = formula;
+	
 		return true;
+	}
+
+	template<class Settings>
+	void PBPPModule<Settings>::extractConstraints(const FormulaT& formula) {
+		if (formula.isBooleanCombination()) {
+			assert(formula.getType() == carl::FormulaType::AND);
+			for (const auto& subformula: formula.subformulas()) {
+				extractConstraints(subformula);
+			}
+		} else if (formula.getType() == carl::FormulaType::CONSTRAINT) {
+			mConstraints.push_back(formula.constraint());
+			formulaByConstraint[formula.constraint()] = formula;
+		} else if (formula.getType() == carl::FormulaType::TRUE) {
+			return;
+		} else {
+			// we only expect a boolean combination of constraints
+			assert("The FormulaType passed was not valid. Expected Constraint, BooleanCombination or TRUE" && false);
+		}
 	}
 
 	template<class Settings>
 	Answer PBPPModule<Settings>::checkCore()
 	{
-		// Preprocess all equalities and join them to one such that we can handle a single constraint in Simplex
-		// if (Settings::JOIN_EQUATIONS) {
-		// 	joinEquations();
-		// }
-
 		// 1. Preprocessing - ignore some constraints and gather informations			
 		for (const auto& constraint : mConstraints) {
 							
@@ -175,6 +184,12 @@ namespace smtrat
 		// since access to variablesInLIA would invalidate the iterator we instead save which variables we already inspected
 		std::set<carl::Variable> inspectedVariables;
 		std::set<ConstraintT> additionallyLIAEncodedBoolConstraints;
+		std::map<carl::Variable, carl::Variable>& variablesFromNormalization = mNormalizer.substitutedVariables();
+		std::set<carl::Variable> variableSubstitutions;
+		for (const auto& pair : variablesFromNormalization) {
+			variableSubstitutions.insert(pair.second);
+		}
+
 		for (const auto& var : variablesInLIA) {
 			if (inspectedVariables.find(var) != inspectedVariables.end()) continue;
 			
@@ -182,16 +197,12 @@ namespace smtrat
 				if (additionallyLIAEncodedBoolConstraints.find(constraint) != additionallyLIAEncodedBoolConstraints.end()) {
 					continue;
 				}
-				std::map<carl::Variable, carl::Variable> variablesFromNormalization = mNormalizer.substitutedVariables();
-				bool constraintContainsVariable = constraint.variables().find(var) != constraint.variables().end();
-				bool constraintContainsSubstitutedVariable = variablesFromNormalization.find(var) != variablesFromNormalization.end() 
-						&& constraint.variables().find(variablesFromNormalization[var]) != constraint.variables().end();
+						
+				bool constraintContainsCurrentVariable = constraint.variables().find(var) != constraint.variables().end();
+				bool constraintContainsSubstitutedVariable = variableSubstitutions.find(var) != variableSubstitutions.end();
 
-				if (!isTrivial(constraint) && (constraintContainsVariable || constraintContainsSubstitutedVariable)) {
-					for (const auto& cvar: constraint.variables()) {
-						inspectedVariables.insert(cvar);
-					}
-
+				if (!isTrivial(constraint) && (constraintContainsCurrentVariable || constraintContainsSubstitutedVariable)) {
+					inspectedVariables.insert(var);
 					liaConstraints.push_back(constraint);
 					additionallyLIAEncodedBoolConstraints.insert(constraint);
 				}
@@ -220,7 +231,7 @@ namespace smtrat
 			}
 
 			#ifdef DEBUG_PBPP
-			std::cout << "Encoded " << constraint << " \t as \t " << *boolEncoding << std::endl;
+			std::cout << "Encoded using " << encoderByConstraint[constraint]->name() << " " << constraint << " \t as \t " << *boolEncoding << std::endl;
 			#endif
 			for (const auto& var : constraint.variables()) {
 				variablesInBooleanPart.insert(var);
@@ -267,37 +278,45 @@ namespace smtrat
 	*/
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::forwardAsArithmetic(const ConstraintT& formula, const std::set<carl::Variable>& boolVariables){
-		const auto& cLHS = formula.lhs();
-		carl::Relation cRel  = formula.relation();
-		Rational cRHS = formula.constantPart();
-		auto variables = formula.variables();
+		carl::Variables variables = formula.variables();
 
 		std::set<carl::Variable> variableSetIntersection;
 		std::set_intersection(variables.begin(), variables.end(), 
 							  boolVariables.begin(), boolVariables.end(), 
 							  std::inserter(variableSetIntersection, variableSetIntersection.end()));
 
-		for(const auto& it : variableSetIntersection){
+		for(const auto& it : variables){
+			if (mVariablesCache.find(it) != mVariablesCache.end()) continue;
+
+			// add the variable since there is no integer coupling just yet.
 			mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(it, carl::freshIntegerVariable()));
 		}
 
 		Poly lhs;
-		for(const auto& it : cLHS){
+		for(const auto& it : formula.lhs()){
 			if (it.isConstant()) {
 				lhs += it.coeff();
 				continue;
 			}
 
-			if (mVariablesCache.find(it.getSingleVariable()) != mVariablesCache.end()) {
-				lhs = lhs + it.coeff() * mVariablesCache.find(it.getSingleVariable())->second;
-			} else {
-				lhs = lhs + it;
-			}
+			lhs = lhs + it.coeff() * mVariablesCache[it.getSingleVariable()];
 		}
 
-		FormulaT subformulaA = FormulaT(lhs, cRel);
-		FormulaT subformulaD = interconnectVariables(variableSetIntersection);
-		return FormulaT(carl::FormulaType::AND, subformulaA, subformulaD);
+		FormulaT constraintFormula = FormulaT(lhs, formula.relation());
+		FormulaT boolConnection = interconnectVariables(variableSetIntersection);
+		// it remains to specify bounds to on the new integer variables, however, it is enough 
+		// to specify bounds to variables \setminus variableSetIntersection
+		FormulasT bounds;
+		for (const auto& var : variables) {
+			if (variableSetIntersection.find(var) != variableSetIntersection.end()) continue;
+
+			// variable is not in intersection, add discrete bounds
+			ConstraintT equalOne((Poly(mVariablesCache[var]) - Rational(1)), carl::Relation::EQ);
+			ConstraintT equalZero(Poly(mVariablesCache[var]), carl::Relation::EQ);
+			bounds.push_back(FormulaT(carl::FormulaType::OR, FormulaT(equalOne), FormulaT(equalZero)));
+		}
+
+		return FormulaT(carl::FormulaType::AND, constraintFormula, boolConnection, FormulaT(carl::FormulaType::AND, bounds));
 	}
 
 	template<typename Settings>
