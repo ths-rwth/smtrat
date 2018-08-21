@@ -7,6 +7,7 @@
  */
 
 #include "AbstractModule.h"
+#include "MonomialMappingByVariablePool.h"
 
 namespace smtrat
 {
@@ -33,10 +34,296 @@ namespace smtrat
     void AbstractModule<Settings>::init()
     {}
 
+    int zVariableCounter = 0;
+    std::string VariableName = "z_";
+
+    /**
+     * create variables and each time increment the suffix e.g., z_0, z_1, etc.
+     * @return a carl Variable object
+     */
+    carl::Variable createZVariable(){
+        std::string GeneratedVariableName = VariableName + std::to_string(zVariableCounter++);
+        return carl::freshRealVariable(GeneratedVariableName);
+    }
+
+    /**
+     * create a square of the variable
+     * @param Variable a carl Variable object e.g., x_0
+     * @return a monomial object e.g., x_0^2
+     */
+    carl::Monomial::Arg createSquareOfVariable(carl::Variable Variable){
+        return carl::createMonomial((Variable), (carl::exponent)2);
+    }
+
+    /**
+     * Insert the variable as key with monomials as value into the map
+     * The map is singeltone
+     * @param GeneratedVariable
+     * @param monomial
+     */
+    void insertIntoMap(carl::Variable GeneratedVariable, carl::Monomial::Arg monomial) {
+        cout << "inserting the monomial into the map:";
+        cout << "\n";
+        cout << "GeneratedVariable: " << GeneratedVariable << ", monomial: " << monomial;
+        cout << "\n";
+        smtrat::MonomialMappingByVariablePool::getInstance().InsertMonomialMapping(GeneratedVariable, monomial);
+    }
+
+    int divisionOfExponentByTwo(int exponent){
+        return (int)(exponent / 2);
+    }
+
+    /**
+     * Replace square of variable (x_0^2) of a monomial (x_0^6) by a variable (z_0),
+     * create a new monomial (z_0^3)
+     * and insert the variable as key with monomials as value in the map
+     * @param Variable a carl::Variable object
+     * @param exponent an even exponent
+     * @return new monomial
+     */
+    carl::Monomial::Arg monomialForEvenExponent(carl::Variable Variable, int exponent){
+
+        int exponentToBe = divisionOfExponentByTwo(exponent);
+
+        carl::Variable GeneratedVariable = createZVariable();
+        carl::Monomial::Arg squareOfVariable = createSquareOfVariable(Variable);
+
+        insertIntoMap(GeneratedVariable, squareOfVariable);
+
+        cout << "Exponent of GeneratedVariable: " << exponentToBe;
+        cout << "\n";
+
+        carl::Monomial::Arg newMonomial = carl::createMonomial(GeneratedVariable, (carl::exponent)exponentToBe);
+
+        cout << "new Monomial: " << newMonomial;
+        cout << "\n";
+        cout << "\n";
+
+        return newMonomial;
+    }
+
+    /**
+     * It creates monomial by taking and poping first two items from the list,
+     * Insert the monomial as value into the map against a new variable,
+     * Each time the new variable is insterted at the front of the list
+     * @param variables List of carl variables
+     * @return created new linear variable
+     */
+    carl::Variable createLinearVariable(std::list<carl::Variable> variables){
+
+        while (variables.size() > 1) {
+            carl::Variable first = variables.front();
+            variables.pop_front();
+
+            carl::Variable second = variables.front();
+            variables.pop_front();
+
+            carl::Monomial::Arg createdMonomial = carl::createMonomial(std::initializer_list<std::pair<carl::Variable, carl::exponent>>
+           (
+                   {std::make_pair(first,(carl::exponent)1), std::make_pair(second, (carl::exponent)1)}
+           ),
+           (carl::exponent)(1));
+
+            carl::Variable GeneratedVariable = createZVariable();
+
+            insertIntoMap(GeneratedVariable, createdMonomial);
+
+            variables.push_front(GeneratedVariable);
+
+        }
+
+        return variables.front();
+    }
+
+    std::list<carl::Variable> extraVariablesForOddExponenet;
+
+    /**
+     * Replace square of variable (x_0^2) of a monomial (x_0^7) by a variable (z_0),
+     * create a linear monomial (z_1)
+     * and insert the variable as key with monomials as value in the map
+     * @param Variable a carl::Variable object
+     * @param exponent an odd exponent
+     * @return new linear monomial
+     */
+    carl::Monomial::Arg monomialForOddExponent(carl::Variable Variable, int exponent){
+        int exponentToBe = divisionOfExponentByTwo(exponent);
+        carl::Variable GeneratedVariable = createZVariable();
+        carl::Monomial::Arg squareOfVariable = createSquareOfVariable(Variable);
+
+        insertIntoMap(GeneratedVariable, squareOfVariable);
+
+        cout << "Exponent of GeneratedVariable: " << exponentToBe;
+        cout << "\n";
+
+        carl::Monomial::Arg newMonomial = carl::createMonomial(GeneratedVariable, (carl::exponent)exponentToBe);
+
+        extraVariablesForOddExponenet.push_front(Variable);
+
+        // get linear monomial
+        while (!newMonomial->isLinear()) {
+
+            if(newMonomial->begin()->second % 2 == 0){
+
+                newMonomial = monomialForEvenExponent(newMonomial->begin()->first, newMonomial->begin()->second);
+
+            } else {
+                newMonomial = monomialForOddExponent(newMonomial->begin()->first, newMonomial->begin()->second);
+            }
+        }
+
+        // create newMonomial by multiplying newMonomial with the list of extraVariablesForOddExponenet
+        if(newMonomial->isLinear()) {
+            extraVariablesForOddExponenet.push_front(newMonomial->begin()->first);
+            newMonomial = carl::createMonomial((createLinearVariable(extraVariablesForOddExponenet)), (carl::exponent)1);
+        }
+
+        cout << "new Monomial: " << newMonomial;
+        cout << "\n";
+        cout << "\n";
+
+        return newMonomial;
+    }
+
+    /**
+     * create monomial which is linear
+     * @param Variable a carl Variable object
+     * @param exponent even or odd exponent of the variable
+     * @return a linear monomial
+     */
+    carl::Monomial::Arg createMonomialOfLinearVariable(carl::Variable Variable, int exponent)
+    {
+        carl::Monomial::Arg monomial;
+
+
+        if(exponent == 1) {
+
+            monomial = carl::createMonomial((Variable), (carl::exponent)1);
+
+        } else if(exponent % 2 == 0){
+
+            monomial = monomialForEvenExponent(Variable, exponent);
+
+        } else {
+            monomial = monomialForOddExponent(Variable, exponent);
+        }
+
+
+        if (monomial->nrVariables() == 1 && monomial->isLinear()) {
+
+            cout << "final Linear Monomial: " << monomial << " tDeg: " << monomial->tdeg();
+            cout << "\n";
+
+            return monomial;
+        }
+
+
+        return createMonomialOfLinearVariable(monomial->begin()->first, monomial->begin()->second);
+    }
+
+    /**
+     * It performs incremental linearization
+     * @param monomial a monomoal object
+     * @return a linear variable
+     */
+    carl::Variable linearization(carl::Monomial::Arg monomial){
+
+        std::list<carl::Variable> variables;
+
+        carl::Variable finalVariable;
+
+        for (auto it = monomial->begin(); it != monomial->end(); ++it) {
+
+            if (monomial->nrVariables() == monomial->tdeg()) {
+                variables.push_back(it->first);
+            } else {
+                carl::Monomial::Arg monomial = createMonomialOfLinearVariable(it->first, it->second);
+
+                cout << "Received final Monomial is: " << monomial;
+                cout << "\n";
+                cout << "\n";
+
+                variables.push_back(monomial->begin()->first);
+            }
+        }
+
+        if (variables.size() > 1) {
+            finalVariable = createLinearVariable(variables);
+        } else {
+            finalVariable = variables.front();
+        }
+
+        return  finalVariable;
+    }
+
+
     template<class Settings>
     bool AbstractModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        // Your code.
+        FormulaT formula = _subformula->formula();
+
+        //get constraint
+        const ConstraintT& constraint = _subformula->formula().constraint();
+
+        cout << "\n";
+        cout << "Constraint is: " << constraint;
+        cout << "\n";
+        cout << "\n";
+
+        //get polynomial(lhs) of constraint
+        carl::MultivariatePolynomial<Rational> poly = constraint.lhs();
+        //counter of op[]
+        int indexCount = 0;
+
+
+        //size of array
+        carl::MultivariatePolynomial<Rational> op[poly.getTerms().size()];
+        int n = sizeof(op) / sizeof(op[0]);
+
+        // loops over each term and create linear polynomials
+        for( auto& term : poly.getTerms() ) {
+            if (!term.isConstant()) {
+                //get variables
+                carl::Monomial::Arg monomial = term.monomial();
+                cout << "Monomial is: " << monomial;
+                cout << "\n";
+                cout << "isLinear: " << monomial->nrVariables();
+                cout << "\n";
+
+                carl::Variable finalVariable = linearization(monomial);
+
+                //create new polynomial
+                carl::MultivariatePolynomial<Rational> p(term.coeff()*finalVariable);
+
+                cout << "Generated MultiVariantPolynomial: " << p;
+                cout << "\n";
+                cout << "\n";
+
+                op[indexCount] = p;
+
+            } else {
+                //create new polynomial
+                carl::MultivariatePolynomial<Rational> p(term);
+                op[indexCount] = p;
+            }
+            indexCount++;
+        }
+
+        //convert op of array type to vector
+        std::vector<carl::MultivariatePolynomial<Rational>> operands(op, op + n);
+        cout << "Vector: " << operands;
+        cout << "\n";
+
+        //construction lhs of the constraint
+        carl::MultivariatePolynomial<Rational> finalPoly(Poly::ConstructorOperation::ADD,operands);
+
+        //create new formula
+        FormulaT  finalFormula = FormulaT(finalPoly, constraint.relation());
+        cout << "Generated final Formula: " << finalFormula;
+        cout << "\n";
+        cout << "Generated New constraint: " << finalFormula.constraint();
+        cout << "\n";
+        cout << "\n";
+
         return true; // This should be adapted according to your implementation.
     }
 
@@ -62,6 +349,7 @@ namespace smtrat
         // Your code.
         return Answer::UNKNOWN; // This should be adapted according to your implementation.
     }
+
 }
 
 #include "Instantiation.h"
