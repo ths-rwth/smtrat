@@ -9,7 +9,7 @@ namespace mcsat {
 namespace arithmetic {
 
 struct AssignmentFinder {
-	AssignmentOrConflict operator()(const mcsat::Bookkeeping& data, carl::Variable var) const {
+	boost::optional<AssignmentOrConflict> operator()(const mcsat::Bookkeeping& data, carl::Variable var) const {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.arithmetic", "Looking for an assignment for " << var);
 		AssignmentFinder_detail af(var, data.model());
 		FormulasT conflict;
@@ -19,7 +19,7 @@ struct AssignmentFinder {
 			if(!af.addConstraint(c)){
 				conflict.push_back(c);
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.arithmetic", "No Assignment, built conflicting core " << conflict << " under model " << data.model());
-				return conflict;
+				return AssignmentOrConflict(conflict);
 			}
 		}
 		for (const auto& b: data.mvBounds()) {
@@ -27,7 +27,7 @@ struct AssignmentFinder {
 			if (!af.addMVBound(b)) {
 				conflict.push_back(b);
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.arithmetic", "No Assignment, built conflicting core " << conflict << " under model " << data.model());
-				return conflict;
+				return AssignmentOrConflict(conflict);
 			}
 		}
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.arithmetic", "Calling AssignmentFinder...");

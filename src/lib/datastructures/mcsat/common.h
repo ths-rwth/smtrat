@@ -9,7 +9,8 @@
 namespace smtrat {
 namespace mcsat {
 
-using AssignmentOrConflict = boost::variant<ModelValue,FormulasT>;
+using ModelValues = std::vector<std::pair<carl::Variable, ModelValue>>;
+using AssignmentOrConflict = boost::variant<ModelValues,FormulasT>;
 using Explanation = boost::variant<FormulaT, ClauseChain>;
 
 inline FormulaT resolveExplanation(const Explanation& expl) {

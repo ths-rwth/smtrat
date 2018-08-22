@@ -199,7 +199,7 @@ public:
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking whether trail is feasible (w.r.t. " << currentVariable() << ")");
 		auto res = mBackend.findAssignment(currentVariable());
-		if (carl::variant_is_type<ModelValue>(res)) {
+		if (carl::variant_is_type<ModelValues>(res)) {
 			return boost::none;
 		} else {
 			const auto& confl = boost::get<FormulasT>(res);
@@ -208,22 +208,26 @@ public:
 		}
 	}
 	
-	std::pair<Explanation,bool> makeTheoryDecision() {
+	boost::variant<Explanation,FormulasT> makeTheoryDecision() {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Obtaining assignment");
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", mBackend);
 		auto res = mBackend.findAssignment(currentVariable());
-		if (carl::variant_is_type<ModelValue>(res)) {
-			const auto& value = boost::get<ModelValue>(res);
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << value);
-			FormulaT repr = carl::representingFormula(currentVariable(), value);
-			mBackend.pushAssignment(currentVariable(), value, repr);
+		if (carl::variant_is_type<ModelValues>(res)) {
+			const auto& values = boost::get<ModelValues>(res);
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << values);
+			FormulasT reprs;
+			for (const auto& value : values) {
+				FormulaT repr = carl::representingFormula(value.first, value.second);
+				mBackend.pushAssignment(value.first, value.second, repr);
+				reprs.push_back(std::move(repr));
+			}
 			assert(trailIsConsistent());
-			return std::make_pair(repr, true);
+			return reprs;
 		} else {
 			const auto& confl = boost::get<FormulasT>(res);
 			auto explanation = mBackend.explain(currentVariable(), confl);
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got a conflict: " << explanation);
-			return std::make_pair(explanation, false);
+			return explanation;
 		}
 	}
 	

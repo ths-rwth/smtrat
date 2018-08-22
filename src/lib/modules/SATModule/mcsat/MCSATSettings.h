@@ -1,6 +1,8 @@
 #pragma once
 
+#include "../../../datastructures/mcsat/assignments/SequentialAssignment.h"
 #include "../../../datastructures/mcsat/arithmetic/AssignmentFinder_arithmetic.h"
+#include "../../../datastructures/mcsat/smtaf/AssignmentFinder.h"
 #include "../../../datastructures/mcsat/explanations/ParallelExplanation.h"
 #include "../../../datastructures/mcsat/explanations/SequentialExplanation.h"
 #include "../../../datastructures/mcsat/fm/Explanation.h"
@@ -13,7 +15,8 @@ namespace mcsat {
 
 struct MCSATSettingsNL {
 	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
-	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+	// using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+	using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
 	using ExplanationBackend = SequentialExplanation<nlsat::Explanation>;
 };
 
