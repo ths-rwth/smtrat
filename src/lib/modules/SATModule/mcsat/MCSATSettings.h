@@ -22,7 +22,8 @@ struct MCSATSettingsNL {
 
 struct MCSATSettingsFMNL {
 	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
-	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+	// using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+	using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
 	using ExplanationBackend = SequentialExplanation<fm::Explanation,nlsat::Explanation>;
 };
 
