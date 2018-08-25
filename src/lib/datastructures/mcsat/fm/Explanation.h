@@ -135,8 +135,9 @@ private:
 		return std::move(res);
 	}
 
-	FormulasT conflictLowerAndUpperBound(const Bound& lower, const Bound& upper, bool strict) {
+	FormulasT conflictLowerAndUpperBound(const Bound& lower, const Bound& upper) {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Lower bound " << lower << " in conflict with upper bound " << upper);
+		bool strict = carl::isStrict(lower.constr.relation()) || carl::isStrict(upper.constr.relation());
 		carl::Relation rel = (lower.neg xor upper.neg) ? (strict ? carl::Relation::GREATER : carl::Relation::GEQ) : (strict ? carl::Relation::LESS : carl::Relation::LEQ);
 		FormulasT res;
 		res.emplace_back(lower.constr.negation());
@@ -222,7 +223,6 @@ public:
 					expl.emplace_back(b.negation());
 					expl.emplace_back(ConstraintT(p, carl::Relation::EQ).negation());
 					expl.emplace_back(ConstraintT(-q, b.relation()));
-					// expl.emplace_back(ConstraintT(-q, carl::Relation::LEQ));
 
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explanation: " << expl[0].negated() << " && " << expl[1].negated() << " -> " << expl[2]);
 					yield(callback, expl);
@@ -296,7 +296,7 @@ public:
 					continue;
 				}
 
-				yield(callback, conflictLowerAndUpperBound(lower, upper, strict));
+				yield(callback, conflictLowerAndUpperBound(lower, upper));
 			}
 		}
 
@@ -366,12 +366,18 @@ struct MinVarCountComparator {
 	}
 };
 
+
+struct DefaultSettings {
+	static constexpr bool use_all_constraints = true;
+}
+
+template<class Settings>
 struct Explanation {
 	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " << reason);
 
 		std::vector<ConstraintT> bounds;
-		for (const auto& b: reason) {
+		for (const auto& b : Settings::use_all_constraints ? data.constraints() : reason) {
 			if (b.getType() != carl::FormulaType::CONSTRAINT) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-constraint bound " << b);
 				continue;
