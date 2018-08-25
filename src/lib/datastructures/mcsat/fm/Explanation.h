@@ -189,6 +189,12 @@ public:
 		// initialize bounds
 		for (const auto& b: mBounds) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Processing bound " << b);
+
+			if (!b.hasVariable(mVariable)) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because it does not contain " << mVariable);
+				continue;
+			}
+
 			if (b.varInfo(mVariable).maxDegree() > 1) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because " << mVariable << " occurs nonlinearly");
 				continue;
@@ -369,12 +375,12 @@ struct MinVarCountComparator {
 
 struct DefaultSettings {
 	static constexpr bool use_all_constraints = true;
-}
+};
 
 template<class Settings>
 struct Explanation {
 	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " << reason);
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " << (Settings::use_all_constraints ? data.constraints() : reason));
 
 		std::vector<ConstraintT> bounds;
 		for (const auto& b : Settings::use_all_constraints ? data.constraints() : reason) {

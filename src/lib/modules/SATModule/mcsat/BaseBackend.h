@@ -78,7 +78,7 @@ public:
 		}
 	}
 
-	Explanation explain(carl::Variable var, const FormulaT& f, const FormulasT& reason) const {
+	Explanation explain(carl::Variable var, const FormulaT& f, const FormulasT& reason) {
 		pushConstraint(f);
 		auto res = explain(var, reason);
 		popConstraint(f);
