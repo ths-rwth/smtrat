@@ -33,6 +33,15 @@ inline bool compare(const Rational& r1, const Rational& r2, const carl::Relation
 	}
 }
 
+inline bool isSubset(const carl::Variables& subset, const std::unordered_set<carl::Variable>& superset) {
+	for (const auto& var : subset) {
+		if (superset.find(var) == superset.end()) {
+			return false;
+		}
+	}
+	return true;
+}
+
 struct Bound {
 	ConstraintT constr;
 	Poly p;
@@ -380,16 +389,34 @@ struct DefaultSettings {
 template<class Settings>
 struct Explanation {
 	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " << (Settings::use_all_constraints ? data.constraints() : reason));
-
 		std::vector<ConstraintT> bounds;
-		for (const auto& b : Settings::use_all_constraints ? data.constraints() : reason) {
-			if (b.getType() != carl::FormulaType::CONSTRAINT) {
-				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-constraint bound " << b);
-				continue;
+
+		if (!Settings::use_all_constraints) {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " <<  reason);
+		
+			for (const auto& b : reason) {
+				if (b.getType() != carl::FormulaType::CONSTRAINT) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-constraint bound " << b);
+					continue;
+				}
+				assert(b.getType() == carl::FormulaType::CONSTRAINT);
+				bounds.emplace_back(b.constraint());
 			}
-			assert(b.getType() == carl::FormulaType::CONSTRAINT);
-			bounds.emplace_back(b.constraint());
+		} else {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " <<  data.constraints());
+		
+			for (const auto& b : data.constraints()) {
+				std::unordered_set<carl::Variable> allowedVars;
+				auto curVar = std::find(variableOrdering.begin(), variableOrdering.end(), var); 
+				assert(curVar != variableOrdering.end());
+				allowedVars.insert(variableOrdering.begin(), curVar+1);
+				if (!isSubset(b.variables(), allowedVars)) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-univariate bound " << b);
+					continue;
+				}
+				assert(b.getType() == carl::FormulaType::CONSTRAINT);
+				bounds.emplace_back(b.constraint());
+			}
 		}
 
 		boost::optional<FormulasT> res = boost::none;
