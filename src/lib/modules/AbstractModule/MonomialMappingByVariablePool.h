@@ -13,26 +13,43 @@ namespace smtrat{
 
     private:
         // Members:
-        std::unordered_map<carl::Variable, Poly> mMonomialMapping;
+        std::unordered_map<carl::Variable, carl::Monomial::Arg> mMonomialMapping;
+        carl::Variable nullVariable = carl::freshRealVariable("0");
+
     public:
-        void InsertMonomialMapping(carl::Variable variable, std::shared_ptr<const carl::Monomial>& mMonomial) {
-            carl::MultivariatePolynomial<Rational> p(mMonomial);
-            mMonomialMapping[variable] = p;
+        void insertMonomialMapping(carl::Variable variable, carl::Monomial::Arg monomial) {
+            mMonomialMapping[variable] = monomial;
         }
 
-        carl::Monomial::Arg Monomial(carl::Variable variable) {
+        carl::Variable variable(carl::Monomial::Arg monomial) {
 
-            std::unordered_map<carl::Variable, Poly>::iterator it;
-            it = mMonomialMapping.find(variable);
-            if (it != mMonomialMapping.end()) {
-                Poly p = it->second;
-                for( auto& term : p.getTerms() ) {
-                    if( !term.isConstant() ) {
-                        return term.monomial();
-                    }
-                }
+            std::unordered_map<carl::Variable, carl::Monomial::Arg>::iterator it;
+
+            for (it = mMonomialMapping.begin(); it != mMonomialMapping.end(); ++it) {
+                if (it->second == monomial)
+                    return it->first;
             }
-            return nullptr;
+
+            return nullVariable;
+        }
+
+        bool isNull(carl::Variable variable){
+            return variable == nullVariable;
+        }
+
+       carl::Monomial::Arg monomial(carl::Variable variable) {
+
+           std::unordered_map<carl::Variable, carl::Monomial::Arg>::iterator it;
+
+           it = mMonomialMapping.find(variable);
+           carl::Monomial::Arg monomial = it->second;
+
+           if (it != mMonomialMapping.end()) {
+               carl::Monomial::Arg monomial = it->second;
+                        return monomial;
+           }
+
+           return nullptr;
         }
     };
 

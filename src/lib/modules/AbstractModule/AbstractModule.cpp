@@ -56,7 +56,7 @@ namespace smtrat
     }
 
     /**
-     * Insert the variable as key with monomials as value into the map
+     * Insert the variable as key with monomial as value into the map
      * The map is singeltone
      * @param GeneratedVariable
      * @param monomial
@@ -66,7 +66,7 @@ namespace smtrat
         cout << "\n";
         cout << "GeneratedVariable: " << GeneratedVariable << ", monomial: " << monomial;
         cout << "\n";
-        smtrat::MonomialMappingByVariablePool::getInstance().InsertMonomialMapping(GeneratedVariable, monomial);
+        smtrat::MonomialMappingByVariablePool::getInstance().insertMonomialMapping(GeneratedVariable, monomial);
     }
 
     int divisionOfExponentByTwo(int exponent){
@@ -74,9 +74,36 @@ namespace smtrat
     }
 
     /**
+     * Check if the monomial is alreday inserted imto the map,
+     * If yes, returned the key which is a variable otherwise create new variable
+     * and insert the monomial into the map against this new variable
+     * @param monomial a monomoal object
+     * @return a carl::Variable object
+     */
+    carl::Variable insertIntoMapOrRetrieveExistingVariable(carl::Monomial::Arg monomial){
+
+        carl::Variable retrievedVariable = smtrat::MonomialMappingByVariablePool::getInstance().variable(monomial);
+
+        if(smtrat::MonomialMappingByVariablePool::getInstance().isNull(retrievedVariable)){
+            //create new variable as it doesn't exist in the map
+            carl::Variable GeneratedVariable = createZVariable();
+            //insert into the map
+            insertIntoMap(GeneratedVariable, monomial);
+
+            return GeneratedVariable;
+        }
+
+        cout << "the monomial, " << monomial << " alreday exists in the map!\nkey for this monomial in the map is, " << retrievedVariable;
+        cout << "\n";
+
+        return retrievedVariable;
+
+    }
+
+    /**
      * Replace square of variable (x_0^2) of a monomial (x_0^6) by a variable (z_0),
      * create a new monomial (z_0^3)
-     * and insert the variable as key with monomials as value in the map
+     * and insert this variable as key with monomial (x_0^2) as value in the map
      * @param Variable a carl::Variable object
      * @param exponent an even exponent
      * @return new monomial
@@ -85,15 +112,16 @@ namespace smtrat
 
         int exponentToBe = divisionOfExponentByTwo(exponent);
 
-        carl::Variable GeneratedVariable = createZVariable();
-        carl::Monomial::Arg squareOfVariable = createSquareOfVariable(Variable);
+        //carl::Variable GeneratedVariable = createZVariable();
+        carl::Monomial::Arg monomialAsSquareOfVariable = createSquareOfVariable(Variable);
 
-        insertIntoMap(GeneratedVariable, squareOfVariable);
+        //insertIntoMap(GeneratedVariable, monomialAsSquareOfVariable);
+        carl::Variable newlyGeneratedOrOldVariable = insertIntoMapOrRetrieveExistingVariable(monomialAsSquareOfVariable);
 
-        cout << "Exponent of GeneratedVariable: " << exponentToBe;
+        cout << "Exponent of newly generated or old variable: " << exponentToBe;
         cout << "\n";
 
-        carl::Monomial::Arg newMonomial = carl::createMonomial(GeneratedVariable, (carl::exponent)exponentToBe);
+        carl::Monomial::Arg newMonomial = carl::createMonomial(newlyGeneratedOrOldVariable, (carl::exponent)exponentToBe);
 
         cout << "new Monomial: " << newMonomial;
         cout << "\n";
@@ -103,9 +131,9 @@ namespace smtrat
     }
 
     /**
-     * It creates monomial by taking and poping first two items from the list,
-     * Insert the monomial as value into the map against a new variable,
-     * Each time the new variable is insterted at the front of the list
+     * It creates monomial by taking and popping first two items from the list,
+     * Insert this new monomial as value into the map against a newly generated variable,
+     * Each time the newly generated variable is insterted at the front of the list
      * @param variables List of carl variables
      * @return created new linear variable
      */
@@ -124,11 +152,11 @@ namespace smtrat
            ),
            (carl::exponent)(1));
 
-            carl::Variable GeneratedVariable = createZVariable();
+            //carl::Variable GeneratedVariable = createZVariable();
+            carl::Variable newlyGeneratedOrOldVariable = insertIntoMapOrRetrieveExistingVariable(createdMonomial);
+            //insertIntoMap(GeneratedVariable, createdMonomial);
 
-            insertIntoMap(GeneratedVariable, createdMonomial);
-
-            variables.push_front(GeneratedVariable);
+            variables.push_front(newlyGeneratedOrOldVariable);
 
         }
 
@@ -140,22 +168,23 @@ namespace smtrat
     /**
      * Replace square of variable (x_0^2) of a monomial (x_0^7) by a variable (z_0),
      * create a linear monomial (z_1)
-     * and insert the variable as key with monomials as value in the map
+     * and insert the variable as key with monomial as value in the map
      * @param Variable a carl::Variable object
      * @param exponent an odd exponent
      * @return new linear monomial
      */
     carl::Monomial::Arg monomialForOddExponent(carl::Variable Variable, int exponent){
         int exponentToBe = divisionOfExponentByTwo(exponent);
-        carl::Variable GeneratedVariable = createZVariable();
-        carl::Monomial::Arg squareOfVariable = createSquareOfVariable(Variable);
+        //carl::Variable GeneratedVariable = createZVariable();
+        carl::Monomial::Arg monomialAsSquareOfVariable = createSquareOfVariable(Variable);
 
-        insertIntoMap(GeneratedVariable, squareOfVariable);
+        //insertIntoMap(GeneratedVariable, monomialAsSquareOfVariable);
+        carl::Variable newlyGeneratedOrOldVariable = insertIntoMapOrRetrieveExistingVariable(monomialAsSquareOfVariable);
 
-        cout << "Exponent of GeneratedVariable: " << exponentToBe;
+        cout << "Exponent of newly generated or old variable: " << exponentToBe;
         cout << "\n";
 
-        carl::Monomial::Arg newMonomial = carl::createMonomial(GeneratedVariable, (carl::exponent)exponentToBe);
+        carl::Monomial::Arg newMonomial = carl::createMonomial(newlyGeneratedOrOldVariable, (carl::exponent)exponentToBe);
 
         extraVariablesForOddExponenet.push_front(Variable);
 
@@ -171,7 +200,7 @@ namespace smtrat
             }
         }
 
-        // create newMonomial by multiplying newMonomial with the list of extraVariablesForOddExponenet
+        // create newMonomial by multiplying newMonomial with the list extraVariablesForOddExponenet
         if(newMonomial->isLinear()) {
             extraVariablesForOddExponenet.push_front(newMonomial->begin()->first);
             newMonomial = carl::createMonomial((createLinearVariable(extraVariablesForOddExponenet)), (carl::exponent)1);
@@ -221,7 +250,7 @@ namespace smtrat
     }
 
     /**
-     * It performs incremental linearization
+     * It linearizes a non-linear monomial
      * @param monomial a monomoal object
      * @return a linear variable
      */
@@ -233,9 +262,6 @@ namespace smtrat
 
         for (auto it = monomial->begin(); it != monomial->end(); ++it) {
 
-            if (monomial->nrVariables() == monomial->tdeg()) {
-                variables.push_back(it->first);
-            } else {
                 carl::Monomial::Arg monomial = createMonomialOfLinearVariable(it->first, it->second);
 
                 cout << "Received final Monomial is: " << monomial;
@@ -244,13 +270,8 @@ namespace smtrat
 
                 variables.push_back(monomial->begin()->first);
             }
-        }
 
-        if (variables.size() > 1) {
             finalVariable = createLinearVariable(variables);
-        } else {
-            finalVariable = variables.front();
-        }
 
         return  finalVariable;
     }
@@ -274,21 +295,30 @@ namespace smtrat
         //counter of op[]
         int indexCount = 0;
 
-
         //size of array
         carl::MultivariatePolynomial<Rational> op[poly.getTerms().size()];
         int n = sizeof(op) / sizeof(op[0]);
 
         // loops over each term and create linear polynomials
         for( auto& term : poly.getTerms() ) {
-            if (!term.isConstant()) {
-                //get variables
+
+           if (!term.isConstant() && term.isLinear()) { //if the term is already linear and not a constant
+
+                carl::MultivariatePolynomial<Rational> p(term);
+                op[indexCount] = p;
+
+                cout << "Monomial is: " << term.monomial() << " (alreday linear)";
+                cout << "\n";
+                cout << "\n";
+
+            }else if (!term.isConstant()) { //if the term is a product of two or more variables
+
+                //get monomial
                 carl::Monomial::Arg monomial = term.monomial();
                 cout << "Monomial is: " << monomial;
                 cout << "\n";
-                cout << "isLinear: " << monomial->nrVariables();
-                cout << "\n";
 
+                //get the linearized variable of the monomial
                 carl::Variable finalVariable = linearization(monomial);
 
                 //create new polynomial
@@ -300,11 +330,14 @@ namespace smtrat
 
                 op[indexCount] = p;
 
-            } else {
+            } else { //if the term is a constants
+
                 //create new polynomial
                 carl::MultivariatePolynomial<Rational> p(term);
                 op[indexCount] = p;
+
             }
+
             indexCount++;
         }
 
