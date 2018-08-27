@@ -1,5 +1,7 @@
 #pragma once
 
+#include "boost/logic/tribool.hpp"
+
 #include "../common.h"
 #include "../Bookkeeping.h"
 
@@ -46,22 +48,33 @@ private:
 	ModelValues modelToAssignment(const Model& model) const {
 		ModelValues values;
 		for (auto varIter = mVariables.first; varIter != mVariables.second; varIter++) {
-			values.push_back(std::make_pair(*varIter, model.at(*varIter)));
+			if (model.find(*varIter) != model.end()) {
+				values.push_back(std::make_pair(*varIter, model.at(*varIter)));
+			}
 		}
 		return values;
 	}
 
-	boost::optional<VariablePos> level(const FormulaT& constraint) const {
+	/**
+	 * @return A VariablePos, if the level is in the current range. true, if the level is higher, false, if the level is lower
+	 */
+	boost::variant<VariablePos,bool> level(const FormulaT& constraint) const {
+		bool lowerLevelFound = false;
 		auto highestLevel = mVariables.first;
 		for (const auto& var : constraint.variables()) {
 			auto currentVarInOrdering = std::find(mVariables.first, mVariables.second, var);
 			if (currentVarInOrdering == mVariables.second) { // variable not found
-				return boost::none;
+				if (mModel.find(var) != mModel.end()) { // level is lower than current range
+					lowerLevelFound = true;
+				} else { // level is higher
+					return true;
+				}
 			}
 			else if (highestLevel < currentVarInOrdering) {
 				highestLevel = currentVarInOrdering;
 			}
 		}
+		if (lowerLevelFound) return false;
 		return highestLevel;		
 	}
 
@@ -74,39 +87,107 @@ public:
 		}
 	}	
 
-	bool addConstraint(const FormulaT& f) {
+	boost::tribool addConstraint(const FormulaT& f) {
 		assert(f.getType() == carl::FormulaType::CONSTRAINT);
 
 		FormulaT fnew(carl::model::substitute(f, mModel));
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Constraint " << f << " evaluated to " << fnew);
 		if (fnew.getType() == carl::FormulaType::CONSTRAINT) {
 			assert(fnew.variables().size() > 0);
 			auto lvl = level(fnew);
-			if (lvl) {
-				SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Considering constraint " << f << " for level " << **lvl << ".");
-				mConstraints[*lvl].push_back(fnew);
+			if (carl::variant_is_type<VariablePos>(lvl)) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Considering constraint " << f << " for level " << *boost::get<VariablePos>(lvl) << ".");
+				mConstraints[boost::get<VariablePos>(lvl)].push_back(fnew);
 				mEvaluatedConstraints[fnew] = f;
-				mFreeConstraintVars[*lvl].insert(fnew.variables().begin(), fnew.variables().end());
+				mFreeConstraintVars[boost::get<VariablePos>(lvl)].insert(fnew.variables().begin(), fnew.variables().end());
+				return true;
+			} else if (boost::get<bool>(lvl) == true) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Ignoring constraint " << f << " because it has more unassigned variables than in the current range.");
+				return true;
 			} else {
-				SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Ignoring constraint " << f << " because it has more unassigned variables.");
+				assert(boost::get<bool>(lvl) == false);
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Constraint " << f << " did not fully evaluate under the current model");
+				return boost::indeterminate;
 			}
-			return true;
 		} else if (fnew.isTrue()) {
-			SMTRAT_LOG_TRACE("smtrat.mcsat.smtaf", "Ignoring " << f << " which simplified to true.");
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Ignoring " << f << " which simplified to true.");
 			return true;
 		} else {
 			assert(fnew.isFalse());
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Conflict: " << f << " simplified to false.");
 			return false;
 		}
+		assert(false);
+	}
+
+	boost::tribool addMVBound(const FormulaT& f) {
+		assert(f.getType() == carl::FormulaType::VARCOMPARE);
+
+		// A VariableComparison is of the form y ~ RAN or y ~ MVRoot(i,p) where p is in variables x_1,...,x_n
+		// and x_1,...,x_n are of lower level according to the current variable ordering.
+		// Thus, if y is not in the variable range, then:
+		// * If y is of lower level (according to the variable ordering): Then, we can evaluate it and it
+		//   evaluates either to true (and can be ignored) or false (conflict found).
+		// * If y is of higher level: Then, the bound can be ignored.
+		// If y is in the variable range, then:
+		// * If the MVRoot or RAN evaluates to a Rational, we can simplify it to a Constraint y ~ Rational,
+		// * otherwise, this method fails.
+
+		VariablePos lvl = std::find(mVariables.first, mVariables.second, f.variableComparison().var());
+		if (lvl == mVariables.second) {
+			if (mModel.find(f.variableComparison().var()) != mModel.end()) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Evaluating " << f);
+				FormulaT fnew(carl::model::substitute(f, mModel));
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "-> " << fnew);
+				if (fnew.isTrue()) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Bound evaluated to true, we can ignore it.");
+					return true;
+				} else if (fnew.isFalse()) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
+					return false;
+				} else { // not fully evaluated => not possible, as all variables are assigned
+					assert(false);
+				}
+			} else {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Ignoring bound " << f << " of higher level");
+				return true;
+			}
+		} else { // the bound's level is potentially in the range to be checked
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Evaluating " << f);
+			FormulaT fnew(carl::model::substitute(f, mModel));
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "-> " << fnew);
+			assert(fnew.getType() == carl::FormulaType::VARCOMPARE);
+
+			ModelValue value = fnew.variableComparison().value();
+			if (value.isSubstitution()) {
+				auto res = value.asSubstitution()->evaluate(mModel);
+				value = res;
+			}
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Evaluated to " << value);
+			if (value.isRational()) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Value is Rational, can convert to Constraint");
+				auto rel =  fnew.variableComparison().negated() ? carl::inverse(fnew.variableComparison().relation()) : fnew.variableComparison().relation();
+				ConstraintT constr(Poly(fnew.variableComparison().var()) - value.asRational(), rel);
+				FormulaT fnewnew = FormulaT(constr);
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Considering constraint " << fnewnew);
+				mConstraints[lvl].push_back(fnewnew);
+				mEvaluatedConstraints[fnewnew] = f;
+				mFreeConstraintVars[lvl].insert(fnew.variableComparison().var());
+				return true;
+			} else {
+				return boost::indeterminate;
+			}
+		}
+		assert(false);
 	}
 
 	boost::optional<AssignmentOrConflict> findAssignment(const VariablePos excludeVar) const {
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Look for assignment on level " << *excludeVar);
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Look for assignment on level " << *(excludeVar-1));
 
 		// set all variables to zero that do not occur in the given constraints
 		Model model;
 		bool freeVariables = false;
-		for (auto varIter = mVariables.first; varIter != mVariables.second; varIter++) {
+		for (auto varIter = mVariables.first; varIter != excludeVar; varIter++) {
 			bool found = false;
 			for (auto iter = mVariables.first; iter != excludeVar; iter++) {
 				if (mFreeConstraintVars.at(iter).find(*varIter) != mFreeConstraintVars.at(iter).end()) {
@@ -158,6 +239,7 @@ public:
 				assert(false);
 			}
 		}
+		assert(false);
 	}
 
 	boost::optional<AssignmentOrConflict> findAssignment() const {
@@ -178,37 +260,50 @@ public:
 };
 
 template<class Settings>
-struct AssignmentFinder { // TODO das ganze worked noch nicht
+struct AssignmentFinder {
 	boost::optional<AssignmentOrConflict> operator()(const mcsat::Bookkeeping& data, carl::Variable var) const {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Looking for an assignment for " << var << " with lookahead " << Settings::lookahead);
 
 		static_assert(Settings::lookahead > 0);
 
-		if (data.mvBounds().empty()) { // TODO too strict: test, if MVBound can be ignored ...
-			VariablePos varPos = std::find(data.variableOrder().begin(), data.variableOrder().end(), var);
-			VariablePos varPosEnd = varPos;
-			for (int i = 0; i < Settings::lookahead && varPosEnd != data.variableOrder().end(); i++) ++varPosEnd;
-			assert(varPos != varPosEnd);
-			AssignmentFinder_detail af(std::make_pair(varPos, varPosEnd), data.model());
-			FormulasT conflict;
-			for (const auto& c: data.constraints()) {
-				SMTRAT_LOG_TRACE("smtrat.mcsat.smtaf", "Adding Constraint " << c);
-				if(!af.addConstraint(c)){
-					conflict.push_back(c);
-					SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "No Assignment, built conflicting core " << conflict << " under model " << data.model());
-					return AssignmentOrConflict(conflict);
-				}
+		VariablePos varPos = std::find(data.variableOrder().begin(), data.variableOrder().end(), var);
+		VariablePos varPosEnd = varPos;
+		for (int i = 0; i < Settings::lookahead && varPosEnd != data.variableOrder().end(); i++) ++varPosEnd;
+		assert(varPos != varPosEnd);
+
+		AssignmentFinder_detail af(std::make_pair(varPos, varPosEnd), data.model());
+
+		for (const auto& c: data.constraints()) {
+			SMTRAT_LOG_TRACE("smtrat.mcsat.smtaf", "Adding Constraint " << c);
+			boost::tribool res = af.addConstraint(c);
+			if (indeterminate(res)) {
+				SMTRAT_LOG_TRACE("smtrat.mcsat.smtaf", "Constraint " << c << " cannot be handled!");
+				return boost::none;
+			} else if(!res){
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "No Assignment, built conflicting core " << c << " under model " << data.model());
+				return AssignmentOrConflict(FormulasT({c}));
 			}
-			SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Calling AssignmentFinder...");
-			if (Settings::advance_level_by_level) {
-				return af.findAssignment();
-			} else {
-				return af.findAssignment(varPosEnd);
-			}
-		} else {
-			SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "MVBounds cannot be handled by classical SMT");
-			return boost::none;
 		}
+
+		for (const auto& c: data.mvBounds()) {
+			SMTRAT_LOG_TRACE("smtrat.mcsat.smtaf", "Adding MVBound " << c);
+			boost::tribool res = af.addMVBound(c);
+			if (indeterminate(res)) {
+				SMTRAT_LOG_TRACE("smtrat.mcsat.smtaf", "MVBound " << c << " cannot be handled!");
+				return boost::none;
+			} else if(!res){
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "No Assignment, built conflicting core " << c << " under model " << data.model());
+				return AssignmentOrConflict(FormulasT({c}));
+			}
+		}
+
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Calling AssignmentFinder...");
+		if (Settings::advance_level_by_level) {
+			return af.findAssignment();
+		} else {
+			return af.findAssignment(varPosEnd);
+		}
+		assert(false);
 	}
 };
 
