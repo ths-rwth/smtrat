@@ -156,26 +156,35 @@ public:
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Evaluating " << f);
 			FormulaT fnew(carl::model::substitute(f, mModel));
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "-> " << fnew);
-			assert(fnew.getType() == carl::FormulaType::VARCOMPARE);
-
-			ModelValue value = fnew.variableComparison().value();
-			if (value.isSubstitution()) {
-				auto res = value.asSubstitution()->evaluate(mModel);
-				value = res;
-			}
-			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Evaluated to " << value);
-			if (value.isRational()) {
-				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Value is Rational, can convert to Constraint");
-				auto rel =  fnew.variableComparison().negated() ? carl::inverse(fnew.variableComparison().relation()) : fnew.variableComparison().relation();
-				ConstraintT constr(Poly(fnew.variableComparison().var()) - value.asRational(), rel);
-				FormulaT fnewnew = FormulaT(constr);
-				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Considering constraint " << fnewnew);
-				mConstraints[lvl].push_back(fnewnew);
-				mEvaluatedConstraints[fnewnew] = f;
-				mFreeConstraintVars[lvl].insert(fnew.variableComparison().var());
+			if (fnew.isTrue()) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Bound evaluated to true, we can ignore it.");
 				return true;
+			} else if (fnew.isFalse()) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
+				return false;
 			} else {
-				return boost::indeterminate;
+				assert(fnew.getType() == carl::FormulaType::VARCOMPARE);
+
+				ModelValue value = fnew.variableComparison().value();
+				if (value.isSubstitution()) {
+					auto res = value.asSubstitution()->evaluate(mModel);
+					value = res;
+				}
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Evaluated to " << value);
+
+				if (value.isRational()) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Value is Rational, can convert to Constraint");
+					auto rel =  fnew.variableComparison().negated() ? carl::inverse(fnew.variableComparison().relation()) : fnew.variableComparison().relation();
+					ConstraintT constr(Poly(fnew.variableComparison().var()) - value.asRational(), rel);
+					FormulaT fnewnew = FormulaT(constr);
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Considering constraint " << fnewnew);
+					mConstraints[lvl].push_back(fnewnew);
+					mEvaluatedConstraints[fnewnew] = f;
+					mFreeConstraintVars[lvl].insert(fnew.variableComparison().var());
+					return true;
+				} else {
+					return boost::indeterminate;
+				}
 			}
 		}
 		assert(false);
@@ -312,7 +321,7 @@ struct DefaultSettings {
 
 	/**
 	 * If set to true, a conflict on the lowest possible level is returned.
-	 * Deactivating this may be incorrent!
+	 * TODO is this method still correct if this is set to false?
 	 */
 	static constexpr bool advance_level_by_level = true;
 };
