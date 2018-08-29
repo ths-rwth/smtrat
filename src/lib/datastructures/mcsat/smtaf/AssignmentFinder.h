@@ -319,11 +319,13 @@ struct AssignmentFinder {
 struct DefaultSettings {
 	static constexpr unsigned int lookahead = 2;
 
-	// TODO is this method still correct if this is set to false?
 	/**
 	 * If set to true, a conflict on the lowest possible level is returned.
+	 * 
+	 * Not sure if settings this to false may cause some termination problems,
+	 * at least for some backends...
 	 */
-	static constexpr bool advance_level_by_level = true;
+	static constexpr bool advance_level_by_level = false;
 };
 
 }

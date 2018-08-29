@@ -56,7 +56,7 @@ private:
 
 		// generate test candidates
 		std::vector<::vs::Substitution> testCandidates;
-		if (helper::generateTestCandidates(testCandidates, var, mModel, atoms)) { // TODO how to deal with mModel???	=> only relevant for MVRoots, which are disabled anyway...
+		if (helper::generateTestCandidates(testCandidates, var, mModel, atoms)) {
 			FormulasT res;
 			res.reserve(testCandidates.size());
 			for (const auto& tc : testCandidates) {
@@ -75,7 +75,7 @@ private:
 							return boost::none;
 						}
 
-						// check if current constraint is part of the conflict // TODO is this approach correct ???
+						// check if current constraint is part of the conflict
 						if (Settings::reduceConflictConstraints) {
 							carl::ModelValue<Rational,Poly> eval = carl::model::evaluate(substitutionResult, mModel);
 							// If constraint is not fully evaluated or evaluates to false, we take it in.
