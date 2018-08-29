@@ -372,6 +372,29 @@ public:
 		}
 		return true;
 	}
+
+	std::size_t staticTheoryLevel(const Minisat::Var& var) const {
+		if (!mGetter.isTheoryAbstraction(var)) {
+			return 0;
+		}
+
+		auto reabstraction = mGetter.reabstractVariable(var);
+		if (reabstraction.variables().empty()) {
+			return 0;
+		}
+
+		if (mBackend.variableOrder().empty()) { // variableOrder has not been initialized yet... TODO is heap updated ?!??
+			return 0;
+		}
+
+		for (int i = mBackend.variableOrder().size() - 1; i >= 0; i--) {
+			if (reabstraction.variables().find(mBackend.variableOrder()[i]) != reabstraction.variables().end()) {
+				return i+1;
+			}
+		}
+		// in case that its not an arithmetic constraint... // TODO handle more explicitly
+		return 0;
+	}
 	
 	// ***** Output
 	/// Prints a single clause

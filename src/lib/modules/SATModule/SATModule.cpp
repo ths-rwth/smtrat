@@ -98,7 +98,8 @@ namespace smtrat
         qhead( 0 ),
         simpDB_assigns( -1 ),
         simpDB_props( 0 ),
-        order_heap( VarOrderLt( activity ) ),
+        order_heap( VarOrderLt( *this ) ),
+        is_var_decidable( *this ),
         progress_estimate( 0 ),
         remove_satisfied( Settings::remove_satisfied ),
         // Resource constraints:
@@ -3089,6 +3090,14 @@ namespace smtrat
                     }
                     else
                         next = order_heap.removeMin();
+                    // if variable is cannot be decided yet, fail...
+                    if (!is_var_decidable(next)) { // TODO wird das hier wirklich aufgerufen? was hat es mit bestBranchLit auf sich??
+                        SMTRAT_LOG_TRACE("smtrat.sat", "Variable not decidable yet.");
+                        order_heap.insert(next);
+                        next = var_Undef;
+                        break;
+
+                    }
 					SMTRAT_LOG_TRACE("smtrat.sat", "Current " << next);
                 }
             }

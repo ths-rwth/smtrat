@@ -203,7 +203,7 @@ namespace smtrat
             };
 
             /// [Minisat related code]
-            struct VarOrderLt
+            struct VarOrderActivity
             {
                 /// [Minisat related code]
                 const Minisat::vec<double>& activity;
@@ -215,10 +215,67 @@ namespace smtrat
                 }
 
                 /// [Minisat related code]
-                VarOrderLt( const Minisat::vec<double>& act ):
-                    activity( act )
+                VarOrderActivity( const SATModule& module ):
+                    activity( module.activity )
                 {}
             };
+            friend VarOrderActivity;
+
+            struct VarOrderMcsat
+            {
+                const Minisat::vec<double>& activity;
+                const SATModule& module;
+
+                bool operator ()( Minisat::Var x, Minisat::Var y ) const
+                {
+                    return module.mMCSAT.staticTheoryLevel(x) < module.mMCSAT.staticTheoryLevel(y) || activity[x] > activity[y]; // TODO more efficient
+                }
+
+                VarOrderMcsat( const SATModule& module ):
+                    activity( module.activity ),
+                    module( module )
+                {}
+            };
+            friend VarOrderMcsat;
+
+            // TODO how to deal with this issue?
+            /*
+            template<bool> struct VarOrderHeuristic { using type = VarOrderActivity; };
+            template<> struct VarOrderHeuristic<true> { using type = VarOrderMcsat; };
+            using VarOrderLt = VarOrderHeuristic<Settings::mc_sat>::type;
+            */
+            using VarOrderLt = VarOrderMcsat;
+
+            struct VarDecidabilityCondDefault
+            {
+                bool operator ()( Minisat::Var x) const
+                {
+                    return true;
+                }
+
+                VarDecidabilityCondDefault( const SATModule& module )
+                {}
+            };
+            friend VarDecidabilityCondDefault;
+
+            struct VarDecidabilityCondMcsat
+            {
+                const SATModule& module;
+
+                bool operator ()( Minisat::Var x) const
+                {
+                    return module.mMCSAT.staticTheoryLevel(x) <= module.mMCSAT.level() + 1; // TODO more efficient
+                }
+
+                VarDecidabilityCondMcsat( const SATModule& module ) :
+                    module( module )
+                {}
+            };
+            friend VarDecidabilityCondMcsat;
+
+            // TODO settings ...
+            // TODO combine decidability cond and ordering to scheduling strategy...
+            using VarDecidabilityCond = VarDecidabilityCondMcsat;
             
             struct CNFInfos
             {
@@ -484,6 +541,8 @@ namespace smtrat
             Minisat::vec<Minisat::Lit> assumptions;
             /// A priority queue of variables ordered with respect to the variable activity.
             Minisat::Heap<VarOrderLt> order_heap;
+            // A check if a given variable can be decided yet
+            VarDecidabilityCond is_var_decidable;
             /// Set by 'search()'.
             double progress_estimate;
             /// Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
