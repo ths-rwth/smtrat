@@ -1426,11 +1426,18 @@ namespace smtrat
         }
         for( auto iter = rReceivedFormula().begin(); iter != rReceivedFormula().end(); ++iter )
         {
-            if( !iter->formula().constraint().hasVariable( objective() ) && iter->formula().constraint().satisfiedBy( rmodel ) != 1 )
-            {
-                assert( iter->formula().constraint().satisfiedBy( rmodel ) == 0 );
-                return false;
+            if( !iter->formula().constraint().hasVariable( objective() )) {
+                unsigned sat = carl::model::satisfiedBy(iter->formula(), Model(rmodel));
+                if (sat != 1) {
+                    assert( sat == 0 );
+                    return false;
+                }
             }
+            // if( !iter->formula().constraint().hasVariable( objective() ) && iter->formula().constraint().satisfiedBy( rmodel ) != 1 )
+            // {
+            //     assert( iter->formula().constraint().satisfiedBy( rmodel ) == 0 );
+            //     return false;
+            // }
         }
         return true;
     }
