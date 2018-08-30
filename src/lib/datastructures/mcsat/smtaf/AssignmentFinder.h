@@ -232,6 +232,12 @@ public:
 			} else if (answer == SAT) {
 				assert(smtModule.model().size() > 0);
 				model.update(smtModule.model());
+				// assign all remaining vars to 0, if any
+				for (auto iter = mVariables.first; iter != excludeVar; iter++) {
+					if (model.find(*iter) == model.end()) {
+						model.assign(*iter, Rational(0));
+					}
+				}
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Found assignment " << model);
 				return AssignmentOrConflict(modelToAssignment(model));
 			} else if (answer == UNSAT) {
