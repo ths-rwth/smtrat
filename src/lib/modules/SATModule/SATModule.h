@@ -228,7 +228,22 @@ namespace smtrat
 
                 bool operator ()( Minisat::Var x, Minisat::Var y ) const
                 {
-                    return module.mMCSAT.staticTheoryLevel(x) < module.mMCSAT.staticTheoryLevel(y) || activity[x] > activity[y]; // TODO more efficient
+                    // TODO make more efficient
+                    const auto& undecided = module.mMCSAT.undecidedVariables();
+                    bool x_und = std::find(undecided.begin(), undecided.end(), x) != undecided.end();
+                    bool y_und = std::find(undecided.begin(), undecided.end(), y) != undecided.end();
+                    
+                    if (x_und && y_und) {
+                        return activity[x] > activity[y];
+                    } else if (!x_und && !y_und) {
+                        std::size_t x_lvl = module.mMCSAT.theoryLevel(x);
+                        std::size_t y_lvl = module.mMCSAT.theoryLevel(y);
+                        return (x_lvl < y_lvl) || (x_lvl == y_lvl && activity[x] > activity[y]);
+                    } else {
+                        assert(x_und != y_und);
+                        return y_und;
+                    }
+                    // return module.mMCSAT.staticTheoryLevel(x) < module.mMCSAT.staticTheoryLevel(y) || activity[x] > activity[y];
                 }
 
                 VarOrderMcsat( const SATModule& module ):
@@ -264,7 +279,10 @@ namespace smtrat
 
                 bool operator ()( Minisat::Var x) const
                 {
-                    return module.mMCSAT.staticTheoryLevel(x) <= module.mMCSAT.level() + 1; // TODO more efficient
+                    const auto& undecided = module.mMCSAT.undecidedVariables();
+                    bool isUndecided = std::find(undecided.begin(), undecided.end(), x) != undecided.end();
+                    return !isUndecided;
+                    // return module.mMCSAT.staticTheoryLevel(x) <= module.mMCSAT.level() + 1;
                 }
 
                 VarDecidabilityCondMcsat( const SATModule& module ) :

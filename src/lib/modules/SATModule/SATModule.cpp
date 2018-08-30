@@ -3052,6 +3052,7 @@ namespace smtrat
     template<class Settings>
     Lit SATModule<Settings>::pickBranchLit()
     {
+        order_heap.print();//TODO
         Var next = var_Undef;
         // Random decision:
         //        if( drand( random_seed ) < random_var_freq &&!order_heap.empty() )
@@ -3120,6 +3121,7 @@ namespace smtrat
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Next theory variable is " << nextVar);
 		mMCSAT.pushLevel(nextVar);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state " << mMCSAT);
+        rebuildOrderHeap();
 	}
     
     template<class Settings>

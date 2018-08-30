@@ -103,6 +103,9 @@ public:
 	const Model& model() const {
 		return mBackend.getModel();
 	}
+	const std::vector<Minisat::Var>& undecidedVariables() const {
+		return mUndecidedVariables;
+	}
 	/// Returns the respective theory level
 	const TheoryLevel& get(std::size_t level) const {
 		assert(level < mTheoryStack.size());
@@ -373,7 +376,7 @@ public:
 		return true;
 	}
 
-	std::size_t staticTheoryLevel(const Minisat::Var& var) const {
+	std::size_t staticTheoryLevel(const Minisat::Var& var) const { // TODO remove later
 		if (!mGetter.isTheoryAbstraction(var)) {
 			return 0;
 		}
