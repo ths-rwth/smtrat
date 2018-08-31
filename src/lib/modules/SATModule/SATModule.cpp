@@ -217,7 +217,7 @@ namespace smtrat
             mModelComputed = false;
             mOptimumComputed = false;
             //TODO Matthias: better solution?
-            cancelUntil( assumptions.size() );
+            cancelUntil(0, true);
             adaptPassedFormula();
             if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
             {
