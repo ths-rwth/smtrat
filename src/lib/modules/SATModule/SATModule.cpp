@@ -29,7 +29,7 @@
 #include <iomanip>
 
 #ifdef LOGGING
-//#define DEBUG_SATMODULE
+#define DEBUG_SATMODULE
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
 //#define DEBUG_SATMODULE_DECISION_HEURISTIC
 //#define DEBUG_SATMODULE_LEMMA_HANDLING
@@ -2746,6 +2746,8 @@ namespace smtrat
 				 * - fully assigned in the theory
 				 * - unassigned in boolean
 				 */
+                // TODO propagate ALL instead ...
+                /*
 				if (Settings::mc_sat && next == lit_Undef) {
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for theory propagations...");
 					for (std::size_t level = 0; level < mMCSAT.level(); level++) {
@@ -2763,8 +2765,23 @@ namespace smtrat
 						}
 						if (next != lit_Undef) break;
 					}
+				}*/
+
+                if (Settings::mc_sat && next == lit_Undef) {
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for theory propagations...");
+                    for (Minisat::Var v = 0; v < nVars(); v++) {
+                        if (bool_value(v) != l_Undef) continue;
+                        auto tv = theoryValue(v);
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "Undef, theory value of " << v << " is " << tv);
+                        if (tv == l_Undef) continue;
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "Propagating " << v << " = " << tv);
+                        if (tv == l_True) next = mkLit(v, false);
+                        else if (tv == l_False) next = mkLit(v, true);
+                        assert(next != lit_Undef);
+                        break;
+                    }
 				}
-			
+
                 // If we do not already have a branching literal, we pick one
                 if( next == lit_Undef )
                 {
@@ -3091,15 +3108,15 @@ namespace smtrat
                     }
                     else
                         next = order_heap.removeMin();
-                    // if variable is cannot be decided yet, fail...
-                    if (!is_var_decidable(next)) { // TODO wird das hier wirklich aufgerufen? was hat es mit bestBranchLit auf sich??
-                        SMTRAT_LOG_TRACE("smtrat.sat", "Variable not decidable yet.");
-                        order_heap.insert(next);
-                        next = var_Undef;
-                        break;
-
-                    }
 					SMTRAT_LOG_TRACE("smtrat.sat", "Current " << next);
+                    std::cout << "Current " <<  next << "("<< bool_value(next) << ") " << mMCSAT.theoryLevel(next) << std::endl;
+                }
+                // if variable is cannot be decided yet, fail...
+                if (next != var_Undef && !is_var_decidable(next)) { // TODO wird das hier wirklich aufgerufen? was hat es mit bestBranchLit auf sich??
+                    std::cout << "not decidable: " <<  next << std::endl;
+                    SMTRAT_LOG_TRACE("smtrat.sat", "Variable not decidable yet.");
+                    order_heap.insert(next);
+                    next = var_Undef;
                 }
             }
             else
