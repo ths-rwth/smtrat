@@ -13,7 +13,8 @@ namespace smtrat
 {
     template<class Settings>
     AbstractModule<Settings>::AbstractModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager):
-            Module( _formula, _conditionals, _manager )
+            Module( _formula, _conditionals, _manager ),
+            mLRAFormula( new ModuleInput())
 #ifdef SMTRAT_DEVOPTION_Statistics
     , mStatistics(Settings::moduleName)
 #endif
@@ -357,6 +358,16 @@ namespace smtrat
         cout << "\n";
         cout << "\n";
 
+        ////////////////////////////////////////////////
+        //
+        // Adding the Linearized Formula to the global
+        // ModuleInput type variable. This global
+        // variable will be used to add all of the
+        // Linearized formulas to the passed formula
+        //
+        ////////////////////////////////////////////////
+        mLRAFormula->add(finalFormula, false);
+
         return true; // This should be adapted according to your implementation.
     }
 
@@ -379,8 +390,25 @@ namespace smtrat
     template<class Settings>
     Answer AbstractModule<Settings>::checkCore()
     {
-        // Your code.
-        return Answer::UNKNOWN; // This should be adapted according to your implementation.
+
+        ////////////////////////////////////////////////
+        //
+        // Adding the Linearized Formula to the passed
+        // Formula
+        //
+        ////////////////////////////////////////////////
+        for (auto it = mLRAFormula->begin(); it != mLRAFormula->end(); ++it) {
+            addReceivedSubformulaToPassedFormula(it);
+        }
+        auto Answer = runBackends();
+
+        if (Answer != UNSAT) {
+            Model bmodel = backendsModel();
+            cout << "Solution: " << bmodel;
+            cout << "\n";
+        }
+
+        return Answer; // This should be adapted according to your implementation.
     }
 
 }
