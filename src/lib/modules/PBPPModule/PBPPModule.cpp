@@ -307,7 +307,7 @@ namespace smtrat
 		// it remains to specify bounds to on the new integer variables, however, it is enough 
 		// to specify bounds to variables \setminus variableSetIntersection
 		FormulasT bounds;
-		for (const auto& var : variables) {
+		for (auto var : variables) {
 			if (variableSetIntersection.find(var) != variableSetIntersection.end()) continue;
 
 			// variable is not in intersection, add discrete bounds
