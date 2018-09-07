@@ -249,6 +249,7 @@ struct CADCore<CoreHeuristic::EnumerateAll> {
 				cad.mLifting.liftSample(it, poly, *polyID);
 			} else {
 				cad.mLifting.removeNextSample();
+				cad.mLifting.addTrivialSample(it);
 			}
 		}
 		std::size_t number_of_cells = 0;
