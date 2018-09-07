@@ -277,7 +277,7 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
                     smtrat::ModelValue mv = mps.evaluate(model);
                     formula = smtrat::FormulaT(carl::FormulaType::AND, formula, smtrat::FormulaT(obj.first - mv.asRational(), carl::Relation::EQ));
                 }
-                sstream << formula.toString( false, 1, "", false, false, true, true ) << std::endl;
+                sstream << formula << std::endl;
                 for (const auto& obj: solver->objectives()) {
                     if (obj.second.second) {
                         sstream << "(minimize " << obj.first << ")" << std::endl;

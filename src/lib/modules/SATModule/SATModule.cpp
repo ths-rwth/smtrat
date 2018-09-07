@@ -4127,7 +4127,7 @@ NextClause:
         _out << _init << " ConstraintLiteralMap" << endl;
         for( ConstraintLiteralsMap::const_iterator clPair = mConstraintLiteralMap.begin(); clPair != mConstraintLiteralMap.end(); ++clPair )
         {
-            _out << _init << "    " << clPair->first.toString() << "  ->  [";
+            _out << _init << "    " << clPair->first << "  ->  [";
             for( auto litIter = clPair->second.begin(); litIter != clPair->second.end(); ++litIter )
             {
                 _out << " ";

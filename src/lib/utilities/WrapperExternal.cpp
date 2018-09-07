@@ -18,7 +18,7 @@ namespace smtrat {
         SMTRAT_LOG_DEBUG("smtrat.wrapper", "Parse: " << input);
         FormulaT parseResult = parser.formula(input);
         std::ostringstream stream;
-        stream << parseResult.toString();
+        stream << parseResult;
         return copyResult(stream, buffer, bufferSize);
     }
 
