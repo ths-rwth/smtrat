@@ -6,6 +6,9 @@
  * Created on May 04, 2012, 2:40 PM
  */
 
+#include "../lib/datastructures/qe/QE.h"
+#include "parser/theories/TheoryTypes.h"
+
 #include <iostream>
 #include <fstream>
 #include "ExitCodes.h"
@@ -133,6 +136,22 @@ public:
 	}
 	void eliminateQuantifiers(const smtrat::parser::QEQuery& q) {
 		regular() << "Eliminating " << q << std::endl;
+
+    smtrat::FormulaT quantifier_free_part = smtrat::FormulaT(this->solver->formula());
+
+		std::map<carl::Variable, smtrat::parser::QuantifierType> quantifiers;
+		for(const auto& qlvl : q) {
+			for(const auto& v: qlvl.second) {
+				quantifiers.emplace(boost::get<carl::Variable>(v), qlvl.first);
+			}
+		}
+
+		std::cout << "Size: " << quantifiers.size() << std::endl;
+
+		smtrat::qe::QE qe(quantifier_free_part, quantifiers);
+		smtrat::FormulaT equivalent_quantifier_free_formula = qe.eliminateQuantifiers();
+
+    std::cout << equivalent_quantifier_free_formula << std::endl;
 	}
 	void exit() {
 	}
@@ -243,7 +262,7 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 
 	Executor* e = new Executor(solver);
 	if (settingsManager.exportDIMACS()) e->exportDIMACS = true;
-	
+
 	bool queueInstructions = true;
 	if (!parseInput(pathToInputFile, e, queueInstructions)) {
 		std::cerr << "Parse error" << std::endl;
