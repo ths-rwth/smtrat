@@ -16,7 +16,6 @@ namespace smtrat {
 			typedef carl::UninterpretedFunction UFunction;
 			typedef carl::UTerm UTerm;
 			typedef carl::UEquality UEquality;
-			typedef UEquality::Arg UArg;
 
 			FormulaT rewrite_ueq(const FormulaT& formula) {
 				assert(formula.getType() == carl::UEQ);

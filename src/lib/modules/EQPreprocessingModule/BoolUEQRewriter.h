@@ -23,7 +23,7 @@ namespace smtrat {
 			bool foundBoolInUEQ() { return !mBools.empty(); }
 
 		private:
-			void P_handle_arg(const carl::UEquality::Arg& arg, bool isUF) {
+			void P_handle_arg(const carl::UTerm& arg, bool isUF) {
 				static const carl::Sort BOOL_SORT = carl::SortManager::getInstance().getInterpreted(carl::VariableType::VT_BOOL);
 
 				if(isUF) {

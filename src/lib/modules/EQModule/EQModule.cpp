@@ -43,8 +43,8 @@ namespace smtrat {
 	{
 		if(_constraint.getType() == carl::UEQ) {
 			const UEquality &ueq = _constraint.uequality();
-			const UEquality::Arg &lhs = ueq.lhs();
-			const UEquality::Arg &rhs = ueq.rhs();
+			const term_type &lhs = ueq.lhs();
+			const term_type &rhs = ueq.rhs();
 			
 			if(ueq.negated()) {
 				if(lhs == rhs) {
@@ -189,8 +189,8 @@ namespace smtrat {
 		
 		const FormulaT& formula = _subformula->formula();
 		const UEquality &ueq = formula.uequality();
-		const UEquality::Arg &lhs = ueq.lhs();
-		const UEquality::Arg &rhs = ueq.rhs();
+		const term_type &lhs = ueq.lhs();
+		const term_type &rhs = ueq.rhs();
 
 		// in any case, add the terms to our map if not present (even for an inequality, otherwise we have no iterators)
 		g_iterator itrLhs;
@@ -376,8 +376,8 @@ namespace smtrat {
 		
 		const FormulaT& formula = _subformula->formula();
 		const UEquality &ueq = formula.uequality();
-		const UEquality::Arg &lhs = ueq.lhs();
-		const UEquality::Arg &rhs = ueq.rhs();
+		const term_type &lhs = ueq.lhs();
+		const term_type &rhs = ueq.rhs();
 		
 		g_iterator itrLhs = mEqualityGraph.find(lhs);
 		g_iterator itrRhs = mEqualityGraph.find(rhs);
