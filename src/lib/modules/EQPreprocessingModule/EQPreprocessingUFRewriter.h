@@ -14,6 +14,7 @@ namespace smtrat {
 			typedef carl::UVariable UVariable;
 			typedef carl::UFInstance UFInstance;
 			typedef carl::UninterpretedFunction UFunction;
+			typedef carl::UTerm UTerm;
 			typedef carl::UEquality UEquality;
 			typedef UEquality::Arg UArg;
 
@@ -24,21 +25,21 @@ namespace smtrat {
 				const UVariable *lhs, *rhs;
 				bool changed = false;
 
-				if(ueq.lhsIsUF()) {
+				if(ueq.lhs().isUFInstance()) {
 					changed = true;
-					lhs = P_handle_UF(ueq.lhsAsUF());
+					lhs = P_handle_UF(ueq.lhs().asUFInstance());
 				} else {
-					lhs = &ueq.lhsAsUV();
+					lhs = &ueq.lhs().asUVariable();
 				}
 
-				if(ueq.rhsIsUF()) {
+				if(ueq.rhs().isUFInstance()) {
 					changed = true;
-					rhs = P_handle_UF(ueq.rhsAsUF());
+					rhs = P_handle_UF(ueq.rhs().asUFInstance());
 				} else {
-					rhs = &ueq.rhsAsUV();
+					rhs = &ueq.rhs().asUVariable();
 				}
 
-				return changed ? FormulaT(*lhs, *rhs, ueq.negated()) : formula;
+				return changed ? FormulaT(UTerm(*lhs), UTerm(*rhs), ueq.negated()) : formula;
 			}
 
 			const FormulaSetT& congruences() const noexcept { return mCongruences; }
@@ -59,16 +60,16 @@ namespace smtrat {
 					if(fniter == mFnToUFI.end()) {
 						fniter = mFnToUFI.emplace(fn, std::vector<UFInstance>()).first;
 					} else {
-						const std::vector<UVariable>& iargs = instance.args();
+						const std::vector<UTerm>& iargs = instance.args();
 
 						for(const UFInstance& other : fniter->second) {
 							FormulaSetT disj;
-							const std::vector<UVariable>& oargs = other.args();
+							const std::vector<UTerm>& oargs = other.args();
 
-							disj.emplace(FormulaT(iter->second, mUFIToVar.find(other)->second, false));
+							disj.emplace(FormulaT(UTerm(iter->second), UTerm(mUFIToVar.find(other)->second), false));
 							for(std::size_t i = 0; i < iargs.size(); ++i) {
 								if(!(iargs[i] == oargs[i])) {
-									disj.emplace(carl::NOT, FormulaT(iargs[i], oargs[i], false));
+									disj.emplace(carl::NOT, FormulaT(UTerm(iargs[i]), UTerm(oargs[i]), false));
 								}
 							}
 

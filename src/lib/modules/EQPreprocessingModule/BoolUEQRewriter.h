@@ -9,8 +9,8 @@ namespace smtrat {
 		public:
 			void visit_ueq(const FormulaT& formula) {
 				const carl::UEquality& ueq = formula.uequality();
-				P_handle_arg(ueq.lhs(), ueq.lhsIsUF());
-				P_handle_arg(ueq.rhs(), ueq.rhsIsUF());
+				P_handle_arg(ueq.lhs(), ueq.lhs().isUFInstance());
+				P_handle_arg(ueq.rhs(), ueq.rhs().isUFInstance());
 			}
 
 			CollectBoolsInUEQs(const CollectBoolsInUEQs&) = delete;
@@ -27,15 +27,17 @@ namespace smtrat {
 				static const carl::Sort BOOL_SORT = carl::SortManager::getInstance().getInterpreted(carl::VariableType::VT_BOOL);
 
 				if(isUF) {
-					for(const carl::UVariable& var : boost::get<carl::UFInstance>(arg).args()) {
+					for(const carl::UTerm& term : arg.asUFInstance().args()) {
+						assert(term.isUVariable());
+						const auto& var = term.asUVariable();
 						if(var.domain() == BOOL_SORT) {
-							mBools.emplace(var());
+							mBools.emplace(var.variable());
 						}
 					}
 				} else {
-					const carl::UVariable &var = boost::get<carl::UVariable>(arg);
+					const carl::UVariable &var = arg.asUVariable();
 					if(var.domain() == BOOL_SORT) {
-						mBools.emplace(var());
+						mBools.emplace(var.variable());
 					}
 				}
 			}
@@ -51,7 +53,7 @@ namespace smtrat {
 				mCollected(std::move(collected)),
 				mTrueHelper(carl::freshBooleanVariable()),
 				mFalseHelper(carl::freshBooleanVariable()),
-				mHelperIneq(FormulaT(carl::NOT, FormulaT(mTrueHelper, mFalseHelper, false)))
+				mHelperIneq(FormulaT(carl::NOT, FormulaT(carl::UTerm(mTrueHelper), carl::UTerm(mFalseHelper), false)))
 			{}
 
 			void setCollected(CollectBoolsInUEQs&& collected) {
@@ -62,7 +64,7 @@ namespace smtrat {
 				carl::Variable b = formula.boolean();
 
 				if(mCollected.mBools.count(b)) {
-					return FormulaT(carl::UVariable(b), mTrueHelper, false);
+					return FormulaT(carl::UTerm(carl::UVariable(b)), carl::UTerm(mTrueHelper), false);
 				} else {
 					return formula;
 				}
@@ -78,16 +80,16 @@ namespace smtrat {
 
 					formulaMap.emplace(FormulaT(carl::TRUE),
 						FormulaT(carl::OR,
-							{FormulaT(uvar, mTrueHelper, false),
-							FormulaT(uvar, mFalseHelper, false)}
+							{FormulaT(carl::UTerm(uvar), carl::UTerm(mTrueHelper), false),
+							FormulaT(carl::UTerm(uvar), carl::UTerm(mFalseHelper), false)}
 						)
 					);
 
 					formulaMap.emplace(FormulaT(carl::TRUE),
 						FormulaT(
 							carl::OR,
-							{FormulaT(carl::NOT, FormulaT(uvar, mTrueHelper, false)),
-							FormulaT(carl::NOT, FormulaT(uvar, mFalseHelper, false))}
+							{FormulaT(carl::NOT, FormulaT(carl::UTerm(uvar), carl::UTerm(mTrueHelper), false)),
+							FormulaT(carl::NOT, FormulaT(carl::UTerm(uvar), carl::UTerm(mFalseHelper), false))}
 						)
 					);
 				}
