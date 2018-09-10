@@ -94,10 +94,10 @@ namespace types {
      * Types of the theory of equalities and uninterpreted functions.
      */
 	struct UninterpretedTheory {
-		typedef mpl::vector<carl::UVariable, carl::UFInstance> ConstTypes;
+		typedef mpl::vector<carl::UTerm> ConstTypes;
 		typedef mpl::vector<carl::UVariable> VariableTypes;
-		typedef mpl::vector<carl::UVariable, carl::UFInstance> ExpressionTypes;
-		typedef mpl::vector<carl::UVariable, carl::UFInstance> TermTypes;
+		typedef mpl::vector<carl::UTerm> ExpressionTypes;
+		typedef mpl::vector<carl::UTerm, carl::UVariable> TermTypes;
 		typedef carl::mpl_variant_of<TermTypes>::type TermType;
 	};
 #endif
