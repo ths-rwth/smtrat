@@ -67,14 +67,14 @@ public:
 		return boost::get<FormulasT>(res);
 	}
 
-	FormulaT explain(carl::Variable var, const FormulasT& reason, const FormulaT& implication) const {
-		auto res = mExplanation(mBookkeeping, variableOrder(), var, reason, implication);
+	Explanation explain(carl::Variable var, const FormulasT& reason) const {
+		boost::optional<Explanation> res = mExplanation(mBookkeeping, variableOrder(), var, reason);
 		if (res) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat", "Got explanation " << *res);
 			return *res;
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.mcsat", "Explanation backend failed.");
-			return FormulaT(carl::FormulaType::FALSE);
+			return Explanation(FormulaT(carl::FormulaType::FALSE));
 		}
 	}
 };

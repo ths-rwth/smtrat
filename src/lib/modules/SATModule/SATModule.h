@@ -941,10 +941,10 @@ namespace smtrat
 				return assigns[x];
 			}
 
-            bool handleTheoryConflictClause(const FormulasT& clause) {
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict clause " << clause);
+            bool addClauseIfNew(const FormulasT& clause) {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Add theory conflict clause " << clause << " if new");
 
-				sat::detail::validateClause(clause, Settings::validate_clauses); // TODO can this lead to errors for multiple explanations???
+				sat::detail::validateClause(clause, Settings::validate_clauses);
                 Minisat::vec<Minisat::Lit> explanation;
                 std::vector<Minisat::Lit> explanation_set;
 				for (const auto& c: clause) {
@@ -963,47 +963,50 @@ namespace smtrat
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
                     mUnorderedClauseLookup.insert(explanation_set);
                     addClause(explanation, Minisat::LEMMA_CLAUSE);
-                    propagateTheory();
-                    Minisat::CRef confl = storeLemmas();
-                    if (confl != Minisat::CRef_Undef) {
-                        handleConflict(confl);
-                    }
                     return true;
                 }
 			}
 			
-			void handleTheoryConflict(const FormulaT& explanation) {
+			void handleTheoryConflict(const mcsat::Explanation& explanation) {
                 #ifdef DEBUG_SATMODULE
                 print(std::cout, "###");
                 #endif
                 SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict explanation " << explanation);
-                FormulaT cnf = explanation.toCNF();
-                if (cnf.getType() == carl::FormulaType::OR) { // clause
-                    bool added = handleTheoryConflictClause(cnf.subformulas());
+
+                if (explanation.type() == typeid(FormulaT)) {
+                    // add conflict clause
+                    const auto& clause = boost::get<FormulaT>(explanation);
+                    bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
                     assert(added);
-                }
-                else if (cnf.getType() == carl::FormulaType::AND) { // conjunction of clauses
-                    bool added = false;
-                    for (const auto& clause : cnf.subformulas()) {
-                        if (clause.getType() == carl::FormulaType::OR) { // clause
-                            added |= handleTheoryConflictClause(clause.subformulas());
+                } else {
+                    const auto& chain = boost::get<mcsat::ClauseChain>(explanation);
+                    if (Settings::mcsat_resolve_clause_chains) {
+                        FormulaT clause = chain.resolve();
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "Resolved clause chain to " << clause);
+                        bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
+                        assert(added);
+                    } else {
+                        // add propagations
+                        bool added = false;
+                        for (const auto link : chain) {
+                            added |= addClauseIfNew(link.clause().isNary() ? link.clause().subformulas() : FormulasT({link.clause()}));
                         }
-                        else { // single literal
-                            added |= handleTheoryConflictClause(FormulasT({clause}));
-                        }
-                    }
-                    assert(added);
+                        assert(added);
+                    }                    
                 }
-                else { // single literal
-                    bool added = handleTheoryConflictClause(FormulasT({cnf}));
-                    assert(added);
+
+                propagateTheory();
+                Minisat::CRef confl = storeLemmas();
+                if (confl != Minisat::CRef_Undef) {
+                    handleConflict(confl);
                 }
+
                 SMTRAT_LOG_DEBUG("smtrat.sat", "Handled theory conflict explanation");
 			}
             
 			inline Minisat::lbool bool_value( Minisat::Lit p ) const
             {
-				return bool_value(Minisat::var(p)) ^ Minisat::sign(p);
+				return bool_value(Minisat::var(p)) == l_Undef ? l_Undef : bool_value(Minisat::var(p)) ^ Minisat::sign(p);
             }
             /**
              * @param p The literal to get its value for.
@@ -1011,14 +1014,15 @@ namespace smtrat
              */
             inline Minisat::lbool value( Minisat::Lit p ) const
             {
-				return value(Minisat::var(p)) ^ Minisat::sign(p);
+				return value(Minisat::var(p)) == l_Undef ? l_Undef : value(Minisat::var(p)) ^ Minisat::sign(p);
             }
 			inline Minisat::lbool theoryValue( Minisat::Lit p ) const {
-				return theoryValue(Minisat::var(p)) ^ Minisat::sign(p);
+				return theoryValue(Minisat::var(p)) == l_Undef ? l_Undef : theoryValue(Minisat::var(p)) ^ Minisat::sign(p);
 			}
 			inline Minisat::lbool valueAndUpdate( Minisat::Lit p )
             {
-				return valueAndUpdate(Minisat::var(p)) ^ Minisat::sign(p);
+                auto res = valueAndUpdate(Minisat::var(p));
+				return res == l_Undef ? l_Undef : valueAndUpdate(Minisat::var(p)) ^ Minisat::sign(p);
             }
             
             /**
