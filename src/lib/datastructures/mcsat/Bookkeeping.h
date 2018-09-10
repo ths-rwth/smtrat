@@ -24,6 +24,8 @@ class Bookkeeping {
 	std::vector<FormulaT> mConstraints;
 	/** Stack of asserted multivariate root bounds. */
 	std::vector<FormulaT> mMVBounds;
+	/** Sequence defining the variable ordering. */
+	std::vector<carl::Variable> mVariableOrdering;
 public:
 	
 	const auto& model() const {
@@ -40,6 +42,13 @@ public:
 	}
 	const auto& mvBounds() const {
 		return mMVBounds;
+	}
+	const auto& variableOrder() const {
+		return mVariableOrdering;
+	}
+
+	void updateVariableOrder(const std::vector<carl::Variable> ordering) {
+		mVariableOrdering = ordering;
 	}
 	
 	/** Assert a constraint/literal */
@@ -99,6 +108,7 @@ inline std::ostream& operator<<(std::ostream& os, const Bookkeeping& bk) {
 	os << "## Assigned Values: " << bk.assignments() << std::endl;
 	os << "## Asserted constr/lits: " << bk.constraints() << std::endl;
 	os << "## Bounds: " << bk.mvBounds() << std::endl;
+	os << "## Variable ordering: " << bk.variableOrder() << std::endl;
 	return os;
 }
 

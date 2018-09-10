@@ -108,6 +108,8 @@ namespace smtrat
         static constexpr bool mcsat_lazy_explanations = true;
 
         static constexpr bool mcsat_learn_lazy_explanations = false;
+
+        static constexpr unsigned int mcsat_num_insert_assignments = 2;
 		
 		using MCSATSettings = mcsat::MCSATSettingsFMVSNL;
     };

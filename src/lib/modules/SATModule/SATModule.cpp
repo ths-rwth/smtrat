@@ -2800,39 +2800,48 @@ namespace smtrat
 					if (mMCSAT.mayDoAssignment()) {
 						// No decision done yet, try with a theory decision.
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Trying with next theory decision");
-						mcsat::Explanation res;
-						bool didDecision;
-						std::tie(res,didDecision) = mMCSAT.makeTheoryDecision();
-						if (didDecision) {
+						auto res = mMCSAT.makeTheoryDecision();
+						if (carl::variant_is_type<FormulasT>(res)) {
 							mCurrentAssignmentConsistent = SAT;
-							next = createLiteral(boost::get<FormulaT>(res), FormulaT(carl::FormulaType::TRUE), false);
-							mMCSAT.makeDecision(next);
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Picking the next literal");
-							pickTheoryBranchLit();
-							
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still feasible with this theory decision");
-							auto conflict = mMCSAT.isFeasible();
-							if (conflict) {
-								newDecisionLevel();
-								uncheckedEnqueue(next);
-								#ifdef DEBUG_SATMODULE
-								cout << "######################################################################" << endl;
-								cout << "### Before handling conflict" << endl;
-								print(cout, "###");
-								#endif
-								SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
+                            const auto& assignments = boost::get<FormulasT>(res);
+                            assert(assignments.size() > 0);
+                            static_assert(Settings::mcsat_num_insert_assignments > 0);
+                            std::vector<Minisat::Lit> theoryDecisions;
+                            // create assignments
+                            for (unsigned int i = 0; i < assignments.size() && i < Settings::mcsat_num_insert_assignments; i++) {
+                                theoryDecisions.push_back(createLiteral(assignments[i], FormulaT(carl::FormulaType::TRUE), false));
+                                mMCSAT.makeDecision(theoryDecisions.back());
+                                SMTRAT_LOG_DEBUG("smtrat.sat", "Picking the next literal");
+                                pickTheoryBranchLit();
+                                SMTRAT_LOG_DEBUG("smtrat.sat", "Insert into SAT solver");
+                                newDecisionLevel();
+                                uncheckedEnqueue(theoryDecisions.back());
+                            }
+
+                            SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still feasible with this theory decision");
+                            auto conflict = mMCSAT.isFeasible();
+                            if (conflict) {
+                                #ifdef DEBUG_SATMODULE
+                                cout << "######################################################################" << endl;
+                                cout << "### Before handling conflict" << endl;
+                                print(cout, "###");
+                                #endif
+                                SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
                                 if ((*conflict).type() == typeid(FormulaT))
-								    sat::detail::validateClause(boost::get<FormulaT>(*conflict), Settings::validate_clauses);
-								handleTheoryConflict(*conflict);
-								mMCSAT.undoAssignment(next);
-								next = lit_Undef;
-								continue;
-							}
+                                    sat::detail::validateClause(boost::get<FormulaT>(*conflict), Settings::validate_clauses);
+                                handleTheoryConflict(*conflict);
+                                // revert assignments
+                                for (auto iter = theoryDecisions.rbegin(); iter != theoryDecisions.rend(); iter++) {
+                                    mMCSAT.undoAssignment(*iter);
+                                }                                
+                            }
+                            assert(next == lit_Undef);
+                            continue;
 						} else {
 							mCurrentAssignmentConsistent = UNSAT;
 							SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << mMCSAT.level());
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << res);
-							handleTheoryConflict(res);
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << boost::get<mcsat::Explanation>(res));
+							handleTheoryConflict(boost::get<mcsat::Explanation>(res));
 							continue;
 						}
 					} else {
