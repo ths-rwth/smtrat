@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 #include "../../../Common.h"
 #include "../Bookkeeping.h"
 #include "../onecellcad/OneCellCAD.h"
@@ -41,9 +43,9 @@ FormulaT eqFormula(const carl::Variable var, carl::MultivariateRoot<Poly> mvRoot
   return FormulaT(varCmp);
 }
 
-inline
-std::vector<carl::Variable> prefix(const std::vector<carl::Variable> vars, std::size_t prefixSize) {
-  std::vector<carl::Variable> prefixVars(vars.begin(), std::next(vars.begin(), prefixSize));
+template <typename T>
+std::vector<T> prefix(const std::vector<T> vars, std::size_t prefixSize) {
+  std::vector<T> prefixVars(vars.begin(), std::next(vars.begin(), (long) prefixSize));
   return prefixVars;
 }
 
@@ -51,107 +53,139 @@ inline
 std::vector<onecellcad::TagPoly> toTagPoly (std::vector<Poly> polys) {
   std::vector<onecellcad::TagPoly> tPolys;
   for (auto& poly : polys)
-    tPolys.emplace_back(onecellcad::TagPoly{onecellcad::PolyTag::SGN_INV, poly});
+    tPolys.emplace_back(onecellcad::TagPoly{onecellcad::InvarianceType::SIGN_INV, poly});
 
   return tPolys;
 }
 
-struct Explanation {
+inline
+ostream& operator<<(ostream& os, const std::vector<std::vector<onecellcad::TagPoly>>& lvls)
+{
+  int lvl = (int) lvls.size() - 1;
+  for (auto it = lvls.rbegin(); it != lvls.rend(); ++it) {
+    os << lvl << ": ";
+    os << *it << "\n";
+    lvl--;
+  }
+  return os;
+}
+
+  struct Explanation {
   boost::optional<FormulaT>
-  operator()(const mcsat::Bookkeeping &assignState,
+  operator()(const mcsat::Bookkeeping &trail, // current assignment state
              const std::vector<carl::Variable> &varOrder,
              carl::Variable var,
-             const FormulasT &reasonAtoms,
-             const FormulaT &impliedAtom) const
+             const FormulasT &trailLiterals,
+             const FormulaT &impliedLiteral) const
   {
-    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "With: " << reasonAtoms << " explain: " << impliedAtom);
+    assert(!impliedLiteral.isTrue());
+    assert(trail.model().size() == trail.assignedVariables().size());
+
+    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Starting an explanation");
+    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", trail);
+    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Number of assigned vars: " << trail.model().size());
+    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Trail literals: " << trailLiterals << " Implied literal: " << impliedLiteral);
     SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat","Ascending variable order: " << varOrder
       << " and eliminate down from: " << var);
 
-    std::vector<Poly> polys;
-//  	if (!impliedAtom.isFalse() && !impliedAtom.isTrue())
-//  	  polys.emplace_back(extractPoly(impliedAtom));
+    std::vector<Poly> polys; // extract from trailLiterals
+    for (const auto &constraint : helper::convertToConstraints(trailLiterals))
+      polys.emplace_back(constraint.lhs()); // constraints have the form 'poly < 0' with  <, = etc.
 
-    for (const auto &constraint : helper::convertToConstraints(reasonAtoms))
-      polys.emplace_back(constraint.lhs()); // constraints have the form e.g. 'poly < 0'
+    const auto& trailVariables = trail.assignedVariables();
+    std::vector<carl::Variable> fullProjectionVarOrder(trailVariables.size());
+    std::vector<carl::Variable> oneCellCADVarOrder;
+    fullProjectionVarOrder.reserve(varOrder.size());
+    oneCellCADVarOrder.reserve(trailVariables.size());
 
-    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", assignState);
-    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Number of assigned vars: " << assignState.model().size());
-    auto maxNormalLvl = assignState.model().size()-1; // -1, b/c we count first var = poly level 0
-    std::vector<std::vector<onecellcad::TagPoly>> projectionLevels(varOrder.size()); // init all levels with empty vector
+    for (auto variable : varOrder) {
+      if (std::find(trailVariables.begin(), trailVariables.end(), variable) == trailVariables.end())
+        fullProjectionVarOrder.push_back(variable);
+      else
+        oneCellCADVarOrder.push_back(variable);
+    }
+    std::copy_n(oneCellCADVarOrder.begin(), oneCellCADVarOrder.size(), fullProjectionVarOrder.begin());
+
+    std::size_t oneCellMaxLvl = trail.model().size()-1; // -1, b/c we count first var = poly level 0
+    std::vector<std::vector<onecellcad::TagPoly>> projectionLevels(fullProjectionVarOrder.size()); // init all levels with empty vector
     carl::CoCoAAdaptor<Poly>factorizer(polys);
-    onecellcad::categorizeByLevel(projectionLevels,
-                                  varOrder,
-                                  onecellcad::nonConstIrreducibleFactors(factorizer, toTagPoly(polys)));
+    onecellcad::categorizeByLevel(
+      projectionLevels,
+      fullProjectionVarOrder,
+      onecellcad::nonConstIrreducibleFactors(factorizer, toTagPoly(polys)));
 
+    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Polys at levels before full CAD projection:\n" << projectionLevels);
     // Project higher level polys down to "normal" level
-    auto maxLevel = varOrder.size() - 1;
-    for (std::size_t currentLvl = maxLevel; currentLvl > maxNormalLvl; currentLvl--) {
+    auto maxLevel = fullProjectionVarOrder.size() - 1;
+    for (std::size_t currentLvl = maxLevel; currentLvl > oneCellMaxLvl; currentLvl--) {
+      auto currentVar = fullProjectionVarOrder[currentLvl];
+      auto projectionFactors = onecellcad::singleLevelFullProjection(currentVar, projectionLevels[currentLvl]);
       onecellcad::categorizeByLevel(
         projectionLevels,
-        varOrder,
+        fullProjectionVarOrder,
         onecellcad::nonConstIrreducibleFactors(
-          factorizer, onecellcad::singleLevelFullProjection(varOrder[currentLvl], projectionLevels[currentLvl])));
+          factorizer, projectionFactors));
+      projectionLevels[currentLvl].clear();
+      SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Polys at levels after projecting level " << currentLvl << ":\n" << projectionLevels);
     }
 
-    std::vector<onecellcad::TagPoly2> normalLevelPolys;
-    for (int currentLvl = maxNormalLvl; currentLvl >= 0; currentLvl--) {
+    std::vector<onecellcad::TagPoly2> oneCellPolys;
+    for (std::size_t currentLvl = 0; currentLvl <= oneCellMaxLvl; currentLvl++) {
       for (auto& poly : projectionLevels[currentLvl])
-        normalLevelPolys.emplace_back(onecellcad::TagPoly2{poly.tag, poly.poly, static_cast<size_t>(currentLvl)});
+        oneCellPolys.emplace_back(onecellcad::TagPoly2{poly.tag, poly.poly, currentLvl});
     }
-    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "All projected level polys: " << normalLevelPolys);
+    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "All polys for OneCell construction: " << oneCellPolys);
 
-    auto cellOpt = onecellcad::OneCellCAD().pointEnclosingCADCell(
-      prefix(varOrder, maxNormalLvl+1), asRANPoint(assignState), normalLevelPolys);
+    auto cellOpt = onecellcad::OneCellCAD(oneCellCADVarOrder,asRANPoint(trail).prefixPoint(oneCellMaxLvl+1)).pointEnclosingCADCell(
+      oneCellPolys);
     if (!cellOpt) {
       SMTRAT_LOG_WARN("smtrat.mcsat.nlsat", "OneCell construction failed");
       return boost::none;
     }
 
     auto cell = *cellOpt;
-    // We directly construct the clausal-formula of 'E -> F',
-    // where E is the conjunction of reasonAtom and CAD cell bound constraints, and F is the implication.
-    FormulasT explainLiterals; // -e1 v -e2 v ..., where - is not
+    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Constructed cell: " << cell);
 
-    for (const auto& reasonAtom : reasonAtoms)
-      explainLiterals.emplace_back(reasonAtom.negated());
+    // If we have trail literals: L_M, ... , L_M,
+    // an implied literal L
+    // and cell boundary atoms : A, .., A
+    // We construct the formula '(A & ... & A & L_M & ... & L_M) => L'
+    // in its clausal form 'E := (-A v ... v -A v -L_M v ... v -L_M  v L)'
+    // as our explanation.
+    FormulasT explainLiterals;
+
+    for (const auto& trailLiteral : trailLiterals)
+      explainLiterals.emplace_back(trailLiteral.negated());
 
     for (std::size_t i = 0; i < cell.size(); i++) {
       auto& cellComponent = cell[i];
-      auto cellVariable = varOrder[i];
+      auto cellVariable = oneCellCADVarOrder[i];
       if (mpark::holds_alternative<onecellcad::Section>(cellComponent)) {
-        auto sectionPoly = mpark::get<onecellcad::Section>(cellComponent).poly;
-        auto rootNumber = mpark::get<onecellcad::Section>(cellComponent).rootNumber;
+        auto section = mpark::get<onecellcad::Section>(cellComponent).boundFunction;
         // Need to use poly with its main variable replaced by the special MultivariateRootT::var().
-        auto param = std::make_pair(Poly(carl::UnivariatePolynomial<Poly>(MultivariateRootT::var(), sectionPoly.toUnivariatePolynomial(cellVariable).coefficients())), rootNumber);
+        auto param = std::make_pair(section.poly(), section.rootIdx());
         explainLiterals.emplace_back(helper::buildAbove(cellVariable, param).negated());
       } else {
-        auto sectorLowPoly = mpark::get<onecellcad::Sector>(cellComponent).lowBound;
-        auto sectorHighPoly = mpark::get<onecellcad::Sector>(cellComponent).highBound;
-        if (sectorLowPoly) {
+        auto sectorLowBound = mpark::get<onecellcad::Sector>(cellComponent).lowBound;
+        if (sectorLowBound) {
           // Need to use poly with its main variable replaced by the special MultivariateRootT::var().
-          auto param = std::make_pair(Poly(carl::UnivariatePolynomial<Poly>(MultivariateRootT::var(),
-                                                                            sectorLowPoly->poly.toUnivariatePolynomial(
-                                                                              cellVariable).coefficients())),
-                                      sectorLowPoly->rootNumber);
+          auto param = std::make_pair(sectorLowBound->boundFunction.poly(), sectorLowBound->boundFunction.rootIdx());
           explainLiterals.emplace_back(helper::buildAbove(cellVariable, param).negated());
         }
-        if (sectorHighPoly) {
+        auto sectorHighBound = mpark::get<onecellcad::Sector>(cellComponent).highBound;
+        if (sectorHighBound) {
           // Need to use poly with its main variable replaced by the special MultivariateRootT::var().
-          auto param = std::make_pair(Poly(carl::UnivariatePolynomial<Poly>(MultivariateRootT::var(),
-                                                                            sectorHighPoly->poly.toUnivariatePolynomial(
-                                                                              cellVariable).coefficients())),
-                                      sectorHighPoly->rootNumber);
+          auto param = std::make_pair(sectorHighBound->boundFunction.poly(), sectorHighBound->boundFunction.rootIdx());
           explainLiterals.emplace_back(helper::buildAbove(cellVariable, param).negated());
         }
       }
     }
 
-    if (!impliedAtom.isTrue() && !impliedAtom.isFalse())
-      explainLiterals.emplace_back(impliedAtom);
+    if (!impliedLiteral.isFalse())
+      explainLiterals.emplace_back(impliedLiteral);
 
     SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Explain literals: " << explainLiterals);
-    return FormulaT(carl::FormulaType::OR, explainLiterals); // need to return a clause (L1 v L2 v ...)
+    return FormulaT(carl::FormulaType::OR, std::move(explainLiterals)); // need to return a clause (L1 v L2 v ...)
   }
 };
 } // namespace nlsat
