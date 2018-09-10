@@ -20,7 +20,7 @@ struct MCSATSettingsNL {
 struct MCSATSettingsFMNL {
 	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-	using ExplanationBackend = SequentialExplanation<fm::Explanation,nlsat::Explanation>;
+	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,nlsat::Explanation>;
 };
 
 struct MCSATSettingsVSNL {
@@ -32,7 +32,7 @@ struct MCSATSettingsVSNL {
 struct MCSATSettingsFMVSNL {
 	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-	using ExplanationBackend = SequentialExplanation<fm::Explanation,vs::Explanation,nlsat::Explanation>;
+	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,nlsat::Explanation>;
 };
 
 }

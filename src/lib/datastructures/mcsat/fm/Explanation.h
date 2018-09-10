@@ -33,6 +33,15 @@ inline bool compare(const Rational& r1, const Rational& r2, const carl::Relation
 	}
 }
 
+inline bool isSubset(const carl::Variables& subset, const std::unordered_set<carl::Variable>& superset) {
+	for (const auto& var : subset) {
+		if (superset.find(var) == superset.end()) {
+			return false;
+		}
+	}
+	return true;
+}
+
 struct Bound {
 	ConstraintT constr;
 	Poly p;
@@ -135,8 +144,9 @@ private:
 		return std::move(res);
 	}
 
-	FormulasT conflictLowerAndUpperBound(const Bound& lower, const Bound& upper, bool strict) {
+	FormulasT conflictLowerAndUpperBound(const Bound& lower, const Bound& upper) {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Lower bound " << lower << " in conflict with upper bound " << upper);
+		bool strict = carl::isStrict(lower.constr.relation()) || carl::isStrict(upper.constr.relation());
 		carl::Relation rel = (lower.neg xor upper.neg) ? (strict ? carl::Relation::GREATER : carl::Relation::GEQ) : (strict ? carl::Relation::LESS : carl::Relation::LEQ);
 		FormulasT res;
 		res.emplace_back(lower.constr.negation());
@@ -188,6 +198,12 @@ public:
 		// initialize bounds
 		for (const auto& b: mBounds) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Processing bound " << b);
+
+			if (!b.hasVariable(mVariable)) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because it does not contain " << mVariable);
+				continue;
+			}
+
 			if (b.varInfo(mVariable).maxDegree() > 1) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because " << mVariable << " occurs nonlinearly");
 				continue;
@@ -222,7 +238,6 @@ public:
 					expl.emplace_back(b.negation());
 					expl.emplace_back(ConstraintT(p, carl::Relation::EQ).negation());
 					expl.emplace_back(ConstraintT(-q, b.relation()));
-					// expl.emplace_back(ConstraintT(-q, carl::Relation::LEQ));
 
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explanation: " << expl[0].negated() << " && " << expl[1].negated() << " -> " << expl[2]);
 					yield(callback, expl);
@@ -296,7 +311,7 @@ public:
 					continue;
 				}
 
-				yield(callback, conflictLowerAndUpperBound(lower, upper, strict));
+				yield(callback, conflictLowerAndUpperBound(lower, upper));
 			}
 		}
 
@@ -366,18 +381,42 @@ struct MinVarCountComparator {
 	}
 };
 
+
+struct DefaultSettings {
+	static constexpr bool use_all_constraints = true;
+};
+
+template<class Settings>
 struct Explanation {
 	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " << reason);
-
 		std::vector<ConstraintT> bounds;
-		for (const auto& b: reason) {
-			if (b.getType() != carl::FormulaType::CONSTRAINT) {
-				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-constraint bound " << b);
-				continue;
+
+		if (!Settings::use_all_constraints) {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " <<  reason);
+		
+			for (const auto& b : reason) {
+				if (b.getType() != carl::FormulaType::CONSTRAINT) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-constraint bound " << b);
+					continue;
+				}
+				assert(b.getType() == carl::FormulaType::CONSTRAINT);
+				bounds.emplace_back(b.constraint());
 			}
-			assert(b.getType() == carl::FormulaType::CONSTRAINT);
-			bounds.emplace_back(b.constraint());
+		} else {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " <<  data.constraints());
+		
+			for (const auto& b : data.constraints()) {
+				std::unordered_set<carl::Variable> allowedVars;
+				auto curVar = std::find(variableOrdering.begin(), variableOrdering.end(), var); 
+				assert(curVar != variableOrdering.end());
+				allowedVars.insert(variableOrdering.begin(), curVar+1);
+				if (!isSubset(b.variables(), allowedVars)) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-univariate bound " << b);
+					continue;
+				}
+				assert(b.getType() == carl::FormulaType::CONSTRAINT);
+				bounds.emplace_back(b.constraint());
+			}
 		}
 
 		boost::optional<FormulasT> res = boost::none;

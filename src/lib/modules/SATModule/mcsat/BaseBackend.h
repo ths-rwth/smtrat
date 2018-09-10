@@ -77,6 +77,13 @@ public:
 			return Explanation(FormulaT(carl::FormulaType::FALSE));
 		}
 	}
+
+	Explanation explain(carl::Variable var, const FormulaT& f, const FormulasT& reason) {
+		pushConstraint(f);
+		auto res = explain(var, reason);
+		popConstraint(f);
+		return res;
+	}
 };
 
 

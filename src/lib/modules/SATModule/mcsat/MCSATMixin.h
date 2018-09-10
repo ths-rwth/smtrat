@@ -235,7 +235,7 @@ public:
 		assert(conflict);
 		assert( std::find((*conflict).begin(), (*conflict).end(), !f) != (*conflict).end() );
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " from " << *conflict);
-		auto res = mBackend.explain(currentVariable(), *conflict);
+		auto res = mBackend.explain(currentVariable(), !f, *conflict);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " by " << res);
 		// f is part of the conflict, because the trail is feasible without f:
 		if (res.type() == typeid(FormulaT)) {
