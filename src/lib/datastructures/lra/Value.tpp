@@ -184,15 +184,14 @@ namespace smtrat
         const std::string Value<T>::toString() const
         {
             std::stringstream out;
-            out << mMainPart << "+d*" << mDeltaPart;
+            out << *this;
             return out.str();
         }
             
         template<class T1>
         std::ostream& operator<<( std::ostream& _out, const Value<T1>& _value )
         {
-            _out << _value.toString();
-            return _out;
+			return _out << _value.mainPart() << "+d*" << _value.deltaPart();
         }
 
         template<class T>

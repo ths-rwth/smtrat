@@ -1109,17 +1109,6 @@ namespace smtrat
                 asynch_interrupt = false;
             }
             
-            inline void toString( std::ostream& _os, Minisat::Lit _lit ) const
-            {
-                if( Minisat::sign( _lit ) )
-                    _os << "-";
-                _os << Minisat::var( _lit );
-                _os << "[";
-                if( Minisat::sign( ~_lit ) )
-                    _os << "-";
-                _os << Minisat::var( ~_lit ) << "]";
-           }
-
             // Memory management:
             
             /**

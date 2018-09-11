@@ -342,7 +342,7 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         cout << "LRAModule::check with mMinimizingCheck = " << mMinimizingCheck << endl;
         for( const auto& f : rReceivedFormula() )
-            std::cout << f.formula().toString() << std::endl;
+            std::cout << f.formula() << std::endl;
         #endif
         bool containsIntegerValuedVariables = true;
         if( !rReceivedFormula().isConstraintConjunction() )
@@ -1456,7 +1456,7 @@ namespace smtrat
         _out << _init << "Linear constraints:" << endl;
         for( auto iter = mLinearConstraints.begin(); iter != mLinearConstraints.end(); ++iter )
         {
-            _out << _init << "   " << iter->toString() << endl;
+            _out << _init << "   " << iter << endl;
         }
     }
 
@@ -1466,7 +1466,7 @@ namespace smtrat
         _out << _init << "Nonlinear constraints:" << endl;
         for( auto iter = mNonlinearConstraints.begin(); iter != mNonlinearConstraints.end(); ++iter )
         {
-            _out << _init << "   " << iter->toString() << endl;
+            _out << _init << "   " << iter << endl;
         }
     }
 
@@ -1476,7 +1476,7 @@ namespace smtrat
         _out << _init << "Mapping of constraints to bounds:" << endl;
         for( auto iter = mTableau.constraintToBound().begin(); iter != mTableau.constraintToBound().end(); ++iter )
         {
-            _out << _init << "   " << iter->first.toString() << endl;
+            _out << _init << "   " << iter->first << endl;
             for( auto iter2 = iter->second->begin(); iter2 != iter->second->end(); ++iter2 )
             {
                 _out << _init << "        ";

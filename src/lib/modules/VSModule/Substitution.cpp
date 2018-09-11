@@ -162,37 +162,29 @@ namespace vs
             return false;
     }
 
-    ostream& operator<<( ostream& _ostream, const Substitution& _substitution )
-    {
-        return (_ostream << _substitution.toString( true ));
-    }
-
-    string Substitution::toString( bool _friendlyNames ) const
-    {
-        stringstream o;
-        o << mVariable;
-        string result = "[" + o.str() + " -> ";
-        switch( type() )
-        {
-            case NORMAL:
-                return result + term().toString( true, _friendlyNames ) + "]";
-            case PLUS_EPSILON:
-                return result + term().toString( true, _friendlyNames ) + " + epsilon]";
-            case MINUS_INFINITY:
-                return result + "-infinity]";
-            case PLUS_INFINITY:
-                return result + "+infinity]";
-            case INVALID:
-                return result + "invalid]";
-            default:
-                assert( false );
-                return result + "unknown]";
-        }
-    }
+	ostream& operator<<(ostream& os, const Substitution& s) {
+		os << "[" << s.variable() << " -> ";
+		switch (s.type()) {
+			case NORMAL:
+				os << s.term() << "]"; break;
+			case PLUS_EPSILON:
+				os << s.term() << " + epsilon]"; break;
+			case MINUS_INFINITY:
+				os << "-infinity]"; break;
+			case PLUS_INFINITY:
+				os << "+infinity]"; break;
+			case INVALID:
+				os << "invalid]"; break;
+			default:
+				assert(false);
+				os << "unknown]"; break;
+		}
+		return os;
+	}
 
     void Substitution::print( bool _withOrigins, bool _withSideConditions, ostream& _out, const string& _init ) const
     {
-        _out << _init << toString();
+        _out << _init << *this;
         if( _withOrigins )
         {
             _out << " from {";
@@ -200,7 +192,7 @@ namespace vs
             {
                 if( oCond != originalConditions().begin() )
                     _out << ", ";
-                _out << (**oCond).constraint().toString( 0, true, true );
+                _out << (**oCond).constraint();
             }
             _out << "}";
         }
@@ -211,7 +203,7 @@ namespace vs
             {
                 if( sCons != sideCondition().begin() )
                     _out << " and ";
-                _out << sCons->toString( 0, true, true );
+                _out << sCons;
             }
         }
         _out << endl;

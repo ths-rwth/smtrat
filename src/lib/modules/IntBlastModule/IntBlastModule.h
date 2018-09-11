@@ -216,7 +216,7 @@ namespace smtrat
 
         friend std::ostream& operator<<( std::ostream& _out, const BlastedPoly& _poly ) {
             if(_poly.isConstant()) {
-                return (_out << carl::toString(_poly.constant(), false) << " (const)");
+                return (_out << _poly.constant() << " (const)");
             } else {
                 return (_out << _poly.term());
             }

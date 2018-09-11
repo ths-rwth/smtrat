@@ -151,12 +151,12 @@ namespace smtrat
                     for( const auto& lem : mLRA.lemmas() )
                     {
                         #ifdef ICP_MODULE_DEBUG_2
-                        std::cout << "Create lemma for: " << lem.mLemma.toString(false,0,"",true,true,true ) << std::endl;
+                        std::cout << "Create lemma for: " << lem.mLemma << std::endl;
                         #endif
                         FormulaT lemma = getReceivedFormulas( lem.mLemma );
                         addLemma(lemma, lem.mLemmaType);
                         #ifdef ICP_MODULE_DEBUG_2
-                        std::cout << "Passed lemma: " << lemma.toString(false,0,"",true,true,true ) << std::endl;
+                        std::cout << "Passed lemma: " << lemma << std::endl;
                         #endif
                     }
                     mLRA.clearLemmas();
@@ -3088,7 +3088,7 @@ namespace smtrat
 
         std::cout << std::endl;
         std::cout << "*********************** ValidationFormula *********************" << std::endl;
-        std::cout << mValidationFormula->toString() << std::endl;
+        std::cout << mValidationFormula << std::endl;
         std::cout << "***************************************************************" << std::endl;
 
         std::cout << "************************* Substitution ************************" << std::endl;

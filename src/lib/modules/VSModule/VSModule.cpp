@@ -664,7 +664,7 @@ namespace smtrat
                                     {
                                         #ifdef VS_DEBUG
                                         cout << "*** Eliminate " << currentState->index() << " in ";
-                                        cout << currentCondition->constraint().toString( 0, true, true );
+                                        cout << currentCondition->constraint();
                                         cout << " creates:" << endl;
                                         #endif
                                         eliminate( currentState, currentState->index(), currentCondition );
@@ -1332,7 +1332,7 @@ namespace smtrat
                                             newTestCandidatesGenerated = true;
                                             #ifdef VS_DEBUG
                                             cout << "*** Eliminate " << _currentState->index() << " in ";
-                                            cout << (**cond).constraint().toString( 0, true, true );
+                                            cout << (**cond).constraint();
                                             cout << " creates:" << endl;
                                             #endif
                                             eliminate( _currentState, _currentState->index(), *cond );
@@ -2011,12 +2011,11 @@ namespace smtrat
                 smtrat::Module::addAssumptionToCheck( constraints, _assumption, _description );
             else
             {
-                std::string assumption = "(assert (and";
+				std::cout << "(assert (and";
                 for( auto constraint = constraints.begin(); constraint != constraints.end(); ++constraint )
-                    assumption += " " + constraint->toString( 1, false, true );
-                assumption += " " + _description;
-                assumption += "))";
-                std::cout << assumption << std::endl;
+                    std::cout << " " << *constraint;
+                std::cout << " " << _description;
+                std::cout << "))" << std::endl;
             }
         }
     }
@@ -2043,7 +2042,7 @@ namespace smtrat
         for( auto cond = mFormulaConditionMap.begin(); cond != mFormulaConditionMap.end(); ++cond )
         {
             _out << _init << "    ";
-            _out << cond->first.toString( false, 0, "", true, true, true );
+            _out << cond->first;
             _out << " <-> ";
             cond->second->print( _out );
             _out << endl;
@@ -2069,7 +2068,7 @@ namespace smtrat
             const State* currentState = mRanking.begin()->second;
             while( !(*currentState).isRoot() )
             {
-                _out << _init << "           " << (*currentState).substitution().toString( true ) << endl;
+                _out << _init << "           " << (*currentState).substitution() << endl;
                 currentState = (*currentState).pFather();
             }
         }
