@@ -80,10 +80,10 @@ public:
                                     for( const auto& obj : this->solver->objectives() ) {
                                         smtrat::ModelValue mv = this->solver->optimum(obj.first);
                                         if( mv.isMinusInfinity() || mv.isPlusInfinity() ) {
-                                            regular() << " (" << obj.first.toString( false, true ) << " " << carl::toString( mv.asInfinity(), false ) << ")" << std::endl;
+                                            regular() << " (" << obj.first << " " << mv.asInfinity() << ")" << std::endl;
                                         } else {
                                             assert( mv.isRational() );
-                                            regular() << " (" << obj.first.toString( false, true ) << " " << carl::toString( mv.asRational(), false ) << ")" << std::endl;
+                                            regular() << " (" << obj.first << " " << mv.asRational() << ")" << std::endl;
                                         }
                                     }
                                     regular() << ")" << std::endl;
