@@ -165,15 +165,15 @@ namespace vs
 	ostream& operator<<(ostream& os, const Substitution& s) {
 		os << "[" << s.variable() << " -> ";
 		switch (s.type()) {
-			case NORMAL:
+			case Substitution::NORMAL:
 				os << s.term() << "]"; break;
-			case PLUS_EPSILON:
+			case Substitution::PLUS_EPSILON:
 				os << s.term() << " + epsilon]"; break;
-			case MINUS_INFINITY:
+			case Substitution::MINUS_INFINITY:
 				os << "-infinity]"; break;
-			case PLUS_INFINITY:
+			case Substitution::PLUS_INFINITY:
 				os << "+infinity]"; break;
-			case INVALID:
+			case Substitution::INVALID:
 				os << "invalid]"; break;
 			default:
 				assert(false);
@@ -203,7 +203,7 @@ namespace vs
             {
                 if( sCons != sideCondition().begin() )
                     _out << " and ";
-                _out << sCons;
+                _out << *sCons;
             }
         }
         _out << endl;

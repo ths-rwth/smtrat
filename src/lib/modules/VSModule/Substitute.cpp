@@ -526,7 +526,7 @@ namespace vs
             {
                 if( cons != (*conj).begin() )
                     cout << " and ";
-                cout << cons;
+                cout << *cons;
                 cons++;
             }
             cout << ")" << endl;
