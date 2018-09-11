@@ -17,6 +17,8 @@
 
 #include <boost/range/adaptor/reversed.hpp>
 
+#include <carl/io/SMTLIBStream.h>
+
 #include "Manager.h"
 #include "Module.h"
 
@@ -118,7 +120,7 @@ namespace smtrat
         #ifdef DEBUG_MODULE_CALLS_IN_SMTLIB
         std::cout << "(assert (and";
         for( auto& subformula : *mpReceivedFormula )
-            std::cout << " " << subformula.formula().toString( false, true );
+            std::cout << " " << subformula.formula();
         std::cout << "))\n";
         #endif
         clearLemmas();
@@ -1155,29 +1157,24 @@ namespace smtrat
         addAssumptionToCheck( assumption, _consistent, _label );
     }
 
-    void Module::addAssumptionToCheck( const ConstraintsT& _constraints, bool _consistent, const string& _label )
-    {
-        string assumption = "";
-        assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
-        carl::Variables vars;
-        for(const auto& c : _constraints)
-            for( auto var : c.variables() )
-                vars.insert( var );
-        std::stringstream os;
-        os << "(declare-fun " << _label << " () " << "Bool" << ")\n";
-        for( auto var : vars )
-            os << "(declare-fun " << var << " () " << var.type() << ")\n";
-        assumption += os.str();
-        assumption += "(assert (and";
-        for( auto constraint = _constraints.begin(); constraint != _constraints.end(); ++constraint )
-            assumption += " " + constraint->toString( 1, false, true );
-        assumption += " " + _label;
-        assumption += "))\n";
-        assumption += "(get-assertions)\n";
-        assumption += "(check-sat)\n";
-        mAssumptionToCheck.push_back( assumption );
-        mVariablesInAssumptionToCheck.insert( _label );
-    }
+	void Module::addAssumptionToCheck(const ConstraintsT& _constraints, bool _consistent, const string& _label) {
+		carl::SMTLIBStream sls;
+		sls.setInfo("status", (_consistent ? "sat" : "unsat"));
+		carl::Variables vars;
+		for(const auto& c : _constraints)
+			vars.insert(c.variables().begin(), c.variables().end());
+		sls << "(declare-fun " << _label << " () " << "Bool" << ")\n";
+		sls.declare(vars);
+		sls << "(assert (and" << std::endl;
+		for (const auto& c: _constraints) {
+			sls << '\t' << c << std::endl;
+		}
+		sls << "))" << std::endl;
+		sls.getAssertions();
+		sls.checkSat();
+		mAssumptionToCheck.push_back(sls.str());
+		mVariablesInAssumptionToCheck.insert( _label );
+	}
 
     void Module::storeAssumptionsToCheck( const Manager& 
                                           #ifdef SMTRAT_DEVOPTION_Validation
