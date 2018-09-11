@@ -369,7 +369,7 @@ namespace smtrat
     {
         //for( const auto& f : rReceivedFormula() )
         //    std::cout << "   " << f.formula() << std::endl;
-//        std::cout << ((FormulaT) rReceivedFormula()).toString( false, 1, "", true, false, true, true ) << std::endl;
+//        std::cout << ((FormulaT) rReceivedFormula()) << std::endl;
         #ifdef SMTRAT_DEVOPTION_Statistics
         mpStatistics->rNrTotalVariablesBefore() = (size_t) nVars();
         mpStatistics->rNrClauses() = (size_t) nClauses();
@@ -3903,10 +3903,6 @@ NextClause:
                     if( lem.mLemma.getType() != carl::FormulaType::TRUE )
                     {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Found a lemma: " << lem.mLemma);
-                        //#ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
-                        //cout << "Learned a theory lemma from a backend module!" << endl;
-                        //cout << lem.mLemma.toString( false, 0, "", true, true, true ) << endl;
-                        //#endif
                         #ifdef SMTRAT_DEVOPTION_Validation
                         if( validationSettings->logLemmata() )
                             addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, lem.mLemma ), false, (*backend)->moduleName() + "_lemma" );
@@ -4189,8 +4185,7 @@ NextClause:
         for( const auto& fcsPair : mFormulaCNFInfosMap )
         {
             _out << _init << "    " << fcsPair.first << std::endl;
-            _out << _init << "        Literal: ";
-            toString( _out, fcsPair.second.mLiteral );
+            _out << _init << "        Literal: " << fcsPair.second.mLiteral;
             _out << std::endl;
             _out << _init << "        Counter: " << fcsPair.second.mCounter << std::endl;
             _out << _init << "        {";
@@ -4252,8 +4247,7 @@ NextClause:
         _out << _init;
         for( int pos = 0; pos < _clause.size(); ++pos )
         {
-            _out << " ";
-            toString( _out, _clause[pos] );
+            _out << " " << _clause[pos];
             if( _withAssignment )
                 _out << "(" << (value( _clause[pos] ) == l_True ? "true" : (value( _clause[pos] ) == l_False ? "false" : "undef")) << "@" << level( var( _clause[pos] ) ) << ")";
         }
@@ -4267,8 +4261,7 @@ NextClause:
         _out << _init;
         for( int pos = 0; pos < c.size(); ++pos )
         {
-            _out << " ";
-            toString( _out, c[pos] );
+            _out << " " << c[pos];
             if( _withAssignment )
             {
                 _out << " [" << (value( c[pos] ) == l_True ? "true@" : (value( c[pos] ) == l_False ? "false@" : "undef"));
