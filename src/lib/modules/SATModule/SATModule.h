@@ -244,8 +244,10 @@ namespace smtrat
                         assert(x_und != y_und);
                         return y_und;
                     }*/
+                    auto x_lvl = module.mMCSAT.staticTheoryLevel(x);
+                    auto y_lvl = module.mMCSAT.staticTheoryLevel(y);
 
-                    return module.mMCSAT.staticTheoryLevel(x) < module.mMCSAT.staticTheoryLevel(y) || activity[x] > activity[y];
+                    return x_lvl < y_lvl || (x_lvl == y_lvl && activity[x] > activity[y]);
                 }
 
                 VarOrderMcsat( const SATModule& module ):

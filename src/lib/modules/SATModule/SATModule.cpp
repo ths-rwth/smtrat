@@ -2746,8 +2746,8 @@ namespace smtrat
 				 * - fully assigned in the theory
 				 * - unassigned in boolean
 				 */
-                // TODO propagate ALL instead ...
-                /*
+                // TODO correct?
+                // TODO mcsatmixin: rmeove caching of levels as they are incorrect...
 				if (Settings::mc_sat && next == lit_Undef) {
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for theory propagations...");
 					for (std::size_t level = 0; level < mMCSAT.level(); level++) {
@@ -2765,8 +2765,8 @@ namespace smtrat
 						}
 						if (next != lit_Undef) break;
 					}
-				}*/
-
+				}
+                /*
                 if (Settings::mc_sat && next == lit_Undef) {
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for theory propagations...");
                     for (Minisat::Var v = 0; v < nVars(); v++) {
@@ -2781,6 +2781,7 @@ namespace smtrat
                         break;
                     }
 				}
+                */
 
                 // If we do not already have a branching literal, we pick one
                 if( next == lit_Undef )
@@ -3138,7 +3139,7 @@ namespace smtrat
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Next theory variable is " << nextVar);
 		mMCSAT.pushLevel(nextVar);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state " << mMCSAT);
-        rebuildOrderHeap();
+        rebuildOrderHeap(); // TODO maybe call only once at the beginning, as heap ordering is static
 	}
     
     template<class Settings>
