@@ -2746,7 +2746,6 @@ namespace smtrat
 				 * - fully assigned in the theory
 				 * - unassigned in boolean
 				 */
-                // TODO correct?
 				if (Settings::mc_sat && next == lit_Undef) {
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for theory propagations...");
 					for (std::size_t level = 0; level < mMCSAT.level(); level++) {
