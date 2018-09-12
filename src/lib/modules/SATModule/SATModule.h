@@ -228,25 +228,8 @@ namespace smtrat
 
                 bool operator ()( Minisat::Var x, Minisat::Var y ) const
                 {
-                    // TODO make more efficient
-                    /*
-                    const auto& undecided = module.mMCSAT.undecidedVariables();
-                    bool x_und = std::find(undecided.begin(), undecided.end(), x) != undecided.end();
-                    bool y_und = std::find(undecided.begin(), undecided.end(), y) != undecided.end();
-                    
-                    if (x_und && y_und) {
-                        return activity[x] > activity[y];
-                    } else if (!x_und && !y_und) {
-                        std::size_t x_lvl = module.mMCSAT.theoryLevel(x);
-                        std::size_t y_lvl = module.mMCSAT.theoryLevel(y);
-                        return (x_lvl < y_lvl) || (x_lvl == y_lvl && activity[x] > activity[y]);
-                    } else {
-                        assert(x_und != y_und);
-                        return y_und;
-                    }*/
                     auto x_lvl = module.mMCSAT.staticTheoryLevel(x);
                     auto y_lvl = module.mMCSAT.staticTheoryLevel(y);
-
                     return x_lvl < y_lvl || (x_lvl == y_lvl && activity[x] > activity[y]);
                 }
 
@@ -283,10 +266,6 @@ namespace smtrat
 
                 bool operator ()( Minisat::Var x) const
                 {
-                    //const auto& undecided = module.mMCSAT.undecidedVariables();
-                    //bool isUndecided = std::find(undecided.begin(), undecided.end(), x) != undecided.end();
-                    //return !isUndecided;
-
                     return module.mMCSAT.staticTheoryLevel(x) <= module.mMCSAT.level() + 1;
                 }
 

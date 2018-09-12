@@ -2747,7 +2747,6 @@ namespace smtrat
 				 * - unassigned in boolean
 				 */
                 // TODO correct?
-                // TODO mcsatmixin: rmeove caching of levels as they are incorrect...
 				if (Settings::mc_sat && next == lit_Undef) {
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for theory propagations...");
 					for (std::size_t level = 0; level < mMCSAT.level(); level++) {
@@ -3070,7 +3069,6 @@ namespace smtrat
     template<class Settings>
     Lit SATModule<Settings>::pickBranchLit()
     {
-        order_heap.print();//TODO
         Var next = var_Undef;
         // Random decision:
         //        if( drand( random_seed ) < random_var_freq &&!order_heap.empty() )
@@ -3110,18 +3108,16 @@ namespace smtrat
                     else
                         next = order_heap.removeMin();
 					SMTRAT_LOG_TRACE("smtrat.sat", "Current " << next);
-                    std::cout << "Current " <<  next << "("<< bool_value(next) << ") " << mMCSAT.theoryLevel(next) << std::endl;
                 }
                 // if variable is cannot be decided yet, fail...
-                if (next != var_Undef && !is_var_decidable(next)) { // TODO wird das hier wirklich aufgerufen? was hat es mit bestBranchLit auf sich??
-                    std::cout << "not decidable: " <<  next << std::endl;
+                if (next != var_Undef && !is_var_decidable(next)) {
                     SMTRAT_LOG_TRACE("smtrat.sat", "Variable not decidable yet.");
                     order_heap.insert(next);
                     next = var_Undef;
                 }
             }
             else
-                return bestBranchLit();
+                return bestBranchLit(); // TODO does this also need to be adapted?
         }
 		SMTRAT_LOG_DEBUG("smtrat.sat", "Got " << next);
         return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );

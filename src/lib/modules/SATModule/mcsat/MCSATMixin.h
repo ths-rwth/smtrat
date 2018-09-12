@@ -58,8 +58,6 @@ private:
 	 */
 	using TheoryStackT = std::vector<TheoryLevel>;
 	TheoryStackT mTheoryStack;
-	/// The level for the next theory variable to be decided
-	std::size_t mCurrentLevel = 0;
 
 	/// Variables that are not univariate in any variable yet.
 	std::vector<Minisat::Var> mUndecidedVariables;
@@ -70,9 +68,7 @@ private:
 	// ***** private helper methods
 	
 	/// Updates lookup for the current level
-	void updateCurrentLevel(carl::Variable var);
-	/// Remove lookups of the last level
-	void removeLastLevel();
+	void updateCurrentLevel();
 public:
 	
 	template<typename BaseModule>
@@ -98,7 +94,7 @@ public:
 	{}
 	
 	std::size_t level() const {
-		return mCurrentLevel;
+		return mTheoryStack.size() - 1;
 	}
 	const Model& model() const {
 		return mBackend.getModel();
@@ -113,10 +109,10 @@ public:
 	}
 	/// Returns the current theory level
 	const TheoryLevel& current() const {
-		return mTheoryStack[level()];
+		return mTheoryStack.back();
 	}
 	TheoryLevel& current() {
-		return mTheoryStack[level()];
+		return mTheoryStack.back();
 	}
 	/// Retrieve the current theory variable
 	carl::Variable currentVariable() const {
@@ -376,26 +372,29 @@ public:
 		return true;
 	}
 
-	std::size_t staticTheoryLevel(const Minisat::Var& var) const { // TODO remove later
+	std::size_t staticTheoryLevel(const Minisat::Var& var) const { // TODO cache?
 		if (!mGetter.isTheoryAbstraction(var)) {
 			return 0;
 		}
 
 		auto reabstraction = mGetter.reabstractVariable(var);
-		if (reabstraction.variables().empty()) {
+		carl::Variables vars;
+		reabstraction.arithmeticVars(vars);
+		if (vars.empty()) {
 			return 0;
 		}
 
-		if (mBackend.variableOrder().empty()) { // variableOrder has not been initialized yet... TODO is heap updated ?!??
+		if (mBackend.variableOrder().empty()) { // variableOrder has not been initialized yet...
 			return 0;
 		}
 
 		for (int i = mBackend.variableOrder().size() - 1; i >= 0; i--) {
-			if (reabstraction.variables().find(mBackend.variableOrder()[i]) != reabstraction.variables().end()) {
+			if (vars.find(mBackend.variableOrder()[i]) != vars.end()) {
 				return i+1;
 			}
 		}
-		// in case that its not an arithmetic constraint... // TODO handle more explicitly
+
+		assert(false);
 		return 0;
 	}
 	
