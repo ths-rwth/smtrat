@@ -209,13 +209,13 @@ namespace smtrat
                 const Minisat::vec<double>& activity;
 
                 /// [Minisat related code]
-                bool operator ()( Minisat::Var x, Minisat::Var y ) const
+                bool operator ()( Minisat::Var x, Minisat::Var y )
                 {
                     return activity[x] > activity[y];
                 }
 
                 /// [Minisat related code]
-                VarOrderActivity( const SATModule& module ):
+                VarOrderActivity( SATModule& module ):
                     activity( module.activity )
                 {}
             };
@@ -224,16 +224,16 @@ namespace smtrat
             struct VarOrderMcsat
             {
                 const Minisat::vec<double>& activity;
-                const SATModule& module;
+                SATModule& module;
 
-                bool operator ()( Minisat::Var x, Minisat::Var y ) const
+                bool operator ()( Minisat::Var x, Minisat::Var y )
                 {
-                    auto x_lvl = module.mMCSAT.staticTheoryLevel(x);
-                    auto y_lvl = module.mMCSAT.staticTheoryLevel(y);
+                    auto x_lvl = module.mMCSAT.maxTheoryLevel(x);
+                    auto y_lvl = module.mMCSAT.maxTheoryLevel(y);
                     return x_lvl < y_lvl || (x_lvl == y_lvl && activity[x] > activity[y]);
                 }
 
-                VarOrderMcsat( const SATModule& module ):
+                VarOrderMcsat( SATModule& module ):
                     activity( module.activity ),
                     module( module )
                 {}
@@ -250,26 +250,26 @@ namespace smtrat
 
             struct VarDecidabilityCondDefault
             {
-                bool operator ()( Minisat::Var x) const
+                bool operator ()( Minisat::Var x)
                 {
                     return true;
                 }
 
-                VarDecidabilityCondDefault( const SATModule& module )
+                VarDecidabilityCondDefault( SATModule& module )
                 {}
             };
             friend VarDecidabilityCondDefault;
 
             struct VarDecidabilityCondMcsat
             {
-                const SATModule& module;
+                SATModule& module;
 
-                bool operator ()( Minisat::Var x) const
+                bool operator ()( Minisat::Var x)
                 {
-                    return module.mMCSAT.staticTheoryLevel(x) <= module.mMCSAT.level() + 1;
+                    return module.mMCSAT.maxTheoryLevel(x) <= module.mMCSAT.level() + 1;
                 }
 
-                VarDecidabilityCondMcsat( const SATModule& module ) :
+                VarDecidabilityCondMcsat( SATModule& module ) :
                     module( module )
                 {}
             };
@@ -908,7 +908,7 @@ namespace smtrat
              * @param _tseitinShadowed A flag, which is true, if the variable to create is a sub-formula of a formula represented by a Tseitin variable.
              * @return The created Minisat variable.
              */
-            Minisat::Var newVar( bool polarity = true, bool dvar = true, double _activity = 0 );
+            Minisat::Var newVar( bool polarity = true, bool dvar = true, double _activity = 0, bool insertIntoHeap = true );
 
             // Solving:
             
@@ -954,14 +954,14 @@ namespace smtrat
              * @param v The variable to change the eligibility for selection in the decision heuristic.
              * @param b true, if the variable should be eligible for selection in the decision heuristic.
              */
-            inline void setDecisionVar( Minisat::Var v, bool b )
+            inline void setDecisionVar( Minisat::Var v, bool b, bool insertIntoHeap = true )
             {
                 if( b &&!decision[v] )
                     dec_vars++;
                 else if( !b && decision[v] )
                     dec_vars--;
                 decision[v] = b;
-                insertVarOrder( v );
+                if (insertIntoHeap) insertVarOrder( v );
             }
 
             // Read state:

@@ -124,6 +124,10 @@ void MCSATMixin<Settings>::popLevel() {
 
 template<typename Settings>
 std::size_t MCSATMixin<Settings>::addVariable(Minisat::Var variable) {
+	while (mMaxTheoryLevel.size() <= variable) {
+		mMaxTheoryLevel.push_back(std::numeric_limits<std::size_t>::max());
+	}
+
 	std::size_t level = theoryLevel(variable);
 	if (level == std::numeric_limits<std::size_t>::max()) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << variable << " to undecided");

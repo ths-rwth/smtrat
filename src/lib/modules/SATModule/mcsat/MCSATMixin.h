@@ -64,6 +64,8 @@ private:
 	
 	MCSATBackend<Settings> mBackend;
 
+	std::vector<std::size_t> mMaxTheoryLevel;
+
 private:
 	// ***** private helper methods
 	
@@ -372,30 +374,39 @@ public:
 		return true;
 	}
 
-	std::size_t staticTheoryLevel(const Minisat::Var& var) const { // TODO cache?
-		if (!mGetter.isTheoryAbstraction(var)) {
+	/**
+	 * Calculates the syntactic (maximal) theory level of the given variable.
+	 */
+	std::size_t maxTheoryLevel(const Minisat::Var& var) {
+		// if variableOrder has not been initialized yet
+		if (mBackend.variableOrder().empty()) {
 			return 0;
 		}
 
-		auto reabstraction = mGetter.reabstractVariable(var);
-		carl::Variables vars;
-		reabstraction.arithmeticVars(vars);
-		if (vars.empty()) {
-			return 0;
-		}
+		assert(var < mMaxTheoryLevel.size());
 
-		if (mBackend.variableOrder().empty()) { // variableOrder has not been initialized yet...
-			return 0;
-		}
-
-		for (int i = mBackend.variableOrder().size() - 1; i >= 0; i--) {
-			if (vars.find(mBackend.variableOrder()[i]) != vars.end()) {
-				return i+1;
+		if (mMaxTheoryLevel[var] == std::numeric_limits<std::size_t>::max()) {
+			if (!mGetter.isTheoryAbstraction(var)) {
+				mMaxTheoryLevel[var] = 0; // TODO neue literale: es wird immer hier rein gelaufen, da bei heap insert noch nicht erstellt...
+			} else {
+				auto reabstraction = mGetter.reabstractVariable(var);
+				carl::Variables vars;
+				reabstraction.arithmeticVars(vars);
+				if (vars.empty()) {
+					mMaxTheoryLevel[var] = 0;
+				} else {
+					for (int i = mBackend.variableOrder().size() - 1; i >= 0; i--) {
+						if (vars.find(mBackend.variableOrder()[i]) != vars.end()) {
+							mMaxTheoryLevel[var] = i+1;
+							break;
+						}
+					}
+				}	
 			}
 		}
+		assert(mMaxTheoryLevel[var] < std::numeric_limits<std::size_t>::max());
 
-		assert(false);
-		return 0;
+		return mMaxTheoryLevel[var];
 	}
 	
 	// ***** Output
