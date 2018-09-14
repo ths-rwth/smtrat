@@ -35,6 +35,7 @@
 #include <carl/formula/parser/DIMACSImporter.h>
 #include <carl/formula/parser/OPBImporter.h>
 #include <carl/io/SMTLIBStream.h>
+#include <carl/util/TimingCollector.h>
 
 
 class Executor : public smtrat::parser::InstructionHandler {
@@ -477,6 +478,10 @@ int main( int argc, char* argv[] )
     // Export statistics.
     smtrat::CollectStatistics::exportXML();
     #endif
+	
+	#ifdef TIMING
+	std::cout << carl::TimingCollector::getInstance() << std::endl;
+	#endif
 
 
     // Delete the solver and the formula.
