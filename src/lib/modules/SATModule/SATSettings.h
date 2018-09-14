@@ -127,6 +127,10 @@ namespace smtrat
     struct SATSettingsMCSAT : SATSettings1 {
         static const bool mc_sat = true;
     };
+  struct SATSettingsMCSATOC : SATSettingsMCSAT {
+    static constexpr auto muduleName = "SATModule<MCSATOCNPP>";
+    using MCSATSettings = mcsat::MCSATSettingsOC;
+  };
 	struct SATSettingsMCSATNL : SATSettingsMCSAT {
 		using MCSATSettings = mcsat::MCSATSettingsNL;
     };

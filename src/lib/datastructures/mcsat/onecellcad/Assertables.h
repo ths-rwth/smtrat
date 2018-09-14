@@ -19,6 +19,8 @@ namespace onecellcad {
 
   template <typename PolyType>
   bool hasOnlyNonConstIrreducibles(const std::vector<PolyType>& polys) {
+    if (polys.empty()) // Corner case, COCOA crashes on empty poly-vector
+      return true;
     carl::CoCoAAdaptor<PolyType> factorizer(polys);
     for (const auto& poly : polys) {
       if (poly.isConstant())

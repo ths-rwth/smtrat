@@ -38,6 +38,7 @@
 #include "lib/Common.h" // useful short type aliases and constants
 #include "Assertables.h"
 #include "lib/datastructures/cad/projection/ProjectionOperator_utils.h"
+#include "lib/datastructures/cad/projection/ProjectionOperator_utils.h"
 
 namespace smtrat {
 namespace onecellcad {
@@ -247,17 +248,29 @@ namespace onecellcad {
     using CADCell = std::vector<mpark::variant<Sector, Section>>;
 
     inline
-    std::ostream &operator<<(ostream &os, const CADCell &c) {
-      os << "(cell";
-      for (std::size_t i = 0; i < c.size(); i++) {
-        os << " " << i << " ";
-        if (mpark::holds_alternative<Sector>(c[i])) {
-          os << mpark::get<Sector>(c[i]);
+    std::ostream &operator<<(ostream &os, const CADCell &cell) {
+      os << "(cell [";
+      for (std::size_t i = 0; i < cell.size(); i++) {
+        if (mpark::holds_alternative<Sector>(cell[i])) {
+          const auto cellSctr = mpark::get<Sector>(cell[i]);
+          // TODO
+          if (cellSctr.lowBound)
+            os << cellSctr.lowBound->boundFunction;
+          else
+            os << "-infty";
+          os << " < var_" << i << " < ";
+          if (cellSctr.highBound)
+            os << cellSctr.highBound->boundFunction;
+          else
+            os << "+infty";
         } else {
-          os << mpark::get<Section>(c[i]);
+          os << "var_" << i << " = ";
+          const auto cellSctn = mpark::get<Section>(cell[i]);
+          os << cellSctn.boundFunction;
         }
+        os << ", ";
       }
-      return os << ")";
+      return os << "])";
     }
 
     /**
@@ -1036,6 +1049,33 @@ namespace onecellcad {
         return shrinkCellWithNonRootPoint(boundCandidate, cell);
     }
 
+    bool isMainPointInsideCell(const CADCell& cell) {
+      for (std::size_t lvl = 0; lvl < cell.size(); lvl++ ) {
+        const RAN pointCmp = point[lvl];
+        const auto cellCmp = cell[lvl];
+        if (mpark::holds_alternative<Sector>(cellCmp)) {
+          // must be low <  point_k < high
+          const auto cellSctr = mpark::get<Sector>(cellCmp);
+          if (cellSctr.lowBound) {
+            if (!(cellSctr.lowBound->isolatedRoot < pointCmp))
+              return false;
+          }
+          if (cellSctr.highBound) {
+            if (!(cellSctr.highBound->isolatedRoot > pointCmp))
+              return false;
+          }
+        } else {
+          const auto cellSctn = mpark::get<Section>(cellCmp);
+          // must be point_k == root
+          SMTRAT_LOG_DEBUG("smtrat.cad", "##Section: " << cellSctn << " point_" << lvl << ": " << pointCmp);
+          if (!(cellSctn.isolatedRoot == pointCmp))
+            return false;
+        }
+      }
+      return true;
+    }
+
+
     std::experimental::optional<CADCell> createCADCellAroundPoint(
       const std::vector<Poly> &polys) {
       // precondition:
@@ -1059,6 +1099,7 @@ namespace onecellcad {
       }
 
       SMTRAT_LOG_DEBUG("smtrat.cad", "Finished Cell: " << cell);
+      assert(isMainPointInsideCell(cell));
       return cell;
     }
 
@@ -1084,6 +1125,7 @@ namespace onecellcad {
       }
 
       SMTRAT_LOG_DEBUG("smtrat.cad", "Finished Cell: " << cell);
+      assert(isMainPointInsideCell(cell));
       return cell;
     }
 

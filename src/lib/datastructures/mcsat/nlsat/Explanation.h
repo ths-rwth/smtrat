@@ -31,8 +31,6 @@ struct Explanation {
    * These atoms mention only variables x1, x2.. x6 (some atom definitely mentions x6) and possibly
    * x7..x10 if they are irrelevant and "vanish" under the assignment in @p data,
    * e.g. x1*x7+x6=0 (for x1 := 0) or x6*(x7^2+1)>0 (equiv to x6>0, since x7^2+1 > 0)
-   * @param implication A single atom like in @p reason, or False.
-   * @return
    */
 	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
 #ifdef SMTRAT_DEVOPTION_Statistics
