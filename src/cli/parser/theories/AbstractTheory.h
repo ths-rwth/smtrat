@@ -73,7 +73,7 @@ struct AbstractTheory {
 		FormulasT subformulas;
 		for (std::size_t i = 0; i < values.size() - 1; i++) {
 			for (std::size_t j = i + 1; j < values.size(); j++) {
-				subformulas.push_back(neqBuilder(values[i], values[j]));
+				subformulas.emplace_back(neqBuilder(values[i], values[j]));
 			}
 		}
 		return FormulaT(carl::FormulaType::AND, subformulas);

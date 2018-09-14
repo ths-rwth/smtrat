@@ -4,7 +4,6 @@
 
 #include <carl/util/mpl_utils.h>
 
-#include <boost/mpl/for_each.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/spirit/include/support_unused.hpp>
 
@@ -95,10 +94,10 @@ namespace types {
      * Types of the theory of equalities and uninterpreted functions.
      */
 	struct UninterpretedTheory {
-		typedef mpl::vector<carl::UVariable, carl::UFInstance> ConstTypes;
+		typedef mpl::vector<carl::UTerm> ConstTypes;
 		typedef mpl::vector<carl::UVariable> VariableTypes;
-		typedef mpl::vector<carl::UVariable, carl::UFInstance> ExpressionTypes;
-		typedef mpl::vector<carl::UVariable, carl::UFInstance> TermTypes;
+		typedef mpl::vector<carl::UTerm> ExpressionTypes;
+		typedef mpl::vector<carl::UTerm, carl::UVariable> TermTypes;
 		typedef carl::mpl_variant_of<TermTypes>::type TermType;
 	};
 #endif
@@ -177,5 +176,25 @@ namespace types {
 	typedef carl::mpl_variant_of<AttributeTypes>::type AttributeValue;
 	
 }
+
+enum QuantifierType { EXISTS, FORALL };
+inline std::ostream& operator<<(std::ostream& os, QuantifierType qt) {
+	switch (qt) {
+		case QuantifierType::EXISTS: os << "exists"; break;
+		case QuantifierType::FORALL: os << "forall"; break;
+	}
+	return os;
+}
+
+using QEQuery = std::vector<std::pair<QuantifierType,std::vector<types::VariableType>>>;
+inline std::ostream& operator<<(std::ostream& os, const QEQuery& q) {
+	for (const auto& qlvl: q) {
+		os << "(" << qlvl.first;
+		for (const auto& v: qlvl.second) os << " " << v;
+		os << ")";
+	}
+	return os;
+}
+
 }
 }

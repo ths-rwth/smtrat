@@ -9,6 +9,8 @@
 #pragma once
 
 #include "../../solver/ModuleSettings.h"
+
+#include "mcsat/MCSATSettings.h"
     
 namespace smtrat
 {
@@ -98,6 +100,18 @@ namespace smtrat
 		
 		static constexpr bool validate_clauses = false;
 #endif
+
+		static constexpr bool check_for_duplicate_clauses = false;
+
+        static constexpr bool mcsat_resolve_clause_chains = false;
+
+        static constexpr bool mcsat_lazy_explanations = true;
+
+        static constexpr bool mcsat_learn_lazy_explanations = false;
+
+        static constexpr unsigned int mcsat_num_insert_assignments = 2;
+		
+		using MCSATSettings = mcsat::MCSATSettingsFMVSNL;
     };
 
     struct SATSettings3 : SATSettings1
@@ -110,8 +124,19 @@ namespace smtrat
 		static const bool stop_search_after_first_unknown = true;
 	};
     
-    struct SATSettingsMCSAT : SATSettings1
-    {
+    struct SATSettingsMCSAT : SATSettings1 {
         static const bool mc_sat = true;
+    };
+	struct SATSettingsMCSATNL : SATSettingsMCSAT {
+		using MCSATSettings = mcsat::MCSATSettingsNL;
+    };
+	struct SATSettingsMCSATFMNL : SATSettingsMCSAT {
+		using MCSATSettings = mcsat::MCSATSettingsFMNL;
+    };
+	struct SATSettingsMCSATVSNL : SATSettingsMCSAT {
+		using MCSATSettings = mcsat::MCSATSettingsVSNL;
+    };
+	struct SATSettingsMCSATFMVSNL : SATSettingsMCSAT {
+		using MCSATSettings = mcsat::MCSATSettingsFMVSNL;
     };
 }

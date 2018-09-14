@@ -1,11 +1,22 @@
 #pragma once
 
 #include "VariantMap.h"
-#include "Attribute.h"
-#include "Common.h"
+#include "theories/Attribute.h"
+#include "../../lib/solver/ResourceLimitation.h"
+
+#include <iostream>
 
 namespace smtrat {
 namespace parser {
+
+enum class OptimizationType { Maximize, Minimize };
+inline std::ostream& operator<<(std::ostream& os, OptimizationType ot) {
+	switch (ot) {
+		case OptimizationType::Maximize: return os << "maximize";
+		case OptimizationType::Minimize: return os << "minimize";
+	}
+	return os << "???";
+}
 
 class OutputWrapper {
 	std::ostream out;
@@ -115,6 +126,7 @@ public:
 		return OutputWrapper(mRegular, "(info \"", "\")\n");
 	}
 	virtual void add(const FormulaT& f) = 0;
+	virtual void annotateName(const FormulaT& f, const std::string& name) = 0;
 	virtual void check() = 0;
 	virtual void declareFun(const carl::Variable&) = 0;
 	virtual void declareSort(const std::string&, const unsigned&) = 0;
@@ -122,13 +134,16 @@ public:
 	virtual void echo(const std::string& s) {
 		regular() << s << std::endl;
 	}
+	virtual void eliminateQuantifiers(const QEQuery& q) = 0;
 	virtual void exit() = 0;
+	virtual void getAllModels() = 0;
 	virtual void getAssertions() = 0;
 	virtual void getAssignment() = 0;
 	void getInfo(const std::string& key) {
 		if (this->infos.count(key) > 0) regular() << "(:" << key << " " << this->infos[key] << ")" << std::endl;
 		else error() << "no info set for :" << key;
 	}
+	virtual void getModel() = 0;
 	void getOption(const std::string& key) {
 		if (this->options.count(key) > 0) regular() << "(:" << key << " " << this->options[key] << ")" << std::endl;
 		else error() << "no option set for :" << key;

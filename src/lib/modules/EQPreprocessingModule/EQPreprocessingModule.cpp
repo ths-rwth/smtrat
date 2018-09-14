@@ -309,8 +309,9 @@ namespace smtrat
 					std::vector<carl::SortValue> args;
 					args.reserve(instance.args().size());
 					for(std::size_t i = 0, s = instance.args().size(); i < s; ++i) {
-						const UVariable& var = instance.args()[i];
-						auto model_iter = mModel.find(var());
+						assert(instance.args()[i].isUVariable());
+						const UVariable& var = instance.args()[i].asUVariable();
+						auto model_iter = mModel.find(var.variable());
 						
 						if(model_iter == mModel.end()) {
 							// there is no model value for the variable, because it does not occur outside of function instances.
@@ -322,7 +323,7 @@ namespace smtrat
 						}
 					}
 
-					auto modelItr = mModel.find(helper());
+					auto modelItr = mModel.find(helper.variable());
 					assert(modelItr != mModel.end());
 					ufModel.extend(std::move(args), modelItr->second.asSortValue());
 					mModel.erase(modelItr);

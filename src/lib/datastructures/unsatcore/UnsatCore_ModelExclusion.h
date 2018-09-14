@@ -8,6 +8,14 @@
 namespace smtrat {
 namespace unsatcore {
 
+/**
+ * Implements an easy strategy to obtain an unsatisfiable core.
+ * Essentially it computes a cover that rejects all possible models if we allow the removal of clauses.
+ *
+ * - Allow to disable every formula f_i by encoding (y_i <=> f_i)
+ * - Find a satisfying assignment (which will set some f_i to false)
+ * - 
+ */
 template<typename Solver>
 class UnsatCore<Solver, UnsatCoreStrategy::ModelExclusion> {
 private:

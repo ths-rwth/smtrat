@@ -34,6 +34,7 @@
 #include <carl/formula/parser/DIMACSExporter.h>
 #include <carl/formula/parser/DIMACSImporter.h>
 #include <carl/formula/parser/OPBImporter.h>
+#include <carl/io/SMTLIBStream.h>
 
 
 class Executor : public smtrat::parser::InstructionHandler {
@@ -51,6 +52,10 @@ public:
 		if (exportDIMACS) { dimacs(f); return; }
 		this->solver->add(f);
 		SMTRAT_LOG_DEBUG("smtrat", "Asserting " << f);
+	}
+	void annotateName(const smtrat::FormulaT& f, const std::string& name) {
+		SMTRAT_LOG_DEBUG("smtrat", "Naming " << name << ": " << f);
+		this->solver->namedFormulas().emplace(name, f);
 	}
 	void check() {
 		smtrat::resource::Limiter::getInstance().resetTimeout();
@@ -75,10 +80,10 @@ public:
                                     for( const auto& obj : this->solver->objectives() ) {
                                         smtrat::ModelValue mv = this->solver->optimum(obj.first);
                                         if( mv.isMinusInfinity() || mv.isPlusInfinity() ) {
-                                            regular() << " (" << obj.first.toString( false, true ) << " " << carl::toString( mv.asInfinity(), false ) << ")" << std::endl;
+                                            regular() << " (" << obj.first << " " << mv.asInfinity() << ")" << std::endl;
                                         } else {
                                             assert( mv.isRational() );
-                                            regular() << " (" << obj.first.toString( false, true ) << " " << carl::toString( mv.asRational(), false ) << ")" << std::endl;
+                                            regular() << " (" << obj.first << " " << mv.asRational() << ")" << std::endl;
                                         }
                                     }
                                     regular() << ")" << std::endl;
@@ -126,10 +131,22 @@ public:
 	void defineSort(const std::string&, const std::vector<std::string>&, const carl::Sort&) {
 		//error() << "(define-sort <name> <sort>) is not implemented.";
 	}
+	void eliminateQuantifiers(const smtrat::parser::QEQuery& q) {
+		regular() << "Eliminating " << q << std::endl;
+	}
 	void exit() {
 	}
 	void getAssertions() {
 		this->solver->printAssertions(std::cout);
+	}
+	void getAllModels() {
+		if (this->lastAnswer == smtrat::Answer::SAT) {
+			for (const auto& m: this->solver->allModels()) {
+				regular() << carl::asSMTLIB(m) << std::endl;
+			}
+		} else {
+			error() << "Can only be called after a call that returned sat.";
+		}
 	}
 	void getAssignment() {
             if (this->lastAnswer == smtrat::Answer::SAT) {
@@ -139,6 +156,13 @@ public:
 	void getAllAssignments() {
 		if (this->lastAnswer == smtrat::Answer::SAT) {
 			this->solver->printAllAssignments(std::cout);
+		}
+	}
+	void getModel() {
+		if (this->lastAnswer == smtrat::Answer::SAT) {
+			regular() << carl::asSMTLIB(this->solver->model()) << std::endl;
+		} else {
+			error() << "Can only be called after a call that returned sat.";
 		}
 	}
 	void getProof() {
@@ -183,9 +207,10 @@ public:
 	}
 };
 
-bool parseInput(const std::string& pathToInputFile, Executor* e, bool queueInstructions) {
+bool parseInput(const std::string& pathToInputFile, Executor* e, bool& queueInstructions) {
 	if (pathToInputFile == "-") {
-		SMTRAT_LOG_DEBUG("smtrat", "Using stdin");
+		queueInstructions = false;
+		SMTRAT_LOG_DEBUG("smtrat", "Starting to parse from stdin");
 		return smtrat::parseSMT2File(e, queueInstructions, std::cin);
 	}
 
@@ -194,6 +219,7 @@ bool parseInput(const std::string& pathToInputFile, Executor* e, bool queueInstr
 		std::cerr << "Could not open file: " << pathToInputFile << std::endl;
 		exit(SMTRAT_EXIT_NOSUCHFILE);
 	}
+	SMTRAT_LOG_DEBUG("smtrat", "Starting to parse " << pathToInputFile);
 	return smtrat::parseSMT2File(e, queueInstructions, infile);
 }
 
@@ -215,16 +241,14 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 	setrlimit(RLIMIT_STACK, &rl);
 #endif
 
-	constexpr bool queueInstructions = false;
 	Executor* e = new Executor(solver);
 	if (settingsManager.exportDIMACS()) e->exportDIMACS = true;
-	{
-		SMTRAT_LOG_DEBUG("smtrat", "Starting to parse " << pathToInputFile);
-		if (!parseInput(pathToInputFile, e, queueInstructions)) {
-            std::cerr << "Parse error" << std::endl;
-            delete e;
-            exit(SMTRAT_EXIT_PARSERFAILURE);
-        }
+	
+	bool queueInstructions = true;
+	if (!parseInput(pathToInputFile, e, queueInstructions)) {
+		std::cerr << "Parse error" << std::endl;
+		delete e;
+		exit(SMTRAT_EXIT_PARSERFAILURE);
 	}
 	if (queueInstructions) {
 		if (e->hasInstructions()) {
@@ -253,7 +277,7 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
                     smtrat::ModelValue mv = mps.evaluate(model);
                     formula = smtrat::FormulaT(carl::FormulaType::AND, formula, smtrat::FormulaT(obj.first - mv.asRational(), carl::Relation::EQ));
                 }
-                sstream << formula.toString( false, 1, "", false, false, true, true ) << std::endl;
+                sstream << formula << std::endl;
                 for (const auto& obj: solver->objectives()) {
                     if (obj.second.second) {
                         sstream << "(minimize " << obj.first << ")" << std::endl;
@@ -398,12 +422,14 @@ int main( int argc, char* argv[] )
 		SMTRAT_LOG_INFO("smtrat", "Parsing " << pathToInputFile << " using OPB");
 		auto input = opb.parse();
 		if (!input) {
-			SMTRAT_LOG_INFO("smtrat", "Parsing " << pathToInputFile << " failed.");
+			SMTRAT_LOG_ERROR("smtrat", "Parsing " << pathToInputFile << " failed.");
 			exitCode = SMTRAT_EXIT_UNKNOWN;
 		} else {
 			SMTRAT_LOG_INFO("smtrat", "Parsed " << input->first);
 			SMTRAT_LOG_INFO("smtrat", "with objective " << input->second);
-			solver->addObjective(input->second, smtrat::parser::OptimizationType::Minimize);
+			if (!input->second.isConstant()) {
+				solver->addObjective(input->second, true);
+			}
 			solver->add(input->first);
 			switch (solver->check()) {
 				case smtrat::Answer::SAT: {

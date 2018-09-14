@@ -29,7 +29,7 @@ BOOST_AUTO_TEST_CASE(Test_NLSATPaper_Ex3)
 	// Explanation for second conflict
 	FormulaT ex2(carl::FormulaType::OR, { c1.negated(), c5 });
 	
-	mcsat::MCSATBackend<mcsat::BackendSettings1> nlsat;
+	mcsat::MCSATBackend<mcsat::MCSATSettingsNL> nlsat;
 	
 	// Decide x+1<=0
 	SMTRAT_LOG_INFO("smtrat.test.nlsat", "Decide " << c1);

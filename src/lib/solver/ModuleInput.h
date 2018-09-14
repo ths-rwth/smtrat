@@ -208,7 +208,7 @@ namespace smtrat
          */
         bool isRealConstraintConjunction() const
         {
-            return isConstraintConjunction() && !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= mProperties);
+            return isConstraintConjunction() && !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= mProperties) && !(carl::PROP_CONTAINS_PSEUDOBOOLEAN <= mProperties);
         }
 
         /**
@@ -292,7 +292,8 @@ namespace smtrat
             return !(carl::PROP_CONTAINS_BITVECTOR <= mProperties) 
                 && !(carl::PROP_CONTAINS_UNINTERPRETED_EQUATIONS <= mProperties)
                 && !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= mProperties)
-                && !(carl::PROP_CONTAINS_REAL_VALUED_VARS <= mProperties);
+                && !(carl::PROP_CONTAINS_REAL_VALUED_VARS <= mProperties)
+                && !(carl::PROP_CONTAINS_PSEUDOBOOLEAN <= properties());
         }
         
         /**
@@ -441,11 +442,12 @@ namespace smtrat
          */
         std::string toString() const
         {
-            std::string result = "(and";
-            for( auto& fwo : *this )
-                result += " " + fwo.formula().toString();
-            result += ")";
-            return result;
+            std::stringstream ss;
+			ss << "(and";
+            for(const auto& fwo : *this )
+                ss << " " << fwo.formula();
+            ss << ")";
+            return ss.str();
         }
         
         explicit operator FormulaT() const
@@ -465,11 +467,6 @@ namespace smtrat
             }
             _formula->mOrigins->push_back( _origin );
         }
-        
-//        friend std::ostream& operator<<( std::ostream& _out, const ModuleInput& _mi )
-//        {
-//            return _out << _mi.toString()
-//        }
         
         // @todo: we want a const_iterator here, but gcc 4.8 doesn't allow us :( even though it should
         iterator erase( iterator _formula );
@@ -504,6 +501,13 @@ namespace smtrat
         
         std::pair<iterator,bool> add( const FormulaT& _formula, bool _hasSingleOrigin, const FormulaT& _origin, const std::shared_ptr<FormulasT>& _origins, bool _mightBeConjunction = true );
     };
+
+	inline std::ostream& operator<<(std::ostream& os, const ModuleInput& mi) {
+		os << "(and";
+		for (const auto& fwo : mi) os << " " << fwo.formula();
+		os << ")";
+		return os;
+	}
     
     template<typename AnnotationType>
     void annotateFormula( const FormulaT&, const std::vector<AnnotationType>& );

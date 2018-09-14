@@ -63,11 +63,15 @@ namespace smtrat
 			std::set<FormulaT> mInformationRelevantFormula;
 			/// Level of lemma generation
 			LemmaLevel mLemmaLevel;
+			/// Formulas that have been named in the SMT-LIB input.
+			std::map<std::string,FormulaT> mNamedFormulas;
             ///
             std::vector<std::pair<Poly,std::pair<carl::Variable,bool>>> mObjectives;
             ///
             std::stack<carl::Variable> mReusableRealObjectiveVars;
             std::stack<carl::Variable> mReusableIntObjectiveVars;
+			/// Number of calls to pop(), allows detection that pop() happened by modules.
+			std::size_t mNumberOfPops = 0;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all statistics for the solver this manager belongs to.
             GeneralStatistics* mpStatistics;
@@ -257,7 +261,7 @@ namespace smtrat
 			 * formulas the assignment could contain other variables or freshly introduced
 			 * variables.
 			 */
-			const std::vector<Model> allModels() const
+			const std::vector<Model>& allModels() const
 			{
 				mpPrimaryBackend->updateAllModels();
 				return mpPrimaryBackend->allModels();
@@ -438,6 +442,19 @@ namespace smtrat
 			{
 				return level <= mLemmaLevel;
 			}
+			
+			/**
+			 * Return a reference to the named formulas.
+			 */
+			auto& namedFormulas() {
+				return mNamedFormulas;
+			}
+			/**
+			 * Return a reference to the named formulas.
+			 */
+			const auto& namedFormulas() const {
+				return mNamedFormulas;
+			}
 
             
             /**
@@ -558,6 +575,10 @@ namespace smtrat
 			inline const std::set<FormulaT>& getInformationRelevantFormulas()
 			{
 				return mInformationRelevantFormula;
+			}
+			
+			std::size_t getNumberOfPops() const {
+				return mNumberOfPops;
 			}
     };
 }    // namespace smtrat

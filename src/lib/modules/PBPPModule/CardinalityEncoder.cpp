@@ -48,15 +48,12 @@ namespace smtrat {
 			// -x1 -x2 -x3 <= -4 iff x1 + x2 + x3 >= 4
 			if (allCoeffNegative && carl::abs(constant) > constraint.variables().size())
 				return FormulaT(carl::FormulaType::FALSE);
-			// -x1 - x2 - x3 <= 1 iff. x1 + x2 + x3 >= -1
-			if (allCoeffNegative && constant > 0) return FormulaT(carl::FormulaType::FALSE);
-			// x1 + x2 + x3 + x4 <= -1
-			if (allCoeffPositive && constant <= 0) return FormulaT(carl::FormulaType::FALSE);
-			// -x1 - x2 - x3 <= 0 iff. x1 + x2 + x3 >= 0
-			if (allCoeffNegative && constant == 0) return FormulaT(carl::FormulaType::TRUE);
 			// x1 + x2 + x3 <= 10
 			if (allCoeffPositive && constant >= constraint.variables().size())
 				return FormulaT(carl::FormulaType::TRUE);
+			// -x1 - x2 - x3 <= 0 iff x1 + x2 + x3 >= 0
+			if (allCoeffNegative && constant >= 0) return FormulaT(carl::FormulaType::TRUE);
+
 
 			if (allCoeffNegative) return encodeAtLeast(constraint);
 			else if (allCoeffPositive) return encodeAtMost(constraint);
@@ -70,15 +67,17 @@ namespace smtrat {
 		}
 
 		assert(false && "All cases should have been handled - a return statement is missing");
-
+		return {};
 	}
 
-	FormulaT CardinalityEncoder::encodeExactly(const ConstraintT& constraint) {
+	boost::optional<FormulaT> CardinalityEncoder::encodeExactly(const ConstraintT& constraint) {
+		// if (!encodeAsBooleanFormula(constraint)) return boost::none;
+
 		return encodeExactly(constraint.variables(), -constraint.constantPart());
 	}
 
 	FormulaT CardinalityEncoder::encodeExactly(const std::set<carl::Variable>& variables, const Rational constant) {
-		assert(variables.size() > constant && "This should have been handled before!");
+		// assert(variables.size() > constant && "This should have been handled before!");
 		assert(constant >= 0 && "This should have been handled before!");
 
 		// either a permutation contains the negation of the variable or the positive variable
@@ -108,40 +107,102 @@ namespace smtrat {
 		} while(std::next_permutation(std::begin(signs), std::end(signs)));
 
 		FormulaT resultFormula = FormulaT(carl::FormulaType::OR, resultFormulaSet);
-		SMTRAT_LOG_DEBUG("smtrat.pbc", "Encoding exactly: " <<
-				variables << " = " << constant
-				<< " as " << resultFormula);
 
 		return resultFormula;
 	}
 
-	FormulaT CardinalityEncoder::encodeAtLeast(const ConstraintT& constraint) {
-		FormulasT allOrSet;
-		for (const auto& variable: constraint.variables()) {
-			allOrSet.push_back(FormulaT(variable));
-		}
-
+	boost::optional<FormulaT> CardinalityEncoder::encodeAtLeast(const ConstraintT& constraint) {
 		FormulasT result;
 		Rational constant = constraint.constantPart();
 		assert(constant > 0);
-		for (Rational i = constant - 1; i > 0; i--) {
-			result.push_back(!encodeExactly(constraint.variables(), i));
-		}
+		if (constant <= constraint.variables().size()/2) {
+			for (Rational i = constant - 1; i > 0; i--) {
+				result.push_back(!encodeExactly(constraint.variables(), i));
+			}
 
-		return FormulaT(carl::FormulaType::AND,
-				FormulaT(carl::FormulaType::AND, result),
-				FormulaT(carl::FormulaType::OR, allOrSet));
+			FormulasT orSet;
+			for (const auto& var : constraint.variables()) {
+				orSet.push_back(FormulaT(var));
+			}
+
+			return FormulaT(carl::FormulaType::AND, 
+					FormulaT(carl::FormulaType::OR, orSet),
+					FormulaT(carl::FormulaType::AND, result));
+		} else { // constant > variables.size()/2
+			for (Rational i = constant; i <= constraint.variables().size(); i++) {
+				result.push_back(encodeExactly(constraint.variables(), i));
+			}
+
+			return FormulaT(carl::FormulaType::OR, result);
+		}		
 	}
 
-	FormulaT CardinalityEncoder::encodeAtMost(const ConstraintT& constraint) {
+	boost::optional<FormulaT> CardinalityEncoder::encodeAtMost(const ConstraintT& constraint) {
 		FormulasT result;
 
 		Rational constant = -constraint.constantPart();
-		for (unsigned i = 0 ; i <= constant; i++) {
-			result.push_back(FormulaT(encodeExactly(constraint.variables(), i)));
+		if (constant < constraint.variables().size()/2) {
+			for (unsigned i = 0 ; i <= constant; i++) {
+				result.push_back(FormulaT(encodeExactly(constraint.variables(), i)));
+			}
+
+			return FormulaT(carl::FormulaType::OR, result);
+
+		} else {
+			for (size_t i = constraint.variables().size() ; i > constant; i--) {
+				result.push_back(FormulaT(!encodeExactly(constraint.variables(), i)));
+			}
+
+			return FormulaT(carl::FormulaType::AND, result);
 		}
 
-		return FormulaT(carl::FormulaType::OR, result);
+		
+	}
+
+	bool CardinalityEncoder::canEncode(const ConstraintT& constraint) {
+		bool encodable = true;
+		bool allCoeffPositive = true;
+		bool allCoeffNegative = true;
+
+		for (const auto& it : constraint.lhs()) {
+			if (it.isConstant()) continue;
+
+			encodable = encodable && (it.coeff() == 1 || it.coeff() == -1);
+			if (it.coeff() < 0) allCoeffPositive = false;
+			if (it.coeff() > 0) allCoeffNegative = false;
+		}
+
+		encodable = encodable && allCoeffNegative != allCoeffPositive;
+
+		return encodable;
+	}
+
+	Rational factorial(Rational n);
+	Rational factorial(std::size_t);
+
+	Rational CardinalityEncoder::encodingSize(const ConstraintT& constraint) {
+
+		SMTRAT_LOG_DEBUG("smtrat.pbc", "Calculating encodingSize for Cardinality.");
+
+		std::size_t nVars = constraint.variables().size();
+		Rational constantPart = carl::abs(constraint.constantPart());
+
+		Rational binom = factorial(nVars)/(factorial(constantPart) * factorial(nVars - constantPart));
+
+		return binom;
+	}
+
+	Rational factorial(std::size_t n) {
+		return factorial(Rational(n));
+	}
+
+	Rational factorial(Rational n) {
+		Rational res = 1;
+		for (Rational i = 1; i < n; i++) {
+			res = res * i;
+		}
+
+		return res;
 	}
 }
 

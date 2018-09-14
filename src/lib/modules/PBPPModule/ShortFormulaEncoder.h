@@ -7,6 +7,12 @@ namespace smtrat {
 		public:
 			ShortFormulaEncoder() : PseudoBoolEncoder () {}
 
+			bool canEncode(const ConstraintT& constraint);
+
+			Rational encodingSize(const ConstraintT& constraint);
+
+			string name() { return "ShortFormulaEncoder"; }
+
 		protected:
 			boost::optional<FormulaT> doEncode(const ConstraintT& constraint);
 

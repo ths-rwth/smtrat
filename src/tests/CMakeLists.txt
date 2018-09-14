@@ -26,4 +26,4 @@ add_subdirectory(pseudobool)
 add_subdirectory(onecellcad)
 add_subdirectory(datastructures)
 add_subdirectory(nlsat)
-
+add_subdirectory(mcsatvs)

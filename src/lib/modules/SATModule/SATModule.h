@@ -54,7 +54,7 @@ namespace smtrat
     class SATModule:
         public Module
     {
-		friend mcsat::MCSATMixin;
+		friend mcsat::MCSATMixin<typename Settings::MCSATSettings>;
         private:
 
             /**
@@ -617,7 +617,7 @@ namespace smtrat
             /*
              * MC-SAT related members.
              */
-			mcsat::MCSATMixin mMCSAT;
+			mcsat::MCSATMixin<typename Settings::MCSATSettings> mMCSAT;
 			std::map<carl::Variable, std::vector<signed>> mFutureChangedBooleans;
 			bool mNextDecisionIsTheory;
             
@@ -625,6 +625,33 @@ namespace smtrat
             /// Stores all collected statistics during solving.
             SATModuleStatistics* mpStatistics;
             #endif
+
+            // learnt clause set for duplicate checks
+			struct UnorderedClauseLookup {
+				struct UnorderedClauseHasher {
+					std::size_t operator() (const std::vector<Minisat::Lit>& cl) const {
+						return std::accumulate(cl.begin(), cl.end(), static_cast<std::size_t>(0),
+							[](std::size_t a, Minisat::Lit b){ return a ^ static_cast<std::size_t>(b.x); }
+						);
+					}
+				};
+				/// Stores all clauses as sets to quickly check for duplicates.
+				std::unordered_set<std::vector<Minisat::Lit>, UnorderedClauseHasher> mData;
+				
+				void preprocess(std::vector<Minisat::Lit>& cl) const {
+					std::sort(cl.begin(), cl.end());
+				}
+				bool contains(const std::vector<Minisat::Lit>& cl) const {
+					return mData.find(cl) != mData.end();
+				}
+				void insert(const std::vector<Minisat::Lit>& cl) {
+					mData.insert(cl);
+				}
+				void clear() {
+					mData.clear();
+				}
+			};
+			UnorderedClauseLookup mUnorderedClauseLookup;
 
         public:
 			typedef Settings SettingsType;
@@ -913,30 +940,73 @@ namespace smtrat
 				SMTRAT_LOG_DEBUG("smtrat.sat", x << " -> " << assigns[x]);
 				return assigns[x];
 			}
-			
-			void handleTheoryConflict(const FormulasT& clause) {
-				Minisat::vec<Minisat::Lit> explanation;
-				#ifdef DEBUG_SATMODULE
-				print(std::cout, "###");
-				#endif
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict clause " << clause);
+
+            bool addClauseIfNew(const FormulasT& clause) {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Add theory conflict clause " << clause << " if new");
+
 				sat::detail::validateClause(clause, Settings::validate_clauses);
+                Minisat::vec<Minisat::Lit> explanation;
+                std::vector<Minisat::Lit> explanation_set;
 				for (const auto& c: clause) {
-					explanation.push(createLiteral(c));
+                    auto lit = createLiteral(c);
+					explanation.push(lit);
+                    explanation_set.push_back(lit);
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Created literal from " << c << " -> " << explanation.last());
 				}
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
-				addClause(explanation, Minisat::LEMMA_CLAUSE);
-				propagateTheory();
-				Minisat::CRef confl = storeLemmas();
-				if (confl != Minisat::CRef_Undef) {
-					handleConflict(confl);
-				}
+                
+				mUnorderedClauseLookup.preprocess(explanation_set);
+                if (mUnorderedClauseLookup.contains(explanation_set)) {
+                    SMTRAT_LOG_DEBUG("smtrat.sat", "Skipping duplicate clause " << explanation);
+                    return false;
+                }
+                else {
+                    SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
+                    mUnorderedClauseLookup.insert(explanation_set);
+                    addClause(explanation, Minisat::LEMMA_CLAUSE);
+                    return true;
+                }
+			}
+			
+			void handleTheoryConflict(const mcsat::Explanation& explanation) {
+                #ifdef DEBUG_SATMODULE
+                print(std::cout, "###");
+                #endif
+                SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict explanation " << explanation);
+
+                if (explanation.type() == typeid(FormulaT)) {
+                    // add conflict clause
+                    const auto& clause = boost::get<FormulaT>(explanation);
+                    bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
+                    assert(added);
+                } else {
+                    const auto& chain = boost::get<mcsat::ClauseChain>(explanation);
+                    if (Settings::mcsat_resolve_clause_chains) {
+                        FormulaT clause = chain.resolve();
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "Resolved clause chain to " << clause);
+                        bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
+                        assert(added);
+                    } else {
+                        // add propagations
+                        bool added = false;
+                        for (const auto link : chain) {
+                            added |= addClauseIfNew(link.clause().isNary() ? link.clause().subformulas() : FormulasT({link.clause()}));
+                        }
+                        assert(added);
+                    }                    
+                }
+
+                propagateTheory();
+                Minisat::CRef confl = storeLemmas();
+                if (confl != Minisat::CRef_Undef) {
+                    handleConflict(confl);
+                }
+
+                SMTRAT_LOG_DEBUG("smtrat.sat", "Handled theory conflict explanation");
 			}
             
 			inline Minisat::lbool bool_value( Minisat::Lit p ) const
             {
-				return bool_value(Minisat::var(p)) ^ Minisat::sign(p);
+				return bool_value(Minisat::var(p)) == l_Undef ? l_Undef : bool_value(Minisat::var(p)) ^ Minisat::sign(p);
             }
             /**
              * @param p The literal to get its value for.
@@ -944,14 +1014,15 @@ namespace smtrat
              */
             inline Minisat::lbool value( Minisat::Lit p ) const
             {
-				return value(Minisat::var(p)) ^ Minisat::sign(p);
+				return value(Minisat::var(p)) == l_Undef ? l_Undef : value(Minisat::var(p)) ^ Minisat::sign(p);
             }
 			inline Minisat::lbool theoryValue( Minisat::Lit p ) const {
-				return theoryValue(Minisat::var(p)) ^ Minisat::sign(p);
+				return theoryValue(Minisat::var(p)) == l_Undef ? l_Undef : theoryValue(Minisat::var(p)) ^ Minisat::sign(p);
 			}
 			inline Minisat::lbool valueAndUpdate( Minisat::Lit p )
             {
-				return valueAndUpdate(Minisat::var(p)) ^ Minisat::sign(p);
+                auto res = valueAndUpdate(Minisat::var(p));
+				return res == l_Undef ? l_Undef : valueAndUpdate(Minisat::var(p)) ^ Minisat::sign(p);
             }
             
             /**
@@ -1038,17 +1109,6 @@ namespace smtrat
                 asynch_interrupt = false;
             }
             
-            inline void toString( std::ostream& _os, Minisat::Lit _lit ) const
-            {
-                if( Minisat::sign( _lit ) )
-                    _os << "-";
-                _os << Minisat::var( _lit );
-                _os << "[";
-                if( Minisat::sign( ~_lit ) )
-                    _os << "-";
-                _os << Minisat::var( ~_lit ) << "]";
-           }
-
             // Memory management:
             
             /**

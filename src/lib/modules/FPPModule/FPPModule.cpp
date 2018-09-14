@@ -61,8 +61,12 @@ namespace smtrat
 	template<class Settings>
 	Answer FPPModule<Settings>::checkCore()
 	{
-            if( mMinimizingCheck ) // Not yet supported, so just pass the problem to the backends.
-                return Module::checkCore();
+            if( mMinimizingCheck ) {
+				// set the objective for all preprocessing modules. Each module has to check
+				// whether it is sound to perform the preprocessing on optimizing solver calls.
+                mPreprocessor.addObjective(Poly(objective()));
+			}
+
             std::size_t iterations = 0;
             Answer answer = UNKNOWN;
             FormulaT formulaBeforePreprocessing = FormulaT(rReceivedFormula());

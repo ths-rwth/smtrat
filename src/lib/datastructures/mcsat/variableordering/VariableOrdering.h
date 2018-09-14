@@ -17,6 +17,7 @@ std::vector<carl::Variable> calculateVariableOrder(const Constraints& c) {
 	std::vector<ConstraintT> constraints;
 	for (int i = 0; i < c.size(); ++i) {
 		if (c[i].first == nullptr) continue;
+		if (c[i].first->reabstraction.getType() != carl::FormulaType::CONSTRAINT) continue;
 		constraints.emplace_back(c[i].first->reabstraction.constraint());
 	}
 	

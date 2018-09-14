@@ -14,19 +14,19 @@ private:
 	using B = std::tuple<Backends...>;
 	B mBackends;
 	template<std::size_t N = 0, carl::EnableIfBool<N == std::tuple_size<B>::value> = carl::dummy>
-	boost::optional<FormulaT> explain(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason, const FormulaT& implication) const {
+	boost::optional<Explanation> explain(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
 		SMTRAT_LOG_ERROR("smtrat.mcsat.explanation", "No explanation left.");
 		return boost::none;
 	}
 	template<std::size_t N = 0, carl::EnableIfBool<N < std::tuple_size<B>::value> = carl::dummy>
-	boost::optional<FormulaT> explain(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason, const FormulaT& implication) const {
-		auto res = std::get<N>(mBackends)(data, variableOrdering, var, reason, implication);
+	boost::optional<Explanation> explain(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
+		auto res = std::get<N>(mBackends)(data, variableOrdering, var, reason);
 		if (res) return res;
-		return explain<N+1>(data, variableOrdering, var, reason, implication);
+		return explain<N+1>(data, variableOrdering, var, reason);
 	}
 public:
-	boost::optional<FormulaT> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason, const FormulaT& implication) const {
-		return explain<0>(data, variableOrdering, var, reason, implication);
+	boost::optional<Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
+		return explain<0>(data, variableOrdering, var, reason);
 	}
 	
 };

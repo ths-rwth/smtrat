@@ -17,7 +17,7 @@ namespace hong {
  */
 template<typename Poly, typename Callback>
 void single(const Poly& p, carl::Variable variable, Callback&& cb) {
-	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Hong_single(" << p << ", " << variable << ") -> Collins_single");
+	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Hong_single(" << p << ") -> Collins_single");
 	collins::single(p, variable, std::forward<Callback>(cb));
 }
 
@@ -27,12 +27,12 @@ void single(const Poly& p, carl::Variable variable, Callback&& cb) {
  */
 template<typename Poly, typename Callback>
 void paired(const Poly& p, const UPoly& q, carl::Variable variable, Callback&& cb) {
-	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Hong_paired(" << p << ", " << q << ", " << variable << ")");
+	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Hong_paired(" << p << ", " << q  << ")");
 	projection::Reducta<Poly> RED_p(p);
 	for (const auto& reducta_p : RED_p) {
 		for (const auto& psc : projection::PSC(reducta_p, q)) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "reducta pcs: " << psc);
-			cb(projection::normalize(psc.switchVariable(variable)));
+			returnPoly(projection::normalize(psc.switchVariable(variable)), cb);
 		}
 	}
 }

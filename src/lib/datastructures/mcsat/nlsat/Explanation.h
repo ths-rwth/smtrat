@@ -34,11 +34,11 @@ struct Explanation {
    * @param implication A single atom like in @p reason, or False.
    * @return
    */
-	boost::optional<FormulaT> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason, const FormulaT& implication) const {
+	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
 #ifdef SMTRAT_DEVOPTION_Statistics
 		mStatistics.explanation();
 #endif
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "With " << reason << " explain " << implication);
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Explain conflict " << reason);
 
 		// 'variableOrder' is ordered 'x0,.., xk, .., xn', the relevant variables that appear in the
 		// reason and implication end at 'var'=xk, so the relevant prefix is 'x0 ... xk'
@@ -50,7 +50,7 @@ struct Explanation {
 
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Bookkeep: " << data);
 		ExplanationGenerator eg(reason, orderedVars, var, data.model());
-		return eg.getExplanation(implication);
+		return eg.getExplanation(FormulaT(carl::FormulaType::FALSE));
 	}
 };
 

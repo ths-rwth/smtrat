@@ -551,7 +551,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                FormulaT::const_iterator defaultBoundPosition() const
+                auto defaultBoundPosition() const
                 {
                     return mDefaultBoundPosition;
                 }

@@ -13,7 +13,7 @@ namespace parser {
 struct LogicParser: public qi::symbols<char, smtrat::Logic> {
 	LogicParser() {
 		add("QF_BV", smtrat::Logic::QF_BV);
-		add("QF_IDL", smtrat::Logic::QF_LIA);
+		add("QF_IDL", smtrat::Logic::QF_IDL);
 		add("QF_LIA", smtrat::Logic::QF_LIA);
 		add("QF_LIRA", smtrat::Logic::QF_LIA);
 		add("QF_LRA", smtrat::Logic::QF_LRA);
@@ -21,7 +21,7 @@ struct LogicParser: public qi::symbols<char, smtrat::Logic> {
 		add("QF_NIRA", smtrat::Logic::QF_NIA);
 		add("QF_NRA", smtrat::Logic::QF_NRA);
 		add("QF_PB", smtrat::Logic::QF_PB);
-		add("QF_RDL", smtrat::Logic::QF_LRA);
+		add("QF_RDL", smtrat::Logic::QF_RDL);
 		add("QF_UF", smtrat::Logic::QF_UF);
 	}
 };
@@ -41,6 +41,27 @@ struct ErrorHandler {
 	}
 };
 
+struct QuantifierParser: public qi::symbols<char, QuantifierType> {
+	QuantifierParser() {
+		add("exists", QuantifierType::EXISTS);
+		add("forall", QuantifierType::FORALL);
+	}
+};
+
+struct QEParser: public qi::grammar<Iterator, QEQuery(), Skipper> {
+	QEParser(Theories* theories): QEParser::base_type(main, "qe-query"), theories(theories) {
+		var = qualifiedidentifier[qi::_val = px::bind(&Theories::resolveVariable, px::ref(*theories), qi::_1)];
+		main = +("(" > quantifier > +var > ")");
+	}
+	
+	Theories* theories;
+	QualifiedIdentifierParser qualifiedidentifier;
+	QuantifierParser quantifier;
+	
+	qi::rule<Iterator, types::VariableType(), Skipper> var;
+	qi::rule<Iterator, QEQuery(), Skipper> main;
+};
+
 template<typename Callee>
 struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 	ScriptParser(InstructionHandler* h, Theories& theories, Callee& callee):
@@ -49,6 +70,7 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 		callee(callee),
 		state(h),
 		theories(theories),
+		qeQuery(&theories),
 		term(&theories)
 	{
 		functionDefinitionArg = sortedvariable[qi::_val = px::bind(&Theories::declareFunctionArgument, px::ref(theories), qi::_1)];
@@ -67,17 +89,19 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 			|	(qi::lit("define-fun") > functionDefinition)
 			//|	(qi::lit("define-sort") > symbol > "(" > (*symbol)[px::bind(&SortParser::setParameters, px::ref(sort), qi::_1)] > ")" > sort > ")")[px::bind(&ScriptParser::defineSort, px::ref(callee), qi::_1, qi::_2, qi::_3)]
 			|	(qi::lit("echo") > string > ")")[px::bind(&Callee::echo, px::ref(callee), qi::_1)]
+			|	(qi::lit("eliminate-quantifiers") > qeQuery > ")")[px::bind(&Callee::eliminateQuantifiers, px::ref(callee), qi::_1)]
 			|	(qi::lit("exit") > ")")[px::bind(&Callee::exit, px::ref(callee))]
+			|	(qi::lit("get-all-models") > ")")[px::bind(&Callee::getAllModels, px::ref(callee))]
 			|	(qi::lit("get-assertions") > ")")[px::bind(&Callee::getAssertions, px::ref(callee))]
 			|	(qi::lit("get-assignment") > ")")[px::bind(&Callee::getAssignment, px::ref(callee))]
 			|	(qi::lit("get-info") > keyword > ")")[px::bind(&Callee::getInfo, px::ref(callee), qi::_1)]
-			|	(qi::lit("get-model") > ")")[px::bind(&Callee::getAssignment, px::ref(callee))]
+			|	(qi::lit("get-model") > ")")[px::bind(&Callee::getModel, px::ref(callee))]
 			|	(qi::lit("get-option") > keyword > ")")[px::bind(&Callee::getOption, px::ref(callee), qi::_1)]
 			|	(qi::lit("get-proof") > ")")[px::bind(&Callee::getProof, px::ref(callee))]
 			|	(qi::lit("get-unsat-core") > ")")[px::bind(&Callee::getUnsatCore, px::ref(callee))]
 			|	(qi::lit("get-value") > "(" > +term > ")" > ")")[px::bind(&Callee::getValue, px::ref(callee), qi::_1)]
-			|	(qi::lit("maximize") > term > ")")[px::bind(&Callee::addObjective, px::ref(callee), qi::_1, Maximize)]
-			|	(qi::lit("minimize") > term > ")")[px::bind(&Callee::addObjective, px::ref(callee), qi::_1, Minimize)]
+			|	(qi::lit("maximize") > term > ")")[px::bind(&Callee::addObjective, px::ref(callee), qi::_1, OptimizationType::Maximize)]
+			|	(qi::lit("minimize") > term > ")")[px::bind(&Callee::addObjective, px::ref(callee), qi::_1, OptimizationType::Minimize)]
 			|	(qi::lit("pop") > (numeral | qi::attr(carl::constant_one<Integer>::get())) > ")")[px::bind(&Callee::pop, px::ref(callee), qi::_1)]
 			|	(qi::lit("push") > (numeral | qi::attr(carl::constant_one<Integer>::get())) > ")")[px::bind(&Callee::push, px::ref(callee), qi::_1)]
 			|	(qi::lit("reset") > ")")[px::bind(&Callee::reset, px::ref(callee))]
@@ -98,6 +122,7 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 	AttributeParser attribute;
 	KeywordParser keyword;
 	NumeralParser numeral;
+	QEParser qeQuery;
 	SortParser sort;
 	SortedVariableParser sortedvariable;
 	StringParser string;

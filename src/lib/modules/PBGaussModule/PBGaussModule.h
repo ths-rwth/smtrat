@@ -27,8 +27,8 @@ namespace smtrat
 #endif
 			// Members.
 			carl::Variables mVariables;
-			std::vector<PBConstraintT> mEquations;
-			std::vector<PBConstraintT> mInequalities;
+			std::vector<ConstraintT> mEquations;
+			std::vector<ConstraintT> mInequalities;
 
 			
 		public:

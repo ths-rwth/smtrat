@@ -17,6 +17,8 @@
 
 #include <boost/range/adaptor/reversed.hpp>
 
+#include <carl/io/SMTLIBStream.h>
+
 #include "Manager.h"
 #include "Module.h"
 
@@ -118,7 +120,7 @@ namespace smtrat
         #ifdef DEBUG_MODULE_CALLS_IN_SMTLIB
         std::cout << "(assert (and";
         for( auto& subformula : *mpReceivedFormula )
-            std::cout << " " << subformula.formula().toString( false, true );
+            std::cout << " " << subformula.formula();
         std::cout << "))\n";
         #endif
         clearLemmas();
@@ -1097,27 +1099,27 @@ namespace smtrat
     
     void Module::addAssumptionToCheck( const FormulaT& _formula, bool _consistent, const string& _label )
     {
-        string assumption = "";
-        assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
-        assumption += "(declare-fun " + _label + " () Bool)\n";
-        assumption += _formula.toString( false, 1, "", true, false, true, true );
-        assumption += "(assert " + _label + ")\n";
-        assumption += "(get-assertions)\n";
-        assumption += "(check-sat)\n";
-        mAssumptionToCheck.push_back( assumption );
+        std::stringstream assumption;
+        assumption << ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
+        assumption << "(declare-fun " << _label << " () Bool)\n";
+        assumption << _formula;
+        assumption << "(assert " << _label << ")\n";
+        assumption << "(get-assertions)\n";
+        assumption << "(check-sat)\n";
+        mAssumptionToCheck.push_back( assumption.str() );
         mVariablesInAssumptionToCheck.insert( _label );
     }
     
     void Module::addAssumptionToCheck( const ModuleInput& _subformulas, bool _consistent, const std::string& _label )
     {
-        string assumption = "";
-        assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
-        assumption += "(declare-fun " + _label + " () Bool)\n";
-        assumption += ((FormulaT) _subformulas).toString( false, 1, "", true, false, true, true );
-        assumption += "(assert " + _label + ")\n";
-        assumption += "(get-assertions)\n";
-        assumption += "(check-sat)\n";
-        mAssumptionToCheck.push_back( assumption );
+        std::stringstream assumption;
+        assumption << ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
+        assumption << "(declare-fun " << _label << " () Bool)\n";
+        assumption << ((FormulaT) _subformulas);
+        assumption << "(assert " << _label << ")\n";
+        assumption << "(get-assertions)\n";
+        assumption << "(check-sat)\n";
+        mAssumptionToCheck.push_back( assumption.str() );
         mVariablesInAssumptionToCheck.insert( _label );
     }
 	
@@ -1126,7 +1128,7 @@ namespace smtrat
         std::stringstream assumption;
         assumption << "(set-info :status " << _status << ")\n";
         assumption << "(declare-fun " << _label << " () Bool)\n";
-        assumption << ((FormulaT) _subformulas).toString( false, 1, "", true, false, true, true );
+        assumption << ((FormulaT) _subformulas);
         assumption << "(assert " << _label << ")\n";
         assumption << "(get-assertions)\n";
         assumption << "(check-sat)\n";
@@ -1136,14 +1138,14 @@ namespace smtrat
 
     void Module::addAssumptionToCheck( const FormulasT& _formulas, bool _consistent, const string& _label )
     {
-        string assumption = "";
-        assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
-        assumption += "(declare-fun " + _label + " () Bool)\n";
-        assumption += FormulaT(carl::FormulaType::AND, _formulas).toString( false, 1, "", true, false, true, true );
-        assumption += "(assert " + _label + ")\n";
-        assumption += "(get-assertions)\n";
-        assumption += "(check-sat)\n";
-        mAssumptionToCheck.push_back( assumption );
+        std::stringstream assumption;
+        assumption << ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
+        assumption << "(declare-fun " << _label << " () Bool)\n";
+        assumption << FormulaT(carl::FormulaType::AND, _formulas);
+        assumption << "(assert " << _label << ")\n";
+        assumption << "(get-assertions)\n";
+        assumption << "(check-sat)\n";
+        mAssumptionToCheck.push_back( assumption.str() );
         mVariablesInAssumptionToCheck.insert( _label );
     }
 
@@ -1155,29 +1157,24 @@ namespace smtrat
         addAssumptionToCheck( assumption, _consistent, _label );
     }
 
-    void Module::addAssumptionToCheck( const ConstraintsT& _constraints, bool _consistent, const string& _label )
-    {
-        string assumption = "";
-        assumption += ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
-        carl::Variables vars;
-        for(const auto& c : _constraints)
-            for( auto var : c.variables() )
-                vars.insert( var );
-        std::stringstream os;
-        os << "(declare-fun " << _label << " () " << "Bool" << ")\n";
-        for( auto var : vars )
-            os << "(declare-fun " << var << " () " << var.type() << ")\n";
-        assumption += os.str();
-        assumption += "(assert (and";
-        for( auto constraint = _constraints.begin(); constraint != _constraints.end(); ++constraint )
-            assumption += " " + constraint->toString( 1, false, true );
-        assumption += " " + _label;
-        assumption += "))\n";
-        assumption += "(get-assertions)\n";
-        assumption += "(check-sat)\n";
-        mAssumptionToCheck.push_back( assumption );
-        mVariablesInAssumptionToCheck.insert( _label );
-    }
+	void Module::addAssumptionToCheck(const ConstraintsT& _constraints, bool _consistent, const string& _label) {
+		carl::SMTLIBStream sls;
+		sls.setInfo("status", (_consistent ? "sat" : "unsat"));
+		carl::Variables vars;
+		for(const auto& c : _constraints)
+			vars.insert(c.variables().begin(), c.variables().end());
+		sls << "(declare-fun " << _label << " () " << "Bool" << ")\n";
+		sls.declare(vars);
+		sls << "(assert (and" << std::endl;
+		for (const auto& c: _constraints) {
+			sls << '\t' << c << std::endl;
+		}
+		sls << "))" << std::endl;
+		sls.getAssertions();
+		sls.checkSat();
+		mAssumptionToCheck.push_back(sls.str());
+		mVariablesInAssumptionToCheck.insert( _label );
+	}
 
     void Module::storeAssumptionsToCheck( const Manager& 
                                           #ifdef SMTRAT_DEVOPTION_Validation
@@ -1258,19 +1255,17 @@ namespace smtrat
 				for (auto v: vars) {
 					smtlibFile << "(declare-fun " << v << " () " << v.type() << ")\n";
 				}
-                string assumption = "";
-                assumption += "(set-info :status sat)\n";
-                assumption += "(assert (and ";
+                smtlibFile << "(set-info :status sat)\n";
+                smtlibFile << "(assert (and ";
                 for( auto it = _infsubset->begin(); it != _infsubset->end(); ++it )
                 {
                     if( bitvector & 1 )
-                        assumption += " " + it->toString();
+                        smtlibFile << " " << *it;
                     bitvector >>= 1;
                 }
-                assumption += "))\n";
-                assumption += "(get-assertions)\n";
-                assumption += "(check-sat)\n";
-                smtlibFile << assumption;
+                smtlibFile << "))\n";
+                smtlibFile << "(get-assertions)\n";
+                smtlibFile << "(check-sat)\n";
                 bitvector = nextbitvector;
                 ++mSmallerMusesCheckCounter;
             }
@@ -1322,9 +1317,8 @@ namespace smtrat
         for( auto form = mpReceivedFormula->begin(); form != mpReceivedFormula->end(); ++form )
         {
             std::stringstream ss;
-            // bool _withActivity, unsigned _resolveUnequal, const string _init, bool _oneline, bool _infix, bool _friendlyNames
             ss << _initiation;
-            ss << setw( 45 ) << form->formula().toString( false, 0, "", true, true, true );
+            ss << setw( 45 ) << form->formula();
             if( form->deducted() ) ss << " deducted";
                 SMTRAT_LOG_INFO("smtrat.module", ss.str());
         }
@@ -1337,12 +1331,11 @@ namespace smtrat
         {
             std::stringstream ss;
             ss << _initiation;
-            ss << setw( 45 ) << form->formula().toString( false, 0, "", true, true, true );
+            ss << setw( 45 ) << form->formula();
             if( form->hasOrigins() )
             {
-                for( auto oSubformulas = form->origins().begin(); oSubformulas != form->origins().end(); ++oSubformulas )
-                {
-                    ss << " {" << oSubformulas->toString( false, 0, "", true, true, true ) << " }";
+                for (const auto& oSubformulas: form->origins()) {
+                    ss << " {" << oSubformulas << " }";
                 }
             }
 			SMTRAT_LOG_INFO("smtrat.module", ss.str());
@@ -1357,8 +1350,8 @@ namespace smtrat
             std::stringstream ss;
             ss << _initiation;
             ss << " {";
-            for( auto infSubFormula = infSubSet->begin(); infSubFormula != infSubSet->end(); ++infSubFormula )
-                ss << " " << infSubFormula->toString( false, 0, "", true, true, true ) << std::endl;
+            for (const auto& infSubFormula: *infSubSet)
+                ss << " " << infSubFormula << std::endl;
             ss << " }";
             SMTRAT_LOG_INFO("smtrat.module", "\t" << ss.str());
         }

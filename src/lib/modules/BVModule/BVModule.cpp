@@ -168,6 +168,7 @@ namespace smtrat
                 modelIter = mModel.emplace_hint( modelIter, var, bmodelIter->second.asBool() );
             }
         }
+		getDefaultModel( mModel, (FormulaT) rReceivedFormula() );
     }
 
     template<class Settings>

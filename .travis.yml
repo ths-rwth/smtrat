@@ -37,7 +37,7 @@ matrix:
       addons:
         apt:
           sources: [*sources_base, llvm-toolchain-trusty-3.9]
-          packages: [*packages_base, clang-3.9, libstdc++-8-dev]
+          packages: [*packages_base, clang-3.9, libstdc++-6-dev]
     - stage: dependencies
       os: linux
       compiler: clang++-4.0
@@ -46,7 +46,7 @@ matrix:
       addons:
         apt:
           sources: [*sources_base, llvm-toolchain-trusty-4.0]
-          packages: [*packages_base, clang-4.0, libstdc++-8-dev]
+          packages: [*packages_base, clang-4.0, libstdc++-6-dev]
     - stage: dependencies
       os: linux
       compiler: clang++-5.0
@@ -67,24 +67,6 @@ matrix:
           packages: [*packages_base, clang-6.0, libstdc++-8-dev]
     - stage: dependencies
       os: linux
-      compiler: g++-5
-      env: CC=gcc-5 CXX=g++-5
-      script: TASK=dependencies MAKE_PARALLEL=-j1 source .ci/build.sh
-      addons:
-        apt:
-          sources: [*sources_base]
-          packages: [*packages_base, g++-5]
-    - stage: dependencies
-      os: linux
-      compiler: g++-6
-      env: CC=gcc-6 CXX=g++-6
-      script: TASK=dependencies MAKE_PARALLEL=-j1 source .ci/build.sh
-      addons:
-        apt:
-          sources: [*sources_base]
-          packages: [*packages_base, g++-6]
-    - stage: dependencies
-      os: linux
       compiler: g++-7
       env: CC=gcc-7 CXX=g++-7
       script: TASK=dependencies MAKE_PARALLEL=-j1 source .ci/build.sh
@@ -92,6 +74,15 @@ matrix:
         apt:
           sources: [*sources_base]
           packages: [*packages_base, g++-7]
+    - stage: dependencies
+      os: linux
+      compiler: g++-8
+      env: CC=gcc-8 CXX=g++-8
+      script: TASK=dependencies MAKE_PARALLEL=-j1 source .ci/build.sh
+      addons:
+        apt:
+          sources: [*sources_base]
+          packages: [*packages_base, g++-8]
     - stage: build
       os: linux
       compiler: clang++-3.8
@@ -109,7 +100,7 @@ matrix:
       addons:
         apt:
           sources: [*sources_base, llvm-toolchain-trusty-3.9]
-          packages: [*packages_base, clang-3.9, libstdc++-8-dev]
+          packages: [*packages_base, clang-3.9, libstdc++-6-dev]
     - stage: build
       os: linux
       compiler: clang++-4.0
@@ -118,7 +109,7 @@ matrix:
       addons:
         apt:
           sources: [*sources_base, llvm-toolchain-trusty-4.0]
-          packages: [*packages_base, clang-4.0, libstdc++-8-dev]
+          packages: [*packages_base, clang-4.0, libstdc++-6-dev]
     - stage: build
       os: linux
       compiler: clang++-5.0
@@ -139,24 +130,6 @@ matrix:
           packages: [*packages_base, clang-6.0, libstdc++-8-dev]
     - stage: build
       os: linux
-      compiler: g++-5
-      env: CC=gcc-5 CXX=g++-5
-      script: MAKE_PARALLEL=-j1 source .ci/build.sh
-      addons:
-        apt:
-          sources: [*sources_base]
-          packages: [*packages_base, g++-5]
-    - stage: build
-      os: linux
-      compiler: g++-6
-      env: CC=gcc-6 CXX=g++-6
-      script: MAKE_PARALLEL=-j1 source .ci/build.sh
-      addons:
-        apt:
-          sources: [*sources_base]
-          packages: [*packages_base, g++-6]
-    - stage: build
-      os: linux
       compiler: g++-7
       env: CC=gcc-7 CXX=g++-7
       script: MAKE_PARALLEL=-j1 source .ci/build.sh
@@ -165,16 +138,45 @@ matrix:
           sources: [*sources_base]
           packages: [*packages_base, g++-7]
     - stage: build
+      os: linux
+      compiler: g++-8
+      env: CC=gcc-8 CXX=g++-8
+      script: MAKE_PARALLEL=-j1 source .ci/build.sh
+      addons:
+        apt:
+          sources: [*sources_base]
+          packages: [*packages_base, g++-8]
+    - stage: build
       os: osx
       osx_image: xcode7.3
       script: source .ci/build.sh
     - stage: build
       os: osx
-      osx_image: xcode8.2
+      osx_image: xcode8.3
       script: source .ci/build.sh
     - stage: build
       os: osx
-      osx_image: xcode8.3
+      osx_image: xcode9
+      script: source .ci/build.sh
+    - stage: build
+      os: osx
+      osx_image: xcode9.1
+      script: source .ci/build.sh
+    - stage: build
+      os: osx
+      osx_image: xcode9.2
+      script: source .ci/build.sh
+    - stage: build
+      os: osx
+      osx_image: xcode9.3
+      script: source .ci/build.sh
+    - stage: build
+      os: osx
+      osx_image: xcode9.4
+      script: source .ci/build.sh
+    - stage: build
+      os: osx
+      osx_image: xcode10
       script: source .ci/build.sh
     - stage: build
       os: linux
@@ -184,26 +186,20 @@ matrix:
       addons:
         apt:
           sources: [*sources_base, llvm-toolchain-trusty-6.0]
-          packages: [*packages_base, clang-6.0, libstdc++-8-dev, doxygen, ghostscript, latex-xcolor, lmodern, pgf, texinfo, texlive, texlive-font-utils, texlive-latex-extra]
+          packages: [*packages_base, clang-6.0, libstdc++-8-dev, doxygen, ghostscript, latex-xcolor, pgf, texinfo, texlive, texlive-font-utils, texlive-latex-extra]
   allow_failures:
     - stage: dependencies
       os: linux
-      env: CC=gcc-5 CXX=g++-5
+      env: CC=gcc-7 CXX=g++-7
     - stage: dependencies
       os: linux
-      env: CC=gcc-6 CXX=g++-6
-    - stage: dependencies
+      env: CC=gcc-8 CXX=g++-8
+    - stage: build
       os: linux
       env: CC=gcc-7 CXX=g++-7
     - stage: build
       os: linux
-      env: CC=gcc-5 CXX=g++-5
-    - stage: build
-      os: linux
-      env: CC=gcc-6 CXX=g++-6
-    - stage: build
-      os: linux
-      env: CC=gcc-7 CXX=g++-7
+      env: CC=gcc-8 CXX=g++-8
 
 before_install:
   - cd .ci/ && source setup_travis.sh && cd ../

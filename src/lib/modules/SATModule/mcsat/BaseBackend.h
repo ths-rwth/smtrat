@@ -1,12 +1,8 @@
 #pragma once
 
 #include "../../../datastructures/mcsat/Bookkeeping.h"
-#include "../../../datastructures/mcsat/arithmetic/AssignmentFinder_arithmetic.h"
-#include "../../../datastructures/mcsat/nlsat/Explanation.h"
-#include "../../../datastructures/mcsat/variableordering/VariableOrdering.h"
 
-#include "../../../datastructures/mcsat/explanations/ParallelExplanation.h"
-#include "../../../datastructures/mcsat/explanations/SequentialExplanation.h"
+#include "MCSATSettings.h"
 
 namespace smtrat {
 namespace mcsat {
@@ -14,16 +10,10 @@ namespace mcsat {
 template<typename Settings>
 class MCSATBackend {
 	mcsat::Bookkeeping mBookkeeping;
-	std::vector<carl::Variable> mVariableOrdering;
 	typename Settings::AssignmentFinderBackend mAssignmentFinder;
 	typename Settings::ExplanationBackend mExplanation;
 
 public:
-	template<typename Settings2>
-	friend std::ostream& operator<<(std::ostream& os, const MCSATBackend<Settings2>& backend) {
-		return operator<<(os, backend.mBookkeeping);
-	}
-
 	void pushConstraint(const FormulaT& f) {
 		mBookkeeping.pushConstraint(f);
 	}
@@ -49,16 +39,25 @@ public:
 	
 	template<typename Constraints>
 	void resetVariableOrdering(const Constraints& c) {
-		mVariableOrdering = calculateVariableOrder<Settings::variable_ordering>(c);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variable ordering " << variableOrder());
+		if (mBookkeeping.variableOrder().empty()) {
+			mBookkeeping.updateVariableOrder(calculateVariableOrder<Settings::variable_ordering>(c));
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variable ordering " << variableOrder());
+		}
 	}
 	
 	const auto& variableOrder() const {
-		return mVariableOrdering;
+		return mBookkeeping.variableOrder();
 	}
 
-	auto findAssignment(carl::Variable var) const { //AssignmentFinder::AssignmentOrConflict
-		return mAssignmentFinder(mBookkeeping, var);
+	AssignmentOrConflict findAssignment(carl::Variable var) const {
+		auto res = mAssignmentFinder(mBookkeeping, var);
+		if (res) {
+			return *res;
+		} else {
+			SMTRAT_LOG_ERROR("smtrat.mcsat", "AssignmentFinder backend failed.");
+			assert(false);
+			return ModelValues();
+		}
 	}
 
 	boost::optional<FormulasT> isInfeasible(carl::Variable var, const FormulaT& f) {
@@ -66,31 +65,40 @@ public:
 		pushConstraint(f);
 		auto res = findAssignment(var);
 		popConstraint(f);
-		if (carl::variant_is_type<ModelValue>(res)) {
+		if (carl::variant_is_type<ModelValues>(res)) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat", f << " is feasible");
 			return boost::none;
+		} else {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat", f << " is infeasible with reason " << boost::get<FormulasT>(res));
+			return boost::get<FormulasT>(res);
 		}
-		SMTRAT_LOG_DEBUG("smtrat.mcsat", f << " is infeasible with reason " << boost::get<FormulasT>(res));
-		return boost::get<FormulasT>(res);
 	}
 
-	FormulaT explain(carl::Variable var, const FormulasT& reason, const FormulaT& implication) const {
-		auto res = mExplanation(mBookkeeping, variableOrder(), var, reason, implication);
+	Explanation explain(carl::Variable var, const FormulasT& reason) const {
+		boost::optional<Explanation> res = mExplanation(mBookkeeping, variableOrder(), var, reason);
 		if (res) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat", "Got explanation " << *res);
 			return *res;
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.mcsat", "Explanation backend failed.");
-			return FormulaT(carl::FormulaType::FALSE);
+			assert(false);
+			return Explanation(FormulaT(carl::FormulaType::FALSE));
 		}
+	}
+
+	Explanation explain(carl::Variable var, const FormulaT& f, const FormulasT& reason) {
+		pushConstraint(f);
+		auto res = explain(var, reason);
+		popConstraint(f);
+		return res;
 	}
 };
 
-struct BackendSettings1 {
-	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
-	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-	using ExplanationBackend = nlsat::Explanation;
-};
+
+template<typename Settings>
+std::ostream& operator<<(std::ostream& os, const MCSATBackend<Settings>& backend) {
+	return os << backend.getTrail();
+}
 
 } // namespace mcsat
 } // namespace smtrat

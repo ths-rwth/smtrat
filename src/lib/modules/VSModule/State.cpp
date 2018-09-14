@@ -2624,7 +2624,7 @@ namespace vs
         if( pOriginalCondition() != NULL )
         {
             _out << _initiation << "                       original condition: ";
-            _out << originalCondition().constraint().toString() << " [";
+            _out << originalCondition().constraint() << " [";
             _out << pOriginalCondition() << "]" << endl;
         }
         if( mpInfinityChild != NULL )
@@ -2658,7 +2658,7 @@ namespace vs
         {
             _out << _initiation << "   ";
             if( _onlyAsConstraints )
-                _out << (**cond).constraint().toString( 0, true, true );
+                _out << (**cond).constraint();
             else 
                 (**cond).print( _out );
             _out << endl;
@@ -2712,7 +2712,7 @@ namespace vs
                     {
                         if( cond != mpSubstitutionResults->at( subResComb->first ).at( subResComb->second ).first.begin() )
                             _out << " and ";
-                        _out << (**cond).constraint().toString( 0, true, true );
+                        _out << (**cond).constraint();
                     }
                     _out << "  )" << endl;
                 }
@@ -2753,13 +2753,13 @@ namespace vs
                     if( cond != (*condSet).end() )
                     {
                         _out << " { [";
-                        _out << (**cond).constraint().toString( 0, true, true );
+                        _out << (**cond).constraint();
                         _out << "]" << "_" << (**cond).valuation();
                         ++cond;
                         while( cond != (*condSet).end() )
                         {
                             _out << ", [";
-                            _out << (**cond).constraint().toString( 0, true, true );
+                            _out << (**cond).constraint();
                             _out << "]" << "_" << (**cond).valuation();
                             ++cond;
                         }
@@ -2776,13 +2776,13 @@ namespace vs
                         if( cond != (*condSet).end() )
                         {
                             _out << " { [";
-                            _out << (**cond).constraint().toString( 0, true, true );
+                            _out << (**cond).constraint();
                             _out << "]" << "_" << (**cond).valuation();
                             ++cond;
                             while( cond != (*condSet).end() )
                             {
                                 _out << ", [";
-                                _out << (**cond).constraint().toString( 0, true, true );
+                                _out << (**cond).constraint();
                                 _out << "]" << "_" << (**cond).valuation();
                                 ++cond;
                             }

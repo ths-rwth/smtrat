@@ -100,10 +100,18 @@ public:
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(echo \"" << s << "\")");
 		callHandler(&InstructionHandler::echo, s);
 	}
+	void eliminateQuantifiers(const QEQuery& q) {
+		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(eliminate-quantifiers \"" << q << "\")");
+		callHandler(&InstructionHandler::eliminateQuantifiers, q);
+	}
 	void exit() {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(exit)");
 		this->mInputStream->setstate(std::ios::eofbit);
 		callHandler(&InstructionHandler::exit);
+	}
+	void getAllModels() {
+		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-all-models)");
+		callHandler(&InstructionHandler::getAllModels);
 	}
 	void getAssertions() {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-assertions)");
@@ -116,6 +124,10 @@ public:
 	void getInfo(const std::string& key) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-info " << key << ")");
 		callHandler(&InstructionHandler::getInfo, key);
+	}
+	void getModel() {
+		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-model)");
+		callHandler(&InstructionHandler::getModel);
 	}
 	void getOption(const std::string& key) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-option " << key << ")");
@@ -163,6 +175,7 @@ public:
 	}
 	void setLogic(const smtrat::Logic& name) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(set-logic " << name << ")");
+		state.logic = name;
 		callHandler(&InstructionHandler::setLogic, name);
 	}
 	void setOption(const Attribute& option) {

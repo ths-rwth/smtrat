@@ -45,6 +45,7 @@ struct TheoryLevel {
 	std::vector<Minisat::Var> univariateVariables;
 };
 
+template<typename Settings>
 class MCSATMixin {
   
 private:
@@ -63,7 +64,7 @@ private:
 	/// Variables that are not univariate in any variable yet.
 	std::vector<Minisat::Var> mUndecidedVariables;
 	
-	MCSATBackend<BackendSettings1> mBackend;
+	MCSATBackend<Settings> mBackend;
 
 private:
 	// ***** private helper methods
@@ -189,51 +190,64 @@ public:
 	/// Evaluate a literal in the theory, set lastReason to last theory decision involved.
 	Minisat::lbool evaluateLiteral(Minisat::Lit lit) const;
 	
-	boost::optional<FormulaT> isDecisionPossible(Minisat::Lit lit);
+	std::pair<bool, boost::optional<Explanation>> isDecisionPossible(Minisat::Lit lit, bool check_feasibility_before = true);
 	
-	boost::optional<FormulaT> isFeasible() {
+	boost::optional<Explanation> isFeasible() {
 		if (!mayDoAssignment()) {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Trail is feasible as there is no next variable to be assigned.");
 			return boost::none;
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking whether trail is feasible (w.r.t. " << currentVariable() << ")");
 		auto res = mBackend.findAssignment(currentVariable());
-		if (carl::variant_is_type<ModelValue>(res)) {
+		if (carl::variant_is_type<ModelValues>(res)) {
 			return boost::none;
 		} else {
 			const auto& confl = boost::get<FormulasT>(res);
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << confl);
-			return mBackend.explain(currentVariable(), confl, FormulaT(carl::FormulaType::FALSE));
+			return mBackend.explain(currentVariable(), confl);
 		}
 	}
 	
-	std::pair<FormulaT,bool> makeTheoryDecision() {
+	boost::variant<Explanation,FormulasT> makeTheoryDecision() {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Obtaining assignment");
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", mBackend);
 		auto res = mBackend.findAssignment(currentVariable());
-		if (carl::variant_is_type<ModelValue>(res)) {
-			const auto& value = boost::get<ModelValue>(res);
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << value);
-			FormulaT repr = carl::representingFormula(currentVariable(), value);
-			mBackend.pushAssignment(currentVariable(), value, repr);
+		if (carl::variant_is_type<ModelValues>(res)) {
+			const auto& values = boost::get<ModelValues>(res);
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << values);
+			FormulasT reprs;
+			for (const auto& value : values) {
+				FormulaT repr = carl::representingFormula(value.first, value.second);
+				mBackend.pushAssignment(value.first, value.second, repr);
+				reprs.push_back(std::move(repr));
+			}
 			assert(trailIsConsistent());
-			return std::make_pair(repr, true);
+			return reprs;
 		} else {
 			const auto& confl = boost::get<FormulasT>(res);
-			auto explanation = mBackend.explain(currentVariable(), confl, FormulaT(carl::FormulaType::FALSE));
+			auto explanation = mBackend.explain(currentVariable(), confl);
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got a conflict: " << explanation);
-			return std::make_pair(explanation, false);
+			return explanation;
 		}
 	}
 	
-	FormulaT explainTheoryPropagation(Minisat::Lit literal) {
+	Explanation explainTheoryPropagation(Minisat::Lit literal) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << (*this));
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << literal << " under " << mBackend.getModel());
-		auto f = mGetter.reabstractLiteral(literal);
-		auto conflict = mBackend.isInfeasible(currentVariable(), !f);
+		const auto& f = mGetter.reabstractLiteral(literal);
+		boost::optional<FormulasT> conflict = mBackend.isInfeasible(currentVariable(), !f);
 		assert(conflict);
+		assert( std::find((*conflict).begin(), (*conflict).end(), !f) != (*conflict).end() );
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " from " << *conflict);
-		auto res = mBackend.explain(currentVariable(), *conflict, f);
+		auto res = mBackend.explain(currentVariable(), !f, *conflict);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " by " << res);
+		// f is part of the conflict, because the trail is feasible without f:
+		if (res.type() == typeid(FormulaT)) {
+			assert(boost::get<FormulaT>(res).contains(f));
+		}
+		else {
+			assert(boost::get<ClauseChain>(res).chain().back().clause().contains(f));
+		}
 		return res;
 	}
 	
@@ -366,8 +380,11 @@ public:
 	// ***** Output
 	/// Prints a single clause
 	void printClause(std::ostream& os, Minisat::CRef clause) const;
-	friend std::ostream& operator<<(std::ostream& os, const MCSATMixin& mcm);
+	template<typename Sett>
+	friend std::ostream& operator<<(std::ostream& os, const MCSATMixin<Sett>& mcm);
 };
 
 }
 }
+
+#include "MCSATMixin.tpp"

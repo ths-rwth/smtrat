@@ -124,5 +124,9 @@ namespace smtrat
 			FormulaT removeSquaresFromStrict(const FormulaT& formula);
 			FormulaT removeSquares(const FormulaT& formula);
 			std::function<FormulaT(FormulaT)> removeSquaresFunction;
+			
+			FormulaT implyDefinitenessFromStrict(const FormulaT& formula);
+			FormulaT implyDefiniteness(const FormulaT& formula);
+			std::function<FormulaT(FormulaT)> implyDefinitenessFunction;
     };
 }

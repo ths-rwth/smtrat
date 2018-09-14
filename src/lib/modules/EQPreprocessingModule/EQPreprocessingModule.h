@@ -38,7 +38,7 @@ namespace smtrat
 		    typedef carl::UFInstance UFInstance;
 		    typedef carl::UninterpretedFunction UFunction;
 		    typedef carl::UEquality UEquality;
-		    typedef UEquality::Arg UArg;
+		    typedef carl::UTerm UArg;
 
 		    // Members.
 		    // helper EQ module

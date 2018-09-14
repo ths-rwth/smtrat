@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Attribute.h"
 #include "Common.h"
 #include "TheoryTypes.h"
 #include "AbstractTheory.h"
@@ -12,6 +13,8 @@
 #ifdef PARSER_ENABLE_UNINTERPRETED
 #include "Uninterpreted.h"
 #endif
+
+#include <boost/mpl/for_each.hpp>
 
 namespace smtrat {
 namespace parser {
@@ -170,6 +173,15 @@ struct Theories {
 		return types::TermType();
 	}
 	
+	types::VariableType resolveVariable(const Identifier& identifier) const {
+		types::VariableType result;
+		if (identifier.indices == nullptr) {
+			if (state->resolveSymbol(identifier.symbol, result)) return result;
+		}
+		HANDLE_ERROR
+		return types::VariableType();
+	}
+	
 	void pushExpressionScope(std::size_t n) {
 		for (; n > 0; n--) state->pushExpressionScope();
 	}
@@ -181,6 +193,29 @@ struct Theories {
 	}
 	void popScriptScope(std::size_t n) {
 		for (; n > 0; n--) state->popScriptScope();
+	}
+	
+	const auto& annotateTerm(const types::TermType& term, const std::vector<Attribute>& attributes) {
+		FormulaT subject;
+		conversion::VariantConverter<FormulaT> converter;
+		if (!converter(term, subject)) {
+			SMTRAT_LOG_WARN("smtrat.parser", "Ignoring annotation on unsupported expression. We only annotated formulas.");
+			return term;
+		}
+		for (const auto& attr: attributes) {
+			if (attr.key == "named") {
+				if (carl::variant_is_type<std::string>(attr.value)) {
+					const std::string& value = boost::get<std::string>(attr.value);
+					SMTRAT_LOG_DEBUG("smtrat.parser", "Naming term: " << value << " = " << term);
+					state->handler->annotateName(subject, value);
+				} else {
+					SMTRAT_LOG_WARN("smtrat.parser", "Ignoring naming with unsupported value type for term " << term);
+				}
+			} else {
+				SMTRAT_LOG_WARN("smtrat.parser", "Ignoring unsupported annotation " << attr << " for term " << term);
+			}
+		}
+		return term;
 	}
 	
 	void handleLet(const std::string& symbol, const types::TermType& term) {

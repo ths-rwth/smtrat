@@ -162,6 +162,66 @@ struct CADCore<CoreHeuristic::PreferSampling> {
 };
 
 template<>
+struct CADCore<CoreHeuristic::Interleave> {
+	template<typename It>
+	bool preferLifting(const It& it) {
+		return it->value().isNumeric();
+	}
+	template<typename CAD>
+	bool doProjection(CAD& cad) {
+		auto r = cad.mProjection.projectNewPolynomial();
+		if (r.none()) {
+			SMTRAT_LOG_INFO("smtrat.cad", "Projection has finished.");
+			return false;
+		}
+		SMTRAT_LOG_INFO("smtrat.cad", "Projected into " << r << ", new projection is" << std::endl << cad.mProjection);
+		cad.mLifting.restoreRemovedSamples();
+		return true;
+	}
+	template<typename CAD>
+	bool doLifting(CAD& cad) {
+		if (!cad.mLifting.hasNextSample()) return false;
+		auto it = cad.mLifting.getNextSample();
+		SMTRAT_LOG_TRACE("smtrat.cad", "Queue" << std::endl << cad.mLifting.getLiftingQueue());
+		Sample& s = *it;
+		assert(0 <= it.depth() && it.depth() < cad.dim());
+		SMTRAT_LOG_DEBUG("smtrat.cad", "Processing " << cad.mLifting.extractSampleMap(it));
+		if (it.depth() > 0 && cad.checkPartialSample(it, cad.idLP(it.depth())) == Answer::UNSAT) {
+			cad.mLifting.removeNextSample();
+			return false;
+		}
+		auto polyID = cad.mProjection.getPolyForLifting(cad.idLP(it.depth() + 1), s.liftedWith());
+		if (polyID) {
+			const auto& poly = cad.mProjection.getPolynomialById(cad.idLP(it.depth() + 1), *polyID);
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Lifting " << cad.mLifting.extractSampleMap(it) << " with " << poly);
+			cad.mLifting.liftSample(it, poly, *polyID);
+		} else {
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Current lifting" << std::endl << cad.mLifting.getTree());
+			SMTRAT_LOG_TRACE("smtrat.cad", "Queue" << std::endl << cad.mLifting.getLiftingQueue());
+			cad.mLifting.removeNextSample();
+			cad.mLifting.addTrivialSample(it);
+		}
+		return true;
+	}
+	template<typename CAD>
+	Answer operator()(Assignment& assignment, CAD& cad) {
+		cad.mLifting.resetFullSamples();
+		while (true) {
+			Answer res = cad.checkFullSamples(assignment);
+			if (res == Answer::SAT) return Answer::SAT;
+			if (!cad.mLifting.hasNextSample()) {
+				if (!doProjection(cad)) return Answer::UNSAT;
+			}
+			if (preferLifting(cad.mLifting.getNextSample())) {
+				doLifting(cad);
+			} else {
+				doProjection(cad);
+			}
+		}
+	}
+};
+
+template<>
 struct CADCore<CoreHeuristic::EnumerateAll> {
 	template<typename CAD>
 	Answer operator()(Assignment& assignment, CAD& cad) {
@@ -189,6 +249,7 @@ struct CADCore<CoreHeuristic::EnumerateAll> {
 				cad.mLifting.liftSample(it, poly, *polyID);
 			} else {
 				cad.mLifting.removeNextSample();
+				cad.mLifting.addTrivialSample(it);
 			}
 		}
 		std::size_t number_of_cells = 0;

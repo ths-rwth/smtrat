@@ -72,7 +72,7 @@ namespace vs
                 {
                     unsigned conflictingWithSolutionSpace = cons->consistentWith( _solutionSpace );
                     
-//                    cout << "Is  " << cons->toString( 0, true, true ) << endl;
+//                    cout << "Is  " << cons << endl;
 //                    cout << endl;
 //                    cout << "consistent with  " << endl;
 //                    for( auto iter = _solutionSpace.begin(); iter != _solutionSpace.end(); ++iter )
@@ -526,7 +526,7 @@ namespace vs
             {
                 if( cons != (*conj).begin() )
                     cout << " and ";
-                cout << cons->toString( 0, true, true );
+                cout << *cons;
                 cons++;
             }
             cout << ")" << endl;
