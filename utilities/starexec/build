@@ -1,8 +1,10 @@
 #!/bin/sh
 
+solver=smtrat
+
 echo "Copying smtrat from build/"
-cp ../../build/smtrat bin/smtrat
+cp ../../build/$solver bin/smtrat
 strip bin/smtrat
 
 echo "Creating archive"
-tar -czf smtrat.tgz bin/
+tar -czf $solver.tgz bin/
