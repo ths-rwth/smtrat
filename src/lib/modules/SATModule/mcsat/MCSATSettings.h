@@ -16,8 +16,8 @@ namespace mcsat {
 
 struct MCSATSettingsNL {
 	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
-	// using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-	using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
+	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+//	using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
 	using ExplanationBackend = SequentialExplanation<nlsat::Explanation>;
 };
 
@@ -25,8 +25,12 @@ struct MCSATSettingsNL {
 struct MCSATSettingsOC {
   static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-//  using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
   using ExplanationBackend = SequentialExplanation<nlsat::OneCellExplanation>;
+};
+struct MCSATSettingsFMVSOC {
+  static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
+  using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,nlsat::OneCellExplanation>;
 };
 
 struct MCSATSettingsFMNL {

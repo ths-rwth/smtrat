@@ -2,18 +2,19 @@
 
 #include "../solver/Manager.h"
 
-//#include "../modules/FPPModule/FPPModule.h"
+#include "../modules/FPPModule/FPPModule.h"
 #include "../modules/SATModule/SATModule.h"
 
 namespace smtrat
 {
-	//no preprocessing
-	class MCSATNLNPP: public Manager
+	class MCSATPPNL: public Manager
 	{
 		public:
-			MCSATNLNPP(): Manager() {
+			MCSATPPNL(): Manager() {
 				setStrategy(
+					addBackend<FPPModule<FPPSettings1>>(
 						addBackend<SATModule<SATSettingsMCSATNL>>()
+					)
 				);
 			}
 	};
