@@ -347,6 +347,7 @@ int main( int argc, char* argv[] )
 		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.strategygraph", carl::logging::LogLevel::LVL_DEBUG)
 	;
+	carl::logging::logger().formatter("stdout")->printInformation = true;
 #endif
 	SMTRAT_LOG_INFO("smtrat", "Starting smtrat.");
     // This variable will hold the input file.
