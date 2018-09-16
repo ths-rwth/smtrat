@@ -8,13 +8,14 @@
 
 #include "AbstractModule.h"
 #include "MonomialMappingByVariablePool.h"
+#include "stdlib.h"
 
 namespace smtrat
 {
     template<class Settings>
     AbstractModule<Settings>::AbstractModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager):
-            Module( _formula, _conditionals, _manager ),
-            mLRAFormula( new ModuleInput())
+            Module( _formula, _conditionals, _manager )
+            //mLRAFormula( new ModuleInput())
 #ifdef SMTRAT_DEVOPTION_Statistics
     , mStatistics(Settings::moduleName)
 #endif
@@ -37,6 +38,7 @@ namespace smtrat
 
     int zVariableCounter = 0;
     std::string VariableName = "z_";
+    ModuleInput* originalFormula( new ModuleInput());
 
     /**
      * create variables and each time increment the suffix e.g., z_0, z_1, etc.
@@ -281,7 +283,8 @@ namespace smtrat
     template<class Settings>
     bool AbstractModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        FormulaT formula = _subformula->formula();
+        //FormulaT formula = _subformula->formula();
+        originalFormula->add(_subformula->formula(), false);
 
         //get constraint
         const ConstraintT& constraint = _subformula->formula().constraint();
@@ -366,7 +369,7 @@ namespace smtrat
         // Linearized formulas to the passed formula
         //
         ////////////////////////////////////////////////
-        mLRAFormula->add(finalFormula, false);
+        addSubformulaToPassedFormula(finalFormula);
 
         return true; // This should be adapted according to your implementation.
     }
@@ -387,6 +390,71 @@ namespace smtrat
         }
     }
 
+    Answer toAnswer(int value){
+        if(value == 0){
+            return Answer::UNSAT;
+        } else if(value == 1) {
+            return Answer::SAT;
+        } else {
+            return Answer::UNKNOWN;
+        }
+    }
+
+    /**
+     * Chekcs if the estimated model satisfies the input NRA formula.
+     * estimated model takes the solution from mModel or randomly chosen.
+     * @param mModel Model of linearized formula.
+     */
+    Answer isOriginalFormulaSatisfied(Model mModel)
+    {
+
+        carl::Variables allVarsOfOriginalFormula;
+        Model estimatedModel;
+
+        //collect the variables into the container "allVarsOfOriginalFormula"
+        originalFormula->vars(allVarsOfOriginalFormula);
+
+        cout << "all variables of original formula: ";
+        for (auto it = allVarsOfOriginalFormula.begin(); it != allVarsOfOriginalFormula.end(); ++it) {
+            cout << it->name();
+            cout << "   ";
+        }
+        cout << "\n";
+
+       cout << "linearized variable | value: " << "\n";
+        for (auto it = mModel.begin(); it != mModel.end(); ++it) {
+            cout << it->first << " | " << it->second;
+            cout << "\n";
+        }
+
+        for (auto it1 = allVarsOfOriginalFormula.begin(); it1 != allVarsOfOriginalFormula.end(); ++it1) {
+            int counter = 0;
+            for (auto it2 = mModel.begin(); it2 != mModel.end(); ++it2) {
+                if(it1->name() == it2->first.asVariable().name()){
+                    estimatedModel.emplace(*it1, it2->second.asRational());
+                    counter++;
+                    break;
+                }
+            }
+            if(counter == 0){
+                estimatedModel.emplace(*it1, Rational( rand() % 10 ));
+            }
+        }
+
+        cout << "estimated model: " << "\n";
+        for (auto it = estimatedModel.begin(); it != estimatedModel.end(); ++it) {
+            cout << it->first << " | " << it->second;
+            cout << "\n";
+        }
+
+        unsigned result = originalFormula->satisfiedBy(estimatedModel);
+        cout  << "Result " << result;
+        cout << "\n";
+
+        return toAnswer(result);
+
+    }
+
     template<class Settings>
     Answer AbstractModule<Settings>::checkCore()
     {
@@ -397,16 +465,21 @@ namespace smtrat
         // Formula
         //
         ////////////////////////////////////////////////
-        for (auto it = mLRAFormula->begin(); it != mLRAFormula->end(); ++it) {
+/*        for (auto it = mLRAFormula->begin(); it != mLRAFormula->end(); ++it) {
             addReceivedSubformulaToPassedFormula(it);
-        }
+        }*/
         auto Answer = runBackends();
 
-        if (Answer != UNSAT) {
-            Model bmodel = backendsModel();
-            cout << "Solution: " << bmodel;
-            cout << "\n";
+        if (Answer != SAT) {
+            return Answer;
         }
+
+        mModel = backendsModel();
+        cout << "Solution/model of linearized formula: " << mModel;
+        cout << "\n";
+        cout << "\n";
+
+        isOriginalFormulaSatisfied(mModel);
 
         return Answer; // This should be adapted according to your implementation.
     }
