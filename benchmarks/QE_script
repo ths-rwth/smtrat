@@ -1,0 +1,12 @@
+#!/bin/bash
+
+TIMEOUT=3
+PROBLEM=1
+while [ $PROBLEM -le 31 ]
+do
+ START_TIME=$SECONDS
+ timeout $TIMEOUT ../build/smtrat $PROBLEM.smt2
+ ELAPSED_TIME=$(($SECONDS - $START_TIME))
+ echo "Time: $(($ELAPSED_TIME/60)) min $(($ELAPSED_TIME%60)) sec"
+ ((PROBLEM++))
+done
