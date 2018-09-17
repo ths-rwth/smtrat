@@ -437,7 +437,7 @@ namespace smtrat
                 }
             }
             if(counter == 0){
-                estimatedModel.emplace(*it1, Rational( rand() % 10 ));
+                estimatedModel.emplace(*it1, ZERO_RATIONAL);
             }
         }
 
