@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TIMEOUT=3
+TIMEOUT=6000
 PROBLEM=1
 while [ $PROBLEM -le 31 ]
 do
