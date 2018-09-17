@@ -60,10 +60,10 @@ ostream& operator<<(ostream& os, const std::vector<std::vector<onecellcad::TagPo
   {
     assert(trail.model().size() == trail.assignedVariables().size());
 
-    // Temp. workaround, should at least one theory-var should be unassigned, otherwise no OneCell construct possible
+    // Temp. workaround, should at least one theory-var should be assigned, otherwise no OneCell construct possible
     // TODO remove as soon, mcsat backend handles this case.
     if (trail.assignedVariables().size() == 0) {
-      SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", " OneCellExplanation called without any theory-assignment");
+      SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", " OneCellExplanation called with 0 theory-assignment");
       FormulasT explainLiterals;
       for (const auto& trailLiteral : trailLiterals)
         explainLiterals.emplace_back(trailLiteral.negated());

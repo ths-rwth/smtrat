@@ -530,61 +530,74 @@ namespace onecellcad {
       if (mpark::holds_alternative<Section>(cell[polyLevel]))
         return; // canot shrink further
 
-      Sector &sectorAtLvl = mpark::get<Sector>(cell[polyLevel]);
-      RAN value = point[polyLevel]; // called alpha_k in [brown15]
-      SMTRAT_LOG_DEBUG("smtrat.cad", "Shrink single cell sector");
-      SMTRAT_LOG_TRACE("smtrat.cad", "Cell: " << cell);
-      SMTRAT_LOG_TRACE("smtrat.cad", "Sector: " << polyLevel
-                                                << " " << sectorAtLvl);
-      SMTRAT_LOG_DEBUG("smtrat.cad", "Poly: " << poly);
-      SMTRAT_LOG_TRACE("smtrat.cad", "Last variable: " << variableOrder[polyLevel]);
-      SMTRAT_LOG_TRACE("smtrat.cad", "Point: " << point.prefixPoint(polyLevel + 1));
-      // Isolate real roots of level-k 'poly' after plugin in a level-(k-1) point.
+      Sector &sector = mpark::get<Sector>(cell[polyLevel]);
+      const RAN pointComp = point[polyLevel]; // called alpha_k in [brown15]
+
+      SMTRAT_LOG_DEBUG("smtrat.cad", "Shrink cell sector at lvl " << polyLevel);
+      SMTRAT_LOG_TRACE("smtrat.cad", "Sector: " << sector);
+      SMTRAT_LOG_TRACE("smtrat.cad", "Poly: " << poly);
+      SMTRAT_LOG_TRACE("smtrat.cad", "Lvl-Var: " << variableOrder[polyLevel]);
+      SMTRAT_LOG_DEBUG("smtrat.cad","PointComp: " << pointComp);
+      //SMTRAT_LOG_TRACE("smtrat.cad", "Point: " << point.prefixPoint(polyLevel + 1));
+      // Isolate real isolatedRoots of level-k 'poly' after plugin in a level-(k-1) point.
       // Poly must not vanish under this prefixPoint!
-      auto roots =
+      auto isolatedRoots =
         isolateLastVariableRoots(polyLevel, poly);
-      if (roots.empty()) {
-        SMTRAT_LOG_TRACE("smtrat.cad", "No last variable roots");
+      if (isolatedRoots.empty()) {
+        SMTRAT_LOG_TRACE("smtrat.cad", "No isolatable isolatedRoots");
         return;
       }
-      SMTRAT_LOG_TRACE("smtrat.cad", "Last variable roots: " << roots);
+      SMTRAT_LOG_TRACE("smtrat.cad", "Isolated roots: " << isolatedRoots);
+      SMTRAT_LOG_DEBUG("smtrat.cad","Isolated roots: " << isolatedRoots);
 
-      // Search for closest roots/boundPoints to value, i.e.
-      // someRoot ... < closestLower <= value <= closestUpper < ... someOtherRoot
+
+      // Search for closest isolatedRoots/boundPoints to pointComp, i.e.
+      // someRoot ... < closestLower <= pointComp <= closestUpper < ... someOtherRoot
       std::experimental::optional<RAN> closestLower;
       std::experimental::optional<RAN> closestUpper;
 
-      std::size_t rootNumber = 0, lowerRootNumber, upperRootNumber;
+      if (sector.lowBound) {
+        closestLower = (*(sector.lowBound)).isolatedRoot;
+        SMTRAT_LOG_DEBUG("smtrat.cad","Existing low bound: " << *closestLower);
+        assert(*closestLower < pointComp);
+      }
+      if (sector.highBound) {
+        closestUpper = (*(sector.highBound)).isolatedRoot;
+        SMTRAT_LOG_DEBUG("smtrat.cad","Existing high bound: " << *closestUpper);
+        assert(*closestUpper > pointComp);
+      }
+
+
+      std::size_t rootIdx = 0, lowerRootIdx, upperRootIdx;
       carl::Variable rootVariable = variableOrder[polyLevel];
-      for (const auto &boundPointCandidate: roots) {
-        rootNumber++;
-        if (boundPointCandidate < value) {
-          if (!closestLower || *closestLower < boundPointCandidate) {
-            closestLower = boundPointCandidate;
-            lowerRootNumber = rootNumber;
+      for (const auto &root: isolatedRoots) {
+        rootIdx++;
+        if (root < pointComp) {
+          if (!closestLower || *closestLower < root) {
+            closestLower = root;
+            lowerRootIdx = rootIdx;
           }
-        } else if (boundPointCandidate == value) {
+        } else if (root == pointComp) {
           // Sector collapses into a section
-          cell[polyLevel] = Section{asRootExpr(rootVariable, poly, rootNumber), boundPointCandidate};
-          SMTRAT_LOG_TRACE("smtrat.cad", "Sector collapses: " << (Section{asRootExpr(rootVariable, poly, rootNumber), boundPointCandidate}));
+          cell[polyLevel] = Section{asRootExpr(rootVariable, poly, rootIdx), root};
+          SMTRAT_LOG_TRACE("smtrat.cad", "Sector collapses: " << (Section{asRootExpr(rootVariable, poly, rootIdx), root}));
           return;
-        } else { // value < boundPointCandidate
-          if (!closestUpper || boundPointCandidate < *closestUpper) {
-            closestUpper = boundPointCandidate;
-            upperRootNumber = rootNumber;
+        } else { // pointComp < root
+          if (!closestUpper || root < *closestUpper) {
+            closestUpper = root;
+            upperRootIdx = rootIdx;
           }
         }
       }
 
-      // Sector is still a sector
-      if (closestLower)
-        sectorAtLvl.lowBound = Section{asRootExpr(rootVariable, poly, lowerRootNumber), *closestLower};
+      if (closestLower && (*(sector.lowBound)).isolatedRoot < closestLower)
+        sector.lowBound = Section{asRootExpr(rootVariable, poly, lowerRootIdx), *closestLower};
 
-      if (closestUpper)
-        sectorAtLvl.highBound = Section{asRootExpr(rootVariable, poly, upperRootNumber), *closestUpper};
+      if (closestUpper && closestUpper < (*(sector.highBound)).isolatedRoot)
+        sector.highBound = Section{asRootExpr(rootVariable, poly, upperRootIdx), *closestUpper};
 
       SMTRAT_LOG_TRACE("smtrat.cad", "New component: " << polyLevel
-                                                       << " " << sectorAtLvl);
+                                                       << " " << sector);
     }
 
     /**
