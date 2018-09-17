@@ -18,28 +18,28 @@ namespace qe{
     * - Anzahl der freien Variablen k
     */
 
-    std::cout << "------------------------------------------------------------------------" << std::endl;
-    std::cout << "Informationen aus den uebergebenen Daten extrahieren." << std::endl;
-    std::cout << std::endl;
+    //std::cout << "------------------------------------------------------------------------" << std::endl;
+    //std::cout << "Informationen aus den uebergebenen Daten extrahieren." << std::endl;
+    //std::cout << std::endl;
 
     // Quantifier-free part ////////////////////////////////////////////////////
     mQuantifierFreePart = quantifierFreePart;
 
     // AUSGABE: Quantifier-free part
-    std::cout << "Quantifier-free part: " << mQuantifierFreePart << std::endl;
+    //std::cout << "Quantifier-free part: " << mQuantifierFreePart << std::endl;
 
     // Quantoren ///////////////////////////////////////////////////////////////
     mQuantifiers = quantifiers;
 
-    std::cout << "Quantoren: ";
+    //std::cout << "Quantoren: ";
     for(auto it = mQuantifiers.begin(); it != mQuantifiers.end(); it++) {
       if(it->second == smtrat::parser::QuantifierType::EXISTS) {
-        std::cout << "E " << it->first << " ";
+        //std::cout << "E " << it->first << " ";
       }else {
-        std::cout << "A " << it->first << " ";
+        //std::cout << "A " << it->first << " ";
       }
     }
-    std::cout << std::endl;
+    //std::cout << std::endl;
 
     // Quantifizierte Variablen ////////////////////////////////////////////////
     for(auto it = mQuantifiers.rbegin(); it != mQuantifiers.rend(); it++) {
@@ -57,11 +57,11 @@ namespace qe{
 		}
 
     // AUSGABE: Menge der Variablen
-    std::cout << "Variablen: ";
+    //std::cout << "Variablen: ";
     for(Variables::iterator it = mVariables.begin(); it != mVariables.end(); it++){
-			std::cout << (*it) << " ";
+			//std::cout << (*it) << " ";
 		}
-    std::cout << std::endl;
+    //std::cout << std::endl;
 
     // Anzahl der Variablen n //////////////////////////////////////////////////
     n = mVariables.size();
@@ -73,12 +73,12 @@ namespace qe{
     mQuantifierFreePart.getConstraints(mConstraints);
 
     // AUSGABE: Menge der Constraints
-    std::cout << "Constraints: ";
+    //std::cout << "Constraints: ";
     for(Constraints::iterator it = mConstraints.begin(); it != mConstraints.end(); it++){
-			std::cout << (*it) << " ";
+			//std::cout << (*it) << " ";
 		}
-    std::cout << std::endl;
-    std::cout << std::endl;
+    //std::cout << std::endl;
+    //std::cout << std::endl;
   }
 
   Formula QE::eliminateQuantifiers() {
@@ -108,9 +108,9 @@ namespace qe{
     * - LiftingTree berechnen
     */
 
-    std::cout << "------------------------------------------------------------------------" << std::endl;
-    std::cout << "CAD bauen." << std::endl;
-    std::cout << std::endl;
+    //std::cout << "------------------------------------------------------------------------" << std::endl;
+    //std::cout << "CAD bauen." << std::endl;
+    //std::cout << std::endl;
 
     // CAD initialisieren //////////////////////////////////////////////////////
     mCAD.reset(mVariables);
@@ -129,7 +129,7 @@ namespace qe{
     */
 
     // AUSGABE: Projektion
-    std::cout << "Projection: " << std::endl;
+    //std::cout << "Projection: " << std::endl;
     std::cout << mCAD.getProjection() << std::endl;
 
 
@@ -138,7 +138,7 @@ namespace qe{
     mCAD.lift();
 
     // AUSGABE: LiftingTree
-    std::cout << "LiftingTree: " << std::endl;
+    //std::cout << "LiftingTree: " << std::endl;
     std::cout << mCAD.getLifting().getTree() << std::endl;
   }
 
@@ -152,9 +152,9 @@ namespace qe{
     * - LiftingTree neu berechnen
     */
 
-    std::cout << "------------------------------------------------------------------------" << std::endl;
-    std::cout << "CAD updaten. " << std::endl;
-    std::cout << std::endl;
+    //std::cout << "------------------------------------------------------------------------" << std::endl;
+    //std::cout << "CAD updaten. " << std::endl;
+    //std::cout << std::endl;
 
     // Die Constraints sortieren, sodass solche mit kleineren Grad zuerst hinzugefuegt werden
     // Anmerkung: Das is ein sort mit lambda-Ausdruck
@@ -166,15 +166,15 @@ namespace qe{
       mCAD.addConstraint(*it);
 
       // AUSGABE: Projektion
-      std::cout << "Projection: " << std::endl;
-      std::cout << mCAD.getProjection() << std::endl;
+      //std::cout << "Projection: " << std::endl;
+      //std::cout << mCAD.getProjection() << std::endl;
 
       // LiftingTree neu berechnen
       mCAD.lift();
 
       // AUSGABE: LiftingTree
-      std::cout << "LiftingTree: " << std::endl;
-      std::cout << mCAD.getLifting().getTree() << std::endl;
+      //std::cout << "LiftingTree: " << std::endl;
+      //std::cout << mCAD.getLifting().getTree() << std::endl;
 
       if(isProjectionDefinable()) {
         break;
@@ -183,9 +183,9 @@ namespace qe{
   }
 
   void QE::simplifyCAD() {
-    std::cout << "Simplify the CAD" << std::endl;
+    //std::cout << "Simplify the CAD" << std::endl;
 
-    std::cout << "Level k" << std::endl;
+    //std::cout << "Level k" << std::endl;
 
     // Bestimme alle k-Level truth-boundary Zellen
     std::vector<carl::tree<smtrat::cad::Sample>::iterator> truthBoundaryCells;
@@ -198,7 +198,7 @@ namespace qe{
         carl::tree<smtrat::cad::Sample>::iterator b = it.previous();
         carl::tree<smtrat::cad::Sample>::iterator d = it.next().next();
 
-        std::cout << "Betrachtete Zellen: " << *b << ", " << *c << ", " << *d << std::endl;
+        //std::cout << "Betrachtete Zellen: " << *b << ", " << *c << ", " << *d << std::endl;
 
         // Betrachte 3 benachbarte Zellen
         if(mTruth.find(b)->second != mTruth.find(c)->second || mTruth.find(c)->second != mTruth.find(d)->second) {
@@ -250,7 +250,7 @@ namespace qe{
 
           // Der k-Level Projektionsfaktor ist nicht in H
           if(std::find(H.begin(), H.end(), p) == H.end()) {
-            std::cout << "Es wurde " << p << " geloescht." << std::endl;
+            //std::cout << "Es wurde " << p << " geloescht." << std::endl;
             mCAD.removePolynomial(n + 1 - k , id);
           }
         }
@@ -263,7 +263,7 @@ namespace qe{
     truthBoundaryCells.clear();
     S.clear();
 
-    std::cout << "Level k-1 und darunter:" << std::endl;
+    //std::cout << "Level k-1 und darunter:" << std::endl;
 
     // Weiter fuer Level k-1 und darunter
     for(int i = k - 1; i > 0; i--) {
@@ -293,7 +293,7 @@ namespace qe{
           carl::tree<smtrat::cad::Sample>::iterator b = it.previous();
           carl::tree<smtrat::cad::Sample>::iterator d = it.next().next();
 
-          std::cout << "Betrachtete Zellen: " << *b << ", " << *c << ", " << *d << std::endl;
+          //std::cout << "Betrachtete Zellen: " << *b << ", " << *c << ", " << *d << std::endl;
 
           if(truthBoundaryTest(b,c,d)) {
             truthBoundaryCells.push_back(c);
@@ -336,7 +336,7 @@ namespace qe{
 
             // Der i-Level Projektionsfaktor ist weder in N noch in H
             if(std::find(N.begin(), N.end(), p) == N.end() && std::find(H.begin(), H.end(), p) == H.end()) {
-              std::cout << "Es wurde " << p << " geloescht." << std::endl;
+              //std::cout << "Es wurde " << p << " geloescht." << std::endl;
               mCAD.removePolynomial(n + 1 - i, id);
             }
           }
@@ -396,8 +396,6 @@ namespace qe{
   }
 
   void QE::computeTruthValues() {
-    // TODO: Sicherheit bezueglich der Reihenfolge der quantifizierten Variablen gewaehrleisten
-
     /* Bestimmung der Wahrheitswerte aller n- bis k-Level CAD-Zellen
     * - Bestimmung der Wahrheitswerte der n-Level CAD-Zellen durch einsetzen in die Formel
     * - Rekursive Bestimmung der Wahrheitswerte der i-Level CAD-Zellen (mit k <= i < n)
@@ -406,15 +404,15 @@ namespace qe{
     // Reset mTruth
     mTruth.clear();
 
-    std::cout << "------------------------------------------------------------------------" << std::endl;
-    std::cout << "Wahrheitswerte aller n- bis k-Level CAD-Zellen bestimmen." << std::endl;
-    std::cout << std::endl;
+    //std::cout << "------------------------------------------------------------------------" << std::endl;
+    //std::cout << "Wahrheitswerte aller n- bis k-Level CAD-Zellen bestimmen." << std::endl;
+    //std::cout << std::endl;
 
     // Bestimmung der Wahrheitswerte der n-Level CAD-Zellen ////////////////////
 
     // AUSGABE: akutelles Level
-    std::cout << "Level: " << n << std::endl;
-    std::cout << std::endl;
+    //std::cout << "Level: " << n << std::endl;
+    //std::cout << std::endl;
 
     // Ueber die Blaetter des LiftingTree's iterieren
     for(auto it = mCAD.getLifting().getTree().begin_leaf(); it != mCAD.getLifting().getTree().end_leaf(); it++) {
@@ -434,7 +432,7 @@ namespace qe{
       mTruth.emplace(it, truthValue);
 
       // AUSGABE: CAD-Zelle und zugehoeriger Wahrheitswert
-      std::cout << assignment << ": " << ((truthValue == 0) ? "FALSE" : "TRUE") << std::endl;
+      //std::cout << assignment << ": " << ((truthValue == 0) ? "FALSE" : "TRUE") << std::endl;
     }
 
     // Bestimmung der Wahrheitswerte der i-Level CAD-Zellen ////////////////////
@@ -444,9 +442,9 @@ namespace qe{
     // Ueber die Quantoren iterieren
     for(const auto& quantifier : mQuantifiers) {
       // AUSGABE: akutelles Level
-      std::cout << std::endl;
-      std::cout << "Level: " << i << std::endl;
-      std::cout << std::endl;
+      //std::cout << std::endl;
+      //std::cout << "Level: " << i << std::endl;
+      //std::cout << std::endl;
 
       // Ueber die Knoten der Tiefe i des LiftingTree's iterieren
       for(auto it = mCAD.getLifting().getTree().begin_depth(i); it != mCAD.getLifting().getTree().end_depth(); it++) {
@@ -463,7 +461,7 @@ namespace qe{
           mTruth.emplace(it, truthValue);
 
           // AUSGABE: CAD-Zelle und zugehoeriger Wahrheitswert
-          std::cout << mCAD.getLifting().extractSampleMap(it) << ": " << ((truthValue == 0) ? "FALSE" : "TRUE") << std::endl;
+          //std::cout << mCAD.getLifting().extractSampleMap(it) << ": " << ((truthValue == 0) ? "FALSE" : "TRUE") << std::endl;
         }
 
         // Der Fall das x_i durch einen Existenzquantor quantifiziert wird
@@ -479,13 +477,13 @@ namespace qe{
           mTruth.emplace(it, truthValue);
 
           // AUSGABE: CAD-Zelle und zugehoeriger Wahrheitswert
-          std::cout << mCAD.getLifting().extractSampleMap(it) << ": " << ((truthValue == 0) ? "FALSE" : "TRUE") << std::endl;
+          //std::cout << mCAD.getLifting().extractSampleMap(it) << ": " << ((truthValue == 0) ? "FALSE" : "TRUE") << std::endl;
         }
       }
 
       i = i-1;
     }
-    std::cout << std::endl;
+    //std::cout << std::endl;
   }
 
   void QE::computeSignatures() {
@@ -498,8 +496,8 @@ namespace qe{
     // Reset mSignature
     mSignature.clear();
 
-    std::cout << "Signaturen aller " << k << "-Level CAD-Zellen bestimmen. " << std::endl;
-    std::cout << std::endl;
+    //std::cout << "Signaturen aller " << k << "-Level CAD-Zellen bestimmen. " << std::endl;
+    //std::cout << std::endl;
 
     Assignment assignment;
     std::vector<carl::Sign> signature;
@@ -565,9 +563,9 @@ namespace qe{
     // Reset mCauseConflict
     mCauseConflict.clear();
 
-    std::cout << "------------------------------------------------------------------------" << std::endl;
-    std::cout << "Teste ob die konstruierte CAD projection definable ist. " << std::endl;
-    std::cout << std::endl;
+    //std::cout << "------------------------------------------------------------------------" << std::endl;
+    //std::cout << "Teste ob die konstruierte CAD projection definable ist. " << std::endl;
+    //std::cout << std::endl;
 
     bool projectionDefinable = true;
     std::vector<carl::tree<smtrat::cad::Sample>::iterator> samplesOfSameSignature;
@@ -583,11 +581,11 @@ namespace qe{
 
     for(auto it = signature_flipped.begin(); it != signature_flipped.end(); it++) {
       // AUSGABE: CAD-Zelle, Signatur, Wahrheitswert
-      std::cout << mCAD.getLifting().extractSampleMap(it->second) << ": (";
+      //std::cout << mCAD.getLifting().extractSampleMap(it->second) << ": (";
       for(auto jt = it->first.begin(); jt != it->first.end(); jt++) {
-        std::cout << ((jt == it->first.begin()) ? "" : ", ") << (*jt);
+        //std::cout << ((jt == it->first.begin()) ? "" : ", ") << (*jt);
       }
-      std::cout << ") , " << ((mTruth.find(it->second)->second == 0) ? "FALSE" : "TRUE") << std::endl;
+      //std::cout << ") , " << ((mTruth.find(it->second)->second == 0) ? "FALSE" : "TRUE") << std::endl;
 
       // Die Signatur hat sich nicht geaendert
       if(signature == it->first) {
@@ -615,7 +613,7 @@ namespace qe{
         signature = it->first;
       }
     }
-    std::cout << std::endl;
+    //std::cout << std::endl;
 
     return projectionDefinable;
   }
@@ -634,15 +632,15 @@ namespace qe{
     * - Die geupdatete CAD hat nun keine conflicting pairs des betrachteden Levels mehr
     */
 
-    std::cout << "------------------------------------------------------------------------" << std::endl;
-    std::cout << "Manipuliere die CAD, sodass sie projection definable wird. " << std::endl;
-    std::cout << std::endl;
+    //std::cout << "------------------------------------------------------------------------" << std::endl;
+    //std::cout << "Manipuliere die CAD, sodass sie projection definable wird. " << std::endl;
+    //std::cout << std::endl;
 
     for(int i = k; i >= 1; i--) {
-      std::cout << "Entferne conflicting pairs in Level: " << i << ". " << std::endl;
+      //std::cout << "Entferne conflicting pairs in Level: " << i << ". " << std::endl;
 
       // 1.) Bestimme confliting pairs des entsprechenden Levels
-      std::cout << "Bestimme die Menge der conflicting pairs. " << std::endl;
+      //std::cout << "Bestimme die Menge der conflicting pairs. " << std::endl;
 
       // Die Menge der conflicting pairs
       std::vector<std::pair<carl::tree<smtrat::cad::Sample>::iterator,carl::tree<smtrat::cad::Sample>::iterator>> conflictingPairs;
@@ -699,7 +697,7 @@ namespace qe{
       }
 
       // 2.) Bestimme die Menge der Mengen der zu betrachtenden Projektionsfaktoren
-      std::cout << "Bestimme die Menge der Mengen der zu betrachtenden Projektionsfaktoren. " << std::endl;
+      //std::cout << "Bestimme die Menge der Mengen der zu betrachtenden Projektionsfaktoren. " << std::endl;
 
       // Die Menge der zu betrachtenden Projektionsfaktoren fuer ein confliting pair (a,b)
       std::vector<carl::UnivariatePolynomial<Polynomial>> setOfProjectionFactors;
@@ -763,26 +761,26 @@ namespace qe{
         }
       }
 
-      std::cout << "Die Menge der Mengen der zu betrachtenden Projektionsfaktoren: " << std::endl;
+      //std::cout << "Die Menge der Mengen der zu betrachtenden Projektionsfaktoren: " << std::endl;
       for(auto it = setOfSetOfProjectionFactors.begin(); it != setOfSetOfProjectionFactors.end(); it++) {
         for(auto jt = it->begin(); jt != it->end(); jt++) {
-          std::cout << *jt << std::endl;
+          //std::cout << *jt << std::endl;
         }
-        std::cout << std::endl;
+        //std::cout << std::endl;
       }
 
       // 3.) Berechne ein Hitting Set fuer die Menge der Mengen der zu betrachtenden Projektionsfaktoren
-      std::cout << "Berechne ein Hitting Set fuer die Menge der Mengen der zu betrachtenden Projektionsfaktoren. " << std::endl;
+      //std::cout << "Berechne ein Hitting Set fuer die Menge der Mengen der zu betrachtenden Projektionsfaktoren. " << std::endl;
 
       std::vector<carl::UnivariatePolynomial<Polynomial>> hittingSet = computeHittingSet(setOfSetOfProjectionFactors);
 
-      std::cout << "Das Hitting Set der zu betrachteden Projektionsfaktoren: " << std::endl;
+      //std::cout << "Das Hitting Set der zu betrachteden Projektionsfaktoren: " << std::endl;
       for(auto it = hittingSet.begin(); it != hittingSet.end(); it++) {
-        std::cout << *it << std::endl;
+        //std::cout << *it << std::endl;
       }
 
       // 4.) Berechne alle irreduziblen Faktoren aller partiellen Ableitungen (nach der Variable i-ten Levels)
-      std::cout << "Berechne alle irreduziblen Faktoren aller partiellen Ableitungen der Polynome des Hitting Sets. " << std::endl;
+      //std::cout << "Berechne alle irreduziblen Faktoren aller partiellen Ableitungen der Polynome des Hitting Sets. " << std::endl;
 
       // Menge der der CAD hinzuzufuegenden Constraints
       Constraints addToCAD;
@@ -801,15 +799,15 @@ namespace qe{
         }
       }
 
-      std::cout << "Die Menge der irreduziblen Faktoren aller partiellen Ableitungen: " << std::endl;
+      //std::cout << "Die Menge der irreduziblen Faktoren aller partiellen Ableitungen: " << std::endl;
       for(auto it = addToCAD.begin(); it != addToCAD.end(); it++) {
-        std::cout << it->lhs() << std::endl;
+        //std::cout << it->lhs() << std::endl;
       }
 
       // 5.) CAD updaten
       updateCAD(addToCAD);
 
-      std::cout << std::endl;
+      //std::cout << std::endl;
 
       /* Anmerkung:
       * - Falls die CAD jetzt projection definable ist kann abgebrochen werden
