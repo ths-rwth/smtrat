@@ -83,18 +83,24 @@ ostream& operator<<(ostream& os, const std::vector<std::vector<onecellcad::TagPo
       polys.emplace_back(constraint.lhs()); // constraints have the form 'poly < 0' with  <, = etc.
 
     const auto& trailVariables = trail.assignedVariables();
-    std::vector<carl::Variable> fullProjectionVarOrder(trailVariables.size());
+    std::vector<carl::Variable> fullProjectionVarOrder = varOrder;
+    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "FullProjVarOrder: " << fullProjectionVarOrder);
     std::vector<carl::Variable> oneCellCADVarOrder;
-    fullProjectionVarOrder.reserve(varOrder.size());
-    oneCellCADVarOrder.reserve(trailVariables.size());
+    for (int i = 0; i < trailVariables.size(); i++)
+      oneCellCADVarOrder.emplace_back(fullProjectionVarOrder[i]);
 
-    for (auto variable : varOrder) {
-      if (std::find(trailVariables.begin(), trailVariables.end(), variable) == trailVariables.end())
-        fullProjectionVarOrder.push_back(variable);
-      else
-        oneCellCADVarOrder.push_back(variable);
-    }
-    std::copy_n(oneCellCADVarOrder.begin(), oneCellCADVarOrder.size(), fullProjectionVarOrder.begin());
+//    std::vector<carl::Variable> fullProjectionVarOrder(trailVariables.size());
+//    std::vector<carl::Variable> oneCellCADVarOrder;
+//    fullProjectionVarOrder.reserve(varOrder.size());
+//    oneCellCADVarOrder.reserve(trailVariables.size());
+//
+//    for (auto variable : varOrder) {
+//      if (std::find(trailVariables.begin(), trailVariables.end(), variable) == trailVariables.end())
+//        fullProjectionVarOrder.push_back(variable);
+//      else
+//        oneCellCADVarOrder.push_back(variable);
+//    }
+//    std::copy_n(oneCellCADVarOrder.begin(), oneCellCADVarOrder.size(), fullProjectionVarOrder.begin());
 
     SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "FullProjVarOrder: " << fullProjectionVarOrder);
     SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "OneCellVarOrder: " << oneCellCADVarOrder);
@@ -118,11 +124,12 @@ ostream& operator<<(ostream& os, const std::vector<std::vector<onecellcad::TagPo
         onecellcad::nonConstIrreducibleFactors(
           factorizer, projectionFactors));
       projectionLevels[currentLvl].clear();
-      SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Polys at levels after projecting level " << currentLvl << ":\n" << projectionLevels);
+      SMTRAT_LOG_TRACE("smtrat.mcsat.nlsat", "Polys at levels after a CAD projection at level: " << currentLvl << ":\n" << projectionLevels);
     }
+    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Polys at levels after full CAD projection:\n" << projectionLevels);
 
     std::vector<onecellcad::TagPoly2> oneCellPolys;
-    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "OneCellMaxLvl: " << oneCellMaxLvl << " ProjectionLvls: " << projectionLevels);
+//    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "OneCellMaxLvl: " << oneCellMaxLvl << " ProjectionLvls: " << projectionLevels);
     for (std::size_t currentLvl = 0; currentLvl <= oneCellMaxLvl; currentLvl++) {
       for (const auto& poly : projectionLevels[currentLvl])
         oneCellPolys.emplace_back(onecellcad::TagPoly2{poly.tag, poly.poly, currentLvl});

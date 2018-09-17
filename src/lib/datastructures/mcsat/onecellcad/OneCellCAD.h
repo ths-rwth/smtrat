@@ -548,7 +548,16 @@ namespace onecellcad {
         return;
       }
       SMTRAT_LOG_TRACE("smtrat.cad", "Isolated roots: " << isolatedRoots);
-      SMTRAT_LOG_DEBUG("smtrat.cad","Isolated roots: " << isolatedRoots);
+
+      if (sector.lowBound) {
+        SMTRAT_LOG_TRACE("smtrat.cad","Existing low bound: " << (*(sector.lowBound)).isolatedRoot);
+        assert((*(sector.lowBound)).isolatedRoot < pointComp);
+      }
+      if (sector.highBound) {
+        SMTRAT_LOG_TRACE("smtrat.cad","Existing high bound: " << (*(sector.highBound)).isolatedRoot);
+        assert((*(sector.highBound)).isolatedRoot  > pointComp);
+      }
+
 
 
       // Search for closest isolatedRoots/boundPoints to pointComp, i.e.
@@ -556,33 +565,24 @@ namespace onecellcad {
       std::experimental::optional<RAN> closestLower;
       std::experimental::optional<RAN> closestUpper;
 
-      if (sector.lowBound) {
-        closestLower = (*(sector.lowBound)).isolatedRoot;
-        SMTRAT_LOG_DEBUG("smtrat.cad","Existing low bound: " << *closestLower);
-        assert(*closestLower < pointComp);
-      }
-      if (sector.highBound) {
-        closestUpper = (*(sector.highBound)).isolatedRoot;
-        SMTRAT_LOG_DEBUG("smtrat.cad","Existing high bound: " << *closestUpper);
-        assert(*closestUpper > pointComp);
-      }
-
-
       std::size_t rootIdx = 0, lowerRootIdx, upperRootIdx;
       carl::Variable rootVariable = variableOrder[polyLevel];
       for (const auto &root: isolatedRoots) {
         rootIdx++;
         if (root < pointComp) {
+          SMTRAT_LOG_TRACE("smtrat.cad", "Smaller: " << root);
           if (!closestLower || *closestLower < root) {
             closestLower = root;
             lowerRootIdx = rootIdx;
           }
         } else if (root == pointComp) {
+          SMTRAT_LOG_TRACE("smtrat.cad", "Equal: " << root);
           // Sector collapses into a section
           cell[polyLevel] = Section{asRootExpr(rootVariable, poly, rootIdx), root};
           SMTRAT_LOG_TRACE("smtrat.cad", "Sector collapses: " << (Section{asRootExpr(rootVariable, poly, rootIdx), root}));
           return;
         } else { // pointComp < root
+          SMTRAT_LOG_TRACE("smtrat.cad", "Bigger: " << root);
           if (!closestUpper || root < *closestUpper) {
             closestUpper = root;
             upperRootIdx = rootIdx;
@@ -590,14 +590,20 @@ namespace onecellcad {
         }
       }
 
-      if (closestLower && (*(sector.lowBound)).isolatedRoot < closestLower)
-        sector.lowBound = Section{asRootExpr(rootVariable, poly, lowerRootIdx), *closestLower};
+      if (closestLower) {
+        if (!sector.lowBound || (*(sector.lowBound)).isolatedRoot < closestLower) {
+          sector.lowBound = Section{asRootExpr(rootVariable, poly, lowerRootIdx), *closestLower};
+          SMTRAT_LOG_TRACE("smtrat.cad", "New section: " << " " << sector);
+        }
+      }
 
-      if (closestUpper && closestUpper < (*(sector.highBound)).isolatedRoot)
-        sector.highBound = Section{asRootExpr(rootVariable, poly, upperRootIdx), *closestUpper};
+      if (closestUpper) {
+        if (!sector.highBound || closestUpper < (*(sector.highBound)).isolatedRoot) {
+          sector.highBound = Section{asRootExpr(rootVariable, poly, upperRootIdx), *closestUpper};
+          SMTRAT_LOG_TRACE("smtrat.cad", "New section: " << " " << sector);
+        }
+      }
 
-      SMTRAT_LOG_TRACE("smtrat.cad", "New component: " << polyLevel
-                                                       << " " << sector);
     }
 
     /**
