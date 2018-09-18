@@ -19,7 +19,7 @@
 #include <set>
 #include <algorithm>
 #include "variant.hpp" // Workaround; remove when c++17 available
-#include <experimental/optional> // remove when c++17 available
+#include <optional> // remove when c++17 available
 /* #include <optional> // uncomment when c++17 is available*/
 
 #include <carl/formula/model/ran/RealAlgebraicNumber.h>
@@ -225,10 +225,10 @@ namespace onecellcad {
      */
     struct Sector {
       /** A std::nullopt lowBound represents negative infinity */
-      std::experimental::optional<Section> lowBound;
+      std::optional<Section> lowBound;
 
       /** A std:nullopt highBound represents infinity */
-      std::experimental::optional<Section> highBound;
+      std::optional<Section> highBound;
     };
 
     inline
@@ -308,7 +308,7 @@ namespace onecellcad {
      * - 'poly.gatherVariables()' must be a subset of 'variableOrder'.
      */
     inline
-    std::experimental::optional<std::size_t> levelOf(
+    std::optional<std::size_t> levelOf(
       const std::vector<carl::Variable> &variableOrder,
       const Poly &poly) {
       // precondition:
@@ -323,7 +323,7 @@ namespace onecellcad {
       auto polyVariables = poly.gatherVariables();
 
       if (polyVariables.empty())
-        return std::experimental::nullopt; // for const-polys like '2'
+        return std::nullopt; // for const-polys like '2'
 
       for (std::size_t level = 0; level < variableOrder.size(); ++level) {
         polyVariables.erase(variableOrder[level]);
@@ -556,8 +556,8 @@ namespace onecellcad {
 
       // Search for closest isolatedRoots/boundPoints to pointComp, i.e.
       // someRoot ... < closestLower <= pointComp <= closestUpper < ... someOtherRoot
-      std::experimental::optional<RAN> closestLower;
-      std::experimental::optional<RAN> closestUpper;
+      std::optional<RAN> closestLower;
+      std::optional<RAN> closestUpper;
 
       std::size_t rootIdx = 0, lowerRootIdx, upperRootIdx;
       carl::Variable rootVariable = variableOrder[polyLevel];
@@ -1089,7 +1089,7 @@ namespace onecellcad {
     }
 
 
-    std::experimental::optional<CADCell> createCADCellAroundPoint(
+    std::optional<CADCell> createCADCellAroundPoint(
       const std::vector<Poly> &polys) {
       // precondition:
       assert(hasOnlyNonConstIrreducibles(polys));
@@ -1107,7 +1107,7 @@ namespace onecellcad {
         auto level = levelOf(variableOrder,poly);
         if (shrinkCell(TagPoly2{InvarianceType::SIGN_INV, poly, *level}, cell) == ShrinkResult::FAIL) {
           SMTRAT_LOG_WARN("smtrat.cad", "Building failed");
-          return std::experimental::nullopt;
+          return std::nullopt;
         }
       }
 
@@ -1116,7 +1116,7 @@ namespace onecellcad {
       return cell;
     }
 
-    std::experimental::optional<CADCell> pointEnclosingCADCell(
+    std::optional<CADCell> pointEnclosingCADCell(
       const std::vector<TagPoly2> &polys) {
       // precondition:
       assert(hasOnlyNonConstIrreducibles(asMultiPolys(polys)));
@@ -1133,7 +1133,7 @@ namespace onecellcad {
       for (const auto &poly : polys) {
         if (shrinkCell(poly, cell) == ShrinkResult::FAIL) {
           SMTRAT_LOG_WARN("smtrat.cad", "Building failed");
-          return std::experimental::nullopt;
+          return std::nullopt;
         }
       }
 
@@ -1156,7 +1156,7 @@ namespace onecellcad {
       * mention only variables that appear in 'variableOrder'.
       *
       */
-    std::experimental::optional<CADCell> pointEnclosingCADCell(
+    std::optional<CADCell> pointEnclosingCADCell(
       const std::vector<Poly> &polys) {
 
       std::vector<TagPoly2> tPolys;
