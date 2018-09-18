@@ -2827,8 +2827,9 @@ namespace smtrat
                                 print(cout, "###");
                                 #endif
                                 SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
-                                if ((*conflict).type() == typeid(FormulaT))
+								if (carl::variant_is_type<FormulaT>(*conflict)) {
                                     sat::detail::validateClause(boost::get<FormulaT>(*conflict), Settings::validate_clauses);
+								}
                                 handleTheoryConflict(*conflict);
                                 // revert assignments
                                 for (auto iter = theoryDecisions.rbegin(); iter != theoryDecisions.rend(); iter++) {

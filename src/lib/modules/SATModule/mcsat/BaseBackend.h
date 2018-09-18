@@ -81,7 +81,6 @@ public:
 			return *res;
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.mcsat", "Explanation backend failed.");
-			assert(false);
 			return Explanation(FormulaT(carl::FormulaType::FALSE));
 		}
 	}

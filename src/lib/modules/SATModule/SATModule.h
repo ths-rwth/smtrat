@@ -973,7 +973,7 @@ namespace smtrat
                 #endif
                 SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict explanation " << explanation);
 
-                if (explanation.type() == typeid(FormulaT)) {
+				if (carl::variant_is_type<FormulaT>(explanation)) {
                     // add conflict clause
                     const auto& clause = boost::get<FormulaT>(explanation);
                     bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));

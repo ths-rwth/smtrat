@@ -14,7 +14,7 @@ using AssignmentOrConflict = boost::variant<ModelValues,FormulasT>;
 using Explanation = boost::variant<FormulaT, ClauseChain>;
 
 inline FormulaT resolveExplanation(const Explanation& expl) {
-    if (expl.type() == typeid(FormulaT)) {
+	if (carl::variant_is_type<FormulaT>(expl)) {
         return boost::get<FormulaT>(expl);
     } else {
         return boost::get<ClauseChain>(expl).resolve();

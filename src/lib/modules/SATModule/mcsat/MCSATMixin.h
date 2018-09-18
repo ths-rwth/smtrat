@@ -242,8 +242,12 @@ public:
 		auto res = mBackend.explain(currentVariable(), !f, *conflict);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " by " << res);
 		// f is part of the conflict, because the trail is feasible without f:
-		if (res.type() == typeid(FormulaT)) {
-			assert(boost::get<FormulaT>(res).contains(f));
+		if (carl::variant_is_type<FormulaT>(res)) {
+			if (boost::get<FormulaT>(res).isFalse()) {
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explanation failed.");
+			} else {
+				assert(boost::get<FormulaT>(res).contains(f));
+			}
 		}
 		else {
 			assert(boost::get<ClauseChain>(res).chain().back().clause().contains(f));
