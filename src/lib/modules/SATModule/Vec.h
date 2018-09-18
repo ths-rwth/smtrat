@@ -232,7 +232,7 @@ namespace Minisat
 		os << "[";
 		for (int i = 0; i < v.size(); i++) {
 			if (i > 0) os << ", ";
-			os << static_cast<const int>(v[i]);
+			os << static_cast<int>(v[i]);
 		}
 		return os << "]";
 	}
