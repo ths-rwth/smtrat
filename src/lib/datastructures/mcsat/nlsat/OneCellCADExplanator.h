@@ -105,11 +105,10 @@ ostream& operator<<(ostream& os, const std::vector<std::vector<onecellcad::TagPo
     SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "OneCellVarOrder: " << oneCellCADVarOrder);
     std::size_t oneCellMaxLvl = trail.model().size()-1; // -1, b/c we count first var = poly level 0
     std::vector<std::vector<onecellcad::TagPoly>> projectionLevels(fullProjectionVarOrder.size()); // init all levels with empty vector
-    carl::CoCoAAdaptor<Poly>factorizer(polys);
     onecellcad::categorizeByLevel(
       projectionLevels,
       fullProjectionVarOrder,
-      onecellcad::nonConstIrreducibleFactors(factorizer, toTagPoly(polys)));
+      onecellcad::nonConstIrreducibleFactors(toTagPoly(polys)));
 
     SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Polys at levels before full CAD projection:\n" << projectionLevels);
     // Project higher level polys down to "normal" level
@@ -122,8 +121,8 @@ ostream& operator<<(ostream& os, const std::vector<std::vector<onecellcad::TagPo
       onecellcad::categorizeByLevel(
         projectionLevels,
         fullProjectionVarOrder,
-        onecellcad::nonConstIrreducibleFactors(
-          factorizer, projectionFactors));
+        onecellcad::nonConstIrreducibleFactors(projectionFactors)
+      );
       projectionLevels[currentLvl].clear();
       SMTRAT_LOG_TRACE("smtrat.mcsat.nlsat", "Polys at levels after a CAD projection at level: " << currentLvl << ":\n" << projectionLevels);
     }

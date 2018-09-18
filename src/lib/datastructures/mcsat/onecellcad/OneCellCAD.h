@@ -348,11 +348,6 @@ namespace onecellcad {
     const std::vector<carl::Variable> &variableOrder;
     const RANPoint &point;
     /**
-     * The CoCoAAdaptor transforms variables into an internal format that we want have done only once
-     * and cached.
-     */
-    const carl::CoCoAAdaptor<Poly> factorizer;
-    /**
      * Projection factor set divided into levels. Polys with mathematical level 1 are at projFactorSet[0]
      * This collection is called "P_prj" in [brown15]
      */
@@ -366,7 +361,6 @@ namespace onecellcad {
     OneCellCAD(const std::vector<carl::Variable> &variableOrder, const RANPoint &point) :
       variableOrder(variableOrder),
       point(point),
-      factorizer(variableOrder),
       projFactorSet(variableOrder.size()), // that many levels exist
       delineators()  {
       // precondition:
@@ -756,7 +750,7 @@ namespace onecellcad {
     ShrinkResult shrinkCellWithIrreducibleFactorsOfPoly(
       const TagPoly2 &poly,
       CADCell &cell) {
-      for (const auto &factor : factorizer.nonConstIrreducibles(poly.poly)) {
+      for (const auto &factor : carl::irreducibleFactors(poly.poly, false)) {
         SMTRAT_LOG_TRACE("smtrat.cad", "Shrink with irreducible factor: Poly: "
           << poly.poly << " Factor: " << factor);
         if (factor.isConstant())
@@ -1214,12 +1208,11 @@ namespace onecellcad {
 
   inline
   std::vector<TagPoly> nonConstIrreducibleFactors(
-    carl::CoCoAAdaptor<Poly> factorizer,
     std::vector<TagPoly> polys) {
 
     std::vector<TagPoly> factors;
     for (auto& poly : polys) {
-      for (const auto &factor : factorizer.nonConstIrreducibles(poly.poly))
+      for (const auto &factor : carl::irreducibleFactors(poly.poly, false))
         factors.emplace_back(TagPoly{poly.tag, factor}); // inherit poly's tag
     }
     return factors;
