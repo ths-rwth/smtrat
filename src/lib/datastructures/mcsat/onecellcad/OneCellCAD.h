@@ -1180,27 +1180,35 @@ namespace onecellcad {
   inline
   std::vector<TagPoly> singleLevelFullProjection(
     carl::Variable mainVar,
+    carl::Variable sndMainVar, //workaround for projection::normalize/discrimant functions
     std::vector<TagPoly> polys) {
 
+    SMTRAT_LOG_DEBUG("smtrat.cad", "Do full McCallum projection of " << polys);
     std::vector<TagPoly> projectionResult;
     for (std::size_t i = 0; i < polys.size(); i++) {
       auto poly1 = polys[i].poly.toUnivariatePolynomial(mainVar);
-      Poly leadCoeff =
-        Poly(smtrat::cad::projection::normalize(poly1.lcoeff().toUnivariatePolynomial(mainVar)));
-      if (!leadCoeff.isConstant())
-        projectionResult.emplace_back(TagPoly{InvarianceType::SIGN_INV, leadCoeff});
+        for (const auto& coeff : poly1.coefficients()) {
+          if (coeff.isConstant()) continue;
+//            SMTRAT_LOG_DEBUG("smtrat.cad", " " << coeff);
+          projectionResult.emplace_back(TagPoly{InvarianceType ::SIGN_INV,Poly(smtrat::cad::projection::normalize(coeff.toUnivariatePolynomial(sndMainVar)))});
+        }
+//      Poly leadCoeff =
+//        Poly(smtrat::cad::projection::normalize(poly1.lcoeff().toUnivariatePolynomial(sndMainVar)));
+//      if (!leadCoeff.isConstant())
+//        projectionResult.emplace_back(TagPoly{InvarianceType::SIGN_INV, leadCoeff});
       Poly discr =
-        Poly(smtrat::cad::projection::discriminant(mainVar, poly1)); // already normalizes
+        Poly(smtrat::cad::projection::discriminant(sndMainVar, poly1)); // already normalizes
       if (!discr.isConstant())
         projectionResult.emplace_back(TagPoly{InvarianceType::ORD_INV, discr});
       for (std::size_t j = i + 1; j < polys.size(); j++) {
         auto poly2 = polys[j].poly.toUnivariatePolynomial(mainVar);
         Poly res =
-          Poly(smtrat::cad::projection::resultant(mainVar, poly1, poly2)); // already normalizes
+          Poly(smtrat::cad::projection::resultant(sndMainVar, poly1, poly2)); // already normalizes
         if (!res.isConstant())
           projectionResult.emplace_back(TagPoly{InvarianceType::ORD_INV, res});
       }
     }
+    SMTRAT_LOG_DEBUG("smtrat.cad", "Result of projection of " << projectionResult);
     return projectionResult;
   }
 

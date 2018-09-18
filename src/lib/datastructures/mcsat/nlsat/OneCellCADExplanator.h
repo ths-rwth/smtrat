@@ -84,7 +84,6 @@ ostream& operator<<(ostream& os, const std::vector<std::vector<onecellcad::TagPo
 
     const auto& trailVariables = trail.assignedVariables();
     std::vector<carl::Variable> fullProjectionVarOrder = varOrder;
-    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "FullProjVarOrder: " << fullProjectionVarOrder);
     std::vector<carl::Variable> oneCellCADVarOrder;
     for (int i = 0; i < trailVariables.size(); i++)
       oneCellCADVarOrder.emplace_back(fullProjectionVarOrder[i]);
@@ -117,7 +116,9 @@ ostream& operator<<(ostream& os, const std::vector<std::vector<onecellcad::TagPo
     auto maxLevel = fullProjectionVarOrder.size() - 1;
     for (std::size_t currentLvl = maxLevel; currentLvl > oneCellMaxLvl; currentLvl--) {
       auto currentVar = fullProjectionVarOrder[currentLvl];
-      auto projectionFactors = onecellcad::singleLevelFullProjection(currentVar, projectionLevels[currentLvl]);
+      assert(currentLvl >= 1);
+      auto nextLowerVar = fullProjectionVarOrder[currentLvl-1];
+      auto projectionFactors = onecellcad::singleLevelFullProjection(currentVar, nextLowerVar, projectionLevels[currentLvl]);
       onecellcad::categorizeByLevel(
         projectionLevels,
         fullProjectionVarOrder,
