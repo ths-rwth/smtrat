@@ -25,12 +25,12 @@ struct MCSATSettingsNL {
 struct MCSATSettingsOC {
   static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-  using ExplanationBackend = SequentialExplanation<nlsat::OneCellExplanation>;
+  using ExplanationBackend = SequentialExplanation<nlsat::OneCellExplanation, nlsat::Explanation>;
 };
 struct MCSATSettingsFMVSOC {
   static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
   using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,nlsat::OneCellExplanation>;
+	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,nlsat::OneCellExplanation, nlsat::Explanation>;
 };
 
 struct MCSATSettingsFMNL {

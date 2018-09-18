@@ -189,6 +189,7 @@ inline std::ostream& operator<< (std::ostream& stream, const ClauseChain::Link& 
     } else if (link.isConflicting()) {
         stream << link.clause() << " -> FALSE";
     }
+	return stream;
 }
 
 inline std::ostream& operator<< (std::ostream& stream, const ClauseChain& chain) {
@@ -199,6 +200,7 @@ inline std::ostream& operator<< (std::ostream& stream, const ClauseChain& chain)
             stream << ", ";
     }
     stream << "]" << std::endl;
+	return stream;
 }
 
 }

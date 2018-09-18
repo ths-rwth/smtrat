@@ -129,19 +129,19 @@ private:
 	ConstraintT sideCondition(const Bound& b) {
 		ConstraintT res = ConstraintT(b.p, carl::Relation::NEQ);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Side condition on " << b.p << ": " << res);
-		return std::move(res);
+		return res;
 	}
 
 	ConstraintT sideConditionLo(const Bound& b) {
 		ConstraintT res = ConstraintT(b.p, b.neg ? carl::Relation::LESS : carl::Relation::GREATER);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Side condition on " << b.p << ": " << res);
-		return std::move(res);
+		return res;
 	}
 
 	ConstraintT sideConditionUp(const Bound& b) {
 		ConstraintT res = ConstraintT(b.p, b.neg ? carl::Relation::LESS : carl::Relation::GREATER);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Side condition on " << b.p << ": " << res);
-		return std::move(res);
+		return res;
 	}
 
 	FormulasT conflictLowerAndUpperBound(const Bound& lower, const Bound& upper) {
@@ -156,7 +156,7 @@ private:
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "-> " << res.back());
 		res.emplace_back(sideConditionLo(lower).negation());
 		res.emplace_back(sideConditionUp(upper).negation());
-		return std::move(res);
+		return res;
 	}
 
 	FormulasT conflictEqualityAndInequality(const Bound& eq, const Bound& ineq) {
@@ -168,7 +168,7 @@ private:
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explanation: " << expl[0].negated() << " && " << expl[1].negated() << " -> " << expl[2]);
 		expl.emplace_back(sideCondition(eq).negation());
 		expl.emplace_back(sideCondition(ineq).negation());
-		return std::move(expl);
+		return expl;
 	}
 
 	FormulasT conflictInequalitiesAndInequality(const Bound& lower, const Bound& upper, const Bound& ineq) {
@@ -183,7 +183,7 @@ private:
 		expl.emplace_back(sideCondition(ineq).negation());
 		expl.emplace_back(sideConditionLo(lower).negation());
 		expl.emplace_back(sideConditionUp(upper).negation()); // TODO move to struct member
-		return std::move(expl);
+		return expl;
 	}
 
 public:
