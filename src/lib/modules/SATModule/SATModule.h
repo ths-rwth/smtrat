@@ -1696,8 +1696,7 @@ namespace smtrat
 					_formula.getType() == carl::FormulaType::VARCOMPARE ||
 					_formula.getType() == carl::FormulaType::VARASSIGN ||
 					_formula.getType() == carl::FormulaType::UEQ ||
-					_formula.getType() == carl::FormulaType::BITVECTOR ||
-					_formula.getType() == carl::FormulaType::PBCONSTRAINT;
+					_formula.getType() == carl::FormulaType::BITVECTOR;
             }
             
             /**
