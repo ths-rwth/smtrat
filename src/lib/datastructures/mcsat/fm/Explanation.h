@@ -7,39 +7,10 @@ namespace smtrat {
 namespace mcsat {
 namespace fm {
 
-inline bool compare(const Rational& r1, const Rational& r2, const carl::Relation& rel) {
-	switch (rel) {
-		case carl::Relation::LESS:
-			return r1 < r2;
-			break;
-		case carl::Relation::LEQ:
-			return r1 <= r2;
-			break;
-		case carl::Relation::GEQ:
-			return r1 >= r2;
-			break;
-		case carl::Relation::GREATER:
-			return r1 > r2;
-			break;
-		case carl::Relation::EQ:
-			return r1 == r2;
-			break;
-		case carl::Relation::NEQ:
-			return r1 != r2;
-			break;
-		default:
-			assert(false);
-			return false;
-	}
-}
+using carl::operator<<;
 
-inline bool isSubset(const carl::Variables& subset, const std::unordered_set<carl::Variable>& superset) {
-	for (const auto& var : subset) {
-		if (superset.find(var) == superset.end()) {
-			return false;
-		}
-	}
-	return true;
+inline bool isSubset(const carl::Variables& subset, const carl::Variables& superset) {
+	return std::includes(superset.begin(), superset.end(), subset.begin(), subset.end());
 }
 
 struct Bound {
@@ -52,28 +23,10 @@ struct Bound {
 	friend ostream& operator<<(ostream& os, const Bound& dt);  
 };
 
-inline ostream& operator<<(ostream& os, const Bound& b)  {  
+inline ostream& operator<<(ostream& os, const Bound& b) {
 	os << "(" << b.constr << ", " << b.p << ", " << b.q << ", " << b.r << ", " << b.neg << ")";  
 	return os;  
 }  
-
-inline std::ostream& operator<< (std::ostream& out, const std::vector<Bound>& v) {
-    out << '[';
-    for (const auto& b : v) {
-		out << b << ", ";
-	}
-    out << "]";
-  	return out;
-}
-
-inline std::ostream& operator<< (std::ostream& out, const std::multimap<Rational, Bound>& v) {
-    out << '[';
-    for (const auto& b : v) {
-		out << b.second << ", ";
-	}
-    out << "]";
-  	return out;
-}
 
 template<class Comparator>
 struct ConflictGenerator {
@@ -110,7 +63,6 @@ struct ConflictGenerator {
 	 * For all bounds b involved, we add b.p != 0 as side condition to the explanation. 
 	 */
 
-	using Callback = std::function<bool(FormulasT&&)>;
 
 	#define yield(callback, result) if (callback(std::move(result))) { return; }
 
@@ -188,7 +140,8 @@ private:
 
 public:
 
-	void generateExplanation(Callback callback) {
+	template<typename Callback>
+	void generateExplanation(Callback&& callback) {
 		std::vector<Bound> mLower;
 		std::vector<Bound> mUpper;
 		std::multimap<Rational, Bound> mInequalities;
@@ -232,7 +185,7 @@ public:
 			if (carl::isZero(evalp.asRational())) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because it does not contain " << mVariable << " after we evaluate it");
 
-				if (!compare(Rational(0), evalq.asRational(), b.relation())) {
+				if (!carl::evaluate(Rational(0), b.relation(), evalq.asRational())) {
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Bound " << b << " unsat because p is zero and q does not comply");
 					FormulasT expl;
 					expl.emplace_back(b.negation());
@@ -406,7 +359,7 @@ struct Explanation {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " <<  data.constraints());
 		
 			for (const auto& b : data.constraints()) {
-				std::unordered_set<carl::Variable> allowedVars;
+				carl::Variables allowedVars;
 				auto curVar = std::find(variableOrdering.begin(), variableOrdering.end(), var); 
 				assert(curVar != variableOrdering.end());
 				allowedVars.insert(variableOrdering.begin(), curVar+1);
