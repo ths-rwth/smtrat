@@ -71,6 +71,8 @@ private:
 	
 	/// Updates lookup for the current level
 	void updateCurrentLevel();
+	/// Undo a decision on the current level
+	void undoDecision();
 public:
 	
 	template<typename BaseModule>
@@ -387,7 +389,7 @@ public:
 
 		if (mMaxTheoryLevel[var] == std::numeric_limits<std::size_t>::max()) {
 			if (!mGetter.isTheoryAbstraction(var)) {
-				mMaxTheoryLevel[var] = 0; // TODO neue literale: es wird immer hier rein gelaufen, da bei heap insert noch nicht erstellt...
+				mMaxTheoryLevel[var] = 0;
 			} else {
 				auto reabstraction = mGetter.reabstractVariable(var);
 				carl::Variables vars;

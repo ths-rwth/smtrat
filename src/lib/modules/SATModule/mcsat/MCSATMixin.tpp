@@ -12,6 +12,17 @@ void MCSATMixin<Settings>::makeDecision(Minisat::Lit decisionLiteral) {
 }
 
 template<typename Settings>
+void MCSATMixin<Settings>::undoDecision() {
+	current().decisionLiteral = Minisat::lit_Undef;
+	mUndecidedVariables.insert(
+		mUndecidedVariables.end(),
+		mTheoryStack.back().univariateVariables.begin(),
+		mTheoryStack.back().univariateVariables.end()
+	);
+	mTheoryStack.back().univariateVariables.clear();
+}
+
+template<typename Settings>
 bool MCSATMixin<Settings>::backtrackTo(Minisat::Lit literal) {
 	std::size_t lvl = level();
 	while (lvl > 0) {
@@ -33,7 +44,7 @@ bool MCSATMixin<Settings>::backtrackTo(Minisat::Lit literal) {
 		if (current().decisionLiteral != Minisat::lit_Undef) {
 			mBackend.popAssignment(currentVariable());
 		}
-		current().decisionLiteral = Minisat::lit_Undef;
+		undoDecision();
 	}
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Next theory variable is " << currentVariable());
 	return true;
@@ -114,11 +125,7 @@ void MCSATMixin<Settings>::pushLevel(carl::Variable var) {
 template<typename Settings>
 void MCSATMixin<Settings>::popLevel() {
 	assert(!mTheoryStack.empty());
-	mUndecidedVariables.insert(
-		mUndecidedVariables.end(),
-		mTheoryStack.back().univariateVariables.begin(),
-		mTheoryStack.back().univariateVariables.end()
-	);
+	assert(mTheoryStack.back().univariateVariables.empty());
 	mTheoryStack.pop_back();
 }
 

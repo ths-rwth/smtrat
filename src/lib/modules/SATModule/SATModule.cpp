@@ -3116,10 +3116,12 @@ namespace smtrat
                     next = var_Undef;
                 }
             }
-            else
+            else {
                 return bestBranchLit(); // TODO does this also need to be adapted?
+            }
         }
 		SMTRAT_LOG_DEBUG("smtrat.sat", "Got " << next);
+        assert(next == var_Undef || is_var_decidable(next));
         return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
         //return next == var_Undef ? lit_Undef : mkLit( next, rnd_pol ? drand( random_seed ) < 0.5 : polarity[next] );
     }
