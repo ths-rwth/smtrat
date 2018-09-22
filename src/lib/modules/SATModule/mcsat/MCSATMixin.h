@@ -66,6 +66,9 @@ private:
 	
 	MCSATBackend<Settings> mBackend;
 
+	/// Cache for the next model assignemt(s)
+	ModelValues mModelAssignmentCache;
+
 private:
 	// ***** private helper methods
 	
@@ -149,6 +152,7 @@ public:
 	 * Add a new constraint.
 	 */
 	void doAssignment(Minisat::Lit lit) {
+		mModelAssignmentCache.clear(); // clear model assignment cache
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Assigned " << lit);
 		if (!mGetter.isTheoryAbstraction(var(lit))) return;
 		const auto& f = mGetter.reabstractLiteral(lit);
@@ -200,6 +204,7 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking whether trail is feasible (w.r.t. " << currentVariable() << ")");
 		auto res = mBackend.findAssignment(currentVariable());
 		if (carl::variant_is_type<ModelValues>(res)) {
+			mModelAssignmentCache = boost::get<ModelValues>(res);
 			return boost::none;
 		} else {
 			const auto& confl = boost::get<FormulasT>(res);
@@ -211,7 +216,13 @@ public:
 	boost::variant<Explanation,FormulasT> makeTheoryDecision() {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Obtaining assignment");
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", mBackend);
-		auto res = mBackend.findAssignment(currentVariable());
+		AssignmentOrConflict res;
+		if (mModelAssignmentCache.empty()) {
+			res = mBackend.findAssignment(currentVariable());
+		} else {
+			res = mModelAssignmentCache;
+			mModelAssignmentCache.clear();
+		}
 		if (carl::variant_is_type<ModelValues>(res)) {
 			const auto& values = boost::get<ModelValues>(res);
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << values);
