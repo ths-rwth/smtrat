@@ -336,6 +336,9 @@ struct MinVarCountComparator {
 
 
 struct DefaultSettings {
+	static constexpr bool use_all_constraints = false;
+};
+struct IgnoreCoreSettings {
 	static constexpr bool use_all_constraints = true;
 };
 
