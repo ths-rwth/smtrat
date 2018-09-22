@@ -255,7 +255,7 @@ namespace vs
      */
     void Condition::print( std::ostream& _out ) const
     {
-        _out << constraint().toString( 0, true, true );
+        _out << constraint();
         _out << " [" << mId << "]";
         _out << "   ";
         if( flag() )

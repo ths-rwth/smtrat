@@ -218,7 +218,7 @@ namespace smtrat
             mModelComputed = false;
             mOptimumComputed = false;
             //TODO Matthias: better solution?
-            cancelUntil( assumptions.size() );
+            cancelUntil(0, true);
             adaptPassedFormula();
             if( _subformula->formula().propertyHolds( carl::PROP_IS_A_LITERAL ) )
             {
@@ -370,7 +370,7 @@ namespace smtrat
     {
         //for( const auto& f : rReceivedFormula() )
         //    std::cout << "   " << f.formula() << std::endl;
-//        std::cout << ((FormulaT) rReceivedFormula()).toString( false, 1, "", true, false, true, true ) << std::endl;
+//        std::cout << ((FormulaT) rReceivedFormula()) << std::endl;
         #ifdef SMTRAT_DEVOPTION_Statistics
         mpStatistics->rNrTotalVariablesBefore() = (size_t) nVars();
         mpStatistics->rNrClauses() = (size_t) nClauses();
@@ -2818,39 +2818,49 @@ namespace smtrat
 					if (mMCSAT.mayDoAssignment()) {
 						// No decision done yet, try with a theory decision.
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Trying with next theory decision");
-						mcsat::Explanation res;
-						bool didDecision;
-						std::tie(res,didDecision) = mMCSAT.makeTheoryDecision();
-						if (didDecision) {
+						auto res = mMCSAT.makeTheoryDecision();
+						if (carl::variant_is_type<FormulasT>(res)) {
 							mCurrentAssignmentConsistent = SAT;
-							next = createLiteral(boost::get<FormulaT>(res), FormulaT(carl::FormulaType::TRUE), false);
-							mMCSAT.makeDecision(next);
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Picking the next literal");
-							pickTheoryBranchLit();
-							
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still feasible with this theory decision");
-							auto conflict = mMCSAT.isFeasible();
-							if (conflict) {
-								newDecisionLevel();
-								uncheckedEnqueue(next);
-								#ifdef DEBUG_SATMODULE
-								cout << "######################################################################" << endl;
-								cout << "### Before handling conflict" << endl;
-								print(cout, "###");
-								#endif
-								SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
-                                if ((*conflict).type() == typeid(FormulaT))
-								    sat::detail::validateClause(boost::get<FormulaT>(*conflict), Settings::validate_clauses);
-								handleTheoryConflict(*conflict);
-								mMCSAT.undoAssignment(next);
-								next = lit_Undef;
-								continue;
-							}
+                            const auto& assignments = boost::get<FormulasT>(res);
+                            assert(assignments.size() > 0);
+                            static_assert(Settings::mcsat_num_insert_assignments > 0);
+                            std::vector<Minisat::Lit> theoryDecisions;
+                            // create assignments
+                            for (unsigned int i = 0; i < assignments.size() && i < Settings::mcsat_num_insert_assignments; i++) {
+                                theoryDecisions.push_back(createLiteral(assignments[i], FormulaT(carl::FormulaType::TRUE), false));
+                                mMCSAT.makeDecision(theoryDecisions.back());
+                                SMTRAT_LOG_DEBUG("smtrat.sat", "Picking the next literal");
+                                pickTheoryBranchLit();
+                                SMTRAT_LOG_DEBUG("smtrat.sat", "Insert into SAT solver");
+                                newDecisionLevel();
+                                uncheckedEnqueue(theoryDecisions.back());
+                            }
+
+                            SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still feasible with this theory decision");
+                            auto conflict = mMCSAT.isFeasible();
+                            if (conflict) {
+                                #ifdef DEBUG_SATMODULE
+                                cout << "######################################################################" << endl;
+                                cout << "### Before handling conflict" << endl;
+                                print(cout, "###");
+                                #endif
+                                SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
+								if (carl::variant_is_type<FormulaT>(*conflict)) {
+                                    sat::detail::validateClause(boost::get<FormulaT>(*conflict), Settings::validate_clauses);
+								}
+                                handleTheoryConflict(*conflict);
+                                // revert assignments
+                                for (auto iter = theoryDecisions.rbegin(); iter != theoryDecisions.rend(); iter++) {
+                                    mMCSAT.undoAssignment(*iter);
+                                }                                
+                            }
+                            assert(next == lit_Undef);
+                            continue;
 						} else {
 							mCurrentAssignmentConsistent = UNSAT;
 							SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << mMCSAT.level());
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << res);
-							handleTheoryConflict(res);
+							SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << boost::get<mcsat::Explanation>(res));
+							handleTheoryConflict(boost::get<mcsat::Explanation>(res));
 							continue;
 						}
 					} else {
@@ -3921,10 +3931,6 @@ NextClause:
                     if( lem.mLemma.getType() != carl::FormulaType::TRUE )
                     {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Found a lemma: " << lem.mLemma);
-                        //#ifdef DEBUG_SATMODULE_THEORY_PROPAGATION
-                        //cout << "Learned a theory lemma from a backend module!" << endl;
-                        //cout << lem.mLemma.toString( false, 0, "", true, true, true ) << endl;
-                        //#endif
                         #ifdef SMTRAT_DEVOPTION_Validation
                         if( validationSettings->logLemmata() )
                             addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, lem.mLemma ), false, (*backend)->moduleName() + "_lemma" );
@@ -4186,7 +4192,7 @@ NextClause:
         _out << _init << " ConstraintLiteralMap" << endl;
         for( ConstraintLiteralsMap::const_iterator clPair = mConstraintLiteralMap.begin(); clPair != mConstraintLiteralMap.end(); ++clPair )
         {
-            _out << _init << "    " << clPair->first.toString() << "  ->  [";
+            _out << _init << "    " << clPair->first << "  ->  [";
             for( auto litIter = clPair->second.begin(); litIter != clPair->second.end(); ++litIter )
             {
                 _out << " ";
@@ -4207,8 +4213,7 @@ NextClause:
         for( const auto& fcsPair : mFormulaCNFInfosMap )
         {
             _out << _init << "    " << fcsPair.first << std::endl;
-            _out << _init << "        Literal: ";
-            toString( _out, fcsPair.second.mLiteral );
+            _out << _init << "        Literal: " << fcsPair.second.mLiteral;
             _out << std::endl;
             _out << _init << "        Counter: " << fcsPair.second.mCounter << std::endl;
             _out << _init << "        {";
@@ -4270,8 +4275,7 @@ NextClause:
         _out << _init;
         for( int pos = 0; pos < _clause.size(); ++pos )
         {
-            _out << " ";
-            toString( _out, _clause[pos] );
+            _out << " " << _clause[pos];
             if( _withAssignment )
                 _out << "(" << (value( _clause[pos] ) == l_True ? "true" : (value( _clause[pos] ) == l_False ? "false" : "undef")) << "@" << level( var( _clause[pos] ) ) << ")";
         }
@@ -4285,8 +4289,7 @@ NextClause:
         _out << _init;
         for( int pos = 0; pos < c.size(); ++pos )
         {
-            _out << " ";
-            toString( _out, c[pos] );
+            _out << " " << c[pos];
             if( _withAssignment )
             {
                 _out << " [" << (value( c[pos] ) == l_True ? "true@" : (value( c[pos] ) == l_False ? "false@" : "undef"));

@@ -248,11 +248,11 @@ namespace smtrat
             out << *mExpression;
             _out << std::setw( 15 ) << out.str();
             _out << std::setw( 6 ) << "  ->  ";
-            _out << std::setw( 35 ) << mAssignment.toString();
+            _out << std::setw( 35 ) << mAssignment;
             _out << std::setw( 6 ) << "  in [";
-            _out << std::setw( 12 ) << mpInfimum->toString();
+            _out << std::setw( 12 ) << mpInfimum;
             _out << std::setw( 2 ) << ", ";
-            _out << std::setw( 12 ) << mpSupremum->toString();
+            _out << std::setw( 12 ) << mpSupremum;
             _out << std::setw( 1 ) << "]";
         }
 

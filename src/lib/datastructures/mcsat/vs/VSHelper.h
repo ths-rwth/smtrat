@@ -10,6 +10,20 @@ namespace mcsat {
 namespace vs {
 namespace helper {    
 
+    inline void getFormulaAtoms(const FormulaT& f, FormulaSetT& result) {
+        if (f.getType() == carl::FormulaType::CONSTRAINT || f.getType() == carl::FormulaType::VARCOMPARE) {
+            result.insert(f);
+        } else if (f.getType() == carl::FormulaType::NOT) {
+            getFormulaAtoms(f.subformula(), result);
+        } else if (f.isNary()) {
+            for (const auto& sub : f.subformulas()) {
+                getFormulaAtoms(sub, result);
+            }
+        } else {
+            assert(false);
+        }
+    }
+
     /**
      * Converts a DisjunctionOfConstraintConjunctions to a regular Formula.
      */
@@ -389,7 +403,7 @@ namespace helper {
      * Generate all test candidates according to "vanilla" virtual substitution.
      * Returns false iff VS is not applicable.
      */
-    static bool generateTestCandidates( std::vector<::vs::Substitution>& results, const carl::Variable& eliminationVar, const Model& model, const std::vector<FormulaT>& constraints) {
+    static bool generateTestCandidates( std::vector<::vs::Substitution>& results, const carl::Variable& eliminationVar, const Model& model, const FormulaSetT& constraints) {
         SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generating test candidates for " << constraints << " and variable " << eliminationVar);
         
         // add minus infinity

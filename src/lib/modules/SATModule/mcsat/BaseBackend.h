@@ -10,7 +10,6 @@ namespace mcsat {
 template<typename Settings>
 class MCSATBackend {
 	mcsat::Bookkeeping mBookkeeping;
-	std::vector<carl::Variable> mVariableOrdering;
 	typename Settings::AssignmentFinderBackend mAssignmentFinder;
 	typename Settings::ExplanationBackend mExplanation;
 
@@ -40,18 +39,25 @@ public:
 	
 	template<typename Constraints>
 	void resetVariableOrdering(const Constraints& c) {
-		if (mVariableOrdering.empty()) {
-			mVariableOrdering = calculateVariableOrder<Settings::variable_ordering>(c);
+		if (mBookkeeping.variableOrder().empty()) {
+			mBookkeeping.updateVariableOrder(calculateVariableOrder<Settings::variable_ordering>(c));
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variable ordering " << variableOrder());
 		}
 	}
 	
 	const auto& variableOrder() const {
-		return mVariableOrdering;
+		return mBookkeeping.variableOrder();
 	}
 
-	auto findAssignment(carl::Variable var) const { //AssignmentFinder::AssignmentOrConflict
-		return mAssignmentFinder(mBookkeeping, var);
+	AssignmentOrConflict findAssignment(carl::Variable var) const {
+		auto res = mAssignmentFinder(mBookkeeping, var);
+		if (res) {
+			return *res;
+		} else {
+			SMTRAT_LOG_ERROR("smtrat.mcsat", "AssignmentFinder backend failed.");
+			assert(false);
+			return ModelValues();
+		}
 	}
 
 	boost::optional<FormulasT> isInfeasible(carl::Variable var, const FormulaT& f) {
@@ -59,12 +65,13 @@ public:
 		pushConstraint(f);
 		auto res = findAssignment(var);
 		popConstraint(f);
-		if (carl::variant_is_type<ModelValue>(res)) {
+		if (carl::variant_is_type<ModelValues>(res)) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat", f << " is feasible");
 			return boost::none;
+		} else {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat", f << " is infeasible with reason " << boost::get<FormulasT>(res));
+			return boost::get<FormulasT>(res);
 		}
-		SMTRAT_LOG_DEBUG("smtrat.mcsat", f << " is infeasible with reason " << boost::get<FormulasT>(res));
-		return boost::get<FormulasT>(res);
 	}
 
 	Explanation explain(carl::Variable var, const FormulasT& reason) const {
@@ -76,6 +83,13 @@ public:
 			SMTRAT_LOG_ERROR("smtrat.mcsat", "Explanation backend failed.");
 			return Explanation(FormulaT(carl::FormulaType::FALSE));
 		}
+	}
+
+	Explanation explain(carl::Variable var, const FormulaT& f, const FormulasT& reason) {
+		pushConstraint(f);
+		auto res = explain(var, reason);
+		popConstraint(f);
+		return res;
 	}
 };
 

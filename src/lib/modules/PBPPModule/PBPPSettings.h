@@ -10,6 +10,29 @@
 
 namespace smtrat
 {
+	struct PBPPSettingsLIAOnly
+	{
+		/// Name of the Module
+		static constexpr auto moduleName = "PBPPModule<PBPPSettingsLIAOnly>";
+		/**
+		 * Example for a setting.
+		 */
+		static constexpr bool use_rns_transformation = false;
+		static constexpr bool use_card_transformation = false;
+		static constexpr bool use_mixed_transformation = false;
+		static constexpr bool use_long_transformation = false;
+		static constexpr bool use_short_transformation = false;
+
+		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
+		// new formulas.
+		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
+		static constexpr bool USE_LIA_MIXED = false;
+		static constexpr bool USE_LIA_ONLY = true;
+		static constexpr bool ENCODE_IF_POSSIBLE = false;
+		static constexpr bool NORMALIZE_CONSTRAINTS = true;
+
+	};
+
 	struct PBPPSettings1
 	{
 		/// Name of the Module
@@ -18,15 +41,42 @@ namespace smtrat
 		 * Example for a setting.
 		 */
 		static constexpr bool use_rns_transformation = false;
-		static constexpr bool use_card_transformation = false;
-		static constexpr bool use_mixed_transformation = false;
-		static constexpr bool use_basic_transformation = false;
+		static constexpr bool use_card_transformation = true;
+		static constexpr bool use_mixed_transformation = true;
+		static constexpr bool use_long_transformation = true;
+		static constexpr bool use_short_transformation = true;
 
 		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
 		// new formulas.
-		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
+		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 20;
 		static constexpr bool USE_LIA_MIXED = true;
+		static constexpr bool USE_LIA_ONLY = false;
+		static constexpr bool ENCODE_IF_POSSIBLE = false;
+		static constexpr bool NORMALIZE_CONSTRAINTS = false;
 
+
+	};
+
+	struct PBPPSettingsWithNormalize
+	{
+		/// Name of the Module
+		static constexpr auto moduleName = "PBPPModule<PBPPSettings1>";
+		/**
+		 * Example for a setting.
+		 */
+		static constexpr bool use_rns_transformation = false;
+		static constexpr bool use_card_transformation = true;
+		static constexpr bool use_mixed_transformation = true;
+		static constexpr bool use_long_transformation = true;
+		static constexpr bool use_short_transformation = true;
+
+		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
+		// new formulas.
+		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 20;
+		static constexpr bool USE_LIA_MIXED = true;
+		static constexpr bool USE_LIA_ONLY = false;
+		static constexpr bool ENCODE_IF_POSSIBLE = false;
+		static constexpr bool NORMALIZE_CONSTRAINTS = true;
 	};
 	
 	struct PBPPSettingsWithRNS
@@ -36,14 +86,19 @@ namespace smtrat
 		/**
 		 * Example for a setting.
 		 */
-		static constexpr bool use_rns_transformation = true;
-		static constexpr bool use_card_transformation = false;
+		static constexpr bool use_rns_transformation = false;
+		static constexpr bool use_card_transformation = true;
 		static constexpr bool use_mixed_transformation = false;
-		static constexpr bool use_basic_transformation = false;
+		static constexpr bool use_long_transformation = false;
+		static constexpr bool use_short_transformation = false;
 		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
 		// new formulas.
 		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
 		static constexpr bool USE_LIA_MIXED = true;
+		static constexpr bool USE_LIA_ONLY = false;
+		static constexpr bool ENCODE_IF_POSSIBLE = true;
+		static constexpr bool NORMALIZE_CONSTRAINTS = false;
+
 	};
 
 	struct PBPPSettingsWithCardConstr
@@ -56,11 +111,16 @@ namespace smtrat
 		static constexpr bool use_rns_transformation = false;
 		static constexpr bool use_card_transformation = true;
 		static constexpr bool use_mixed_transformation = false;
-		static constexpr bool use_basic_transformation = false;
+		static constexpr bool use_long_transformation = false;
+		static constexpr bool use_short_transformation = false;
 		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
 		// new formulas.
 		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
 		static constexpr bool USE_LIA_MIXED = true;
+		static constexpr bool USE_LIA_ONLY = false;
+		static constexpr bool ENCODE_IF_POSSIBLE = true;
+		static constexpr bool NORMALIZE_CONSTRAINTS = false;
+
 	};
 
 	struct PBPPSettingsWithMixedConstr
@@ -71,13 +131,18 @@ namespace smtrat
 		 * Example for a setting.
 		 */
 		static constexpr bool use_rns_transformation = false;
-		static constexpr bool use_card_transformation = false;
-		static constexpr bool use_mixed_transformation = true;
-		static constexpr bool use_basic_transformation = false;
+		static constexpr bool use_card_transformation = true;
+		static constexpr bool use_mixed_transformation = false;
+		static constexpr bool use_long_transformation = false;
+		static constexpr bool use_short_transformation = false;
 		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
 		// new formulas.
 		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
 		static constexpr bool USE_LIA_MIXED = true;
+		static constexpr bool USE_LIA_ONLY = false;
+		static constexpr bool ENCODE_IF_POSSIBLE = true;
+		static constexpr bool NORMALIZE_CONSTRAINTS = false;
+
 	};
 
 	struct PBPPSettingsBasic
@@ -88,13 +153,17 @@ namespace smtrat
 		 * Example for a setting.
 		 */
 		static constexpr bool use_rns_transformation = false;
-		static constexpr bool use_card_transformation = false;
+		static constexpr bool use_card_transformation = true;
 		static constexpr bool use_mixed_transformation = false;
-		static constexpr bool use_basic_transformation = true;
+		static constexpr bool use_long_transformation = false;
+		static constexpr bool use_short_transformation = false;
 		// Depending on the size of the original formulation do not introduce more than a factor of 1/n
 		// new formulas.
 		static constexpr double MAX_NEW_RELATIVE_FORMULA_SIZE = 0.5;
 		static constexpr bool USE_LIA_MIXED = true;
+		static constexpr bool USE_LIA_ONLY = false;
+		static constexpr bool ENCODE_IF_POSSIBLE = true;
+		static constexpr bool NORMALIZE_CONSTRAINTS = false;
 	};
 
 

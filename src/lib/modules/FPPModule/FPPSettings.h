@@ -39,6 +39,12 @@ namespace smtrat
 	using Preprocessor = BVPreprocessing;
     };
 
+    struct FPPSettingsPBGroebner : FPPSettings1
+    {
+	static constexpr auto moduleName = "FPPModule<FPPSettingsPBGroebner>";
+	using Preprocessor = PBPreprocessingGroebner;
+    };
+
     struct FPPSettingsPB : FPPSettings1
     {
 	static constexpr auto moduleName = "FPPModule<FPPSettingsPB>";

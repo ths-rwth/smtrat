@@ -58,13 +58,16 @@ namespace smtrat
 	{
 		for(const auto& subformula : rReceivedFormula()){
 			const FormulaT& f = subformula.formula();
-			if(f.getType() == carl::FormulaType::PBCONSTRAINT){
-				const PBConstraintT& c = f.pbConstraint();
-				c.collectVariables(mVariables);
-				if(c.getRelation() == carl::Relation::EQ){
+			if(f.getType() == carl::FormulaType::CONSTRAINT){
+				const ConstraintT& c = f.constraint();
+				for (const auto& var : c.variables()) {
+					mVariables.insert(var);
+				}
+
+				if(c.relation() == carl::Relation::EQ){
 					mEquations.push_back(c);
-				}else if(c.getRelation() == carl::Relation::LEQ || c.getRelation() == carl::Relation::GEQ
-					|| c.getRelation() == carl::Relation::LESS || c.getRelation() == carl::Relation::GREATER){
+				}else if(c.relation() == carl::Relation::LEQ || c.relation() == carl::Relation::GEQ
+					|| c.relation() == carl::Relation::LESS || c.relation() == carl::Relation::GREATER){
 					mInequalities.push_back(c);
 				}else{
 					addSubformulaToPassedFormula(f);
@@ -73,9 +76,11 @@ namespace smtrat
 				addSubformulaToPassedFormula(f);
 			}
 		}
+		
 		FormulaT formula;
 		if(mEquations.size() > 1){
 			formula = gaussAlgorithm();
+			SMTRAT_LOG_DEBUG("smtrat.gauss", "Gaussing resulted in " << formula);
 		}else{
 			FormulasT subformulas;
 			for(const auto& it : mInequalities){
@@ -98,6 +103,7 @@ namespace smtrat
 
 	template<class Settings>
 	FormulaT PBGaussModule<Settings>::gaussAlgorithm(){
+		SMTRAT_LOG_DEBUG("smtrat.gauss", "Gaussing " << mEquations);
 		if(mEquations.size() == 0){
 			return FormulaT(carl::FormulaType::TRUE);
 		}else if(mEquations.size() == 1){
@@ -107,23 +113,42 @@ namespace smtrat
 		// Collect all variables
 		carl::Variables eqVarSet;
 		for(const auto& it : mEquations){
-			it.collectVariables(eqVarSet);
+			for (const auto& var : it.variables()) {
+				eqVarSet.insert(var);
+			}
 		}
 		std::vector<carl::Variable> eqVars(eqVarSet.begin(), eqVarSet.end());
 		
 		// Collect all coefficients and rhs
 		std::vector<Rational> coef;
 		for(const auto& it : mEquations){
-			for(auto var : eqVars){
-				coef.push_back(it.getCoefficient(var));
+			for (const auto& var : eqVars) {
+				// if var in equation, choose coeff, otherwise 0
+				bool found = false;
+				for (const auto& term: it.lhs()) {
+					if (term.isConstant()) continue;
+
+					if (term.getSingleVariable() == var) {
+						found = true;
+						coef.push_back(term.coeff());
+						break;
+					}
+				}
+
+				if (!found) {
+					coef.push_back(0);
+				}
 			}
-			coef.push_back(it.getRHS());
+			
+			coef.push_back(-it.constantPart());
 		}
 		
 		std::size_t rows = mEquations.size();
 		std::size_t columns = eqVars.size();
 
 		MatrixT matrix = MatrixT::Map(coef.data(), (long) columns + 1, (long) rows).transpose();
+
+		SMTRAT_LOG_DEBUG("smtrat.gauss", matrix);
 
 		//LU Decomposition
 		Eigen::FullPivLU<MatrixT> lu(matrix);
@@ -150,7 +175,7 @@ template<class Settings>
 		FormulasT subformulas;
 		std::vector<carl::Variable> varsVec(vars.begin(), vars.end());
 		for(long i = 0; i < m.rows(); i++){
-			std::vector<std::pair<Rational, carl::Variable>> newLHS;
+			Poly newLHS;
 			const VectorT& r = m.row(i);
 			
 			// Compute least common multiple of all denominators
@@ -163,9 +188,9 @@ template<class Settings>
 			// Restore 
 			for(long j = 0; j < r.size(); j++){
 				if (carl::isZero(r[j])) continue;
-				newLHS.emplace_back(mpl * r[j], varsVec[(std::size_t) j]);
+				newLHS += TermT(Rational(mpl * r[j]) * varsVec[(std::size_t) j]);
 			}
-			subformulas.emplace_back(PBConstraintT(newLHS, rels[std::size_t(i)], b[i] * mpl));
+			subformulas.emplace_back(ConstraintT(newLHS + Rational(b[i] * -mpl), rels[std::size_t(i)]));
 		}
 		return FormulaT(carl::FormulaType::AND, std::move(subformulas));
 	}
@@ -210,21 +235,22 @@ template<class Settings>
 		//Inequalities to matrix
 		std::vector<carl::Relation> ineqRels;
 		std::vector<Rational> ineqCoef;
-		for(auto i : mInequalities){
-			ineqRels.push_back(i.getRelation());
-			auto iLHS = i.getLHS();
-			for(auto j : mVariables){
+		for(const auto& i : mInequalities){
+			ineqRels.push_back(i.relation());
+			auto iLHS = i.lhs();
+			for(const auto& j : mVariables){
 				auto elem = std::find_if(iLHS.begin(), iLHS.end(), 
-					[&] (const pair<Rational, carl::Variable>& elem){
-						return elem.second == j;
+					[&] (const TermT& elem){
+						std::cout << elem << std::endl;
+						return !elem.isConstant() && elem.getSingleVariable() == j;
 					});
 				if(elem != iLHS.end()){
-					ineqCoef.push_back(elem->first);
+					ineqCoef.push_back(elem->coeff());
 				}else{
 					ineqCoef.push_back(0);
 				}
 			}
-			ineqCoef.push_back(i.getRHS());
+			ineqCoef.push_back(i.constantPart());
 		}
 
 
@@ -308,9 +334,9 @@ template<class Settings>
 				if(eqRowVec.size() != 0){
 					ineqMatrix.row(i) = (multiplier * eqRow) + row; 
 					//Update relation
-					if(mInequalities[(std::size_t) i].getRelation() == carl::Relation::LESS){
+					if(mInequalities[(std::size_t) i].relation() == carl::Relation::LESS){
 						ineqRels[(std::size_t) i] = carl::Relation::LEQ;
-					}else if(mInequalities[(std::size_t) i].getRelation() == carl::Relation::GREATER){
+					}else if(mInequalities[(std::size_t) i].relation() == carl::Relation::GREATER){
 						ineqRels[(std::size_t) i] = carl::Relation::GEQ;
 					}
 					// Try again with this (simplified) row

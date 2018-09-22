@@ -1,12 +1,6 @@
 #pragma once
 
-// #include "../../../Common.h"
-// #include <carl/util/Common.h>
-
 #include "VSHelper.h"
-
-
-
 
 namespace smtrat {
 namespace mcsat {
@@ -34,67 +28,82 @@ public:
 	{}
 
 private:	
-	boost::optional<FormulaT> generateExplanation() const {
+
+	std::pair<std::vector<carl::Variable>::const_iterator, std::vector<carl::Variable>::const_iterator> getUnassignedVariables() const {
+		std::unordered_set<carl::Variable> freeVariables;
+		for (const auto& constr : mConstraints) {
+			freeVariables.insert(constr.variables().begin(), constr.variables().end());
+		}
+		
+		auto firstVar = std::find(mVariableOrdering.begin(), mVariableOrdering.end(), mTargetVar);
+		assert(firstVar != mVariableOrdering.end());
+		auto lastVar = firstVar;
+		for (auto iter = firstVar; iter != mVariableOrdering.end(); iter++) {
+			if (freeVariables.find(*iter) != freeVariables.end()) {
+				lastVar = iter;
+			}
+		}
+
+		lastVar++;
+		
+		return std::make_pair(firstVar, lastVar); 
+	}
+
+	boost::optional<FormulaT> eliminateVariable(const FormulaT& inputFormula, const carl::Variable& var) const {
+		// get formula atoms
+		FormulaSetT atoms;
+		helper::getFormulaAtoms(inputFormula, atoms);
+
 		// generate test candidates
 		std::vector<::vs::Substitution> testCandidates;
-		if (helper::generateTestCandidates(testCandidates, mTargetVar, mModel, mConstraints)) {
+		if (helper::generateTestCandidates(testCandidates, var, mModel, atoms)) {
 			FormulasT res;
 			res.reserve(testCandidates.size());
 			for (const auto& tc : testCandidates) {
-				FormulasT substitutionResults;
-				substitutionResults.reserve(mConstraints.size());
+				FormulaT branchResult = inputFormula;
 
 				// substitute tc into each input constraint
 				for (const auto& constr : mConstraints) {
-					SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substituting " << tc << " into " << constr);
+					// check if branchResult still contains constr
+					if (branchResult.contains(constr)) {
+						SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substituting " << tc << " into " << constr);
 
-					FormulaT result; // TODO reduceConflictConstraints?
-					if (!helper::substitute(constr, tc, mModel, result)) {
-						SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution failed");
-						return boost::none;
-					}
-
-					// check if current constraint is part of the conflict
-					if (Settings::reduceConflictConstraints) {
-						carl::ModelValue<Rational,Poly> eval = carl::model::evaluate(result, mModel);
-						// If evaluation result is not a bool, then the model probably contains a RAN or MVRoot. In this case, we just take the constraint in.
-						if (!eval.isBool() || !eval.asBool()) {
-							SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Use constraint " << constr << " for explanation");
-							substitutionResults.push_back(std::move(result));
-						}					
-						else {
-							SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Ignore constraint " << constr << " because it is not part of the conflict");
+						// calculate substitution
+						FormulaT substitutionResult; // TODO reduceConflictConstraints?
+						if (!helper::substitute(constr, tc, mModel, substitutionResult)) {
+							SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution failed");
+							return boost::none;
 						}
-					}
-					else {
-						substitutionResults.push_back(std::move(result));
-					}
 
-					if (substitutionResults.back() == FormulaT(carl::FormulaType::FALSE)) {
-						break; // since this is part of a conjunction, and we got false, we can ignore future substitutions
+						// check if current constraint is part of the conflict
+						if (Settings::reduceConflictConstraints) {
+							carl::ModelValue<Rational,Poly> eval = carl::model::evaluate(substitutionResult, mModel);
+							// If constraint is not fully evaluated or evaluates to false, we take it in.
+							if (!eval.isBool() || !eval.asBool()) {
+								SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Use constraint " << constr << " for explanation");
+							}					
+							else {
+								SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Ignore constraint " << constr << " because it is not part of the conflict");
+								substitutionResult = FormulaT(carl::FormulaType::TRUE);
+							}
+						}
+
+						// substitute into formula
+						carl::FormulaSubstitutor<FormulaT> substitutor;
+						branchResult = substitutor.substitute(branchResult, constr, substitutionResult);
 					}
 				}
 
 				// add side condition
+				FormulasT branch;
+				branch.push_back(std::move(branchResult));				
 				for (const auto& sc : tc.sideCondition()) {
-					substitutionResults.emplace_back(sc);
+					branch.emplace_back(sc);
 				}
 				
-				res.emplace_back(carl::FormulaType::AND, std::move(substitutionResults));
+				res.emplace_back(carl::FormulaType::AND, std::move(branch));
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution of " << tc << " into formula obtained " << res.back());
 				assert(res.back() != FormulaT(carl::FormulaType::TRUE));
-			}
-
-			#ifndef NDEBUG
-			FormulaT tmp(carl::FormulaType::OR, std::move(res));
-			carl::ModelValue<Rational,Poly> evalRes = carl::model::evaluate(tmp, mModel);
-			assert(evalRes.isBool());
-			assert(!evalRes.asBool());
-			#endif
-
-			// collect input constraints
-			for (const auto& c: mConstraints) {
-				res.emplace_back(c.negated());
 			}
 
 			return FormulaT(carl::FormulaType::OR, std::move(res));
@@ -103,6 +112,32 @@ private:
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Could not generate test candidates");
 			return boost::none;
 		}
+	}
+
+	boost::optional<FormulaT> eliminateVariables() const {
+		// eliminate unassigned variables
+		boost::optional<FormulaT> res = FormulaT(carl::FormulaType::AND, mConstraints);
+		auto unassignedVariables = getUnassignedVariables();
+		for (auto iter = unassignedVariables.first; iter != unassignedVariables.second; iter++) {
+			res = eliminateVariable(*res, *iter);
+			if (!res) {
+				return boost::none;
+			}
+		}
+
+		#ifndef NDEBUG
+		carl::ModelValue<Rational,Poly> evalRes = carl::model::evaluate(*res, mModel);
+		assert(evalRes.isBool());
+		assert(!evalRes.asBool());
+		#endif
+
+		// collect input constraints
+		FormulasT expl;
+		expl.push_back(std::move(*res));
+		for (const auto& c: mConstraints) {
+			expl.emplace_back(c.negated());
+		}
+		return FormulaT(carl::FormulaType::OR, expl);
     }
 
 	/**
@@ -177,7 +212,7 @@ private:
 
 public:
 	boost::optional<mcsat::Explanation> getExplanation() const {
-		auto expl = generateExplanation();
+		auto expl = eliminateVariables();
 
 		if (expl) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Obtained explanation " << (*expl));

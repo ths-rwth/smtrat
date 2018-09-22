@@ -77,13 +77,12 @@ namespace smtrat
 
   typedef carl::Constraints<Poly> ConstraintsT;
 	
-	typedef carl::MultivariateRoot<Poly> MultivariateRootT;
-	
+	using MultivariateRootT = carl::MultivariateRoot<Poly>;
+	using RootExpr = carl::MultivariateRoot<Poly>; // prefer this one
+
 	typedef carl::VariableAssignment<Poly> VariableAssignmentT;
 	
 	typedef carl::VariableComparison<Poly> VariableComparisonT;
-	
-	typedef carl::PBConstraint<Poly> PBConstraintT;
 
   typedef carl::Formula<Poly> FormulaT;
 

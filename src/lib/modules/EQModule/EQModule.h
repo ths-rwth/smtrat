@@ -40,7 +40,7 @@ namespace smtrat
 	{
 		// ----------------------- HELPER TYPES -----------------------
 		private:
-			typedef carl::UEquality::Arg term_type;
+			typedef carl::UTerm term_type;
 			typedef carl::UEquality UEquality;
 			typedef carl::UVariable UVariable;
 			typedef carl::UninterpretedFunction UninterpretedFunction;

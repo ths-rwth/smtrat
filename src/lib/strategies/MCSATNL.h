@@ -12,9 +12,7 @@ namespace smtrat
 		public:
 			MCSATNL(): Manager() {
 				setStrategy(
-					addBackend<FPPModule<FPPSettings1>>(
 						addBackend<SATModule<SATSettingsMCSATNL>>()
-					)
 				);
 			}
 	};

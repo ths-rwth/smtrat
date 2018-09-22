@@ -227,6 +227,10 @@ namespace smtrat {
 		return primes;
 	}
 
+	bool RNSEncoder::canEncode(const ConstraintT& constraint) {
+		return false;
+	}
+
 	std::vector<std::vector<Integer>> RNSEncoder::primesTable() {
 		//The 0 and 1 MUST be here in order to pick the right factorization!
 		return {{0}, {1}, {2}, {3}, {2, 2}, {5}, {2, 3}, {7}, {2, 2, 2}, {3, 3}, {2, 5}, {11}, {2, 2, 3},

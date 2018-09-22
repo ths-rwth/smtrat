@@ -1034,7 +1034,7 @@ namespace smtrat
                 #endif
                 SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict explanation " << explanation);
 
-                if (explanation.type() == typeid(FormulaT)) {
+				if (carl::variant_is_type<FormulaT>(explanation)) {
                     // add conflict clause
                     const auto& clause = boost::get<FormulaT>(explanation);
                     bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
@@ -1170,17 +1170,6 @@ namespace smtrat
                 asynch_interrupt = false;
             }
             
-            inline void toString( std::ostream& _os, Minisat::Lit _lit ) const
-            {
-                if( Minisat::sign( _lit ) )
-                    _os << "-";
-                _os << Minisat::var( _lit );
-                _os << "[";
-                if( Minisat::sign( ~_lit ) )
-                    _os << "-";
-                _os << Minisat::var( ~_lit ) << "]";
-           }
-
             // Memory management:
             
             /**
@@ -1768,8 +1757,7 @@ namespace smtrat
 					_formula.getType() == carl::FormulaType::VARCOMPARE ||
 					_formula.getType() == carl::FormulaType::VARASSIGN ||
 					_formula.getType() == carl::FormulaType::UEQ ||
-					_formula.getType() == carl::FormulaType::BITVECTOR ||
-					_formula.getType() == carl::FormulaType::PBCONSTRAINT;
+					_formula.getType() == carl::FormulaType::BITVECTOR;
             }
             
             /**

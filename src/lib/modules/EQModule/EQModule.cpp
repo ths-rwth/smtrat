@@ -43,8 +43,8 @@ namespace smtrat {
 	{
 		if(_constraint.getType() == carl::UEQ) {
 			const UEquality &ueq = _constraint.uequality();
-			const UEquality::Arg &lhs = ueq.lhs();
-			const UEquality::Arg &rhs = ueq.rhs();
+			const term_type &lhs = ueq.lhs();
+			const term_type &rhs = ueq.rhs();
 			
 			if(ueq.negated()) {
 				if(lhs == rhs) {
@@ -60,18 +60,18 @@ namespace smtrat {
 				std::tie(itrRhs, insertedRhs) = mEqualityGraph.emplace(std::piecewise_construct, std::forward_as_tuple(rhs), std::forward_as_tuple(*this));
 
 				if(insertedLhs) {
-					if(ueq.lhsIsUF()) {
-						P_add_function_instance(ueq.lhsAsUF(), itrLhs);
+					if(ueq.lhs().isUFInstance()) {
+						P_add_function_instance(ueq.lhs().asUFInstance(), itrLhs);
 					} else {
-						P_add_variable(ueq.lhsAsUV(), itrLhs);
+						P_add_variable(ueq.lhs().asUVariable(), itrLhs);
 					}
 				}
 
 				if(insertedRhs) {
-					if(ueq.rhsIsUF()) {
-						P_add_function_instance(ueq.rhsAsUF(), itrRhs);
+					if(ueq.rhs().isUFInstance()) {
+						P_add_function_instance(ueq.rhs().asUFInstance(), itrRhs);
 					} else {
-						P_add_variable(ueq.rhsAsUV(), itrRhs);
+						P_add_variable(ueq.rhs().asUVariable(), itrRhs);
 					}
 				}
 
@@ -157,7 +157,9 @@ namespace smtrat {
 		ainfo->mBuckets = &(i->second.mHashBuckets);
 		ainfo->mArity = args.size();
 		std::size_t aindex = 0;
-		for(const UVariable& var : args) {
+		for(const auto& term : args) {
+			assert(term.isUVariable());
+			const auto& var = term.asUVariable();
 			g_iterator iter; bool inserted;
 			std::tie(iter, inserted) = mEqualityGraph.emplace(std::piecewise_construct, std::forward_as_tuple(var), std::forward_as_tuple(*this));
 			new (&(ainfo->mArgs[aindex++])) g_iterator(iter);
@@ -187,8 +189,8 @@ namespace smtrat {
 		
 		const FormulaT& formula = _subformula->formula();
 		const UEquality &ueq = formula.uequality();
-		const UEquality::Arg &lhs = ueq.lhs();
-		const UEquality::Arg &rhs = ueq.rhs();
+		const term_type &lhs = ueq.lhs();
+		const term_type &rhs = ueq.rhs();
 
 		// in any case, add the terms to our map if not present (even for an inequality, otherwise we have no iterators)
 		g_iterator itrLhs;
@@ -198,19 +200,19 @@ namespace smtrat {
 
 		if(itrLhs == mEqualityGraph.end()) {
 			itrLhs = mEqualityGraph.emplace(std::piecewise_construct, std::forward_as_tuple(lhs), std::forward_as_tuple(*this)).first;
-			if(ueq.lhsIsUF()) {
-				P_add_function_instance(ueq.lhsAsUF(), itrLhs);
+			if(ueq.lhs().isUFInstance()) {
+				P_add_function_instance(ueq.lhs().asUFInstance(), itrLhs);
 			} else {
-				P_add_variable(ueq.lhsAsUV(), itrLhs);
+				P_add_variable(ueq.lhs().asUVariable(), itrLhs);
 			}
 		}
 
 		if(itrRhs == mEqualityGraph.end()) {
 			itrRhs = mEqualityGraph.emplace(std::piecewise_construct, std::forward_as_tuple(rhs), std::forward_as_tuple(*this)).first;
-			if(ueq.rhsIsUF()) {
-				P_add_function_instance(ueq.rhsAsUF(), itrRhs);
+			if(ueq.rhs().isUFInstance()) {
+				P_add_function_instance(ueq.rhs().asUFInstance(), itrRhs);
 			} else {
-				P_add_variable(ueq.rhsAsUV(), itrRhs);
+				P_add_variable(ueq.rhs().asUVariable(), itrRhs);
 			}
 		}
 
@@ -374,8 +376,8 @@ namespace smtrat {
 		
 		const FormulaT& formula = _subformula->formula();
 		const UEquality &ueq = formula.uequality();
-		const UEquality::Arg &lhs = ueq.lhs();
-		const UEquality::Arg &rhs = ueq.rhs();
+		const term_type &lhs = ueq.lhs();
+		const term_type &rhs = ueq.rhs();
 		
 		g_iterator itrLhs = mEqualityGraph.find(lhs);
 		g_iterator itrRhs = mEqualityGraph.find(rhs);
@@ -560,7 +562,7 @@ namespace smtrat {
 				sortValueIter = mClassToSortValue.emplace(eqClass, newSortValue(entry.first.domain())).first;
 			}
 
-			mModel.emplace(entry.first(), sortValueIter->second);
+			mModel.emplace(entry.first.variable(), sortValueIter->second);
 		}
 	}
 
@@ -576,7 +578,8 @@ namespace smtrat {
 
 		carl::SortValue val = ufModel.get(args);
 
-		if(!(val == result) && !(val == defaultSortValue(boost::get<UFInstance>(term->first).uninterpretedFunction().codomain()))) {
+		assert(term->first.isUFInstance());
+		if(!(val == result) && !(val == defaultSortValue(term->first.asUFInstance().uninterpretedFunction().codomain()))) {
 			std::cerr << "Failure: Trying to map " << term->first << "(arguments";
 
 			for(std::size_t i = 0; i < args.size(); ++i) {
@@ -601,8 +604,10 @@ namespace smtrat {
 				std::vector<carl::SortValue> args;
 				args.reserve(arityof(entry));
 				for(std::size_t i = 0, s = arityof(entry); i < s; ++i) {
-					const UVariable& var = boost::get<UVariable>(argsof(entry)[i]->first);
-					args.push_back(mModel.find(var())->second.asSortValue());
+					const auto& term = boost::get<carl::UTerm>(argsof(entry)[i]->first);
+					assert(term.isUVariable());
+					const auto& var = term.asUVariable();
+					args.push_back(mModel.find(var.variable())->second.asSortValue());
 				}
 
 				std::size_t eqClass = mUnionFind.find(entry->second.mUFIndex);
@@ -1671,7 +1676,7 @@ namespace smtrat {
 		};
 
 		const term_type* min = &term;
-		bool minIsUVariable = boost::apply_visitor(is_uvariable_visitor{}, term);
+		bool minIsUVariable = term.isUVariable();
 
 		mBfsQueue.push_back(giter);
 		giter->second.mVisited = true;
@@ -1683,12 +1688,12 @@ namespace smtrat {
 
 			for(edge_info *e : cur->second.mExplicit) {
 				if(!e->mSucc->second.mVisited) {
-					if(minIsUVariable && boost::apply_visitor(is_uvariable_visitor{}, e->mSucc->first)) {
+					if(minIsUVariable && e->mSucc->first.isUVariable()) {
 						if(e->mSucc->first < *min) {
 							min = &(e->mSucc->first);
 						}
 					} else {
-						if(boost::apply_visitor(is_uvariable_visitor{}, e->mSucc->first)) {
+						if(e->mSucc->first.isUVariable()) {
 							min = &(e->mSucc->first);
 						} else {
 							if(e->mSucc->first < *min) {
@@ -1705,12 +1710,12 @@ namespace smtrat {
 
 			for(implicit_edge_info *e : cur->second.mImplicit) {
 				if(!e->mSucc->second.mVisited) {
-					if(minIsUVariable && boost::apply_visitor(is_uvariable_visitor{}, e->mSucc->first)) {
+					if(minIsUVariable && e->mSucc->first.isUVariable()) {
 						if(e->mSucc->first < *min) {
 							min = &(e->mSucc->first);
 						}
 					} else {
-						if(boost::apply_visitor(is_uvariable_visitor{}, e->mSucc->first)) {
+						if(e->mSucc->first.isUVariable()) {
 							min = &(e->mSucc->first);
 						} else {
 							if(e->mSucc->first < *min) {

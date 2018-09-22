@@ -625,16 +625,18 @@ namespace smtrat
 			}
 			
 			/// Calculate the domain of the next digit
-			if (!activeDomain.isEmpty())
+			if (!activeDomain.isEmpty()) {
 				if (activeDomain.diameter() <= Settings::maxDomainSize)
 					activeDomain = RationalInterval::emptyInterval();
 				else
 					activeDomain = carl::floor(activeDomain/Rational(Settings::expansionBase));
-			if (!domain.isEmpty())
+			}
+			if (!domain.isEmpty()) {
 				if (domain.diameter() <= Settings::maxDomainSize)
 					domain = RationalInterval::emptyInterval();
 				else
 					domain = carl::floor(domain/Rational(Settings::expansionBase));
+			}
 			
 			/// Update the variable bounds of the next digit
 			if (!activeDomain.isEmpty())

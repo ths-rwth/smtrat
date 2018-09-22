@@ -35,6 +35,7 @@
 #include <carl/formula/parser/DIMACSImporter.h>
 #include <carl/formula/parser/OPBImporter.h>
 #include <carl/io/SMTLIBStream.h>
+#include <carl/util/TimingCollector.h>
 
 
 class Executor : public smtrat::parser::InstructionHandler {
@@ -80,10 +81,10 @@ public:
                                     for( const auto& obj : this->solver->objectives() ) {
                                         smtrat::ModelValue mv = this->solver->optimum(obj.first);
                                         if( mv.isMinusInfinity() || mv.isPlusInfinity() ) {
-                                            regular() << " (" << obj.first.toString( false, true ) << " " << carl::toString( mv.asInfinity(), false ) << ")" << std::endl;
+                                            regular() << " (" << obj.first << " " << mv.asInfinity() << ")" << std::endl;
                                         } else {
                                             assert( mv.isRational() );
-                                            regular() << " (" << obj.first.toString( false, true ) << " " << carl::toString( mv.asRational(), false ) << ")" << std::endl;
+                                            regular() << " (" << obj.first << " " << mv.asRational() << ")" << std::endl;
                                         }
                                     }
                                     regular() << ")" << std::endl;
@@ -277,7 +278,7 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
                     smtrat::ModelValue mv = mps.evaluate(model);
                     formula = smtrat::FormulaT(carl::FormulaType::AND, formula, smtrat::FormulaT(obj.first - mv.asRational(), carl::Relation::EQ));
                 }
-                sstream << formula.toString( false, 1, "", false, false, true, true ) << std::endl;
+                sstream << formula << std::endl;
                 for (const auto& obj: solver->objectives()) {
                     if (obj.second.second) {
                         sstream << "(minimize " << obj.first << ")" << std::endl;
@@ -346,6 +347,7 @@ int main( int argc, char* argv[] )
 		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.strategygraph", carl::logging::LogLevel::LVL_DEBUG)
 	;
+	carl::logging::logger().formatter("stdout")->printInformation = true;
 #endif
 	SMTRAT_LOG_INFO("smtrat", "Starting smtrat.");
     // This variable will hold the input file.
@@ -477,6 +479,10 @@ int main( int argc, char* argv[] )
     // Export statistics.
     smtrat::CollectStatistics::exportXML();
     #endif
+	
+	#ifdef TIMING
+	std::cout << carl::TimingCollector::getInstance() << std::endl;
+	#endif
 
 
     // Delete the solver and the formula.

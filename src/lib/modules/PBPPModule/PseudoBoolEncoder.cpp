@@ -17,6 +17,7 @@ namespace smtrat {
 		}
 
 		assert(constraint.relation() != carl::Relation::LESS);
+		assert(this->canEncode(constraint));
 
 		return doEncode(constraint);
 	}
@@ -28,6 +29,11 @@ namespace smtrat {
 		// This means we need to add(!!) 1 to lhs
 		return ConstraintT(constraint.lhs() + Rational(1), carl::Relation::LEQ);
 	}
+
+	Rational PseudoBoolEncoder::encodingSize(const ConstraintT& constraint) {
+		return Rational(std::numeric_limits<unsigned long>::max());
+	}
+
 
 	FormulaT PseudoBoolEncoder::generateVarChain(const std::set<carl::Variable>& vars, carl::FormulaType type) {
 		FormulasT newSubformulas;

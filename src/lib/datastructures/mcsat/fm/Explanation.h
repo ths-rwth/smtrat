@@ -7,30 +7,10 @@ namespace smtrat {
 namespace mcsat {
 namespace fm {
 
-inline bool compare(const Rational& r1, const Rational& r2, const carl::Relation& rel) {
-	switch (rel) {
-		case carl::Relation::LESS:
-			return r1 < r2;
-			break;
-		case carl::Relation::LEQ:
-			return r1 <= r2;
-			break;
-		case carl::Relation::GEQ:
-			return r1 >= r2;
-			break;
-		case carl::Relation::GREATER:
-			return r1 > r2;
-			break;
-		case carl::Relation::EQ:
-			return r1 == r2;
-			break;
-		case carl::Relation::NEQ:
-			return r1 != r2;
-			break;
-		default:
-			assert(false);
-			return false;
-	}
+using carl::operator<<;
+
+inline bool isSubset(const carl::Variables& subset, const carl::Variables& superset) {
+	return std::includes(superset.begin(), superset.end(), subset.begin(), subset.end());
 }
 
 struct Bound {
@@ -43,28 +23,10 @@ struct Bound {
 	friend ostream& operator<<(ostream& os, const Bound& dt);  
 };
 
-inline ostream& operator<<(ostream& os, const Bound& b)  {  
+inline ostream& operator<<(ostream& os, const Bound& b) {
 	os << "(" << b.constr << ", " << b.p << ", " << b.q << ", " << b.r << ", " << b.neg << ")";  
 	return os;  
 }  
-
-inline std::ostream& operator<< (std::ostream& out, const std::vector<Bound>& v) {
-    out << '[';
-    for (const auto& b : v) {
-		out << b << ", ";
-	}
-    out << "]";
-  	return out;
-}
-
-inline std::ostream& operator<< (std::ostream& out, const std::multimap<Rational, Bound>& v) {
-    out << '[';
-    for (const auto& b : v) {
-		out << b.second << ", ";
-	}
-    out << "]";
-  	return out;
-}
 
 template<class Comparator>
 struct ConflictGenerator {
@@ -101,7 +63,6 @@ struct ConflictGenerator {
 	 * For all bounds b involved, we add b.p != 0 as side condition to the explanation. 
 	 */
 
-	using Callback = std::function<bool(FormulasT&&)>;
 
 	#define yield(callback, result) if (callback(std::move(result))) { return; }
 
@@ -120,23 +81,24 @@ private:
 	ConstraintT sideCondition(const Bound& b) {
 		ConstraintT res = ConstraintT(b.p, carl::Relation::NEQ);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Side condition on " << b.p << ": " << res);
-		return std::move(res);
+		return res;
 	}
 
 	ConstraintT sideConditionLo(const Bound& b) {
 		ConstraintT res = ConstraintT(b.p, b.neg ? carl::Relation::LESS : carl::Relation::GREATER);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Side condition on " << b.p << ": " << res);
-		return std::move(res);
+		return res;
 	}
 
 	ConstraintT sideConditionUp(const Bound& b) {
 		ConstraintT res = ConstraintT(b.p, b.neg ? carl::Relation::LESS : carl::Relation::GREATER);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Side condition on " << b.p << ": " << res);
-		return std::move(res);
+		return res;
 	}
 
-	FormulasT conflictLowerAndUpperBound(const Bound& lower, const Bound& upper, bool strict) {
+	FormulasT conflictLowerAndUpperBound(const Bound& lower, const Bound& upper) {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Lower bound " << lower << " in conflict with upper bound " << upper);
+		bool strict = carl::isStrict(lower.constr.relation()) || carl::isStrict(upper.constr.relation());
 		carl::Relation rel = (lower.neg xor upper.neg) ? (strict ? carl::Relation::GREATER : carl::Relation::GEQ) : (strict ? carl::Relation::LESS : carl::Relation::LEQ);
 		FormulasT res;
 		res.emplace_back(lower.constr.negation());
@@ -146,7 +108,7 @@ private:
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "-> " << res.back());
 		res.emplace_back(sideConditionLo(lower).negation());
 		res.emplace_back(sideConditionUp(upper).negation());
-		return std::move(res);
+		return res;
 	}
 
 	FormulasT conflictEqualityAndInequality(const Bound& eq, const Bound& ineq) {
@@ -158,7 +120,7 @@ private:
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explanation: " << expl[0].negated() << " && " << expl[1].negated() << " -> " << expl[2]);
 		expl.emplace_back(sideCondition(eq).negation());
 		expl.emplace_back(sideCondition(ineq).negation());
-		return std::move(expl);
+		return expl;
 	}
 
 	FormulasT conflictInequalitiesAndInequality(const Bound& lower, const Bound& upper, const Bound& ineq) {
@@ -173,12 +135,13 @@ private:
 		expl.emplace_back(sideCondition(ineq).negation());
 		expl.emplace_back(sideConditionLo(lower).negation());
 		expl.emplace_back(sideConditionUp(upper).negation()); // TODO move to struct member
-		return std::move(expl);
+		return expl;
 	}
 
 public:
 
-	void generateExplanation(Callback callback) {
+	template<typename Callback>
+	void generateExplanation(Callback&& callback) {
 		std::vector<Bound> mLower;
 		std::vector<Bound> mUpper;
 		std::multimap<Rational, Bound> mInequalities;
@@ -188,6 +151,12 @@ public:
 		// initialize bounds
 		for (const auto& b: mBounds) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Processing bound " << b);
+
+			if (!b.hasVariable(mVariable)) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because it does not contain " << mVariable);
+				continue;
+			}
+
 			if (b.varInfo(mVariable).maxDegree() > 1) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because " << mVariable << " occurs nonlinearly");
 				continue;
@@ -216,13 +185,12 @@ public:
 			if (carl::isZero(evalp.asRational())) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because it does not contain " << mVariable << " after we evaluate it");
 
-				if (!compare(Rational(0), evalq.asRational(), b.relation())) {
+				if (!carl::evaluate(Rational(0), b.relation(), evalq.asRational())) {
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Bound " << b << " unsat because p is zero and q does not comply");
 					FormulasT expl;
 					expl.emplace_back(b.negation());
 					expl.emplace_back(ConstraintT(p, carl::Relation::EQ).negation());
 					expl.emplace_back(ConstraintT(-q, b.relation()));
-					// expl.emplace_back(ConstraintT(-q, carl::Relation::LEQ));
 
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explanation: " << expl[0].negated() << " && " << expl[1].negated() << " -> " << expl[2]);
 					yield(callback, expl);
@@ -296,7 +264,7 @@ public:
 					continue;
 				}
 
-				yield(callback, conflictLowerAndUpperBound(lower, upper, strict));
+				yield(callback, conflictLowerAndUpperBound(lower, upper));
 			}
 		}
 
@@ -366,18 +334,42 @@ struct MinVarCountComparator {
 	}
 };
 
+
+struct DefaultSettings {
+	static constexpr bool use_all_constraints = true;
+};
+
+template<class Settings>
 struct Explanation {
 	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " << reason);
-
 		std::vector<ConstraintT> bounds;
-		for (const auto& b: reason) {
-			if (b.getType() != carl::FormulaType::CONSTRAINT) {
-				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-constraint bound " << b);
-				continue;
+
+		if (!Settings::use_all_constraints) {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " <<  reason);
+		
+			for (const auto& b : reason) {
+				if (b.getType() != carl::FormulaType::CONSTRAINT) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-constraint bound " << b);
+					continue;
+				}
+				assert(b.getType() == carl::FormulaType::CONSTRAINT);
+				bounds.emplace_back(b.constraint());
 			}
-			assert(b.getType() == carl::FormulaType::CONSTRAINT);
-			bounds.emplace_back(b.constraint());
+		} else {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " <<  data.constraints());
+		
+			for (const auto& b : data.constraints()) {
+				carl::Variables allowedVars;
+				auto curVar = std::find(variableOrdering.begin(), variableOrdering.end(), var); 
+				assert(curVar != variableOrdering.end());
+				allowedVars.insert(variableOrdering.begin(), curVar+1);
+				if (!isSubset(b.variables(), allowedVars)) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-univariate bound " << b);
+					continue;
+				}
+				assert(b.getType() == carl::FormulaType::CONSTRAINT);
+				bounds.emplace_back(b.constraint());
+			}
 		}
 
 		boost::optional<FormulasT> res = boost::none;

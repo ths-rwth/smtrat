@@ -18,7 +18,7 @@ namespace smtrat {
         SMTRAT_LOG_DEBUG("smtrat.wrapper", "Parse: " << input);
         FormulaT parseResult = parser.formula(input);
         std::ostringstream stream;
-        stream << parseResult.toString();
+        stream << parseResult;
         return copyResult(stream, buffer, bufferSize);
     }
 
@@ -185,7 +185,6 @@ namespace smtrat {
         // TODO Matthias: fix linker error and activate again
         //ModuleInput formula = solver->formula();
         std::ostringstream stream;
-        //stream << formula.toString() << std::endl;
         SMTRAT_LOG_DEBUG("smtrat.wrapper", "formula()");
         SMTRAT_LOG_NOTIMPLEMENTED();
         return copyResult(stream, buffer, bufferSize);
