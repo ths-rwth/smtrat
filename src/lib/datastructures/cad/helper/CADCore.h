@@ -175,7 +175,6 @@ struct CADCore<CoreHeuristic::Interleave> {
 			return false;
 		}
 		SMTRAT_LOG_INFO("smtrat.cad", "Projected into " << r << ", new projection is" << std::endl << cad.mProjection);
-		cad.mLifting.restoreRemovedSamples();
 		return true;
 	}
 	template<typename CAD>
@@ -205,6 +204,7 @@ struct CADCore<CoreHeuristic::Interleave> {
 	}
 	template<typename CAD>
 	Answer operator()(Assignment& assignment, CAD& cad) {
+		cad.mLifting.restoreRemovedSamples();
 		cad.mLifting.resetFullSamples();
 		while (true) {
 			Answer res = cad.checkFullSamples(assignment);
@@ -216,6 +216,7 @@ struct CADCore<CoreHeuristic::Interleave> {
 				doLifting(cad);
 			} else {
 				doProjection(cad);
+				cad.mLifting.restoreRemovedSamples();
 			}
 		}
 	}
