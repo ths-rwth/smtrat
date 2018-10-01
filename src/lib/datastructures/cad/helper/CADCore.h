@@ -211,6 +211,7 @@ struct CADCore<CoreHeuristic::Interleave> {
 			if (res == Answer::SAT) return Answer::SAT;
 			if (!cad.mLifting.hasNextSample()) {
 				if (!doProjection(cad)) return Answer::UNSAT;
+				cad.mLifting.restoreRemovedSamples();
 			}
 			if (preferLifting(cad.mLifting.getNextSample())) {
 				doLifting(cad);

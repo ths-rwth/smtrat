@@ -26,7 +26,7 @@ struct Bound {
 inline ostream& operator<<(ostream& os, const Bound& b) {
 	os << "(" << b.constr << ", " << b.p << ", " << b.q << ", " << b.r << ", " << b.neg << ")";  
 	return os;  
-}  
+}
 
 template<class Comparator>
 struct ConflictGenerator {
