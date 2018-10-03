@@ -202,82 +202,87 @@ namespace smtrat
                 }
             };
 
-            /// [Minisat related code]
-            struct VarOrderActivity
-            {
+            struct VarSchedulingDefault {
                 /// [Minisat related code]
-                const Minisat::vec<double>& activity;
-
-                /// [Minisat related code]
-                bool operator ()( Minisat::Var x, Minisat::Var y )
+                struct VarOrderLt
                 {
-                    return activity[x] > activity[y];
-                }
+                    /// [Minisat related code]
+                    const Minisat::vec<double>& activity;
 
-                /// [Minisat related code]
-                VarOrderActivity( SATModule& module ):
-                    activity( module.activity )
-                {}
-            };
-            friend VarOrderActivity;
+                    /// [Minisat related code]
+                    bool operator ()( Minisat::Var x, Minisat::Var y )
+                    {
+                        return activity[x] > activity[y];
+                    }
 
-            struct VarOrderMcsat
-            {
-                const Minisat::vec<double>& activity;
-                SATModule& module;
+                    /// [Minisat related code]
+                    VarOrderLt( SATModule& module ):
+                        activity( module.activity )
+                    {}
+                };
 
-                bool operator ()( Minisat::Var x, Minisat::Var y )
+                struct VarDecidabilityCond
                 {
-                    auto x_lvl = module.mMCSAT.maxTheoryLevel(x);
-                    auto y_lvl = module.mMCSAT.maxTheoryLevel(y);
-                    return x_lvl < y_lvl || (x_lvl == y_lvl && activity[x] > activity[y]);
-                }
+                    bool operator ()( Minisat::Var x)
+                    {
+                        return true;
+                    }
 
-                VarOrderMcsat( SATModule& module ):
-                    activity( module.activity ),
-                    module( module )
-                {}
+                    VarDecidabilityCond( SATModule& module )
+                    {}
+                };
             };
-            friend VarOrderMcsat;
+            friend VarSchedulingDefault;
 
-            // TODO how to deal with this issue?
+            template<int maxNumUnassignedVars>
+            struct VarSchedulingMcsat {
+                struct VarOrderLt
+                {
+                    const Minisat::vec<double>& activity;
+                    SATModule& module;
+
+                    bool operator ()( Minisat::Var x, Minisat::Var y )
+                    {
+                        auto x_lvl = module.mMCSAT.maxTheoryLevel(x);
+                        auto y_lvl = module.mMCSAT.maxTheoryLevel(y);
+                        return x_lvl < y_lvl || (x_lvl == y_lvl && activity[x] > activity[y]);
+                    }
+
+                    VarOrderLt( SATModule& module ):
+                        activity( module.activity ),
+                        module( module )
+                    {}
+                };
+
+                struct VarDecidabilityCond
+                {
+                    SATModule& module;
+
+                    bool operator ()( Minisat::Var x)
+                    {
+                        static_assert(maxNumUnassignedVars >= 1);
+                        return module.mMCSAT.maxTheoryLevel(x) <= module.mMCSAT.level() + maxNumUnassignedVars;
+                    }
+
+                    VarDecidabilityCond( SATModule& module ) :
+                        module( module )
+                    {}
+                };
+            };
+            template<int maxNumUnassignedVars>
+            friend struct VarSchedulingMcsat;
+
+            using VarScheduling = VarSchedulingMcsat<1>; // TODO settings ...
+
             /*
-            template<bool> struct VarOrderHeuristic { using type = VarOrderActivity; };
-            template<> struct VarOrderHeuristic<true> { using type = VarOrderMcsat; };
-            using VarOrderLt = VarOrderHeuristic<Settings::mc_sat>::type;
+            template<bool> struct VarSchedulingT { using type = VarSchedulingDefault; };
+            template<> struct VarSchedulingT<true> { using type = VarSchedulingMcsat<1>; };
+            using VarScheduling = typename VarSchedulingT<Settings::mc_sat>::type;
             */
-            using VarOrderLt = VarOrderMcsat;
 
-            struct VarDecidabilityCondDefault
-            {
-                bool operator ()( Minisat::Var x)
-                {
-                    return true;
-                }
-
-                VarDecidabilityCondDefault( SATModule& module )
-                {}
-            };
-            friend VarDecidabilityCondDefault;
-
-            struct VarDecidabilityCondMcsat
-            {
-                SATModule& module;
-
-                bool operator ()( Minisat::Var x)
-                {
-                    return module.mMCSAT.maxTheoryLevel(x) <= module.mMCSAT.level() + 1;
-                }
-
-                VarDecidabilityCondMcsat( SATModule& module ) :
-                    module( module )
-                {}
-            };
-            friend VarDecidabilityCondMcsat;
-
-            // TODO settings ...
-            // TODO combine decidability cond and ordering to scheduling strategy...
-            using VarDecidabilityCond = VarDecidabilityCondMcsat;
+            using VarOrderLt = typename VarScheduling::VarOrderLt;
+            using VarDecidabilityCond = typename VarScheduling::VarDecidabilityCond;
+            
             
             struct CNFInfos
             {
