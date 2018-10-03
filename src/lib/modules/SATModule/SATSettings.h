@@ -11,6 +11,8 @@
 #include "../../solver/ModuleSettings.h"
 
 #include "mcsat/MCSATSettings.h"
+
+#include "VarScheduling.h"
     
 namespace smtrat
 {
@@ -103,14 +105,16 @@ namespace smtrat
 
 		static constexpr bool check_for_duplicate_clauses = false;
 
-        static constexpr bool mcsat_resolve_clause_chains = false;
+    static constexpr bool mcsat_resolve_clause_chains = false;
 
-        static constexpr bool mcsat_lazy_explanations = true;
+    static constexpr bool mcsat_lazy_explanations = true;
 
-        static constexpr bool mcsat_learn_lazy_explanations = false;
+    static constexpr bool mcsat_learn_lazy_explanations = false;
 
-        static constexpr unsigned int mcsat_num_insert_assignments = 2;
-		
+    static constexpr unsigned int mcsat_num_insert_assignments = 2;
+
+    using VarScheduling = VarSchedulingDefault;
+
 		using MCSATSettings = mcsat::MCSATSettingsFMVSNL;
     };
 
@@ -126,6 +130,7 @@ namespace smtrat
     
     struct SATSettingsMCSAT : SATSettings1 {
         static const bool mc_sat = true;
+        using VarScheduling = VarSchedulingMcsat<1>;
     };
   struct SATSettingsMCSATOC : SATSettingsMCSAT {
     static constexpr auto muduleName = "SATModule<MCSATOC>";
