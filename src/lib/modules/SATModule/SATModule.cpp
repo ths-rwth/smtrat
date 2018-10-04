@@ -29,7 +29,7 @@
 #include <iomanip>
 
 #ifdef LOGGING
-#define DEBUG_SATMODULE // TODO
+//#define DEBUG_SATMODULE
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
 //#define DEBUG_SATMODULE_DECISION_HEURISTIC
 //#define DEBUG_SATMODULE_LEMMA_HANDLING
@@ -1409,7 +1409,7 @@ namespace smtrat
 				assert(invertedConstraint.getType() != carl::FormulaType::NOT);
 				SMTRAT_LOG_TRACE("smtrat.sat", "Adding " << constraint << " / " << invertedConstraint << ", negated? " << negated);
 
-                // Note: insertVarOrder cannot be called inside newVar, as some orderings may depend on the abstracted constraint // TODO ugly hack
+                // Note: insertVarOrder cannot be called inside newVar, as some orderings may depend on the abstracted constraint (ugly hack)
                 Var constraintAbstraction = newVar( !preferredToTSolver, _decisionRelevant, act, !Settings::mc_sat );
                 // map the abstraction variable to the abstraction information for the constraint and it's negation
                 mBooleanConstraintMap.push( std::make_pair( new Abstraction( passedFormulaEnd(), constraint ), new Abstraction( passedFormulaEnd(), invertedConstraint ) ) );
@@ -2765,22 +2765,6 @@ namespace smtrat
 						if (next != lit_Undef) break;
 					}
 				}
-                /*
-                if (Settings::mc_sat && next == lit_Undef) {
-					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for theory propagations...");
-                    for (Minisat::Var v = 0; v < nVars(); v++) {
-                        if (bool_value(v) != l_Undef) continue;
-                        auto tv = theoryValue(v);
-                        SMTRAT_LOG_DEBUG("smtrat.sat", "Undef, theory value of " << v << " is " << tv);
-                        if (tv == l_Undef) continue;
-                        SMTRAT_LOG_DEBUG("smtrat.sat", "Propagating " << v << " = " << tv);
-                        if (tv == l_True) next = mkLit(v, false);
-                        else if (tv == l_False) next = mkLit(v, true);
-                        assert(next != lit_Undef);
-                        break;
-                    }
-				}
-                */
 
                 // If we do not already have a branching literal, we pick one
                 if( next == lit_Undef )
@@ -3127,7 +3111,7 @@ namespace smtrat
                 }
             }
             else {
-                return bestBranchLit(); // TODO does this also need to be adapted?
+                return bestBranchLit();
             }
         }
 		SMTRAT_LOG_DEBUG("smtrat.sat", "Got " << next);
