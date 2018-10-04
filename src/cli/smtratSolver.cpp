@@ -267,33 +267,16 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
         else if(e->lastAnswer == smtrat::Answer::UNKNOWN) {
             if (settingsManager.printInputSimplified())
             {
-                std::stringstream sstream;
-                if (solver->logic() != smtrat::Logic::UNDEFINED)
-                    sstream << "(set-logic " << solver->logic() << ")" << std::endl;
                 smtrat::FormulaT formula = solver->getInputSimplified().second;
+				auto smtrepr = carl::outputSMTLIB(solver->logic(), { formula });
 
-                smtrat::Model model = solver->model();
-                for (const auto& obj: solver->objectives()) {
-                    smtrat::ModelPolynomialSubstitution mps(obj.first);
-                    smtrat::ModelValue mv = mps.evaluate(model);
-                    formula = smtrat::FormulaT(carl::FormulaType::AND, formula, smtrat::FormulaT(obj.first - mv.asRational(), carl::Relation::EQ));
-                }
-                sstream << formula << std::endl;
-                for (const auto& obj: solver->objectives()) {
-                    if (obj.second.second) {
-                        sstream << "(minimize " << obj.first << ")" << std::endl;
-                    } else {
-                        sstream << "(maximize " << obj.first << ")" << std::endl;
-                    }
-                }
-                sstream << "(check-sat)" << std::endl;
                 if( settingsManager.simplifiedInputFileName() == "" )
-                    e->regular() << sstream.str();
+                    e->regular() << smtrepr;
                 else
                 {
                     std::ofstream file;
                     file.open(settingsManager.simplifiedInputFileName());
-                    file << sstream.str();
+                    file << smtrepr;
                     file.close();
                 }
             }
