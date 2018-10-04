@@ -56,16 +56,20 @@ std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isDecisionPo
 	if (!mGetter.isTheoryAbstraction(var)) return std::make_pair(true, boost::none);
 	const auto& f = mGetter.reabstractLiteral(lit);
 	auto res = mBackend.isInfeasible(currentVariable(), f);
-	if (res == boost::none) {
+	if (carl::variant_is_type<ModelValues>(res)) {
+		if (mModelAssignmentCache.empty()) {
+			mModelAssignmentCache = boost::get<ModelValues>(res);
+		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " (" << f << ") is possible");
 		return std::make_pair(true, boost::none);
 	} else {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " (" << f << ") is impossible due to " << *res);
+		auto& confl = boost::get<FormulasT>(res);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " (" << f << ") is impossible due to " << confl);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << (*this));
 		if (check_feasibility_before) {
-			if (std::find((*res).begin(), (*res).end(), f) == (*res).end()) {
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflicting core " << *res << " is independent from decision " << f);
-				return std::make_pair(false, mBackend.explain(currentVariable(), *res));
+			if (std::find(confl.begin(), confl.end(), f) == confl.end()) {
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflicting core " << confl << " is independent from decision " << f);
+				return std::make_pair(false, mBackend.explain(currentVariable(), confl));
 			} else {
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Check if trail without " << f << " was feasible");
 				auto expl = isFeasible();
@@ -78,8 +82,8 @@ std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isDecisionPo
 				}
 			}
 		} else {
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " from " << *res);
-			return std::make_pair(false, mBackend.explain(currentVariable(), *res));
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " from " << confl);
+			return std::make_pair(false, mBackend.explain(currentVariable(), confl));
 		}
 	}
 }

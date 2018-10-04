@@ -54,8 +54,9 @@ BOOST_AUTO_TEST_CASE(Test_NLSATPaper_Ex3)
 	SMTRAT_LOG_INFO("smtrat.test.nlsat", "T-Propagate " << c4.negated());
 	{
 		auto res = nlsat.isInfeasible(y, c4);
-		BOOST_CHECK(bool(res));
-		auto explanation = nlsat.explain(y, *res, c4.negated());
+		BOOST_CHECK(carl::variant_is_type<FormulasT>(res));
+		auto r = boost::get<FormulasT>(res);
+		auto explanation = nlsat.explain(y, r, c4.negated());
 		BOOST_CHECK(ex1 == explanation);
 	}
 	nlsat.pushConstraint(c4.negated());
@@ -68,8 +69,9 @@ BOOST_AUTO_TEST_CASE(Test_NLSATPaper_Ex3)
 	SMTRAT_LOG_INFO("smtrat.test.nlsat", "T-Propagate " << c5);
 	{
 		auto res = nlsat.isInfeasible(x, c5.negated());
-		BOOST_CHECK(bool(res));
-		auto explanation = nlsat.explain(x, *res, c5);
+		BOOST_CHECK(carl::variant_is_type<FormulasT>(res));
+		auto r = boost::get<FormulasT>(res);
+		auto explanation = nlsat.explain(x, r, c5);
 		BOOST_CHECK(ex2 == explanation);
 	}
 }

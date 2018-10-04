@@ -202,14 +202,20 @@ public:
 			return boost::none;
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking whether trail is feasible (w.r.t. " << currentVariable() << ")");
-		auto res = mBackend.findAssignment(currentVariable());
-		if (carl::variant_is_type<ModelValues>(res)) {
-			mModelAssignmentCache = boost::get<ModelValues>(res);
+		AssignmentOrConflict res;
+		if (!mModelAssignmentCache.empty()) {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found cached assignment.");
 			return boost::none;
 		} else {
-			const auto& confl = boost::get<FormulasT>(res);
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << confl);
-			return mBackend.explain(currentVariable(), confl);
+			auto res = mBackend.findAssignment(currentVariable());
+			if (carl::variant_is_type<ModelValues>(res)) {
+				mModelAssignmentCache = boost::get<ModelValues>(res);
+				return boost::none;
+			} else {
+				const auto& confl = boost::get<FormulasT>(res);
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << confl);
+				return mBackend.explain(currentVariable(), confl);
+			}
 		}
 	}
 	
@@ -220,6 +226,7 @@ public:
 		if (mModelAssignmentCache.empty()) {
 			res = mBackend.findAssignment(currentVariable());
 		} else {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found cached assignment.");
 			res = mModelAssignmentCache;
 			mModelAssignmentCache.clear();
 		}
@@ -246,11 +253,12 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << (*this));
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << literal << " under " << mBackend.getModel());
 		const auto& f = mGetter.reabstractLiteral(literal);
-		boost::optional<FormulasT> conflict = mBackend.isInfeasible(currentVariable(), !f);
-		assert(conflict);
-		assert( std::find((*conflict).begin(), (*conflict).end(), !f) != (*conflict).end() );
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " from " << *conflict);
-		auto res = mBackend.explain(currentVariable(), !f, *conflict);
+		auto conflict = mBackend.isInfeasible(currentVariable(), !f);
+		assert(carl::variant_is_type<FormulasT>(conflict));
+		auto& confl = boost::get<FormulasT>(conflict);
+		assert( std::find(confl.begin(), confl.end(), !f) != confl.end() );
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " from " << confl);
+		auto res = mBackend.explain(currentVariable(), !f, confl);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " by " << res);
 		// f is part of the conflict, because the trail is feasible without f:
 		if (carl::variant_is_type<FormulaT>(res)) {

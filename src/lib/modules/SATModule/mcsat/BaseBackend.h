@@ -60,18 +60,17 @@ public:
 		}
 	}
 
-	boost::optional<FormulasT> isInfeasible(carl::Variable var, const FormulaT& f) {
+	AssignmentOrConflict isInfeasible(carl::Variable var, const FormulaT& f) {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat", "Checking whether " << f << " is feasible");
 		pushConstraint(f);
 		auto res = findAssignment(var);
 		popConstraint(f);
 		if (carl::variant_is_type<ModelValues>(res)) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat", f << " is feasible");
-			return boost::none;
 		} else {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat", f << " is infeasible with reason " << boost::get<FormulasT>(res));
-			return boost::get<FormulasT>(res);
 		}
+		return res;
 	}
 
 	Explanation explain(carl::Variable var, const FormulasT& reason) const {
