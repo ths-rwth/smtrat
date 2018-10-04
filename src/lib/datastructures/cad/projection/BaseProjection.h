@@ -8,6 +8,7 @@
 #include "../Common.h"
 #include "../helper/CADConstraints.h"
 
+#include "Projection_utils.h"
 #include "ProjectionOperator.h"
 #include "PolynomialLiftingQueue.h"
 
@@ -50,14 +51,6 @@ namespace cad {
 		carl::Variable var(std::size_t level) const {
 			assert(level > 0 && level <= dim());
 			return vars()[level - 1];
-		}
-		/// Checks whether a polynomial can safely be ignored.
-		bool canBeRemoved(const UPoly& p) const {
-			return p.isZero() || p.isNumber();
-		}
-		/// Checks whether a polynomial can safely be forwarded to the next level.
-		bool canBeForwarded(std::size_t, const UPoly& p) const {
-			return p.isConstant();
 		}
 		/// Checks whether a polynomial can safely be ignored due to the bounds.
 		bool canBePurgedByBounds(const UPoly& p) const {
@@ -129,10 +122,6 @@ namespace cad {
 				if (!empty(level)) return false;
 			}
 			return true;
-		}
-		
-		UPoly normalize(const UPoly& p) const {
-			return projection::normalize(p);
 		}
 		
 		/// Get a polynomial from this level suited for lifting.

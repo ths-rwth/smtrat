@@ -41,9 +41,9 @@ namespace cad {
 		debug::TikzHistoryPrinter thp;
 		CAD():
 			mConstraints(
-				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(mProjection.normalize(p), cid, isBound); },
-				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addEqConstraint(mProjection.normalize(p), cid, isBound); },
-				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(mProjection.normalize(p), cid, isBound); }
+				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(projection::normalize(p), cid, isBound); },
+				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addEqConstraint(projection::normalize(p), cid, isBound); },
+				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(projection::normalize(p), cid, isBound); }
 			),
 			mProjection(mConstraints),
 			mLifting(mConstraints)
