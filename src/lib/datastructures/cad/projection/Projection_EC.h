@@ -219,7 +219,7 @@ namespace full_ec {
                  */
                 void deletePolynomials(const UPoly& p, std::size_t cid) {
                         assert(mPolynomials[0][cid]);
-			assert(mPolynomials[0][cid]->first == p);
+			assert(*mPolynomials[0][cid] == p);
 			mPolyInfo.clear(0, cid);
                         mProjectionQueue.removeIf([cid](const QueueEntry& qe){ return (qe.level == 0) && (qe.first == cid || qe.second == cid); });
 			mInactiveQueue.removeIf([cid](const QueueEntry& qe){ return (qe.level == 0) && (qe.first == cid || qe.second == cid); });
@@ -446,6 +446,7 @@ namespace full_ec {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Got new id " << id);
 			if (id >= mPolynomials[level].size()) mPolynomials[level].resize(id + 1);
 			assert(!mPolynomials[level][id]);
+			mPolyInfo.emplace(level, id);
 			mPolyInfo.origin(level, id) = Origin(origin);
 			mPolynomials[level][id] = p;
 			mLiftingQueues[level - 1].insert(id);
@@ -593,7 +594,7 @@ namespace full_ec {
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " with id " << cid);
 			assert(!mPolynomials[0][cid]);
-			mPolyInfo.origin(0, cid) = Origin();
+			mPolyInfo.emplace(0, cid);
 			mPolynomials[0][cid] = p;
 			mPolynomialIDs[0].emplace(p, cid); 
 			printPolynomialIDs();
@@ -642,7 +643,7 @@ namespace full_ec {
 			}    
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " with id " << cid);
 			assert(!mPolynomials[0][cid]);
-			mPolyInfo.origin(0, cid) = Origin();
+			mPolyInfo.emplace(0, cid);
 			mPolynomials[0][cid] = p;
 			mPolynomialIDs[0].emplace(p, cid);
 			insertPolynomialTo(1, p, Origin::BaseType(0,cid), isBound, true);
@@ -661,7 +662,7 @@ namespace full_ec {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << cid);
 			printPolynomialIDs();
 			assert(mPolynomials[0][cid]);
-			assert(mPolynomials[0][cid]->first == p);
+			assert(*mPolynomials[0][cid] == p);
                         mInactive.set(cid);
                         // activates polynomials that were inactive due to p, if p is an equational polynomial
                         if(Settings::restrictProjectionByEC) {

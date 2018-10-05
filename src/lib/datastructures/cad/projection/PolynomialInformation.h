@@ -19,6 +19,11 @@ private:
 		return mData[level][pid].has_value();
 	}
 public:
+	void emplace(std::size_t level, std::size_t pid) {
+		while (mData.size() <= level) mData.emplace_back();
+		while (mData[level].size() <= pid) mData[level].emplace_back();
+		mData[level][pid] = Info();
+	}
 	const auto& origin(std::size_t level, std::size_t pid) const {
 		assert(hasInfo(level, pid));
 		return std::get<0>(*mData[level][pid]);
