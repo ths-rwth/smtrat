@@ -14,6 +14,12 @@ namespace smtrat{
     private:
         // Members:
         std::unordered_map<carl::Variable, carl::Monomial::Arg> mMonomialMapping;
+    public:
+        const std::unordered_map<carl::Variable, carl::Monomial::Arg> &getMMonomialMapping() const {
+            return mMonomialMapping;
+        }
+
+    private:
         carl::Variable nullVariable = carl::freshRealVariable("0");
 
     public:
