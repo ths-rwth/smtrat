@@ -52,7 +52,7 @@ namespace smtrat{
 
            if (it != mMonomialMapping.end()) {
                carl::Monomial::Arg monomial = it->second;
-                        return monomial;
+               return monomial;
            }
 
            return nullptr;
