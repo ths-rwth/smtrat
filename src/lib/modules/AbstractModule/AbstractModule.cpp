@@ -10,6 +10,7 @@
 #include "MonomialMappingByVariablePool.h"
 #include "stdlib.h"
 
+
 namespace smtrat
 {
     template<class Settings>
@@ -295,12 +296,12 @@ namespace smtrat
         cout << "\n";
 
         //get polynomial(lhs) of constraint
-        carl::MultivariatePolynomial<Rational> poly = constraint.lhs();
+        Poly poly = constraint.lhs();
         //counter of op[]
         int indexCount = 0;
 
         //size of array
-        carl::MultivariatePolynomial<Rational> op[poly.getTerms().size()];
+        Poly op[poly.getTerms().size()];
         int n = sizeof(op) / sizeof(op[0]);
 
         // loops over each term and create linear polynomials
@@ -308,7 +309,7 @@ namespace smtrat
 
            if (!term.isConstant() && term.isLinear()) { //if the term is already linear and not a constant
 
-                carl::MultivariatePolynomial<Rational> p(term);
+                Poly p(term);
                 op[indexCount] = p;
 
                 cout << "Monomial is: " << term.monomial() << " (alreday linear)";
@@ -326,7 +327,7 @@ namespace smtrat
                 carl::Variable finalVariable = linearization(monomial);
 
                 //create new polynomial
-                carl::MultivariatePolynomial<Rational> p(term.coeff()*finalVariable);
+                Poly p(term.coeff()*finalVariable);
 
                 cout << "Generated MultiVariantPolynomial: " << p;
                 cout << "\n";
@@ -337,7 +338,7 @@ namespace smtrat
             } else { //if the term is a constants
 
                 //create new polynomial
-                carl::MultivariatePolynomial<Rational> p(term);
+                Poly p(term);
                 op[indexCount] = p;
 
             }
@@ -346,12 +347,12 @@ namespace smtrat
         }
 
         //convert op of array type to vector
-        std::vector<carl::MultivariatePolynomial<Rational>> operands(op, op + n);
+        std::vector<Poly> operands(op, op + n);
         cout << "Vector: " << operands;
         cout << "\n";
 
         //construction lhs of the constraint
-        carl::MultivariatePolynomial<Rational> finalPoly(Poly::ConstructorOperation::ADD,operands);
+        Poly finalPoly(Poly::ConstructorOperation::ADD,operands);
 
         //create new formula
         FormulaT  finalFormula = FormulaT(finalPoly, constraint.relation());
