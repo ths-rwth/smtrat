@@ -2,9 +2,8 @@
 #pragma once
 
 #include "carl/util/Singleton.h"
-#include "carl/core/Monomial.h"
-#include "unordered_map"
 #include <string>
+#include "Util.h"
 
 namespace smtrat{
 
@@ -13,9 +12,9 @@ namespace smtrat{
 
     private:
         // Members:
-        std::unordered_map<carl::Variable, carl::Monomial::Arg> mMonomialMapping;
+        MonomialMap mMonomialMapping;
     public:
-        const std::unordered_map<carl::Variable, carl::Monomial::Arg> &getMMonomialMapping() const {
+        const MonomialMap &getMMonomialMapping() const {
             return mMonomialMapping;
         }
 
@@ -29,7 +28,7 @@ namespace smtrat{
 
         carl::Variable variable(carl::Monomial::Arg monomial) {
 
-            std::unordered_map<carl::Variable, carl::Monomial::Arg>::iterator it;
+            MonomialMapIterator it;
 
             for (it = mMonomialMapping.begin(); it != mMonomialMapping.end(); ++it) {
                 if (it->second == monomial)
@@ -45,7 +44,7 @@ namespace smtrat{
 
        carl::Monomial::Arg monomial(carl::Variable variable) {
 
-           std::unordered_map<carl::Variable, carl::Monomial::Arg>::iterator it;
+           MonomialMapIterator it;
 
            it = mMonomialMapping.find(variable);
            carl::Monomial::Arg monomial = it->second;
