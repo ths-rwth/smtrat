@@ -9,6 +9,7 @@
 #include "AbstractModule.h"
 #include "MonomialMappingByVariablePool.h"
 #include "stdlib.h"
+#include "AxiomFactory.h"
 
 
 namespace smtrat
@@ -480,7 +481,13 @@ namespace smtrat
         cout << "\n";
         cout << "\n";
 
-        isOriginalFormulaSatisfied(mModel);
+        auto AnswerOfOriginalFormula = isOriginalFormulaSatisfied(mModel);
+
+        ///////////////////////////
+        // testing axioms
+        ///////////////////////////
+        FormulasT formulas = AxiomFactory::createFormula(AxiomFactory::AxiomType::ZERO, smtrat::MonomialMappingByVariablePool::getInstance().getMMonomialMapping());
+
 
         return Answer; // This should be adapted according to your implementation.
     }
