@@ -188,6 +188,7 @@ public:
 			}
 		}
 		assert(false);
+		return boost::indeterminate;
 	}
 
 	boost::optional<AssignmentOrConflict> findAssignment(const VariablePos excludeVar) const {
@@ -255,6 +256,7 @@ public:
 			}
 		}
 		assert(false);
+		return boost::none;
 	}
 
 	boost::optional<AssignmentOrConflict> findAssignment() const {
@@ -271,6 +273,7 @@ public:
 			}
 		}
 		assert(false);
+		return boost::none;
 	}
 };
 

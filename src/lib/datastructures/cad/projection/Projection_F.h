@@ -28,9 +28,7 @@ namespace full {
 		using Super::mLiftingQueues;
 		using Super::mOperator;
 		using Super::callRemoveCallback;
-		using Super::canBeForwarded;
 		using Super::canBePurgedByBounds;
-		using Super::canBeRemoved;
 		using Super::getID;
 		using Super::freeID;
 		using Super::var;
@@ -199,11 +197,11 @@ namespace full {
 		/// Inserts a polynomial with the given origin into the given level.
 		carl::Bitset insertPolynomialTo(std::size_t level, const UPoly& p, const Origin::BaseType& origin, bool setBound = false) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "Receiving " << p << " for level " << level);
-			if (canBeRemoved(p)) {
+			if (projection::canBeRemoved(p)) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> but is safely removed.");
 				return carl::Bitset();
 			}
-			if ((level < dim()) && canBeForwarded(level, p)) {
+			if ((level < dim()) && projection::canBeForwarded(level, p)) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> but is forwarded to " << (level+1));
 				return insertPolynomialTo(level + 1, p.switchVariable(var(level + 1)), origin, setBound);
 			}

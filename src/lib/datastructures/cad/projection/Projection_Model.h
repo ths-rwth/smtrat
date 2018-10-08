@@ -30,8 +30,6 @@ namespace cad {
 		using Super::mLiftingQueues;
 		using Super::mOperator;
 		using Super::callRemoveCallback;
-		using Super::canBeRemoved;
-		using Super::canBeForwarded;
 		using Super::var;
 	public:
 		using Super::dim;
@@ -125,8 +123,8 @@ namespace cad {
                 /// Adds a polynomial with the given origin to the suitable level. 
                 void addToCorrectLevel(std::size_t level, const UPoly& p, std::size_t origin) {
                         assert(level > 0 && level <= dim());
-			if (canBeRemoved(p)) return;
-                        if ((level > 1) && (level < dim()) && canBeForwarded(level, p)) {
+			if (projection::canBeRemoved(p)) return;
+                        if ((level > 1) && (level < dim()) && projection::canBeForwarded(level, p)) {
 				addToCorrectLevel(level + 1, p.switchVariable(var(level+1)), origin);
                                 return;
 			} 
@@ -146,9 +144,9 @@ namespace cad {
 		/// Adds a new polynomial to the given level (used to performs the first step of the projection)
 		carl::Bitset addToProjection(std::size_t level, const UPoly& p, std::size_t origin) {
 			assert(level > 0 && level <= dim());
-			if (canBeRemoved(p)) return carl::Bitset();
+			if (projection::canBeRemoved(p)) return carl::Bitset();
                         // TODO warum > 1 und nicht > 0?
-			if ((level > 1) && (level < dim()) && canBeForwarded(level, p)) {
+			if ((level > 1) && (level < dim()) && projection::canBeForwarded(level, p)) {
 				return addToProjection(level + 1, p.switchVariable(var(level+1)), origin);
 			} 
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);

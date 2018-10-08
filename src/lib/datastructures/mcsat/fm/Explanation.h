@@ -26,7 +26,7 @@ struct Bound {
 inline ostream& operator<<(ostream& os, const Bound& b) {
 	os << "(" << b.constr << ", " << b.p << ", " << b.q << ", " << b.r << ", " << b.neg << ")";  
 	return os;  
-}  
+}
 
 template<class Comparator>
 struct ConflictGenerator {
@@ -336,6 +336,9 @@ struct MinVarCountComparator {
 
 
 struct DefaultSettings {
+	static constexpr bool use_all_constraints = false;
+};
+struct IgnoreCoreSettings {
 	static constexpr bool use_all_constraints = true;
 };
 
