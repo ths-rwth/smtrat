@@ -98,7 +98,8 @@ namespace smtrat
         qhead( 0 ),
         simpDB_assigns( -1 ),
         simpDB_props( 0 ),
-        order_heap( VarOrderLt( activity ) ),
+        order_heap( VarOrderLt( *this ) ),
+        is_var_decidable( *this ),
         progress_estimate( 0 ),
         remove_satisfied( Settings::remove_satisfied ),
         // Resource constraints:
@@ -387,6 +388,7 @@ namespace smtrat
 			#endif
 			mMCSAT.resetVariableOrdering(mBooleanConstraintMap);
 			assert(mMCSAT.level() <= 1);
+            rebuildOrderHeap();
 			pickTheoryBranchLit();
 		}
         ++solves;
@@ -1407,7 +1409,8 @@ namespace smtrat
 				assert(invertedConstraint.getType() != carl::FormulaType::NOT);
 				SMTRAT_LOG_TRACE("smtrat.sat", "Adding " << constraint << " / " << invertedConstraint << ", negated? " << negated);
 
-                Var constraintAbstraction = newVar( !preferredToTSolver, _decisionRelevant, act );
+                // Note: insertVarOrder cannot be called inside newVar, as some orderings may depend on the abstracted constraint (ugly hack)
+                Var constraintAbstraction = newVar( !preferredToTSolver, _decisionRelevant, act, !Settings::mc_sat );
                 // map the abstraction variable to the abstraction information for the constraint and it's negation
                 mBooleanConstraintMap.push( std::make_pair( new Abstraction( passedFormulaEnd(), constraint ), new Abstraction( passedFormulaEnd(), invertedConstraint ) ) );
 				if (Settings::mc_sat) {
@@ -1415,6 +1418,7 @@ namespace smtrat
                     if (content.getType() != carl::FormulaType::VARASSIGN) {
 	                    mMCSAT.addVariable(constraintAbstraction);
                     }
+                    insertVarOrder(constraintAbstraction);
 				}
                 // add the constraint and its negation to the constraints to inform backends about
                 if( !_origin.isTrue() )
@@ -1632,7 +1636,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Var SATModule<Settings>::newVar( bool sign, bool dvar, double _activity )
+    Var SATModule<Settings>::newVar( bool sign, bool dvar, double _activity, bool insertIntoHeap )
     {
         int v = nVars();
         watches.init( mkLit( v, false ) );
@@ -1645,13 +1649,11 @@ namespace smtrat
         polarity.push( sign );
         decision.push();
         trail.capacity( v + 1 );
+        setDecisionVar( v, dvar, insertIntoHeap );
         if( !mReceivedFormulaPurelyPropositional && Settings::formula_guided_decision_heuristic )
         {
-            setDecisionVar( v, dvar );
             mNonTseitinShadowedOccurrences.push( dvar ? 1 : 0 );
         }
-        else
-            setDecisionVar( v, dvar );
         if( !mReceivedFormulaPurelyPropositional && Settings::check_active_literal_occurrences )
         {
             mLiteralsClausesMap.emplace_back();
@@ -2763,7 +2765,7 @@ namespace smtrat
 						if (next != lit_Undef) break;
 					}
 				}
-			
+
                 // If we do not already have a branching literal, we pick one
                 if( next == lit_Undef )
                 {
@@ -3101,11 +3103,19 @@ namespace smtrat
                         next = order_heap.removeMin();
 					SMTRAT_LOG_TRACE("smtrat.sat", "Current " << next);
                 }
+                // if variable is cannot be decided yet, fail...
+                if (next != var_Undef && !is_var_decidable(next)) {
+                    SMTRAT_LOG_TRACE("smtrat.sat", "Variable not decidable yet.");
+                    order_heap.insert(next);
+                    next = var_Undef;
+                }
             }
-            else
+            else {
                 return bestBranchLit();
+            }
         }
 		SMTRAT_LOG_DEBUG("smtrat.sat", "Got " << next);
+        assert(next == var_Undef || is_var_decidable(next));
         return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
         //return next == var_Undef ? lit_Undef : mkLit( next, rnd_pol ? drand( random_seed ) < 0.5 : polarity[next] );
     }
@@ -3121,6 +3131,7 @@ namespace smtrat
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Next theory variable is " << nextVar);
 		mMCSAT.pushLevel(nextVar);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state " << mMCSAT);
+        // rebuildOrderHeap();
 	}
     
     template<class Settings>

@@ -40,6 +40,8 @@
 #include "../../solver/Module.h"
 #include "../../solver/RuntimeSettings.h"
 
+#include "VarScheduling.h"
+
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "SATModuleStatistics.h"
 #endif
@@ -55,6 +57,8 @@ namespace smtrat
         public Module
     {
 		friend mcsat::MCSATMixin<typename Settings::MCSATSettings>;
+        friend struct VarSchedulingDefault;
+        template<int num> friend struct VarSchedulingMcsat;
         private:
 
             /**
@@ -202,23 +206,9 @@ namespace smtrat
                 }
             };
 
-            /// [Minisat related code]
-            struct VarOrderLt
-            {
-                /// [Minisat related code]
-                const Minisat::vec<double>& activity;
-
-                /// [Minisat related code]
-                bool operator ()( Minisat::Var x, Minisat::Var y ) const
-                {
-                    return activity[x] > activity[y];
-                }
-
-                /// [Minisat related code]
-                VarOrderLt( const Minisat::vec<double>& act ):
-                    activity( act )
-                {}
-            };
+            using VarScheduling = typename Settings::VarScheduling;
+            using VarOrderLt = typename VarScheduling::VarOrderLt;
+            using VarDecidabilityCond = typename VarScheduling::VarDecidabilityCond;
             
             struct CNFInfos
             {
@@ -484,6 +474,8 @@ namespace smtrat
             Minisat::vec<Minisat::Lit> assumptions;
             /// A priority queue of variables ordered with respect to the variable activity.
             Minisat::Heap<VarOrderLt> order_heap;
+            // A check if a given variable can be decided yet
+            VarDecidabilityCond is_var_decidable;
             /// Set by 'search()'.
             double progress_estimate;
             /// Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
@@ -847,7 +839,7 @@ namespace smtrat
              * @param _tseitinShadowed A flag, which is true, if the variable to create is a sub-formula of a formula represented by a Tseitin variable.
              * @return The created Minisat variable.
              */
-            Minisat::Var newVar( bool polarity = true, bool dvar = true, double _activity = 0 );
+            Minisat::Var newVar( bool polarity = true, bool dvar = true, double _activity = 0, bool insertIntoHeap = true );
 
             // Solving:
             
@@ -893,14 +885,14 @@ namespace smtrat
              * @param v The variable to change the eligibility for selection in the decision heuristic.
              * @param b true, if the variable should be eligible for selection in the decision heuristic.
              */
-            inline void setDecisionVar( Minisat::Var v, bool b )
+            inline void setDecisionVar( Minisat::Var v, bool b, bool insertIntoHeap = true )
             {
                 if( b &&!decision[v] )
                     dec_vars++;
                 else if( !b && decision[v] )
                     dec_vars--;
                 decision[v] = b;
-                insertVarOrder( v );
+                if (insertIntoHeap) insertVarOrder( v );
             }
 
             // Read state:

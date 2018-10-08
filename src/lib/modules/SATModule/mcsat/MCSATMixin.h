@@ -58,21 +58,21 @@ private:
 	 */
 	using TheoryStackT = std::vector<TheoryLevel>;
 	TheoryStackT mTheoryStack;
-	/// The level for the next theory variable to be decided
-	std::size_t mCurrentLevel = 0;
 
 	/// Variables that are not univariate in any variable yet.
 	std::vector<Minisat::Var> mUndecidedVariables;
 	
 	MCSATBackend<Settings> mBackend;
 
+	std::vector<std::size_t> mMaxTheoryLevel;
+
 private:
 	// ***** private helper methods
 	
 	/// Updates lookup for the current level
-	void updateCurrentLevel(carl::Variable var);
-	/// Remove lookups of the last level
-	void removeLastLevel();
+	void updateCurrentLevel();
+	/// Undo a decision on the current level
+	void undoDecision();
 public:
 	
 	template<typename BaseModule>
@@ -98,10 +98,13 @@ public:
 	{}
 	
 	std::size_t level() const {
-		return mCurrentLevel;
+		return mTheoryStack.size() - 1;
 	}
 	const Model& model() const {
 		return mBackend.getModel();
+	}
+	const std::vector<Minisat::Var>& undecidedVariables() const {
+		return mUndecidedVariables;
 	}
 	/// Returns the respective theory level
 	const TheoryLevel& get(std::size_t level) const {
@@ -110,10 +113,10 @@ public:
 	}
 	/// Returns the current theory level
 	const TheoryLevel& current() const {
-		return mTheoryStack[level()];
+		return mTheoryStack.back();
 	}
 	TheoryLevel& current() {
-		return mTheoryStack[level()];
+		return mTheoryStack.back();
 	}
 	/// Retrieve the current theory variable
 	carl::Variable currentVariable() const {
@@ -379,6 +382,41 @@ public:
 			if (!evaluator(b)) return false;
 		}
 		return true;
+	}
+
+	/**
+	 * Calculates the syntactic (maximal) theory level of the given variable.
+	 */
+	std::size_t maxTheoryLevel(const Minisat::Var& var) {
+		// if variableOrder has not been initialized yet
+		if (mBackend.variableOrder().empty()) {
+			return 0;
+		}
+
+		assert(var < mMaxTheoryLevel.size());
+
+		if (mMaxTheoryLevel[var] == std::numeric_limits<std::size_t>::max()) {
+			if (!mGetter.isTheoryAbstraction(var)) {
+				mMaxTheoryLevel[var] = 0;
+			} else {
+				auto reabstraction = mGetter.reabstractVariable(var);
+				carl::Variables vars;
+				reabstraction.arithmeticVars(vars);
+				if (vars.empty()) {
+					mMaxTheoryLevel[var] = 0;
+				} else {
+					for (int i = mBackend.variableOrder().size() - 1; i >= 0; i--) {
+						if (vars.find(mBackend.variableOrder()[i]) != vars.end()) {
+							mMaxTheoryLevel[var] = i+1;
+							break;
+						}
+					}
+				}	
+			}
+		}
+		assert(mMaxTheoryLevel[var] < std::numeric_limits<std::size_t>::max());
+
+		return mMaxTheoryLevel[var];
 	}
 	
 	// ***** Output
