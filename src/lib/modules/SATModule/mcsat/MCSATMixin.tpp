@@ -70,7 +70,7 @@ std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isDecisionPo
 	auto res = mBackend.isInfeasible(currentVariable(), f);
 	if (carl::variant_is_type<ModelValues>(res)) {
 		if (mModelAssignmentCache.empty()) {
-			mModelAssignmentCache = boost::get<ModelValues>(res);
+			mModelAssignmentCache.cache(boost::get<ModelValues>(res));
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " (" << f << ") is possible");
 		return std::make_pair(true, boost::none);

@@ -64,8 +64,45 @@ private:
 	
 	MCSATBackend<Settings> mBackend;
 
+	struct ModelAssignmentCache {
+		ModelValues mContent;
+		Model mModel;
+		const Model& mBaseModel;
+
+		ModelAssignmentCache(const Model& baseModel) : mBaseModel(baseModel) {
+			mModel = mBaseModel;
+		}
+
+		bool empty() const {
+			return mContent.empty();
+		}
+
+		void clear() {
+			mContent.clear();
+			mModel = mBaseModel;
+		}
+
+		void cache(const ModelValues& val) {
+			assert(empty());
+			mModel = mBaseModel;
+			mContent = val;
+			for (const auto& assignment : content()) {
+				mModel.emplace(assignment.first, assignment.second);
+			}
+		}
+
+		const ModelValues& content() const {
+			return mContent;
+		}
+
+		const Model& model() const {
+			return mModel;
+		}
+	};
 	/// Cache for the next model assignemt(s)
-	ModelValues mModelAssignmentCache;
+	ModelAssignmentCache mModelAssignmentCache;
+
+
 	std::vector<std::size_t> mMaxTheoryLevel;
 
 private:
@@ -96,7 +133,8 @@ public:
 			[&baseModule](Minisat::Lit l) -> const auto& { return sign(l) ? baseModule.mBooleanConstraintMap[var(l)].second->reabstraction : baseModule.mBooleanConstraintMap[var(l)].first->reabstraction; },
 			[&baseModule](Minisat::Lit l) -> const auto& { return baseModule.watches[l]; }
 		}),
-		mTheoryStack(1, TheoryLevel())
+		mTheoryStack(1, TheoryLevel()),
+		mModelAssignmentCache(model())
 	{}
 	
 	std::size_t level() const {
@@ -154,13 +192,18 @@ public:
 	 * Add a new constraint.
 	 */
 	void doAssignment(Minisat::Lit lit) {
-		mModelAssignmentCache.clear(); // clear model assignment cache
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Assigned " << lit);
 		if (!mGetter.isTheoryAbstraction(var(lit))) return;
 		const auto& f = mGetter.reabstractLiteral(lit);
 		if (f.getType() == carl::FormulaType::VARASSIGN) {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Skipping assignment.");
 			return;
+		}
+		if (!mModelAssignmentCache.empty()) {
+			auto res = carl::model::evaluate(f, mModelAssignmentCache.model());
+			if (!res.isBool() || !res.asBool()) {
+				mModelAssignmentCache.clear(); // clear model assignment cache
+			}
 		}
 		mBackend.pushConstraint(f);
 	}
@@ -211,7 +254,7 @@ public:
 		} else {
 			auto res = mBackend.findAssignment(currentVariable());
 			if (carl::variant_is_type<ModelValues>(res)) {
-				mModelAssignmentCache = boost::get<ModelValues>(res);
+				mModelAssignmentCache.cache(boost::get<ModelValues>(res));
 				return boost::none;
 			} else {
 				const auto& confl = boost::get<FormulasT>(res);
@@ -229,7 +272,7 @@ public:
 			res = mBackend.findAssignment(currentVariable());
 		} else {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found cached assignment.");
-			res = mModelAssignmentCache;
+			res = mModelAssignmentCache.content();
 			mModelAssignmentCache.clear();
 		}
 		if (carl::variant_is_type<ModelValues>(res)) {
