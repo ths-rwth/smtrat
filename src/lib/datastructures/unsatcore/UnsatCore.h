@@ -64,6 +64,8 @@ FormulasT computeUnsatCore(const Solver* solver, UnsatCoreStrategy strategy) {
 		case UnsatCoreStrategy::ModelExclusion:
 			return unsatcore::UnsatCore<Solver, UnsatCoreStrategy::ModelExclusion>(solver).computeCore();
 	}
+	SMTRAT_LOG_WARN("smtrat.unsatcore", "Unsat core computation failed as unknown strategy " << strategy << " was selected.");
+	return FormulasT();
 }
 
 }
