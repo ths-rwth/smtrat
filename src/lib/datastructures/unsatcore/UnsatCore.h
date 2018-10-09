@@ -6,6 +6,13 @@
 namespace smtrat {
 enum class UnsatCoreStrategy { Counting, ModelExclusion };
 
+std::ostream& operator<<(std::ostream& os, UnsatCoreStrategy ucs) {
+	switch (ucs) {
+		case UnsatCoreStrategy::Counting: return os << "Counting";
+		case UnsatCoreStrategy::ModelExclusion: return os << "ModelExclusion";
+	}
+}
+
 /// Contains helper for unsat core computations.
 namespace unsatcore {
 template<typename Solver, UnsatCoreStrategy Strategy>
