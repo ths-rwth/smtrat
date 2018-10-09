@@ -8,9 +8,9 @@
 #include "../Common.h"
 #include "../helper/CADConstraints.h"
 
-#include "PolynomialInformation.h"
 #include "PolynomialLiftingQueue.h"
 #include "Projection_utils.h"
+#include "ProjectionInformation.h"
 #include "ProjectionOperator.h"
 
 namespace smtrat {
@@ -29,7 +29,8 @@ namespace cad {
 		/// List of lifting queues that can be used for incremental projection.
 		std::vector<PolynomialLiftingQueue<BaseProjection>> mLiftingQueues;
 		/// Origins and additional info on polynomials
-		PolynomialInformation mPolyInfo;
+		ProjectionLevelInformation mLevelInfo;
+		ProjectionPolynomialInformation mPolyInfo;
 		/// The projection operator.
 		ProjectionOperator mOperator;
 		/// Callback to be called when polynomials are removed. The arguments are the projection level and a bitset that indicate which polynomials were removed in this level.
@@ -149,7 +150,8 @@ namespace cad {
 		virtual const UPoly& getPolynomialById(std::size_t level, std::size_t id) const = 0;
 		
 		virtual void exportAsDot(std::ostream&) const {}
-		virtual Origin getOrigin(std::size_t, std::size_t) const {
+		virtual Origin getOrigin(std::size_t level, std::size_t id) const {
+			if (mPolyInfo.hasInfo(level, id)) return mPolyInfo(level, id).origin;
 			return Origin();
 		}
 	};
