@@ -34,11 +34,11 @@ public:
 		bool active() const {
 			return first_active && second_active && ec_active;
 		}
-		bool activate(const carl::Bitset& ids) {
+		void activate(const carl::Bitset& ids) {
 			if (!first_active && ids.test(first)) first_active = true;
 			if (!second_active && ids.test(second)) second_active = true;
 		}
-		bool deactivate(const carl::Bitset& ids) {
+		void deactivate(const carl::Bitset& ids) {
 			if (first_active && ids.test(first)) first_active = false;
 			if (second_active && ids.test(second)) second_active = false;
 		}
