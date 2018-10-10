@@ -85,7 +85,7 @@ ostream& operator<<(ostream& os, const std::vector<std::vector<onecellcad::TagPo
     const auto& trailVariables = trail.assignedVariables();
     std::vector<carl::Variable> fullProjectionVarOrder = varOrder;
     std::vector<carl::Variable> oneCellCADVarOrder;
-    for (int i = 0; i < trailVariables.size(); i++)
+    for (std::size_t i = 0; i < trailVariables.size(); i++)
       oneCellCADVarOrder.emplace_back(fullProjectionVarOrder[i]);
 
 //    std::vector<carl::Variable> fullProjectionVarOrder(trailVariables.size());
