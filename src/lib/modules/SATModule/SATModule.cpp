@@ -1333,7 +1333,7 @@ namespace smtrat
             }
             else
             {
-                Var var = newVar( true, _decisionRelevant, content.activity() );
+                Var var = newVar( true, _decisionRelevant, content.activity(), !Settings::mc_sat );
                 mBooleanVarMap[content.boolean()] = var;
                 mMinisatVarMap.emplace((int)var,content);
                 mBooleanConstraintMap.push( std::make_pair( nullptr, nullptr ) );
@@ -1342,6 +1342,7 @@ namespace smtrat
                     if (content.getType() != carl::FormulaType::VARASSIGN) {
 	                    mMCSAT.addVariable(var);
                     }
+                    insertVarOrder(var);
 				}
                 l = mkLit( var, negated );
             }
