@@ -8,8 +8,55 @@
 
 namespace smtrat::cad {
 
+class ProjectionGlobalInformation {
+public:
+	using ECMap = std::map<Origin::BaseType, std::pair<std::size_t,std::size_t>>;
+
+	ECMap mECs;
+	std::vector<ECMap::const_iterator> mUsedEC;
+
+	void reset(std::size_t dim) {
+		mECs.clear();
+		mUsedEC.assign(dim, mECs.end());
+	}
+};
+
 class ProjectionLevelInformation {
 private:
+	struct EquationalConstraint {
+		/// Which polynomials belong to this specific equational constraint.
+		carl::Bitset polynomials;
+	};
+
+	struct EquationalConstraints {
+	private:
+		/// A list of all ECs in this level, identified by their origin.
+		std::vector<EquationalConstraint> mData;
+	public:
+		/// Add a poly to the respective origin.
+		/// Todo: check if it should belong to an EC of another level.
+		/// Usually: higher level, but could also be lower (if first poly was degenerate)
+		/// Maybe have a map: Origin::BaseType -> level
+		std::size_t addEC() {
+			mData.emplace_back();
+			return mData.size() - 1;
+		}
+
+		void addPolyToEC(std::size_t id, std::size_t pid) {
+			mData[id].polynomials.set(pid);
+		}
+
+		bool hasEC() const {
+			return !mData.empty();
+		}
+		std::size_t getNextEC() const {
+			return 0;
+		}
+		const auto& getEC(std::size_t ecid) const {
+			return mData[ecid];
+		}
+	};
+public:
 	struct LevelInfo {
 		/// Which polynomials are bounds.
 		carl::Bitset bounds;
@@ -19,6 +66,9 @@ private:
 		carl::Bitset evaluated;
 		/// Which polynomials are purged from the projection. (usually due to bounds)
 		carl::Bitset purged;
+
+		/// Equational constraints.
+		EquationalConstraints ecs;
 		
 		bool isBound(std::size_t pid) const {
 			return bounds.test(pid);
@@ -27,12 +77,12 @@ private:
 			bounds.set(pid, isBound);
 		}
 
-		bool isEquational(std::size_t pid) const {
-			return equational.test(pid);
-		}
-		void setEquational(std::size_t pid, bool isEquational) {
-			equational.set(pid, isEquational);
-		}
+		//bool isEquational(std::size_t pid) const {
+		//	return equational.test(pid);
+		//}
+		//void setEquational(std::size_t pid, bool isEquational) {
+		//	equational.set(pid, isEquational);
+		//}
 
 		bool isEvaluated(std::size_t pid) const {
 			return evaluated.test(pid);
@@ -55,6 +105,7 @@ private:
 			evaluated &= purged;
 		}
 	};
+private:
 	std::vector<LevelInfo> mLevelData;
 
 public:
@@ -81,10 +132,14 @@ public:
 };
 
 class ProjectionPolynomialInformation {
-
+public:
 	struct PolyInfo {
+		/// Origins of this polynomial.
 		Origin origin;
+		/// The polynomial is part of these equational constraints.
+		carl::Bitset equational;
 	};
+private:
 	std::vector<std::vector<std::optional<PolyInfo>>> mPolyData;
 
 public:
@@ -113,5 +168,127 @@ public:
 		mPolyData.clear();
 	}
 };
+
+class ProjectionInformation {
+private:
+	ProjectionGlobalInformation mGlobal;
+	ProjectionLevelInformation mLevel;
+	ProjectionPolynomialInformation mPoly;
+public:
+	const auto& operator()() const {
+		return mGlobal;
+	}
+	auto& operator()() {
+		return mGlobal;
+	}
+
+	const auto& operator()(std::size_t level) const {
+		return mLevel(level);
+	}
+	auto& operator()(std::size_t level) {
+		return mLevel(level);
+	}
+	bool hasInfo(std::size_t level) const {
+		return mLevel.hasInfo(level);
+	}
+
+	const auto& operator()(std::size_t level, std::size_t pid) const {
+		return mPoly(level, pid);
+	}
+	auto& operator()(std::size_t level, std::size_t pid) {
+		return mPoly(level, pid);
+	}
+	void clear(std::size_t level, std::size_t pid) {
+		mPoly.clear(level, pid);
+	}
+	void emplace(std::size_t level, std::size_t pid) {
+		mPoly.emplace(level, pid);
+	}
+	bool hasInfo(std::size_t level, std::size_t pid) const {
+		return mPoly.hasInfo(level, pid);
+	}
+
+	void reset(std::size_t dim) {
+		mGlobal.reset(dim);
+		mLevel.reset(dim);
+		mPoly.reset(dim);
+	}
+
+	void addECConstraint(std::size_t pid) {
+		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Add EC " << pid);
+		std::size_t ecid = (*this)(0).ecs.addEC();
+		(*this)(0).ecs.addPolyToEC(ecid, pid);
+		(*this)(0, pid).equational.set(ecid);
+	}
+
+	void removeECConstraint(std::size_t pid) {
+
+	}
+
+	void addToEC(Origin::BaseType origin, std::size_t level, std::size_t pid) {
+		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Add " << level << "/" << pid << " to EC " << origin);
+		auto it = (*this)().mECs.find(origin);
+		if (it == (*this)().mECs.end()) {
+			std::size_t ecid = (*this)(level).ecs.addEC();
+			(*this)(level).ecs.addPolyToEC(ecid, pid);
+			(*this)().mECs.emplace(origin, std::make_pair(level, ecid));
+			(*this)(level, pid).equational.set(ecid);
+			return;
+		}
+		auto [eclevel, ecid] = it->second;
+		if (eclevel != level) {
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "EC is imprimitive!");
+			return;
+		}
+		(*this)(level).ecs.addPolyToEC(ecid, pid);
+		(*this)(level, pid).equational.set(ecid);
+	}
+
+	bool hasEC(std::size_t level) const {
+		return (*this)(level).ecs.hasEC();
+	}
+	bool usingEC(std::size_t level) const {
+		return (*this)().mUsedEC[level] != (*this)().mECs.end();
+	}
+	std::size_t getUsedEC(std::size_t level) const {
+		assert(hasEC(level));
+		assert((*this)().mUsedEC[level]->second.first == level);
+		return (*this)().mUsedEC[level]->second.second;
+	}
+	const carl::Bitset& getECPolys(std::size_t level) const {
+		std::size_t ecid = getUsedEC(level);
+		return (*this)(level).ecs.getEC(ecid).polynomials;
+	}
+	void selectEC(std::size_t level) {
+		assert(hasEC(level));
+		assert(!usingEC(level));
+		std::size_t ecid = (*this)(level).ecs.getNextEC();
+		const auto& ecs = (*this)().mECs;
+		for (auto it = ecs.begin(); it != ecs.end(); ++it) {
+			if (it->second == std::make_pair(level, ecid)) {
+				(*this)().mUsedEC[level] = it;
+				return;
+			}
+		}
+	}
+	void unselectEC(std::size_t level) {
+		(*this)().mUsedEC[level] = (*this)().mECs.end();
+	}
+};
+
+inline std::ostream& operator<<(std::ostream& os, const ProjectionGlobalInformation& gi) {
+	for (const auto& ec: gi.mECs) {
+		os << "\t" << ec.first << " -> " << ec.second.first << "/" << ec.second.second << std::endl;
+	}
+	return os;
+}
+inline std::ostream& operator<<(std::ostream& os, const ProjectionLevelInformation::LevelInfo& li) {
+	os << "bounds " << li.bounds << ", purged: " << li.purged << " / " << li.evaluated;
+	return os;
+}
+inline std::ostream& operator<<(std::ostream& os, const ProjectionPolynomialInformation::PolyInfo& pi) {
+	os << "origin: " << pi.origin << ", equational: " << pi.equational;
+	return os;
+}
 
 }

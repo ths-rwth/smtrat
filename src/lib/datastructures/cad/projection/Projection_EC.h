@@ -24,10 +24,9 @@ private:
 	using Super::freeID;
 	using Super::getID;
 	using Super::mConstraints;
-	using Super::mLevelInfo;
+	using Super::mInfo;
 	using Super::mLiftingQueues;
 	using Super::mOperator;
-	using Super::mPolyInfo;
 	using Super::var;
 	using typename Super::Constraints;
 
@@ -93,9 +92,6 @@ private:
 	// inactive polynomials in level 0
 	carl::Bitset mInactive;
 
-	// Stores whether an equational constraint is used for restricted projection and which one for each level
-	std::vector<std::pair<bool, std::size_t>> mRestricted;
-
 	std::string logPrefix(std::size_t level) const {
 		return std::string(dim() - level, '\t');
 	}
@@ -108,27 +104,27 @@ private:
 	bool isPurged(std::size_t level, std::size_t id) {
 		assert(level > 0 && level <= dim());
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking whether " << level << "/" << id << " is purged.");
-		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Current bounds are " << mLevelInfo(level).bounds);
-		if (mLevelInfo(level).isBound(id)) {
+		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Current bounds are " << mInfo(level).bounds);
+		if (mInfo(level).isBound(id)) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Do not purge as " << level << "/" << id << " is a bound.");
 			return false;
 		}
-		if (mLevelInfo(level).isEquational(id)) {
+		if (mInfo(level, id).equational.any()) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Do not purge as " << level << "/" << id << " is an equational constraint.");
 			return false;
 		}
-		if (!mLevelInfo(level).isEvaluated(id)) {
+		if (!mInfo(level).isEvaluated(id)) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking if " << level << "/" << id << " can be purged.");
 			bool cbp = mCanBePurged(level, id);
-			mLevelInfo(level).setPurged(id, cbp);
+			mInfo(level).setPurged(id, cbp);
 			if (cbp) {
 				carl::Bitset purged = carl::Bitset().set(id);
 				mLiftingQueues[level - 1].erase(id);
 				callRemoveCallback(level, purged);
 			}
-			mLevelInfo(level).setEvaluated(id, true);
+			mInfo(level).setEvaluated(id, true);
 		}
-		return mLevelInfo(level).isPurged(id);
+		return mInfo(level).isPurged(id);
 	}
 	/*
                  * Evaluate whether a queue entry is purged.
@@ -154,7 +150,7 @@ private:
 #ifdef SMTRAT_DEVOPTION_Statistics
 		std::size_t number = 0;
 		for (std::size_t lvl = 1; lvl <= dim(); lvl++) {
-			number += mLevelInfo(lvl).purged.count();
+			number += mInfo(lvl).purged.count();
 		}
 		mStatistics.currentlyPurgedPolynomials(number);
 #endif
@@ -167,11 +163,11 @@ private:
                  */
 	bool active(std::size_t level, std::size_t id) const {
 		if (level == 0) {
-			SMTRAT_LOG_DEBUG("smtrat.cad.projection", level << "/" << id << " active? !" << mInactive.test(id) << " && !" << mLevelInfo(0).isPurged(id));
-			return !mInactive.test(id) && !mLevelInfo(0).isPurged(id);
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", level << "/" << id << " active? !" << mInactive.test(id) << " && !" << mInfo(0).isPurged(id));
+			return !mInactive.test(id) && !mInfo(0).isPurged(id);
 		} else {
-			SMTRAT_LOG_DEBUG("smtrat.cad.projection", level << "/" << id << " active? " << mPolyInfo(level, id).origin.isActive() << " && !" << mLevelInfo(level).isPurged(id));
-			return mPolyInfo(level, id).origin.isActive() && !mLevelInfo(level).isPurged(id);
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", level << "/" << id << " active? " << mInfo(level, id).origin.isActive() << " && !" << mInfo(level).isPurged(id));
+			return mInfo(level, id).origin.isActive() && !mInfo(level).isPurged(id);
 		}
 	}
 
@@ -182,7 +178,7 @@ private:
 		 */
 	void insertIntoProjectionQueue(std::size_t level, std::size_t id) {
 		assert(level < dim());
-		if (mRestricted[level].first == false) {
+		if (!mInfo.usingEC(level)) {
 			for (const auto& it : mPolynomialIDs[level]) {
 				assert(mPolynomials[level][it.second]);
 				if (!active(level, it.second)) {
@@ -193,16 +189,24 @@ private:
 				}
 			}
 		} else {
+			std::size_t usedEC = mInfo.getUsedEC(level);
+			bool isInEC = mInfo(level, id).equational.test(usedEC);
 			for (const auto& it : mPolynomialIDs[level]) {
 				assert(mPolynomials[level][it.second]);
-				if (it.second == mRestricted[level].second) {
-					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding to PQ (" << mRestricted[level].second << "," << id << ")@" << level);
-					mProjectionQueue.emplace(level, mRestricted[level].second, id);
-					//Semi-restricted projection (+ldc)
+				if (isInEC) {
+					// Added polynomial is part of EC
+					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding to PQ (" << it.second << "," << id << ")@" << level);
+					mProjectionQueue.emplace(level, it.second, id);
+				} else if (mInfo(level, it.second).equational.test(usedEC)) {
+					// Other polynomial is part of EC
+					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding to PQ (" << it.second << "," << id << ")@" << level);
+					mProjectionQueue.emplace(level, it.second, id);
 				} else if (Settings::semiRestrictedProjection && it.second == id) {
-					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding to PQ (" << mRestricted[level].second << "," << id << ")@" << level);
-					mProjectionQueue.emplace(level, mRestricted[level].second, id);
+					// Semi-restricted && single projection step
+					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding to PQ (" << it.second << "," << id << ")@" << level);
+					mProjectionQueue.emplace(level, it.second, id);
 				} else {
+					// Projection step is disabled
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding to IQ (" << it.second << "," << id << ")@" << level);
 					mInactiveQueue.emplace(level, it.second, id);
 				}
@@ -218,14 +222,14 @@ private:
 	void deletePolynomials(const UPoly& p, std::size_t cid) {
 		assert(mPolynomials[0][cid]);
 		assert(*mPolynomials[0][cid] == p);
-		mPolyInfo.clear(0, cid);
+		mInfo.clear(0, cid);
 		mProjectionQueue.removeIf([cid](const QueueEntry& qe) { return (qe.level == 0) && (qe.first == cid || qe.second == cid); });
 		mInactiveQueue.removeIf([cid](const QueueEntry& qe) { return (qe.level == 0) && (qe.first == cid || qe.second == cid); });
 		carl::Bitset filter = carl::Bitset().set(cid);
 		for (std::size_t level = 1; level <= dim(); level++) {
 			for (std::size_t lvl = level; lvl <= dim(); lvl++) {
 				for (auto it = mPolynomialIDs[level].begin(); it != mPolynomialIDs[level].end(); it++) {
-					mPolyInfo(level, it->second).origin.erase(level, filter);
+					mInfo(level, it->second).origin.erase(level, filter);
 				}
 			}
 			carl::Bitset removed;
@@ -233,7 +237,7 @@ private:
 			for (auto it = mPolynomialIDs[level].begin(); it != mPolynomialIDs[level].end();) {
 				std::size_t id = it->second;
 				assert(mPolynomials[level][id]);
-				if (mPolyInfo(level, it->second).origin.empty()) {
+				if (mInfo(level, it->second).origin.empty()) {
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purging " << id << " from level " << level);
 					removed.set(id);
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "Removing " << id << " on " << level);
@@ -243,7 +247,7 @@ private:
 					}
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Removing polynomial");
 					mLiftingQueues[level - 1].erase(id);
-					mPolyInfo.clear(level, id);
+					mInfo.clear(level, id);
 					freeID(level, id);
 					it = mPolynomialIDs[level].erase(it);
 				} else {
@@ -279,7 +283,7 @@ private:
 				for (const auto& it : mPolynomialIDs[l]) {
 					assert(mPolynomials[l][it.second]);
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purging " << l << "/" << it.second << " with " << lvl << " / " << remove);
-					mPolyInfo(l, it.second).origin.deactivate(lvl, remove);
+					mInfo(l, it.second).origin.deactivate(lvl, remove);
 					// remove inactive polynomials from LiftingQueue
 					if (!active(l, it.second)) {
 						mLiftingQueues[l - 1].erase(it.second);
@@ -312,7 +316,7 @@ private:
 				for (const auto& it : mPolynomialIDs[l]) {
 					assert(mPolynomials[l][it.second]);
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Activating origins for " << it.second << " from level " << lvl << " with " << activate);
-					mPolyInfo(l, it.second).origin.activate(lvl, activate);
+					mInfo(l, it.second).origin.activate(lvl, activate);
 					//add active polynomials to LiftingQueue
 					if (active(l, it.second)) {
 						mLiftingQueues[l - 1].insert(it.second);
@@ -331,18 +335,18 @@ private:
 	void restrictProjection(std::size_t level) {
 		std::size_t lvl = level;
 		bool restricted = false;
-		while (lvl < dim() && mRestricted[lvl].first == false && mLevelInfo(lvl).equational.any() && (Settings::interruptions || mRestricted[lvl - 1].first == true)) {
+		while (lvl < dim() && !mInfo.usingEC(lvl) && mInfo(lvl).ecs.hasEC() && (Settings::interruptions || mInfo.usingEC(lvl-1))) {
 #ifdef SMTRAT_DEVOPTION_Statistics
 			mStatistics.usedRestrictedProjection();
 #endif
 			restricted = true;
-			mRestricted[lvl].first = true;
-			mRestricted[lvl].second = mLevelInfo(lvl).equational.find_first();
-			carl::Bitset eqc = carl::Bitset().set(mLevelInfo(lvl).equational.find_first());
+			mInfo.selectEC(lvl);
+
+			carl::Bitset eqc = mInfo.getECPolys(lvl);
 			for (std::size_t l = lvl + 1; l <= dim(); l++) {
 				for (const auto& it : mPolynomialIDs[l]) {
 					assert(mPolynomials[l][it.second]);
-					mPolyInfo(l, it.second).origin.deactivateEC(lvl, eqc);
+					mInfo(l, it.second).origin.deactivateEC(lvl, eqc);
 					if (!active(l, it.second)) {
 						mLiftingQueues[l - 1].erase(it.second);
 					}
@@ -368,48 +372,47 @@ private:
 			return;
 		}
 		std::size_t id = mPolynomialIDs[level].find(p.switchVariable(var(level)))->second;
-		mLevelInfo(level).setEquational(id, false);
-		if (!mRestricted[level].first || id != mRestricted[level].second) {
+		if (!mInfo.usingEC(level) || !mInfo.getECPolys(level).test(id)) {
 			return;
 		}
-		if (mLevelInfo(level).equational.none()) {
+		if (mInfo(level).equational.none()) {
 			std::size_t lvl = level;
 			carl::Bitset eqc;
-			while (lvl == level || (mRestricted[lvl].first == true && !Settings::interruptions)) {
-				mRestricted[lvl].first = false;
-				eqc = carl::Bitset().set(mRestricted[lvl].second);
+			while (lvl == level || (mInfo.usingEC(lvl) && !Settings::interruptions)) {
+				eqc = mInfo.getECPolys(lvl);
 				for (std::size_t l = lvl + 1; l <= dim(); l++) {
 					for (const auto& it : mPolynomialIDs[l]) {
 						assert(mPolynomials[l][it.second]);
-						mPolyInfo(l, it.second).origin.activateEC(lvl, eqc);
+						mInfo(l, it.second).origin.activateEC(lvl, eqc);
 						if (active(l, it.second)) {
 							mLiftingQueues[l - 1].insert(it.second);
 						}
 					}
 				}
+				mInfo.unselectEC(lvl);
 				lvl++;
 			}
 			activatePolynomials(level + 1);
 		} else {
-			mRestricted[level].first = false;
 			carl::Bitset eqc;
 			eqc = carl::Bitset().set(id);
 			for (std::size_t l = level + 1; l <= dim(); l++) {
 				for (const auto& it : mPolynomialIDs[l]) {
 					assert(mPolynomials[l][it.second]);
-					mPolyInfo(l, it.second).origin.activateEC(level, eqc);
+					mInfo(l, it.second).origin.activateEC(level, eqc);
 					if (active(l, it.second)) {
 						mLiftingQueues[l - 1].insert(it.second);
 					}
 				}
 			}
+			mInfo.unselectEC(level);
 			activatePolynomials(level + 1);
 			restrictProjection(level);
 		}
 	}
 
 	/// Inserts a polynomial with the given origin into the given level.
-	carl::Bitset insertPolynomialTo(std::size_t level, const UPoly& p, const Origin::BaseType& origin, bool setBound = false, bool isEqC = false) {
+	carl::Bitset insertPolynomialTo(std::size_t level, const UPoly& p, const Origin::BaseType& origin, bool setBound = false) {
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "Receiving " << p << " for level " << level);
 		if (projection::canBeRemoved(p)) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> but is safely removed.");
@@ -417,7 +420,7 @@ private:
 		}
 		if ((level < dim()) && projection::canBeForwarded(level, p)) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> but is forwarded to " << (level + 1));
-			return insertPolynomialTo(level + 1, p.switchVariable(var(level + 1)), origin, setBound, isEqC);
+			return insertPolynomialTo(level + 1, p.switchVariable(var(level + 1)), origin, setBound);
 		}
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "Inserting " << p << " into level " << level);
 		assert(level <= dim());
@@ -427,10 +430,21 @@ private:
 			if (Settings::simplifyProjectionByBounds && setBound) {
 				assert(level > 0 && level <= dim());
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Setting " << level << "/" << it->second << " is a bound.");
-				mLevelInfo(level).setBound(it->second, true);
+				mInfo(level).setBound(it->second, true);
+			}
+			if (Settings::restrictProjectionByEC) {
+				SMTRAT_LOG_INFO("smtrat.cad.projection", *this);
+				SMTRAT_LOG_INFO("smtrat.cad.projection", "Doing resultant rule for " << origin);
+				for (auto fecid: mInfo(origin.level, origin.first).equational) {
+					for (auto secid: mInfo(origin.level, origin.second).equational) {
+						if (origin.level != 0 && fecid == secid) continue;
+						SMTRAT_LOG_INFO("smtrat.cad.projection", "Adding to " << fecid << " / " << secid);
+						mInfo.addToEC(Origin::BaseType(origin.level, fecid, secid), level, it->second);
+					}
+				}
 			}
 			bool activated = active(level, it->second);
-			mPolyInfo(level, it->second).origin += origin;
+			mInfo(level, it->second).origin += origin;
 			// in case p was inactive but becomes active by new BaseType activate successors
 			if (activated == false && active(level, it->second)) {
 				activatePolynomials(level);
@@ -444,22 +458,34 @@ private:
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Got new id " << id);
 		if (id >= mPolynomials[level].size()) mPolynomials[level].resize(id + 1);
 		assert(!mPolynomials[level][id]);
-		mPolyInfo.emplace(level, id);
-		mPolyInfo(level, id).origin = Origin(origin);
+		mInfo.emplace(level, id);
+		mInfo(level, id).origin = Origin(origin);
 		mPolynomials[level][id] = p;
 		mLiftingQueues[level - 1].insert(id);
 		mPolynomialIDs[level].emplace(p, id);
 		if (Settings::simplifyProjectionByBounds && setBound) {
 			assert(level > 0 && level <= dim());
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Setting " << level << "/" << id << " is a bound.");
-			mLevelInfo(level).setBound(id, true);
+			mInfo(level).setBound(id, true);
+		}
+		if (Settings::restrictProjectionByEC) {
+			SMTRAT_LOG_INFO("smtrat.cad.projection", *this);
+			SMTRAT_LOG_INFO("smtrat.cad.projection", "Doing resultant rule for " << origin);
+			for (auto fecid: mInfo(origin.level, origin.first).equational) {
+				for (auto secid: mInfo(origin.level, origin.second).equational) {
+					if (origin.level != 0 && fecid == secid) continue;
+					SMTRAT_LOG_INFO("smtrat.cad.projection", "Adding to " << fecid << " / " << secid);
+					mInfo.addToEC(Origin::BaseType(origin.level, fecid, secid), level, id);
+				}
+			}
 		}
 		if (level < dim()) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Inserting " << id << " into queue for level " << (level + 1));
 			insertIntoProjectionQueue(level, id);
 		}
-		if (Settings::restrictProjectionByEC && isEqC) {
-			mLevelInfo(level).setEquational(id, true);
+
+		if (Settings::restrictProjectionByEC && mInfo(level, id).equational.any()) {
+			SMTRAT_LOG_INFO("smtrat.cad.projection", "Possibly enabling EC " << p);
 			restrictProjection(level);
 		}
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Done.");
@@ -482,7 +508,7 @@ private:
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purged.");
 			} else if (!active(qe.level, qe.first) || !active(qe.level, qe.second)) {
 				mInactiveQueue.push(qe);
-			} else if (Settings::restrictProjectionByEC && qe.level != 0 && mRestricted[qe.level].first == true && (qe.first != mRestricted[qe.level].second && qe.second != mRestricted[qe.level].second)) {
+			} else if (Settings::restrictProjectionByEC && qe.level != 0 && mInfo.usingEC(qe.level) && (!mInfo.getECPolys(qe.level).test(qe.first) && !mInfo.getECPolys(qe.level).test(qe.second))) {
 				mInactiveQueue.push(qe);
 			} else {
 				carl::Bitset res = projectCandidate(qe);
@@ -499,15 +525,16 @@ private:
 #endif
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Projecting " << qe);
 		assert(qe.level < dim());
+		carl::Bitset res;
 		if (qe.level == 0) {
 			assert(qe.first == qe.second);
 			assert(mPolynomials[qe.level][qe.first]);
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Moving into level 1: " << *mPolynomials[qe.level][qe.first]);
-			insertPolynomialTo(1, *mPolynomials[qe.level][qe.first], Origin::BaseType(qe.level, qe.first));
-			return carl::Bitset({1});
+			projection::returnPoly(*mPolynomials[qe.level][qe.first],
+				[&](const UPoly& np) { res |= insertPolynomialTo(1, np, Origin::BaseType(qe.level, qe.first)); }
+			);
 		}
-		carl::Bitset res;
-		if (qe.first == qe.second) {
+		else if (qe.first == qe.second) {
 			assert(qe.first < mPolynomials[qe.level].size());
 			assert(mPolynomials[qe.level][qe.first]);
 			const auto& p = *mPolynomials[qe.level][qe.first];
@@ -520,13 +547,9 @@ private:
 			assert(mPolynomials[qe.level][qe.first] && mPolynomials[qe.level][qe.second]);
 			const auto& p = *mPolynomials[qe.level][qe.first];
 			const auto& q = *mPolynomials[qe.level][qe.second];
-			bool isEqC = false;
-			if (mLevelInfo(qe.level).isEquational(qe.first) && mLevelInfo(qe.level).isEquational(qe.second)) {
-				isEqC = true;
-			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Projecting paired " << p << ", " << q << " into " << qe.level);
 			mOperator(Settings::projectionOperator, p, q, var(qe.level + 1),
-					  [&](const UPoly& np) { res |= insertPolynomialTo(qe.level + 1, np, Origin::BaseType(qe.level, qe.first, qe.second), false, isEqC); });
+					  [&](const UPoly& np) { res |= insertPolynomialTo(qe.level + 1, np, Origin::BaseType(qe.level, qe.first, qe.second), false); });
 		}
 		return res;
 	}
@@ -549,19 +572,12 @@ public:
 		Super::reset();
 		mPolynomialIDs.clear();
 		mPolynomialIDs.resize(dim() + 1);
-		mLevelInfo.reset(dim());
-		mPolyInfo.reset(dim());
+		mInfo.reset(dim() + 1);
 		mPolynomials.clear();
 		mPolynomials.resize(dim() + 1);
 		mProjectionQueue.clear();
 		mInactiveQueue.clear();
 
-		mRestricted.clear();
-		mRestricted.resize(dim() + 1);
-		mRestricted[0].first = true;
-		for (std::size_t i = 1; i <= dim(); i++) {
-			mRestricted[i].first = false;
-		}
 		updateInactiveQueue = false;
 		checkPurged = 0;
 	}
@@ -573,10 +589,10 @@ public:
 			// activate all successors of p
 			activatePolynomials(0);
 			if (Settings::simplifyProjectionByBounds && isBound) {
-				mLevelInfo(0).restrictEvaluatedToPurged();
+				mInfo(0).restrictEvaluatedToPurged();
 				std::size_t level = 1;
 				while (level <= dim()) {
-					mLevelInfo(level).restrictEvaluatedToPurged();
+					mInfo(level).restrictEvaluatedToPurged();
 					if (!projection::canBeForwarded(level, p.switchVariable(var(level)))) break;
 					level += 1;
 				}
@@ -587,15 +603,15 @@ public:
 		}
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " with id " << cid);
 		assert(!mPolynomials[0][cid]);
-		mPolyInfo.emplace(0, cid);
+		mInfo.emplace(0, cid);
 		mPolynomials[0][cid] = p;
 		mPolynomialIDs[0].emplace(p, cid);
 		printPolynomialIDs();
 		if (Settings::simplifyProjectionByBounds && isBound) {
-			insertPolynomialTo(1, p, Origin::BaseType(0, cid), true, false);
+			insertPolynomialTo(1, p, Origin::BaseType(0, cid), true);
 			std::size_t level = 1;
 			while (level <= dim()) {
-				mLevelInfo(level).restrictEvaluatedToPurged();
+				mInfo(level).restrictEvaluatedToPurged();
 				if (!projection::canBeForwarded(level, p.switchVariable(var(level)))) break;
 				level += 1;
 			}
@@ -612,10 +628,11 @@ public:
 		if (cid >= mPolynomials[0].size()) {
 			mPolynomials[0].resize(cid + 1);
 		} else if (mPolynomials[0][cid]) {
+			/// Polynomial already exists.
 			std::size_t level = 1;
 			while (level <= dim()) {
 				if (Settings::simplifyProjectionByBounds && isBound) {
-					mLevelInfo(level).restrictEvaluatedToPurged();
+					mInfo(level).restrictEvaluatedToPurged();
 				}
 				if (!projection::canBeForwarded(level, p.switchVariable(var(level)))) break;
 				level += 1;
@@ -625,8 +642,8 @@ public:
 			}
 			auto itp = mPolynomialIDs[level].find(p.switchVariable(var(level)));
 			if (Settings::restrictProjectionByEC) {
-				mLevelInfo(level).setEquational(itp->second, true);
-				mLevelInfo(level).setPurged(itp->second, false);
+				mInfo(level).setPurged(itp->second, false);
+				mInfo.addECConstraint(itp->second);
 				restrictProjection(level);
 			}
 			mInactive.reset(cid);
@@ -636,18 +653,20 @@ public:
 		}
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " with id " << cid);
 		assert(!mPolynomials[0][cid]);
-		mPolyInfo.emplace(0, cid);
+		mInfo.emplace(0, cid);
 		mPolynomials[0][cid] = p;
 		mPolynomialIDs[0].emplace(p, cid);
-		insertPolynomialTo(1, p, Origin::BaseType(0, cid), isBound, true);
+		mInfo.addECConstraint(cid);
 		if (Settings::simplifyProjectionByBounds && isBound) {
 			std::size_t level = 1;
 			while (level <= dim()) {
-				mLevelInfo(level).restrictEvaluatedToPurged();
+				mInfo(level).restrictEvaluatedToPurged();
 				if (!projection::canBeForwarded(level, p.switchVariable(var(level)))) break;
 				level += 1;
 			}
 			checkPurged = std::max(level, checkPurged);
+		} else {
+			mProjectionQueue.emplace(0, cid, cid);
 		}
 		return carl::Bitset();
 	}
@@ -672,8 +691,8 @@ public:
 			updateInactiveQueue = true;
 			std::size_t level = 1;
 			while (level <= dim()) {
-				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Resetting evaluated on level " << level << ": " << mLevelInfo(level).evaluated << " -= " << mLevelInfo(level).purged);
-				mLevelInfo(level).removePurgedFromEvaluated();
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Resetting evaluated on level " << level << ": " << mInfo(level).evaluated << " -= " << mInfo(level).purged);
+				mInfo(level).removePurgedFromEvaluated();
 				if (!projection::canBeForwarded(level, p.switchVariable(var(level)))) break;
 				level += 1;
 			}
@@ -702,11 +721,11 @@ public:
 			// activate all QE that became relevant again
 			for (auto it = mInactiveQueue.begin(); it != mInactiveQueue.end();) {
 				if (active(it->level, it->first) && active(it->level, it->second)) {
-					if (mRestricted[it->level].first != true || it->level == 0) {
+					if (mInfo.usingEC(it->level) || it->level == 0) {
 						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding to PQ " << *it);
 						mProjectionQueue.push((*it));
 						it = mInactiveQueue.erase(it);
-					} else if (Settings::restrictProjectionByEC && mRestricted[it->level].first == true && (it->first == mRestricted[it->level].second || it->second == mRestricted[it->level].second)) {
+					} else if (Settings::restrictProjectionByEC && mInfo.usingEC(it->level) && (it->first == mInfo.getUsedEC(it->level) || it->second == mInfo.getUsedEC(it->level))) {
 						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding to PQ " << *it);
 						mProjectionQueue.push((*it));
 						it = mInactiveQueue.erase(it);
@@ -753,7 +772,7 @@ public:
 				if (!p) continue;
 				out << "\t\tp_" << level << "_" << id << " [label=\"" << *p << "\"];" << std::endl;
 				dsg.add("p_" + std::to_string(level) + "_" + std::to_string(id));
-				for (const auto& origin : mPolyInfo(level, id).origin) {
+				for (const auto& origin : mInfo(level, id).origin) {
 					std::string target = (origin.level == 0 ? "orig_" : "p_" + std::to_string(origin.level - 1) + "_");
 					if (origin.first != origin.second) {
 						out << "\t\torigin_" << originID << " [label=\"\", shape=point];" << std::endl;
@@ -780,16 +799,22 @@ public:
 
 template<typename S>
 std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::FULL, Backtracking::HIDE, S>& p) {
+	os << "Global:" << std::endl << p.mInfo() << std::endl;
 	for (std::size_t level = 0; level <= p.dim(); level++) {
 		if (level == 0)
 			os << level << std::endl;
 		else
 			os << level << " / " << p.var(level) << std::endl;
-		os << "\tP: " << p.mPolynomials[level] << " (purged " << p.mLevelInfo(level).purged << " / " << p.mLevelInfo(level).evaluated << ")(ec " << p.mLevelInfo(level).equational;
-		if (p.mRestricted[level].first) os << " -> " << p.mRestricted[level].second;
-		os << ")" << std::endl;
+		os << "\tP: " << p.mPolynomials[level] << " (ec " << p.mInfo(level).equational << ")" << std::endl;
 		if (level > 0) {
 			os << "\tL: " << p.mLiftingQueues[level - 1] << std::endl;
+		}
+		os << "\tInfo: " << p.mInfo(level) << std::endl;
+		for (const auto& poly: p.mPolynomialIDs[level]) {
+			os << "\t" << poly.first << " -> " << p.mInfo(level, poly.second) << std::endl;
+		}
+		if (p.mInfo.usingEC(level)) {
+			os << "\tUsing EC " << p.mInfo.getUsedEC(level) << std::endl;
 		}
 	}
 	os << "Q: " << p.mProjectionQueue << std::endl;
