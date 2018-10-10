@@ -131,6 +131,7 @@ void MCSATMixin<Settings>::popLevel() {
 	assert(!mTheoryStack.empty());
 	assert(mTheoryStack.back().univariateVariables.empty());
 	mTheoryStack.pop_back();
+	mModelAssignmentCache.clear();
 }
 
 template<typename Settings>
