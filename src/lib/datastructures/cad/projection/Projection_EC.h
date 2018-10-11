@@ -433,7 +433,6 @@ private:
 				mInfo(level).setBound(it->second, true);
 			}
 			if (Settings::restrictProjectionByEC) {
-				SMTRAT_LOG_INFO("smtrat.cad.projection", *this);
 				SMTRAT_LOG_INFO("smtrat.cad.projection", "Doing resultant rule for " << origin);
 				for (auto fecid: mInfo(origin.level, origin.first).equational) {
 					for (auto secid: mInfo(origin.level, origin.second).equational) {
@@ -489,8 +488,6 @@ private:
 			restrictProjection(level);
 		}
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Done.");
-		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Now:" << std::endl
-														 << *this);
 		return carl::Bitset({level});
 	}
 
@@ -639,12 +636,6 @@ public:
 			}
 			if (Settings::simplifyProjectionByBounds && isBound) {
 				checkPurged = std::max(level, checkPurged);
-			}
-			auto itp = mPolynomialIDs[level].find(p.switchVariable(var(level)));
-			if (Settings::restrictProjectionByEC) {
-				mInfo(level).setPurged(itp->second, false);
-				mInfo.addECConstraint(itp->second);
-				restrictProjection(level);
 			}
 			mInactive.reset(cid);
 			activatePolynomials(0);
