@@ -9,6 +9,9 @@ namespace uninterpreted {
 		if (boost::get<carl::UTerm>(&term) != nullptr) {
 			result = boost::get<carl::UTerm>(term);
 			return true;
+		} else if (boost::get<carl::UVariable>(&term) != nullptr) {
+			result = carl::UTerm(boost::get<carl::UVariable>(term));
+			return true;
 		} else {
 			return false;
 		}
