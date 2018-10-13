@@ -7,7 +7,7 @@ namespace qe{
   using Variable = carl::Variable;
   using Variables = std::vector<Variable>;
 
-  using Rational = mpq_class; //FRAGE: Was ist mpq_class genau?
+  using Rational = mpq_class;
   using Polynomial = carl::MultivariatePolynomial<Rational>;
   using Polynomials = std::vector<Polynomial>;
 

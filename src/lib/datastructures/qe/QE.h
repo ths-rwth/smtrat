@@ -20,37 +20,22 @@
 #include <carl/core/Relation.h>
 
 #include <iostream>
-
 #include <map>
 #include <vector>
 #include <string>
-#include <algorithm> // fuer std::transform, std::find
-#include <utility> // fuer std::pair
+#include <algorithm>
+#include <utility>
 
 namespace smtrat{
 namespace qe{
-  /* CADSettings beeinhaltet die Einstellung fuer die CAD
-  * - Wir konfigurieren uns die Settings fuer die Quantifier Elimination
-  * - CADSettings erbt im wesentlichen alle Einstellungen der BaseSettings
-  * - Lediglich die Einstellung CoreHeuristic wird angepasst: Wir setzen diese auf EnumerateAll
-  * - EnumerateAll fuehrt dazu, dass ein vollstaendiger LifingTree aufgebaut wird
-  */
   struct CADSettings : smtrat::cad::BaseSettings {
-    // Verwende Brown's Projektionsoperator
     static constexpr smtrat::cad::ProjectionType projectionOperator = smtrat::cad::ProjectionType::Brown;
-
+    static constexpr smtrat::cad::Incrementality incrementality = smtrat::cad::Incrementality::NONE;
     static constexpr smtrat::cad::Backtracking backtracking = smtrat::cad::Backtracking::UNORDERED;
-
-    // Die Originale Metode, beschrieben in Col75, benutzt Collins Projektionsoperator
-    // static constexpr smtrat::cad::ProjectionType projectionOperator = smtrat::cad::ProjectionType::Collins;
   };
 
-  /* QE Klasse
-  * -
-  */
   class QE {
   private:
-    // Daten //////////////////////////////////////////////////////////////
     Formula mQuantifierFreePart;
     Variables mVariables;
     Constraints mConstraints;
@@ -70,11 +55,10 @@ namespace qe{
     std::vector<carl::tree<smtrat::cad::Sample>::iterator> mFalseSamples;
     Formulas mAtomicFormulas;
 
-    // Private-Funktionen /////////////////////////////////////////////////
     void constructCAD();
-    void updateCAD(Constraints& constraints);
-    void simplifyCAD();
+    void updateCAD(Polynomials& polynomials);
 
+    void simplifyCAD();
     bool truthBoundaryTest(carl::tree<smtrat::cad::Sample>::iterator& b, carl::tree<smtrat::cad::Sample>::iterator& c, carl::tree<smtrat::cad::Sample>::iterator& d);
 
     void computeTruthValues();
@@ -86,18 +70,12 @@ namespace qe{
     Formula constructImplicant(const carl::tree<smtrat::cad::Sample>::iterator& sample);
     Formula constructSolutionFormula();
 
-    // Originale Methode zur Konstruktion von solution formulas, beschrieben in Col75
-    Formula constructSolutionFormula_OriginalMethod();
-
     template<typename T>
     std::vector<T> computeHittingSet(const std::vector<std::vector<T>>& setOfSets);
-
-    void printCADCellsPerLevel(std::size_t level);
-    void printProjectionFactorsPerLevel(std::size_t level);
   public:
-    // Public-Funktionen //////////////////////////////////////////////////
     QE(Formula &quantifierFreePart, std::map<Variable, smtrat::parser::QuantifierType>& quantifiers);
     Formula eliminateQuantifiers();
   };
-} // End of namespace qe
-} // End of namespace smtrat
+
+}
+}

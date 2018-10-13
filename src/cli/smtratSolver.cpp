@@ -136,23 +136,18 @@ public:
 		//error() << "(define-sort <name> <sort>) is not implemented.";
 	}
 	void eliminateQuantifiers(const smtrat::parser::QEQuery& q) {
-		regular() << "Input: " << q;
+		regular() << "Quantified Formula: " << q << smtrat::FormulaT(this->solver->formula()) << std::endl;
 
-    smtrat::FormulaT quantifier_free_part = smtrat::FormulaT(this->solver->formula());
-
-		std::cout << quantifier_free_part << std::endl;
-
+		smtrat::FormulaT quantifier_free_part = smtrat::FormulaT(this->solver->formula());
 		std::map<carl::Variable, smtrat::parser::QuantifierType> quantifiers;
 		for(const auto& qlvl : q) {
 			for(const auto& v: qlvl.second) {
 				quantifiers.emplace(boost::get<carl::Variable>(v), qlvl.first);
 			}
 		}
-
 		smtrat::qe::QE qe(quantifier_free_part, quantifiers);
-		smtrat::FormulaT equivalent_quantifier_free_formula = qe.eliminateQuantifiers();
 
-    std::cout << "Output: " <<equivalent_quantifier_free_formula << std::endl;
+    std::cout << "Equivalent Quantifier-Free Formula: " << qe.eliminateQuantifiers() << std::endl;
 	}
 	void exit() {
 	}
@@ -498,7 +493,7 @@ int main( int argc, char* argv[] )
     // Export statistics.
     smtrat::CollectStatistics::exportXML();
     #endif
-	
+
 	#ifdef TIMING
 	std::cout << carl::TimingCollector::getInstance() << std::endl;
 	#endif

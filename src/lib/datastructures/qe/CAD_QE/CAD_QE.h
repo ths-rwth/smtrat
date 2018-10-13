@@ -6,8 +6,6 @@
 #include "../../cad/lifting/LiftingTree.h"
 #include "../../cad/helper/CADConstraints.h"
 
-//#include "Projection_QE.h"
-
 namespace smtrat {
 namespace cad {
 	template<typename Settings>
@@ -15,6 +13,7 @@ namespace cad {
 	private:
 		Variables mVariables;
 		CADConstraints<Settings::backtracking> mConstraints;
+		std::vector<Poly> polynomials;
 		Projection_QE<Settings> mProjection;
 		LiftingTree<Settings> mLifting;
 
@@ -22,7 +21,6 @@ namespace cad {
 			assert(level > 0 && level <= dim());
 			return dim() - level + 1;
 		}
-
 		std::size_t idLP(std::size_t level) const {
 			assert(level > 0 && level <= dim());
 			return dim() - level + 1;
@@ -42,58 +40,81 @@ namespace cad {
 			});
 		}
 
-		std::size_t dim() const {
-			return mVariables.size();
-		}
-
-		const auto& getProjection() const {
-			return mProjection;
-		}
-
-		const auto& getLifting() const {
-			return mLifting;
-		}
-
-    void reset(const Variables& vars) {
+		void reset(const Variables& vars) {
       mVariables = vars;
 			mConstraints.reset(mVariables);
 			mProjection.reset();
 			mLifting.reset(Variables(vars.rbegin(), vars.rend()));
     }
 
-		void addConstraint(const ConstraintT& c) {
-			mConstraints.add(c);
+		std::size_t dim() const {
+			return mVariables.size();
+		}
+		const auto& getProjection() const {
+			return mProjection;
+		}
+		const auto& getLifting() const {
+			return mLifting;
 		}
 
+		void addConstraint(const ConstraintT& c) {
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Adding " << c);
+			mConstraints.add(c);
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Current sampletree:" << std::endl << mLifting.getTree());
+		}
+		void removeConstraint(const ConstraintT& c) {
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing " << c);
+			auto mask = mConstraints.remove(c);
+			mLifting.removedConstraint(mask);
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Current sampletree:" << std::endl << mLifting.getTree());
+    }
+
+		void addPolynomial(const Poly& p) {
+		  polynomials.push_back(p);
+		}
 		void removePolynomial(std::size_t level, std::size_t id) {
 			mProjection.removeProjectionFactor(level, id);
 		}
 
+		void project() {
+			for(auto it = polynomials.begin(); it != polynomials.end(); it++) {
+				mConstraints.add(ConstraintT(*it, carl::Relation::EQ));
+			}
+			polynomials.clear();
+		}
     void lift() {
-			// Fragen, ob die naechsten beiden Zeilen wirklich gebraucht werden
       mLifting.resetFullSamples();
       mLifting.restoreRemovedSamples();
 
       while (mLifting.hasNextSample()) {
         auto it = mLifting.getNextSample();
         Sample& s = *it;
-
+				SMTRAT_LOG_DEBUG("smtrat.cad", "Sample " << s << " at depth " << it.depth());
+        SMTRAT_LOG_DEBUG("smtrat.cad", "Current sample: " << cad.mLifting.printSample(it));
         assert(0 <= it.depth() && it.depth() < cad.dim());
-
         auto polyID = mProjection.getPolyForLifting(idLP(it.depth() + 1), s.liftedWith());
-
-        if (polyID) {
-					// Polynom kann eventuell durch simplifyCAD geloescht worden sein
+        if(polyID) {
 					if(mProjection.hasPolynomialById(idLP(it.depth() + 1), *polyID)) {
 						const auto& poly = mProjection.getPolynomialById(idLP(it.depth() + 1), *polyID);
+						SMTRAT_LOG_DEBUG("smtrat.cad", "Lifting " << s << " with " << poly);
 	          mLifting.liftSample(it, poly, *polyID);
 					}
-        } else {
+        }else {
           mLifting.removeNextSample();
 					mLifting.addTrivialSample(it);
         }
       }
+
+			std::size_t number_of_cells = 0;
+		  const auto& tree = mLifting.getTree();
+		  for(auto it = tree.begin_leaf(); it != tree.end_leaf(); ++it) {
+			  ++number_of_cells;
+		  }
+      SMTRAT_LOG_WARN("smtrat.cad", "Got " << number_of_cells << " cells");
     }
 	};
+
 }
 }

@@ -54,6 +54,7 @@ namespace cad {
 		carl::Bitset addToProjection(std::size_t level, const UPoly& p, const Origin::BaseType& origin) {
 			assert(level > 0 && level <= dim());
 			if (canBeRemoved(p)) return carl::Bitset();
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			assert(p.mainVar() == var(level));
 			auto it = polyIDs(level).find(p);
 			if (it != polyIDs(level).end()) {
@@ -83,7 +84,7 @@ namespace cad {
 			mLiftingQueues[level - 1].insert(newID);
 			res.set(level);
 			return res;
-		}
+    }
 
 	public:
 		Projection_QE(const Constraints& c): Super(c) {}
@@ -100,8 +101,8 @@ namespace cad {
 			assert(p.mainVar() == var(1));
 			return addToProjection(1, p, Origin::BaseType(0, cid));
 		}
-
 		void removePolynomial(const UPoly&, std::size_t cid, bool) override {
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << cid);
 			carl::Bitset filter = carl::Bitset().set(cid);
 			for (std::size_t level = 1; level <= dim(); level++) {
 				for (std::size_t lvl = level; lvl <= dim(); lvl++) {
@@ -124,58 +125,44 @@ namespace cad {
 						it++;
 					}
 				}
+				SMTRAT_LOG_TRACE("smtrat.cad.projection", "Calling callback for level " << level << ", removed [" << removed << "]");
 				callRemoveCallback(level, removed);
 				filter = removed;
 			}
-		}
+    }
 
-		void removeProjectionFactor(std::size_t level, std::size_t id) {
-			// Damit einen Faktor aus der Projektion genommen wird, reicht es scheinbar die ID zu loeschen
-			auto p = polys(level)[id];
-			auto it = polyIDs(level).find(p->first);
-			polyIDs(level).erase(it);
-
-			// Das Polynom auf boost::none setzen (damit hasPolynomialById false zurueck liefert)
-			polys(level)[id] = boost::none;
-
-			// Was ich dachte: NICHT freeID nutzen, sonst koennte die ID neu vergeben werden -> fuehrt evtl. zu Problemen
-			// Wie es ist: Ohne freeID kommt es zu Problemen beim hinzufuegen neuer Polynome nachdem Polynome geloescht wurden
-			freeID(level, id);
-
-			// Lifting entsprechend anpassen (es muss scheinbar nur der Callback aufgerufen werden)
-			carl::Bitset removed;
-			removed.set(id);
-			callRemoveCallback(level, removed);
-
-			// Doch, was hat es mit der mLiftingQueue fuer Projections auf sich?
-			// -> BaseProjection.h Kommentar sagt, dass es nur etwas fuer incremental Projections ist
-		}
-
-		bool testPolynomial(std::size_t level, std::size_t id) const {
-			// Iteriere ueber die Origins
+		bool testProjectionFactor(std::size_t level, std::size_t id) const {
 			for(auto it = polys(level)[id]->second.begin(); it != polys(level)[id]->second.end(); it++) {
-				// Teste ob das betrachtete Origin noch gueltig ist
 				if(hasPolynomialById(it->level, it->first) &&  hasPolynomialById(it->level, it->second)) {
 					return true;
 				}
 			}
-
 			return false;
+		}
+		void removeProjectionFactor(std::size_t level, std::size_t id) {
+			auto p = polys(level)[id];
+			auto it = polyIDs(level).find(p->first);
+
+			polyIDs(level).erase(it);
+			polys(level)[id] = boost::none;
+			freeID(level, id);
+
+			carl::Bitset removed;
+			removed.set(id);
+			callRemoveCallback(level, removed);
 		}
 
 		std::size_t size(std::size_t level) const override {
-			// Die size() von polys statt von polyIDs erfragen, sonst funktioniert numberOfProjectionFactors nicht wie gewuenscht
 			return polys(level).size();
 		}
-
 		bool empty(std::size_t level) const override {
 			return polyIDs(level).empty();
 		}
 
 		bool hasPolynomialById(std::size_t level, std::size_t id) const override {
-			assert(level > 0 && level <= dim());
-			assert(id < polys(level).size());
-			return bool(polys(level)[id]);
+		 assert(level > 0 && level <= dim());
+		 assert(id < polys(level).size());
+		 return bool(polys(level)[id]);
 		}
 		const UPoly& getPolynomialById(std::size_t level, std::size_t id) const override {
 			assert(level > 0 && level <= dim());
@@ -187,14 +174,15 @@ namespace cad {
 
 	template<typename S>
 	std::ostream& operator<<(std::ostream& os, const Projection_QE<S>& p) {
-		for (std::size_t level = 1; level <= p.dim(); level++) {
-			os << level << " " << p.var(level) << ":" << std::endl;
-			for (const auto& it: p.polyIDs(level)) {
-				assert(p.polys(level)[it.second]);
-				os << "\t" << it.second << ": " << p.polys(level)[it.second]->first << " " << p.polys(level)[it.second]->second << std::endl;
-			}
+	for (std::size_t level = 1; level <= p.dim(); level++) {
+		os << level << " " << p.var(level) << ":" << std::endl;
+		for (const auto& it: p.polyIDs(level)) {
+			assert(p.polys(level)[it.second]);
+			os << "\t" << it.second << ": " << p.polys(level)[it.second]->first << " " << p.polys(level)[it.second]->second << std::endl;
 		}
-		return os;
 	}
+	return os;
+	}
+
 }
 }
