@@ -61,7 +61,7 @@ namespace cad {
 	template<typename I, typename C>
 	inline std::ostream& operator<<(std::ostream& os, const SampleIteratorQueue<I,C>& siq) {
 		for (const auto& it: siq) {
-			os << *it << ", ";
+			os << *it << "@" << it.depth() << ", ";
 		}
 		return os;
 	}

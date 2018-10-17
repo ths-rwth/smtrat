@@ -2,7 +2,7 @@
 
 mkdir -p build || return 1
 cd build/ || return 1
-cmake -D DEVELOPER=ON -DUSE_COCOA=ON -D SMTRAT_Strategy=AllModulesStrategy ../ || return 1
+cmake -D DEVELOPER=ON -D USE_COCOA=ON -D USE_GINAC=ON -D SMTRAT_Strategy=AllModulesStrategy ../ || return 1
 
 function keep_waiting() {
   while true; do

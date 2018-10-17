@@ -252,7 +252,9 @@ public:
 				assignment = assignment.asRAN().value();
 			}
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Assignment: " << mVar << " = " << assignment);
-			return assignment;
+			ModelValues res;
+			res.push_back(std::make_pair(mVar,assignment));
+			return std::move(res);
 		}
 	}
 	

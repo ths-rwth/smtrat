@@ -58,21 +58,60 @@ private:
 	 */
 	using TheoryStackT = std::vector<TheoryLevel>;
 	TheoryStackT mTheoryStack;
-	/// The level for the next theory variable to be decided
-	std::size_t mCurrentLevel = 0;
 
 	/// Variables that are not univariate in any variable yet.
 	std::vector<Minisat::Var> mUndecidedVariables;
 	
 	MCSATBackend<Settings> mBackend;
 
+	struct ModelAssignmentCache {
+		ModelValues mContent;
+		Model mModel;
+		const Model& mBaseModel;
+
+		ModelAssignmentCache(const Model& baseModel) : mBaseModel(baseModel) {
+			mModel = mBaseModel;
+		}
+
+		bool empty() const {
+			return mContent.empty();
+		}
+
+		void clear() {
+			mContent.clear();
+			mModel = mBaseModel;
+		}
+
+		void cache(const ModelValues& val) {
+			assert(empty());
+			mModel = mBaseModel;
+			mContent = val;
+			for (const auto& assignment : content()) {
+				mModel.emplace(assignment.first, assignment.second);
+			}
+		}
+
+		const ModelValues& content() const {
+			return mContent;
+		}
+
+		const Model& model() const {
+			return mModel;
+		}
+	};
+	/// Cache for the next model assignemt(s)
+	ModelAssignmentCache mModelAssignmentCache;
+
+
+	std::vector<std::size_t> mMaxTheoryLevel;
+
 private:
 	// ***** private helper methods
 	
 	/// Updates lookup for the current level
-	void updateCurrentLevel(carl::Variable var);
-	/// Remove lookups of the last level
-	void removeLastLevel();
+	void updateCurrentLevel();
+	/// Undo a decision on the current level
+	void undoDecision();
 public:
 	
 	template<typename BaseModule>
@@ -94,14 +133,18 @@ public:
 			[&baseModule](Minisat::Lit l) -> const auto& { return sign(l) ? baseModule.mBooleanConstraintMap[var(l)].second->reabstraction : baseModule.mBooleanConstraintMap[var(l)].first->reabstraction; },
 			[&baseModule](Minisat::Lit l) -> const auto& { return baseModule.watches[l]; }
 		}),
-		mTheoryStack(1, TheoryLevel())
+		mTheoryStack(1, TheoryLevel()),
+		mModelAssignmentCache(model())
 	{}
 	
 	std::size_t level() const {
-		return mCurrentLevel;
+		return mTheoryStack.size() - 1;
 	}
 	const Model& model() const {
 		return mBackend.getModel();
+	}
+	const std::vector<Minisat::Var>& undecidedVariables() const {
+		return mUndecidedVariables;
 	}
 	/// Returns the respective theory level
 	const TheoryLevel& get(std::size_t level) const {
@@ -110,10 +153,10 @@ public:
 	}
 	/// Returns the current theory level
 	const TheoryLevel& current() const {
-		return mTheoryStack[level()];
+		return mTheoryStack.back();
 	}
 	TheoryLevel& current() {
-		return mTheoryStack[level()];
+		return mTheoryStack.back();
 	}
 	/// Retrieve the current theory variable
 	carl::Variable currentVariable() const {
@@ -156,6 +199,12 @@ public:
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Skipping assignment.");
 			return;
 		}
+		if (!mModelAssignmentCache.empty()) {
+			auto res = carl::model::evaluate(f, mModelAssignmentCache.model());
+			if (!res.isBool() || !res.asBool()) {
+				mModelAssignmentCache.clear(); // clear model assignment cache
+			}
+		}
 		mBackend.pushConstraint(f);
 	}
 	/**
@@ -190,51 +239,83 @@ public:
 	/// Evaluate a literal in the theory, set lastReason to last theory decision involved.
 	Minisat::lbool evaluateLiteral(Minisat::Lit lit) const;
 	
-	boost::optional<FormulaT> isDecisionPossible(Minisat::Lit lit);
+	std::pair<bool, boost::optional<Explanation>> isDecisionPossible(Minisat::Lit lit, bool check_feasibility_before = true);
 	
-	boost::optional<FormulaT> isFeasible() {
+	boost::optional<Explanation> isFeasible() {
 		if (!mayDoAssignment()) {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Trail is feasible as there is no next variable to be assigned.");
 			return boost::none;
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking whether trail is feasible (w.r.t. " << currentVariable() << ")");
-		auto res = mBackend.findAssignment(currentVariable());
-		if (carl::variant_is_type<ModelValue>(res)) {
+		AssignmentOrConflict res;
+		if (!mModelAssignmentCache.empty()) {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found cached assignment.");
 			return boost::none;
 		} else {
-			const auto& confl = boost::get<FormulasT>(res);
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << confl);
-			return mBackend.explain(currentVariable(), confl, FormulaT(carl::FormulaType::FALSE));
+			auto res = mBackend.findAssignment(currentVariable());
+			if (carl::variant_is_type<ModelValues>(res)) {
+				mModelAssignmentCache.cache(boost::get<ModelValues>(res));
+				return boost::none;
+			} else {
+				const auto& confl = boost::get<FormulasT>(res);
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << confl);
+				return mBackend.explain(currentVariable(), confl);
+			}
 		}
 	}
 	
-	std::pair<FormulaT,bool> makeTheoryDecision() {
+	boost::variant<Explanation,FormulasT> makeTheoryDecision() {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Obtaining assignment");
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", mBackend);
-		auto res = mBackend.findAssignment(currentVariable());
-		if (carl::variant_is_type<ModelValue>(res)) {
-			const auto& value = boost::get<ModelValue>(res);
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << value);
-			FormulaT repr = carl::representingFormula(currentVariable(), value);
-			mBackend.pushAssignment(currentVariable(), value, repr);
+		AssignmentOrConflict res;
+		if (mModelAssignmentCache.empty()) {
+			res = mBackend.findAssignment(currentVariable());
+		} else {
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found cached assignment.");
+			res = mModelAssignmentCache.content();
+			mModelAssignmentCache.clear();
+		}
+		if (carl::variant_is_type<ModelValues>(res)) {
+			const auto& values = boost::get<ModelValues>(res);
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << values);
+			FormulasT reprs;
+			for (const auto& value : values) {
+				FormulaT repr = carl::representingFormula(value.first, value.second);
+				mBackend.pushAssignment(value.first, value.second, repr);
+				reprs.push_back(std::move(repr));
+			}
 			assert(trailIsConsistent());
-			return std::make_pair(repr, true);
+			return reprs;
 		} else {
 			const auto& confl = boost::get<FormulasT>(res);
-			auto explanation = mBackend.explain(currentVariable(), confl, FormulaT(carl::FormulaType::FALSE));
+			auto explanation = mBackend.explain(currentVariable(), confl);
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got a conflict: " << explanation);
-			return std::make_pair(explanation, false);
+			return explanation;
 		}
 	}
 	
-	FormulaT explainTheoryPropagation(Minisat::Lit literal) {
+	Explanation explainTheoryPropagation(Minisat::Lit literal) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << (*this));
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << literal << " under " << mBackend.getModel());
-		auto f = mGetter.reabstractLiteral(literal);
+		const auto& f = mGetter.reabstractLiteral(literal);
 		auto conflict = mBackend.isInfeasible(currentVariable(), !f);
-		assert(conflict);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " from " << *conflict);
-		auto res = mBackend.explain(currentVariable(), *conflict, f);
+		assert(carl::variant_is_type<FormulasT>(conflict));
+		auto& confl = boost::get<FormulasT>(conflict);
+		assert( std::find(confl.begin(), confl.end(), !f) != confl.end() );
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " from " << confl);
+		auto res = mBackend.explain(currentVariable(), !f, confl);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " by " << res);
+		// f is part of the conflict, because the trail is feasible without f:
+		if (carl::variant_is_type<FormulaT>(res)) {
+			if (boost::get<FormulaT>(res).isFalse()) {
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explanation failed.");
+			} else {
+				assert(boost::get<FormulaT>(res).contains(f));
+			}
+		}
+		else {
+			assert(boost::get<ClauseChain>(res).chain().back().clause().contains(f));
+		}
 		return res;
 	}
 	
@@ -362,6 +443,41 @@ public:
 			if (!evaluator(b)) return false;
 		}
 		return true;
+	}
+
+	/**
+	 * Calculates the syntactic (maximal) theory level of the given variable.
+	 */
+	std::size_t maxTheoryLevel(const Minisat::Var& var) {
+		// if variableOrder has not been initialized yet
+		if (mBackend.variableOrder().empty()) {
+			return 0;
+		}
+
+		assert(var < mMaxTheoryLevel.size());
+
+		if (mMaxTheoryLevel[var] == std::numeric_limits<std::size_t>::max()) {
+			if (!mGetter.isTheoryAbstraction(var)) {
+				mMaxTheoryLevel[var] = 0;
+			} else {
+				auto reabstraction = mGetter.reabstractVariable(var);
+				carl::Variables vars;
+				reabstraction.arithmeticVars(vars);
+				if (vars.empty()) {
+					mMaxTheoryLevel[var] = 0;
+				} else {
+					for (int i = mBackend.variableOrder().size() - 1; i >= 0; i--) {
+						if (vars.find(mBackend.variableOrder()[i]) != vars.end()) {
+							mMaxTheoryLevel[var] = i+1;
+							break;
+						}
+					}
+				}	
+			}
+		}
+		assert(mMaxTheoryLevel[var] < std::numeric_limits<std::size_t>::max());
+
+		return mMaxTheoryLevel[var];
 	}
 	
 	// ***** Output

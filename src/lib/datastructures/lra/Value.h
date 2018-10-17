@@ -202,13 +202,6 @@ namespace smtrat
                 const std::string toString() const;
                 
                 /**
-                 * @param _out
-                 * @param _value
-                 * @return 
-                 */
-                template <typename T1> friend std::ostream& operator<<( std::ostream& _out, const Value<T1>& _value );
-
-                /**
                  * @return 
                  */
                 const T& mainPart() const
@@ -250,6 +243,8 @@ namespace smtrat
                  */
                 void print( std::ostream& _out = std::cout ) const;
         };
+		template <typename T1>
+		std::ostream& operator<<( std::ostream& _out, const Value<T1>& _value );
     }    // end namspace lra
 }    // end namspace smtrat
 

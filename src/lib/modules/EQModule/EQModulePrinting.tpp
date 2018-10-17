@@ -197,32 +197,36 @@ namespace smtrat {
 				for(const FormulaT &formula : infeasible) {
 					const UEquality &ueq = formula.uequality();
 
-					if(ueq.lhsIsUF()) {
-						functions.insert(ueq.lhsAsUF().uninterpretedFunction());
-						sorts.insert(ueq.lhsAsUF().uninterpretedFunction().codomain());
-						for(const Sort& s : ueq.lhsAsUF().uninterpretedFunction().domain()) {
+					if(ueq.lhs().isUFInstance()) {
+						functions.insert(ueq.lhs().asUFInstance().uninterpretedFunction());
+						sorts.insert(ueq.lhs().asUFInstance().uninterpretedFunction().codomain());
+						for(const Sort& s : ueq.lhs().asUFInstance().uninterpretedFunction().domain()) {
 							sorts.insert(s);
 						}
-						for(const UVariable& v : ueq.lhsAsUF().args()) {
+						for(const auto& t : ueq.lhs().asUFInstance().args()) {
+							assert(t.isUVariable());
+							const auto& v = t.asUVariable();
 							variables.insert(v);
 						}
 					} else {
-						variables.insert(ueq.lhsAsUV());
-						sorts.insert(ueq.lhsAsUV().domain());
+						variables.insert(ueq.lhs().asUVariable());
+						sorts.insert(ueq.lhs().asUVariable().domain());
 					}
 
-					if(ueq.rhsIsUF()) {
-						functions.insert(ueq.rhsAsUF().uninterpretedFunction());
-						sorts.insert(ueq.rhsAsUF().uninterpretedFunction().codomain());
-						for(const Sort& s : ueq.rhsAsUF().uninterpretedFunction().domain()) {
+					if(ueq.rhs().isUFInstance()) {
+						functions.insert(ueq.rhs().asUFInstance().uninterpretedFunction());
+						sorts.insert(ueq.rhs().asUFInstance().uninterpretedFunction().codomain());
+						for(const Sort& s : ueq.rhs().asUFInstance().uninterpretedFunction().domain()) {
 							sorts.insert(s);
 						}
-						for(const UVariable& v : ueq.rhsAsUF().args()) {
+						for(const auto& t : ueq.rhs().asUFInstance().args()) {
+							assert(t.isUVariable());
+							const auto& v = t.asUVariable();
 							variables.insert(v);
 						}
 					} else {
-						variables.insert(ueq.rhsAsUV());
-						sorts.insert(ueq.rhsAsUV().domain());
+						variables.insert(ueq.rhs().asUVariable());
+						sorts.insert(ueq.rhs().asUVariable().domain());
 					}
 				}
 

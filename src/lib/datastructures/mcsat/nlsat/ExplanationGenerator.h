@@ -156,9 +156,9 @@ public:
 		mModel(model),
 		mConstraints(constraints),
 		mCADConstraints(
-			[&](const auto& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(mProjection.normalize(p), cid, isBound); },
-                        [&](const auto& p, std::size_t cid, bool isBound){ mProjection.addEqConstraint(mProjection.normalize(p), cid, isBound); },
-			[&](const auto& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(mProjection.normalize(p), cid, isBound); }
+			[&](const auto& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(cad::projection::normalize(p), cid, isBound); },
+			[&](const auto& p, std::size_t cid, bool isBound){ mProjection.addEqConstraint(cad::projection::normalize(p), cid, isBound); },
+			[&](const auto& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(cad::projection::normalize(p), cid, isBound); }
 		),
 		mProjection(mCADConstraints, mModel)
 	{
@@ -218,7 +218,7 @@ public:
 	/**
 	 * Compute explanation in clausal form.
 	 */
-	FormulaT getExplanation(const FormulaT& impliedAtom) const {
+	mcsat::Explanation getExplanation(const FormulaT& impliedAtom) const {
 		std::vector<FormulasT> explainAtomsInLevels;
 		generateExplanation(impliedAtom, explainAtomsInLevels);
 		// Convert e1,..,en => I into clause -e1,...,-en, I

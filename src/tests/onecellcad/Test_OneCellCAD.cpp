@@ -27,7 +27,7 @@ namespace {
   using smtrat::Rational;
   using namespace smtrat::onecellcad;
   using carl::Variable;
-  using MultiPoly = carl::MultivariatePolynomial<Rational>;
+  using Poly = carl::MultivariatePolynomial<Rational>;
 	using RAN = carl::RealAlgebraicNumber<Rational>;
 	using RANPoint = carl::RealAlgebraicPoint<Rational>;
 
@@ -35,34 +35,35 @@ struct VariableFixture {
   Variable x = carl::freshRealVariable("x");
   Variable y = carl::freshRealVariable("y");
   Variable z = carl::freshRealVariable("z");
+  std::vector<Variable> varOrder {x};
+  std::vector<Variable> varOrder2 {x,y};
+  std::vector<Variable> varOrder3 {x,y,z};
 };
 
 BOOST_FIXTURE_TEST_CASE(polylevel, VariableFixture) {
   BOOST_TEST_MESSAGE("Test polyLevel");
 
-  std::vector<Variable> variableOrder {x,y,z};
-  BOOST_CHECK(levelOf(variableOrder, MultiPoly(1)) == nullopt);
-  BOOST_CHECK(levelOf(variableOrder, MultiPoly(x) * Rational(0)) == nullopt);
-  BOOST_CHECK(levelOf(variableOrder, MultiPoly(x * y) * Rational(0)) == nullopt);
-  BOOST_CHECK(*levelOf(variableOrder, MultiPoly(x)) == 0);
-  BOOST_CHECK(*levelOf(variableOrder, MultiPoly(y)) == 1);
-  BOOST_CHECK(*levelOf(variableOrder, MultiPoly(x * y)) == 1);
-  BOOST_CHECK(*levelOf(variableOrder, MultiPoly(z)) == 2);
-  BOOST_CHECK(*levelOf(variableOrder, MultiPoly(x * z)) == 2);
-  BOOST_CHECK(*levelOf(variableOrder, MultiPoly(x * y * z)) == 2);
+  BOOST_CHECK(levelOf(varOrder3, Poly(1)) == nullopt);
+  BOOST_CHECK(levelOf(varOrder3, Poly(x) * Rational(0)) == nullopt);
+  BOOST_CHECK(levelOf(varOrder3, Poly(x * y) * Rational(0)) == nullopt);
+  BOOST_CHECK(*levelOf(varOrder3, Poly(x)) == 0);
+  BOOST_CHECK(*levelOf(varOrder3, Poly(y)) == 1);
+  BOOST_CHECK(*levelOf(varOrder3, Poly(x * y)) == 1);
+  BOOST_CHECK(*levelOf(varOrder3, Poly(z)) == 2);
+  BOOST_CHECK(*levelOf(varOrder3, Poly(x * z)) == 2);
+  BOOST_CHECK(*levelOf(varOrder3, Poly(x * y * z)) == 2);
 }
 
 BOOST_FIXTURE_TEST_CASE(cell2d, VariableFixture) {
   BOOST_TEST_MESSAGE("Test 2D example from [1]");
-  std::vector<Variable> variableOrder {x,y};
-  MultiPoly p = MultiPoly(x*x) + MultiPoly(y*y) - Rational(1) ;
-  MultiPoly q = MultiPoly(y*y)*Rational(2) - MultiPoly(x*x) * (MultiPoly(x)*Rational(2) + Rational(3)) ;
-  MultiPoly r = MultiPoly(y) + MultiPoly(x)*Rational(0.5) - Rational(0.5) ;
-  std::vector<MultiPoly> polys {p,q,r};
+  Poly p = Poly(x*x) + Poly(y*y) - Rational(1) ;
+  Poly q = Poly(y*y)*Rational(2) - Poly(x*x) * (Poly(x)*Rational(2) + Rational(3)) ;
+  Poly r = Poly(y) + Poly(x)*Rational(0.5) - Rational(0.5) ;
+  std::vector<Poly> polys {p,q,r};
 
-  RANPoint alpha { RAN(Rational(-1)/3), RAN(Rational(1)/3) };
+  RANPoint point { RAN(Rational(-1)/3), RAN(Rational(1)/3) };
 
-  optional<CADCell> c = OneCellCAD().pointEnclosingCADCell(variableOrder, alpha, polys);
+  optional<CADCell> c = OneCellCAD(varOrder3,point).createCADCellAroundPoint(polys);
 
   BOOST_CHECK(c);
 }

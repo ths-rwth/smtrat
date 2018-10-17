@@ -24,12 +24,23 @@ public:
 		std::size_t level;
 		std::size_t first;
 		std::size_t second;
-                bool f_act = true;
-                bool s_act = true;
-                bool e_act = true;
+		bool first_active = true;
+		bool second_active = true;
+		bool ec_active = true;
 		explicit BaseType(std::size_t level, std::size_t id): BaseType(level,id,id) {}
 		BaseType(std::size_t lvl, std::size_t id1, std::size_t id2): level(lvl),first(id1),second(id2) {
 			if (first > second) std::swap(first, second);
+		}
+		bool active() const {
+			return first_active && second_active && ec_active;
+		}
+		void activate(const carl::Bitset& ids) {
+			if (!first_active && ids.test(first)) first_active = true;
+			if (!second_active && ids.test(second)) second_active = true;
+		}
+		void deactivate(const carl::Bitset& ids) {
+			if (first_active && ids.test(first)) first_active = false;
+			if (second_active && ids.test(second)) second_active = false;
 		}
 		bool operator==(const BaseType& bt) const {
 			return (level == bt.level) && (first == bt.first) && (second == bt.second);
@@ -40,7 +51,7 @@ public:
 			return second < bt.second;
 		}
 		friend std::ostream& operator<<(std::ostream& os, const BaseType& bt) {
-			if (!bt.f_act || !bt.s_act || !bt.e_act) os << "!";
+			if (!bt.first_active || !bt.second_active || !bt.ec_active) os << "!";
 			return os << "(" << bt.first << "," << bt.second << ")@" << bt.level;
 		}
 	};
@@ -72,57 +83,43 @@ public:
 		return mData.end();
 	}
         
-        // returns true, if Origin contains at least one active BaseType
-        bool isActive() const {
-                for(const auto& it : mData) {
-                        if(it.f_act && it.s_act && it.e_act) {
-                            return true;
-                        }
-                }
-                return false;
-        }
-        
-        // deactivates BaseTypes due to inactive polynomials 
-        void deactivate(std::size_t level, const carl::Bitset& rhs) {
-                for(auto& it : mData) {
-                        if(it.level == level) {
-                                if(rhs.test(it.first)) {
-                                        it.f_act = false;
-                                } else if(rhs.test(it.second)) {
-                                        it.s_act = false;
-                                }
-                        }
-                }
-        }
+		// returns true, if Origin contains at least one active BaseType
+		bool isActive() const {
+			return std::any_of(mData.begin(), mData.end(), 
+				[](const auto& o){ return o.active(); }
+			);
+		}
+
+		// deactivates BaseTypes due to inactive polynomials 
+		void deactivate(std::size_t level, const carl::Bitset& rhs) {
+			std::for_each(mData.begin(), mData.end(),
+				[level, &rhs](auto& o){ 
+					if (o.level == level) o.deactivate(rhs);
+				});
+		}
         
         // deactivates BaseTypes due to equational constraint 
         void deactivateEC(std::size_t level, const carl::Bitset& rhs) {
                 for(auto& it : mData) {
                         if((it.level == level) && !rhs.test(it.first) && !rhs.test(it.second)) {
-                                it.e_act = false;
+                                it.ec_active = false;
                         }
                 }
         }
-        
-        // activates BaseTypes due to activated polynomials 
-        void activate(std::size_t level, const carl::Bitset& rhs) {
-                for(auto& it : mData) {
-                        if(it.level == level) {
-                                if(rhs.test(it.first)) {
-                                        it.f_act = true;
-                                }
-								if(rhs.test(it.second)) {
-                                        it.s_act = true;
-                                }
-                        }
-                }
-        }
+
+		// activates BaseTypes due to activated polynomials 
+		void activate(std::size_t level, const carl::Bitset& rhs) {
+			std::for_each(mData.begin(), mData.end(),
+				[level, &rhs](auto& o){ 
+					if (o.level == level) o.activate(rhs);
+				});
+		}
         
         // activates BaseTypes due to equational constraint that is not used for restricted projection anymore 
         void activateEC(std::size_t level, const carl::Bitset& rhs) {
                 for(auto& it : mData) {
                         if((it.level == level) && !rhs.test(it.first) && !rhs.test(it.second)) {
-                                it.e_act = true;
+                                it.ec_active = true;
                         }
                 }
         }

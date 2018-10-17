@@ -403,7 +403,7 @@ namespace smtrat
         }
         _out << "btl_" << btlCounter << ": (and";
         for (auto it = mpPassedFormula->begin(); it != mpPassedFormula->end(); it++) {
-            _out << " " << it->formula().toString();
+            _out << " " << it->formula();
             if (btlIter != mBacktrackPoints.end() && btlIter->first == it) {
                 btlCounter++;
                 btlIter++;

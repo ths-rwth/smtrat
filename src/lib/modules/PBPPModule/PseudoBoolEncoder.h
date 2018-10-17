@@ -17,9 +17,12 @@ namespace smtrat {
 			 * @return encoded formula
 			 */
 			boost::optional<FormulaT> encode(const ConstraintT& constraint);
-			unsigned problem_size;
-			bool use_lia;
-			double max_new_relative_formula_size;
+			std::size_t problem_size;
+
+			virtual Rational encodingSize(const ConstraintT& constraint);
+			virtual bool canEncode(const ConstraintT& constraint) = 0;
+
+			virtual string name() { return "unspecified PseudoBoolEncoder"; }
 
 		protected:
 			virtual boost::optional<FormulaT> doEncode(const ConstraintT& constraint) = 0;

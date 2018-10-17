@@ -19,11 +19,12 @@ namespace onecellcad {
 
   template <typename PolyType>
   bool hasOnlyNonConstIrreducibles(const std::vector<PolyType>& polys) {
-    carl::CoCoAAdaptor<PolyType> factorizer(polys);
+    if (polys.empty()) // Corner case, COCOA crashes on empty poly-vector
+      return true;
     for (const auto& poly : polys) {
       if (poly.isConstant())
         return false;
-      else if (factorizer.irreducibleFactorsOf(poly).size() > 1)
+      else if (carl::irreducibleFactors(poly, false).size() > 1)
         return false;
         // if more than 1 factor, not irreducible
     }

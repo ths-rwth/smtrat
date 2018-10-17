@@ -171,21 +171,6 @@ namespace vs
 //            bool operator<( const Substitution& ) const;
             
             /**
-             * @param _friendlyNames A flag that indicates whether to print the variables with their internal representation (false)
-             *                        or with their dedicated names.
-             * @return The string representation of this substitution.
-             */
-            std::string toString( bool _friendlyNames = true ) const;
-            
-            /**
-             * Prints the given substitution on the given output stream.
-             * @param _out The output stream, on which to write.
-             * @param _substitution  The substitution to print.
-             * @return The output stream after printing the substitution on it.
-             */
-            friend std::ostream& operator<<( std::ostream& _out, const Substitution& _substitution );
-
-            /**
              * Prints this substitution on the given stream, with some additional information.
              * @param _withOrigins A flag indicating whether to print also the origins of this substitution.
              * @param _withSideConditions A flag indication whether to also the side conditions of this substitution.
@@ -194,6 +179,14 @@ namespace vs
              */
             void print( bool _withOrigins = false, bool _withSideConditions = false, std::ostream& _out = std::cout, const std::string& _init = "" ) const;
     };
+	/**
+	 * Prints the given substitution on the given output stream.
+	 * @param _out The output stream, on which to write.
+	 * @param _substitution  The substitution to print.
+	 * @return The output stream after printing the substitution on it.
+	 */
+	std::ostream& operator<<(std::ostream& os, const Substitution& s);
+
 }    // end namspace vs
 
 namespace std

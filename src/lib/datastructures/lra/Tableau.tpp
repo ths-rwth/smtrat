@@ -2795,7 +2795,7 @@ namespace smtrat
                         if( !(rowVar->factor() == 1) )
                             outA << rowVar->factor();
                     }
-                    outA << rowVar->expression().toString( true, _friendlyNames );
+                    outA << rowVar->expression();
                     size_t rowVarNameSize = outA.str().size();
                     if( Settings::omit_division )
                     {

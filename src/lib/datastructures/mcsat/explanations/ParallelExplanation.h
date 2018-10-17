@@ -14,9 +14,9 @@ private:
 	using B = std::tuple<Backends...>;
 	B mBackends;
 public:
-	boost::optional<FormulaT> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason, const FormulaT& implication) const {
+	boost::optional<Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
 		auto F = [&](const auto& expl){
-			auto r = expl(data, variableOrdering, var, reason, implication);
+			auto r = expl(data, variableOrdering, var, reason);
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.explanation", "Got explanation " << r);
 			return r;
 		};

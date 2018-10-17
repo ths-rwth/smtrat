@@ -6,11 +6,11 @@ namespace parser {
 namespace uninterpreted {
 
 	inline bool convertTerm(const types::TermType& term, types::UninterpretedTheory::TermType& result) {
-		if (boost::get<carl::UVariable>(&term) != nullptr) {
-			result = boost::get<carl::UVariable>(term);
+		if (boost::get<carl::UTerm>(&term) != nullptr) {
+			result = boost::get<carl::UTerm>(term);
 			return true;
-		} else if (boost::get<carl::UFInstance>(&term) != nullptr) {
-			result = boost::get<carl::UFInstance>(term);
+		} else if (boost::get<carl::UVariable>(&term) != nullptr) {
+			result = carl::UTerm(boost::get<carl::UVariable>(term));
 			return true;
 		} else {
 			return false;
@@ -29,22 +29,6 @@ namespace uninterpreted {
 		}
 		return true;
 	}
-	
-	template<bool negated>
-	struct EqualityGenerator: public boost::static_visitor<FormulaT> {
-		FormulaT operator()(const carl::UVariable& lhs, const carl::UVariable& rhs) {
-			return FormulaT(lhs, rhs, negated);
-		}
-		FormulaT operator()(const carl::UVariable& lhs, const carl::UFInstance& rhs) {
-			return FormulaT(lhs, rhs, negated);
-		}
-		FormulaT operator()(const carl::UFInstance& lhs, const carl::UVariable& rhs) {
-			return FormulaT(lhs, rhs, negated);
-		}
-		FormulaT operator()(const carl::UFInstance& lhs, const carl::UFInstance& rhs) {
-			return FormulaT(lhs, rhs, negated);
-		}
-	};
 }
 
 	UninterpretedTheory::UninterpretedTheory(ParserState* state):
@@ -87,7 +71,7 @@ namespace uninterpreted {
 	}
 	
 	bool UninterpretedTheory::handleFunctionInstantiation(const carl::UninterpretedFunction& f, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError&) {
-		std::vector<carl::UVariable> vars;
+		std::vector<carl::UTerm> vars;
 		for (const auto& v: arguments) {
 			auto it = mInstantiatedArguments.find(v);
 			if (it != mInstantiatedArguments.end()) {
@@ -95,18 +79,22 @@ namespace uninterpreted {
 				continue;
 			} else if (const FormulaT* f = boost::get<FormulaT>(&v)) {
 				carl::Variable tmp = carl::freshBooleanVariable();
-				vars.push_back(carl::UVariable(tmp));
+				vars.push_back(carl::UTerm(carl::UVariable(tmp)));
 				state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IFF, {FormulaT(tmp), *f}));
 			} else if (const Poly* p = boost::get<Poly>(&v)) {
 				carl::Variable tmp = carl::freshRealVariable();
-				vars.push_back(carl::UVariable(tmp));
+				vars.push_back(carl::UTerm(carl::UVariable(tmp)));
 				state->global_formulas.emplace_back(FormulaT(*p - carl::makePolynomial<Poly>(tmp), carl::Relation::EQ));
+			} else if (const carl::UTerm* ut = boost::get<carl::UTerm>(&v)) {
+				if (true && ut->isUFInstance()) { // do flattening
+					carl::Variable tmp = carl::freshUninterpretedVariable();
+					vars.emplace_back(carl::UVariable(tmp, ut->asUFInstance().uninterpretedFunction().codomain()));
+					state->global_formulas.emplace_back(FormulaT(carl::UEquality(carl::UTerm(vars.back()), *ut, false)));
+				} else {
+					vars.push_back(*ut);
+				}
 			} else if (const carl::UVariable* uv = boost::get<carl::UVariable>(&v)) {
-				vars.push_back(*uv);
-			} else if (const carl::UFInstance* uf = boost::get<carl::UFInstance>(&v)) {
-				carl::Variable tmp = carl::freshUninterpretedVariable();
-				vars.push_back(carl::UVariable(tmp, uf->uninterpretedFunction().codomain()));
-				state->global_formulas.emplace_back(FormulaT(carl::UEquality(vars.back(), *uf, false)));
+				vars.push_back(carl::UTerm(*uv));
 			} else {
 				SMTRAT_LOG_ERROR("smtrat.parser", "The function argument type for function " << f << " was invalid.");
 				continue;
@@ -126,23 +114,22 @@ namespace uninterpreted {
 			}
 		} else if (f.codomain() == mBoolSort) {
 			carl::UVariable uvar(carl::freshVariable(carl::VariableType::VT_UNINTERPRETED), mBoolSort);
-			state->global_formulas.emplace_back(carl::UEquality(uvar, ufi, false));
+			state->global_formulas.emplace_back(carl::UEquality(carl::UTerm(uvar), carl::UTerm(ufi), false));
 			state->global_formulas.push_back(FormulaT(carl::FormulaType::OR, {
-				FormulaT(carl::UEquality(uvar, mTrue, false)),
-				FormulaT(carl::UEquality(uvar, mFalse, false))
+				FormulaT(carl::UEquality(carl::UTerm(uvar), carl::UTerm(mTrue), false)),
+				FormulaT(carl::UEquality(carl::UTerm(uvar), carl::UTerm(mFalse), false))
 			}));
-			result = FormulaT(carl::UEquality(uvar, mTrue, false));
+			result = FormulaT(carl::UEquality(carl::UTerm(uvar), carl::UTerm(mTrue), false));
 		} else {
-			result = ufi;
+			result = carl::UTerm(ufi);
 		}
 		return true;
 	}
 	bool UninterpretedTheory::handleDistinct(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
 		std::vector<types::UninterpretedTheory::TermType> args;
 		if (!uninterpreted::convertArguments(arguments, args, errors)) return false;
-		uninterpreted::EqualityGenerator<true> eg;
-		result = expandDistinct(args, [&eg](const types::UninterpretedTheory::TermType& a, const types::UninterpretedTheory::TermType& b){ 
-			return boost::apply_visitor(eg, a, b); 
+		result = expandDistinct(args, [](const types::UninterpretedTheory::TermType& a, const types::UninterpretedTheory::TermType& b){ 
+			return carl::UEquality(boost::get<carl::UTerm>(a), boost::get<carl::UTerm>(b), true);
 		});
 		return true;
 	}
@@ -156,9 +143,8 @@ namespace uninterpreted {
 			std::vector<types::UninterpretedTheory::TermType> args;
 			if (!uninterpreted::convertArguments(arguments, args, errors)) return false;
 			FormulasT subformulas;
-			uninterpreted::EqualityGenerator<false> eg;
 			for (std::size_t i = 0; i < args.size() - 1; i++) {
-				subformulas.push_back(boost::apply_visitor(eg, args[i], args[i+1]));
+				subformulas.emplace_back(carl::UEquality(boost::get<carl::UTerm>(args[i]), boost::get<carl::UTerm>(args[i+1]), false));
 			}
 			result = FormulaT(carl::FormulaType::AND, subformulas);
 			return true;

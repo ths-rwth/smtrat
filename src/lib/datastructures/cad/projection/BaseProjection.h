@@ -8,8 +8,10 @@
 #include "../Common.h"
 #include "../helper/CADConstraints.h"
 
-#include "ProjectionOperator.h"
 #include "PolynomialLiftingQueue.h"
+#include "Projection_utils.h"
+#include "ProjectionInformation.h"
+#include "ProjectionOperator.h"
 
 namespace smtrat {
 namespace cad {
@@ -26,6 +28,8 @@ namespace cad {
 		const Constraints& mConstraints;
 		/// List of lifting queues that can be used for incremental projection.
 		std::vector<PolynomialLiftingQueue<BaseProjection>> mLiftingQueues;
+		/// Additional info on projection, projection levels and projection polynomials.
+		ProjectionInformation mInfo;
 		/// The projection operator.
 		ProjectionOperator mOperator;
 		/// Callback to be called when polynomials are removed. The arguments are the projection level and a bitset that indicate which polynomials were removed in this level.
@@ -50,14 +54,6 @@ namespace cad {
 		carl::Variable var(std::size_t level) const {
 			assert(level > 0 && level <= dim());
 			return vars()[level - 1];
-		}
-		/// Checks whether a polynomial can safely be ignored.
-		bool canBeRemoved(const UPoly& p) const {
-			return p.isZero() || p.isNumber();
-		}
-		/// Checks whether a polynomial can safely be forwarded to the next level.
-		bool canBeForwarded(std::size_t, const UPoly& p) const {
-			return p.isConstant();
 		}
 		/// Checks whether a polynomial can safely be ignored due to the bounds.
 		bool canBePurgedByBounds(const UPoly& p) const {
@@ -131,10 +127,6 @@ namespace cad {
 			return true;
 		}
 		
-		UPoly normalize(const UPoly& p) const {
-			return projection::normalize(p);
-		}
-		
 		/// Get a polynomial from this level suited for lifting.
 		OptionalID getPolyForLifting(std::size_t level, SampleLiftedWith& slw) {
 			assert(level > 0);
@@ -157,7 +149,8 @@ namespace cad {
 		virtual const UPoly& getPolynomialById(std::size_t level, std::size_t id) const = 0;
 		
 		virtual void exportAsDot(std::ostream&) const {}
-		virtual Origin getOrigin(std::size_t, std::size_t) const {
+		virtual Origin getOrigin(std::size_t level, std::size_t id) const {
+			if (mInfo.hasInfo(level, id)) return mInfo(level, id).origin;
 			return Origin();
 		}
 	};

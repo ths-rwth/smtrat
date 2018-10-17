@@ -342,7 +342,7 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         cout << "LRAModule::check with mMinimizingCheck = " << mMinimizingCheck << endl;
         for( const auto& f : rReceivedFormula() )
-            std::cout << f.formula().toString() << std::endl;
+            std::cout << f.formula() << std::endl;
         #endif
         bool containsIntegerValuedVariables = true;
         if( !rReceivedFormula().isConstraintConjunction() )
@@ -1296,7 +1296,8 @@ namespace smtrat
         {
             carl::Variables vars;
             basicVar->expression().gatherVariables( vars );
-            assert( vars.size() == 1 );
+            // TODO JNE why should this hold? Doesn't this correspond to the variables of a tableu row?
+            assert( vars.size() >= 1 );
             auto found_ex = rMap_.find(*vars.begin());
             const Rational& ass = found_ex->second;
             if( !carl::isInteger( ass ) )
@@ -1350,7 +1351,7 @@ namespace smtrat
                 continue;
             assert( var->first == map_iterator->first );
             const Rational& ass = map_iterator->second;
-            if( var->first.type() == carl::VariableType::VT_INT && !carl::isInteger( ass ) )
+            if( (var->first.type() == carl::VariableType::VT_INT || var->first.type() == carl::VariableType::VT_BOOL) && !carl::isInteger( ass ) )
             {
                 if( mFinalCheck )
                 {
@@ -1423,14 +1424,26 @@ namespace smtrat
             {
                 return false;
             }
+
+            if ( ass->first.type() == carl::VariableType::VT_BOOL && !(ass->second == Rational(0) || ass->second == Rational(1)) )
+            {
+                return false;
+            }
         }
         for( auto iter = rReceivedFormula().begin(); iter != rReceivedFormula().end(); ++iter )
         {
-            if( !iter->formula().constraint().hasVariable( objective() ) && iter->formula().constraint().satisfiedBy( rmodel ) != 1 )
-            {
-                assert( iter->formula().constraint().satisfiedBy( rmodel ) == 0 );
-                return false;
+            if( !iter->formula().constraint().hasVariable( objective() )) {
+                unsigned sat = carl::model::satisfiedBy(iter->formula(), Model(rmodel));
+                if (sat != 1) {
+                    assert( sat == 0 );
+                    return false;
+                }
             }
+            // if( !iter->formula().constraint().hasVariable( objective() ) && iter->formula().constraint().satisfiedBy( rmodel ) != 1 )
+            // {
+            //     assert( iter->formula().constraint().satisfiedBy( rmodel ) == 0 );
+            //     return false;
+            // }
         }
         return true;
     }
@@ -1443,7 +1456,7 @@ namespace smtrat
         _out << _init << "Linear constraints:" << endl;
         for( auto iter = mLinearConstraints.begin(); iter != mLinearConstraints.end(); ++iter )
         {
-            _out << _init << "   " << iter->toString() << endl;
+            _out << _init << "   " << iter << endl;
         }
     }
 
@@ -1453,7 +1466,7 @@ namespace smtrat
         _out << _init << "Nonlinear constraints:" << endl;
         for( auto iter = mNonlinearConstraints.begin(); iter != mNonlinearConstraints.end(); ++iter )
         {
-            _out << _init << "   " << iter->toString() << endl;
+            _out << _init << "   " << iter << endl;
         }
     }
 
@@ -1463,7 +1476,7 @@ namespace smtrat
         _out << _init << "Mapping of constraints to bounds:" << endl;
         for( auto iter = mTableau.constraintToBound().begin(); iter != mTableau.constraintToBound().end(); ++iter )
         {
-            _out << _init << "   " << iter->first.toString() << endl;
+            _out << _init << "   " << iter->first << endl;
             for( auto iter2 = iter->second->begin(); iter2 != iter->second->end(); ++iter2 )
             {
                 _out << _init << "        ";

@@ -19,6 +19,7 @@
 #include "PBPPSettings.h"
 #include "RNSEncoder.h"
 #include "ShortFormulaEncoder.h"
+#include "PseudoBoolNormalizer.h"
 
 
 namespace smtrat
@@ -32,15 +33,26 @@ namespace smtrat
 #endif
 			// Members.
 			std::map<carl::Variable, carl::Variable> mVariablesCache; // int, bool
-			carl::FormulaVisitor<FormulaT> mVisitor;
 			std::vector<carl::Variable> mCheckedVars;
 			std::vector<carl::Variable> mConnectedVars;
+
+    		std::vector<ConstraintT> liaConstraints;
+			std::vector<ConstraintT> boolConstraints;
+			std::vector<ConstraintT> mConstraints;
+
+			std::map<ConstraintT, Rational> conversionSizeByConstraint;
+			std::map<ConstraintT, PseudoBoolEncoder*> encoderByConstraint;
+			std::map<ConstraintT, FormulaT> formulaByConstraint;
 
 			RNSEncoder mRNSEncoder;
 			ShortFormulaEncoder mShortFormulaEncoder;
 			LongFormulaEncoder mLongFormulaEncoder;
 			CardinalityEncoder mCardinalityEncoder;
 			MixedSignEncoder mMixedSignEncoder;
+
+			PseudoBoolNormalizer mNormalizer;
+
+			std::vector<PseudoBoolEncoder*> mEncoders;
 
 		public:
 			typedef Settings SettingsType;
@@ -104,28 +116,20 @@ namespace smtrat
 
 		private:
 			bool isAllCoefficientsEqual(const ConstraintT& constraint);
-			FormulaT convertPbConstraintToConstraintFormula(const FormulaT& formula);
 			FormulaT convertSmallFormula(const ConstraintT& formula);
 			FormulaT convertBigFormula(const ConstraintT& formula);
 
-			FormulaT forwardAsArithmetic(const ConstraintT& formula);
+			FormulaT forwardAsArithmetic(const ConstraintT& formula, const std::set<carl::Variable>& boolVariables);
 
-			FormulaT checkFormulaType(const FormulaT& formula);
-			FormulaT checkFormulaTypeWithRNS(const FormulaT& formula);
-			FormulaT checkFormulaTypeWithCardConstr(const FormulaT& formula);
-			FormulaT checkFormulaTypeWithMixedConstr(const FormulaT& formula);
-			FormulaT checkFormulaTypeBasic(const FormulaT& formula);
-
-			std::function<FormulaT(FormulaT)> checkFormulaAndApplyTransformationsCallback;
-
-			FormulaT checkFormulaAndApplyTransformations(const FormulaT& subformula);
 			FormulaT generateVarChain(const std::set<carl::Variable>& vars, carl::FormulaType type);
-			FormulaT createAuxiliaryConstraint(const std::vector<carl::Variable>& variables);
 			FormulaT interconnectVariables(const std::set<carl::Variable>& variables);
 
-			FormulaT encodeCardinalityConstraint(const ConstraintT& formula);
-			FormulaT encodeMixedConstraints(const ConstraintT& formula);
-			FormulaT encodeConstraintOrForwardAsArithmetic(const ConstraintT& constraint, PseudoBoolEncoder& encoder);
+			bool encodeAsBooleanFormula(const ConstraintT& constraint);
+			bool isTrivial(const ConstraintT& constraint);
+
+			ConstraintT generateZeroHalfCut(const ConstraintT& first, const ConstraintT& second);
+
+			void extractConstraints(const FormulaT& formula);
 
 	};
 }

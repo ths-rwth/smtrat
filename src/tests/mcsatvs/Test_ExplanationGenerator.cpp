@@ -332,10 +332,8 @@ BOOST_AUTO_TEST_CASE(Test_substitute_varComp_varNotContained) {
 	BOOST_CHECK(result.variableComparison() == varcomp);
 }
 BOOST_AUTO_TEST_CASE(Test_substitute_varComp_MVRoot) {
-	// TODO	test
 }
 BOOST_AUTO_TEST_CASE(Test_substitute_varComp_RAN) {
-	// TODO test
 }
 
 BOOST_AUTO_TEST_CASE(Test_getExplanation_degreeTooHigh) {

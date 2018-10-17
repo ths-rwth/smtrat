@@ -40,6 +40,8 @@
 #include "../../solver/Module.h"
 #include "../../solver/RuntimeSettings.h"
 
+#include "VarScheduling.h"
+
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "SATModuleStatistics.h"
 #endif
@@ -55,6 +57,8 @@ namespace smtrat
         public Module
     {
 		friend mcsat::MCSATMixin<typename Settings::MCSATSettings>;
+        friend struct VarSchedulingDefault;
+        template<int num> friend struct VarSchedulingMcsat;
         private:
 
             /**
@@ -202,23 +206,9 @@ namespace smtrat
                 }
             };
 
-            /// [Minisat related code]
-            struct VarOrderLt
-            {
-                /// [Minisat related code]
-                const Minisat::vec<double>& activity;
-
-                /// [Minisat related code]
-                bool operator ()( Minisat::Var x, Minisat::Var y ) const
-                {
-                    return activity[x] > activity[y];
-                }
-
-                /// [Minisat related code]
-                VarOrderLt( const Minisat::vec<double>& act ):
-                    activity( act )
-                {}
-            };
+            using VarScheduling = typename Settings::VarScheduling;
+            using VarOrderLt = typename VarScheduling::VarOrderLt;
+            using VarDecidabilityCond = typename VarScheduling::VarDecidabilityCond;
             
             struct CNFInfos
             {
@@ -484,6 +474,8 @@ namespace smtrat
             Minisat::vec<Minisat::Lit> assumptions;
             /// A priority queue of variables ordered with respect to the variable activity.
             Minisat::Heap<VarOrderLt> order_heap;
+            // A check if a given variable can be decided yet
+            VarDecidabilityCond is_var_decidable;
             /// Set by 'search()'.
             double progress_estimate;
             /// Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
@@ -847,7 +839,7 @@ namespace smtrat
              * @param _tseitinShadowed A flag, which is true, if the variable to create is a sub-formula of a formula represented by a Tseitin variable.
              * @return The created Minisat variable.
              */
-            Minisat::Var newVar( bool polarity = true, bool dvar = true, double _activity = 0 );
+            Minisat::Var newVar( bool polarity = true, bool dvar = true, double _activity = 0, bool insertIntoHeap = true );
 
             // Solving:
             
@@ -893,14 +885,14 @@ namespace smtrat
              * @param v The variable to change the eligibility for selection in the decision heuristic.
              * @param b true, if the variable should be eligible for selection in the decision heuristic.
              */
-            inline void setDecisionVar( Minisat::Var v, bool b )
+            inline void setDecisionVar( Minisat::Var v, bool b, bool insertIntoHeap = true )
             {
                 if( b &&!decision[v] )
                     dec_vars++;
                 else if( !b && decision[v] )
                     dec_vars--;
                 decision[v] = b;
-                insertVarOrder( v );
+                if (insertIntoHeap) insertVarOrder( v );
             }
 
             // Read state:
@@ -941,10 +933,10 @@ namespace smtrat
 				return assigns[x];
 			}
 
-            bool handleTheoryConflictClause(const FormulasT& clause) {
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict clause " << clause);
+            bool addClauseIfNew(const FormulasT& clause) {
+				SMTRAT_LOG_DEBUG("smtrat.sat", "Add theory conflict clause " << clause << " if new");
 
-				sat::detail::validateClause(clause, Settings::validate_clauses); // TODO can this lead to errors for multiple explanations???
+				sat::detail::validateClause(clause, Settings::validate_clauses);
                 Minisat::vec<Minisat::Lit> explanation;
                 std::vector<Minisat::Lit> explanation_set;
 				for (const auto& c: clause) {
@@ -963,47 +955,50 @@ namespace smtrat
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Adding clause " << explanation);
                     mUnorderedClauseLookup.insert(explanation_set);
                     addClause(explanation, Minisat::LEMMA_CLAUSE);
-                    propagateTheory();
-                    Minisat::CRef confl = storeLemmas();
-                    if (confl != Minisat::CRef_Undef) {
-                        handleConflict(confl);
-                    }
                     return true;
                 }
 			}
 			
-			void handleTheoryConflict(const FormulaT& explanation) {
+			void handleTheoryConflict(const mcsat::Explanation& explanation) {
                 #ifdef DEBUG_SATMODULE
                 print(std::cout, "###");
                 #endif
                 SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict explanation " << explanation);
-                FormulaT cnf = explanation.toCNF();
-                if (cnf.getType() == carl::FormulaType::OR) { // clause
-                    bool added = handleTheoryConflictClause(cnf.subformulas());
+
+				if (carl::variant_is_type<FormulaT>(explanation)) {
+                    // add conflict clause
+                    const auto& clause = boost::get<FormulaT>(explanation);
+                    bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
                     assert(added);
-                }
-                else if (cnf.getType() == carl::FormulaType::AND) { // conjunction of clauses
-                    bool added = false;
-                    for (const auto& clause : cnf.subformulas()) {
-                        if (clause.getType() == carl::FormulaType::OR) { // clause
-                            added |= handleTheoryConflictClause(clause.subformulas());
+                } else {
+                    const auto& chain = boost::get<mcsat::ClauseChain>(explanation);
+                    if (Settings::mcsat_resolve_clause_chains) {
+                        FormulaT clause = chain.resolve();
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "Resolved clause chain to " << clause);
+                        bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
+                        assert(added);
+                    } else {
+                        // add propagations
+                        bool added = false;
+                        for (const auto link : chain) {
+                            added |= addClauseIfNew(link.clause().isNary() ? link.clause().subformulas() : FormulasT({link.clause()}));
                         }
-                        else { // single literal
-                            added |= handleTheoryConflictClause(FormulasT({clause}));
-                        }
-                    }
-                    assert(added);
+                        assert(added);
+                    }                    
                 }
-                else { // single literal
-                    bool added = handleTheoryConflictClause(FormulasT({cnf}));
-                    assert(added);
+
+                propagateTheory();
+                Minisat::CRef confl = storeLemmas();
+                if (confl != Minisat::CRef_Undef) {
+                    handleConflict(confl);
                 }
+
                 SMTRAT_LOG_DEBUG("smtrat.sat", "Handled theory conflict explanation");
 			}
             
 			inline Minisat::lbool bool_value( Minisat::Lit p ) const
             {
-				return bool_value(Minisat::var(p)) ^ Minisat::sign(p);
+				return bool_value(Minisat::var(p)) == l_Undef ? l_Undef : bool_value(Minisat::var(p)) ^ Minisat::sign(p);
             }
             /**
              * @param p The literal to get its value for.
@@ -1011,14 +1006,15 @@ namespace smtrat
              */
             inline Minisat::lbool value( Minisat::Lit p ) const
             {
-				return value(Minisat::var(p)) ^ Minisat::sign(p);
+				return value(Minisat::var(p)) == l_Undef ? l_Undef : value(Minisat::var(p)) ^ Minisat::sign(p);
             }
 			inline Minisat::lbool theoryValue( Minisat::Lit p ) const {
-				return theoryValue(Minisat::var(p)) ^ Minisat::sign(p);
+				return theoryValue(Minisat::var(p)) == l_Undef ? l_Undef : theoryValue(Minisat::var(p)) ^ Minisat::sign(p);
 			}
 			inline Minisat::lbool valueAndUpdate( Minisat::Lit p )
             {
-				return valueAndUpdate(Minisat::var(p)) ^ Minisat::sign(p);
+                auto res = valueAndUpdate(Minisat::var(p));
+				return res == l_Undef ? l_Undef : valueAndUpdate(Minisat::var(p)) ^ Minisat::sign(p);
             }
             
             /**
@@ -1105,17 +1101,6 @@ namespace smtrat
                 asynch_interrupt = false;
             }
             
-            inline void toString( std::ostream& _os, Minisat::Lit _lit ) const
-            {
-                if( Minisat::sign( _lit ) )
-                    _os << "-";
-                _os << Minisat::var( _lit );
-                _os << "[";
-                if( Minisat::sign( ~_lit ) )
-                    _os << "-";
-                _os << Minisat::var( ~_lit ) << "]";
-           }
-
             // Memory management:
             
             /**
@@ -1703,8 +1688,7 @@ namespace smtrat
 					_formula.getType() == carl::FormulaType::VARCOMPARE ||
 					_formula.getType() == carl::FormulaType::VARASSIGN ||
 					_formula.getType() == carl::FormulaType::UEQ ||
-					_formula.getType() == carl::FormulaType::BITVECTOR ||
-					_formula.getType() == carl::FormulaType::PBCONSTRAINT;
+					_formula.getType() == carl::FormulaType::BITVECTOR;
             }
             
             /**

@@ -6,7 +6,7 @@ namespace smtrat {
 namespace mcsat {
 
 /**
- * Represent the trace, i.e. the assignment/model state, of a MCSAT run in different
+ * Represent the trail, i.e. the assignment/model state, of a MCSAT run in different
  * representations (kept in sync) for a fast access.
  * Most notably, we store literals, i.e. a polynomial (in)equality-atom or its negation,
  * which we assert to be true. Since the negation can be represented by an atom by
@@ -24,6 +24,8 @@ class Bookkeeping {
 	std::vector<FormulaT> mConstraints;
 	/** Stack of asserted multivariate root bounds. */
 	std::vector<FormulaT> mMVBounds;
+	/** Sequence defining the variable ordering. */
+	std::vector<carl::Variable> mVariableOrdering;
 public:
 	
 	const auto& model() const {
@@ -40,6 +42,13 @@ public:
 	}
 	const auto& mvBounds() const {
 		return mMVBounds;
+	}
+	const auto& variableOrder() const {
+		return mVariableOrdering;
+	}
+
+	void updateVariableOrder(const std::vector<carl::Variable> ordering) {
+		mVariableOrdering = ordering;
 	}
 	
 	/** Assert a constraint/literal */
@@ -93,12 +102,13 @@ public:
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Bookkeeping& bk) {
-	os << "MCSAT trace:" << std::endl;
-	os << "## Model: " << bk.model() << std::endl;
-	os << "## Assigned Vars: " << bk.assignedVariables() << std::endl;
-	os << "## Assigned Values: " << bk.assignments() << std::endl;
-	os << "## Asserted constr/lits: " << bk.constraints() << std::endl;
-	os << "## Bounds: " << bk.mvBounds() << std::endl;
+	os << "MCSAT trail:\n";
+	os << "- Raw model: " << bk.model() << "\n";
+	os << "- Assigned Vars: " << bk.assignedVariables() << "\n";
+	os << "- Theory-assignments: " << bk.assignments() << "\n";
+	os << "- Asserted literals: " << bk.constraints() << "\n";
+	os << "- Bounds: " << bk.mvBounds() << "\n";
+  os << "- Variable order: " << bk.variableOrder() << "\n";
 	return os;
 }
 

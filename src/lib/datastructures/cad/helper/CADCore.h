@@ -175,7 +175,6 @@ struct CADCore<CoreHeuristic::Interleave> {
 			return false;
 		}
 		SMTRAT_LOG_INFO("smtrat.cad", "Projected into " << r << ", new projection is" << std::endl << cad.mProjection);
-		cad.mLifting.restoreRemovedSamples();
 		return true;
 	}
 	template<typename CAD>
@@ -205,17 +204,20 @@ struct CADCore<CoreHeuristic::Interleave> {
 	}
 	template<typename CAD>
 	Answer operator()(Assignment& assignment, CAD& cad) {
+		cad.mLifting.restoreRemovedSamples();
 		cad.mLifting.resetFullSamples();
 		while (true) {
 			Answer res = cad.checkFullSamples(assignment);
 			if (res == Answer::SAT) return Answer::SAT;
 			if (!cad.mLifting.hasNextSample()) {
 				if (!doProjection(cad)) return Answer::UNSAT;
+				cad.mLifting.restoreRemovedSamples();
 			}
 			if (preferLifting(cad.mLifting.getNextSample())) {
 				doLifting(cad);
 			} else {
 				doProjection(cad);
+				cad.mLifting.restoreRemovedSamples();
 			}
 		}
 	}
@@ -249,6 +251,7 @@ struct CADCore<CoreHeuristic::EnumerateAll> {
 				cad.mLifting.liftSample(it, poly, *polyID);
 			} else {
 				cad.mLifting.removeNextSample();
+				cad.mLifting.addTrivialSample(it);
 			}
 		}
 		std::size_t number_of_cells = 0;

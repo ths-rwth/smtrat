@@ -23,7 +23,6 @@ namespace cad {
 		using Super::mLiftingQueues;
 		using Super::mOperator;
 		using Super::callRemoveCallback;
-		using Super::canBeRemoved;
 		using Super::getID;
 		using Super::freeID;
 		using Super::var;
@@ -58,7 +57,7 @@ namespace cad {
 		
 		carl::Bitset addToProjection(std::size_t level, const UPoly& p, const Origin::BaseType& origin) {
 			assert(level > 0 && level <= dim());
-			if (canBeRemoved(p)) return carl::Bitset();
+			if (projection::canBeRemoved(p)) return carl::Bitset();
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			assert(p.mainVar() == var(level));
 			auto it = polyIDs(level).find(p);

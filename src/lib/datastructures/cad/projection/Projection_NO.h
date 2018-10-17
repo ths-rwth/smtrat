@@ -30,8 +30,6 @@ namespace cad {
 		using Super::mLiftingQueues;
 		using Super::mOperator;
 		using Super::callRemoveCallback;
-		using Super::canBeRemoved;
-		using Super::canBeForwarded;
 		using Super::var;
 	public:
 		using Super::dim;
@@ -85,8 +83,8 @@ namespace cad {
 		carl::Bitset addToProjection(std::size_t level, const UPoly& p, std::size_t origin) {
 			assert(level > 0 && level <= dim());
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
-			if (canBeRemoved(p)) return carl::Bitset();
-			if (level < dim() && canBeForwarded(level, p)) {
+			if (projection::canBeRemoved(p)) return carl::Bitset();
+			if (level < dim() && projection::canBeForwarded(level, p)) {
 				return addToProjection(level + 1, p.switchVariable(var(level+1)), origin);
 			}
 			assert(p.mainVar() == var(level));
