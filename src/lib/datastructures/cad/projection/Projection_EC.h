@@ -656,6 +656,7 @@ public:
 				level += 1;
 			}
 			checkPurged = std::max(level, checkPurged);
+			mProjectionQueue.emplace(0, cid, cid);
 		} else {
 			mProjectionQueue.emplace(0, cid, cid);
 		}
