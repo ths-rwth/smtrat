@@ -442,6 +442,7 @@ private:
 					}
 				}
 			}
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Polynomial was already present, adding origins " << origin);
 			bool activated = active(level, it->second);
 			mInfo(level, it->second).origin += origin;
 			// in case p was inactive but becomes active by new BaseType activate successors
@@ -449,8 +450,8 @@ private:
 				activatePolynomials(level);
 				mLiftingQueues[level - 1].insert(it->second);
 				updateInactiveQueue = true;
+				return carl::Bitset({level});
 			}
-			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Polynomial was already present, merged origins");
 			return carl::Bitset();
 		}
 		std::size_t id = getID(level);
@@ -530,6 +531,7 @@ private:
 			projection::returnPoly(*mPolynomials[qe.level][qe.first],
 				[&](const UPoly& np) { res |= insertPolynomialTo(1, np, Origin::BaseType(qe.level, qe.first)); }
 			);
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Done, obtained res = " << res);
 		}
 		else if (qe.first == qe.second) {
 			assert(qe.first < mPolynomials[qe.level].size());
@@ -537,7 +539,9 @@ private:
 			const auto& p = *mPolynomials[qe.level][qe.first];
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Projecting single " << p << " into " << qe.level);
 			mOperator(Settings::projectionOperator, p, var(qe.level + 1),
-					  [&](const UPoly& np) { res |= insertPolynomialTo(qe.level + 1, np, Origin::BaseType(qe.level, qe.first)); });
+				[&](const UPoly& np) { res |= insertPolynomialTo(qe.level + 1, np, Origin::BaseType(qe.level, qe.first)); }
+			);
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Done, obtained res = " << res);
 		} else {
 			assert(qe.first < mPolynomials[qe.level].size());
 			assert(qe.second < mPolynomials[qe.level].size());
@@ -546,7 +550,9 @@ private:
 			const auto& q = *mPolynomials[qe.level][qe.second];
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Projecting paired " << p << ", " << q << " into " << qe.level);
 			mOperator(Settings::projectionOperator, p, q, var(qe.level + 1),
-					  [&](const UPoly& np) { res |= insertPolynomialTo(qe.level + 1, np, Origin::BaseType(qe.level, qe.first, qe.second), false); });
+				[&](const UPoly& np) { res |= insertPolynomialTo(qe.level + 1, np, Origin::BaseType(qe.level, qe.first, qe.second), false); }
+			);
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Done, obtained res = " << res);
 		}
 		return res;
 	}
