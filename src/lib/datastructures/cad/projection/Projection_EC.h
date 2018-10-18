@@ -528,8 +528,9 @@ private:
 			assert(qe.first == qe.second);
 			assert(mPolynomials[qe.level][qe.first]);
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Moving into level 1: " << *mPolynomials[qe.level][qe.first]);
+			bool isBound = mInfo(0).isBound(qe.first);
 			projection::returnPoly(*mPolynomials[qe.level][qe.first],
-				[&](const UPoly& np) { res |= insertPolynomialTo(1, np, Origin::BaseType(qe.level, qe.first)); }
+				[&](const UPoly& np) { res |= insertPolynomialTo(1, np, Origin::BaseType(qe.level, qe.first), isBound); }
 			);
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Done, obtained res = " << res);
 		}
@@ -592,6 +593,7 @@ public:
 			// activate all successors of p
 			activatePolynomials(0);
 			if (Settings::simplifyProjectionByBounds && isBound) {
+				mInfo(0).setBound(cid, true);
 				mInfo(0).restrictEvaluatedToPurged();
 				std::size_t level = 1;
 				while (level <= dim()) {
@@ -611,7 +613,8 @@ public:
 		mPolynomialIDs[0].emplace(p, cid);
 		printPolynomialIDs();
 		if (Settings::simplifyProjectionByBounds && isBound) {
-			insertPolynomialTo(1, p, Origin::BaseType(0, cid), true);
+			mInfo(0).setBound(cid, true);
+			//insertPolynomialTo(1, p, Origin::BaseType(0, cid), true);
 			std::size_t level = 1;
 			while (level <= dim()) {
 				mInfo(level).restrictEvaluatedToPurged();
@@ -619,6 +622,7 @@ public:
 				level += 1;
 			}
 			checkPurged = std::max(level, checkPurged);
+			mProjectionQueue.emplace(0, cid, cid);
 		} else {
 			mProjectionQueue.emplace(0, cid, cid);
 		}
@@ -632,15 +636,14 @@ public:
 			mPolynomials[0].resize(cid + 1);
 		} else if (mPolynomials[0][cid]) {
 			/// Polynomial already exists.
-			std::size_t level = 1;
-			while (level <= dim()) {
-				if (Settings::simplifyProjectionByBounds && isBound) {
-					mInfo(level).restrictEvaluatedToPurged();
-				}
-				if (!projection::canBeForwarded(level, p.switchVariable(var(level)))) break;
-				level += 1;
-			}
 			if (Settings::simplifyProjectionByBounds && isBound) {
+				mInfo(0).setBound(cid, true);
+				std::size_t level = 1;
+				while (level <= dim()) {
+					mInfo(level).restrictEvaluatedToPurged();
+					if (!projection::canBeForwarded(level, p.switchVariable(var(level)))) break;
+					level += 1;
+				}
 				checkPurged = std::max(level, checkPurged);
 			}
 			mInactive.reset(cid);
@@ -655,6 +658,7 @@ public:
 		mPolynomialIDs[0].emplace(p, cid);
 		mInfo.addECConstraint(cid);
 		if (Settings::simplifyProjectionByBounds && isBound) {
+			mInfo(0).setBound(cid, true);
 			std::size_t level = 1;
 			while (level <= dim()) {
 				mInfo(level).restrictEvaluatedToPurged();
