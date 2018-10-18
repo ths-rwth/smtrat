@@ -33,6 +33,7 @@ namespace cad {
 		static constexpr ProjectionType projectionOperator = P;
 	};
 	using ProjectionBrown = ProjectionMixin<ProjectionType::Brown>;
+	using ProjectionMcCallum = ProjectionMixin<ProjectionType::McCallum>;
 	
 	/// Mixin that provides settings for the sample comparison.
 	template<SampleCompareStrategy SCS, FullSampleCompareStrategy FSCS>
@@ -313,7 +314,7 @@ namespace cad {
 		static constexpr bool interruptions = false;
 		static constexpr bool semiRestrictedProjection = false;
 	};
-	struct NewCADSettingsEQ_BRI: NewCADBaseSettings, cad::IncrementalityEQ, cad::ProjectionBrown, cad::SampleCompareT, cad::ProjectionOrderDefault {
+	struct NewCADSettingsEQ_BRI: NewCADBaseSettings, cad::IncrementalityEQ, cad::ProjectionMcCallum, cad::SampleCompareT, cad::ProjectionOrderDefault {
 		static constexpr auto moduleName = "NewCADModule<NewCADEQ_BRI>";
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = true;
@@ -322,7 +323,7 @@ namespace cad {
 		static constexpr bool interruptions = true;
 		static constexpr bool semiRestrictedProjection = false;
 	};
-	struct NewCADSettingsEQ_BRID: NewCADBaseSettings, cad::IncrementalityEQ, cad::ProjectionBrown, cad::SampleCompareT, cad::ProjectionOrderDefault {
+	struct NewCADSettingsEQ_BRID: NewCADBaseSettings, cad::IncrementalityEQ, cad::ProjectionMcCallum, cad::SampleCompareT, cad::ProjectionOrderDefault {
 		static constexpr auto moduleName = "NewCADModule<NewCADEQ_BRID>";
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = true;
@@ -367,7 +368,7 @@ namespace cad {
 		static constexpr bool interruptions = true;
 		static constexpr bool semiRestrictedProjection = true;
 	};
-	struct NewCADSettingsEQ_BSI: NewCADBaseSettings, cad::IncrementalityEQ, cad::ProjectionBrown, cad::SampleCompareT, cad::ProjectionOrderDefault {
+	struct NewCADSettingsEQ_BSI: NewCADBaseSettings, cad::IncrementalityEQ, cad::ProjectionMcCallum, cad::SampleCompareT, cad::ProjectionOrderDefault {
 		static constexpr auto moduleName = "NewCADModule<NewCADEQ_BSI>";
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = true;
@@ -376,7 +377,7 @@ namespace cad {
 		static constexpr bool interruptions = true;
 		static constexpr bool semiRestrictedProjection = true;
 	};
-	struct NewCADSettingsEQ_BSID: NewCADBaseSettings, cad::IncrementalityEQ, cad::ProjectionBrown, cad::SampleCompareT, cad::ProjectionOrderDefault {
+	struct NewCADSettingsEQ_BSID: NewCADBaseSettings, cad::IncrementalityEQ, cad::ProjectionMcCallum, cad::SampleCompareT, cad::ProjectionOrderDefault {
 		static constexpr auto moduleName = "NewCADModule<NewCADEQ_BSID>";
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = true;
