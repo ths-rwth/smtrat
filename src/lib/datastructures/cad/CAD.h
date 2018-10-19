@@ -104,14 +104,14 @@ namespace cad {
 		template<typename ConstraintIt>
 		bool evaluateSample(Sample& sample, const ConstraintIt& constraint, Assignment& assignment) const {
 			std::size_t cid = constraint.second;
-			SMTRAT_LOG_TRACE("smtrat.cad", "Evaluating " << cid << " / " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment);
-			SMTRAT_LOG_TRACE("smtrat.cad", "Sample was evaluated: " << sample.evaluatedWith() << " / " << sample.evaluationResult());
+			SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Evaluating " << cid << " / " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment);
+			SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Sample was evaluated: " << sample.evaluatedWith() << " / " << sample.evaluationResult());
 			if (sample.evaluatedWith().test(cid)) {
 				return sample.evaluationResult().test(cid);
 			}
 			auto res = carl::RealAlgebraicNumberEvaluation::evaluate(constraint.first.lhs(), assignment);
 			bool evalResult = carl::evaluate(res, constraint.first.relation());
-			SMTRAT_LOG_TRACE("smtrat.cad", "Evaluating " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment << " -> " << evalResult);
+			SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Evaluating " << constraint.first.lhs() << " " << constraint.first.relation() << " 0 on " << assignment << " -> " << evalResult);
 			sample.evaluatedWith().set(cid, true);
 			sample.evaluationResult().set(cid, evalResult);
 			return evalResult;
@@ -166,17 +166,17 @@ namespace cad {
 		
 		template<typename Iterator>
 		Answer checkPartialSample(Iterator& it, std::size_t level) {
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Checking partial sample " << *it << " against level " << level);
+			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Checking partial sample " << *it << " against level " << level);
 			Answer answer = Answer::SAT;
 			if (it->hasConflictWithConstraint()) {
-				SMTRAT_LOG_DEBUG("smtrat.cad", "\tAlready has conflict...");
+				SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tAlready has conflict...");
 				answer = Answer::UNSAT;
 			}
 			for (const auto& c: mConstraints.ordered()) {
 				if (mConstraints.level(c.second) != level) continue;
 				auto a = mLifting.extractSampleMap(it);
 				if (!evaluateSample(*it, c, a)) {
-					SMTRAT_LOG_DEBUG("smtrat.cad", "\tConflicts with " << c.first);
+					SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tConflicts with " << c.first);
 					answer = Answer::UNSAT;
 				}
 			}
@@ -206,7 +206,7 @@ namespace cad {
 			for (auto it = mLifting.getTree().begin_preorder(); it != mLifting.getTree().end_preorder();) {
 				if (it->hasConflictWithConstraint()) {
 					// Skip subtrees of already conflicting samples
-					SMTRAT_LOG_TRACE("smtrat.cad", "Adding sample " << *it);
+					SMTRAT_LOG_TRACE("smtrat.cad.mis", "Adding sample " << *it);
 					cg.addSample(*it);
 					it.skipChildren();
 				} else {
@@ -214,12 +214,12 @@ namespace cad {
 				}
 				for (std::size_t id = 0; id < mConstraints.size(); id++) {
 					if (!mConstraints.valid(id)) {
-						SMTRAT_LOG_TRACE("smtrat.cad", "Invalid constraint: " << id << ", cur graph:" << std::endl << cg);
+						SMTRAT_LOG_TRACE("smtrat.cad.mis", "Invalid constraint: " << id << ", cur graph:" << std::endl << cg);
 					}
 					assert(mConstraints.valid(id) || cg.coveredSamples(id) == 0);
 				}
 			}
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Resulting conflict graph " << cg);
+			SMTRAT_LOG_DEBUG("smtrat.cad.mis", "Resulting conflict graph " << cg);
 			return cg;
 		}
 	};
