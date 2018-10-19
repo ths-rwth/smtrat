@@ -14,6 +14,8 @@ public:
 
 	ECMap mECs;
 	std::vector<ECMap::const_iterator> mUsedEC;
+	// Inactive polynomials in level 0
+	carl::Bitset mInactive;
 
 	void reset(std::size_t dim) {
 		mECs.clear();
@@ -49,8 +51,8 @@ private:
 		bool hasEC() const {
 			return !mData.empty();
 		}
-		std::size_t getNextEC() const {
-			return 0;
+		std::size_t count() const {
+			return mData.size();
 		}
 		const auto& getEC(std::size_t ecid) const {
 			return mData[ecid];
@@ -199,6 +201,14 @@ public:
 		return mPoly.hasInfo(level, pid);
 	}
 
+	bool active(std::size_t level, std::size_t id) const {
+		if (level == 0) {
+			return !mGlobal.mInactive.test(id) && !(*this)(0).isPurged(id);
+		} else {
+			return (*this)(level, id).origin.isActive() && !(*this)(level).isPurged(id);
+		}
+	}
+
 	void reset(std::size_t dim) {
 		mGlobal.reset(dim);
 		mLevel.reset(dim);
@@ -250,17 +260,29 @@ public:
 		std::size_t ecid = getUsedEC(level);
 		return (*this)(level).ecs.getEC(ecid).polynomials;
 	}
-	void selectEC(std::size_t level) {
+	bool selectEC(std::size_t level) {
 		assert(hasEC(level));
 		assert(!usingEC(level));
-		std::size_t ecid = (*this)(level).ecs.getNextEC();
-		const auto& ecs = (*this)().mECs;
-		for (auto it = ecs.begin(); it != ecs.end(); ++it) {
-			if (it->second == std::make_pair(level, ecid)) {
-				(*this)().mUsedEC[level] = it;
-				return;
+		for (std::size_t ecid = 0; ecid < (*this)(level).ecs.count(); ++ecid) {
+			const auto& polys = (*this)(level).ecs.getEC(ecid).polynomials;
+			bool ec_active = true;
+			for (auto pid: polys) {
+				if (!active(level, pid)) {
+					ec_active = false;
+					break;
+				}
+			}
+			if (!ec_active) continue;
+			
+			const auto& ecs = (*this)().mECs;
+			for (auto it = ecs.begin(); it != ecs.end(); ++it) {
+				if (it->second == std::make_pair(level, ecid)) {
+					(*this)().mUsedEC[level] = it;
+					return true;
+				}
 			}
 		}
+		return false;
 	}
 	void unselectEC(std::size_t level) {
 		(*this)().mUsedEC[level] = (*this)().mECs.end();

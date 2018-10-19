@@ -87,10 +87,7 @@ private:
 	// Stores inactive projection queue entries.
 	PriorityQueue<QueueEntry, ProjectionCandidateComparator> mInactiveQueue;
 	// Stores whether some inactive queue entries might be active again due to adding/removing a polynomial.
-	bool updateInactiveQueue;
-
-	// inactive polynomials in level 0
-	carl::Bitset mInactive;
+	bool updateInactiveQueue;	
 
 	std::string logPrefix(std::size_t level) const {
 		return std::string(dim() - level, '\t');
@@ -162,12 +159,32 @@ private:
                  * @param id Id of the polynomial.
                  */
 	bool active(std::size_t level, std::size_t id) const {
-		if (level == 0) {
-			SMTRAT_LOG_DEBUG("smtrat.cad.projection", level << "/" << id << " active? !" << mInactive.test(id) << " && !" << mInfo(0).isPurged(id));
-			return !mInactive.test(id) && !mInfo(0).isPurged(id);
+		return mInfo.active(level, id);
+	}
+
+	bool isQueueEntryActive(std::size_t level, std::size_t first, std::size_t second, bool usingEC) const {
+		if (usingEC) {
+			if (!active(level, second)) return false;
+
+			std::size_t usedEC = mInfo.getUsedEC(level);
+			if (mInfo(level, first).equational.test(usedEC)) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "First is part of EC");
+				return true;
+			} else if (mInfo(level, second).equational.test(usedEC)) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Second is part of EC");
+				return true;
+			}
+
+			if (Settings::semiRestrictedProjection && first == second) {
+				if (!Settings::restrictedIfPossible || (level > 1 && level < dim() - 1)) {
+					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Single projection in semi-restricted projection");
+					return true;
+				}
+			}
+
+			return false;
 		} else {
-			SMTRAT_LOG_DEBUG("smtrat.cad.projection", level << "/" << id << " active? " << mInfo(level, id).origin.isActive() << " && !" << mInfo(level).isPurged(id));
-			return mInfo(level, id).origin.isActive() && !mInfo(level).isPurged(id);
+			return active(level, second);
 		}
 	}
 
@@ -178,38 +195,16 @@ private:
 		 */
 	void insertIntoProjectionQueue(std::size_t level, std::size_t id) {
 		assert(level < dim());
-		if (!mInfo.usingEC(level)) {
-			for (const auto& it : mPolynomialIDs[level]) {
-				assert(mPolynomials[level][it.second]);
-				if (!active(level, it.second)) {
-					mInactiveQueue.emplace(level, it.second, id);
-				} else {
-					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding to PQ (" << it.second << "," << id << ")@" << level);
-					mProjectionQueue.emplace(level, it.second, id);
-				}
-			}
-		} else {
-			std::size_t usedEC = mInfo.getUsedEC(level);
-			bool isInEC = mInfo(level, id).equational.test(usedEC);
-			for (const auto& it : mPolynomialIDs[level]) {
-				assert(mPolynomials[level][it.second]);
-				if (isInEC) {
-					// Added polynomial is part of EC
-					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding to PQ (" << it.second << "," << id << ")@" << level);
-					mProjectionQueue.emplace(level, it.second, id);
-				} else if (mInfo(level, it.second).equational.test(usedEC)) {
-					// Other polynomial is part of EC
-					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding to PQ (" << it.second << "," << id << ")@" << level);
-					mProjectionQueue.emplace(level, it.second, id);
-				} else if (Settings::semiRestrictedProjection && it.second == id) {
-					// Semi-restricted && single projection step
-					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding to PQ (" << it.second << "," << id << ")@" << level);
-					mProjectionQueue.emplace(level, it.second, id);
-				} else {
-					// Projection step is disabled
-					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding to IQ (" << it.second << "," << id << ")@" << level);
-					mInactiveQueue.emplace(level, it.second, id);
-				}
+		bool usingEC = mInfo.usingEC(level);
+		
+		for (const auto& it : mPolynomialIDs[level]) {
+			assert(mPolynomials[level][it.second]);
+			if (isQueueEntryActive(level, id, it.second, usingEC)) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding to PQ (" << it.second << "," << id << ")@" << level);
+				mProjectionQueue.emplace(level, it.second, id);
+			} else {
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding to IQ (" << it.second << "," << id << ")@" << level);
+				mInactiveQueue.emplace(level, it.second, id);
 			}
 		}
 	}
@@ -340,7 +335,7 @@ private:
 			mStatistics.usedRestrictedProjection();
 #endif
 			restricted = true;
-			mInfo.selectEC(lvl);
+			if (!mInfo.selectEC(lvl)) break;
 
 			carl::Bitset eqc = mInfo.getECPolys(lvl);
 			for (std::size_t l = lvl + 1; l <= dim(); l++) {
@@ -372,10 +367,13 @@ private:
 			return;
 		}
 		std::size_t id = mPolynomialIDs[level].find(p.switchVariable(var(level)))->second;
+		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking if " << p << " is part of an EC in " << level);
 		if (!mInfo.usingEC(level) || !mInfo.getECPolys(level).test(id)) {
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "No, nothing to change.");
 			return;
 		}
 		if (mInfo(level).ecs.hasEC()) {
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Level " << level << " is using an EC");
 			std::size_t lvl = level;
 			carl::Bitset eqc;
 			while (lvl == level || (mInfo.usingEC(lvl) && !Settings::interruptions)) {
@@ -507,9 +505,14 @@ private:
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> origins are inactive");
 			} else if (Settings::restrictProjectionByEC && qe.level != 0 && mInfo.usingEC(qe.level)) {
 				if (!mInfo.getECPolys(qe.level).test(qe.first) && !mInfo.getECPolys(qe.level).test(qe.second)) {
-					if (Settings::semiRestrictedProjection && qe.first != qe.second) {
-						moveToInactive = true;
-						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> disabled due to semirestricted projection");
+					if (Settings::semiRestrictedProjection) {
+						if (qe.first != qe.second) {
+							moveToInactive = true;
+							SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> disabled due to semi restricted projection");
+						} else if (qe.level <= 1 || qe.level >= dim()-1) {
+							moveToInactive = true;
+							SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> disabled due to restricted projection in first or last level");
+						}
 					} else if (!Settings::semiRestrictedProjection) {
 						moveToInactive = true;
 						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> disabled due to restricted projection");
@@ -600,7 +603,7 @@ public:
 		if (cid >= mPolynomials[0].size()) {
 			mPolynomials[0].resize(cid + 1);
 		} else if (mPolynomials[0][cid]) {
-			mInactive.reset(cid);
+			mInfo().mInactive.reset(cid);
 			// activate all successors of p
 			activatePolynomials(0);
 			if (Settings::simplifyProjectionByBounds && isBound) {
@@ -657,7 +660,7 @@ public:
 				}
 				checkPurged = std::max(level, checkPurged);
 			}
-			mInactive.reset(cid);
+			mInfo().mInactive.reset(cid);
 			activatePolynomials(0);
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(0) << "-> Polynomial was already present, reactivated");
 			return carl::Bitset();
@@ -688,7 +691,7 @@ public:
 		printPolynomialIDs();
 		assert(mPolynomials[0][cid]);
 		assert(*mPolynomials[0][cid] == p);
-		mInactive.set(cid);
+		mInfo().mInactive.set(cid);
 		// activates polynomials that were inactive due to p, if p is an equational polynomial
 		if (Settings::restrictProjectionByEC) {
 			extendProjection(p);
