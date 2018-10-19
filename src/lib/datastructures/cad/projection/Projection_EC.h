@@ -494,19 +494,30 @@ private:
 
 	carl::Bitset project(const ConstraintSelection&) {
 		while (!mProjectionQueue.empty()) {
-			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Projecting" << std::endl
-																   << *this);
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Using next projection candidate " << mProjectionQueue.top());
 			QueueEntry qe = mProjectionQueue.top();
 			mProjectionQueue.pop();
-			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Checking if can be purged: " << Settings::simplifyProjectionByBounds);
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Checking if the candidate is active.");
+			bool moveToInactive = false;
 			if (Settings::simplifyProjectionByBounds && isPurged(qe)) {
-				mInactiveQueue.push(qe);
-				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Not Projecting, is purged");
-				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> Purged.");
+				moveToInactive = true;
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> purged by bounds");
 			} else if (!active(qe.level, qe.first) || !active(qe.level, qe.second)) {
-				mInactiveQueue.push(qe);
-			} else if (Settings::restrictProjectionByEC && qe.level != 0 && mInfo.usingEC(qe.level) && (!mInfo.getECPolys(qe.level).test(qe.first) && !mInfo.getECPolys(qe.level).test(qe.second))) {
+				moveToInactive = true;
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> origins are inactive");
+			} else if (Settings::restrictProjectionByEC && qe.level != 0 && mInfo.usingEC(qe.level)) {
+				if (!mInfo.getECPolys(qe.level).test(qe.first) && !mInfo.getECPolys(qe.level).test(qe.second)) {
+					if (Settings::semiRestrictedProjection && qe.first != qe.second) {
+						moveToInactive = true;
+						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> disabled due to semirestricted projection");
+					} else if (!Settings::semiRestrictedProjection) {
+						moveToInactive = true;
+						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> disabled due to restricted projection");
+					}
+				}
+			}
+			if (moveToInactive) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> moving to InactiveQueue");
 				mInactiveQueue.push(qe);
 			} else {
 				carl::Bitset res = projectCandidate(qe);
