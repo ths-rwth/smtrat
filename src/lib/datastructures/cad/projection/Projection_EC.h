@@ -375,7 +375,7 @@ private:
 		if (!mInfo.usingEC(level) || !mInfo.getECPolys(level).test(id)) {
 			return;
 		}
-		if (mInfo(level).equational.none()) {
+		if (mInfo(level).ecs.hasEC()) {
 			std::size_t lvl = level;
 			carl::Bitset eqc;
 			while (lvl == level || (mInfo.usingEC(lvl) && !Settings::interruptions)) {
@@ -807,7 +807,7 @@ std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::FULL
 			os << level << std::endl;
 		else
 			os << level << " / " << p.var(level) << std::endl;
-		os << "\tP: " << p.mPolynomials[level] << " (ec " << p.mInfo(level).equational << ")" << std::endl;
+		os << "\tP: " << p.mPolynomials[level] << std::endl;
 		if (level > 0) {
 			os << "\tL: " << p.mLiftingQueues[level - 1] << std::endl;
 		}

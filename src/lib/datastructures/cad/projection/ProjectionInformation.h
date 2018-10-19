@@ -60,8 +60,6 @@ public:
 	struct LevelInfo {
 		/// Which polynomials are bounds.
 		carl::Bitset bounds;
-		/// Which polynomials are equational constraints.
-		carl::Bitset equational;
 		/// Which polynomials have been evaluated w.r.t. purging.
 		carl::Bitset evaluated;
 		/// Which polynomials are purged from the projection. (usually due to bounds)
@@ -76,13 +74,6 @@ public:
 		void setBound(std::size_t pid, bool isBound) {
 			bounds.set(pid, isBound);
 		}
-
-		//bool isEquational(std::size_t pid) const {
-		//	return equational.test(pid);
-		//}
-		//void setEquational(std::size_t pid, bool isEquational) {
-		//	equational.set(pid, isEquational);
-		//}
 
 		bool isEvaluated(std::size_t pid) const {
 			return evaluated.test(pid);
