@@ -87,6 +87,9 @@ namespace cad {
 		static constexpr bool debugProjection = false;
 		static constexpr bool debugStepsToTikz = false;
 		static constexpr bool force_nonincremental = false;
+
+		static constexpr bool semiRestrictedProjection = false;
+		static constexpr bool restrictedIfPossible = true;
 	};
 	
 	struct NewCADSettingsNaive: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareLT, cad::ProjectionOrderDefault {
