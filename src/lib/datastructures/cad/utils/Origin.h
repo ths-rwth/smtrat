@@ -51,7 +51,7 @@ public:
 			return second < bt.second;
 		}
 		friend std::ostream& operator<<(std::ostream& os, const BaseType& bt) {
-			if (!bt.first_active || !bt.second_active || !bt.ec_active) os << "!";
+			if (!bt.active()) os << "![" << bt.first_active << bt.second_active << bt.ec_active << "]";
 			return os << "(" << bt.first << "," << bt.second << ")@" << bt.level;
 		}
 	};
