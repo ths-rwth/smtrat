@@ -9,7 +9,7 @@
 #include "AbstractModule.h"
 #include "MonomialMappingByVariablePool.h"
 #include "stdlib.h"
-#include "AxiomFactory.h"
+#include "factory/AxiomFactory.h"
 
 
 namespace smtrat
