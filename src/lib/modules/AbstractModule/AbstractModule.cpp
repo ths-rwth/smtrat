@@ -486,8 +486,7 @@ namespace smtrat
         ///////////////////////////
         // testing axioms
         ///////////////////////////
-        FormulasT formulas = AxiomFactory::createFormula(AxiomFactory::AxiomType::ZERO, smtrat::MonomialMappingByVariablePool::getInstance().getMMonomialMapping());
-
+        FormulasT formulas = AxiomFactory::createFormula(AxiomFactory::AxiomType::CONGRUENCE, smtrat::MonomialMappingByVariablePool::getInstance().getMMonomialMapping());
 
         return Answer; // This should be adapted according to your implementation.
     }

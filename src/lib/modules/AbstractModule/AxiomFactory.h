@@ -8,6 +8,7 @@
 #pragma once
 
 
+#include <lib/modules/AbstractModule/Dto/VariableCapsule.h>
 #include "lib/Common.h"
 #include "Util.h"
 
@@ -17,8 +18,7 @@ namespace smtrat {
     class AxiomFactory {
 
     public:
-        enum AxiomType { ZERO, TANGENT_PLANE };
-
+        enum AxiomType { ZERO, TANGENT_PLANE, MONOTONICITY, CONGRUENCE };
         static FormulasT createFormula(AxiomType axiomType, MonomialMap monomialMap);
     };
 
