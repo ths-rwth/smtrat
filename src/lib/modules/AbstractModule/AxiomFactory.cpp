@@ -6,7 +6,7 @@
  */
 
 #include "AxiomFactory.h"
-#include "Dto/VariableCapsule.h"
+#include "dto/VariableCapsule.h"
 
 namespace smtrat {
 

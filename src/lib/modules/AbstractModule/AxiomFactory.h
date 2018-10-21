@@ -8,7 +8,7 @@
 #pragma once
 
 
-#include <lib/modules/AbstractModule/Dto/VariableCapsule.h>
+#include <lib/modules/AbstractModule/dto/VariableCapsule.h>
 #include "lib/Common.h"
 #include "Util.h"
 
