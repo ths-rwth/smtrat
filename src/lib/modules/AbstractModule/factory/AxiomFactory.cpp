@@ -98,19 +98,13 @@ namespace smtrat {
 
     }
 
-    FormulaT createTangentPlaneNEQOne (carl::Variable xVariable, carl::Variable yVariable, carl::Variable zVariable, carl::Variable aVariable) {
-
-        // {x, a}
-        std::vector<Poly> operands {Poly(xVariable), Poly(aVariable)};
+    FormulaT createTangentPlaneNEQOne (carl::Variable xVariable, carl::Variable yVariable, carl::Variable zVariable, Rational aRational) {
 
         // x - a = 0
-        FormulaT leftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands), carl::Relation::EQ);
-
-        // {z, a*y}
-        std::vector<Poly> operands2 {Poly(zVariable), Poly(aVariable*yVariable)};
+        FormulaT leftFormula = FormulaT(Poly(xVariable) - aRational, carl::Relation::EQ);
 
         // z - a*y = 0
-        FormulaT zFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands2), carl::Relation::EQ);
+        FormulaT zFormula = FormulaT(Poly(zVariable) - Poly(aRational*yVariable), carl::Relation::EQ);
 
         // (x - a = 0) -> (z - a*y = 0)
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
@@ -123,17 +117,13 @@ namespace smtrat {
 
     }
 
-    FormulaT createTangentPlaneNEQTwo (carl::Variable xVariable, carl::Variable yVariable, carl::Variable zVariable, carl::Variable bVariable) {
+    FormulaT createTangentPlaneNEQTwo (carl::Variable xVariable, carl::Variable yVariable, carl::Variable zVariable, Rational bRational) {
 
-        // {y, b}
-        std::vector<Poly> operands {Poly(yVariable), Poly(bVariable)};
         // y - b = 0
-        FormulaT leftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands), carl::Relation::EQ);
+        FormulaT leftFormula = FormulaT(Poly(yVariable) - bRational, carl::Relation::EQ);
 
-        // {z, b*x}
-        std::vector<Poly> operands2 {Poly(zVariable), Poly(bVariable*xVariable)};
         // z - b*x = 0
-        FormulaT zFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands2), carl::Relation::EQ);
+        FormulaT zFormula = FormulaT(Poly(zVariable) - Poly(bRational*xVariable), carl::Relation::EQ);
 
         // (y - b = 0) -> (z - b*x = 0)
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
@@ -146,15 +136,15 @@ namespace smtrat {
 
     }
 
-    FormulaT createTangentPlaneNEQThree (carl::Variable xVariable, carl::Variable yVariable, carl::Variable zVariable, carl::Variable aVariable, carl::Variable bVariable) {
+    FormulaT createTangentPlaneNEQThree (carl::Variable xVariable, carl::Variable yVariable, carl::Variable zVariable, Rational aRational, Rational bRational) {
 
         // {x, a}
-        std::vector<Poly> operandsxa {Poly(xVariable), Poly(aVariable)};
+        std::vector<Poly> operandsxa {Poly(xVariable), Poly(aRational)};
         // Poly(x - a)
         Poly xMinusa = Poly(Poly::ConstructorOperation::SUB, operandsxa);
 
         // {y, b}
-        std::vector<Poly> operandsyb {Poly(yVariable), Poly(bVariable)};
+        std::vector<Poly> operandsyb {Poly(yVariable), Poly(bRational)};
         // Poly(y - b)
         Poly yMinusb =Poly(Poly::ConstructorOperation::SUB, operandsyb);
 
@@ -170,7 +160,7 @@ namespace smtrat {
         FormulaT leftFormula = FormulaT(carl::FormulaType::OR, partOneFormula, partTwoFormula);
 
         // {z, -b*x, -a*y, a*b}
-        std::vector<Poly> operandsz {Poly(zVariable), -Poly(bVariable*xVariable), -Poly(aVariable*yVariable), Poly(aVariable*bVariable)};
+        std::vector<Poly> operandsz {Poly(zVariable), -Poly(bRational*xVariable), -Poly(aRational*yVariable), Poly(aRational*bRational)};
         // z - b*x - a*y + a*b = 0
         Poly zLeftPoly = Poly(Poly::ConstructorOperation::ADD, operandsz);
         FormulaT zFormula = FormulaT(zLeftPoly, carl::Relation::LESS);
@@ -186,15 +176,15 @@ namespace smtrat {
 
     }
 
-    FormulaT createTangentPlaneNEQFour (carl::Variable xVariable, carl::Variable yVariable, carl::Variable zVariable, carl::Variable aVariable, carl::Variable bVariable) {
+    FormulaT createTangentPlaneNEQFour (carl::Variable xVariable, carl::Variable yVariable, carl::Variable zVariable, Rational aRational, Rational bRational) {
 
         // {x, a}
-        std::vector<Poly> operandsxa {Poly(xVariable), Poly(aVariable)};
+        std::vector<Poly> operandsxa {Poly(xVariable), Poly(aRational)};
         // Poly(x - a)
         Poly xMinusa = Poly(Poly::ConstructorOperation::SUB, operandsxa);
 
         // {y, b}
-        std::vector<Poly> operandsyb {Poly(yVariable), Poly(bVariable)};
+        std::vector<Poly> operandsyb {Poly(yVariable), Poly(bRational)};
         // Poly(y - b)
         Poly yMinusb =Poly(Poly::ConstructorOperation::SUB, operandsyb);
 
@@ -210,7 +200,7 @@ namespace smtrat {
         FormulaT leftFormula = FormulaT(carl::FormulaType::OR, partOneFormula, partTwoFormula);
 
         // {z, -b*x, -a*y, a*b}
-        std::vector<Poly> operandsz {Poly(zVariable), -Poly(bVariable*xVariable), -Poly(aVariable*yVariable), Poly(aVariable*bVariable)};
+        std::vector<Poly> operandsz {Poly(zVariable), -Poly(bRational*xVariable), -Poly(aRational*yVariable), Poly(aRational*bRational)};
         // z - b*x - a*y + a*b = 0
         Poly zLeftPoly = Poly(Poly::ConstructorOperation::ADD, operandsz);
         FormulaT zFormula = FormulaT(zLeftPoly, carl::Relation::GREATER);
@@ -226,12 +216,12 @@ namespace smtrat {
 
     }
 
-    FormulaT createTangentPlaneEQOne (carl::Variable xVariable, carl::Variable yVariable, carl::Variable zVariable, carl::Variable aVariable) {
+    FormulaT createTangentPlaneEQOne (carl::Variable xVariable, carl::Variable yVariable, carl::Variable zVariable, Rational aRational) {
 
-        std::vector<Poly> operands {Poly(xVariable), Poly(aVariable)};
+        std::vector<Poly> operands {Poly(xVariable), Poly(aRational)};
         FormulaT leftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands), carl::Relation::EQ);
 
-        std::vector<Poly> operands2 {Poly(zVariable), Poly(aVariable*yVariable)};
+        std::vector<Poly> operands2 {Poly(zVariable), Poly(aRational*yVariable)};
         FormulaT zFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands2), carl::Relation::EQ);
 
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
@@ -244,12 +234,12 @@ namespace smtrat {
 
     }
 
-    FormulaT createTangentPlaneEQTwo (carl::Variable xVariable, carl::Variable yVariable, carl::Variable zVariable, carl::Variable aVariable) {
+    FormulaT createTangentPlaneEQTwo (carl::Variable xVariable, carl::Variable yVariable, carl::Variable zVariable, Rational aRational) {
 
-        std::vector<Poly> operands {Poly(xVariable), Poly(aVariable)};
+        std::vector<Poly> operands {Poly(xVariable), Poly(aRational)};
         FormulaT leftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands), carl::Relation::NEQ);
 
-        std::vector<Poly> operands2 {Poly(zVariable), Poly(aVariable*xVariable), Poly(aVariable*xVariable), Poly(aVariable*aVariable)};
+        std::vector<Poly> operands2 {Poly(zVariable), Poly(aRational*xVariable), Poly(aRational*xVariable), Poly(aRational*aRational)};
         FormulaT zFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands2), carl::Relation::EQ);
 
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
@@ -412,8 +402,43 @@ namespace smtrat {
         return finalFormula;
     }
 
+    bool abcCheck(VariableCapsule variableCapsuleOuter, Model abstractModel){
+        carl::Variable xVariable = variableCapsuleOuter.getXVariable();
+        carl::Variable yVariable = variableCapsuleOuter.getYVariable();
+        carl::Variable zVariable = variableCapsuleOuter.getZVariable();
 
-    FormulasT AxiomFactory::createFormula(AxiomType axiomType, MonomialMap monomialMap) {
+        Rational aRational = abstractModel.find(variableCapsuleOuter.getXVariable())->second.asRational();
+        Rational bRational = abstractModel.find(variableCapsuleOuter.getYVariable())->second.asRational();
+        Rational cRational = abstractModel.find(variableCapsuleOuter.getZVariable())->second.asRational();
+
+        cout << "\n";
+        cout << "Found Zvariable Value: " << cRational;
+        cout << "\n";
+        cout << "Found Xvariable Value: " << aRational;
+        cout << "\n";
+        cout << "Found Yvariable Value: " << bRational;
+        cout << "\n";
+
+        carl::Variable aVariable = carl::freshRealVariable("a");
+        carl::Variable bVariable = carl::freshRealVariable("b");
+        carl::Variable cVariable = carl::freshRealVariable("c");
+
+        Model abcModel;
+        abcModel.emplace(aVariable, aRational);
+        abcModel.emplace(bVariable, bRational);
+        abcModel.emplace(cVariable, cRational);
+
+        // c != a * b or, c - a * b != 0
+        FormulaT abcFormula = FormulaT(Poly(cVariable) - Poly(aVariable*bVariable), carl::Relation::NEQ);
+
+        if (carl::model::satisfiedBy(abcFormula, abcModel) == 1){
+            return true;
+        }
+
+        return false;
+    }
+
+    FormulasT AxiomFactory::createFormula(AxiomType axiomType, Model abstractModel, MonomialMap monomialMap) {
 
         FormulasT formulas;
 
@@ -425,22 +450,26 @@ namespace smtrat {
             carl::Variable yVariable = variableCapsuleOuter.getYVariable();
             carl::Variable zVariable = variableCapsuleOuter.getZVariable();
 
-            carl::Variable aVariable = carl::freshRealVariable("a");
-            carl::Variable bVariable = carl::freshRealVariable("b");
+            Rational aRational = abstractModel.find(variableCapsuleOuter.getXVariable())->second.asRational();
+            Rational bRational = abstractModel.find(variableCapsuleOuter.getYVariable())->second.asRational();
+            Rational cRational = abstractModel.find(variableCapsuleOuter.getZVariable())->second.asRational();
+
 
             if (axiomType == AxiomType::ZERO) {
                 formulas.push_back(createZeroOne(xVariable, yVariable, zVariable));
                 formulas.push_back(createZeroTwo(xVariable, yVariable, zVariable));
                 formulas.push_back(createZeroThree(xVariable, yVariable, zVariable));
             } else if (axiomType == AxiomType::TANGENT_PLANE){
-                if (xVariable != yVariable){
-                    formulas.push_back(createTangentPlaneNEQOne(xVariable, yVariable, zVariable, aVariable));
-                    formulas.push_back(createTangentPlaneNEQTwo(xVariable, yVariable, zVariable, bVariable));
-                    formulas.push_back(createTangentPlaneNEQThree(xVariable, yVariable, zVariable, aVariable, bVariable));
-                    formulas.push_back(createTangentPlaneNEQFour(xVariable, yVariable, zVariable, aVariable, bVariable));
-                } else {
-                    formulas.push_back(createTangentPlaneEQOne(xVariable, yVariable, zVariable, aVariable));
-                    formulas.push_back(createTangentPlaneEQTwo(xVariable, yVariable, zVariable, aVariable));
+                if(abcCheck(variableCapsuleOuter, abstractModel)) {
+                    if (xVariable != yVariable){
+                        formulas.push_back(createTangentPlaneNEQOne(xVariable, yVariable, zVariable, aRational));
+                        formulas.push_back(createTangentPlaneNEQTwo(xVariable, yVariable, zVariable, bRational));
+                        formulas.push_back(createTangentPlaneNEQThree(xVariable, yVariable, zVariable, aRational, bRational));
+                        formulas.push_back(createTangentPlaneNEQFour(xVariable, yVariable, zVariable, aRational, bRational));
+                    } else {
+                        formulas.push_back(createTangentPlaneEQOne(xVariable, yVariable, zVariable, aRational));
+                        formulas.push_back(createTangentPlaneEQTwo(xVariable, yVariable, zVariable, aRational));
+                    }
                 }
             } else if(axiomType == AxiomType::MONOTONICITY || axiomType == AxiomType::CONGRUENCE){
                     bool flag = false;
@@ -451,9 +480,11 @@ namespace smtrat {
                         if (flag && monomialIteratorOuter != monomialIteratorInner){
                             smtrat::VariableCapsule variableCapsuleInner = extractVariables(monomialIteratorInner);
                             if (axiomType == AxiomType::MONOTONICITY){
-                                formulas.push_back(createMonotonicityOne(variableCapsuleOuter, variableCapsuleInner));
-                                formulas.push_back(createMonotonicityTwo(variableCapsuleOuter, variableCapsuleInner));
-                                formulas.push_back(createMonotonicityThree(variableCapsuleOuter, variableCapsuleInner));
+                                if(abcCheck(variableCapsuleInner, abstractModel) || abcCheck(variableCapsuleOuter, abstractModel)){
+                                    formulas.push_back(createMonotonicityOne(variableCapsuleOuter, variableCapsuleInner));
+                                    formulas.push_back(createMonotonicityTwo(variableCapsuleOuter, variableCapsuleInner));
+                                    formulas.push_back(createMonotonicityThree(variableCapsuleOuter, variableCapsuleInner));
+                                }
                             } else if (axiomType == AxiomType::CONGRUENCE){
                                 formulas.push_back(createCongruence(variableCapsuleOuter, variableCapsuleInner));
                             }

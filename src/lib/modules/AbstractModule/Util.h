@@ -10,5 +10,4 @@ namespace smtrat
 {
     typedef std::unordered_map<carl::Variable, carl::Monomial::Arg>::iterator MonomialMapIterator;
     typedef  std::unordered_map<carl::Variable, carl::Monomial::Arg> MonomialMap;
-    typedef carl::parser::Parser<Poly> FormulaParser;
 }

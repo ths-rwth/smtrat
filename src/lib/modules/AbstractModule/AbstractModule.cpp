@@ -476,7 +476,8 @@ namespace smtrat
         stream.rdbuf(std::cout.rdbuf());
 
         for (auto mModelModelItarator = mModel.begin(); mModelModelItarator != mModel.end(); ++mModelModelItarator) {
-            abstractModel.emplace(mModelModelItarator->first, mModelModelItarator->second.asRational());
+            if (mModelModelItarator->second.isRational())
+                abstractModel.emplace(mModelModelItarator->first, mModelModelItarator->second.asRational());
         }
 
         for (auto estimatedModelModelItarator = estimatedModel.begin(); estimatedModelModelItarator != estimatedModel.end(); ++estimatedModelModelItarator) {
@@ -495,41 +496,84 @@ namespace smtrat
         return abstractModel;
     }
 
+    FormulasT unsatisfiedFormulas(AxiomFactory::AxiomType axiomType, FormulasT formulas, Model model){
+        if (axiomType == AxiomFactory::AxiomType::TANGENT_PLANE)
+            return formulas;
+
+        FormulasT unsatisfiedFormulas;
+        for(FormulaT formula:formulas) {
+            if (carl::model::satisfiedBy(formula, model) == 0){
+                unsatisfiedFormulas.push_back(formula);
+            }
+        }
+        return unsatisfiedFormulas;
+    }
+
     template<class Settings>
     Answer AbstractModule<Settings>::checkCore()
     {
+        std::ostream stream(nullptr);
+        stream.rdbuf(std::cout.rdbuf());
 
-        ////////////////////////////////////////////////
-        //
-        // Adding the Linearized Formula to the passed
-        // Formula
-        //
-        ////////////////////////////////////////////////
-/*        for (auto it = mLRAFormula->begin(); it != mLRAFormula->end(); ++it) {
-            addReceivedSubformulaToPassedFormula(it);
-        }*/
-        auto Answer = runBackends();
+        int loopCounter = 0;
+        AxiomFactory::AxiomType axiomType[] = {AxiomFactory::AxiomType::ZERO,
+                                               AxiomFactory::AxiomType::TANGENT_PLANE,
+                                               AxiomFactory::AxiomType::MONOTONICITY,
+                                               AxiomFactory::AxiomType::CONGRUENCE};
 
-        if (Answer != SAT) {
-            return Answer;
+        int axiom_type_size = sizeof(axiomType)/sizeof(axiomType[0]);
+
+        int axiomCounter = 0;
+
+        while (loopCounter < 10) {
+            cout << "Loop" << loopCounter << "\n";
+
+            auto AnswerOfLRA = runBackends();
+            updateModel();
+
+            if (AnswerOfLRA != SAT) {
+                cout << "Linearized Formula is Unsatisfied!" << "\n";
+                return AnswerOfLRA;
+            }
+
+            mModel = backendsModel();
+            cout << "Solution/model of linearized formula: ";
+            mModel.printOneline(stream, true);
+            cout << "\n";
+            cout << "\n";
+
+            Model estimatedModel = createEstimatedModel(mModel);
+            auto AnswerOfOriginalFormula = isOriginalFormulaSatisfied(estimatedModel);
+
+            cout << "AnswerOfOriginalFormula: " << AnswerOfOriginalFormula<< "\n";
+
+            if (AnswerOfOriginalFormula != UNSAT) {
+                cout << "Input Formula is Satisfied!" << "\n";
+                estimatedModel.printOneline(stream, true);
+                return AnswerOfOriginalFormula;
+            }
+
+            Model abstractModel = createAbstractModel(mModel, estimatedModel);
+
+            FormulasT formulas = AxiomFactory::createFormula(axiomType[axiomCounter], abstractModel, smtrat::MonomialMappingByVariablePool::getInstance().getMMonomialMapping());
+
+            FormulasT unsatFormulas = unsatisfiedFormulas(axiomType[axiomCounter], formulas, abstractModel);
+
+            for (FormulaT formulaT : unsatFormulas) {
+                addSubformulaToPassedFormula(formulaT);
+            }
+
+            axiomCounter++;
+            if (axiomCounter > axiom_type_size) {
+                axiomCounter = 0;
+            }
+
+            loopCounter++;
         }
 
-        mModel = backendsModel();
-        cout << "Solution/model of linearized formula: " << mModel;
-        cout << "\n";
-        cout << "\n";
+        cout << "Refinement Not possible!" << "\n";
 
-        Model estimatedModel = createEstimatedModel(mModel);
-        auto AnswerOfOriginalFormula = isOriginalFormulaSatisfied(estimatedModel);
-        Model abstractModel = createAbstractModel(mModel, estimatedModel);
-
-
-        ///////////////////////////
-        // testing axioms
-        ///////////////////////////
-        FormulasT formulas = AxiomFactory::createFormula(AxiomFactory::AxiomType::CONGRUENCE, smtrat::MonomialMappingByVariablePool::getInstance().getMMonomialMapping());
-
-        return Answer; // This should be adapted according to your implementation.
+        return UNSAT; // This should be adapted according to your implementation.
     }
 
 }
