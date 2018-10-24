@@ -404,12 +404,23 @@ namespace smtrat
 
     /**
      * Chekcs if the estimated model satisfies the input NRA formula.
+     * @param estimatedModel The estimated model.
+     */
+    Answer isOriginalFormulaSatisfied(Model estimatedModel)
+    {
+        unsigned result = originalFormula->satisfiedBy(estimatedModel);
+        cout  << "Result " << result;
+        cout << "\n";
+
+        return toAnswer(result);
+    }
+
+    /**
+     * Creates the estimated model.
      * estimated model takes the solution from mModel or randomly chosen.
      * @param mModel Model of linearized formula.
      */
-    Answer isOriginalFormulaSatisfied(Model mModel)
-    {
-
+    Model createEstimatedModel(Model mModel){
         carl::Variables allVarsOfOriginalFormula;
         Model estimatedModel;
 
@@ -423,7 +434,7 @@ namespace smtrat
         }
         cout << "\n";
 
-       cout << "linearized variable | value: " << "\n";
+        cout << "linearized variable | value: " << "\n";
         for (auto it = mModel.begin(); it != mModel.end(); ++it) {
             cout << it->first << " | " << it->second;
             cout << "\n";
@@ -443,18 +454,45 @@ namespace smtrat
             }
         }
 
-        cout << "estimated model: " << "\n";
+        cout << "estimated model for original formula: " << "\n";
         for (auto it = estimatedModel.begin(); it != estimatedModel.end(); ++it) {
             cout << it->first << " | " << it->second;
             cout << "\n";
         }
 
-        unsigned result = originalFormula->satisfiedBy(estimatedModel);
-        cout  << "Result " << result;
+        return estimatedModel;
+    }
+
+    /**
+     * create a model combining mModel, estimatedModel and rest of the variables are guessed.
+     * This model checks the satifiability of the axioms.
+     * @param mModel Model of linearized formula.
+     * @param estimatedModel the estimated model for original formula.
+     * @return the Abstract Model
+     */
+    Model createAbstractModel(Model mModel, Model estimatedModel){
+        Model abstractModel;
+        std::ostream stream(nullptr);
+        stream.rdbuf(std::cout.rdbuf());
+
+        for (auto mModelModelItarator = mModel.begin(); mModelModelItarator != mModel.end(); ++mModelModelItarator) {
+            abstractModel.emplace(mModelModelItarator->first, mModelModelItarator->second.asRational());
+        }
+
+        for (auto estimatedModelModelItarator = estimatedModel.begin(); estimatedModelModelItarator != estimatedModel.end(); ++estimatedModelModelItarator) {
+            abstractModel.emplace(estimatedModelModelItarator->first, estimatedModelModelItarator->second.asRational());
+        }
+
+        MonomialMap monomialMap = smtrat::MonomialMappingByVariablePool::getInstance().getMMonomialMapping();
+        for (MonomialMapIterator it = monomialMap.begin(); it != monomialMap.end(); ++it) {
+            abstractModel.emplace(it->first, ZERO_RATIONAL);
+        }
+
+        cout << "Abstract model for checking axioms: " << "\n";
+        abstractModel.printOneline(stream, true);
         cout << "\n";
 
-        return toAnswer(result);
-
+        return abstractModel;
     }
 
     template<class Settings>
@@ -481,7 +519,10 @@ namespace smtrat
         cout << "\n";
         cout << "\n";
 
-        auto AnswerOfOriginalFormula = isOriginalFormulaSatisfied(mModel);
+        Model estimatedModel = createEstimatedModel(mModel);
+        auto AnswerOfOriginalFormula = isOriginalFormulaSatisfied(estimatedModel);
+        Model abstractModel = createAbstractModel(mModel, estimatedModel);
+
 
         ///////////////////////////
         // testing axioms
