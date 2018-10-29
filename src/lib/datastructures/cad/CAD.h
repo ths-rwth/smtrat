@@ -66,6 +66,9 @@ namespace cad {
 		std::size_t dim() const {
 			return mVariables.size();
 		}
+		const auto& getVariables() const {
+			return mVariables;
+		}
 		const auto& getProjection() const {
 			return mProjection;
 		}
@@ -74,6 +77,9 @@ namespace cad {
 		}
 		const auto& getConstraints() const {
 			return mConstraints.indexed();
+		}
+		const auto& getConstraintMap() const {
+			return mConstraints.ordered();
 		}
 		bool isIdValid(std::size_t id) const {
 			return mConstraints.valid(id);
