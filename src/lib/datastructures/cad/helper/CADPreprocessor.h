@@ -7,8 +7,16 @@ namespace smtrat::cad {
 namespace preprocessor {
 
 class AssignmentCollector {
+public:
+	/// Result of an assignment collection.
+	/// true: new assignments were found
+	/// false: no new assignments were found
+	/// constraint: found direct conflict
+	using CollectionResult = std::variant<bool,ConstraintT>;
 private:
 	Model& mModel;
+	/// Reasons for the assignment of variables.
+	std::map<carl::Variable, ConstraintT> mReasons;
 
 	bool extractValueAssignments(std::map<ConstraintT, ConstraintT>& constraints) {
 		carl::Variable v;
@@ -18,6 +26,7 @@ private:
 			if (it->second.getAssignment(v, r) && mModel.find(v) == mModel.end()) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Newly extracted " << v << " = " << r);
 				mModel.emplace(v, r);
+				mReasons.emplace(v, it->first);
 				it = constraints.erase(it);
 				foundAssignment = true;
 			} else {
@@ -35,6 +44,7 @@ private:
 			if (it->second.getSubstitution(v, r) && mModel.find(v) == mModel.end()) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Newly extracted " << v << " = " << r);
 				mModel.emplace(v, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>(r));
+				mReasons.emplace(v, it->first);
 				it = constraints.erase(it);
 				foundAssignment = true;
 			} else {
@@ -50,25 +60,37 @@ private:
 		return extractParametricAssignments(constraints);
 	}
 
-	void simplify(std::map<ConstraintT, ConstraintT>& constraints) {
+	std::optional<ConstraintT> simplify(std::map<ConstraintT, ConstraintT>& constraints) {
 		for (auto& c: constraints) {
 			carl::model::substituteIn(c.second, mModel);
+			if (c.second.isConsistent() == 0) {
+				return c.first;
+			}
 		}
+		return std::nullopt;
 	}
 public:
 
 	AssignmentCollector(Model& model): mModel(model) {}
 
-	bool collect(std::map<ConstraintT, ConstraintT>& constraints) {
+	const auto& reasons() const {
+		return mReasons;
+	}
+
+	CollectionResult collect(std::map<ConstraintT, ConstraintT>& constraints) {
 		bool foundAssignments = extractAssignments(constraints);
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Extracted assignments " << mModel << " from " << constraints);
-		simplify(constraints);
+		if (auto c = simplify(constraints); c) {
+			return *c;
+		}
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "After simplication with " << mModel << ": " << constraints);
 		if (!foundAssignments) return false;
 		while (foundAssignments) {
 			foundAssignments = extractAssignments(constraints);
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Extracted assignments " << mModel << " from " << constraints);
-			simplify(constraints);
+			if (auto c = simplify(constraints); c) {
+				return *c;
+			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "After simplication with " << mModel << ": " << constraints);
 		}
 		return true;
@@ -160,8 +182,10 @@ private:
 	std::vector<ConstraintT> mEqualities;
 	/// Inequalities from the input.
 	std::map<ConstraintT, ConstraintT> mInequalities;
-	/// Derived set of equalities, essentially equivalent to mModel.
+	/// Derived set of equalities, essentially mEqualities - mModel.
 	std::map<ConstraintT, ConstraintT> mDerivedEqualities;
+
+	std::optional<ConstraintT> mConflict;
 
 	void removeEquality(const ConstraintT& c) {
 		mDerivedEqualities.clear();
@@ -217,24 +241,41 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Removed " << c << " from " << std::endl << *this);
 	}
 
-	void preprocess() {
-		if (!addEqualities(mEqualities)) return;
+	/**
+	 * Performs the preprocessing.
+	 * Return false if a direct conflict was found, true otherwise.
+	 */
+	bool preprocess() {
+		std::vector<ConstraintT> cur = mEqualities;
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Starting with:" << std::endl << *this);
-		bool foundAssignments = mAssignments.collect(mDerivedEqualities);
-		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Collected assignments:" << std::endl << *this);
-		std::vector<ConstraintT> cur = mResultants.complete(collectDerivedEqualities());
-		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Computed resultants:" << std::endl << *this << std::endl << "-> " << cur);
 		while (addEqualities(cur)) {
-			foundAssignments = mAssignments.collect(mDerivedEqualities);
+			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Collecting assignments from:" << std::endl << *this);
+			auto collectResult = mAssignments.collect(mDerivedEqualities);
+			if (std::holds_alternative<ConstraintT>(collectResult)) {
+				mConflict = std::get<ConstraintT>(collectResult);
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Immediate conflict due to " << *mConflict);
+				return false;
+			}
+			assert(std::holds_alternative<bool>(collectResult));
+			if (std::get<bool>(collectResult) == false) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "No further assignments.");
+				break;
+			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Collected assignments:" << std::endl << *this);
-			if (!foundAssignments) return;
+			
 			cur = mResultants.complete(collectDerivedEqualities());
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Computed resultants:" << std::endl << *this << std::endl << "-> " << cur);
 		}
 		for (auto& c: mInequalities) {
 			carl::model::substituteIn(c.second, mModel);
+			if (c.second.isConsistent() == 0) {
+				mConflict = c.first;
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Immediate conflict due to " << *mConflict);
+				return false;
+			}
 		}
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "After preprocessing:" << std::endl << *this);
+		return true;
 	}
 
 	const Model& model() const {
@@ -264,6 +305,19 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "To remove:" << std::endl << toRemove);
 
 		return {toAdd, toRemove};
+	}
+
+	std::set<FormulaT> getConflict() const {
+		assert(mConflict);
+		std::set<FormulaT> res;
+		res.emplace(*mConflict);
+		for (auto v: mConflict->variables()) {
+			auto it = mAssignments.reasons().find(v);
+			if (it != mAssignments.reasons().end()) {
+				res.emplace(it->second);
+			}
+		}
+		return res;
 	}
 };
 
