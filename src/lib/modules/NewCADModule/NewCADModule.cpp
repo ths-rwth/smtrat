@@ -91,7 +91,10 @@ namespace smtrat
 		if (Settings::force_nonincremental) {
 			pushConstraintsToReplacer();
 		}
-		mPreprocessor.preprocess();
+		if (!mPreprocessor.preprocess()) {
+			mInfeasibleSubsets.emplace_back(mPreprocessor.getConflict());
+			return Answer::UNSAT;
+		}
 		auto update = mPreprocessor.result(mCAD.getConstraintMap());
 		for (const auto& c: update.toAdd) {
 			mCAD.addConstraint(c);
