@@ -19,7 +19,8 @@ namespace smtrat
 		mStatistics(Settings::moduleName),
 #endif
 		mCAD(),
-		mReplacer(mCAD)
+		mReplacer(mCAD),
+		mPreprocessor(mCAD.getVariables())
 	{}
 	
 	template<class Settings>
@@ -72,6 +73,7 @@ namespace smtrat
 				if (vars.find(a.first) == vars.end()) continue;
 				mModel.emplace(a.first, a.second);
 			}
+			mModel.update(mPreprocessor.model(), false);
 		}
 	}
 	
@@ -89,23 +91,31 @@ namespace smtrat
 		if (Settings::force_nonincremental) {
 			pushConstraintsToReplacer();
 		}
-		if (!mReplacer.commit()) {
-			// Assignments simplified a constraint to false
-			mInfeasibleSubsets.emplace_back();
-			mReplacer.buildInfeasibleSubset(mInfeasibleSubsets.back());
-			if (Settings::force_nonincremental) {
-				removeConstraintsFromReplacer();
-			}
-			return Answer::UNSAT;
+		mPreprocessor.preprocess();
+		auto update = mPreprocessor.result(mCAD.getConstraintMap());
+		for (const auto& c: update.toAdd) {
+			mCAD.addConstraint(c);
 		}
+		for (const auto& c: update.toRemove) {
+			mCAD.removeConstraint(c);
+		}
+		//if (!mReplacer.commit()) {
+		//	// Assignments simplified a constraint to false
+		//	mInfeasibleSubsets.emplace_back();
+		//	mReplacer.buildInfeasibleSubset(mInfeasibleSubsets.back());
+		//	if (Settings::force_nonincremental) {
+		//		removeConstraintsFromReplacer();
+		//	}
+		//	return Answer::UNSAT;
+		//}
 		auto answer = mCAD.check(mLastAssignment, mInfeasibleSubsets);
 #ifdef SMTRAT_DEVOPTION_Statistics
 		mStatistics.currentProjectionSize(mCAD.getProjection().size());
 #endif
 		if (answer == Answer::UNSAT) {
 			//mCAD.generateInfeasibleSubsets(mInfeasibleSubsets);
-			for(auto& mis : mInfeasibleSubsets)
-				mReplacer.preprocessInfeasibleSubset(mis);
+			//for(auto& mis : mInfeasibleSubsets)
+			//	mReplacer.preprocessInfeasibleSubset(mis);
 			SMTRAT_LOG_INFO("smtrat.cad", "Infeasible subset: " << mInfeasibleSubsets);
 		}
 		if (Settings::force_nonincremental) {

@@ -10,6 +10,7 @@
 
 #include "../../datastructures/cad/CAD.h"
 #include "../../datastructures/cad/helper/EqualityReplacer.h"
+#include "../../datastructures/cad/helper/CADPreprocessor.h"
 #include "../../datastructures/VariableBounds.h"
 
 #include "../../solver/Module.h"
@@ -27,28 +28,19 @@ namespace smtrat
 #endif
 			/// Stores the polynomials seen during inform() to build the variable ordering.
 			std::vector<Poly> mPolynomials;
+
 			carl::Variables mVariables;
 			cad::CAD<Settings> mCAD;
 			cad::Assignment mLastAssignment;
 			cad::EqualityReplacer<cad::CAD<Settings>> mReplacer;
+
+			cad::CADPreprocessor mPreprocessor;
 			
 			void addConstraint(const ConstraintT& c) {
-				carl::Variable v;
-				Rational r;
-				if (c.getAssignment(v, r)) {
-					mReplacer.addAssignment(v, r, c);
-				} else {
-					mReplacer.addConstraint(c);
-				}
+				mPreprocessor.addConstraint(c);
 			}
 			void removeConstraint(const ConstraintT& c) {
-				carl::Variable v;
-				Rational r;
-				if (c.getAssignment(v, r)) {
-					mReplacer.removeAssignment(v, c);
-				} else {
-					mReplacer.removeConstraint(c);
-				}
+				mPreprocessor.removeConstraint(c);
 			}
 			void pushConstraintsToReplacer() {
 				for (const auto& f: rReceivedFormula()) {
