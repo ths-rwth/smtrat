@@ -100,27 +100,30 @@ public:
 class ResultantRule {
 private:
 	const std::vector<carl::Variable>& mVars;
+	std::vector<ConstraintT> mConstraints;
 	std::vector<std::vector<UPoly>> mData;
 	std::vector<ConstraintT> mNewECs;
+	std::map<Poly, std::set<FormulaT>> mOrigins;
 
-	void addPoly(const Poly& poly) {
-		if (poly.isNumber()) return;
+	bool addPoly(const Poly& poly, std::size_t cid) {
+		if (poly.isZero()) return false;
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
 		std::size_t level = 0;
 		UPoly p = poly.toUnivariatePolynomial(mVars[level]);
-		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "-> " << p);
 		while (p.isConstant()) {
 			++level;
-			SMTRAT_LOG_DEBUG("smtrat.cad.pp", p << " is constant, moving to level " << level);
 			p = poly.toUnivariatePolynomial(mVars[level]);
 		}
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Inserting " << p << " into level " << level);
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Into " << mData);
 		mData[level].emplace_back(p);
+		mOrigins.emplace(poly, std::set<FormulaT>({ FormulaT(mConstraints[cid]) }));
+		return true;
 	}
 
-	void addPoly(const UPoly& poly, std::size_t level = 0) {
-		if (poly.isNumber()) return;
+	bool addPoly(const UPoly& poly, std::size_t level, const std::set<FormulaT>& origin) {
+		if (poly.isZero()) return false;
+		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
 		Poly mp(poly);
 		UPoly p = poly;
 		assert(p.mainVar() == mVars[level]);
@@ -128,34 +131,76 @@ private:
 			++level;
 			p = mp.toUnivariatePolynomial(mVars[level]);
 		}
+		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Inserting " << p << " into level " << level);
+		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Into " << mData);
 		mData[level].emplace_back(p);
-		mNewECs.emplace_back(mp, carl::Relation::EQ);
+		ConstraintT cons(mp, carl::Relation::EQ);
+		mOrigins.emplace(mp, origin);
+		mNewECs.emplace_back(cons);
+		if (cons.isConsistent() == 0) return false;
+		return true;
 	}
 
-	void computeResultants(std::size_t level) {
+	std::optional<std::set<FormulaT>> computeResultants(std::size_t level) {
 		for (std::size_t pid = 0; pid < mData[level].size(); ++pid) {
 			for (std::size_t qid = pid + 1; qid < mData[level].size(); ++qid) {
-				addPoly(projection::resultant(mVars[level + 1], mData[level][pid], mData[level][qid]), level + 1);
+				auto r = projection::resultant(mVars[level + 1], mData[level][pid], mData[level][qid]);
+				std::set<FormulaT> origin;
+				const auto& op = mOrigins.at(Poly(mData[level][pid]));
+				origin.insert(op.begin(), op.end());
+				const auto& oq = mOrigins.at(Poly(mData[level][qid]));
+				origin.insert(oq.begin(), oq.end());
+				if (!addPoly(r, level + 1, origin)) {
+					return origin;
+				}
 			}
 		}
+		return std::nullopt;
 	}
 
-	void computeResultants() {
+	std::optional<std::set<FormulaT>> computeResultants() {
 		for (std::size_t level = 0; level < mData.size() - 1; ++level) {
-			computeResultants(level);
+			auto conflict = computeResultants(level);
+			if (conflict) return conflict;
 		}
+		return std::nullopt;
 	}
 public:
 	ResultantRule(const std::vector<carl::Variable>& vars):
 		mVars(vars)
 	{}
-	
-	std::vector<ConstraintT> complete(const std::vector<ConstraintT>& constraints) {
+
+	void reset(const std::vector<ConstraintT>& constraints) {
+		mConstraints = constraints;
 		mData.assign(mVars.size(), {});
-		for (const auto& c: constraints) {
-			addPoly(c.lhs());
+		mNewECs.clear();
+	}
+	
+	std::optional<std::set<FormulaT>> complete() {
+		for (std::size_t cid = 0; cid < mConstraints.size(); ++cid) {
+			if (!addPoly(mConstraints[cid].lhs(), cid)) {
+				return std::set<FormulaT>({ FormulaT(mConstraints[cid]) });
+			}
 		}
-		computeResultants();
+		return computeResultants();
+	}
+
+	bool resolveOrigins(std::set<FormulaT>& conflict) const {
+		bool didReplacement = false;
+		for (const auto& c: mOrigins) {
+			if (c.second.size() == 1) {
+				if (*c.second.begin() == FormulaT(c.first, carl::Relation::EQ)) continue;
+			}
+			if (conflict.erase(FormulaT(c.first, carl::Relation::EQ)) > 0) {
+				conflict.insert(c.second.begin(), c.second.end());
+				didReplacement = true;
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Replaced " << c.first << " by origins " << c.second);
+			}
+		}
+		return didReplacement;
+	}
+
+	const auto& getNewECs() const {
 		return mNewECs;
 	}
 };
@@ -187,7 +232,7 @@ private:
 	/// Derived set of equalities, essentially mEqualities - mModel.
 	std::map<ConstraintT, ConstraintT> mDerivedEqualities;
 
-	std::optional<ConstraintT> mConflict;
+	std::optional<std::set<FormulaT>> mConflict;
 
 	void removeEquality(const ConstraintT& c) {
 		mDerivedEqualities.clear();
@@ -218,13 +263,28 @@ private:
 	/**
 	 * Replace constraints that have been modified by its origins in the given conflict.
 	 */
-	void collectOriginsOfConflict(std::set<FormulaT>& conflict, const std::map<ConstraintT, ConstraintT>& constraints) const {
+	bool collectOriginsOfConflict(std::set<FormulaT>& conflict, const std::map<ConstraintT, ConstraintT>& constraints) const {
+		bool didReplacement = false;
 		for (const auto& c: constraints) {
 			if (c.first == c.second) continue;
 			if (conflict.erase(FormulaT(c.second)) > 0) {
 				conflict.emplace(c.first);
+				didReplacement = true;
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Replaced " << c.second << " by origin " << c.first);
 			}
+		}
+		return didReplacement;
+	}
+
+	void addModelToConflict(std::set<FormulaT>& conflict) const {
+		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding necessary parts of model to conflict: " << conflict);
+		carl::Variables vars;
+		for (const auto& f: conflict) f.allVars(vars);
+		for (auto v: vars) {
+			auto it = mAssignments.reasons().find(v);
+			if (it == mAssignments.reasons().end()) continue;
+			conflict.emplace(it->second);
+			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Added " << it->second << " to conflict.");
 		}
 	}
 
@@ -267,7 +327,7 @@ public:
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Collecting assignments from:" << std::endl << *this);
 			auto collectResult = mAssignments.collect(mDerivedEqualities);
 			if (std::holds_alternative<ConstraintT>(collectResult)) {
-				mConflict = std::get<ConstraintT>(collectResult);
+				mConflict = { FormulaT(std::get<ConstraintT>(collectResult)) };
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Immediate conflict due to " << *mConflict);
 				return false;
 			}
@@ -278,13 +338,20 @@ public:
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Collected assignments:" << std::endl << *this);
 			
-			cur = mResultants.complete(collectDerivedEqualities());
-			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Computed resultants:" << std::endl << *this << std::endl << "-> " << cur);
+			mResultants.reset(collectDerivedEqualities());
+			auto conflict = mResultants.complete();
+			if (conflict.has_value()) {
+				mConflict = *conflict;
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Immediate conflict due to " << *mConflict);
+			} else {
+				cur = mResultants.getNewECs();
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Computed resultants:" << std::endl << *this << std::endl << "-> " << cur);
+			}
 		}
 		for (auto& c: mInequalities) {
 			carl::model::substituteIn(c.second, mModel);
 			if (c.second.isConsistent() == 0) {
-				mConflict = c.first;
+				mConflict = { FormulaT(c.first) };
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Immediate conflict due to " << *mConflict);
 				return false;
 			}
@@ -330,29 +397,23 @@ public:
 
 	std::set<FormulaT> getConflict() const {
 		assert(mConflict);
-		std::set<FormulaT> res;
-		res.emplace(*mConflict);
-		for (auto v: mConflict->variables()) {
-			auto it = mAssignments.reasons().find(v);
-			if (it != mAssignments.reasons().end()) {
-				res.emplace(it->second);
-			}
-		}
+		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Building MIS from immediate conflict " << *mConflict);
+		std::set<FormulaT> res = *mConflict;
+		addModelToConflict(res);
+		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Resulting MIS: " << res);
 		return res;
 	}
 
 	void postprocessConflict(std::set<FormulaT>& mis) const {
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Postprocessing conflict: " << mis << " based on" << std::endl << *this);
-		collectOriginsOfConflict(mis, mDerivedEqualities);
-		collectOriginsOfConflict(mis, mInequalities);
-		carl::Variables vars;
-		for (const auto& f: mis) f.allVars(vars);
-		for (auto v: vars) {
-			auto it = mAssignments.reasons().find(v);
-			if (it == mAssignments.reasons().end()) continue;
-			mis.emplace(it->second);
-			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Added " << it->second << " to conflict.");
+		bool changed = true;
+		while (changed) {
+			changed = false;
+			if (collectOriginsOfConflict(mis, mDerivedEqualities)) changed = true;
+			if (collectOriginsOfConflict(mis, mInequalities)) changed = true;
+			if (mResultants.resolveOrigins(mis)) changed = true;
 		}
+		addModelToConflict(mis);
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Postprocessed conflict: " << mis);
 	}
 };
