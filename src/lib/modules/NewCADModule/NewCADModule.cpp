@@ -102,23 +102,14 @@ namespace smtrat
 		for (const auto& c: update.toRemove) {
 			mCAD.removeConstraint(c);
 		}
-		//if (!mReplacer.commit()) {
-		//	// Assignments simplified a constraint to false
-		//	mInfeasibleSubsets.emplace_back();
-		//	mReplacer.buildInfeasibleSubset(mInfeasibleSubsets.back());
-		//	if (Settings::force_nonincremental) {
-		//		removeConstraintsFromReplacer();
-		//	}
-		//	return Answer::UNSAT;
-		//}
 		auto answer = mCAD.check(mLastAssignment, mInfeasibleSubsets);
 #ifdef SMTRAT_DEVOPTION_Statistics
 		mStatistics.currentProjectionSize(mCAD.getProjection().size());
 #endif
 		if (answer == Answer::UNSAT) {
-			//mCAD.generateInfeasibleSubsets(mInfeasibleSubsets);
-			//for(auto& mis : mInfeasibleSubsets)
-			//	mReplacer.preprocessInfeasibleSubset(mis);
+			for (auto& mis : mInfeasibleSubsets) {
+				mPreprocessor.postprocessConflict(mis);
+			}
 			SMTRAT_LOG_INFO("smtrat.cad", "Infeasible subset: " << mInfeasibleSubsets);
 		}
 		if (Settings::force_nonincremental) {
