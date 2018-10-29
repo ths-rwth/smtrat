@@ -104,6 +104,7 @@ private:
 	std::vector<ConstraintT> mNewECs;
 
 	void addPoly(const Poly& poly) {
+		if (poly.isNumber()) return;
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
 		std::size_t level = 0;
 		UPoly p = poly.toUnivariatePolynomial(mVars[level]);
@@ -119,6 +120,7 @@ private:
 	}
 
 	void addPoly(const UPoly& poly, std::size_t level = 0) {
+		if (poly.isNumber()) return;
 		Poly mp(poly);
 		UPoly p = poly;
 		assert(p.mainVar() == mVars[level]);
@@ -298,8 +300,14 @@ public:
 	template<typename Map>
 	preprocessor::ConstraintUpdate result(const Map& oldC) const {
 		std::set<ConstraintT> newC;
-		for (const auto& c: mInequalities) newC.insert(c.second);
-		for (const auto& c: mDerivedEqualities) newC.insert(c.second);
+		for (const auto& c: mInequalities) {
+			if (c.second.isConsistent() == 1) continue;
+			newC.insert(c.second);
+		}
+		for (const auto& c: mDerivedEqualities) {
+			if (c.second.isConsistent() == 1) continue;
+			newC.insert(c.second);
+		}
 
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Old state:" << std::endl << oldC);
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "New state:" << std::endl << newC);
