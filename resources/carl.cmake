@@ -4,7 +4,7 @@ message(STATUS "Making sure CArL is available.")
 set(CARL_BUILD_DIR "${CMAKE_BINARY_DIR}/resources/src/CArL-config-EP-build")
 file(MAKE_DIRECTORY ${CARL_BUILD_DIR})
 execute_process(
-	COMMAND ${CMAKE_COMMAND} -DTARGETDIR=${CMAKE_BINARY_DIR}/resources ${CMAKE_SOURCE_DIR}/resources/carl
+	COMMAND ${CMAKE_COMMAND} -DTARGETDIR=${CMAKE_BINARY_DIR}/resources ${CMAKE_SOURCE_DIR}/resources/carl -DUSE_GINAC=${USE_GINAC}
 	WORKING_DIRECTORY ${CARL_BUILD_DIR}
 )
 execute_process(
