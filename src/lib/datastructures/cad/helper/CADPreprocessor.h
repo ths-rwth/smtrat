@@ -213,6 +213,19 @@ private:
 		return cur;
 	}
 
+	/**
+	 * Replace constraints that have been modified by its origins in the given conflict.
+	 */
+	void collectOriginsOfConflict(std::set<FormulaT>& conflict, const std::map<ConstraintT, ConstraintT>& constraints) const {
+		for (const auto& c: constraints) {
+			if (c.first == c.second) continue;
+			if (conflict.erase(FormulaT(c.second)) > 0) {
+				conflict.emplace(c.first);
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Replaced " << c.second << " by origin " << c.first);
+			}
+		}
+	}
+
 public:
 	CADPreprocessor(const std::vector<carl::Variable>& vars):
 		mModel(),
@@ -318,6 +331,21 @@ public:
 			}
 		}
 		return res;
+	}
+
+	void postprocessConflict(std::set<FormulaT>& mis) const {
+		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Postprocessing conflict: " << mis << " based on" << std::endl << *this);
+		collectOriginsOfConflict(mis, mDerivedEqualities);
+		collectOriginsOfConflict(mis, mInequalities);
+		carl::Variables vars;
+		for (const auto& f: mis) f.allVars(vars);
+		for (auto v: vars) {
+			auto it = mAssignments.reasons().find(v);
+			if (it == mAssignments.reasons().end()) continue;
+			mis.emplace(it->second);
+			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Added " << it->second << " to conflict.");
+		}
+		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Postprocessed conflict: " << mis);
 	}
 };
 
