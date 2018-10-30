@@ -28,6 +28,9 @@ private:
 	struct EquationalConstraint {
 		/// Which polynomials belong to this specific equational constraint.
 		carl::Bitset polynomials;
+		/// Whether this equational constraint can be used.
+		/// An equational can not be used, if some factor is primitive.
+		bool suitable = true;
 	};
 
 	struct EquationalConstraints {
@@ -36,9 +39,6 @@ private:
 		std::vector<EquationalConstraint> mData;
 	public:
 		/// Add a poly to the respective origin.
-		/// Todo: check if it should belong to an EC of another level.
-		/// Usually: higher level, but could also be lower (if first poly was degenerate)
-		/// Maybe have a map: Origin::BaseType -> level
 		std::size_t addEC() {
 			mData.emplace_back();
 			return mData.size() - 1;
@@ -55,6 +55,9 @@ private:
 			return mData.size();
 		}
 		const auto& getEC(std::size_t ecid) const {
+			return mData[ecid];
+		}
+		auto& getEC(std::size_t ecid) {
 			return mData[ecid];
 		}
 	};
@@ -226,7 +229,15 @@ public:
 
 	}
 
+	/**
+	 * Adds the polynomial pid to the equational constraint origin.
+	 * Returns false if the equational contraints becomes unsuitable.
+	 */
 	void addToEC(Origin::BaseType origin, std::size_t level, std::size_t pid) {
+		if (origin.level != 0) return;
+		assert(origin.first == origin.second);
+		if ((*this)(0, origin.first).equational.none()) return;
+		assert((*this)(0, origin.first).equational.count() == 1);
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Add " << level << "/" << pid << " to EC " << origin);
 		auto it = (*this)().mECs.find(origin);
 		if (it == (*this)().mECs.end()) {
@@ -239,10 +250,12 @@ public:
 		auto [eclevel, ecid] = it->second;
 		if (eclevel != level) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "EC is imprimitive!");
+			(*this)(eclevel).ecs.getEC(ecid).suitable = false;
 			return;
 		}
 		(*this)(level).ecs.addPolyToEC(ecid, pid);
 		(*this)(level, pid).equational.set(ecid);
+		return;
 	}
 
 	bool hasEC(std::size_t level) const {
@@ -264,6 +277,7 @@ public:
 		assert(hasEC(level));
 		assert(!usingEC(level));
 		for (std::size_t ecid = 0; ecid < (*this)(level).ecs.count(); ++ecid) {
+			if (!(*this)(level).ecs.getEC(ecid).suitable) continue;
 			const auto& polys = (*this)(level).ecs.getEC(ecid).polynomials;
 			bool ec_active = true;
 			for (auto pid: polys) {

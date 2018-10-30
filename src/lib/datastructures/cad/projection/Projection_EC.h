@@ -431,14 +431,9 @@ private:
 				mInfo(level).setBound(it->second, true);
 			}
 			if (Settings::restrictProjectionByEC) {
-				SMTRAT_LOG_INFO("smtrat.cad.projection", "Doing resultant rule for " << origin);
-				for (auto fecid: mInfo(origin.level, origin.first).equational) {
-					for (auto secid: mInfo(origin.level, origin.second).equational) {
-						if (origin.level != 0 && fecid == secid) continue;
-						SMTRAT_LOG_INFO("smtrat.cad.projection", "Adding to " << fecid << " / " << secid);
-						mInfo.addToEC(Origin::BaseType(origin.level, fecid, secid), level, it->second);
-					}
-				}
+				SMTRAT_LOG_INFO("smtrat.cad.projection", *this);
+				SMTRAT_LOG_INFO("smtrat.cad.projection", "Checking whether " << p << " is from an equational constraint.");
+				mInfo.addToEC(origin, level, it->second);
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Polynomial was already present, adding origins " << origin);
 			bool activated = active(level, it->second);
@@ -468,14 +463,8 @@ private:
 		}
 		if (Settings::restrictProjectionByEC) {
 			SMTRAT_LOG_INFO("smtrat.cad.projection", *this);
-			SMTRAT_LOG_INFO("smtrat.cad.projection", "Doing resultant rule for " << origin);
-			for (auto fecid: mInfo(origin.level, origin.first).equational) {
-				for (auto secid: mInfo(origin.level, origin.second).equational) {
-					if (origin.level != 0 && fecid == secid) continue;
-					SMTRAT_LOG_INFO("smtrat.cad.projection", "Adding to " << fecid << " / " << secid);
-					mInfo.addToEC(Origin::BaseType(origin.level, fecid, secid), level, id);
-				}
-			}
+			SMTRAT_LOG_INFO("smtrat.cad.projection", "Checking whether " << p << " is from an equational constraint.");
+			mInfo.addToEC(origin, level, id);
 		}
 		if (level < dim()) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Inserting " << id << " into queue for level " << (level + 1));
