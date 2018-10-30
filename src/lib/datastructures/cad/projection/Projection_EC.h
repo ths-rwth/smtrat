@@ -464,7 +464,7 @@ private:
 		if (Settings::restrictProjectionByEC) {
 			SMTRAT_LOG_INFO("smtrat.cad.projection", *this);
 			SMTRAT_LOG_INFO("smtrat.cad.projection", "Checking whether " << p << " is from an equational constraint.");
-			mInfo().addToEC(origin, level, it->second);
+			mInfo().addToEC(origin, level, id);
 		}
 		if (level < dim()) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Inserting " << id << " into queue for level " << (level + 1));
