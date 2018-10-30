@@ -20,16 +20,17 @@ namespace smtrat
 				if (a.second >= mDefault) mDefault = carl::ceil(a.second) + 1;
 			}
 		}
-		virtual void multiplyBy( const Rational& _number )
-                {
-                    for (auto& a: mAssignments)
-                        a.second *= _number;
-                }
-		virtual void add( const Rational& _number )
-                {
-                    for (auto& a: mAssignments)
-                        a.second += _number;
-                }
+		virtual void multiplyBy(const Rational& _number) {
+			for (auto& a: mAssignments)
+				a.second *= _number;
+		}
+		virtual void add(const Rational& _number) {
+			for (auto& a: mAssignments)
+				a.second += _number;
+		}
+		virtual carl::ModelSubstitutionPtr<Rational,Poly> clone() const {
+			return carl::createSubstitutionPtr<Rational,Poly,MCBModelSubstitution>(mAssignments);
+		}
 		virtual FormulaT representingFormula( const ModelVariable& mv ) {
 			assert(false);
 			return FormulaT();
