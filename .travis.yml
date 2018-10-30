@@ -65,6 +65,18 @@ matrix:
         apt:
           sources: [*sources_base]
           packages: [*packages_base, g++-8]
+    - stage: dependencies
+      os: osx
+      osx_image: xcode9.3
+      script: TASK=dependencies source .ci/build.sh
+    - stage: dependencies
+      os: osx
+      osx_image: xcode9.4
+      script: TASK=dependencies source .ci/build.sh
+    - stage: dependencies
+      os: osx
+      osx_image: xcode10
+      script: TASK=dependencies source .ci/build.sh
     - stage: build
       os: linux
       compiler: clang++-5.0
