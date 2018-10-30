@@ -30,7 +30,7 @@ private:
 				it = constraints.erase(it);
 				foundAssignment = true;
 			} else {
-				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "No assignment from " << it->second);
+				SMTRAT_LOG_TRACE("smtrat.cad.pp", "No assignment from " << it->second);
 				++it;
 			}
 		}
@@ -47,8 +47,9 @@ private:
 				mReasons.emplace(v, it->first);
 				it = constraints.erase(it);
 				foundAssignment = true;
+				break;
 			} else {
-				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "No assignment from " << it->second);
+				SMTRAT_LOG_TRACE("smtrat.cad.pp", "No assignment from " << it->second);
 				++it;
 			}
 		}
@@ -64,6 +65,7 @@ private:
 		for (auto& c: constraints) {
 			carl::model::substituteIn(c.second, mModel);
 			if (c.second.isConsistent() == 0) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Simplification found conflict in " << c.first);
 				return c.first;
 			}
 		}
@@ -78,22 +80,18 @@ public:
 	}
 
 	CollectionResult collect(std::map<ConstraintT, ConstraintT>& constraints) {
-		bool foundAssignments = extractAssignments(constraints);
-		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Extracted assignments " << mModel << " from " << constraints);
-		if (auto c = simplify(constraints); c) {
-			return *c;
-		}
-		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "After simplication with " << mModel << ": " << constraints);
-		if (!foundAssignments) return false;
-		while (foundAssignments) {
-			foundAssignments = extractAssignments(constraints);
-			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Extracted assignments " << mModel << " from " << constraints);
+		bool foundNew = false;
+		bool continueSearch = true;
+		while (continueSearch) {
+			continueSearch = extractAssignments(constraints);
+			SMTRAT_LOG_TRACE("smtrat.cad.pp", "Extracted assignments " << mModel << " from " << constraints);
 			if (auto c = simplify(constraints); c) {
 				return *c;
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "After simplication with " << mModel << ": " << constraints);
+			foundNew = foundNew || continueSearch;
 		}
-		return true;
+		return foundNew;
 	}
 };
 
@@ -106,7 +104,7 @@ private:
 	std::map<Poly, std::set<FormulaT>> mOrigins;
 
 	bool addPoly(const Poly& poly, std::size_t cid) {
-		if (poly.isZero()) return false;
+		if (poly.isZero()) return true;
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
 		std::size_t level = 0;
 		UPoly p = poly.toUnivariatePolynomial(mVars[level]);
@@ -122,7 +120,7 @@ private:
 	}
 
 	bool addPoly(const UPoly& poly, std::size_t level, const std::set<FormulaT>& origin) {
-		if (poly.isZero()) return false;
+		if (poly.isZero()) return true;
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
 		Poly mp(poly);
 		UPoly p = poly;
@@ -151,6 +149,7 @@ private:
 				const auto& oq = mOrigins.at(Poly(mData[level][qid]));
 				origin.insert(oq.begin(), oq.end());
 				if (!addPoly(r, level + 1, origin)) {
+					SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Found direct conflict due to " << origin);
 					return origin;
 				}
 			}
@@ -179,6 +178,7 @@ public:
 	std::optional<std::set<FormulaT>> complete() {
 		for (std::size_t cid = 0; cid < mConstraints.size(); ++cid) {
 			if (!addPoly(mConstraints[cid].lhs(), cid)) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Found direct conflict due to " << mConstraints[cid]);
 				return std::set<FormulaT>({ FormulaT(mConstraints[cid]) });
 			}
 		}
@@ -302,7 +302,7 @@ public:
 		} else {
 			mInequalities.emplace(c, c);
 		}
-		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Added " << c << " to " << std::endl << *this);
+		SMTRAT_LOG_TRACE("smtrat.cad.pp", "Added " << c << " to " << std::endl << *this);
 	}
 
 	void removeConstraint(const ConstraintT& c) {
@@ -313,7 +313,7 @@ public:
 			assert(it != mInequalities.end());
 			mInequalities.erase(it);
 		}
-		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Removed " << c << " from " << std::endl << *this);
+		SMTRAT_LOG_TRACE("smtrat.cad.pp", "Removed " << c << " from " << std::endl << *this);
 	}
 
 	/**
