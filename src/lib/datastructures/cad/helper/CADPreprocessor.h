@@ -78,6 +78,9 @@ public:
 	const auto& reasons() const {
 		return mReasons;
 	}
+	auto& reasons() {
+		return mReasons;
+	}
 
 	CollectionResult collect(std::map<ConstraintT, ConstraintT>& constraints) {
 		bool foundNew = false;
@@ -238,6 +241,8 @@ private:
 		mDerivedEqualities.clear();
 		auto it = std::remove(mEqualities.begin(), mEqualities.end(), c);
 		mEqualities.erase(it, mEqualities.end());
+		mModel.clear();
+		mAssignments.reasons().clear();
 		for (auto& i: mInequalities) {
 			i.second = i.first;
 		}
@@ -281,11 +286,18 @@ private:
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding necessary parts of model to conflict: " << conflict);
 		carl::Variables vars;
 		for (const auto& f: conflict) f.allVars(vars);
-		for (auto v: vars) {
-			auto it = mAssignments.reasons().find(v);
-			if (it == mAssignments.reasons().end()) continue;
-			conflict.emplace(it->second);
-			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Added " << it->second << " to conflict.");
+		while (!vars.empty()) {
+			carl::Variables newvars;
+			for (auto v: vars) {
+				auto it = mAssignments.reasons().find(v);
+				if (it == mAssignments.reasons().end()) continue;
+				auto cit = conflict.emplace(it->second);
+				if (cit.second) {
+					cit.first->allVars(newvars);
+					SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Added " << it->second << " to conflict.");
+				}
+			}
+			vars = newvars;
 		}
 	}
 
