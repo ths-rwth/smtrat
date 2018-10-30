@@ -386,7 +386,7 @@ public:
 			if (oldC.find(c) == oldC.end()) toAdd.emplace_back(c);
 		}
 		for (const auto& c: oldC) {
-			if (newC.find(c.first) == newC.end()) toAdd.emplace_back(c.first);
+			if (newC.find(c.first) == newC.end()) toRemove.emplace_back(c.first);
 		}
 
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "To add:" << std::endl << toAdd);
