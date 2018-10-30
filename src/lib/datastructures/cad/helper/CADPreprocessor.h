@@ -236,7 +236,8 @@ private:
 
 	void removeEquality(const ConstraintT& c) {
 		mDerivedEqualities.clear();
-		std::remove(mEqualities.begin(), mEqualities.end(), c);
+		auto it = std::remove(mEqualities.begin(), mEqualities.end(), c);
+		mEqualities.erase(it, mEqualities.end());
 		for (auto& i: mInequalities) {
 			i.second = i.first;
 		}
