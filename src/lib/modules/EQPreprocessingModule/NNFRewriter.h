@@ -79,7 +79,7 @@ namespace smtrat {
 			FormulaT rewrite_not(const FormulaT& formula, FormulaT&& subformula) {
 				remove_xor_first_arg remover(*this, formula);
 				--notCount;
-				return subformula;
+				return std::move(subformula);
 			}
 
 			FormulaT rewrite_leaf(const FormulaT& formula) {
