@@ -106,7 +106,7 @@ private:
 	std::vector<ConstraintT> mNewECs;
 	std::map<Poly, std::set<FormulaT>> mOrigins;
 
-	bool addPoly(const Poly& poly, std::size_t cid) {
+	bool addPoly(const Poly& poly, const ConstraintT& origin) {
 		if (poly.isZero()) return true;
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
 		std::size_t level = 0;
@@ -118,7 +118,7 @@ private:
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Inserting " << p << " into level " << level);
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Into " << mData);
 		mData[level].emplace_back(p);
-		mOrigins.emplace(poly, std::set<FormulaT>({ FormulaT(mConstraints[cid]) }));
+		mOrigins.emplace(poly, std::set<FormulaT>({ FormulaT(origin) }));
 		return true;
 	}
 
@@ -160,32 +160,28 @@ private:
 		return std::nullopt;
 	}
 
-	std::optional<std::set<FormulaT>> computeResultants() {
+public:
+	ResultantRule(const std::vector<carl::Variable>& vars):
+		mVars(vars)
+	{}
+	
+	std::optional<std::set<FormulaT>> compute(const std::map<ConstraintT,ConstraintT>& constraints) {
+		mConstraints.clear();
+		mData.assign(mVars.size(), {});
+		mNewECs.clear();
+		for (const auto& c: constraints) {
+			mConstraints.emplace_back(c.first);
+			if (!addPoly(c.second.lhs(), c.first)) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Found direct conflict due to " << c.first);
+				return std::set<FormulaT>({ FormulaT(c.first) });
+			}
+		}
+
 		for (std::size_t level = 0; level < mData.size() - 1; ++level) {
 			auto conflict = computeResultants(level);
 			if (conflict) return conflict;
 		}
 		return std::nullopt;
-	}
-public:
-	ResultantRule(const std::vector<carl::Variable>& vars):
-		mVars(vars)
-	{}
-
-	void reset(const std::vector<ConstraintT>& constraints) {
-		mConstraints = constraints;
-		mData.assign(mVars.size(), {});
-		mNewECs.clear();
-	}
-	
-	std::optional<std::set<FormulaT>> complete() {
-		for (std::size_t cid = 0; cid < mConstraints.size(); ++cid) {
-			if (!addPoly(mConstraints[cid].lhs(), cid)) {
-				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Found direct conflict due to " << mConstraints[cid]);
-				return std::set<FormulaT>({ FormulaT(mConstraints[cid]) });
-			}
-		}
-		return computeResultants();
 	}
 
 	bool resolveOrigins(std::set<FormulaT>& conflict) const {
@@ -356,8 +352,7 @@ public:
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Collected assignments:" << std::endl << *this);
 			
-			mResultants.reset(collectDerivedEqualities());
-			auto conflict = mResultants.complete();
+			auto conflict = mResultants.compute(mDerivedEqualities);
 			if (conflict.has_value()) {
 				mConflict = *conflict;
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Immediate conflict due to " << *mConflict);
@@ -427,10 +422,22 @@ public:
 		carl::Variables modelAdded;
 		while (changed) {
 			changed = false;
-			if (collectOriginsOfConflict(mis, mDerivedEqualities)) changed = true;
-			if (collectOriginsOfConflict(mis, mInequalities)) changed = true;
-			if (mResultants.resolveOrigins(mis)) changed = true;
-			if (addModelToConflict(mis, modelAdded)) changed = true;
+			if (collectOriginsOfConflict(mis, mDerivedEqualities)) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Resolved equalities: " << mis);
+				changed = true;
+			}
+			if (collectOriginsOfConflict(mis, mInequalities)) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Resolved inequalities: " << mis);
+				changed = true;
+			}
+			if (mResultants.resolveOrigins(mis)) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Resolved resultants: " << mis);
+				changed = true;
+			}
+			if (addModelToConflict(mis, modelAdded)) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Resolved model: " << mis);
+				changed = true;
+			}
 		}
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Postprocessed conflict: " << mis);
 	}
@@ -441,6 +448,7 @@ inline std::ostream& operator<<(std::ostream& os, const CADPreprocessor& cadpp) 
 	os << "Inequalities: " << cadpp.mInequalities << std::endl;
 	os << "Derived: " << cadpp.mDerivedEqualities << std::endl;
 	os << "Model: " << cadpp.mModel << std::endl;
+	os << "Reasons: " << cadpp.mAssignments.reasons() << std::endl;
 	return os;
 }
 
