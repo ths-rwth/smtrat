@@ -262,9 +262,11 @@ struct CADCore<CoreHeuristic::EnumerateAll> {
 		SMTRAT_LOG_WARN("smtrat.cad", "Got " << number_of_cells << " cells");
 		
 		auto assignments = cad.enumerateSolutions();
+#ifdef LOGGING
 		for (const auto& a: assignments) {
 			SMTRAT_LOG_WARN("smtrat.cad", "Solution: " << a);
 		}
+#endif
 		
 		if (assignments.empty()) return Answer::UNSAT;
 		assignment = assignments.front();

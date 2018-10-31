@@ -143,15 +143,19 @@ namespace smtrat
     using MCSATSettings = mcsat::MCSATSettingsFMVSOC;
   };
 	struct SATSettingsMCSATNL : SATSettingsMCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATNL>";
 		using MCSATSettings = mcsat::MCSATSettingsNL;
     };
 	struct SATSettingsMCSATFMNL : SATSettingsMCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATFMNL>";
 		using MCSATSettings = mcsat::MCSATSettingsFMNL;
     };
 	struct SATSettingsMCSATVSNL : SATSettingsMCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATVSNL>";
 		using MCSATSettings = mcsat::MCSATSettingsVSNL;
     };
 	struct SATSettingsMCSATFMVSNL : SATSettingsMCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATFMVSNL>";
 		using MCSATSettings = mcsat::MCSATSettingsFMVSNL;
     };
 }

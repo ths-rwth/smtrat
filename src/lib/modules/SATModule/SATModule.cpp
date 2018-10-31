@@ -1285,9 +1285,9 @@ namespace smtrat
                     std::cerr << "Formula must be quantifier-free!" << std::endl;
                     break;
                 default:
-					SMTRAT_LOG_WARN("smtrat.sat", "Unexpected formula type " << _formula.getType());
+					SMTRAT_LOG_ERROR("smtrat.sat", "Unexpected formula type " << _formula.getType());
+					SMTRAT_LOG_ERROR("smtrat.sat", _formula);
                     assert( false );
-                    std::cerr << "Unexpected type of formula!" << std::endl;
                 }
             }
         }
@@ -2451,10 +2451,7 @@ namespace smtrat
     {
         carl::uint pos = mTheoryPropagations.size();
         collectTheoryPropagations();
-		for (const auto& tp: mTheoryPropagations) {
-            SMTRAT_LOG_DEBUG("smtrat.sat", "SAT: " << tp.mPremise << " -> " << tp.mConclusion);
-		}
-        while( pos < mTheoryPropagations.size() )
+		while( pos < mTheoryPropagations.size() )
         {
             TheoryPropagation& tp = mTheoryPropagations[pos];
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Propagating " << tp.mPremise << " -> " << tp.mConclusion);
@@ -2903,8 +2900,10 @@ namespace smtrat
                 
                 if( decisionLevel() <= assumptions.size() )
                 {
-                    if( !mReceivedFormulaPurelyPropositional && !Settings::stop_search_after_first_unknown && mExcludedAssignments )
+                    if( !mReceivedFormulaPurelyPropositional && !Settings::stop_search_after_first_unknown && mExcludedAssignments ) {
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "Return undef due to excluded: " << mExcludedAssignments);
                         return l_Undef;
+                    }
                     return l_False;
                 }
 

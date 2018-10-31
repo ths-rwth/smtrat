@@ -16,8 +16,6 @@ namespace cad {
 	template<>
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::TRIVIAL>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
-		static int x;
-		SMTRAT_LOG_DEBUG("smtrat.mis", "TRIVIAL invoked: " << x++);
 		mis.emplace_back();
 		for (const auto& it: cad.getConstraints()) mis.back().emplace(it->first);
 	}
@@ -25,17 +23,11 @@ namespace cad {
 	template<>
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::GREEDY>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
-		static int x;
-		SMTRAT_LOG_DEBUG("smtrat.mis", "GREEDY invoked: " << x++);
 		mis.emplace_back();
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
 			mis.back().emplace(c);
 		}
 		auto cg = cad.generateConflictGraph();
-		//std::cout << "rows:" << cg.numConstraints() << std::endl;
-		//std::cout << "columns: " << cg.numSamples() << std::endl;
-		//std::cout << "trivial columns: " << cg.numTrivialColumns() << std::endl;
-		//std::cout << "unique colums: " << cg.numUniqueColumns() << std::endl;
 		while (cg.hasRemainingSamples()) {
 			std::size_t c = cg.getMaxDegreeConstraint();
 			mis.back().emplace(cad.getConstraints()[c]->first);
@@ -46,8 +38,6 @@ namespace cad {
 	template<>
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::GREEDY_PRE>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
-		static int x;
-		SMTRAT_LOG_DEBUG("smtrat.mis", "GREEDY_PRE invoked: " << x++);
 		mis.emplace_back();
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
 			mis.back().emplace(c);
@@ -73,8 +63,6 @@ namespace cad {
 		const static double constant_weight   = 10.0;
 		const static double complexity_weight = 0.1;
 		const static double activity_weight   = 10.0;
-		static int x;
-		SMTRAT_LOG_DEBUG("smtrat.mis", "HYBRID invoked: " << x++);
 		
 		// The set of constraints that will be included in every MIS
 		FormulaSetT misIntersection;
@@ -184,8 +172,6 @@ namespace cad {
 		const static double complexity_weight = 0.1;
 		const static double activity_weight   = 10.0;
 
-		static int x;
-		SMTRAT_LOG_DEBUG("smtrat.mis", "GREEDY_WEIGHTED invoked: " << x++);
 		mis.emplace_back();
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
 			mis.back().emplace(c);
@@ -221,8 +207,7 @@ namespace cad {
 		}
 		SMTRAT_LOG_DEBUG("smtrat.mis", cg);
 		SMTRAT_LOG_DEBUG("smtrat.mis", "-------------- Included: ---------------");
-		bool in = true;
-
+		
 		while (cg.hasRemainingSamples()) {
 			auto selection = std::max_element(candidates.begin(), candidates.end(),
 				[cg](candidate left, candidate right) {

@@ -198,10 +198,11 @@ private:
 				
 				return tseitinVar;
 			}
-			break;
 
 			default:
+				SMTRAT_LOG_WARN("smtrat.mcsat.vs", "Invalid formula type " << formula);
 				assert(false);
+				return FormulaT();
 		}
 	}
 

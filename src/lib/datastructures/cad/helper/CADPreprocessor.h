@@ -65,7 +65,7 @@ private:
 		for (auto& c: constraints) {
 			carl::model::substituteIn(c.second, mModel);
 			if (c.second.isConsistent() == 0) {
-				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Simplification found conflict in " << c.first);
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Simplification found conflict in " << c.first << " (" << c.second << ")");
 				return c.first;
 			}
 		}
