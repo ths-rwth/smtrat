@@ -92,6 +92,9 @@ public:
 	}
 
 	CollectionResult collect(std::map<ConstraintT, ConstraintT>& constraints) {
+		if (auto c = simplify(constraints); c) {
+			return *c;
+		}
 		bool foundNew = false;
 		bool continueSearch = true;
 		while (continueSearch) {
@@ -242,16 +245,20 @@ private:
 
 	std::optional<std::set<FormulaT>> mConflict;
 
-	void removeEquality(const ConstraintT& c) {
+	void resetCached() {
 		mDerivedEqualities.clear();
-		auto it = std::remove(mEqualities.begin(), mEqualities.end(), c);
-		mEqualities.erase(it, mEqualities.end());
 		mModel.clear();
 		mAssignments.reasons().clear();
 		mAssignments.constraints().clear();
 		for (auto& i: mInequalities) {
 			i.second = i.first;
 		}
+	}
+
+	void removeEquality(const ConstraintT& c) {
+		auto it = std::remove(mEqualities.begin(), mEqualities.end(), c);
+		mEqualities.erase(it, mEqualities.end());
+		resetCached();
 	}
 
 	bool addEqualities(const std::vector<ConstraintT>& constraints) {
