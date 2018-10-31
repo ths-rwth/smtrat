@@ -17,6 +17,7 @@ private:
 	Model& mModel;
 	/// Reasons for the assignment of variables.
 	std::map<carl::Variable, ConstraintT> mReasons;
+	std::map<ConstraintT, carl::Variable> mConstraints;
 
 	bool extractValueAssignments(std::map<ConstraintT, ConstraintT>& constraints) {
 		carl::Variable v;
@@ -27,6 +28,7 @@ private:
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Newly extracted " << v << " = " << r);
 				mModel.emplace(v, r);
 				mReasons.emplace(v, it->first);
+				mConstraints.emplace(it->first, v);
 				it = constraints.erase(it);
 				foundAssignment = true;
 			} else {
@@ -45,6 +47,7 @@ private:
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Newly extracted " << v << " = " << r);
 				mModel.emplace(v, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>(r));
 				mReasons.emplace(v, it->first);
+				mConstraints.emplace(it->first, v);
 				it = constraints.erase(it);
 				foundAssignment = true;
 				break;
@@ -80,6 +83,12 @@ public:
 	}
 	auto& reasons() {
 		return mReasons;
+	}
+	const auto& constraints() const {
+		return mConstraints;
+	}
+	auto& constraints() {
+		return mConstraints;
 	}
 
 	CollectionResult collect(std::map<ConstraintT, ConstraintT>& constraints) {
@@ -239,6 +248,7 @@ private:
 		mEqualities.erase(it, mEqualities.end());
 		mModel.clear();
 		mAssignments.reasons().clear();
+		mAssignments.constraints().clear();
 		for (auto& i: mInequalities) {
 			i.second = i.first;
 		}
@@ -247,6 +257,7 @@ private:
 	bool addEqualities(const std::vector<ConstraintT>& constraints) {
 		bool addedNew = false;
 		for (const auto& c: constraints) {
+			if (mAssignments.constraints().find(c) != mAssignments.constraints().end()) continue;
 			if (mDerivedEqualities.try_emplace(c, c).second) {
 				addedNew = true;
 			}
