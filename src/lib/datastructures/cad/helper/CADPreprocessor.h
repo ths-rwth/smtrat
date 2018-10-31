@@ -282,16 +282,20 @@ private:
 		return didReplacement;
 	}
 
-	void addModelToConflict(std::set<FormulaT>& conflict) const {
+	bool addModelToConflict(std::set<FormulaT>& conflict, carl::Variables& added) const {
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding necessary parts of model to conflict: " << conflict);
 		carl::Variables vars;
+		bool changed = false;
 		for (const auto& f: conflict) f.allVars(vars);
 		while (!vars.empty()) {
 			carl::Variables newvars;
 			for (auto v: vars) {
 				auto it = mAssignments.reasons().find(v);
 				if (it == mAssignments.reasons().end()) continue;
+				if (added.find(v) != added.end()) continue;
+				added.insert(v);
 				auto cit = conflict.emplace(it->second);
+				changed = true;
 				if (cit.second) {
 					cit.first->allVars(newvars);
 					SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Added " << it->second << " to conflict.");
@@ -299,6 +303,7 @@ private:
 			}
 			vars = newvars;
 		}
+		return changed;
 	}
 
 public:
@@ -412,21 +417,21 @@ public:
 		assert(mConflict);
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Building MIS from immediate conflict " << *mConflict);
 		std::set<FormulaT> res = *mConflict;
-		addModelToConflict(res);
-		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Resulting MIS: " << res);
+		postprocessConflict(res);
 		return res;
 	}
 
 	void postprocessConflict(std::set<FormulaT>& mis) const {
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Postprocessing conflict: " << mis << " based on" << std::endl << *this);
 		bool changed = true;
+		carl::Variables modelAdded;
 		while (changed) {
 			changed = false;
 			if (collectOriginsOfConflict(mis, mDerivedEqualities)) changed = true;
 			if (collectOriginsOfConflict(mis, mInequalities)) changed = true;
 			if (mResultants.resolveOrigins(mis)) changed = true;
+			if (addModelToConflict(mis, modelAdded)) changed = true;
 		}
-		addModelToConflict(mis);
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Postprocessed conflict: " << mis);
 	}
 };
