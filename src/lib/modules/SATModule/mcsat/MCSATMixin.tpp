@@ -136,7 +136,7 @@ void MCSATMixin<Settings>::popLevel() {
 
 template<typename Settings>
 std::size_t MCSATMixin<Settings>::addVariable(Minisat::Var variable) {
-	while (mMaxTheoryLevel.size() <= variable) {
+	while (mMaxTheoryLevel.size() <= varid(variable)) {
 		mMaxTheoryLevel.push_back(std::numeric_limits<std::size_t>::max());
 	}
 

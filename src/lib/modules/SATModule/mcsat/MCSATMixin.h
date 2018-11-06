@@ -112,6 +112,11 @@ private:
 	void updateCurrentLevel();
 	/// Undo a decision on the current level
 	void undoDecision();
+
+	std::size_t varid(Minisat::Var var) const {
+		assert(var >= 0);
+		return static_cast<std::size_t>(var);
+	}
 public:
 	
 	template<typename BaseModule>
@@ -448,36 +453,37 @@ public:
 	/**
 	 * Calculates the syntactic (maximal) theory level of the given variable.
 	 */
-	std::size_t maxTheoryLevel(const Minisat::Var& var) {
+	std::size_t maxTheoryLevel(Minisat::Var var) {
 		// if variableOrder has not been initialized yet
 		if (mBackend.variableOrder().empty()) {
 			return 0;
 		}
 
-		assert(var < mMaxTheoryLevel.size());
+		std::size_t v = varid(var);
+		assert(v < mMaxTheoryLevel.size());
 
-		if (mMaxTheoryLevel[var] == std::numeric_limits<std::size_t>::max()) {
+		if (mMaxTheoryLevel[v] == std::numeric_limits<std::size_t>::max()) {
 			if (!mGetter.isTheoryAbstraction(var)) {
-				mMaxTheoryLevel[var] = 0;
+				mMaxTheoryLevel[v] = 0;
 			} else {
 				auto reabstraction = mGetter.reabstractVariable(var);
 				carl::Variables vars;
 				reabstraction.arithmeticVars(vars);
 				if (vars.empty()) {
-					mMaxTheoryLevel[var] = 0;
+					mMaxTheoryLevel[v] = 0;
 				} else {
-					for (int i = mBackend.variableOrder().size() - 1; i >= 0; i--) {
-						if (vars.find(mBackend.variableOrder()[i]) != vars.end()) {
-							mMaxTheoryLevel[var] = i+1;
+					for (std::size_t i = mBackend.variableOrder().size(); i > 0; i--) {
+						if (vars.find(mBackend.variableOrder()[i-1]) != vars.end()) {
+							mMaxTheoryLevel[v] = i;
 							break;
 						}
 					}
 				}	
 			}
 		}
-		assert(mMaxTheoryLevel[var] < std::numeric_limits<std::size_t>::max());
+		assert(mMaxTheoryLevel[v] < std::numeric_limits<std::size_t>::max());
 
-		return mMaxTheoryLevel[var];
+		return mMaxTheoryLevel[v];
 	}
 	
 	// ***** Output
