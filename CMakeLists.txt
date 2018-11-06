@@ -187,6 +187,9 @@ include(resources/resources.cmake)
 # use carl, carl pulls in the required libraries.
 
 if(STATICLIB_SWITCH)
+	if(NOT TARGET lib_carl_static)
+		message(FATAL_ERROR "Cannot build static as lib_carl_static is not present")
+	endif()
 	set( libraries ${libraries} lib_carl_static)
 	set( libraries ${libraries} Boost_STATIC)
 else()
