@@ -116,7 +116,7 @@ private:
 			mInfo(level).setPurged(id, cbp);
 			if (cbp) {
 				carl::Bitset purged = carl::Bitset().set(id);
-				mLiftingQueues[level - 1].erase(id);
+				mLiftingQueues[level - 1].disable(id);
 				callRemoveCallback(level, purged);
 			}
 			mInfo(level).setEvaluated(id, true);
@@ -241,7 +241,7 @@ private:
 						mInactiveQueue.removeIf([level, id](const QueueEntry& qe) { return (qe.level == level) && (qe.first == id || qe.second == id); });
 					}
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Removing polynomial");
-					mLiftingQueues[level - 1].erase(id);
+					mLiftingQueues[level - 1].disable(id);
 					mInfo.clear(level, id);
 					freeID(level, id);
 					it = mPolynomialIDs[level].erase(it);
@@ -281,7 +281,7 @@ private:
 					mInfo(l, it.second).origin.deactivate(lvl, remove);
 					// remove inactive polynomials from LiftingQueue
 					if (!active(l, it.second)) {
-						mLiftingQueues[l - 1].erase(it.second);
+						mLiftingQueues[l - 1].disable(it.second);
 					}
 				}
 			}
@@ -314,7 +314,7 @@ private:
 					mInfo(l, it.second).origin.activate(lvl, activate);
 					//add active polynomials to LiftingQueue
 					if (active(l, it.second)) {
-						mLiftingQueues[l - 1].insert(it.second);
+						mLiftingQueues[l - 1].restore(it.second);
 					}
 				}
 			}
@@ -343,7 +343,7 @@ private:
 					assert(mPolynomials[l][it.second]);
 					mInfo(l, it.second).origin.deactivateEC(lvl, eqc);
 					if (!active(l, it.second)) {
-						mLiftingQueues[l - 1].erase(it.second);
+						mLiftingQueues[l - 1].disable(it.second);
 					}
 				}
 			}
@@ -383,7 +383,7 @@ private:
 						assert(mPolynomials[l][it.second]);
 						mInfo(l, it.second).origin.activateEC(lvl, eqc);
 						if (active(l, it.second)) {
-							mLiftingQueues[l - 1].insert(it.second);
+							mLiftingQueues[l - 1].restore(it.second);
 						}
 					}
 				}
@@ -399,7 +399,7 @@ private:
 					assert(mPolynomials[l][it.second]);
 					mInfo(l, it.second).origin.activateEC(level, eqc);
 					if (active(l, it.second)) {
-						mLiftingQueues[l - 1].insert(it.second);
+						mLiftingQueues[l - 1].restore(it.second);
 					}
 				}
 			}
@@ -425,26 +425,30 @@ private:
 		auto it = mPolynomialIDs[level].find(p);
 		if (it != mPolynomialIDs[level].end()) {
 			assert(mPolynomials[level][it->second]);
+			bool activated = active(level, it->second);
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Polynomial was already present. Already active? " << activated);
 			if (Settings::simplifyProjectionByBounds && setBound) {
 				assert(level > 0 && level <= dim());
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Setting " << level << "/" << it->second << " is a bound.");
 				mInfo(level).setBound(it->second, true);
 			}
 			if (Settings::restrictProjectionByEC) {
-				SMTRAT_LOG_INFO("smtrat.cad.projection", *this);
 				SMTRAT_LOG_INFO("smtrat.cad.projection", "Checking whether " << p << " is from an equational constraint.");
 				mInfo().addToEC(origin, level, it->second);
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Polynomial was already present, adding origins " << origin);
-			bool activated = active(level, it->second);
 			mInfo(level, it->second).origin += origin;
 			// in case p was inactive but becomes active by new BaseType activate successors
 			if (activated == false && active(level, it->second)) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Polynomial was inactive and is now active");
 				activatePolynomials(level);
-				mLiftingQueues[level - 1].insert(it->second);
+				mLiftingQueues[level - 1].restore(it->second);
 				updateInactiveQueue = true;
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Restored polynomial");
+				SMTRAT_LOG_INFO("smtrat.cad.projection", *this);
 				return carl::Bitset({level});
 			}
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> nothing changed.");
 			return carl::Bitset();
 		}
 		std::size_t id = getID(level);
