@@ -5,7 +5,7 @@ namespace smtrat {
 namespace parser {
 namespace uninterpreted {
 
-	inline bool convertTerm(const types::TermType& term, types::UninterpretedTheory::TermType& result) {
+	inline bool convertTerm(const types::TermType& term, types::UTerm& result) {
 		if (boost::get<carl::UTerm>(&term) != nullptr) {
 			result = boost::get<carl::UTerm>(term);
 			return true;
@@ -17,10 +17,10 @@ namespace uninterpreted {
 		}
 	}
 
-	inline bool convertArguments(const std::vector<types::TermType>& arguments, std::vector<types::UninterpretedTheory::TermType>& result, TheoryError& errors) {
+	inline bool convertArguments(const std::vector<types::TermType>& arguments, std::vector<types::UTerm>& result, TheoryError& errors) {
 		result.clear();
 		for (std::size_t i = 0; i < arguments.size(); i++) {
-			types::UninterpretedTheory::TermType res;
+			types::UTerm res;
 			if (!convertTerm(arguments[i], res)) {
 				errors.next() << "Arguments are expected to be uninterpreted, but argument " << (i+1) << " is not: \"" << arguments[i] << "\".";
 				return false;
@@ -55,9 +55,9 @@ namespace uninterpreted {
 		return true;
 	}
 
-	bool UninterpretedTheory::handleITE(const FormulaT&, const types::TermType& thenterm, const types::TermType& elseterm, types::TermType&, TheoryError& errors) {
-		types::UninterpretedTheory::TermType thenf;
-		types::UninterpretedTheory::TermType elsef;
+	bool UninterpretedTheory::handleITE(const FormulaT& ifterm, const types::TermType& thenterm, const types::TermType& elseterm, types::TermType& result, TheoryError& errors) {
+		types::UTerm thenf;
+		types::UTerm elsef;
 		if (!uninterpreted::convertTerm(thenterm, thenf)) {
 			errors.next() << "Failed to construct ITE, the then-term \"" << thenterm << "\" is unsupported.";
 			return false;
@@ -66,8 +66,25 @@ namespace uninterpreted {
 			errors.next() << "Failed to construct ITE, the else-term \"" << elseterm << "\" is unsupported.";
 			return false;
 		}
-		//result = FormulaT(carl::FormulaType::ITE, ifterm, thenf, elsef);
-		return false;
+		if (thenf.domain() != elsef.domain()) {
+			errors.next() << "Failed to construct ITE, the domains of \"" << thenterm << "\" (" << thenterm.domain() << ") and \"" << elseterm << "\" (" << elseterm.domain() << ") are different.";
+			return false;
+		}
+
+		carl::Variable var = carl::freshUninterpretedVariable();
+		state->artificialVariables.emplace_back(var);
+		carl::UVariable uvar(var, thenf.domain());
+		state->auxiliary_variables.insert(uvar);
+
+
+		FormulaT consThen(carl::UEquality(carl::UTerm(uvar), thenf, false));
+		FormulaT consElse(carl::UEquality(carl::UTerm(uvar), elsef, false));
+
+		state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IMPLIES, {ifterm, consThen}));
+		state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IMPLIES, {!ifterm, consElse}));
+		
+		result = uvar;
+		return true;
 	}
 	
 	bool UninterpretedTheory::handleFunctionInstantiation(const carl::UninterpretedFunction& f, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError&) {
@@ -126,10 +143,10 @@ namespace uninterpreted {
 		return true;
 	}
 	bool UninterpretedTheory::handleDistinct(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
-		std::vector<types::UninterpretedTheory::TermType> args;
+		std::vector<types::UTerm> args;
 		if (!uninterpreted::convertArguments(arguments, args, errors)) return false;
-		result = expandDistinct(args, [](const types::UninterpretedTheory::TermType& a, const types::UninterpretedTheory::TermType& b){ 
-			return carl::UEquality(boost::get<carl::UTerm>(a), boost::get<carl::UTerm>(b), true);
+		result = expandDistinct(args, [](const types::UTerm& a, const types::UTerm& b){ 
+			return carl::UEquality(a, b, true);
 		});
 		return true;
 	}
@@ -140,11 +157,11 @@ namespace uninterpreted {
 			return handleFunctionInstantiation(fit->second, arguments, result, errors);
 		}
 		if (identifier.symbol == "=") {
-			std::vector<types::UninterpretedTheory::TermType> args;
+			std::vector<types::UTerm> args;
 			if (!uninterpreted::convertArguments(arguments, args, errors)) return false;
 			FormulasT subformulas;
 			for (std::size_t i = 0; i < args.size() - 1; i++) {
-				subformulas.emplace_back(carl::UEquality(boost::get<carl::UTerm>(args[i]), boost::get<carl::UTerm>(args[i+1]), false));
+				subformulas.emplace_back(carl::UEquality(args[i], args[i+1], false));
 			}
 			result = FormulaT(carl::FormulaType::AND, subformulas);
 			return true;

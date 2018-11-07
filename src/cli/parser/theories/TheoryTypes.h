@@ -90,6 +90,7 @@ namespace types {
 	};
 #endif
 #ifdef PARSER_ENABLE_UNINTERPRETED
+	using UTerm = carl::UTerm;
     /**
      * Types of the theory of equalities and uninterpreted functions.
      */
