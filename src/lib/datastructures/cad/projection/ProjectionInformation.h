@@ -231,6 +231,7 @@ public:
 	}
 
 	bool active(std::size_t level, std::size_t id) const {
+		if ((*this)(level).isBound(id)) return true;
 		if (level == 0) {
 			return !mGlobal.mInactive.test(id) && !(*this)(0).isPurged(id);
 		} else {
