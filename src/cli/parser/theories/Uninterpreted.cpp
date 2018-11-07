@@ -56,29 +56,29 @@ namespace uninterpreted {
 	}
 
 	bool UninterpretedTheory::handleITE(const FormulaT& ifterm, const types::TermType& thenterm, const types::TermType& elseterm, types::TermType& result, TheoryError& errors) {
-		types::UTerm thenf;
-		types::UTerm elsef;
-		if (!uninterpreted::convertTerm(thenterm, thenf)) {
+		types::UTerm thent;
+		types::UTerm elset;
+		if (!uninterpreted::convertTerm(thenterm, thent)) {
 			errors.next() << "Failed to construct ITE, the then-term \"" << thenterm << "\" is unsupported.";
 			return false;
 		}
-		if (!uninterpreted::convertTerm(elseterm, elsef)) {
+		if (!uninterpreted::convertTerm(elseterm, elset)) {
 			errors.next() << "Failed to construct ITE, the else-term \"" << elseterm << "\" is unsupported.";
 			return false;
 		}
-		if (thenf.domain() != elsef.domain()) {
-			errors.next() << "Failed to construct ITE, the domains of \"" << thenterm << "\" (" << thenterm.domain() << ") and \"" << elseterm << "\" (" << elseterm.domain() << ") are different.";
+		if (thent.domain() != elset.domain()) {
+			errors.next() << "Failed to construct ITE, the domains of \"" << thent << "\" (" << thent.domain() << ") and \"" << elset << "\" (" << elset.domain() << ") are different.";
 			return false;
 		}
 
 		carl::Variable var = carl::freshUninterpretedVariable();
 		state->artificialVariables.emplace_back(var);
-		carl::UVariable uvar(var, thenf.domain());
+		carl::UVariable uvar(var, thent.domain());
 		state->auxiliary_variables.insert(uvar);
 
 
-		FormulaT consThen(carl::UEquality(carl::UTerm(uvar), thenf, false));
-		FormulaT consElse(carl::UEquality(carl::UTerm(uvar), elsef, false));
+		FormulaT consThen(carl::UEquality(carl::UTerm(uvar), thent, false));
+		FormulaT consElse(carl::UEquality(carl::UTerm(uvar), elset, false));
 
 		state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IMPLIES, {ifterm, consThen}));
 		state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IMPLIES, {!ifterm, consElse}));
