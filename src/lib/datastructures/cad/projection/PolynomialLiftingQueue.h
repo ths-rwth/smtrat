@@ -29,27 +29,39 @@ namespace cad {
 	private:
 		PolynomialComparator<PolynomialGetter> mComparator;
 		std::set<std::size_t, PolynomialComparator<PolynomialGetter>> mQueue;
+		carl::Bitset mDisabled;
 	public:
 		PolynomialLiftingQueue(const PolynomialGetter* pg, std::size_t level):
 			mComparator(pg, level),
 			mQueue(mComparator)
 		{}
 		
-		auto insert(std::size_t id) -> decltype(mQueue.insert(id)) {
+		auto insert(std::size_t id) {
 			return mQueue.insert(id);
 		}
-		auto erase(std::size_t id) -> decltype(mQueue.erase(id)) {
+		auto erase(std::size_t id) {
 			return mQueue.erase(id);
 		}
 		
-		auto begin() const -> decltype(mQueue.begin()) {
+		auto begin() const {
 			return mQueue.begin();
 		}
-		auto end() const -> decltype(mQueue.end()) {
+		auto end() const {
 			return mQueue.end();
 		}
-		auto size() const -> decltype(mQueue.size()) {
+		auto size() const {
 			return mQueue.size();
+		}
+
+		void disable(std::size_t id) {
+			erase(id);
+			mDisabled.set(id, true);
+		}
+		void restore(std::size_t id) {
+			if (mDisabled.test(id)) {
+				mDisabled.set(id, false);
+				insert(id);
+			}
 		}
 		
 	};
