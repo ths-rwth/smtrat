@@ -17,6 +17,13 @@ struct UninterpretedTheory: public AbstractTheory {
 	carl::UVariable mFalse;
 	
 	UninterpretedTheory(ParserState* state);
+
+	FormulaT coupleBooleanVariables(carl::Variable v, carl::UVariable uv) {
+		return FormulaT(carl::FormulaType::AND, {
+			FormulaT(carl::FormulaType::IFF, {FormulaT(v), FormulaT(carl::UEquality(uv, mTrue, false))}),
+			FormulaT(carl::FormulaType::IFF, {!FormulaT(v), FormulaT(carl::UEquality(uv, mFalse, false))})
+		});
+	}
 	
 	bool declareVariable(const std::string& name, const carl::Sort& sort, types::VariableType& result, TheoryError& errors);
 	

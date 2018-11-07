@@ -94,10 +94,14 @@ namespace uninterpreted {
 			if (it != mInstantiatedArguments.end()) {
 				vars.push_back(it->second);
 				continue;
-			} else if (const FormulaT* f = boost::get<FormulaT>(&v)) {
+			} else if (const carl::Variable* var = boost::get<carl::Variable>(&v)) {
+				carl::Variable tmp = carl::freshUninterpretedVariable();
+				vars.push_back(carl::UTerm(carl::UVariable(tmp, mBoolSort)));
+				state->global_formulas.emplace_back(coupleBooleanVariables(*var, carl::UVariable(tmp, mBoolSort)));
+			} else if (const FormulaT* formula = boost::get<FormulaT>(&v)) {
 				carl::Variable tmp = carl::freshBooleanVariable();
 				vars.push_back(carl::UTerm(carl::UVariable(tmp)));
-				state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IFF, {FormulaT(tmp), *f}));
+				state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IFF, {FormulaT(tmp), *formula}));
 			} else if (const Poly* p = boost::get<Poly>(&v)) {
 				carl::Variable tmp = carl::freshRealVariable();
 				vars.push_back(carl::UTerm(carl::UVariable(tmp)));
@@ -113,7 +117,7 @@ namespace uninterpreted {
 			} else if (const carl::UVariable* uv = boost::get<carl::UVariable>(&v)) {
 				vars.push_back(carl::UTerm(*uv));
 			} else {
-				SMTRAT_LOG_ERROR("smtrat.parser", "The function argument type for function " << f << " was invalid.");
+				SMTRAT_LOG_ERROR("smtrat.parser", "The function argument type of " << v << " for function " << f << " was invalid.");
 				continue;
 			}
 			mInstantiatedArguments[v] = vars.back();
