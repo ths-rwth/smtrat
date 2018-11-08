@@ -21,24 +21,24 @@ namespace smtrat {
 				assert(formula.getType() == carl::UEQ);
 
 				const UEquality& ueq = formula.uequality();
-				const UVariable *lhs, *rhs;
+				UVariable lhs, rhs;
 				bool changed = false;
 
 				if(ueq.lhs().isUFInstance()) {
 					changed = true;
 					lhs = P_handle_UF(ueq.lhs().asUFInstance());
 				} else {
-					lhs = &ueq.lhs().asUVariable();
+					lhs = ueq.lhs().asUVariable();
 				}
 
 				if(ueq.rhs().isUFInstance()) {
 					changed = true;
 					rhs = P_handle_UF(ueq.rhs().asUFInstance());
 				} else {
-					rhs = &ueq.rhs().asUVariable();
+					rhs = ueq.rhs().asUVariable();
 				}
 
-				return changed ? FormulaT(UTerm(*lhs), UTerm(*rhs), ueq.negated()) : formula;
+				return changed ? FormulaT(UTerm(lhs), UTerm(rhs), ueq.negated()) : formula;
 			}
 
 			const FormulaSetT& congruences() const noexcept { return mCongruences; }
@@ -46,7 +46,7 @@ namespace smtrat {
 			const std::unordered_map<UFInstance, UVariable>& UFItoVar() const noexcept { return mUFIToVar; }
 
 		private:
-			UVariable *P_handle_UF(const UFInstance& instance) {
+			UVariable P_handle_UF(const UFInstance& instance) {
 				auto iter = mUFIToVar.find(instance);
 
 				if(iter == mUFIToVar.end()) {
@@ -80,7 +80,7 @@ namespace smtrat {
 					fniter->second.push_back(instance);
 				}
 
-				return &(iter->second);
+				return iter->second;
 			}
 
 			// mapping of function instances to variables and back
