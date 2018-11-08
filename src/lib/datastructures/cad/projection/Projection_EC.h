@@ -23,6 +23,7 @@ private:
 	using Super::canBePurgedByBounds;
 	using Super::freeID;
 	using Super::getID;
+	using Super::isPurged;
 	using Super::mConstraints;
 	using Super::mInfo;
 	using Super::mLiftingQueues;
@@ -92,56 +93,21 @@ private:
 	std::string logPrefix(std::size_t level) const {
 		return std::string(dim() - level, '\t');
 	}
-
 	/*
-                 * Evaluate whether a polynomial is purged.
-                 * @param level Level of the polnomial.
-                 * @param id ID of the polynomial.
-                 */
-	bool isPurged(std::size_t level, std::size_t id) {
-		assert(level > 0 && level <= dim());
-		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking whether " << level << "/" << id << " is purged.");
-		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Current bounds are " << mInfo(level).bounds);
-		if (mInfo(level).isBound(id)) {
-			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Do not purge as " << level << "/" << id << " is a bound.");
-			return false;
-		}
-		if (mInfo.usingEC(level) && mInfo.getUsedEC(level).test(id)) {
-			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Do not purge as " << level << "/" << id << " is an equational constraint.");
-			return false;
-		}
-		if (!mInfo(level).isEvaluated(id)) {
-			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking if " << level << "/" << id << " can be purged.");
-			bool cbp = mCanBePurged(level, id);
-			mInfo(level).setPurged(id, cbp);
-			if (cbp) {
-				carl::Bitset purged = carl::Bitset().set(id);
-				mLiftingQueues[level - 1].disable(id);
-				callRemoveCallback(level, purged);
-			}
-			mInfo(level).setEvaluated(id, true);
-		}
-		return mInfo(level).isPurged(id);
-	}
-	/*
-                 * Evaluate whether a queue entry is purged.
-                 * @param qe Queue entry.
-                 */
+	 * Evaluate whether a queue entry is purged.
+	 * @param qe Queue entry.
+	 */
 	bool isPurged(const QueueEntry& qe) {
-		if (qe.level == 0) {
-			assert(qe.first == qe.second);
-			return false; //mCanBePurged(0, qe.first);
-		}
-		return isPurged(qe.level, qe.first) || isPurged(qe.level, qe.second); //previously ...level-1
+		return !(active(qe.level, qe.first) && active(qe.level, qe.second));
 	}
 	/*
-                 * Evaluates if polynomials are purged, for not yet evaluated polynomials.
-                 * @param level Level until which polynomials need to be evaluated.
-                 */
+	 * Evaluates if polynomials are purged, for not yet evaluated polynomials.
+	 * @param level Level until which polynomials need to be evaluated.
+	 */
 	void computePurgedPolynomials(std::size_t level) {
 		for (std::size_t lvl = 1; lvl <= level; lvl++) {
 			for (const auto& it : mPolynomialIDs[lvl]) {
-				isPurged(lvl, it.second);
+				active(lvl, it.second);
 			}
 		}
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -159,7 +125,7 @@ private:
                  * @param id Id of the polynomial.
                  */
 	bool active(std::size_t level, std::size_t id) const {
-		return mInfo.active(level, id);
+		return mInfo.isActive(level, id);
 	}
 
 	bool isQueueEntryActive(std::size_t level, std::size_t first, std::size_t second, bool usingEC) const {
@@ -465,6 +431,7 @@ private:
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Setting " << level << "/" << id << " is a bound.");
 			mInfo(level).setBound(id, true);
 		}
+		isPurged(level, id);
 		if (Settings::restrictProjectionByEC) {
 			SMTRAT_LOG_INFO("smtrat.cad.projection", *this);
 			SMTRAT_LOG_INFO("smtrat.cad.projection", "Checking whether " << p << " is from an equational constraint.");

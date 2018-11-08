@@ -66,6 +66,17 @@ namespace cad {
 			}
 			return false;
 		}
+
+		bool isPurged(std::size_t level, std::size_t id) {
+			if (!mInfo(level).isEvaluated(id)) {
+				bool cbp = canBePurgedByBounds(this->getPolynomialById(level, id));
+				if (cbp) {
+					mInfo(level).setPurged(id, true);
+				}
+				mInfo(level).setEvaluated(id, true);
+			}
+			return mInfo(level).isPurged(id);
+		}
 	public:
 		/// Returns the dimension of the projection.
 		std::size_t dim() const {

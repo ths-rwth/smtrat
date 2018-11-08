@@ -230,13 +230,33 @@ public:
 		return mPoly.hasInfo(level, pid);
 	}
 
-	bool active(std::size_t level, std::size_t id) const {
-		if ((*this)(level).isBound(id)) return true;
+	bool isActive(std::size_t level, std::size_t id) const {
 		if (level == 0) {
-			return !mGlobal.mInactive.test(id) && !(*this)(0).isPurged(id);
-		} else {
-			return (*this)(level, id).origin.isActive() && !(*this)(level).isPurged(id);
+			if ((*this)().mInactive.test(id)) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", level << "/" << id << " is inactive on level 0.");
+				return false;
+			}
+			if ((*this)(level).isEvaluated(id) && (*this)(level).isPurged(id)) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", level << "/" << id << " is inactive as being purged.");
+				return false;
+			}
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", level << "/" << id << " is active on level 0.");
+			return true;
 		}
+		if ((*this)(level).isBound(id)) {
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", level << "/" << id << " is active as a bound polynomial.");
+			return true;
+		}
+		if (!(*this)(level, id).origin.isActive()) {
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", level << "/" << id << " is inactive without active origins.");
+			return false;
+		}
+		if ((*this)(level).isEvaluated(id) && (*this)(level).isPurged(id)) {
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", level << "/" << id << " is inactive as being purged.");
+			return false;
+		}
+		SMTRAT_LOG_DEBUG("smtrat.cad.projection", level << "/" << id << " is active.");
+		return true;
 	}
 
 	void reset(std::size_t dim) {
@@ -274,7 +294,7 @@ public:
 			const auto& polys = (*this)(level).ecs.getEC(ecid).polynomials;
 			bool ec_active = true;
 			for (auto pid: polys) {
-				if (!active(level, pid)) {
+				if (!isActive(level, pid)) {
 					ec_active = false;
 					break;
 				}
