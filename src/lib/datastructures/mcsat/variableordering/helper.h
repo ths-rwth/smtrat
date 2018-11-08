@@ -27,7 +27,7 @@ struct VariableIDs {
 inline std::ostream& operator<<(std::ostream& os, const VariableIDs& vids) {
 	std::vector<carl::Variable> v(vids.mIDs.size());
 	for (const auto& var: vids.mIDs) {
-		assert(var.second >= 0 && var.second < v.size());
+		assert(var.second < v.size());
 		v[var.second] = var.first;
 	}
 	return os << v;

@@ -295,7 +295,7 @@ public:
 struct DefaultComparator {
 	bool symmetric = false;
 
-	bool operator()(const Bound& b1, const Bound& b2) const {
+	bool operator()(const Bound&, const Bound&) const {
 		return false;
 	}
 };

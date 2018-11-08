@@ -14,7 +14,7 @@ private:
 	using B = std::tuple<Backends...>;
 	B mBackends;
 	template<std::size_t N = 0, carl::EnableIfBool<N == std::tuple_size<B>::value> = carl::dummy>
-	boost::optional<Explanation> explain(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
+	boost::optional<Explanation> explain(const mcsat::Bookkeeping&, const std::vector<carl::Variable>&, carl::Variable, const FormulasT&) const {
 		SMTRAT_LOG_ERROR("smtrat.mcsat.explanation", "No explanation left.");
 		return boost::none;
 	}
