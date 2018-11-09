@@ -5,6 +5,8 @@
 #include "../../../modules/VSModule/Substitute.h"
 #include <carl/formula/model/evaluation/ModelEvaluation.h>
 
+#include <variant>
+
 namespace smtrat {
 namespace mcsat {
 namespace vs {
@@ -367,11 +369,14 @@ namespace helper {
             return true;
         }
 
-        if (variableComparison.value().which() == 0) { // MultivariateRoot
-            return generateZeros(boost::get<MultivariateRootT>(variableComparison.value()), model, yield_result);
-        } else { // RealAlgebraicNumber
-            return generateZeros(boost::get<carl::RealAlgebraicNumber<Rational>>(variableComparison.value()), yield_result);
-        }
+		return std::visit(carl::overloaded {
+			[&model,&yield_result](const MultivariateRootT& mv) {
+				return generateZeros(mv, model, yield_result);
+			},
+			[&yield_result](const carl::RealAlgebraicNumber<Rational>& ran) {
+				return generateZeros(ran, yield_result);
+			}
+		}, variableComparison.value());
     }
 
     static bool generateZeros(const FormulaT& formula, const carl::Variable& eliminationVar, const Model& model, std::function<void(SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions)> yield_result) {
@@ -464,7 +469,7 @@ namespace helper {
         static carl::Variable subVar2 = carl::freshRealVariable("__subVar2");
 
         // assert that the substitution variable occurs never in an MVRoot's polynomial...
-        assert(varcomp.value().which() == 1 || !boost::get<MultivariateRootT>(varcomp.value()).poly().has(substitution.variable()));
+		assert(!std::holds_alternative<MultivariateRootT>(varcomp.value()) || !std::get<MultivariateRootT>(varcomp.value()).poly().has(substitution.variable()));
 
         if (varcomp.var() == substitution.variable()) {
             carl::Relation varcompRelation = varcomp.negated() ? carl::inverse(varcomp.relation()) : varcomp.relation();

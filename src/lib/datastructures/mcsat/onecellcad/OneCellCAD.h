@@ -32,7 +32,7 @@
 #include <carl/core/rootfinder/RootFinder.h>
 #include <carl/core/UnivariatePolynomial.h>
 #include <carl/core/MultivariatePolynomial.h>
-#include <carl/converter/CoCoAAdaptor.h>
+#include <carl/core/polynomialfunctions/Factorization.h>
 
 //#include "../../../Common.h" // useful short type aliases and constants
 #include "lib/Common.h" // useful short type aliases and constants
