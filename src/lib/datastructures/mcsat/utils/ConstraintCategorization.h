@@ -28,22 +28,14 @@ namespace constraint_type {
 		return os;
 	}
 	
-	
-	inline void collectVariables(carl::Variables& vars, const FormulaT& f) {
-		f.arithmeticVars(vars);
-	}
-	inline void collectVariables(carl::Variables& vars, const ConstraintT& c) {
-		vars = c.variables();
-	}
-	
 	template<typename T>
 	ConstraintType categorize(const T& t, const Model& model, carl::Variable next) {
 		assert(model.find(next) == model.end());
-		carl::Variables vars;
-		collectVariables(vars, t);
+		carl::carlVariables vars;
+		t.gatherVariables(vars);
 		if (vars.empty()) return ConstraintType::Constant;
 		bool foundNext = false;
-		for (const auto& var: vars) {
+		for (const auto& var: vars.underlyingVariables()) {
 			if (var == next) {
 				foundNext = true;
 				continue;
@@ -62,8 +54,8 @@ namespace constraint_type {
 	template<typename T>
 	bool isConstant(const T& t) {
 		// Avoid unnecessary overhead of categorize()
-		carl::Variables vars;
-		collectVariables(vars, t);
+		carl::carlVariables vars;
+		t.gatherVariables(vars);
 		return vars.empty();
 	}
 	
@@ -74,9 +66,9 @@ namespace constraint_type {
 	template<typename T>
 	bool isAssigned(const T& t, const Model& model) {
 		// Avoid unnecessary overhead of categorize()
-		carl::Variables vars;
-		collectVariables(vars, t);
-		for (const auto& var: vars) {
+		carl::carlVariables vars;
+		t.gatherVariables(vars);
+		for (const auto& var: vars.underlyingVariables()) {
 			if (model.find(var) == model.end()) return false;
 		}
 		return true;

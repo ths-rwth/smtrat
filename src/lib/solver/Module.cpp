@@ -1160,9 +1160,11 @@ namespace smtrat
 	void Module::addAssumptionToCheck(const ConstraintsT& _constraints, bool _consistent, const string& _label) {
 		carl::SMTLIBStream sls;
 		sls.setInfo("status", (_consistent ? "sat" : "unsat"));
-		carl::Variables vars;
-		for(const auto& c : _constraints)
-			vars.insert(c.variables().begin(), c.variables().end());
+		carl::carlVariables vars;
+		for(const auto& c : _constraints) {
+			c.gatherVariables(vars);
+			vars.compact();
+		}
 		sls << "(declare-fun " << _label << " () " << "Bool" << ")\n";
 		sls.declare(vars);
 		sls << "(assert (and" << std::endl;

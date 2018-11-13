@@ -111,12 +111,13 @@ std::vector<carl::Variable> feature_based(const Constraints& c) {
 	features.addFeature(detail::max_term_total_degree<Constraints>, 0, -0.5);
 	features.addFeature(detail::max_coefficient<Constraints>, 1, 1);
 	
-	std::vector<carl::Variable> vars = collectVariables(c);
+	carl::carlVariables vars;
+	gatherVariables(vars, c);
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Collected variables " << vars);
-	vars = features.sortVariables(c, vars);
+	auto orderedVars = features.sortVariables(c, vars.underlyingVariables());
 	
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Calculated variable ordering " << vars);
-	return vars;
+	return orderedVars;
 	
 }
 

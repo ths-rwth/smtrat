@@ -42,6 +42,14 @@ std::vector<carl::Variable> collectVariables(const Constraints& constraints) {
 	return std::vector<carl::Variable>(vars.begin(), vars.end());
 }
 
+template<typename Constraints>
+void gatherVariables(carl::carlVariables& vars, const Constraints& constraints) {
+	for (const auto& c: constraints) {
+		c.gatherVariables(vars);
+		vars.compact();
+	}
+}
+
 }
 }
 }
