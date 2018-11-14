@@ -586,7 +586,7 @@ namespace smtrat
 			RationalInterval res(1);
 			for (const auto& vexp: *_mon) {
 				const RationalInterval& i = getInterval(vexp.first);
-				res *= i.pow(vexp.second);
+				res *= carl::pow(i, vexp.second);
 			}
 			return res;
 		}
