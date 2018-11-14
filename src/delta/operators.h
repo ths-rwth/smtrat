@@ -56,6 +56,23 @@ NodeChangeSet children(const Node& n) {
 }
 
 /**
+ * Node operator that reorders children of a node.
+ * @param n Node.
+ * @return A set of replacements.
+ */
+NodeChangeSet reorderChildren(const Node& n) {
+	std::vector<Node> nodes = n.children;
+	NodeChangeSet res;
+	for (std::size_t i = 1; i < nodes.size(); ++i) {
+		if (nodes[i-1].size > nodes[i].size) {
+			res.emplace_back(n);
+			std::swap(res.back().children[i-1], res.back().children[i]);
+		}
+	}
+	return res;
+}
+
+/**
  * Node operator that merges nodes with one of its own children.
  * @param n Node.
  * @return A set of replacements.
