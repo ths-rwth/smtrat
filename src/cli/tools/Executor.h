@@ -97,19 +97,13 @@ public:
 	void defineSort(const std::string&, const std::vector<std::string>&, const carl::Sort&) {
 		//error() << "(define-sort <name> <sort>) is not implemented.";
 	}
-	void eliminateQuantifiers(const smtrat::parser::QEQuery& q) {
-		regular() << "Quantified Formula: " << q << smtrat::FormulaT(this->solver->formula()) << std::endl;
+	void eliminateQuantifiers(const smtrat::QEQuery& q) {
+		FormulaT qfree(this->solver->formula());
+		regular() << "Quantified Formula: " << q << " " << qfree << std::endl;
 
-		smtrat::FormulaT quantifier_free_part = smtrat::FormulaT(this->solver->formula());
-		std::map<carl::Variable, smtrat::parser::QuantifierType> quantifiers;
-		for(const auto& qlvl : q) {
-			for(const auto& v: qlvl.second) {
-				quantifiers.emplace(boost::get<carl::Variable>(v), qlvl.first);
-			}
-		}
-		smtrat::qe::QE qe(quantifier_free_part, quantifiers);
+		FormulaT result = smtrat::qe::eliminateQuantifiers(qfree, q);
 
-		std::cout << "Equivalent Quantifier-Free Formula: " << qe.eliminateQuantifiers() << std::endl;
+		regular() << "Equivalent Quantifier-Free Formula: " << result << std::endl;
 	}
 	void exit() {
 	}

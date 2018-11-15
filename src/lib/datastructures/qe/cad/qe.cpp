@@ -1,26 +1,27 @@
-#include "QE.h"
+#include "qe.h"
 
 #include <sstream>
 
 namespace smtrat{
 namespace qe{
 
-  QE::QE(Formula &quantifierFreePart, std::map<Variable, smtrat::parser::QuantifierType>& quantifiers) {
+  QE::QE(const Formula& quantifierFreePart, const QEQuery& quantifiers) {
     mQuantifierFreePart = quantifierFreePart;
-    mQuantifiers = quantifiers;
 
+	carl::carlVariables vars;
+	quantifierFreePart.gatherVariables(vars);
     // quantified variables
-    for(auto it = mQuantifiers.rbegin(); it != mQuantifiers.rend(); it++) {
-      mVariables.push_back(it->first);
-    }
-    // free variables
-    std::set<Variable> variables_as_set = mQuantifierFreePart.variables();
-		for(carl::Variables::iterator it = variables_as_set.begin(); it != variables_as_set.end(); it++){
-      if(std::find(mVariables.begin(), mVariables.end(), *it) == mVariables.end()) {
-        mVariables.push_back(*it);
-      }
+	for (const auto& quantifier: quantifiers) {
+		for (auto v: quantifier.second) {
+			mQuantifiers.emplace_back(v, quantifier.first);
+			mVariables.emplace_back(v);
+			vars.erase(v);
 		}
-
+	}
+	for (auto v: vars.underlyingVariables()) {
+		mVariables.emplace_back(v);
+	}
+    
     // number of variables
     n = mVariables.size();
     // number of free variables
@@ -233,14 +234,14 @@ namespace qe{
     int i = n-1;
     for(auto quantifier = mQuantifiers.rbegin(); quantifier != mQuantifiers.rend(); quantifier++) {
       for(auto it = mCAD.getLifting().getTree().begin_depth(i); it != mCAD.getLifting().getTree().end_depth(); it++) {
-        if(quantifier->second == smtrat::parser::QuantifierType::EXISTS) {
+        if(quantifier->second == smtrat::QuantifierType::EXISTS) {
           bool truthValue = false;
           for(auto child = mCAD.getLifting().getTree().begin_children(it); child != mCAD.getLifting().getTree().end_children(it); child++) {
             truthValue = truthValue || mTruth.find(child)->second;
           }
           mTruth.emplace(it, truthValue);
         }
-        if(quantifier->second == smtrat::parser::QuantifierType::FORALL) {
+        if(quantifier->second == smtrat::QuantifierType::FORALL) {
           bool truthValue = true;
           for(auto child = mCAD.getLifting().getTree().begin_children(it); child != mCAD.getLifting().getTree().end_children(it); child++) {
             truthValue = truthValue && mTruth.find(child)->second;

@@ -50,15 +50,24 @@ struct QuantifierParser: public qi::symbols<char, QuantifierType> {
 
 struct QEParser: public qi::grammar<Iterator, QEQuery(), Skipper> {
 	QEParser(Theories* theories): QEParser::base_type(main, "qe-query"), theories(theories) {
-		var = qualifiedidentifier[qi::_val = px::bind(&Theories::resolveVariable, px::ref(*theories), qi::_1)];
+		var = qualifiedidentifier[qi::_val = px::bind(&QEParser::resolveVariable, this, qi::_1)];
 		main = +("(" > quantifier > +var > ")");
+	}
+
+	carl::Variable resolveVariable(const Identifier& name) const {
+		auto v = theories->resolveVariable(name);
+		return boost::apply_visitor(carl::overloaded {
+			[](carl::Variable v){ return v; },
+			[](carl::BVVariable v){ return v.variable(); },
+			[](carl::UVariable v){ return v.variable(); },
+		}, v);
 	}
 	
 	Theories* theories;
 	QualifiedIdentifierParser qualifiedidentifier;
 	QuantifierParser quantifier;
 	
-	qi::rule<Iterator, types::VariableType(), Skipper> var;
+	qi::rule<Iterator, carl::Variable(), Skipper> var;
 	qi::rule<Iterator, QEQuery(), Skipper> main;
 };
 

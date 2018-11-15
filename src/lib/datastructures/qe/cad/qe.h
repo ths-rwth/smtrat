@@ -2,14 +2,12 @@
 
 #include "Common.h"
 
-#include "../../../cli/parser/theories/TheoryTypes.h"
-
-#include "CAD_QE/CAD_QE.h"
-#include "../cad/Settings.h"
-#include "../cad/helper/CADCore.h"
-#include "../cad/projection/Projection.h"
-#include "../cad/lifting/LiftingTree.h"
-#include "../cad/lifting/Sample.h"
+#include "CAD_QE.h"
+#include "../../cad/Settings.h"
+#include "../../cad/helper/CADCore.h"
+#include "../../cad/projection/Projection.h"
+#include "../../cad/lifting/LiftingTree.h"
+#include "../../cad/lifting/Sample.h"
 
 #include <carl/formula/model/Model.h>
 #include <carl/formula/model/ran/RealAlgebraicNumberEvaluation.h>
@@ -39,7 +37,7 @@ namespace qe{
     Formula mQuantifierFreePart;
     Variables mVariables;
     Constraints mConstraints;
-    std::map<Variable, smtrat::parser::QuantifierType> mQuantifiers;
+    std::vector<std::pair<Variable, QuantifierType>> mQuantifiers;
 
     std::size_t n;
     std::size_t k;
@@ -73,7 +71,7 @@ namespace qe{
     template<typename T>
     std::vector<T> computeHittingSet(const std::vector<std::vector<T>>& setOfSets);
   public:
-    QE(Formula &quantifierFreePart, std::map<Variable, smtrat::parser::QuantifierType>& quantifiers);
+    QE(const Formula &quantifierFreePart, const QEQuery& quantifiers);
     Formula eliminateQuantifiers();
   };
 

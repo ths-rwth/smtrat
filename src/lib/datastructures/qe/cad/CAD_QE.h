@@ -28,9 +28,9 @@ namespace cad {
 	public:
 		CAD_QE():
 			mConstraints(
-				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(mProjection.normalize(p), cid, isBound); },
-				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addEqConstraint(mProjection.normalize(p), cid, isBound); },
-				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(mProjection.normalize(p), cid, isBound); }
+				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(projection::normalize(p), cid, isBound); },
+				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addEqConstraint(projection::normalize(p), cid, isBound); },
+				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(projection::normalize(p), cid, isBound); }
 			),
 			mProjection(mConstraints),
 			mLifting(mConstraints)
@@ -92,8 +92,8 @@ namespace cad {
         auto it = mLifting.getNextSample();
         Sample& s = *it;
 				SMTRAT_LOG_DEBUG("smtrat.cad", "Sample " << s << " at depth " << it.depth());
-        SMTRAT_LOG_DEBUG("smtrat.cad", "Current sample: " << cad.mLifting.printSample(it));
-        assert(0 <= it.depth() && it.depth() < cad.dim());
+        SMTRAT_LOG_DEBUG("smtrat.cad", "Current sample: " << mLifting.printSample(it));
+        assert(0 <= it.depth() && it.depth() < dim());
         auto polyID = mProjection.getPolyForLifting(idLP(it.depth() + 1), s.liftedWith());
         if(polyID) {
 					if(mProjection.hasPolynomialById(idLP(it.depth() + 1), *polyID)) {
