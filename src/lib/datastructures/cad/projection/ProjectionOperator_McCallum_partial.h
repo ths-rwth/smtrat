@@ -33,7 +33,7 @@ void single(const Poly& p, carl::Variable variable, Callback&& cb) {
 	}
 	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "All coefficients might vanish, we need all of them.");
 	for (const auto& coeff : p.coefficients()) {
-		if (coeff.isZero()) continue;
+		if (isZero(coeff)) continue;
 		assert(!coeff.isConstant());
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "\t-> " << coeff);
 		returnPoly(projection::normalize(coeff.toUnivariatePolynomial(variable)), cb);

@@ -15,7 +15,7 @@ namespace projection {
  */
 template<typename Poly>
 bool doesNotVanish(const Poly& p) {
-	if (p.isZero()) return false;
+	if (isZero(p)) return false;
 	if (p.isConstant()) return true;
 	auto def = p.definiteness();
 	if (def == carl::Definiteness::POSITIVE) return true;
