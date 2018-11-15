@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Common.h"
+#include "../lifting/Sample.h"
 
 namespace smtrat {
 namespace cad {

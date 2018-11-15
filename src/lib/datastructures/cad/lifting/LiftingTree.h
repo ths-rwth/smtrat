@@ -3,6 +3,7 @@
 #include <carl/util/carlTree.h>
 
 #include "../Common.h"
+#include "../helper/CADConstraints.h"
 
 #include "LiftingOperator.h"
 #include "SampleIteratorQueue.h"
