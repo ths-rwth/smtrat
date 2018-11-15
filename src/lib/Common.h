@@ -74,7 +74,7 @@ inline std::ostream& operator<<(std::ostream& os, const QEQuery& q) {
 	return os;
 }
 
-std::vector<std::pair<QuantifierType,carl::Variable>> flattenQEQuery(const QEQuery& query) {
+inline std::vector<std::pair<QuantifierType,carl::Variable>> flattenQEQuery(const QEQuery& query) {
 	std::vector<std::pair<QuantifierType,carl::Variable>> res;
 	for (const auto& q: query) {
 		for (auto v: q.second) {
