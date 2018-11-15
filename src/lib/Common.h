@@ -51,6 +51,29 @@ namespace smtrat
   // An enum with the levels for lemma generation
   enum LemmaLevel { NONE = 0, NORMAL = 1, ADVANCED = 2 };
 
+
+
+enum class QuantifierType { EXISTS, FORALL };
+inline std::ostream& operator<<(std::ostream& os, QuantifierType qt) {
+	switch (qt) {
+		case QuantifierType::EXISTS: return os << "exists";
+		case QuantifierType::FORALL: return os << "forall";
+	}
+	return os;
+}
+
+using QEQuery = std::vector<std::pair<QuantifierType,std::vector<carl::Variable>>>;
+
+inline std::ostream& operator<<(std::ostream& os, const QEQuery& q) {
+	os << "QE";
+	for (const auto& qlvl: q) {
+		os << "(" << qlvl.first;
+		for (const auto& v: qlvl.second) os << " " << v;
+		os << ")";
+	}
+	return os;
+}
+
     // Further type definitions.
 /*#ifdef SMTRAT_STRAT_PARALLEL_MODE
     typedef mpq_class Rational;
