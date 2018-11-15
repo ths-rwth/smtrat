@@ -54,6 +54,7 @@ struct Origins {
 	}
 
 	const std::vector<FormulaT>& get(const FormulaT& f) const {
+		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Looking for " << f << " in Orings: " << mOrigins);
 		auto it = mOrigins.find(f);
 		assert(it != mOrigins.end());
 		return it->second.front();
@@ -433,6 +434,9 @@ public:
 				break;
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Collected assignments:" << std::endl << *this);
+			for (const auto& de: mDerivedEqualities) {
+				mOrigins.add(FormulaT(de.second), {FormulaT(de.first)});
+			}
 			
 			auto conflict = mResultants.compute(mDerivedEqualities);
 			if (conflict.has_value()) {
