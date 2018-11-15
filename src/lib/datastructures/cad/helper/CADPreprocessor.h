@@ -6,6 +6,77 @@ namespace smtrat::cad {
 
 namespace preprocessor {
 
+struct Origins {
+	std::map<FormulaT, std::vector<std::vector<FormulaT>>> mOrigins;
+
+	static std::size_t complexity(const std::vector<FormulaT>& origin) {
+		return std::accumulate(origin.begin(), origin.end(), 0, 
+			[](std::size_t i, const auto& f){ return i + f.complexity(); }
+		);
+	}
+
+	void cleanOrigins(const FormulaT& f) {
+		for (auto it = mOrigins.begin(); it != mOrigins.end(); ) {
+			for (auto oit = it->second.begin(); oit != it->second.end(); ) {
+				auto keep = std::find(oit->begin(), oit->end(), f) == oit->end();
+				if (keep) ++oit;
+				else oit = it->second.erase(oit);
+			}
+			if (it->second.empty()) {
+				it = mOrigins.erase(it);
+			} else {
+				++it;
+			}
+		}
+	}
+
+	void add(const FormulaT& f, const std::vector<FormulaT>& origin) {
+		auto it = mOrigins.find(f);
+		if (it == mOrigins.end()) {
+			mOrigins.emplace(f, std::vector<std::vector<FormulaT>>({origin}));
+			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding new origins " << f << " -> " << origin);
+			return;
+		}
+		it->second.emplace_back(origin);
+		std::sort(it->second.begin(), it->second.end(),
+			[](const auto& a, const auto& b){
+				if (a.size() != b.size()) return a.size() < b.size();
+				return complexity(a) < complexity(b);
+			}
+		);
+	}
+
+	void remove(const FormulaT& f) {
+		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Erasing " << f << " from Origins: " << mOrigins);
+		mOrigins.erase(f);
+		cleanOrigins(f);
+		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Result Origins: " << mOrigins);
+	}
+
+	const std::vector<FormulaT>& get(const FormulaT& f) const {
+		auto it = mOrigins.find(f);
+		assert(it != mOrigins.end());
+		return it->second.front();
+	}
+
+	bool resolve(std::set<FormulaT>& conflict) const {
+		bool didReplacement = false;
+		for (const auto& origins: mOrigins) {
+			const auto& c = origins.second.front(); 
+			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Considering origin " << origins.first << " -> " << c);
+			if (c.size() == 1 && c.front() == origins.first) {
+				continue;
+			}
+			if (conflict.erase(origins.first) > 0) {
+				conflict.insert(c.begin(), c.end());
+				didReplacement = true;
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Replaced " << origins.first << " by origins " << c);
+			}
+		}
+		return didReplacement;
+	}
+};
+
 class AssignmentCollector {
 public:
 	/// Result of an assignment collection.
@@ -116,9 +187,9 @@ private:
 	std::vector<ConstraintT> mConstraints;
 	std::vector<std::vector<UPoly>> mData;
 	std::vector<ConstraintT> mNewECs;
-	std::map<Poly, std::set<FormulaT>> mOrigins;
+	Origins& mOrigins;
 
-	bool addPoly(const Poly& poly, const ConstraintT& origin) {
+	bool addPoly(const Poly& poly) {
 		if (poly.isZero()) return true;
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
 		std::size_t level = 0;
@@ -130,11 +201,10 @@ private:
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Inserting " << p << " into level " << level);
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Into " << mData);
 		mData[level].emplace_back(p);
-		mOrigins.emplace(poly, std::set<FormulaT>({ FormulaT(origin) }));
 		return true;
 	}
 
-	bool addPoly(const UPoly& poly, std::size_t level, const std::set<FormulaT>& origin) {
+	bool addPoly(const UPoly& poly, std::size_t level, const std::vector<FormulaT>& origin) {
 		if (poly.isZero()) return true;
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
 		Poly mp(poly);
@@ -148,21 +218,22 @@ private:
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Into " << mData);
 		mData[level].emplace_back(p);
 		ConstraintT cons(mp, carl::Relation::EQ);
-		mOrigins.emplace(mp, origin);
+		mOrigins.add(FormulaT(mp, carl::Relation::EQ), origin);
+		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Origins: " << mOrigins.mOrigins);
 		mNewECs.emplace_back(cons);
 		if (cons.isConsistent() == 0) return false;
 		return true;
 	}
 
-	std::optional<std::set<FormulaT>> computeResultants(std::size_t level) {
+	std::optional<std::vector<FormulaT>> computeResultants(std::size_t level) {
 		for (std::size_t pid = 0; pid < mData[level].size(); ++pid) {
 			for (std::size_t qid = pid + 1; qid < mData[level].size(); ++qid) {
 				auto r = projection::resultant(mVars[level + 1], mData[level][pid], mData[level][qid]);
-				std::set<FormulaT> origin;
-				const auto& op = mOrigins.at(Poly(mData[level][pid]));
-				origin.insert(op.begin(), op.end());
-				const auto& oq = mOrigins.at(Poly(mData[level][qid]));
-				origin.insert(oq.begin(), oq.end());
+				std::vector<FormulaT> origin;
+				const auto& op = mOrigins.get(FormulaT(Poly(mData[level][pid]), carl::Relation::EQ));
+				origin.insert(origin.end(), op.begin(), op.end());
+				const auto& oq = mOrigins.get(FormulaT(Poly(mData[level][qid]), carl::Relation::EQ));
+				origin.insert(origin.end(), oq.begin(), oq.end());
 				if (!addPoly(r, level + 1, origin)) {
 					SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Found direct conflict due to " << origin);
 					return origin;
@@ -173,19 +244,20 @@ private:
 	}
 
 public:
-	ResultantRule(const std::vector<carl::Variable>& vars):
+	ResultantRule(Origins& origins, const std::vector<carl::Variable>& vars):
+		mOrigins(origins),
 		mVars(vars)
 	{}
 	
-	std::optional<std::set<FormulaT>> compute(const std::map<ConstraintT,ConstraintT>& constraints) {
+	std::optional<std::vector<FormulaT>> compute(const std::map<ConstraintT,ConstraintT>& constraints) {
 		mConstraints.clear();
 		mData.assign(mVars.size(), {});
 		mNewECs.clear();
 		for (const auto& c: constraints) {
 			mConstraints.emplace_back(c.first);
-			if (!addPoly(c.second.lhs(), c.first)) {
+			if (!addPoly(c.second.lhs())) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Found direct conflict due to " << c.first);
-				return std::set<FormulaT>({ FormulaT(c.first) });
+				return std::vector<FormulaT>({ FormulaT(c.first) });
 			}
 		}
 
@@ -194,21 +266,6 @@ public:
 			if (conflict) return conflict;
 		}
 		return std::nullopt;
-	}
-
-	bool resolveOrigins(std::set<FormulaT>& conflict) const {
-		bool didReplacement = false;
-		for (const auto& c: mOrigins) {
-			if (c.second.size() == 1) {
-				if (*c.second.begin() == FormulaT(c.first, carl::Relation::EQ)) continue;
-			}
-			if (conflict.erase(FormulaT(c.first, carl::Relation::EQ)) > 0) {
-				conflict.insert(c.second.begin(), c.second.end());
-				didReplacement = true;
-				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Replaced " << c.first << " by origins " << c.second);
-			}
-		}
-		return didReplacement;
 	}
 
 	const auto& getNewECs() const {
@@ -231,6 +288,8 @@ private:
 	Model mModel;
 	/// Variable ordering.
 	const std::vector<carl::Variable>& mVars;
+	/// Origins of new formulas.
+	preprocessor::Origins mOrigins;
 	/// The assignment collector.
 	preprocessor::AssignmentCollector mAssignments;
 	/// The resultant rule.
@@ -242,6 +301,7 @@ private:
 	std::map<ConstraintT, ConstraintT> mInequalities;
 	/// Derived set of equalities, essentially mEqualities - mModel.
 	std::map<ConstraintT, ConstraintT> mDerivedEqualities;
+
 
 	std::optional<std::set<FormulaT>> mConflict;
 
@@ -325,7 +385,7 @@ public:
 		mModel(),
 		mVars(vars),
 		mAssignments(mModel),
-		mResultants(mVars)
+		mResultants(mOrigins, mVars)
 	{}
 
 	void addConstraint(const ConstraintT& c) {
@@ -334,6 +394,8 @@ public:
 		} else {
 			mInequalities.emplace(c, c);
 		}
+		mOrigins.add(FormulaT(c), { FormulaT(c) });
+		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Origins: " << mOrigins.mOrigins);
 		SMTRAT_LOG_TRACE("smtrat.cad.pp", "Added " << c << " to " << std::endl << *this);
 	}
 
@@ -345,6 +407,8 @@ public:
 			assert(it != mInequalities.end());
 			mInequalities.erase(it);
 		}
+		mOrigins.remove(FormulaT(c));
+		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Origins: " << mOrigins.mOrigins);
 		SMTRAT_LOG_TRACE("smtrat.cad.pp", "Removed " << c << " from " << std::endl << *this);
 	}
 
@@ -372,7 +436,7 @@ public:
 			
 			auto conflict = mResultants.compute(mDerivedEqualities);
 			if (conflict.has_value()) {
-				mConflict = *conflict;
+				mConflict = std::set<FormulaT>(conflict->begin(), conflict->end());
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Immediate conflict due to " << *mConflict);
 			} else {
 				cur = mResultants.getNewECs();
@@ -436,6 +500,9 @@ public:
 
 	void postprocessConflict(std::set<FormulaT>& mis) const {
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Postprocessing conflict: " << mis << " based on" << std::endl << *this);
+		if (collectOriginsOfConflict(mis, mInequalities)) {
+			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Resolved inequalities: " << mis);
+		}
 		bool changed = true;
 		carl::Variables modelAdded;
 		while (changed) {
@@ -444,11 +511,7 @@ public:
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Resolved equalities: " << mis);
 				changed = true;
 			}
-			if (collectOriginsOfConflict(mis, mInequalities)) {
-				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Resolved inequalities: " << mis);
-				changed = true;
-			}
-			if (mResultants.resolveOrigins(mis)) {
+			if (mOrigins.resolve(mis)) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Resolved resultants: " << mis);
 				changed = true;
 			}
