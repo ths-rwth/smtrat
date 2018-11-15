@@ -30,11 +30,11 @@ public:
 private:
     boundIteratorPair findBounds(const carl::Variable& variable);
 
-    std::vector<ConstraintT> createNewConstraints(const boundIteratorPair& bounds, Variable v);
+    std::vector<ConstraintT> createNewConstraints(const boundIteratorPair& bounds, carl::Variable v);
 
-    void removeOldConstraints(const boundIteratorVector& bounds);
+    void removeOldConstraints(const boundIteratorPair& bounds);
 
-    bool isLinearLowerBound(const FormulaT& f, Variable v);
+    bool isLinearLowerBound(const ConstraintT& f, carl::Variable v);
 };
 
 } // smtrat
