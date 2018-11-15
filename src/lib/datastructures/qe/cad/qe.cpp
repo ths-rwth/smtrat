@@ -13,8 +13,8 @@ namespace qe{
 	quantifierFreePart.gatherVariables(vars);
     // quantified variables
 	for (const auto& v: mQuantifiers) {
-		mVariables.emplace_back(v);
-		vars.erase(v);
+		mVariables.emplace_back(v.second);
+		vars.erase(v.second);
 	}
 	for (auto v: vars.underlyingVariables()) {
 		mVariables.emplace_back(v);
@@ -232,14 +232,14 @@ namespace qe{
     int i = n-1;
     for(auto quantifier = mQuantifiers.rbegin(); quantifier != mQuantifiers.rend(); quantifier++) {
       for(auto it = mCAD.getLifting().getTree().begin_depth(i); it != mCAD.getLifting().getTree().end_depth(); it++) {
-        if(quantifier->second == smtrat::QuantifierType::EXISTS) {
+        if(quantifier->first == smtrat::QuantifierType::EXISTS) {
           bool truthValue = false;
           for(auto child = mCAD.getLifting().getTree().begin_children(it); child != mCAD.getLifting().getTree().end_children(it); child++) {
             truthValue = truthValue || mTruth.find(child)->second;
           }
           mTruth.emplace(it, truthValue);
         }
-        if(quantifier->second == smtrat::QuantifierType::FORALL) {
+        if(quantifier->first == smtrat::QuantifierType::FORALL) {
           bool truthValue = true;
           for(auto child = mCAD.getLifting().getTree().begin_children(it); child != mCAD.getLifting().getTree().end_children(it); child++) {
             truthValue = truthValue && mTruth.find(child)->second;

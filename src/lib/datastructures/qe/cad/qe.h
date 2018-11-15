@@ -37,7 +37,7 @@ namespace qe{
     Formula mQuantifierFreePart;
     Variables mVariables;
     Constraints mConstraints;
-    std::vector<std::pair<Variable, QuantifierType>> mQuantifiers;
+    std::vector<std::pair<QuantifierType,Variable>> mQuantifiers;
 
     std::size_t n;
     std::size_t k;
