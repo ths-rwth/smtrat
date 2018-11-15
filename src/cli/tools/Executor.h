@@ -98,7 +98,18 @@ public:
 		//error() << "(define-sort <name> <sort>) is not implemented.";
 	}
 	void eliminateQuantifiers(const smtrat::parser::QEQuery& q) {
-		regular() << "Eliminating " << q << std::endl;
+		regular() << "Quantified Formula: " << q << smtrat::FormulaT(this->solver->formula()) << std::endl;
+
+		smtrat::FormulaT quantifier_free_part = smtrat::FormulaT(this->solver->formula());
+		std::map<carl::Variable, smtrat::parser::QuantifierType> quantifiers;
+		for(const auto& qlvl : q) {
+			for(const auto& v: qlvl.second) {
+				quantifiers.emplace(boost::get<carl::Variable>(v), qlvl.first);
+			}
+		}
+		smtrat::qe::QE qe(quantifier_free_part, quantifiers);
+
+		std::cout << "Equivalent Quantifier-Free Formula: " << qe.eliminateQuantifiers() << std::endl;
 	}
 	void exit() {
 	}

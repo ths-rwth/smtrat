@@ -6,6 +6,9 @@
  * Created on May 04, 2012, 2:40 PM
  */
 
+#include "../lib/datastructures/qe/QE.h"
+#include "parser/theories/TheoryTypes.h"
+
 #include <iostream>
 #include <fstream>
 #include "ExitCodes.h"
@@ -75,7 +78,7 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 
 	auto e = new smtrat::Executor<CMakeStrategySolver>(solver);
 	if (settingsManager.exportDIMACS()) e->exportDIMACS = true;
-	
+
 	bool queueInstructions = true;
 	if (!parseInput(pathToInputFile, e, queueInstructions)) {
 		std::cerr << "Parse error" << std::endl;
@@ -293,7 +296,7 @@ int main( int argc, char* argv[] )
     // Export statistics.
     smtrat::CollectStatistics::exportXML();
     #endif
-	
+
 	#ifdef TIMING
 	std::cout << carl::TimingCollector::getInstance() << std::endl;
 	#endif
