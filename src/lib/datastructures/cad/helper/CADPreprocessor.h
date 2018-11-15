@@ -10,7 +10,7 @@ struct Origins {
 	std::map<FormulaT, std::vector<std::vector<FormulaT>>> mOrigins;
 
 	static std::size_t complexity(const std::vector<FormulaT>& origin) {
-		return std::accumulate(origin.begin(), origin.end(), 0, 
+		return std::accumulate(origin.begin(), origin.end(), static_cast<std::size_t>(0), 
 			[](std::size_t i, const auto& f){ return i + f.complexity(); }
 		);
 	}
@@ -245,8 +245,8 @@ private:
 
 public:
 	ResultantRule(Origins& origins, const std::vector<carl::Variable>& vars):
-		mOrigins(origins),
-		mVars(vars)
+		mVars(vars),
+		mOrigins(origins)
 	{}
 	
 	std::optional<std::vector<FormulaT>> compute(const std::map<ConstraintT,ConstraintT>& constraints) {
