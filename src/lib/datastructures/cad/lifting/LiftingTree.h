@@ -12,6 +12,7 @@ namespace smtrat {
 namespace cad {
 	template<typename Settings>
 	class LiftingTree {
+	public:
 		using Tree = carl::tree<Sample>;
 		using Iterator = Tree::iterator;
 		using FSC = FullSampleComparator<Iterator,Settings::fullSampleComparator>;

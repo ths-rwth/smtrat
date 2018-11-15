@@ -9,10 +9,14 @@
 #include "../../cad/Common.h"
 #include "../../cad/projection/BaseProjection.h"
 
-namespace smtrat {
-namespace cad {
+namespace smtrat::qe::cad {
+
+	using smtrat::cad::BaseProjection;
+	using smtrat::cad::Origin;
+	using smtrat::cad::UPoly;
+
 	template<typename Settings>
-	class Projection_QE: public BaseProjection<Settings> {
+	class Projection: public BaseProjection<Settings> {
 	private:
 		using Super = BaseProjection<Settings>;
 		using typename Super::Constraints;
@@ -28,7 +32,7 @@ namespace cad {
 
 	private:
 		template<typename S>
-		friend std::ostream& operator<<(std::ostream& os, const Projection_QE<S>& p);
+		friend std::ostream& operator<<(std::ostream& os, const Projection<S>& p);
 
 		std::vector<std::map<UPoly,std::size_t>> mPolynomialIDs;
 		std::vector<std::vector<boost::optional<std::pair<UPoly,Origin>>>> mPolynomials;
@@ -52,7 +56,7 @@ namespace cad {
 
 		carl::Bitset addToProjection(std::size_t level, const UPoly& p, const Origin::BaseType& origin) {
 			assert(level > 0 && level <= dim());
-			if (cad::projection::canBeRemoved(p)) return carl::Bitset();
+			if (smtrat::cad::projection::canBeRemoved(p)) return carl::Bitset();
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			assert(p.mainVar() == var(level));
 			auto it = polyIDs(level).find(p);
@@ -86,7 +90,7 @@ namespace cad {
     }
 
 	public:
-		Projection_QE(const Constraints& c): Super(c) {}
+		Projection(const Constraints& c): Super(c) {}
 
 		void reset() {
 			Super::reset();
@@ -172,7 +176,7 @@ namespace cad {
 	};
 
 	template<typename S>
-	std::ostream& operator<<(std::ostream& os, const Projection_QE<S>& p) {
+	std::ostream& operator<<(std::ostream& os, const Projection<S>& p) {
 	for (std::size_t level = 1; level <= p.dim(); level++) {
 		os << level << " " << p.var(level) << ":" << std::endl;
 		for (const auto& it: p.polyIDs(level)) {
@@ -182,6 +186,4 @@ namespace cad {
 	}
 	return os;
 	}
-
-}
 }

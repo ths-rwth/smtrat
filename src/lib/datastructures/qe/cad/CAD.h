@@ -1,21 +1,23 @@
 #pragma once
 
-#include "Projection_QE.h"
+#include "Projection.h"
 
 #include "../../cad/Common.h"
 #include "../../cad/lifting/LiftingTree.h"
 #include "../../cad/helper/CADConstraints.h"
 
-namespace smtrat {
-namespace cad {
+namespace smtrat::qe::cad {
+
 	template<typename Settings>
-	class CAD_QE {
+	class CAD {
+	public:
+		using TreeIterator = typename smtrat::cad::LiftingTree<Settings>::Iterator;
 	private:
-		Variables mVariables;
-		CADConstraints<Settings::backtracking> mConstraints;
+		std::vector<carl::Variable> mVariables;
+		smtrat::cad::CADConstraints<Settings::backtracking> mConstraints;
 		std::vector<Poly> polynomials;
-		Projection_QE<Settings> mProjection;
-		LiftingTree<Settings> mLifting;
+		Projection<Settings> mProjection;
+		smtrat::cad::LiftingTree<Settings> mLifting;
 
     std::size_t idPL(std::size_t level) const {
 			assert(level > 0 && level <= dim());
@@ -26,26 +28,26 @@ namespace cad {
 			return dim() - level + 1;
 		}
 	public:
-		CAD_QE():
+		CAD():
 			mConstraints(
-				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(projection::normalize(p), cid, isBound); },
-				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addEqConstraint(projection::normalize(p), cid, isBound); },
-				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(projection::normalize(p), cid, isBound); }
+				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(smtrat::cad::projection::normalize(p), cid, isBound); },
+				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addEqConstraint(smtrat::cad::projection::normalize(p), cid, isBound); },
+				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(smtrat::cad::projection::normalize(p), cid, isBound); }
 			),
 			mProjection(mConstraints),
 			mLifting(mConstraints)
 		{
-			mProjection.setRemoveCallback([&](std::size_t level, const SampleLiftedWith& mask){
+			mProjection.setRemoveCallback([&](std::size_t level, const smtrat::cad::SampleLiftedWith& mask){
 				mLifting.removedPolynomialsFromLevel(idPL(level), mask);
 			});
 		}
 
-		void reset(const Variables& vars) {
-      mVariables = vars;
+		void reset(const std::vector<carl::Variable>& vars) {
+			mVariables = vars;
 			mConstraints.reset(mVariables);
 			mProjection.reset();
-			mLifting.reset(Variables(vars.rbegin(), vars.rend()));
-    }
+			mLifting.reset(std::vector<carl::Variable>(vars.rbegin(), vars.rend()));
+		}
 
 		std::size_t dim() const {
 			return mVariables.size();
@@ -90,7 +92,7 @@ namespace cad {
 
       while (mLifting.hasNextSample()) {
         auto it = mLifting.getNextSample();
-        Sample& s = *it;
+        auto& s = *it;
 				SMTRAT_LOG_DEBUG("smtrat.cad", "Sample " << s << " at depth " << it.depth());
         SMTRAT_LOG_DEBUG("smtrat.cad", "Current sample: " << mLifting.printSample(it));
         assert(0 <= it.depth() && it.depth() < dim());
@@ -116,5 +118,4 @@ namespace cad {
     }
 	};
 
-}
 }
