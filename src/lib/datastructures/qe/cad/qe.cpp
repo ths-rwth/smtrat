@@ -7,16 +7,14 @@ namespace qe{
 
   QE::QE(const Formula& quantifierFreePart, const QEQuery& quantifiers) {
     mQuantifierFreePart = quantifierFreePart;
+	mQuantifiers = smtrat::flattenQEQuery(quantifiers);
 
 	carl::carlVariables vars;
 	quantifierFreePart.gatherVariables(vars);
     // quantified variables
-	for (const auto& quantifier: quantifiers) {
-		for (auto v: quantifier.second) {
-			mQuantifiers.emplace_back(v, quantifier.first);
-			mVariables.emplace_back(v);
-			vars.erase(v);
-		}
+	for (const auto& v: mQuantifiers) {
+		mVariables.emplace_back(v);
+		vars.erase(v);
 	}
 	for (auto v: vars.underlyingVariables()) {
 		mVariables.emplace_back(v);
