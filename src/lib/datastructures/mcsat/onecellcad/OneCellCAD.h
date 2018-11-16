@@ -435,7 +435,7 @@ namespace onecellcad {
           poly.toUnivariatePolynomial(mainVariable),
           prefixPointToStdMap(polyLevel),
           dummy);
-      return resultPoly.isZero();
+      return carl::isZero(resultPoly);
     }
 
     bool isPointRootOfPoly(
@@ -627,7 +627,7 @@ namespace onecellcad {
           // Derive poly wrt to each variable (variables with idx 0 to 'mainPoly.level')
           for (std::size_t varIdx = 0; varIdx <= mainPoly.level; varIdx++) {
             const auto derivative = poly.derivative(variableOrder[varIdx]);
-            if (derivative.isZero())
+            if (carl::isZero(derivative))
               continue;
             nextLayer.emplace_back(derivative);
             if (foundSomeNonEarlyVanishingDerivative)
@@ -780,7 +780,7 @@ namespace onecellcad {
 
       // Do early-exit tests:
       for (const auto &coeff : boundCandidateUniPoly.coefficients()) {
-        if (coeff.isConstant() && !coeff.isZero())
+        if (coeff.isConstant() && !carl::isZero(coeff))
           return ShrinkResult::SUCCESS;
       }
 

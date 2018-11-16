@@ -356,7 +356,7 @@ namespace smtrat
 					vars.erase(v); // shall never be found again
 				} else {
 					// variable not handled by CAD, use the midpoint of the bounding interval for the assignment
-					ModelValue ass = b.second.center();
+					ModelValue ass = carl::center(b.second);
 					mModel.insert(std::make_pair(b.first, ass));
 				}
 			}

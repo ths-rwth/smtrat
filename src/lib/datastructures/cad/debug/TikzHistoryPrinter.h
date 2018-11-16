@@ -293,7 +293,7 @@ private:
 	std::string sampleID(const Sample& s) const {
 		double val = 0;
 		if (s.value().isNumeric()) val = carl::toDouble(s.value().value());
-		else val = carl::toDouble(s.value().getInterval().center());
+		else val = carl::toDouble(carl::center(s.value().getInterval()));
 		if (val < 0) val = -1 / (val - 1);
 		else val = val + 1;
 		return std::to_string(val);

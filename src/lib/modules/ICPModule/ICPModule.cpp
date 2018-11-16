@@ -1073,7 +1073,7 @@ namespace smtrat
         DoubleInterval resultA;
         DoubleInterval resultB;
         // check if derivative is already calculated
-        if(_selection->derivative().isZero())
+        if(carl::isZero(_selection->derivative()))
             _selection->calcDerivative();
         carl::Variable variable = _selection->derivationVar();
         assert( mVariables.find( variable ) != mVariables.end() );
@@ -1399,7 +1399,7 @@ namespace smtrat
                     }
                     else
                     {
-                        value = interv.sample(false);
+                        value = carl::sample(interv,false);
                     }
                 }
                 else if( takeLower )
@@ -1827,7 +1827,7 @@ namespace smtrat
                     double actualImpact = sizeBasedSplittingImpact( varIcpvarIter );
                     if( actualImpact > maximalImpact )
                     {
-                        valueAsDouble = varIcpvarIter->second->interval().sample( false );
+                        valueAsDouble = carl::sample(varIcpvarIter->second->interval(), false );
                         if( valueAsDouble == std::numeric_limits<double>::infinity() || valueAsDouble == -std::numeric_limits<double>::infinity() )
                         {
                             continue;
@@ -1872,7 +1872,7 @@ namespace smtrat
                 continue;
             }
             assert( !Settings::first_split_to_bounded_intervals_without_zero || !varInterval.isUnbounded() );
-            valueAsDouble = varInterval.sample( false );
+            valueAsDouble = carl::sample( varInterval, false );
             if( valueAsDouble == std::numeric_limits<double>::infinity() || valueAsDouble == -std::numeric_limits<double>::infinity() )
             {
                 continue;
@@ -2247,7 +2247,7 @@ namespace smtrat
                     {
                         if( varBounds.lowerBoundType() == carl::BoundType::STRICT )
                         {
-                            value = varBounds.sample( false );
+                            value = carl::sample( varBounds, false );
                         }
                         else
                         {
@@ -2258,7 +2258,7 @@ namespace smtrat
                     {
                         if( varBounds.upperBoundType() == carl::BoundType::STRICT )
                         {
-                            value = varBounds.sample( false );
+                            value = carl::sample( varBounds, false );
                         }
                         else
                         {

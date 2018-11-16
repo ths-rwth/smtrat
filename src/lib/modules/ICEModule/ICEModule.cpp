@@ -184,7 +184,7 @@ namespace smtrat
 				continue;
 			}
 			if (isSemiPositive(term)) {
-				if (!src.isZero()) {
+				if (!carl::isZero(src)) {
 					SMTRAT_LOG_TRACE("smtrat.ice", "No: Already has a source, but " << term << " was found.");
 					return false;
 				}

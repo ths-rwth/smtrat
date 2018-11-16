@@ -2440,7 +2440,7 @@ namespace smtrat
                 sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * typename Poly::PolyType( mRows[_rowNumber]->factor() ) * MINUS_ONE_RATIONAL;
             else
                 sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * MINUS_ONE_RATIONAL;
-            if( !sumOfNonbasics.isZero() )
+            if( !carl::isZero(sumOfNonbasics) )
             {
                 return false;
             }

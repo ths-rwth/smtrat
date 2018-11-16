@@ -191,7 +191,7 @@ private:
 	Origins& mOrigins;
 
 	bool addPoly(const Poly& poly) {
-		if (poly.isZero()) return true;
+		if (isZero(poly)) return true;
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
 		std::size_t level = 0;
 		UPoly p = poly.toUnivariatePolynomial(mVars[level]);
@@ -206,7 +206,7 @@ private:
 	}
 
 	bool addPoly(const UPoly& poly, std::size_t level, const std::vector<FormulaT>& origin) {
-		if (poly.isZero()) return true;
+		if (isZero(poly)) return true;
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
 		Poly mp(poly);
 		UPoly p = poly;

@@ -90,7 +90,7 @@ namespace cad {
                         for (std::size_t pid = 0; pid < size(level); pid++) {
                                 const auto& poly = getPolynomialById(level, pid); 
                                 auto psubs = carl::model::substitute(poly, model);
-                                if (psubs.isZero()) continue;
+                                if (carl::isZero(psubs)) continue;
                                 auto list = carl::model::realRoots(poly, model);
                                 if (!list) {
                                         // The polynomial vanished at this point

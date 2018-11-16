@@ -61,7 +61,7 @@ template<typename Poly>
 struct Reducta : std::vector<Poly> {
 	Reducta(const Poly& p) {
 		this->emplace_back(p);
-		while (!this->back().isZero()) {
+		while (!isZero(this->back())) {
 			this->emplace_back(this->back());
 			this->back().truncate();
 		}

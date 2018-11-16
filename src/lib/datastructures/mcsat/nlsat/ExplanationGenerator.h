@@ -111,7 +111,7 @@ private:
 
 		for (std::size_t pid = 0; pid < mProjection.size(level); pid++) {
 			const auto& poly = mProjection.getPolynomialById(level, pid);
-			if (carl::model::substitute(poly, model).isZero()) continue;
+			if (carl::isZero(carl::model::substitute(poly, model))) continue;
 			auto list = carl::model::realRoots(poly, model);
 			if (!list) {
 				// The polynomial vanished at this point

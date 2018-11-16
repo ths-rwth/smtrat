@@ -162,7 +162,7 @@ public:
 				continue;
 			}
 			auto p = b.coefficient(mVariable, 1);
-			if (p.isZero()) {
+			if (carl::isZero(p)) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because it does not contain " << mVariable);
 				continue;
 			}

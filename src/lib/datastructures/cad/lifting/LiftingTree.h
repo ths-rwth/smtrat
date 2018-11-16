@@ -88,7 +88,7 @@ namespace cad {
 					auto var = mVariables[parent.depth()];
 					auto interval = mConstraints.bounds().getInterval(var);
 					SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Inserting zero node for " << var << " from " << interval);
-					auto it = mTree.append(parent, Sample(RAN(interval.sample())));
+					auto it = mTree.append(parent, Sample(RAN(sample(interval))));
 					addToQueue(it);
 				}
 				return false;
@@ -202,7 +202,7 @@ namespace cad {
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Variables: " << mVariables);
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "For " << printSample(sample));
 			auto variable = mVariables[sample.depth()];
-			auto center = mConstraints.bounds().getInterval(variable).sample();
+			auto center = carl::sample(mConstraints.bounds().getInterval(variable));
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Selecting " << center << " for " << variable << " from " << mConstraints.bounds().getInterval(variable));
 			auto it = mTree.append(sample, Sample(RAN(center), false));
 			addToQueue(it);

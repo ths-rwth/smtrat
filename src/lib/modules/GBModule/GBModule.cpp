@@ -243,7 +243,7 @@ Answer GBModule<Settings>::checkCore()
         }
         // We have found an infeasible subset. Generate it.
         #endif
-        if( mBasis.basisIsConstant( ) || (Settings::applyNSS && !witness.isZero( )) )
+        if( mBasis.basisIsConstant( ) || (Settings::applyNSS && !carl::isZero(witness)) )
         {
 			
             if( mBasis.basisIsConstant( ) )

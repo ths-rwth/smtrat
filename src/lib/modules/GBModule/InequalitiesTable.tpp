@@ -239,7 +239,7 @@ namespace smtrat
 
         bool reductionOccured = false;
         bool rewriteOccured = false;
-        if( !p.isZero( ) && !p.isConstant( ) )
+        if( !carl::isZero(p) && !p.isConstant( ) )
         {
             if(rules.size() == 0)
             {
@@ -252,7 +252,7 @@ namespace smtrat
                 Polynomial ptemp = groebner::rewritePolynomial(p, rules);
 				
                 rewriteOccured = (ptemp != p);
-                if( !ptemp.isZero() && !ptemp.isConstant() )
+                if( !carl::isZero(ptemp) && !ptemp.isConstant() )
                 {
                     typename Settings::Reductor reductor( gb, ptemp );
                     reduced = reductor.fullReduce( );
@@ -270,15 +270,15 @@ namespace smtrat
         if( rewriteOccured || reductionOccured )
         {
             assert(std::get < 0 > (it->second) != mModule->passedFormulaEnd());
-            if( reduced.isZero( ) || reduced.isConstant( ) )
+            if( carl::isZero(reduced) || reduced.isConstant( ) )
             {
                 bool satisfied = false;
-                if( reduced.isZero( ) && isWeak( relation ) )
+                if( carl::isZero(reduced) && isWeak( relation ) )
                 {
                     assert( isWeak( relation ) );
                     satisfied = true;
                 }
-                else if( !reduced.isZero( ) )
+                else if( !carl::isZero(reduced) )
                 { // non zero
                     assert( reduced.nrTerms( ) > 0 );
                     assert( reduced.lcoeff( ) != 0 );

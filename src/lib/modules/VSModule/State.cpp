@@ -2382,7 +2382,7 @@ namespace vs
             cout << ">>>    division part 1    : " << std::setprecision(100) << resA << endl;
             cout << ">>>    subVarInterval     : " << std::setprecision(100) << subVarInterval << endl;
             #endif
-            resA = resA.intersect( subVarInterval );
+            resA = carl::set_intersection(resA, subVarInterval);
             #ifdef VS_DEBUG_VARIABLE_BOUNDS
             cout << ">>>    intersection part 1: " << std::setprecision(100) << resA << endl;
             #endif
@@ -2393,7 +2393,7 @@ namespace vs
                 #ifdef VS_DEBUG_VARIABLE_BOUNDS
                 cout << ">>>    division part 2: " << resB << endl;
                 #endif
-                resB = resB.intersect( subVarInterval );
+                resB = carl::set_intersection(resB, subVarInterval );
                 #ifdef VS_DEBUG_VARIABLE_BOUNDS
                 cout << ">>>    intersection part 1: " << resB << endl;
                 #endif
@@ -2428,7 +2428,7 @@ namespace vs
             cout << "Cauchy bound of  " << cons.lhs() << "  is  " << cb << "." << endl;
             #endif
             smtrat::DoubleInterval cbInterval = smtrat::DoubleInterval( smtrat::Rational(-cb), carl::BoundType::STRICT, cb, carl::BoundType::STRICT );
-            varDomain = varDomain.intersect( cbInterval );
+            varDomain = carl::set_intersection(varDomain, cbInterval );
             #ifdef VS_DEBUG_ROOTS_CHECK
             cout << varDomain << endl;
             #endif
