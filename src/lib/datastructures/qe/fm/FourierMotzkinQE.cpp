@@ -10,14 +10,21 @@ namespace smtrat::qe::fm {
 
             // eliminate one variable after the other
             for(const auto& var : QuantifierVariablesPair.second) {
+                std::cout << "eliminate " << var << std::endl;
+
                 auto bounds = findBounds(var);
                 // combine all lower-upper bound pairs.
-                auto newConstraints = createNewConstraints(bounds, var);
+                FormulasT newConstraints;
+                if(!bounds[2].empty()) {
+                    newConstraints = substituteEquations(bounds,var);
+                } else {
+                    newConstraints = createNewConstraints(bounds, var);
+                }
 
                 // add all constraints which are not containing var to newConstraints
                 for(const auto formulaIt : bounds[2]) {
-                    assert((*formulaIt).getType() == carl::FormulaType::CONSTRAINT);
-                    newConstraints.emplace_back(FormulaT(*formulaIt));
+                    assert((formulaIt).getType() == carl::FormulaType::CONSTRAINT);
+                    newConstraints.emplace_back(formulaIt);
                 }
 
                 // assemble new formula
@@ -30,17 +37,19 @@ namespace smtrat::qe::fm {
 
     typename FourierMotzkinQE::FormulaPartition FourierMotzkinQE::findBounds(const carl::Variable& variable) {
         // result vector initialized with three subsets
-        typename FourierMotzkinQE::FormulaPartition res{3,std::vector<FormulaT::const_iterator>()};
+        typename FourierMotzkinQE::FormulaPartition res{4,std::vector<FormulaT>()};
 
         // if the formula only contains one constraint, check for occurence of the variable.
         if(mFormula.getType() == carl::FormulaType::CONSTRAINT) {
             if(!mFormula.constraint().hasVariable(variable)) {
-                res[2].emplace_back(mFormula.begin());
+                res[3].push_back(mFormula);
             } else {
-                if(isLinearLowerBound(mFormula.constraint(), variable)){
-                    res[0].emplace_back(mFormula.begin());
+                if(mFormula.constraint().relation() == carl::Relation::EQ){
+                    res[2].push_back(mFormula);
+                } else if(isLinearLowerBound(mFormula.constraint(), variable)){
+                    res[0].push_back(mFormula);
                 } else {
-                    res[1].emplace_back(mFormula.begin());
+                    res[1].push_back(mFormula);
                 }
             }
             return res;
@@ -50,35 +59,93 @@ namespace smtrat::qe::fm {
         for(auto formulaIt = mFormula.begin(); formulaIt != mFormula.end(); ++formulaIt) {
             assert((*formulaIt).getType() == carl::FormulaType::CONSTRAINT);
             if((*formulaIt).constraint().hasVariable(variable)) {
-                if(isLinearLowerBound((*formulaIt).constraint(), variable)) {
-                    res[0].push_back(formulaIt);
+                if((*formulaIt).constraint().relation() == carl::Relation::EQ) {
+                    res[2].push_back(*formulaIt);
+                } else if(isLinearLowerBound((*formulaIt).constraint(), variable)) {
+                    res[0].push_back(*formulaIt);
                 } else {
-                    res[1].push_back(formulaIt);
+                    res[1].push_back(*formulaIt);
                 }
             } else {
-                res[2].push_back(formulaIt);
+                res[2].push_back(*formulaIt);
             }
         }
 
         return res;
     }
 
-    carl::Formulas<Poly> FourierMotzkinQE::createNewConstraints(const typename FourierMotzkinQE::FormulaPartition& bounds, carl::Variable v) {
+    FormulasT FourierMotzkinQE::createNewConstraints(const typename FourierMotzkinQE::FormulaPartition& bounds, carl::Variable v) {
 
-        carl::Formulas<Poly> constraints;
+        FormulasT constraints;
 
         // combine all pairs of lower and upper bounds.
-        for(const auto lowerBndIt : bounds[0]) {
-            for(const auto upperBndIt : bounds[1]) {
-                Poly lhs = (*lowerBndIt).constraint().coefficient(v,1)*v-(*lowerBndIt).constraint().lhs();
+        for(const auto& lowerBnd : bounds[0]) {
+            for(const auto& upperBnd : bounds[1]) {
+                std::cout << "Combine " << (lowerBnd) << " and " << (upperBnd) << std::endl;
 
-                Poly rhs = (*upperBndIt).constraint().coefficient(v,1)*v-(*upperBndIt).constraint().lhs();
+                Poly lhs = getRemainder(lowerBnd.constraint(), v, true);
+
+                std::cout << "Lhs is " << lhs << std::endl;
+
+                Poly rhs = getRemainder(upperBnd.constraint(), v, false);
+
+                std::cout << "Rhs is " << rhs << std::endl;
 
                 constraints.emplace_back(FormulaT(ConstraintT(lhs-rhs, carl::Relation::LEQ)));
+
+                std::cout << "Created new constraint: " << constraints.back() << std::endl;
             }
         }
 
         return constraints;
+    }
+
+    FormulasT FourierMotzkinQE::substituteEquations(const typename FourierMotzkinQE::FormulaPartition& bounds, carl::Variable v) {
+        assert(!bounds[2].empty());
+        FormulasT constraints;
+
+        // check if equations are pairwise equal - if not return false, otherwise use one of the equations.
+        for(const auto& f : bounds[2]) {
+            assert(f.getType() == carl::FormulaType::CONSTRAINT);
+            for(const auto& g : bounds[2]) {
+                assert(g.getType() == carl::FormulaType::CONSTRAINT);
+                if( FormulaT(f.constraint().lhs() - g.constraint().lhs(), carl::Relation::EQ).getType() == carl::FormulaType::FALSE) {
+                    constraints.emplace_back(FormulaT(carl::FormulaType::FALSE));
+                    return constraints;
+                }
+            }
+        }
+
+        // at this point all equations are pairwise equal, chose one (the first) for substitution in bounds[0], bounds[1].
+        Poly substitute = bounds[2].front().constraint().lhs() - bounds[2].front().constraint().coefficient(v,1)*v;
+        // lower bounds
+        for(auto fc : bounds[0]) {
+            assert(fc.getType() == carl::FormulaType::CONSTRAINT);
+            constraints.emplace_back(fc.constraint().lhs().substitute(v, substitute), fc.constraint().relation());
+        }
+        // upper bounds
+        for(auto fc : bounds[1]) {
+            assert(fc.getType() == carl::FormulaType::CONSTRAINT);
+            constraints.emplace_back(fc.constraint().lhs().substitute(v, substitute), fc.constraint().relation());
+        }
+
+        return constraints;
+    }
+
+    Poly FourierMotzkinQE::getRemainder(const ConstraintT& c, carl::Variable v, bool isLowerBnd) {
+        if(isLowerBnd) {
+            if(c.relation() == carl::Relation::LESS || c.relation() == carl::Relation::LEQ) {
+                return c.lhs() - c.coefficient(v,1)*v;
+            } else {
+                return -(c.lhs() - c.coefficient(v,1)*v);
+            }
+        } else {
+            if(c.relation() == carl::Relation::LESS || c.relation() == carl::Relation::LEQ) {
+                return -(c.lhs() - c.coefficient(v,1)*v);
+            } else {
+                return c.lhs() - c.coefficient(v,1)*v;
+            }
+        }
     }
 
     bool FourierMotzkinQE::isLinearLowerBound(const ConstraintT& c, carl::Variable v) {
@@ -86,10 +153,12 @@ namespace smtrat::qe::fm {
         assert(c.coefficient(v,1).isNumber());
 
         // is linear lower bound when the coefficient is > 0 and the relation is LEQ or LESS, or if the coefficient is < 0 and the relation is GEQ or GREATER.
-        if( ((c.relation() == carl::Relation::LEQ || c.relation() == carl::Relation::LESS) && c.coefficient(v,1) > 0) ||
-        ((c.relation() == carl::Relation::GEQ || c.relation() == carl::Relation::GREATER) && c.coefficient(v,1) < 0) ) {
+        if( ((c.relation() == carl::Relation::LEQ || c.relation() == carl::Relation::LESS) && c.coefficient(v,1) < 0) ||
+        ((c.relation() == carl::Relation::GEQ || c.relation() == carl::Relation::GREATER) && c.coefficient(v,1) > 0) ) {
+            std::cout << c << " is lower bound." << std::endl;
             return true;
         }
+        std::cout << c << " is no lower bound." << std::endl;
         return false;
     }
 

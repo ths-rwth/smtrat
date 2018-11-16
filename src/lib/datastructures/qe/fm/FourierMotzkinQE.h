@@ -9,8 +9,8 @@ namespace smtrat::qe::fm{
  */
 class FourierMotzkinQE {
 public:
-    // we use three vectors, one for the discovered lower bounds, one for the upper bounds and one for unrelated constraints.
-    using FormulaPartition = std::vector<std::vector<FormulaT::const_iterator>>;
+    // we use four vectors, one for the discovered lower bounds, one for the upper bounds, one for the equations and one for unrelated constraints.
+    using FormulaPartition = std::vector<std::vector<FormulaT>>;
 
 private:
     QEQuery mQuery;
@@ -29,9 +29,13 @@ public:
 private:
     FormulaPartition findBounds(const carl::Variable& variable);
 
-    carl::Formulas<Poly> createNewConstraints(const FormulaPartition& bounds, carl::Variable v);
+    FormulasT createNewConstraints(const FormulaPartition& bounds, carl::Variable v);
+
+    FormulasT substituteEquations(const FormulaPartition& bounds, carl::Variable v);
 
     bool isLinearLowerBound(const ConstraintT& f, carl::Variable v);
+
+    Poly getRemainder(const ConstraintT& c, carl::Variable v, bool isLowerBnd);
 };
 
 } // smtrat
