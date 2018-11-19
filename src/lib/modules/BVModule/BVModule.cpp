@@ -158,11 +158,12 @@ namespace smtrat
         }
         if( rReceivedFormula().containsBooleanVariables() )
         {
-            carl::Variables bvars;
-            rReceivedFormula().booleanVars( bvars );
+            carl::carlVariables bvars;
+            rReceivedFormula().gatherVariables(bvars);
             auto modelIter = mModel.begin();
-            for( carl::Variable::Arg var : bvars )
+            for( carl::Variable var : bvars.underlyingVariables() )
             {
+				if (var.type() != carl::VariableType::VT_BOOL) continue;
                 auto bmodelIter = bModel.find( var );
                 assert( bmodelIter != bModel.end() );
                 modelIter = mModel.emplace_hint( modelIter, var, bmodelIter->second.asBool() );
