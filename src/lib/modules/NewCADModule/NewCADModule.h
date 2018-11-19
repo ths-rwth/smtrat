@@ -32,7 +32,6 @@ namespace smtrat
 			carl::carlVariables mVariables;
 			cad::CAD<Settings> mCAD;
 			cad::Assignment mLastAssignment;
-			cad::EqualityReplacer<cad::CAD<Settings>> mReplacer;
 
 			cad::CADPreprocessor mPreprocessor;
 			

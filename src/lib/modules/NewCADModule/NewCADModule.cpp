@@ -19,7 +19,6 @@ namespace smtrat
 		mStatistics(Settings::moduleName),
 #endif
 		mCAD(),
-		mReplacer(mCAD),
 		mPreprocessor(mCAD.getVariables())
 	{}
 	
