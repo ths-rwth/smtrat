@@ -29,7 +29,7 @@ namespace smtrat
 			/// Stores the polynomials seen during inform() to build the variable ordering.
 			std::vector<Poly> mPolynomials;
 
-			carl::Variables mVariables;
+			carl::carlVariables mVariables;
 			cad::CAD<Settings> mCAD;
 			cad::Assignment mLastAssignment;
 			cad::EqualityReplacer<cad::CAD<Settings>> mReplacer;
