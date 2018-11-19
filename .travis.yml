@@ -166,6 +166,15 @@ matrix:
       os: linux
       env: CC=gcc-8 CXX=g++-8
     - stage: build
+      os: osx
+      osx_image: xcode9.3
+    - stage: build
+      os: osx
+      osx_image: xcode9.4
+    - stage: build
+      os: osx
+      osx_image: xcode10
+    - stage: build
       os: linux
       env: CC=clang-7 CXX=clang++-7 TASK=tidy
 
