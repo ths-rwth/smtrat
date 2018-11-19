@@ -3,7 +3,7 @@ file(GLOB_RECURSE test_sources "*.cpp")
 add_executable(runCADTests ${test_sources})
 
 target_link_libraries(runCADTests
-    ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+    ${Boost_unit_test_framework_SHARED}
     lib_${PROJECT_NAME}
     ${libraries}
 )
