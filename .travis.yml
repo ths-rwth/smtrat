@@ -145,13 +145,13 @@ matrix:
           packages: [*packages_base, g++-7, doxygen, ghostscript, latex-xcolor, lmodern, pgf, texinfo, texlive, texlive-font-utils, texlive-latex-extra]
     - stage: build
       os: linux
-      compiler: clang++-6.0
-      env: CC=clang-6.0 CXX=clang++-6.0 TASK=tidy
+      compiler: clang++-7.0
+      env: CC=clang-7 CXX=clang++-7 TASK=tidy
       script: source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base, llvm-toolchain-trusty-6.0]
-          packages: [*packages_base, clang-6.0, libstdc++-8-dev]
+          sources: [*sources_base, llvm-toolchain-trusty-7]
+          packages: [*packages_base, clang-7, libstdc++-8-dev]
   allow_failures:
     - stage: dependencies
       os: linux
@@ -167,7 +167,7 @@ matrix:
       env: CC=gcc-8 CXX=g++-8
     - stage: build
       os: linux
-      env: CC=clang-6.0 CXX=clang++-6.0 TASK=tidy
+      env: CC=clang-7 CXX=clang++-7 TASK=tidy
 
 before_install:
   - cd .ci/ && source setup_travis.sh && cd ../
