@@ -7,6 +7,7 @@
 
 #include "State.h"
 #include "../../solver/Module.h"
+#include <carl/interval/set_theory.h>
 #include <cmath>
 #include <float.h>
 #include <numeric>
