@@ -44,6 +44,10 @@ elif [[ ${TASK} == "doxygen" ]]; then
 	git commit -q -m "Updated documentation for SMT-RAT" || return 1
 	git push -f origin master || return 1
 
+elif [[ ${TASK} == "tidy" ]]; then
+
+	/usr/bin/time make tidy || return 1
+
 else
 	keep_waiting &
 	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
