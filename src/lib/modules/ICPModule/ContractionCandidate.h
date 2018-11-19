@@ -12,12 +12,17 @@
 //#include "ContractionCandidateManager.h"
 #include "../../Common.h"
 
+#include <carl/interval/Contraction.h>
+
 namespace smtrat
 {
     namespace icp{
     
     class IcpVariable;
     class ContractionCandidateManager;
+
+	template<template<typename> class Operator>
+	using Contractor = carl::Contraction<Operator, Poly>;
     
     class ContractionCandidate
     {

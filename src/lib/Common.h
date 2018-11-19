@@ -19,7 +19,6 @@
 #include <carl/core/VariablePool.h>
 #include <carl/interval/Interval.h>
 #include <carl/interval/IntervalEvaluation.h>
-#include <carl/interval/Contraction.h>
 #include <carl/io/streamingOperators.h>
 #include <carl/util/Common.h>
 #include <carl/formula/Logic.h>
@@ -154,9 +153,6 @@ inline std::vector<std::pair<QuantifierType,carl::Variable>> flattenQEQuery(cons
 	using InfinityValue = carl::InfinityValue;
 	
 	using SqrtEx = carl::SqrtEx<smtrat::Poly>;
-
-  template<template<typename> class Operator>
-  using Contractor = carl::Contraction<Operator, Poly>;
 
   typedef carl::Factors<Poly> Factorization;
 
