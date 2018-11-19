@@ -3,7 +3,7 @@ add_executable( runFourierMotzkinQETests
 )
 cotire(runFourierMotzkinQETests)
 target_link_libraries(runFourierMotzkinQETests
-    ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+    ${Boost_unit_test_framework_SHARED}
     lib_${PROJECT_NAME}
     ${libraries})
 

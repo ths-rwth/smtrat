@@ -1,8 +1,8 @@
 #define BOOST_TEST_MODULE test_fm
 
+#include <boost/test/unit_test.hpp>
 #include "../lib/Common.h"
 #include "../../lib/datastructures/qe/fm/qe.h"
-#include <boost/test/unit_test.hpp>
 #include <iostream>
 
 using namespace smtrat;

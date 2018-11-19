@@ -11,7 +11,7 @@
 # Version: 2012-07-30                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-find_package(Boost COMPONENTS unit_test_framework REQUIRED)
+#find_package(Boost COMPONENTS unit_test_framework REQUIRED)
 
 add_definitions(-DBOOST_TEST_DYN_LINK)
 

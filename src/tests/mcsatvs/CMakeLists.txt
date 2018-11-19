@@ -6,7 +6,7 @@ add_executable(runMcsatVSTests ${test_sources})
 #target_link_libraries(runMcsatVSTests ${UNITTEST_LIB} lib_${PROJECT_NAME} ${libraries})
 
 target_link_libraries(runMcsatVSTests
-    ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+    ${Boost_unit_test_framework_SHARED}
     lib_${PROJECT_NAME}
     ${libraries}
 )
