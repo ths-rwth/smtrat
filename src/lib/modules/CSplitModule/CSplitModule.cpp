@@ -8,6 +8,8 @@
 
 #include "CSplitModule.h"
 
+#include <carl/interval/set_theory.h>
+
 namespace smtrat
 {
 	template<class Settings>
