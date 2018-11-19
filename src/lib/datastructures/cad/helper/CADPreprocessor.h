@@ -526,6 +526,10 @@ public:
 		}
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Postprocessed conflict: " << mis);
 	}
+
+	FormulaT simplify(const FormulaT& f) const {
+		return carl::model::substitute(f, mModel);
+	}
 };
 
 inline std::ostream& operator<<(std::ostream& os, const CADPreprocessor& cadpp) {
