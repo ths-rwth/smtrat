@@ -2,11 +2,7 @@ include(${carl_INCLUDE_DIR}/../cmake/carlmacros.cmake)
 
 add_definitions(-fPIC)
 
-file(GLOB_RECURSE smtrat-qe_tpl "*.in")
-foreach(tpl ${smtrat-qe_tpl})
-	string(REGEX REPLACE ".in$" "" file ${tpl})
-	configure_file("${tpl}" "${file}")
-endforeach()
+configure_everything()
 
 file(GLOB_RECURSE smtrat-qe_sources "*.cpp")
 
