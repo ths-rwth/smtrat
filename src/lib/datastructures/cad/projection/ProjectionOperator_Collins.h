@@ -2,6 +2,8 @@
 
 #include "ProjectionOperator_utils.h"
 
+#include <carl/core/polynomialfunctions/Derivative.h>
+
 namespace smtrat {
 namespace cad {
 namespace projection {
@@ -28,7 +30,7 @@ void single(const Poly& p, carl::Variable variable, Callback&& cb) {
 	}
 
 	projection::Reducta<Poly> RED_p(p);
-	projection::Reducta<Poly> RED_d(p.derivative());
+	projection::Reducta<Poly> RED_d(carl::derivative(p));
 	for (std::size_t i = 0; i < RED_d.size(); ++i) {
 		const auto& reducta = RED_p[i];
 		const auto& reducta_derivative = RED_d[i];

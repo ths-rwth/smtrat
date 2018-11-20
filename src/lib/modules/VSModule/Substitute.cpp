@@ -9,6 +9,8 @@
 #include <cmath>
 #include <limits>
 
+#include <carl/core/polynomialfunctions/Derivative.h>
+
 //#define VS_DEBUG_SUBSTITUTION
 const unsigned MAX_NUM_OF_TERMS = 512;
 
@@ -1005,7 +1007,7 @@ namespace vs
             // Change the relation symbol of the last added constraint to "=".
             smtrat::ConstraintT equation = smtrat::ConstraintT( deriv, Relation::EQ );
             // Form the derivate of the left hand side of the last added constraint.
-            deriv = deriv.derivative( _subs.variable(), 1 );
+            deriv = carl::derivative(deriv, _subs.variable(), 1);
             // Add the constraint f^i(x)~0.
             smtrat::ConstraintT inequality = smtrat::ConstraintT( deriv, _relation );
             // Apply the substitution (without epsilon) to the new constraints.

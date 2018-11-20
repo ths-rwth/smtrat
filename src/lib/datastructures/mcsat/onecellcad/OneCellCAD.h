@@ -28,11 +28,12 @@
 #include <carl/formula/model/mvroot/MultivariateRoot.h>
 #include <carl/core/Variable.h>
 #include <carl/core/VariablePool.h>
-#include <carl/core/polynomialfunctions/Resultant.h>
 #include <carl/core/rootfinder/RootFinder.h>
 #include <carl/core/UnivariatePolynomial.h>
 #include <carl/core/MultivariatePolynomial.h>
+#include <carl/core/polynomialfunctions/Derivative.h>
 #include <carl/core/polynomialfunctions/Factorization.h>
+#include <carl/core/polynomialfunctions/Resultant.h>
 
 //#include "../../../Common.h" // useful short type aliases and constants
 #include "lib/Common.h" // useful short type aliases and constants
@@ -626,7 +627,7 @@ namespace onecellcad {
         for (const auto &poly : layerOfDerivatives) {
           // Derive poly wrt to each variable (variables with idx 0 to 'mainPoly.level')
           for (std::size_t varIdx = 0; varIdx <= mainPoly.level; varIdx++) {
-            const auto derivative = poly.derivative(variableOrder[varIdx]);
+            const auto derivative = carl::derivative(poly, variableOrder[varIdx]);
             if (carl::isZero(derivative))
               continue;
             nextLayer.emplace_back(derivative);
