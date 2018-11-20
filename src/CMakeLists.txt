@@ -13,7 +13,10 @@
 
 
 add_subdirectory(lib)
+
+add_subdirectory(smtrat-common)
 add_subdirectory(smtrat-qe)
+
 if(BUILD_SOLVER)
 	add_subdirectory(cli)
 endif()
