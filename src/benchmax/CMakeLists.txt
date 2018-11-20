@@ -6,7 +6,7 @@ configure_file(${CMAKE_SOURCE_DIR}/src/benchmax/config.h.in ${CMAKE_SOURCE_DIR}/
 
 file(GLOB_RECURSE benchmax_sources "*.cpp")
 add_executable( benchmax ${benchmax_sources})
-target_link_libraries(benchmax pthread lib_carl ${Boost_SHARED})
+target_link_libraries(benchmax pthread carl-shared ${Boost_SHARED})
 
 if(BENCHMAX_DATABASE)
 	find_library(LIBMYSQL NAMES libmysqlclient)
