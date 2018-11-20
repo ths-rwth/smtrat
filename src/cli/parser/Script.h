@@ -41,14 +41,14 @@ struct ErrorHandler {
 	}
 };
 
-struct QuantifierParser: public qi::symbols<char, QuantifierType> {
+struct QuantifierParser: public qi::symbols<char, qe::QuantifierType> {
 	QuantifierParser() {
-		add("exists", QuantifierType::EXISTS);
-		add("forall", QuantifierType::FORALL);
+		add("exists", qe::QuantifierType::EXISTS);
+		add("forall", qe::QuantifierType::FORALL);
 	}
 };
 
-struct QEParser: public qi::grammar<Iterator, QEQuery(), Skipper> {
+struct QEParser: public qi::grammar<Iterator, qe::QEQuery(), Skipper> {
 	QEParser(Theories* theories): QEParser::base_type(main, "qe-query"), theories(theories) {
 		var = qualifiedidentifier[qi::_val = px::bind(&QEParser::resolveVariable, this, qi::_1)];
 		main = +("(" > quantifier > +var > ")");
@@ -68,7 +68,7 @@ struct QEParser: public qi::grammar<Iterator, QEQuery(), Skipper> {
 	QuantifierParser quantifier;
 	
 	qi::rule<Iterator, carl::Variable(), Skipper> var;
-	qi::rule<Iterator, QEQuery(), Skipper> main;
+	qi::rule<Iterator, qe::QEQuery(), Skipper> main;
 };
 
 template<typename Callee>

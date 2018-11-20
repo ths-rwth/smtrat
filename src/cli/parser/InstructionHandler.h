@@ -4,6 +4,8 @@
 #include "theories/Attribute.h"
 #include "../../lib/solver/ResourceLimitation.h"
 
+#include <smtrat-qe/smtrat-qe.h>
+
 #include <iostream>
 
 namespace smtrat {
@@ -134,7 +136,7 @@ public:
 	virtual void echo(const std::string& s) {
 		regular() << s << std::endl;
 	}
-	virtual void eliminateQuantifiers(const QEQuery& q) = 0;
+	virtual void eliminateQuantifiers(const qe::QEQuery& q) = 0;
 	virtual void exit() = 0;
 	virtual void getAllModels() = 0;
 	virtual void getAssertions() = 0;

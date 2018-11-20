@@ -100,7 +100,7 @@ public:
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(echo \"" << s << "\")");
 		callHandler(&InstructionHandler::echo, s);
 	}
-	void eliminateQuantifiers(const QEQuery& q) {
+	void eliminateQuantifiers(const qe::QEQuery& q) {
 		if (handler->printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(eliminate-quantifiers \"" << q << "\")");
 		callHandler(&InstructionHandler::eliminateQuantifiers, q);
 	}

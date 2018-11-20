@@ -97,7 +97,7 @@ public:
 	void defineSort(const std::string&, const std::vector<std::string>&, const carl::Sort&) {
 		//error() << "(define-sort <name> <sort>) is not implemented.";
 	}
-	void eliminateQuantifiers(const smtrat::QEQuery& q) {
+	void eliminateQuantifiers(const smtrat::qe::QEQuery& q) {
 		FormulaT qfree(this->solver->formula());
 		regular() << "Quantified Formula: " << q << " " << qfree << std::endl;
 

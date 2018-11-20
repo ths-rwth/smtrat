@@ -37,6 +37,8 @@ add_executable( smtrat ${smtrat_cli_sources})
 target_link_libraries( smtrat
                         lib_${PROJECT_NAME} # smtrat library
                         ${libraries} # libraries definied in top-level CMakeLists.txt
+						smtrat-common-shared
+						smtrat-qe-shared
 )
 
 #if(USE_COTIRE)
