@@ -1,6 +1,8 @@
 #pragma once
 
-#include <lib/Common.h>
+#include "../QEQuery.h"
+
+#include <smtrat-common/smtrat-common.h>
 
 namespace smtrat::qe::cad {
 

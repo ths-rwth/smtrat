@@ -11,7 +11,7 @@ using smtrat::cad::RAN;
 
 CADElimination::CADElimination(const FormulaT& quantifierFreePart, const QEQuery& quantifiers) {
 	mQuantifierFreePart = quantifierFreePart;
-	mQuantifiers = smtrat::flattenQEQuery(quantifiers);
+	mQuantifiers = smtrat::qe::flattenQEQuery(quantifiers);
 
 	carl::carlVariables vars;
 	quantifierFreePart.gatherVariables(vars);
@@ -227,14 +227,14 @@ void CADElimination::computeTruthValues() {
 	std::size_t i = n - 1;
 	for (auto quantifier = mQuantifiers.rbegin(); quantifier != mQuantifiers.rend(); quantifier++) {
 		for (auto it = tree().begin_depth(i); it != tree().end_depth(); it++) {
-			if (quantifier->first == smtrat::QuantifierType::EXISTS) {
+			if (quantifier->first == QuantifierType::EXISTS) {
 				bool truthValue = false;
 				for (auto child = tree().begin_children(it); child != tree().end_children(it); child++) {
 					truthValue = truthValue || mTruth.find(child)->second;
 				}
 				mTruth.emplace(it, truthValue);
 			}
-			if (quantifier->first == smtrat::QuantifierType::FORALL) {
+			if (quantifier->first == QuantifierType::FORALL) {
 				bool truthValue = true;
 				for (auto child = tree().begin_children(it); child != tree().end_children(it); child++) {
 					truthValue = truthValue && mTruth.find(child)->second;

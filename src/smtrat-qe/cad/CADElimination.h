@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../QEQuery.h"
+
 #include <lib/datastructures/cad/Settings.h>
 #include <lib/datastructures/cad/helper/CADCore.h>
 #include <lib/datastructures/cad/lifting/LiftingTree.h>
