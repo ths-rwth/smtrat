@@ -30,6 +30,8 @@
 
 #include "logging.h"
 
+#include "../smtrat-common/smtrat-common.h"
+
 namespace smtrat
 {
 	using carl::operator<<;
@@ -93,21 +95,21 @@ inline std::vector<std::pair<QuantifierType,carl::Variable>> flattenQEQuery(cons
     typedef mpq_class Rational;
 #endif
 #endif*/
-  using Rational = mpq_class; // Use always GMP as CLN does not work for rationalize
+//  using Rational = mpq_class; // Use always GMP as CLN does not work for rationalize
 
 	typedef carl::IntegralType<Rational>::type Integer;
 
   typedef carl::Term<Rational> TermT;
 
-  using Poly = carl::MultivariatePolynomial<Rational>;
+//  using Poly = carl::MultivariatePolynomial<Rational>;
 
   template<typename Coeff> using UPoly = carl::UnivariatePolynomial<Coeff>;
 
   using RANPoint = carl::RealAlgebraicPoint<Rational>;
 
-  typedef carl::Constraint<Poly> ConstraintT;
-
-  typedef carl::Constraints<Poly> ConstraintsT;
+//  typedef carl::Constraint<Poly> ConstraintT;
+//
+//  typedef carl::Constraints<Poly> ConstraintsT;
 	
 	using MultivariateRootT = carl::MultivariateRoot<Poly>;
 	using RootExpr = carl::MultivariateRoot<Poly>; // prefer this one
@@ -116,9 +118,9 @@ inline std::vector<std::pair<QuantifierType,carl::Variable>> flattenQEQuery(cons
 	
 	typedef carl::VariableComparison<Poly> VariableComparisonT;
 
-  typedef carl::Formula<Poly> FormulaT;
+//  typedef carl::Formula<Poly> FormulaT;
 
-  typedef carl::Formulas<Poly> FormulasT;
+//  typedef carl::Formulas<Poly> FormulasT;
 
 	typedef carl::FormulaSet<Poly> FormulaSetT;
 
