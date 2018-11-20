@@ -1,9 +1,10 @@
 #pragma once
 
+#include "CompileInfo.h"
+
 #include <carl/core/MultivariatePolynomial.h>
 #include <carl/core/Variable.h>
 #include <carl/formula/Formula.h>
-
 
 namespace smtrat {
 

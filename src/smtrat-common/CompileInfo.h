@@ -1,3 +1,6 @@
+#pragma once
+
+#include <iostream>
 #include <string>
 
 namespace smtrat
@@ -13,4 +16,6 @@ namespace smtrat
 		static const std::string CXXCompiler;
         static const std::string GitRevisionSHA1; 
 	};
+
+	void printCMakeOptions(std::ostream& os);
 }

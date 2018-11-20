@@ -20,10 +20,9 @@
 #include "../lib/modules/Modules.h"
 #include "../lib/config.h"
 #include "config.h"
-#include "../lib/utilities/CompileInfo.h"
 
 #include "carl/util/CMakeOptions.h"
-#include "../lib/utilities/CMakeOptions.h"
+#include <smtrat-common/smtrat-common.h>
 
 #include "../lib/utilities/SettingsManager.h"
 

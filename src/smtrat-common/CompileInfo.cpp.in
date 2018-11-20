@@ -1,8 +1,13 @@
-#include <iostream>
+#include "CompileInfo.h"
 
-#include "CMakeOptions.h"
+namespace smtrat 
+{
 
-namespace smtrat {
+const std::string CompileInfo::SystemName = "@CMAKE_SYSTEM_NAME@";
+const std::string CompileInfo::SystemVersion = "@CMAKE_SYSTEM_VERSION@";
+const std::string CompileInfo::BuildType = "@CMAKE_BUILD_TYPE@";
+const std::string CompileInfo::CXXCompiler = "@CMAKE_CXX_COMPILER_VERSION@";
+const std::string CompileInfo::GitRevisionSHA1 = "@GIT_SHA1@";
 
 struct OptionPrinter {
 	std::ostream& os;
