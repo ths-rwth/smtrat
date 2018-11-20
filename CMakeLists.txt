@@ -1,45 +1,17 @@
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-#                                                             #
-# File: CMakeLists.txt                                        #
-#                                                             #
-# Project name: SMT-RAT                                       #
-# Contact: Florian Corzilius <corzilius@cs.rwth-aachen.de>,   #
-#          Ulrich Loup <loup@cs.rwth-aachen.de>               #
-# Project page: https://github.com/smtrat/smtrat/wiki         #
-# Development status: beta                                    #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Version: 2013-04-25                                         #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+cmake_minimum_required (VERSION 3.7 FATAL_ERROR)
 
-
-# # # # # # # # # # # # # # # # # # # # # #
-# A. Project properties.
-# B. Options.
-# C. Find system tools and libraries.
-# D. Write information files.
-# F. Invoke subdirectories.
-# G. Export Compile Information
-# H. CPack
-# # # # # # # # # # # # # # # # # # # # # #
-
-if (WIN32)
-	cmake_minimum_required (VERSION 3.1 FATAL_ERROR)
-else()
-	cmake_minimum_required (VERSION 2.8.12)
-endif()
-
-# # # # # # # # # # # # # # # # # # # # # #
-# A. Project properties
-# # # # # # # # # # # # # # # # # # # # # #
 project(smtrat CXX)
+
+# path to find own modules
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+# Include own macros.
+include(macros)
+
+set_version(18 10)
 
 set(PROJECT_FULLNAME "SMT-RAT")
 set(PROJECT_DESCRIPTION "Toolbox for Strategic and Parallel Satisfiability-Modulo-Theories Solving")
-set(smtrat_MAJORVERSION 2)
-set(smtrat_MINORVERSION 1)
-set(smtrat_MAINTENANCEVERSION 0)
-set(smtrat_VERSION "${smtrat_MAJORVERSION}.${smtrat_MINORVERSION}.${smtrat_MAINTENANCEVERSION}")
-set(PROJECT_VERSION "${smtrat_MAJORVERSION}.${smtrat_MINORVERSION}.${smtrat_MAINTENANCEVERSION}")
 set(smtrat_NAME "SMT-RAT" )
 set(smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
 set(ADDITIONAL_INCLUDE_DIRS "" CACHE STRING "Additional directories added to the include directories.")
@@ -83,9 +55,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE "RELEASE")
 endif()
-
-# path to find own modules
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 set(SMTRAT_MANUAL_PATH ${PROJECT_SOURCE_DIR}/manual/manual_${PROJECT_NAME}-${PROJECT_VERSION}.pdf)
 set(SMTRAT_MODULES_PATH ${PROJECT_SOURCE_DIR}/src/lib/modules)
@@ -167,16 +136,6 @@ endforeach()
 
 # path to put in the executables
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
-
-# # # # # # # # # # # # # # # # # # # # # #
-# C. Find system tools and libraries.
-#
-# 1. Required libraries for core.
-# 2. Optional libraries for core.
-# 3. Required libraries for solver.
-# 4. Required libraries for GUI.
-# 5. Development and debug libraries.
-# # # # # # # # # # # # # # # # # # # # # #
 
 # # # # # # # # # # # # # # # # # # # # # #
 # C.1. Required libraries for core.
