@@ -6,7 +6,6 @@
  * Created on May 04, 2012, 2:40 PM
  */
 
-#include "../lib/datastructures/qe/qe.h"
 #include "parser/theories/TheoryTypes.h"
 
 #include <iostream>
