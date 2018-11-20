@@ -186,7 +186,7 @@ namespace onecellcad {
     RootExpr asRootExpr(carl::Variable rootVariable, Poly poly, std::size_t rootIdx){
       assert(poly.gatherVariables().count(rootVariable) == 1);
       // Apparently we need this complicated construction. I forgot why a simple substitute is not okay.
-      return RootExpr(Poly(carl::UnivariatePolynomial<Poly>(RootExpr::uniqRootVar(),
+      return RootExpr(Poly(carl::UnivariatePolynomial<Poly>(RootExpr::var(),
         poly.toUnivariatePolynomial(rootVariable).coefficients())), rootIdx);
     }
 

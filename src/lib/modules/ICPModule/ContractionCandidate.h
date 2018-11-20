@@ -262,7 +262,7 @@ namespace smtrat
             {
                 if( !mDerived )
                 {
-                    mDerivative = mRhs.derivative(mDerivationVar);
+                    mDerivative = carl::derivative(mRhs, mDerivationVar);
                     mDerived = true;
                 }
             }

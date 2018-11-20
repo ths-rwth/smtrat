@@ -378,7 +378,7 @@ void CADElimination::makeProjectionDefinable() {
 		std::vector<Poly> addToCAD;
 		for (const auto& p : hittingSet) {
 			for (uint nth = 0; nth <= p.degree(); nth++) {
-				Poly nthDerivative(p.derivative(nth));
+				Poly nthDerivative(carl::derivative(p, nth));
 				auto factorizationOfTheDerivative = carl::factorization(nthDerivative, false);
 
 				for (const auto& factor : factorizationOfTheDerivative) {

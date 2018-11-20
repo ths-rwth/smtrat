@@ -163,19 +163,19 @@ ostream& operator<<(ostream& os, const std::vector<std::vector<onecellcad::TagPo
       if (mpark::holds_alternative<onecellcad::Section>(cellComponent)) {
         auto section = mpark::get<onecellcad::Section>(cellComponent).boundFunction;
         // Need to use poly with its main variable replaced by the special MultivariateRootT::var().
-        auto param = std::make_pair(section.poly(), section.rootIdx());
+        auto param = std::make_pair(section.poly(), section.k());
         explainLiterals.emplace_back(helper::buildEquality(cellVariable, param).negated());
       } else {
         auto sectorLowBound = mpark::get<onecellcad::Sector>(cellComponent).lowBound;
         if (sectorLowBound) {
           // Need to use poly with its main variable replaced by the special MultivariateRootT::var().
-          auto param = std::make_pair(sectorLowBound->boundFunction.poly(), sectorLowBound->boundFunction.rootIdx());
+          auto param = std::make_pair(sectorLowBound->boundFunction.poly(), sectorLowBound->boundFunction.k());
           explainLiterals.emplace_back(helper::buildAbove(cellVariable, param).negated());
         }
         auto sectorHighBound = mpark::get<onecellcad::Sector>(cellComponent).highBound;
         if (sectorHighBound) {
           // Need to use poly with its main variable replaced by the special MultivariateRootT::var().
-          auto param = std::make_pair(sectorHighBound->boundFunction.poly(), sectorHighBound->boundFunction.rootIdx());
+          auto param = std::make_pair(sectorHighBound->boundFunction.poly(), sectorHighBound->boundFunction.k());
           explainLiterals.emplace_back(helper::buildBelow(cellVariable, param).negated());
         }
       }
