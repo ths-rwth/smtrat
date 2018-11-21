@@ -25,9 +25,9 @@
 #include <atomic>
 #include <mutex>
 #include <carl/formula/model/Assignment.h>
+#include <smtrat-common/smtrat-common.h>
 #include "ModuleInput.h"
 #include "ValidationSettings.h"
-#include "../config.h"
 #include "ModuleSettings.h"
 
 namespace smtrat

@@ -10,8 +10,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <smtrat-common/smtrat-common.h>
 #include "ExitCodes.h"
-#include "../lib/config.h"
 
 #include "config.h"
 #include "../lib/strategies/config.h"

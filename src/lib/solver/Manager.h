@@ -14,7 +14,7 @@
 #include <vector>
 
 #include "StrategyGraph.h"
-#include "../config.h"
+#include <smtrat-common/smtrat-common.h>
 #include "ModuleInput.h"
 #include "GeneralStatistics.h"
 #include "QuantifierManager.h"

@@ -9,7 +9,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "../../config.h"
+#include <smtrat-common/smtrat-common.h>
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "StatisticSettings.h"
 #include "CollectStatistics.h"

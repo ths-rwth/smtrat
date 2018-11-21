@@ -6,7 +6,7 @@
  *
  * @version 2012-12-20
  */
-#include "../../config.h"
+#include <smtrat-common/smtrat-common.h>
 
 #include "GBModule.h"
 #include "GBModuleStatistics.h"

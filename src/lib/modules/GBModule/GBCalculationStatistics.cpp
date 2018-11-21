@@ -1,4 +1,4 @@
-#include "../../config.h"
+#include <smtrat-common/smtrat-common.h>
 #include "GBCalculationStatistics.h"
 #ifdef SMTRAT_DEVOPTION_Statistics
 

@@ -13,7 +13,6 @@
 #include <set>
 #include <iterator>
 #include "../Common.h"
-#include "../config.h"
 
 namespace smtrat
 {

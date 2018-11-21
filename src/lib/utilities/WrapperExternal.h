@@ -5,7 +5,7 @@
 */
 #pragma once
 
-#include "../config.h"
+#include <smtrat-common/smtrat-common.h>
 #include "../modules/Modules.h"
 #include "carl/util/stringparser.h"
 #include "carl/util/parser/Parser.h"

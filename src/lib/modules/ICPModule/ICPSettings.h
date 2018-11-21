@@ -9,7 +9,7 @@
 #pragma once
     
 #include "../../solver/ModuleSettings.h"
-#include "../../config.h"
+#include <smtrat-common/smtrat-common.h>
 
 namespace smtrat
 {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../config.h"
+#include <smtrat-common/smtrat-common.h>
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include <vector>
 #include <map>

@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "../../config.h"
+#include <smtrat-common/smtrat-common.h>
 #include "mcsat/MCSATMixin.h"
 #include "SATSettings.h"
 #include "Vec.h"

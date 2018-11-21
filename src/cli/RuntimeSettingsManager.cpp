@@ -18,7 +18,6 @@
 #include "ExitCodes.h"
 
 #include "../lib/modules/Modules.h"
-#include "../lib/config.h"
 #include "config.h"
 
 #include <carl/util/CompileInfo.h>
