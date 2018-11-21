@@ -1,0 +1,27 @@
+#pragma once
+
+#define SMTRAT_PACKAGE_NAME "@PROJECT_NAME@"
+#define SMTRAT_PROJECT_NAME "@PROJECT_FULLNAME@"
+#define SMTRAT_VERSION "@PROJECT_VERSION@"
+#define SMTRAT_WEBSITE "https://github.com/smtrat/smtrat/wiki"
+
+#cmakedefine USE_NSS
+
+// Whether the validation in the module should be enabled
+#cmakedefine SMTRAT_DEVOPTION_Validation
+#cmakedefine SMTRAT_DEVOPTION_Statistics
+#cmakedefine SMTRAT_DEVOPTION_MeasureTime
+
+#cmakedefine SMTRAT_STRAT_Factorization
+#cmakedefine SMTRAT_STRAT_PARALLEL_MODE
+#cmakedefine USE_GINAC
+
+#cmakedefine LOGGING
+
+#ifdef _MSC_VER
+#define __VS
+#endif
+
+#ifdef _WIN32
+#define __WIN
+#endif
