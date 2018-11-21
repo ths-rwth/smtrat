@@ -1,9 +1,8 @@
 #pragma once
 
-#include "../../Common.h"
-
 #include <carl/util/Bitset.h>
 #include <carl/util/Covering.h>
+#include <smtrat-common/smtrat-common.h>
 
 namespace smtrat {
 namespace unsatcore {

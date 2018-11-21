@@ -23,8 +23,6 @@
 #include "../lib/solver/Module.h"
 #include "../lib/Common.h"
 
-#include "../lib/datastructures/unsatcore/UnsatCore.h"
-
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "../lib/utilities/stats/CollectStatistics.h"
 #include "lib/utilities/stats/StatisticSettings.h"

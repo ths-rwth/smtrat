@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../../modules/SATModule/SATModule.h"
-#include "../../solver/Manager.h"
+#include <iostream>
+#include <smtrat-common/smtrat-common.h>
 
 namespace smtrat {
-enum class UnsatCoreStrategy { Counting, ModelExclusion };
 
+enum class UnsatCoreStrategy { Counting, ModelExclusion };
 std::ostream& operator<<(std::ostream& os, UnsatCoreStrategy ucs) {
 	switch (ucs) {
 		case UnsatCoreStrategy::Counting: return os << "Counting";
@@ -15,6 +15,7 @@ std::ostream& operator<<(std::ostream& os, UnsatCoreStrategy ucs) {
 
 /// Contains helper for unsat core computations.
 namespace unsatcore {
+
 template<typename Solver, UnsatCoreStrategy Strategy>
 class UnsatCore {};
 
@@ -64,17 +65,4 @@ bool separateFormulas(const Solver& solver, FormulasT& unlabeled, std::map<std::
 
 }
 
-template<typename Solver>
-FormulasT computeUnsatCore(const Solver& solver, UnsatCoreStrategy strategy) {
-	switch (strategy) {
-		case UnsatCoreStrategy::Counting:
-		case UnsatCoreStrategy::ModelExclusion:
-			return unsatcore::UnsatCore<Solver, UnsatCoreStrategy::ModelExclusion>(solver).computeCore();
-	}
-	SMTRAT_LOG_WARN("smtrat.unsatcore", "Unsat core computation failed as unknown strategy " << strategy << " was selected.");
-	return FormulasT();
 }
-
-}
-
-#include "UnsatCore_ModelExclusion.h"

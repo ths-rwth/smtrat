@@ -13,9 +13,9 @@
 
 
 add_subdirectory(lib)
-
 add_subdirectory(smtrat-common)
 add_subdirectory(smtrat-qe)
+add_subdirectory(smtrat-unsat-cores)
 
 if(BUILD_SOLVER)
 	add_subdirectory(cli)
