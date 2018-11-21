@@ -19,7 +19,6 @@
 #include <carl/core/VariablePool.h>
 #include <carl/interval/Interval.h>
 #include <carl/interval/IntervalEvaluation.h>
-#include <carl/io/streamingOperators.h>
 #include <carl/util/Common.h>
 #include <carl/formula/Logic.h>
 #include <carl/formula/FormulaPool.h>
@@ -30,11 +29,10 @@
 
 #include "logging.h"
 
-#include "../smtrat-common/smtrat-common.h"
+#include <smtrat-common/smtrat-common.h>
 
 namespace smtrat
 {
-	using carl::operator<<;
 
   using Logic = carl::Logic;
   ///An enum with the possible answers a Module can give
@@ -52,38 +50,6 @@ namespace smtrat
   // An enum with the levels for lemma generation
   enum LemmaLevel { NONE = 0, NORMAL = 1, ADVANCED = 2 };
 
-
-
-enum class QuantifierType { EXISTS, FORALL };
-inline std::ostream& operator<<(std::ostream& os, QuantifierType qt) {
-	switch (qt) {
-		case QuantifierType::EXISTS: return os << "exists";
-		case QuantifierType::FORALL: return os << "forall";
-	}
-	return os;
-}
-
-using QEQuery = std::vector<std::pair<QuantifierType,std::vector<carl::Variable>>>;
-
-inline std::ostream& operator<<(std::ostream& os, const QEQuery& q) {
-	os << "QE";
-	for (const auto& qlvl: q) {
-		os << "(" << qlvl.first;
-		for (const auto& v: qlvl.second) os << " " << v;
-		os << ")";
-	}
-	return os;
-}
-
-inline std::vector<std::pair<QuantifierType,carl::Variable>> flattenQEQuery(const QEQuery& query) {
-	std::vector<std::pair<QuantifierType,carl::Variable>> res;
-	for (const auto& q: query) {
-		for (auto v: q.second) {
-			res.emplace_back(q.first, v);
-		}
-	}
-	return res;
-}
 
     // Further type definitions.
 /*#ifdef SMTRAT_STRAT_PARALLEL_MODE

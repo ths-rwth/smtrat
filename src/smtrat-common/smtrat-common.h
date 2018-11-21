@@ -5,8 +5,11 @@
 #include <carl/core/MultivariatePolynomial.h>
 #include <carl/core/Variable.h>
 #include <carl/formula/Formula.h>
+#include <carl/io/streamingOperators.h>
 
 namespace smtrat {
+
+using carl::operator<<;
 
 using Rational = mpq_class;
 
