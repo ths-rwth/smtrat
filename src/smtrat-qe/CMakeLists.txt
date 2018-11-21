@@ -10,3 +10,5 @@ add_new_libraries(smtrat-qe "${PROJECT_VERSION}" "${smtrat-qe_sources}" "resourc
 target_include_dirs_from(smtrat-qe-objects "" PUBLIC lib_smtrat smtrat-common-shared)
 target_link_libraries(smtrat-qe-shared lib_smtrat smtrat-common-shared)
 target_link_libraries(smtrat-qe-static lib_smtrat smtrat-common-static)
+
+install_libraries(smtrat-qe-shared smtrat-qe-static)
