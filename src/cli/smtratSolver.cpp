@@ -34,87 +34,13 @@
 #include "parser/ParserWrapper.h"
 #include "../lib/Common.h"
 #include <carl/formula/parser/DIMACSExporter.h>
-#include <carl/formula/parser/DIMACSImporter.h>
-#include <carl/formula/parser/OPBImporter.h>
 #include <carl/io/SMTLIBStream.h>
 #include <carl/util/TimingCollector.h>
 #include "tools/Executor.h"
+#include "parse_input.h"
+#include "tools/dimacs.h"
+#include "tools/pseudoboolean.h"
 
-template<typename Executor>
-bool parseInput(const std::string& pathToInputFile, Executor& e, bool& queueInstructions) {
-	if (pathToInputFile == "-") {
-		queueInstructions = false;
-		SMTRAT_LOG_DEBUG("smtrat", "Starting to parse from stdin");
-		return smtrat::parseSMT2File(e, queueInstructions, std::cin);
-	}
-
-	std::ifstream infile(pathToInputFile);
-	if (!infile.good()) {
-		std::cerr << "Could not open file: " << pathToInputFile << std::endl;
-		exit(SMTRAT_EXIT_NOSUCHFILE);
-	}
-	SMTRAT_LOG_DEBUG("smtrat", "Starting to parse " << pathToInputFile);
-	return smtrat::parseSMT2File(e, queueInstructions, infile);
-}
-
-/**
- * Parse the file and save it in formula.
- * @param pathToInputFile The path to the input smt2 file.
- * @param formula A pointer to the formula object which holds the parsed input afterwards.
- * @param options Save options from the smt2 file here.
- */
-unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver& solver, const smtrat::RuntimeSettingsManager& settingsManager) {
-#ifdef __WIN
-//TODO: do not use magical number
-#pragma comment(linker, "/STACK:10000000")
-#else
-	// Increase stack size to the maximum.
-	rlimit rl;
-	getrlimit(RLIMIT_STACK, &rl);
-	rl.rlim_cur = rl.rlim_max;
-	setrlimit(RLIMIT_STACK, &rl);
-#endif
-
-	auto e = smtrat::Executor<CMakeStrategySolver>(solver);
-	if (settingsManager.exportDIMACS()) e.exportDIMACS = true;
-
-	bool queueInstructions = true;
-	if (!parseInput(pathToInputFile, e, queueInstructions)) {
-		std::cerr << "Parse error" << std::endl;
-		exit(SMTRAT_EXIT_PARSERFAILURE);
-	}
-	if (queueInstructions) {
-		if (e.hasInstructions()) {
-			SMTRAT_LOG_WARN("smtrat", "Running queued instructions.");
-			e.runInstructions();
-		} else {
-			SMTRAT_LOG_WARN("smtrat", "Did not parse any instructions.");
-		}
-	}
-	unsigned exitCode = e.getExitCode();
-	if (e.lastAnswer == smtrat::Answer::SAT) {
-		if (settingsManager.printModel()) solver.printAssignment();
-		else if (settingsManager.printAllModels()) solver.printAllAssignments(std::cout);
-	}
-        else if(e.lastAnswer == smtrat::Answer::UNKNOWN) {
-            if (settingsManager.printInputSimplified())
-            {
-                smtrat::FormulaT formula = solver.getInputSimplified().second;
-				auto smtrepr = carl::outputSMTLIB(solver.logic(), { formula });
-
-                if( settingsManager.simplifiedInputFileName() == "" )
-                    e.regular() << smtrepr;
-                else
-                {
-                    std::ofstream file;
-                    file.open(settingsManager.simplifiedInputFileName());
-                    file << smtrepr;
-                    file.close();
-                }
-            }
-        }
-	return exitCode;
-}
 
 void printTimings(smtrat::Manager& solver)
 {
@@ -186,11 +112,11 @@ int main( int argc, char* argv[] )
     #endif
 
     // Construct solver.
-    CMakeStrategySolver solver;
+    CMakeStrategySolver strategy;
 
     if( settingsManager.printStrategy() )
     {
-        solver.printStrategyGraph();
+        strategy.printStrategyGraph();
         return (int)SMTRAT_EXIT_SUCCESS;
     }
 
@@ -205,74 +131,39 @@ int main( int argc, char* argv[] )
 
 	unsigned exitCode = 0;
 	if (settingsManager.readDIMACS()) {
-		carl::DIMACSImporter<smtrat::Poly> dimacs(pathToInputFile);
-		while (dimacs.hasNext()) {
-			solver.add(dimacs.next());
-			switch (solver.check()) {
-				case smtrat::Answer::SAT: {
-					std::cout << "sat" << std::endl;
-					exitCode = SMTRAT_EXIT_SAT;
-					break;
-				}
-				case smtrat::Answer::UNSAT: {
-					std::cout << "unsat" << std::endl;
-					exitCode = SMTRAT_EXIT_UNSAT;
-					break;
-				}
-				case smtrat::Answer::UNKNOWN: {
-					std::cout << "unknown" << std::endl;
-					exitCode = SMTRAT_EXIT_UNKNOWN;
-					break;
-				}
-				default: {
-					std::cerr << "unexpected output!";
-					exitCode = SMTRAT_EXIT_UNEXPECTED_ANSWER;
-					break;
-				}
-			}
-			if (dimacs.hasNext()) solver.reset();
-		}
+		exitCode = smtrat::run_dimacs_file(strategy, pathToInputFile);
 	} else if (settingsManager.readOPB()) {
-		carl::OPBImporter<smtrat::Poly> opb(pathToInputFile);
-		SMTRAT_LOG_INFO("smtrat", "Parsing " << pathToInputFile << " using OPB");
-		auto input = opb.parse();
-		if (!input) {
-			SMTRAT_LOG_ERROR("smtrat", "Parsing " << pathToInputFile << " failed.");
-			exitCode = SMTRAT_EXIT_UNKNOWN;
-		} else {
-			SMTRAT_LOG_INFO("smtrat", "Parsed " << input->first);
-			SMTRAT_LOG_INFO("smtrat", "with objective " << input->second);
-			if (!input->second.isConstant()) {
-				solver.addObjective(input->second, true);
-			}
-			solver.add(input->first);
-			switch (solver.check()) {
-				case smtrat::Answer::SAT: {
-					std::cout << "sat" << std::endl;
-					exitCode = SMTRAT_EXIT_SAT;
-					break;
-				}
-				case smtrat::Answer::UNSAT: {
-					std::cout << "unsat" << std::endl;
-					exitCode = SMTRAT_EXIT_UNSAT;
-					break;
-				}
-				case smtrat::Answer::UNKNOWN: {
-					std::cout << "unknown" << std::endl;
-					exitCode = SMTRAT_EXIT_UNKNOWN;
-					break;
-				}
-				default: {
-					std::cerr << "unexpected output!";
-					exitCode = SMTRAT_EXIT_UNEXPECTED_ANSWER;
-					break;
-				}
-			}
-		}
+		exitCode = smtrat::run_opb_file(strategy, pathToInputFile);
 	} else {
 		// Parse input.
 		try {
-			exitCode = executeFile(pathToInputFile, solver, settingsManager);
+
+			auto e = smtrat::Executor<CMakeStrategySolver>(strategy);
+			if (settingsManager.exportDIMACS()) e.exportDIMACS = true;
+			exitCode = smtrat::executeFile(pathToInputFile, e, settingsManager);
+
+			if (e.lastAnswer == smtrat::Answer::SAT) {
+			if (settingsManager.printModel()) strategy.printAssignment();
+			else if (settingsManager.printAllModels()) strategy.printAllAssignments(std::cout);
+			}
+			else if(e.lastAnswer == smtrat::Answer::UNKNOWN) {
+			if (settingsManager.printInputSimplified())
+			{
+				smtrat::FormulaT formula = strategy.getInputSimplified().second;
+				auto smtrepr = carl::outputSMTLIB(strategy.logic(), { formula });
+
+				if( settingsManager.simplifiedInputFileName() == "" )
+					e.regular() << smtrepr;
+				else
+				{
+					std::ofstream file;
+					file.open(settingsManager.simplifiedInputFileName());
+					file << smtrepr;
+					file.close();
+				}
+			}
+			}
+
 		} catch (const std::bad_alloc& e) {
 			std::raise(ENOMEM);
 		}
@@ -280,7 +171,7 @@ int main( int argc, char* argv[] )
 
     if( settingsManager.doPrintTimings() )
     {
-        printTimings( solver );
+        printTimings( strategy );
     }
 
     #ifdef SMTRAT_DEVOPTION_Statistics
