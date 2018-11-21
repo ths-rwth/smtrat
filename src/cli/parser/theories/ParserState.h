@@ -69,12 +69,12 @@ namespace parser {
 		FormulasT global_formulas;
 		std::vector<smtrat::ModelVariable> artificialVariables;
 
-		InstructionHandler* handler;
+		InstructionHandler& handler;
 
 		std::stack<ExpressionScope> expressionScopes;
 		std::stack<ScriptScope> scriptScopes;
 
-		ParserState(InstructionHandler* ih): handler(ih) {
+		ParserState(InstructionHandler& ih): handler(ih) {
 		}
 		~ParserState() {
 			while (!scriptScopes.empty()) popScriptScope();

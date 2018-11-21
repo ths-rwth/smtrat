@@ -213,7 +213,7 @@ struct Theories {
 				if (carl::variant_is_type<std::string>(attr.value)) {
 					const std::string& value = boost::get<std::string>(attr.value);
 					SMTRAT_LOG_DEBUG("smtrat.parser", "Naming term: " << value << " = " << term);
-					state->handler->annotateName(subject, value);
+					state->handler.annotateName(subject, value);
 				} else {
 					SMTRAT_LOG_WARN("smtrat.parser", "Ignoring naming with unsupported value type for term " << term);
 				}

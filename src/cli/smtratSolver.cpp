@@ -41,7 +41,7 @@
 #include "tools/Executor.h"
 
 template<typename Executor>
-bool parseInput(const std::string& pathToInputFile, Executor* e, bool& queueInstructions) {
+bool parseInput(const std::string& pathToInputFile, Executor& e, bool& queueInstructions) {
 	if (pathToInputFile == "-") {
 		queueInstructions = false;
 		SMTRAT_LOG_DEBUG("smtrat", "Starting to parse from stdin");
@@ -63,7 +63,7 @@ bool parseInput(const std::string& pathToInputFile, Executor* e, bool& queueInst
  * @param formula A pointer to the formula object which holds the parsed input afterwards.
  * @param options Save options from the smt2 file here.
  */
-unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* solver, const smtrat::RuntimeSettingsManager& settingsManager) {
+unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver& solver, const smtrat::RuntimeSettingsManager& settingsManager) {
 #ifdef __WIN
 //TODO: do not use magical number
 #pragma comment(linker, "/STACK:10000000")
@@ -75,36 +75,35 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
 	setrlimit(RLIMIT_STACK, &rl);
 #endif
 
-	auto e = new smtrat::Executor<CMakeStrategySolver>(solver);
-	if (settingsManager.exportDIMACS()) e->exportDIMACS = true;
+	auto e = smtrat::Executor<CMakeStrategySolver>(solver);
+	if (settingsManager.exportDIMACS()) e.exportDIMACS = true;
 
 	bool queueInstructions = true;
 	if (!parseInput(pathToInputFile, e, queueInstructions)) {
 		std::cerr << "Parse error" << std::endl;
-		delete e;
 		exit(SMTRAT_EXIT_PARSERFAILURE);
 	}
 	if (queueInstructions) {
-		if (e->hasInstructions()) {
+		if (e.hasInstructions()) {
 			SMTRAT_LOG_WARN("smtrat", "Running queued instructions.");
-			e->runInstructions();
+			e.runInstructions();
 		} else {
 			SMTRAT_LOG_WARN("smtrat", "Did not parse any instructions.");
 		}
 	}
-	unsigned exitCode = e->getExitCode();
-	if (e->lastAnswer == smtrat::Answer::SAT) {
-		if (settingsManager.printModel()) solver->printAssignment();
-		else if (settingsManager.printAllModels()) solver->printAllAssignments(std::cout);
+	unsigned exitCode = e.getExitCode();
+	if (e.lastAnswer == smtrat::Answer::SAT) {
+		if (settingsManager.printModel()) solver.printAssignment();
+		else if (settingsManager.printAllModels()) solver.printAllAssignments(std::cout);
 	}
-        else if(e->lastAnswer == smtrat::Answer::UNKNOWN) {
+        else if(e.lastAnswer == smtrat::Answer::UNKNOWN) {
             if (settingsManager.printInputSimplified())
             {
-                smtrat::FormulaT formula = solver->getInputSimplified().second;
-				auto smtrepr = carl::outputSMTLIB(solver->logic(), { formula });
+                smtrat::FormulaT formula = solver.getInputSimplified().second;
+				auto smtrepr = carl::outputSMTLIB(solver.logic(), { formula });
 
                 if( settingsManager.simplifiedInputFileName() == "" )
-                    e->regular() << smtrepr;
+                    e.regular() << smtrepr;
                 else
                 {
                     std::ofstream file;
@@ -114,17 +113,16 @@ unsigned executeFile(const std::string& pathToInputFile, CMakeStrategySolver* so
                 }
             }
         }
-	delete e;
 	return exitCode;
 }
 
-void printTimings(smtrat::Manager* solver)
+void printTimings(smtrat::Manager& solver)
 {
     std::cout << "**********************************************" << std::endl;
     std::cout << "*                  Timings                   *" << std::endl;
     std::cout << "**********************************************" << std::endl;
     std::cout << "\t\tAdd \t\tCheck \t (calls) \tRemove" << std::endl;
-    for(std::vector<smtrat::Module*>::const_iterator it =  solver->getAllGeneratedModules().begin(); it != solver->getAllGeneratedModules().end(); ++it)
+    for(std::vector<smtrat::Module*>::const_iterator it =  solver.getAllGeneratedModules().begin(); it != solver.getAllGeneratedModules().end(); ++it)
     {
         std::cout << (*it)->moduleName() << ":\t" << (*it)->getAddTimerMS() << "\t\t" << (*it)->getCheckTimerMS() << "\t(" << (*it)->getNrConsistencyChecks() << ")\t\t" << (*it)->getRemoveTimerMS() << std::endl;
 
@@ -188,12 +186,11 @@ int main( int argc, char* argv[] )
     #endif
 
     // Construct solver.
-    CMakeStrategySolver* solver = new CMakeStrategySolver();
+    CMakeStrategySolver solver;
 
     if( settingsManager.printStrategy() )
     {
-        solver->printStrategyGraph();
-        delete solver;
+        solver.printStrategyGraph();
         return (int)SMTRAT_EXIT_SUCCESS;
     }
 
@@ -210,8 +207,8 @@ int main( int argc, char* argv[] )
 	if (settingsManager.readDIMACS()) {
 		carl::DIMACSImporter<smtrat::Poly> dimacs(pathToInputFile);
 		while (dimacs.hasNext()) {
-			solver->add(dimacs.next());
-			switch (solver->check()) {
+			solver.add(dimacs.next());
+			switch (solver.check()) {
 				case smtrat::Answer::SAT: {
 					std::cout << "sat" << std::endl;
 					exitCode = SMTRAT_EXIT_SAT;
@@ -233,7 +230,7 @@ int main( int argc, char* argv[] )
 					break;
 				}
 			}
-			if (dimacs.hasNext()) solver->reset();
+			if (dimacs.hasNext()) solver.reset();
 		}
 	} else if (settingsManager.readOPB()) {
 		carl::OPBImporter<smtrat::Poly> opb(pathToInputFile);
@@ -246,10 +243,10 @@ int main( int argc, char* argv[] )
 			SMTRAT_LOG_INFO("smtrat", "Parsed " << input->first);
 			SMTRAT_LOG_INFO("smtrat", "with objective " << input->second);
 			if (!input->second.isConstant()) {
-				solver->addObjective(input->second, true);
+				solver.addObjective(input->second, true);
 			}
-			solver->add(input->first);
-			switch (solver->check()) {
+			solver.add(input->first);
+			switch (solver.check()) {
 				case smtrat::Answer::SAT: {
 					std::cout << "sat" << std::endl;
 					exitCode = SMTRAT_EXIT_SAT;
@@ -299,10 +296,6 @@ int main( int argc, char* argv[] )
 	#ifdef TIMING
 	std::cout << carl::TimingCollector::getInstance() << std::endl;
 	#endif
-
-
-    // Delete the solver and the formula.
-    delete solver;
 
     return (int)exitCode;
 }

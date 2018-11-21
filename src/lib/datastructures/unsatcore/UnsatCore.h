@@ -26,12 +26,12 @@ class UnsatCore<Solver, UnsatCoreStrategy::Counting> {};
  * This follows @cite SMTLIB26 (4.2.7)
  */
 template<typename Solver>
-bool separateFormulas(const Solver* solver, FormulasT& unlabeled, std::map<std::string,FormulasT>& labeled) {
+bool separateFormulas(const Solver& solver, FormulasT& unlabeled, std::map<std::string,FormulasT>& labeled) {
 	FormulaSetT input;
 	std::map<FormulaT,std::string> labels;
 	
-	for (const auto& f: *solver) input.insert(f.formula());
-	for (const auto& nf: solver->namedFormulas()) {
+	for (const auto& f: solver) input.insert(f.formula());
+	for (const auto& nf: solver.namedFormulas()) {
 		if (nf.second.getType() == carl::FormulaType::AND) {
 			for (const auto& f: nf.second.subFormulas()) {
 				if (labels.find(f) != labels.end()) {
@@ -65,7 +65,7 @@ bool separateFormulas(const Solver* solver, FormulasT& unlabeled, std::map<std::
 }
 
 template<typename Solver>
-FormulasT computeUnsatCore(const Solver* solver, UnsatCoreStrategy strategy) {
+FormulasT computeUnsatCore(const Solver& solver, UnsatCoreStrategy strategy) {
 	switch (strategy) {
 		case UnsatCoreStrategy::Counting:
 		case UnsatCoreStrategy::ModelExclusion:

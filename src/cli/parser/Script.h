@@ -73,7 +73,7 @@ struct QEParser: public qi::grammar<Iterator, qe::QEQuery(), Skipper> {
 
 template<typename Callee>
 struct ScriptParser: public qi::grammar<Iterator, Skipper> {
-	ScriptParser(InstructionHandler* h, Theories& theories, Callee& callee):
+	ScriptParser(InstructionHandler& h, Theories& theories, Callee& callee):
 		ScriptParser::base_type(main, "script"),
 		handler(h),
 		callee(callee),
@@ -122,7 +122,7 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 		qi::on_error<qi::fail>(main, errorHandler(qi::_1, qi::_2, qi::_3, qi::_4));
 	}
 	
-	InstructionHandler* handler;
+	InstructionHandler& handler;
 	Callee& callee;
 	ParserState state;
 	Theories& theories;

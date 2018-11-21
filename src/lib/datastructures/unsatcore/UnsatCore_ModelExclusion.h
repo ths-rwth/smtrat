@@ -19,27 +19,27 @@ namespace unsatcore {
 template<typename Solver>
 class UnsatCore<Solver, UnsatCoreStrategy::ModelExclusion> {
 private:
-	Solver* mSolver;
+	Solver mSolver;
 	std::map<carl::Variable, std::pair<FormulaT,std::size_t>> mFormulas;
 	std::vector<carl::Bitset> mSets;
 	std::size_t mAssignments = 0;
 public:
-	UnsatCore(const Solver* s): mSolver(new Solver()) {
+	UnsatCore(const Solver& s) {
 		FormulasT phis;
 		std::size_t id = 0;
-		for (const auto& form: s->formula()) {
+		for (const auto& form: s.formula()) {
 			FormulaT f = form.formula();
 			auto it = mFormulas.emplace(carl::freshBooleanVariable(), std::make_pair(f, id));
 			phis.emplace_back(f.negated());
-			mSolver->add(FormulaT(carl::FormulaType::IFF, {FormulaT(it.first->first), f}));
+			mSolver.add(FormulaT(carl::FormulaType::IFF, {FormulaT(it.first->first), f}));
 			mSets.emplace_back();
 			SMTRAT_LOG_DEBUG("smtrat.unsatcore", it.first->first << " <-> " << f << " with id " << id);
 			id++;
 		}
-		mSolver->add(FormulaT(carl::FormulaType::OR, std::move(phis)));
+		mSolver.add(FormulaT(carl::FormulaType::OR, std::move(phis)));
 	}
 	void processAssignment() {
-		const auto& m = mSolver->model();
+		const auto& m = mSolver.model();
 		FormulasT subs;
 		SMTRAT_LOG_TRACE("smtrat.unsatcore", "Got assignment " << m);
 		for (const auto& f: mFormulas) {
@@ -52,12 +52,12 @@ public:
 			}
 		}
 		SMTRAT_LOG_TRACE("smtrat.unsatcore", "Excluding assignment with " << subs);
-		mSolver->add(FormulaT(carl::FormulaType::OR, std::move(subs)));
+		mSolver.add(FormulaT(carl::FormulaType::OR, std::move(subs)));
 		mAssignments++;
 	}
 	void compute() {
 		while (true) {
-			Answer a = mSolver->check();
+			Answer a = mSolver.check();
 			switch (a) {
 				case Answer::SAT:
 					processAssignment();
