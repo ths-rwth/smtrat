@@ -21,7 +21,7 @@
 #include "../lib/config.h"
 #include "config.h"
 
-#include "carl/util/CMakeOptions.h"
+#include <carl/util/CompileInfo.h>
 #include <smtrat-common/smtrat-common.h>
 
 #include "../lib/utilities/SettingsManager.h"
@@ -118,7 +118,7 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
             else if(optionName == "cmake")
             {
                 std::cout << "CMake options used for CArL:" << std::endl;
-                carl::printCMakeOptions(std::cout);
+                std::cout << carl::CMakeOptions() << std::endl;
                 std::cout << std::endl;
                 std::cout << "CMake options used for SMT-RAT:" << std::endl;
                 std::cout << smtrat::CMakeOptions() << std::endl;
