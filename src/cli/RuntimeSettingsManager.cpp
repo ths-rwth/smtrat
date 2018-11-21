@@ -121,8 +121,7 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
                 carl::printCMakeOptions(std::cout);
                 std::cout << std::endl;
                 std::cout << "CMake options used for SMT-RAT:" << std::endl;
-                smtrat::printCMakeOptions(std::cout);
-                std::cout << std::endl;
+                std::cout << smtrat::CMakeOptions() << std::endl;
                 exit(SMTRAT_EXIT_SUCCESS);
             }
             else if(optionName == "export-dimacs")
@@ -331,7 +330,7 @@ void RuntimeSettingsManager::printWelcome() const
 
 void RuntimeSettingsManager::printInfo() const
 {
-    std::cout << "Code was compiled with compiler ? , version: " << smtrat::CompileInfo::CXXCompiler << std::endl;
+    std::cout << "Code was compiled with compiler " << smtrat::CompileInfo::CXXCompiler << " " << smtrat::CompileInfo::CXXCompilerVersion << std::endl;
     std::cout << "Build type:" << smtrat::CompileInfo::BuildType << std::endl;   
     std::cout << "Code is based on commit " << smtrat::CompileInfo::GitRevisionSHA1 << ". " << std::endl;
     std::cout << "Build on a " << smtrat::CompileInfo::SystemName << " (" << CompileInfo::SystemVersion << ") machine." << std::endl;

@@ -6,25 +6,26 @@ namespace smtrat
 const std::string CompileInfo::SystemName = "@CMAKE_SYSTEM_NAME@";
 const std::string CompileInfo::SystemVersion = "@CMAKE_SYSTEM_VERSION@";
 const std::string CompileInfo::BuildType = "@CMAKE_BUILD_TYPE@";
-const std::string CompileInfo::CXXCompiler = "@CMAKE_CXX_COMPILER_VERSION@";
+const std::string CompileInfo::CXXCompiler = "@CMAKE_CXX_COMPILER@";
+const std::string CompileInfo::CXXCompilerVersion = "@CMAKE_CXX_COMPILER_VERSION@";
 const std::string CompileInfo::GitRevisionSHA1 = "@GIT_SHA1@";
 
-struct OptionPrinter {
-	std::ostream& os;
-	OptionPrinter(std::ostream& out): os(out) {}
-	void operator()(const std::string& name, const std::string& value) {
-		if (name.at(0) == '_') return;
+std::ostream& operator<<(std::ostream& os, CMakeOptionPrinter cmop) {
+	auto print = [&os,&cmop](bool advanced, const std::string& type, const std::string& key, const std::string& value) {
+		if (advanced && !cmop.advanced) return;
+		if (type.empty()) return;
+		if (key.empty()) return;
+		if (key[0] == '_') return;
 		if (value.find('\n') == std::string::npos) {
-			os << name << " = " << value << std::endl;
+			os << key << " = " << value << std::endl;
 		} else {
-			os << name << " has multiple lines." << std::endl;
+			os << key << " has multiple lines." << std::endl;
 		}
-	}
-};
+	};
 
-void printCMakeOptions(std::ostream& os) {
-	OptionPrinter p(os);
 	${VARLIST}
+
+	return os;
 }
 
 }
