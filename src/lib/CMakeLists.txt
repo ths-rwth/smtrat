@@ -52,6 +52,8 @@ set_target_properties( lib_${PROJECT_NAME} PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
+include(GNUInstallDirs)
+
 install(
 	TARGETS lib_${PROJECT_NAME}
 	EXPORT smtratTargets
