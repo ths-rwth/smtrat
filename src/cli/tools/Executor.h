@@ -158,7 +158,7 @@ public:
 		this->solver.addObjective( p, ot == smtrat::parser::OptimizationType::Minimize );
 	}
 	void pop(std::size_t n) {
-		this->solver.pop();
+		this->solver.pop(n);
 		if (exportDIMACS) dimacs.clear();
 	}
 	void push(std::size_t n) {
