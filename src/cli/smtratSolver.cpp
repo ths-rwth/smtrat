@@ -38,6 +38,7 @@
 #include "parse_input.h"
 #include "tools/dimacs.h"
 #include "tools/pseudoboolean.h"
+#include "tools/preprocessor.h"
 
 
 void printTimings(smtrat::Manager& solver)
@@ -132,13 +133,15 @@ int main( int argc, char* argv[] )
 		exitCode = smtrat::run_dimacs_file(strategy, pathToInputFile);
 	} else if (settingsManager.readOPB()) {
 		exitCode = smtrat::run_opb_file(strategy, pathToInputFile);
+	} else if (settingsManager.printInputSimplified()) {
+		exitCode = smtrat::preprocess_file(pathToInputFile, settingsManager.simplifiedInputFileName());
 	} else {
 		// Parse input.
 		try {
 
 			auto e = smtrat::Executor<CMakeStrategySolver>(strategy);
 			if (settingsManager.exportDIMACS()) e.exportDIMACS = true;
-			exitCode = smtrat::executeFile(pathToInputFile, e, settingsManager);
+			exitCode = smtrat::executeFile(pathToInputFile, e);
 
 			if (e.lastAnswer == smtrat::Answer::SAT) {
 			if (settingsManager.printModel()) strategy.printAssignment();

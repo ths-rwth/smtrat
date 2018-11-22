@@ -6,7 +6,7 @@
 namespace smtrat {
 
 enum class UnsatCoreStrategy { Counting, ModelExclusion };
-std::ostream& operator<<(std::ostream& os, UnsatCoreStrategy ucs) {
+inline std::ostream& operator<<(std::ostream& os, UnsatCoreStrategy ucs) {
 	switch (ucs) {
 		case UnsatCoreStrategy::Counting: return os << "Counting";
 		case UnsatCoreStrategy::ModelExclusion: return os << "ModelExclusion";

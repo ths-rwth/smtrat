@@ -1,6 +1,5 @@
 #pragma once
 
-#include "RuntimeSettingsManager.h"
 #include "parser/ParserWrapper.h"
 
 #include <string>
@@ -32,7 +31,7 @@ bool parseInput(const std::string& pathToInputFile, Executor& e, bool& queueInst
  * @param options Save options from the smt2 file here.
  */
 template<typename Executor>
-unsigned executeFile(const std::string& pathToInputFile, Executor& e, const RuntimeSettingsManager& settingsManager) {
+unsigned executeFile(const std::string& pathToInputFile, Executor& e) {
 #ifdef __WIN
 //TODO: do not use magical number
 #pragma comment(linker, "/STACK:10000000")
