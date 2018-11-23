@@ -12,7 +12,7 @@ namespace smtrat {
 template<typename Strategy>
 class Executor : public smtrat::parser::InstructionHandler {
 	Strategy& solver;
-	unsigned exitCode;
+	int exitCode;
 	carl::DIMACSExporter<smtrat::Poly> dimacs;
 	std::size_t dimacsID = 0;
 public:
@@ -175,7 +175,7 @@ public:
 			this->solver.rLogic() = logic;
 		}
 	}
-	unsigned getExitCode() const {
+	int getExitCode() const {
 		return this->exitCode;
 	}
 };

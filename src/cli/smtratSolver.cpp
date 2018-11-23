@@ -189,5 +189,5 @@ int main( int argc, char* argv[] )
 	std::cout << carl::TimingCollector::getInstance() << std::endl;
 	#endif
 
-    return (int)exitCode;
+    return exitCode;
 }

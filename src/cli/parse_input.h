@@ -31,7 +31,7 @@ bool parseInput(const std::string& pathToInputFile, Executor& e, bool& queueInst
  * @param options Save options from the smt2 file here.
  */
 template<typename Executor>
-unsigned executeFile(const std::string& pathToInputFile, Executor& e) {
+int executeFile(const std::string& pathToInputFile, Executor& e) {
 #ifdef __WIN
 //TODO: do not use magical number
 #pragma comment(linker, "/STACK:10000000")
@@ -56,7 +56,7 @@ unsigned executeFile(const std::string& pathToInputFile, Executor& e) {
 			SMTRAT_LOG_WARN("smtrat", "Did not parse any instructions.");
 		}
 	}
-	unsigned exitCode = e.getExitCode();
+	int exitCode = e.getExitCode();
 	
 	return exitCode;
 }
