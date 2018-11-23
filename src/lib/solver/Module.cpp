@@ -957,7 +957,6 @@ namespace smtrat
 		for (const auto& f: *mpReceivedFormula) {
 			f.formula().gatherVariables(variables);
 		}
-		variables.compact();
 		auto vars = variables.underlyingVariables();
 		// Filter model
 		for (auto it = mModel.begin(); it != mModel.end(); ) {
@@ -1117,7 +1116,6 @@ namespace smtrat
 		carl::carlVariables vars;
 		for(const auto& c : _constraints) {
 			c.gatherVariables(vars);
-			vars.compact();
 		}
 		sls << "(declare-fun " << _label << " () " << "Bool" << ")\n";
 		sls.declare(vars);

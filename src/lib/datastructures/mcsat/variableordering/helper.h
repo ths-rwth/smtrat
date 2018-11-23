@@ -46,7 +46,6 @@ template<typename Constraints>
 void gatherVariables(carl::carlVariables& vars, const Constraints& constraints) {
 	for (const auto& c: constraints) {
 		c.gatherVariables(vars);
-		vars.compact();
 	}
 }
 
