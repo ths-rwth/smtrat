@@ -128,7 +128,7 @@ int main( int argc, char* argv[] )
     //settingsObjects.clear();
 
 
-	unsigned exitCode = 0;
+	int exitCode = 0;
 	if (settingsManager.readDIMACS()) {
 		exitCode = smtrat::run_dimacs_file(strategy, pathToInputFile);
 	} else if (settingsManager.readOPB()) {
