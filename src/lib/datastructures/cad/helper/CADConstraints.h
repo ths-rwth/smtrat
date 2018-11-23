@@ -61,7 +61,11 @@ public:
 		mActiveConstraintMap.clear();
 		mConstraintMap.clear();
 		mConstraintIts.clear();
+		mConstraintLevels.clear();
 		mIDPool.clear();
+		mBounds.clear();
+		mSatByBounds = carl::Bitset();
+		mUnsatByBounds = carl::Bitset();
 	}
 	const Variables& vars() const {
 		return mVariables;
