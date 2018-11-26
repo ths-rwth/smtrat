@@ -30,7 +30,6 @@ function(set_version major minor)
 endfunction(set_version)
 
 macro(install_libraries target)
-	message(STATUS "Exporting ${ARGN} / ${ARGV}")
 	install(
 		TARGETS "${target}"
 		EXPORT smtratTargets
