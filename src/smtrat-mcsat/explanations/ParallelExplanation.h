@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../common.h"
-#include "../Bookkeeping.h"
+#include "../utils/Bookkeeping.h"
 
 #include <carl/util/tuple_util.h>
+#include <smtrat-common/smtrat-common.h>
 
 namespace smtrat {
 namespace mcsat {
@@ -13,21 +13,21 @@ struct ParallelExplanation {
 private:
 	using B = std::tuple<Backends...>;
 	B mBackends;
+
 public:
 	boost::optional<Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
-		auto F = [&](const auto& expl){
+		auto F = [&](const auto& expl) {
 			auto r = expl(data, variableOrdering, var, reason);
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.explanation", "Got explanation " << r);
 			return r;
 		};
 		auto res = carl::tuple_foreach(F, mBackends);
 		carl::tuple_foreach(
-			[&res](const auto& ref){
+			[&res](const auto& ref) {
 				assert(std::get<0>(res) == ref);
 				return true;
 			},
-			mBackends
-		);
+			mBackends);
 		return std::get<0>(res);
 	}
 };

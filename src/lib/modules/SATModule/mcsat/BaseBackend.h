@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../../../datastructures/mcsat/Bookkeeping.h"
-
 #include "MCSATSettings.h"
+
+#include <smtrat-mcsat/smtrat-mcsat.h>
 
 namespace smtrat {
 namespace mcsat {
@@ -40,7 +40,7 @@ public:
 	template<typename Constraints>
 	void resetVariableOrdering(const Constraints& c) {
 		if (mBookkeeping.variableOrder().empty()) {
-			mBookkeeping.updateVariableOrder(calculateVariableOrder<Settings::variable_ordering>(c));
+			mBookkeeping.updateVariableOrder(calculate_variable_order<Settings::variable_ordering>(c));
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variable ordering " << variableOrder());
 		}
 	}

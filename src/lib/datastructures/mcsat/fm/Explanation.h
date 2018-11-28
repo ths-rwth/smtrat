@@ -1,7 +1,8 @@
 #pragma once
 
 #include "../common.h"
-#include "../Bookkeeping.h"
+
+#include <smtrat-mcsat/smtrat-mcsat.h>
 
 namespace smtrat {
 namespace mcsat {

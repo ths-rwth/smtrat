@@ -1,11 +1,10 @@
 #pragma once
 
-#include "../../../Common.h"
-
 #include "helper.h"
 
 #include <carl/core/Variable.h>
 #include <carl/util/Bitset.h>
+#include <smtrat-common/smtrat-common.h>
 
 #include <algorithm>
 #include <map>

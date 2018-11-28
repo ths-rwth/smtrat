@@ -3,9 +3,10 @@
 #include <algorithm>
 
 #include "../../../Common.h"
-#include "../Bookkeeping.h"
 #include "../onecellcad/OneCellCAD.h"
 #include "ExplanationGenerator.h"
+
+#include <smtrat-mcsat/smtrat-mcsat.h>
 
 namespace smtrat {
 namespace mcsat {

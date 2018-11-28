@@ -1,6 +1,9 @@
 #pragma once
 
-#include "../../Common.h"
+#include <smtrat-common/smtrat-common.h>
+#include <smtrat-common/model.h>
+
+#include <vector>
 
 namespace smtrat {
 namespace mcsat {
@@ -108,7 +111,7 @@ inline std::ostream& operator<<(std::ostream& os, const Bookkeeping& bk) {
 	os << "- Theory-assignments: " << bk.assignments() << "\n";
 	os << "- Asserted literals: " << bk.constraints() << "\n";
 	os << "- Bounds: " << bk.mvBounds() << "\n";
-  os << "- Variable order: " << bk.variableOrder() << "\n";
+	os << "- Variable order: " << bk.variableOrder() << "\n";
 	return os;
 }
 

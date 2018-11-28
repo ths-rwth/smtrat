@@ -14,6 +14,7 @@
 
 add_subdirectory(lib)
 add_subdirectory(smtrat-common)
+add_subdirectory(smtrat-mcsat)
 add_subdirectory(smtrat-qe)
 add_subdirectory(smtrat-unsat-cores)
 

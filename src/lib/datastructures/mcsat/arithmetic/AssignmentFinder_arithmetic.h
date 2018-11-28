@@ -4,7 +4,8 @@
 #include "RootIndexer.h"
 
 #include "../common.h"
-#include "../utils/ConstraintCategorization.h"
+
+#include <smtrat-mcsat/smtrat-mcsat.h>
 
 #include <boost/variant.hpp>
 
@@ -84,11 +85,11 @@ public:
 		auto category = mcsat::constraint_type::categorize(f, mModel, mVar);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << " is " << category << " under " << mModel << " w.r.t. " << mVar);
 		switch (category) {
-			case mcsat::constraint_type::ConstraintType::Constant:
+			case mcsat::ConstraintType::Constant:
 				assert(f.isTrue() || f.isFalse());
 				if (f.isFalse()) return false;
 				break;
-			case mcsat::constraint_type::ConstraintType::Assigned: {
+			case mcsat::ConstraintType::Assigned: {
 				SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Checking fully assigned " << f);
 				FormulaT fnew = carl::model::substitute(f, mModel);
 				if (fnew.isTrue()) {
@@ -101,10 +102,10 @@ public:
 				}
 				break;
 			}
-			case mcsat::constraint_type::ConstraintType::Univariate:
+			case mcsat::ConstraintType::Univariate:
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Considering univariate constraint " << f);
 				break;
-			case mcsat::constraint_type::ConstraintType::Unassigned:
+			case mcsat::ConstraintType::Unassigned:
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Considering unassigned constraint " << f << " (which may still become univariate)");
 				return true;
 				break;

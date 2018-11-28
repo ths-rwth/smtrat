@@ -1,7 +1,6 @@
 #include "Explanation.h"
 
 #include "../common.h"
-#include "../Bookkeeping.h"
 #include "ExplanationGenerator.h"
 
 #include "NLSATStatistics.h"

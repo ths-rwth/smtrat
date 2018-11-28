@@ -1,13 +1,11 @@
 #pragma once
 
-#include "../../../Common.h"
-
 #include "helper.h"
 
 #include <carl/core/Variable.h>
+#include <smtrat-common/smtrat-common.h>
 
 #include <numeric>
-
 
 namespace smtrat {
 namespace mcsat {

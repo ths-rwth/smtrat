@@ -1,9 +1,8 @@
 #pragma once
 
-#include "../common.h"
-#include "../Bookkeeping.h"
+#include "../utils/Bookkeeping.h"
 
-#include <carl/util/tuple_util.h>
+#include <smtrat-common/smtrat-common.h>
 
 namespace smtrat {
 namespace mcsat {
@@ -28,7 +27,6 @@ public:
 	boost::optional<Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
 		return explain<0>(data, variableOrdering, var, reason);
 	}
-	
 };
 
 } // namespace mcsat

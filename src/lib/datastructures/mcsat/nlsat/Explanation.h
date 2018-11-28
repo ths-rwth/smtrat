@@ -1,10 +1,12 @@
 #pragma once
 
+
 #include "../common.h"
-#include "../Bookkeeping.h"
 #include "ExplanationGenerator.h"
 
 #include "NLSATStatistics.h"
+
+#include <smtrat-mcsat/smtrat-mcsat.h>
 
 namespace smtrat {
 namespace mcsat {

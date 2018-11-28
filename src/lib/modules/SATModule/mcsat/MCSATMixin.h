@@ -9,6 +9,8 @@
 
 #include <carl/formula/model/Assignment.h>
 
+#include <smtrat-mcsat/smtrat-mcsat.h>
+
 #include <functional>
 #include <map>
 #include <set>
@@ -439,12 +441,12 @@ public:
 		};
 		for (const auto& c: trail.constraints()) {
 			auto category = mcsat::constraint_type::categorize(c, model(), carl::Variable::NO_VARIABLE);
-			if (category != mcsat::constraint_type::ConstraintType::Assigned) continue;
+			if (category != mcsat::ConstraintType::Assigned) continue;
 			if (!evaluator(c)) return false;
 		}
 		for (const auto& b: trail.mvBounds()) {
 			auto category = mcsat::constraint_type::categorize(b, model(), carl::Variable::NO_VARIABLE);
-			if (category != mcsat::constraint_type::ConstraintType::Assigned) continue;
+			if (category != mcsat::ConstraintType::Assigned) continue;
 			if (!evaluator(b)) return false;
 		}
 		return true;

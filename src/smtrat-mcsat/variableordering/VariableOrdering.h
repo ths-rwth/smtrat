@@ -12,7 +12,7 @@ enum class VariableOrdering {
 };
 
 template<VariableOrdering vot, typename Constraints>
-std::vector<carl::Variable> calculateVariableOrder(const Constraints& c) {
+std::vector<carl::Variable> calculate_variable_order(const Constraints& c) {
 	
 	std::vector<ConstraintT> constraints;
 	for (int i = 0; i < c.size(); ++i) {

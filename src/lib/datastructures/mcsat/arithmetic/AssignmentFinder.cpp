@@ -1,7 +1,6 @@
 #include "AssignmentFinder.h"
 
 #include "../common.h"
-#include "../Bookkeeping.h"
 #include "AssignmentFinder_arithmetic.h"
 
 namespace smtrat {

@@ -3,13 +3,14 @@
 #include "../../../datastructures/mcsat/assignments/SequentialAssignment.h"
 #include "../../../datastructures/mcsat/arithmetic/AssignmentFinder.h"
 #include "../../../datastructures/mcsat/smtaf/AssignmentFinder.h"
-#include "../../../datastructures/mcsat/explanations/ParallelExplanation.h"
-#include "../../../datastructures/mcsat/explanations/SequentialExplanation.h"
 #include "../../../datastructures/mcsat/fm/Explanation.h"
 #include "../../../datastructures/mcsat/nlsat/Explanation.h"
 #include "../../../datastructures/mcsat/nlsat/OneCellCADExplanator.h"
 #include "../../../datastructures/mcsat/vs/Explanation.h"
-#include "../../../datastructures/mcsat/variableordering/VariableOrdering.h"
+
+#include <smtrat-mcsat/explanations/ParallelExplanation.h>
+#include <smtrat-mcsat/explanations/SequentialExplanation.h>
+#include <smtrat-mcsat/variableordering/VariableOrdering.h>
 
 namespace smtrat {
 namespace mcsat {

@@ -3,11 +3,12 @@
 #include "boost/logic/tribool.hpp"
 
 #include "../common.h"
-#include "../Bookkeeping.h"
 
 #include "../../../solver/Module.h"
 #include "../../../solver/Manager.h"
 #include "../../../modules/LRAModule/LRAModule.h"
+
+#include <smtrat-mcsat/smtrat-mcsat.h>
 
 namespace smtrat {
 namespace mcsat {

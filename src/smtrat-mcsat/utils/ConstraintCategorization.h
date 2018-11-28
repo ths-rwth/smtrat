@@ -1,32 +1,38 @@
 #pragma once
 
-#include "../../../Common.h"
+#include <smtrat-common/smtrat-common.h>
+#include <smtrat-common/model.h>
+
+#include <carl/util/enum_util.h>
 
 #include <iostream>
 
 namespace smtrat {
 namespace mcsat {
 
-namespace constraint_type {
-	/**
-	 * This type categorizes constraints with respect to a given (partial) model and the next variable to be assigned.
-	 * Note that `Constant` implies `Assigned`.
-	 */
-	enum class ConstraintType {
-		Constant,	/// The constraint contains no variables
-		Assigned,	/// The constraint is fully assigned
-		Univariate,	/// The constraint has a single unassigned variable being the next one.
-		Unassigned	/// The constraint has an unassigned variable that is not the next one.
-	};
-	inline std::ostream& operator<<(std::ostream& os, ConstraintType ct) {
-		switch (ct) {
-			case ConstraintType::Constant: os << "constant"; break;
-			case ConstraintType::Assigned: os << "assigned"; break;
-			case ConstraintType::Univariate: os << "univariate"; break;
-			case ConstraintType::Unassigned: os << "unassigned"; break;
-		}
-		return os;
+/**
+ * This type categorizes constraints with respect to a given (partial) model and the next variable to be assigned.
+ * Note that `Constant` implies `Assigned`.
+ */
+enum class ConstraintType {
+	Constant,	/// The constraint contains no variables
+	Assigned,	/// The constraint is fully assigned
+	Univariate,	/// The constraint has a single unassigned variable being the next one.
+	Unassigned	/// The constraint has an unassigned variable that is not the next one.
+};
+inline std::ostream& operator<<(std::ostream& os, ConstraintType ct) {
+	switch (ct) {
+		case ConstraintType::Constant: return os << "constant";
+		case ConstraintType::Assigned: return os << "assigned";
+		case ConstraintType::Univariate: return os << "univariate";
+		case ConstraintType::Unassigned: return os << "unassigned";
+		default:
+			assert(false && "Invalid enum value for ConstraintType");
+			return os << "ConstraintType(" << carl::underlying_enum_value(ct) << ")";
 	}
+}
+
+namespace constraint_type {
 	
 	template<typename T>
 	ConstraintType categorize(const T& t, const Model& model, carl::Variable next) {
@@ -90,8 +96,6 @@ namespace constraint_type {
 		return categorize(t, model, next) == ConstraintType::Unassigned;
 	}
 }
-
-
 
 }
 }
