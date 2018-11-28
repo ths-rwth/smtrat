@@ -1198,28 +1198,28 @@ namespace smtrat
              * @param _out The output stream where the answer should be printed.
              * @param _initiation The line initiation.
              */
-            void print( const std::string _initiation = "***" ) const;
+            void print( const std::string& _initiation = "***" ) const;
             
             /**
              * Prints the vector of the received formula.
              * @param _out The output stream where the answer should be printed.
              * @param _initiation The line initiation.
              */
-            void printReceivedFormula( const std::string _initiation = "***" ) const;
+            void printReceivedFormula( const std::string& _initiation = "***" ) const;
             
             /**
              * Prints the vector of passed formula.
              * @param _out The output stream where the answer should be printed.
              * @param _initiation The line initiation.
              */
-            void printPassedFormula( const std::string _initiation = "***" ) const;
+            void printPassedFormula( const std::string& _initiation = "***" ) const;
             
             /**
              * Prints the infeasible subsets.
              * @param _out The output stream where the answer should be printed.
              * @param _initiation The line initiation.
              */
-            void printInfeasibleSubsets( const std::string _initiation = "***" ) const;
+            void printInfeasibleSubsets( const std::string& _initiation = "***" ) const;
             
             /**
              * Prints the assignment of this module satisfying its received formula if it satisfiable
