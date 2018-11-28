@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../common.h"
+#include "../utils/Bookkeeping.h"
 
 #include <carl/util/tuple_util.h>
-#include <smtrat-mcsat/smtrat-mcsat.h>
+#include <smtrat-common/smtrat-common.h>
 
 namespace smtrat {
 namespace mcsat {
