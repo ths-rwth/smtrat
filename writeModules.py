@@ -217,7 +217,6 @@ def statisticsContent(module):
 	result = license(module + 'Statistics.h') + """
 #pragma once
 
-#include "../../config.h"
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "../../utilities/stats/Statistics.h"
 
