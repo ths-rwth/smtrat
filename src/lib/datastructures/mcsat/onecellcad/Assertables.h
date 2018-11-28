@@ -15,6 +15,7 @@
 #include "../../../Common.h" // type alias for Rational number representation
 
 namespace smtrat {
+namespace mcsat {
 namespace onecellcad {
 
   template <typename PolyType>
@@ -77,4 +78,5 @@ namespace onecellcad {
   }
 
 } // namespace onecellcad
+} // namespace mcsat
 } // namespace smtrat

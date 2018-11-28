@@ -1,16 +1,16 @@
-#pragma once
+#include "Explanation.h"
 
 #include <algorithm>
 
 #include "../../../Common.h"
-#include "../onecellcad/OneCellCAD.h"
-#include "ExplanationGenerator.h"
+#include "OneCellCAD.h"
+#include "../nlsat/ExplanationGenerator.h"
 
 #include <smtrat-mcsat/smtrat-mcsat.h>
 
 namespace smtrat {
 namespace mcsat {
-namespace nlsat {
+namespace onecellcad {
 
 inline
 carl::RealAlgebraicPoint<smtrat::Rational> asRANPoint(
@@ -52,9 +52,8 @@ ostream& operator<<(ostream& os, const std::vector<std::vector<onecellcad::TagPo
   return os;
 }
 
-  struct OneCellExplanation {
   boost::optional<mcsat::Explanation>
-  operator()(const mcsat::Bookkeeping &trail, // current assignment state
+  Explanation::operator()(const mcsat::Bookkeeping &trail, // current assignment state
              const std::vector<carl::Variable> &varOrder,
              carl::Variable var,
              const FormulasT &trailLiterals) const
@@ -80,7 +79,7 @@ ostream& operator<<(ostream& os, const std::vector<std::vector<onecellcad::TagPo
       << " and eliminate down from: " << var);
 
     std::vector<Poly> polys; // extract from trailLiterals
-    for (const auto &constraint : helper::convertToConstraints(trailLiterals))
+    for (const auto &constraint : nlsat::helper::convertToConstraints(trailLiterals))
       polys.emplace_back(constraint.lhs()); // constraints have the form 'poly < 0' with  <, = etc.
 
     const auto& trailVariables = trail.assignedVariables();
@@ -161,23 +160,23 @@ ostream& operator<<(ostream& os, const std::vector<std::vector<onecellcad::TagPo
     for (std::size_t i = 0; i < cell.size(); i++) {
       auto& cellComponent = cell[i];
       auto cellVariable = oneCellCADVarOrder[i];
-      if (mpark::holds_alternative<onecellcad::Section>(cellComponent)) {
-        auto section = mpark::get<onecellcad::Section>(cellComponent).boundFunction;
+      if (std::holds_alternative<onecellcad::Section>(cellComponent)) {
+        auto section = std::get<onecellcad::Section>(cellComponent).boundFunction;
         // Need to use poly with its main variable replaced by the special MultivariateRootT::var().
         auto param = std::make_pair(section.poly(), section.k());
-        explainLiterals.emplace_back(helper::buildEquality(cellVariable, param).negated());
+        explainLiterals.emplace_back(nlsat::helper::buildEquality(cellVariable, param).negated());
       } else {
-        auto sectorLowBound = mpark::get<onecellcad::Sector>(cellComponent).lowBound;
+        auto sectorLowBound = std::get<onecellcad::Sector>(cellComponent).lowBound;
         if (sectorLowBound) {
           // Need to use poly with its main variable replaced by the special MultivariateRootT::var().
           auto param = std::make_pair(sectorLowBound->boundFunction.poly(), sectorLowBound->boundFunction.k());
-          explainLiterals.emplace_back(helper::buildAbove(cellVariable, param).negated());
+          explainLiterals.emplace_back(nlsat::helper::buildAbove(cellVariable, param).negated());
         }
-        auto sectorHighBound = mpark::get<onecellcad::Sector>(cellComponent).highBound;
+        auto sectorHighBound = std::get<onecellcad::Sector>(cellComponent).highBound;
         if (sectorHighBound) {
           // Need to use poly with its main variable replaced by the special MultivariateRootT::var().
           auto param = std::make_pair(sectorHighBound->boundFunction.poly(), sectorHighBound->boundFunction.k());
-          explainLiterals.emplace_back(helper::buildBelow(cellVariable, param).negated());
+          explainLiterals.emplace_back(nlsat::helper::buildBelow(cellVariable, param).negated());
         }
       }
     }
@@ -188,8 +187,8 @@ ostream& operator<<(ostream& os, const std::vector<std::vector<onecellcad::TagPo
     SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Explain literals: " << explainLiterals);
     return boost::variant<FormulaT, ClauseChain>(FormulaT(carl::FormulaType::OR, std::move(explainLiterals)));
   }
-};
-} // namespace nlsat
+
+} // namespace onecell
 } // namespace mcsat
 } // namespace smtrat
 

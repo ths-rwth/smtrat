@@ -5,7 +5,7 @@
 #include "../../../datastructures/mcsat/smtaf/AssignmentFinder.h"
 #include "../../../datastructures/mcsat/fm/Explanation.h"
 #include "../../../datastructures/mcsat/nlsat/Explanation.h"
-#include "../../../datastructures/mcsat/nlsat/OneCellCADExplanator.h"
+#include "../../../datastructures/mcsat/onecellcad/Explanation.h"
 #include "../../../datastructures/mcsat/vs/Explanation.h"
 
 #include <smtrat-mcsat/explanations/ParallelExplanation.h>
@@ -26,12 +26,12 @@ struct MCSATSettingsNL {
 struct MCSATSettingsOC {
   static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-  using ExplanationBackend = SequentialExplanation<nlsat::OneCellExplanation, nlsat::Explanation>;
+  using ExplanationBackend = SequentialExplanation<onecellcad::Explanation, nlsat::Explanation>;
 };
 struct MCSATSettingsFMVSOC {
   static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
   using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,nlsat::OneCellExplanation, nlsat::Explanation>;
+	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,onecellcad::Explanation, nlsat::Explanation>;
 };
 
 struct MCSATSettingsFMNL {
