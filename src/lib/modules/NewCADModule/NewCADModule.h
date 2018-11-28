@@ -9,7 +9,6 @@
 #pragma once
 
 #include "../../datastructures/cad/CAD.h"
-#include "../../datastructures/cad/helper/EqualityReplacer.h"
 #include "../../datastructures/cad/helper/CADPreprocessor.h"
 #include "../../datastructures/VariableBounds.h"
 
