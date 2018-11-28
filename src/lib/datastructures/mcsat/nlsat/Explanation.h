@@ -32,24 +32,7 @@ struct Explanation {
    * x7..x10 if they are irrelevant and "vanish" under the assignment in @p data,
    * e.g. x1*x7+x6=0 (for x1 := 0) or x6*(x7^2+1)>0 (equiv to x6>0, since x7^2+1 > 0)
    */
-	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
-#ifdef SMTRAT_DEVOPTION_Statistics
-		mStatistics.explanation();
-#endif
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Explain conflict " << reason);
-
-		// 'variableOrder' is ordered 'x0,.., xk, .., xn', the relevant variables that appear in the
-		// reason and implication end at 'var'=xk, so the relevant prefix is 'x0 ... xk'
-		// where CAD would start its variable elimination from back ('xk') to front ('x0').
-		// However, the CAD implementation starts eliminating at the front:
-		std::vector<carl::Variable> orderedVars(variableOrdering);
-		std::reverse(orderedVars.begin(), orderedVars.end());
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Ascending variable order " << variableOrdering << " and eliminating down from " << var);
-
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Bookkeep: " << data);
-		ExplanationGenerator eg(reason, orderedVars, var, data.model());
-		return eg.getExplanation(FormulaT(carl::FormulaType::FALSE));
-	}
+	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const;
 };
 
 }
