@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../../datastructures/mcsat/assignments/SequentialAssignment.h"
-#include "../../../datastructures/mcsat/arithmetic/AssignmentFinder_arithmetic.h"
+#include "../../../datastructures/mcsat/arithmetic/AssignmentFinder.h"
 #include "../../../datastructures/mcsat/smtaf/AssignmentFinder.h"
 #include "../../../datastructures/mcsat/explanations/ParallelExplanation.h"
 #include "../../../datastructures/mcsat/explanations/SequentialExplanation.h"
