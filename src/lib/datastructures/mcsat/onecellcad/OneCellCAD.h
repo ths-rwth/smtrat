@@ -323,8 +323,9 @@ namespace onecellcad {
       // 'gatherVariables()' collects only variables with positive degree
       auto polyVariables = poly.gatherVariables();
 
-      if (polyVariables.empty())
+      if (polyVariables.empty()) {
         return std::nullopt; // for const-polys like '2'
+	  }
 
       for (std::size_t level = 0; level < variableOrder.size(); ++level) {
         polyVariables.erase(variableOrder[level]);
@@ -333,6 +334,7 @@ namespace onecellcad {
           return level;
       }
       throw ("Poly contains variable not found in variableOrder");
+	  return std::nullopt;
     }
 
     inline
@@ -1222,13 +1224,16 @@ namespace onecellcad {
   inline
   void categorizeByLevel(
     std::vector<std::vector<TagPoly>>& projectionLevels, // output argument
-    const std::vector<carl::Variable> varOrder,
-    const std::vector<TagPoly> polys) { // constant-polys prohibited
+    const std::vector<carl::Variable>& varOrder,
+    const std::vector<TagPoly>& polys) { // constant-polys prohibited
 
     //assert(enough Levels for polys)
-    for (auto& poly : polys) {
-      std::size_t level = *levelOf(varOrder, poly.poly);
-      projectionLevels[level].emplace_back(poly);
+    for (const auto& poly : polys) {
+		if (poly.poly.isNumber()) continue;
+      auto level = levelOf(varOrder, poly.poly);
+	  assert(level.has_value());
+	  assert(*level < projectionLevels.size());
+      projectionLevels[*level].emplace_back(poly);
     }
   }
 
