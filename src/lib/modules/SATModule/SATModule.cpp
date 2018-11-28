@@ -447,7 +447,7 @@ namespace smtrat
             }
             rebuildOrderHeap();
         }
-        lbool result = l_Undef;
+        Minisat::lbool result = l_Undef;
         mUpperBoundOnMinimal = passedFormulaEnd();
         while( true )
         {
@@ -565,7 +565,7 @@ namespace smtrat
         {
             mCurr_Restarts = 0;
             int current_restarts = -1;
-            lbool result = l_Undef;
+            Minisat::lbool result = l_Undef;
             while( current_restarts < mCurr_Restarts )
             {
                 current_restarts = mCurr_Restarts;
@@ -609,7 +609,7 @@ namespace smtrat
             }
         }
 
-        lbool result = l_Undef;
+        Minisat::lbool result = l_Undef;
         while (!testVarsPositive.empty())
         {
             for (int pos = 0; pos < assigns.size(); ++pos)
@@ -771,7 +771,7 @@ namespace smtrat
             std::cout << std::endl;
             #endif
 
-            lbool result = l_False;
+            Minisat::lbool result = l_False;
             Model model;
             do
             {
@@ -1680,7 +1680,7 @@ namespace smtrat
         if( _type != NORMAL_CLAUSE ) mpStatistics->lemmaLearned();
         #endif
         // Check if clause is satisfied and remove false/duplicate literals:true);
-        sort( add_tmp );
+        Minisat::sort( add_tmp );
         
         int falseLiteralsCount = 0;
         // check the clause for tautologies and similar
@@ -1743,7 +1743,7 @@ namespace smtrat
         if( add_tmp.size() > 1 )
         {
             lemma_lt lt( *this );
-            sort( add_tmp, lt );
+            Minisat::sort( add_tmp, lt );
             cr = ca.alloc( add_tmp, NORMAL_CLAUSE );
             clauses.push( cr );
             attachClause( cr );
@@ -1820,7 +1820,7 @@ namespace smtrat
 			}
 			// Sort to make sure watches are at the front
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Sorting lemma   " << lemma);
-			sort(lemma, lemma_lt(*this));
+			Minisat::sort(lemma, lemma_lt(*this));
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Resulting lemma " << lemma);
 			if (lemma.size() == 1) {
 				// Backtrack to DL0 if (a) it is not assigned to true or (b) assigned to true later than DL0
@@ -1870,7 +1870,7 @@ namespace smtrat
 					for (int j = 0; j < corig.size(); j++) {
 						c.push(corig[j]);
 					}
-					sort(c, lemma_lt(*this));
+					Minisat::sort(c, lemma_lt(*this));
 					bool different = false;
 					for (int j = 0; j < lemma.size(); j++) {
 						different = different || (c[j] != lemma[j]);
@@ -1892,7 +1892,7 @@ namespace smtrat
 				return CRef_Undef;
 			}
 			// Resort in case the backtracking changed the order
-			sort(lemma, lemma_lt(*this));
+			Minisat::sort(lemma, lemma_lt(*this));
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Sorted -> " << lemma);
 			// If lemma is not a single literal, attach it
 			CRef lemma_ref = CRef_Undef;
@@ -2257,7 +2257,7 @@ namespace smtrat
     template<class Settings>
     void SATModule<Settings>::resetVariableAssignment( Var _var )
     {
-        lbool& ass = assigns[_var];
+        Minisat::lbool& ass = assigns[_var];
         bool wasAssignedToFalse = ass == l_False;
         if( !mReceivedFormulaPurelyPropositional && mBooleanConstraintMap[_var].first != nullptr )
         {
@@ -2504,7 +2504,7 @@ namespace smtrat
 
         // sort the literals by trail index level
         lemma_lt lt(*this);
-        sort( explanation, lt );
+        Minisat::sort( explanation, lt );
         assert( explanation[0] == l );
 
         // compute the assertion level for this clause
@@ -2647,7 +2647,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    lbool SATModule<Settings>::search( int nof_conflicts )
+    Minisat::lbool SATModule<Settings>::search( int nof_conflicts )
     {
 
         assert( ok );
@@ -2948,7 +2948,7 @@ namespace smtrat
 			//for (int i = 0; i < learnt_clause.size(); i++) {
 			//	valueAndUpdate(learnt_clause[i]);
 			//}
-			sort(learnt_clause, lemma_lt(*this));
+			Minisat::sort(learnt_clause, lemma_lt(*this));
 		}
 		
 		if (false && Settings::mc_sat) {
@@ -3305,7 +3305,7 @@ namespace smtrat
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Explanation for " << p << ": " << expClause);
 
                 if (expClause.size() > 1) {
-                    sort(expClause, lemma_lt(*this));
+                    Minisat::sort(expClause, lemma_lt(*this));
                     confl = ca.alloc(expClause, LEMMA_CLAUSE);
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Explanation for " << p << ": " << ca[confl]);
                     if (Settings::mcsat_learn_lazy_explanations) {
@@ -3399,7 +3399,7 @@ namespace smtrat
 		
 		SMTRAT_LOG_DEBUG("smtrat.sat", "Before sorting " << out_learnt);
 		if (Settings::mc_sat) {
-			sort(out_learnt, lemma_lt(*this));
+			Minisat::sort(out_learnt, lemma_lt(*this));
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat", "After sorting " << out_learnt);
 
@@ -3602,7 +3602,7 @@ namespace smtrat
                 }
             }
         }
-        assigns[var( p )] = lbool( !sign( p ) );
+        assigns[var( p )] = Minisat::lbool( !sign( p ) );
 		if (Settings::mc_sat) {
 			mMCSAT.doAssignment(p);
 		}
@@ -3814,7 +3814,7 @@ NextClause:
         int    i, j;
         double extra_lim = cla_inc / learnts.size();    // Remove any clause below this activity
 
-        sort( learnts, reduceDB_lt( ca ) );
+        Minisat::sort( learnts, reduceDB_lt( ca ) );
         // Don't delete binary or locked clauses. From the rest, delete clauses from the first half
         // and clauses with activity smaller than 'extra_lim':
         for( i = j = 0; i < learnts.size(); i++ )

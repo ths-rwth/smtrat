@@ -14,7 +14,6 @@
 //#define VS_DEBUG_SUBSTITUTION
 const unsigned MAX_NUM_OF_TERMS = 512;
 
-using namespace std;
 using namespace carl;
 
 namespace vs
@@ -130,7 +129,7 @@ namespace vs
 
     bool splitProducts( const ConstraintVector& _toSimplify, DisjunctionOfConstraintConjunctions& _result, bool _onlyNeq )
     {
-        vector<DisjunctionOfConstraintConjunctions> toCombine;
+        std::vector<DisjunctionOfConstraintConjunctions> toCombine;
         for( auto constraint = _toSimplify.begin(); constraint != _toSimplify.end(); ++constraint )
         {
             if( constraint->hasFactorization() )
@@ -436,7 +435,7 @@ namespace vs
             assert( positives.size() == negatives.size() );
             if( positives.size() > 0 )
             {
-                vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> > combSelector = vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >();
+                std::vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> > combSelector = std::vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >();
                 if( fmod( numOfAlwaysNegatives, 2.0 ) != 0.0 )
                 {
                     if( positive ) 
@@ -478,13 +477,13 @@ namespace vs
         return combinations;
     }
 
-    void getOddBitStrings( size_t _length, vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings )
+    void getOddBitStrings( std::size_t _length, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings )
     {
         assert( _length > 0 );
-        if( _length == 1 )  _strings.push_back( bitset<MAX_PRODUCT_SPLIT_NUMBER>( 1 ) );
+        if( _length == 1 )  _strings.push_back( std::bitset<MAX_PRODUCT_SPLIT_NUMBER>( 1 ) );
         else
         {
-            size_t pos = _strings.size();
+            std::size_t pos = _strings.size();
             getEvenBitStrings( _length - 1, _strings );
             for( ; pos < _strings.size(); ++pos )
             {
@@ -496,13 +495,13 @@ namespace vs
         }
     }
 
-    void getEvenBitStrings( size_t _length, vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings )
+    void getEvenBitStrings( std::size_t _length, std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >& _strings )
     {
         assert( _length > 0 );
-        if( _length == 1 ) _strings.push_back( bitset<MAX_PRODUCT_SPLIT_NUMBER>( 0 ) );
+        if( _length == 1 ) _strings.push_back( std::bitset<MAX_PRODUCT_SPLIT_NUMBER>( 0 ) );
         else
         {
-            size_t pos = _strings.size();
+            std::size_t pos = _strings.size();
             getEvenBitStrings( _length - 1, _strings );
             for( ; pos < _strings.size(); ++pos ) _strings[pos] <<= 1;
             getOddBitStrings( _length - 1, _strings );
@@ -992,7 +991,7 @@ namespace vs
         if( !substituteNormal( firstCaseInequality, substitution, _result, _accordingPaper, _conflictingVariables, _solutionSpace ) )
             return false;
         // Create a vector to store the results of each single substitution.
-        vector<DisjunctionOfConstraintConjunctions> substitutionResultsVector;
+        std::vector<DisjunctionOfConstraintConjunctions> substitutionResultsVector;
         /*
          * Let k be the maximum degree of x in f, then call for every 1<=i<=k substituteNormal with:
          *

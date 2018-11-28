@@ -25,22 +25,21 @@
 // Flag activating some informative and not exaggerated output about module calls.
 //#define DEBUG_MODULE_CALLS_IN_SMTLIB
 
-using namespace std;
 using namespace carl;
 
 namespace smtrat
 {
     
-    vector<string> Module::mAssumptionToCheck;
-    set<string> Module::mVariablesInAssumptionToCheck;
-    size_t Module::mNumOfBranchVarsToStore = 5;
+    std::vector<std::string> Module::mAssumptionToCheck;
+    std::set<std::string> Module::mVariablesInAssumptionToCheck;
+    std::size_t Module::mNumOfBranchVarsToStore = 5;
 #ifdef __VS
-    vector<Branching> Module::mLastBranches = vector<Branching>( mNumOfBranchVarsToStore, Branching(Poly::PolyType(ZERO_RATIONAL), ZERO_RATIONAL) );
+    std::vector<Branching> Module::mLastBranches = std::vector<Branching>( mNumOfBranchVarsToStore, Branching(Poly::PolyType(ZERO_RATIONAL), ZERO_RATIONAL) );
 #else
-	vector<Branching> Module::mLastBranches = vector<Branching>(mNumOfBranchVarsToStore, Branching(typename Poly::PolyType(ZERO_RATIONAL), ZERO_RATIONAL));
+	std::vector<Branching> Module::mLastBranches = std::vector<Branching>(mNumOfBranchVarsToStore, Branching(typename Poly::PolyType(ZERO_RATIONAL), ZERO_RATIONAL));
 #endif
-    size_t Module::mFirstPosInLastBranches = 0;
-    vector<FormulaT> Module::mOldSplittingVariables;
+    std::size_t Module::mFirstPosInLastBranches = 0;
+    std::vector<FormulaT> Module::mOldSplittingVariables;
 #ifdef SMTRAT_STRAT_PARALLEL_MODE
 	std::mutex  Module::mOldSplittingVarMutex;
 #endif
@@ -163,7 +162,7 @@ namespace smtrat
         SMTRAT_LOG_DEBUG("smtrat.module", __func__ << " " << moduleName() << " (" << mId << ") about: " << _constraint);
         if( mpManager != nullptr )
         {
-            for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+            for( auto module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
             {
                 (*module)->deinform( _constraint );
             }
@@ -647,7 +646,7 @@ namespace smtrat
 
     void Module::getInfeasibleSubsets()
     {
-        vector<Module*>::const_iterator backend = mUsedBackends.begin();
+        auto backend = mUsedBackends.begin();
         while( backend != mUsedBackends.end() )
         {
             if( (*backend)->solverState() == UNSAT )
@@ -740,12 +739,12 @@ namespace smtrat
         }
     }
 
-    vector<FormulaT>::const_iterator Module::findBestOrigin( const vector<FormulaT>& _origins ) const
+    std::vector<FormulaT>::const_iterator Module::findBestOrigin( const std::vector<FormulaT>& _origins ) const
     {
         // TODO: implement other heuristics for finding the best origin, e.g., activity or age based
         // Find the smallest set of origins.
-        vector<FormulaT>::const_iterator smallestOrigin = _origins.begin();
-        vector<FormulaT>::const_iterator origin = _origins.begin();
+        auto smallestOrigin = _origins.begin();
+        auto origin = _origins.begin();
         while( origin != _origins.end() )
         {
             if( origin->size() == 1 )
@@ -787,14 +786,14 @@ namespace smtrat
         // Get the backends to be considered from the manager.
         mUsedBackends = mpManager->getBackends( this, mBackendsFoundAnswer );
         mAllBackends = mpManager->getAllBackends( this );
-        size_t numberOfUsedBackends = mUsedBackends.size();
+        std::size_t numberOfUsedBackends = mUsedBackends.size();
         if( numberOfUsedBackends > 0 )
         {
             // Update the backends.
             if( mFirstSubformulaToPass != mpPassedFormula->end() )
             {
                 bool assertionFailed = false;
-                for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+                for( auto module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
                 {
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->startAddTimer();
@@ -828,7 +827,7 @@ namespace smtrat
             else
             {
                 // TODO: this might be removed, as it is now done in check as well
-                for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+                for( auto module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
                 {
                     (*module)->mLemmas.clear();
                 }
@@ -847,7 +846,7 @@ namespace smtrat
             {
             #endif
                 // Run the backend solver sequentially until the first answers true or false.
-                std::vector<Module*>::iterator module = mUsedBackends.begin();
+                auto module = mUsedBackends.begin();
                 while( module != mUsedBackends.end() && result == UNKNOWN )
                 {
                     result = (*module)->check( _final, _full, _minimize );
@@ -897,7 +896,7 @@ namespace smtrat
             if( mpManager != nullptr )
             {
                 mAllBackends = mpManager->getAllBackends( this );
-                for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+                for( auto module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
                 {
                     #ifdef SMTRAT_DEVOPTION_MeasureTime
                     (*module)->startRemoveTimer();
@@ -974,7 +973,7 @@ namespace smtrat
 
     void Module::updateLemmas()
     {
-        for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
+        for( auto module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
         {
             (*module)->updateLemmas();
             mLemmas.insert( mLemmas.end(), (*module)->mLemmas.begin(), (*module)->mLemmas.end() );
@@ -983,7 +982,7 @@ namespace smtrat
 
     void Module::collectTheoryPropagations()
     {
-        for( vector<Module*>::iterator module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
+        for( auto module = mUsedBackends.begin(); module != mUsedBackends.end(); ++module )
         {
             (*module)->collectTheoryPropagations();
             #ifdef SMTRAT_DEVOPTION_Validation
@@ -1005,9 +1004,9 @@ namespace smtrat
     {
         if( solverState() == UNSAT )
             return make_pair( true, FormulaT( carl::FormulaType::FALSE ) );
-        for( auto& backend : usedBackends() )
+        for( const auto& backend : usedBackends() )
         {
-            pair<bool,FormulaT> simplifiedPassedFormula = backend->getReceivedFormulaSimplified();
+            std::pair<bool,FormulaT> simplifiedPassedFormula = backend->getReceivedFormulaSimplified();
             if( simplifiedPassedFormula.first )
             {
                 return simplifiedPassedFormula;
@@ -1245,7 +1244,7 @@ namespace smtrat
 		return mpManager->isLemmaLevel(level);
     }
 
-    void Module::print( const string 
+    void Module::print( const std::string&
 #ifdef SMTRAT_LOGGING_ENABLED
         _initiation
 #endif
@@ -1265,7 +1264,7 @@ namespace smtrat
 #endif
     }
 
-    void Module::printReceivedFormula( const string _initiation ) const
+    void Module::printReceivedFormula( const std::string& _initiation ) const
     {
         SMTRAT_LOG_INFO("smtrat.module", _initiation << "Received formula:");
         for( auto form = mpReceivedFormula->begin(); form != mpReceivedFormula->end(); ++form )
@@ -1278,7 +1277,7 @@ namespace smtrat
         }
     }
 
-    void Module::printPassedFormula( const string _initiation ) const
+    void Module::printPassedFormula( const std::string& _initiation ) const
     {
         SMTRAT_LOG_INFO("smtrat.module", _initiation << "Passed formula:");
         for( auto form = mpPassedFormula->begin(); form != mpPassedFormula->end(); ++form )
@@ -1296,7 +1295,7 @@ namespace smtrat
         }
     }
 
-    void Module::printInfeasibleSubsets( const string _initiation ) const
+    void Module::printInfeasibleSubsets( const std::string& _initiation ) const
     {
         SMTRAT_LOG_INFO("smtrat.module", _initiation << "Infeasible subsets:");
         for( auto infSubSet = mInfeasibleSubsets.begin(); infSubSet != mInfeasibleSubsets.end(); ++infSubSet )
@@ -1311,7 +1310,7 @@ namespace smtrat
         }
     }
     
-    void Module::printModel( ostream& _out ) const
+    void Module::printModel( std::ostream& _out ) const
     {
         this->updateModel();
         mModel.clean();
@@ -1321,7 +1320,7 @@ namespace smtrat
         }
     }
     
-    void Module::printAllModels( ostream& _out )
+    void Module::printAllModels( std::ostream& _out )
     {
         this->updateAllModels();
         for( const auto& m : mAllModels )

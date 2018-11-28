@@ -519,7 +519,7 @@ namespace smtrat
                     return true;
                 if( mpManager != nullptr )
                 {
-                    for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+                    for( auto module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
                     {
                         if( (*module)->hasLemmas() )
                             return true;
@@ -535,7 +535,7 @@ namespace smtrat
             {
                 if( mpManager != nullptr )
                 {
-                    for( vector<Module*>::iterator module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
+                    for( auto module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
                     {
                         (*module)->clearLemmas();
                     }

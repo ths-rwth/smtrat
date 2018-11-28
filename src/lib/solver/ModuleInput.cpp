@@ -256,7 +256,7 @@ namespace smtrat
     }
     
     template<typename AnnotationType>
-    void annotateFormula( const FormulaT&, const vector<AnnotationType>& )
+    void annotateFormula( const FormulaT&, const std::vector<AnnotationType>& )
     {
     }
 } // namespace smtrat

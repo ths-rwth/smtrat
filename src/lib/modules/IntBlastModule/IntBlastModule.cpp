@@ -25,7 +25,7 @@ namespace smtrat
     mInputVariables(),
     mNonlinearInputVariables(),
     mpICPInput(new ModuleInput()),
-    mICPFoundAnswer( vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
+    mICPFoundAnswer( std::vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
     mpICPRuntimeSettings(new RuntimeSettings()),
     mICP(mpICPInput, mpICPRuntimeSettings, mICPFoundAnswer),
     mConstraintFromBounds(carl::freshBooleanVariable()),

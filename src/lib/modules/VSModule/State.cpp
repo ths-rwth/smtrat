@@ -20,8 +20,6 @@
 
 //#define VS_LOG_INFSUBSETS
 
-using namespace std;
-
 namespace vs
 {   
     State::State( carl::IDPool* _conditionIdAllocator, bool _withVariableBounds ):
@@ -865,7 +863,7 @@ namespace vs
         }
     }
 
-    bool State::updateOCondsOfSubstitutions( const Substitution& _substitution, vector<State*>& _reactivatedStates )
+    bool State::updateOCondsOfSubstitutions( const Substitution& _substitution, std::vector<State*>& _reactivatedStates )
     {
         for( auto child = rChildren().begin(); child != children().end(); ++child )
         {
@@ -907,7 +905,7 @@ namespace vs
         return false;
     }
 
-    void State::addSubstitutionResults( vector<DisjunctionOfConditionConjunctions>&& _disjunctionsOfCondConj )
+    void State::addSubstitutionResults( std::vector<DisjunctionOfConditionConjunctions>&& _disjunctionsOfCondConj )
     {
         // For each disjunction add a substitution result to the substitution results of this state.
         if( mpSubstitutionResults == NULL )
@@ -1203,7 +1201,7 @@ namespace vs
                 return false;
             size_t bestVar = mBestVarVals.back();
             mBestVarVals.pop_back();
-            vector<pair<carl::Variable, multiset<double>>>& varVals = mRealVarVals.empty() ? mIntVarVals : mRealVarVals;
+            std::vector<std::pair<carl::Variable, std::multiset<double>>>& varVals = mRealVarVals.empty() ? mIntVarVals : mRealVarVals;
             assert( index() != varVals[bestVar].first );
             setIndex( varVals[bestVar].first );
             return true;
@@ -1218,7 +1216,7 @@ namespace vs
             else
                 mRealVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, multiset<double>() ) );
         }
-        vector<pair<carl::Variable, multiset<double>>>& varValsB = mRealVarVals.empty() ? mIntVarVals : mRealVarVals;
+        std::vector<std::pair<carl::Variable, std::multiset<double>>>& varValsB = mRealVarVals.empty() ? mIntVarVals : mRealVarVals;
         // Find for each variable the highest valuation of all conditions' constraints.
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
         {
@@ -1230,7 +1228,7 @@ namespace vs
                     var->second.insert( varInConsVal );
             }
         }
-        vector<pair<carl::Variable, multiset<double>>>& varVals = mRealVarVals.empty() ? mIntVarVals : mRealVarVals;
+        std::vector<std::pair<carl::Variable, std::multiset<double>>>& varVals = mRealVarVals.empty() ? mIntVarVals : mRealVarVals;
         #ifdef VS_DEBUG_VARIABLE_VALUATIONS
         for( auto var = varVals.begin(); var != varVals.end(); ++var )
         {
@@ -1283,7 +1281,7 @@ namespace vs
         return false;
     }
     
-    void State::bestConstraintValuation( const vector<pair<carl::Variable, multiset<double>>>& _varVals )
+    void State::bestConstraintValuation( const std::vector<std::pair<carl::Variable, std::multiset<double>>>& _varVals )
     {
         assert( _varVals.size() > 1 );
         size_t var = 1;
@@ -1342,13 +1340,13 @@ namespace vs
         }
     }
     
-    void State::averageConstraintValuation( const vector<pair<carl::Variable, multiset<double>>>& _varVals )
+    void State::averageConstraintValuation( const std::vector<std::pair<carl::Variable, std::multiset<double>>>& _varVals )
     {
         assert( _varVals.size() > 1 );
-        size_t var = 0;
+        std::size_t var = 0;
         mBestVarVals.push_back(0);
         double bestAvgVal = 0;
-        const multiset<double>& vals = _varVals[var].second;
+        const std::multiset<double>& vals = _varVals[var].second;
         if( !vals.empty() )
         {
 			bestAvgVal = std::accumulate(vals.begin(), vals.end(), 0.0) / static_cast<double>(vals.size());
@@ -1371,7 +1369,7 @@ namespace vs
         }
     }
     
-    void State::worstConstraintValuation( const vector<pair<carl::Variable, multiset<double>>>& _varVals )
+    void State::worstConstraintValuation( const std::vector<std::pair<carl::Variable, std::multiset<double>>>& _varVals )
     {
         assert( _varVals.size() > 1 );
         size_t var = 1;
@@ -1614,7 +1612,7 @@ namespace vs
         // Remove the given conditions from this state.
         bool conditionDeleted = false;
         bool recentlyAddedConditionLeft = false;
-        vector<const Condition* > condsToDelete;
+        std::vector<const Condition* > condsToDelete;
         carl::PointerSet<Condition> originsToRemove;
         for( auto cond = rConditions().begin(); cond != conditions().end(); )
         {
@@ -1949,9 +1947,9 @@ namespace vs
         }
     }
 
-    vector<State*> State::addChild( const Substitution& _substitution )
+    std::vector<State*> State::addChild( const Substitution& _substitution )
     {
-        vector<State*> result;
+        std::vector<State*> result;
         if( !updateOCondsOfSubstitutions( _substitution, result ) )
         {
             if( index().type() == carl::VariableType::VT_INT && _substitution.type() == Substitution::NORMAL && _substitution.term().isInteger() )
@@ -2300,7 +2298,7 @@ namespace vs
             father().variableBounds().print( cout, ">>>    " );
             #endif
             carl::PointerSet<Condition> conflict;
-            vector< smtrat::DoubleInterval > solutionSpaces = solutionSpace( conflict );
+            std::vector< smtrat::DoubleInterval > solutionSpaces = solutionSpace( conflict );
             if( solutionSpaces.empty() )
             {
                 ConditionSetSet conflicts;
@@ -2315,9 +2313,9 @@ namespace vs
         return true;
     }
 
-    vector< smtrat::DoubleInterval > State::solutionSpace( carl::PointerSet<Condition>& _conflictReason ) const
+    std::vector< smtrat::DoubleInterval > State::solutionSpace( carl::PointerSet<Condition>& _conflictReason ) const
     {
-        vector< smtrat::DoubleInterval > result;
+        std::vector< smtrat::DoubleInterval > result;
         assert( !isRoot() );
         if( substitution().type() == Substitution::MINUS_INFINITY )
         {

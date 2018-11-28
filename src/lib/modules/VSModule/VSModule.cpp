@@ -243,7 +243,7 @@ namespace smtrat
         {
             if( !mpStateTree->variableBounds().isConflicting() )
             {
-                std::vector<pair<vector<ConstraintT>, ConstraintT>> bDeds = mpStateTree->variableBounds().getBoundDeductions();
+                std::vector<std::pair<std::vector<ConstraintT>, ConstraintT>> bDeds = mpStateTree->variableBounds().getBoundDeductions();
                 for( auto bDed = bDeds.begin(); bDed != bDeds.end(); ++bDed )
                 {
                     FormulasT subformulas;
