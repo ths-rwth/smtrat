@@ -8,6 +8,7 @@
 #include <carl/core/Variable.h>
 #include <carl/formula/Formula.h>
 #include <carl/io/streamingOperators.h>
+#include <carl/util/enum_util.h>
 
 namespace smtrat {
 
@@ -36,6 +37,9 @@ inline std::ostream& operator<<(std::ostream& os, Answer a) {
 		case Answer::UNSAT:		return os << "UNSAT";
 		case Answer::UNKNOWN:	return os << "UNKNOWN";
 		case Answer::ABORTED:	return os << "ABORTED";
+		default:
+			assert(false && "Invalid enum value for Answer");
+			return os << "Answer(" << carl::underlying_enum_value(a) << ")";
 	}
 }
 
