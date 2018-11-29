@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "../../solver/PModule.h"
+#include "../PModule.h"
 #include "EMStatistics.h"
 #include "EMSettings.h"
 

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "../../solver/PModule.h"
+#include "../PModule.h"
 #include "FPPStatistics.h"
 #include "FPPSettings.h"
 

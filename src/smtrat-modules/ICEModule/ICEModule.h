@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "../../solver/PModule.h"
-#include "../../datastructures/VariableBounds.h"
+#include "../PModule.h"
+#include <lib/datastructures/VariableBounds.h>
 
 #include "ICEStatistics.h"
 #include "ICESettings.h"

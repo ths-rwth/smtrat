@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "../../datastructures/lra/TableauSettings.h"
-#include "../../solver/ModuleSettings.h"
+#include <lib/datastructures/lra/TableauSettings.h>
+#include "../ModuleSettings.h"
 
 namespace smtrat
 {

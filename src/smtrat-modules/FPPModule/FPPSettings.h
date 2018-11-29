@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "../../solver/ModuleSettings.h"
+#include "../ModuleSettings.h"
 #include <smtrat-strategies/strategies/PreprocessingOne.h>
 #include <smtrat-strategies/strategies/BVPreprocessing.h>
 #include <smtrat-strategies/strategies/PBPreprocessing.h>

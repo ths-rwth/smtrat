@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "../../Common.h"
+#include <smtrat-common/smtrat-common.h>
 #include "Condition.h"
 
 namespace vs

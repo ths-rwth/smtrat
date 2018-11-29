@@ -8,7 +8,7 @@
 #pragma once
 
 #include <set>
-#include "../../Common.h"
+#include <smtrat-common/smtrat-common.h>
 
 namespace vs
 {

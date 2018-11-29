@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "../../solver/ModuleSettings.h"
+#include "../ModuleSettings.h"
 
 #include "mcsat/MCSATSettings.h"
 

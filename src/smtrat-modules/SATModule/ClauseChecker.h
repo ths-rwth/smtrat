@@ -1,7 +1,7 @@
 #pragma once
 
 #include "SolverTypes.h"
-#include "../../Common.h"
+#include <smtrat-common/smtrat-common.h>
 
 namespace smtrat {
 namespace sat {

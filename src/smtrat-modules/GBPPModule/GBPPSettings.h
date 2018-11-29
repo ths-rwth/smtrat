@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "carl/core/MultivariatePolynomial.h"
+#include <carl/core/MultivariatePolynomial.h>
 
 namespace smtrat
 {

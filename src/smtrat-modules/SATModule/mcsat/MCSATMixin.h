@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../../Common.h"
+#include <lib/Common.h>
 
 #include "../SolverTypes.h"
 

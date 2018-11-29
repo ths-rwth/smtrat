@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "../../solver/PModule.h"
+#include "../PModule.h"
 #include "GBPPStatistics.h"
 #include "GBPPSettings.h"
 

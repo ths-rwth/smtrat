@@ -8,9 +8,9 @@
 #pragma once
 
 
-#include "../../solver/Module.h"
-#include "../../solver/RuntimeSettings.h"
-#include "../../datastructures/lra/Tableau.h"
+#include "../Module.h"
+#include <smtrat-common/smtrat-common.h>
+#include <lib/datastructures/lra/Tableau.h>
 #include "LRAModuleStatistics.h"
 #include "LRASettings.h"
 #include <stdio.h>

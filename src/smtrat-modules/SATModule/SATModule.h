@@ -37,8 +37,7 @@
 #include "SolverTypes.h"
 #include "Sort.h"
 #include <math.h>
-#include "../../solver/Module.h"
-#include "../../solver/RuntimeSettings.h"
+#include "../Module.h"
 
 #include "VarScheduling.h"
 

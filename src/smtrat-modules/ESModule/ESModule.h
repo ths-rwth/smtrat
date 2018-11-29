@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include "../../solver/PModule.h"
+#include "../PModule.h"
 #include "ESStatistics.h"
 #include "ESSettings.h"
 namespace smtrat
