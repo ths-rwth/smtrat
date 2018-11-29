@@ -34,10 +34,6 @@ namespace smtrat
 
   using Logic = carl::Logic;
 
-  // An enum with the levels for lemma generation
-  enum LemmaLevel { NONE = 0, NORMAL = 1, ADVANCED = 2 };
-
-
     // Further type definitions.
 /*#ifdef SMTRAT_STRAT_PARALLEL_MODE
     typedef mpq_class Rational;
@@ -79,8 +75,6 @@ namespace smtrat
 
 	typedef carl::FormulasMulti<Poly> FormulasMultiT;
 
-  typedef carl::EvaluationMap<Rational> EvalRationalMap;
-
   typedef carl::Interval<Rational> RationalInterval;
 
   typedef carl::EvaluationMap<RationalInterval> EvalRationalIntervalMap;
@@ -117,8 +111,6 @@ namespace smtrat
     typedef std::vector<std::atomic_bool*> Conditionals;
 #endif
 
-	// Pair of priority and module id (within the respective strategy graph)
-    typedef std::pair<std::size_t, std::size_t> thread_priority;
 
     // Constants.
     ///@todo move static variables to own cpp

@@ -4,6 +4,9 @@
 #include "CompileInfo.h"
 #include "logging.h"
 
+#include "RuntimeSettings.h"
+#include "ValidationSettings.h"
+
 #include <carl/core/MultivariatePolynomial.h>
 #include <carl/core/Variable.h>
 #include <carl/formula/Formula.h>
@@ -27,6 +30,14 @@ using FormulaT = carl::Formula<Poly>;
 using FormulasT = carl::Formulas<Poly>;
 
 using FormulaSetT = carl::FormulaSet<Poly>;
+
+using EvalRationalMap = std::map<carl::Variable, Rational>;
+
+// Pair of priority and module id (within the respective strategy graph)
+using thread_priority = std::pair<std::size_t, std::size_t>;
+
+// An enum with the levels for lemma generation
+enum LemmaLevel { NONE = 0, NORMAL = 1, ADVANCED = 2 };
 
 
 ///An enum with the possible answers a Module can give
