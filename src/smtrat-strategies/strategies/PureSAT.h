@@ -5,7 +5,7 @@
 
 #include <lib/solver/Manager.h>
 
-#include <lib/modules/SATModule/SATModule.h>
+#include <smtrat-modules/SATModule/SATModule.h>
 
 namespace smtrat
 {
