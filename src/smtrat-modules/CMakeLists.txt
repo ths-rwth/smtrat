@@ -2,7 +2,13 @@ include(${carl_INCLUDE_DIR}/../cmake/carlmacros.cmake)
 
 add_definitions(-fPIC)
 
-configure_everything()
+file(GLOB_RECURSE tpl_files "*.in")
+foreach(tpl ${tpl_files})
+	if(NOT tpl MATCHES ".*/Instantiation.h.in")
+		string(REGEX REPLACE ".in$" "" file ${tpl})
+		configure_file("${tpl}" "${file}")
+	endif()
+endforeach()
 
 file(GLOB smtrat-modules_sources "*.cpp")
 
