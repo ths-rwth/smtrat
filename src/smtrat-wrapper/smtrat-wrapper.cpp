@@ -1,4 +1,5 @@
-#include "WrapperExternal.h"
+#include "smtrat-wrapper.h"
+
 #include <iostream>
 
 namespace smtrat {

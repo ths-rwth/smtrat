@@ -19,6 +19,7 @@ add_subdirectory(smtrat-modules)
 add_subdirectory(smtrat-qe)
 add_subdirectory(smtrat-strategies)
 add_subdirectory(smtrat-unsat-cores)
+add_subdirectory(smtrat-wrapper)
 
 if(BUILD_SOLVER)
 	add_subdirectory(cli)

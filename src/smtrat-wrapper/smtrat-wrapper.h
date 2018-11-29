@@ -1,15 +1,10 @@
-/**
-* @file WrapperExternal.h
-* @author Matthias Volk
-* Defines the exported functions for the smtrat library
-*/
 #pragma once
 
+
+#include <carl/util/stringparser.h>
+#include <carl/util/parser/Parser.h>
 #include <smtrat-common/smtrat-common.h>
-#include "../modules/Modules.h"
-#include "carl/util/stringparser.h"
-#include "carl/util/parser/Parser.h"
-#include "../Common.h"
+#include <smtrat-modules/Modules.h>
 #include <smtrat-strategies/strategies/PureSAT.h>
 
 #ifdef __WIN
