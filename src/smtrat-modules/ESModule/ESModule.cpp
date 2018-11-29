@@ -70,7 +70,7 @@ namespace smtrat
                 if( var.type() == carl::VariableType::VT_BOOL )
                     mModel.insert(std::make_pair(var, false));
                 else
-                    mModel.insert(std::make_pair(var, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>( ZERO_POLYNOMIAL )));
+                    mModel.insert(std::make_pair(var, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>(Poly())));
             }
         }
     }

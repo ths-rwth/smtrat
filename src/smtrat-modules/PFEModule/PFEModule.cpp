@@ -145,7 +145,7 @@ namespace smtrat
 							case carl::Relation::LEQ: return FormulaT(carl::FormulaType::OR, {FormulaT(getPoly(Pq), carl::Relation::EQ), FormulaT(getPoly(Pr), rel)});
 							case carl::Relation::LESS: return FormulaT(carl::FormulaType::AND, {FormulaT(getPoly(Pq), carl::Relation::GREATER), FormulaT(getPoly(Pr), rel)});
 						}
-					case carl::Relation::EQ: return FormulaT(ZERO_POLYNOMIAL, rel);
+					case carl::Relation::EQ: return FormulaT(Poly(0), rel);
 					case carl::Relation::LEQ:
 						switch (rel) {
 							case carl::Relation::EQ: return FormulaT(carl::FormulaType::OR, {FormulaT(getPoly(Pq), carl::Relation::EQ), FormulaT(getPoly(Pr), rel)});

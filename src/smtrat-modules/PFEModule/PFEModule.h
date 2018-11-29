@@ -91,7 +91,7 @@ namespace smtrat
 			}
 			
 			Poly getPoly(const std::vector<Factorization::const_iterator>& its) const {
-				Poly res = ONE_POLYNOMIAL;
+				Poly res(1);
 				for (const auto& it: its) res *= carl::pow(it->first, it->second);
 				return res;
 			}

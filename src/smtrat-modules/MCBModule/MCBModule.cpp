@@ -8,6 +8,8 @@
 
 #include "MCBModule.h"
 
+#include <smtrat-common/model.h>
+
 namespace smtrat
 {
 	class MCBModelSubstitution: public ModelSubstitution {
