@@ -17,6 +17,8 @@ static const Model EMPTY_MODEL = Model();
 using ModelSubstitution = carl::ModelSubstitution<Rational, Poly>;
 using ModelPolynomialSubstitution = carl::ModelPolynomialSubstitution<Rational, Poly>;
 
+using InfinityValue = carl::InfinityValue;
+
 using SqrtEx = carl::SqrtEx<Poly>;
 
 using DoubleInterval = carl::Interval<double>;

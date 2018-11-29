@@ -75,8 +75,6 @@ namespace smtrat
 	
 	using ModelMVRootSubstitution = carl::ModelMVRootSubstitution<Rational, Poly>;
 	
-	using InfinityValue = carl::InfinityValue;
-	
 	using SqrtEx = carl::SqrtEx<smtrat::Poly>;
 
 #ifdef __VS
