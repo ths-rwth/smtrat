@@ -2437,9 +2437,9 @@ namespace smtrat
             }
             sumOfNonbasics += (*((*rowEntry).columnVar()->pExpression())) * typename Poly::PolyType( (*rowEntry).content() );
             if( Settings::omit_division )
-                sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * typename Poly::PolyType( mRows[_rowNumber]->factor() ) * MINUS_ONE_RATIONAL;
+                sumOfNonbasics += -(*mRows[_rowNumber]->pExpression()) * typename Poly::PolyType( mRows[_rowNumber]->factor() );
             else
-                sumOfNonbasics += (*mRows[_rowNumber]->pExpression()) * MINUS_ONE_RATIONAL;
+                sumOfNonbasics += -(*mRows[_rowNumber]->pExpression());
             if( !carl::isZero(sumOfNonbasics) )
             {
                 return false;
@@ -2475,7 +2475,7 @@ namespace smtrat
         template<class Settings, typename T1, typename T2>
         const typename Poly::PolyType* Tableau<Settings,T1,T2>::gomoryCut( const T2& _ass, Variable<T1,T2>* _rowVar )
         {
-            typename Poly::PolyType* sum = new typename Poly::PolyType(smtrat::ZERO_RATIONAL);
+            typename Poly::PolyType* sum = new typename Poly::PolyType();
             Iterator row_iterator = Iterator( _rowVar->startEntry(), mpEntries );
             std::vector<GOMORY_SET> splitting;
             // Check, whether the premises for a Gomory Cut are satisfied

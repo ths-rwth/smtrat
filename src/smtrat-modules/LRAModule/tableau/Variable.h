@@ -10,7 +10,7 @@
 #define LRA_NO_DIVISION
 
 #include "Bound.h"
-#include "../../Common.h"
+#include <smtrat-common/smtrat-common.h>
 #include <sstream>
 #include <iomanip>
 #include <list>

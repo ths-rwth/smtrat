@@ -10,8 +10,9 @@
 #define	NUMERIC_H
 
 #include <iostream>
-#include <assert.h>
-#include "../../Common.h"
+#include <cassert>
+#include <smtrat-common/smtrat-common.h>
+
 
 namespace smtrat
 {

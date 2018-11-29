@@ -7,6 +7,8 @@
 
 #include "LRAModule.h"
 
+#include <smtrat-common/model.h>
+
 #ifdef DEBUG_METHODS_TABLEAU
 //#define DEBUG_METHODS_LRA_MODULE
 #endif
@@ -1303,7 +1305,7 @@ namespace smtrat
             {
                 all_int = false;
                 const Poly::PolyType* gomory_poly = mTableau.gomoryCut(ass, basicVar);
-                if( *gomory_poly != ZERO_RATIONAL )
+                if( *gomory_poly != Rational(0) )
                 {
                     ConstraintT gomory_constr = ConstraintT( *gomory_poly , carl::Relation::GEQ );
                     ConstraintT neg_gomory_constr = ConstraintT( *gomory_poly - (*gomory_poly).evaluate( rMap_ ), carl::Relation::LESS );
@@ -1342,7 +1344,7 @@ namespace smtrat
         auto branch_var = mTableau.originalVars().begin();
         Rational ass_;
         bool result = false;
-        Rational diff = ONE_RATIONAL;
+        Rational diff = 1;
         for( auto map_iterator = _rMap.begin(); map_iterator != _rMap.end(); ++map_iterator )
         {
             auto var = mTableau.originalVars().find( map_iterator->first );
@@ -1354,7 +1356,7 @@ namespace smtrat
             {
                 if( mFinalCheck )
                 {
-                    Rational curr_diff = carl::abs( Rational( Rational(ass - carl::floor(ass)) - ONE_RATIONAL/Rational(2)) );
+                    Rational curr_diff = carl::abs( Rational( Rational(ass - carl::floor(ass)) - Rational(1)/Rational(2)) );
                     if( curr_diff < diff )
                     {
                         result = true;
