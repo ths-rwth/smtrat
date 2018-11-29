@@ -7,6 +7,8 @@
 #include "../Common.h"
 #include "BaseProjection.h"
 
+#include <smtrat-common/model.h>
+
 namespace smtrat {
 namespace cad {
 	

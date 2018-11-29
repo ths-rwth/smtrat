@@ -55,7 +55,7 @@ private:
 		helper::getFormulaAtoms(inputFormula, atoms);
 
 		// generate test candidates
-		std::vector<::vs::Substitution> testCandidates;
+		std::vector<smtrat::vs::Substitution> testCandidates;
 		if (helper::generateTestCandidates(testCandidates, var, mModel, atoms)) {
 			FormulasT res;
 			res.reserve(testCandidates.size());

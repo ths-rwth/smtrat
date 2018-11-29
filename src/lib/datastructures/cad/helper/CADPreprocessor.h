@@ -1,5 +1,7 @@
 #pragma once
 
+#include <smtrat-common/model.h>
+
 #include "../Common.h"
 #include "../projection/ProjectionOperator_utils.h"
 

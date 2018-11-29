@@ -29,7 +29,7 @@ namespace helper {
     /**
      * Converts a DisjunctionOfConstraintConjunctions to a regular Formula.
      */
-    inline FormulaT doccToFormula(const ::vs::DisjunctionOfConstraintConjunctions& docc) {
+    inline FormulaT doccToFormula(const smtrat::vs::DisjunctionOfConstraintConjunctions& docc) {
         FormulasT constraintConjunctions;
         for (const auto& conjunction : docc) {
             FormulasT constraintConjunction;
@@ -41,8 +41,8 @@ namespace helper {
         return FormulaT(carl::FormulaType::OR, std::move(constraintConjunctions));
     }
 
-    inline bool substituteHelper(const ConstraintT& constraint, const ::vs::Substitution& substitution, ::vs::DisjunctionOfConstraintConjunctions& result) {
-        ::vs::DisjunctionOfConstraintConjunctions subres;
+    inline bool substituteHelper(const ConstraintT& constraint, const smtrat::vs::Substitution& substitution, smtrat::vs::DisjunctionOfConstraintConjunctions& result) {
+        smtrat::vs::DisjunctionOfConstraintConjunctions subres;
         carl::Variables dummy_vars; // we do not make use of this feature here
         smtrat::EvalDoubleIntervalMap dummy_map; // we do not make use of this feature here
         bool success = substitute(constraint, substitution, result, false, dummy_vars, dummy_map);
@@ -192,9 +192,9 @@ namespace helper {
         static ConstraintT subConstraint(Poly(subVar1) - subVar2, carl::Relation::LESS);
             
         // calculate subRes := (x<0)[(exprA-exprB)//x]
-        ::vs::Substitution subSub1(subVar1, exprA, ::vs::Substitution::Type::NORMAL, carl::PointerSet<::vs::Condition>());
-        ::vs::Substitution subSub2(subVar2, exprB, ::vs::Substitution::Type::NORMAL, carl::PointerSet<::vs::Condition>());
-        ::vs::DisjunctionOfConstraintConjunctions subRes1;
+        smtrat::vs::Substitution subSub1(subVar1, exprA, smtrat::vs::Substitution::Type::NORMAL, carl::PointerSet<smtrat::vs::Condition>());
+        smtrat::vs::Substitution subSub2(subVar2, exprB, smtrat::vs::Substitution::Type::NORMAL, carl::PointerSet<smtrat::vs::Condition>());
+        smtrat::vs::DisjunctionOfConstraintConjunctions subRes1;
         if (!substituteHelper(subConstraint, subSub1, subRes1)) {
             return false;
         }
@@ -202,7 +202,7 @@ namespace helper {
         for (const auto& conj : subRes1) {
             std::vector<FormulaT> conjF;
             for (const auto& constr : conj) {
-                ::vs::DisjunctionOfConstraintConjunctions subRes2;
+                smtrat::vs::DisjunctionOfConstraintConjunctions subRes2;
                 if (!substituteHelper(constr, subSub2, subRes2)) {
                     return false;
                 }
@@ -396,7 +396,7 @@ namespace helper {
      * Adds a new substitution to the given list of substitutions or merges it to an existing one.
      * Returns true if a new substitution was created.
      */
-    static bool addOrMergeTestCandidate(std::vector<::vs::Substitution>& results, const ::vs::Substitution& newSubstitution) {
+    static bool addOrMergeTestCandidate(std::vector<smtrat::vs::Substitution>& results, const smtrat::vs::Substitution& newSubstitution) {
         if(!(std::find(results.begin(), results.end(), newSubstitution) != results.end())) {
             results.push_back(newSubstitution);
             return true;
@@ -408,11 +408,11 @@ namespace helper {
      * Generate all test candidates according to "vanilla" virtual substitution.
      * Returns false iff VS is not applicable.
      */
-    static bool generateTestCandidates( std::vector<::vs::Substitution>& results, const carl::Variable& eliminationVar, const Model& model, const FormulaSetT& constraints) {
+    static bool generateTestCandidates( std::vector<smtrat::vs::Substitution>& results, const carl::Variable& eliminationVar, const Model& model, const FormulaSetT& constraints) {
         SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generating test candidates for " << constraints << " and variable " << eliminationVar);
         
         // add minus infinity
-        ::vs::Substitution sub (eliminationVar, ::vs::Substitution::MINUS_INFINITY, carl::PointerSet<::vs::Condition>());
+        smtrat::vs::Substitution sub (eliminationVar, smtrat::vs::Substitution::MINUS_INFINITY, carl::PointerSet<smtrat::vs::Condition>());
         results.push_back(std::move(sub));
 
         // scan through conditions for test candidates
@@ -422,11 +422,11 @@ namespace helper {
             bool isConstraint = constraint.getType() == carl::FormulaType::CONSTRAINT || constraint.getType() == carl::FormulaType::TRUE || constraint.getType() == carl::FormulaType::FALSE;
             const carl::Relation& relation = isConstraint ? constraint.constraint().relation() : constraint.variableComparison().relation();
             bool weakConstraint = (relation == carl::Relation::EQ || relation == carl::Relation::LEQ || relation == carl::Relation::GEQ);
-            ::vs::Substitution::Type subType = weakConstraint ? ::vs::Substitution::NORMAL : ::vs::Substitution::PLUS_EPSILON;
+            smtrat::vs::Substitution::Type subType = weakConstraint ? smtrat::vs::Substitution::NORMAL : smtrat::vs::Substitution::PLUS_EPSILON;
 
             // generate Zeros
             bool res = generateZeros(constraint, eliminationVar, model, [&](SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions) {
-                ::vs::Substitution sub(eliminationVar, sqrtExpression, subType, carl::PointerSet<::vs::Condition>(), std::move(sideConditions));
+                smtrat::vs::Substitution sub(eliminationVar, sqrtExpression, subType, carl::PointerSet<smtrat::vs::Condition>(), std::move(sideConditions));
                 SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generated test candidate " << sub);
                 addOrMergeTestCandidate(results, sub);
             });
@@ -441,10 +441,10 @@ namespace helper {
         return true;
     }
 
-    inline bool substitute(const ConstraintT& constraint, const ::vs::Substitution& substitution, FormulaT& result) {
+    inline bool substitute(const ConstraintT& constraint, const smtrat::vs::Substitution& substitution, FormulaT& result) {
         SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitute " << substitution << " into Constraint " << constraint);
         if (constraint.hasVariable(substitution.variable())) {
-            ::vs::DisjunctionOfConstraintConjunctions subres;
+            smtrat::vs::DisjunctionOfConstraintConjunctions subres;
             if (!substituteHelper(constraint, substitution, subres)) {
                 SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution failed");
                 return false;
@@ -462,7 +462,7 @@ namespace helper {
         }
     }
 
-    static bool substitute(const VariableComparisonT& varcomp, const ::vs::Substitution& substitution, const Model& model, FormulaT& result) {
+    static bool substitute(const VariableComparisonT& varcomp, const smtrat::vs::Substitution& substitution, const Model& model, FormulaT& result) {
         SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitute " << substitution << " into VariableComparison " << varcomp);
 
         static carl::Variable subVar1 = carl::freshRealVariable("__subVar1");
@@ -474,7 +474,7 @@ namespace helper {
         if (varcomp.var() == substitution.variable()) {
             carl::Relation varcompRelation = varcomp.negated() ? carl::inverse(varcomp.relation()) : varcomp.relation();
 
-            if (substitution.type() == ::vs::Substitution::NORMAL || substitution.type() == ::vs::Substitution::PLUS_EPSILON) {
+            if (substitution.type() == smtrat::vs::Substitution::NORMAL || substitution.type() == smtrat::vs::Substitution::PLUS_EPSILON) {
                 SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution is of type NORMAL or PLUS_EPSILON");
 
                 // convert MVRoot/RAN to SqrtExpression with side conditions
@@ -490,10 +490,10 @@ namespace helper {
 
                 // calculate subVar1-subVar2 ~ 0 [substitution.term()//subVar1][zero//subVar2]
                 ConstraintT subConstraint(Poly(subVar1) - subVar2, varcompRelation);
-                ::vs::Substitution subSub1(subVar1, substitution.term(), substitution.type(), carl::PointerSet<::vs::Condition>());
-                ::vs::Substitution subSub2(subVar2, zero, ::vs::Substitution::Type::NORMAL, carl::PointerSet<::vs::Condition>());
+                smtrat::vs::Substitution subSub1(subVar1, substitution.term(), substitution.type(), carl::PointerSet<smtrat::vs::Condition>());
+                smtrat::vs::Substitution subSub2(subVar2, zero, smtrat::vs::Substitution::Type::NORMAL, carl::PointerSet<smtrat::vs::Condition>());
 
-                ::vs::DisjunctionOfConstraintConjunctions subRes1;
+                smtrat::vs::DisjunctionOfConstraintConjunctions subRes1;
                 if (!substituteHelper(subConstraint, subSub1, subRes1)) {
                     SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution failed");
                     assert(false);
@@ -503,7 +503,7 @@ namespace helper {
                 for (const auto& conj : subRes1) {
                     std::vector<FormulaT> conjF;
                     for (const auto& constr : conj) {
-                        ::vs::DisjunctionOfConstraintConjunctions subRes2;
+                        smtrat::vs::DisjunctionOfConstraintConjunctions subRes2;
                         if (!substituteHelper(constr, subSub2, subRes2)) {
                             SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution failed");
                             assert(false);
@@ -526,11 +526,11 @@ namespace helper {
                 result = FormulaT(carl::FormulaType::AND, std::move(res));
                 SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution obtained " << result);
                 return true;
-            } else if(substitution.type() == ::vs::Substitution::MINUS_INFINITY ) {
+            } else if(substitution.type() == smtrat::vs::Substitution::MINUS_INFINITY ) {
                 SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "MINUS_INFINITY");
                 // square root term is irrelevant
                 ConstraintT subConstraint(subVar1, varcompRelation);
-                static ::vs::Substitution subSub(subVar1, ::vs::Substitution::MINUS_INFINITY, carl::PointerSet<::vs::Condition>());
+                static smtrat::vs::Substitution subSub(subVar1, smtrat::vs::Substitution::MINUS_INFINITY, carl::PointerSet<smtrat::vs::Condition>());
                 if (!substitute(subConstraint, subSub, result)) {
                     SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution into constraint failed");
                     assert(false);
@@ -551,7 +551,7 @@ namespace helper {
         }
     }
 
-    inline bool substitute(const FormulaT& constr, const ::vs::Substitution& substitution, const Model& model, FormulaT& result) {
+    inline bool substitute(const FormulaT& constr, const smtrat::vs::Substitution& substitution, const Model& model, FormulaT& result) {
         if (constr.getType() == carl::FormulaType::CONSTRAINT) {
             return substitute(constr.constraint(), substitution, result);
         }

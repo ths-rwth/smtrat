@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "../Common.h"
+#include <smtrat-common/model.h>
 #include <iomanip>
 
 namespace smtrat
