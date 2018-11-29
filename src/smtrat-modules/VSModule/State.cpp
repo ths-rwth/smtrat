@@ -6,7 +6,7 @@
  */
 
 #include "State.h"
-#include "../../solver/Module.h"
+#include <smtrat-modules/Module.h>
 #include <carl/interval/set_theory.h>
 #include <carl/core/polynomialfunctions/SturmSequence.h>
 #include <cmath>
@@ -20,6 +20,7 @@
 
 //#define VS_LOG_INFSUBSETS
 
+namespace smtrat {
 namespace vs
 {   
     State::State( carl::IDPool* _conditionIdAllocator, bool _withVariableBounds ):
@@ -50,8 +51,8 @@ namespace vs
         mpTooHighDegreeConditions( new carl::PointerSet<Condition>() ),
         mpVariableBounds( _withVariableBounds ? new VariableBoundsCond() : NULL ),
         mpInfinityChild( NULL ),
-        mMinIntTestCanidate( smtrat::ONE_RATIONAL ),
-        mMaxIntTestCanidate( smtrat::MINUS_ONE_RATIONAL ),
+        mMinIntTestCanidate( Rational(1) ),
+        mMaxIntTestCanidate( Rational(-1) ),
         mCurrentIntRange( 0 ),
         mpConditionIdAllocator( _conditionIdAllocator ),
         mRealVarVals(),
@@ -90,8 +91,8 @@ namespace vs
         mpTooHighDegreeConditions( new carl::PointerSet<Condition>() ),
         mpVariableBounds( _withVariableBounds ? new VariableBoundsCond() : NULL ),
         mpInfinityChild( NULL ),
-        mMinIntTestCanidate( smtrat::ONE_RATIONAL ),
-        mMaxIntTestCanidate( smtrat::MINUS_ONE_RATIONAL ),
+        mMinIntTestCanidate( Rational(1) ),
+        mMaxIntTestCanidate( Rational(-1) ),
         mCurrentIntRange( 0 ),
         mpConditionIdAllocator( _conditionIdAllocator ),
         mRealVarVals(),
@@ -337,8 +338,8 @@ namespace vs
     {
         State* minusInfChild = NULL;
         State* plusInfChild = NULL;
-        smtrat::Rational leastIntTc = smtrat::ONE_RATIONAL;
-        smtrat::Rational greatestIntTc = smtrat::MINUS_ONE_RATIONAL;
+        smtrat::Rational leastIntTc = 1;
+        smtrat::Rational greatestIntTc = -1;
         for( auto child : rChildren() )
         {
             if( child->substitution().type() == Substitution::MINUS_INFINITY )
@@ -886,7 +887,7 @@ namespace vs
                 smtrat::Rational intTc = _substitution.term().constantPart().constantPart();
                 if( (**child).substitution().type() == Substitution::MINUS_INFINITY )
                 {
-                    if( intTc < (mMinIntTestCanidate - smtrat::ONE_RATIONAL) )
+                    if( intTc < (mMinIntTestCanidate - Rational(1)) )
                     {
                         (**child).resetCurrentRangeSize();
                         _reactivatedStates.push_back( *child );
@@ -894,7 +895,7 @@ namespace vs
                 }
                 else if( (**child).substitution().type() == Substitution::PLUS_INFINITY )
                 {
-                    if( intTc > (mMaxIntTestCanidate + smtrat::ONE_RATIONAL) )
+                    if( intTc > (mMaxIntTestCanidate + Rational(1)) )
                     {
                         (**child).resetCurrentRangeSize();
                         _reactivatedStates.push_back( *child );
@@ -2462,9 +2463,9 @@ namespace vs
                 assert( index() != carl::Variable::NO_VARIABLE );
                 smtrat::Rational imageOfLeftBound = rup.evaluate( leftBound );
                 smtrat::Rational imageOfRightBound = rup.evaluate( rightBound );
-                if( imageOfLeftBound == smtrat::ZERO_RATIONAL )
+                if( imageOfLeftBound == Rational(0) )
                     ++numberOfRoots;
-                if( imageOfRightBound == smtrat::ZERO_RATIONAL )
+                if( imageOfRightBound == Rational(0) )
                 {
                     if( intervals.begin()->second.upperBoundType() == carl::BoundType::STRICT && numberOfRoots != 0 )
                         --numberOfRoots;
@@ -2488,9 +2489,9 @@ namespace vs
                 }
                 else if( numberOfRoots == 1 )
                 {
-                    if( imageOfLeftBound > smtrat::ZERO_RATIONAL && imageOfRightBound > smtrat::ZERO_RATIONAL && cons.relation() == carl::Relation::LESS )
+                    if( imageOfLeftBound > Rational(0) && imageOfRightBound > Rational(0) && cons.relation() == carl::Relation::LESS )
                         constraintInconsistent = true;
-                    if( imageOfLeftBound < smtrat::ZERO_RATIONAL && imageOfRightBound < smtrat::ZERO_RATIONAL && cons.relation() == carl::Relation::GREATER )
+                    if( imageOfLeftBound < Rational(0) && imageOfRightBound < Rational(0) && cons.relation() == carl::Relation::GREATER )
                         constraintInconsistent = true;
                 }
                 if( constraintInconsistent )
@@ -2851,3 +2852,4 @@ namespace vs
         return greatestTreeDepth;
     }
 }    // end namspace vs
+}

@@ -10,13 +10,13 @@
 //#define VS_PRINT_ANSWERS
 //#define VS_LOG_INTERMEDIATE_STEPS
 
-#include "../../Common.h"
+#include <smtrat-common/smtrat-common.h>
+#include <smtrat-common/model.h>
 #include "Substitute.h"
 #include "State.h"
 #include "VSStatistics.h"
 #include <carl/util/IDPool.h>
-#include "../../solver/Module.h"
-#include "../../solver/RuntimeSettings.h"
+#include <smtrat-modules/Module.h>
 
 namespace smtrat
 {

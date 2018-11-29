@@ -12,7 +12,7 @@
 #include "config.h"
 #include "Substitution.h"
 #include <carl/util/IDPool.h>
-#include "../../datastructures/VariableBounds.h"
+#include <lib/datastructures/VariableBounds.h>
 #include "VSSettings.h"
 
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -21,6 +21,7 @@
 
 #define VS_STATE_DEBUG_METHODS
 
+namespace smtrat {
 namespace vs
 {
     
@@ -1141,3 +1142,4 @@ namespace vs
         static size_t coveringSet( const ConditionSetSetSet& _conflictSets, carl::PointerSet<Condition>& _minCovSet, unsigned _currentTreeDepth );
     };
 } // end namspace vs
+}

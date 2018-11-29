@@ -16,6 +16,7 @@ const unsigned MAX_NUM_OF_TERMS = 512;
 
 using namespace carl;
 
+namespace smtrat {
 namespace vs
 {
     void simplify( DisjunctionOfConstraintConjunctions& _toSimplify )
@@ -665,7 +666,7 @@ namespace vs
             // The term then looks like:   (q+r*sqrt(b^2-4ac))/s
             else
             {
-                smtrat::Poly s = smtrat::ONE_POLYNOMIAL;
+                smtrat::Poly s = Poly(1);
                 if( !_subs.term().denominator().isConstant() )
                     s = sub.denominator();
                 switch( _cons.relation() )
@@ -1117,3 +1118,4 @@ namespace vs
         }
     }
 }    // end namspace vs
+}

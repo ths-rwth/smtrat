@@ -23,6 +23,7 @@ const unsigned MAX_PRODUCT_SPLIT_NUMBER = 64;
  */
 const unsigned MAX_NUM_OF_COMBINATION_RESULT = 1025;
 
+namespace smtrat {
 namespace vs
 {
     
@@ -355,4 +356,4 @@ namespace vs
     void substituteNotTrivialCase( const smtrat::ConstraintT&, const Substitution&, DisjunctionOfConstraintConjunctions& );
     
 }    // end namspace vs
-
+}

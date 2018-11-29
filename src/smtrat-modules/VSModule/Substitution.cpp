@@ -9,6 +9,7 @@
 
 using namespace std;
 
+namespace smtrat {
 namespace vs
 {
     Substitution::Substitution( const carl::Variable& _variable, const Type& _type, carl::PointerSet<Condition>&& _oConditions, smtrat::ConstraintsT&& _sideCondition ):
@@ -21,7 +22,7 @@ namespace vs
     {
         if( mType == PLUS_EPSILON && mVariable.type() == carl::VariableType::VT_INT )
         {
-            *mpTerm = *mpTerm + smtrat::SqrtEx(smtrat::ONE_POLYNOMIAL);
+            *mpTerm = *mpTerm + smtrat::SqrtEx(Poly(1));
             mType = NORMAL;
         }
     }
@@ -36,7 +37,7 @@ namespace vs
     {
         if( mType == PLUS_EPSILON && mVariable.type() == carl::VariableType::VT_INT )
         {
-            *mpTerm = *mpTerm + smtrat::SqrtEx(smtrat::ONE_POLYNOMIAL);
+            *mpTerm = *mpTerm + smtrat::SqrtEx(Poly(1));
             mType = NORMAL;
         }
     }
@@ -209,3 +210,4 @@ namespace vs
         _out << endl;
     }
 } // end namspace vs
+}

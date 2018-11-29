@@ -8,7 +8,6 @@
 
 #include "VSModule.h"
 
-using namespace vs;
 
 #ifdef VS_STATE_DEBUG_METHODS
 //#define VS_DEBUG_METHODS
@@ -18,6 +17,7 @@ using namespace vs;
 
 namespace smtrat
 {
+	using namespace vs;
     template<class Settings>
     VSModule<Settings>::VSModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
         Module( _formula, _conditionals, _manager ),
@@ -758,7 +758,7 @@ namespace smtrat
             // real domain, we leave at as a parameter, and, if it has the integer domain we assign 0 to it.
             for( auto var = allVarsInRoot.begin(); var != allVarsInRoot.end(); ++var )
             {
-                mModel.insert(std::make_pair(*var, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>( ZERO_POLYNOMIAL )));
+                mModel.insert(std::make_pair(*var, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>( Poly(0) )));
             }
         }
     }
@@ -860,7 +860,7 @@ namespace smtrat
                             ConstraintsT sideCond = sideConditions;
                             if( cons != ConstraintT( true ) )
                                 sideCond.insert( cons );
-                            SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, coeffs.rbegin()->second, ZERO_POLYNOMIAL );
+                            SqrtEx sqEx = SqrtEx( -constantCoeff, Poly(0), coeffs.rbegin()->second, Poly(0) );
                             Substitution sub = Substitution( _eliminationVar, sqEx, subType, carl::PointerSet<vs::Condition>(oConditions), std::move(sideCond) );
                             std::vector<State*> addedChildren = _currentState->addChild( sub );
                             if( !addedChildren.empty() )
@@ -907,7 +907,7 @@ namespace smtrat
                                     sideCond.insert( cons11 );
                                 if( cons12 != ConstraintT( true ) )
                                     sideCond.insert( cons12 );
-                                SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, linearCoeff, ZERO_POLYNOMIAL );
+                                SqrtEx sqEx = SqrtEx( -constantCoeff, Poly(0), linearCoeff, Poly(0) );
                                 Substitution sub = Substitution( _eliminationVar, sqEx, subType, carl::PointerSet<vs::Condition>(oConditions), std::move(sideCond) );
                                 std::vector<State*> addedChildren = _currentState->addChild( sub );
                                 if( !addedChildren.empty() )
@@ -943,7 +943,7 @@ namespace smtrat
                                 if( cons22 != ConstraintT( true ) )
                                     sideCond.insert( cons22 );
                                 // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b-sqrt(b^2-4ac))/2a]):
-                                SqrtEx sqExA = SqrtEx( -linearCoeff, MINUS_ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
+                                SqrtEx sqExA = SqrtEx( -linearCoeff, Poly(-1), Rational( 2 ) * coeffs.rbegin()->second, radicand );
                                 Substitution subA = Substitution( _eliminationVar, sqExA, subType, carl::PointerSet<vs::Condition>(oConditions), ConstraintsT(sideCond) );
                                 std::vector<State*> addedChildrenA = _currentState->addChild( subA );
                                 if( !addedChildrenA.empty() )
@@ -965,7 +965,7 @@ namespace smtrat
                                     #endif
                                 }
                                 // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
-                                SqrtEx sqExB = SqrtEx( -linearCoeff, ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
+                                SqrtEx sqExB = SqrtEx( -linearCoeff, Poly(1), Rational( 2 ) * coeffs.rbegin()->second, radicand );
                                 Substitution subB = Substitution( _eliminationVar, sqExB, subType, carl::PointerSet<vs::Condition>(oConditions), std::move(sideCond) );
                                 std::vector<State*> addedChildrenB = _currentState->addChild( subB );
                                 if( !addedChildrenB.empty() )
@@ -1094,7 +1094,7 @@ namespace smtrat
         bool anySubstitutionFailed = false;
         bool allSubstitutionsApplied = true;
         ConditionSetSet conflictSet;
-        const EvalDoubleIntervalMap& solBox = Settings::use_variable_bounds ? _currentState->father().variableBounds().getIntervalMap() : EMPTY_EVAL_DOUBLE_INTERVAL_MAP;
+        EvalDoubleIntervalMap solBox = Settings::use_variable_bounds ? _currentState->father().variableBounds().getIntervalMap() : EvalDoubleIntervalMap();
         // Apply the substitution to the given conditions.
         for( auto cond = _conditions.begin(); cond != _conditions.end(); ++cond )
         {
@@ -1637,7 +1637,7 @@ namespace smtrat
                 if( currentState->substitution().variable().type() == carl::VariableType::VT_INT )
                 {
                     for( carl::Variable::Arg v : tVars )
-                        varSolutions.insert( std::make_pair( v, ZERO_RATIONAL ) );
+                        varSolutions.insert( std::make_pair( v, Rational(0) ) );
 //                    assert( currentState->substitution().type() != Substitution::MINUS_INFINITY );
 //                    assert( currentState->substitution().type() != Substitution::PLUS_INFINITY );
                     if( currentState->substitution().type() == Substitution::MINUS_INFINITY || currentState->substitution().type() == Substitution::PLUS_INFINITY )
@@ -1676,9 +1676,9 @@ namespace smtrat
                                 if( !carl::isZero(subPolyPartiallySubstituted) )
                                 {
                                     Rational cp = subPolyPartiallySubstituted.coprimeFactorWithoutConstant();
-                                    assert( carl::getNum( cp ) == ONE_RATIONAL || carl::getNum( cp ) == MINUS_ONE_RATIONAL );
+                                    assert( carl::getNum( cp ) == Rational(1) || carl::getNum( cp ) == Rational(-1) );
                                     Rational g = carl::getDenom( cp );
-                                    if( g > ZERO_RATIONAL && carl::mod( carl::toInt<Integer>( subPolyPartiallySubstituted.constantPart() ), carl::toInt<Integer>( g ) ) != 0 )
+                                    if( g > Rational(0) && carl::mod( carl::toInt<Integer>( subPolyPartiallySubstituted.constantPart() ), carl::toInt<Integer>( g ) ) != 0 )
                                     {
                                         Poly branchEx = (subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * cp;
                                         Rational branchValue = subPolyPartiallySubstituted.constantPart() * cp;

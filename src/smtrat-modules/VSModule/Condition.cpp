@@ -7,8 +7,11 @@
 
 #include "Condition.h"
 
+#include <smtrat-common/smtrat-common.h>
+
 using namespace std;
 
+namespace smtrat {
 namespace vs
 {
     Condition::Condition( const smtrat::ConstraintT& _cons, size_t _id, size_t _val, bool _flag, const carl::PointerSet<Condition>& _oConds, bool _rAdded ):
@@ -92,7 +95,7 @@ namespace vs
             smtrat::Poly coeff = constraint().coefficient( _consideredVariable, varInfo.maxDegree() );
             if( coeff.isConstant() )
             {
-                if( _consideredVariable.type() == carl::VariableType::VT_INT && (coeff == smtrat::ONE_POLYNOMIAL || coeff == smtrat::MINUS_ONE_POLYNOMIAL) )
+                if( _consideredVariable.type() == carl::VariableType::VT_INT && (coeff == Poly(1) || coeff == Poly(-1)) )
                 {
                     lCoeffWeightB = 1;
                 }
@@ -126,7 +129,7 @@ namespace vs
 #else
 	typename smtrat::Poly::PolyType polyExpanded = (typename smtrat::Poly::PolyType)constraint().lhs();
 #endif
-	if( numberOfVariableOccurencesWeight == 1 && ( polyExpanded.nrTerms() == 1 || (constraint().constantPart() != smtrat::ZERO_RATIONAL && polyExpanded.nrTerms() > 1) ) )
+	if( numberOfVariableOccurencesWeight == 1 && ( polyExpanded.nrTerms() == 1 || (!carl::isZero(constraint().constantPart()) && polyExpanded.nrTerms() > 1) ) )
         {
             bool allOtherMonomialsPos = true;
             bool allOtherMonomialsNeg = true;
@@ -281,3 +284,4 @@ namespace vs
         }
     }
 }    // end namspace vs
+} // end namespace smtrat

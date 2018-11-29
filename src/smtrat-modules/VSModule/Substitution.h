@@ -7,9 +7,12 @@
 
 #pragma once
 
-#include <smtrat-common/smtrat-common.h>
 #include "Condition.h"
 
+#include <smtrat-common/smtrat-common.h>
+#include <smtrat-common/model.h>
+
+namespace smtrat {
 namespace vs
 {
 
@@ -188,20 +191,22 @@ namespace vs
 	std::ostream& operator<<(std::ostream& os, const Substitution& s);
 
 }    // end namspace vs
+}
 
 namespace std
 {
     template<>
-    struct hash<vs::Substitution>
+    struct hash<smtrat::vs::Substitution>
     {
     public:
-        size_t operator()( const vs::Substitution& _substitution ) const 
+        size_t operator()( const smtrat::vs::Substitution& _substitution ) const 
         {
             return ((hash<smtrat::SqrtEx>()(_substitution.term()) << 7) ^ hash<carl::Variable>()( _substitution.variable() ) << 2) ^ _substitution.type();
         }
     };
 } // namespace std
 
+namespace smtrat {
 namespace vs
 {
     struct substitutionPointerEqual
@@ -224,4 +229,5 @@ namespace vs
     
     template<typename T> 
     using SubstitutionFastPointerMap = std::unordered_map<const smtrat::Poly*, T, substitutionPointerHash, substitutionPointerEqual>;
+}
 }

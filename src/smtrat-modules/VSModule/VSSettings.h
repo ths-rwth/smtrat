@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "../../solver/ModuleInput.h"
-#include "../../solver/ModuleSettings.h"
 #include <smtrat-common/smtrat-common.h>
+#include <smtrat-modules/ModuleInput.h>
+#include <smtrat-modules/ModuleSettings.h>
     
 namespace smtrat
 {

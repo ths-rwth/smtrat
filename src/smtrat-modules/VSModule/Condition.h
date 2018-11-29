@@ -10,6 +10,7 @@
 #include <set>
 #include <smtrat-common/smtrat-common.h>
 
+namespace smtrat {
 namespace vs
 {
     /*
@@ -100,3 +101,4 @@ namespace vs
     };
 
 }    // end namspace vs
+}
