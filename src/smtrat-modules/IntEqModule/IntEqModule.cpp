@@ -161,7 +161,7 @@ namespace smtrat
             Poly maybe_sub = _subformula->formula().constraint().lhs();
             while( iter_temp != mSubstitutions.end() )
             {
-                if( maybe_sub.substitute( iter_temp->first, iter_temp->second ) == ZERO_POLYNOMIAL )
+                if( maybe_sub.substitute( iter_temp->first, iter_temp->second ) == Poly() )
                 {
                     derived_sub = true;
                     #ifdef DEBUG_IntEqModule
@@ -327,7 +327,7 @@ namespace smtrat
                     #ifdef DEBUG_IntEqModule
                     cout << "Substitute: " << iter_temp->first << " by: " << iter_temp->second << endl;
                     #endif
-                    if( maybe_sub.substitute( iter_temp->first, iter_temp->second ) == ZERO_POLYNOMIAL )
+                    if( maybe_sub.substitute( iter_temp->first, iter_temp->second ) == Poly() )
                     {
                         is_sub = true;
                         break;
@@ -451,7 +451,7 @@ namespace smtrat
             // Proceed with the execution of the equation elimination 
             // depending on the value of the smallest absolute value of curr_constr
             Poly* temp = new Poly();
-            *temp = ZERO_POLYNOMIAL;
+            *temp = Poly();
             Rational sign = (Rational)1;
             if( value_negative )
             {

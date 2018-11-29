@@ -6,7 +6,6 @@
  */
 
 #include "LRAModule.h"
-#include "../../../cli/ExitCodes.h"
 
 #ifdef DEBUG_METHODS_TABLEAU
 //#define DEBUG_METHODS_LRA_MODULE

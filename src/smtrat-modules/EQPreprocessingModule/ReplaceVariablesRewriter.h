@@ -3,7 +3,7 @@
 
 #include "ModuleWrapper.h"
 #include "FormulaVisitor.hpp"
-#include "../../Common.h"
+#include <smtrat-common/smtrat-common.h>
 #include "../EQModule/EQModule.h"
 
 namespace smtrat {

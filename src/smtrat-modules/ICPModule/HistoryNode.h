@@ -11,7 +11,7 @@
 
 #include "IcpVariable.h"
 #include "ContractionCandidate.h"
-#include "../../Common.h"
+#include <smtrat-common/smtrat-common.h>
 
 namespace smtrat
 {

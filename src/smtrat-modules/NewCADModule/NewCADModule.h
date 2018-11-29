@@ -8,11 +8,11 @@
 
 #pragma once
 
-#include "../../datastructures/cad/CAD.h"
-#include "../../datastructures/cad/helper/CADPreprocessor.h"
-#include "../../datastructures/VariableBounds.h"
+#include <lib/datastructures/cad/CAD.h>
+#include <lib/datastructures/cad/helper/CADPreprocessor.h>
+#include <lib/datastructures/VariableBounds.h>
 
-#include "../../solver/Module.h"
+#include "../Module.h"
 #include "NewCADStatistics.h"
 #include "NewCADSettings.h"
 

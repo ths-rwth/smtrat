@@ -8,14 +8,14 @@
  */
 #pragma once
 
-#include "../../solver/Module.h"
-#include "../../solver/RuntimeSettings.h"
+#include "../Module.h"
 
 #include <unordered_map>
 
 #include <carl/cad/CAD.h>
 
-#include "../../datastructures/VariableBounds.h"
+#include <smtrat-common/smtrat-common.h>
+#include <lib/datastructures/VariableBounds.h>
 #include "CADStatistics.h"
 #include "CADSettings.h"
 

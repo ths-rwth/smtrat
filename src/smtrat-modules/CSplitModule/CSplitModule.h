@@ -9,9 +9,9 @@
 #pragma once
 
 #include <boost/optional.hpp>
-#include "../../datastructures/VariableBounds.h"
-#include "../../solver/Module.h"
-#include "../../solver/Manager.h"
+#include <lib/datastructures/VariableBounds.h>
+#include <lib/solver/Manager.h>
+#include "../Module.h"
 #include "../SATModule/SATModule.h"
 #include "../LRAModule/LRAModule.h"
 #include "Bimap.h"

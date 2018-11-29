@@ -13,7 +13,7 @@
 #include <ratio>
 #include <cstdint>
 #include "PairHash.h"
-#include "../../solver/ModuleSettings.h"
+#include "../ModuleSettings.h"
 
 namespace smtrat
 {

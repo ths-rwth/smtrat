@@ -31,10 +31,10 @@
 #define SMTRAT_BV_INCREMENTAL_MODE
 // define SMTRAT_BV_ENCODER_DEBUG
 
-#include "boost/optional/optional.hpp"
-#include "../../Common.h"
-#include "carl/formula/bitvector/BVConstraint.h"
-#include "carl/formula/bitvector/BVConstraintPool.h"
+#include <boost/optional/optional.hpp>
+#include <smtrat-common/smtrat-common.h>
+#include <carl/formula/bitvector/BVConstraint.h>
+#include <carl/formula/bitvector/BVConstraintPool.h>
 
 namespace smtrat
 {

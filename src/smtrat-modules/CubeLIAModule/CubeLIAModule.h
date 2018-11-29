@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "../../solver/Module.h"
+#include "../Module.h"
 #include "CubeLIAStatistics.h"
 #include "CubeLIASettings.h"
 #include "../LRAModule/LRAModule.h"

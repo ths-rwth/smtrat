@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include "../../solver/Module.h"
+#include "../Module.h"
 #include "BVStatistics.h"
 #include "BVSettings.h"
 #include "BVDirectEncoder.h"

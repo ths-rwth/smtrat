@@ -9,8 +9,8 @@
 #pragma once
 
 #include <boost/optional.hpp>
-#include "../../solver/Module.h"
-#include "../../solver/Manager.h"
+#include "../Module.h"
+#include <lib/solver/Manager.h>
 #include "../SATModule/SATModule.h"
 #include "../LRAModule/LRAModule.h"
 #include "STropStatistics.h"

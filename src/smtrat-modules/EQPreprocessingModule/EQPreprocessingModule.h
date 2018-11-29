@@ -11,12 +11,12 @@
 #include <unordered_map>
 #include <iostream>
 
-#include "../../Common.h"
-#include "../../solver/Module.h"
+#include <smtrat-common/smtrat-common.h>
+#include "../Module.h"
 #include "ModuleWrapper.h"
 #include "../EQModule/VariantHash.h"
 #include "../EQModule/PairHash.h"
-#include "../../datastructures/eq/union_find.h"
+#include <lib/datastructures/eq/union_find.h>
 #include "../EQModule/pmatrix.hpp"
 #include "EQPreprocessingStatistics.h"
 #include "EQPreprocessingSettings.h"

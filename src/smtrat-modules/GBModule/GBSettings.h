@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "carl/core/MultivariatePolynomial.h"
+#include <carl/core/MultivariatePolynomial.h>
 #include <smtrat-common/smtrat-common.h>
-#include "../../solver/ModuleSettings.h"
+#include "../ModuleSettings.h"
 
 namespace smtrat
 {

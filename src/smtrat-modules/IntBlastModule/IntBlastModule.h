@@ -6,13 +6,13 @@
 
 #pragma once
 
-#include "../../solver/Module.h"
+#include <lib/datastructures/VariableBounds.h>
+#include <smtrat-strategies/strategies/BVSolver.h>
+#include "../Module.h"
 #include "../ICPModule/ICPModule.h"
-#include "../../datastructures/VariableBounds.h"
 #include "IntBlastSettings.h"
 #include "IntBlastStatistics.h"
 #include "PolyTreePool.h"
-#include <smtrat-strategies/strategies/BVSolver.h>
 
 namespace smtrat
 {

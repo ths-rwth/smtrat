@@ -18,7 +18,7 @@
 #include "carl/groebner/groebner.h"
 
 // General Module interface
-#include "../../solver/Module.h"
+#include "../Module.h"
 
 // Compile time settings structures
 #include "GBSettings.h"

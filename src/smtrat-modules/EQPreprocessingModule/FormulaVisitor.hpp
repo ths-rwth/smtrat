@@ -1,7 +1,7 @@
 #ifndef SRC_LIB_MODULES_EQPREPROCESSINGMODULE_FORMULAVISITOR_HPP_
 #define SRC_LIB_MODULES_EQPREPROCESSINGMODULE_FORMULAVISITOR_HPP_
 
-#include "../../Common.h"
+#include <smtrat-common/smtrat-common.h>
 
 #include <utility>
 #include <type_traits>

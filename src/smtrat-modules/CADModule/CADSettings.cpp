@@ -1,6 +1,6 @@
 #include "CADSettings.h"
 
-#include "../../utilities/SettingsManager.h"
+#include <lib/utilities/SettingsManager.h>
 
 constexpr carl::cad::IntegerHandling smtrat::CADSettingsReal::integerHandling;
 

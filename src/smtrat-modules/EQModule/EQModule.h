@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "../../Common.h"
-#include "../../solver/Module.h"
+#include <smtrat-common/smtrat-common.h>
+#include "../Module.h"
 #include "EQStatistics.h"
 #include "EQSettings.h"
 #include "VariantHash.h"
@@ -30,8 +30,8 @@
 #include <boost/variant.hpp>
 #include <boost/circular_buffer.hpp>
 #include <boost/operators.hpp>
-#include "../../datastructures/eq/alloc.h"
-#include "../../datastructures/eq/union_find.h"
+#include <lib/datastructures/eq/alloc.h>
+#include <lib/datastructures/eq/union_find.h>
 
 namespace smtrat
 {

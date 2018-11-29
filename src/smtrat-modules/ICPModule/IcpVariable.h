@@ -8,9 +8,9 @@
 #pragma once
 
 #include "ContractionCandidate.h"
-#include "../../Common.h"
 #include "../LRAModule/LRAModule.h"
-#include <assert.h>
+#include <smtrat-common/smtrat-common.h>
+#include <cassert>
 
 namespace smtrat
 {

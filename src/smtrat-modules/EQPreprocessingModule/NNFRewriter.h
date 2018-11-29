@@ -1,7 +1,7 @@
 #ifndef SRC_LIB_MODULES_EQPREPROCESSINGMODULE_NNFREWRITER_H_
 #define SRC_LIB_MODULES_EQPREPROCESSINGMODULE_NNFREWRITER_H_
 
-#include "../../Common.h"
+#include <smtrat-common/smtrat-common.h>
 #include <vector>
 
 namespace smtrat {

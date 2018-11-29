@@ -2,7 +2,7 @@
 
 #include <boost/optional.hpp>
 
-#include "../../Common.h"
+#include <smtrat-common/smtrat-common.h>
 
 namespace smtrat {
 

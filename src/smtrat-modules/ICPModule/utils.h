@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "../../Common.h"
 #include "../LRAModule/LRAModule.h"
 #include <carl/numbers/numbers.h>
+#include <smtrat-common/smtrat-common.h>
 
 namespace smtrat
 {    

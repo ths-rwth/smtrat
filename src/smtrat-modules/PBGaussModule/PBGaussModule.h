@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "../../solver/Module.h"
+#include "../Module.h"
 #include "PBGaussStatistics.h"
 #include "PBGaussSettings.h"
 

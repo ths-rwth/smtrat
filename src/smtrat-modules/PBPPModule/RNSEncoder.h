@@ -1,9 +1,9 @@
 #pragma once
 
+#include "PseudoBoolEncoder.h"
+#include <smtrat-common/smtrat-common.h>
 #include <vector>
 
-#include "../../Common.h"
-#include "PseudoBoolEncoder.h"
 
 namespace smtrat {
 	class RNSEncoder : public PseudoBoolEncoder {

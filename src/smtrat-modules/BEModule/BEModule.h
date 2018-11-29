@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "../../solver/PModule.h"
+#include "../PModule.h"
 #include "BEStatistics.h"
 #include "BESettings.h"
 

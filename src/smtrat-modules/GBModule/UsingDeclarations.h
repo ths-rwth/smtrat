@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "../../Common.h"
-#include "carl/core/Term.h"
+#include <smtrat-common/smtrat-common.h>
+#include <carl/core/Term.h>
 
 typedef carl::BitVector BitVector;
 

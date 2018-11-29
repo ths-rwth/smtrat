@@ -2,7 +2,7 @@
 #define SRC_LIB_MODULES_EQPREPROCESSINGMODULE_BOOLUEQREWRITER_H_
 
 #include "FormulaVisitor.hpp"
-#include "../../Common.h"
+#include <smtrat-common/smtrat-common.h>
 
 namespace smtrat {
 	struct CollectBoolsInUEQs : public formula_visitor<CollectBoolsInUEQs, void> {

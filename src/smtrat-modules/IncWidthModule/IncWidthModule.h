@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "../../solver/Module.h"
-#include "../../datastructures/VariableBounds.h"
+#include "../Module.h"
+#include <lib/datastructures/VariableBounds.h>
 #include "../ICPModule/ICPModule.h"
 #include "IncWidthStatistics.h"
 #include "IncWidthSettings.h"

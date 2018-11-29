@@ -8,8 +8,6 @@
 
 #pragma once
 
-#include "../../solver/ModuleSettings.h"
-
 namespace smtrat
 {
 	enum class SeparatorType {STRICT = 0, WEAK = 1};

@@ -12,13 +12,13 @@
 #endif
 
 
-#include "../../solver/Module.h"
+#include "../Module.h"
 #include "ContractionCandidateManager.h"
 #include "IcpVariable.h"
 #include "../LRAModule/LRAModule.h"
 #include "../LRAModule/LRASettings.h"
-#include "../../Common.h"
-#include "../../datastructures/VariableBounds.h"
+#include <smtrat-common/smtrat-common.h>
+#include <lib/datastructures/VariableBounds.h>
 #include "IcpVariable.h"
 #include "ICPSettings.h"
 #include "utils.h"

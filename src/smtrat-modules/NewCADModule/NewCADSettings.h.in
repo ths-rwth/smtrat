@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "../../datastructures/cad/Settings.h"
+#include <lib/datastructures/cad/Settings.h>
 
 namespace smtrat {
 namespace cad {

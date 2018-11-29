@@ -6,7 +6,7 @@
  * Created on 2014-10-17.
  */
 #pragma once
-#include "../../solver/Module.h"
+#include "../Module.h"
 #include "IntEqStatistics.h"
 #include "IntEqSettings.h"
 #include <stdio.h>

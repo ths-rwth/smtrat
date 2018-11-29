@@ -5,9 +5,9 @@
 
 #include <lib/solver/Manager.h>
 
-#include <lib/modules/BVModule/BVModule.h>
-#include <lib/modules/SATModule/SATModule.h>
-#include <lib/modules/FPPModule/FPPModule.h>
+#include <smtrat-modules/BVModule/BVModule.h>
+#include <smtrat-modules/SATModule/SATModule.h>
+#include <smtrat-modules/FPPModule/FPPModule.h>
 
 namespace smtrat
 {

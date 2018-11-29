@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "../../solver/Module.h"
+#include "../Module.h"
 #include "CoCoAGBStatistics.h"
 #include "CoCoAGBSettings.h"
 

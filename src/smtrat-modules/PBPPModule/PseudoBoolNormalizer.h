@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../Common.h" 
 #include <boost/optional.hpp>
+#include <smtrat-common/smtrat-common.h>
 
 namespace smtrat {
     class PseudoBoolNormalizer {
