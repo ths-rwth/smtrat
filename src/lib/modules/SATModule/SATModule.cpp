@@ -144,8 +144,7 @@ namespace smtrat
         mLiteralsActivOccurrences(),
 		//mTheoryVariableStack(),
 		//mNextTheoryVariable(mTheoryVariableStack.end()),
-		mMCSAT(*this),
-		mNextDecisionIsTheory(false)
+		mMCSAT(*this)
     {
 		if (Settings::mc_sat) {
 			ca.extra_clause_field = true;

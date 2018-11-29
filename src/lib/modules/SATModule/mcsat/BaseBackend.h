@@ -50,7 +50,7 @@ public:
 	}
 
 	AssignmentOrConflict findAssignment(carl::Variable var) const {
-		auto res = mAssignmentFinder(mBookkeeping, var);
+		auto res = mAssignmentFinder(getTrail(), var);
 		if (res) {
 			return *res;
 		} else {

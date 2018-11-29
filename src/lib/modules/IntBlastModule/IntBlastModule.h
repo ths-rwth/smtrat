@@ -12,7 +12,7 @@
 #include "IntBlastSettings.h"
 #include "IntBlastStatistics.h"
 #include "PolyTreePool.h"
-#include "../../strategies/BVSolver.h"
+#include <smtrat-strategies/strategies/BVSolver.h>
 
 namespace smtrat
 {

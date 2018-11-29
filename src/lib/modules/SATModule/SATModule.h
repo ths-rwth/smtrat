@@ -611,7 +611,6 @@ namespace smtrat
              */
 			mcsat::MCSATMixin<typename Settings::MCSATSettings> mMCSAT;
 			std::map<carl::Variable, std::vector<signed>> mFutureChangedBooleans;
-			bool mNextDecisionIsTheory;
             
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.

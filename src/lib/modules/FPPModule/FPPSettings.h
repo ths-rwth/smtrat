@@ -9,9 +9,9 @@
 #pragma once
 
 #include "../../solver/ModuleSettings.h"
-#include "../../strategies/PreprocessingOne.h"
-#include "../../strategies/BVPreprocessing.h"
-#include "../../strategies/PBPreprocessing.h"
+#include <smtrat-strategies/strategies/PreprocessingOne.h>
+#include <smtrat-strategies/strategies/BVPreprocessing.h>
+#include <smtrat-strategies/strategies/PBPreprocessing.h>
 
 namespace smtrat
 {
