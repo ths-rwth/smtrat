@@ -14,7 +14,6 @@ target_link_libraries(smtrat-strategies-static lib_smtrat)
 install_libraries(smtrat-strategies-shared smtrat-strategies-static)
 
 file(GLOB strategies LIST_DIRECTORIES false RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/strategies/ strategies/*.h)
-message(STATUS "Strategies: ${strategies}")
 foreach(strategyfile ${strategies})
 	get_filename_component(strategy ${strategyfile} NAME_WE)
 

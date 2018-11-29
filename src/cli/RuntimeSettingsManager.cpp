@@ -17,7 +17,6 @@
 #include "RuntimeSettingsManager.h"
 #include "ExitCodes.h"
 
-#include "../lib/modules/Modules.h"
 #include "config.h"
 
 #include <carl/util/CompileInfo.h>
@@ -145,11 +144,6 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
 //                printToC();
 //                exit(SMTRAT_EXIT_SUCCESS);
 //            }
-            else if(optionName == "list-modules")
-            {
-                printModulesInfo();
-                exit(SMTRAT_EXIT_SUCCESS);
-            }
             #ifdef SMTRAT_DEVOPTION_MeasureTime
             else if(optionName == "print-timings")
             {
@@ -268,7 +262,6 @@ void RuntimeSettingsManager::printHelp() const
     std::cout << "\t --simplified-input (-si) \t prints a simplified form of the input formula (if result is unknown)" << std::endl;
     std::cout << std::endl;
     std::cout << "Developer options:" <<std::endl;
-    std::cout << "\t --list-modules \t\t prints all compiled modules" << std::endl;
     #ifdef SMTRAT_DEVOPTION_MeasureTime
     std::cout << "\t --print-timings \t prints the timings" << std::endl;
     #endif
