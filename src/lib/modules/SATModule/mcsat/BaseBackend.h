@@ -74,7 +74,12 @@ public:
 	}
 
 	Explanation explain(carl::Variable var, const FormulasT& reason) const {
-		boost::optional<Explanation> res = mExplanation(mBookkeeping, variableOrder(), var, reason);
+		if (getModel().empty()) {
+			FormulasT expl;
+			for (const auto& r: reason) expl.emplace_back(r.negated());
+			return FormulaT(carl::FormulaType::OR, std::move(expl));
+		}
+		boost::optional<Explanation> res = mExplanation(getTrail(), variableOrder(), var, reason);
 		if (res) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat", "Got explanation " << *res);
 			return *res;
