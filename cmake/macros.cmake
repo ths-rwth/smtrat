@@ -30,6 +30,7 @@ function(set_version major minor)
 endfunction(set_version)
 
 macro(install_libraries target)
+	include(GNUInstallDirs)
 	install(
 		TARGETS "${target}"
 		EXPORT smtratTargets
