@@ -10,7 +10,7 @@
 #include "carl/util/stringparser.h"
 #include "carl/util/parser/Parser.h"
 #include "../Common.h"
-#include "../strategies/PureSAT.h"
+#include <smtrat-strategies/strategies/PureSAT.h>
 
 #ifdef __WIN
 #define DLL_EXPORT __declspec(dllexport)

@@ -3,9 +3,9 @@
  */
 #pragma once
 
-#include "../solver/Manager.h"
-#include "../modules/GBPPModule/GBPPModule.h"
-#include "../modules/ESModule/ESModule.h"
+#include <lib/solver/Manager.h>
+#include <lib/modules/GBPPModule/GBPPModule.h>
+#include <lib/modules/ESModule/ESModule.h>
 // #include "../modules/PBPPModule/PBPPModule.h"
 
 namespace smtrat

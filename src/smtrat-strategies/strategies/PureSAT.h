@@ -3,9 +3,9 @@
  */
 #pragma once
 
-#include "../solver/Manager.h"
+#include <lib/solver/Manager.h>
 
-#include "../modules/SATModule/SATModule.h"
+#include <lib/modules/SATModule/SATModule.h>
 
 namespace smtrat
 {

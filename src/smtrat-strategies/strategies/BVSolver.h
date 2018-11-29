@@ -3,11 +3,11 @@
  */
 #pragma once
 
-#include "../solver/Manager.h"
+#include <lib/solver/Manager.h>
 
-#include "../modules/BVModule/BVModule.h"
-#include "../modules/SATModule/SATModule.h"
-#include "../modules/FPPModule/FPPModule.h"
+#include <lib/modules/BVModule/BVModule.h>
+#include <lib/modules/SATModule/SATModule.h>
+#include <lib/modules/FPPModule/FPPModule.h>
 
 namespace smtrat
 {
