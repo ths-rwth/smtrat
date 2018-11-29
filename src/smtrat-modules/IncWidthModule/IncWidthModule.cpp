@@ -157,13 +157,13 @@ namespace smtrat
                     else if( ass.second.isSubstitution() )
                     {
                         if( varWithNegCoeff )
-                            ass.second.asSubstitution()->multiplyBy( MINUS_ONE_RATIONAL );
+                            ass.second.asSubstitution()->multiplyBy( -1 );
                         else
                             ass.second.asSubstitution()->add( varShiftIter->second.constantPart() );
                     }
                     else if( ass.second.isSqrtEx() )
                     {
-                        mModel.assign(ass.first, (varWithNegCoeff ? ass.second.asSqrtEx()*SqrtEx( Poly( MINUS_ONE_RATIONAL ) ) : ass.second.asSqrtEx()) + SqrtEx( Poly( varShiftIter->second.constantPart() ) ));
+                        mModel.assign(ass.first, (varWithNegCoeff ? ass.second.asSqrtEx()*SqrtEx( Poly( -1 ) ) : ass.second.asSqrtEx()) + SqrtEx( Poly( varShiftIter->second.constantPart() ) ));
                     }
                     else // ass.second.isRAN()
                     {
@@ -402,7 +402,7 @@ namespace smtrat
                     auto ret = addToICP( FormulaT( boundA ), false );
                     if( ret.second )
                         icpsAddedBounds.push_back( ret.first );
-                    ConstraintT boundB( var, carl::Relation::GEQ, Settings::exclude_negative_numbers ? ZERO_RATIONAL : Rational(-Rational( mHalfOfCurrentWidth )) );
+                    ConstraintT boundB( var, carl::Relation::GEQ, Settings::exclude_negative_numbers ? Rational(0) : Rational(-Rational( mHalfOfCurrentWidth )) );
                     ret = addToICP( FormulaT( boundB ), false );
                     if( ret.second )
                         icpsAddedBounds.push_back( ret.first );
@@ -478,7 +478,7 @@ namespace smtrat
                     auto res = addSubformulaToPassedFormula( FormulaT( boundA ) );
                     if( res.second )
                         addBound( _addedBounds, res.first );
-                    ConstraintT boundB( var, carl::Relation::GEQ, Settings::exclude_negative_numbers ? ZERO_RATIONAL : Rational(-Rational( mHalfOfCurrentWidth )) );
+                    ConstraintT boundB( var, carl::Relation::GEQ, Settings::exclude_negative_numbers ? Rational(0) : Rational(-Rational( mHalfOfCurrentWidth )) );
                     res = addSubformulaToPassedFormula( FormulaT( boundB ) );
                     if( res.second )
                         addBound( _addedBounds, res.first );

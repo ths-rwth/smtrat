@@ -74,7 +74,7 @@ namespace smtrat
                     std::cout << "Real relaxation of " << constraint.lhs() << " is " << realRelax << std::endl;
                     #endif
                     // Find the 1-norm of the left-hand side's coefficients.
-                    Rational norm = ZERO_RATIONAL;
+                    Rational norm = 0;
                     for( auto& term : realRelax.getTerms() )
                     {
                         if( !term.isConstant() )
