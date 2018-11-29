@@ -75,35 +75,13 @@ namespace smtrat
 
 	typedef carl::FormulasMulti<Poly> FormulasMultiT;
 
-  typedef carl::Interval<Rational> RationalInterval;
-
-  typedef carl::EvaluationMap<RationalInterval> EvalRationalIntervalMap;
-
-  typedef carl::Interval<double> DoubleInterval;
-
-  typedef carl::EvaluationMap<DoubleInterval> EvalDoubleIntervalMap;
-
-  typedef carl::VarInfo<Poly> VarPolyInfo;
-
   typedef carl::VarInfoMap<Poly> VarPolyInfoMap;
 	
-	using Model = carl::Model<Rational, Poly>;
-	static const Model EMPTY_MODEL = Model();
-	
-	using ModelSubstitution = carl::ModelSubstitution<Rational, Poly>;
-	
 	using ModelMVRootSubstitution = carl::ModelMVRootSubstitution<Rational, Poly>;
-	using ModelPolynomialSubstitution = carl::ModelPolynomialSubstitution<Rational, Poly>;
-	
-	using ModelVariable = carl::ModelVariable;
-	
-	using ModelValue = carl::ModelValue<Rational, Poly>;
 	
 	using InfinityValue = carl::InfinityValue;
 	
 	using SqrtEx = carl::SqrtEx<smtrat::Poly>;
-
-  typedef carl::Factors<Poly> Factorization;
 
 #ifdef __VS
     typedef std::vector<std::atomic<bool>*> Conditionals;
@@ -133,8 +111,6 @@ namespace smtrat
     static const unsigned MAX_DIMENSION_FOR_FACTORIZATION = 6;
 
     static const unsigned MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION = 7;
-    
-    static const EvalDoubleIntervalMap EMPTY_EVAL_DOUBLE_INTERVAL_MAP = EvalDoubleIntervalMap();
 
 }    // namespace smtrat
 

@@ -9,6 +9,7 @@
 
 #include <carl/core/MultivariatePolynomial.h>
 #include <carl/core/Variable.h>
+#include <carl/core/VariableInformation.h>
 #include <carl/formula/Formula.h>
 #include <carl/io/streamingOperators.h>
 #include <carl/util/enum_util.h>
@@ -19,7 +20,13 @@ using carl::operator<<;
 
 using Rational = mpq_class;
 
+using Integer = carl::IntegralType<Rational>::type;
+
+using TermT = carl::Term<Rational>;
+
 using Poly = carl::MultivariatePolynomial<Rational>;
+
+using Factorization = std::map<Poly, carl::uint>;
 
 using ConstraintT = carl::Constraint<Poly>;
 
@@ -32,6 +39,8 @@ using FormulasT = carl::Formulas<Poly>;
 using FormulaSetT = carl::FormulaSet<Poly>;
 
 using EvalRationalMap = std::map<carl::Variable, Rational>;
+
+using VarPolyInfo = carl::VariableInformation<true, Poly>;
 
 // Pair of priority and module id (within the respective strategy graph)
 using thread_priority = std::pair<std::size_t, std::size_t>;
