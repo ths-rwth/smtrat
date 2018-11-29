@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <lib/datastructures/lra/TableauSettings.h>
+#include "tableau/TableauSettings.h"
 #include "../ModuleSettings.h"
 
 namespace smtrat

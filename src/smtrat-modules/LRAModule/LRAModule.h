@@ -10,7 +10,7 @@
 
 #include "../Module.h"
 #include <smtrat-common/smtrat-common.h>
-#include <lib/datastructures/lra/Tableau.h>
+#include "tableau/Tableau.h"
 #include "LRAModuleStatistics.h"
 #include "LRASettings.h"
 #include <stdio.h>
