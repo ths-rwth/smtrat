@@ -19,7 +19,7 @@
 
 #include <carl/io/SMTLIBStream.h>
 
-#include "Manager.h"
+#include <lib/solver/Manager.h>
 #include "Module.h"
 
 // Flag activating some informative and not exaggerated output about module calls.

@@ -12,7 +12,8 @@
 #include <vector>
 #include <set>
 #include <iterator>
-#include "../Common.h"
+#include <smtrat-common/smtrat-common.h>
+#include <smtrat-common/model.h>
 
 namespace smtrat
 {
