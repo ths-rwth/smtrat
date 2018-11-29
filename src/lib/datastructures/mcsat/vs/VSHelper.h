@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../../../Common.h"
+#include <lib/Common.h>
+#include <smtrat-modules/VSModule/Substitute.h>
 #include <carl/util/Common.h>
-#include "../../../modules/VSModule/Substitute.h"
 #include <carl/formula/model/evaluation/ModelEvaluation.h>
 
 #include <variant>

@@ -38,6 +38,7 @@ target_link_libraries( smtrat
                         lib_${PROJECT_NAME} # smtrat library
                         ${libraries} # libraries definied in top-level CMakeLists.txt
 						smtrat-common-shared
+						smtrat-modules-shared
 						smtrat-qe-shared
 						smtrat-unsat-cores-shared
 )

@@ -53,8 +53,7 @@ namespace smtrat
     {
         mGeneratedModules.push_back( mpPrimaryBackend );
         // inform it about all constraints
-        typedef void (*Func)( Module*, const FormulaT& );
-        Func f = [] ( Module* _module, const FormulaT& _constraint ) { _module->inform( _constraint ); };
+        auto f = [] ( Module* _module, const FormulaT& _constraint ) { _module->inform( _constraint ); };
         carl::FormulaPool<Poly>::getInstance().forallDo<Module>( f, mpPrimaryBackend );
     }
 

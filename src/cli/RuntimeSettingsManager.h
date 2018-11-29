@@ -11,7 +11,7 @@
 #include <string>
 #include <assert.h>
 #include <list>
-#include "../lib/solver/RuntimeSettings.h"
+#include <smtrat-common/smtrat-common.h>
 
 namespace smtrat
 {    

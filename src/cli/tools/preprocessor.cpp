@@ -3,10 +3,9 @@
 #include "../parse_input.h"
 #include "../parser/InstructionHandler.h"
 
-#include "../../lib/modules/FPPModule/FPPModule.h"
-
 #include <carl/io/SMTLIBStream.h>
 #include <smtrat-common/smtrat-common.h>
+#include <smtrat-modules/FPPModule/FPPModule.h>
 
 namespace smtrat {
 namespace preprocessor {

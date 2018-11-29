@@ -14,13 +14,13 @@
 #include "ExitCodes.h"
 
 #include "config.h"
-#include "../lib/strategies/config.h"
+#include <smtrat-strategies/smtrat-strategies.h>
 #include "RuntimeSettingsManager.h"
 
 #ifndef __WIN
 #include <sys/resource.h>
 #endif
-#include "../lib/solver/Module.h"
+#include <smtrat-modules/Module.h>
 #include "../lib/Common.h"
 
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -47,7 +47,7 @@ void printTimings(smtrat::Manager& solver)
     std::cout << "*                  Timings                   *" << std::endl;
     std::cout << "**********************************************" << std::endl;
     std::cout << "\t\tAdd \t\tCheck \t (calls) \tRemove" << std::endl;
-    for(std::vector<smtrat::Module*>::const_iterator it =  solver.getAllGeneratedModules().begin(); it != solver.getAllGeneratedModules().end(); ++it)
+    for(auto it =  solver.getAllGeneratedModules().begin(); it != solver.getAllGeneratedModules().end(); ++it)
     {
         std::cout << (*it)->moduleName() << ":\t" << (*it)->getAddTimerMS() << "\t\t" << (*it)->getCheckTimerMS() << "\t(" << (*it)->getNrConsistencyChecks() << ")\t\t" << (*it)->getRemoveTimerMS() << std::endl;
 

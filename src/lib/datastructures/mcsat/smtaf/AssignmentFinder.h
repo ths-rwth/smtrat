@@ -1,12 +1,12 @@
 #pragma once
 
-#include "boost/logic/tribool.hpp"
+#include <boost/logic/tribool.hpp>
 
 #include "../common.h"
 
-#include "../../../solver/Module.h"
-#include "../../../solver/Manager.h"
-#include "../../../modules/LRAModule/LRAModule.h"
+#include <smtrat-modules/Module.h>
+#include <lib/solver/Manager.h>
+#include <smtrat-modules/LRAModule/LRAModule.h>
 
 #include <smtrat-mcsat/smtrat-mcsat.h>
 

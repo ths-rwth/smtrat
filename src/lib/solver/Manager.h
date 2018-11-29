@@ -15,7 +15,7 @@
 
 #include "StrategyGraph.h"
 #include <smtrat-common/smtrat-common.h>
-#include "ModuleInput.h"
+#include <smtrat-modules/ModuleInput.h>
 #include "GeneralStatistics.h"
 #include "QuantifierManager.h"
 #ifdef SMTRAT_STRAT_PARALLEL_MODE

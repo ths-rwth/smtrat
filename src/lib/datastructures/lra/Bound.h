@@ -8,8 +8,8 @@
 #pragma once
 
 #include "Value.h"
-#include "../../Common.h"
-#include "../../solver/ModuleInput.h"
+#include <smtrat-common/smtrat-common.h>
+#include <smtrat-modules/ModuleInput.h>
 #include <stddef.h>
 #include <set>
 
