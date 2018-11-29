@@ -1,0 +1,4 @@
+#pragma once
+
+#include "strategies/@SMTRAT_Strategy@.h"
+#define CMakeStrategySolver smtrat::@SMTRAT_Strategy@
