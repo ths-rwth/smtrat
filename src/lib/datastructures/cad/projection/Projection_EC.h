@@ -4,7 +4,6 @@
 #include <map>
 #include <vector>
 
-#include "../../../modules/NewCADModule/NewCADStatistics.h"
 #include "../Common.h"
 #include "BaseProjection.h"
 #include "ProjectionComparator.h"
@@ -36,9 +35,6 @@ public:
 	using Super::size;
 
 private:
-#ifdef SMTRAT_DEVOPTION_Statistics
-	NewCADStatistics mStatistics;
-#endif
 	template<typename S>
 	friend std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::FULL, Backtracking::HIDE, S>& p);
 	// A projection candidate: a level to project into and two ids that refer to the level above.
@@ -110,13 +106,6 @@ private:
 				active(lvl, it.second);
 			}
 		}
-#ifdef SMTRAT_DEVOPTION_Statistics
-		std::size_t number = 0;
-		for (std::size_t lvl = 1; lvl <= dim(); lvl++) {
-			number += mInfo(lvl).purged.count();
-		}
-		mStatistics.currentlyPurgedPolynomials(number);
-#endif
 	}
 
 	/*
@@ -297,9 +286,6 @@ private:
 		std::size_t lvl = level;
 		bool restricted = false;
 		while (lvl < dim() && !mInfo.usingEC(lvl) && mInfo(lvl).ecs.hasEC() && (Settings::interruptions || mInfo.usingEC(lvl-1))) {
-#ifdef SMTRAT_DEVOPTION_Statistics
-			mStatistics.usedRestrictedProjection();
-#endif
 			restricted = true;
 			if (!mInfo.selectEC(lvl)) break;
 
@@ -492,9 +478,6 @@ private:
 		return carl::Bitset();
 	}
 	carl::Bitset projectCandidate(const QueueEntry& qe) {
-#ifdef SMTRAT_DEVOPTION_Statistics
-		mStatistics.computePolynomial();
-#endif
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Projecting " << qe);
 		assert(qe.level < dim());
 		carl::Bitset res;
@@ -549,10 +532,6 @@ public:
 		  }),
 		  mProjectionQueue(ProjectionCandidateComparator([&](std::size_t level, std::size_t id) { return getPolynomialById(level, id); })),
 		  mInactiveQueue(ProjectionCandidateComparator([&](std::size_t level, std::size_t id) { return getPolynomialById(level, id); }))
-#ifdef SMTRAT_DEVOPTION_Statistics
-		  ,
-		  mStatistics("CAD")
-#endif
 	{
 	}
 	void reset() {
@@ -612,9 +591,6 @@ public:
 		return carl::Bitset();
 	}
 	carl::Bitset addEqConstraint(const UPoly& p, std::size_t cid, bool isBound) override {
-#ifdef SMTRAT_DEVOPTION_Statistics
-		mStatistics.addedECtoCAD();
-#endif
 		if (cid >= mPolynomials[0].size()) {
 			mPolynomials[0].resize(cid + 1);
 		} else if (mPolynomials[0][cid]) {
