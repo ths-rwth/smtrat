@@ -4,6 +4,7 @@
 #include "theories/Attribute.h"
 #include "../../lib/solver/ResourceLimitation.h"
 
+#include <smtrat-common/model.h>
 #include <smtrat-qe/smtrat-qe.h>
 
 #include <iostream>

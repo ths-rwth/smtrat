@@ -41,6 +41,7 @@ target_link_libraries( smtrat
 						smtrat-modules-shared
 						smtrat-qe-shared
 						smtrat-unsat-cores-shared
+						smtrat-strategy-${SMTRAT_Strategy}-shared
 )
 
 #if(USE_COTIRE)
