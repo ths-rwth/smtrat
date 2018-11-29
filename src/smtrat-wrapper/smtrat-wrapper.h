@@ -4,7 +4,6 @@
 #include <carl/util/stringparser.h>
 #include <carl/util/parser/Parser.h>
 #include <smtrat-common/smtrat-common.h>
-#include <smtrat-modules/Modules.h>
 #include <smtrat-strategies/strategies/PureSAT.h>
 
 #ifdef __WIN

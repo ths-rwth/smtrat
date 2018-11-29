@@ -1,9 +1,7 @@
 #pragma once
 
-#include "../solver/Manager.h"
-
-#include "../modules/FPPModule/FPPModule.h"
-#include "../modules/SATModule/SATModule.h"
+#include <smtrat-modules/FPPModule/FPPModule.h>
+#include <smtrat-modules/SATModule/SATModule.h>
 
 namespace smtrat
 {
