@@ -19,6 +19,7 @@ foreach(strategyfile ${strategies})
 
 	add_library(smtrat-strategy-${strategy}-shared INTERFACE)
 	add_library(smtrat-strategy-${strategy}-static INTERFACE)
+	install_libraries(smtrat-strategy-${strategy}-shared smtrat-strategy-${strategy}-static)
 
 	file(READ "${CMAKE_CURRENT_SOURCE_DIR}/strategies/${strategyfile}" Content)
 	string(REGEX MATCHALL "#include <smtrat-modules/[a-zA-Z]+Module/" Matches ${Content})
