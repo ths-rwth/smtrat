@@ -71,10 +71,6 @@ namespace smtrat
 
 //  typedef carl::Formulas<Poly> FormulasT;
 
-	typedef carl::FormulaSet<Poly> FormulaSetT;
-
-	typedef carl::FormulasMulti<Poly> FormulasMultiT;
-
   typedef carl::VarInfoMap<Poly> VarPolyInfoMap;
 	
 	using ModelMVRootSubstitution = carl::ModelMVRootSubstitution<Rational, Poly>;

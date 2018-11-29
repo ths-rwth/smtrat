@@ -38,6 +38,8 @@ using FormulasT = carl::Formulas<Poly>;
 
 using FormulaSetT = carl::FormulaSet<Poly>;
 
+using FormulasMultiT = std::multiset<FormulaT>;
+
 using EvalRationalMap = std::map<carl::Variable, Rational>;
 
 using VarPolyInfo = carl::VariableInformation<true, Poly>;
