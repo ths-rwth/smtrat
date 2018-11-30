@@ -6,6 +6,15 @@ add_custom_target(smtrat-modules-all)
 file(GLOB modules RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *Module/)
 foreach(module ${modules})
 	if (IS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${module})
+
+		# Properly configure everything but Instantiation.h
+		file(GLOB_RECURSE tpl_files "*.in")
+		foreach(tpl ${tpl_files})
+			if(NOT tpl MATCHES ".*/Instantiation.h.in")
+				string(REGEX REPLACE ".in$" "" file ${tpl})
+				configure_file("${tpl}" "${file}")
+			endif()
+		endforeach()
 	
 		# Properly configure Instantiation.h
 		if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${module}/Instantiation.h.in")
@@ -45,14 +54,6 @@ foreach(module ${modules})
 			target_link_libraries(smtrat-module-${module}-shared ${DEPEND-shared})
 			target_link_libraries(smtrat-module-${module}-static ${DEPEND-static})
 		endif()
-	endif()
-endforeach()
-
-file(GLOB_RECURSE tpl_files "*.in")
-foreach(tpl ${tpl_files})
-	if(NOT tpl MATCHES ".*/Instantiation.h.in")
-		string(REGEX REPLACE ".in$" "" file ${tpl})
-		configure_file("${tpl}" "${file}")
 	endif()
 endforeach()
 
