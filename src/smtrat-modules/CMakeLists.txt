@@ -1,24 +1,6 @@
 include(${carl_INCLUDE_DIR}/../cmake/carlmacros.cmake)
 
 add_definitions(-fPIC)
-
-file(GLOB_RECURSE tpl_files "*.in")
-foreach(tpl ${tpl_files})
-	if(NOT tpl MATCHES ".*/Instantiation.h.in")
-		string(REGEX REPLACE ".in$" "" file ${tpl})
-		configure_file("${tpl}" "${file}")
-	endif()
-endforeach()
-
-file(GLOB smtrat-modules_sources "*.cpp")
-
-add_new_libraries(smtrat-modules "${PROJECT_VERSION}" "${smtrat-modules_sources}" "resources")
-target_include_dirs_from(smtrat-modules-objects "" PUBLIC smtrat-common-shared)
-target_link_libraries(smtrat-modules-shared smtrat-common-shared)
-target_link_libraries(smtrat-modules-static smtrat-common-static)
-
-install_libraries(smtrat-modules-shared smtrat-modules-static)
-
 add_custom_target(smtrat-modules-all)
 
 file(GLOB modules RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *Module/)
@@ -65,3 +47,20 @@ foreach(module ${modules})
 		endif()
 	endif()
 endforeach()
+
+file(GLOB_RECURSE tpl_files "*.in")
+foreach(tpl ${tpl_files})
+	if(NOT tpl MATCHES ".*/Instantiation.h.in")
+		string(REGEX REPLACE ".in$" "" file ${tpl})
+		configure_file("${tpl}" "${file}")
+	endif()
+endforeach()
+
+file(GLOB smtrat-modules_sources "*.cpp")
+
+add_new_libraries(smtrat-modules "${PROJECT_VERSION}" "${smtrat-modules_sources}" "resources")
+target_include_dirs_from(smtrat-modules-objects "" PUBLIC smtrat-common-shared)
+target_link_libraries(smtrat-modules-shared smtrat-common-shared)
+target_link_libraries(smtrat-modules-static smtrat-common-static)
+
+install_libraries(smtrat-modules-shared smtrat-modules-static)
