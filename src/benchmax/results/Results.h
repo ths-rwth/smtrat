@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include <boost/filesystem.hpp>
+#include <filesystem>
 
 #include "../logging.h"
 #include "../BenchmarkStatus.h"
@@ -22,7 +22,7 @@
 
 namespace benchmax {
 
-namespace fs = boost:: filesystem;
+namespace fs = std::filesystem;
 
 class Results {
 private:

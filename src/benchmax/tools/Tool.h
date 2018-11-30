@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <functional>
 #include <string>
 #include <stdexcept>
@@ -18,19 +19,17 @@
 #pragma warning(push, 0)
 #include <boost/functional/hash.hpp>
 #include <boost/version.hpp>
-#include <boost/filesystem.hpp>
 #pragma warning(pop)
 #else
 #include <boost/functional/hash.hpp>
 #include <boost/version.hpp>
-#include <boost/filesystem.hpp>
 #endif
 
 #include "../BenchmarkStatus.h"
 
 namespace benchmax {
 
-namespace fs = boost:: filesystem;
+namespace fs = std::filesystem;
 
 class Tool {
 protected:

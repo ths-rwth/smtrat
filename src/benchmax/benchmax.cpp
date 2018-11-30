@@ -8,16 +8,10 @@
  * @version 2013-04-23
  */
 
+#include <filesystem>
 #include <iostream>
 #include "../cli/config.h"
-#ifdef __VS
-#pragma warning(push, 0)
-#include <boost/filesystem/path.hpp>
-#pragma warning(pop)
-#else
-#include <boost/filesystem/path.hpp>
-#endif
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 #include <csignal>
 
@@ -66,7 +60,7 @@ bool initApplication(int argc, char** argv) {
 	carl::logging::logger().resetFormatter();
 	
 	benchmax::Settings s(argc, argv);
-	Settings::PathOfBenchmarkTool = fs::system_complete(fs::path(argv[0])).native();
+	Settings::PathOfBenchmarkTool = fs::canonical(fs::path(argv[0])).native();
 
 	if(s.has("help")) {
 		std::cout << s;
