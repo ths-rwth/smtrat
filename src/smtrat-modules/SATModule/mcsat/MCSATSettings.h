@@ -1,12 +1,12 @@
 #pragma once
 
-#include <lib//datastructures/mcsat/arithmetic/AssignmentFinder.h>
-#include <lib//datastructures/mcsat/smtaf/AssignmentFinder.h>
-#include <lib//datastructures/mcsat/fm/Explanation.h>
-#include <lib//datastructures/mcsat/nlsat/Explanation.h>
-#include <lib//datastructures/mcsat/onecellcad/Explanation.h>
-#include <lib//datastructures/mcsat/vs/Explanation.h>
+#include <lib/datastructures/mcsat/smtaf/AssignmentFinder.h>
+#include <lib/datastructures/mcsat/fm/Explanation.h>
+#include <lib/datastructures/mcsat/nlsat/Explanation.h>
+#include <lib/datastructures/mcsat/onecellcad/Explanation.h>
+#include <lib/datastructures/mcsat/vs/Explanation.h>
 
+#include <smtrat-mcsat/assignments/arithmetic/AssignmentFinder.h>
 #include <smtrat-mcsat/assignments/SequentialAssignment.h>
 #include <smtrat-mcsat/explanations/ParallelExplanation.h>
 #include <smtrat-mcsat/explanations/SequentialExplanation.h>

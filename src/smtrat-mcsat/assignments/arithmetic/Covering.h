@@ -1,8 +1,7 @@
 #pragma once
 
-#include "../../../Common.h"
-
 #include <carl/util/Bitset.h>
+#include <smtrat-common/smtrat-common.h>
 
 #include <iostream>
 #include <map>

@@ -3,8 +3,7 @@
 #include "Covering.h"
 #include "RootIndexer.h"
 
-#include "../common.h"
-
+#include <smtrat-common/smtrat-common.h>
 #include <smtrat-mcsat/smtrat-mcsat.h>
 
 #include <boost/variant.hpp>
