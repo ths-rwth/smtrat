@@ -94,6 +94,7 @@ bool SettingsParser::parse_options(int argc, char* argv[]) {
 		po::command_line_parser(argc, argv).options(mOptions).positional(mPositional).run(),
 		mValues
 	);
+	po::notify(mValues);
 	return true;
 }
 
