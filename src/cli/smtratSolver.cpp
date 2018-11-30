@@ -28,7 +28,9 @@
 #include "lib/utilities/stats/StatisticSettings.h"
 #endif //SMTRAT_DEVOPTION_Statistics
 
+#include <smtrat-common/settings/SettingsParser.h>
 
+#include "handle_options.h"
 #include "parser/ParserWrapper.h"
 #include "../lib/Common.h"
 #include <carl/formula/parser/DIMACSExporter.h>
@@ -41,19 +43,6 @@
 #include "tools/preprocessor.h"
 
 
-void printTimings(smtrat::Manager& solver)
-{
-    std::cout << "**********************************************" << std::endl;
-    std::cout << "*                  Timings                   *" << std::endl;
-    std::cout << "**********************************************" << std::endl;
-    std::cout << "\t\tAdd \t\tCheck \t (calls) \tRemove" << std::endl;
-    for(auto it =  solver.getAllGeneratedModules().begin(); it != solver.getAllGeneratedModules().end(); ++it)
-    {
-        std::cout << (*it)->moduleName() << ":\t" << (*it)->getAddTimerMS() << "\t\t" << (*it)->getCheckTimerMS() << "\t(" << (*it)->getNrConsistencyChecks() << ")\t\t" << (*it)->getRemoveTimerMS() << std::endl;
-
-    }
-    std::cout << "**********************************************" << std::endl;
-}
 
 //#include "../lib/datastructures/expression/ExpressionTest.h"
 
@@ -89,6 +78,19 @@ int main( int argc, char* argv[] )
 	carl::logging::logger().formatter("stdout")->printInformation = true;
 #endif
 	SMTRAT_LOG_INFO("smtrat", "Starting smtrat.");
+
+	smtrat::SettingsParser parser;
+	parser.parse_options(argc, argv);
+	const auto& settings = smtrat::Settings();
+
+	{
+		// handle easy options of CoreSettings
+		int basic_exitcode = smtrat::handle_basic_options(parser);
+		if (basic_exitcode != SMTRAT_EXIT_UNDEFINED) {
+			return basic_exitcode;
+		}
+	}
+
     // This variable will hold the input file.
     std::string pathToInputFile = "";
 
@@ -113,11 +115,10 @@ int main( int argc, char* argv[] )
     // Construct solver.
     CMakeStrategySolver strategy;
 
-    if( settingsManager.printStrategy() )
-    {
-        strategy.printStrategyGraph();
-        return (int)SMTRAT_EXIT_SUCCESS;
-    }
+	if (settings.solver.print_strategy) {
+		strategy.printStrategyGraph();
+		return SMTRAT_EXIT_SUCCESS;
+	}
 
     #ifdef SMTRAT_DEVOPTION_Statistics
     //smtrat::CollectStatistics::settings->rOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
@@ -129,12 +130,12 @@ int main( int argc, char* argv[] )
 
 
 	int exitCode = 0;
-	if (settingsManager.readDIMACS()) {
-		exitCode = smtrat::run_dimacs_file(strategy, pathToInputFile);
-	} else if (settingsManager.readOPB()) {
-		exitCode = smtrat::run_opb_file(strategy, pathToInputFile);
-	} else if (settingsManager.printInputSimplified()) {
-		exitCode = smtrat::preprocess_file(pathToInputFile, settingsManager.simplifiedInputFileName());
+	if (settings.parser.read_dimacs) {
+		exitCode = smtrat::run_dimacs_file(strategy, settings.parser.input_file);
+	} else if (settings.parser.read_opb) {
+		exitCode = smtrat::run_opb_file(strategy, settings.parser.input_file);
+	} else if (settings.solver.preprocess) {
+		exitCode = smtrat::preprocess_file(settings.parser.input_file, settings.solver.preprocess_output_file);
 	} else {
 		// Parse input.
 		try {
@@ -147,33 +148,15 @@ int main( int argc, char* argv[] )
 			if (settingsManager.printModel()) strategy.printAssignment();
 			else if (settingsManager.printAllModels()) strategy.printAllAssignments(std::cout);
 			}
-			else if(e.lastAnswer == smtrat::Answer::UNKNOWN) {
-			if (settingsManager.printInputSimplified())
-			{
-				smtrat::FormulaT formula = strategy.getInputSimplified().second;
-				auto smtrepr = carl::outputSMTLIB(strategy.logic(), { formula });
-
-				if( settingsManager.simplifiedInputFileName() == "" )
-					e.regular() << smtrepr;
-				else
-				{
-					std::ofstream file;
-					file.open(settingsManager.simplifiedInputFileName());
-					file << smtrepr;
-					file.close();
-				}
-			}
-			}
 
 		} catch (const std::bad_alloc& e) {
 			std::raise(ENOMEM);
 		}
 	}
 
-    if( settingsManager.doPrintTimings() )
-    {
-        printTimings( strategy );
-    }
+	if (settings.solver.print_timings) {
+		smtrat::options_detail::print_timings(strategy);
+	}
 
     #ifdef SMTRAT_DEVOPTION_Statistics
     smtrat::CollectStatistics::collect();
