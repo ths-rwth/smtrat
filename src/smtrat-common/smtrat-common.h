@@ -7,6 +7,8 @@
 #include "RuntimeSettings.h"
 #include "ValidationSettings.h"
 
+#include "settings/Settings.h"
+
 #include <carl/core/MultivariatePolynomial.h>
 #include <carl/core/Variable.h>
 #include <carl/core/VariableInformation.h>
