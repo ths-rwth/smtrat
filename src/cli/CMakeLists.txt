@@ -21,6 +21,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src
 link_directories( ${PROJECT_BINARY_DIR}/src/lib
                   ${PROJECT_BINARY_DIR} )
 
+file(STRINGS ${CMAKE_SOURCE_DIR}/LICENSE LICENSE_CONTENT_IN)
 
 file(GLOB_RECURSE smtrat_cli_tpl "*.in")
 foreach(tpl ${smtrat_cli_tpl})
@@ -30,7 +31,6 @@ endforeach()
 
 file(GLOB_RECURSE smtrat_cli_sources "*.cpp")
 
-file(STRINGS ${CMAKE_SOURCE_DIR}/LICENSE LICENSE_CONTENT_IN)
 
 add_executable( smtrat ${smtrat_cli_sources})
 
