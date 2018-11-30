@@ -18,11 +18,11 @@ void print_cmake_options() {
 }
 
 void print_info() {
-    std::cout << "Code was compiled with compiler " << smtrat::CompileInfo::CXXCompiler << " " << smtrat::CompileInfo::CXXCompilerVersion << std::endl;
-    std::cout << "Build type:" << smtrat::CompileInfo::BuildType << std::endl;   
+    std::cout << "Version: " << smtrat::CompileInfo::GitVersion << std::endl;
     std::cout << "Code is based on commit " << smtrat::CompileInfo::GitRevisionSHA1 << ". " << std::endl;
+    std::cout << "Build type:" << smtrat::CompileInfo::BuildType << std::endl;   
+    std::cout << "Code was compiled with compiler " << smtrat::CompileInfo::CXXCompiler << " " << smtrat::CompileInfo::CXXCompilerVersion << std::endl;
     std::cout << "Build on a " << smtrat::CompileInfo::SystemName << " (" << CompileInfo::SystemVersion << ") machine." << std::endl;
-    std::cout << "Version: " << SMTRAT_VERSION << std::endl;
 }
 
 void print_license() {
@@ -46,6 +46,11 @@ void print_timings(const smtrat::Manager& solver) {
 	std::cout << "**********************************************" << std::endl;
 }
 
+void print_version() {
+	std::cout << CompileInfo::ProjectName << " " << CompileInfo::Version << std::endl;
+	std::cout << CompileInfo::GitVersion << " based on " << CompileInfo::GitRevisionSHA1 << std::endl;
+}
+
 }
 
 int handle_basic_options(const SettingsParser& parser) {
@@ -60,7 +65,7 @@ int handle_basic_options(const SettingsParser& parser) {
 		return SMTRAT_EXIT_SUCCESS;
 	}
 	if (settings.core.show_version) {
-		std::cout << smtrat::SMTRAT_VERSION << std::endl;
+		options_detail::print_version();
 		return SMTRAT_EXIT_SUCCESS;
 	}
 	if (settings.core.show_settings) {

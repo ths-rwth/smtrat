@@ -14,6 +14,11 @@ namespace smtrat {
 		static const std::string CXXCompiler;
 		static const std::string CXXCompilerVersion;
 		static const std::string GitRevisionSHA1;
+		static const std::string PackageName;
+		static const std::string ProjectName;
+		static const std::string Version;
+		static const std::string Website;
+		static const std::string GitVersion;
 	};
 
 	struct CMakeOptionPrinter {

@@ -1,14 +1,5 @@
 #pragma once
 
-namespace smtrat {
-
-constexpr auto SMTRAT_PACKAGE_NAME = "@PROJECT_NAME@";
-constexpr auto SMTRAT_PROJECT_NAME = "@PROJECT_FULLNAME@";
-constexpr auto SMTRAT_VERSION = "@PROJECT_VERSION@";
-constexpr auto SMTRAT_WEBSITE = "https://github.com/smtrat/smtrat/wiki";
-
-}
-
 #cmakedefine USE_NSS
 
 // Whether the validation in the module should be enabled

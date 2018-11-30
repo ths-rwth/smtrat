@@ -279,7 +279,7 @@ void RuntimeSettingsManager::printHelp() const
         std::cout << std::endl;
     }
     // Print reference to website.
-    std::cout << "For more information, please visit our website at " << SMTRAT_WEBSITE << std::endl;
+    std::cout << "For more information, please visit our website at " << smtrat::CompileInfo::Website << std::endl;
 }
 
 /**
@@ -297,7 +297,7 @@ void RuntimeSettingsManager::printLicense() const
  */
 void RuntimeSettingsManager::printVersion() const 
 {
-    std::cout << SMTRAT_VERSION << std::endl;
+    std::cout << CompileInfo::Version << std::endl;
 }
 
 /**
@@ -313,8 +313,8 @@ void RuntimeSettingsManager::printToC() const
  */
 void RuntimeSettingsManager::printWelcome() const 
 {
-    std::cout << "This is " << SMTRAT_PROJECT_NAME << "." << std::endl;
-    std::cout << "Version: " << SMTRAT_VERSION << std::endl;
+    std::cout << "This is " << smtrat::CompileInfo::ProjectName << "." << std::endl;
+    std::cout << "Version: " << smtrat::CompileInfo::Version << std::endl;
     std::cout << "For more information, run this binary with --help." << std::endl;
     std::cout << std::endl << std::endl;
     printLicense();
@@ -326,7 +326,7 @@ void RuntimeSettingsManager::printInfo() const
     std::cout << "Build type:" << smtrat::CompileInfo::BuildType << std::endl;   
     std::cout << "Code is based on commit " << smtrat::CompileInfo::GitRevisionSHA1 << ". " << std::endl;
     std::cout << "Build on a " << smtrat::CompileInfo::SystemName << " (" << CompileInfo::SystemVersion << ") machine." << std::endl;
-    std::cout << "Version: " << SMTRAT_VERSION << std::endl;
+    std::cout << "Version: " << smtrat::CompileInfo::Version << std::endl;
 }
 
 }
