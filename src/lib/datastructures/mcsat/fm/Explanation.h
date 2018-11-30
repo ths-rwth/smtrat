@@ -65,7 +65,7 @@ struct ConflictGenerator {
 	 */
 
 
-	#define yield(callback, result) if (callback(std::move(result))) { return; }
+	#define mcsat_yield(callback, result) if (callback(std::move(result))) { return; }
 
 	
 private:
@@ -194,7 +194,7 @@ public:
 					expl.emplace_back(ConstraintT(-q, b.relation()));
 
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explanation: " << expl[0].negated() << " && " << expl[1].negated() << " -> " << expl[2]);
-					yield(callback, expl);
+					mcsat_yield(callback, expl);
 				}
 
 				continue;
@@ -265,7 +265,7 @@ public:
 					continue;
 				}
 
-				yield(callback, conflictLowerAndUpperBound(lower, upper));
+				mcsat_yield(callback, conflictLowerAndUpperBound(lower, upper));
 			}
 		}
 
@@ -276,7 +276,7 @@ public:
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Considering equality " << eq.constr);
 			auto it = mInequalities.find(eq.r);
 			if (it != mInequalities.end()) {
-				yield(callback, conflictEqualityAndInequality(eq, it->second));
+				mcsat_yield(callback, conflictEqualityAndInequality(eq, it->second));
 			}
 		}
 
@@ -284,7 +284,7 @@ public:
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Considering lower bound " << bounds.first << " and upper bound " << bounds.second);
 			auto it = mInequalities.find(bounds.first.r);
 			if (it != mInequalities.end()) {
-				yield(callback, conflictInequalitiesAndInequality(bounds.first, bounds.second, it->second));
+				mcsat_yield(callback, conflictInequalitiesAndInequality(bounds.first, bounds.second, it->second));
 			}
 		}
 	}

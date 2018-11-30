@@ -1,27 +1,27 @@
 #pragma once
 
-#include "../solver/Manager.h"
+#include <lib/solver/Manager.h>
 
-#include "../modules/BEModule/BEModule.h"
-#include "../modules/BVModule/BVModule.h"
-#include "../modules/CADModule/CADModule.h"
-#include "../modules/CNFerModule/CNFerModule.h"
-#include "../modules/EMModule/EMModule.h"
-#include "../modules/EQModule/EQModule.h"
-#include "../modules/EQPreprocessingModule/EQPreprocessingModule.h"
-#include "../modules/ESModule/ESModule.h"
-#include "../modules/FouMoModule/FouMoModule.h"
-#include "../modules/FPPModule/FPPModule.h"
-#include "../modules/GBModule/GBModule.h"
-#include "../modules/ICPModule/ICPModule.h"
-#include "../modules/IncWidthModule/IncWidthModule.h"
-#include "../modules/IntBlastModule/IntBlastModule.h"
-#include "../modules/IntEqModule/IntEqModule.h"
-#include "../modules/LRAModule/LRAModule.h"
-#include "../modules/PFEModule/PFEModule.h"
-#include "../modules/SATModule/SATModule.h"
-#include "../modules/SplitSOSModule/SplitSOSModule.h"
-#include "../modules/VSModule/VSModule.h"
+#include <smtrat-modules/BEModule/BEModule.h>
+#include <smtrat-modules/BVModule/BVModule.h>
+#include <smtrat-modules/CADModule/CADModule.h>
+#include <smtrat-modules/CNFerModule/CNFerModule.h>
+#include <smtrat-modules/EMModule/EMModule.h>
+#include <smtrat-modules/EQModule/EQModule.h>
+#include <smtrat-modules/EQPreprocessingModule/EQPreprocessingModule.h>
+#include <smtrat-modules/ESModule/ESModule.h>
+#include <smtrat-modules/FouMoModule/FouMoModule.h>
+#include <smtrat-modules/FPPModule/FPPModule.h>
+#include <smtrat-modules/GBModule/GBModule.h>
+#include <smtrat-modules/ICPModule/ICPModule.h>
+#include <smtrat-modules/IncWidthModule/IncWidthModule.h>
+#include <smtrat-modules/IntBlastModule/IntBlastModule.h>
+#include <smtrat-modules/IntEqModule/IntEqModule.h>
+#include <smtrat-modules/LRAModule/LRAModule.h>
+#include <smtrat-modules/PFEModule/PFEModule.h>
+#include <smtrat-modules/SATModule/SATModule.h>
+#include <smtrat-modules/SplitSOSModule/SplitSOSModule.h>
+#include <smtrat-modules/VSModule/VSModule.h>
 
 namespace smtrat
 {
