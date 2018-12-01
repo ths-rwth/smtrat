@@ -96,10 +96,6 @@ int main( int argc, char* argv[] )
 
     // Construct the settingsManager.
     smtrat::RuntimeSettingsManager settingsManager;
-    // Introduce the smtrat core settingsObjects to the manager.
-    #ifdef SMTRAT_DEVOPTION_Validation
-    settingsManager.addSettingsObject( "validation", smtrat::Module::validationSettings );
-    #endif
     // Introduce the settings object for the statistics to the manager.
     #ifdef SMTRAT_DEVOPTION_Statistics
     settingsManager.addSettingsObject("stats", smtrat::CollectStatistics::settings);

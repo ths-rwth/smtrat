@@ -1929,7 +1929,7 @@ namespace smtrat
                             cout << "  }" << endl;
                             #endif
                             #ifdef SMTRAT_DEVOPTION_Validation
-                            if( validationSettings->logTCalls() )
+                            if (Settings().validation.log_theory_calls)
                             {
                                 smtrat::ConstraintsT constraints;
                                 for( auto cond = conflict.begin(); cond != conflict.end(); ++cond )

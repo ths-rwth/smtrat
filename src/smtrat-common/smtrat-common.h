@@ -4,8 +4,6 @@
 #include "CompileInfo.h"
 #include "logging.h"
 
-#include "ValidationSettings.h"
-
 #include "settings/Settings.h"
 
 #include <carl/core/MultivariatePolynomial.h>

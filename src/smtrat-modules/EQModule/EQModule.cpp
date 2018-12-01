@@ -1525,8 +1525,9 @@ namespace smtrat {
 				mStatistics->countDeducedUnassignedLiterals();
 #endif
                 #ifdef SMTRAT_DEVOPTION_Validation
-                if( validationSettings->logLemmata() )
+				if (Settings().validation.log_lemmata) {
                     addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName() + "_lemma_1" );
+				}
                 #endif
 				addLemma(or_);
 			} else {
@@ -1577,7 +1578,7 @@ namespace smtrat {
 					mStatistics->countDeducedUnassignedLiterals();
 #endif
 					#ifdef SMTRAT_DEVOPTION_Validation
-                    if( validationSettings->logLemmata() )
+                    if (Settings().validation.log_lemmata)
                         addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName() + "_lemma_2" );
                     #endif
                     addLemma(or_);
@@ -1629,7 +1630,7 @@ namespace smtrat {
 								innerformulas.insert(rhs);
 								FormulaT or_(carl::OR, std::move(innerformulas));
 								#ifdef SMTRAT_DEVOPTION_Validation
-                                if( validationSettings->logLemmata() )
+                                if (Settings().validation.log_lemmata)
                                     addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName() + "_lemma_3" );
                                 #endif
                                 addLemma(or_);
@@ -1645,7 +1646,7 @@ namespace smtrat {
 				outerformulas.insert(FormulaT(i->first, j->first, false));
 				FormulaT or_(carl::OR, std::move(outerformulas));
                 #ifdef SMTRAT_DEVOPTION_Validation
-                if( validationSettings->logLemmata() )
+                if (Settings().validation.log_lemmata)
                     addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName() + "_lemma_4" );
                 #endif
 				addLemma(or_);

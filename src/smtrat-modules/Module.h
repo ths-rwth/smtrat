@@ -254,11 +254,6 @@ namespace smtrat
             /// Reusable splitting variables.
             static std::vector<FormulaT> mOldSplittingVariables;
 
-            #ifdef SMTRAT_DEVOPTION_Validation
-            /// The types of validations to involve.
-            static ValidationSettings* validationSettings;
-            #endif
-
             // Main interfaces
             
             /**
@@ -503,8 +498,9 @@ namespace smtrat
             void addLemma( const FormulaT& _lemma, const LemmaType& _lt = LemmaType::NORMAL, const FormulaT& _preferredFormula = FormulaT( carl::FormulaType::TRUE ) )
             {
                 #ifdef SMTRAT_DEVOPTION_Validation
-                if( validationSettings->logLemmata() )
+                if (Settings().validation.log_lemmata) {
                     addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, _lemma ), false, moduleName() + "_lemma" );
+                }
                 #endif
                 mLemmas.emplace_back( _lemma, _lt, _preferredFormula );
             }

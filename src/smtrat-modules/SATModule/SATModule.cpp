@@ -3915,8 +3915,9 @@ NextClause:
                     {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Found a lemma: " << lem.mLemma);
                         #ifdef SMTRAT_DEVOPTION_Validation
-                        if( validationSettings->logLemmata() )
+                        if (Settings().validation.log_lemmata) {
                             addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, lem.mLemma ), false, (*backend)->moduleName() + "_lemma" );
+                        }
                         #endif
                         int numOfLearnts = mLemmas.size();
                         /*{
@@ -3953,8 +3954,9 @@ NextClause:
             {
                 assert( !infsubset->empty() );
                 #ifdef SMTRAT_DEVOPTION_Validation
-                if( validationSettings->logInfSubsets() )
+                if (Settings().validation.log_infeasible_subsets) {
                     addAssumptionToCheck( *infsubset, false, (*backend)->moduleName() + "_infeasible_subset" );
+                }
                 #endif
                 // Add the according literals to the conflict clause.
                 vec<Lit> explanation;

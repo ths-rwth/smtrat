@@ -47,7 +47,7 @@ struct Settings: public carl::Singleton<Settings> {
 
 }
 
-inline const auto& Settings() {
+inline const settings::Settings& Settings() {
 	return settings::Settings::getInstance();
 }
 

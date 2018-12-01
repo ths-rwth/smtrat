@@ -44,10 +44,6 @@ namespace smtrat
 	std::mutex  Module::mOldSplittingVarMutex;
 #endif
 
-    #ifdef SMTRAT_DEVOPTION_Validation
-    ValidationSettings* Module::validationSettings = new ValidationSettings();
-    #endif
-
     // Constructor.
     
     Module::Module( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager ):
@@ -138,8 +134,7 @@ namespace smtrat
 		SMTRAT_LOG_DEBUG("smtrat.module", "Status: " << result);
         assert( result != UNSAT || hasValidInfeasibleSubset() );
         #ifdef SMTRAT_DEVOPTION_Validation
-        if( validationSettings->logTCalls() )
-        {
+        if (Settings().validation.log_theory_calls) {
             if( result != UNKNOWN && !mpReceivedFormula->empty() )
             {
                 addAssumptionToCheck( *mpReceivedFormula, result, moduleName() );
@@ -766,8 +761,9 @@ namespace smtrat
         {
             assert( !infSubSet->empty() );
             #ifdef SMTRAT_DEVOPTION_Validation
-            if( validationSettings->logInfSubsets() )
+            if (Settings().validation.log_infeasible_subsets) {
                 addAssumptionToCheck( *infSubSet, false, _backend.moduleName() + "_infeasible_subset" );
+            }
             #endif
             result.emplace_back();
             for( const auto& cons : *infSubSet )
@@ -986,8 +982,7 @@ namespace smtrat
         {
             (*module)->collectTheoryPropagations();
             #ifdef SMTRAT_DEVOPTION_Validation
-            if( validationSettings->logLemmata() )
-            {
+            if (Settings().validation.log_lemmata) {
                 for( const auto& tp : (*module)->mTheoryPropagations )
                 {
                     FormulaT theoryPropagation( FormulaType::IMPLIES, FormulaT( FormulaType::AND, tp.mPremise ), tp.mConclusion );
@@ -1139,7 +1134,7 @@ namespace smtrat
         if( !Module::mAssumptionToCheck.empty() )
         {
             ofstream smtlibFile;
-            smtlibFile.open( validationSettings->path() );
+            smtlibFile.open(Settings().validation.log_filename);
             for( const auto& assum : Module::mAssumptionToCheck )
             { 
                 // For each assumption add a new solver-call by resetting the search state.
