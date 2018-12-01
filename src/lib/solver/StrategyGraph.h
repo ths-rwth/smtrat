@@ -22,15 +22,10 @@ namespace smtrat {
 
 	template<typename Module>
 	struct ModuleFactory: public AbstractModuleFactory {
-	protected:
-		RuntimeSettings* mSettings;
 	public:
-		ModuleFactory(RuntimeSettings* settings = nullptr): AbstractModuleFactory(), mSettings(settings) {}
-		~ModuleFactory() {
-			delete mSettings;
-		}
+		ModuleFactory(): AbstractModuleFactory() {}
 		Module* create(const ModuleInput* _formula, Conditionals& _conditionals, Manager* const _manager) {
-			return new Module(_formula, mSettings, _conditionals, _manager);
+			return new Module(_formula, _conditionals, _manager);
 		}
 		std::string moduleName() const {
 			return Module::SettingsType::moduleName;

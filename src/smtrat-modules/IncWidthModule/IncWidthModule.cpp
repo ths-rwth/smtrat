@@ -17,7 +17,7 @@ namespace smtrat
      */
 
     template<class Settings>
-    IncWidthModule<Settings>::IncWidthModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+    IncWidthModule<Settings>::IncWidthModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager ):
         Module( _formula, _conditionals, _manager ),
         mRestartCheck( true ),
         mHalfOfCurrentWidth( carl::pow( Rational(Settings::increment), Settings::start_width-1 ) ),
@@ -25,7 +25,6 @@ namespace smtrat
         mVarBounds(),
         mICPFormula( nullptr ),
         mICPFoundAnswer(),
-        mICPRuntimeSettings( nullptr ),
         mICP( nullptr ),
         mICPFormulaPositions()
     {
@@ -33,8 +32,7 @@ namespace smtrat
         {
             mICPFormula = new ModuleInput();
             mICPFoundAnswer.push_back( new std::atomic_bool( false ) );
-            mICPRuntimeSettings = new RuntimeSettings();
-            mICP = new ICPModule<ICPSettings4>( mICPFormula, mICPRuntimeSettings, mICPFoundAnswer );
+            mICP = new ICPModule<ICPSettings4>( mICPFormula, mICPFoundAnswer );
 
         }
     }
@@ -51,7 +49,6 @@ namespace smtrat
                 delete toDel;
             }
             mICPFoundAnswer.clear();
-            delete mICPRuntimeSettings;
             delete mICPFormula;
             delete mICP;
         }

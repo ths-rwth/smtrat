@@ -3,28 +3,28 @@
  */
 #pragma once
 
-#include "../solver/Manager.h"
-#include "../modules/FPPModule/FPPModule.h"
-#include "../modules/IncWidthModule/IncWidthModule.h"
-#include "../modules/IntBlastModule/IntBlastModule.h"
-#include "../modules/SATModule/SATModule.h"
-#include "../modules/LRAModule/LRAModule.h"
-#include "../modules/VSModule/VSModule.h"
-#include "../modules/NewCADModule/NewCADModule.h"
-#include "../modules/FPPModule/FPPModule.h"
-#include "../modules/SATModule/SATModule.h"
-#include "../modules/ICPModule/ICPModule.h"
-#include "../modules/VSModule/VSModule.h"
-#include "../modules/CADModule/CADModule.h"
-#include "../modules/FPPModule/FPPModule.h"
-#include "../modules/SATModule/SATModule.h"
-#include "../modules/CubeLIAModule/CubeLIAModule.h"
-#include "../modules/LRAModule/LRAModule.h"
-#include "../modules/SATModule/SATModule.h"
-#include "../modules/LRAModule/LRAModule.h"
-#include "../modules/FPPModule/FPPModule.h"
-#include "../modules/SATModule/SATModule.h"
-#include "../modules/LRAModule/LRAModule.h"
+#include <lib/solver/Manager.h>
+#include <smtrat-modules/FPPModule/FPPModule.h>
+#include <smtrat-modules/IncWidthModule/IncWidthModule.h>
+#include <smtrat-modules/IntBlastModule/IntBlastModule.h>
+#include <smtrat-modules/SATModule/SATModule.h>
+#include <smtrat-modules/LRAModule/LRAModule.h>
+#include <smtrat-modules/VSModule/VSModule.h>
+#include <smtrat-modules/NewCADModule/NewCADModule.h>
+#include <smtrat-modules/FPPModule/FPPModule.h>
+#include <smtrat-modules/SATModule/SATModule.h>
+#include <smtrat-modules/ICPModule/ICPModule.h>
+#include <smtrat-modules/VSModule/VSModule.h>
+#include <smtrat-modules/CADModule/CADModule.h>
+#include <smtrat-modules/FPPModule/FPPModule.h>
+#include <smtrat-modules/SATModule/SATModule.h>
+#include <smtrat-modules/CubeLIAModule/CubeLIAModule.h>
+#include <smtrat-modules/LRAModule/LRAModule.h>
+#include <smtrat-modules/SATModule/SATModule.h>
+#include <smtrat-modules/LRAModule/LRAModule.h>
+#include <smtrat-modules/FPPModule/FPPModule.h>
+#include <smtrat-modules/SATModule/SATModule.h>
+#include <smtrat-modules/LRAModule/LRAModule.h>
 
 namespace smtrat
 {

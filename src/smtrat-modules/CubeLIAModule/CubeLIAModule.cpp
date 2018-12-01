@@ -12,7 +12,7 @@
 namespace smtrat
 {
     template<class Settings>
-    CubeLIAModule<Settings>::CubeLIAModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager):
+    CubeLIAModule<Settings>::CubeLIAModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
         Module( _formula, _conditionals, _manager ),
         mModelUpdated(false),
         mIntToRealVarMap(),
@@ -20,8 +20,7 @@ namespace smtrat
         mCubifications(),
         mLRAFormula( new ModuleInput() ),
         mLRAFoundAnswer( std::vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
-        mLRARuntimeSettings( new RuntimeSettings() ),
-        mLRA( mLRAFormula, mLRARuntimeSettings, mLRAFoundAnswer )
+        mLRA( mLRAFormula, mLRAFoundAnswer )
 #ifdef SMTRAT_DEVOPTION_Statistics
         , mStatistics(Settings::moduleName)
 #endif
@@ -37,7 +36,6 @@ namespace smtrat
             delete toDel;
         }
         mLRAFoundAnswer.clear();
-        delete mLRARuntimeSettings;
         delete mLRAFormula;
     }
 

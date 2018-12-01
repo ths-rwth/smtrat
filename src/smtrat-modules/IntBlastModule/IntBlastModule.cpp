@@ -18,7 +18,7 @@ namespace smtrat
      */
 
     template<class Settings>
-    IntBlastModule<Settings>::IntBlastModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+    IntBlastModule<Settings>::IntBlastModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager ):
     Module( _formula, _conditionals, _manager ),
     mBoundsFromInput(),
     mBoundsInRestriction(),
@@ -26,8 +26,7 @@ namespace smtrat
     mNonlinearInputVariables(),
     mpICPInput(new ModuleInput()),
     mICPFoundAnswer( std::vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
-    mpICPRuntimeSettings(new RuntimeSettings()),
-    mICP(mpICPInput, mpICPRuntimeSettings, mICPFoundAnswer),
+    mICP(mpICPInput, mICPFoundAnswer),
     mConstraintFromBounds(carl::freshBooleanVariable()),
     mProcessedFormulasFromICP(),
     mpBVInput(new ModuleInput()),
@@ -58,7 +57,6 @@ namespace smtrat
             delete toDel;
         }
         mICPFoundAnswer.clear();
-        delete mpICPRuntimeSettings;
 
         delete mpBVSolver;
         delete mpBVInput;

@@ -13,7 +13,7 @@
 namespace smtrat
 {
     template<class Settings>
-    FouMoModule<Settings>::FouMoModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+    FouMoModule<Settings>::FouMoModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager ):
         Module( _formula, _conditionals, _manager ),
         mProc_Constraints(),
         mRecent_Constraints(),

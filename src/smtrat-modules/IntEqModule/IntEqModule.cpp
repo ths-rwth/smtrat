@@ -17,7 +17,7 @@ namespace smtrat
      */
 
     template<class Settings>
-    IntEqModule<Settings>::IntEqModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+    IntEqModule<Settings>::IntEqModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager ):
         Module( _formula, _conditionals, _manager ),
         mProc_Constraints(),
         mRecent_Constraints(),    

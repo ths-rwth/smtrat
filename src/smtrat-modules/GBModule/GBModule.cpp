@@ -28,13 +28,12 @@ namespace smtrat
 {
 
 template<class Settings>
-GBModule<Settings>::GBModule( const ModuleInput* const _formula, RuntimeSettings* settings, Conditionals& _conditionals, Manager* const _manager ):
+GBModule<Settings>::GBModule( const ModuleInput* const _formula, Conditionals& _conditionals, Manager* const _manager ):
         Module( _formula, _conditionals, _manager ),
     mBasis( ),
     mInequalities( this ),
     mStateHistory( ),
-    mRecalculateGB(false),
-    mRuntimeSettings(static_cast<GBRuntimeSettings*>(settings))
+    mRecalculateGB(false)
 #ifdef SMTRAT_DEVOPTION_Statistics
     ,
     mStats(GBModuleStats::getInstance(Settings::identifier)),

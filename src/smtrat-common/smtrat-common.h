@@ -4,7 +4,6 @@
 #include "CompileInfo.h"
 #include "logging.h"
 
-#include "RuntimeSettings.h"
 #include "ValidationSettings.h"
 
 #include "settings/Settings.h"

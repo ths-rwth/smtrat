@@ -12,7 +12,7 @@
 namespace smtrat
 {
     template<class Settings>
-    EMModule<Settings>::EMModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+    EMModule<Settings>::EMModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager ):
         PModule( _formula, _conditionals, _manager ),
         mVisitor()
     {

@@ -26,7 +26,7 @@ namespace smtrat
 			std::string moduleName() const {
 				return SettingsType::moduleName;
 			}
-			SymmetryModule(const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = nullptr);
+			SymmetryModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
 
 			~SymmetryModule();
 			

@@ -18,7 +18,7 @@ namespace smtrat {
 	 * Constructors.
 	 */
 	template<class Settings>
-	EQModule<Settings>::EQModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+	EQModule<Settings>::EQModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager ):
 		Module( _formula, _conditionals, _manager ),
 		mLocalSplitAge(0), mGlobalSplitAge(0),
 		mBfsQueue(Settings::initial_bfsqueue_capacity),

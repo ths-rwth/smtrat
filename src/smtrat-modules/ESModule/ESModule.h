@@ -31,7 +31,7 @@ namespace smtrat
 			std::string moduleName() const {
 				return SettingsType::moduleName;
 			}
-            ESModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+            ESModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~ESModule();
 

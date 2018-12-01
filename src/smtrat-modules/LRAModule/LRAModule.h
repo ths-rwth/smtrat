@@ -129,7 +129,7 @@ namespace smtrat
              * @param _conditionals Vector of Booleans: If any of them is true, we have to terminate a running check procedure.
              * @param _manager A reference to the manager of the solver using this module.
              */
-            LRAModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+            LRAModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = NULL );
 
             /**
              * Destructs this LRAModule.

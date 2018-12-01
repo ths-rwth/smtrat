@@ -7,8 +7,6 @@
 
 // Compile time settings structures
 #include "GBSettings.h"
-// Runtime settings class
-#include "GBRuntimeSettings.h"
 
 #include "VariableRewriteRule.h"
 #ifdef SMTRAT_DEVOPTION_Statistics

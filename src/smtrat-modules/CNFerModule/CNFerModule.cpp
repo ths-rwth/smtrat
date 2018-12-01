@@ -12,7 +12,7 @@ using namespace carl;
 
 namespace smtrat
 {
-    CNFerModule::CNFerModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
+    CNFerModule::CNFerModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* const _manager ):
         PModule( _formula, _conditionals, _manager )
     {
         #ifdef SMTRAT_DEVOPTION_Statistics

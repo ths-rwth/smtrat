@@ -11,7 +11,7 @@
 namespace smtrat
 {
     template<class Settings>
-    BEModule<Settings>::BEModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager ):
+    BEModule<Settings>::BEModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager ):
         PModule( _formula, _conditionals, _manager ),
         mVisitor()
     {

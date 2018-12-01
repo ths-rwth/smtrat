@@ -136,7 +136,7 @@ namespace smtrat
 				return SettingsType::moduleName;
 			}
 			
-			STropModule(const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = nullptr);
+			STropModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
 			
 			/**
 			 * The module has to take the given sub-formula of the received formula into account.

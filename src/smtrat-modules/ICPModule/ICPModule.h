@@ -101,7 +101,6 @@ namespace smtrat
             
             ModuleInput* mValidationFormula; // ReceivedFormula of the internal LRA Module
             smtrat::Conditionals mLRAFoundAnswer;
-            RuntimeSettings* mLraRuntimeSettings;
             LRAModule<LRASettingsICP> mLRA; // internal LRA module
             
             std::queue<FormulasT> mBoxStorage; // keeps the box before contraction
@@ -139,7 +138,7 @@ return SettingsType::moduleName;
             /**
              * Constructors:
              */
-            ICPModule( const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            ICPModule( const ModuleInput*, Conditionals&, Manager* const = NULL );
 
             /**
             * Destructor:

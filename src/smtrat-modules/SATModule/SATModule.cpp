@@ -57,7 +57,7 @@ namespace smtrat
                                           DoubleRange( 0, false, HUGE_VAL, false ) );
 
     template<class Settings>
-    SATModule<Settings>::SATModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _foundAnswer, Manager* const _manager ):
+    SATModule<Settings>::SATModule( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* const _manager ):
         Module( _formula, _foundAnswer, _manager ),
         // Parameters (user settable):
         verbosity( 0 ),

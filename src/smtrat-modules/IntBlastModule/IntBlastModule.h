@@ -467,7 +467,6 @@ namespace smtrat
 
             ModuleInput* mpICPInput; // ReceivedFormula of the internal ICP Module
             std::vector<std::atomic_bool*> mICPFoundAnswer;
-            RuntimeSettings* mpICPRuntimeSettings;
             ICPModule<ICPSettings1> mICP;
             FormulaT mConstraintFromBounds;
             FormulasT mProcessedFormulasFromICP;
@@ -490,7 +489,7 @@ namespace smtrat
 std::string moduleName() const {
 return SettingsType::moduleName;
 }
-            IntBlastModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+            IntBlastModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~IntBlastModule();
 

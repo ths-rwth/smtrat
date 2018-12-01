@@ -11,7 +11,7 @@
 namespace smtrat
 {
 	template<class Settings>
-	PBGaussModule<Settings>::PBGaussModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager):
+	PBGaussModule<Settings>::PBGaussModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
 	Module( _formula, _conditionals, _manager )
 #ifdef SMTRAT_DEVOPTION_Statistics
 	, mStatistics(Settings::moduleName)

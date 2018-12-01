@@ -41,7 +41,6 @@ namespace smtrat
             carl::FastMap<FormulaT,Cubification> mCubifications;
             ModuleInput* mLRAFormula;
             std::vector<std::atomic_bool*> mLRAFoundAnswer;
-            RuntimeSettings* mLRARuntimeSettings;
             LRAModule<LRASettings1> mLRA;
             
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -53,7 +52,7 @@ namespace smtrat
 			std::string moduleName() const {
 				return SettingsType::moduleName;
 			}
-			CubeLIAModule(const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = nullptr);
+			CubeLIAModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
 
 			~CubeLIAModule();
 			

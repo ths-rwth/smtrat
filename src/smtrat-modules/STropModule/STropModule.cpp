@@ -11,7 +11,7 @@
 namespace smtrat
 {
 	template<class Settings>
-	STropModule<Settings>::STropModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager)
+	STropModule<Settings>::STropModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager)
 		: Module(_formula, _conditionals, _manager)
 		, mMoments()
 		, mSeparators()

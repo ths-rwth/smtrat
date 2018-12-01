@@ -77,7 +77,7 @@ namespace smtrat
 std::string moduleName() const {
 return SettingsType::moduleName;
 }
-            CADModule( const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            CADModule( const ModuleInput*, Conditionals&, Manager* const = NULL );
 
             ~CADModule();
 

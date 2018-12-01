@@ -33,7 +33,7 @@
 namespace smtrat
 {
     template<class Settings>
-    ICPModule<Settings>::ICPModule( const ModuleInput* _formula, RuntimeSettings* , Conditionals& _conditionals, Manager* const _manager ):
+    ICPModule<Settings>::ICPModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* const _manager ):
         Module( _formula, _conditionals, _manager ),
         mContractors(),
         mCandidateManager(),
@@ -54,8 +54,7 @@ namespace smtrat
         mHistoryActual(nullptr),
         mValidationFormula(new ModuleInput()),
         mLRAFoundAnswer( std::vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
-        mLraRuntimeSettings(new RuntimeSettings),
-        mLRA(mValidationFormula, mLraRuntimeSettings, mLRAFoundAnswer),
+        mLRA(mValidationFormula, mLRAFoundAnswer),
         mBoxStorage(),
         mIsIcpInitialized(false),
         mSplitOccurred(false),
@@ -90,7 +89,6 @@ namespace smtrat
             delete toDel;
         }
         mLRAFoundAnswer.clear();
-        delete mLraRuntimeSettings;
         delete mHistoryRoot;
         delete mValidationFormula;
         for( auto variableIt = mVariables.begin(); variableIt != mVariables.end(); ++variableIt )

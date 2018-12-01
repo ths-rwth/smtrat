@@ -156,7 +156,7 @@ namespace smtrat
 				return SettingsType::moduleName;
 			}
 			
-			CSplitModule(const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = nullptr);
+			CSplitModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
 			
 			/**
 			 * The module has to take the given sub-formula of the received formula into account.

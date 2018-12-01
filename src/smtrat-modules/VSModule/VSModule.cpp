@@ -19,7 +19,7 @@ namespace smtrat
 {
 	using namespace vs;
     template<class Settings>
-    VSModule<Settings>::VSModule( const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager ):
+    VSModule<Settings>::VSModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* const _manager ):
         Module( _formula, _conditionals, _manager ),
         mConditionsChanged( false ),
         mInconsistentConstraintAdded( false ),

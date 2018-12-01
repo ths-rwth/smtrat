@@ -10,7 +10,7 @@ namespace smtrat {
 		public:
 			ModuleWrapper() :
 				input(),
-				module(&input, nullptr, conditionals, nullptr)
+				module(&input, conditionals, nullptr)
 			{}
 
 			M& get() noexcept { return module; }

@@ -92,7 +92,7 @@ namespace smtrat
 std::string moduleName() const {
 return SettingsType::moduleName;
 }
-			EQPreprocessingModule(const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL);
+			EQPreprocessingModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = NULL);
 			~EQPreprocessingModule();
 
 			void updateModel() const;

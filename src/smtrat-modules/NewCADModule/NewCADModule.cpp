@@ -13,7 +13,7 @@
 namespace smtrat
 {
 	template<class Settings>
-	NewCADModule<Settings>::NewCADModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager):
+	NewCADModule<Settings>::NewCADModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
 		Module( _formula, _conditionals, _manager ),
 #ifdef SMTRAT_DEVOPTION_Statistics
 		mStatistics(Settings::moduleName),

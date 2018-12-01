@@ -6,7 +6,7 @@
 #pragma once
 
 #include <iostream>
-#include <smtrat-common/smtrat-common.h>
+#include <smtrat-common/RuntimeSettings.h>
 
 namespace smtrat {
 class StatisticSettings : public RuntimeSettings

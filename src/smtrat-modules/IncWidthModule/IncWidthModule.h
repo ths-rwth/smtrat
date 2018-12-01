@@ -31,7 +31,6 @@ namespace smtrat
             ///
             ModuleInput* mICPFormula;
             std::vector<std::atomic_bool*> mICPFoundAnswer;
-            RuntimeSettings* mICPRuntimeSettings;
             ICPModule<ICPSettings4>* mICP;
             carl::FastMap<FormulaT,ModuleInput::iterator> mICPFormulaPositions;
             
@@ -44,7 +43,7 @@ namespace smtrat
                 return SettingsType::moduleName;
             }
             
-            IncWidthModule( const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = NULL );
+            IncWidthModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~IncWidthModule();
 

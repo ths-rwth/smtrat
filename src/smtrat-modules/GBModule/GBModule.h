@@ -22,8 +22,6 @@
 
 // Compile time settings structures
 #include "GBSettings.h"
-// Runtime settings class
-#include "GBRuntimeSettings.h"
 #include "RewriteRules.h"
 
 #include "VariableRewriteRule.h"
@@ -68,8 +66,6 @@ protected:
     bool mRecalculateGB;
     /// A list of inequalities which were added after the last consistency check.
     std::list<typename InequalitiesTable<Settings>::Rows::iterator> mNewInequalities;
-    /// An reference to the RuntimeSettings
-    GBRuntimeSettings* mRuntimeSettings;
     /// The rewrite rules for the variables
     groebner::RewriteRules mRewriteRules;
 
@@ -81,7 +77,7 @@ protected:
     FormulasT mGbEqualities;
 
 public:
-    GBModule( const ModuleInput* const, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+    GBModule( const ModuleInput* const, Conditionals&, Manager* const = NULL );
     virtual ~GBModule( );
 
     bool addCore( ModuleInput::const_iterator _formula );

@@ -29,7 +29,7 @@ namespace smtrat
             /**
              * Constructs a CNFerModule.
              */
-            CNFerModule( const ModuleInput*, RuntimeSettings*, Conditionals&, Manager* const = NULL );
+            CNFerModule( const ModuleInput*, Conditionals&, Manager* const = NULL );
 
             /**
              * Destructs a CNFerModule.

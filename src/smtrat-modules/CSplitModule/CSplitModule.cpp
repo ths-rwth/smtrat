@@ -13,7 +13,7 @@
 namespace smtrat
 {
 	template<class Settings>
-	CSplitModule<Settings>::CSplitModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager)
+	CSplitModule<Settings>::CSplitModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager)
 		: Module( _formula, _conditionals, _manager )
 		, mPurifications()
 		, mExpansions()

@@ -106,7 +106,7 @@ namespace smtrat
 			std::string moduleName() const {
 				return SettingsType::moduleName;
 			}
-			CoCoAGBModule(const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = nullptr);
+			CoCoAGBModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
 
 			~CoCoAGBModule();
 			

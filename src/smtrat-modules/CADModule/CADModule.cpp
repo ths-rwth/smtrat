@@ -30,7 +30,7 @@ namespace smtrat
 {
 
 	template<typename Settings>
-	CADModule<Settings>::CADModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* const _manager):
+	CADModule<Settings>::CADModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* const _manager):
 		Module(_formula, _conditionals, _manager),
 		mCAD(_conditionals),
 		mConstraints(),
