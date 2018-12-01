@@ -79,9 +79,9 @@ int main( int argc, char* argv[] )
 #endif
 	SMTRAT_LOG_INFO("smtrat", "Starting smtrat.");
 
-	smtrat::SettingsParser parser;
+	auto& parser = smtrat::SettingsParser::getInstance();
+	parser.finalize();
 	parser.parse_options(argc, argv);
-	const auto& settings = smtrat::Settings();
 
 	{
 		// handle easy options of CoreSettings
@@ -102,7 +102,7 @@ int main( int argc, char* argv[] )
     #endif
 
     // Parse command line.
-    pathToInputFile = settingsManager.parseCommandline( argc, argv );
+    //pathToInputFile = settingsManager.parseCommandline( argc, argv );
 
     #ifdef SMTRAT_DEVOPTION_Statistics
     smtrat::CollectStatistics::settings->setPrintStats( settingsManager.printStatistics() );
@@ -111,7 +111,7 @@ int main( int argc, char* argv[] )
     // Construct solver.
     CMakeStrategySolver strategy;
 
-	if (settings.solver.print_strategy) {
+	if (smtrat::settings_solver().print_strategy) {
 		strategy.printStrategyGraph();
 		return SMTRAT_EXIT_SUCCESS;
 	}
@@ -126,19 +126,19 @@ int main( int argc, char* argv[] )
 
 
 	int exitCode = 0;
-	if (settings.parser.read_dimacs) {
-		exitCode = smtrat::run_dimacs_file(strategy, settings.parser.input_file);
-	} else if (settings.parser.read_opb) {
-		exitCode = smtrat::run_opb_file(strategy, settings.parser.input_file);
-	} else if (settings.solver.preprocess) {
-		exitCode = smtrat::preprocess_file(settings.parser.input_file, settings.solver.preprocess_output_file);
+	if (smtrat::settings_parser().read_dimacs) {
+		exitCode = smtrat::run_dimacs_file(strategy, smtrat::settings_parser().input_file);
+	} else if (smtrat::settings_parser().read_opb) {
+		exitCode = smtrat::run_opb_file(strategy, smtrat::settings_parser().input_file);
+	} else if (smtrat::settings_solver().preprocess) {
+		exitCode = smtrat::preprocess_file(smtrat::settings_parser().input_file, smtrat::settings_solver().preprocess_output_file);
 	} else {
 		// Parse input.
 		try {
 
 			auto e = smtrat::Executor<CMakeStrategySolver>(strategy);
 			if (settingsManager.exportDIMACS()) e.exportDIMACS = true;
-			exitCode = smtrat::executeFile(pathToInputFile, e);
+			exitCode = smtrat::executeFile(smtrat::settings_parser().input_file, e);
 
 			if (e.lastAnswer == smtrat::Answer::SAT) {
 			if (settingsManager.printModel()) strategy.printAssignment();
@@ -150,7 +150,7 @@ int main( int argc, char* argv[] )
 		}
 	}
 
-	if (settings.solver.print_timings) {
+	if (smtrat::settings_solver().print_timings) {
 		smtrat::options_detail::print_timings(strategy);
 	}
 

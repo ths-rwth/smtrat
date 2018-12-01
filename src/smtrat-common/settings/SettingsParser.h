@@ -1,7 +1,7 @@
 #pragma once
 
 #include <boost/program_options.hpp>
-
+#include <carl/util/Singleton.h>
 #include <iostream>
 
 namespace smtrat {
@@ -23,20 +23,29 @@ std::ostream& operator<<(std::ostream& os, SettingsPrinter);
 
 }
 
-class SettingsParser {
+class SettingsParser: public carl::Singleton<SettingsParser> {
 	friend std::ostream& settings::operator<<(std::ostream& os, settings::OptionPrinter);
 	friend std::ostream& settings::operator<<(std::ostream& os, settings::SettingsPrinter);
+	friend carl::Singleton<SettingsParser>;
 private:
 	char* argv_zero = nullptr;
 	po::positional_options_description mPositional;
-	po::options_description mOptionsCore;
-	po::options_description mOptionsParser;
-	po::options_description mOptionsSolver;
-	po::options_description mOptionsValidation;
-	po::options_description mOptions;
+	po::options_description mAllOptions;
 	po::variables_map mValues;
-public:
+
+	std::vector<po::options_description> mOptions;
 	SettingsParser();
+public:
+
+	void finalize() {
+		for (const auto& po: mOptions)
+			mAllOptions.add(po);
+	}
+
+	po::options_description& add(const std::string& title) {
+		mOptions.emplace_back(po::options_description(title));
+		return mOptions.back();
+	}
 
 	bool parse_options(int argc, char* argv[]);
 

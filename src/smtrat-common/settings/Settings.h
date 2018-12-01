@@ -1,6 +1,8 @@
 #pragma once
 
 #include <carl/util/Singleton.h>
+#include <any>
+#include <map>
 #include <string>
 
 namespace smtrat {
@@ -39,16 +41,54 @@ struct ValidationSettings {
 };
 
 struct Settings: public carl::Singleton<Settings> {
+	friend carl::Singleton<Settings>;
+private:
+	std::map<std::string,std::any> mSettings = {
+		{"core", CoreSettings()},
+		{"parser", ParserSettings{}},
+		{"solver", SolverSettings{}},
+		{"validation", ValidationSettings{}}
+	};
+	Settings() = default;
+public:
 	CoreSettings core;
 	ParserSettings parser;
 	SolverSettings solver;
 	ValidationSettings validation;
+
+	template<typename T>
+	T& get(const std::string& name) {
+		auto it = mSettings.find(name);
+		assert(it != mSettings.end());
+		return std::any_cast<T&>(it->second);
+	}
+	template<typename T>
+	void add(const std::string& name) {
+		mSettings.emplace(name, T{});
+	}
 };
 
 }
 
 inline const settings::Settings& Settings() {
 	return settings::Settings::getInstance();
+}
+
+inline const auto& settings_core() {
+	static const auto& s = settings::Settings::getInstance().get<settings::CoreSettings>("core");
+	return s;
+}
+inline const auto& settings_parser() {
+	static const auto& s = settings::Settings::getInstance().get<settings::ParserSettings>("parser");
+	return s;
+}
+inline const auto& settings_solver() {
+	static const auto& s = settings::Settings::getInstance().get<settings::SolverSettings>("solver");
+	return s;
+}
+inline const auto& settings_validation() {
+	static const auto& s = settings::Settings::getInstance().get<settings::ValidationSettings>("validation");
+	return s;
 }
 
 }

@@ -29,10 +29,10 @@ std::ostream& operator<<(std::ostream& os, OptionPrinter op) {
 		os << " " << op.parser.mPositional.name_for_position(i);
 	}
 	os << std::endl;
-	return os << op.parser.mOptions;
+	return os << op.parser.mAllOptions;
 }
 std::ostream& operator<<(std::ostream& os, SettingsPrinter sp) {
-	for (const auto& option: sp.parser.mOptions.options()) {
+	for (const auto& option: sp.parser.mAllOptions.options()) {
 		auto value = sp.parser.mValues[option->canonical_display_name()];
 		os << option->canonical_display_name() << " = " << value.value() << std::endl;
 	}
@@ -41,57 +41,60 @@ std::ostream& operator<<(std::ostream& os, SettingsPrinter sp) {
 
 }
 
-SettingsParser::SettingsParser():
-	mOptionsCore("Core settings"),
-	mOptionsParser("Parser settings"),
-	mOptionsSolver("Solver settings"),
-	mOptionsValidation("Validation settings")
-{
+SettingsParser::SettingsParser() {
 	mPositional.add("input-file", 1);
 
-	auto& s = settings::Settings::getInstance();
+	auto& settings = settings::Settings::getInstance();
 
-	mOptionsCore.add_options()
-		("help", po::bool_switch(&s.core.show_help))
-		("info", po::bool_switch(&s.core.show_info))
-		("version", po::bool_switch(&s.core.show_version))
-		("settings", po::bool_switch(&s.core.show_settings))
-		("cmake-options", po::bool_switch(&s.core.show_cmake_options))
-		("license", po::bool_switch(&s.core.show_license))
-	;
-	mOptions.add(mOptionsCore);
+	{
+		auto& s = settings.get<settings::CoreSettings>("core");
+		add("Core settings").add_options()
+			("help", po::bool_switch(&s.show_help))
+			("info", po::bool_switch(&s.show_info))
+			("version", po::bool_switch(&s.show_version))
+			("settings", po::bool_switch(&s.show_settings))
+			("cmake-options", po::bool_switch(&s.show_cmake_options))
+			("license", po::bool_switch(&s.show_license))
+		;
+	}
 
-	mOptionsParser.add_options()
-		("dimacs", po::bool_switch(&s.parser.read_dimacs))
-		("opb", po::bool_switch(&s.parser.read_opb))
-		("input-file", po::value<std::string>(&s.parser.input_file))
-	;
-	mOptions.add(mOptionsParser);
+	{
+		auto& s = settings.get<settings::ParserSettings>("parser");
+		add("Parser settings").add_options()
+			("dimacs", po::bool_switch(&s.read_dimacs))
+			("opb", po::bool_switch(&s.read_opb))
+			("input-file", po::value<std::string>(&s.input_file))
+		;
+	}
 
-	mOptionsSolver.add_options()
-		("print-model", po::bool_switch(&s.solver.print_model))
-		("print-all-models", po::bool_switch(&s.solver.print_all_models))
-		("preprocess", po::bool_switch(&s.solver.preprocess))
-		("pp-output-file", po::value<std::string>(&s.solver.preprocess_output_file))
-		("statistics", po::bool_switch(&s.solver.print_statistics))
-		("strategy", po::bool_switch(&s.solver.print_strategy))
-		("timings", po::bool_switch(&s.solver.print_timings))
-	;
-	mOptions.add(mOptionsSolver);
+	{
+		auto& s = settings.get<settings::SolverSettings>("solver");
+		add("Solver settings").add_options()
+			("print-model", po::bool_switch(&s.print_model))
+			("print-all-models", po::bool_switch(&s.print_all_models))
+			("preprocess", po::bool_switch(&s.preprocess))
+			("pp-output-file", po::value<std::string>(&s.preprocess_output_file))
+			("statistics", po::bool_switch(&s.print_statistics))
+			("strategy", po::bool_switch(&s.print_strategy))
+			("timings", po::bool_switch(&s.print_timings))
+		;
+	}
 
-	mOptionsValidation.add_options()
-		("log-lemmata", po::bool_switch(&s.validation.log_lemmata))
-		("log-theory-calls", po::bool_switch(&s.validation.log_theory_calls))
-		("log-infeasible-subsets", po::bool_switch(&s.validation.log_infeasible_subsets))
-		("log-filename", po::value<std::string>(&s.validation.log_filename)->default_value("validationlog.smt2"))
-	;
-	mOptions.add(mOptionsValidation);
+	{
+		auto& s = settings.get<settings::ValidationSettings>("validation");
+		add("Validation settings").add_options()
+			("log-lemmata", po::bool_switch(&s.log_lemmata))
+			("log-theory-calls", po::bool_switch(&s.log_theory_calls))
+			("log-infeasible-subsets", po::bool_switch(&s.log_infeasible_subsets))
+			("log-filename", po::value<std::string>(&s.log_filename)->default_value("validationlog.smt2"))
+		;
+	}
 }
 
 bool SettingsParser::parse_options(int argc, char* argv[]) {
 	argv_zero = argv[0];
 	po::store(
-		po::command_line_parser(argc, argv).options(mOptions).positional(mPositional).run(),
+		po::command_line_parser(argc, argv).options(mAllOptions).positional(mPositional).run(),
 		mValues
 	);
 	po::notify(mValues);

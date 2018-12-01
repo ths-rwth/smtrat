@@ -54,29 +54,27 @@ void print_version() {
 }
 
 int handle_basic_options(const SettingsParser& parser) {
-	const auto& settings = smtrat::Settings();
-
-	if (settings.core.show_help) {
+	if (settings_core().show_help) {
 		std::cout << parser.print_help() << std::endl;
 		return SMTRAT_EXIT_SUCCESS;
 	}
-	if (settings.core.show_info) {
+	if (settings_core().show_info) {
 		options_detail::print_info();
 		return SMTRAT_EXIT_SUCCESS;
 	}
-	if (settings.core.show_version) {
+	if (settings_core().show_version) {
 		options_detail::print_version();
 		return SMTRAT_EXIT_SUCCESS;
 	}
-	if (settings.core.show_settings) {
+	if (settings_core().show_settings) {
 		std::cout << parser.print_options() << std::endl;
 		return SMTRAT_EXIT_SUCCESS;
 	}
-	if (settings.core.show_cmake_options) {
+	if (settings_core().show_cmake_options) {
 		options_detail::print_cmake_options();
 		return SMTRAT_EXIT_SUCCESS;
 	}
-	if (settings.core.show_license) {
+	if (settings_core().show_license) {
 		options_detail::print_license();
 		return SMTRAT_EXIT_SUCCESS;
 	}
