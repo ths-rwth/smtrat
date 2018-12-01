@@ -79,9 +79,6 @@ namespace smtrat
      */
     class Module
     {
-        #ifdef SMTRAT_DEVOPTION_Validation
-        friend class ValidationSettings;
-        #endif
         friend Manager;
         public:
             /// For time measuring purposes.
