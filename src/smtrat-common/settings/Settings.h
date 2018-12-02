@@ -1,7 +1,9 @@
 #pragma once
 
 #include <carl/util/Singleton.h>
+
 #include <any>
+#include <cassert>
 #include <map>
 #include <string>
 
