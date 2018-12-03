@@ -63,10 +63,6 @@ namespace smtrat
 	using MultivariateRootT = carl::MultivariateRoot<Poly>;
 	using RootExpr = carl::MultivariateRoot<Poly>; // prefer this one
 
-	typedef carl::VariableAssignment<Poly> VariableAssignmentT;
-	
-	typedef carl::VariableComparison<Poly> VariableComparisonT;
-
 //  typedef carl::Formula<Poly> FormulaT;
 
 //  typedef carl::Formulas<Poly> FormulasT;

@@ -31,6 +31,10 @@ using ConstraintT = carl::Constraint<Poly>;
 
 using ConstraintsT = carl::Constraints<Poly>;
 
+using VariableAssignmentT = carl::VariableAssignment<Poly>;	
+
+using VariableComparisonT = carl::VariableComparison<Poly>;
+
 using FormulaT = carl::Formula<Poly>;
 
 using FormulasT = carl::Formulas<Poly>;
