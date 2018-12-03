@@ -39,9 +39,11 @@ BOOST_AUTO_TEST_CASE(Test_NLSATPaper_Ex3)
 	SMTRAT_LOG_INFO("smtrat.test.nlsat", "T-Decide " << x << " = -2");
 	{
 		auto res = nlsat.findAssignment(x);
-		BOOST_CHECK(carl::variant_is_type<ModelValue>(res));
-		auto value = boost::get<ModelValue>(res);
-		BOOST_CHECK(value == ModelValue(Rational(-2)));
+		BOOST_CHECK(carl::variant_is_type<mcsat::ModelValues>(res));
+		auto value = boost::get<mcsat::ModelValues>(res);
+		BOOST_CHECK(value.size() == 1);
+		BOOST_CHECK(value[0].first == x);
+		BOOST_CHECK(value[0].second == ModelValue(Rational(-1)));
 	}
 	FormulaT fx(Poly(x) + Rational(2), carl::Relation::EQ);
 	nlsat.pushAssignment(x, Rational(-2), fx);
@@ -56,8 +58,9 @@ BOOST_AUTO_TEST_CASE(Test_NLSATPaper_Ex3)
 		auto res = nlsat.isInfeasible(y, c4);
 		BOOST_CHECK(carl::variant_is_type<FormulasT>(res));
 		auto r = boost::get<FormulasT>(res);
-		auto explanation = nlsat.explain(y, r, c4.negated());
-		BOOST_CHECK(ex1 == explanation);
+		auto explanation = nlsat.explain(y, r);
+		BOOST_CHECK(boost::get<FormulaT>(&explanation) != nullptr);
+		BOOST_CHECK(ex1 == boost::get<FormulaT>(explanation));
 	}
 	nlsat.pushConstraint(c4.negated());
 	
@@ -71,8 +74,9 @@ BOOST_AUTO_TEST_CASE(Test_NLSATPaper_Ex3)
 		auto res = nlsat.isInfeasible(x, c5.negated());
 		BOOST_CHECK(carl::variant_is_type<FormulasT>(res));
 		auto r = boost::get<FormulasT>(res);
-		auto explanation = nlsat.explain(x, r, c5);
-		BOOST_CHECK(ex2 == explanation);
+		auto explanation = nlsat.explain(x, r);
+		BOOST_CHECK(boost::get<FormulaT>(&explanation) != nullptr);
+		BOOST_CHECK(ex2 == boost::get<FormulaT>(explanation));
 	}
 }
 
