@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-#include "../../lib/modules/PBPPModule/CardinalityEncoder.h"
+#include <smtrat-modules/PBPPModule/CardinalityEncoder.h>
 
 using namespace smtrat;
 

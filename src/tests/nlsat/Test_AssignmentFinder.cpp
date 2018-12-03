@@ -1,7 +1,7 @@
 #include <boost/test/unit_test.hpp>
 
-#include <lib/modules/SATModule/mcsat/BaseBackend.h>
-#include <lib/logging.h>
+#include <smtrat-modules/SATModule/mcsat/BaseBackend.h>
+#include <smtrat-common/smtrat-common.h>
 
 using namespace smtrat;
 

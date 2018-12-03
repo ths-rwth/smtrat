@@ -1,8 +1,8 @@
 #define BOOST_TEST_MODULE test_fm
 
 #include <boost/test/unit_test.hpp>
-#include "../lib/Common.h"
-#include "../../lib/datastructures/qe/fm/qe.h"
+#include <smtrat-common/smtrat-common.h>
+#include <smtrat-qe/fm/qe.h>
 #include <iostream>
 
 using namespace smtrat;
@@ -26,8 +26,8 @@ BOOST_AUTO_TEST_CASE( FMQE_eliminate_single_variable )
 
     std::cout << "Formula: " << inFormula << ", eliminate " << x << std::endl;
 
-    QEQuery query;
-    query.emplace_back(std::make_pair(QuantifierType::EXISTS,std::vector<carl::Variable>{x}));
+    qe::QEQuery query;
+    query.emplace_back(std::make_pair(qe::QuantifierType::EXISTS,std::vector<carl::Variable>{x}));
 
     auto newFormula = qe::fm::eliminateQuantifiers(inFormula, query);
 
@@ -52,8 +52,8 @@ BOOST_AUTO_TEST_CASE( FMQE_eliminate_to_true )
 
     std::cout << "Formula: " << inFormula << ", eliminate " << x << std::endl;
 
-    QEQuery query;
-    query.emplace_back(std::make_pair(QuantifierType::EXISTS,std::vector<carl::Variable>{x}));
+    qe::QEQuery query;
+    query.emplace_back(std::make_pair(qe::QuantifierType::EXISTS,std::vector<carl::Variable>{x}));
 
     auto newFormula = qe::fm::eliminateQuantifiers(inFormula, query);
 
@@ -81,8 +81,8 @@ BOOST_AUTO_TEST_CASE( FMQE_eliminate_to_true_with_remaining_constraint )
 
     std::cout << "Formula: " << inFormula << ", eliminate " << x << std::endl;
 
-    QEQuery query;
-    query.emplace_back(std::make_pair(QuantifierType::EXISTS,std::vector<carl::Variable>{x}));
+    qe::QEQuery query;
+    query.emplace_back(std::make_pair(qe::QuantifierType::EXISTS,std::vector<carl::Variable>{x}));
 
     auto newFormula = qe::fm::eliminateQuantifiers(inFormula, query);
 
@@ -110,8 +110,8 @@ BOOST_AUTO_TEST_CASE( FMQE_eliminate_several_variables )
 
     std::cout << "Formula: " << inFormula << std::endl;
 
-    QEQuery query;
-    query.emplace_back(std::make_pair(QuantifierType::EXISTS,std::vector<carl::Variable>{x,y}));
+    qe::QEQuery query;
+    query.emplace_back(std::make_pair(qe::QuantifierType::EXISTS,std::vector<carl::Variable>{x,y}));
 
     auto newFormula = qe::fm::eliminateQuantifiers(inFormula, query);
 

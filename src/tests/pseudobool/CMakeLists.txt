@@ -6,6 +6,7 @@ target_link_libraries(runPseudoBoolTests
     ${Boost_unit_test_framework_SHARED}
     lib_${PROJECT_NAME}
     ${libraries}
+	smtrat-module-PBPPModule-shared
 )
 
 add_test(NAME pseudobool COMMAND runPseudoBoolTests)

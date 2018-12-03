@@ -2,6 +2,8 @@
 
 #include "VSHelper.h"
 
+#include <smtrat-mcsat/smtrat-mcsat.h>
+
 namespace smtrat {
 namespace mcsat {
 namespace vs {

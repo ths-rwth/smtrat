@@ -63,7 +63,7 @@ install(
 
 target_link_libraries( lib_${PROJECT_NAME} ${libraries} ) # libraries defined in top-level CMakeLists.txt
 
-target_link_libraries(lib_smtrat smtrat-common-shared smtrat-mcsat-shared smtrat-module-VSModule-shared smtrat-modules-shared)
+target_link_libraries(lib_smtrat smtrat-common-shared smtrat-mcsat-shared smtrat-modules-shared)
 
 target_include_directories( lib_${PROJECT_NAME} PUBLIC
 	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
