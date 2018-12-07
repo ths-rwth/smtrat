@@ -28,6 +28,8 @@
 #include "SATModule.h"
 #include <iomanip>
 
+#include <smtrat-mcsat/verifier/Verifier.h>
+
 #ifdef LOGGING
 //#define DEBUG_SATMODULE
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
@@ -159,11 +161,14 @@ namespace smtrat
         s << moduleName() << "_" << id();
         mpStatistics = new SATModuleStatistics( s.str() );
         #endif
+		
+		mcsat::initializeVerifier();
     }
 
     template<class Settings>
     SATModule<Settings>::~SATModule()
     {
+		mcsat::clearVerifier();
         while( mBooleanConstraintMap.size() > 0 )
         {
             Abstraction* abstrAToDel = mBooleanConstraintMap.last().first;
@@ -1700,7 +1705,7 @@ namespace smtrat
                 // ignore repeated literals
                 if( add_tmp[i] == p )
                     continue;
-                // if a literal is false at 0 level (both sat and user level) we also ignore it
+                // if a liteal is false at 0 level (both sat and user level) we also ignore it
                 if( value( add_tmp[i] ) == l_False )
                 {
                     if( level( var( add_tmp[i] ) ) == 0 )
@@ -1849,6 +1854,7 @@ namespace smtrat
 			}
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking to " << backtrackLevel);
+		CARL_CHECKPOINT("nlsat", "backtrack", backtrackLevel);
 		cancelUntil(backtrackLevel, true);
 
 		CRef conflict = CRef_Undef;
@@ -1925,6 +1931,7 @@ namespace smtrat
 				}
 			} else if (value(lemma[0]) == l_Undef && value(lemma[1]) == l_False) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is unit, propagating " << lemma[0]);
+				CARL_CHECKPOINT("nlsat", "propagation", lemma_ref, lemma[0]);
 				uncheckedEnqueue(lemma[0], lemma_ref);
 			} else if (value(lemma[0]) == l_False) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", lemma[0] << " is false, hence " << lemma[1] << " should also be false...");
@@ -2886,6 +2893,7 @@ namespace smtrat
                     #ifdef DEBUG_SATMODULE
                     std::cout << "### Decide " <<  (sign(next) ? "-" : "" ) << var(next) << std::endl;
                     #endif
+					CARL_CHECKPOINT("nlsat", "decision", next);
                     uncheckedEnqueue( next );
                 }
             }
@@ -2931,6 +2939,8 @@ namespace smtrat
         cout << "### Backtrack to level " << backtrack_level << endl;
         cout << "###" << endl;
         #endif
+		
+		CARL_CHECKPOINT("nlsat", "backtrack", backtrack_level);
        
         if(Settings::mc_sat) {
             // TODO testing necessary
@@ -2984,6 +2994,7 @@ namespace smtrat
         assert( value( learnt_clause[0] ) == l_Undef );
         if( learnt_clause.size() == 1 )
         {
+			CARL_CHECKPOINT("nlsat", "new-assumption", learnt_clause[0]);
             uncheckedEnqueue( learnt_clause[0] );
         }
         else
@@ -2997,9 +3008,11 @@ namespace smtrat
 			}
 			if (Settings::mc_sat) {
 				if (value(learnt_clause[1]) == l_False) {
+					CARL_CHECKPOINT("nlsat", "propagation", _confl, learnt_clause[0]);
 					uncheckedEnqueue( learnt_clause[0], _confl );
 				}
 			} else {
+				CARL_CHECKPOINT("nlsat", "propagation", _confl, learnt_clause[0]);
             	uncheckedEnqueue( learnt_clause[0], _confl );
 			}
             decrementLearntSizeAdjustCnt();
@@ -3763,6 +3776,7 @@ namespace smtrat
                 if( value( first ) == l_False )
                 {
 					SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Clause is conflicting " << c);
+					CARL_CHECKPOINT("nlsat", "conflict-clause", cr);
                     confl = cr;
                     qhead = trail.size();
                     // Copy the remaining watches:
@@ -3775,6 +3789,7 @@ namespace smtrat
 					if (Settings::mc_sat && valueAndUpdate(first) != l_Undef) {
 						assert(value(first) != l_Undef);
 					} else {
+						CARL_CHECKPOINT("nlsat", "propagation", cr, first);
 	                    assert( value( first ) == l_Undef );
 	                    uncheckedEnqueue( first, cr );
 	                    #ifdef SMTRAT_DEVOPTION_Statistics
