@@ -11,7 +11,7 @@ namespace nlsat {
 
 boost::optional<mcsat::Explanation> Explanation::operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
 #ifdef SMTRAT_DEVOPTION_Statistics
-	mStatistics.explanation();
+	mStatistics.explanationCalled();
 #endif
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Explain conflict " << reason);
 
@@ -25,6 +25,9 @@ boost::optional<mcsat::Explanation> Explanation::operator()(const mcsat::Bookkee
 
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Bookkeep: " << data);
 	ExplanationGenerator eg(reason, orderedVars, var, data.model());
+#ifdef SMTRAT_DEVOPTION_Statistics
+	mStatistics.explanationSuccess();
+#endif
 	return eg.getExplanation(FormulaT(carl::FormulaType::FALSE));
 }
 
