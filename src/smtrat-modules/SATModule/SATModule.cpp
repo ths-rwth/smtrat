@@ -160,6 +160,8 @@ namespace smtrat
         stringstream s;
         s << moduleName() << "_" << id();
         mpStatistics = new SATModuleStatistics( s.str() );
+        s << "_mcsat";
+        mpMCSATStatistics = new mcsat::MCSATStatistics( s.str() );
         #endif
 		
 		mcsat::initializeVerifier();
@@ -2794,6 +2796,9 @@ namespace smtrat
                             } else {
                                 SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict, propagate " << ~next);
                                 uncheckedEnqueue( ~next, CRef_TPropagation );
+                                #ifdef SMTRAT_DEVOPTION_Statistics
+                                mpMCSATStatistics->insertedLazyExplanation();
+                                #endif
                                 continue;
                             }
 						}
@@ -3301,6 +3306,9 @@ namespace smtrat
             bool gotClause = true;
 			if (Settings::mc_sat && confl == CRef_TPropagation) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Found " << p << " to be result of theory propagation.");
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                mpMCSATStatistics->usedLazyExplanation();
+                #endif
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << mMCSAT);
 				cancelIncludingLiteral(p); // does not affect decision levels of literals processed later nor decisionLevel()
 				auto explanation = mcsat::resolveExplanation(mMCSAT.explainTheoryPropagation(p));
