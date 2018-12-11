@@ -13,7 +13,7 @@
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "StatisticSettings.h"
 #include "CollectStatistics.h"
-#include "../../modules/GBModule/GBModuleStatistics.h"
+#include <smtrat-modules/GBModule/GBModuleStatistics.h>
 namespace smtrat {
 StatisticSettings* CollectStatistics::settings = new StatisticSettings();
 

@@ -15,6 +15,7 @@ struct Explanation {
 	
 #ifdef SMTRAT_DEVOPTION_Statistics
 	mutable NLSATStatistics mStatistics;
+  Explanation() : mStatistics("mcsat-backend-nlsat") {}
 #endif
   /**
    * We construct a formula 'E -> I', i.e. 'e1 &  e2 ... en -> i', called "Explanation",

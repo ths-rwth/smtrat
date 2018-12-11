@@ -13,8 +13,8 @@
 #include <map>
 #include <iostream>
 
-#include "../../Common.h"
-#include "../../utilities/stats/Statistics.h"
+#include <lib/Common.h>
+#include <lib/utilities/stats/Statistics.h>
 
 #include "carl/groebner/gb-buchberger/BuchbergerStats.h"
 

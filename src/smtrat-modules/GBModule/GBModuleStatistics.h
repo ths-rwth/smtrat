@@ -6,8 +6,8 @@
 #include <map>
 #include <iostream>
 
-#include "../../Common.h"
-#include "../../utilities/stats/Statistics.h"
+#include <lib/Common.h>
+#include <lib/utilities/stats/Statistics.h>
 
 namespace smtrat {
 class GBModuleStats : public Statistics
