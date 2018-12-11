@@ -10,13 +10,13 @@
 
 #include <smtrat-common/smtrat-common.h>
 #ifdef SMTRAT_DEVOPTION_Statistics
-#include "../../utilities/stats/Statistics.h"
+#include <lib/utilities/stats/Statistics.h>
 
 namespace smtrat
 {
 	class STropStatistics : public Statistics
 	{
-		private:
+		public:
 			STropStatistics(const std::string& _statisticName)
 				: Statistics(_statisticName, this)
 				{}

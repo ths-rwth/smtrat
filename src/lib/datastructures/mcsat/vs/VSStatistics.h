@@ -7,13 +7,13 @@
 namespace smtrat {
 namespace mcsat {
 
-class NLSATStatistics: public Statistics {
+class VSStatistics: public Statistics {
 private:
 	std::size_t mExplanationCalled = 0;
 	std::size_t mExplanationSuccess = 0;
 public:
-	NLSATStatistics(const std::string& name): Statistics(name, this) {}
-	~NLSATStatistics() = default;
+	VSStatistics(const std::string& name): Statistics(name, this) {}
+	~VSStatistics() = default;
 	
 	void collect() {
 		Statistics::addKeyValuePair("explanation_called", mExplanationCalled);

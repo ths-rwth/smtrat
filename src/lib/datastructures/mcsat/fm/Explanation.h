@@ -2,6 +2,8 @@
 
 #include "../common.h"
 
+#include "FMStatistics.h"
+
 #include <smtrat-mcsat/smtrat-mcsat.h>
 
 namespace smtrat {
@@ -345,7 +347,17 @@ struct IgnoreCoreSettings {
 
 template<class Settings>
 struct Explanation {
+
+#ifdef SMTRAT_DEVOPTION_Statistics
+	mutable FMStatistics mStatistics;
+    Explanation() : mStatistics("mcsat-explanation-fm") {}
+#endif
+
 	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
+		#ifdef SMTRAT_DEVOPTION_Statistics
+		mStatistics.explanationCalled();
+		#endif
+
 		std::vector<ConstraintT> bounds;
 
 		if (!Settings::use_all_constraints) {
@@ -384,6 +396,9 @@ struct Explanation {
 
 		if (res) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Found conflict " << *res);
+			#ifdef SMTRAT_DEVOPTION_Statistics
+			mStatistics.explanationSuccess();
+			#endif
 			return mcsat::Explanation(FormulaT(carl::FormulaType::OR, std::move(*res)));
 		}
 		else {
