@@ -7,6 +7,8 @@
 #include "BaseBackend.h"
 #include "../ClauseChecker.h"
 
+#include "MCSATStatistics.h"
+
 #include <carl/formula/model/Assignment.h>
 
 #include <smtrat-mcsat/smtrat-mcsat.h>
@@ -65,6 +67,10 @@ private:
 	std::vector<Minisat::Var> mUndecidedVariables;
 	
 	MCSATBackend<Settings> mBackend;
+
+	#ifdef SMTRAT_DEVOPTION_Statistics
+	MCSATStatistics*& mpStatistics;
+	#endif
 
 	struct ModelAssignmentCache {
 		ModelValues mContent;
@@ -141,6 +147,9 @@ public:
 			[&baseModule](Minisat::Lit l) -> const auto& { return baseModule.watches[l]; }
 		}),
 		mTheoryStack(1, TheoryLevel()),
+		#ifdef SMTRAT_DEVOPTION_Statistics
+		mpStatistics(baseModule.mpMCSATStatistics),
+		#endif
 		mModelAssignmentCache(model())
 	{}
 	
@@ -207,6 +216,9 @@ public:
 			return;
 		}
 		if (!mModelAssignmentCache.empty()) {
+			#ifdef SMTRAT_DEVOPTION_Statistics
+			mpStatistics->modelAssignmentCacheHit();
+			#endif
 			auto res = carl::model::evaluate(f, mModelAssignmentCache.model());
 			if (!res.isBool() || !res.asBool()) {
 				mModelAssignmentCache.clear(); // clear model assignment cache
@@ -256,6 +268,9 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking whether trail is feasible (w.r.t. " << currentVariable() << ")");
 		AssignmentOrConflict res;
 		if (!mModelAssignmentCache.empty()) {
+			#ifdef SMTRAT_DEVOPTION_Statistics
+			mpStatistics->modelAssignmentCacheHit();
+			#endif
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found cached assignment.");
 			return boost::none;
 		} else {
@@ -279,6 +294,9 @@ public:
 			res = mBackend.findAssignment(currentVariable());
 		} else {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found cached assignment.");
+			#ifdef SMTRAT_DEVOPTION_Statistics
+			mpStatistics->modelAssignmentCacheHit();
+			#endif
 			res = mModelAssignmentCache.content();
 			mModelAssignmentCache.clear();
 		}

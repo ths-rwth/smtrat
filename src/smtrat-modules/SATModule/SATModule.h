@@ -43,6 +43,7 @@
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "SATModuleStatistics.h"
+#include "mcsat/MCSATStatistics.h"
 #endif
 
 namespace smtrat
@@ -608,6 +609,9 @@ namespace smtrat
             /*
              * MC-SAT related members.
              */
+            #ifdef SMTRAT_DEVOPTION_Statistics
+            mcsat::MCSATStatistics* mpMCSATStatistics;
+            #endif
 			mcsat::MCSATMixin<typename Settings::MCSATSettings> mMCSAT;
 			std::map<carl::Variable, std::vector<signed>> mFutureChangedBooleans;
             
