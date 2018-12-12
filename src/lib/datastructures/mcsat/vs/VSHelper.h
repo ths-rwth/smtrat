@@ -345,8 +345,8 @@ namespace helper {
             static Model model;
             for (const auto& zero : zeros) {
                  // RAN uses open intervals and the polynomial has rational coefficients
-                bool res1 = rationalLessThanSqrtEx(ran.lower(), zero.first, model);
-                bool res2 = sqrtExLessThanRational(zero.first, ran.upper(), model);
+                bool res1 = rationalLessThanSqrtEx(ran.getInterval().lower(), zero.first, model);
+                bool res2 = sqrtExLessThanRational(zero.first, ran.getInterval().upper(), model);
                 if (res1 && res2) {
                     SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generate zero " << zero.first << " with " << zero.second);
                     yield_result(SqrtEx(zero.first), ConstraintsT(zero.second));

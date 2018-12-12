@@ -113,14 +113,10 @@ private:
 			const auto& poly = mProjection.getPolynomialById(level, pid);
 			if (carl::isZero(carl::model::substitute(poly, model))) continue;
 			auto list = carl::model::realRoots(poly, model);
-			if (!list) {
-				// The polynomial vanished at this point
-				continue;
-			}
 			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Looking at " << poly << " with roots " << list);
 			// Find the closest roots/rootIdx around value.
 			std::size_t rootID = 1;
-			for (const auto& root: *list) {
+			for (const auto& root: list) {
 			  // Need to use poly with its main variable replaced by the special MultivariateRootT::var().
 				auto param = std::make_pair(Poly(carl::UnivariatePolynomial<Poly>(MultivariateRootT::var(), poly.coefficients())), rootID);
 				SMTRAT_LOG_TRACE("smtrat.nlsat", root << " -> " << param);

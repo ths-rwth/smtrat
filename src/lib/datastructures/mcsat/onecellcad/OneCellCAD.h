@@ -395,10 +395,9 @@ namespace onecellcad {
       const Poly &poly) {
       // 'realRoots' returns std::nullopt if poly vanishes
       // early, but here we don't care
-      auto rootsOpt = carl::rootfinder::realRoots(
+      return carl::rootfinder::realRoots(
         poly.toUnivariatePolynomial(variableOrder[polyLevel]),
         prefixPointToStdMap(polyLevel));
-      return rootsOpt ? *rootsOpt : std::vector<RAN>();
     }
 
     bool isAlreadyProcessed(const TagPoly2 &poly) {

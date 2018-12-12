@@ -94,14 +94,10 @@ namespace cad {
                                 auto psubs = carl::model::substitute(poly, model);
                                 if (carl::isZero(psubs)) continue;
                                 auto list = carl::model::realRoots(poly, model);
-                                if (!list) {
-                                        // The polynomial vanished at this point
-                                        continue;
-                                }
-                               
+
                                 boost::optional<std::pair<RAN,bool>> lower;
                                 boost::optional<std::pair<RAN,bool>> upper;
-                                for (const auto& root: *list) {
+                                for (const auto& root: list) {
                                         if (root < value) {
                                                 if (!lower || root > lower->first) {
                                                         lower = std::make_pair(root, true);
