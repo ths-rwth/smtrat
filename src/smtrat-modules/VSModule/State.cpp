@@ -2459,7 +2459,7 @@ namespace vs
                 smtrat::Rational leftBound = carl::rationalize<smtrat::Rational>( intervals.begin()->second.lower() );
                 smtrat::Rational rightBound = carl::rationalize<smtrat::Rational>( intervals.begin()->second.upper() );
                 smtrat::RationalInterval interv( leftBound, carl::BoundType::WEAK, rightBound, carl::BoundType::WEAK );
-                int numberOfRoots = carl::UnivariatePolynomial<smtrat::Rational>::countRealRoots( seq, interv );
+                int numberOfRoots = carl::count_real_roots( seq, interv );
                 assert( index() != carl::Variable::NO_VARIABLE );
                 smtrat::Rational imageOfLeftBound = rup.evaluate( leftBound );
                 smtrat::Rational imageOfRightBound = rup.evaluate( rightBound );
