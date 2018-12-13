@@ -1,0 +1,14 @@
+/**
+ * @file CurryInstantiation.h.in
+ * @author Henrich Lauko <xlauko@mail.muni.cz>
+ * @author Dominika Krejci <dominika.krejci@rwth-aachen.de>
+ *
+ * @version 2018-11-18
+ * Created on 2018-11-18.
+ */
+
+#include "${Prefix}Module.h"
+
+namespace smtrat {
+${INSTANTIATIONS}
+}
