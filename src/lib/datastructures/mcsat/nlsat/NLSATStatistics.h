@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../../utilities/stats/Statistics.h"
+#include <lib/utilities/stats/Statistics.h>
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 
