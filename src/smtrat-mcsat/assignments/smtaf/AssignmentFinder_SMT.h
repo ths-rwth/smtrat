@@ -2,10 +2,8 @@
 
 #include <boost/logic/tribool.hpp>
 
-#include "../common.h"
-
-#include <smtrat-mcsat/smtrat-mcsat.h>
 #include <smtrat-modules/Module.h>
+#include <smtrat-mcsat/smtrat-mcsat.h>
 
 #include <variant>
 
