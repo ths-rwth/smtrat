@@ -1,6 +1,7 @@
 #pragma once
 
-#include <lib/Common.h>
+#include <smtrat-common/smtrat-common.h>
+#include <smtrat-common/model.h>
 #include <smtrat-modules/VSModule/Substitute.h>
 #include <carl/util/Common.h>
 #include <carl/formula/model/evaluation/ModelEvaluation.h>
@@ -114,7 +115,7 @@ namespace helper {
                         if( cons != ConstraintT( true ) ) {
                             sideCond.insert( cons );
                         } 
-                        SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, coeffs.rbegin()->second, ZERO_POLYNOMIAL );
+                        SqrtEx sqEx = SqrtEx( -constantCoeff, Poly(), coeffs.rbegin()->second, Poly() );
                         SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generated zero " << sqEx << " with side conditions " << sideCond);
                         yield_result(std::move(sqEx), std::move(sideCond));
                     }
@@ -139,7 +140,7 @@ namespace helper {
                                 sideCond.insert( cons11 );
                             if( cons12 != ConstraintT( true ) )
                                 sideCond.insert( cons12 );
-                            SqrtEx sqEx = SqrtEx( -constantCoeff, ZERO_POLYNOMIAL, linearCoeff, ZERO_POLYNOMIAL );
+                            SqrtEx sqEx = SqrtEx( -constantCoeff, Poly(), linearCoeff, Poly() );
                             SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generated zero " << sqEx << " with side conditions " << sideCond);
                             yield_result(std::move(sqEx), std::move(sideCond));
                         }
@@ -157,12 +158,12 @@ namespace helper {
                             }
                             
                             // Create ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b-sqrt(b^2-4ac))/2a]):
-                            SqrtEx sqExA = SqrtEx( -linearCoeff, MINUS_ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
+                            SqrtEx sqExA = SqrtEx( -linearCoeff, Poly(-1), Rational( 2 ) * coeffs.rbegin()->second, radicand );
                             SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generated zero " << sqExA << " with side conditions " << sideCond);
                             yield_result(std::move(sqExA), ConstraintsT(sideCond));
 
                             // Create ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
-                            SqrtEx sqExB = SqrtEx( -linearCoeff, ONE_POLYNOMIAL, Rational( 2 ) * coeffs.rbegin()->second, radicand );
+                            SqrtEx sqExB = SqrtEx( -linearCoeff, Poly(1), Rational( 2 ) * coeffs.rbegin()->second, radicand );
                             SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generated zero " << sqExB << " with side conditions " << sideCond);
                             yield_result(std::move(sqExB), std::move(sideCond));
                         }

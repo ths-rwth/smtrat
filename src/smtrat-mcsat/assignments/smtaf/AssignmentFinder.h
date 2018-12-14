@@ -3,7 +3,6 @@
 #include "AssignmentFinder_SMT.h"
 
 #include <smtrat-common/smtrat-common.h>
-#include <smtrat-modules/Module.h>
 #include <smtrat-mcsat/smtrat-mcsat.h>
 
 #include <variant>
