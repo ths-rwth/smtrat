@@ -2,11 +2,12 @@
 
 #include <algorithm>
 
-#include "../../../Common.h"
-#include "OneCellCAD.h"
-#include "../nlsat/ExplanationGenerator.h"
-
+#include <smtrat-common/smtrat-common.h>
 #include <smtrat-mcsat/smtrat-mcsat.h>
+#include <smtrat-mcsat/explanations/nlsat/ExplanationGenerator.h>
+
+#include "OneCellCAD.h"
+
 
 namespace smtrat {
 namespace mcsat {
