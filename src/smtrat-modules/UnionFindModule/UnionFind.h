@@ -28,11 +28,10 @@ namespace smtrat
                 translate.emplace(val, node++);
             }
 
-            parents.reserve(data.size());
+            parents.resize(data.size());
             std::iota(parents.begin(), parents.end(), 0);
 
-            ranks.reserve(data.size());
-            std::fill(ranks.begin(), ranks.end(), 0);
+            ranks.resize(data.size(), 0);
         }
 
         [[nodiscard]] auto find(value_type const& val) noexcept -> representative const&
@@ -45,7 +44,17 @@ namespace smtrat
             merge(translate.at(a), translate.at(b));
         }
 
-    private:
+        std::vector<node_type> classes() noexcept
+        {
+            compress();
+
+            auto classes = parents;
+            std::sort(classes.begin(), classes.end());
+            auto last = std::unique(classes.begin(), classes.end());
+            classes.erase(last, classes.end());
+
+            return classes;
+        }
 
         [[nodiscard]] auto find(node_type const& val) noexcept ->representative const&
         {
@@ -67,6 +76,14 @@ namespace smtrat
                 ++ranks[repr_a];
         }
 
+        void compress() noexcept
+        {
+            for (auto &val : parents) {
+                parents[val] = find(val);
+            }
+        }
+
+private:
         std::unordered_map<T, node_type> translate;
 
         std::vector<node_type> parents;
