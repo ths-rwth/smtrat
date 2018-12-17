@@ -44,15 +44,11 @@ namespace smtrat
     {
         assert(_subformula->formula().getType() == carl::UEQ);
         const auto& ueq = _subformula->formula().uequality();
+        assert(ueq.lhs().isUVariable() && ueq.rhs().isUVariable());
+
         history.emplace_back(ueq);
         variables.emplace(ueq.lhs().asUVariable());
-        if (ueq.rhs().isUVariable()) {
-            variables.emplace(ueq.rhs().asUVariable());
-        } else { // ueq of form a = f(b, c)
-            const auto &ins = ueq.rhs().asUFInstance();
-            variables.emplace(ins.args().at(0).asUVariable());
-            variables.emplace(ins.args().at(1).asUVariable());
-        }
+        variables.emplace(ueq.rhs().asUVariable());
 
         return true;
     }
@@ -79,14 +75,10 @@ namespace smtrat
     template<typename UF, typename Inequalities>
     [[nodiscard]] bool isConsistent(UF& union_find, const Inequalities& inequalities) noexcept {
         for (const auto &ueq : inequalities) {
-            if (ueq.rhs().isUVariable()) {
-                const auto& lhs = union_find.find(ueq.lhs().asUVariable());
-                const auto& rhs = union_find.find(ueq.rhs().asUVariable());
-                if (rhs == lhs)
-                    return false;
-            } else { // ueq of form a = f(b,c)
-               // TODO
-            }
+            const auto& lhs = union_find.find(ueq.lhs().asUVariable());
+            const auto& rhs = union_find.find(ueq.rhs().asUVariable());
+            if (rhs == lhs)
+                return false;
         }
 
         return true;
@@ -100,14 +92,11 @@ namespace smtrat
 
         std::vector<carl::UEquality> inequalities;
         for (const auto &ueq : history) {
+            assert(ueq.lhs().isUVariable() && ueq.rhs().isUVariable());
             if (ueq.negated()) {
                 inequalities.emplace_back(ueq);
             } else {
-                if (ueq.rhs().isUVariable()) {
-                    union_find.merge(ueq.lhs().asUVariable(), ueq.rhs().asUVariable());
-                } else { // ueq of form a = f(b,c)
-                   // TODO
-                }
+                union_find.merge(ueq.lhs().asUVariable(), ueq.rhs().asUVariable());
             }
         }
 
