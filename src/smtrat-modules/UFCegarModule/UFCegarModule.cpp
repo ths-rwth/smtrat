@@ -57,6 +57,32 @@ namespace smtrat
         return eq;
     }
 
+    std::string flatten_name(const carl::UTerm& term);
+
+    std::string flatten_name_impl(const carl::UVariable& var) {
+        return var.variable().name();
+    }
+
+    std::string flatten_name_impl(const carl::UFInstance& ufi) {
+        const auto& fn = ufi.uninterpretedFunction();
+
+        auto concat = [&] (std::string res, const carl::UTerm& term) {
+            return std::move(res) + '.' + flatten_name(term);
+        };
+
+        const auto &args = ufi.args();
+        auto suffix = std::accumulate(args.begin(), args.end(), std::string(""), concat);
+
+        return '(' + fn.name() + suffix + ')';
+    }
+
+
+    std::string flatten_name(const carl::UTerm& term) {
+        return std::visit( [&] (const auto& var) -> std::string {
+            return flatten_name_impl(var);
+        }, term.asVariant());
+    }
+
     template<class Settings>
     auto UFCegarModule<Settings>::flatten(const UTerm& term) noexcept -> UTerm
     {
@@ -64,22 +90,10 @@ namespace smtrat
             return res->second;
         }
 
-        auto uvar = [&] (const std::string& name) -> UVariable {
-            return UVariable(freshUninterpretedVariable(name), my_sort);
-        };
-
-        auto res = std::visit(overloaded {
-            [&](const UVariable& var) {
-                return UTerm{uvar(var.variable().name())};
-            },
-            [&](const UFInstance& ufi) {
-                const auto& fn = ufi.uninterpretedFunction();
-                return UTerm{uvar(fn.name())};
-            }
-        }, term.asVariant());
-
-        term_store.emplace(term, res);
-        return res;
+        auto name = flatten_name(term);
+        UTerm flattened{ UVariable(freshUninterpretedVariable(name), my_sort) };
+        term_store.emplace(term, flattened);
+        return flattened;
     }
 
     template<class Settings>
