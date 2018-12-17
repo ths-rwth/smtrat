@@ -45,20 +45,20 @@ namespace smtrat
     }
 
     template<class Settings>
-    auto UFCegarModule<Settings>::to_equality_logic(const FormulaT& formula) noexcept -> FormulaT
+    auto UFCegarModule<Settings>::flatten(const FormulaT& formula) noexcept -> FormulaT
     {
         if (auto res = formula_store.find(formula); res != formula_store.end()) {
             return res->second;
         }
 
         const auto& ueq = formula.uequality();
-        FormulaT eq{to_equality_logic(ueq.lhs()), to_equality_logic(ueq.rhs()), ueq.negated()};
+        FormulaT eq{flatten(ueq.lhs()), flatten(ueq.rhs()), ueq.negated()};
         formula_store.emplace(formula, eq);
         return eq;
     }
 
     template<class Settings>
-    auto UFCegarModule<Settings>::to_equality_logic(const UTerm& term) noexcept -> UTerm
+    auto UFCegarModule<Settings>::flatten(const UTerm& term) noexcept -> UTerm
     {
         if (auto res = term_store.find(term); res != term_store.end()) {
             return res->second;
@@ -87,14 +87,14 @@ namespace smtrat
     {
         carl::FormulaVisitor<FormulaT> visitor;
 
-        auto transformed = visitor.visitResult( _subformula->formula(), [&] (const auto& formula) {
+        auto flattened = visitor.visitResult( _subformula->formula(), [&] (const auto& formula) {
             if (formula.getType() == carl::UEQ)
-                return to_equality_logic(formula);
+                return flatten(formula);
             else
                 return formula;
         } );
 
-        addSubformulaToPassedFormula(transformed, _subformula->formula());
+        addSubformulaToPassedFormula(flattened, _subformula->formula());
         return true;
     }
 

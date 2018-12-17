@@ -31,8 +31,8 @@ namespace smtrat
         std::unordered_map<FormulaT, FormulaT> formula_store;
         std::unordered_map<UTerm, UTerm> term_store;
 
-        auto to_equality_logic(const FormulaT& formula) noexcept -> FormulaT;
-        auto to_equality_logic(const UTerm& term) noexcept -> UTerm;
+        auto flatten(const FormulaT& formula) noexcept -> FormulaT;
+        auto flatten(const UTerm& term) noexcept -> UTerm;
 
         Sort my_sort;
 
