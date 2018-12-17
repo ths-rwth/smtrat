@@ -68,6 +68,7 @@ namespace smtrat
         mModel.clear();
         if( solverState() == Answer::SAT )
         {
+            // TODO
             // Your code.
         }
     }
@@ -100,7 +101,7 @@ namespace smtrat
             }
         }
 
-        if (isConsistent(union_find, inequalities)) {
+        if (!isConsistent(union_find, inequalities)) {
             generateTrivialInfeasibleSubset();
             return Answer::UNSAT;
         } else {
