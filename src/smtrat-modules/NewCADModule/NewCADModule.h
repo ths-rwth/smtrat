@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include <lib/datastructures/cad/CAD.h>
-#include <lib/datastructures/cad/helper/CADPreprocessor.h>
+#include <smtrat-cad/CAD.h>
+#include <smtrat-cad/utils/CADPreprocessor.h>
 #include <lib/datastructures/VariableBounds.h>
 
 #include "../Module.h"

@@ -9,7 +9,7 @@
 #include <carl/util/IDPool.h>
 
 #include "../../Common.h"
-#include "Settings.h"
+#include <smtrat-cad/Settings.h>
 #include "utils/DynamicPriorityQueue.h"
 #include "utils/Origin.h"
 

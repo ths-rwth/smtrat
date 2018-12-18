@@ -37,8 +37,7 @@
 //#include "../../../Common.h" // useful short type aliases and constants
 #include "lib/Common.h" // useful short type aliases and constants
 #include "Assertables.h"
-#include "lib/datastructures/cad/projection/ProjectionOperator_utils.h"
-#include "lib/datastructures/cad/projection/ProjectionOperator_utils.h"
+#include <smtrat-cad/projectionoperator/utils.h>
 
 namespace smtrat {
 namespace mcsat {

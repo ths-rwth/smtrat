@@ -1,10 +1,9 @@
 #pragma once
 
 
+#include <smtrat-cad/projection/Projection.h>
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
-
-#include <lib/datastructures/cad/projection/Projection.h>
 
 #include <carl/util/Common.h>
 

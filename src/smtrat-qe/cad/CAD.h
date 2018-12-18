@@ -2,9 +2,9 @@
 
 #include "Projection.h"
 
-#include <lib/datastructures/cad/Common.h>
-#include <lib/datastructures/cad/lifting/LiftingTree.h>
-#include <lib/datastructures/cad/helper/CADConstraints.h>
+#include <smtrat-cad/lifting/LiftingTree.h>
+#include <smtrat-cad/common.h>
+#include <smtrat-cad/utils/CADConstraints.h>
 
 namespace smtrat::qe::cad {
 

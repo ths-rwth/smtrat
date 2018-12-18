@@ -7,8 +7,8 @@
  */
 
 #include "NewCADModule.h"
-#include <lib/datastructures/cad/projection/Projection.h>
-#include <lib/datastructures/cad/variableordering/TriangularOrdering.h>
+#include <smtrat-cad/projection/Projection.h>
+#include <smtrat-cad/variableordering/TriangularOrdering.h>
 
 namespace smtrat
 {
