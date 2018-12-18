@@ -9,6 +9,8 @@
 #pragma once
 
 #include <carl/core/MultivariatePolynomial.h>
+#include <carl/groebner/GBProcedure.h>
+#include <carl/groebner/gb-buchberger/Buchberger.h>
 
 namespace smtrat
 {

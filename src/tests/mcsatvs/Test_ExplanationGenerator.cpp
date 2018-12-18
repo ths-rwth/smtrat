@@ -1,7 +1,7 @@
 #include <boost/test/unit_test.hpp>
 
 
-#include <lib/datastructures/mcsat/vs/ExplanationGenerator.h>
+#include <smtrat-mcsat/explanations/vs/ExplanationGenerator.h>
 #include <smtrat-common/smtrat-common.h>
 
 using namespace smtrat;
@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(Test_generateZeros_deg1) {
 
 	ConstraintT c2(Poly(y)*x+Rational(1), carl::Relation::EQ);
 	result = generateZeros(c2, y, [&](const SqrtEx&& sqrtExpression, const ConstraintsT&& sideConditions) {
-    	BOOST_CHECK(sqrtExpression==SqrtEx(Poly(-1), ZERO_POLYNOMIAL, Poly(x), ZERO_POLYNOMIAL));
+    	BOOST_CHECK(sqrtExpression==SqrtEx(Poly(-1), Poly(0), Poly(x), Poly(0)));
 		BOOST_CHECK(sideConditions.size() == 1);
 		BOOST_CHECK(*sideConditions.begin() == ConstraintT(Poly(x), carl::Relation::NEQ));
     });
@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(Test_generateZeros_deg2) {
 	ConstraintT c2(Poly(y)*y+y+x, carl::Relation::EQ);
 	int resultcount = 0;
 	result = generateZeros(c2, y, [&](const SqrtEx&& sqrtExpression, const ConstraintsT&& sideConditions) {
-		BOOST_CHECK(sqrtExpression==SqrtEx(Poly(Rational(-1)), ONE_POLYNOMIAL, Poly(Rational(2)), Poly(Rational(1))-Rational(4)*x) || sqrtExpression==SqrtEx(Poly(Rational(-1)), MINUS_ONE_POLYNOMIAL, Poly(Rational(2)), Poly(Rational(1))-Rational(4)*x));
+		BOOST_CHECK(sqrtExpression==SqrtEx(Poly(Rational(-1)), Poly(1), Poly(Rational(2)), Poly(Rational(1))-Rational(4)*x) || sqrtExpression==SqrtEx(Poly(Rational(-1)), Poly(-1), Poly(Rational(2)), Poly(Rational(1))-Rational(4)*x));
 		BOOST_CHECK(sideConditions.size() == 1);
 		BOOST_CHECK(*sideConditions.begin() == ConstraintT(Poly(Rational(1))-Rational(4)*x, carl::Relation::GEQ));
 		resultcount++;

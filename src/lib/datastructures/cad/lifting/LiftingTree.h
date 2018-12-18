@@ -178,12 +178,8 @@ namespace cad {
 			std::vector<Sample> newSamples;
 			// TODO: Check whether the polynomials becomes zero (check if McCallum is safe)
 			auto roots = carl::rootfinder::realRoots(p, m, RationalInterval::unboundedInterval(), Settings::rootSplittingStrategy);
-			std::vector<RAN> rootlist = { RAN(0) };
-			if (roots) rootlist = *roots;
-			else {
-				// Here, the polynomial vanished.
-			}
-			for (const auto& r: rootlist) {
+			if (roots.empty()) roots = { RAN(0) };
+			for (const auto& r: roots) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tnew root sample: " << r);
 				newSamples.emplace_back(r, pid);
 			}
