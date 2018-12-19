@@ -448,19 +448,6 @@ namespace smtrat
             }
         };
         
-        /**
-         * @return The string representation of this module input.
-         */
-        std::string toString() const
-        {
-            std::stringstream ss;
-			ss << "(and";
-            for(const auto& fwo : *this )
-                ss << " " << fwo.formula();
-            ss << ")";
-            return ss.str();
-        }
-        
         explicit operator FormulaT() const
         {
             FormulasT subFormulas;
