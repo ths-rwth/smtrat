@@ -65,12 +65,12 @@ namespace smtrat
 
         void merge(node_type const& a, node_type const& b) noexcept
         {
-            const auto& repr_a = find(a);
-            const auto& repr_b = find(b);
+            auto repr_a = find(a);
+            auto repr_b = find(b);
             if (repr_a == repr_b)
                 return;
             if (ranks[repr_a] < ranks[repr_b])
-                std::swap(parents[repr_a], parents[repr_b]);
+                std::swap(repr_a, repr_b);
             parents[repr_b] = repr_a;
             if (ranks[repr_a] == ranks[repr_b])
                 ++ranks[repr_a];
