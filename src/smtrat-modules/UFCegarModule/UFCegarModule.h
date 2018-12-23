@@ -37,6 +37,7 @@ namespace smtrat
         auto flatten(const FormulaT& formula) noexcept -> FormulaT;
         auto flatten(const UTerm& term) noexcept -> UTerm;
 
+        bool refine(const UFInstance& a, const UFInstance& b) noexcept;
         bool refine() noexcept;
 
         Sort my_sort;
