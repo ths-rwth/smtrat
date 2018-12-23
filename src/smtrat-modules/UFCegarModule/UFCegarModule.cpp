@@ -91,6 +91,12 @@ namespace smtrat
         }
 
         auto name = flatten_name(term);
+
+        if (term.isUFInstance()) {
+            const auto& ufi = term.asUFInstance();
+            instances[ufi.uninterpretedFunction()].emplace(ufi);
+        }
+
         UTerm flattened{ UVariable(freshUninterpretedVariable(name), my_sort) };
         term_store.emplace(term, flattened);
         return flattened;
@@ -128,14 +134,74 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer UFCegarModule<Settings>::checkCore()
-    {
-        auto result = runBackends();
-        if (result == Answer::SAT) {
-            getBackendsModel();
+    bool UFCegarModule<Settings>::refine() noexcept {
+        /*using Class = carl::SortValue;
+        std::unordered_map<Class, std::vector<carl::UVariable>> classes;
+        for (const auto& var : backendsModel() ) {
+            classes[var.second.asSortValue()].push_back(var.first.asUVariable());
+        }*/
+
+        bool added_constraint = false;
+
+        // generate functional consistency
+        for (const auto& [function, list] : instances) {
+            if (list.size() <= 1)
+                continue;
+
+            for (auto i = list.begin(); i != std::prev(list.end()); ++i) {
+                for (auto j = std::next(list.begin()); j != list.end(); ++j) {
+                    if (refined.count(*i) && refined.count(*j)) {
+                        continue;
+                    } else {
+                        refined.emplace(*i);
+                        refined.emplace(*j);
+                        added_constraint = true;
+                    }
+
+                    auto args = std::make_pair(i->args().begin(), j->args().begin());
+                    auto end = i->args().end();
+
+                    FormulasT conditions;
+                    for ( ; args.first != end; ++args.first, ++args.second ) {
+                        conditions.emplace_back(carl::UEquality(
+                                    term_store[*args.first],
+                                    term_store[*args.second], false ));
+                    }
+
+                    auto consequence = carl::UEquality(
+                            term_store[*i],
+                            term_store[*j], false);
+
+                    FormulaT constraint = FormulaT( carl::FormulaType::IMPLIES,
+                        FormulaT( carl::FormulaType::AND, conditions ),
+                        FormulaT( consequence )
+                    );
+
+                    addSubformulaToPassedFormula(constraint);
+                }
+            }
         }
 
-        if (result == Answer::UNSAT) {
+        return added_constraint;
+    }
+
+    template<class Settings>
+    Answer UFCegarModule<Settings>::checkCore()
+    {
+        Answer result;
+
+        refine();
+        result = runBackends();
+        /*bool refinable = true;
+        while (refinable) {
+            if (result = runBackends(); result == Answer::SAT) {
+                refinable = refine();
+            }
+        }*/
+
+        if (result == Answer::SAT) {
+            getBackendsModel();
+        } else if (result == Answer::UNSAT) {
             getInfeasibleSubsets();
         }
 

@@ -31,8 +31,13 @@ namespace smtrat
         std::unordered_map<FormulaT, FormulaT> formula_store;
         std::unordered_map<UTerm, UTerm> term_store;
 
+        std::unordered_map<UFunction, std::set<UFInstance>> instances;
+        std::set<UFInstance> refined;
+
         auto flatten(const FormulaT& formula) noexcept -> FormulaT;
         auto flatten(const UTerm& term) noexcept -> UTerm;
+
+        bool refine() noexcept;
 
         Sort my_sort;
 
