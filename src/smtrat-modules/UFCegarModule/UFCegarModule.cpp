@@ -146,8 +146,20 @@ namespace smtrat
 
         auto term = [&] (const auto& val) { return term_store[val]; };
 
+        auto record_instance = [&] (const auto& arg) {
+            if (arg.isUFInstance()) {
+                const auto& ufi = arg.asUFInstance();
+                if (!instances[ufi.uninterpretedFunction()].count(ufi)) {
+                    pending.emplace(ufi);
+                }
+            }
+        };
+
         FormulasT conditions;
         for ( ; args.first != end; ++args.first, ++args.second ) {
+            record_instance(*args.first);
+            record_instance(*args.second);
+
             conditions.emplace_back(term(*args.first), term(*args.second), false);
         }
 
@@ -173,6 +185,7 @@ namespace smtrat
             classes[var.second.asSortValue()].push_back(var.first.asUVariable());
         }*/
 
+        // TODO solve removing f constraints
         bool added_constraint = false;
 
         // generate functional consistency
@@ -186,6 +199,12 @@ namespace smtrat
                 }
             }
         }
+
+        for (auto&& ufi : pending) {
+            instances[ufi.uninterpretedFunction()].insert(std::move(ufi));
+        }
+
+        pending.clear();
 
         return added_constraint;
     }
