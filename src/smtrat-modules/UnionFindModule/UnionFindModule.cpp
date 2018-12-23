@@ -89,11 +89,21 @@ namespace smtrat
     template<class Settings>
     void UnionFindModule<Settings>::updateModel() const
     {
+        using Class = typename decltype(union_find)::representative;
+        std::unordered_map<Class, carl::SortValue> sorts;
+
         mModel.clear();
         if( solverState() == Answer::SAT )
         {
-            // TODO
-            // Your code.
+            for (const auto& var : variables) {
+                auto cls = union_find.find(var);
+
+                if (!sorts.count(cls)) {
+                    sorts[cls] = carl::newSortValue(var.domain());
+                }
+
+                mModel.emplace(var.variable(), sorts[cls]);
+            }
         }
     }
 

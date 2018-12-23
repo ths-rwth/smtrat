@@ -28,7 +28,7 @@ namespace smtrat
 
         bool reset = false;
 
-        UnionFind<carl::UVariable> union_find;
+        mutable UnionFind<carl::UVariable> union_find;
         std::set<carl::UVariable> variables;
         public:
             typedef Settings SettingsType;
