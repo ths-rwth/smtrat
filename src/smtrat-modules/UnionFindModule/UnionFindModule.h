@@ -26,6 +26,9 @@ namespace smtrat
         using History = std::vector<carl::UEquality>;
         History history;
 
+        bool reset = false;
+
+        UnionFind<carl::UVariable> union_find;
         std::set<carl::UVariable> variables;
         public:
             typedef Settings SettingsType;

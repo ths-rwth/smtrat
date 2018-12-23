@@ -21,6 +21,7 @@ namespace smtrat
         template<template<typename> typename Container>
         void init(Container<T> const& data) noexcept
         {
+            translate.clear();
             translate.reserve(data.size());
 
             node_type node = 0;
@@ -28,10 +29,20 @@ namespace smtrat
                 translate.emplace(val, node++);
             }
 
+            parents.clear();
             parents.resize(data.size());
             std::iota(parents.begin(), parents.end(), 0);
 
+            ranks.clear();
             ranks.resize(data.size(), 0);
+        }
+
+        void introduce_variable(T const& var) noexcept
+        {
+            assert(translate.size() == parents.size());
+            translate.emplace(var, translate.size());
+            parents.emplace_back(parents.size());
+            ranks.emplace_back(0);
         }
 
         [[nodiscard]] auto find(value_type const& val) noexcept -> representative const&

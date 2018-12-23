@@ -46,10 +46,32 @@ namespace smtrat
         const auto& ueq = _subformula->formula().uequality();
         assert(ueq.lhs().isUVariable() && ueq.rhs().isUVariable());
 
-        history.emplace_back(ueq);
-        variables.emplace(ueq.lhs().asUVariable());
-        variables.emplace(ueq.rhs().asUVariable());
+        const auto& lhs = ueq.lhs().asUVariable();
+        const auto& rhs = ueq.rhs().asUVariable();
 
+        if (const auto& [it, inserted] = variables.emplace(lhs); inserted) {
+            union_find.introduce_variable(lhs);
+        }
+
+        if (const auto& [it, inserted] = variables.emplace(rhs); inserted) {
+            union_find.introduce_variable(rhs);
+        }
+
+        if (!ueq.negated()) {
+            if (reset) {
+                union_find.init(variables);
+                for (const auto& eq : history) {
+                    if (!eq.negated()) {
+                        union_find.merge(eq.lhs().asUVariable(), eq.rhs().asUVariable());
+                    }
+                }
+                reset = false;
+            }
+
+            union_find.merge(lhs, rhs);
+        }
+
+        history.emplace_back(ueq);
         return true;
     }
 
@@ -60,6 +82,8 @@ namespace smtrat
         const auto& ueq = _subformula->formula().uequality();
         auto it = std::find(history.rbegin(), history.rend(), ueq);
         history.erase(std::next(it).base());
+
+        reset = true;
     }
 
     template<class Settings>
@@ -88,18 +112,10 @@ namespace smtrat
     template<class Settings>
     Answer UnionFindModule<Settings>::checkCore()
     {
-        UnionFind<carl::UVariable> union_find;
-        union_find.init(variables);
-
         std::vector<carl::UEquality> inequalities;
-        for (const auto &ueq : history) {
-            assert(ueq.lhs().isUVariable() && ueq.rhs().isUVariable());
-            if (ueq.negated()) {
-                inequalities.emplace_back(ueq);
-            } else {
-                union_find.merge(ueq.lhs().asUVariable(), ueq.rhs().asUVariable());
-            }
-        }
+        std::copy_if(history.begin(), history.end(), std::back_inserter(inequalities), [] (const auto &ueq) {
+            return ueq.negated();
+        });
 
         if (!isConsistent(union_find, inequalities)) {
             generateTrivialInfeasibleSubset();
