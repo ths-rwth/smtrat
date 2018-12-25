@@ -7,7 +7,7 @@
 
 #include <iostream>
 #include <map>
-#include "../config.h"
+#include <smtrat-common/smtrat-common.h>
 #ifdef __VS
 #pragma warning(push, 0)
 #include <boost/spirit/home/support/detail/hold_any.hpp>

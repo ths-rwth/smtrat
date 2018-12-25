@@ -1,5 +1,4 @@
 language: generic
-sudo: false
 dist: trusty
 
 cache:
@@ -65,6 +64,18 @@ matrix:
         apt:
           sources: [*sources_base]
           packages: [*packages_base, g++-8]
+    - stage: dependencies
+      os: osx
+      osx_image: xcode9.3
+      script: TASK=dependencies source .ci/build.sh
+    - stage: dependencies
+      os: osx
+      osx_image: xcode9.4
+      script: TASK=dependencies source .ci/build.sh
+    - stage: dependencies
+      os: osx
+      osx_image: xcode10
+      script: TASK=dependencies source .ci/build.sh
     - stage: build
       os: linux
       compiler: clang++-5.0
@@ -126,33 +137,28 @@ matrix:
       os: linux
       compiler: g++-7
       env: CC=gcc-7 CXX=g++-7 TASK=doxygen
+      if: branch = master
       script: MAKE_PARALLEL=-j1 source .ci/build.sh
       addons:
         apt:
           sources: [*sources_base]
-          packages: [*packages_base, g++-7, doxygen, ghostscript, latex-xcolor, pgf, texinfo, texlive, texlive-font-utils, texlive-latex-extra]
+          packages: [*packages_base, g++-7, doxygen, ghostscript, latex-xcolor, lmodern, pgf, texinfo, texlive, texlive-font-utils, texlive-latex-extra]
     - stage: build
       os: linux
-      compiler: clang++-6.0
-      env: CC=clang-6.0 CXX=clang++-6.0 TASK=tidy
+      compiler: clang++-7.0
+      env: CC=clang-7 CXX=clang++-7 TASK=tidy
       script: source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base, llvm-toolchain-trusty-6.0]
-          packages: [*packages_base, clang-6.0, libstdc++-8-dev]
+          sources: [*sources_base, llvm-toolchain-trusty-7]
+          packages: [*packages_base, clang-7, libstdc++-8-dev]
   allow_failures:
     - stage: dependencies
       os: linux
-      env: CC=clang-7 CXX=clang++-7
-    - stage: dependencies
-      os: linux
       env: CC=gcc-7 CXX=g++-7
     - stage: dependencies
       os: linux
       env: CC=gcc-8 CXX=g++-8
-    - stage: build
-      os: linux
-      env: CC=clang-7 CXX=clang++-7
     - stage: build
       os: linux
       env: CC=gcc-7 CXX=g++-7
@@ -160,8 +166,17 @@ matrix:
       os: linux
       env: CC=gcc-8 CXX=g++-8
     - stage: build
+      os: osx
+      osx_image: xcode9.3
+    - stage: build
+      os: osx
+      osx_image: xcode9.4
+    - stage: build
+      os: osx
+      osx_image: xcode10
+    - stage: build
       os: linux
-      env: CC=clang-6.0 CXX=clang++-6.0 TASK=tidy
+      env: CC=clang-7 CXX=clang++-7 TASK=tidy
 
 before_install:
   - cd .ci/ && source setup_travis.sh && cd ../

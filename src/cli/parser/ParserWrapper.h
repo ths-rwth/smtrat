@@ -4,6 +4,6 @@
 
 namespace smtrat {
 
-bool parseSMT2File(parser::InstructionHandler* handler, bool queueInstructions, std::istream& input);
+bool parseSMT2File(parser::InstructionHandler& handler, bool queueInstructions, std::istream& input);
 	
 }

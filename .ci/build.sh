@@ -2,7 +2,7 @@
 
 mkdir -p build || return 1
 cd build/ || return 1
-cmake -D DEVELOPER=ON -D USE_COCOA=ON -D USE_GINAC=ON -D SMTRAT_Strategy=AllModulesStrategy ../ || return 1
+cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=AllModulesStrategy ../ || return 1
 
 function keep_waiting() {
   while true; do
@@ -43,6 +43,10 @@ elif [[ ${TASK} == "doxygen" ]]; then
 	# Commit and push
 	git commit -q -m "Updated documentation for SMT-RAT" || return 1
 	git push -f origin master || return 1
+
+elif [[ ${TASK} == "tidy" ]]; then
+
+	/usr/bin/time make tidy || return 1
 
 else
 	keep_waiting &

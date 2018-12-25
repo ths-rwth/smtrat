@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <boost/filesystem.hpp>
+#include <filesystem>
 
 #ifdef BENCHMAX_DATABASE
 // Include exactly one implementation.
@@ -18,7 +18,7 @@
 
 namespace benchmax {
 
-namespace fs = boost:: filesystem;
+namespace fs = std::filesystem;
 
 #ifdef BENCHMAX_DATABASE
 class Database {

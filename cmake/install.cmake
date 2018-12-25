@@ -1,0 +1,21 @@
+include(GNUInstallDirs)
+
+install(
+	DIRECTORY
+		${CMAKE_SOURCE_DIR}/src/lib
+		${CMAKE_SOURCE_DIR}/src/smtrat-common
+		${CMAKE_SOURCE_DIR}/src/smtrat-qe
+	DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/smtrat
+	FILES_MATCHING REGEX ".*\.(h|tpp)$"
+)
+
+#install(
+#	EXPORT smtratTar
+#	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+#	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#)
+
+#install(FILES ${CMAKE_BINARY_DIR}/carlConfig.install.cmake DESTINATION ${CMAKE_INSTALL_DIR} RENAME carlConfig.cmake)
+#install(FILES ${CMAKE_BINARY_DIR}/carlConfigVersion.cmake DESTINATION ${CMAKE_INSTALL_DIR})
+install(EXPORT smtratTargets FILE smtratTargets.cmake DESTINATION ${CMAKE_INSTALL_DIR})

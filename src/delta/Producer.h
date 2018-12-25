@@ -46,6 +46,7 @@ public:
 	{
 		if (!settings.has("no-constants")) operators.emplace_back(&constant, "Replaced variable ", " by constant ", ".");
 		if (!settings.has("no-children")) operators.emplace_back(&children, "Replaced ", " by child ", ".");
+		if (!settings.has("no-reorder")) operators.emplace_back(&reorderChildren, "Reordered children of ", " to ", ".");
 		if (!settings.has("no-merge")) operators.emplace_back(&mergeChild, "Merged ", " with child ", ".");
 		if (!settings.has("no-numbers")) operators.emplace_back(&number, "Replaced number ", " by ", ".");
 		if (!settings.has("no-lets")) operators.emplace_back(&letExpression, "Eliminated ", " by ", ".");

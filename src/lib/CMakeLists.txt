@@ -26,7 +26,6 @@ foreach(tpl ${smtrat_lib_tpl})
 	configure_file("${tpl}" "${file}")
 endforeach()
 
-add_subdirectory(modules)
 add_subdirectory(utilities)
 
 file(GLOB_RECURSE smtrat_lib_sources "*.cpp")
@@ -42,18 +41,29 @@ endif()
 add_library(lib_${PROJECT_NAME} ${STATICLIB} ${smtrat_lib_sources} )
 set_target_properties( lib_${PROJECT_NAME} PROPERTIES
 #		# create *nix style library versions + symbolic links
-		VERSION "${${PROJECT_NAME}_MAJORVERSION}.${${PROJECT_NAME}_MINORVERSION}.${${PROJECT_NAME}_MAINTENANCEVERSION}"
-		SOVERSION "${${PROJECT_NAME}_MAJORVERSION}.${${PROJECT_NAME}_MINORVERSION}.${${PROJECT_NAME}_MAINTENANCEVERSION}"
+		VERSION "${PROJECT_VERSION}"
+		SOVERSION "${PROJECT_VERSION}"
 #		# allow creating static and shared libs without conflicts
-#		# CLEAN_DIRECT_OUTPUT 1
+		CLEAN_DIRECT_OUTPUT 1
 #		# avoid conflicts between library and binary target names
 		OUTPUT_NAME ${PROJECT_NAME}
         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
         ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
 )
 
-set(SMTRAT_TARGETS lib_smtrat CACHE STRING INTERNAL FORCE)
+include(GNUInstallDirs)
+
+install(
+	TARGETS lib_${PROJECT_NAME}
+	EXPORT smtratTargets
+	RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+	LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+	ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+)
+
 target_link_libraries( lib_${PROJECT_NAME} ${libraries} ) # libraries defined in top-level CMakeLists.txt
+
+target_link_libraries(lib_smtrat smtrat-common-shared smtrat-mcsat-shared smtrat-modules-shared)
 
 target_include_directories( lib_${PROJECT_NAME} PUBLIC
 	$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
@@ -82,19 +92,3 @@ if (CLANG_TIDY)
 		endif()
 	endforeach()
 endif()
-
-
-# Install destination and permissions for the library
-# # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-
-install( TARGETS ${SMTRAT_TARGETS}
-	EXPORT smtratTargets
-	LIBRARY DESTINATION "${LIB_INSTALL_DIR}"
-        ARCHIVE DESTINATION "${LIB_INSTALL_DIR}"
-        COMPONENT shlib
-	PERMISSIONS
-		OWNER_READ OWNER_WRITE OWNER_EXECUTE
-		GROUP_READ GROUP_EXECUTE
-		WORLD_READ WORLD_EXECUTE
-)

@@ -16,9 +16,7 @@
 #include <unordered_map>
 #include <set>
 #include <algorithm>
-#include <experimental/optional>
-/* #include <optional> */
-/* #include <boost/optional.hpp> */
+#include <optional>
 
 #include <carl/formula/model/ran/RealAlgebraicNumber.h>
 #include <carl/formula/model/ran/RealAlgebraicNumberEvaluation.h>
@@ -42,8 +40,8 @@ namespace onecellcad {
   using RAN = carl::RealAlgebraicNumber<smtrat::Rational>;
   using RANPoint = carl::RealAlgebraicPoint<smtrat::Rational>;
   using RANMap = std::map<carl::Variable, RAN>;
-  using std::experimental::optional;
-  using std::experimental::nullopt;
+  using std::optional;
+  using std::nullopt;
 
   /**
    * Represent a cell's closed-interval-boundary object along one single axis by an

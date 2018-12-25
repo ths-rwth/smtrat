@@ -1,0 +1,6 @@
+BeginDefineModule()
+ModuleMainHeader(GBModule/GBModule.h)
+ModuleName(GBModule)
+ModuleVersion(0 5 0)
+ModuleSettingsName(output)
+EndDefineModule()

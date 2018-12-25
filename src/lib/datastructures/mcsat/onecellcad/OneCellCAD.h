@@ -18,9 +18,8 @@
 #include <unordered_map>
 #include <set>
 #include <algorithm>
-#include "variant.hpp" // Workaround; remove when c++17 available
-#include <optional> // remove when c++17 available
-/* #include <optional> // uncomment when c++17 is available*/
+#include <optional>
+#include <variant>
 
 #include <carl/formula/model/ran/RealAlgebraicNumber.h>
 #include <carl/formula/model/ran/RealAlgebraicNumberEvaluation.h>
@@ -28,19 +27,20 @@
 #include <carl/formula/model/mvroot/MultivariateRoot.h>
 #include <carl/core/Variable.h>
 #include <carl/core/VariablePool.h>
-#include <carl/core/polynomialfunctions/Resultant.h>
 #include <carl/core/rootfinder/RootFinder.h>
 #include <carl/core/UnivariatePolynomial.h>
 #include <carl/core/MultivariatePolynomial.h>
-#include <carl/converter/CoCoAAdaptor.h>
+#include <carl/core/polynomialfunctions/Derivative.h>
+#include <carl/core/polynomialfunctions/Factorization.h>
+#include <carl/core/polynomialfunctions/Resultant.h>
 
 //#include "../../../Common.h" // useful short type aliases and constants
 #include "lib/Common.h" // useful short type aliases and constants
 #include "Assertables.h"
-#include "lib/datastructures/cad/projection/ProjectionOperator_utils.h"
-#include "lib/datastructures/cad/projection/ProjectionOperator_utils.h"
+#include <smtrat-cad/projectionoperator/utils.h>
 
 namespace smtrat {
+namespace mcsat {
 namespace onecellcad {
 
     using RAN = carl::RealAlgebraicNumber<smtrat::Rational>;
@@ -185,7 +185,7 @@ namespace onecellcad {
     RootExpr asRootExpr(carl::Variable rootVariable, Poly poly, std::size_t rootIdx){
       assert(poly.gatherVariables().count(rootVariable) == 1);
       // Apparently we need this complicated construction. I forgot why a simple substitute is not okay.
-      return RootExpr(Poly(carl::UnivariatePolynomial<Poly>(RootExpr::uniqRootVar(),
+      return RootExpr(Poly(carl::UnivariatePolynomial<Poly>(RootExpr::var(),
         poly.toUnivariatePolynomial(rootVariable).coefficients())), rootIdx);
     }
 
@@ -245,14 +245,14 @@ namespace onecellcad {
      * A cell is a collection of boundary objects along each axis, called
      * cell-components based on math. vectors and their components.
      */
-    using CADCell = std::vector<mpark::variant<Sector, Section>>;
+    using CADCell = std::vector<std::variant<Sector, Section>>;
 
     inline
     std::ostream &operator<<(ostream &os, const CADCell &cell) {
       os << "(cell [";
       for (std::size_t i = 0; i < cell.size(); i++) {
-        if (mpark::holds_alternative<Sector>(cell[i])) {
-          const auto cellSctr = mpark::get<Sector>(cell[i]);
+        if (std::holds_alternative<Sector>(cell[i])) {
+          const auto cellSctr = std::get<Sector>(cell[i]);
           // TODO
           if (cellSctr.lowBound)
             os << cellSctr.lowBound->boundFunction;
@@ -265,7 +265,7 @@ namespace onecellcad {
             os << "+infty";
         } else {
           os << "var_" << i << " = ";
-          const auto cellSctn = mpark::get<Section>(cell[i]);
+          const auto cellSctn = std::get<Section>(cell[i]);
           os << cellSctn.boundFunction;
         }
         os << ", ";
@@ -282,7 +282,7 @@ namespace onecellcad {
     std::size_t cellDimension(const CADCell &cell, const std::size_t uptoLevel) {
       std::size_t sectorCount = 0;
       for (std::size_t i = 0; i <= uptoLevel; i++)
-        if (mpark::holds_alternative<Sector>(cell[i]))
+        if (std::holds_alternative<Sector>(cell[i]))
           sectorCount++;
       return sectorCount;
     }
@@ -322,8 +322,9 @@ namespace onecellcad {
       // 'gatherVariables()' collects only variables with positive degree
       auto polyVariables = poly.gatherVariables();
 
-      if (polyVariables.empty())
+      if (polyVariables.empty()) {
         return std::nullopt; // for const-polys like '2'
+	  }
 
       for (std::size_t level = 0; level < variableOrder.size(); ++level) {
         polyVariables.erase(variableOrder[level]);
@@ -332,6 +333,7 @@ namespace onecellcad {
           return level;
       }
       throw ("Poly contains variable not found in variableOrder");
+	  return std::nullopt;
     }
 
     inline
@@ -392,10 +394,9 @@ namespace onecellcad {
       const Poly &poly) {
       // 'realRoots' returns std::nullopt if poly vanishes
       // early, but here we don't care
-      auto rootsOpt = carl::rootfinder::realRoots(
+      return carl::rootfinder::realRoots(
         poly.toUnivariatePolynomial(variableOrder[polyLevel]),
         prefixPointToStdMap(polyLevel));
-      return rootsOpt ? *rootsOpt : std::vector<RAN>();
     }
 
     bool isAlreadyProcessed(const TagPoly2 &poly) {
@@ -435,7 +436,7 @@ namespace onecellcad {
           poly.toUnivariatePolynomial(mainVariable),
           prefixPointToStdMap(polyLevel),
           dummy);
-      return resultPoly.isZero();
+      return carl::isZero(resultPoly);
     }
 
     bool isPointRootOfPoly(
@@ -469,14 +470,14 @@ namespace onecellcad {
 
       for (std::size_t level = 0; level < point.dim(); level++) {
         const carl::Variable lvlVar= variableOrder[level];
-        if (mpark::holds_alternative<Section>(cell[level])) {
-          const Section section = mpark::get<Section>(cell[level]);
+        if (std::holds_alternative<Section>(cell[level])) {
+          const Section section = std::get<Section>(cell[level]);
           if (!isPointRootOfPoly(level, section.boundFunction.poly(lvlVar)))
             return false;
           if (section.isolatedRoot != point[level])
             return false;
         } else {
-          const Sector sector = mpark::get<Sector>(cell[level]);
+          const Sector sector = std::get<Sector>(cell[level]);
           if (sector.highBound) {
             const Section highBound = *sector.highBound;
             if (point[level] > highBound.isolatedRoot)
@@ -521,10 +522,10 @@ namespace onecellcad {
       // precondition:
       assert(isNonConstIrreducible(poly));
       assert(!vanishesEarly(polyLevel, poly));
-      if (mpark::holds_alternative<Section>(cell[polyLevel]))
+      if (std::holds_alternative<Section>(cell[polyLevel]))
         return; // canot shrink further
 
-      Sector &sector = mpark::get<Sector>(cell[polyLevel]);
+      Sector &sector = std::get<Sector>(cell[polyLevel]);
       const RAN pointComp = point[polyLevel]; // called alpha_k in [brown15]
 
       SMTRAT_LOG_DEBUG("smtrat.cad", "Shrink cell sector at lvl " << polyLevel);
@@ -626,8 +627,8 @@ namespace onecellcad {
         for (const auto &poly : layerOfDerivatives) {
           // Derive poly wrt to each variable (variables with idx 0 to 'mainPoly.level')
           for (std::size_t varIdx = 0; varIdx <= mainPoly.level; varIdx++) {
-            const auto derivative = poly.derivative(variableOrder[varIdx]);
-            if (derivative.isZero())
+            const auto derivative = carl::derivative(poly, variableOrder[varIdx]);
+            if (carl::isZero(derivative))
               continue;
             nextLayer.emplace_back(derivative);
             if (foundSomeNonEarlyVanishingDerivative)
@@ -780,7 +781,7 @@ namespace onecellcad {
 
       // Do early-exit tests:
       for (const auto &coeff : boundCandidateUniPoly.coefficients()) {
-        if (coeff.isConstant() && !coeff.isZero())
+        if (coeff.isConstant() && !carl::isZero(coeff))
           return ShrinkResult::SUCCESS;
       }
 
@@ -829,13 +830,13 @@ namespace onecellcad {
       // Do a "model-based" Brown-McCallum projection.
       std::vector<TagPoly2> projectionResult;
       const auto mainVariable = variableOrder[boundCandidate.level];
-      if (mpark::holds_alternative<Section>(cell[boundCandidate.level])) {
+      if (std::holds_alternative<Section>(cell[boundCandidate.level])) {
         projectionResult.emplace_back(TagPoly2{
           InvarianceType::ORD_INV,
           resultant(
             mainVariable,
             boundCandidate.poly,
-            mpark::get<Section>(cell[boundCandidate.level]).boundFunction.poly(mainVariable)),
+            std::get<Section>(cell[boundCandidate.level]).boundFunction.poly(mainVariable)),
           0}); // hack: we compute the level later in this function
 
         if (boundCandidate.tag == InvarianceType::ORD_INV) {
@@ -858,7 +859,7 @@ namespace onecellcad {
           discriminant(mainVariable, boundCandidate.poly),
           0}); // hack: we compute the level later in this function
 
-        Sector &sectorAtLvl = mpark::get<Sector>(cell[boundCandidate.level]);
+        Sector &sectorAtLvl = std::get<Sector>(cell[boundCandidate.level]);
 
         if (sectorAtLvl.lowBound) {
           projectionResult.emplace_back(TagPoly2{
@@ -893,7 +894,7 @@ namespace onecellcad {
       }
 
       if (boundCandidate.tag == InvarianceType::ORD_INV ||
-          mpark::holds_alternative<Sector>(cell[boundCandidate.level])) {
+          std::holds_alternative<Sector>(cell[boundCandidate.level])) {
         if (refineNonNull(boundCandidate, cell) == ShrinkResult::FAIL)
           return ShrinkResult::FAIL;
 
@@ -937,8 +938,8 @@ namespace onecellcad {
       // Do a "model-based" Brown-McCallum projection.
       std::vector<TagPoly2> projectionResult;
       const auto mainVariable = variableOrder[boundCandidate.level];
-      if (mpark::holds_alternative<Section>(cell[boundCandidate.level])) {
-        Section sectionAtLvl = mpark::get<Section>(cell[boundCandidate.level]);
+      if (std::holds_alternative<Section>(cell[boundCandidate.level])) {
+        Section sectionAtLvl = std::get<Section>(cell[boundCandidate.level]);
         projectionResult.emplace_back(TagPoly2{
           InvarianceType::ORD_INV,
           resultant(mainVariable, boundCandidate.poly, sectionAtLvl.boundFunction.poly(mainVariable)),
@@ -949,7 +950,7 @@ namespace onecellcad {
           discriminant(mainVariable, boundCandidate.poly),
           0}); // hack: we compute the level later in this function});
 
-        Sector sectorAtLvl = mpark::get<Sector>(cell[boundCandidate.level]);
+        Sector sectorAtLvl = std::get<Sector>(cell[boundCandidate.level]);
         if (!sectorAtLvl.lowBound || !sectorAtLvl.highBound ||
             hasPolyLastVariableRootWithinBounds(
               sectorAtLvl.lowBound->isolatedRoot,
@@ -994,7 +995,7 @@ namespace onecellcad {
           return ShrinkResult::FAIL;
       }
 
-      if (mpark::holds_alternative<Sector>(cell[boundCandidate.level])) {
+      if (std::holds_alternative<Sector>(cell[boundCandidate.level])) {
         if (refineNonNull(boundCandidate, cell)
             == ShrinkResult::FAIL)
           return ShrinkResult::FAIL;
@@ -1040,7 +1041,7 @@ namespace onecellcad {
       }
 
       if (boundCandidate.level == 0) {
-        if (mpark::holds_alternative<Sector>(cell[boundCandidate.level]))
+        if (std::holds_alternative<Sector>(cell[boundCandidate.level]))
           shrinkSingleComponent(boundCandidate.level, boundCandidate.poly, cell);
         projFactorSet[boundCandidate.level].emplace_back(TagPoly2{InvarianceType::ORD_INV, boundCandidate.poly, boundCandidate.level});
         return ShrinkResult::SUCCESS;
@@ -1066,9 +1067,9 @@ namespace onecellcad {
       for (std::size_t lvl = 0; lvl < cell.size(); lvl++ ) {
         const RAN pointCmp = point[lvl];
         const auto cellCmp = cell[lvl];
-        if (mpark::holds_alternative<Sector>(cellCmp)) {
+        if (std::holds_alternative<Sector>(cellCmp)) {
           // must be low <  point_k < high
-          const auto cellSctr = mpark::get<Sector>(cellCmp);
+          const auto cellSctr = std::get<Sector>(cellCmp);
           if (cellSctr.lowBound) {
             if (!(cellSctr.lowBound->isolatedRoot < pointCmp))
               return false;
@@ -1078,7 +1079,7 @@ namespace onecellcad {
               return false;
           }
         } else {
-          const auto cellSctn = mpark::get<Section>(cellCmp);
+          const auto cellSctn = std::get<Section>(cellCmp);
           // must be point_k == root
           SMTRAT_LOG_DEBUG("smtrat.cad", "##Section: " << cellSctn << " point_" << lvl << ": " << pointCmp);
           if (!(cellSctn.isolatedRoot == pointCmp))
@@ -1221,15 +1222,19 @@ namespace onecellcad {
   inline
   void categorizeByLevel(
     std::vector<std::vector<TagPoly>>& projectionLevels, // output argument
-    const std::vector<carl::Variable> varOrder,
-    const std::vector<TagPoly> polys) { // constant-polys prohibited
+    const std::vector<carl::Variable>& varOrder,
+    const std::vector<TagPoly>& polys) { // constant-polys prohibited
 
     //assert(enough Levels for polys)
-    for (auto& poly : polys) {
-      std::size_t level = *levelOf(varOrder, poly.poly);
-      projectionLevels[level].emplace_back(poly);
+    for (const auto& poly : polys) {
+		if (poly.poly.isNumber()) continue;
+      auto level = levelOf(varOrder, poly.poly);
+	  assert(level.has_value());
+	  assert(*level < projectionLevels.size());
+      projectionLevels[*level].emplace_back(poly);
     }
   }
 
 } // namespace onecellcad
+} // namespace mcsat
 } // namespace smtrat

@@ -53,8 +53,7 @@ namespace smtrat
     {
         mGeneratedModules.push_back( mpPrimaryBackend );
         // inform it about all constraints
-        typedef void (*Func)( Module*, const FormulaT& );
-        Func f = [] ( Module* _module, const FormulaT& _constraint ) { _module->inform( _constraint ); };
+        auto f = [] ( Module* _module, const FormulaT& _constraint ) { _module->inform( _constraint ); };
         carl::FormulaPool<Poly>::getInstance().forallDo<Module>( f, mpPrimaryBackend );
     }
 
@@ -199,7 +198,7 @@ namespace smtrat
             auto modelIter = curModel.find( mObjectives.front().second.first );
             assert( modelIter != curModel.end() );
             if( modelIter->second.isMinusInfinity() )
-                return mObjectives.front().second.second ? modelIter->second.asInfinity() : InfinityValue(true);
+                return mObjectives.front().second.second ? modelIter->second.asInfinity() : InfinityValue{true};
             assert( modelIter->second.isRational() );
             return mObjectives.front().second.second ? modelIter->second.asRational() : Rational(-(modelIter->second.asRational()));
         }
@@ -416,7 +415,7 @@ namespace smtrat
 #ifdef __VS
     vector<Module*> Manager::getBackends( Module* _requiredBy, atomic<bool>* _foundAnswer )
 #else
-    vector<Module*> Manager::getBackends( Module* _requiredBy, atomic_bool* _foundAnswer )
+    std::vector<Module*> Manager::getBackends( Module* _requiredBy, atomic_bool* _foundAnswer )
 #endif
     {
         #ifdef SMTRAT_STRAT_PARALLEL_MODE

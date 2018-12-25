@@ -4,7 +4,7 @@
 # )
 #
 # target_link_libraries(runOpenCellCadTests
-#   libboost_unit_test_framework.a
+#   ${Boost_unit_test_framework_SHARED}
 #   lib_${PROJECT_NAME}
 #   ${libraries}
 # )
@@ -15,7 +15,7 @@
 # )
 #
 # target_link_libraries(runOneCellCadTests
-#   libboost_unit_test_framework.a
+#   ${Boost_unit_test_framework_SHARED}
 #   lib_${PROJECT_NAME}
 #   ${libraries}
 # )

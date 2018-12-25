@@ -4,7 +4,7 @@ message(STATUS "Making sure CArL is available.")
 set(CARL_BUILD_DIR "${CMAKE_BINARY_DIR}/resources/src/CArL-config-EP-build")
 file(MAKE_DIRECTORY ${CARL_BUILD_DIR})
 execute_process(
-	COMMAND ${CMAKE_COMMAND} -DTARGETDIR=${CMAKE_BINARY_DIR}/resources ${CMAKE_SOURCE_DIR}/resources/carl
+	COMMAND ${CMAKE_COMMAND} -DTARGETDIR=${CMAKE_BINARY_DIR}/resources ${CMAKE_SOURCE_DIR}/resources/carl -DUSE_GINAC=${USE_GINAC}
 	WORKING_DIRECTORY ${CARL_BUILD_DIR}
 )
 execute_process(
@@ -16,7 +16,7 @@ ExternalProject_Add(
 	CArL-EP
 	DOWNLOAD_COMMAND ""
 	CONFIGURE_COMMAND ""
-	BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} lib_carl lib_carl_static
+	BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} carl-shared carl-static
 	INSTALL_COMMAND ${CMAKE_MAKE_PROGRAM} install/fast
 )
 
@@ -32,6 +32,6 @@ ExternalProject_Add(
 )
 
 include(${CMAKE_BINARY_DIR}/resources/src/CArL-EP-build/carlConfig.cmake)
-add_dependencies(lib_carl CArL-EP)
-add_dependencies(lib_carl_static CArL-EP)
-add_dependencies(resources lib_carl lib_carl_static)
+add_dependencies(carl-shared CArL-EP)
+add_dependencies(carl-static CArL-EP)
+add_dependencies(resources carl-shared carl-static)

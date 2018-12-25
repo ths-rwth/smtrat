@@ -11,10 +11,11 @@
 #include <algorithm>
 #include <carl/core/Variable.h>
 #include <carl/core/MultivariatePolynomial.h>
-#include <carl/converter/CoCoAAdaptor.h>
+#include <carl/core/polynomialfunctions/Factorization.h>
 #include "../../../Common.h" // type alias for Rational number representation
 
 namespace smtrat {
+namespace mcsat {
 namespace onecellcad {
 
   template <typename PolyType>
@@ -77,4 +78,5 @@ namespace onecellcad {
   }
 
 } // namespace onecellcad
+} // namespace mcsat
 } // namespace smtrat

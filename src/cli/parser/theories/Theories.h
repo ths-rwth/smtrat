@@ -115,10 +115,16 @@ struct Theories {
 	}
 	void declareFunction(const std::string& name, const std::vector<carl::Sort>& args, const carl::Sort& sort) {
 		if (state->isSymbolFree(name)) {
+			std::vector<carl::Sort> our_args(args);
+			for (auto& a: our_args) {
+				if (carl::SortManager::getInstance().getType(a) == carl::VariableType::VT_BOOL) {
+					a = carl::SortManager::getInstance().getSort("UF_Bool");
+				}
+			}
 			if (carl::SortManager::getInstance().getType(sort) == carl::VariableType::VT_BOOL) {
-				state->declared_functions[name] = carl::newUninterpretedFunction(name, args, carl::SortManager::getInstance().getSort("UF_Bool"));
+				state->declared_functions[name] = carl::newUninterpretedFunction(name, our_args, carl::SortManager::getInstance().getSort("UF_Bool"));
 			} else {
-				state->declared_functions[name] = carl::newUninterpretedFunction(name, args, sort);
+				state->declared_functions[name] = carl::newUninterpretedFunction(name, our_args, sort);
 			}
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Function \"" << name << "\" will not be declared due to a name clash.");
@@ -207,7 +213,7 @@ struct Theories {
 				if (carl::variant_is_type<std::string>(attr.value)) {
 					const std::string& value = boost::get<std::string>(attr.value);
 					SMTRAT_LOG_DEBUG("smtrat.parser", "Naming term: " << value << " = " << term);
-					state->handler->annotateName(subject, value);
+					state->handler.annotateName(subject, value);
 				} else {
 					SMTRAT_LOG_WARN("smtrat.parser", "Ignoring naming with unsupported value type for term " << term);
 				}

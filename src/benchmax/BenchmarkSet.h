@@ -12,15 +12,8 @@
 #include <iostream>
 #include <vector>
 
-#define BOOST_FILESYSTEM_VERSION 3
-#ifdef __VS
-#pragma warning(push, 0)
-#include <boost/filesystem.hpp>
-#pragma warning(pop)
-#else
-#include <boost/filesystem.hpp>
-#endif
-namespace fs = boost::filesystem;
+#include <filesystem>
+namespace fs = std::filesystem;
 
 namespace benchmax {
 

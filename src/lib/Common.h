@@ -19,8 +19,6 @@
 #include <carl/core/VariablePool.h>
 #include <carl/interval/Interval.h>
 #include <carl/interval/IntervalEvaluation.h>
-#include <carl/interval/Contraction.h>
-#include <carl/io/streamingOperators.h>
 #include <carl/util/Common.h>
 #include <carl/formula/Logic.h>
 #include <carl/formula/FormulaPool.h>
@@ -29,27 +27,12 @@
 #include <carl/formula/model/Model.h>
 #include <carl/formula/model/evaluation/ModelEvaluation.h>
 
-#include "logging.h"
+#include <smtrat-common/smtrat-common.h>
 
 namespace smtrat
 {
-	using carl::operator<<;
 
   using Logic = carl::Logic;
-  ///An enum with the possible answers a Module can give
-  enum Answer { SAT = 0, UNSAT = 1, UNKNOWN = 2, ABORTED = 3 };
-	inline std::ostream& operator<<(std::ostream& os, const Answer& a) {
-		switch (a) {
-			case Answer::SAT:		return os << "SAT";
-			case Answer::UNSAT:		return os << "UNSAT";
-			case Answer::UNKNOWN:	return os << "UNKNOWN";
-			case Answer::ABORTED:	return os << "ABORTED";
-		}
-		return os << "???";
-	}
-
-  // An enum with the levels for lemma generation
-  enum LemmaLevel { NONE = 0, NORMAL = 1, ADVANCED = 2 };
 
     // Further type definitions.
 /*#ifdef SMTRAT_STRAT_PARALLEL_MODE
@@ -61,71 +44,34 @@ namespace smtrat
     typedef mpq_class Rational;
 #endif
 #endif*/
-  using Rational = mpq_class; // Use always GMP as CLN does not work for rationalize
+//  using Rational = mpq_class; // Use always GMP as CLN does not work for rationalize
 
 	typedef carl::IntegralType<Rational>::type Integer;
 
   typedef carl::Term<Rational> TermT;
 
-  using Poly = carl::MultivariatePolynomial<Rational>;
+//  using Poly = carl::MultivariatePolynomial<Rational>;
 
   template<typename Coeff> using UPoly = carl::UnivariatePolynomial<Coeff>;
 
   using RANPoint = carl::RealAlgebraicPoint<Rational>;
 
-  typedef carl::Constraint<Poly> ConstraintT;
-
-  typedef carl::Constraints<Poly> ConstraintsT;
+//  typedef carl::Constraint<Poly> ConstraintT;
+//
+//  typedef carl::Constraints<Poly> ConstraintsT;
 	
 	using MultivariateRootT = carl::MultivariateRoot<Poly>;
 	using RootExpr = carl::MultivariateRoot<Poly>; // prefer this one
 
-	typedef carl::VariableAssignment<Poly> VariableAssignmentT;
-	
-	typedef carl::VariableComparison<Poly> VariableComparisonT;
+//  typedef carl::Formula<Poly> FormulaT;
 
-  typedef carl::Formula<Poly> FormulaT;
-
-  typedef carl::Formulas<Poly> FormulasT;
-
-	typedef carl::FormulaSet<Poly> FormulaSetT;
-
-	typedef carl::FormulasMulti<Poly> FormulasMultiT;
-
-  typedef carl::EvaluationMap<Rational> EvalRationalMap;
-
-  typedef carl::Interval<Rational> RationalInterval;
-
-  typedef carl::EvaluationMap<RationalInterval> EvalRationalIntervalMap;
-
-  typedef carl::Interval<double> DoubleInterval;
-
-  typedef carl::EvaluationMap<DoubleInterval> EvalDoubleIntervalMap;
-
-  typedef carl::VarInfo<Poly> VarPolyInfo;
+//  typedef carl::Formulas<Poly> FormulasT;
 
   typedef carl::VarInfoMap<Poly> VarPolyInfoMap;
 	
-	using Model = carl::Model<Rational, Poly>;
-	static const Model EMPTY_MODEL = Model();
-	
-	using ModelSubstitution = carl::ModelSubstitution<Rational, Poly>;
-	
 	using ModelMVRootSubstitution = carl::ModelMVRootSubstitution<Rational, Poly>;
-	using ModelPolynomialSubstitution = carl::ModelPolynomialSubstitution<Rational, Poly>;
-	
-	using ModelVariable = carl::ModelVariable;
-	
-	using ModelValue = carl::ModelValue<Rational, Poly>;
-	
-	using InfinityValue = carl::InfinityValue;
 	
 	using SqrtEx = carl::SqrtEx<smtrat::Poly>;
-
-  template<template<typename> class Operator>
-  using Contractor = carl::Contraction<Operator, Poly>;
-
-  typedef carl::Factors<Poly> Factorization;
 
 #ifdef __VS
     typedef std::vector<std::atomic<bool>*> Conditionals;
@@ -133,8 +79,6 @@ namespace smtrat
     typedef std::vector<std::atomic_bool*> Conditionals;
 #endif
 
-	// Pair of priority and module id (within the respective strategy graph)
-    typedef std::pair<std::size_t, std::size_t> thread_priority;
 
     // Constants.
     ///@todo move static variables to own cpp
@@ -157,8 +101,6 @@ namespace smtrat
     static const unsigned MAX_DIMENSION_FOR_FACTORIZATION = 6;
 
     static const unsigned MAX_NUMBER_OF_MONOMIALS_FOR_FACTORIZATION = 7;
-    
-    static const EvalDoubleIntervalMap EMPTY_EVAL_DOUBLE_INTERVAL_MAP = EvalDoubleIntervalMap();
 
 }    // namespace smtrat
 

@@ -223,7 +223,7 @@ namespace parser {
 		FormulaT consElse = FormulaT(types::BVConstraint::create(carl::BVCompareRelation::EQ, vart, elset));
 
 		state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IMPLIES, {ifterm, consThen}));
-		state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IMPLIES, {FormulaT(carl::FormulaType::NOT,ifterm), consElse}));
+		state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IMPLIES, {!ifterm, consElse}));
 		result = vart;
 		return true;
 	}

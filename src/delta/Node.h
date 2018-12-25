@@ -198,11 +198,23 @@ struct NodePrinter {
 			}
 			return;
 		}
+
+		if (std::all_of(n.children.begin(), n.children.end(),
+			[](const auto& child){ return !child.brackets && child.children.empty(); }
+		)) {
+			if (n.brackets) os << "(";
+			os << n.name;
+			for (const auto& c: n.children) {
+				os << " " << c.name;
+			}
+			if (n.brackets) os << ")";
+			return;
+		}
 		
 		if (n.brackets) os << "(";
 		os << n.name;
 		if (n.brackets && !n.children.empty()) os << std::endl;
-		for (auto c: n.children) {
+		for (const auto& c: n.children) {
 			os << indent << "\t";
 			pretty_print(os, c, indent + "\t");
 			if (n.brackets) os << std::endl;

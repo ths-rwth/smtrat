@@ -1,0 +1,7 @@
+(set-logic QF_NRA)
+(declare-fun a () Real)
+(declare-fun b () Real)
+(declare-fun c () Real)
+(assert (and (= (+ (+ a b) c) 0) (= (+ (+ (* a b) (* b c)) (* c a)) 0) (= (- (* a (* b c)) 1) 0)))
+(eliminate-quantifiers (exists b a))
+(exit)

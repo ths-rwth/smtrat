@@ -586,7 +586,7 @@ namespace smtrat
 			RationalInterval res(1);
 			for (const auto& vexp: *_mon) {
 				const RationalInterval& i = getInterval(vexp.first);
-				res *= i.pow(vexp.second);
+				res *= carl::pow(i, vexp.second);
 			}
 			return res;
 		}
@@ -826,7 +826,7 @@ namespace smtrat
                         Poly varCoeff = cons->coefficient( var, 1 );
                         assert( !varCoeff.isZero() );
                         RationalInterval varCoeffEvaluated = carl::IntervalEvaluation::evaluate( varCoeff, bounds );
-                        Poly remainder = cons->lhs().substitute( var, smtrat::ZERO_POLYNOMIAL );
+                        Poly remainder = cons->lhs().substitute( var, Poly(0) );
                         RationalInterval remainderEvaluated = carl::IntervalEvaluation::evaluate( remainder, bounds ).inverse();
                         
                         RationalInterval newBoundsA;
@@ -873,7 +873,7 @@ namespace smtrat
                         }
                         else
                         {
-                            if( !varCoeffEvaluated.contains( ZERO_RATIONAL ) || cons->relation() == carl::Relation::EQ )
+                            if( !varCoeffEvaluated.contains( Rational(0) ) || cons->relation() == carl::Relation::EQ )
                             {
                                 carl::Relation rel = cons->relation();
                                 if( varCoeffEvaluated.sgn() == carl::Sign::NEGATIVE )

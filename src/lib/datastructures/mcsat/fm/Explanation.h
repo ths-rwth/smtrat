@@ -1,7 +1,10 @@
 #pragma once
 
 #include "../common.h"
-#include "../Bookkeeping.h"
+
+#include "FMStatistics.h"
+
+#include <smtrat-mcsat/smtrat-mcsat.h>
 
 namespace smtrat {
 namespace mcsat {
@@ -64,7 +67,7 @@ struct ConflictGenerator {
 	 */
 
 
-	#define yield(callback, result) if (callback(std::move(result))) { return; }
+	#define mcsat_yield(callback, result) if (callback(std::move(result))) { return; }
 
 	
 private:
@@ -162,7 +165,7 @@ public:
 				continue;
 			}
 			auto p = b.coefficient(mVariable, 1);
-			if (p.isZero()) {
+			if (carl::isZero(p)) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because it does not contain " << mVariable);
 				continue;
 			}
@@ -193,7 +196,7 @@ public:
 					expl.emplace_back(ConstraintT(-q, b.relation()));
 
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explanation: " << expl[0].negated() << " && " << expl[1].negated() << " -> " << expl[2]);
-					yield(callback, expl);
+					mcsat_yield(callback, expl);
 				}
 
 				continue;
@@ -264,7 +267,7 @@ public:
 					continue;
 				}
 
-				yield(callback, conflictLowerAndUpperBound(lower, upper));
+				mcsat_yield(callback, conflictLowerAndUpperBound(lower, upper));
 			}
 		}
 
@@ -275,7 +278,7 @@ public:
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Considering equality " << eq.constr);
 			auto it = mInequalities.find(eq.r);
 			if (it != mInequalities.end()) {
-				yield(callback, conflictEqualityAndInequality(eq, it->second));
+				mcsat_yield(callback, conflictEqualityAndInequality(eq, it->second));
 			}
 		}
 
@@ -283,7 +286,7 @@ public:
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Considering lower bound " << bounds.first << " and upper bound " << bounds.second);
 			auto it = mInequalities.find(bounds.first.r);
 			if (it != mInequalities.end()) {
-				yield(callback, conflictInequalitiesAndInequality(bounds.first, bounds.second, it->second));
+				mcsat_yield(callback, conflictInequalitiesAndInequality(bounds.first, bounds.second, it->second));
 			}
 		}
 	}
@@ -295,7 +298,7 @@ public:
 struct DefaultComparator {
 	bool symmetric = false;
 
-	bool operator()(const Bound& b1, const Bound& b2) const {
+	bool operator()(const Bound&, const Bound&) const {
 		return false;
 	}
 };
@@ -344,7 +347,17 @@ struct IgnoreCoreSettings {
 
 template<class Settings>
 struct Explanation {
+
+#ifdef SMTRAT_DEVOPTION_Statistics
+	mutable FMStatistics mStatistics;
+    Explanation() : mStatistics("mcsat-explanation-fm") {}
+#endif
+
 	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
+		#ifdef SMTRAT_DEVOPTION_Statistics
+		mStatistics.explanationCalled();
+		#endif
+
 		std::vector<ConstraintT> bounds;
 
 		if (!Settings::use_all_constraints) {
@@ -383,6 +396,9 @@ struct Explanation {
 
 		if (res) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Found conflict " << *res);
+			#ifdef SMTRAT_DEVOPTION_Statistics
+			mStatistics.explanationSuccess();
+			#endif
 			return mcsat::Explanation(FormulaT(carl::FormulaType::OR, std::move(*res)));
 		}
 		else {

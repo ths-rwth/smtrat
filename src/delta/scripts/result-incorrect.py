@@ -4,22 +4,32 @@ import re
 import subprocess
 import sys
 
-filename = sys.argv[1]
-responsere = re.compile(b"((?:un)?sat)\s*$")
-solvers = {
-	"smtrat": ["./smtrat"],
-	"z3": ["z3"],
-}
-
-def run(command):
-	res = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+def response_smtrat(res):
 	if res.returncode in [2,3]:
 		print("Got proper smtrat result")
 		return {2: "sat", 3: "unsat"}[res.returncode]
-	match = responsere.search(res.stdout)
+	match = re.search(b"((?:un)?sat)\s*$", res.stdout)
 	if match != None:
 		return match.group(1).decode("utf-8")
 	return "unknown"
+
+def response_z3(res):
+	if res.returncode == 1:
+		return "unknown"
+	match = re.search(b"^((?:un)?sat)", res.stdout)
+	if match != None:
+		return match.group(1).decode("utf-8")
+	return "unknown"
+
+filename = sys.argv[1]
+solvers = {
+	"smtrat": (["./smtrat"], response_smtrat),
+	"z3": (["z3"], response_z3),
+}
+
+def run(command, response):
+	res = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	return response(res)
 
 def compare(runs):
 	results = {"sat": 0, "unsat": 0, "unknown": 0}
@@ -35,5 +45,5 @@ def compare(runs):
 	print("Solvers agreed -> 0")
 	return 0
 
-d = { k: run(v + [filename]) for (k,v) in solvers.items() }	
+d = { k: run(v[0] + [filename], v[1]) for (k,v) in solvers.items() }	
 sys.exit(compare(d))

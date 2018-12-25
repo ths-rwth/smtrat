@@ -1,5 +1,0 @@
-BeginDefineModule()
-ModuleMainHeader(IntBlastModule/IntBlastModule.h)
-ModuleName(IntBlastModule)
-ModuleVersion(0 0 1)
-EndDefineModule()

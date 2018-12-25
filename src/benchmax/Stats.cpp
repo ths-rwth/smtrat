@@ -5,22 +5,16 @@
 
 #include "Stats.h"
 #include <iostream>
+#include <filesystem>
 #include <fstream>
 #include <assert.h>
 #include "../cli/config.h"
-#ifdef __VS
-#pragma warning(push, 0)
-#include <boost/filesystem.hpp>
-#pragma warning(pop)
-#else
-#include <boost/filesystem.hpp>
-#endif
 
 #include "Settings.h"
 
 namespace benchmax {
 
-namespace fs = boost:: filesystem;
+namespace fs = std::filesystem;
 
 Stats::Stats(const std::string& _file, Type _type):
 	mType(_type),

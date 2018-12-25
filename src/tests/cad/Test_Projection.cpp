@@ -2,43 +2,37 @@
 
 #include <iostream>
 
-#include "../../lib/datastructures/cad/projection/Projection.h"
-#include "../../lib/datastructures/cad/lifting/Sample.h"
-// #include "../../lib/datastructures/cad/debug/Projection.h"
-#include "../../lib/modules/NewCADModule/NewCADSettings.h"
-#include "../../lib/datastructures/cad/CAD.h"
+#include <smtrat-cad/CAD.h>
+#include <smtrat-cad/projection/Projection.h>
+#include <smtrat-cad/projection/Projection_Debug.h>
+#include <smtrat-cad/lifting/Sample.h>
+#include <smtrat-modules/NewCADModule/NewCADSettings.h>
+
 
 using namespace smtrat;
-using namespace smtrat::cad;
 
 BOOST_AUTO_TEST_SUITE(Test_Projection);
 
-// BOOST_AUTO_TEST_CASE(Projection)
-// {
-// 	carl::Variable x = carl::freshRealVariable("x");
-// 	carl::Variable y = carl::freshRealVariable("y");
-// 	
-// 	debug::Projection p({x,y});
-// 	
-// 	p.add(ConstraintT(Poly(x) + Poly(y), carl::Relation::LEQ));
-// 	p.add(ConstraintT(Poly(y), carl::Relation::GREATER));
-// 	p.add(ConstraintT(Poly(x) + Poly(1), carl::Relation::GREATER));
-// 	
-// 	std::cout << p.getProjection() << std::endl;
-// 	
-// 	
-// 	
-// 	//ProjectionT<NewCADSettingsSO> projection;
-// 	//projection.reset({x,y});
-// 	//projection.addPolynomial(p.toUnivariatePolynomial(x), 0);
-// 	//projection.addPolynomial(q.toUnivariatePolynomial(x), 1);
-// 	//std::cout << projection << std::endl;
-// 	//
-// 	//Sample s(RAN(1));
-// 	//while (auto pid = projection.getPolyForLifting(1, s.liftedWith())) {
-// 	//	std::cout << projection.getPolynomialById(1, *pid) << std::endl;
-// 	//}
-// }
+BOOST_AUTO_TEST_CASE(Projection)
+{
+	carl::Variable a = carl::freshRealVariable("a");
+	carl::Variable b = carl::freshRealVariable("b");
+	carl::Variable c = carl::freshRealVariable("c");
+	carl::Variable d = carl::freshRealVariable("d");
+	carl::Variable e = carl::freshRealVariable("e");
+	carl::Variable f = carl::freshRealVariable("f");
+	carl::Variable g = carl::freshRealVariable("g");
+
+	Poly p1 = Poly(b)*b - Poly(10)*c - Poly(1);
+	Poly p2 = Poly(b);
+	Poly p3 = Poly(d) - Poly(c);
+	Poly p4 = Poly(b);
+	Poly p5 = Poly(f);
+	//Poly p6 = Poly(b);
+
+	cad::projection::Projection_Debug<cad::ProjectionType::McCallum> projection("projection.dot", {e, g, c, d, f, b});
+	projection.doProjection({p1, p2, p3, p4, p5});
+}
 // 
 // BOOST_AUTO_TEST_CASE(Test_CAD)
 // {

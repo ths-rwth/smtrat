@@ -1,5 +1,0 @@
-BeginDefineModule()
-ModuleMainHeader(FPPModule/FPPModule.h)
-ModuleName(FPPModule)
-ModuleVersion(0 0 1)
-EndDefineModule()

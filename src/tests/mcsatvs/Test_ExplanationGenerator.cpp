@@ -1,8 +1,8 @@
 #include <boost/test/unit_test.hpp>
 
 
-#include <lib/datastructures/mcsat/vs/ExplanationGenerator.h>
-#include <lib/logging.h>
+#include <smtrat-mcsat/explanations/vs/ExplanationGenerator.h>
+#include <smtrat-common/smtrat-common.h>
 
 using namespace smtrat;
 using namespace mcsat::vs::helper;
@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(Test_generateZeros_deg1) {
 
 	ConstraintT c2(Poly(y)*x+Rational(1), carl::Relation::EQ);
 	result = generateZeros(c2, y, [&](const SqrtEx&& sqrtExpression, const ConstraintsT&& sideConditions) {
-    	BOOST_CHECK(sqrtExpression==SqrtEx(Poly(-1), ZERO_POLYNOMIAL, Poly(x), ZERO_POLYNOMIAL));
+    	BOOST_CHECK(sqrtExpression==SqrtEx(Poly(-1), Poly(0), Poly(x), Poly(0)));
 		BOOST_CHECK(sideConditions.size() == 1);
 		BOOST_CHECK(*sideConditions.begin() == ConstraintT(Poly(x), carl::Relation::NEQ));
     });
@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(Test_generateZeros_deg2) {
 	ConstraintT c2(Poly(y)*y+y+x, carl::Relation::EQ);
 	int resultcount = 0;
 	result = generateZeros(c2, y, [&](const SqrtEx&& sqrtExpression, const ConstraintsT&& sideConditions) {
-		BOOST_CHECK(sqrtExpression==SqrtEx(Poly(Rational(-1)), ONE_POLYNOMIAL, Poly(Rational(2)), Poly(Rational(1))-Rational(4)*x) || sqrtExpression==SqrtEx(Poly(Rational(-1)), MINUS_ONE_POLYNOMIAL, Poly(Rational(2)), Poly(Rational(1))-Rational(4)*x));
+		BOOST_CHECK(sqrtExpression==SqrtEx(Poly(Rational(-1)), Poly(1), Poly(Rational(2)), Poly(Rational(1))-Rational(4)*x) || sqrtExpression==SqrtEx(Poly(Rational(-1)), Poly(-1), Poly(Rational(2)), Poly(Rational(1))-Rational(4)*x));
 		BOOST_CHECK(sideConditions.size() == 1);
 		BOOST_CHECK(*sideConditions.begin() == ConstraintT(Poly(Rational(1))-Rational(4)*x, carl::Relation::GEQ));
 		resultcount++;
@@ -213,15 +213,15 @@ BOOST_AUTO_TEST_CASE(Test_generateTestCandidates_degreeTooHigh) {
 	std::vector<::vs::Substitution> results;
 
 	ConstraintT c1(Poly(y)*y*y+Rational(1), carl::Relation::EQ);
-	std::vector<FormulaT> constraints1;
-	constraints1.emplace_back(c1);
+	FormulaSetT constraints1;
+	constraints1.emplace(c1);
 
 	bool status = generateTestCandidates(results, y, Model(), constraints1);
 	BOOST_CHECK(!status);
 
 	ConstraintT c2(Poly(y)*y+Rational(1), carl::Relation::GEQ);
-	std::vector<FormulaT> constraints2;
-	constraints2.emplace_back(c2);
+	FormulaSetT constraints2;
+	constraints2.emplace(c2);
 
 	status = generateTestCandidates(results, y, Model(), constraints2);
 	BOOST_CHECK(status);
@@ -232,8 +232,8 @@ BOOST_AUTO_TEST_CASE(Test_generateTestCandidates_variableNotIncluded) {
 	std::vector<::vs::Substitution> results;
 
 	ConstraintT c(Poly(x), carl::Relation::EQ);
-	std::vector<FormulaT> constraints;
-	constraints.emplace_back(c);
+	FormulaSetT constraints;
+	constraints.emplace(c);
 
 	bool status = generateTestCandidates(results, y, Model(), constraints);
 	BOOST_CHECK(status);
@@ -246,9 +246,9 @@ BOOST_AUTO_TEST_CASE(Test_generateTestCandidates_constraintType) {
 
 	ConstraintT c1(Poly(y), carl::Relation::GEQ);
 	ConstraintT c2(Poly(y), carl::Relation::GREATER);
-	std::vector<FormulaT> constraints;
-	constraints.emplace_back(c1);
-	constraints.emplace_back(c2);
+	FormulaSetT constraints;
+	constraints.emplace(c1);
+	constraints.emplace(c2);
 
 	bool status = generateTestCandidates(results, y, Model(), constraints);
 	BOOST_CHECK(status);
@@ -263,9 +263,9 @@ BOOST_AUTO_TEST_CASE(Test_generateTestCandidates_duplicateRemoval) {
 
 	ConstraintT c1(Poly(y) - x, carl::Relation::GEQ);
 	ConstraintT c2(Poly(y) - x, carl::Relation::GEQ);
-	std::vector<FormulaT> constraints;
-	constraints.emplace_back(c1);
-	constraints.emplace_back(c2);
+	FormulaSetT constraints;
+	constraints.emplace(c1);
+	constraints.emplace(c2);
 
 	bool status = generateTestCandidates(results, y, Model(), constraints);
 	BOOST_CHECK(status);
@@ -277,8 +277,8 @@ BOOST_AUTO_TEST_CASE(Test_generateTestCandidates_variableComparison) {
 	VariableComparisonT varcomp(y, MultivariateRootT(Poly(MultivariateRootT::var())*MultivariateRootT::var()*x-Rational(1), 2), carl::Relation::EQ);
 	Model model;
 	model.assign(x, Rational(1));
-	std::vector<FormulaT> constraints;
-	constraints.emplace_back(varcomp);
+	FormulaSetT constraints;
+	constraints.emplace(varcomp);
 
 	std::vector<::vs::Substitution> results;
 	bool result = generateTestCandidates( results, y, model, constraints);
@@ -351,8 +351,8 @@ BOOST_AUTO_TEST_CASE(Test_getExplanation_degreeTooHigh) {
 	Model varModel;
 	varModel.emplace(x, Rational(0));
 
-	mcsat::vs::ExplanationGenerator generator(constraints, ordering, y, varModel);
-	boost::optional<FormulaT> result = generator.getExplanation(FormulaT(carl::FormulaType::FALSE));
+	mcsat::vs::ExplanationGenerator<mcsat::vs::DefaultSettings> generator(constraints, ordering, y, varModel);
+	boost::optional<mcsat::Explanation> result = generator.getExplanation();
 	BOOST_CHECK(!result);	
 }
 BOOST_AUTO_TEST_CASE(Test_getExplanation_substitution) {
@@ -371,8 +371,8 @@ BOOST_AUTO_TEST_CASE(Test_getExplanation_substitution) {
 	Model varModel;
 	varModel.emplace(x, Rational(0));
 
-	mcsat::vs::ExplanationGenerator generator(constraints, ordering, y, varModel);
-	boost::optional<FormulaT> result = generator.getExplanation(FormulaT(carl::FormulaType::FALSE));
+	mcsat::vs::ExplanationGenerator<mcsat::vs::DefaultSettings> generator(constraints, ordering, y, varModel);
+	boost::optional<mcsat::Explanation> result = generator.getExplanation();
 	BOOST_CHECK(result);
 	std::stringstream ss;
 	ss << result.value();

@@ -12,7 +12,16 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
+add_subdirectory(smtrat-common)
 add_subdirectory(lib)
+add_subdirectory(smtrat-cad)
+add_subdirectory(smtrat-mcsat)
+add_subdirectory(smtrat-modules)
+add_subdirectory(smtrat-qe)
+add_subdirectory(smtrat-strategies)
+add_subdirectory(smtrat-unsat-cores)
+add_subdirectory(smtrat-wrapper)
+
 if(BUILD_SOLVER)
 	add_subdirectory(cli)
 endif()

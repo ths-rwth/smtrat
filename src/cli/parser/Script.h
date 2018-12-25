@@ -41,30 +41,39 @@ struct ErrorHandler {
 	}
 };
 
-struct QuantifierParser: public qi::symbols<char, QuantifierType> {
+struct QuantifierParser: public qi::symbols<char, qe::QuantifierType> {
 	QuantifierParser() {
-		add("exists", QuantifierType::EXISTS);
-		add("forall", QuantifierType::FORALL);
+		add("exists", qe::QuantifierType::EXISTS);
+		add("forall", qe::QuantifierType::FORALL);
 	}
 };
 
-struct QEParser: public qi::grammar<Iterator, QEQuery(), Skipper> {
+struct QEParser: public qi::grammar<Iterator, qe::QEQuery(), Skipper> {
 	QEParser(Theories* theories): QEParser::base_type(main, "qe-query"), theories(theories) {
-		var = qualifiedidentifier[qi::_val = px::bind(&Theories::resolveVariable, px::ref(*theories), qi::_1)];
+		var = qualifiedidentifier[qi::_val = px::bind(&QEParser::resolveVariable, this, qi::_1)];
 		main = +("(" > quantifier > +var > ")");
+	}
+
+	carl::Variable resolveVariable(const Identifier& name) const {
+		auto v = theories->resolveVariable(name);
+		return boost::apply_visitor(carl::overloaded {
+			[](carl::Variable v){ return v; },
+			[](carl::BVVariable v){ return v.variable(); },
+			[](carl::UVariable v){ return v.variable(); },
+		}, v);
 	}
 	
 	Theories* theories;
 	QualifiedIdentifierParser qualifiedidentifier;
 	QuantifierParser quantifier;
 	
-	qi::rule<Iterator, types::VariableType(), Skipper> var;
-	qi::rule<Iterator, QEQuery(), Skipper> main;
+	qi::rule<Iterator, carl::Variable(), Skipper> var;
+	qi::rule<Iterator, qe::QEQuery(), Skipper> main;
 };
 
 template<typename Callee>
 struct ScriptParser: public qi::grammar<Iterator, Skipper> {
-	ScriptParser(InstructionHandler* h, Theories& theories, Callee& callee):
+	ScriptParser(InstructionHandler& h, Theories& theories, Callee& callee):
 		ScriptParser::base_type(main, "script"),
 		handler(h),
 		callee(callee),
@@ -113,7 +122,7 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 		qi::on_error<qi::fail>(main, errorHandler(qi::_1, qi::_2, qi::_3, qi::_4));
 	}
 	
-	InstructionHandler* handler;
+	InstructionHandler& handler;
 	Callee& callee;
 	ParserState state;
 	Theories& theories;

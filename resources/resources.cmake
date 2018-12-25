@@ -27,7 +27,7 @@ endif()
 find_package(carl ${CARL_REQUIRED_VERSION})
 
 if(carl_FOUND)
-	message(STATUS "Use system version of carl ${carl_VERSION} (required ${CARL_REQUIRED_VERSION})")
+	message(STATUS "Use system version of carl ${carl_VERSION} (required ${CARL_REQUIRED_VERSION}) from ${carl_INCLUDE_DIR}")
 	add_custom_target(doxygen-build DEPENDS Doxygen::doxygen)
 else()
 	include(resources/carl.cmake)

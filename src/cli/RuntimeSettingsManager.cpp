@@ -17,13 +17,10 @@
 #include "RuntimeSettingsManager.h"
 #include "ExitCodes.h"
 
-#include "../lib/modules/Modules.h"
-#include "../lib/config.h"
 #include "config.h"
-#include "../lib/utilities/CompileInfo.h"
 
-#include "carl/util/CMakeOptions.h"
-#include "../lib/utilities/CMakeOptions.h"
+#include <carl/util/CompileInfo.h>
+#include <smtrat-common/smtrat-common.h>
 
 #include "../lib/utilities/SettingsManager.h"
 
@@ -119,11 +116,10 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
             else if(optionName == "cmake")
             {
                 std::cout << "CMake options used for CArL:" << std::endl;
-                carl::printCMakeOptions(std::cout);
+                std::cout << carl::CMakeOptions() << std::endl;
                 std::cout << std::endl;
                 std::cout << "CMake options used for SMT-RAT:" << std::endl;
-                smtrat::printCMakeOptions(std::cout);
-                std::cout << std::endl;
+                std::cout << smtrat::CMakeOptions() << std::endl;
                 exit(SMTRAT_EXIT_SUCCESS);
             }
             else if(optionName == "export-dimacs")
@@ -148,11 +144,6 @@ std::string RuntimeSettingsManager::parseCommandline(int argc, char** argv)
 //                printToC();
 //                exit(SMTRAT_EXIT_SUCCESS);
 //            }
-            else if(optionName == "list-modules")
-            {
-                printModulesInfo();
-                exit(SMTRAT_EXIT_SUCCESS);
-            }
             #ifdef SMTRAT_DEVOPTION_MeasureTime
             else if(optionName == "print-timings")
             {
@@ -271,7 +262,6 @@ void RuntimeSettingsManager::printHelp() const
     std::cout << "\t --simplified-input (-si) \t prints a simplified form of the input formula (if result is unknown)" << std::endl;
     std::cout << std::endl;
     std::cout << "Developer options:" <<std::endl;
-    std::cout << "\t --list-modules \t\t prints all compiled modules" << std::endl;
     #ifdef SMTRAT_DEVOPTION_MeasureTime
     std::cout << "\t --print-timings \t prints the timings" << std::endl;
     #endif
@@ -289,7 +279,7 @@ void RuntimeSettingsManager::printHelp() const
         std::cout << std::endl;
     }
     // Print reference to website.
-    std::cout << "For more information, please visit our website at " << SMTRAT_WEBSITE << std::endl;
+    std::cout << "For more information, please visit our website at " << smtrat::CompileInfo::Website << std::endl;
 }
 
 /**
@@ -307,7 +297,7 @@ void RuntimeSettingsManager::printLicense() const
  */
 void RuntimeSettingsManager::printVersion() const 
 {
-    std::cout << SMTRAT_VERSION << std::endl;
+    std::cout << CompileInfo::Version << std::endl;
 }
 
 /**
@@ -323,8 +313,8 @@ void RuntimeSettingsManager::printToC() const
  */
 void RuntimeSettingsManager::printWelcome() const 
 {
-    std::cout << "This is " << SMTRAT_PROJECT_NAME << "." << std::endl;
-    std::cout << "Version: " << SMTRAT_VERSION << std::endl;
+    std::cout << "This is " << smtrat::CompileInfo::ProjectName << "." << std::endl;
+    std::cout << "Version: " << smtrat::CompileInfo::Version << std::endl;
     std::cout << "For more information, run this binary with --help." << std::endl;
     std::cout << std::endl << std::endl;
     printLicense();
@@ -332,11 +322,11 @@ void RuntimeSettingsManager::printWelcome() const
 
 void RuntimeSettingsManager::printInfo() const
 {
-    std::cout << "Code was compiled with compiler ? , version: " << smtrat::CompileInfo::CXXCompiler << std::endl;
+    std::cout << "Code was compiled with compiler " << smtrat::CompileInfo::CXXCompiler << " " << smtrat::CompileInfo::CXXCompilerVersion << std::endl;
     std::cout << "Build type:" << smtrat::CompileInfo::BuildType << std::endl;   
     std::cout << "Code is based on commit " << smtrat::CompileInfo::GitRevisionSHA1 << ". " << std::endl;
     std::cout << "Build on a " << smtrat::CompileInfo::SystemName << " (" << CompileInfo::SystemVersion << ") machine." << std::endl;
-    std::cout << "Version: " << SMTRAT_VERSION << std::endl;
+    std::cout << "Version: " << smtrat::CompileInfo::Version << std::endl;
 }
 
 }

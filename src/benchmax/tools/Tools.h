@@ -8,14 +8,6 @@
 
 #pragma once
 
-#ifdef __VS
-#pragma warning(push, 0)
-#include <boost/filesystem/path.hpp>
-#pragma warning(pop)
-#else
-#include <boost/filesystem/path.hpp>
-#endif
-
 #include "Tool.h"
 
 #include "IsatTool.h"
@@ -35,12 +27,12 @@ void createTools(const std::vector<std::string>& arguments, std::vector<Tool*>& 
 		smatch matches;
 		if (regex_match(arg, matches, r)) {
 			fs::path path(matches[1]);
-			fs::file_status status = fs::status(path);
-			if (status.type() != fs::file_type::regular_file) {
+			if (fs::is_regular_file(path)) {
 				BENCHMAX_LOG_WARN("benchmax", "The tool " << path << " does not seem to be a file. We skip it.");
 				continue;
 			}
-			if ((status.permissions() & (fs::others_exe | fs::group_exe | fs::owner_exe)) == 0) {
+			const fs::perms executable = fs::perms::others_exec | fs::perms::group_exec | fs::perms::owner_exec;
+			if ((fs::status(path).permissions() & executable) != fs::perms::none) {
 				BENCHMAX_LOG_WARN("benchmax", "The tool " << path << " does not seem to be executable. We skip it.");
 				continue;
 			}
