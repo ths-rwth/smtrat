@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "../../solver/Module.h"
+#include "../Module.h"
 #include "AbstractStatistics.h"
 #include "AbstractSettings.h"
 
@@ -29,7 +29,7 @@ namespace smtrat
 		std::string moduleName() const {
 			return SettingsType::moduleName;
 		}
-		AbstractModule(const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = nullptr);
+		AbstractModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
 
 		~AbstractModule();
 

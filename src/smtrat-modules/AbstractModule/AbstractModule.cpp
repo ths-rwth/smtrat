@@ -15,7 +15,7 @@
 namespace smtrat
 {
     template<class Settings>
-    AbstractModule<Settings>::AbstractModule(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager):
+    AbstractModule<Settings>::AbstractModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
             Module( _formula, _conditionals, _manager )
             //mLRAFormula( new ModuleInput())
 #ifdef SMTRAT_DEVOPTION_Statistics

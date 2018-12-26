@@ -11,6 +11,7 @@
 #include "../dto/VariableCapsule.h"
 #include "lib/Common.h"
 #include "../Util.h"
+#include "../../../smtrat-common/model.h"
 
 
 namespace smtrat {

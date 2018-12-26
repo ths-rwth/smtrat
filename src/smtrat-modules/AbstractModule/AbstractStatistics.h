@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "../../config.h"
+#include "../../smtrat-common/config.h"
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "../../utilities/stats/Statistics.h"
 
