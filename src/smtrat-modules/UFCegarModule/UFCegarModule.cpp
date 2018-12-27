@@ -138,13 +138,13 @@ namespace smtrat
     {
         using carl::FormulaType;
 
-        if (refined.count(a) && refined.count(b))
+        if (refined.count({a, b}))
             return false;
 
         auto args = std::make_pair(a.args().begin(), b.args().begin());
         auto end = a.args().end();
 
-        auto term = [&] (const auto& val) { return term_store[val]; };
+        auto term = [&] (const auto& val) { return flatten(val); };
 
         auto record_instance = [&] (const auto& arg) {
             if (arg.isUFInstance()) {
@@ -155,25 +155,21 @@ namespace smtrat
             }
         };
 
-        FormulasT conditions;
+        FormulasT eqs;
         for ( ; args.first != end; ++args.first, ++args.second ) {
             record_instance(*args.first);
             record_instance(*args.second);
-
-            conditions.emplace_back(term(*args.first), term(*args.second), false);
+            eqs.emplace_back(term(*args.first), term(*args.second), false);
         }
 
-        auto consequence = carl::UEquality(term(a), term(b), false);
+        FormulaT consequence{ carl::UEquality(term(a), term(b), false) };
+        FormulaT conditions( FormulaType::AND, eqs );
 
-        FormulaT constraint{ FormulaType::IMPLIES, // TODO is this only validity ???
-            FormulaT( FormulaType::AND, conditions ),
-            FormulaT( consequence )
-        };
+        FormulaT constraint{ FormulaType::IMPLIES, conditions, consequence };
 
         addSubformulaToPassedFormula(constraint);
 
-        refined.emplace(a);
-        refined.emplace(b);
+        refined.emplace(a, b);
         return true;
     }
 

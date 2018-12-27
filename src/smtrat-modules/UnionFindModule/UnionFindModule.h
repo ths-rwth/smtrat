@@ -27,6 +27,7 @@ namespace smtrat
         History history;
 
         bool reset = false;
+        void check_restart() noexcept;
 
         mutable UnionFind<carl::UVariable> union_find;
         std::set<carl::UVariable> variables;

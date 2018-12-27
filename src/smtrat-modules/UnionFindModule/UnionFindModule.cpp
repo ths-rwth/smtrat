@@ -40,6 +40,20 @@ namespace smtrat
     }
 
     template<class Settings>
+    void UnionFindModule<Settings>::check_restart() noexcept
+    {
+        if (reset) {
+            union_find.init(variables);
+            for (const auto& eq : history) {
+                if (!eq.negated()) {
+                    union_find.merge(eq.lhs().asUVariable(), eq.rhs().asUVariable());
+                }
+            }
+            reset = false;
+        }
+    }
+
+    template<class Settings>
     bool UnionFindModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
         assert(_subformula->formula().getType() == carl::UEQ);
@@ -58,16 +72,7 @@ namespace smtrat
         }
 
         if (!ueq.negated()) {
-            if (reset) {
-                union_find.init(variables);
-                for (const auto& eq : history) {
-                    if (!eq.negated()) {
-                        union_find.merge(eq.lhs().asUVariable(), eq.rhs().asUVariable());
-                    }
-                }
-                reset = false;
-            }
-
+            check_restart();
             union_find.merge(lhs, rhs);
         }
 
@@ -82,7 +87,6 @@ namespace smtrat
         const auto& ueq = _subformula->formula().uequality();
         auto it = std::find(history.rbegin(), history.rend(), ueq);
         history.erase(std::next(it).base());
-
         reset = true;
     }
 
@@ -126,6 +130,8 @@ namespace smtrat
         std::copy_if(history.begin(), history.end(), std::back_inserter(inequalities), [] (const auto &ueq) {
             return ueq.negated();
         });
+
+        check_restart();
 
         if (!isConsistent(union_find, inequalities)) {
             generateTrivialInfeasibleSubset();

@@ -32,7 +32,15 @@ namespace smtrat
         std::unordered_map<UTerm, UTerm> term_store;
 
         std::unordered_map<UFunction, std::set<UFInstance>> instances;
-        std::set<UFInstance> refined;
+
+        struct pairhash {
+            template <typename T, typename U>
+            std::size_t operator()(const std::pair<T, U> &x) const {
+                return std::hash<T>()(x.first) ^ std::hash<U>()(x.second);
+            }
+        };
+
+        std::unordered_set<std::pair<UFInstance, UFInstance>, pairhash> refined;
 
         auto flatten(const FormulaT& formula) noexcept -> FormulaT;
         auto flatten(const UTerm& term) noexcept -> UTerm;
