@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../solver/Manager.h"
-#include "../modules/SATModule/SATModule.h"
-#include "../modules/LRAModule/LRAModule.h"
-#include "../modules/AbstractModule/AbstractModule.h"
+#include "lib/solver/Manager.h"
+#include "smtrat-modules/SATModule/SATModule.h"
+#include "smtrat-modules/LRAModule/LRAModule.h"
+#include "smtrat-modules/AbstractModule/AbstractModule.h"
 
 namespace smtrat
 {
