@@ -571,9 +571,9 @@ namespace smtrat
             loopCounter++;
         }
 
-        cout << "Refinement Not possible!" << "\n";
+        cout << "Result is:" << "\n";
 
-        return UNSAT; // This should be adapted according to your implementation.
+        return UNKNOWN; // This should be adapted according to your implementation.
     }
 
 }
