@@ -17,6 +17,7 @@ namespace smtrat
     template<class Settings>
     UnionFindModule<Settings>::UnionFindModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
         Module( _formula, _conditionals, _manager )
+        , classes(translate)
 #ifdef SMTRAT_DEVOPTION_Statistics
         , mStatistics(Settings::moduleName)
 #endif
@@ -43,10 +44,10 @@ namespace smtrat
     void UnionFindModule<Settings>::check_restart() noexcept
     {
         if (reset) {
-            union_find.init(variables);
+            classes.resize(variables);
             for (const auto& eq : history) {
                 if (!eq.negated()) {
-                    union_find.merge(eq.lhs().asUVariable(), eq.rhs().asUVariable());
+                    classes.merge(eq.lhs().asUVariable(), eq.rhs().asUVariable());
                 }
             }
             reset = false;
@@ -64,16 +65,16 @@ namespace smtrat
         const auto& rhs = ueq.rhs().asUVariable();
 
         if (const auto& [it, inserted] = variables.emplace(lhs); inserted) {
-            union_find.introduce_variable(lhs);
+            classes.introduce_variable(lhs);
         }
 
         if (const auto& [it, inserted] = variables.emplace(rhs); inserted) {
-            union_find.introduce_variable(rhs);
+            classes.introduce_variable(rhs);
         }
 
         if (!ueq.negated()) {
             check_restart();
-            union_find.merge(lhs, rhs);
+            classes.merge(lhs, rhs);
         }
 
         history.emplace_back(ueq);
@@ -93,14 +94,14 @@ namespace smtrat
     template<class Settings>
     void UnionFindModule<Settings>::updateModel() const
     {
-        using Class = typename decltype(union_find)::representative;
+        using Class = typename decltype(classes)::Representative;
         std::unordered_map<Class, carl::SortValue> sorts;
 
         mModel.clear();
         if( solverState() == Answer::SAT )
         {
             for (const auto& var : variables) {
-                auto cls = union_find.find(var);
+                auto cls = classes.find(var);
 
                 if (!sorts.count(cls)) {
                     sorts[cls] = carl::newSortValue(var.domain());
@@ -111,11 +112,11 @@ namespace smtrat
         }
     }
 
-    template<typename UF, typename Inequalities>
-    [[nodiscard]] bool isConsistent(UF& union_find, const Inequalities& inequalities) noexcept {
+    template<typename Classes, typename Inequalities>
+    [[nodiscard]] bool isConsistent(Classes& classes, const Inequalities& inequalities) noexcept {
         for (const auto &ueq : inequalities) {
-            const auto& lhs = union_find.find(ueq.lhs().asUVariable());
-            const auto& rhs = union_find.find(ueq.rhs().asUVariable());
+            const auto& lhs = classes.find(ueq.lhs().asUVariable());
+            const auto& rhs = classes.find(ueq.rhs().asUVariable());
             if (rhs == lhs)
                 return false;
         }
@@ -133,7 +134,7 @@ namespace smtrat
 
         check_restart();
 
-        if (!isConsistent(union_find, inequalities)) {
+        if (!isConsistent(classes, inequalities)) {
             generateTrivialInfeasibleSubset();
             return Answer::UNSAT;
         } else {

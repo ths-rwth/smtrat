@@ -13,6 +13,7 @@
 #include "UnionFindStatistics.h"
 #include "UnionFindSettings.h"
 #include "UnionFind.h"
+#include "PersistentUnionFind.h"
 
 namespace smtrat
 {
@@ -29,8 +30,15 @@ namespace smtrat
         bool reset = false;
         void check_restart() noexcept;
 
-        mutable UnionFind<carl::UVariable> union_find;
+        using Type = carl::UVariable;
+        using StaticUnionFind = UnionFindInterface< Type, UnionFind >;
+        mutable StaticUnionFind classes;
+
+        using TranslateMap = typename StaticUnionFind::TranslateMap;
+        TranslateMap translate;
+
         std::set<carl::UVariable> variables;
+
         public:
             typedef Settings SettingsType;
             std::string moduleName() const {
