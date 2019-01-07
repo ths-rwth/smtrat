@@ -15,25 +15,23 @@
 
 #include "config.h"
 #include <smtrat-strategies/smtrat-strategies.h>
-#include "RuntimeSettingsManager.h"
 
 #ifndef __WIN
 #include <sys/resource.h>
 #endif
 #include <smtrat-modules/Module.h>
-#include "../lib/Common.h"
 
 #ifdef SMTRAT_DEVOPTION_Statistics
-#include "../lib/utilities/stats/CollectStatistics.h"
-#include "lib/utilities/stats/StatisticSettings.h"
+#include <smtrat-common/statistics/StatisticsCollector.h>
+#include <smtrat-common/statistics/StatisticsPrinter.h>
+#include <smtrat-common/statistics/StatisticsSettings.h>
 #endif //SMTRAT_DEVOPTION_Statistics
 
 #include <smtrat-common/settings/SettingsParser.h>
 
 #include "handle_options.h"
 #include "parser/ParserWrapper.h"
-#include "../lib/Common.h"
-#include <carl/formula/parser/DIMACSExporter.h>
+#include "parser/ParserSettings.h"
 #include <carl/io/SMTLIBStream.h>
 #include <carl/util/TimingCollector.h>
 #include "tools/Executor.h"
@@ -80,6 +78,8 @@ int main( int argc, char* argv[] )
 	SMTRAT_LOG_INFO("smtrat", "Starting smtrat.");
 
 	auto& parser = smtrat::SettingsParser::getInstance();
+	smtrat::parser::registerParserSettings(parser);
+	smtrat::statistics::registerStatisticsSettings(parser);
 	parser.finalize();
 	parser.parse_options(argc, argv);
 
@@ -94,20 +94,6 @@ int main( int argc, char* argv[] )
     // This variable will hold the input file.
     std::string pathToInputFile = "";
 
-    // Construct the settingsManager.
-    smtrat::RuntimeSettingsManager settingsManager;
-    // Introduce the settings object for the statistics to the manager.
-    #ifdef SMTRAT_DEVOPTION_Statistics
-    settingsManager.addSettingsObject("stats", smtrat::CollectStatistics::settings);
-    #endif
-
-    // Parse command line.
-    //pathToInputFile = settingsManager.parseCommandline( argc, argv );
-
-    #ifdef SMTRAT_DEVOPTION_Statistics
-    smtrat::CollectStatistics::settings->setPrintStats( settingsManager.printStatistics() );
-    #endif
-
     // Construct solver.
     CMakeStrategySolver strategy;
 
@@ -115,14 +101,6 @@ int main( int argc, char* argv[] )
 		strategy.printStrategyGraph();
 		return SMTRAT_EXIT_SUCCESS;
 	}
-
-    #ifdef SMTRAT_DEVOPTION_Statistics
-    //smtrat::CollectStatistics::settings->rOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
-    #endif
-
-    // Introduce the settingsObjects from the modules to the manager.
-    //settingsManager.addSettingsObject( settingsObjects );
-    //settingsObjects.clear();
 
 
 	int exitCode = 0;
@@ -137,12 +115,14 @@ int main( int argc, char* argv[] )
 		try {
 
 			auto e = smtrat::Executor<CMakeStrategySolver>(strategy);
-			if (settingsManager.exportDIMACS()) e.exportDIMACS = true;
 			exitCode = smtrat::executeFile(smtrat::settings_parser().input_file, e);
 
 			if (e.lastAnswer == smtrat::Answer::SAT) {
-			if (settingsManager.printModel()) strategy.printAssignment();
-			else if (settingsManager.printAllModels()) strategy.printAllAssignments(std::cout);
+				if (smtrat::settings_solver().print_all_models) {
+					strategy.printAllAssignments(std::cout);
+				} else if (smtrat::settings_solver().print_model) {
+					strategy.printAssignment();
+				}
 			}
 
 		} catch (const std::bad_alloc& e) {
@@ -155,15 +135,15 @@ int main( int argc, char* argv[] )
 	}
 
     #ifdef SMTRAT_DEVOPTION_Statistics
-    smtrat::CollectStatistics::collect();
-    smtrat::CollectStatistics::print( true );
+    smtrat::StatisticsCollector::getInstance().collect();
+	if (smtrat::settings_statistics().print_as_smtlib) {
+		std::cout << smtrat::statistics_as_smtlib() << std::endl;
+	}
+	if (smtrat::settings_statistics().export_as_xml) {
+		smtrat::statistics_to_xml_file(smtrat::settings_statistics().xml_filename);
+	}
     #endif
-
-    #ifdef SMTRAT_DEVOPTION_Statistics
-    // Export statistics.
-    smtrat::CollectStatistics::exportXML();
-    #endif
-
+	
 	#ifdef TIMING
 	std::cout << carl::TimingCollector::getInstance() << std::endl;
 	#endif

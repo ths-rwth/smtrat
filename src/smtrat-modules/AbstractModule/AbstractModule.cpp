@@ -302,7 +302,8 @@ namespace smtrat
         int indexCount = 0;
 
         //size of array
-        Poly op[poly.getTerms().size()];
+        std::vector<Poly> op(poly.getTerms().size());
+//        Poly op[poly.getTerms().size()];
         int n = sizeof(op) / sizeof(op[0]);
 
         // loops over each term and create linear polynomials
@@ -348,12 +349,11 @@ namespace smtrat
         }
 
         //convert op of array type to vector
-        std::vector<Poly> operands(op, op + n);
-        cout << "Vector: " << operands;
+        cout << "Vector: " << op;
         cout << "\n";
 
         //construction lhs of the constraint
-        Poly finalPoly(Poly::ConstructorOperation::ADD,operands);
+        Poly finalPoly(Poly::ConstructorOperation::ADD,op);
 
         //create new formula
         FormulaT  finalFormula = FormulaT(finalPoly, constraint.relation());

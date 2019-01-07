@@ -14,13 +14,13 @@
 #include <vector>
 
 #include "StrategyGraph.h"
-#include <smtrat-common/smtrat-common.h>
-#include <smtrat-modules/ModuleInput.h>
-#include "GeneralStatistics.h"
-#include "QuantifierManager.h"
+#include "SolverStatistics.h"
 #ifdef SMTRAT_STRAT_PARALLEL_MODE
 #include "ThreadPool.h"
 #endif
+
+#include <smtrat-common/smtrat-common.h>
+#include <smtrat-modules/ModuleInput.h>
 
 namespace smtrat
 {   
@@ -55,10 +55,8 @@ namespace smtrat
 			StrategyGraph mStrategyGraph;
             /// channel to write debug output
             std::ostream mDebugOutputChannel;
-			/// quantified variables
-			QuantifierManager mQuantifierManager;
             /// the logic this solver considers
-            Logic mLogic;
+            carl::Logic mLogic;
 			/// List of formula which are relevant for certain tasks
 			std::set<FormulaT> mInformationRelevantFormula;
 			/// Level of lemma generation
@@ -74,7 +72,7 @@ namespace smtrat
 			std::size_t mNumberOfPops = 0;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all statistics for the solver this manager belongs to.
-            GeneralStatistics* mpStatistics;
+            SolverStatistics* mpStatistics;
             #endif
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             /// contains all threads to assign jobs to
@@ -365,46 +363,16 @@ namespace smtrat
             }
 
             /**
-             * @return A constant reference to the managing unit for the quantifiers occurring in the formulas to solve.
-             */
-			const QuantifierManager& quantifierManager() const {
-				return mQuantifierManager;
-			}
-
-            /**
-             * @return A reference to the managing unit for the quantifiers occurring in the formulas to solve.
-             */
-			QuantifierManager& quantifierManager() {
-				return mQuantifierManager;
-			}
-
-            /**
-             * @return A constant reference to the variables, which are bound by a quantifier.
-             */
-			const carl::QuantifiedVariables& quantifiedVariables() const {
-				return mQuantifierManager.quantifiers();
-			}
-
-			/**
-             * @return A reference to the variables, which are bound by a quantifier.
-             */
-			carl::QuantifiedVariables& quantifiedVariables() {
-				return mQuantifierManager.quantifiers();
-			}
-
-            /**
              * @return A constant reference to the logic this solver considers.
              */
-            const Logic& logic() const
-            {
+            auto logic() const {
                 return mLogic;
             }
             
             /**
              * @return A reference to the logic this solver considers.
              */
-            Logic& rLogic()
-            {
+            auto& rLogic() {
                 return mLogic;
             }
 

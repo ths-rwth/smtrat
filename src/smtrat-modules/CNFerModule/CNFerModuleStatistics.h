@@ -9,7 +9,7 @@
 
 #include <smtrat-common/smtrat-common.h>
 #ifdef SMTRAT_DEVOPTION_Statistics
-#include <lib/utilities/stats/Statistics.h>
+#include <smtrat-common/statistics/Statistics.h>
 
 namespace smtrat
 {
@@ -17,16 +17,13 @@ namespace smtrat
     {
     private:
         // Members.
-        size_t mBooleanComplexity;
-        size_t mNrOfArithVariables;
-        size_t mNrOfBoolVariables;
+        size_t mBooleanComplexity = 1;
+        size_t mNrOfArithVariables = 0;
+        size_t mNrOfBoolVariables = 0;
 
     public:
         CNFerModuleStatistics( const std::string& _name ) : 
-            Statistics( _name, this ),
-            mBooleanComplexity( 1 ),
-            mNrOfArithVariables( 0 ),
-            mNrOfBoolVariables( 0 )
+            Statistics( _name )
         {}
 
         ~CNFerModuleStatistics() {}

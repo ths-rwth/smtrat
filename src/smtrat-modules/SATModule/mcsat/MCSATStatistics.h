@@ -1,6 +1,6 @@
 #pragma once
 
-#include <lib/utilities/stats/Statistics.h>
+#include <smtrat-common/statistics/Statistics.h>
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 
@@ -13,7 +13,7 @@ private:
 	std::size_t mUsedLazyExplanation = 0;
 	std::size_t mModelAssignmentCacheHit = 0;
 public:
-	MCSATStatistics(const std::string& name): Statistics(name, this) {}
+	MCSATStatistics(const std::string& name): Statistics(name) {}
 	~MCSATStatistics() = default;
 	
 	void collect() {

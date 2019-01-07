@@ -26,8 +26,6 @@ foreach(tpl ${smtrat_lib_tpl})
 	configure_file("${tpl}" "${file}")
 endforeach()
 
-add_subdirectory(utilities)
-
 file(GLOB_RECURSE smtrat_lib_sources "*.cpp")
 
 set(STATICLIB "SHARED")
@@ -41,8 +39,8 @@ endif()
 add_library(lib_${PROJECT_NAME} ${STATICLIB} ${smtrat_lib_sources} )
 set_target_properties( lib_${PROJECT_NAME} PROPERTIES
 #		# create *nix style library versions + symbolic links
-		VERSION "${PROJECT_VERSION}"
-		SOVERSION "${PROJECT_VERSION}"
+		VERSION "${PROJECT_VERSION_LIB}"
+		SOVERSION "${PROJECT_VERSION_LIB}"
 #		# allow creating static and shared libs without conflicts
 		CLEAN_DIRECT_OUTPUT 1
 #		# avoid conflicts between library and binary target names

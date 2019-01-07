@@ -1,6 +1,6 @@
 #pragma once
 
-#include <lib/utilities/stats/Statistics.h>
+#include <smtrat-common/statistics/Statistics.h>
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 
@@ -12,7 +12,7 @@ private:
 	std::size_t mExplanationCalled = 0;
 	std::size_t mExplanationSuccess = 0;
 public:
-	VSStatistics(const std::string& name): Statistics(name, this) {}
+	VSStatistics(const std::string& name): Statistics(name) {}
 	~VSStatistics() = default;
 	
 	void collect() {

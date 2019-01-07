@@ -1,6 +1,6 @@
 #define BOOST_TEST_MODULE test_onecellcad
 
-#include <experimental/optional>
+#include <optional>
 
 #include <boost/test/unit_test.hpp>
 
@@ -8,8 +8,7 @@
 #include <carl/core/Variable.h>
 #include <carl/formula/model/ran/RealAlgebraicPoint.h>
 
-#include "../lib/Common.h"
-#include "../../lib/datastructures/mcsat/onecellcad/OneCellCAD.h"
+#include <smtrat-mcsat/explanations/onecellcad/OneCellCAD.h>
 
 /**
   * References:
@@ -21,11 +20,11 @@
 namespace {
   using std::cout;
   using std::endl;
-  using std::experimental::optional;
-  using std::experimental::nullopt;
+  using std::optional;
+  using std::nullopt;
 
   using smtrat::Rational;
-  using namespace smtrat::onecellcad;
+  using namespace smtrat::mcsat::onecellcad;
   using carl::Variable;
   using Poly = carl::MultivariatePolynomial<Rational>;
 	using RAN = carl::RealAlgebraicNumber<Rational>;

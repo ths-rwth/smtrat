@@ -10,6 +10,7 @@
 #include <carl/core/Variable.h>
 #include <carl/core/VariableInformation.h>
 #include <carl/formula/Formula.h>
+#include <carl/formula/Logic.h>
 #include <carl/io/streamingOperators.h>
 #include <carl/util/enum_util.h>
 

@@ -2,7 +2,7 @@
 #define BOOST_TEST_MODULE test_PseudoBool
 #include <boost/test/unit_test.hpp>
 
-#include "../../lib/Common.h"
+#include <smtrat-common/smtrat-common.h>
 
 struct PseudoBoolFixture {
 	PseudoBoolFixture() {

@@ -10,7 +10,7 @@
 
 #include <smtrat-common/smtrat-common.h>
 #ifdef SMTRAT_DEVOPTION_Statistics
-#include <lib/utilities/stats/Statistics.h>
+#include <smtrat-common/statistics/Statistics.h>
 
 namespace smtrat
 {
@@ -21,7 +21,7 @@ namespace smtrat
 		/**
 		 * Example for a statistic.
 		 */
-		size_t mExampleStatistic;
+		std::size_t mExampleStatistic = 0;
 	public:
 		// Override Statistics::collect.
 		void collect()
@@ -33,8 +33,7 @@ namespace smtrat
 			++mExampleStatistic;
 		}
 		SymmetryStatistics( const std::string& _statisticName ):
-			Statistics( _statisticName, this ),
-			mExampleStatistic( 0 )
+			Statistics( _statisticName )
 		{}
 		~SymmetryStatistics() {}
 	};

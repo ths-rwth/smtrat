@@ -7,14 +7,14 @@
 
 #pragma once
 
+#include <smtrat-common/smtrat-common.h>
+
 #include <chrono>
 #include <condition_variable>
 #include <future>
 #include <stack>
 #include <tuple>
 #include <vector>
-
-#include "../Common.h"
 
 namespace smtrat {
 
