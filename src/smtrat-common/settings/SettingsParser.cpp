@@ -59,15 +59,6 @@ SettingsParser::SettingsParser() {
 	}
 
 	{
-		auto& s = settings.get<settings::ParserSettings>("parser");
-		add("Parser settings").add_options()
-			("dimacs", po::bool_switch(&s.read_dimacs))
-			("opb", po::bool_switch(&s.read_opb))
-			("input-file", po::value<std::string>(&s.input_file))
-		;
-	}
-
-	{
 		auto& s = settings.get<settings::SolverSettings>("solver");
 		add("Solver settings").add_options()
 			("print-model", po::bool_switch(&s.print_model))

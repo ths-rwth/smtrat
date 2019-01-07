@@ -19,12 +19,6 @@ struct CoreSettings {
 	bool show_license;
 };
 
-struct ParserSettings {
-	bool read_dimacs;
-	bool read_opb;
-	std::string input_file;
-};
-
 struct SolverSettings {
 	bool print_model;
 	bool print_all_models;
@@ -47,14 +41,12 @@ struct Settings: public carl::Singleton<Settings> {
 private:
 	std::map<std::string,std::any> mSettings = {
 		{"core", CoreSettings()},
-		{"parser", ParserSettings{}},
 		{"solver", SolverSettings{}},
 		{"validation", ValidationSettings{}}
 	};
 	Settings() = default;
 public:
 	CoreSettings core;
-	ParserSettings parser;
 	SolverSettings solver;
 	ValidationSettings validation;
 
@@ -65,8 +57,10 @@ public:
 		return std::any_cast<T&>(it->second);
 	}
 	template<typename T>
-	void add(const std::string& name) {
-		mSettings.emplace(name, T{});
+	T& add(const std::string& name) {
+		auto res = mSettings.emplace(name, T{});
+		assert(res.second);
+		return res.first->second;
 	}
 };
 
@@ -78,10 +72,6 @@ inline const settings::Settings& Settings() {
 
 inline const auto& settings_core() {
 	static const auto& s = settings::Settings::getInstance().get<settings::CoreSettings>("core");
-	return s;
-}
-inline const auto& settings_parser() {
-	static const auto& s = settings::Settings::getInstance().get<settings::ParserSettings>("parser");
 	return s;
 }
 inline const auto& settings_solver() {

@@ -35,6 +35,7 @@
 
 #include "handle_options.h"
 #include "parser/ParserWrapper.h"
+#include "parser/ParserSettings.h"
 #include "../lib/Common.h"
 #include <carl/formula/parser/DIMACSExporter.h>
 #include <carl/io/SMTLIBStream.h>
@@ -83,6 +84,7 @@ int main( int argc, char* argv[] )
 	SMTRAT_LOG_INFO("smtrat", "Starting smtrat.");
 
 	auto& parser = smtrat::SettingsParser::getInstance();
+	smtrat::parser::registerParserSettings(parser);
 	smtrat::statistics::registerStatisticsSettings(parser);
 	parser.finalize();
 	parser.parse_options(argc, argv);
