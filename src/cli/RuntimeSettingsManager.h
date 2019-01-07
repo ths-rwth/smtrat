@@ -12,7 +12,7 @@
 #include <assert.h>
 #include <list>
 #include <smtrat-common/smtrat-common.h>
-#include <smtrat-common/RuntimeSettings.h>
+#include <smtrat-common/settings/RuntimeSettings.h>
 
 namespace smtrat
 {    
