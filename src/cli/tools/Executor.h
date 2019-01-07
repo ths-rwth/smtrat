@@ -13,16 +13,12 @@ template<typename Strategy>
 class Executor : public smtrat::parser::InstructionHandler {
 	Strategy& solver;
 	int exitCode;
-	carl::DIMACSExporter<smtrat::Poly> dimacs;
-	std::size_t dimacsID = 0;
 public:
-	bool exportDIMACS = false;
 	smtrat::Answer lastAnswer;
 	Executor(Strategy& solver) : smtrat::parser::InstructionHandler(), solver(solver) {}
 	~Executor() {
 	}
 	void add(const smtrat::FormulaT& f) {
-		if (exportDIMACS) { dimacs(f); return; }
 		this->solver.add(f);
 		SMTRAT_LOG_DEBUG("smtrat", "Asserting " << f);
 	}
@@ -32,13 +28,6 @@ public:
 	}
 	void check() {
 		smtrat::resource::Limiter::getInstance().resetTimeout();
-		if (exportDIMACS) {
-			dimacsID++;
-			std::ofstream out("dimacs_" + std::to_string(dimacsID) + ".dimacs");
-			out << dimacs << std::endl;
-			out.close();
-			return;
-		}
 		this->lastAnswer = this->solver.check();
 		switch (this->lastAnswer) {
 			case smtrat::Answer::SAT: {
@@ -159,7 +148,6 @@ public:
 	}
 	void pop(std::size_t n) {
 		this->solver.pop(n);
-		if (exportDIMACS) dimacs.clear();
 	}
 	void push(std::size_t n) {
 		for (; n > 0; n--) this->solver.push();

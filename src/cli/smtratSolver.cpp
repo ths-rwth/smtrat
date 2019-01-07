@@ -24,7 +24,6 @@
 #include "../lib/Common.h"
 
 #ifdef SMTRAT_DEVOPTION_Statistics
-#include "../lib/utilities/stats/CollectStatistics.h"
 #include <smtrat-common/statistics/StatisticsCollector.h>
 #include <smtrat-common/statistics/StatisticsPrinter.h>
 #include <smtrat-common/statistics/StatisticsSettings.h>
@@ -103,9 +102,6 @@ int main( int argc, char* argv[] )
     // Construct the settingsManager.
     smtrat::RuntimeSettingsManager settingsManager;
     // Introduce the settings object for the statistics to the manager.
-    #ifdef SMTRAT_DEVOPTION_Statistics
-    //settingsManager.addSettingsObject("stats", smtrat::CollectStatistics::settings);
-    #endif
 
     // Construct solver.
     CMakeStrategySolver strategy;
@@ -114,10 +110,6 @@ int main( int argc, char* argv[] )
 		strategy.printStrategyGraph();
 		return SMTRAT_EXIT_SUCCESS;
 	}
-
-    #ifdef SMTRAT_DEVOPTION_Statistics
-    //smtrat::CollectStatistics::settings->rOutputChannel().rdbuf( parser.rDiagnosticOutputChannel().rdbuf() );
-    #endif
 
 
 	int exitCode = 0;
@@ -132,12 +124,14 @@ int main( int argc, char* argv[] )
 		try {
 
 			auto e = smtrat::Executor<CMakeStrategySolver>(strategy);
-			if (settingsManager.exportDIMACS()) e.exportDIMACS = true;
 			exitCode = smtrat::executeFile(smtrat::settings_parser().input_file, e);
 
 			if (e.lastAnswer == smtrat::Answer::SAT) {
-				if (settingsManager.printModel()) strategy.printAssignment();
-				else if (settingsManager.printAllModels()) strategy.printAllAssignments(std::cout);
+				if (smtrat::settings_solver().print_all_models) {
+					strategy.printAllAssignments(std::cout);
+				} else if (smtrat::settings_solver().print_model) {
+					strategy.printAssignment();
+				}
 			}
 
 		} catch (const std::bad_alloc& e) {
