@@ -15,7 +15,6 @@
 
 #include "config.h"
 #include <smtrat-strategies/smtrat-strategies.h>
-#include "RuntimeSettingsManager.h"
 
 #ifndef __WIN
 #include <sys/resource.h>
