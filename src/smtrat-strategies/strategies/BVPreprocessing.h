@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <lib/solver/Manager.h>
+#include <smtrat-solver/Manager.h>
 #include <smtrat-modules/EMModule/EMModule.h>
 #include <smtrat-modules/PFEModule/PFEModule.h>
 #include <smtrat-modules/SplitSOSModule/SplitSOSModule.h>

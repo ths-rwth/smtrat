@@ -35,13 +35,13 @@ namespace smtrat
         mpPrimaryBackend( new Module( mpPassedFormula, mPrimaryBackendFoundAnswer, this ) ),
         mStrategyGraph(),
         mDebugOutputChannel( cout.rdbuf() ),
-        mLogic( Logic::UNDEFINED ),
+        mLogic( carl::Logic::UNDEFINED ),
         mInformationRelevantFormula(),
         mLemmaLevel(LemmaLevel::NONE),
         mObjectives()
         #ifdef SMTRAT_DEVOPTION_Statistics
         ,
-        mpStatistics( new GeneralStatistics() )
+        mpStatistics( new SolverStatistics() )
         #endif
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         ,
@@ -325,7 +325,7 @@ namespace smtrat
             mPrimaryBackendFoundAnswer.pop_back();
             delete toDelete;
         }
-        mLogic = Logic::UNDEFINED;
+        mLogic = carl::Logic::UNDEFINED;
         mpPrimaryBackend = new Module( mpPassedFormula, mPrimaryBackendFoundAnswer, this );
 		mpPrimaryBackend->setThreadPriority(thread_priority(0, mStrategyGraph.getRoot()));
         mGeneratedModules.push_back( mpPrimaryBackend );

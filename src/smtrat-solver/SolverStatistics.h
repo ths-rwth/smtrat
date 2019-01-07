@@ -6,7 +6,7 @@
 
 namespace smtrat
 {
-    class GeneralStatistics : public Statistics
+    class SolverStatistics : public Statistics
     {
         std::size_t mNumberOfBranchingLemmas = 0;
        public:
@@ -22,8 +22,8 @@ namespace smtrat
             addKeyValuePair( "number_of_learned_branching_lemmas", mNumberOfBranchingLemmas );
          }
 
-        GeneralStatistics() : 
-            Statistics("General")
+        SolverStatistics() : 
+            Statistics("Solver")
         {}
         
         void addBranchingLemma()
