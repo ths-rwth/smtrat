@@ -162,6 +162,7 @@ namespace smtrat
 
         void introduce_variable(Value const& var) noexcept
         {
+            assert(_parents.size() == var);
             _parents = std::move(_parents).push_back(var);
             _ranks = std::move(_ranks).push_back(0);
         }
@@ -248,7 +249,6 @@ namespace smtrat
         void introduce_variable(Value const& var) noexcept
         {
             UnionFind::introduce_variable(var);
-            // TODO handle backtracked
         }
 
         [[nodiscard]] auto find(Value const& val) noexcept -> Representative

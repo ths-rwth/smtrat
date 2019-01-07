@@ -64,13 +64,13 @@ namespace smtrat
         const auto& lhs = ueq.lhs().asUVariable();
         const auto& rhs = ueq.rhs().asUVariable();
 
-        if (const auto& [it, inserted] = variables.emplace(lhs); inserted) {
-            classes.introduce_variable(lhs);
-        }
+        auto process = [&] (const auto& var) {
+            variables.emplace(var);
+            classes.introduce_variable(var);
+        };
 
-        if (const auto& [it, inserted] = variables.emplace(rhs); inserted) {
-            classes.introduce_variable(rhs);
-        }
+        process(lhs);
+        process(rhs);
 
         if (!ueq.negated()) {
             check_restart();
