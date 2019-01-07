@@ -14,7 +14,7 @@ configure_everything()
 
 file(GLOB_RECURSE smtrat-common_sources "*.cpp")
 
-add_new_libraries(smtrat-common ${PROJECT_VERSION} "${smtrat-common_sources}" "resources")
+add_new_libraries(smtrat-common ${PROJECT_VERSION_LIB} "${smtrat-common_sources}" "resources")
 target_include_dirs_from(smtrat-common-objects "" PUBLIC carl-shared)
 target_link_libraries(smtrat-common-shared carl-shared)
 target_link_libraries(smtrat-common-static carl-static)

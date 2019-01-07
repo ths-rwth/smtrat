@@ -39,7 +39,7 @@ foreach(module ${modules})
 		# Create library
 		file(GLOB_RECURSE sources ${CMAKE_CURRENT_SOURCE_DIR}/${module}/*.cpp)
 		
-		add_new_libraries(smtrat-module-${module} ${PROJECT_VERSION} "${sources}" "resources")
+		add_new_libraries(smtrat-module-${module} ${PROJECT_VERSION_LIB} "${sources}" "resources")
 		target_include_dirs_from(smtrat-module-${module}-objects "" PUBLIC carl-shared smtrat-common-shared)
 		target_link_libraries(smtrat-module-${module}-shared smtrat-common-shared)
 		target_link_libraries(smtrat-module-${module}-static smtrat-common-static)
@@ -59,7 +59,7 @@ endforeach()
 
 file(GLOB smtrat-modules_sources "*.cpp")
 
-add_new_libraries(smtrat-modules "${PROJECT_VERSION}" "${smtrat-modules_sources}" "resources")
+add_new_libraries(smtrat-modules "${PROJECT_VERSION_LIB}" "${smtrat-modules_sources}" "resources")
 target_include_dirs_from(smtrat-modules-objects "" PUBLIC smtrat-common-shared)
 target_link_libraries(smtrat-modules-shared smtrat-common-shared)
 target_link_libraries(smtrat-modules-static smtrat-common-static)

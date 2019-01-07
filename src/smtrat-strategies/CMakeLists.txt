@@ -6,7 +6,7 @@ configure_everything()
 
 file(GLOB_RECURSE smtrat-strategies_sources "*.cpp")
 
-add_new_libraries(smtrat-strategies "${PROJECT_VERSION}" "${smtrat-strategies_sources}" "resources")
+add_new_libraries(smtrat-strategies "${PROJECT_VERSION_LIB}" "${smtrat-strategies_sources}" "resources")
 target_include_dirs_from(smtrat-strategies-objects "" PUBLIC lib_smtrat)
 target_link_libraries(smtrat-strategies-shared lib_smtrat)
 target_link_libraries(smtrat-strategies-static lib_smtrat)
