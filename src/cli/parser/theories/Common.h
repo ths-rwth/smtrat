@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../../lib/Common.h"
+#include <smtrat-common/smtrat-common.h>
 
 #include <boost/variant.hpp>
 

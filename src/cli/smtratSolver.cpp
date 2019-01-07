@@ -20,7 +20,6 @@
 #include <sys/resource.h>
 #endif
 #include <smtrat-modules/Module.h>
-#include "../lib/Common.h"
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include <smtrat-common/statistics/StatisticsCollector.h>
@@ -33,7 +32,6 @@
 #include "handle_options.h"
 #include "parser/ParserWrapper.h"
 #include "parser/ParserSettings.h"
-#include "../lib/Common.h"
 #include <carl/io/SMTLIBStream.h>
 #include <carl/util/TimingCollector.h>
 #include "tools/Executor.h"

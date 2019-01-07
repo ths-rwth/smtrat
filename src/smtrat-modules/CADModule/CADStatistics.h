@@ -13,7 +13,6 @@
 #include <map>
 #include <iostream>
 
-#include <lib/Common.h>
 #include <smtrat-common/statistics/Statistics.h>
 
 namespace smtrat {

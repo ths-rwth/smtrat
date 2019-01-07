@@ -8,12 +8,12 @@
 #pragma once
 
 #include <smtrat-common/smtrat-common.h>
+
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include <vector>
 #include <map>
 #include <iostream>
 
-#include <lib/Common.h>
 #include <smtrat-common/statistics/Statistics.h>
 
 #include "carl/groebner/gb-buchberger/BuchbergerStats.h"

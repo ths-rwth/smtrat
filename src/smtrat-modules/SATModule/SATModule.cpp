@@ -881,12 +881,12 @@ namespace smtrat
             if( assigns[bVar->second] == l_True )
             {
                 assert( _rationalAssignment.find( bVar->first ) == _rationalAssignment.end() );
-                _rationalAssignment.insert( std::pair< const carl::Variable, Rational >( bVar->first, ONE_RATIONAL ) );
+                _rationalAssignment.insert( std::pair< const carl::Variable, Rational >( bVar->first, 1 ) );
             }
             else if( assigns[bVar->second] == l_False )
             {
                 assert( _rationalAssignment.find( bVar->first ) == _rationalAssignment.end() );
-                _rationalAssignment.insert( std::pair< const carl::Variable, Rational >( bVar->first, ZERO_RATIONAL ) );
+                _rationalAssignment.insert( std::pair< const carl::Variable, Rational >( bVar->first, 0 ) );
             }
         }
     }
