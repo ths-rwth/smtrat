@@ -22,7 +22,7 @@ foreach(strategyfile ${strategies})
 	install_libraries(smtrat-strategy-${strategy}-shared smtrat-strategy-${strategy}-static)
 
 	file(READ "${CMAKE_CURRENT_SOURCE_DIR}/strategies/${strategyfile}" Content)
-	string(REGEX MATCHALL "#include <smtrat-modules/[a-zA-Z]+Module/" Matches ${Content})
+	string(REGEX MATCHALL "#include [<\"]smtrat-modules/[a-zA-Z]+Module/" Matches ${Content})
 	string(REGEX MATCHALL "[a-zA-Z]+Module" Matches "${Matches}")
 
 	foreach(module ${Matches})

@@ -42,6 +42,7 @@ target_link_libraries( smtrat
 						smtrat-qe-shared
 						smtrat-unsat-cores-shared
 						smtrat-strategy-${SMTRAT_Strategy}-shared
+						smtrat-module-FPPModule-shared # for preprocessing
 )
 
 #if(USE_COTIRE)
