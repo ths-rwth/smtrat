@@ -27,7 +27,6 @@
 #include <smtrat-common/statistics/StatisticsCollector.h>
 #include <smtrat-common/statistics/StatisticsPrinter.h>
 #include <smtrat-common/statistics/StatisticsSettings.h>
-#include "lib/utilities/stats/StatisticSettings.h"
 #endif //SMTRAT_DEVOPTION_Statistics
 
 #include <smtrat-common/settings/SettingsParser.h>
@@ -36,7 +35,6 @@
 #include "parser/ParserWrapper.h"
 #include "parser/ParserSettings.h"
 #include "../lib/Common.h"
-#include <carl/formula/parser/DIMACSExporter.h>
 #include <carl/io/SMTLIBStream.h>
 #include <carl/util/TimingCollector.h>
 #include "tools/Executor.h"
@@ -98,10 +96,6 @@ int main( int argc, char* argv[] )
 
     // This variable will hold the input file.
     std::string pathToInputFile = "";
-
-    // Construct the settingsManager.
-    smtrat::RuntimeSettingsManager settingsManager;
-    // Introduce the settings object for the statistics to the manager.
 
     // Construct solver.
     CMakeStrategySolver strategy;
