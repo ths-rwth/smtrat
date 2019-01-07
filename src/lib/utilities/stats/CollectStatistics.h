@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "../../config.h"
+#include <smtrat-common/smtrat-common.h>
 #include "StatisticSettings.h"
 
 
@@ -14,7 +14,7 @@
 
 #include <vector>
 #include <iostream>
-
+/*
 namespace smtrat {
 
     class Statistics;
@@ -38,4 +38,5 @@ namespace smtrat {
         static size_t maxKeyLength;
     };
 }
+*/
 #endif

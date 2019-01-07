@@ -15,6 +15,7 @@
 #include "CollectStatistics.h"
 #include <smtrat-modules/GBModule/GBModuleStatistics.h>
 namespace smtrat {
+/*
 StatisticSettings* CollectStatistics::settings = new StatisticSettings();
 
 CollectStatistics::CollectStatistics( )
@@ -86,7 +87,7 @@ std::vector<Statistics*> CollectStatistics::stats = std::vector<Statistics*>();
 size_t CollectStatistics::maxNameLength = 0;
 size_t CollectStatistics::maxKeyLength = 0;
 
-
+*/
 }
 
 #endif //SMTRAT_DEVOPTION_Statistics

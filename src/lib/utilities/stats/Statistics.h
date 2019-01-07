@@ -18,7 +18,7 @@
 #include <iomanip>
 
 #include "CollectStatistics.h"
-
+/*
 namespace smtrat {
     class Statistics {
     public:
@@ -106,5 +106,6 @@ namespace smtrat {
         }
     };
 }
+*/
 
 #endif
