@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../config.h"
 #include "StatisticsCollector.h"
 
 #include <map>
@@ -7,13 +8,13 @@
 
 namespace smtrat {
 
-class Statistics2 {
+class Statistics {
 private:
 	std::string mName;
 	std::map<std::string, std::string> mCollected;
 protected:
 	template<typename T>
-	void add(const std::string& key, const T& value) {
+	void addKeyValuePair(const std::string& key, const T& value) {
 		if constexpr(std::is_same<T,std::string>::value) {
 			mCollected.emplace(key, value);
 		} else {
@@ -23,12 +24,12 @@ protected:
 		}
 	}
 public:
-	Statistics2(std::string name): mName(std::move(name)) {
+	Statistics(std::string name): mName(std::move(name)) {
 		StatisticsCollector::getInstance().registerStats(this);
 	}
 
-	Statistics2(const Statistics2&) = delete;
-	virtual ~Statistics2() = default;
+	Statistics(const Statistics&) = delete;
+	virtual ~Statistics() = default;
 
 	virtual void collect() {}
 

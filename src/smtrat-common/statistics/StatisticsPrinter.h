@@ -22,6 +22,7 @@ std::ostream& operator<<(std::ostream& os, StatisticsPrinter<SOF>);
 template<>
 std::ostream& operator<<(std::ostream& os, StatisticsPrinter<StatisticsOutputFormat::SMTLIB>) {
 	for (auto s: StatisticsCollector::getInstance().statistics()) {
+		if (s->collected().empty()) continue;
 		os << "(:" << s->name() << " (" << std::endl;
 		std::size_t max_width = 0;
 		for (const auto& kv: s->collected()) {
@@ -38,6 +39,7 @@ std::ostream& operator<<(std::ostream& os, StatisticsPrinter<StatisticsOutputFor
 template<>
 std::ostream& operator<<(std::ostream& os, StatisticsPrinter<StatisticsOutputFormat::XML>) {
 	for (auto s: StatisticsCollector::getInstance().statistics()) {
+		if (s->collected().empty()) continue;
 		std::string name = s->name();
 		std::replace(name.begin(), name.end(), '<', '(');
 		std::replace(name.begin(), name.end(), '>', ')');

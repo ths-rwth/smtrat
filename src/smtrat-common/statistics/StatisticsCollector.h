@@ -6,13 +6,13 @@
 
 namespace smtrat {
 
-class Statistics2;
+class Statistics;
 
 class StatisticsCollector: public carl::Singleton<StatisticsCollector> {
 private:
-	std::vector<Statistics2*> mStats;
+	std::vector<Statistics*> mStats;
 public:
-	void registerStats(Statistics2* s) {
+	void registerStats(Statistics* s) {
 		mStats.emplace_back(s);
 	}
 
