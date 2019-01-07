@@ -60,7 +60,7 @@ public:
 	T& add(const std::string& name) {
 		auto res = mSettings.emplace(name, T{});
 		assert(res.second);
-		return res.first->second;
+		return std::any_cast<T&>(res.first->second);
 	}
 };
 
