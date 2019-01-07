@@ -79,7 +79,7 @@ int main( int argc, char* argv[] )
 
 	auto& parser = smtrat::SettingsParser::getInstance();
 	smtrat::parser::registerParserSettings(parser);
-	smtrat::statistics::registerStatisticsSettings(parser);
+//	smtrat::statistics::registerStatisticsSettings(parser);
 	parser.finalize();
 	parser.parse_options(argc, argv);
 
