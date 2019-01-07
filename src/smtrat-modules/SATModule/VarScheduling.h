@@ -28,7 +28,7 @@ namespace smtrat {
             }
 
             template<typename BaseModule>
-            explicit VarDecidabilityCond( BaseModule& baseModule )
+            explicit VarDecidabilityCond( BaseModule& )
             {}
         };
     };

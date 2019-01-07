@@ -51,7 +51,7 @@ def headerContent(module):
 	result = license(module + 'Module.h') + """
 #pragma once
 
-#include "../../solver/Module.h"
+#include "../Module.h"
 #include \"<MODULENAME>Statistics.h\"
 #include \"<MODULENAME>Settings.h\"
 
@@ -71,7 +71,7 @@ namespace smtrat
 			std::string moduleName() const {
 				return SettingsType::moduleName;
 			}
-			<CLASSNAME>(const ModuleInput* _formula, RuntimeSettings* _settings, Conditionals& _conditionals, Manager* _manager = nullptr);
+			<CLASSNAME>(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
 
 			~<CLASSNAME>();
 			
@@ -137,7 +137,7 @@ def sourceContent(module):
 namespace smtrat
 {
 	template<class Settings>
-	<CLASSNAME><Settings>::<CLASSNAME>(const ModuleInput* _formula, RuntimeSettings*, Conditionals& _conditionals, Manager* _manager):
+	<CLASSNAME><Settings>::<CLASSNAME>(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
 		Module( _formula, _conditionals, _manager )
 #ifdef SMTRAT_DEVOPTION_Statistics
 		, mStatistics(Settings::moduleName)
@@ -218,7 +218,7 @@ def statisticsContent(module):
 #pragma once
 
 #ifdef SMTRAT_DEVOPTION_Statistics
-#include "../../utilities/stats/Statistics.h"
+#include <lib/utilities/stats/Statistics.h>
 
 namespace smtrat
 {
@@ -275,7 +275,7 @@ def printUsage():
 # Parse input.
 #
 moduleName = None
-modulesPath = 'src/lib/modules/'
+modulesPath = 'src/smtrat-modules/'
 for entry in sys.argv[1:]:
 	if entry in ["-h", "--help"]:
 		printUsage()

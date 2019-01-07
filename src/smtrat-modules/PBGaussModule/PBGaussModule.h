@@ -8,6 +8,9 @@
 
 #pragma once
 
+#include <eigen3/Eigen/Core>
+#include <eigen3/Eigen/LU>
+
 #include "../Module.h"
 #include "PBGaussStatistics.h"
 #include "PBGaussSettings.h"

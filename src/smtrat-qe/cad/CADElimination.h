@@ -2,11 +2,11 @@
 
 #include "../QEQuery.h"
 
-#include <lib/datastructures/cad/Settings.h>
-#include <lib/datastructures/cad/helper/CADCore.h>
-#include <lib/datastructures/cad/lifting/LiftingTree.h>
-#include <lib/datastructures/cad/lifting/Sample.h>
-#include <lib/datastructures/cad/projection/Projection.h>
+#include <smtrat-cad/utils/CADCore.h>
+#include <smtrat-cad/Settings.h>
+#include <smtrat-cad/lifting/LiftingTree.h>
+#include <smtrat-cad/lifting/Sample.h>
+#include <smtrat-cad/projection/Projection.h>
 #include "CAD.h"
 
 #include <carl/core/MultivariatePolynomial.h>

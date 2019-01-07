@@ -6,8 +6,8 @@
 
 #include <boost/optional.hpp>
 
-#include <lib/datastructures/cad/Common.h>
-#include <lib/datastructures/cad/projection/BaseProjection.h>
+#include <smtrat-cad/common.h>
+#include <smtrat-cad/projection/BaseProjection.h>
 
 namespace smtrat::qe::cad {
 

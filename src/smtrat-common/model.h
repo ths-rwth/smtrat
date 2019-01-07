@@ -21,6 +21,8 @@ using InfinityValue = carl::InfinityValue;
 
 using SqrtEx = carl::SqrtEx<Poly>;
 
+using MultivariateRootT = carl::MultivariateRoot<Poly>;
+
 using DoubleInterval = carl::Interval<double>;
 using RationalInterval = carl::Interval<Rational>;
 
