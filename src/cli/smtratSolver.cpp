@@ -25,6 +25,9 @@
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "../lib/utilities/stats/CollectStatistics.h"
+#include <smtrat-common/statistics/StatisticsCollector.h>
+#include <smtrat-common/statistics/StatisticsPrinter.h>
+#include <smtrat-common/statistics/StatisticsSettings.h>
 #include "lib/utilities/stats/StatisticSettings.h"
 #endif //SMTRAT_DEVOPTION_Statistics
 
@@ -80,6 +83,7 @@ int main( int argc, char* argv[] )
 	SMTRAT_LOG_INFO("smtrat", "Starting smtrat.");
 
 	auto& parser = smtrat::SettingsParser::getInstance();
+	smtrat::statistics::registerStatisticsSettings(parser);
 	parser.finalize();
 	parser.parse_options(argc, argv);
 
@@ -157,11 +161,14 @@ int main( int argc, char* argv[] )
     #ifdef SMTRAT_DEVOPTION_Statistics
     smtrat::CollectStatistics::collect();
     smtrat::CollectStatistics::print( true );
-    #endif
-
-    #ifdef SMTRAT_DEVOPTION_Statistics
-    // Export statistics.
     smtrat::CollectStatistics::exportXML();
+	smtrat::StatisticsCollector::getInstance().collect();
+	if (smtrat::settings_statistics().print_as_smtlib) {
+		std::cout << smtrat::statistics_as_smtlib() << std::endl;
+	}
+	if (smtrat::settings_statistics().export_as_xml) {
+		smtrat::statistics_to_xml_file(smtrat::settings_statistics().xml_filename);
+	}
     #endif
 
 	#ifdef TIMING
