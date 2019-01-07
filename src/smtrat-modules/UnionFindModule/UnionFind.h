@@ -24,23 +24,10 @@ namespace smtrat
             : translate(translate)
         {}
 
-        using Implementation::resize;
         using Implementation::introduce_variable;
         using Implementation::find;
         using Implementation::merge;
-
-        template<template<typename> typename Container>
-        void resize(Container<T> const& data) noexcept
-        {
-            translate.clear();
-            translate.reserve(data.size());
-
-            Value node = 0;
-            for (const auto& val: data) {
-                translate.emplace(val, node++);
-            }
-            resize(data.size());
-        }
+        using Implementation::backtrack;
 
         void introduce_variable(T const& var) noexcept
         {
@@ -58,6 +45,10 @@ namespace smtrat
             merge(translate.at(a), translate.at(b));
         }
 
+        void backtrack(T const& a, T const& b) noexcept
+        {
+            backtrack(translate.at(a), translate.at(b));
+        }
 
     private:
         TranslateMap & translate;
@@ -69,16 +60,6 @@ namespace smtrat
         using Representative = Value;
         using Parents = std::vector<Value>;
         using Ranks = std::vector<size_t>;
-
-        void resize(size_t size) noexcept
-        {
-            _parents.clear();
-            _parents.resize(size);
-            std::iota(_parents.begin(), _parents.end(), 0);
-
-            _ranks.clear();
-            _ranks.resize(size, 0);
-        }
 
         void introduce_variable(Value const& var) noexcept
         {
@@ -146,25 +127,12 @@ namespace smtrat
             update_ranks(std::forward<Rs>(ranks));
         }
 
-        Parents resize_parents(size_t size) const noexcept
-        {
-            Parents parents;
-            for (size_t i = 0; i < size; ++i)
-                std::move(parents).push_back(i);
-            return parents;
-        }
-
-        void resize(size_t size) noexcept
-        {
-            _parents = resize_parents(size);
-            _ranks = Ranks(size, 0);
-        }
-
         void introduce_variable(Value const& var) noexcept
         {
-            assert(_parents.size() == var);
-            _parents = std::move(_parents).push_back(var);
-            _ranks = std::move(_ranks).push_back(0);
+            for (size_t i = _parents.size(); i <= var; ++i) {
+                _parents = std::move(_parents).push_back(i);
+                _ranks = std::move(_ranks).push_back(0);
+            }
         }
 
         using FindState = std::pair<Parents, Representative>;
@@ -234,45 +202,59 @@ namespace smtrat
 
 
     template< typename UnionFind >
-    struct Backtrackable : UnionFind // TODO remove inheritence
+    struct Backtrackable
     {
         using Value = typename UnionFind::Value;
         using Representative = Value;
 
-        using UnionFind::update;
-
-        void resize(size_t size) noexcept
+        Backtrackable()
         {
-            UnionFind::resize(size);
+            history.emplace_back( origin(), UnionFind{} );
         }
 
         void introduce_variable(Value const& var) noexcept
         {
-            UnionFind::introduce_variable(var);
+            current().introduce_variable(var);
         }
 
         [[nodiscard]] auto find(Value const& val) noexcept -> Representative
         {
-            return UnionFind::find(val);
+            return current().find(val);
         }
 
         void merge(Value const& a, Value const& b) noexcept
         {
-            if constexpr ( std::is_void_v< decltype( UnionFind::merge(a, b) ) > ) {
-                UnionFind::merge(a, b);
-            } else {
-                auto updated = UnionFind::merge(a, b);
-                update(std::move(updated._parents), std::move(updated._ranks));
-            }
-            // TODO maintain history
+            history.emplace_back( Timestamp(a, b), current().merge(a, b) );
+        }
+
+        void backtrack(Value const& a, Value const& b) noexcept
+        {
+            auto ver = version(Timestamp(a, b));
+            history.erase(ver, history.end());
         }
 
         using Timestamp = std::pair<Value, Value>;
+        using History = std::vector< std::pair< Timestamp, UnionFind > >;
+
+        [[nodiscard]] auto version(Timestamp && ts) const noexcept -> typename History::const_iterator
+        {
+            auto it = std::find_if(history.rbegin(), history.rend(), [&] (auto const& ver) {
+                return ver.first == ts;
+            });
+
+            assert(it != history.rend());
+            return std::next(it).base();
+        }
+
+        constexpr auto origin() const noexcept -> Timestamp
+        {
+            constexpr auto t = std::numeric_limits<Value>::max();
+            return {t, t};
+        }
 
         UnionFind& current() noexcept { return history.back().second; }
-        Timestamp& time() noexcept { return history.back().first; }
 
-        std::vector< std::pair< Timestamp, UnionFind > > history;
+        History history;
     };
 
 } // namespace smtrat

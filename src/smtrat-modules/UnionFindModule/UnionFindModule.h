@@ -37,8 +37,8 @@ namespace smtrat
         using History = std::vector<carl::UEquality>;
         History history;
 
-        bool reset = false;
-        void check_restart() noexcept;
+        //bool reset = false;
+        //void check_restart() noexcept;
 
         mutable Classes classes;
 
