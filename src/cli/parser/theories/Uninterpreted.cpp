@@ -1,6 +1,8 @@
 #include "Uninterpreted.h"
 #include "ParserState.h"
 
+#include <carl/formula/uninterpreted/UFInstanceManager.h>
+
 namespace smtrat {
 namespace parser {
 namespace uninterpreted {

@@ -52,7 +52,7 @@ namespace parser {
 		result.clear();
 		for (std::size_t i = 0; i < arguments.size(); i++) {
 			Poly res;
-			if (!convertTerm(arguments[i], res, state->logic == smtrat::Logic::QF_PB)) {
+			if (!convertTerm(arguments[i], res, state->logic == carl::Logic::QF_PB)) {
 				errors.next() << "Operator \"" << op << "\" expects arguments to be polynomials, but argument " << (i+1) << " is not: \"" << arguments[i] << "\".";
 				return false;
 			}

@@ -68,7 +68,7 @@ public:
 		solver.reset();
 		mOutput << "(reset)" << std::endl;
 	}
-	void setLogic(const smtrat::Logic& logic) {
+	void setLogic(const carl::Logic& logic) {
 		solver.rLogic() = logic;
 		mOutput << "(set-logic " << logic << ")" << std::endl;
 	}

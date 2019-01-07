@@ -156,8 +156,8 @@ public:
 		smtrat::resource::Limiter::getInstance().reset();
 		this->solver.reset();
 	}
-	void setLogic(const smtrat::Logic& logic) {
-		if (this->solver.logic() != smtrat::Logic::UNDEFINED) {
+	void setLogic(const carl::Logic& logic) {
+		if (this->solver.logic() != carl::Logic::UNDEFINED) {
 			error() << "The logic has already been set!";
 		} else {
 			this->solver.rLogic() = logic;
