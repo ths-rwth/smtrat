@@ -13,10 +13,20 @@
 #include "UnionFindStatistics.h"
 #include "UnionFindSettings.h"
 #include "UnionFind.h"
-#include "PersistentUnionFind.h"
 
 namespace smtrat
 {
+    using Type = carl::UVariable;
+
+    template<typename Impl>
+    using EQClasses = UnionFindInterface< Type, Impl >;
+
+    using StaticClasses = EQClasses< StaticUnionFind >;
+    using BacktrackableClasses = EQClasses< Backtrackable< PersistentUnionFind > >;
+
+    /* slasses setup */
+    using Classes = BacktrackableClasses;
+
     template<typename Settings>
     class UnionFindModule : public Module
     {
@@ -30,11 +40,9 @@ namespace smtrat
         bool reset = false;
         void check_restart() noexcept;
 
-        using Type = carl::UVariable;
-        using StaticUnionFind = UnionFindInterface< Type, UnionFind >;
-        mutable StaticUnionFind classes;
+        mutable Classes classes;
 
-        using TranslateMap = typename StaticUnionFind::TranslateMap;
+        using TranslateMap = typename Classes::TranslateMap;
         TranslateMap translate;
 
         std::set<carl::UVariable> variables;
