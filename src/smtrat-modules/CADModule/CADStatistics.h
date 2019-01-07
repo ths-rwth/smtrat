@@ -14,16 +14,16 @@
 #include <iostream>
 
 #include <lib/Common.h>
-#include <lib/utilities/stats/Statistics.h>
+#include <smtrat-common/statistics/Statistics.h>
 
 namespace smtrat {
 class CADStatistics : public Statistics
 {
 private:
     std::size_t mCalls = 0;
-    std::size_t mMISCount;
-    std::size_t mMISBaseSize;
-    std::size_t mMISSize;
+    std::size_t mMISCount = 0;
+    std::size_t mMISBaseSize = 0;
+    std::size_t mMISSize = 0;
     std::size_t mSamples = 0;
     std::size_t mSkippedSamples = 0;
 	
@@ -41,10 +41,7 @@ private:
 		Statistics::addKeyValuePair("bb-branches", mBranches);
     }
  public:
-    CADStatistics() : Statistics("CADModule", this),
-        mMISCount(0),
-        mMISBaseSize(0),
-        mMISSize(0)
+    CADStatistics() : Statistics("CADModule")
     {}
         
     void addMIS(std::size_t baseSize, std::size_t size) {

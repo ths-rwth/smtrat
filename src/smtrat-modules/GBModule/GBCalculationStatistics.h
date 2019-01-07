@@ -14,7 +14,7 @@
 #include <iostream>
 
 #include <lib/Common.h>
-#include <lib/utilities/stats/Statistics.h>
+#include <smtrat-common/statistics/Statistics.h>
 
 #include "carl/groebner/gb-buchberger/BuchbergerStats.h"
 
@@ -35,7 +35,7 @@ class GBCalculationStats : public Statistics
      void print(std::ostream& os = std::cout);
      void exportKeyValue(std::ostream& os = std::cout);
    protected:
-    GBCalculationStats() : Statistics("GB Calculation", this), mBuchbergerStats(carl::BuchbergerStats::getInstance())
+    GBCalculationStats() : Statistics("GB Calculation"), mBuchbergerStats(carl::BuchbergerStats::getInstance())
     {}
   
     carl::BuchbergerStats* mBuchbergerStats;

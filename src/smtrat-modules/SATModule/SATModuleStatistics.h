@@ -8,7 +8,9 @@
 
 #pragma once
 
-#include <lib/utilities/stats/Statistics.h>
+#include <smtrat-common/statistics/Statistics.h>
+
+//#include <lib/utilities/stats/Statistics.h>
 #ifdef SMTRAT_DEVOPTION_Statistics
 
 namespace smtrat
@@ -17,43 +19,34 @@ namespace smtrat
     {
     private:
         // Members.
-        size_t mNrTotalVariablesBefore;
-        size_t mNrTotalVariablesAfter;
-        size_t mNrTseitinVariables;
-        size_t mNrClauses;
-        size_t mNrLearnedLemmas;
-        size_t mVarsWithPolarityTrue;
-        size_t mPropagations;
-        size_t mRestarts;
-        size_t mDecisions;
+        std::size_t mNrTotalVariablesBefore = 0;
+        std::size_t mNrTotalVariablesAfter = 0;
+        std::size_t mNrTseitinVariables = 0;
+        std::size_t mNrClauses = 0;
+        std::size_t mNrLearnedLemmas = 0;
+        std::size_t mVarsWithPolarityTrue = 0;
+        std::size_t mPropagations = 0;
+        std::size_t mRestarts = 0;
+        std::size_t mDecisions = 0;
 
     public:
         SATModuleStatistics( const std::string& _name ) : 
-            Statistics( _name, this ),
-            mNrTotalVariablesBefore( 0 ),
-            mNrTotalVariablesAfter( 0 ),
-            mNrTseitinVariables( 0 ),
-            mNrClauses( 0 ),
-            mNrLearnedLemmas( 0 ), 
-            mVarsWithPolarityTrue( 0 ), 
-            mPropagations( 0 ), 
-            mRestarts( 0 ), 
-            mDecisions( 0 )
+            Statistics( _name )
         {}
 
         ~SATModuleStatistics() {}
 
         void collect()
         {
-            Statistics::addKeyValuePair( "variables", mNrTotalVariablesBefore );
-            Statistics::addKeyValuePair( "introduced_variables", mNrTotalVariablesAfter-mNrTotalVariablesBefore );
-            Statistics::addKeyValuePair( "tseitin_variables", mNrTseitinVariables );
-            Statistics::addKeyValuePair( "variables_preferably_set_to_true", mVarsWithPolarityTrue );
-            Statistics::addKeyValuePair( "clauses", mNrClauses );
-            Statistics::addKeyValuePair( "lemmas_learned", mNrLearnedLemmas );
-            Statistics::addKeyValuePair( "propagations", mPropagations );
-            Statistics::addKeyValuePair( "decisions", mDecisions );
-            Statistics::addKeyValuePair( "restarts", mRestarts );
+            addKeyValuePair( "variables", mNrTotalVariablesBefore );
+            addKeyValuePair( "introduced_variables", mNrTotalVariablesAfter-mNrTotalVariablesBefore );
+            addKeyValuePair( "tseitin_variables", mNrTseitinVariables );
+            addKeyValuePair( "variables_preferably_set_to_true", mVarsWithPolarityTrue );
+            addKeyValuePair( "clauses", mNrClauses );
+            addKeyValuePair( "lemmas_learned", mNrLearnedLemmas );
+            addKeyValuePair( "propagations", mPropagations );
+            addKeyValuePair( "decisions", mDecisions );
+            addKeyValuePair( "restarts", mRestarts );
         }
 
         void lemmaLearned()

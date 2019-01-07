@@ -11,7 +11,7 @@
 
 #include <smtrat-common/smtrat-common.h>
 #ifdef SMTRAT_DEVOPTION_Statistics
-#include <lib/utilities/stats/Statistics.h>
+#include <smtrat-common/statistics/Statistics.h>
 #include <boost/lexical_cast.hpp>
 #include <iterator>
 
@@ -96,7 +96,7 @@ namespace smtrat
 		void countImplicitEdgeDeduction() noexcept { ++mAddedImplicitDeductions; }
 
 		explicit EQStatistics(const std::string& _statisticName = "EQStatistics") :
-			Statistics( _statisticName, this ),
+			Statistics( _statisticName ),
 			mHashCollisions(0),
 			mBucketInsertions(0),
 			mBucketMerges(0),

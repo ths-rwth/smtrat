@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../../utilities/stats/Statistics.h"
+#include <smtrat-common/statistics/Statistics.h>
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 
@@ -12,7 +12,7 @@ private:
 	std::size_t mExplanationCalled = 0;
 	std::size_t mExplanationSuccess = 0;
 public:
-	FMStatistics(const std::string& name): Statistics(name, this) {}
+	FMStatistics(const std::string& name): Statistics(name) {}
 	~FMStatistics() = default;
 	
 	void collect() {

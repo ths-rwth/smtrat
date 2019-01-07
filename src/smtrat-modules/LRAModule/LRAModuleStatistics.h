@@ -2,7 +2,7 @@
 
 #include <smtrat-common/smtrat-common.h>
 #ifdef SMTRAT_DEVOPTION_Statistics
-#include <lib/utilities/stats/Statistics.h>
+#include <smtrat-common/statistics/Statistics.h>
 
 namespace smtrat
 {
@@ -10,39 +10,39 @@ namespace smtrat
     {
     private:
         // Members.
-        size_t mPivotingSteps;
-        size_t mCurrentPivotingSteps;
-        size_t mMostPivotingStepsInACheck;
-        size_t mChecksWithPivoting;
-        size_t mTableauxSize;
-        size_t mTableauEntries;
-        size_t mRefinements;
-        size_t mConflicts;
-        size_t mAllConflictsSizes;
-        size_t mDeductions;
-        size_t mTheoryPropagations;
-        size_t mChecks;
-        size_t mAllChecksSizes;
-        size_t mUnequalConstrainSplittings;
+        std::size_t mPivotingSteps = 0;
+        std::size_t mCurrentPivotingSteps = 0;
+        std::size_t mMostPivotingStepsInACheck = 0;
+        std::size_t mChecksWithPivoting = 0;
+        std::size_t mTableauxSize = 0;
+        std::size_t mTableauEntries = 0;
+        std::size_t mRefinements = 0;
+        std::size_t mConflicts = 0;
+        std::size_t mAllConflictsSizes = 0;
+        std::size_t mDeductions = 0;
+        std::size_t mTheoryPropagations = 0;
+        std::size_t mChecks = 0;
+        std::size_t mAllChecksSizes = 0;
+        std::size_t mUnequalConstrainSplittings = 0;
     public:
         // Override Statistics::collect.
         void collect()
         {
-           Statistics::addKeyValuePair( "pivots", mPivotingSteps );
-           Statistics::addKeyValuePair( "max-pivots", mMostPivotingStepsInACheck );
-           Statistics::addKeyValuePair( "average-num-of_pivots", mChecksWithPivoting == 0 ? 0 : (double)mPivotingSteps/(double)mChecksWithPivoting );
-           Statistics::addKeyValuePair( "tableau-size", mTableauxSize );
-           Statistics::addKeyValuePair( "tableau-entries", mTableauEntries );
-           Statistics::addKeyValuePair( "tableau-coverage", mTableauxSize == 0 ? 0 : (double)mTableauEntries/(double)mTableauxSize );
-           Statistics::addKeyValuePair( "refinements", mRefinements );
-           Statistics::addKeyValuePair( "conflicts", mConflicts );
-           Statistics::addKeyValuePair( "average-conflict-size", mConflicts == 0 ? 0 : (double)mAllConflictsSizes/(double)mConflicts );
-           Statistics::addKeyValuePair( "lemmas", mDeductions );
-           Statistics::addKeyValuePair( "theory-propagations", mTheoryPropagations );
-           Statistics::addKeyValuePair( "checks", mChecks );
-           Statistics::addKeyValuePair( "checks-with-pivots", mChecksWithPivoting );
-           Statistics::addKeyValuePair( "average-check-size", mChecks == 0 ? 0 : (double)mAllChecksSizes/(double)mChecks );
-           Statistics::addKeyValuePair( "unequal-constraint-splittings", mUnequalConstrainSplittings );
+           addKeyValuePair( "pivots", mPivotingSteps );
+           addKeyValuePair( "max-pivots", mMostPivotingStepsInACheck );
+           addKeyValuePair( "average-num-of_pivots", mChecksWithPivoting == 0 ? 0 : (double)mPivotingSteps/(double)mChecksWithPivoting );
+           addKeyValuePair( "tableau-size", mTableauxSize );
+           addKeyValuePair( "tableau-entries", mTableauEntries );
+           addKeyValuePair( "tableau-coverage", mTableauxSize == 0 ? 0 : (double)mTableauEntries/(double)mTableauxSize );
+           addKeyValuePair( "refinements", mRefinements );
+           addKeyValuePair( "conflicts", mConflicts );
+           addKeyValuePair( "average-conflict-size", mConflicts == 0 ? 0 : (double)mAllConflictsSizes/(double)mConflicts );
+           addKeyValuePair( "lemmas", mDeductions );
+           addKeyValuePair( "theory-propagations", mTheoryPropagations );
+           addKeyValuePair( "checks", mChecks );
+           addKeyValuePair( "checks-with-pivots", mChecksWithPivoting );
+           addKeyValuePair( "average-check-size", mChecks == 0 ? 0 : (double)mAllChecksSizes/(double)mChecks );
+           addKeyValuePair( "unequal-constraint-splittings", mUnequalConstrainSplittings );
         }
         
         void pivotStep()
@@ -112,21 +112,7 @@ namespace smtrat
         }
 
         LRAModuleStatistics( const std::string& _name ) : 
-            Statistics( _name, this ),
-            mPivotingSteps( 0 ),
-            mCurrentPivotingSteps( 0 ),
-            mMostPivotingStepsInACheck( 0 ),
-            mChecksWithPivoting( 0 ),
-            mTableauxSize( 0 ),
-            mTableauEntries( 0 ),
-            mRefinements( 0 ),
-            mConflicts( 0 ),
-            mAllConflictsSizes( 0 ),
-            mDeductions( 0 ),
-            mTheoryPropagations( 0 ),
-            mChecks( 0 ),
-            mAllChecksSizes( 0 ),
-            mUnequalConstrainSplittings( 0 )
+            Statistics( _name )
         {}
         
         ~LRAModuleStatistics() {}
