@@ -15,13 +15,13 @@ foreach(module ${modules})
 				configure_file("${tpl}" "${file}")
 			endif()
 		endforeach()
-	
+
 		# Properly configure Instantiation.h
 		if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${module}/Instantiation.h.in")
 			string(REPLACE "Module" "" Prefix ${module})
 			file(READ "${CMAKE_CURRENT_SOURCE_DIR}/${module}/${Prefix}Settings.h" Content)
 			string(REGEX MATCHALL "[^_0-9a-zA-Z]${Prefix}Settings[_0-9a-zA-Z]+" Matches ${Content})
-			
+
 			set(settings "")
 			foreach(Match ${Matches})
 				string(SUBSTRING ${Match} 1 -1 Match)
@@ -38,7 +38,6 @@ foreach(module ${modules})
 
 		# Create library
 		file(GLOB_RECURSE sources ${CMAKE_CURRENT_SOURCE_DIR}/${module}/*.cpp)
-		
 		add_new_libraries(smtrat-module-${module} ${PROJECT_VERSION_LIB} "${sources}" "resources")
 		target_include_dirs_from(smtrat-module-${module}-objects "" PUBLIC carl-shared smtrat-common-shared)
 		target_link_libraries(smtrat-module-${module}-shared smtrat-common-shared smtrat-modules-shared)
