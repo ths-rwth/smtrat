@@ -3,7 +3,7 @@
  */
 #pragma once
 
-#include <lib/solver/Manager.h>
+#include <smtrat-solver/Manager.h>
 #include <smtrat-modules/FPPModule/FPPModule.h>
 #include <smtrat-modules/IncWidthModule/IncWidthModule.h>
 #include <smtrat-modules/IntBlastModule/IntBlastModule.h>

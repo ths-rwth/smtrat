@@ -10,7 +10,7 @@
 
 #include <boost/optional.hpp>
 #include <lib/datastructures/VariableBounds.h>
-#include <lib/solver/Manager.h>
+#include <smtrat-solver/Manager.h>
 #include "../Module.h"
 #include "../SATModule/SATModule.h"
 #include "../LRAModule/LRAModule.h"

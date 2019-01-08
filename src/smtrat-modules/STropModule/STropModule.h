@@ -10,7 +10,7 @@
 
 #include <boost/optional.hpp>
 #include "../Module.h"
-#include <lib/solver/Manager.h>
+#include <smtrat-solver/Manager.h>
 #include "../SATModule/SATModule.h"
 #include "../LRAModule/LRAModule.h"
 #include "STropStatistics.h"

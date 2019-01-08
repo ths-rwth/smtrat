@@ -9,7 +9,7 @@
 #include <map>
 #include <iomanip>
 #include "assert.h"
-#include <lib/solver/Manager.h>
+#include <smtrat-solver/Manager.h>
 #include "ICPModule.h"
 
 //#define ICP_MODULE_DEBUG_METHODS
