@@ -41,8 +41,8 @@ foreach(module ${modules})
 		
 		add_new_libraries(smtrat-module-${module} ${PROJECT_VERSION_LIB} "${sources}" "resources")
 		target_include_dirs_from(smtrat-module-${module}-objects "" PUBLIC carl-shared smtrat-common-shared)
-		target_link_libraries(smtrat-module-${module}-shared smtrat-common-shared)
-		target_link_libraries(smtrat-module-${module}-static smtrat-common-static)
+		target_link_libraries(smtrat-module-${module}-shared smtrat-common-shared smtrat-modules-shared)
+		target_link_libraries(smtrat-module-${module}-static smtrat-common-static smtrat-modules-static)
 		install_libraries(smtrat-module-${module}-shared smtrat-module-${module}-static)
 
 		add_dependencies(smtrat-modules-all smtrat-module-${module}-shared smtrat-module-${module}-static)
