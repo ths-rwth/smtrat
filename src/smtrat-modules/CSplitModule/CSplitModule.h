@@ -85,7 +85,7 @@ namespace smtrat
 				Expansion(const carl::Variable& rationalization)
 					: mRationalization(rationalization)
 					, mDiscretization(rationalization.type() == carl::VariableType::VT_INT ? rationalization : carl::freshIntegerVariable())
-					, mNucleus(ZERO_RATIONAL)
+					, mNucleus(0)
 					, mMaximalDomainSize(DomainSize::UNBOUNDED)
 					, mMaximalDomain(RationalInterval::unboundedInterval())
 					, mActiveDomain(RationalInterval::emptyInterval())
