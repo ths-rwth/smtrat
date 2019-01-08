@@ -47,10 +47,12 @@ foreach(module ${modules})
 
 		add_dependencies(smtrat-modules-all smtrat-module-${module}-shared smtrat-module-${module}-static)
 
+		unset(DEPEND-include)
 		unset(DEPEND-shared)
 		unset(DEPEND-static)
 		add_subdirectory(${module})
-		if(DEPEND-shared OR DEPEND-static)
+		if(DEPEND-include OR DEPEND-shared OR DEPEND-static)
+			target_include_dirs_from(smtrat-module-${module}-objects "" PUBLIC ${DEPEND-include})
 			target_link_libraries(smtrat-module-${module}-shared ${DEPEND-shared})
 			target_link_libraries(smtrat-module-${module}-static ${DEPEND-static})
 		endif()
