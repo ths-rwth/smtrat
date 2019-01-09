@@ -1,6 +1,6 @@
 #pragma once
 
-#include <lib/solver/Manager.h>
+#include <smtrat-solver/Manager.h>
 
 #include <smtrat-modules/BEModule/BEModule.h>
 #include <smtrat-modules/BVModule/BVModule.h>

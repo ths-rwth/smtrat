@@ -1,5 +1,7 @@
 #pragma once
 
+#define EXTERNALIZE_CLASSES
+
 #cmakedefine USE_NSS
 
 // Whether the validation in the module should be enabled

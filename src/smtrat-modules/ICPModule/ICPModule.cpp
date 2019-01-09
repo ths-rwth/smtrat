@@ -9,7 +9,7 @@
 #include <map>
 #include <iomanip>
 #include "assert.h"
-#include <lib/solver/Manager.h>
+#include <smtrat-solver/Manager.h>
 #include "ICPModule.h"
 
 //#define ICP_MODULE_DEBUG_METHODS
@@ -70,7 +70,7 @@ namespace smtrat
         mGlobalBoxSize(0.0),
         mInitialBoxSize(0.0)
     {
-        if( mpManager != nullptr && mpManager->logic() == Logic::QF_NIA )
+        if( mpManager != nullptr && mpManager->logic() == carl::Logic::QF_NIA )
         {
             mTargetDiameter = Settings::target_diameter_nia;
             mContractionThreshold = Settings::contraction_threshold_nia;
@@ -793,7 +793,7 @@ namespace smtrat
     template<class Settings>
     Poly ICPModule<Settings>::createNonlinearCCs( const ConstraintT& _constraint, const std::vector<Poly>& _tempMonomes )
     {
-        Poly linearizedConstraint = ZERO_POLYNOMIAL;
+        Poly linearizedConstraint;
         ContractionCandidates ccs;
         /*
          * Create all icp variables and contraction candidates for the given non-linear constraint:
@@ -1805,7 +1805,7 @@ namespace smtrat
     template<class Settings>
     void ICPModule<Settings>::sizeBasedSplitting( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase )
     {
-        _value = ZERO_RATIONAL;
+        _value = 0;
         _leftCaseWeak = true;
         _preferLeftCase = true;
         std::vector<std::map<carl::Variable, icp::IcpVariable*>::const_iterator> suitableVariables;
@@ -1849,7 +1849,7 @@ namespace smtrat
     template<class Settings>
     bool ICPModule<Settings>::satBasedSplitting( carl::Variable& _variable, Rational& _value, bool& _leftCaseWeak, bool& _preferLeftCase )
     {
-        _value = ZERO_RATIONAL;
+        _value = 0;
         _leftCaseWeak = true;
         _preferLeftCase = true;
         std::vector<std::map<carl::Variable, icp::IcpVariable*>::const_iterator> suitableVariables;
@@ -2217,7 +2217,7 @@ namespace smtrat
             // Add an assignment for variables only occurring in constraints with != as relation symbol
             while( origVarsIter != originalRealVariables.end() && *origVarsIter < iter->first )
             {
-                mFoundSolution.emplace(*origVarsIter, ZERO_RATIONAL); // TODO: find a rational assignment which most probably satisfies this inequality
+                mFoundSolution.emplace(*origVarsIter, 0); // TODO: find a rational assignment which most probably satisfies this inequality
                 ++origVarsIter;
             }
             if( origVarsIter != originalRealVariables.end() )
@@ -2238,7 +2238,7 @@ namespace smtrat
                 }
                 else
                 {
-                    assert( iter->first.type() != carl::VariableType::VT_INT || varBounds.isUnbounded() || varBounds.diameter() >= ONE_RATIONAL );
+                    assert( iter->first.type() != carl::VariableType::VT_INT || varBounds.isUnbounded() || varBounds.diameter() >= 1 );
                     if( iter->first.type() != carl::VariableType::VT_INT )
                         boxContainsOnlyOneSolution = false;
                     if( varBounds.lowerBoundType() != carl::BoundType::INFTY && value < varBounds.lower() )

@@ -375,7 +375,7 @@ namespace smtrat
 		for (Expansion& expansion : mExpansions)
 		{
 			/// Calculate the center point where the initial domain is located
-			expansion.mNucleus = ZERO_RATIONAL;
+			expansion.mNucleus = 0;
 			if (expansion.mMaximalDomain.lowerBoundType() != carl::BoundType::INFTY
 				&& expansion.mNucleus < expansion.mMaximalDomain.lower())
 				expansion.mNucleus = expansion.mMaximalDomain.lower();
@@ -412,9 +412,9 @@ namespace smtrat
 			
 			bool operator<(const Candidate& rhs) const
 			{
-				if (mDirection*rhs.mDirection == ONE_RATIONAL)
+				if (carl::isOne(mDirection*rhs.mDirection))
 					return mRadius < rhs.mRadius;
-				else if (mDirection == ONE_RATIONAL)
+				else if (carl::isOne(mDirection))
 					return mRadius < Rational(Settings::thresholdRadius);
 				else
 					return rhs.mRadius >= Rational(Settings::thresholdRadius);
@@ -436,12 +436,12 @@ namespace smtrat
 					if (constraint.isLowerBound()
 						&& (expansion.mMaximalDomain.lowerBoundType() == carl::BoundType::INFTY
 							|| expansion.mMaximalDomain.lower() < expansion.mActiveDomain.lower()))
-						direction = MINUS_ONE_RATIONAL;
+						direction = -1;
 					else if (constraint.isUpperBound()
 						&& (expansion.mMaximalDomain.upperBoundType() == carl::BoundType::INFTY
 							|| expansion.mMaximalDomain.upper() > expansion.mActiveDomain.upper()))
-						direction  = ONE_RATIONAL;
-					if (direction != ZERO_RATIONAL)
+						direction  = 1;
+					if (!carl::isZero(direction))
 					{
 						Rational radius{(direction*(expansion.mActiveDomain-expansion.mNucleus)).upper()};
 						if (radius <= Settings::maximalRadius)
@@ -459,7 +459,7 @@ namespace smtrat
 		{
 			RationalInterval domain;
 			if (candidate.mRadius <= Settings::thresholdRadius)
-				domain = RationalInterval(0, ONE_RATIONAL);
+				domain = RationalInterval(0, 1);
 			else if (candidate.mExpansion.mPurifications.empty())
 				domain = RationalInterval(0, carl::BoundType::WEAK, 0, carl::BoundType::INFTY);
 			else
@@ -567,7 +567,7 @@ namespace smtrat
 			{
 				/// Update the currently active linear encoding
 				Rational lower{activeDomain.isEmpty() ? domain.lower() : activeDomain.lower()};
-				Rational upper{activeDomain.isEmpty() ? domain.lower() : activeDomain.upper()+ONE_RATIONAL};
+				Rational upper{activeDomain.isEmpty() ? domain.lower() : activeDomain.upper()+1};
 				for (const Purification *purification : expansion.mPurifications)
 				{
 					for (Rational alpha = domain.lower(); alpha < lower; ++alpha)
@@ -611,7 +611,7 @@ namespace smtrat
 							),
 							false
 						);
-					for (Rational alpha = ZERO_RATIONAL; alpha < Settings::expansionBase; ++alpha)
+					for (Rational alpha = 0; alpha < Settings::expansionBase; ++alpha)
 						propagateFormula(
 							FormulaT(
 								carl::FormulaType::IMPLIES,
