@@ -285,7 +285,12 @@ namespace smtrat
     template<class Settings>
     bool AbstractModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        //FormulaT formula = _subformula->formula();
+        const FormulaT& formula{_subformula->formula()};
+        if (formula.getType() == carl::FormulaType::FALSE){
+            mInfeasibleSubsets.push_back({formula});
+            return mInfeasibleSubsets.empty();
+        }
+        cout << "Formula: " <<_subformula->formula();
         originalFormula->add(_subformula->formula(), false);
 
         //get constraint
@@ -303,8 +308,6 @@ namespace smtrat
 
         //size of array
         std::vector<Poly> op(poly.getTerms().size());
-//        Poly op[poly.getTerms().size()];
-        int n = sizeof(op) / sizeof(op[0]);
 
         // loops over each term and create linear polynomials
         for( auto& term : poly.getTerms() ) {
@@ -426,7 +429,6 @@ namespace smtrat
 
         //collect the variables into the container "allVarsOfOriginalFormula"
         originalFormula->vars(allVarsOfOriginalFormula);
-
         cout << "all variables of original formula: ";
         for (auto it = allVarsOfOriginalFormula.begin(); it != allVarsOfOriginalFormula.end(); ++it) {
             cout << it->name();
@@ -530,7 +532,7 @@ namespace smtrat
 
             auto AnswerOfLRA = runBackends();
             updateModel();
-
+            cout << "Linearized Formula is AnswerOfLRA!"<< AnswerOfLRA << "\n";
             if (AnswerOfLRA != SAT) {
                 cout << "Linearized Formula is Unsatisfied!" << "\n";
                 return AnswerOfLRA;
