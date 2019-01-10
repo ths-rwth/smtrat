@@ -3,7 +3,7 @@
  */
 #pragma once
 
-#include <lib/solver/Manager.h>
+#include <smtrat-solver/Manager.h>
 #include <smtrat-modules/SATModule/SATModule.h>
 #include <smtrat-modules/UnionFindModule/UnionFindModule.h>
 #include <smtrat-modules/UFCegarModule/UFCegarModule.h>
