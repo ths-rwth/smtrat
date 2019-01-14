@@ -10,7 +10,6 @@
 #include "UnionFindModule.h"
 #include "UnionFind.h"
 
-#include <boost/graph/adjacency_list.hpp>
 #include <carl/formula/uninterpreted/UFInstanceManager.h>
 
 namespace smtrat
@@ -52,7 +51,9 @@ namespace smtrat
         const auto& rhs = ueq.rhs().asUVariable();
 
         auto process = [&] (const auto& var) {
-            variables.emplace(var);
+            if (const auto& [it, inserted] = variables.emplace(var); inserted) {
+				graph.add_vertex(var);
+            }
             classes.introduce_variable(var);
         };
 
@@ -61,6 +62,7 @@ namespace smtrat
 
         if (!ueq.negated()) {
             classes.merge(lhs, rhs);
+			graph.add_edge(lhs, rhs);
         }
 
         history.emplace_back(ueq);
@@ -78,6 +80,8 @@ namespace smtrat
             const auto& lhs = it->lhs().asUVariable();
             const auto& rhs = it->rhs().asUVariable();
             classes.backtrack(lhs, rhs);
+
+			graph.remove_edge(lhs, rhs);
 
             // reinsert history tail
             if (it != history.rbegin()) {
@@ -118,6 +122,20 @@ namespace smtrat
         }
     }
 
+    template<typename Settings>
+    void UnionFindModule<Settings>::generateInfeasibleSubset(const carl::UEquality& inequality)
+    {
+        mInfeasibleSubsets.emplace_back();
+        auto& infeasible = mInfeasibleSubsets.back();
+        infeasible.emplace(inequality);
+
+        const auto& begin = inequality.lhs().asUVariable();
+        const auto& end = inequality.rhs().asUVariable();
+		for (const auto& [u, v]: graph.get_path(begin, end)) {
+			infeasible.emplace(carl::UEquality(u, v, false));
+		}
+    }
+
     template<class Settings>
     Answer UnionFindModule<Settings>::checkCore()
     {
@@ -126,7 +144,7 @@ namespace smtrat
                 const auto& lhs = classes.find(ueq.lhs().asUVariable());
                 const auto& rhs = classes.find(ueq.rhs().asUVariable());
                 if (lhs == rhs) {
-                    generateTrivialInfeasibleSubset();
+                    generateInfeasibleSubset(ueq);
                     return Answer::UNSAT;
                 }
             }

@@ -13,6 +13,7 @@
 #include "UnionFindStatistics.h"
 #include "UnionFindSettings.h"
 #include "UnionFind.h"
+#include "EQGraph.h"
 
 namespace smtrat
 {
@@ -36,6 +37,10 @@ namespace smtrat
 #endif
         using History = std::vector<carl::UEquality>;
         History history;
+
+        EQGraph<carl::UVariable> graph;
+
+        void generateInfeasibleSubset(const carl::UEquality& inequality);
 
         mutable Classes classes;
 
