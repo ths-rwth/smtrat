@@ -10,6 +10,7 @@
 #include "UnionFindModule.h"
 #include "UnionFind.h"
 
+#include <boost/graph/adjacency_list.hpp>
 #include <carl/formula/uninterpreted/UFInstanceManager.h>
 
 namespace smtrat
@@ -39,20 +40,6 @@ namespace smtrat
     void UnionFindModule<Settings>::init()
     {
     }
-
-    /*template<class Settings>
-    void UnionFindModule<Settings>::check_restart() noexcept
-    {
-        if (reset) {
-            classes.resize(variables);
-            for (const auto& eq : history) {
-                if (!eq.negated()) {
-                    classes.merge(eq.lhs().asUVariable(), eq.rhs().asUVariable());
-                }
-            }
-            reset = false;
-        }
-    }*/
 
     template<class Settings>
     bool UnionFindModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
@@ -131,34 +118,21 @@ namespace smtrat
         }
     }
 
-    template<typename Classes, typename Inequalities>
-    [[nodiscard]] bool isConsistent(Classes& classes, const Inequalities& inequalities) noexcept {
-        for (const auto &ueq : inequalities) {
-            const auto& lhs = classes.find(ueq.lhs().asUVariable());
-            const auto& rhs = classes.find(ueq.rhs().asUVariable());
-            if (rhs == lhs)
-                return false;
-        }
-
-        return true;
-    }
-
     template<class Settings>
     Answer UnionFindModule<Settings>::checkCore()
     {
-        std::vector<carl::UEquality> inequalities;
-        std::copy_if(history.begin(), history.end(), std::back_inserter(inequalities), [] (const auto &ueq) {
-            return ueq.negated();
-        });
-
-        //check_restart();
-
-        if (!isConsistent(classes, inequalities)) {
-            generateTrivialInfeasibleSubset();
-            return Answer::UNSAT;
-        } else {
-            return Answer::SAT;
+        for (const auto& ueq : history) {
+            if (ueq.negated()) {
+                const auto& lhs = classes.find(ueq.lhs().asUVariable());
+                const auto& rhs = classes.find(ueq.rhs().asUVariable());
+                if (lhs == rhs) {
+                    generateTrivialInfeasibleSubset();
+                    return Answer::UNSAT;
+                }
+            }
         }
+
+        return Answer::SAT;
     }
 }
 
