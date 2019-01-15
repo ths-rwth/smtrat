@@ -21,7 +21,7 @@ private:
 	std::map<carl::Variable, carl::Interval<double>> mBox;
 	std::vector<QueueEntry> mContractors;
 
-	FormulaT mPremise;
+	FormulasT mPremise;
 
 	static constexpr double weight_age = 0.5;
 	static constexpr double threshold_priority = 0.1;
@@ -139,10 +139,14 @@ private:
 	}
 
 	auto construct_direct_conflict() const {
-		return FormulaT(carl::FormulaType::NOT, mPremise);
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Constructing not " << mPremise);
+		return FormulaT(carl::FormulaType::OR, mPremise);
 	}
 	auto construct_interval_conflict(carl::Variable v, const FormulaT& excluded) const {
-		return FormulaT(carl::FormulaType::IMPLIES, mPremise, excluded);
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Constructing " << mPremise << " => " << excluded);
+		FormulasT cur = mPremise;
+		cur.emplace_back(excluded);
+		return FormulaT(carl::FormulaType::OR, cur);
 	}
 
 public:
@@ -151,11 +155,12 @@ public:
 			mBox.emplace(v, carl::Interval<double>(0, carl::BoundType::INFTY, 0, carl::BoundType::INFTY));
 		}
 		for (const auto& c: constraints) {
+			if (c.constraint().relation() == carl::Relation::NEQ) continue;
 			for (const auto& v: c.variables()) {
 				mContractors.emplace_back(QueueEntry {1.0, carl::contractor::Contractor<Poly>(c.constraint(), v)});
 			}
+			mPremise.emplace_back(!c);
 		}
-		mPremise = FormulaT(carl::FormulaType::AND, constraints);
 	}
 
 	std::optional<FormulaT> execute() {
