@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Dependencies.h"
+
 #include <carl/interval/Interval.h>
 #include <carl/interval/Contractor.h>
 #include <carl/interval/sampling.h>
@@ -12,7 +14,7 @@ namespace icp {
 
 struct QueueEntry {
 	double priority;
-	carl::contractor::Contractor<Poly> contractor;
+	carl::contractor::Contractor<FormulaT, Poly> contractor;
 };
 
 class IntervalPropagation {	
@@ -21,7 +23,7 @@ private:
 	std::map<carl::Variable, carl::Interval<double>> mBox;
 	std::vector<QueueEntry> mContractors;
 
-	FormulasT mPremise;
+	Dependencies mDependencies;
 
 	static constexpr double weight_age = 0.5;
 	static constexpr double threshold_priority = 0.1;
@@ -76,20 +78,30 @@ private:
 		if (intervals.back().upperBound() < cur.upperBound()) {
 			cur = carl::Interval<double>(cur.lower(), cur.lowerBoundType(), intervals.back().upper(), intervals.back().upperBoundType());
 		}
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", old << " -> " << cur);
 		if (old.isInfinite()) {
-			if (cur.isInfinite()) return 0.0;
-			else return 1.0;
+			if (cur.isInfinite()) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "still infinite");
+				return 0.0;
+			} else {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "no longer infinite");
+				return 1.0;
+			}
 		} else if (old.isUnbounded()) {
 			assert(!cur.isInfinite());
 			if (cur.isUnbounded()) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "still unbounded");
 				if (old.lower() < cur.lower() || cur.upper() < old.upper()) {
 					return threshold_priority / 2;
 				} else {
 					return 0.0;
 				}
+			} else {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "no longer unbounded");
+				return 1.0;
 			}
-			else return 1.0;
 		} else {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "reduced size");
 			auto size = old.diameter();
 			return (size - cur.diameter()) / size;
 		}
@@ -142,15 +154,16 @@ private:
 		return std::nullopt;
 	}
 
-	auto construct_direct_conflict() const {
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Constructing not " << mPremise);
-		return FormulaT(carl::FormulaType::OR, mPremise);
+	auto construct_direct_conflict(carl::Variable v) const {
+		auto constraints = mDependencies.get(v, true);
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Constructing not " << constraints);
+		return FormulaT(carl::FormulaType::OR, std::move(constraints));
 	}
 	auto construct_interval_conflict(carl::Variable v, const FormulaT& excluded) const {
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Constructing " << mPremise << " => " << excluded);
-		FormulasT cur = mPremise;
-		cur.emplace_back(excluded);
-		return FormulaT(carl::FormulaType::OR, cur);
+		auto constraints = mDependencies.get(v, true);
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Constructing " << constraints << " => " << excluded);
+		constraints.emplace_back(excluded);
+		return FormulaT(carl::FormulaType::OR, std::move(constraints));
 	}
 
 public:
@@ -161,9 +174,8 @@ public:
 		for (const auto& c: constraints) {
 			if (c.constraint().relation() == carl::Relation::NEQ) continue;
 			for (const auto& v: c.variables()) {
-				mContractors.emplace_back(QueueEntry {1.0, carl::contractor::Contractor<Poly>(c.constraint(), v)});
+				mContractors.emplace_back(QueueEntry {1.0, carl::contractor::Contractor<FormulaT, Poly>(c, c.constraint(), v)});
 			}
-			mPremise.emplace_back(!c);
 		}
 	}
 
@@ -180,20 +192,27 @@ public:
 			}
 			bool contracted = false;
 			for (auto& c: mContractors) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "***************");
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Contracting with " << c.contractor.var());
 				auto res = c.contractor.contract(mBox);
 				if (res.empty()) {
+					mDependencies.add(c.contractor);
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Contracted to empty interval, conflict for " << c.contractor.var());
-					return construct_direct_conflict();
+					return construct_direct_conflict(c.contractor.var());
 				} else {
 					auto excluded = find_excluded_interval(c.contractor.var(), res);
 					if (excluded) {
+						mDependencies.add(c.contractor);
 						SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Contracted to exclude current model, conflict for " << c.contractor.var());
 						return construct_interval_conflict(c.contractor.var(), *excluded);
 					} else {
 						SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Contracted " << c.contractor.var() << " to " << res);
 						double factor = update_model(c.contractor.var(), res);
-						if (factor > 0) contracted = true;
+						SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Contraction factor: " << factor);
+						if (factor > 0) {
+							contracted = true;
+							mDependencies.add(c.contractor);
+						}
 						c.priority = weight_age * c.priority + factor * (1 - c.priority);
 						SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "New priority: " << c.priority);
 					}
