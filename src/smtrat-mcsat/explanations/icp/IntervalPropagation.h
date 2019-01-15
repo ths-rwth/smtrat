@@ -103,6 +103,7 @@ private:
 		auto value = mModel.evaluated(v);
 		if (value.isRational()) {
 			Rational val = value.asRational();
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "model is " << val);
 			std::optional<Rational> lower;
 			std::optional<Rational> upper;
 			for (std::size_t i = 0; i < admissible.size(); ++i) {
@@ -113,11 +114,14 @@ private:
 					carl::rationalize<Rational>(a.upper()),
 					a.upperBoundType()
 				);
-				if (cur.lower() > val) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "cur is " << cur);
+				if (val < cur) {
 					upper = cur.lower();
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "cur is above " << val);
 					break;
 				}
 				if (cur.contains(val)) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "cur contains " << val);
 					return std::nullopt;
 				}
 				lower = cur.upper();
