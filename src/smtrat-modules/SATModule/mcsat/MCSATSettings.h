@@ -32,14 +32,14 @@ struct MCSATSettingsOC {
 struct MCSATSettingsFMVSOC {
   static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
   using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,onecellcad::Explanation, nlsat::Explanation>;
+	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::IgnoreCoreSettings>,vs::Explanation,onecellcad::Explanation, nlsat::Explanation>;
 };
 
 struct MCSATSettingsFMNL {
 	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
 	// using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
-	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,nlsat::Explanation>;
+	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::IgnoreCoreSettings>,nlsat::Explanation>;
 };
 
 struct MCSATSettingsVSNL {
@@ -51,7 +51,7 @@ struct MCSATSettingsVSNL {
 struct MCSATSettingsFMVSNL {
 	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,nlsat::Explanation>;
+	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::IgnoreCoreSettings>,vs::Explanation,nlsat::Explanation>;
 };
 
 struct MCSATSettingsICPNL {
