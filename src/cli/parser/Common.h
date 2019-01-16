@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../../lib/Common.h"
+#include <smtrat-common/smtrat-common.h>
 #include "theories/Common.h"
 
 #include <algorithm>

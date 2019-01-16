@@ -199,12 +199,12 @@ namespace smtrat
 				}
 				
 				/// Calculate smallest possible integer valued exponents
-				if (gcd != ZERO_RATIONAL && gcd != ONE_RATIONAL)
+				if (!carl::isZero(gcd) && !carl::isOne(gcd))
 					for (Weight& weight : weights)
 						weight.mExponent /= gcd;
 				
 				/// Find model by increasingly testing the sample base
-				Rational base{ZERO_RATIONAL};
+				Rational base = 0;
 				do
 				{
 					++base;
@@ -214,7 +214,7 @@ namespace smtrat
 						Rational value{carl::isNegative(weight.mExponent) ? carl::reciprocal(base) : base};
 						carl::pow_assign(value, carl::toInt<carl::uint>(carl::abs(weight.mExponent)));
 						if (weight.mSign)
-							value *= MINUS_ONE_RATIONAL;
+							value *= -1;
 						mModel.emplace(weight.mVariable, value);
 					}
 				}

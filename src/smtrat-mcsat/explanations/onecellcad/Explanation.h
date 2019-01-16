@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../common.h"
+#include <smtrat-common/smtrat-common.h>
 #include <smtrat-mcsat/smtrat-mcsat.h>
 
 namespace smtrat {

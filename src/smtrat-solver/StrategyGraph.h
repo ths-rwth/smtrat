@@ -5,7 +5,7 @@
 #include <tuple>
 #include <vector>
 
-#include "../Common.h"
+#include <smtrat-common/smtrat-common.h>
 #include <smtrat-modules/Module.h>
 
 namespace smtrat {

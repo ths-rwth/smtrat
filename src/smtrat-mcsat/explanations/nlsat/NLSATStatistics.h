@@ -1,6 +1,6 @@
 #pragma once
 
-#include <lib/utilities/stats/Statistics.h>
+#include <smtrat-common/statistics/Statistics.h>
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 
@@ -12,7 +12,7 @@ private:
 	std::size_t mExplanationCalled = 0;
 	std::size_t mExplanationSuccess = 0;
 public:
-	NLSATStatistics(const std::string& name): Statistics(name, this) {}
+	NLSATStatistics(const std::string& name): Statistics(name) {}
 	~NLSATStatistics() = default;
 	
 	void collect() {

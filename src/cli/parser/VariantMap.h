@@ -5,7 +5,8 @@
 
 #pragma once
 
-#include "../../lib/Common.h"
+#include <smtrat-common/smtrat-common.h>
+
 #ifdef __VS
 #pragma warning(push, 0)
 #include <boost/variant.hpp>

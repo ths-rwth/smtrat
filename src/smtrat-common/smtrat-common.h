@@ -10,6 +10,7 @@
 #include <carl/core/Variable.h>
 #include <carl/core/VariableInformation.h>
 #include <carl/formula/Formula.h>
+#include <carl/formula/Logic.h>
 #include <carl/io/streamingOperators.h>
 #include <carl/util/enum_util.h>
 
@@ -69,3 +70,13 @@ inline std::ostream& operator<<(std::ostream& os, Answer a) {
 }
 
 }
+
+#ifdef EXTERNALIZE_CLASSES
+namespace carl {
+
+extern template class MultivariatePolynomial<smtrat::Rational>;
+extern template class Constraint<smtrat::Poly>;
+extern template class Formula<smtrat::Poly>;
+
+}
+#endif

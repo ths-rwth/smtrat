@@ -2,7 +2,7 @@
 //#include <boost/test/included/unit_test.hpp>
 #include <boost/test/unit_test.hpp>
 
-#include "../../lib/Common.h"
+#include <smtrat-common/smtrat-common.h>
 
 struct MCSATVSFixture {
 	MCSATVSFixture() {

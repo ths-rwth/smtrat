@@ -9,7 +9,7 @@
 
 #include <smtrat-common/smtrat-common.h>
 #ifdef SMTRAT_DEVOPTION_Statistics
-#include <lib/utilities/stats/Statistics.h>
+#include <smtrat-common/statistics/Statistics.h>
 
 namespace smtrat
 {
@@ -17,60 +17,45 @@ namespace smtrat
     {
     private:
         // Members.
-        carl::uint mChecks;
-        carl::uint mConflicts;
-        carl::uint mCoveringSets;
-        double mCoveringSetSavings;
-        double mInfSubsetsSavings;
-        carl::uint mCreatedTCs;
-        carl::uint mConsideredStates;
-        carl::uint mConsideredCases;
-        carl::uint mLocalConflicts;
-        carl::uint mLCOmittedConstraints;
-        carl::uint mVBOmittedConstraints;
-        carl::uint mBackjumpings;
-        carl::uint mBJOmittedConstraints;
-        carl::uint mVBOmittedTCs;
-        carl::uint mBranchingLemmas;
+        carl::uint mChecks = 0;
+        carl::uint mConflicts = 0;
+        carl::uint mCoveringSets = 0;
+        double mCoveringSetSavings = 0;
+        double mInfSubsetsSavings = 0;
+        carl::uint mCreatedTCs = 0;
+        carl::uint mConsideredStates = 0;
+        carl::uint mConsideredCases = 0;
+        carl::uint mLocalConflicts = 0;
+        carl::uint mLCOmittedConstraints = 0;
+        carl::uint mVBOmittedConstraints = 0;
+        carl::uint mBackjumpings = 0;
+        carl::uint mBJOmittedConstraints = 0;
+        carl::uint mVBOmittedTCs = 0;
+        carl::uint mBranchingLemmas = 0;
 
     public:
         VSStatistics( const std::string& _name ) : 
-            Statistics( _name, this ),
-            mChecks( 0 ),
-            mConflicts( 0 ),
-            mCoveringSets( 0 ),
-            mCoveringSetSavings( 0.0 ),
-            mInfSubsetsSavings( 0.0 ),
-            mCreatedTCs( 0 ),
-            mConsideredStates( 0 ),
-            mConsideredCases( 0 ),
-            mLocalConflicts( 0 ),
-            mLCOmittedConstraints( 0 ),
-            mVBOmittedConstraints( 0 ),
-            mBackjumpings( 0 ),
-            mBJOmittedConstraints( 0 ),
-            mVBOmittedTCs( 0 ),
-            mBranchingLemmas( 0 )
+            Statistics( _name )
         {}
 
         ~VSStatistics() {}
 
         void collect()
         {
-            Statistics::addKeyValuePair( "check-calls", mChecks );
-            Statistics::addKeyValuePair( "created-test-candidates", mCreatedTCs );
-            Statistics::addKeyValuePair( "considered-states", mConsideredStates );
-            Statistics::addKeyValuePair( "considered-cases", mConsideredCases );
-            Statistics::addKeyValuePair( "omitted-test-candidates-by-variable-bounds", mVBOmittedTCs );
-            Statistics::addKeyValuePair( "omitted-constraints-by-variable-bounds", mVBOmittedConstraints );
-            Statistics::addKeyValuePair( "created-covering-sets", mCoveringSets );
-            Statistics::addKeyValuePair( "average-covering-set-gain", mCoveringSets == 0 ? 0 : (mCoveringSetSavings/(double)mCoveringSets) );
-            Statistics::addKeyValuePair( "average-infeasible-subset-gain", mConflicts == 0 ? 0 : (mInfSubsetsSavings/(double)mConflicts) );
-            Statistics::addKeyValuePair( "local-conflicts", mLocalConflicts );
-            Statistics::addKeyValuePair( "omitted-constraints-by-local-conflicts", mLCOmittedConstraints );
-            Statistics::addKeyValuePair( "backjumpings", mBackjumpings );
-            Statistics::addKeyValuePair( "omitted-constraints-by-backjumping", mBJOmittedConstraints );
-            Statistics::addKeyValuePair( "branching-lemmas", mBranchingLemmas );
+            addKeyValuePair( "check-calls", mChecks );
+            addKeyValuePair( "created-test-candidates", mCreatedTCs );
+            addKeyValuePair( "considered-states", mConsideredStates );
+            addKeyValuePair( "considered-cases", mConsideredCases );
+            addKeyValuePair( "omitted-test-candidates-by-variable-bounds", mVBOmittedTCs );
+            addKeyValuePair( "omitted-constraints-by-variable-bounds", mVBOmittedConstraints );
+            addKeyValuePair( "created-covering-sets", mCoveringSets );
+            addKeyValuePair( "average-covering-set-gain", mCoveringSets == 0 ? 0 : (mCoveringSetSavings/(double)mCoveringSets) );
+            addKeyValuePair( "average-infeasible-subset-gain", mConflicts == 0 ? 0 : (mInfSubsetsSavings/(double)mConflicts) );
+            addKeyValuePair( "local-conflicts", mLocalConflicts );
+            addKeyValuePair( "omitted-constraints-by-local-conflicts", mLCOmittedConstraints );
+            addKeyValuePair( "backjumpings", mBackjumpings );
+            addKeyValuePair( "omitted-constraints-by-backjumping", mBJOmittedConstraints );
+            addKeyValuePair( "branching-lemmas", mBranchingLemmas );
         }
         
         void check()

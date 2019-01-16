@@ -2,7 +2,7 @@
 
 #include "VariantMap.h"
 #include "theories/Attribute.h"
-#include "../../lib/solver/ResourceLimitation.h"
+#include "../ResourceLimitation.h"
 
 #include <smtrat-common/model.h>
 #include <smtrat-qe/smtrat-qe.h>
@@ -163,7 +163,7 @@ public:
 		if (attr.key == "name" || attr.key == "authors" || attr.key == "version") error() << "The info :" << attr.key << " is read-only.";
 		else this->infos[attr.key] = attr.value;
 	}
-	virtual void setLogic(const smtrat::Logic&) = 0;
+	virtual void setLogic(const carl::Logic&) = 0;
 	void setOption(const Attribute& option)  {
 		std::string key = option.key;
 		if (this->options.count(key) > 0) warn() << "overwriting option for :" << key;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../cli/ExitCodes.h"
+#include "ExitCodes.h"
 
 #include <carl/util/platform.h>
 #include <carl/util/Singleton.h>

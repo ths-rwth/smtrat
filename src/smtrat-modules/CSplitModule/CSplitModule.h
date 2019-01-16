@@ -10,7 +10,7 @@
 
 #include <boost/optional.hpp>
 #include <lib/datastructures/VariableBounds.h>
-#include <lib/solver/Manager.h>
+#include <smtrat-solver/Manager.h>
 #include "../Module.h"
 #include "../SATModule/SATModule.h"
 #include "../LRAModule/LRAModule.h"
@@ -85,7 +85,7 @@ namespace smtrat
 				Expansion(const carl::Variable& rationalization)
 					: mRationalization(rationalization)
 					, mDiscretization(rationalization.type() == carl::VariableType::VT_INT ? rationalization : carl::freshIntegerVariable())
-					, mNucleus(ZERO_RATIONAL)
+					, mNucleus(0)
 					, mMaximalDomainSize(DomainSize::UNBOUNDED)
 					, mMaximalDomain(RationalInterval::unboundedInterval())
 					, mActiveDomain(RationalInterval::emptyInterval())

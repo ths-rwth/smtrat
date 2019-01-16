@@ -1,8 +1,9 @@
 #pragma once
 
-#include <lib/solver/Manager.h>
+#include <smtrat-solver/Manager.h>
 
-#include "config.h"
+// Use absolute include, otherwise cmake fails to add dependencies for config.h
+#include <smtrat-strategies/config.h>
 
 namespace smtrat {
 

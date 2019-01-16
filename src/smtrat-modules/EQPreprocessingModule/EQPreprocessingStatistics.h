@@ -11,7 +11,7 @@
 
 #include <smtrat-common/smtrat-common.h>
 #ifdef SMTRAT_DEVOPTION_Statistics
-#include <lib/utilities/stats/Statistics.h>
+#include <smtrat-common/statistics/Statistics.h>
 
 namespace smtrat {
 	class EQPreprocessingStatistics : public Statistics {
@@ -33,7 +33,7 @@ namespace smtrat {
 			}
 
 			EQPreprocessingStatistics() :
-				Statistics("EQPreprocessingModule", this),
+				Statistics("EQPreprocessingModule" ),
 				mCongruencesAdded(0)
 			{}
 

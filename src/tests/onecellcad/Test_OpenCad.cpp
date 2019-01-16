@@ -1,15 +1,12 @@
 #define BOOST_TEST_MODULE test_opencellcad
 
-#include <experimental/optional>
-
 #include <boost/test/unit_test.hpp>
 
 #include <carl/core/MultivariatePolynomial.h>
 #include <carl/core/Variable.h>
 #include <carl/formula/model/ran/RealAlgebraicPoint.h>
 
-#include "../lib/Common.h"
-#include "../../lib/datastructures/onecellcad/OpenCAD.h"
+#include <smtrat-mcsat/explanations/onecellcad/OpenCAD.h>
 
 /**
   * References:
@@ -22,7 +19,7 @@
 namespace {
   using std::cout;
   using std::endl;
-  using std::experimental::optional;
+  using std::optional;
 
   using smtrat::Rational;
   using namespace smtrat::onecellcad;

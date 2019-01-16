@@ -1,14 +1,15 @@
 #pragma once
 
 #include <lib/datastructures/mcsat/fm/Explanation.h>
-#include <lib/datastructures/mcsat/onecellcad/Explanation.h>
 
 #include <smtrat-mcsat/assignments/arithmetic/AssignmentFinder.h>
 #include <smtrat-mcsat/assignments/smtaf/AssignmentFinder.h>
 #include <smtrat-mcsat/assignments/SequentialAssignment.h>
 #include <smtrat-mcsat/explanations/ParallelExplanation.h>
 #include <smtrat-mcsat/explanations/SequentialExplanation.h>
+#include <smtrat-mcsat/explanations/icp/Explanation.h>
 #include <smtrat-mcsat/explanations/nlsat/Explanation.h>
+#include <smtrat-mcsat/explanations/onecellcad/Explanation.h>
 #include <smtrat-mcsat/explanations/vs/Explanation.h>
 #include <smtrat-mcsat/variableordering/VariableOrdering.h>
 
@@ -51,6 +52,12 @@ struct MCSATSettingsFMVSNL {
 	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
 	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,nlsat::Explanation>;
+};
+
+struct MCSATSettingsICPNL {
+	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
+	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+	using ExplanationBackend = SequentialExplanation<icp::Explanation,nlsat::Explanation>;
 };
 
 }

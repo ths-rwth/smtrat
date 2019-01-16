@@ -1,7 +1,7 @@
 #include "AssignmentFinder_SMT.h"
 
-#include <lib/solver/Manager.h>
 #include <smtrat-modules/LRAModule/LRAModule.h>
+#include <smtrat-solver/Manager.h>
 
 namespace smtrat {
 namespace mcsat {

@@ -158,4 +158,8 @@ namespace smtrat
 		static constexpr auto moduleName = "SATModule<MCSATFMVSNL>";
 		using MCSATSettings = mcsat::MCSATSettingsFMVSNL;
     };
+	struct SATSettingsMCSATICPNL : SATSettingsMCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATICPNL>";
+		using MCSATSettings = mcsat::MCSATSettingsICPNL;
+    };
 }

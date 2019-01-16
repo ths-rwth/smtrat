@@ -8,19 +8,18 @@
  * @since:   2012-01-18
  * @version: 2013-01-11
  */
+#include "Module.h"
+
+#include <carl/io/SMTLIBStream.h>
+#include <smtrat-solver/Manager.h>
+
+#include <boost/range/adaptor/reversed.hpp>
 
 #include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <limits.h>
 #include <cmath>
-
-#include <boost/range/adaptor/reversed.hpp>
-
-#include <carl/io/SMTLIBStream.h>
-
-#include <lib/solver/Manager.h>
-#include "Module.h"
 
 // Flag activating some informative and not exaggerated output about module calls.
 //#define DEBUG_MODULE_CALLS_IN_SMTLIB
@@ -34,9 +33,9 @@ namespace smtrat
     std::set<std::string> Module::mVariablesInAssumptionToCheck;
     std::size_t Module::mNumOfBranchVarsToStore = 5;
 #ifdef __VS
-    std::vector<Branching> Module::mLastBranches = std::vector<Branching>( mNumOfBranchVarsToStore, Branching(Poly::PolyType(ZERO_RATIONAL), ZERO_RATIONAL) );
+    std::vector<Branching> Module::mLastBranches = std::vector<Branching>( mNumOfBranchVarsToStore, Branching(Poly::PolyType(), 0) );
 #else
-	std::vector<Branching> Module::mLastBranches = std::vector<Branching>(mNumOfBranchVarsToStore, Branching(typename Poly::PolyType(ZERO_RATIONAL), ZERO_RATIONAL));
+	std::vector<Branching> Module::mLastBranches = std::vector<Branching>(mNumOfBranchVarsToStore, Branching(typename Poly::PolyType(), 0));
 #endif
     std::size_t Module::mFirstPosInLastBranches = 0;
     std::vector<FormulaT> Module::mOldSplittingVariables;
