@@ -7,19 +7,24 @@
 namespace smtrat {
 namespace mcsat {
 
-class VSStatistics: public Statistics {
+class VSStatistics : public Statistics {
 private:
 	std::size_t mExplanationCalled = 0;
 	std::size_t mExplanationSuccess = 0;
+
 public:
-	VSStatistics(const std::string& name): Statistics(name) {}
+	VSStatistics(const std::string& name)
+		: Statistics(name) {}
 	~VSStatistics() = default;
-	
+
+	bool enabled() const {
+		return (mExplanationCalled > 0) || (mExplanationSuccess > 0);
+	}
 	void collect() {
 		Statistics::addKeyValuePair("explanation_called", mExplanationCalled);
 		Statistics::addKeyValuePair("explanation_success", mExplanationSuccess);
 	}
-	
+
 	void explanationCalled() {
 		++mExplanationCalled;
 	}
@@ -27,10 +32,9 @@ public:
 	void explanationSuccess() {
 		++mExplanationSuccess;
 	}
-	
 };
 
-}
-}
+} // namespace mcsat
+} // namespace smtrat
 
 #endif

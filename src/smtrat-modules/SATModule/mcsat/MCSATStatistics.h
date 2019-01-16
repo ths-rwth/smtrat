@@ -16,6 +16,13 @@ public:
 	MCSATStatistics(const std::string& name): Statistics(name) {}
 	~MCSATStatistics() = default;
 	
+	bool enabled() const {
+		return
+			(mInsertedLazyExplanation > 0) ||
+			(mUsedLazyExplanation > 0) ||
+			(mModelAssignmentCacheHit > 0)
+		;
+	}
 	void collect() {
 		Statistics::addKeyValuePair("insertedLazyExplanation", mInsertedLazyExplanation);
 		Statistics::addKeyValuePair("usedLazyExplanation", mUsedLazyExplanation);

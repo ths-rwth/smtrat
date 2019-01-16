@@ -15,6 +15,9 @@ public:
 	NLSATStatistics(const std::string& name): Statistics(name) {}
 	~NLSATStatistics() = default;
 	
+	bool enabled() const {
+		return (mExplanationCalled > 0) || (mExplanationSuccess > 0);
+	}
 	void collect() {
 		Statistics::addKeyValuePair("explanation_called", mExplanationCalled);
 		Statistics::addKeyValuePair("explanation_success", mExplanationSuccess);
