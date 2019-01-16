@@ -74,7 +74,8 @@ namespace smtrat {
     };
 
     template<int maxNumUnassignedVars, int maxPreferredDegree>
-    struct VarSchedulingMcsatPreferLowDegrees { // TODO test
+    struct VarSchedulingMcsatPreferLowDegrees {
+        // TODO prefer degree in current theory variable??
         
         struct VarOrderLt
         {
@@ -84,7 +85,7 @@ namespace smtrat {
 
             bool operator ()( Minisat::Var x, Minisat::Var y )
             {
-                if (getMaxDegree(x) <= maxPreferredDegree && getMaxDegree(y) > maxPreferredDegree) { 
+                if (getMaxDegree(x) <= maxPreferredDegree && getMaxDegree(y) > maxPreferredDegree) {
                     return true;
                 }
 
