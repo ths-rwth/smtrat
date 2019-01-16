@@ -260,17 +260,7 @@
 								<xsl:attribute name="office:value">answer</xsl:attribute>
 								<text:p>answer</text:p>
 						</table:table-cell>
-						<xsl:for-each select="$SET/benchmarkfile[6]/inputstats/stat">
-							<table:table-cell>
-								<xsl:attribute name="office:value">
-									<xsl:value-of select="@name"/>
-								</xsl:attribute>
-								<text:p>
-									<xsl:value-of select="@name"/>
-								</text:p>
-							</table:table-cell>
-						</xsl:for-each>
-						<xsl:for-each select="$SET/benchmarkfile[6]/run/runtimestats/module/stat">
+						<xsl:for-each select="/benchmarksets/statistics/stat">
 							<table:table-cell>
 								<xsl:attribute name="office:value">
 									<xsl:value-of select="@name"/>
@@ -282,6 +272,7 @@
 						</xsl:for-each>
 					</table:table-row>
 					<xsl:for-each select="$SET/benchmarkfile">
+						<xsl:variable name="FILE" select="."/>
 						<table:table-row>
 							<table:table-cell>
 								<xsl:attribute name="office:value">
@@ -307,23 +298,14 @@
 									<xsl:value-of select="run[@solver_id=$SolverID]/results/result[@name='answer']"/>
 								</text:p>
 							</table:table-cell>
-							<xsl:for-each select="inputstats/stat">
+							<xsl:for-each select="/benchmarksets/statistics/stat">
+								<xsl:variable name="StatID" select="@name"/>
 								<table:table-cell>
 									<xsl:attribute name="office:value">
-										<xsl:value-of select="."/>
+										<xsl:value-of select="$FILE/run[@solver_id=$SolverID]/statistics/stat[@name=$StatID]"/>
 									</xsl:attribute>
 									<text:p>
-										<xsl:value-of select="."/>
-									</text:p>
-								</table:table-cell>
-							</xsl:for-each>
-							<xsl:for-each select="run/runtimestats/module/stat">
-								<table:table-cell>
-									<xsl:attribute name="office:value">
-										<xsl:value-of select="@value"/>
-									</xsl:attribute>
-									<text:p>
-										<xsl:value-of select="@value"/>
+										<xsl:value-of select="$FILE/run[@solver_id=$SolverID]/statistics/stat[@name=$StatID]"/>
 									</text:p>
 								</table:table-cell>
 							</xsl:for-each>
