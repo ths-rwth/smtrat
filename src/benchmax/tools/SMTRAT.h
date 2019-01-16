@@ -18,7 +18,7 @@ namespace benchmax {
 class SMTRAT: public Tool {
 public:
 	SMTRAT(const fs::path& binary, const std::string& arguments): Tool("SMTRAT", binary, arguments) {
-		if (Settings::UseStats) mArguments += " -s";
+		if (Settings::UseStats) mArguments += " --stats:print";
 	}
 
 	virtual bool canHandle(const fs::path& path) const override {
@@ -54,8 +54,7 @@ public:
 			case 12: result.additional["answer"] = "memout"; break;
 			default: result.additional["answer"] = getStatusFromOutput(result);
 		}
-		
-		regex topRegex("\\(\\:(\\S+)\\s*\\(((?:\\:\\S+\\s*\\S+\\s*)+)\\)\\)");
+		regex topRegex("\\(\\:(\\S+)\\s*\\(\\s*((?:\\:\\S+\\s*\\S+\\s*)+)\\)\\)");
 		regex subRegex("\\s*\\:(\\S+)\\s*(\\S+)");
 
 		auto topBegin = sregex_iterator(result.stdout.begin(), result.stdout.end(), topRegex);
