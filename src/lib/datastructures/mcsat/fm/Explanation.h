@@ -87,13 +87,7 @@ private:
 		return res;
 	}
 
-	ConstraintT sideConditionLo(const Bound& b) {
-		ConstraintT res = ConstraintT(b.p, b.neg ? carl::Relation::LESS : carl::Relation::GREATER);
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Side condition on " << b.p << ": " << res);
-		return res;
-	}
-
-	ConstraintT sideConditionUp(const Bound& b) {
+	ConstraintT sideConditionLoUp(const Bound& b) {
 		ConstraintT res = ConstraintT(b.p, b.neg ? carl::Relation::LESS : carl::Relation::GREATER);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Side condition on " << b.p << ": " << res);
 		return res;
@@ -109,8 +103,8 @@ private:
 		res.emplace_back(ConstraintT(lower.q*upper.p - upper.q*lower.p, rel));
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Conflict: " << lower.q << " * " << upper.p << " " << rel << " " << upper.q << " * " << lower.p);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "-> " << res.back());
-		res.emplace_back(sideConditionLo(lower).negation());
-		res.emplace_back(sideConditionUp(upper).negation());
+		res.emplace_back(sideConditionLoUp(lower).negation());
+		res.emplace_back(sideConditionLoUp(upper).negation());
 		return res;
 	}
 
@@ -136,8 +130,8 @@ private:
 		expl.emplace_back(ConstraintT(lower.q*ineq.p - ineq.q*lower.p, carl::Relation::NEQ));
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explanation: " << expl[0].negated() << " && " << expl[1].negated() << " && " << expl[2].negated() << " && " << expl[3].negated() << " -> " << expl[4]);
 		expl.emplace_back(sideCondition(ineq).negation());
-		expl.emplace_back(sideConditionLo(lower).negation());
-		expl.emplace_back(sideConditionUp(upper).negation()); // TODO move to struct member
+		expl.emplace_back(sideConditionLoUp(lower).negation());
+		expl.emplace_back(sideConditionLoUp(upper).negation()); // TODO move to struct member
 		return expl;
 	}
 
