@@ -99,6 +99,7 @@ namespace smtrat
 
         UTerm flattened{ UVariable(freshUninterpretedVariable(name), my_sort) };
         term_store.emplace(term, flattened);
+        term_store.emplace(flattened, flattened);
         return flattened;
     }
 
@@ -108,10 +109,11 @@ namespace smtrat
         carl::FormulaVisitor<FormulaT> visitor;
 
         auto flattened = visitor.visitResult( _subformula->formula(), [&] (const auto& formula) {
-            if (formula.getType() == carl::UEQ)
+            if (formula.getType() == carl::UEQ) {
                 return flatten(formula);
-            else
+            } else {
                 return formula;
+            }
         } );
 
         addSubformulaToPassedFormula(flattened, _subformula->formula());

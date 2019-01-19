@@ -31,8 +31,8 @@ namespace smtrat
 
         void introduce_variable(T const& var) noexcept
         {
-            translate.emplace(var, translate.size());
-            introduce_variable(translate.size() - 1);
+            translate.try_emplace(var, translate.size());
+            introduce_variable(translate[var]);
         }
 
         [[nodiscard]] auto find(T const& val) noexcept -> Representative
@@ -63,8 +63,10 @@ namespace smtrat
 
         void introduce_variable(Value const& var) noexcept
         {
-            _parents.emplace_back(var);
-            _ranks.emplace_back(0);
+            if ( _parents.size() < var ) {
+                _parents.emplace_back(var);
+                _ranks.emplace_back(0);
+            }
         }
 
         [[nodiscard]] auto find(Value const& val) noexcept -> Representative
