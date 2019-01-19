@@ -6,6 +6,7 @@
  */
 
 #include "AxiomFactory.h"
+#include "../LOG.h"
 
 namespace smtrat {
 
@@ -23,10 +24,11 @@ namespace smtrat {
         // (x = 0 | y = 0) <-> (z = 0)
         FormulaT finalFormula = FormulaT(carl::FormulaType::IFF, leftFormula, zFormula);
 
-        cout << "\n";
-        cout << "created ZeroOne Axiom Formula is: " << finalFormula;
-        cout << "\n";
-
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "created ZeroOne Axiom Formula is: " << finalFormula;
+            cout << "\n";
+        }
 
         return finalFormula;
 
@@ -57,9 +59,11 @@ namespace smtrat {
         // (x > 0 && y > 0) | (x < 0 && y < 0) <-> z > 0
         FormulaT finalFormula = FormulaT(carl::FormulaType::IFF, leftFormula, zFormula);
 
-        cout << "\n";
-        cout << "created ZeroTwo Axiom Formula is: " << finalFormula;
-        cout << "\n";
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "created ZeroTwo Axiom Formula is: " << finalFormula;
+            cout << "\n";
+        }
 
         return finalFormula;
 
@@ -90,9 +94,11 @@ namespace smtrat {
         // (x < 0 && y > 0) | (x > 0 && y < 0) <-> z < 0
         FormulaT finalFormula = FormulaT(carl::FormulaType::IFF, leftFormula, zFormula);
 
-        cout << "\n";
-        cout << "created ZeroThree Axiom Formula is: " << finalFormula;
-        cout << "\n";
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "created ZeroThree Axiom Formula is: " << finalFormula;
+            cout << "\n";
+        }
 
         return finalFormula;
 
@@ -109,9 +115,11 @@ namespace smtrat {
         // (x - a = 0) -> (z - a*y = 0)
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
 
-        cout << "\n";
-        cout << "created TangentPlaneNEQOne Axiom Formula is: " << finalFormula;
-        cout << "\n";
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "created TangentPlaneNEQOne Axiom Formula is: " << finalFormula;
+            cout << "\n";
+        }
 
         return finalFormula;
 
@@ -128,9 +136,11 @@ namespace smtrat {
         // (y - b = 0) -> (z - b*x = 0)
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
 
-        cout << "\n";
-        cout << "created TangentPlaneNEQTwo Axiom Formula is: " << finalFormula;
-        cout << "\n";
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "created TangentPlaneNEQTwo Axiom Formula is: " << finalFormula;
+            cout << "\n";
+        }
 
         return finalFormula;
 
@@ -167,10 +177,11 @@ namespace smtrat {
 
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
 
-        cout << "\n";
-        cout << "created TangentPlaneNEQThree Axiom Formula is: " << finalFormula;
-        cout << "\n";
-
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "created TangentPlaneNEQThree Axiom Formula is: " << finalFormula;
+            cout << "\n";
+        }
 
         return finalFormula;
 
@@ -207,9 +218,11 @@ namespace smtrat {
 
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
 
-        cout << "\n";
-        cout << "created TangentPlaneNEQFour Axiom Formula is: " << finalFormula;
-        cout << "\n";
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "created TangentPlaneNEQFour Axiom Formula is: " << finalFormula;
+            cout << "\n";
+        }
 
 
         return finalFormula;
@@ -226,9 +239,11 @@ namespace smtrat {
 
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
 
-        cout << "\n";
-        cout << "created TangentPlaneEQOne Axiom Formula is: " << finalFormula;
-        cout << "\n";
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "created TangentPlaneEQOne Axiom Formula is: " << finalFormula;
+            cout << "\n";
+        }
 
         return finalFormula;
 
@@ -244,9 +259,11 @@ namespace smtrat {
 
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
 
-        cout << "\n";
-        cout << "created TangentPlaneEQTwo Axiom Formula is: " << finalFormula;
-        cout << "\n";
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "created TangentPlaneEQTwo Axiom Formula is: " << finalFormula;
+            cout << "\n";
+        }
 
         return finalFormula;
 
@@ -267,13 +284,15 @@ namespace smtrat {
             yVariable = it->first;
         }
 
-        cout << "\n";
-        cout << "zVariable is: " << zVariable;
-        cout << "\n";
-        cout << "xVariable is: " << xVariable;
-        cout << "\n";
-        cout << "yVariable is: " << yVariable;
-        cout << "\n";
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "zVariable is: " << zVariable;
+            cout << "\n";
+            cout << "xVariable is: " << xVariable;
+            cout << "\n";
+            cout << "yVariable is: " << yVariable;
+            cout << "\n";
+        }
 
         smtrat::VariableCapsule capsule(xVariable, yVariable, zVariable);
         return capsule;
@@ -302,9 +321,11 @@ namespace smtrat {
         // (x_1 - x_2 <= 0) && (y_1 - y_2 <= 0) -> (z_1 - z_2 <= 0)
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
 
-        cout << "\n";
-        cout << "created MonotonicityOne Axiom Formula is: " << finalFormula;
-        cout << "\n";
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "created MonotonicityOne Axiom Formula is: " << finalFormula;
+            cout << "\n";
+        }
 
         return finalFormula;
     }
@@ -334,9 +355,11 @@ namespace smtrat {
         // (x_1 - x_2 < 0) && (y_1 - y_2 <= 0) && (y_2 != 0) -> (z_1 - z_2 < 0)
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
 
-        cout << "\n";
-        cout << "created MonotonicityTwo Axiom Formula is: " << finalFormula;
-        cout << "\n";
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "created MonotonicityTwo Axiom Formula is: " << finalFormula;
+            cout << "\n";
+        }
 
         return finalFormula;
     }
@@ -366,9 +389,11 @@ namespace smtrat {
         // (x_1 - x_2 <= 0) && (y_1 - y_2 < 0) && (x_2 != 0) -> (z_1 - z_2 < 0)
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
 
-        cout << "\n";
-        cout << "created MonotonicityThree Axiom Formula is: " << finalFormula;
-        cout << "\n";
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "created MonotonicityThree Axiom Formula is: " << finalFormula;
+            cout << "\n";
+        }
 
         return finalFormula;
     }
@@ -395,9 +420,11 @@ namespace smtrat {
         // (x_1 - x_2 = 0) && (y_1 - y_2 = 0) -> (z_1 - z_2 = 0)
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
 
-        cout << "\n";
-        cout << "created Congruence Axiom Formula is: " << finalFormula;
-        cout << "\n";
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "created Congruence Axiom Formula is: " << finalFormula;
+            cout << "\n";
+        }
 
         return finalFormula;
     }
@@ -411,13 +438,15 @@ namespace smtrat {
         Rational bRational = abstractModel.find(variableCapsuleOuter.getYVariable())->second.asRational();
         Rational cRational = abstractModel.find(variableCapsuleOuter.getZVariable())->second.asRational();
 
-        cout << "\n";
-        cout << "Found Zvariable Value: " << cRational;
-        cout << "\n";
-        cout << "Found Xvariable Value: " << aRational;
-        cout << "\n";
-        cout << "Found Yvariable Value: " << bRational;
-        cout << "\n";
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "Found Zvariable Value: " << cRational;
+            cout << "\n";
+            cout << "Found Xvariable Value: " << aRational;
+            cout << "\n";
+            cout << "Found Yvariable Value: " << bRational;
+            cout << "\n";
+        }
 
         carl::Variable aVariable = carl::freshRealVariable("a");
         carl::Variable bVariable = carl::freshRealVariable("b");
