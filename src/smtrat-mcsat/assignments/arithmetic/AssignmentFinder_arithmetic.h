@@ -182,7 +182,7 @@ public:
 	Covering computeCover() {
 		mRI.process();
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", mRI);
-		Covering cover(mRI.size() * 2 + 1);
+		Covering cover(mRI.size() * 2 + 1, mVar);
 		for (const auto& c: mRootMap) {
 			carl::Bitset b;
 			const auto& roots = c.second.first;

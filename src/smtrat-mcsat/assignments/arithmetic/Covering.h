@@ -21,8 +21,15 @@ class Covering {
 private:
 	std::map<FormulaT, carl::Bitset> mData;
 	carl::Bitset mOkay;
+	carl::Variable mVar;
+	std::size_t degreeInVar(const FormulaT& f) const {
+		if (f.getType() != carl::FormulaType::CONSTRAINT || !f.constraint().hasVariable(mVar)) {
+			return std::numeric_limits<std::size_t>::max();
+		}
+		return f.constraint().maxDegree(mVar);
+	}
 public:
-	Covering(std::size_t intervals) {
+	Covering(std::size_t intervals, carl::Variable currentVar) : mVar(currentVar) {
 		mOkay.resize(intervals, true);
 	}
 	void add(const FormulaT& c, const carl::Bitset& b) {
@@ -45,7 +52,10 @@ public:
 		while (covered.any()) {
 			auto maxit = data.begin();
 			for (auto it = data.begin(); it != data.end(); it++) {
-				if (maxit->second.count() < it->second.count()) maxit = it;
+				if (degreeInVar(it->first) <= 2 && (degreeInVar(it->first) < degreeInVar(maxit->first) || (degreeInVar(it->first) == degreeInVar(maxit->first) && maxit->second.count() < it->second.count()))) {
+					maxit = it;
+				}
+				else if (maxit->second.count() < it->second.count()) maxit = it;
 			}
 			core.push_back(maxit->first);
 			covered -= maxit->second;
