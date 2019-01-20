@@ -153,6 +153,8 @@ namespace smtrat
      */
     carl::Variable createLinearVariable(std::list<carl::Variable> variables){
 
+        // variables must be sorted to create monomial.
+        variables.sort();
         while (variables.size() > 1) {
             carl::Variable first = variables.front();
             variables.pop_front();
@@ -164,7 +166,7 @@ namespace smtrat
            (
                    {std::make_pair(first,(carl::exponent)1), std::make_pair(second, (carl::exponent)1)}
            ),
-           (carl::exponent)(1));
+           (carl::exponent)(2));
 
             //carl::Variable GeneratedVariable = createZVariable();
             carl::Variable newlyGeneratedOrOldVariable = insertIntoMapOrRetrieveExistingVariable(createdMonomial);
