@@ -561,12 +561,12 @@ namespace smtrat
         stream.rdbuf(std::cout.rdbuf());
 
         int loopCounter = 0;
-        AxiomFactory::AxiomType axiomType[] = {AxiomFactory::AxiomType::ZERO,
+        std::vector<AxiomFactory::AxiomType> axiomType = {AxiomFactory::AxiomType::ZERO,
                                                AxiomFactory::AxiomType::TANGENT_PLANE,
                                                AxiomFactory::AxiomType::MONOTONICITY,
                                                AxiomFactory::AxiomType::CONGRUENCE};
 
-        int axiom_type_size = sizeof(axiomType)/sizeof(axiomType[0]);
+        int axiom_type_size = axiomType.size();
 
         int axiomCounter = 0;
 
