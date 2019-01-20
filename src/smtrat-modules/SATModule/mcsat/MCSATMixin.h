@@ -540,6 +540,25 @@ public:
 		return *mVarPropertyCache[v].maxDegree;
 	}
 
+	std::size_t degreeInLevel(const Minisat::Var& var, std::size_t level) {
+		if (!mGetter.isTheoryAbstraction(var)) {
+			return std::numeric_limits<std::size_t>::max();
+		}
+		else {
+			const carl::Variable& theoryVar = variable(get(level));
+			const auto& reabstraction = mGetter.reabstractVariable(var);
+			if (reabstraction.getType() == carl::FormulaType::CONSTRAINT || reabstraction.getType() == carl::FormulaType::TRUE || reabstraction.getType() == carl::FormulaType::FALSE) {
+				// TODO how exactly handle degree = 0?
+				const auto& constr = reabstraction.constraint();
+				return constr.maxDegree(theoryVar);
+			} else if (reabstraction.getType() == carl::FormulaType::VARCOMPARE) {
+				return std::numeric_limits<std::size_t>::max();
+			} else {
+				assert(false);
+			}
+		}
+	}
+
 	// ***** Output
 	/// Prints a single clause
 	void printClause(std::ostream& os, Minisat::CRef clause) const;
