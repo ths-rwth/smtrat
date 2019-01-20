@@ -60,6 +60,7 @@ namespace smtrat
         friend struct VarSchedulingDefault;
         template<int num> friend struct VarSchedulingMcsat;
         template<int num, int num2> friend struct VarSchedulingMcsatPreferLowDegrees;
+        template<int num, int num2> friend struct VarSchedulingMcsatLowerFirstPerLevel;
 
         private:
 
