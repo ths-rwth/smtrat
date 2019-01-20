@@ -9,6 +9,7 @@ namespace benchmax {
 struct BenchmarkResult {
 	int exitCode;
 	std::chrono::milliseconds time;
+	std::string answer;
 	std::string stdout;
 	std::string stderr;
 	std::map<std::string, std::string> additional;
@@ -16,7 +17,7 @@ struct BenchmarkResult {
 	template<typename TimeLimit>
 	void cleanup(const TimeLimit& limit) {
 		if (time > limit) {
-			additional["answer"] = "timeout";
+			answer = "timeout";
 		}
 		stdout = "";
 		stderr = "";
@@ -24,7 +25,7 @@ struct BenchmarkResult {
 };
 
 inline std::ostream& operator<<(std::ostream& os, const BenchmarkResult& results) {
-	os << "(" << results.exitCode << ", " << results.time.count() << "ms)" << std::endl;
+	os << "(" << results.answer << ", " << results.exitCode << ", " << results.time.count() << "ms)" << std::endl;
 	os << results.stdout << std::endl;
 	os << results.stderr << std::endl;
 	return os;

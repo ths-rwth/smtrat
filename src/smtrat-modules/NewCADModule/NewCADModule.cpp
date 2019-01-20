@@ -85,7 +85,7 @@ namespace smtrat
 			mCAD.reset(cad::variable_ordering::triangular_ordering(mPolynomials));
 		}
 #ifdef SMTRAT_DEVOPTION_Statistics
-                mStatistics.usedCAD();
+		mStatistics.called();
 #endif
 		if (Settings::force_nonincremental) {
 			pushConstraintsToReplacer();

@@ -7,6 +7,7 @@
 #include <smtrat-mcsat/assignments/SequentialAssignment.h>
 #include <smtrat-mcsat/explanations/ParallelExplanation.h>
 #include <smtrat-mcsat/explanations/SequentialExplanation.h>
+#include <smtrat-mcsat/explanations/icp/Explanation.h>
 #include <smtrat-mcsat/explanations/nlsat/Explanation.h>
 #include <smtrat-mcsat/explanations/onecellcad/Explanation.h>
 #include <smtrat-mcsat/explanations/vs/Explanation.h>
@@ -51,6 +52,12 @@ struct MCSATSettingsFMVSNL {
 	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
 	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,nlsat::Explanation>;
+};
+
+struct MCSATSettingsICPNL {
+	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
+	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+	using ExplanationBackend = SequentialExplanation<icp::Explanation,nlsat::Explanation>;
 };
 
 }

@@ -31,6 +31,9 @@ public:
 	Statistics(const Statistics&) = delete;
 	virtual ~Statistics() = default;
 
+	virtual bool enabled() const {
+		return true;
+	}
 	virtual void collect() {}
 
 	const auto& name() const {
