@@ -545,7 +545,7 @@ public:
 			return std::numeric_limits<std::size_t>::max();
 		}
 		else {
-			const carl::Variable& theoryVar = variable(get(level));
+			const carl::Variable& theoryVar = variable(level);
 			const auto& reabstraction = mGetter.reabstractVariable(var);
 			if (reabstraction.getType() == carl::FormulaType::CONSTRAINT || reabstraction.getType() == carl::FormulaType::TRUE || reabstraction.getType() == carl::FormulaType::FALSE) {
 				// TODO how exactly handle degree = 0?
