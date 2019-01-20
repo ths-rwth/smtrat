@@ -6,7 +6,7 @@ namespace smtrat {
         friend class carl::Singleton<LOG>;
 
     public:
-        bool debugEnabled = true;
+        bool debugEnabled = false;
         const bool isDebugEnabled() {
             return  debugEnabled;
         }
