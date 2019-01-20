@@ -129,14 +129,14 @@ namespace smtrat
         carl::Variable newlyGeneratedOrOldVariable = insertIntoMapOrRetrieveExistingVariable(monomialAsSquareOfVariable);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "Exponent of newly generated or old variable: " << exponentToBe;
+            cout << "monomialForEvenExponent: Exponent of newly generated or old variable: " << exponentToBe;
             cout << "\n";
         }
 
         carl::Monomial::Arg newMonomial = carl::createMonomial(newlyGeneratedOrOldVariable, (carl::exponent)exponentToBe);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "new Monomial: " << newMonomial;
+            cout << "monomialForEvenExponent: new Monomial: " << newMonomial;
             cout << "\n";
             cout << "\n";
         }
@@ -162,11 +162,20 @@ namespace smtrat
             carl::Variable second = variables.front();
             variables.pop_front();
 
+            if (smtrat::LOG::getInstance().isDebugEnabled()) {
+                cout << "first: " << first << "\n";
+                cout << "second: " << second << "\n";
+            }
+
             carl::Monomial::Arg createdMonomial = carl::createMonomial(std::initializer_list<std::pair<carl::Variable, carl::exponent>>
            (
                    {std::make_pair(first,(carl::exponent)1), std::make_pair(second, (carl::exponent)1)}
            ),
            (carl::exponent)(2));
+
+            if (smtrat::LOG::getInstance().isDebugEnabled()) {
+                cout << "createdMonomial: " << createdMonomial << "\n";
+            }
 
             //carl::Variable GeneratedVariable = createZVariable();
             carl::Variable newlyGeneratedOrOldVariable = insertIntoMapOrRetrieveExistingVariable(createdMonomial);
@@ -179,7 +188,6 @@ namespace smtrat
         return variables.front();
     }
 
-    std::list<carl::Variable> extraVariablesForOddExponenet;
 
     /**
      * Replace square of variable (x_0^2) of a monomial (x_0^7) by a variable (z_0),
@@ -190,6 +198,9 @@ namespace smtrat
      * @return new linear monomial
      */
     carl::Monomial::Arg monomialForOddExponent(carl::Variable Variable, int exponent){
+
+        std::list<carl::Variable> extraVariablesForOddExponenet;
+
         int exponentToBe = divisionOfExponentByTwo(exponent);
         //carl::Variable GeneratedVariable = createZVariable();
         carl::Monomial::Arg monomialAsSquareOfVariable = createSquareOfVariable(Variable);
@@ -198,7 +209,7 @@ namespace smtrat
         carl::Variable newlyGeneratedOrOldVariable = insertIntoMapOrRetrieveExistingVariable(monomialAsSquareOfVariable);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "Exponent of newly generated or old variable: " << exponentToBe;
+            cout << "monomialForOddExponent: Exponent of newly generated or old variable: " << exponentToBe;
             cout << "\n";
         }
 
@@ -208,6 +219,9 @@ namespace smtrat
 
         // get linear monomial
         while (!newMonomial->isLinear()) {
+            if (smtrat::LOG::getInstance().isDebugEnabled()) {
+                cout << "entering while" << "\n";
+            }
 
             if(newMonomial->begin()->second % 2 == 0){
 
@@ -220,12 +234,20 @@ namespace smtrat
 
         // create newMonomial by multiplying newMonomial with the list extraVariablesForOddExponenet
         if(newMonomial->isLinear()) {
-            extraVariablesForOddExponenet.push_front(newMonomial->begin()->first);
+            carl::Variable variableOfNewMonomial =  newMonomial->begin()->first;
+            if (smtrat::LOG::getInstance().isDebugEnabled()) {
+                cout << "new monomial is linear" << "\n";
+                cout << "variableOfNewMonomial: " << variableOfNewMonomial << "\n";
+            }
+            extraVariablesForOddExponenet.push_front(variableOfNewMonomial);
+            if (smtrat::LOG::getInstance().isDebugEnabled()) {
+                cout << "extraVariablesForOddExponenet: " << extraVariablesForOddExponenet << "\n";
+            }
             newMonomial = carl::createMonomial((createLinearVariable(extraVariablesForOddExponenet)), (carl::exponent)1);
         }
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "new Monomial: " << newMonomial;
+            cout << "monomialForOddExponent: new Monomial: " << newMonomial;
             cout << "\n";
             cout << "\n";
         }
@@ -306,6 +328,9 @@ namespace smtrat
     {
         const FormulaT& formula{_subformula->formula()};
         if (formula.getType() == carl::FormulaType::FALSE){
+            if (smtrat::LOG::getInstance().isDebugEnabled()) {
+                cout << "Formula type is false and UNSAT! ";
+            }
             mInfeasibleSubsets.push_back({formula});
             return mInfeasibleSubsets.empty();
         }
