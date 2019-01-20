@@ -35,6 +35,23 @@ private:
 	std::string sanitizeFile(const fs::path& file, const std::string& prefix) const {
 		return sanitize(removePrefix(file.native(), prefix), true);
 	}
+	template<typename Results>
+	std::vector<std::string> collectStatistics(const Results& results) const {
+		std::vector<std::string> res;
+		for (const auto& rfile: results) {
+			for (const auto& run: rfile.second.data) {
+				for (const auto& stat: run.second.additional) {
+					res.emplace_back(stat.first);
+				}
+			}
+			std::sort(res.begin(), res.end());
+			res.erase(
+				std::unique(res.begin(), res.end()),
+				res.end()
+			);
+		}
+		return res;
+	}
 public:
 	XMLWriter(const std::string& filename): mFile(filename) {
 		mFile << "<?xml version=\"1.0\"?>" << std::endl;
@@ -50,6 +67,12 @@ public:
 			mFile << "\t\t<solver solver_id=\"" << tool << "\" />" << std::endl;
 		}
 		mFile << "\t</solvers>" << std::endl;
+		mFile << "\t<statistics>" << std::endl;
+		for (const auto& s: collectStatistics(results)) {
+			mFile << "\t\t<stat name=\"" << sanitize(s) << "\" />" << std::endl;
+		}
+		mFile << "\t</statistics>" << std::endl;
+		
 		
 		for (const auto& res: results) {
 			fs::path setBaseDir = res.first;
@@ -63,20 +86,16 @@ public:
 					if (it == res.second.data.end()) continue;
 					mFile << "\t\t\t<run solver_id=\"" << sanitizeTool(tool.first) << "\" timeout=\"" << seconds(Settings::timeLimit).count() << "s\">" << std::endl;
 					if (!it->second.additional.empty()) {
-						mFile << "\t\t\t\t<runtimestats>" << std::endl;
-						mFile << "\t\t\t\t\t<module name=\"All\">" << std::endl;
+						mFile << "\t\t\t\t<statistics>" << std::endl;
 						for (const auto& stat: it->second.additional) {
-							mFile << "\t\t\t\t\t\t<stat name=\"" << sanitize(stat.first) << "\" value=\"" << stat.second << "\" />" << std::endl;
+							mFile << "\t\t\t\t\t<stat name=\"" << sanitize(stat.first) << "\">" << stat.second << "</stat>" << std::endl;
 						}
-						mFile << "\t\t\t\t\t</module>" << std::endl;
-						mFile << "\t\t\t\t</runtimestats>" << std::endl;
+						mFile << "\t\t\t\t</statistics>" << std::endl;
 					}
 					mFile << "\t\t\t\t<results>" << std::endl;
-					mFile << "\t\t\t\t\t<result name=\"runtime\" type=\"msec\">" << milliseconds(it->second.time).count() << "</result>" << std::endl;
+					mFile << "\t\t\t\t\t<result name=\"answer\" type=\"string\">" << it->second.answer << "</result>" << std::endl;
 					mFile << "\t\t\t\t\t<result name=\"exitcode\" type=\"int\">" << it->second.exitCode << "</result>" << std::endl;
-					for (const auto& stat: it->second.additional) {
-						mFile << "\t\t\t\t\t<result name=\"" << stat.first << "\" type=\"\">" << stat.second << "</result>" << std::endl;
-					}
+					mFile << "\t\t\t\t\t<result name=\"runtime\" type=\"msec\">" << milliseconds(it->second.time).count() << "</result>" << std::endl;
 					mFile << "\t\t\t\t</results>" << std::endl;
 					mFile << "\t\t\t</run>" << std::endl;
 				}
