@@ -440,7 +440,7 @@ namespace smtrat
      * Chekcs if the estimated model satisfies the input NRA formula.
      * @param estimatedModel The estimated model.
      */
-    Answer isOriginalFormulaSatisfied(Model estimatedModel)
+    Answer isNRASatisfied(Model estimatedModel)
     {
         unsigned result = originalFormula->satisfiedBy(estimatedModel);
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
@@ -544,6 +544,16 @@ namespace smtrat
         return unsatisfiedFormulas;
     }
 
+    FormulasT refinement(AxiomFactory::AxiomType axiomType, Model abstractModel){
+
+        FormulasT axiomFormulasToBeChecked = AxiomFactory::createFormula(axiomType, abstractModel, smtrat::MonomialMappingByVariablePool::getInstance().getMMonomialMapping());
+
+        FormulasT unsatFormulas = unsatisfiedFormulas(axiomType, axiomFormulasToBeChecked, abstractModel);
+
+        return  unsatFormulas;
+    }
+
+
     template<class Settings>
     Answer AbstractModule<Settings>::checkCore()
     {
@@ -592,27 +602,25 @@ namespace smtrat
                 cout << "\n";
             }
             Model estimatedModel = createEstimatedModel(mModel);
-            auto AnswerOfOriginalFormula = isOriginalFormulaSatisfied(estimatedModel);
+            auto answerOfNRA = isNRASatisfied(estimatedModel);
 
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                cout << "AnswerOfOriginalFormula: " << AnswerOfOriginalFormula << "\n";
+                cout << "answerOfNRA: " << answerOfNRA << "\n";
             }
 
-            if (AnswerOfOriginalFormula != UNSAT) {
+            if (answerOfNRA != UNSAT) {
 
                 if (smtrat::LOG::getInstance().isDebugEnabled()) {
                     cout << "Input Formula is Satisfied!" << "\n";
                 }
 
                 estimatedModel.printOneline(stream, true);
-                return AnswerOfOriginalFormula;
+                return answerOfNRA;
             }
 
             Model abstractModel = createAbstractModel(mModel, estimatedModel);
 
-            FormulasT formulas = AxiomFactory::createFormula(axiomType[axiomCounter], abstractModel, smtrat::MonomialMappingByVariablePool::getInstance().getMMonomialMapping());
-
-            FormulasT unsatFormulas = unsatisfiedFormulas(axiomType[axiomCounter], formulas, abstractModel);
+            FormulasT unsatFormulas = refinement(axiomType[axiomCounter], abstractModel);
 
             for (FormulaT formulaT : unsatFormulas) {
                 addSubformulaToPassedFormula(formulaT);
