@@ -3,7 +3,7 @@
 #include <smtrat-solver/Manager.h>
 #include "smtrat-modules/SATModule/SATModule.h"
 #include "smtrat-modules/LRAModule/LRAModule.h"
-#include "smtrat-modules/AbstractModule/AbstractModule.h"
+#include "smtrat-modules/NRAILModule/NRAILModule.h"
 
 namespace smtrat
 {
@@ -23,7 +23,7 @@ namespace smtrat
         {
             setStrategy(
             {
-                addBackend<AbstractModule<AbstractSettings1>>(
+                addBackend<NRAILModule<NRAILSettings1>>(
                 {
                     addBackend<SATModule<SATSettings1>>(
                     {

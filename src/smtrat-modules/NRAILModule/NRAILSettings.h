@@ -10,10 +10,10 @@
 
 namespace smtrat
 {
-	struct AbstractSettings1
+	struct NRAILSettings1
 	{
 		/// Name of the Module
-		static constexpr auto moduleName = "AbstractModule<AbstractSettings1>";
+		static constexpr auto moduleName = "NRAILModule<NRAILSettings1>";
 		/**
 		 * Example for a setting.
 		 */

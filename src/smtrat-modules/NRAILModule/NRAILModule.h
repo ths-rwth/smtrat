@@ -9,13 +9,13 @@
 #pragma once
 
 #include "../Module.h"
-#include "AbstractStatistics.h"
-#include "AbstractSettings.h"
+#include "NRAILStatistics.h"
+#include "NRAILSettings.h"
 
 namespace smtrat
 {
 	template<typename Settings>
-	class AbstractModule : public Module
+	class NRAILModule : public Module
 	{
 	private:
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -29,9 +29,9 @@ namespace smtrat
 		std::string moduleName() const {
 			return SettingsType::moduleName;
 		}
-		AbstractModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
+		NRAILModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
 
-		~AbstractModule();
+		~NRAILModule();
 
 		// Main interfaces.
 		/**

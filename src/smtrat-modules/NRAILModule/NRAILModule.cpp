@@ -6,7 +6,7 @@
  * Created on 2018-07-12.
  */
 
-#include "AbstractModule.h"
+#include "NRAILModule.h"
 #include "MonomialMappingByVariablePool.h"
 #include "stdlib.h"
 #include "factory/AxiomFactory.h"
@@ -15,7 +15,7 @@
 namespace smtrat
 {
     template<class Settings>
-    AbstractModule<Settings>::AbstractModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
+    NRAILModule<Settings>::NRAILModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
             Module( _formula, _conditionals, _manager )
             //mLRAFormula( new ModuleInput())
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -24,18 +24,18 @@ namespace smtrat
     {}
 
     template<class Settings>
-    AbstractModule<Settings>::~AbstractModule()
+    NRAILModule<Settings>::~NRAILModule()
     {}
 
     template<class Settings>
-    bool AbstractModule<Settings>::informCore( const FormulaT& _constraint )
+    bool NRAILModule<Settings>::informCore( const FormulaT& _constraint )
     {
         // Your code.
         return true; // This should be adapted according to your implementation.
     }
 
     template<class Settings>
-    void AbstractModule<Settings>::init()
+    void NRAILModule<Settings>::init()
     {}
 
     int zVariableCounter = 0;
@@ -300,7 +300,7 @@ namespace smtrat
 
 
     template<class Settings>
-    bool AbstractModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
+    bool NRAILModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
         const FormulaT& formula{_subformula->formula()};
         if (formula.getType() == carl::FormulaType::FALSE){
@@ -411,13 +411,13 @@ namespace smtrat
     }
 
     template<class Settings>
-    void AbstractModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
+    void NRAILModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
         // Your code.
     }
 
     template<class Settings>
-    void AbstractModule<Settings>::updateModel() const
+    void NRAILModule<Settings>::updateModel() const
     {
         mModel.clear();
         if( solverState() == Answer::SAT )
@@ -555,7 +555,7 @@ namespace smtrat
 
 
     template<class Settings>
-    Answer AbstractModule<Settings>::checkCore()
+    Answer NRAILModule<Settings>::checkCore()
     {
         std::ostream stream(nullptr);
         stream.rdbuf(std::cout.rdbuf());
