@@ -308,9 +308,12 @@ namespace smtrat
             return mInfeasibleSubsets.empty();
         }
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "Formula type: " << _subformula->formula().getType();
+            cout << "\n";
             cout << "Formula: " <<_subformula->formula();
         }
-        originalFormula->add(_subformula->formula(), false);
+
+        originalFormula->add(_subformula->formula(), true);
 
         //get constraint
         const ConstraintT& constraint = _subformula->formula().constraint();
@@ -573,6 +576,9 @@ namespace smtrat
             if (AnswerOfLRA != SAT) {
                 if (smtrat::LOG::getInstance().isDebugEnabled()) {
                     cout << "Linearized Formula is Unsatisfied!" << "\n";
+                }
+                if (AnswerOfLRA == UNSAT) {
+                    generateTrivialInfeasibleSubset();
                 }
                 return AnswerOfLRA;
             }
