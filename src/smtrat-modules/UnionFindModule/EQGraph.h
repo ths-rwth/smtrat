@@ -67,6 +67,8 @@ namespace smtrat
             const auto& begin = vertices.at(a);
             const auto& end = vertices.at(b);
 
+            assert( a != b );
+
             std::vector<Vertex> predecessors(vertices.size(), Graph::null_vertex());
 
             boost::breadth_first_search(graph, begin,
@@ -77,9 +79,11 @@ namespace smtrat
             std::vector<PathEdge> path;
             auto prop = properties();
 
-            int vertex = end;
+			int vertex = end;
             while (vertex != begin) {
                 auto next = predecessors[vertex];
+                assert( next != Graph::null_vertex() );
+
                 path.emplace_back(prop[vertex], prop[next]);
                 vertex = next;
             }

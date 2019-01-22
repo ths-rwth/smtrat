@@ -87,11 +87,11 @@ namespace smtrat
             if (it != history.rbegin()) {
                 History tail;
                 for (auto eq = it.base(); eq != history.end(); ++eq) {
+                    const auto& a = eq->lhs().asUVariable();
+                    const auto& b = eq->rhs().asUVariable();
+                    classes.introduce_variable(a);
+                    classes.introduce_variable(b);
                     if (!eq->negated()) {
-                        const auto& a = eq->lhs().asUVariable();
-                        const auto& b = eq->rhs().asUVariable();
-                        classes.introduce_variable(a);
-                        classes.introduce_variable(b);
                         classes.merge(a, b);
                     }
                 }
