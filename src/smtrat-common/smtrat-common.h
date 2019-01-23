@@ -1,7 +1,7 @@
 #pragma once
 
-#include "config.h"
 #include "CompileInfo.h"
+#include "config.h"
 #include "logging.h"
 
 #include "settings/Settings.h"
