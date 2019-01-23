@@ -59,7 +59,7 @@ foreach(module ${modules})
 
 		if (CLANG_TIDY)
 			add_custom_target(tidy-module-${module}
-				COMMAND clang-tidy -p ${CMAKE_BINARY_DIR}/compile_commands.json ${CLANG_TIDY_CHECKS} -header-filter='.*' ${sources}
+				COMMAND clang-tidy -p ${CMAKE_BINARY_DIR}/compile_commands.json ${CLANG_TIDY_CHECKS} -header-filter='${CMAKE_CURRENT_SOURCE_DIR}/${module}/' ${sources}
 				WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 			)
 		endif()
