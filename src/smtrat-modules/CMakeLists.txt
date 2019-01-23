@@ -56,6 +56,13 @@ foreach(module ${modules})
 			target_link_libraries(smtrat-module-${module}-shared ${DEPEND-shared})
 			target_link_libraries(smtrat-module-${module}-static ${DEPEND-static})
 		endif()
+
+		if (CLANG_TIDY)
+			add_custom_target(tidy-module-${module}
+				COMMAND clang-tidy -p ${CMAKE_BINARY_DIR}/compile_commands.json ${CLANG_TIDY_CHECKS} -header-filter='.*' ${sources}
+				WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+			)
+		endif()
 	endif()
 endforeach()
 
