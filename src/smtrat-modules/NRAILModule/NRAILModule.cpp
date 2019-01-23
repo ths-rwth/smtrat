@@ -328,6 +328,96 @@ namespace smtrat
     FormulasT constraintsList;
     FormulasT compoundSubFormulasList;
 
+    FormulaT linearization(FormulaT formula) {
+        originalFormula->add(formula, true);
+
+        //get constraint
+        const ConstraintT& constraint = formula.constraint();
+
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "Constraint is: " << constraint;
+            cout << "\n";
+            cout << "\n";
+        }
+
+        //get polynomial(lhs) of constraint
+        Poly poly = constraint.lhs();
+        //counter of op[]
+        int indexCount = 0;
+
+        //size of array
+        std::vector<Poly> op(poly.getTerms().size());
+
+        // loops over each term and create linear polynomials
+        for( auto& term : poly.getTerms() ) {
+
+            if (!term.isConstant() && term.isLinear()) { //if the term is already linear and not a constant
+
+                Poly p(term);
+                op[indexCount] = p;
+
+                if (smtrat::LOG::getInstance().isDebugEnabled()) {
+                    cout << "Monomial is: " << term.monomial() << " (alreday linear)";
+                    cout << "\n";
+                    cout << "\n";
+                }
+
+            } else if (!term.isConstant()) { //if the term is a product of two or more variables
+
+                //get monomial
+                carl::Monomial::Arg monomial = term.monomial();
+
+                if (smtrat::LOG::getInstance().isDebugEnabled()) {
+                    cout << "Monomial is: " << monomial;
+                    cout << "\n";
+                }
+
+                //get the linearized variable of the monomial
+                carl::Variable finalVariable = encapsulateMonomial(monomial);
+
+                //create new polynomial
+                Poly p(term.coeff()*finalVariable);
+                if (smtrat::LOG::getInstance().isDebugEnabled()) {
+                    cout << "Generated MultiVariantPolynomial: " << p;
+                    cout << "\n";
+                    cout << "\n";
+                }
+                op[indexCount] = p;
+
+            } else { //if the term is a constants
+
+                //create new polynomial
+                Poly p(term);
+                op[indexCount] = p;
+
+            }
+
+            indexCount++;
+        }
+
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "Vector: " << op;
+            cout << "\n";
+        }
+
+        //construction lhs of the constraint
+        Poly finalPoly(Poly::ConstructorOperation::ADD,op);
+
+        //create new formula
+        FormulaT finalFormula = FormulaT(finalPoly, constraint.relation());
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "Generated final Formula: " << finalFormula;
+            cout << "\n";
+            cout << "Generated New constraint: " << finalFormula.constraint();
+            cout << "\n";
+            cout << "\n";
+        }
+
+        return  finalFormula;
+    }
+
+
     template<typename Settings>
     FormulaT NRAILModule<Settings>::linearizeCompoundSubformula(const FormulaT &formula)
     {
@@ -335,7 +425,11 @@ namespace smtrat
 
         if (formula.getType() == carl::FormulaType::CONSTRAINT) {
             if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "inserting into constraintsList, formula: " << formula <<endl; }
-            constraintsList.push_back(formula);
+
+            FormulaT linearizedFormula = linearization(formula);
+
+            constraintsList.push_back(linearizedFormula);
+
         } else {
             if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "The formula type is not CONSTRAINT" << endl; }
 
@@ -393,6 +487,8 @@ namespace smtrat
     {
         const FormulaT& formula{_subformula->formula()};
 
+        FormulaT linearizedFormula;
+
         if (formula.getType() == carl::FormulaType::FALSE){
 
             if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Formula type is false and UNSAT! "; }
@@ -417,96 +513,13 @@ namespace smtrat
             FormulaT formulaFromVisitor = mVisitor.visitResult( formula, linearizeCompoundSubformulaFunction );
 
             if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "formulaFromVisitor: " << formulaFromVisitor << endl; }
-
+            linearizedFormula = compoundSubFormulasList[0];
             compoundSubFormulasList.clear();
+        } else {
+            linearizedFormula = linearization(formula);
         }
 
-
-        originalFormula->add(_subformula->formula(), true);
-
-        //get constraint
-        const ConstraintT& constraint = _subformula->formula().constraint();
-
-        if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "Constraint is: " << constraint;
-            cout << "\n";
-            cout << "\n";
-        }
-
-        //get polynomial(lhs) of constraint
-        Poly poly = constraint.lhs();
-        //counter of op[]
-        int indexCount = 0;
-
-        //size of array
-        std::vector<Poly> op(poly.getTerms().size());
-
-        // loops over each term and create linear polynomials
-        for( auto& term : poly.getTerms() ) {
-
-           if (!term.isConstant() && term.isLinear()) { //if the term is already linear and not a constant
-
-                Poly p(term);
-                op[indexCount] = p;
-
-               if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                   cout << "Monomial is: " << term.monomial() << " (alreday linear)";
-                   cout << "\n";
-                   cout << "\n";
-               }
-
-            } else if (!term.isConstant()) { //if the term is a product of two or more variables
-
-                //get monomial
-                carl::Monomial::Arg monomial = term.monomial();
-
-               if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                   cout << "Monomial is: " << monomial;
-                   cout << "\n";
-               }
-
-                //get the linearized variable of the monomial
-                carl::Variable finalVariable = encapsulateMonomial(monomial);
-
-                //create new polynomial
-                Poly p(term.coeff()*finalVariable);
-               if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                   cout << "Generated MultiVariantPolynomial: " << p;
-                   cout << "\n";
-                   cout << "\n";
-               }
-                op[indexCount] = p;
-
-            } else { //if the term is a constants
-
-                //create new polynomial
-                Poly p(term);
-                op[indexCount] = p;
-
-            }
-
-            indexCount++;
-        }
-
-        if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "Vector: " << op;
-            cout << "\n";
-        }
-
-        //construction lhs of the constraint
-        Poly finalPoly(Poly::ConstructorOperation::ADD,op);
-
-        //create new formula
-        FormulaT finalFormula = FormulaT(finalPoly, constraint.relation());
-        if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "Generated final Formula: " << finalFormula;
-            cout << "\n";
-            cout << "Generated New constraint: " << finalFormula.constraint();
-            cout << "\n";
-            cout << "\n";
-        }
-
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Generated  linearized Formula: " << linearizedFormula << endl; }
         ////////////////////////////////////////////////
         //
         // Adding the Linearized Formula to the global
@@ -515,7 +528,7 @@ namespace smtrat
         // Linearized formulas to the passed formula
         //
         ////////////////////////////////////////////////
-        addSubformulaToPassedFormula(finalFormula);
+        addSubformulaToPassedFormula(linearizedFormula);
 
         return true; // This should be adapted according to your implementation.
     }
