@@ -711,7 +711,9 @@ namespace smtrat
                     cout << "Linearized Formula is Unsatisfied!" << "\n";
                 }
                 if (AnswerOfLRA == UNSAT) {
-                    generateTrivialInfeasibleSubset();
+                    for( ModuleInput::iterator passedFormula = passedFormulaBegin( ); passedFormula != passedFormulaEnd(); ++passedFormula) {
+                        mInfeasibleSubsets.push_back({passedFormula->formula()});
+                    }
                 }
                 return AnswerOfLRA;
             }
