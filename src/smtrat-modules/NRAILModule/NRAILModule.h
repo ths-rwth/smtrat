@@ -23,6 +23,9 @@ namespace smtrat
 #endif
 		// Members.
         ModuleInput* mLRAFormula;
+        carl::FormulaVisitor<FormulaT> mVisitor;
+		FormulaT lintest(const FormulaT& formula);
+        std::function<FormulaT(FormulaT)> lintestFunction;
 
 	public:
 		typedef Settings SettingsType;

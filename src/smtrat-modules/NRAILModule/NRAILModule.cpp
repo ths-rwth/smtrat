@@ -16,12 +16,15 @@ namespace smtrat
 {
     template<class Settings>
     NRAILModule<Settings>::NRAILModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
-            Module( _formula, _conditionals, _manager )
-            //mLRAFormula( new ModuleInput())
+            Module( _formula, _conditionals, _manager ),
+            mVisitor()
+    {
+        lintestFunction = std::bind(&NRAILModule<Settings>::lintest, this, std::placeholders::_1);
+    }
+    //mLRAFormula( new ModuleInput())
 #ifdef SMTRAT_DEVOPTION_Statistics
     , mStatistics(Settings::moduleName)
 #endif
-    {}
 
     template<class Settings>
     NRAILModule<Settings>::~NRAILModule()
@@ -322,23 +325,102 @@ namespace smtrat
         return  finalVariable;
     }
 
+    FormulasT constraintsList;
+    FormulasT compoundSubFormulasList;
+
+    template<typename Settings>
+    FormulaT NRAILModule<Settings>::lintest( const FormulaT& formula )
+    {
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Formula from visitor: " <<  formula << " Formula Type: " <<  formula.getType() << endl; }
+
+        if (formula.getType() == carl::FormulaType::CONSTRAINT) {
+            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "inserting into constraintsList, formula: " << formula <<endl; }
+            constraintsList.push_back(formula);
+        } else {
+            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "The formula type is not CONSTRAINT" << endl; }
+
+            if (constraintsList.size() > 1) {
+                FormulaT compoundFormula = FormulaT(formula.getType(), constraintsList);
+
+                if (smtrat::LOG::getInstance().isDebugEnabled()) {
+                    cout << "the constraintsList greater than 1" << endl;
+                    cout << "inserting into compoundSubFormulasList, compoundFormula: " << compoundFormula <<endl;
+                }
+                compoundSubFormulasList.push_back(compoundFormula);
+            } else if (constraintsList.size() == 1){
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "the constraintsList equals 1" << endl; }
+
+                auto lastFormulaOfCompoundSubFormulasList = compoundSubFormulasList.back();
+                compoundSubFormulasList.pop_back();
+
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "poping last Formula Of Compound SubFormulas List that is: " << lastFormulaOfCompoundSubFormulasList << endl; }
+
+                FormulaT compoundFormula = FormulaT(formula.getType(), lastFormulaOfCompoundSubFormulasList, constraintsList[0]);
+
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "created compoundFormula pushing to compoundSubFormulasList is: " << compoundFormula << endl; }
+
+                compoundSubFormulasList.push_back(compoundFormula);
+
+            } else {
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "constraintsList is empty" << endl; }
+
+                FormulaT compoundFormula;
+
+                if (formula.getType() == carl::FormulaType::NOT) {
+                    compoundFormula = FormulaT(formula.getType(), compoundSubFormulasList[0]);
+                } else {
+                    compoundFormula = FormulaT(formula.getType(), compoundSubFormulasList);
+                }
+
+                compoundSubFormulasList.clear();
+
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "clear compoundSubFormulasList, created compoundFormula is pushed to compoundSubFormulasList, compoundFormula: " << compoundFormula << endl; }
+
+                compoundSubFormulasList.push_back(compoundFormula);
+
+            }
+
+            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "clearing constraintsList" <<endl; }
+            constraintsList.clear();
+        }
+
+        return  formula;
+    }
+
 
     template<class Settings>
     bool NRAILModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
         const FormulaT& formula{_subformula->formula()};
+
         if (formula.getType() == carl::FormulaType::FALSE){
-            if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                cout << "Formula type is false and UNSAT! ";
-            }
+
+            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Formula type is false and UNSAT! "; }
+
             mInfeasibleSubsets.push_back({formula});
-            return mInfeasibleSubsets.empty();
+
+            return false;
         }
-        if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "Formula type: " << _subformula->formula().getType();
-            cout << "\n";
-            cout << "Formula: " <<_subformula->formula();
+
+        if (formula.getType() == carl::FormulaType::TRUE){
+            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Formula type is true! "; }
+            return true;
         }
+
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Sub Formula: " <<  formula << " Sub Formula type: " <<  formula.getType() << endl; }
+
+
+        if (formula.getType() != carl::FormulaType::CONSTRAINT) {
+
+            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "The formula type is not CONSTRAINT and passing to formulaFromVisitor!" << endl; }
+
+            FormulaT formulaFromVisitor = mVisitor.visitResult( formula, lintestFunction );
+
+            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "formulaFromVisitor: " << formulaFromVisitor << endl; }
+
+            compoundSubFormulasList.clear();
+        }
+
 
         originalFormula->add(_subformula->formula(), true);
 
@@ -416,7 +498,7 @@ namespace smtrat
         Poly finalPoly(Poly::ConstructorOperation::ADD,op);
 
         //create new formula
-        FormulaT  finalFormula = FormulaT(finalPoly, constraint.relation());
+        FormulaT finalFormula = FormulaT(finalPoly, constraint.relation());
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             cout << "Generated final Formula: " << finalFormula;
             cout << "\n";
@@ -424,6 +506,7 @@ namespace smtrat
             cout << "\n";
             cout << "\n";
         }
+
         ////////////////////////////////////////////////
         //
         // Adding the Linearized Formula to the global

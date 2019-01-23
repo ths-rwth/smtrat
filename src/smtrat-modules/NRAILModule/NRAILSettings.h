@@ -8,9 +8,11 @@
 
 #pragma once
 
+#include "../ModuleSettings.h"
+
 namespace smtrat
 {
-	struct NRAILSettings1
+	struct NRAILSettings1 : ModuleSettings
 	{
 		/// Name of the Module
 		static constexpr auto moduleName = "NRAILModule<NRAILSettings1>";
