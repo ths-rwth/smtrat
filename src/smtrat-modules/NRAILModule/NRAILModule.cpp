@@ -264,7 +264,7 @@ namespace smtrat
      * @param exponent even or odd exponent of the variable
      * @return a linear monomial
      */
-    carl::Monomial::Arg createMonomialOfLinearVariable(carl::Variable Variable, int exponent)
+    carl::Monomial::Arg createLinearMonomial(carl::Variable Variable, int exponent)
     {
         carl::Monomial::Arg monomial;
 
@@ -293,7 +293,7 @@ namespace smtrat
         }
 
 
-        return createMonomialOfLinearVariable(monomial->begin()->first, monomial->begin()->second);
+        return createLinearMonomial(monomial->begin()->first, monomial->begin()->second);
     }
 
     /**
@@ -301,7 +301,7 @@ namespace smtrat
      * @param monomial a monomoal object
      * @return a linear variable
      */
-    carl::Variable linearization(carl::Monomial::Arg monomial){
+    carl::Variable encapsulateMonomial(carl::Monomial::Arg monomial){
 
         std::list<carl::Variable> variables;
 
@@ -309,7 +309,7 @@ namespace smtrat
 
         for (auto it = monomial->begin(); it != monomial->end(); ++it) {
 
-                carl::Monomial::Arg monomial = createMonomialOfLinearVariable(it->first, it->second);
+                carl::Monomial::Arg monomial = createLinearMonomial(it->first, it->second);
 
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
                 cout << "Received final Monomial is: " << monomial;
@@ -467,7 +467,7 @@ namespace smtrat
                }
 
                 //get the linearized variable of the monomial
-                carl::Variable finalVariable = linearization(monomial);
+                carl::Variable finalVariable = encapsulateMonomial(monomial);
 
                 //create new polynomial
                 Poly p(term.coeff()*finalVariable);
