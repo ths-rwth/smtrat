@@ -52,14 +52,6 @@ target_link_libraries( smtrat
 
 set_target_properties( smtrat PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
 
-if (CLANG_TIDY)
-	add_custom_target(tidy-cli
-		COMMAND clang-tidy -p ${CMAKE_BINARY_DIR}/compile_commands.json ${CLANG_TIDY_CHECKS} -header-filter='.*' ${smtrat_cli_sources}
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/cli/
-	)
-endif()
-
-
 #add_library( smtlibParser
 #	${CMAKE_SOURCE_DIR}/src/cli/smtratSolver.cpp
 #)
