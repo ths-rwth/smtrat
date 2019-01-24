@@ -178,7 +178,7 @@ namespace smtrat
 
             carl::Monomial::Arg createdMonomial = carl::createMonomial(std::initializer_list<std::pair<carl::Variable, carl::exponent>>
            (
-                   {std::make_pair(mExponents[0].first,(carl::exponent)1), std::make_pair(mExponents[1].first, (carl::exponent)1)}
+                   {mExponents[0], mExponents[1]}
            ),
            (carl::exponent)(2));
 
