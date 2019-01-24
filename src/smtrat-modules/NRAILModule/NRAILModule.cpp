@@ -156,8 +156,6 @@ namespace smtrat
      */
     carl::Variable createLinearVariable(std::list<carl::Variable> variables){
 
-        // variables must be sorted to create monomial.
-        variables.sort();
         while (variables.size() > 1) {
             carl::Variable first = variables.front();
             variables.pop_front();
@@ -170,9 +168,17 @@ namespace smtrat
                 cout << "second: " << second << "\n";
             }
 
+            // variables must be sorted to create monomial.
+            carl::Monomial::Content mExponents(std::initializer_list<std::pair<carl::Variable, carl::exponent>>
+             (
+                 {std::make_pair(first,(carl::exponent)1), std::make_pair(second, (carl::exponent)1)}
+              ));
+
+            std::sort(mExponents.begin(), mExponents.end(), [](const std::pair<carl::Variable, carl::uint>& p1, const std::pair<carl::Variable, carl::uint>& p2){ return p1.first < p2.first; });
+
             carl::Monomial::Arg createdMonomial = carl::createMonomial(std::initializer_list<std::pair<carl::Variable, carl::exponent>>
            (
-                   {std::make_pair(first,(carl::exponent)1), std::make_pair(second, (carl::exponent)1)}
+                   {std::make_pair(mExponents[0].first,(carl::exponent)1), std::make_pair(mExponents[1].first, (carl::exponent)1)}
            ),
            (carl::exponent)(2));
 
