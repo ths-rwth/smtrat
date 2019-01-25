@@ -108,8 +108,12 @@ private:
 	/// Cache for the next model assignemt(s)
 	ModelAssignmentCache mModelAssignmentCache;
 
-
-	std::vector<std::size_t> mMaxTheoryLevel;
+	struct VarProperties {
+		std::size_t maxTheoryLevel = std::numeric_limits<std::size_t>::max();
+		boost::optional<std::size_t> maxDegree = boost::none;
+	};
+	/// Cache for static information about variables
+	std::vector<VarProperties> mVarPropertyCache;
 
 private:
 	// ***** private helper methods
@@ -478,32 +482,83 @@ public:
 		}
 
 		std::size_t v = varid(var);
-		assert(v < mMaxTheoryLevel.size());
+		assert(v < mVarPropertyCache.size());
 
-		if (mMaxTheoryLevel[v] == std::numeric_limits<std::size_t>::max()) {
+		if (mVarPropertyCache[v].maxTheoryLevel == std::numeric_limits<std::size_t>::max()) {
 			if (!mGetter.isTheoryAbstraction(var)) {
-				mMaxTheoryLevel[v] = 0;
+				mVarPropertyCache[v].maxTheoryLevel = 0;
 			} else {
 				auto reabstraction = mGetter.reabstractVariable(var);
 				carl::Variables vars;
 				reabstraction.arithmeticVars(vars);
 				if (vars.empty()) {
-					mMaxTheoryLevel[v] = 0;
+					mVarPropertyCache[v].maxTheoryLevel = 0;
 				} else {
 					for (std::size_t i = mBackend.variableOrder().size(); i > 0; i--) {
 						if (vars.find(mBackend.variableOrder()[i-1]) != vars.end()) {
-							mMaxTheoryLevel[v] = i;
+							mVarPropertyCache[v].maxTheoryLevel = i;
 							break;
 						}
 					}
 				}	
 			}
 		}
-		assert(mMaxTheoryLevel[v] < std::numeric_limits<std::size_t>::max());
+		assert(mVarPropertyCache[v].maxTheoryLevel < std::numeric_limits<std::size_t>::max());
 
-		return mMaxTheoryLevel[v];
+		return mVarPropertyCache[v].maxTheoryLevel;
 	}
-	
+
+	std::size_t maxDegree(const Minisat::Var& var) { // TODO test
+		std::size_t v = varid(var);
+		assert(v < mVarPropertyCache.size());
+
+		if (mVarPropertyCache[v].maxDegree == boost::none) {
+			if (!mGetter.isTheoryAbstraction(var)) {
+				mVarPropertyCache[v].maxDegree = 0;
+			} else {
+				const auto& reabstraction = mGetter.reabstractVariable(var);
+				if (reabstraction.getType() == carl::FormulaType::CONSTRAINT) {
+					const auto& constr = reabstraction.constraint();
+					carl::Variables vars;
+					reabstraction.arithmeticVars(vars);
+					std::size_t maxDeg = 0;
+					for (const auto& tvar : vars) {
+						std::size_t deg = constr.lhs().degree(tvar);
+						if (deg > maxDeg) maxDeg = deg;
+					}
+					mVarPropertyCache[v].maxDegree = maxDeg;
+				} else if (reabstraction.getType() == carl::FormulaType::VARCOMPARE) {
+					mVarPropertyCache[v].maxDegree = std::numeric_limits<std::size_t>::max();
+				} else {
+					assert(false);
+				}
+				
+			}
+		}
+		assert(mVarPropertyCache[v].maxDegree != boost::none);
+
+		return *mVarPropertyCache[v].maxDegree;
+	}
+
+	std::size_t degreeInLevel(const Minisat::Var& var, std::size_t level) {
+		if (!mGetter.isTheoryAbstraction(var)) {
+			return std::numeric_limits<std::size_t>::max();
+		}
+		else {
+			const carl::Variable& theoryVar = variable(level);
+			const auto& reabstraction = mGetter.reabstractVariable(var);
+			if (reabstraction.getType() == carl::FormulaType::CONSTRAINT || reabstraction.getType() == carl::FormulaType::TRUE || reabstraction.getType() == carl::FormulaType::FALSE) {
+				// TODO how exactly handle degree = 0?
+				const auto& constr = reabstraction.constraint();
+				return constr.maxDegree(theoryVar);
+			} else if (reabstraction.getType() == carl::FormulaType::VARCOMPARE) {
+				return std::numeric_limits<std::size_t>::max();
+			} else {
+				assert(false);
+			}
+		}
+	}
+
 	// ***** Output
 	/// Prints a single clause
 	void printClause(std::ostream& os, Minisat::CRef clause) const;
