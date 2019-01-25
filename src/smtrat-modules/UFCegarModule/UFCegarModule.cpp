@@ -135,6 +135,17 @@ namespace smtrat
         }
     }
 
+    template<typename Settings>
+    FormulaT UFCegarModule<Settings>::create_functional_contraint( FormulasT &&eqs,
+                                                                   const carl::UTerm &lhs,
+                                                                   const carl::UTerm &rhs ) noexcept
+    {
+        using carl::FormulaType;
+        FormulaT consequence{ flatten(lhs), flatten(rhs), false };
+        FormulaT conditions( FormulaType::AND, eqs );
+        return FormulaT{ FormulaType::IMPLIES, conditions, consequence };
+    }
+
     template<class Settings>
     bool UFCegarModule<Settings>::refine(const UFInstance& a, const UFInstance& b) noexcept
     {
@@ -145,8 +156,6 @@ namespace smtrat
 
         auto args = std::make_pair(a.args().begin(), b.args().begin());
         auto end = a.args().end();
-
-        auto term = [&] (const auto& val) { return flatten(val); };
 
         auto record_instance = [&] (const auto& arg) {
             if (arg.isUFInstance()) {
@@ -161,15 +170,10 @@ namespace smtrat
         for ( ; args.first != end; ++args.first, ++args.second ) {
             record_instance(*args.first);
             record_instance(*args.second);
-            eqs.emplace_back(term(*args.first), term(*args.second), false);
+            eqs.emplace_back(flatten(*args.first), flatten(*args.second), false);
         }
 
-        FormulaT consequence{ carl::UEquality(term(a), term(b), false) };
-        FormulaT conditions( FormulaType::AND, eqs );
-
-        FormulaT constraint{ FormulaType::IMPLIES, conditions, consequence };
-
-        addSubformulaToPassedFormula(constraint);
+        addSubformulaToPassedFormula(create_functional_contraint( std::move(eqs), a, b ));
 
         refined.emplace(a, b);
         return true;
@@ -177,13 +181,6 @@ namespace smtrat
 
     template<class Settings>
     bool UFCegarModule<Settings>::refine() noexcept {
-        /*using Class = carl::SortValue;
-        std::unordered_map<Class, std::vector<carl::UVariable>> classes;
-        for (const auto& var : backendsModel() ) {
-            classes[var.second.asSortValue()].push_back(var.first.asUVariable());
-        }*/
-
-        // TODO solve removing f constraints
         bool added_constraint = false;
 
         // generate functional consistency
@@ -208,15 +205,63 @@ namespace smtrat
     }
 
     template<class Settings>
+    bool UFCegarModule<Settings>::refine_once() noexcept {
+        // Expects flattened input without nested function calls
+
+        // TODO idea partial unrolling of arguments -
+        // extend consistency only by one argument at a time
+        // TODO expand according to previous model (functions satisfied in model)
+
+        bool constrained = false;
+        for (const auto& [function, list] : instances) {
+            if (list.size() <= 1)
+                continue;
+
+            for (auto i = list.begin(); i != std::prev(list.end()); ++i) {
+                for (auto j = std::next(list.begin()); j != list.end(); ++j) {
+
+                    auto a = *i;
+                    auto b = *j;
+                    if (refined.count({a, b}))
+                        return false;
+
+                    auto args = std::make_pair(a.args().begin(), b.args().begin());
+                    auto end = a.args().end();
+
+                    FormulasT eqs;
+                    for ( ; args.first != end; ++args.first, ++args.second ) {
+                        eqs.emplace_back(flatten(*args.first), flatten(*args.second), false);
+                    }
+
+                    addSubformulaToPassedFormula(create_functional_contraint( std::move(eqs), a, b ));
+
+                    refined.emplace(a, b);
+                }
+            }
+            constrained = true;
+        }
+
+        return constrained;
+    }
+
+    template<class Settings>
     Answer UFCegarModule<Settings>::checkCore()
     {
         Answer result = runBackends();
-        bool refinable = true;
 
-        while (result == Answer::SAT && refinable) {
-            refinable = refine();
-            result = runBackends();
+        if ( result == Answer::SAT ) { // expect flattened input
+            if ( refine_once() )
+                result = runBackends();
         }
+
+        /* CEGAR iteration when input is not flattened:
+
+        bool refinable = true;
+        while (result == Answer::SAT && refinable) {
+            if ( refinable = refine() )
+                result = runBackends();
+        }
+        */
 
         if (result == Answer::SAT) {
             getBackendsModel();

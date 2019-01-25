@@ -50,6 +50,11 @@ namespace smtrat
         bool refine(const UFInstance& a, const UFInstance& b) noexcept;
         bool refine() noexcept;
 
+        bool refine_once() noexcept;
+
+        auto create_functional_contraint(FormulasT &&eqs, const carl::UTerm &lhs, const carl::UTerm &rhs)
+            noexcept -> FormulaT;
+
         Sort my_sort;
 
         public:
