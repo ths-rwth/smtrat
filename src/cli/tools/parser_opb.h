@@ -1,8 +1,13 @@
 #pragma once
 
+#include "config.h"
+
 #include <smtrat-common/smtrat-common.h>
 
+#ifdef CLI_ENABLE_OPB_PARSER
+
 #include <carl/formula/parser/OPBImporter.h>
+
 
 namespace smtrat {
 
@@ -49,3 +54,17 @@ int run_opb_file(Strategy& strategy, const std::string& filename) {
 }
 
 }
+
+#else
+
+namespace smtrat {
+
+template<typename Strategy>
+int run_opb_file(Strategy&, const std::string&) {
+	SMTRAT_LOG_ERROR("smtrat", "This version of SMT-RAT was compiled without support for OPB parsing.");
+	return 0;
+}
+
+}
+
+#endif

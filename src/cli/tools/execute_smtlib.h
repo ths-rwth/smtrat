@@ -1,6 +1,6 @@
 #pragma once
 
-#include "parser/ParserWrapper.h"
+#include "../parser/ParserWrapper.h"
 
 #include <string>
 

@@ -11,6 +11,13 @@
 # Version: 2012-10-10                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+option(CLI_ENABLE_DIMACS_PARSER "Enable parser for DIMACS files" OFF)
+option(CLI_ENABLE_FORMULAPARSER "Enable stand-alone formula parser" OFF)
+option(CLI_ENABLE_OPB_PARSER "Enable parser for OPB files" OFF)
+option(CLI_ENABLE_PREPROCESSOR "Enable stand-alone preprocessor" ON)
+option(CLI_ENABLE_QE "Enable quantifier elimination" OFF)
+
+
 #TODO: are all these directories really necessary?
 include_directories(${CMAKE_SOURCE_DIR}/src
                     ${CMAKE_SOURCE_DIR}/src/cli
@@ -40,11 +47,16 @@ target_link_libraries( smtrat
 						smtrat-common-shared
 						smtrat-modules-shared
 						smtrat-solver-shared
-						smtrat-qe-shared
 						smtrat-unsat-cores-shared
 						smtrat-strategy-${SMTRAT_Strategy}-shared
-						smtrat-module-FPPModule-shared # for preprocessing
 )
+
+if(CLI_ENABLE_PREPROCESSOR)
+	target_link_libraries(smtrat smtrat-module-FPPModule-shared)
+endif()
+if(CLI_ENABLE_QE)
+	target_link_libraries(smtrat smtrat-qe-shared)
+endif()
 
 #if(USE_COTIRE)
 #    cotire( smtrat )
