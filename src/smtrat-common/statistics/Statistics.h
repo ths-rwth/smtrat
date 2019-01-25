@@ -24,11 +24,14 @@ protected:
 		}
 	}
 public:
-	Statistics(std::string name): mName(std::move(name)) {
+	explicit Statistics(std::string name): mName(std::move(name)) {
 		StatisticsCollector::getInstance().registerStats(this);
 	}
 
 	Statistics(const Statistics&) = delete;
+	Statistics(Statistics&&) = delete;
+	Statistics& operator=(const Statistics&) = delete;
+	Statistics& operator=(Statistics&&) = delete;
 	virtual ~Statistics() = default;
 
 	virtual bool enabled() const {

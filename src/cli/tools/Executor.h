@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../parser/InstructionHandler.h"
+#include "config.h"
 
 #include <carl/formula/parser/DIMACSExporter.h>
 #include <carl/io/SMTLIBStream.h>
@@ -92,12 +93,16 @@ public:
 		//error() << "(define-sort <name> <sort>) is not implemented.";
 	}
 	void eliminateQuantifiers(const smtrat::qe::QEQuery& q) {
+#ifdef CLI_ENABLE_QE
 		FormulaT qfree(this->solver.formula());
 		regular() << "Quantified Formula: " << q << " " << qfree << std::endl;
 
 		FormulaT result = smtrat::qe::eliminateQuantifiers(qfree, q);
 
 		regular() << "Equivalent Quantifier-Free Formula: " << result << std::endl;
+#else
+		SMTRAT_LOG_ERROR("smtrat", "This version of SMT-RAT was compiled without support for quantifier elimination.");
+#endif
 	}
 	void exit() {
 	}

@@ -1,5 +1,6 @@
 #include "Uninterpreted.h"
 #include "ParserState.h"
+#include "../ParserSettings.h"
 
 #include <carl/formula/uninterpreted/UFInstanceManager.h>
 
@@ -109,7 +110,7 @@ namespace uninterpreted {
 				vars.push_back(carl::UTerm(carl::UVariable(tmp)));
 				state->global_formulas.emplace_back(FormulaT(*p - carl::makePolynomial<Poly>(tmp), carl::Relation::EQ));
 			} else if (const carl::UTerm* ut = boost::get<carl::UTerm>(&v)) {
-				if (true && ut->isUFInstance()) { // do flattening
+				if (!settings_parser().disable_uf_flattening && ut->isUFInstance()) { // do flattening
 					carl::Variable tmp = carl::freshUninterpretedVariable();
 					vars.emplace_back(carl::UVariable(tmp, ut->asUFInstance().uninterpretedFunction().codomain()));
 					state->global_formulas.emplace_back(FormulaT(carl::UEquality(carl::UTerm(vars.back()), *ut, false)));

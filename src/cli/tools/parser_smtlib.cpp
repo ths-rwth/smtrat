@@ -1,9 +1,12 @@
-#include "parse_formula.h"
+#include "parser_smtlib.h"
+
+#include "config.h"
+#include <smtrat-common/smtrat-common.h>
+
+#ifdef CLI_ENABLE_FORMULAPARSER
 
 #include "../parse_input.h"
 #include "../parser/InstructionHandler.h"
-
-#include <smtrat-common/smtrat-common.h>
 
 namespace smtrat {
 namespace parseformula {
@@ -45,10 +48,23 @@ public:
 };
 }
 
-FormulaT parse_formula(const std::string& filename) {
+FormulaT parse_smtlib(const std::string& filename) {
 	auto e = parseformula::FormulaCollector();
 	executeFile(filename, e);
 	return e.getFormula();
 }
 
 }
+
+#else
+
+namespace smtrat {
+
+FormulaT parse_smtlib(const std::string&) {
+	SMTRAT_LOG_ERROR("smtrat", "This version of SMT-RAT was compiled without support for stand-alone formula parsing.");
+	return FormulaT();
+}
+
+}
+
+#endif

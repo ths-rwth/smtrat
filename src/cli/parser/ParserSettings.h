@@ -10,6 +10,7 @@ struct ParserSettings {
 	bool read_dimacs;
 	bool read_opb;
 	std::string input_file;
+	bool disable_uf_flattening;
 };
 
 template<typename T>
@@ -21,6 +22,7 @@ void registerParserSettings(T& parser) {
 		("dimacs", po::bool_switch(&s.read_dimacs), "parse input file as dimacs file")
 		("opb", po::bool_switch(&s.read_opb), "parse input file as OPB file")
 		("input-file", po::value<std::string>(&s.input_file), "path of the input file")
+		("disable-uf-flattening", po::bool_switch(&s.disable_uf_flattening), "disable flattening of nested uninterpreted functions")
 	;
 }
 
