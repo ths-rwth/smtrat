@@ -37,11 +37,11 @@ namespace smtrat {
     FormulaT createZeroTwo(carl::Variable xVariable, carl::Variable yVariable, carl::Variable zVariable) {
 
         // x > 0
-        FormulaT xFormulaGrater = FormulaT(Poly(xVariable), carl::Relation::GREATER);
+        FormulaT xFormulaGreater = FormulaT(Poly(xVariable), carl::Relation::GREATER);
         // y > 0
-        FormulaT yFormulaGrater = FormulaT(Poly(yVariable), carl::Relation::GREATER);
+        FormulaT yFormulaGreater = FormulaT(Poly(yVariable), carl::Relation::GREATER);
         // x > 0 && y > 0
-        FormulaT partOneFormula = FormulaT(carl::FormulaType::AND, xFormulaGrater, yFormulaGrater);
+        FormulaT partOneFormula = FormulaT(carl::FormulaType::AND, xFormulaGreater, yFormulaGreater);
 
         // x < 0
         FormulaT xFormulaLess = FormulaT(Poly(xVariable), carl::Relation::LESS);
@@ -72,18 +72,18 @@ namespace smtrat {
     FormulaT createZeroThree(carl::Variable xVariable, carl::Variable yVariable, carl::Variable zVariable) {
 
         // x < 0
-        FormulaT xFormulaGrater = FormulaT(Poly(xVariable), carl::Relation::LESS);
+        FormulaT xFormulaLess = FormulaT(Poly(xVariable), carl::Relation::LESS);
         // y > 0
-        FormulaT yFormulaGrater = FormulaT(Poly(yVariable), carl::Relation::GREATER);
+        FormulaT yFormulaGreater = FormulaT(Poly(yVariable), carl::Relation::GREATER);
         // x < 0 && y > 0
-        FormulaT partOneFormula = FormulaT(carl::FormulaType::AND, xFormulaGrater, yFormulaGrater);
+        FormulaT partOneFormula = FormulaT(carl::FormulaType::AND, xFormulaLess, yFormulaGreater);
 
         // x > 0
-        FormulaT xFormulaLess = FormulaT(Poly(xVariable), carl::Relation::GREATER);
+        FormulaT xFormulaGreater = FormulaT(Poly(xVariable), carl::Relation::GREATER);
         // y < 0
         FormulaT yFormulaLess = FormulaT(Poly(yVariable), carl::Relation::LESS);
         // x > 0 && y < 0
-        FormulaT partTwoFormula = FormulaT(carl::FormulaType::AND, xFormulaLess, yFormulaLess);
+        FormulaT partTwoFormula = FormulaT(carl::FormulaType::AND, xFormulaGreater, yFormulaLess);
 
         // z < 0
         FormulaT zFormula = FormulaT(Poly(zVariable), carl::Relation::LESS);
@@ -110,10 +110,10 @@ namespace smtrat {
         FormulaT leftFormula = FormulaT(Poly(xVariable) - aRational, carl::Relation::EQ);
 
         // z - a*y = 0
-        FormulaT zFormula = FormulaT(Poly(zVariable) - Poly(aRational*yVariable), carl::Relation::EQ);
+        FormulaT rightFormula = FormulaT(Poly(zVariable) - Poly(aRational*yVariable), carl::Relation::EQ);
 
         // (x - a = 0) -> (z - a*y = 0)
-        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
+        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             cout << "\n";
@@ -131,10 +131,10 @@ namespace smtrat {
         FormulaT leftFormula = FormulaT(Poly(yVariable) - bRational, carl::Relation::EQ);
 
         // z - b*x = 0
-        FormulaT zFormula = FormulaT(Poly(zVariable) - Poly(bRational*xVariable), carl::Relation::EQ);
+        FormulaT rightFormula = FormulaT(Poly(zVariable) - Poly(bRational*xVariable), carl::Relation::EQ);
 
         // (y - b = 0) -> (z - b*x = 0)
-        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
+        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             cout << "\n";
@@ -171,11 +171,11 @@ namespace smtrat {
 
         // {z, -b*x, -a*y, a*b}
         std::vector<Poly> operandsz {Poly(zVariable), -Poly(bRational*xVariable), -Poly(aRational*yVariable), Poly(aRational*bRational)};
-        // z - b*x - a*y + a*b = 0
+        // z - b*x - a*y + a*b < 0
         Poly zLeftPoly = Poly(Poly::ConstructorOperation::ADD, operandsz);
-        FormulaT zFormula = FormulaT(zLeftPoly, carl::Relation::LESS);
+        FormulaT rightFormula = FormulaT(zLeftPoly, carl::Relation::LESS);
 
-        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
+        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             cout << "\n";
@@ -212,11 +212,11 @@ namespace smtrat {
 
         // {z, -b*x, -a*y, a*b}
         std::vector<Poly> operandsz {Poly(zVariable), -Poly(bRational*xVariable), -Poly(aRational*yVariable), Poly(aRational*bRational)};
-        // z - b*x - a*y + a*b = 0
+        // z - b*x - a*y + a*b > 0
         Poly zLeftPoly = Poly(Poly::ConstructorOperation::ADD, operandsz);
-        FormulaT zFormula = FormulaT(zLeftPoly, carl::Relation::GREATER);
+        FormulaT rightFormula = FormulaT(zLeftPoly, carl::Relation::GREATER);
 
-        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
+        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             cout << "\n";
@@ -235,9 +235,9 @@ namespace smtrat {
         FormulaT leftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands), carl::Relation::EQ);
 
         std::vector<Poly> operands2 {Poly(zVariable), Poly(aRational*yVariable)};
-        FormulaT zFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands2), carl::Relation::EQ);
+        FormulaT rightFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands2), carl::Relation::EQ);
 
-        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
+        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             cout << "\n";
@@ -254,10 +254,10 @@ namespace smtrat {
         std::vector<Poly> operands {Poly(xVariable), Poly(aRational)};
         FormulaT leftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands), carl::Relation::NEQ);
 
-        std::vector<Poly> operands2 {Poly(zVariable), Poly(aRational*xVariable), Poly(aRational*xVariable), Poly(aRational*aRational)};
-        FormulaT zFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands2), carl::Relation::GREATER);
+        std::vector<Poly> operands2 {Poly(zVariable), -Poly(aRational*xVariable), -Poly(aRational*xVariable), Poly(aRational*aRational)};
+        FormulaT rightFormula = FormulaT(Poly(Poly::ConstructorOperation::ADD, operands2), carl::Relation::GREATER);
 
-        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
+        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             cout << "\n";
@@ -316,10 +316,10 @@ namespace smtrat {
         // {z_1, z_2}
         std::vector<Poly> operandszz {Poly(variableCapsule.getZVariable()), Poly(variableCapsuleInner.getZVariable())};
         // z_1 - z_2 <= 0
-        FormulaT zFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandszz), carl::Relation::LEQ);
+        FormulaT rightFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandszz), carl::Relation::LEQ);
 
         // (x_1 - x_2 <= 0) && (y_1 - y_2 <= 0) -> (z_1 - z_2 <= 0)
-        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
+        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             cout << "\n";
@@ -350,10 +350,10 @@ namespace smtrat {
         // {z_1, z_2}
         std::vector<Poly> operandszz {Poly(variableCapsule.getZVariable()), Poly(variableCapsuleInner.getZVariable())};
         // z_1 - z_2 < 0
-        FormulaT zFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandszz), carl::Relation::LESS);
+        FormulaT rightFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandszz), carl::Relation::LESS);
 
         // (x_1 - x_2 < 0) && (y_1 - y_2 <= 0) && (y_2 != 0) -> (z_1 - z_2 < 0)
-        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
+        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             cout << "\n";
@@ -384,10 +384,10 @@ namespace smtrat {
         // {z_1, z_2}
         std::vector<Poly> operandszz {Poly(variableCapsule.getZVariable()), Poly(variableCapsuleInner.getZVariable())};
         // z_1 - z_2 < 0
-        FormulaT zFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandszz), carl::Relation::LESS);
+        FormulaT rightFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandszz), carl::Relation::LESS);
 
         // (x_1 - x_2 <= 0) && (y_1 - y_2 < 0) && (x_2 != 0) -> (z_1 - z_2 < 0)
-        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
+        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             cout << "\n";
@@ -415,10 +415,10 @@ namespace smtrat {
         // {z_1, z_2}
         std::vector<Poly> operandszz {Poly(variableCapsuleOuter.getZVariable()), Poly(variableCapsuleInner.getZVariable())};
         // z_1 - z_2 = 0
-        FormulaT zFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandszz), carl::Relation::EQ);
+        FormulaT rightFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandszz), carl::Relation::EQ);
 
         // (x_1 - x_2 = 0) && (y_1 - y_2 = 0) -> (z_1 - z_2 = 0)
-        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
+        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             cout << "\n";
