@@ -687,7 +687,7 @@ public:
 						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding to PQ " << *it);
 						mProjectionQueue.push((*it));
 						it = mInactiveQueue.erase(it);
-					} else if (Settings::restrictProjectionByEC && mInfo.usingEC(it->level) && (it->first == mInfo.getUsedEC(it->level) || it->second == mInfo.getUsedEC(it->level))) {
+					} else if (Settings::restrictProjectionByEC && mInfo.usingEC(it->level) && (carl::Bitset(it->first) == mInfo.getUsedEC(it->level) || carl::Bitset(it->second) == mInfo.getUsedEC(it->level))) {
 						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding to PQ " << *it);
 						mProjectionQueue.push((*it));
 						it = mInactiveQueue.erase(it);
