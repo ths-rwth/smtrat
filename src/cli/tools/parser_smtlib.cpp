@@ -5,7 +5,7 @@
 
 #ifdef CLI_ENABLE_FORMULAPARSER
 
-#include "../parse_input.h"
+#include "execute_smtlib.h"
 #include "../parser/InstructionHandler.h"
 
 namespace smtrat {

@@ -5,7 +5,7 @@
 
 #ifdef CLI_ENABLE_PREPROCESSOR
 
-#include "../parse_input.h"
+#include "execute_smtlib.h"
 #include "../parser/InstructionHandler.h"
 
 #include <carl/io/SMTLIBStream.h>
