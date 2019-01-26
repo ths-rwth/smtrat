@@ -679,6 +679,8 @@ namespace smtrat
 
         FormulasT unsatFormulas = unsatisfiedFormulas(axiomType, axiomFormulasToBeChecked, abstractModel);
 
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { }
+
         return  unsatFormulas;
     }
 
@@ -695,14 +697,17 @@ namespace smtrat
                                                AxiomFactory::AxiomType::MONOTONICITY,
                                                AxiomFactory::AxiomType::CONGRUENCE};
 
-        int axiom_type_size = axiomType.size();
+        int axiom_type_size = axiomType.size() - 1;
+
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "axiom_type_size: " << axiom_type_size << endl; }
 
         int axiomCounter = 0;
 
-        while (loopCounter < 10) {
+        while (loopCounter < 11) {
 
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
                 cout << "Loop" << loopCounter << "\n";
+                cout << "axiomCounter" << axiomCounter << "\n";
             }
 
             auto AnswerOfLRA = runBackends();
@@ -755,9 +760,11 @@ namespace smtrat
                 addSubformulaToPassedFormula(formulaT);
             }
 
-            axiomCounter++;
-            if (axiomCounter > axiom_type_size) {
+
+            if (axiomCounter == axiom_type_size) {
                 axiomCounter = 0;
+            } else {
+                axiomCounter++;
             }
 
             loopCounter++;
