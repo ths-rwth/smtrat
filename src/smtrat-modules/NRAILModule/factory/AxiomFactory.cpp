@@ -255,7 +255,7 @@ namespace smtrat {
         FormulaT leftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands), carl::Relation::NEQ);
 
         std::vector<Poly> operands2 {Poly(zVariable), Poly(aRational*xVariable), Poly(aRational*xVariable), Poly(aRational*aRational)};
-        FormulaT zFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands2), carl::Relation::EQ);
+        FormulaT zFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands2), carl::Relation::GREATER);
 
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
 
