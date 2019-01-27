@@ -429,6 +429,99 @@ namespace smtrat {
         return finalFormula;
     }
 
+    FormulaT createICPGreaterOne(VariableCapsule variableCapsule, RationalCapsule rationalCapsule){
+
+        std::vector<Poly> operands1 {Poly(variableCapsule.getXVariable()), Poly(rationalCapsule.getARational())};
+        FormulaT leftFormulaPartOneOne = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands1), carl::Relation::GEQ);
+
+        std::vector<Poly> operands2 {Poly(variableCapsule.getYVariable()), Poly(rationalCapsule.getBRational())};
+        FormulaT leftFormulaPartOneTwo = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands2), carl::Relation::GEQ);
+
+        FormulaT leftFormulaOne = FormulaT(carl::FormulaType::AND, leftFormulaPartOneOne, leftFormulaPartOneTwo);
+
+        FormulaT leftFormulaPartTwoOne = FormulaT(Poly(Poly::ConstructorOperation::ADD, operands1), carl::Relation::LEQ);
+
+        FormulaT leftFormulaPartTwoTwo = FormulaT(Poly(Poly::ConstructorOperation::ADD, operands2), carl::Relation::LEQ);
+
+        FormulaT leftFormulaTwo = FormulaT(carl::FormulaType::AND, leftFormulaPartTwoOne, leftFormulaPartTwoTwo);
+
+        FormulaT leftFormula = FormulaT(carl::FormulaType::OR, leftFormulaOne, leftFormulaTwo);
+
+        std::vector<Poly> operands3 {Poly(variableCapsule.getZVariable()), Poly(rationalCapsule.getCRational())};
+        FormulaT rightFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands3), carl::Relation::GEQ);
+
+        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
+
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "created ICPGreaterOne Axiom Formula is: " << finalFormula << endl; }
+
+        return finalFormula;
+    }
+
+    FormulaT createICPGreaterTwo(VariableCapsule variableCapsule, RationalCapsule rationalCapsule){
+
+        std::vector<Poly> operands1 {Poly(variableCapsule.getXVariable()), Poly(rationalCapsule.getARational())};
+        FormulaT leftFormulaPartOneOne = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands1), carl::Relation::GEQ);
+
+        std::vector<Poly> operands2 {Poly(variableCapsule.getYVariable()), Poly(rationalCapsule.getBRational())};
+        FormulaT leftFormulaPartOneTwo = FormulaT(Poly(Poly::ConstructorOperation::ADD, operands2), carl::Relation::LEQ);
+
+        FormulaT leftFormulaOne = FormulaT(carl::FormulaType::AND, leftFormulaPartOneOne, leftFormulaPartOneTwo);
+
+        FormulaT leftFormulaPartTwoOne = FormulaT(Poly(Poly::ConstructorOperation::ADD, operands1), carl::Relation::LEQ);
+
+        FormulaT leftFormulaPartTwoTwo = FormulaT(Poly(Poly::ConstructorOperation::ADD, operands2), carl::Relation::GEQ);
+
+        FormulaT leftFormulaTwo = FormulaT(carl::FormulaType::AND, leftFormulaPartTwoOne, leftFormulaPartTwoTwo);
+
+        FormulaT leftFormula = FormulaT(carl::FormulaType::OR, leftFormulaOne, leftFormulaTwo);
+
+        std::vector<Poly> operands3 {Poly(variableCapsule.getZVariable()), Poly(rationalCapsule.getCRational())};
+        FormulaT rightFormula = FormulaT(Poly(Poly::ConstructorOperation::ADD, operands3), carl::Relation::LEQ);
+
+        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
+
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "created ICPGreaterTwo Axiom Formula is: " << finalFormula << endl; }
+
+        return finalFormula;
+    }
+
+    FormulaT createICPLess(VariableCapsule variableCapsule, RationalCapsule rationalCapsule){
+
+        FormulasT leftFormulas;
+
+        std::vector<Poly> operands1 {-Poly(variableCapsule.getXVariable()), -Poly(rationalCapsule.getARational())};
+        FormulaT leftFormulaPartOne = FormulaT(Poly(Poly::ConstructorOperation::ADD, operands1), carl::Relation::LEQ);
+        leftFormulas.push_back(leftFormulaPartOne);
+
+        std::vector<Poly> operands2 {Poly(variableCapsule.getXVariable()), Poly(rationalCapsule.getARational())};
+        FormulaT leftFormulaPartTwo = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands2), carl::Relation::LEQ);
+        leftFormulas.push_back(leftFormulaPartTwo);
+
+        std::vector<Poly> operands3 {-Poly(variableCapsule.getYVariable()), -Poly(rationalCapsule.getBRational())};
+        FormulaT leftFormulaPartThree = FormulaT(Poly(Poly::ConstructorOperation::ADD, operands3), carl::Relation::LEQ);
+        leftFormulas.push_back(leftFormulaPartThree);
+
+        std::vector<Poly> operands4 {Poly(variableCapsule.getYVariable()), Poly(rationalCapsule.getBRational())};
+        FormulaT leftFormulaPartFour = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands4), carl::Relation::LEQ);
+        leftFormulas.push_back(leftFormulaPartFour);
+
+        FormulaT leftFormula = FormulaT(carl::FormulaType::AND, leftFormulas);
+
+        std::vector<Poly> operands5 {-Poly(variableCapsule.getZVariable()), -Poly(rationalCapsule.getCRational())};
+        FormulaT rightFormulaPartOne = FormulaT(Poly(Poly::ConstructorOperation::ADD, operands5), carl::Relation::LEQ);
+
+        std::vector<Poly> operands6 {Poly(variableCapsule.getZVariable()), Poly(rationalCapsule.getCRational())};
+        FormulaT rightFormulaPartTwo = FormulaT(Poly(Poly::ConstructorOperation::ADD, operands6), carl::Relation::LEQ);
+
+        FormulaT rightFormula = FormulaT(carl::FormulaType::AND, rightFormulaPartOne, rightFormulaPartTwo);
+
+        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
+
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "created ICPLess Axiom Formula is: " << finalFormula << endl; }
+
+        return finalFormula;
+    }
+
     bool abEqualcCheck(VariableCapsule variableCapsuleOuter, Model abstractModel){
         carl::Variable xVariable = variableCapsuleOuter.getXVariable();
         carl::Variable yVariable = variableCapsuleOuter.getYVariable();
@@ -459,6 +552,48 @@ namespace smtrat {
         return false;
     }
 
+    bool abGreatercCheck(RationalCapsule rationalCapsule){
+
+        carl::Variable aVariable = carl::freshRealVariable("a");
+        carl::Variable bVariable = carl::freshRealVariable("b");
+        carl::Variable cVariable = carl::freshRealVariable("c");
+
+        Model abcModel;
+        abcModel.emplace(aVariable, rationalCapsule.getARational());
+        abcModel.emplace(bVariable, rationalCapsule.getBRational());
+        abcModel.emplace(cVariable, rationalCapsule.getCRational());
+
+        // c < a * b or, c - a * b < 0
+        FormulaT abcFormula = FormulaT(Poly(cVariable) - Poly(aVariable*bVariable), carl::Relation::LESS);
+
+        if (carl::model::satisfiedBy(abcFormula, abcModel) == 1){
+            return true;
+        }
+
+        return false;
+    }
+
+    bool abLesscCheck(RationalCapsule rationalCapsule){
+
+        carl::Variable aVariable = carl::freshRealVariable("a");
+        carl::Variable bVariable = carl::freshRealVariable("b");
+        carl::Variable cVariable = carl::freshRealVariable("c");
+
+        Model abcModel;
+        abcModel.emplace(aVariable, rationalCapsule.getARational());
+        abcModel.emplace(bVariable, rationalCapsule.getBRational());
+        abcModel.emplace(cVariable, rationalCapsule.getCRational());
+
+        // c > a * b or, c - a * b > 0
+        FormulaT abcFormula = FormulaT(Poly(cVariable) - Poly(aVariable*bVariable), carl::Relation::GREATER);
+
+        if (carl::model::satisfiedBy(abcFormula, abcModel) == 1){
+            return true;
+        }
+
+        return false;
+    }
+
     FormulasT AxiomFactory::createFormula(AxiomType axiomType, Model abstractModel, MonomialMap monomialMap) {
 
         FormulasT formulas;
@@ -475,6 +610,8 @@ namespace smtrat {
             Rational aRational = abstractModel.find(variableCapsuleOuter.getXVariable())->second.asRational();
             Rational bRational = abstractModel.find(variableCapsuleOuter.getYVariable())->second.asRational();
             Rational cRational = abstractModel.find(variableCapsuleOuter.getZVariable())->second.asRational();
+
+            RationalCapsule rationalCapsule(aRational, bRational, cRational);
 
 
             if (axiomType == AxiomType::ZERO) {
@@ -501,23 +638,51 @@ namespace smtrat {
                     if (monomialIteratorOuter == monomialIteratorInner){
                         continue;
                     }
+
                     if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "creating variableCapsuleInner..." << endl; }
+
                     smtrat::VariableCapsule variableCapsuleInner = extractVariables(monomialIteratorInner);
+
                     if (axiomType == AxiomType::MONOTONICITY){
-                        if(abEqualcCheck(variableCapsuleInner, abstractModel) ||
-                                abEqualcCheck(variableCapsuleOuter, abstractModel)){
+
+                        if(abEqualcCheck(variableCapsuleInner, abstractModel) || abEqualcCheck(variableCapsuleOuter, abstractModel)){
+
                             if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is true, creating Monotonicity..." << endl; }
+
                             formulas.push_back(createMonotonicityOne(variableCapsuleOuter, variableCapsuleInner));
                             formulas.push_back(createMonotonicityTwo(variableCapsuleOuter, variableCapsuleInner));
                             formulas.push_back(createMonotonicityThree(variableCapsuleOuter, variableCapsuleInner));
-                        } else {
-                            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is false Monotonicity is not creating..." << endl; }
-                        }
+
+                        } else { if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is false Monotonicity is not creating..." << endl; }}
+
                     } else if (axiomType == AxiomType::CONGRUENCE){
+
                         formulas.push_back(createCongruence(variableCapsuleOuter, variableCapsuleInner));
+
                     }
                 }
 
+            } else if (axiomType == AxiomType::ICP) {
+
+                // NOTE: we assume a' = a, b' = b, c' = a * b. Here rationalCapsulePrime include the primes.
+                RationalCapsule rationalCapsulePrime(rationalCapsule.getARational(), rationalCapsule.getBRational(), rationalCapsule.getARational() * rationalCapsule.getBRational());
+
+                if (abGreatercCheck(rationalCapsule)){
+
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abGreatercCheck is true and ICP is creating..." << endl; }
+
+                    formulas.push_back(createICPGreaterOne(variableCapsuleOuter, rationalCapsulePrime));
+                    formulas.push_back(createICPGreaterTwo(variableCapsuleOuter, rationalCapsulePrime));
+
+                } else if (abLesscCheck(rationalCapsule)) {
+
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abLesscCheck is true and ICP is creating..." << endl; }
+
+                    formulas.push_back(createICPLess(variableCapsuleOuter, rationalCapsulePrime));
+
+                } else {
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "None of the precondition is true and ICP is not creating..." << endl; }
+                }
             }
         }
         return formulas;

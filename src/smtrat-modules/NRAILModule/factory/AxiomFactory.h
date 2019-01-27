@@ -12,14 +12,14 @@
 #include "lib/Common.h"
 #include "../Util.h"
 #include "../../../smtrat-common/model.h"
-
+#include "../dto/RationalCapsule.h"
 
 namespace smtrat {
 
     class AxiomFactory {
 
     public:
-        enum AxiomType { ZERO, TANGENT_PLANE, MONOTONICITY, CONGRUENCE };
+        enum AxiomType { ZERO, TANGENT_PLANE, MONOTONICITY, CONGRUENCE, ICP };
         static FormulasT createFormula(AxiomType axiomType, Model abstractModel, MonomialMap monomialMap);
     };
 

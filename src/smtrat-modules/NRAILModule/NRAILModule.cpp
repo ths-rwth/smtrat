@@ -666,7 +666,7 @@ namespace smtrat
 
         FormulasT unsatisfiedFormulas;
         for(FormulaT formula:formulas) {
-            if (carl::model::satisfiedBy(formula, model) == 0){
+            if (carl::model::satisfiedBy(formula, model) == 0){ if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "pushing to unsatisfiedFormulas " << formula << endl; }
                 unsatisfiedFormulas.push_back(formula);
             }
         }
@@ -695,7 +695,8 @@ namespace smtrat
         std::vector<AxiomFactory::AxiomType> axiomType = {AxiomFactory::AxiomType::ZERO,
                                                AxiomFactory::AxiomType::TANGENT_PLANE,
                                                AxiomFactory::AxiomType::MONOTONICITY,
-                                               AxiomFactory::AxiomType::CONGRUENCE};
+                                               AxiomFactory::AxiomType::CONGRUENCE,
+                                               AxiomFactory::AxiomType::ICP};
 
         int axiom_type_size = axiomType.size() - 1;
 
