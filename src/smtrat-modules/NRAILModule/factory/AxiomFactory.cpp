@@ -429,7 +429,7 @@ namespace smtrat {
         return finalFormula;
     }
 
-    bool abcCheck(VariableCapsule variableCapsuleOuter, Model abstractModel){
+    bool abEqualcCheck(VariableCapsule variableCapsuleOuter, Model abstractModel){
         carl::Variable xVariable = variableCapsuleOuter.getXVariable();
         carl::Variable yVariable = variableCapsuleOuter.getYVariable();
         carl::Variable zVariable = variableCapsuleOuter.getZVariable();
@@ -438,7 +438,7 @@ namespace smtrat {
         Rational bRational = abstractModel.find(variableCapsuleOuter.getYVariable())->second.asRational();
         Rational cRational = abstractModel.find(variableCapsuleOuter.getZVariable())->second.asRational();
 
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << endl << "Found values in abcCheck" << " Zvariable = " << cRational << " Xvariable = " << aRational << " Yvariable = " << bRational << endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << endl << "Found values in abEqualcCheck" << " Zvariable = " << cRational << " Xvariable = " << aRational << " Yvariable = " << bRational << endl; }
 
         carl::Variable aVariable = carl::freshRealVariable("a");
         carl::Variable bVariable = carl::freshRealVariable("b");
@@ -482,8 +482,8 @@ namespace smtrat {
                 formulas.push_back(createZeroTwo(xVariable, yVariable, zVariable));
                 formulas.push_back(createZeroThree(xVariable, yVariable, zVariable));
             } else if (axiomType == AxiomType::TANGENT_PLANE){
-                if(abcCheck(variableCapsuleOuter, abstractModel)) {
-                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abcCheck is true, creating TANGENT_PLANE..." << endl; }
+                if(abEqualcCheck(variableCapsuleOuter, abstractModel)) {
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is true, creating TANGENT_PLANE..." << endl; }
                     if (xVariable != yVariable){
                         formulas.push_back(createTangentPlaneNEQOne(xVariable, yVariable, zVariable, aRational));
                         formulas.push_back(createTangentPlaneNEQTwo(xVariable, yVariable, zVariable, bRational));
@@ -494,7 +494,7 @@ namespace smtrat {
                         formulas.push_back(createTangentPlaneEQTwo(xVariable, yVariable, zVariable, aRational));
                     }
                 } else {
-                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abcCheck is false TANGENT_PLANE is not creating..." << endl; }
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is false TANGENT_PLANE is not creating..." << endl; }
                 }
             } else if(axiomType == AxiomType::MONOTONICITY || axiomType == AxiomType::CONGRUENCE){
                 for (MonomialMapIterator monomialIteratorInner = monomialMap.begin(); monomialIteratorInner != monomialMap.end(); ++monomialIteratorInner){
@@ -504,19 +504,18 @@ namespace smtrat {
                     if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "creating variableCapsuleInner..." << endl; }
                     smtrat::VariableCapsule variableCapsuleInner = extractVariables(monomialIteratorInner);
                     if (axiomType == AxiomType::MONOTONICITY){
-                        if(abcCheck(variableCapsuleInner, abstractModel) || abcCheck(variableCapsuleOuter, abstractModel)){
-                            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abcCheck is true, creating Monotonicity..." << endl; }
+                        if(abEqualcCheck(variableCapsuleInner, abstractModel) ||
+                                abEqualcCheck(variableCapsuleOuter, abstractModel)){
+                            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is true, creating Monotonicity..." << endl; }
                             formulas.push_back(createMonotonicityOne(variableCapsuleOuter, variableCapsuleInner));
                             formulas.push_back(createMonotonicityTwo(variableCapsuleOuter, variableCapsuleInner));
                             formulas.push_back(createMonotonicityThree(variableCapsuleOuter, variableCapsuleInner));
                         } else {
-                            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abcCheck is false Monotonicity is not creating..." << endl; }
+                            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is false Monotonicity is not creating..." << endl; }
                         }
                     } else if (axiomType == AxiomType::CONGRUENCE){
                         formulas.push_back(createCongruence(variableCapsuleOuter, variableCapsuleInner));
                     }
-
-
                 }
 
             }
