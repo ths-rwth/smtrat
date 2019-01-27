@@ -438,15 +438,7 @@ namespace smtrat {
         Rational bRational = abstractModel.find(variableCapsuleOuter.getYVariable())->second.asRational();
         Rational cRational = abstractModel.find(variableCapsuleOuter.getZVariable())->second.asRational();
 
-        if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "Found Zvariable Value: " << cRational;
-            cout << "\n";
-            cout << "Found Xvariable Value: " << aRational;
-            cout << "\n";
-            cout << "Found Yvariable Value: " << bRational;
-            cout << "\n";
-        }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << endl << "Found values in abcCheck" << " Zvariable = " << cRational << " Xvariable = " << aRational << " Yvariable = " << bRational << endl; }
 
         carl::Variable aVariable = carl::freshRealVariable("a");
         carl::Variable bVariable = carl::freshRealVariable("b");
@@ -473,6 +465,7 @@ namespace smtrat {
 
         for (MonomialMapIterator monomialIteratorOuter = monomialMap.begin(); monomialIteratorOuter != monomialMap.end(); ++monomialIteratorOuter){
 
+            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "creating variableCapsuleOuter..." << endl; }
             smtrat::VariableCapsule variableCapsuleOuter = extractVariables(monomialIteratorOuter);
 
             carl::Variable xVariable = variableCapsuleOuter.getXVariable();
@@ -501,24 +494,26 @@ namespace smtrat {
                     }
                 }
             } else if(axiomType == AxiomType::MONOTONICITY || axiomType == AxiomType::CONGRUENCE){
-                    bool flag = false;
                     for (MonomialMapIterator monomialIteratorInner = monomialMap.begin(); monomialIteratorInner != monomialMap.end(); ++monomialIteratorInner){
                         if (monomialIteratorOuter == monomialIteratorInner){
-                            flag = true;
+                            continue;
                         }
-                        if (flag && monomialIteratorOuter != monomialIteratorInner){
-                            smtrat::VariableCapsule variableCapsuleInner = extractVariables(monomialIteratorInner);
-                            if (axiomType == AxiomType::MONOTONICITY){
-                                if(abcCheck(variableCapsuleInner, abstractModel) || abcCheck(variableCapsuleOuter, abstractModel)){
-                                    formulas.push_back(createMonotonicityOne(variableCapsuleOuter, variableCapsuleInner));
-                                    formulas.push_back(createMonotonicityTwo(variableCapsuleOuter, variableCapsuleInner));
-                                    formulas.push_back(createMonotonicityThree(variableCapsuleOuter, variableCapsuleInner));
-                                }
-                            } else if (axiomType == AxiomType::CONGRUENCE){
-                                formulas.push_back(createCongruence(variableCapsuleOuter, variableCapsuleInner));
+                        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "creating variableCapsuleInner..." << endl; }
+                        smtrat::VariableCapsule variableCapsuleInner = extractVariables(monomialIteratorInner);
+                        if (axiomType == AxiomType::MONOTONICITY){
+                            if(abcCheck(variableCapsuleInner, abstractModel) || abcCheck(variableCapsuleOuter, abstractModel)){
+                                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abcCheck is true, creating Monotonicity..." << endl; }
+                                formulas.push_back(createMonotonicityOne(variableCapsuleOuter, variableCapsuleInner));
+                                formulas.push_back(createMonotonicityTwo(variableCapsuleOuter, variableCapsuleInner));
+                                formulas.push_back(createMonotonicityThree(variableCapsuleOuter, variableCapsuleInner));
+                            } else {
+                                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abcCheck is false Monotonicity is not creating..." << endl; }
                             }
-
+                        } else if (axiomType == AxiomType::CONGRUENCE){
+                            formulas.push_back(createCongruence(variableCapsuleOuter, variableCapsuleInner));
                         }
+
+
                     }
 
             }
