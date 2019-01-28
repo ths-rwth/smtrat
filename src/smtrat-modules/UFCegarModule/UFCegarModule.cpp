@@ -253,22 +253,11 @@ namespace smtrat
     {
         Answer result = runBackends();
 
-        assert(flattened_function_calls(instances));
-        if ( result == Answer::SAT ) {                          // expect flattened input
+        if ( result == Answer::SAT ) { // expect flattened input
+            assert(flattened_function_calls(instances));
             if (refine_n_args(std::numeric_limits<int>::max())) // constrain all args
                 result = runBackends();
         }
-
-        /*if ( result == Answer::SAT ) { // expect flattened input
-            int i = 1;
-            bool refinable = true;
-
-            do {
-                refinable = refine_n_args(i++);
-                if ( refinable )
-                    result = runBackends();
-            } while (result == Answer::UNSAT && refinable);
-        }*/
 
         /* CEGAR iteration when input is not flattened:
         bool refinable = true;

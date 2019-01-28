@@ -15,7 +15,7 @@
 enum vertex_properties_t { vertex_properties };
 
 namespace boost {
-	BOOST_INSTALL_PROPERTY(vertex, properties);
+    BOOST_INSTALL_PROPERTY(vertex, properties);
 }
 
 namespace smtrat
@@ -34,36 +34,36 @@ namespace smtrat
         auto properties() noexcept { return get(vertex_properties, graph); }
         auto properties() const noexcept { return get(vertex_properties, graph); }
 
-		VertexName const& properties(Vertex const& v) const noexcept
+        VertexName const& properties(Vertex const& v) const noexcept
         {
-        	return properties()[v];
+            return properties()[v];
         }
 
-		VertexName & properties(Vertex const& v) noexcept
+        VertexName & properties(Vertex const& v) noexcept
         {
-        	return properties()[v];
+            return properties()[v];
         }
 
-		void add_vertex(VertexName const& prop) noexcept
-		{
-        	auto v = boost::add_vertex(graph);
-			properties(v) = prop;
-			vertices[prop] = v;
-		}
+        void add_vertex(VertexName const& name) noexcept
+        {
+            auto v = boost::add_vertex(graph);
+            properties(v) = name;
+            vertices.emplace(name, v);
+        }
 
-		void add_edge(VertexName const& a, VertexName const& b) noexcept
-		{
-			boost::add_edge(vertices[a], vertices[b], graph);
-		}
+        void add_edge(VertexName const& a, VertexName const& b) noexcept
+        {
+            boost::add_edge(vertices.at(a), vertices.at(b), graph);
+        }
 
-		void remove_edge(VertexName const& a, VertexName const& b) noexcept
-		{
-            boost::remove_edge(vertices[a], vertices[b], graph);
-		}
+        void remove_edge(VertexName const& a, VertexName const& b) noexcept
+        {
+            boost::remove_edge(vertices.at(a), vertices.at(b), graph);
+        }
 
-		using PathEdge = std::pair<VertexName, VertexName>;
-		std::vector<PathEdge> get_path(VertexName const& a, VertexName const& b) noexcept
-		{
+        using PathEdge = std::pair<VertexName, VertexName>;
+        std::vector<PathEdge> get_path(VertexName const& a, VertexName const& b) noexcept
+        {
             const auto& begin = vertices.at(a);
             const auto& end = vertices.at(b);
 
@@ -79,7 +79,7 @@ namespace smtrat
             std::vector<PathEdge> path;
             auto prop = properties();
 
-			int vertex = end;
+            int vertex = end;
             while (vertex != begin) {
                 auto next = predecessors[vertex];
                 assert( next != Graph::null_vertex() );
@@ -89,9 +89,9 @@ namespace smtrat
             }
 
             return path;
-		}
+        }
 
-		Graph graph;
-		std::map<VertexName, Vertex> vertices;
+        Graph graph;
+        std::map<VertexName, Vertex> vertices;
     };
 } // namespace smtrat

@@ -41,6 +41,10 @@ namespace smtrat
         if (ueq.negated()) {
             if (lhs == rhs)
                 return false;
+        } else {
+            if (Settings::use_theory_propagation) {
+                informed.emplace(ueq);
+            }
         }
         return true;
     }
@@ -57,7 +61,7 @@ namespace smtrat
 
         auto process = [&] (const auto& var) {
             if (const auto& [it, inserted] = variables.emplace(var); inserted) {
-				graph.add_vertex(var);
+                graph.add_vertex(var);
             }
             classes.introduce_variable(var);
         };
@@ -67,10 +71,14 @@ namespace smtrat
 
         if (!ueq.negated()) {
             classes.merge(lhs, rhs);
-			graph.add_edge(lhs, rhs);
+            graph.add_edge(lhs, rhs);
+
+            if (informed.count(ueq))
+                informed.erase(ueq);
         }
 
         history.emplace_back(ueq);
+
         return true;
     }
 
@@ -87,7 +95,7 @@ namespace smtrat
             const auto& rhs = it->rhs().asUVariable();
             classes.backtrack(lhs, rhs);
 
-			graph.remove_edge(lhs, rhs);
+            graph.remove_edge(lhs, rhs);
 
             // reinsert history tail
             if (it != history.rbegin()) {
@@ -137,9 +145,9 @@ namespace smtrat
 
         const auto& begin = inequality.lhs().asUVariable();
         const auto& end = inequality.rhs().asUVariable();
-		for (const auto& [u, v]: graph.get_path(begin, end)) {
-			infeasible.emplace(u, v, false);
-		}
+        for (const auto& [u, v]: graph.get_path(begin, end)) {
+            infeasible.emplace(u, v, false);
+        }
     }
 
     template<class Settings>
@@ -152,6 +160,26 @@ namespace smtrat
                 if (lhs == rhs) {
                     generateInfeasibleSubset(ueq);
                     return Answer::UNSAT;
+                }
+            }
+        }
+
+        if (Settings::use_theory_propagation) {
+            for (const auto& ueq : informed) {
+                const auto& lhs = ueq.lhs().asUVariable();
+                const auto& rhs = ueq.rhs().asUVariable();
+                if (classes.has_variable(lhs) && classes.has_variable(rhs)) {
+                    if (classes.find(lhs) == classes.find(rhs)) {
+
+                        FormulasT eqs;
+                        for (const auto& [u, v]: graph.get_path(lhs, rhs)) {
+                            eqs.emplace_back(u, v, false);
+                        }
+
+                        using carl::FormulaType;
+                        FormulaT precondition( FormulaType::AND, eqs );
+                        addLemma(FormulaT{ FormulaType::IMPLIES, precondition, FormulaT{ueq} });
+                    }
                 }
             }
         }

@@ -49,6 +49,7 @@ namespace smtrat
 
         std::unordered_set<carl::UVariable> variables;
 
+        std::unordered_set<carl::UEquality> informed;
         public:
             typedef Settings SettingsType;
             std::string moduleName() const {

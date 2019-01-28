@@ -35,6 +35,11 @@ namespace smtrat
             introduce_variable(translate[var]);
         }
 
+        bool has_variable(T const& var) noexcept
+        {
+            return translate.count(var);
+        }
+
         [[nodiscard]] auto find(T const& val) noexcept -> Representative
         {
             return find(translate.at(val));
