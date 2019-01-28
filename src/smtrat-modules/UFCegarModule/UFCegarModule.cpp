@@ -24,7 +24,7 @@ namespace smtrat
         , mStatistics(Settings::moduleName)
 #endif
     {
-        const std::string sort_name = "__my_cegar_sort";
+        const std::string sort_name = "_S";
         my_sort = SortManager::getInstance().addSort( sort_name );
     }
 
@@ -131,7 +131,7 @@ namespace smtrat
         mModel.clear();
         if( solverState() == Answer::SAT )
         {
-            // Your code.
+            getBackendsModel();
         }
     }
 
@@ -205,12 +205,13 @@ namespace smtrat
     }
 
     template<class Settings>
-    bool UFCegarModule<Settings>::refine_once() noexcept {
+    bool UFCegarModule<Settings>::refine_n_args(int count) noexcept {
         // Expects flattened input without nested function calls
 
         // TODO idea partial unrolling of arguments -
         // extend consistency only by one argument at a time
         // TODO expand according to previous model (functions satisfied in model)
+        // TODO filter combinations
 
         bool constrained = false;
         for (const auto& [function, list] : instances) {
@@ -219,7 +220,6 @@ namespace smtrat
 
             for (auto i = list.begin(); i != std::prev(list.end()); ++i) {
                 for (auto j = std::next(list.begin()); j != list.end(); ++j) {
-
                     auto a = *i;
                     auto b = *j;
                     if (refined.count({a, b}))
@@ -229,19 +229,35 @@ namespace smtrat
                     auto end = a.args().end();
 
                     FormulasT eqs;
-                    for ( ; args.first != end; ++args.first, ++args.second ) {
+
+                    for (int n = 0; args.first != end && n < count; ++args.first, ++args.second, ++n) {
                         eqs.emplace_back(flatten(*args.first), flatten(*args.second), false);
                     }
 
                     addSubformulaToPassedFormula(create_functional_contraint( std::move(eqs), a, b ));
 
                     refined.emplace(a, b);
+                    constrained = true;
                 }
             }
-            constrained = true;
         }
 
         return constrained;
+    }
+
+    template<typename Instances>
+    bool flattened_function_calls(const Instances& instances) noexcept {
+        for (const auto& [function, list] : instances) {
+            for (const auto& inst : list) {
+                for (const auto& arg : inst.args()) {
+                    if (arg.isUFInstance()) {
+                        return false; // not flattened call
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 
     template<class Settings>
@@ -249,13 +265,24 @@ namespace smtrat
     {
         Answer result = runBackends();
 
-        if ( result == Answer::SAT ) { // expect flattened input
-            if ( refine_once() )
+        assert(flattened_function_calls(instances));
+        if ( result == Answer::SAT ) {                          // expect flattened input
+            if (refine_n_args(std::numeric_limits<int>::max())) // constrain all args
                 result = runBackends();
         }
 
-        /* CEGAR iteration when input is not flattened:
+        /*if ( result == Answer::SAT ) { // expect flattened input
+            int i = 1;
+            bool refinable = true;
 
+            do {
+                refinable = refine_n_args(i++);
+                if ( refinable )
+                    result = runBackends();
+            } while (result == Answer::UNSAT && refinable);
+        }*/
+
+        /* CEGAR iteration when input is not flattened:
         bool refinable = true;
         while (result == Answer::SAT && refinable) {
             if ( refinable = refine() )
@@ -263,9 +290,7 @@ namespace smtrat
         }
         */
 
-        if (result == Answer::SAT) {
-            getBackendsModel();
-        } else if (result == Answer::UNSAT) {
+        if (result == Answer::UNSAT) {
             getInfeasibleSubsets();
         }
 

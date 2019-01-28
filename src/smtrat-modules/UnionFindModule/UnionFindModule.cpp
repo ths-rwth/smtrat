@@ -74,6 +74,7 @@ namespace smtrat
     {
         assert(_subformula->formula().getType() == carl::UEQ);
         const auto& ueq = _subformula->formula().uequality();
+
         auto it = std::find(history.rbegin(), history.rend(), ueq);
 
         if (!it->negated()) {
@@ -117,7 +118,7 @@ namespace smtrat
                     sorts[cls] = carl::newSortValue(var.domain());
                 }
 
-                mModel.emplace(var.variable(), sorts[cls]);
+                mModel.emplace(var, sorts[cls]);
             }
         }
     }
@@ -132,7 +133,7 @@ namespace smtrat
         const auto& begin = inequality.lhs().asUVariable();
         const auto& end = inequality.rhs().asUVariable();
 		for (const auto& [u, v]: graph.get_path(begin, end)) {
-			infeasible.emplace(carl::UEquality(u, v, false));
+			infeasible.emplace(u, v, false);
 		}
     }
 
