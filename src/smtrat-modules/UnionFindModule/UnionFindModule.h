@@ -47,7 +47,7 @@ namespace smtrat
         using TranslateMap = typename Classes::TranslateMap;
         TranslateMap translate;
 
-        std::set<carl::UVariable> variables;
+        std::unordered_set<carl::UVariable> variables;
 
         public:
             typedef Settings SettingsType;
@@ -69,12 +69,6 @@ namespace smtrat
              *        true, otherwise.
              */
             bool informCore( const FormulaT& _constraint );
-
-            /**
-             * Informs all backends about the so far encountered constraints, which have not yet been communicated.
-             * This method must not and will not be called more than once and only before the first runBackends call.
-             */
-            void init();
 
             /**
              * The module has to take the given sub-formula of the received formula into account.

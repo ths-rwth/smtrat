@@ -29,15 +29,20 @@ namespace smtrat
     {}
 
     template<class Settings>
-    bool UnionFindModule<Settings>::informCore( const FormulaT& /*_constraint*/ )
+    bool UnionFindModule<Settings>::informCore( const FormulaT& _constraint )
     {
-        // Your code.
-        return true; // This should be adapted according to your implementation.
-    }
+        assert(_constraint.getType() == carl::UEQ);
+        const auto& ueq = _constraint.uequality();
+        assert(ueq.lhs().isUVariable() && ueq.rhs().isUVariable());
 
-    template<class Settings>
-    void UnionFindModule<Settings>::init()
-    {
+        const auto& lhs = ueq.lhs().asUVariable();
+        const auto& rhs = ueq.rhs().asUVariable();
+
+        if (ueq.negated()) {
+            if (lhs == rhs)
+                return false;
+        }
+        return true;
     }
 
     template<class Settings>

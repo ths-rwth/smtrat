@@ -33,18 +33,6 @@ namespace smtrat
     {}
 
     template<class Settings>
-    bool UFCegarModule<Settings>::informCore( const FormulaT& /*_constraint*/ )
-    {
-        // Your code.
-        return true; // This should be adapted according to your implementation.
-    }
-
-    template<class Settings>
-    void UFCegarModule<Settings>::init()
-    {
-    }
-
-    template<class Settings>
     auto UFCegarModule<Settings>::flatten(const FormulaT& formula) noexcept -> FormulaT
     {
         if (auto res = formula_store.find(formula); res != formula_store.end()) {
