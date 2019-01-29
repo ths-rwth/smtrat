@@ -1,10 +1,14 @@
 #include "preprocessor.h"
 
-#include "../parse_input.h"
+#include "config.h"
+#include <smtrat-common/smtrat-common.h>
+
+#ifdef CLI_ENABLE_PREPROCESSOR
+
+#include "execute_smtlib.h"
 #include "../parser/InstructionHandler.h"
 
 #include <carl/io/SMTLIBStream.h>
-#include <smtrat-common/smtrat-common.h>
 #include <smtrat-modules/FPPModule/FPPModule.h>
 
 namespace smtrat {
@@ -94,3 +98,16 @@ int preprocess_file(const std::string& filename, const std::string& outfile) {
 }
 
 }
+
+#else
+
+namespace smtrat {
+
+int preprocess_file(const std::string&, const std::string&) {
+	SMTRAT_LOG_ERROR("smtrat", "This version of SMT-RAT was compiled without support for stand-alone preprocessing.");
+	return 0;
+}
+
+}
+
+#endif

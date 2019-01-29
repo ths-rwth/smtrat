@@ -1025,20 +1025,31 @@ namespace smtrat
                         updateCNFInfoCounter( cnfInfoIter, _original, true );
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Recovered literal for " << _original << ": " << cnfInfoIter->second.mLiteral);
 						Lit l = cnfInfoIter->second.mLiteral;
-						if (mNonassumedTseitinVariable.test(std::size_t(var(l)))) {
-							/*
-							 * If this literal is a tseitin variable, it may belong to a top-level clause.
-							 * In this case, it is not eagerly added to the assumptions but only lazily when it is actually reused.
-							 * This is the case now. We backtrack to DL0 (+ assumptions.size()) and add it to the assumptions now.
-							 * This can only happen if a formula is added with some boolean structure, as only then the tseitin variable will be used.
-							 * Examples are addCore() or a lemma from a backend, in these cases it is safe to reset.
-							 * In particular this can not happen for infeasible subsets or conflict clauses, where a reset might not be safe.
-							 */
-							cancelUntil(assumptions.size());
-							assumptions.push(l);
-							assert(mFormulaAssumptionMap.find(_formula) == mFormulaAssumptionMap.end());
-							mFormulaAssumptionMap.emplace(_formula, assumptions.last());
-							mNonassumedTseitinVariable.reset(std::size_t(var(l)));
+						// If it was not assumed yet
+						if (!mAssumedTseitinVariable.test(std::size_t(var(l)))) {
+							SMTRAT_LOG_DEBUG("smtrat.sat", _original << " is not assumed yet");
+							// If we have a top-level clause right now and it is already used somewhere else
+							// Or there already was a top-level clause but it is not assumed yet
+							if (
+								(_depth == 0 && cnfInfoIter->second.mCounter > 1) ||
+								mNonassumedTseitinVariable.test(std::size_t(var(l)))
+							) {
+								SMTRAT_LOG_DEBUG("smtrat.sat", _original << " should be assumed, adding it to assumptions");
+								/*
+								* If this literal is a tseitin variable, it may belong to a top-level clause.
+								* In this case, it is not eagerly added to the assumptions but only lazily when it is actually reused.
+								* This is the case now. We backtrack to DL0 (+ assumptions.size()) and add it to the assumptions now.
+								* This can only happen if a formula is added with some boolean structure, as only then the tseitin variable will be used.
+								* Examples are addCore() or a lemma from a backend, in these cases it is safe to reset.
+								* In particular this can not happen for infeasible subsets or conflict clauses, where a reset might not be safe.
+								*/
+								cancelUntil(assumptions.size());
+								assumptions.push(l);
+								assert(mFormulaAssumptionMap.find(_formula) == mFormulaAssumptionMap.end());
+								mFormulaAssumptionMap.emplace(_formula, assumptions.last());
+								mNonassumedTseitinVariable.reset(std::size_t(var(l)));
+								mAssumedTseitinVariable.set(std::size_t(var(l)));
+							}
 						}
                         return l;
                     }
@@ -1129,6 +1140,9 @@ namespace smtrat
 						 * To avoid work (and because always doing that induces problems when adding infeasible subsets) we do this lazily.
 						 * We add ts to mNonassumedTseitinVariable and only add it to the assumptions when it is actually reused in another formula.
 						 */
+						SMTRAT_LOG_DEBUG("smtrat.sat", "top-level clause has new tseitin literal " << tsLit << ", marking it as non-assumed");
+						assert(!mAssumedTseitinVariable.test(std::size_t(var(tsLit))));
+						assert(cnfInfoIter->second.mCounter == 1);
 						mNonassumedTseitinVariable.set(std::size_t(var(tsLit)));
 	                    addClause_( lits, _type, _original, cnfInfoIter );
 						return lit_Undef;

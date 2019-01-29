@@ -34,10 +34,11 @@
 #include "parser/ParserSettings.h"
 #include <carl/io/SMTLIBStream.h>
 #include <carl/util/TimingCollector.h>
+#include "tools/config.h"
+#include "tools/execute_smtlib.h"
 #include "tools/Executor.h"
-#include "parse_input.h"
-#include "tools/dimacs.h"
-#include "tools/pseudoboolean.h"
+#include "tools/parser_dimacs.h"
+#include "tools/parser_opb.h"
 #include "tools/preprocessor.h"
 
 
