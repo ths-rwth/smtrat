@@ -41,6 +41,9 @@ namespace smtrat
         if (ueq.negated()) {
             if (lhs == rhs)
                 return false;
+            if (Settings::use_theory_propagation) {
+                informed.emplace(lhs, rhs, false);
+            }
         } else {
             if (Settings::use_theory_propagation) {
                 informed.emplace(ueq);
@@ -59,6 +62,7 @@ namespace smtrat
         const auto& lhs = ueq.lhs().asUVariable();
         const auto& rhs = ueq.rhs().asUVariable();
 
+        // TODO process vars in inform core?
         auto process = [&] (const auto& var) {
             if (const auto& [it, inserted] = variables.emplace(var); inserted) {
                 graph.add_vertex(var);
@@ -97,6 +101,7 @@ namespace smtrat
 
             graph.remove_edge(lhs, rhs);
 
+            // TODO optimize - reinsert after last removeCore call
             // reinsert history tail
             if (it != history.rbegin()) {
                 History tail;
@@ -151,8 +156,42 @@ namespace smtrat
     }
 
     template<class Settings>
+    void UnionFindModule<Settings>::propagate_induces_equalities(const std::set<carl::UVariable>& vars) noexcept
+    {
+        auto induced = [&] (auto const& lhs, auto const& rhs) -> bool {
+            return (classes.has_variable(lhs) && classes.has_variable(rhs))
+                && (classes.find(lhs) == classes.find(rhs));
+        };
+
+        for (const auto& ueq : informed) {
+            const auto& lhs = ueq.lhs().asUVariable();
+            const auto& rhs = ueq.rhs().asUVariable();
+            if (vars.count(lhs) && vars.count(rhs) && induced(lhs, rhs)) {
+                FormulasT eqs;
+                for (const auto& [u, v]: graph.get_path(lhs, rhs)) {
+                    eqs.emplace_back(u, v, false);
+                }
+
+                using carl::FormulaType;
+                FormulaT precondition( FormulaType::AND, eqs );
+                addLemma(FormulaT{ FormulaType::IMPLIES, precondition, FormulaT{ueq} });
+            }
+        }
+    }
+
+    template<class Settings>
     Answer UnionFindModule<Settings>::checkCore()
     {
+        if (Settings::use_theory_propagation) {
+            // TODO benchmark help of filtering
+            std::set<carl::UVariable> vars;
+            for (const auto& ueq : history) {
+                ueq.collectUVariables(vars);
+            }
+
+            propagate_induces_equalities(vars);
+        }
+
         for (const auto& ueq : history) {
             if (ueq.negated()) {
                 const auto& lhs = classes.find(ueq.lhs().asUVariable());
@@ -160,26 +199,6 @@ namespace smtrat
                 if (lhs == rhs) {
                     generateInfeasibleSubset(ueq);
                     return Answer::UNSAT;
-                }
-            }
-        }
-
-        if (Settings::use_theory_propagation) {
-            for (const auto& ueq : informed) {
-                const auto& lhs = ueq.lhs().asUVariable();
-                const auto& rhs = ueq.rhs().asUVariable();
-                if (classes.has_variable(lhs) && classes.has_variable(rhs)) {
-                    if (classes.find(lhs) == classes.find(rhs)) {
-
-                        FormulasT eqs;
-                        for (const auto& [u, v]: graph.get_path(lhs, rhs)) {
-                            eqs.emplace_back(u, v, false);
-                        }
-
-                        using carl::FormulaType;
-                        FormulaT precondition( FormulaType::AND, eqs );
-                        addLemma(FormulaT{ FormulaType::IMPLIES, precondition, FormulaT{ueq} });
-                    }
                 }
             }
         }

@@ -42,6 +42,8 @@ namespace smtrat
 
         void generateInfeasibleSubset(const carl::UEquality& inequality);
 
+        void propagate_induces_equalities(const std::set<carl::UVariable>& vars) noexcept;
+
         mutable Classes classes;
 
         using TranslateMap = typename Classes::TranslateMap;

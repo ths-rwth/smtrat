@@ -11,13 +11,13 @@
 
 namespace smtrat
 {
-	struct UnionFindSettings1
-	{
-		/// Name of the Module
-		static constexpr auto moduleName = "UnionFindModule<UnionFindSettings1>";
-		/**
-		 * Example for a setting.
-		 */
-		static const bool use_theory_propagation = true;
-	};
+    struct UnionFindSettings1
+    {
+        /// Name of the Module
+        static constexpr auto moduleName = "UnionFindModule<UnionFindSettings1>";
+        /**
+         * Example for a setting.
+         */
+        static const bool use_theory_propagation = false;
+    };
 }
