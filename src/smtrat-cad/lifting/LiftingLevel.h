@@ -15,9 +15,9 @@ namespace cad {
 		std::vector<carl::Variable> mVariables;
 		Sample curSample;
 		std::vector<UPoly&> polynoms;
-		std::vector<Interval> intervals;
-		std::set<RAN> levelintervals;
-        LiftingLevel predecessor;
+		std::vector<Interval> intervals; 	// unsat intervals
+		std::set<RAN> levelintervals;		// all bounds of unsat intervals, ordered
+        LiftingLevel predecessor;			//@todo or list of all levels somewhere.
 		
 		std::size_t dim() const {
 			return mVariables.size();
@@ -28,9 +28,29 @@ namespace cad {
 			levelintervals.insert(inter.lower());
 			levelintervals.insert(inter.upper());
 		}
+
+		Sample chooseSample() {
+			std::set<RAN>::iterator it = levelintervals.begin();
+			if(it.getLowerBoundType == BoundType::INFTY) {
+				it.next();
+			}
+
+			//make sample here and check whether it is in some interval (open/closed!)
+			// first sample before first bound (in bound is not minf), 
+			//then between bounds, last one after last bound if not pinf 
 		
+			for(auto interval : intervals) {
+				//@todo cases: minf, lower, equal, higher, pinf
+				//
+			}
+		}
+
 	public:
 
+		LiftingLevel(LiftingLevel& lev):predecessor{lev}{
+			predecessor = lev;
+			//@todo: init intervals, levelintervals 
+		}
 
 	};
 }
