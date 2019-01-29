@@ -49,6 +49,7 @@ namespace smtrat
         using TranslateMap = typename Classes::TranslateMap;
         TranslateMap translate;
 
+        bool need_to_update = false;
         std::unordered_set<carl::UVariable> variables;
 
         std::unordered_set<carl::UEquality> informed;

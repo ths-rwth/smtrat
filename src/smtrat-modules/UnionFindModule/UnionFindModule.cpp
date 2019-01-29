@@ -35,26 +35,38 @@ namespace smtrat
         const auto& ueq = _constraint.uequality();
         assert(ueq.lhs().isUVariable() && ueq.rhs().isUVariable());
 
+        auto process = [&] (const auto& var) {
+            if (const auto& [it, inserted] = variables.emplace(var); inserted) {
+                need_to_update = true;
+                graph.add_vertex(var);
+            }
+        };
+
         const auto& lhs = ueq.lhs().asUVariable();
         const auto& rhs = ueq.rhs().asUVariable();
+
+        process(lhs);
+        process(rhs);
+
+        if constexpr (Settings::use_theory_propagation) {
+            informed.emplace(lhs, rhs, false);
+        }
 
         if (ueq.negated()) {
             if (lhs == rhs)
                 return false;
-            if constexpr (Settings::use_theory_propagation) {
-                informed.emplace(lhs, rhs, false);
-            }
-        } else {
-            if constexpr (Settings::use_theory_propagation) {
-                informed.emplace(ueq);
-            }
         }
+
         return true;
     }
 
     template<class Settings>
     bool UnionFindModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
+        if (need_to_update) {
+            classes.init(variables);
+        }
+
         assert(_subformula->formula().getType() == carl::UEQ);
         const auto& ueq = _subformula->formula().uequality();
         assert(ueq.lhs().isUVariable() && ueq.rhs().isUVariable());
@@ -62,18 +74,8 @@ namespace smtrat
         const auto& lhs = ueq.lhs().asUVariable();
         const auto& rhs = ueq.rhs().asUVariable();
 
-        // TODO process vars in inform core?
-        auto process = [&] (const auto& var) {
-            if (const auto& [it, inserted] = variables.emplace(var); inserted) {
-                graph.add_vertex(var);
-            }
-            classes.introduce_variable(var);
-        };
-
-        process(lhs);
-        process(rhs);
-
         if (!ueq.negated()) {
+            assert(classes.has_variable(lhs) && classes.has_variable(rhs));
             classes.merge(lhs, rhs);
             graph.add_edge(lhs, rhs); //try to add in inform core
 
@@ -110,8 +112,8 @@ namespace smtrat
                 for (auto eq = it.base(); eq != history.end(); ++eq) {
                     const auto& a = eq->lhs().asUVariable();
                     const auto& b = eq->rhs().asUVariable();
-                    classes.introduce_variable(a);
-                    classes.introduce_variable(b);
+                    assert(classes.has_variable(a));
+                    assert(classes.has_variable(b));
                     if (!eq->negated()) {
                         classes.merge(a, b);
                     }

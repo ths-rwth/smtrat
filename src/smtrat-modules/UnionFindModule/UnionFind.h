@@ -24,15 +24,23 @@ namespace smtrat
             : translate(translate)
         {}
 
-        using Implementation::introduce_variable;
         using Implementation::find;
         using Implementation::merge;
         using Implementation::backtrack;
 
-        void introduce_variable(T const& var) noexcept
+        Value insert_value(T const& var) noexcept {
+            auto const&[it, inserted] = translate.try_emplace(var, translate.size());
+            return it->second;
+        }
+
+        template<typename Container>
+        void init(Container const& cont) noexcept
         {
-            translate.try_emplace(var, translate.size());
-            introduce_variable(translate[var]);
+            for (auto const& var: cont) {
+                insert_value(var);
+            }
+
+            Implementation::init_size(translate.size());
         }
 
         bool has_variable(T const& var) noexcept
@@ -134,11 +142,24 @@ namespace smtrat
             update_ranks(std::forward<Rs>(ranks));
         }
 
-        void introduce_variable(Value const& var) noexcept
+        void resize(size_t size) noexcept
         {
-            for (size_t i = _parents.size(); i <= var; ++i) {
+            for (size_t i = _parents.size(); i <= size; ++i) {
                 _parents = std::move(_parents).push_back(i);
                 _ranks = std::move(_ranks).push_back(0);
+            }
+        }
+
+        void init_size(size_t size) noexcept
+        {
+            if (_parents.empty()) {
+                std::vector<Value> tmp{size + 1};
+                std::iota(tmp.begin(), tmp.end(), 0);
+                update_parents(Parents{tmp.begin(), tmp.end()});
+                update_ranks(Ranks{size + 1, 0});
+                resize(size);
+            } else {
+                resize(size);
             }
         }
 
@@ -219,9 +240,9 @@ namespace smtrat
             history.emplace_back( origin(), UnionFind{} );
         }
 
-        void introduce_variable(Value const& var) noexcept
+        void init_size(size_t size) noexcept
         {
-            current().introduce_variable(var);
+            current().init_size(size);
         }
 
         [[nodiscard]] auto find(Value const& val) noexcept -> Representative
