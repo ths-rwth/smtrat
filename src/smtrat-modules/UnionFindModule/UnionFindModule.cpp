@@ -65,6 +65,7 @@ namespace smtrat
     {
         if (need_to_update) {
             classes.init(variables);
+            need_to_update = false;
         }
 
         assert(_subformula->formula().getType() == carl::UEQ);
