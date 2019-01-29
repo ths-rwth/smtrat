@@ -18,6 +18,6 @@ namespace smtrat
         /**
          * Example for a setting.
          */
-        static const bool use_theory_propagation = false;
+        static constexpr bool use_theory_propagation = false;
     };
 }

@@ -41,11 +41,11 @@ namespace smtrat
         if (ueq.negated()) {
             if (lhs == rhs)
                 return false;
-            if (Settings::use_theory_propagation) {
+            if constexpr (Settings::use_theory_propagation) {
                 informed.emplace(lhs, rhs, false);
             }
         } else {
-            if (Settings::use_theory_propagation) {
+            if constexpr (Settings::use_theory_propagation) {
                 informed.emplace(ueq);
             }
         }
@@ -75,10 +75,12 @@ namespace smtrat
 
         if (!ueq.negated()) {
             classes.merge(lhs, rhs);
-            graph.add_edge(lhs, rhs);
+            graph.add_edge(lhs, rhs); //try to add in inform core
 
-            if (informed.count(ueq))
-                informed.erase(ueq);
+            if constexpr (Settings::use_theory_propagation) {
+                if (informed.count(ueq))
+                    informed.erase(ueq);
+            }
         }
 
         history.emplace_back(ueq);
@@ -182,7 +184,7 @@ namespace smtrat
     template<class Settings>
     Answer UnionFindModule<Settings>::checkCore()
     {
-        if (Settings::use_theory_propagation) {
+        if constexpr (Settings::use_theory_propagation) {
             // TODO benchmark help of filtering
             std::set<carl::UVariable> vars;
             for (const auto& ueq : history) {
