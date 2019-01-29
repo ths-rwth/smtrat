@@ -28,6 +28,8 @@ namespace smtrat
     UnionFindModule<Settings>::~UnionFindModule()
     {}
 
+    // eq_diamond16.smt2  3.23s user 0.01s system 99% cpu 3.244 total
+
     template<class Settings>
     bool UnionFindModule<Settings>::informCore( const FormulaT& _constraint )
     {
@@ -155,13 +157,15 @@ namespace smtrat
 
         const auto& begin = inequality.lhs().asUVariable();
         const auto& end = inequality.rhs().asUVariable();
-        for (const auto& [u, v]: graph.get_path(begin, end)) {
+        auto path = graph.get_path(begin, end).value();
+        for (const auto& [u, v]: path) {
             infeasible.emplace(u, v, false);
         }
     }
 
     template<class Settings>
-    void UnionFindModule<Settings>::propagate_induces_equalities(const std::set<carl::UVariable>& vars) noexcept
+    void UnionFindModule<Settings>::propagate_induces_equalities(
+                                    const std::unordered_set<carl::UVariable>& vars) noexcept
     {
         auto induced = [&] (auto const& lhs, auto const& rhs) -> bool {
             return (classes.has_variable(lhs) && classes.has_variable(rhs))
@@ -171,15 +175,19 @@ namespace smtrat
         for (const auto& ueq : informed) {
             const auto& lhs = ueq.lhs().asUVariable();
             const auto& rhs = ueq.rhs().asUVariable();
-            if (vars.count(lhs) && vars.count(rhs) && induced(lhs, rhs)) {
-                FormulasT eqs;
-                for (const auto& [u, v]: graph.get_path(lhs, rhs)) {
-                    eqs.emplace_back(u, v, false);
-                }
 
-                using carl::FormulaType;
-                FormulaT precondition( FormulaType::AND, eqs );
-                addLemma(FormulaT{ FormulaType::IMPLIES, precondition, FormulaT{ueq} });
+            if (vars.count(lhs) && vars.count(rhs) && induced(lhs, rhs)) {
+                if (auto path = graph.get_path(lhs, rhs, Settings::lemma_length_bound)) {
+                    FormulasT eqs;
+
+                    for (const auto& [u, v]: path.value()) {
+                        eqs.emplace_back(u, v, false);
+                    }
+
+                    using carl::FormulaType;
+                    FormulaT precondition( FormulaType::AND, eqs );
+                    addLemma(FormulaT{ FormulaType::IMPLIES, precondition, FormulaT{ueq} });
+                }
             }
         }
     }
@@ -188,13 +196,7 @@ namespace smtrat
     Answer UnionFindModule<Settings>::checkCore()
     {
         if constexpr (Settings::use_theory_propagation) {
-            // TODO benchmark help of filtering
-            std::set<carl::UVariable> vars;
-            for (const auto& ueq : history) {
-                ueq.collectUVariables(vars);
-            }
-
-            propagate_induces_equalities(vars);
+            propagate_induces_equalities(variables);
         }
 
         for (const auto& ueq : history) {

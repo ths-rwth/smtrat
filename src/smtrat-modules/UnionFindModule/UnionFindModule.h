@@ -42,7 +42,7 @@ namespace smtrat
 
         void generateInfeasibleSubset(const carl::UEquality& inequality);
 
-        void propagate_induces_equalities(const std::set<carl::UVariable>& vars) noexcept;
+        void propagate_induces_equalities(const std::unordered_set<carl::UVariable>& vars) noexcept;
 
         mutable Classes classes;
 

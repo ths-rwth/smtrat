@@ -62,7 +62,13 @@ namespace smtrat
         }
 
         using PathEdge = std::pair<VertexName, VertexName>;
-        std::vector<PathEdge> get_path(VertexName const& a, VertexName const& b) noexcept
+        using MaybePath = std::optional<std::vector<PathEdge>>;
+        MaybePath get_path(VertexName const& a, VertexName const& b) noexcept
+        {
+            return get_path(a, b, std::numeric_limits<size_t>::max());
+        }
+
+        MaybePath get_path(VertexName const& a, VertexName const& b, size_t bound) noexcept
         {
             const auto& begin = vertices.at(a);
             const auto& end = vertices.at(b);
@@ -80,13 +86,16 @@ namespace smtrat
             auto prop = properties();
 
             int vertex = end;
-            while (vertex != begin) {
+            while (vertex != begin && path.size() < bound) {
                 auto next = predecessors[vertex];
                 assert( next != Graph::null_vertex() );
 
                 path.emplace_back(prop[vertex], prop[next]);
                 vertex = next;
             }
+
+            if (vertex != begin)
+                return std::nullopt;
 
             return path;
         }
