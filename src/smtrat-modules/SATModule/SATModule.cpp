@@ -1140,10 +1140,12 @@ namespace smtrat
 						 * To avoid work (and because always doing that induces problems when adding infeasible subsets) we do this lazily.
 						 * We add ts to mNonassumedTseitinVariable and only add it to the assumptions when it is actually reused in another formula.
 						 */
-						SMTRAT_LOG_DEBUG("smtrat.sat", "top-level clause has new tseitin literal " << tsLit << ", marking it as non-assumed");
-						assert(!mAssumedTseitinVariable.test(std::size_t(var(tsLit))));
-						assert(cnfInfoIter->second.mCounter == 1);
-						mNonassumedTseitinVariable.set(std::size_t(var(tsLit)));
+						if (_type == NORMAL_CLAUSE) {
+							SMTRAT_LOG_DEBUG("smtrat.sat", "top-level clause has new tseitin literal " << tsLit << ", marking it as non-assumed");
+							assert(!mAssumedTseitinVariable.test(std::size_t(var(tsLit))));
+							assert(cnfInfoIter->second.mCounter == 1);
+							mNonassumedTseitinVariable.set(std::size_t(var(tsLit)));
+						}
 	                    addClause_( lits, _type, _original, cnfInfoIter );
 						return lit_Undef;
                     }
