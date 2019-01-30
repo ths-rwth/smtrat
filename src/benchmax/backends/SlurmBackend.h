@@ -28,7 +28,7 @@ private:
 		// Load environment
 		out << "source ~/load_environment" << std::endl;
 		// Change current directory
-		out << "cd ~/" << Settings::outputDir << std::endl;
+		out << "cd " << Settings::outputDir << std::endl;
 
 		// Calculate slices for jobfile
 		out << "min=$SLURM_ARRAY_TASK_MIN" << std::endl;
@@ -38,11 +38,12 @@ private:
 		out << "slicesize=$(( (max - min + 1) / slices + 1 ))" << std::endl;
 		out << "start=$(( (cur - 1) * slicesize + min ))" << std::endl;
 		out << "end=$(( start + slicesize - 1 ))" << std::endl;
+
 		// Execute this slice
 		out << "for i in `seq ${start} ${end}`; do" << std::endl;
 		out << "\tcmd=$(sed -n \"${i}p\" < " << jobfile << ")" << std::endl;
 		out << "\techo \"Executing $cmd\"" << std::endl;
-		out << "\ttime $cmd" << std::endl;
+		out << "\tulimit -S -v " << (Settings::memoryLimit * 1024) << " && time $cmd" << std::endl;
 		out << "done" << std::endl;
 		out.close();
 	}
@@ -50,7 +51,7 @@ public:
 	void run(const std::vector<Tool*>& tools, const std::vector<BenchmarkSet>& benchmarks) {
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Generating ");
 
-		std::string jobfile = "~/" + Settings::outputDir + "/jobs_" + Settings::fileSuffix + ".jobs";
+		std::string jobfile = Settings::outputDir + "/jobs_" + Settings::fileSuffix + ".jobs";
 		std::ofstream jobs(jobfile);
 		std::size_t count = 0;
 		for (const Tool* tool: tools) {
