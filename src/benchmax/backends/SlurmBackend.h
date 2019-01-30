@@ -34,8 +34,9 @@ private:
 		out << "min=$SLURM_ARRAY_TASK_MIN" << std::endl;
 		out << "max=$SLURM_ARRAY_TASK_MAX" << std::endl;
 		out << "cur=$SLURM_ARRAY_TASK_ID" << std::endl;
-		out << "slices=" << num_slices << std::endl;
-		out << "slicesize=$(( (max - min + 1) / slices + 1 ))" << std::endl;
+		out << "tasks=" << num_slices << std::endl;
+		out << "jobcount=$(( max - min + 1 ))" << std::endl;
+		out << "slicesize=$(( (tasks + jobcount + 1) / jobcount ))" << std::endl;
 		out << "start=$(( (cur - 1) * slicesize + min ))" << std::endl;
 		out << "end=$(( start + slicesize - 1 ))" << std::endl;
 
@@ -45,9 +46,9 @@ private:
 		out << "\tcmd=$(sed -n \"${i}p\" < " << jobfile << ")" << std::endl;
 		out << "\techo \"Executing $cmd\"" << std::endl;
 		out << "\tdate +\"Start: %s%3N\"" << std::endl;
-		out << "ulimit -S -v " << (Settings::memoryLimit * 1024) << " && ulimit -S -t " << timeout << " && time $cmd ; rc=$?" << std::endl;
+		out << "\tulimit -S -v " << (Settings::memoryLimit * 1024) << " && ulimit -S -t " << timeout << " && time $cmd ; rc=$?" << std::endl;
 		out << "\tdate +\"End: %s%3N\"" << std::endl;
-		out << "\techo \"Exit code $rc\"" << std::endl;
+		out << "\techo \"Exit code: $rc\"" << std::endl;
 		out << "done" << std::endl;
 		out.close();
 	}
