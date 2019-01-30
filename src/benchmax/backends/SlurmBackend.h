@@ -23,7 +23,7 @@ private:
 		// Rough estimation of time in minutes (timeout * jobs)
 		out << "#SBATCH -t " << (seconds(Settings::timeLimit).count() * num_input / 60 + 1) << std::endl;
 		// Memory usage in MB
-		out << "#SBATCH --mem-per-cpu=4096M" << std::endl;
+		out << "#SBATCH --mem-per-cpu=" << (Settings::memoryLimit + 1024) << "M" << std::endl;
 
 		// Load environment
 		out << "source ~/load_environment" << std::endl;
@@ -39,11 +39,15 @@ private:
 		out << "start=$(( (cur - 1) * slicesize + min ))" << std::endl;
 		out << "end=$(( start + slicesize - 1 ))" << std::endl;
 
+		auto timeout = (seconds(Settings::timeLimit) + std::chrono::seconds(3)).count();
 		// Execute this slice
 		out << "for i in `seq ${start} ${end}`; do" << std::endl;
 		out << "\tcmd=$(sed -n \"${i}p\" < " << jobfile << ")" << std::endl;
 		out << "\techo \"Executing $cmd\"" << std::endl;
-		out << "\tulimit -S -v " << (Settings::memoryLimit * 1024) << " && time $cmd" << std::endl;
+		out << "\tdate +\"Start: %s%3N\"" << std::endl;
+		out << "ulimit -S -v " << (Settings::memoryLimit * 1024) << " && ulimit -S -t " << timeout << " && time $cmd ; rc=$?" << std::endl;
+		out << "\tdate +\"End: %s%3N\"" << std::endl;
+		out << "\techo \"Exit code $rc\"" << std::endl;
 		out << "done" << std::endl;
 		out.close();
 	}
