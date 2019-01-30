@@ -218,9 +218,6 @@ public:
 			return;
 		}
 		if (!mModelAssignmentCache.empty()) {
-			#ifdef SMTRAT_DEVOPTION_Statistics
-			mpStatistics->modelAssignmentCacheHit();
-			#endif
 			auto res = carl::model::evaluate(f, mModelAssignmentCache.model());
 			if (!res.isBool() || !res.asBool()) {
 				mModelAssignmentCache.clear(); // clear model assignment cache
