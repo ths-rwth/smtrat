@@ -11,6 +11,7 @@
 #include <filesystem>
 #include <iostream>
 #include "../cli/config.h"
+#include "config.h"
 namespace fs = std::filesystem;
 
 #include <csignal>
@@ -23,7 +24,9 @@ namespace fs = std::filesystem;
 
 #include "backends/CondorBackend.h"
 #include "backends/LocalBackend.h"
+#ifdef BENCHMAX_SSH
 #include "backends/SSHBackend.h"
+#endif
 
 #include "utils/regex.h"
 
@@ -170,10 +173,13 @@ int main(int argc, char** argv)
 		benchmax::LocalBackend backend;
 		backend.run(tools, benchmarks);
 	} else if (Settings::backend == "ssh") {
+#ifdef BENCHMAX_SSH
 		BENCHMAX_LOG_INFO("benchmax", "Using ssh backend.");
-		// libssh is needed.
 		benchmax::SSHBackend backend;
 		backend.run(tools, benchmarks);
+#else
+		BENCHMAX_LOG_ERROR("benchmax", "This version of benchmax was compiled without support for SSH.");
+#endif
 	} else {
 		BENCHMAX_LOG_ERROR("benchmax", "Invalid backend \"" << Settings::backend << "\".");
 	}
