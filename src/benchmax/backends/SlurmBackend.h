@@ -18,8 +18,8 @@ private:
 		// Job name
 		out << "#SBATCH --job-name=benchmax" << std::endl;
 		// Output files (stdout and stderr)
-		out << "#SBATCH -o JOB.%A_%a.out" << std::endl;
-		out << "#SBATCH -e JOB.%A_%a.err" << std::endl;
+		out << "#SBATCH -o " << Settings::outputDir << "/JOB.%A_%a.out" << std::endl;
+		out << "#SBATCH -e " << Settings::outputDir << "/JOB.%A_%a.err" << std::endl;
 		// Rough estimation of time in minutes (timeout * jobs)
 		out << "#SBATCH -t " << (seconds(Settings::timeLimit).count() * num_input / 60 + 1) << std::endl;
 		// Memory usage in MB
@@ -41,7 +41,8 @@ private:
 		// Execute this slice
 		out << "for i in `seq ${start} ${end}`; do" << std::endl;
 		out << "\tcmd=$(sed -n \"${i}p\" < " << jobfile << ")" << std::endl;
-		out << "\t$cmd" << std::endl;
+		out << "\techo \"Executing $cmd\"" << std::endl;
+		out << "\ttime $cmd" << std::endl;
 		out << "done" << std::endl;
 		out.close();
 	}
@@ -49,7 +50,7 @@ public:
 	void run(const std::vector<Tool*>& tools, const std::vector<BenchmarkSet>& benchmarks) {
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Generating ");
 
-		std::string jobfile = "jobs_" + Settings::fileSuffix + ".jobs";
+		std::string jobfile = "~/" + Settings::outputDir + "/jobs_" + Settings::fileSuffix + ".jobs";
 		std::ofstream jobs(jobfile);
 		std::size_t count = 0;
 		for (const Tool* tool: tools) {
