@@ -24,6 +24,7 @@ namespace fs = std::filesystem;
 
 #include "backends/CondorBackend.h"
 #include "backends/LocalBackend.h"
+#include "backends/SlurmBackend.h"
 #ifdef BENCHMAX_SSH
 #include "backends/SSHBackend.h"
 #endif
@@ -171,6 +172,10 @@ int main(int argc, char** argv)
 	} else if (Settings::backend == "local") {
 		BENCHMAX_LOG_INFO("benchmax", "Using local backend.");
 		benchmax::LocalBackend backend;
+		backend.run(tools, benchmarks);
+	} else if (Settings::backend == "slurm") {
+		BENCHMAX_LOG_INFO("benchmax", "Using slurm backend.");
+		benchmax::SlurmBackend backend;
 		backend.run(tools, benchmarks);
 	} else if (Settings::backend == "ssh") {
 #ifdef BENCHMAX_SSH

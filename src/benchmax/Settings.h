@@ -70,7 +70,7 @@ public:
 			("convert-filter", po::value<std::string>()->default_value("Benchmax"), "XSLT filter name to import XML file into libreoffice")
 		;
 		backendOptions.add_options()
-			("backend,b", po::value<std::string>(&backend), "Backend to be used. Possible values: \"condor\", \"local\", \"ssh\".")
+			("backend,b", po::value<std::string>(&backend), "Backend to be used. Possible values: \"condor\", \"local\", \"slurm\", \"ssh\".")
 		;
 		backendOptions_SSH.add_options()
 			("node,N", po::value<std::vector<std::string>>(&ssh_nodes), "remote blades")
@@ -88,7 +88,7 @@ public:
 			("validation,V", po::value<std::string>(&validationtoolpath), "tool to check assumptions")
 			("wrong-result-path,W", po::value<std::string>(&WrongResultPath)->default_value("wrong_result/"), "path to the directory to store the wrong results")
 			("stats-xml-file,X", po::value<std::string>(&StatsXMLFile)->default_value("stats.xml"), "path to the xml-file where the statistics are stored")
-			("output-file,f", po::value<std::string>(&outputFile), "output file")
+			("file-suffix", po::value<std::string>(&fileSuffix), "suffix for temporary files")
 		;
 		solverOptions.add_options()
 			("tool", po::value<std::vector<std::string>>(&tools_generic), "any tool")
@@ -159,7 +159,7 @@ public:
 	static std::string validationtoolpath;
 	static std::string WrongResultPath;
 	static std::string StatsXMLFile;
-	static std::string outputFile;
+	static std::string fileSuffix;
     
     /// Solver Options
 	static std::vector<std::string> tools_generic;

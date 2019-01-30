@@ -35,7 +35,7 @@ namespace benchmax {
 	std::string Settings::validationtoolpath;
 	std::string Settings::WrongResultPath;
 	std::string Settings::StatsXMLFile;
-	std::string Settings::outputFile;
+	std::string Settings::fileSuffix;
 	
 	std::vector<std::string> Settings::tools_generic;
 	std::vector<std::string> Settings::tools_smtrat;
