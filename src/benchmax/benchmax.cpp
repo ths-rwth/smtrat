@@ -124,8 +124,12 @@ int main(int argc, char** argv)
 	}
 	
 	Tools tools = loadTools();
-	std::vector<BenchmarkSet> benchmarks = loadBenchmarks();
+	if (tools.empty()) {
+		BENCHMAX_LOG_ERROR("benchmax", "No usable tools were found.");
+		return 0;
+	}
 
+	std::vector<BenchmarkSet> benchmarks = loadBenchmarks();
 	if(benchmarks.empty()) {
 		BENCHMAX_LOG_ERROR("benchmax", "No benchmarks were found. Specify a valid location with --directory.");
 		return 0;
