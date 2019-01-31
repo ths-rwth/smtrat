@@ -201,7 +201,7 @@ public:
 
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Submitting job now.");
 		std::string output;
-		callProgram("sbatch --wait --array=1-" + std::to_string(settings_slurm().slices) + " -N1 " + submitfile, output, true);
+		callProgram("sbatch --wait --array=1-" + std::to_string(settings_slurm().slices) + " -N1 " + settings_slurm().tmp_dir + "/" + submitfile, output, true);
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Job terminated, collecting results.");
 		int jobid = getJobID(output);
 
