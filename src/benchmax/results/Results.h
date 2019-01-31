@@ -13,7 +13,6 @@
 #include <filesystem>
 
 #include "../logging.h"
-#include "../BenchmarkStatus.h"
 #include "../tools/Tool.h"
 #include "../utils/durations.h"
 #include "Database.h"

@@ -8,7 +8,6 @@
 #include "Node.h"
 #include "SSHSettings.h"
 #include <benchmax/logging.h>
-#include <benchmax/BenchmarkStatus.h>
 #include <benchmax/utils/backend.h>
 #include <benchmax/utils/durations.h>
 

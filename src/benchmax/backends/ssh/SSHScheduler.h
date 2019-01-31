@@ -5,7 +5,6 @@
 #ifdef BENCHMAX_SSH
 
 #include <benchmax/backends/Backend.h>
-#include <benchmax/BenchmarkStatus.h>
 #include <benchmax/logging.h>
 
 #include <atomic>

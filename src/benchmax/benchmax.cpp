@@ -23,10 +23,7 @@ namespace fs = std::filesystem;
 #include "settings/SettingsParser.h"
 #include "Stats.h"
 
-#include "backends/CondorBackend.h"
-#include "backends/LocalBackend.h"
-#include "backends/SlurmBackend.h"
-#include "backends/SSHBackend.h"
+#include "backends/Backends.h"
 
 #include "utils/regex.h"
 
@@ -175,25 +172,7 @@ int main(int argc, char** argv)
 		BENCHMAX_LOG_ERROR("benchmax", "No benchmarks were found. Specify a valid location with --directory.");
 		return 0;
 	}
-	if (settings_operation().backend == "condor") {
-		BENCHMAX_LOG_INFO("benchmax", "Using condor backend.");
-		CondorBackend backend;
-		backend.run(tools, benchmarks);
-	} else if (settings_operation().backend == "local") {
-		BENCHMAX_LOG_INFO("benchmax", "Using local backend.");
-		LocalBackend backend;
-		backend.run(tools, benchmarks);
-	} else if (settings_operation().backend == "slurm") {
-		BENCHMAX_LOG_INFO("benchmax", "Using slurm backend.");
-		SlurmBackend backend;
-		backend.run(tools, benchmarks);
-	} else if (settings_operation().backend == "ssh") {
-		BENCHMAX_LOG_INFO("benchmax", "Using ssh backend.");
-		SSHBackend backend;
-		backend.run(tools, benchmarks);
-	} else {
-		BENCHMAX_LOG_ERROR("benchmax", "Invalid backend \"" << settings_operation().backend << "\".");
-	}
+	benchmax::run_backend(settings_operation().backend, tools, benchmarks);
 
 	return 0;
 }

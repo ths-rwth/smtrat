@@ -1,6 +1,5 @@
-option(BENCHMAX_USE_SMTPARSER "Use parser for smtlib files." OFF)
-option(BENCHMAX_LOGGING "Use logging in benchmax. Strongly encouraged!" ON)
-option(BENCHMAX_DATABASE "Store results in a database." OFF)
+option(BENCHMAX_DATABASE "Enable database storage for results." OFF)
+option(BENCHMAX_LOGGING "Enable logging." ON)
 option(BENCHMAX_SSH "Enable SSH backend." ON)
 
 include_directories(${CMAKE_SOURCE_DIR}/src)

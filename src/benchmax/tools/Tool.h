@@ -18,8 +18,9 @@
 #include <boost/functional/hash.hpp>
 #include <boost/version.hpp>
 
-#include "../BenchmarkStatus.h"
-#include "../settings/Settings.h"
+#include <benchmax/results/BenchmarkResult.h>
+#include <benchmax/BenchmarkSet.h>
+#include <benchmax/settings/Settings.h>
 
 namespace benchmax {
 
