@@ -78,11 +78,11 @@ SettingsParser::SettingsParser() {
 		auto& s = settings.get<settings::ToolSettings>("tools");
 		add("Tool settings", s).add_options()
 			("statistics,s", po::bool_switch(&s.collect_statistics), "run tools with statistics")
-			("tool", po::value<std::vector<std::string>>(&s.tools_generic), "any tool")
-			("smtrat,S", po::value<std::vector<std::string>>(&s.tools_smtrat), "an SMT-LIB 2.0 solver with SMT-RAT interface (multiple are possible)")
+			("tool", po::value<std::vector<std::string>>(&s.tools_generic), "a generic tool")
+			("smtrat,S", po::value<std::vector<std::string>>(&s.tools_smtrat), "SMT-RAT with SMT-LIB interface")
 			("smtrat-opb,O", po::value<std::vector<std::string>>(&s.tools_smtrat_opb), "SMT-RAT with OPB interface")
 			("minisatp", po::value<std::vector<std::string>>(&s.tools_minisatp), "Minisatp with OPB interface")
-			("z3,Z", po::value<std::vector<std::string>>(&s.tools_z3), "an SMT-LIB 2.0 solver with z3 interface (multiple are possible)")
+			("z3,Z", po::value<std::vector<std::string>>(&s.tools_z3), "z3 with SMT-LIB interface")
 		;
 	}
 }

@@ -17,6 +17,9 @@ namespace benchmax {
 
 struct SlurmBackendSettings {
 	std::size_t slices;
+	std::string tmp_dir;
+	bool keep_logs;
+	std::string archive_log_file;
 };
 
 template<typename T>
@@ -27,6 +30,9 @@ void registerSlurmBackendSettings(T& parser) {
 	
 	parser.add("Slurm Backend settings", s).add_options()
 		("slurm:slices", po::value<std::size_t>(&s.slices), "Number of slices for array job")
+		("slurm:tmp-dir", po::value<std::string>(&s.tmp_dir)->default_value("/tmp/"), "temporary directory")
+		("slurm:keep-logs", po::bool_switch(&s.keep_logs), "Do not delete log files")
+		("slurm:archive-logs", po::value<std::string>(&s.archive_log_file), "Store log files in this tgz archive")
 	;
 }
 
@@ -76,7 +82,28 @@ private:
 		}
 	}
 
-	void parse_result_file(const std::string& content, const std::string& extension) {
+	std::vector<std::filesystem::path> collect_result_files(const fs::path& basedir, int jobid) const {
+		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Collecting results files from " << basedir);
+		std::vector<std::filesystem::path> files;
+
+		std::regex filenamere("JOB." + std::to_string(jobid) + "_[0-9]+.(out|err)");
+		for (const auto& f: std::filesystem::directory_iterator(basedir)) {
+			if (!std::regex_match(f.path().filename().string(), filenamere)) {
+				BENCHMAX_LOG_TRACE("benchmax.slurm", "Skipping file " << f.path());
+				continue;
+			}
+			BENCHMAX_LOG_DEBUG("benchmax.slurm", "Using file " << f.path());
+			files.emplace_back(f.path());
+		}
+		BENCHMAX_LOG_INFO("benchmax.slurm", "Collected " << files.size() << " log files.");
+		return files;
+	}
+
+	void parse_result_file(const std::filesystem::path& file) {
+		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Processing file " << file);
+		std::ifstream in(file);
+		std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+		auto extension = file.extension();
 		std::regex filere("# START ([0-9]+) #((?:.|\n)*)# END \\1 #(?:((?:.|\n)*)# END DATA \\1 #)?");
 
 		auto reBegin = std::sregex_iterator(content.begin(), content.end(), filere);
@@ -97,30 +124,11 @@ private:
 			} else {
 				BENCHMAX_LOG_WARN("benchmax.slurm", "Trying to parse output file with unexpected extension " << extension);
 			}
-			
-			
-		}
-	}
-
-	void parse_result_files(const fs::path& basedir, int jobid) {
-		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Collecting results from " << basedir);
-
-		std::regex filenamere("JOB." + std::to_string(jobid) + "_[0-9]+.(out|err)");
-
-		for (const auto& f: std::filesystem::directory_iterator(basedir)) {
-			if (!std::regex_match(f.path().filename().string(), filenamere)) {
-				BENCHMAX_LOG_TRACE("benchmax.slurm", "Skipping file " << f.path());
-				continue;
-			}
-			BENCHMAX_LOG_DEBUG("benchmax.slurm", "Processing file " << f.path());
-			std::ifstream in(f.path());
-			std::string str((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-			parse_result_file(str, f.path().extension());
 		}
 	}
 
 	std::string generateSubmitFile(const std::string& jobfile, std::size_t num_input) {
-		std::string filename = settings_benchmarks().output_dir + "/job.job";
+		std::string filename = settings_slurm().tmp_dir + "/job-" + std::to_string(settings_core().start_time) + ".job";
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Writing submit file to " << filename);
 		std::ofstream out(filename);
 		out << "#!/usr/bin/env zsh" << std::endl;
@@ -128,8 +136,8 @@ private:
 		// Job name
 		out << "#SBATCH --job-name=benchmax" << std::endl;
 		// Output files (stdout and stderr)
-		out << "#SBATCH -o " << settings_benchmarks().output_dir << "/JOB.%A_%a.out" << std::endl;
-		out << "#SBATCH -e " << settings_benchmarks().output_dir << "/JOB.%A_%a.err" << std::endl;
+		out << "#SBATCH -o " << settings_slurm().tmp_dir << "/JOB.%A_%a.out" << std::endl;
+		out << "#SBATCH -e " << settings_slurm().tmp_dir << "/JOB.%A_%a.err" << std::endl;
 		// Rough estimation of time in minutes (timeout * jobs)
 		out << "#SBATCH -t " << (static_cast<std::size_t>(seconds(settings_benchmarks().limit_time).count()) * num_input / 60 + 1) << std::endl;
 		// Memory usage in MB
@@ -138,7 +146,7 @@ private:
 		// Load environment
 		out << "source ~/load_environment" << std::endl;
 		// Change current directory
-		out << "cd " << settings_benchmarks().output_dir << std::endl;
+		out << "cd " << settings_slurm().tmp_dir << std::endl;
 
 		// Calculate slices for jobfile
 		out << "min=$SLURM_ARRAY_TASK_MIN" << std::endl;
@@ -173,7 +181,7 @@ private:
 public:
 	void run(const Tools& tools, const std::vector<BenchmarkSet>& benchmarks) {
 
-		std::string jobsfile = settings_benchmarks().output_dir + "/jobs.jobs";
+		std::string jobsfile = settings_slurm().tmp_dir + "/jobs-" + std::to_string(settings_core().start_time) + ".jobs";
 		for (const auto& tool: tools) {
 			for (const BenchmarkSet& set: benchmarks) {
 				for (const auto& file: set) {
@@ -194,13 +202,39 @@ public:
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Submitting job now.");
 		std::string output;
 		callProgram("sbatch --wait --array=1-" + std::to_string(settings_slurm().slices) + " -N1 " + submitfile, output);
-		BENCHMAX_LOG_INFO("benchmax.slurm", "Job terminated.");
+		BENCHMAX_LOG_INFO("benchmax.slurm", "Job terminated, collecting results.");
 		int jobid = getJobID(output);
 
-		parse_result_files(settings_benchmarks().output_dir, jobid);
+		auto files = collect_result_files(settings_slurm().tmp_dir, jobid);
+		for (const auto& f: files) {
+			parse_result_file(f);
+		}
+		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Parsed results.");
 		for (auto& r: mResults) {
 			addResult(std::get<0>(r), std::get<1>(r), std::get<2>(r), std::get<3>(r));
 		}
+
+		if (settings_slurm().archive_log_file != "") {
+			std::string output;
+			std::stringstream ss;
+			ss << "tar -czf " << settings_slurm().archive_log_file << " ";
+			ss << jobsfile << " " << submitfile << " ";
+			ss << settings_slurm().tmp_dir << "/JOB." << jobid << "_*";
+			int code = callProgram(ss.str(), output);
+			if (code == 0) {
+				BENCHMAX_LOG_INFO("benchmax.slurm", "Archived log files in " << settings_slurm().archive_log_file);
+			} else {
+				BENCHMAX_LOG_WARN("benchmax.slurm", "Archiving of log files failed with exit code " << code);
+				BENCHMAX_LOG_WARN("benchmax.slurm", output);
+			}
+		}
+		if (!settings_slurm().keep_logs) {
+			BENCHMAX_LOG_INFO("benchmax.slurm", "Removing log files.");
+			for (const auto& f: files) {
+				std::filesystem::remove(f);
+			}
+		}
+
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Finished.");
 	}
 };
