@@ -16,7 +16,7 @@ void createTools(const std::vector<std::string>& arguments, Tools& tools) {
 	for (const auto& arg: arguments) {
 		std::smatch matches;
 		if (std::regex_match(arg, matches, r)) {
-			fs::path path(matches[1]);
+			fs::path path = std::filesystem::canonical(fs::path(matches[1]));
 			if (!fs::is_regular_file(path)) {
 				BENCHMAX_LOG_WARN("benchmax", "The tool " << path << " does not seem to be a file. We skip it.");
 				continue;
@@ -26,7 +26,7 @@ void createTools(const std::vector<std::string>& arguments, Tools& tools) {
 				BENCHMAX_LOG_WARN("benchmax", "The tool " << path << " does not seem to be executable. We skip it.");
 				continue;
 			}
-			BENCHMAX_LOG_DEBUG("benchmax.tools", "Adding tool " << path.native() << " with arguments \"" << matches[2] << "\".");
+			BENCHMAX_LOG_DEBUG("benchmax.tools", "Adding tool " << path << " with arguments \"" << matches[2] << "\".");
 			tools.emplace_back(std::make_unique<T>(path, matches[2]));
 		}
 	}
