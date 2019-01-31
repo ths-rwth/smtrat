@@ -29,10 +29,10 @@ void registerSlurmBackendSettings(T& parser) {
 	auto& s = settings.add<SlurmBackendSettings>("backend-slurm");
 	
 	parser.add("Slurm Backend settings", s).add_options()
-		("slurm:slices", po::value<std::size_t>(&s.slices), "Number of slices for array job")
+		("slurm:slices", po::value<std::size_t>(&s.slices)->default_value(1000), "Number of slices for array job")
 		("slurm:tmp-dir", po::value<std::string>(&s.tmp_dir)->default_value("/tmp/"), "temporary directory")
 		("slurm:keep-logs", po::bool_switch(&s.keep_logs), "Do not delete log files")
-		("slurm:archive-logs", po::value<std::string>(&s.archive_log_file), "Store log files in this tgz archive")
+		("slurm:archive-logs", po::value<std::string>(&s.archive_log_file)->value_name("filename"), "Store log files in this tgz archive")
 	;
 }
 
@@ -128,9 +128,9 @@ private:
 	}
 
 	std::string generateSubmitFile(const std::string& jobfile, std::size_t num_input) {
-		std::string filename = settings_slurm().tmp_dir + "/job-" + std::to_string(settings_core().start_time) + ".job";
+		std::string filename = "job-" + std::to_string(settings_core().start_time) + ".job";
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Writing submit file to " << filename);
-		std::ofstream out(filename);
+		std::ofstream out(settings_slurm().tmp_dir + "/" + filename);
 		out << "#!/usr/bin/env zsh" << std::endl;
 		out << "### Job name" << std::endl;
 		// Job name
@@ -181,7 +181,7 @@ private:
 public:
 	void run(const Tools& tools, const std::vector<BenchmarkSet>& benchmarks) {
 
-		std::string jobsfile = settings_slurm().tmp_dir + "/jobs-" + std::to_string(settings_core().start_time) + ".jobs";
+		std::string jobsfile = "jobs-" + std::to_string(settings_core().start_time) + ".jobs";
 		for (const auto& tool: tools) {
 			for (const BenchmarkSet& set: benchmarks) {
 				for (const auto& file: set) {
@@ -192,16 +192,16 @@ public:
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Gathered " << mResults.size() << " jobs");
 		shuffle_jobs();
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Writing job file to " << jobsfile);
-		std::ofstream jobs(jobsfile);
+		std::ofstream jobs(settings_slurm().tmp_dir + "/" + jobsfile);
 		for (const auto& r: mResults) {
 			jobs << std::get<0>(r)->getCommandline(std::get<2>(r)) << std::endl;
 		}
 		jobs.close();
-		auto submitfile = generateSubmitFile(jobsfile, mResults.size());
+		auto submitfile = generateSubmitFile(settings_slurm().tmp_dir + "/" + jobsfile, mResults.size());
 
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Submitting job now.");
 		std::string output;
-		callProgram("sbatch --wait --array=1-" + std::to_string(settings_slurm().slices) + " -N1 " + submitfile, output);
+		callProgram("sbatch --wait --array=1-" + std::to_string(settings_slurm().slices) + " -N1 " + submitfile, output, true);
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Job terminated, collecting results.");
 		int jobid = getJobID(output);
 
@@ -218,8 +218,9 @@ public:
 			std::string output;
 			std::stringstream ss;
 			ss << "tar -czf " << settings_slurm().archive_log_file << " ";
+			ss << "-C " << settings_slurm().tmp_dir << " ";
 			ss << jobsfile << " " << submitfile << " ";
-			ss << settings_slurm().tmp_dir << "/JOB." << jobid << "_*";
+			ss << "JOB." << jobid << "_*";
 			int code = callProgram(ss.str(), output);
 			if (code == 0) {
 				BENCHMAX_LOG_INFO("benchmax.slurm", "Archived log files in " << settings_slurm().archive_log_file);
