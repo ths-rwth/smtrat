@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "../BenchmarkSet.h"
+#include <benchmax/benchmarks/BenchmarkSet.h>
 #include "../tools/Tools.h"
 #include "../results/Results.h"
 #include "../settings/Settings.h"

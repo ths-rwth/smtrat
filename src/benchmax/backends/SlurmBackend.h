@@ -6,6 +6,8 @@
 #include "../utils/Execute.h"
 #include "../utils/durations.h"
 
+#include <boost/program_options.hpp>
+
 #include <algorithm>
 #include <filesystem>
 #include <random>
@@ -19,6 +21,7 @@ struct SlurmBackendSettings {
 
 template<typename T>
 void registerSlurmBackendSettings(T& parser) {
+	namespace po = boost::program_options;
 	auto& settings = settings::Settings::getInstance();
 	auto& s = settings.add<SlurmBackendSettings>("backend-slurm");
 	

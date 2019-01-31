@@ -17,33 +17,15 @@ namespace fs = std::filesystem;
 #include <csignal>
 
 #include "logging.h"
-#include "BenchmarkSet.h"
+#include "backends/Backends.h"
+#include "benchmarks/benchmarks.h"
 #include "tools/Tools.h"
 #include "settings/Settings.h"
 #include "settings/SettingsParser.h"
 #include "Stats.h"
 
-#include "backends/Backends.h"
 
 using namespace benchmax;
-
-namespace po = boost:: program_options;
-
-const std::string COPYRIGHT =
-	"Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Sebastian Junges, Erika Abraham\r\nThis program comes with ABSOLUTELY NO WARRANTY.\r\nThis is free software, and you are welcome to redistribute it \r\nunder certain conditions; use the command line argument --disclaimer in order to get the conditions and warranty disclaimer.";
-const std::string WARRANTY =
-	"THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM “AS IS” WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION.";
-
-void printWelcome()
-{
-	std::cout << "\tSMT-LIB 3.0 Benchmark Tool " << std::endl;
-	std::cout << "Support: Florian Corzilius <florian.corzilius@rwth-aachen.de> and Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>" << std::endl;
-	std::cout <<  std::endl;
-	std::cout << "Usage: Start the tool with the command line argument --help to get further information." << std::endl;
-	std::cout << "Examples: ./benchmax -T 90 -D smtlib/qf_nra/etcs/ -D smtlib/qf_nra/bouncing_ball/ -S smtratSolver" << std::endl;
-	std::cout << "          ./benchmax -T 90 -D smtlib/qf_nra/etcs/ -D smtlib/qf_nra/bouncing_ball/ -Z z3" << std::endl;
-	std::cout << "          ./benchmax -T 90 -D smtlib/qf_nra/etcs/ -D smtlib/qf_nra/bouncing_ball/ --redlog_rlqe /usr/bin/redcsl" << std::endl;
-}
 
 bool initApplication(int argc, char** argv) {
 	
@@ -120,25 +102,6 @@ bool initApplication(int argc, char** argv) {
 	return true;
 }
 
-void loadTools(Tools& tools) {
-	createTools<Tool>(settings_tools().tools_generic, tools);
-	createTools<SMTRAT>(settings_tools().tools_smtrat, tools);
-	createTools<SMTRAT_OPB>(settings_tools().tools_smtrat_opb, tools);
-	createTools<Minisatp>(settings_tools().tools_minisatp, tools);
-	createTools<Z3>(settings_tools().tools_z3, tools);
-}
-void loadBenchmarks(std::vector<BenchmarkSet>& benchmarks) {
-	for (const auto& p: settings_benchmarks().input_directories) {
-		std::filesystem::path path(p);
-		if (std::filesystem::exists(path)) {
-			BENCHMAX_LOG_INFO("benchmax.benchmarks", "Adding benchmark " << path.native());
-			benchmarks.emplace_back(path);
-		} else {
-			BENCHMAX_LOG_WARN("benchmax", "Benchmark path " << p << " does not exist.");
-		}
-	}
-}
-
 /**
  *
  * @param _signal
@@ -156,15 +119,12 @@ int main(int argc, char** argv)
 {
 	std::signal(SIGINT, &handleSignal);
 	
-	// init benchmax
 	if (!initApplication(argc, argv)) {
 		return 0;
 	}
 	
-	Tools tools;
-	loadTools(tools);
-	std::vector<BenchmarkSet> benchmarks;
-	loadBenchmarks(benchmarks);
+	Tools tools = loadTools();
+	std::vector<BenchmarkSet> benchmarks = loadBenchmarks();
 
 	if(benchmarks.empty()) {
 		BENCHMAX_LOG_ERROR("benchmax", "No benchmarks were found. Specify a valid location with --directory.");

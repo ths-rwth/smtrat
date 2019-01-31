@@ -9,7 +9,8 @@
  */
 
 #include "BenchmarkSet.h"
-#include "logging.h"
+
+#include <benchmax/logging.h>
 
 #include <string>
 

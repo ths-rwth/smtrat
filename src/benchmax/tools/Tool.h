@@ -19,7 +19,7 @@
 #include <boost/version.hpp>
 
 #include <benchmax/results/BenchmarkResult.h>
-#include <benchmax/BenchmarkSet.h>
+#include <benchmax/benchmarks/BenchmarkSet.h>
 #include <benchmax/settings/Settings.h>
 
 namespace benchmax {
