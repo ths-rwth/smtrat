@@ -26,9 +26,7 @@ namespace fs = std::filesystem;
 #include "backends/CondorBackend.h"
 #include "backends/LocalBackend.h"
 #include "backends/SlurmBackend.h"
-#ifdef BENCHMAX_SSH
 #include "backends/SSHBackend.h"
-#endif
 
 #include "utils/regex.h"
 
@@ -64,9 +62,7 @@ bool initApplication(int argc, char** argv) {
 
 	auto& parser = SettingsParser::getInstance();
 	benchmax::registerSlurmBackendSettings(parser);
-#ifdef BENCHMAX_SSH
 	benchmax::registerSSHBackendSettings(parser);
-#endif
 	parser.finalize();
 	parser.parse_options(argc, argv);
 
@@ -192,13 +188,9 @@ int main(int argc, char** argv)
 		SlurmBackend backend;
 		backend.run(tools, benchmarks);
 	} else if (settings_operation().backend == "ssh") {
-#ifdef BENCHMAX_SSH
 		BENCHMAX_LOG_INFO("benchmax", "Using ssh backend.");
 		SSHBackend backend;
 		backend.run(tools, benchmarks);
-#else
-		BENCHMAX_LOG_ERROR("benchmax", "This version of benchmax was compiled without support for SSH.");
-#endif
 	} else {
 		BENCHMAX_LOG_ERROR("benchmax", "Invalid backend \"" << settings_operation().backend << "\".");
 	}

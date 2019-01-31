@@ -10,6 +10,7 @@
 #include <carl/util/Singleton.h>
 
 #include <any>
+#include <cassert>
 #include <chrono>
 #include <ctime>
 #include <fstream>

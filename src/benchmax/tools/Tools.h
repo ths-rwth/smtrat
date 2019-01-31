@@ -16,7 +16,9 @@
 #include "SMTRAT_OPB.h"
 #include "Z3.h"
 
-#include "../utils/regex.h"
+
+#include <benchmax/logging.h>
+#include <regex>
 
 namespace benchmax {
 
@@ -25,10 +27,10 @@ using Tools = std::vector<ToolPtr>;
 
 template<typename T>
 void createTools(const std::vector<std::string>& arguments, Tools& tools) {
-	regex r("([^ ]+) *(.*)");
+	std::regex r("([^ ]+) *(.*)");
 	for (const auto& arg: arguments) {
-		smatch matches;
-		if (regex_match(arg, matches, r)) {
+		std::smatch matches;
+		if (std::regex_match(arg, matches, r)) {
 			fs::path path(matches[1]);
 			if (!fs::is_regular_file(path)) {
 				BENCHMAX_LOG_WARN("benchmax", "The tool " << path << " does not seem to be a file. We skip it.");

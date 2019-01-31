@@ -7,10 +7,10 @@
 
 #include "Node.h"
 #include "SSHSettings.h"
-#include "../logging.h"
-#include "../BenchmarkStatus.h"
-#include "../utils/backend.h"
-#include "../utils/durations.h"
+#include <benchmax/logging.h>
+#include <benchmax/BenchmarkStatus.h>
+#include <benchmax/utils/backend.h>
+#include <benchmax/utils/durations.h>
 
 #define SSH_LOCKED(expr) { std::lock_guard<std::mutex> guard(mutex); expr; }
 

@@ -6,10 +6,12 @@
 #pragma once
 
 #include "../BenchmarkSet.h"
-#include "../tools/Tool.h"
+#include "../tools/Tools.h"
 #include "../utils/regex.h"
 #include "../results/Results.h"
 #include "../settings/Settings.h"
+
+#include <atomic>
 
 namespace benchmax {
 

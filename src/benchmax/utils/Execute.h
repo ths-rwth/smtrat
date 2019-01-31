@@ -7,7 +7,7 @@
 
 namespace benchmax {
 
-int callProgram(const std::string& commandline, std::string& stdout) {
+inline int callProgram(const std::string& commandline, std::string& stdout) {
 	FILE* pipe = popen(commandline.c_str(), "r");
 	char buf[255];
 	while (!feof(pipe)) {

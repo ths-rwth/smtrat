@@ -5,15 +5,16 @@
 
 #pragma once
 
+#include "Backend.h"
+#include "ssh/SSHSettings.h"
+#include <benchmax/config.h>
+
+#ifdef BENCHMAX_SSH
+
+#include "ssh/SSHScheduler.h"
+
 #include <future>
 #include <queue>
-
-#include <regex>
-using std::regex;
-using std::regex_match;
-
-#include "../ssh/SSHSettings.h"
-#include "../ssh/SSHScheduler.h"
 
 namespace benchmax {
 class SSHBackend: public Backend {
@@ -51,3 +52,19 @@ public:
 };
 
 }
+
+#else
+
+namespace benchmax {
+class SSHBackend: public Backend {
+public:
+	SSHBackend(): Backend() {}
+	~SSHBackend() {}
+	void run(const Tools&, const std::vector<BenchmarkSet>&) {
+		BENCHMAX_LOG_ERROR("benchmax", "This version of benchmax was compiled without support for SSH.");
+	}
+};
+
+}
+
+#endif

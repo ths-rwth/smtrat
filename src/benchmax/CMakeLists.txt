@@ -3,6 +3,7 @@ option(BENCHMAX_LOGGING "Use logging in benchmax. Strongly encouraged!" ON)
 option(BENCHMAX_DATABASE "Store results in a database." OFF)
 option(BENCHMAX_SSH "Enable SSH backend." ON)
 
+include_directories(${CMAKE_SOURCE_DIR}/src)
 file(GLOB_RECURSE benchmax_sources "*.cpp")
 add_executable( benchmax ${benchmax_sources})
 target_link_libraries(benchmax stdc++fs pthread carl-shared ${Boost_SHARED})
