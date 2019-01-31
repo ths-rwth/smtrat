@@ -20,8 +20,11 @@
 
 namespace benchmax {
 
+using ToolPtr = std::unique_ptr<Tool>;
+using Tools = std::vector<ToolPtr>;
+
 template<typename T>
-void createTools(const std::vector<std::string>& arguments, std::vector<Tool*>& tools) {
+void createTools(const std::vector<std::string>& arguments, Tools& tools) {
 	regex r("([^ ]+) *(.*)");
 	for (const auto& arg: arguments) {
 		smatch matches;
@@ -37,7 +40,7 @@ void createTools(const std::vector<std::string>& arguments, std::vector<Tool*>& 
 				continue;
 			}
 			BENCHMAX_LOG_DEBUG("benchmax.tools", "Adding tool " << path.native() << " with arguments \"" << matches[2] << "\".");
-			tools.push_back(new T(path, matches[2]));
+			tools.emplace_back(std::make_unique<T>(path, matches[2]));
 		}
 	}
 }

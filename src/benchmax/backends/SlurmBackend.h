@@ -99,7 +99,7 @@ private:
 	}
 
 	std::string generateSubmitFile(const std::string& jobfile, std::size_t num_input) {
-		std::string filename = Settings::outputDir + "/job_" + Settings::fileSuffix + ".job";
+		std::string filename = Settings::outputDir + "/job.job";
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Writing submit file to " << filename);
 		std::ofstream out(filename);
 		out << "#!/usr/bin/env zsh" << std::endl;
@@ -110,9 +110,9 @@ private:
 		out << "#SBATCH -o " << Settings::outputDir << "/JOB.%A_%a.out" << std::endl;
 		out << "#SBATCH -e " << Settings::outputDir << "/JOB.%A_%a.err" << std::endl;
 		// Rough estimation of time in minutes (timeout * jobs)
-		out << "#SBATCH -t " << (static_cast<std::size_t>(seconds(Settings::timeLimit).count()) * num_input / 60 + 1) << std::endl;
+		out << "#SBATCH -t " << (static_cast<std::size_t>(seconds(settings_benchmarks().limit_time).count()) * num_input / 60 + 1) << std::endl;
 		// Memory usage in MB
-		out << "#SBATCH --mem-per-cpu=" << (Settings::memoryLimit + 1024) << "M" << std::endl;
+		out << "#SBATCH --mem-per-cpu=" << (settings_benchmarks().limit_memory + 1024) << "M" << std::endl;
 
 		// Load environment
 		out << "source ~/load_environment" << std::endl;
@@ -129,7 +129,7 @@ private:
 		out << "start=$(( (cur - 1) * slicesize + min ))" << std::endl;
 		out << "end=$(( start + slicesize - 1 ))" << std::endl;
 
-		auto timeout = (seconds(Settings::timeLimit) + std::chrono::seconds(3)).count();
+		auto timeout = (seconds(settings_benchmarks().limit_time) + std::chrono::seconds(3)).count();
 		// Execute this slice
 		out << "for i in `seq ${start} ${end}`; do" << std::endl;
 		out << "\tcmd=$(sed -n \"${i}p\" < " << jobfile << ")" << std::endl;
@@ -137,7 +137,7 @@ private:
 		out << "\techo \"# START ${i} #\"" << std::endl;
 		out << "\techo \"# START ${i} #\" >&2" << std::endl;
 		out << "\tstart=`date +\"%s%3N\"`" << std::endl;
-		out << "\tulimit -S -v " << (Settings::memoryLimit * 1024) << " && ulimit -S -t " << timeout << " && $cmd ; rc=$?" << std::endl;
+		out << "\tulimit -S -v " << (settings_benchmarks().limit_memory * 1024) << " && ulimit -S -t " << timeout << " && $cmd ; rc=$?" << std::endl;
 		out << "\tend=`date +\"%s%3N\"`" << std::endl;
 		out << "\techo \"# END ${i} #\"" << std::endl;
 		out << "\techo \"# END ${i} #\" 1>&2" << std::endl;
@@ -150,13 +150,13 @@ private:
 		return filename;
 	}
 public:
-	void run(const std::vector<Tool*>& tools, const std::vector<BenchmarkSet>& benchmarks) {
+	void run(const Tools& tools, const std::vector<BenchmarkSet>& benchmarks) {
 
-		std::string jobsfile = Settings::outputDir + "/jobs_" + Settings::fileSuffix + ".jobs";
-		for (const Tool* tool: tools) {
+		std::string jobsfile = Settings::outputDir + "/jobs.jobs";
+		for (const auto& tool: tools) {
 			for (const BenchmarkSet& set: benchmarks) {
 				for (const auto& file: set) {
-					mResults.emplace_back(JobData { tool, file, set.baseDir(), BenchmarkResult() });
+					mResults.emplace_back(JobData { tool.get(), file, set.baseDir(), BenchmarkResult() });
 				}
 			}
 		}

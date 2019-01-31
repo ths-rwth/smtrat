@@ -11,6 +11,7 @@
 #include "../cli/config.h"
 
 #include "Settings.h"
+#include "settings/Settings.h"
 
 namespace benchmax {
 
@@ -402,7 +403,7 @@ void Stats::createLatexCompose(const std::string& _fileName)
 
 void Stats::composeStats(const std::vector<std::string>& files)
 {
-	Stats* stats = new Stats(Settings::StatsXMLFile, STATS_COLLECTION);
+	Stats* stats = new Stats(settings_benchmarks().output_file_xml, STATS_COLLECTION);
 	for(std::vector<std::string>::const_iterator it = files.begin(); it != files.end(); ++it)
 	{
 		stats->addStat(*it);
@@ -427,14 +428,14 @@ void Stats::callComposeProcessor(const std::string& io)
 	{
 		createLatexCompose(Settings::outputDir + "latexCompose.xsl");
 		system(std::string("xsltproc -o " + Settings::outputDir + "results.tex " + Settings::outputDir + "latexCompose.xsl "
-						   + Settings::StatsXMLFile).c_str());
+						   + settings_benchmarks().output_file_xml).c_str());
 		fs::remove(fs::path(Settings::outputDir + "latexCompose.xsl"));
 	}
 }
 
 void Stats::callComposeProcessor()
 {
-	callComposeProcessor(std::string(Settings::outputDir + Settings::StatsXMLFile));
+	callComposeProcessor(std::string(Settings::outputDir + settings_benchmarks().output_file_xml));
 }
 
 }

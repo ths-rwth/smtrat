@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "../Settings.h"
+#include "../settings/Settings.h"
 #include "../utils/durations.h"
 #include "../utils/strings.h"
 
@@ -30,7 +30,7 @@ private:
 		return res;
 	}
 	std::string sanitizeTool(const Tool* tool) const {
-		return sanitize(removePrefix(tool->binary().native(), Settings::toolsPrefix), true);
+		return sanitize(removePrefix(tool->binary().native(), settings_tools().tools_common_prefix), true);
 	}
 	std::string sanitizeFile(const fs::path& file, const std::string& prefix) const {
 		return sanitize(removePrefix(file.native(), prefix), true);
@@ -76,7 +76,7 @@ public:
 		
 		for (const auto& res: results) {
 			fs::path setBaseDir = res.first;
-			mFile << "\t<benchmarkset name=\"" << sanitizeFile(setBaseDir, Settings::pathPrefix) << "\">" << std::endl;
+			mFile << "\t<benchmarkset name=\"" << sanitizeFile(setBaseDir, settings_benchmarks().input_directories_common_prefix) << "\">" << std::endl;
 			for (const auto& file: res.second.files) {
 				fs::path filename = file.first;
 				mFile << "\t\t<benchmarkfile name=\"" << sanitizeFile(filename, setBaseDir.native()) << "\">" << std::endl;
@@ -84,7 +84,7 @@ public:
 					std::pair<std::size_t, std::size_t> resultID(tool.second, file.second);
 					auto it = res.second.data.find(resultID);
 					if (it == res.second.data.end()) continue;
-					mFile << "\t\t\t<run solver_id=\"" << sanitizeTool(tool.first) << "\" timeout=\"" << seconds(Settings::timeLimit).count() << "s\">" << std::endl;
+					mFile << "\t\t\t<run solver_id=\"" << sanitizeTool(tool.first) << "\" timeout=\"" << seconds(settings_benchmarks().limit_time).count() << "s\">" << std::endl;
 					if (!it->second.additional.empty()) {
 						mFile << "\t\t\t\t<statistics>" << std::endl;
 						for (const auto& stat: it->second.additional) {

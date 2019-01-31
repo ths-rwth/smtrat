@@ -19,7 +19,8 @@ namespace fs = std::filesystem;
 #include "logging.h"
 #include "BenchmarkSet.h"
 #include "tools/Tools.h"
-#include "Settings.h"
+#include "settings/Settings.h"
+#include "settings/SettingsParser.h"
 #include "Stats.h"
 
 #include "backends/CondorBackend.h"
@@ -31,9 +32,7 @@ namespace fs = std::filesystem;
 
 #include "utils/regex.h"
 
-using benchmax::Tool;
-using benchmax::Stats;
-using benchmax::Settings;
+using namespace benchmax;
 
 namespace po = boost:: program_options;
 
@@ -62,25 +61,49 @@ bool initApplication(int argc, char** argv) {
 		("benchmax.benchmarks", carl::logging::LogLevel::LVL_INFO)
 	;
 	carl::logging::logger().resetFormatter();
-	
-	benchmax::Settings s(argc, argv);
-	Settings::PathOfBenchmarkTool = fs::canonical(fs::path(argv[0])).native();
 
-	if(s.has("help")) {
-		std::cout << s;
+	auto& parser = SettingsParser::getInstance();
+#ifdef BENCHMAX_SSH
+	benchmax::registerSSHBackendSettings(parser);
+#endif
+	parser.finalize();
+	parser.parse_options(argc, argv);
+
+	if (settings_core().show_help) {
+		std::cout << parser.print_help() << std::endl;
 		return false;
 	}
-	if (s.has("verbose")) {
+	if (settings_core().show_settings) {
+		std::cout << parser.print_options() << std::endl;
+		return false;
+	}
+	if (settings_core().be_quiet) {
 		carl::logging::logger().filter("stdout")
 			("benchmax", carl::logging::LogLevel::LVL_INFO)
 			("benchmax.backend", carl::logging::LogLevel::LVL_INFO)
 			("benchmax.benchmarks", carl::logging::LogLevel::LVL_DEBUG)
 		;
 	}
-	if(s.has("disclaimer")) {
-		std::cout << WARRANTY << std::endl;
+	if (settings_core().be_verbose) {
+		carl::logging::logger().filter("stdout")
+			("benchmax", carl::logging::LogLevel::LVL_DEBUG)
+			("benchmax.backend", carl::logging::LogLevel::LVL_DEBUG)
+			("benchmax.benchmarks", carl::logging::LogLevel::LVL_DEBUG)
+		;
+	}
+
+	if (settings_operation().convert_ods_filename != "") {
+		std::string filename = settings_operation().convert_ods_filename;
+		std::string filter = settings_operation().convert_ods_filter;
+		BENCHMAX_LOG_INFO("benchmax.convert", "Converting " << filename << " to ods using import filer " << filter);
+		std::stringstream ss;
+		ss << "libreoffice --headless --infilter=" << filter << " --convert-to ods " << filename;
+		system(ss.str().c_str());
 		return false;
 	}
+	
+	Settings s(argc, argv);
+
 	if(s.has("compose")) {
 		Stats::composeStats(s.composeFiles);
 		return false;
@@ -90,16 +113,8 @@ bool initApplication(int argc, char** argv) {
 		Stats::createStatsCompose(Settings::outputDir + "latexCompose.xsl");
 		system(
 		std::string("xsltproc -o " + Settings::outputDir + "results.tex " + Settings::outputDir + "latexCompose.xsl "
-					+ Settings::StatsXMLFile).c_str());
+					+ settings_benchmarks().output_file_xml).c_str());
 		fs::remove(fs::path(Settings::outputDir + "latexCompose.xsl"));
-	}
-	
-	if (s.has("convert")) {
-		BENCHMAX_LOG_INFO("benchmax", "Converting " << s.as<std::string>("convert") << " to ods using import filer " << s.as<std::string>("convert-filter"));
-		std::stringstream ss;
-		ss << "libreoffice --headless --infilter=" << s.as<std::string>("convert-filter") << " --convert-to ods " << s.as<std::string>("convert");
-		system(ss.str().c_str());
-		return false;
 	}
 
 	if(Settings::outputDir != "")
@@ -115,17 +130,17 @@ bool initApplication(int argc, char** argv) {
 	return true;
 }
 
-void loadTools(std::vector<benchmax::Tool*>& tools) {
-	benchmax::createTools<benchmax::Tool>(Settings::tools_generic, tools);
-	benchmax::createTools<benchmax::SMTRAT>(Settings::tools_smtrat, tools);
-	benchmax::createTools<benchmax::SMTRAT_OPB>(Settings::tools_smtrat_opb, tools);
-	benchmax::createTools<benchmax::Minisatp>(Settings::tools_minisatp, tools);
-	benchmax::createTools<benchmax::Z3>(Settings::tools_z3, tools);
+void loadTools(Tools& tools) {
+	createTools<Tool>(settings_tools().tools_generic, tools);
+	createTools<SMTRAT>(settings_tools().tools_smtrat, tools);
+	createTools<SMTRAT_OPB>(settings_tools().tools_smtrat_opb, tools);
+	createTools<Minisatp>(settings_tools().tools_minisatp, tools);
+	createTools<Z3>(settings_tools().tools_z3, tools);
 }
-void loadBenchmarks(std::vector<benchmax::BenchmarkSet>& benchmarks) {
-	for (const auto& p: Settings::pathes) {
-		fs::path path(p);
-		if (fs::exists(path)) {
+void loadBenchmarks(std::vector<BenchmarkSet>& benchmarks) {
+	for (const auto& p: settings_benchmarks().input_directories) {
+		std::filesystem::path path(p);
+		if (std::filesystem::exists(path)) {
 			BENCHMAX_LOG_INFO("benchmax.benchmarks", "Adding benchmark " << path.native());
 			benchmarks.emplace_back(path);
 		} else {
@@ -151,45 +166,43 @@ int main(int argc, char** argv)
 {
 	std::signal(SIGINT, &handleSignal);
 	
-	// init benchmark
+	// init benchmax
 	if (!initApplication(argc, argv)) {
 		return 0;
 	}
 	
-	std::vector<Tool*> tools;
+	Tools tools;
 	loadTools(tools);
-	std::vector<benchmax::BenchmarkSet> benchmarks;
+	std::vector<BenchmarkSet> benchmarks;
 	loadBenchmarks(benchmarks);
 
 	if(benchmarks.empty()) {
-		BENCHMAX_LOG_FATAL("benchmax", "No benchmarks were found.");
+		BENCHMAX_LOG_ERROR("benchmax", "No benchmarks were found. Specify a valid location with --directory.");
 		return 0;
 	}
-	if (Settings::backend == "condor") {
+	if (settings_operation().backend == "condor") {
 		BENCHMAX_LOG_INFO("benchmax", "Using condor backend.");
-		benchmax::CondorBackend backend;
+		CondorBackend backend;
 		backend.run(tools, benchmarks);
-	} else if (Settings::backend == "local") {
+	} else if (settings_operation().backend == "local") {
 		BENCHMAX_LOG_INFO("benchmax", "Using local backend.");
-		benchmax::LocalBackend backend;
+		LocalBackend backend;
 		backend.run(tools, benchmarks);
-	} else if (Settings::backend == "slurm") {
+	} else if (settings_operation().backend == "slurm") {
 		BENCHMAX_LOG_INFO("benchmax", "Using slurm backend.");
-		benchmax::SlurmBackend backend;
+		SlurmBackend backend;
 		backend.run(tools, benchmarks);
-	} else if (Settings::backend == "ssh") {
+	} else if (settings_operation().backend == "ssh") {
 #ifdef BENCHMAX_SSH
 		BENCHMAX_LOG_INFO("benchmax", "Using ssh backend.");
-		benchmax::SSHBackend backend;
+		SSHBackend backend;
 		backend.run(tools, benchmarks);
 #else
 		BENCHMAX_LOG_ERROR("benchmax", "This version of benchmax was compiled without support for SSH.");
 #endif
 	} else {
-		BENCHMAX_LOG_ERROR("benchmax", "Invalid backend \"" << Settings::backend << "\".");
+		BENCHMAX_LOG_ERROR("benchmax", "Invalid backend \"" << settings_operation().backend << "\".");
 	}
-	
-	for (auto& tp: tools) delete tp;
 
 	return 0;
 }

@@ -10,6 +10,7 @@
 
 #include "Node.h"
 #include "SSHConnection.h"
+#include "SSHSettings.h"
 #include "../Settings.h"
 #include "../logging.h"
 #include "../BenchmarkStatus.h"
@@ -79,7 +80,7 @@ public:
 	SSHScheduler(): mWorkerCount(0), mRunningJobs(0) {
 		ssh_threads_set_callbacks(ssh_threads_get_pthread());
 		ssh_init();
-		for (const auto& s: Settings::ssh_nodes) {
+		for (const auto& s: settings_ssh().nodes) {
 			Node n = getNode(s);
 			for (std::size_t i = 0; i < n.connections; i++) {
 				mConnections.push_back(new SSHConnection(n));
@@ -108,21 +109,21 @@ public:
 			while (!c->jobFree()) {
 				std::this_thread::sleep_for(std::chrono::milliseconds(10));
 			}
-			c->uploadFile(tool->binary().native(), Settings::ssh_basedir, tool->binary().filename().native(), S_IRWXU);
+			c->uploadFile(tool->binary().native(), settings_ssh().basedir, tool->binary().filename().native(), S_IRWXU);
 		}
 	}
 	
 	bool executeJob(const Tool* tool, const fs::path& file, const fs::path& baseDir, Backend* backend) {
 		mRunningJobs++;
 		SSHConnection* c = get();
-		BENCHMAX_LOG_INFO("benchmax.ssh", "Executing " << removePrefix(file.native(), Settings::pathPrefix));
+		BENCHMAX_LOG_INFO("benchmax.ssh", "Executing " << removePrefix(file.native(), settings_benchmarks().input_directories_common_prefix));
 		// Create temporary directory
 		std::string folder = c->createTmpDir(tmpDirName(tool,file));
 		// Upload benchmark file
 		c->uploadFile(file, folder, file.filename().native());
 		// Execute benchmark run
 		BenchmarkResult result;
-		std::string cmdLine = tool->getCommandline(folder + file.filename().native(), Settings::ssh_basedir + tool->binary().filename().native());
+		std::string cmdLine = tool->getCommandline(folder + file.filename().native(), settings_ssh().basedir + tool->binary().filename().native());
 		if (!c->executeCommand(cmdLine, result)) {
 			BENCHMAX_LOG_ERROR("benchmax.ssh", "Failed to execute command.");
 		}

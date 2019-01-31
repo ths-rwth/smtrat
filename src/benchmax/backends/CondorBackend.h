@@ -13,7 +13,7 @@
 #include "Backend.h"
 
 #include "../logging.h"
-#include "../Settings.h"
+#include "../settings/Settings.h"
 #include "../utils/durations.h"
 
 namespace benchmax {
@@ -27,8 +27,8 @@ private:
 	std::string generateSubmitFile(std::size_t ID, const Tool& tool, const BenchmarkSet& b) {
 		std::ofstream wrapper(".wrapper_" + std::to_string(ID));
 		wrapper << "#!/bin/sh" << std::endl;
-		wrapper << "ulimit -S -t " << seconds(Settings::timeLimit).count() << std::endl;
-		wrapper << "ulimit -S -v " << (Settings::memoryLimit * 1024) << std::endl;
+		wrapper << "ulimit -S -t " << seconds(settings_benchmarks().limit_time).count() << std::endl;
+		wrapper << "ulimit -S -v " << (settings_benchmarks().limit_memory * 1024) << std::endl;
 		wrapper << "date +\"Start: %s%3N\"" << std::endl;
 		wrapper << tool.getCommandline("$*") << std::endl;
 		wrapper << "date +\"End: %s%3N\"" << std::endl;
@@ -39,7 +39,7 @@ private:
 		out << "output = out/out." << ID << ".$(cluster).$(process)" << std::endl;
 		out << "error = out/err." << ID << ".$(cluster).$(process)" << std::endl;
 		out << "log = out/log." << ID << std::endl;
-		out << "periodic_hold = (time() - JobCurrentStartExecutingDate) > " << seconds(Settings::timeLimit).count() << std::endl;
+		out << "periodic_hold = (time() - JobCurrentStartExecutingDate) > " << seconds(settings_benchmarks().limit_time).count() << std::endl;
 		
 		for (const auto& file: b) {
 			if (!tool.canHandle(file)) continue;
@@ -74,13 +74,13 @@ private:
 	}
 	
 public:
-	void run(const std::vector<Tool*>& tools, const std::vector<BenchmarkSet>& benchmarks) {
+	void run(const Tools& tools, const std::vector<BenchmarkSet>& benchmarks) {
 		BENCHMAX_LOG_INFO("benchmax.condor", "Generating submit files...");
 		
-		for (const Tool* tool: tools) {
+		for (const auto& tool: tools) {
 			for (const BenchmarkSet& set: benchmarks) {
 				std::size_t ID = processes.size() + 1;
-				std::string submitFile = generateSubmitFile(ID, *tool, set);
+				std::string submitFile = generateSubmitFile(ID, *tool.get(), set);
 				processes.emplace_back(false);
 				std::async(&CondorBackend::runAndWait, this, ID, std::ref(submitFile), std::ref(processes.back()));
 			}

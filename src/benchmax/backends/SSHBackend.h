@@ -8,27 +8,14 @@
 #include <future>
 #include <queue>
 
-#ifdef USE_BOOST_REGEX
-#include "../../cli/config.h"
-#ifdef __VS
-#pragma warning(push, 0)
-#include <boost/regex.hpp>
-#pragma warning(pop)
-#else
-#include <boost/regex.hpp>
-#endif
-using boost::regex;
-using boost::regex_match;
-#else
 #include <regex>
 using std::regex;
 using std::regex_match;
-#endif
 
+#include "../ssh/SSHSettings.h"
 #include "../ssh/SSHScheduler.h"
 
 namespace benchmax {
-
 class SSHBackend: public Backend {
 private:
 	std::queue<std::future<bool>> jobs;
