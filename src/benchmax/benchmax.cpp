@@ -25,8 +25,6 @@ namespace fs = std::filesystem;
 
 #include "backends/Backends.h"
 
-#include "utils/regex.h"
-
 using namespace benchmax;
 
 namespace po = boost:: program_options;

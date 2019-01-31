@@ -1,8 +1,8 @@
 #pragma once
 
+#include <regex>
 #include <string>
 
-#include "regex.h"
 #include "durations.h"
 
 namespace benchmax {

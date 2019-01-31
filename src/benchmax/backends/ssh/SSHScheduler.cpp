@@ -5,6 +5,7 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
+#include <regex>
 #include <string>
 #include <sys/stat.h>
 #include <thread>
@@ -26,9 +27,9 @@ namespace ssh {
  */
 Node getNode(const std::string& _nodeAsString)
 {
-	regex noderegex("([^:@]+)(?::([^@]+))?@([^:@]+)(?::(\\d+))?(?:@(\\d+))?(?:#(\\d+))?");
+	std::regex noderegex("([^:@]+)(?::([^@]+))?@([^:@]+)(?::(\\d+))?(?:@(\\d+))?(?:#(\\d+))?");
 	std::smatch matches;
-	if (regex_match(_nodeAsString, matches, noderegex)) {
+	if (std::regex_match(_nodeAsString, matches, noderegex)) {
 		std::string username = matches[1];
 		std::string password = matches[2];
 		std::string hostname = matches[3];

@@ -76,8 +76,8 @@ private:
 	void parse_result_file(const std::string& content, const std::string& extension) {
 		std::regex filere("# START ([0-9]+) #((?:.|\n)*)# END \\1 #(?:((?:.|\n)*)# END DATA \\1 #)?");
 
-		auto reBegin = sregex_iterator(content.begin(), content.end(), filere);
-		auto reEnd = sregex_iterator();
+		auto reBegin = std::sregex_iterator(content.begin(), content.end(), filere);
+		auto reEnd = std::sregex_iterator();
 		for (auto i = reBegin; i != reEnd; ++i) {
 			assert(std::stoi((*i)[1]) > 0);
 			std::size_t id = std::stoull((*i)[1]) - 1;
