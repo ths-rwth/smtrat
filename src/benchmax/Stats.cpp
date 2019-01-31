@@ -10,7 +10,6 @@
 #include <assert.h>
 #include "../cli/config.h"
 
-#include "Settings.h"
 #include "settings/Settings.h"
 
 namespace benchmax {
@@ -409,9 +408,9 @@ void Stats::composeStats(const std::vector<std::string>& files)
 		stats->addStat(*it);
 	}
 	delete stats;
-	createStatsCompose(Settings::outputDir + "statsCompose.xsl");
+	createStatsCompose(settings_benchmarks().output_dir + "statsCompose.xsl");
 	callComposeProcessor();
-	fs::remove(fs::path(Settings::outputDir + "statsCompose.xsl"));
+	fs::remove(fs::path(settings_benchmarks().output_dir + "statsCompose.xsl"));
 }
 
 /**
@@ -419,23 +418,23 @@ void Stats::composeStats(const std::vector<std::string>& files)
  */
 void Stats::callComposeProcessor(const std::string& io)
 {
-	system(std::string("xsltproc -o " + Settings::outputDir + "stats.xml.tmp " + Settings::outputDir + "statsCompose.xsl "
+	system(std::string("xsltproc -o " + settings_benchmarks().output_dir + "stats.xml.tmp " + settings_benchmarks().output_dir + "statsCompose.xsl "
 					   + io).c_str());
-	system(std::string("xsltproc -o " + io + " " + Settings::outputDir + "statsCompose.xsl " + Settings::outputDir
+	system(std::string("xsltproc -o " + io + " " + settings_benchmarks().output_dir + "statsCompose.xsl " + settings_benchmarks().output_dir
 					   + "stats.xml.tmp").c_str());
-	fs::remove(fs::path(Settings::outputDir + "stats.xml.tmp"));
-	if(Settings::ProduceLatex)
-	{
-		createLatexCompose(Settings::outputDir + "latexCompose.xsl");
-		system(std::string("xsltproc -o " + Settings::outputDir + "results.tex " + Settings::outputDir + "latexCompose.xsl "
-						   + settings_benchmarks().output_file_xml).c_str());
-		fs::remove(fs::path(Settings::outputDir + "latexCompose.xsl"));
-	}
+	fs::remove(fs::path(settings_benchmarks().output_dir + "stats.xml.tmp"));
+	//if(Settings::ProduceLatex)
+	//{
+	//	createLatexCompose(settings_benchmarks().output_dir + "latexCompose.xsl");
+	//	system(std::string("xsltproc -o " + settings_benchmarks().output_dir + "results.tex " + settings_benchmarks().output_dir + "latexCompose.xsl "
+	//					   + settings_benchmarks().output_file_xml).c_str());
+	//	fs::remove(fs::path(settings_benchmarks().output_dir + "latexCompose.xsl"));
+	//}
 }
 
 void Stats::callComposeProcessor()
 {
-	callComposeProcessor(std::string(Settings::outputDir + settings_benchmarks().output_file_xml));
+	callComposeProcessor(std::string(settings_benchmarks().output_dir + settings_benchmarks().output_file_xml));
 }
 
 }
