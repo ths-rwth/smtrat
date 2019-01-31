@@ -169,15 +169,13 @@ public:
 		}
 		jobs.close();
 		auto submitfile = generateSubmitFile(jobsfile, mResults.size());
-/*
+
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Submitting job now.");
 		std::string output;
-		callProgram("sbatch --wait --array=1-100 -N1 " + submitfile, output);
+		callProgram("sbatch --wait --array=1-1000 -N1 " + submitfile, output);
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Job terminated.");
-		
 		int jobid = getJobID(output);
-*/
-		int jobid = 110492;
+
 		parse_result_files(Settings::outputDir, jobid);
 		for (auto& r: mResults) {
 			addResult(std::get<0>(r), std::get<1>(r), std::get<2>(r), std::get<3>(r));
