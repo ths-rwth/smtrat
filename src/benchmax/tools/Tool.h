@@ -15,17 +15,11 @@
 #include <stdexcept>
 #include <vector>
 
-#ifdef __VS
-#pragma warning(push, 0)
 #include <boost/functional/hash.hpp>
 #include <boost/version.hpp>
-#pragma warning(pop)
-#else
-#include <boost/functional/hash.hpp>
-#include <boost/version.hpp>
-#endif
 
 #include "../BenchmarkStatus.h"
+#include "../settings/Settings.h"
 
 namespace benchmax {
 

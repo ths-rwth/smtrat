@@ -9,7 +9,6 @@
 
 #include "Backend.h"
 
-#include "../Settings.h"
 #include "../utils/Execute.h"
 #include "../utils/durations.h"
 

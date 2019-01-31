@@ -9,9 +9,9 @@
 
 #include "Tool.h"
 
-#include "../Settings.h"
 #include "../utils/Execute.h"
 #include "../utils/regex.h"
+#include "../utils/strings.h"
 
 namespace benchmax {
 

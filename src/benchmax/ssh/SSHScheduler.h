@@ -11,7 +11,6 @@
 #include "Node.h"
 #include "SSHConnection.h"
 #include "SSHSettings.h"
-#include "../Settings.h"
 #include "../logging.h"
 #include "../BenchmarkStatus.h"
 #include "../backends/Backend.h"
@@ -74,7 +73,7 @@ private:
 		}
 	}
 	std::string tmpDirName(const Tool* tool, const fs::path& file) const {
-		return "benchmax-" + std::to_string(Settings::startTime) + "-" + std::to_string(std::size_t(tool)) + "-" + std::to_string(std::hash<std::string>()(file.native()));
+		return "benchmax-" + std::to_string(settings_core().start_time) + "-" + std::to_string(std::size_t(tool)) + "-" + std::to_string(std::hash<std::string>()(file.native()));
 	}
 public:
 	SSHScheduler(): mWorkerCount(0), mRunningJobs(0) {

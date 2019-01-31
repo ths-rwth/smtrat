@@ -13,7 +13,6 @@
 #include "Backend.h"
 
 #include "../logging.h"
-#include "../settings/Settings.h"
 #include "../utils/durations.h"
 
 namespace benchmax {

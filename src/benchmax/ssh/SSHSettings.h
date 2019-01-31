@@ -16,9 +16,9 @@ void registerSSHBackendSettings(T& parser) {
 	auto& s = settings.add<SSHBackendSettings>("backend-ssh");
 	
 	parser.add("SSH Backend settings", s).add_options()
-		("node,N", po::value<std::vector<std::string>>(&s.nodes), "remote computation nodes")
-		("basedir", po::value<std::string>(&s.basedir)->default_value("~/"), "remote base directory")
-		("tmpdir", po::value<std::string>(&s.tmpdir)->default_value("/tmp/"), "remote temporary directory")
+		("ssh:node", po::value<std::vector<std::string>>(&s.nodes), "remote computation nodes")
+		("ssh:basedir", po::value<std::string>(&s.basedir)->default_value("~/"), "remote base directory")
+		("ssh:tmpdir", po::value<std::string>(&s.tmpdir)->default_value("/tmp/"), "remote temporary directory")
 	;
 }
 

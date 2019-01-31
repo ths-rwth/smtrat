@@ -7,7 +7,6 @@
 
 #include "Node.h"
 #include "SSHSettings.h"
-#include "../Settings.h"
 #include "../logging.h"
 #include "../BenchmarkStatus.h"
 #include "../utils/backend.h"

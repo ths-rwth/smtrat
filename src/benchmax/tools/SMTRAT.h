@@ -9,16 +9,16 @@
 
 #include "Tool.h"
 
-#include "../Settings.h"
 #include "../utils/Execute.h"
 #include "../utils/regex.h"
+#include "../utils/strings.h"
 
 namespace benchmax {
 
 class SMTRAT: public Tool {
 public:
 	SMTRAT(const fs::path& binary, const std::string& arguments): Tool("SMTRAT", binary, arguments) {
-		if (Settings::UseStats) mArguments += " --stats:print";
+		if (settings_tools().collect_statistics) mArguments += " --stats:print";
 	}
 
 	virtual bool canHandle(const fs::path& path) const override {

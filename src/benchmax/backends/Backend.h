@@ -9,6 +9,7 @@
 #include "../tools/Tool.h"
 #include "../utils/regex.h"
 #include "../results/Results.h"
+#include "../settings/Settings.h"
 
 namespace benchmax {
 

@@ -63,6 +63,7 @@ bool initApplication(int argc, char** argv) {
 	carl::logging::logger().resetFormatter();
 
 	auto& parser = SettingsParser::getInstance();
+	benchmax::registerSlurmBackendSettings(parser);
 #ifdef BENCHMAX_SSH
 	benchmax::registerSSHBackendSettings(parser);
 #endif
@@ -102,25 +103,23 @@ bool initApplication(int argc, char** argv) {
 		return false;
 	}
 	
-	Settings s(argc, argv);
+	
+	//if(s.has("compose")) {
+	//	Stats::composeStats(s.composeFiles);
+	//	return false;
+	//}
+	//else if(Settings::ProduceLatex)
+	//{
+	//	Stats::createStatsCompose(settings_benchmarks().output_dir + "latexCompose.xsl");
+	//	system(
+	//	std::string("xsltproc -o " + settings_benchmarks().output_dir + "results.tex " + Settings::outputDir + "latexCompose.xsl "
+	//				+ settings_benchmarks().output_file_xml).c_str());
+	//	fs::remove(fs::path(settings_benchmarks().output_dir + "latexCompose.xsl"));
+	//}
 
-	if(s.has("compose")) {
-		Stats::composeStats(s.composeFiles);
-		return false;
-	}
-	else if(Settings::ProduceLatex)
-	{
-		Stats::createStatsCompose(Settings::outputDir + "latexCompose.xsl");
-		system(
-		std::string("xsltproc -o " + Settings::outputDir + "results.tex " + Settings::outputDir + "latexCompose.xsl "
-					+ settings_benchmarks().output_file_xml).c_str());
-		fs::remove(fs::path(Settings::outputDir + "latexCompose.xsl"));
-	}
-
-	if(Settings::outputDir != "")
-	{
-		fs::path oloc = fs::path(Settings::outputDir);
-		if(!fs::exists(oloc) ||!fs::is_directory(oloc))
+	if (settings_benchmarks().output_dir != "") {
+		std::filesystem::path oloc = std::filesystem::path(settings_benchmarks().output_dir);
+		if(!std::filesystem::exists(oloc) ||!std::filesystem::is_directory(oloc))
 		{
 			BENCHMAX_LOG_FATAL("benchmax", "Output directory does not exist: " << oloc);
 			exit(0);

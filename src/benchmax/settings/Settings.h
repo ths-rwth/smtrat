@@ -27,6 +27,8 @@ struct CoreSettings {
 	bool show_settings;
 	bool be_verbose;
 	bool be_quiet;
+
+	long start_time = std::time(nullptr);
 };
 
 struct OperationSettings {
@@ -41,6 +43,7 @@ struct BenchmarkSettings {
 	std::chrono::seconds limit_time;
 	std::vector<std::string> input_directories;
 	std::string input_directories_common_prefix;
+	std::string output_dir;
 	std::string output_file_xml;
 };
 template<typename V>

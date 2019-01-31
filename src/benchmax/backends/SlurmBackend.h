@@ -3,7 +3,6 @@
 #include "Backend.h"
 
 #include "../logging.h"
-#include "../Settings.h"
 #include "../utils/Execute.h"
 #include "../utils/durations.h"
 
@@ -13,6 +12,25 @@
 #include <regex>
 
 namespace benchmax {
+
+struct SlurmBackendSettings {
+	std::size_t slices;
+};
+
+template<typename T>
+void registerSlurmBackendSettings(T& parser) {
+	auto& settings = settings::Settings::getInstance();
+	auto& s = settings.add<SlurmBackendSettings>("backend-slurm");
+	
+	parser.add("Slurm Backend settings", s).add_options()
+		("slurm:slices", po::value<std::size_t>(&s.slices), "Number of slices for array job")
+	;
+}
+
+inline const auto& settings_slurm() {
+	static const auto& s = settings::Settings::getInstance().get<SlurmBackendSettings>("backend-slurm");
+	return s;
+}
 
 class SlurmBackend: public Backend {
 private:
@@ -99,7 +117,7 @@ private:
 	}
 
 	std::string generateSubmitFile(const std::string& jobfile, std::size_t num_input) {
-		std::string filename = Settings::outputDir + "/job.job";
+		std::string filename = settings_benchmarks().output_dir + "/job.job";
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Writing submit file to " << filename);
 		std::ofstream out(filename);
 		out << "#!/usr/bin/env zsh" << std::endl;
@@ -107,8 +125,8 @@ private:
 		// Job name
 		out << "#SBATCH --job-name=benchmax" << std::endl;
 		// Output files (stdout and stderr)
-		out << "#SBATCH -o " << Settings::outputDir << "/JOB.%A_%a.out" << std::endl;
-		out << "#SBATCH -e " << Settings::outputDir << "/JOB.%A_%a.err" << std::endl;
+		out << "#SBATCH -o " << settings_benchmarks().output_dir << "/JOB.%A_%a.out" << std::endl;
+		out << "#SBATCH -e " << settings_benchmarks().output_dir << "/JOB.%A_%a.err" << std::endl;
 		// Rough estimation of time in minutes (timeout * jobs)
 		out << "#SBATCH -t " << (static_cast<std::size_t>(seconds(settings_benchmarks().limit_time).count()) * num_input / 60 + 1) << std::endl;
 		// Memory usage in MB
@@ -117,7 +135,7 @@ private:
 		// Load environment
 		out << "source ~/load_environment" << std::endl;
 		// Change current directory
-		out << "cd " << Settings::outputDir << std::endl;
+		out << "cd " << settings_benchmarks().output_dir << std::endl;
 
 		// Calculate slices for jobfile
 		out << "min=$SLURM_ARRAY_TASK_MIN" << std::endl;
@@ -152,7 +170,7 @@ private:
 public:
 	void run(const Tools& tools, const std::vector<BenchmarkSet>& benchmarks) {
 
-		std::string jobsfile = Settings::outputDir + "/jobs.jobs";
+		std::string jobsfile = settings_benchmarks().output_dir + "/jobs.jobs";
 		for (const auto& tool: tools) {
 			for (const BenchmarkSet& set: benchmarks) {
 				for (const auto& file: set) {
@@ -172,11 +190,11 @@ public:
 
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Submitting job now.");
 		std::string output;
-		callProgram("sbatch --wait --array=1-1000 -N1 " + submitfile, output);
+		callProgram("sbatch --wait --array=1-" + std::to_string(settings_slurm().slices) + " -N1 " + submitfile, output);
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Job terminated.");
 		int jobid = getJobID(output);
 
-		parse_result_files(Settings::outputDir, jobid);
+		parse_result_files(settings_benchmarks().output_dir, jobid);
 		for (auto& r: mResults) {
 			addResult(std::get<0>(r), std::get<1>(r), std::get<2>(r), std::get<3>(r));
 		}

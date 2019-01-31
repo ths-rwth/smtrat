@@ -9,16 +9,16 @@
 
 #include "Tool.h"
 
-#include "../Settings.h"
 #include "../utils/Execute.h"
 #include "../utils/regex.h"
+#include "../utils/strings.h"
 
 namespace benchmax {
 
 class SMTRAT_OPB: public Tool {
 public:
 	SMTRAT_OPB(const fs::path& binary, const std::string& arguments): Tool("SMTRAT-OPB", binary, arguments) {
-		if (Settings::UseStats) mArguments += " -s";
+		if (settings_tools().collect_statistics) mArguments += " -s";
 		mArguments += " -opb";
 	}
 
