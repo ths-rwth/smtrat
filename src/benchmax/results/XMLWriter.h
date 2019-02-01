@@ -2,6 +2,7 @@
 
 
 #include "../settings/Settings.h"
+#include "../benchmarks/benchmarks.h"
 #include "../utils/durations.h"
 #include "../utils/strings.h"
 

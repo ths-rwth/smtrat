@@ -63,28 +63,6 @@ SettingsParser::SettingsParser() {
 			("convert-filter", po::value<std::string>(&s.convert_ods_filter)->default_value("Benchmax"), "XSLT filter name to import XML file into libreoffice")
 		;
 	}
-	{
-		auto& s = settings.get<settings::BenchmarkSettings>("benchmarks");
-		add("Benchmark settings", s).add_options()
-			("wallclock", po::bool_switch(&s.use_wallclock), "Use wall clock for timeout")
-			("memory,M", po::value<std::size_t>(&s.limit_memory)->default_value(1024), "memory limit for all competing solvers in megabytes")
-			("timeout,T", po::value<std::size_t>()->default_value(60), "timeout for all tools in seconds")
-			("directory,D", po::value<std::vector<std::string>>(&s.input_directories), "path to look for benchmarks (several are possible)")
-			("output-dir", po::value<std::string>(&s.output_dir), "Output directory.")
-			("output-xml,X", po::value<std::string>(&s.output_file_xml)->default_value("stats.xml"), "filename for xml output file")
-		;
-	}
-	{
-		auto& s = settings.get<settings::ToolSettings>("tools");
-		add("Tool settings", s).add_options()
-			("statistics,s", po::bool_switch(&s.collect_statistics), "run tools with statistics")
-			("tool", po::value<std::vector<std::string>>(&s.tools_generic), "a generic tool")
-			("smtrat,S", po::value<std::vector<std::string>>(&s.tools_smtrat), "SMT-RAT with SMT-LIB interface")
-			("smtrat-opb,O", po::value<std::vector<std::string>>(&s.tools_smtrat_opb), "SMT-RAT with OPB interface")
-			("minisatp", po::value<std::vector<std::string>>(&s.tools_minisatp), "Minisatp with OPB interface")
-			("z3,Z", po::value<std::vector<std::string>>(&s.tools_z3), "z3 with SMT-LIB interface")
-		;
-	}
 }
 
 bool SettingsParser::parse_options(int argc, char* argv[]) {

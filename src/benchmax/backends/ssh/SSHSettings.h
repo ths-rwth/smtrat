@@ -1,10 +1,13 @@
 #pragma once
 
 #include <benchmax/config.h>
+
+#include <boost/program_options.hpp>
 #include <benchmax/settings/Settings.h>
-#include <benchmax/settings/SettingsParser.h>
 
 namespace benchmax {
+namespace  settings {
+
 struct SSHBackendSettings {
 	std::vector<std::string> nodes;
 	std::string basedir;
@@ -13,6 +16,7 @@ struct SSHBackendSettings {
 
 template<typename T>
 void registerSSHBackendSettings(T& parser) {
+	namespace po = boost::program_options;
 	auto& settings = settings::Settings::getInstance();
 	auto& s = settings.add<SSHBackendSettings>("backend-ssh");
 	
@@ -26,9 +30,11 @@ void registerSSHBackendSettings(T& parser) {
 		("ssh:tmpdir", po::value<std::string>(&s.tmpdir)->default_value("/tmp/"), "remote temporary directory")
 	;
 }
+}
 
 inline const auto& settings_ssh() {
-	static const auto& s = settings::Settings::getInstance().get<SSHBackendSettings>("backend-ssh");
+	static const auto& s = settings::Settings::getInstance().get<settings::SSHBackendSettings>("backend-ssh");
 	return s;
 }
+
 }

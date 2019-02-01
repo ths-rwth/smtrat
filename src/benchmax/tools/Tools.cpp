@@ -5,6 +5,7 @@
 #include "SMTRAT_OPB.h"
 #include "Z3.h"
 
+#include <benchmax/settings/SettingsParser.h>
 #include <benchmax/logging.h>
 #include <regex>
 
@@ -40,6 +41,23 @@ Tools loadTools() {
 	createTools<Minisatp>(settings_tools().tools_minisatp, tools);
 	createTools<Z3>(settings_tools().tools_z3, tools);
 	return tools;
+}
+
+namespace settings {
+void registerToolSettings(SettingsParser* parser) {
+	namespace po = boost::program_options;
+	auto& settings = settings::Settings::getInstance();
+	auto& s = settings.add<settings::ToolSettings>("tools");
+
+	parser->add("Tool settings", s).add_options()
+		("statistics,s", po::bool_switch(&s.collect_statistics), "run tools with statistics")
+		("tool", po::value<std::vector<std::string>>(&s.tools_generic), "a generic tool")
+		("smtrat,S", po::value<std::vector<std::string>>(&s.tools_smtrat), "SMT-RAT with SMT-LIB interface")
+		("smtrat-opb,O", po::value<std::vector<std::string>>(&s.tools_smtrat_opb), "SMT-RAT with OPB interface")
+		("minisatp", po::value<std::vector<std::string>>(&s.tools_minisatp), "Minisatp with OPB interface")
+		("z3,Z", po::value<std::vector<std::string>>(&s.tools_z3), "z3 with SMT-LIB interface")
+	;
+}
 }
 
 }

@@ -38,8 +38,10 @@ bool initApplication(int argc, char** argv) {
 	carl::logging::logger().resetFormatter();
 
 	auto& parser = SettingsParser::getInstance();
-	benchmax::registerSlurmBackendSettings(parser);
-	benchmax::registerSSHBackendSettings(parser);
+	benchmax::settings::registerBenchmarkSettings(&parser);
+	benchmax::settings::registerToolSettings(&parser);
+	benchmax::settings::registerSlurmBackendSettings(parser);
+	benchmax::settings::registerSSHBackendSettings(parser);
 	parser.finalize();
 	parser.parse_options(argc, argv);
 

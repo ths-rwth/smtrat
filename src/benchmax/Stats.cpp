@@ -11,6 +11,7 @@
 #include "../cli/config.h"
 
 #include "settings/Settings.h"
+#include "benchmarks/benchmarks.h"
 
 namespace benchmax {
 

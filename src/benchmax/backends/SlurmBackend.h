@@ -14,6 +14,7 @@
 #include <regex>
 
 namespace benchmax {
+namespace settings {
 
 struct SlurmBackendSettings {
 	std::size_t slices;
@@ -35,10 +36,10 @@ void registerSlurmBackendSettings(T& parser) {
 		("slurm:archive-logs", po::value<std::string>(&s.archive_log_file)->value_name("filename"), "Store log files in this tgz archive")
 	;
 }
+}
 
 inline const auto& settings_slurm() {
-	static const auto& s = settings::Settings::getInstance().get<SlurmBackendSettings>("backend-slurm");
-	return s;
+	return settings_get<settings::SlurmBackendSettings>("backend-slurm");
 }
 
 class SlurmBackend: public Backend {

@@ -18,6 +18,9 @@
 #include <memory>
 
 namespace benchmax {
+
+class SettingsParser;
+
 namespace settings {
 
 template<typename T, typename V>
@@ -38,49 +41,12 @@ struct OperationSettings {
 	std::string convert_ods_filter;
 };
 
-struct BenchmarkSettings {
-	bool use_wallclock;
-	std::size_t limit_memory;
-	std::chrono::seconds limit_time;
-	std::vector<std::string> input_directories;
-	std::string input_directories_common_prefix;
-	std::string output_dir;
-	std::string output_file_xml;
-};
-template<typename V>
-inline void finalize_settings(BenchmarkSettings& s, const V& values) {
-	s.limit_time = std::chrono::seconds(values["timeout"].template as<std::size_t>());
-	s.input_directories_common_prefix = commonPrefix(s.input_directories);
-}
-
-struct ToolSettings {
-	bool collect_statistics;
-	std::vector<std::string> tools_generic;
-	std::vector<std::string> tools_smtrat;
-	std::vector<std::string> tools_smtrat_opb;
-	std::vector<std::string> tools_minisatp;
-	std::vector<std::string> tools_z3;
-	std::string tools_common_prefix;
-};
-template<typename V>
-inline void finalize_settings(ToolSettings& s, const V&) {
-	s.tools_common_prefix = commonPrefix({
-		s.tools_generic,
-		s.tools_smtrat,
-		s.tools_smtrat_opb,
-		s.tools_minisatp,
-		s.tools_z3
-	});
-}
-
 struct Settings: public carl::Singleton<Settings> {
 	friend carl::Singleton<Settings>;
 private:
 	std::map<std::string,std::any> mSettings = {
 		{"core", CoreSettings()},
-		{"operation", OperationSettings()},
-		{"benchmarks", BenchmarkSettings()},
-		{"tools", ToolSettings()},
+		{"operation", OperationSettings()}
 	};
 
 	Settings() = default;
@@ -106,22 +72,17 @@ public:
 inline const settings::Settings& getSettings() {
 	return settings::Settings::getInstance();
 }
+template<typename T>
+inline const auto& settings_get(const std::string& name) {
+	static const auto& s = settings::Settings::getInstance().get<T>(name);
+	return s;
+}
 
 inline const auto& settings_core() {
-	static const auto& s = settings::Settings::getInstance().get<settings::CoreSettings>("core");
-	return s;
+	return settings_get<settings::CoreSettings>("core");
 }
 inline const auto& settings_operation() {
-	static const auto& s = settings::Settings::getInstance().get<settings::OperationSettings>("operation");
-	return s;
-}
-inline const auto& settings_benchmarks() {
-	static const auto& s = settings::Settings::getInstance().get<settings::BenchmarkSettings>("benchmarks");
-	return s;
-}
-inline const auto& settings_tools() {
-	static const auto& s = settings::Settings::getInstance().get<settings::ToolSettings>("tools");
-	return s;
+	return settings_get<settings::OperationSettings>("operation");
 }
 
 }
