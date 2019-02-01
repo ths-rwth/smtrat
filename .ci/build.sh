@@ -20,7 +20,7 @@ if [[ ${TASK} == "dependencies" ]]; then
 elif [[ ${TASK} == "doxygen" ]]; then
 	
 	cmake -D DOCUMENTATION_CREATE_PDF=ON ../
-	make doc || return 1
+	make doc benchmax-doc || return 1
 	make manual || return 1
 	
 	git config --global user.email "gereon.kremer@cs.rwth-aachen.de"
