@@ -181,7 +181,6 @@ private:
 public:
 	void run(const Tools& tools, const std::vector<BenchmarkSet>& benchmarks) {
 
-		std::string jobsfile = "jobs-" + std::to_string(settings_core().start_time) + ".jobs";
 		for (const auto& tool: tools) {
 			for (const BenchmarkSet& set: benchmarks) {
 				for (const auto& file: set) {
@@ -191,10 +190,11 @@ public:
 		}
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Gathered " << mResults.size() << " jobs");
 		shuffle_jobs();
+		std::string jobsfile = "jobs-" + std::to_string(settings_core().start_time) + ".jobs";
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Writing job file to " << jobsfile);
 		std::ofstream jobs(settings_slurm().tmp_dir + "/" + jobsfile);
 		for (const auto& r: mResults) {
-			jobs << std::get<0>(r)->getCommandline(std::get<2>(r)) << std::endl;
+			jobs << std::get<0>(r)->getCommandline(std::get<1>(r)) << std::endl;
 		}
 		jobs.close();
 		auto submitfile = generateSubmitFile(settings_slurm().tmp_dir + "/" + jobsfile, mResults.size());
@@ -229,7 +229,9 @@ public:
 				BENCHMAX_LOG_WARN("benchmax.slurm", output);
 			}
 		}
-		if (!settings_slurm().keep_logs) {
+		if (settings_slurm().keep_logs) {
+			BENCHMAX_LOG_INFO("benchmax.slurm", "Retaining log files at " << settings_slurm().tmp_dir);
+		} else {
 			BENCHMAX_LOG_INFO("benchmax.slurm", "Removing log files.");
 			for (const auto& f: files) {
 				std::filesystem::remove(f);
