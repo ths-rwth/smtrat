@@ -1,0 +1,11 @@
+PROJECT_NAME           = benchmax
+OUTPUT_DIRECTORY       = @CMAKE_BINARY_DIR@/doc/benchmax
+CREATE_SUBDIRS         = NO
+OUTPUT_LANGUAGE        = @DOXYGEN_LANGUAGE@
+STRIP_FROM_PATH        = @CMAKE_SOURCE_DIR@/src/benchmax
+OPTIMIZE_OUTPUT_FOR_C  = YES
+INPUT                  = @CMAKE_SOURCE_DIR@/src/benchmax @CMAKE_SOURCE_DIR@/src/benchmax/doc
+FILE_PATTERNS          = *.cpp *.h *.tpp *.dox *.py *.md
+RECURSIVE              = YES
+SOURCE_BROWSER         = YES
+ALPHABETICAL_INDEX     = YES

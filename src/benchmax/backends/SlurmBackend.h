@@ -16,6 +16,9 @@
 
 namespace benchmax {
 
+/**
+ * Backend for the Slurm workload manager.
+ */
 class SlurmBackend: public Backend {
 private:
 	using JobData = std::tuple<

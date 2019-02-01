@@ -8,14 +8,11 @@
  * @version 2013-04-23
  */
 
+#include <csignal>
 #include <filesystem>
 #include <iostream>
-#include "../cli/config.h"
+
 #include "config.h"
-namespace fs = std::filesystem;
-
-#include <csignal>
-
 #include "logging.h"
 #include "backends/Backends.h"
 #include "benchmarks/benchmarks.h"
@@ -28,14 +25,8 @@ namespace fs = std::filesystem;
 using namespace benchmax;
 
 bool initApplication(int argc, char** argv) {
-	
-	carl::logging::logger().configure("stdout", std::cout);
-	carl::logging::logger().filter("stdout")
-		("benchmax", carl::logging::LogLevel::LVL_INFO)
-		("benchmax.ssh", carl::logging::LogLevel::LVL_WARN)
-		("benchmax.benchmarks", carl::logging::LogLevel::LVL_INFO)
-	;
-	carl::logging::logger().resetFormatter();
+
+	logging_configure();
 
 	auto& parser = SettingsParser::getInstance();
 	benchmax::settings::registerBenchmarkSettings(&parser);
@@ -45,6 +36,12 @@ bool initApplication(int argc, char** argv) {
 	parser.finalize();
 	parser.parse_options(argc, argv);
 
+	if (settings_core().be_quiet) {
+		logging_quiet();
+	}
+	if (settings_core().be_verbose) {
+		logging_verbose();
+	}
 	if (settings_core().show_help) {
 		std::cout << parser.print_help() << std::endl;
 		return false;
@@ -52,20 +49,6 @@ bool initApplication(int argc, char** argv) {
 	if (settings_core().show_settings) {
 		std::cout << parser.print_options() << std::endl;
 		return false;
-	}
-	if (settings_core().be_quiet) {
-		carl::logging::logger().filter("stdout")
-			("benchmax", carl::logging::LogLevel::LVL_INFO)
-			("benchmax.backend", carl::logging::LogLevel::LVL_INFO)
-			("benchmax.benchmarks", carl::logging::LogLevel::LVL_DEBUG)
-		;
-	}
-	if (settings_core().be_verbose) {
-		carl::logging::logger().filter("stdout")
-			("benchmax", carl::logging::LogLevel::LVL_DEBUG)
-			("benchmax.backend", carl::logging::LogLevel::LVL_DEBUG)
-			("benchmax.benchmarks", carl::logging::LogLevel::LVL_DEBUG)
-		;
 	}
 
 	if (settings_operation().convert_ods_filename != "") {

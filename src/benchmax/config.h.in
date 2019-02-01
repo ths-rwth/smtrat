@@ -1,3 +1,2 @@
 #cmakedefine BENCHMAX_DATABASE
-#cmakedefine BENCHMAX_LOGGING
 #cmakedefine BENCHMAX_SSH

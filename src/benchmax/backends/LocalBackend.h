@@ -14,8 +14,12 @@
 
 namespace benchmax {
 
+/**
+ * This backend simply runs files sequentially on the local machine.
+ */
 class LocalBackend: public Backend {
 protected:
+	/// Execute the tool on the file manually.
 	virtual void execute(const Tool* tool, const fs::path& file, const fs::path& baseDir) {
 		std::stringstream call;
 		call << "ulimit -S -t " << seconds(settings_benchmarks().limit_time).count() << " && ";

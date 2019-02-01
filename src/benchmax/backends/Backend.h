@@ -26,6 +26,7 @@ protected:
 	
 	virtual void startTool(const Tool*) {}
 	virtual void execute(const Tool*, const fs::path&, const fs::path&) {}
+	/// Can be called to give information about the current progress, if available.
 	void madeProgress(std::size_t files = 1) {
 		mFinishedJobs += files;
 		std::size_t newPercent = mFinishedJobs * 100 / mExpectedJobs;

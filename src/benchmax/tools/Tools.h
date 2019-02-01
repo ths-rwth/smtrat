@@ -12,22 +12,35 @@ namespace benchmax {
 using ToolPtr = std::unique_ptr<Tool>;
 using Tools = std::vector<ToolPtr>;
 
+/**
+ * Create tools of a given type T from a list of binaries and store them in tools.
+ */
 template<typename T>
 void createTools(const std::vector<std::string>& arguments, Tools& tools);
 
+/// Load all tools from the tool settings.
 Tools loadTools();
 
 namespace settings {
 
+/// Tool-related settings.
 struct ToolSettings {
+	/// Whether or not to collect statistics.
 	bool collect_statistics;
+	/// Generic tools.
 	std::vector<std::string> tools_generic;
+	/// SMT-RAT with SMT-LIB interface.
 	std::vector<std::string> tools_smtrat;
+	/// SMT-RAT with OPB interface.
 	std::vector<std::string> tools_smtrat_opb;
+	/// Minisatp with OPB interface.
 	std::vector<std::string> tools_minisatp;
+	/// z3 with SMT-LIB interface.
 	std::vector<std::string> tools_z3;
+	/// Common prefix of tool binaries to simplify output.
 	std::string tools_common_prefix;
 };
+/// Postprocess settings to compute common prefix.
 template<typename V>
 inline void finalize_settings(ToolSettings& s, const V&) {
 	s.tools_common_prefix = commonPrefix({
@@ -35,9 +48,11 @@ inline void finalize_settings(ToolSettings& s, const V&) {
 		s.tools_minisatp, s.tools_z3
 	});
 }
+/// Registers tool settings with the settings parser.
 void registerToolSettings(SettingsParser* parser);
 } // namespace settings
 
+/// Returns the tool settings.
 inline const auto& settings_tools() {
 	return settings_get<settings::ToolSettings>("tools");
 }
