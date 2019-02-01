@@ -26,10 +26,10 @@ void registerBenchmarkSettings(SettingsParser* parser) {
 	auto& s = settings.add<settings::BenchmarkSettings>("benchmarks");
 	
 	parser->add("Benchmark settings", s).add_options()
-		("memory,M", po::value<std::size_t>(&s.limit_memory)->default_value(1024), "memory limit for all competing solvers in megabytes")
-		("timeout,T", po::value<std::size_t>()->default_value(60), "timeout for all tools in seconds")
-		("directory,D", po::value<std::vector<std::string>>(&s.input_directories), "path to look for benchmarks (several are possible)")
-		("output-dir", po::value<std::string>(&s.output_dir), "Output directory.")
+		("memory,M", po::value<std::size_t>(&s.limit_memory)->default_value(1024), "memory limit in megabytes")
+		("timeout,T", po::value<std::size_t>()->default_value(60), "timeout in seconds")
+		("directory,D", po::value<std::vector<std::string>>(&s.input_directories), "path to look for benchmarks")
+		("output-dir", po::value<std::string>(&s.output_dir), "output directory")
 		("output-xml,X", po::value<std::string>(&s.output_file_xml)->default_value("stats.xml"), "filename for xml output file")
 	;
 }
