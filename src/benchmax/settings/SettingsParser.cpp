@@ -2,6 +2,7 @@
 
 #include "Settings.h"
 
+#include <benchmax/logging.h>
 #include <boost/any.hpp>
 
 namespace benchmax {
@@ -12,6 +13,8 @@ std::ostream& operator<<(std::ostream& os, const boost::any& val) {
 		return os << "<empty>";
 	} else if (boost::any_cast<bool>(&val)) {
 		return os << std::boolalpha << boost::any_cast<bool>(val);
+	} else if (boost::any_cast<std::size_t>(&val)) {
+		return os << boost::any_cast<std::size_t>(val);
 	} else if (boost::any_cast<std::string>(&val)) {
 		return os << boost::any_cast<std::string>(val);
 	}
@@ -53,6 +56,7 @@ SettingsParser::SettingsParser() {
 			("settings", po::bool_switch(&s.show_settings), "show settings that are used")
 			("verbose", po::bool_switch(&s.be_verbose), "show more detailed output")
 			("quiet", po::bool_switch(&s.be_quiet), "show only most important output")
+			("config,c", po::value<std::string>(&s.config_file), "load config from the given config file")
 		;
 	}
 	{
@@ -65,17 +69,44 @@ SettingsParser::SettingsParser() {
 	}
 }
 
-bool SettingsParser::parse_options(int argc, char* argv[]) {
-	argv_zero = argv[0];
-	po::store(
-		po::command_line_parser(argc, argv).options(mAllOptions).positional(mPositional).run(),
-		mValues
-	);
-	po::notify(mValues);
+void SettingsParser::warn_for_unrecognized(const po::parsed_options& parsed) const {
+	auto res = po::collect_unrecognized(parsed.options, po::include_positional);
+	for (const auto& s: res) {
+		BENCHMAX_LOG_WARN("benchmark.settings", "Ignoring unrecognized option " << s);
+	}
+}
+
+void SettingsParser::parse_command_line(int argc, char* argv[]) {
+	auto parsed = po::command_line_parser(argc, argv).allow_unregistered().options(mAllOptions).positional(mPositional).run();
+	warn_for_unrecognized(parsed);
+	po::store(parsed, mValues);
+}
+
+void SettingsParser::parse_config_file() {
+	std::filesystem::path configfile(mValues["config"].as<std::string>());
+	if (std::filesystem::is_regular_file(configfile)) {
+		auto parsed = po::parse_config_file(configfile.c_str(), mAllOptions, true);
+		warn_for_unrecognized(parsed);
+		po::store(parsed, mValues);
+	} else {
+		BENCHMAX_LOG_WARN("benchmax.settings", "Could not load config file " << configfile);
+	}
+}
+
+void SettingsParser::finalize_settings() const {
 	for (const auto& f: mFinalizer) {
 		f();
 	}
-	return true;
+}
+
+void SettingsParser::parse_options(int argc, char* argv[]) {
+	argv_zero = argv[0];
+	parse_command_line(argc, argv);
+	if (mValues.count("config")) {
+		parse_config_file();
+	}
+	po::notify(mValues);
+	finalize_settings();
 }
 
 }

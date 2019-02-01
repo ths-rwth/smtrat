@@ -32,6 +32,8 @@ struct CoreSettings {
 	bool be_verbose;
 	bool be_quiet;
 
+	std::string config_file;
+
 	long start_time = std::time(nullptr);
 };
 

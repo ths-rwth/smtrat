@@ -41,7 +41,7 @@ bool initApplication(int argc, char** argv) {
 	benchmax::settings::registerBenchmarkSettings(&parser);
 	benchmax::settings::registerToolSettings(&parser);
 	benchmax::settings::registerSlurmBackendSettings(&parser);
-	benchmax::settings::registerSSHBackendSettings(parser);
+	benchmax::settings::registerSSHBackendSettings(&parser);
 	parser.finalize();
 	parser.parse_options(argc, argv);
 

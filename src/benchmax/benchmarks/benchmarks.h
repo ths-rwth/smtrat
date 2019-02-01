@@ -13,7 +13,6 @@ std::vector<BenchmarkSet> loadBenchmarks();
 namespace settings {
 
 struct BenchmarkSettings {
-	bool use_wallclock;
 	std::size_t limit_memory;
 	std::chrono::seconds limit_time;
 	std::vector<std::string> input_directories;

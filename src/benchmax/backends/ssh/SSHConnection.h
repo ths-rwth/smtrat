@@ -231,7 +231,7 @@ public:
 		std::stringstream call;
 		call << "date +\"Start: %s%3N\" ; ";
 		auto timeout = (seconds(settings_benchmarks().limit_time) + std::chrono::seconds(3)).count();
-		if (settings_benchmarks().use_wallclock) call << "timeout " << timeout << "s ";
+		if (settings_ssh().use_wallclock) call << "timeout " << timeout << "s ";
 		else call << "ulimit -S -t " << timeout << " && ";
 		call << "ulimit -S -v " << (settings_benchmarks().limit_memory * 1024) << " && ";
 		call << cmd << " ; rc=$? ;";

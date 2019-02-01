@@ -38,6 +38,11 @@ private:
 	std::vector<po::options_description> mOptions;
 	std::vector<std::function<void()>> mFinalizer;
 	SettingsParser();
+
+	void warn_for_unrecognized(const po::parsed_options& parsed) const;
+	void parse_command_line(int argc, char* argv[]);
+	void parse_config_file();
+	void finalize_settings() const;
 public:
 
 	void finalize() {
@@ -54,7 +59,7 @@ public:
 		return mOptions.back();
 	}
 
-	bool parse_options(int argc, char* argv[]);
+	void parse_options(int argc, char* argv[]);
 
 	settings::OptionPrinter print_help() const {
 		return settings::OptionPrinter{*this};
