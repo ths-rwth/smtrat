@@ -36,6 +36,10 @@ elif [[ ${TASK} == "doxygen" ]]; then
 	cp ../doc/*.pdf .  || return 1
 	cp ../manual/*.pdf .  || return 1
 	
+	# Benchmax
+	mkdir -p benchmax/
+	cp -r ../doc/benchmax/html/* benchmax/
+	
 	# Check if something has changed
 	git diff --summary --exit-code && return 0
 	git add . || return 1
