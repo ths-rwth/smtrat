@@ -664,17 +664,19 @@ namespace smtrat {
 
             } else if (axiomType == AxiomType::ICP) {
 
-                // NOTE: we assume a' = a, b' = b, c' = a * b. Here rationalCapsulePrime include the primes.
-                RationalCapsule rationalCapsulePrime(rationalCapsule.getARational(), rationalCapsule.getBRational(), rationalCapsule.getARational() * rationalCapsule.getBRational());
+                RationalCapsule rationalCapsuleAbs(carl::abs(rationalCapsule.getARational()), carl::abs(rationalCapsule.getBRational()), carl::abs(rationalCapsule.getCRational()));
 
-                if (abGreatercCheck(rationalCapsule)){
+                // NOTE: we assume a' = a, b' = b, c' = a * b. Here rationalCapsulePrime include the primes.
+                RationalCapsule rationalCapsulePrime(rationalCapsuleAbs.getARational(), rationalCapsuleAbs.getBRational(), rationalCapsuleAbs.getARational() * rationalCapsuleAbs.getBRational());
+
+                if (abGreatercCheck(rationalCapsuleAbs)){
 
                     if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abGreatercCheck is true and ICP is creating..." << endl; }
 
                     formulas.push_back(createICPGreaterOne(variableCapsuleOuter, rationalCapsulePrime));
                     formulas.push_back(createICPGreaterTwo(variableCapsuleOuter, rationalCapsulePrime));
 
-                } else if (abLesscCheck(rationalCapsule)) {
+                } else if (abLesscCheck(rationalCapsuleAbs)) {
 
                     if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abLesscCheck is true and ICP is creating..." << endl; }
 
