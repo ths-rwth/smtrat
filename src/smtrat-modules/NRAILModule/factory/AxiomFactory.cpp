@@ -511,7 +511,7 @@ namespace smtrat {
         FormulaT rightFormulaPartOne = FormulaT(Poly(Poly::ConstructorOperation::ADD, operands5), carl::Relation::LEQ);
 
         std::vector<Poly> operands6 {Poly(variableCapsule.getZVariable()), Poly(rationalCapsule.getCRational())};
-        FormulaT rightFormulaPartTwo = FormulaT(Poly(Poly::ConstructorOperation::ADD, operands6), carl::Relation::LEQ);
+        FormulaT rightFormulaPartTwo = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands6), carl::Relation::LEQ);
 
         FormulaT rightFormula = FormulaT(carl::FormulaType::AND, rightFormulaPartOne, rightFormulaPartTwo);
 
