@@ -39,7 +39,8 @@
 #include <math.h>
 #include "../Module.h"
 
-#include "VarScheduling.h"
+#include "VarScheduler.h"
+#include "mcsat/VarSchedulerMcsat.h"
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "SATModuleStatistics.h"
@@ -57,10 +58,12 @@ namespace smtrat
         public Module
     {
 		friend mcsat::MCSATMixin<typename Settings::MCSATSettings>;
-        friend struct VarSchedulingDefault;
-        template<int num> friend struct VarSchedulingMcsat;
-        template<int num, int num2> friend struct VarSchedulingMcsatPreferLowDegrees;
-        template<int num, int num2> friend struct VarSchedulingMcsatLowerFirstPerLevel;
+        //friend struct VarSchedulingDefault;
+        //template<int num> friend struct VarSchedulingMcsat;
+        //template<int num, int num2> friend struct VarSchedulingMcsatPreferLowDegrees;
+        //template<int num, int num2> friend struct VarSchedulingMcsatLowerFirstPerLevel;
+        friend class VarSchedulerBase;
+        friend class VarSchedulerMcsatBase;
 
         private:
 
@@ -209,9 +212,21 @@ namespace smtrat
                 }
             };
 
-            using VarScheduling = typename Settings::VarScheduling;
-            using VarOrderLt = typename VarScheduling::VarOrderLt;
-            using VarDecidabilityCond = typename VarScheduling::VarDecidabilityCond;
+            using VarScheduler = typename Settings::VarScheduler;
+
+            struct VarOrderLt
+            {
+                Minisat::vec<double>& activity;
+
+                bool operator ()( Minisat::Var x, Minisat::Var y )
+                {
+                    return activity[x] > activity[y];
+                }
+
+                explicit VarOrderLt( Minisat::vec<double>& activity ):
+                    activity(activity)
+                {}
+            };
             
             struct CNFInfos
             {
@@ -477,8 +492,8 @@ namespace smtrat
             Minisat::vec<Minisat::Lit> assumptions;
             /// A priority queue of variables ordered with respect to the variable activity.
             Minisat::Heap<VarOrderLt> order_heap;
-            // A check if a given variable can be decided yet
-            VarDecidabilityCond is_var_decidable;
+            /// Alternative approach to order_heap
+            VarScheduler var_scheduler;
             /// Set by 'search()'.
             double progress_estimate;
             /// Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
@@ -933,7 +948,7 @@ namespace smtrat
 			{
 				if (assigns[x] == l_Undef) {
 					Minisat::lbool res = theoryValue(x);
-					if (res == l_True) uncheckedEnqueue(Minisat::mkLit(x, false), Minisat::CRef_TPropagation);
+					if (res == l_True) uncheckedEnqueue(Minisat::mkLit(x, false), Minisat::CRef_TPropagation); // TODO REFACTOR not used anymore??
 					else if (res == l_False) uncheckedEnqueue(Minisat::mkLit(x, true), Minisat::CRef_TPropagation);
 				}
 				SMTRAT_LOG_DEBUG("smtrat.sat", x << " -> " << assigns[x]);
@@ -1148,8 +1163,22 @@ namespace smtrat
              */
             inline void insertVarOrder( Minisat::Var x )
             {
-                if( !order_heap.inHeap( x ) && decision[x] )
-                    order_heap.insert( x );
+                if (Settings::mc_sat) {
+                    if (mBooleanConstraintMap.size() > x && mBooleanConstraintMap[x].first != nullptr) {
+                        const auto& reabstr = mBooleanConstraintMap[x].first->reabstraction;
+                        if (reabstr.getType() == carl::FormulaType::VARASSIGN) {
+                            const carl::Variable tvar = reabstr.variableAssignment().var();
+                            x = mMCSAT.minisatVar(tvar);
+                        }
+                    }
+                }
+
+                if (Settings::use_new_var_scheduler) {
+                    var_scheduler.insert(x);
+                } else {
+                    if( !order_heap.inHeap( x ) && decision[x] )
+                        order_heap.insert( x );
+                }
             }
             
             /**
@@ -1172,7 +1201,6 @@ namespace smtrat
              */
             Minisat::Lit pickBranchLit();
 			
-			void pickTheoryBranchLit();
 			void checkAbstractionsConsistency() {
 				for (int i = 0; i < mBooleanConstraintMap.size(); i++) {
 					auto ptr1 = mBooleanConstraintMap[i].first;
@@ -1186,6 +1214,8 @@ namespace smtrat
 					assert(ptr1->updateInfo * ptr2->updateInfo <= 0);
 				}
 			}
+            // TODO REFACTOR remove
+            /*
 			void fixTheoryPassedFormulas() {
 				std::vector<Abstraction*> toRemove;
 				for (const auto& pf: rPassedFormula()) {
@@ -1211,7 +1241,7 @@ namespace smtrat
 					abstrptr->updateInfo++;
 					checkAbstractionsConsistency();
 				}
-			}
+			}*/
             
             /**
              * @return The best decision variable under consideration of the decision heuristic.
@@ -1461,8 +1491,13 @@ namespace smtrat
                 }
 
                 // Update order_heap with respect to new activity:
-                if( order_heap.inHeap( v ) )
-                    order_heap.decrease( v );
+                if (Settings::use_new_var_scheduler) {
+                    var_scheduler.decreaseActivity(v);
+                } else {
+                    if( order_heap.inHeap( v ) )
+                        order_heap.decrease( v );
+                }
+                
             }
             
             /**

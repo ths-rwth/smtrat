@@ -347,7 +347,7 @@ struct Explanation {
     Explanation() : mStatistics("mcsat-explanation-fm") {}
 #endif
 
-	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
+	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason) const {
 		#ifdef SMTRAT_DEVOPTION_Statistics
 		mStatistics.explanationCalled();
 		#endif
@@ -367,12 +367,11 @@ struct Explanation {
 			}
 		} else {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " <<  data.constraints());
+
+			carl::Variables allowedVars(data.assignedVariables().begin(), data.assignedVariables().end());
+			allowedVars.insert(var);
 		
 			for (const auto& b : data.constraints()) {
-				carl::Variables allowedVars;
-				auto curVar = std::find(variableOrdering.begin(), variableOrdering.end(), var); 
-				assert(curVar != variableOrdering.end());
-				allowedVars.insert(variableOrdering.begin(), curVar+1);
 				if (!isSubset(b.variables(), allowedVars)) {
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-univariate bound " << b);
 					continue;

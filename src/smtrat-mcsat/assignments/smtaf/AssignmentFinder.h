@@ -18,11 +18,17 @@ struct AssignmentFinder {
 
 		static_assert(Settings::lookahead > 0);
 
+		/*
 		VariablePos varPos = std::find(data.variableOrder().begin(), data.variableOrder().end(), var);
 		VariablePos varPosEnd = varPos;
 		for (int i = 0; i < Settings::lookahead && varPosEnd != data.variableOrder().end(); i++) ++varPosEnd;
+		*/
+		std::vector<carl::Variable> tmp = {var};
+		VariablePos varPos = tmp.begin();
+		VariablePos varPosEnd = tmp.end();
+		// TODO DYNSCHED: allow to assign all variables
+		
 		assert(varPos != varPosEnd);
-
 		AssignmentFinder_SMT af(std::make_pair(varPos, varPosEnd), data.model());
 
 		for (const auto& c: data.constraints()) {

@@ -49,10 +49,17 @@ inline ostream& operator<<(ostream& os, const std::vector<std::vector<onecellcad
 
 boost::optional<mcsat::Explanation>
 Explanation::operator()(const mcsat::Bookkeeping& trail, // current assignment state
-						const std::vector<carl::Variable>& varOrder,
 						carl::Variable var,
 						const FormulasT& trailLiterals) const {
 	assert(trail.model().size() == trail.assignedVariables().size());
+
+	// compute compatible complete variable ordering
+	std::vector varOrder(trail.assignedVariables());
+	for (const auto& v : trail.variables()) {
+		if (std::find(trail.assignedVariables().begin(), trail.assignedVariables().end(), v) == trail.assignedVariables().end()) {
+			varOrder.push_back(v);
+		}
+	}
 
 	// Temp. workaround, should at least one theory-var should be assigned, otherwise no OneCell construct possible
 	// TODO remove as soon, mcsat backend handles this case.

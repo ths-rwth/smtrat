@@ -4,104 +4,30 @@ namespace smtrat {
 namespace mcsat {
 
 template<typename Settings>
-void MCSATMixin<Settings>::makeDecision(Minisat::Lit decisionLiteral) {
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Made theory decision for " << currentVariable() << ": " << decisionLiteral);
-	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Variables: " << mBackend.variableOrder());
+void MCSATMixin<Settings>::pushTheoryDecision(const FormulaT& assignment, Minisat::Lit decisionLiteral) {
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Made theory decision for " << assignment.variableAssignment().var() << ": " << decisionLiteral);
+	mBackend.pushAssignment( assignment.variableAssignment().var(),  assignment.variableAssignment().value(), assignment);
+	assert(trailIsConsistent());
+	mTheoryStack.emplace_back();
+	current().variable = assignment.variableAssignment().var();
 	current().decisionLiteral = decisionLiteral;
 	updateCurrentLevel();
 }
 
 template<typename Settings>
-void MCSATMixin<Settings>::undoDecision() {
-	current().decisionLiteral = Minisat::lit_Undef;
+void MCSATMixin<Settings>::popTheoryDecision() {
+	assert(!mTheoryStack.empty());
 	mUndecidedVariables.insert(
 		mUndecidedVariables.end(),
 		mTheoryStack.back().univariateVariables.begin(),
 		mTheoryStack.back().univariateVariables.end()
 	);
-	mTheoryStack.back().univariateVariables.clear();
+	mTheoryStack.pop_back();
+	// mModelAssignmentCache.clear();
 }
 
 template<typename Settings>
-bool MCSATMixin<Settings>::backtrackTo(Minisat::Lit literal) {
-	std::size_t lvl = level();
-	while (lvl > 0) {
-		if (get(lvl).decisionLiteral == literal) break;
-		lvl--;
-	}
-	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Backtracking until " << literal << " on level " << lvl);
-	if (lvl == 0 || lvl == level()) {
-		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Nothing to backtrack for " << literal);
-		return false;
-	}
-	
-	while (level() > lvl) {
-		popLevel();
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Backtracking theory assignment for " << currentVariable());
-
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Model " << model());
-
-		if (current().decisionLiteral != Minisat::lit_Undef) {
-			mBackend.popAssignment(currentVariable());
-		}
-		undoDecision();
-	}
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Next theory variable is " << currentVariable());
-	return true;
-}
-
-template<typename Settings>
-Minisat::lbool MCSATMixin<Settings>::evaluateLiteral(Minisat::Lit lit) const {
-	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Evaluate " << lit);
-	const FormulaT& f = mGetter.reabstractLiteral(lit);
-	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Evaluate " << f << " on " << mBackend.getModel());
-	auto res = carl::model::evaluate(f, mBackend.getModel());
-	if (res.isBool()) {
-		return res.asBool() ? l_True : l_False;
-	}
-	return l_Undef;
-}
-
-template<typename Settings>
-std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isDecisionPossible(Minisat::Lit lit, bool check_feasibility_before) {
-	auto var = Minisat::var(lit);
-	if (!mGetter.isTheoryAbstraction(var)) return std::make_pair(true, boost::none);
-	const auto& f = mGetter.reabstractLiteral(lit);
-	auto res = mBackend.isInfeasible(currentVariable(), f);
-	if (carl::variant_is_type<ModelValues>(res)) {
-		if (mModelAssignmentCache.empty()) {
-			mModelAssignmentCache.cache(boost::get<ModelValues>(res));
-		}
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " (" << f << ") is possible");
-		return std::make_pair(true, boost::none);
-	} else {
-		auto& confl = boost::get<FormulasT>(res);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " (" << f << ") is impossible due to " << confl);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << (*this));
-		if (check_feasibility_before) {
-			if (std::find(confl.begin(), confl.end(), f) == confl.end()) {
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflicting core " << confl << " is independent from decision " << f);
-				return std::make_pair(false, mBackend.explain(currentVariable(), confl));
-			} else {
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Check if trail without " << f << " was feasible");
-				auto expl = isFeasible();
-				if (expl) {
-					SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Trail without " << f << " was infeasible");
-					return std::make_pair(false, std::move(*expl));
-				} else {
-					SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict depends truly on " << f);
-					return std::make_pair(false, boost::none);
-				}
-			}
-		} else {
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " from " << confl);
-			return std::make_pair(false, mBackend.explain(currentVariable(), confl));
-		}
-	}
-}
-
-template<typename Settings>
-void MCSATMixin<Settings>::updateCurrentLevel() {
+void MCSATMixin<Settings>::updateCurrentLevel() { // TODO DYNSCHED: make more efficient: only evaluate mUndecidedVars: everything decided is newly decided!
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Updating current level " << current().variable);
 	
 	// Check undecided variables whether they became univariate
@@ -120,22 +46,96 @@ void MCSATMixin<Settings>::updateCurrentLevel() {
 }
 
 template<typename Settings>
-void MCSATMixin<Settings>::pushLevel(carl::Variable var) {
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Pushing new level with " << var);
-	mTheoryStack.emplace_back();
-	current().variable = var;
+bool MCSATMixin<Settings>::backtrackTo(Minisat::Lit literal) {
+	std::size_t lvl = level();
+	while (lvl > 0) {
+		if (get(lvl).decisionLiteral == literal) break;
+		lvl--;
+	}
+	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Backtracking until " << literal << " on level " << lvl);
+	if (lvl == 0 || lvl == level()) {
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Nothing to backtrack for " << literal);
+		return false;
+	}
+	
+	while (level() > lvl) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Backtracking theory assignment for " << current().variable);
+
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Model " << model());
+
+		if (current().decisionLiteral != Minisat::lit_Undef) {
+			mBackend.popAssignment(current().variable);
+		}
+		popTheoryDecision();
+	}
+	return true;
 }
 
 template<typename Settings>
-void MCSATMixin<Settings>::popLevel() {
-	assert(!mTheoryStack.empty());
-	assert(mTheoryStack.back().univariateVariables.empty());
-	mTheoryStack.pop_back();
-	mModelAssignmentCache.clear();
+Minisat::lbool MCSATMixin<Settings>::evaluateLiteral(Minisat::Lit lit) const {
+	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Evaluate " << lit);
+	const FormulaT& f = mGetter.reabstractLiteral(lit);
+	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Evaluate " << f << " on " << mBackend.getModel());
+	auto res = carl::model::evaluate(f, mBackend.getModel());
+	if (res.isBool()) {
+		return res.asBool() ? l_True : l_False;
+	}
+	return l_Undef;
+}
+
+/**
+ * Checks is given literal is feasible with the current trail.
+ */
+template<typename Settings>
+std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isBooleanDecisionFeasible(Minisat::Lit lit) {
+	auto var = Minisat::var(lit);
+	if (!mGetter.isTheoryAbstraction(var)) return std::make_pair(true, boost::none);
+	const auto& f = mGetter.reabstractLiteral(lit);
+	
+	// assert that literal is consistent with the trail
+	assert(evaluateLiteral(lit) != l_False);
+
+	carl::Variables vars;
+	f.arithmeticVars(vars);
+	for (const auto& v : mBackend.assignedVariables())
+		vars.erase(v);
+	
+	// TODO DYNSCHED: extend feasibility checks to arbitrarily many variables
+	if (vars.size() == 1) {
+		carl::Variable tvar = *(vars.begin());
+
+		auto res = mBackend.isInfeasible(tvar, f);
+		if (carl::variant_is_type<ModelValues>(res)) {
+			/* if (mModelAssignmentCache.empty()) {
+				mModelAssignmentCache.cache(boost::get<ModelValues>(res));
+			}*/
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " (" << f << ") is feasible wrt " << tvar);
+			return std::make_pair(true, boost::none);
+		} else {
+			auto& confl = boost::get<FormulasT>(res);
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " (" << f << ") is infeasible wrt " << tvar << " due to " << confl);
+			if (std::find(confl.begin(), confl.end(), f) == confl.end()) {
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflicting core " << confl << " is independent from decision " << f);
+				return std::make_pair(false, mBackend.explain(tvar, confl));
+			} else {
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Check if trail without " << f << " was feasible wrt " << tvar);
+				auto expl = isFeasible(tvar);
+				if (expl) {
+					SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Trail without " << f << " was infeasible wrt " << tvar);
+					return std::make_pair(false, std::move(*expl));
+				} else {
+					SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Infeasibility wrt " << tvar << " depends truly on " << f);
+					return std::make_pair(false, boost::none);
+				}
+			}
+		}
+	} else {
+		return std::make_pair(true, boost::none);
+	}
 }
 
 template<typename Settings>
-std::size_t MCSATMixin<Settings>::addVariable(Minisat::Var variable) {
+std::size_t MCSATMixin<Settings>::addBooleanVariable(Minisat::Var variable) {
 	while (mVarPropertyCache.size() <= varid(variable)) {
 		mVarPropertyCache.emplace_back();
 	}
