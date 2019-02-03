@@ -719,9 +719,9 @@ namespace smtrat
             }
 
             if (AnswerOfLRA != SAT) {
-                if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                    cout << "Linearized Formula is Unsatisfied!" << "\n";
-                }
+
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Linearized Formula is Unsatisfied!" << "\n"; }
+
                 if (AnswerOfLRA == UNSAT) {
                     generateTrivialInfeasibleSubset();
                 }
@@ -739,17 +739,13 @@ namespace smtrat
             Model estimatedModel = createEstimatedModel(mModel);
             auto answerOfNRA = isNRASatisfied(estimatedModel);
 
-            if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                cout << "answerOfNRA: " << answerOfNRA << "\n";
-            }
+            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "answerOfNRA: " << answerOfNRA << endl; }
 
             if (answerOfNRA != UNSAT) {
 
-                if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                    cout << "Input Formula is Satisfied!" << "\n";
-                }
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Input Formula is Satisfied!" << endl; }
 
-                estimatedModel.printOneline(stream, true);
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { estimatedModel.printOneline(stream, true); }
                 return answerOfNRA;
             }
 
@@ -771,9 +767,7 @@ namespace smtrat
             loopCounter++;
         }
 
-        if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "Result is:" << "\n";
-        }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Result is:" << endl; }
 
         return UNKNOWN; // This should be adapted according to your implementation.
     }
