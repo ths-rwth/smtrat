@@ -9,18 +9,21 @@
 
 #include "Backend.h"
 
-#include "../Settings.h"
 #include "../utils/Execute.h"
 #include "../utils/durations.h"
 
 namespace benchmax {
 
+/**
+ * This backend simply runs files sequentially on the local machine.
+ */
 class LocalBackend: public Backend {
 protected:
+	/// Execute the tool on the file manually.
 	virtual void execute(const Tool* tool, const fs::path& file, const fs::path& baseDir) {
 		std::stringstream call;
-		call << "ulimit -S -t " << seconds(Settings::timeLimit).count() << " && ";
-		call << "ulimit -S -v " << (Settings::memoryLimit * 1024) << " && ";
+		call << "ulimit -S -t " << seconds(settings_benchmarks().limit_time).count() << " && ";
+		call << "ulimit -S -v " << (settings_benchmarks().limit_memory * 1024) << " && ";
 		call << "date +\"Start: %s%3N\" && ";
 		call << tool->getCommandline(file.native()) << " 2> stderr.log && ";
 		call << "date +\"End: %s%3N\"";

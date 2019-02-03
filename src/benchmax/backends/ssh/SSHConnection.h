@@ -6,11 +6,11 @@
 #include <libssh/sftp.h>
 
 #include "Node.h"
-#include "../Settings.h"
-#include "../logging.h"
-#include "../BenchmarkStatus.h"
-#include "../utils/backend.h"
-#include "../utils/durations.h"
+#include "SSHSettings.h"
+#include <benchmax/benchmarks/benchmarks.h>
+#include <benchmax/logging.h>
+#include <benchmax/utils/backend.h>
+#include <benchmax/utils/durations.h>
 
 #define SSH_LOCKED(expr) { std::lock_guard<std::mutex> guard(mutex); expr; }
 
@@ -157,7 +157,7 @@ public:
 	
 	std::string createTmpDir(const std::string& folder) {
 		BENCHMAX_LOG_DEBUG("benchmax.ssh", this << " Creating directory " << folder);
-		ssh_scp scp = getSCP(SSH_SCP_WRITE | SSH_SCP_RECURSIVE, Settings::ssh_tmpdir.c_str());
+		ssh_scp scp = getSCP(SSH_SCP_WRITE | SSH_SCP_RECURSIVE, settings_ssh().tmpdir.c_str());
 		int rc;
 		SSH_LOCKED(rc = ssh_scp_push_directory(scp, folder.c_str(), S_IRWXU));
 		if (rc != SSH_OK) {
@@ -165,7 +165,7 @@ public:
 			exit(1);
 		}
 		destroy(scp);
-		return Settings::ssh_tmpdir + folder + "/";
+		return settings_ssh().tmpdir + folder + "/";
 	}
 	
 	void removeDir(const std::string& folder) {
@@ -230,10 +230,10 @@ public:
 		ssh_channel channel = getChannel();
 		std::stringstream call;
 		call << "date +\"Start: %s%3N\" ; ";
-		auto timeout = (seconds(Settings::timeLimit) + std::chrono::seconds(3)).count();
-		if (Settings::wallclock) call << "timeout " << timeout << "s ";
+		auto timeout = (seconds(settings_benchmarks().limit_time) + std::chrono::seconds(3)).count();
+		if (settings_ssh().use_wallclock) call << "timeout " << timeout << "s ";
 		else call << "ulimit -S -t " << timeout << " && ";
-		call << "ulimit -S -v " << (Settings::memoryLimit * 1024) << " && ";
+		call << "ulimit -S -v " << (settings_benchmarks().limit_memory * 1024) << " && ";
 		call << cmd << " ; rc=$? ;";
 		call << "date +\"End: %s%3N\" ; exit $rc";
 		int rc;

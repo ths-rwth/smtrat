@@ -15,33 +15,44 @@
 #include <stdexcept>
 #include <vector>
 
-#ifdef __VS
-#pragma warning(push, 0)
 #include <boost/functional/hash.hpp>
 #include <boost/version.hpp>
-#pragma warning(pop)
-#else
-#include <boost/functional/hash.hpp>
-#include <boost/version.hpp>
-#endif
 
-#include "../BenchmarkStatus.h"
+#include <benchmax/results/BenchmarkResult.h>
+#include <benchmax/benchmarks/BenchmarkSet.h>
+#include <benchmax/settings/Settings.h>
 
 namespace benchmax {
 
 namespace fs = std::filesystem;
 
+/**
+ * Base class for any tool.
+ * A tool represents some executable that can be run with some input file.
+ * A tool is responsible for
+ * - deciding it is applicable for a given file extension,
+ * - building a command line to execute it and
+ * - parse additional results from stdout / stderr after it has run.
+ * 
+ * A tool is not to be copied or moved around but should only exist a single time.
+ */
 class Tool {
 protected:
+	/// (Non-unique) identifier for the tool.
 	std::string mName;
+	/// Path to the binary.
 	fs::path mBinary;
+	/// Command line arguments that should be passed to the binary.
 	std::string mArguments;
+	/// Attributes of the tool obtained by introspection of the binary.
 	std::map<std::string,std::string> mAttributes;
 public:
 	Tool() = delete;
 	Tool(const Tool&) = delete;
 	Tool(Tool&&) = delete;
+	/// Creates a generic tool from a binary and command line arguments.
 	Tool(const fs::path& binary, const std::string& arguments): Tool("Generic", binary, arguments) {}
+	/// Creates a named tool from a binary and command line arguments.
 	Tool(const std::string& name, const fs::path& binary, const std::string& arguments): mName(name), mBinary(binary), mArguments(arguments) {}
 	
 	virtual ~Tool() = default;

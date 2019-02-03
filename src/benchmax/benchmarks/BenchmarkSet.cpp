@@ -9,31 +9,32 @@
  */
 
 #include "BenchmarkSet.h"
-#include "logging.h"
+
+#include <benchmax/logging.h>
 
 #include <string>
 
 namespace benchmax {
 
-BenchmarkSet::BenchmarkSet(const fs::path& baseDir): mBaseDir(baseDir), mFilesList() {
+BenchmarkSet::BenchmarkSet(const std::filesystem::path& baseDir): mBaseDir(baseDir), mFilesList() {
 	parseDirectory(mBaseDir);
 }
 
-void BenchmarkSet::parseDirectory(const fs::path& dir)
+void BenchmarkSet::parseDirectory(const std::filesystem::path& dir)
 {
 	try {
 		// does p actually exist?
-		if(fs::exists(dir))
+		if(std::filesystem::exists(dir))
 		{
-			if (fs::is_directory(dir)) {
+			if (std::filesystem::is_directory(dir)) {
 				// If it is a directory, we add all the contents
 				BENCHMAX_LOG_DEBUG("benchmax", dir << " is a directory.");
-				for (auto it = fs::directory_iterator(dir); it != fs::directory_iterator(); it++) {
+				for (auto it = std::filesystem::directory_iterator(dir); it != std::filesystem::directory_iterator(); it++) {
 					parseDirectory(*it);
 				}
-			} else if (fs::is_symlink(dir)) {
+			} else if (std::filesystem::is_symlink(dir)) {
 				// A symlink. Resolve symlink and call recursively.
-				fs::path r = fs::read_symlink(dir);
+				auto r = std::filesystem::read_symlink(dir);
 				BENCHMAX_LOG_DEBUG("benchmax", dir << " is a symlink to " << r);
 				parseDirectory(r);
 			} else {
@@ -42,7 +43,7 @@ void BenchmarkSet::parseDirectory(const fs::path& dir)
 			}
 		}
 		else BENCHMAX_LOG_WARN("benchmax", dir << " does not exist.");
-	} catch(const fs::filesystem_error& ex) {
+	} catch(const std::filesystem::filesystem_error& ex) {
 		BENCHMAX_LOG_ERROR("benchmax", "Filesystem error: " << ex.what());
 	}
 }

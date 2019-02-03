@@ -9,16 +9,17 @@
 
 #include "Tool.h"
 
-#include "../Settings.h"
 #include "../utils/Execute.h"
-#include "../utils/regex.h"
+#include "../utils/strings.h"
+
+#include <regex>
 
 namespace benchmax {
 
 class SMTRAT: public Tool {
 public:
 	SMTRAT(const fs::path& binary, const std::string& arguments): Tool("SMTRAT", binary, arguments) {
-		if (Settings::UseStats) mArguments += " --stats:print";
+		if (settings_tools().collect_statistics) mArguments += " --stats:print";
 	}
 
 	virtual bool canHandle(const fs::path& path) const override {
@@ -33,9 +34,9 @@ public:
 	
 	std::map<std::string,std::string> parseOptions(const std::string& options) const {
 		std::map<std::string,std::string> res;
-		regex r("^(.+) = (.+)\n");
-		auto begin = sregex_iterator(options.begin(), options.end(), r);
-		auto end = sregex_iterator();
+		std::regex r("^(.+) = (.+)\n");
+		auto begin = std::sregex_iterator(options.begin(), options.end(), r);
+		auto end = std::sregex_iterator();
 		for (auto i = begin; i != end; ++i) {
 			res[(*i)[1]] = (*i)[2];
 		}
@@ -54,17 +55,17 @@ public:
 			case 12: result.answer = "memout"; break;
 			default: result.answer = getStatusFromOutput(result);
 		}
-		regex topRegex("\\(\\:(\\S+)\\s*\\(\\s*((?:\\:\\S+\\s*\\S+\\s*)+)\\)\\)");
-		regex subRegex("\\s*\\:(\\S+)\\s*(\\S+)");
+		std::regex topRegex("\\(\\:(\\S+)\\s*\\(\\s*((?:\\:\\S+\\s*\\S+\\s*)+)\\)\\)");
+		std::regex subRegex("\\s*\\:(\\S+)\\s*(\\S+)");
 
-		auto topBegin = sregex_iterator(result.stdout.begin(), result.stdout.end(), topRegex);
-		auto topEnd = sregex_iterator();
+		auto topBegin = std::sregex_iterator(result.stdout.begin(), result.stdout.end(), topRegex);
+		auto topEnd = std::sregex_iterator();
 		for (auto i = topBegin; i != topEnd; ++i) {
 			const std::string& prefix = (*i)[1];
 			const std::string& subStdout = (*i)[2];
 
-			auto subBegin = sregex_iterator(subStdout.begin(), subStdout.end(), subRegex);
-			auto subEnd = sregex_iterator();
+			auto subBegin = std::sregex_iterator(subStdout.begin(), subStdout.end(), subRegex);
+			auto subEnd = std::sregex_iterator();
 			for (auto j = subBegin; j != subEnd; ++j) {
 				std::string name = prefix + "_" + std::string((*j)[1]);
 				result.additional.emplace(name, (*j)[2]);

@@ -9,31 +9,29 @@
 
 #pragma once
 
+#include <filesystem>
 #include <iostream>
 #include <vector>
-
-#include <filesystem>
-namespace fs = std::filesystem;
 
 namespace benchmax {
 
 class BenchmarkSet {
 private:
-	fs::path mBaseDir;
-	std::vector<fs::path> mFilesList;
-	void parseDirectory(const fs::path& dir);
+	std::filesystem::path mBaseDir;
+	std::vector<std::filesystem::path> mFilesList;
+	void parseDirectory(const std::filesystem::path& dir);
 public:
-	BenchmarkSet(const fs::path& baseDir);
+	BenchmarkSet(const std::filesystem::path& baseDir);
 	std::size_t size() const {
 		return mFilesList.size();
 	}
-	const fs::path& baseDir() const {
+	const std::filesystem::path& baseDir() const {
 		return mBaseDir;
 	}
-	auto begin() const -> decltype(mFilesList.begin()) {
+	auto begin() const {
 		return mFilesList.begin();
 	}
-	auto end() const -> decltype(mFilesList.end()) {
+	auto end() const {
 		return mFilesList.end();
 	}
 };
