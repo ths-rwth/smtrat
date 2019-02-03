@@ -299,24 +299,84 @@ namespace smtrat {
 
     }
 
-    FormulaT createMonotonicityOne(smtrat::VariableCapsule variableCapsule, smtrat::VariableCapsule variableCapsuleInner){
-        // {x_1, x_2}
-        std::vector<Poly> operandsxx {Poly(variableCapsule.getXVariable()), Poly(variableCapsuleInner.getXVariable())};
-        // x_1 - x_2 <= 0
-        FormulaT partOneLeftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandsxx), carl::Relation::LEQ);
 
-        // {y_1, y_2}
-        std::vector<Poly> operandsyy {Poly(variableCapsule.getYVariable()), Poly(variableCapsuleInner.getYVariable())};
-        // y_1 - y_2 <= 0
-        FormulaT partTwoLeftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandsyy), carl::Relation::LEQ);
+    /**
+     * | x1 | =
+     * (and
+     *     (=> (x1 >= 0) (y1 = x1))
+     *     (=> (x1 < 0) (y1 = -x1))
+     * )
+     * @param variable
+     * @return
+     */
+    FormulaT generateAbsFormula(carl::Variable variable) {
+
+        FormulaT partOneOneFormula = FormulaT(Poly(variable), carl::Relation::GEQ);
+
+        std::vector<Poly> operands1 {Poly(variable), Poly(variable)};
+
+        FormulaT partOneTwoFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands1), carl::Relation::EQ);
+
+        FormulaT partOneFormula = FormulaT(carl::FormulaType::IMPLIES, partOneOneFormula, partOneTwoFormula);
+
+        FormulaT partTwoOneFormula = FormulaT(Poly(variable), carl::Relation::LESS);
+
+        FormulaT partTwoTwoFormula = FormulaT(Poly(Poly::ConstructorOperation::ADD, operands1), carl::Relation::EQ);
+
+        FormulaT partTwoFormula = FormulaT(carl::FormulaType::IMPLIES, partTwoOneFormula, partTwoTwoFormula);
+
+        FormulaT absFormula = FormulaT(carl::FormulaType::IMPLIES, partTwoOneFormula, partTwoTwoFormula);
+
+        return absFormula;
+    }
+
+
+    /**
+     *
+     * | x1 | <= | x1 | =
+     * (and
+     *     (=> (x1 >= 0) (y1 = x1))
+     *     (=> (x1 < 0) (y1 = -x1))
+     *     (=> (x2 >= 0) (y2 = x2))
+     *     (=> (x2 < 0) (y2 = -x2))
+     *     (y1 <= y2)
+     * )
+     *
+     * @param variable1
+     * @param variable2
+     * @param relation
+     * @return
+     */
+    FormulaT generateAbsFormula(carl::Variable variable1, carl::Variable variable2, carl::Relation relation) {
+
+        FormulasT formulas;
+
+        FormulaT absFormulaOfVariable1 = generateAbsFormula(variable1);
+        formulas.push_back(absFormulaOfVariable1);
+
+        FormulaT absFormulaOfVariable2 = generateAbsFormula(variable2);
+        formulas.push_back(absFormulaOfVariable2);
+
+        std::vector<Poly> operands {Poly(variable1), Poly(variable2)};
+
+        FormulaT realtionFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands), relation);
+        formulas.push_back(realtionFormula);
+
+        FormulaT finalAbsFormula = FormulaT(carl::FormulaType::AND, formulas);
+
+        return finalAbsFormula;
+    }
+
+    FormulaT createMonotonicityOne(smtrat::VariableCapsule variableCapsule, smtrat::VariableCapsule variableCapsuleInner){
+
+        FormulaT partOneLeftFormula = generateAbsFormula(variableCapsule.getXVariable(), variableCapsuleInner.getXVariable(), carl::Relation::LEQ);
+
+        FormulaT partTwoLeftFormula = generateAbsFormula(variableCapsule.getYVariable(), variableCapsuleInner.getYVariable(), carl::Relation::LEQ);
 
         // (x_1 - x_2 <= 0) && (y_1 - y_2 <= 0)
         FormulaT leftFormula = FormulaT(carl::FormulaType::AND, partOneLeftFormula, partTwoLeftFormula);
 
-        // {z_1, z_2}
-        std::vector<Poly> operandszz {Poly(variableCapsule.getZVariable()), Poly(variableCapsuleInner.getZVariable())};
-        // z_1 - z_2 <= 0
-        FormulaT rightFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandszz), carl::Relation::LEQ);
+        FormulaT rightFormula = generateAbsFormula(variableCapsule.getZVariable(), variableCapsuleInner.getZVariable(), carl::Relation::LEQ);
 
         // (x_1 - x_2 <= 0) && (y_1 - y_2 <= 0) -> (z_1 - z_2 <= 0)
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
@@ -331,15 +391,10 @@ namespace smtrat {
     }
 
     FormulaT createMonotonicityTwo(smtrat::VariableCapsule variableCapsule, smtrat::VariableCapsule variableCapsuleInner){
-        // {x_1, x_2}
-        std::vector<Poly> operandsxx {Poly(variableCapsule.getXVariable()), Poly(variableCapsuleInner.getXVariable())};
-        // x_1 - x_2 < 0
-        FormulaT partOneLeftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandsxx), carl::Relation::LESS);
 
-        // {y_1, y_2}
-        std::vector<Poly> operandsyy {Poly(variableCapsule.getYVariable()), Poly(variableCapsuleInner.getYVariable())};
-        // y_1 - y_2 <= 0
-        FormulaT partTwoLeftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandsyy), carl::Relation::LEQ);
+        FormulaT partOneLeftFormula = generateAbsFormula(variableCapsule.getXVariable(), variableCapsuleInner.getXVariable(), carl::Relation::LESS);
+
+        FormulaT partTwoLeftFormula = generateAbsFormula(variableCapsule.getYVariable(), variableCapsuleInner.getYVariable(), carl::Relation::LEQ);
 
         // y_2 != 0
         FormulaT partThreeLeftFormula = FormulaT(Poly(variableCapsuleInner.getYVariable()), carl::Relation::NEQ);
@@ -347,10 +402,7 @@ namespace smtrat {
         // (x_1 - x_2 < 0) && (y_1 - y_2 <= 0) && (y_2 != 0)
         FormulaT leftFormula = FormulaT(carl::FormulaType::AND, partOneLeftFormula, partTwoLeftFormula, partThreeLeftFormula);
 
-        // {z_1, z_2}
-        std::vector<Poly> operandszz {Poly(variableCapsule.getZVariable()), Poly(variableCapsuleInner.getZVariable())};
-        // z_1 - z_2 < 0
-        FormulaT rightFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandszz), carl::Relation::LESS);
+        FormulaT rightFormula = generateAbsFormula(variableCapsule.getZVariable(), variableCapsuleInner.getZVariable(), carl::Relation::LESS);
 
         // (x_1 - x_2 < 0) && (y_1 - y_2 <= 0) && (y_2 != 0) -> (z_1 - z_2 < 0)
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
@@ -365,15 +417,10 @@ namespace smtrat {
     }
 
     FormulaT createMonotonicityThree(smtrat::VariableCapsule variableCapsule, smtrat::VariableCapsule variableCapsuleInner){
-        // {x_1, x_2}
-        std::vector<Poly> operandsxx {Poly(variableCapsule.getXVariable()), Poly(variableCapsuleInner.getXVariable())};
-        // x_1 - x_2 <= 0
-        FormulaT partOneLeftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandsxx), carl::Relation::LEQ);
 
-        // {y_1, y_2}
-        std::vector<Poly> operandsyy {Poly(variableCapsule.getYVariable()), Poly(variableCapsuleInner.getYVariable())};
-        // y_1 - y_2 < 0
-        FormulaT partTwoLeftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandsyy), carl::Relation::LESS);
+        FormulaT partOneLeftFormula = generateAbsFormula(variableCapsule.getXVariable(), variableCapsuleInner.getXVariable(), carl::Relation::LEQ);
+
+        FormulaT partTwoLeftFormula = generateAbsFormula(variableCapsule.getYVariable(), variableCapsuleInner.getYVariable(), carl::Relation::LESS);
 
         // x_2 != 0
         FormulaT partThreeLeftFormula = FormulaT(Poly(variableCapsuleInner.getXVariable()), carl::Relation::NEQ);
@@ -381,10 +428,7 @@ namespace smtrat {
         // (x_1 - x_2 <= 0) && (y_1 - y_2 < 0) && (x_2 != 0)
         FormulaT leftFormula = FormulaT(carl::FormulaType::AND, partOneLeftFormula, partTwoLeftFormula, partThreeLeftFormula);
 
-        // {z_1, z_2}
-        std::vector<Poly> operandszz {Poly(variableCapsule.getZVariable()), Poly(variableCapsuleInner.getZVariable())};
-        // z_1 - z_2 < 0
-        FormulaT rightFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandszz), carl::Relation::LESS);
+        FormulaT rightFormula = generateAbsFormula(variableCapsule.getZVariable(), variableCapsuleInner.getZVariable(), carl::Relation::LESS);
 
         // (x_1 - x_2 <= 0) && (y_1 - y_2 < 0) && (x_2 != 0) -> (z_1 - z_2 < 0)
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
