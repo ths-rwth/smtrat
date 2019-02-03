@@ -666,7 +666,7 @@ namespace smtrat
 
         FormulasT unsatisfiedFormulas;
         for(FormulaT formula:formulas) {
-            if (carl::model::satisfiedBy(formula, model) == 0){ if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "pushing to unsatisfiedFormulas " << formula << endl; }
+            if (carl::model::satisfiedBy(formula, model) == 0){
                 unsatisfiedFormulas.push_back(formula);
             }
         }
@@ -679,7 +679,7 @@ namespace smtrat
 
         FormulasT unsatFormulas = unsatisfiedFormulas(axiomType, axiomFormulasToBeChecked, abstractModel);
 
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "pushing to unsatisfiedFormulas " << unsatFormulas << endl; }
 
         return  unsatFormulas;
     }
@@ -704,6 +704,10 @@ namespace smtrat
 
         int axiomCounter = 0;
 
+        bool isUnsatFormulasNotEmpty = true;
+
+        Model abstractModel;
+
         while (loopCounter < 11) {
 
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
@@ -711,47 +715,61 @@ namespace smtrat
                 cout << "axiomCounter" << axiomCounter << "\n";
             }
 
-            auto AnswerOfLRA = runBackends();
-            updateModel();
+            if(isUnsatFormulasNotEmpty) {
 
-            if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                cout << "Linearized Formula is AnswerOfLRA!" << AnswerOfLRA << "\n";
-            }
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Calling backend for axiom counter = " << axiomCounter << endl; }
 
-            if (AnswerOfLRA != SAT) {
+                auto AnswerOfLRA = runBackends();
+                updateModel();
 
-                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Linearized Formula is Unsatisfied!" << "\n"; }
-
-                if (AnswerOfLRA == UNSAT) {
-                    generateTrivialInfeasibleSubset();
+                if (smtrat::LOG::getInstance().isDebugEnabled()) {
+                    cout << "Linearized Formula is AnswerOfLRA!" << AnswerOfLRA << "\n";
                 }
-                return AnswerOfLRA;
+
+                if (AnswerOfLRA != SAT) {
+
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) {
+                        cout << "Linearized Formula is Unsatisfied!" << "\n";
+                    }
+
+                    if (AnswerOfLRA == UNSAT) {
+                        generateTrivialInfeasibleSubset();
+                    }
+                    return AnswerOfLRA;
+                }
+
+                mModel = backendsModel();
+
+                if (smtrat::LOG::getInstance().isDebugEnabled()) {
+                    cout << "Solution/model of linearized formula: ";
+                    mModel.printOneline(stream, true);
+                    cout << "\n";
+                    cout << "\n";
+                }
+                Model estimatedModel = createEstimatedModel(mModel);
+                auto answerOfNRA = isNRASatisfied(estimatedModel);
+
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "answerOfNRA: " << answerOfNRA << endl; }
+
+                if (answerOfNRA != UNSAT) {
+
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Input Formula is Satisfied!" << endl; }
+
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { estimatedModel.printOneline(stream, true); }
+                    return answerOfNRA;
+                }
+
+                abstractModel = createAbstractModel(mModel, estimatedModel);
+
             }
-
-            mModel = backendsModel();
-
-            if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                cout << "Solution/model of linearized formula: ";
-                mModel.printOneline(stream, true);
-                cout << "\n";
-                cout << "\n";
-            }
-            Model estimatedModel = createEstimatedModel(mModel);
-            auto answerOfNRA = isNRASatisfied(estimatedModel);
-
-            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "answerOfNRA: " << answerOfNRA << endl; }
-
-            if (answerOfNRA != UNSAT) {
-
-                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Input Formula is Satisfied!" << endl; }
-
-                if (smtrat::LOG::getInstance().isDebugEnabled()) { estimatedModel.printOneline(stream, true); }
-                return answerOfNRA;
-            }
-
-            Model abstractModel = createAbstractModel(mModel, estimatedModel);
 
             FormulasT unsatFormulas = refinement(axiomType[axiomCounter], abstractModel);
+
+            isUnsatFormulasNotEmpty = !unsatFormulas.empty();
+
+            if (unsatFormulas.empty()) {
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "empty" << endl; }
+            }
 
             for (FormulaT formulaT : unsatFormulas) {
                 addSubformulaToPassedFormula(formulaT);
