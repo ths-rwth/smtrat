@@ -11,6 +11,13 @@
 #include "stdlib.h"
 #include "factory/AxiomFactory.h"
 #include "LOG.h"
+#include <algorithm>
+#include <iostream>
+#include <random>
+#include <vector>
+#include "boost/random.hpp"
+#include "boost/generator_iterator.hpp"
+
 
 namespace smtrat
 {
@@ -660,24 +667,58 @@ namespace smtrat
         return abstractModel;
     }
 
-    FormulasT unsatisfiedFormulas(AxiomFactory::AxiomType axiomType, FormulasT formulas, Model model){
+    int rand(int min, int max) {
+        std::time_t now = std::time(0);
+        boost::random::mt19937 gen{static_cast<std::uint32_t>(now)};
+        boost::random::uniform_int_distribution<> dist{min, max};
+        return dist(gen);
+    }
+
+    FormulasT unsatisfiedFormulas(AxiomFactory::AxiomType axiomType, FormulasT formulas, Model model, UNSATFormulaSelectionStrategy formulaSelectionStrategy){
+
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "unsatisfiedFormulas to be check: " << formulas << endl; }
+
         if (axiomType == AxiomFactory::AxiomType::TANGENT_PLANE)
             return formulas;
 
         FormulasT unsatisfiedFormulas;
         for(FormulaT formula:formulas) {
             if (carl::model::satisfiedBy(formula, model) == 0){
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "unsatisfiedFormula: " << formula << endl; }
                 unsatisfiedFormulas.push_back(formula);
+                if (formulaSelectionStrategy == UNSATFormulaSelectionStrategy::FIRST){
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "returning first formula" << endl; }
+                    return unsatisfiedFormulas;
+                }
             }
         }
+
+        if (unsatisfiedFormulas.empty()) {
+            return unsatisfiedFormulas;
+        }
+
+        if (formulaSelectionStrategy == UNSATFormulaSelectionStrategy::RANDOM) {
+            std::vector<FormulaT> out;
+
+            int min = unsatisfiedFormulas. size() / 2;
+            int max = (unsatisfiedFormulas. size() * 80) / 100;
+
+            size_t nelems = rand(min, max);
+
+            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Selecting elements: " << nelems << " from the elemnts of: " << unsatisfiedFormulas.size() << endl; }
+            std::sample(unsatisfiedFormulas.begin(), unsatisfiedFormulas.end(), std::back_inserter(out),
+                        nelems, std::mt19937{std::random_device{}()});
+            return out;
+        }
+
         return unsatisfiedFormulas;
     }
 
-    FormulasT refinement(AxiomFactory::AxiomType axiomType, Model abstractModel){
+    FormulasT refinement(AxiomFactory::AxiomType axiomType, Model abstractModel, UNSATFormulaSelectionStrategy formulaSelectionStrategy){
 
         FormulasT axiomFormulasToBeChecked = AxiomFactory::createFormula(axiomType, abstractModel, smtrat::MonomialMappingByVariablePool::getInstance().getMMonomialMapping());
 
-        FormulasT unsatFormulas = unsatisfiedFormulas(axiomType, axiomFormulasToBeChecked, abstractModel);
+        FormulasT unsatFormulas = unsatisfiedFormulas(axiomType, axiomFormulasToBeChecked, abstractModel, formulaSelectionStrategy);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "pushing to unsatisfiedFormulas " << unsatFormulas << endl; }
 
@@ -759,7 +800,7 @@ namespace smtrat
 
             }
 
-            FormulasT unsatFormulas = refinement(axiomType[axiomCounter], abstractModel);
+            FormulasT unsatFormulas = refinement(axiomType[axiomCounter], abstractModel, Settings::formulaSelectionStrategy);
 
             isUnsatFormulasNotEmpty = !unsatFormulas.empty();
 
