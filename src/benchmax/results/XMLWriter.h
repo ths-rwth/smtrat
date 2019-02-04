@@ -3,7 +3,6 @@
 
 #include "../settings/Settings.h"
 #include "../benchmarks/benchmarks.h"
-#include "../utils/durations.h"
 #include "../utils/strings.h"
 
 #include <fstream>
@@ -85,7 +84,7 @@ public:
 					std::pair<std::size_t, std::size_t> resultID(tool.second, file.second);
 					auto it = res.second.data.find(resultID);
 					if (it == res.second.data.end()) continue;
-					mFile << "\t\t\t<run solver_id=\"" << sanitizeTool(tool.first) << "\" timeout=\"" << seconds(settings_benchmarks().limit_time).count() << "s\">" << std::endl;
+					mFile << "\t\t\t<run solver_id=\"" << sanitizeTool(tool.first) << "\" timeout=\"" << std::chrono::seconds(settings_benchmarks().limit_time).count() << "s\">" << std::endl;
 					if (!it->second.additional.empty()) {
 						mFile << "\t\t\t\t<statistics>" << std::endl;
 						for (const auto& stat: it->second.additional) {
@@ -96,7 +95,7 @@ public:
 					mFile << "\t\t\t\t<results>" << std::endl;
 					mFile << "\t\t\t\t\t<result name=\"answer\" type=\"string\">" << it->second.answer << "</result>" << std::endl;
 					mFile << "\t\t\t\t\t<result name=\"exitcode\" type=\"int\">" << it->second.exitCode << "</result>" << std::endl;
-					mFile << "\t\t\t\t\t<result name=\"runtime\" type=\"msec\">" << milliseconds(it->second.time).count() << "</result>" << std::endl;
+					mFile << "\t\t\t\t\t<result name=\"runtime\" type=\"msec\">" << std::chrono::milliseconds(it->second.time).count() << "</result>" << std::endl;
 					mFile << "\t\t\t\t</results>" << std::endl;
 					mFile << "\t\t\t</run>" << std::endl;
 				}

@@ -16,7 +16,7 @@ void archive_log_files(const ArchiveProperties& p) {
 	ss << "-C " << p.tmp_dir << " ";
 	ss << p.filename_jobfile << " " << p.filename_submitfile << " ";
 	ss << "JOB." << p.jobid << "_*";
-	int code = callProgram(ss.str(), output);
+	int code = call_program(ss.str(), output);
 	if (code == 0) {
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Archived log files in " << p.filename_archive);
 	} else {

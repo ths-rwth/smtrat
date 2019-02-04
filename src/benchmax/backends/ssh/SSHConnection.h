@@ -9,8 +9,6 @@
 #include "SSHSettings.h"
 #include <benchmax/benchmarks/benchmarks.h>
 #include <benchmax/logging.h>
-#include <benchmax/utils/backend.h>
-#include <benchmax/utils/durations.h>
 
 #define SSH_LOCKED(expr) { std::lock_guard<std::mutex> guard(mutex); expr; }
 
@@ -26,6 +24,20 @@ private:
 	ssh_session session;
 	std::mutex mutex;
 	int verbosity;
+
+
+	std::chrono::milliseconds parse_duration(const std::string& output) const {
+		std::regex re("Start: ([0-9]+).*End: ([0-9]+)", std::regex::extended); //".*End: (\\d+)$");
+		std::smatch m;
+		if (std::regex_search(output, m, re)) {
+			std::size_t p;
+			std::size_t start = std::stoull(m[1].str(), &p);
+			std::size_t end = std::stoull(m[2].str(), &p);
+			return std::chrono::milliseconds(end - start);
+		} else {
+			return std::chrono::milliseconds(0);
+		}
+	}
 	
 	ssh_channel getChannel() {
 		std::lock_guard<std::mutex> guard(mutex);
@@ -230,7 +242,7 @@ public:
 		ssh_channel channel = getChannel();
 		std::stringstream call;
 		call << "date +\"Start: %s%3N\" ; ";
-		auto timeout = (seconds(settings_benchmarks().limit_time) + std::chrono::seconds(3)).count();
+		auto timeout = (std::chrono::seconds(settings_benchmarks().limit_time) + std::chrono::seconds(3)).count();
 		if (settings_ssh().use_wallclock) call << "timeout " << timeout << "s ";
 		else call << "ulimit -S -t " << timeout << " && ";
 		call << "ulimit -S -v " << (settings_benchmarks().limit_memory * 1024) << " && ";
@@ -265,7 +277,7 @@ public:
 			BENCHMAX_LOG_DEBUG("benchmax.ssh", "stderr = " << result.stderr);
 		}
 		SSH_LOCKED(result.exitCode = ssh_channel_get_exit_status(channel));
-		result.time = parseDuration(result.stdout);
+		result.time = parse_duration(result.stdout);
 		destroy(channel);
 		return true;
 	}
