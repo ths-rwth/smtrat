@@ -1,48 +1,34 @@
-/**
- * @file   smtratSolverTool.h
- * @author: Sebastian Junges
- *
- *
- */
-
 #pragma once
 
 #include "Tool.h"
-
-#include "../utils/Execute.h"
-#include "../utils/strings.h"
 
 #include <regex>
 
 namespace benchmax {
 
+/**
+ * Tool wrapper for SMT-RAT for SMT-LIB.
+ */
 class SMTRAT: public Tool {
 public:
+	/// New SMT-RAT tool.
 	SMTRAT(const fs::path& binary, const std::string& arguments): Tool("SMTRAT", binary, arguments) {
 		if (settings_tools().collect_statistics) mArguments += " --stats:print";
 	}
 
+	/// Only handle .smt2 files.
 	virtual bool canHandle(const fs::path& path) const override {
-		return isExtension(path, ".smt2");
+		return is_extension(path, ".smt2");
 	}
 	
+	/// Try to parse memouts from stderr.
 	std::string getStatusFromOutput(const BenchmarkResult& result) const {
 		if (result.stderr.find("GNU MP: Cannot allocate memory") != std::string::npos) return "memout";
 		if (result.stderr.find("Minisat::OutOfMemoryException") != std::string::npos) return "memout";
 		return "segfault";
 	}
 	
-	std::map<std::string,std::string> parseOptions(const std::string& options) const {
-		std::map<std::string,std::string> res;
-		std::regex r("^(.+) = (.+)\n");
-		auto begin = std::sregex_iterator(options.begin(), options.end(), r);
-		auto end = std::sregex_iterator();
-		for (auto i = begin; i != end; ++i) {
-			res[(*i)[1]] = (*i)[2];
-		}
-		return res;
-	}
-	
+	/// Computes the answer string from the exit code and parses statistics output.
 	virtual void additionalResults(const fs::path&, BenchmarkResult& result) const override {
 		switch (result.exitCode) {
 			case 2: result.answer = "sat"; break;

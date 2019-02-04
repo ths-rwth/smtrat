@@ -1,7 +1,7 @@
 Backends {#backends}
 ====================
 
-A backend offers the means to run the tasks in a specific manner.
+A [backend](@ref benchmax::Backend) offers the means to run the tasks in a specific manner.
 A number of different backends are implemented that allow for using benchmax in various scenarios.
 
 LocalBackend

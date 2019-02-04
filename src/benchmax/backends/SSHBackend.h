@@ -17,6 +17,15 @@
 #include <queue>
 
 namespace benchmax {
+/**
+ * Backend using remote computation nodes via SSH.
+ * This backend connects to one or more remote computations nodes via SSH and runs all benchmarks concurrently.
+ * The queueing is performed manually by the SSHScheduler class.
+ * 
+ * Additionally to simply connecting multiple times, SSH also allows for multiplexing within a single connection.
+ * As SSH limits both the number of concurrent connections and the number of channels within a single connection, we combine both mechanisms.
+ * The number of concurrent connections is specified by `connections` while the number of channels is specified by `cores` of a Node.
+ */
 class SSHBackend: public Backend {
 private:
 	std::queue<std::future<bool>> jobs;
@@ -60,6 +69,7 @@ class SSHBackend: public Backend {
 public:
 	SSHBackend(): Backend() {}
 	~SSHBackend() {}
+	/// Dummy if SSH is disabled.
 	void run(const Tools&, const std::vector<BenchmarkSet>&) {
 		BENCHMAX_LOG_ERROR("benchmax", "This version of benchmax was compiled without support for SSH.");
 	}

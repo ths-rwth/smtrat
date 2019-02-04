@@ -22,6 +22,11 @@ namespace benchmax {
 
 namespace fs = std::filesystem;
 
+/**
+ * Stores results for for whole benchmax run.
+ * Allows for (concurrent) insertion of the individual results via addResult().
+ * Eventually results can be stored to a database (if enabled) or to a xml file.
+ */
 class Results {
 private:
 	struct ResultSet {
@@ -32,6 +37,7 @@ private:
 	std::map<const Tool*, std::size_t> mTools;
 	std::map<fs::path, ResultSet> mResults;
 public:
+	/// Add a new result.
 	void addResult(const Tool* tool, const fs::path& file, const fs::path& baseDir, const BenchmarkResult& results) {
 		std::lock_guard<std::mutex> lock(mMutex);
 		auto toolIt = mTools.find(tool);
@@ -46,6 +52,7 @@ public:
 		mResults[baseDir].data.emplace(std::make_pair(toolIt->second, fileIt->second), results);
 	}
 	
+	/// Store all results to some database.
 	void store(Database& db) {
 		std::map<std::size_t, std::size_t> toolIDs;
 		std::map<std::size_t, std::size_t> fileIDs;
@@ -70,11 +77,10 @@ public:
 		}
 	}
 	
+	/// Store all results to a xml file.
 	void store(XMLWriter& xml) {
 		xml.write(mTools, mResults);
 	}
-	
-	~Results() {}
 };
 
 }

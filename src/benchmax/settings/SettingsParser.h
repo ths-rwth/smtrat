@@ -16,14 +16,18 @@ namespace settings {
 
 /// Helper class to nicely print the options that are available.
 struct OptionPrinter {
+	/// Reference to parser.
 	const SettingsParser& parser;
 };
+/// Streaming operator for a option printer.
 std::ostream& operator<<(std::ostream& os, OptionPrinter);
 
 /// Helper class to nicely print the settings that were parsed.
 struct SettingsPrinter {
+	/// Reference to parser.
 	const SettingsParser& parser;
 };
+/// Streaming operator for a settings printer.
 std::ostream& operator<<(std::ostream& os, SettingsPrinter);
 
 }

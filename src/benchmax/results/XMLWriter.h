@@ -11,6 +11,9 @@
 
 namespace benchmax {
 
+/**
+ * Writes results to a xml file.
+ */
 class XMLWriter {
 private:
 	std::ofstream mFile;
@@ -30,10 +33,10 @@ private:
 		return res;
 	}
 	std::string sanitizeTool(const Tool* tool) const {
-		return sanitize(removePrefix(tool->binary().native(), settings_tools().tools_common_prefix), true);
+		return sanitize(remove_prefix(tool->binary().native(), settings_tools().tools_common_prefix), true);
 	}
 	std::string sanitizeFile(const fs::path& file, const std::string& prefix) const {
-		return sanitize(removePrefix(file.native(), prefix), true);
+		return sanitize(remove_prefix(file.native(), prefix), true);
 	}
 	template<typename Results>
 	std::vector<std::string> collectStatistics(const Results& results) const {
@@ -53,13 +56,15 @@ private:
 		return res;
 	}
 public:
+	/// Open file for writing.
 	XMLWriter(const std::string& filename): mFile(filename) {
-		mFile << "<?xml version=\"1.0\"?>" << std::endl;
-		mFile << "<benchmarksets>" << std::endl;
 	}
 
+	/// Write results to file.
 	template<typename Results>
 	void write(const std::map<const Tool*, std::size_t>& tools, const Results& results) {
+		mFile << "<?xml version=\"1.0\"?>" << std::endl;
+		mFile << "<benchmarksets>" << std::endl;
 		mFile << "\t<solvers>" << std::endl;
 		std::set<std::string> toolNames;
 		for (const auto& tool: tools) toolNames.insert(sanitizeTool(tool.first));
@@ -103,11 +108,7 @@ public:
 			}
 			mFile << "\t</benchmarkset>" << std::endl;
 		}
-	}
-
-	~XMLWriter() {
 		mFile << "</benchmarksets>" << std::endl;
-		mFile.close();
 	}
 };
 

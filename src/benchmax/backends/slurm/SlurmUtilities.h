@@ -10,13 +10,20 @@ namespace slurm {
 
 namespace fs = std::filesystem;
 
+/// All properties needed to archive log files.
 struct ArchiveProperties {
+	/// Filename of the archive.
 	std::string filename_archive;
+	/// Filename of the job file.
 	std::string filename_jobfile;
+	/// Filename of the submit file.
 	std::string filename_submitfile;
+	/// Temporary directory to look for output files.
 	std::string tmp_dir;
+	/// Job id to recognizes appropriate output files.
 	int jobid;
 };
+/// Put all log files into an archive.
 void archive_log_files(const ArchiveProperties& p);
 
 /**
@@ -27,14 +34,21 @@ void archive_log_files(const ArchiveProperties& p);
  */
 std::vector<fs::path> collect_result_files(const fs::path& basedir, int jobid);
 
-
+/// All properties needed to create a submit file.
 struct SubmitfileProperties {
+	/// Suffix for job and submit file.
 	std::string file_suffix;
+	/// Filename of the job list file.
 	std::string filename_jobs;
+	/// Temporary directory for log files.
 	std::string tmp_dir;
+	/// Time limit in seconds.
 	std::chrono::seconds limit_time;
+	/// Memory limit in megabytes.
 	std::size_t limit_memory;
+	/// Number of tasks.
 	std::size_t tasks;
+	/// Number of slices.
 	std::size_t slices;
 };
 
@@ -63,6 +77,7 @@ std::string parse_result_info(const std::string& content, const std::string& nam
 /**
  * Remove the given list of files.
  * @param files List of files.
+ * @param remove Boolean flag whether to actually remove files.
  */
 void remove_log_files(const std::vector<fs::path>& files, bool remove);
 

@@ -16,12 +16,19 @@
 
 namespace benchmax {
 
+/**
+ * Backend for the HTCondor batch system.
+ * Currently submits all jobs individually and asynchronously waits for them to finish.
+ */
 class CondorBackend: public Backend {
 protected:
+	/// No-op version of execute.
 	virtual void execute(const Tool*, const fs::path&, const fs::path&) {}
 private:
+	/// List of processes that are currently running.
 	std::list<std::atomic<bool>> processes;
 
+	/// Generate a submit file for the given job.
 	std::string generateSubmitFile(std::size_t ID, const Tool& tool, const BenchmarkSet& b) {
 		std::ofstream wrapper(".wrapper_" + std::to_string(ID));
 		wrapper << "#!/bin/sh" << std::endl;
@@ -49,6 +56,7 @@ private:
 		return ".jobs." + std::to_string(ID);
 	}
 	
+	/// Collect job results for the given id.
 	void collectResults(std::size_t ID) {
 		typedef fs::directory_iterator dirIt;
 		
@@ -60,6 +68,7 @@ private:
 		}
 	}
 	
+	/// Run the given job and wait for its results.
 	void runAndWait(std::size_t ID, const std::string& submitFile, std::atomic<bool>& it) {
 		BENCHMAX_LOG_INFO("benchmax.condor", "Queueing batch " << ID << "...");
 		std::system(("condor_submit " + submitFile).c_str());
@@ -72,6 +81,7 @@ private:
 	}
 	
 public:
+	/// Run all tools on all benchmarks.
 	void run(const Tools& tools, const std::vector<BenchmarkSet>& benchmarks) {
 		BENCHMAX_LOG_INFO("benchmax.condor", "Generating submit files...");
 		
