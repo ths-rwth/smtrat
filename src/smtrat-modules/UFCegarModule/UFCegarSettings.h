@@ -18,6 +18,6 @@ namespace smtrat
 		/**
 		 * Example for a setting.
 		 */
-		static const bool example_setting = true;
+		static constexpr bool cegar = true;
 	};
 }

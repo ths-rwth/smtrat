@@ -192,15 +192,23 @@ namespace smtrat
         return added_constraint;
     }
 
+    template<typename Instances>
+    bool flattened_function_calls(const Instances& instances) noexcept {
+        for (const auto& [function, list] : instances) {
+            for (const auto& inst : list) {
+                for (const auto& arg : inst.args()) {
+                    if (arg.isUFInstance()) {
+                        return false; // not flattened call
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
     template<class Settings>
-    bool UFCegarModule<Settings>::refine_n_args(int count) noexcept {
-        // Expects flattened input without nested function calls
-
-        // TODO idea partial unrolling of arguments -
-        // extend consistency only by one argument at a time
-        // TODO expand according to previous model (functions satisfied in model)
-        // TODO filter combinations
-
+    bool UFCegarModule<Settings>::ackermanize() noexcept {
         bool constrained = false;
         for (const auto& [function, list] : instances) {
             if (list.size() <= 1)
@@ -218,7 +226,7 @@ namespace smtrat
 
                     FormulasT eqs;
 
-                    for (int n = 0; args.first != end && n < count; ++args.first, ++args.second, ++n) {
+                    for (int n = 0; args.first != end; ++args.first, ++args.second, ++n) {
                         eqs.emplace_back(flatten(*args.first), flatten(*args.second), false);
                     }
 
@@ -233,39 +241,30 @@ namespace smtrat
         return constrained;
     }
 
-    template<typename Instances>
-    bool flattened_function_calls(const Instances& instances) noexcept {
-        for (const auto& [function, list] : instances) {
-            for (const auto& inst : list) {
-                for (const auto& arg : inst.args()) {
-                    if (arg.isUFInstance()) {
-                        return false; // not flattened call
-                    }
-                }
-            }
-        }
-
-        return true;
-    }
-
     template<class Settings>
     Answer UFCegarModule<Settings>::checkCore()
     {
-        Answer result = runBackends();
+        assert(flattened_function_calls(instances));
 
-        if ( result == Answer::SAT ) { // expect flattened input
-            assert(flattened_function_calls(instances));
-            if (refine_n_args(std::numeric_limits<int>::max())) // constrain all args
-                result = runBackends();
-        }
+        Answer result;
+        if constexpr (Settings::cegar) {
+            result = runBackends();
 
-        /* CEGAR iteration when input is not flattened:
-        bool refinable = true;
-        while (result == Answer::SAT && refinable) {
-            if ( refinable = refine() )
-                result = runBackends();
+            bool refinable = true;
+            while (result == Answer::SAT && refinable) {
+                if (checkModel()) {
+                    return result;
+                }
+
+                refinable = refine();
+                if (refinable) {
+                    result = runBackends();
+                }
+            }
+        } else {
+            ackermanize();
+            result = runBackends();
         }
-        */
 
         if (result == Answer::UNSAT) {
             getInfeasibleSubsets();
