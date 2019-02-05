@@ -38,31 +38,63 @@ endforeach()
 
 file(GLOB_RECURSE smtrat_cli_sources "*.cpp")
 
+add_library(smtrat-objects OBJECT ${smtrat_cli_sources})
+add_dependencies(smtrat-objects
+	smtrat-lib-shared
+	carl-shared
+	smtrat-common-shared
+	smtrat-modules-shared
+	smtrat-solver-shared
+	smtrat-unsat-cores-shared
+	smtrat-strategy-${SMTRAT_Strategy}-shared
+)
+target_include_dirs_from(smtrat-objects "" PUBLIC
+	smtrat-lib-shared
+	carl-shared
+	smtrat-common-shared
+	smtrat-modules-shared
+	smtrat-solver-shared
+	smtrat-unsat-cores-shared
+	smtrat-strategy-${SMTRAT_Strategy}-shared
+)
 
-add_executable( smtrat ${smtrat_cli_sources})
+add_executable(smtrat-shared $<TARGET_OBJECTS:smtrat-objects>)
+add_executable(smtrat-static $<TARGET_OBJECTS:smtrat-objects>)
 
-target_link_libraries( smtrat
-                        lib_${PROJECT_NAME} # smtrat library
-                        ${libraries} # libraries definied in top-level CMakeLists.txt
-						smtrat-common-shared
-						smtrat-modules-shared
-						smtrat-solver-shared
-						smtrat-unsat-cores-shared
-						smtrat-strategy-${SMTRAT_Strategy}-shared
+target_link_libraries(smtrat-shared
+	smtrat-lib-shared
+	carl-shared
+	smtrat-common-shared
+	smtrat-modules-shared
+	smtrat-solver-shared
+	smtrat-unsat-cores-shared
+	smtrat-strategy-${SMTRAT_Strategy}-shared
+)
+target_link_libraries(smtrat-static
+	smtrat-lib-static
+	carl-static
+	smtrat-common-static
+	smtrat-modules-static
+	smtrat-solver-static
+	smtrat-unsat-cores-static
+	smtrat-strategy-${SMTRAT_Strategy}-static
 )
 
 if(CLI_ENABLE_PREPROCESSOR)
-	target_link_libraries(smtrat smtrat-module-FPPModule-shared)
+	target_link_libraries(smtrat-shared smtrat-module-FPPModule-shared)
+	target_link_libraries(smtrat-static smtrat-module-FPPModule-static)
 endif()
 if(CLI_ENABLE_QE)
-	target_link_libraries(smtrat smtrat-qe-shared)
+	target_link_libraries(smtrat-shared smtrat-qe-shared)
+	target_link_libraries(smtrat-static smtrat-qe-static)
 endif()
 
 #if(USE_COTIRE)
 #    cotire( smtrat )
 #endif()
 
-set_target_properties( smtrat PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR} )
+set_target_properties(smtrat-shared PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set_target_properties(smtrat-static PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 #add_library( smtlibParser
 #	${CMAKE_SOURCE_DIR}/src/cli/smtratSolver.cpp
