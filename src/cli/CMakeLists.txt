@@ -17,6 +17,7 @@ option(CLI_ENABLE_OPB_PARSER "Enable parser for OPB files" OFF)
 option(CLI_ENABLE_PREPROCESSOR "Enable stand-alone preprocessor" ON)
 option(CLI_ENABLE_QE "Enable quantifier elimination" OFF)
 
+include(${carl_INCLUDE_DIR}/../cmake/carlmacros.cmake)
 
 #TODO: are all these directories really necessary?
 include_directories(${CMAKE_SOURCE_DIR}/src
@@ -30,11 +31,7 @@ link_directories( ${PROJECT_BINARY_DIR}/src/lib
 
 file(STRINGS ${CMAKE_SOURCE_DIR}/LICENSE LICENSE_CONTENT_IN)
 
-file(GLOB_RECURSE smtrat_cli_tpl "*.in")
-foreach(tpl ${smtrat_cli_tpl})
-	string(REGEX REPLACE ".in$" "" file ${tpl})
-	configure_file("${tpl}" "${file}")
-endforeach()
+configure_everything()
 
 file(GLOB_RECURSE smtrat_cli_sources "*.cpp")
 
@@ -89,29 +86,12 @@ if(CLI_ENABLE_QE)
 	target_link_libraries(smtrat-static smtrat-qe-static)
 endif()
 
-#if(USE_COTIRE)
-#    cotire( smtrat )
-#endif()
 
 set_target_properties(smtrat-shared PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set_target_properties(smtrat-static PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-#add_library( smtlibParser
-#	${CMAKE_SOURCE_DIR}/src/cli/smtratSolver.cpp
-#)
+add_custom_target(smtrat DEPENDS smtrat-shared)
+if (STATICLIB_SWITCH)
+	add_dependencies(smtrat smtrat-static)
+endif()
 
-## add linking libraries. This is an over-approximation.
-#target_link_libraries( smtlibParser ${libraries})
-#
-#set_target_properties( smtlibParser PROPERTIES
-#		# create *nix style library versions + symbolic links
-#		VERSION "${${PROJECT_NAME}_MAJORVERSION}.${${PROJECT_NAME}_MINORVERSION}.${${PROJECT_NAME}_MAINTENANCEVERSION}"
-#		SOVERSION "${${PROJECT_NAME}_MAJORVERSION}.${${PROJECT_NAME}_MINORVERSION}.${${PROJECT_NAME}_MAINTENANCEVERSION}"
-#		# allow creating static and shared libs without conflicts
-#		# CLEAN_DIRECT_OUTPUT 1
-#		# avoid conflicts between library and binary target names
-#)
-#
-#if(USE_COTIRE)
-#    cotire( smtlibParser )
-#endif()
