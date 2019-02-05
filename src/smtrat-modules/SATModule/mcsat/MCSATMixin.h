@@ -91,6 +91,14 @@ private:
 		Minisat::Var minisatVar(const carl::Variable& v) const {
 			return carlToMinisat.at(v);
 		}
+
+		std::vector<Minisat::Var> minisatVars() const {
+			std::vector<Minisat::Var> res;
+			for(auto it = minisatToCarl.begin(); it != minisatToCarl.end(); ++it) {
+				res.push_back(it->first);
+			}
+			return res;
+		}
 	};
 	VarMapping mTheoryVarMapping;
 
@@ -176,7 +184,7 @@ public:
 			[&baseModule](Minisat::Var v) -> const auto& { return baseModule.mBooleanConstraintMap[v].first->reabstraction; },
 			[&baseModule](Minisat::Lit l) -> const auto& { return sign(l) ? baseModule.mBooleanConstraintMap[var(l)].second->reabstraction : baseModule.mBooleanConstraintMap[var(l)].first->reabstraction; },
 			[&baseModule](Minisat::Lit l) -> const auto& { return baseModule.watches[l]; },
-			[&baseModule]() -> Minisat::Var { return baseModule.newVar(); }
+			[&baseModule]() -> Minisat::Var { baseModule.mBooleanConstraintMap.push( std::make_pair( nullptr, nullptr ) ); return baseModule.newVar(true,true,0,false); }
 		}),
 		mTheoryStack(1, TheoryLevel())
 		#ifdef SMTRAT_DEVOPTION_Statistics
@@ -335,6 +343,8 @@ public:
 	 * Checks if the trail is consistent after the assignment on the current level.
 	 * The trail must be consistent on the previous level.
 	 * 
+	 * Note that we only check consistency for syntactically univariate constraints.
+	 * 
 	 * Returns boost::none if consistent and otherwise a conflicting Boolean variable.
 	 */
 	boost::optional<FormulaT> checkConsistency() { // TODO DYNSCHED make more efficient
@@ -354,6 +364,12 @@ public:
 			if (std::find(current().univariateVariables.begin(), current().univariateVariables.end(), var) == current().univariateVariables.end()) {
 				continue;
 			}
+			carl::Variables tvars;
+			c.arithmeticVars(tvars);
+			for (const auto& v : mBackend.assignedVariables())
+				tvars.erase(v);
+			if (tvars.size() > 1)
+				continue;
 			if (!evaluator(c)) return c;
 		}
 		for (const auto& b: trail.mvBounds()) {
@@ -361,6 +377,12 @@ public:
 			if (std::find(current().univariateVariables.begin(), current().univariateVariables.end(), var) == current().univariateVariables.end()) {
 				continue;
 			}
+			carl::Variables tvars;
+			b.arithmeticVars(tvars);
+			for (const auto& v : mBackend.assignedVariables())
+				tvars.erase(v);
+			if (tvars.size() > 1)
+				continue;
 			if (!evaluator(b)) return b;
 		}
 		return boost::none;
@@ -440,12 +462,16 @@ public:
 		return mTheoryVarMapping.has(v);
 	}
 
-	const carl::Variable& theoryVar(Minisat::Var v) const {
+	const carl::Variable& theoryVar(Minisat::Var v) const { // TODO REFACTOR rename
 		return mTheoryVarMapping.carlVar(v);
 	}
 
-	Minisat::Var minisatVar(const carl::Variable& v) const {
+	Minisat::Var minisatVar(const carl::Variable& v) const { // TODO REFACTOR rename
 		return mTheoryVarMapping.minisatVar(v);
+	}
+
+	std::vector<Minisat::Var> theoryVarAbstractions() const {
+		return mTheoryVarMapping.minisatVars();
 	}
 
 	// ***** Auxliary getter

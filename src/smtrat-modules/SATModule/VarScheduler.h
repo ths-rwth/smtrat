@@ -72,6 +72,7 @@ namespace smtrat
         void rebuildActivities() {
         }
 
+        // TODO DYNSCHED ged rid of parameter here
         template<typename Constraints>
         void rebuildTheoryVars(const Constraints&) {
         }
@@ -83,15 +84,15 @@ namespace smtrat
     class VarSchedulerMinisat : public VarSchedulerBase {
         struct VarOrderLt
         {
-            std::function<double(Minisat::Var)> getActivity;
+            std::function<bool(Minisat::Var,Minisat::Var)> cmp;
 
             bool operator ()( Minisat::Var x, Minisat::Var y )
             {
-                return getActivity(x) > getActivity(y);
+                return cmp(x,y);
             }
 
-            explicit VarOrderLt( std::function<double(Minisat::Var)> getActivity ) :
-                getActivity( getActivity )
+            explicit VarOrderLt( std::function<bool(Minisat::Var,Minisat::Var)> cmp ) :
+                cmp( cmp )
             {}
         };
 
@@ -104,17 +105,22 @@ namespace smtrat
 
     public:
         template<typename BaseModule>
+        explicit VarSchedulerMinisat( BaseModule& baseModule, std::function<bool(Minisat::Var,Minisat::Var)> cmp ) :
+            VarSchedulerBase( baseModule ),
+            order_heap( VarOrderLt( cmp ) )
+        {}
+
+        template<typename BaseModule>
         explicit VarSchedulerMinisat( BaseModule& baseModule ) :
-            VarSchedulerBase(baseModule),
-            order_heap( VarOrderLt( getActivity ) )
+            VarSchedulerMinisat( baseModule, [this](Minisat::Var x, Minisat::Var y) -> bool { return getActivity(x) > getActivity(y); } )
         {}
 
         void rebuild() {
             Minisat::vec<Minisat::Var> vs;
-            for( Minisat::Var v = 0; v < order_heap.size(); v++ )
-                if( valid(v) )
-                    vs.push( v );
-            order_heap.build( vs );
+            for(Minisat::Var v = 0; v < order_heap.size(); v++)
+                if(order_heap.inHeap(v) && valid(v))
+                    vs.push(v);
+            order_heap.build(vs);
         }
 
         void insert(Minisat::Var var) {
@@ -135,7 +141,7 @@ namespace smtrat
         }
 
         bool empty() {
-            while(!valid(order_heap[0]))
+            while(!order_heap.empty() && !valid(order_heap[0]))
                 order_heap.removeMin();
             return order_heap.empty();
         }
@@ -151,11 +157,13 @@ namespace smtrat
         // Events called by SATModule
 
         void increaseActivity(Minisat::Var var) {
-            order_heap.increase(var);
+            if(order_heap.inHeap(var))
+                order_heap.increase(var);
         }
 
         void decreaseActivity(Minisat::Var var) {
-            order_heap.decrease(var);
+            if(order_heap.inHeap(var))
+                order_heap.decrease(var);
         }
 
         void rebuildActivities() { 

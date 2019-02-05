@@ -388,14 +388,17 @@ namespace smtrat
         processLemmas();
 		
 		if (Settings::mc_sat) {
+            assert(Settings::use_new_var_scheduler);
 			#ifdef DEBUG_SATMODULE
 			cout << "### Processing clause" << endl;
 			print(cout, "###");
 			#endif
 			mMCSAT.initVariables(mBooleanConstraintMap);
-			assert(mMCSAT.level() <= 1);
-            assert(Settings::use_new_var_scheduler);
-            var_scheduler.rebuildTheoryVars(mBooleanConstraintMap); // TODO DYNSCHED pass BooleanConstaintsMap???
+            for (const auto& v : mMCSAT.theoryVarAbstractions()) {
+                var_scheduler.insert(v);
+            }
+			assert(mMCSAT.level() == 0);
+            var_scheduler.rebuildTheoryVars(mBooleanConstraintMap);
 		}
         ++solves;
         // compared to original minisat we add the number of clauses with size 1 (nAssigns()) and learnts, we got after init()
@@ -1353,8 +1356,14 @@ namespace smtrat
             BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find(content.boolean());
             if( booleanVarPair != mBooleanVarMap.end() )
             {
-                if( _decisionRelevant )
-                    setDecisionVar( booleanVarPair->second, _decisionRelevant );
+                if( _decisionRelevant ) {
+                    if (Settings::mc_sat) {
+                        setDecisionVar( booleanVarPair->second, _decisionRelevant, content.getType() != carl::FormulaType::VARASSIGN );
+                    } else {
+                        setDecisionVar( booleanVarPair->second, _decisionRelevant );
+                    }
+                }
+                    
                 l = mkLit( booleanVarPair->second, negated );
             }
             else
@@ -1367,8 +1376,8 @@ namespace smtrat
                     SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << var << " that abstracts " << content << " having type " << content.getType());
                     if (content.getType() != carl::FormulaType::VARASSIGN) {
 	                    mMCSAT.addBooleanVariable(var);
+                        insertVarOrder(var);
                     }
-                    insertVarOrder(var);
 				}
                 l = mkLit( var, negated );
             }
@@ -1392,8 +1401,13 @@ namespace smtrat
                     activity[abstractionVar] = maxActivity() + 1;
                     polarity[abstractionVar] = false;
                 }
-                if( _decisionRelevant )
-                    setDecisionVar( abstractionVar, _decisionRelevant );
+                if( _decisionRelevant ) {
+                    if (Settings::mc_sat) {
+                        setDecisionVar( abstractionVar, _decisionRelevant, content.getType() != carl::FormulaType::VARASSIGN );
+                    } else {
+                        setDecisionVar( abstractionVar, _decisionRelevant );
+                    }
+                }
                 // add the origin
                 auto& abstrPair = mBooleanConstraintMap[abstractionVar];
                 assert( abstrPair.first != nullptr && abstrPair.second != nullptr );
@@ -1444,8 +1458,8 @@ namespace smtrat
                     SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Adding " << constraintAbstraction << " that abstracts " << content << " having type " << content.getType());
                     if (content.getType() != carl::FormulaType::VARASSIGN) {
 	                    mMCSAT.addBooleanVariable(constraintAbstraction);
+                        insertVarOrder(constraintAbstraction);
                     }
-                    insertVarOrder(constraintAbstraction);
 				}
                 // add the constraint and its negation to the constraints to inform backends about
                 if( !_origin.isTrue() )
@@ -2777,7 +2791,7 @@ namespace smtrat
 				 */
 				if (Settings::mc_sat && next == lit_Undef) { // TODO DYNSCHED: sufficient to look only on current level?
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for semantic propagations...");
-					for (std::size_t level = 0; level < mMCSAT.level(); level++) {
+					for (std::size_t level = 0; level <= mMCSAT.level(); level++) {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Considering " << mMCSAT.get(level).univariateVariables);
 						for (auto v: mMCSAT.get(level).univariateVariables) {
 							if (bool_value(v) != l_Undef) continue;
@@ -2815,16 +2829,15 @@ namespace smtrat
                             const auto& assignments = boost::get<FormulasT>(res);
                             assert(assignments.size() > 0);
                             static_assert(Settings::mcsat_num_insert_assignments > 0);
-                            std::vector<Minisat::Lit> theoryDecisions;
                             // create assignments
                             for (unsigned int i = 0; i < assignments.size() && i < Settings::mcsat_num_insert_assignments; i++) {
                                 // Note that this literal is marked as decision relevant. When reinserted into the heap, it is
                                 // converted to the corresponding theory variable representation.
-                                theoryDecisions.push_back(createLiteral(assignments[i], FormulaT(carl::FormulaType::TRUE), true));
-                                mMCSAT.pushTheoryDecision(assignments[i], theoryDecisions.back());
-                                SMTRAT_LOG_DEBUG("smtrat.sat", "Insert into SAT solver");
+                                auto lit = createLiteral(assignments[i], FormulaT(carl::FormulaType::TRUE), true);
+                                mMCSAT.pushTheoryDecision(assignments[i], lit);
+                                SMTRAT_LOG_DEBUG("smtrat.sat", "Insert " << lit << " (" << assignments[i] << ") into SAT solver");
                                 newDecisionLevel();
-                                uncheckedEnqueue(theoryDecisions.back());
+                                uncheckedEnqueue(lit);
                             }
 
                             SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still feasible with this theory decision");
@@ -2842,11 +2855,10 @@ namespace smtrat
                                 handleTheoryConflict(*conflict); 
                                 // TODO DYNSCHED reinsert ??? => should be done during conflict handling
                             }
-                            assert(next == lit_Undef);
                             continue;
                         } else {
                             mCurrentAssignmentConsistent = UNSAT;
-                            SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << mMCSAT.level());
+                            SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << (mMCSAT.level()+1)); // TODO LEVEL
                             insertVarOrder(var(next));
                             SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << boost::get<mcsat::Explanation>(res));
                             handleTheoryConflict(boost::get<mcsat::Explanation>(res));
@@ -2855,7 +2867,12 @@ namespace smtrat
                     } else if (Settings::mc_sat && next != lit_Undef) { // Boolean decision
                         SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << " for Boolean decision, checking for theory consistency...");
                         assert(bool_value(next) == l_Undef);
-                        assert(mMCSAT.evaluateLiteral(next) != l_Undef);
+                         // TODO DYNSCHED remove:
+                        std::cout << "next " << next << std::endl;
+                        std::cout << mMCSAT << std::endl;
+                        printBooleanConstraintMap(cout, "###");
+                        // Note that all literals evaluating to some values should already been propagated semantically
+                        assert(!((mBooleanConstraintMap.size() > var(next)) && (mBooleanConstraintMap[var(next)].first != nullptr)) || mMCSAT.evaluateLiteral(next) == l_Undef);
                         if (Settings::mcsat_check_feasibility_on_decide) {
                             auto res = mMCSAT.isBooleanDecisionFeasible(next);                        
                             if (!res.first) {
@@ -2876,7 +2893,9 @@ namespace smtrat
                         }
                     }
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Deciding upon " << next);
-				} else if (mMCSAT.theoryAssignmentComplete()) {
+				}
+                if (next == lit_Undef) {
+                    assert(mMCSAT.theoryAssignmentComplete());
                     SMTRAT_LOG_DEBUG("smtrat.sat", "No further theory variable to assign.");
                     mCurrentAssignmentConsistent = SAT;
                 }
@@ -3507,7 +3526,7 @@ namespace smtrat
             // Find the first literal assigned at the next-highest level:
             for( int i = 1; i < out_learnt.size(); i++ ) {
                 int currentLitLevel;
-                if (reason(var(out_learnt[i])) == CRef_TPropagation) {
+                if (reason(var(out_learnt[i])) == CRef_TPropagation) { // TODO REFACTOR should not be used in tthis context, should be unused
                     const FormulaT& f = mBooleanConstraintMap[var(out_learnt[i])].first->reabstraction;
                     currentLitLevel = mMCSAT.decisionLevel(f);
                 } else {

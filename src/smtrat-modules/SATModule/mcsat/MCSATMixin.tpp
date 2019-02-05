@@ -46,19 +46,19 @@ void MCSATMixin<Settings>::updateCurrentLevel() { // TODO DYNSCHED: make more ef
 }
 
 template<typename Settings>
-bool MCSATMixin<Settings>::backtrackTo(Minisat::Lit literal) {
+bool MCSATMixin<Settings>::backtrackTo(Minisat::Lit literal) { // TODO BUG adapt backtracking ...
 	std::size_t lvl = level();
 	while (lvl > 0) {
 		if (get(lvl).decisionLiteral == literal) break;
 		lvl--;
 	}
 	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Backtracking until " << literal << " on level " << lvl);
-	if (lvl == 0 || lvl == level()) {
+	if (lvl == 0) {
 		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Nothing to backtrack for " << literal);
 		return false;
 	}
 	
-	while (level() > lvl) {
+	while (level() >= lvl) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Backtracking theory assignment for " << current().variable);
 
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Model " << model());
@@ -187,14 +187,17 @@ std::ostream& operator<<(std::ostream& os, const MCSATMixin<Settings>& mcm) {
 		if (mcm.model().find(level.variable) != mcm.model().end()) {
 			os << " = " << mcm.model().at(level.variable);
 		}
+		/* TODO DYNSCHED refactor when theory level caching is reintroduced
 		if (level.variable == mcm.current().variable) {
 			os << " <<-- Current variable";
-		}
+		}*/
 		os << std::endl;
 		os << "\tVariables: " << level.univariateVariables << std::endl;
 	}
 	os << "Backend:" << std::endl;
 	os << mcm.mBackend << std::endl;
+	os << "Theory variable mapping:" << std::endl;
+	os << mcm.mTheoryVarMapping.minisatToCarl << std::endl;
 	return os;
 }
 

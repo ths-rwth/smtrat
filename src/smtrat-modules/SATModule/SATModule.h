@@ -910,7 +910,7 @@ namespace smtrat
             inline void setDecisionVar( Minisat::Var v, bool b, bool insertIntoHeap = true )
             {
                 if( b &&!decision[v] )
-                    dec_vars++;
+                    dec_vars++; // TODO DYNSCHED has marking assignment vars as "to be decided" any effect ??
                 else if( !b && decision[v] )
                     dec_vars--;
                 decision[v] = b;
@@ -1163,12 +1163,17 @@ namespace smtrat
              */
             inline void insertVarOrder( Minisat::Var x )
             {
+                SMTRAT_LOG_TRACE("smtrat.sat", "Insert " << x << " into order heap");
+
                 if (Settings::mc_sat) {
+                    // Note: insertVarOrder should never be called with a VARASSIGN when it's created
                     if (mBooleanConstraintMap.size() > x && mBooleanConstraintMap[x].first != nullptr) {
                         const auto& reabstr = mBooleanConstraintMap[x].first->reabstraction;
                         if (reabstr.getType() == carl::FormulaType::VARASSIGN) {
+                            SMTRAT_LOG_DEBUG("smtrat.sat", "Converting " << x << " (" << reabstr << ")...")
                             const carl::Variable tvar = reabstr.variableAssignment().var();
                             x = mMCSAT.minisatVar(tvar);
+                            SMTRAT_LOG_DEBUG("smtrat.sat", "..to " << x << " (" << tvar << ")");
                         }
                     }
                 }
