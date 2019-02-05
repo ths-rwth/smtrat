@@ -15,11 +15,11 @@ namespace smtrat
      * @version
      *
      */
-    class NRARefinementSolver:
+    class NRARefinementSolver21:
             public Manager
     {
     public:
-        NRARefinementSolver(): Manager()
+        NRARefinementSolver21(): Manager()
         {
             setStrategy(
             {
