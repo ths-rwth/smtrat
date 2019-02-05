@@ -2,15 +2,22 @@
 
 namespace benchmax {
 namespace ssh {
-	
-	struct Node {
-		std::string hostname;
-		std::string username;
-		std::string password;
-		int port;
-		unsigned long cores;
-		std::size_t connections;
-	};
-	
-}
-}
+
+/// Specification of a compuation node for the SSH backend.
+struct Node {
+	/// Hostname to connect to.
+	std::string hostname;
+	/// Username.
+	std::string username;
+	/// Password (only used if public key authentication fails).
+	std::string password;
+	/// Port (default is 22)
+	int port;
+	/// Number of cores we use per connection (default is 1)
+	unsigned long cores;
+	/// Number of concurrent connections (default is 1)
+	std::size_t connections;
+};
+
+} // namespace ssh
+} // namespace benchmax

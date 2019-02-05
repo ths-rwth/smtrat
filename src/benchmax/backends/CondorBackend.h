@@ -13,20 +13,26 @@
 #include "Backend.h"
 
 #include "../logging.h"
-#include "../utils/durations.h"
 
 namespace benchmax {
 
+/**
+ * Backend for the HTCondor batch system.
+ * Currently submits all jobs individually and asynchronously waits for them to finish.
+ */
 class CondorBackend: public Backend {
 protected:
+	/// No-op version of execute.
 	virtual void execute(const Tool*, const fs::path&, const fs::path&) {}
 private:
+	/// List of processes that are currently running.
 	std::list<std::atomic<bool>> processes;
 
+	/// Generate a submit file for the given job.
 	std::string generateSubmitFile(std::size_t ID, const Tool& tool, const BenchmarkSet& b) {
 		std::ofstream wrapper(".wrapper_" + std::to_string(ID));
 		wrapper << "#!/bin/sh" << std::endl;
-		wrapper << "ulimit -S -t " << seconds(settings_benchmarks().limit_time).count() << std::endl;
+		wrapper << "ulimit -S -t " << std::chrono::seconds(settings_benchmarks().limit_time).count() << std::endl;
 		wrapper << "ulimit -S -v " << (settings_benchmarks().limit_memory * 1024) << std::endl;
 		wrapper << "date +\"Start: %s%3N\"" << std::endl;
 		wrapper << tool.getCommandline("$*") << std::endl;
@@ -38,7 +44,7 @@ private:
 		out << "output = out/out." << ID << ".$(cluster).$(process)" << std::endl;
 		out << "error = out/err." << ID << ".$(cluster).$(process)" << std::endl;
 		out << "log = out/log." << ID << std::endl;
-		out << "periodic_hold = (time() - JobCurrentStartExecutingDate) > " << seconds(settings_benchmarks().limit_time).count() << std::endl;
+		out << "periodic_hold = (time() - JobCurrentStartExecutingDate) > " << std::chrono::seconds(settings_benchmarks().limit_time).count() << std::endl;
 		
 		for (const auto& file: b) {
 			if (!tool.canHandle(file)) continue;
@@ -50,6 +56,7 @@ private:
 		return ".jobs." + std::to_string(ID);
 	}
 	
+	/// Collect job results for the given id.
 	void collectResults(std::size_t ID) {
 		typedef fs::directory_iterator dirIt;
 		
@@ -61,6 +68,7 @@ private:
 		}
 	}
 	
+	/// Run the given job and wait for its results.
 	void runAndWait(std::size_t ID, const std::string& submitFile, std::atomic<bool>& it) {
 		BENCHMAX_LOG_INFO("benchmax.condor", "Queueing batch " << ID << "...");
 		std::system(("condor_submit " + submitFile).c_str());
@@ -73,6 +81,7 @@ private:
 	}
 	
 public:
+	/// Run all tools on all benchmarks.
 	void run(const Tools& tools, const std::vector<BenchmarkSet>& benchmarks) {
 		BENCHMAX_LOG_INFO("benchmax.condor", "Generating submit files...");
 		

@@ -9,24 +9,45 @@
 #include "SSHSettings.h"
 #include <benchmax/benchmarks/benchmarks.h>
 #include <benchmax/logging.h>
-#include <benchmax/utils/backend.h>
-#include <benchmax/utils/durations.h>
 
 #define SSH_LOCKED(expr) { std::lock_guard<std::mutex> guard(mutex); expr; }
 
 namespace benchmax {
 namespace ssh {
-	
+
+/// A wrapper class that manages a single SSH connection as specified in a Node object (with all its channels).
 class SSHConnection {
 private:
+	/// The node object.
 	Node node;
+	/// The number of currently active channels.
 	std::size_t curChannels;
+	/// The maximal number of channels allowed.
 	std::size_t maxChannels;
+	/// The number of currently running jobs.
 	std::atomic<std::size_t> curJobs;
+	/// The SSH session handle.
 	ssh_session session;
+	/// Mutex.
 	std::mutex mutex;
+	/// Verbosity needed due to libssh interface.
 	int verbosity;
+
+	/// Parse a duration from stdout.
+	std::chrono::milliseconds parse_duration(const std::string& output) const {
+		std::regex re("Start: ([0-9]+).*End: ([0-9]+)", std::regex::extended); //".*End: (\\d+)$");
+		std::smatch m;
+		if (std::regex_search(output, m, re)) {
+			std::size_t p;
+			std::size_t start = std::stoull(m[1].str(), &p);
+			std::size_t end = std::stoull(m[2].str(), &p);
+			return std::chrono::milliseconds(end - start);
+		} else {
+			return std::chrono::milliseconds(0);
+		}
+	}
 	
+	/// Allocate a new channel from the current SSH session.
 	ssh_channel getChannel() {
 		std::lock_guard<std::mutex> guard(mutex);
 		BENCHMAX_LOG_DEBUG("benchmax.ssh", this << " Allocating channel, currently " << curChannels << " / " << maxChannels);
@@ -44,6 +65,8 @@ private:
 		curChannels++;
 		return channel;
 	}
+
+	/// Get a new SCP session for file transfer.
 	ssh_scp getSCP(int mode, const std::string& basedir) {
 		std::lock_guard<std::mutex> guard(mutex);
 		BENCHMAX_LOG_DEBUG("benchmax.ssh", this << " Allocating scp, currently " << curChannels << " / " << maxChannels);
@@ -61,6 +84,8 @@ private:
 		curChannels++;
 		return scp;
 	}
+
+	/// Get a new SFTP session for file transfer.
 	sftp_session getSFTP() {
 		std::lock_guard<std::mutex> guard(mutex);
 		BENCHMAX_LOG_DEBUG("benchmax.ssh", this << " Allocating sftp, currently " << curChannels << " / " << maxChannels);
@@ -78,6 +103,8 @@ private:
 		curChannels++;
 		return sftp;
 	}
+
+	/// Terminate a SSH channel.
 	void destroy(ssh_channel channel) {
 		std::lock_guard<std::mutex> guard(mutex);
 		BENCHMAX_LOG_DEBUG("benchmax.ssh", this << " Destroying channel, currently " << curChannels << " / " << maxChannels);
@@ -85,6 +112,8 @@ private:
 		ssh_channel_free(channel);
 		curChannels--;
 	}
+
+	/// Terminate a SCP session.
 	void destroy(ssh_scp scp) {
 		std::lock_guard<std::mutex> guard(mutex);
 		BENCHMAX_LOG_DEBUG("benchmax.ssh", this << " Destroying scp, currently " << curChannels << " / " << maxChannels);
@@ -92,6 +121,8 @@ private:
 		ssh_scp_free(scp);
 		curChannels--;
 	}
+
+	/// Terminate a SFTP session.
 	void destroy(sftp_session sftp) {
 		std::lock_guard<std::mutex> guard(mutex);
 		BENCHMAX_LOG_DEBUG("benchmax.ssh", this << " Destroying sftp, currently " << curChannels << " / " << maxChannels);
@@ -99,6 +130,7 @@ private:
 		curChannels--;
 	}
 public:
+	/// Create a new connection for the given node.
 	SSHConnection(const Node& n): node(n), curChannels(0), maxChannels(node.cores), curJobs(0) {
 		session = ssh_new();
 		if (session == nullptr) {
@@ -127,6 +159,7 @@ public:
 		}
 		BENCHMAX_LOG_DEBUG("benchmax.ssh", this << " Authenticated as " << node.username << ".");
 	}
+	/// Wait for all channels to terminate.
 	~SSHConnection() {
 		while (curChannels > 0) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -134,27 +167,34 @@ public:
 		ssh_disconnect(session);
 		ssh_free(session);
 	}
+	/// Return the node.
 	const Node& getNode() const {
 		return node;
 	}
+	/// Check if a new job could be started.
 	bool jobFree() {
 		return curJobs < maxChannels;
 	}
+	/// Increase job counter.
 	void newJob() {
 		assert(curJobs < maxChannels);
 		curJobs++;
 	}
+	/// Decrease job counter.
 	void finishJob() {
 		curJobs--;
 	}
+	/// Current number of jobs.
 	std::size_t jobs() const {
 		return curJobs;
 	}
+	/// Check if all channels are busy.
 	bool busy() {
 		//BENCHMAX_LOG_DEBUG("benchmax.ssh", "Currently " << curChannels << " / " << maxChannels);
 		return curChannels >= maxChannels;
 	}
 	
+	/// Create a temporary directory on the remote.
 	std::string createTmpDir(const std::string& folder) {
 		BENCHMAX_LOG_DEBUG("benchmax.ssh", this << " Creating directory " << folder);
 		ssh_scp scp = getSCP(SSH_SCP_WRITE | SSH_SCP_RECURSIVE, settings_ssh().tmpdir.c_str());
@@ -167,7 +207,8 @@ public:
 		destroy(scp);
 		return settings_ssh().tmpdir + folder + "/";
 	}
-	
+
+	/// Remove a (temporary) directory on the remote.	
 	void removeDir(const std::string& folder) {
 		BENCHMAX_LOG_DEBUG("benchmax.ssh", this << " Removing directory " << folder);
 		sftp_session sftp = getSFTP();
@@ -203,6 +244,7 @@ public:
 		destroy(sftp);
 	}
 	
+	/// Upload a file to the remote.
 	bool uploadFile(const fs::path& local, const std::string& base, const std::string& remote, int mode = S_IRUSR | S_IWUSR) {
 		BENCHMAX_LOG_DEBUG("benchmax.ssh", this << " Pushing file " << base << remote);
 		ssh_scp scp = getSCP(SSH_SCP_WRITE | SSH_SCP_RECURSIVE, base.c_str());
@@ -225,12 +267,13 @@ public:
 		return true;
 	}
 	
+	/// Execute a command on the remote.
 	bool executeCommand(const std::string& cmd, BenchmarkResult& result) {
 		BENCHMAX_LOG_DEBUG("benchmax.ssh", this << " Executing command " << cmd);
 		ssh_channel channel = getChannel();
 		std::stringstream call;
 		call << "date +\"Start: %s%3N\" ; ";
-		auto timeout = (seconds(settings_benchmarks().limit_time) + std::chrono::seconds(3)).count();
+		auto timeout = (std::chrono::seconds(settings_benchmarks().limit_time) + std::chrono::seconds(3)).count();
 		if (settings_ssh().use_wallclock) call << "timeout " << timeout << "s ";
 		else call << "ulimit -S -t " << timeout << " && ";
 		call << "ulimit -S -v " << (settings_benchmarks().limit_memory * 1024) << " && ";
@@ -265,7 +308,7 @@ public:
 			BENCHMAX_LOG_DEBUG("benchmax.ssh", "stderr = " << result.stderr);
 		}
 		SSH_LOCKED(result.exitCode = ssh_channel_get_exit_status(channel));
-		result.time = parseDuration(result.stdout);
+		result.time = parse_duration(result.stdout);
 		destroy(channel);
 		return true;
 	}

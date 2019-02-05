@@ -24,7 +24,17 @@
 
 using namespace benchmax;
 
-bool initApplication(int argc, char** argv) {
+/**
+ * Initialized the application.
+ * 
+ * Takes care of loading settings from the command line and a config file.
+ * Afterwards checks for all options that are handled easily like being verbose or showing the help.
+ * Might signal to stop execution by returning true.
+ * @param argc argc as passed to main()
+ * @param argv argv as passed to main()
+ * @return true if the application should stop.
+ */
+bool init_application(int argc, char** argv) {
 
 	logging_configure();
 
@@ -88,8 +98,7 @@ bool initApplication(int argc, char** argv) {
 }
 
 /**
- *
- * @param _signal
+ * Handles the interrupt signal.
  */
 void handleSignal(int)
 {
@@ -104,7 +113,7 @@ int main(int argc, char** argv)
 {
 	std::signal(SIGINT, &handleSignal);
 	
-	if (!initApplication(argc, argv)) {
+	if (!init_application(argc, argv)) {
 		return 0;
 	}
 	

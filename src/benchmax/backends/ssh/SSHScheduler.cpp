@@ -53,7 +53,7 @@ Node getNode(const std::string& _nodeAsString)
 	}
 }
 
-SSHConnection* SSHScheduler::get() {
+const std::unique_ptr<SSHConnection>& SSHScheduler::get() {
 	std::lock_guard<std::mutex> lock(mMutex);
 	while (true) {
 		for (auto& c: mConnections) {
@@ -75,20 +75,17 @@ SSHScheduler::SSHScheduler(): mWorkerCount(0), mRunningJobs(0) {
 	for (const auto& s: settings_ssh().nodes) {
 		Node n = getNode(s);
 		for (std::size_t i = 0; i < n.connections; i++) {
-			mConnections.push_back(new SSHConnection(n));
+			mConnections.emplace_back(std::make_unique<SSHConnection>(n));
 		}
 		mWorkerCount += n.connections * n.cores;
 	}
-}
-SSHScheduler::~SSHScheduler() {
-	for (auto& c: mConnections) delete c;
 }
 
 void SSHScheduler::uploadTool(const Tool* tool) {
 	std::lock_guard<std::mutex> lock(mMutex);
 	BENCHMAX_LOG_DEBUG("benchmax.ssh", "Uploading " << tool);
 	std::set<std::string> nodes;
-	for (SSHConnection* c: mConnections) {
+	for (const auto& c: mConnections) {
 		// Check if we have already uploaded to this host
 		if (!nodes.insert(c->getNode().hostname).second) continue;
 		while (!c->jobFree()) {
@@ -100,8 +97,8 @@ void SSHScheduler::uploadTool(const Tool* tool) {
 
 bool SSHScheduler::executeJob(const Tool* tool, const fs::path& file, const fs::path& baseDir, Backend* backend) {
 	mRunningJobs++;
-	SSHConnection* c = get();
-	BENCHMAX_LOG_INFO("benchmax.ssh", "Executing " << removePrefix(file.native(), settings_benchmarks().input_directories_common_prefix));
+	const auto& c = get();
+	BENCHMAX_LOG_INFO("benchmax.ssh", "Executing " << remove_prefix(file.native(), settings_benchmarks().input_directories_common_prefix));
 	// Create temporary directory
 	std::string folder = c->createTmpDir(tmpDirName(tool,file));
 	// Upload benchmark file

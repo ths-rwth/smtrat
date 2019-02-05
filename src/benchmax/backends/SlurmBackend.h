@@ -4,7 +4,6 @@
 
 #include "../logging.h"
 #include "../utils/Execute.h"
-#include "../utils/durations.h"
 
 #include "slurm/SlurmSettings.h"
 #include "slurm/SlurmUtilities.h"
@@ -21,6 +20,7 @@ namespace benchmax {
  */
 class SlurmBackend: public Backend {
 private:
+	/// A job consists of a tool, an input file, a base dir and results.
 	using JobData = std::tuple<
 		const Tool*,
 		std::filesystem::path,
@@ -28,14 +28,17 @@ private:
 		BenchmarkResult
 	>;
 	
+	/// All jobs.
 	std::vector<JobData> mResults;
 
+	/// Randomize job order to mitigate suboptimal scheduling due to slicing.
 	void shuffle_jobs() {
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Shuffling jobs");
 		std::mt19937 rand(mResults.size());
 		std::shuffle(mResults.begin(), mResults.end(), rand);
 	}
 
+	/// Parse the content of an output file.
 	void parse_result_file(const std::filesystem::path& file) {
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Processing file " << file);
 		std::ifstream in(file);
@@ -64,8 +67,8 @@ private:
 		}
 	}
 public:
+	/// Run all tools on all benchmarks using Slurm.
 	void run(const Tools& tools, const std::vector<BenchmarkSet>& benchmarks) {
-
 		for (const auto& tool: tools) {
 			for (const BenchmarkSet& set: benchmarks) {
 				for (const auto& file: set) {
@@ -94,7 +97,7 @@ public:
 
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Submitting job now.");
 		std::string output;
-		callProgram("sbatch --wait --array=1-" + std::to_string(settings_slurm().slices) + " -N1 " + settings_slurm().tmp_dir + "/" + submitfile, output, true);
+		call_program("sbatch --wait --array=1-" + std::to_string(settings_slurm().slices) + " -N1 " + settings_slurm().tmp_dir + "/" + submitfile, output, true);
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Job terminated, collecting results.");
 		int jobid = slurm::parse_job_id(output);
 

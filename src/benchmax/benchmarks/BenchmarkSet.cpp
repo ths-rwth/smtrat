@@ -1,13 +1,3 @@
-/**
- * @file   BenchmarkSet.cpp
- * @author Sebastian Junges
- * @author Florian Corzilius
- * @author Ulrich Loup
- *
- * @since 2012-12-11
- * @version 2013-05-03
- */
-
 #include "BenchmarkSet.h"
 
 #include <benchmax/logging.h>
@@ -17,10 +7,10 @@
 namespace benchmax {
 
 BenchmarkSet::BenchmarkSet(const std::filesystem::path& baseDir): mBaseDir(baseDir), mFilesList() {
-	parseDirectory(mBaseDir);
+	parse_directory(mBaseDir);
 }
 
-void BenchmarkSet::parseDirectory(const std::filesystem::path& dir)
+void BenchmarkSet::parse_directory(const std::filesystem::path& dir)
 {
 	try {
 		// does p actually exist?
@@ -30,13 +20,13 @@ void BenchmarkSet::parseDirectory(const std::filesystem::path& dir)
 				// If it is a directory, we add all the contents
 				BENCHMAX_LOG_DEBUG("benchmax", dir << " is a directory.");
 				for (auto it = std::filesystem::directory_iterator(dir); it != std::filesystem::directory_iterator(); it++) {
-					parseDirectory(*it);
+					parse_directory(*it);
 				}
 			} else if (std::filesystem::is_symlink(dir)) {
 				// A symlink. Resolve symlink and call recursively.
 				auto r = std::filesystem::read_symlink(dir);
 				BENCHMAX_LOG_DEBUG("benchmax", dir << " is a symlink to " << r);
-				parseDirectory(r);
+				parse_directory(r);
 			} else {
 				// Not a directory, so (we assume?) it is a file.
 				mFilesList.push_back(dir);

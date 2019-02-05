@@ -10,6 +10,12 @@
 
 namespace benchmax {
 
+/**
+ * Runs a given backend on a list of tools and benchmarks.
+ * @param backend Backend name.
+ * @param tools List of tools.
+ * @param benchmarks List of benchmarks.
+ */
 void run_backend(const std::string& backend, const Tools& tools, const std::vector<BenchmarkSet>& benchmarks) {
 
 	if (backend == "condor") {

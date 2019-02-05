@@ -41,15 +41,25 @@ inline void logging_verbose() {
 
 }
 
+/// Log fatal errors.
 #define BENCHMAX_LOG_FATAL(channel, msg) __CARL_LOG_FATAL(channel, msg)
+/// Log errors.
 #define BENCHMAX_LOG_ERROR(channel, msg) __CARL_LOG_ERROR(channel, msg)
+/// Log warnings.
 #define BENCHMAX_LOG_WARN(channel, msg) __CARL_LOG_WARN(channel, msg)
+/// Log informational messages.
 #define BENCHMAX_LOG_INFO(channel, msg) __CARL_LOG_INFO(channel, msg)
+/// Log debug messages.
 #define BENCHMAX_LOG_DEBUG(channel, msg) __CARL_LOG_DEBUG(channel, msg)	
+/// Log trace messages.
 #define BENCHMAX_LOG_TRACE(channel, msg) __CARL_LOG_TRACE(channel, msg)
 
+/// Log function call with function arguments.
 #define BENCHMAX_LOG_FUNC(channel, args) __CARL_LOG_FUNC(channel, args)
+/// Assert and log an some condition.
 #define BENCHMAX_LOG_ASSERT(channel, condition, msg) __CARL_LOG_ASSERT(channel, condition, msg)
+/// Warn about some function not being implemented.
 #define BENCHMAX_LOG_NOTIMPLEMENTED() __CARL_LOG_ERROR("", "Not implemented method-stub called.")
+/// Warn about some function being inefficient.
 #define BENCHMAX_LOG_INEFFICIENT() __CARL_LOG_WARN("", "Inefficient method called.")
 

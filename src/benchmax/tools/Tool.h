@@ -1,12 +1,3 @@
-/**
- * File:   Tool.h
- * @author Sebastian Junges
- * @author Ulrich Loup
- *
- * @since 2012-09-25
- * @version 2013-03-19
- */
-
 #pragma once
 
 #include <filesystem>
@@ -107,6 +98,7 @@ public:
 	virtual void additionalResults(const fs::path&, BenchmarkResult&) const {}
 };
 
+/// Streaming operator for a generic tool.
 inline std::ostream& operator<<(std::ostream& os, const Tool& tool) {
 	return os << tool.binary().native();
 }
