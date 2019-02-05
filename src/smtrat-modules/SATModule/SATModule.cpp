@@ -2867,10 +2867,6 @@ namespace smtrat
                     } else if (Settings::mc_sat && next != lit_Undef) { // Boolean decision
                         SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << " for Boolean decision, checking for theory consistency...");
                         assert(bool_value(next) == l_Undef);
-                         // TODO DYNSCHED remove:
-                        std::cout << "next " << next << std::endl;
-                        std::cout << mMCSAT << std::endl;
-                        printBooleanConstraintMap(cout, "###");
                         // Note that all literals evaluating to some values should already been propagated semantically
                         assert(!((mBooleanConstraintMap.size() > var(next)) && (mBooleanConstraintMap[var(next)].first != nullptr)) || mMCSAT.evaluateLiteral(next) == l_Undef);
                         if (Settings::mcsat_check_feasibility_on_decide) {
