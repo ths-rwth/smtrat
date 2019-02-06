@@ -14,8 +14,13 @@ boost::optional<mcsat::Explanation> Explanation::operator()(const mcsat::Bookkee
 	// 'variableOrder' is ordered 'x0,.., xk, .., xn', the relevant variables that appear in the
 	// reason and implication end at 'var'=xk, so the relevant prefix is 'x0 ... xk'
 	// where VS starts its variable elimination from back ('xk') to front ('x0').
+	// compute compatible complete variable ordering
 	std::vector varOrder(data.assignedVariables());
-	varOrder.push_back(var);
+	for (const auto& v : data.variables()) {
+		if (std::find(data.assignedVariables().begin(), data.assignedVariables().end(), v) == data.assignedVariables().end()) {
+			varOrder.push_back(v);
+		}
+	}
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Ascending variable order " << varOrder << " and eliminating down from " << var);
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Bookkeep: " << data);
 	ExplanationGenerator<DefaultSettings> eg(reason, varOrder, var, data.model());
