@@ -3,15 +3,15 @@
  */
 #pragma once
 
-#include "../solver/Manager.h"
+#include <smtrat-solver/Manager.h>
 
-#include "../modules/FPPModule/FPPModule.h"
-#include "../modules/IncWidthModule/IncWidthModule.h"
-#include "../modules/IntBlastModule/IntBlastModule.h"
-#include "../modules/SATModule/SATModule.h"
-#include "../modules/LRAModule/LRAModule.h"
-#include "../modules/VSModule/VSModule.h"
-#include "../modules/CADModule/CADModule.h"
+#include <smtrat-modules/FPPModule/FPPModule.h>
+#include <smtrat-modules/IncWidthModule/IncWidthModule.h>
+#include <smtrat-modules/IntBlastModule/IntBlastModule.h>
+#include <smtrat-modules/SATModule/SATModule.h>
+#include <smtrat-modules/LRAModule/LRAModule.h>
+#include <smtrat-modules/VSModule/VSModule.h>
+#include <smtrat-modules/NewCADModule/NewCADModule.h>
 
 namespace smtrat
 {
@@ -32,24 +32,18 @@ namespace smtrat
                 setStrategy(
                 {
                     addBackend<FPPModule<FPPSettings1>>(
-                    {
                         addBackend<IncWidthModule<IncWidthSettings1>>(
-                        {
                             addBackend<IntBlastModule<IntBlastSettings2>>(
-                            {
                                 addBackend<SATModule<SATSettings1>>(
-                                {
                                     addBackend<LRAModule<LRASettings1>>(
-                                    {
                                         addBackend<VSModule<VSSettings234>>(
-                                        {
-                                            addBackend<CADModule<CADSettingsSplitFirst>>()
-                                        })
-                                    })
-                                })
-                            })
-                        })
-                    })
+                                            addBackend<NewCADModule<NewCADSettingsFOS>>()
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
                 });
             }
     };
