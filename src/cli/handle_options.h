@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "ExitCodes.h"
+#include "tools/compile_information.h"
 #include <carl/util/CompileInfo.h>
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/settings/Settings.h>
@@ -18,11 +19,11 @@ void print_cmake_options() {
 }
 
 void print_info() {
-    std::cout << "Version: " << smtrat::CompileInfo::GitVersion << std::endl;
-    std::cout << "Code is based on commit " << smtrat::CompileInfo::GitRevisionSHA1 << ". " << std::endl;
-    std::cout << "Build type:" << smtrat::CompileInfo::BuildType << std::endl;   
-    std::cout << "Code was compiled with compiler " << smtrat::CompileInfo::CXXCompiler << " " << smtrat::CompileInfo::CXXCompilerVersion << std::endl;
-    std::cout << "Build on a " << smtrat::CompileInfo::SystemName << " (" << CompileInfo::SystemVersion << ") machine." << std::endl;
+    std::cout << "Version: " << smtrat::compile_information::GitVersion << std::endl;
+    std::cout << "Code is based on commit " << smtrat::compile_information::GitRevisionSHA1 << ". " << std::endl;
+    std::cout << "Build type:" << smtrat::compile_information::BuildType << std::endl;
+    std::cout << "Code was compiled with compiler " << smtrat::compile_information::CXXCompiler << " " << smtrat::compile_information::CXXCompilerVersion << std::endl;
+    std::cout << "Build on a " << smtrat::compile_information::SystemName << " (" << compile_information::SystemVersion << ") machine." << std::endl;
 }
 
 void print_license() {
@@ -47,8 +48,8 @@ void print_timings(const smtrat::Manager& solver) {
 }
 
 void print_version() {
-	std::cout << CompileInfo::ProjectName << " " << CompileInfo::Version << std::endl;
-	std::cout << CompileInfo::GitVersion << " based on " << CompileInfo::GitRevisionSHA1 << std::endl;
+	std::cout << compile_information::ProjectName << " " << compile_information::Version << std::endl;
+	std::cout << compile_information::GitVersion << " based on " << compile_information::GitRevisionSHA1 << std::endl;
 }
 
 }
