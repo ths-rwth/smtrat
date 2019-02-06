@@ -4,5 +4,5 @@ ModuleName(IntBlastModule)
 ModuleVersion(0 0 1)
 EndDefineModule()
 
-set(DEPEND-shared smtrat-strategy-BVSolver-shared PARENT_SCOPE)
-set(DEPEND-static smtrat-strategy-BVSolver-static PARENT_SCOPE)
+set(DEPEND-shared smtrat-module-ICPModule-shared smtrat-strategy-BVSolver-shared PARENT_SCOPE)
+set(DEPEND-static smtrat-module-ICPModule-static smtrat-strategy-BVSolver-static PARENT_SCOPE)
