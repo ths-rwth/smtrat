@@ -120,6 +120,7 @@ namespace smtrat {
                     return i;
                 }
             }
+            return 0;
         }
 
     };
@@ -309,6 +310,7 @@ namespace smtrat {
         template<typename Constraints>
         void rebuildTheoryVars(const Constraints& c) {
             theory_ordering.rebuildTheoryVars(c);
+            boolean_ordering.rebuild();
         }
     };
 
