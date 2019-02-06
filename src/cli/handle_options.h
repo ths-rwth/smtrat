@@ -21,7 +21,7 @@ void print_cmake_options() {
 void print_info() {
     std::cout << "Version: " << smtrat::compile_information::GitVersion << std::endl;
     std::cout << "Code is based on commit " << smtrat::compile_information::GitRevisionSHA1 << ". " << std::endl;
-    std::cout << "Build type:" << smtrat::compile_information::BuildType << std::endl;
+    std::cout << "Build type: " << smtrat::compile_information::BuildType << std::endl;
     std::cout << "Code was compiled with compiler " << smtrat::compile_information::CXXCompiler << " " << smtrat::compile_information::CXXCompilerVersion << std::endl;
     std::cout << "Build on a " << smtrat::compile_information::SystemName << " (" << compile_information::SystemVersion << ") machine." << std::endl;
 }
