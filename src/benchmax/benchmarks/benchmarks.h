@@ -9,7 +9,7 @@
 namespace benchmax {
 
 /// Loads benchmark files from directory specified in settings.
-std::vector<BenchmarkSet> loadBenchmarks();
+BenchmarkSet loadBenchmarks();
 
 namespace settings {
 

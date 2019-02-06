@@ -123,8 +123,8 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-	std::vector<BenchmarkSet> benchmarks = loadBenchmarks();
-	if(benchmarks.empty()) {
+	BenchmarkSet benchmarks = loadBenchmarks();
+	if(benchmarks.size() == 0) {
 		BENCHMAX_LOG_ERROR("benchmax", "No benchmarks were found. Specify a valid location with --directory.");
 		return 0;
 	}
