@@ -31,6 +31,14 @@ link_directories( ${PROJECT_BINARY_DIR}/src/lib
 
 file(STRINGS ${CMAKE_SOURCE_DIR}/LICENSE LICENSE_CONTENT_IN)
 
+get_cmake_property(variableNames VARIABLES)
+set(VARLIST "")
+foreach (variableName ${variableNames})
+	get_property(ISADV CACHE ${variableName} PROPERTY ADVANCED SET)
+	get_property(TYPE CACHE ${variableName} PROPERTY TYPE)
+	set(VARLIST "${VARLIST}\n\tprint(${ISADV}, \"${TYPE}\", \"${variableName}\", R\"VAR(${${variableName}})VAR\");")
+endforeach()
+
 configure_everything()
 
 file(GLOB_RECURSE smtrat_cli_sources "*.cpp")

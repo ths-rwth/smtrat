@@ -85,7 +85,7 @@ void SettingsParser::parse_command_line(int argc, char* argv[]) {
 void SettingsParser::parse_config_file() {
 	std::filesystem::path configfile(mValues["config"].as<std::string>());
 	if (std::filesystem::is_regular_file(configfile)) {
-		auto parsed = po::parse_config_file(configfile.c_str(), mAllOptions, true);
+		auto parsed = po::parse_config_file<char>(configfile.c_str(), mAllOptions, true);
 		warn_for_unrecognized(parsed);
 		po::store(parsed, mValues);
 	} else {

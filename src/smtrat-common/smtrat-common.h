@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CompileInfo.h"
 #include "config.h"
 #include "logging.h"
 

@@ -23,7 +23,7 @@ namespace benchmax {
 class CondorBackend: public Backend {
 protected:
 	/// No-op version of execute.
-	virtual void execute(const Tool*, const fs::path&, const fs::path&) {}
+	virtual void execute(const Tool*, const fs::path&) {}
 private:
 	/// List of processes that are currently running.
 	std::list<std::atomic<bool>> processes;
@@ -82,16 +82,14 @@ private:
 	
 public:
 	/// Run all tools on all benchmarks.
-	void run(const Tools& tools, const std::vector<BenchmarkSet>& benchmarks) {
+	void run(const Tools& tools, const BenchmarkSet& benchmarks) {
 		BENCHMAX_LOG_INFO("benchmax.condor", "Generating submit files...");
 		
 		for (const auto& tool: tools) {
-			for (const BenchmarkSet& set: benchmarks) {
-				std::size_t ID = processes.size() + 1;
-				std::string submitFile = generateSubmitFile(ID, *tool.get(), set);
-				processes.emplace_back(false);
-				std::async(&CondorBackend::runAndWait, this, ID, std::ref(submitFile), std::ref(processes.back()));
-			}
+			std::size_t ID = processes.size() + 1;
+			std::string submitFile = generateSubmitFile(ID, *tool.get(), benchmarks);
+			processes.emplace_back(false);
+			std::async(&CondorBackend::runAndWait, this, ID, std::ref(submitFile), std::ref(processes.back()));
 		}
 		while (!processes.empty()) {
 			while (!processes.front()) usleep(1000000);

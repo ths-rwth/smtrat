@@ -1,0 +1,39 @@
+#include "compile_information.h"
+
+namespace smtrat {
+
+namespace compile_information {
+
+const std::string SystemName = "@CMAKE_SYSTEM_NAME@";
+const std::string SystemVersion = "@CMAKE_SYSTEM_VERSION@";
+const std::string BuildType = "@CMAKE_BUILD_TYPE@";
+const std::string CXXCompiler = "@CMAKE_CXX_COMPILER@";
+const std::string CXXCompilerVersion = "@CMAKE_CXX_COMPILER_VERSION@";
+const std::string GitRevisionSHA1 = "@GIT_SHA1@";
+const std::string PackageName = "@PROJECT_NAME@";
+const std::string ProjectName = "@PROJECT_FULLNAME@";
+const std::string Version = "@PROJECT_VERSION@";
+const std::string Website = "https://github.com/smtrat/smtrat/wiki";
+const std::string GitVersion = "@PROJECT_VERSION_FULL@";
+
+}
+
+std::ostream& operator<<(std::ostream& os, CMakeOptionPrinter cmop) {
+	auto print = [&os,&cmop](bool advanced, const std::string& type, const std::string& key, const std::string& value) {
+		if (advanced && !cmop.advanced) return;
+		if (type.empty()) return;
+		if (key.empty()) return;
+		if (key[0] == '_') return;
+		if (value.find('\n') == std::string::npos) {
+			os << key << " = " << value << std::endl;
+		} else {
+			os << key << " has multiple lines." << std::endl;
+		}
+	};
+
+	${VARLIST}
+
+	return os;
+}
+
+}

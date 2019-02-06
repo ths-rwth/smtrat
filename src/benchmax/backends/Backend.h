@@ -41,9 +41,9 @@ protected:
 	 */
 	virtual void startTool(const Tool*) {}
 	/**
-	 * Execute a single pair of tool and benchmark in some base directory.
+	 * Execute a single pair of tool and benchmark.
 	 */
-	virtual void execute(const Tool*, const fs::path&, const fs::path&) {}
+	virtual void execute(const Tool*, const fs::path&) {}
 	/// Can be called to give information about the current progress, if available.
 	void madeProgress(std::size_t files = 1) {
 		mFinishedJobs += files;
@@ -55,36 +55,27 @@ protected:
 	}
 public:
 	/// Add a result.
-	void addResult(const Tool* tool, const fs::path& file, const fs::path& baseDir, BenchmarkResult& result) {
+	void addResult(const Tool* tool, const fs::path& file, BenchmarkResult& result) {
 		tool->additionalResults(file, result);
 		result.cleanup(settings_benchmarks().limit_time);
-		mResults.addResult(tool, file, baseDir, result);
+		mResults.addResult(tool, file, result);
 	}
 	/// Run the list of tools against the list of benchmarks.
-	void run(const Tools& tools, const std::vector<BenchmarkSet>& benchmarks) {
-		for (const BenchmarkSet& set: benchmarks) {
-			mExpectedJobs += tools.size() * set.size();
-		}
+	void run(const Tools& tools, const BenchmarkSet& benchmarks) {
+		mExpectedJobs = tools.size() * benchmarks.size();
+		BENCHMAX_LOG_INFO("benchmax", "Running " << mExpectedJobs << " now.");
 		for (const auto& tool: tools) {
 			this->startTool(tool.get());
-			for (const BenchmarkSet& set: benchmarks) {
-				for (const fs::path& file: set) {
-					if (tool->canHandle(file)) {
-						//BENCHMAX_LOG_DEBUG("benchmax", "Calling " << tool->binary().native() << " on " << file.native());
-						this->execute(tool.get(), file, set.baseDir());
-					}
+			for (const fs::path& file: benchmarks) {
+				if (tool->canHandle(file)) {
+					//BENCHMAX_LOG_DEBUG("benchmax", "Calling " << tool->binary().native() << " on " << file.native());
+					this->execute(tool.get(), file);
 				}
 			}
 		}
-		BENCHMAX_LOG_INFO("benchmax", "Scheduled all jobs, waiting for termination.");
-	}
-	/// Stores the results.
-	virtual ~Backend() {
-		//Database db;
-		//mResults.store(db);
 		BENCHMAX_LOG_INFO("benchmax", "Writing results to " << settings_benchmarks().output_file_xml);
 		XMLWriter xml(settings_benchmarks().output_file_xml);
-		mResults.store(xml);
+		mResults.store(xml, tools, benchmarks);
 	}
 };
 

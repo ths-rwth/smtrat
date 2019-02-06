@@ -111,6 +111,22 @@ namespace smtrat
 			}
 			SMTRAT_LOG_INFO("smtrat.cad", "Infeasible subset: " << mInfeasibleSubsets);
 		}
+		if (Settings::split_for_integers) {
+			for (auto v: mCAD.getVariables()) {
+				if (v.type() != carl::VariableType::VT_INT) continue;
+				auto it = mLastAssignment.find(v);
+				if (it == mLastAssignment.end()) {
+					SMTRAT_LOG_WARN("smtrat.cad", "Variable " << v << " was not found in last assignment " << mLastAssignment);
+					continue;
+				}
+				if (carl::isInteger(it->second)) continue;
+				if (mFinalCheck) {
+					branchAt(v, it->second.branchingPoint(), true, true, true);
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Branching on " << v << " at " << it->second.branchingPoint());
+					answer = UNKNOWN;
+				}
+			}
+		}
 		if (Settings::force_nonincremental) {
 			removeConstraintsFromReplacer();
 		}
