@@ -3173,7 +3173,6 @@ namespace smtrat
             }
         }
 		SMTRAT_LOG_DEBUG("smtrat.sat", "Got " << next);
-        // TODO DYNSCHED if theory var, ignore polarity ...
         return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
         //return next == var_Undef ? lit_Undef : mkLit( next, rnd_pol ? drand( random_seed ) < 0.5 : polarity[next] );
     }

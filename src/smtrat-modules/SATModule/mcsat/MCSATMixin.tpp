@@ -46,7 +46,7 @@ void MCSATMixin<Settings>::updateCurrentLevel() { // TODO DYNSCHED: make more ef
 }
 
 template<typename Settings>
-bool MCSATMixin<Settings>::backtrackTo(Minisat::Lit literal) { // TODO BUG adapt backtracking ...
+bool MCSATMixin<Settings>::backtrackTo(Minisat::Lit literal) {
 	std::size_t lvl = level();
 	while (lvl > 0) {
 		if (get(lvl).decisionLiteral == literal) break;

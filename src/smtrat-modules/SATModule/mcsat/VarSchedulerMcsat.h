@@ -233,7 +233,7 @@ namespace smtrat {
         template<typename BaseModule>
         explicit VarSchedulerMcsatUnivariateConstraintsOnly( BaseModule& baseModule ) :
             VarSchedulerMcsatBase(baseModule),
-            boolean_ordering( baseModule, [this](Minisat::Var x, Minisat::Var y) -> bool { return varCmp(x,y); } ), // TODO DYNSCHED override ...
+            boolean_ordering( baseModule, [this](Minisat::Var x, Minisat::Var y) -> bool { return varCmp(x,y); } ),
             theory_ordering( baseModule )
         {}
 
