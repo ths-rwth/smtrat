@@ -95,10 +95,10 @@ void SSHScheduler::uploadTool(const Tool* tool) {
 	}
 }
 
-bool SSHScheduler::executeJob(const Tool* tool, const fs::path& file, const fs::path& baseDir, Backend* backend) {
+bool SSHScheduler::executeJob(const Tool* tool, const fs::path& file, Backend* backend) {
 	mRunningJobs++;
 	const auto& c = get();
-	BENCHMAX_LOG_INFO("benchmax.ssh", "Executing " << remove_prefix(file.native(), settings_benchmarks().input_directories_common_prefix));
+	BENCHMAX_LOG_DEBUG("benchmax.ssh", "Executing " << remove_prefix(file.native(), settings_benchmarks().input_directories_common_prefix));
 	// Create temporary directory
 	std::string folder = c->createTmpDir(tmpDirName(tool,file));
 	// Upload benchmark file
@@ -112,7 +112,7 @@ bool SSHScheduler::executeJob(const Tool* tool, const fs::path& file, const fs::
 	// Remove temporary directory
 	c->removeDir(folder);
 	// Store result
-	backend->addResult(tool, file, baseDir, result);
+	backend->addResult(tool, file, result);
 	c->finishJob();
 	mRunningJobs--;
 	return true;

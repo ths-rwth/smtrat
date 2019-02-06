@@ -24,7 +24,6 @@ private:
 	using JobData = std::tuple<
 		const Tool*,
 		std::filesystem::path,
-		std::filesystem::path,
 		BenchmarkResult
 	>;
 	
@@ -52,7 +51,7 @@ private:
 			assert(std::stoi((*i)[1]) > 0);
 			std::size_t id = std::stoull((*i)[1]) - 1;
 			if (id >= mResults.size()) continue;
-			auto& res = std::get<3>(mResults[id]);
+			auto& res = std::get<2>(mResults[id]);
 			if (extension == ".out") {
 				res.stdout = (*i)[2];
 				res.exitCode = std::stoi(slurm::parse_result_info((*i)[3], "exitcode"));
@@ -68,12 +67,10 @@ private:
 	}
 public:
 	/// Run all tools on all benchmarks using Slurm.
-	void run(const Tools& tools, const std::vector<BenchmarkSet>& benchmarks) {
+	void run(const Tools& tools, const BenchmarkSet& benchmarks) {
 		for (const auto& tool: tools) {
-			for (const BenchmarkSet& set: benchmarks) {
-				for (const auto& file: set) {
-					mResults.emplace_back(JobData { tool.get(), file, set.baseDir(), BenchmarkResult() });
-				}
+			for (const auto& file: benchmarks) {
+				mResults.emplace_back(JobData { tool.get(), file, BenchmarkResult() });
 			}
 		}
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Gathered " << mResults.size() << " jobs");
@@ -107,7 +104,7 @@ public:
 		}
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Parsed results.");
 		for (auto& r: mResults) {
-			addResult(std::get<0>(r), std::get<1>(r), std::get<2>(r), std::get<3>(r));
+			addResult(std::get<0>(r), std::get<1>(r), std::get<2>(r));
 		}
 
 		if (settings_slurm().archive_log_file != "") {

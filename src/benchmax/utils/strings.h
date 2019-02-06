@@ -27,6 +27,18 @@ inline std::string common_prefix(const std::vector<std::string>& s) {
 	return s.front().substr(0, s.front().rfind('/', len-1)+1);
 }
 
+/// Computes the common prefix of a list of paths.
+inline std::filesystem::path common_prefix(const std::vector<std::filesystem::path>& s) {
+	if (s.empty()) return std::filesystem::path();
+	const auto& front = s.front().native();
+	std::size_t len = front.length();
+	
+	for (std::size_t i = 1; i < s.size(); i++) {
+		len = common_prefix_length(s[i-1].native(), s[i].native(), len);
+	}
+	return front.substr(0, front.rfind('/', len-1)+1);
+}
+
 /// Computes the common prefix of multiple lists of strings.
 inline std::string common_prefix(const std::initializer_list<std::vector<std::string>>& s) {
 	if (s.begin() == s.end()) return "";

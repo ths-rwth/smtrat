@@ -45,7 +45,7 @@ public:
 	/// Upload a tool to all remotes.
 	void uploadTool(const Tool* tool);
 	/// Execute a single job.
-	bool executeJob(const Tool* tool, const fs::path& file, const fs::path& baseDir, Backend* backend);
+	bool executeJob(const Tool* tool, const fs::path& file, Backend* backend);
 };
 
 }
