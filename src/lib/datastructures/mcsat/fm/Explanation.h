@@ -352,6 +352,9 @@ struct Explanation {
 		mStatistics.explanationCalled();
 		#endif
 
+		carl::Variables allowedVars(data.assignedVariables().begin(), data.assignedVariables().end());
+		allowedVars.insert(var);
+
 		std::vector<ConstraintT> bounds;
 
 		if (!Settings::use_all_constraints) {
@@ -362,15 +365,17 @@ struct Explanation {
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-constraint bound " << b);
 					continue;
 				}
+				// Note that FM can only eliminate one variable. Thus, only syntactically univariate bounds can be handled!
+				if (!isSubset(b.variables(), allowedVars)) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-univariate bound " << b);
+					continue;
+				}
 				assert(b.getType() == carl::FormulaType::CONSTRAINT);
 				bounds.emplace_back(b.constraint());
 			}
 		} else {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " <<  data.constraints());
 
-			carl::Variables allowedVars(data.assignedVariables().begin(), data.assignedVariables().end());
-			allowedVars.insert(var);
-		
 			for (const auto& b : data.constraints()) {
 				if (!isSubset(b.variables(), allowedVars)) {
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-univariate bound " << b);
