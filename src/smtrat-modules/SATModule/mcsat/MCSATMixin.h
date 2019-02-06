@@ -343,11 +343,16 @@ public:
 	 * Checks if the trail is consistent after the assignment on the current level.
 	 * The trail must be consistent on the previous level.
 	 * 
-	 * Note that we only check consistency for syntactically univariate constraints.
+	 * If only_univariate is set to true, only syntactically univariate constraints are checked for consistency. This may
+	 * lead to an inconsistent trail when considering all variables, but the trail is still consistent up to the currently
+	 * decided theory variables.
+	 * 
+	 * Note that if we check consistency for all constraints, including those being not yet syntactically univariate,
+	 * the explanation backends need to be able to eliminate all unassigned variables, otherwise we run into termination problems.
 	 * 
 	 * Returns boost::none if consistent and otherwise a conflicting Boolean variable.
 	 */
-	boost::optional<FormulaT> checkConsistency() { // TODO DYNSCHED make more efficient
+	boost::optional<FormulaT> checkConsistency(bool only_univariate = false) { // TODO DYNSCHED make more efficient
 		const auto& trail = mBackend.getTrail();
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking trail against " << trail.model());
 		auto evaluator = [&trail](const auto& c){
@@ -364,12 +369,14 @@ public:
 			if (std::find(current().univariateVariables.begin(), current().univariateVariables.end(), var) == current().univariateVariables.end()) {
 				continue;
 			}
-			carl::Variables tvars;
-			c.arithmeticVars(tvars);
-			for (const auto& v : mBackend.assignedVariables())
-				tvars.erase(v);
-			if (tvars.size() > 1)
-				continue;
+			if (only_univariate) {
+				carl::Variables tvars;
+				c.arithmeticVars(tvars);
+				for (const auto& v : mBackend.assignedVariables())
+					tvars.erase(v);
+				if (tvars.size() > 1)
+					continue;
+			}
 			if (!evaluator(c)) return c;
 		}
 		for (const auto& b: trail.mvBounds()) {
@@ -377,12 +384,14 @@ public:
 			if (std::find(current().univariateVariables.begin(), current().univariateVariables.end(), var) == current().univariateVariables.end()) {
 				continue;
 			}
-			carl::Variables tvars;
-			b.arithmeticVars(tvars);
-			for (const auto& v : mBackend.assignedVariables())
-				tvars.erase(v);
-			if (tvars.size() > 1)
-				continue;
+			if (only_univariate) {
+				carl::Variables tvars;
+				b.arithmeticVars(tvars);
+				for (const auto& v : mBackend.assignedVariables())
+					tvars.erase(v);
+				if (tvars.size() > 1)
+					continue;
+			}
 			if (!evaluator(b)) return b;
 		}
 		return boost::none;
