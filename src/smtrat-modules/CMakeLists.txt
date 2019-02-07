@@ -70,7 +70,7 @@ file(GLOB smtrat-modules_sources "*.cpp")
 
 add_new_libraries(smtrat-modules "${PROJECT_VERSION_LIB}" "${smtrat-modules_sources}" "resources")
 target_include_dirs_from(smtrat-modules-objects "" PUBLIC smtrat-common-shared)
-target_link_libraries(smtrat-modules-shared smtrat-common-shared)
-target_link_libraries(smtrat-modules-static smtrat-common-static)
+target_link_libraries(smtrat-modules-shared smtrat-common-shared smtrat-solver-shared)
+target_link_libraries(smtrat-modules-static smtrat-common-static smtrat-solver-static)
 
 install_libraries(smtrat-modules-shared smtrat-modules-static)
