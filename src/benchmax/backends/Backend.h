@@ -5,10 +5,9 @@
 
 #pragma once
 
-#include <benchmax/benchmarks/BenchmarkSet.h>
-#include "../tools/Tools.h"
 #include "../results/Results.h"
 #include "../settings/Settings.h"
+#include "Jobs.h"
 
 #include <atomic>
 
@@ -61,21 +60,19 @@ public:
 		mResults.addResult(tool, file, result);
 	}
 	/// Run the list of tools against the list of benchmarks.
-	void run(const Tools& tools, const BenchmarkSet& benchmarks) {
-		mExpectedJobs = tools.size() * benchmarks.size();
+	void run(const Jobs& jobs) {
+		mExpectedJobs = jobs.size();
 		BENCHMAX_LOG_INFO("benchmax", "Running " << mExpectedJobs << " now.");
-		for (const auto& tool: tools) {
+
+		for (const auto& tool: jobs.tools()) {
 			this->startTool(tool.get());
-			for (const fs::path& file: benchmarks) {
-				if (tool->canHandle(file)) {
-					//BENCHMAX_LOG_DEBUG("benchmax", "Calling " << tool->binary().native() << " on " << file.native());
-					this->execute(tool.get(), file);
-				}
-			}
+		}
+		for (const auto& [tool, file]: jobs.randomized()) {
+			this->execute(tool, file);
 		}
 		BENCHMAX_LOG_INFO("benchmax", "Writing results to " << settings_benchmarks().output_file_xml);
 		XMLWriter xml(settings_benchmarks().output_file_xml);
-		mResults.store(xml, tools, benchmarks);
+		mResults.store(xml, jobs);
 	}
 };
 

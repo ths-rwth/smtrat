@@ -15,6 +15,7 @@
 #include "config.h"
 #include "logging.h"
 #include "backends/Backends.h"
+#include "backends/Jobs.h"
 #include "benchmarks/benchmarks.h"
 #include "tools/Tools.h"
 #include "settings/Settings.h"
@@ -128,7 +129,7 @@ int main(int argc, char** argv)
 		BENCHMAX_LOG_ERROR("benchmax", "No benchmarks were found. Specify a valid location with --directory.");
 		return 0;
 	}
-	benchmax::run_backend(settings_operation().backend, tools, benchmarks);
+	run_backend(settings_operation().backend, Jobs(tools, benchmarks));
 
 	return 0;
 }

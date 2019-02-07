@@ -82,20 +82,20 @@ private:
 	
 public:
 	/// Run all tools on all benchmarks.
-	void run(const Tools& tools, const BenchmarkSet& benchmarks) {
+	void run(const Jobs& jobs) {
 		BENCHMAX_LOG_INFO("benchmax.condor", "Generating submit files...");
 		
-		for (const auto& tool: tools) {
-			std::size_t ID = processes.size() + 1;
-			std::string submitFile = generateSubmitFile(ID, *tool.get(), benchmarks);
-			processes.emplace_back(false);
-			std::async(&CondorBackend::runAndWait, this, ID, std::ref(submitFile), std::ref(processes.back()));
-		}
-		while (!processes.empty()) {
-			while (!processes.front()) usleep(1000000);
-			assert(processes.front());
-			processes.pop_front();
-		}
+		//for (const auto& tool: tools) {
+		//	std::size_t ID = processes.size() + 1;
+		//	std::string submitFile = generateSubmitFile(ID, *tool.get(), benchmarks);
+		//	processes.emplace_back(false);
+		//	std::async(&CondorBackend::runAndWait, this, ID, std::ref(submitFile), std::ref(processes.back()));
+		//}
+		//while (!processes.empty()) {
+		//	while (!processes.front()) usleep(1000000);
+		//	assert(processes.front());
+		//	processes.pop_front();
+		//}
 	}
 };
 

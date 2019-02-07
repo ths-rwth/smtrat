@@ -2,15 +2,13 @@
 
 #include "Backend.h"
 
-#include "../logging.h"
-#include "../utils/Execute.h"
+#include <benchmax/logging.h>
+#include <benchmax/utils/execute.h>
 
 #include "slurm/SlurmSettings.h"
 #include "slurm/SlurmUtilities.h"
 
-#include <algorithm>
 #include <filesystem>
-#include <random>
 #include <regex>
 
 namespace benchmax {
@@ -29,13 +27,6 @@ private:
 	
 	/// All jobs.
 	std::vector<JobData> mResults;
-
-	/// Randomize job order to mitigate suboptimal scheduling due to slicing.
-	void shuffle_jobs() {
-		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Shuffling jobs");
-		std::mt19937 rand(mResults.size());
-		std::shuffle(mResults.begin(), mResults.end(), rand);
-	}
 
 	/// Parse the content of an output file.
 	void parse_result_file(const std::filesystem::path& file) {
@@ -67,24 +58,21 @@ private:
 	}
 public:
 	/// Run all tools on all benchmarks using Slurm.
-	void run(const Tools& tools, const BenchmarkSet& benchmarks) {
-		for (const auto& tool: tools) {
-			for (const auto& file: benchmarks) {
-				mResults.emplace_back(JobData { tool.get(), file, BenchmarkResult() });
-			}
+	void run(const Jobs& jobs) {
+		for (const auto& [tool, file]: jobs.randomized()) {
+			mResults.emplace_back(JobData { tool, file, BenchmarkResult() });
 		}
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Gathered " << mResults.size() << " jobs");
-		shuffle_jobs();
-		std::string jobsfile = "jobs-" + std::to_string(settings_core().start_time) + ".jobs";
-		BENCHMAX_LOG_INFO("benchmax.slurm", "Writing job file to " << jobsfile);
-		std::ofstream jobs(settings_slurm().tmp_dir + "/" + jobsfile);
+		std::string jobsfilename = "jobs-" + std::to_string(settings_core().start_time) + ".jobs";
+		BENCHMAX_LOG_INFO("benchmax.slurm", "Writing job file to " << jobsfilename);
+		std::ofstream jobsfile(settings_slurm().tmp_dir + "/" + jobsfilename);
 		for (const auto& r: mResults) {
-			jobs << std::get<0>(r)->getCommandline(std::get<1>(r)) << std::endl;
+			jobsfile << std::get<0>(r)->getCommandline(std::get<1>(r)) << std::endl;
 		}
-		jobs.close();
+		jobsfile.close();
 		auto submitfile = slurm::generate_submit_file({
 			std::to_string(settings_core().start_time),
-			jobsfile,
+			jobsfilename,
 			settings_slurm().tmp_dir,
 			settings_benchmarks().limit_time,
 			settings_benchmarks().limit_memory,
@@ -110,7 +98,7 @@ public:
 		if (settings_slurm().archive_log_file != "") {
 			slurm::archive_log_files({
 				settings_slurm().archive_log_file,
-				jobsfile,
+				jobsfilename,
 				submitfile,
 				settings_slurm().tmp_dir,
 				jobid

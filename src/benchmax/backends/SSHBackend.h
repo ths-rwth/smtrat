@@ -70,7 +70,7 @@ public:
 	SSHBackend(): Backend() {}
 	~SSHBackend() {}
 	/// Dummy if SSH is disabled.
-	void run(const Tools&, const std::vector<BenchmarkSet>&) {
+	void run(const Jobs&) {
 		BENCHMAX_LOG_ERROR("benchmax", "This version of benchmax was compiled without support for SSH.");
 	}
 };

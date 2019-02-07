@@ -87,8 +87,8 @@ public:
 	}
 	
 	/// Store all results to a xml file.
-	void store(XMLWriter& xml, const Tools& tools, const BenchmarkSet& benchmarks) {
-		xml.write(tools, benchmarks, *this);
+	void store(XMLWriter& xml, const Jobs& jobs) {
+		xml.write(jobs, *this);
 	}
 };
 

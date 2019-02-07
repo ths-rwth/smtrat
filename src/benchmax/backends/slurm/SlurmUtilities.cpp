@@ -4,7 +4,7 @@
 #include <sstream>
 
 #include <benchmax/logging.h>
-#include <benchmax/utils/Execute.h>
+#include <benchmax/utils/execute.h>
 
 namespace benchmax {
 namespace slurm {

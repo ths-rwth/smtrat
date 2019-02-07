@@ -9,8 +9,6 @@
 
 #include "Tool.h"
 
-#include "../utils/Execute.h"
-
 namespace benchmax {
 
 /**
