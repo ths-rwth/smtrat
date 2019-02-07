@@ -193,7 +193,7 @@
 			<office:spreadsheet>
 				<table:table>
 					<xsl:attribute name="table:name">
-						<xsl:value-of select='concat(@solver_id,"_",$SET/@name)'/>
+						<xsl:value-of select='@solver_id'/>
 					</xsl:attribute>
 					<table:table-row>
 						<table:table-cell/>
