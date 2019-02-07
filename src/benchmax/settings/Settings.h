@@ -5,8 +5,7 @@
 
 #pragma once
 
-#include "../utils/strings.h"
-
+#include <benchmax/utils/filesystem.h>
 #include <carl/util/Singleton.h>
 
 #include <any>

@@ -1,9 +1,9 @@
 #pragma once
 
 
-#include "../settings/Settings.h"
-#include "../benchmarks/benchmarks.h"
-#include "../utils/strings.h"
+#include <benchmax/benchmarks/benchmarks.h>
+#include <benchmax/settings/Settings.h>
+#include <benchmax/utils/filesystem.h>
 
 #include <fstream>
 #include <map>

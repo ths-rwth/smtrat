@@ -9,9 +9,10 @@
 #include <boost/functional/hash.hpp>
 #include <boost/version.hpp>
 
-#include <benchmax/results/BenchmarkResult.h>
 #include <benchmax/benchmarks/BenchmarkSet.h>
+#include <benchmax/results/BenchmarkResult.h>
 #include <benchmax/settings/Settings.h>
+#include <benchmax/utils/filesystem.h>
 
 namespace benchmax {
 
