@@ -13,7 +13,12 @@ namespace std {
 inline void validate(boost::any& v, const std::vector<std::string>& values, std::filesystem::path*, int) {
 	namespace pov = boost::program_options::validators;
 	namespace fs = std::filesystem;
-	v = fs::canonical(fs::path(pov::get_single_string(values)));
+	fs::path p(pov::get_single_string(values));
+	if (fs::exists(p)) {
+		v = fs::canonical(p);
+	} else {
+		v = fs::absolute(p);
+	}
 }
 
 }
