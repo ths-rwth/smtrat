@@ -122,11 +122,7 @@ namespace cad {
 		}
 		
 	public:
-		LiftingTree(const Constraints& c): mConstraints(c) {
-			auto it = mTree.setRoot(Sample(RAN(0), false));
-			assert(mTree.is_valid(it));
-			mLiftingQueue.addNewSample(it);
-		}
+		LiftingTree(const Constraints& c): mConstraints(c) {}
 		LiftingTree(const LiftingTree&) = delete;
 		LiftingTree(LiftingTree&&) = delete;
 		LiftingTree& operator=(const LiftingTree&) = delete;
@@ -140,6 +136,13 @@ namespace cad {
 		}
 		void reset(std::vector<carl::Variable>&& vars) {
 			mVariables = std::move(vars);
+			mCheckingQueue.clear();
+			mLiftingQueue.clear();
+			mRemovedFromLiftingQueue.clear();
+			mTree.clear();
+			auto it = mTree.setRoot(Sample(RAN(0), false));
+			assert(mTree.is_valid(it));
+			mLiftingQueue.addNewSample(it);
 		}
 		
 		bool hasFullSamples() const {
