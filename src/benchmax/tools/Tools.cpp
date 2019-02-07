@@ -12,11 +12,11 @@
 namespace benchmax {
 
 template<typename T>
-void createTools(const std::vector<std::string>& arguments, Tools& tools) {
+void createTools(const std::vector<std::filesystem::path>& arguments, Tools& tools) {
 	std::regex r("([^ ]+) *(.*)");
 	for (const auto& arg: arguments) {
 		std::smatch matches;
-		if (std::regex_match(arg, matches, r)) {
+		if (std::regex_match(arg.native(), matches, r)) {
 			fs::path path = std::filesystem::canonical(fs::path(matches[1]));
 			if (!fs::is_regular_file(path)) {
 				BENCHMAX_LOG_WARN("benchmax", "The tool " << path << " does not seem to be a file. We skip it.");
@@ -51,11 +51,11 @@ void registerToolSettings(SettingsParser* parser) {
 
 	parser->add("Tool settings", s).add_options()
 		("statistics,s", po::bool_switch(&s.collect_statistics), "run tools with statistics")
-		("tool", po::value<std::vector<std::string>>(&s.tools_generic), "a generic tool")
-		("smtrat,S", po::value<std::vector<std::string>>(&s.tools_smtrat), "SMT-RAT with SMT-LIB interface")
-		("smtrat-opb,O", po::value<std::vector<std::string>>(&s.tools_smtrat_opb), "SMT-RAT with OPB interface")
-		("minisatp", po::value<std::vector<std::string>>(&s.tools_minisatp), "Minisatp with OPB interface")
-		("z3,Z", po::value<std::vector<std::string>>(&s.tools_z3), "z3 with SMT-LIB interface")
+		("tool", po::value<std::vector<std::filesystem::path>>(&s.tools_generic), "a generic tool")
+		("smtrat,S", po::value<std::vector<std::filesystem::path>>(&s.tools_smtrat), "SMT-RAT with SMT-LIB interface")
+		("smtrat-opb,O", po::value<std::vector<std::filesystem::path>>(&s.tools_smtrat_opb), "SMT-RAT with OPB interface")
+		("minisatp", po::value<std::vector<std::filesystem::path>>(&s.tools_minisatp), "Minisatp with OPB interface")
+		("z3,Z", po::value<std::vector<std::filesystem::path>>(&s.tools_z3), "z3 with SMT-LIB interface")
 	;
 }
 }

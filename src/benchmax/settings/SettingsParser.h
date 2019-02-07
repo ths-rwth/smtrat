@@ -2,9 +2,21 @@
 
 #include <boost/program_options.hpp>
 #include <carl/util/Singleton.h>
+#include <filesystem>
 #include <iostream>
+#include <vector>
 
 #include "Settings.h"
+
+namespace std {
+
+inline void validate(boost::any& v, const std::vector<std::string>& values, std::filesystem::path*, int) {
+	namespace pov = boost::program_options::validators;
+	namespace fs = std::filesystem;
+	v = fs::canonical(fs::path(pov::get_single_string(values)));
+}
+
+}
 
 namespace benchmax {
 namespace po = boost::program_options;
@@ -65,7 +77,7 @@ private:
 	/// Parses the config file if one was configured.
 	void parse_config_file();
 	/// Calls the finalizer functions.
-	void finalize_settings() const;
+	void finalize_settings();
 public:
 	/// Finalizes the parser.
 	void finalize() {

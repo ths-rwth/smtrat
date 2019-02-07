@@ -93,7 +93,7 @@ void SettingsParser::parse_config_file() {
 	}
 }
 
-void SettingsParser::finalize_settings() const {
+void SettingsParser::finalize_settings() {
 	for (const auto& f: mFinalizer) {
 		f();
 	}

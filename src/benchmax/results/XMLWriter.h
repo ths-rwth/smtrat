@@ -33,10 +33,10 @@ private:
 		return res;
 	}
 	std::string sanitizeTool(const std::unique_ptr<Tool>& tool) const {
-		return sanitize(remove_prefix(tool->binary().native(), settings_tools().tools_common_prefix), true);
+		return sanitize(remove_prefix(tool->binary(), settings_tools().tools_common_prefix), false);
 	}
-	std::string sanitizeFile(const fs::path& file, const std::string& prefix) const {
-		return sanitize(remove_prefix(file.native(), prefix), true);
+	std::string sanitizeFile(const fs::path& file) const {
+		return sanitize(remove_prefix(file, settings_benchmarks().input_directories_common_prefix), false);
 	}
 	template<typename Results>
 	std::vector<std::string> collectStatistics(const Results& results) const {
@@ -62,12 +62,10 @@ public:
 	template<typename Results>
 	void write(const Tools& tools, const BenchmarkSet& files, const Results& results) {
 		mFile << "<?xml version=\"1.0\"?>" << std::endl;
-		mFile << "<benchmarksets>" << std::endl;
-		mFile << "\t<solvers>" << std::endl;
-		std::set<std::string> toolNames;
-		for (const auto& tool: tools) toolNames.insert(sanitizeTool(tool));
-		for (const auto& tool: toolNames) {
-			mFile << "\t\t<solver solver_id=\"" << tool << "\" />" << std::endl;
+		mFile << "<results>" << std::endl;
+		mFile << "\t<solvers prefix=\"" << settings_tools().tools_common_prefix.native() << "\">" << std::endl;
+		for (const auto& tool: tools) {
+			mFile << "\t\t<solver solver_id=\"" << sanitizeTool(tool) << "\" />" << std::endl;
 		}
 		mFile << "\t</solvers>" << std::endl;
 		mFile << "\t<statistics>" << std::endl;
@@ -76,9 +74,9 @@ public:
 		}
 		mFile << "\t</statistics>" << std::endl;
 		
-		mFile << "\t<benchmarkset name=\"" << settings_benchmarks().input_directories_common_prefix << "\">" << std::endl;
+		mFile << "\t<benchmarks prefix=\"" << settings_benchmarks().input_directories_common_prefix.native() << "\">" << std::endl;
 		for (const auto& filename: files) {
-			mFile << "\t\t<benchmarkfile name=\"" << sanitizeFile(filename, settings_benchmarks().input_directories_common_prefix) << "\">" << std::endl;
+			mFile << "\t\t<file name=\"" << sanitizeFile(filename) << "\">" << std::endl;
 			for (const auto& tool: tools) {
 				const auto& result = results.get(tool.get(), filename);
 				if (!result) continue;
@@ -98,10 +96,10 @@ public:
 				mFile << "\t\t\t\t</results>" << std::endl;
 				mFile << "\t\t\t</run>" << std::endl;
 			}
-			mFile << "\t\t</benchmarkfile>" << std::endl;
+			mFile << "\t\t</file>" << std::endl;
 		}
-		mFile << "\t</benchmarkset>" << std::endl;
-		mFile << "</benchmarksets>" << std::endl;
+		mFile << "\t</benchmarks>" << std::endl;
+		mFile << "</results>" << std::endl;
 	}
 };
 

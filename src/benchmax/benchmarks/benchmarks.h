@@ -20,13 +20,13 @@ struct BenchmarkSettings {
 	/// Time limit in seconds.
 	std::chrono::seconds limit_time;
 	/// Lift of input directories.
-	std::vector<std::string> input_directories;
+	std::vector<std::filesystem::path> input_directories;
 	/// Common prefix of input directories (to shorten filenames in output).
-	std::string input_directories_common_prefix;
+	std::filesystem::path input_directories_common_prefix;
 	/// Output directory.
-	std::string output_dir;
+	std::filesystem::path output_dir;
 	/// Filename of xml file.
-	std::string output_file_xml;
+	std::filesystem::path output_file_xml;
 };
 /// Postprocess benchmark settings.
 template<typename V>
