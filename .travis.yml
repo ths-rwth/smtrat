@@ -1,5 +1,5 @@
 language: generic
-dist: trusty
+dist: xenial
 
 cache:
   apt: true
@@ -26,7 +26,7 @@ matrix:
       script: TASK=dependencies source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base, llvm-toolchain-trusty-5.0]
+          sources: [*sources_base, llvm-toolchain-xenial-5.0]
           packages: [*packages_base, clang-5.0, libstdc++-8-dev]
     - stage: dependencies
       os: linux
@@ -35,17 +35,17 @@ matrix:
       script: TASK=dependencies source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base, llvm-toolchain-trusty-6.0]
+          sources: [*sources_base, llvm-toolchain-xenial-6.0]
           packages: [*packages_base, clang-6.0, libstdc++-8-dev]
     - stage: dependencies
       os: linux
       compiler: clang++-7.0
-      env: CC=clang-7 CXX=clang++-7
+      env: CC=clang CXX=clang++
       script: TASK=dependencies source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base, llvm-toolchain-trusty-7]
-          packages: [*packages_base, clang-7, libstdc++-8-dev]
+          sources: [*sources_base, llvm-toolchain-xenial-7]
+          packages: [*packages_base, libstdc++-8-dev]
     - stage: dependencies
       os: linux
       compiler: g++-7
@@ -75,6 +75,10 @@ matrix:
     - stage: dependencies
       os: osx
       osx_image: xcode10
+      script: TASK=dependencies source .ci/build.sh
+    - stage: dependencies
+      os: osx
+      osx_image: xcode10.1
       script: TASK=dependencies source .ci/build.sh
     - stage: build
       os: linux
@@ -83,7 +87,7 @@ matrix:
       script: source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base, llvm-toolchain-trusty-5.0]
+          sources: [*sources_base, llvm-toolchain-xenial-5.0]
           packages: [*packages_base, clang-5.0, libstdc++-8-dev]
     - stage: build
       os: linux
@@ -92,17 +96,17 @@ matrix:
       script: source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base, llvm-toolchain-trusty-6.0]
+          sources: [*sources_base, llvm-toolchain-xenial-6.0]
           packages: [*packages_base, clang-6.0, libstdc++-8-dev]
     - stage: build
       os: linux
       compiler: clang++-7.0
-      env: CC=clang-7 CXX=clang++-7
+      env: CC=clang CXX=clang++
       script: source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base, llvm-toolchain-trusty-7]
-          packages: [*packages_base, clang-7, libstdc++-8-dev]
+          sources: [*sources_base, llvm-toolchain-xenial-7]
+          packages: [*packages_base, libstdc++-8-dev]
     - stage: build
       os: linux
       compiler: g++-7
@@ -132,6 +136,10 @@ matrix:
     - stage: build
       os: osx
       osx_image: xcode10
+      script: source .ci/build.sh
+    - stage: build
+      os: osx
+      osx_image: xcode10.1
       script: source .ci/build.sh
     - stage: build
       os: linux
@@ -146,12 +154,12 @@ matrix:
     - stage: build
       os: linux
       compiler: clang++-7.0
-      env: CC=clang-7 CXX=clang++-7 TASK=tidy
+      env: CC=clang CXX=clang++ TASK=tidy
       script: source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base, llvm-toolchain-trusty-7]
-          packages: [*packages_base, clang-7, libstdc++-8-dev]
+          sources: [*sources_base, llvm-toolchain-xenial-7]
+          packages: [*packages_base, libstdc++-8-dev]
   allow_failures:
     - stage: dependencies
       os: linux
@@ -175,8 +183,11 @@ matrix:
       os: osx
       osx_image: xcode10
     - stage: build
+      os: osx
+      osx_image: xcode10.1
+    - stage: build
       os: linux
-      env: CC=clang-7 CXX=clang++-7 TASK=tidy
+      env: CC=clang CXX=clang++ TASK=tidy
 
 before_install:
   - cd .ci/ && source setup_travis.sh && cd ../

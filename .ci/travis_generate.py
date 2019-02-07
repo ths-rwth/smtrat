@@ -24,6 +24,8 @@ jobs = [
 	job("2-macos", ["build", "xcode9.4", "build.sh", "mayfail"]),
 	job("2-macos", ["dependencies", "xcode10", "build.sh"]),
 	job("2-macos", ["build", "xcode10", "build.sh", "mayfail"]),
+	job("2-macos", ["dependencies", "xcode10.1", "build.sh"]),
+	job("2-macos", ["build", "xcode10.1", "build.sh", "mayfail"]),
 	job("3-docs", ["build", "linux", "g++-7", "task.doxygen", "j1", "build.sh"]),
 	job("4-tidy", ["build", "linux", "clang-7.0", "task.tidy", "build.sh", "mayfail"]),
 ]
