@@ -26,7 +26,9 @@ matrix:
       script: TASK=dependencies source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base, llvm-toolchain-xenial-5.0]
+          sources:
+          - *sources_base
+          - llvm-toolchain-xenial-5.0
           packages: [*packages_base, clang-5.0, libstdc++-8-dev]
     - stage: dependencies
       os: linux
@@ -35,17 +37,44 @@ matrix:
       script: TASK=dependencies source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base, llvm-toolchain-xenial-6.0]
+          sources:
+          - *sources_base
+          - llvm-toolchain-xenial-6.0
           packages: [*packages_base, clang-6.0, libstdc++-8-dev]
     - stage: dependencies
       os: linux
       compiler: clang++-7.0
-      env: CC=clang CXX=clang++
+      env: CC=clang-7 CXX=clang++-7
       script: TASK=dependencies source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base, llvm-toolchain-xenial-7]
-          packages: [*packages_base, libstdc++-8-dev]
+          sources:
+          - *sources_base
+          - llvm-toolchain-xenial-7
+          packages: [*packages_base, clang-7, libstdc++-8-dev]
+    - stage: dependencies
+      os: linux
+      compiler: clang++-8.0
+      env: CC=clang-8 CXX=clang++-8
+      script: TASK=dependencies source .ci/build.sh
+      addons:
+        apt:
+          sources:
+          - *sources_base
+          - llvm-toolchain-xenial-8
+          packages: [*packages_base, clang-8, libstdc++-8-dev]
+    - stage: dependencies
+      os: linux
+      compiler: clang++-9.0
+      env: CC=clang-9 CXX=clang++-9
+      script: TASK=dependencies source .ci/build.sh
+      addons:
+        apt:
+          sources:
+          - *sources_base
+          - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial main'
+            key_url: https://apt.llvm.org/llvm-snapshot.gpg.key
+          packages: [*packages_base, clang-9, libstdc++-8-dev]
     - stage: dependencies
       os: linux
       compiler: g++-7
@@ -53,7 +82,8 @@ matrix:
       script: TASK=dependencies MAKE_PARALLEL=-j1 source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base]
+          sources:
+          - *sources_base
           packages: [*packages_base, g++-7]
     - stage: dependencies
       os: linux
@@ -62,7 +92,8 @@ matrix:
       script: TASK=dependencies MAKE_PARALLEL=-j1 source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base]
+          sources:
+          - *sources_base
           packages: [*packages_base, g++-8]
     - stage: dependencies
       os: osx
@@ -87,7 +118,9 @@ matrix:
       script: source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base, llvm-toolchain-xenial-5.0]
+          sources:
+          - *sources_base
+          - llvm-toolchain-xenial-5.0
           packages: [*packages_base, clang-5.0, libstdc++-8-dev]
     - stage: build
       os: linux
@@ -96,17 +129,44 @@ matrix:
       script: source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base, llvm-toolchain-xenial-6.0]
+          sources:
+          - *sources_base
+          - llvm-toolchain-xenial-6.0
           packages: [*packages_base, clang-6.0, libstdc++-8-dev]
     - stage: build
       os: linux
       compiler: clang++-7.0
-      env: CC=clang CXX=clang++
+      env: CC=clang-7 CXX=clang++-7
       script: source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base, llvm-toolchain-xenial-7]
-          packages: [*packages_base, libstdc++-8-dev]
+          sources:
+          - *sources_base
+          - llvm-toolchain-xenial-7
+          packages: [*packages_base, clang-7, libstdc++-8-dev]
+    - stage: build
+      os: linux
+      compiler: clang++-8.0
+      env: CC=clang-8 CXX=clang++-8
+      script: source .ci/build.sh
+      addons:
+        apt:
+          sources:
+          - *sources_base
+          - llvm-toolchain-xenial-8
+          packages: [*packages_base, clang-8, libstdc++-8-dev]
+    - stage: build
+      os: linux
+      compiler: clang++-9.0
+      env: CC=clang-9 CXX=clang++-9
+      script: source .ci/build.sh
+      addons:
+        apt:
+          sources:
+          - *sources_base
+          - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial main'
+            key_url: https://apt.llvm.org/llvm-snapshot.gpg.key
+          packages: [*packages_base, clang-9, libstdc++-8-dev]
     - stage: build
       os: linux
       compiler: g++-7
@@ -114,7 +174,8 @@ matrix:
       script: MAKE_PARALLEL=-j1 source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base]
+          sources:
+          - *sources_base
           packages: [*packages_base, g++-7]
     - stage: build
       os: linux
@@ -123,7 +184,8 @@ matrix:
       script: MAKE_PARALLEL=-j1 source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base]
+          sources:
+          - *sources_base
           packages: [*packages_base, g++-8]
     - stage: build
       os: osx
@@ -143,30 +205,46 @@ matrix:
       script: source .ci/build.sh
     - stage: build
       os: linux
-      compiler: g++-7
-      env: CC=gcc-7 CXX=g++-7 TASK=doxygen
+      compiler: g++-8
+      env: CC=gcc-8 CXX=g++-8 TASK=doxygen
       if: branch = master
       script: MAKE_PARALLEL=-j1 source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base]
-          packages: [*packages_base, g++-7, doxygen, ghostscript, latex-xcolor, lmodern, pgf, texinfo, texlive, texlive-font-utils, texlive-latex-extra]
+          sources:
+          - *sources_base
+          packages: [*packages_base, g++-8, doxygen, ghostscript, latex-xcolor, lmodern, pgf, texinfo, texlive, texlive-font-utils, texlive-latex-extra]
     - stage: build
       os: linux
-      compiler: clang++-7.0
-      env: CC=clang CXX=clang++ TASK=tidy
+      compiler: clang++-9.0
+      env: CC=clang-9 CXX=clang++-9 TASK=tidy
       script: source .ci/build.sh
       addons:
         apt:
-          sources: [*sources_base, llvm-toolchain-xenial-7]
-          packages: [*packages_base, libstdc++-8-dev]
+          sources:
+          - *sources_base
+          - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial main'
+            key_url: https://apt.llvm.org/llvm-snapshot.gpg.key
+          packages: [*packages_base, clang-9, libstdc++-8-dev]
   allow_failures:
+    - stage: dependencies
+      os: linux
+      env: CC=clang-8 CXX=clang++-8
+    - stage: dependencies
+      os: linux
+      env: CC=clang-9 CXX=clang++-9
     - stage: dependencies
       os: linux
       env: CC=gcc-7 CXX=g++-7
     - stage: dependencies
       os: linux
       env: CC=gcc-8 CXX=g++-8
+    - stage: build
+      os: linux
+      env: CC=clang-8 CXX=clang++-8
+    - stage: build
+      os: linux
+      env: CC=clang-9 CXX=clang++-9
     - stage: build
       os: linux
       env: CC=gcc-7 CXX=g++-7
@@ -187,7 +265,7 @@ matrix:
       osx_image: xcode10.1
     - stage: build
       os: linux
-      env: CC=clang CXX=clang++ TASK=tidy
+      env: CC=clang-9 CXX=clang++-9 TASK=tidy
 
 before_install:
   - cd .ci/ && source setup_travis.sh && cd ../

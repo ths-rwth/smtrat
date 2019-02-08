@@ -14,6 +14,10 @@ jobs = [
 	job("0-clang", ["build", "linux", "clang-6.0", "build.sh"]),
 	job("0-clang", ["dependencies", "linux", "clang-7.0", "build.sh"]),
 	job("0-clang", ["build", "linux", "clang-7.0", "build.sh"]),
+	job("0-clang", ["dependencies", "linux", "clang-8.0", "build.sh", "mayfail"]),
+	job("0-clang", ["build", "linux", "clang-8.0", "build.sh", "mayfail"]),
+	job("0-clang", ["dependencies", "linux", "clang-9.0", "build.sh", "mayfail"]),
+	job("0-clang", ["build", "linux", "clang-9.0", "build.sh", "mayfail"]),
 	job("1-gcc", ["dependencies", "linux", "g++-7", "j1", "build.sh", "mayfail"]),
 	job("1-gcc", ["build", "linux", "g++-7", "j1", "build.sh", "mayfail"]),
 	job("1-gcc", ["dependencies", "linux", "g++-8", "j1", "build.sh", "mayfail"]),
@@ -26,8 +30,8 @@ jobs = [
 	job("2-macos", ["build", "xcode10", "build.sh", "mayfail"]),
 	job("2-macos", ["dependencies", "xcode10.1", "build.sh"]),
 	job("2-macos", ["build", "xcode10.1", "build.sh", "mayfail"]),
-	job("3-docs", ["build", "linux", "g++-7", "task.doxygen", "j1", "build.sh"]),
-	job("4-tidy", ["build", "linux", "clang-7.0", "task.tidy", "build.sh", "mayfail"]),
+	job("3-docs", ["build", "linux", "g++-8", "task.doxygen", "j1", "build.sh"]),
+	job("4-tidy", ["build", "linux", "clang-9.0", "task.tidy", "build.sh", "mayfail"]),
 ]
 
 
