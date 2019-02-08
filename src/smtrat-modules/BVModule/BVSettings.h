@@ -10,11 +10,9 @@
 
 #pragma once
 
-#include "../ModuleSettings.h"
-
 namespace smtrat
 {
-    struct BVSettings1 : ModuleSettings
+    struct BVSettings1
     {
 		static constexpr auto moduleName = "BVModule<BVSettings1>";
         /**

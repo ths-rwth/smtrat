@@ -27,11 +27,9 @@
 
 #pragma once
 
-#include "../ModuleSettings.h"
-
 namespace smtrat
 {
-    struct IntBlastSettings1 : ModuleSettings
+    struct IntBlastSettings1
     {
 		static constexpr auto moduleName = "IntBlastModule<IntBlastSettings1>";
         /**

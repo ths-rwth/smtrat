@@ -48,7 +48,6 @@ add_dependencies(smtrat-objects
 	smtrat-lib-shared
 	carl-shared
 	smtrat-common-shared
-	smtrat-modules-shared
 	smtrat-solver-shared
 	smtrat-unsat-cores-shared
 	smtrat-strategy-${SMTRAT_Strategy}-shared
@@ -57,7 +56,6 @@ target_include_dirs_from(smtrat-objects "" PUBLIC
 	smtrat-lib-shared
 	carl-shared
 	smtrat-common-shared
-	smtrat-modules-shared
 	smtrat-solver-shared
 	smtrat-unsat-cores-shared
 	smtrat-strategy-${SMTRAT_Strategy}-shared
@@ -70,7 +68,6 @@ target_link_libraries(smtrat-shared
 	smtrat-lib-shared
 	carl-shared
 	smtrat-common-shared
-	smtrat-modules-shared
 	smtrat-solver-shared
 	smtrat-unsat-cores-shared
 	smtrat-strategy-${SMTRAT_Strategy}-shared
@@ -79,7 +76,6 @@ target_link_libraries(smtrat-static
 	smtrat-lib-static
 	carl-static
 	smtrat-common-static
-	smtrat-modules-static
 	smtrat-solver-static
 	smtrat-unsat-cores-static
 	smtrat-strategy-${SMTRAT_Strategy}-static

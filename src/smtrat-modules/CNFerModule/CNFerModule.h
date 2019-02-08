@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "../PModule.h"
+#include <smtrat-solver/PModule.h>
 #include "CNFerModuleStatistics.h"
 
 namespace smtrat

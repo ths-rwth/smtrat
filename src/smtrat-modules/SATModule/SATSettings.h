@@ -8,8 +8,6 @@
 
 #pragma once
 
-#include "../ModuleSettings.h"
-
 #include "mcsat/MCSATSettings.h"
 
 #include "VarScheduling.h"
@@ -22,7 +20,7 @@ namespace smtrat
     
     enum class VARIABLE_ACTIVITY_STRATEGY : unsigned { NONE, MIN_COMPLEXITY_MAX_OCCURRENCES };
     
-    struct SATSettings1 : ModuleSettings
+    struct SATSettings1
     {
 		static constexpr auto moduleName = "SATModule<SATSettings1>";
         /**

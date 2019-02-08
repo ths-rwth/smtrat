@@ -6,7 +6,7 @@
 #include <vector>
 
 #include <smtrat-common/smtrat-common.h>
-#include <smtrat-modules/Module.h>
+#include <smtrat-solver/Module.h>
 
 namespace smtrat {
 	

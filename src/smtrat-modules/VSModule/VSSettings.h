@@ -8,13 +8,12 @@
 #pragma once
 
 #include <smtrat-common/smtrat-common.h>
-#include <smtrat-modules/ModuleSettings.h>
     
 namespace smtrat
 {
     enum class VariableValuationStrategy : unsigned { OPTIMIZE_BEST, OPTIMIZE_AVERAGE, OPTIMIZE_WORST };
     
-    struct VSSettings1 : ModuleSettings
+    struct VSSettings1
     {
 		static constexpr auto moduleName = "VSModule<VSSettings1>";
         static const bool elimination_with_factorization                        = false;

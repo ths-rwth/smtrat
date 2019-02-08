@@ -19,7 +19,6 @@
 #ifndef __WIN
 #include <sys/resource.h>
 #endif
-#include <smtrat-modules/Module.h>
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include <smtrat-common/statistics/StatisticsCollector.h>

@@ -37,7 +37,7 @@
 #include "SolverTypes.h"
 #include "Sort.h"
 #include <math.h>
-#include "../Module.h"
+#include <smtrat-solver/Module.h>
 
 #include "VarScheduling.h"
 

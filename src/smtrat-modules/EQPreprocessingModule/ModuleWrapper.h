@@ -2,7 +2,7 @@
 #define SRC_LIB_MODULES_EQPREPROCESSINGMODULE_MODULE_WRAPPER_H_
 
 #include <smtrat-common/smtrat-common.h>
-#include "../Module.h"
+#include <smtrat-solver/Module.h>
 #include "../EQModule/EQModule.h"
 
 namespace smtrat {

@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "../Module.h"
+#include <smtrat-solver/Module.h>
 #include "CoCoAGBStatistics.h"
 #include "CoCoAGBSettings.h"
 

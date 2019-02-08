@@ -11,7 +11,7 @@
 #include <boost/optional.hpp>
 #include <lib/datastructures/VariableBounds.h>
 #include <smtrat-solver/Manager.h>
-#include "../Module.h"
+#include <smtrat-solver/Module.h>
 #include "../SATModule/SATModule.h"
 #include "../LRAModule/LRAModule.h"
 #include "Bimap.h"

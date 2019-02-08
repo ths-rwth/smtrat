@@ -8,10 +8,8 @@
 
 #pragma once
 
-#include "../ModuleSettings.h"
-
 namespace smtrat {
-	struct EQPreprocessingSettings1 : ModuleSettings {
+	struct EQPreprocessingSettings1 {
 		static constexpr auto moduleName = "EQPreprocessingModule<EQPreprocessingSettings1>";
 		static constexpr bool printFormulas = false;
 
@@ -24,7 +22,7 @@ namespace smtrat {
 		static constexpr bool rewriteUsingFacts = false;
 	};
 
-	struct EQPreprocessingSettings2 : ModuleSettings {
+	struct EQPreprocessingSettings2 {
 		static constexpr auto moduleName = "EQPreprocessingModule<EQPreprocessingSettings2>";
 		static constexpr bool printFormulas = false;
 
