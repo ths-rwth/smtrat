@@ -41,6 +41,9 @@ protected:
 	virtual void startTool(const Tool* tool) {
 		scheduler->uploadTool(tool);
 	}
+	virtual void finalize() {
+		while (!jobs.empty()) waitAndPop();
+	}
 	virtual void execute(const Tool* tool, const fs::path& file) {
 		// Make sure enough jobs are active.
 		while (scheduler->runningJobs() > scheduler->workerCount() * 2) {
@@ -54,9 +57,6 @@ protected:
 public:
 	SSHBackend(): Backend() {
 		scheduler = new ssh::SSHScheduler();
-	}
-	~SSHBackend() {
-		while (!jobs.empty()) waitAndPop();
 	}
 };
 

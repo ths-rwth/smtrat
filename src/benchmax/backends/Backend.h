@@ -40,6 +40,10 @@ protected:
 	 */
 	virtual void startTool(const Tool*) {}
 	/**
+	 * Hook to allow for asynchronous backends to wait for jobs to terminate.
+	 */
+	virtual void finalize() {};
+	/**
 	 * Execute a single pair of tool and benchmark.
 	 */
 	virtual void execute(const Tool*, const fs::path&) {}
@@ -70,6 +74,7 @@ public:
 		for (const auto& [tool, file]: jobs.randomized()) {
 			this->execute(tool, file);
 		}
+		this->finalize();
 		BENCHMAX_LOG_INFO("benchmax", "Writing results to " << settings_benchmarks().output_file_xml);
 		XMLWriter xml(settings_benchmarks().output_file_xml);
 		mResults.store(xml, jobs);
