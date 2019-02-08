@@ -6,16 +6,15 @@
 #include <vector>
 
 #include <smtrat-common/smtrat-common.h>
-#include <smtrat-modules/Module.h>
+#include <smtrat-solver/Module.h>
 
 namespace smtrat {
-	
 	
 	typedef bool (*ConditionEvaluation)( carl::Condition );
 	bool isCondition( carl::Condition _condition );
 	
 	struct AbstractModuleFactory {
-		virtual ~AbstractModuleFactory() {}
+		virtual ~AbstractModuleFactory() = default;
 		virtual Module* create(const ModuleInput* _formula, Conditionals& _conditionals, Manager* const _manager) = 0;
 		virtual std::string moduleName() const = 0;
 	};
@@ -30,20 +29,12 @@ namespace smtrat {
 		std::string moduleName() const {
 			return Module::SettingsType::moduleName;
 		}
-
-        ModuleSettings moduleSettingsType() const
-        {
-            return Module::SettingsType;
-        }
-
-        friend std::ostream& operator<<( std::ostream& _os, const ModuleFactory& _moduleFactory )
-        {
-            return _os << _moduleFactory.moduleSettingsType();
-        }
 	};
 
 	template<typename Module>
-	using StandardModuleFactory = ModuleFactory<Module>;
+	inline std::ostream& operator<<(std::ostream& os, const ModuleFactory<Module>& mf) {
+		return os << mf.moduleName();
+	}
 
 	typedef std::function<bool(carl::Condition)> ConditionFunction;
 	class BackendLink {

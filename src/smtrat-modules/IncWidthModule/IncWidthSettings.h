@@ -9,11 +9,9 @@
 
 #pragma once
 
-#include "../ModuleSettings.h"
-
 namespace smtrat
 {
-    struct IncWidthSettings1 : ModuleSettings
+    struct IncWidthSettings1
     {
 		static constexpr auto moduleName = "IncWidthModule<IncWidthSettings1>";
         /**

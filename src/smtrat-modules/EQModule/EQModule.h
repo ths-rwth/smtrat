@@ -9,7 +9,7 @@
 #pragma once
 
 #include <smtrat-common/smtrat-common.h>
-#include "../Module.h"
+#include <smtrat-solver/Module.h>
 #include "EQStatistics.h"
 #include "EQSettings.h"
 #include "VariantHash.h"

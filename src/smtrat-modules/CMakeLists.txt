@@ -1,7 +1,7 @@
 include(${carl_INCLUDE_DIR}/../cmake/carlmacros.cmake)
 
 add_definitions(-fPIC)
-add_custom_target(smtrat-modules-all)
+add_custom_target(smtrat-modules)
 
 file(GLOB modules RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *Module/)
 foreach(module ${modules})
@@ -41,11 +41,11 @@ foreach(module ${modules})
 		
 		add_new_libraries(smtrat-module-${module} ${PROJECT_VERSION_LIB} "${sources}" "resources")
 		target_include_dirs_from(smtrat-module-${module}-objects "" PUBLIC carl-shared smtrat-common-shared)
-		target_link_libraries(smtrat-module-${module}-shared smtrat-common-shared smtrat-modules-shared)
-		target_link_libraries(smtrat-module-${module}-static smtrat-common-static smtrat-modules-static)
+		target_link_libraries(smtrat-module-${module}-shared smtrat-common-shared smtrat-solver-shared)
+		target_link_libraries(smtrat-module-${module}-static smtrat-common-static smtrat-solver-static)
 		install_libraries(smtrat-module-${module}-shared smtrat-module-${module}-static)
 
-		add_dependencies(smtrat-modules-all smtrat-module-${module}-shared smtrat-module-${module}-static)
+		add_dependencies(smtrat-modules smtrat-module-${module}-shared smtrat-module-${module}-static)
 
 		unset(DEPEND-include)
 		unset(DEPEND-shared)
@@ -65,12 +65,3 @@ foreach(module ${modules})
 		endif()
 	endif()
 endforeach()
-
-file(GLOB smtrat-modules_sources "*.cpp")
-
-add_new_libraries(smtrat-modules "${PROJECT_VERSION_LIB}" "${smtrat-modules_sources}" "resources")
-target_include_dirs_from(smtrat-modules-objects "" PUBLIC smtrat-common-shared)
-target_link_libraries(smtrat-modules-shared smtrat-common-shared)
-target_link_libraries(smtrat-modules-static smtrat-common-static)
-
-install_libraries(smtrat-modules-shared smtrat-modules-static)

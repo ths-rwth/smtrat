@@ -1,7 +1,7 @@
 #include "BenchmarkSet.h"
 
 #include <benchmax/logging.h>
-#include <benchmax/utils/strings.h>
+#include <benchmax/utils/filesystem.h>
 
 #include <string>
 

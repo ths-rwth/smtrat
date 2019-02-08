@@ -12,8 +12,6 @@
 
 #include <carl/cad/CADSettings.h>
 
-#include "../ModuleSettings.h"
-
 namespace smtrat
 {
 	enum class MISHeuristic {
@@ -24,7 +22,7 @@ namespace smtrat
 		FIRST, LAST
 	};
 
-	struct CADSettingsReal : ModuleSettings
+	struct CADSettingsReal
 	{
 		static constexpr auto moduleName = "CADModule<CADSettingsReal>";
 		static constexpr carl::cad::IntegerHandling integerHandling = carl::cad::IntegerHandling::NONE;

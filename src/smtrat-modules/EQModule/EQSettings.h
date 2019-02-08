@@ -13,11 +13,10 @@
 #include <ratio>
 #include <cstdint>
 #include "PairHash.h"
-#include "../ModuleSettings.h"
 
 namespace smtrat
 {
-	struct EQSettings1 : ModuleSettings
+	struct EQSettings1
 	{
 		static constexpr auto moduleName = "EQModule<EQSettings1>";
 		/*

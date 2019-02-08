@@ -14,7 +14,7 @@
 #include "CardinalityEncoder.h"
 #include "LongFormulaEncoder.h"
 #include "MixedSignEncoder.h"
-#include "../Module.h"
+#include <smtrat-solver/Module.h>
 #include "PBPPStatistics.h"
 #include "PBPPSettings.h"
 #include "RNSEncoder.h"

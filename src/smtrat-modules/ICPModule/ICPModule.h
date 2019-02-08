@@ -12,7 +12,7 @@
 #endif
 
 
-#include "../Module.h"
+#include <smtrat-solver/Module.h>
 #include "ContractionCandidateManager.h"
 #include "IcpVariable.h"
 #include "../LRAModule/LRAModule.h"

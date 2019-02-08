@@ -41,6 +41,9 @@ protected:
 	virtual void startTool(const Tool* tool) {
 		scheduler->uploadTool(tool);
 	}
+	virtual void finalize() {
+		while (!jobs.empty()) waitAndPop();
+	}
 	virtual void execute(const Tool* tool, const fs::path& file) {
 		// Make sure enough jobs are active.
 		while (scheduler->runningJobs() > scheduler->workerCount() * 2) {
@@ -55,9 +58,6 @@ public:
 	SSHBackend(): Backend() {
 		scheduler = new ssh::SSHScheduler();
 	}
-	~SSHBackend() {
-		while (!jobs.empty()) waitAndPop();
-	}
 };
 
 }
@@ -70,7 +70,7 @@ public:
 	SSHBackend(): Backend() {}
 	~SSHBackend() {}
 	/// Dummy if SSH is disabled.
-	void run(const Tools&, const std::vector<BenchmarkSet>&) {
+	void run(const Jobs&) {
 		BENCHMAX_LOG_ERROR("benchmax", "This version of benchmax was compiled without support for SSH.");
 	}
 };

@@ -20,7 +20,8 @@
 #endif
 
 #include <smtrat-common/smtrat-common.h>
-#include <smtrat-modules/ModuleInput.h>
+#include "ModuleInput.h"
+#include "Module.h"
 
 namespace smtrat
 {   

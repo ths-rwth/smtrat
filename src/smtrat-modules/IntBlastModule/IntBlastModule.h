@@ -8,7 +8,7 @@
 
 #include <lib/datastructures/VariableBounds.h>
 #include <smtrat-strategies/strategies/BVSolver.h>
-#include "../Module.h"
+#include <smtrat-solver/Module.h>
 #include "../ICPModule/ICPModule.h"
 #include "IntBlastSettings.h"
 #include "IntBlastStatistics.h"

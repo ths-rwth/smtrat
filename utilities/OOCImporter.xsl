@@ -16,13 +16,12 @@
 				</style:style>
 			</office:automatic-styles>
 			<office:body>
-				<xsl:apply-templates select="benchmarksets" mode="summary"/>
-				<xsl:apply-templates select="benchmarksets/benchmarkset" mode="single"/>
-				<xsl:apply-templates select="benchmarksets/benchmarkset" mode="single-details"/>
+				<xsl:apply-templates select="results" mode="summary"/>
+				<xsl:apply-templates select="results/benchmarks" mode="single-details"/>
 			</office:body>
 		</office:document-content>
 	</xsl:template>
-	<xsl:key name="bsbbf_sum" match="benchmarkfile" use="@name"/>
+	<xsl:key name="bsbbf_sum" match="file" use="@name"/>
 
 	<xsl:template name="summaryAggregates">
 		<xsl:param name="curStatus" />
@@ -35,7 +34,7 @@
 				<xsl:attribute name="office:value"><xsl:value-of select="$curStatus"/></xsl:attribute>
 				<text:p><xsl:value-of select="$curStatus"/></text:p>
 			</table:table-cell>
-			<xsl:for-each select="/benchmarksets/solvers/solver">
+			<xsl:for-each select="/results/solvers/solver">
 				<table:table-cell><xsl:attribute name="table:formula">=SUMIF(<xsl:value-of select="$afterArea"/>; "<xsl:value-of select="$curStatus"/>"; <xsl:value-of select="$curArea"/>)</xsl:attribute></table:table-cell>
 				<table:table-cell><xsl:attribute name="table:formula">=COUNTIF(<xsl:value-of select="$curArea"/>; "<xsl:value-of select="$curStatus"/>")</xsl:attribute></table:table-cell>
 			</xsl:for-each>
@@ -92,7 +91,7 @@
 	
 	<xsl:template name="singleResultRow">
 		<xsl:param name="FILE" />
-		<xsl:for-each select="/benchmarksets/solvers/solver">
+		<xsl:for-each select="/results/solvers/solver">
 			<xsl:variable name="id"><xsl:value-of select='@solver_id'/></xsl:variable>
 			<table:table-cell office:value-type="float">
 				<xsl:attribute name="office:value">
@@ -131,8 +130,8 @@
 	</xsl:template>
 
 	<!-- summary sheet -->
-	<xsl:template match="benchmarksets" mode="summary">
-		<xsl:variable name="nrOfBenchmarks" select="count(benchmarkset/benchmarkfile)"/>
+	<xsl:template match="results" mode="summary">
+		<xsl:variable name="nrOfBenchmarks" select="count(benchmarks/file)"/>
 		<office:spreadsheet>
 			<table:table>
 				<xsl:attribute name="table:name">all</xsl:attribute>
@@ -152,14 +151,14 @@
 						<table:table-cell/>
 					</xsl:for-each>
 				</table:table-row>
-				<xsl:for-each select="benchmarkset/benchmarkfile">
+				<xsl:for-each select="benchmarks/file">
 					<table:table-row>
 						<table:table-cell>
 							<xsl:attribute name="office:value">
-								<xsl:value-of select="../@name"/>/<xsl:value-of select="@name"/>
+								<xsl:value-of select="@name"/>
 							</xsl:attribute>
 							<text:p>
-								<xsl:value-of select="../@name"/>/<xsl:value-of select="@name"/>
+								<xsl:value-of select="@name"/>
 							</text:p>
 						</table:table-cell>
 						<xsl:call-template name="singleResultRow">
@@ -173,61 +172,7 @@
 						<xsl:attribute name="office:value">count</xsl:attribute>
 						<text:p>count</text:p>
 					</table:table-cell>
-					<xsl:for-each select="/benchmarksets/solvers/solver">
-						<table:table-cell />
-						<table:table-cell><xsl:attribute name="table:formula">=COUNT(INDIRECT(ADDRESS(1; CELL("COL")-1) &amp; ":" &amp; ADDRESS(<xsl:value-of select="$nrOfBenchmarks+1"/>; CELL("COL")-1)))</xsl:attribute></table:table-cell>
-					</xsl:for-each>
-				</table:table-row>
-				
-				<xsl:call-template name="allSummaryAggregates">
-					<xsl:with-param name="nrOfBenchmarks" select="$nrOfBenchmarks" />
-				</xsl:call-template>
-			</table:table>
-		</office:spreadsheet>
-	</xsl:template>
-
-	<!-- single benchmarkset sheet -->
-	<xsl:template match="benchmarkset" mode="single">
-		<xsl:variable name="nrOfBenchmarks" select="count(benchmarkfile)"/>
-		<office:spreadsheet>
-			<table:table>
-				<xsl:attribute name="table:name">
-					<xsl:value-of select='@name'/>
-				</xsl:attribute>
-				
-				<!-- header -->
-				<table:table-row>
-					<table:table-cell/>
-					<xsl:for-each select="//solvers/solver">
-						<table:table-cell>
-							<xsl:attribute name="office:value">
-								<xsl:value-of select='@solver_id'/>
-							</xsl:attribute>
-							<text:p>
-								<xsl:value-of select="@solver_id"/>
-							</text:p>
-						</table:table-cell>
-						<table:table-cell/>
-					</xsl:for-each>
-				</table:table-row>
-				<xsl:for-each select="benchmarkfile">
-					<table:table-row>
-						<table:table-cell>
-							<xsl:attribute name="office:value"><xsl:value-of select="@name"/></xsl:attribute>
-							<text:p><xsl:value-of select="@name"/></text:p>
-						</table:table-cell>
-						<xsl:call-template name="singleResultRow">
-							<xsl:with-param name="FILE" select="." />
-						</xsl:call-template>
-					</table:table-row>	
-				</xsl:for-each>
-				
-				<table:table-row>
-					<table:table-cell>
-						<xsl:attribute name="office:value">count</xsl:attribute>
-						<text:p>count</text:p>
-					</table:table-cell>
-					<xsl:for-each select="/benchmarksets/solvers/solver">
+					<xsl:for-each select="/results/solvers/solver">
 						<table:table-cell />
 						<table:table-cell><xsl:attribute name="table:formula">=COUNT(INDIRECT(ADDRESS(1; CELL("COL")-1) &amp; ":" &amp; ADDRESS(<xsl:value-of select="$nrOfBenchmarks+1"/>; CELL("COL")-1)))</xsl:attribute></table:table-cell>
 					</xsl:for-each>
@@ -241,14 +186,14 @@
 	</xsl:template>
 	
 	<!-- detail sheet for every solver -->
-	<xsl:template match="benchmarkset" mode="single-details">
+	<xsl:template match="benchmarks" mode="single-details">
 		<xsl:variable name="SET" select="."/>
-		<xsl:for-each select="/benchmarksets/solvers/solver">
+		<xsl:for-each select="/results/solvers/solver">
 			<xsl:variable name="SolverID" select="@solver_id"/>
 			<office:spreadsheet>
 				<table:table>
 					<xsl:attribute name="table:name">
-						<xsl:value-of select='concat(@solver_id,"_",$SET/@name)'/>
+						<xsl:value-of select='@solver_id'/>
 					</xsl:attribute>
 					<table:table-row>
 						<table:table-cell/>
@@ -260,7 +205,7 @@
 								<xsl:attribute name="office:value">answer</xsl:attribute>
 								<text:p>answer</text:p>
 						</table:table-cell>
-						<xsl:for-each select="/benchmarksets/statistics/stat">
+						<xsl:for-each select="/results/statistics/stat">
 							<table:table-cell>
 								<xsl:attribute name="office:value">
 									<xsl:value-of select="@name"/>
@@ -271,7 +216,7 @@
 							</table:table-cell>
 						</xsl:for-each>
 					</table:table-row>
-					<xsl:for-each select="$SET/benchmarkfile">
+					<xsl:for-each select="$SET/file">
 						<xsl:variable name="FILE" select="."/>
 						<table:table-row>
 							<table:table-cell>
@@ -298,7 +243,7 @@
 									<xsl:value-of select="run[@solver_id=$SolverID]/results/result[@name='answer']"/>
 								</text:p>
 							</table:table-cell>
-							<xsl:for-each select="/benchmarksets/statistics/stat">
+							<xsl:for-each select="/results/statistics/stat">
 								<xsl:variable name="StatID" select="@name"/>
 								<table:table-cell>
 									<xsl:attribute name="office:value">

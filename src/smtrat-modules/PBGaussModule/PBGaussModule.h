@@ -11,7 +11,7 @@
 #include <eigen3/Eigen/Core>
 #include <eigen3/Eigen/LU>
 
-#include "../Module.h"
+#include <smtrat-solver/Module.h>
 #include "PBGaussStatistics.h"
 #include "PBGaussSettings.h"
 

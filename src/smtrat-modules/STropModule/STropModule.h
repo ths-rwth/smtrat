@@ -9,7 +9,7 @@
 #pragma once
 
 #include <boost/optional.hpp>
-#include "../Module.h"
+#include <smtrat-solver/Module.h>
 #include <smtrat-solver/Manager.h>
 #include "../SATModule/SATModule.h"
 #include "../LRAModule/LRAModule.h"

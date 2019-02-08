@@ -6,7 +6,7 @@
  */
 
 #include "ThreadPool.h"
-#include <smtrat-modules/Module.h>
+#include <smtrat-solver/Module.h>
 
 namespace smtrat
 {

@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include "../PModule.h"
+#include <smtrat-solver/PModule.h>
 #include "MCBStatistics.h"
 #include "MCBSettings.h"
 

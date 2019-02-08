@@ -3,9 +3,8 @@ file(GLOB_RECURSE test_sources "*.cpp")
 add_executable(runCADTests ${test_sources})
 
 target_link_libraries(runCADTests
-    ${Boost_unit_test_framework_SHARED}
-    lib_${PROJECT_NAME}
-    ${libraries}
+	${Boost_unit_test_framework_SHARED}
+	smtrat-cad-shared
 )
 
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS runCADTests)

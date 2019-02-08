@@ -6,7 +6,7 @@
  */
 
 #include "State.h"
-#include <smtrat-modules/Module.h>
+//#include <smtrat-modules/Module.h>
 #include <carl/interval/set_theory.h>
 #include <carl/core/polynomialfunctions/SturmSequence.h>
 #include <cmath>

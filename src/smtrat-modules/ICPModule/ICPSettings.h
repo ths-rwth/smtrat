@@ -8,14 +8,13 @@
 
 #pragma once
     
-#include "../ModuleSettings.h"
 #include <smtrat-common/smtrat-common.h>
 
 namespace smtrat
 {
     enum class SplittingHeuristic : unsigned { SIZE, UNSATISFIABILITY, SATISFIABILITY };
             
-    struct ICPSettings1 : ModuleSettings
+    struct ICPSettings1
     {
 		static constexpr auto moduleName = "ICPModule<ICPSettings1>";
         /**

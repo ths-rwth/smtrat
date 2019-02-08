@@ -73,11 +73,11 @@ namespace smtrat
 	
 	using SqrtEx = carl::SqrtEx<smtrat::Poly>;
 
-#ifdef __VS
-    typedef std::vector<std::atomic<bool>*> Conditionals;
-#else
-    typedef std::vector<std::atomic_bool*> Conditionals;
-#endif
+//#ifdef __VS
+//    typedef std::vector<std::atomic<bool>*> Conditionals;
+//#else
+//    typedef std::vector<std::atomic_bool*> Conditionals;
+//#endif
 
 
     // Constants.

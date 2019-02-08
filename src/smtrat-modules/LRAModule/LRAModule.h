@@ -8,7 +8,7 @@
 #pragma once
 
 
-#include "../Module.h"
+#include <smtrat-solver/Module.h>
 #include <smtrat-common/smtrat-common.h>
 #include "tableau/Tableau.h"
 #include "LRAModuleStatistics.h"

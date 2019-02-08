@@ -6,6 +6,7 @@
 #pragma once
 
 #include <carl/core/carlLogging.h>
+#include <carl/io/streamingOperators.h>
 
 namespace benchmax {
 using carl::operator<<;

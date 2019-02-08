@@ -63,6 +63,7 @@ namespace smtrat
             ++mChecks;
         }
         
+		template<typename ModuleInput>
         void addConflict( const ModuleInput& _formula, const std::vector<FormulaSetT>& _infSubSets )
         {
             assert( !_formula.empty() );

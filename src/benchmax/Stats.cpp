@@ -409,9 +409,9 @@ void Stats::composeStats(const std::vector<std::string>& files)
 		stats->addStat(*it);
 	}
 	delete stats;
-	createStatsCompose(settings_benchmarks().output_dir + "statsCompose.xsl");
+	createStatsCompose(settings_benchmarks().output_dir.native() + "statsCompose.xsl");
 	callComposeProcessor();
-	fs::remove(fs::path(settings_benchmarks().output_dir + "statsCompose.xsl"));
+	fs::remove(fs::path(settings_benchmarks().output_dir.native() + "statsCompose.xsl"));
 }
 
 /**
@@ -419,11 +419,11 @@ void Stats::composeStats(const std::vector<std::string>& files)
  */
 void Stats::callComposeProcessor(const std::string& io)
 {
-	system(std::string("xsltproc -o " + settings_benchmarks().output_dir + "stats.xml.tmp " + settings_benchmarks().output_dir + "statsCompose.xsl "
+	system(std::string("xsltproc -o " + settings_benchmarks().output_dir.native() + "stats.xml.tmp " + settings_benchmarks().output_dir.native() + "statsCompose.xsl "
 					   + io).c_str());
-	system(std::string("xsltproc -o " + io + " " + settings_benchmarks().output_dir + "statsCompose.xsl " + settings_benchmarks().output_dir
+	system(std::string("xsltproc -o " + io + " " + settings_benchmarks().output_dir.native() + "statsCompose.xsl " + settings_benchmarks().output_dir.native()
 					   + "stats.xml.tmp").c_str());
-	fs::remove(fs::path(settings_benchmarks().output_dir + "stats.xml.tmp"));
+	fs::remove(fs::path(settings_benchmarks().output_dir.native() + "stats.xml.tmp"));
 	//if(Settings::ProduceLatex)
 	//{
 	//	createLatexCompose(settings_benchmarks().output_dir + "latexCompose.xsl");
@@ -435,7 +435,7 @@ void Stats::callComposeProcessor(const std::string& io)
 
 void Stats::callComposeProcessor()
 {
-	callComposeProcessor(std::string(settings_benchmarks().output_dir + settings_benchmarks().output_file_xml));
+	callComposeProcessor(std::string(settings_benchmarks().output_dir.native() + settings_benchmarks().output_file_xml.native()));
 }
 
 }
