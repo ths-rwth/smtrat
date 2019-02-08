@@ -932,9 +932,6 @@ namespace smtrat
         {
             mModelComputed = false;
         }
-		if (_answer == SAT && checkModel() == 0) {
-			std::quick_exit(43);
-		}
         assert( _answer != SAT || checkModel() != 0 );
         return _answer;
     }
