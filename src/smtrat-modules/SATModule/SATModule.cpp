@@ -3049,8 +3049,10 @@ namespace smtrat
 			if (Settings::mc_sat) {
 				if (value(learnt_clause[1]) == l_False) {
 					CARL_CHECKPOINT("nlsat", "propagation", _confl, learnt_clause[0]);
+                    SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Propagate asserting clause");
 					uncheckedEnqueue( learnt_clause[0], _confl );
 				} else if (Settings::mcsat_backjump_decide) {
+                    SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decide literal as clause is not asserting");
                     newDecisionLevel();
                     uncheckedEnqueue( learnt_clause[0], _confl );
                 }
