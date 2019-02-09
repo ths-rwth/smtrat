@@ -165,10 +165,13 @@ namespace smtrat {
 
         Minisat::Var pop() {
             if (!boolean_ordering.empty()) {
+                SMTRAT_LOG_DEBUG("smtrat.sat.mcsat.scheduler", "Picking Boolean var");
                 return boolean_ordering.pop();
             } else if (!theory_ordering.empty()) {
+                SMTRAT_LOG_DEBUG("smtrat.sat.mcsat.scheduler", "Picking theory var");
                 return theory_ordering.pop();
             } else {
+                SMTRAT_LOG_DEBUG("smtrat.sat.mcsat.scheduler", "No variable available");
                 return var_Undef;
             }
         }
@@ -265,14 +268,19 @@ namespace smtrat {
 
         Minisat::Var pop() {
             if (!boolean_ordering.empty()) {
-                if (varDecidable(boolean_ordering.top()))
+                if (varDecidable(boolean_ordering.top())) {
+                    SMTRAT_LOG_DEBUG("smtrat.sat.mcsat.scheduler", "Picking Boolean var");
                     return boolean_ordering.pop();
-                else
+                } else {
+                    SMTRAT_LOG_DEBUG("smtrat.sat.mcsat.scheduler", "Decision of next Boolean variable is deferred");
                     assert(!theory_ordering.empty());
+                }
             }
             if (!theory_ordering.empty()) {
+                SMTRAT_LOG_DEBUG("smtrat.sat.mcsat.scheduler", "Picking theory var");
                 return theory_ordering.pop();
             }
+            SMTRAT_LOG_DEBUG("smtrat.sat.mcsat.scheduler", "No variable availabe");
             return var_Undef;
         }
 
