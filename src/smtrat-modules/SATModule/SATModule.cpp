@@ -3154,6 +3154,8 @@ namespace smtrat
 				SMTRAT_LOG_TRACE("smtrat.sat", "Retrieving next variable from the heap");
                 if (Settings::use_new_var_scheduler) {
                     next = var_scheduler.pop();
+                    assert(next == var_Undef || (decision[next] && bool_value(next) == l_Undef));
+                    assert(!Settings::mc_sat || mBooleanConstraintMap[next].first == nullptr || mBooleanConstraintMap[next].first->reabstraction.getType() != carl::FormulaType::VARASSIGN);
                     SMTRAT_LOG_TRACE("smtrat.sat", "Current " << next);
                 } else {
                     while( next == var_Undef || bool_value( next ) != l_Undef || !decision[next] )
