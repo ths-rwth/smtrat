@@ -2852,8 +2852,7 @@ namespace smtrat
                                 if (carl::variant_is_type<FormulaT>(*conflict)) {
                                     sat::detail::validateClause(boost::get<FormulaT>(*conflict), Settings::validate_clauses);
                                 }
-                                handleTheoryConflict(*conflict); 
-                                // TODO DYNSCHED reinsert ??? => should be done during conflict handling
+                                handleTheoryConflict(*conflict);
                             }
                             continue;
                         } else {
