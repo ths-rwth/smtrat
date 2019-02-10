@@ -7,7 +7,6 @@ template<typename Settings>
 void MCSATMixin<Settings>::pushTheoryDecision(const FormulaT& assignment, Minisat::Lit decisionLiteral) {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Made theory decision for " << assignment.variableAssignment().var() << ": " << decisionLiteral);
 	mBackend.pushAssignment( assignment.variableAssignment().var(),  assignment.variableAssignment().value(), assignment);
-	assert(trailIsConsistent());
 	mTheoryStack.emplace_back();
 	current().variable = assignment.variableAssignment().var();
 	current().decisionLiteral = decisionLiteral;

@@ -2808,6 +2808,8 @@ namespace smtrat
 					}
 				}
 
+                assert(mMCSAT.trailIsConsistent());
+
                 // If we do not already have a branching literal, we pick one
                 if( next == lit_Undef )
                 {
@@ -2890,6 +2892,7 @@ namespace smtrat
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Deciding upon " << next);
 				}
                 if (next == lit_Undef) {
+                    assert(mMCSAT.trailIsConsistent());
                     assert(mMCSAT.theoryAssignmentComplete());
                     SMTRAT_LOG_DEBUG("smtrat.sat", "No further theory variable to assign.");
                     mCurrentAssignmentConsistent = SAT;

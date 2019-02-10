@@ -580,7 +580,7 @@ public:
 		return mGetter.getDecisionLevel(var(lit));
 	}
 	
-	bool trailIsConsistent() const { // TODO DYNSCHED remove
+	bool trailIsConsistent() const {
 		const auto& trail = mBackend.getTrail();
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking trail against " << trail.model());
 		auto evaluator = [&trail](const auto& c){
@@ -592,13 +592,13 @@ public:
 			return true;
 		};
 		for (const auto& c: trail.constraints()) {
-			auto category = mcsat::constraint_type::categorize(c, model(), carl::Variable::NO_VARIABLE);
-			if (category != mcsat::ConstraintType::Assigned) continue;
+			//auto category = mcsat::constraint_type::categorize(c, model(), carl::Variable::NO_VARIABLE);
+			//if (category != mcsat::ConstraintType::Assigned) continue;
 			if (!evaluator(c)) return false;
 		}
 		for (const auto& b: trail.mvBounds()) {
-			auto category = mcsat::constraint_type::categorize(b, model(), carl::Variable::NO_VARIABLE);
-			if (category != mcsat::ConstraintType::Assigned) continue;
+			//auto category = mcsat::constraint_type::categorize(b, model(), carl::Variable::NO_VARIABLE);
+			//if (category != mcsat::ConstraintType::Assigned) continue;
 			if (!evaluator(b)) return false;
 		}
 		return true;
