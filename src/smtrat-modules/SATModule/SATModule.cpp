@@ -2789,7 +2789,7 @@ namespace smtrat
 				 * - fully assigned in the theory
 				 * - unassigned in boolean
 				 */
-				if (Settings::mc_sat && next == lit_Undef) { // TODO DYNSCHED: sufficient to look only on current level?
+				if (Settings::mc_sat && next == lit_Undef) { // TODO more efficient semantic propagations
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for semantic propagations...");
 					for (std::size_t level = 0; level <= mMCSAT.level(); level++) {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Considering " << mMCSAT.get(level).univariateVariables);
@@ -2797,7 +2797,7 @@ namespace smtrat
 							if (bool_value(v) != l_Undef) continue;
 							auto tv = theoryValue(v);
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Undef, theory value of " << v << " is " << tv);
-							if (tv == l_Undef) continue;
+                            assert(tv != l_Undef);
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Propagating " << v << " = " << tv);
 							if (tv == l_True) next = mkLit(v, false);
 							else if (tv == l_False) next = mkLit(v, true);

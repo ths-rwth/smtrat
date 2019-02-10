@@ -497,7 +497,7 @@ public:
 		return theoryLevel(mGetter.reabstractVariable(var));
 	}
 	
-	std::size_t theoryLevel(const FormulaT& f) const { // TODO DYNSCHED use univariate vars tracking ...
+	std::size_t theoryLevel(const FormulaT& f) const { // TODO DYNSCHED theory levels are stored in univariateVariables => lookup more efficient?
 		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Computing theory level for " << f);
 		carl::Variables vars;
 		f.arithmeticVars(vars);

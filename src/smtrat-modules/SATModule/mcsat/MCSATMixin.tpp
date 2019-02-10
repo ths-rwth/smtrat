@@ -139,7 +139,12 @@ std::size_t MCSATMixin<Settings>::addBooleanVariable(Minisat::Var variable) {
 		mVarPropertyCache.emplace_back();
 	}
 
-	std::size_t level = theoryLevel(variable);
+	std::size_t level = theoryLevel(variable); // TODO DYNSCHED refactor if theoryLevel depends on univariateVariables
+	if (!mGetter.isTheoryAbstraction(variable)) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Ignoring " << variable << " as it is not a theory abstraction");
+		return level;
+	}
+	assert(mGetter.reabstractVariable(variable).getType() != carl::FormulaType::VARASSIGN);
 	if (level == std::numeric_limits<std::size_t>::max()) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << variable << " to undecided");
 		mUndecidedVariables.push_back(variable);
