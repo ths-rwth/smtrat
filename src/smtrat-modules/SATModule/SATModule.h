@@ -1481,7 +1481,21 @@ namespace smtrat
              */
             inline void varBumpActivity( Minisat::Var v, double inc )
             {
-                if( (activity[v] += inc) > 1e100 )
+                // TODO DYNSCHED check if we can update multiple activities at the same time so that we still get a correct ordering in order_heap
+
+                bool rescale = false;
+                if (Settings::mc_sat) {
+                    for (auto tvar : mMCSAT.theoryVarsIn(v)) {
+                        if ((activity[tvar] += inc) > 1e100) {
+                            rescale = true;
+                        }
+                    }
+                }
+                if ((activity[v] += inc) > 1e100) {
+                    rescale = true;
+                }
+
+                if( rescale )
                 {
                     // Rescale:
                     for( int i = 0; i < nVars(); i++ )
@@ -1497,7 +1511,12 @@ namespace smtrat
 
                 // Update order_heap with respect to new activity:
                 if (Settings::use_new_var_scheduler) {
-                    var_scheduler.decreaseActivity(v);
+                    var_scheduler.increaseActivity(v);
+                    if (Settings::mc_sat) {
+                        for (auto tvar : mMCSAT.theoryVarsIn(v)) {
+                            var_scheduler.increaseActivity(tvar);
+                        }
+                    }
                 } else {
                     if( order_heap.inHeap( v ) )
                         order_heap.decrease( v );

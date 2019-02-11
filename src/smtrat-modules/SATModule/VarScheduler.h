@@ -158,12 +158,12 @@ namespace smtrat
 
         void increaseActivity(Minisat::Var var) {
             if(order_heap.inHeap(var))
-                order_heap.increase(var);
+                order_heap.decrease(var);
         }
 
         void decreaseActivity(Minisat::Var var) {
             if(order_heap.inHeap(var))
-                order_heap.decrease(var);
+                order_heap.increase(var);
         }
 
         void rebuildActivities() { 

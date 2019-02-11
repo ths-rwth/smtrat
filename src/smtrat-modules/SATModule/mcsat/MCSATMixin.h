@@ -636,6 +636,21 @@ public:
 		return *mVarPropertyCache[v].maxDegree;
 	}
 
+	std::vector<Minisat::Var> theoryVarsIn(const Minisat::Var& v) { // TODO DYNSCHED cache?
+		if (!mGetter.isTheoryAbstraction(v)) {
+			return std::vector<Minisat::Var>();
+		}
+		const auto& reabstraction = mGetter.reabstractVariable(v);
+
+		carl::Variables tvars;
+		reabstraction.arithmeticVars(tvars);
+		std::vector<Minisat::Var> vars;
+		for (const auto& tvar : tvars) {
+			vars.push_back(minisatVar(tvar));
+		}
+		return vars;
+	}
+
 	// ***** Output
 	/// Prints a single clause
 	void printClause(std::ostream& os, Minisat::CRef clause) const;
