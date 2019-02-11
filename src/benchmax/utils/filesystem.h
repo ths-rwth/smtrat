@@ -22,23 +22,32 @@ inline std::filesystem::path common_prefix(const std::filesystem::path& p1, cons
 	return result;
 }
 
-/// Computes the common prefix of a list of paths.
-inline std::filesystem::path common_prefix(const std::vector<std::filesystem::path>& s) {
+/**
+ * Computes the common prefix of a list of paths.
+ * skip_last specifies whether the last part if the path (usually the filename) may be part of the prefix.
+ */
+inline std::filesystem::path common_prefix(const std::vector<std::filesystem::path>& s, bool skip_last = true) {
 	if (s.empty()) return std::filesystem::path();
-	auto cur = s.front().parent_path();
+	auto cur = s.front();
+	if (skip_last) {
+		cur = cur.parent_path();
+	}
 	for (std::size_t i = 1; i < s.size(); i++) {
 		cur = common_prefix(cur, s[i]);
 	}
 	return cur;
 }
 
-/// Computes the common prefix of multiple lists of paths.
-inline std::filesystem::path common_prefix(const std::initializer_list<std::vector<std::filesystem::path>>& s) {
+/**
+ * Computes the common prefix of multiple lists of paths.
+ * skip_last specifies whether the last part if the path (usually the filename) may be part of the prefix.
+ */
+inline std::filesystem::path common_prefix(const std::initializer_list<std::vector<std::filesystem::path>>& s, bool skip_last = true) {
 	std::vector<std::filesystem::path> all;
 	for (const auto& sv: s) {
 		all.insert(all.end(), sv.begin(), sv.end());
 	}
-	return common_prefix(all);
+	return common_prefix(all, skip_last);
 }
 
 /// Remove a prefix from a path.

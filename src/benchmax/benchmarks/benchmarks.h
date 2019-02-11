@@ -32,7 +32,7 @@ struct BenchmarkSettings {
 template<typename V>
 inline void finalize_settings(BenchmarkSettings& s, const V& values) {
 	s.limit_time = std::chrono::seconds(values["timeout"].template as<std::size_t>());
-	s.input_directories_common_prefix = common_prefix(s.input_directories);
+	s.input_directories_common_prefix = common_prefix(s.input_directories, false);
 }
 
 /// Registers benchmark settings with the settings parser.
