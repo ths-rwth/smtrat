@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "../ModuleSettings.h"
+#include <smtrat-solver/ModuleSettings.h>
 #include "factory/AxiomFactory.h"
 
 namespace smtrat
