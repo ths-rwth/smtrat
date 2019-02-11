@@ -8,14 +8,13 @@
 
 #pragma once
 
-#include <smtrat-solver/ModuleSettings.h>
 #include "factory/AxiomFactory.h"
 
 namespace smtrat
 {
     enum class UNSATFormulaSelectionStrategy {ALL = 0, FIRST = 1, RANDOM = 2};
 
-	struct NRAILSettings1 : ModuleSettings
+	struct NRAILSettings1
 	{
 		static constexpr auto moduleName = "NRAILModule<NRAILSettings1>";
 
@@ -28,7 +27,7 @@ namespace smtrat
 														  AxiomFactory::AxiomType::MONOTONICITY};
 	};
 
-    struct NRAILSettings2 : ModuleSettings
+    struct NRAILSettings2
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings2>";
 
@@ -41,7 +40,7 @@ namespace smtrat
                                                                  AxiomFactory::AxiomType::MONOTONICITY};
     };
 
-    struct NRAILSettings3 : ModuleSettings
+    struct NRAILSettings3
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings3>";
 
@@ -54,7 +53,7 @@ namespace smtrat
                                                                  AxiomFactory::AxiomType::MONOTONICITY};
     };
 
-    struct NRAILSettings4 : ModuleSettings
+    struct NRAILSettings4
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings4>";
 
@@ -67,7 +66,7 @@ namespace smtrat
                                                                  AxiomFactory::AxiomType::MONOTONICITY};
     };
 
-    struct NRAILSettings5 : ModuleSettings
+    struct NRAILSettings5
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings5>";
 
@@ -80,7 +79,7 @@ namespace smtrat
                                                                  AxiomFactory::AxiomType::MONOTONICITY};
     };
 
-    struct NRAILSettings6 : ModuleSettings
+    struct NRAILSettings6
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings6>";
 
@@ -93,7 +92,7 @@ namespace smtrat
                                                                  AxiomFactory::AxiomType::MONOTONICITY};
     };
 
-    struct NRAILSettings7 : ModuleSettings
+    struct NRAILSettings7
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings7>";
 
@@ -108,7 +107,7 @@ namespace smtrat
 
 //    First
 
-    struct NRAILSettings8 : ModuleSettings
+    struct NRAILSettings8
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings8>";
 
@@ -121,7 +120,7 @@ namespace smtrat
                                                                  AxiomFactory::AxiomType::MONOTONICITY};
     };
 
-    struct NRAILSettings9 : ModuleSettings
+    struct NRAILSettings9
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings9>";
 
@@ -134,7 +133,7 @@ namespace smtrat
                                                                  AxiomFactory::AxiomType::MONOTONICITY};
     };
 
-    struct NRAILSettings10 : ModuleSettings
+    struct NRAILSettings10
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings10>";
 
@@ -147,7 +146,7 @@ namespace smtrat
                                                                  AxiomFactory::AxiomType::MONOTONICITY};
     };
 
-    struct NRAILSettings11 : ModuleSettings
+    struct NRAILSettings11
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings11>";
 
@@ -160,7 +159,7 @@ namespace smtrat
                                                                  AxiomFactory::AxiomType::MONOTONICITY};
     };
 
-    struct NRAILSettings12 : ModuleSettings
+    struct NRAILSettings12
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings12>";
 
@@ -173,7 +172,7 @@ namespace smtrat
                                                                  AxiomFactory::AxiomType::MONOTONICITY};
     };
 
-    struct NRAILSettings13 : ModuleSettings
+    struct NRAILSettings13
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings13>";
 
@@ -186,7 +185,7 @@ namespace smtrat
                                                                  AxiomFactory::AxiomType::MONOTONICITY};
     };
 
-    struct NRAILSettings14 : ModuleSettings
+    struct NRAILSettings14
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings14>";
 
@@ -201,7 +200,7 @@ namespace smtrat
 
 //    Random
 
-    struct NRAILSettings15 : ModuleSettings
+    struct NRAILSettings15
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings15>";
 
@@ -214,7 +213,7 @@ namespace smtrat
                                                                  AxiomFactory::AxiomType::MONOTONICITY};
     };
 
-    struct NRAILSettings16 : ModuleSettings
+    struct NRAILSettings16
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings16>";
 
@@ -227,7 +226,7 @@ namespace smtrat
                                                                  AxiomFactory::AxiomType::MONOTONICITY};
     };
 
-    struct NRAILSettings17 : ModuleSettings
+    struct NRAILSettings17
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings17>";
 
@@ -240,7 +239,7 @@ namespace smtrat
                                                                  AxiomFactory::AxiomType::MONOTONICITY};
     };
 
-    struct NRAILSettings18 : ModuleSettings
+    struct NRAILSettings18
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings18>";
 
@@ -253,7 +252,7 @@ namespace smtrat
                                                                  AxiomFactory::AxiomType::MONOTONICITY};
     };
 
-    struct NRAILSettings19 : ModuleSettings
+    struct NRAILSettings19
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings19>";
 
@@ -266,7 +265,7 @@ namespace smtrat
                                                                  AxiomFactory::AxiomType::MONOTONICITY};
     };
 
-    struct NRAILSettings20 : ModuleSettings
+    struct NRAILSettings20
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings20>";
 
@@ -279,7 +278,7 @@ namespace smtrat
                                                                  AxiomFactory::AxiomType::MONOTONICITY};
     };
 
-    struct NRAILSettings21 : ModuleSettings
+    struct NRAILSettings21
     {
         static constexpr auto moduleName = "NRAILModule<NRAILSettings21>";
 
