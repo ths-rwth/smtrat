@@ -329,14 +329,12 @@ bool CADPreprocessor::preprocess() {
             return false;
         }
         assert(std::holds_alternative<bool>(collectResult));
-        if (std::get<bool>(collectResult) == false) {
-            SMTRAT_LOG_DEBUG("smtrat.cad.pp", "No further assignments.");
-            break;
-        }
-        SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Collected assignments:" << std::endl << *this);
-        for (const auto& de: mDerivedEqualities) {
-            mOrigins.add(FormulaT(de.second), {FormulaT(de.first)});
-        }
+        if (std::get<bool>(collectResult) == true) {
+			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Collected assignments:" << std::endl << *this);
+			for (const auto& de: mDerivedEqualities) {
+				mOrigins.add(FormulaT(de.second), {FormulaT(de.first)});
+			}
+		}
         
         auto conflict = mResultants.compute(mDerivedEqualities);
         if (conflict.has_value()) {
