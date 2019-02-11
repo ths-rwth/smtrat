@@ -27,7 +27,6 @@
 #include <carl/formula/model/Assignment.h>
 #include <smtrat-common/smtrat-common.h>
 #include "ModuleInput.h"
-#include "ModuleSettings.h"
 
 namespace smtrat
 {
