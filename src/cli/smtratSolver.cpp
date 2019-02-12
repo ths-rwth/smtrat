@@ -26,6 +26,7 @@
 #include <smtrat-common/statistics/StatisticsSettings.h>
 #endif //SMTRAT_DEVOPTION_Statistics
 
+#include <smtrat-common/settings/SettingsComponents.h>
 #include <smtrat-common/settings/SettingsParser.h>
 
 #include "handle_options.h"
@@ -82,6 +83,7 @@ int main( int argc, char* argv[] )
 	#ifdef SMTRAT_DEVOPTION_Statistics
 	smtrat::statistics::registerStatisticsSettings(parser);
 	#endif
+	smtrat::SettingsComponents::getInstance().add_to_parser(parser);
 	parser.finalize();
 	parser.parse_options(argc, argv);
 
