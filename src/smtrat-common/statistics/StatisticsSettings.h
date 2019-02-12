@@ -15,7 +15,7 @@ struct StatisticsSettings {
 template<typename T>
 void registerStatisticsSettings(T& parser) {
 	auto& settings = settings::Settings::getInstance();
-	auto& s = settings.add<StatisticsSettings>("statistics");
+	auto& s = settings.get<StatisticsSettings>("statistics");
 	
 	parser.add("Statistics settings").add_options()
 		("stats:export-xml", po::bool_switch(&s.export_as_xml), "store statistics to xml file")

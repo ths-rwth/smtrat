@@ -52,14 +52,7 @@ public:
 
 	template<typename T>
 	T& get(const std::string& name) {
-		auto it = mSettings.find(name);
-		assert(it != mSettings.end());
-		return std::any_cast<T&>(it->second);
-	}
-	template<typename T>
-	T& add(const std::string& name) {
 		auto res = mSettings.emplace(name, T{});
-		assert(res.second);
 		return std::any_cast<T&>(res.first->second);
 	}
 };

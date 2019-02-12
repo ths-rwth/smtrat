@@ -16,7 +16,7 @@ struct ParserSettings {
 template<typename T>
 void registerParserSettings(T& parser) {
 	auto& settings = settings::Settings::getInstance();
-	auto& s = settings.add<ParserSettings>("parser");
+	auto& s = settings.get<ParserSettings>("parser");
 
 	parser.add("Parser settings").add_options()
 		("dimacs", po::bool_switch(&s.read_dimacs), "parse input file as dimacs file")
