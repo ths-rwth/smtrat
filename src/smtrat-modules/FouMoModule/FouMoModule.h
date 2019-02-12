@@ -9,7 +9,6 @@
 #pragma once
 
 #include <smtrat-solver/Module.h>
-#include "FouMoStatistics.h"
 #include "FouMoSettings.h"
 namespace smtrat
 {

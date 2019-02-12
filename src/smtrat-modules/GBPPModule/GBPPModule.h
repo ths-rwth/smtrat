@@ -9,7 +9,6 @@
 #pragma once
 
 #include <smtrat-solver/PModule.h>
-#include "GBPPStatistics.h"
 #include "GBPPSettings.h"
 
 namespace smtrat
@@ -18,9 +17,6 @@ namespace smtrat
 	class GBPPModule : public PModule
 	{
 		private:
-#ifdef SMTRAT_DEVOPTION_Statistics
-			GBPPStatistics mStatistics;
-#endif
 			FormulaSetT mEqualities;
 			std::size_t mEqualityComplexity = 0;
 			FormulaSetT mRest;

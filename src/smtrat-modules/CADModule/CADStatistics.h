@@ -40,9 +40,6 @@ private:
 		Statistics::addKeyValuePair("bb-branches", mBranches);
     }
  public:
-    CADStatistics() : Statistics("CADModule")
-    {}
-        
     void addMIS(std::size_t baseSize, std::size_t size) {
         mMISCount++;
         mMISBaseSize += baseSize;

@@ -13,10 +13,6 @@ private:
 	std::size_t mExplanationSuccess = 0;
 
 public:
-	FMStatistics(const std::string& name)
-		: Statistics(name) {}
-	~FMStatistics() = default;
-
 	bool enabled() const {
 		return (mExplanationCalled > 0) || (mExplanationSuccess > 0);
 	}

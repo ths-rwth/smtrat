@@ -13,9 +13,6 @@ namespace smtrat
 	template<class Settings>
 	GBPPModule<Settings>::GBPPModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
 		PModule( _formula, _conditionals, _manager )
-#ifdef SMTRAT_DEVOPTION_Statistics
-		, mStatistics(Settings::moduleName)
-#endif
 	{
 		simplifyInequalityFunction = std::bind(&GBPPModule<Settings>::simplifyInequality, this, std::placeholders::_1);
 	}

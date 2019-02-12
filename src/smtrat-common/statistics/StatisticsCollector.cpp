@@ -5,7 +5,7 @@
 namespace smtrat {
 
 void StatisticsCollector::collect() {
-	for (auto s: mStats) {
+	for (auto& s: mStatistics) {
 		if (s->enabled()) {
 			s->collect();
 		}

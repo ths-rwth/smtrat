@@ -590,7 +590,7 @@ namespace smtrat
 			std::vector<implicit_edge_info*> mImplicitEdgeIsProvenList; // list of implicit equalities that are already proven during generation of infeasible subset
 			std::size_t mCountNonUEQFormulas; // number of incorrect formulas currently asserted
 #ifdef SMTRAT_DEVOPTION_Statistics
-			EQStatistics<Settings>* mStatistics;
+			EQStatistics<Settings>& mStatistics = statistics_get<EQStatistics<Settings>>("EQStatistics");
 #endif
 			std::vector<std::size_t> mSplitClasses; // indices of implicit classes that were split; we have to update the hash buckets for these indices
 			std::vector<bfs_todo_entry> mDeletedEdges; // list of implicit edges that have to be deleted in graph

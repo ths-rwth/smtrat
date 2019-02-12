@@ -62,7 +62,7 @@ namespace smtrat
             
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
-            VSStatistics* mpStatistics;
+            VSStatistics& mStatistics = statistics_get<VSStatistics>(moduleName() + "_" + std::to_string(id()));
             #endif
 
         public:

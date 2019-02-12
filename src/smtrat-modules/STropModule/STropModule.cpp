@@ -19,9 +19,6 @@ namespace smtrat
 		, mRelationalConflicts(0)
 		, mLinearizationConflicts()
 		, mCheckedWithBackends(false)
-#ifdef SMTRAT_DEVOPTION_Statistics
-		, mStatistics(Settings::moduleName)
-#endif
 	{}
 	
 	template<class Settings>

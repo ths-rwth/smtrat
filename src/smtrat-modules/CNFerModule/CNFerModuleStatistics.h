@@ -22,11 +22,6 @@ namespace smtrat
         size_t mNrOfBoolVariables = 0;
 
     public:
-        CNFerModuleStatistics( const std::string& _name ) : 
-            Statistics( _name )
-        {}
-
-        ~CNFerModuleStatistics() {}
 
         void collect()
         {

@@ -21,9 +21,6 @@ namespace smtrat
         mLRAFormula( new ModuleInput() ),
         mLRAFoundAnswer( std::vector< std::atomic_bool* >( 1, new std::atomic_bool( false ) ) ),
         mLRA( mLRAFormula, mLRAFoundAnswer )
-#ifdef SMTRAT_DEVOPTION_Statistics
-        , mStatistics(Settings::moduleName)
-#endif
     {}
 
     template<class Settings>

@@ -24,9 +24,6 @@ namespace smtrat {
 		mBfsQueue(Settings::initial_bfsqueue_capacity),
 		mImplicitEdgeQueue(Settings::initial_bfsqueue_capacity),
 		mCountNonUEQFormulas(0),
-#ifdef SMTRAT_DEVOPTION_Statistics
-		mStatistics(new EQStatistics<Settings>()),
-#endif
 		mGlobalPairSetAge(0),
 		mCheckForDeductionCounter(0)
 	{}
@@ -930,7 +927,7 @@ namespace smtrat {
 				if(mCheckForDeductionCounter++ % Settings::testRateForDeductions == 0) {
 
 #ifdef SMTRAT_DEVOPTION_Statistics
-					mStatistics->countCheckedUnassignedLiterals();
+					mStatistics.countCheckedUnassignedLiterals();
 #endif
 					// check whether we can deduce unassigned literals
 					P_check_for_unassigned_literals();
@@ -1472,7 +1469,7 @@ namespace smtrat {
 		assert(start != target);
 
 #ifdef SMTRAT_DEVOPTION_Statistics
-		mStatistics->countInfeasibleSubsets();
+		mStatistics.countInfeasibleSubsets();
 #endif
 
 		mInfeasibleSubsets.emplace_back();
@@ -1522,7 +1519,7 @@ namespace smtrat {
 				}
 
 #ifdef SMTRAT_DEVOPTION_Statistics
-				mStatistics->countDeducedUnassignedLiterals();
+				mStatistics.countDeducedUnassignedLiterals();
 #endif
                 #ifdef SMTRAT_DEVOPTION_Validation
 				if (Settings().validation.log_lemmata) {
@@ -1575,7 +1572,7 @@ namespace smtrat {
 					}
 
 #ifdef SMTRAT_DEVOPTION_Statistics
-					mStatistics->countDeducedUnassignedLiterals();
+					mStatistics.countDeducedUnassignedLiterals();
 #endif
 					#ifdef SMTRAT_DEVOPTION_Validation
                     if (Settings().validation.log_lemmata)
@@ -1601,7 +1598,7 @@ namespace smtrat {
 
 			if(++mPairMatrix.at(minindex,maxindex).mImplicitEventCount % Settings::implicitEdgeDeductionRate == 0) {
 #ifdef SMTRAT_DEVOPTION_Statistics
-				mStatistics->countImplicitEdgeDeduction();
+				mStatistics.countImplicitEdgeDeduction();
 #endif
 
 				FormulaSetT outerformulas;

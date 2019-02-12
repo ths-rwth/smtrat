@@ -36,12 +36,6 @@ namespace smtrat
 		void setOutput(std::size_t variables) {
             mOutputVariables = variables;
         }
-
-        FPPStatistics( const std::string& _statisticName ): 
-            Statistics( _statisticName )
-        {}
-
-        ~FPPStatistics() {}
     };
 }
 

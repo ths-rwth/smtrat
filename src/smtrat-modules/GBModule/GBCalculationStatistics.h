@@ -23,7 +23,7 @@ namespace smtrat {
 class GBCalculationStats : public Statistics
 {
    public:
-     static GBCalculationStats* getInstance(unsigned key);
+     static GBCalculationStats& getInstance(unsigned key);
      
      static void printAll(std::ostream& = std::cout);
      
@@ -34,9 +34,9 @@ class GBCalculationStats : public Statistics
      
      void print(std::ostream& os = std::cout);
      void exportKeyValue(std::ostream& os = std::cout);
-   protected:
-    GBCalculationStats() : Statistics("GB Calculation"), mBuchbergerStats(carl::BuchbergerStats::getInstance())
+    GBCalculationStats() : mBuchbergerStats(carl::BuchbergerStats::getInstance())
     {}
+   protected:
   
     carl::BuchbergerStats* mBuchbergerStats;
 

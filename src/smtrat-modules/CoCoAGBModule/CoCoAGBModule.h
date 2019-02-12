@@ -9,7 +9,6 @@
 #pragma once
 
 #include <smtrat-solver/Module.h>
-#include "CoCoAGBStatistics.h"
 #include "CoCoAGBSettings.h"
 
 #include <boost/optional.hpp>
@@ -56,10 +55,6 @@ namespace smtrat
 			}
 		};
 		private:
-#ifdef SMTRAT_DEVOPTION_Statistics
-			CoCoAGBStatistics mStatistics;
-#endif
-			
 			// Auxiliary variables are needed when transforming inequalities to equalities
 			std::map<ConstraintT, carl::Variable> mAuxVariables;
 			// Polys constructed from constraints

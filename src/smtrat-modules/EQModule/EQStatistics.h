@@ -95,8 +95,7 @@ namespace smtrat
 
 		void countImplicitEdgeDeduction() noexcept { ++mAddedImplicitDeductions; }
 
-		explicit EQStatistics(const std::string& _statisticName = "EQStatistics") :
-			Statistics( _statisticName ),
+		explicit EQStatistics() :
 			mHashCollisions(0),
 			mBucketInsertions(0),
 			mBucketMerges(0),
@@ -106,8 +105,6 @@ namespace smtrat
 			mDeducedUnassignedLiterals(0),
 			mAddedImplicitDeductions(0)
 		{}
-
-		~EQStatistics() {}
 	};
 }
 

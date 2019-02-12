@@ -110,12 +110,6 @@ namespace smtrat
         {
             mTableauEntries = _num;
         }
-
-        LRAModuleStatistics( const std::string& _name ) : 
-            Statistics( _name )
-        {}
-        
-        ~LRAModuleStatistics() {}
     };
 }
 

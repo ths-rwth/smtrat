@@ -49,10 +49,6 @@ namespace smtrat
 		void currentProjectionSize(std::size_t size) {
 			mMaxProjectionSize = std::max(mMaxProjectionSize, size);
 		}
-		NewCADStatistics( const std::string& _statisticName ):
-			Statistics( _statisticName )
-		{}
-		~NewCADStatistics() {}
 	};
 }
 

@@ -116,7 +116,7 @@ namespace smtrat
             mutable EvalRationalMap mRationalAssignment;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores the yet collected statistics of this LRAModule.
-            LRAModuleStatistics* mpStatistics;
+            LRAModuleStatistics& mStatistics = statistics_get<LRAModuleStatistics>(moduleName() + "_" + std::to_string(id()));
             #endif
 
         public:

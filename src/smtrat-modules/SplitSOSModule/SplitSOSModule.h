@@ -11,7 +11,6 @@
 #pragma once
 
 #include <smtrat-solver/PModule.h>
-#include "SplitSOSStatistics.h"
 #include "SplitSOSSettings.h"
 
 namespace smtrat

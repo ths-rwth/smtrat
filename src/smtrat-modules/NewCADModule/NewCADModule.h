@@ -23,7 +23,7 @@ namespace smtrat
 	{
 		private:
 #ifdef SMTRAT_DEVOPTION_Statistics
-			NewCADStatistics mStatistics;
+			NewCADStatistics& mStatistics = statistics_get<NewCADStatistics>(Settings::moduleName);
 #endif
 			/// Stores the polynomials seen during inform() to build the variable ordering.
 			std::vector<Poly> mPolynomials;

@@ -12,7 +12,6 @@
 #include <eigen3/Eigen/LU>
 
 #include <smtrat-solver/Module.h>
-#include "PBGaussStatistics.h"
 #include "PBGaussSettings.h"
 
 namespace smtrat
@@ -25,9 +24,6 @@ namespace smtrat
 		using VectorT = Eigen::Matrix<Rational, Eigen::Dynamic, 1>;
 		
 		private:
-#ifdef SMTRAT_DEVOPTION_Statistics
-			PBGaussStatistics mStatistics;
-#endif
 			// Members.
 			carl::Variables mVariables;
 			std::vector<ConstraintT> mEquations;

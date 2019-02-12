@@ -7,11 +7,11 @@ namespace smtrat
 
 std::map<unsigned,GBModuleStats*> GBModuleStats::instances = std::map<unsigned,GBModuleStats*>();
 
-GBModuleStats* GBModuleStats::getInstance(unsigned key)
+GBModuleStats& GBModuleStats::getInstance(unsigned key)
 {
   if( instances[key] == 0 )
     instances[key] = new GBModuleStats();
-  return instances[key];
+  return *instances[key];
 }
 
 void GBModuleStats::printAll(std::ostream& os) {

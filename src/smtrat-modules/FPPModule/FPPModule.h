@@ -18,7 +18,7 @@ namespace smtrat
 	{
 		private:
 #ifdef SMTRAT_DEVOPTION_Statistics
-			FPPStatistics mStatistics;
+			FPPStatistics& mStatistics = statistics_get<FPPStatistics>(SettingsType::moduleName);
 #endif
 			FormulaT mFormulaAfterPreprocessing;
 			Model mPartialModel;

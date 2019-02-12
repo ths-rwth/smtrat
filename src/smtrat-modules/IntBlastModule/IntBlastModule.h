@@ -11,7 +11,6 @@
 #include <smtrat-solver/Module.h>
 #include "../ICPModule/ICPModule.h"
 #include "IntBlastSettings.h"
-#include "IntBlastStatistics.h"
 #include "PolyTreePool.h"
 
 namespace smtrat

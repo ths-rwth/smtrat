@@ -59,7 +59,7 @@ namespace smtrat
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 		    // statistics collection
-		    EQPreprocessingStatistics* mStatistics;
+		    EQPreprocessingStatistics& mStatistics = statistics_get<EQPreprocessingStatistics>("EQPreprocessingModule");
 #endif
 
 		    // helper types
