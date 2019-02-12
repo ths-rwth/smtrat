@@ -64,9 +64,9 @@ SettingsParser::SettingsParser() {
 			("strategy", po::bool_switch(&s.print_strategy), "show the configured strategy")
 			("preprocess", po::bool_switch(&s.preprocess), "only preprocess the input")
 			("pp-output-file", po::value<std::string>(&s.preprocess_output_file), "store the preprocessed input to this file")
+			("analyze-file", po::bool_switch(&s.analyze_file), "parse file and analyze it")
 			("print-model", po::bool_switch(&s.print_model), "print a model if the input is satisfiable")
 			("print-all-models", po::bool_switch(&s.print_all_models), "print all models of the input")
-			("statistics", po::bool_switch(&s.print_statistics), "print statistics after solving")
 			("timings", po::bool_switch(&s.print_timings), "print timings after solving")
 		;
 	}

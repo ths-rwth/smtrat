@@ -12,4 +12,6 @@ namespace smtrat {
  */
 FormulaT parse_formula(const std::string& filename);
 
+int analze_file(const std::string& filename);
+
 }

@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include <smtrat-common/smtrat-common.h>
+#include <smtrat-common/statistics/Statistics.h>
 
 #ifdef CLI_ENABLE_FORMULAPARSER
 
@@ -54,6 +55,42 @@ FormulaT parse_smtlib(const std::string& filename) {
 	return e.getFormula();
 }
 
+struct FormulaProperties : public Statistics {
+	std::size_t num_variables = 0;
+	std::size_t num_constraints = 0;
+	std::size_t num_formulas = 0;
+	std::size_t num_or = 0;
+	std::size_t max_degree = 0;
+	std::size_t max_total_degree = 0;
+
+	carl::carlVariables vars;
+
+	void collect() {
+		Statistics::addKeyValuePair("num_variables", num_variables);
+		Statistics::addKeyValuePair("num_constraints", num_constraints);
+		Statistics::addKeyValuePair("num_formulas", num_formulas);
+		Statistics::addKeyValuePair("num_or", num_or);
+		Statistics::addKeyValuePair("max_degree", max_degree);
+		Statistics::addKeyValuePair("max_total_degree", max_total_degree);
+	}
+	FormulaProperties(): Statistics("FormulaProperties") {}
+
+	void analyze(const FormulaT& f) {
+		++num_formulas;
+		if (f.getType() == carl::FormulaType::CONSTRAINT) {
+			++num_constraints;
+		}
+	}
+};
+
+int analze_file(const std::string& filename) {
+	FormulaT f = parse_smtlib(filename);
+	FormulaProperties fp;
+	carl::FormulaVisitor<FormulaT> fv;
+	fv.visit(fp);
+	return 0;
+}
+
 }
 
 #else
@@ -63,6 +100,10 @@ namespace smtrat {
 FormulaT parse_smtlib(const std::string&) {
 	SMTRAT_LOG_ERROR("smtrat", "This version of SMT-RAT was compiled without support for stand-alone formula parsing.");
 	return FormulaT();
+}
+
+int analze_file(const std::string& filename) {
+	return 0;
 }
 
 }

@@ -39,6 +39,7 @@
 #include "tools/Executor.h"
 #include "tools/parser_dimacs.h"
 #include "tools/parser_opb.h"
+#include "tools/parser_smtlib.h"
 #include "tools/preprocessor.h"
 
 
@@ -114,6 +115,8 @@ int main( int argc, char* argv[] )
 		exitCode = smtrat::run_opb_file(strategy, smtrat::settings_parser().input_file);
 	} else if (smtrat::settings_solver().preprocess) {
 		exitCode = smtrat::preprocess_file(smtrat::settings_parser().input_file, smtrat::settings_solver().preprocess_output_file);
+	} else if (smtrat::settings_solver().analyze_file) {
+		exitCode = smtrat::analze_file(smtrat::settings_parser().input_file);
 	} else {
 		// Parse input.
 		try {

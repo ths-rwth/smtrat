@@ -24,7 +24,7 @@ struct SolverSettings {
 	bool print_all_models;
 	bool preprocess;
 	std::string preprocess_output_file;
-	bool print_statistics;
+	bool analyze_file;
 	bool print_strategy;
 	bool print_timings;
 };
