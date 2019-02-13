@@ -149,7 +149,9 @@ public:
 			[&baseModule](Minisat::Lit l) -> const auto& { return baseModule.watches[l]; }
 		}),
 		mTheoryStack(1, TheoryLevel()),
+#ifdef SMTRAT_DEVOPTION_Statistics
 		mStatistics(baseModule.mMCSATStatistics),
+#endif
 		mModelAssignmentCache(model())
 	{}
 	
