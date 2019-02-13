@@ -49,7 +49,10 @@ void registerToolSettings(SettingsParser* parser) {
 	auto& settings = settings::Settings::getInstance();
 	auto& s = settings.add<settings::ToolSettings>("tools");
 
-	parser->add("Tool settings", s).add_options()
+	parser->add_finalizer([&s](const auto& values){
+		finalize_tool_settings(s, values);
+	});
+	parser->add("Tool settings").add_options()
 		("statistics,s", po::bool_switch(&s.collect_statistics), "run tools with statistics")
 		("tool", po::value<std::vector<std::filesystem::path>>(&s.tools_generic), "a generic tool")
 		("smtrat,S", po::value<std::vector<std::filesystem::path>>(&s.tools_smtrat), "SMT-RAT with SMT-LIB interface")

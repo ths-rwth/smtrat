@@ -25,7 +25,10 @@ void registerBenchmarkSettings(SettingsParser* parser) {
 	auto& settings = settings::Settings::getInstance();
 	auto& s = settings.add<settings::BenchmarkSettings>("benchmarks");
 	
-	parser->add("Benchmark settings", s).add_options()
+	parser->add_finalizer([&s](const auto& values){
+		finalize_benchmark_settings(s, values);
+	});
+	parser->add("Benchmark settings").add_options()
 		("memory,M", po::value<std::size_t>(&s.limit_memory)->default_value(1024), "memory limit in megabytes")
 		("timeout,T", po::value<std::size_t>()->default_value(60), "timeout in seconds")
 		("directory,D", po::value<std::vector<std::filesystem::path>>(&s.input_directories), "path to look for benchmarks")

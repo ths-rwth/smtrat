@@ -23,14 +23,6 @@ class SettingsParser;
 
 namespace settings {
 
-/**
- * Hook to be called when settings have been parsed.
- * This allows to compute some advanced settings like a common prefix of paths.
- * This is the generic (no-op) version that individual settings may specialize.
- */
-template<typename T, typename V>
-inline void finalize_settings(T&, const V&) {}
-
 /// Core settings.
 struct CoreSettings {
 	/// Whether to show the command-line help.

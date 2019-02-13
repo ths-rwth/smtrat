@@ -47,7 +47,7 @@ struct ToolSettings {
 
 /// Postprocess settings to compute common prefix.
 template<typename V>
-inline void finalize_settings(ToolSettings& s, const V&) {
+inline void finalize_tool_settings(ToolSettings& s, const V&) {
 	s.tools_common_prefix = common_prefix({
 		s.tools_generic, s.tools_smtrat, s.tools_smtrat_opb,
 		s.tools_minisatp, s.tools_z3

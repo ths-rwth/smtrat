@@ -30,7 +30,7 @@ struct BenchmarkSettings {
 };
 /// Postprocess benchmark settings.
 template<typename V>
-inline void finalize_settings(BenchmarkSettings& s, const V& values) {
+inline void finalize_benchmark_settings(BenchmarkSettings& s, const V& values) {
 	s.limit_time = std::chrono::seconds(values["timeout"].template as<std::size_t>());
 	s.input_directories_common_prefix = common_prefix(s.input_directories, false);
 }
