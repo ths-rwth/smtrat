@@ -73,7 +73,6 @@ struct FormulaProperties : public Statistics {
 		Statistics::addKeyValuePair("max_degree", max_degree);
 		Statistics::addKeyValuePair("max_total_degree", max_total_degree);
 	}
-	FormulaProperties(): Statistics("FormulaProperties") {}
 
 	void analyze(const FormulaT& f) {
 		++num_formulas;
@@ -85,9 +84,9 @@ struct FormulaProperties : public Statistics {
 
 int analze_file(const std::string& filename) {
 	FormulaT f = parse_smtlib(filename);
-	FormulaProperties fp;
+	FormulaProperties& fp = statistics_get<FormulaProperties>("formula");
 	carl::FormulaVisitor<FormulaT> fv;
-	fv.visit(fp);
+	fv.visit(f, [&fp](const auto& f){ fp.analyze(f); });
 	return 0;
 }
 

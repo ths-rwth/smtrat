@@ -43,15 +43,22 @@
 #include "tools/preprocessor.h"
 
 
+void print_statistics() {
+#ifdef SMTRAT_DEVOPTION_Statistics
+	smtrat::StatisticsCollector::getInstance().collect();
+	if (smtrat::settings_statistics().print_as_smtlib) {
+		std::cout << smtrat::statistics_as_smtlib() << std::endl;
+	}
+	if (smtrat::settings_statistics().export_as_xml) {
+		smtrat::statistics_to_xml_file(smtrat::settings_statistics().xml_filename);
+	}
+#endif
+#ifdef TIMING
+	std::cout << carl::TimingCollector::getInstance() << std::endl;
+#endif
+}
 
-//#include "../lib/datastructures/expression/ExpressionTest.h"
-
-/**
- *
- */
-int main( int argc, char* argv[] )
-{
-	//smtrat::testExpression();
+void setup_logging() {
 #ifdef LOGGING
 	if (!carl::logging::logger().has("smtrat")) {
 		carl::logging::logger().configure("smtrat", "smtrat.log");
@@ -77,7 +84,12 @@ int main( int argc, char* argv[] )
 	;
 	carl::logging::logger().formatter("stdout")->printInformation = true;
 #endif
-	SMTRAT_LOG_INFO("smtrat", "Starting smtrat.");
+}
+
+int main( int argc, char* argv[] )
+{
+	setup_logging();
+	SMTRAT_LOG_DEBUG("smtrat", "Starting smtrat.");
 
 	auto& parser = smtrat::SettingsParser::getInstance();
 	smtrat::parser::registerParserSettings(parser);
@@ -96,64 +108,49 @@ int main( int argc, char* argv[] )
 		}
 	}
 
-    // This variable will hold the input file.
-    std::string pathToInputFile = "";
-
-    // Construct solver.
-    CMakeStrategySolver strategy;
-
-	if (smtrat::settings_solver().print_strategy) {
-		strategy.printStrategyGraph();
-		return SMTRAT_EXIT_SUCCESS;
-	}
-
-
 	int exitCode = 0;
-	if (smtrat::settings_parser().read_dimacs) {
-		exitCode = smtrat::run_dimacs_file(strategy, smtrat::settings_parser().input_file);
-	} else if (smtrat::settings_parser().read_opb) {
-		exitCode = smtrat::run_opb_file(strategy, smtrat::settings_parser().input_file);
-	} else if (smtrat::settings_solver().preprocess) {
+	
+	if (smtrat::settings_solver().preprocess) {
 		exitCode = smtrat::preprocess_file(smtrat::settings_parser().input_file, smtrat::settings_solver().preprocess_output_file);
 	} else if (smtrat::settings_solver().analyze_file) {
 		exitCode = smtrat::analze_file(smtrat::settings_parser().input_file);
 	} else {
-		// Parse input.
-		try {
+		SMTRAT_LOG_INFO("smtrat", "Constructing strategy.");
 
-			auto e = smtrat::Executor<CMakeStrategySolver>(strategy);
-			exitCode = smtrat::executeFile(smtrat::settings_parser().input_file, e);
+		CMakeStrategySolver strategy;
 
-			if (e.lastAnswer == smtrat::Answer::SAT) {
-				if (smtrat::settings_solver().print_all_models) {
-					strategy.printAllAssignments(std::cout);
-				} else if (smtrat::settings_solver().print_model) {
-					strategy.printAssignment();
+		if (smtrat::settings_core().show_strategy) {
+			strategy.printStrategyGraph();
+		}
+		if (smtrat::settings_parser().read_dimacs) {
+			exitCode = smtrat::run_dimacs_file(strategy, smtrat::settings_parser().input_file);
+		} else if (smtrat::settings_parser().read_opb) {
+			exitCode = smtrat::run_opb_file(strategy, smtrat::settings_parser().input_file);
+		} else {
+			// Parse input.
+			try {
+
+				auto e = smtrat::Executor<CMakeStrategySolver>(strategy);
+				exitCode = smtrat::executeFile(smtrat::settings_parser().input_file, e);
+
+				if (e.lastAnswer == smtrat::Answer::SAT) {
+					if (smtrat::settings_solver().print_all_models) {
+						strategy.printAllAssignments(std::cout);
+					} else if (smtrat::settings_solver().print_model) {
+						strategy.printAssignment();
+					}
 				}
-			}
 
-		} catch (const std::bad_alloc& e) {
-			std::raise(ENOMEM);
+			} catch (const std::bad_alloc& e) {
+				std::raise(ENOMEM);
+			}
+		}
+		if (smtrat::settings_solver().print_timings) {
+			smtrat::options_detail::print_timings(strategy);
 		}
 	}
 
-	if (smtrat::settings_solver().print_timings) {
-		smtrat::options_detail::print_timings(strategy);
-	}
+	print_statistics();
 
-    #ifdef SMTRAT_DEVOPTION_Statistics
-    smtrat::StatisticsCollector::getInstance().collect();
-	if (smtrat::settings_statistics().print_as_smtlib) {
-		std::cout << smtrat::statistics_as_smtlib() << std::endl;
-	}
-	if (smtrat::settings_statistics().export_as_xml) {
-		smtrat::statistics_to_xml_file(smtrat::settings_statistics().xml_filename);
-	}
-    #endif
-	
-	#ifdef TIMING
-	std::cout << carl::TimingCollector::getInstance() << std::endl;
-	#endif
-
-    return exitCode;
+	return exitCode;
 }

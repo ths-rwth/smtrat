@@ -15,6 +15,7 @@ struct ParserSettings {
 
 template<typename T>
 void registerParserSettings(T& parser) {
+	namespace po = boost::program_options;
 	auto& settings = settings::Settings::getInstance();
 	auto& s = settings.get<ParserSettings>("parser");
 

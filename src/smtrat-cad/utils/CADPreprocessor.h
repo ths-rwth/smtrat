@@ -16,6 +16,7 @@ struct CADPreprocessorSettings {
 	bool disable_resultants = false;
 
 	static void register_settings(SettingsParser& parser) {
+		namespace po = boost::program_options;
 		auto& settings = settings::Settings::getInstance();
 		auto& s = settings.get<CADPreprocessorSettings>("cad-pp");
 		
