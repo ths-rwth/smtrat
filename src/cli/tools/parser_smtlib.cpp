@@ -58,35 +58,77 @@ FormulaT parse_smtlib(const std::string& filename) {
 struct FormulaProperties : public Statistics {
 	std::size_t num_variables = 0;
 	std::size_t num_constraints = 0;
+	std::size_t num_equalities = 0;
+	std::size_t num_disequalities = 0;
+	std::size_t num_weak_inequalities = 0;
+	std::size_t num_strict_inequalities = 0;
 	std::size_t num_formulas = 0;
 	std::size_t num_or = 0;
 	std::size_t max_degree = 0;
 	std::size_t max_total_degree = 0;
+	std::map<std::string,std::string> additional;
 
-	carl::carlVariables vars;
+	template<typename T>
+	void add(const std::string& name, const T& value) {
+		std::stringstream ss;
+		ss << value;
+		additional.emplace(name, ss.str());
+	}
+
+	carl::carlVariables variables;
 
 	void collect() {
 		Statistics::addKeyValuePair("num_variables", num_variables);
 		Statistics::addKeyValuePair("num_constraints", num_constraints);
+		Statistics::addKeyValuePair("num_equalities", num_equalities);
+		Statistics::addKeyValuePair("num_disequalities", num_disequalities);
+		Statistics::addKeyValuePair("num_weak_inequalities", num_weak_inequalities);
+		Statistics::addKeyValuePair("num_strict_inequalities", num_strict_inequalities);
 		Statistics::addKeyValuePair("num_formulas", num_formulas);
 		Statistics::addKeyValuePair("num_or", num_or);
 		Statistics::addKeyValuePair("max_degree", max_degree);
 		Statistics::addKeyValuePair("max_total_degree", max_total_degree);
+		for (const auto& add: additional) {
+			Statistics::addKeyValuePair(add.first, add.second);
+		}
+	}
+
+	void analyze(const ConstraintT& c) {
+		++num_constraints;
+		switch (c.relation()) {
+			case carl::Relation::LESS: ++num_strict_inequalities; break;
+			case carl::Relation::LEQ: ++num_weak_inequalities; break;
+			case carl::Relation::EQ: ++num_equalities; break;
+			case carl::Relation::NEQ: ++num_equalities; break;
+			case carl::Relation::GEQ: ++num_weak_inequalities; break;
+			case carl::Relation::GREATER: ++num_strict_inequalities; break;
+		}
 	}
 
 	void analyze(const FormulaT& f) {
 		++num_formulas;
+		f.gatherVariables(variables);
 		if (f.getType() == carl::FormulaType::CONSTRAINT) {
-			++num_constraints;
+			analyze(f.constraint());
+		}
+	}
+	void finalize(const parseformula::FormulaCollector& collector) {
+		num_variables = variables.size();
+		if (collector.has_info("status")) {
+			add("answer", collector.get_info("status"));
+		} else {
+			std::cout << "Answer not available" << std::endl;
 		}
 	}
 };
 
 int analze_file(const std::string& filename) {
-	FormulaT f = parse_smtlib(filename);
+	auto e = parseformula::FormulaCollector();
+	executeFile(filename, e);
 	FormulaProperties& fp = statistics_get<FormulaProperties>("formula");
 	carl::FormulaVisitor<FormulaT> fv;
-	fv.visit(f, [&fp](const auto& f){ fp.analyze(f); });
+	fv.visit(e.getFormula(), [&fp](const auto& f){ fp.analyze(f); });
+	fp.finalize(e);
 	return 0;
 }
 
