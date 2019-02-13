@@ -73,6 +73,12 @@ protected:
 	VariantMap<std::string, Value> infos;
 	VariantMap<std::string, Value> options;
 public:
+	bool has_info(const std::string& key) const {
+		return infos.find(key) != infos.end();
+	}
+	const auto& get_info(const std::string& key) const {
+		return infos.find(key)->second;
+	}
 	template<typename T>
 	T option(const std::string& key) const {
 		return this->options.get<T>(key);
