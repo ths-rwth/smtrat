@@ -123,10 +123,8 @@ struct FormulaProperties : public Statistics {
 };
 
 int analyze_file(const std::string& filename) {
-	auto start = CARL_TIME_START();
 	auto e = parseformula::FormulaCollector();
 	executeFile(filename, e);
-	CARL_TIME_FINISH("parsing", start);
 	FormulaProperties& fp = statistics_get<FormulaProperties>("formula");
 	carl::FormulaVisitor<FormulaT> fv;
 	fv.visit(e.getFormula(), [&fp](const auto& f){ fp.analyze(f); });

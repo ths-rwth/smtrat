@@ -43,6 +43,7 @@ int executeFile(const std::string& pathToInputFile, Executor& e) {
 	setrlimit(RLIMIT_STACK, &rl);
 #endif
 
+	auto start = CARL_TIME_START();
 	bool queueInstructions = true;
 	if (!parseInput(pathToInputFile, e, queueInstructions)) {
 		std::cerr << "Parse error" << std::endl;
@@ -56,9 +57,8 @@ int executeFile(const std::string& pathToInputFile, Executor& e) {
 			SMTRAT_LOG_WARN("smtrat", "Did not parse any instructions.");
 		}
 	}
-	int exitCode = e.getExitCode();
-	
-	return exitCode;
+	CARL_TIME_FINISH("parsing", start);
+	return e.getExitCode();
 }
 
 }
