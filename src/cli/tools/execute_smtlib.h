@@ -2,6 +2,8 @@
 
 #include "../parser/ParserWrapper.h"
 
+#include <carl/util/TimingCollector.h>
+
 #include <string>
 
 namespace smtrat {
