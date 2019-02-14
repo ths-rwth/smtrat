@@ -1,2 +1,2 @@
-#cmakedefine BENCHMAX_USE_SMTPARSER
-#cmakedefine BENCHMAX_LOGGING
+#cmakedefine BENCHMAX_DATABASE
+#cmakedefine BENCHMAX_SSH

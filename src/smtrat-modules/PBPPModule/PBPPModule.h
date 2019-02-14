@@ -14,8 +14,7 @@
 #include "CardinalityEncoder.h"
 #include "LongFormulaEncoder.h"
 #include "MixedSignEncoder.h"
-#include "../Module.h"
-#include "PBPPStatistics.h"
+#include <smtrat-solver/Module.h>
 #include "PBPPSettings.h"
 #include "RNSEncoder.h"
 #include "ShortFormulaEncoder.h"
@@ -28,9 +27,6 @@ namespace smtrat
 		class PBPPModule : public Module
 	{
 		private:
-#ifdef SMTRAT_DEVOPTION_Statistics
-			PBPPStatistics mStatistics;
-#endif
 			// Members.
 			std::map<carl::Variable, carl::Variable> mVariablesCache; // int, bool
 			std::vector<carl::Variable> mCheckedVars;

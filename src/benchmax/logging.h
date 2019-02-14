@@ -5,36 +5,62 @@
 
 #pragma once
 
-#include "config.h"
-
-#if defined BENCHMAX_LOGGING
-
 #include <carl/core/carlLogging.h>
+#include <carl/io/streamingOperators.h>
+
 namespace benchmax {
-	using carl::operator<<;
+using carl::operator<<;
+
+/**
+ * Configure default logging for benchmax.
+ */
+inline void logging_configure() {
+	carl::logging::logger().configure("stdout", std::cout);
+	carl::logging::logger().filter("stdout")
+		("benchmax", carl::logging::LogLevel::LVL_INFO)
+	;
+	carl::logging::logger().resetFormatter();
 }
 
-	#define BENCHMAX_LOG_FATAL(channel, msg) __CARL_LOG_FATAL(channel, msg)
-	#define BENCHMAX_LOG_ERROR(channel, msg) __CARL_LOG_ERROR(channel, msg)
-	#define BENCHMAX_LOG_WARN(channel, msg) __CARL_LOG_WARN(channel, msg)
-	#define BENCHMAX_LOG_INFO(channel, msg) __CARL_LOG_INFO(channel, msg)
-	#define BENCHMAX_LOG_DEBUG(channel, msg) __CARL_LOG_DEBUG(channel, msg)	
-	#define BENCHMAX_LOG_TRACE(channel, msg) __CARL_LOG_TRACE(channel, msg)
+/**
+ * Configure quiet logging for benchmax.
+ */
+inline void logging_quiet() {
+	carl::logging::logger().filter("stdout")
+		("benchmax", carl::logging::LogLevel::LVL_WARN)
+	;
+}
 
-	#define BENCHMAX_LOG_FUNC(channel, args) __CARL_LOG_FUNC(channel, args)
-	#define BENCHMAX_LOG_ASSERT(channel, condition, msg) __CARL_LOG_ASSERT(channel, condition, msg)
-	#define BENCHMAX_LOG_NOTIMPLEMENTED() __CARL_LOG_ERROR("", "Not implemented method-stub called.")
-	#define BENCHMAX_LOG_INEFFICIENT() __CARL_LOG_WARN("", "Inefficient method called.")
-#else
-	#define BENCHMAX_LOG_FATAL(channel, msg) std::cerr << "FATAL: " << msg << std::endl;
-	#define BENCHMAX_LOG_ERROR(channel, msg) std::cerr << "ERROR: " << msg << std::endl;
-	#define BENCHMAX_LOG_WARN(channel, msg)
-	#define BENCHMAX_LOG_INFO(channel, msg)
-	#define BENCHMAX_LOG_DEBUG(channel, msg)
-	#define BENCHMAX_LOG_TRACE(channel, msg)
+/**
+ * Configure verbose logging for benchmax.
+ */
+inline void logging_verbose() {
+	carl::logging::logger().filter("stdout")
+		("benchmax", carl::logging::LogLevel::LVL_DEBUG)
+	;
+}
 
-	#define BENCHMAX_LOG_FUNC(channel, args)
-	#define BENCHMAX_LOG_ASSERT(channel, condition, msg) assert(condition)
-	#define BENCHMAX_LOG_NOTIMPLEMENTED()
-	#define BENCHMAX_LOG_INEFFICIENT()
-#endif
+}
+
+/// Log fatal errors.
+#define BENCHMAX_LOG_FATAL(channel, msg) __CARL_LOG_FATAL(channel, msg)
+/// Log errors.
+#define BENCHMAX_LOG_ERROR(channel, msg) __CARL_LOG_ERROR(channel, msg)
+/// Log warnings.
+#define BENCHMAX_LOG_WARN(channel, msg) __CARL_LOG_WARN(channel, msg)
+/// Log informational messages.
+#define BENCHMAX_LOG_INFO(channel, msg) __CARL_LOG_INFO(channel, msg)
+/// Log debug messages.
+#define BENCHMAX_LOG_DEBUG(channel, msg) __CARL_LOG_DEBUG(channel, msg)	
+/// Log trace messages.
+#define BENCHMAX_LOG_TRACE(channel, msg) __CARL_LOG_TRACE(channel, msg)
+
+/// Log function call with function arguments.
+#define BENCHMAX_LOG_FUNC(channel, args) __CARL_LOG_FUNC(channel, args)
+/// Assert and log an some condition.
+#define BENCHMAX_LOG_ASSERT(channel, condition, msg) __CARL_LOG_ASSERT(channel, condition, msg)
+/// Warn about some function not being implemented.
+#define BENCHMAX_LOG_NOTIMPLEMENTED() __CARL_LOG_ERROR("", "Not implemented method-stub called.")
+/// Warn about some function being inefficient.
+#define BENCHMAX_LOG_INEFFICIENT() __CARL_LOG_WARN("", "Inefficient method called.")
+

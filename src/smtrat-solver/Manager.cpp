@@ -39,10 +39,6 @@ namespace smtrat
         mInformationRelevantFormula(),
         mLemmaLevel(LemmaLevel::NONE),
         mObjectives()
-        #ifdef SMTRAT_DEVOPTION_Statistics
-        ,
-        mpStatistics( new SolverStatistics() )
-        #endif
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         ,
         mpThreadPool( nullptr ),
@@ -65,9 +61,6 @@ namespace smtrat
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         if( mpThreadPool != nullptr )
             delete mpThreadPool;
-        #endif
-        #ifdef SMTRAT_DEVOPTION_Statistics
-        delete mpStatistics;
         #endif
         #ifndef SMTRAT_STRAT_PARALLEL_MODE
         // TODO: Parallel solving causes for some reason segfaults in the modules' destructors 

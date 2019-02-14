@@ -8,14 +8,13 @@
 
 #pragma once
 
-#include "../ModuleSettings.h"
 #include <smtrat-strategies/strategies/PreprocessingOne.h>
 #include <smtrat-strategies/strategies/BVPreprocessing.h>
 #include <smtrat-strategies/strategies/PBPreprocessing.h>
 
 namespace smtrat
 {
-    struct FPPSettings1 : ModuleSettings
+    struct FPPSettings1
     {
 		static constexpr auto moduleName = "FPPModule<FPPSettings1>";
         /**

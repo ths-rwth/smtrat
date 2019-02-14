@@ -6,7 +6,7 @@ CMakeFiles
 *~
 **/config.h
 **/config.txt
-**/CompileInfo.cpp
+**/compile_information.cpp
 **/CMakeOptions.cpp
 /build/**
 /cmake-build-debug/

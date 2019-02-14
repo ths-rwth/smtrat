@@ -9,11 +9,9 @@
 
 #pragma once
 
-#include "../ModuleSettings.h"
-
 namespace smtrat
 {
-    struct FouMoSettings1 : ModuleSettings
+    struct FouMoSettings1
     {        
 		static constexpr auto moduleName = "FouMoModule<FouMoSettings1>";
         static const bool Allow_Deletion = true;       

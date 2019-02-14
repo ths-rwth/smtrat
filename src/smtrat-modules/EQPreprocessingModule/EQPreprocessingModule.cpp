@@ -19,9 +19,6 @@ namespace smtrat
 			Module(_formula, _conditionals, _manager),
 			mEQHelper(),
 			mBoolRewriter(nullptr)
-#ifdef SMTRAT_DEVOPTION_Statistics
-			,mStatistics(new EQPreprocessingStatistics())
-#endif
 	{}
 
 	/**
@@ -42,7 +39,7 @@ namespace smtrat
 			}
 
 #ifdef SMTRAT_DEVOPTION_Statistics
-			mStatistics->countCongruencesAdded(mRewriter.get().congruences().size());
+			mStatistics.countCongruencesAdded(mRewriter.get().congruences().size());
 #endif
 
 			for(const FormulaT& cong : mRewriter.get().congruences()) {

@@ -9,18 +9,20 @@
 
 #include "Backend.h"
 
-#include "../Settings.h"
-#include "../utils/Execute.h"
-#include "../utils/durations.h"
+#include "../utils/execute.h"
 
 namespace benchmax {
 
+/**
+ * This backend simply runs files sequentially on the local machine.
+ */
 class LocalBackend: public Backend {
 protected:
-	virtual void execute(const Tool* tool, const fs::path& file, const fs::path& baseDir) {
+	/// Execute the tool on the file manually.
+	virtual void execute(const Tool* tool, const fs::path& file) {
 		std::stringstream call;
-		call << "ulimit -S -t " << seconds(Settings::timeLimit).count() << " && ";
-		call << "ulimit -S -v " << (Settings::memoryLimit * 1024) << " && ";
+		call << "ulimit -S -t " << std::chrono::seconds(settings_benchmarks().limit_time).count() << " && ";
+		call << "ulimit -S -v " << (settings_benchmarks().limit_memory * 1024) << " && ";
 		call << "date +\"Start: %s%3N\" && ";
 		call << tool->getCommandline(file.native()) << " 2> stderr.log && ";
 		call << "date +\"End: %s%3N\"";
@@ -28,13 +30,13 @@ protected:
 		BenchmarkResult results;
 		auto start = std::chrono::high_resolution_clock::now();
 		
-		int exitCode = callProgram(call.str(), results.stdout);
+		int exitCode = call_program(call.str(), results.stdout);
 		results.exitCode = WEXITSTATUS(exitCode);
 		
 		auto end = std::chrono::high_resolution_clock::now();
-		results.time = milliseconds(end - start);
+		results.time = std::chrono::duration_cast<decltype(results.time)>(end - start);
 	
-		addResult(tool, file, baseDir, results);
+		addResult(tool, file, results);
 	}
 };
 

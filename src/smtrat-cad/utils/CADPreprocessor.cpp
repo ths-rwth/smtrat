@@ -2,6 +2,8 @@
 
 namespace smtrat::cad {
 
+const bool CADPreprocessorSettings::dummy = CADPreprocessorSettings::register_hook();
+
 namespace preprocessor {
 
 inline std::size_t complexity(const std::vector<FormulaT>& origin) {
@@ -318,34 +320,46 @@ void CADPreprocessor::removeConstraint(const ConstraintT& c) {
 }
 
 bool CADPreprocessor::preprocess() {
-    std::vector<ConstraintT> cur = mEqualities;
     SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Starting with:" << std::endl << *this);
-    while (addEqualities(cur)) {
-        SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Collecting assignments from:" << std::endl << *this);
-        auto collectResult = mAssignments.collect(mDerivedEqualities);
-        if (std::holds_alternative<ConstraintT>(collectResult)) {
-            mConflict = { FormulaT(std::get<ConstraintT>(collectResult)) };
-            SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Immediate conflict due to " << *mConflict);
-            return false;
-        }
-        assert(std::holds_alternative<bool>(collectResult));
-        if (std::get<bool>(collectResult) == false) {
-            SMTRAT_LOG_DEBUG("smtrat.cad.pp", "No further assignments.");
-            break;
-        }
-        SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Collected assignments:" << std::endl << *this);
-        for (const auto& de: mDerivedEqualities) {
-            mOrigins.add(FormulaT(de.second), {FormulaT(de.first)});
-        }
-        
-        auto conflict = mResultants.compute(mDerivedEqualities);
-        if (conflict.has_value()) {
-            mConflict = std::set<FormulaT>(conflict->begin(), conflict->end());
-            SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Immediate conflict due to " << *mConflict);
-        } else {
-            cur = mResultants.getNewECs();
-            SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Computed resultants:" << std::endl << *this << std::endl << "-> " << cur);
-        }
+	bool changed = addEqualities(mEqualities);
+    while (changed) {
+		changed = false;
+		if (settings_cadpp().disable_variable_elimination) {
+			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Variable elimination is disabled");
+		} else {
+			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Collecting assignments from:" << std::endl << *this);
+			auto collectResult = mAssignments.collect(mDerivedEqualities);
+			if (std::holds_alternative<ConstraintT>(collectResult)) {
+				mConflict = { FormulaT(std::get<ConstraintT>(collectResult)) };
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Immediate conflict due to " << *mConflict);
+				return false;
+			}
+			assert(std::holds_alternative<bool>(collectResult));
+			if (std::get<bool>(collectResult) == true) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Collected assignments:" << std::endl << *this);
+				for (const auto& de: mDerivedEqualities) {
+					mOrigins.add(FormulaT(de.second), {FormulaT(de.first)});
+				}
+				changed = true;
+			}
+		}
+
+		if (settings_cadpp().disable_resultants) {
+			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Resultant rule is disabled");
+		} else {
+			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Computing Resultants from:" << std::endl << *this);
+			auto conflict = mResultants.compute(mDerivedEqualities);
+			if (conflict.has_value()) {
+				mConflict = std::set<FormulaT>(conflict->begin(), conflict->end());
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Immediate conflict due to " << *mConflict);
+				return false;
+			} else {
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Computed resultants:" << std::endl << *this << std::endl << "-> " << mResultants.getNewECs());
+				if (addEqualities(mResultants.getNewECs())) {
+					changed = true;
+				}
+			}
+		}
     }
     for (auto& c: mInequalities) {
         carl::model::substituteIn(c.second, mModel);

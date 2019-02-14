@@ -64,7 +64,7 @@ bool GBModule<Settings>::addCore( ModuleInput::const_iterator _formula )
 
     #ifdef SMTRAT_DEVOPTION_Statistics
     const ConstraintT& constraint = _formula->formula().constraint( );
-    mStats->constraintAdded(constraint.relation());
+    mStats.constraintAdded(constraint.relation());
     #endif
 
     processNewConstraint(_formula);
@@ -177,7 +177,7 @@ Answer GBModule<Settings>::checkCore()
     }
 
     #ifdef SMTRAT_DEVOPTION_Statistics
-    mStats->called();
+    mStats.called();
     #endif
 
     assert( mInfeasibleSubsets.empty( ) );
@@ -248,7 +248,7 @@ Answer GBModule<Settings>::checkCore()
             if( mBasis.basisIsConstant( ) )
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
-                mStats->constantGB();
+                mStats.constantGB();
                 #endif
 				assert(mBasis.getIdeal().nrGenerators() == 1);
                 witness = mBasis.getIdeal( ).getGenerators().front();
@@ -292,7 +292,7 @@ Answer GBModule<Settings>::checkCore()
             }
 
             #ifdef SMTRAT_DEVOPTION_Statistics
-            mStats->EffectivenessOfConflicts( (double)mInfeasibleSubsets.back().size()/(double)rReceivedFormula().size());
+            mStats.EffectivenessOfConflicts( (double)mInfeasibleSubsets.back().size()/(double)rReceivedFormula().size());
             #endif
             #ifdef CHECK_SMALLER_MUSES
             Module::checkInfSubsetForMinimality( mInfeasibleSubsets->begin() );
@@ -365,7 +365,7 @@ Answer GBModule<Settings>::checkCore()
     if( ans == UNSAT )
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
-        mStats->backendFalse();
+        mStats.backendFalse();
         #endif
         // use the infeasible subsets from our backends.
         getInfeasibleSubsets( );
@@ -536,7 +536,7 @@ bool GBModule<Settings>::iterativeVariableRewriting()
                 // TODO handle other cases
                 // calculate q-root(reduce);
                 #ifdef SMTRAT_DEVOPTION_Statistics
-                mStats->FoundEqualities();
+                mStats.FoundEqualities();
                 #endif
                 std::cout << t << " -> " << reduce << std::endl;
 
@@ -546,7 +546,7 @@ bool GBModule<Settings>::iterativeVariableRewriting()
             else if( reduce.isReducedIdentity(*it, exponent))
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
-                mStats->FoundIdentities();
+                mStats.FoundIdentities();
                 #endif
                 std::cout << t << " -> " << reduce << std::endl;
 
@@ -602,7 +602,7 @@ void GBModule<Settings>::knownConstraintDeduction(const std::list<std::pair<carl
             addLemma( FormulaT( carl::FormulaType::OR, subformulas ) );
             //deduction->print();
             #ifdef SMTRAT_DEVOPTION_Statistics
-            mStats->DeducedEquality();
+            mStats.DeducedEquality();
             #endif
         }
     }
@@ -628,7 +628,7 @@ void GBModule<Settings>::removeCore( ModuleInput::const_iterator _formula )
         return;
     }
     #ifdef SMTRAT_DEVOPTION_Statistics
-    mStats->constraintRemoved(_formula->formula().constraint().relation());
+    mStats.constraintRemoved(_formula->formula().constraint().relation());
     #endif
     if( constraintByGB(_formula->formula().constraint().relation()))
     {
@@ -735,7 +735,7 @@ void GBModule<Settings>::popBacktrackPoint( ModuleInput::const_iterator btpoint 
     }
 
     #ifdef SMTRAT_DEVOPTION_Statistics
-    mStats->PopLevel(nrOfBacktracks);
+    mStats.PopLevel(nrOfBacktracks);
     #endif
 
     for( unsigned i = 0; i < nrOfBacktracks; ++i )

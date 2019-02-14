@@ -8,100 +8,87 @@
  * @version 2013-04-23
  */
 
+#include <csignal>
 #include <filesystem>
 #include <iostream>
-#include "../cli/config.h"
-namespace fs = std::filesystem;
 
-#include <csignal>
-
+#include "config.h"
 #include "logging.h"
-#include "BenchmarkSet.h"
+#include "backends/Backends.h"
+#include "backends/Jobs.h"
+#include "benchmarks/benchmarks.h"
 #include "tools/Tools.h"
-#include "Settings.h"
+#include "settings/Settings.h"
+#include "settings/SettingsParser.h"
 #include "Stats.h"
 
-#include "backends/CondorBackend.h"
-#include "backends/LocalBackend.h"
-#include "backends/SSHBackend.h"
 
-#include "utils/regex.h"
+using namespace benchmax;
 
-using benchmax::Tool;
-using benchmax::Stats;
-using benchmax::Settings;
+/**
+ * Initialized the application.
+ * 
+ * Takes care of loading settings from the command line and a config file.
+ * Afterwards checks for all options that are handled easily like being verbose or showing the help.
+ * Might signal to stop execution by returning true.
+ * @param argc argc as passed to main()
+ * @param argv argv as passed to main()
+ * @return true if the application should stop.
+ */
+bool init_application(int argc, char** argv) {
 
-namespace po = boost:: program_options;
+	logging_configure();
 
-const std::string COPYRIGHT =
-	"Copyright (C) 2012 Florian Corzilius, Ulrich Loup, Sebastian Junges, Erika Abraham\r\nThis program comes with ABSOLUTELY NO WARRANTY.\r\nThis is free software, and you are welcome to redistribute it \r\nunder certain conditions; use the command line argument --disclaimer in order to get the conditions and warranty disclaimer.";
-const std::string WARRANTY =
-	"THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES PROVIDE THE PROGRAM “AS IS” WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU. SHOULD THE PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING, REPAIR OR CORRECTION.";
+	auto& parser = SettingsParser::getInstance();
+	benchmax::settings::registerBenchmarkSettings(&parser);
+	benchmax::settings::registerToolSettings(&parser);
+	benchmax::settings::registerSlurmBackendSettings(&parser);
+	benchmax::settings::registerSSHBackendSettings(&parser);
+	parser.finalize();
+	parser.parse_options(argc, argv);
 
-void printWelcome()
-{
-	std::cout << "\tSMT-LIB 3.0 Benchmark Tool " << std::endl;
-	std::cout << "Support: Florian Corzilius <florian.corzilius@rwth-aachen.de> and Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>" << std::endl;
-	std::cout <<  std::endl;
-	std::cout << "Usage: Start the tool with the command line argument --help to get further information." << std::endl;
-	std::cout << "Examples: ./benchmax -T 90 -D smtlib/qf_nra/etcs/ -D smtlib/qf_nra/bouncing_ball/ -S smtratSolver" << std::endl;
-	std::cout << "          ./benchmax -T 90 -D smtlib/qf_nra/etcs/ -D smtlib/qf_nra/bouncing_ball/ -Z z3" << std::endl;
-	std::cout << "          ./benchmax -T 90 -D smtlib/qf_nra/etcs/ -D smtlib/qf_nra/bouncing_ball/ --redlog_rlqe /usr/bin/redcsl" << std::endl;
-}
-
-bool initApplication(int argc, char** argv) {
-	
-	carl::logging::logger().configure("stdout", std::cout);
-	carl::logging::logger().filter("stdout")
-		("benchmax", carl::logging::LogLevel::LVL_INFO)
-		("benchmax.ssh", carl::logging::LogLevel::LVL_WARN)
-		("benchmax.benchmarks", carl::logging::LogLevel::LVL_INFO)
-	;
-	carl::logging::logger().resetFormatter();
-	
-	benchmax::Settings s(argc, argv);
-	Settings::PathOfBenchmarkTool = fs::canonical(fs::path(argv[0])).native();
-
-	if(s.has("help")) {
-		std::cout << s;
+	if (settings_core().be_quiet) {
+		logging_quiet();
+	}
+	if (settings_core().be_verbose) {
+		logging_verbose();
+	}
+	if (settings_core().show_help) {
+		std::cout << parser.print_help() << std::endl;
 		return false;
 	}
-	if (s.has("verbose")) {
-		carl::logging::logger().filter("stdout")
-			("benchmax", carl::logging::LogLevel::LVL_INFO)
-			("benchmax.backend", carl::logging::LogLevel::LVL_INFO)
-			("benchmax.benchmarks", carl::logging::LogLevel::LVL_DEBUG)
-		;
-	}
-	if(s.has("disclaimer")) {
-		std::cout << WARRANTY << std::endl;
+	if (settings_core().show_settings) {
+		std::cout << parser.print_options() << std::endl;
 		return false;
 	}
-	if(s.has("compose")) {
-		Stats::composeStats(s.composeFiles);
-		return false;
-	}
-	else if(Settings::ProduceLatex)
-	{
-		Stats::createStatsCompose(Settings::outputDir + "latexCompose.xsl");
-		system(
-		std::string("xsltproc -o " + Settings::outputDir + "results.tex " + Settings::outputDir + "latexCompose.xsl "
-					+ Settings::StatsXMLFile).c_str());
-		fs::remove(fs::path(Settings::outputDir + "latexCompose.xsl"));
-	}
-	
-	if (s.has("convert")) {
-		BENCHMAX_LOG_INFO("benchmax", "Converting " << s.as<std::string>("convert") << " to ods using import filer " << s.as<std::string>("convert-filter"));
+
+	if (settings_operation().convert_ods_filename != "") {
+		std::string filename = settings_operation().convert_ods_filename;
+		std::string filter = settings_operation().convert_ods_filter;
+		BENCHMAX_LOG_INFO("benchmax.convert", "Converting " << filename << " to ods using import filer " << filter);
 		std::stringstream ss;
-		ss << "libreoffice --headless --infilter=" << s.as<std::string>("convert-filter") << " --convert-to ods " << s.as<std::string>("convert");
+		ss << "libreoffice --headless --infilter=" << filter << " --convert-to ods " << filename;
 		system(ss.str().c_str());
 		return false;
 	}
+	
+	
+	//if(s.has("compose")) {
+	//	Stats::composeStats(s.composeFiles);
+	//	return false;
+	//}
+	//else if(Settings::ProduceLatex)
+	//{
+	//	Stats::createStatsCompose(settings_benchmarks().output_dir + "latexCompose.xsl");
+	//	system(
+	//	std::string("xsltproc -o " + settings_benchmarks().output_dir + "results.tex " + Settings::outputDir + "latexCompose.xsl "
+	//				+ settings_benchmarks().output_file_xml).c_str());
+	//	fs::remove(fs::path(settings_benchmarks().output_dir + "latexCompose.xsl"));
+	//}
 
-	if(Settings::outputDir != "")
-	{
-		fs::path oloc = fs::path(Settings::outputDir);
-		if(!fs::exists(oloc) ||!fs::is_directory(oloc))
+	if (settings_benchmarks().output_dir != "") {
+		std::filesystem::path oloc = std::filesystem::path(settings_benchmarks().output_dir);
+		if(!std::filesystem::exists(oloc) ||!std::filesystem::is_directory(oloc))
 		{
 			BENCHMAX_LOG_FATAL("benchmax", "Output directory does not exist: " << oloc);
 			exit(0);
@@ -111,28 +98,8 @@ bool initApplication(int argc, char** argv) {
 	return true;
 }
 
-void loadTools(std::vector<benchmax::Tool*>& tools) {
-	benchmax::createTools<benchmax::Tool>(Settings::tools_generic, tools);
-	benchmax::createTools<benchmax::SMTRAT>(Settings::tools_smtrat, tools);
-	benchmax::createTools<benchmax::SMTRAT_OPB>(Settings::tools_smtrat_opb, tools);
-	benchmax::createTools<benchmax::Minisatp>(Settings::tools_minisatp, tools);
-	benchmax::createTools<benchmax::Z3>(Settings::tools_z3, tools);
-}
-void loadBenchmarks(std::vector<benchmax::BenchmarkSet>& benchmarks) {
-	for (const auto& p: Settings::pathes) {
-		fs::path path(p);
-		if (fs::exists(path)) {
-			BENCHMAX_LOG_INFO("benchmax.benchmarks", "Adding benchmark " << path.native());
-			benchmarks.emplace_back(path);
-		} else {
-			BENCHMAX_LOG_WARN("benchmax", "Benchmark path " << p << " does not exist.");
-		}
-	}
-}
-
 /**
- *
- * @param _signal
+ * Handles the interrupt signal.
  */
 void handleSignal(int)
 {
@@ -147,38 +114,22 @@ int main(int argc, char** argv)
 {
 	std::signal(SIGINT, &handleSignal);
 	
-	// init benchmark
-	if (!initApplication(argc, argv)) {
+	if (!init_application(argc, argv)) {
 		return 0;
 	}
 	
-	std::vector<Tool*> tools;
-	loadTools(tools);
-	std::vector<benchmax::BenchmarkSet> benchmarks;
-	loadBenchmarks(benchmarks);
+	Tools tools = loadTools();
+	if (tools.empty()) {
+		BENCHMAX_LOG_ERROR("benchmax", "No usable tools were found.");
+		return 0;
+	}
 
-	if(benchmarks.empty()) {
-		BENCHMAX_LOG_FATAL("benchmax", "No benchmarks were found.");
+	BenchmarkSet benchmarks = loadBenchmarks();
+	if(benchmarks.size() == 0) {
+		BENCHMAX_LOG_ERROR("benchmax", "No benchmarks were found. Specify a valid location with --directory.");
 		return 0;
 	}
-	if (Settings::backend == "condor") {
-		BENCHMAX_LOG_INFO("benchmax", "Using condor backend.");
-		benchmax::CondorBackend backend;
-		backend.run(tools, benchmarks);
-	} else if (Settings::backend == "local") {
-		BENCHMAX_LOG_INFO("benchmax", "Using local backend.");
-		benchmax::LocalBackend backend;
-		backend.run(tools, benchmarks);
-	} else if (Settings::backend == "ssh") {
-		BENCHMAX_LOG_INFO("benchmax", "Using ssh backend.");
-		// libssh is needed.
-		benchmax::SSHBackend backend;
-		backend.run(tools, benchmarks);
-	} else {
-		BENCHMAX_LOG_ERROR("benchmax", "Invalid backend \"" << Settings::backend << "\".");
-	}
-	
-	for (auto& tp: tools) delete tp;
+	run_backend(settings_operation().backend, Jobs(tools, benchmarks));
 
 	return 0;
 }

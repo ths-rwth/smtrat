@@ -9,22 +9,24 @@
 
 #include "Tool.h"
 
-#include "../Settings.h"
-#include "../utils/Execute.h"
-#include "../utils/regex.h"
-
 namespace benchmax {
 
+/**
+ * Tool wrapper for the Minisatp solver for pseudo-Boolean problems.
+ */
 class Minisatp: public Tool {
 public:
+	/// Create tool, add "-v0" to arguments.
 	Minisatp(const fs::path& binary, const std::string& arguments): Tool("Minisatp", binary, arguments) {
 		mArguments += " -v0";
 	}
 
+	/// Only handles .opb files.
 	virtual bool canHandle(const fs::path& path) const override {
-		return isExtension(path, ".opb");
+		return is_extension(path, ".opb");
 	}
 	
+	/// Parse results from stdout.
 	virtual void additionalResults(const fs::path&, BenchmarkResult& result) const override {
 		if (result.stdout.find("s OPTIMUM FOUND") != std::string::npos) result.answer = "sat";
 		else if (result.stdout.find("s SATISFIABLE") != std::string::npos) result.answer = "sat";

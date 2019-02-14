@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "../PModule.h"
+#include <smtrat-solver/PModule.h>
 #include "FPPStatistics.h"
 #include "FPPSettings.h"
 
@@ -18,7 +18,7 @@ namespace smtrat
 	{
 		private:
 #ifdef SMTRAT_DEVOPTION_Statistics
-			FPPStatistics mStatistics;
+			FPPStatistics& mStatistics = statistics_get<FPPStatistics>(SettingsType::moduleName);
 #endif
 			FormulaT mFormulaAfterPreprocessing;
 			Model mPartialModel;

@@ -34,21 +34,11 @@ namespace smtrat
         mDelta( carl::freshRealVariable( "delta_" + to_string( id() ) ) ),
         mBoundCandidatesToPass(),
         mRationalAssignment()
-    {
-        #ifdef SMTRAT_DEVOPTION_Statistics
-        stringstream s;
-        s << moduleName() << "_" << id();
-        mpStatistics = new LRAModuleStatistics( s.str() );
-        #endif
-    }
+    {}
 
     template<class Settings>
     LRAModule<Settings>::~LRAModule()
-    {
-        #ifdef SMTRAT_DEVOPTION_Statistics
-        delete mpStatistics;
-        #endif
-    }
+    {}
 
     template<class Settings>
     bool LRAModule<Settings>::informCore( const FormulaT& _constraint )
@@ -97,7 +87,7 @@ namespace smtrat
                 infSubSet.insert( _subformula->formula() );
                 mInfeasibleSubsets.push_back( infSubSet );
                 #ifdef SMTRAT_DEVOPTION_Statistics
-                mpStatistics->addConflict( mInfeasibleSubsets );
+                mStatistics.addConflict( mInfeasibleSubsets );
                 #endif
                 return false;
             }
@@ -110,7 +100,7 @@ namespace smtrat
                 const FormulaT& formula = _subformula->formula();
                 const ConstraintT& constraint  = formula.constraint();
                 #ifdef SMTRAT_DEVOPTION_Statistics
-                mpStatistics->add( constraint );
+                mStatistics.add( constraint );
                 #endif
                 unsigned consistency = constraint.isConsistent();
                 if( consistency == 2 )
@@ -209,7 +199,7 @@ namespace smtrat
             const ConstraintT& constraint = formula.constraint();
             const FormulaT& pformula = _subformula->formula();
             #ifdef SMTRAT_DEVOPTION_Statistics
-            mpStatistics->remove( constraint );
+            mStatistics.remove( constraint );
             #endif
             if( constraint.isConsistent() == 2 )
             {
@@ -410,7 +400,7 @@ namespace smtrat
                     // Pivot at the found pivoting entry.
                     mTableau.pivot( pivotingElement.first );
                     #ifdef SMTRAT_DEVOPTION_Statistics
-                    mpStatistics->pivotStep();
+                    mStatistics.pivotStep();
                     #endif
                     if( Settings::learn_refinements ) // Learn all bounds which have been deduced during the pivoting process.
                         processLearnedBounds();
@@ -443,11 +433,11 @@ namespace smtrat
         #ifdef SMTRAT_DEVOPTION_Statistics
         if( _result != UNKNOWN )
         {
-            mpStatistics->check( rReceivedFormula() );
+            mStatistics.check( rReceivedFormula() );
             if( _result == UNSAT )
-                mpStatistics->addConflict( mInfeasibleSubsets );
-            mpStatistics->setNumberOfTableauxEntries( mTableau.size() );
-            mpStatistics->setTableauSize( mTableau.rows().size()*mTableau.columns().size() );
+                mStatistics.addConflict( mInfeasibleSubsets );
+            mStatistics.setNumberOfTableauxEntries( mTableau.size() );
+            mStatistics.setTableauSize( mTableau.rows().size()*mTableau.columns().size() );
         }
         #endif
         if( mMinimizingCheck )
@@ -626,7 +616,7 @@ namespace smtrat
                 if( mFinalCheck )
                 {
                     #ifdef SMTRAT_DEVOPTION_Statistics
-                    mpStatistics->splitUnequalConstraint();
+                    mStatistics.splitUnequalConstraint();
                     #endif
                     splitUnequalConstraint( iter->first );
                 }
@@ -646,7 +636,7 @@ namespace smtrat
                     if( mFinalCheck )
                     {
                         #ifdef SMTRAT_DEVOPTION_Statistics
-                        mpStatistics->splitUnequalConstraint();
+                        mStatistics.splitUnequalConstraint();
                         #endif
                         splitUnequalConstraint( iter->first );
                     }
@@ -855,8 +845,8 @@ namespace smtrat
             }
         }
         #ifdef SMTRAT_DEVOPTION_Statistics
-        mpStatistics->addRefinement();
-        mpStatistics->propagateTheory();
+        mStatistics.addRefinement();
+        mStatistics.propagateTheory();
         #endif
     }
 
@@ -985,7 +975,7 @@ namespace smtrat
         assert( mInfeasibleSubsets.empty() || !mInfeasibleSubsets.begin()->empty() );
         #ifdef SMTRAT_DEVOPTION_Statistics
         if( !mInfeasibleSubsets.empty() )
-            mpStatistics->addConflict( mInfeasibleSubsets );
+            mStatistics.addConflict( mInfeasibleSubsets );
         #endif
     }
 
@@ -1102,7 +1092,7 @@ namespace smtrat
         std::cout << "theory propagation:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
         #endif
         #ifdef SMTRAT_DEVOPTION_Statistics
-        mpStatistics->propagateTheory();
+        mStatistics.propagateTheory();
         #endif
     }
     

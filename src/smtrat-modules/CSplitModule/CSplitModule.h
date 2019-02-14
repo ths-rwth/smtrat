@@ -11,11 +11,10 @@
 #include <boost/optional.hpp>
 #include <lib/datastructures/VariableBounds.h>
 #include <smtrat-solver/Manager.h>
-#include "../Module.h"
+#include <smtrat-solver/Module.h>
 #include "../SATModule/SATModule.h"
 #include "../LRAModule/LRAModule.h"
 #include "Bimap.h"
-#include "CSplitStatistics.h"
 #include "CSplitSettings.h"
 
 namespace smtrat
@@ -24,9 +23,6 @@ namespace smtrat
 	class CSplitModule : public Module
 	{
 		private:
-#ifdef SMTRAT_DEVOPTION_Statistics
-			CSplitStatistics mStatistics;
-#endif
 			/**
 			 * Represents the substitution variables of a nonlinear monomial
 			 * in a positional notation to the basis Settings::expansionBase.

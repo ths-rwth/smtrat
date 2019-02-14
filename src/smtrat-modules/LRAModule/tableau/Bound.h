@@ -9,7 +9,6 @@
 
 #include "Value.h"
 #include <smtrat-common/smtrat-common.h>
-#include <smtrat-modules/ModuleInput.h>
 #include <stddef.h>
 #include <set>
 

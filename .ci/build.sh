@@ -20,7 +20,7 @@ if [[ ${TASK} == "dependencies" ]]; then
 elif [[ ${TASK} == "doxygen" ]]; then
 	
 	cmake -D DOCUMENTATION_CREATE_PDF=ON ../
-	make doc || return 1
+	make doc benchmax-doc || return 1
 	make manual || return 1
 	
 	git config --global user.email "gereon.kremer@cs.rwth-aachen.de"
@@ -35,6 +35,10 @@ elif [[ ${TASK} == "doxygen" ]]; then
 	cp -r ../doc/html/* ./ || return 1
 	cp ../doc/*.pdf .  || return 1
 	cp ../manual/*.pdf .  || return 1
+	
+	# Benchmax
+	mkdir -p benchmax/
+	cp -r ../doc/benchmax/html/* benchmax/
 	
 	# Check if something has changed
 	git diff --summary --exit-code && return 0

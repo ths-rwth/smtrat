@@ -75,7 +75,7 @@ namespace smtrat
 
     private:
         #ifdef SMTRAT_DEVOPTION_Statistics
-        GBModuleStats* mStats;
+        GBModuleStats& mStats = GBModuleStats::getInstance(Settings::identifier);
         #endif //SMTRAT_DEVOPTION_Statistics
     };
 }

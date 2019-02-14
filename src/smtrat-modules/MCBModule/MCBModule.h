@@ -12,8 +12,7 @@
 
 #pragma once
 
-#include "../PModule.h"
-#include "MCBStatistics.h"
+#include <smtrat-solver/PModule.h>
 #include "MCBSettings.h"
 
 namespace smtrat
@@ -22,9 +21,6 @@ namespace smtrat
 	class MCBModule : public PModule
 	{
 		private:
-#ifdef SMTRAT_DEVOPTION_Statistics
-			MCBStatistics mStatistics;
-#endif
 			using AVar = carl::Variable;
 			using BVar = carl::Variable;
 			

@@ -87,6 +87,7 @@ namespace cad {
 		static constexpr bool debugProjection = false;
 		static constexpr bool debugStepsToTikz = false;
 		static constexpr bool force_nonincremental = false;
+		static constexpr bool split_for_integers = true;
 
 		static constexpr bool semiRestrictedProjection = false;
 		static constexpr bool restrictedIfPossible = true;
@@ -417,6 +418,7 @@ namespace cad {
 		static constexpr bool debugProjection = false;
 		static constexpr bool debugStepsToTikz = false;
 		static constexpr bool force_nonincremental = false;
+		static constexpr bool split_for_integers = true;
 		
 		static constexpr cad::ProjectionCompareStrategy projectionComparator = cad::ProjectionCompareStrategy::Default;
 		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Default;

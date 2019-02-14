@@ -8,11 +8,11 @@ namespace smtrat
 
 std::map<unsigned,GBCalculationStats*> GBCalculationStats::instances = std::map<unsigned,GBCalculationStats*>();
 
-GBCalculationStats* GBCalculationStats::getInstance(unsigned key)
+GBCalculationStats& GBCalculationStats::getInstance(unsigned key)
 {
   if( instances[key] == 0 )
     instances[key] = new GBCalculationStats();
-  return instances[key];
+  return *instances[key];
 }
 
 void GBCalculationStats::printAll(std::ostream& os) {

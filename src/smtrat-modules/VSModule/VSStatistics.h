@@ -34,12 +34,6 @@ namespace smtrat
         carl::uint mBranchingLemmas = 0;
 
     public:
-        VSStatistics( const std::string& _name ) : 
-            Statistics( _name )
-        {}
-
-        ~VSStatistics() {}
-
         void collect()
         {
             addKeyValuePair( "check-calls", mChecks );
@@ -63,6 +57,7 @@ namespace smtrat
             ++mChecks;
         }
         
+		template<typename ModuleInput>
         void addConflict( const ModuleInput& _formula, const std::vector<FormulaSetT>& _infSubSets )
         {
             assert( !_formula.empty() );

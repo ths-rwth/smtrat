@@ -20,7 +20,8 @@
 #endif
 
 #include <smtrat-common/smtrat-common.h>
-#include <smtrat-modules/ModuleInput.h>
+#include "ModuleInput.h"
+#include "Module.h"
 
 namespace smtrat
 {   
@@ -72,7 +73,7 @@ namespace smtrat
 			std::size_t mNumberOfPops = 0;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all statistics for the solver this manager belongs to.
-            SolverStatistics* mpStatistics;
+            SolverStatistics& mStatistics = statistics_get<SolverStatistics>("Solver");
             #endif
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             /// contains all threads to assign jobs to

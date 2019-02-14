@@ -18,7 +18,7 @@
 #include "carl/groebner/groebner.h"
 
 // General Module interface
-#include "../Module.h"
+#include <smtrat-solver/Module.h>
 
 // Compile time settings structures
 #include "GBSettings.h"
@@ -124,8 +124,8 @@ public:
 
 private:
     #ifdef SMTRAT_DEVOPTION_Statistics
-    GBModuleStats* mStats;
-    GBCalculationStats* mGBStats;
+    GBModuleStats& mStats = statistics_get<GBModuleStats>("GroebnerBasis");
+    GBCalculationStats& mGBStats = statistics_get<GBCalculationStats>("GB Calculation");
     #endif //SMTRAT_DEVOPTION_Statistics
 
     typedef Module super;

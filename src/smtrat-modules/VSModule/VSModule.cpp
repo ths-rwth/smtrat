@@ -34,10 +34,7 @@ namespace smtrat
         mVariableVector()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
-        stringstream s;
-        s << moduleName() << "_" << id();
-        mpStatistics = new VSStatistics( s.str() );
-        mpStateTree->setStatistics( mpStatistics );
+        mpStateTree->setStatistics( &mStatistics );
         #endif
     }
 
@@ -54,9 +51,6 @@ namespace smtrat
         }
         delete mpStateTree;
         delete mpConditionIdAllocator;
-        #ifdef SMTRAT_DEVOPTION_Statistics
-        delete mpStatistics;
-        #endif
     }
 
     template<class Settings>
@@ -117,7 +111,7 @@ namespace smtrat
             mInfeasibleSubsets.emplace_back();
             mInfeasibleSubsets.back().insert( _subformula->formula() );
             #ifdef SMTRAT_DEVOPTION_Statistics
-            mpStatistics->addConflict( rReceivedFormula(), mInfeasibleSubsets );
+            mStatistics.addConflict( rReceivedFormula(), mInfeasibleSubsets );
             #endif
             mInconsistentConstraintAdded = true;
             assert( checkRanking() );
@@ -167,7 +161,7 @@ namespace smtrat
     Answer VSModule<Settings>::checkCore()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
-        mpStatistics->check();
+        mStatistics.check();
         #endif
         if( !Settings::incremental_solving )
         {
@@ -175,7 +169,7 @@ namespace smtrat
             delete mpStateTree;
             mpStateTree = new State( mpConditionIdAllocator, Settings::use_variable_bounds );
             #ifdef SMTRAT_DEVOPTION_Statistics
-            mpStateTree->setStatistics( mpStatistics );
+            mpStateTree->setStatistics( &mStatistics );
             #endif
             for( auto iter = mFormulaConditionMap.begin(); iter != mFormulaConditionMap.end(); ++iter )
             {
@@ -274,7 +268,7 @@ namespace smtrat
 //            else
 //                cout << "VSModule iteration" << endl;
             #ifdef SMTRAT_DEVOPTION_Statistics
-            mpStatistics->considerState();
+            mStatistics.considerState();
             #endif
             State* currentState = mRanking.begin()->second;
             #ifdef VS_DEBUG
@@ -457,7 +451,7 @@ namespace smtrat
                                     if( currentState->refreshConditions( mRanking ) )
                                     {
                                         #ifdef SMTRAT_DEVOPTION_Statistics
-                                        mpStatistics->considerCase();
+                                        mStatistics.considerCase();
                                         #endif
                                         addStateToRanking( currentState );
                                     }
@@ -1569,7 +1563,7 @@ namespace smtrat
             for( auto cons = rReceivedFormula().begin(); cons != rReceivedFormula().end(); ++cons )
                 mInfeasibleSubsets.back().insert( cons->formula() );
             #ifdef SMTRAT_DEVOPTION_Statistics
-            mpStatistics->addConflict( rReceivedFormula(), mInfeasibleSubsets );
+            mStatistics.addConflict( rReceivedFormula(), mInfeasibleSubsets );
             #endif
             return;
         }
@@ -1598,7 +1592,7 @@ namespace smtrat
         assert( !mInfeasibleSubsets.empty() );
         assert( !mInfeasibleSubsets.back().empty() );
         #ifdef SMTRAT_DEVOPTION_Statistics
-        mpStatistics->addConflict( rReceivedFormula(), mInfeasibleSubsets );
+        mStatistics.addConflict( rReceivedFormula(), mInfeasibleSubsets );
         #endif
     }
 
@@ -1648,7 +1642,7 @@ namespace smtrat
                             if( trySplitting )
                             {
                                 #ifdef SMTRAT_DEVOPTION_Statistics
-                                mpStatistics->branch();
+                                mStatistics.branch();
                                 #endif
                                 branchAt( currentState->substitution().variable(), nextIntTCinRange, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
                             }
@@ -1685,7 +1679,7 @@ namespace smtrat
                                         if( branchAt( branchEx, true, branchValue, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) ) )
                                         {
                                             #ifdef SMTRAT_DEVOPTION_Statistics
-                                            mpStatistics->branch();
+                                            mStatistics.branch();
                                             #endif
                                             return false;
                                         }
@@ -1709,7 +1703,7 @@ namespace smtrat
                             if( trySplitting )
                             {
                                 #ifdef SMTRAT_DEVOPTION_Statistics
-                                mpStatistics->branch();
+                                mStatistics.branch();
                                 #endif
                                 branchAt( currentState->substitution().variable(), evaluatedSubTerm, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) );
                             }

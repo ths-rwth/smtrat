@@ -12,7 +12,7 @@
 #include <iostream>
 
 #include <smtrat-common/smtrat-common.h>
-#include "../Module.h"
+#include <smtrat-solver/Module.h>
 #include "ModuleWrapper.h"
 #include "../EQModule/VariantHash.h"
 #include "../EQModule/PairHash.h"
@@ -59,7 +59,7 @@ namespace smtrat
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 		    // statistics collection
-		    EQPreprocessingStatistics* mStatistics;
+		    EQPreprocessingStatistics& mStatistics = statistics_get<EQPreprocessingStatistics>("EQPreprocessingModule");
 #endif
 
 		    // helper types

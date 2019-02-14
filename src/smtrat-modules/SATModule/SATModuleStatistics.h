@@ -30,12 +30,6 @@ namespace smtrat
         std::size_t mDecisions = 0;
 
     public:
-        SATModuleStatistics( const std::string& _name ) : 
-            Statistics( _name )
-        {}
-
-        ~SATModuleStatistics() {}
-
         void collect()
         {
             addKeyValuePair( "variables", mNrTotalVariablesBefore );

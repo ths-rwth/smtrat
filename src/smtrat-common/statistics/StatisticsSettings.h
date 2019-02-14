@@ -14,13 +14,14 @@ struct StatisticsSettings {
 
 template<typename T>
 void registerStatisticsSettings(T& parser) {
+	namespace po = boost::program_options;
 	auto& settings = settings::Settings::getInstance();
-	auto& s = settings.add<StatisticsSettings>("statistics");
+	auto& s = settings.get<StatisticsSettings>("statistics");
 	
 	parser.add("Statistics settings").add_options()
-		("stats:export-xml", po::bool_switch(&s.export_as_xml), "store statistics to xml file")
-		("stats:xml-filename", po::value<std::string>(&s.xml_filename)->default_value("stats.xml"), "filename of xml output")
-		("stats:print", po::bool_switch(&s.print_as_smtlib), "print statistics to stdout")
+		("stats.export-xml", po::bool_switch(&s.export_as_xml), "store statistics to xml file")
+		("stats.xml-filename", po::value<std::string>(&s.xml_filename)->default_value("stats.xml"), "filename of xml output")
+		("stats.print", po::bool_switch(&s.print_as_smtlib), "print statistics to stdout")
 	;
 }
 

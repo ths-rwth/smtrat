@@ -37,7 +37,7 @@
 #include "SolverTypes.h"
 #include "Sort.h"
 #include <math.h>
-#include "../Module.h"
+#include <smtrat-solver/Module.h>
 
 #include "VarScheduling.h"
 
@@ -615,14 +615,14 @@ namespace smtrat
              * MC-SAT related members.
              */
             #ifdef SMTRAT_DEVOPTION_Statistics
-            mcsat::MCSATStatistics* mpMCSATStatistics;
+            mcsat::MCSATStatistics& mMCSATStatistics = statistics_get<mcsat::MCSATStatistics>("SATModule_" + std::to_string(id()) + "_mcsat");
             #endif
 			mcsat::MCSATMixin<typename Settings::MCSATSettings> mMCSAT;
 			std::map<carl::Variable, std::vector<signed>> mFutureChangedBooleans;
             
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
-            SATModuleStatistics* mpStatistics;
+            SATModuleStatistics& mStatistics = statistics_get<SATModuleStatistics>("SATModule_" + std::to_string(id()));
             #endif
 
             // learnt clause set for duplicate checks

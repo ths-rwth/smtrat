@@ -11,9 +11,6 @@ namespace smtrat
     {
         mBtnumber = 0;
         mNewConstraints = mReducedInequalities.begin( );
-        #ifdef SMTRAT_DEVOPTION_Statistics
-        mStats = GBModuleStats::getInstance(Settings::identifier);
-        #endif
     }
 
     /**
@@ -148,7 +145,7 @@ namespace smtrat
             // The formula is not passed because it is unsatisfiable.
             if( !reduceWRTGroebnerBasis( it, gb, rules ) ) {
                 #ifdef SMTRAT_DEVOPTION_Statistics
-                mStats->infeasibleInequality();
+                mStats.infeasibleInequality();
                 #endif
                 if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
                 {
@@ -165,7 +162,7 @@ namespace smtrat
             else
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
-                mStats->infeasibleInequality();
+                mStats.infeasibleInequality();
                 #endif
                 return UNSAT;
             }
@@ -192,7 +189,7 @@ namespace smtrat
             assert( std::get < 1 > ((*it)->second) != carl::Relation::EQ );
             if( !reduceWRTGroebnerBasis( *it, gb, rules ) ) {
                 #ifdef SMTRAT_DEVOPTION_Statistics
-                mStats->infeasibleInequality();
+                mStats.infeasibleInequality();
                 #endif
                 if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
                 {
@@ -209,7 +206,7 @@ namespace smtrat
             else
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
-                mStats->infeasibleInequality();
+                mStats.infeasibleInequality();
                 #endif
                 return UNSAT;
             }
@@ -334,7 +331,7 @@ namespace smtrat
 //                        std::cout << std::endl;
 //                        mModule->addLemma( FormulaT( carl::FormulaType::carl::FormulaType::OR, subformulas ) ); // TODO: Florian ask Sebastian, why he commented that line
                         #ifdef SMTRAT_DEVOPTION_Statistics
-                        mStats->DeducedInequality();
+                        mStats.DeducedInequality();
                         #endif
 
                     }
@@ -345,7 +342,7 @@ namespace smtrat
                     FormulaSetT infeasibleSubset( mModule->generateReasonSet( reduced.getReasons( ) ) );
                     infeasibleSubset.insert( it->first->formula() );
                     #ifdef SMTRAT_DEVOPTION_Statistics
-                    mStats->EffectivenessOfConflicts(infeasibleSubset.size()/mModule->rReceivedFormula().size());
+                    mStats.EffectivenessOfConflicts(infeasibleSubset.size()/mModule->rReceivedFormula().size());
                     #endif //SMTRAT_DEVOPTION_Statistics
                     mModule->mInfeasibleSubsets.push_back( infeasibleSubset );
                     if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
@@ -389,7 +386,7 @@ namespace smtrat
                             FormulaSetT infeasibleSubset( mModule->generateReasonSet( reduced.getReasons( ) ) );
                             infeasibleSubset.insert( it->first->formula() );
                             #ifdef SMTRAT_DEVOPTION_Statistics
-                            mStats->EffectivenessOfConflicts(infeasibleSubset.size()/mModule->rReceivedFormula().size());
+                            mStats.EffectivenessOfConflicts(infeasibleSubset.size()/mModule->rReceivedFormula().size());
                             #endif //SMTRAT_DEVOPTION_Statistics
                             mModule->mInfeasibleSubsets.push_back( infeasibleSubset );
                             if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
@@ -446,7 +443,7 @@ namespace smtrat
             assert( std::get < 1 > ((*it)->second) != carl::Relation::EQ );
             if( !reduceWRTVariableRewriteRules( *it, rules ) ) {
                 #ifdef SMTRAT_DEVOPTION_Statistics
-                mStats->infeasibleInequality();
+                mStats.infeasibleInequality();
                 #endif
                 if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
                 {
@@ -463,7 +460,7 @@ namespace smtrat
             else
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
-                mStats->infeasibleInequality();
+                mStats.infeasibleInequality();
                 #endif
                 return UNSAT;
             }
@@ -482,7 +479,7 @@ namespace smtrat
             assert( std::get < 1 > ((*it)->second) != carl::Relation::EQ );
             if( !reduceWRTVariableRewriteRules( *it, rules ) ) {
                 #ifdef SMTRAT_DEVOPTION_Statistics
-                mStats->infeasibleInequality();
+                mStats.infeasibleInequality();
                 #endif
                 if( Settings::withInfeasibleSubset == RETURN_DIRECTLY )
                 {
@@ -499,7 +496,7 @@ namespace smtrat
             else
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
-                mStats->infeasibleInequality();
+                mStats.infeasibleInequality();
                 #endif
                 return UNSAT;
             }

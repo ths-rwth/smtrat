@@ -11,7 +11,7 @@ struct NLSATFixture {
 		}
 		carl::logging::logger().formatter("stdout")->printInformation = true;
 		carl::logging::logger().filter("stdout")
-			("smtrat.nlsat", carl::logging::LogLevel::LVL_DEBUG)
+			("smtrat.mcsat", carl::logging::LogLevel::LVL_DEBUG)
 			("smtrat.test.nlsat", carl::logging::LogLevel::LVL_DEBUG)
 		;
 	}

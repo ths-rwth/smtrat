@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CompileInfo.h"
 #include "config.h"
 #include "logging.h"
 
@@ -14,9 +13,13 @@
 #include <carl/io/streamingOperators.h>
 #include <carl/util/enum_util.h>
 
+#include <atomic>
+
 namespace smtrat {
 
 using carl::operator<<;
+
+using Conditionals = std::vector<std::atomic_bool*>;
 
 using Rational = mpq_class;
 

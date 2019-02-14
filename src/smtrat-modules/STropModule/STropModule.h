@@ -9,11 +9,10 @@
 #pragma once
 
 #include <boost/optional.hpp>
-#include "../Module.h"
+#include <smtrat-solver/Module.h>
 #include <smtrat-solver/Manager.h>
 #include "../SATModule/SATModule.h"
 #include "../LRAModule/LRAModule.h"
-#include "STropStatistics.h"
 #include "STropSettings.h"
 
 namespace smtrat
@@ -22,9 +21,6 @@ namespace smtrat
 	class STropModule : public Module
 	{
 		private:
-#ifdef SMTRAT_DEVOPTION_Statistics
-			STropStatistics mStatistics;
-#endif
 			/**
 			 * Represents the normal vector component and the sign variable
 			 * assigned to a variable in an original constraint.

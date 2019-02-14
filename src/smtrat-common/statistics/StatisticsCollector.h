@@ -10,17 +10,25 @@ class Statistics;
 
 class StatisticsCollector: public carl::Singleton<StatisticsCollector> {
 private:
-	std::vector<Statistics*> mStats;
+	std::vector<std::unique_ptr<Statistics>> mStatistics;
 public:
-	void registerStats(Statistics* s) {
-		mStats.emplace_back(s);
+	template<typename T>
+	T& get(const std::string& name) {
+		auto& ptr = mStatistics.emplace_back(std::make_unique<T>());
+		ptr->set_name(name);
+		return static_cast<T&>(*ptr);
 	}
 
 	void collect();
 
 	const auto& statistics() const {
-		return mStats;
+		return mStatistics;
 	}
 };
+
+template<typename T>
+auto& statistics_get(const std::string& name) {
+	return StatisticsCollector::getInstance().get<T>(name);
+}
 
 }

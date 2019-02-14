@@ -13,9 +13,6 @@ namespace smtrat
 	template<class Settings>
 	FPPModule<Settings>::FPPModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager ):
 		PModule( _formula, _conditionals, _manager ),
-#ifdef SMTRAT_DEVOPTION_Statistics
-		mStatistics(SettingsType::moduleName),
-#endif
 		mFormulaAfterPreprocessing( carl::FormulaType::TRUE ),
 		mPreprocessor()
 	{}

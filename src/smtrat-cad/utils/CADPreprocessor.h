@@ -1,11 +1,41 @@
 #pragma once
 
 #include <smtrat-common/model.h>
+#include <smtrat-common/settings/Settings.h>
+#include <smtrat-common/settings/SettingsParser.h>
+#include <smtrat-common/settings/SettingsComponents.h>
+
 
 #include "../common.h"
 #include <smtrat-cad/projectionoperator/utils.h>
 
 namespace smtrat::cad {
+
+struct CADPreprocessorSettings {
+	bool disable_variable_elimination = false;
+	bool disable_resultants = false;
+
+	static void register_settings(SettingsParser& parser) {
+		namespace po = boost::program_options;
+		auto& settings = settings::Settings::getInstance();
+		auto& s = settings.get<CADPreprocessorSettings>("cad-pp");
+		
+		parser.add("CAD Preprocessor settings").add_options()
+			("cad.pp.no-elimination", po::bool_switch(&s.disable_variable_elimination), "disable variable elimination")
+			("cad.pp.no-resultants", po::bool_switch(&s.disable_resultants), "disable resultant rule")
+		;
+	}
+	static bool register_hook() {
+		SettingsComponents::getInstance().add(&register_settings);
+		return true;
+	}
+	static const bool dummy;
+};
+
+inline const auto& settings_cadpp() {
+	static const auto& s = settings::Settings::getInstance().get<CADPreprocessorSettings>("cad-pp");
+	return s;
+}
 
 namespace preprocessor {
 

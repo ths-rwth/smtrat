@@ -15,9 +15,6 @@ namespace smtrat
 	template<class Settings>
 	SymmetryModule<Settings>::SymmetryModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
 		PModule( _formula, _conditionals, _manager )
-#ifdef SMTRAT_DEVOPTION_Statistics
-		, mStatistics(Settings::moduleName)
-#endif
 	{}
 	
 	template<class Settings>

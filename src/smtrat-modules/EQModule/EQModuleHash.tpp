@@ -239,7 +239,7 @@ namespace smtrat {
 		if(target) {
 #ifdef SMTRAT_DEVOPTION_Statistics
 			if(Settings::collectHashStatistics) {
-				mModule.mStatistics->countBucketMerged();
+				mModule.mStatistics.countBucketMerged();
 			}
 #endif
 
@@ -252,10 +252,10 @@ namespace smtrat {
 #ifdef SMTRAT_DEVOPTION_Statistics
 			if(Settings::collectHashStatistics) {
 				if(!targetBin.empty()) {
-					mModule.mStatistics->countHashCollision(P_reduce_hash(bptr->hashValue));
+					mModule.mStatistics.countHashCollision(P_reduce_hash(bptr->hashValue));
 				}
 
-				mModule.mStatistics->countBucketInsertion();
+				mModule.mStatistics.countBucketInsertion();
 			}
 #endif
 
@@ -305,7 +305,7 @@ namespace smtrat {
 		if(target) {
 #ifdef SMTRAT_DEVOPTION_Statistics
 			if(Settings::collectHashStatistics) {
-				mModule.mStatistics->countBucketMerged();
+				mModule.mStatistics.countBucketMerged();
 			}
 #endif
 
@@ -317,10 +317,10 @@ namespace smtrat {
 #ifdef SMTRAT_DEVOPTION_Statistics
 			if(Settings::collectHashStatistics) {
 				if(!targetBin.empty()) {
-					mModule.mStatistics->countHashCollision(P_reduce_hash(hashValue));
+					mModule.mStatistics.countHashCollision(P_reduce_hash(hashValue));
 				}
 
-				mModule.mStatistics->countBucketInsertion();
+				mModule.mStatistics.countBucketInsertion();
 			}
 #endif
 
@@ -481,7 +481,7 @@ tail: // we have seen both newClass and oldClass
 		if(target) {
 #ifdef SMTRAT_DEVOPTION_Statistics
 			if(Settings::collectHashStatistics) {
-				mModule.mStatistics->countBucketMerged();
+				mModule.mStatistics.countBucketMerged();
 			}
 #endif
 
@@ -493,10 +493,10 @@ tail: // we have seen both newClass and oldClass
 #ifdef SMTRAT_DEVOPTION_Statistics
 			if(Settings::collectHashStatistics) {
 				if(!targetBin.empty()) {
-					mModule.mStatistics->countHashCollision(P_reduce_hash(b->hashValue));
+					mModule.mStatistics.countHashCollision(P_reduce_hash(b->hashValue));
 				}
 
-				mModule.mStatistics->countBucketInsertion();
+				mModule.mStatistics.countBucketInsertion();
 			}
 #endif
 
@@ -615,7 +615,7 @@ tail: // we have seen both newClass and oldClass
 	{
 #ifdef SMTRAT_DEVOPTION_Statistics
 		if(Settings::collectHashStatistics) {
-			mModule.mStatistics->countRehashed();
+			mModule.mStatistics.countRehashed();
 		}
 #endif
 
@@ -786,10 +786,10 @@ tail: // we have seen both newClass and oldClass
 #ifdef SMTRAT_DEVOPTION_Statistics
 					if(Settings::collectHashStatistics) {
 						if(!targetBin.empty()) {
-							mModule.mStatistics->countHashCollision(P_reduce_hash(cur->hashValue));
+							mModule.mStatistics.countHashCollision(P_reduce_hash(cur->hashValue));
 						}
 
-						mModule.mStatistics->countBucketInsertion();
+						mModule.mStatistics.countBucketInsertion();
 					}
 #endif
 

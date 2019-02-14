@@ -11,9 +11,8 @@
 
 #pragma once
 
-#include "../PModule.h"
+#include <smtrat-solver/PModule.h>
 #include <lib/datastructures/VariableBounds.h>
-#include "PFEStatistics.h"
 #include "PFESettings.h"
 
 namespace smtrat

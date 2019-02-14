@@ -10,8 +10,7 @@
 
 #pragma once
 
-#include "../PModule.h"
-#include "SplitSOSStatistics.h"
+#include <smtrat-solver/PModule.h>
 #include "SplitSOSSettings.h"
 
 namespace smtrat

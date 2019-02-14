@@ -20,9 +20,6 @@ namespace smtrat
 	template<class Settings>
 	PBPPModule<Settings>::PBPPModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
 		Module( _formula, _conditionals, _manager )
-#ifdef SMTRAT_DEVOPTION_Statistics
-		, mStatistics(Settings::moduleName)
-#endif
 		{
 			mCardinalityEncoder.problem_size = _formula->size();
 			

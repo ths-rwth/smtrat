@@ -17,8 +17,6 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
 
-	brew update --quiet
-	brew upgrade cmake
 	brew install llvm
 
 fi

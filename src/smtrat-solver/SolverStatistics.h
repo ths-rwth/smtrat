@@ -21,10 +21,6 @@ namespace smtrat
             addKeyValuePair( "maximal_degree", carl::constraintPool<Poly>().maxDegree() );
             addKeyValuePair( "number_of_learned_branching_lemmas", mNumberOfBranchingLemmas );
          }
-
-        SolverStatistics() : 
-            Statistics("Solver")
-        {}
         
         void addBranchingLemma()
         {

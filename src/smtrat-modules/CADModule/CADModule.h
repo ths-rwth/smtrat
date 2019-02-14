@@ -8,7 +8,7 @@
  */
 #pragma once
 
-#include "../Module.h"
+#include <smtrat-solver/Module.h>
 
 #include <unordered_map>
 
@@ -124,7 +124,7 @@ return SettingsType::moduleName;
             const FormulaT& getConstraintAt(unsigned index);
             void updateConstraintMap(unsigned index, bool decrement = true);
 #ifdef SMTRAT_DEVOPTION_Statistics
-			CADStatistics* mStats;
+			CADStatistics& mStats = statistics_get<CADStatistics>("CADModule");
 #endif
     };
 

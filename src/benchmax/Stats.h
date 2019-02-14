@@ -1,8 +1,6 @@
 /**
  * @file   Stats.h
  * @author Sebastian Junges
- * @created 28/11/2012
- *
  */
 
 #pragma once

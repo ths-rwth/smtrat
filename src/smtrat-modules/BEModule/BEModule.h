@@ -10,8 +10,7 @@
 
 #pragma once
 
-#include "../PModule.h"
-#include "BEStatistics.h"
+#include <smtrat-solver/PModule.h>
 #include "BESettings.h"
 
 namespace smtrat

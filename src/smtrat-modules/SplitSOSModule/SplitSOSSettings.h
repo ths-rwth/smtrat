@@ -8,11 +8,9 @@
 
 #pragma once
 
-#include "../ModuleSettings.h"
-
 namespace smtrat
 {
-    struct SplitSOSSettings1 : ModuleSettings
+    struct SplitSOSSettings1
     {
 		static constexpr auto moduleName = "SplitSOSModule<SplitSOSSettings1>";
         /**

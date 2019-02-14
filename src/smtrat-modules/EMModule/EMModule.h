@@ -9,8 +9,7 @@
 
 #pragma once
 
-#include "../PModule.h"
-#include "EMStatistics.h"
+#include <smtrat-solver/PModule.h>
 #include "EMSettings.h"
 
 namespace smtrat

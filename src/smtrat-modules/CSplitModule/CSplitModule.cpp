@@ -21,9 +21,6 @@ namespace smtrat
 		, mVariableBounds()
 		, mLRAModel()
 		, mCheckedWithBackends(false)
-#ifdef SMTRAT_DEVOPTION_Statistics
-		, mStatistics(Settings::moduleName)
-#endif
 	{}
 	
 	template<class Settings>
