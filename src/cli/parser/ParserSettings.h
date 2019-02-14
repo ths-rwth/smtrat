@@ -11,6 +11,7 @@ struct ParserSettings {
 	bool read_opb;
 	std::string input_file;
 	bool disable_uf_flattening;
+	bool disable_theory;
 };
 
 template<typename T>
@@ -24,6 +25,7 @@ void registerParserSettings(T& parser) {
 		("opb", po::bool_switch(&s.read_opb), "parse input file as OPB file")
 		("input-file", po::value<std::string>(&s.input_file), "path of the input file")
 		("disable-uf-flattening", po::bool_switch(&s.disable_uf_flattening), "disable flattening of nested uninterpreted functions")
+		("disable-theory", po::bool_switch(&s.disable_theory), "disable theory construction")
 	;
 }
 
