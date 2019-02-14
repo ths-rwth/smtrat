@@ -57,6 +57,13 @@ FormulaT parse_smtlib(const std::string& filename) {
 
 struct FormulaProperties : public Statistics {
 	std::size_t num_variables = 0;
+	std::size_t num_variables_boolean = 0;
+	std::size_t num_variables_theory = 0;
+	std::size_t num_variables_arithmetic = 0;
+	std::size_t num_variables_arithmetic_real = 0;
+	std::size_t num_variables_arithmetic_int = 0;
+	std::size_t num_variables_bitvector = 0;
+	std::size_t num_variables_uninterpreted = 0;
 	std::size_t num_constraints = 0;
 	std::size_t num_equalities = 0;
 	std::size_t num_disequalities = 0;
@@ -79,6 +86,13 @@ struct FormulaProperties : public Statistics {
 
 	void collect() {
 		Statistics::addKeyValuePair("num_variables", num_variables);
+		Statistics::addKeyValuePair("num_variables_boolean", num_variables_boolean);
+		Statistics::addKeyValuePair("num_variables_theory", num_variables_theory);
+		Statistics::addKeyValuePair("num_variables_arithmetic", num_variables_arithmetic);
+		Statistics::addKeyValuePair("num_variables_arithmetic_real", num_variables_arithmetic_real);
+		Statistics::addKeyValuePair("num_variables_arithmetic_int", num_variables_arithmetic_int);
+		Statistics::addKeyValuePair("num_variables_bitvector", num_variables_bitvector);
+		Statistics::addKeyValuePair("num_variables_uninterpreted", num_variables_uninterpreted);
 		Statistics::addKeyValuePair("num_constraints", num_constraints);
 		Statistics::addKeyValuePair("num_equalities", num_equalities);
 		Statistics::addKeyValuePair("num_disequalities", num_disequalities);
@@ -112,8 +126,26 @@ struct FormulaProperties : public Statistics {
 			analyze(f.constraint());
 		}
 	}
+	std::size_t get_variable_count(carl::VariableType vt) const {
+		return variables.filter([vt](const auto& v) {
+			return std::holds_alternative<carl::Variable>(v) && std::get<carl::Variable>(v).type() == vt;
+		}).size();
+	}
+	template<typename T>
+	std::size_t get_variable_count() const {
+		return variables.filter([](const auto& v) {
+			return std::holds_alternative<T>(v);
+		}).size();
+	}
 	void finalize(const parseformula::FormulaCollector& collector) {
 		num_variables = variables.size();
+		num_variables_boolean = get_variable_count(carl::VariableType::VT_BOOL);
+		num_variables_arithmetic_int = get_variable_count(carl::VariableType::VT_INT);
+		num_variables_arithmetic_real = get_variable_count(carl::VariableType::VT_REAL);
+		num_variables_arithmetic = num_variables_arithmetic_int + num_variables_arithmetic_real;
+		num_variables_bitvector = get_variable_count<carl::BVVariable>();
+		num_variables_uninterpreted = get_variable_count<carl::UVariable>();
+		num_variables_theory = num_variables_arithmetic + num_variables_bitvector + num_variables_uninterpreted;
 		if (collector.has_info("status")) {
 			add("answer", collector.get_info("status"));
 		} else {
