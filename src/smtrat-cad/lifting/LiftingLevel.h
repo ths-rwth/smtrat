@@ -1,20 +1,22 @@
 #pragma once
 
-
 #include <carl/interval/Interval.h>
 #include "../common.h"
+
+#include "../utils/CADConstraints.h"
 
 namespace smtrat {
 namespace cad {
 	template<typename Settings>
 	class LiftingLevel {
 	public:
-		using Interval = carl::Interval;
+		using Interval = carl::Interval<RAN>;
+		using Constraints = CADConstraints<Settings::backtracking>;
 	private:
 		const Constraints& mConstraints;
 		std::vector<carl::Variable> mVariables;
 		Sample curSample;
-		std::vector<UPoly&> polynoms;
+		//std::vector<UPoly&> polynoms; @todo
 		std::vector<Interval> intervals; 	// unsat intervals
 		std::set<RAN> levelintervals;		// all bounds of unsat intervals, ordered
         LiftingLevel predecessor;			//@todo or list of all levels somewhere.
@@ -23,8 +25,8 @@ namespace cad {
 			return mVariables.size();
 		}
 
-		void addInterval(Interval inter) {
-			intervals.insert(inter);
+		void addUnsatInterval(Interval& inter) {
+			intervals.push_back(inter);
 			levelintervals.insert(inter.lower());
 			levelintervals.insert(inter.upper());
 		}
@@ -33,19 +35,21 @@ namespace cad {
 		Sample chooseSample() {
 			std::set<RAN>::iterator it = levelintervals.begin();
 			// go to the next bound (may equal last sample)
-			while(it->value > curSample) {
-				it.next();
+			while((*it) > curSample.value()) {
+				it++;
 			}
 
+			//@todo special cases for -inf, +inf
+			/*
 			if(it == levelintervals.begin() && it.getLowerBoundType == BoundType::INFTY) {
-				it.next();
+				it++;
 				if(it == levelintervals.end() && it.getUpperBoundType == BoundType::INFTY) {
 					//@todo case levelintervals = {-inf, +inf}: get some random value in between
 				}
 			}
 			else {
 
-			}
+			} */
 
 			//make sample here and check whether it is in some interval (isInUnsatInterval)
 			// first sample before first bound (if bound is not minf), 
@@ -76,4 +80,4 @@ namespace cad {
 
 	};
 }
-}
+};
