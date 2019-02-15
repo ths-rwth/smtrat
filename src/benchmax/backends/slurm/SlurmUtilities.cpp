@@ -15,7 +15,8 @@ void archive_log_files(const ArchiveProperties& p) {
 	ss << "tar -czf " << p.filename_archive << " ";
 	ss << "-C " << p.tmp_dir << " ";
 	ss << p.filename_jobfile << " " << p.filename_submitfile << " ";
-	ss << "JOB." << p.jobid << "_*";
+	ss << "`find " << p.tmp_dir << " -iname \"JOB." << p.jobid << "_*\"`";
+	BENCHMAX_LOG_DEBUG("benchmax.slurm", "Archiving log files with command " << ss.str());
 	int code = call_program(ss.str(), output);
 	if (code == 0) {
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Archived log files in " << p.filename_archive << " from " << p.tmp_dir);
@@ -119,7 +120,6 @@ std::string parse_result_info(const std::string& content, const std::string& nam
 void remove_log_files(const std::vector<fs::path>& files, bool remove) {
 	if (remove) {
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Removing log files.");
-		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Removing first " << files.front());
 		for (const auto& f: files) {
 			std::filesystem::remove(f);
 		}
