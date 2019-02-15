@@ -56,7 +56,7 @@ std::string generate_submit_file(const SubmitfileProperties& p) {
 		out << "#SBATCH -e " << p.tmp_dir << "/JOB.%A_%a.err" << std::endl;
 		// Rough estimation of time in minutes (timeout * jobs)
 		auto minutes = static_cast<std::size_t>(std::chrono::seconds(p.limit_time).count()) * p.tasks / p.slices / 60 + 1;
-		minutes = std::min(minutes, 60*24);
+		minutes = std::min(minutes, static_cast<std::size_t>(60*24));
 		out << "#SBATCH -t " << minutes << std::endl;
 		// Memory usage in MB
 		out << "#SBATCH --mem-per-cpu=" << (p.limit_memory + 1024) << "M" << std::endl;
