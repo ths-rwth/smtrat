@@ -30,6 +30,7 @@ SettingsParser::SettingsParser() {
 		add("Solver settings").add_options()
 			("preprocess", po::bool_switch(&s.preprocess), "only preprocess the input")
 			("pp-output-file", po::value<std::string>(&s.preprocess_output_file), "store the preprocessed input to this file")
+			("pp-cnf", po::bool_switch(&s.preprocess_enable_cnf), "transform formula to cnf in preprocessor")
 			("analyze-file", po::bool_switch(&s.analyze_file), "parse file and analyze it")
 			("print-model", po::bool_switch(&s.print_model), "print a model if the input is satisfiable")
 			("print-all-models", po::bool_switch(&s.print_all_models), "print all models of the input")
