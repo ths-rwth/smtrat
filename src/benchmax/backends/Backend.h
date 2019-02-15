@@ -56,6 +56,12 @@ protected:
 			BENCHMAX_LOG_INFO("benchmax", "Progress: " << mLastPercent << "% (" << mFinishedJobs << " / " << mExpectedJobs << ")");
 		}
 	}
+
+	void write_results(const Jobs& jobs) const {
+		BENCHMAX_LOG_INFO("benchmax", "Writing results to " << settings_benchmarks().output_file_xml);
+		XMLWriter xml(settings_benchmarks().output_file_xml);
+		mResults.store(xml, jobs);
+	}
 public:
 	/// Add a result.
 	void addResult(const Tool* tool, const fs::path& file, BenchmarkResult& result) {
