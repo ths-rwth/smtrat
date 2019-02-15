@@ -70,19 +70,22 @@ public:
 			jobsfile << std::get<0>(r)->getCommandline(std::get<1>(r)) << std::endl;
 		}
 		jobsfile.close();
+		auto slices = std::min(settings_slurm().slices, mResults.size());
+		
 		auto submitfile = slurm::generate_submit_file({
 			std::to_string(settings_core().start_time),
 			jobsfilename,
 			settings_slurm().tmp_dir,
 			settings_benchmarks().limit_time,
 			settings_benchmarks().limit_memory,
-			mResults.size(),
-			settings_slurm().slices
+			mResults.size()
 		});
 
+		std::string cmd = "sbatch --wait --array=1-" + std::to_string(slices) + " " + settings_slurm().tmp_dir + "/" + submitfile;
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Submitting job now.");
+		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Command: " << cmd);
 		std::string output;
-		call_program("sbatch --wait --array=1-" + std::to_string(settings_slurm().slices) + " -N1 " + settings_slurm().tmp_dir + "/" + submitfile, output, true);
+		call_program(cmd, output, true);
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Job terminated, collecting results.");
 		int jobid = slurm::parse_job_id(output);
 

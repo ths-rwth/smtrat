@@ -18,7 +18,7 @@ void archive_log_files(const ArchiveProperties& p) {
 	ss << "JOB." << p.jobid << "_*";
 	int code = call_program(ss.str(), output);
 	if (code == 0) {
-		BENCHMAX_LOG_INFO("benchmax.slurm", "Archived log files in " << p.filename_archive);
+		BENCHMAX_LOG_INFO("benchmax.slurm", "Archived log files in " << p.filename_archive << " from " << p.tmp_dir);
 	} else {
 		BENCHMAX_LOG_WARN("benchmax.slurm", "Archiving of log files failed with exit code " << code);
 		BENCHMAX_LOG_WARN("benchmax.slurm", output);
@@ -44,7 +44,7 @@ std::vector<fs::path> collect_result_files(const fs::path& basedir, int jobid) {
 
 std::string generate_submit_file(const SubmitfileProperties& p) {
 		std::string filename = "job-" + p.file_suffix + ".job";
-		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Writing submit file to " << filename);
+		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Writing submit file to " << p.tmp_dir << "/" << filename);
 		std::ofstream out(p.tmp_dir + "/" + filename);
 		out << "#!/usr/bin/env zsh" << std::endl;
 		out << "### Job name" << std::endl;
@@ -53,9 +53,6 @@ std::string generate_submit_file(const SubmitfileProperties& p) {
 		// Output files (stdout and stderr)
 		out << "#SBATCH -o " << p.tmp_dir << "/JOB.%A_%a.out" << std::endl;
 		out << "#SBATCH -e " << p.tmp_dir << "/JOB.%A_%a.err" << std::endl;
-		// Rough estimation of time in minutes (timeout * jobs)
-		auto minutes = static_cast<std::size_t>(std::chrono::seconds(p.limit_time).count()) * p.tasks / p.slices / 60 + 1;
-		out << "#SBATCH -t " << minutes << std::endl;
 		// Memory usage in MB
 		out << "#SBATCH --mem-per-cpu=" << (p.limit_memory + 1024) << "M" << std::endl;
 
@@ -122,6 +119,7 @@ std::string parse_result_info(const std::string& content, const std::string& nam
 void remove_log_files(const std::vector<fs::path>& files, bool remove) {
 	if (remove) {
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Removing log files.");
+		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Removing first " << files.front());
 		for (const auto& f: files) {
 			std::filesystem::remove(f);
 		}
