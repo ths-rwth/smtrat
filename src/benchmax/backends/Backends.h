@@ -12,6 +12,13 @@
 
 namespace benchmax {
 
+template<typename Backend>
+void execute_backend(const std::string& name, const Jobs& jobs) {
+	BENCHMAX_LOG_INFO("benchmax", "Using " << name << " backend.");
+	Backend backend;
+	backend.run(jobs);
+	backend.write_results(jobs);
+}
 /**
  * Runs a given backend on a list of tools and benchmarks.
  * @param backend Backend name.
@@ -19,23 +26,14 @@ namespace benchmax {
  * @param benchmarks List of benchmarks.
  */
 void run_backend(const std::string& backend, const Jobs& jobs) {
-
 	if (backend == "condor") {
-		BENCHMAX_LOG_INFO("benchmax", "Using condor backend.");
-		CondorBackend backend;
-		backend.run(jobs);
+		execute_backend<CondorBackend>(backend, jobs);
 	} else if (backend == "local") {
-		BENCHMAX_LOG_INFO("benchmax", "Using local backend.");
-		LocalBackend backend;
-		backend.run(jobs);
+		execute_backend<LocalBackend>(backend, jobs);
 	} else if (backend == "slurm") {
-		BENCHMAX_LOG_INFO("benchmax", "Using slurm backend.");
-		SlurmBackend backend;
-		backend.run(jobs);
+		execute_backend<SlurmBackend>(backend, jobs);
 	} else if (backend == "ssh") {
-		BENCHMAX_LOG_INFO("benchmax", "Using ssh backend.");
-		SSHBackend backend;
-		backend.run(jobs);
+		execute_backend<SSHBackend>(backend, jobs);
 	} else {
 		BENCHMAX_LOG_ERROR("benchmax", "Invalid backend \"" << settings_operation().backend << "\".");
 	}

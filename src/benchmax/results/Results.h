@@ -87,7 +87,7 @@ public:
 	}
 	
 	/// Store all results to a xml file.
-	void store(XMLWriter& xml, const Jobs& jobs) {
+	void store(XMLWriter& xml, const Jobs& jobs) const {
 		xml.write(jobs, *this);
 	}
 };

@@ -109,8 +109,6 @@ public:
 			});
 		}
 		slurm::remove_log_files(files, !settings_slurm().keep_logs);
-
-		write_results(jobs);
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Finished.");
 	}
 };
