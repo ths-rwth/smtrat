@@ -53,9 +53,11 @@ void print_statistics() {
 		smtrat::statistics_to_xml_file(smtrat::settings_statistics().xml_filename);
 	}
 #endif
-#ifdef TIMING
-	std::cout << carl::TimingCollector::getInstance() << std::endl;
-#endif
+	#ifdef TIMING
+	if (smtrat::settings_solver().print_timings) {
+		std::cout << carl::TimingCollector::getInstance() << std::endl;
+	}
+	#endif
 }
 
 void setup_logging() {
