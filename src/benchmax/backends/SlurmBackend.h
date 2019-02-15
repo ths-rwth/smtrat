@@ -78,7 +78,8 @@ public:
 			settings_slurm().tmp_dir,
 			settings_benchmarks().limit_time,
 			settings_benchmarks().limit_memory,
-			mResults.size()
+			mResults.size(),
+			slices
 		});
 
 		std::string cmd = "sbatch --wait --array=1-" + std::to_string(slices) + " " + settings_slurm().tmp_dir + "/" + submitfile;

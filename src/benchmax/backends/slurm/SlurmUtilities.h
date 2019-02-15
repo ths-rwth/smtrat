@@ -48,6 +48,8 @@ struct SubmitfileProperties {
 	std::size_t limit_memory;
 	/// Number of tasks.
 	std::size_t tasks;
+	/// Number of slices.
+	std::size_t slices;
 };
 
 /**
