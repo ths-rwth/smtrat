@@ -15,10 +15,11 @@ void archive_log_files(const ArchiveProperties& p) {
 	ss << "tar -czf " << p.filename_archive << " ";
 	ss << "-C " << p.tmp_dir << " ";
 	ss << p.filename_jobfile << " " << p.filename_submitfile << " ";
-	ss << "JOB." << p.jobid << "_*";
+	ss << "`find " << p.tmp_dir << " -iname \"JOB." << p.jobid << "_*\"`";
+	BENCHMAX_LOG_DEBUG("benchmax.slurm", "Archiving log files with command " << ss.str());
 	int code = call_program(ss.str(), output);
 	if (code == 0) {
-		BENCHMAX_LOG_INFO("benchmax.slurm", "Archived log files in " << p.filename_archive);
+		BENCHMAX_LOG_INFO("benchmax.slurm", "Archived log files in " << p.filename_archive << " from " << p.tmp_dir);
 	} else {
 		BENCHMAX_LOG_WARN("benchmax.slurm", "Archiving of log files failed with exit code " << code);
 		BENCHMAX_LOG_WARN("benchmax.slurm", output);
@@ -44,7 +45,7 @@ std::vector<fs::path> collect_result_files(const fs::path& basedir, int jobid) {
 
 std::string generate_submit_file(const SubmitfileProperties& p) {
 		std::string filename = "job-" + p.file_suffix + ".job";
-		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Writing submit file to " << filename);
+		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Writing submit file to " << p.tmp_dir << "/" << filename);
 		std::ofstream out(p.tmp_dir + "/" + filename);
 		out << "#!/usr/bin/env zsh" << std::endl;
 		out << "### Job name" << std::endl;
@@ -54,7 +55,8 @@ std::string generate_submit_file(const SubmitfileProperties& p) {
 		out << "#SBATCH -o " << p.tmp_dir << "/JOB.%A_%a.out" << std::endl;
 		out << "#SBATCH -e " << p.tmp_dir << "/JOB.%A_%a.err" << std::endl;
 		// Rough estimation of time in minutes (timeout * jobs)
-		auto minutes = static_cast<std::size_t>(std::chrono::seconds(p.limit_time).count()) * p.tasks / p.slices / 60 + 1;
+		auto minutes = static_cast<std::size_t>(std::chrono::seconds(p.limit_time).count() + 10) * p.tasks / p.slices / 60 + 1;
+		minutes = std::min(minutes, static_cast<std::size_t>(60*24));
 		out << "#SBATCH -t " << minutes << std::endl;
 		// Memory usage in MB
 		out << "#SBATCH --mem-per-cpu=" << (p.limit_memory + 1024) << "M" << std::endl;
@@ -82,7 +84,7 @@ std::string generate_submit_file(const SubmitfileProperties& p) {
 		out << "\techo \"# START ${i} #\"" << std::endl;
 		out << "\techo \"# START ${i} #\" >&2" << std::endl;
 		out << "\tstart=`date +\"%s%3N\"`" << std::endl;
-		out << "\tulimit -S -v " << (p.limit_memory * 1024) << " && ulimit -S -t " << timeout << " && $cmd ; rc=$?" << std::endl;
+		out << "\tulimit -c 0 && ulimit -S -v " << (p.limit_memory * 1024) << " && ulimit -S -t " << timeout << " && $cmd ; rc=$?" << std::endl;
 		out << "\tend=`date +\"%s%3N\"`" << std::endl;
 		out << "\techo \"# END ${i} #\"" << std::endl;
 		out << "\techo \"# END ${i} #\" 1>&2" << std::endl;

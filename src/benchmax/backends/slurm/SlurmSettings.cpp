@@ -10,7 +10,7 @@ void registerSlurmBackendSettings(SettingsParser* parser) {
 	auto& settings = settings::Settings::getInstance();
 	auto& s = settings.add<SlurmBackendSettings>("backend-slurm");
 	
-	parser->add("Slurm Backend settings", s).add_options()
+	parser->add("Slurm Backend settings").add_options()
 		("slurm.slices", po::value<std::size_t>(&s.slices)->default_value(1000), "number of slices for array job")
 		("slurm.tmp-dir", po::value<std::string>(&s.tmp_dir)->default_value("/tmp/"), "temporary directory")
 		("slurm.keep-logs", po::bool_switch(&s.keep_logs), "do not delete log files")

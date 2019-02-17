@@ -13,9 +13,6 @@ private:
 	std::size_t mUsedLazyExplanation = 0;
 	std::size_t mModelAssignmentCacheHit = 0;
 public:
-	MCSATStatistics(const std::string& name): Statistics(name) {}
-	~MCSATStatistics() = default;
-	
 	bool enabled() const {
 		return
 			(mInsertedLazyExplanation > 0) ||

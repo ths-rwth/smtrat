@@ -67,7 +67,7 @@ private:
 	MCSATBackend<Settings> mBackend;
 
 	#ifdef SMTRAT_DEVOPTION_Statistics
-	MCSATStatistics*& mpStatistics;
+	MCSATStatistics& mStatistics;
 	#endif
 
 	struct ModelAssignmentCache {
@@ -149,9 +149,9 @@ public:
 			[&baseModule](Minisat::Lit l) -> const auto& { return baseModule.watches[l]; }
 		}),
 		mTheoryStack(1, TheoryLevel()),
-		#ifdef SMTRAT_DEVOPTION_Statistics
-		mpStatistics(baseModule.mpMCSATStatistics),
-		#endif
+#ifdef SMTRAT_DEVOPTION_Statistics
+		mStatistics(baseModule.mMCSATStatistics),
+#endif
 		mModelAssignmentCache(model())
 	{}
 	
@@ -219,7 +219,7 @@ public:
 		}
 		if (!mModelAssignmentCache.empty()) {
 			#ifdef SMTRAT_DEVOPTION_Statistics
-			mpStatistics->modelAssignmentCacheHit();
+			mStatistics.modelAssignmentCacheHit();
 			#endif
 			auto res = carl::model::evaluate(f, mModelAssignmentCache.model());
 			if (!res.isBool() || !res.asBool()) {
@@ -271,7 +271,7 @@ public:
 		AssignmentOrConflict res;
 		if (!mModelAssignmentCache.empty()) {
 			#ifdef SMTRAT_DEVOPTION_Statistics
-			mpStatistics->modelAssignmentCacheHit();
+			mStatistics.modelAssignmentCacheHit();
 			#endif
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found cached assignment.");
 			return boost::none;
@@ -297,7 +297,7 @@ public:
 		} else {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found cached assignment.");
 			#ifdef SMTRAT_DEVOPTION_Statistics
-			mpStatistics->modelAssignmentCacheHit();
+			mStatistics.modelAssignmentCacheHit();
 			#endif
 			res = mModelAssignmentCache.content();
 			mModelAssignmentCache.clear();

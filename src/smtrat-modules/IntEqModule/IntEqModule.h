@@ -7,7 +7,6 @@
  */
 #pragma once
 #include <smtrat-solver/Module.h>
-#include "IntEqStatistics.h"
 #include "IntEqSettings.h"
 #include <stdio.h>
 namespace smtrat

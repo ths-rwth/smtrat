@@ -12,9 +12,9 @@ void registerSSHBackendSettings(SettingsParser* parser) {
 	auto& s = settings.add<SSHBackendSettings>("backend-ssh");
 	
 #ifdef BENCHMAX_SSH
-	parser->add("SSH Backend settings", s).add_options()
+	parser->add("SSH Backend settings").add_options()
 #else
-	parser->add("SSH Backend settings (disabled)", s).add_options()
+	parser->add("SSH Backend settings (disabled)").add_options()
 #endif
 		("ssh.node", po::value<std::vector<std::string>>(&s.nodes), "remote computation nodes")
 		("ssh.basedir", po::value<std::string>(&s.basedir)->default_value("~/"), "remote base directory")

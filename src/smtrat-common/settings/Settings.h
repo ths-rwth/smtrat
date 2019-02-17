@@ -1,6 +1,7 @@
 #pragma once
 
 #include <carl/util/Singleton.h>
+#include <carl/util/Settings.h>
 
 #include <any>
 #include <cassert>
@@ -16,7 +17,9 @@ struct CoreSettings {
 	bool show_version;
 	bool show_settings;
 	bool show_cmake_options;
+	bool show_strategy;
 	bool show_license;
+	std::string config_file;
 };
 
 struct SolverSettings {
@@ -24,8 +27,8 @@ struct SolverSettings {
 	bool print_all_models;
 	bool preprocess;
 	std::string preprocess_output_file;
-	bool print_statistics;
-	bool print_strategy;
+	bool preprocess_enable_cnf;
+	bool analyze_file;
 	bool print_timings;
 };
 
@@ -36,31 +39,13 @@ struct ValidationSettings {
 	std::string log_filename;
 };
 
-struct Settings: public carl::Singleton<Settings> {
+struct Settings: public carl::Singleton<Settings>, public carl::settings::Settings {
 	friend carl::Singleton<Settings>;
 private:
-	std::map<std::string,std::any> mSettings = {
-		{"core", CoreSettings()},
-		{"solver", SolverSettings{}},
-		{"validation", ValidationSettings{}}
-	};
-	Settings() = default;
-public:
-	CoreSettings core;
-	SolverSettings solver;
-	ValidationSettings validation;
-
-	template<typename T>
-	T& get(const std::string& name) {
-		auto it = mSettings.find(name);
-		assert(it != mSettings.end());
-		return std::any_cast<T&>(it->second);
-	}
-	template<typename T>
-	T& add(const std::string& name) {
-		auto res = mSettings.emplace(name, T{});
-		assert(res.second);
-		return std::any_cast<T&>(res.first->second);
+	Settings() {
+		get<CoreSettings>("core");
+		get<SolverSettings>("solver");
+		get<ValidationSettings>("validation");
 	}
 };
 

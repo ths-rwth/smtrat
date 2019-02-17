@@ -9,7 +9,6 @@
 #pragma once
 
 #include <smtrat-solver/Module.h>
-#include "CubeLIAStatistics.h"
 #include "CubeLIASettings.h"
 #include "../LRAModule/LRAModule.h"
 
@@ -42,11 +41,6 @@ namespace smtrat
             ModuleInput* mLRAFormula;
             std::vector<std::atomic_bool*> mLRAFoundAnswer;
             LRAModule<LRASettings1> mLRA;
-            
-#ifdef SMTRAT_DEVOPTION_Statistics
-			CubeLIAStatistics mStatistics;
-#endif
-			
 		public:
 			typedef Settings SettingsType;
 			std::string moduleName() const {

@@ -14,6 +14,8 @@
 #include "Uninterpreted.h"
 #endif
 
+#include "../ParserSettings.h"
+
 #include <boost/mpl/for_each.hpp>
 
 namespace smtrat {
@@ -167,6 +169,7 @@ struct Theories {
 
 	types::TermType resolveSymbol(const Identifier& identifier) const {
 		types::TermType result;
+		if (settings_parser().disable_theory) return result;
 		if (identifier.indices == nullptr) {
 			if (state->resolveSymbol(identifier.symbol, result)) return result;
 		}
@@ -181,6 +184,7 @@ struct Theories {
 	
 	types::VariableType resolveVariable(const Identifier& identifier) const {
 		types::VariableType result;
+		if (settings_parser().disable_theory) return result;
 		if (identifier.indices == nullptr) {
 			if (state->resolveSymbol(identifier.symbol, result)) return result;
 		}
@@ -202,6 +206,7 @@ struct Theories {
 	}
 	
 	const auto& annotateTerm(const types::TermType& term, const std::vector<Attribute>& attributes) {
+		if (settings_parser().disable_theory) return term;
 		FormulaT subject;
 		conversion::VariantConverter<FormulaT> converter;
 		if (!converter(term, subject)) {
@@ -225,10 +230,12 @@ struct Theories {
 	}
 	
 	void handleLet(const std::string& symbol, const types::TermType& term) {
+		if (settings_parser().disable_theory) return;
 		state->bindings.emplace(symbol, term);
 	}
 
 	types::TermType handleITE(const std::vector<types::TermType>& arguments) {
+		if (settings_parser().disable_theory) return FormulaT();
 		types::TermType result;
 		if (arguments.size() != 3) {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Failed to construct ITE expression, only exactly three arguments are allowed, but \"" << arguments << "\" were given.");
@@ -254,6 +261,7 @@ struct Theories {
 	}
 	
 	types::TermType handleDistinct(const std::vector<types::TermType>& arguments) {
+		if (settings_parser().disable_theory) return FormulaT();
 		types::TermType result;
 		TheoryError te;
 		for (auto& t: theories) {
@@ -265,6 +273,7 @@ struct Theories {
 	}
 	
 	bool instantiate(const UserFunctionInstantiator& function, const types::VariableType& var, const types::TermType& repl, types::TermType& subject) {
+		if (settings_parser().disable_theory) return true;
 		TheoryError errors;
 		bool wasInstantiated = false;
 		for (auto& t: theories) {
@@ -288,6 +297,10 @@ struct Theories {
 	}
 	
 	bool instantiateUserFunction(const UserFunctionInstantiator& function, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
+		if (settings_parser().disable_theory) {
+			result = FormulaT();
+			return true;
+		}
 		if (function.arguments.size() != arguments.size()) {
 			errors.next() << "Function was expected to have " << function.arguments.size() << " arguments, but was instantiated with " << arguments.size() << ".";
 			return false;
@@ -317,6 +330,7 @@ struct Theories {
 	}
 	
 	types::TermType functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments) {
+		if (settings_parser().disable_theory) return FormulaT();
 		types::TermType result;
 		TheoryError te;
 		if (identifier.symbol == "ite") {

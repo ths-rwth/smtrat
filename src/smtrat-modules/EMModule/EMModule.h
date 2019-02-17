@@ -10,7 +10,6 @@
 #pragma once
 
 #include <smtrat-solver/PModule.h>
-#include "EMStatistics.h"
 #include "EMSettings.h"
 
 namespace smtrat

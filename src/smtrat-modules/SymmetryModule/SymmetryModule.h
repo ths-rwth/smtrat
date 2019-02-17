@@ -9,7 +9,6 @@
 #pragma once
 
 #include <smtrat-solver/PModule.h>
-#include "SymmetryStatistics.h"
 #include "SymmetrySettings.h"
 
 namespace smtrat
@@ -17,10 +16,6 @@ namespace smtrat
 	template<typename Settings>
 	class SymmetryModule : public PModule
 	{
-		private:
-#ifdef SMTRAT_DEVOPTION_Statistics
-			SymmetryStatistics mStatistics;
-#endif
 		public:
 			typedef Settings SettingsType;
 			std::string moduleName() const {

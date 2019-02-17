@@ -20,7 +20,7 @@ namespace smtrat {
 			/**
 			 * Number of congruences explicitly added to the formula during UF => EQ rewriting.
 			 */
-			size_t mCongruencesAdded;
+			size_t mCongruencesAdded = 0;
 
 		public:
 			// Override Statistics::collect.
@@ -31,13 +31,6 @@ namespace smtrat {
 			void countCongruencesAdded(std::size_t congruences) {
 				mCongruencesAdded += congruences;
 			}
-
-			EQPreprocessingStatistics() :
-				Statistics("EQPreprocessingModule" ),
-				mCongruencesAdded(0)
-			{}
-
-			~EQPreprocessingStatistics() {}
 	};
 }
 

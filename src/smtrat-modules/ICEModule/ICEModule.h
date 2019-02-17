@@ -11,7 +11,6 @@
 #include <smtrat-solver/PModule.h>
 #include <lib/datastructures/VariableBounds.h>
 
-#include "ICEStatistics.h"
 #include "ICESettings.h"
 #include "ForwardHyperGraph.h"
 
@@ -120,9 +119,6 @@ namespace smtrat
 		};
 
 		private:
-#ifdef SMTRAT_DEVOPTION_Statistics
-			ICEStatistics mStatistics;
-#endif
 			vb::VariableBounds<FormulaT> mBounds;
 			std::map<FormulaT,ConstraintT> mConstraints;
 			std::set<FormulaT> mOtherFormulas;

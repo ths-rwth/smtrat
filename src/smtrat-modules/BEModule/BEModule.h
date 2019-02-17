@@ -11,7 +11,6 @@
 #pragma once
 
 #include <smtrat-solver/PModule.h>
-#include "BEStatistics.h"
 #include "BESettings.h"
 
 namespace smtrat

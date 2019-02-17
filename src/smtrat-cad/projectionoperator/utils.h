@@ -34,7 +34,13 @@ Poly normalize(const Poly& p) {
 }
 
 /**
- * Computes the resultant of two polynomials with respect to the given variable.
+ * Computes the resultant of two polynomials.
+ * The polynomials are assumed to be univariate polynomials and thus know their respective main variables.
+ * The given variable instead indicates the main variable of the resulting polynomial.
+ * @param variable Main variable of the resulting polynomial.
+ * @param p First input polynomial.
+ * @param q Second input polynomial.
+ * @return Resultant of p and q in main variable variable.
  */
 template<typename Poly>
 Poly resultant(carl::Variable variable, const Poly& p, const Poly& q) {
@@ -44,7 +50,12 @@ Poly resultant(carl::Variable variable, const Poly& p, const Poly& q) {
 }
 
 /**
- * Computes the discriminant of a polynomial with respect to the given variable.
+ * Computes the discriminant of a polynomial.
+ * The polynomial is assumed to be univariate and thus knows is main variable.
+ * The given variable instead indicates the main variable of the resulting polynomial.
+ * @param variable Main variable of the resulting polynomial.
+ * @param p Input polynomial.
+ * @return Discriminant of p in main variable variable.
  */
 template<typename Poly>
 Poly discriminant(carl::Variable variable, const Poly& p) {

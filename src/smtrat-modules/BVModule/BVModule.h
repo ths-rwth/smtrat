@@ -29,7 +29,6 @@
 #pragma once
 
 #include <smtrat-solver/Module.h>
-#include "BVStatistics.h"
 #include "BVSettings.h"
 #include "BVDirectEncoder.h"
 #include "carl/formula/bitvector/BVConstraint.h"

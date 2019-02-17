@@ -156,14 +156,7 @@ namespace smtrat
         mTrueVar = newVar();
         uncheckedEnqueue( mkLit( mTrueVar, false ) );
         mBooleanConstraintMap.push( std::make_pair( nullptr, nullptr ) );
-        #ifdef SMTRAT_DEVOPTION_Statistics
-        stringstream s;
-        s << moduleName() << "_" << id();
-        mpStatistics = new SATModuleStatistics( s.str() );
-        s << "_mcsat";
-        mpMCSATStatistics = new mcsat::MCSATStatistics( s.str() );
-        #endif
-		
+
 		mcsat::initializeVerifier();
     }
 
@@ -181,9 +174,6 @@ namespace smtrat
             abstrAToDel = nullptr;
             abstrBToDel = nullptr;
         }
-        #ifdef SMTRAT_DEVOPTION_Statistics
-        delete mpStatistics;
-        #endif
     }
     
     class ScopedBool
@@ -378,8 +368,8 @@ namespace smtrat
         //    std::cout << "   " << f.formula() << std::endl;
 //        std::cout << ((FormulaT) rReceivedFormula()) << std::endl;
         #ifdef SMTRAT_DEVOPTION_Statistics
-        mpStatistics->rNrTotalVariablesBefore() = (size_t) nVars();
-        mpStatistics->rNrClauses() = (size_t) nClauses();
+        mStatistics.rNrTotalVariablesBefore() = (size_t) nVars();
+        mStatistics.rNrClauses() = (size_t) nClauses();
         #endif
         ScopedBool scopedBool( mBusy, true );
         budgetOff();
@@ -1424,7 +1414,7 @@ namespace smtrat
 				SMTRAT_LOG_TRACE("smtrat.sat", "Constraint " << content << " does not exist yet");
                 // Add a fresh Boolean variable as an abstraction of the constraint.
                 #ifdef SMTRAT_DEVOPTION_Statistics
-                if( preferredToTSolver ) mpStatistics->initialTrue();
+                if( preferredToTSolver ) mStatistics.initialTrue();
                 #endif
                 FormulaT constraint = content;
                 FormulaT invertedConstraint = content.negated();
@@ -1699,7 +1689,7 @@ namespace smtrat
         _clause.copyTo( add_tmp );
 
         #ifdef SMTRAT_DEVOPTION_Statistics
-        if( _type != NORMAL_CLAUSE ) mpStatistics->lemmaLearned();
+        if( _type != NORMAL_CLAUSE ) mStatistics.lemmaLearned();
         #endif
         // Check if clause is satisfied and remove false/duplicate literals:true);
         Minisat::sort( add_tmp );
@@ -2727,7 +2717,7 @@ namespace smtrat
                     cancelUntil( 0 );
                     ++mCurr_Restarts;
                     #ifdef SMTRAT_DEVOPTION_Statistics
-                    mpStatistics->restart();
+                    mStatistics.restart();
                     #endif
                     return l_Undef;
                 }
@@ -2794,7 +2784,7 @@ namespace smtrat
                     // New variable decision:
                     decisions++;
                     #ifdef SMTRAT_DEVOPTION_Statistics
-                    mpStatistics->decide();
+                    mStatistics.decide();
 					#endif
 					
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Picking a literal for a boolean decision");
@@ -2813,7 +2803,7 @@ namespace smtrat
                                 SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict, propagate " << ~next);
                                 uncheckedEnqueue( ~next, CRef_TPropagation );
                                 #ifdef SMTRAT_DEVOPTION_Statistics
-                                mpMCSATStatistics->insertedLazyExplanation();
+                                mMCSATStatistics.insertedLazyExplanation();
                                 #endif
                                 continue;
                             }
@@ -3323,7 +3313,7 @@ namespace smtrat
 			if (Settings::mc_sat && confl == CRef_TPropagation) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Found " << p << " to be result of theory propagation.");
                 #ifdef SMTRAT_DEVOPTION_Statistics
-                mpMCSATStatistics->usedLazyExplanation();
+                mMCSATStatistics.usedLazyExplanation();
                 #endif
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << mMCSAT);
 				cancelIncludingLiteral(p); // does not affect decision levels of literals processed later nor decisionLevel()
@@ -3817,7 +3807,7 @@ namespace smtrat
 	                    assert( value( first ) == l_Undef );
 	                    uncheckedEnqueue( first, cr );
 	                    #ifdef SMTRAT_DEVOPTION_Statistics
-	                    mpStatistics->propagate();
+	                    mStatistics.propagate();
 	                    #endif
 					}
                 }
@@ -4512,8 +4502,8 @@ NextClause:
     void SATModule<Settings>::collectStats()
     {
         #ifdef SMTRAT_DEVOPTION_Statistics
-        mpStatistics->rNrTotalVariablesAfter() = (size_t) nVars();
-        mpStatistics->rNrClauses() = (size_t) nClauses();
+        mStatistics.rNrTotalVariablesAfter() = (size_t) nVars();
+        mStatistics.rNrClauses() = (size_t) nClauses();
         #endif
     }
 }    // namespace smtrat

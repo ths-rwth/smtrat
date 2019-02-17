@@ -40,9 +40,6 @@ namespace smtrat
 		mRealAlgebraicSolution(),
 		mConflictGraph(),
 		mVariableBounds()
-#ifdef SMTRAT_DEVOPTION_Statistics
-		,mStats(new CADStatistics())
-#endif
 	{
 		mInfeasibleSubsets.clear();	// initially everything is satisfied
 		// CAD setting
@@ -121,7 +118,7 @@ namespace smtrat
 		
 		assert(mConstraints.size() == mConstraintsMap.size());
 #ifdef SMTRAT_DEVOPTION_Statistics
-		mStats->addCall();
+		mStats.addCall();
 #endif
 		if (this->hasFalse) return UNSAT;
 		else {
@@ -203,7 +200,7 @@ namespace smtrat
 					if (carl::isInteger(mRealAlgebraicSolution[d])) continue;
 					branches++;
 				}
-				mStats->addBBStats(branches);
+				mStats.addBBStats(branches);
 			}
 #endif
 			cad::SplitVariableSelector<Settings::splitHeuristic> svs;

@@ -64,6 +64,9 @@ public:
 	void write(const Jobs& jobs, const Results& results) {
 		mFile << "<?xml version=\"1.0\"?>" << std::endl;
 		mFile << "<results>" << std::endl;
+		mFile << "\t<information>" << std::endl;
+		mFile << "\t\t<info name=\"timeout\" type=\"seconds\" value=\"" << std::chrono::seconds(settings_benchmarks().limit_time).count() << "\" />" << std::endl;
+		mFile << "\t</information>" << std::endl;
 		mFile << "\t<solvers prefix=\"" << settings_tools().tools_common_prefix.native() << "\">" << std::endl;
 		for (const auto& tool: jobs.tools()) {
 			mFile << "\t\t<solver solver_id=\"" << sanitizeTool(tool) << "\" />" << std::endl;
@@ -82,7 +85,7 @@ public:
 				const auto& result = results.get(tool.get(), filename);
 				if (!result) continue;
 				const auto& res = result->get();
-				mFile << "\t\t\t<run solver_id=\"" << sanitizeTool(tool) << "\" timeout=\"" << std::chrono::seconds(settings_benchmarks().limit_time).count() << "s\">" << std::endl;
+				mFile << "\t\t\t<run solver_id=\"" << sanitizeTool(tool) << "\">" << std::endl;
 				if (!res.additional.empty()) {
 					mFile << "\t\t\t\t<statistics>" << std::endl;
 					for (const auto& stat: res.additional) {
@@ -93,7 +96,7 @@ public:
 				mFile << "\t\t\t\t<results>" << std::endl;
 				mFile << "\t\t\t\t\t<result name=\"answer\" type=\"string\">" << res.answer << "</result>" << std::endl;
 				mFile << "\t\t\t\t\t<result name=\"exitcode\" type=\"int\">" << res.exitCode << "</result>" << std::endl;
-				mFile << "\t\t\t\t\t<result name=\"runtime\" type=\"msec\">" << std::chrono::milliseconds(res.time).count() << "</result>" << std::endl;
+				mFile << "\t\t\t\t\t<result name=\"runtime\" type=\"milliseconds\">" << std::chrono::milliseconds(res.time).count() << "</result>" << std::endl;
 				mFile << "\t\t\t\t</results>" << std::endl;
 				mFile << "\t\t\t</run>" << std::endl;
 			}

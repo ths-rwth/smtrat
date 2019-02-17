@@ -18,7 +18,7 @@ namespace smtrat
         private:
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all collected statistics during solving.
-            CNFerModuleStatistics* mpStatistics;
+            CNFerModuleStatistics& mStatistics = statistics_get<CNFerModuleStatistics>("CNFerModule");
             #endif
         public:
 			

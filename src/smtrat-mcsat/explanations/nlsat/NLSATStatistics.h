@@ -12,9 +12,6 @@ private:
 	std::size_t mExplanationCalled = 0;
 	std::size_t mExplanationSuccess = 0;
 public:
-	NLSATStatistics(const std::string& name): Statistics(name) {}
-	~NLSATStatistics() = default;
-	
 	bool enabled() const {
 		return (mExplanationCalled > 0) || (mExplanationSuccess > 0);
 	}
