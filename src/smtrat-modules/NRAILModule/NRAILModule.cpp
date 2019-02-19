@@ -26,7 +26,7 @@ namespace smtrat
             Module( _formula, _conditionals, _manager ),
             mVisitor()
     {
-        linearizeCompoundSubformulaFunction = std::bind(&NRAILModule<Settings>::linearizeCompoundSubformula, this, std::placeholders::_1);
+        linearizeSubformulaFunction = std::bind(&NRAILModule<Settings>::linearizeSubformula, this, std::placeholders::_1);
     }
     //mLRAFormula( new ModuleInput())
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -429,9 +429,9 @@ namespace smtrat
 
 
     template<typename Settings>
-    FormulaT NRAILModule<Settings>::linearizeCompoundSubformula(const FormulaT &formula)
+    FormulaT NRAILModule<Settings>::linearizeSubformula(const FormulaT &formula)
     {
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Formula from linearizeCompoundSubformula: " <<  formula << " Formula Type: " <<  formula.getType() << endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Formula from linearizeSubformula: " <<  formula << " Formula Type: " <<  formula.getType() << endl; }
 
         if (formula.getType() == carl::FormulaType::CONSTRAINT) {
             FormulaT linearizedFormula = linearization(formula);
@@ -463,7 +463,7 @@ namespace smtrat
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Sub Formula: " <<  formula << " Sub Formula type: " <<  formula.getType() << endl; }
 
-        FormulaT formulaFromVisitor = mVisitor.visitResult( formula, linearizeCompoundSubformulaFunction );
+        FormulaT formulaFromVisitor = mVisitor.visitResult( formula, linearizeSubformulaFunction );
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Generated  linearized Formula FromVisitor: " << formulaFromVisitor << endl; }
         ////////////////////////////////////////////////

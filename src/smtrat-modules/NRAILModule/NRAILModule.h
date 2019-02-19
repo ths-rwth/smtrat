@@ -24,8 +24,8 @@ namespace smtrat
 		// Members.
         ModuleInput* mLRAFormula;
         carl::FormulaVisitor<FormulaT> mVisitor;
-		FormulaT linearizeCompoundSubformula(const FormulaT &formula);
-        std::function<FormulaT(FormulaT)> linearizeCompoundSubformulaFunction;
+		FormulaT linearizeSubformula(const FormulaT &formula);
+        std::function<FormulaT(FormulaT)> linearizeSubformulaFunction;
 
 	public:
 		typedef Settings SettingsType;
