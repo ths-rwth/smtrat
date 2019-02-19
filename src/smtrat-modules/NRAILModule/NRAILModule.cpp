@@ -338,9 +338,6 @@ namespace smtrat
         return  finalVariable;
     }
 
-    FormulasT constraintsList;
-    FormulasT compoundSubFormulasList;
-
     FormulaT linearization(FormulaT formula) {
         originalFormula->add(formula, true);
 
@@ -434,64 +431,14 @@ namespace smtrat
     template<typename Settings>
     FormulaT NRAILModule<Settings>::linearizeCompoundSubformula(const FormulaT &formula)
     {
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Formula from visitor: " <<  formula << " Formula Type: " <<  formula.getType() << endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Formula from linearizeCompoundSubformula: " <<  formula << " Formula Type: " <<  formula.getType() << endl; }
 
         if (formula.getType() == carl::FormulaType::CONSTRAINT) {
-            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "inserting into constraintsList, formula: " << formula <<endl; }
-
             FormulaT linearizedFormula = linearization(formula);
-
-            constraintsList.push_back(linearizedFormula);
-
-        } else {
-            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "The formula type is not CONSTRAINT" << endl; }
-
-            if (constraintsList.size() > 1) {
-                FormulaT compoundFormula = FormulaT(formula.getType(), constraintsList);
-
-                if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                    cout << "the constraintsList greater than 1" << endl;
-                    cout << "inserting into compoundSubFormulasList, compoundFormula: " << compoundFormula <<endl;
-                }
-                compoundSubFormulasList.push_back(compoundFormula);
-            } else if (constraintsList.size() == 1){
-                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "the constraintsList equals 1" << endl; }
-
-                auto lastFormulaOfCompoundSubFormulasList = compoundSubFormulasList.back();
-                compoundSubFormulasList.pop_back();
-
-                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "poping last Formula Of Compound SubFormulas List that is: " << lastFormulaOfCompoundSubFormulasList << endl; }
-
-                FormulaT compoundFormula = FormulaT(formula.getType(), lastFormulaOfCompoundSubFormulasList, constraintsList[0]);
-
-                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "created compoundFormula pushing to compoundSubFormulasList is: " << compoundFormula << endl; }
-
-                compoundSubFormulasList.push_back(compoundFormula);
-
-            } else {
-                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "constraintsList is empty" << endl; }
-
-                FormulaT compoundFormula;
-
-                if (formula.getType() == carl::FormulaType::NOT) {
-                    compoundFormula = FormulaT(formula.getType(), compoundSubFormulasList[0]);
-                } else {
-                    compoundFormula = FormulaT(formula.getType(), compoundSubFormulasList);
-                }
-
-                compoundSubFormulasList.clear();
-
-                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "clear compoundSubFormulasList, created compoundFormula is pushed to compoundSubFormulasList, compoundFormula: " << compoundFormula << endl; }
-
-                compoundSubFormulasList.push_back(compoundFormula);
-
-            }
-
-            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "clearing constraintsList" <<endl; }
-            constraintsList.clear();
+            return linearizedFormula;
         }
 
-        return  formula;
+        return formula;
     }
 
 
@@ -499,8 +446,6 @@ namespace smtrat
     bool NRAILModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
         const FormulaT& formula{_subformula->formula()};
-
-        FormulaT linearizedFormula;
 
         if (formula.getType() == carl::FormulaType::FALSE){
 
@@ -518,21 +463,9 @@ namespace smtrat
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Sub Formula: " <<  formula << " Sub Formula type: " <<  formula.getType() << endl; }
 
+        FormulaT formulaFromVisitor = mVisitor.visitResult( formula, linearizeCompoundSubformulaFunction );
 
-        if (formula.getType() != carl::FormulaType::CONSTRAINT) {
-
-            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "The formula type is not CONSTRAINT and passing to formulaFromVisitor!" << endl; }
-
-            FormulaT formulaFromVisitor = mVisitor.visitResult( formula, linearizeCompoundSubformulaFunction );
-
-            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "formulaFromVisitor: " << formulaFromVisitor << endl; }
-            linearizedFormula = compoundSubFormulasList[0];
-            compoundSubFormulasList.clear();
-        } else {
-            linearizedFormula = linearization(formula);
-        }
-
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Generated  linearized Formula: " << linearizedFormula << endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Generated  linearized Formula FromVisitor: " << formulaFromVisitor << endl; }
         ////////////////////////////////////////////////
         //
         // Adding the Linearized Formula to the global
@@ -541,7 +474,7 @@ namespace smtrat
         // Linearized formulas to the passed formula
         //
         ////////////////////////////////////////////////
-        addSubformulaToPassedFormula(linearizedFormula);
+        addSubformulaToPassedFormula(formulaFromVisitor);
 
         return true; // This should be adapted according to your implementation.
     }
