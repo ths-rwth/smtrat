@@ -36,6 +36,9 @@ public:
 	}
 	void check() {
 		solver.check();
+		carl::carlVariables vars;
+		solver.getInputSimplified().second.gatherVariables(vars);
+		mOutput.declare(vars);
 		mOutput.assertFormula(solver.getInputSimplified().second);
 		mOutput << "(check-sat)" << std::endl;
 	}
