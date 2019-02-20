@@ -81,6 +81,9 @@ namespace smtrat
 			} else if (sgn == carl::Sign::POSITIVE) {
 				SMTRAT_LOG_DEBUG("smtrat.lve", "-> " << FormulaT(without, rel));
 				return FormulaT(without, rel);
+			} else {
+				assert(false);
+				return FormulaT();
 			}
 		}
 	}
@@ -222,7 +225,45 @@ namespace smtrat
 	}
 	
 	template<class Settings>
-	std::optional<FormulaT> LVEModule<Settings>::eliminate_linear(carl::Variable v, const ConstraintT& c) const {
+	std::optional<FormulaT> LVEModule<Settings>::eliminate_linear(carl::Variable v, const ConstraintT& c) {
+		assert(c.maxDegree(v) > 0);
+		if (c.maxDegree(v) > 1) {
+			return std::nullopt;
+		}
+		// Decompose a * v - b ~ 0
+		carl::Relation rel = c.relation();
+		auto a = c.lhs().coeff(v, 1);
+		auto b = a*v - c.lhs();
+		// Now consider a * v ~ b
+		SMTRAT_LOG_DEBUG("smtrat.lve", "Considering " << a << " * " << v << " " << rel << " " << b);
+
+		if (a.isConstant()) {
+			if (a.constantPart() < 0) {
+				switch (rel) {
+					case carl::Relation::EQ:		rel = carl::Relation::EQ; break;
+					case carl::Relation::NEQ:		rel = carl::Relation::NEQ; break;
+					case carl::Relation::LESS:		rel = carl::Relation::GREATER; break;
+					case carl::Relation::LEQ:		rel = carl::Relation::GEQ; break;
+					case carl::Relation::GREATER:	rel = carl::Relation::LESS; break;
+					case carl::Relation::GEQ:		rel = carl::Relation::LEQ; break;
+				}
+			}
+			b = b / a.constantPart();
+			// Now we have v ~ b
+			SMTRAT_LOG_DEBUG("smtrat.lve", "Transformed to " << v << " " << rel << " " << b);
+			switch (rel) {
+				case carl::Relation::EQ: break;
+				case carl::Relation::NEQ: b = b + Rational(1); break;
+				case carl::Relation::LESS: b = b - Rational(1); break;
+				case carl::Relation::LEQ: break;
+				case carl::Relation::GREATER: b = b + Rational(1); break;
+				case carl::Relation::GEQ: break;
+			}
+			SMTRAT_LOG_DEBUG("smtrat.lve", "Eliminated with " << v << " = " << b);
+			mPPModel.emplace(v, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>(b));
+			return FormulaT(carl::FormulaType::TRUE);
+		}
+
 		return std::nullopt;
 	}
 

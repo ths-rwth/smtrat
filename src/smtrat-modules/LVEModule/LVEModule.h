@@ -30,7 +30,8 @@ namespace smtrat
 			FormulaT eliminate_from_separated_strict_inequality(carl::Variable v, const Poly& with, const Poly& without, carl::Relation rel);
 			std::optional<FormulaT> eliminate_from_separated_factors(carl::Variable v, const Poly& with, const Poly& without, carl::Relation rel);
 			std::optional<FormulaT> eliminate_from_factors(carl::Variable v, const ConstraintT& c);
-			std::optional<FormulaT> eliminate_linear(carl::Variable v, const ConstraintT& c) const;
+
+			std::optional<FormulaT> eliminate_linear(carl::Variable v, const ConstraintT& c);
 		public:
 			typedef Settings SettingsType;
 			std::string moduleName() const {
