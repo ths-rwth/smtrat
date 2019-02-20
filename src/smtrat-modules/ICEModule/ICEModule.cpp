@@ -20,16 +20,6 @@ namespace smtrat
 	{}
 	
 	template<class Settings>
-	bool ICEModule<Settings>::informCore( const FormulaT& )
-	{
-		return true;
-	}
-	
-	template<class Settings>
-	void ICEModule<Settings>::init()
-	{}
-	
-	template<class Settings>
 	bool ICEModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 	{
 		addReceivedSubformulaToPassedFormula(_subformula);
