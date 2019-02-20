@@ -678,7 +678,7 @@ namespace smtrat
 
         Model abstractModel;
 
-        while (loopCounter < 11) {
+        while (true) {
 
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
                 cout << "Loop" << loopCounter << "\n";
@@ -698,9 +698,7 @@ namespace smtrat
 
                 if (AnswerOfLRA != SAT) {
 
-                    if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                        cout << "Linearized Formula is Unsatisfied!" << "\n";
-                    }
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) {cout << "Linearized Formula is Unsatisfied/Unknown!" << endl;}
 
                     if (AnswerOfLRA == UNSAT) {
                         generateTrivialInfeasibleSubset();
