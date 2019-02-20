@@ -53,8 +53,19 @@ namespace smtrat
 	template<class Settings>
 	std::optional<FormulaT> LVEModule<Settings>::eliminate_variable(carl::Variable v, const ConstraintT& c) {
 		auto res = eliminate_linear(v, c);
-		if (res) return res;
-		return eliminate_from_factors(v, c);
+		if (res) {
+#ifdef SMTRAT_DEVOPTION_Statistics
+			++mStatistics.elim_linear;
+#endif
+			return res;
+		}
+		res = eliminate_from_factors(v, c);
+#ifdef SMTRAT_DEVOPTION_Statistics
+		if (res) {
+			++mStatistics.elim_factors;
+		}
+#endif
+		return res;
 	}
 
 	template<class Settings>
@@ -211,17 +222,6 @@ namespace smtrat
 		assert(!isZero(with_v) && !isZero(without_v));
 		SMTRAT_LOG_DEBUG("smtrat.lve", "Separated " << c << " into " << with_v << " and " << without_v);
 		return eliminate_from_separated_factors(v, with_v, without_v, c.relation());
-		return std::nullopt;
-		if (without_v.isConstant()) {
-			if (without_v.constantPart() < 0) {
-				SMTRAT_LOG_DEBUG("smtrat.lve", "Separated " << c << " into " << with_v << " and " << without_v);
-			} else {
-
-			}
-		} else {
-
-		}
-		return std::nullopt;
 	}
 	
 	template<class Settings>
@@ -294,6 +294,9 @@ namespace smtrat
 	Answer LVEModule<Settings>::checkCore()
 	{
 		std::vector<carl::Variable> vars = get_lone_variables();
+#ifdef SMTRAT_DEVOPTION_Statistics
+		mStatistics.lone_variables = std::max(mStatistics.lone_variables, vars.size());
+#endif
 		for (const auto& f: rReceivedFormula()) {
 			if (f.formula().getType() == carl::FormulaType::CONSTRAINT) {
 				const auto& c = f.formula().constraint();
@@ -318,6 +321,9 @@ namespace smtrat
 		}
 		auto res = runBackends();
 		if (res == UNSAT) getInfeasibleSubsets();
+		#ifdef SMTRAT_DEVOPTION_Statistics
+			mStatistics.eliminated = std::max(mStatistics.eliminated, mPPModel.size());
+		#endif
 		return res;
 	}
 }

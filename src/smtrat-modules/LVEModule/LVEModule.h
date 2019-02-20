@@ -10,6 +10,7 @@
 
 #include <smtrat-solver/PModule.h>
 #include "LVESettings.h"
+#include "LVEStatistics.h"
 
 namespace smtrat
 {
@@ -17,6 +18,9 @@ namespace smtrat
 	class LVEModule : public PModule
 	{
 		private:
+#ifdef SMTRAT_DEVOPTION_Statistics
+			LVEStatistics& mStatistics = statistics_get<LVEStatistics>("lve");
+#endif
 			Model mPPModel;
 			
 			void count_variables(std::map<carl::Variable, std::size_t>& count, const ConstraintT& c) const;
