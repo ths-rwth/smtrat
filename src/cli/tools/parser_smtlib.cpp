@@ -85,14 +85,14 @@ struct FormulaProperties : public Statistics {
 	carl::carlVariables variables;
 
 	void collect() {
-		Statistics::addKeyValuePair("num_variables", num_variables);
-		Statistics::addKeyValuePair("num_variables_boolean", num_variables_boolean);
-		Statistics::addKeyValuePair("num_variables_theory", num_variables_theory);
-		Statistics::addKeyValuePair("num_variables_arithmetic", num_variables_arithmetic);
-		Statistics::addKeyValuePair("num_variables_arithmetic_real", num_variables_arithmetic_real);
-		Statistics::addKeyValuePair("num_variables_arithmetic_int", num_variables_arithmetic_int);
-		Statistics::addKeyValuePair("num_variables_bitvector", num_variables_bitvector);
-		Statistics::addKeyValuePair("num_variables_uninterpreted", num_variables_uninterpreted);
+		Statistics::addKeyValuePair("num_variables", variables.size());
+		Statistics::addKeyValuePair("num_variables_boolean", variables.boolean().size());
+		Statistics::addKeyValuePair("num_variables_theory", variables.integer().size() + variables.real().size() + variables.bitvector().size() + variables.uninterpreted().size());
+		Statistics::addKeyValuePair("num_variables_arithmetic_real", variables.real().size());
+		Statistics::addKeyValuePair("num_variables_arithmetic_int", variables.integer().size());
+		Statistics::addKeyValuePair("num_variables_arithmetic", variables.integer().size() + variables.real().size());
+		Statistics::addKeyValuePair("num_variables_bitvector", variables.bitvector().size());
+		Statistics::addKeyValuePair("num_variables_uninterpreted", variables.uninterpreted().size());
 		Statistics::addKeyValuePair("num_constraints", num_constraints);
 		Statistics::addKeyValuePair("num_equalities", num_equalities);
 		Statistics::addKeyValuePair("num_disequalities", num_disequalities);
@@ -139,13 +139,6 @@ struct FormulaProperties : public Statistics {
 	}
 	void finalize(const parseformula::FormulaCollector& collector) {
 		num_variables = variables.size();
-		num_variables_boolean = get_variable_count(carl::VariableType::VT_BOOL);
-		num_variables_arithmetic_int = get_variable_count(carl::VariableType::VT_INT);
-		num_variables_arithmetic_real = get_variable_count(carl::VariableType::VT_REAL);
-		num_variables_arithmetic = num_variables_arithmetic_int + num_variables_arithmetic_real;
-		num_variables_bitvector = get_variable_count<carl::BVVariable>();
-		num_variables_uninterpreted = get_variable_count<carl::UVariable>();
-		num_variables_theory = num_variables_arithmetic + num_variables_bitvector + num_variables_uninterpreted;
 		if (collector.has_info("status")) {
 			add("answer", collector.get_info("status"));
 		} else {

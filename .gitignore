@@ -1,13 +1,8 @@
-# CMake
-CMakeCache.txt
-CMakeFiles
-
 *.swp
 *~
 **/config.h
 **/config.txt
 **/compile_information.cpp
-**/CMakeOptions.cpp
 /build/**
 /cmake-build-debug/
 /.idea/
@@ -16,10 +11,3 @@ CMakeFiles
 /manual/module_list.tex
 /nbproject/
 /src/gui/Config.java
-/src/lib/modules/ModuleType.h
-/src/lib/modules/ModuleType.cpp
-/src/lib/modules/MODULETYPES.txt
-/src/lib/modules/AddModules.h
-/src/lib/modules/Modules.cpp
-/src/lib/modules/Modules.h
-/src/lib/modules/NewCADModule/NewCADSettings.h

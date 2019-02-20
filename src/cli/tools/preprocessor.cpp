@@ -29,13 +29,16 @@ public:
 	PPStrategy solver;
 	carl::SMTLIBStream mOutput;
 	void add(const smtrat::FormulaT& f) {
-		solver.add(f);
+		solver.add(f.toCNF());
 	}
 	void annotateName(const smtrat::FormulaT& f, const std::string& name) {
 		SMTRAT_LOG_WARN("smtrat.preprocessor", "Preprocessor does not supprt named annotations.")
 	}
 	void check() {
 		solver.check();
+		carl::carlVariables vars;
+		solver.getInputSimplified().second.gatherVariables(vars);
+		mOutput.declare(vars);
 		mOutput.assertFormula(solver.getInputSimplified().second);
 		mOutput << "(check-sat)" << std::endl;
 	}

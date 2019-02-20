@@ -245,7 +245,7 @@
 							</table:table-cell>
 							<xsl:for-each select="/results/statistics/stat">
 								<xsl:variable name="StatID" select="@name"/>
-								<table:table-cell>
+								<table:table-cell office:value-type="float">
 									<xsl:attribute name="office:value">
 										<xsl:value-of select="$FILE/run[@solver_id=$SolverID]/statistics/stat[@name=$StatID]"/>
 									</xsl:attribute>
