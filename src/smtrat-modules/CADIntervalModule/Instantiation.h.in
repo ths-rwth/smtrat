@@ -1,0 +1,13 @@
+/**
+ * @file CADIntervalInstantiation.h.in
+ * @author Hanna Franzen <hanna.franzen@rwth-aachen.de>
+ *
+ * @version 2019-02-20
+ * Created on 2019-02-20.
+ */
+
+#include "${Prefix}Module.h"
+
+namespace smtrat {
+${INSTANTIATIONS}
+}
