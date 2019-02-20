@@ -25,6 +25,9 @@ namespace smtrat
 		
 			std::optional<FormulaT> eliminate_variable(carl::Variable v, const ConstraintT& c);
 
+			FormulaT eliminate_from_separated_weak_inequality(carl::Variable v, const Poly& with, const Poly& without, carl::Relation rel);
+			FormulaT eliminate_from_separated_disequality(carl::Variable v, const Poly& with, const Poly& without);
+			FormulaT eliminate_from_separated_strict_inequality(carl::Variable v, const Poly& with, const Poly& without, carl::Relation rel);
 			std::optional<FormulaT> eliminate_from_separated_factors(carl::Variable v, const Poly& with, const Poly& without, carl::Relation rel);
 			std::optional<FormulaT> eliminate_from_factors(carl::Variable v, const ConstraintT& c);
 			std::optional<FormulaT> eliminate_linear(carl::Variable v, const ConstraintT& c) const;

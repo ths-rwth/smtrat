@@ -58,120 +58,134 @@ namespace smtrat
 	}
 
 	template<class Settings>
+	FormulaT LVEModule<Settings>::eliminate_from_separated_weak_inequality(carl::Variable v, const Poly& with, const Poly& without, carl::Relation rel) {
+		auto res = lve::get_root(v, with);
+		if (res) {
+			SMTRAT_LOG_DEBUG("smtrat.lve", "Satisfying equality by selecting root " << v << " = " << *res);
+			mPPModel.assign(v, *res);
+			return FormulaT(carl::FormulaType::TRUE);
+		} else {
+			SMTRAT_LOG_DEBUG("smtrat.lve", "Factor " << with << " has no real root. Set " << v << " = 0 and eliminate factor.");
+			mPPModel.assign(v, 0);
+			carl::Sign sgn = lve::sgn_of_invariant_poly(v, with);
+			assert(sgn == carl::Sign::NEGATIVE || sgn == carl::Sign::POSITIVE);
+			if (sgn == carl::Sign::NEGATIVE) {
+				switch (rel) {
+					case carl::Relation::EQ:	rel = carl::Relation::EQ; break;
+					case carl::Relation::LEQ:	rel = carl::Relation::GEQ; break;
+					case carl::Relation::GEQ:	rel = carl::Relation::LEQ; break;
+					default: assert(false);
+				}
+				SMTRAT_LOG_DEBUG("smtrat.lve", "-> " << FormulaT(without, rel));
+				return FormulaT(without, rel);
+			} else if (sgn == carl::Sign::POSITIVE) {
+				SMTRAT_LOG_DEBUG("smtrat.lve", "-> " << FormulaT(without, rel));
+				return FormulaT(without, rel);
+			}
+		}
+	}
+
+	template<class Settings>
+	FormulaT LVEModule<Settings>::eliminate_from_separated_disequality(carl::Variable v, const Poly& with, const Poly& without) {
+		auto val = lve::get_non_root(v, with);
+		SMTRAT_LOG_DEBUG("smtrat.lve", "Remove factor " << with << " from disequality by selecting non-root " << v << " = " << val);
+		mPPModel.emplace(v, val);
+		return FormulaT(without, carl::Relation::NEQ);
+	}
+
+	inline carl::Sign sign_of(carl::Relation rel, bool invert) {
+		switch (rel) {
+			case carl::Relation::LESS:
+				return invert ? carl::Sign::POSITIVE : carl::Sign::NEGATIVE;
+			case carl::Relation::GREATER:
+				return invert ? carl::Sign::NEGATIVE : carl::Sign::POSITIVE;
+			default:
+				assert(false);
+				return carl::Sign::ZERO;
+		}
+	}
+
+	template<class Settings>
+	FormulaT LVEModule<Settings>::eliminate_from_separated_strict_inequality(carl::Variable v, const Poly& with, const Poly& without, carl::Relation rel) {
+		if (without.isConstant()) {
+			SMTRAT_LOG_DEBUG("smtrat.lve", "Remaining part " << without << " is constant, we choose a proper value for " << v);
+			carl::Sign target = sign_of(rel, without.constantPart() < 0);
+			auto val = lve::get_value_for_sgn(v, with, target);
+			if (val) {
+				SMTRAT_LOG_DEBUG("smtrat.lve", "Found proper value " << v << " = " << *val << " such that " << with << " " << rel << " 0");
+				mPPModel.emplace(v, *val);
+				return FormulaT(carl::FormulaType::TRUE);
+			} else {
+				SMTRAT_LOG_DEBUG("smtrat.lve", "No value exists for " << v << " such that " << with << " " << rel << " 0");
+				return FormulaT(carl::FormulaType::FALSE);
+			}
+		} else {
+			SMTRAT_LOG_DEBUG("smtrat.lve", "Remaining part " << without << " is not constant, we construct a conditional model for " << v);
+			auto posval = lve::get_value_for_sgn(v, with, carl::Sign::POSITIVE);
+			auto negval = lve::get_value_for_sgn(v, with, carl::Sign::NEGATIVE);
+			assert(posval || negval);
+			if (!posval) {
+				SMTRAT_LOG_DEBUG("smtrat.lve", "Cannot make " << with << " positive.");
+				mPPModel.emplace(v, *negval);
+				switch (rel) {
+					case carl::Relation::LESS:		return FormulaT(without, carl::Relation::GREATER);
+					case carl::Relation::GREATER:	return FormulaT(without, carl::Relation::LESS);
+					default: assert(false);
+				}
+				return FormulaT();
+			}
+			if (!negval) {
+				SMTRAT_LOG_DEBUG("smtrat.lve", "Cannot make " << with << " negative.");
+				mPPModel.emplace(v, *posval);
+				return FormulaT(without, rel);
+			}
+			SMTRAT_LOG_DEBUG("smtrat.lve", "Possible values for " << v << " are " << *posval << " and " << *negval);
+			if (FormulaT(without, carl::Relation::LESS).isFalse()) {
+				SMTRAT_LOG_DEBUG("smtrat.lve", "Cannot make " << without << " negative.");
+				switch (rel) {
+					case carl::Relation::LESS:		mPPModel.emplace(v, *negval); break;
+					case carl::Relation::GREATER:	mPPModel.emplace(v, *posval); break;
+					default: assert(false);
+				}
+				return FormulaT(without, carl::Relation::GREATER);
+			}
+			if (FormulaT(without, carl::Relation::GREATER).isFalse()) {
+				SMTRAT_LOG_DEBUG("smtrat.lve", "Cannot make " << without << " positive.");
+				switch (rel) {
+					case carl::Relation::LESS:		mPPModel.emplace(v, *posval); break;
+					case carl::Relation::GREATER:	mPPModel.emplace(v, *negval); break;
+					default: assert(false);
+				}
+				return FormulaT(without, carl::Relation::LESS);
+			}
+			std::vector<std::pair<FormulaT, ModelValue>> subs;
+			switch (rel) {
+				case carl::Relation::LESS:
+					subs.emplace_back(FormulaT(without, carl::Relation::LESS), *posval);
+					subs.emplace_back(FormulaT(without, carl::Relation::GREATER), *negval);
+					break;
+				case carl::Relation::GREATER:
+					subs.emplace_back(FormulaT(without, carl::Relation::LESS), *negval);
+					subs.emplace_back(FormulaT(without, carl::Relation::GREATER), *posval);
+					break;
+				default: assert(false);
+			}
+			mPPModel.emplace(v, carl::createSubstitution<Rational,Poly,carl::ModelConditionalSubstitution<Rational,Poly>>(subs));
+			SMTRAT_LOG_DEBUG("smtrat.lve", "Constructed conditional model: " << mPPModel);
+			return FormulaT(without, carl::Relation::NEQ);
+		}
+	}
+
+	template<class Settings>
 	std::optional<FormulaT> LVEModule<Settings>::eliminate_from_separated_factors(carl::Variable v, const Poly& with, const Poly& without, carl::Relation rel) {
 		SMTRAT_LOG_DEBUG("smtrat.lve", "Considering " << v << " in " << with << " and " << without << " and relation " << rel);
 		if (carl::isWeak(rel)) {
-			auto res = lve::get_root(v, with);
-			if (res) {
-				SMTRAT_LOG_DEBUG("smtrat.lve", "Satisfying equality by selecting root " << v << " = " << *res);
-				mPPModel.assign(v, *res);
-				return FormulaT(carl::FormulaType::TRUE);
-			} else {
-				SMTRAT_LOG_DEBUG("smtrat.lve", "Factor " << with << " has no real root. Set " << v << " = 0 and eliminate factor.");
-				mPPModel.assign(v, 0);
-				carl::Sign sgn = lve::sgn_of_invariant_poly(v, with);
-				assert(sgn == carl::Sign::NEGATIVE || sgn == carl::Sign::POSITIVE);
-				if (sgn == carl::Sign::NEGATIVE) {
-					switch (rel) {
-						case carl::Relation::EQ:	rel = carl::Relation::EQ; break;
-						case carl::Relation::LEQ:	rel = carl::Relation::GEQ; break;
-						case carl::Relation::GEQ:	rel = carl::Relation::LEQ; break;
-						default: assert(false);
-					}
-					SMTRAT_LOG_DEBUG("smtrat.lve", "-> " << FormulaT(without, rel));
-					return FormulaT(without, rel);
-				} else if (sgn == carl::Sign::POSITIVE) {
-					SMTRAT_LOG_DEBUG("smtrat.lve", "-> " << FormulaT(without, rel));
-					return FormulaT(without, rel);
-				}
-			}
+			return eliminate_from_separated_weak_inequality(v, with, without, rel);
 		} else if (rel == carl::Relation::NEQ) {
-			auto val = lve::get_non_root(v, with);
-			SMTRAT_LOG_DEBUG("smtrat.lve", "Remove factor " << with << " from disequality by selecting non-root " << v << " = " << val);
-			mPPModel.emplace(v, val);
-			return FormulaT(without, rel);
+			return eliminate_from_separated_disequality(v, with, without);
 		} else {
 			assert(carl::isStrict(rel));
-			if (without.isConstant()) {
-				SMTRAT_LOG_DEBUG("smtrat.lve", "Remaining part " << without << " is constant, we choose a proper value for " << v);
-				carl::Sign target = carl::Sign::POSITIVE;
-				if (without.constantPart() < 0) {
-					switch (rel) {
-						case carl::Relation::LESS:		target = carl::Sign::POSITIVE; break;
-						case carl::Relation::GREATER:	target = carl::Sign::NEGATIVE; break;
-						default: assert(false);
-					}
-				} else {
-					switch (rel) {
-						case carl::Relation::LESS:		target = carl::Sign::NEGATIVE; break;
-						case carl::Relation::GREATER:	target = carl::Sign::POSITIVE; break;
-						default: assert(false);
-					}
-				}
-				auto val = lve::get_value_for_sgn(v, with, target);
-				if (val) {
-					SMTRAT_LOG_DEBUG("smtrat.lve", "Found proper value " << v << " = " << *val << " such that " << with << " " << rel << " 0");
-					mPPModel.emplace(v, *val);
-					return FormulaT(carl::FormulaType::TRUE);
-				} else {
-					SMTRAT_LOG_DEBUG("smtrat.lve", "No value exists for " << v << " such that " << with << " " << rel << " 0");
-					return FormulaT(carl::FormulaType::FALSE);
-				}
-			} else {
-				SMTRAT_LOG_DEBUG("smtrat.lve", "Remaining part " << without << " is not constant, we construct a conditional model for " << v);
-				auto posval = lve::get_value_for_sgn(v, with, carl::Sign::POSITIVE);
-				auto negval = lve::get_value_for_sgn(v, with, carl::Sign::NEGATIVE);
-				assert(posval || negval);
-				if (!posval) {
-					SMTRAT_LOG_DEBUG("smtrat.lve", "Cannot make " << with << " positive.");
-					mPPModel.emplace(v, *negval);
-					switch (rel) {
-						case carl::Relation::LESS:		return FormulaT(without, carl::Relation::GREATER);
-						case carl::Relation::GREATER:	return FormulaT(without, carl::Relation::LESS);
-						default: assert(false);
-					}
-					return FormulaT();
-				}
-				if (!negval) {
-					SMTRAT_LOG_DEBUG("smtrat.lve", "Cannot make " << with << " negative.");
-					mPPModel.emplace(v, *posval);
-					return FormulaT(without, rel);
-				}
-				SMTRAT_LOG_DEBUG("smtrat.lve", "Possible values for " << v << " are " << *posval << " and " << *negval);
-				if (FormulaT(without, carl::Relation::LESS).isFalse()) {
-					SMTRAT_LOG_DEBUG("smtrat.lve", "Cannot make " << without << " negative.");
-					switch (rel) {
-						case carl::Relation::LESS:		mPPModel.emplace(v, *negval); break;
-						case carl::Relation::GREATER:	mPPModel.emplace(v, *posval); break;
-						default: assert(false);
-					}
-					return FormulaT(without, carl::Relation::GREATER);
-				}
-				if (FormulaT(without, carl::Relation::GREATER).isFalse()) {
-					SMTRAT_LOG_DEBUG("smtrat.lve", "Cannot make " << without << " positive.");
-					switch (rel) {
-						case carl::Relation::LESS:		mPPModel.emplace(v, *posval); break;
-						case carl::Relation::GREATER:	mPPModel.emplace(v, *negval); break;
-						default: assert(false);
-					}
-					return FormulaT(without, carl::Relation::LESS);
-				}
-				std::vector<std::pair<FormulaT, ModelValue>> subs;
-				switch (rel) {
-					case carl::Relation::LESS:
-						subs.emplace_back(FormulaT(without, carl::Relation::LESS), *posval);
-						subs.emplace_back(FormulaT(without, carl::Relation::GREATER), *negval);
-						break;
-					case carl::Relation::GREATER:
-						subs.emplace_back(FormulaT(without, carl::Relation::LESS), *negval);
-						subs.emplace_back(FormulaT(without, carl::Relation::GREATER), *posval);
-						break;
-					default: assert(false);
-				}
-				mPPModel.emplace(v, carl::createSubstitution<Rational,Poly,carl::ModelConditionalSubstitution<Rational,Poly>>(subs));
-				SMTRAT_LOG_DEBUG("smtrat.lve", "Constructed conditional model: " << mPPModel);
-				return FormulaT(without, carl::Relation::NEQ);
-			}
+			return eliminate_from_separated_strict_inequality(v, with, without, rel);
 		}
 		return std::nullopt;
 	}
