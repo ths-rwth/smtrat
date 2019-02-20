@@ -566,6 +566,16 @@ namespace smtrat {
         return finalFormula;
     }
 
+    FormulaT createSign(VariableCapsule variableCapsule) {
+        std::vector<Poly> operands {Poly(variableCapsule.getZVariable()), Poly(variableCapsule.getXVariable() * variableCapsule.getYVariable())};
+
+        FormulaT finalFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands), carl::Relation::EQ);
+
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "created Sign Axiom Formula is: " << finalFormula << endl; }
+
+        return finalFormula;
+    }
+
     bool abEqualcCheck(VariableCapsule variableCapsuleOuter, Model abstractModel){
         carl::Variable xVariable = variableCapsuleOuter.getXVariable();
         carl::Variable yVariable = variableCapsuleOuter.getYVariable();
@@ -638,6 +648,32 @@ namespace smtrat {
         return false;
     }
 
+    RationalCapsule generateAbcPrimeForICP(RationalCapsule rationalCapsule) {
+
+        // b' = (b - (c/a)) / 2
+        double bPrime = ((rationalCapsule.getBRational().get_d() - (rationalCapsule.getCRational().get_d()/rationalCapsule.getARational().get_d())))/2;
+
+        // In casr bPrime = 0, aPrime can not be generated.
+        if (bPrime <= 0) {
+            bPrime = rationalCapsule.getBRational().get_d();
+        }
+        // a' = (a - (c/b')) / 2
+        double aPrime = ((rationalCapsule.getARational().get_d() - (rationalCapsule.getCRational().get_d()/bPrime)))/2;
+
+        // c' = a * b
+        Rational cPrime = aPrime * bPrime;
+
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "generated aPrime: " << aPrime << " bPrime: " << bPrime << " cPrime: " << cPrime << endl; }
+
+        return  RationalCapsule(aPrime, bPrime, cPrime);
+    }
+
+    bool isAnyRationalIsZero (RationalCapsule rationalCapsule) {
+        return carl::getNum(rationalCapsule.getARational()) == ZERO_RATIONAL ||
+                carl::getNum(rationalCapsule.getBRational()) == ZERO_RATIONAL ||
+                carl::getNum(rationalCapsule.getCRational()) == ZERO_RATIONAL;
+    }
+
     FormulasT AxiomFactory::createFormula(AxiomType axiomType, Model abstractModel, MonomialMap monomialMap) {
 
         FormulasT formulas;
@@ -708,26 +744,40 @@ namespace smtrat {
 
             } else if (axiomType == AxiomType::ICP) {
 
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "ICP axioms are creating..." << endl; }
+
+                // For ICP, we take the a, b, c always as positive value.
                 RationalCapsule rationalCapsuleAbs(carl::abs(rationalCapsule.getARational()), carl::abs(rationalCapsule.getBRational()), carl::abs(rationalCapsule.getCRational()));
 
-                // NOTE: we assume a' = a, b' = b, c' = a * b. Here rationalCapsulePrime include the primes.
-                RationalCapsule rationalCapsulePrime(rationalCapsuleAbs.getARational(), rationalCapsuleAbs.getBRational(), rationalCapsuleAbs.getARational() * rationalCapsuleAbs.getBRational());
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "rationalCapsuleAbs for ICP with a: " << rationalCapsuleAbs.getARational() << " b: " << rationalCapsuleAbs.getBRational() << " c: " << rationalCapsuleAbs.getCRational() << endl; }
 
-                if (abGreatercCheck(rationalCapsuleAbs)){
+                if (isAnyRationalIsZero(rationalCapsuleAbs)){
 
-                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abGreatercCheck is true and ICP is creating..." << endl; }
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "one of the rational is zero and Sign is creating..." << endl; }
 
-                    formulas.push_back(createICPGreaterOne(variableCapsuleOuter, rationalCapsulePrime));
-                    formulas.push_back(createICPGreaterTwo(variableCapsuleOuter, rationalCapsulePrime));
-
-                } else if (abLesscCheck(rationalCapsuleAbs)) {
-
-                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abLesscCheck is true and ICP is creating..." << endl; }
-
-                    formulas.push_back(createICPLess(variableCapsuleOuter, rationalCapsulePrime));
+                    formulas.push_back(createSign(variableCapsuleOuter));
 
                 } else {
-                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "None of the precondition is true and ICP is not creating..." << endl; }
+
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "none of the rational is zero and ICP is creating..." << endl; }
+
+                    // RationalCapsule rationalCapsulePrime = generateAbcPrimeForICP(rationalCapsuleAbs);
+                    RationalCapsule rationalCapsulePrime(rationalCapsuleAbs.getARational(), rationalCapsuleAbs.getBRational(), rationalCapsuleAbs.getARational() * rationalCapsuleAbs.getBRational());
+
+                    if (abGreatercCheck(rationalCapsuleAbs)) {
+
+                        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abGreatercCheck is true and ICPGreater is creating..." << endl; }
+
+                        formulas.push_back(createICPGreaterOne(variableCapsuleOuter, rationalCapsulePrime));
+                        formulas.push_back(createICPGreaterTwo(variableCapsuleOuter, rationalCapsulePrime));
+
+                    } else if (abLesscCheck(rationalCapsuleAbs)) {
+
+                        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abLesscCheck is true and ICPLess is creating..." << endl; }
+
+                        formulas.push_back(createICPLess(variableCapsuleOuter, rationalCapsulePrime));
+
+                    } else { if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "None of the precondition is true and ICP is not creating..." << endl; } }
                 }
             }
         }
