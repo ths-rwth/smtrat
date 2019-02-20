@@ -96,6 +96,9 @@ int preprocess_file(const std::string& filename, const std::string& outfile) {
 		file << e.mOutput;
 		file.close();
 	}
+	if (smtrat::settings_solver().print_model) {
+		e.solver.printAssignment();
+	}
 
 	return exitCode;
 }
