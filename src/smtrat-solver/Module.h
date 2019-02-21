@@ -25,7 +25,10 @@
 #include <atomic>
 #include <mutex>
 #include <carl/formula/model/Assignment.h>
+#include <carl/util/TimingCollector.h>
 #include <smtrat-common/smtrat-common.h>
+#include <smtrat-common/statistics/Statistics.h>
+#include <smtrat-common/statistics/StatisticsCollector.h>
 #include "ModuleInput.h"
 
 namespace smtrat
@@ -80,8 +83,42 @@ namespace smtrat
     {
         friend Manager;
         public:
-            /// For time measuring purposes.
-            typedef std::chrono::high_resolution_clock clock;
+			struct ModuleStatistics: public Statistics {
+#ifdef SMTRAT_DEVOPTION_Statistics
+				carl::timing::time_point timer_add_started;
+				carl::timing::time_point timer_check_started;
+				carl::timing::time_point timer_remove_started;
+				carl::timing::duration timer_add_total;
+				carl::timing::duration timer_check_total;
+				carl::timing::duration timer_remove_total;
+				bool timer_add_running;
+				bool timer_check_running;
+				bool timer_remove_running;
+				std::size_t check_count = 0;
+
+				void collect() override {
+					addKeyValuePair("timer_add_total", timer_add_total.count());
+					addKeyValuePair("timer_check_total", timer_check_total.count());
+					addKeyValuePair("timer_remove_total", timer_remove_total.count());
+					addKeyValuePair("check_count", check_count);
+				}
+
+				void start_add() { timer_add_started = carl::timing::now(); }
+				void start_check() { timer_check_started = carl::timing::now(); }
+				void start_remove() { timer_remove_started = carl::timing::now(); }
+				void stop_add() { timer_add_total += carl::timing::since(timer_add_started); }
+				void stop_check() { timer_check_total += carl::timing::since(timer_check_started); }
+				void stop_remove() { timer_remove_total += carl::timing::since(timer_remove_started); }
+#else
+				void start_add() {}
+				void start_check() {}
+				void start_remove() {}
+				void stop_add() {}
+				void stop_check() {}
+				void stop_remove() {}
+#endif
+			};
+
             /// For time measuring purposes.
             typedef std::chrono::microseconds timeunit;
             /*
@@ -157,6 +194,9 @@ namespace smtrat
             /// The formula passed to the backends of this module.
             ModuleInput* mpPassedFormula;
 			std::string mModuleName;
+#ifdef SMTRAT_DEVOPTION_Statistics
+			ModuleStatistics& mStatistics = statistics_get<ModuleStatistics>(moduleName());
+#endif
         protected:
             /// Stores the infeasible subsets.
             std::vector<FormulaSetT> mInfeasibleSubsets;
@@ -1234,165 +1274,6 @@ namespace smtrat
              * @param _answer The found answer.
              */
             Answer foundAnswer( Answer _answer );
-            
-            /// Measuring module times.
-            clock::time_point mTimerCheckStarted;
-            /// Measuring module times.
-            clock::time_point mTimerAddStarted;
-            /// Measuring module times.
-            clock::time_point mTimerRemoveStarted;
-            /// Measuring module times.
-            timeunit mTimerAddTotal;
-            /// Measuring module times.
-            timeunit mTimerCheckTotal;
-            /// Measuring module times.
-            timeunit mTimerRemoveTotal;
-            /// For debug purposes.
-            bool mTimerAddRunning;
-            /// For debug purposes.
-            bool mTimerCheckRunning;
-            /// For debug purposes.
-            bool mTimerRemoveRunning;
-            /// For debug purposes.
-            unsigned mNrConsistencyChecks;
-        public:
-            /**
-             * Starts the timer to stop the timing for adding formulas performed by this module.
-             */
-            void startAddTimer()
-            {
-                assert(!mTimerAddRunning);
-                mTimerAddRunning = true;
-                mTimerAddStarted = clock::now();
-            }
-
-            /**
-             * Stops the timer to stop the timing for adding formulas performed by this module.
-             */
-            void stopAddTimer()
-            {
-                assert( mTimerAddRunning );
-                mTimerAddTotal += std::chrono::duration_cast<timeunit>( clock::now() - mTimerAddStarted );
-                mTimerAddRunning = false;
-            }
-
-            /**
-             * Starts the timer to stop the timing for checking formulas performed by this module.
-             */
-            void startCheckTimer()
-            {
-                assert( !mTimerCheckRunning );
-                mTimerCheckRunning = true;
-                mTimerCheckStarted = clock::now();
-            }
-
-            /**
-             * Stops the timer to stop the timing for checking formulas performed by this module.
-             */
-            void stopCheckTimer()
-            {
-                assert( mTimerCheckRunning );
-                mTimerCheckTotal += std::chrono::duration_cast<timeunit>( clock::now() - mTimerCheckStarted );
-                mTimerCheckRunning = false;
-            }
-
-            /**
-             * Starts the timer to stop the timing for removing formulas performed by this module.
-             */
-            void startRemoveTimer()
-            {
-                assert( !mTimerRemoveRunning );
-                mTimerRemoveRunning = true;
-                mTimerRemoveStarted = clock::now();
-
-            }
-
-            /**
-             * Stops the timer to stop the timing for removing formulas performed by this module.
-             */
-            void stopRemoveTimer()
-            {
-                assert( mTimerRemoveRunning );
-                mTimerRemoveTotal += std::chrono::duration_cast<timeunit>( clock::now() - mTimerRemoveStarted );
-                mTimerRemoveRunning = false;
-            }
-
-            /**
-             * Starts the timers according to the given integer of this module:
-             *      If its first bit is set, the timer for adding formulas is started.
-             *      If its second bit is set, the timer for checking formulas is started.
-             *      If its third bit is set, the timer for removing formulas is started.
-             * @param timers The integer specifying which timers to start.
-             */
-            void startTimers( int timers )
-            {
-                if( ( timers & 1 ) > 0 )
-                    startAddTimer();
-                if( ( timers & 2 ) > 0 )
-                    startCheckTimer();
-                if( ( timers & 4 ) > 0 )
-                    startRemoveTimer();
-            }
-
-            /**
-             * Stops all timers of this module.
-             * @return An integer showing which timers were stopped:
-             *      If its first bit is set, the timer for adding formulas was stopped.
-             *      If its second bit is set, the timer for checking formulas was stopped.
-             *      If its third bit is set, the timer for removing formulas was stopped.
-             */
-            int stopAllTimers()
-            {
-                int result = 0;
-                if( mTimerAddRunning )
-                {
-                    stopAddTimer();
-                    result |= 1;
-                }
-                if( mTimerCheckRunning )
-                {
-                    stopCheckTimer();
-                    result |= 2;
-                }
-                if( mTimerRemoveRunning )
-                {
-                    stopRemoveTimer();
-                    result |= 4;
-                }
-                return result;
-            }
-
-            /**
-             * @return The total time of adding formulas performed by this module.
-             */
-            double getAddTimerMS() const
-            {
-                return (double)mTimerAddTotal.count() / 1000;
-            }
-
-            /**
-             * @return The total time of checking formulas performed by this module.
-             */
-            double getCheckTimerMS() const
-            {
-                return (double)mTimerCheckTotal.count() / 1000;
-            }
-
-            /**
-             * @return The total time of removing formulas performed by this module.
-             */
-            double getRemoveTimerMS() const
-            {
-                return (double)mTimerRemoveTotal.count() / 1000;
-            }
-
-            /**
-             * @return The number of consistency checks performed by this module.
-             */
-            unsigned getNrConsistencyChecks() const
-            {
-                return mNrConsistencyChecks;
-            }
     };
 
 	inline std::ostream& operator<<(std::ostream& os, Module::LemmaType lt) {

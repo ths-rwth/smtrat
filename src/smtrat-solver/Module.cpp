@@ -108,9 +108,9 @@ namespace smtrat
         mFinalCheck = _final;
         mFullCheck = _full;
         mMinimizingCheck = _minimize;
-        #ifdef SMTRAT_DEVOPTION_MeasureTime
-        startCheckTimer();
-        ++(mNrConsistencyChecks);
+		mStatistics.start_check();
+        #ifdef SMTRAT_DEVOPTION_Statistics
+		++mStatistics.check_count;
         #endif
         #ifdef DEBUG_MODULE_CALLS_IN_SMTLIB
         std::cout << "(assert (and";
@@ -121,15 +121,13 @@ namespace smtrat
         clearLemmas();
         if( rReceivedFormula().empty() )
         {
-            #ifdef SMTRAT_DEVOPTION_MeasureTime
-            stopCheckTimer();
+            #ifdef SMTRAT_DEVOPTION_Statistics
+			mStatistics.stop_check();
             #endif
             return foundAnswer( SAT );
         }
         Answer result = checkCore();
-        #ifdef SMTRAT_DEVOPTION_MeasureTime
-        stopCheckTimer();
-        #endif
+        mStatistics.stop_check();
 //        assert(result == UNKNOWN || result == UNSAT || result == SAT);
 		SMTRAT_LOG_DEBUG("smtrat.module", "Status: " << result);
         assert( result != UNSAT || hasValidInfeasibleSubset() );
@@ -168,6 +166,7 @@ namespace smtrat
     
     bool Module::add( ModuleInput::const_iterator _receivedSubformula )
     {
+		mStatistics.start_add();
         SMTRAT_LOG_DEBUG("smtrat.module", __func__ << " to " << moduleName() << " (" << mId << "):");
         SMTRAT_LOG_DEBUG("smtrat.module", "\t" << _receivedSubformula->formula());
         if( mFirstUncheckedReceivedSubformula == mpReceivedFormula->end() )
@@ -193,11 +192,13 @@ namespace smtrat
         bool result = addCore( _receivedSubformula );
         if( !result )
             foundAnswer( UNSAT );
+		mStatistics.stop_add();
         return result;
     }
     
     void Module::remove( ModuleInput::const_iterator _receivedSubformula )
     {
+		mStatistics.start_remove();
         SMTRAT_LOG_DEBUG("smtrat.module", __func__ << " from " << moduleName() << " (" << mId << "):");
         SMTRAT_LOG_DEBUG("smtrat.module", "\t" << _receivedSubformula->formula());
         removeCore( _receivedSubformula );
@@ -240,6 +241,7 @@ namespace smtrat
         }
         if( mInfeasibleSubsets.empty() ) 
             mSolverState.store(UNKNOWN);
+		mStatistics.stop_remove();
     }
 
     Answer Module::checkCore()
@@ -791,9 +793,6 @@ namespace smtrat
                 bool assertionFailed = false;
                 for( auto module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
                 {
-                    #ifdef SMTRAT_DEVOPTION_MeasureTime
-                    (*module)->startAddTimer();
-                    #endif
                     (*module)->mLemmas.clear(); // TODO: this might be removed, as it is now done in check as well
                     if( !(*module)->mInfeasibleSubsets.empty() )
                     {
@@ -808,9 +807,6 @@ namespace smtrat
                             assertionFailed = true;
                         }
                     }
-                    #ifdef SMTRAT_DEVOPTION_MeasureTime
-                    (*module)->stopAddTimer();
-                    #endif
                 }
                 mFirstSubformulaToPass = mpPassedFormula->end();
                 mInformedConstraints.insert( mConstraintsToInform.begin(), mConstraintsToInform.end() );
@@ -863,9 +859,6 @@ namespace smtrat
             mpPassedFormula->clearOrigins( _subformula );
         }
         assert( !_subformula->hasOrigins() );
-        #ifdef SMTRAT_DEVOPTION_MeasureTime
-        int timers = stopAllTimers();
-        #endif
         // Check whether the passed sub-formula has already been part of a consistency check of the backends.
         bool subformulaChecked = true;
         if( _subformula == mFirstSubformulaToPass )
@@ -894,22 +887,12 @@ namespace smtrat
                 mAllBackends = mpManager->getAllBackends( this );
                 for( auto module = mAllBackends.begin(); module != mAllBackends.end(); ++module )
                 {
-                    #ifdef SMTRAT_DEVOPTION_MeasureTime
-                    (*module)->startRemoveTimer();
-                    #endif
                     (*module)->remove( _subformula );
-                    #ifdef SMTRAT_DEVOPTION_MeasureTime
-                    (*module)->stopRemoveTimer();
-                    #endif
                 }
             }
         }
         // Delete the sub formula from the passed formula.
-        auto result = mpPassedFormula->erase( _subformula );
-        #ifdef SMTRAT_DEVOPTION_MeasureTime
-        startTimers(timers);
-        #endif
-        return result;
+        return mpPassedFormula->erase( _subformula );
     }
     
     void Module::clearPassedFormula()
