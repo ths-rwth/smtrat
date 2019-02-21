@@ -156,6 +156,7 @@ namespace smtrat
             const ModuleInput* mpReceivedFormula;
             /// The formula passed to the backends of this module.
             ModuleInput* mpPassedFormula;
+			std::string mModuleName;
         protected:
             /// Stores the infeasible subsets.
             std::vector<FormulaSetT> mInfeasibleSubsets;
@@ -230,7 +231,7 @@ namespace smtrat
              * @param _foundAnswer Vector of Booleans: If any of them is true, we have to terminate a running check procedure.
              * @param _manager A reference to the manager of the solver using this module.
              */
-            Module( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager = NULL );
+            Module( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager = nullptr, std::string module_name = "Module" );
             
             /**
              * Destructs a module.
@@ -588,7 +589,7 @@ namespace smtrat
              * @return The name of the given module type as name.
              */
             virtual std::string moduleName() const {
-				return "Module";
+				return mModuleName;
 			}
             
             carl::Variable::Arg objective() const

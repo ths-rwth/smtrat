@@ -45,11 +45,12 @@ namespace smtrat
 
     // Constructor.
     
-    Module::Module( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager ):
+    Module::Module( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager, std::string module_name ):
         mId( 0 ),
         mThreadPriority( thread_priority( 0 , 0 ) ),
         mpReceivedFormula( _formula ),
         mpPassedFormula( new ModuleInput() ),
+		mModuleName(std::move(module_name)),
         mInfeasibleSubsets(),
         mpManager( _manager ),
         mModel(),

@@ -18,13 +18,13 @@ namespace smtrat
     class PModule : public Module
     {
         private:
-            bool mAppliedPreprocessing;
+            bool mAppliedPreprocessing = false;
 			std::pair<bool,FormulaT> mSimplifiedFormula;
 			
 			void collectSimplifiedFormula();
         public:
             
-            PModule( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager = NULL );
+            PModule( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager = nullptr, std::string module_name = "PModule" );
 
             /**
              * @return true, if this module is a preprocessor that is a module, which simplifies
