@@ -63,10 +63,8 @@ namespace smtrat
 			// Members.
 			
 		public:
-			typedef Settings SettingsType;
-			std::string moduleName() const {
-				return SettingsType::moduleName;
-			}
+			using SettingsType = Settings;
+
 			<CLASSNAME>(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
 
 			~<CLASSNAME>();

@@ -12,9 +12,7 @@ namespace smtrat
 {
     template<class Settings>
     ESModule<Settings>::ESModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager ):
-        PModule( _formula, _conditionals, _manager ),
-        mBoolSubs(),
-        mArithSubs()
+        PModule( _formula, _conditionals, _manager, Settings::moduleName )
     {}
 
     template<class Settings>

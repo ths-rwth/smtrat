@@ -29,9 +29,6 @@ namespace smtrat
 			bool boundsChanged = false;
         public:
 			typedef Settings SettingsType;
-			std::string moduleName() const {
-				return SettingsType::moduleName;
-			}
             PFEModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~PFEModule();

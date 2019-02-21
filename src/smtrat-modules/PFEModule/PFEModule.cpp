@@ -13,7 +13,7 @@ namespace smtrat
 {
 	template<class Settings>
 	PFEModule<Settings>::PFEModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager ):
-		PModule( _formula, _conditionals, _manager ),
+		PModule( _formula, _conditionals, _manager, Settings::moduleName ),
 		visitor(),
 		varbounds()
 	{   

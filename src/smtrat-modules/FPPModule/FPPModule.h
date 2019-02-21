@@ -18,17 +18,14 @@ namespace smtrat
 	{
 		private:
 #ifdef SMTRAT_DEVOPTION_Statistics
-			FPPStatistics& mStatistics = statistics_get<FPPStatistics>(SettingsType::moduleName);
+			FPPStatistics& mStatistics = statistics_get<FPPStatistics>(Settings::moduleName);
 #endif
-			FormulaT mFormulaAfterPreprocessing;
+			FormulaT mFormulaAfterPreprocessing = FormulaT(carl::FormulaType::TRUE);
 			Model mPartialModel;
 			///
 			typename Settings::Preprocessor mPreprocessor;
 		public:
 			typedef Settings SettingsType;
-			std::string moduleName() const {
-				return SettingsType::moduleName;
-			}
 			FPPModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = NULL );
 
 			~FPPModule();

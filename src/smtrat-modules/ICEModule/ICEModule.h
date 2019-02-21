@@ -140,9 +140,6 @@ namespace smtrat
 			
 		public:
 			typedef Settings SettingsType;
-			std::string moduleName() const {
-				return SettingsType::moduleName;
-			}
 			ICEModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
 
 			~ICEModule();
