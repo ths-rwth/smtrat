@@ -3,7 +3,7 @@
 #include <carl/interval/Interval.h>
 #include "../common.h"
 
-#include "../utils/CADConstraints.h"
+#include "Sample.h"
 
 namespace smtrat {
 namespace cad {
@@ -11,9 +11,8 @@ namespace cad {
 	class LiftingLevel {
 	public:
 		using Interval = carl::Interval<RAN>;
-		using Constraints = CADConstraints<Settings::backtracking>;
 	private:
-		const Constraints& mConstraints;
+		const ConstraintT& mConstraints;
 		std::vector<carl::Variable> mVariables;
 		Sample curSample;
 		//std::vector<UPoly&> polynoms; @todo
@@ -76,6 +75,36 @@ namespace cad {
 		LiftingLevel(LiftingLevel& lev):predecessor{lev}{
 			predecessor = lev;
 			//@todo: init intervals, levelintervals 
+		}
+
+		void reset(std::vector<carl::Variable>&& vars) {
+			mVariables = std::move(vars);
+			//@todo current sample
+			intervals.clear();
+			levelintervals.clear();
+		}
+
+		const auto& getUnsatIntervals() const {
+			return intervals;
+		}
+
+		/** checks whether the unsat intervals contain (-inf, inf) */
+		bool isSingletonCover() {
+			if(intervals.empty()) {
+				return false;
+			}
+			else {
+				for(auto inter : intervals) {
+					if(inter.isInfinite()) {
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		bool isUnsatCover() {
+			//@todo
 		}
 
 	};
