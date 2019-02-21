@@ -77,16 +77,6 @@ namespace smtrat
         mObjective( carl::Variable::NO_VARIABLE ),
         mObjectiveFunction(),
         mVariableCounters()
-#ifdef SMTRAT_DEVOPTION_MeasureTime
-        ,
-        mTimerAddTotal( 0 ),
-        mTimerCheckTotal( 0 ),
-        mTimerRemoveTotal( 0 ),
-        mTimerAddRunning( false ),
-        mTimerCheckRunning( false ),
-        mTimerRemoveRunning( false ),
-        mNrConsistencyChecks( 0 )
-#endif
     {}
 
     // Destructor.
