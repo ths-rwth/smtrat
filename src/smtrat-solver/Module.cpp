@@ -103,12 +103,12 @@ namespace smtrat
     
     Answer Module::check( bool _final, bool _full, bool _minimize )
     {
+		mStatistics.start_check();
         SMTRAT_LOG_INFO("smtrat.module", __func__  << (_final ? " final" : " partial") << (_full ? " full" : " lazy" ) << " with module " << moduleName() << " (" << mId << ")");
         print("\t");
         mFinalCheck = _final;
         mFullCheck = _full;
         mMinimizingCheck = _minimize;
-		mStatistics.start_check();
         #ifdef SMTRAT_DEVOPTION_Statistics
 		++mStatistics.check_count;
         #endif
@@ -121,13 +121,10 @@ namespace smtrat
         clearLemmas();
         if( rReceivedFormula().empty() )
         {
-            #ifdef SMTRAT_DEVOPTION_Statistics
-			mStatistics.stop_check();
-            #endif
+            mStatistics.stop_check();
             return foundAnswer( SAT );
         }
         Answer result = checkCore();
-        mStatistics.stop_check();
 //        assert(result == UNKNOWN || result == UNSAT || result == SAT);
 		SMTRAT_LOG_DEBUG("smtrat.module", "Status: " << result);
         assert( result != UNSAT || hasValidInfeasibleSubset() );
@@ -140,6 +137,7 @@ namespace smtrat
         }
         #endif
 		receivedFormulaChecked();
+        mStatistics.stop_check();
         return foundAnswer( result );
     }
 
