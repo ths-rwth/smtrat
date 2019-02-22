@@ -7,6 +7,8 @@
 
 #include "CNFerModule.h"
 
+#include <carl/formula/helpers/to_cnf.h>
+
 using namespace std;
 using namespace carl;
 
@@ -28,7 +30,7 @@ namespace smtrat
              * Add the currently considered formula of the received constraint as clauses
              * to the passed formula.
              */
-            FormulaT formulaToAssertInCnf = receivedSubformula->formula().toCNF( true, true, true );
+            FormulaT formulaToAssertInCnf = carl::to_cnf(receivedSubformula->formula());
             if( formulaToAssertInCnf.getType() == TRUE )
             {
                 // No need to add it.
