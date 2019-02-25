@@ -104,6 +104,14 @@ namespace smtrat {
 
     }
 
+    FormulasT createZero(smtrat::VariableCapsule variableCapsule) {
+        FormulasT zeroFormulas;
+        zeroFormulas.push_back(createZeroOne(variableCapsule.getXVariable(), variableCapsule.getYVariable(), variableCapsule.getZVariable()));
+        zeroFormulas.push_back(createZeroTwo(variableCapsule.getXVariable(), variableCapsule.getYVariable(), variableCapsule.getZVariable()));
+        zeroFormulas.push_back(createZeroThree(variableCapsule.getXVariable(), variableCapsule.getYVariable(), variableCapsule.getZVariable()));
+        return zeroFormulas;
+    }
+
     FormulaT createTangentPlaneNEQOne (carl::Variable xVariable, carl::Variable yVariable, carl::Variable zVariable, Rational aRational) {
 
         // x - a = 0
@@ -566,16 +574,6 @@ namespace smtrat {
         return finalFormula;
     }
 
-    FormulaT createSign(VariableCapsule variableCapsule) {
-        std::vector<Poly> operands {Poly(variableCapsule.getZVariable()), Poly(variableCapsule.getXVariable() * variableCapsule.getYVariable())};
-
-        FormulaT finalFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands), carl::Relation::EQ);
-
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "created Sign Axiom Formula is: " << finalFormula << endl; }
-
-        return finalFormula;
-    }
-
     bool abEqualcCheck(VariableCapsule variableCapsuleOuter, Model abstractModel){
         carl::Variable xVariable = variableCapsuleOuter.getXVariable();
         carl::Variable yVariable = variableCapsuleOuter.getYVariable();
@@ -735,7 +733,7 @@ namespace smtrat {
 
                         } else { if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is false Monotonicity is not creating..." << endl; }}
 
-                    } else if (axiomType == AxiomType::CONGRUENCE){
+                    } else {
 
                         formulas.push_back(createCongruence(variableCapsuleOuter, variableCapsuleInner));
 
@@ -753,9 +751,10 @@ namespace smtrat {
 
                 if (isAnyRationalIsZero(rationalCapsuleAbs)){
 
-                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "one of the rational is zero and Sign is creating..." << endl; }
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "one of the rational is zero and Zero axiom is creating..." << endl; }
 
-                    formulas.push_back(createSign(variableCapsuleOuter));
+                    FormulasT createdZeroFormulas = createZero(variableCapsuleOuter);
+                    formulas.insert(std::end(formulas), std::begin(createdZeroFormulas), std::end(createdZeroFormulas));
 
                 } else {
 
