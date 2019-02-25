@@ -9,12 +9,19 @@
 #include "slurm/SlurmUtilities.h"
 
 #include <filesystem>
+#include <future>
 #include <regex>
 
 namespace benchmax {
 
 /**
  * Backend for the Slurm workload manager.
+ * 
+ * The execution model is as follows:
+ * We create multiple jobs that each consists of multiple array jobs that each execute one slice of the task list.
+ * One array job executes Settings::slice_size entries of the task list.
+ * One job consists of Settings::array_size array jobs.
+ * We start as many jobs as necessary.
  */
 class SlurmBackend: public Backend {
 private:
@@ -56,13 +63,8 @@ private:
 			}
 		}
 	}
-public:
-	/// Run all tools on all benchmarks using Slurm.
-	void run(const Jobs& jobs) {
-		for (const auto& [tool, file]: jobs.randomized()) {
-			mResults.emplace_back(JobData { tool, file, BenchmarkResult() });
-		}
-		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Gathered " << mResults.size() << " jobs");
+
+	void run_job_sync() {
 		std::string jobsfilename = "jobs-" + std::to_string(settings_core().start_time) + ".jobs";
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Writing job file to " << jobsfilename);
 		std::ofstream jobsfile(settings_slurm().tmp_dir + "/" + jobsfilename);
@@ -70,7 +72,7 @@ public:
 			jobsfile << std::get<0>(r)->getCommandline(std::get<1>(r)) << std::endl;
 		}
 		jobsfile.close();
-		auto slices = std::min(settings_slurm().slices, mResults.size());
+		auto slices = std::min(settings_slurm().array_size, mResults.size());
 		
 		auto submitfile = slurm::generate_submit_file({
 			std::to_string(settings_core().start_time),
@@ -110,6 +112,70 @@ public:
 		}
 		slurm::remove_log_files(files, !settings_slurm().keep_logs);
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Finished.");
+	}
+
+	void run_job_async(std::size_t n) {
+		std::string jobsfilename = "jobs-" + std::to_string(settings_core().start_time) + "-" + std::to_string(n+1) + ".jobs";
+		BENCHMAX_LOG_INFO("benchmax.slurm", "Writing job file to " << jobsfilename);
+		std::ofstream jobsfile(settings_slurm().tmp_dir + "/" + jobsfilename);
+		std::size_t job_size = settings_slurm().array_size * settings_slurm().slice_size;
+		std::size_t start = job_size * n;
+		std::size_t end = std::max(start + job_size, mResults.size());
+		BENCHMAX_LOG_INFO("benchmax.slurm", "Taking jobs " << start << ".." << (end - 1));
+
+		for (std::size_t i = start; i < end; ++i) {
+			const auto& r = mResults[i];
+			jobsfile << std::get<0>(r)->getCommandline(std::get<1>(r)) << std::endl;
+		}
+		jobsfile.close();
+		
+		auto submitfile = slurm::generate_submit_file_chunked({
+			std::to_string(settings_core().start_time),
+			jobsfilename,
+			settings_slurm().tmp_dir,
+			settings_benchmarks().limit_time,
+			settings_benchmarks().limit_memory,
+			settings_slurm().array_size,
+			settings_slurm().slice_size
+		});
+
+		std::string cmd = "sbatch --wait --array=1-" + std::to_string(settings_slurm().array_size) + " " + settings_slurm().tmp_dir + "/" + submitfile;
+		BENCHMAX_LOG_INFO("benchmax.slurm", "Submitting job now.");
+		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Command: " << cmd);
+		std::string output;
+		call_program(cmd, output, true);
+		BENCHMAX_LOG_INFO("benchmax.slurm", "Job terminated, collecting results.");
+		int jobid = slurm::parse_job_id(output);
+
+		auto files = slurm::collect_result_files(settings_slurm().tmp_dir, jobid);
+		for (const auto& f: files) {
+			parse_result_file(f);
+		}
+		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Parsed results.");
+		for (auto& r: mResults) {
+			addResult(std::get<0>(r), std::get<1>(r), std::get<2>(r));
+		}
+		slurm::remove_log_files(files, !settings_slurm().keep_logs);
+	}
+public:
+	/// Run all tools on all benchmarks using Slurm.
+	void run(const Jobs& jobs) {
+		for (const auto& [tool, file]: jobs.randomized()) {
+			mResults.emplace_back(JobData { tool, file, BenchmarkResult() });
+		}
+		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Gathered " << mResults.size() << " jobs");
+		
+		std::vector<std::future<void>> tasks;
+		std::size_t count = mResults.size() / (settings_slurm().array_size * settings_slurm().slice_size) + 1;
+		for (std::size_t i = 0; i < count; ++i) {
+			tasks.emplace_back(std::async(std::launch::async,
+				[i,this](){ return run_job_async(i); }
+			));
+		}
+		for (auto& f: tasks) {
+			f.wait();
+		}
+		BENCHMAX_LOG_DEBUG("benchmax.slurm", "All jobs terminated.");
 	}
 };
 

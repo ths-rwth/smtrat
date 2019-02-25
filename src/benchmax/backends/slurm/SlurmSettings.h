@@ -7,8 +7,10 @@ namespace settings {
 
 /// Settings for the Slurm backend.
 struct SlurmBackendSettings {
-	/// Number of slices to create (the size of the array job)
-	std::size_t slices;
+	/// Number of array jobs within one job.
+	std::size_t array_size;
+	/// Size of one slice that is handled in one array job.
+	std::size_t slice_size;
 	/// Temporary directory for output files.
 	std::string tmp_dir;
 	/// Do not remove logs from file system if set to true.

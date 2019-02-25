@@ -44,58 +44,111 @@ std::vector<fs::path> collect_result_files(const fs::path& basedir, int jobid) {
 }
 
 std::string generate_submit_file(const SubmitfileProperties& p) {
-		std::string filename = "job-" + p.file_suffix + ".job";
-		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Writing submit file to " << p.tmp_dir << "/" << filename);
-		std::ofstream out(p.tmp_dir + "/" + filename);
-		out << "#!/usr/bin/env zsh" << std::endl;
-		out << "### Job name" << std::endl;
-		// Job name
-		out << "#SBATCH --job-name=benchmax" << std::endl;
-		// Output files (stdout and stderr)
-		out << "#SBATCH -o " << p.tmp_dir << "/JOB.%A_%a.out" << std::endl;
-		out << "#SBATCH -e " << p.tmp_dir << "/JOB.%A_%a.err" << std::endl;
-		// Rough estimation of time in minutes (timeout * jobs)
-		auto minutes = static_cast<std::size_t>(std::chrono::seconds(p.limit_time).count() + 10) * p.tasks / p.slices / 60 + 1;
-		minutes = std::min(minutes, static_cast<std::size_t>(60*24));
-		out << "#SBATCH -t " << minutes << std::endl;
-		// Memory usage in MB
-		out << "#SBATCH --mem-per-cpu=" << (p.limit_memory + 1024) << "M" << std::endl;
+	std::string filename = "job-" + p.file_suffix + ".job";
+	BENCHMAX_LOG_DEBUG("benchmax.slurm", "Writing submit file to " << p.tmp_dir << "/" << filename);
+	std::ofstream out(p.tmp_dir + "/" + filename);
+	out << "#!/usr/bin/env zsh" << std::endl;
+	out << "### Job name" << std::endl;
+	// Job name
+	out << "#SBATCH --job-name=benchmax" << std::endl;
+	// Output files (stdout and stderr)
+	out << "#SBATCH -o " << p.tmp_dir << "/JOB.%A_%a.out" << std::endl;
+	out << "#SBATCH -e " << p.tmp_dir << "/JOB.%A_%a.err" << std::endl;
+	// Rough estimation of time in minutes (timeout * jobs)
+	auto minutes = static_cast<std::size_t>(std::chrono::seconds(p.limit_time).count() + 10) * p.tasks / p.slices / 60 + 1;
+	minutes = std::min(minutes, static_cast<std::size_t>(60*24));
+	out << "#SBATCH -t " << minutes << std::endl;
+	// Memory usage in MB
+	out << "#SBATCH --mem-per-cpu=" << (p.limit_memory + 1024) << "M" << std::endl;
 
-		// Load environment
-		out << "source ~/load_environment" << std::endl;
-		// Change current directory
-		out << "cd " << p.tmp_dir << std::endl;
+	// Load environment
+	out << "source ~/load_environment" << std::endl;
+	// Change current directory
+	out << "cd " << p.tmp_dir << std::endl;
 
-		// Calculate slices for jobfile
-		out << "min=$SLURM_ARRAY_TASK_MIN" << std::endl;
-		out << "max=$SLURM_ARRAY_TASK_MAX" << std::endl;
-		out << "cur=$SLURM_ARRAY_TASK_ID" << std::endl;
-		out << "tasks=" << p.tasks << std::endl;
-		out << "jobcount=$(( max - min + 1 ))" << std::endl;
-		out << "slicesize=$(( (tasks + jobcount + 1) / jobcount ))" << std::endl;
-		out << "start=$(( (cur - 1) * slicesize + min ))" << std::endl;
-		out << "end=$(( start + slicesize - 1 ))" << std::endl;
+	// Calculate slices for jobfile
+	out << "min=$SLURM_ARRAY_TASK_MIN" << std::endl;
+	out << "max=$SLURM_ARRAY_TASK_MAX" << std::endl;
+	out << "cur=$SLURM_ARRAY_TASK_ID" << std::endl;
+	out << "tasks=" << p.tasks << std::endl;
+	out << "jobcount=$(( max - min + 1 ))" << std::endl;
+	out << "slicesize=$(( (tasks + jobcount + 1) / jobcount ))" << std::endl;
+	out << "start=$(( (cur - 1) * slicesize + min ))" << std::endl;
+	out << "end=$(( start + slicesize - 1 ))" << std::endl;
 
-		auto timeout = (std::chrono::seconds(p.limit_time) + std::chrono::seconds(3)).count();
-		// Execute this slice
-		out << "for i in `seq ${start} ${end}`; do" << std::endl;
-		out << "\tcmd=$(sed -n \"${i}p\" < " << p.filename_jobs << ")" << std::endl;
-		out << "\techo \"Executing $cmd\"" << std::endl;
-		out << "\techo \"# START ${i} #\"" << std::endl;
-		out << "\techo \"# START ${i} #\" >&2" << std::endl;
-		out << "\tstart=`date +\"%s%3N\"`" << std::endl;
-		out << "\tulimit -c 0 && ulimit -S -v " << (p.limit_memory * 1024) << " && ulimit -S -t " << timeout << " && $cmd ; rc=$?" << std::endl;
-		out << "\tend=`date +\"%s%3N\"`" << std::endl;
-		out << "\techo \"# END ${i} #\"" << std::endl;
-		out << "\techo \"# END ${i} #\" 1>&2" << std::endl;
-		out << "\techo \"time: $(( end - start ))\"" << std::endl;
-		out << "\techo \"exitcode: $rc\"" << std::endl;
-		out << "\techo \"# END DATA ${i} #\"" << std::endl;
-		out << "done" << std::endl;
-		out.close();
+	auto timeout = (std::chrono::seconds(p.limit_time) + std::chrono::seconds(3)).count();
+	// Execute this slice
+	out << "for i in `seq ${start} ${end}`; do" << std::endl;
+	out << "\tcmd=$(sed -n \"${i}p\" < " << p.filename_jobs << ")" << std::endl;
+	out << "\techo \"Executing $cmd\"" << std::endl;
+	out << "\techo \"# START ${i} #\"" << std::endl;
+	out << "\techo \"# START ${i} #\" >&2" << std::endl;
+	out << "\tstart=`date +\"%s%3N\"`" << std::endl;
+	out << "\tulimit -c 0 && ulimit -S -v " << (p.limit_memory * 1024) << " && ulimit -S -t " << timeout << " && $cmd ; rc=$?" << std::endl;
+	out << "\tend=`date +\"%s%3N\"`" << std::endl;
+	out << "\techo \"# END ${i} #\"" << std::endl;
+	out << "\techo \"# END ${i} #\" 1>&2" << std::endl;
+	out << "\techo \"time: $(( end - start ))\"" << std::endl;
+	out << "\techo \"exitcode: $rc\"" << std::endl;
+	out << "\techo \"# END DATA ${i} #\"" << std::endl;
+	out << "done" << std::endl;
+	out.close();
 
-		return filename;
-	}
+	return filename;
+}
+
+
+std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p) {
+	std::string filename = "job-" + p.file_suffix + ".job";
+	BENCHMAX_LOG_DEBUG("benchmax.slurm", "Writing submit file to " << p.tmp_dir << "/" << filename);
+	std::ofstream out(p.tmp_dir + "/" + filename);
+	out << "#!/usr/bin/env zsh" << std::endl;
+	out << "### Job name" << std::endl;
+	// Job name
+	out << "#SBATCH --job-name=benchmax" << std::endl;
+	// Output files (stdout and stderr)
+	out << "#SBATCH -o " << p.tmp_dir << "/JOB.%A_%a.out" << std::endl;
+	out << "#SBATCH -e " << p.tmp_dir << "/JOB.%A_%a.err" << std::endl;
+	// Rough estimation of time in minutes (timeout * jobs)
+	auto minutes = static_cast<std::size_t>(std::chrono::seconds(p.limit_time).count() + 10) * p.slice_size / p.array_size / 60 + 1;
+	minutes = std::min(minutes, static_cast<std::size_t>(60*24));
+	out << "#SBATCH -t " << minutes << std::endl;
+	// Memory usage in MB
+	out << "#SBATCH --mem-per-cpu=" << (p.limit_memory + 1024) << "M" << std::endl;
+
+	// Load environment
+	out << "source ~/load_environment" << std::endl;
+	// Change current directory
+	out << "cd " << p.tmp_dir << std::endl;
+
+	// Calculate slices for jobfile
+	out << "min=$SLURM_ARRAY_TASK_MIN" << std::endl;
+	out << "max=$SLURM_ARRAY_TASK_MAX" << std::endl;
+	out << "cur=$SLURM_ARRAY_TASK_ID" << std::endl;
+	out << "slicesize=" << p.slice_size << std::endl;
+	out << "start=$(( (cur - 1) * slicesize ))" << std::endl;
+	out << "end=$(( start + slicesize - 1 ))" << std::endl;
+
+	auto timeout = (std::chrono::seconds(p.limit_time) + std::chrono::seconds(3)).count();
+	// Execute this slice
+	out << "for i in `seq ${start} ${end}`; do" << std::endl;
+	out << "\tcmd=$(sed -n \"${i}p\" < " << p.filename_jobs << ")" << std::endl;
+	out << "\techo \"Executing $cmd\"" << std::endl;
+	out << "\techo \"# START ${i} #\"" << std::endl;
+	out << "\techo \"# START ${i} #\" >&2" << std::endl;
+	out << "\tstart=`date +\"%s%3N\"`" << std::endl;
+	out << "\tulimit -c 0 && ulimit -S -v " << (p.limit_memory * 1024) << " && ulimit -S -t " << timeout << " && $cmd ; rc=$?" << std::endl;
+	out << "\tend=`date +\"%s%3N\"`" << std::endl;
+	out << "\techo \"# END ${i} #\"" << std::endl;
+	out << "\techo \"# END ${i} #\" 1>&2" << std::endl;
+	out << "\techo \"time: $(( end - start ))\"" << std::endl;
+	out << "\techo \"exitcode: $rc\"" << std::endl;
+	out << "\techo \"# END DATA ${i} #\"" << std::endl;
+	out << "done" << std::endl;
+	out.close();
+
+	return filename;
+}
 
 int parse_job_id(const std::string& output) {
 	std::regex r("Submitted batch job ([0-9]+)");

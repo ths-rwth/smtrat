@@ -59,6 +59,26 @@ struct SubmitfileProperties {
  */
 std::string generate_submit_file(const SubmitfileProperties& p);
 
+/// All properties needed to create a submit file.
+struct ChunkedSubmitfileProperties {
+	/// Suffix for job and submit file.
+	std::string file_suffix;
+	/// Filename of the job list file.
+	std::string filename_jobs;
+	/// Temporary directory for log files.
+	std::string tmp_dir;
+	/// Time limit in seconds.
+	std::chrono::seconds limit_time;
+	/// Memory limit in megabytes.
+	std::size_t limit_memory;
+	/// Array size.
+	std::size_t array_size;
+	/// Slice size.
+	std::size_t slice_size;
+};
+
+std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p);
+
 /**
  * Parses the job id from the output of `sbatch`.
  * @param output Output of `sbatch`.
