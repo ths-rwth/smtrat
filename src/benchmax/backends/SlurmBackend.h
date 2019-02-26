@@ -69,12 +69,7 @@ private:
 
 	void run_job_sync() {
 		std::string jobsfilename = "jobs-" + std::to_string(settings_core().start_time) + ".jobs";
-		BENCHMAX_LOG_INFO("benchmax.slurm", "Writing job file to " << jobsfilename);
-		std::ofstream jobsfile(settings_slurm().tmp_dir + "/" + jobsfilename);
-		for (const auto& r: mResults) {
-			jobsfile << std::get<0>(r)->getCommandline(std::get<1>(r)) << std::endl;
-		}
-		jobsfile.close();
+		slurm::generate_jobs_file(jobsfilename, {0, mResults.size()}, mResults);
 		auto slices = std::min(settings_slurm().array_size, mResults.size());
 		
 		auto submitfile = slurm::generate_submit_file({
@@ -121,20 +116,17 @@ private:
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Finished.");
 	}
 
+	std::pair<std::size_t,std::size_t> get_job_range(std::size_t n) const {
+		std::size_t job_size = settings_slurm().array_size * settings_slurm().slice_size;
+		return std::make_pair(
+			job_size * n,
+			std::min(job_size * (n + 1), mResults.size())
+		);
+	}
+
 	void run_job_async(std::size_t n) {
 		std::string jobsfilename = "jobs-" + std::to_string(settings_core().start_time) + "-" + std::to_string(n+1) + ".jobs";
-		BENCHMAX_LOG_INFO("benchmax.slurm", "Writing job file to " << jobsfilename);
-		std::ofstream jobsfile(settings_slurm().tmp_dir + "/" + jobsfilename);
-		std::size_t job_size = settings_slurm().array_size * settings_slurm().slice_size;
-		std::size_t start = job_size * n;
-		std::size_t end = std::min(start + job_size, mResults.size());
-		BENCHMAX_LOG_INFO("benchmax.slurm", "Taking jobs " << start << ".." << (end - 1));
-
-		for (std::size_t i = start; i < end; ++i) {
-			const auto& r = mResults[i];
-			jobsfile << std::get<0>(r)->getCommandline(std::get<1>(r)) << std::endl;
-		}
-		jobsfile.close();
+		slurm::generate_jobs_file(jobsfilename, get_job_range(n), mResults);
 
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Generating submitfile");
 		auto submitfile = slurm::generate_submit_file_chunked({

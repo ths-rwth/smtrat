@@ -1,6 +1,7 @@
 #pragma once
 
 #include <carl/util/settings_utils.h>
+#include <benchmax/logging.h>
 
 #include <chrono>
 #include <filesystem>
@@ -80,6 +81,20 @@ struct ChunkedSubmitfileProperties {
 };
 
 std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p);
+
+template<typename Jobs>
+void generate_jobs_file(const std::string& filename, std::pair<std::size_t,std::size_t> range, const Jobs& jobs) {
+	BENCHMAX_LOG_DEBUG("benchmax.slurm", "Writing job file to " << filename);
+	std::ofstream jobsfile(filename);
+	BENCHMAX_LOG_DEBUG("benchmax.slurm", "Taking jobs " << range.first << ".." << (range.second-1));
+
+	for (std::size_t i = range.first; i < range.second; ++i) {
+		const auto& r = jobs[i];
+		jobsfile << std::get<0>(r)->getCommandline(std::get<1>(r)) << std::endl;
+	}
+	jobsfile.close();
+	BENCHMAX_LOG_DEBUG("benchmax.slurm", "Job file is finished.");
+}
 
 /**
  * Parses the job id from the output of `sbatch`.

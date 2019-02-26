@@ -3,7 +3,6 @@
 #include <regex>
 #include <sstream>
 
-#include <benchmax/logging.h>
 #include <benchmax/utils/execute.h>
 
 namespace benchmax {
