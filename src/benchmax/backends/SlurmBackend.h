@@ -120,7 +120,7 @@ private:
 		std::ofstream jobsfile(settings_slurm().tmp_dir + "/" + jobsfilename);
 		std::size_t job_size = settings_slurm().array_size * settings_slurm().slice_size;
 		std::size_t start = job_size * n;
-		std::size_t end = std::max(start + job_size, mResults.size());
+		std::size_t end = std::min(start + job_size, mResults.size());
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Taking jobs " << start << ".." << (end - 1));
 
 		for (std::size_t i = start; i < end; ++i) {
@@ -130,7 +130,7 @@ private:
 		jobsfile.close();
 		
 		auto submitfile = slurm::generate_submit_file_chunked({
-			std::to_string(settings_core().start_time),
+			std::to_string(settings_core().start_time) + "-" + std::to_string(n),
 			jobsfilename,
 			settings_slurm().tmp_dir,
 			settings_benchmarks().limit_time,
