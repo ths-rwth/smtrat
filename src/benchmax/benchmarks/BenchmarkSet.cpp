@@ -14,7 +14,7 @@ void BenchmarkSet::add_directory(const std::filesystem::path& dir) {
 		{
 			if (std::filesystem::is_directory(dir)) {
 				// If it is a directory, we add all the contents
-				BENCHMAX_LOG_DEBUG("benchmax", dir << " is a directory.");
+				BENCHMAX_LOG_TRACE("benchmax", dir << " is a directory.");
 				for (auto it = std::filesystem::directory_iterator(dir); it != std::filesystem::directory_iterator(); it++) {
 					add_directory(*it);
 				}
