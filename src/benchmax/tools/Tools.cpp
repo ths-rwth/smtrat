@@ -47,7 +47,7 @@ namespace settings {
 void registerToolSettings(SettingsParser* parser) {
 	namespace po = boost::program_options;
 	auto& settings = settings::Settings::getInstance();
-	auto& s = settings.add<settings::ToolSettings>("tools");
+	auto& s = settings.get<settings::ToolSettings>("tools");
 
 	parser->add_finalizer([&s](const auto& values){
 		finalize_tool_settings(s, values);

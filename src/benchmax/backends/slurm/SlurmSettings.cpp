@@ -8,7 +8,7 @@ namespace settings {
 void registerSlurmBackendSettings(SettingsParser* parser) {
 	namespace po = boost::program_options;
 	auto& settings = settings::Settings::getInstance();
-	auto& s = settings.add<SlurmBackendSettings>("backend-slurm");
+	auto& s = settings.get<SlurmBackendSettings>("backend-slurm");
 	
 	parser->add("Slurm Backend settings").add_options()
 		("slurm.array-size", po::value<std::size_t>(&s.array_size)->default_value(1000), "number of array jobs per job")

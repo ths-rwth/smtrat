@@ -23,7 +23,7 @@ namespace settings {
 void registerBenchmarkSettings(SettingsParser* parser) {
 	namespace po = boost::program_options;
 	auto& settings = settings::Settings::getInstance();
-	auto& s = settings.add<settings::BenchmarkSettings>("benchmarks");
+	auto& s = settings.get<settings::BenchmarkSettings>("benchmarks");
 	
 	parser->add_finalizer([&s](const auto& values){
 		finalize_benchmark_settings(s, values);
