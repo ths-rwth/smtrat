@@ -11,7 +11,7 @@ namespace slurm {
 void archive_log_files(const ArchiveProperties& p) {
 	std::string output;
 	std::stringstream ss;
-	ss << "tar -czf " << p.filename_archive << " ";
+	ss << "tar --force-local -czf " << p.filename_archive << " ";
 	ss << "-C " << p.tmp_dir << " ";
 	ss << p.filename_jobfile << " " << p.filename_submitfile << " ";
 	ss << "`find " << p.tmp_dir << " -iname \"JOB." << p.jobid << "_*\"`";
