@@ -105,7 +105,7 @@ private:
 
 		if (settings_slurm().archive_log_file != "") {
 			slurm::archive_log_files({
-				settings_slurm().archive_log_file,
+				settings_slurm().archive_log_file + "-" + std::to_string(settings_core().start_time) + ".tgz",
 				jobsfilename,
 				submitfile,
 				settings_slurm().tmp_dir,
@@ -164,6 +164,15 @@ private:
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Parsed results.");
 		for (auto& r: mResults) {
 			addResult(std::get<0>(r), std::get<1>(r), std::get<2>(r));
+		}
+		if (settings_slurm().archive_log_file != "") {
+			slurm::archive_log_files({
+				settings_slurm().archive_log_file + "-" + std::to_string(settings_core().start_time) + "-" + std::to_string(n) + ".tgz",
+				jobsfilename,
+				submitfile,
+				settings_slurm().tmp_dir,
+				jobid
+			});
 		}
 		slurm::remove_log_files(files, !settings_slurm().keep_logs);
 	}
