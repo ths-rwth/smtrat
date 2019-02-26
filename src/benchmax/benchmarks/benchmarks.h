@@ -16,7 +16,7 @@ namespace settings {
 /// Settings for benchmarks.
 struct BenchmarkSettings {
 	/// Memory limit in megabytes.
-	std::size_t limit_memory;
+	carl::settings::binary_quantity limit_memory;
 	/// Time limit in seconds.
 	carl::settings::duration limit_time;
 	/// Lift of input directories.

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <carl/util/settings_utils.h>
+
 #include <chrono>
 #include <filesystem>
 #include <string>
@@ -43,9 +45,9 @@ struct SubmitfileProperties {
 	/// Temporary directory for log files.
 	std::string tmp_dir;
 	/// Time limit in seconds.
-	std::chrono::seconds limit_time;
+	carl::settings::duration limit_time;
 	/// Memory limit in megabytes.
-	std::size_t limit_memory;
+	carl::settings::binary_quantity limit_memory;
 	/// Number of tasks.
 	std::size_t tasks;
 	/// Number of slices.
@@ -68,9 +70,9 @@ struct ChunkedSubmitfileProperties {
 	/// Temporary directory for log files.
 	std::string tmp_dir;
 	/// Time limit in seconds.
-	std::chrono::seconds limit_time;
+	carl::settings::duration limit_time;
 	/// Memory limit in megabytes.
-	std::size_t limit_memory;
+	carl::settings::binary_quantity limit_memory;
 	/// Array size.
 	std::size_t array_size;
 	/// Slice size.

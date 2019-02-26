@@ -29,8 +29,8 @@ void registerBenchmarkSettings(SettingsParser* parser) {
 		finalize_benchmark_settings(s, values);
 	});
 	parser->add("Benchmark settings").add_options()
-		("memory,M", po::value<std::size_t>(&s.limit_memory)->default_value(1024), "memory limit in megabytes")
-		("timeout,T", po::value<carl::settings::duration>(&s.limit_time)->default_value(std::chrono::seconds(60))->value_name("time"), "timeout in seconds")
+		("memory,M", po::value<carl::settings::binary_quantity>(&s.limit_memory)->default_value(carl::settings::binary_quantity(1024*1024*1024)), "memory limit")
+		("timeout,T", po::value<carl::settings::duration>(&s.limit_time)->default_value(std::chrono::seconds(60))->value_name("time"), "timeout")
 		("directory,D", po::value<std::vector<std::filesystem::path>>(&s.input_directories), "path to look for benchmarks")
 		("output-dir", po::value<std::filesystem::path>(&s.output_dir), "output directory")
 		("output-xml,X", po::value<std::filesystem::path>(&s.output_file_xml)->default_value("stats.xml"), "filename for xml output file")

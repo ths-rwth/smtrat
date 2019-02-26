@@ -33,7 +33,7 @@ private:
 		std::ofstream wrapper(".wrapper_" + std::to_string(ID));
 		wrapper << "#!/bin/sh" << std::endl;
 		wrapper << "ulimit -S -t " << std::chrono::seconds(settings_benchmarks().limit_time).count() << std::endl;
-		wrapper << "ulimit -S -v " << (settings_benchmarks().limit_memory * 1024) << std::endl;
+		wrapper << "ulimit -S -v " << settings_benchmarks().limit_memory.kibi() << std::endl;
 		wrapper << "date +\"Start: %s%3N\"" << std::endl;
 		wrapper << tool.getCommandline("$*") << std::endl;
 		wrapper << "date +\"End: %s%3N\"" << std::endl;

@@ -59,7 +59,7 @@ std::string generate_submit_file(const SubmitfileProperties& p) {
 	minutes = std::min(minutes, static_cast<std::size_t>(60*24));
 	out << "#SBATCH -t " << minutes << std::endl;
 	// Memory usage in MB
-	out << "#SBATCH --mem-per-cpu=" << (p.limit_memory + 1024) << "M" << std::endl;
+	out << "#SBATCH --mem-per-cpu=" << p.limit_memory.mebi() + 1024 << "M" << std::endl;
 
 	// Load environment
 	out << "source ~/load_environment" << std::endl;
@@ -84,7 +84,7 @@ std::string generate_submit_file(const SubmitfileProperties& p) {
 	out << "\techo \"# START ${i} #\"" << std::endl;
 	out << "\techo \"# START ${i} #\" >&2" << std::endl;
 	out << "\tstart=`date +\"%s%3N\"`" << std::endl;
-	out << "\tulimit -c 0 && ulimit -S -v " << (p.limit_memory * 1024) << " && ulimit -S -t " << timeout << " && $cmd ; rc=$?" << std::endl;
+	out << "\tulimit -c 0 && ulimit -S -v " << p.limit_memory.kibi() << " && ulimit -S -t " << timeout << " && $cmd ; rc=$?" << std::endl;
 	out << "\tend=`date +\"%s%3N\"`" << std::endl;
 	out << "\techo \"# END ${i} #\"" << std::endl;
 	out << "\techo \"# END ${i} #\" 1>&2" << std::endl;
@@ -114,7 +114,7 @@ std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p) {
 	minutes = std::min(minutes + 1, static_cast<long>(60*24));
 	out << "#SBATCH -t " << minutes << std::endl;
 	// Memory usage in MB
-	out << "#SBATCH --mem-per-cpu=" << (p.limit_memory + 1024) << "M" << std::endl;
+	out << "#SBATCH --mem-per-cpu=" << p.limit_memory.mebi() + 1024 << "M" << std::endl;
 
 	// Load environment
 	out << "source ~/load_environment" << std::endl;
@@ -137,7 +137,7 @@ std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p) {
 	out << "\techo \"# START ${i} #\"" << std::endl;
 	out << "\techo \"# START ${i} #\" >&2" << std::endl;
 	out << "\tstart=`date +\"%s%3N\"`" << std::endl;
-	out << "\tulimit -c 0 && ulimit -S -v " << (p.limit_memory * 1024) << " && ulimit -S -t " << timeout << " && $cmd ; rc=$?" << std::endl;
+	out << "\tulimit -c 0 && ulimit -S -v " << p.limit_memory.kibi() << " && ulimit -S -t " << timeout << " && $cmd ; rc=$?" << std::endl;
 	out << "\tend=`date +\"%s%3N\"`" << std::endl;
 	out << "\techo \"# END ${i} #\"" << std::endl;
 	out << "\techo \"# END ${i} #\" 1>&2" << std::endl;
