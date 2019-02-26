@@ -89,7 +89,7 @@ private:
 
 		std::stringstream cmd;
 		cmd << "sbatch --wait";
-		cmd << " --array=1-" << std::to_string(slices);
+		cmd << " --array=1-" << std::to_string(settings_slurm().array_size);
 		cmd << " " << settings_slurm().sbatch_options;
 		cmd << " " + settings_slurm().tmp_dir + "/" + submitfile;
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Submitting job now.");
@@ -135,7 +135,8 @@ private:
 			jobsfile << std::get<0>(r)->getCommandline(std::get<1>(r)) << std::endl;
 		}
 		jobsfile.close();
-		
+
+		BENCHMAX_LOG_INFO("benchmax.slurm", "Generating submitfile");
 		auto submitfile = slurm::generate_submit_file_chunked({
 			std::to_string(settings_core().start_time) + "-" + std::to_string(n),
 			jobsfilename,
@@ -146,15 +147,21 @@ private:
 			settings_slurm().slice_size
 		});
 
+		BENCHMAX_LOG_INFO("benchmax.slurm", "Delaying for " << settings_slurm().submission_delay);
 		{
 			std::lock_guard<std::mutex> guard(mSubmissionMutex);
 			std::this_thread::sleep_for(settings_slurm().submission_delay);
 		}
-		std::string cmd = "sbatch --wait --array=1-" + std::to_string(settings_slurm().array_size) + " " + settings_slurm().tmp_dir + "/" + submitfile;
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Submitting job now.");
-		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Command: " << cmd);
+
+		std::stringstream cmd;
+		cmd << "sbatch --wait";
+		cmd << " --array=1-" << std::to_string(settings_slurm().array_size);
+		cmd << " " << settings_slurm().sbatch_options;
+		cmd << " " + settings_slurm().tmp_dir + "/" + submitfile;
+		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Command: " << cmd.str());
 		std::string output;
-		call_program(cmd, output, true);
+		call_program(cmd.str(), output, true);
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Job terminated, collecting results.");
 		int jobid = slurm::parse_job_id(output);
 
