@@ -84,11 +84,15 @@ private:
 			slices
 		});
 
-		std::string cmd = "sbatch --wait --array=1-" + std::to_string(slices) + " " + settings_slurm().tmp_dir + "/" + submitfile;
+		std::stringstream cmd;
+		cmd << "sbatch --wait";
+		cmd << " --array=1-" << std::to_string(slices);
+		cmd << " " << settings_slurm().sbatch_options;
+		cmd << " " + settings_slurm().tmp_dir + "/" + submitfile;
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Submitting job now.");
-		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Command: " << cmd);
+		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Command: " << cmd.str());
 		std::string output;
-		call_program(cmd, output, true);
+		call_program(cmd.str(), output, true);
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Job terminated, collecting results.");
 		int jobid = slurm::parse_job_id(output);
 

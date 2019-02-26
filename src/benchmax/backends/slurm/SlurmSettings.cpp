@@ -16,6 +16,7 @@ void registerSlurmBackendSettings(SettingsParser* parser) {
 		("slurm.tmp-dir", po::value<std::string>(&s.tmp_dir)->default_value("/tmp/"), "temporary directory")
 		("slurm.keep-logs", po::bool_switch(&s.keep_logs), "do not delete log files")
 		("slurm.archive-logs", po::value<std::string>(&s.archive_log_file)->value_name("filename"), "store log files in this tgz archive")
+		("slurm.sbatch-options", po::value<std::string>(&s.sbatch_options)->value_name("filename"), "command line options to be passed to sbatch")
 	;
 }
 }

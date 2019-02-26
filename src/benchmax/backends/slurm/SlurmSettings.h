@@ -17,6 +17,8 @@ struct SlurmBackendSettings {
 	bool keep_logs;
 	/// Puts logs to some archive.
 	std::string archive_log_file;
+	/// Additional options passed on to slurm.
+	std::string sbatch_options;
 };
 
 /// Registers Slurm settings with the settings parser.
