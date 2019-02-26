@@ -7,6 +7,7 @@
 
 #include <benchmax/utils/filesystem.h>
 #include <carl/util/Singleton.h>
+#include <carl/util/Settings.h>
 
 #include <any>
 #include <cassert>

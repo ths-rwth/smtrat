@@ -19,6 +19,9 @@ struct SlurmBackendSettings {
 	std::string archive_log_file;
 	/// Additional options passed on to slurm.
 	std::string sbatch_options;
+	/// Delay between job submissions
+	carl::settings::duration submission_delay;
+
 };
 
 /// Registers Slurm settings with the settings parser.
