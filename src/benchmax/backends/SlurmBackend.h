@@ -10,6 +10,7 @@
 
 #include <filesystem>
 #include <future>
+#include <mutex>
 #include <regex>
 
 namespace benchmax {
@@ -34,6 +35,8 @@ private:
 	
 	/// All jobs.
 	std::vector<JobData> mResults;
+	/// Mutex for submission delay.
+	std::mutex mSubmissionMutex;
 
 	/// Parse the content of an output file.
 	void parse_result_file(const std::filesystem::path& file) {
@@ -143,6 +146,10 @@ private:
 			settings_slurm().slice_size
 		});
 
+		{
+			std::lock_guard<std::mutex> guard(mSubmissionMutex);
+			std::this_thread::sleep_for(settings_slurm().submission_delay);
+		}
 		std::string cmd = "sbatch --wait --array=1-" + std::to_string(settings_slurm().array_size) + " " + settings_slurm().tmp_dir + "/" + submitfile;
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Submitting job now.");
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Command: " << cmd);
