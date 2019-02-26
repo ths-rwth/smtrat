@@ -125,8 +125,8 @@ std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p) {
 	out << "max=$SLURM_ARRAY_TASK_MAX" << std::endl;
 	out << "cur=$SLURM_ARRAY_TASK_ID" << std::endl;
 	out << "slicesize=" << p.slice_size << std::endl;
-	out << "start=$(( (cur - 1) * slicesize ))" << std::endl;
-	out << "end=$(( start + slicesize - 1 ))" << std::endl;
+	out << "start=$(( (cur - 1) * slicesize + 1 ))" << std::endl;
+	out << "end=$(( start + slicesize ))" << std::endl;
 
 	auto timeout = (std::chrono::seconds(p.limit_time) + std::chrono::seconds(3)).count();
 	// Execute this slice
