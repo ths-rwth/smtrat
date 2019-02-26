@@ -109,9 +109,9 @@ std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p) {
 	// Output files (stdout and stderr)
 	out << "#SBATCH -o " << p.tmp_dir << "/JOB.%A_%a.out" << std::endl;
 	out << "#SBATCH -e " << p.tmp_dir << "/JOB.%A_%a.err" << std::endl;
-	// Rough estimation of time in minutes (timeout * jobs)
-	auto minutes = static_cast<std::size_t>(std::chrono::seconds(p.limit_time).count() + 10) * p.slice_size / p.array_size / 60 + 1;
-	minutes = std::min(minutes, static_cast<std::size_t>(60*24));
+	// Rough estimation of time in minutes (timeout * slice_size)
+	long minutes = (std::chrono::seconds(p.limit_time) * p.slice_size).count() / 60;
+	minutes = std::min(minutes + 1, static_cast<long>(60*24));
 	out << "#SBATCH -t " << minutes << std::endl;
 	// Memory usage in MB
 	out << "#SBATCH --mem-per-cpu=" << (p.limit_memory + 1024) << "M" << std::endl;
