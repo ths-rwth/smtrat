@@ -43,9 +43,9 @@ std::vector<fs::path> collect_result_files(const fs::path& basedir, int jobid) {
 }
 
 std::string generate_submit_file(const SubmitfileProperties& p) {
-	std::string filename = "job-" + p.file_suffix + ".job";
-	BENCHMAX_LOG_DEBUG("benchmax.slurm", "Writing submit file to " << p.tmp_dir << "/" << filename);
-	std::ofstream out(p.tmp_dir + "/" + filename);
+	std::string filename = p.tmp_dir + "/job-" + p.file_suffix + ".job";
+	BENCHMAX_LOG_INFO("benchmax.slurm", "Generating submitfile " << filename);
+	std::ofstream out(filename);
 	out << "#!/usr/bin/env zsh" << std::endl;
 	out << "### Job name" << std::endl;
 	// Job name
@@ -98,9 +98,9 @@ std::string generate_submit_file(const SubmitfileProperties& p) {
 
 
 std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p) {
-	std::string filename = "job-" + p.file_suffix + ".job";
-	BENCHMAX_LOG_DEBUG("benchmax.slurm", "Writing submit file to " << p.tmp_dir << "/" << filename);
-	std::ofstream out(p.tmp_dir + "/" + filename);
+	std::string filename = p.tmp_dir + "/job-" + p.file_suffix + ".job";
+	BENCHMAX_LOG_INFO("benchmax.slurm", "Generating submitfile " << filename);
+	std::ofstream out(filename);
 	out << "#!/usr/bin/env zsh" << std::endl;
 	out << "### Job name" << std::endl;
 	// Job name
