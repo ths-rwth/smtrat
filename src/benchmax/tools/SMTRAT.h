@@ -13,7 +13,7 @@ class SMTRAT: public Tool {
 public:
 	/// New SMT-RAT tool.
 	SMTRAT(const fs::path& binary, const std::string& arguments): Tool("SMTRAT", binary, arguments) {
-		if (settings_tools().collect_statistics) mArguments += " --stats:print";
+		if (settings_tools().collect_statistics) mArguments += " --stats.print";
 	}
 
 	/// Only handle .smt2 files.

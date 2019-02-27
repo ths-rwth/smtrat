@@ -13,9 +13,8 @@ using namespace carl;
 
 namespace smtrat
 {
-    PModule::PModule( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager ):
-        Module( _formula, _foundAnswer, _manager ),
-        mAppliedPreprocessing( false )
+    PModule::PModule( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager, std::string module_name ):
+        Module( _formula, _foundAnswer, _manager, std::move(module_name) )
     {
     }
 	

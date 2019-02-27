@@ -71,7 +71,7 @@ namespace smtrat
 	
 	template<class Settings>
 	MCBModule<Settings>::MCBModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
-		PModule( _formula, _conditionals, _manager )
+		PModule( _formula, _conditionals, _manager, Settings::moduleName )
 	{
 		collectChoicesFunction = std::bind(&MCBModule<Settings>::collectChoices, this, std::placeholders::_1);
 	}

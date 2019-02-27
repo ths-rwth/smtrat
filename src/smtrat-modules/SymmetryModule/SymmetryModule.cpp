@@ -14,7 +14,7 @@ namespace smtrat
 {
 	template<class Settings>
 	SymmetryModule<Settings>::SymmetryModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
-		PModule( _formula, _conditionals, _manager )
+		PModule( _formula, _conditionals, _manager, Settings::moduleName )
 	{}
 	
 	template<class Settings>

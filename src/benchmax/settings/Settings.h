@@ -7,6 +7,7 @@
 
 #include <benchmax/utils/filesystem.h>
 #include <carl/util/Singleton.h>
+#include <carl/util/Settings.h>
 
 #include <any>
 #include <cassert>
@@ -54,43 +55,13 @@ struct OperationSettings {
  * Generic class to manage runtime settings.
  * Essentially stores all (named) settings in a map<string,any> and retrieves settings classes when requested.
  */
-struct Settings: public carl::Singleton<Settings> {
+struct Settings: public carl::Singleton<Settings>, public carl::settings::Settings {
 	friend carl::Singleton<Settings>;
 private:
-	/// Stores the actual settings.
-	std::map<std::string,std::any> mSettings = {
-		{"core", CoreSettings()},
-		{"operation", OperationSettings()}
+	Settings() {
+		get<CoreSettings>("core");
+		get<OperationSettings>("operation");
 	};
-
-	Settings() = default;
-public:
-	/**
-	 * Retrieves a settings object by name.
-	 * Asserts that
-	 * - a settings object with the given name exists and
-	 * - the stored settings object has the type T.
-	 * @param name Name of the settings object.
-	 * return Settings object.
-	 */
-	template<typename T>
-	T& get(const std::string& name) {
-		auto it = mSettings.find(name);
-		assert(it != mSettings.end());
-		return std::any_cast<T&>(it->second);
-	}
-	/**
-	 * Stores a new settings object by name with type T.
-	 * Asserts that no settings object with the given name exists yet.
-	 * @param name Name of the settings object.
-	 * return Settings object.
-	 */
-	template<typename T>
-	T& add(const std::string& name) {
-		auto res = mSettings.emplace(name, T{});
-		assert(res.second);
-		return std::any_cast<T&>(res.first->second);
-	}
 };
 
 }

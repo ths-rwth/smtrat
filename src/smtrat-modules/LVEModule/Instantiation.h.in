@@ -1,0 +1,13 @@
+/**
+ * @file LVEInstantiation.h.in
+ * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ *
+ * @version 2019-02-20
+ * Created on 2019-02-20.
+ */
+
+#include "${Prefix}Module.h"
+
+namespace smtrat {
+${INSTANTIATIONS}
+}

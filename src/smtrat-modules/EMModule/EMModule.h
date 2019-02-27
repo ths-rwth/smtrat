@@ -24,9 +24,6 @@ namespace smtrat
 
         public:
 			typedef Settings SettingsType;
-			std::string moduleName() const {
-				return SettingsType::moduleName;
-			}
             EMModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = NULL );
 
             ~EMModule();

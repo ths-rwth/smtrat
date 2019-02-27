@@ -60,7 +60,7 @@ namespace smtrat
 
     template<class Settings>
     SATModule<Settings>::SATModule( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* const _manager ):
-        Module( _formula, _foundAnswer, _manager ),
+        Module( _formula, _foundAnswer, _manager, Settings::moduleName ),
         // Parameters (user settable):
         verbosity( 0 ),
         var_decay( opt_var_decay ),

@@ -32,21 +32,6 @@ void print_license() {
 	std::cout << license << std::endl;
 }
 
-void print_timings(const smtrat::Manager& solver) {
-	std::cout << "**********************************************" << std::endl;
-	std::cout << "*                  Timings                   *" << std::endl;
-	std::cout << "**********************************************" << std::endl;
-	std::cout << "\t\tAdd \t\tCheck \t (calls) \tRemove" << std::endl;
-	for (const auto& m: solver.getAllGeneratedModules()) {
-		std::cout << m->moduleName() << ":\t";
-		std::cout << m->getAddTimerMS() << "\t\t";
-		std::cout << m->getCheckTimerMS() << "\t";
-		std::cout << "(" << m->getNrConsistencyChecks() << ")\t\t";
-		std::cout << m->getRemoveTimerMS() << std::endl;
-	}
-	std::cout << "**********************************************" << std::endl;
-}
-
 void print_version() {
 	std::cout << compile_information::ProjectName << " " << compile_information::Version << std::endl;
 	std::cout << compile_information::GitVersion << " based on " << compile_information::GitRevisionSHA1 << std::endl;

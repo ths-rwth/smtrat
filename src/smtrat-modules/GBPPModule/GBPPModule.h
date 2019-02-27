@@ -28,9 +28,6 @@ namespace smtrat
 			
 		public:
 			typedef Settings SettingsType;
-			std::string moduleName() const {
-				return SettingsType::moduleName;
-			}
 			GBPPModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
 
 			~GBPPModule();

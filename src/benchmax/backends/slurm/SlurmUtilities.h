@@ -1,5 +1,8 @@
 #pragma once
 
+#include <carl/util/settings_utils.h>
+#include <benchmax/logging.h>
+
 #include <chrono>
 #include <filesystem>
 #include <string>
@@ -43,9 +46,9 @@ struct SubmitfileProperties {
 	/// Temporary directory for log files.
 	std::string tmp_dir;
 	/// Time limit in seconds.
-	std::chrono::seconds limit_time;
+	carl::settings::duration limit_time;
 	/// Memory limit in megabytes.
-	std::size_t limit_memory;
+	carl::settings::binary_quantity limit_memory;
 	/// Number of tasks.
 	std::size_t tasks;
 	/// Number of slices.
@@ -58,6 +61,40 @@ struct SubmitfileProperties {
  * @return The filename of the submit file.
  */
 std::string generate_submit_file(const SubmitfileProperties& p);
+
+/// All properties needed to create a submit file.
+struct ChunkedSubmitfileProperties {
+	/// Suffix for job and submit file.
+	std::string file_suffix;
+	/// Filename of the job list file.
+	std::string filename_jobs;
+	/// Temporary directory for log files.
+	std::string tmp_dir;
+	/// Time limit in seconds.
+	carl::settings::duration limit_time;
+	/// Memory limit in megabytes.
+	carl::settings::binary_quantity limit_memory;
+	/// Array size.
+	std::size_t array_size;
+	/// Slice size.
+	std::size_t slice_size;
+};
+
+std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p);
+
+template<typename Jobs>
+void generate_jobs_file(const std::string& filename, std::pair<std::size_t,std::size_t> range, const Jobs& jobs) {
+	BENCHMAX_LOG_DEBUG("benchmax.slurm", "Writing job file to " << filename);
+	std::ofstream jobsfile(filename);
+	BENCHMAX_LOG_DEBUG("benchmax.slurm", "Taking jobs " << range.first << ".." << (range.second-1));
+
+	for (std::size_t i = range.first; i < range.second; ++i) {
+		const auto& r = jobs[i];
+		jobsfile << std::get<0>(r)->getCommandline(std::get<1>(r)) << std::endl;
+	}
+	jobsfile.close();
+	BENCHMAX_LOG_DEBUG("benchmax.slurm", "Job file is finished.");
+}
 
 /**
  * Parses the job id from the output of `sbatch`.

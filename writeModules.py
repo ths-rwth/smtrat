@@ -51,8 +51,7 @@ def headerContent(module):
 	result = license(module + 'Module.h') + """
 #pragma once
 
-#include "../Module.h"
-#include \"<MODULENAME>Statistics.h\"
+#include <smtrat-solver/Module.h>
 #include \"<MODULENAME>Settings.h\"
 
 namespace smtrat
@@ -61,16 +60,11 @@ namespace smtrat
 	class <CLASSNAME> : public Module
 	{
 		private:
-#ifdef SMTRAT_DEVOPTION_Statistics
-			<MODULENAME>Statistics mStatistics;
-#endif
 			// Members.
 			
 		public:
-			typedef Settings SettingsType;
-			std::string moduleName() const {
-				return SettingsType::moduleName;
-			}
+			using SettingsType = Settings;
+
 			<CLASSNAME>(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
 
 			~<CLASSNAME>();
@@ -139,9 +133,6 @@ namespace smtrat
 	template<class Settings>
 	<CLASSNAME><Settings>::<CLASSNAME>(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
 		Module( _formula, _conditionals, _manager )
-#ifdef SMTRAT_DEVOPTION_Statistics
-		, mStatistics(Settings::moduleName)
-#endif
 	{}
 	
 	template<class Settings>
@@ -213,45 +204,6 @@ namespace smtrat
 """
   return replacePlaceholder(result, module)
 
-def statisticsContent(module):
-	result = license(module + 'Statistics.h') + """
-#pragma once
-
-#ifdef SMTRAT_DEVOPTION_Statistics
-#include <lib/utilities/stats/Statistics.h>
-
-namespace smtrat
-{
-	class <MODULENAME>Statistics : public Statistics
-	{
-	private:
-		// Members.
-		/**
-		 * Example for a statistic.
-		 */
-		size_t mExampleStatistic;
-	public:
-		// Override Statistics::collect.
-		void collect()
-		{
-		   Statistics::addKeyValuePair( "example_statistic", mExampleStatistic );
-		}
-		void foo()
-		{
-			++mExampleStatistic;
-		}
-		<MODULENAME>Statistics( const std::string& _statisticName ):
-			Statistics( _statisticName, this ),
-			mExampleStatistic( 0 )
-		{}
-		~<MODULENAME>Statistics() {}
-	};
-}
-
-#endif
-"""
-	return replacePlaceholder(result, module)
-
 def instantiationContent(module):
   result = license(module + 'Instantiation.h.in') + """
 #include "${Prefix}Module.h"
@@ -298,7 +250,6 @@ files = {
 	moduleName + "Module.cpp": sourceContent,
 	moduleName + "Module.tex": texContent,
 	moduleName + "Settings.h": settingsContent,
-	moduleName + "Statistics.h": statisticsContent,
 	"Instantiation.h.in": instantiationContent,
 }
 

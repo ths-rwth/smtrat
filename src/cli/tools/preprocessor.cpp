@@ -29,7 +29,7 @@ public:
 	PPStrategy solver;
 	carl::SMTLIBStream mOutput;
 	void add(const smtrat::FormulaT& f) {
-		solver.add(f.toCNF());
+		solver.add(f);
 	}
 	void annotateName(const smtrat::FormulaT& f, const std::string& name) {
 		SMTRAT_LOG_WARN("smtrat.preprocessor", "Preprocessor does not supprt named annotations.")
@@ -95,6 +95,9 @@ int preprocess_file(const std::string& filename, const std::string& outfile) {
 		std::ofstream file(outfile);
 		file << e.mOutput;
 		file.close();
+	}
+	if (smtrat::settings_solver().print_model) {
+		e.solver.printAssignment();
 	}
 
 	return exitCode;

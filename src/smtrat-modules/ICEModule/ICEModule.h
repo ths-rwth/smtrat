@@ -140,30 +140,9 @@ namespace smtrat
 			
 		public:
 			typedef Settings SettingsType;
-			std::string moduleName() const {
-				return SettingsType::moduleName;
-			}
 			ICEModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
 
 			~ICEModule();
-			
-			// Main interfaces.
-			/**
-			 * Informs the module about the given constraint. It should be tried to inform this
-			 * module about any constraint it could receive eventually before assertSubformula
-			 * is called (preferably for the first time, but at least before adding a formula
-			 * containing that constraint).
-			 * @param _constraint The constraint to inform about.
-			 * @return false, if it can be easily decided whether the given constraint is inconsistent;
-			 *		  true, otherwise.
-			 */
-			bool informCore( const FormulaT& _constraint );
-
-			/**
-			 * Informs all backends about the so far encountered constraints, which have not yet been communicated.
-			 * This method must not and will not be called more than once and only before the first runBackends call.
-			 */
-			void init();
 
 			/**
 			 * The module has to take the given sub-formula of the received formula into account.

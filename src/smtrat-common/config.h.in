@@ -7,7 +7,6 @@
 // Whether the validation in the module should be enabled
 #cmakedefine SMTRAT_DEVOPTION_Validation
 #cmakedefine SMTRAT_DEVOPTION_Statistics
-#cmakedefine SMTRAT_DEVOPTION_MeasureTime
 
 #cmakedefine SMTRAT_STRAT_Factorization
 #cmakedefine SMTRAT_STRAT_PARALLEL_MODE

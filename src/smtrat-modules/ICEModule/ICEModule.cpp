@@ -12,23 +12,13 @@ namespace smtrat
 {
 	template<class Settings>
 	ICEModule<Settings>::ICEModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
-		PModule( _formula, _conditionals, _manager )
+		PModule( _formula, _conditionals, _manager, Settings::moduleName )
 	{}
 	
 	template<class Settings>
 	ICEModule<Settings>::~ICEModule()
 	{}
-	
-	template<class Settings>
-	bool ICEModule<Settings>::informCore( const FormulaT& )
-	{
-		return true;
-	}
-	
-	template<class Settings>
-	void ICEModule<Settings>::init()
-	{}
-	
+
 	template<class Settings>
 	bool ICEModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 	{

@@ -23,14 +23,14 @@ namespace settings {
 void registerBenchmarkSettings(SettingsParser* parser) {
 	namespace po = boost::program_options;
 	auto& settings = settings::Settings::getInstance();
-	auto& s = settings.add<settings::BenchmarkSettings>("benchmarks");
+	auto& s = settings.get<settings::BenchmarkSettings>("benchmarks");
 	
 	parser->add_finalizer([&s](const auto& values){
 		finalize_benchmark_settings(s, values);
 	});
 	parser->add("Benchmark settings").add_options()
-		("memory,M", po::value<std::size_t>(&s.limit_memory)->default_value(1024), "memory limit in megabytes")
-		("timeout,T", po::value<std::size_t>()->default_value(60), "timeout in seconds")
+		("memory,M", po::value<carl::settings::binary_quantity>(&s.limit_memory)->default_value(carl::settings::binary_quantity(1024*1024*1024)), "memory limit")
+		("timeout,T", po::value<carl::settings::duration>(&s.limit_time)->default_value(std::chrono::seconds(60))->value_name("time"), "timeout")
 		("directory,D", po::value<std::vector<std::filesystem::path>>(&s.input_directories), "path to look for benchmarks")
 		("output-dir", po::value<std::filesystem::path>(&s.output_dir), "output directory")
 		("output-xml,X", po::value<std::filesystem::path>(&s.output_file_xml)->default_value("stats.xml"), "filename for xml output file")

@@ -45,6 +45,11 @@
 
 void print_statistics() {
 #ifdef SMTRAT_DEVOPTION_Statistics
+	#ifdef TIMING
+	if (smtrat::settings_solver().print_timings) {
+		std::cout << carl::TimingCollector::getInstance() << std::endl;
+	}
+	#endif
 	smtrat::StatisticsCollector::getInstance().collect();
 	if (smtrat::settings_statistics().print_as_smtlib) {
 		std::cout << smtrat::statistics_as_smtlib() << std::endl;
@@ -53,11 +58,6 @@ void print_statistics() {
 		smtrat::statistics_to_xml_file(smtrat::settings_statistics().xml_filename);
 	}
 #endif
-	#ifdef TIMING
-	if (smtrat::settings_solver().print_timings) {
-		std::cout << carl::TimingCollector::getInstance() << std::endl;
-	}
-	#endif
 }
 
 void setup_logging() {
@@ -146,9 +146,6 @@ int main( int argc, char* argv[] )
 			} catch (const std::bad_alloc& e) {
 				std::raise(ENOMEM);
 			}
-		}
-		if (smtrat::settings_solver().print_timings) {
-			smtrat::options_detail::print_timings(strategy);
 		}
 	}
 

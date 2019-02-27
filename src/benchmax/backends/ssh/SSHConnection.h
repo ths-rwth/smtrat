@@ -276,7 +276,7 @@ public:
 		auto timeout = (std::chrono::seconds(settings_benchmarks().limit_time) + std::chrono::seconds(3)).count();
 		if (settings_ssh().use_wallclock) call << "timeout " << timeout << "s ";
 		else call << "ulimit -S -t " << timeout << " && ";
-		call << "ulimit -S -v " << (settings_benchmarks().limit_memory * 1024) << " && ";
+		call << "ulimit -S -v " << settings_benchmarks().limit_memory.kibi() << " && ";
 		call << cmd << " ; rc=$? ;";
 		call << "date +\"End: %s%3N\" ; exit $rc";
 		int rc;

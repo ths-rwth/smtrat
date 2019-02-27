@@ -9,7 +9,7 @@ namespace settings {
 void registerSSHBackendSettings(SettingsParser* parser) {
 	namespace po = boost::program_options;
 	auto& settings = settings::Settings::getInstance();
-	auto& s = settings.add<SSHBackendSettings>("backend-ssh");
+	auto& s = settings.get<SSHBackendSettings>("backend-ssh");
 	
 #ifdef BENCHMAX_SSH
 	parser->add("SSH Backend settings").add_options()

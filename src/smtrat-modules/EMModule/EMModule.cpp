@@ -13,8 +13,7 @@ namespace smtrat
 {
     template<class Settings>
     EMModule<Settings>::EMModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager ):
-        PModule( _formula, _conditionals, _manager ),
-        mVisitor()
+        PModule( _formula, _conditionals, _manager, Settings::moduleName )
     {
 		eliminateEquationFunction = std::bind(&EMModule<Settings>::eliminateEquation, this, std::placeholders::_1);
     }
