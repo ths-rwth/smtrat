@@ -11,7 +11,7 @@ namespace slurm {
 void archive_log_files(const ArchiveProperties& p) {
 	std::string output;
 	std::stringstream ss;
-	ss << "tar -czf " << p.filename_archive << " ";
+	ss << "tar --force-local -czf " << p.filename_archive << " ";
 	ss << "-C " << p.tmp_dir << " ";
 	ss << p.filename_jobfile << " " << p.filename_submitfile << " ";
 	ss << "`find " << p.tmp_dir << " -iname \"JOB." << p.jobid << "_*\"`";
@@ -43,9 +43,9 @@ std::vector<fs::path> collect_result_files(const fs::path& basedir, int jobid) {
 }
 
 std::string generate_submit_file(const SubmitfileProperties& p) {
-	std::string filename = "job-" + p.file_suffix + ".job";
-	BENCHMAX_LOG_DEBUG("benchmax.slurm", "Writing submit file to " << p.tmp_dir << "/" << filename);
-	std::ofstream out(p.tmp_dir + "/" + filename);
+	std::string filename = p.tmp_dir + "/job-" + p.file_suffix + ".job";
+	BENCHMAX_LOG_INFO("benchmax.slurm", "Generating submitfile " << filename);
+	std::ofstream out(filename);
 	out << "#!/usr/bin/env zsh" << std::endl;
 	out << "### Job name" << std::endl;
 	// Job name
@@ -98,9 +98,9 @@ std::string generate_submit_file(const SubmitfileProperties& p) {
 
 
 std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p) {
-	std::string filename = "job-" + p.file_suffix + ".job";
-	BENCHMAX_LOG_DEBUG("benchmax.slurm", "Writing submit file to " << p.tmp_dir << "/" << filename);
-	std::ofstream out(p.tmp_dir + "/" + filename);
+	std::string filename = p.tmp_dir + "/job-" + p.file_suffix + ".job";
+	BENCHMAX_LOG_INFO("benchmax.slurm", "Generating submitfile " << filename);
+	std::ofstream out(filename);
 	out << "#!/usr/bin/env zsh" << std::endl;
 	out << "### Job name" << std::endl;
 	// Job name
@@ -125,7 +125,7 @@ std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p) {
 	out << "max=$SLURM_ARRAY_TASK_MAX" << std::endl;
 	out << "cur=$SLURM_ARRAY_TASK_ID" << std::endl;
 	out << "slicesize=" << p.slice_size << std::endl;
-	out << "start=$(( (cur - 1) * slicesize ))" << std::endl;
+	out << "start=$(( (cur - 1) * slicesize + 1 ))" << std::endl;
 	out << "end=$(( start + slicesize - 1 ))" << std::endl;
 
 	auto timeout = (std::chrono::seconds(p.limit_time) + std::chrono::seconds(3)).count();

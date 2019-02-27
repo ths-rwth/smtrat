@@ -68,7 +68,7 @@ private:
 	}
 
 	void run_job_sync() {
-		std::string jobsfilename = "jobs-" + std::to_string(settings_core().start_time) + ".jobs";
+		std::string jobsfilename = settings_slurm().tmp_dir + "/jobs-" + std::to_string(settings_core().start_time) + ".jobs";
 		slurm::generate_jobs_file(jobsfilename, {0, mResults.size()}, mResults);
 		auto slices = std::min(settings_slurm().array_size, mResults.size());
 		
@@ -86,7 +86,7 @@ private:
 		cmd << "sbatch --wait";
 		cmd << " --array=1-" << std::to_string(settings_slurm().array_size);
 		cmd << " " << settings_slurm().sbatch_options;
-		cmd << " " + settings_slurm().tmp_dir + "/" + submitfile;
+		cmd << " " + submitfile;
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Submitting job now.");
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Command: " << cmd.str());
 		std::string output;
@@ -125,10 +125,9 @@ private:
 	}
 
 	void run_job_async(std::size_t n) {
-		std::string jobsfilename = "jobs-" + std::to_string(settings_core().start_time) + "-" + std::to_string(n+1) + ".jobs";
+		std::string jobsfilename = settings_slurm().tmp_dir + "/jobs-" + std::to_string(settings_core().start_time) + "-" + std::to_string(n+1) + ".jobs";
 		slurm::generate_jobs_file(jobsfilename, get_job_range(n), mResults);
 
-		BENCHMAX_LOG_INFO("benchmax.slurm", "Generating submitfile");
 		auto submitfile = slurm::generate_submit_file_chunked({
 			std::to_string(settings_core().start_time) + "-" + std::to_string(n),
 			jobsfilename,
@@ -150,7 +149,7 @@ private:
 		cmd << "sbatch --wait";
 		cmd << " --array=1-" << std::to_string(settings_slurm().array_size);
 		cmd << " " << settings_slurm().sbatch_options;
-		cmd << " " + settings_slurm().tmp_dir + "/" + submitfile;
+		cmd << " " + submitfile;
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Command: " << cmd.str());
 		std::string output;
 		call_program(cmd.str(), output, true);
