@@ -646,17 +646,42 @@ namespace smtrat {
         return false;
     }
 
-    RationalCapsule generateAbcPrimeForICP(RationalCapsule rationalCapsule) {
+    RationalCapsule generateAbcPrimeForICP(RationalCapsule rationalCapsule, bool isGreater) {
 
-        // b' = (b - (c/a)) / 2
-        double bPrime = ((rationalCapsule.getBRational().get_d() - (rationalCapsule.getCRational().get_d()/rationalCapsule.getARational().get_d())))/2;
+        Rational cByA = rationalCapsule.getCRational() / rationalCapsule.getARational();
 
-        // In casr bPrime = 0, aPrime can not be generated.
-        if (bPrime <= 0) {
-            bPrime = rationalCapsule.getBRational().get_d();
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "generated cByA: " << cByA << endl; }
+
+        RationalInterval bPrimeInterval;
+
+        if (isGreater) {
+            bPrimeInterval = RationalInterval(cByA, rationalCapsule.getBRational());
+        } else {
+            bPrimeInterval = RationalInterval(rationalCapsule.getBRational(), cByA);
         }
-        // a' = (a - (c/b')) / 2
-        double aPrime = ((rationalCapsule.getARational().get_d() - (rationalCapsule.getCRational().get_d()/bPrime)))/2;
+
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "The bPrimeInterval is: " << bPrimeInterval << endl;
+            if (bPrimeInterval.isConsistent())
+                cout << "isConsistent: " << endl;
+            if (!bPrimeInterval.isEmpty())
+                cout << "Not Empty: " << endl;
+        }
+
+        Rational bPrime = carl::sample(bPrimeInterval);
+
+        Rational cByBPrime = rationalCapsule.getCRational() / bPrime;
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "generated cByBPrime: " << cByBPrime << endl; }
+
+        RationalInterval aPrimeInterval;
+
+        if (isGreater) {
+            aPrimeInterval = RationalInterval(cByBPrime, rationalCapsule.getARational());
+        } else {
+            aPrimeInterval = RationalInterval(rationalCapsule.getARational(), cByBPrime);
+        }
+
+        Rational aPrime = carl::sample(aPrimeInterval);
 
         // c' = a * b
         Rational cPrime = aPrime * bPrime;
@@ -760,21 +785,25 @@ namespace smtrat {
 
                     if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "none of the rational is zero and ICP is creating..." << endl; }
 
-                    // RationalCapsule rationalCapsulePrime = generateAbcPrimeForICP(rationalCapsuleAbs);
-                    RationalCapsule rationalCapsulePrime(rationalCapsuleAbs.getARational(), rationalCapsuleAbs.getBRational(), rationalCapsuleAbs.getARational() * rationalCapsuleAbs.getBRational());
-
                     if (abGreatercCheck(rationalCapsuleAbs)) {
 
                         if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abGreatercCheck is true and ICPGreater is creating..." << endl; }
 
-                        formulas.push_back(createICPGreaterOne(variableCapsuleOuter, rationalCapsulePrime));
-                        formulas.push_back(createICPGreaterTwo(variableCapsuleOuter, rationalCapsulePrime));
+                        RationalCapsule rationalCapsulePrimeForICPGreater = generateAbcPrimeForICP(rationalCapsuleAbs, true);
+                        // RationalCapsule rationalCapsulePrimeForICPGreater(rationalCapsuleAbs.getARational(), rationalCapsuleAbs.getBRational(), rationalCapsuleAbs.getARational() * rationalCapsuleAbs.getBRational());
+
+
+                        formulas.push_back(createICPGreaterOne(variableCapsuleOuter, rationalCapsulePrimeForICPGreater));
+                        formulas.push_back(createICPGreaterTwo(variableCapsuleOuter, rationalCapsulePrimeForICPGreater));
 
                     } else if (abLesscCheck(rationalCapsuleAbs)) {
 
                         if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abLesscCheck is true and ICPLess is creating..." << endl; }
 
-                        formulas.push_back(createICPLess(variableCapsuleOuter, rationalCapsulePrime));
+                        RationalCapsule rationalCapsulePrimeForICPLess = generateAbcPrimeForICP(rationalCapsuleAbs, false);
+                        // RationalCapsule rationalCapsulePrimeForICPLess(rationalCapsuleAbs.getARational(), rationalCapsuleAbs.getBRational(), rationalCapsuleAbs.getARational() * rationalCapsuleAbs.getBRational());
+
+                        formulas.push_back(createICPLess(variableCapsuleOuter, rationalCapsulePrimeForICPLess));
 
                     } else { if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "None of the precondition is true and ICP is not creating..." << endl; } }
                 }
