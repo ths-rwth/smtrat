@@ -237,6 +237,15 @@ namespace smtrat {
 
     }
 
+    FormulasT createTangentPlaneNEQ(VariableCapsule variableCapsule, RationalCapsule rationalCapsule) {
+        FormulasT tangentPlaneNEQ;
+        tangentPlaneNEQ.push_back(createTangentPlaneNEQOne(variableCapsule.getXVariable(), variableCapsule.getYVariable(), variableCapsule.getZVariable(), rationalCapsule.getARational()));
+        tangentPlaneNEQ.push_back(createTangentPlaneNEQTwo(variableCapsule.getXVariable(), variableCapsule.getYVariable(), variableCapsule.getZVariable(), rationalCapsule.getBRational()));
+        tangentPlaneNEQ.push_back(createTangentPlaneNEQThree(variableCapsule.getXVariable(), variableCapsule.getYVariable(), variableCapsule.getZVariable(), rationalCapsule.getARational(), rationalCapsule.getBRational()));
+        tangentPlaneNEQ.push_back(createTangentPlaneNEQFour(variableCapsule.getXVariable(), variableCapsule.getYVariable(), variableCapsule.getZVariable(), rationalCapsule.getARational(), rationalCapsule.getBRational()));
+        return tangentPlaneNEQ;
+    }
+
     FormulaT createTangentPlaneEQOne (carl::Variable xVariable, carl::Variable yVariable, carl::Variable zVariable, Rational aRational) {
 
         std::vector<Poly> operands {Poly(xVariable), Poly(aRational)};
@@ -275,6 +284,13 @@ namespace smtrat {
 
         return finalFormula;
 
+    }
+
+    FormulasT createTangentPlaneEQ(VariableCapsule variableCapsule, RationalCapsule rationalCapsule) {
+        FormulasT tangentPlaneEQ;
+        tangentPlaneEQ.push_back(createTangentPlaneEQOne(variableCapsule.getXVariable(), variableCapsule.getYVariable(), variableCapsule.getZVariable(), rationalCapsule.getARational()));
+        tangentPlaneEQ.push_back(createTangentPlaneEQTwo(variableCapsule.getXVariable(), variableCapsule.getYVariable(), variableCapsule.getZVariable(), rationalCapsule.getARational()));
+        return tangentPlaneEQ;
     }
 
     const smtrat::VariableCapsule extractVariables(MonomialMapIterator monomialIterator) {
@@ -462,6 +478,14 @@ namespace smtrat {
         return finalFormula;
     }
 
+    FormulasT createMonotonicity(VariableCapsule variableCapsuleOuter, VariableCapsule variableCapsuleInner) {
+        FormulasT tangentPlaneNEQ;
+        tangentPlaneNEQ.push_back(createMonotonicityOne(variableCapsuleOuter, variableCapsuleInner));
+        tangentPlaneNEQ.push_back(createMonotonicityTwo(variableCapsuleOuter, variableCapsuleInner));
+        tangentPlaneNEQ.push_back(createMonotonicityThree(variableCapsuleOuter, variableCapsuleInner));
+        return tangentPlaneNEQ;
+    }
+
     FormulaT createCongruence(smtrat::VariableCapsule variableCapsuleOuter, smtrat::VariableCapsule variableCapsuleInner){
         // {x_1, x_2}
         std::vector<Poly> operandsxx {Poly(variableCapsuleOuter.getXVariable()), Poly(variableCapsuleInner.getXVariable())};
@@ -547,6 +571,13 @@ namespace smtrat {
         if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "created ICPGreaterTwo Axiom Formula is: " << finalFormula << endl; }
 
         return finalFormula;
+    }
+
+    FormulasT createICPGreater(VariableCapsule variableCapsule, RationalCapsule rationalCapsule) {
+        FormulasT iCPGreater;
+        iCPGreater.push_back(createICPGreaterOne(variableCapsule, rationalCapsule));
+        iCPGreater.push_back(createICPGreaterTwo(variableCapsule, rationalCapsule));
+        return iCPGreater;
     }
 
     FormulaT createICPLess(VariableCapsule variableCapsule, RationalCapsule rationalCapsule){
@@ -730,20 +761,19 @@ namespace smtrat {
 
 
             if (axiomType == AxiomType::ZERO) {
-                formulas.push_back(createZeroOne(xVariable, yVariable, zVariable));
-                formulas.push_back(createZeroTwo(xVariable, yVariable, zVariable));
-                formulas.push_back(createZeroThree(xVariable, yVariable, zVariable));
+
+                FormulasT createdZeroFormulas = createZero(variableCapsuleOuter);
+                formulas.insert(std::end(formulas), std::begin(createdZeroFormulas), std::end(createdZeroFormulas));
+
             } else if (axiomType == AxiomType::TANGENT_PLANE){
                 if(abEqualcCheck(variableCapsuleOuter, abstractModel)) {
                     if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is true, creating TANGENT_PLANE..." << endl; }
                     if (xVariable != yVariable){
-                        formulas.push_back(createTangentPlaneNEQOne(xVariable, yVariable, zVariable, aRational));
-                        formulas.push_back(createTangentPlaneNEQTwo(xVariable, yVariable, zVariable, bRational));
-                        formulas.push_back(createTangentPlaneNEQThree(xVariable, yVariable, zVariable, aRational, bRational));
-                        formulas.push_back(createTangentPlaneNEQFour(xVariable, yVariable, zVariable, aRational, bRational));
+                        FormulasT createdTangentPlaneNEQ = createTangentPlaneNEQ(variableCapsuleOuter, rationalCapsule);
+                        formulas.insert(std::end(formulas), std::begin(createdTangentPlaneNEQ), std::end(createdTangentPlaneNEQ));
                     } else {
-                        formulas.push_back(createTangentPlaneEQOne(xVariable, yVariable, zVariable, aRational));
-                        formulas.push_back(createTangentPlaneEQTwo(xVariable, yVariable, zVariable, aRational));
+                        FormulasT createdTangentPlaneEQ = createTangentPlaneEQ(variableCapsuleOuter, rationalCapsule);
+                        formulas.insert(std::end(formulas), std::begin(createdTangentPlaneEQ), std::end(createdTangentPlaneEQ));
                     }
                 } else {
                     if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is false TANGENT_PLANE is not creating..." << endl; }
@@ -764,9 +794,8 @@ namespace smtrat {
 
                             if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is true, creating Monotonicity..." << endl; }
 
-                            formulas.push_back(createMonotonicityOne(variableCapsuleOuter, variableCapsuleInner));
-                            formulas.push_back(createMonotonicityTwo(variableCapsuleOuter, variableCapsuleInner));
-                            formulas.push_back(createMonotonicityThree(variableCapsuleOuter, variableCapsuleInner));
+                            FormulasT createdMonotonicity = createMonotonicity(variableCapsuleOuter, variableCapsuleInner);
+                            formulas.insert(std::end(formulas), std::begin(createdMonotonicity), std::end(createdMonotonicity));
 
                         } else { if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is false Monotonicity is not creating..." << endl; }}
 
@@ -804,9 +833,8 @@ namespace smtrat {
                         RationalCapsule rationalCapsulePrimeForICPGreater = generateAbcPrimeForICP(rationalCapsuleAbs, true);
                         // RationalCapsule rationalCapsulePrimeForICPGreater(rationalCapsuleAbs.getARational(), rationalCapsuleAbs.getBRational(), rationalCapsuleAbs.getARational() * rationalCapsuleAbs.getBRational());
 
-
-                        formulas.push_back(createICPGreaterOne(variableCapsuleOuter, rationalCapsulePrimeForICPGreater));
-                        formulas.push_back(createICPGreaterTwo(variableCapsuleOuter, rationalCapsulePrimeForICPGreater));
+                        FormulasT createdICPGreater = createICPGreater(variableCapsuleOuter, rationalCapsulePrimeForICPGreater);
+                        formulas.insert(std::end(formulas), std::begin(createdICPGreater), std::end(createdICPGreater));
 
                     } else if (abLesscCheck(rationalCapsuleAbs)) {
 
