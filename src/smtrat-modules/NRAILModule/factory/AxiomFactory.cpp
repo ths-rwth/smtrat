@@ -307,6 +307,14 @@ namespace smtrat {
 
     }
 
+    /**
+     * create an auxiliary variable e.g. aux_<Variable Name>
+     * @param variable the variable for which auxiliary variable to be created
+     * @return created auxiliary variable
+     */
+    carl::Variable createAuxiliaryVariable(carl::Variable variable){
+        return carl::freshRealVariable("aux_" + variable.name());
+    }
 
     /**
      * | x1 | =
@@ -317,19 +325,19 @@ namespace smtrat {
      * @param variable
      * @return
      */
-    FormulaT generateAbsFormula(carl::Variable variable) {
+    FormulaT generateAbsFormula(carl::Variable variable, carl::Variable aux_variable) {
 
         FormulaT partOneOneFormula = FormulaT(Poly(variable), carl::Relation::GEQ);
 
-        std::vector<Poly> operands1 {Poly(variable), Poly(variable)};
+        std::vector<Poly> operands {Poly(aux_variable), Poly(variable)};
 
-        FormulaT partOneTwoFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands1), carl::Relation::EQ);
+        FormulaT partOneTwoFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands), carl::Relation::EQ);
 
         FormulaT partOneFormula = FormulaT(carl::FormulaType::IMPLIES, partOneOneFormula, partOneTwoFormula);
 
         FormulaT partTwoOneFormula = FormulaT(Poly(variable), carl::Relation::LESS);
 
-        FormulaT partTwoTwoFormula = FormulaT(Poly(Poly::ConstructorOperation::ADD, operands1), carl::Relation::EQ);
+        FormulaT partTwoTwoFormula = FormulaT(Poly(Poly::ConstructorOperation::ADD, operands), carl::Relation::EQ);
 
         FormulaT partTwoFormula = FormulaT(carl::FormulaType::IMPLIES, partTwoOneFormula, partTwoTwoFormula);
 
@@ -350,22 +358,26 @@ namespace smtrat {
      *     (y1 <= y2)
      * )
      *
-     * @param variable1
-     * @param variable2
+     * @param variableLeft
+     * @param variableRight
      * @param relation
      * @return
      */
-    FormulaT generateAbsFormula(carl::Variable variable1, carl::Variable variable2, carl::Relation relation) {
+    FormulaT generateAbsFormula(carl::Variable variableLeft, carl::Variable variableRight, carl::Relation relation) {
 
         FormulasT formulas;
 
-        FormulaT absFormulaOfVariable1 = generateAbsFormula(variable1);
+        carl::Variable auxLeft = createAuxiliaryVariable(variableLeft);
+
+        FormulaT absFormulaOfVariable1 = generateAbsFormula(variableLeft, auxLeft);
         formulas.push_back(absFormulaOfVariable1);
 
-        FormulaT absFormulaOfVariable2 = generateAbsFormula(variable2);
+        carl::Variable auxRight = createAuxiliaryVariable(variableRight);
+
+        FormulaT absFormulaOfVariable2 = generateAbsFormula(variableRight, auxRight);
         formulas.push_back(absFormulaOfVariable2);
 
-        std::vector<Poly> operands {Poly(variable1), Poly(variable2)};
+        std::vector<Poly> operands {Poly(auxLeft), Poly(auxRight)};
 
         FormulaT realtionFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operands), relation);
         formulas.push_back(realtionFormula);
@@ -703,7 +715,7 @@ namespace smtrat {
 
         for (MonomialMapIterator monomialIteratorOuter = monomialMap.begin(); monomialIteratorOuter != monomialMap.end(); ++monomialIteratorOuter){
 
-            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "creating variableCapsuleOuter..." << endl; }
+            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << endl <<"creating variableCapsuleOuter..."; }
             smtrat::VariableCapsule variableCapsuleOuter = extractVariables(monomialIteratorOuter);
 
             carl::Variable xVariable = variableCapsuleOuter.getXVariable();
@@ -742,7 +754,7 @@ namespace smtrat {
                         continue;
                     }
 
-                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "creating variableCapsuleInner..." << endl; }
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << endl << "creating variableCapsuleInner..."; }
 
                     smtrat::VariableCapsule variableCapsuleInner = extractVariables(monomialIteratorInner);
 
