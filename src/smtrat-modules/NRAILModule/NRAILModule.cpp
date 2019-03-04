@@ -128,7 +128,7 @@ namespace smtrat
      * @param exponent an even exponent
      * @return new monomial
      */
-    carl::Monomial::Arg monomialForEvenExponent(carl::Variable Variable, int exponent){
+    carl::Monomial::Arg abstractUnivariateMonomialForEvenExponent(carl::Variable Variable, int exponent){
 
         int exponentToBe = divisionOfExponentByTwo(exponent);
 
@@ -139,14 +139,14 @@ namespace smtrat
         carl::Variable newlyGeneratedOrOldVariable = insertIntoMapOrRetrieveExistingVariable(monomialAsSquareOfVariable);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "monomialForEvenExponent: Exponent of newly generated or old variable: " << exponentToBe;
+            cout << "abstractUnivariateMonomialForEvenExponent: Exponent of newly generated or old variable: " << exponentToBe;
             cout << "\n";
         }
 
         carl::Monomial::Arg newMonomial = carl::createMonomial(newlyGeneratedOrOldVariable, (carl::exponent)exponentToBe);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "monomialForEvenExponent: new Monomial: " << newMonomial;
+            cout << "abstractUnivariateMonomialForEvenExponent: new Monomial: " << newMonomial;
             cout << "\n";
             cout << "\n";
         }
@@ -161,7 +161,7 @@ namespace smtrat
      * @param variables List of carl variables
      * @return created new linear variable
      */
-    carl::Variable createLinearVariable(std::list<carl::Variable> variables){
+    carl::Variable abstractProductRecursively(std::list<carl::Variable> variables){
 
         while (variables.size() > 1) {
             carl::Variable first = variables.front();
@@ -213,7 +213,7 @@ namespace smtrat
      * @param exponent an odd exponent
      * @return new linear monomial
      */
-    carl::Monomial::Arg monomialForOddExponent(carl::Variable Variable, int exponent){
+    carl::Monomial::Arg abstractUnivariateMonomialForOddExponent(carl::Variable Variable, int exponent){
 
         std::list<carl::Variable> extraVariablesForOddExponenet;
 
@@ -225,7 +225,7 @@ namespace smtrat
         carl::Variable newlyGeneratedOrOldVariable = insertIntoMapOrRetrieveExistingVariable(monomialAsSquareOfVariable);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "monomialForOddExponent: Exponent of newly generated or old variable: " << exponentToBe;
+            cout << "abstractUnivariateMonomialForOddExponent: Exponent of newly generated or old variable: " << exponentToBe;
             cout << "\n";
         }
 
@@ -241,10 +241,12 @@ namespace smtrat
 
             if(newMonomial->begin()->second % 2 == 0){
 
-                newMonomial = monomialForEvenExponent(newMonomial->begin()->first, newMonomial->begin()->second);
+                newMonomial = abstractUnivariateMonomialForEvenExponent(newMonomial->begin()->first,
+                                                                        newMonomial->begin()->second);
 
             } else {
-                newMonomial = monomialForOddExponent(newMonomial->begin()->first, newMonomial->begin()->second);
+                newMonomial = abstractUnivariateMonomialForOddExponent(newMonomial->begin()->first,
+                                                                       newMonomial->begin()->second);
             }
         }
 
@@ -259,11 +261,11 @@ namespace smtrat
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
                 cout << "extraVariablesForOddExponenet: " << extraVariablesForOddExponenet << "\n";
             }
-            newMonomial = carl::createMonomial((createLinearVariable(extraVariablesForOddExponenet)), (carl::exponent)1);
+            newMonomial = carl::createMonomial((abstractProductRecursively(extraVariablesForOddExponenet)), (carl::exponent)1);
         }
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "monomialForOddExponent: new Monomial: " << newMonomial;
+            cout << "abstractUnivariateMonomialForOddExponent: new Monomial: " << newMonomial;
             cout << "\n";
             cout << "\n";
         }
@@ -277,7 +279,7 @@ namespace smtrat
      * @param exponent even or odd exponent of the variable
      * @return a linear monomial
      */
-    carl::Monomial::Arg createLinearMonomial(carl::Variable Variable, int exponent)
+    carl::Monomial::Arg abstractUnivariateMonomial (carl::Variable Variable, int exponent)
     {
         carl::Monomial::Arg monomial;
 
@@ -288,10 +290,10 @@ namespace smtrat
 
         } else if(exponent % 2 == 0){
 
-            monomial = monomialForEvenExponent(Variable, exponent);
+            monomial = abstractUnivariateMonomialForEvenExponent(Variable, exponent);
 
         } else {
-            monomial = monomialForOddExponent(Variable, exponent);
+            monomial = abstractUnivariateMonomialForOddExponent(Variable, exponent);
         }
 
 
@@ -306,7 +308,7 @@ namespace smtrat
         }
 
 
-        return createLinearMonomial(monomial->begin()->first, monomial->begin()->second);
+        return abstractUnivariateMonomial(monomial->begin()->first, monomial->begin()->second);
     }
 
     /**
@@ -314,7 +316,7 @@ namespace smtrat
      * @param monomial a monomoal object
      * @return a linear variable
      */
-    carl::Variable encapsulateMonomial(carl::Monomial::Arg monomial){
+    carl::Variable abstractMonomial(carl::Monomial::Arg monomial){
 
         std::list<carl::Variable> variables;
 
@@ -322,7 +324,7 @@ namespace smtrat
 
         for (auto it = monomial->begin(); it != monomial->end(); ++it) {
 
-                carl::Monomial::Arg monomial = createLinearMonomial(it->first, it->second);
+                carl::Monomial::Arg monomial = abstractUnivariateMonomial(it->first, it->second);
 
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
                 cout << "Received final Monomial is: " << monomial;
@@ -333,7 +335,7 @@ namespace smtrat
                 variables.push_back(monomial->begin()->first);
             }
 
-            finalVariable = createLinearVariable(variables);
+            finalVariable = abstractProductRecursively(variables);
 
         return  finalVariable;
     }
@@ -384,7 +386,7 @@ namespace smtrat
                 }
 
                 //get the linearized variable of the monomial
-                carl::Variable finalVariable = encapsulateMonomial(monomial);
+                carl::Variable finalVariable = abstractMonomial(monomial);
 
                 //create new polynomial
                 Poly p(term.coeff()*finalVariable);
@@ -506,7 +508,7 @@ namespace smtrat
     }
 
     /**
-     * Chekcs if the estimated model satisfies the input NRA formula.
+     * Chekcs if the estimated Assignment satisfies the input NRA formula.
      * @param estimatedModel The estimated model.
      */
     Answer isNRASatisfied(Model estimatedModel)
@@ -522,9 +524,9 @@ namespace smtrat
     /**
      * Creates the estimated model.
      * estimated model takes the solution from mModel or randomly chosen.
-     * @param mModel Model of linearized formula.
+     * @param linearizedModel Model of linearized formula.
      */
-    Model createEstimatedModel(Model mModel){
+    Model createEstimatedAssignment(Model linearizedModel){
         carl::Variables allVarsOfOriginalFormula;
         Model estimatedModel;
 
@@ -539,14 +541,14 @@ namespace smtrat
             cout << "\n";
 
             cout << "linearized variable | value: " << "\n";
-            for (auto it = mModel.begin(); it != mModel.end(); ++it) {
+            for (auto it = linearizedModel.begin(); it != linearizedModel.end(); ++it) {
                 cout << it->first << " | " << it->second;
                 cout << "\n";
             }
         }
         for (auto it1 = allVarsOfOriginalFormula.begin(); it1 != allVarsOfOriginalFormula.end(); ++it1) {
             int counter = 0;
-            for (auto it2 = mModel.begin(); it2 != mModel.end(); ++it2) {
+            for (auto it2 = linearizedModel.begin(); it2 != linearizedModel.end(); ++it2) {
                 if(it1->name() == it2->first.asVariable().name()){
                     estimatedModel.emplace(*it1, it2->second.asRational());
                     counter++;
@@ -574,30 +576,30 @@ namespace smtrat
      * @param estimatedModel the estimated model for original formula.
      * @return the Abstract Model
      */
-    Model createAbstractModel(Model mModel, Model estimatedModel){
-        Model abstractModel;
+    Model extendLinearizedModel(Model mModel, Model estimatedModel){
+        Model linearizedModel;
         std::ostream stream(nullptr);
         stream.rdbuf(std::cout.rdbuf());
 
-        for (auto mModelModelItarator = mModel.begin(); mModelModelItarator != mModel.end(); ++mModelModelItarator) {
-            if (mModelModelItarator->second.isRational())
-                abstractModel.emplace(mModelModelItarator->first, mModelModelItarator->second.asRational());
+        for (auto mModelItarator = mModel.begin(); mModelItarator != mModel.end(); ++mModelItarator) {
+            if (mModelItarator->second.isRational())
+                linearizedModel.emplace(mModelItarator->first, mModelItarator->second.asRational());
         }
 
-        for (auto estimatedModelModelItarator = estimatedModel.begin(); estimatedModelModelItarator != estimatedModel.end(); ++estimatedModelModelItarator) {
-            abstractModel.emplace(estimatedModelModelItarator->first, estimatedModelModelItarator->second.asRational());
+        for (auto estimatedModelItarator = estimatedModel.begin(); estimatedModelItarator != estimatedModel.end(); ++estimatedModelItarator) {
+            linearizedModel.emplace(estimatedModelItarator->first, estimatedModelItarator->second.asRational());
         }
 
         MonomialMap monomialMap = smtrat::MonomialMappingByVariablePool::getInstance().getMMonomialMapping();
         for (MonomialMapIterator it = monomialMap.begin(); it != monomialMap.end(); ++it) {
-            abstractModel.emplace(it->first, ZERO_RATIONAL);
+            linearizedModel.emplace(it->first, ZERO_RATIONAL);
         }
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             cout << "Abstract model for checking axioms: " << "\n";
-            abstractModel.printOneline(stream, true);
+            linearizedModel.printOneline(stream, true);
             cout << "\n";
         }
-        return abstractModel;
+        return linearizedModel;
     }
 
     int rand(int min, int max) {
@@ -647,11 +649,11 @@ namespace smtrat
         return unsatisfiedFormulas;
     }
 
-    FormulasT refinement(AxiomFactory::AxiomType axiomType, Model abstractModel, UNSATFormulaSelectionStrategy formulaSelectionStrategy){
+    FormulasT refinement(AxiomFactory::AxiomType axiomType, Model linearizedModel, UNSATFormulaSelectionStrategy formulaSelectionStrategy){
 
-        FormulasT axiomFormulasToBeChecked = AxiomFactory::createFormula(axiomType, abstractModel, smtrat::MonomialMappingByVariablePool::getInstance().getMMonomialMapping());
+        FormulasT axiomFormulasToBeChecked = AxiomFactory::createFormula(axiomType, linearizedModel, smtrat::MonomialMappingByVariablePool::getInstance().getMMonomialMapping());
 
-        FormulasT unsatFormulas = unsatisfiedFormulas(axiomType, axiomFormulasToBeChecked, abstractModel, formulaSelectionStrategy);
+        FormulasT unsatFormulas = unsatisfiedFormulas(axiomType, axiomFormulasToBeChecked, linearizedModel, formulaSelectionStrategy);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "pushing to unsatisfiedFormulas " << unsatFormulas << endl; }
 
@@ -676,7 +678,7 @@ namespace smtrat
 
         bool isUnsatFormulasNotEmpty = true;
 
-        Model abstractModel;
+        Model linearizedModel;
 
         while (true) {
 
@@ -705,7 +707,7 @@ namespace smtrat
                     }
                     return AnswerOfLRA;
                 }
-
+                // NOTE: This mModel is the actual linearized model.
                 mModel = backendsModel();
 
                 if (smtrat::LOG::getInstance().isDebugEnabled()) {
@@ -714,7 +716,7 @@ namespace smtrat
                     cout << "\n";
                     cout << "\n";
                 }
-                Model estimatedModel = createEstimatedModel(mModel);
+                Model estimatedModel = createEstimatedAssignment(mModel);
                 auto answerOfNRA = isNRASatisfied(estimatedModel);
 
                 if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "answerOfNRA: " << answerOfNRA << endl; }
@@ -726,12 +728,12 @@ namespace smtrat
                     if (smtrat::LOG::getInstance().isDebugEnabled()) { estimatedModel.printOneline(stream, true); }
                     return answerOfNRA;
                 }
-
-                abstractModel = createAbstractModel(mModel, estimatedModel);
+                // NOTE: mModel is the actual linearized model, linearizedModel contains linearized model with estimatedAssignments
+                linearizedModel = extendLinearizedModel(mModel, estimatedModel);
 
             }
 
-            FormulasT unsatFormulas = refinement(axiomType[axiomCounter], abstractModel, Settings::formulaSelectionStrategy);
+            FormulasT unsatFormulas = refinement(axiomType[axiomCounter], linearizedModel, Settings::formulaSelectionStrategy);
 
             isUnsatFormulasNotEmpty = !unsatFormulas.empty();
 

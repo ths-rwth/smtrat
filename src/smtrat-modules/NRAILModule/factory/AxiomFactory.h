@@ -20,7 +20,7 @@ namespace smtrat {
 
     public:
         enum AxiomType { ZERO, TANGENT_PLANE, MONOTONICITY, CONGRUENCE, ICP };
-        static FormulasT createFormula(AxiomType axiomType, Model abstractModel, MonomialMap monomialMap);
+        static FormulasT createFormula(AxiomType axiomType, Model linearizedModel, MonomialMap monomialMap);
     };
 
 }

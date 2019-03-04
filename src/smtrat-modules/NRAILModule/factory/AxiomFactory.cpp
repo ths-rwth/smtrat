@@ -617,14 +617,14 @@ namespace smtrat {
         return finalFormula;
     }
 
-    bool abEqualcCheck(VariableCapsule variableCapsuleOuter, Model abstractModel){
+    bool abEqualcCheck(VariableCapsule variableCapsuleOuter, Model linearizedModel){
         carl::Variable xVariable = variableCapsuleOuter.getXVariable();
         carl::Variable yVariable = variableCapsuleOuter.getYVariable();
         carl::Variable zVariable = variableCapsuleOuter.getZVariable();
 
-        Rational aRational = abstractModel.find(variableCapsuleOuter.getXVariable())->second.asRational();
-        Rational bRational = abstractModel.find(variableCapsuleOuter.getYVariable())->second.asRational();
-        Rational cRational = abstractModel.find(variableCapsuleOuter.getZVariable())->second.asRational();
+        Rational aRational = linearizedModel.find(variableCapsuleOuter.getXVariable())->second.asRational();
+        Rational bRational = linearizedModel.find(variableCapsuleOuter.getYVariable())->second.asRational();
+        Rational cRational = linearizedModel.find(variableCapsuleOuter.getZVariable())->second.asRational();
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << endl << "Found values in abEqualcCheck" << " Zvariable = " << cRational << " Xvariable = " << aRational << " Yvariable = " << bRational << endl; }
 
@@ -740,7 +740,7 @@ namespace smtrat {
                 carl::getNum(rationalCapsule.getCRational()) == ZERO_RATIONAL;
     }
 
-    FormulasT AxiomFactory::createFormula(AxiomType axiomType, Model abstractModel, MonomialMap monomialMap) {
+    FormulasT AxiomFactory::createFormula(AxiomType axiomType, Model linearizedModel, MonomialMap monomialMap) {
 
         FormulasT formulas;
 
@@ -749,13 +749,9 @@ namespace smtrat {
             if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << endl <<"creating variableCapsuleOuter..."; }
             smtrat::VariableCapsule variableCapsuleOuter = extractVariables(monomialIteratorOuter);
 
-            carl::Variable xVariable = variableCapsuleOuter.getXVariable();
-            carl::Variable yVariable = variableCapsuleOuter.getYVariable();
-            carl::Variable zVariable = variableCapsuleOuter.getZVariable();
-
-            Rational aRational = abstractModel.find(variableCapsuleOuter.getXVariable())->second.asRational();
-            Rational bRational = abstractModel.find(variableCapsuleOuter.getYVariable())->second.asRational();
-            Rational cRational = abstractModel.find(variableCapsuleOuter.getZVariable())->second.asRational();
+            Rational aRational = linearizedModel.find(variableCapsuleOuter.getXVariable())->second.asRational();
+            Rational bRational = linearizedModel.find(variableCapsuleOuter.getYVariable())->second.asRational();
+            Rational cRational = linearizedModel.find(variableCapsuleOuter.getZVariable())->second.asRational();
 
             RationalCapsule rationalCapsule(aRational, bRational, cRational);
 
@@ -766,9 +762,9 @@ namespace smtrat {
                 formulas.insert(std::end(formulas), std::begin(createdZeroFormulas), std::end(createdZeroFormulas));
 
             } else if (axiomType == AxiomType::TANGENT_PLANE){
-                if(abEqualcCheck(variableCapsuleOuter, abstractModel)) {
+                if(abEqualcCheck(variableCapsuleOuter, linearizedModel)) {
                     if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is true, creating TANGENT_PLANE..." << endl; }
-                    if (xVariable != yVariable){
+                    if (variableCapsuleOuter.getXVariable() != variableCapsuleOuter.getYVariable()){
                         FormulasT createdTangentPlaneNEQ = createTangentPlaneNEQ(variableCapsuleOuter, rationalCapsule);
                         formulas.insert(std::end(formulas), std::begin(createdTangentPlaneNEQ), std::end(createdTangentPlaneNEQ));
                     } else {
@@ -790,7 +786,7 @@ namespace smtrat {
 
                     if (axiomType == AxiomType::MONOTONICITY){
 
-                        if(abEqualcCheck(variableCapsuleInner, abstractModel) || abEqualcCheck(variableCapsuleOuter, abstractModel)){
+                        if(abEqualcCheck(variableCapsuleInner, linearizedModel) || abEqualcCheck(variableCapsuleOuter, linearizedModel)){
 
                             if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is true, creating Monotonicity..." << endl; }
 
