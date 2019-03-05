@@ -478,6 +478,13 @@ namespace smtrat {
         return finalFormula;
     }
 
+    RationalCapsule extractRationalCapsule(VariableCapsule variableCapsule, Model linearizedModel) {
+        Rational aRational = linearizedModel.find(variableCapsule.getXVariable())->second.asRational();
+        Rational bRational = linearizedModel.find(variableCapsule.getYVariable())->second.asRational();
+        Rational cRational = linearizedModel.find(variableCapsule.getZVariable())->second.asRational();
+        return  RationalCapsule(aRational, bRational, cRational);
+    }
+
     FormulasT createMonotonicity(VariableCapsule variableCapsuleOuter, VariableCapsule variableCapsuleInner) {
         FormulasT tangentPlaneNEQ;
         tangentPlaneNEQ.push_back(createMonotonicityOne(variableCapsuleOuter, variableCapsuleInner));
@@ -749,12 +756,7 @@ namespace smtrat {
             if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << endl <<"creating variableCapsuleOuter..."; }
             smtrat::VariableCapsule variableCapsuleOuter = extractVariables(monomialIteratorOuter);
 
-            Rational aRational = linearizedModel.find(variableCapsuleOuter.getXVariable())->second.asRational();
-            Rational bRational = linearizedModel.find(variableCapsuleOuter.getYVariable())->second.asRational();
-            Rational cRational = linearizedModel.find(variableCapsuleOuter.getZVariable())->second.asRational();
-
-            RationalCapsule rationalCapsule(aRational, bRational, cRational);
-
+            RationalCapsule rationalCapsule = extractRationalCapsule(variableCapsuleOuter, linearizedModel);
 
             if (axiomType == AxiomType::ZERO) {
 
