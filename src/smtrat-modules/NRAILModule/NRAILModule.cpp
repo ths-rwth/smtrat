@@ -613,12 +613,10 @@ namespace smtrat
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "unsatisfiedFormulas to be check: " << formulas << endl; }
 
-        if (axiomType == AxiomFactory::AxiomType::TANGENT_PLANE)
-            return formulas;
-
         FormulasT unsatisfiedFormulas;
-        for(FormulaT formula:formulas) {
-            if (carl::model::satisfiedBy(formula, model) == 0){
+
+        if (axiomType == AxiomFactory::AxiomType::TANGENT_PLANE) {
+            for(FormulaT formula:formulas) {
                 if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "unsatisfiedFormula: " << formula << endl; }
                 unsatisfiedFormulas.push_back(formula);
                 if (formulaSelectionStrategy == UNSATFormulaSelectionStrategy::FIRST){
@@ -626,8 +624,18 @@ namespace smtrat
                     return unsatisfiedFormulas;
                 }
             }
+        } else {
+            for(FormulaT formula:formulas) {
+                if (carl::model::satisfiedBy(formula, model) == 0){
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "unsatisfiedFormula: " << formula << endl; }
+                    unsatisfiedFormulas.push_back(formula);
+                    if (formulaSelectionStrategy == UNSATFormulaSelectionStrategy::FIRST){
+                        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "returning first formula" << endl; }
+                        return unsatisfiedFormulas;
+                    }
+                }
+            }
         }
-
         if (unsatisfiedFormulas.empty()) {
             return unsatisfiedFormulas;
         }
