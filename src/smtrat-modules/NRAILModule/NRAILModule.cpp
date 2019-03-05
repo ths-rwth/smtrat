@@ -633,7 +633,7 @@ namespace smtrat
         }
 
         if (formulaSelectionStrategy == UNSATFormulaSelectionStrategy::RANDOM) {
-            std::vector<FormulaT> out;
+            std::vector<FormulaT> randomlySelectedFormulas;
 
             int min = unsatisfiedFormulas. size() / 2;
             int max = (unsatisfiedFormulas. size() * 80) / 100;
@@ -641,9 +641,9 @@ namespace smtrat
             size_t nelems = rand(min, max);
 
             if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Selecting elements: " << nelems << " from the elemnts of: " << unsatisfiedFormulas.size() << endl; }
-            std::sample(unsatisfiedFormulas.begin(), unsatisfiedFormulas.end(), std::back_inserter(out),
+            std::sample(unsatisfiedFormulas.begin(), unsatisfiedFormulas.end(), std::back_inserter(randomlySelectedFormulas),
                         nelems, std::mt19937{std::random_device{}()});
-            return out;
+            return randomlySelectedFormulas;
         }
 
         return unsatisfiedFormulas;
