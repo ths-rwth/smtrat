@@ -610,9 +610,8 @@ namespace smtrat {
         return finalFormula;
     }
 
-    FormulasT createMonotonicity(VariableCapsule variableCapsuleOuter, VariableCapsule variableCapsuleInner, Model linearizedModel) {
+    FormulasT createMonotonicity(VariableCapsule variableCapsuleOuter, VariableCapsule variableCapsuleInner, Model absoluteValuedModel) {
 
-        Model absoluteValuedModel = createAbsoluteValuedModel(linearizedModel);
         FormulasT monotonicityFormulas;
 
         if(carl::model::satisfiedBy(createOriginalMonotonicityOne(variableCapsuleOuter, variableCapsuleInner), absoluteValuedModel) == 0){
@@ -890,6 +889,11 @@ namespace smtrat {
 
     FormulasT AxiomFactory::createFormula(AxiomType axiomType, Model linearizedModel, MonomialMap monomialMap) {
 
+
+        Model absoluteValuedModel;
+
+        if (axiomType == AxiomType::MONOTONICITY) { absoluteValuedModel = createAbsoluteValuedModel(linearizedModel); }
+
         FormulasT formulas;
 
         for (MonomialMapIterator monomialIteratorOuter = monomialMap.begin(); monomialIteratorOuter != monomialMap.end(); ++monomialIteratorOuter){
@@ -933,7 +937,7 @@ namespace smtrat {
 
                             if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is true, creating Monotonicity..." << endl; }
 
-                            FormulasT createdMonotonicity = createMonotonicity(variableCapsuleOuter, variableCapsuleInner, linearizedModel);
+                            FormulasT createdMonotonicity = createMonotonicity(variableCapsuleOuter, variableCapsuleInner, absoluteValuedModel);
                             formulas.insert(std::end(formulas), std::begin(createdMonotonicity), std::end(createdMonotonicity));
 
                         } else { if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is false Monotonicity is not creating..." << endl; }}
