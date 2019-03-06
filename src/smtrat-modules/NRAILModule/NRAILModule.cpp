@@ -615,7 +615,7 @@ namespace smtrat
 
         FormulasT unsatisfiedFormulas;
 
-        if (axiomType == AxiomFactory::AxiomType::TANGENT_PLANE) {
+        if (axiomType == AxiomFactory::AxiomType::TANGENT_PLANE || axiomType == AxiomFactory::AxiomType::MONOTONICITY) {
             for(FormulaT formula:formulas) {
                 if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "unsatisfiedFormula: " << formula << endl; }
                 unsatisfiedFormulas.push_back(formula);
@@ -640,15 +640,17 @@ namespace smtrat
             return unsatisfiedFormulas;
         }
 
+        int unsatisfiedFormulasSize = unsatisfiedFormulas. size();
+
         if (formulaSelectionStrategy == UNSATFormulaSelectionStrategy::RANDOM) {
             std::vector<FormulaT> randomlySelectedFormulas;
 
-            int min = unsatisfiedFormulas. size() / 2;
-            int max = (unsatisfiedFormulas. size() * 80) / 100;
+            int min = unsatisfiedFormulasSize / 2;
+            int max = (unsatisfiedFormulasSize * 80) / 100;
 
             size_t nelems = rand(min, max);
 
-            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Selecting elements: " << nelems << " from the elemnts of: " << unsatisfiedFormulas.size() << endl; }
+            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Selecting elements: " << nelems << " from the elemnts of: " << unsatisfiedFormulasSize << endl; }
             std::sample(unsatisfiedFormulas.begin(), unsatisfiedFormulas.end(), std::back_inserter(randomlySelectedFormulas),
                         nelems, std::mt19937{std::random_device{}()});
             return randomlySelectedFormulas;
