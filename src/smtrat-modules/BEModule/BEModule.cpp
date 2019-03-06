@@ -53,8 +53,8 @@ namespace smtrat
 		FormulaT::ConstraintBounds cb;
 		collectBounds(cb, formula, conjunction);
 		if (cb.empty()) return formula;
-		//std::cout << cb << std::endl;
-			
+		
+		SMTRAT_LOG_DEBUG("smtrat.be", "Extracted bounds " << cb);
 		if (conjunction) {
 			FormulasT f;
 			FormulaT::swapConstraintBounds(cb, f, conjunction);
@@ -96,21 +96,17 @@ namespace smtrat
 		for (const auto& r: mReplacements) {
 			carl::Variable v = std::get<0>(r.first);
 			FormulaT form = std::get<1>(r.first);
-			std::cout << "Handling " << form << std::endl;
 			
 			variables.push_back(v);
 			repl.emplace(form, FormulaT(r.second));
 		}
 		carl::FormulaSubstitutor<FormulaT> subs;
-		std::cout << "Doing substitution..." << std::endl;
 		FormulaT res = subs.substitute(f, repl);
-		std::cout << "Done." << std::endl;
 		carl::Variables remainingVars;
 		res.allVars(remainingVars);
 		FormulasT impl;
 		for (const auto& v: variables) {
 			if (remainingVars.count(v) > 0) {
-				std::cout << "Checking for " << v << std::endl;
 				for (const auto& r: mReplacements) {
 					if (v != std::get<0>(r.first)) continue;
 					FormulaT form = std::get<1>(r.first);
