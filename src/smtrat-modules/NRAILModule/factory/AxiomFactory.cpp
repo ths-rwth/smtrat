@@ -323,6 +323,29 @@ namespace smtrat {
 
     }
 
+    Model createAbsoluteValuedModel(Model linearizedModel){
+
+        Model absoluteValuedModel;
+
+        for (auto it = linearizedModel.begin(); it != linearizedModel.end(); ++it) {
+
+            Rational value = carl::abs(it->second.asRational());
+            absoluteValuedModel.emplace(it->first, value);
+
+        }
+
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n" << "absolute valued model: " << "\n";
+            cout << "variable | value: " << "\n";
+            for (auto it = absoluteValuedModel.begin(); it != absoluteValuedModel.end(); ++it) {
+                cout << it->first << " | " << it->second;
+                cout << "\n";
+            }
+        }
+
+        return absoluteValuedModel;
+    }
+
     /**
      * create an auxiliary variable e.g. aux_<Variable Name>
      * @param variable the variable for which auxiliary variable to be created
@@ -403,7 +426,8 @@ namespace smtrat {
         return finalAbsFormula;
     }
 
-    FormulaT createMonotonicityOne(smtrat::VariableCapsule variableCapsule, smtrat::VariableCapsule variableCapsuleInner){
+    FormulaT createEquivalentToOriginalMonotonicityOne(smtrat::VariableCapsule variableCapsule,
+                                                       smtrat::VariableCapsule variableCapsuleInner){
 
         FormulaT partOneLeftFormula = generateAbsFormula(variableCapsule.getXVariable(), variableCapsuleInner.getXVariable(), carl::Relation::LEQ);
 
@@ -419,16 +443,17 @@ namespace smtrat {
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             cout << "\n";
-            cout << "created MonotonicityOne Axiom Formula is: " << finalFormula;
+            cout << "created EquivalentToOriginalMonotonicityOne Axiom Formula is: " << finalFormula;
             cout << "\n";
         }
 
         return finalFormula;
     }
 
-    FormulaT createMonotonicityTwo(smtrat::VariableCapsule variableCapsule, smtrat::VariableCapsule variableCapsuleInner){
+    FormulaT createEquivalentToOriginalMonotonicityTwo(smtrat::VariableCapsule variableCapsule, smtrat::VariableCapsule variableCapsuleInner){
 
         FormulaT partOneLeftFormula = generateAbsFormula(variableCapsule.getXVariable(), variableCapsuleInner.getXVariable(), carl::Relation::LESS);
+
 
         FormulaT partTwoLeftFormula = generateAbsFormula(variableCapsule.getYVariable(), variableCapsuleInner.getYVariable(), carl::Relation::LEQ);
 
@@ -445,14 +470,15 @@ namespace smtrat {
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             cout << "\n";
-            cout << "created MonotonicityTwo Axiom Formula is: " << finalFormula;
+            cout << "created EquivalentToOriginalMonotonicityTwo Axiom Formula is: " << finalFormula;
             cout << "\n";
         }
 
         return finalFormula;
     }
 
-    FormulaT createMonotonicityThree(smtrat::VariableCapsule variableCapsule, smtrat::VariableCapsule variableCapsuleInner){
+    FormulaT createEquivalentToOriginalMonotonicityThree(smtrat::VariableCapsule variableCapsule,
+                                                         smtrat::VariableCapsule variableCapsuleInner){
 
         FormulaT partOneLeftFormula = generateAbsFormula(variableCapsule.getXVariable(), variableCapsuleInner.getXVariable(), carl::Relation::LEQ);
 
@@ -471,7 +497,7 @@ namespace smtrat {
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             cout << "\n";
-            cout << "created MonotonicityThree Axiom Formula is: " << finalFormula;
+            cout << "created EquivalentToOriginalMonotonicityThree Axiom Formula is: " << finalFormula;
             cout << "\n";
         }
 
@@ -485,12 +511,126 @@ namespace smtrat {
         return  RationalCapsule(aRational, bRational, cRational);
     }
 
-    FormulasT createMonotonicity(VariableCapsule variableCapsuleOuter, VariableCapsule variableCapsuleInner) {
-        FormulasT tangentPlaneNEQ;
-        tangentPlaneNEQ.push_back(createMonotonicityOne(variableCapsuleOuter, variableCapsuleInner));
-        tangentPlaneNEQ.push_back(createMonotonicityTwo(variableCapsuleOuter, variableCapsuleInner));
-        tangentPlaneNEQ.push_back(createMonotonicityThree(variableCapsuleOuter, variableCapsuleInner));
-        return tangentPlaneNEQ;
+    FormulaT createOriginalMonotonicityOne(smtrat::VariableCapsule variableCapsule, smtrat::VariableCapsule variableCapsuleInner){
+        // {x_1, x_2}
+        std::vector<Poly> operandsxx {Poly(variableCapsule.getXVariable()), Poly(variableCapsuleInner.getXVariable())};
+        // x_1 - x_2 <= 0
+        FormulaT partOneLeftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandsxx), carl::Relation::LEQ);
+
+        // {y_1, y_2}
+        std::vector<Poly> operandsyy {Poly(variableCapsule.getYVariable()), Poly(variableCapsuleInner.getYVariable())};
+        // y_1 - y_2 <= 0
+        FormulaT partTwoLeftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandsyy), carl::Relation::LEQ);
+
+        // (x_1 - x_2 <= 0) && (y_1 - y_2 <= 0)
+        FormulaT leftFormula = FormulaT(carl::FormulaType::AND, partOneLeftFormula, partTwoLeftFormula);
+
+        // {z_1, z_2}
+        std::vector<Poly> operandszz {Poly(variableCapsule.getZVariable()), Poly(variableCapsuleInner.getZVariable())};
+        // z_1 - z_2 <= 0
+        FormulaT zFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandszz), carl::Relation::LEQ);
+
+        // (x_1 - x_2 <= 0) && (y_1 - y_2 <= 0) -> (z_1 - z_2 <= 0)
+        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
+
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "created OriginalMonotonicityOne Axiom Formula is: " << finalFormula;
+            cout << "\n";
+        }
+
+        return finalFormula;
+    }
+
+    FormulaT createOriginalMonotonicityTwo(smtrat::VariableCapsule variableCapsule, smtrat::VariableCapsule variableCapsuleInner){
+        // {x_1, x_2}
+        std::vector<Poly> operandsxx {Poly(variableCapsule.getXVariable()), Poly(variableCapsuleInner.getXVariable())};
+        // x_1 - x_2 < 0
+        FormulaT partOneLeftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandsxx), carl::Relation::LESS);
+
+        // {y_1, y_2}
+        std::vector<Poly> operandsyy {Poly(variableCapsule.getYVariable()), Poly(variableCapsuleInner.getYVariable())};
+        // y_1 - y_2 <= 0
+        FormulaT partTwoLeftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandsyy), carl::Relation::LEQ);
+
+        // y_2 != 0
+        FormulaT partThreeLeftFormula = FormulaT(Poly(variableCapsuleInner.getYVariable()), carl::Relation::NEQ);
+
+        // (x_1 - x_2 < 0) && (y_1 - y_2 <= 0) && (y_2 != 0)
+        FormulaT leftFormula = FormulaT(carl::FormulaType::AND, partOneLeftFormula, partTwoLeftFormula, partThreeLeftFormula);
+
+        // {z_1, z_2}
+        std::vector<Poly> operandszz {Poly(variableCapsule.getZVariable()), Poly(variableCapsuleInner.getZVariable())};
+        // z_1 - z_2 < 0
+        FormulaT zFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandszz), carl::Relation::LESS);
+
+        // (x_1 - x_2 < 0) && (y_1 - y_2 <= 0) && (y_2 != 0) -> (z_1 - z_2 < 0)
+        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
+
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "created OriginalMonotonicityTwo Axiom Formula is: " << finalFormula;
+            cout << "\n";
+        }
+
+        return finalFormula;
+    }
+
+    FormulaT createOriginalMonotonicityThree(smtrat::VariableCapsule variableCapsule, smtrat::VariableCapsule variableCapsuleInner){
+        // {x_1, x_2}
+        std::vector<Poly> operandsxx {Poly(variableCapsule.getXVariable()), Poly(variableCapsuleInner.getXVariable())};
+        // x_1 - x_2 <= 0
+        FormulaT partOneLeftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandsxx), carl::Relation::LEQ);
+
+        // {y_1, y_2}
+        std::vector<Poly> operandsyy {Poly(variableCapsule.getYVariable()), Poly(variableCapsuleInner.getYVariable())};
+        // y_1 - y_2 < 0
+        FormulaT partTwoLeftFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandsyy), carl::Relation::LESS);
+
+        // x_2 != 0
+        FormulaT partThreeLeftFormula = FormulaT(Poly(variableCapsuleInner.getXVariable()), carl::Relation::NEQ);
+
+        // (x_1 - x_2 <= 0) && (y_1 - y_2 < 0) && (x_2 != 0)
+        FormulaT leftFormula = FormulaT(carl::FormulaType::AND, partOneLeftFormula, partTwoLeftFormula, partThreeLeftFormula);
+
+        // {z_1, z_2}
+        std::vector<Poly> operandszz {Poly(variableCapsule.getZVariable()), Poly(variableCapsuleInner.getZVariable())};
+        // z_1 - z_2 < 0
+        FormulaT zFormula = FormulaT(Poly(Poly::ConstructorOperation::SUB, operandszz), carl::Relation::LESS);
+
+        // (x_1 - x_2 <= 0) && (y_1 - y_2 < 0) && (x_2 != 0) -> (z_1 - z_2 < 0)
+        FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
+
+        if (smtrat::LOG::getInstance().isDebugEnabled()) {
+            cout << "\n";
+            cout << "created OriginalMonotonicityThree Axiom Formula is: " << finalFormula;
+            cout << "\n";
+        }
+
+        return finalFormula;
+    }
+
+    FormulasT createMonotonicity(VariableCapsule variableCapsuleOuter, VariableCapsule variableCapsuleInner, Model linearizedModel) {
+
+        Model absoluteValuedModel = createAbsoluteValuedModel(linearizedModel);
+        FormulasT monotonicityFormulas;
+
+        if(carl::model::satisfiedBy(createOriginalMonotonicityOne(variableCapsuleOuter, variableCapsuleInner), absoluteValuedModel) == 0){
+            monotonicityFormulas.push_back(
+                    createEquivalentToOriginalMonotonicityOne(variableCapsuleOuter, variableCapsuleInner));
+        }
+
+        if(carl::model::satisfiedBy(createOriginalMonotonicityTwo(variableCapsuleOuter, variableCapsuleInner), absoluteValuedModel) == 0){
+            monotonicityFormulas.push_back(
+                    createEquivalentToOriginalMonotonicityTwo(variableCapsuleOuter, variableCapsuleInner));
+        }
+
+        if(carl::model::satisfiedBy(createOriginalMonotonicityThree(variableCapsuleOuter, variableCapsuleInner), absoluteValuedModel) == 0){
+            monotonicityFormulas.push_back(
+                    createEquivalentToOriginalMonotonicityThree(variableCapsuleOuter, variableCapsuleInner));
+        }
+
+        return monotonicityFormulas;
     }
 
     FormulaT createCongruence(smtrat::VariableCapsule variableCapsuleOuter, smtrat::VariableCapsule variableCapsuleInner){
@@ -747,6 +887,7 @@ namespace smtrat {
                 carl::getNum(rationalCapsule.getCRational()) == ZERO_RATIONAL;
     }
 
+
     FormulasT AxiomFactory::createFormula(AxiomType axiomType, Model linearizedModel, MonomialMap monomialMap) {
 
         FormulasT formulas;
@@ -792,7 +933,7 @@ namespace smtrat {
 
                             if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is true, creating Monotonicity..." << endl; }
 
-                            FormulasT createdMonotonicity = createMonotonicity(variableCapsuleOuter, variableCapsuleInner);
+                            FormulasT createdMonotonicity = createMonotonicity(variableCapsuleOuter, variableCapsuleInner, linearizedModel);
                             formulas.insert(std::end(formulas), std::begin(createdMonotonicity), std::end(createdMonotonicity));
 
                         } else { if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is false Monotonicity is not creating..." << endl; }}
