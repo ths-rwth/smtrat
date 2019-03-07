@@ -18,6 +18,7 @@
 #include "backends/Jobs.h"
 #include "benchmarks/benchmarks.h"
 #include "tools/Tools.h"
+#include "settings/PresetSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsParser.h"
 #include "Stats.h"
@@ -44,6 +45,7 @@ bool init_application(int argc, char** argv) {
 	benchmax::settings::registerToolSettings(&parser);
 	benchmax::settings::registerSlurmBackendSettings(&parser);
 	benchmax::settings::registerSSHBackendSettings(&parser);
+	benchmax::settings::registerPresetSettings(&parser);
 	parser.finalize();
 	parser.parse_options(argc, argv);
 
