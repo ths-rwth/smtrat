@@ -20,13 +20,20 @@ BenchmarkSet loadBenchmarks() {
 }
 
 namespace settings {
+
+/// Postprocess benchmark settings.
+bool finalize_benchmark_settings(BenchmarkSettings& s, const boost::program_options::variables_map& values) {
+	s.input_directories_common_prefix = common_prefix(s.input_directories, false);
+	return false;
+}
+
 void registerBenchmarkSettings(SettingsParser* parser) {
 	namespace po = boost::program_options;
 	auto& settings = settings::Settings::getInstance();
 	auto& s = settings.get<settings::BenchmarkSettings>("benchmarks");
 	
 	parser->add_finalizer([&s](const auto& values){
-		finalize_benchmark_settings(s, values);
+		return finalize_benchmark_settings(s, values);
 	});
 	parser->add("Benchmark settings").add_options()
 		("memory,M", po::value<carl::settings::binary_quantity>(&s.limit_memory)->default_value(carl::settings::binary_quantity(1024*1024*1024)), "memory limit")
