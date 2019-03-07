@@ -3055,6 +3055,7 @@ namespace smtrat
 					uncheckedEnqueue( learnt_clause[0], _confl );
 				} else if (Settings::mcsat_backjump_decide) {
                     SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decide literal as clause is not asserting");
+                    assert(assumptions.size() <= backtrack_level);
                     newDecisionLevel();
                     uncheckedEnqueue( learnt_clause[0], _confl );
                 }
@@ -3511,13 +3512,27 @@ namespace smtrat
 				SMTRAT_LOG_DEBUG("smtrat.sat", out_learnt[i] << " is assigned at " << levels.back());
 			}
 			std::sort(levels.rbegin(), levels.rend());
-			levels.erase(std::unique(levels.begin(), levels.end()), levels.end());
-			assert(levels.size() > 0);
-			if (levels.size() > 1) {
-				out_btlevel = levels[1];
-			} else {
-				out_btlevel = levels[0]-1;
-			}
+            assert(levels.size() > 0);
+            if (!Settings::mcsat_backjump_decide) {
+                levels.erase(std::unique(levels.begin(), levels.end()), levels.end());
+                if (levels.size() > 1) {
+                    out_btlevel = levels[1];
+                } else {
+                    out_btlevel = levels[0]-1;
+                }
+            } else {
+                if (levels.size() > 1) {
+                    if (levels[0] == levels[1]) {
+                        // levels[0] is a theory decision deciding more than one literal in the explanation clause
+                        out_btlevel = levels[0]-1;
+                    } else {
+                        levels.erase(std::unique(levels.begin(), levels.end()), levels.end());
+                        out_btlevel = levels[1];
+                    }
+                } else {
+                    out_btlevel = levels[0]-1;
+                }
+            }
 			SMTRAT_LOG_DEBUG("smtrat.sat", "-> " << out_btlevel << " (" << out_learnt << ")");
 			assert(out_btlevel >= 0);
 		} else {

@@ -115,7 +115,7 @@ namespace smtrat
 
 		static constexpr bool mcsat_check_feasibility_on_decide = true;
 
-    	static constexpr bool mcsat_backjump_decide = false; // TODO DYNSCHED fix backjump decide
+    static constexpr bool mcsat_backjump_decide = true;
 
 		static constexpr bool use_new_var_scheduler = false;
 		using VarScheduler = VarSchedulerBase; // noop scheduler
