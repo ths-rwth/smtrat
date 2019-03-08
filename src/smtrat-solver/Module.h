@@ -88,6 +88,7 @@ namespace smtrat
 				carl::timing::time_point timer_add_started;
 				carl::timing::time_point timer_check_started;
 				carl::timing::time_point timer_remove_started;
+				carl::timing::time_point timer_pause_started;
 				carl::timing::duration timer_add_total;
 				carl::timing::duration timer_check_total;
 				carl::timing::duration timer_remove_total;
@@ -106,6 +107,13 @@ namespace smtrat
 				void start_add() { timer_add_started = carl::timing::now(); }
 				void start_check() { timer_check_started = carl::timing::now(); }
 				void start_remove() { timer_remove_started = carl::timing::now(); }
+				void pause_all() { timer_pause_started = carl::timing::now(); }
+				void continue_all() {
+					auto diff = carl::timing::since(timer_pause_started);
+					timer_add_started += diff;
+					timer_check_started += diff;
+					timer_remove_started += diff;
+				}
 				void stop_add() { timer_add_total += carl::timing::since(timer_add_started); }
 				void stop_check() { timer_check_total += carl::timing::since(timer_check_started); }
 				void stop_remove() { timer_remove_total += carl::timing::since(timer_remove_started); }
@@ -113,6 +121,8 @@ namespace smtrat
 				void start_add() {}
 				void start_check() {}
 				void start_remove() {}
+				void pause_all() {}
+				void continue_all() {}
 				void stop_add() {}
 				void stop_check() {}
 				void stop_remove() {}
@@ -194,9 +204,7 @@ namespace smtrat
             /// The formula passed to the backends of this module.
             ModuleInput* mpPassedFormula;
 			std::string mModuleName;
-#ifdef SMTRAT_DEVOPTION_Statistics
 			ModuleStatistics& mStatistics = statistics_get<ModuleStatistics>(moduleName());
-#endif
         protected:
             /// Stores the infeasible subsets.
             std::vector<FormulaSetT> mInfeasibleSubsets;
