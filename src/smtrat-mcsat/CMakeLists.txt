@@ -21,4 +21,4 @@ target_link_libraries(smtrat-mcsat-static
 	smtrat-module-VSModule-static
 )
 
-install_libraries(smtrat-mcsat-shared smtrat-mcsat-static)
+install_libraries(smtrat smtrat-mcsat-shared smtrat-mcsat-static)

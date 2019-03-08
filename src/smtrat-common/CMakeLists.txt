@@ -11,4 +11,4 @@ target_include_dirs_from(smtrat-common-objects "" PUBLIC carl-shared)
 target_link_libraries(smtrat-common-shared carl-shared)
 target_link_libraries(smtrat-common-static carl-static)
 
-install_libraries(smtrat-common-shared smtrat-common-static)
+install_libraries(smtrat smtrat-common-shared smtrat-common-static)

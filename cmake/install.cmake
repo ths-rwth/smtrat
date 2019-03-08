@@ -18,4 +18,4 @@ install(
 
 #install(FILES ${CMAKE_BINARY_DIR}/carlConfig.install.cmake DESTINATION ${CMAKE_INSTALL_DIR} RENAME carlConfig.cmake)
 #install(FILES ${CMAKE_BINARY_DIR}/carlConfigVersion.cmake DESTINATION ${CMAKE_INSTALL_DIR})
-install(EXPORT smtratTargets FILE smtratTargets.cmake DESTINATION ${CMAKE_INSTALL_DIR})
+install(EXPORT smtrat-targets FILE smtratTargets.cmake DESTINATION ${CMAKE_INSTALL_DIR})

@@ -30,14 +30,3 @@ function(set_version major minor)
 		set(PROJECT_VERSION_LIB "${major}.${minor}" PARENT_SCOPE)
 	endif()
 endfunction(set_version)
-
-macro(install_libraries target)
-	include(GNUInstallDirs)
-	install(
-		TARGETS "${target}"
-		EXPORT smtratTargets
-		RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-		LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-		ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-	)
-endmacro(install_libraries)

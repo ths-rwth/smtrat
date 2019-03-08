@@ -11,5 +11,5 @@ target_include_dirs_from(smtrat-unsat-cores-objects "" PUBLIC smtrat-common-shar
 target_link_libraries(smtrat-unsat-cores-shared smtrat-common-shared carl-shared)
 target_link_libraries(smtrat-unsat-cores-static smtrat-common-static carl-static)
 
-install_libraries(smtrat-unsat-cores-shared smtrat-unsat-cores-static)
+install_libraries(smtrat smtrat-unsat-cores-shared smtrat-unsat-cores-static)
 

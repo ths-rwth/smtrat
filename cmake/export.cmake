@@ -1,6 +1,6 @@
 option(EXPORT_TO_CMAKE "Export the project to CMake for easy inclusion" ON)
 
-export(EXPORT smtratTargets FILE "${PROJECT_BINARY_DIR}/smtratTargets.cmake")
+export(EXPORT smtrat-targets FILE "${PROJECT_BINARY_DIR}/smtratTargets.cmake")
 
 if(EXPORT_TO_CMAKE)
 	# Export the package for use from the build-tree

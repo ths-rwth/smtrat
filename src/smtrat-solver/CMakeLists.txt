@@ -11,4 +11,4 @@ target_include_dirs_from(smtrat-solver-objects "" PUBLIC smtrat-lib-shared smtra
 target_link_libraries(smtrat-solver-shared smtrat-lib-shared smtrat-common-shared)
 target_link_libraries(smtrat-solver-static smtrat-lib-static smtrat-common-static)
 
-install_libraries(smtrat-solver-shared smtrat-solver-static)
+install_libraries(smtrat smtrat-solver-shared smtrat-solver-static)
