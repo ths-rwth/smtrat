@@ -58,6 +58,15 @@ protected:
 	}
 
 public:
+	void sanitize_results(const Jobs& jobs) const {
+		for (const auto& j: jobs) {
+			auto res = mResults.get(j.first, j.second);
+			if (!res && j.first->canHandle(j.second)) {
+				BENCHMAX_LOG_WARN("benchmax", "Missing result for " << j.first->name() << " on " << j.second);
+				BENCHMAX_LOG_WARN("benchmax", "Chances are that something went wrong, please check this!");
+			}
+		}
+	}
 	void write_results(const Jobs& jobs) const {
 		BENCHMAX_LOG_INFO("benchmax", "Writing results to " << settings_benchmarks().output_file_xml);
 		XMLWriter xml(settings_benchmarks().output_file_xml);
