@@ -2783,7 +2783,26 @@ namespace smtrat
 					}
 				}
 
-                assert(mMCSAT.trailIsConsistent());
+                //assert(mMCSAT.trailIsConsistent());
+
+                if (next == lit_Undef) {
+                    SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still consistent");
+                    auto conflict = mMCSAT.isStillConsistent();
+                    if (conflict) {
+                        #ifdef DEBUG_SATMODULE
+                        cout << "######################################################################" << endl;
+                        cout << "### Before handling conflict" << endl;
+                        print(cout, "###");
+                        #endif
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
+                        if (carl::variant_is_type<FormulaT>(*conflict)) {
+                            sat::detail::validateClause(boost::get<FormulaT>(*conflict), Settings::validate_clauses);
+                        }
+                        handleTheoryConflict(*conflict);
+                        continue;
+                    }
+                    assert(mMCSAT.trailIsConsistent());
+                }
 
                 // If we do not already have a branching literal, we pick one
                 if( next == lit_Undef )
@@ -2817,7 +2836,9 @@ namespace smtrat
                                 uncheckedEnqueue(lit);
                             }
 
-                            SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still feasible with this theory decision");
+                            /*
+
+                            SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still consistent with this theory decision");
                             auto conflict = mMCSAT.isStillConsistent();
                             if (conflict) {
                                 #ifdef DEBUG_SATMODULE
@@ -2830,7 +2851,7 @@ namespace smtrat
                                     sat::detail::validateClause(boost::get<FormulaT>(*conflict), Settings::validate_clauses);
                                 }
                                 handleTheoryConflict(*conflict);
-                            }
+                            }*/
                             continue;
                         } else {
                             mCurrentAssignmentConsistent = UNSAT;
