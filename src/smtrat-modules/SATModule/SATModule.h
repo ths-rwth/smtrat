@@ -1009,7 +1009,7 @@ namespace smtrat
                     }                    
                 }
 
-                propagateTheory();
+                propagateTheory(); // TODO REFACTOR can be removed ??
                 Minisat::CRef confl = storeLemmas();
                 if (confl != Minisat::CRef_Undef) {
                     handleConflict(confl);
