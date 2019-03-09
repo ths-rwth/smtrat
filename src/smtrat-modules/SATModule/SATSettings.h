@@ -139,7 +139,11 @@ namespace smtrat
         static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::DISABLED;
 		    static constexpr bool use_new_var_scheduler = true;
         // using VarScheduler = VarSchedulerMcsatBooleanFirst;
-        using VarScheduler = VarSchedulerMcsatUnivariateConstraintsOnly<1>;
+        // using VarScheduler = VarSchedulerMcsatUnivariateConstraintsOnly<1>;
+
+        // uniform (resp Boolean and theory vars) decision heuristic
+        // Note: mcsat_backjump_decide needs to be activated, otherwise we run into termination problems!
+        using VarScheduler = VarSchedulerMinisat;
     };
   struct SATSettingsMCSATOC : SATSettingsMCSAT {
     static constexpr auto muduleName = "SATModule<MCSATOC>";
