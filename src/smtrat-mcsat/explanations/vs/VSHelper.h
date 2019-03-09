@@ -471,8 +471,12 @@ namespace helper {
         static carl::Variable subVar1 = carl::freshRealVariable("__subVar1");
         static carl::Variable subVar2 = carl::freshRealVariable("__subVar2");
 
-        // assert that the substitution variable occurs never in an MVRoot's polynomial...
-		assert(!std::holds_alternative<MultivariateRootT>(varcomp.value()) || !std::get<MultivariateRootT>(varcomp.value()).poly().has(substitution.variable()));
+        if (std::holds_alternative<MultivariateRootT>(varcomp.value()) && std::get<MultivariateRootT>(varcomp.value()).poly().has(substitution.variable())) {
+            SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution variable occurs in MVRoot's polynomial");
+            // Note that this does not occur if the theory variable order is fixed
+            // TODO can this case be handled?
+            return false;
+        }
 
         if (varcomp.var() == substitution.variable()) {
             carl::Relation varcompRelation = varcomp.negated() ? carl::inverse(varcomp.relation()) : varcomp.relation();
