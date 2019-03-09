@@ -22,6 +22,8 @@ namespace helper {
             for (const auto& sub : f.subformulas()) {
                 getFormulaAtoms(sub, result);
             }
+        } else if (f.getType() == carl::FormulaType::TRUE || f.getType() == carl::FormulaType::FALSE) {
+            result.insert(f);
         } else {
             assert(false);
         }
