@@ -2768,6 +2768,7 @@ namespace smtrat
 					for (std::size_t level = 0; level <= mMCSAT.level(); level++) {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Considering " << mMCSAT.get(level).univariateVariables);
 						for (auto v: mMCSAT.get(level).univariateVariables) {
+                            assert(bool_value(v) == l_Undef || theoryValue(v) == bool_value(v));
 							if (bool_value(v) != l_Undef) continue;
 							auto tv = theoryValue(v);
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Undef, theory value of " << v << " is " << tv);
