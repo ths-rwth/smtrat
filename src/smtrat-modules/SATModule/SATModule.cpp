@@ -1538,35 +1538,9 @@ namespace smtrat
         // Adapt the constraints in the passed formula for the just assigned Booleans being abstractions of constraints.
         for( signed posInAssigns : mChangedBooleans )
         {
-            // TODO DYNSCHED what is this??
-            /*
-			if (Settings::mc_sat) {
-				const auto& abstr1 = mBooleanConstraintMap[posInAssigns].first;
-				assert( abstr1 != nullptr );
-				const auto& abstr2 = mBooleanConstraintMap[posInAssigns].second;
-				assert( abstr2 != nullptr );
-				checkAbstractionsConsistency();
-				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "abstr1: " << abstr1->reabstraction << " with " << abstr1->updateInfo);
-				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "abstr2: " << abstr2->reabstraction << " with " << abstr2->updateInfo);
-				if (abstr1->updateInfo > 0 && !mMCSAT.isFormulaUnivariate(abstr1->reabstraction)) {
-					SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Postponing changes to " << abstr1->reabstraction);
-					mFutureChangedBooleans[mMCSAT.currentVariable()].push_back(posInAssigns);
-				} else {
-					SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Adapting " << abstr1->reabstraction);
-					adaptPassedFormula(*abstr1);
-				}
-				if (abstr2->updateInfo > 0 && !mMCSAT.isFormulaUnivariate(abstr2->reabstraction)) {
-					SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Postponing changes to " << abstr2->reabstraction);
-					mFutureChangedBooleans[mMCSAT.currentVariable()].push_back(posInAssigns);
-				} else {
-					SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Adapting " << abstr2->reabstraction);
-					adaptPassedFormula(*abstr2);
-				}
-			} else {*/
-	            assert( mBooleanConstraintMap[posInAssigns].first != nullptr && mBooleanConstraintMap[posInAssigns].second != nullptr );
-	            adaptPassedFormula( *mBooleanConstraintMap[posInAssigns].first );
-	            adaptPassedFormula( *mBooleanConstraintMap[posInAssigns].second );
-			//}
+            assert( mBooleanConstraintMap[posInAssigns].first != nullptr && mBooleanConstraintMap[posInAssigns].second != nullptr );
+            adaptPassedFormula( *mBooleanConstraintMap[posInAssigns].first );
+            adaptPassedFormula( *mBooleanConstraintMap[posInAssigns].second );
         }
         mChangedBooleans.clear();
         // Update the activities of the constraints in the passed formula according to the activity of the SAT solving process.
@@ -2859,7 +2833,7 @@ namespace smtrat
                             continue;
                         } else {
                             mCurrentAssignmentConsistent = UNSAT;
-                            SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << (mMCSAT.level()+1)); // TODO LEVEL
+                            SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << (mMCSAT.level()+1));
                             insertVarOrder(var(next));
                             SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << boost::get<mcsat::Explanation>(res));
                             handleTheoryConflict(boost::get<mcsat::Explanation>(res));

@@ -1219,34 +1219,6 @@ namespace smtrat
 					assert(ptr1->updateInfo * ptr2->updateInfo <= 0);
 				}
 			}
-            // TODO REFACTOR remove
-            /*
-			void fixTheoryPassedFormulas() {
-				std::vector<Abstraction*> toRemove;
-				for (const auto& pf: rPassedFormula()) {
-					auto it = mConstraintLiteralMap.find(pf.formula());
-					assert(it != mConstraintLiteralMap.end());
-					auto lit = it->second.front();
-					Abstraction* abstrptr = sign(lit) ? mBooleanConstraintMap[var(lit)].second : mBooleanConstraintMap[var(lit)].first;
-					assert(abstrptr != nullptr);
-					assert(abstrptr->updateInfo <= 0);
-					if (abstrptr->updateInfo < 0) continue;
-					if (!mMCSAT.isFormulaUnivariate(abstrptr->reabstraction)) {
-						SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Removing " << abstrptr->reabstraction << " with updateInfo " << abstrptr->updateInfo);
-						toRemove.push_back(abstrptr);
-						mFutureChangedBooleans[mMCSAT.currentVariable()].emplace_back(var(lit));
-					} else {
-                        SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Still univariate: " << abstrptr->reabstraction);
-                    }
-				}
-				for (auto abstrptr: toRemove) {
-					abstrptr->updateInfo--;
-					checkAbstractionsConsistency();
-					adaptPassedFormula(*abstrptr);
-					abstrptr->updateInfo++;
-					checkAbstractionsConsistency();
-				}
-			}*/
             
             /**
              * @return The best decision variable under consideration of the decision heuristic.
@@ -1481,18 +1453,25 @@ namespace smtrat
              */
             inline void varBumpActivity( Minisat::Var v, double inc )
             {
-                // TODO DYNSCHED check if we can update multiple activities at the same time so that we still get a correct ordering in order_heap
-
                 bool rescale = false;
+
                 if (Settings::mc_sat) {
                     for (auto tvar : mMCSAT.theoryVarsIn(v)) {
                         if ((activity[tvar] += inc) > 1e100) {
                             rescale = true;
                         }
+                        var_scheduler.increaseActivity(tvar);
                     }
                 }
+
                 if ((activity[v] += inc) > 1e100) {
                     rescale = true;
+                }
+                if (Settings::use_new_var_scheduler) {
+                    var_scheduler.increaseActivity(v);
+                } else {
+                    if( order_heap.inHeap( v ) )
+                        order_heap.decrease( v );
                 }
 
                 if( rescale )
@@ -1508,20 +1487,6 @@ namespace smtrat
                 {
                     mChangedActivities.push_back( (signed) v );
                 }
-
-                // Update order_heap with respect to new activity:
-                if (Settings::use_new_var_scheduler) {
-                    var_scheduler.increaseActivity(v);
-                    if (Settings::mc_sat) {
-                        for (auto tvar : mMCSAT.theoryVarsIn(v)) {
-                            var_scheduler.increaseActivity(tvar);
-                        }
-                    }
-                } else {
-                    if( order_heap.inHeap( v ) )
-                        order_heap.decrease( v );
-                }
-                
             }
             
             /**

@@ -271,7 +271,7 @@ public:
 	// ***** Auxiliary getter
 	
 	/// Checks whether the given formula is univariate on the given level
-	bool isFormulaUnivariate(const FormulaT& formula, std::size_t level) const; // TODO DYNSCHED remove
+	bool isFormulaUnivariate(const FormulaT& formula, std::size_t level) const;
 	
 	/// Push a theory decision
 	void pushTheoryDecision(const FormulaT& assignment, Minisat::Lit decisionLiteral);
@@ -484,11 +484,6 @@ public:
 	}
 
 	// ***** Auxliary getter
-	
-	/// Checks whether the given formula is currently univariate
-	bool isFormulaUnivariate(const FormulaT& formula) const { // TODO DYNSCHED remove
-		return isFormulaUnivariate(formula, level());
-	}
 	
 	std::size_t theoryLevel(Minisat::Var var) const {
 		if (!mGetter.isTheoryAbstraction(var)) {
