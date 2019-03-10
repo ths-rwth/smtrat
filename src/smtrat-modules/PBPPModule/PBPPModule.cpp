@@ -381,6 +381,8 @@ namespace smtrat
 		// remove the constraint according to the given input again
 		const FormulaT& formula = _subformula->formula();
 
+		SMTRAT_LOG_DEBUG("smtrat.pbpp" , "Trying to remove formula " << formula << "from PBPP...");
+
 		if (formula.getType() != carl::FormulaType::CONSTRAINT){
 			return;
 		}
@@ -393,21 +395,21 @@ namespace smtrat
 		for (auto it = mConstraints.begin(); it != mConstraints.end(); ++it) {
 			if (*it == constraint) {
 				mConstraints.erase(it);
-				return;
+				break;
 			}
 		}
 
 		for (auto it = liaConstraints.begin(); it != liaConstraints.end(); ++it) {
 			if (*it == constraint) {
-				mConstraints.erase(it);
-				return;
+				liaConstraints.erase(it);
+				break;
 			}
 		}
 
 		for (auto it = boolConstraints.begin(); it != boolConstraints.end(); ++it) {
 			if (*it == constraint) {
-				mConstraints.erase(it);
-				return;
+				boolConstraints.erase(it);
+				break;
 			}
 		}
 
