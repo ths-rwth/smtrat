@@ -95,6 +95,9 @@ namespace smtrat
 		if (Settings::ALGORITHM == MAXSATAlgorithm::FU_MALIK_INCREMENTAL) {
 			SMTRAT_LOG_INFO("smtrat.maxsmt", "Running FUMALIK Algorithm.");
 			satiesfiedSoftClauses = runFuMalik();
+		} else if (Settings::ALGORITHM == MAXSATAlgorithm::LINEAR_SEARCH) {
+			SMTRAT_LOG_INFO("smtrat.maxsmt", "Running Linear Search Algorithm.");
+			satiesfiedSoftClauses = runLinearSearch();
 		} else if (Settings::ALGORITHM == MAXSATAlgorithm::OLL) {
 			SMTRAT_LOG_INFO("smtrat.maxsmt", "Running OLL Algorithm.");
 			satiesfiedSoftClauses = runOLL();
@@ -216,6 +219,48 @@ namespace smtrat
 	std::vector<FormulaT> MaxSMTModule<Settings>::runOLL()
 	{
 		return std::vector<FormulaT>();
+	}
+
+	template<class Settings>
+	std::vector<FormulaT> MaxSMTModule<Settings>::runLinearSearch()
+	{
+		// add all soft clauses with relaxation var
+		// for i = 0; i < soft.size; i++:
+		//   check sat for \sum relaxation var <= i to determine if we have to disable some constraint
+		//   if sat return;
+		
+		std::vector<carl::Variable> relaxationVars;
+		for (const auto& clause : softclauses) {
+			carl::Variable relaxationVar = carl::freshBooleanVariable();
+			addSubformulaToPassedFormula(FormulaT(carl::FormulaType::OR, clause, FormulaT(relaxationVar)));
+
+			relaxationVars.push_back(relaxationVar);
+		}
+
+		Poly relaxationPoly;
+		for (carl::Variable& var : relaxationVars) {
+			relaxationPoly = relaxationPoly + var;
+		}
+
+		// initially all must constraints must be enabled
+		ConstraintT initialRelaxationConstraint(relaxationPoly - Rational(0),carl::Relation::LEQ);
+		ModuleInput::iterator previousRelaxationConstraint = addSubformulaToPassedFormula(FormulaT(initialRelaxationConstraint)).first;
+
+		for (unsigned i = 1; i < softclauses.size(); i++) {
+			// check sat for max i disables clauses
+			SMTRAT_LOG_DEBUG("smtrat.maxsmt.linear", "Trying to check SAT for " << i - 1 << " disabled soft constraints...");
+
+			Answer ans = runBackends();
+			if (ans == Answer::SAT) return gatherSatisfiedSoftClauses();
+
+			eraseSubformulaFromPassedFormula(previousRelaxationConstraint);
+			
+			ConstraintT relaxationConstraint(relaxationPoly - Rational(i),carl::Relation::LEQ);
+			previousRelaxationConstraint = addSubformulaToPassedFormula(FormulaT(relaxationConstraint)).first;
+		}
+
+		// from here, none of the soft clauses can be satisfied
+		return gatherSatisfiedSoftClauses();
 	}
 
 	template<class Settings>

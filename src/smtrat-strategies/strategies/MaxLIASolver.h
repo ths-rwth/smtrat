@@ -28,7 +28,7 @@ namespace smtrat
             {
                 setStrategy(
                 {
-                        addBackend<MaxSMTModule<MaxSMTSettings1>>(
+                        addBackend<MaxSMTModule<MaxSMTSettingsFuMalikIncremental>>(
                         {
                             addBackend<SATModule<SATSettings1>>(
                             {

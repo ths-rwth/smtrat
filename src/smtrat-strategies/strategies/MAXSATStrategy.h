@@ -27,7 +27,7 @@ namespace smtrat
             {
                 setStrategy(
                 {
-                        addBackend<MaxSMTModule<MaxSMTSettings1>>(
+                        addBackend<MaxSMTModule<MaxSMTSettingsLinearSearch>>(
                         {
                             addBackend<PBPPModule<PBPPSettings1>>(
                                 addBackend<SATModule<SATSettings1>>()

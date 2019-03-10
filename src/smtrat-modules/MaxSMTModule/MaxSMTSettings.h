@@ -13,15 +13,25 @@ namespace smtrat
 	enum MAXSATAlgorithm{
 		FU_MALIK_INCREMENTAL,
 		OLL,
-		MSU3
+		MSU3,
+		LINEAR_SEARCH
 	};
 
-	struct MaxSMTSettings1
+	struct MaxSMTSettingsFuMalikIncremental
 	{
 		/// Name of the Module
 		static constexpr auto moduleName = "MaxSMTModule<MaxSMTSettings1>";
 
 
 		static const MAXSATAlgorithm ALGORITHM = MAXSATAlgorithm::FU_MALIK_INCREMENTAL;
+	};
+
+	struct MaxSMTSettingsLinearSearch
+	{
+		/// Name of the Module
+		static constexpr auto moduleName = "MaxSMTModule<MaxSMTSettings1>";
+
+
+		static const MAXSATAlgorithm ALGORITHM = MAXSATAlgorithm::LINEAR_SEARCH;
 	};
 }
