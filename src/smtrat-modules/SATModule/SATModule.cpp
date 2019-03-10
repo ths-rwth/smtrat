@@ -2673,6 +2673,8 @@ namespace smtrat
         starts++;
         mCurrentAssignmentConsistent = SAT;
 
+        bool maybeInconsistent = false;
+
         for( ; ; )
         {
 			#ifdef DEBUG_SATMODULE
@@ -2768,7 +2770,7 @@ namespace smtrat
 					for (std::size_t level = 0; level <= mMCSAT.level(); level++) {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Considering " << mMCSAT.get(level).univariateVariables);
 						for (auto v: mMCSAT.get(level).univariateVariables) {
-                            assert(bool_value(v) == l_Undef || theoryValue(v) == bool_value(v));
+                            // assert(bool_value(v) == l_Undef || theoryValue(v) == bool_value(v));
 							if (bool_value(v) != l_Undef) continue;
 							auto tv = theoryValue(v);
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Undef, theory value of " << v << " is " << tv);
@@ -2783,9 +2785,9 @@ namespace smtrat
 					}
 				}
 
-                //assert(mMCSAT.trailIsConsistent());
+                // assert(mMCSAT.trailIsConsistent());
 
-                if (next == lit_Undef) {
+                if (Settings::mc_sat && next == lit_Undef && maybeInconsistent) {
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still consistent");
                     auto conflict = mMCSAT.isStillConsistent();
                     if (conflict) {
@@ -2799,14 +2801,17 @@ namespace smtrat
                             sat::detail::validateClause(boost::get<FormulaT>(*conflict), Settings::validate_clauses);
                         }
                         handleTheoryConflict(*conflict);
+                        // TODO maybeInconsistent = false can be moved here?!?
                         continue;
                     }
-                    assert(mMCSAT.trailIsConsistent());
+                    maybeInconsistent = false;
                 }
 
                 // If we do not already have a branching literal, we pick one
                 if( next == lit_Undef )
                 {
+                    assert(mMCSAT.trailIsConsistent());
+
                     // New variable decision:
                     decisions++;
                     #ifdef SMTRAT_DEVOPTION_Statistics
@@ -2835,6 +2840,11 @@ namespace smtrat
                                 newDecisionLevel();
                                 uncheckedEnqueue(lit);
                             }
+
+                            maybeInconsistent = true;
+
+                            // Allow inconsistency here.
+                            //assert(mMCSAT.trailIsConsistent());
 
                             /*
 
