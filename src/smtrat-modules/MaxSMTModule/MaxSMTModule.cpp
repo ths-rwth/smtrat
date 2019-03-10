@@ -67,11 +67,7 @@ namespace smtrat
 	template<class Settings>
 	void MaxSMTModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
 	{
-		const auto& softIt = std::find(softclauses.begin(), softclauses.end(), _subformula->formula());
-		if (softIt != softclauses.end()) softclauses.erase(softIt);
-		
-		const auto& varIt = blockingVars.find(_subformula->formula());
-		if (varIt != blockingVars.end()) blockingVars.erase(varIt);
+		assert(false && "Removing from MAXSMT module could cause unexpected and inconsistent behavior.");
 	}
 	
 	template<class Settings>
@@ -101,12 +97,15 @@ namespace smtrat
 		} else if (Settings::ALGORITHM == MAXSATAlgorithm::OLL) {
 			SMTRAT_LOG_INFO("smtrat.maxsmt", "Running OLL Algorithm.");
 			satiesfiedSoftClauses = runOLL();
+		} else if (Settings::ALGORITHM == MAXSATAlgorithm::MSU3) {
+			SMTRAT_LOG_INFO("smtrat.maxsmt", "Running MSU3 Algorithm.");
+			satiesfiedSoftClauses = runMSU3();
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.maxsmt", "The selected MAXSATAlgorithm is not implemented.");
 			assert(false);
 		}
 
-		SMTRAT_LOG_INFO("smtrat.maxsmt", "Found satisfied softclauses: " << satiesfiedSoftClauses);
+		SMTRAT_LOG_INFO("smtrat.maxsmt", "Found maximal set of satisfied soft clauses: " << satiesfiedSoftClauses);
 
 		// at this point we can be sure to be SAT. Worst case is that all soft-constraints are false.
 		return Answer::SAT;
@@ -257,6 +256,65 @@ namespace smtrat
 			
 			ConstraintT relaxationConstraint(relaxationPoly - Rational(i),carl::Relation::LEQ);
 			previousRelaxationConstraint = addSubformulaToPassedFormula(FormulaT(relaxationConstraint)).first;
+		}
+
+		// from here, none of the soft clauses can be satisfied
+		return gatherSatisfiedSoftClauses();
+	}
+
+	template<class Settings>
+	std::vector<FormulaT> MaxSMTModule<Settings>::runMSU3()
+	{
+
+		// initialise data structures
+		for (const auto& clause : softclauses) {
+			// add clause backend and remember where we put it so we can easily remove it later
+			ModuleInput::iterator it = addSubformulaToPassedFormula(clause).first;
+			formulaPositionMap[clause] = it;
+		}
+
+		std::vector<carl::Variable> relaxationVars;
+		std::vector<FormulaT> relaxedConstraints;
+		
+		for (unsigned i = 0; i < softclauses.size(); i++) {
+			// rebuild polynomial since we add relaxation vars incrementally
+			Poly relaxationPoly;
+			for (carl::Variable& var : relaxationVars) {
+				relaxationPoly = relaxationPoly + var;
+			}
+
+			ConstraintT relaxationConstraint(relaxationPoly - Rational(i),carl::Relation::LEQ);
+			SMTRAT_LOG_DEBUG("smtrat.maxsmt.msu3", FormulaT(relaxationConstraint));
+			ModuleInput::iterator relaxationFormula = addSubformulaToPassedFormula(FormulaT(relaxationConstraint)).first;
+
+			SMTRAT_LOG_DEBUG("smtrat.maxsmt.msu3", "Checking SAT for up to " << i << " disabled constraints.");
+			Answer ans = runBackends();
+			if (ans == Answer::SAT) return gatherSatisfiedSoftClauses();
+
+			// We extract directly from the backend because newly added formulas get deleted from the infeasible subset!
+			const std::vector<FormulaSetT> infeasibleSubsets = mUsedBackends[0]->infeasibleSubsets();
+			assert(infeasibleSubsets.size() != 0 && "We need at least one infeasible subset.");
+			FormulaSetT unsatisfiableCore = infeasibleSubsets.back();
+
+			SMTRAT_LOG_DEBUG("smtrat.maxsmt.msu3", "Got unsat core " << unsatisfiableCore);
+
+			for (const auto& f : unsatisfiableCore) { // for all soft constraints in unsat core...
+				if (!isSoft(f)) continue;
+
+				// check whether we already relaxed f
+				bool alreadyRelaxed = std::find(relaxedConstraints.begin(), relaxedConstraints.end(), f) != relaxedConstraints.end();
+				if (alreadyRelaxed) continue;
+
+				carl::Variable relaxationVar = carl::freshBooleanVariable();
+				eraseSubformulaFromPassedFormula(formulaPositionMap[f]); // first erase non-relaxed clause
+				addSubformulaToPassedFormula(FormulaT(carl::FormulaType::OR, f, FormulaT(relaxationVar))); // ...then add relaxed clause
+
+				relaxedConstraints.push_back(f);
+				relaxationVars.push_back(relaxationVar);
+			}
+
+			eraseSubformulaFromPassedFormula(relaxationFormula); // remove cardinality constraint again
+
 		}
 
 		// from here, none of the soft clauses can be satisfied

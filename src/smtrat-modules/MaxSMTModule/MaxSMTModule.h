@@ -90,6 +90,7 @@ namespace smtrat
 
 			std::vector<FormulaT> runFuMalik();
 			std::vector<FormulaT> runOLL();
+			std::vector<FormulaT> runMSU3();
 			std::vector<FormulaT> runLinearSearch();
 			bool isSoft(const FormulaT& formula);
 			void addSoftFormula(const FormulaT& formula);
