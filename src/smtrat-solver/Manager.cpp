@@ -137,7 +137,7 @@ namespace smtrat
         {
             assert( obVarIter != mObjectives.end() );
             push(); // In this level we store the equation between the objective function and it's introduced variable.
-            add( FormulaT( (obVarIter->second.second ? obVarIter->first : -(obVarIter->first)) - obVarIter->second.first, carl::Relation::EQ ) );
+            add( FormulaT( (obVarIter->second.second ? -(obVarIter->first) : obVarIter->first) - obVarIter->second.first, carl::Relation::EQ ) );
             mpPrimaryBackend->setObjective( obVarIter->second.first );
             Answer result = mpPrimaryBackend->check( true, _full, true );
             if( result != SAT )

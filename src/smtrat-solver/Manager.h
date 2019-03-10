@@ -64,6 +64,8 @@ namespace smtrat
 			LemmaLevel mLemmaLevel;
 			/// Formulas that have been named in the SMT-LIB input.
 			std::map<std::string,FormulaT> mNamedFormulas;
+            /// Formulas that have been weighted in the SMT-LIB input.
+            std::map<FormulaT, Rational> mWeightedFormulas;
             ///
             std::vector<std::pair<Poly,std::pair<carl::Variable,bool>>> mObjectives;
             ///
@@ -424,6 +426,19 @@ namespace smtrat
 			const auto& namedFormulas() const {
 				return mNamedFormulas;
 			}
+
+            /**
+             * Return a reference to the weighted formulas.
+             */
+            auto& weightedFormulas() {
+                return mWeightedFormulas;
+            }
+            /**
+             * Return a reference to the weighted formulas.
+             */
+            const auto& weightedFormulas() const {
+                return mWeightedFormulas;
+            }
 
             
             /**

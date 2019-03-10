@@ -12,6 +12,8 @@
 #include "MaxSMTStatistics.h"
 #include "MaxSMTSettings.h"
 
+#include <smtrat-modules/PBPPModule/PBPPModule.h>
+
 namespace smtrat
 {
 	template<typename Settings>
@@ -22,6 +24,9 @@ namespace smtrat
 			MaxSMTStatistics mStatistics;
 #endif
 			// Members.
+			std::vector<FormulaT> softclauses;
+			std::map<FormulaT, carl::Variable> blockingVars;
+			std::map<FormulaT, ModuleInput::iterator> formulaPositionMap;
 			
 		public:
 			typedef Settings SettingsType;
@@ -82,5 +87,12 @@ namespace smtrat
 			 *		 Unknown, otherwise.
 			 */
 			Answer checkCore();
+
+			std::vector<FormulaT> runFuMalik();
+			std::vector<FormulaT> runOLL();
+			bool isSoft(const FormulaT& formula);
+			void addSoftFormula(const FormulaT& formula);
+			std::vector<FormulaT> gatherSatisfiedSoftClauses();
+
 	};
 }
