@@ -16,7 +16,7 @@ ExternalProject_Add(
 	CArL-EP
 	DOWNLOAD_COMMAND ""
 	CONFIGURE_COMMAND ""
-	BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} carl-shared carl-static
+	BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} carl-shared carl-static carl-settings-shared carl-settings-static
 	INSTALL_COMMAND ${CMAKE_MAKE_PROGRAM} install/fast
 )
 
