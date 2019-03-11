@@ -379,7 +379,7 @@ public:
 			}
 			if (!evaluator(c)) return c;
 		}
-		for (const auto& b: trail.mvBounds()) {
+		for (const auto& b: trail.activeMvBounds()) {
 			const Minisat::Var& var = mGetter.abstractVariable(b);
 			if (std::find(current().univariateVariables.begin(), current().univariateVariables.end(), var) == current().univariateVariables.end()) {
 				continue;
@@ -591,7 +591,7 @@ public:
 			//if (category != mcsat::ConstraintType::Assigned) continue;
 			if (!evaluator(c)) return false;
 		}
-		for (const auto& b: trail.mvBounds()) {
+		for (const auto& b: trail.activeMvBounds()) {
 			//auto category = mcsat::constraint_type::categorize(b, model(), carl::Variable::NO_VARIABLE);
 			//if (category != mcsat::ConstraintType::Assigned) continue;
 			if (!evaluator(b)) return false;

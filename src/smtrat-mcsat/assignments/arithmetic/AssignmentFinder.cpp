@@ -19,7 +19,7 @@ boost::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::
 			return AssignmentOrConflict(conflict);
 		}
 	}
-	for (const auto& b: data.mvBounds()) {
+	for (const auto& b: data.activeMvBounds()) {
 		SMTRAT_LOG_TRACE("smtrat.mcsat.arithmetic", "Adding MVBound " << b);
 		if (!af.addMVBound(b)) {
 			conflict.push_back(b);
