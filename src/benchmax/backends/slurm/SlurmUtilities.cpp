@@ -78,12 +78,12 @@ std::string generate_submit_file(const SubmitfileProperties& p) {
 	auto timeout = (std::chrono::seconds(p.limit_time) + std::chrono::seconds(3)).count();
 	// Execute this slice
 	out << "for i in `seq ${start} ${end}`; do" << std::endl;
-	out << "\tcmd=$(sed -n \"${i}p\" < " << p.filename_jobs << ")" << std::endl;
+	out << "\ttime cmd=$(sed -n \"${i}p\" < " << p.filename_jobs << ")" << std::endl;
 	out << "\techo \"Executing $cmd\"" << std::endl;
 	out << "\techo \"# START ${i} #\"" << std::endl;
 	out << "\techo \"# START ${i} #\" >&2" << std::endl;
 	out << "\tstart=`date +\"%s%3N\"`" << std::endl;
-	out << "\tulimit -c 0 && ulimit -S -v " << p.limit_memory.kibi() << " && ulimit -S -t " << timeout << " && $cmd ; rc=$?" << std::endl;
+	out << "\tulimit -c 0 && ulimit -S -v " << p.limit_memory.kibi() << " && ulimit -S -t " << timeout << " && time $cmd ; rc=$?" << std::endl;
 	out << "\tend=`date +\"%s%3N\"`" << std::endl;
 	out << "\techo \"# END ${i} #\"" << std::endl;
 	out << "\techo \"# END ${i} #\" 1>&2" << std::endl;
@@ -131,12 +131,12 @@ std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p) {
 	auto timeout = (std::chrono::seconds(p.limit_time) + std::chrono::seconds(3)).count();
 	// Execute this slice
 	out << "for i in `seq ${start} ${end}`; do" << std::endl;
-	out << "\tcmd=$(sed -n \"${i}p\" < " << p.filename_jobs << ")" << std::endl;
+	out << "\ttime cmd=$(sed -n \"${i}p\" < " << p.filename_jobs << ")" << std::endl;
 	out << "\techo \"Executing $cmd\"" << std::endl;
 	out << "\techo \"# START ${i} #\"" << std::endl;
 	out << "\techo \"# START ${i} #\" >&2" << std::endl;
 	out << "\tstart=`date +\"%s%3N\"`" << std::endl;
-	out << "\tulimit -c 0 && ulimit -S -v " << p.limit_memory.kibi() << " && ulimit -S -t " << timeout << " && $cmd ; rc=$?" << std::endl;
+	out << "\tulimit -c 0 && ulimit -S -v " << p.limit_memory.kibi() << " && ulimit -S -t " << timeout << " && time $cmd ; rc=$?" << std::endl;
 	out << "\tend=`date +\"%s%3N\"`" << std::endl;
 	out << "\techo \"# END ${i} #\"" << std::endl;
 	out << "\techo \"# END ${i} #\" 1>&2" << std::endl;
