@@ -45,7 +45,7 @@ struct TheoryLevel {
 	/// Literal that assigns this theory variable
 	Minisat::Lit decisionLiteral = Minisat::lit_Undef;
 	/// Boolean variables univariate in this theory variable
-	std::vector<Minisat::Var> univariateVariables; // TODO DYNSCHED rename univariateVariables to decidedVariables
+	std::vector<Minisat::Var> decidedVariables;
 };
 
 template<typename Settings>
@@ -366,7 +366,7 @@ public:
 
 		for (const auto& c: trail.constraints()) {
 			const Minisat::Var& var = mGetter.abstractVariable(c);
-			if (std::find(current().univariateVariables.begin(), current().univariateVariables.end(), var) == current().univariateVariables.end()) {
+			if (std::find(current().decidedVariables.begin(), current().decidedVariables.end(), var) == current().decidedVariables.end()) {
 				continue;
 			}
 			if (only_univariate) {
@@ -381,7 +381,7 @@ public:
 		}
 		for (const auto& b: trail.mvBounds()) {
 			const Minisat::Var& var = mGetter.abstractVariable(b);
-			if (std::find(current().univariateVariables.begin(), current().univariateVariables.end(), var) == current().univariateVariables.end()) {
+			if (std::find(current().decidedVariables.begin(), current().decidedVariables.end(), var) == current().decidedVariables.end()) {
 				continue;
 			}
 			if (only_univariate) {
@@ -492,7 +492,7 @@ public:
 		return theoryLevel(mGetter.reabstractVariable(var));
 	}
 	
-	std::size_t theoryLevel(const FormulaT& f) const { // TODO DYNSCHED theory levels are stored in univariateVariables => lookup more efficient?
+	std::size_t theoryLevel(const FormulaT& f) const { // TODO DYNSCHED theory levels are stored in decidedVariables => lookup more efficient?
 		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Computing theory level for " << f);
 		carl::Variables vars;
 		f.arithmeticVars(vars);

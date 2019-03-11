@@ -18,27 +18,34 @@ void MCSATMixin<Settings>::popTheoryDecision() {
 	assert(!mTheoryStack.empty());
 	mUndecidedVariables.insert(
 		mUndecidedVariables.end(),
-		mTheoryStack.back().univariateVariables.begin(),
-		mTheoryStack.back().univariateVariables.end()
+		mTheoryStack.back().decidedVariables.begin(),
+		mTheoryStack.back().decidedVariables.end()
 	);
 	mTheoryStack.pop_back();
 	// mModelAssignmentCache.clear();
 }
 
 template<typename Settings>
-void MCSATMixin<Settings>::updateCurrentLevel() { // TODO DYNSCHED: make more efficient: only evaluate mUndecidedVars: everything decided is newly decided!
+void MCSATMixin<Settings>::updateCurrentLevel() {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Updating current level " << current().variable);
 	
 	// Check undecided variables whether they became univariate
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Undecided Variables: " << mUndecidedVariables);
 	for (auto vit = mUndecidedVariables.begin(); vit != mUndecidedVariables.end();) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Looking at " << *vit);
-		if (theoryLevel(*vit) != level()) {
+		/*if (theoryLevel(*vit) != level()) {
 			++vit;
 			continue;
+		}*/
+		if (mGetter.isTheoryAbstraction(*vit)) {
+			const auto& f = mGetter.reabstractVariable(*vit);
+			if (!carl::model::evaluate(f, model()).isBool()) {
+				++vit;
+				continue;
+			}
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Associating " << *vit << " with " << current().variable << " at " << level());
-		current().univariateVariables.push_back(*vit);
+		current().decidedVariables.push_back(*vit);
 		vit = mUndecidedVariables.erase(vit);
 	}
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << mUndecidedVariables);
@@ -139,7 +146,7 @@ std::size_t MCSATMixin<Settings>::addBooleanVariable(Minisat::Var variable) {
 		mVarPropertyCache.emplace_back();
 	}
 
-	std::size_t level = theoryLevel(variable); // TODO DYNSCHED refactor if theoryLevel depends on univariateVariables
+	std::size_t level = theoryLevel(variable); // TODO DYNSCHED refactor if theoryLevel depends on decidedVariables
 	if (!mGetter.isTheoryAbstraction(variable)) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Ignoring " << variable << " as it is not a theory abstraction");
 		return level;
@@ -150,7 +157,7 @@ std::size_t MCSATMixin<Settings>::addBooleanVariable(Minisat::Var variable) {
 		mUndecidedVariables.push_back(variable);
 	} else {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << variable << " on level " << level);
-		mTheoryStack[level].univariateVariables.push_back(variable);
+		mTheoryStack[level].decidedVariables.push_back(variable);
 	}
 	return level;
 }
@@ -196,7 +203,7 @@ std::ostream& operator<<(std::ostream& os, const MCSATMixin<Settings>& mcm) {
 			os << " <<-- Current variable";
 		}*/
 		os << std::endl;
-		os << "\tVariables: " << level.univariateVariables << std::endl;
+		os << "\tVariables: " << level.decidedVariables << std::endl;
 	}
 	os << "Backend:" << std::endl;
 	os << mcm.mBackend << std::endl;

@@ -2766,8 +2766,8 @@ namespace smtrat
 				if (Settings::mc_sat && next == lit_Undef) { // TODO more efficient semantic propagations
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for semantic propagations...");
 					for (std::size_t level = 0; level <= mMCSAT.level(); level++) {
-						SMTRAT_LOG_DEBUG("smtrat.sat", "Considering " << mMCSAT.get(level).univariateVariables);
-						for (auto v: mMCSAT.get(level).univariateVariables) {
+						SMTRAT_LOG_DEBUG("smtrat.sat", "Considering " << mMCSAT.get(level).decidedVariables);
+						for (auto v: mMCSAT.get(level).decidedVariables) {
                             assert(bool_value(v) == l_Undef || theoryValue(v) == bool_value(v));
 							if (bool_value(v) != l_Undef) continue;
 							auto tv = theoryValue(v);

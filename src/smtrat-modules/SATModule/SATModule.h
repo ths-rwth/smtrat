@@ -910,7 +910,7 @@ namespace smtrat
             inline void setDecisionVar( Minisat::Var v, bool b, bool insertIntoHeap = true )
             {
                 if( b &&!decision[v] )
-                    dec_vars++; // TODO DYNSCHED has marking assignment vars as "to be decided" any effect ??
+                    dec_vars++;
                 else if( !b && decision[v] )
                     dec_vars--;
                 decision[v] = b;
