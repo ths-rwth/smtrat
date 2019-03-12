@@ -5,6 +5,7 @@
 
 #include <carl/formula/model/evaluation/ModelEvaluation.h>
 #include <smtrat-mcsat/assignments/arithmetic/AssignmentFinder.h>
+#include <smtrat-mcsat/explanations/nlsat/Explanation.h>
 
 using namespace smtrat;
 
@@ -134,6 +135,7 @@ BOOST_AUTO_TEST_CASE(AssignmentFinderBug) {
 	MultivariateRootT mvroot(poly, 1);
 	VariableComparisonT varcomp(a, mvroot, carl::Relation::GREATER, true);
 	FormulaT formula(varcomp);
+	std::cout << "Looking at " << varcomp << std::endl;
 
 	// proof that an assignment for b exist
 	Model model2 = model;
@@ -150,6 +152,26 @@ BOOST_AUTO_TEST_CASE(AssignmentFinderBug) {
 	auto afres = af(bookkeeping, b);
 	BOOST_CHECK(afres);
 	BOOST_CHECK(carl::variant_is_type<mcsat::ModelValues>(*afres));
+	
+	FormulaT tmp;
+	{
+		bookkeeping.pushAssignment(b, Rational(0), FormulaT(carl::FormulaType::TRUE));
+		mcsat::nlsat::Explanation expl;
+		auto ex = expl(bookkeeping, b, { formula });
+		assert(ex);
+		std::cout << *ex << std::endl;
+		tmp = boost::get<FormulaT>(*ex).subformulas()[2];
+		bookkeeping.popAssignment(b);
+	}
+	std::cout << "tmp = " << tmp << std::endl;
+	bookkeeping.pushConstraint(tmp);
+	{
+		mcsat::arithmetic::AssignmentFinder af;
+		auto afres = af(bookkeeping, b);
+		BOOST_CHECK(afres);
+		BOOST_CHECK(carl::variant_is_type<mcsat::ModelValues>(*afres));
+		std::cout << *afres << std::endl;
+	}
 }
 
 BOOST_AUTO_TEST_SUITE_END();
