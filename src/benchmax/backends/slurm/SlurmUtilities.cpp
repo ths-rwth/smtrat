@@ -53,9 +53,12 @@ std::string generate_submit_file(const SubmitfileProperties& p) {
 	// Output files (stdout and stderr)
 	out << "#SBATCH -o " << p.tmp_dir << "/JOB.%A_%a.out" << std::endl;
 	out << "#SBATCH -e " << p.tmp_dir << "/JOB.%A_%a.err" << std::endl;
+	
 	// Rough estimation of time in minutes (timeout * jobs)
-	auto minutes = static_cast<std::size_t>(std::chrono::seconds(p.limit_time).count() + 10) * p.tasks / p.slices / 60 + 1;
-	minutes = std::min(minutes, static_cast<std::size_t>(60*24));
+	auto timeout = (std::chrono::seconds(p.limit_time) + std::chrono::seconds(p.grace_time));
+	long minutes = std::chrono::duration_cast<std::chrono::minutes>(timeout * p.tasks / p.slices).count() + 1;
+	minutes = std::min(minutes, static_cast<long>(60*24));
+
 	out << "#SBATCH -t " << minutes << std::endl;
 	// Memory usage in MB
 	out << "#SBATCH --mem-per-cpu=" << p.limit_memory.mebi() + 1024 << "M" << std::endl;
@@ -75,7 +78,6 @@ std::string generate_submit_file(const SubmitfileProperties& p) {
 	out << "start=$(( (cur - 1) * slicesize + min ))" << std::endl;
 	out << "end=$(( start + slicesize - 1 ))" << std::endl;
 
-	auto timeout = (std::chrono::seconds(p.limit_time) + std::chrono::seconds(3)).count();
 	// Execute this slice
 	out << "for i in `seq ${start} ${end}`; do" << std::endl;
 	out << "\tcmd=$(time sed -n \"${i}p\" < " << p.filename_jobs << ")" << std::endl;
@@ -83,7 +85,7 @@ std::string generate_submit_file(const SubmitfileProperties& p) {
 	out << "\techo \"# START ${i} #\"" << std::endl;
 	out << "\techo \"# START ${i} #\" >&2" << std::endl;
 	out << "\tstart=`date +\"%s%3N\"`" << std::endl;
-	out << "\tulimit -c 0 && ulimit -S -v " << p.limit_memory.kibi() << " && ulimit -S -t " << timeout << " && time $cmd ; rc=$?" << std::endl;
+	out << "\tulimit -c 0 && ulimit -S -v " << p.limit_memory.kibi() << " && ulimit -S -t " << std::chrono::seconds(timeout).count() << " && time $cmd ; rc=$?" << std::endl;
 	out << "\tend=`date +\"%s%3N\"`" << std::endl;
 	out << "\techo \"# END ${i} #\"" << std::endl;
 	out << "\techo \"# END ${i} #\" 1>&2" << std::endl;
@@ -108,9 +110,12 @@ std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p) {
 	// Output files (stdout and stderr)
 	out << "#SBATCH -o " << p.tmp_dir << "/JOB.%A_%a.out" << std::endl;
 	out << "#SBATCH -e " << p.tmp_dir << "/JOB.%A_%a.err" << std::endl;
+	
 	// Rough estimation of time in minutes (timeout * slice_size)
-	long minutes = (std::chrono::seconds(p.limit_time) * p.slice_size).count() / 60;
+	auto timeout = (std::chrono::seconds(p.limit_time) + std::chrono::seconds(p.grace_time));
+	long minutes = std::chrono::duration_cast<std::chrono::minutes>(timeout * p.slice_size).count() + 1;
 	minutes = std::min(minutes + 1, static_cast<long>(60*24));
+
 	out << "#SBATCH -t " << minutes << std::endl;
 	// Memory usage in MB
 	out << "#SBATCH --mem-per-cpu=" << p.limit_memory.mebi() + 1024 << "M" << std::endl;
@@ -128,7 +133,6 @@ std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p) {
 	out << "start=$(( (cur - 1) * slicesize + 1 ))" << std::endl;
 	out << "end=$(( start + slicesize - 1 ))" << std::endl;
 
-	auto timeout = (std::chrono::seconds(p.limit_time) + std::chrono::seconds(3)).count();
 	// Execute this slice
 	out << "for i in `seq ${start} ${end}`; do" << std::endl;
 	out << "\tcmd=$(time sed -n \"${i}p\" < " << p.filename_jobs << ")" << std::endl;
@@ -136,7 +140,7 @@ std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p) {
 	out << "\techo \"# START ${i} #\"" << std::endl;
 	out << "\techo \"# START ${i} #\" >&2" << std::endl;
 	out << "\tstart=`date +\"%s%3N\"`" << std::endl;
-	out << "\tulimit -c 0 && ulimit -S -v " << p.limit_memory.kibi() << " && ulimit -S -t " << timeout << " && time $cmd ; rc=$?" << std::endl;
+	out << "\tulimit -c 0 && ulimit -S -v " << p.limit_memory.kibi() << " && ulimit -S -t " << std::chrono::seconds(timeout).count() << " && time $cmd ; rc=$?" << std::endl;
 	out << "\tend=`date +\"%s%3N\"`" << std::endl;
 	out << "\techo \"# END ${i} #\"" << std::endl;
 	out << "\techo \"# END ${i} #\" 1>&2" << std::endl;

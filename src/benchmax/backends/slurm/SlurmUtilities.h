@@ -47,6 +47,8 @@ struct SubmitfileProperties {
 	std::string tmp_dir;
 	/// Time limit in seconds.
 	carl::settings::duration limit_time;
+	/// Grace time in seconds.
+	carl::settings::duration grace_time;
 	/// Memory limit in megabytes.
 	carl::settings::binary_quantity limit_memory;
 	/// Number of tasks.
@@ -72,6 +74,8 @@ struct ChunkedSubmitfileProperties {
 	std::string tmp_dir;
 	/// Time limit in seconds.
 	carl::settings::duration limit_time;
+	/// Grace time in seconds.
+	carl::settings::duration grace_time;
 	/// Memory limit in megabytes.
 	carl::settings::binary_quantity limit_memory;
 	/// Array size.

@@ -77,6 +77,7 @@ private:
 			jobsfilename,
 			settings_slurm().tmp_dir,
 			settings_benchmarks().limit_time,
+			settings_benchmarks().grace_time,
 			settings_benchmarks().limit_memory,
 			mResults.size(),
 			slices
@@ -133,6 +134,7 @@ private:
 			jobsfilename,
 			settings_slurm().tmp_dir,
 			settings_benchmarks().limit_time,
+			settings_benchmarks().grace_time,
 			settings_benchmarks().limit_memory,
 			settings_slurm().array_size,
 			settings_slurm().slice_size
