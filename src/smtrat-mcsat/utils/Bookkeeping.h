@@ -111,7 +111,7 @@ public:
 		mAssignments.pop_back();
 	}
 
-	bool isMVBoundActive(const FormulaT& f) const { // TODO from an engineering point of view, this is the wrong place as its theory specific
+	bool isMVBoundActive(const FormulaT& f) const { // TODO DYNSCHED move somewhere else!
 		assert(f.getType() == carl::FormulaType::VARCOMPARE);
 
 		const auto& val = f.variableComparison().value();
@@ -130,7 +130,7 @@ public:
 					}
 					vars.erase(*iter);
 				}
-				return vars.size() > 1;
+				return vars.size() == 0;
 			}
 		}
 	}
