@@ -19,6 +19,8 @@ struct BenchmarkSettings {
 	carl::settings::binary_quantity limit_memory;
 	/// Time limit in seconds.
 	carl::settings::duration limit_time;
+	/// Grace time in seconds.
+	carl::settings::duration grace_time;
 	/// Lift of input directories.
 	std::vector<std::filesystem::path> input_directories;
 	/// Common prefix of input directories (to shorten filenames in output).
