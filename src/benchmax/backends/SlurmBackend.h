@@ -44,7 +44,7 @@ private:
 		std::ifstream in(file);
 		std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
 		auto extension = file.extension();
-		std::regex filere("# START ([0-9]+) #((?:.|\n)*)# END \\1 #(?:((?:.|\n)*)# END DATA \\1 #)?");
+		std::regex filere("# START ([0-9]+) #([^#]*)# END \\1 #(?:([^#]*)# END DATA \\1 #)?");
 
 		auto reBegin = std::sregex_iterator(content.begin(), content.end(), filere);
 		auto reEnd = std::sregex_iterator();
