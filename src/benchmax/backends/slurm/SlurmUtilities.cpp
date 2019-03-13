@@ -56,7 +56,7 @@ std::string generate_submit_file(const SubmitfileProperties& p) {
 	
 	// Rough estimation of time in minutes (timeout * jobs)
 	auto timeout = (std::chrono::seconds(p.limit_time) + std::chrono::seconds(p.grace_time));
-	long minutes = std::chrono::duration_cast<std::chrono::minutes>(timeout * p.tasks / p.slices).count() + 1;
+	long minutes = std::chrono::duration_cast<std::chrono::minutes>(timeout * p.tasks / p.slices).count() * 2;
 	minutes = std::min(minutes, static_cast<long>(60*24));
 
 	out << "#SBATCH -t " << minutes << std::endl;
@@ -113,7 +113,7 @@ std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p) {
 	
 	// Rough estimation of time in minutes (timeout * slice_size)
 	auto timeout = (std::chrono::seconds(p.limit_time) + std::chrono::seconds(p.grace_time));
-	long minutes = std::chrono::duration_cast<std::chrono::minutes>(timeout * p.slice_size).count() + 1;
+	long minutes = std::chrono::duration_cast<std::chrono::minutes>(timeout * p.slice_size).count() * 2;
 	minutes = std::min(minutes + 1, static_cast<long>(60*24));
 
 	out << "#SBATCH -t " << minutes << std::endl;
