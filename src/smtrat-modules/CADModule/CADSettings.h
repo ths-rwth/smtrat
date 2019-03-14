@@ -10,7 +10,7 @@
 
 #include <iostream>
 
-#include <carl/cad/CADSettings.h>
+#include <carl-cad/CADSettings.h>
 
 namespace smtrat
 {

@@ -12,7 +12,7 @@
 
 #include <unordered_map>
 
-#include <carl/cad/CAD.h>
+#include <carl-cad/CAD.h>
 
 #include <smtrat-common/smtrat-common.h>
 #include <lib/datastructures/VariableBounds.h>
