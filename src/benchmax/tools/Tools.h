@@ -33,12 +33,14 @@ struct ToolSettings {
 	bool collect_statistics;
 	/// Generic tools.
 	std::vector<std::filesystem::path> tools_generic;
+	/// MathSAT with SMT-LIB interface.
+	std::vector<std::filesystem::path> tools_mathsat;
+	/// Minisatp with OPB interface.
+	std::vector<std::filesystem::path> tools_minisatp;
 	/// SMT-RAT with SMT-LIB interface.
 	std::vector<std::filesystem::path> tools_smtrat;
 	/// SMT-RAT with OPB interface.
 	std::vector<std::filesystem::path> tools_smtrat_opb;
-	/// Minisatp with OPB interface.
-	std::vector<std::filesystem::path> tools_minisatp;
 	/// z3 with SMT-LIB interface.
 	std::vector<std::filesystem::path> tools_z3;
 	/// Common prefix of tool binaries to simplify output.
