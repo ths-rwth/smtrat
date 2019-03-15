@@ -1,7 +1,7 @@
 #pragma once
 
-#include <carl/interval/Interval.h>
 #include "../common.h"
+#include "CADInterval.h"
 
 #include "Sample.h"
 
@@ -9,18 +9,17 @@ namespace smtrat {
 namespace cad {
 	template<typename Settings>
 	class LiftingLevel {
-	public:
-		using Interval = carl::Interval<RAN>;
 	private:
 		const ConstraintT& mConstraints;
 		std::vector<carl::Variable> mVariables;
 		Sample curSample;
-		//std::vector<UPoly&> polynoms; @todo
-		std::vector<Interval> intervals; 	// unsat intervals
-		std::set<RAN> levelintervals;		// all bounds of unsat intervals, ordered
-		bool levelintervalminf;				// whether -inf is a bound
-		bool levelintervalpinf;				// whether +inf is a bound
+		std::vector<CADInterval> intervals;	/**< unsat intervals */
+		std::set<RAN> levelintervals;		/**< all bounds of unsat intervals, ordered */
+		bool levelintervalminf;				/**< whether -inf is a bound */
+		bool levelintervalpinf;				/**< whether +inf is a bound */
 		
+		//@todo check all fcnts and add doxygen conform comments
+
 		std::size_t dim() const {
 			return mVariables.size();
 		}
@@ -29,6 +28,7 @@ namespace cad {
 			//@todo see alg 2
 		}
 
+		/** adds an unsat interval to the internal data structures of the level */
 		void addUnsatInterval(Interval& inter) {
 			intervals.push_back(inter);
 
@@ -37,9 +37,16 @@ namespace cad {
 				levelintervalminf = true;
 				levelintervalpinf = true;
 			}
-			else if (inter.isHalfBounded())
+			else if(inter.isHalfBounded())
 			{
-				// @todo how to find out which bound is inf
+				if(inter.getLowerBoundType() == CADBoundType::INF) {
+					levelintervalminf = true;
+					levelintervals.insert(inter.upper());
+				}
+				else {
+					levelintervalpinf = true;
+					levelintervals.insert(inter.lower());
+				}
 			}
 			else {
 				levelintervals.insert(inter.lower());
@@ -101,6 +108,7 @@ namespace cad {
 			levelintervals.clear();
 		}
 
+		/** gets all unsat intervals */
 		const auto& getUnsatIntervals() const {
 			return intervals;
 		}
@@ -120,22 +128,56 @@ namespace cad {
 			return false;
 		}
 
+		/** check whether an unsat cover was found */
 		bool isUnsatCover() {
-			if(isSingletonCover()) {
-				return true;
-			}
-
+			// check whether -inf and +inf are included
 			if(!levelintervalminf || !levelintervalpinf) {
 				return false;
 			}
-
-			/* start with a (-inf, x) interval,
-			 * find the next overlapping/joining interval and store upper bound,
-			 * find next overlapping/joining interval for that bound with higher upper bound,
-			 * continue until no overlapping interval or +inf found,
-			 * if +inf is not found, there is no cover*/
-
-			//@todo
+			if(isSingletonCover()) {
+				return true;
+			}
+			
+			// get an interval with -inf bound, store its higher bound
+			int highestbound;
+			bool boundopen;
+			for(auto inter : intervals) {
+				if(inter.getLowerBoundType() == CADBoundType::INF) {
+					// note: the higher bound cannot be +inf as there is no singleton cover
+					highestbound = inter.upper();
+					boundopen = (inter.getUpperBoundType() == CADBoundType::OPEN) ? true : false;
+					break;
+				}
+			}
+			// iteratively check for highest reachable bound
+			bool stop = false;
+			while(!stop) {
+				for(auto inter : intervals) {
+					bool updated = false;
+					// update highest bound if the upper bound is not equal to the current highest bound,
+					if(!(highestbound == inter.upper() && 
+						((boundopen && inter.getUpperBoundType() == CADBoundType::OPEN) || 
+						 (!boundopen && inter.getUpperBoundType() == CADBoundType::CLOSED)))) {
+						// and is contained in the interval or is bordered by the lower bound of the interval
+						if(inter.contains(highestbound) ||
+							(highestbound == inter.lower && 
+							((boundopen && inter.getLowerBoundType() == CADBoundType::CLOSED) || 
+								(!boundopen && inter.getLowerBoundType() == CADBoundType::OPEN)))) {
+							if(inter.getUpperBoundType() == CADBoundType::INF) {
+								return true;
+							}
+							highestbound = inter.upper();
+							boundopen = (inter.getUpperBoundType() == CADBoundType::OPEN) ? true : false;
+							updated = true;
+						}
+					}
+				}
+				// if the highest bound could not be updated (& was not +inf), no cover was found
+				if(!updated) {
+					stop = true;
+				}
+			}
+			return false;
 		}
 
 	};

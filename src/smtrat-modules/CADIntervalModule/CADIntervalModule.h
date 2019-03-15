@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "smtrat-cad/CADInterval.h"
+#include "smtrat-cad/CADIntervalBased.h"
 
 #include "smtrat-solver/Module.h"
 #include "CADIntervalStatistics.h"
