@@ -1,12 +1,8 @@
-option( USE_BOOST_REGEX "Use boost::regex instead of std::regex in delta." OFF )
-
-configure_file( ${CMAKE_SOURCE_DIR}/src/delta/config.h.in ${CMAKE_SOURCE_DIR}/src/delta/config.h )
-
 add_executable( delta
 	delta.cpp
 )
 
-target_link_libraries( delta Boost_SHARED )
+target_link_libraries( delta Boost_program_options_SHARED )
 
 if (NOT WIN32)
 	target_link_libraries( delta pthread )

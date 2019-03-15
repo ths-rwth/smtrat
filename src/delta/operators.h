@@ -8,28 +8,10 @@
 #include <algorithm>
 #include <cctype>
 #include <functional>
+#include <regex>
 #include <sstream>
 #include <utility>
 #include <vector>
-
-#include "config.h"
-
-#ifdef USE_BOOST_REGEX
-#include "../cli/config.h"
-#ifdef __VS
-#pragma warning(push, 0)
-#include <boost/regex.hpp>
-#pragma warning(pop)
-#else
-#include <boost/regex.hpp>
-#endif
-using boost::regex;
-using boost::regex_match;
-#else
-#include <regex>
-using std::regex;
-using std::regex_match;
-#endif
 
 #include "Node.h"
 #include "utils.h"
@@ -37,13 +19,13 @@ using std::regex_match;
 namespace delta {
 
 /// Set of new nodes.
-typedef std::vector<Node> NodeChangeSet;
+using NodeChangeSet = std::vector<Node>;
 /**
  * Type of an node operator.
  * A NodeOperator is called on a node and shall return a set of new nodes.
  * These new nodes are supposed to be a simplifying replacement for the given node.
  */
-typedef std::function<NodeChangeSet(const Node&)> NodeOperator;
+using NodeOperator = std::function<NodeChangeSet(const Node&)>;
 
 /**
  * Node operator that returns all children of a node.
@@ -109,15 +91,15 @@ NodeChangeSet number(const Node& n) {
 	NodeChangeSet res;
 
 	// Not a number
-	if (!regex_match(n.name, regex("[0-9]*\\.?[0-9]*"))) return res;
+	if (!std::regex_match(n.name, std::regex("[0-9]*\\.?[0-9]*"))) return res;
 
 	// Handle trailing dot -> remove dot
-	if (regex_match(n.name, regex("[0-9]+\\."))) {
+	if (std::regex_match(n.name, std::regex("[0-9]+\\."))) {
 		res.emplace_back(n.name.substr(0, n.name.size()-1), false);
 		return res;
 	}
 	// Handle simple numbers -> remove last digits
-	if (regex_match(n.name, regex("[0-9]+"))) {
+	if (std::regex_match(n.name, std::regex("[0-9]+"))) {
 		for (unsigned i = 1; i < n.name.size(); i++) {
 			res.emplace_back(n.name.substr(0, i), false);
 		}
@@ -125,13 +107,13 @@ NodeChangeSet number(const Node& n) {
 	}
 
 	// Handle degenerated floating points -> add zero in front
-	if (regex_match(n.name, regex("\\.[0-9]+"))) {
+	if (std::regex_match(n.name, std::regex("\\.[0-9]+"))) {
 		res.emplace_back("0" + n.name, false);
 		return res;
 	}
 
 	// Handle floating points -> remove decimal places
-	if (regex_match(n.name, regex("[0-9]+\\.[0-9]+"))) {
+	if (std::regex_match(n.name, std::regex("[0-9]+\\.[0-9]+"))) {
 		std::size_t pos = n.name.find('.');
 		res.emplace_back(n.name.substr(0, pos), false);
 		res.emplace_back(n.name.substr(0, n.name.size()-1));
@@ -216,8 +198,8 @@ NodeChangeSet BV_mergeShift(const Node& n) {
 		if (n.children[1].children.size() != 2) return NodeChangeSet();
 		// Same bit-width
 		if (c.children[1].children[1].name != n.children[1].children[1].name) return NodeChangeSet();
-		if (!regex_match(n.children[1].children[0].name, regex("bv[0-9]+"))) return NodeChangeSet();
-		if (!regex_match(c.children[1].children[0].name, regex("bv[0-9]+"))) return NodeChangeSet();
+		if (!std::regex_match(n.children[1].children[0].name, std::regex("bv[0-9]+"))) return NodeChangeSet();
+		if (!std::regex_match(c.children[1].children[0].name, std::regex("bv[0-9]+"))) return NodeChangeSet();
 		
 		std::size_t inner = std::stoul(c.children[1].children[0].name.substr(2));
 		std::size_t outer = std::stoul(n.children[1].children[0].name.substr(2));

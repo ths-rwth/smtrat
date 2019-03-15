@@ -1,7 +1,7 @@
 #pragma once
 
 #include <carl/util/Singleton.h>
-#include <carl/util/SettingsParser.h>
+#include <carl-settings/SettingsParser.h>
 
 namespace smtrat {
 

@@ -17,6 +17,7 @@ void execute_backend(const std::string& name, const Jobs& jobs) {
 	BENCHMAX_LOG_INFO("benchmax", "Using " << name << " backend.");
 	Backend backend;
 	backend.run(jobs);
+	backend.sanitize_results(jobs);
 	backend.write_results(jobs);
 }
 /**

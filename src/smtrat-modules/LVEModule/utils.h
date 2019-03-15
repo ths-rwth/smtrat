@@ -8,7 +8,7 @@
 namespace smtrat::lve {
 
 Rational evaluate(carl::Variable v, const Poly& p, const Rational& r) {
-	assert(p.substitute(v, r).isConstant());
+	assert(p.substitute(v, Poly(r)).isConstant());
 	return p.substitute(v, Poly(r)).constantPart();
 }
 carl::Sign sgn(carl::Variable v, const Poly& p, const carl::RealAlgebraicNumber<Rational>& r) {

@@ -63,6 +63,10 @@ namespace helper {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding " << cAtom);
 				cons.emplace(cAtom.constraint());
 			} else if (cAtom.getType() == carl::FormulaType::VARCOMPARE) {
+				// Note that we only add the polynomials here and don't really care about the relation
+				// var ~ rootexpr(poly)
+				// -> poly to ensure that the root exists
+				// -> var - poly to ensure that the relation still holds
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << cAtom << " -> " << cAtom.variableComparison().definingPolynomial());
 				cons.emplace(cAtom.variableComparison().definingPolynomial(), cAtom.variableComparison().relation());
 				cons.emplace(Poly(cAtom.variableComparison().var()) - cAtom.variableComparison().definingPolynomial(), cAtom.variableComparison().relation());

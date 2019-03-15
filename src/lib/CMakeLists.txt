@@ -11,7 +11,7 @@ target_include_dirs_from(smtrat-lib-objects "" PUBLIC smtrat-common-shared carl-
 target_link_libraries(smtrat-lib-shared smtrat-common-shared carl-shared)
 target_link_libraries(smtrat-lib-static smtrat-common-static carl-static)
 
-install_libraries(smtrat-lib-shared smtrat-lib-static)
+install_libraries(smtrat smtrat-lib-shared smtrat-lib-static)
 
 if (CLANG_TIDY)
 	add_custom_target(tidy

@@ -33,27 +33,20 @@ struct ToolSettings {
 	bool collect_statistics;
 	/// Generic tools.
 	std::vector<std::filesystem::path> tools_generic;
+	/// MathSAT with SMT-LIB interface.
+	std::vector<std::filesystem::path> tools_mathsat;
+	/// Minisatp with OPB interface.
+	std::vector<std::filesystem::path> tools_minisatp;
 	/// SMT-RAT with SMT-LIB interface.
 	std::vector<std::filesystem::path> tools_smtrat;
 	/// SMT-RAT with OPB interface.
 	std::vector<std::filesystem::path> tools_smtrat_opb;
-	/// Minisatp with OPB interface.
-	std::vector<std::filesystem::path> tools_minisatp;
 	/// z3 with SMT-LIB interface.
 	std::vector<std::filesystem::path> tools_z3;
 	/// Common prefix of tool binaries to simplify output.
 	std::filesystem::path tools_common_prefix;
 };
 
-/// Postprocess settings to compute common prefix.
-template<typename V>
-inline void finalize_tool_settings(ToolSettings& s, const V&) {
-	s.tools_common_prefix = common_prefix({
-		s.tools_generic, s.tools_smtrat, s.tools_smtrat_opb,
-		s.tools_minisatp, s.tools_z3
-	});
-	BENCHMAX_LOG_DEBUG("benchmax.tools", "Common tool prefix is " << s.tools_common_prefix);
-}
 /// Registers tool settings with the settings parser.
 void registerToolSettings(SettingsParser* parser);
 } // namespace settings

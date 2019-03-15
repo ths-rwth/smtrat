@@ -58,6 +58,15 @@ protected:
 	}
 
 public:
+	void sanitize_results(const Jobs& jobs) const {
+		for (const auto& j: jobs) {
+			auto res = mResults.get(j.first, j.second);
+			if (!res && j.first->canHandle(j.second)) {
+				BENCHMAX_LOG_WARN("benchmax", "Missing result for " << j.first->name() << " on " << j.second);
+				BENCHMAX_LOG_WARN("benchmax", "Chances are that something went wrong, please check this!");
+			}
+		}
+	}
 	void write_results(const Jobs& jobs) const {
 		BENCHMAX_LOG_INFO("benchmax", "Writing results to " << settings_benchmarks().output_file_xml);
 		XMLWriter xml(settings_benchmarks().output_file_xml);
@@ -66,6 +75,10 @@ public:
 	/// Add a result.
 	void addResult(const Tool* tool, const fs::path& file, BenchmarkResult& result) {
 		tool->additionalResults(file, result);
+		if (result.time > settings_benchmarks().limit_time + 2*settings_benchmarks().grace_time) {
+			BENCHMAX_LOG_WARN("benchmax", "Computation took longer than it should: " << carl::settings::duration(result.time) << " > " << settings_benchmarks().limit_time << " + " << settings_benchmarks().grace_time);
+			BENCHMAX_LOG_WARN("benchmax", "Offending command: " << tool->name() << " " << file);
+		}
 		result.cleanup(settings_benchmarks().limit_time);
 		mResults.addResult(tool, file, result);
 	}

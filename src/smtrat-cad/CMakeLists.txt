@@ -11,4 +11,4 @@ target_include_dirs_from(smtrat-cad-objects "" PUBLIC smtrat-common-shared)
 target_link_libraries(smtrat-cad-shared smtrat-common-shared)
 target_link_libraries(smtrat-cad-static smtrat-common-static)
 
-install_libraries(smtrat-cad-shared smtrat-cad-static)
+install_libraries(smtrat smtrat-cad-shared smtrat-cad-static)

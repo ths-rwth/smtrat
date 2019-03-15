@@ -11,4 +11,4 @@ target_include_dirs_from(smtrat-qe-objects "" PUBLIC smtrat-lib-shared smtrat-co
 target_link_libraries(smtrat-qe-shared smtrat-lib-shared smtrat-common-shared)
 target_link_libraries(smtrat-qe-static smtrat-lib-static smtrat-common-static)
 
-install_libraries(smtrat-qe-shared smtrat-qe-static)
+install_libraries(smtrat smtrat-qe-shared smtrat-qe-static)

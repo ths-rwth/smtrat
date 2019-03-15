@@ -19,6 +19,8 @@ struct BenchmarkSettings {
 	carl::settings::binary_quantity limit_memory;
 	/// Time limit in seconds.
 	carl::settings::duration limit_time;
+	/// Grace time in seconds.
+	carl::settings::duration grace_time;
 	/// Lift of input directories.
 	std::vector<std::filesystem::path> input_directories;
 	/// Common prefix of input directories (to shorten filenames in output).
@@ -28,11 +30,6 @@ struct BenchmarkSettings {
 	/// Filename of xml file.
 	std::filesystem::path output_file_xml;
 };
-/// Postprocess benchmark settings.
-template<typename V>
-inline void finalize_benchmark_settings(BenchmarkSettings& s, const V& values) {
-	s.input_directories_common_prefix = common_prefix(s.input_directories, false);
-}
 
 /// Registers benchmark settings with the settings parser.
 void registerBenchmarkSettings(SettingsParser* parser);

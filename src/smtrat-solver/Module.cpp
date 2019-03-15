@@ -829,7 +829,9 @@ namespace smtrat
                 auto module = mUsedBackends.begin();
                 while( module != mUsedBackends.end() && result == UNKNOWN )
                 {
+                    mStatistics.pause_all();
                     result = (*module)->check( _final, _full, _minimize );
+                    mStatistics.continue_all();
                     (*module)->receivedFormulaChecked();
                     ++module;
                 }

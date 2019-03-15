@@ -11,5 +11,5 @@ target_include_dirs_from(smtrat-wrapper-objects "" PUBLIC smtrat-common-shared c
 target_link_libraries(smtrat-wrapper-shared smtrat-lib-shared smtrat-common-shared smtrat-strategies-shared)
 target_link_libraries(smtrat-wrapper-static smtrat-lib-static smtrat-common-static smtrat-strategies-static)
 
-install_libraries(smtrat-wrapper-shared smtrat-wrapper-static)
+install_libraries(smtrat smtrat-wrapper-shared smtrat-wrapper-static)
 
