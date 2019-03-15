@@ -24,7 +24,7 @@ namespace cad {
 		std::vector<carl::Variable> mVariables;
 		CADConstraints<Settings::backtracking> mConstraints;
 		ProjectionT<Settings> mProjection;
-		LiftingLevel<Settings> mLifting;
+		std:vector<LiftingLevel<Settings>> mLifting;
 		
 		// ID scheme for variables x,y,z:
 		// Projection: x=1,y=2,z=3
@@ -54,9 +54,10 @@ namespace cad {
 				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(projection::normalize(p), cid, isBound); }
 			),
 			mProjection(mConstraints),
-			mLifting(mConstraints)
+			mLifting();
 		{
 			//@todo what to initialize
+			mLifting.append(LiftingLevel(mConstraints);
 			
 			if (Settings::debugStepsToTikz) {
 				thp.configure<debug::TikzTreePrinter>("Lifting");
@@ -114,7 +115,17 @@ namespace cad {
 		}
 
 		Answer check(Assignment& assignment, std::vector<FormulaSetT>& mis) {
-			
+			currentLevel = mLifting.back();
+
+			// check for (-inf, +inf) in the unsat intervals
+			if(currentLevel.isSingletonCover()) {
+				//@todo get poly of contradicting constraint, return unsat
+			}
+
+			while(!currentLevel.isUnsatCover()) {
+				//@todo
+			}
+
 			//@todo check
 
 			return Answer::UNKNOWN;

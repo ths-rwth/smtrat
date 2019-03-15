@@ -18,16 +18,33 @@ namespace cad {
 		//std::vector<UPoly&> polynoms; @todo
 		std::vector<Interval> intervals; 	// unsat intervals
 		std::set<RAN> levelintervals;		// all bounds of unsat intervals, ordered
-        LiftingLevel predecessor;			//@todo or list of all levels somewhere.
+		bool levelintervalminf;				// whether -inf is a bound
+		bool levelintervalpinf;				// whether +inf is a bound
 		
 		std::size_t dim() const {
 			return mVariables.size();
 		}
 
+		void computeUnsatIntervals() {
+			//@todo see alg 2
+		}
+
 		void addUnsatInterval(Interval& inter) {
 			intervals.push_back(inter);
-			levelintervals.insert(inter.lower());
-			levelintervals.insert(inter.upper());
+
+			// -inf or +inf are special cases
+			if(inter.isInfinite()) {
+				levelintervalminf = true;
+				levelintervalpinf = true;
+			}
+			else if (inter.isHalfBounded())
+			{
+				// @todo how to find out which bound is inf
+			}
+			else {
+				levelintervals.insert(inter.lower());
+				levelintervals.insert(inter.upper());
+			}
 		}
 
 		// @note check whether an unsat cover has been found before calling this
@@ -72,8 +89,8 @@ namespace cad {
 
 	public:
 
-		LiftingLevel(LiftingLevel& lev):predecessor{lev}{
-			predecessor = lev;
+		LiftingLevel(){
+			computeUnsatIntervals();
 			//@todo: init intervals, levelintervals 
 		}
 
@@ -104,6 +121,20 @@ namespace cad {
 		}
 
 		bool isUnsatCover() {
+			if(isSingletonCover()) {
+				return true;
+			}
+
+			if(!levelintervalminf || !levelintervalpinf) {
+				return false;
+			}
+
+			/* start with a (-inf, x) interval,
+			 * find the next overlapping/joining interval and store upper bound,
+			 * find next overlapping/joining interval for that bound with higher upper bound,
+			 * continue until no overlapping interval or +inf found,
+			 * if +inf is not found, there is no cover*/
+
 			//@todo
 		}
 
