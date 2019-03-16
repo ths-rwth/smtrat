@@ -27,6 +27,8 @@ namespace smtrat
 			std::vector<FormulaT> softclauses;
 			std::map<FormulaT, carl::Variable> blockingVars;
 			std::map<FormulaT, ModuleInput::iterator> formulaPositionMap;
+
+			typename Settings::Backend mBackend;
 			
 		public:
 			typedef Settings SettingsType;
@@ -95,6 +97,9 @@ namespace smtrat
 			bool isSoft(const FormulaT& formula);
 			void addSoftFormula(const FormulaT& formula);
 			std::vector<FormulaT> gatherSatisfiedSoftClauses();
+			ModuleInput::iterator addToLocalBackend(const FormulaT& formula);
+
+			FormulasT getUnsatCore();
 
 	};
 }

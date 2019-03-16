@@ -9,6 +9,7 @@
 #include "MaxSMTModule.h"
 
 #include <smtrat-solver/Manager.h>
+#include <smtrat-unsat-cores/smtrat-unsat-cores.h>
 
 namespace smtrat
 {
@@ -40,7 +41,8 @@ namespace smtrat
 
 		// To this point we only expect receiving hard clauses. Soft clauses are saved in the manager.
 		// All hard clauses need to be passed on to the backend since they always have to be satisfied.
-		addReceivedSubformulaToPassedFormula(_subformula);
+		mBackend.add(_subformula->formula());
+		//addReceivedSubformulaToPassedFormula(_subformula);
 
 		return true;
 	}
@@ -76,7 +78,7 @@ namespace smtrat
 		SMTRAT_LOG_INFO("smtrat.maxsmt", "Running MAXSMT.");
 
 		// check sat for hard constraints. If UNSAT for hard-clauses, we are UNSAT, for unknown we are lost as well.
-		Answer ans = runBackends();
+		Answer ans = mBackend.check();
 		SMTRAT_LOG_DEBUG("smtrat.maxsmt", "Checking satisfiability of hard clauses... Got " << ans);
 		if (ans != Answer::SAT) return ans;
 
@@ -136,14 +138,15 @@ namespace smtrat
 			// add the clause v blockingVar to backend
 			FormulaT clauseWithBlockingVar(carl::FormulaType::OR, FormulaT(blockingVar), clause);
 			extendedClauses[clauseWithBlockingVar] = clause;
-			addSubformulaToPassedFormula(clauseWithBlockingVar, clause);
+			mBackend.add(clauseWithBlockingVar);
+			// addSubformulaToPassedFormula(clauseWithBlockingVar, clause);
 
 			// we may not add or remove from softclauses, hence we save a intermediate result which new soft clauses to add
 			newSoftClauses.push_back(clauseWithBlockingVar);
 
 			// enable the clause related to blocking var
 			assignments[blockingVar] = !FormulaT(blockingVar);
-			formulaPositionMap[assignments[blockingVar]] = addSubformulaToPassedFormula(assignments[blockingVar]).first; 
+			formulaPositionMap[assignments[blockingVar]] = addToLocalBackend(assignments[blockingVar]); 
 		}
 
 		for (FormulaT& f : newSoftClauses) {
@@ -156,18 +159,12 @@ namespace smtrat
 			std::vector<carl::Variable> relaxationVars;
 
 			// try to solve
-			Answer ans = runBackends();
+			//Answer ans = runBackends();
+			Answer ans = mBackend.check();
 			SMTRAT_LOG_DEBUG("smtrat.maxsmt.fumalik", "Checked satisfiability of current soft/hardclause mixture got... " << ans);
 			if (ans == Answer::SAT) return gatherSatisfiedSoftClauses();
 
-			// We extract directly from the backend because newly added formulas get deleted from the infeasible subset!
-			// For now, assume we have only one backend, otherwise we have to aggregate from all backends
-			const std::vector<FormulaSetT> infeasibleSubsets = mUsedBackends[0]->infeasibleSubsets();
-			SMTRAT_LOG_DEBUG("smtrat.maxsmt.fumalik", "Got infeasible subsets " << infeasibleSubsets);
-
-			assert(infeasibleSubsets.size() != 0 && "We need at least one infeasible subset.");
-			for (auto it : infeasibleSubsets.back()) {
-				assert(infeasibleSubsets.back() != infeasibleSubsets[infeasibleSubsets.size() - 2] && "infeasibleSubsets must not become a fixpoint.");
+			for (auto it : getUnsatCore()) {
 
 				if (!isSoft(it)) continue; // hard clauses are ignored here since we can not "relax".
 
@@ -184,19 +181,22 @@ namespace smtrat
 				assignments[blockingRelaxationVar] = !FormulaT(blockingRelaxationVar);
 
 				SMTRAT_LOG_DEBUG("smtrat.maxsat.fumalik", "adding clause to backend: " << replacementClause);
-				addSubformulaToPassedFormula(replacementClause); // add new relaxed clause 
-				formulaPositionMap[assignments[blockingRelaxationVar]] = addSubformulaToPassedFormula(assignments[blockingRelaxationVar]).first;
+				// addSubformulaToPassedFormula(replacementClause); // add new relaxed clause 
+				mBackend.add(replacementClause);
+				formulaPositionMap[assignments[blockingRelaxationVar]] = addToLocalBackend(assignments[blockingRelaxationVar]);
 
 				// disable original clause
 				carl::Variable prevBlockingVar = blockingVars[extendedClauses[it]];
 				const auto& prevAssignment = assignments.find(prevBlockingVar);
 				assert(prevAssignment != assignments.end() && "Could not find an assignment which we must have made before.");
 
-				eraseSubformulaFromPassedFormula(formulaPositionMap[prevAssignment->second]); // TODO is there a better way to pass assumptions?
+				//eraseSubformulaFromPassedFormula(formulaPositionMap[prevAssignment->second]); // TODO is there a better way to pass assumptions?
+				mBackend.remove(formulaPositionMap[prevAssignment->second]);
 				assignments.erase(prevAssignment);
 
 				SMTRAT_LOG_DEBUG("smtrat.maxsat.fumalik", "adding clause to backend: " << FormulaT(prevBlockingVar));
-				addSubformulaToPassedFormula(FormulaT(prevBlockingVar)); // actually disabling the previous clause by enabling it's blocking var
+				mBackend.add(FormulaT(prevBlockingVar));
+				//addSubformulaToPassedFormula(FormulaT(prevBlockingVar)); // actually disabling the previous clause by enabling it's blocking var
 				
 			}
 
@@ -207,11 +207,12 @@ namespace smtrat
 			
 			// \sum r \ in relaxationVars : r <= 1
 			FormulaT pbEncoding = FormulaT(ConstraintT(relaxationPoly - Rational(1),carl::Relation::LEQ));
-			addSubformulaToPassedFormula(pbEncoding); // translate/solve this in backend!
+			mBackend.add(pbEncoding);
+			// addSubformulaToPassedFormula(pbEncoding); // translate/solve this in backend!
 			SMTRAT_LOG_DEBUG("smtrat.maxsmt.fumalik", "Adding cardinality constraint to solver: " << pbEncoding);
 		}
 
-		return gatherSatisfiedSoftClauses(); // TODO
+		return gatherSatisfiedSoftClauses();
 	}
 
 	template<class Settings>
@@ -231,7 +232,8 @@ namespace smtrat
 		std::vector<carl::Variable> relaxationVars;
 		for (const auto& clause : softclauses) {
 			carl::Variable relaxationVar = carl::freshBooleanVariable();
-			addSubformulaToPassedFormula(FormulaT(carl::FormulaType::OR, clause, FormulaT(relaxationVar)));
+			mBackend.add(FormulaT(carl::FormulaType::OR, clause, FormulaT(relaxationVar)));
+			//addSubformulaToPassedFormula(FormulaT(carl::FormulaType::OR, clause, FormulaT(relaxationVar)));
 
 			relaxationVars.push_back(relaxationVar);
 		}
@@ -241,9 +243,9 @@ namespace smtrat
 			relaxationPoly = relaxationPoly + var;
 		}
 
-		// initially all must constraints must be enabled
+		// initially all constraints must be enabled
 		ConstraintT initialRelaxationConstraint(relaxationPoly - Rational(0),carl::Relation::LEQ);
-		ModuleInput::iterator previousRelaxationConstraint = addSubformulaToPassedFormula(FormulaT(initialRelaxationConstraint)).first;
+		ModuleInput::iterator previousRelaxationConstraint = addToLocalBackend(FormulaT(initialRelaxationConstraint));
 
 		for (unsigned i = 1; i < softclauses.size(); i++) {
 			// check sat for max i disables clauses
@@ -252,10 +254,11 @@ namespace smtrat
 			Answer ans = runBackends();
 			if (ans == Answer::SAT) return gatherSatisfiedSoftClauses();
 
-			eraseSubformulaFromPassedFormula(previousRelaxationConstraint);
+			mBackend.remove(previousRelaxationConstraint);
+			// eraseSubformulaFromPassedFormula(previousRelaxationConstraint);
 			
 			ConstraintT relaxationConstraint(relaxationPoly - Rational(i),carl::Relation::LEQ);
-			previousRelaxationConstraint = addSubformulaToPassedFormula(FormulaT(relaxationConstraint)).first;
+			previousRelaxationConstraint = addToLocalBackend(FormulaT(relaxationConstraint));
 		}
 
 		// from here, none of the soft clauses can be satisfied
@@ -269,7 +272,8 @@ namespace smtrat
 		// initialise data structures
 		for (const auto& clause : softclauses) {
 			// add clause backend and remember where we put it so we can easily remove it later
-			ModuleInput::iterator it = addSubformulaToPassedFormula(clause).first;
+			// ModuleInput::iterator it = addSubformulaToPassedFormula(clause).first;
+			ModuleInput::iterator it = addToLocalBackend(clause);
 			formulaPositionMap[clause] = it;
 		}
 
@@ -285,16 +289,14 @@ namespace smtrat
 
 			ConstraintT relaxationConstraint(relaxationPoly - Rational(i),carl::Relation::LEQ);
 			SMTRAT_LOG_DEBUG("smtrat.maxsmt.msu3", FormulaT(relaxationConstraint));
-			ModuleInput::iterator relaxationFormula = addSubformulaToPassedFormula(FormulaT(relaxationConstraint)).first;
+			ModuleInput::iterator relaxationFormula = addToLocalBackend(FormulaT(relaxationConstraint));
 
 			SMTRAT_LOG_DEBUG("smtrat.maxsmt.msu3", "Checking SAT for up to " << i << " disabled constraints.");
-			Answer ans = runBackends();
+			Answer ans = mBackend.check();
 			if (ans == Answer::SAT) return gatherSatisfiedSoftClauses();
 
 			// We extract directly from the backend because newly added formulas get deleted from the infeasible subset!
-			const std::vector<FormulaSetT> infeasibleSubsets = mUsedBackends[0]->infeasibleSubsets();
-			assert(infeasibleSubsets.size() != 0 && "We need at least one infeasible subset.");
-			FormulaSetT unsatisfiableCore = infeasibleSubsets.back();
+			FormulasT unsatisfiableCore = getUnsatCore();
 
 			SMTRAT_LOG_DEBUG("smtrat.maxsmt.msu3", "Got unsat core " << unsatisfiableCore);
 
@@ -306,14 +308,14 @@ namespace smtrat
 				if (alreadyRelaxed) continue;
 
 				carl::Variable relaxationVar = carl::freshBooleanVariable();
-				eraseSubformulaFromPassedFormula(formulaPositionMap[f]); // first erase non-relaxed clause
-				addSubformulaToPassedFormula(FormulaT(carl::FormulaType::OR, f, FormulaT(relaxationVar))); // ...then add relaxed clause
+				mBackend.remove(formulaPositionMap[f]); // first erase non-relaxed clause
+				addToLocalBackend(FormulaT(carl::FormulaType::OR, f, FormulaT(relaxationVar))); // ...then add relaxed clause
 
 				relaxedConstraints.push_back(f);
 				relaxationVars.push_back(relaxationVar);
 			}
 
-			eraseSubformulaFromPassedFormula(relaxationFormula); // remove cardinality constraint again
+			mBackend.remove(relaxationFormula); // remove cardinality constraint again
 
 		}
 
@@ -327,7 +329,7 @@ namespace smtrat
 		std::vector<FormulaT> result;
 
 		for (const auto& clause : mpManager->weightedFormulas()) {
-			auto res = carl::model::substitute(FormulaT(clause.first), backendsModel());
+			auto res = carl::model::substitute(FormulaT(clause.first), mBackend.model());
 			if (res.isTrue()) {
 				result.push_back(clause.first);
 			}
@@ -342,8 +344,28 @@ namespace smtrat
 		mModel.clear();
 		if( solverState() == Answer::SAT )
 		{
-			getBackendsModel();
+			mModel = mBackend.model();
 		}
+	}
+
+	template<class Settings>
+	ModuleInput::iterator MaxSMTModule<Settings>::addToLocalBackend(const FormulaT& formula)
+	{
+		mBackend.add(formula);
+		for (auto it = mBackend.formulaEnd(); it != mBackend.formulaBegin(); --it) {
+			if (it->formula() == formula) {
+				return it;
+			}
+		}
+
+		assert(false && "Formula was not added correctly to backend. Expected to find formula.");
+		return mBackend.formulaEnd();
+	}
+
+	template<class Settings>
+	FormulasT MaxSMTModule<Settings>::getUnsatCore()
+	{
+		return computeUnsatCore(mBackend, UnsatCoreStrategy::ModelExclusion);
 	}
 }
 

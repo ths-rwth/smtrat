@@ -11,29 +11,20 @@
 
 namespace smtrat
 {
-    /**
-     * Strategy description.
-     *
-     * @author
-     * @since
-     * @version
-     *
-     */
-    class MAXSATStrategy:
-        public Manager
+
+    class MAXSATStrategy: public Manager
     {
         public:
             MAXSATStrategy(): Manager()
             {
-                setStrategy(
-                {
-                        addBackend<MaxSMTModule<MaxSMTSettingsMSU3>>(
-                        {
-                            addBackend<PBPPModule<PBPPSettings1>>(
-                                addBackend<SATModule<SATSettings1>>()
-                            )
-                        })
+                setStrategy({
+                    addBackend<MaxSMTModule<MaxSMTSettings1>>(
+                        // The backend is defined in the settings!
+                        // addBackend<PBPPModule<PBPPSettings1>>(
+                        //     addBackend<SATModule<SATSettings1>>()
+                        // )
+                    ),
                 });
             }
     };
-} // namespace smtrat
+}

@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <smtrat-strategies/strategies/MAXSATBackendStrategy.h>
+
 namespace smtrat
 {
 	enum MAXSATAlgorithm{
@@ -20,34 +22,36 @@ namespace smtrat
 	struct MaxSMTSettings1
 	{
 		/// Name of the Module
-		static constexpr auto moduleName = "MaxSMTModule<MaxSMTSettingsMSU3>";
+		static constexpr auto moduleName = "MaxSMTModule<MaxSMTSettings1>";
 
 
 		static const MAXSATAlgorithm ALGORITHM = MAXSATAlgorithm::MSU3;
+
+		using Backend = MaxSATBackendStrategy;
 	};
 
-	struct MaxSMTSettingsFuMalikIncremental
+	struct MaxSMTSettingsFuMalikIncrementalSAT : public MaxSMTSettings1
 	{
 		/// Name of the Module
-		static constexpr auto moduleName = "MaxSMTModule<MaxSMTSettingsFuMalikIncremental>";
+		static constexpr auto moduleName = "MaxSMTModule<MaxSMTSettingsFuMalikIncrementalSAT>";
 
 
 		static const MAXSATAlgorithm ALGORITHM = MAXSATAlgorithm::FU_MALIK_INCREMENTAL;
 	};
 
-	struct MaxSMTSettingsLinearSearch
+	struct MaxSMTSettingsLinearSearchSAT : public MaxSMTSettings1
 	{
 		/// Name of the Module
-		static constexpr auto moduleName = "MaxSMTModule<MaxSMTSettingsLinearSearch>";
+		static constexpr auto moduleName = "MaxSMTModule<MaxSMTSettingsLinearSearchSAT>";
 
 
 		static const MAXSATAlgorithm ALGORITHM = MAXSATAlgorithm::LINEAR_SEARCH;
 	};
 
-	struct MaxSMTSettingsMSU3
+	struct MaxSMTSettingsMSU3SAT : public MaxSMTSettings1
 	{
 		/// Name of the Module
-		static constexpr auto moduleName = "MaxSMTModule<MaxSMTSettingsMSU3>";
+		static constexpr auto moduleName = "MaxSMTModule<MaxSMTSettingsMSU3SAT>";
 
 
 		static const MAXSATAlgorithm ALGORITHM = MAXSATAlgorithm::MSU3;
