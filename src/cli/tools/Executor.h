@@ -33,6 +33,7 @@ public:
 	}
 
 	void addSoft(const smtrat::FormulaT& f, smtrat::Rational weight) {
+		this->solver.inform(f);
 		// formula is not part of the solver yet. Neither hard nor soft-typed
 		if (solver.weightedFormulas().find(f) == solver.weightedFormulas().end() && solver.formula().find(f) == solver.formula().end()) {
 			solver.weightedFormulas()[f] = weight;
