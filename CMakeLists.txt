@@ -249,3 +249,5 @@ set( CPACK_SOURCE_IGNORE_FILES ${CPACK_SOURCE_IGNORE_FILES};opensmt-1\\\\.0.1_sm
 include(CPack)
 
 include(prepare-ci)
+include(dependency-graph)
+
