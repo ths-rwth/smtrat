@@ -29,24 +29,24 @@ public:
 		for (const auto& form: s.formula()) {
 			FormulaT f = form.formula();
 			auto it = mFormulas.emplace(carl::freshBooleanVariable(), std::make_pair(f, id));
-			phis.emplace_back(f.negated());
+			phis.emplace_back(FormulaT(it.first->first));
 			mSolver.add(FormulaT(carl::FormulaType::IFF, {FormulaT(it.first->first), f}));
 			mSets.emplace_back();
 			SMTRAT_LOG_DEBUG("smtrat.unsatcore", it.first->first << " <-> " << f << " with id " << id);
 			id++;
 		}
+		// At least one clause should be active.
 		mSolver.add(FormulaT(carl::FormulaType::OR, std::move(phis)));
 	}
 	void processAssignment() {
 		const auto& m = mSolver.model();
 		FormulasT subs;
-		SMTRAT_LOG_TRACE("smtrat.unsatcore", "Got assignment " << m);
+		SMTRAT_LOG_DEBUG("smtrat.unsatcore", "Got assignment " << m);
 		for (const auto& f: mFormulas) {
 			const auto& val = m.evaluated(f.first);
 			assert(val.isBool());
-			if (val.asBool()) {
-				subs.emplace_back(carl::FormulaType::NOT, FormulaT(f.first));
-			} else {
+			if (!val.asBool()) {
+				subs.emplace_back(FormulaT(f.first));
 				mSets[f.second.second].set(mAssignments, true);
 			}
 		}
@@ -74,7 +74,7 @@ public:
 		compute();
 		carl::Covering<carl::Variable> cover(mSets.size());
 		for (const auto& f: mFormulas) {
-			SMTRAT_LOG_TRACE("smtrat.unsatcore", "Adding to cover: " << f.first << " -> " << mSets[f.second.second]);
+			SMTRAT_LOG_DEBUG("smtrat.unsatcore", "Adding to cover: " << f.first << " -> " << mSets[f.second.second]);
 			cover.add(f.first, mSets[f.second.second]);
 		}
 		assert(cover.conflicts());
