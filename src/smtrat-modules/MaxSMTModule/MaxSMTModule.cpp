@@ -251,7 +251,7 @@ namespace smtrat
 			// check sat for max i disables clauses
 			SMTRAT_LOG_DEBUG("smtrat.maxsmt.linear", "Trying to check SAT for " << i - 1 << " disabled soft constraints...");
 
-			Answer ans = runBackends();
+			Answer ans = mBackend.check();
 			if (ans == Answer::SAT) return gatherSatisfiedSoftClauses();
 
 			mBackend.remove(previousRelaxationConstraint);

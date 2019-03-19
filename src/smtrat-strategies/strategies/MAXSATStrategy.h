@@ -18,7 +18,7 @@ namespace smtrat
             MAXSATStrategy(): Manager()
             {
                 setStrategy({
-                    addBackend<MaxSMTModule<MaxSMTSettings1>>(
+                    addBackend<MaxSMTModule<MaxSMTSettingsFuMalikIncrementalSAT>>(
                         // The backend is defined in the settings!
                         // addBackend<PBPPModule<PBPPSettings1>>(
                         //     addBackend<SATModule<SATSettings1>>()
