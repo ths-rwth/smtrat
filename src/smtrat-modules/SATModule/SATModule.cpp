@@ -675,8 +675,11 @@ namespace smtrat
             {
                 for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
                 {
-                    ModelValue assignment = assigns[bVar->second] == l_True;
-                    mModel.insert(std::make_pair(bVar->first, assignment));
+					auto v = static_cast<std::size_t>(bVar->second);
+					if (!mTseitinVariable.test(v)) {
+						ModelValue assignment = assigns[bVar->second] == l_True;
+						mModel.insert(std::make_pair(bVar->first, assignment));
+					}
                 }
                 Module::getBackendsModel();
                 if( Settings::check_if_all_clauses_are_satisfied && trail.size() < assigns.size() )
@@ -1048,6 +1051,7 @@ namespace smtrat
                 vec<Lit> lits;
                 FormulaT tsVar = carl::FormulaPool<Poly>::getInstance().createTseitinVar( _formula );
                 Lit tsLit = createLiteral( tsVar, _original, everythingDecisionRelevant || _depth <= 1 );
+                mTseitinVariable.set(static_cast<std::size_t>(var(tsLit)));
                 if( _type == NORMAL_CLAUSE )
                     cnfInfoIter->second.mLiteral = tsLit;
                 switch( _formula.getType() )

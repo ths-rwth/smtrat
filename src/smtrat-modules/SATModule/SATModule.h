@@ -584,6 +584,8 @@ namespace smtrat
             TseitinVarShadows mTseitinVarShadows;
             ///
             carl::FastMap<int, FormulaT> mTseitinVarFormulaMap;
+			/// Stores whether a given variable is a tseitin variable.
+			carl::Bitset mTseitinVariable;
             /// Stores whether a given tseitin variable was already added to the assumptions.
 			carl::Bitset mAssumedTseitinVariable;
             /// Stores whether a given tseitin variable was not yet added to the assumptions, but represents a top-level clause.
