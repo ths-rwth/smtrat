@@ -2,6 +2,7 @@
 
 #include <carl/util/Bitset.h>
 #include <carl/util/Covering.h>
+#include <carl-covering/carl-covering.h>
 #include <smtrat-common/smtrat-common.h>
 
 namespace smtrat {
@@ -19,8 +20,8 @@ template<typename Solver>
 class UnsatCore<Solver, UnsatCoreStrategy::ModelExclusion> {
 private:
 	Solver mSolver;
-	std::map<carl::Variable, std::pair<FormulaT,std::size_t>> mFormulas;
-	std::vector<carl::Bitset> mSets;
+	carl::covering::TypedSetCover<FormulaT> mSetCover;
+	std::map<carl::Variable, FormulaT> mFormulas;
 	std::size_t mAssignments = 0;
 public:
 	UnsatCore(const Solver& s) {
@@ -28,10 +29,9 @@ public:
 		std::size_t id = 0;
 		for (const auto& form: s.formula()) {
 			FormulaT f = form.formula();
-			auto it = mFormulas.emplace(carl::freshBooleanVariable(), std::make_pair(f, id));
+			auto it = mFormulas.emplace(carl::freshBooleanVariable(), f);
 			phis.emplace_back(FormulaT(it.first->first));
 			mSolver.add(FormulaT(carl::FormulaType::IFF, {FormulaT(it.first->first), f}));
-			mSets.emplace_back();
 			SMTRAT_LOG_DEBUG("smtrat.unsatcore", it.first->first << " <-> " << f << " with id " << id);
 			id++;
 		}
@@ -43,11 +43,12 @@ public:
 		FormulasT subs;
 		SMTRAT_LOG_DEBUG("smtrat.unsatcore", "Got assignment " << m);
 		for (const auto& f: mFormulas) {
+			SMTRAT_LOG_DEBUG("smtrat.unsatcore", "Processing " << f.first);
 			const auto& val = m.evaluated(f.first);
 			assert(val.isBool());
 			if (!val.asBool()) {
 				subs.emplace_back(FormulaT(f.first));
-				mSets[f.second.second].set(mAssignments, true);
+				mSetCover.set(f.second, mAssignments);
 			}
 		}
 		SMTRAT_LOG_TRACE("smtrat.unsatcore", "Excluding assignment with " << subs);
@@ -72,20 +73,15 @@ public:
 	}
 	FormulasT computeCore() {
 		compute();
-		carl::Covering<carl::Variable> cover(mSets.size());
-		for (const auto& f: mFormulas) {
-			SMTRAT_LOG_DEBUG("smtrat.unsatcore", "Adding to cover: " << f.first << " -> " << mSets[f.second.second]);
-			cover.add(f.first, mSets[f.second.second]);
-		}
-		assert(cover.conflicts());
-		std::vector<carl::Variable> coreVars;
-		cover.buildConflictingCore(coreVars);
-		FormulasT core;
-		for (const auto& v: coreVars) {
-			SMTRAT_LOG_DEBUG("smtrat.unsatcore", "In core: " << v << " / " << mFormulas[v].first);
-			core.emplace_back(mFormulas[v].first);
-		}
-		return core;
+		auto covering = mSetCover.get_cover([](auto& sc) {
+			carl::Bitset res;
+			res |= carl::covering::heuristic::remove_duplicates(sc);
+			res |= carl::covering::heuristic::select_essential(sc);
+			res |= carl::covering::heuristic::greedy(sc);
+			return res;
+		});
+		SMTRAT_LOG_DEBUG("smtrat.unsatcore", "Greedy: " << covering);
+		return covering;
 	}
 };
 
