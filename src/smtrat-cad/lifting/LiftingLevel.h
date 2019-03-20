@@ -3,6 +3,9 @@
 #include "../common.h"
 #include "CADInterval.h"
 
+#include <carl/interval/sampling.h>
+#include <carl/interval/Interval.h>
+
 #include "Sample.h"
 
 namespace smtrat {
@@ -29,7 +32,7 @@ namespace cad {
 		}
 
 		/** adds an unsat interval to the internal data structures of the level */
-		void addUnsatInterval(Interval& inter) {
+		void addUnsatInterval(CADInterval inter) {
 			intervals.push_back(inter);
 
 			// -inf or +inf are special cases
@@ -41,50 +44,69 @@ namespace cad {
 			{
 				if(inter.getLowerBoundType() == CADBoundType::INF) {
 					levelintervalminf = true;
-					levelintervals.insert(inter.upper());
+					levelintervals.insert(inter.getUpper());
 				}
 				else {
 					levelintervalpinf = true;
-					levelintervals.insert(inter.lower());
+					levelintervals.insert(inter.getLower());
 				}
 			}
 			else {
-				levelintervals.insert(inter.lower());
-				levelintervals.insert(inter.upper());
+				levelintervals.insert(inter.getLower());
+				levelintervals.insert(inter.getUpper());
 			}
 		}
 
-		// @note check whether an unsat cover has been found before calling this
-		Sample chooseSample() {
+		/** get the next Sample to check
+		 * @note check whether an unsat cover has been found before calling this
+		 */
+		Sample chooseSample() {		
+			// if -inf is not a bound find sample in (-inf, first bound)
+			if(!levelintervalminf) {
+				RAN upper = levelinterval.begin();
+				//@todo find sample between -inf and this bound
+			}
+
+			auto boundtuple = getLowestUpperBound();
+			assert(std::get<0>(boundtuple)); //@todo handle this instead
+			RAN bound = std::get<1>(boundtuple);
+
+			// check whether the nex unexplored interval is a point interval
+			for(auto inter: intervals) {
+				if(bound = inter.getLower() && inter.getLowerBoundType() == CADBoundType::OPEN 
+					&& !isInUnsatInterval(bound)) {
+					return Sample sample(bound); //@todo is this a root in this case? if so, set isRoot of sample
+				}
+			}
+
+			// case the next lowest upper bound is the last recorded bound
+			if(std::get<1>(boundtuple) == levelintervals.back()) {
+				//@todo find sample in (bound, +inf)
+			}
+
+			// go to the next bound
+			//@todo assuming that set is ordered. check that
 			std::set<RAN>::iterator it = levelintervals.begin();
-			// go to the next bound (may equal last sample)
-			while((*it) > curSample.value()) {
+			while((*it) < std::get<1>(boundtuple)) {
 				it++;
 			}
-
-			//@todo special cases for -inf, +inf
-			/*
-			if(it == levelintervals.begin() && it.getLowerBoundType == BoundType::INFTY) {
-				it++;
-				if(it == levelintervals.end() && it.getUpperBoundType == BoundType::INFTY) {
-					//@todo case levelintervals = {-inf, +inf}: get some random value in between
+			// determine whether next bound is closed, do not break in case bound appears > once.
+			bool boundopen = true;
+			for(auto bound : intervals) {
+				if(bound.getLower() == (*it)) {
+					if(bound.getLowerBoundType() == CADBoundType::CLOSED) {
+						boundopen = false;
+					}
 				}
 			}
-			else {
-
-			} */
-
-			//make sample here and check whether it is in some interval (isInUnsatInterval)
-			// first sample before first bound (if bound is not minf), 
-			//then on & between bounds, last one after last bound if not pinf 
-		
-			for(auto interval : intervals) {
-				//@todo cases: minf, lower, equal, higher, pinf
-				//
-			}
+			// we got the bounds and their types, find sample in between
+			computinterval = carl::Interval<RAN>(std::get<1>(boundtuple),(*it)); //@todo bound types?
+			RAN samplenr = sample(computinterval, false); 
+			//@todo the false leads to bounds not included, so we prefer choosing samples that are not bounds. is that important?
+			return Sample sample(samplenr);
 		}
 
-		// check whether the given value is in the list of unsat intervals
+		/** check whether the given value is in the list of unsat intervals */
 		bool isInUnsatInterval(RAN val) {
 			for(auto inter : intervals) {
 				if(inter.contains(val)) {
@@ -97,8 +119,12 @@ namespace cad {
 	public:
 
 		LiftingLevel(){
+			intervals = std::vector<CADInterval>();
+			levelintervals = set<RAN>();
+			levelintervalminf = false;
+			levelintervalpinf = false;
+
 			computeUnsatIntervals();
-			//@todo: init intervals, levelintervals 
 		}
 
 		void reset(std::vector<carl::Variable>&& vars) {
@@ -138,13 +164,47 @@ namespace cad {
 				return true;
 			}
 			
+			// check whether any unexplored interval remains
+			auto boundtuple = getLowestUpperBound();
+			if (!std::get<0>(boundtuple)) {
+				return true;
+			}
+			return false;
+		}
+
+		/** 
+		 * @brief Gives the lowest bound followed by an unexplored interval
+		 * 
+		 * Goes through the unsat intervals starting from -inf,
+		 * if -inf is not a bound yet it is determined to be the first "upper" bound 
+		 * to encode that there is an open interval smaller than any known bound.
+		 * Else the first bound not followed by another unsat interval is returned.
+		 * 
+		 * @returns bool (first value of tuple) true iff a bound was found
+		 * @returns RAN (second value of tuple) bound iff one was found, 0 otherwise
+		 * @returns bool (third value of tuple) true iff the bound is open, otherwise it is closed
+		 * @returns bool (fourth value of tuple) true iff -inf is is not a bound yet
+		 * 
+		 * @note The output (true, 0, false, true) stands for an unexplored
+		 * interval before the first recorded bound
+		 */
+		std::tuple<bool, RAN, bool, bool> getLowestUpperBound() {
+			// if (-inf, +inf) is included, return false
+			if(isSingletonCover()) {
+				return std::make_tuple(false, (RAN) 0, false, false);
+			}
+			// if -inf is no bound, there is some unexplored interval before the first recorded bound
+			if(levelintervalminf == false) {
+				return std::make_tuple(true, (RAN) 0, false, true);
+			}
+
 			// get an interval with -inf bound, store its higher bound
-			int highestbound;
+			RAN highestbound;
 			bool boundopen;
 			for(auto inter : intervals) {
 				if(inter.getLowerBoundType() == CADBoundType::INF) {
 					// note: the higher bound cannot be +inf as there is no singleton cover
-					highestbound = inter.upper();
+					highestbound = inter.getUpper();
 					boundopen = (inter.getUpperBoundType() == CADBoundType::OPEN) ? true : false;
 					break;
 				}
@@ -154,30 +214,36 @@ namespace cad {
 			while(!stop) {
 				for(auto inter : intervals) {
 					bool updated = false;
+					// if the upper bound is the highest bound but is included only update bound type
+					if(highestbound == inter.getUpper() && inter.getUpperBoundType() == CADBoundType::CLOSED) {
+						openbound = false;
+					}
 					// update highest bound if the upper bound is not equal to the current highest bound,
-					if(!(highestbound == inter.upper() && 
+					else if(!(highestbound == inter.getUpper() && 
 						((boundopen && inter.getUpperBoundType() == CADBoundType::OPEN) || 
 						 (!boundopen && inter.getUpperBoundType() == CADBoundType::CLOSED)))) {
 						// and is contained in the interval or is bordered by the lower bound of the interval
 						if(inter.contains(highestbound) ||
-							(highestbound == inter.lower && 
+							(highestbound == inter.getLower() && 
 							((boundopen && inter.getLowerBoundType() == CADBoundType::CLOSED) || 
 								(!boundopen && inter.getLowerBoundType() == CADBoundType::OPEN)))) {
 							if(inter.getUpperBoundType() == CADBoundType::INF) {
-								return true;
+								// an unset cover was found
+								return std::make_tuple(false, (RAN) 0, false, false);
 							}
-							highestbound = inter.upper();
+							// update to next higher bound
+							highestbound = inter.getUpper();
 							boundopen = (inter.getUpperBoundType() == CADBoundType::OPEN) ? true : false;
 							updated = true;
 						}
 					}
 				}
-				// if the highest bound could not be updated (& was not +inf), no cover was found
+				// if the highest bound could not be updated (& was not +inf), break
 				if(!updated) {
 					stop = true;
 				}
 			}
-			return false;
+			return std::make_tuple(true, highestbound, boundopen, false);
 		}
 
 	};

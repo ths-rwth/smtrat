@@ -39,7 +39,7 @@ namespace cad {
         }
 
         /** gets lower bound */
-        auto lower() {
+        auto getLower() {
             return lower;
         }
 
@@ -49,7 +49,7 @@ namespace cad {
         }
 
         /** gets upper bound */
-        auto upper() {
+        auto getUpper() {
             return upper;
         }
 
@@ -72,7 +72,7 @@ namespace cad {
 
         /** checks whether the interval is (-inf, +inf) */
         bool isInfinite() {
-            if(lowerboundtype == INF && upperboundtype == INF) {
+            if(lowertype == INF && uppertype == INF) {
                 return true;
             }
             return false;
@@ -80,8 +80,8 @@ namespace cad {
 
         /** checks whether one of the bounds is infinite */
         bool isHalfBounded() {
-            if((lowerboundtype == INF && !upperboundtype == INF) || 
-                (!lowerboundtype == INF && upperboundtype == INF)) {
+            if((lowertype == INF && !uppertype == INF) || 
+                (!lowertype == INF && uppertype == INF)) {
                 return true;
             }
             return false;
