@@ -10,12 +10,20 @@ function keep_waiting() {
     sleep 60
   done
 }
+function start_keep_waiting() {
+  keep_waiting &
+  disown
+  keep_waiting_id=$!
+}
+function stop_keep_waiting() {
+  kill $keep_waiting_id
+}
 
 if [[ ${TASK} == "dependencies" ]]; then
 	
-	keep_waiting &
+	start_keep_waiting
 	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
-	kill $!
+	stop_keep_waiting
 	
 elif [[ ${TASK} == "doxygen" ]]; then
 	
@@ -53,9 +61,9 @@ elif [[ ${TASK} == "tidy" ]]; then
 	/usr/bin/time make tidy || return 1
 
 else
-	keep_waiting &
+	start_keep_waiting
 	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
-	kill $!
+	stop_keep_waiting
 	/usr/bin/time make -j1 || return 1
 fi
 

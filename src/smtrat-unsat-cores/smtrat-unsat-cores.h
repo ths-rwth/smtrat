@@ -9,6 +9,7 @@ namespace smtrat {
 
 template<typename Solver>
 FormulasT computeUnsatCore(const Solver& solver, UnsatCoreStrategy strategy) {
+	SMTRAT_LOG_INFO("smtrat.unsatcore", "Computing UNSAT core.");
 	switch (strategy) {
 		case UnsatCoreStrategy::Counting:
 		case UnsatCoreStrategy::ModelExclusion:

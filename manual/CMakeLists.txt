@@ -78,7 +78,7 @@ if( MANUAL_PDFLATEX )
 		DEPENDS manual-bib
 	)
 	add_custom_target( manual
-		COMMAND mv ${PDF_OUTPUT} ${CMAKE_CURRENT_BINARY_DIR}/manual_${PROJECT_NAME}-${PROJECT_VERSION}.pdf
+		COMMAND mv ${PDF_OUTPUT} ${CMAKE_CURRENT_BINARY_DIR}/manual_${PROJECT_NAME}-${PROJECT_VERSION_LIB}.pdf
 		DEPENDS manual-pdf-third
 	)
 	add_custom_target( manual-bib-cleanup
