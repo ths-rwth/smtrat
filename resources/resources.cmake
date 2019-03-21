@@ -42,18 +42,5 @@ add_custom_target(carl-required-version
 	VERBATIM
 )
 
-ExternalProject_Add(
-    Immer-EP
-        GIT_REPOSITORY "https://github.com/arximboldi/immer.git"
-        DOWNLOAD_NO_PROGRESS 1
-        UPDATE_COMMAND "" # due to https://gitlab.kitware.com/cmake/cmake/issues/17229
-        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
-	    BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} immer-shared immer-static
-        LOG_INSTALL 1
-)
-
-ExternalProject_Get_Property(Immer-EP INSTALL_DIR)
-
-add_imported_library(Immer SHARED "" "${INSTALL_DIR}/include")
-add_dependencies(resources Immer)
+include(resources/immer.cmake)
 
