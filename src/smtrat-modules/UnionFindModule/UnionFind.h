@@ -9,7 +9,19 @@
 
 #pragma once
 
+#if defined(__GNUG__)
+    #define ENABLE_WARNINGS _Pragma("GCC diagnostic push")
+    #define DISABLE_WARNINGS _Pragma("GCC diagnostic pop")
+#endif
+
+#if defined(__clang__)
+    #define ENABLE_WARNINGS _Pragma("clang diagnostic push")
+    #define DISABLE_WARNINGS _Pragma("clang diagnostic pop")
+#endif
+
+DISABLE_WARNINGS
 #include <immer/vector.hpp>
+ENABLE_WARNINGS
 
 namespace smtrat
 {

@@ -20,6 +20,6 @@ namespace smtrat
          */
         static constexpr bool use_theory_propagation = false;
 
-        static constexpr size_t lemma_length_bound = 2;
+        static constexpr size_t lemma_length_bound = 5;
     };
 }

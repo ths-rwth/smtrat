@@ -181,12 +181,13 @@ namespace smtrat
                     FormulasT eqs;
 
                     for (const auto& [u, v]: path.value()) {
-                        eqs.emplace_back(u, v, false);
+                        eqs.emplace_back(u, v, true);
                     }
 
+                    eqs.emplace_back(ueq);
+
                     using carl::FormulaType;
-                    FormulaT precondition( FormulaType::AND, eqs );
-                    addLemma(FormulaT{ FormulaType::IMPLIES, precondition, FormulaT{ueq} });
+                    addLemma(FormulaT{ FormulaType::OR, eqs });
                 }
             }
         }

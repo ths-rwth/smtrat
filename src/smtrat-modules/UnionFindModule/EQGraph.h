@@ -85,7 +85,7 @@ namespace smtrat
             std::vector<PathEdge> path;
             auto prop = properties();
 
-            int vertex = end;
+            auto vertex = end;
             while (vertex != begin && path.size() < bound) {
                 auto next = predecessors[vertex];
                 assert( next != Graph::null_vertex() );
