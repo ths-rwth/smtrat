@@ -10,4 +10,5 @@ ExternalProject_Get_Property(Immer-EP INSTALL_DIR)
 
 add_imported_library(Immer SHARED "" "${INSTALL_DIR}/include")
 
+add_dependencies(Immer Immer-EP)
 add_dependencies(resources Immer)
