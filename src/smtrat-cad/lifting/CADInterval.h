@@ -4,7 +4,6 @@
 
 namespace smtrat {
 namespace cad {
-	template<typename Settings>
 	class CADInterval {
     public: 
         /** bound types for CAD interval bounds */
@@ -21,8 +20,8 @@ namespace cad {
 	public:
         /** initializes interval as (-inf, +inf) */
 		CADInterval(){
-            lower = 0;
-            upper = 0;
+            lower = (RAN) 0;
+            upper = (RAN) 0;
             lowertype = INF;
             uppertype = INF;
 		}
