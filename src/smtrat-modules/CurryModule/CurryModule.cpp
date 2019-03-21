@@ -22,9 +22,6 @@ namespace smtrat
     template<class Settings>
     CurryModule<Settings>::CurryModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
         Module( _formula, _conditionals, _manager )
-#ifdef SMTRAT_DEVOPTION_Statistics
-        , mStatistics(Settings::moduleName)
-#endif
     {
         const std::string sort_name = "__curry_sort";
         curry_sort = SortManager::getInstance().addSort( sort_name );

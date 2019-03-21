@@ -9,8 +9,7 @@
 
 #pragma once
 
-#include <smtrat-modules/Module.h>
-#include "UnionFindStatistics.h"
+#include <smtrat-solver/Module.h>
 #include "UnionFindSettings.h"
 #include "UnionFind.h"
 #include "EQGraph.h"
@@ -32,9 +31,6 @@ namespace smtrat
     class UnionFindModule : public Module
     {
         private:
-#ifdef SMTRAT_DEVOPTION_Statistics
-            UnionFindStatistics mStatistics;
-#endif
         using History = std::vector<carl::UEquality>;
         History history;
 

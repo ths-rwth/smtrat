@@ -18,9 +18,6 @@ namespace smtrat
     UnionFindModule<Settings>::UnionFindModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
         Module( _formula, _conditionals, _manager )
         , classes(translate)
-#ifdef SMTRAT_DEVOPTION_Statistics
-        , mStatistics(Settings::moduleName)
-#endif
     {
     }
 

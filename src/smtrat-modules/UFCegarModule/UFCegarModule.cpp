@@ -20,9 +20,6 @@ namespace smtrat
     template<class Settings>
     UFCegarModule<Settings>::UFCegarModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
         Module( _formula, _conditionals, _manager )
-#ifdef SMTRAT_DEVOPTION_Statistics
-        , mStatistics(Settings::moduleName)
-#endif
     {
         const std::string sort_name = "_S";
         my_sort = SortManager::getInstance().addSort( sort_name );

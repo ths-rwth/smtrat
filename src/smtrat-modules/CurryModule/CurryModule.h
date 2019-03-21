@@ -9,8 +9,7 @@
 
 #pragma once
 
-#include <smtrat-modules/Module.h>
-#include "CurryStatistics.h"
+#include <smtrat-solver/Module.h>
 #include "CurrySettings.h"
 
 namespace smtrat
@@ -19,9 +18,6 @@ namespace smtrat
     class CurryModule : public Module
     {
         private:
-#ifdef SMTRAT_DEVOPTION_Statistics
-            CurryStatistics mStatistics;
-#endif
             using Sort = carl::Sort;
             using UTerm = carl::UTerm;
             using UVariable = carl::UVariable;

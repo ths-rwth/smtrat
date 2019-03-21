@@ -9,8 +9,7 @@
 
 #pragma once
 
-#include <smtrat-modules/Module.h>
-#include "UFCegarStatistics.h"
+#include <smtrat-solver/Module.h>
 #include "UFCegarSettings.h"
 
 namespace smtrat
@@ -19,9 +18,6 @@ namespace smtrat
     class UFCegarModule : public Module
     {
         private:
-#ifdef SMTRAT_DEVOPTION_Statistics
-            UFCegarStatistics mStatistics;
-#endif
         using Sort = carl::Sort;
         using UTerm = carl::UTerm;
         using UVariable = carl::UVariable;
