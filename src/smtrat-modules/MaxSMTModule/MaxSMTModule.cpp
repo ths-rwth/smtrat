@@ -42,7 +42,6 @@ namespace smtrat
 		// To this point we only expect receiving hard clauses. Soft clauses are saved in the manager.
 		// All hard clauses need to be passed on to the backend since they always have to be satisfied.
 		mBackend.add(_subformula->formula());
-		//addReceivedSubformulaToPassedFormula(_subformula);
 
 		return true;
 	}
@@ -96,9 +95,9 @@ namespace smtrat
 		} else if (Settings::ALGORITHM == MAXSATAlgorithm::LINEAR_SEARCH) {
 			SMTRAT_LOG_INFO("smtrat.maxsmt", "Running Linear Search Algorithm.");
 			satiesfiedSoftClauses = runLinearSearch();
-		} else if (Settings::ALGORITHM == MAXSATAlgorithm::OLL) {
-			SMTRAT_LOG_INFO("smtrat.maxsmt", "Running OLL Algorithm.");
-			satiesfiedSoftClauses = runOLL();
+		//} else if (Settings::ALGORITHM == MAXSATAlgorithm::OLL) {
+		//	SMTRAT_LOG_INFO("smtrat.maxsmt", "Running OLL Algorithm.");
+		//	satiesfiedSoftClauses = runOLL();
 		} else if (Settings::ALGORITHM == MAXSATAlgorithm::MSU3) {
 			SMTRAT_LOG_INFO("smtrat.maxsmt", "Running MSU3 Algorithm.");
 			satiesfiedSoftClauses = runMSU3();
@@ -107,7 +106,7 @@ namespace smtrat
 			assert(false);
 		}
 
-		SMTRAT_LOG_INFO("smtrat.maxsmt", "Found maximal set of satisfied soft clauses: " << satiesfiedSoftClauses);
+		SMTRAT_LOG_ERROR("smtrat.maxsmt", "Found maximal set of satisfied soft clauses: " << satiesfiedSoftClauses);
 
 		// at this point we can be sure to be SAT. Worst case is that all soft-constraints are false.
 		return Answer::SAT;
@@ -139,7 +138,6 @@ namespace smtrat
 			FormulaT clauseWithBlockingVar(carl::FormulaType::OR, FormulaT(blockingVar), clause);
 			extendedClauses[clauseWithBlockingVar] = clause;
 			mBackend.add(clauseWithBlockingVar);
-			// addSubformulaToPassedFormula(clauseWithBlockingVar, clause);
 
 			// we may not add or remove from softclauses, hence we save a intermediate result which new soft clauses to add
 			newSoftClauses.push_back(clauseWithBlockingVar);
@@ -181,7 +179,6 @@ namespace smtrat
 				assignments[blockingRelaxationVar] = !FormulaT(blockingRelaxationVar);
 
 				SMTRAT_LOG_DEBUG("smtrat.maxsat.fumalik", "adding clause to backend: " << replacementClause);
-				// addSubformulaToPassedFormula(replacementClause); // add new relaxed clause 
 				mBackend.add(replacementClause);
 				formulaPositionMap[assignments[blockingRelaxationVar]] = addToLocalBackend(assignments[blockingRelaxationVar]);
 
@@ -190,13 +187,11 @@ namespace smtrat
 				const auto& prevAssignment = assignments.find(prevBlockingVar);
 				assert(prevAssignment != assignments.end() && "Could not find an assignment which we must have made before.");
 
-				//eraseSubformulaFromPassedFormula(formulaPositionMap[prevAssignment->second]); // TODO is there a better way to pass assumptions?
 				mBackend.remove(formulaPositionMap[prevAssignment->second]);
 				assignments.erase(prevAssignment);
 
 				SMTRAT_LOG_DEBUG("smtrat.maxsat.fumalik", "adding clause to backend: " << FormulaT(prevBlockingVar));
 				mBackend.add(FormulaT(prevBlockingVar));
-				//addSubformulaToPassedFormula(FormulaT(prevBlockingVar)); // actually disabling the previous clause by enabling it's blocking var
 				
 			}
 
@@ -233,7 +228,6 @@ namespace smtrat
 		for (const auto& clause : softclauses) {
 			carl::Variable relaxationVar = carl::freshBooleanVariable();
 			mBackend.add(FormulaT(carl::FormulaType::OR, clause, FormulaT(relaxationVar)));
-			//addSubformulaToPassedFormula(FormulaT(carl::FormulaType::OR, clause, FormulaT(relaxationVar)));
 
 			relaxationVars.push_back(relaxationVar);
 		}
@@ -255,7 +249,6 @@ namespace smtrat
 			if (ans == Answer::SAT) return gatherSatisfiedSoftClauses();
 
 			mBackend.remove(previousRelaxationConstraint);
-			// eraseSubformulaFromPassedFormula(previousRelaxationConstraint);
 			
 			ConstraintT relaxationConstraint(relaxationPoly - Rational(i),carl::Relation::LEQ);
 			previousRelaxationConstraint = addToLocalBackend(FormulaT(relaxationConstraint));
@@ -272,7 +265,6 @@ namespace smtrat
 		// initialise data structures
 		for (const auto& clause : softclauses) {
 			// add clause backend and remember where we put it so we can easily remove it later
-			// ModuleInput::iterator it = addSubformulaToPassedFormula(clause).first;
 			ModuleInput::iterator it = addToLocalBackend(clause);
 			formulaPositionMap[clause] = it;
 		}
