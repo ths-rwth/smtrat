@@ -11,14 +11,18 @@
 #include <carl/numbers/PrimeFactory.h>
 #include <boost/math/common_factor.hpp>
 
-#include "CardinalityEncoder.h"
-#include "LongFormulaEncoder.h"
-#include "MixedSignEncoder.h"
+#include "Encoders/CardinalityEncoder.h"
+#include "Encoders/LongFormulaEncoder.h"
+#include "Encoders/MixedSignEncoder.h"
+#include "Encoders/RNSEncoder.h"
+#include "Encoders/ShortFormulaEncoder.h"
+#include "Encoders/ExactlyOneCommanderEncoder.h"
+#include "Encoders/TotalizerEncoder.h"
+
 #include <smtrat-solver/Module.h>
+
 #include "PBPPSettings.h"
-#include "RNSEncoder.h"
-#include "ShortFormulaEncoder.h"
-#include "PseudoBoolNormalizer.h"
+#include "Encoders/PseudoBoolNormalizer.h"
 
 
 namespace smtrat
@@ -27,6 +31,9 @@ namespace smtrat
 		class PBPPModule : public Module
 	{
 		private:
+#ifdef SMTRAT_DEVOPTION_Statistics
+			PBPPStatistics mStatistics;
+#endif
 			// Members.
 			std::map<carl::Variable, carl::Variable> mVariablesCache; // int, bool
 			std::vector<carl::Variable> mCheckedVars;
@@ -35,6 +42,10 @@ namespace smtrat
     		std::vector<ConstraintT> liaConstraints;
 			std::vector<ConstraintT> boolConstraints;
 			std::vector<ConstraintT> mConstraints;
+
+			// the actual encodings by constraint. Does not contain any coupling. These are just substitutions.
+			std::map<ConstraintT, FormulaT> boolEncodings;
+			std::map<ConstraintT, FormulaT> liaConstraintFormula;
 
 			std::map<ConstraintT, Rational> conversionSizeByConstraint;
 			std::map<ConstraintT, PseudoBoolEncoder*> encoderByConstraint;
@@ -45,6 +56,8 @@ namespace smtrat
 			LongFormulaEncoder mLongFormulaEncoder;
 			CardinalityEncoder mCardinalityEncoder;
 			MixedSignEncoder mMixedSignEncoder;
+			ExactlyOneCommanderEncoder mExactlyOneCommanderEncoder;
+			TotalizerEncoder mTotalizerEncoder;
 
 			PseudoBoolNormalizer mNormalizer;
 
@@ -123,9 +136,12 @@ namespace smtrat
 			bool encodeAsBooleanFormula(const ConstraintT& constraint);
 			bool isTrivial(const ConstraintT& constraint);
 
-			ConstraintT generateZeroHalfCut(const ConstraintT& first, const ConstraintT& second);
-
 			void extractConstraints(const FormulaT& formula);
+
+			void addConstraints(const FormulaT& formula);
+
+			FormulaT restoreFormula(const FormulaT& formula);
+
 
 	};
 }
