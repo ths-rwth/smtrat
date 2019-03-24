@@ -42,7 +42,7 @@ namespace smtrat {
 				if (sigma == 0) {
 					rootNode = FormulaT(carl::FormulaType::TRUE);
 				} else {
-					rootNode = FormulaT(tree.variables().at(sigma- 1));
+					rootNode = FormulaT(tree.variables().at(sigma - 1));
 				}
 
 				FormulaT nodeSum = FormulaT(carl::FormulaType::OR, leftNode, rightNode, rootNode);
