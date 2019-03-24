@@ -291,4 +291,58 @@ namespace smtrat
                                                                  AxiomFactory::AxiomType::CONGRUENCE};
     };
 
+//    Experiment
+
+    struct NRAILSettings22
+    {
+        static constexpr auto moduleName = "NRAILModule<NRAILSettings22>";
+
+        static constexpr UNSATFormulaSelectionStrategy formulaSelectionStrategy = UNSATFormulaSelectionStrategy::ALL;
+
+        static constexpr AxiomFactory::AxiomType axiomType[4] = {AxiomFactory::AxiomType::ICP,
+                                                                 AxiomFactory::AxiomType::ZERO,
+                                                                 AxiomFactory::AxiomType::TANGENT_PLANE,
+                                                                 AxiomFactory::AxiomType::CONGRUENCE};
+    };
+
+    struct NRAILSettings23
+    {
+        static constexpr auto moduleName = "NRAILModule<NRAILSettings23>";
+
+        static constexpr UNSATFormulaSelectionStrategy formulaSelectionStrategy = UNSATFormulaSelectionStrategy::ALL;
+
+        static constexpr AxiomFactory::AxiomType axiomType[4] = {AxiomFactory::AxiomType::ICP,
+                                                                 AxiomFactory::AxiomType::TANGENT_PLANE,
+                                                                 AxiomFactory::AxiomType::ZERO,
+                                                                 AxiomFactory::AxiomType::CONGRUENCE};
+    };
+
+    struct NRAILSettings24
+    {
+        static constexpr auto moduleName = "NRAILModule<NRAILSettings24>";
+
+        static constexpr UNSATFormulaSelectionStrategy formulaSelectionStrategy = UNSATFormulaSelectionStrategy::ALL;
+
+        static constexpr AxiomFactory::AxiomType axiomType[6] = {AxiomFactory::AxiomType::ICP,
+                                                                 AxiomFactory::AxiomType::ZERO,
+                                                                 AxiomFactory::AxiomType::ICP,
+                                                                 AxiomFactory::AxiomType::TANGENT_PLANE,
+                                                                 AxiomFactory::AxiomType::ICP,
+                                                                 AxiomFactory::AxiomType::CONGRUENCE};
+    };
+
+    struct NRAILSettings25
+    {
+        static constexpr auto moduleName = "NRAILModule<NRAILSettings25>";
+
+        static constexpr UNSATFormulaSelectionStrategy formulaSelectionStrategy = UNSATFormulaSelectionStrategy::ALL;
+
+        static constexpr AxiomFactory::AxiomType axiomType[6] = {AxiomFactory::AxiomType::ICP,
+                                                                 AxiomFactory::AxiomType::TANGENT_PLANE,
+                                                                 AxiomFactory::AxiomType::ICP,
+                                                                 AxiomFactory::AxiomType::ZERO,
+                                                                 AxiomFactory::AxiomType::ICP,
+                                                                 AxiomFactory::AxiomType::CONGRUENCE};
+    };
+
 }
