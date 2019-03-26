@@ -944,16 +944,6 @@ namespace smtrat
 				//SMTRAT_LOG_DEBUG("smtrat.sat", x << " -> " << res);
 				return res;
 			}
-			inline Minisat::lbool valueAndUpdate( Minisat::Var x )
-			{
-				if (assigns[x] == l_Undef) {
-					Minisat::lbool res = theoryValue(x);
-					if (res == l_True) uncheckedEnqueue(Minisat::mkLit(x, false), Minisat::CRef_TPropagation); // TODO REFACTOR not used anymore??
-					else if (res == l_False) uncheckedEnqueue(Minisat::mkLit(x, true), Minisat::CRef_TPropagation);
-				}
-				SMTRAT_LOG_DEBUG("smtrat.sat", x << " -> " << assigns[x]);
-				return assigns[x];
-			}
 
             bool addClauseIfNew(const FormulasT& clause) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Add theory conflict clause " << clause << " if new");
@@ -1033,11 +1023,6 @@ namespace smtrat
 			inline Minisat::lbool theoryValue( Minisat::Lit p ) const {
 				return theoryValue(Minisat::var(p)) == l_Undef ? l_Undef : theoryValue(Minisat::var(p)) ^ Minisat::sign(p);
 			}
-			inline Minisat::lbool valueAndUpdate( Minisat::Lit p )
-            {
-                auto res = valueAndUpdate(Minisat::var(p));
-				return res == l_Undef ? l_Undef : valueAndUpdate(Minisat::var(p)) ^ Minisat::sign(p);
-            }
             
             /**
              * @return The current number of assigned literals.

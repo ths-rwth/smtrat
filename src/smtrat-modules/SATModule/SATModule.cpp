@@ -3547,13 +3547,8 @@ namespace smtrat
 			int max_lvl = 0;
             // Find the first literal assigned at the next-highest level:
             for( int i = 1; i < out_learnt.size(); i++ ) {
-                int currentLitLevel;
-                if (reason(var(out_learnt[i])) == CRef_TPropagation) { // TODO REFACTOR should not be used in tthis context, should be unused
-                    const FormulaT& f = mBooleanConstraintMap[var(out_learnt[i])].first->reabstraction;
-                    currentLitLevel = mMCSAT.decisionLevel(f);
-                } else {
-                    currentLitLevel = theory_level(var(out_learnt[i]));
-                }
+                assert(reason(var(out_learnt[i])) != CRef_TPropagation);
+                int currentLitLevel = theory_level(var(out_learnt[i]));
 				SMTRAT_LOG_DEBUG("smtrat.sat", out_learnt[i] << " is assigned at " << currentLitLevel);
                 if (currentLitLevel > max_lvl) {
 					max_i = i;
@@ -3817,7 +3812,6 @@ namespace smtrat
 					if (Settings::mc_sat) {
 						if (value(c[k]) == l_Undef && theoryValue(c[k]) == l_False) {
 							assert(false);
-							uncheckedEnqueue(neg(c[k]), Minisat::CRef_TPropagation);
 						}
 					}
                     if( value( c[k] ) != l_False )
@@ -3847,7 +3841,7 @@ namespace smtrat
                 else
                 {
 					SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Clause is propagating " << c);
-					if (Settings::mc_sat && valueAndUpdate(first) != l_Undef) { // TODO REFACTOR semantic propagations done somewhere else...
+					if (Settings::mc_sat && value(first) != l_Undef) {
 						assert(value(first) != l_Undef);
 					} else {
 						CARL_CHECKPOINT("nlsat", "propagation", cr, first);
