@@ -2673,6 +2673,8 @@ namespace smtrat
         starts++;
         mCurrentAssignmentConsistent = SAT;
 
+        bool maybeInconsistent = false;
+
         for( ; ; )
         {
 			#ifdef DEBUG_SATMODULE
@@ -2768,7 +2770,7 @@ namespace smtrat
 					for (std::size_t level = 0; level <= mMCSAT.level(); level++) {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Considering " << mMCSAT.get(level).decidedVariables);
 						for (auto v: mMCSAT.get(level).decidedVariables) {
-                            assert(bool_value(v) == l_Undef || theoryValue(v) == bool_value(v));
+                            // assert(bool_value(v) == l_Undef || theoryValue(v) == bool_value(v));
 							if (bool_value(v) != l_Undef) continue;
 							auto tv = theoryValue(v);
 							SMTRAT_LOG_DEBUG("smtrat.sat", "Undef, theory value of " << v << " is " << tv);
@@ -2783,11 +2785,33 @@ namespace smtrat
 					}
 				}
 
-                assert(mMCSAT.trailIsConsistent());
+                // assert(mMCSAT.trailIsConsistent());
+
+                if (Settings::mc_sat && next == lit_Undef && maybeInconsistent) {
+                    SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still consistent");
+                    auto conflict = mMCSAT.isStillConsistent();
+                    if (conflict) {
+                        #ifdef DEBUG_SATMODULE
+                        cout << "######################################################################" << endl;
+                        cout << "### Before handling conflict" << endl;
+                        print(cout, "###");
+                        #endif
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
+                        if (carl::variant_is_type<FormulaT>(*conflict)) {
+                            sat::detail::validateClause(boost::get<FormulaT>(*conflict), Settings::validate_clauses);
+                        }
+                        handleTheoryConflict(*conflict);
+                        // TODO maybeInconsistent = false can be moved here?!?
+                        continue;
+                    }
+                    maybeInconsistent = false;
+                }
 
                 // If we do not already have a branching literal, we pick one
                 if( next == lit_Undef )
                 {
+                    assert(mMCSAT.trailIsConsistent());
+
                     // New variable decision:
                     decisions++;
                     #ifdef SMTRAT_DEVOPTION_Statistics
@@ -2817,7 +2841,14 @@ namespace smtrat
                                 uncheckedEnqueue(lit);
                             }
 
-                            SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still feasible with this theory decision");
+                            maybeInconsistent = true;
+
+                            // Allow inconsistency here.
+                            //assert(mMCSAT.trailIsConsistent());
+
+                            /*
+
+                            SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still consistent with this theory decision");
                             auto conflict = mMCSAT.isStillConsistent();
                             if (conflict) {
                                 #ifdef DEBUG_SATMODULE
@@ -2830,7 +2861,7 @@ namespace smtrat
                                     sat::detail::validateClause(boost::get<FormulaT>(*conflict), Settings::validate_clauses);
                                 }
                                 handleTheoryConflict(*conflict);
-                            }
+                            }*/
                             continue;
                         } else {
                             mCurrentAssignmentConsistent = UNSAT;
@@ -3516,13 +3547,8 @@ namespace smtrat
 			int max_lvl = 0;
             // Find the first literal assigned at the next-highest level:
             for( int i = 1; i < out_learnt.size(); i++ ) {
-                int currentLitLevel;
-                if (reason(var(out_learnt[i])) == CRef_TPropagation) { // TODO REFACTOR should not be used in tthis context, should be unused
-                    const FormulaT& f = mBooleanConstraintMap[var(out_learnt[i])].first->reabstraction;
-                    currentLitLevel = mMCSAT.decisionLevel(f);
-                } else {
-                    currentLitLevel = theory_level(var(out_learnt[i]));
-                }
+                assert(reason(var(out_learnt[i])) != CRef_TPropagation);
+                int currentLitLevel = theory_level(var(out_learnt[i]));
 				SMTRAT_LOG_DEBUG("smtrat.sat", out_learnt[i] << " is assigned at " << currentLitLevel);
                 if (currentLitLevel > max_lvl) {
 					max_i = i;
@@ -3786,7 +3812,6 @@ namespace smtrat
 					if (Settings::mc_sat) {
 						if (value(c[k]) == l_Undef && theoryValue(c[k]) == l_False) {
 							assert(false);
-							uncheckedEnqueue(neg(c[k]), Minisat::CRef_TPropagation);
 						}
 					}
                     if( value( c[k] ) != l_False )
@@ -3816,7 +3841,7 @@ namespace smtrat
                 else
                 {
 					SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Clause is propagating " << c);
-					if (Settings::mc_sat && valueAndUpdate(first) != l_Undef) { // TODO REFACTOR semantic propagations done somewhere else...
+					if (Settings::mc_sat && value(first) != l_Undef) {
 						assert(value(first) != l_Undef);
 					} else {
 						CARL_CHECKPOINT("nlsat", "propagation", cr, first);

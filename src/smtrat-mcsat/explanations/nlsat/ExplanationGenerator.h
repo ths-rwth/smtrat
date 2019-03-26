@@ -193,11 +193,11 @@ public:
 		explainAtomsinLvls.resize(mCADConstraints.vars().size());
 		
 		// Start from the bottom to generate bound constraints. 
-		for (std::size_t level = mCADConstraints.vars().size() - 1; level > 0; level--) {
+		for (int level = mCADConstraints.vars().size() - 1; level >= 0; level--) {
 			carl::Variable varAtLvl = mCADConstraints.vars()[level];
 			if (mModel.find(varAtLvl) == mModel.end()) continue;
-			generateBoundsFor(explainAtomsinLvls[level-1], varAtLvl, level+1, submodel);
-			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Cell bounds for " << varAtLvl << ": " << explainAtomsinLvls[level-1]);
+			generateBoundsFor(explainAtomsinLvls[level], varAtLvl, level+1, submodel);
+			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Cell bounds for " << varAtLvl << ": " << explainAtomsinLvls[level]);
 			submodel.emplace(varAtLvl, mModel.evaluated(varAtLvl));
 		}
 

@@ -215,6 +215,12 @@ public:
 				cover.add(c.first, b);
 			}
 		}
+		// Handling multivariate bounds this way is unsoud: A consistent assignment may exist for these bounds,
+		// but cannot be found by the assignment finder. Thus, satisfying cells may be excluded.
+		// Currently, these bounds are disabled in the BaseBackend/Bookkeeping, but they may be handled using
+		// the CAD.
+		assert(mMVBounds.empty());
+		/*
 		for (const auto& c: mMVBounds) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Computing cover for " << c);
 			carl::Bitset b;
@@ -235,6 +241,7 @@ public:
 				cover.add(c, b);
 			}
 		}
+		*/
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", cover);
 		return cover;
 	}

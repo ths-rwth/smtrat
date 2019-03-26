@@ -43,7 +43,7 @@ struct AssignmentFinder {
 			}
 		}
 
-		for (const auto& c: data.mvBounds()) {
+		for (const auto& c: data.activeMvBounds()) {
 			SMTRAT_LOG_TRACE("smtrat.mcsat.smtaf", "Adding MVBound " << c);
 			boost::tribool res = af.addMVBound(c);
 			if (indeterminate(res)) {
