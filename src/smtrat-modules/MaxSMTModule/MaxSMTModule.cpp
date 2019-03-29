@@ -95,9 +95,6 @@ namespace smtrat
 		} else if (Settings::ALGORITHM == MAXSATAlgorithm::LINEAR_SEARCH) {
 			SMTRAT_LOG_INFO("smtrat.maxsmt", "Running Linear Search Algorithm.");
 			satiesfiedSoftClauses = runLinearSearch();
-		//} else if (Settings::ALGORITHM == MAXSATAlgorithm::OLL) {
-		//	SMTRAT_LOG_INFO("smtrat.maxsmt", "Running OLL Algorithm.");
-		//	satiesfiedSoftClauses = runOLL();
 		} else if (Settings::ALGORITHM == MAXSATAlgorithm::MSU3) {
 			SMTRAT_LOG_INFO("smtrat.maxsmt", "Running MSU3 Algorithm.");
 			satiesfiedSoftClauses = runMSU3();
@@ -106,7 +103,7 @@ namespace smtrat
 			assert(false);
 		}
 
-		SMTRAT_LOG_ERROR("smtrat.maxsmt", "Found maximal set of satisfied soft clauses: " << satiesfiedSoftClauses);
+		SMTRAT_LOG_DEBUG("smtrat.maxsmt", "Found maximal set of satisfied soft clauses: " << satiesfiedSoftClauses);
 
 		// at this point we can be sure to be SAT. Worst case is that all soft-constraints are false.
 		return Answer::SAT;

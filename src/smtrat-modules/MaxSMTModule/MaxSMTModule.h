@@ -17,6 +17,11 @@
 
 namespace smtrat
 {
+	/**
+	 * MaxSMTModule implements several algorithms used to solve MaxSAT. Currently, MSU3, FuMalikIncremental and LinearSearch are supported.
+	 * See @MaxSMTSettings.h for more information on usage.
+	 * All implemented algorithms are described in https://doi.org/10.1007/978-3-319-10428-7_39
+	 */
 	template<typename Settings>
 	class MaxSMTModule : public Module
 	{
