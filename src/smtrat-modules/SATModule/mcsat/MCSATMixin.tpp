@@ -106,8 +106,8 @@ std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isBooleanDec
 	for (const auto& v : mBackend.assignedVariables())
 		vars.erase(v);
 	
-	// TODO DYNSCHED: extend feasibility checks to arbitrarily many variables
-	if (vars.size() == 1) {
+	// TODO DYNSCHED: extend feasibility checks to arbitrarily many variables (DONE, test it!)
+	if (vars.size() > 0) {
 		carl::Variable tvar = *(vars.begin());
 
 		auto res = mBackend.isInfeasible(tvar, f);
@@ -136,7 +136,7 @@ std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isBooleanDec
 			}
 		}
 	} else {
-		return std::make_pair(true, boost::none);
+	 	return std::make_pair(true, boost::none);
 	}
 }
 
