@@ -111,7 +111,7 @@ namespace smtrat
 
 		static constexpr bool mcsat_learn_lazy_explanations = false;
 
-		static constexpr unsigned int mcsat_num_insert_assignments = 2;
+		static constexpr unsigned int mcsat_num_insert_assignments = 1;
 
 		static constexpr bool mcsat_check_feasibility_on_decide = true;
 

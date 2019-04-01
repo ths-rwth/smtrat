@@ -366,9 +366,9 @@ public:
 
 		for (const auto& c: trail.constraints()) {
 			const Minisat::Var& var = mGetter.abstractVariable(c);
-			if (std::find(current().decidedVariables.begin(), current().decidedVariables.end(), var) == current().decidedVariables.end()) {
-				continue;
-			}
+			// if (std::find(current().decidedVariables.begin(), current().decidedVariables.end(), var) == current().decidedVariables.end()) {
+			// 	continue;
+			// }
 			if (only_univariate) {
 				carl::Variables tvars;
 				c.arithmeticVars(tvars);
@@ -381,9 +381,9 @@ public:
 		}
 		for (const auto& b: trail.activeMvBounds()) {
 			const Minisat::Var& var = mGetter.abstractVariable(b);
-			if (std::find(current().decidedVariables.begin(), current().decidedVariables.end(), var) == current().decidedVariables.end()) {
-				continue;
-			}
+			// if (std::find(current().decidedVariables.begin(), current().decidedVariables.end(), var) == current().decidedVariables.end()) {
+			// 	continue;
+			// }
 			if (only_univariate) {
 				carl::Variables tvars;
 				b.arithmeticVars(tvars);
