@@ -2699,6 +2699,7 @@ namespace smtrat
             {
                 if( !mReceivedFormulaPurelyPropositional && !Settings::stop_search_after_first_unknown && mExcludedAssignments )
                     return l_Undef;
+                assert(!maybeInconsistent);
                 return l_False;
             } 
 
@@ -2710,6 +2711,7 @@ namespace smtrat
                 {
                     if( decisionLevel() >= assumptions.size() && mNumberOfSatisfiedClauses == (size_t)clauses.size() )
                     {
+                        assert(!maybeInconsistent);
                         return l_True;
                     }
                 }
@@ -2750,6 +2752,7 @@ namespace smtrat
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Assumption " << p << " is already false");
                         if( !mReceivedFormulaPurelyPropositional && !Settings::stop_search_after_first_unknown && mExcludedAssignments )
                             return l_Undef;
+                        assert(!maybeInconsistent);
                         return l_False;
                     }
                     else
@@ -2801,7 +2804,6 @@ namespace smtrat
                             sat::detail::validateClause(boost::get<FormulaT>(*conflict), Settings::validate_clauses);
                         }
                         handleTheoryConflict(*conflict);
-                        // TODO maybeInconsistent = false can be moved here?!?
                         continue;
                     }
                     maybeInconsistent = false;
@@ -2840,28 +2842,10 @@ namespace smtrat
                                 newDecisionLevel();
                                 uncheckedEnqueue(lit);
                             }
-
                             maybeInconsistent = true;
-
-                            // Allow inconsistency here.
-                            //assert(mMCSAT.trailIsConsistent());
-
-                            /*
-
-                            SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still consistent with this theory decision");
-                            auto conflict = mMCSAT.isStillConsistent();
-                            if (conflict) {
-                                #ifdef DEBUG_SATMODULE
-                                cout << "######################################################################" << endl;
-                                cout << "### Before handling conflict" << endl;
-                                print(cout, "###");
-                                #endif
-                                SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
-                                if (carl::variant_is_type<FormulaT>(*conflict)) {
-                                    sat::detail::validateClause(boost::get<FormulaT>(*conflict), Settings::validate_clauses);
-                                }
-                                handleTheoryConflict(*conflict);
-                            }*/
+                            if (!mMCSAT.trailIsConsistent()) {
+                                SMTRAT_LOG_DEBUG("smtrat.sat", "Trail inconsistent after assignment");
+                            }
                             continue;
                         } else {
                             mCurrentAssignmentConsistent = UNSAT;
@@ -2911,6 +2895,7 @@ namespace smtrat
                     if( mReceivedFormulaPurelyPropositional || mCurrentAssignmentConsistent == SAT )
                     {
                         // Model found:
+                        assert(!maybeInconsistent);
                         return l_True;
                     }
                     else
@@ -2959,6 +2944,7 @@ namespace smtrat
                         SMTRAT_LOG_DEBUG("smtrat.sat", "Return undef due to excluded: " << mExcludedAssignments);
                         return l_Undef;
                     }
+                    assert(!maybeInconsistent);
                     return l_False;
                 }
 
