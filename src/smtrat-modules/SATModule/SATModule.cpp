@@ -2699,7 +2699,7 @@ namespace smtrat
             {
                 if( !mReceivedFormulaPurelyPropositional && !Settings::stop_search_after_first_unknown && mExcludedAssignments )
                     return l_Undef;
-                assert(!maybeInconsistent);
+                // Maybe not needed here?: assert(!maybeInconsistent);
                 return l_False;
             } 
 
@@ -2711,7 +2711,7 @@ namespace smtrat
                 {
                     if( decisionLevel() >= assumptions.size() && mNumberOfSatisfiedClauses == (size_t)clauses.size() )
                     {
-                        assert(!maybeInconsistent);
+                        // Maybe not needed here?: assert(!maybeInconsistent);
                         return l_True;
                     }
                 }
@@ -2752,7 +2752,8 @@ namespace smtrat
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Assumption " << p << " is already false");
                         if( !mReceivedFormulaPurelyPropositional && !Settings::stop_search_after_first_unknown && mExcludedAssignments )
                             return l_Undef;
-                        assert(!maybeInconsistent);
+                        // Inconsistency is not possible here, even if maybeInconsistent hold, as all theory decisions are backtracked
+                        // at this point, thus no assert(!maybeInconsistent);
                         return l_False;
                     }
                     else
