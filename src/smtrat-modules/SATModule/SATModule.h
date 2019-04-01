@@ -935,6 +935,20 @@ namespace smtrat
             }
             
 			inline Minisat::lbool theoryValue( Minisat::Var x ) const {
+                // MCSAT-specific:
+                // There are currently two ways of propagating literals evaluating in the theory
+                // to the Boolean level: Semantic propagations inserted as decisions explicitly
+                // in the search loop and this value function. This value function should have no
+                // effect most of the times as semantic propagations handle most cases. The only case
+                // where theoryValue is neccessary is during backtracking, when semantic propagations
+                // which are not inserted at the earliest possible point are already backtracked but
+                // the corerspondiong literals still evaluate to a value.
+                // Since the trail is left inconsistent after an theory decision, it is important for 
+                // the correctness of the procedure that the Boolean level is considered first here,
+                // as Boolean conflict resolution (which will fix those inconsistencies) relies on that.
+                // Note that the inconsistency mentioned here is not between semantic propagations and
+                // Boolean decisions/propagations but between theory values and Boolean decisions/propagations.
+                // In this sense, the trail is kept consistent throughout the procedure.
 				Minisat::lbool res = assigns[x];
 				if (res == l_Undef) {
 					if (mBooleanConstraintMap.size() <= x) return l_Undef;
