@@ -2945,7 +2945,8 @@ namespace smtrat
                         SMTRAT_LOG_DEBUG("smtrat.sat", "Return undef due to excluded: " << mExcludedAssignments);
                         return l_Undef;
                     }
-                    assert(!maybeInconsistent);
+                    // TODO is that needed here?!?
+                    // assert(!maybeInconsistent);
                     return l_False;
                 }
 
