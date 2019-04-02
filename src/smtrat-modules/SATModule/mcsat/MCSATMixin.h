@@ -62,9 +62,18 @@ private:
 	using TheoryStackT = std::vector<TheoryLevel>;
 	TheoryStackT mTheoryStack;
 
+	/// Theory levels for Boolean variables
+	std::vector<size_t> mTheoryLevels;
+
 	/// Variables that are not univariate in any variable yet.
 	std::vector<Minisat::Var> mUndecidedVariables;
-	
+
+	/// Variables that are inconsistent in the current theory level
+	std::vector<Minisat::Var> mInconsistentVariables;
+
+	/// Semantically propagated variables that are not yet inserted into the trail
+	std::set<Minisat::Var> mSemanticPropagations;
+
 	MCSATBackend<Settings> mBackend;
 
 	struct VarMapping {
@@ -241,6 +250,7 @@ public:
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Skipping assignment.");
 			return;
 		}
+		assert(evaluateLiteral(lit) != l_False);
 		/*
 		if (!mModelAssignmentCache.empty()) {
 			auto res = carl::model::evaluate(f, mModelAssignmentCache.model());
@@ -250,6 +260,7 @@ public:
 		}
 		*/
 		mBackend.pushConstraint(f);
+		mSemanticPropagations.erase(var(lit));
 	}
 	/**
 	 * Remove the last constraint. f must be the same as the one passed to the last call of pushConstraint().
@@ -263,10 +274,27 @@ public:
 			return;
 		}
 		mBackend.popConstraint(f);
+
+		auto iter = std::find(mInconsistentVariables.begin(), mInconsistentVariables.end(), var(lit));
+		if (iter != mInconsistentVariables.end())
+			mInconsistentVariables.erase(iter);
+
+		if (theoryLevel(var(lit)) < std::numeric_limits<std::size_t>::max()) {
+			mSemanticPropagations.insert(var(lit));
+		}
 	}
 	
 	/// Add a variable, return the level it was inserted on
 	std::size_t addBooleanVariable(Minisat::Var variable);
+
+	/// Getter for semantic propagations
+	Minisat::Var topSemanticPropagation() {
+		if (mSemanticPropagations.empty()) {
+			return var_Undef;
+		} else {
+			return *mSemanticPropagations.begin();
+		}
+	} 
 
 	// ***** Auxiliary getter
 	
@@ -340,61 +368,14 @@ public:
 	}
 
 	/**
-	 * Checks if the trail is consistent after the assignment on the current level.
-	 * The trail must be consistent on the previous level.
-	 * 
-	 * If only_univariate is set to true, only syntactically univariate constraints are checked for consistency. This may
-	 * lead to an inconsistent trail when considering all variables, but the trail is still consistent up to the currently
-	 * decided theory variables.
-	 * 
-	 * Note that if we check consistency for all constraints, including those being not yet syntactically univariate,
-	 * the explanation backends need to be able to eliminate all unassigned variables, otherwise we run into termination problems.
-	 * 
-	 * Returns boost::none if consistent and otherwise a conflicting Boolean variable.
+	 * Checks if any inconsistency was detected.
 	 */
-	boost::optional<FormulaT> checkConsistency(bool only_univariate = false) { // TODO DYNSCHED make more efficient
-		const auto& trail = mBackend.getTrail();
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking trail against " << trail.model());
-		auto evaluator = [&trail](const auto& c){
-			auto res = carl::model::evaluate(c, trail.model());
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", c << " evaluates to " << res);
-			if (res.isBool()) {
-				if (!res.asBool()) return false;
-			}
-			return true;
-		};
+	bool isConsistent() {
+		return mInconsistentVariables.empty();
+	}
 
-		for (const auto& c: trail.constraints()) {
-			const Minisat::Var& var = mGetter.abstractVariable(c);
-			// if (std::find(current().decidedVariables.begin(), current().decidedVariables.end(), var) == current().decidedVariables.end()) {
-			// 	continue;
-			// }
-			if (only_univariate) {
-				carl::Variables tvars;
-				c.arithmeticVars(tvars);
-				for (const auto& v : mBackend.assignedVariables())
-					tvars.erase(v);
-				if (tvars.size() > 1)
-					continue;
-			}
-			if (!evaluator(c)) return c;
-		}
-		for (const auto& b: trail.activeMvBounds()) {
-			const Minisat::Var& var = mGetter.abstractVariable(b);
-			// if (std::find(current().decidedVariables.begin(), current().decidedVariables.end(), var) == current().decidedVariables.end()) {
-			// 	continue;
-			// }
-			if (only_univariate) {
-				carl::Variables tvars;
-				b.arithmeticVars(tvars);
-				for (const auto& v : mBackend.assignedVariables())
-					tvars.erase(v);
-				if (tvars.size() > 1)
-					continue;
-			}
-			if (!evaluator(b)) return b;
-		}
-		return boost::none;
+	bool isConsistent(Minisat::Var v) {
+		return std::find(mInconsistentVariables.begin(), mInconsistentVariables.end(), v) == mInconsistentVariables.end();
 	}
 
 	/**
@@ -403,13 +384,16 @@ public:
 	 * 
 	 * Returns boost::none if consistent and an explanation.
 	 */
-	boost::optional<Explanation> isStillConsistent() {
-		auto core = checkConsistency();
-		if (core == boost::none) {
+	boost::optional<Explanation> explainInconsistency() {
+		if (isConsistent()) {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Trail is still consistent");
 			return boost::none;
 		} else {
-			const auto& confl = boost::get<FormulaT>(core);
+			const auto& conflvar = mInconsistentVariables.front();
+			auto val = mGetter.getBoolVarValue(conflvar);
+			assert(val != l_Undef);
+			const auto confl = (val == l_True) ? mGetter.reabstractVariable(conflvar) : mGetter.reabstractVariable(conflvar).negated();
+
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Inconsistent: " << confl << " evaluates to false");
 			// pick any unassigned variable in confl (it must exist, otherwise the AssignmentFinder is incorrect)
 			carl::Variables vars;
@@ -484,15 +468,23 @@ public:
 	}
 
 	// ***** Auxliary getter
-	
+
 	std::size_t theoryLevel(Minisat::Var var) const {
 		if (!mGetter.isTheoryAbstraction(var)) {
 			return 0;
 		}
-		return theoryLevel(mGetter.reabstractVariable(var));
+		assert(varid(var) < mTheoryLevels.size());
+		return mTheoryLevels[varid(var)];
 	}
 	
-	std::size_t theoryLevel(const FormulaT& f) const { // TODO DYNSCHED theory levels are stored in decidedVariables => lookup more efficient?
+	std::size_t computeTheoryLevel(Minisat::Var var) const {
+		if (!mGetter.isTheoryAbstraction(var)) {
+			return 0;
+		}
+		return computeTheoryLevel(mGetter.reabstractVariable(var));
+	}
+	
+	std::size_t computeTheoryLevel(const FormulaT& f) const {
 		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Computing theory level for " << f);
 		carl::Variables vars;
 		f.arithmeticVars(vars);
@@ -501,16 +493,6 @@ public:
 			return 0;
 		}
 		
-		//for (std::size_t lvl = level(); lvl > 0; lvl--) {
-		//	if (variable(lvl) == carl::Variable::NO_VARIABLE) continue;
-		//	if (vars.count(variable(lvl)) > 0) {
-		//		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is univariate in " << variable(lvl));
-		//		return lvl;
-		//	}
-		//}
-		//SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " contains undecided variables.");
-		//return std::numeric_limits<std::size_t>::max();
-	
 		Model m = model();
 		if (!carl::model::evaluate(f, m).isBool()) {
 			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is undecided.");
@@ -526,27 +508,14 @@ public:
 		}
 		assert(false);
 		return 0;
-		
-		for (std::size_t level = 1; level < mTheoryStack.size(); level++) {
-			vars.erase(variable(level));
-			if (vars.empty()) {
-				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is univariate in " << variable(level));
-				return level;
-			}
-		}
-		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is undecided.");
-		return std::numeric_limits<std::size_t>::max();
 	}
 	
 	Minisat::Lit getDecisionLiteral(Minisat::Var var) const {
 		if (!mGetter.isTheoryAbstraction(var)) {
 			return Minisat::lit_Undef;
 		}
-		return getDecisionLiteral(mGetter.reabstractVariable(var));
-	}
-	Minisat::Lit getDecisionLiteral(const FormulaT& f) const {
-		std::size_t level = theoryLevel(f);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Theory level of " << f << " is " << level);
+		std::size_t level = theoryLevel(var);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Theory level of " << var << " is " << level);
 		if (level >= mTheoryStack.size()) return Minisat::lit_Undef;
 		return get(level).decisionLiteral;
 	}
@@ -560,22 +529,18 @@ public:
 		return mGetter.getTrailIndex(var(lit));
 	}
 	
-	int decisionLevel(Minisat::Var var) const {
-		if (!mGetter.isTheoryAbstraction(var)) {
+	int decisionLevel(Minisat::Var v) const {
+		if (!mGetter.isTheoryAbstraction(v)) {
 			return std::numeric_limits<int>::max();
 		}
-		return decisionLevel(mGetter.reabstractVariable(var));
-	}
-	
-	int decisionLevel(const FormulaT& f) const {
-		auto lit = getDecisionLiteral(f);
+		auto lit = getDecisionLiteral(v);
 		if (lit == Minisat::lit_Undef) {
 			return std::numeric_limits<int>::max();
 		}
 		return mGetter.getDecisionLevel(var(lit));
 	}
 	
-	bool trailIsConsistent() const {
+	bool fullConsistencyCheck() const {
 		const auto& trail = mBackend.getTrail();
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking trail against " << trail.model());
 		auto evaluator = [&trail](const auto& c){

@@ -6,6 +6,7 @@ namespace mcsat {
 template<typename Settings>
 void MCSATMixin<Settings>::pushTheoryDecision(const FormulaT& assignment, Minisat::Lit decisionLiteral) {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Made theory decision for " << assignment.variableAssignment().var() << ": " << decisionLiteral);
+	assert(mInconsistentVariables.empty());
 	mBackend.pushAssignment( assignment.variableAssignment().var(),  assignment.variableAssignment().value(), assignment);
 	mTheoryStack.emplace_back();
 	current().variable = assignment.variableAssignment().var();
@@ -21,7 +22,12 @@ void MCSATMixin<Settings>::popTheoryDecision() {
 		mTheoryStack.back().decidedVariables.begin(),
 		mTheoryStack.back().decidedVariables.end()
 	);
+	for (const auto var : mTheoryStack.back().decidedVariables) {
+		mTheoryLevels[varid(var)] = std::numeric_limits<std::size_t>::max();
+		mSemanticPropagations.erase(var);
+	}
 	mTheoryStack.pop_back();
+	mInconsistentVariables.clear();
 	// mModelAssignmentCache.clear();
 }
 
@@ -33,19 +39,27 @@ void MCSATMixin<Settings>::updateCurrentLevel() {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Undecided Variables: " << mUndecidedVariables);
 	for (auto vit = mUndecidedVariables.begin(); vit != mUndecidedVariables.end();) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Looking at " << *vit);
-		/*if (theoryLevel(*vit) != level()) {
+		/*if (computeTheoryLevel(*vit) != level()) {
 			++vit;
 			continue;
 		}*/
 		if (mGetter.isTheoryAbstraction(*vit)) {
 			const auto& f = mGetter.reabstractVariable(*vit);
-			if (!carl::model::evaluate(f, model()).isBool()) {
+			auto evalres = carl::model::evaluate(f, model());
+			if (!evalres.isBool()) {
 				++vit;
 				continue;
+			} else if (mGetter.getBoolVarValue(*vit) != l_Undef && mGetter.getBoolVarValue(*vit) != Minisat::lbool(evalres.asBool())) {
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found inconsistent variable " << *vit);
+				mInconsistentVariables.push_back(*vit);
 			}
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Associating " << *vit << " with " << current().variable << " at " << level());
 		current().decidedVariables.push_back(*vit);
+		mTheoryLevels[varid(*vit)] = level();
+		if (mGetter.getBoolVarValue(*vit) == l_Undef) {
+			mSemanticPropagations.insert(*vit);
+		}
 		vit = mUndecidedVariables.erase(vit);
 	}
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << mUndecidedVariables);
@@ -106,7 +120,6 @@ std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isBooleanDec
 	for (const auto& v : mBackend.assignedVariables())
 		vars.erase(v);
 	
-	// TODO DYNSCHED: extend feasibility checks to arbitrarily many variables (DONE, test it!)
 	if (vars.size() > 0) {
 		carl::Variable tvar = *(vars.begin());
 
@@ -146,7 +159,11 @@ std::size_t MCSATMixin<Settings>::addBooleanVariable(Minisat::Var variable) {
 		mVarPropertyCache.emplace_back();
 	}
 
-	std::size_t level = theoryLevel(variable); // TODO DYNSCHED refactor if theoryLevel depends on decidedVariables
+	while (mTheoryLevels.size() <= varid(variable)) {
+		mTheoryLevels.emplace_back();
+	}
+
+	std::size_t level = computeTheoryLevel(variable);
 	if (!mGetter.isTheoryAbstraction(variable)) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Ignoring " << variable << " as it is not a theory abstraction");
 		return level;
@@ -155,9 +172,12 @@ std::size_t MCSATMixin<Settings>::addBooleanVariable(Minisat::Var variable) {
 	if (level == std::numeric_limits<std::size_t>::max()) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << variable << " to undecided");
 		mUndecidedVariables.push_back(variable);
+		mTheoryLevels[varid(variable)] = std::numeric_limits<std::size_t>::max();
 	} else {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << variable << " on level " << level);
 		mTheoryStack[level].decidedVariables.push_back(variable);
+		mTheoryLevels[varid(variable)] = level;
+		mSemanticPropagations.insert(variable);
 	}
 	return level;
 }
@@ -198,10 +218,9 @@ std::ostream& operator<<(std::ostream& os, const MCSATMixin<Settings>& mcm) {
 		if (mcm.model().find(level.variable) != mcm.model().end()) {
 			os << " = " << mcm.model().at(level.variable);
 		}
-		/* TODO DYNSCHED refactor when theory level caching is reintroduced
-		if (level.variable == mcm.current().variable) {
-			os << " <<-- Current variable";
-		}*/
+		// if (level.variable == mcm.current().variable) {
+		//	os << " <<-- Current variable";
+		// }
 		os << std::endl;
 		os << "\tVariables: " << level.decidedVariables << std::endl;
 	}

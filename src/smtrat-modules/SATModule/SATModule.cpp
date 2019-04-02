@@ -2673,8 +2673,6 @@ namespace smtrat
         starts++;
         mCurrentAssignmentConsistent = SAT;
 
-        bool maybeInconsistent = false;
-
         for( ; ; )
         {
 			#ifdef DEBUG_SATMODULE
@@ -2699,7 +2697,7 @@ namespace smtrat
             {
                 if( !mReceivedFormulaPurelyPropositional && !Settings::stop_search_after_first_unknown && mExcludedAssignments )
                     return l_Undef;
-                // Maybe not needed here?: assert(!maybeInconsistent);
+                // Maybe not needed here?: assert(mMCSAT.isConsistent());
                 return l_False;
             } 
 
@@ -2711,7 +2709,7 @@ namespace smtrat
                 {
                     if( decisionLevel() >= assumptions.size() && mNumberOfSatisfiedClauses == (size_t)clauses.size() )
                     {
-                        // Maybe not needed here?: assert(!maybeInconsistent);
+                        // Maybe not needed here?: assert(mMCSAT.isConsistent());
                         return l_True;
                     }
                 }
@@ -2752,8 +2750,8 @@ namespace smtrat
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Assumption " << p << " is already false");
                         if( !mReceivedFormulaPurelyPropositional && !Settings::stop_search_after_first_unknown && mExcludedAssignments )
                             return l_Undef;
-                        // Inconsistency is not possible here, even if maybeInconsistent hold, as all theory decisions are backtracked
-                        // at this point, thus no assert(!maybeInconsistent);
+                        // Inconsistency is not possible here, even if mMCSAT.isConsistent() holds, as all theory decisions are backtracked
+                        // at this point, thus no assert(mMCSAT.isConsistent());
                         return l_False;
                     }
                     else
@@ -2769,31 +2767,35 @@ namespace smtrat
 				 * - fully assigned in the theory
 				 * - unassigned in boolean
 				 */
-				if (Settings::mc_sat && next == lit_Undef) { // TODO more efficient semantic propagations
+				if (Settings::mc_sat && next == lit_Undef) {
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Looking for semantic propagations...");
-					for (std::size_t level = 0; level <= mMCSAT.level(); level++) {
-						SMTRAT_LOG_DEBUG("smtrat.sat", "Considering " << mMCSAT.get(level).decidedVariables);
-						for (auto v: mMCSAT.get(level).decidedVariables) {
-                            // assert(bool_value(v) == l_Undef || theoryValue(v) == bool_value(v));
-							if (bool_value(v) != l_Undef) continue;
-							auto tv = theoryValue(v);
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Undef, theory value of " << v << " is " << tv);
-                            assert(tv != l_Undef);
-							SMTRAT_LOG_DEBUG("smtrat.sat", "Propagating " << v << " = " << tv);
-							if (tv == l_True) next = mkLit(v, false);
-							else if (tv == l_False) next = mkLit(v, true);
-							assert(next != lit_Undef);
-							break;
-						}
-						if (next != lit_Undef) break;
-					}
+                    Minisat::Var v = mMCSAT.topSemanticPropagation();
+                    if (v != var_Undef) {
+                        assert(bool_value(v) == l_Undef);
+                        auto tv = theoryValue(v);
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "Undef, theory value of " << v << " is " << tv);
+                        assert (tv != l_Undef);
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "Propagating " << v << " = " << tv);
+                        if (tv == l_True) next = mkLit(v, false);
+                        else if (tv == l_False) next = mkLit(v, true);
+                        assert(next != lit_Undef);
+                    }
+                    if (next == lit_Undef) { // TODO SEMPROP disable
+                        assert(mMCSAT.topSemanticPropagation() == var_Undef);
+                        for (std::size_t level = 0; level <= mMCSAT.level(); level++) {
+                            for (auto v: mMCSAT.get(level).decidedVariables) {
+                                SMTRAT_LOG_DEBUG("smtrat.sat", "Checking if " << v << " has been semantically propagated");
+                                assert(theoryValue(v) != l_Undef);
+                                assert(bool_value(v) != l_Undef);
+                                assert(theoryValue(v) == bool_value(v) || !mMCSAT.isConsistent(v));
+                            }
+                        }
+                    }
 				}
 
-                // assert(mMCSAT.trailIsConsistent());
-
-                if (Settings::mc_sat && next == lit_Undef && maybeInconsistent) {
-                    SMTRAT_LOG_DEBUG("smtrat.sat", "Checking whether trail is still consistent");
-                    auto conflict = mMCSAT.isStillConsistent();
+                if (Settings::mc_sat && next == lit_Undef && !mMCSAT.isConsistent()) {
+                    SMTRAT_LOG_DEBUG("smtrat.sat", "Trail inconsistent, fixing inconsistencies...");
+                    auto conflict = mMCSAT.explainInconsistency();
                     if (conflict) {
                         #ifdef DEBUG_SATMODULE
                         cout << "######################################################################" << endl;
@@ -2807,13 +2809,12 @@ namespace smtrat
                         handleTheoryConflict(*conflict);
                         continue;
                     }
-                    maybeInconsistent = false;
                 }
 
                 // If we do not already have a branching literal, we pick one
                 if( next == lit_Undef )
                 {
-                    assert(mMCSAT.trailIsConsistent());
+                    assert(mMCSAT.fullConsistencyCheck());
 
                     // New variable decision:
                     decisions++;
@@ -2842,11 +2843,12 @@ namespace smtrat
                                 SMTRAT_LOG_DEBUG("smtrat.sat", "Insert " << lit << " (" << assignments[i] << ") into SAT solver");
                                 newDecisionLevel();
                                 uncheckedEnqueue(lit);
+                                if (!mMCSAT.isConsistent()) {
+                                    SMTRAT_LOG_DEBUG("smtrat.sat", "Trail got inconsistent, stopping inserting assignments");
+                                    break;
+                                }
                             }
-                            maybeInconsistent = true;
-                            if (!mMCSAT.trailIsConsistent()) {
-                                SMTRAT_LOG_DEBUG("smtrat.sat", "Trail inconsistent after assignment");
-                            }
+                            assert(mMCSAT.isConsistent() == mMCSAT.fullConsistencyCheck());
                             continue;
                         } else {
                             mCurrentAssignmentConsistent = UNSAT;
@@ -2857,7 +2859,7 @@ namespace smtrat
                             continue;
                         }
                     } else if (Settings::mc_sat && next != lit_Undef) { // Boolean decision
-                        SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << " for Boolean decision, checking for theory consistency...");
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << " for Boolean decision, checking for feasibility...");
                         assert(bool_value(next) == l_Undef);
                         // Note that all literals evaluating to some values should already been propagated semantically
                         assert(!((mBooleanConstraintMap.size() > var(next)) && (mBooleanConstraintMap[var(next)].first != nullptr)) || mMCSAT.evaluateLiteral(next) == l_Undef);
@@ -2883,7 +2885,7 @@ namespace smtrat
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Deciding upon " << next);
 				}
                 if (next == lit_Undef) {
-                    assert(mMCSAT.trailIsConsistent());
+                    assert(mMCSAT.fullConsistencyCheck());
                     assert(mMCSAT.theoryAssignmentComplete());
                     SMTRAT_LOG_DEBUG("smtrat.sat", "No further theory variable to assign.");
                     mCurrentAssignmentConsistent = SAT;
@@ -2896,7 +2898,7 @@ namespace smtrat
                     if( mReceivedFormulaPurelyPropositional || mCurrentAssignmentConsistent == SAT )
                     {
                         // Model found:
-                        assert(!maybeInconsistent);
+                        assert(mMCSAT.isConsistent());
                         return l_True;
                     }
                     else
@@ -2946,7 +2948,7 @@ namespace smtrat
                         return l_Undef;
                     }
                     // TODO is that needed here?!?
-                    // assert(!maybeInconsistent);
+                    // assert(mMCSAT.isConsistent());
                     return l_False;
                 }
 
