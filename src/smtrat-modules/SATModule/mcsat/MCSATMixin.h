@@ -116,7 +116,7 @@ private:
 	#endif
 
 	/*
-	struct ModelAssignmentCache { // TODO DYNSCHED model assignment cache
+	struct ModelAssignmentCache { // TODO reintroduce model assignment cache
 		ModelValues mContent;
 		Model mModel;
 		const Model& mBaseModel;
