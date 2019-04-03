@@ -2780,7 +2780,7 @@ namespace smtrat
                         else if (tv == l_False) next = mkLit(v, true);
                         assert(next != lit_Undef);
                     }
-                    if (next == lit_Undef) { // TODO SEMPROP disable
+                    if (next == lit_Undef && false) { // can be enabled to verify that semantic propagations work
                         assert(mMCSAT.topSemanticPropagation() == var_Undef);
                         for (std::size_t level = 0; level <= mMCSAT.level(); level++) {
                             for (auto v: mMCSAT.get(level).decidedVariables) {
