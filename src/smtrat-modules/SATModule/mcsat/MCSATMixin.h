@@ -195,9 +195,9 @@ public:
 			[&baseModule](Minisat::Lit l) -> const auto& { return baseModule.watches[l]; },
 			[&baseModule]() -> Minisat::Var { baseModule.mBooleanConstraintMap.push( std::make_pair( nullptr, nullptr ) ); return baseModule.newVar(true,true,0,false); }
 		}),
-		mTheoryStack(1, TheoryLevel()),
+		mTheoryStack(1, TheoryLevel())
 #ifdef SMTRAT_DEVOPTION_Statistics
-		mStatistics(baseModule.mMCSATStatistics),
+		, mStatistics(baseModule.mMCSATStatistics)
 #endif
 		// mModelAssignmentCache(model())
 	{}
