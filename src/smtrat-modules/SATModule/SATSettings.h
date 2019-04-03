@@ -10,7 +10,7 @@
 
 #include "mcsat/MCSATSettings.h"
 
-#include "VarScheduling.h"
+#include "VarSchedulerForwardDeclarations.h"
     
 namespace smtrat
 {
@@ -103,15 +103,20 @@ namespace smtrat
 
 		static constexpr bool check_for_duplicate_clauses = false;
 
-    static constexpr bool mcsat_resolve_clause_chains = false;
+		static constexpr bool mcsat_resolve_clause_chains = false;
 
-    static constexpr bool mcsat_lazy_explanations = true;
+		static constexpr bool mcsat_lazy_explanations = true;
 
-    static constexpr bool mcsat_learn_lazy_explanations = false;
+		static constexpr bool mcsat_learn_lazy_explanations = false;
 
-    static constexpr unsigned int mcsat_num_insert_assignments = 2;
+		static constexpr unsigned int mcsat_num_insert_assignments = 1;
 
-    using VarScheduling = VarSchedulingDefault;
+		static constexpr bool mcsat_check_feasibility_on_decide = true;
+
+    static constexpr bool mcsat_backjump_decide = true;
+
+		static constexpr bool use_new_var_scheduler = false;
+		using VarScheduler = VarSchedulerBase; // noop scheduler
 
 		using MCSATSettings = mcsat::MCSATSettingsFMVSNL;
     };
@@ -130,7 +135,13 @@ namespace smtrat
         static const bool mc_sat = true;
         // needed for variable scheduling to work:
         static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::DISABLED;
-        using VarScheduling = VarSchedulingMcsat<1>;
+		    static constexpr bool use_new_var_scheduler = true;
+        // using VarScheduler = VarSchedulerMcsatBooleanFirst;
+        // using VarScheduler = VarSchedulerMcsatUnivariateConstraintsOnly<1>;
+
+        // uniform (resp Boolean and theory vars) decision heuristic
+        // Note: mcsat_backjump_decide needs to be activated, otherwise we run into termination problems!
+        using VarScheduler = VarSchedulerMinisat;
     };
   struct SATSettingsMCSATOC : SATSettingsMCSAT {
     static constexpr auto muduleName = "SATModule<MCSATOC>";

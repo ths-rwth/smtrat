@@ -39,7 +39,8 @@
 #include <math.h>
 #include <smtrat-solver/Module.h>
 
-#include "VarScheduling.h"
+#include "VarScheduler.h"
+#include "mcsat/VarSchedulerMcsat.h"
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "SATModuleStatistics.h"
@@ -57,10 +58,12 @@ namespace smtrat
         public Module
     {
 		friend mcsat::MCSATMixin<typename Settings::MCSATSettings>;
-        friend struct VarSchedulingDefault;
-        template<int num> friend struct VarSchedulingMcsat;
-        template<int num, int num2> friend struct VarSchedulingMcsatPreferLowDegrees;
-        template<int num, int num2> friend struct VarSchedulingMcsatLowerFirstPerLevel;
+        //friend struct VarSchedulingDefault;
+        //template<int num> friend struct VarSchedulingMcsat;
+        //template<int num, int num2> friend struct VarSchedulingMcsatPreferLowDegrees;
+        //template<int num, int num2> friend struct VarSchedulingMcsatLowerFirstPerLevel;
+        friend class VarSchedulerBase;
+        friend class VarSchedulerMcsatBase;
 
         private:
 
@@ -209,9 +212,21 @@ namespace smtrat
                 }
             };
 
-            using VarScheduling = typename Settings::VarScheduling;
-            using VarOrderLt = typename VarScheduling::VarOrderLt;
-            using VarDecidabilityCond = typename VarScheduling::VarDecidabilityCond;
+            using VarScheduler = typename Settings::VarScheduler;
+
+            struct VarOrderLt
+            {
+                Minisat::vec<double>& activity;
+
+                bool operator ()( Minisat::Var x, Minisat::Var y )
+                {
+                    return activity[x] > activity[y];
+                }
+
+                explicit VarOrderLt( Minisat::vec<double>& activity ):
+                    activity(activity)
+                {}
+            };
             
             struct CNFInfos
             {
@@ -477,8 +492,8 @@ namespace smtrat
             Minisat::vec<Minisat::Lit> assumptions;
             /// A priority queue of variables ordered with respect to the variable activity.
             Minisat::Heap<VarOrderLt> order_heap;
-            // A check if a given variable can be decided yet
-            VarDecidabilityCond is_var_decidable;
+            /// Alternative approach to order_heap
+            VarScheduler var_scheduler;
             /// Set by 'search()'.
             double progress_estimate;
             /// Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
@@ -919,6 +934,20 @@ namespace smtrat
             }
             
 			inline Minisat::lbool theoryValue( Minisat::Var x ) const {
+                // MCSAT-specific:
+                // There are currently two ways of propagating literals evaluating in the theory
+                // to the Boolean level: Semantic propagations inserted as decisions explicitly
+                // in the search loop and this value function. This value function should have no
+                // effect most of the times as semantic propagations handle most cases. The only case
+                // where theoryValue is neccessary is during backtracking, when semantic propagations
+                // which are not inserted at the earliest possible point are already backtracked but
+                // the corerspondiong literals still evaluate to a value.
+                // Since the trail is left inconsistent after an theory decision, it is important for 
+                // the correctness of the procedure that the Boolean level is considered first here,
+                // as Boolean conflict resolution (which will fix those inconsistencies) relies on that.
+                // Note that the inconsistency mentioned here is not between semantic propagations and
+                // Boolean decisions/propagations but between theory values and Boolean decisions/propagations.
+                // In this sense, the trail is kept consistent throughout the procedure.
 				Minisat::lbool res = assigns[x];
 				if (res == l_Undef) {
 					if (mBooleanConstraintMap.size() <= x) return l_Undef;
@@ -927,16 +956,6 @@ namespace smtrat
 				}
 				//SMTRAT_LOG_DEBUG("smtrat.sat", x << " -> " << res);
 				return res;
-			}
-			inline Minisat::lbool valueAndUpdate( Minisat::Var x )
-			{
-				if (assigns[x] == l_Undef) {
-					Minisat::lbool res = theoryValue(x);
-					if (res == l_True) uncheckedEnqueue(Minisat::mkLit(x, false), Minisat::CRef_TPropagation);
-					else if (res == l_False) uncheckedEnqueue(Minisat::mkLit(x, true), Minisat::CRef_TPropagation);
-				}
-				SMTRAT_LOG_DEBUG("smtrat.sat", x << " -> " << assigns[x]);
-				return assigns[x];
 			}
 
             bool addClauseIfNew(const FormulasT& clause) {
@@ -993,7 +1012,7 @@ namespace smtrat
                     }                    
                 }
 
-                propagateTheory();
+                propagateTheory(); // TODO REFACTOR can be removed ??
                 Minisat::CRef confl = storeLemmas();
                 if (confl != Minisat::CRef_Undef) {
                     handleConflict(confl);
@@ -1017,11 +1036,6 @@ namespace smtrat
 			inline Minisat::lbool theoryValue( Minisat::Lit p ) const {
 				return theoryValue(Minisat::var(p)) == l_Undef ? l_Undef : theoryValue(Minisat::var(p)) ^ Minisat::sign(p);
 			}
-			inline Minisat::lbool valueAndUpdate( Minisat::Lit p )
-            {
-                auto res = valueAndUpdate(Minisat::var(p));
-				return res == l_Undef ? l_Undef : valueAndUpdate(Minisat::var(p)) ^ Minisat::sign(p);
-            }
             
             /**
              * @return The current number of assigned literals.
@@ -1147,8 +1161,27 @@ namespace smtrat
              */
             inline void insertVarOrder( Minisat::Var x )
             {
-                if( !order_heap.inHeap( x ) && decision[x] )
-                    order_heap.insert( x );
+                SMTRAT_LOG_TRACE("smtrat.sat", "Insert " << x << " into order heap");
+
+                if (Settings::mc_sat) {
+                    // Note: insertVarOrder should never be called with a VARASSIGN when it's created
+                    if (mBooleanConstraintMap.size() > x && mBooleanConstraintMap[x].first != nullptr) {
+                        const auto& reabstr = mBooleanConstraintMap[x].first->reabstraction;
+                        if (reabstr.getType() == carl::FormulaType::VARASSIGN) {
+                            SMTRAT_LOG_DEBUG("smtrat.sat", "Converting " << x << " (" << reabstr << ")...")
+                            const carl::Variable tvar = reabstr.variableAssignment().var();
+                            x = mMCSAT.minisatVar(tvar);
+                            SMTRAT_LOG_DEBUG("smtrat.sat", "..to " << x << " (" << tvar << ")");
+                        }
+                    }
+                }
+
+                if (Settings::use_new_var_scheduler) {
+                    var_scheduler.insert(x);
+                } else {
+                    if( !order_heap.inHeap( x ) && decision[x] )
+                        order_heap.insert( x );
+                }
             }
             
             /**
@@ -1171,7 +1204,6 @@ namespace smtrat
              */
             Minisat::Lit pickBranchLit();
 			
-			void pickTheoryBranchLit();
 			void checkAbstractionsConsistency() {
 				for (int i = 0; i < mBooleanConstraintMap.size(); i++) {
 					auto ptr1 = mBooleanConstraintMap[i].first;
@@ -1183,32 +1215,6 @@ namespace smtrat
 						std::exit(24);
 					}
 					assert(ptr1->updateInfo * ptr2->updateInfo <= 0);
-				}
-			}
-			void fixTheoryPassedFormulas() {
-				std::vector<Abstraction*> toRemove;
-				for (const auto& pf: rPassedFormula()) {
-					auto it = mConstraintLiteralMap.find(pf.formula());
-					assert(it != mConstraintLiteralMap.end());
-					auto lit = it->second.front();
-					Abstraction* abstrptr = sign(lit) ? mBooleanConstraintMap[var(lit)].second : mBooleanConstraintMap[var(lit)].first;
-					assert(abstrptr != nullptr);
-					assert(abstrptr->updateInfo <= 0);
-					if (abstrptr->updateInfo < 0) continue;
-					if (!mMCSAT.isFormulaUnivariate(abstrptr->reabstraction)) {
-						SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Removing " << abstrptr->reabstraction << " with updateInfo " << abstrptr->updateInfo);
-						toRemove.push_back(abstrptr);
-						mFutureChangedBooleans[mMCSAT.currentVariable()].emplace_back(var(lit));
-					} else {
-                        SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Still univariate: " << abstrptr->reabstraction);
-                    }
-				}
-				for (auto abstrptr: toRemove) {
-					abstrptr->updateInfo--;
-					checkAbstractionsConsistency();
-					adaptPassedFormula(*abstrptr);
-					abstrptr->updateInfo++;
-					checkAbstractionsConsistency();
 				}
 			}
             
@@ -1445,7 +1451,28 @@ namespace smtrat
              */
             inline void varBumpActivity( Minisat::Var v, double inc )
             {
-                if( (activity[v] += inc) > 1e100 )
+                bool rescale = false;
+
+                if (Settings::mc_sat) {
+                    for (auto tvar : mMCSAT.theoryVarsIn(v)) {
+                        if ((activity[tvar] += inc) > 1e100) {
+                            rescale = true;
+                        }
+                        var_scheduler.increaseActivity(tvar);
+                    }
+                }
+
+                if ((activity[v] += inc) > 1e100) {
+                    rescale = true;
+                }
+                if (Settings::use_new_var_scheduler) {
+                    var_scheduler.increaseActivity(v);
+                } else {
+                    if( order_heap.inHeap( v ) )
+                        order_heap.decrease( v );
+                }
+
+                if( rescale )
                 {
                     // Rescale:
                     for( int i = 0; i < nVars(); i++ )
@@ -1458,10 +1485,6 @@ namespace smtrat
                 {
                     mChangedActivities.push_back( (signed) v );
                 }
-
-                // Update order_heap with respect to new activity:
-                if( order_heap.inHeap( v ) )
-                    order_heap.decrease( v );
             }
             
             /**

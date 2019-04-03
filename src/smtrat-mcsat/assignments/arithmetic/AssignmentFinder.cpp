@@ -11,6 +11,10 @@ boost::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::
 	AssignmentFinder_detail af(var, data.model());
 	FormulasT conflict;
 	for (const auto& c: data.constraints()) {
+		if (!active(data, c)) {
+			SMTRAT_LOG_TRACE("smtrat.mcsat.arithmetic", "Skipping inactive Constraint " << c);
+			continue;
+		}
 		assert(c.getType() == carl::FormulaType::CONSTRAINT);
 		SMTRAT_LOG_TRACE("smtrat.mcsat.arithmetic", "Adding Constraint " << c);
 		if(!af.addConstraint(c)){
@@ -20,6 +24,10 @@ boost::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::
 		}
 	}
 	for (const auto& b: data.mvBounds()) {
+		if (!active(data, b)) {
+			SMTRAT_LOG_TRACE("smtrat.mcsat.arithmetic", "Skipping inactive MVBound " << b);
+			continue;
+		}
 		SMTRAT_LOG_TRACE("smtrat.mcsat.arithmetic", "Adding MVBound " << b);
 		if (!af.addMVBound(b)) {
 			conflict.push_back(b);
@@ -30,6 +38,31 @@ boost::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.arithmetic", "Calling AssignmentFinder...");
 	return af.findAssignment();
 }
+
+bool AssignmentFinder::active(const mcsat::Bookkeeping& data, const FormulaT& f) const {
+		if(f.getType() != carl::FormulaType::VARCOMPARE)
+			return true;
+
+		const auto& val = f.variableComparison().value();
+		if (std::holds_alternative<VariableComparisonT::RAN>(val)) {
+			return true;
+		} else {
+			if (data.model().find(f.variableComparison().var()) == data.model().end()) {
+				return true;
+			} else {
+				const auto& mvroot = std::get<MultivariateRootT>(val);
+				auto vars = mvroot.poly().gatherVariables();
+				vars.erase(mvroot.var());
+				for (auto iter = data.assignedVariables().begin(); iter != data.assignedVariables().end(); iter++) {
+					if (*iter == f.variableComparison().var()) {
+						break;
+					}
+					vars.erase(*iter);
+				}
+				return vars.size() == 0;
+			}
+		}
+	}
 
 }
 }

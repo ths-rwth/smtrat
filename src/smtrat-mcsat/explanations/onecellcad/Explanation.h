@@ -10,7 +10,6 @@ namespace onecellcad {
 struct Explanation {
 	boost::optional<mcsat::Explanation>
 	operator()(const mcsat::Bookkeeping& trail, // current assignment state
-			   const std::vector<carl::Variable>& varOrder,
 			   carl::Variable var,
 			   const FormulasT& trailLiterals) const;
 };
