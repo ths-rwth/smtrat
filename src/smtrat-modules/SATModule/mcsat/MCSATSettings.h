@@ -19,19 +19,20 @@ namespace mcsat {
 struct MCSATSettingsNL {
 	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-//	using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
+    //using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
 	using ExplanationBackend = SequentialExplanation<nlsat::Explanation>;
 };
 
 //OneCell only
 struct MCSATSettingsOC {
-  static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
+    static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-  using ExplanationBackend = SequentialExplanation<onecellcad::Explanation, nlsat::Explanation>;
+    using ExplanationBackend = SequentialExplanation<onecellcad::Explanation, nlsat::Explanation>;
 };
 struct MCSATSettingsFMVSOC {
-  static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
-  using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
+	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+	//using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
 	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,onecellcad::Explanation, nlsat::Explanation>;
 };
 
