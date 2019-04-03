@@ -2830,6 +2830,9 @@ namespace smtrat
                         SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << " for a theory decision, assigning...");
                         auto res = mMCSAT.makeTheoryDecision(tvar);
                         if (carl::variant_is_type<FormulasT>(res)) {
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                            mpMCSATStatistics->theoryDecision();
+                            #endif
                             mCurrentAssignmentConsistent = SAT;
                             const auto& assignments = boost::get<FormulasT>(res);
                             assert(assignments.size() > 0);
@@ -2845,6 +2848,9 @@ namespace smtrat
                                 uncheckedEnqueue(lit);
                                 if (!mMCSAT.isConsistent()) {
                                     SMTRAT_LOG_DEBUG("smtrat.sat", "Trail got inconsistent, stopping inserting assignments");
+                                    #ifdef SMTRAT_DEVOPTION_Statistics
+                                    mpMCSATStatistics->inconsistentTheoryDecision();
+                                    #endif
                                     break;
                                 }
                             }
@@ -2855,6 +2861,9 @@ namespace smtrat
                             SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << (mMCSAT.level()+1));
                             insertVarOrder(var(next));
                             SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << boost::get<mcsat::Explanation>(res));
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                            mpMCSATStatistics->theoryConflict();
+                            #endif
                             handleTheoryConflict(boost::get<mcsat::Explanation>(res));
                             continue;
                         }
@@ -2870,6 +2879,9 @@ namespace smtrat
                                     SMTRAT_LOG_DEBUG("smtrat.sat", "Found conflict " << *res.second);
                                     insertVarOrder(var(next));
                                     handleTheoryConflict(*res.second);
+                                    #ifdef SMTRAT_DEVOPTION_Statistics
+                                    mpMCSATStatistics->theoryConflict();
+                                    #endif
                                     continue;   
                                 } else {
                                     SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " leads to conflict, propagate " << ~next);
@@ -2881,6 +2893,9 @@ namespace smtrat
                                 }
                             }
                         }
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        mpMCSATStatistics->booleanDecision();
+                        #endif
                     }
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Deciding upon " << next);
 				}
@@ -2940,6 +2955,9 @@ namespace smtrat
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Hit conflicting clause " << confl);
                 conflicts++;
                 conflictC++;
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                mpMCSATStatistics->booleanConflict();
+                #endif
                 
                 if( decisionLevel() <= assumptions.size() )
                 {
@@ -3050,6 +3068,9 @@ namespace smtrat
                     SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Propagate asserting clause");
 					uncheckedEnqueue( learnt_clause[0], _confl );
 				} else if (Settings::mcsat_backjump_decide) {
+                    #ifdef SMTRAT_DEVOPTION_Statistics
+                    mpMCSATStatistics->backjumpDecide();
+                    #endif
                     SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decide literal as clause is not asserting");
                     assert(assumptions.size() <= backtrack_level);
                     newDecisionLevel();
