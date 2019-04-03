@@ -22,6 +22,7 @@
 #include <smtrat-solver/Module.h>
 
 #include "PBPPSettings.h"
+#include "PBPPStatistics.h"
 #include "Encoders/PseudoBoolNormalizer.h"
 
 

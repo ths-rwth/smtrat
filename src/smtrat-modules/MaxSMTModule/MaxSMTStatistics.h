@@ -9,7 +9,7 @@
 #pragma once
 
 #ifdef SMTRAT_DEVOPTION_Statistics
-#include <lib/utilities/stats/Statistics.h>
+#include <smtrat-common/statistics/Statistics.h>
 
 namespace smtrat
 {
@@ -32,7 +32,7 @@ namespace smtrat
 			++mExampleStatistic;
 		}
 		MaxSMTStatistics( const std::string& _statisticName ):
-			Statistics( _statisticName, this ),
+			Statistics( ),
 			mExampleStatistic( 0 )
 		{}
 		~MaxSMTStatistics() {}

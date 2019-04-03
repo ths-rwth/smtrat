@@ -23,8 +23,10 @@ namespace smtrat
 		{
 		}
 		PBPPStatistics( const std::string& _statisticName ):
-			Statistics( _statisticName )
-		{}
+			Statistics( )
+		{
+			set_name(_statisticName);
+		}
 		~PBPPStatistics() {}
 	};
 }
