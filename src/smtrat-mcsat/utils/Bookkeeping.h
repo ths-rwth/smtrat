@@ -46,14 +46,6 @@ public:
 	const auto& mvBounds() const {
 		return mMVBounds;
 	}
-	const auto activeMvBounds() const { // TODO DYNSCHED more efficient
-		std::vector<FormulaT> result;
-		for (const auto& b : mMVBounds) {
-			if (isMVBoundActive(b))
-				result.push_back(b);
-		}
-		return result;
-	}
 	const auto& variables() const {
 		return mVariables;
 	}
@@ -110,30 +102,6 @@ public:
 		mAssignedVariables.pop_back();
 		mAssignments.pop_back();
 	}
-
-	bool isMVBoundActive(const FormulaT& f) const { // TODO DYNSCHED move somewhere else!
-		assert(f.getType() == carl::FormulaType::VARCOMPARE);
-
-		const auto& val = f.variableComparison().value();
-		if (std::holds_alternative<VariableComparisonT::RAN>(val)) {
-			return true;
-		} else {
-			if (model().find(f.variableComparison().var()) == model().end()) {
-				return true;
-			} else {
-				const auto& mvroot = std::get<MultivariateRootT>(val);
-				auto vars = mvroot.poly().gatherVariables();
-				vars.erase(mvroot.var());
-				for (auto iter = mAssignedVariables.begin(); iter != mAssignedVariables.end(); iter++) {
-					if (*iter == f.variableComparison().var()) {
-						break;
-					}
-					vars.erase(*iter);
-				}
-				return vars.size() == 0;
-			}
-		}
-	}
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Bookkeeping& bk) {
@@ -143,7 +111,6 @@ inline std::ostream& operator<<(std::ostream& os, const Bookkeeping& bk) {
 	os << "- Theory-assignments: " << bk.assignments() << "\n";
 	os << "- Asserted literals: " << bk.constraints() << "\n";
 	os << "- Bounds: " << bk.mvBounds() << "\n";
-	os << "- Active Bounds: " << bk.activeMvBounds() << "\n";
 	return os;
 }
 

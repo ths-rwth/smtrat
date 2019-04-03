@@ -107,6 +107,10 @@ public:
 		popConstraint(f);
 		return res;
 	}
+
+	bool isActive(const FormulaT& f) const {
+		return mAssignmentFinder.active(getTrail(), f);
+	}
 };
 
 

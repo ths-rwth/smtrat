@@ -552,11 +552,13 @@ public:
 			return true;
 		};
 		for (const auto& c: trail.constraints()) {
+			if (!mBackend.isActive(c)) continue;
 			//auto category = mcsat::constraint_type::categorize(c, model(), carl::Variable::NO_VARIABLE);
 			//if (category != mcsat::ConstraintType::Assigned) continue;
 			if (!evaluator(c)) return false;
 		}
-		for (const auto& b: trail.activeMvBounds()) {
+		for (const auto& b: trail.mvBounds()) {
+			if (!mBackend.isActive(b)) continue;
 			//auto category = mcsat::constraint_type::categorize(b, model(), carl::Variable::NO_VARIABLE);
 			//if (category != mcsat::ConstraintType::Assigned) continue;
 			if (!evaluator(b)) return false;

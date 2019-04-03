@@ -51,7 +51,7 @@ struct AssignmentFinder {
 			}
 		}
 
-		for (const auto& c: data.activeMvBounds()) {
+		for (const auto& c: data.mvBounds()) {
 			SMTRAT_LOG_TRACE("smtrat.mcsat.smtaf", "Adding MVBound " << c);
 			boost::tribool res = af.addMVBound(c);
 			if (indeterminate(res)) {
@@ -70,6 +70,10 @@ struct AssignmentFinder {
 			return af.findAssignment(varPosEnd);
 		}
 		assert(false);
+	}
+
+	bool active(const mcsat::Bookkeeping&, const FormulaT&) const {
+		return true;
 	}
 };
 

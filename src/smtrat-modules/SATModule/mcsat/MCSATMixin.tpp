@@ -49,7 +49,7 @@ void MCSATMixin<Settings>::updateCurrentLevel() {
 			if (!evalres.isBool()) {
 				++vit;
 				continue;
-			} else if (mGetter.getBoolVarValue(*vit) != l_Undef && mGetter.getBoolVarValue(*vit) != Minisat::lbool(evalres.asBool())) {
+			} else if (mBackend.isActive(f) && mGetter.getBoolVarValue(*vit) != l_Undef && mGetter.getBoolVarValue(*vit) != Minisat::lbool(evalres.asBool())) {
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found inconsistent variable " << *vit);
 				mInconsistentVariables.push_back(*vit);
 			}
