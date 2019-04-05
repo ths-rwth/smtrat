@@ -1665,7 +1665,7 @@ namespace smtrat
         {
             mNonTseitinShadowedOccurrences.push( dvar ? 1 : 0 );
         }
-        if( !mReceivedFormulaPurelyPropositional && Settings::check_active_literal_occurrences )
+        if( /*!mReceivedFormulaPurelyPropositional &&*/ Settings::check_active_literal_occurrences )
         {
             mLiteralsClausesMap.emplace_back();
             mLiteralsActivOccurrences.emplace_back();
@@ -2090,12 +2090,13 @@ namespace smtrat
         }
         else
             clauses_literals += (uint64_t)c.size();
-        if( !mReceivedFormulaPurelyPropositional && Settings::check_active_literal_occurrences )
+        if( /*!mReceivedFormulaPurelyPropositional &&*/ Settings::check_active_literal_occurrences )
         {
-            bool clauseSatisfied = satisfied(c);
+            bool clauseSatisfied = bool_satisfied(c);
             for( int i = 0; i < c.size(); ++i )
             {
                 size_t v = (size_t)var(c[i]);
+                assert(mLiteralsClausesMap.size() > v);
                 if( sign(c[i]) )
                 {
                     if( !clauseSatisfied )
@@ -2134,9 +2135,9 @@ namespace smtrat
             learnts_literals -= (uint64_t)c.size();
         else
             clauses_literals -= (uint64_t)c.size();
-        if( !mReceivedFormulaPurelyPropositional && Settings::check_active_literal_occurrences )
+        if( /*!mReceivedFormulaPurelyPropositional &&*/ Settings::check_active_literal_occurrences )
         {
-            bool clauseSatisfied = satisfied(c);
+            bool clauseSatisfied = bool_satisfied(c);
             for( int i = 0; i < c.size(); ++i )
             {
                 size_t v = (size_t)var(c[i]);
@@ -2174,12 +2175,23 @@ namespace smtrat
         ca.free( cr );
     }
 
-    template<class Settings>
+    template<class Settings> // TODO REFACTOR can be replaced by bool_satisfied?
     bool SATModule<Settings>::satisfied( const Clause& c ) const
     {
         for( int i = 0; i < c.size(); i++ )
         {
             if( value( c[i] ) == l_True )
+                return true;
+        }
+        return false;
+    }
+
+    template<class Settings>
+    bool SATModule<Settings>::bool_satisfied( const Clause& c ) const
+    {
+        for( int i = 0; i < c.size(); i++ )
+        {
+            if( bool_value( c[i] ) == l_True )
                 return true;
         }
         return false;
@@ -2301,7 +2313,7 @@ namespace smtrat
             }
         }
         ass = l_Undef;
-        if( !mReceivedFormulaPurelyPropositional && Settings::check_active_literal_occurrences )
+        if( /*!mReceivedFormulaPurelyPropositional &&*/ Settings::check_active_literal_occurrences )
         {
             // Check clauses which are going to be satisfied by this assignment.
             size_t v = (size_t)_var;
@@ -2310,7 +2322,7 @@ namespace smtrat
             {
                 const Clause& c = ca[cr];
                 // Check if clause is not yet satisfied.
-                if( !satisfied(c) )
+                if( !bool_satisfied(c) )
                 {
                     for( int i = 0; i < c.size(); ++i )
                     {
@@ -3153,7 +3165,7 @@ namespace smtrat
             mNewSplittingVars.pop_back();
         else
         {
-            if( !mReceivedFormulaPurelyPropositional && Settings::check_active_literal_occurrences )
+            if( /*!mReceivedFormulaPurelyPropositional &&*/ Settings::check_active_literal_occurrences )
             {
                 while( next == var_Undef && !mPropagationFreeDecisions.empty() )
                 {
@@ -3634,7 +3646,7 @@ namespace smtrat
                 }
             }
         }
-        if( !mReceivedFormulaPurelyPropositional && Settings::check_active_literal_occurrences )
+        if( /*!mReceivedFormulaPurelyPropositional &&*/ Settings::check_active_literal_occurrences )
         {
             // Check clauses which are going to be satisfied by this assignment.
             size_t v = (size_t)var(p);
@@ -3643,7 +3655,7 @@ namespace smtrat
             {
                 const Clause& c = ca[cr];
                 // Check if clause is not yet satisfied.
-                if( !satisfied(c) )
+                if( !bool_satisfied(c) )
                 {
                     for( int i = 0; i < c.size(); ++i )
                     {
@@ -4162,7 +4174,7 @@ NextClause:
             }
         }
         
-        if( !mReceivedFormulaPurelyPropositional && Settings::check_active_literal_occurrences )
+        if( /*!mReceivedFormulaPurelyPropositional &&*/ Settings::check_active_literal_occurrences )
         {
             for( auto& cls : mLiteralsClausesMap )
             {

@@ -1556,6 +1556,7 @@ namespace smtrat
              * @return TRUE if a clause is satisfied in the current state.
              */
             bool satisfied( const Minisat::Clause& c ) const;
+            bool bool_satisfied( const Minisat::Clause& c ) const;
 
             /**
              * [Minisat related code]
