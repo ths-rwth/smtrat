@@ -157,6 +157,7 @@ private:
 
 	struct VarProperties {
 		boost::optional<std::size_t> maxDegree = boost::none;
+		boost::optional<std::vector<Minisat::Var>> theoryVars = boost::none;
 	};
 	/// Cache for static information about variables
 	std::vector<VarProperties> mVarPropertyCache;
@@ -597,24 +598,32 @@ public:
 				
 			}
 		}
-		assert(mVarPropertyCache[v].maxDegree != boost::none);
 
+		assert(mVarPropertyCache[v].maxDegree != boost::none);
 		return *mVarPropertyCache[v].maxDegree;
 	}
 
-	std::vector<Minisat::Var> theoryVarsIn(const Minisat::Var& v) { // TODO DYNSCHED cache?
-		if (!mGetter.isTheoryAbstraction(v)) {
-			return std::vector<Minisat::Var>();
-		}
-		const auto& reabstraction = mGetter.reabstractVariable(v);
+	std::vector<Minisat::Var> theoryVarsIn(const Minisat::Var& var) {
+		std::size_t v = varid(var);
+		assert(v < mVarPropertyCache.size());
 
-		carl::Variables tvars;
-		reabstraction.arithmeticVars(tvars);
-		std::vector<Minisat::Var> vars;
-		for (const auto& tvar : tvars) {
-			vars.push_back(minisatVar(tvar));
+		if (mVarPropertyCache[v].theoryVars == boost::none) {
+			if (!mGetter.isTheoryAbstraction(v)) {
+				mVarPropertyCache[v].theoryVars = std::vector<Minisat::Var>();
+			} else {
+				const auto& reabstraction = mGetter.reabstractVariable(v);
+				carl::Variables tvars;
+				reabstraction.arithmeticVars(tvars);
+				std::vector<Minisat::Var> vars;
+				for (const auto& tvar : tvars) {
+					vars.push_back(minisatVar(tvar));
+				}
+				mVarPropertyCache[v].theoryVars = vars;
+			}
 		}
-		return vars;
+
+		assert(mVarPropertyCache[v].theoryVars != boost::none);
+		return *mVarPropertyCache[v].theoryVars;
 	}
 
 	// ***** Output
