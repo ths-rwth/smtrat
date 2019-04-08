@@ -611,7 +611,7 @@ public:
 			if (!mGetter.isTheoryAbstraction(v)) {
 				mVarPropertyCache[v].theoryVars = std::vector<Minisat::Var>();
 			} else {
-				const auto& reabstraction = mGetter.reabstractVariable(v);
+				const auto& reabstraction = mGetter.reabstractVariable(var);
 				carl::Variables tvars;
 				reabstraction.arithmeticVars(tvars);
 				std::vector<Minisat::Var> vars;
