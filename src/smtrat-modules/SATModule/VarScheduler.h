@@ -72,7 +72,6 @@ namespace smtrat
         void rebuildActivities() {
         }
 
-        // TODO DYNSCHED get rid of parameter here
         template<typename Constraints>
         void rebuildTheoryVars(const Constraints&) {
         }

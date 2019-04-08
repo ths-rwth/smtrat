@@ -108,7 +108,7 @@ namespace smtrat {
          */
         size_t univariateLevel(Minisat::Var v) {
             if (!isTheoryAbstraction(v)) 
-                return 0; // TODO DYNSCHED how to handle non-theory abstractions?
+                return 0;
             const auto& reabstraction = reabstractVariable(v);
 
             carl::Variables vars;
