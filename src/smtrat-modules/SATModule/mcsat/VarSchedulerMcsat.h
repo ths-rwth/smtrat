@@ -37,6 +37,7 @@ namespace smtrat {
      * 
      * Should not be used directly.
      */
+    template<mcsat::VariableOrdering vot>
     class TheoryVarSchedulerStatic : public VarSchedulerMcsatBase {
         std::vector<Minisat::Var> ordering;
         std::vector<Minisat::Var>::const_iterator nextTheoryVar = ordering.end();
@@ -84,8 +85,7 @@ namespace smtrat {
         void rebuildTheoryVars(const Constraints& c) {
             assert(!initialized);
             // const auto& c = booleanConstraintMap();
-            // TODO DYNSCHED settings ...
-            std::vector<carl::Variable> tordering = mcsat::calculate_variable_order<mcsat::VariableOrdering::FeatureBased>(c);
+            std::vector<carl::Variable> tordering = mcsat::calculate_variable_order<vot>(c);
             assert(tordering.size() == ordering.size());
             ordering.clear();
             for (const auto& tvar : tordering) {
@@ -129,9 +129,10 @@ namespace smtrat {
      * Variable scheduling that all decides Boolean variables first before
      * deciding any theory variable.
      */
+    template<mcsat::VariableOrdering vot>
     class VarSchedulerMcsatBooleanFirst : public VarSchedulerMcsatBase {
         VarSchedulerMinisat boolean_ordering;
-        TheoryVarSchedulerStatic theory_ordering;
+        TheoryVarSchedulerStatic<vot> theory_ordering;
         
     public:
         template<typename BaseModule>
@@ -217,10 +218,10 @@ namespace smtrat {
      * Decides only Constraints univariate in the current theory variable while the
      * theory ordering is static.
      */
-    template<int lookahead>
+    template<int lookahead, mcsat::VariableOrdering vot>
     class VarSchedulerMcsatUnivariateConstraintsOnly : public VarSchedulerMcsatBase {
         VarSchedulerMinisat boolean_ordering;
-        TheoryVarSchedulerStatic theory_ordering;
+        TheoryVarSchedulerStatic<vot> theory_ordering;
 
         bool varCmp(Minisat::Var x, Minisat::Var y) {
             auto x_lvl = theory_ordering.univariateLevel(x);
