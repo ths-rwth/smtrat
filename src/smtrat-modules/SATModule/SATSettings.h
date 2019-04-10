@@ -142,6 +142,7 @@ namespace smtrat
         // uniform (resp Boolean and theory vars) decision heuristic
         // Note: mcsat_backjump_decide needs to be activated, otherwise we run into termination problems!
         using VarScheduler = VarSchedulerMinisat;
+        // using VarScheduler = VarSchedulerFixedRandom;
     };
   struct SATSettingsMCSATOC : SATSettingsMCSAT {
     static constexpr auto muduleName = "SATModule<MCSATOC>";
