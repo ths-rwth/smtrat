@@ -13,7 +13,7 @@ namespace smtrat {
 
     protected:
         std::function<bool(Minisat::Var)> isTheoryVar;
-        std::function<carl::Variable(Minisat::Var)> theoryVar;
+        std::function<carl::Variable(Minisat::Var)> carlVar;
         std::function<Minisat::Var(carl::Variable)> minisatVar;
         // std::function<const auto&()> booleanConstraintMap;
         std::function<bool(Minisat::Var)> isTheoryAbstraction;
@@ -24,7 +24,7 @@ namespace smtrat {
         VarSchedulerMcsatBase(BaseModule& baseModule) :
             VarSchedulerBase(baseModule),
             isTheoryVar([&baseModule](Minisat::Var v){ return baseModule.mMCSAT.isTheoryVar(v); }),
-            theoryVar([&baseModule](Minisat::Var v){ return baseModule.mMCSAT.theoryVar(v); }),
+            carlVar([&baseModule](Minisat::Var v){ return baseModule.mMCSAT.carlVar(v); }),
             minisatVar([&baseModule](carl::Variable v){ return baseModule.mMCSAT.minisatVar(v); }),
             isTheoryAbstraction([&baseModule](Minisat::Var v){ return (baseModule.mBooleanConstraintMap.size() > v) && (baseModule.mBooleanConstraintMap[v].first != nullptr); }),
             reabstractVariable([&baseModule](Minisat::Var v) -> const auto& { return baseModule.mBooleanConstraintMap[v].first->reabstraction; })
@@ -116,7 +116,7 @@ namespace smtrat {
             if (vars.empty())
                 return 0;
             for (std::size_t i = ordering.size(); i > 0; i--) {
-                if (vars.find(theoryVar(ordering[i-1])) != vars.end()) {
+                if (vars.find(carlVar(ordering[i-1])) != vars.end()) {
                     return i;
                 }
             }

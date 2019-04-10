@@ -2819,7 +2819,7 @@ namespace smtrat
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Picking a literal for a decision");
 					next = pickBranchLit();
                     if (Settings::mc_sat && next != lit_Undef && mMCSAT.isTheoryVar(var(next))) { // theory decision
-                        const carl::Variable& tvar = mMCSAT.theoryVar(var(next));
+                        const carl::Variable& tvar = mMCSAT.carlVar(var(next));
                         assert(!mMCSAT.isAssignedTheoryVariable(tvar));
                         SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << " for a theory decision, assigning...");
                         auto res = mMCSAT.makeTheoryDecision(tvar);

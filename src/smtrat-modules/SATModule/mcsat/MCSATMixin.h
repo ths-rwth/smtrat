@@ -460,11 +460,11 @@ public:
 		return mTheoryVarMapping.has(v);
 	}
 
-	const carl::Variable& theoryVar(Minisat::Var v) const { // TODO REFACTOR rename
+	const carl::Variable& carlVar(Minisat::Var v) const {
 		return mTheoryVarMapping.carlVar(v);
 	}
 
-	Minisat::Var minisatVar(const carl::Variable& v) const { // TODO REFACTOR rename
+	Minisat::Var minisatVar(const carl::Variable& v) const {
 		return mTheoryVarMapping.minisatVar(v);
 	}
 
@@ -603,7 +603,7 @@ public:
 		return *mVarPropertyCache[v].maxDegree;
 	}
 
-	std::vector<Minisat::Var> theoryVarsIn(const Minisat::Var& var) {
+	std::vector<Minisat::Var> theoryVars(const Minisat::Var& var) {
 		std::size_t v = varid(var);
 		assert(v < mVarPropertyCache.size());
 
