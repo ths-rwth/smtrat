@@ -3,6 +3,7 @@
 #include "SolverTypes.h"
 #include "Heap.h"
 #include <functional>
+#include <random>
 
 namespace smtrat
 {
@@ -72,7 +73,6 @@ namespace smtrat
         void rebuildActivities() {
         }
 
-        // TODO DYNSCHED get rid of parameter here
         template<typename Constraints>
         void rebuildTheoryVars(const Constraints&) {
         }
@@ -170,5 +170,95 @@ namespace smtrat
             rebuild();
         }
 
+    };
+
+    class VarSchedulerFixedRandom : public VarSchedulerMinisat {
+        std::vector<Minisat::Var> ordering;
+
+    public:
+
+        template<typename BaseModule>
+        explicit VarSchedulerFixedRandom( BaseModule& baseModule ) :
+            VarSchedulerMinisat( baseModule, [this](Minisat::Var x, Minisat::Var y) -> bool { return getIndex(x) > getIndex(y); } )
+        {} 
+
+    private:
+
+        auto getIndex(Minisat::Var var) {
+            auto iter = std::find(ordering.begin(), ordering.end(), var);
+            if (iter == ordering.end()) {
+                auto it = ordering.begin();
+                long unsigned int idx = 0;
+                if (ordering.size() > 0) {
+                    std::random_device rd;
+                    std::mt19937 gen(rd());
+                    std::uniform_int_distribution<long unsigned int> dis(0, ordering.size()-1);
+                    idx = dis(gen);
+                }
+                it += idx;
+                iter = ordering.insert(it, var);
+            }
+            return iter;
+        }
+    };
+
+    /**
+     * Random scheduler
+     */
+    class VarSchedulerRandom : public VarSchedulerBase {
+
+        std::vector<Minisat::Var> vars;
+
+        protected:
+        bool valid(Minisat::Var var) {
+            return isDecisionVar(var) && isBoolValueUndef(var);
+        }
+
+    public:
+        template<typename BaseModule>
+        explicit VarSchedulerRandom( BaseModule& baseModule ) :
+            VarSchedulerBase( baseModule )
+        {}
+
+        void rebuild() {}
+
+        void insert(Minisat::Var var) {
+            if (std::find(vars.begin(), vars.end(), var) == vars.end() && valid(var)) {
+                auto it = vars.begin();
+                std::random_device rd;
+                std::mt19937 gen(rd());
+                std::uniform_int_distribution<long unsigned int> dis(0, vars.size()-1);
+                it += dis(gen);
+                vars.insert(it, var);
+            }
+        }
+
+        Minisat::Var top() {
+            if (empty())
+                return var_Undef;
+            return vars.back();
+        }
+
+        Minisat::Var pop() {
+            if (empty())
+                return var_Undef;
+            auto res = vars.back();
+            vars.pop_back();
+            return res;
+        }
+
+        bool empty() {
+            while(!vars.empty() && !valid(vars.back()))
+                vars.pop_back();
+            return vars.empty();
+        }
+
+        bool contains(Minisat::Var var) {
+            return std::find(vars.begin(), vars.end(), var) != vars.end() && valid(var);
+        }
+
+        void print() const {
+            std::cout << "Random scheduler contents: " << vars << std::endl;
+        }
     };
 }

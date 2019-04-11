@@ -53,6 +53,11 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, // current assignment s
 						const FormulasT& trailLiterals) const {
 	assert(trail.model().size() == trail.assignedVariables().size());
 
+	#if not (defined USE_COCOA || defined USE_GINAC)
+		// OneCellCAD needs carl::irreducibleFactors to be implemented
+		#warning OneCellCAD may be incorrect as USE_COCOA is disabled
+	#endif
+
 	// compute compatible complete variable ordering
 	std::vector varOrder(trail.assignedVariables());
 	for (const auto& v : trail.variables()) {

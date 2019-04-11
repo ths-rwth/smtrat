@@ -13,7 +13,7 @@ namespace smtrat {
 
     protected:
         std::function<bool(Minisat::Var)> isTheoryVar;
-        std::function<carl::Variable(Minisat::Var)> theoryVar;
+        std::function<carl::Variable(Minisat::Var)> carlVar;
         std::function<Minisat::Var(carl::Variable)> minisatVar;
         // std::function<const auto&()> booleanConstraintMap;
         std::function<bool(Minisat::Var)> isTheoryAbstraction;
@@ -24,7 +24,7 @@ namespace smtrat {
         VarSchedulerMcsatBase(BaseModule& baseModule) :
             VarSchedulerBase(baseModule),
             isTheoryVar([&baseModule](Minisat::Var v){ return baseModule.mMCSAT.isTheoryVar(v); }),
-            theoryVar([&baseModule](Minisat::Var v){ return baseModule.mMCSAT.theoryVar(v); }),
+            carlVar([&baseModule](Minisat::Var v){ return baseModule.mMCSAT.carlVar(v); }),
             minisatVar([&baseModule](carl::Variable v){ return baseModule.mMCSAT.minisatVar(v); }),
             isTheoryAbstraction([&baseModule](Minisat::Var v){ return (baseModule.mBooleanConstraintMap.size() > v) && (baseModule.mBooleanConstraintMap[v].first != nullptr); }),
             reabstractVariable([&baseModule](Minisat::Var v) -> const auto& { return baseModule.mBooleanConstraintMap[v].first->reabstraction; })
@@ -37,6 +37,7 @@ namespace smtrat {
      * 
      * Should not be used directly.
      */
+    template<mcsat::VariableOrdering vot>
     class TheoryVarSchedulerStatic : public VarSchedulerMcsatBase {
         std::vector<Minisat::Var> ordering;
         std::vector<Minisat::Var>::const_iterator nextTheoryVar = ordering.end();
@@ -84,8 +85,7 @@ namespace smtrat {
         void rebuildTheoryVars(const Constraints& c) {
             assert(!initialized);
             // const auto& c = booleanConstraintMap();
-            // TODO DYNSCHED settings ...
-            std::vector<carl::Variable> tordering = mcsat::calculate_variable_order<mcsat::VariableOrdering::FeatureBased>(c);
+            std::vector<carl::Variable> tordering = mcsat::calculate_variable_order<vot>(c);
             assert(tordering.size() == ordering.size());
             ordering.clear();
             for (const auto& tvar : tordering) {
@@ -108,7 +108,7 @@ namespace smtrat {
          */
         size_t univariateLevel(Minisat::Var v) {
             if (!isTheoryAbstraction(v)) 
-                return 0; // TODO DYNSCHED how to handle non-theory abstractions?
+                return 0;
             const auto& reabstraction = reabstractVariable(v);
 
             carl::Variables vars;
@@ -116,7 +116,7 @@ namespace smtrat {
             if (vars.empty())
                 return 0;
             for (std::size_t i = ordering.size(); i > 0; i--) {
-                if (vars.find(theoryVar(ordering[i-1])) != vars.end()) {
+                if (vars.find(carlVar(ordering[i-1])) != vars.end()) {
                     return i;
                 }
             }
@@ -129,9 +129,10 @@ namespace smtrat {
      * Variable scheduling that all decides Boolean variables first before
      * deciding any theory variable.
      */
+    template<mcsat::VariableOrdering vot>
     class VarSchedulerMcsatBooleanFirst : public VarSchedulerMcsatBase {
         VarSchedulerMinisat boolean_ordering;
-        TheoryVarSchedulerStatic theory_ordering;
+        TheoryVarSchedulerStatic<vot> theory_ordering;
         
     public:
         template<typename BaseModule>
@@ -217,10 +218,10 @@ namespace smtrat {
      * Decides only Constraints univariate in the current theory variable while the
      * theory ordering is static.
      */
-    template<int lookahead>
+    template<int lookahead, mcsat::VariableOrdering vot>
     class VarSchedulerMcsatUnivariateConstraintsOnly : public VarSchedulerMcsatBase {
         VarSchedulerMinisat boolean_ordering;
-        TheoryVarSchedulerStatic theory_ordering;
+        TheoryVarSchedulerStatic<vot> theory_ordering;
 
         bool varCmp(Minisat::Var x, Minisat::Var y) {
             auto x_lvl = theory_ordering.univariateLevel(x);

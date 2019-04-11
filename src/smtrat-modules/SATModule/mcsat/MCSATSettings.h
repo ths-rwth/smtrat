@@ -17,7 +17,6 @@ namespace smtrat {
 namespace mcsat {
 
 struct MCSATSettingsNL {
-	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
     //using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
 	using ExplanationBackend = SequentialExplanation<nlsat::Explanation>;
@@ -25,38 +24,32 @@ struct MCSATSettingsNL {
 
 //OneCell only
 struct MCSATSettingsOC {
-    static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
     using ExplanationBackend = SequentialExplanation<onecellcad::Explanation, nlsat::Explanation>;
 };
 struct MCSATSettingsFMVSOC {
-	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
 	//using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
 	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,onecellcad::Explanation, nlsat::Explanation>;
 };
 
 struct MCSATSettingsFMNL {
-	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
 	// using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
 	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,nlsat::Explanation>;
 };
 
 struct MCSATSettingsVSNL {
-	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
 	using ExplanationBackend = SequentialExplanation<vs::Explanation,nlsat::Explanation>;
 };
 
 struct MCSATSettingsFMVSNL {
-	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
 	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,nlsat::Explanation>;
 };
 
 struct MCSATSettingsICPNL {
-	static constexpr VariableOrdering variable_ordering = VariableOrdering::FeatureBased;
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
 	using ExplanationBackend = SequentialExplanation<icp::Explanation,nlsat::Explanation>;
 };

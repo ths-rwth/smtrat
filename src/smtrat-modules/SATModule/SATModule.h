@@ -1012,7 +1012,6 @@ namespace smtrat
                     }                    
                 }
 
-                propagateTheory(); // TODO REFACTOR can be removed ??
                 Minisat::CRef confl = storeLemmas();
                 if (confl != Minisat::CRef_Undef) {
                     handleConflict(confl);
@@ -1454,7 +1453,7 @@ namespace smtrat
                 bool rescale = false;
 
                 if (Settings::mc_sat) {
-                    for (auto tvar : mMCSAT.theoryVarsIn(v)) {
+                    for (auto tvar : mMCSAT.theoryVars(v)) {
                         if ((activity[tvar] += inc) > 1e100) {
                             rescale = true;
                         }
