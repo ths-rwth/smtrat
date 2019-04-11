@@ -419,7 +419,7 @@ namespace smtrat
             {
                 double& act = activity[pos];
                 act = 1;
-                if( Settings::check_active_literal_occurrences )
+                if( Settings::check_active_literal_occurrences && false )
                 {
                     const auto& litActOccs = mLiteralsActivOccurrences[(size_t)pos];
                     act = (double)litActOccs.first + (double)litActOccs.second;
@@ -3165,7 +3165,7 @@ namespace smtrat
             mNewSplittingVars.pop_back();
         else
         {
-            if( /*!mReceivedFormulaPurelyPropositional &&*/ Settings::check_active_literal_occurrences )
+            if( /*!mReceivedFormulaPurelyPropositional &&*/ Settings::check_active_literal_occurrences && false)
             {
                 while( next == var_Undef && !mPropagationFreeDecisions.empty() )
                 {
@@ -3243,7 +3243,7 @@ namespace smtrat
                     if( abstrPair.first != nullptr )
                     {
                         assert( abstrPair.second != nullptr );
-                        if( Settings::check_active_literal_occurrences )
+                        if( Settings::check_active_literal_occurrences && false)
                         {
 //                            const auto& litActOccs = mLiteralsActivOccurrences[(size_t)next];
 //                            takeNegation = litActOccs.second > litActOccs.first;
