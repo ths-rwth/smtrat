@@ -7,6 +7,8 @@ namespace smtrat {
     
     template<mcsat::VariableOrdering vot>
     class VarSchedulerMcsatBooleanFirst;
+    template<mcsat::VariableOrdering vot>
+    class VarSchedulerMcsatTheoryFirst;
 
     template<int lookahead, mcsat::VariableOrdering vot>
     class VarSchedulerMcsatUnivariateConstraintsOnly;
