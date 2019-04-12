@@ -133,7 +133,7 @@ namespace smtrat
     
     struct SATSettingsMCSAT : SATSettings1 {
         static const bool mc_sat = true;
-        static const bool check_active_literal_occurrences = true;
+        // static const bool check_active_literal_occurrences = true;
         // needed for variable scheduling to work:
         static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::DISABLED;
 		    static constexpr bool use_new_var_scheduler = true;
