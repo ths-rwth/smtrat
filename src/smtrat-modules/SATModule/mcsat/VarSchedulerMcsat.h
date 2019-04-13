@@ -412,4 +412,92 @@ namespace smtrat {
         }
     };
 
+
+    /**
+     * Activity-based scheduler preferring initially theory variables.
+     */
+    template<mcsat::VariableOrdering vot>
+    class VarSchedulerMcsatActivityPreferTheory : public VarSchedulerMcsatBase {
+        bool initialized = false;
+        std::vector<Minisat::Var> theory_ordering;
+        VarSchedulerMinisat ordering;
+
+        auto compareVars(Minisat::Var x, Minisat::Var y) {
+            if (getActivity(x) != getActivity(y)) {
+                return getActivity(x) > getActivity(y);
+            } else if (isTheoryVar(x) && !isTheoryVar(y)) {
+                return true;
+            } else if (!isTheoryVar(x) && isTheoryVar(y)) {
+                return false;
+            } else if (isTheoryVar(x) && isTheoryVar(y)) {
+                auto ypos = std::find(theory_ordering.begin(), theory_ordering.end(), y);
+                assert(!initialized || ypos != theory_ordering.end());
+                return std::find(theory_ordering.begin(), ypos, x) != theory_ordering.end();
+            } else { // !isTheoryVar(x) && !isTheoryVar(y)
+                return false;
+            }
+        }
+
+    public:
+
+        template<typename BaseModule>
+        explicit VarSchedulerMcsatActivityPreferTheory( BaseModule& baseModule ) :
+            VarSchedulerMcsatBase(baseModule),
+            ordering( baseModule, [this](Minisat::Var x, Minisat::Var y) -> bool { return compareVars(x, y); } )
+        {} 
+
+        void rebuild() {
+            ordering.rebuild();
+        }
+
+        void insert(Minisat::Var var) {
+            ordering.insert(var);
+        }
+
+        Minisat::Var top() {
+            return ordering.top();
+        }
+
+        Minisat::Var pop() {
+            return ordering.pop();
+        }
+
+        bool empty() {
+            return ordering.empty();
+        }
+
+        bool contains(Minisat::Var var) {
+            return ordering.contains(var);
+        }
+
+        void print() const {
+            ordering.print();
+        }
+
+        // Events called by SATModule
+
+        void increaseActivity(Minisat::Var var) {
+            ordering.increaseActivity(var);
+        }
+
+        void decreaseActivity(Minisat::Var var) {
+            ordering.decreaseActivity(var);
+        }
+
+        void rebuildActivities() { 
+            ordering.rebuild();
+        }
+
+        template<typename Constraints>
+        void rebuildTheoryVars(const Constraints& c) {
+            assert(!initialized);
+            std::vector<carl::Variable> tordering = mcsat::calculate_variable_order<vot>(c);
+            theory_ordering.clear();
+            for (const auto& tvar : tordering) {
+                theory_ordering.push_back(minisatVar(tvar));
+            }
+            initialized = true;
+        }
+    };
+
 }
