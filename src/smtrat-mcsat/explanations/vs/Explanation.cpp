@@ -27,10 +27,11 @@ boost::optional<mcsat::Explanation> Explanation::operator()(const mcsat::Bookkee
 	auto ret = eg.getExplanation();
 	if (ret == boost::none) {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Could not generate explanation");
+	} else {
+		#ifdef SMTRAT_DEVOPTION_Statistics
+		mStatistics.explanationSuccess();
+		#endif
 	}
-	#ifdef SMTRAT_DEVOPTION_Statistics
-	mStatistics.explanationSuccess();
-	#endif
 	return ret;
 }
 
