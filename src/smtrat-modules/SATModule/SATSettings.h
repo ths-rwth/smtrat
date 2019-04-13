@@ -137,8 +137,8 @@ namespace smtrat
         // needed for variable scheduling to work:
         static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::DISABLED;
 		    static constexpr bool use_new_var_scheduler = true;
-        // using VarScheduler = VarSchedulerMcsatBooleanFirst<VariableOrdering::FeatureBased>;
-        // using VarScheduler = VarSchedulerMcsatUnivariateConstraintsOnly<1, VariableOrdering::FeatureBased>;
+        // using VarScheduler = VarSchedulerMcsatBooleanFirst<mcsat::VariableOrdering::FeatureBased>;
+        // using VarScheduler = VarSchedulerMcsatUnivariateConstraintsOnly<1, mcsat::VariableOrdering::FeatureBased>;
 
         // uniform (resp Boolean and theory vars) decision heuristic
         // Note: mcsat_backjump_decide needs to be activated, otherwise we run into termination problems!
