@@ -3353,6 +3353,8 @@ namespace smtrat
         int index = trail.size() - 1;
 		for (int i = 0; i < seen.size(); i++) seen[i] = 0;
 
+        std::set<Minisat::Var> seenTheoryVars; // for MCSAT theory var bumping
+
         do
         {
 			SMTRAT_LOG_DEBUG("smtrat.sat", "out_learnt = " << out_learnt);
@@ -3419,6 +3421,11 @@ namespace smtrat
                     {
                         SMTRAT_LOG_DEBUG("smtrat.sat", "\tNot seen yet, level = " << qlevel);
                         varBumpActivity( var( q ) );
+                        if (Settings::mc_sat) {
+                            for (auto tvar : mMCSAT.theoryVars(var(q))) {
+                                seenTheoryVars.insert(tvar);
+                            }
+                        }
                         seen[var( q )] = 1;
                         //if (Settings::mc_sat && reason(var(q)) == CRef_TPropagation) {
                         //    SMTRAT_LOG_DEBUG("smtrat.sat", "\t"  << q << " is result of theory propagation");
@@ -3458,6 +3465,12 @@ namespace smtrat
             ++resolutionSteps;
         }
         while( pathC > 0 );
+
+        if (Settings::mc_sat) {
+            for (auto tvar : seenTheoryVars) {
+                varBumpActivity(tvar);
+            }
+        }
 	
 		if (Settings::mc_sat) {
 			bool found = false;

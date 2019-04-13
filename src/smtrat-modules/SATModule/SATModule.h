@@ -1452,6 +1452,7 @@ namespace smtrat
             {
                 bool rescale = false;
 
+                /*
                 if (Settings::mc_sat) {
                     for (auto tvar : mMCSAT.theoryVars(v)) {
                         if ((activity[tvar] += inc) > 1e100) {
@@ -1460,6 +1461,7 @@ namespace smtrat
                         var_scheduler.increaseActivity(tvar);
                     }
                 }
+                */
 
                 if ((activity[v] += inc) > 1e100) {
                     rescale = true;
