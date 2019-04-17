@@ -8,6 +8,9 @@ namespace arithmetic {
 
 boost::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::Bookkeeping& data, carl::Variable var) const {
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.arithmetic", "Looking for an assignment for " << var);
+	#ifdef SMTRAT_DEVOPTION_Statistics
+		mStatistics.called();
+	#endif
 	AssignmentFinder_detail af(var, data.model());
 	FormulasT conflict;
 	for (const auto& c: data.constraints()) {
@@ -36,6 +39,9 @@ boost::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::
 		}
 	}
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.arithmetic", "Calling AssignmentFinder...");
+	#ifdef SMTRAT_DEVOPTION_Statistics
+		mStatistics.success();
+	#endif
 	return af.findAssignment();
 }
 

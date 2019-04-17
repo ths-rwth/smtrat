@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AssignmentFinder_SMT.h"
+#include "SMTAFStatistics.h"
 
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-mcsat/smtrat-mcsat.h>
@@ -13,8 +14,17 @@ namespace smtaf {
 
 template<class Settings>
 struct AssignmentFinder {
+
+#ifdef SMTRAT_DEVOPTION_Statistics
+	SMTAFStatistics& mStatistics = statistics_get<SMTAFStatistics>("mcsat-assignment-smt");
+#endif
+
 	boost::optional<AssignmentOrConflict> operator()(const mcsat::Bookkeeping& data, carl::Variable var) const {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Looking for an assignment for " << var << " with assignAllVariables = " << Settings::assignAllVariables);
+
+		#ifdef SMTRAT_DEVOPTION_Statistics
+			mStatistics.called();
+		#endif
 
 		/*
 		VariablePos varPos = std::find(data.variableOrder().begin(), data.variableOrder().end(), var);
@@ -64,11 +74,18 @@ struct AssignmentFinder {
 		}
 
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Calling AssignmentFinder...");
+		boost::optional<AssignmentOrConflict> result;
 		if (Settings::advance_level_by_level) {
-			return af.findAssignment();
+			result = af.findAssignment();
 		} else {
-			return af.findAssignment(varPosEnd);
+			result = af.findAssignment(varPosEnd);
 		}
+		#ifdef SMTRAT_DEVOPTION_Statistics
+			if (result) {
+				mStatistics.success();
+			}
+		#endif
+		return result;
 		assert(false);
 	}
 

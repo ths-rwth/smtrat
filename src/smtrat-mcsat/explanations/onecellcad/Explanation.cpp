@@ -53,6 +53,10 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, // current assignment s
 						const FormulasT& trailLiterals) const {
 	assert(trail.model().size() == trail.assignedVariables().size());
 
+#ifdef SMTRAT_DEVOPTION_Statistics
+	mStatistics.explanationCalled();
+#endif
+
 	#if not (defined USE_COCOA || defined USE_GINAC)
 		// OneCellCAD needs carl::irreducibleFactors to be implemented
 		#warning OneCellCAD may be incorrect as USE_COCOA is disabled
@@ -192,6 +196,9 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, // current assignment s
 	//      explainLiterals.emplace_back(impliedLiteral);
 
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Explain literals: " << explainLiterals);
+#ifdef SMTRAT_DEVOPTION_Statistics
+	mStatistics.explanationSuccess();
+#endif
 	return boost::variant<FormulaT, ClauseChain>(FormulaT(carl::FormulaType::OR, std::move(explainLiterals)));
 }
 
