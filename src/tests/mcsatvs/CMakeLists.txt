@@ -10,3 +10,16 @@ target_link_libraries(runMcsatVSTests
 	smtrat-mcsat-shared
 )
 add_test(NAME mcsatvs COMMAND runMcsatVSTests)
+
+
+
+add_executable(runMcsatVSBug
+  Test_McsatVSBug.cpp
+)
+target_link_libraries(runMcsatVSBug
+  ${Boost_unit_test_framework_SHARED}
+  #lib_${PROJECT_NAME}
+  smtrat-mcsat-shared
+  ${libraries}
+)
+add_test(NAME mcsatvsbug COMMAND runMcsatVSBug)
