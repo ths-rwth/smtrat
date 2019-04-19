@@ -218,10 +218,12 @@ namespace smtrat {
      * Variable scheduling that all decides theory variables first before
      * deciding any Boolean variable.
      */
-    template<mcsat::VariableOrdering vot>
+    // template<mcsat::VariableOrdering vot>
+    template<typename TheoryScheduler>
     class VarSchedulerMcsatTheoryFirst : public VarSchedulerMcsatBase {
         VarSchedulerMinisat boolean_ordering;
-        TheoryVarSchedulerStatic<vot> theory_ordering;
+        // TheoryVarSchedulerStatic<vot> theory_ordering;
+        TheoryScheduler theory_ordering;
         
     public:
         template<typename BaseModule>
@@ -233,6 +235,7 @@ namespace smtrat {
 
         void rebuild() {
             boolean_ordering.rebuild();
+            theory_ordering.rebuild();
         }
 
         void insert(Minisat::Var var) {
@@ -287,14 +290,17 @@ namespace smtrat {
 
         void increaseActivity(Minisat::Var var) {
             boolean_ordering.increaseActivity(var);
+            theory_ordering.increaseActivity(var);
         }
 
         void decreaseActivity(Minisat::Var var) {
             boolean_ordering.decreaseActivity(var);
+            theory_ordering.decreaseActivity(var);
         }
 
         void rebuildActivities() { 
             boolean_ordering.rebuild();
+            theory_ordering.rebuild();
         }
 
         template<typename Constraints>

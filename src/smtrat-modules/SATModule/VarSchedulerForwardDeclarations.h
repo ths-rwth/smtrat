@@ -1,5 +1,7 @@
 namespace smtrat {
     class VarSchedulerBase;
+    template<mcsat::VariableOrdering vot>
+    class TheoryVarSchedulerStatic;
 
     class VarSchedulerMinisat;
     class VarSchedulerRandom;
@@ -7,7 +9,8 @@ namespace smtrat {
     
     template<mcsat::VariableOrdering vot>
     class VarSchedulerMcsatBooleanFirst;
-    template<mcsat::VariableOrdering vot>
+    //template<mcsat::VariableOrdering vot>
+    template<typename TheoryScheduler>
     class VarSchedulerMcsatTheoryFirst;
     template<mcsat::VariableOrdering vot>
     class VarSchedulerMcsatActivityPreferTheory;
