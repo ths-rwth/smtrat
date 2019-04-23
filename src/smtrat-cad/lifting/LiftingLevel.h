@@ -58,126 +58,12 @@ namespace cad {
 			}
 		}
 
-		/** get the next Sample to check
-		 * @note check whether an unsat cover has been found before calling this
-		 * @todo when using infty bounds in carl intervals, is 0 a valid bound input?
-		 */
-		Sample chooseSample() {		
-			// if -inf is not a bound find sample in (-inf, first bound)
-			if(!levelintervalminf) {
-				RAN upper = levelintervals.begin();
-				auto computeinterval = carl::Interval<RAN>(0, carl::BoundType::INFTY, upper, carl::BoundType::STRICT);
-				RAN samplenr = sample(computeinterval, false); 
-				return Sample(samplenr);
-			}
-
-			auto boundtuple = getLowestUpperBound();
-			assert(std::get<0>(boundtuple)); //@todo handle this instead
-			RAN bound = std::get<1>(boundtuple);
-
-			// check whether the nex unexplored interval is a point interval
-			for(auto inter: intervals) {
-				if(bound == inter.getLower() && inter.getLowerBoundType() == CADInterval::CADBoundType::OPEN 
-					&& !isInUnsatInterval(bound)) {
-					return Sample(bound); //@todo is this a root in this case? if so, set isRoot of sample
-				}
-			}
-
-			// case the next lowest upper bound is the last recorded bound
-			if(bound == *levelintervals.rbegin()) {
-				auto computeinterval = carl::Interval<RAN>(bound, carl::BoundType::STRICT, 0, carl::BoundType::INFTY);
-				RAN samplenr = sample(computeinterval, false); 
-				return Sample(samplenr);
-			}
-
-			// go to the next bound
-			//@todo assuming that set is ordered. check that
-			std::set<RAN>::iterator it = levelintervals.begin();
-			while((*it) < std::get<1>(boundtuple)) {
-				it++;
-			}
-			// determine whether next bound is closed, do not break in case bound appears > once.
-			bool boundopen = true;
-			for(auto bound : intervals) {
-				if(bound.getLower() == (*it)) {
-					if(bound.getLowerBoundType() == CADInterval::CADBoundType::CLOSED) {
-						boundopen = false;
-					}
-				}
-			}
-			// we got the bounds and their types, find sample in between
-			auto computeinterval = carl::Interval<RAN>(std::get<1>(boundtuple),(*it)); //@todo bound types?
-			RAN samplenr = sample(computeinterval, false); 
-			//@todo the false leads to bounds not included, so we prefer choosing samples that are not bounds. is that important?
-			return Sample(samplenr);
-		}
-
 		/** check whether the given value is in the list of unsat intervals */
 		bool isInUnsatInterval(RAN val) {
 			for(auto inter : intervals) {
 				if(inter.contains(val)) {
 					return true;
 				}
-			}
-			return false;
-		}
-
-	public:
-
-		LiftingLevel(){
-			intervals = std::vector<CADInterval>();
-			levelintervals = set<RAN>();
-			levelintervalminf = false;
-			levelintervalpinf = false;
-
-			computeUnsatIntervals();
-		}
-
-		void reset(std::vector<carl::Variable>&& vars) {
-			mVariables = std::move(vars);
-			//@todo current sample
-			intervals.clear();
-			levelintervals.clear();
-		}
-
-		/** gets all unsat intervals */
-		const auto& getUnsatIntervals() const {
-			return intervals;
-		}
-
-		/** checks whether the unsat intervals contain (-inf, inf) */
-		bool isSingletonCover() {
-			if(intervals.empty()) {
-				return false;
-			}
-			else {
-				for(auto inter : intervals) {
-					if(inter.isInfinite()) {
-						return true;
-					}
-				}
-			}
-			return false;
-		}
-
-		/** @brief Checks whether an unsat cover was found
-		 * 
-		 * Checks whether the detected unsat intervals cover the reals in this level with given prefix
-		 * @returns true iff there is an unsat cover
-		 */
-		bool isUnsatCover() {
-			// check whether -inf and +inf are included
-			if(!levelintervalminf || !levelintervalpinf) {
-				return false;
-			}
-			if(isSingletonCover()) {
-				return true;
-			}
-			
-			// check whether any unexplored interval remains
-			auto boundtuple = getLowestUpperBound();
-			if (!std::get<0>(boundtuple)) {
-				return true;
 			}
 			return false;
 		}
@@ -257,6 +143,131 @@ namespace cad {
 			return std::make_tuple(true, highestbound, boundopen, false);
 		}
 
+	public:
+
+		LiftingLevel(){
+			intervals = std::vector<CADInterval>();
+			levelintervals = set<RAN>();
+			levelintervalminf = false;
+			levelintervalpinf = false;
+
+			computeUnsatIntervals();
+		}
+
+		void reset(std::vector<carl::Variable>&& vars) {
+			mVariables = std::move(vars);
+			//@todo current sample
+			intervals.clear();
+			levelintervals.clear();
+		}
+
+		/** gets the current sample */
+		const auto& getCurrentSample() const {
+			return curSample;
+		}
+
+		/** gets all unsat intervals */
+		const auto& getUnsatIntervals() const {
+			return intervals;
+		}
+
+		/** checks whether the unsat intervals contain (-inf, inf) */
+		bool isSingletonCover() {
+			if(intervals.empty()) {
+				return false;
+			}
+			else {
+				for(auto inter : intervals) {
+					if(inter.isInfinite()) {
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		/** @brief Checks whether an unsat cover was found
+		 * 
+		 * Checks whether the detected unsat intervals cover the reals in this level with given prefix
+		 * @returns true iff there is an unsat cover
+		 */
+		bool isUnsatCover() {
+			// check whether -inf and +inf are included
+			if(!levelintervalminf || !levelintervalpinf) {
+				return false;
+			}
+			if(isSingletonCover()) {
+				return true;
+			}
+			
+			// check whether any unexplored interval remains
+			auto boundtuple = getLowestUpperBound();
+			if (!std::get<0>(boundtuple)) {
+				return true;
+			}
+			return false;
+		}
+
+		/** @brief computes the next Sample
+		 * 
+		 * Chooses a Sample outside the currently known unsat intervals
+		 * 
+		 * @note check whether an unsat cover has been found before calling this
+		 * @todo when using infty bounds in carl intervals, is 0 a valid bound input?
+		 */
+		Sample chooseSample() {
+			//@todo remove the current value of curSample
+
+			// if -inf is not a bound find sample in (-inf, first bound)
+			if(!levelintervalminf) {
+				RAN upper = levelintervals.begin();
+				auto computeinterval = carl::Interval<RAN>(0, carl::BoundType::INFTY, upper, carl::BoundType::STRICT);
+				RAN samplenr = sample(computeinterval, false); 
+				curSample = Sample(samplenr);
+			}
+
+			auto boundtuple = getLowestUpperBound();
+			assert(std::get<0>(boundtuple)); //@todo handle this instead
+			RAN bound = std::get<1>(boundtuple);
+
+			// check whether the nex unexplored interval is a point interval
+			for(auto inter: intervals) {
+				if(bound == inter.getLower() && inter.getLowerBoundType() == CADInterval::CADBoundType::OPEN 
+					&& !isInUnsatInterval(bound)) {
+					curSample = Sample(bound); //@todo is this a root in this case? if so, set isRoot of sample
+				}
+			}
+
+			// case the next lowest upper bound is the last recorded bound
+			if(bound == *levelintervals.rbegin()) {
+				auto computeinterval = carl::Interval<RAN>(bound, carl::BoundType::STRICT, 0, carl::BoundType::INFTY);
+				RAN samplenr = sample(computeinterval, false); 
+				curSample = Sample(samplenr);
+			}
+
+			// go to the next bound
+			//@todo assuming that set is ordered. check that
+			std::set<RAN>::iterator it = levelintervals.begin();
+			while((*it) < std::get<1>(boundtuple)) {
+				it++;
+			}
+			// determine whether next bound is closed, do not break in case bound appears > once.
+			bool boundopen = true;
+			for(auto bound : intervals) {
+				if(bound.getLower() == (*it)) {
+					if(bound.getLowerBoundType() == CADInterval::CADBoundType::CLOSED) {
+						boundopen = false;
+					}
+				}
+			}
+			// we got the bounds and their types, find sample in between
+			auto computeinterval = carl::Interval<RAN>(std::get<1>(boundtuple),(*it)); //@todo bound types?
+			RAN samplenr = sample(computeinterval, false); 
+			//@todo the false leads to bounds not included, so we prefer choosing samples that are not bounds. is that important?
+			curSample = Sample(samplenr);
+
+			return curSample;
+		}
 	};
 }
 };
