@@ -70,8 +70,11 @@ namespace cad {
 		carl::Bitset& evaluationResult() {
 			return mEvaluationResult;
 		}
+		auto getConflictingConstraints() const {
+			return mEvaluatedWith & ~mEvaluationResult;
+		}
 		bool hasConflictWithConstraint() const {
-			return (mEvaluatedWith & ~mEvaluationResult).any();
+			return getConflictingConstraints().any();
 		}
 		void merge(const Sample& s) {
 			if (s.isRoot()) setIsRoot(true);
