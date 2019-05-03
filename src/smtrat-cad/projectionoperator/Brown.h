@@ -18,7 +18,7 @@ namespace brown {
  */
 template<typename Poly, typename Callback>
 void single(const Poly& p, carl::Variable variable, Callback&& cb) {
-	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Brown_single(" << p << ") -> Collins_single");
+	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Brown_single(" << p << ")");
 	returnPoly(projection::discriminant(variable, p), cb);
 	returnPoly(projection::normalize(p.lcoeff().toUnivariatePolynomial(variable)), cb);
 }
@@ -28,7 +28,7 @@ void single(const Poly& p, carl::Variable variable, Callback&& cb) {
  */
 template<typename Poly, typename Callback>
 void paired(const Poly& p, const UPoly& q, carl::Variable variable, Callback&& cb) {
-	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Brown_paired(" << p << ", " << q << ")");
+	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Brown_paired(" << p << ", " << q << ") -> McCallum_paired");
 	mccallum::paired(p, q, variable, std::forward<Callback>(cb));
 }
 
