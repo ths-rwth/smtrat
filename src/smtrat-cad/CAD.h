@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <carl-covering/carl-covering.h>
+
 #include "common.h"
 #include "projection/Projection.h"
 #include "lifting/LiftingTree.h"
@@ -227,6 +229,22 @@ namespace cad {
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.mis", "Resulting conflict graph " << cg);
 			return cg;
+		}
+		
+		auto generateCovering() const {
+			carl::covering::TypedSetCover<ConstraintT> cover;
+			for (auto it = mLifting.getTree().begin_preorder(); it != mLifting.getTree().end_preorder();) {
+				auto constraints = it->getConflictingConstraints();
+				if (constraints.any()) {
+					for (auto cid: constraints) {
+						cover.set(mConstraints[cid], it->id());
+					}
+				} else {
+					it++;
+				}
+			}
+			SMTRAT_LOG_DEBUG("smtrat.cad.mis", "Resulting covering " << cover);
+			return cover;
 		}
 	};
 }
