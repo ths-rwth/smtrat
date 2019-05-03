@@ -25,20 +25,10 @@ namespace cad {
 	template<>
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::GREEDY>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
-		auto covering = cad.generateCovering();
 		mis.emplace_back();
-		for (const auto& c: covering.get_cover(carl::covering::heuristic::greedy)) {
+		auto covering = cad.generateCovering().get_cover(carl::covering::heuristic::greedy);
+		for (const auto& c: covering) {
 			mis.back().emplace(c);
-		}
-		return;
-		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
-			mis.back().emplace(c);
-		}
-		auto cg = cad.generateConflictGraph();
-		while (cg.hasRemainingSamples()) {
-			std::size_t c = cg.getMaxDegreeConstraint();
-			mis.back().emplace(cad.getConstraints()[c]->first);
-			cg.selectConstraint(c);
 		}
 	}
 
@@ -46,22 +36,13 @@ namespace cad {
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::GREEDY_PRE>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		mis.emplace_back();
-		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
-			mis.back().emplace(c);
-		}
-		auto cg = cad.generateConflictGraph();
-		cg = cg.removeDuplicateColumns();
-		
-		auto essentialConstrains = cg.selectEssentialConstraints();
-		for(size_t c : essentialConstrains){
-			mis.back().emplace(cad.getConstraints()[c]->first);
-		}
-		
-		while (cg.hasRemainingSamples()) {
-			std::size_t c = cg.getMaxDegreeConstraint();
-			mis.back().emplace(cad.getConstraints()[c]->first);
-			cg.selectConstraint(c);
-		}
+		auto covering = cad.generateCovering().get_cover([](auto& sc) {
+			carl::Bitset res;
+			res |= carl::covering::heuristic::remove_duplicates(sc);
+			res |= carl::covering::heuristic::select_essential(sc);
+			res |= carl::covering::heuristic::greedy(sc);
+			return res;
+		});
 	}
 	
 	template<>
