@@ -179,7 +179,7 @@ namespace smtrat
 
         template<typename BaseModule>
         explicit VarSchedulerFixedRandom( BaseModule& baseModule ) :
-            VarSchedulerMinisat( baseModule, [this](Minisat::Var x, Minisat::Var y) -> bool { return getIndex(x) > getIndex(y); } )
+            VarSchedulerMinisat( baseModule, [this](Minisat::Var x, Minisat::Var y) { return getIndex(x) > getIndex(y); } )
         {} 
 
     private:
