@@ -21,7 +21,7 @@ if(EXISTS ${CARL_VERSION_FILE})
 endif()
 if (NOT "${CARL_REQUIRED_VERSION}" MATCHES "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$")
 	message(STATUS "Resetting invalid carl version ${CARL_REQUIRED_VERSION}")
-	set(CARL_REQUIRED_VERSION "0.1")
+	set(CARL_REQUIRED_VERSION "18.12")
 endif()
 
 find_package(carl ${CARL_REQUIRED_VERSION})
