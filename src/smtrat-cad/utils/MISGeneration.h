@@ -3,6 +3,8 @@
 #include "ConflictGraph.h"
 #include "../common.h"
 
+#include <carl-covering/carl-covering.h>
+
 namespace smtrat {
 namespace cad {
 	
@@ -23,7 +25,12 @@ namespace cad {
 	template<>
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::GREEDY>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
+		auto covering = cad.generateCovering();
 		mis.emplace_back();
+		for (const auto& c: covering.get_cover(carl::covering::heuristic::greedy)) {
+			mis.back().emplace(c);
+		}
+		return;
 		for (const auto& c: cad.getBounds().getOriginsOfBounds()) {
 			mis.back().emplace(c);
 		}
