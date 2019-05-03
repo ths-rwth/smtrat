@@ -357,7 +357,7 @@ public:
 		}*/
 		if (carl::variant_is_type<ModelValues>(res)) {
 			const auto& values = boost::get<ModelValues>(res);
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << values);
+			SMTRAT_LOG_INFO("smtrat.sat.mcsat", "-> " << values);
 			FormulasT reprs;
 			for (const auto& value : values) {
 				FormulaT repr = carl::representingFormula(value.first, value.second);

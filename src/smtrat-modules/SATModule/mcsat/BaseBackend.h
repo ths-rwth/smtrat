@@ -93,7 +93,7 @@ public:
 		}
 		boost::optional<Explanation> res = mExplanation(getTrail(), var, reason);
 		if (res) {
-			SMTRAT_LOG_DEBUG("smtrat.mcsat", "Got explanation " << *res);
+			SMTRAT_LOG_INFO("smtrat.mcsat", "Got explanation " << *res);
 			return *res;
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.mcsat", "Explanation backend failed.");
