@@ -25,8 +25,8 @@ namespace cad {
 	template<>
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::GREEDY>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
-		mis.emplace_back();
 		auto covering = cad.generateCovering().get_cover(carl::covering::heuristic::greedy);
+		mis.emplace_back();
 		for (const auto& c: covering) {
 			mis.back().emplace(c);
 		}
@@ -35,7 +35,6 @@ namespace cad {
 	template<>
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::GREEDY_PRE>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
-		mis.emplace_back();
 		auto covering = cad.generateCovering().get_cover([](auto& sc) {
 			carl::Bitset res;
 			res |= carl::covering::heuristic::remove_duplicates(sc);
@@ -43,114 +42,69 @@ namespace cad {
 			res |= carl::covering::heuristic::greedy(sc);
 			return res;
 		});
+		mis.emplace_back();
+		for (const auto& c: covering) {
+			mis.back().emplace(c);
+		}
+	}
+
+	template<>
+	template<typename CAD>
+	void MISGeneration<MISHeuristic::EXACT>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
+		auto covering = cad.generateCovering().get_cover(carl::covering::heuristic::exact);
+		mis.emplace_back();
+		for (const auto& c: covering) {
+			mis.back().emplace(c);
+		}
 	}
 	
 	template<>
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::HYBRID>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
-		const static double constant_weight   = 10.0;
-		const static double complexity_weight = 0.1;
-		const static double activity_weight   = 10.0;
-		
-		// The set of constraints that will be included in every MIS
-		FormulaSetT misIntersection;
-	
-		auto cg = cad.generateConflictGraph();
-		auto essentialConstrains = cg.selectEssentialConstraints();	
-		for(size_t c : essentialConstrains){
-			misIntersection.emplace(cad.getConstraints()[c]->first);
-		}
+		mis.emplace_back();
+		auto cov = cad.generateCovering();
+		auto covering = cov.get_cover(carl::covering::heuristic::select_essential);
+		cov.set_cover().prune_sets();
 
-		if(!cg.hasRemainingSamples()){
-			mis.push_back(misIntersection);
-			SMTRAT_LOG_DEBUG("smtrat.mis", "returning after precon.");
-			return;
-		}
-		cg = cg.removeDuplicateColumns();
-		
-		auto constraints = cad.getConstraints();
-		struct candidate {
-			size_t constraint;
-			FormulaT formula;
-			double weight;
-		};
-		std::vector<candidate> candidates;
-		for(size_t i = 0; i < constraints.size(); i++){
-			if(cad.isIdValid(i)){
-				auto formula = FormulaT(constraints[i]->first);
-				double weight = constant_weight +
-								complexity_weight * formula.complexity() +
-								activity_weight / (1.0 + formula.activity());
-				candidates.push_back(candidate{i, formula, weight});
-			}
-		}
-		// Apply greedy algorithm as long as more than 12 constraints remain
-		while (cg.numRemainingConstraints() > 12 && cg.hasRemainingSamples()) {
-			auto selection = std::max_element(candidates.begin(), candidates.end(),
-				[cg](candidate left, candidate right) {
-					return cg.coveredSamples(left.constraint)/left.weight < cg.coveredSamples(right.constraint)/right.weight;
-				}
-			);
-			misIntersection.emplace(cad.getConstraints()[selection->constraint]->first);
-			cg.selectConstraint(selection->constraint);
-			candidates.erase(selection);
-		}
-		if(!cg.hasRemainingSamples()){
-			mis.push_back(misIntersection);
-			SMTRAT_LOG_DEBUG("smtrat.mis", "returning after greedy.");
-			return;
-		}
-		SMTRAT_LOG_DEBUG("smtrat.mis", cg);
-		// Find the optimum solution for the remaining constraints
-		auto remaining = cg.getRemainingConstraints();
-		std::set<carl::Bitset> misTails;
-		for(size_t coverSize = 0; coverSize <= remaining.size(); coverSize++){
-			std::vector<bool> selection(remaining.size() - coverSize, false);
-			selection.resize(remaining.size(), true);
-			do {
-				carl::Bitset selAsBitset(0);
-				selAsBitset.resize(selection.size());
-				for(size_t i = 0; i < selection.size(); i++){
-					selAsBitset.set(i, selection[i]);
-				}
-				bool skip = false;
-				for(auto tail : misTails){
-					if(tail.is_subset_of(selAsBitset)){
-						skip = true;
-						break;
-					}
-				}
-				if(skip) continue;
-
-				carl::Bitset cover(0);
-				cover.resize(cg.numSamples());
-				for(size_t i = 0; i < selection.size(); i++) {
-					if(selection[i]){
-						cover |= remaining[i].second;
-					}
-				}
-				if (cover.count() == cover.size()){
-					carl::Bitset tail(0);
-					for(size_t i = 0; i < selection.size(); i++) {
-						tail.set(i, selection[i]);
-					}
-					misTails.insert(tail);
-					SMTRAT_LOG_DEBUG("smtrat.mis", "tail found: " << selection);
-				}
-			} while(std::next_permutation(selection.begin(), selection.end()));
-		}
-		for(auto tail : misTails){
+		if (cov.set_cover().active_set_count() == 0) {
 			mis.emplace_back();
-			for(auto f : misIntersection){
-				mis.back().insert(f);
+			for (const auto& c: covering) {
+				mis.back().emplace(c);
 			}
-			for(size_t i = 0; i < tail.size(); i++){
-				if(tail.test(i)){
-					mis.back().emplace(cad.getConstraints()[remaining[i].first]->first);
-				}
-			}
+			SMTRAT_LOG_DEBUG("smtrat.mis", "returning after preconditioning");
+			return;
 		}
-		SMTRAT_LOG_DEBUG("smtrat.mis", "returning " << mis.size() << " MISes.");
+
+		covering |= cov.get_cover([](auto& sc) {
+			carl::Bitset res;
+			res |= carl::covering::heuristic::remove_duplicates(sc);
+			res |= carl::covering::heuristic::greedy_weighted(sc,
+				[](const ConstraintT& c){
+					constexpr double constant_weight   = 10.0;
+					constexpr double complexity_weight = 0.1;
+					return constant_weight + complexity_weight * c.complexity());
+				}, 12);
+			return res;
+		});
+		cov.set_cover().prune_sets();
+		if (cov.set_cover().active_set_count() == 0) {
+			mis.emplace_back();
+			for (const auto& c: covering) {
+				mis.back().emplace(c);
+			}
+			SMTRAT_LOG_DEBUG("smtrat.mis", "returning after greedy");
+			return;
+		}
+
+		SMTRAT_LOG_DEBUG("smtrat.mis", "Computing exact solution for " << cov);
+		covering |= cov.get_cover(carl::covering::heuristic::exact);
+
+		assert(cov.set_cover().active_set_count() == 0);
+		mis.emplace_back();
+		for (const auto& c: covering) {
+			mis.back().emplace(c);
+		}
+		SMTRAT_LOG_DEBUG("smtrat.mis", "returning exact solution");
 	}
 
 	template<>
