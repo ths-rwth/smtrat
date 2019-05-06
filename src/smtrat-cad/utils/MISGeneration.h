@@ -63,46 +63,43 @@ namespace cad {
 	void MISGeneration<MISHeuristic::HYBRID>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		mis.emplace_back();
 		auto cov = cad.generateCovering();
-		auto covering = cov.get_cover(carl::covering::heuristic::select_essential);
+		auto covering = carl::covering::heuristic::select_essential(cov.set_cover());
 		cov.set_cover().prune_sets();
 
 		if (cov.set_cover().active_set_count() == 0) {
 			mis.emplace_back();
 			for (const auto& c: covering) {
-				mis.back().emplace(c);
+				mis.back().emplace(cov.get_set(c));
 			}
 			SMTRAT_LOG_DEBUG("smtrat.mis", "returning after preconditioning");
 			return;
 		}
 
-		covering |= cov.get_cover([](auto& sc) {
-			carl::Bitset res;
-			res |= carl::covering::heuristic::remove_duplicates(sc);
-			res |= carl::covering::heuristic::greedy_weighted(sc,
-				[](const ConstraintT& c){
-					constexpr double constant_weight   = 10.0;
-					constexpr double complexity_weight = 0.1;
-					return constant_weight + complexity_weight * c.complexity());
-				}, 12);
-			return res;
-		});
+		covering |= carl::covering::heuristic::remove_duplicates(cov.set_cover());
+		covering |= carl::covering::heuristic::greedy_weighted(cov,
+			[](const ConstraintT& c){
+				constexpr double constant_weight   = 10.0;
+				constexpr double complexity_weight = 0.1;
+				return constant_weight + complexity_weight * c.complexity();
+			}, 12
+		);
 		cov.set_cover().prune_sets();
 		if (cov.set_cover().active_set_count() == 0) {
 			mis.emplace_back();
 			for (const auto& c: covering) {
-				mis.back().emplace(c);
+				mis.back().emplace(cov.get_set(c));
 			}
 			SMTRAT_LOG_DEBUG("smtrat.mis", "returning after greedy");
 			return;
 		}
 
 		SMTRAT_LOG_DEBUG("smtrat.mis", "Computing exact solution for " << cov);
-		covering |= cov.get_cover(carl::covering::heuristic::exact);
+		covering |= carl::covering::heuristic::exact(cov.set_cover());
 
 		assert(cov.set_cover().active_set_count() == 0);
 		mis.emplace_back();
 		for (const auto& c: covering) {
-			mis.back().emplace(c);
+			mis.back().emplace(cov.get_set(c));
 		}
 		SMTRAT_LOG_DEBUG("smtrat.mis", "returning exact solution");
 	}
