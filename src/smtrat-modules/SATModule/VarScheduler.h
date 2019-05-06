@@ -175,15 +175,7 @@ namespace smtrat
     class VarSchedulerFixedRandom : public VarSchedulerMinisat {
         std::vector<Minisat::Var> ordering;
 
-    public:
-
-        template<typename BaseModule>
-        explicit VarSchedulerFixedRandom( BaseModule& baseModule ) :
-            VarSchedulerMinisat( baseModule, [this](Minisat::Var x, Minisat::Var y) { return getIndex(x) > getIndex(y); } )
-        {} 
-
     private:
-
         auto getIndex(Minisat::Var var) {
             auto iter = std::find(ordering.begin(), ordering.end(), var);
             if (iter == ordering.end()) {
@@ -200,6 +192,12 @@ namespace smtrat
             }
             return iter;
         }
+
+    public:
+        template<typename BaseModule>
+        explicit VarSchedulerFixedRandom( BaseModule& baseModule ) :
+            VarSchedulerMinisat( baseModule, [this](Minisat::Var x, Minisat::Var y) { return getIndex(x) > getIndex(y); } )
+        {}
     };
 
     /**
