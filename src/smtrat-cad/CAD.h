@@ -237,8 +237,9 @@ namespace cad {
 				auto constraints = it->getConflictingConstraints();
 				if (constraints.any()) {
 					for (auto cid: constraints) {
-						cover.set(mConstraints[cid], it->id());
+						cover.set(mConstraints[cid], it.id());
 					}
+					it.skipChildren();
 				} else {
 					it++;
 				}
