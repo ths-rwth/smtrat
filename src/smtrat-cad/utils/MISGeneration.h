@@ -19,7 +19,7 @@ namespace cad {
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::TRIVIAL>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		mis.emplace_back();
-		for (const auto& it: cad.getConstraints()) mis.back().emplace(it->first);
+		for (const auto& it: cad.getConstraintMap()) mis.back().emplace(it.first);
 	}
 	
 	template<>
@@ -61,7 +61,6 @@ namespace cad {
 	template<>
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::HYBRID>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
-		mis.emplace_back();
 		auto cov = cad.generateCovering();
 		auto covering = carl::covering::heuristic::select_essential(cov.set_cover());
 		cov.set_cover().prune_sets();
