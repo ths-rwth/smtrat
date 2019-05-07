@@ -1634,10 +1634,14 @@ namespace smtrat
 				return mMCSAT.decisionLevel(x);
             }
 			int min_theory_level(Minisat::Var x) const {
-				int tl = mMCSAT.decisionLevel(x);
-				SMTRAT_LOG_DEBUG("smtrat.sat", "Theory level of " << x << " is " << tl);
-				if (level(x) >= 0) return std::min(level(x), tl);
-				return tl;
+				if (Settings::mc_sat) {
+					int tl = mMCSAT.decisionLevel(x);
+					SMTRAT_LOG_DEBUG("smtrat.sat", "Theory level of " << x << " is " << tl);
+					if (level(x) >= 0) return std::min(level(x), tl);
+					return tl;
+				} else {
+					return level(x);
+				}
 			}
 
             inline int trailIndex( Minisat::Var _var ) const
