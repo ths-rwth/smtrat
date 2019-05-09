@@ -65,7 +65,7 @@ private:
 	bool extractValueAssignments(std::map<ConstraintT, ConstraintT>& constraints);
 	bool extractParametricAssignments(std::map<ConstraintT, ConstraintT>& constraints);
 	bool extractAssignments(std::map<ConstraintT, ConstraintT>& constraints);
-	std::optional<ConstraintT> simplify(std::map<ConstraintT, ConstraintT>& constraints);
+	CollectionResult simplify(std::map<ConstraintT, ConstraintT>& constraints);
 public:
 
 	AssignmentCollector(Model& model): mModel(model) {}
