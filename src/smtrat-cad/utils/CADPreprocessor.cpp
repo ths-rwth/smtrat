@@ -51,7 +51,7 @@ void Origins::remove(const FormulaT& f) {
 }
 
 const std::vector<FormulaT>& Origins::get(const FormulaT& f) const {
-    SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Looking for " << f << " in Orings: " << mOrigins);
+    SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Looking for " << f << " in Origins: " << mOrigins);
     auto it = mOrigins.find(f);
     assert(it != mOrigins.end());
     return it->second.front();
@@ -119,31 +119,40 @@ bool AssignmentCollector::extractAssignments(std::map<ConstraintT, ConstraintT>&
     return extractParametricAssignments(constraints);
 }
 
-std::optional<ConstraintT> AssignmentCollector::simplify(std::map<ConstraintT, ConstraintT>& constraints) {
+AssignmentCollector::CollectionResult AssignmentCollector::simplify(std::map<ConstraintT, ConstraintT>& constraints) {
+	bool changed = false;
     for (auto& c: constraints) {
-        carl::model::substituteIn(c.second, mModel);
+        auto tmp = carl::model::substitute(c.second, mModel);
+		if (tmp != c.second) {
+			changed = true;
+			c.second = tmp;
+		}
         if (c.second.isConsistent() == 0) {
             SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Simplification found conflict in " << c.first << " (" << c.second << ")");
             return c.first;
         }
     }
-    return std::nullopt;
+    return changed;
 }
 
 AssignmentCollector::CollectionResult AssignmentCollector::collect(std::map<ConstraintT, ConstraintT>& constraints) {
-    if (auto c = simplify(constraints); c) {
-        return *c;
-    }
-    bool foundNew = false;
+	auto sres = simplify(constraints);
+	if (std::holds_alternative<ConstraintT>(sres)) {
+		return sres;
+	}
+	assert(std::holds_alternative<bool>(sres));
+    bool foundNew = std::get<bool>(sres);
     bool continueSearch = true;
     while (continueSearch) {
         continueSearch = extractAssignments(constraints);
-        SMTRAT_LOG_TRACE("smtrat.cad.pp", "Extracted assignments " << mModel << " from " << constraints);
-        if (auto c = simplify(constraints); c) {
-            return *c;
-        }
-        SMTRAT_LOG_DEBUG("smtrat.cad.pp", "After simplication with " << mModel << ": " << constraints);
-        foundNew = foundNew || continueSearch;
+        SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Extracted assignments " << mModel << " from " << constraints);
+		auto sres = simplify(constraints);
+		if (std::holds_alternative<ConstraintT>(sres)) {
+			return sres;
+		}
+		assert(std::holds_alternative<bool>(sres));
+        SMTRAT_LOG_DEBUG("smtrat.cad.pp", "After simplification with " << mModel << ": " << constraints);
+        foundNew = foundNew || continueSearch || std::get<bool>(sres);
     }
     return foundNew;
 }
@@ -218,6 +227,7 @@ std::optional<std::vector<FormulaT>> ResultantRule::compute(const std::map<Const
         auto conflict = computeResultants(level);
         if (conflict) return conflict;
     }
+	SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Done.");
     return std::nullopt;
 }
 
@@ -343,6 +353,7 @@ bool CADPreprocessor::preprocess() {
 				changed = true;
 			}
 		}
+		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Origins are now:" << std::endl << mOrigins.mOrigins);
 
 		if (settings_cadpp().disable_resultants) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Resultant rule is disabled");
