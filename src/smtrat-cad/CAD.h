@@ -233,11 +233,15 @@ namespace cad {
 		
 		auto generateCovering() const {
 			carl::covering::TypedSetCover<ConstraintT> cover;
+			SMTRAT_LOG_DEBUG("smtrat.cad.mis", "Current lifting tree: " << std::endl << mLifting.getTree());
+			carl::IDPool idpool;
 			for (auto it = mLifting.getTree().begin_preorder(); it != mLifting.getTree().end_preorder();) {
 				auto constraints = it->getConflictingConstraints();
 				if (constraints.any()) {
+					auto sid = idpool.get();
 					for (auto cid: constraints) {
-						cover.set(mConstraints[cid], it.id());
+						SMTRAT_LOG_DEBUG("smtrat.cad.mis", sid << " " << *it << " vs. " << cid);
+						cover.set(mConstraints[cid], sid);
 					}
 					it.skipChildren();
 				} else {
