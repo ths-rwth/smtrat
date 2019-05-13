@@ -397,12 +397,10 @@ public:
 			return false; // cannot vanish early
 
 		const carl::Variable mainVariable = variableOrder[polyLevel];
-		std::map<carl::Variable, carl::Interval<Rational>> dummy;
 		auto resultPoly =
 			carl::RealAlgebraicNumberEvaluation::evaluateCoefficients(
 				poly.toUnivariatePolynomial(mainVariable),
-				prefixPointToStdMap(polyLevel),
-				dummy);
+				prefixPointToStdMap(polyLevel));
 		return carl::isZero(resultPoly);
 	}
 
