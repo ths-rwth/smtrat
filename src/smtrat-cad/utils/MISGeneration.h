@@ -62,7 +62,12 @@ namespace cad {
 	template<typename CAD>
 	void MISGeneration<MISHeuristic::HYBRID>::operator()(const CAD& cad, std::vector<FormulaSetT>& mis) {
 		auto cov = cad.generateCovering();
-		auto covering = carl::covering::heuristic::select_essential(cov.set_cover());
+		carl::Bitset covering;
+
+		covering |= carl::covering::heuristic::remove_duplicates(cov.set_cover());
+		SMTRAT_LOG_DEBUG("smtrat.mis", "After removing duplicates: " << covering << std::endl << cov);
+
+		covering |= carl::covering::heuristic::select_essential(cov.set_cover());
 		cov.set_cover().prune_sets();
 
 		if (cov.set_cover().active_set_count() == 0) {
@@ -73,8 +78,8 @@ namespace cad {
 			SMTRAT_LOG_DEBUG("smtrat.mis", "returning after preconditioning");
 			return;
 		}
+		SMTRAT_LOG_DEBUG("smtrat.mis", "After preconditioning: " << covering << std::endl << cov);
 
-		covering |= carl::covering::heuristic::remove_duplicates(cov.set_cover());
 		covering |= carl::covering::heuristic::greedy_weighted(cov,
 			[](const ConstraintT& c){
 				constexpr double constant_weight   = 10.0;
@@ -82,6 +87,8 @@ namespace cad {
 				return constant_weight + complexity_weight * c.complexity();
 			}, 12
 		);
+		SMTRAT_LOG_DEBUG("smtrat.mis", "After greedy: " << covering << std::endl << cov);
+
 		cov.set_cover().prune_sets();
 		if (cov.set_cover().active_set_count() == 0) {
 			mis.emplace_back();
