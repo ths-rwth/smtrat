@@ -13,7 +13,7 @@ namespace smtrat
 			CADOnly(): Manager() {
 				setStrategy({
 					addBackend<SATModule<SATSettings1>>({
-						addBackend<CADModule<CADSettingsReal>>()
+						addBackend<NewCADModule<NewCADSettingsFOS>>()
 					})
 				});
 			}

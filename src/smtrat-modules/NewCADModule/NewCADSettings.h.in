@@ -398,7 +398,7 @@ namespace cad {
 		static constexpr auto moduleName = "NewCADModule<NewCADFOV>";
 	};
 
-	struct NewCADSettingsMISBase: NewCADBaseSettings, cad::IncrementalityFO, cad::ProjectionBrown, cad::SampleCompareValue, cad::ProjectionOrderDefault {
+	struct NewCADSettingsMISBase: NewCADBaseSettings, cad::IncrementalityFO, cad::ProjectionBrown, cad::SampleCompareT, cad::ProjectionOrderDefault {
 		static constexpr auto moduleName = "NewCADModule<MISBase>";
 	};
 
