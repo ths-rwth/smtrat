@@ -397,6 +397,35 @@ namespace cad {
 	struct NewCADSettingsFOV: NewCADBaseSettings, cad::IncrementalityFO, cad::ProjectionBrown, cad::SampleCompareValue, cad::ProjectionOrderDefault {
 		static constexpr auto moduleName = "NewCADModule<NewCADFOV>";
 	};
+
+	struct NewCADSettingsMISBase: NewCADBaseSettings, cad::IncrementalityFO, cad::ProjectionBrown, cad::SampleCompareValue, cad::ProjectionOrderDefault {
+		static constexpr auto moduleName = "NewCADModule<MISBase>";
+	};
+
+	struct NewCADSettingsMISTrivial: NewCADSettingsMISBase {
+		static constexpr auto moduleName = "NewCADModule<MISTrivial>";
+		static constexpr cad::MISHeuristic misHeuristic = cad::MISHeuristic::TRIVIAL;
+	};
+	struct NewCADSettingsMISGreedy: NewCADSettingsMISBase {
+		static constexpr auto moduleName = "NewCADModule<MISGreedy>";
+		static constexpr cad::MISHeuristic misHeuristic = cad::MISHeuristic::GREEDY;
+	};
+	struct NewCADSettingsMISGreedyPre: NewCADSettingsMISBase {
+		static constexpr auto moduleName = "NewCADModule<MISGreedyPre>";
+		static constexpr cad::MISHeuristic misHeuristic = cad::MISHeuristic::GREEDY_PRE;
+	};
+	struct NewCADSettingsMISGreedyWeighted: NewCADSettingsMISBase {
+		static constexpr auto moduleName = "NewCADModule<MISGreedyWeighted>";
+		static constexpr cad::MISHeuristic misHeuristic = cad::MISHeuristic::GREEDY_WEIGHTED;
+	};
+	struct NewCADSettingsMISExact: NewCADSettingsMISBase {
+		static constexpr auto moduleName = "NewCADModule<MISExact>";
+		static constexpr cad::MISHeuristic misHeuristic = cad::MISHeuristic::EXACT;
+	};
+	struct NewCADSettingsMISHybrid: NewCADSettingsMISBase {
+		static constexpr auto moduleName = "NewCADModule<MISHybrid>";
+		static constexpr cad::MISHeuristic misHeuristic = cad::MISHeuristic::HYBRID;
+	};
 	
 	struct NewCADSettingsEnumerateAll: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareT, cad::ProjectionOrderDefault {
 		static constexpr auto moduleName = "NewCADModule<NewCADEnumAll>";

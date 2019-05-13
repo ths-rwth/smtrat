@@ -9,7 +9,6 @@ namespace smtrat {
 namespace cad {
 	class Sample {
 	private:
-		std::size_t mID = std::numeric_limits<std::size_t>::max();
 		RAN mValue;
 		bool mIsRoot;
 		SampleLiftedWith mLiftedWith;
@@ -30,12 +29,6 @@ namespace cad {
 		}
 		const RAN& value() const {
 			return mValue;
-		}
-		const auto& id() const {
-			return mID;
-		}
-		auto& id() {
-			return mID;
 		}
 		bool isRoot() const {
 			return mIsRoot;
@@ -70,8 +63,11 @@ namespace cad {
 		carl::Bitset& evaluationResult() {
 			return mEvaluationResult;
 		}
+		auto getConflictingConstraints() const {
+			return mEvaluatedWith & ~mEvaluationResult;
+		}
 		bool hasConflictWithConstraint() const {
-			return (mEvaluatedWith & ~mEvaluationResult).any();
+			return getConflictingConstraints().any();
 		}
 		void merge(const Sample& s) {
 			if (s.isRoot()) setIsRoot(true);
