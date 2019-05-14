@@ -15,9 +15,9 @@ private:
 	B mBackends;
 
 public:
-	boost::optional<Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
+	boost::optional<Explanation> operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason) const {
 		auto F = [&](const auto& expl) {
-			auto r = expl(data, variableOrdering, var, reason);
+			auto r = expl(data, var, reason);
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.explanation", "Got explanation " << r);
 			return r;
 		};

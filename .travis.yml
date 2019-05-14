@@ -28,7 +28,6 @@ matrix:
         apt:
           sources:
           - *sources_base
-          - llvm-toolchain-xenial-5.0
           packages: [*packages_base, clang-5.0, libstdc++-8-dev]
     - stage: dependencies
       os: linux
@@ -99,18 +98,34 @@ matrix:
       os: osx
       osx_image: xcode9.3
       script: TASK=dependencies source .ci/build.sh
+      addons:
+        homebrew:
+          packages:
+          - llvm
     - stage: dependencies
       os: osx
       osx_image: xcode9.4
       script: TASK=dependencies source .ci/build.sh
+      addons:
+        homebrew:
+          packages:
+          - llvm
     - stage: dependencies
       os: osx
       osx_image: xcode10
       script: TASK=dependencies source .ci/build.sh
+      addons:
+        homebrew:
+          packages:
+          - llvm
     - stage: dependencies
       os: osx
       osx_image: xcode10.1
       script: TASK=dependencies source .ci/build.sh
+      addons:
+        homebrew:
+          packages:
+          - llvm
     - stage: build
       os: linux
       compiler: clang++-5.0
@@ -120,7 +135,6 @@ matrix:
         apt:
           sources:
           - *sources_base
-          - llvm-toolchain-xenial-5.0
           packages: [*packages_base, clang-5.0, libstdc++-8-dev]
     - stage: build
       os: linux
@@ -191,18 +205,34 @@ matrix:
       os: osx
       osx_image: xcode9.3
       script: source .ci/build.sh
+      addons:
+        homebrew:
+          packages:
+          - llvm
     - stage: build
       os: osx
       osx_image: xcode9.4
       script: source .ci/build.sh
+      addons:
+        homebrew:
+          packages:
+          - llvm
     - stage: build
       os: osx
       osx_image: xcode10
       script: source .ci/build.sh
+      addons:
+        homebrew:
+          packages:
+          - llvm
     - stage: build
       os: osx
       osx_image: xcode10.1
       script: source .ci/build.sh
+      addons:
+        homebrew:
+          packages:
+          - llvm
     - stage: build
       os: linux
       compiler: g++-8

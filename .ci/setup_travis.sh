@@ -15,10 +15,6 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
 
 	export PATH="$PREFIX/bin:$PATH"
 
-elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
-
-	brew install llvm
-
 fi
 
 export CC=$CC

@@ -3,6 +3,7 @@
 #include <benchmax/logging.h>
 #include <benchmax/utils/filesystem.h>
 
+#include <algorithm>
 #include <string>
 
 namespace benchmax {
@@ -34,6 +35,7 @@ void BenchmarkSet::add_directory(const std::filesystem::path& dir) {
 	} catch(const std::filesystem::filesystem_error& ex) {
 		BENCHMAX_LOG_ERROR("benchmax", "Filesystem error: " << ex.what());
 	}
+	std::sort(mFilesList.begin(), mFilesList.end());
 }
 
 }

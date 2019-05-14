@@ -97,7 +97,8 @@ namespace smtrat {
 	}
 
 	bool MixedSignEncoder::canEncode(const ConstraintT& constraint) {
-		bool positiveSign, negativeSign = false;
+		bool positiveSign = false;
+		bool negativeSign = false;
 
 		for (const auto& term: constraint.lhs()) {
 			if (term.isConstant()) continue;
@@ -110,11 +111,11 @@ namespace smtrat {
 				negativeSign = true;
 			}
 		}
-
+		
 		return positiveSign && negativeSign;
 	}
 
-		Rational MixedSignEncoder::encodingSize(const ConstraintT& constraint) {
+	Rational MixedSignEncoder::encodingSize(const ConstraintT& constraint) {
 		if (!canEncode(constraint)) return PseudoBoolEncoder::encodingSize(constraint);
 
 		std::vector<TermT> positiveTerms;
@@ -138,7 +139,7 @@ namespace smtrat {
 			sums.insert(r);
 		}
 
-		return sums.size(); 
+		return sums.size();
 	}
 
 	std::vector<Rational> MixedSignEncoder::calculateSubsetsums(const std::vector<TermT>& terms) {

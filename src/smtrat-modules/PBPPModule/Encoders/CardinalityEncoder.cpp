@@ -89,7 +89,6 @@ namespace smtrat {
 			else signs.push_front(false);
 		}
 
-		// TODO copying is probably not what we want but we can not easily access the elements
 		std::vector<carl::Variable> variableVector(variables.begin(), variables.end());
 
 		FormulasT resultFormulaSet;
@@ -125,7 +124,7 @@ namespace smtrat {
 				orSet.push_back(FormulaT(var));
 			}
 
-			return FormulaT(carl::FormulaType::AND, 
+			return FormulaT(carl::FormulaType::AND,
 					FormulaT(carl::FormulaType::OR, orSet),
 					FormulaT(carl::FormulaType::AND, result));
 		} else { // constant > variables.size()/2
@@ -155,8 +154,6 @@ namespace smtrat {
 
 			return FormulaT(carl::FormulaType::AND, result);
 		}
-
-		
 	}
 
 	bool CardinalityEncoder::canEncode(const ConstraintT& constraint) {
@@ -187,9 +184,10 @@ namespace smtrat {
 		std::size_t nVars = constraint.variables().size();
 		Rational constantPart = carl::abs(constraint.constantPart());
 
-		Rational binom = factorial(nVars)/(factorial(constantPart) * factorial(nVars - constantPart));
+		Rational binomPositiveFormulation = factorial(nVars)/(factorial(constantPart) * factorial(nVars - constantPart));
+		Rational binomNegativeFormulation = factorial(nVars)/(factorial(nVars - constantPart - 1) * factorial(constantPart - 1));
 
-		return binom;
+		return std::min(binomPositiveFormulation, binomNegativeFormulation);
 	}
 
 	Rational factorial(std::size_t n) {

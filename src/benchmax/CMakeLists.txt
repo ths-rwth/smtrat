@@ -17,7 +17,7 @@ endif()
 # SSH
 if(BENCHMAX_SSH)
 	find_library(LIBSSH NAMES ssh)
-	find_library(LIBSSHTHREADS NAMES ssh)
+	find_library(LIBSSHTHREADS NAMES ssh_threads)
 	if(LIBSSH AND LIBSSHTHREADS)
 		target_link_libraries(benchmax ${LIBSSH} ${LIBSSHTHREADS})
 	else()

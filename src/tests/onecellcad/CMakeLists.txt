@@ -15,3 +15,15 @@ target_link_libraries(runOneCellCadTests
 	${Boost_unit_test_framework_SHARED}
 	smtrat-mcsat-shared
 )
+
+
+add_executable(runOneCellCadBugTests
+  Test_OneCellCADBug.cpp
+)
+target_link_libraries(runOneCellCadBugTests
+  ${Boost_unit_test_framework_SHARED}
+  lib_${PROJECT_NAME}
+  smtrat-mcsat-shared
+  ${libraries}
+)
+add_test(NAME onecellcadbug COMMAND runOneCellCadBugTests)

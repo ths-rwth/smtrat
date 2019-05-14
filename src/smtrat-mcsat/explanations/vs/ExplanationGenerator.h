@@ -52,6 +52,8 @@ private:
 	}
 
 	boost::optional<FormulaT> eliminateVariable(const FormulaT& inputFormula, const carl::Variable& var) const {
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Eliminating variable " << var << " in " << inputFormula);
+
 		// get formula atoms
 		FormulaSetT atoms;
 		helper::getFormulaAtoms(inputFormula, atoms);
@@ -65,9 +67,9 @@ private:
 				FormulaT branchResult = inputFormula;
 
 				// substitute tc into each input constraint
-				for (const auto& constr : mConstraints) {
+				for (const auto& constr : atoms) {
 					// check if branchResult still contains constr
-					if (branchResult.contains(constr)) {
+					//if (branchResult.contains(constr)) {
 						SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substituting " << tc << " into " << constr);
 
 						// calculate substitution
@@ -93,7 +95,7 @@ private:
 						// substitute into formula
 						carl::FormulaSubstitutor<FormulaT> substitutor;
 						branchResult = substitutor.substitute(branchResult, constr, substitutionResult);
-					}
+					//}
 				}
 
 				// add side condition
@@ -125,6 +127,7 @@ private:
 			if (!res) {
 				return boost::none;
 			}
+			assert(res->variables().find(*iter) == res->variables().end());
 		}
 
 		#ifndef NDEBUG

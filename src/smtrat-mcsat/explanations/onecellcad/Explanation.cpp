@@ -49,10 +49,26 @@ inline ostream& operator<<(ostream& os, const std::vector<std::vector<onecellcad
 
 boost::optional<mcsat::Explanation>
 Explanation::operator()(const mcsat::Bookkeeping& trail, // current assignment state
-						const std::vector<carl::Variable>& varOrder,
 						carl::Variable var,
 						const FormulasT& trailLiterals) const {
 	assert(trail.model().size() == trail.assignedVariables().size());
+
+#ifdef SMTRAT_DEVOPTION_Statistics
+	mStatistics.explanationCalled();
+#endif
+
+	#if not (defined USE_COCOA || defined USE_GINAC)
+		// OneCellCAD needs carl::irreducibleFactors to be implemented
+		#warning OneCellCAD may be incorrect as USE_COCOA is disabled
+	#endif
+
+	// compute compatible complete variable ordering
+	std::vector varOrder(trail.assignedVariables());
+	for (const auto& v : trail.variables()) {
+		if (std::find(trail.assignedVariables().begin(), trail.assignedVariables().end(), v) == trail.assignedVariables().end()) {
+			varOrder.push_back(v);
+		}
+	}
 
 	// Temp. workaround, should at least one theory-var should be assigned, otherwise no OneCell construct possible
 	// TODO remove as soon, mcsat backend handles this case.
@@ -180,6 +196,9 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, // current assignment s
 	//      explainLiterals.emplace_back(impliedLiteral);
 
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Explain literals: " << explainLiterals);
+#ifdef SMTRAT_DEVOPTION_Statistics
+	mStatistics.explanationSuccess();
+#endif
 	return boost::variant<FormulaT, ClauseChain>(FormulaT(carl::FormulaType::OR, std::move(explainLiterals)));
 }
 

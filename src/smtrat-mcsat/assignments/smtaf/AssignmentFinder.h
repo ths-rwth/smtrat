@@ -1,6 +1,7 @@
 #pragma once
 
 #include "AssignmentFinder_SMT.h"
+#include "SMTAFStatistics.h"
 
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-mcsat/smtrat-mcsat.h>
@@ -13,16 +14,39 @@ namespace smtaf {
 
 template<class Settings>
 struct AssignmentFinder {
+
+#ifdef SMTRAT_DEVOPTION_Statistics
+	SMTAFStatistics& mStatistics = statistics_get<SMTAFStatistics>("mcsat-assignment-smt");
+#endif
+
 	boost::optional<AssignmentOrConflict> operator()(const mcsat::Bookkeeping& data, carl::Variable var) const {
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Looking for an assignment for " << var << " with lookahead " << Settings::lookahead);
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Looking for an assignment for " << var << " with assignAllVariables = " << Settings::assignAllVariables);
 
-		static_assert(Settings::lookahead > 0);
+		#ifdef SMTRAT_DEVOPTION_Statistics
+			mStatistics.called();
+		#endif
 
+		/*
 		VariablePos varPos = std::find(data.variableOrder().begin(), data.variableOrder().end(), var);
 		VariablePos varPosEnd = varPos;
 		for (int i = 0; i < Settings::lookahead && varPosEnd != data.variableOrder().end(); i++) ++varPosEnd;
+		*/
+		std::vector<carl::Variable> varsToAssign;
+		if (Settings::assignAllVariables) {
+			carl::Variables unassignedVars(data.variables());
+			for (const auto& v : data.assignedVariables()) {
+				unassignedVars.erase(v);
+			}
+			assert(unassignedVars.find(var) != unassignedVars.end());
+			varsToAssign.insert(varsToAssign.begin(), unassignedVars.begin(), unassignedVars.end());
+		} else {
+			varsToAssign.push_back(var);
+		}
+		VariablePos varPos = std::find(varsToAssign.begin(), varsToAssign.end(), var);
+		assert(varPos != varsToAssign.end());
+		VariablePos varPosEnd = varsToAssign.end();
+		
 		assert(varPos != varPosEnd);
-
 		AssignmentFinder_SMT af(std::make_pair(varPos, varPosEnd), data.model());
 
 		for (const auto& c: data.constraints()) {
@@ -50,23 +74,34 @@ struct AssignmentFinder {
 		}
 
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Calling AssignmentFinder...");
+		boost::optional<AssignmentOrConflict> result;
 		if (Settings::advance_level_by_level) {
-			return af.findAssignment();
+			result = af.findAssignment();
 		} else {
-			return af.findAssignment(varPosEnd);
+			result = af.findAssignment(varPosEnd);
 		}
+		#ifdef SMTRAT_DEVOPTION_Statistics
+			if (result) {
+				mStatistics.success();
+			}
+		#endif
+		return result;
 		assert(false);
+	}
+
+	bool active(const mcsat::Bookkeeping&, const FormulaT&) const {
+		return true;
 	}
 };
 
 struct DefaultSettings {
-	static constexpr unsigned int lookahead = 2;
+	static constexpr unsigned int assignAllVariables = true;
 
 	/**
 	 * If set to true, a conflict on the lowest possible level is returned.
 	 * 
-	 * Not sure if settings this to false may cause some termination problems,
-	 * at least for some backends...
+	 * Got more or less irrelevant as unassigned variables are not ordered
+	 * anymore.
 	 */
 	static constexpr bool advance_level_by_level = false;
 };

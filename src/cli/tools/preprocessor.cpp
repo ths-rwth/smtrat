@@ -31,6 +31,9 @@ public:
 	void add(const smtrat::FormulaT& f) {
 		solver.add(f);
 	}
+	void addSoft(const smtrat::FormulaT& f, Rational weight) {
+		solver.add(f);
+	}
 	void annotateName(const smtrat::FormulaT& f, const std::string& name) {
 		SMTRAT_LOG_WARN("smtrat.preprocessor", "Preprocessor does not supprt named annotations.")
 	}

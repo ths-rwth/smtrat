@@ -135,6 +135,7 @@ public:
 		return OutputWrapper(mRegular, "(info \"", "\")\n");
 	}
 	virtual void add(const FormulaT& f) = 0;
+	virtual void addSoft(const FormulaT& f, Rational weight) = 0;
 	virtual void annotateName(const FormulaT& f, const std::string& name) = 0;
 	virtual void check() = 0;
 	virtual void declareFun(const carl::Variable&) = 0;

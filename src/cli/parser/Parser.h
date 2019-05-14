@@ -56,7 +56,7 @@ public:
 		}
 	}
 
-	void add(const types::TermType& t) {
+	void add(const types::TermType& t, bool isSoftFormula = false, Rational weight = Rational(1)) {
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(assert " << t << ")");
 		FormulaT f;
 		conversion::VariantConverter<FormulaT> conv;
@@ -64,6 +64,7 @@ public:
 			SMTRAT_LOG_ERROR("smtrat.parser", "assert requires it's argument to be a formula, but it is \"" << t << "\".");
 			return;
 		}
+
 		// Check if there are global formulas to be added.
 		// These may be due to ite expressions or alike.
 		FormulasT additional;
@@ -72,8 +73,16 @@ public:
 			additional.push_back(f);
 			f = FormulaT(carl::FormulaType::AND, std::move(additional));
 		}
-		callHandler(&InstructionHandler::add, f);
+
+		if (isSoftFormula) {
+			callHandler(&InstructionHandler::addSoft, f, weight);
+		} else {
+			// if we add a soft constraint the usual way we would implicitly require them to be hard which is contradictory.
+			callHandler(&InstructionHandler::add, f);
+		}
+
 	}
+
 	void check() {
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(check-sat)");
 		callHandler(&InstructionHandler::check);

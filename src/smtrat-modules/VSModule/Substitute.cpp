@@ -259,6 +259,17 @@ namespace vs
 
     void splitSosDecompositions( DisjunctionOfConstraintConjunctions& _toSimplify )
     {
+        // TODO this needs to be reviewed and fixed
+        // It seems that is is assumed that lcoeffNeg * constraint.lhs() is positive if
+        // a SOS decomposition exists. However, we can only follow that it's non-negative
+        // (in the univariate case), for the multivariate case more requirements need to be made
+        // (therefor constraint.lhs().hasConstantTerm() ???).
+        // This lead to wrong simplifications in very rare cases, for example
+        // -100 + 140*z + -49*y^2 + -49*z^2 is wrongly simplified to true (see McsatVSBug).
+        
+        // Temporarily disabled (what can be followed in the multivariate case?).
+        return;
+
         for( size_t i = 0; i < _toSimplify.size(); )
         {
             auto& cc = _toSimplify[i];

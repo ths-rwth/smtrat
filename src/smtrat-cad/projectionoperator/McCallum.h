@@ -17,11 +17,12 @@ namespace mccallum {
  */
 template<typename Poly, typename Callback>
 void single(const Poly& p, carl::Variable variable, Callback&& cb) {
-	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "McCallum_single(" << p << ") -> Collins_single");
+	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "McCallum_single(" << p << ")");
+	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "\t-> discriminant " << projection::discriminant(variable, p));
 	cb(projection::discriminant(variable, p));
 	for (const auto& coeff : p.coefficients()) {
 		if (coeff.isConstant()) continue;
-		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "\t-> " << coeff);
+		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "\t-> coefficient " << coeff);
 		returnPoly(projection::normalize(coeff.toUnivariatePolynomial(variable)), cb);
 	}
 }
@@ -33,6 +34,7 @@ void single(const Poly& p, carl::Variable variable, Callback&& cb) {
 template<typename Poly, typename Callback>
 void paired(const Poly& p, const UPoly& q, carl::Variable variable, Callback&& cb) {
 	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "McCallum_paired(" << p << ", " << q << ")");
+	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "\t-> resultant " << projection::resultant(variable, p, q));
 	returnPoly(projection::resultant(variable, p, q), cb);
 }
 

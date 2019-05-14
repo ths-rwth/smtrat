@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 #include "../parser/InstructionHandler.h"
 #include "config.h"
 
@@ -20,9 +22,34 @@ public:
 	~Executor() {
 	}
 	void add(const smtrat::FormulaT& f) {
+		auto softFormulaIt = solver.weightedFormulas().find(f);
+		if (softFormulaIt != solver.weightedFormulas().end()) {
+			// if we have this formula as soft type already in the solver remove it! Hard types have priority.
+			solver.weightedFormulas().erase(softFormulaIt);
+		}
+
 		this->solver.add(f);
 		SMTRAT_LOG_DEBUG("smtrat", "Asserting " << f);
 	}
+
+	void addSoft(const smtrat::FormulaT& f, smtrat::Rational weight) {
+		this->solver.inform(f);
+		// formula is not part of the solver yet. Neither hard nor soft-typed
+		if (solver.weightedFormulas().find(f) == solver.weightedFormulas().end() && solver.formula().find(f) == solver.formula().end()) {
+			solver.weightedFormulas()[f] = weight;
+			return;
+		}
+
+		// formula is already known to the solver as a soft typed constraint - adjust the weight, take MAX
+		if (solver.weightedFormulas().find(f) != solver.weightedFormulas().end()) {
+			solver.weightedFormulas()[f] = std::max(weight, solver.weightedFormulas()[f]);
+			return;
+		}
+
+		// formula is already known as hard-typed formula. Hard type always wins, hence we do not add it
+		assert(solver.formula().find(f) != solver.formula().end());
+	}
+
 	void annotateName(const smtrat::FormulaT& f, const std::string& name) {
 		SMTRAT_LOG_DEBUG("smtrat", "Naming " << name << ": " << f);
 		this->solver.namedFormulas().emplace(name, f);

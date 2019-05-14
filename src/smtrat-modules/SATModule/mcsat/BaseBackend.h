@@ -38,15 +38,27 @@ public:
 	}
 	
 	template<typename Constraints>
-	void resetVariableOrdering(const Constraints& c) {
-		if (mBookkeeping.variableOrder().empty()) {
-			mBookkeeping.updateVariableOrder(calculate_variable_order<Settings::variable_ordering>(c));
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variable ordering " << variableOrder());
+	void initVariables(const Constraints& c) {
+		if (mBookkeeping.variables().empty()) {
+			carl::carlVariables vars;
+			for (int i = 0; i < c.size(); ++i) {
+				if (c[i].first == nullptr) continue;
+				if (c[i].first->reabstraction.getType() != carl::FormulaType::CONSTRAINT) continue;
+				const ConstraintT& constr = c[i].first->reabstraction.constraint(); 
+				constr.gatherVariables(vars);
+			}
+			const auto& varvec = vars.underlyingVariables();
+			mBookkeeping.updateVariables(carl::Variables(varvec.begin(), varvec.end()));
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variables " << variables());
 		}
 	}
 	
-	const auto& variableOrder() const {
-		return mBookkeeping.variableOrder();
+	const auto& variables() const {
+		return mBookkeeping.variables();
+	}
+
+	const auto& assignedVariables() const {
+		return mBookkeeping.assignedVariables();
 	}
 
 	AssignmentOrConflict findAssignment(carl::Variable var) const {
@@ -79,9 +91,9 @@ public:
 			for (const auto& r: reason) expl.emplace_back(r.negated());
 			return FormulaT(carl::FormulaType::OR, std::move(expl));
 		}
-		boost::optional<Explanation> res = mExplanation(getTrail(), variableOrder(), var, reason);
+		boost::optional<Explanation> res = mExplanation(getTrail(), var, reason);
 		if (res) {
-			SMTRAT_LOG_DEBUG("smtrat.mcsat", "Got explanation " << *res);
+			SMTRAT_LOG_INFO("smtrat.mcsat", "Got explanation " << *res);
 			return *res;
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.mcsat", "Explanation backend failed.");
@@ -94,6 +106,10 @@ public:
 		auto res = explain(var, reason);
 		popConstraint(f);
 		return res;
+	}
+
+	bool isActive(const FormulaT& f) const {
+		return mAssignmentFinder.active(getTrail(), f);
 	}
 };
 

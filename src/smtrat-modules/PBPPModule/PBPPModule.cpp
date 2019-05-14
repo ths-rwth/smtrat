@@ -8,11 +8,13 @@
 
 #include "PBPPModule.h"
 
-#include "RNSEncoder.h"
+#include "Encoders/RNSEncoder.h"
 
 #include <boost/optional/optional_io.hpp>
 
-#define DEBUG_PBPP
+// #define DEBUG_PBPP
+// #define PRINT_STATS
+
 
 namespace smtrat
 {
@@ -20,6 +22,9 @@ namespace smtrat
 	template<class Settings>
 	PBPPModule<Settings>::PBPPModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
 		Module( _formula, _conditionals, _manager )
+#ifdef SMTRAT_DEVOPTION_Statistics
+		, mStatistics(Settings::moduleName)
+#endif
 		{
 			mCardinalityEncoder.problem_size = _formula->size();
 			
@@ -29,6 +34,8 @@ namespace smtrat
 			if (Settings::use_mixed_transformation) mEncoders.push_back(&mMixedSignEncoder);
 			if (Settings::use_long_transformation) mEncoders.push_back(&mLongFormulaEncoder);
 			if (Settings::use_short_transformation) mEncoders.push_back(&mShortFormulaEncoder);
+			if (Settings::use_commander_transformation) mEncoders.push_back(&mExactlyOneCommanderEncoder);
+			if (Settings::use_totalizer_transformation) mEncoders.push_back(&mTotalizerEncoder);
 
 		}
 
@@ -57,46 +64,55 @@ namespace smtrat
 			}
 		}
 
-		if (formula.getType() != carl::FormulaType::CONSTRAINT){
-			addSubformulaToPassedFormula(formula, formula);
-			return true;
-		}
-		
-		ConstraintT constraint = formula.constraint();
-		if (!constraint.isPseudoBoolean()) { 
-			// eg an objective function - just forward it
-			addSubformulaToPassedFormula(formula, formula);
-			return true;
-		}
-		
-		
-
-		ConstraintT normalizedConstraint = constraint;
-		if (Settings::NORMALIZE_CONSTRAINTS) {
-			#ifdef DEBUG_PBPP
-			std::cout << "Constraint before normalization: \t" << normalizedConstraint << std::endl;
-			#endif
-			// normalize and hence hopefully simplify the formula
-			std::pair<boost::optional<FormulaT>, ConstraintT> normalizedConstraintWithBoolPart = mNormalizer.normalize(constraint);
-
-			// extract the normalized constraint and pass along the rest
-			#ifdef DEBUG_PBPP
-			std::cout << "Constraint after normalization: \t" 
-					<< normalizedConstraintWithBoolPart.first 
-					<< " and " 
-					<<  normalizedConstraintWithBoolPart.second << std::endl;
-			#endif
-
-			normalizedConstraint = normalizedConstraintWithBoolPart.second;
-			if (normalizedConstraintWithBoolPart.first) {
-				extractConstraints(*normalizedConstraintWithBoolPart.first);						
-			}
-		}
-
-		mConstraints.push_back(normalizedConstraint);
-		formulaByConstraint[normalizedConstraint] = formula;
+		addConstraints(formula);
 	
 		return true;
+	}
+
+	template<class Settings>
+	void PBPPModule<Settings>::addConstraints(const FormulaT& formula) {
+		if  (formula.isBooleanCombination() && formula.isNary()) {
+			SMTRAT_LOG_DEBUG("smtrat.pbc", "Searching for embedded constraints in " << formula);
+			for (const auto& subformula : formula.subformulas()) {
+				addConstraints(subformula);
+			}
+
+			return;
+		}
+
+		if (formula.getType() == carl::FormulaType::CONSTRAINT && formula.constraint().isPseudoBoolean()) {
+			ConstraintT constraint = formula.constraint();
+			if (!constraint.isPseudoBoolean()) { 
+				// eg an objective function - just forward it
+				addSubformulaToPassedFormula(formula, formula);
+				return;
+			}
+			
+			ConstraintT normalizedConstraint = constraint;
+			if (Settings::NORMALIZE_CONSTRAINTS) {
+				#ifdef DEBUG_PBPP
+				std::cout << "Constraint before normalization: \t" << normalizedConstraint << std::endl;
+				#endif
+				// normalize and hence hopefully simplify the formula
+				std::pair<boost::optional<FormulaT>, ConstraintT> normalizedConstraintWithBoolPart = mNormalizer.normalize(constraint);
+
+				// extract the normalized constraint and pass along the rest
+				#ifdef DEBUG_PBPP
+				std::cout << "Constraint after normalization: \t" 
+						<< normalizedConstraintWithBoolPart.first 
+						<< " and " 
+						<<  normalizedConstraintWithBoolPart.second << std::endl;
+				#endif
+
+				normalizedConstraint = normalizedConstraintWithBoolPart.second;
+				if (normalizedConstraintWithBoolPart.first) {
+					extractConstraints(*normalizedConstraintWithBoolPart.first);						
+				}
+			}
+
+			mConstraints.push_back(normalizedConstraint);
+			formulaByConstraint[normalizedConstraint] = formula;
+		}
 	}
 
 	template<class Settings>
@@ -125,13 +141,13 @@ namespace smtrat
 							
 			// we can also check a mode which only uses simplex and does not encode
 			if (Settings::USE_LIA_ONLY) {
-				addSubformulaToPassedFormula(forwardAsArithmetic(constraint, {}), formulaByConstraint[constraint]);
+				liaConstraints.push_back(constraint);
 				continue;
 			} 
 
 			// store information about the constraint
 			Rational encodingSize = std::numeric_limits<size_t>::max();
-			for (const auto& encoder : mEncoders) {
+			for (const auto encoder : mEncoders) {
 				Rational curEncoderSize = encoder->encodingSize(constraint);
 				encodingSize = conversionSizeByConstraint[constraint];
 				if (encoder->canEncode(constraint) && 
@@ -234,22 +250,25 @@ namespace smtrat
 				variablesInBooleanPart.insert(var);
 			}
 
-			// If we find an atom like true or false, we do not need to pass it along or can already prove unsat
-			if ((*boolEncoding).getType() == carl::FormulaType::FALSE) {
-				generateTrivialInfeasibleSubset();
-				return UNSAT;
-			}
-
-			// we can safely ignore true since (true and x) = x
-			if ((*boolEncoding).getType() != carl::FormulaType::TRUE) {
-				addSubformulaToPassedFormula(*boolEncoding, formulaByConstraint[constraint]);
-			}
+			boolEncodings[constraint] = *boolEncoding;
 		}
 
 		for (const auto& constraint : liaConstraints) {
-			addSubformulaToPassedFormula(forwardAsArithmetic(constraint, variablesInBooleanPart), formulaByConstraint[constraint]);
+			//addSubformulaToPassedFormula(forwardAsArithmetic(constraint, variablesInBooleanPart), formulaByConstraint[constraint]);
+			liaConstraintFormula[constraint] = forwardAsArithmetic(constraint, variablesInBooleanPart);
 		}
 
+		#ifdef PRINT_STATS
+			std::cout << "Encoded " << mConstraints.size() - liaConstraints.size() << " as bool and " 
+			          << liaConstraints.size() << " as LIA. " 
+					  << ((double)(mConstraints.size() - liaConstraints.size()))/(double)mConstraints.size() * 100 << "% are directly encoded." << std::endl; 
+		#endif
+
+		for (const auto& subformula : rReceivedFormula()) {
+			SMTRAT_LOG_INFO("smtrat.pbc", "rFormula " << subformula.formula() << " forwarded as \t" << restoreFormula(subformula.formula()));
+			addSubformulaToPassedFormula(restoreFormula(subformula.formula()), subformula.formula());
+		}
+		
 		Answer ans = runBackends();
 		if (ans == UNSAT) {
 			generateTrivialInfeasibleSubset();
@@ -259,15 +278,25 @@ namespace smtrat
 	}
 
 	template<typename Settings>
-	ConstraintT PBPPModule<Settings>::generateZeroHalfCut(const ConstraintT& first, const ConstraintT& second) {
-		assert(first.relation() == second.relation());
-		assert(first.relation() == carl::Relation::LEQ);
+	FormulaT PBPPModule<Settings>::restoreFormula(const FormulaT& formula) {
+		if (formula.getType() == carl::FormulaType::CONSTRAINT) {
+			// this one we may have to substitute
+			const ConstraintT& constraint = formula.constraint();
+			if (boolEncodings.find(constraint) != boolEncodings.end()) return boolEncodings[constraint];
+			if (liaConstraintFormula.find(constraint) != liaConstraintFormula.end()) return liaConstraintFormula[constraint];
 
-		Poly cutPoly = first.lhs() + second.lhs() - first.lhs().constantPart() - second.constantPart();
-		cutPoly = cutPoly/2;
-		cutPoly += carl::floor((first.lhs().constantPart() + second.lhs().constantPart())/2);
+			return formula;
+		} else if (formula.isBooleanCombination() && formula.isNary()) {
+			FormulasT subforms;
+			for (const auto& subformula : formula.subformulas()) {
+				subforms.push_back(restoreFormula(subformula));
+			}
 
-		return ConstraintT(cutPoly, first.relation());
+			return FormulaT(formula.getType(), subforms);
+		} else {
+			// we don't care and return the formula - for example boolean literals. That's totally fine.
+			return formula;
+		}
 	}
 
 	/*
@@ -313,7 +342,10 @@ namespace smtrat
 			bounds.push_back(FormulaT(carl::FormulaType::OR, FormulaT(equalOne), FormulaT(equalZero)));
 		}
 
-		return FormulaT(carl::FormulaType::AND, constraintFormula, boolConnection, FormulaT(carl::FormulaType::AND, bounds));
+		// bounds and connection do hold globally, forward them here
+		addSubformulaToPassedFormula(FormulaT(carl::FormulaType::AND, boolConnection, FormulaT(carl::FormulaType::AND, bounds)));
+
+		return constraintFormula;
 	}
 
 	template<typename Settings>

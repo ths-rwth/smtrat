@@ -27,7 +27,7 @@ namespace cad {
 	};
 	enum class FullSampleCompareStrategy { Type, Value, T, Default = T };
 	using SampleHeuristic = carl::RANSampleHeuristic;
-	enum class MISHeuristic { TRIVIAL, GREEDY, GREEDY_PRE, GREEDY_WEIGHTED, HYBRID};
+	enum class MISHeuristic { TRIVIAL, GREEDY, GREEDY_PRE, GREEDY_WEIGHTED, EXACT, HYBRID};
 	enum class CoreHeuristic { BySample, PreferProjection, PreferSampling, EnumerateAll, Interleave };
 	enum class CoreIntervalBasedHeuristic { PreferLifting };
 	using RootSplittingStrategy = carl::rootfinder::SplittingStrategy;

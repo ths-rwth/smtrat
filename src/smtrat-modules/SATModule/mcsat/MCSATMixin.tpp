@@ -4,22 +4,65 @@ namespace smtrat {
 namespace mcsat {
 
 template<typename Settings>
-void MCSATMixin<Settings>::makeDecision(Minisat::Lit decisionLiteral) {
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Made theory decision for " << currentVariable() << ": " << decisionLiteral);
-	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Variables: " << mBackend.variableOrder());
+void MCSATMixin<Settings>::pushTheoryDecision(const FormulaT& assignment, Minisat::Lit decisionLiteral) {
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Made theory decision for " << assignment.variableAssignment().var() << ": " << decisionLiteral);
+	assert(mInconsistentVariables.empty());
+	mBackend.pushAssignment( assignment.variableAssignment().var(),  assignment.variableAssignment().value(), assignment);
+	mTheoryStack.emplace_back();
+	current().variable = assignment.variableAssignment().var();
 	current().decisionLiteral = decisionLiteral;
 	updateCurrentLevel();
 }
 
 template<typename Settings>
-void MCSATMixin<Settings>::undoDecision() {
-	current().decisionLiteral = Minisat::lit_Undef;
+void MCSATMixin<Settings>::popTheoryDecision() {
+	assert(!mTheoryStack.empty());
 	mUndecidedVariables.insert(
 		mUndecidedVariables.end(),
-		mTheoryStack.back().univariateVariables.begin(),
-		mTheoryStack.back().univariateVariables.end()
+		mTheoryStack.back().decidedVariables.begin(),
+		mTheoryStack.back().decidedVariables.end()
 	);
-	mTheoryStack.back().univariateVariables.clear();
+	for (const auto var : mTheoryStack.back().decidedVariables) {
+		mTheoryLevels[varid(var)] = std::numeric_limits<std::size_t>::max();
+		mSemanticPropagations.erase(var);
+	}
+	mTheoryStack.pop_back();
+	mInconsistentVariables.clear();
+	// mModelAssignmentCache.clear();
+}
+
+template<typename Settings>
+void MCSATMixin<Settings>::updateCurrentLevel() {
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Updating current level " << current().variable);
+	
+	// Check undecided variables whether they became univariate
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Undecided Variables: " << mUndecidedVariables);
+	for (auto vit = mUndecidedVariables.begin(); vit != mUndecidedVariables.end();) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Looking at " << *vit);
+		/*if (computeTheoryLevel(*vit) != level()) {
+			++vit;
+			continue;
+		}*/
+		if (mGetter.isTheoryAbstraction(*vit)) {
+			const auto& f = mGetter.reabstractVariable(*vit);
+			auto evalres = carl::model::evaluate(f, model());
+			if (!evalres.isBool()) {
+				++vit;
+				continue;
+			} else if (mBackend.isActive(f) && mGetter.getBoolVarValue(*vit) != l_Undef && mGetter.getBoolVarValue(*vit) != Minisat::lbool(evalres.asBool())) {
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found inconsistent variable " << *vit);
+				mInconsistentVariables.push_back(*vit);
+			}
+		}
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Associating " << *vit << " with " << current().variable << " at " << level());
+		current().decidedVariables.push_back(*vit);
+		mTheoryLevels[varid(*vit)] = level();
+		if (mGetter.getBoolVarValue(*vit) == l_Undef) {
+			mSemanticPropagations.insert(*vit);
+		}
+		vit = mUndecidedVariables.erase(vit);
+	}
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << mUndecidedVariables);
 }
 
 template<typename Settings>
@@ -30,23 +73,21 @@ bool MCSATMixin<Settings>::backtrackTo(Minisat::Lit literal) {
 		lvl--;
 	}
 	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Backtracking until " << literal << " on level " << lvl);
-	if (lvl == 0 || lvl == level()) {
+	if (lvl == 0) {
 		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Nothing to backtrack for " << literal);
 		return false;
 	}
 	
-	while (level() > lvl) {
-		popLevel();
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Backtracking theory assignment for " << currentVariable());
+	while (level() >= lvl) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Backtracking theory assignment for " << current().variable);
 
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Model " << model());
 
 		if (current().decisionLiteral != Minisat::lit_Undef) {
-			mBackend.popAssignment(currentVariable());
+			mBackend.popAssignment(current().variable);
 		}
-		undoDecision();
+		popTheoryDecision();
 	}
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Next theory variable is " << currentVariable());
 	return true;
 }
 
@@ -62,91 +103,81 @@ Minisat::lbool MCSATMixin<Settings>::evaluateLiteral(Minisat::Lit lit) const {
 	return l_Undef;
 }
 
+/**
+ * Checks is given literal is feasible with the current trail.
+ */
 template<typename Settings>
-std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isDecisionPossible(Minisat::Lit lit, bool check_feasibility_before) {
+std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isBooleanDecisionFeasible(Minisat::Lit lit) {
 	auto var = Minisat::var(lit);
 	if (!mGetter.isTheoryAbstraction(var)) return std::make_pair(true, boost::none);
 	const auto& f = mGetter.reabstractLiteral(lit);
-	auto res = mBackend.isInfeasible(currentVariable(), f);
-	if (carl::variant_is_type<ModelValues>(res)) {
-		if (mModelAssignmentCache.empty()) {
-			mModelAssignmentCache.cache(boost::get<ModelValues>(res));
-		}
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " (" << f << ") is possible");
-		return std::make_pair(true, boost::none);
-	} else {
-		auto& confl = boost::get<FormulasT>(res);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " (" << f << ") is impossible due to " << confl);
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Current state: " << (*this));
-		if (check_feasibility_before) {
+	
+	// assert that literal is consistent with the trail
+	assert(evaluateLiteral(lit) != l_False);
+
+	carl::Variables vars;
+	f.arithmeticVars(vars);
+	for (const auto& v : mBackend.assignedVariables())
+		vars.erase(v);
+	
+	if (vars.size() > 0) {
+		carl::Variable tvar = *(vars.begin());
+
+		auto res = mBackend.isInfeasible(tvar, f);
+		if (carl::variant_is_type<ModelValues>(res)) {
+			/* if (mModelAssignmentCache.empty()) {
+				mModelAssignmentCache.cache(boost::get<ModelValues>(res));
+			}*/
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " (" << f << ") is feasible wrt " << tvar);
+			return std::make_pair(true, boost::none);
+		} else {
+			auto& confl = boost::get<FormulasT>(res);
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " (" << f << ") is infeasible wrt " << tvar << " due to " << confl);
 			if (std::find(confl.begin(), confl.end(), f) == confl.end()) {
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflicting core " << confl << " is independent from decision " << f);
-				return std::make_pair(false, mBackend.explain(currentVariable(), confl));
+				return std::make_pair(false, mBackend.explain(tvar, confl));
 			} else {
-				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Check if trail without " << f << " was feasible");
-				auto expl = isFeasible();
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Check if trail without " << f << " was feasible wrt " << tvar);
+				auto expl = isFeasible(tvar);
 				if (expl) {
-					SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Trail without " << f << " was infeasible");
+					SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Trail without " << f << " was infeasible wrt " << tvar);
 					return std::make_pair(false, std::move(*expl));
 				} else {
-					SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict depends truly on " << f);
+					SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Infeasibility wrt " << tvar << " depends truly on " << f);
 					return std::make_pair(false, boost::none);
 				}
 			}
-		} else {
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " from " << confl);
-			return std::make_pair(false, mBackend.explain(currentVariable(), confl));
 		}
+	} else {
+	 	return std::make_pair(true, boost::none);
 	}
 }
 
 template<typename Settings>
-void MCSATMixin<Settings>::updateCurrentLevel() {
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Updating current level " << current().variable);
-	
-	// Check undecided variables whether they became univariate
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Undecided Variables: " << mUndecidedVariables);
-	for (auto vit = mUndecidedVariables.begin(); vit != mUndecidedVariables.end();) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Looking at " << *vit);
-		if (theoryLevel(*vit) != level()) {
-			++vit;
-			continue;
-		}
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Associating " << *vit << " with " << current().variable << " at " << level());
-		current().univariateVariables.push_back(*vit);
-		vit = mUndecidedVariables.erase(vit);
-	}
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "-> " << mUndecidedVariables);
-}
-
-template<typename Settings>
-void MCSATMixin<Settings>::pushLevel(carl::Variable var) {
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Pushing new level with " << var);
-	mTheoryStack.emplace_back();
-	current().variable = var;
-}
-
-template<typename Settings>
-void MCSATMixin<Settings>::popLevel() {
-	assert(!mTheoryStack.empty());
-	assert(mTheoryStack.back().univariateVariables.empty());
-	mTheoryStack.pop_back();
-	mModelAssignmentCache.clear();
-}
-
-template<typename Settings>
-std::size_t MCSATMixin<Settings>::addVariable(Minisat::Var variable) {
+std::size_t MCSATMixin<Settings>::addBooleanVariable(Minisat::Var variable) {
 	while (mVarPropertyCache.size() <= varid(variable)) {
 		mVarPropertyCache.emplace_back();
 	}
 
-	std::size_t level = theoryLevel(variable);
+	while (mTheoryLevels.size() <= varid(variable)) {
+		mTheoryLevels.emplace_back();
+	}
+
+	std::size_t level = computeTheoryLevel(variable);
+	if (!mGetter.isTheoryAbstraction(variable)) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Ignoring " << variable << " as it is not a theory abstraction");
+		return level;
+	}
+	assert(mGetter.reabstractVariable(variable).getType() != carl::FormulaType::VARASSIGN);
 	if (level == std::numeric_limits<std::size_t>::max()) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << variable << " to undecided");
 		mUndecidedVariables.push_back(variable);
+		mTheoryLevels[varid(variable)] = std::numeric_limits<std::size_t>::max();
 	} else {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << variable << " on level " << level);
-		mTheoryStack[level].univariateVariables.push_back(variable);
+		mTheoryStack[level].decidedVariables.push_back(variable);
+		mTheoryLevels[varid(variable)] = level;
+		mSemanticPropagations.insert(variable);
 	}
 	return level;
 }
@@ -187,14 +218,16 @@ std::ostream& operator<<(std::ostream& os, const MCSATMixin<Settings>& mcm) {
 		if (mcm.model().find(level.variable) != mcm.model().end()) {
 			os << " = " << mcm.model().at(level.variable);
 		}
-		if (level.variable == mcm.current().variable) {
-			os << " <<-- Current variable";
-		}
+		// if (level.variable == mcm.current().variable) {
+		//	os << " <<-- Current variable";
+		// }
 		os << std::endl;
-		os << "\tVariables: " << level.univariateVariables << std::endl;
+		os << "\tVariables: " << level.decidedVariables << std::endl;
 	}
 	os << "Backend:" << std::endl;
 	os << mcm.mBackend << std::endl;
+	os << "Theory variable mapping:" << std::endl;
+	os << mcm.mTheoryVarMapping.minisatToCarl << std::endl;
 	return os;
 }
 

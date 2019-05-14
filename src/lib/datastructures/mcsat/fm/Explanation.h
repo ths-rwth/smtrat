@@ -346,10 +346,13 @@ struct Explanation {
 	FMStatistics& mStatistics = statistics_get<FMStatistics>("mcsat-explanation-fm");
 #endif
 
-	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, const std::vector<carl::Variable>& variableOrdering, carl::Variable var, const FormulasT& reason) const {
+	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason) const {
 		#ifdef SMTRAT_DEVOPTION_Statistics
 		mStatistics.explanationCalled();
 		#endif
+
+		carl::Variables allowedVars(data.assignedVariables().begin(), data.assignedVariables().end());
+		allowedVars.insert(var);
 
 		std::vector<ConstraintT> bounds;
 
@@ -361,17 +364,18 @@ struct Explanation {
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-constraint bound " << b);
 					continue;
 				}
+				// Note that FM can only eliminate one variable. Thus, only syntactically univariate bounds can be handled!
+				if (!isSubset(b.variables(), allowedVars)) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-univariate bound " << b);
+					continue;
+				}
 				assert(b.getType() == carl::FormulaType::CONSTRAINT);
 				bounds.emplace_back(b.constraint());
 			}
 		} else {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " <<  data.constraints());
-		
+
 			for (const auto& b : data.constraints()) {
-				carl::Variables allowedVars;
-				auto curVar = std::find(variableOrdering.begin(), variableOrdering.end(), var); 
-				assert(curVar != variableOrdering.end());
-				allowedVars.insert(variableOrdering.begin(), curVar+1);
 				if (!isSubset(b.variables(), allowedVars)) {
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-univariate bound " << b);
 					continue;

@@ -90,7 +90,9 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 				qi::eps[px::bind(&Theories::popScriptScope, px::ref(theories), 1)]
 			)[px::bind(&Theories::defineFunction, px::ref(theories), qi::_1, qi::_2, qi::_3, qi::_4)];
 		command = qi::lit("(") >> (
-				(qi::lit("assert") > term > ")")[px::bind(&Callee::add, px::ref(callee), qi::_1)]
+				(qi::lit("assert-soft") > term > ")")[px::bind(&Callee::add, px::ref(callee), qi::_1, true, Rational(1))]
+			// |	(qi::lit("assert-soft") > term > qi::lit(":weight") > numeral > ")")[px::bind(&Callee::add, px::ref(callee), qi::_1, true, qi::_2)]
+			|	(qi::lit("assert") > term > ")")[px::bind(&Callee::add, px::ref(callee), qi::_1, false, Rational(-1))]
 			|	(qi::lit("check-sat") > ")")[px::bind(&Callee::check, px::ref(callee))]
 			|	(qi::lit("declare-const") > symbol > sort > ")")[px::bind(&Callee::declareConst, px::ref(callee), qi::_1, qi::_2)]
 			|	(qi::lit("declare-fun") > symbol > "(" > *sort > ")" > sort > ")")[px::bind(&Callee::declareFun, px::ref(callee), qi::_1, qi::_2, qi::_3)]
