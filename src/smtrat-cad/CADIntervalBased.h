@@ -15,9 +15,9 @@ namespace smtrat {
 namespace cad {
 	
 	template<typename Settings>
-	class CAD {
+	class CADIntervalBased {
 	public:
-		template<CoreHeuristic CH>
+		template<CoreIntervalBasedHeuristic CH>
 		friend struct CADCore;
 		using SettingsT = Settings;
 	private:
@@ -116,15 +116,16 @@ namespace cad {
 
 		Answer check(Assignment& assignment, std::vector<FormulaSetT>& mis) {
 			LiftingLevel currentLevel = mLifting.back();
-
 			// check for (-inf, +inf) in the unsat intervals
 			if(currentLevel.isSingletonCover()) {
-				//@todo get poly of contradicting constraint, return unsat
+				return Answer::UNSAT;
 			}
 
-			while(!currentLevel.isUnsatCover()) {
-				//@todo
-			}
+			CADCoreIntervalBased<Settings::coreIntervalBasedHeuristic> cad;
+			auto res = cad(assignment, *this);
+			
+			/*Assignment newsample = std::map<mLifting.getCurrentSample.get>;
+			assignment.insert(); */
 
 			//@todo check
 
