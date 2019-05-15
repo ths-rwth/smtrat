@@ -73,6 +73,7 @@ target_link_libraries(smtrat-shared
 	smtrat-strategy-${SMTRAT_Strategy}-shared
 )
 target_link_libraries(smtrat-static
+	"-static"
 	smtrat-lib-static
 	carl-static
 	smtrat-common-static
