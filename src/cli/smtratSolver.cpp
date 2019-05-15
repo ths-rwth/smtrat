@@ -24,6 +24,9 @@
 #include <smtrat-common/statistics/StatisticsCollector.h>
 #include <smtrat-common/statistics/StatisticsPrinter.h>
 #include <smtrat-common/statistics/StatisticsSettings.h>
+#ifdef TIMING
+#include <smtrat-common/statistics/TimingStatistics.h>
+#endif // TIMING
 #endif //SMTRAT_DEVOPTION_Statistics
 
 #include <smtrat-common/settings/SettingsComponents.h>
@@ -49,6 +52,8 @@ void print_statistics() {
 	if (smtrat::settings_solver().print_timings) {
 		std::cout << carl::TimingCollector::getInstance() << std::endl;
 	}
+	smtrat::TimingStatistics& timingStatistics = smtrat::statistics_get<smtrat::TimingStatistics>("Timing");
+	timingStatistics.addTimingCollector(carl::TimingCollector::getInstance());
 	#endif
 	smtrat::StatisticsCollector::getInstance().collect();
 	if (smtrat::settings_statistics().print_as_smtlib) {
@@ -83,6 +88,11 @@ void setup_logging() {
 		("smtrat.nlsat.assignmentfinder", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.strategygraph", carl::logging::LogLevel::LVL_DEBUG)
+//		("smtrat.mcsat.assignmentfinder", carl::logging::LogLevel::LVL_TRACE)
+//		("carl.formula.model", carl::logging::LogLevel::LVL_DEBUG)
+//		("carl.core.rootfinder", carl::logging::LogLevel::LVL_TRACE)
+//		("carl.ran", carl::logging::LogLevel::LVL_TRACE)
+//		("carl.lazard", carl::logging::LogLevel::LVL_TRACE)
 	;
 	carl::logging::logger().formatter("stdout")->printInformation = true;
 #endif
