@@ -922,17 +922,29 @@ namespace smtrat
         if (mModel.empty()) return;
 		// Collect all variables
 		carl::carlVariables variables;
+		std::set<carl::UninterpretedFunction> functions;
 		for (const auto& f: *mpReceivedFormula) {
 			f.formula().gatherVariables(variables);
+			f.formula().gatherUFs(functions);
 		}
 		auto vars = variables.underlyingVariables();
 		// Filter model
 		for (auto it = mModel.begin(); it != mModel.end(); ) {
-			carl::Variable v;
-			if (it->first.isVariable()) v = it->first.asVariable();
-			else if (it->first.isBVVariable()) v = it->first.asBVVariable().variable();
-			else if (it->first.isUVariable()) v = it->first.asUVariable().variable();
-			if (std::find(vars.begin(), vars.end(), v) == vars.end()) {
+			bool remove = false;
+			if (it->first.isFunction()) {
+				if (functions.find(it->first.asFunction()) == functions.end()) {
+					remove = true;
+				}
+			} else {
+				carl::Variable v;
+				if (it->first.isVariable()) v = it->first.asVariable();
+				else if (it->first.isBVVariable()) v = it->first.asBVVariable().variable();
+				else if (it->first.isUVariable()) v = it->first.asUVariable().variable();
+				if (std::find(vars.begin(), vars.end(), v) == vars.end()) {
+					remove = true;
+				}
+			}
+			if (remove) {
 				it = mModel.erase(it);
 			} else {
 				++it;
