@@ -2214,6 +2214,7 @@ namespace smtrat
         auto origVarsIter = originalRealVariables.begin();
         for( auto iter = antipoint.begin(); iter != antipoint.end(); ++iter )
         {
+			SMTRAT_LOG_TRACE("smtrat.module.icp", "Checking antipoint " << iter->first << " = " << iter->second);
             // Add an assignment for variables only occurring in constraints with != as relation symbol
             while( origVarsIter != originalRealVariables.end() && *origVarsIter < iter->first )
             {
@@ -2222,6 +2223,9 @@ namespace smtrat
             }
             if( origVarsIter != originalRealVariables.end() )
                 ++origVarsIter;
+			if (std::isinf(iter->second) || std::isnan(iter->second)) {
+				continue;
+			}
 			assert(!std::isinf(iter->second) && !std::isnan(iter->second));
             // rationalize the found test point for the given dimension
             Rational value = carl::rationalize<Rational>( iter->second );
@@ -2275,6 +2279,9 @@ namespace smtrat
         {
             assert( rf.formula().getType() == carl::FormulaType::CONSTRAINT );
             unsigned isSatisfied = carl::model::satisfiedBy(rf.formula().constraint(), mFoundSolution);
+			if (isSatisfied == 2) {
+				return false;
+			}
             assert( isSatisfied != 2 );
             if( isSatisfied == 0 )
             {
