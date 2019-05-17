@@ -31,6 +31,8 @@
 #include <variant>
 #include <vector>
 
+#include <carl/formula/model/ran/RealAlgebraicNumberIntervalExtra.h>
+
 namespace smtrat {
 namespace mcsat {
 namespace onecellcad {
@@ -397,11 +399,15 @@ public:
 			return false; // cannot vanish early
 
 		const carl::Variable mainVariable = variableOrder[polyLevel];
-		auto resultPoly =
-			carl::RealAlgebraicNumberEvaluation::evaluateCoefficients(
+		// auto resultPoly =
+		// 	carl::RealAlgebraicNumberEvaluation::evaluateCoefficients(
+		// 		poly.toUnivariatePolynomial(mainVariable),
+		// 		prefixPointToStdMap(polyLevel));
+		// return carl::isZero(resultPoly);vanishes
+
+		return carl::RealAlgebraicNumberEvaluation::vanishes(
 				poly.toUnivariatePolynomial(mainVariable),
 				prefixPointToStdMap(polyLevel));
-		return carl::isZero(resultPoly);
 	}
 
 	bool isPointRootOfPoly(
