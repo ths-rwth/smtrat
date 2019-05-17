@@ -13,23 +13,19 @@ namespace cad {
 	template<typename Settings>
 	class LiftingLevel {
 	private:
-		const ConstraintT& mConstraints;
-		std::vector<carl::Variable> mVariables;
-		Sample curSample;
-		std::vector<CADInterval> intervals;	/**< unsat intervals */
-		std::set<RAN> levelintervals;			/**< all bounds of unsat intervals, ordered */
-		bool levelintervalminf;					/**< whether -inf is a bound */
-		bool levelintervalpinf;					/**< whether +inf is a bound */
+		std:vector<const ConstraintT&> mConstraints = std:vector<const ConstraintT&>();	/**< constraints */
+		std::vector<carl::Variable> mVariables 		= std::vector<carl::Variable>();	/**< variables */
+		Sample curSample	 						= Sample();							/**< current sample to be checked */
+		std::vector<CADInterval> intervals 			= std::vector<CADInterval>();		/**< unsat intervals */
+		std::set<RAN> levelintervals 				= set<RAN>();						/**< all bounds of unsat intervals, ordered */
+		bool levelintervalminf			 			= false;							/**< whether -inf is a bound */
+		bool levelintervalpinf 						= false;							/**< whether +inf is a bound */
 		
 		//@todo check all fcnts and add doxygen conform comments
 
 		/** gets the current dimension (#variables) */
 		std::size_t dim() const {
 			return mVariables.size();
-		}
-
-		void computeUnsatIntervals() {
-			//@todo see alg 2
 		}
 
 		/** adds an unsat interval to the internal data structures of the level */
@@ -146,11 +142,6 @@ namespace cad {
 	public:
 
 		LiftingLevel(){
-			intervals = std::vector<CADInterval>();
-			levelintervals = set<RAN>();
-			levelintervalminf = false;
-			levelintervalpinf = false;
-
 			computeUnsatIntervals();
 		}
 

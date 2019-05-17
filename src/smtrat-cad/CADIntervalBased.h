@@ -22,8 +22,7 @@ namespace cad {
 		using SettingsT = Settings;
 	private:
 		std::vector<carl::Variable> mVariables;
-		CADConstraints<Settings::backtracking> mConstraints;
-		ProjectionT<Settings> mProjection;
+		std:vector<const ConstraintT&> mConstraints;	/**< constraints */
 		std::vector<LiftingLevel<Settings>> mLifting;
 		
 		// ID scheme for variables x,y,z:

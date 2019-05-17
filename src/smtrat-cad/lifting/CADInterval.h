@@ -8,33 +8,43 @@ namespace cad {
     public: 
         /** bound types for CAD interval bounds */
         enum CADBoundType {
-            INF,
-            OPEN,
-            CLOSED
+            INF,        /**< infinity */
+            OPEN,       /**< open but not infinitiy (does not include bound value) */
+            CLOSED      /**< closed (does include bound value) */
         };
 	private:
-        RAN lower;  /**< lower bound */
-        RAN upper;  /**< upper bound */
-        CADBoundType lowertype;    /**< lower bound type */
-        CADBoundType uppertype;    /**< upper bound type */
+        RAN lower = (RAN) 0;                                            /**< lower bound */
+        RAN upper = (RAN) 0;                                            /**< upper bound */
+        CADBoundType lowertype = INF;                                   /**< lower bound type */
+        CADBoundType uppertype = INF;                                   /**< upper bound type */
+        std::optional<const ConstraintT&> constraint = std::nullopt;    /**< this interval represents the bounds of this constraint */
 	public:
         /** initializes interval as (-inf, +inf) */
-		CADInterval(){
-            lower = (RAN) 0;
-            upper = (RAN) 0;
-            lowertype = INF;
-            uppertype = INF;
-		}
+		CADInterval(){     
+        }
 
-        /** initializes closed interval with given bounds */
-        CADInterval(RAN lowerbound, RAN upperbound): lower(lowerbound), upper(upperbound) {
-            lowertype = CLOSED;
-            uppertype = CLOSED;
+        /** initializes open interval with given bounds */
+        CADInterval(RAN lowerbound, RAN upperbound): 
+            lower(lowerbound), upper(upperbound) {
+            lowertype = OPEN;
+            uppertype = OPEN;
+        }
+
+        /** initializes open interval with given bounds and constraint */
+        CADInterval(RAN lowerbound, RAN upperbound, const ConstraintT& cons): 
+            lower(lowerbound), upper(upperbound), constraint(cons) {
+            lowertype = OPEN;
+            uppertype = OPEN;
         }
 
         /** initializes interval with given bounds and bound types */
         CADInterval(RAN lowerbound, RAN upperbound, CADBoundType lowerboundtype, CADBoundType upperboundtype):
             lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype) {
+        }
+
+        /** initializes interval with given bounds, bound types and constraint */
+        CADInterval(RAN lowerbound, RAN upperbound, CADBoundType lowerboundtype, CADBoundType upperboundtype, const ConstraintT& cons):
+            lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), constraint(cons) {
         }
 
         /** gets lower bound */
@@ -57,6 +67,11 @@ namespace cad {
             return uppertype;
         }
 
+        /** gets constraint the interval originated from */
+        auto getConstraint() {
+            return constraint;
+        }
+
         /** sets lower bound value and bound type */
         void setLowerBound(RAN value, CADBoundType type) {
             lower = value;
@@ -67,6 +82,11 @@ namespace cad {
         void setUpperBound(RAN value, CADBoundType type) {
             upper = value;
             uppertype = type;
+        }
+
+        /** sets constraint */
+        void setConstraint(const ConstraintT& cons) {
+            constraint = cons;
         }
 
         /** checks whether the interval is (-inf, +inf) */
