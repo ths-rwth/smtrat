@@ -764,6 +764,7 @@ public:
 
 		for (const auto& coeff : boundCandidateUniPoly.coefficients()) {
 			// find first non-vanishing coefficient:
+			if (carl::isZero(coeff)) continue;
 			const auto coeffLevel = *levelOf(variableOrder, coeff); // certainly non-constant
 			if (!isPointRootOfPoly(coeffLevel, coeff)) {
 				return shrinkCellWithIrreducibleFactorsOfPoly(
