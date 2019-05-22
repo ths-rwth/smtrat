@@ -4,6 +4,7 @@
 #include "../Settings.h"
 
 #include <smtrat-cad/lifting/Sample.h>
+#include <smtrat-cad/lifting/LiftingLevel.h>
 
 namespace smtrat {
 namespace cad {
@@ -13,8 +14,8 @@ struct CADCoreIntervalBased {};
 
 template<>
 struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::PreferLifting> {
-	template<typename CAD>
-	bool doProjection(CAD& cad) {
+	template<typename CADIntervalBased>
+	bool doProjection(CADIntervalBased& cad) {
 		auto r = cad.mProjection.projectNewPolynomial();
 		if (r.none()) {
 			SMTRAT_LOG_INFO("smtrat.cad", "Projection has finished.");
@@ -23,14 +24,15 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::PreferLifting> {
 		SMTRAT_LOG_INFO("smtrat.cad", "Projected into " << r << ", new projection is" << std::endl << cad.mProjection);
 		return true;
 	}
-	template<typename CAD>
-	bool doLifting(CAD& cad) {
+	template<typename CADIntervalBased>
+	bool doLifting(CADIntervalBased& cad) {
+		//@todo is mLifting.back() applicable here? maybe specify lifting level or iterator instead for recursion
         // no lifting is possible if an unsat cover was found
-		if (cad.mLifting.isUnsatCover()) return false;
+		if (cad.mLifting.back().isUnsatCover()) return false;
 
-        while(!cad.mLifting.isUnsatCover()) {
+        while(!cad.mLifting.back().isUnsatCover()) {
             // compute a new sample outside of known unsat intervals
-            auto s = cad.mLifting.chooseSample();
+            auto s = cad.mLifting.back().chooseSample();
             SMTRAT_LOG_TRACE("smtrat.cad", "Next sample" << std::endl << s);
             //@todo check whether all former levels + new sample are sat, if true return sat
 
@@ -58,8 +60,54 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::PreferLifting> {
 		}
 		return true;
 	}
-	template<typename CAD>
-	Answer operator()(Assignment& assignment, CAD& cad) {
+
+	/**
+	 * @param cad 	CAD class
+	 * @param dim	dimension of current lifting level
+	 * @returns true if SAT, false if UNSAT
+	 * @returns in UNSAT case: intervals forming the unsat cover
+	 * @returns in SAT case: vector of samples as satisfying witness (ordered from lowest to highest dimension)
+	 */
+	template<typename CADIntervalBased>
+	std::tuple<bool, std::vector<CADInterval>, std::vector<Sample>> getUnsatCover(
+		CADIntervalBased& cad, std::vector<Sample> samples) {
+
+		// get the current dimension
+		int dim = samples.size();
+		// there should be lifting levels for all former dimensions and none for the current one
+		assert(cad.mLifting.size() == dim);
+		//@todo initialize new lifting level with conss, get intervals
+		cad.mLifting.push_back(new LiftingLevel());
+
+        // no lifting is possible if an unsat cover was found
+		if (cad.mLifting.back().isUnsatCover()) return false;
+
+        while(!cad.mLifting.back().isUnsatCover()) {
+            // compute a new sample outside of known unsat intervals
+            auto s = cad.mLifting.back().chooseSample();
+            SMTRAT_LOG_TRACE("smtrat.cad", "Next sample" << std::endl << s);
+			samples.push_back(s);
+			// have we reached full dimension yet?
+			if(samples.size() == cad.dim())
+				return new std::tuple<bool, std::vector<CADInterval>, std::vector<Sample>>(true, new std::vector<CADInterval>, samples);
+
+			auto samplecheck = getUnsatCover(cad, samples);
+            //@todo check whether all former levels + new sample are sat, if true return sat
+
+			// if the result was sat, return the resulting samples as witnesses
+			if(std::get<0>(samplecheck) == true) 
+				return new std::tuple<bool, std::vector<CADInterval>, std::vector<Sample>>(true, new std::vector<CADInterval>, std::get<2>(samplecheck));
+			else
+			{
+				auto r = cad.construct_characterization(samples); //@todo
+				CADInterval i = cad.interval_from_characterization(samples, std::get<1>(samplecheck)); //@todo
+				cad.mLifting.back().addUnsatInterval(i);
+			}
+        }
+		return true;
+	}
+	template<typename CADIntervalBased>
+	Answer operator()(Assignment& assignment, CADIntervalBased& cad) {
         //@todo there should probably be a different preference order here?!
 		cad.mLifting.restoreRemovedSamples();
 		cad.mLifting.resetFullSamples();

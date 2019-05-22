@@ -141,6 +141,7 @@ namespace cad {
 
 	public:
 
+		//@todo add constraints etc as parameters
 		LiftingLevel(){
 			computeUnsatIntervals();
 		}

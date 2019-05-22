@@ -18,7 +18,7 @@ namespace cad {
 	class CADIntervalBased {
 	public:
 		template<CoreIntervalBasedHeuristic CH>
-		friend struct CADCore;
+		friend struct CADCoreIntervalBased;
 		using SettingsT = Settings;
 	private:
 		std::vector<carl::Variable> mVariables;
