@@ -14,7 +14,9 @@ namespace cad {
 	template<typename Settings>
 	class LiftingLevel {
 	private:
+		//@todo check which of these are used and that all are initialized
 		std:vector<const ConstraintT&> mConstraints = std:vector<const ConstraintT&>();	/**< constraints */
+		carl::Variable currVar						= carl::Variable();					/**< this level is considered univariate on given variable */
 		std::vector<carl::Variable> mVariables 		= std::vector<carl::Variable>();	/**< variables */
 		Sample curSample	 						= Sample();							/**< current sample to be checked */
 		std::vector<CADInterval> intervals 			= std::vector<CADInterval>();		/**< unsat intervals */
@@ -143,7 +145,7 @@ namespace cad {
 		/**
 		 * Calculates the intervals between the real roots of the given set of constraints
 		 */
-		void calcIntervalsFromPolys(Variable v, std::set<const ConstraintT&> conss) {
+		void calcIntervalsFromPolys(Variable v, std::vector<const ConstraintT&> conss) {
 			std::vector<RAN> roots;
 			for (const auto& c: conss) {
 				// find real roots of every constraint
@@ -171,9 +173,10 @@ namespace cad {
 
 	public:
 
-		//@todo add constraints etc as parameters
-		LiftingLevel(){
-			computeUnsatIntervals();
+		//@todo init all class vars
+		LiftingLevel(std:vector<const ConstraintT&> conss, carl::Variable v): 
+			mConstraints(conss), currVar(v) {
+			calcIntervalsFromPolys(currVar, mConstraints);
 		}
 
 		void reset(std::vector<carl::Variable>&& vars) {

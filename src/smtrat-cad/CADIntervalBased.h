@@ -46,7 +46,7 @@ namespace cad {
 
 	public:
 		debug::TikzHistoryPrinter thp;
-		CAD():
+		CADIntervalBased():
 			mConstraints(
 				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(projection::normalize(p), cid, isBound); },
 				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addEqConstraint(projection::normalize(p), cid, isBound); },
@@ -63,7 +63,7 @@ namespace cad {
 				thp.configure<debug::TikzDAGPrinter>("Projection");
 			}
 		}
-		~CAD() {
+		~CADIntervalBased() {
 			if (Settings::debugStepsToTikz) {
 				thp.layout();
 				thp.writeTo("cad_debug.tex");
@@ -99,6 +99,8 @@ namespace cad {
 			mProjection.reset();
 			mLifting.reset(std::vector<carl::Variable>(vars.rbegin(), vars.rend()));
 		}
+
+		//@todo add constraint to lifting level
 		void addConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Adding " << c);
 			mConstraints.add(c);
@@ -112,7 +114,7 @@ namespace cad {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current intervals in lifting level:" << std::endl << mLifting.getUnsatIntervals());
 		}
-
+		
 		Answer check(Assignment& assignment, std::vector<FormulaSetT>& mis) {
 			LiftingLevel currentLevel = mLifting.back();
 			// check for (-inf, +inf) in the unsat intervals
