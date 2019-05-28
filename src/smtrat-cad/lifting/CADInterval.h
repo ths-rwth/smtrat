@@ -30,6 +30,20 @@ namespace cad {
             uppertype = OPEN;
         }
 
+        /** initializes closed point interval */
+        CADInterval(RAN point): 
+            lower(point), upper(point) {
+            lowertype = CLOSED;
+            uppertype = CLOSED;
+        }
+
+        /** initializes closed point interval with constraint */
+        CADInterval(RAN point, const ConstraintT& cons): 
+            lower(point), upper(point), constraint(cons) {
+            lowertype = CLOSED;
+            uppertype = CLOSED;
+        }
+
         /** initializes open interval with given bounds and constraint */
         CADInterval(RAN lowerbound, RAN upperbound, const ConstraintT& cons): 
             lower(lowerbound), upper(upperbound), constraint(cons) {
@@ -86,7 +100,7 @@ namespace cad {
 
         /** sets constraint */
         void setConstraint(const ConstraintT& cons) {
-            constraint = cons;
+            constraint.emplace(cons);
         }
 
         /** checks whether the interval is (-inf, +inf) */
