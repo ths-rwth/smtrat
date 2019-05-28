@@ -140,33 +140,33 @@ namespace cad {
 			return std::make_tuple(true, highestbound, boundopen, false);
 		}
 
-		/*@todo how to get polys from constraints */
-		void calcIntervalsFromPolys(Variable v, RAN s, const PolySet& P) {
+		/**
+		 * Calculates the intervals between the real roots of the given set of constraints
+		 */
+		void calcIntervalsFromPolys(Variable v, std::set<const ConstraintT&> conss) {
 			std::vector<RAN> roots;
-			for (const auto& p: P) {
-				// find real roots
-				auto r = rootfinder::realRoots(p.toUnivariatePolynomial(v));
+			for (const auto& c: conss) {
+				// find real roots of every constraint
+				auto r = rootfinder::realRoots(c.lhs().toUnivariatePolynomial(v));
 				r.sort(r.begin(), r.end()); // roots have to be ordered
 				
 				// go through roots to build intervals and add them to the lifting level
 				std::vector<RAN>::iterator it;
 				for (it = r.begin(); it != r.end(); it++) {
-					/*@todo add constraint to initialization */
 					// add closed point interval for each root
-					addUnsatInterval(CADInterval(*it));
+					addUnsatInterval(CADInterval(*it), c);
 
-					/*@todo add constraints here, too */
 					// add inf intervals if appropriate
 					if (it == r.begin()) // add (-inf, x)
-						addUnsatInterval(CADInterval(0, *it, CADBoundType::INF, CADBoundType::OPEN));
+						addUnsatInterval(CADInterval(0, *it, CADBoundType::INF, CADBoundType::OPEN, c));
 					else if (it == r.back()) // add (x, inf)
-						addUnsatInterval(CADInterval(*it, 0, CADBoundType::OPEN, CADBoundType::INF));
+						addUnsatInterval(CADInterval(*it, 0, CADBoundType::OPEN, CADBoundType::INF, c));
 					
-					/*@todo add constraints here, too */
 					// add open interval to next root
 					if (it != r.back())
-						addUnsatInterval(CADInterval(*it, *(std::next(it,1))));
+						addUnsatInterval(CADInterval(*it, *(std::next(it,1)), c));
 				}
+			}
 		}
 
 	public:
