@@ -13,6 +13,9 @@ class BenchmarkSet {
 private:
 	/// List of files in this benchmark set.
 	std::vector<std::filesystem::path> mFilesList;
+
+	/// Recursively add all benchmarks from this path.
+	void add_recursive(const std::filesystem::path& path);
 public:
 	/// Recursively find all benchmarks from this directory.
 	void add_directory(const std::filesystem::path& dir);
