@@ -548,12 +548,26 @@ namespace smtrat
                                             }
                                             else // Solution.
                                             {
-                                                if( !solutionInDomain() )
+												SMTRAT_LOG_DEBUG("smtrat.vs", "Has a solution");
+												if( !solutionInDomain() )
                                                 {
-                                                    return UNKNOWN;
+													bool cannotBeSolved = false;
+													State* cur = currentState;
+													while (!cannotBeSolved && cur != nullptr) {
+														cannotBeSolved = cannotBeSolved || cur->cannotBeSolved(mLazyMode);
+														cur = cur->pFather();
+													}
+													SMTRAT_LOG_DEBUG("smtrat.vs", "Checking for solvability " << mLazyMode << " -> " << currentState->cannotBeSolved(mLazyMode));
+													if (!cannotBeSolved) {
+														SMTRAT_LOG_DEBUG("smtrat.vs", "Solution is not in domain");
+														return UNKNOWN;
+													} else {
+														SMTRAT_LOG_DEBUG("smtrat.vs", "Found infeasibility of this state");
+													}
                                                 }
                                                 else
                                                 {
+													SMTRAT_LOG_DEBUG("smtrat.vs", "Checking the consistency");
                                                     return consistencyTrue();
                                                 }
                                             }
