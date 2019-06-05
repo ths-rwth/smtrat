@@ -32,7 +32,7 @@
 
 #define EXIT_ON_ERROR
 #ifdef EXIT_ON_ERROR
-#define HANDLE_ERROR exit(123);
+#define HANDLE_ERROR std::cout << "(unknown)" << std::endl; exit(123);
 #else
 #define HANDLE_ERROR
 #endif
