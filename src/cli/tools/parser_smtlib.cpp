@@ -141,8 +141,6 @@ struct FormulaProperties : public Statistics {
 		num_variables = variables.size();
 		if (collector.has_info("status")) {
 			add("answer", collector.get_info("status"));
-		} else {
-			std::cout << "Answer not available" << std::endl;
 		}
 	}
 };
