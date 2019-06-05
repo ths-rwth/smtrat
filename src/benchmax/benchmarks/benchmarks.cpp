@@ -10,10 +10,10 @@ BenchmarkSet loadBenchmarks() {
 	for (const auto& p : settings_benchmarks().input_directories) {
 		std::filesystem::path path(p);
 		if (std::filesystem::exists(path)) {
-			BENCHMAX_LOG_INFO("benchmax.benchmarks", "Adding benchmark " << path.native());
+			BENCHMAX_LOG_INFO("benchmax.benchmarks", "Adding input directory " << path.native());
 			benchmarks.add_directory(path);
 		} else {
-			BENCHMAX_LOG_WARN("benchmax", "Benchmark path " << p << " does not exist.");
+			BENCHMAX_LOG_WARN("benchmax.benchmarks", "Benchmark path " << p << " does not exist.");
 		}
 	}
 	return benchmarks;

@@ -160,11 +160,13 @@ namespace smtrat
     template<class Settings>
     Answer VSModule<Settings>::checkCore()
     {
+		SMTRAT_LOG_DEBUG("smtrat.vs", "Starting checkCore()");
         #ifdef SMTRAT_DEVOPTION_Statistics
         mStatistics.check();
         #endif
         if( !Settings::incremental_solving )
         {
+			SMTRAT_LOG_DEBUG("smtrat.vs", "Do not solve incrementally");
             removeStatesFromRanking( *mpStateTree );
             delete mpStateTree;
             mpStateTree = new State( mpConditionIdAllocator, Settings::use_variable_bounds );
@@ -193,6 +195,7 @@ namespace smtrat
         }
         if( !mFinalCheck && !mConditionsChanged && (!mFullCheck || mLastCheckFull) )
         {
+			SMTRAT_LOG_DEBUG("smtrat.vs", "Do not perform a proper check, exit quickly");
             if( mInfeasibleSubsets.empty() )
             {
                 if( solverState() == SAT )
@@ -218,6 +221,7 @@ namespace smtrat
         mLastCheckFull = mFullCheck;
         if( rReceivedFormula().empty() )
         {
+			SMTRAT_LOG_DEBUG("smtrat.vs", "Received formula is empty");
             if( !solutionInDomain() )
             {
                 return UNKNOWN;
@@ -229,12 +233,14 @@ namespace smtrat
         }
         if( mInconsistentConstraintAdded )
         {
+			SMTRAT_LOG_DEBUG("smtrat.vs", "Inconsistent constraint was found");
             assert( !mInfeasibleSubsets.empty() );
             assert( !mInfeasibleSubsets.back().empty() );
             return UNSAT;
         }
         if( Settings::use_variable_bounds )
         {
+			SMTRAT_LOG_DEBUG("smtrat.vs", "Trying to employ variable bounds");
             if( !mpStateTree->variableBounds().isConflicting() )
             {
                 std::vector<std::pair<std::vector<ConstraintT>, ConstraintT>> bDeds = mpStateTree->variableBounds().getBoundDeductions();
@@ -261,6 +267,7 @@ namespace smtrat
         }
         while( !mRanking.empty() )
         {
+			SMTRAT_LOG_DEBUG("smtrat.vs", "Ranking is not empty yet");
             assert( checkRanking() );
 //                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             if( anAnswerFound() )
@@ -304,13 +311,16 @@ namespace smtrat
 //            }
             if( currentState->hasChildrenToInsert() )
             {
+				SMTRAT_LOG_DEBUG("smtrat.vs", "Children to insert");
                 currentState->rHasChildrenToInsert() = false;
                 addStatesToRanking( currentState );
             }
             else
             {
+				SMTRAT_LOG_DEBUG("smtrat.vs", "No children to insert");
                 if( currentState->isInconsistent() )
                 {
+					SMTRAT_LOG_DEBUG("smtrat.vs", "Current state is inconsistent");
                     #ifdef VS_LOG_INTERMEDIATE_STEPS
                     logConditions( *currentState, false, "Intermediate_conflict_of_VSModule" );
                     #endif
@@ -329,6 +339,7 @@ namespace smtrat
                 }
                 else if( currentState->takeSubResultCombAgain() && currentState->type() == State::COMBINE_SUBRESULTS )
                 {
+					SMTRAT_LOG_DEBUG("smtrat.vs", "Case 2");
                     #ifdef VS_DEBUG
                     cout << "*** Refresh conditons:" << endl;
                     #endif
@@ -344,6 +355,7 @@ namespace smtrat
                 }
                 else if( currentState->hasRecentlyAddedConditions() )//&& !(currentState->takeSubResultCombAgain() && currentState->isRoot() ) )
                 {
+					SMTRAT_LOG_DEBUG("smtrat.vs", "Current state has new conditions");
                     #ifdef VS_DEBUG
                     cout << "*** Propagate new conditions :" << endl;
                     #endif
@@ -354,8 +366,10 @@ namespace smtrat
                 }
                 else
                 {
+					SMTRAT_LOG_DEBUG("smtrat.vs", "Case 4");
                     if( Settings::use_variable_bounds && !currentState->checkTestCandidatesForBounds() )
                     {
+						SMTRAT_LOG_DEBUG("smtrat.vs", "Test candidates invalidates bounds");
                         currentState->rInconsistent() = true;
                         removeStatesFromRanking( *currentState );
                     }
@@ -363,6 +377,7 @@ namespace smtrat
                     {
                         if( mLazyMode && currentState->getNumberOfCurrentSubresultCombination() > mLazyCheckThreshold )
                         {
+							SMTRAT_LOG_DEBUG("smtrat.vs", "LazyMode case");
                             if( mFullCheck )
                             {
                                 if( currentState->cannotBeSolved( true ) )
@@ -409,6 +424,7 @@ namespace smtrat
                         {
                             case State::SUBSTITUTION_TO_APPLY:
                             {
+								SMTRAT_LOG_DEBUG("smtrat.vs", "Applying substitution");
                                 #ifdef VS_DEBUG
                                 cout << "*** SubstituteAll changes it to:" << endl;
                                 #else
@@ -443,6 +459,7 @@ namespace smtrat
                             }
                             case State::COMBINE_SUBRESULTS:
                             {
+								SMTRAT_LOG_DEBUG("smtrat.vs", "Combining subresults");
                                 #ifdef VS_DEBUG
                                 cout << "*** Refresh conditons:" << endl;
                                 #endif
@@ -477,6 +494,7 @@ namespace smtrat
                             }
                             case State::TEST_CANDIDATE_TO_GENERATE:
                             {
+								SMTRAT_LOG_DEBUG("smtrat.vs", "Generating test candidate");
                                 // Set the index, if not already done, to the best variable to eliminate next.
                                 if( currentState->index() == carl::Variable::NO_VARIABLE )
                                     currentState->initIndex( mAllVariables, VariableValuationStrategy::OPTIMIZE_BEST, Settings::prefer_equation_over_all, false, Settings::use_fixed_variable_order );
@@ -501,10 +519,12 @@ namespace smtrat
                                 const vs::Condition* currentCondition;
                                 if( !currentState->bestCondition( currentCondition, mAllVariables.size(), Settings::prefer_equation_over_all ) )
                                 {
+									SMTRAT_LOG_DEBUG("smtrat.vs", "Not the best condition");
                                     if( !(*currentState).cannotBeSolved( mLazyMode ) && currentState->tooHighDegreeConditions().empty() )
                                     {
                                         if( currentState->conditions().empty() )
                                         {
+											SMTRAT_LOG_DEBUG("smtrat.vs", "No conditions");
                                             #ifdef VS_DEBUG
                                             cout << "*** Check ancestors!" << endl;
                                             #endif
@@ -512,6 +532,7 @@ namespace smtrat
                                             State * unfinishedAncestor;
                                             if( currentState->unfinishedAncestor( unfinishedAncestor ) )
                                             {
+												SMTRAT_LOG_DEBUG("smtrat.vs", "Has unfinished ancestor");
                                                 // Go back to this ancestor and refine.
                                                 removeStatesFromRanking( *unfinishedAncestor );
                                                 unfinishedAncestor->extendSubResultCombination();
@@ -527,12 +548,26 @@ namespace smtrat
                                             }
                                             else // Solution.
                                             {
-                                                if( !solutionInDomain() )
+												SMTRAT_LOG_DEBUG("smtrat.vs", "Has a solution");
+												if( !solutionInDomain() )
                                                 {
-                                                    return UNKNOWN;
+													bool cannotBeSolved = false;
+													State* cur = currentState;
+													while (!cannotBeSolved && cur != nullptr) {
+														cannotBeSolved = cannotBeSolved || cur->cannotBeSolved(mLazyMode);
+														cur = cur->pFather();
+													}
+													SMTRAT_LOG_DEBUG("smtrat.vs", "Checking for solvability " << mLazyMode << " -> " << currentState->cannotBeSolved(mLazyMode));
+													if (!cannotBeSolved) {
+														SMTRAT_LOG_DEBUG("smtrat.vs", "Solution is not in domain");
+														return UNKNOWN;
+													} else {
+														SMTRAT_LOG_DEBUG("smtrat.vs", "Found infeasibility of this state");
+													}
                                                 }
                                                 else
                                                 {
+													SMTRAT_LOG_DEBUG("smtrat.vs", "Checking the consistency");
                                                     return consistencyTrue();
                                                 }
                                             }
@@ -670,6 +705,7 @@ namespace smtrat
                                 break;
                             }
                             default:
+								SMTRAT_LOG_DEBUG("smtrat.vs", "Fallthrough case.");
                                 assert( false );
                         }
                     }
@@ -678,11 +714,13 @@ namespace smtrat
         }
         if( mpStateTree->markedAsDeleted() )
         {
+			SMTRAT_LOG_DEBUG("smtrat.vs", "State tree is to be deleted");
             #ifdef VS_DEBUG
             printAll();
             #endif
             return UNKNOWN;
         }
+		SMTRAT_LOG_DEBUG("smtrat.vs", "Nothing was found, return UNSAT");
         #ifdef VS_LOG_INTERMEDIATE_STEPS
         if( mpStateTree->conflictSets().empty() ) logConditions( *mpStateTree, false, "Intermediate_conflict_of_VSModule" );
         #endif
@@ -1600,11 +1638,15 @@ namespace smtrat
     bool VSModule<Settings>::solutionInDomain()
     {
         bool trySplitting = Settings::use_branch_and_bound && (!Settings::only_split_in_final_call || mFinalCheck);
-        if( rReceivedFormula().isRealConstraintLiteralConjunction() )
+		SMTRAT_LOG_DEBUG("smtrat.vs", "Try splitting? " << trySplitting << " (from " << Settings::use_branch_and_bound << " " << Settings::only_split_in_final_call << " " << mFinalCheck << ")");
+        if( rReceivedFormula().isRealConstraintLiteralConjunction() ) {
+			SMTRAT_LOG_DEBUG("smtrat.vs", "Everything is real anyway");
             return true;
+		}
         assert( solverState() != UNSAT );
         if( !mRanking.empty() )
         {
+			SMTRAT_LOG_DEBUG("smtrat.vs", "Ranking is not empty");
             std::vector<carl::Variable> varOrder;
             State* currentState = mRanking.begin()->second;
             EvalRationalMap varSolutions;
@@ -1627,20 +1669,25 @@ namespace smtrat
             }
             while( !currentState->isRoot() )
             {
+				SMTRAT_LOG_DEBUG("smtrat.vs", "State is not the root");
                 const carl::Variables& tVars = currentState->substitution().termVariables();
                 if( currentState->substitution().variable().type() == carl::VariableType::VT_INT )
                 {
+					SMTRAT_LOG_DEBUG("smtrat.vs", "This variable is integer");
                     for( carl::Variable::Arg v : tVars )
                         varSolutions.insert( std::make_pair( v, Rational(0) ) );
 //                    assert( currentState->substitution().type() != Substitution::MINUS_INFINITY );
 //                    assert( currentState->substitution().type() != Substitution::PLUS_INFINITY );
                     if( currentState->substitution().type() == Substitution::MINUS_INFINITY || currentState->substitution().type() == Substitution::PLUS_INFINITY )
                     {
+						SMTRAT_LOG_DEBUG("smtrat.vs", "substitution is infty");
                         Rational nextIntTCinRange;
                         if( currentState->getNextIntTestCandidate( nextIntTCinRange, Settings::int_max_range ) )
                         {
+							SMTRAT_LOG_DEBUG("smtrat.vs", "Get next int test candidate");
                             if( trySplitting )
                             {
+								SMTRAT_LOG_DEBUG("smtrat.vs", "Try splitting");
                                 #ifdef SMTRAT_DEVOPTION_Statistics
                                 mStatistics.branch();
                                 #endif
@@ -1649,6 +1696,7 @@ namespace smtrat
                         }
                         else
                         {
+							SMTRAT_LOG_DEBUG("smtrat.vs", "Some else case");
                             removeStatesFromRanking( *currentState );
                             currentState->rCannotBeSolved() = true;
                             addStateToRanking( currentState );
@@ -1657,9 +1705,11 @@ namespace smtrat
                     }
                     else
                     {
+						SMTRAT_LOG_DEBUG("smtrat.vs", "substitution is not infty");
                         assert( currentState->substitution().type() != Substitution::PLUS_EPSILON );
                         if( trySplitting && Settings::branch_and_bound_at_origin )
                         {
+							SMTRAT_LOG_DEBUG("smtrat.vs", "Try splitting for B&B");
                             EvalRationalMap partialVarSolutions;
                             const Poly& substitutionPoly = (*currentState->substitution().originalConditions().begin())->constraint().lhs();
                             for( auto var = varOrder.rbegin(); var != varOrder.rend(); ++var )
@@ -1692,6 +1742,7 @@ namespace smtrat
                         Rational evaluatedSubTerm;
                         if( carl::isZero(subTerm.denominator().substitute( varSolutions )) )
                         {
+							SMTRAT_LOG_DEBUG("smtrat.vs", "Something is zero");
                             if( mFinalCheck )
                                 splitUnequalConstraint( FormulaT( subTerm.denominator(), carl::Relation::NEQ ) );
                             return false;
@@ -1700,8 +1751,10 @@ namespace smtrat
                         assIsInteger &= carl::isInteger( evaluatedSubTerm );
                         if( !assIsInteger )
                         {
+							SMTRAT_LOG_DEBUG("smtrat.vs", "Assignment is not integer");
                             if( trySplitting )
                             {
+								SMTRAT_LOG_DEBUG("smtrat.vs", "Try to split");
                                 #ifdef SMTRAT_DEVOPTION_Statistics
                                 mStatistics.branch();
                                 #endif

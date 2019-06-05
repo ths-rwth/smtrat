@@ -2598,6 +2598,10 @@ namespace vs
             _out << _initiation << "                           isInconsistent: yes" << endl;
         else
             _out << _initiation << "                           isInconsistent: no" << endl;
+        if( cannotBeSolved(false) )
+            _out << _initiation << "                           cannotBeSolved: yes" << endl;
+        else
+            _out << _initiation << "                           cannotBeSolved: no" << endl;
         if( conditionsSimplified() )
             _out << _initiation << "                     conditionsSimplified: yes" << endl;
         else
