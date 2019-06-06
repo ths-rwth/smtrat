@@ -1,18 +1,23 @@
 #!/usr/bin/env python3
 
 import argparse
+import logging
 from odf import math, table
 from odf.opendocument import load, OpenDocumentSpreadsheet
 from odf.text import P
 import sys
 import xml.etree.ElementTree as ET
 
+logging.basicConfig(format='[%(levelname)s] %(message)s', level=logging.DEBUG)
+
 def load_xml(filename):
+	logging.info("Loading {}".format(filename))
 	tree = ET.parse(filename)
 	root = tree.getroot()
 	solvers = []
 	for solver in root.findall('./solvers/solver'):
 		solvers.append(solver.attrib["solver_id"])
+	logging.info("Loaded results for {}".format(solvers))
 	return solvers,root
 
 def create_cell(text, *args, **kwargs):
@@ -86,6 +91,8 @@ for file in root.findall('./benchmarks/file'):
 		}
 	results.append([filename] + list(map(lambda x: res[x], solvers)))
 
+logging.info("Collected results for {} files".format(len(results)))
+
 doc = OpenDocumentSpreadsheet()
 tbl = table.Table(name = "all")
 tbl.addElement(create_row_head(solvers))
@@ -95,6 +102,8 @@ for r in results:
 
 for s in ['count', 'sat', 'unsat', 'unknown', 'wrong', 'error', 'timeout', 'memout', 'segfault', 'abort']:
 	tbl.addElement(create_stats(solvers, s, max = len(results) + 1))
+
+logging.info("Saving spreadsheet to {}".format(args.output))
 
 doc.spreadsheet.addElement(tbl)
 doc.save(args.output)
