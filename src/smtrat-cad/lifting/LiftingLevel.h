@@ -31,32 +31,6 @@ namespace cad {
 			return mVariables.size();
 		}
 
-		/** adds an unsat interval to the internal data structures of the level */
-		void addUnsatInterval(CADInterval inter) {
-			intervals.push_back(inter);
-
-			// -inf or +inf are special cases
-			if(inter.isInfinite()) {
-				levelintervalminf = true;
-				levelintervalpinf = true;
-			}
-			else if(inter.isHalfBounded())
-			{
-				if(inter.getLowerBoundType() == CADInterval::CADBoundType::INF) {
-					levelintervalminf = true;
-					levelintervals.insert(inter.getUpper());
-				}
-				else {
-					levelintervalpinf = true;
-					levelintervals.insert(inter.getLower());
-				}
-			}
-			else {
-				levelintervals.insert(inter.getLower());
-				levelintervals.insert(inter.getUpper());
-			}
-		}
-
 		/** check whether the given value is in the list of unsat intervals */
 		bool isInUnsatInterval(RAN val) {
 			for(auto inter : intervals) {
@@ -144,15 +118,17 @@ namespace cad {
 
 		/**
 		 * Calculates the intervals between the real roots of the given set of constraints
+		 * 
+		 * (Paper Alg. 1, l.9-11)
 		 */
-		void calcIntervalsFromPolys(Variable v, std::vector<const ConstraintT&> conss) {
+		void calcIntervalsFromPolys(std::vector<const ConstraintT&> conss) {
 			std::vector<RAN> roots;
 			for (const auto& c: conss) {
-				// find real roots of every constraint
-				auto r = rootfinder::realRoots(c.lhs().toUnivariatePolynomial(v));
+				// find real roots of every constraint corresponding to current var
+				auto r = rootfinder::realRoots(c.lhs().toUnivariatePolynomial(currVar));
 				r.sort(r.begin(), r.end()); // roots have to be ordered
 				
-				// go through roots to build intervals and add them to the lifting level
+				// go through roots to build region intervals and add them to the lifting level
 				std::vector<RAN>::iterator it;
 				for (it = r.begin(); it != r.end(); it++) {
 					// add closed point interval for each root
@@ -186,14 +162,56 @@ namespace cad {
 			levelintervals.clear();
 		}
 
+		/** removes all stored intervals */
+		void resetIntervals() {
+			intervals.clear();
+			levelintervals.clear();
+		}
+
 		/** gets the current sample */
 		const auto& getCurrentSample() const {
 			return curSample;
 		}
 
-		/** gets all unsat intervals */
-		const auto& getUnsatIntervals() const {
-			return intervals;
+		/** gets all unsat intervals
+		 * @note asserts that constraints were given to level beforehand
+		 * (Paper Alg. 1)
+		*/
+		const auto& getUnsatIntervals(Sample s) const {
+			resetIntervals();
+			for(auto c : mConstraints) {
+				/*auto issat = c.satisfiedBy()*/
+				/*calcIntervalsFromPolys()*/
+			}
+
+			//@todo
+			
+		}
+
+		/** adds an unsat interval to the internal data structures of the level */
+		void addUnsatInterval(CADInterval inter) {
+			intervals.push_back(inter);
+
+			// -inf or +inf are special cases
+			if(inter.isInfinite()) {
+				levelintervalminf = true;
+				levelintervalpinf = true;
+			}
+			else if(inter.isHalfBounded())
+			{
+				if(inter.getLowerBoundType() == CADInterval::CADBoundType::INF) {
+					levelintervalminf = true;
+					levelintervals.insert(inter.getUpper());
+				}
+				else {
+					levelintervalpinf = true;
+					levelintervals.insert(inter.getLower());
+				}
+			}
+			else {
+				levelintervals.insert(inter.getLower());
+				levelintervals.insert(inter.getUpper());
+			}
 		}
 
 		/** checks whether the unsat intervals contain (-inf, inf) */
