@@ -19,6 +19,9 @@ public:
 	void add(const smtrat::FormulaT& f) {
 		mFormulas.emplace_back(f);
 	}
+	void addSoft(const FormulaT& f, Rational weight) {
+		mFormulas.emplace_back(f);
+	}
 	void annotateName(const smtrat::FormulaT&, const std::string&) {}
 	void check() {}
 	void declareFun(const carl::Variable&) {}
