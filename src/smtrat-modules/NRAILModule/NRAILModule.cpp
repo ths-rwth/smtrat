@@ -29,9 +29,6 @@ namespace smtrat
         linearizeSubformulaFunction = std::bind(&NRAILModule<Settings>::linearizeSubformula, this, std::placeholders::_1);
     }
     //mLRAFormula( new ModuleInput())
-#ifdef SMTRAT_DEVOPTION_Statistics
-    , mStatistics(Settings::moduleName)
-#endif
 
     template<class Settings>
     NRAILModule<Settings>::~NRAILModule()
