@@ -9,8 +9,6 @@
 
 #include <smtrat-common/smtrat-common.h>
 
-using namespace std;
-
 namespace smtrat {
 namespace vs
 {

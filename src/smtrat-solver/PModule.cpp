@@ -8,9 +8,6 @@
 
 #include "PModule.h"
 
-using namespace std;
-using namespace carl;
-
 namespace smtrat
 {
     PModule::PModule( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager, std::string module_name ):
