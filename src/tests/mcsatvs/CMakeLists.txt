@@ -6,20 +6,19 @@ add_executable(runMcsatVSTests ${test_sources})
 #target_link_libraries(runMcsatVSTests ${UNITTEST_LIB} lib_${PROJECT_NAME} ${libraries})
 
 target_link_libraries(runMcsatVSTests
-	${Boost_unit_test_framework_SHARED}
+	Boost_unit_test_framework_SHARED
 	smtrat-mcsat-shared
 )
 add_test(NAME mcsatvs COMMAND runMcsatVSTests)
 
 
 
-add_executable(runMcsatVSBug
-  Test_McsatVSBug.cpp
-)
-target_link_libraries(runMcsatVSBug
-  ${Boost_unit_test_framework_SHARED}
-  #lib_${PROJECT_NAME}
-  smtrat-mcsat-shared
-  ${libraries}
-)
-add_test(NAME mcsatvsbug COMMAND runMcsatVSBug)
+#add_executable(runMcsatVSBug
+#  Test_McsatVSBug.cpp
+#)
+#target_link_libraries(runMcsatVSBug
+#	Boost_unit_test_framework_SHARED
+#	smtrat-mcsat-shared
+#	${libraries}
+#)
+#add_test(NAME mcsatvsbug COMMAND runMcsatVSBug)
