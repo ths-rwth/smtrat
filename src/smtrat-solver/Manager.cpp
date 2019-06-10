@@ -32,7 +32,7 @@ namespace smtrat
         mBackendsOfModules(),
         mpPrimaryBackend( new Module( mpPassedFormula, mPrimaryBackendFoundAnswer, this ) ),
         mStrategyGraph(),
-        mDebugOutputChannel( cout.rdbuf() ),
+        mDebugOutputChannel( std::cout.rdbuf() ),
         mLogic( carl::Logic::UNDEFINED ),
         mInformationRelevantFormula(),
         mLemmaLevel(LemmaLevel::NONE),
@@ -252,7 +252,7 @@ namespace smtrat
             curModel.clean();
             if( !curModel.empty() )
             {
-                cout << curModel;
+                std::cout << curModel;
             }
         }
     }
@@ -344,7 +344,7 @@ namespace smtrat
     }
     #endif
     
-    void Manager::printAssertions( ostream& _out ) const
+    void Manager::printAssertions( std::ostream& _out ) const
     {
         _out << "(";
         if( mpPassedFormula->size() == 1 )
@@ -355,13 +355,13 @@ namespace smtrat
         {
             for( auto subFormula = mpPassedFormula->begin(); subFormula != mpPassedFormula->end(); ++subFormula )
             {
-                _out << (*subFormula).formula() << endl;
+                _out << (*subFormula).formula() << std::endl;
             }
         }
-        _out << ")" << endl;
+        _out << ")" << std::endl;
     }
 
-    void Manager::printInfeasibleSubset( ostream& _out ) const
+    void Manager::printInfeasibleSubset( std::ostream& _out ) const
     {
         _out << "(";
         if( !mpPrimaryBackend->infeasibleSubsets().empty() )
@@ -375,11 +375,11 @@ namespace smtrat
             {
                 for( auto subFormula = infSubSet.begin(); subFormula != infSubSet.end(); ++subFormula )
                 {
-                    _out << *subFormula << endl;
+                    _out << *subFormula << std::endl;
                 }
             }
         }
-        _out << ")" << endl;
+        _out << ")" << std::endl;
     }
             
     void Manager::printBackTrackStack( std::ostream& _out ) const
@@ -406,7 +406,7 @@ namespace smtrat
 #ifdef __VS
     vector<Module*> Manager::getBackends( Module* _requiredBy, atomic<bool>* _foundAnswer )
 #else
-    std::vector<Module*> Manager::getBackends( Module* _requiredBy, atomic_bool* _foundAnswer )
+    std::vector<Module*> Manager::getBackends( Module* _requiredBy, std::atomic_bool* _foundAnswer )
 #endif
     {
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
