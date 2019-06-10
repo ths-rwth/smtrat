@@ -3,7 +3,7 @@ add_executable( runFourierMotzkinQETests
 )
 cotire(runFourierMotzkinQETests)
 target_link_libraries(runFourierMotzkinQETests
-    ${Boost_unit_test_framework_SHARED}
+	Boost_unit_test_framework_SHARED
 	smtrat-qe-shared
 )
 

@@ -29,7 +29,7 @@ BOOST_AUTO_TEST_CASE(Test_One)
 			c2.negated(),
 			FormulaT(ConstraintT(Poly(a), carl::Relation::GEQ))
 		});
-		auto res = expl(bk, {a,b}, b, {c1,c2});
+		auto res = expl(bk, b, {c1,c2});
 		assert(res);
 		std::cout << *res << std::endl;
 		std::cout << "Should be " << ref << std::endl;
@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(Test_One)
 			FormulaT(ConstraintT(Poly(a), carl::Relation::LEQ))
 		});
 		std::cout << "Should be " << ref << std::endl;
-		auto res = expl(bk, {a,b}, b, {c1,c2});
+		auto res = expl(bk, b, {c1,c2});
 		assert(res);
 		std::cout << *res << std::endl;
 		BOOST_CHECK(boost::get<FormulaT>(&*res) != nullptr);
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(Test_Two)
 	
 	{
 		bk.pushAssignment(x, Rational(0), FormulaT(VariableAssignmentT(x, Rational(0))));
-		auto res = expl(bk, {x,y}, y, {c1,c2});
+		auto res = expl(bk, y, {c1,c2});
 		assert(res);
 		std::cout << *res << std::endl;
 	}

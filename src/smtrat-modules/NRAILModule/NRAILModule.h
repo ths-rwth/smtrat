@@ -9,7 +9,6 @@
 #pragma once
 
 #include <smtrat-solver/Module.h>
-#include "NRAILStatistics.h"
 #include "NRAILSettings.h"
 
 namespace smtrat
@@ -18,9 +17,6 @@ namespace smtrat
 	class NRAILModule : public Module
 	{
 	private:
-#ifdef SMTRAT_DEVOPTION_Statistics
-		AbstractStatistics mStatistics;
-#endif
 		// Members.
         ModuleInput* mLRAFormula;
         carl::FormulaVisitor<FormulaT> mVisitor;

@@ -7,8 +7,6 @@
 
 #include "Substitution.h"
 
-using namespace std;
-
 namespace smtrat {
 namespace vs
 {

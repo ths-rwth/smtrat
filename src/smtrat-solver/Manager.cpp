@@ -15,8 +15,6 @@
 
 #include <typeinfo>
 
-using namespace std;
-
 namespace smtrat
 {
     

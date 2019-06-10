@@ -9,9 +9,6 @@
 
 #include <carl/formula/helpers/to_cnf.h>
 
-using namespace std;
-using namespace carl;
-
 namespace smtrat
 {
     CNFerModule::CNFerModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* const _manager ):
@@ -31,18 +28,18 @@ namespace smtrat
              * to the passed formula.
              */
             FormulaT formulaToAssertInCnf = carl::to_cnf(receivedSubformula->formula());
-            if( formulaToAssertInCnf.getType() == TRUE )
+            if( formulaToAssertInCnf.getType() == carl::FormulaType::TRUE )
             {
                 // No need to add it.
             }
-            else if( formulaToAssertInCnf.getType() == FALSE )
+            else if( formulaToAssertInCnf.getType() == carl::FormulaType::FALSE )
             {
                 receivedFormulasAsInfeasibleSubset( receivedSubformula );
                 return UNSAT;
             }
             else
             {
-                if( formulaToAssertInCnf.getType() == AND )
+                if( formulaToAssertInCnf.getType() == carl::FormulaType::AND )
                 {
                     for( const FormulaT& subFormula : formulaToAssertInCnf.subformulas()  )
                     {

@@ -8,9 +8,6 @@
 
 #include "Numeric.h"
 
-using namespace smtrat;
-using namespace std;
-
 namespace smtrat
 {
     namespace lra
