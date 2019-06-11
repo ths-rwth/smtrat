@@ -17,7 +17,7 @@ namespace cad {
         RAN upper = (RAN) 0;                                            /**< upper bound */
         CADBoundType lowertype = INF;                                   /**< lower bound type */
         CADBoundType uppertype = INF;                                   /**< upper bound type */
-        std::optional<const ConstraintT&> constraint = std::nullopt;    /**< this interval represents the bounds of this constraint */
+        std::optional<ConstraintT> constraint = std::nullopt;    /**< this interval represents the bounds of this constraint */
 	public:
         /** initializes interval as (-inf, +inf) */
 		CADInterval(){     

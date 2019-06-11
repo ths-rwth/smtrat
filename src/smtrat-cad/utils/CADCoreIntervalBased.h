@@ -77,10 +77,12 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::PreferLifting> {
 		// there should be lifting levels for all former dimensions and none for the current one
 		assert(cad.mLifting.size() == dim);
 		//@todo initialize new lifting level with conss, get intervals
-		cad.mLifting.push_back(new LiftingLevel());
+		cad.mLifting.emplace_back();
 
         // no lifting is possible if an unsat cover was found
-		if (cad.mLifting.back().isUnsatCover()) return false;
+		if (cad.mLifting.back().isUnsatCover()) {
+			return std::make_tuple(false, std::vector<CADInterval>(), std::vector<Sample>());
+		}
 
         while(!cad.mLifting.back().isUnsatCover()) {
             // compute a new sample outside of known unsat intervals
@@ -89,14 +91,14 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::PreferLifting> {
 			samples.push_back(s);
 			// have we reached full dimension yet?
 			if(samples.size() == cad.dim())
-				return new std::tuple<bool, std::vector<CADInterval>, std::vector<Sample>>(true, new std::vector<CADInterval>, samples);
+				return std::tuple<bool, std::vector<CADInterval>, std::vector<Sample>>(true, std::vector<CADInterval>(), samples);
 
 			auto samplecheck = getUnsatCover(cad, samples);
             //@todo check whether all former levels + new sample are sat, if true return sat
 
 			// if the result was sat, return the resulting samples as witnesses
 			if(std::get<0>(samplecheck) == true) 
-				return new std::tuple<bool, std::vector<CADInterval>, std::vector<Sample>>(true, new std::vector<CADInterval>, std::get<2>(samplecheck));
+				return std::tuple<bool, std::vector<CADInterval>, std::vector<Sample>>(true, std::vector<CADInterval>(), std::get<2>(samplecheck));
 			else
 			{
 				auto r = cad.construct_characterization(samples); //@todo
@@ -104,7 +106,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::PreferLifting> {
 				cad.mLifting.back().addUnsatInterval(i);
 			}
         }
-		return true;
+		return std::make_tuple(true, std::vector<CADInterval>(), std::vector<Sample>());
 	}
 	template<typename CADIntervalBased>
 	Answer operator()(Assignment& assignment, CADIntervalBased& cad) {

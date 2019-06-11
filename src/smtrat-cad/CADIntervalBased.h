@@ -6,7 +6,7 @@
 #include "projection/Projection.h"
 #include "lifting/LiftingLevel.h"
 #include "utils/CADConstraints.h"
-#include "utils/CADCore.h"
+#include "utils/CADCoreIntervalBased.h"
 #include "utils/ConflictGraph.h"
 #include "utils/MISGeneration.h"
 #include "debug/TikzHistoryPrinter.h"
@@ -22,8 +22,9 @@ namespace cad {
 		using SettingsT = Settings;
 	private:
 		std::vector<carl::Variable> mVariables;
-		std:vector<const ConstraintT&> mConstraints;	/**< constraints */
+		std::vector<ConstraintT> mConstraints;	/**< constraints */
 		std::vector<LiftingLevel<Settings>> mLifting;
+		ProjectionT<Settings> mProjection;
 		
 		// ID scheme for variables x,y,z:
 		// Projection: x=1,y=2,z=3
@@ -81,21 +82,21 @@ namespace cad {
 		const auto& getLifting() const {
 			return mLifting;
 		}
-		const auto& getConstraints() const {
-			return mConstraints.indexed();
-		}
-		const auto& getConstraintMap() const {
-			return mConstraints.ordered();
-		}
-		bool isIdValid(std::size_t id) const {
-			return mConstraints.valid(id);
-		}
-		const auto& getBounds() const {
-			return mConstraints.bounds();
-		}
+		//const auto& getConstraints() const {
+		//	return mConstraints.indexed();
+		//}
+		//const auto& getConstraintMap() const {
+		//	return mConstraints.ordered();
+		//}
+		//bool isIdValid(std::size_t id) const {
+		//	return mConstraints.valid(id);
+		//}
+		//const auto& getBounds() const {
+		//	return mConstraints.bounds();
+		//}
 		void reset(const std::vector<carl::Variable>& vars) {
 			mVariables = vars;
-			mConstraints.reset(mVariables);
+			mConstraints.clear();
 			mProjection.reset();
 			mLifting.reset(std::vector<carl::Variable>(vars.rbegin(), vars.rend()));
 		}
@@ -103,14 +104,14 @@ namespace cad {
 		//@todo add constraint to lifting level
 		void addConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Adding " << c);
-			mConstraints.add(c);
+			//mConstraints.add(c);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current intervals in lifting level:" << std::endl << mLifting.getUnsatIntervals());
 		}
 		void removeConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing " << c);
-			auto mask = mConstraints.remove(c);
-			mLifting.removedConstraint(mask);
+			//auto mask = mConstraints.remove(c);
+			//mLifting.removedConstraint(mask);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current intervals in lifting level:" << std::endl << mLifting.getUnsatIntervals());
 		}

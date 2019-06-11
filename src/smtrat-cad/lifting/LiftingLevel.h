@@ -15,7 +15,7 @@ namespace cad {
 	class LiftingLevel {
 	private:
 		//@todo check which of these are used and that all are initialized
-		std:vector<const ConstraintT&> mConstraints = std:vector<const ConstraintT&>();	/**< constraints */
+		std::vector<ConstraintT> mConstraints = std::vector<ConstraintT>();	/**< constraints */
 		carl::Variable currVar						= carl::Variable();					/**< this level is considered univariate on given variable */
 		std::vector<carl::Variable> mVariables 		= std::vector<carl::Variable>();	/**< variables */
 		Sample curSample	 						= Sample();							/**< current sample to be checked */
@@ -121,12 +121,12 @@ namespace cad {
 		 * 
 		 * (Paper Alg. 1, l.9-11)
 		 */
-		void calcIntervalsFromPolys(std::vector<const ConstraintT&> conss) {
+		void calcIntervalsFromPolys(std::vector<ConstraintT> conss) {
 			std::vector<RAN> roots;
 			for (const auto& c: conss) {
 				// find real roots of every constraint corresponding to current var
-				auto r = rootfinder::realRoots(c.lhs().toUnivariatePolynomial(currVar));
-				r.sort(r.begin(), r.end()); // roots have to be ordered
+				auto r = carl::rootfinder::realRoots(c.lhs().toUnivariatePolynomial(currVar));
+				std::sort(r.begin(), r.end()); // roots have to be ordered
 				
 				// go through roots to build region intervals and add them to the lifting level
 				std::vector<RAN>::iterator it;
@@ -136,12 +136,12 @@ namespace cad {
 
 					// add inf intervals if appropriate
 					if (it == r.begin()) // add (-inf, x)
-						addUnsatInterval(CADInterval(0, *it, CADBoundType::INF, CADBoundType::OPEN, c));
-					else if (it == r.back()) // add (x, inf)
-						addUnsatInterval(CADInterval(*it, 0, CADBoundType::OPEN, CADBoundType::INF, c));
+						addUnsatInterval(CADInterval(0, *it, CADInterval::CADBoundType::INF, CADInterval::CADBoundType::OPEN, c));
+					else if (it == r.rbegin().base()) // add (x, inf)
+						addUnsatInterval(CADInterval(*it, 0, CADInterval::CADBoundType::OPEN, CADInterval::CADBoundType::INF, c));
 					
 					// add open interval to next root
-					if (it != r.back())
+					if (it != r.rbegin().base())
 						addUnsatInterval(CADInterval(*it, *(std::next(it,1)), c));
 				}
 			}
@@ -150,7 +150,7 @@ namespace cad {
 	public:
 
 		//@todo init all class vars
-		LiftingLevel(std:vector<const ConstraintT&> conss, carl::Variable v): 
+		LiftingLevel(std::vector<ConstraintT> conss, carl::Variable v): 
 			mConstraints(conss), currVar(v) {
 			calcIntervalsFromPolys(currVar, mConstraints);
 		}
