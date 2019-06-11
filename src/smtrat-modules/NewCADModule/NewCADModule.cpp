@@ -121,19 +121,12 @@ namespace smtrat
 					SMTRAT_LOG_WARN("smtrat.cad", "Variable " << v << " was not found in last assignment " << mLastModel);
 					continue;
 				}
-				if (it->second.visit(carl::overloaded {
-					[](const Rational& r){ return carl::isInteger(r); },
-					[](const carl::RealAlgebraicNumber<Rational>& r){ return carl::isInteger(r); },
-					[](const auto&){ return true; },
-				})) continue;
-				//if (carl::isInteger(it->second)) continue;
+				assert(it->second.isRAN());
+				const auto& r = it->second.asRAN();
+				if (carl::isInteger(r)) continue;
 				if (mFinalCheck) {
-					auto bp = it->second.visit(carl::overloaded {
-						[](const carl::RealAlgebraicNumber<Rational>& r){ return r.branchingPoint(); },
-						[](const auto&){ return Rational(0); },
-					});
-					branchAt(v, bp, true, true, true);
-					SMTRAT_LOG_DEBUG("smtrat.cad", "Branching on " << v << " at " << bp);
+					branchAt(v, r.branchingPoint(), true, true, true);
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Branching on " << v << " at " << r.branchingPoint());
 					answer = UNKNOWN;
 				}
 			}
