@@ -31,6 +31,7 @@ namespace smtrat
 			carl::carlVariables mVariables;
 			cad::CAD<Settings> mCAD;
 			cad::Assignment mLastAssignment;
+			Model mLastModel;
 
 			cad::CADPreprocessor mPreprocessor;
 			
@@ -47,10 +48,13 @@ namespace smtrat
 				}
 			}
 			void removeConstraintsFromReplacer() {
-				for (auto it = rReceivedFormula().rbegin(); it != rReceivedFormula().rend(); ++it) {
-					assert(it->formula().getType() == carl::FormulaType::CONSTRAINT);
-					removeConstraint(it->formula().constraint());
+				while (!mPreprocessor.inequalities().empty()) {
+					mPreprocessor.removeConstraint(mPreprocessor.inequalities().begin()->first);
 				}
+				while (!mPreprocessor.equalities().empty()) {
+					mPreprocessor.removeConstraint(mPreprocessor.equalities().front());
+				}
+				mPreprocessor.preprocess();
 			}
 
 		public:

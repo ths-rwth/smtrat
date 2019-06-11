@@ -162,6 +162,13 @@ public:
 		mResultants(mOrigins, mVars)
 	{}
 
+	const auto& equalities() const {
+		return mEqualities;
+	}
+	const auto& inequalities() const {
+		return mInequalities;
+	}
+
 	void addConstraint(const ConstraintT& c);
 	void removeConstraint(const ConstraintT& c);
 

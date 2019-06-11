@@ -65,12 +65,7 @@ namespace smtrat
 		mModel.clear();
 		if( solverState() == SAT )
 		{
-			for (const auto& a: mLastAssignment) {
-				auto it = std::find(vars.begin(), vars.end(), carl::carlVariables::VarTypes(a.first));
-				if (it == vars.end()) continue;
-				mModel.emplace(a.first, a.second);
-			}
-			mModel.update(mPreprocessor.model(), false);
+			mModel = mLastModel;
 		}
 	}
 	
@@ -85,9 +80,12 @@ namespace smtrat
 		mStatistics.called();
 #endif
 		if (Settings::force_nonincremental) {
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Enforce non-incremental behaviour");
+			removeConstraintsFromReplacer();
 			pushConstraintsToReplacer();
 		}
 		if (!mPreprocessor.preprocess()) {
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Found unsat in preprocessor");
 			mInfeasibleSubsets.emplace_back(mPreprocessor.getConflict());
 			return Answer::UNSAT;
 		}
@@ -98,34 +96,47 @@ namespace smtrat
 		for (const auto& c: update.toRemove) {
 			mCAD.removeConstraint(c);
 		}
+		SMTRAT_LOG_DEBUG("smtrat.cad", "Performing actual check");
 		auto answer = mCAD.check(mLastAssignment, mInfeasibleSubsets);
 #ifdef SMTRAT_DEVOPTION_Statistics
 		mStatistics.currentProjectionSize(mCAD.getProjection().size());
 #endif
 		if (answer == Answer::UNSAT) {
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Found to be unsat");
 			for (auto& mis : mInfeasibleSubsets) {
 				mPreprocessor.postprocessConflict(mis);
 			}
 			SMTRAT_LOG_INFO("smtrat.cad", "Infeasible subset: " << mInfeasibleSubsets);
+		} else if (answer == Answer::SAT) {
+			for (const auto& a: mLastAssignment) {
+				mLastModel.emplace(a.first, a.second);
+			}
+			mLastModel.update(mPreprocessor.model(), false);
 		}
-		if (Settings::split_for_integers) {
+		if (answer == Answer::SAT && Settings::split_for_integers) {
 			for (auto v: mCAD.getVariables()) {
 				if (v.type() != carl::VariableType::VT_INT) continue;
-				auto it = mLastAssignment.find(v);
-				if (it == mLastAssignment.end()) {
-					SMTRAT_LOG_WARN("smtrat.cad", "Variable " << v << " was not found in last assignment " << mLastAssignment);
+				auto it = mLastModel.find(v);
+				if (it == mLastModel.end()) {
+					SMTRAT_LOG_WARN("smtrat.cad", "Variable " << v << " was not found in last assignment " << mLastModel);
 					continue;
 				}
-				if (carl::isInteger(it->second)) continue;
+				if (it->second.visit(carl::overloaded {
+					[](const Rational& r){ return carl::isInteger(r); },
+					[](const carl::RealAlgebraicNumber<Rational>& r){ return carl::isInteger(r); },
+					[](const auto&){ return true; },
+				})) continue;
+				//if (carl::isInteger(it->second)) continue;
 				if (mFinalCheck) {
-					branchAt(v, it->second.branchingPoint(), true, true, true);
-					SMTRAT_LOG_DEBUG("smtrat.cad", "Branching on " << v << " at " << it->second.branchingPoint());
+					auto bp = it->second.visit(carl::overloaded {
+						[](const carl::RealAlgebraicNumber<Rational>& r){ return r.branchingPoint(); },
+						[](const auto&){ return Rational(0); },
+					});
+					branchAt(v, bp, true, true, true);
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Branching on " << v << " at " << bp);
 					answer = UNKNOWN;
 				}
 			}
-		}
-		if (Settings::force_nonincremental) {
-			removeConstraintsFromReplacer();
 		}
 		return answer;
 	}
