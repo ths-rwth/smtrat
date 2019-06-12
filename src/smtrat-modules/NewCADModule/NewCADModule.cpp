@@ -109,7 +109,7 @@ namespace smtrat
 			SMTRAT_LOG_INFO("smtrat.cad", "Infeasible subset: " << mInfeasibleSubsets);
 		} else if (answer == Answer::SAT) {
 			for (const auto& a: mLastAssignment) {
-				mLastModel.emplace(a.first, a.second);
+				mLastModel.assign(a.first, a.second);
 			}
 			mLastModel.update(mPreprocessor.model(), false);
 		}
