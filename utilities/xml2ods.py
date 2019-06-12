@@ -7,6 +7,7 @@ from odf.opendocument import load, OpenDocumentSpreadsheet
 from odf.text import P
 import sys
 import xml.etree.ElementTree as ET
+import xml.dom.minidom
 
 logging.basicConfig(format='[%(levelname)s] %(message)s', level=logging.DEBUG)
 
@@ -17,7 +18,7 @@ def load_xml(filename):
 	solvers = []
 	for solver in root.findall('./solvers/solver'):
 		solvers.append(solver.attrib["solver_id"])
-	logging.info("Loaded results for {}".format(solvers))
+	logging.info("Loaded solvers: {}".format(solvers))
 	return solvers,root
 
 def create_cell(text, *args, **kwargs):
@@ -25,12 +26,14 @@ def create_cell(text, *args, **kwargs):
 	tc.addElement(P(text = text))
 	return tc
 
-def create_cell_number(n):
-	return create_cell(n, valuetype = 'float', value = n)
-def create_cell_string(s = ""):
-	return create_cell(s, valuetype = 'string', value = s)
-def create_cell_formula(f):
-	return create_cell("", valuetype = 'float', formula = 'of:' + f)
+def create_cell_covered(**kwargs):
+	return table.CoveredTableCell(**kwargs)
+def create_cell_number(n, **kwargs):
+	return create_cell(n, valuetype = 'float', value = n, **kwargs)
+def create_cell_string(s = "", **kwargs):
+	return create_cell(s, valuetype = 'string', value = s, **kwargs)
+def create_cell_formula(f, **kwargs):
+	return create_cell("", valuetype = 'float', formula = 'of:' + f, **kwargs)
 
 def create_row(cells):
 	tr = table.TableRow()
@@ -41,8 +44,8 @@ def create_row(cells):
 def create_row_head(data):
 	return create_row([create_cell_string()] + [
 		x for d in data for x in [
-			create_cell_string(d),
-			create_cell_string()
+			create_cell_string(d, numbercolumnsspanned = 2),
+			create_cell_covered()
 		]
 	])
 
@@ -73,9 +76,16 @@ def create_stats(solvers, s, min = 2, max = 2):
 	return tr
 
 parser = argparse.ArgumentParser(description = "Convert benchmax results to ods.")
+parser.add_argument('--dump', action = 'store_true', help = 'dump xml of input file')
 parser.add_argument('input', help = 'input file')
 args = parser.parse_args()
 args.output = args.input.rsplit('.', 1)[0] + '.ods'
+
+if args.dump:
+	doc = load(args.input)
+	dom = xml.dom.minidom.parseString(doc.contentxml())
+	print(dom.toprettyxml())
+	sys.exit(0)
 
 solvers,root = load_xml(args.input)
 
