@@ -1867,7 +1867,7 @@ namespace smtrat
         for( auto cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
         {
             // Optimization: If the zeros of the polynomial in a weak inequality have already been checked pass the strict version.
-            if( _state.allTestCandidatesInvalidated( *cond ) )
+            if( Settings::make_constraints_strict_for_backend && _state.allTestCandidatesInvalidated( *cond ) )
             {
                 const ConstraintT& constraint = (*cond)->constraint();
                 switch( constraint.relation() )
