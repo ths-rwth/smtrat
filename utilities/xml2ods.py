@@ -2,7 +2,7 @@
 
 import argparse
 import logging
-from odf import math, style, table
+from odf import config, math, style, table
 from odf.opendocument import load, OpenDocumentSpreadsheet
 from odf.text import P
 import sys
@@ -27,6 +27,32 @@ def create_cell_styles(doc):
 		style.TableCellProperties(backgroundcolor = "#d85c41")
 	)
 	doc.styles.addElement(warning)
+
+def add_node(parent, node):
+	parent.addElement(node)
+	return parent.childNodes[-1]
+def add_config_item(parent, text, **kwargs):
+	return add_node(parent, config.ConfigItem(**kwargs)).addText(text, check_grammar = False)
+
+def freeze_cells(doc, cols = None, rows = None):
+	if cols or rows:
+		cur = doc.settings
+		cur = add_node(cur, config.ConfigItemSet(name = 'ooo:view-settings'))
+		cur = add_node(cur, config.ConfigItemMapIndexed(name = 'Views'))
+		cur = add_node(cur, config.ConfigItemMapEntry())
+		add_config_item(cur, 'view1', name = 'ViewId', type = 'string')
+		cur = add_node(cur, config.ConfigItemMapNamed(name = 'Tables'))
+		cur = add_node(cur, config.ConfigItemMapEntry(name = 'all'))
+		if cols:
+			add_config_item(cur, '2', name = 'HorizontalSplitMode', type = 'short')
+			add_config_item(cur, str(cols), name = 'HorizontalSplitPosition', type = 'int')
+			add_config_item(cur, '1', name = 'PositionRight', type = 'int')
+		if rows:
+			add_config_item(cur, '2', name = 'VerticalSplitMode', type = 'short')
+			add_config_item(cur, str(rows), name = 'VerticalSplitPosition', type = 'int')
+			add_config_item(cur, '1', name = 'PositionBottom', type = 'int')
+
+			
 
 def create_cell(text, *args, **kwargs):
 	tc = table.TableCell(*args, **kwargs)
@@ -114,6 +140,7 @@ logging.info("Collected results for {} files".format(len(results)))
 
 doc = OpenDocumentSpreadsheet()
 create_cell_styles(doc)
+freeze_cells(doc, cols = 1, rows = 1)
 tbl = table.Table(name = "all")
 tbl.addElement(create_row_head(solvers))
 
