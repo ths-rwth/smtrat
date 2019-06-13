@@ -124,19 +124,20 @@ namespace cad {
 	// Settings to test different projection operators
 	//
 
-	struct NewCADSettingsCollins: NewCADSettingsFU, cad::ProjectionCollins {
+	struct NewCADBaseProjectionSettings: NewCADBaseSettings, cad::IncrementalityFU, cad::SampleCompareLT, cad::ProjectionOrderDefault {};
+	struct NewCADSettingsCollins: NewCADBaseProjectionSettings, cad::ProjectionCollins {
 		static constexpr auto moduleName = "NewCADModule<NewCADCollins>";
 	};
-	struct NewCADSettingsHong: NewCADSettingsFU, cad::ProjectionHong {
+	struct NewCADSettingsHong: NewCADBaseProjectionSettings, cad::ProjectionHong {
 		static constexpr auto moduleName = "NewCADModule<NewCADHong>";
 	};
-	struct NewCADSettingsMcCallum: NewCADSettingsFU, cad::ProjectionMcCallum {
+	struct NewCADSettingsMcCallum: NewCADBaseProjectionSettings, cad::ProjectionMcCallum {
 		static constexpr auto moduleName = "NewCADModule<NewCADMcCallum>";
 	};
-	struct NewCADSettingsMcCallumPartial: NewCADSettingsFU, cad::ProjectionMcCallum_partial {
+	struct NewCADSettingsMcCallumPartial: NewCADBaseProjectionSettings, cad::ProjectionMcCallum_partial {
 		static constexpr auto moduleName = "NewCADModule<NewCADMcCallumPartial>";
 	};
-	struct NewCADSettingsBrown: NewCADSettingsFU, cad::ProjectionBrown {
+	struct NewCADSettingsBrown: NewCADBaseProjectionSettings, cad::ProjectionBrown {
 		static constexpr auto moduleName = "NewCADModule<NewCADBrown>";
 	};
 	
