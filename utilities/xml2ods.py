@@ -2,7 +2,7 @@
 
 import argparse
 import logging
-from odf import math, table
+from odf import math, style, table
 from odf.opendocument import load, OpenDocumentSpreadsheet
 from odf.text import P
 import sys
@@ -21,6 +21,13 @@ def load_xml(filename):
 	logging.info("Loaded solvers: {}".format(solvers))
 	return solvers,root
 
+def create_cell_styles(doc):
+	warning = style.Style(family = "table-cell", name = "warning", parentstylename = "Default")
+	warning.addElement(
+		style.TableCellProperties(backgroundcolor = "#d85c41")
+	)
+	doc.styles.addElement(warning)
+
 def create_cell(text, *args, **kwargs):
 	tc = table.TableCell(*args, **kwargs)
 	tc.addElement(P(text = text))
@@ -30,7 +37,9 @@ def create_cell_covered(**kwargs):
 	return table.CoveredTableCell(**kwargs)
 def create_cell_number(n, **kwargs):
 	return create_cell(n, valuetype = 'float', value = n, **kwargs)
-def create_cell_string(s = "", **kwargs):
+def create_cell_string(s = "", check_for_errors = False, **kwargs):
+	if check_for_errors and s in ['wrong', 'segfault']:
+		kwargs['stylename'] = 'warning'
 	return create_cell(s, valuetype = 'string', value = s, **kwargs)
 def create_cell_formula(f, **kwargs):
 	return create_cell("", valuetype = 'float', formula = 'of:' + f, **kwargs)
@@ -53,7 +62,7 @@ def create_row_data(data):
 	return create_row([create_cell_string(data[0])] + [
 		x for d in data[1:] for x in [
 			create_cell_number(d['runtime']),
-			create_cell_string(d['answer'])
+			create_cell_string(d['answer'], True)
 		]
 	])
 
@@ -104,6 +113,7 @@ for file in root.findall('./benchmarks/file'):
 logging.info("Collected results for {} files".format(len(results)))
 
 doc = OpenDocumentSpreadsheet()
+create_cell_styles(doc)
 tbl = table.Table(name = "all")
 tbl.addElement(create_row_head(solvers))
 
