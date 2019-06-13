@@ -32,8 +32,11 @@ namespace cad {
 	struct ProjectionMixin {
 		static constexpr ProjectionType projectionOperator = P;
 	};
-	using ProjectionBrown = ProjectionMixin<ProjectionType::Brown>;
+	using ProjectionCollins = ProjectionMixin<ProjectionType::Collins>;
+	using ProjectionHong = ProjectionMixin<ProjectionType::Hong>;
 	using ProjectionMcCallum = ProjectionMixin<ProjectionType::McCallum>;
+	using ProjectionMcCallum_partial = ProjectionMixin<ProjectionType::McCallum_partial>;
+	using ProjectionBrown = ProjectionMixin<ProjectionType::Brown>;
 	
 	/// Mixin that provides settings for the sample comparison.
 	template<SampleCompareStrategy SCS, FullSampleCompareStrategy FSCS>
@@ -115,6 +118,26 @@ namespace cad {
 	
 	struct NewCADSettingsFU: NewCADBaseSettings, cad::IncrementalityFU, cad::ProjectionBrown, cad::SampleCompareLT, cad::ProjectionOrderDefault {
 		static constexpr auto moduleName = "NewCADModule<NewCADFU>";
+	};
+
+	//
+	// Settings to test different projection operators
+	//
+
+	struct NewCADSettingsCollins: NewCADSettingsFU, cad::ProjectionCollins {
+		static constexpr auto moduleName = "NewCADModule<NewCADCollins>";
+	};
+	struct NewCADSettingsHong: NewCADSettingsFU, cad::ProjectionHong {
+		static constexpr auto moduleName = "NewCADModule<NewCADHong>";
+	};
+	struct NewCADSettingsMcCallum: NewCADSettingsFU, cad::ProjectionMcCallum {
+		static constexpr auto moduleName = "NewCADModule<NewCADMcCallum>";
+	};
+	struct NewCADSettingsMcCallumPartial: NewCADSettingsFU, cad::ProjectionMcCallum_partial {
+		static constexpr auto moduleName = "NewCADModule<NewCADMcCallumPartial>";
+	};
+	struct NewCADSettingsBrown: NewCADSettingsFU, cad::ProjectionBrown {
+		static constexpr auto moduleName = "NewCADModule<NewCADBrown>";
 	};
 	
 	//
