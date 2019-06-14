@@ -2,8 +2,8 @@
 
 #include "smtrat-common.h"
 
-#include <carl/formula/model/Model.h>
-#include <carl/formula/model/sqrtex/SqrtEx.h>
+#include <carl-model/Model.h>
+#include <carl-model/sqrtex/SqrtEx.h>
 #include <carl/interval/Interval.h>
 
 namespace smtrat {

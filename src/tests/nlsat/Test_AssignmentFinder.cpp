@@ -3,7 +3,7 @@
 #include <smtrat-modules/SATModule/mcsat/BaseBackend.h>
 #include <smtrat-common/smtrat-common.h>
 
-#include <carl/formula/model/evaluation/ModelEvaluation.h>
+#include <carl-model/evaluation/ModelEvaluation.h>
 #include <smtrat-mcsat/assignments/arithmetic/AssignmentFinder.h>
 #include <smtrat-mcsat/explanations/nlsat/Explanation.h>
 

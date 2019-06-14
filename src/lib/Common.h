@@ -24,8 +24,8 @@
 #include <carl/formula/FormulaPool.h>
 #include <carl/formula/uninterpreted/UFManager.h>
 #include <carl/formula/uninterpreted/UFInstanceManager.h>
-#include <carl/formula/model/Model.h>
-#include <carl/formula/model/evaluation/ModelEvaluation.h>
+#include <carl-model/Model.h>
+#include <carl-model/evaluation/ModelEvaluation.h>
 
 #include <smtrat-common/smtrat-common.h>
 

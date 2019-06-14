@@ -7,7 +7,7 @@
 
 #include "ModuleInput.h"
 
-#include <carl/formula/model/Assignment.h>
+#include <carl-model/Assignment.h>
 
 using namespace std;
 using namespace carl;

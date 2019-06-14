@@ -7,7 +7,7 @@
 
 #include "MCSATStatistics.h"
 
-#include <carl/formula/model/Assignment.h>
+#include <carl-model/Assignment.h>
 
 #include <smtrat-mcsat/smtrat-mcsat.h>
 

@@ -9,7 +9,7 @@
 
 #include <carl/core/MultivariatePolynomial.h>
 #include <carl/core/Variable.h>
-#include <carl/formula/model/evaluation/ModelEvaluation.h>
+#include <carl-model/evaluation/ModelEvaluation.h>
 
 #include <smtrat-mcsat/explanations/onecellcad/Explanation.h>
 
