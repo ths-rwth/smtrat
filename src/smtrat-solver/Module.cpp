@@ -10,7 +10,7 @@
  */
 #include "Module.h"
 
-#include <carl/io/SMTLIBStream.h>
+#include <carl-io/SMTLIBStream.h>
 #include <smtrat-solver/Manager.h>
 
 #include <boost/range/adaptor/reversed.hpp>
