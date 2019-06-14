@@ -17,7 +17,11 @@ namespace smtrat
 		Module( _formula, _conditionals, _manager ),
 		mCAD(),
 		mPreprocessor(mCAD.getVariables())
-	{}
+	{
+		auto& pps = settings::Settings::getInstance().get<cad::CADPreprocessorSettings>("cad-pp");
+		if (Settings::pp_disable_variable_elimination) pps.disable_variable_elimination = false;
+		if (Settings::pp_disable_resultants) pps.disable_resultants = false;
+	}
 	
 	template<class Settings>
 	NewCADModule<Settings>::~NewCADModule()
