@@ -94,6 +94,10 @@ namespace cad {
 
 		static constexpr bool semiRestrictedProjection = false;
 		static constexpr bool restrictedIfPossible = true;
+
+		static constexpr bool pp_disable_variable_elimination = true;
+		static constexpr bool pp_disable_resultants = true;
+		
 	};
 	
 	struct NewCADSettingsNaive: NewCADBaseSettings, cad::IncrementalityNO, cad::ProjectionBrown, cad::SampleCompareLT, cad::ProjectionOrderDefault {
@@ -139,6 +143,24 @@ namespace cad {
 	};
 	struct NewCADSettingsBrown: NewCADBaseProjectionSettings, cad::ProjectionBrown {
 		static constexpr auto moduleName = "NewCADModule<NewCADBrown>";
+	};
+
+	struct NewCADBasePPSettings: NewCADBaseSettings, cad::IncrementalityFU, cad::ProjectionBrown, cad::SampleCompareLT, cad::ProjectionOrderDefault {};
+	struct NewCADSettingsPP: NewCADBasePPSettings {
+		static constexpr auto moduleName = "NewCADModule<NewCADPPVERR>";
+		static constexpr bool pp_disable_variable_elimination = true;
+		static constexpr bool pp_disable_resultants = true;
+	};
+	struct NewCADSettingsPPVE: NewCADBasePPSettings {
+		static constexpr auto moduleName = "NewCADModule<NewCADPPVERR>";
+		static constexpr bool pp_disable_resultants = true;
+	};
+	struct NewCADSettingsPPRR: NewCADBasePPSettings {
+		static constexpr auto moduleName = "NewCADModule<NewCADPPVERR>";
+		static constexpr bool pp_disable_variable_elimination = true;
+	};
+	struct NewCADSettingsPPVERR: NewCADBasePPSettings {
+		static constexpr auto moduleName = "NewCADModule<NewCADPPVERR>";
 	};
 	
 	//
@@ -472,6 +494,9 @@ namespace cad {
 		static constexpr bool debugStepsToTikz = false;
 		static constexpr bool force_nonincremental = false;
 		static constexpr bool split_for_integers = true;
+
+		static constexpr bool pp_disable_variable_elimination = true;
+		static constexpr bool pp_disable_resultants = true;
 		
 		static constexpr cad::ProjectionCompareStrategy projectionComparator = cad::ProjectionCompareStrategy::Default;
 		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Default;
