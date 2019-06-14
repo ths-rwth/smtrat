@@ -11,4 +11,5 @@
 /manual/module_list.tex
 /nbproject/
 /src/gui/Config.java
+/src/smtrat-modules/NewCADModule/NewCADSettings.h
 CMakeCache.txt
