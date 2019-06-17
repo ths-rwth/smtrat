@@ -32,7 +32,7 @@ namespace smtrat
         mBackendsOfModules(),
         mpPrimaryBackend( new Module( mpPassedFormula, mPrimaryBackendFoundAnswer, this ) ),
         mStrategyGraph(),
-        mDebugOutputChannel( cout.rdbuf() ),
+        mDebugOutputChannel( std::cout.rdbuf() ),
         mLogic( carl::Logic::UNDEFINED ),
         mInformationRelevantFormula(),
         mLemmaLevel(LemmaLevel::NONE),
@@ -252,7 +252,7 @@ namespace smtrat
             curModel.clean();
             if( !curModel.empty() )
             {
-                cout << curModel;
+                std::cout << curModel;
             }
         }
     }
@@ -344,7 +344,7 @@ namespace smtrat
     }
     #endif
     
-    void Manager::printAssertions( ostream& _out ) const
+    void Manager::printAssertions( std::ostream& _out ) const
     {
         _out << "(";
         if( mpPassedFormula->size() == 1 )
@@ -361,7 +361,7 @@ namespace smtrat
         _out << ")" << endl;
     }
 
-    void Manager::printInfeasibleSubset( ostream& _out ) const
+    void Manager::printInfeasibleSubset( std::ostream& _out ) const
     {
         _out << "(";
         if( !mpPrimaryBackend->infeasibleSubsets().empty() )
