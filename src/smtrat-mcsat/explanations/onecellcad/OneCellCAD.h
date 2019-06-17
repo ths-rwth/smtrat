@@ -213,7 +213,7 @@ struct Sector {
 	std::optional<Section> highBound;
 };
 
-inline std::ostream& operator<<(ostream& os, const Sector& s) {
+inline std::ostream& operator<<(std::ostream& os, const Sector& s) {
 	os << "(sector ";
 	s.lowBound ? os << s.lowBound.value() : os << "-infty";
 	os << " ";
@@ -228,7 +228,7 @@ inline std::ostream& operator<<(ostream& os, const Sector& s) {
      */
 using CADCell = std::vector<std::variant<Sector, Section>>;
 
-inline std::ostream& operator<<(ostream& os, const CADCell& cell) {
+inline std::ostream& operator<<(std::ostream& os, const CADCell& cell) {
 	os << "(cell [";
 	for (std::size_t i = 0; i < cell.size(); i++) {
 		if (std::holds_alternative<Sector>(cell[i])) {

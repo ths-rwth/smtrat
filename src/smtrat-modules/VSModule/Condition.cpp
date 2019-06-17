@@ -175,20 +175,20 @@ namespace vs
             }
         }
         double weightFactorTmp = maximum;
-//        cout << "valuate " << mConstraint << " for " << _consideredVariable << endl;
-//        cout << "finitlyManySolutionsWeight = " << finitlyManySolutionsWeight << endl;
-//        cout << "wtfweight = " << (_preferEquation ? ((constraint().relation() == carl::Relation::EQ || degreeWeight <= 2) ? 1 : 2) : (degreeWeight <= 2 ? 1 : 2)) << endl;
-//        cout << "relationSymbolWeight = " << relationSymbolWeight << endl;
-//        cout << "univariateWeight = " << (degreeWeight <= 2 && numberOfVariableWeight == 1 ? 1 : 2) << endl;
-//        cout << "degreeWeight = " << degreeWeight << endl;
-//        cout << "lCoeffWeight = " << lCoeffWeight << endl;
+//        std::cout << "valuate " << mConstraint << " for " << _consideredVariable << std::endl;
+//        std::cout << "finitlyManySolutionsWeight = " << finitlyManySolutionsWeight << std::endl;
+//        std::cout << "wtfweight = " << (_preferEquation ? ((constraint().relation() == carl::Relation::EQ || degreeWeight <= 2) ? 1 : 2) : (degreeWeight <= 2 ? 1 : 2)) << std::endl;
+//        std::cout << "relationSymbolWeight = " << relationSymbolWeight << std::endl;
+//        std::cout << "univariateWeight = " << (degreeWeight <= 2 && numberOfVariableWeight == 1 ? 1 : 2) << std::endl;
+//        std::cout << "degreeWeight = " << degreeWeight << std::endl;
+//        std::cout << "lCoeffWeight = " << lCoeffWeight << std::endl;
 //        if( _consideredVariable.getType() == carl::VariableType::VT_INT )
 //        {
-//            cout << "lCoeffWeightB = " << lCoeffWeightB << endl;
+//            std::cout << "lCoeffWeightB = " << lCoeffWeightB << std::endl;
 //        }
-//        cout << "numberOfVariableWeight = " << numberOfVariableWeight << endl;
-//        cout << "numberOfVariableOccurencesWeight = " << numberOfVariableOccurencesWeight << endl;
-//        cout << "otherMonomialsPositiveWeight = " << otherMonomialsPositiveWeight << endl;
+//        std::cout << "numberOfVariableWeight = " << numberOfVariableWeight << std::endl;
+//        std::cout << "numberOfVariableOccurencesWeight = " << numberOfVariableOccurencesWeight << std::endl;
+//        std::cout << "otherMonomialsPositiveWeight = " << otherMonomialsPositiveWeight << std::endl;
         double result = finitlyManySolutionsWeight;
         if( _preferEquation )
             result += ((constraint().relation() == carl::Relation::EQ || degreeWeight <= 2) ? 1 : 2)/weightFactorTmp;

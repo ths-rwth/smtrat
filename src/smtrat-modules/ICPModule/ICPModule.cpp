@@ -945,7 +945,7 @@ namespace smtrat
                 assert( origIcpVar != mVariables.end() );
                 origIcpVar->second->addCandidates( ccs );
             }
-            mLinearConstraints.insert( pair<const icp::LRAVariable*, ContractionCandidates>( slackvariable, icpVar->candidates() ) );
+            mLinearConstraints.insert( std::pair<const icp::LRAVariable*, ContractionCandidates>( slackvariable, icpVar->candidates() ) );
         }
     }
 

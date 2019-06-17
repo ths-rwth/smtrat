@@ -75,10 +75,10 @@ namespace smtrat
      */
     void insertIntoMap(carl::Variable GeneratedVariable, carl::Monomial::Arg monomial) {
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "inserting the monomial into the map:";
-            cout << "\n";
-            cout << "GeneratedVariable: " << GeneratedVariable << ", monomial: " << monomial;
-            cout << "\n";
+            std::cout << "inserting the monomial into the map:";
+            std::cout << "\n";
+            std::cout << "GeneratedVariable: " << GeneratedVariable << ", monomial: " << monomial;
+            std::cout << "\n";
         }
         smtrat::MonomialMappingByVariablePool::getInstance().insertMonomialMapping(GeneratedVariable, monomial);
     }
@@ -108,9 +108,9 @@ namespace smtrat
         }
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "the monomial, " << monomial << " alreday exists in the map!\nkey for this monomial in the map is, "
+            std::cout << "the monomial, " << monomial << " alreday exists in the map!\nkey for this monomial in the map is, "
                  << retrievedVariable;
-            cout << "\n";
+            std::cout << "\n";
         }
 
         return retrievedVariable;
@@ -136,16 +136,16 @@ namespace smtrat
         carl::Variable newlyGeneratedOrOldVariable = insertIntoMapOrRetrieveExistingVariable(monomialAsSquareOfVariable);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "abstractUnivariateMonomialForEvenExponent: Exponent of newly generated or old variable: " << exponentToBe;
-            cout << "\n";
+            std::cout << "abstractUnivariateMonomialForEvenExponent: Exponent of newly generated or old variable: " << exponentToBe;
+            std::cout << "\n";
         }
 
         carl::Monomial::Arg newMonomial = carl::createMonomial(newlyGeneratedOrOldVariable, (carl::exponent)exponentToBe);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "abstractUnivariateMonomialForEvenExponent: new Monomial: " << newMonomial;
-            cout << "\n";
-            cout << "\n";
+            std::cout << "abstractUnivariateMonomialForEvenExponent: new Monomial: " << newMonomial;
+            std::cout << "\n";
+            std::cout << "\n";
         }
 
         return newMonomial;
@@ -168,8 +168,8 @@ namespace smtrat
             variables.pop_front();
 
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                cout << "first: " << first << "\n";
-                cout << "second: " << second << "\n";
+                std::cout << "first: " << first << "\n";
+                std::cout << "second: " << second << "\n";
             }
 
             // variables must be sorted to create monomial.
@@ -187,7 +187,7 @@ namespace smtrat
            (carl::exponent)(2));
 
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                cout << "createdMonomial: " << createdMonomial << "\n";
+                std::cout << "createdMonomial: " << createdMonomial << "\n";
             }
 
             //carl::Variable GeneratedVariable = createZVariable();
@@ -222,8 +222,8 @@ namespace smtrat
         carl::Variable newlyGeneratedOrOldVariable = insertIntoMapOrRetrieveExistingVariable(monomialAsSquareOfVariable);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "abstractUnivariateMonomialForOddExponent: Exponent of newly generated or old variable: " << exponentToBe;
-            cout << "\n";
+            std::cout << "abstractUnivariateMonomialForOddExponent: Exponent of newly generated or old variable: " << exponentToBe;
+            std::cout << "\n";
         }
 
         carl::Monomial::Arg newMonomial = carl::createMonomial(newlyGeneratedOrOldVariable, (carl::exponent)exponentToBe);
@@ -233,7 +233,7 @@ namespace smtrat
         // get linear monomial
         while (!newMonomial->isLinear()) {
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                cout << "entering while" << "\n";
+                std::cout << "entering while" << "\n";
             }
 
             if(newMonomial->begin()->second % 2 == 0){
@@ -251,20 +251,20 @@ namespace smtrat
         if(newMonomial->isLinear()) {
             carl::Variable variableOfNewMonomial =  newMonomial->begin()->first;
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                cout << "new monomial is linear" << "\n";
-                cout << "variableOfNewMonomial: " << variableOfNewMonomial << "\n";
+                std::cout << "new monomial is linear" << "\n";
+                std::cout << "variableOfNewMonomial: " << variableOfNewMonomial << "\n";
             }
             extraVariablesForOddExponenet.push_front(variableOfNewMonomial);
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                cout << "extraVariablesForOddExponenet: " << extraVariablesForOddExponenet << "\n";
+                std::cout << "extraVariablesForOddExponenet: " << extraVariablesForOddExponenet << "\n";
             }
             newMonomial = carl::createMonomial((abstractProductRecursively(extraVariablesForOddExponenet)), (carl::exponent)1);
         }
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "abstractUnivariateMonomialForOddExponent: new Monomial: " << newMonomial;
-            cout << "\n";
-            cout << "\n";
+            std::cout << "abstractUnivariateMonomialForOddExponent: new Monomial: " << newMonomial;
+            std::cout << "\n";
+            std::cout << "\n";
         }
 
         return newMonomial;
@@ -297,8 +297,8 @@ namespace smtrat
         if (monomial->nrVariables() == 1 && monomial->isLinear()) {
 
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                cout << "final Linear Monomial: " << monomial << " tDeg: " << monomial->tdeg();
-                cout << "\n";
+                std::cout << "final Linear Monomial: " << monomial << " tDeg: " << monomial->tdeg();
+                std::cout << "\n";
             }
 
             return monomial;
@@ -324,9 +324,9 @@ namespace smtrat
                 carl::Monomial::Arg monomial = abstractUnivariateMonomial(it->first, it->second);
 
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                cout << "Received final Monomial is: " << monomial;
-                cout << "\n";
-                cout << "\n";
+                std::cout << "Received final Monomial is: " << monomial;
+                std::cout << "\n";
+                std::cout << "\n";
             }
 
                 variables.push_back(monomial->begin()->first);
@@ -344,10 +344,10 @@ namespace smtrat
         const ConstraintT& constraint = formula.constraint();
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "Constraint is: " << constraint;
-            cout << "\n";
-            cout << "\n";
+            std::cout << "\n";
+            std::cout << "Constraint is: " << constraint;
+            std::cout << "\n";
+            std::cout << "\n";
         }
 
         //get polynomial(lhs) of constraint
@@ -367,9 +367,9 @@ namespace smtrat
                 op[indexCount] = p;
 
                 if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                    cout << "Monomial is: " << term.monomial() << " (alreday linear)";
-                    cout << "\n";
-                    cout << "\n";
+                    std::cout << "Monomial is: " << term.monomial() << " (alreday linear)";
+                    std::cout << "\n";
+                    std::cout << "\n";
                 }
 
             } else if (!term.isConstant()) { //if the term is a product of two or more variables
@@ -378,8 +378,8 @@ namespace smtrat
                 carl::Monomial::Arg monomial = term.monomial();
 
                 if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                    cout << "Monomial is: " << monomial;
-                    cout << "\n";
+                    std::cout << "Monomial is: " << monomial;
+                    std::cout << "\n";
                 }
 
                 //get the linearized variable of the monomial
@@ -388,9 +388,9 @@ namespace smtrat
                 //create new polynomial
                 Poly p(term.coeff()*finalVariable);
                 if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                    cout << "Generated MultiVariantPolynomial: " << p;
-                    cout << "\n";
-                    cout << "\n";
+                    std::cout << "Generated MultiVariantPolynomial: " << p;
+                    std::cout << "\n";
+                    std::cout << "\n";
                 }
                 op[indexCount] = p;
 
@@ -406,8 +406,8 @@ namespace smtrat
         }
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "Vector: " << op;
-            cout << "\n";
+            std::cout << "Vector: " << op;
+            std::cout << "\n";
         }
 
         //construction lhs of the constraint
@@ -416,11 +416,11 @@ namespace smtrat
         //create new formula
         FormulaT finalFormula = FormulaT(finalPoly, constraint.relation());
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "Generated final Formula: " << finalFormula;
-            cout << "\n";
-            cout << "Generated New constraint: " << finalFormula.constraint();
-            cout << "\n";
-            cout << "\n";
+            std::cout << "Generated final Formula: " << finalFormula;
+            std::cout << "\n";
+            std::cout << "Generated New constraint: " << finalFormula.constraint();
+            std::cout << "\n";
+            std::cout << "\n";
         }
 
         return  finalFormula;
@@ -430,7 +430,7 @@ namespace smtrat
     template<typename Settings>
     FormulaT NRAILModule<Settings>::linearizeSubformula(const FormulaT &formula)
     {
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Formula from linearizeSubformula: " <<  formula << " Formula Type: " <<  formula.getType() << endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "Formula from linearizeSubformula: " <<  formula << " Formula Type: " <<  formula.getType() << std::endl; }
 
         if (formula.getType() == carl::FormulaType::CONSTRAINT) {
             FormulaT linearizedFormula = linearization(formula);
@@ -448,7 +448,7 @@ namespace smtrat
 
         if (formula.getType() == carl::FormulaType::FALSE){
 
-            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Formula type is false and UNSAT! "; }
+            if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "Formula type is false and UNSAT! "; }
 
             mInfeasibleSubsets.push_back({formula});
 
@@ -456,15 +456,15 @@ namespace smtrat
         }
 
         if (formula.getType() == carl::FormulaType::TRUE){
-            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Formula type is true! "; }
+            if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "Formula type is true! "; }
             return true;
         }
 
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Sub Formula: " <<  formula << " Sub Formula type: " <<  formula.getType() << endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "Sub Formula: " <<  formula << " Sub Formula type: " <<  formula.getType() << std::endl; }
 
         FormulaT formulaFromVisitor = mVisitor.visitResult( formula, linearizeSubformulaFunction );
 
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Generated  linearized Formula FromVisitor: " << formulaFromVisitor << endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "Generated  linearized Formula FromVisitor: " << formulaFromVisitor << std::endl; }
         ////////////////////////////////////////////////
         //
         // Adding the Linearized Formula to the global
@@ -512,8 +512,8 @@ namespace smtrat
     {
         unsigned result = originalFormula->satisfiedBy(estimatedModel);
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "Result " << result;
-            cout << "\n";
+            std::cout << "Result " << result;
+            std::cout << "\n";
         }
         return toAnswer(result);
     }
@@ -530,17 +530,17 @@ namespace smtrat
         //collect the variables into the container "allVarsOfOriginalFormula"
         originalFormula->vars(allVarsOfOriginalFormula);
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "all variables of original formula: ";
+            std::cout << "all variables of original formula: ";
             for (auto it = allVarsOfOriginalFormula.begin(); it != allVarsOfOriginalFormula.end(); ++it) {
-                cout << it->name();
-                cout << "   ";
+                std::cout << it->name();
+                std::cout << "   ";
             }
-            cout << "\n";
+            std::cout << "\n";
 
-            cout << "linearized variable | value: " << "\n";
+            std::cout << "linearized variable | value: " << "\n";
             for (auto it = linearizedModel.begin(); it != linearizedModel.end(); ++it) {
-                cout << it->first << " | " << it->second;
-                cout << "\n";
+                std::cout << it->first << " | " << it->second;
+                std::cout << "\n";
             }
         }
         for (auto it1 = allVarsOfOriginalFormula.begin(); it1 != allVarsOfOriginalFormula.end(); ++it1) {
@@ -557,10 +557,10 @@ namespace smtrat
             }
         }
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "estimated model for original formula: " << "\n";
+            std::cout << "estimated model for original formula: " << "\n";
             for (auto it = estimatedModel.begin(); it != estimatedModel.end(); ++it) {
-                cout << it->first << " | " << it->second;
-                cout << "\n";
+                std::cout << it->first << " | " << it->second;
+                std::cout << "\n";
             }
         }
         return estimatedModel;
@@ -592,9 +592,9 @@ namespace smtrat
             linearizedModel.emplace(it->first, ZERO_RATIONAL);
         }
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "Abstract model for checking axioms: " << "\n";
+            std::cout << "Abstract model for checking axioms: " << "\n";
             linearizedModel.printOneline(stream, true);
-            cout << "\n";
+            std::cout << "\n";
         }
         return linearizedModel;
     }
@@ -608,26 +608,26 @@ namespace smtrat
 
     FormulasT unsatisfiedFormulas(AxiomFactory::AxiomType axiomType, FormulasT formulas, Model model, UNSATFormulaSelectionStrategy formulaSelectionStrategy){
 
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "unsatisfiedFormulas to be check: " << formulas << endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "unsatisfiedFormulas to be check: " << formulas << std::endl; }
 
         FormulasT unsatisfiedFormulas;
 
         if (axiomType == AxiomFactory::AxiomType::TANGENT_PLANE || axiomType == AxiomFactory::AxiomType::MONOTONICITY) {
             for(FormulaT formula:formulas) {
-                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "unsatisfiedFormula: " << formula << endl; }
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "unsatisfiedFormula: " << formula << std::endl; }
                 unsatisfiedFormulas.push_back(formula);
                 if (formulaSelectionStrategy == UNSATFormulaSelectionStrategy::FIRST){
-                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "returning first formula" << endl; }
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "returning first formula" << std::endl; }
                     return unsatisfiedFormulas;
                 }
             }
         } else {
             for(FormulaT formula:formulas) {
                 if (carl::model::satisfiedBy(formula, model) == 0){
-                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "unsatisfiedFormula: " << formula << endl; }
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "unsatisfiedFormula: " << formula << std::endl; }
                     unsatisfiedFormulas.push_back(formula);
                     if (formulaSelectionStrategy == UNSATFormulaSelectionStrategy::FIRST){
-                        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "returning first formula" << endl; }
+                        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "returning first formula" << std::endl; }
                         return unsatisfiedFormulas;
                     }
                 }
@@ -647,7 +647,7 @@ namespace smtrat
 
             size_t nelems = rand(min, max);
 
-            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Selecting elements: " << nelems << " from the elemnts of: " << unsatisfiedFormulasSize << endl; }
+            if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "Selecting elements: " << nelems << " from the elemnts of: " << unsatisfiedFormulasSize << std::endl; }
             std::sample(unsatisfiedFormulas.begin(), unsatisfiedFormulas.end(), std::back_inserter(randomlySelectedFormulas),
                         nelems, std::mt19937{std::random_device{}()});
             return randomlySelectedFormulas;
@@ -662,7 +662,7 @@ namespace smtrat
 
         FormulasT unsatFormulas = unsatisfiedFormulas(axiomType, axiomFormulasToBeChecked, linearizedModel, formulaSelectionStrategy);
 
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "pushing to unsatisfiedFormulas " << unsatFormulas << endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "pushing to unsatisfiedFormulas " << unsatFormulas << std::endl; }
 
         return  unsatFormulas;
     }
@@ -679,7 +679,7 @@ namespace smtrat
 
         int axiom_type_size = axiomType.size() - 1;
 
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "axiom_type_size: " << axiom_type_size << endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "axiom_type_size: " << axiom_type_size << std::endl; }
 
         int axiomCounter = 0;
 
@@ -690,24 +690,24 @@ namespace smtrat
         while (true) {
 
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                cout << "Loop" << loopCounter << "\n";
-                cout << "axiomCounter" << axiomCounter << "\n";
+                std::cout << "Loop" << loopCounter << "\n";
+                std::cout << "axiomCounter" << axiomCounter << "\n";
             }
 
             if(isUnsatFormulasNotEmpty) {
 
-                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Calling backend for axiom counter = " << axiomCounter << endl; }
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "Calling backend for axiom counter = " << axiomCounter << std::endl; }
 
                 auto AnswerOfLRA = runBackends();
                 updateModel();
 
                 if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                    cout << "Linearized Formula is AnswerOfLRA!" << AnswerOfLRA << "\n";
+                    std::cout << "Linearized Formula is AnswerOfLRA!" << AnswerOfLRA << "\n";
                 }
 
                 if (AnswerOfLRA != SAT) {
 
-                    if (smtrat::LOG::getInstance().isDebugEnabled()) {cout << "Linearized Formula is Unsatisfied/Unknown!" << endl;}
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) {cout << "Linearized Formula is Unsatisfied/Unknown!" << std::endl;}
 
                     if (AnswerOfLRA == UNSAT) {
                         generateTrivialInfeasibleSubset();
@@ -718,19 +718,19 @@ namespace smtrat
                 mModel = backendsModel();
 
                 if (smtrat::LOG::getInstance().isDebugEnabled()) {
-                    cout << "Solution/model of linearized formula: ";
+                    std::cout << "Solution/model of linearized formula: ";
                     mModel.printOneline(stream, true);
-                    cout << "\n";
-                    cout << "\n";
+                    std::cout << "\n";
+                    std::cout << "\n";
                 }
                 Model estimatedModel = createEstimatedAssignment(mModel);
                 auto answerOfNRA = isNRASatisfied(estimatedModel);
 
-                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "answerOfNRA: " << answerOfNRA << endl; }
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "answerOfNRA: " << answerOfNRA << std::endl; }
 
                 if (answerOfNRA != UNSAT) {
 
-                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Input Formula is Satisfied!" << endl; }
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "Input Formula is Satisfied!" << std::endl; }
 
                     if (smtrat::LOG::getInstance().isDebugEnabled()) { estimatedModel.printOneline(stream, true); }
                     return answerOfNRA;
@@ -745,7 +745,7 @@ namespace smtrat
             isUnsatFormulasNotEmpty = !unsatFormulas.empty();
 
             if (unsatFormulas.empty()) {
-                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "empty" << endl; }
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "empty" << std::endl; }
             }
 
             for (FormulaT formulaT : unsatFormulas) {
@@ -762,7 +762,7 @@ namespace smtrat
             loopCounter++;
         }
 
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "Result is:" << endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "Result is:" << std::endl; }
 
         return UNKNOWN; // This should be adapted according to your implementation.
     }

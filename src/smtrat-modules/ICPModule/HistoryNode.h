@@ -436,18 +436,18 @@ namespace smtrat
                 {
                     if( mVariableReasons.find(_var) != mVariableReasons.end() )
                     {
-//                        cout << "search." << endl;
+//                        std::cout << "search." << std::endl;
                         set_icpVariable variables = mVariableReasons.at(_var);
                         for( set_icpVariable::iterator varIt = variables.begin(); varIt != variables.end(); ++varIt )
                         {
                             if( _result.insert( *varIt ).second )
                             {
-//                                cout << "Inserted " << (*varIt)->var() << endl;
+//                                std::cout << "Inserted " << (*varIt)->var() << std::endl;
                                 gatherVariables((*varIt)->var(), _result);
                             }
                             else
                             {
-//                                cout << "Already contained: " << (*varIt)->var() << endl;
+//                                std::cout << "Already contained: " << (*varIt)->var() << std::endl;
                             }
                         }
                     }

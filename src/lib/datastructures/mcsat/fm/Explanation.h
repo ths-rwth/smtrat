@@ -23,10 +23,10 @@ struct Bound {
 	Rational r;
 	bool neg;
 	Bound(ConstraintT constr, Poly p, Poly q, Rational r, bool neg) : constr(constr), p(p), q(q), r(r), neg(neg) {}
-	friend ostream& operator<<(ostream& os, const Bound& dt);  
+	friend std::ostream& operator<<(std::ostream& os, const Bound& dt);  
 };
 
-inline ostream& operator<<(ostream& os, const Bound& b) {
+inline std::ostream& operator<<(std::ostream& os, const Bound& b) {
 	os << "(" << b.constr << ", " << b.p << ", " << b.q << ", " << b.r << ", " << b.neg << ")";  
 	return os;  
 }

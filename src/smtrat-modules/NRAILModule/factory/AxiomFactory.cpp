@@ -25,9 +25,9 @@ namespace smtrat {
         FormulaT finalFormula = FormulaT(carl::FormulaType::IFF, leftFormula, zFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "created ZeroOne Axiom Formula is: " << finalFormula;
-            cout << "\n";
+            std::cout << "\n";
+            std::cout << "created ZeroOne Axiom Formula is: " << finalFormula;
+            std::cout << "\n";
         }
 
         return finalFormula;
@@ -60,9 +60,9 @@ namespace smtrat {
         FormulaT finalFormula = FormulaT(carl::FormulaType::IFF, leftFormula, zFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "created ZeroTwo Axiom Formula is: " << finalFormula;
-            cout << "\n";
+            std::cout << "\n";
+            std::cout << "created ZeroTwo Axiom Formula is: " << finalFormula;
+            std::cout << "\n";
         }
 
         return finalFormula;
@@ -95,9 +95,9 @@ namespace smtrat {
         FormulaT finalFormula = FormulaT(carl::FormulaType::IFF, leftFormula, zFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "created ZeroThree Axiom Formula is: " << finalFormula;
-            cout << "\n";
+            std::cout << "\n";
+            std::cout << "created ZeroThree Axiom Formula is: " << finalFormula;
+            std::cout << "\n";
         }
 
         return finalFormula;
@@ -124,9 +124,9 @@ namespace smtrat {
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "created TangentPlaneNEQOne Axiom Formula is: " << finalFormula;
-            cout << "\n";
+            std::cout << "\n";
+            std::cout << "created TangentPlaneNEQOne Axiom Formula is: " << finalFormula;
+            std::cout << "\n";
         }
 
         return finalFormula;
@@ -145,9 +145,9 @@ namespace smtrat {
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "created TangentPlaneNEQTwo Axiom Formula is: " << finalFormula;
-            cout << "\n";
+            std::cout << "\n";
+            std::cout << "created TangentPlaneNEQTwo Axiom Formula is: " << finalFormula;
+            std::cout << "\n";
         }
 
         return finalFormula;
@@ -186,9 +186,9 @@ namespace smtrat {
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "created TangentPlaneNEQThree Axiom Formula is: " << finalFormula;
-            cout << "\n";
+            std::cout << "\n";
+            std::cout << "created TangentPlaneNEQThree Axiom Formula is: " << finalFormula;
+            std::cout << "\n";
         }
 
         return finalFormula;
@@ -227,9 +227,9 @@ namespace smtrat {
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "created TangentPlaneNEQFour Axiom Formula is: " << finalFormula;
-            cout << "\n";
+            std::cout << "\n";
+            std::cout << "created TangentPlaneNEQFour Axiom Formula is: " << finalFormula;
+            std::cout << "\n";
         }
 
 
@@ -257,9 +257,9 @@ namespace smtrat {
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "created TangentPlaneEQOne Axiom Formula is: " << finalFormula;
-            cout << "\n";
+            std::cout << "\n";
+            std::cout << "created TangentPlaneEQOne Axiom Formula is: " << finalFormula;
+            std::cout << "\n";
         }
 
         return finalFormula;
@@ -277,9 +277,9 @@ namespace smtrat {
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "created TangentPlaneEQTwo Axiom Formula is: " << finalFormula;
-            cout << "\n";
+            std::cout << "\n";
+            std::cout << "created TangentPlaneEQTwo Axiom Formula is: " << finalFormula;
+            std::cout << "\n";
         }
 
         return finalFormula;
@@ -309,13 +309,13 @@ namespace smtrat {
         }
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "zVariable is: " << zVariable;
-            cout << "\n";
-            cout << "xVariable is: " << xVariable;
-            cout << "\n";
-            cout << "yVariable is: " << yVariable;
-            cout << "\n";
+            std::cout << "\n";
+            std::cout << "zVariable is: " << zVariable;
+            std::cout << "\n";
+            std::cout << "xVariable is: " << xVariable;
+            std::cout << "\n";
+            std::cout << "yVariable is: " << yVariable;
+            std::cout << "\n";
         }
 
         smtrat::VariableCapsule capsule(xVariable, yVariable, zVariable);
@@ -335,11 +335,11 @@ namespace smtrat {
         }
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n" << "absolute valued model: " << "\n";
-            cout << "variable | value: " << "\n";
+            std::cout << "\n" << "absolute valued model: " << "\n";
+            std::cout << "variable | value: " << "\n";
             for (auto it = absoluteValuedModel.begin(); it != absoluteValuedModel.end(); ++it) {
-                cout << it->first << " | " << it->second;
-                cout << "\n";
+                std::cout << it->first << " | " << it->second;
+                std::cout << "\n";
             }
         }
 
@@ -442,9 +442,9 @@ namespace smtrat {
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "created EquivalentToOriginalMonotonicityOne Axiom Formula is: " << finalFormula;
-            cout << "\n";
+            std::cout << "\n";
+            std::cout << "created EquivalentToOriginalMonotonicityOne Axiom Formula is: " << finalFormula;
+            std::cout << "\n";
         }
 
         return finalFormula;
@@ -469,9 +469,9 @@ namespace smtrat {
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "created EquivalentToOriginalMonotonicityTwo Axiom Formula is: " << finalFormula;
-            cout << "\n";
+            std::cout << "\n";
+            std::cout << "created EquivalentToOriginalMonotonicityTwo Axiom Formula is: " << finalFormula;
+            std::cout << "\n";
         }
 
         return finalFormula;
@@ -496,9 +496,9 @@ namespace smtrat {
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "created EquivalentToOriginalMonotonicityThree Axiom Formula is: " << finalFormula;
-            cout << "\n";
+            std::cout << "\n";
+            std::cout << "created EquivalentToOriginalMonotonicityThree Axiom Formula is: " << finalFormula;
+            std::cout << "\n";
         }
 
         return finalFormula;
@@ -534,9 +534,9 @@ namespace smtrat {
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "created OriginalMonotonicityOne Axiom Formula is: " << finalFormula;
-            cout << "\n";
+            std::cout << "\n";
+            std::cout << "created OriginalMonotonicityOne Axiom Formula is: " << finalFormula;
+            std::cout << "\n";
         }
 
         return finalFormula;
@@ -568,9 +568,9 @@ namespace smtrat {
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "created OriginalMonotonicityTwo Axiom Formula is: " << finalFormula;
-            cout << "\n";
+            std::cout << "\n";
+            std::cout << "created OriginalMonotonicityTwo Axiom Formula is: " << finalFormula;
+            std::cout << "\n";
         }
 
         return finalFormula;
@@ -602,9 +602,9 @@ namespace smtrat {
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, zFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "created OriginalMonotonicityThree Axiom Formula is: " << finalFormula;
-            cout << "\n";
+            std::cout << "\n";
+            std::cout << "created OriginalMonotonicityThree Axiom Formula is: " << finalFormula;
+            std::cout << "\n";
         }
 
         return finalFormula;
@@ -655,9 +655,9 @@ namespace smtrat {
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "\n";
-            cout << "created Congruence Axiom Formula is: " << finalFormula;
-            cout << "\n";
+            std::cout << "\n";
+            std::cout << "created Congruence Axiom Formula is: " << finalFormula;
+            std::cout << "\n";
         }
 
         return finalFormula;
@@ -686,7 +686,7 @@ namespace smtrat {
 
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "created ICPGreaterOne Axiom Formula is: " << finalFormula << endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "created ICPGreaterOne Axiom Formula is: " << finalFormula << std::endl; }
 
         return finalFormula;
     }
@@ -714,7 +714,7 @@ namespace smtrat {
 
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "created ICPGreaterTwo Axiom Formula is: " << finalFormula << endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "created ICPGreaterTwo Axiom Formula is: " << finalFormula << std::endl; }
 
         return finalFormula;
     }
@@ -758,7 +758,7 @@ namespace smtrat {
 
         FormulaT finalFormula = FormulaT(carl::FormulaType::IMPLIES, leftFormula, rightFormula);
 
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "created ICPLess Axiom Formula is: " << finalFormula << endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "created ICPLess Axiom Formula is: " << finalFormula << std::endl; }
 
         return finalFormula;
     }
@@ -772,7 +772,7 @@ namespace smtrat {
         Rational bRational = linearizedModel.find(variableCapsuleOuter.getYVariable())->second.asRational();
         Rational cRational = linearizedModel.find(variableCapsuleOuter.getZVariable())->second.asRational();
 
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << endl << "Found values in abEqualcCheck" << " Zvariable = " << cRational << " Xvariable = " << aRational << " Yvariable = " << bRational << endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << std::endl << "Found values in abEqualcCheck" << " Zvariable = " << cRational << " Xvariable = " << aRational << " Yvariable = " << bRational << std::endl; }
 
         carl::Variable aVariable = carl::freshRealVariable("a");
         carl::Variable bVariable = carl::freshRealVariable("b");
@@ -839,7 +839,7 @@ namespace smtrat {
 
         Rational cByA = rationalCapsule.getCRational() / rationalCapsule.getARational();
 
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "generated cByA: " << cByA << endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "generated cByA: " << cByA << std::endl; }
 
         RationalInterval bPrimeInterval;
 
@@ -850,17 +850,17 @@ namespace smtrat {
         }
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
-            cout << "The bPrimeInterval is: " << bPrimeInterval << endl;
+            std::cout << "The bPrimeInterval is: " << bPrimeInterval << std::endl;
             if (bPrimeInterval.isConsistent())
-                cout << "isConsistent: " << endl;
+                std::cout << "isConsistent: " << std::endl;
             if (!bPrimeInterval.isEmpty())
-                cout << "Not Empty: " << endl;
+                std::cout << "Not Empty: " << std::endl;
         }
 
         Rational bPrime = carl::sample(bPrimeInterval);
 
         Rational cByBPrime = rationalCapsule.getCRational() / bPrime;
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "generated cByBPrime: " << cByBPrime << endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "generated cByBPrime: " << cByBPrime << std::endl; }
 
         RationalInterval aPrimeInterval;
 
@@ -875,7 +875,7 @@ namespace smtrat {
         // c' = a * b
         Rational cPrime = aPrime * bPrime;
 
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "generated aPrime: " << aPrime << " bPrime: " << bPrime << " cPrime: " << cPrime << endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "generated aPrime: " << aPrime << " bPrime: " << bPrime << " cPrime: " << cPrime << std::endl; }
 
         return  RationalCapsule(aPrime, bPrime, cPrime);
     }
@@ -898,7 +898,7 @@ namespace smtrat {
 
         for (MonomialMapIterator monomialIteratorOuter = monomialMap.begin(); monomialIteratorOuter != monomialMap.end(); ++monomialIteratorOuter){
 
-            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << endl <<"creating variableCapsuleOuter..."; }
+            if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << std::endl <<"creating variableCapsuleOuter..."; }
             smtrat::VariableCapsule variableCapsuleOuter = extractVariables(monomialIteratorOuter);
 
             RationalCapsule rationalCapsule = extractRationalCapsule(variableCapsuleOuter, linearizedModel);
@@ -910,7 +910,7 @@ namespace smtrat {
 
             } else if (axiomType == AxiomType::TANGENT_PLANE){
                 if(abEqualcCheck(variableCapsuleOuter, linearizedModel)) {
-                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is true, creating TANGENT_PLANE..." << endl; }
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "abEqualcCheck is true, creating TANGENT_PLANE..." << std::endl; }
                     if (variableCapsuleOuter.getXVariable() != variableCapsuleOuter.getYVariable()){
                         FormulasT createdTangentPlaneNEQ = createTangentPlaneNEQ(variableCapsuleOuter, rationalCapsule);
                         formulas.insert(std::end(formulas), std::begin(createdTangentPlaneNEQ), std::end(createdTangentPlaneNEQ));
@@ -919,7 +919,7 @@ namespace smtrat {
                         formulas.insert(std::end(formulas), std::begin(createdTangentPlaneEQ), std::end(createdTangentPlaneEQ));
                     }
                 } else {
-                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is false TANGENT_PLANE is not creating..." << endl; }
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "abEqualcCheck is false TANGENT_PLANE is not creating..." << std::endl; }
                 }
             } else if(axiomType == AxiomType::MONOTONICITY || axiomType == AxiomType::CONGRUENCE){
                 for (MonomialMapIterator monomialIteratorInner = monomialMap.begin(); monomialIteratorInner != monomialMap.end(); ++monomialIteratorInner){
@@ -927,7 +927,7 @@ namespace smtrat {
                         continue;
                     }
 
-                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << endl << "creating variableCapsuleInner..."; }
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << std::endl << "creating variableCapsuleInner..."; }
 
                     smtrat::VariableCapsule variableCapsuleInner = extractVariables(monomialIteratorInner);
 
@@ -935,12 +935,12 @@ namespace smtrat {
 
                         if(abEqualcCheck(variableCapsuleInner, linearizedModel) || abEqualcCheck(variableCapsuleOuter, linearizedModel)){
 
-                            if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is true, creating Monotonicity..." << endl; }
+                            if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "abEqualcCheck is true, creating Monotonicity..." << std::endl; }
 
                             FormulasT createdMonotonicity = createMonotonicity(variableCapsuleOuter, variableCapsuleInner, absoluteValuedModel);
                             formulas.insert(std::end(formulas), std::begin(createdMonotonicity), std::end(createdMonotonicity));
 
-                        } else { if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abEqualcCheck is false Monotonicity is not creating..." << endl; }}
+                        } else { if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "abEqualcCheck is false Monotonicity is not creating..." << std::endl; }}
 
                     } else {
 
@@ -951,27 +951,27 @@ namespace smtrat {
 
             } else if (axiomType == AxiomType::ICP) {
 
-                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "ICP axioms are creating..." << endl; }
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "ICP axioms are creating..." << std::endl; }
 
                 // For ICP, we take the a, b, c always as positive value.
                 RationalCapsule rationalCapsuleAbs(carl::abs(rationalCapsule.getARational()), carl::abs(rationalCapsule.getBRational()), carl::abs(rationalCapsule.getCRational()));
 
-                if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "rationalCapsuleAbs for ICP with a: " << rationalCapsuleAbs.getARational() << " b: " << rationalCapsuleAbs.getBRational() << " c: " << rationalCapsuleAbs.getCRational() << endl; }
+                if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "rationalCapsuleAbs for ICP with a: " << rationalCapsuleAbs.getARational() << " b: " << rationalCapsuleAbs.getBRational() << " c: " << rationalCapsuleAbs.getCRational() << std::endl; }
 
                 if (isAnyRationalIsZero(rationalCapsuleAbs)){
 
-                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "one of the rational is zero and Zero axiom is creating..." << endl; }
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "one of the rational is zero and Zero axiom is creating..." << std::endl; }
 
                     FormulasT createdZeroFormulas = createZero(variableCapsuleOuter);
                     formulas.insert(std::end(formulas), std::begin(createdZeroFormulas), std::end(createdZeroFormulas));
 
                 } else {
 
-                    if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "none of the rational is zero and ICP is creating..." << endl; }
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "none of the rational is zero and ICP is creating..." << std::endl; }
 
                     if (abGreatercCheck(rationalCapsuleAbs)) {
 
-                        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abGreatercCheck is true and ICPGreater is creating..." << endl; }
+                        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "abGreatercCheck is true and ICPGreater is creating..." << std::endl; }
 
                         RationalCapsule rationalCapsulePrimeForICPGreater = generateAbcPrimeForICP(rationalCapsuleAbs, true);
                         // RationalCapsule rationalCapsulePrimeForICPGreater(rationalCapsuleAbs.getARational(), rationalCapsuleAbs.getBRational(), rationalCapsuleAbs.getARational() * rationalCapsuleAbs.getBRational());
@@ -981,14 +981,14 @@ namespace smtrat {
 
                     } else if (abLesscCheck(rationalCapsuleAbs)) {
 
-                        if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "abLesscCheck is true and ICPLess is creating..." << endl; }
+                        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "abLesscCheck is true and ICPLess is creating..." << std::endl; }
 
                         RationalCapsule rationalCapsulePrimeForICPLess = generateAbcPrimeForICP(rationalCapsuleAbs, false);
                         // RationalCapsule rationalCapsulePrimeForICPLess(rationalCapsuleAbs.getARational(), rationalCapsuleAbs.getBRational(), rationalCapsuleAbs.getARational() * rationalCapsuleAbs.getBRational());
 
                         formulas.push_back(createICPLess(variableCapsuleOuter, rationalCapsulePrimeForICPLess));
 
-                    } else { if (smtrat::LOG::getInstance().isDebugEnabled()) { cout << "None of the precondition is true and ICP is not creating..." << endl; } }
+                    } else { if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "None of the precondition is true and ICP is not creating..." << std::endl; } }
                 }
             }
         }

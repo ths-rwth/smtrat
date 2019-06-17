@@ -90,7 +90,7 @@ struct Sector {
 	}
 };
 
-std::ostream& operator<<(ostream& o, const Sector& s) {
+std::ostream& operator<<(std::ostream& o, const Sector& s) {
 	o << "(sector (low ";
 	s.isLowBoundNegInfty() ? o << "-infty) " : o << s.lowBound.value() << ") ";
 	o << "(high ";

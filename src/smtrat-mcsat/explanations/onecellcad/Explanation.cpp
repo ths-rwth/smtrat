@@ -37,7 +37,7 @@ inline std::vector<onecellcad::TagPoly> toTagPoly(std::vector<Poly> polys) {
 	return tPolys;
 }
 
-inline ostream& operator<<(ostream& os, const std::vector<std::vector<onecellcad::TagPoly>>& lvls) {
+inline std::ostream& operator<<(std::ostream& os, const std::vector<std::vector<onecellcad::TagPoly>>& lvls) {
 	int lvl = (int)lvls.size() - 1;
 	for (auto it = lvls.rbegin(); it != lvls.rend(); ++it) {
 		os << lvl << ": ";

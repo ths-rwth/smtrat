@@ -22,7 +22,7 @@ namespace smtrat {
 			virtual Rational encodingSize(const ConstraintT& constraint);
 			virtual bool canEncode(const ConstraintT& constraint) = 0;
 
-			virtual string name() { return "unspecified PseudoBoolEncoder"; }
+			virtual std::string name() { return "unspecified PseudoBoolEncoder"; }
 
 		protected:
 			virtual boost::optional<FormulaT> doEncode(const ConstraintT& constraint) = 0;

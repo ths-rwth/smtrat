@@ -292,14 +292,14 @@ namespace smtrat
                 _out << mId << ": \t" << mContractor.polynomial() << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative;
 //                _out << mId << ": \t" << ", LHS = " << mLhs <<  ", VAR = " << mDerivationVar << ", DERIVATIVE = " << mDerivative;
 #ifdef CCPRINTORIGINS
-                cout << endl << "Origins(" << mOrigin.size()<< "): " << endl;
+                std::cout << std::endl << "Origins(" << mOrigin.size()<< "): " << std::endl;
                 if ( !mOrigin.empty())
                 {
                     for ( auto originIt = mOrigin.begin(); originIt != mOrigin.end(); ++originIt )
                     {
-                        cout << "\t ";
+                        std::cout << "\t ";
                         (*originIt)->print();
-                        cout << "\t [" << (*originIt) << "]" << endl;
+                        std::cout << "\t [" << (*originIt) << "]" << std::endl;
                     }
                 }
 #else
