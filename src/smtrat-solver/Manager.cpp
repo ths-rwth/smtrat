@@ -355,10 +355,10 @@ namespace smtrat
         {
             for( auto subFormula = mpPassedFormula->begin(); subFormula != mpPassedFormula->end(); ++subFormula )
             {
-                _out << (*subFormula).formula() << endl;
+                _out << (*subFormula).formula() << std::endl;
             }
         }
-        _out << ")" << endl;
+        _out << ")" << std::endl;
     }
 
     void Manager::printInfeasibleSubset( std::ostream& _out ) const
@@ -375,11 +375,11 @@ namespace smtrat
             {
                 for( auto subFormula = infSubSet.begin(); subFormula != infSubSet.end(); ++subFormula )
                 {
-                    _out << *subFormula << endl;
+                    _out << *subFormula << std::endl;
                 }
             }
         }
-        _out << ")" << endl;
+        _out << ")" << std::endl;
     }
             
     void Manager::printBackTrackStack( std::ostream& _out ) const
@@ -387,7 +387,7 @@ namespace smtrat
         auto btlIter = mBacktrackPoints.begin();
         std::size_t btlCounter = 0;
         while (btlIter != mBacktrackPoints.end() && btlIter->first == mpPassedFormula->end()) {
-            _out << "btl_" << btlCounter << ": (and ) skip" << std::endl;;
+            _out << "btl_" << btlCounter << ": (and ) skip" << std::endl;
             btlCounter++;
             btlIter++;
         }
