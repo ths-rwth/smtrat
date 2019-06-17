@@ -6,7 +6,7 @@
 
 #ifdef CLI_ENABLE_OPB_PARSER
 
-#include <carl/formula/parser/OPBImporter.h>
+#include <carl-io/OPBImporter.h>
 
 
 namespace smtrat {

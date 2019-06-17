@@ -47,6 +47,7 @@ add_library(smtrat-objects OBJECT ${smtrat_cli_sources})
 add_dependencies(smtrat-objects
 	smtrat-lib-shared
 	carl-shared
+	carl-io-shared
 	smtrat-common-shared
 	smtrat-solver-shared
 	smtrat-unsat-cores-shared
@@ -55,6 +56,7 @@ add_dependencies(smtrat-objects
 target_include_dirs_from(smtrat-objects "" PUBLIC
 	smtrat-lib-shared
 	carl-shared
+	carl-io-shared
 	smtrat-common-shared
 	smtrat-solver-shared
 	smtrat-unsat-cores-shared
@@ -67,6 +69,7 @@ add_executable(smtrat-static $<TARGET_OBJECTS:smtrat-objects>)
 target_link_libraries(smtrat-shared
 	smtrat-lib-shared
 	carl-shared
+	carl-io-shared
 	smtrat-common-shared
 	smtrat-solver-shared
 	smtrat-unsat-cores-shared
@@ -76,6 +79,7 @@ target_link_libraries(smtrat-static
 	"-static"
 	smtrat-lib-static
 	carl-static
+	carl-io-static
 	smtrat-common-static
 	smtrat-solver-static
 	smtrat-unsat-cores-static

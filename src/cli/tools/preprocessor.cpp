@@ -8,7 +8,7 @@
 #include "execute_smtlib.h"
 #include "../parser/InstructionHandler.h"
 
-#include <carl/io/SMTLIBStream.h>
+#include <carl-io/SMTLIBStream.h>
 #include <smtrat-modules/FPPModule/FPPModule.h>
 
 namespace smtrat {
