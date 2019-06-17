@@ -20,7 +20,7 @@ namespace smtrat {
 			bool canEncode(const ConstraintT& constraint);
 			Rational encodingSize(const ConstraintT& constraint);
 
-			string name() { return "TotalizerEncoder"; }
+			std::string name() { return "TotalizerEncoder"; }
 
 
 		protected:
@@ -30,7 +30,7 @@ namespace smtrat {
 			// we need this cache because with recurring calls we might produce a tree multiple times although the set
 			// of variables is identical, introducing a load of redundant variables.
 			std::map<carl::Variables, TotalizerTree*> mTreeCache;
-			map<carl::Variables, FormulaT> mSumPropagationFormulaCache;
+			std::map<carl::Variables, FormulaT> mSumPropagationFormulaCache;
 
 			TotalizerTree buildTree(const std::set<carl::Variable>& variables);
 			FormulaT encodeSumPropagation(TotalizerTree& tree);

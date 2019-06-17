@@ -16,7 +16,7 @@ namespace smtrat {
 
 			bool canEncode(const ConstraintT& constraint);
 
-			string name() { return "ExactlyOneCommanderEncoder"; }
+			std::string name() { return "ExactlyOneCommanderEncoder"; }
 
 		protected:
 			boost::optional<FormulaT> doEncode(const ConstraintT& constraint);
