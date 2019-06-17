@@ -168,9 +168,9 @@ namespace vs
         ///
         carl::IDPool* mpConditionIdAllocator;
         ///
-        std::vector<std::pair<carl::Variable,multiset<double>>> mRealVarVals;
+        std::vector<std::pair<carl::Variable,std::multiset<double>>> mRealVarVals;
         ///
-        std::vector<std::pair<carl::Variable,multiset<double>>> mIntVarVals;
+        std::vector<std::pair<carl::Variable,std::multiset<double>>> mIntVarVals;
         ///
         std::vector<size_t> mBestVarVals;
             

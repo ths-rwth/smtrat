@@ -338,9 +338,9 @@ namespace smtrat
         return result;
     }
 
-    list<std::vector<carl::Variable>> Module::getModelEqualities() const
+    std::list<std::vector<carl::Variable>> Module::getModelEqualities() const
     {
-        list<std::vector<carl::Variable>> res;
+        std::list<std::vector<carl::Variable>> res;
         for( auto& it : this->mModel )
         {
             if( it.first.isVariable() )
@@ -371,7 +371,7 @@ namespace smtrat
         return res;
     }
     
-    pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, bool _hasSingleOrigin, const FormulaT& _origin, const std::shared_ptr<std::vector<FormulaT>>& _origins, bool _mightBeConjunction )
+    std::pair<ModuleInput::iterator,bool> Module::addSubformulaToPassedFormula( const FormulaT& _formula, bool _hasSingleOrigin, const FormulaT& _origin, const std::shared_ptr<std::vector<FormulaT>>& _origins, bool _mightBeConjunction )
     {
         std::pair<ModuleInput::iterator,bool> res = mpPassedFormula->add( _formula, _hasSingleOrigin, _origin, _origins, _mightBeConjunction );
         if( res.second )
@@ -980,10 +980,10 @@ namespace smtrat
         }
     }
     
-    pair<bool,FormulaT> Module::getReceivedFormulaSimplified()
+    std::pair<bool,FormulaT> Module::getReceivedFormulaSimplified()
     {
         if( solverState() == UNSAT )
-            return make_pair( true, FormulaT( carl::FormulaType::FALSE ) );
+            return std::make_pair( true, FormulaT( carl::FormulaType::FALSE ) );
         for( const auto& backend : usedBackends() )
         {
             std::pair<bool,FormulaT> simplifiedPassedFormula = backend->getReceivedFormulaSimplified();
@@ -992,7 +992,7 @@ namespace smtrat
                 return simplifiedPassedFormula;
             }
         }
-        return make_pair( false, FormulaT( carl::FormulaType::TRUE ) );
+        return std::make_pair( false, FormulaT( carl::FormulaType::TRUE ) );
     }
     
     void Module::collectOrigins( const FormulaT& _formula, FormulasT& _origins ) const
@@ -1029,7 +1029,7 @@ namespace smtrat
         }
     }
     
-    void Module::addAssumptionToCheck( const FormulaT& _formula, bool _consistent, const string& _label )
+    void Module::addAssumptionToCheck( const FormulaT& _formula, bool _consistent, const std::string& _label )
     {
         std::stringstream assumption;
         assumption << ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
@@ -1068,7 +1068,7 @@ namespace smtrat
         mVariablesInAssumptionToCheck.insert( _label );
     }
 
-    void Module::addAssumptionToCheck( const FormulasT& _formulas, bool _consistent, const string& _label )
+    void Module::addAssumptionToCheck( const FormulasT& _formulas, bool _consistent, const std::string& _label )
     {
         std::stringstream assumption;
         assumption << ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
@@ -1081,7 +1081,7 @@ namespace smtrat
         mVariablesInAssumptionToCheck.insert( _label );
     }
 
-    void Module::addAssumptionToCheck( const FormulaSetT& _formulas, bool _consistent, const string& _label )
+    void Module::addAssumptionToCheck( const FormulaSetT& _formulas, bool _consistent, const std::string& _label )
     {
         FormulasT assumption;
         for( auto& f : _formulas )
@@ -1089,7 +1089,7 @@ namespace smtrat
         addAssumptionToCheck( assumption, _consistent, _label );
     }
 
-	void Module::addAssumptionToCheck(const ConstraintsT& _constraints, bool _consistent, const string& _label) {
+	void Module::addAssumptionToCheck(const ConstraintsT& _constraints, bool _consistent, const std::string& _label) {
 		carl::SMTLIBStream sls;
 		sls.setInfo("status", (_consistent ? "sat" : "unsat"));
 		carl::carlVariables vars;
@@ -1157,15 +1157,15 @@ namespace smtrat
         return true;
     }
     
-    void Module::checkInfSubsetForMinimality( std::vector<FormulaSetT>::const_iterator _infsubset, const string& _filename, unsigned _maxSizeDifference ) const
+    void Module::checkInfSubsetForMinimality( std::vector<FormulaSetT>::const_iterator _infsubset, const std::string& _filename, unsigned _maxSizeDifference ) const
     {
 		carl::Variables vars;
 		for( auto it = _infsubset->begin(); it != _infsubset->end(); ++it ) {
 			it->arithmeticVars(vars);
 		}
-        stringstream filename;
+        std::stringstream filename;
         filename << _filename << "_" << moduleName() << "_" << mSmallerMusesCheckCounter << ".smt2";
-        ofstream smtlibFile;
+        std::ofstream smtlibFile;
         smtlibFile.open( filename.str() );
         for( size_t size = _infsubset->size() - _maxSizeDifference; size < _infsubset->size(); ++size )
         {
@@ -1251,7 +1251,7 @@ namespace smtrat
         {
             std::stringstream ss;
             ss << _initiation;
-            ss << setw( 45 ) << form->formula();
+            ss << std::setw( 45 ) << form->formula();
             if( form->deducted() ) ss << " deducted";
                 SMTRAT_LOG_INFO("smtrat.module", ss.str());
         }
@@ -1264,7 +1264,7 @@ namespace smtrat
         {
             std::stringstream ss;
             ss << _initiation;
-            ss << setw( 45 ) << form->formula();
+            ss << std::setw( 45 ) << form->formula();
             if( form->hasOrigins() )
             {
                 for (const auto& oSubformulas: form->origins()) {

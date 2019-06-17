@@ -824,7 +824,7 @@ namespace vs
         {
             ConditionSetSetSet condSetSetSet;
             condSetSetSet.insert( std::move(_condSetSet) );
-            mpConflictSets->insert( pair<const Substitution*, ConditionSetSetSet>( _substitution, std::move(condSetSetSet) ) );
+            mpConflictSets->insert( std::pair<const Substitution*, ConditionSetSetSet>( _substitution, std::move(condSetSetSet) ) );
         }
         if( _substitution == NULL )
             rInconsistent() = true;
@@ -849,7 +849,7 @@ namespace vs
         {
             ConditionSetSetSet condSetSetSet;
             condSetSetSet.insert( std::move(_condSetSet) );
-            mpConflictSets->insert( pair<const Substitution*, ConditionSetSetSet>( _substitution, std::move(condSetSetSet) ) );
+            mpConflictSets->insert( std::pair<const Substitution*, ConditionSetSetSet>( _substitution, std::move(condSetSetSet) ) );
         }
     }
 
@@ -915,7 +915,7 @@ namespace vs
         {
             mpSubstitutionResults->emplace_back();
             for( auto conjunction = disjunction->begin(); conjunction != disjunction->end(); ++conjunction )
-                mpSubstitutionResults->back().push_back( pair<ConditionList, bool>( std::move(*conjunction), false ) );
+                mpSubstitutionResults->back().push_back( std::pair<ConditionList, bool>( std::move(*conjunction), false ) );
         }
         // Mark this state as not yet simplified.
         mSubResultsSimplified = false;
@@ -976,7 +976,7 @@ namespace vs
                 ++subResultIndex;
             }
             // Add the found substitution result to the substitution result combinations.
-            mpSubResultCombination->push_back( pair<unsigned, unsigned>( bestSubResultIndex, 0 ) );
+            mpSubResultCombination->push_back( std::pair<unsigned, unsigned>( bestSubResultIndex, 0 ) );
             return true;
         }
         else
@@ -1213,9 +1213,9 @@ namespace vs
         for( auto var = _allVariables.begin(); var != _allVariables.end(); ++var )
         {
             if( var->type() == carl::VariableType::VT_INT )
-                mIntVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, multiset<double>() ) );
+                mIntVarVals.push_back( std::pair<carl::Variable, std::multiset<double> >( *var, std::multiset<double>() ) );
             else
-                mRealVarVals.push_back( pair<carl::Variable, multiset<double> >( *var, multiset<double>() ) );
+                mRealVarVals.push_back( std::pair<carl::Variable, std::multiset<double> >( *var, std::multiset<double>() ) );
         }
         std::vector<std::pair<carl::Variable, std::multiset<double>>>& varValsB = mRealVarVals.empty() ? mIntVarVals : mRealVarVals;
         // Find for each variable the highest valuation of all conditions' constraints.
@@ -1233,10 +1233,10 @@ namespace vs
         #ifdef VS_DEBUG_VARIABLE_VALUATIONS
         for( auto var = varVals.begin(); var != varVals.end(); ++var )
         {
-            cout << var->first << ":  ";
+            std::cout << var->first << ":  ";
             for( auto varVal = var->second.begin(); varVal != var->second.end(); ++varVal )
-                cout <<  setprecision(10) << *varVal << " | ";
-            cout << endl;
+                std::cout <<  setprecision(10) << *varVal << " | ";
+            std::cout << std::endl;
         }
         #endif
         // Find the variable which has in a constraint the best valuation. If more than one have the highest valuation, 
@@ -1355,7 +1355,7 @@ namespace vs
         ++var;
         for(; var < _varVals.size(); ++var )
         {
-            const multiset<double>& valsB = _varVals[var].second;
+            const std::multiset<double>& valsB = _varVals[var].second;
             if( !valsB.empty() )
             {
                 double curAvgVal = std::accumulate(valsB.begin(), valsB.end(), 0.0) / static_cast<double>(valsB.size());
@@ -2054,7 +2054,7 @@ namespace vs
     void State::updateBackendCallValuation()
     {
         carl::Variables occuringVars = carl::Variables();
-        set<carl::Relation> relationSymbols = set<carl::Relation>();
+        std::set<carl::Relation> relationSymbols = std::set<carl::Relation>();
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
         {
             occuringVars.insert( (*cond)->constraint().variables().begin(), (*cond)->constraint().variables().end() );
@@ -2207,10 +2207,10 @@ namespace vs
         // Check whether the local conflict set covers for each test candidate, its conditions have generated,
         // one of its conflict sets.
         #ifdef VS_DEBUG_LOCAL_CONFLICT_SEARCH
-        cout << "local conflict:   { ";
+        std::cout << "local conflict:   { ";
         for( auto iter = localConflictSet.begin(); iter != localConflictSet.end(); ++iter )
-            cout << (*iter)->constraint() << " ";
-        cout << "}" << endl;
+            std::cout << (*iter)->constraint() << " ";
+        std::cout << "}" << std::endl;
         #endif
         carl::PointerSet<Condition> infSubset;
         bool containsConflictToCover = false;
@@ -2226,10 +2226,10 @@ namespace vs
                     auto condB = localConflictSet.begin();
                     assert( condA != condSet->end() );
                     #ifdef VS_DEBUG_LOCAL_CONFLICT_SEARCH
-                    cout << "covers:   { ";
+                    std::cout << "covers:   { ";
                     for( auto iter = condSet->begin(); iter != condSet->end(); ++iter )
-                        cout << (*iter)->constraint() << " ";
-                    cout << "}  ??";
+                        std::cout << (*iter)->constraint() << " ";
+                    std::cout << "}  ??";
                     #endif
                     while( condA != condSet->end() &&  condB != localConflictSet.end() )
                     {
@@ -2247,28 +2247,28 @@ namespace vs
                     {
                         infSubset.insert( condSet->begin(), condSet->end() );
                         #ifdef VS_DEBUG_LOCAL_CONFLICT_SEARCH
-                        cout << "   Yes!" << endl;
+                        std::cout << "   Yes!" << std::endl;
                         #endif
                         break;
                     }
                     else
                     {
                         #ifdef VS_DEBUG_LOCAL_CONFLICT_SEARCH
-                        cout << "   No!" << endl;
+                        std::cout << "   No!" << std::endl;
                         #endif
                     }
                 }
                 if( condSet == condSetSet->end() )
                 {
                     #ifdef VS_DEBUG_LOCAL_CONFLICT_SEARCH
-                    cout << "No conflict set in conflict is covered!" << endl;
+                    std::cout << "No conflict set in conflict is covered!" << std::endl;
                     #endif
                     return false;
                 }
                 #ifdef VS_DEBUG_LOCAL_CONFLICT_SEARCH
                 else
                 {
-                    cout << "A conflict set in conflict is covered!" << endl;
+                    std::cout << "A conflict set in conflict is covered!" << std::endl;
                 }
                 #endif
             }
@@ -2295,8 +2295,8 @@ namespace vs
         {
             if( substitution().type() == Substitution::MINUS_INFINITY || substitution().type() == Substitution::PLUS_INFINITY ) return true;
             #ifdef VS_DEBUG_VARIABLE_BOUNDS
-            cout << ">>> Check test candidate  " << substitution() << "  against:" << endl;
-            father().variableBounds().print( cout, ">>>    " );
+            std::cout << ">>> Check test candidate  " << substitution() << "  against:" << std::endl;
+            father().variableBounds().print( std::cout, ">>>    " );
             #endif
             carl::PointerSet<Condition> conflict;
             std::vector< smtrat::DoubleInterval > solutionSpaces = solutionSpace( conflict );
@@ -2352,13 +2352,13 @@ namespace vs
             smtrat::DoubleInterval solutionSpace = solutionSpaceFactor * solutionSpaceSqrt;
             solutionSpace = solutionSpace + solutionSpaceConst;
             #ifdef VS_DEBUG_VARIABLE_BOUNDS
-            cout << ">>> Results in:" << endl;
-            cout << ">>>    constant part      : " << solutionSpaceConst << endl;
-            cout << ">>>    factor part        : " << solutionSpaceFactor << endl;
-            cout << ">>>    radicand part      : " << solutionSpaceRadicand << endl;
-            cout << ">>>    square root part   : " << solutionSpaceSqrt << endl;
-            cout << ">>>    denominator part   : " << solutionSpaceDenom << endl;
-            cout << ">>>    numerator part     : " << solutionSpace << endl;
+            std::cout << ">>> Results in:" << std::endl;
+            std::cout << ">>>    constant part      : " << solutionSpaceConst << std::endl;
+            std::cout << ">>>    factor part        : " << solutionSpaceFactor << std::endl;
+            std::cout << ">>>    radicand part      : " << solutionSpaceRadicand << std::endl;
+            std::cout << ">>>    square root part   : " << solutionSpaceSqrt << std::endl;
+            std::cout << ">>>    denominator part   : " << solutionSpaceDenom << std::endl;
+            std::cout << ">>>    numerator part     : " << solutionSpace << std::endl;
             #endif
             smtrat::DoubleInterval resA;
             smtrat::DoubleInterval resB;
@@ -2380,23 +2380,23 @@ namespace vs
                 }
             }
             #ifdef VS_DEBUG_VARIABLE_BOUNDS
-            cout << ">>>    division part 1    : " << std::setprecision(100) << resA << endl;
-            cout << ">>>    subVarInterval     : " << std::setprecision(100) << subVarInterval << endl;
+            std::cout << ">>>    division part 1    : " << std::setprecision(100) << resA << std::endl;
+            std::cout << ">>>    subVarInterval     : " << std::setprecision(100) << subVarInterval << std::endl;
             #endif
             resA = carl::set_intersection(resA, subVarInterval);
             #ifdef VS_DEBUG_VARIABLE_BOUNDS
-            cout << ">>>    intersection part 1: " << std::setprecision(100) << resA << endl;
+            std::cout << ">>>    intersection part 1: " << std::setprecision(100) << resA << std::endl;
             #endif
             if( !resA.isEmpty() )
                 result.push_back( resA );
             if( splitOccurred )
             {
                 #ifdef VS_DEBUG_VARIABLE_BOUNDS
-                cout << ">>>    division part 2: " << resB << endl;
+                std::cout << ">>>    division part 2: " << resB << std::endl;
                 #endif
                 resB = carl::set_intersection(resB, subVarInterval );
                 #ifdef VS_DEBUG_VARIABLE_BOUNDS
-                cout << ">>>    intersection part 1: " << resB << endl;
+                std::cout << ">>>    intersection part 1: " << resB << std::endl;
                 #endif
                 if( !resB.isEmpty() )
                     result.push_back( resB );
@@ -2416,7 +2416,7 @@ namespace vs
     bool State::hasRootsInVariableBounds( const Condition* _condition, bool _useSturmSequence )
     {
         #ifdef VS_DEBUG_ROOTS_CHECK
-        cout << __func__ << ":  " << _condition->constraint() << endl;
+        std::cout << __func__ << ":  " << _condition->constraint() << std::endl;
         #endif
         assert( index() != carl::Variable::NO_VARIABLE );
         const smtrat::ConstraintT& cons = _condition->constraint();
@@ -2426,12 +2426,12 @@ namespace vs
             smtrat::DoubleInterval varDomain = variableBounds().getDoubleInterval( index() );
             smtrat::Rational cb = carl::cauchyBound(cons.lhs().toUnivariatePolynomial());
             #ifdef VS_DEBUG_ROOTS_CHECK
-            cout << "Cauchy bound of  " << cons.lhs() << "  is  " << cb << "." << endl;
+            std::cout << "Cauchy bound of  " << cons.lhs() << "  is  " << cb << "." << std::endl;
             #endif
             smtrat::DoubleInterval cbInterval = smtrat::DoubleInterval( smtrat::Rational(-cb), carl::BoundType::STRICT, cb, carl::BoundType::STRICT );
             varDomain = carl::set_intersection(varDomain, cbInterval );
             #ifdef VS_DEBUG_ROOTS_CHECK
-            cout << varDomain << endl;
+            std::cout << varDomain << std::endl;
             #endif
             intervals[index()] = varDomain;
         }
@@ -2448,7 +2448,7 @@ namespace vs
         // TODO: if the condition is an equation and the degree in the index less than 3, 
         // then it is maybe better to consider the according test candidates
         #ifdef VS_DEBUG_ROOTS_CHECK
-        cout << "solutionSpace: " << solutionSpace << endl;
+        std::cout << "solutionSpace: " << solutionSpace << std::endl;
         #endif
         if( solutionSpace.contains( 0 ) )
         {
@@ -2473,9 +2473,9 @@ namespace vs
                         ++numberOfRoots;
                 }
                 #ifdef VS_DEBUG_ROOTS_CHECK
-                cout << "Image of left bound                     : " << imageOfLeftBound << endl;
-                cout << "Image of right bound                    : " << imageOfRightBound << endl;
-                cout << "Number of roots according sturm sequence: " << numberOfRoots << endl;
+                std::cout << "Image of left bound                     : " << imageOfLeftBound << std::endl;
+                std::cout << "Image of right bound                    : " << imageOfRightBound << std::endl;
+                std::cout << "Number of roots according sturm sequence: " << numberOfRoots << std::endl;
                 #endif
                 bool constraintInconsistent = false;
                 if( numberOfRoots == 0 )
@@ -2505,14 +2505,14 @@ namespace vs
                     addConflictSet( NULL, std::move(conflicts) );
                     rInconsistent() = true;
                     #ifdef VS_DEBUG_ROOTS_CHECK
-                    cout << "  -> false (1)" << endl;
+                    std::cout << "  -> false (1)" << std::endl;
                     #endif
                     return false;
                 }
                 if( numberOfRoots > 0 )
                 {
                 #ifdef VS_DEBUG_ROOTS_CHECK
-                cout << "  -> true (1)" << endl;
+                std::cout << "  -> true (1)" << std::endl;
                 #endif
                 return true;
                 }
@@ -2520,7 +2520,7 @@ namespace vs
             else
             {
                 #ifdef VS_DEBUG_ROOTS_CHECK
-                cout << "  -> true (3)" << endl;
+                std::cout << "  -> true (3)" << std::endl;
                 #endif
                 return true;
             }
@@ -2553,90 +2553,90 @@ namespace vs
         }
         addConflictSet( sub, std::move(conflicts) );
         #ifdef VS_DEBUG_ROOTS_CHECK
-        cout << "  -> false (2)" << endl;
+        std::cout << "  -> false (2)" << std::endl;
         #endif
         return false;
     }
     
     #ifdef VS_STATE_DEBUG_METHODS
 
-    void State::print( const string _initiation, ostream& _out ) const
+    void State::print( const std::string _initiation, std::ostream& _out ) const
     {
         printAlone( _initiation, _out );
-        _out << _initiation << "   " << "Children:" << endl;
+        _out << _initiation << "   " << "Children:" << std::endl;
         if( !children().empty() )
             for( auto child = children().begin(); child != children().end(); ++child )
                 (**child).print( _initiation + "      ", _out );
-        else _out << _initiation << "      no" << endl;
+        else _out << _initiation << "      no" << std::endl;
     }
 
-    void State::printAlone( const string _initiation, ostream& _out ) const
+    void State::printAlone( const std::string _initiation, std::ostream& _out ) const
     {
-        _out << _initiation << "   State: (                     reference: " << this << endl;
-        _out << _initiation << "                                valuation: " << valuation() << endl;
-        _out << _initiation << "                                       ID: " << mID << endl;
+        _out << _initiation << "   State: (                     reference: " << this << std::endl;
+        _out << _initiation << "                                valuation: " << valuation() << std::endl;
+        _out << _initiation << "                                       ID: " << mID << std::endl;
         switch( type() )
         {
             case COMBINE_SUBRESULTS:
-                _out << _initiation << "                               state type: COMBINE_SUBRESULTS" << endl;
+                _out << _initiation << "                               state type: COMBINE_SUBRESULTS" << std::endl;
                 break;
             case SUBSTITUTION_TO_APPLY:
-                _out << _initiation << "                               state type: SUBSTITUTION_TO_APPLY" << endl;
+                _out << _initiation << "                               state type: SUBSTITUTION_TO_APPLY" << std::endl;
                 break;
             case TEST_CANDIDATE_TO_GENERATE:
-                _out << _initiation << "                               state type: TEST_CANDIDATE_TO_GENERATE" << endl;
+                _out << _initiation << "                               state type: TEST_CANDIDATE_TO_GENERATE" << std::endl;
                 break;
             default:
-                _out << _initiation << "                               state type: Undefined" << endl;
+                _out << _initiation << "                               state type: Undefined" << std::endl;
                 break;
         }
         if( hasRecentlyAddedConditions() ) 
-            _out << _initiation << "               hasRecentlyAddedConditions: yes" << endl;
+            _out << _initiation << "               hasRecentlyAddedConditions: yes" << std::endl;
         else 
-            _out << _initiation << "               hasRecentlyAddedConditions: no" << endl;
+            _out << _initiation << "               hasRecentlyAddedConditions: no" << std::endl;
         if( isInconsistent() ) 
-            _out << _initiation << "                           isInconsistent: yes" << endl;
+            _out << _initiation << "                           isInconsistent: yes" << std::endl;
         else
-            _out << _initiation << "                           isInconsistent: no" << endl;
+            _out << _initiation << "                           isInconsistent: no" << std::endl;
         if( cannotBeSolved(false) )
-            _out << _initiation << "                           cannotBeSolved: yes" << endl;
+            _out << _initiation << "                           cannotBeSolved: yes" << std::endl;
         else
-            _out << _initiation << "                           cannotBeSolved: no" << endl;
+            _out << _initiation << "                           cannotBeSolved: no" << std::endl;
         if( conditionsSimplified() )
-            _out << _initiation << "                     conditionsSimplified: yes" << endl;
+            _out << _initiation << "                     conditionsSimplified: yes" << std::endl;
         else
-            _out << _initiation << "                     conditionsSimplified: no" << endl;
+            _out << _initiation << "                     conditionsSimplified: no" << std::endl;
         if( subResultsSimplified() )
-            _out << _initiation << "                     subResultsSimplified: yes" << endl;
+            _out << _initiation << "                     subResultsSimplified: yes" << std::endl;
         else
-            _out << _initiation << "                     subResultsSimplified: no" << endl;
+            _out << _initiation << "                     subResultsSimplified: no" << std::endl;
         if( takeSubResultCombAgain() )
-            _out << _initiation << "                   takeSubResultCombAgain: yes" << endl;
+            _out << _initiation << "                   takeSubResultCombAgain: yes" << std::endl;
         else
-            _out << _initiation << "                   takeSubResultCombAgain: no" << endl;
+            _out << _initiation << "                   takeSubResultCombAgain: no" << std::endl;
         if( tryToRefreshIndex() )
-            _out << _initiation << "                        tryToRefreshIndex: yes" << endl;
+            _out << _initiation << "                        tryToRefreshIndex: yes" << std::endl;
         else
-            _out << _initiation << "                        tryToRefreshIndex: no" << endl;
+            _out << _initiation << "                        tryToRefreshIndex: no" << std::endl;
         if( mCannotBeSolved )
-            _out << _initiation << "                             toHighDegree: yes" << endl;
+            _out << _initiation << "                             toHighDegree: yes" << std::endl;
         else
-            _out << _initiation << "                             toHighDegree: no" << endl;
+            _out << _initiation << "                             toHighDegree: no" << std::endl;
         if( markedAsDeleted() )
-            _out << _initiation << "                          markedAsDeleted: yes" << endl;
+            _out << _initiation << "                          markedAsDeleted: yes" << std::endl;
         else
-            _out << _initiation << "                          markedAsDeleted: no" << endl;
+            _out << _initiation << "                          markedAsDeleted: no" << std::endl;
         if( pOriginalCondition() != NULL )
         {
             _out << _initiation << "                       original condition: ";
             _out << originalCondition().constraint() << " [";
-            _out << pOriginalCondition() << "]" << endl;
+            _out << pOriginalCondition() << "]" << std::endl;
         }
         if( mpInfinityChild != NULL )
         {
-            _out << _initiation << "                           infinity child: " << mpInfinityChild << endl;
+            _out << _initiation << "                           infinity child: " << mpInfinityChild << std::endl;
         }
-        _out << _initiation << "                                    index: " << index() << " " << index().type() << "  )" << endl;
+        _out << _initiation << "                                    index: " << index() << " " << index().type() << "  )" << std::endl;
         printConditions( _initiation + "   ", _out );
         if( !isRoot() )
         {
@@ -2644,21 +2644,21 @@ namespace vs
             substitution().print( false, false, _out );
         }
         printSubstitutionResults( _initiation + "   ", _out );
-        _out << _initiation << endl;
+        _out << _initiation << std::endl;
         printSubstitutionResultCombination( _initiation + "   ", _out );
-        _out << _initiation << endl;
+        _out << _initiation << std::endl;
         printConflictSets( _initiation + "   ", _out );
         if( mpVariableBounds != NULL )
         {
-            _out << _initiation << endl;
+            _out << _initiation << std::endl;
             mpVariableBounds->print( _out, _initiation );
-            _out << _initiation << endl;
+            _out << _initiation << std::endl;
         }
     }
 
-    void State::printConditions( const string _initiation, ostream& _out, bool _onlyAsConstraints ) const
+    void State::printConditions( const std::string _initiation, std::ostream& _out, bool _onlyAsConstraints ) const
     {
-        _out << _initiation << "Condititons:" << endl;
+        _out << _initiation << "Condititons:" << std::endl;
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
         {
             _out << _initiation << "   ";
@@ -2666,11 +2666,11 @@ namespace vs
                 _out << (**cond).constraint();
             else 
                 (**cond).print( _out );
-            _out << endl;
+            _out << std::endl;
         }
     }
 
-    void State::printSubstitutionResults( const string _initiation, ostream& _out ) const
+    void State::printSubstitutionResults( const std::string _initiation, std::ostream& _out ) const
     {
         if( hasSubstitutionResults() )
         {
@@ -2690,25 +2690,25 @@ namespace vs
                     for( auto cond = condConjunction->first.begin(); cond != condConjunction->first.end(); ++cond )
                     {
                         if( cond != condConjunction->first.begin() ) _out << " and ";
-                        cout << (*cond)->constraint();
+                        std::cout << (*cond)->constraint();
                     }
                     _out << " )";
                     auto nextCondConjunction = condConjunction;
                     ++nextCondConjunction;
-                    if( nextCondConjunction != subResult->end() ) _out << endl;
+                    if( nextCondConjunction != subResult->end() ) _out << std::endl;
                 }
-                _out << " ]" << endl;
+                _out << " ]" << std::endl;
             }
         }
     }
 
-    void State::printSubstitutionResultCombination( const string _initiation, ostream& _out ) const
+    void State::printSubstitutionResultCombination( const std::string _initiation, std::ostream& _out ) const
     {
         if( hasSubstitutionResults() )
         {
             if( hasSubResultsCombination() )
             {
-                _out << _initiation << "Substitution result combination:" << endl;
+                _out << _initiation << "Substitution result combination:" << std::endl;
                 for( auto subResComb = mpSubResultCombination->begin(); subResComb != mpSubResultCombination->end(); ++subResComb )
                 {
                     _out << _initiation << "   (  ";
@@ -2719,13 +2719,13 @@ namespace vs
                             _out << " and ";
                         _out << (**cond).constraint();
                     }
-                    _out << "  )" << endl;
+                    _out << "  )" << std::endl;
                 }
             }
         }
     }
     
-    void State::printSubstitutionResultCombinationAsNumbers( const string _initiation, ostream& _out ) const
+    void State::printSubstitutionResultCombinationAsNumbers( const std::string _initiation, std::ostream& _out ) const
     {
         if( hasSubstitutionResults() )
         {
@@ -2734,20 +2734,20 @@ namespace vs
                 _out << _initiation << "Substitution result combination:    ";
                 for( auto subResComb = mpSubResultCombination->begin(); subResComb != mpSubResultCombination->end(); ++subResComb )
                     _out << "(" << subResComb->first << ", " << subResComb->second << ")  ";
-                _out << endl;
+                _out << std::endl;
             }
         }
     }
 
-    void State::printConflictSets( const string _initiation, ostream& _out ) const
+    void State::printConflictSets( const std::string _initiation, std::ostream& _out ) const
     {
-        _out << _initiation << "Conflict sets: " << endl;
+        _out << _initiation << "Conflict sets: " << std::endl;
         for( auto conflictSet = conflictSets().begin(); conflictSet != conflictSets().end(); ++conflictSet )
         {
             if( conflictSet->first != NULL )
                 conflictSet->first->print( true, true, _out, _initiation + "    " );
             else
-                _out << _initiation << "    NULL" << endl;
+                _out << _initiation << "    NULL" << std::endl;
             for( auto condSetSet = conflictSet->second.begin(); condSetSet != conflictSet->second.end(); ++condSetSet )
             {
                 auto condSet = condSetSet->begin();
@@ -2775,7 +2775,7 @@ namespace vs
                     ++condSet;
                     while( condSet != condSetSet->end() )
                     {
-                        _out << "," << endl;
+                        _out << "," << std::endl;
                         _out << _initiation << "        ";
                         auto cond = (*condSet).begin();
                         if( cond != (*condSet).end() )
@@ -2797,10 +2797,10 @@ namespace vs
                             _out << " {}";
                         ++condSet;
                     }
-                    _out << " }" << endl;
+                    _out << " }" << std::endl;
                 }
                 else
-                    _out << _initiation << "       {}" << endl;
+                    _out << _initiation << "       {}" << std::endl;
             }
         }
     }

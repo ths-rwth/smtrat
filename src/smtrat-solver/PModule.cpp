@@ -23,7 +23,7 @@ namespace smtrat
 		}
 		for( auto& backend : usedBackends() )
 		{
-			pair<bool,FormulaT> simplifiedPassedFormula = backend->getReceivedFormulaSimplified();
+			std::pair<bool,FormulaT> simplifiedPassedFormula = backend->getReceivedFormulaSimplified();
 			if( simplifiedPassedFormula.first )
 			{
 				SMTRAT_LOG_WARN("smtrat.pmodule", moduleName() << ": Returning from backend: " << simplifiedPassedFormula.second);

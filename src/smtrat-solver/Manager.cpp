@@ -404,9 +404,9 @@ namespace smtrat
     }
     
 #ifdef __VS
-    vector<Module*> Manager::getBackends( Module* _requiredBy, atomic<bool>* _foundAnswer )
+    vector<Module*> Manager::getBackends( Module* _requiredBy, std::atomic<bool>* _foundAnswer )
 #else
-    std::vector<Module*> Manager::getBackends( Module* _requiredBy, atomic_bool* _foundAnswer )
+    std::vector<Module*> Manager::getBackends( Module* _requiredBy, std::atomic_bool* _foundAnswer )
 #endif
     {
         #ifdef SMTRAT_STRAT_PARALLEL_MODE

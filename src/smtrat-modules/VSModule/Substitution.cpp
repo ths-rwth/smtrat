@@ -161,7 +161,7 @@ namespace vs
             return false;
     }
 
-	ostream& operator<<(ostream& os, const Substitution& s) {
+	std::ostream& operator<<(std::ostream& os, const Substitution& s) {
 		os << "[" << s.variable() << " -> ";
 		switch (s.type()) {
 			case Substitution::NORMAL:
@@ -181,7 +181,7 @@ namespace vs
 		return os;
 	}
 
-    void Substitution::print( bool _withOrigins, bool _withSideConditions, ostream& _out, const string& _init ) const
+    void Substitution::print( bool _withOrigins, bool _withSideConditions, std::ostream& _out, const std::string& _init ) const
     {
         _out << _init << *this;
         if( _withOrigins )
@@ -205,7 +205,7 @@ namespace vs
                 _out << *sCons;
             }
         }
-        _out << endl;
+        _out << std::endl;
     }
 } // end namspace vs
 }

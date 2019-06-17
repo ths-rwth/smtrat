@@ -31,7 +31,7 @@ namespace smtrat
         mNonlinearConstraints(),
         mActiveResolvedNEQConstraints(),
         mActiveUnresolvedNEQConstraints(),
-        mDelta( carl::freshRealVariable( "delta_" + to_string( id() ) ) ),
+        mDelta( carl::freshRealVariable( "delta_" + std::to_string( id() ) ) ),
         mBoundCandidatesToPass(),
         mRationalAssignment()
     {}
