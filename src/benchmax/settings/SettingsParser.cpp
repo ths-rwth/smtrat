@@ -25,6 +25,7 @@ SettingsParser::SettingsParser() {
 		auto& s = settings.get<settings::OperationSettings>("operation");
 		add("Operational settings").add_options()
 			("backend,b", po::value<std::string>(&s.backend), "Run benchmarks using the given backend. Possible values: \"condor\", \"local\", \"slurm\", \"ssh\".")
+			("mode", po::value<std::string>(&s.mode)->default_value("both"), "Which tasks to perform (\"execute\", \"collect\" or \"both\")")
 			("convert", po::value<std::string>(&s.convert_ods_filename), "Convert a XML result file to .ods")
 			("convert-filter", po::value<std::string>(&s.convert_ods_filter)->default_value("Benchmax"), "XSLT filter name to import XML file into libreoffice")
 		;
