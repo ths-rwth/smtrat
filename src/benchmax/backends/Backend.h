@@ -57,7 +57,7 @@ protected:
 		}
 	}
 
-public:
+	virtual void collect_results() {}
 	void sanitize_results(const Jobs& jobs) const {
 		for (const auto& j: jobs) {
 			auto res = mResults.get(j.first, j.second);
@@ -72,6 +72,16 @@ public:
 		XMLWriter xml(settings_benchmarks().output_file_xml);
 		mResults.store(xml, jobs);
 	}
+
+public:
+	bool suspendable() const {
+		return false;
+	}
+	void process_results(const Jobs& jobs) {
+		collect_results();
+		sanitize_results(jobs);
+		write_results(jobs);
+	}
 	/// Add a result.
 	void addResult(const Tool* tool, const fs::path& file, BenchmarkResult& result) {
 		tool->additionalResults(file, result);
@@ -83,9 +93,12 @@ public:
 		mResults.addResult(tool, file, result);
 	}
 	/// Run the list of tools against the list of benchmarks.
-	void run(const Jobs& jobs) {
+	void run(const Jobs& jobs, bool wait_for_termination) {
 		mExpectedJobs = jobs.size();
 		BENCHMAX_LOG_INFO("benchmax", "Running " << mExpectedJobs << " now.");
+		if (!wait_for_termination) {
+			BENCHMAX_LOG_INFO("benchmax", "Running jobs synchronously.");
+		}
 
 		for (const auto& tool: jobs.tools()) {
 			this->startTool(tool.get());

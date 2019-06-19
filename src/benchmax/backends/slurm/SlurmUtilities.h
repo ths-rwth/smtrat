@@ -17,14 +17,8 @@ namespace fs = std::filesystem;
 struct ArchiveProperties {
 	/// Filename of the archive.
 	std::string filename_archive;
-	/// Filename of the job file.
-	std::string filename_jobfile;
-	/// Filename of the submit file.
-	std::string filename_submitfile;
 	/// Temporary directory to look for output files.
 	std::string tmp_dir;
-	/// Job id to recognizes appropriate output files.
-	int jobid;
 };
 /// Put all log files into an archive.
 void archive_log_files(const ArchiveProperties& p);
@@ -35,7 +29,7 @@ void archive_log_files(const ArchiveProperties& p);
  * @param jobid ID of slurm job.
  * @return List of result files.
  */
-std::vector<fs::path> collect_result_files(const fs::path& basedir, int jobid);
+std::vector<fs::path> collect_result_files(const fs::path& basedir);
 
 /// All properties needed to create a submit file.
 struct SubmitfileProperties {
