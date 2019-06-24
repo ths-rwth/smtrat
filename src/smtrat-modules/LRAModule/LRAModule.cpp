@@ -1447,7 +1447,7 @@ namespace smtrat
         _out << _init << "Linear constraints:" << std::endl;
         for( auto iter = mLinearConstraints.begin(); iter != mLinearConstraints.end(); ++iter )
         {
-            _out << _init << "   " << iter << std::endl;
+            _out << _init << "   " << *iter << std::endl;
         }
     }
 
@@ -1457,7 +1457,7 @@ namespace smtrat
         _out << _init << "Nonlinear constraints:" << std::endl;
         for( auto iter = mNonlinearConstraints.begin(); iter != mNonlinearConstraints.end(); ++iter )
         {
-            _out << _init << "   " << iter << std::endl;
+            _out << _init << "   " << *iter << std::endl;
         }
     }
 
