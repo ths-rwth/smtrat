@@ -137,9 +137,11 @@ namespace boost { namespace spirit { namespace traits {
             r /= carl::pow(smtrat::Rational(10), (unsigned)(-exp));
     }
 #endif
+#if BOOST_VERSION < 107000
     template<> inline bool is_equal_to_one(const smtrat::Rational& value) {
         return value == 1;
     }
+#endif
 	/**
 	 * Specialization of standard implementation to fix compilation errors.
 	 * Standard implementation looks like this:
