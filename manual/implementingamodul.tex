@@ -25,7 +25,7 @@ Here is an overview of the most important members of the class \texttt{Module}.
 		for a satisfiability check. These formulas are of the type \formulaClass and the \moduleInputClass
 		is basically a list of such formulas, which never contains a formula more than once.
 	\item \begin{verbatim}ModuleInput* mpPassedFormula\end{verbatim}
-		The \emph{passed formula}  stores the conjunction of the formulas which this module passes to a backend to be
+		The \emph{passed formula} stores the conjunction of the formulas which this module passes to a backend to be
 		solved for satisfiability. There are dedicated methods to change this member, which are explained in the following.
 \end{itemize}
 The received formula of a module is the passed formula of the preceding module. The owner is the preceding module, hence, a module has only read access to its received formula. The \moduleInputClass also stores a mapping of
