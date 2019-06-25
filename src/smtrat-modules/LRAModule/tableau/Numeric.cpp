@@ -452,7 +452,7 @@ namespace smtrat
          * @param _value The Numeric to print.
          * @return The output stream after printing the given Numerics representation on it.
          */
-        ostream& operator <<( ostream& _out, const Numeric& _value )
+        std::ostream& operator <<( std::ostream& _out, const Numeric& _value )
         {
             _out << _value.content();
             return _out;

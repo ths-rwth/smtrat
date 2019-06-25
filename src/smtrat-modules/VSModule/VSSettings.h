@@ -41,6 +41,8 @@ namespace smtrat
         static const bool branch_and_bound_at_origin                            = false;
         static const bool use_fixed_variable_order                              = false;
         static constexpr auto variable_valuation_strategy = VariableValuationStrategy::OPTIMIZE_BEST;
+
+		static constexpr bool make_constraints_strict_for_backend = true;
     };
     
     struct VSSettings2 : VSSettings1
@@ -60,6 +62,11 @@ namespace smtrat
 		static constexpr auto moduleName = "VSModule<VSSettings234>";
         static const bool check_conflict_for_side_conditions                    = true;
         static const bool prefer_equation_over_all                              = true;
+    };
+	struct VSSettings234a : VSSettings234
+    {
+		static constexpr auto moduleName = "VSModule<VSSettings234a>";
+        static constexpr bool make_constraints_strict_for_backend                    = false;
     };
     
     struct VSSettings2346 : VSSettings234

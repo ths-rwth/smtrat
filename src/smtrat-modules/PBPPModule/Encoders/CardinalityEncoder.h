@@ -11,7 +11,7 @@ namespace smtrat {
 
 			bool canEncode(const ConstraintT& constraint);
 
-			string name() { return "CardinalityEncoder"; }
+			std::string name() { return "CardinalityEncoder"; }
 
 		protected:
 			boost::optional<FormulaT> doEncode(const ConstraintT& constraint);

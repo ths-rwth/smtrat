@@ -387,7 +387,7 @@ namespace smtrat
         auto btlIter = mBacktrackPoints.begin();
         std::size_t btlCounter = 0;
         while (btlIter != mBacktrackPoints.end() && btlIter->first == mpPassedFormula->end()) {
-            _out << "btl_" << btlCounter << ": (and ) skip" << std::endl;;
+            _out << "btl_" << btlCounter << ": (and ) skip" << std::endl;
             btlCounter++;
             btlIter++;
         }
@@ -404,7 +404,7 @@ namespace smtrat
     }
     
 #ifdef __VS
-    vector<Module*> Manager::getBackends( Module* _requiredBy, atomic<bool>* _foundAnswer )
+    vector<Module*> Manager::getBackends( Module* _requiredBy, std::atomic<bool>* _foundAnswer )
 #else
     std::vector<Module*> Manager::getBackends( Module* _requiredBy, std::atomic_bool* _foundAnswer )
 #endif

@@ -74,12 +74,12 @@ namespace vs
                 {
                     unsigned conflictingWithSolutionSpace = cons->consistentWith( _solutionSpace );
                     
-//                    cout << "Is  " << cons << endl;
-//                    cout << endl;
-//                    cout << "consistent with  " << endl;
+//                    std::cout << "Is  " << cons << std::endl;
+//                    std::cout << std::endl;
+//                    std::cout << "consistent with  " << std::endl;
 //                    for( auto iter = _solutionSpace.begin(); iter != _solutionSpace.end(); ++iter )
-//                        cout << iter->first << " in " << iter->second << endl;
-//                    cout << "   ->  " << conflictingWithSolutionSpace << endl;
+//                        std::cout << iter->first << " in " << iter->second << std::endl;
+//                    std::cout << "   ->  " << conflictingWithSolutionSpace << std::endl;
                     
                     if( conflictingWithSolutionSpace == 0 )
                     {
@@ -447,7 +447,7 @@ namespace vs
             assert( positives.size() == negatives.size() );
             if( positives.size() > 0 )
             {
-                std::vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> > combSelector = std::vector< bitset<MAX_PRODUCT_SPLIT_NUMBER> >();
+                std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> > combSelector = std::vector< std::bitset<MAX_PRODUCT_SPLIT_NUMBER> >();
                 if( fmod( numOfAlwaysNegatives, 2.0 ) != 0.0 )
                 {
                     if( positive ) 
@@ -531,21 +531,21 @@ namespace vs
         while( conj != _substitutionResults.end() )
         {
             if( conj != _substitutionResults.begin() )
-                cout << " or (";
+                std::cout << " or (";
             else
-                cout << "    (";
+                std::cout << "    (";
             auto cons = (*conj).begin();
             while( cons != (*conj).end() )
             {
                 if( cons != (*conj).begin() )
-                    cout << " and ";
-                cout << *cons;
+                    std::cout << " and ";
+                std::cout << *cons;
                 cons++;
             }
-            cout << ")" << endl;
+            std::cout << ")" << std::endl;
             conj++;
         }
-        cout << endl;
+        std::cout << std::endl;
     }
     
     bool substitute( const smtrat::ConstraintT& _cons,
@@ -556,7 +556,7 @@ namespace vs
                      const smtrat::EvalDoubleIntervalMap& _solutionSpace )
     {
         #ifdef VS_DEBUG_SUBSTITUTION
-        cout << "substitute: ( " << _cons << " )" << _subs << endl;
+        std::cout << "substitute: ( " << _cons << " )" << _subs << std::endl;
         #endif
         bool result = true;
         // Apply the substitution according to its type.
@@ -584,7 +584,7 @@ namespace vs
             }
             default:
             {
-                cout << "Error in substitute: unexpected type of substitution." << endl;
+                std::cout << "Error in substitute: unexpected type of substitution." << std::endl;
             }
         }
         #ifdef VS_DEBUG_SUBSTITUTION
@@ -622,7 +622,7 @@ namespace vs
             }
             smtrat::SqrtEx sub = smtrat::SqrtEx::subBySqrtEx( _cons.lhs(), _subs.variable(), _subs.term() );
             #ifdef VS_DEBUG_SUBSTITUTION
-            cout << "Result of common substitution:" << sub << endl;
+            std::cout << "Result of common substitution:" << sub << std::endl;
             #endif
             // The term then looks like:    q/s
             if( !sub.hasSqrt() )
@@ -713,7 +713,7 @@ namespace vs
                         break;
                     }
                     default:
-                        cout << "Error in substituteNormal: Unexpected relation symbol" << endl;
+                        std::cout << "Error in substituteNormal: Unexpected relation symbol" << std::endl;
                         assert( false );
                 }
             }
@@ -982,7 +982,7 @@ namespace vs
         else
         {
             assert( false );
-            cerr << "Warning in substitutePlusEps: The chosen constraint has no variable" << endl;
+            std::cerr << "Warning in substitutePlusEps: The chosen constraint has no variable" << std::endl;
         }
         return result;
     }
@@ -1059,7 +1059,7 @@ namespace vs
             }
         }
         else
-            cout << "Warning in substituteInf: The chosen constraint has no variable" << endl;
+            std::cout << "Warning in substituteInf: The chosen constraint has no variable" << std::endl;
     }
 
     void substituteInfLessGreater( const smtrat::ConstraintT& _cons, const Substitution& _subs, DisjunctionOfConstraintConjunctions& _result )

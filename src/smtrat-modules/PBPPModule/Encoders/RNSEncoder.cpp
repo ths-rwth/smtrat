@@ -111,7 +111,7 @@ namespace smtrat {
 
 			for(auto i : v){
 				auto elem = std::find_if(freq.begin(), freq.end(),
-						[&] (const pair<int, Integer>& elem){
+						[&] (const std::pair<int, Integer>& elem){
 						return elem.second == i;
 						});
 				if(elem != freq.end()){
@@ -124,7 +124,7 @@ namespace smtrat {
 		}
 
 		std::sort(freq.begin(), freq.end(),
-				[&](const pair<int, Integer> &p1, const pair<int, Integer> &p2)
+				[&](const std::pair<int, Integer> &p1, const std::pair<int, Integer> &p2)
 				{
 				if(p1.first == p2.first){
 				return (p1.second < p2.second);

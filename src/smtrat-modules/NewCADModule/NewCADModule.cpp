@@ -17,7 +17,11 @@ namespace smtrat
 		Module( _formula, _conditionals, _manager ),
 		mCAD(),
 		mPreprocessor(mCAD.getVariables())
-	{}
+	{
+		auto& pps = settings::Settings::getInstance().get<cad::CADPreprocessorSettings>("cad-pp");
+		if (Settings::pp_disable_variable_elimination) pps.disable_variable_elimination = false;
+		if (Settings::pp_disable_resultants) pps.disable_resultants = false;
+	}
 	
 	template<class Settings>
 	NewCADModule<Settings>::~NewCADModule()
@@ -109,7 +113,7 @@ namespace smtrat
 			SMTRAT_LOG_INFO("smtrat.cad", "Infeasible subset: " << mInfeasibleSubsets);
 		} else if (answer == Answer::SAT) {
 			for (const auto& a: mLastAssignment) {
-				mLastModel.emplace(a.first, a.second);
+				mLastModel.assign(a.first, a.second);
 			}
 			mLastModel.update(mPreprocessor.model(), false);
 		}

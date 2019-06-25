@@ -4,7 +4,7 @@
 #include <smtrat-common/model.h>
 #include <smtrat-modules/VSModule/Substitute.h>
 #include <carl/util/Common.h>
-#include <carl/formula/model/evaluation/ModelEvaluation.h>
+#include <carl-model/evaluation/ModelEvaluation.h>
 
 #include <variant>
 

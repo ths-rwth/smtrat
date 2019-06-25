@@ -14,7 +14,7 @@ namespace smtrat {
 			bool canEncode(const ConstraintT& constraint);
 			Rational encodingSize(const ConstraintT& constraint);
 
-			string name() { return "MixedSignEncoder"; }
+			std::string name() { return "MixedSignEncoder"; }
 
 
 		protected:

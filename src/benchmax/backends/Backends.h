@@ -16,9 +16,23 @@ template<typename Backend>
 void execute_backend(const std::string& name, const Jobs& jobs) {
 	BENCHMAX_LOG_INFO("benchmax", "Using " << name << " backend.");
 	Backend backend;
-	backend.run(jobs);
-	backend.sanitize_results(jobs);
-	backend.write_results(jobs);
+	if (settings_operation().mode == "both") {
+		backend.run(jobs, true);
+		backend.process_results(jobs);
+	} else {
+		if (!backend.suspendable()) {
+			BENCHMAX_LOG_ERROR("benchmax", "The selected backend cannot be suspended. You need to use mode=\"both\".");
+			return;
+		}
+		if (settings_operation().mode == "execute") {
+			backend.run(jobs, false);
+		} else if (settings_operation().mode == "collect") {
+			backend.process_results(jobs);
+		} else {
+			BENCHMAX_LOG_ERROR("benchmax", "Unsupported operation mode \"" << settings_operation().mode << "\". Use one of \"execute\", \"collect\", \"both\".");
+			return;
+		}
+	}
 }
 /**
  * Runs a given backend on a list of tools and benchmarks.

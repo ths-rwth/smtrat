@@ -24,7 +24,7 @@
 #include <chrono>
 #include <atomic>
 #include <mutex>
-#include <carl/formula/model/Assignment.h>
+#include <carl-model/Assignment.h>
 #include <carl/util/TimingCollector.h>
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/statistics/Statistics.h>

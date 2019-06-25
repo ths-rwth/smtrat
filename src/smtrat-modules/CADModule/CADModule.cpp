@@ -24,8 +24,6 @@ using carl::CAD;
 using carl::RealAlgebraicPoint;
 using carl::cad::ConflictGraph;
 
-using namespace std;
-
 namespace smtrat
 {
 

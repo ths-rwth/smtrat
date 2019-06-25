@@ -7,10 +7,7 @@
 
 #include "ModuleInput.h"
 
-#include <carl/formula/model/Assignment.h>
-
-using namespace std;
-using namespace carl;
+#include <carl-model/Assignment.h>
 
 // Main smtrat namespace.
 namespace smtrat
@@ -170,7 +167,7 @@ namespace smtrat
     void ModuleInput::updateProperties()
     {
         mProperties = carl::Condition();
-        mProperties |= carl::PROP_IS_PURE_CONJUNCTION | PROP_IS_LITERAL_CONJUNCTION | carl::PROP_IS_IN_CNF | carl::PROP_IS_IN_NNF;
+        mProperties |= carl::PROP_IS_PURE_CONJUNCTION | carl::PROP_IS_LITERAL_CONJUNCTION | carl::PROP_IS_IN_CNF | carl::PROP_IS_IN_NNF;
         for( const FormulaWithOrigins& fwo : *this )
         {
             carl::Condition subFormulaConds = fwo.formula().properties();
@@ -189,7 +186,7 @@ namespace smtrat
         mPropertiesUpdated = true;
     }
 
-    pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, bool _hasSingleOrigin, const FormulaT& _origin, const std::shared_ptr<std::vector<FormulaT>>& _origins, bool _mightBeConjunction )
+    std::pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, bool _hasSingleOrigin, const FormulaT& _origin, const std::shared_ptr<std::vector<FormulaT>>& _origins, bool _mightBeConjunction )
     {
         if( _mightBeConjunction && _formula.getType() == carl::FormulaType::AND )
         {

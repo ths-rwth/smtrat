@@ -4,7 +4,7 @@
 #include <smtrat-common/smtrat-common.h>
 
 #ifdef CLI_ENABLE_DIMACS_PARSER
-#include <carl/formula/parser/DIMACSImporter.h>
+#include <carl-io/DIMACSImporter.h>
 
 namespace smtrat {
 

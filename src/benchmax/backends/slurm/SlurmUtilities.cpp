@@ -13,8 +13,7 @@ void archive_log_files(const ArchiveProperties& p) {
 	std::stringstream ss;
 	ss << "tar --force-local -czf " << p.filename_archive << " ";
 	ss << "-C " << p.tmp_dir << " ";
-	ss << p.filename_jobfile << " " << p.filename_submitfile << " ";
-	ss << "`find " << p.tmp_dir << " -iname \"JOB." << p.jobid << "_*\"`";
+	ss << "`ls " << p.tmp_dir << "`";
 	BENCHMAX_LOG_DEBUG("benchmax.slurm", "Archiving log files with command " << ss.str());
 	int code = call_program(ss.str(), output);
 	if (code == 0) {
@@ -25,11 +24,11 @@ void archive_log_files(const ArchiveProperties& p) {
 	}
 }
 
-std::vector<fs::path> collect_result_files(const fs::path& basedir, int jobid) {
+std::vector<fs::path> collect_result_files(const fs::path& basedir) {
 	BENCHMAX_LOG_DEBUG("benchmax.slurm", "Collecting results files from " << basedir);
 	std::vector<fs::path> files;
 
-	std::regex filenamere("JOB." + std::to_string(jobid) + "_[0-9]+.(out|err)");
+	std::regex filenamere("JOB.[0-9]+_[0-9]+.(out|err)");
 	for (const auto& f: fs::directory_iterator(basedir)) {
 		if (!std::regex_match(f.path().filename().string(), filenamere)) {
 			BENCHMAX_LOG_TRACE("benchmax.slurm", "Skipping file " << f.path());

@@ -273,27 +273,27 @@ namespace smtrat
             if( anAnswerFound() )
                 return ABORTED;
 //            else
-//                cout << "VSModule iteration" << endl;
+//                std::cout << "VSModule iteration" << std::endl;
             #ifdef SMTRAT_DEVOPTION_Statistics
             mStatistics.considerState();
             #endif
             State* currentState = mRanking.begin()->second;
             #ifdef VS_DEBUG
-            cout << "Ranking:" << endl;
+            std::cout << "Ranking:" << std::endl;
             for( auto valDTPair = mRanking.begin(); valDTPair != mRanking.end(); ++valDTPair )
             {
-                stringstream stream;
+                std::stringstream stream;
                 stream << "(" << valDTPair->first.first << ", " << valDTPair->first.second.first << ", " << valDTPair->first.second.second << ")";
-                cout << setw(15) << stream.str();
-                cout << ":  " << valDTPair->second << endl;
+                std::cout << std::setw(15) << stream.str();
+                std::cout << ":  " << valDTPair->second << std::endl;
             }
-            cout << "*** Considered state:" << endl;
-            currentState->printAlone( "*** ", cout );
+            std::cout << "*** Considered state:" << std::endl;
+            currentState->printAlone( "*** ", std::cout );
             #endif
             currentState->simplify( mRanking );
             #ifdef VS_DEBUG
-            cout << "Simplifing results in " << endl;
-            currentState->printAlone( "*** ", cout );
+            std::cout << "Simplifing results in " << std::endl;
+            currentState->printAlone( "*** ", std::cout );
             #endif
 //            if( !Settings::split_neq_constraints && !currentState->isInconsistent() && !currentState->takeSubResultCombAgain() )
 //            {
@@ -341,7 +341,7 @@ namespace smtrat
                 {
 					SMTRAT_LOG_DEBUG("smtrat.vs", "Case 2");
                     #ifdef VS_DEBUG
-                    cout << "*** Refresh conditons:" << endl;
+                    std::cout << "*** Refresh conditons:" << std::endl;
                     #endif
                     if( currentState->refreshConditions( mRanking ) )
                         addStateToRanking( currentState );
@@ -349,19 +349,19 @@ namespace smtrat
                         addStatesToRanking( currentState );
                     currentState->rTakeSubResultCombAgain() = false;
                     #ifdef VS_DEBUG
-                    currentState->printAlone( "   ", cout );
-                    cout << "*** Conditions refreshed." << endl;
+                    currentState->printAlone( "   ", std::cout );
+                    std::cout << "*** Conditions refreshed." << std::endl;
                     #endif
                 }
                 else if( currentState->hasRecentlyAddedConditions() )//&& !(currentState->takeSubResultCombAgain() && currentState->isRoot() ) )
                 {
 					SMTRAT_LOG_DEBUG("smtrat.vs", "Current state has new conditions");
                     #ifdef VS_DEBUG
-                    cout << "*** Propagate new conditions :" << endl;
+                    std::cout << "*** Propagate new conditions :" << std::endl;
                     #endif
                     propagateNewConditions(currentState);
                     #ifdef VS_DEBUG
-                    cout << "*** Propagate new conditions ready." << endl;
+                    std::cout << "*** Propagate new conditions ready." << std::endl;
                     #endif
                 }
                 else
@@ -426,14 +426,14 @@ namespace smtrat
                             {
 								SMTRAT_LOG_DEBUG("smtrat.vs", "Applying substitution");
                                 #ifdef VS_DEBUG
-                                cout << "*** SubstituteAll changes it to:" << endl;
+                                std::cout << "*** SubstituteAll changes it to:" << std::endl;
                                 #else
                                 #ifdef VS_MODULE_VERBOSE_INTEGERS
                                 bool minf = currentState->substitution().type() == Substitution::MINUS_INFINITY;
                                 if( !minf )
                                 {
-                                    cout << string( currentState->treeDepth()*3, ' ') << "Test candidate  " << endl;
-                                    currentState->substitution().print( true, false, cout, string( currentState->treeDepth()*3, ' '));
+                                    std::cout << std::string( currentState->treeDepth()*3, ' ') << "Test candidate  " << std::endl;
+                                    currentState->substitution().print( true, false, std::cout, std::string( currentState->treeDepth()*3, ' '));
                                 }
                                 #endif
                                 #endif
@@ -447,13 +447,13 @@ namespace smtrat
                                 #ifdef VS_MODULE_VERBOSE_INTEGERS
                                 if( minf )
                                 {
-                                    cout << string( currentState->treeDepth()*3, ' ') << "Test candidate  [from -inf]" << endl;
-                                    currentState->substitution().print( true, false, cout, string( currentState->treeDepth()*3, ' '));
+                                    std::cout << std::string( currentState->treeDepth()*3, ' ') << "Test candidate  [from -inf]" << std::endl;
+                                    currentState->substitution().print( true, false, std::cout, std::string( currentState->treeDepth()*3, ' '));
                                 }
                                 #endif
                                 #endif
                                 #ifdef VS_DEBUG
-                                cout << "*** SubstituteAll ready." << endl;
+                                std::cout << "*** SubstituteAll ready." << std::endl;
                                 #endif
                                 break;
                             }
@@ -461,7 +461,7 @@ namespace smtrat
                             {
 								SMTRAT_LOG_DEBUG("smtrat.vs", "Combining subresults");
                                 #ifdef VS_DEBUG
-                                cout << "*** Refresh conditons:" << endl;
+                                std::cout << "*** Refresh conditons:" << std::endl;
                                 #endif
                                 if( currentState->nextSubResultCombination() )
                                 {
@@ -475,7 +475,7 @@ namespace smtrat
                                     else
                                         addStatesToRanking( currentState );
                                     #ifdef VS_DEBUG
-                                    currentState->printAlone( "   ", cout );
+                                    currentState->printAlone( "   ", std::cout );
                                     #endif
                                 }
                                 else
@@ -488,7 +488,7 @@ namespace smtrat
 
                                 }
                                 #ifdef VS_DEBUG
-                                cout << "*** Conditions refreshed." << endl;
+                                std::cout << "*** Conditions refreshed." << std::endl;
                                 #endif
                                 break;
                             }
@@ -526,7 +526,7 @@ namespace smtrat
                                         {
 											SMTRAT_LOG_DEBUG("smtrat.vs", "No conditions");
                                             #ifdef VS_DEBUG
-                                            cout << "*** Check ancestors!" << endl;
+                                            std::cout << "*** Check ancestors!" << std::endl;
                                             #endif
                                             // Check if there are still conditions in any ancestor, which have not been considered.
                                             State * unfinishedAncestor;
@@ -542,7 +542,7 @@ namespace smtrat
                                                 else
                                                     addStatesToRanking( unfinishedAncestor );
                                                 #ifdef VS_DEBUG
-                                                cout << "*** Found an unfinished ancestor:" << endl;
+                                                std::cout << "*** Found an unfinished ancestor:" << std::endl;
                                                 unfinishedAncestor->printAlone();
                                                 #endif
                                             }
@@ -669,7 +669,7 @@ namespace smtrat
                                                 }
                                                 default:
                                                 {
-                                                    cout << "Error: UNKNOWN answer in method " << __func__ << " line " << __LINE__ << endl;
+                                                    std::cout << "Error: UNKNOWN answer in method " << __func__ << " line " << __LINE__ << std::endl;
                                                     return UNKNOWN;
                                                 }
                                             }
@@ -692,13 +692,13 @@ namespace smtrat
                                     else
                                     {
                                         #ifdef VS_DEBUG
-                                        cout << "*** Eliminate " << currentState->index() << " in ";
-                                        cout << currentCondition->constraint();
-                                        cout << " creates:" << endl;
+                                        std::cout << "*** Eliminate " << currentState->index() << " in ";
+                                        std::cout << currentCondition->constraint();
+                                        std::cout << " creates:" << std::endl;
                                         #endif
                                         eliminate( currentState, currentState->index(), currentCondition );
                                         #ifdef VS_DEBUG
-                                        cout << "*** Eliminate ready." << endl;
+                                        std::cout << "*** Eliminate ready." << std::endl;
                                         #endif
                                     }
                                 }
@@ -742,10 +742,10 @@ namespace smtrat
                 return;
             for( size_t i = mVariableVector.size(); i<=mRanking.begin()->second->treeDepth(); ++i )
             {
-                stringstream outA;
+                std::stringstream outA;
                 outA << "m_inf_" << id() << "_" << i;
                 carl::Variable minfVar( carl::freshRealVariable( outA.str() ) );
-                stringstream outB;
+                std::stringstream outB;
                 outB << "eps_" << id() << "_" << i;
                 carl::Variable epsVar( carl::freshRealVariable( outB.str() ) );
                 mVariableVector.push_back( std::pair<carl::Variable,carl::Variable>( minfVar, epsVar ) );
@@ -861,7 +861,7 @@ namespace smtrat
             for( auto factor = factors.begin(); factor != factors.end(); ++factor )
             {
                 #ifdef VS_DEBUG
-                cout << "Eliminate for " << *factor << endl;
+                std::cout << "Eliminate for " << *factor << std::endl;
                 #endif
                 VarPolyInfo varInfo = factor->getVarInfo<true>( _eliminationVar );
                 const auto& coeffs = varInfo.coeffs();
@@ -910,7 +910,7 @@ namespace smtrat
                                 }
                                 ++numberOfAddedChildren;
                                 #ifdef VS_DEBUG
-                                (*(*_currentState).rChildren().back()).print( "   ", cout );
+                                (*(*_currentState).rChildren().back()).print( "   ", std::cout );
                                 #endif
                             }
                         }
@@ -957,7 +957,7 @@ namespace smtrat
                                     }
                                     ++numberOfAddedChildren;
                                     #ifdef VS_DEBUG
-                                    (*(*_currentState).rChildren().back()).print( "   ", cout );
+                                    (*(*_currentState).rChildren().back()).print( "   ", std::cout );
                                     #endif
                                 }
                                 constraintHasZeros = true;
@@ -993,7 +993,7 @@ namespace smtrat
                                     }
                                     ++numberOfAddedChildren;
                                     #ifdef VS_DEBUG
-                                    (*(*_currentState).rChildren().back()).print( "   ", cout );
+                                    (*(*_currentState).rChildren().back()).print( "   ", std::cout );
                                     #endif
                                 }
                                 // Create state ({a!=0, b^2-4ac>=0} + oldConditions, [x -> (-b+sqrt(b^2-4ac))/2a]):
@@ -1015,7 +1015,7 @@ namespace smtrat
                                     }
                                     ++numberOfAddedChildren;
                                     #ifdef VS_DEBUG
-                                    (*(*_currentState).rChildren().back()).print( "   ", cout );
+                                    (*(*_currentState).rChildren().back()).print( "   ", std::cout );
                                     #endif
                                 }
                                 constraintHasZeros = true;
@@ -1050,7 +1050,7 @@ namespace smtrat
                 }
                 numberOfAddedChildren++;
                 #ifdef VS_DEBUG
-                (*(*_currentState).rChildren().back()).print( "   ", cout );
+                (*(*_currentState).rChildren().back()).print( "   ", std::cout );
                 #endif
             }
         }
@@ -1071,7 +1071,7 @@ namespace smtrat
 //                    }
 //                    numberOfAddedChildren++;
 //                    #ifdef VS_DEBUG
-//                    (*(*_currentState).rChildren().back()).print( "   ", cout );
+//                    (*(*_currentState).rChildren().back()).print( "   ", std::cout );
 //                    #endif
 //                }
 //            }
@@ -1229,7 +1229,7 @@ namespace smtrat
                     allSubResults.back().push_back( oldConditions );
                     _currentState->addSubstitutionResults( std::move(allSubResults) );
                     #ifdef VS_MODULE_VERBOSE_INTEGERS
-                    _currentState->printSubstitutionResults( string( _currentState->treeDepth()*3, ' '), cout );
+                    _currentState->printSubstitutionResults( std::string( _currentState->treeDepth()*3, ' '), std::cout );
                     #endif
                     addStatesToRanking( _currentState );
                 }
@@ -1262,7 +1262,7 @@ namespace smtrat
                 }
             }
             #ifdef VS_DEBUG
-            _currentState->print( "   ", cout );
+            _currentState->print( "   ", std::cout );
             #endif
         }
         if( cleanResultsOfThisMethod )
@@ -1363,13 +1363,13 @@ namespace smtrat
                                         {
                                             newTestCandidatesGenerated = true;
                                             #ifdef VS_DEBUG
-                                            cout << "*** Eliminate " << _currentState->index() << " in ";
-                                            cout << (**cond).constraint();
-                                            cout << " creates:" << endl;
+                                            std::cout << "*** Eliminate " << _currentState->index() << " in ";
+                                            std::cout << (**cond).constraint();
+                                            std::cout << " creates:" << std::endl;
                                             #endif
                                             eliminate( _currentState, _currentState->index(), *cond );
                                             #ifdef VS_DEBUG
-                                            cout << "*** Eliminate ready." << endl;
+                                            std::cout << "*** Eliminate ready." << std::endl;
                                             #endif
                                             worseConditionFound = true;
                                             break;
@@ -1444,8 +1444,8 @@ namespace smtrat
             UnsignedTriple key = UnsignedTriple( _state->valuation(), std::pair< size_t, size_t> ( _state->id(), _state->backendCallValuation() ) );
             if( (mRanking.insert( ValStatePair( key, _state ) )).second == false )
             {
-                cout << "Warning: Could not insert. Entry already exists.";
-                cout << endl;
+                std::cout << "Warning: Could not insert. Entry already exists.";
+                std::cout << std::endl;
             }
         }
     }
@@ -1867,7 +1867,7 @@ namespace smtrat
         for( auto cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
         {
             // Optimization: If the zeros of the polynomial in a weak inequality have already been checked pass the strict version.
-            if( _state.allTestCandidatesInvalidated( *cond ) )
+            if( Settings::make_constraints_strict_for_backend && _state.allTestCandidatesInvalidated( *cond ) )
             {
                 const ConstraintT& constraint = (*cond)->constraint();
                 switch( constraint.relation() )
@@ -1935,10 +1935,10 @@ namespace smtrat
         adaptPassedFormula( *_state, formulaToConditions );
         Answer result = runBackends();
         #ifdef VS_DEBUG
-        cout << "Ask backend      : ";
+        std::cout << "Ask backend      : ";
         printPassedFormula();
-        cout << endl;
-        cout << "Answer           : " << result << std::endl;
+        std::cout << std::endl;
+        std::cout << "Answer           : " << result << std::endl;
         #endif
         switch( result )
         {
@@ -1961,19 +1961,19 @@ namespace smtrat
                         {
                             carl::PointerSet<vs::Condition> conflict;
                             #ifdef VS_DEBUG
-                            cout << "Infeasible Subset: {";
+                            std::cout << "Infeasible Subset: {";
                             #endif
                             for( auto subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                             {
                                 #ifdef VS_DEBUG
-                                cout << "  " << *subformula;
+                                std::cout << "  " << *subformula;
                                 #endif
                                 auto fcPair = formulaToConditions.find( *subformula );
                                 assert( fcPair != formulaToConditions.end() );
                                 conflict.insert( fcPair->second );
                             }
                             #ifdef VS_DEBUG
-                            cout << "  }" << endl;
+                            std::cout << "  }" << std::endl;
                             #endif
                             #ifdef SMTRAT_DEVOPTION_Validation
                             if (Settings().validation.log_theory_calls)
@@ -2021,7 +2021,7 @@ namespace smtrat
             }
             default:
             {
-                cerr << "UNKNOWN answer type!" << endl;
+                std::cerr << "UNKNOWN answer type!" << std::endl;
                 assert( false );
                 return UNKNOWN;
             }
@@ -2047,7 +2047,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    void VSModule<Settings>::logConditions( const State& _state, bool _assumption, const string& _description, bool _logAsDeduction ) const
+    void VSModule<Settings>::logConditions( const State& _state, bool _assumption, const std::string& _description, bool _logAsDeduction ) const
     {
         if( !_state.conditions().empty() )
         {
@@ -2070,21 +2070,21 @@ namespace smtrat
     #ifdef VS_DEBUG_METHODS
 
     template<class Settings>
-    void VSModule<Settings>::printAll( const string& _init, ostream& _out ) const
+    void VSModule<Settings>::printAll( const std::string& _init, std::ostream& _out ) const
     {
-        _out << _init << " Current solver status, where the constraints" << endl;
+        _out << _init << " Current solver status, where the constraints" << std::endl;
         printFormulaConditionMap( _init, _out );
-        _out << _init << " have been added:" << endl;
-        _out << _init << " mInconsistentConstraintAdded: " << mInconsistentConstraintAdded << endl;
-        _out << _init << " mIDCounter: " << mIDCounter << endl;
-        _out << _init << " Current ranking:" << endl;
-        printRanking( _init, cout );
-        _out << _init << " State tree:" << endl;
+        _out << _init << " have been added:" << std::endl;
+        _out << _init << " mInconsistentConstraintAdded: " << mInconsistentConstraintAdded << std::endl;
+        _out << _init << " mIDCounter: " << mIDCounter << std::endl;
+        _out << _init << " Current ranking:" << std::endl;
+        printRanking( _init, std::cout );
+        _out << _init << " State tree:" << std::endl;
         mpStateTree->print( _init + "   ", _out );
     }
 
     template<class Settings>
-    void VSModule<Settings>::printFormulaConditionMap( const string& _init, ostream& _out ) const
+    void VSModule<Settings>::printFormulaConditionMap( const std::string& _init, std::ostream& _out ) const
     {
         for( auto cond = mFormulaConditionMap.begin(); cond != mFormulaConditionMap.end(); ++cond )
         {
@@ -2092,34 +2092,34 @@ namespace smtrat
             _out << cond->first;
             _out << " <-> ";
             cond->second->print( _out );
-            _out << endl;
+            _out << std::endl;
         }
     }
 
     template<class Settings>
-    void VSModule<Settings>::printRanking( const string& _init, ostream& _out ) const
+    void VSModule<Settings>::printRanking( const std::string& _init, std::ostream& _out ) const
     {
         for( auto valDTPair = mRanking.begin(); valDTPair != mRanking.end(); ++valDTPair )
             (*(*valDTPair).second).printAlone( _init + "   ", _out );
     }
 
     template<class Settings>
-    void VSModule<Settings>::printAnswer( const string& _init, ostream& _out ) const
+    void VSModule<Settings>::printAnswer( const std::string& _init, std::ostream& _out ) const
     {
-        _out << _init << " Answer:" << endl;
+        _out << _init << " Answer:" << std::endl;
         if( mRanking.empty() )
-            _out << _init << "        UNSAT." << endl;
+            _out << _init << "        UNSAT." << std::endl;
         else
         {
-            _out << _init << "        SAT:" << endl;
+            _out << _init << "        SAT:" << std::endl;
             const State* currentState = mRanking.begin()->second;
             while( !(*currentState).isRoot() )
             {
-                _out << _init << "           " << (*currentState).substitution() << endl;
+                _out << _init << "           " << (*currentState).substitution() << std::endl;
                 currentState = (*currentState).pFather();
             }
         }
-        _out << endl;
+        _out << std::endl;
     }
     #endif
 }    // end namespace smtrat

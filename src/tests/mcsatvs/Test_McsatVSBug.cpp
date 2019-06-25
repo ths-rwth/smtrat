@@ -6,7 +6,7 @@
 #include <smtrat-mcsat/smtrat-mcsat.h>
 
 #include <carl/core/Variable.h>
-#include <carl/formula/model/evaluation/ModelEvaluation.h>
+#include <carl-model/evaluation/ModelEvaluation.h>
 
 #include <smtrat-mcsat/explanations/vs/VSHelper.h>
 

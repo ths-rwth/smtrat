@@ -4,7 +4,7 @@
 \usepackage[pdfpagelabels=true,linktocpage]{hyperref}
 \usepackage{color}
 
-\title{\texttt{SMT-RAT 2.2}}
+\title{\texttt{SMT-RAT 19.04}}
 
 \begin{document}
 
@@ -18,37 +18,31 @@ A more detailed description of \texttt{SMT-RAT} can be found at \href{https://gi
 There will be two versions of \texttt{SMT-RAT} that employ different strategies that we call \texttt{SMT-RAT} and \texttt{SMT-RAT-MCSAT}.
 
 \paragraph{\texttt{SMT-RAT}} focuses on nonlinear arithmetic.
-As core theory solving modules, it employs interval constraint propagation (ICP) as presented in~\cite{GGIGSC10}, virtual substitution (VS)~\cite{Article_Corzilius_FCT2011} and the cylindrical algebraic decomposition (CAD)~\cite{Article_Loup_TubeCAD}. For ICP, lifting splitting decisions and contraction lemmas to the SAT solving and aided by the other approaches for nonlinear constraints in case it cannot determine whether a box contains a solution or not. For nonlinear integer problems, we employ bit blasting up to some fixed number of bits~\cite{kruger2015bitvectors} and use branch-and-bound~\cite{Kremer2016} afterwards.
-The SAT solving takes place in an adaption of the SAT solver \texttt{minisat}~\cite{minisat} and we use it for SMT solving in a less-lazy fashion~\cite{sebastiani2007lazy}.
+As core theory solving modules, it employs interval constraint propagation (ICP) as presented in~\cite{GGIGSC10}, virtual substitution (VS)~\cite{Article_Corzilius_FCT2011} and the cylindrical algebraic decomposition (CAD)~\cite{Loup2013}. For ICP, lifting splitting decisions and contraction lemmas to the SAT solving and aided by the other approaches for nonlinear constraints in case it cannot determine whether a box contains a solution or not. For nonlinear integer problems, we employ bit blasting up to some fixed number of bits~\cite{kruger2015bitvectors} and use branch-and-bound~\cite{Kremer2016} afterwards.
+The SAT solving takes place in an adaption of the SAT solver \texttt{minisat}~\cite{Een2003} and we use it for SMT solving in a less-lazy fashion~\cite{sebastiani2007lazy}.
 
 For linear inputs we use the Simplex method equipped with branch-and-bound and cutting-plane procedures as presented in \cite{DM06}.
 Furthermore, we apply several preprocessing techniques, e.g., using factorizations to simplify constraints, applying substitutions gained by constraints being equations or breaking symmetries. We also normalize and simplify formulas if it is obvious.
 
-%\paragraph{\texttt{SMT-RAT-BV}} is aimed at bit-vectors only. It was the result of a master thesis \cite{kruger2015bitvectors} and is mainly used as first stage when solving nonlinear integer arithmetic in \texttt{SMT-RAT}.
-%It can however also be used to solve actual bit-vector formulas, though it is not particularly optimized for this case. It only implements a straight-forward encoding from bit-vectors to propositional logic with constant propagation and incremental flattening.
+\paragraph{\texttt{SMT-RAT-MCSAT}} uses our implementation of the MCSAT framework \cite{Moura2013} that is still being worked on.
+It is equipped with multiple explanation backends based on the following: NLSAT-style CAD-based; Fourier-Motzkin variable elimination; Virtual substitution as in \cite{Abraham2017}; OneCell CAD as in \cite{Neuss2018}.
+The general MCSAT framework is integrated in our adapted \texttt{minisat}~\cite{Een2003} solver, but is not particularly optimized yet.
+The latest addition has been making the variable ordering fully dynamic as suggested in \cite{Jovanovic2013}.
 
-%\paragraph{\texttt{SMT-RAT-DL}} is the intermediate result of a bachelor thesis aimed at solving difference logic problems incrementally.
-%It contains implementations of both Floyd-Warshall and Bellman-Ford for the standard graph-based approach. Apart from the SAT solver, the whole implementation was done by Christopher Lösbrock during his Bachelor thesis.
 
-\paragraph{\texttt{SMT-RAT-MCSAT}} uses our preliminary implementation of the MCSAT framework \cite{nlsat}, equipped with an NLSAT-style CAD-based explanation function, enhanced with a simpler explanation function based on Fourier-Motzkin variable elimination. Further extensions, for example a VS-based explanation or a OneCellCAD-based explanation are being worked on, but not yet ready.
-The general MCSAT framework is integrated in our adapted \texttt{minisat}~\cite{minisat} solver, but is not optimized yet.
-For example, explanations are still generated eagerly and always added to the clause database which is presumably inferior to the version described in the original MCSAT approach and almost no work has been invested in finding a good variable ordering yet.
+\paragraph{Authors}
+
+Erika \'Abrah\'am,
+Gereon Kremer,
+Jasper Nalbach,
+Rebecca Haehn,
+Florian Corzilius,
+Sebastian Junges,
+Stefan Schupp.
 
 \newpage
 
-\paragraph{Authors}
-\begin{itemize}
-\item Erika \'Abrah\'am
-\item Gereon Kremer
-\item Rebecca Haehn
-\item Florian Corzilius
-\item Sebastian Junges
-\item Stefan Schupp
-\item Andreas Krüger
-\item Christopher Lösbrock
-\end{itemize}
-
 \bibliographystyle{plain}
-  \bibliography{../string,../literature,../local,../crossref}
+\bibliography{literature}
 
 \end{document}

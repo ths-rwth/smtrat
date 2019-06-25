@@ -395,7 +395,7 @@ namespace smtrat
 					if (exponent.second % 2 == 1)
 						signChangeSubformulas.emplace_back(moment.mSignVariant);
 				}
-				signChangeFormula = FormulaT(carl::FormulaType::XOR, move(signChangeSubformulas));
+				signChangeFormula = FormulaT(carl::FormulaType::XOR, std::move(signChangeSubformulas));
 			}
 			
 			/// Create the rating case distinction formula
@@ -438,16 +438,16 @@ namespace smtrat
 			);
 			conjunctions.emplace_back(
 				carl::FormulaType::IMPLIES,
-				positive ? move(signChangeFormula) : move(signChangeFormula.negated()),
-				FormulaT(move(hyperplane), Settings::separatorType == SeparatorType::STRICT ? carl::Relation::LESS : carl::Relation::LEQ)
+				positive ? std::move(signChangeFormula) : std::move(signChangeFormula.negated()),
+				FormulaT(std::move(hyperplane), Settings::separatorType == SeparatorType::STRICT ? carl::Relation::LESS : carl::Relation::LEQ)
 			);
 		}
 		if (Settings::separatorType == SeparatorType::WEAK)
 			conjunctions.emplace_back(totalRating, carl::Relation::GREATER);
 		return FormulaT(
 			carl::FormulaType::AND,
-			FormulaT(carl::FormulaType::OR, move(disjunctions)),
-			FormulaT(carl::FormulaType::AND, move(conjunctions))
+			FormulaT(carl::FormulaType::OR, std::move(disjunctions)),
+			FormulaT(carl::FormulaType::AND, std::move(conjunctions))
 		);
 	}
 	

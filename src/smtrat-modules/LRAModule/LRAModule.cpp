@@ -31,7 +31,7 @@ namespace smtrat
         mNonlinearConstraints(),
         mActiveResolvedNEQConstraints(),
         mActiveUnresolvedNEQConstraints(),
-        mDelta( carl::freshRealVariable( "delta_" + to_string( id() ) ) ),
+        mDelta( carl::freshRealVariable( "delta_" + std::to_string( id() ) ) ),
         mBoundCandidatesToPass(),
         mRationalAssignment()
     {}
@@ -44,7 +44,7 @@ namespace smtrat
     bool LRAModule<Settings>::informCore( const FormulaT& _constraint )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "LRAModule::inform  " << "inform about " << _constraint << endl;
+        std::cout << "LRAModule::inform  " << "inform about " << _constraint << std::endl;
         #endif
         if( _constraint.getType() == carl::FormulaType::CONSTRAINT )
         {
@@ -63,7 +63,7 @@ namespace smtrat
     void LRAModule<Settings>::deinformCore( const FormulaT& _constraint )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "LRAModule::deinform  " << "deinform about " << _constraint << endl;
+        std::cout << "LRAModule::deinform  " << "deinform about " << _constraint << std::endl;
         #endif
         if( _constraint.constraint().lhs().isLinear() )
         {
@@ -76,7 +76,7 @@ namespace smtrat
     bool LRAModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "LRAModule::add " << _subformula->formula() << endl;
+        std::cout << "LRAModule::add " << _subformula->formula() << std::endl;
         #endif
         mOptimumComputed = false;
         switch( _subformula->formula().getType() )
@@ -189,7 +189,7 @@ namespace smtrat
     void LRAModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "LRAModule::remove " << _subformula->formula() << endl;
+        std::cout << "LRAModule::remove " << _subformula->formula() << std::endl;
         #endif
         mOptimumComputed = false;
         const FormulaT& formula = _subformula->formula();
@@ -331,7 +331,7 @@ namespace smtrat
     Answer LRAModule<Settings>::checkCore()
     {
         #ifdef DEBUG_LRA_MODULE
-        cout << "LRAModule::check with mMinimizingCheck = " << mMinimizingCheck << endl;
+        std::cout << "LRAModule::check with mMinimizingCheck = " << mMinimizingCheck << std::endl;
         for( const auto& f : rReceivedFormula() )
             std::cout << f.formula() << std::endl;
         #endif
@@ -370,7 +370,7 @@ namespace smtrat
                 if( pivotingElement.first == lra::LAST_ENTRY_ID )
                 {
                     #ifdef DEBUG_LRA_MODULE
-                    mTableau.print(); mTableau.printVariables(); cout << "True" << endl;
+                    mTableau.print(); mTableau.printVariables(); std::cout << "True" << std::endl;
                     #endif
                     mTableau.storeAssignment();
                     mRationalModelComputed = false;
@@ -574,7 +574,7 @@ namespace smtrat
                     else
                     {
                         #ifdef DEBUG_LRA_MODULE
-                        std::cout << std::endl; mTableau.print( pivotingElement.first, cout, "    " ); std::cout << std::endl;
+                        std::cout << std::endl; mTableau.print( pivotingElement.first, std::cout, "    " ); std::cout << std::endl;
                         #endif
                         mTableau.pivot( pivotingElement.first, true );
                     }
@@ -1299,7 +1299,7 @@ namespace smtrat
                 {
                     ConstraintT gomory_constr = ConstraintT( *gomory_poly , carl::Relation::GEQ );
                     ConstraintT neg_gomory_constr = ConstraintT( *gomory_poly - (*gomory_poly).evaluate( rMap_ ), carl::Relation::LESS );
-                    //std::cout << gomory_constr << endl;
+                    //std::cout << gomory_constr << std::endl;
                     assert( !gomory_constr.satisfiedBy( rMap_ ) );
                     assert( !neg_gomory_constr.satisfiedBy( rMap_ ) );
                     FormulasT subformulas;
@@ -1442,74 +1442,74 @@ namespace smtrat
     #ifdef DEBUG_METHODS_LRA_MODULE
 
     template<class Settings>
-    void LRAModule<Settings>::printLinearConstraints( ostream& _out, const string _init ) const
+    void LRAModule<Settings>::printLinearConstraints( std::ostream& _out, const std::string _init ) const
     {
-        _out << _init << "Linear constraints:" << endl;
+        _out << _init << "Linear constraints:" << std::endl;
         for( auto iter = mLinearConstraints.begin(); iter != mLinearConstraints.end(); ++iter )
         {
-            _out << _init << "   " << iter << endl;
+            _out << _init << "   " << *iter << std::endl;
         }
     }
 
     template<class Settings>
-    void LRAModule<Settings>::printNonlinearConstraints( ostream& _out, const string _init ) const
+    void LRAModule<Settings>::printNonlinearConstraints( std::ostream& _out, const std::string _init ) const
     {
-        _out << _init << "Nonlinear constraints:" << endl;
+        _out << _init << "Nonlinear constraints:" << std::endl;
         for( auto iter = mNonlinearConstraints.begin(); iter != mNonlinearConstraints.end(); ++iter )
         {
-            _out << _init << "   " << iter << endl;
+            _out << _init << "   " << *iter << std::endl;
         }
     }
 
     template<class Settings>
-    void LRAModule<Settings>::printConstraintToBound( ostream& _out, const string _init ) const
+    void LRAModule<Settings>::printConstraintToBound( std::ostream& _out, const std::string _init ) const
     {
-        _out << _init << "Mapping of constraints to bounds:" << endl;
+        _out << _init << "Mapping of constraints to bounds:" << std::endl;
         for( auto iter = mTableau.constraintToBound().begin(); iter != mTableau.constraintToBound().end(); ++iter )
         {
-            _out << _init << "   " << iter->first << endl;
+            _out << _init << "   " << iter->first << std::endl;
             for( auto iter2 = iter->second->begin(); iter2 != iter->second->end(); ++iter2 )
             {
                 _out << _init << "        ";
-                (*iter2)->print( true, cout, true );
-                _out << endl;
+                (*iter2)->print( true, std::cout, true );
+                _out << std::endl;
             }
         }
     }
 
     template<class Settings>
-    void LRAModule<Settings>::printBoundCandidatesToPass( ostream& _out, const string _init ) const
+    void LRAModule<Settings>::printBoundCandidatesToPass( std::ostream& _out, const std::string _init ) const
     {
-        _out << _init << "Bound candidates to pass:" << endl;
+        _out << _init << "Bound candidates to pass:" << std::endl;
         for( auto iter = mBoundCandidatesToPass.begin(); iter != mBoundCandidatesToPass.end(); ++iter )
         {
             _out << _init << "   ";
-            (*iter)->print( true, cout, true );
-            _out << " [" << (*iter)->pInfo()->updated << "]" << endl;
+            (*iter)->print( true, std::cout, true );
+            _out << " [" << (*iter)->pInfo()->updated << "]" << std::endl;
         }
     }
 
     template<class Settings>
-    void LRAModule<Settings>::printRationalModel( ostream& _out, const string _init ) const
+    void LRAModule<Settings>::printRationalModel( std::ostream& _out, const std::string _init ) const
     {
         const EvalRationalMap& rmodel = getRationalModel();
-        _out << _init << "Rational model:" << endl;
+        _out << _init << "Rational model:" << std::endl;
         for( auto assign = rmodel.begin(); assign != rmodel.end(); ++assign )
         {
             _out << _init;
-            _out << setw(10) << assign->first;
-            _out << " -> " << assign->second << endl;
+            _out << std::setw(10) << assign->first;
+            _out << " -> " << assign->second << std::endl;
         }
     }
 
     template<class Settings>
-    void LRAModule<Settings>::printTableau( ostream& _out, const string _init ) const
+    void LRAModule<Settings>::printTableau( std::ostream& _out, const std::string _init ) const
     {
         mTableau.print( LAST_ENTRY_ID, _out, _init );
     }
 
     template<class Settings>
-    void LRAModule<Settings>::printVariables( ostream& _out, const string _init ) const
+    void LRAModule<Settings>::printVariables( std::ostream& _out, const std::string _init ) const
     {
         mTableau.printVariables( true, _out, _init );
     }

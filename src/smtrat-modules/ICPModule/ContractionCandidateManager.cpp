@@ -39,7 +39,7 @@ namespace icp
         std::pair<std::set<const ContractionCandidate*>::iterator, bool> res = _candidates.insert(_candidate);
         if ( res.second )
         {
-//            cout << "[Closure] Add candidate ";
+//            std::cout << "[Closure] Add candidate ";
             _candidate->print();
             for( auto symbolIt = _candidate->constraint().variables().begin(); symbolIt != _candidate->constraint().variables().end(); ++symbolIt )
             {

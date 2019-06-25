@@ -7,8 +7,8 @@ namespace smtrat {
 		auto treeIt = mTreeCache.find(constraint.variables());
 		if (treeIt == mTreeCache.end()) {
 			TotalizerTree* tree = new TotalizerTree(constraint.variables());
-			mTreeCache.insert(map<carl::Variables, TotalizerTree*>::value_type(constraint.variables(), tree));
-			mSumPropagationFormulaCache.insert(map<carl::Variables, FormulaT>::value_type(constraint.variables(), encodeSumPropagation(*tree)));
+			mTreeCache.insert(std::map<carl::Variables, TotalizerTree*>::value_type(constraint.variables(), tree));
+			mSumPropagationFormulaCache.insert(std::map<carl::Variables, FormulaT>::value_type(constraint.variables(), encodeSumPropagation(*tree)));
 		}
 
 		TotalizerTree* tree = mTreeCache[constraint.variables()];

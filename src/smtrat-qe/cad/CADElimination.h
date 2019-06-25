@@ -14,7 +14,7 @@
 #include <carl/core/Sign.h>
 #include <carl/core/UnivariatePolynomial.h>
 #include <carl/core/polynomialfunctions/Factorization.h>
-#include <carl/formula/model/Model.h>
+#include <carl-model/Model.h>
 #include <carl/formula/model/ran/RealAlgebraicNumberEvaluation.h>
 
 #include <algorithm>

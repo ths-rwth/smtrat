@@ -5,8 +5,8 @@
 #include "../parser/InstructionHandler.h"
 #include "config.h"
 
-#include <carl/formula/parser/DIMACSExporter.h>
-#include <carl/io/SMTLIBStream.h>
+#include <carl-io/DIMACSExporter.h>
+#include <carl-io/SMTLIBStream.h>
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-unsat-cores/smtrat-unsat-cores.h>
 

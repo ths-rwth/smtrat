@@ -1147,7 +1147,7 @@ namespace smtrat
             
             /**
              * [Minisat related code]
-             * @param cout [Minisat related code]
+             * @param std::cout [Minisat related code]
              * @param [Minisat related code]
              */
             void printSatState( std::ostream& = std::cout, const std::string = "" );

@@ -2820,7 +2820,9 @@ namespace smtrat
                     columnWidths.push_back( 0 );
                     continue;
                 }
-                size_t column_width = columnVar->expression().toString( true, _friendlyNames ).size();
+				std::stringstream ss;
+				ss << columnVar->expression();
+				size_t column_width = ss.str().size();
                 if( columnVar->assignment().toString().size() > column_width )
                     column_width = columnVar->assignment().toString().size();
                 if( columnVar->infimum().toString().size()+2 > column_width )
@@ -2861,7 +2863,7 @@ namespace smtrat
                     continue;
                 _out << " ";
                 std::stringstream out;
-                out << columnVar->expression().toString( true, _friendlyNames );
+                out << columnVar->expression();
                 _out << std::setw( (int) columnWidths[columnVar->position()] ) << out.str();
                 if(  _pivotingElement != LAST_ENTRY_ID && pivotingColumn == columnVar->position() )
                     _out << " " << pivoting_separator;
@@ -2883,7 +2885,7 @@ namespace smtrat
                         if( !(rowVar->factor() == 1) )
                             out << "(" << rowVar->factor() << ")*(";
                     }
-                    out << rowVar->expression().toString( true, _friendlyNames );
+                    out << rowVar->expression();
                     if( Settings::omit_division )
                     {
                         if( !(rowVar->factor() == 1) )
@@ -2942,11 +2944,11 @@ namespace smtrat
                         rowIter.hMove( false );
                     }
                     _out << " ";
-                    _out << std::setw( (int) basic_var_assign_width ) << rowVar->assignment().toString();
+                    _out << std::setw( (int) basic_var_assign_width ) << rowVar->assignment();
                     _out << " [";
-                    _out << std::setw( (int) basic_var_infimum_width ) << rowVar->infimum().toString();
+                    _out << std::setw( (int) basic_var_infimum_width ) << rowVar->infimum();
                     _out << ", ";
-                    _out << std::setw( (int) basic_var_supremum_width ) << rowVar->supremum().toString();
+                    _out << std::setw( (int) basic_var_supremum_width ) << rowVar->supremum();
                     _out << "]";
                     _out << std::endl;
                 }

@@ -25,7 +25,7 @@ if [[ ${TASK} == "dependencies" ]]; then
 	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
 	stop_keep_waiting
 	
-elif [[ ${TASK} == "doxygen" ]]; then
+elif [[ ${TASK} == "documentation" ]]; then
 	
 	cmake -D DOCUMENTATION_CREATE_PDF=ON ../
 	make doc benchmax-doc || return 1

@@ -35,7 +35,7 @@
 #include "handle_options.h"
 #include "parser/ParserWrapper.h"
 #include "parser/ParserSettings.h"
-#include <carl/io/SMTLIBStream.h>
+#include <carl-io/SMTLIBStream.h>
 #include <carl/util/TimingCollector.h>
 #include "tools/config.h"
 #include "tools/execute_smtlib.h"

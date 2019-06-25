@@ -45,6 +45,8 @@ struct CoreSettings {
 struct OperationSettings {
 	/// Name of the backend to be used.
 	std::string backend;
+	/// Name of the operation mode.
+	std::string mode;
 	/// Name of the xml file to convert to an ods file.
 	std::string convert_ods_filename;
 	/// Name of the xslt filter used for ods import.

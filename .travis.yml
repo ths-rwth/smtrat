@@ -96,36 +96,13 @@ matrix:
           packages: [*packages_base, g++-8]
     - stage: dependencies
       os: osx
-      osx_image: xcode9.3
+      osx_image: xcode10.2
       script: TASK=dependencies source .ci/build.sh
       addons:
         homebrew:
           packages:
           - llvm
-    - stage: dependencies
-      os: osx
-      osx_image: xcode9.4
-      script: TASK=dependencies source .ci/build.sh
-      addons:
-        homebrew:
-          packages:
-          - llvm
-    - stage: dependencies
-      os: osx
-      osx_image: xcode10
-      script: TASK=dependencies source .ci/build.sh
-      addons:
-        homebrew:
-          packages:
-          - llvm
-    - stage: dependencies
-      os: osx
-      osx_image: xcode10.1
-      script: TASK=dependencies source .ci/build.sh
-      addons:
-        homebrew:
-          packages:
-          - llvm
+          update: true
     - stage: build
       os: linux
       compiler: clang++-5.0
@@ -203,47 +180,24 @@ matrix:
           packages: [*packages_base, g++-8]
     - stage: build
       os: osx
-      osx_image: xcode9.3
+      osx_image: xcode10.2
       script: source .ci/build.sh
       addons:
         homebrew:
           packages:
           - llvm
-    - stage: build
-      os: osx
-      osx_image: xcode9.4
-      script: source .ci/build.sh
-      addons:
-        homebrew:
-          packages:
-          - llvm
-    - stage: build
-      os: osx
-      osx_image: xcode10
-      script: source .ci/build.sh
-      addons:
-        homebrew:
-          packages:
-          - llvm
-    - stage: build
-      os: osx
-      osx_image: xcode10.1
-      script: source .ci/build.sh
-      addons:
-        homebrew:
-          packages:
-          - llvm
+          update: true
     - stage: build
       os: linux
       compiler: g++-8
-      env: CC=gcc-8 CXX=g++-8 TASK=doxygen
+      env: CC=gcc-8 CXX=g++-8 TASK=documentation
       if: branch = master
       script: MAKE_PARALLEL=-j1 source .ci/build.sh
       addons:
         apt:
           sources:
           - *sources_base
-          packages: [*packages_base, g++-8, doxygen, ghostscript, latex-xcolor, lmodern, pgf, texinfo, texlive, texlive-font-utils, texlive-latex-extra]
+          packages: [*packages_base, g++-8, doxygen, ghostscript, latex-xcolor, lmodern, pgf, texinfo, texlive, texlive-font-utils, texlive-latex-extra, python3-pip, python3-setuptools]
     - stage: build
       os: linux
       compiler: clang++-9.0
@@ -283,16 +237,7 @@ matrix:
       env: CC=gcc-8 CXX=g++-8
     - stage: build
       os: osx
-      osx_image: xcode9.3
-    - stage: build
-      os: osx
-      osx_image: xcode9.4
-    - stage: build
-      os: osx
-      osx_image: xcode10
-    - stage: build
-      os: osx
-      osx_image: xcode10.1
+      osx_image: xcode10.2
     - stage: build
       os: linux
       env: CC=clang-9 CXX=clang++-9 TASK=tidy
