@@ -608,7 +608,7 @@ public:
 		assert(v < mVarPropertyCache.size());
 
 		if (mVarPropertyCache[v].theoryVars == boost::none) {
-			if (!mGetter.isTheoryAbstraction(v)) {
+			if (!mGetter.isTheoryAbstraction(static_cast<int>(v))) {
 				mVarPropertyCache[v].theoryVars = std::vector<Minisat::Var>();
 			} else {
 				const auto& reabstraction = mGetter.reabstractVariable(var);
