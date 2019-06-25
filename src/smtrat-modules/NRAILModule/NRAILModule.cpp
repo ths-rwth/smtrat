@@ -707,7 +707,7 @@ namespace smtrat
 
                 if (AnswerOfLRA != SAT) {
 
-                    if (smtrat::LOG::getInstance().isDebugEnabled()) {cout << "Linearized Formula is Unsatisfied/Unknown!" << std::endl;}
+                    if (smtrat::LOG::getInstance().isDebugEnabled()) {std::cout << "Linearized Formula is Unsatisfied/Unknown!" << std::endl;}
 
                     if (AnswerOfLRA == UNSAT) {
                         generateTrivialInfeasibleSubset();
