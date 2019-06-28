@@ -2818,7 +2818,7 @@ namespace smtrat
                 // If we do not already have a branching literal, we pick one
                 if( next == lit_Undef )
                 {
-                    assert(mMCSAT.fullConsistencyCheck());
+                    assert(!Settings::mc_sat || mMCSAT.fullConsistencyCheck());
 
                     // New variable decision:
                     decisions++;
