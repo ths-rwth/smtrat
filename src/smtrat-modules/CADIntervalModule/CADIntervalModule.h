@@ -31,7 +31,7 @@ namespace smtrat
 				return SettingsType::moduleName;
 			}
 			CADIntervalModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
-
+			
 			~CADIntervalModule();
 			
 			// Main interfaces.

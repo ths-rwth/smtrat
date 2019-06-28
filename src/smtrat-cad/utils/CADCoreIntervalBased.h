@@ -41,7 +41,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::PreferLifting> {
         }
 
         //@todo this is code from CADCore, adapt
-		assert(0 <= it.depth() && it.depth() < cad.dim());
+		/*assert(0 <= it.depth() && it.depth() < cad.dim());
 		SMTRAT_LOG_DEBUG("smtrat.cad", "Processing " << cad.mLifting.extractSampleMap(it));
 		if (it.depth() > 0 && cad.checkPartialSample(it, cad.idLP(it.depth())) == Answer::UNSAT) {
 			cad.mLifting.removeNextSample();
@@ -57,7 +57,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::PreferLifting> {
 			SMTRAT_LOG_TRACE("smtrat.cad", "Queue" << std::endl << cad.mLifting.getLiftingQueue());
 			cad.mLifting.removeNextSample();
 			cad.mLifting.addTrivialSample(it);
-		}
+		} */
 		return true;
 	}
 
