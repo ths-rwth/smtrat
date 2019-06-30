@@ -2111,6 +2111,9 @@ namespace smtrat
                 }
             }
         }
+        if (Settings::use_new_var_scheduler) {
+            var_scheduler.attachClause(cr);
+        }
     }
 
     template<class Settings>
@@ -2161,6 +2164,9 @@ namespace smtrat
                 }
             }
 		}
+        if (Settings::use_new_var_scheduler) {
+            var_scheduler.detachClause(cr);
+        }
     }
 
     template<class Settings>
@@ -3159,8 +3165,11 @@ namespace smtrat
         //        }
         // Check first, if a splitting decision has to be made.
         next = pickSplittingVar();
-        if( next != var_Undef )
+        if( next != var_Undef ) {
             mNewSplittingVars.pop_back();
+            SMTRAT_LOG_DEBUG("smtrat.sat", "Got " << next);
+            return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
+        }
         else
         {
             if( /*!mReceivedFormulaPurelyPropositional &&*/ Settings::check_active_literal_occurrences && false)
@@ -3177,10 +3186,11 @@ namespace smtrat
             {
 				SMTRAT_LOG_TRACE("smtrat.sat", "Retrieving next variable from the heap");
                 if (Settings::use_new_var_scheduler) {
-                    next = var_scheduler.pop();
-                    assert(next == var_Undef || (decision[next] && bool_value(next) == l_Undef));
-                    assert(!Settings::mc_sat || next == var_Undef || mBooleanConstraintMap[next].first == nullptr || mBooleanConstraintMap[next].first->reabstraction.getType() != carl::FormulaType::VARASSIGN);
-                    SMTRAT_LOG_TRACE("smtrat.sat", "Current " << next);
+                    Lit next = var_scheduler.pop();
+                    assert(next == lit_Undef || (decision[Minisat::var(next)] && bool_value(next) == l_Undef));
+                    assert(!Settings::mc_sat || next == lit_Undef || mBooleanConstraintMap[Minisat::var(next)].first == nullptr || mBooleanConstraintMap[Minisat::var(next)].first->reabstraction.getType() != carl::FormulaType::VARASSIGN);
+                    SMTRAT_LOG_TRACE("smtrat.sat", "Got " << next);
+                    return next;
                 } else {
                     while( next == var_Undef || bool_value( next ) != l_Undef || !decision[next] )
                     {
@@ -3194,14 +3204,16 @@ namespace smtrat
                             next = order_heap.removeMin();
                         SMTRAT_LOG_TRACE("smtrat.sat", "Current " << next);
                     }
+                    SMTRAT_LOG_DEBUG("smtrat.sat", "Got " << next);
+                    return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
                 }
             }
             else {
                 return bestBranchLit();
             }
         }
-		SMTRAT_LOG_DEBUG("smtrat.sat", "Got " << next);
-        return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
+        assert(false);
+        return lit_Undef;
         //return next == var_Undef ? lit_Undef : mkLit( next, rnd_pol ? drand( random_seed ) < 0.5 : polarity[next] );
     }
     
@@ -4191,6 +4203,10 @@ NextClause:
             {
                 cls.reloc( ca, to );
             }
+        }
+
+        if (Settings::use_new_var_scheduler) {
+            var_scheduler.relocateClauses([&](Minisat::CRef& cl) { ca.reloc(cl, to); });
         }
         
         // All watchers:

@@ -16,16 +16,31 @@ namespace smtrat
 
     protected:
         std::function<double(Minisat::Var)> getActivity;
+        std::function<char(Minisat::Var)> getPolarity;
         std::function<bool(Minisat::Var)> isDecisionVar;
         std::function<bool(Minisat::Var)> isBoolValueUndef;
+        std::function<bool(Minisat::Var)> isTheoryAbstraction;
+        std::function<const FormulaT&(Minisat::Var)> reabstractVariable;
+        std::function<const FormulaT&(Minisat::Lit)> reabstractLiteral;
+        std::function<const Minisat::Clause&(Minisat::CRef)> getClause;
+        std::function<Minisat::lbool(Minisat::Var)> getBoolVarValue;
+        std::function<Minisat::lbool(Minisat::Lit)> getBoolLitValue;
+
 
     public:
         template<typename BaseModule>
         VarSchedulerBase(BaseModule& baseModule) :
             getActivity([&baseModule](Minisat::Var v){ return baseModule.activity[v]; }),
+            getPolarity([&baseModule](Minisat::Var v){ return baseModule.polarity[v]; }),
             isDecisionVar([&baseModule](Minisat::Var v){ return baseModule.decision[v]; }),
-            isBoolValueUndef([&baseModule](Minisat::Var v){ return baseModule.bool_value(v) == l_Undef; }) {
-        }
+            isBoolValueUndef([&baseModule](Minisat::Var v){ return baseModule.bool_value(v) == l_Undef; }),
+            isTheoryAbstraction([&baseModule](Minisat::Var v){ return (baseModule.mBooleanConstraintMap.size() > v) && (baseModule.mBooleanConstraintMap[v].first != nullptr); }),
+            reabstractVariable([&baseModule](Minisat::Var v) -> const auto& { return baseModule.mBooleanConstraintMap[v].first->reabstraction; }),
+            reabstractLiteral([&baseModule](Minisat::Lit l) -> const auto& { return Minisat::sign(l) ? baseModule.mBooleanConstraintMap[Minisat::var(l)].second->reabstraction : baseModule.mBooleanConstraintMap[Minisat::var(l)].first->reabstraction; }),
+            getClause([&baseModule](Minisat::CRef cl) -> const auto& { return baseModule.getClause(cl); }),
+            getBoolVarValue([&baseModule](Minisat::Var v){ return baseModule.bool_value(v); }),
+            getBoolLitValue([&baseModule](Minisat::Lit l){ return baseModule.bool_value(l); })
+        {}
 
         /**
          * Rebuild heap.
@@ -40,12 +55,12 @@ namespace smtrat
         /**
          * Returns the next variable to be decided.
          */
-        Minisat::Var top() { assert(false); }
+        // Minisat::Var top() { assert(false); }
 
         /**
          * Returns and removes the next variable to be decided.
          */
-        Minisat::Var pop() { assert(false); }
+        Minisat::Lit pop() { assert(false); }
 
         /**
          * Check if empty.
@@ -55,7 +70,7 @@ namespace smtrat
         /**
          * Check if variable is contained.
          */
-        bool contains(Minisat::Var) { assert(false); }
+        // bool contains(Minisat::Var) { assert(false); }
 
         /**
          * Print.
@@ -75,6 +90,15 @@ namespace smtrat
 
         template<typename Constraints>
         void rebuildTheoryVars(const Constraints&) {
+        }
+
+        void attachClause(Minisat::CRef /* cl */) {
+        }
+
+        void detachClause(Minisat::CRef /* cl */) {
+        }
+
+        void relocateClauses(std::function<void(Minisat::CRef&)> /* relocate */) {            
         }
     };
 
@@ -134,10 +158,11 @@ namespace smtrat
             return order_heap[0];
         }
 
-        Minisat::Var pop() {
+        Minisat::Lit pop() {
             if (empty())
-                return var_Undef;
-            return order_heap.removeMin();
+                return Minisat::lit_Undef;
+            auto next = order_heap.removeMin();
+            return Minisat::mkLit( next, getPolarity(next) );
         }
 
         bool empty() {
@@ -146,9 +171,11 @@ namespace smtrat
             return order_heap.empty();
         }
 
+        /*
         bool contains(Minisat::Var var) {
             return order_heap.inHeap(var) && valid(var);
         }
+        */
 
         void print() const {
             order_heap.print();
@@ -231,18 +258,20 @@ namespace smtrat
             }
         }
 
+        /*
         Minisat::Var top() {
             if (empty())
                 return var_Undef;
             return vars.back();
         }
+        */
 
-        Minisat::Var pop() {
+        Minisat::Lit pop() {
             if (empty())
-                return var_Undef;
+                return Minisat::lit_Undef;
             auto res = vars.back();
             vars.pop_back();
-            return res;
+            return Minisat::mkLit( res, getPolarity(res) );
         }
 
         bool empty() {
@@ -251,9 +280,11 @@ namespace smtrat
             return vars.empty();
         }
 
+        /*
         bool contains(Minisat::Var var) {
             return std::find(vars.begin(), vars.end(), var) != vars.end() && valid(var);
         }
+        */
 
         void print() const {
             std::cout << "Random scheduler contents: " << vars << std::endl;
