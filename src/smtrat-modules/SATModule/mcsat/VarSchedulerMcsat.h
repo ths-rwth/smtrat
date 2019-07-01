@@ -440,7 +440,7 @@ namespace smtrat {
      * theory variable while the theory ordering is static.
      * This corresponds to the original NLSAT strategy.
      */
-    template<typename TheoryScheduler>
+    template<typename TheoryScheduler, bool respectActivities>
     class VarSchedulerMcsatUnivariateClausesOnly : public VarSchedulerMcsatBase {
         private:
             bool univariate(Minisat::CRef cl) {
@@ -491,12 +491,19 @@ namespace smtrat {
             }
 
             Minisat::Lit undefLitIn(Minisat::CRef cl) {
+                Minisat::Lit res = Minisat::lit_Undef;
                 for (int i = 0; i < getClause(cl).size(); i++) {
-                    if (getBoolLitValue(getClause(cl)[i]) == l_Undef) {
-                        return getClause(cl)[i];
+                    auto lit = getClause(cl)[i];
+                    if (getBoolLitValue(lit) == l_Undef) {
+                        if (!respectActivities) {
+                            return lit;
+                        }
+                        if (res == Minisat::lit_Undef || getActivity(Minisat::var(res)) < getActivity(Minisat::var(lit))) {
+                            res = lit;
+                        }
                     }
                 }
-                return Minisat::lit_Undef;
+                return res;
             }
 
             struct TheoryLevel {
@@ -512,13 +519,19 @@ namespace smtrat {
 
             Minisat::Lit pickBooleanVarFromCurrentLevel() {
                 assert(mTheoryLevels.back().variable != carl::Variable::NO_VARIABLE);
+                Minisat::Lit res = Minisat::lit_Undef;
                 for (const auto& cl : mTheoryLevels.back().clauses) {
                     auto lit = undefLitIn(cl);
                     if (lit != Minisat::lit_Undef) {
-                        return lit;
+                        if (!respectActivities) {
+                            return lit;
+                        }
+                        if (res == Minisat::lit_Undef || getActivity(Minisat::var(res)) < getActivity(Minisat::var(lit))) {
+                            res = lit;
+                        }
                     }
                 }
-                return Minisat::lit_Undef;
+                return res;
             }
 
 
@@ -557,14 +570,16 @@ namespace smtrat {
                 return true;
             }
 
-            void popTheoryLevel(carl::Variable v) {
-                if (mTheoryLevels.back().variable == v) {
-                    mUndecidedClauses.insert(mUndecidedClauses.end(), mTheoryLevels.back().clauses.begin(), mTheoryLevels.back().clauses.end());
-                } else {
-                    assert(mTheoryLevels.back().variable == carl::Variable::NO_VARIABLE);
-                    mUndecidedClauses.insert(mUndecidedClauses.end(), mTheoryLevels.back().clauses.begin(), mTheoryLevels.back().clauses.end());
-                }
-                
+            void popTheoryLevel() {
+                assert(mTheoryLevels.back().variable != carl::Variable::NO_VARIABLE);
+
+                auto v = mTheoryLevels.back().variable;
+                theory_ordering.insert(minisatVar(v));
+
+                mUndecidedClauses.insert(mUndecidedClauses.end(), mTheoryLevels.back().clauses.begin(), mTheoryLevels.back().clauses.end());
+                mTheoryLevels.pop_back();
+
+                assert(mTheoryLevels.back().variable != carl::Variable::NO_VARIABLE);
             }
 
         public:
@@ -614,8 +629,12 @@ namespace smtrat {
 
             void insert(Minisat::Var var) {
                 if (isTheoryVar(var)) {
-                    theory_ordering.insert(var);  
-                    popTheoryLevel(carlVar(var));            
+                    if (mTheoryLevels.back().variable != carl::Variable::NO_VARIABLE) {
+                        popTheoryLevel(); 
+                        assert(mTheoryLevels.back().variable == carlVar(var));    
+                    } else {
+                        theory_ordering.insert(var);
+                    }
                 } else {
                     // do nothing
                 }
@@ -664,7 +683,9 @@ namespace smtrat {
 
             template<typename Constraints>
             void rebuildTheoryVars(const Constraints& c) {
+                assert(mTheoryLevels.size() == 1 && mTheoryLevels.back().variable == carl::Variable::NO_VARIABLE);
                 theory_ordering.rebuildTheoryVars(c);
+                pickNextTheoryVar();
             }
 
     };

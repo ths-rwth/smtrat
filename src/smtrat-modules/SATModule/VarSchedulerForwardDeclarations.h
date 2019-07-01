@@ -15,6 +15,6 @@ namespace smtrat {
     class VarSchedulerMcsatActivityPreferTheory;
     template<int lookahead, mcsat::VariableOrdering vot>
     class VarSchedulerMcsatUnivariateConstraintsOnly;
-    template<typename TheoryScheduler>
+    template<typename TheoryScheduler, bool respectActivities>
     class VarSchedulerMcsatUnivariateClausesOnly;
 }
