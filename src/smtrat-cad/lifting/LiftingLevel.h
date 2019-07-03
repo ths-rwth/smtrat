@@ -15,9 +15,9 @@ namespace cad {
 	class LiftingLevel {
 	private:
 		//@todo check which of these are used and that all are initialized
-		std::vector<ConstraintT> mConstraints = std::vector<ConstraintT>();	/**< constraints */
+		std::vector<ConstraintT> mConstraints = std::vector<ConstraintT>();				/**< constraints */
 		carl::Variable currVar						= carl::Variable();					/**< this level is considered univariate on given variable */
-		std::vector<carl::Variable> mVariables 		= std::vector<carl::Variable>();	/**< variables */
+		std::vector<carl::Variable> mVariables 		= std::vector<carl::Variable>();	/**< variables, ordered */
 		Sample curSample	 						= Sample();							/**< current sample to be checked */
 		std::vector<CADInterval> intervals 			= std::vector<CADInterval>();		/**< unsat intervals */
 		std::set<RAN> levelintervals 				= set<RAN>();						/**< all bounds of unsat intervals, ordered */
@@ -147,6 +147,27 @@ namespace cad {
 			}
 		}
 
+		/** checks whether the variable is at least as high in the var order as currVar of level */
+		bool isAtLeastCurrVar(carl::Variable v) {
+			/* if currVar is given, obviously true */
+			if(v == currVar)
+				return true;
+
+			/* go throught vars until currvar, then look for the given variable */
+			bool curr = false;
+			for(auto var : mVariables) {
+				if(!curr && var == currVar)
+					curr = true;
+				else if(curr && var == v) {
+					return true;
+				/* case v = currVar covered before */
+				}
+
+			/* if the given var was not found at/after currVar */
+			return false;
+			}
+		}
+
 	public:
 
 		//@todo init all class vars
@@ -158,14 +179,15 @@ namespace cad {
 		void reset(std::vector<carl::Variable>&& vars) {
 			mVariables = std::move(vars);
 			//@todo current sample
-			intervals.clear();
-			levelintervals.clear();
+			resetIntervals();
 		}
 
 		/** removes all stored intervals */
 		void resetIntervals() {
 			intervals.clear();
 			levelintervals.clear();
+			levelintervalminf = false;
+			levelintervalpinf = false;
 		}
 
 		/** gets the current sample */
@@ -179,10 +201,24 @@ namespace cad {
 		*/
 		const auto& getUnsatIntervals(Sample s) const {
 			resetIntervals();
+
+			/* constraints are filtered for ones with main var currVar or higher */
+			std::vector<ConstraintT> constraints;
 			for(auto c : mConstraints) {
-				/*auto issat = c.satisfiedBy()*/
-				/*calcIntervalsFromPolys()*/
+				auto consvars = c.variables();
+				bool add = false;
+				for(auto v : consvars) {
+					if(isAtLeastCurrVar(v))
+						add = true;
+				}
+				/*@todo push back c(s) instead. how to substitute s into c? */
+				if(add)
+					constraints.push_back(c);
 			}
+
+			/*  */
+			/*auto issat = c.satisfiedBy()*/
+			/*calcIntervalsFromPolys()*/
 
 			//@todo
 			
