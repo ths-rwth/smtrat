@@ -15,9 +15,8 @@ namespace smtrat {
         std::function<bool(Minisat::Var)> isTheoryVar;
         std::function<carl::Variable(Minisat::Var)> carlVar;
         std::function<Minisat::Var(carl::Variable)> minisatVar;
+        std::function<Model()> currentModel;
         // std::function<const auto&()> booleanConstraintMap;
-        std::function<bool(Minisat::Var)> isTheoryAbstraction;
-        std::function<const FormulaT&(Minisat::Var)> reabstractVariable;
 
     public:
         template<typename BaseModule>
@@ -26,8 +25,7 @@ namespace smtrat {
             isTheoryVar([&baseModule](Minisat::Var v){ return baseModule.mMCSAT.isTheoryVar(v); }),
             carlVar([&baseModule](Minisat::Var v){ return baseModule.mMCSAT.carlVar(v); }),
             minisatVar([&baseModule](carl::Variable v){ return baseModule.mMCSAT.minisatVar(v); }),
-            isTheoryAbstraction([&baseModule](Minisat::Var v){ return (baseModule.mBooleanConstraintMap.size() > v) && (baseModule.mBooleanConstraintMap[v].first != nullptr); }),
-            reabstractVariable([&baseModule](Minisat::Var v) -> const auto& { return baseModule.mBooleanConstraintMap[v].first->reabstraction; })
+            currentModel([&baseModule](){ return baseModule.mMCSAT.model(); })
             // booleanConstraintMap([&baseModule]() -> const auto& { return baseModule.mBooleanConstraintMap; })
         {}
     };
@@ -63,19 +61,26 @@ namespace smtrat {
             return nextTheoryVar == ordering.end();
         }
 
+        /*
         Minisat::Var top() {
             return *nextTheoryVar;
         }
+        */
 
-        Minisat::Var pop() {
+        Minisat::Lit pop() {
+            if (empty()) {
+                return Minisat::lit_Undef;
+            }
             auto next = *nextTheoryVar;
             nextTheoryVar++;
-            return next;
+            return Minisat::mkLit( next, true );
         }
 
+        /*
         bool contains(Minisat::Var var) {
             return std::find(ordering.begin(), ordering.end(), var) != ordering.end();
         }
+        */
 
         void print() const {
             std::cout << "Theory variable ordering: " << ordering << std::endl;
@@ -154,6 +159,7 @@ namespace smtrat {
             }
         }
 
+        /*
         Minisat::Var top() {
             if (!boolean_ordering.empty()) {
                 return boolean_ordering.top();
@@ -163,8 +169,9 @@ namespace smtrat {
                 return var_Undef;
             }
         }
+        */
 
-        Minisat::Var pop() {
+        Minisat::Lit pop() {
             if (!boolean_ordering.empty()) {
                 SMTRAT_LOG_DEBUG("smtrat.sat.mcsat.scheduler", "Picking Boolean var");
                 return boolean_ordering.pop();
@@ -173,7 +180,7 @@ namespace smtrat {
                 return theory_ordering.pop();
             } else {
                 SMTRAT_LOG_DEBUG("smtrat.sat.mcsat.scheduler", "No variable available");
-                return var_Undef;
+                return Minisat::lit_Undef;
             }
         }
 
@@ -181,6 +188,7 @@ namespace smtrat {
             return boolean_ordering.empty() && theory_ordering.empty();
         }
 
+        /*
         bool contains(Minisat::Var var) {
             if (isTheoryVar(var)) {
                 return theory_ordering.contains(var);
@@ -188,6 +196,7 @@ namespace smtrat {
                 return boolean_ordering.contains(var);
             }
         }
+        */
 
         void print() const {
             boolean_ordering.print();
@@ -246,6 +255,7 @@ namespace smtrat {
             }
         }
 
+        /*
         Minisat::Var top() {
             if (!theory_ordering.empty()) {
                 return theory_ordering.top();
@@ -255,8 +265,9 @@ namespace smtrat {
                 return var_Undef;
             }
         }
+        */
 
-        Minisat::Var pop() {
+        Minisat::Lit pop() {
             if (!theory_ordering.empty()) {
                 SMTRAT_LOG_DEBUG("smtrat.sat.mcsat.scheduler", "Picking theory var");
                 return theory_ordering.pop();
@@ -265,7 +276,7 @@ namespace smtrat {
                 return boolean_ordering.pop();
             } else {
                 SMTRAT_LOG_DEBUG("smtrat.sat.mcsat.scheduler", "No variable available");
-                return var_Undef;
+                return Minisat::lit_Undef;
             }
         }
 
@@ -273,6 +284,7 @@ namespace smtrat {
             return boolean_ordering.empty() && theory_ordering.empty();
         }
 
+        /*
         bool contains(Minisat::Var var) {
             if (isTheoryVar(var)) {
                 return theory_ordering.contains(var);
@@ -280,6 +292,7 @@ namespace smtrat {
                 return boolean_ordering.contains(var);
             }
         }
+        */
 
         void print() const {
             boolean_ordering.print();
@@ -349,6 +362,7 @@ namespace smtrat {
             }
         }
 
+        /*
         Minisat::Var top() {
             if (!boolean_ordering.empty()) {
                 if (varDecidable(boolean_ordering.top()))
@@ -361,8 +375,9 @@ namespace smtrat {
             }
             return var_Undef;
         }
+        */
 
-        Minisat::Var pop() {
+        Minisat::Lit pop() {
             if (!boolean_ordering.empty()) {
                 if (varDecidable(boolean_ordering.top())) {
                     SMTRAT_LOG_DEBUG("smtrat.sat.mcsat.scheduler", "Picking Boolean var");
@@ -377,13 +392,14 @@ namespace smtrat {
                 return theory_ordering.pop();
             }
             SMTRAT_LOG_DEBUG("smtrat.sat.mcsat.scheduler", "No variable availabe");
-            return var_Undef;
+            return Minisat::lit_Undef;
         }
 
         bool empty() {
             return boolean_ordering.empty() && theory_ordering.empty();
         }
 
+        /*
         bool contains(Minisat::Var var) {
             if (isTheoryVar(var)) {
                 return theory_ordering.contains(var);
@@ -391,6 +407,7 @@ namespace smtrat {
                 return boolean_ordering.contains(var);
             }
         }
+        */
 
         void print() const {
             boolean_ordering.print();
@@ -418,6 +435,260 @@ namespace smtrat {
         }
     };
 
+    /**
+     * Decides only Constraints occuring in clauses that are univariate in the current
+     * theory variable while the theory ordering is static.
+     * This corresponds to the original NLSAT strategy.
+     */
+    template<typename TheoryScheduler, bool respectActivities>
+    class VarSchedulerMcsatUnivariateClausesOnly : public VarSchedulerMcsatBase {
+        private:
+            bool univariate(Minisat::CRef cl) {
+                const auto& x = mTheoryLevels.back().variable;
+
+                for (int i = 0; i < getClause(cl).size(); i++) {
+                    const auto& l = getClause(cl)[i];
+                    if (isTheoryAbstraction(Minisat::var(l))) {
+                        const auto& reabstraction = reabstractLiteral(l);
+
+                        const auto substituted = carl::model::substitute(reabstraction, currentModel());
+
+                        carl::Variables vars;
+                        substituted.arithmeticVars(vars);
+
+                        auto size = vars.size();
+                        for (auto iter = mTheoryLevels.begin(); iter != std::prev(mTheoryLevels.end()); iter++) {
+                            if (vars.find(iter->variable) != vars.end()){
+                                size --;
+                            }
+                        }
+
+                        if (size == 0)
+                            continue;
+                        if (size > 1 || vars.find(x) == vars.end()) {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            bool decidedByTheory(Minisat::CRef cl) {
+                for (int i = 0; i < getClause(cl).size(); i++) {
+                    const auto& l = getClause(cl)[i];
+                    if (isTheoryAbstraction(Minisat::var(l))) {
+                        const auto& eval = carl::model::evaluate(reabstractLiteral(l), currentModel());
+                        if (!eval.isBool()) {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            Minisat::Lit undefLitIn(Minisat::CRef cl) {
+                Minisat::Lit res = Minisat::lit_Undef;
+                for (int i = 0; i < getClause(cl).size(); i++) {
+                    auto lit = getClause(cl)[i];
+                    if (getBoolLitValue(lit) == l_Undef) {
+                        if (!respectActivities) {
+                            return lit;
+                        }
+                        if (res == Minisat::lit_Undef || getActivity(Minisat::var(res)) < getActivity(Minisat::var(lit))) {
+                            res = lit;
+                        }
+                    }
+                }
+                return res;
+            }
+
+            struct TheoryLevel {
+                std::vector<Minisat::CRef> clauses;
+                carl::Variable variable;
+            };
+
+            std::vector<Minisat::CRef> mUndecidedClauses;
+            std::vector<TheoryLevel> mTheoryLevels;
+
+            TheoryScheduler theory_ordering;
+
+
+            Minisat::Lit pickBooleanVarFromCurrentLevel() {
+                assert(mTheoryLevels.back().variable != carl::Variable::NO_VARIABLE);
+                Minisat::Lit res = Minisat::lit_Undef;
+                for (const auto& cl : mTheoryLevels.back().clauses) {
+                    auto lit = undefLitIn(cl);
+                    if (lit != Minisat::lit_Undef) {
+                        if (!respectActivities) {
+                            return lit;
+                        }
+                        if (res == Minisat::lit_Undef || getActivity(Minisat::var(res)) < getActivity(Minisat::var(lit))) {
+                            res = lit;
+                        }
+                    }
+                }
+                return res;
+            }
+
+
+            carl::Variable theoryDecision() {
+                // precondition: all clauses in mTheoryLevels.back().clauses should be satisfied (by Boolean/theory)!
+                assert(mTheoryLevels.back().variable != carl::Variable::NO_VARIABLE);
+                carl::Variable& v = mTheoryLevels.back().variable;
+                mTheoryLevels.emplace_back();
+                return v;
+            }
+            
+
+            bool pickNextTheoryVar() {
+                assert(mTheoryLevels.back().variable == carl::Variable::NO_VARIABLE);
+                for (auto cl = mUndecidedClauses.begin(); cl != mUndecidedClauses.end();) {
+                    if (decidedByTheory(*cl)) {
+                        mTheoryLevels[mTheoryLevels.size()-2].clauses.push_back(*cl);
+                        cl = mUndecidedClauses.erase(cl);
+                    } else {
+                        cl++;
+                    }
+                }
+                auto lit = theory_ordering.pop();
+                if (lit == Minisat::lit_Undef) {
+                    return false;
+                }
+                mTheoryLevels.back().variable = carlVar(Minisat::var(lit));
+                for (auto cl = mUndecidedClauses.begin(); cl != mUndecidedClauses.end();) {
+                    if (univariate(*cl)) {
+                        mTheoryLevels.back().clauses.push_back(*cl);
+                        cl = mUndecidedClauses.erase(cl);
+                    } else {
+                        cl++;
+                    }
+                }
+                return true;
+            }
+
+            void popTheoryLevel() {
+                assert(mTheoryLevels.back().variable != carl::Variable::NO_VARIABLE);
+
+                auto v = mTheoryLevels.back().variable;
+                theory_ordering.insert(minisatVar(v));
+
+                mUndecidedClauses.insert(mUndecidedClauses.end(), mTheoryLevels.back().clauses.begin(), mTheoryLevels.back().clauses.end());
+                mTheoryLevels.pop_back();
+
+                assert(mTheoryLevels.back().variable != carl::Variable::NO_VARIABLE);
+            }
+
+        public:
+
+            void attachClause(Minisat::CRef cl) {
+                // We only allow attaching clauses of level >= current level
+                // which is the case for learned clauses.
+                if (univariate(cl)) {
+                    mTheoryLevels.back().clauses.push_back(cl);
+                } else {
+                    assert(!decidedByTheory(cl));
+                    mUndecidedClauses.push_back(cl);
+                }
+            }
+
+            void detachClause(Minisat::CRef cl) {
+                mUndecidedClauses.erase(std::remove(mUndecidedClauses.begin(), mUndecidedClauses.end(), cl), mUndecidedClauses.end());
+                for (auto& level : mTheoryLevels) {
+                    level.clauses.erase(std::remove(level.clauses.begin(), level.clauses.end(), cl), level.clauses.end());
+                }
+            }
+
+            void relocateClauses(std::function<void(Minisat::CRef&)> relocate) {
+                for (auto& level : mTheoryLevels) {
+                    for (auto& clause : level.clauses) {
+                        relocate(clause);
+                    }
+                }  
+                for (auto& clause : mUndecidedClauses) {
+                    relocate(clause);
+                }      
+            }
+
+
+        public:
+            template<typename BaseModule>
+            explicit VarSchedulerMcsatUnivariateClausesOnly( BaseModule& baseModule ) :
+                VarSchedulerMcsatBase(baseModule),
+                theory_ordering( baseModule )
+            {
+                mTheoryLevels.emplace_back();
+            }
+
+            void rebuild() {
+                theory_ordering.rebuild();
+            }
+
+            void insert(Minisat::Var var) {
+                if (isTheoryVar(var)) {
+                    if (mTheoryLevels.back().variable != carl::Variable::NO_VARIABLE) {
+                        popTheoryLevel(); 
+                        assert(mTheoryLevels.back().variable == carlVar(var));    
+                    } else {
+                        theory_ordering.insert(var);
+                    }
+                } else {
+                    // do nothing
+                }
+            }
+
+            Minisat::Lit pop() {
+                if (mTheoryLevels.back().variable == carl::Variable::NO_VARIABLE) {
+                    if (!pickNextTheoryVar()) {
+                        return Minisat::lit_Undef;
+                    }
+                }
+                auto res = pickBooleanVarFromCurrentLevel();
+                if (res != Minisat::lit_Undef) {
+                    return res;
+                } else {
+                    auto x = theoryDecision();
+                    return Minisat::mkLit( minisatVar(x), true );
+                }
+            }
+
+            bool empty() {
+                return theory_ordering.empty() && pickBooleanVarFromCurrentLevel() == Minisat::lit_Undef;
+            }
+
+            void print() const {
+                theory_ordering.print();
+                for (const auto& level: mTheoryLevels) {
+                    std::cout << "Clauses in " << level.variable << ": " << level.clauses << std::endl;
+                }
+                std::cout << "Undecided clauses: " << mUndecidedClauses << std::endl;
+            }
+
+            // Events called by SATModule
+
+            void increaseActivity(Minisat::Var var) {
+                theory_ordering.increaseActivity(var);
+            }
+
+            void decreaseActivity(Minisat::Var var) {
+                theory_ordering.decreaseActivity(var);
+            }
+
+            void rebuildActivities() { 
+                theory_ordering.rebuild();
+            }
+
+            template<typename Constraints>
+            void rebuildTheoryVars(const Constraints& c) {
+                assert(mTheoryLevels.size() == 1 && mTheoryLevels.back().variable == carl::Variable::NO_VARIABLE);
+                theory_ordering.rebuildTheoryVars(c);
+                pickNextTheoryVar();
+            }
+
+    };
 
     /**
      * Activity-based scheduler preferring initially theory variables.
@@ -460,11 +731,13 @@ namespace smtrat {
             ordering.insert(var);
         }
 
+        /*
         Minisat::Var top() {
             return ordering.top();
         }
+        */
 
-        Minisat::Var pop() {
+        Minisat::Lit pop() {
             return ordering.pop();
         }
 
@@ -472,9 +745,11 @@ namespace smtrat {
             return ordering.empty();
         }
 
+        /*
         bool contains(Minisat::Var var) {
             return ordering.contains(var);
         }
+        */
 
         void print() const {
             ordering.print();
