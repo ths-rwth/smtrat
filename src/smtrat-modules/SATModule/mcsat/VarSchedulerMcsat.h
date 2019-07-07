@@ -571,10 +571,12 @@ namespace smtrat {
             }
 
             void popTheoryLevel() {
-                assert(mTheoryLevels.back().variable != carl::Variable::NO_VARIABLE);
+                assert(mTheoryLevels.size() > 1);
 
-                auto v = mTheoryLevels.back().variable;
-                theory_ordering.insert(minisatVar(v));
+                if (mTheoryLevels.back().variable != carl::Variable::NO_VARIABLE) {
+                    auto v = mTheoryLevels.back().variable;
+                    theory_ordering.insert(minisatVar(v));
+                }
 
                 mUndecidedClauses.insert(mUndecidedClauses.end(), mTheoryLevels.back().clauses.begin(), mTheoryLevels.back().clauses.end());
                 mTheoryLevels.pop_back();
@@ -629,7 +631,7 @@ namespace smtrat {
 
             void insert(Minisat::Var var) {
                 if (isTheoryVar(var)) {
-                    if (mTheoryLevels.back().variable != carl::Variable::NO_VARIABLE) {
+                    if (mTheoryLevels.back().variable != carl::Variable::NO_VARIABLE || mTheoryLevels.size() > 1) {
                         popTheoryLevel(); 
                         assert(mTheoryLevels.back().variable == carlVar(var));    
                     } else {
