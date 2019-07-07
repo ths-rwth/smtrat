@@ -535,6 +535,24 @@ namespace smtrat {
             }
 
 
+            Minisat::Lit pickBooleanVarFromUndecided() {
+                assert(mTheoryLevels.back().variable == carl::Variable::NO_VARIABLE);
+                Minisat::Lit res = Minisat::lit_Undef;
+                for (const auto& cl : mUndecidedClauses) {
+                    auto lit = undefLitIn(cl);
+                    if (lit != Minisat::lit_Undef) {
+                        if (!respectActivities) {
+                            return lit;
+                        }
+                        if (res == Minisat::lit_Undef || getActivity(Minisat::var(res)) < getActivity(Minisat::var(lit))) {
+                            res = lit;
+                        }
+                    }
+                }
+                return res;
+            }
+
+
             carl::Variable theoryDecision() {
                 // precondition: all clauses in mTheoryLevels.back().clauses should be satisfied (by Boolean/theory)!
                 assert(mTheoryLevels.back().variable != carl::Variable::NO_VARIABLE);
@@ -645,7 +663,8 @@ namespace smtrat {
             Minisat::Lit pop() {
                 if (mTheoryLevels.back().variable == carl::Variable::NO_VARIABLE) {
                     if (!pickNextTheoryVar()) {
-                        return Minisat::lit_Undef;
+                        // possibly undef, in this case, no decisions left
+                        return pickBooleanVarFromUndecided();
                     }
                 }
                 auto res = pickBooleanVarFromCurrentLevel();
