@@ -1542,6 +1542,10 @@ namespace smtrat
              * @param cr [Minisat related code]
              */
             void removeClause( Minisat::CRef cr );
+
+            Minisat::Clause& getClause( Minisat::CRef cr ) {
+                return ca[cr];
+            }
             
             /**
              * @param c [Minisat related code]
