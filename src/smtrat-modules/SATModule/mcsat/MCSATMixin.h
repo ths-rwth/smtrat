@@ -316,7 +316,9 @@ public:
 	/// Evaluate a literal in the theory, set lastReason to last theory decision involved.
 	Minisat::lbool evaluateLiteral(Minisat::Lit lit) const;
 	
-	std::pair<bool, boost::optional<Explanation>> isBooleanDecisionFeasible(Minisat::Lit lit);
+	std::pair<bool, boost::optional<Explanation>> isBooleanDecisionFeasible(Minisat::Lit lit, bool always_explain = false);
+
+	std::pair<boost::tribool, boost::optional<Explanation>> propagateBooleanDomain(Minisat::Lit lit);
 	
 	boost::optional<Explanation> isFeasible(const carl::Variable& var) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking whether trail is feasible (w.r.t. " << var << ")");
