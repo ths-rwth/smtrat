@@ -159,7 +159,7 @@ std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isBooleanDec
 template<typename Settings>
 std::pair<boost::tribool, boost::optional<Explanation>> MCSATMixin<Settings>::propagateBooleanDomain(Minisat::Lit lit) {
 	auto var = Minisat::var(lit);
-	if (!mGetter.isTheoryAbstraction(var)) return std::make_pair(true, boost::none);
+	if (!mGetter.isTheoryAbstraction(var)) return std::make_pair(boost::indeterminate, boost::none);
 	const auto& f = mGetter.reabstractLiteral(lit);
 	
 	carl::Variables vars;
