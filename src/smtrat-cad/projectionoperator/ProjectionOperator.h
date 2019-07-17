@@ -5,6 +5,7 @@
 #include "Brown.h"
 #include "Collins.h"
 #include "Hong.h"
+#include "Lazard.h"
 #include "McCallum.h"
 #include "McCallum_partial.h"
 #include "utils.h"
@@ -24,6 +25,8 @@ struct ProjectionOperator {
 			return projection::mccallum::single(p, variable, cb);
 		case ProjectionType::McCallum_partial:
 			return projection::mccallum_partial::single(p, variable, cb);
+		case ProjectionType::Lazard:
+			return projection::lazard::single(p, variable, cb);
 		case ProjectionType::Brown:
 			return projection::brown::single(p, variable, cb);
 		default:
@@ -42,6 +45,8 @@ struct ProjectionOperator {
 			return projection::mccallum::paired(p, q, variable, i);
 		case ProjectionType::McCallum_partial:
 			return projection::mccallum_partial::paired(p, q, variable, i);
+		case ProjectionType::Lazard:
+			return projection::lazard::paired(p, q, variable, i);
 		case ProjectionType::Brown:
 			return projection::brown::paired(p, q, variable, i);
 		default:
