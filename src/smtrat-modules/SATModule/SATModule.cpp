@@ -2882,10 +2882,10 @@ namespace smtrat
                         assert(bool_value(next) == l_Undef);
                         // Note that all literals evaluating to some values should already been propagated semantically
                         assert(!((mBooleanConstraintMap.size() > var(next)) && (mBooleanConstraintMap[var(next)].first != nullptr)) || mMCSAT.evaluateLiteral(next) == l_Undef);
-                        if (Settings::mcsat_check_feasibility_on_decide) {
+                        if (Settings::mcsat_boolean_domain_propagation == MCSAT_BOOLEAN_DOMAIN_PROPAGATION::PARTIAL) {
                             auto res = mMCSAT.isBooleanDecisionFeasible(next);                        
                             if (!res.first) {
-                                if (res.second || !Settings::mcsat_lazy_explanations) {
+                                if (res.second) {
                                     SMTRAT_LOG_DEBUG("smtrat.sat", "Found conflict " << *res.second);
                                     insertVarOrder(var(next));
                                     handleTheoryConflict(*res.second);
@@ -2901,6 +2901,48 @@ namespace smtrat
                                     #endif
                                     continue;
                                 }
+                            }
+                        } else if (Settings::mcsat_boolean_domain_propagation == MCSAT_BOOLEAN_DOMAIN_PROPAGATION::FULL) {
+                            auto res = mMCSAT.propagateBooleanDomain(next);                        
+                            if (res.first) {
+                                SMTRAT_LOG_DEBUG("smtrat.sat", "Propagate " << next);
+                                uncheckedEnqueue( next, CRef_TPropagation );
+                                #ifdef SMTRAT_DEVOPTION_Statistics
+                                mMCSATStatistics.insertedLazyExplanation();
+                                #endif
+                                continue;
+                            } else if (!res.first) {
+                                SMTRAT_LOG_DEBUG("smtrat.sat", "Propagate " << ~next);
+                                uncheckedEnqueue( ~next, CRef_TPropagation );
+                                #ifdef SMTRAT_DEVOPTION_Statistics
+                                mMCSATStatistics.insertedLazyExplanation();
+                                #endif
+                                continue;
+                            } else {
+                                assert(boost::indeterminate(res.first));
+                                if (res.second) {
+                                    SMTRAT_LOG_DEBUG("smtrat.sat", "Found conflict " << *res.second);
+                                    insertVarOrder(var(next));
+                                    handleTheoryConflict(*res.second);
+                                    #ifdef SMTRAT_DEVOPTION_Statistics
+                                    mMCSATStatistics.theoryConflict();
+                                    #endif
+                                    continue;   
+                                } else {
+                                    SMTRAT_LOG_DEBUG("smtrat.sat", "Decision " << next << " is possible");
+                                }
+                            }
+                        } else if (Settings::mcsat_boolean_domain_propagation == MCSAT_BOOLEAN_DOMAIN_PROPAGATION::PARTIAL_CONFLICT) {
+                            auto res = mMCSAT.isBooleanDecisionFeasible(next, true);                        
+                            if (!res.first) {
+                                assert (res.second);
+                                SMTRAT_LOG_DEBUG("smtrat.sat", "Found conflict " << *res.second);
+                                insertVarOrder(var(next));
+                                handleTheoryConflict(*res.second);
+                                #ifdef SMTRAT_DEVOPTION_Statistics
+                                mMCSATStatistics.theoryConflict();
+                                #endif
+                                continue;  
                             }
                         }
                         #ifdef SMTRAT_DEVOPTION_Statistics
