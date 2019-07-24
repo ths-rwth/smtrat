@@ -26,12 +26,16 @@ namespace cad {
 		
 		//@todo check all fcnts and add doxygen conform comments
 
-		/** gets the current dimension (#variables) */
+		/** gets the current dimension (#variables)
+		 * @returns current dimension
+		 */
 		std::size_t dim() const {
 			return mVariables.size();
 		}
 
-		/** check whether the given value is in the list of unsat intervals */
+		/** check whether the given value is in the list of unsat intervals
+		 * @returns true if value is in unsat interval
+		 */
 		bool isInUnsatInterval(RAN val) {
 			for(auto inter : intervals) {
 				if(inter.contains(val)) {
@@ -121,8 +125,8 @@ namespace cad {
 		 * 
 		 * (Paper Alg. 1, l.9-11)
 		 */
-		void calcIntervalsFromPolys(std::vector<ConstraintT> conss) {
-			std::vector<RAN> roots;
+		std::set<CADInterval> calcIntervalsFromPolys(std::vector<ConstraintT> conss) {
+			std::set<CADInterval> inters;
 			for (const auto& c: conss) {
 				// find real roots of every constraint corresponding to current var
 				auto r = carl::rootfinder::realRoots(c.lhs().toUnivariatePolynomial(currVar));
@@ -132,19 +136,24 @@ namespace cad {
 				std::vector<RAN>::iterator it;
 				for (it = r.begin(); it != r.end(); it++) {
 					// add closed point interval for each root
-					addUnsatInterval(CADInterval(*it), c);
+					inters.insert( CADInterval(*it, c) );
 
 					// add inf intervals if appropriate
 					if (it == r.begin()) // add (-inf, x)
-						addUnsatInterval(CADInterval(0, *it, CADInterval::CADBoundType::INF, CADInterval::CADBoundType::OPEN, c));
+						inters.insert( CADInterval(0, *it, CADInterval::CADBoundType::INF, CADInterval::CADBoundType::OPEN, c) );
 					else if (it == r.rbegin().base()) // add (x, inf)
-						addUnsatInterval(CADInterval(*it, 0, CADInterval::CADBoundType::OPEN, CADInterval::CADBoundType::INF, c));
+						inters.insert( CADInterval(*it, 0, CADInterval::CADBoundType::OPEN, CADInterval::CADBoundType::INF, c) );
 					
 					// add open interval to next root
 					if (it != r.rbegin().base())
-						addUnsatInterval(CADInterval(*it, *(std::next(it,1)), c));
+						inters.insert(CADInterval(*it, *(std::next(it,1)), c) );
 				}
 			}
+			/* sort intervals by ascending order of lower bounds */
+			std::sort(inters.begin(), inters.end(), [](CADInterval a, CADInterval b) {
+        		return a.isLowerThan(b);
+    		});
+			return inters;
 		}
 
 		/** checks whether the variable is at least as high in the var order as currVar of level */
@@ -168,61 +177,6 @@ namespace cad {
 			}
 		}
 
-	public:
-
-		//@todo init all class vars
-		LiftingLevel(std::vector<ConstraintT> conss, carl::Variable v): 
-			mConstraints(conss), currVar(v) {
-			calcIntervalsFromPolys(currVar, mConstraints);
-		}
-
-		void reset(std::vector<carl::Variable>&& vars) {
-			mVariables = std::move(vars);
-			//@todo current sample
-			resetIntervals();
-		}
-
-		/** removes all stored intervals */
-		void resetIntervals() {
-			intervals.clear();
-			levelintervals.clear();
-			levelintervalminf = false;
-			levelintervalpinf = false;
-		}
-
-		/** gets the current sample */
-		const auto& getCurrentSample() const {
-			return curSample;
-		}
-
-		/** gets all unsat intervals
-		 * @note asserts that constraints were given to level beforehand
-		 * (Paper Alg. 1)
-		*/
-		const auto& getUnsatIntervals(Sample s) const {
-			resetIntervals();
-
-			/* constraints are filtered for ones with main var currVar or higher */
-			std::vector<ConstraintT> constraints;
-			for(auto c : mConstraints) {
-				auto consvars = c.variables();
-				bool add = false;
-				for(auto v : consvars) {
-					if(isAtLeastCurrVar(v))
-						add = true;
-				}
-				/*@todo push back c(s) instead. how to substitute s into c? */
-				if(add)
-					constraints.push_back(c);
-			}
-
-			/*  */
-			/*auto issat = c.satisfiedBy()*/
-			/*calcIntervalsFromPolys()*/
-
-			//@todo
-			
-		}
 
 		/** adds an unsat interval to the internal data structures of the level */
 		void addUnsatInterval(CADInterval inter) {
@@ -249,6 +203,93 @@ namespace cad {
 				levelintervals.insert(inter.getUpper());
 			}
 		}
+
+	public:
+
+		//@todo init all class vars
+		LiftingLevel(std::vector<ConstraintT> conss, carl::Variable v): 
+			mConstraints(conss), currVar(v) {
+			addUnsatIntervals(calcIntervalsFromPolys(currVar, mConstraints));
+		}
+
+		void reset(std::vector<carl::Variable>&& vars) {
+			mVariables = std::move(vars);
+			//@todo current sample
+			resetIntervals();
+		}
+
+		/** removes all stored intervals */
+		void resetIntervals() {
+			intervals.clear();
+			levelintervals.clear();
+			levelintervalminf = false;
+			levelintervalpinf = false;
+		}
+
+		/** gets the current sample */
+		const auto& getCurrentSample() const {
+			return curSample;
+		}
+
+		/** gets all unsat intervals
+		 * @note asserts that constraints were given to level beforehand
+		 * (Paper Alg. 1)
+		*/
+		const std::set<CADInterval>& getUnsatIntervals(Sample s) const {
+			resetIntervals(); /*@todo necessary? */
+
+			/* constraints are filtered for ones with main var currVar or higher */
+			std::vector<ConstraintT> constraints;
+			for(auto c : mConstraints) {
+				auto consvars = c.variables();
+				bool add = false;
+				for(auto v : consvars) {
+					if(isAtLeastCurrVar(v)) {
+						add = true;
+						break;
+					}
+				}
+				/*@todo push back c(s) instead. how to substitute s into c? */
+				if(add)
+					constraints.push_back(c);
+			}
+
+			/* map variable of depth i-1 to sample value */
+			EvaluationMap eval = new EvaluationMap();
+			if(dim() > 1) {
+				carl::Variable v = mVariables.at(mVariables.size() - 2);
+				eval.insert( std::pair<carl::Variable, RAN>(v, s.value()) );
+			}
+
+			for(auto c : constraints) {
+				unsigned issat = c.satisfiedBy(eval)
+				/* if unsat, return (-inf, +inf) */
+				if(issat == 0) /*@todo is this equiv to "c(s) == false"? */
+					return new std::set(new CADInterval(c));
+				/* if sat, constraint is finished */
+				else if(issat == 1)
+					continue;
+				else {
+					// get unsat intervals for constraint
+					/*@todo this should get eval */
+					auto inters = calcIntervalsFromPolys(c);
+					/*
+					for(auto inter : inters) {
+						//@todo
+					} */
+				}
+			}
+			//@todo
+		}
+
+
+		/** adds a set of unsat intervals */
+		void addUnsatIntervals(std::set<CADInterval> inters) {
+			for(auto inter : inters) {
+				addUnsatInterval(inter);
+			}
+		}
+
 
 		/** checks whether the unsat intervals contain (-inf, inf) */
 		bool isSingletonCover() {
