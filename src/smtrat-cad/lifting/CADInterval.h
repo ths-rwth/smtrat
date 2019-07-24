@@ -162,6 +162,33 @@ namespace cad {
 
             return false;
         }
+
+        /** gets "middle" value (lower + (upper - lower)/2) 
+         * @note if at least one bound is inf, some other value is given
+        */
+        RAN getMiddle() {
+            if(lowertype == INF && uppertype == INF)
+                return (RAN) 0;
+
+            if(lowertype == INF) {
+                if(uppertype == CLOSED)
+                    return upper;
+                if(uppertype == OPEN)
+                    return (upper - 1);
+            }
+            
+            if(uppertype == INF) {
+                if(lowertype == CLOSED)
+                    return lower;
+                if(lowertype == OPEN)
+                    return (lower + 1);
+            }
+            
+            if(lower == upper)
+                return lower;
+
+            return (lower + (upper - lower)/2);
+        }
 	};
 }   //cad
 };  //smtrat

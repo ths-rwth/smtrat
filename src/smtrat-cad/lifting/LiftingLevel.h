@@ -255,14 +255,16 @@ namespace cad {
 			}
 
 			/* map variable of depth i-1 to sample value */
-			EvaluationMap eval = new EvaluationMap();
+			EvaluationMap evalbase = new EvaluationMap();
 			if(dim() > 1) {
 				carl::Variable v = mVariables.at(mVariables.size() - 2);
-				eval.insert( std::pair<carl::Variable, RAN>(v, s.value()) );
+				evalbase.insert( std::pair<carl::Variable, RAN>(v, s.value()) );
 			}
 
+			/* gather intervals from each constraint */
+			std::set<CADInterval> newintervals;
 			for(auto c : constraints) {
-				unsigned issat = c.satisfiedBy(eval)
+				unsigned issat = c.satisfiedBy(evalbase);
 				/* if unsat, return (-inf, +inf) */
 				if(issat == 0) /*@todo is this equiv to "c(s) == false"? */
 					return new std::set(new CADInterval(c));
@@ -271,15 +273,25 @@ namespace cad {
 					continue;
 				else {
 					// get unsat intervals for constraint
-					/*@todo this should get eval */
+					/*@todo this should get eval! assignment not used yet */
 					auto inters = calcIntervalsFromPolys(c);
-					/*
 					for(auto inter : inters) {
-						//@todo
-					} */
+						auto r = inter.getMiddle();
+						EvaluationMap eval = new EvaluationMap(evalbase);
+						eval.insert(std::pair<carl::Variable, RAN>(currVal, r));
+						std::vector<Poly> lowerreason;
+						std::vector<Poly> upperreason;
+						if(c.satisfiedBy(eval) == 0) { //@todo again, is this right?
+							if(inter.getLowerBoundType() != CADInterval::CADBoundType::INF)
+								lowerreason.push_back(c.lhs());
+							if(inter.getUpperBoundType() != CADInterval::CADBoundType::INF)
+								upperreason.push_back(c.lhs());
+							newintervals.insert(new CADInterval(inter.getLower(), inter.getUpper(), inter.getLowerBoundType(), inter.getUpperBoundType(), lowerreason, upperreason, c));
+						}
+					} 
 				}
 			}
-			//@todo
+			return newintervals;
 		}
 
 
