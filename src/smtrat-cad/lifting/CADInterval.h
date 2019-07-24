@@ -12,16 +12,19 @@ namespace cad {
             OPEN,       /**< open but not infinitiy (does not include bound value) */
             CLOSED      /**< closed (does include bound value) */
         };
+
 	private:
         RAN lower = (RAN) 0;                                            /**< lower bound */
         RAN upper = (RAN) 0;                                            /**< upper bound */
         CADBoundType lowertype = INF;                                   /**< lower bound type */
         CADBoundType uppertype = INF;                                   /**< upper bound type */
+        std::vector<Poly> lowerreason;                                  /**< collection of polynomials for lower bound */
+        std::vector<Poly> upperreason;                                  /**< collection of polynomials for upper bound */
         std::optional<ConstraintT> constraint = std::nullopt;    /**< this interval represents the bounds of this constraint */
-	public:
+	
+    public:
         /** initializes interval as (-inf, +inf) */
-		CADInterval(){     
-        }
+		CADInterval(){}
 
         /** initializes open interval with given bounds */
         CADInterval(RAN lowerbound, RAN upperbound): 
@@ -51,6 +54,11 @@ namespace cad {
             uppertype = OPEN;
         }
 
+        /** initializes (-inf, +inf) interval with given constraint */
+        CADInterval(const ConstraintT& cons):
+            constraint(cons) {
+        }
+
         /** initializes interval with given bounds and bound types */
         CADInterval(RAN lowerbound, RAN upperbound, CADBoundType lowerboundtype, CADBoundType upperboundtype):
             lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype) {
@@ -59,6 +67,11 @@ namespace cad {
         /** initializes interval with given bounds, bound types and constraint */
         CADInterval(RAN lowerbound, RAN upperbound, CADBoundType lowerboundtype, CADBoundType upperboundtype, const ConstraintT& cons):
             lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), constraint(cons) {
+        }
+
+        /** initializes interval with given bounds, bound types, reasons and constraint */
+        CADInterval(RAN lowerbound, RAN upperbound, CADBoundType lowerboundtype, CADBoundType upperboundtype, std::vector<Poly> lowerres, std::vector<Poly> upperres, const ConstraintT& cons):
+            lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), lowerreason(lowerres), upperreason(upperres), constraint(cons) {
         }
 
         /** gets lower bound */
@@ -130,6 +143,25 @@ namespace cad {
             }
             return false;
         }
+
+        /** @brief checks whether the lower bound is lower than the one of the given interval
+         * 
+         * @note can handle inf bounds
+         * @returns true iff the lower bound is lower than the one of the given interval
+         */
+        bool isLowerThan(CADInterval inter) {
+            /* if other bound is inf, this one is not lower */
+            if(inter.getLowerBoundType == INF)
+                return false;
+            /* if this bound is inf (& the other one not), the other one is greater */
+            if(lowertype == INF)
+                return true;
+
+            if(lower < inter.getLower())
+                return true;
+
+            return false;
+        }
 	};
-}
-};
+}   //cad
+};  //smtrat
