@@ -125,11 +125,13 @@ namespace cad {
 		 * 
 		 * (Paper Alg. 1, l.9-11)
 		 */
-		std::set<CADInterval> calcIntervalsFromPolys(std::vector<ConstraintT> conss) {
+		std::set<CADInterval> calcIntervalsFromPolys(
+			std::vector<ConstraintT> conss, 
+			EvaluationMap evalmap) {
 			std::set<CADInterval> inters;
 			for (const auto& c: conss) {
 				// find real roots of every constraint corresponding to current var
-				auto r = carl::rootfinder::realRoots(c.lhs().toUnivariatePolynomial(currVar));
+				auto r = carl::rootfinder::realRoots(c.lhs().toUnivariatePolynomial(currVar), evalmap);
 				std::sort(r.begin(), r.end()); // roots have to be ordered
 				
 				// go through roots to build region intervals and add them to the lifting level
@@ -232,6 +234,7 @@ namespace cad {
 		}
 
 		/** gets all unsat intervals
+		 * @param s sample for variable of depth i-1 (only necessary if dimension is > 1)
 		 * @note asserts that constraints were given to level beforehand
 		 * (Paper Alg. 1)
 		*/
@@ -249,7 +252,6 @@ namespace cad {
 						break;
 					}
 				}
-				/*@todo push back c(s) instead. how to substitute s into c? */
 				if(add)
 					constraints.push_back(c);
 			}
@@ -273,10 +275,9 @@ namespace cad {
 					continue;
 				else {
 					// get unsat intervals for constraint
-					/*@todo this should get eval! assignment not used yet */
-					auto inters = calcIntervalsFromPolys(c);
+					auto inters = calcIntervalsFromPolys(c, evalbase);
 					for(auto inter : inters) {
-						auto r = inter.getMiddle();
+						auto r = inter.getRepresentative();
 						EvaluationMap eval = new EvaluationMap(evalbase);
 						eval.insert(std::pair<carl::Variable, RAN>(currVal, r));
 						std::vector<Poly> lowerreason;

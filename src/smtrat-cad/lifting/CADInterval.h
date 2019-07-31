@@ -2,6 +2,8 @@
 
 #include "../common.h"
 
+#include <carl/formula/model/ran/RealAlgebraicNumberOperations.h>
+
 namespace smtrat {
 namespace cad {
 	class CADInterval {
@@ -163,10 +165,10 @@ namespace cad {
             return false;
         }
 
-        /** gets "middle" value (lower + (upper - lower)/2) 
+        /** gets a value within the interval
          * @note if at least one bound is inf, some other value is given
         */
-        RAN getMiddle() {
+        RAN getRepresentative() {
             if(lowertype == INF && uppertype == INF)
                 return (RAN) 0;
 
@@ -174,20 +176,20 @@ namespace cad {
                 if(uppertype == CLOSED)
                     return upper;
                 if(uppertype == OPEN)
-                    return (upper - 1);
+                    return sampleBelow(upper);
             }
             
             if(uppertype == INF) {
                 if(lowertype == CLOSED)
                     return lower;
                 if(lowertype == OPEN)
-                    return (lower + 1);
+                    return sampleAbove(lower);
             }
             
             if(lower == upper)
                 return lower;
 
-            return (lower + (upper - lower)/2);
+            return sampleBetween(lower, upper);
         }
 	};
 }   //cad
