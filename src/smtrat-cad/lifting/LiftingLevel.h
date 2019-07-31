@@ -53,15 +53,16 @@ namespace cad {
 		 * to encode that there is an open interval smaller than any known bound.
 		 * Else the first bound not followed by another unsat interval is returned.
 		 * 
-		 * @returns bool (first value of tuple) true iff a bound was found
-		 * @returns RAN (second value of tuple) bound iff one was found, 0 otherwise
-		 * @returns bool (third value of tuple) true iff the bound is open, otherwise it is closed
-		 * @returns bool (fourth value of tuple) true iff -inf is is not a bound yet
+		 * @returns bool (1st value of tuple) true iff a bound was found
+		 * @returns RAN (2nd value of tuple) bound iff one was found, 0 otherwise
+		 * @returns bool (3rd value of tuple) true iff the bound is open, otherwise it is closed
+		 * @returns bool (4th value of tuple) true iff -inf is is not a bound yet
+		 * @returns set<CADInterval> (5th value of tuple) contains intervals of covering iff no bound was found, else empty
 		 * 
 		 * @note The output (true, 0, false, true) stands for an unexplored
 		 * interval before the first recorded bound
 		 */
-		std::tuple<bool, RAN, bool, bool> getLowestUpperBound() {
+		std::tuple<bool, RAN, bool, bool, std::set<CADInterval>> getLowestUpperBound() {
 			// if (-inf, +inf) is included, return false
 			if(isSingletonCover()) {
 				return std::make_tuple(false, (RAN) 0, false, false);
@@ -71,6 +72,8 @@ namespace cad {
 				return std::make_tuple(true, (RAN) 0, false, true);
 			}
 
+			std::set<CADInterval> cover;
+
 			// get an interval with -inf bound, store its higher bound
 			RAN highestbound;
 			bool boundopen;
@@ -79,6 +82,7 @@ namespace cad {
 					// note: the higher bound cannot be +inf as there is no singleton cover
 					highestbound = inter.getUpper();
 					boundopen = (inter.getUpperBoundType() == CADInterval::CADBoundType::OPEN) ? true : false;
+					cover.insert(inter);
 					break;
 				}
 			}
@@ -89,10 +93,11 @@ namespace cad {
 				for(auto inter : intervals) {
 					updated = false;
 					// if the upper bound is the highest bound but is included only update bound type
-					if(highestbound == inter.getUpper() && inter.getUpperBoundType() == CADInterval::CADBoundType::CLOSED) {
+					if(highestbound == inter.getUpper() && boundopen && inter.getUpperBoundType() == CADInterval::CADBoundType::CLOSED) {
 						boundopen = false;
+						cover.insert(inter);
 					}
-					// update highest bound if the upper bound is not equal to the current highest bound,
+					// update highest bound if the upper bound is not equal to the current highest bound
 					else if(!(highestbound == inter.getUpper() && 
 						((boundopen && inter.getUpperBoundType() == CADInterval::CADBoundType::OPEN) || 
 						 (!boundopen && inter.getUpperBoundType() == CADInterval::CADBoundType::CLOSED)))) {
@@ -101,9 +106,11 @@ namespace cad {
 							(highestbound == inter.getLower() && 
 							((boundopen && inter.getLowerBoundType() == CADInterval::CADBoundType::CLOSED) || 
 								(!boundopen && inter.getLowerBoundType() == CADInterval::CADBoundType::OPEN)))) {
+							
+							cover.insert(inter);
 							if(inter.getUpperBoundType() == CADInterval::CADBoundType::INF) {
 								// an unset cover was found
-								return std::make_tuple(false, (RAN) 0, false, false);
+								return std::make_tuple(false, (RAN) 0, false, false, cover);
 							}
 							// update to next higher bound
 							highestbound = inter.getUpper();
@@ -117,7 +124,7 @@ namespace cad {
 					stop = true;
 				}
 			}
-			return std::make_tuple(true, highestbound, boundopen, false);
+			return std::make_tuple(true, highestbound, boundopen, false, std::set<CADInterval>());
 		}
 
 		/**
@@ -339,6 +346,21 @@ namespace cad {
 				return true;
 			}
 			return false;
+		}
+
+		/**@brief computes a cover from the given set of intervals
+		 * 
+		 * @returns subset of intervals that form a cover or an empty set if none was found
+		 * (Paper Alg. 2)
+		 */
+		std::set<CADInterval>compute_cover(std::set<CADInterval> inters) {
+			// check whether there is a gap in the covering
+			auto boundtuple = getLowestUpperBound();
+			if (!std::get<0>(boundtuple)) {		// there is a cover
+				return std::get<4>(boundtuple);
+			}
+
+			return std::set<CADInterval>();
 		}
 
 		/** @brief computes the next Sample

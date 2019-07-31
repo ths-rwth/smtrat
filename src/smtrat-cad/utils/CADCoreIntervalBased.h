@@ -62,8 +62,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::PreferLifting> {
 	}
 
 	/**
-	 * @param cad 	CAD class
-	 * @param dim	dimension of current lifting level
+	 * @param cad 		CAD class
+	 * @param samples	current sample set (initially empty set)
 	 * @returns true if SAT, false if UNSAT
 	 * @returns in UNSAT case: intervals forming the unsat cover
 	 * @returns in SAT case: vector of samples as satisfying witness (ordered from lowest to highest dimension)
