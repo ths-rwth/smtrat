@@ -46,151 +46,6 @@ namespace cad {
 			return false;
 		}
 
-		/** 
-		 * @brief Gives the lowest bound followed by an unexplored interval
-		 * 
-		 * Goes through the unsat intervals starting from -inf,
-		 * if -inf is not a bound yet it is determined to be the first "upper" bound 
-		 * to encode that there is an open interval smaller than any known bound.
-		 * Else the first bound not followed by another unsat interval is returned.
-		 * 
-		 * @returns bool (1st value of tuple) true iff a bound was found
-		 * @returns RAN (2nd value of tuple) bound iff one was found, 0 otherwise
-		 * @returns bool (3rd value of tuple) true iff the bound is open, otherwise it is closed
-		 * @returns bool (4th value of tuple) true iff -inf is is not a bound yet
-		 * @returns set<CADInterval> (5th value of tuple) contains intervals of covering iff no bound was found, else empty
-		 * 
-		 * @note The output (true, 0, false, true) stands for an unexplored
-		 * interval before the first recorded bound
-		 */
-		std::tuple<bool, RAN, bool, bool, std::set<CADInterval>> getLowestUpperBound() {
-			// if (-inf, +inf) is included, return false
-			if(isSingletonCover()) {
-				auto tuple = std::make_tuple(false, (RAN) 0, false, false);
-				return tuple;
-			}
-			// if -inf is no bound, there is some unexplored interval before the first recorded bound
-			if(levelintervalminf == false) {
-				auto tuple = std::make_tuple(true, (RAN) 0, false, true);
-				return tuple;
-			}
-
-			std::set<CADInterval> cover;
-
-			// get an interval with -inf bound, store its higher bound
-			RAN highestbound;
-			bool boundopen;
-			for(auto inter : intervals) {
-				if(inter.getLowerBoundType() == CADInterval::CADBoundType::INF) {
-					// note: the higher bound cannot be +inf as there is no singleton cover
-					highestbound = inter.getUpper();
-					boundopen = (inter.getUpperBoundType() == CADInterval::CADBoundType::OPEN) ? true : false;
-					cover.insert(inter);
-					break;
-				}
-			}
-			// iteratively check for highest reachable bound
-			bool stop = false;
-			while(!stop) {
-				bool updated = false;
-				for(auto inter : intervals) {
-					updated = false;
-					// if the upper bound is the highest bound but is included only update bound type
-					if(highestbound == inter.getUpper() && boundopen && inter.getUpperBoundType() == CADInterval::CADBoundType::CLOSED) {
-						boundopen = false;
-						cover.insert(inter);
-					}
-					// update highest bound if the upper bound is not equal to the current highest bound
-					else if(!(highestbound == inter.getUpper() && 
-						((boundopen && inter.getUpperBoundType() == CADInterval::CADBoundType::OPEN) || 
-						 (!boundopen && inter.getUpperBoundType() == CADInterval::CADBoundType::CLOSED)))) {
-						// and is contained in the interval or is bordered by the lower bound of the interval
-						if(inter.contains(highestbound) ||
-							(highestbound == inter.getLower() && 
-							((boundopen && inter.getLowerBoundType() == CADInterval::CADBoundType::CLOSED) || 
-								(!boundopen && inter.getLowerBoundType() == CADInterval::CADBoundType::OPEN)))) {
-							
-							cover.insert(inter);
-							if(inter.getUpperBoundType() == CADInterval::CADBoundType::INF) {
-								// an unset cover was found
-								auto tuple = std::make_tuple(false, (RAN) 0, false, false, cover);
-								return tuple;
-							}
-							// update to next higher bound
-							highestbound = inter.getUpper();
-							boundopen = (inter.getUpperBoundType() == CADInterval::CADBoundType::OPEN) ? true : false;
-							updated = true;
-						}
-					}
-				}
-				// if the highest bound could not be updated (& was not +inf), break
-				if(!updated) {
-					stop = true;
-				}
-			}
-			auto tuple = std::make_tuple(true, highestbound, boundopen, false, std::set<CADInterval>());
-			return tuple;
-		}
-
-		/**
-		 * Calculates the intervals between the real roots of the given set of constraints
-		 * 
-		 * (Paper Alg. 1, l.9-11)
-		 */
-		std::set<CADInterval> calcIntervalsFromPolys(
-			std::vector<ConstraintT> conss, 
-			std::map<carl::Variable, RAN> evalmap) {
-			std::set<CADInterval> inters;
-			for (const auto& c: conss) {
-				// find real roots of every constraint corresponding to current var
-				auto r = carl::rootfinder::realRoots(c.lhs().toUnivariatePolynomial(currVar), evalmap);
-				std::sort(r.begin(), r.end()); // roots have to be ordered
-				
-				// go through roots to build region intervals and add them to the lifting level
-				std::vector<RAN>::iterator it;
-				for (it = r.begin(); it != r.end(); it++) {
-					// add closed point interval for each root
-					inters.insert( CADInterval(*it, c) );
-
-					// add inf intervals if appropriate
-					if (it == r.begin()) // add (-inf, x)
-						inters.insert( CADInterval(0, *it, CADInterval::CADBoundType::INF, CADInterval::CADBoundType::OPEN, c) );
-					else if (it == r.rbegin().base()) // add (x, inf)
-						inters.insert( CADInterval(*it, 0, CADInterval::CADBoundType::OPEN, CADInterval::CADBoundType::INF, c) );
-					
-					// add open interval to next root
-					if (it != r.rbegin().base())
-						inters.insert(CADInterval(*it, *(std::next(it,1)), c) );
-				}
-			}
-			/* sort intervals by ascending order of lower bounds */
-			std::sort(inters.begin(), inters.end(), [](CADInterval a, CADInterval b) {
-        		return a.isLowerThan(b);
-    		});
-			return inters;
-		}
-
-		/** checks whether the variable is at least as high in the var order as currVar of level */
-		bool isAtLeastCurrVar(carl::Variable v) {
-			/* if currVar is given, obviously true */
-			if(v == currVar)
-				return true;
-
-			/* go throught vars until currvar, then look for the given variable */
-			bool curr = false;
-			for(auto var : mVariables) {
-				if(!curr && var == currVar)
-					curr = true;
-				else if(curr && var == v) {
-					return true;
-				/* case v = currVar covered before */
-				}
-
-			/* if the given var was not found at/after currVar */
-			return false;
-			}
-		}
-
 
 		/** adds an unsat interval to the internal data structures of the level */
 		void addUnsatInterval(CADInterval inter) {
@@ -245,68 +100,6 @@ namespace cad {
 			return curSample;
 		}
 
-		/** gets all unsat intervals
-		 * @param s sample for variable of depth i-1 (only necessary if dimension is > 1)
-		 * @note asserts that constraints were given to level beforehand
-		 * (Paper Alg. 1)
-		*/
-		const std::set<CADInterval>& getUnsatIntervals(Sample s) const {
-			resetIntervals(); /*@todo necessary? */
-
-			/* constraints are filtered for ones with main var currVar or higher */
-			std::vector<ConstraintT> constraints;
-			for(auto c : mConstraints) {
-				auto consvars = c.variables();
-				bool add = false;
-				for(auto v : consvars) {
-					if(isAtLeastCurrVar(v)) {
-						add = true;
-						break;
-					}
-				}
-				if(add)
-					constraints.push_back(c);
-			}
-
-			/* map variable of depth i-1 to sample value */
-			std::map<carl::Variable,RAN> evalbase = new std::map<carl::Variable,RAN>();
-			if(dim() > 1) {
-				carl::Variable v = mVariables.at(mVariables.size() - 2);
-				evalbase.insert( std::pair<carl::Variable, RAN>(v, s.value()) );
-			}
-
-			/* gather intervals from each constraint */
-			std::set<CADInterval> newintervals;
-			for(auto c : constraints) {
-				unsigned issat = c.satisfiedBy(evalbase&);
-				/* if unsat, return (-inf, +inf) */
-				if(issat == 0) /*@todo is this equiv to "c(s) == false"? */
-					return new std::set(new CADInterval(c));
-				/* if sat, constraint is finished */
-				else if(issat == 1)
-					continue;
-				else {
-					// get unsat intervals for constraint
-					auto inters = calcIntervalsFromPolys(c, evalbase);
-					for(auto inter : inters) {
-						auto r = inter.getRepresentative();
-						std::map<carl::Variable,RAN> eval = new std::map<carl::Variable,RAN>(evalbase);
-						eval.insert(std::pair<carl::Variable, RAN>(currVal, r));
-						std::vector<Poly> lowerreason;
-						std::vector<Poly> upperreason;
-						if(c.satisfiedBy(eval) == 0) { //@todo again, is this right?
-							if(inter.getLowerBoundType() != CADInterval::CADBoundType::INF)
-								lowerreason.push_back(c.lhs());
-							if(inter.getUpperBoundType() != CADInterval::CADBoundType::INF)
-								upperreason.push_back(c.lhs());
-							newintervals.insert(new CADInterval(inter.getLower(), inter.getUpper(), inter.getLowerBoundType(), inter.getUpperBoundType(), lowerreason, upperreason, c));
-						}
-					} 
-				}
-			}
-			return newintervals;
-		}
-
 
 		/** adds a set of unsat intervals */
 		void addUnsatIntervals(std::set<CADInterval> inters) {
@@ -315,21 +108,6 @@ namespace cad {
 			}
 		}
 
-
-		/** checks whether the unsat intervals contain (-inf, inf) */
-		bool isSingletonCover() {
-			if(intervals.empty()) {
-				return false;
-			}
-			else {
-				for(auto inter : intervals) {
-					if(inter.isInfinite()) {
-						return true;
-					}
-				}
-			}
-			return false;
-		}
 
 		/** @brief Checks whether an unsat cover was found
 		 * 
@@ -353,20 +131,6 @@ namespace cad {
 			return false;
 		}
 
-		/**@brief computes a cover from the given set of intervals
-		 * 
-		 * @returns subset of intervals that form a cover or an empty set if none was found
-		 * (Paper Alg. 2)
-		 */
-		std::set<CADInterval>compute_cover(std::set<CADInterval> inters) {
-			// check whether there is a gap in the covering
-			auto boundtuple = getLowestUpperBound();
-			if (!std::get<0>(boundtuple)) {		// there is a cover
-				return std::get<4>(boundtuple);
-			}
-
-			return std::set<CADInterval>();
-		}
 
 		/** @brief computes the next Sample
 		 * 

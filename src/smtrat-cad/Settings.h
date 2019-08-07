@@ -29,7 +29,7 @@ namespace cad {
 	using SampleHeuristic = carl::RANSampleHeuristic;
 	enum class MISHeuristic { TRIVIAL, GREEDY, GREEDY_PRE, GREEDY_WEIGHTED, EXACT, HYBRID};
 	enum class CoreHeuristic { BySample, PreferProjection, PreferSampling, EnumerateAll, Interleave };
-	enum class CoreIntervalBasedHeuristic { PreferLifting };
+	enum class CoreIntervalBasedHeuristic { UnsatCover };
 	using RootSplittingStrategy = carl::rootfinder::SplittingStrategy;
 
 	struct BaseSettings {
@@ -38,7 +38,7 @@ namespace cad {
 		
 		static constexpr ProjectionType projectionOperator = cad::ProjectionType::McCallum;
 		static constexpr CoreHeuristic coreHeuristic = cad::CoreHeuristic::PreferProjection;
-		static constexpr CoreIntervalBasedHeuristic coreIntervalBasedHeuristic = cad::CoreIntervalBasedHeuristic::PreferLifting;
+		static constexpr CoreIntervalBasedHeuristic coreIntervalBasedHeuristic = cad::CoreIntervalBasedHeuristic::UnsatCover;
 		
 		static constexpr MISHeuristic misHeuristic = cad::MISHeuristic::GREEDY;
 		static constexpr std::size_t trivialSampleRadius = 1;

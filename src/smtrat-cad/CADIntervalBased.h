@@ -4,7 +4,7 @@
 
 #include "common.h"
 #include "projection/Projection.h"
-#include "lifting/LiftingLevel.h"
+// #include "lifting/LiftingLevel.h" @todo
 #include "utils/CADConstraints.h"
 #include "utils/CADCoreIntervalBased.h"
 #include "utils/ConflictGraph.h"
@@ -69,15 +69,16 @@ namespace cad {
 		const auto& getVariables() const {
 			return mVariables;
 		}
+		const auto& getConstraints() const {
+			return mConstraints;
+		}
 		const auto& getProjection() const {
 			return mProjection;
 		}
 		const auto& getLifting() const {
 			return mLifting;
 		}
-		//const auto& getConstraints() const {
-		//	return mConstraints.indexed();
-		//}
+
 		//const auto& getConstraintMap() const {
 		//	return mConstraints.ordered();
 		//}

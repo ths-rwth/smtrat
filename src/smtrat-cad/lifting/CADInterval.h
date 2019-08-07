@@ -22,7 +22,7 @@ namespace cad {
         CADBoundType uppertype = INF;                                   /**< upper bound type */
         std::vector<Poly> lowerreason;                                  /**< collection of polynomials for lower bound */
         std::vector<Poly> upperreason;                                  /**< collection of polynomials for upper bound */
-        std::optional<ConstraintT> constraint = std::nullopt;    /**< this interval represents the bounds of this constraint */
+        std::optional<ConstraintT> constraint = std::nullopt;           /**< this interval represents the bounds of this constraint */
 	
     public:
         /** initializes interval as (-inf, +inf) */
