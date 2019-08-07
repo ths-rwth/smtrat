@@ -21,8 +21,8 @@ namespace cad {
 		friend struct CADCoreIntervalBased;
 		using SettingsT = Settings;
 	private:
-		std::vector<carl::Variable> mVariables;
-		std::vector<ConstraintT> mConstraints;	/**< constraints */
+		std::vector<carl::Variable> mVariables;			/**< variables in given order */
+		std::vector<ConstraintT> mConstraints;			/**< constraints */
 		std::vector<LiftingLevel<Settings>> mLifting;
 		ProjectionT<Settings> mProjection;
 		
@@ -36,13 +36,6 @@ namespace cad {
 		std::size_t idLP(std::size_t level) const {
 			assert(level > 0 && level <= dim());
 			return dim() - level + 1;
-		}
-
-		//@todo return type
-		void getUnsatCover(Sample s) {
-			if(mLifting.isSingletonCover()) {
-				//@todo
-			}
 		}
 
 	public:

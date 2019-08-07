@@ -153,7 +153,7 @@ namespace cad {
          */
         bool isLowerThan(CADInterval inter) {
             /* if other bound is inf, this one is not lower */
-            if(inter.getLowerBoundType == INF)
+            if(inter.getLowerBoundType() == INF)
                 return false;
             /* if this bound is inf (& the other one not), the other one is greater */
             if(lowertype == INF)

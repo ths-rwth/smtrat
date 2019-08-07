@@ -6,6 +6,7 @@
 #include <carl/interval/sampling.h>
 #include <carl/interval/Interval.h>
 #include <carl/core/rootfinder/RootFinder.h>
+#include <carl/util/Common.h>
 
 #include "Sample.h"
 
@@ -65,11 +66,13 @@ namespace cad {
 		std::tuple<bool, RAN, bool, bool, std::set<CADInterval>> getLowestUpperBound() {
 			// if (-inf, +inf) is included, return false
 			if(isSingletonCover()) {
-				return std::make_tuple(false, (RAN) 0, false, false);
+				auto tuple = std::make_tuple(false, (RAN) 0, false, false);
+				return tuple;
 			}
 			// if -inf is no bound, there is some unexplored interval before the first recorded bound
 			if(levelintervalminf == false) {
-				return std::make_tuple(true, (RAN) 0, false, true);
+				auto tuple = std::make_tuple(true, (RAN) 0, false, true);
+				return tuple;
 			}
 
 			std::set<CADInterval> cover;
@@ -110,7 +113,8 @@ namespace cad {
 							cover.insert(inter);
 							if(inter.getUpperBoundType() == CADInterval::CADBoundType::INF) {
 								// an unset cover was found
-								return std::make_tuple(false, (RAN) 0, false, false, cover);
+								auto tuple = std::make_tuple(false, (RAN) 0, false, false, cover);
+								return tuple;
 							}
 							// update to next higher bound
 							highestbound = inter.getUpper();
@@ -124,7 +128,8 @@ namespace cad {
 					stop = true;
 				}
 			}
-			return std::make_tuple(true, highestbound, boundopen, false, std::set<CADInterval>());
+			auto tuple = std::make_tuple(true, highestbound, boundopen, false, std::set<CADInterval>());
+			return tuple;
 		}
 
 		/**
@@ -134,7 +139,7 @@ namespace cad {
 		 */
 		std::set<CADInterval> calcIntervalsFromPolys(
 			std::vector<ConstraintT> conss, 
-			EvaluationMap evalmap) {
+			std::map<carl::Variable, RAN> evalmap) {
 			std::set<CADInterval> inters;
 			for (const auto& c: conss) {
 				// find real roots of every constraint corresponding to current var
@@ -264,7 +269,7 @@ namespace cad {
 			}
 
 			/* map variable of depth i-1 to sample value */
-			EvaluationMap evalbase = new EvaluationMap();
+			std::map<carl::Variable,RAN> evalbase = new std::map<carl::Variable,RAN>();
 			if(dim() > 1) {
 				carl::Variable v = mVariables.at(mVariables.size() - 2);
 				evalbase.insert( std::pair<carl::Variable, RAN>(v, s.value()) );
@@ -273,7 +278,7 @@ namespace cad {
 			/* gather intervals from each constraint */
 			std::set<CADInterval> newintervals;
 			for(auto c : constraints) {
-				unsigned issat = c.satisfiedBy(evalbase);
+				unsigned issat = c.satisfiedBy(evalbase&);
 				/* if unsat, return (-inf, +inf) */
 				if(issat == 0) /*@todo is this equiv to "c(s) == false"? */
 					return new std::set(new CADInterval(c));
@@ -285,7 +290,7 @@ namespace cad {
 					auto inters = calcIntervalsFromPolys(c, evalbase);
 					for(auto inter : inters) {
 						auto r = inter.getRepresentative();
-						EvaluationMap eval = new EvaluationMap(evalbase);
+						std::map<carl::Variable,RAN> eval = new std::map<carl::Variable,RAN>(evalbase);
 						eval.insert(std::pair<carl::Variable, RAN>(currVal, r));
 						std::vector<Poly> lowerreason;
 						std::vector<Poly> upperreason;
