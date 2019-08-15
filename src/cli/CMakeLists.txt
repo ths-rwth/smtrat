@@ -94,6 +94,10 @@ if(CLI_ENABLE_QE)
 	target_link_libraries(smtrat-shared smtrat-qe-shared)
 	target_link_libraries(smtrat-static smtrat-qe-static)
 endif()
+if(CLI_ENABLE_FORMULAPARSER)
+	target_link_libraries(smtrat-shared smtrat-analyzer-shared)
+	target_link_libraries(smtrat-static smtrat-analyzer-static)
+endif()
 
 
 set_target_properties(smtrat-shared PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
