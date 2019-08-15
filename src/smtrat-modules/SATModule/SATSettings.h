@@ -19,6 +19,8 @@ namespace smtrat
     enum class CCES : unsigned { SECOND_LEVEL_MINIMIZER, LITERALS_BLOCKS_DISTANCE, SECOND_LEVEL_MINIMIZER_PLUS_LBD };
     
     enum class VARIABLE_ACTIVITY_STRATEGY : unsigned { NONE, MIN_COMPLEXITY_MAX_OCCURRENCES };
+
+    enum class MCSAT_BOOLEAN_DOMAIN_PROPAGATION : unsigned { NONE, PARTIAL_CONFLICT, PARTIAL, FULL};
     
     struct SATSettings1
     {
@@ -105,13 +107,11 @@ namespace smtrat
 
 		static constexpr bool mcsat_resolve_clause_chains = false;
 
-		static constexpr bool mcsat_lazy_explanations = true;
-
 		static constexpr bool mcsat_learn_lazy_explanations = false;
 
 		static constexpr unsigned int mcsat_num_insert_assignments = 1;
 
-		static constexpr bool mcsat_check_feasibility_on_decide = true;
+		static constexpr MCSAT_BOOLEAN_DOMAIN_PROPAGATION mcsat_boolean_domain_propagation = MCSAT_BOOLEAN_DOMAIN_PROPAGATION::FULL;
 
     static constexpr bool mcsat_backjump_decide = true;
 

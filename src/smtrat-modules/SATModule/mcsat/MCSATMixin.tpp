@@ -107,7 +107,7 @@ Minisat::lbool MCSATMixin<Settings>::evaluateLiteral(Minisat::Lit lit) const {
  * Checks is given literal is feasible with the current trail.
  */
 template<typename Settings>
-std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isBooleanDecisionFeasible(Minisat::Lit lit) {
+std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isBooleanDecisionFeasible(Minisat::Lit lit, bool always_explain) {
 	auto var = Minisat::var(lit);
 	if (!mGetter.isTheoryAbstraction(var)) return std::make_pair(true, boost::none);
 	const auto& f = mGetter.reabstractLiteral(lit);
@@ -133,7 +133,10 @@ std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isBooleanDec
 		} else {
 			auto& confl = boost::get<FormulasT>(res);
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision " << lit << " (" << f << ") is infeasible wrt " << tvar << " due to " << confl);
-			if (std::find(confl.begin(), confl.end(), f) == confl.end()) {
+			if (always_explain) {
+				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << confl);
+				return std::make_pair(false, mBackend.explain(tvar, confl));
+			} else if (std::find(confl.begin(), confl.end(), f) == confl.end()) {
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflicting core " << confl << " is independent from decision " << f);
 				return std::make_pair(false, mBackend.explain(tvar, confl));
 			} else {
@@ -150,6 +153,47 @@ std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isBooleanDec
 		}
 	} else {
 	 	return std::make_pair(true, boost::none);
+	}
+}
+
+template<typename Settings>
+std::pair<boost::tribool, boost::optional<Explanation>> MCSATMixin<Settings>::propagateBooleanDomain(Minisat::Lit lit) {
+	auto var = Minisat::var(lit);
+	if (!mGetter.isTheoryAbstraction(var)) return std::make_pair(boost::indeterminate, boost::none);
+	const auto& f = mGetter.reabstractLiteral(lit);
+	
+	carl::Variables vars;
+	f.arithmeticVars(vars);
+	for (const auto& v : mBackend.assignedVariables())
+		vars.erase(v);
+	
+	assert(vars.size() > 0);
+
+	carl::Variable tvar = *(vars.begin());
+
+	auto res_pos = mBackend.isInfeasible(tvar, f);
+	auto res_neg = mBackend.isInfeasible(tvar, f.negated());
+
+	if (carl::variant_is_type<ModelValues>(res_pos) && carl::variant_is_type<ModelValues>(res_neg)) {
+		/* if (mModelAssignmentCache.empty()) {
+			mModelAssignmentCache.cache(boost::get<ModelValues>(res));
+		}*/
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Decision: " << lit << " (" << f << ") and its negation are feasible wrt " << tvar);
+		return std::make_pair(boost::indeterminate, boost::none);
+	} else if (carl::variant_is_type<ModelValues>(res_pos)) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Propagation: " << lit << " (" << f << ") is feasible wrt " << tvar);
+		return std::make_pair(true, boost::none);
+	} else if (carl::variant_is_type<ModelValues>(res_neg)) {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Propagation: negation of " << lit << " (" << f << ") is feasible wrt " << tvar);
+		return std::make_pair(false, boost::none);
+	} else {
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict: " << lit << " (" << f << ") and its negation are infeasible wrt " << tvar << " due to " << boost::get<FormulasT>(res_pos) << " resp. " << boost::get<FormulasT>(res_neg));
+
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Check if trail without " << f << " was feasible wrt " << tvar);
+		auto expl = isFeasible(tvar);
+		assert(expl);
+		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Trail without " << f << " was infeasible wrt " << tvar);
+		return std::make_pair(boost::indeterminate, std::move(*expl));
 	}
 }
 
