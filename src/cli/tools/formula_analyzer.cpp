@@ -3,7 +3,7 @@
 #include "config.h"
 #include <smtrat-common/smtrat-common.h>
 
-#ifdef CLI_ENABLE_FORMULAPARSER
+#ifdef CLI_ENABLE_ANALYZER
 
 #include "parser_smtlib_utils.h"
 #include "execute_smtlib.h"

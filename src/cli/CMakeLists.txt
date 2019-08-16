@@ -11,6 +11,7 @@
 # Version: 2012-10-10                                         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+option(CLI_ENABLE_ANALYZER "Enable stand-alone formula analyzer" OFF)
 option(CLI_ENABLE_DIMACS_PARSER "Enable parser for DIMACS files" OFF)
 option(CLI_ENABLE_FORMULAPARSER "Enable stand-alone formula parser" OFF)
 option(CLI_ENABLE_OPB_PARSER "Enable parser for OPB files" OFF)
