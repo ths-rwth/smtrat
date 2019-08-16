@@ -9,7 +9,7 @@ namespace analyzer {
 
 struct AnalysisSettings {
 	bool analyze_file = false;
-	bool analyze_projections = false;
+	std::string analyze_projections = "none";
 };
 
 template<typename T>
@@ -21,7 +21,7 @@ void registerAnalyzerSettings(T& parser) {
 
 	parser.add("Analysis settings").add_options()
 			("analyze.file", po::bool_switch(&s.analyze_file), "parse file and analyze it")
-			("analyze.projections", po::bool_switch(&s.analyze_projections), "analyze different CAD projections")
+			("analyze.projections", po::value<std::string>(&s.analyze_projections)->default_value("none"), "which CAD projections to analyze (all, collins, hong, mccallum, mccallum_partial, lazard, brown, none)")
 	;
 #endif
 }

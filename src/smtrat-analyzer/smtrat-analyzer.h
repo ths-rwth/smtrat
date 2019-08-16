@@ -1,8 +1,9 @@
 #pragma once
 
+#include "settings.h"
+#include "statistics.h"
+
 #include <smtrat-common/smtrat-common.h>
-#include "analyzer_settings.h"
-#include "analyzer_statistics.h"
 
 namespace smtrat {
 

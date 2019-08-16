@@ -1,4 +1,5 @@
 #include "variables.h"
+#include "../settings.h"
 
 #include <smtrat-cad/common.h>
 #include <smtrat-cad/Settings.h>
@@ -72,6 +73,8 @@ struct SettingsBrown: cad::BaseSettings {
 };
 
 void analyze_cad_projections(const FormulaT& f, AnalyzerStatistics& stats) {
+	if (settings_analyzer().analyze_projections == "none") return;
+
 	std::set<ConstraintT> constraints;
 
 	carl::FormulaVisitor<FormulaT> fv;
@@ -81,12 +84,25 @@ void analyze_cad_projections(const FormulaT& f, AnalyzerStatistics& stats) {
 		}
 	});
 
-	perform_projection<SettingsCollins>("cad_projection_collins", constraints, stats);
-	perform_projection<SettingsHong>("cad_projection_hong", constraints, stats);
-	perform_projection<SettingsMcCallum>("cad_projection_mccallum", constraints, stats);
-	perform_projection<SettingsMcCallumPartial>("cad_projection_mccallum_partial", constraints, stats);
-	perform_projection<SettingsLazard>("cad_projection_lazard", constraints, stats);
-	perform_projection<SettingsBrown>("cad_projection_brown", constraints, stats);
+	bool all = (settings_analyzer().analyze_projections == "all");
+	if (all || settings_analyzer().analyze_projections == "collins") {
+		perform_projection<SettingsCollins>("cad_projection_collins", constraints, stats);
+	}
+	if (all || settings_analyzer().analyze_projections == "hong") {
+		perform_projection<SettingsHong>("cad_projection_hong", constraints, stats);
+	}
+	if (all || settings_analyzer().analyze_projections == "mccallum") {
+		perform_projection<SettingsMcCallum>("cad_projection_mccallum", constraints, stats);
+	}
+	if (all || settings_analyzer().analyze_projections == "mccallum_partial") {
+		perform_projection<SettingsMcCallumPartial>("cad_projection_mccallum_partial", constraints, stats);
+	}
+	if (all || settings_analyzer().analyze_projections == "lazard") {
+		perform_projection<SettingsLazard>("cad_projection_lazard", constraints, stats);
+	}
+	if (all || settings_analyzer().analyze_projections == "brown") {
+		perform_projection<SettingsBrown>("cad_projection_brown", constraints, stats);
+	}
 }
 
 }

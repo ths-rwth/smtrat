@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../analyzer_statistics.h"
+#include "../statistics.h"
 
 #include <smtrat-common/smtrat-common.h>
 
