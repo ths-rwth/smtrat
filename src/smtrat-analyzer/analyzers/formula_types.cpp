@@ -1,5 +1,7 @@
 #include "formula_types.h"
 
+#include "utils.h"
+
 namespace smtrat::analyzer {
 
 void analyze_formula_types(const FormulaT& f, AnalyzerStatistics& stats) {
@@ -10,6 +12,8 @@ void analyze_formula_types(const FormulaT& f, AnalyzerStatistics& stats) {
 	std::size_t num_disequalities = 0;
 	std::size_t num_weak_inequalities = 0;
 	std::size_t num_strict_inequalities = 0;
+	DegreeCollector dc;
+
 
 	carl::FormulaVisitor<FormulaT> fv;
 	fv.visit(f, [&](const FormulaT& f){
@@ -18,6 +22,7 @@ void analyze_formula_types(const FormulaT& f, AnalyzerStatistics& stats) {
 			++num_or;
 		} else if (f.getType() == carl::FormulaType::CONSTRAINT) {
 			++num_constraints;
+			dc(f.constraint());
 			switch (f.constraint().relation()) {
 				case carl::Relation::LESS: ++num_strict_inequalities; break;
 				case carl::Relation::LEQ: ++num_weak_inequalities; break;
@@ -36,6 +41,9 @@ void analyze_formula_types(const FormulaT& f, AnalyzerStatistics& stats) {
 	stats.add("num_disequalities", num_disequalities);
 	stats.add("num_weak_inequalities", num_weak_inequalities);
 	stats.add("num_strict_inequalities", num_strict_inequalities);
+
+	stats.add("constraint_deg_max", dc.degree_max);
+	stats.add("constraint_deg_sum", dc.degree_sum);
 }
 
 }

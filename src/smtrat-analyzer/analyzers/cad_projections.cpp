@@ -1,4 +1,5 @@
 #include "variables.h"
+#include "utils.h"
 #include "../settings.h"
 
 #include <smtrat-cad/common.h>
@@ -31,27 +32,21 @@ struct Projector {
 template<typename P>
 void collect_projection_size(const std::string& prefix, const P& projection, AnalyzerStatistics& stats) {
 	std::size_t sum = 0;
-	std::size_t degree_max = 0;
-	std::size_t degree_sum = 0;
-	std::size_t tdegree_max = 0;
-	std::size_t tdegree_sum = 0;
+	DegreeCollector dc;
 	for (std::size_t level = 1; level <= projection.mProjection.dim(); ++level) {
 		sum += projection.mProjection.size(level);
 		for (std::size_t pid = 0; pid < projection.mProjection.size(level); ++pid) {
 			if (projection.mProjection.hasPolynomialById(level, pid)) {
 				const auto& p = projection.mProjection.getPolynomialById(level, pid);
-				degree_max = std::max(degree_max, p.degree());
-				degree_sum += p.degree();
-				tdegree_max = std::max(tdegree_max, p.totalDegree());
-				tdegree_sum += p.totalDegree();
+				dc(p);
 			}
 		}
 	}
 	stats.add(prefix + "_size", sum);
-	stats.add(prefix + "_deg_max", degree_max);
-	stats.add(prefix + "_deg_sum", degree_sum);
-	stats.add(prefix + "_tdeg_max", tdegree_max);
-	stats.add(prefix + "_tdeg_sum", tdegree_sum);
+	stats.add(prefix + "_deg_max", dc.degree_max);
+	stats.add(prefix + "_deg_sum", dc.degree_sum);
+	stats.add(prefix + "_tdeg_max", dc.tdegree_max);
+	stats.add(prefix + "_tdeg_sum", dc.tdegree_sum);
 }
 
 template<typename Settings>
