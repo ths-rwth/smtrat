@@ -17,10 +17,10 @@
 configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/manual.tex.in ${CMAKE_CURRENT_SOURCE_DIR}/manual.tex )
 
 set(MODULE_INCLUDES "")
-ListSubDirs(MODULES ${CMAKE_SOURCE_DIR}/src/lib/modules)
+ListSubDirs(MODULES ${CMAKE_SOURCE_DIR}/src/smtrat-modules)
 foreach(module ${MODULES})
-	if(EXISTS ${CMAKE_SOURCE_DIR}/src/lib/modules/${module}/${module}.tex)
-		set(MODULE_INCLUDES "${MODULE_INCLUDES}\n\\subsection{The \\texttt{${module}}}\n\\input{../src/lib/modules/${module}/${module}.tex}\n")
+	if(EXISTS ${CMAKE_SOURCE_DIR}/src/smtrat-modules/${module}/${module}.tex)
+		set(MODULE_INCLUDES "${MODULE_INCLUDES}\n\\subsection{The \\texttt{${module}}}\n\\input{../src/smtrat-modules/${module}/${module}.tex}\n")
 	endif()
 endforeach()
 
