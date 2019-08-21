@@ -14,6 +14,7 @@
 
 add_subdirectory(smtrat-common)
 add_subdirectory(lib)
+add_subdirectory(smtrat-analyzer)
 add_subdirectory(smtrat-cad)
 add_subdirectory(smtrat-mcsat)
 add_subdirectory(smtrat-modules)
