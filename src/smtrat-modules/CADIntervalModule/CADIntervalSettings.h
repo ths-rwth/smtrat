@@ -33,7 +33,7 @@ namespace smtrat
 	struct CADIntervalBaseSettings: cad::MISHeuristicGreedy {
 		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Default;
 		static constexpr cad::RootSplittingStrategy rootSplittingStrategy = cad::RootSplittingStrategy::DEFAULT;
-		static constexpr cad::CoreIntervalBasedHeuristic coreHeuristic = cad::CoreIntervalBasedHeuristic::PreferLifting;
+		static constexpr cad::CoreIntervalBasedHeuristic coreHeuristic = cad::CoreIntervalBasedHeuristic::UnsatCover;
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = false;
 		static constexpr bool restrictProjectionByEC = false;

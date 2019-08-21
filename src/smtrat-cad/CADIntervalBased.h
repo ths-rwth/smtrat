@@ -23,7 +23,6 @@ namespace cad {
 	private:
 		std::vector<carl::Variable> mVariables;			/**< variables in given order */
 		std::vector<ConstraintT> mConstraints;			/**< constraints */
-		std::vector<LiftingLevel<Settings>> mLifting;
 		ProjectionT<Settings> mProjection;
 		
 		// ID scheme for variables x,y,z:
@@ -46,11 +45,9 @@ namespace cad {
 				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addEqConstraint(projection::normalize(p), cid, isBound); },
 				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(projection::normalize(p), cid, isBound); }
 			),
-			mProjection(mConstraints),
-			mLifting()
+			mProjection(mConstraints)
 		{
 			//@todo what to initialize
-			mLifting.append(LiftingLevel(mConstraints));
 			
 			if (Settings::debugStepsToTikz) {
 				thp.configure<debug::TikzTreePrinter>("Lifting");
@@ -75,9 +72,6 @@ namespace cad {
 		const auto& getProjection() const {
 			return mProjection;
 		}
-		const auto& getLifting() const {
-			return mLifting;
-		}
 
 		//const auto& getConstraintMap() const {
 		//	return mConstraints.ordered();
@@ -92,7 +86,6 @@ namespace cad {
 			mVariables = vars;
 			mConstraints.clear();
 			mProjection.reset();
-			mLifting.reset(std::vector<carl::Variable>(vars.rbegin(), vars.rend()));
 		}
 
 		//@todo add constraint to lifting level
@@ -100,28 +93,19 @@ namespace cad {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Adding " << c);
 			//mConstraints.add(c);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Current intervals in lifting level:" << std::endl << mLifting.getUnsatIntervals());
 		}
 		void removeConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing " << c);
 			//auto mask = mConstraints.remove(c);
-			//mLifting.removedConstraint(mask);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Current intervals in lifting level:" << std::endl << mLifting.getUnsatIntervals());
 		}
 		
 		Answer check(Assignment& assignment, std::vector<FormulaSetT>& mis) {
-			LiftingLevel currentLevel = mLifting.back();
-			// check for (-inf, +inf) in the unsat intervals
-			if(currentLevel.isSingletonCover()) {
-				return Answer::UNSAT;
-			}
 
 			CADCoreIntervalBased<Settings::coreIntervalBasedHeuristic> cad;
 			auto res = cad(assignment, *this);
 			
-			/*Assignment newsample = std::map<mLifting.getCurrentSample.get>;
-			assignment.insert(); */
+			/*assignment.insert(); */
 
 			//@todo check
 

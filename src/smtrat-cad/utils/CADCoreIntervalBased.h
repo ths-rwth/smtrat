@@ -97,8 +97,9 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 * 
 	 * (Paper Alg. 1, l.9-11)
 	 */
+	template<typename CADIntervalBased>
 	std::set<CADInterval> calcRegionsFromPoly(
-		ConstraintT c, std::map<carl::Variable, RAN> samples, carl::Variable currVar
+		CADIntervalBased& cad, ConstraintT c, std::map<carl::Variable, RAN> samples, carl::Variable currVar
 		) {
 		
 		std::set<CADInterval> regions;
@@ -132,6 +133,20 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		return regions;
 	}
 
+	/** converts a std::map<carl::Variable, RAN> to EvalRationalMap
+	 * as different carl classes need the same information in different format
+	 */
+	template<typename CADIntervalBased>
+	 EvalRationalMap makeEvalMap( CADIntervalBased& cad, const std::map<carl::Variable, RAN>& orig ) {
+		// convert eval map to usable format
+		EvalRationalMap map;
+		for(auto entry : orig) {
+			std::pair<carl::Variable, Rational> newentry = std::make_pair(entry.first, entry.second.value());
+			map.insert(newentry);
+		}
+		return map;
+	}
+
 
 	/** gets unsat intervals corresponding to given sample map
 	 * @param s sample for variable of depth i-1 (only used if dimension is > 1)
@@ -140,8 +155,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 * (Paper Alg. 1)
 	*/
 	template<typename CADIntervalBased>
-	const std::set<CADInterval>& get_unsat_intervals(
-		CADIntervalBased& cad, std::map<carl::Variable,RAN> samples, carl::Variable currVar
+	const std::set<CADInterval*>& get_unsat_intervals(
+		CADIntervalBased& cad, std::map<carl::Variable, RAN> samples, carl::Variable currVar
 		) const {
 
 		// @todo this checks all vars, not just main vars
@@ -158,12 +173,12 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		}
 
 		/* gather intervals from each constraint */
-		std::set<CADInterval> newintervals;
+		std::set<CADInterval*> newintervals;
 		for(auto c : constraints) {
-			unsigned issat = c.satisfiedBy(samples);
+			unsigned issat = c.satisfiedBy(makeEvalMap(cad, samples));
 			/* if unsat, return (-inf, +inf) */
 			if(issat == 0) { /*@todo is this equiv to "c(s) == false"? */
-				std::set<CADInterval> set;
+				std::set<CADInterval*> set;
 				set.insert(new CADInterval(c));
 				return set;
 			}
@@ -172,14 +187,14 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				continue;
 			else { /* @todo this should be the satisfiedBy result with open vars */
 				// get unsat intervals for constraint
-				auto regions = calcRegionsFromPoly(c, samples, currVar);
+				auto regions = calcRegionsFromPoly(cad, c, samples, currVar);
 				for(auto region : regions) {
 					auto r = region.getRepresentative();
-					std::map<carl::Variable,RAN> eval = new std::map<carl::Variable,RAN>(samples);
-					eval.insert(std::pair<carl::Variable, RAN>(currVal, r));
+					std::map<carl::Variable, RAN> eval = new std::map<carl::Variable, RAN>(samples);
+					eval.insert(std::pair<carl::Variable, RAN>(currVar, r));
 					std::vector<Poly> lowerreason;
 					std::vector<Poly> upperreason;
-					if(c.satisfiedBy(eval) == 0) { //@todo again, is this right?
+					if(c.satisfiedBy(makeEvalMap(cad, eval)) == 0) { //@todo again, is this right?
 						if(region.getLowerBoundType() != CADInterval::CADBoundType::INF)
 							lowerreason.push_back(c.lhs());
 						if(region.getUpperBoundType() != CADInterval::CADBoundType::INF)
@@ -191,8 +206,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		}
 
 		/* sort intervals by ascending order of lower bounds */
-		std::sort(newintervals.begin(), newintervals.end(), [](CADInterval a, CADInterval b) {
-			return a.isLowerThan(b);
+		std::sort(newintervals.begin(), newintervals.end(), [](CADInterval* a, CADInterval* b) {
+			return (*a).isLowerThan(*b);
 		});
 
 		return newintervals;
@@ -216,24 +231,26 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 * @note The output (true, 0, INF, emptyset) stands for an unexplored
 	 * interval before the first given interval
 	 */
-	std::tuple<bool, RAN, CADInterval::CADBoundType, std::set<CADInterval>> getLowestUpperBound(
-		std::set<CADInterval> intervals
+	template<typename CADIntervalBased>
+	std::tuple<bool, RAN, CADInterval::CADBoundType, std::set<CADInterval*>> getLowestUpperBound(
+		CADIntervalBased& cad, std::set<CADInterval*> intervals
 	) {
 		// check whether there are intervals
 		if(intervals.empty()) {
-			auto tuple = std::make_tuple(false, (RAN) 0, CADInterval::CADBoundType::OPEN, std::set<CADInterval>());
+			auto tuple = std::make_tuple(false, (RAN) 0, CADInterval::CADBoundType::OPEN, std::set<CADInterval*>());
 			return tuple;
 		}
 
+		// check for (-inf, +inf) interval
 		for(auto inter : intervals) {
-			if(inter.isInfinite()) {
-				auto infset = std::set<CADInterval>();
+			if(inter->isInfinite()) {
+				auto infset = std::set<CADInterval*>();
 				infset.insert(inter);
 				auto tuple = std::make_tuple(false, (RAN) 0, CADInterval::CADBoundType::OPEN, infset);
 			}
 		}
 
-		std::set<CADInterval> cover;
+		std::set<CADInterval*> cover;
 
 		// get an interval with -inf bound, store its higher bound
 		RAN highestbound = (RAN) 0;
@@ -241,16 +258,16 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		bool hasminf = false;
 		for(auto inter : intervals) {
 			// check for singleton cover
-			if(inter.isInfinite()) {
-				auto infset = std::set<CADInterval>();
+			if(inter->isInfinite()) {
+				auto infset = std::set<CADInterval*>();
 				infset.insert(inter);
 				auto tuple = std::make_tuple(false, (RAN) 0, CADInterval::CADBoundType::OPEN, infset);
 				return tuple;
 			}
-			if(inter.getLowerBoundType() == CADInterval::CADBoundType::INF) {
+			if(inter->getLowerBoundType() == CADInterval::CADBoundType::INF) {
 				// note: the higher bound cannot be +inf as there is singleton cover was checked before
-				highestbound = inter.getUpper();
-				boundopen = inter.getUpperBoundType();
+				highestbound = inter->getUpper();
+				boundopen = inter->getUpperBoundType();
 				cover.insert(inter);
 				hasminf = true;
 				break;
@@ -258,7 +275,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		}
 		// if -inf is no bound in any interval, there is some unexplored region before the first interval
 		if(!hasminf) {
-			auto tuple = std::make_tuple(true, (RAN) 0, CADInterval::CADBoundType::INF, std::set<CADInterval>());
+			auto tuple = std::make_tuple(true, (RAN) 0, CADInterval::CADBoundType::INF, std::set<CADInterval*>());
 			return tuple;
 		}
 
@@ -269,30 +286,30 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			for(auto inter : intervals) {
 				updated = false;
 				// if the upper bound is the highest bound but is included only update bound type
-				if(highestbound == inter.getUpper() && boundopen == CADInterval::CADBoundType::OPEN && inter.getUpperBoundType() == CADInterval::CADBoundType::CLOSED) {
-					boundopen = inter.getUpperBoundType();
+				if(highestbound == inter->getUpper() && boundopen == CADInterval::CADBoundType::OPEN && inter->getUpperBoundType() == CADInterval::CADBoundType::CLOSED) {
+					boundopen = inter->getUpperBoundType();
 					cover.insert(inter);
 					updated = true;
 				}
 				// update if the upper bound is not equal to highestbound 
 				// note: checking (highestbound < upper bound) would ommit (upper bound == INF) case
-				else if( !(highestbound == inter.getUpper() && boundopen == inter.getUpperBoundType()) ) {
+				else if( !(highestbound == inter->getUpper() && boundopen == inter->getUpperBoundType()) ) {
 					// and if highestbound is contained in the interval or is bordered by the lower bound of the interval
 					// (also excludes the case upper bound < highestbound)
 					assert(boundopen != CADInterval::CADBoundType::INF);
-					if(inter.contains(highestbound) ||
-						(highestbound == inter.getLower() && boundopen != inter.getLowerBoundType() && 
-						inter.getLowerBoundType() != CADInterval::CADBoundType::INF)) {
+					if(inter->contains(highestbound) ||
+						(highestbound == inter->getLower() && boundopen != inter->getLowerBoundType() && 
+						inter->getLowerBoundType() != CADInterval::CADBoundType::INF)) {
 						
 						cover.insert(inter);
-						if(inter.getUpperBoundType() == CADInterval::CADBoundType::INF) {
+						if(inter->getUpperBoundType() == CADInterval::CADBoundType::INF) {
 							// an unset cover was found
 							auto tuple = std::make_tuple(false, (RAN) 0, CADInterval::CADBoundType::OPEN, cover);
 							return tuple;
 						}
 						// update to next higher bound
-						highestbound = inter.getUpper();
-						boundopen = inter.getUpperBoundType();
+						highestbound = inter->getUpper();
+						boundopen = inter->getUpperBoundType();
 						updated = true;
 					}
 				}
@@ -303,7 +320,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			}
 		}
 		
-		auto tuple = std::make_tuple(true, highestbound, boundopen, std::set<CADInterval>());
+		auto tuple = std::make_tuple(true, highestbound, boundopen, std::set<CADInterval*>());
 		return tuple;
 	}
 
@@ -313,9 +330,10 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 * @returns subset of intervals that form a cover or an empty set if none was found
 	 * (Paper Alg. 2)
 	 */
-	std::set<CADInterval>compute_cover(std::set<CADInterval> inters) {
+	template<typename CADIntervalBased>
+	std::set<CADInterval>compute_cover(CADIntervalBased& cad, std::set<CADInterval*> inters) {
 		// return cover or empty set if none was found
-		auto boundtuple = getLowestUpperBound(inters);
+		auto boundtuple = getLowestUpperBound(cad, inters);
 		return std::get<3>(boundtuple);
 	}
 
@@ -331,14 +349,14 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 */
 	template<typename CADIntervalBased>
 	std::tuple<bool, std::vector<CADInterval>, std::map<carl::Variable, RAN>> get_unsat_cover(
-		CADIntervalBased& cad, std::map<carl::Variable,RAN> samples
+		CADIntervalBased& cad, std::map<carl::Variable, RAN> samples
 		) {
 
 		// get known unsat intervals
-		std::set<CADInterval>& unsatinters = get_unsat_intervals(samples);
+		std::set<CADInterval*>& unsatinters = get_unsat_intervals(cad, samples);
 
 		// run until a cover was found
-		while(compute_cover(unsatinters).empty()) {
+		while(compute_cover(cad, unsatinters).empty()) {
 			//@todo get sample
 		}
 
