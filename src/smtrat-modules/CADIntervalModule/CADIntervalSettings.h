@@ -47,7 +47,6 @@ namespace smtrat
 
 		static constexpr bool pp_disable_variable_elimination = true;
 		static constexpr bool pp_disable_resultants = true;
-		
 	};
 
 	struct CADIntervalSettingsBase: CADIntervalBaseSettings {

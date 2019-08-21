@@ -67,7 +67,11 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 
 	/** checks whether the first variable is at least as high in the var order as the second one */
 	template<typename CADIntervalBased>
-	bool isAtLeastCurrVar(CADIntervalBased& cad, carl::Variable v, carl::Variable currVar) {
+	bool isAtLeastCurrVar(
+		CADIntervalBased& cad,	/**< corresponding CAD */
+		carl::Variable v, 		/**< variable to check */
+		carl::Variable currVar	/**< current variable */
+	) {
 		/* if currVar is given, obviously true */
 		if(v == currVar)
 			return true;
@@ -89,7 +93,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 
 
 	/**
-	 * Calculates the regions between the real roots of the given set of constraints
+	 * Calculates the regions between the real roots of the polynom (left-hand side) of given constraint
 	 * @param samples variables to be substituted by given values, can be empty
 	 * @param currVar variable of current level
 	 * 
@@ -99,9 +103,11 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 */
 	template<typename CADIntervalBased>
 	std::set<CADInterval> calcRegionsFromPoly(
-		CADIntervalBased& cad, ConstraintT c, std::map<carl::Variable, RAN> samples, carl::Variable currVar
-		) {
-		
+		CADIntervalBased& cad,					/**< corresponding CAD */
+		ConstraintT c, 							/**< constraint containing the polynom */
+		std::map<carl::Variable, RAN> samples,	/**< variables to be substituted by given values, may be empty */
+		carl::Variable currVar					/**< constraint is considered as univariate in this variable */
+	) {
 		std::set<CADInterval> regions;
 
 		// find real roots of constraint corresponding to current var
@@ -137,7 +143,10 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 * as different carl classes need the same information in different format
 	 */
 	template<typename CADIntervalBased>
-	 EvalRationalMap makeEvalMap( CADIntervalBased& cad, const std::map<carl::Variable, RAN>& orig ) {
+	 EvalRationalMap makeEvalMap( 
+		 CADIntervalBased& cad,						/**< corresponding CAD */ 
+		 const std::map<carl::Variable, RAN>& orig	/**< map to convert */
+	) {
 		// convert eval map to usable format
 		EvalRationalMap map;
 		for(auto entry : orig) {
@@ -148,16 +157,18 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	}
 
 
-	/** gets unsat intervals corresponding to given sample map
-	 * @param s sample for variable of depth i-1 (only used if dimension is > 1)
-	 * @note asserts that constraints were given to level beforehand
+	/** @brief gets unsat intervals for depth i corresponding to given sample map
+	 * 
 	 * @returns unsat intervals ordered by lower bound, ascending
+	 * 
 	 * (Paper Alg. 1)
 	*/
 	template<typename CADIntervalBased>
 	const std::set<CADInterval*>& get_unsat_intervals(
-		CADIntervalBased& cad, std::map<carl::Variable, RAN> samples, carl::Variable currVar
-		) const {
+		CADIntervalBased& cad,					/**< corresponding CAD */ 
+		std::map<carl::Variable, RAN> samples,	/**< values for variables of depth till i-1 (only used if dimension is > 1) */
+		carl::Variable currVar					/**< variable of current depth i */
+	) const {
 
 		// @todo this checks all vars, not just main vars
 		/* constraints are filtered for ones with main var currVar or higher */
@@ -221,19 +232,17 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 * if -inf is not a bound yet it is determined to be the first "upper" bound.
 	 * Else the first bound not followed by another interval is returned.
 	 * 
-	 * @param intervals Set of intervals to be checked for unexplored regions
-	 * 
 	 * @returns bool 				(1st value of tuple) true iff a bound was found
 	 * @returns RAN  				(2nd value of tuple) bound iff one was found, 0 otherwise
 	 * @returns CADBoundType 		(3rd value of tuple) type of bound if one was found or OPEN if none was found (if this is INF, the found "bound" is -inf)
 	 * @returns set<CADInterval> 	(4th value of tuple) contains intervals of covering iff no bound was found, else empty
 	 * 
-	 * @note The output (true, 0, INF, emptyset) stands for an unexplored
-	 * interval before the first given interval
+	 * @note The output (true, 0, INF, emptyset) stands for an unexplored interval before the first given interval
 	 */
 	template<typename CADIntervalBased>
 	std::tuple<bool, RAN, CADInterval::CADBoundType, std::set<CADInterval*>> getLowestUpperBound(
-		CADIntervalBased& cad, std::set<CADInterval*> intervals
+		CADIntervalBased& cad,				/**< corresponding CAD */
+		std::set<CADInterval*> intervals	/**< set of intervals to be checked for unexplored regions */
 	) {
 		// check whether there are intervals
 		if(intervals.empty()) {
@@ -331,12 +340,85 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 * (Paper Alg. 2)
 	 */
 	template<typename CADIntervalBased>
-	std::set<CADInterval>compute_cover(CADIntervalBased& cad, std::set<CADInterval*> inters) {
+	std::set<CADInterval>compute_cover(
+		CADIntervalBased& cad, 			/**< corresponding CAD */
+		std::set<CADInterval*> inters	/**< set of intervals over which to find a cover */
+	) {
 		// return cover or empty set if none was found
 		auto boundtuple = getLowestUpperBound(cad, inters);
 		return std::get<3>(boundtuple);
 	}
 
+	/** @brief computes the next sample
+	 * 
+	 * Chooses a Sample outside the currently known unsat intervals
+	 * 
+	 * @returns RAN in unexplored interval
+	 * @note check whether an unsat cover has been found before calling this!
+	 */
+	template<typename CADIntervalBased>
+	RAN chooseSample(
+		CADIntervalBased& cad,			/**< corresponding CAD */
+		std::set<CADInterval*> inters	/**< known unsat intervals */
+	) {
+		// if -inf is not a bound find sample in (-inf, first bound)
+		bool hasminf = false;
+		bool first = true;
+		RAN lowestval = 0;
+		for(auto inter : inters) {
+			if(inter->getLowerBoundType() == CADInterval::CADBoundType::INF) {
+				hasminf = true;
+				break;
+			}
+			else {
+				// get lowest bound
+				if(first) {
+					lowestval = inter->getLower();
+					first = false;
+				}
+				else {
+					if(inter->getLower() < lowestval)
+						lowestval = inter->getLower();
+				}
+			}
+		}
+		// if no -inf bound, get val below
+		if(!hasminf) {
+			return sampleBelow(lowestval);
+		}
+
+		// get first unexplored region
+		auto boundtuple = getLowestUpperBound(cad, inters);
+		assert(std::get<0>(boundtuple)); //@todo handle this instead
+		RAN bound = std::get<1>(boundtuple);
+		// note: at this point the bound is not -inf (case is handled above)
+
+		// get lower bound of next interval after the unexplored region iff one exists
+		bool found = false;
+		RAN upperbound;
+		CADInterval::CADBoundType upperboundtype;
+		for(auto inter : inters) {
+			if(bound < inter->getLower() && inter->getLowerBoundType() != CADInterval::CADBoundType::INF) {
+				found = true;
+				upperbound = inter->getLower();
+				upperboundtype = inter->getLowerBoundType();
+			}
+			// case bound == inter.lower can only happen if found == true, initially was covered by getLowestUpperBound
+			else if(bound == inter->getLower() && upperboundtype == CADInterval::CADBoundType::OPEN 
+				&& inter->getLowerBoundType() == CADInterval::CADBoundType::CLOSED) {
+				upperboundtype == CADInterval::CADBoundType::CLOSED;
+			}
+		}
+		// if none was found, next bound is +inf
+		if(!found) {
+			upperboundtype = CADInterval::CADBoundType::INF;
+			upperbound = (RAN) 0;
+		}
+
+		// create interval in which to find the next sample
+		CADInterval* sampleinterval = new CADInterval(bound, upperbound, std::get<2>(boundtuple), upperboundtype);
+		return sampleinterval->getRepresentative();
+	}
 
 	/**
 	 * @param cad 		CAD class
