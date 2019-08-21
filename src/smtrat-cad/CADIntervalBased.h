@@ -73,15 +73,15 @@ namespace cad {
 			return mProjection;
 		}
 
-		//const auto& getConstraintMap() const {
-		//	return mConstraints.ordered();
-		//}
-		//bool isIdValid(std::size_t id) const {
-		//	return mConstraints.valid(id);
-		//}
-		//const auto& getBounds() const {
-		//	return mConstraints.bounds();
-		//}
+		/** @returns depth of var iff var is in var list, else 0 */
+		int getDepthOfVar(carl::Variable var) {
+			for(int i = 0; i < mVariables.size(); i++) {
+				if(var == mVariables.at(i))
+					return i+1;
+			}
+			return 0;
+		}
+
 		void reset(const std::vector<carl::Variable>& vars) {
 			mVariables = vars;
 			mConstraints.clear();

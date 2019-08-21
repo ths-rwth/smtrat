@@ -65,30 +65,20 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	// }
 
 
-	/** checks whether the first variable is at least as high in the var order as the second one */
+	/** @brief checks whether the first variable is at least as high in the var order as the second one 
+	 * 
+	 * @returns true iff the first var is at least as high in the var order as the second one
+	*/
 	template<typename CADIntervalBased>
 	bool isAtLeastCurrVar(
 		CADIntervalBased& cad,	/**< corresponding CAD */
 		carl::Variable v, 		/**< variable to check */
 		carl::Variable currVar	/**< current variable */
 	) {
-		/* if currVar is given, obviously true */
-		if(v == currVar)
+		if(cad.getDepthOfVar(v) >= cad.getDepthOfVar(currVar))
 			return true;
 
-		/* go throught vars until currvar, then look for the given variable */
-		bool curr = false;
-		for(auto var : cad.getVariables()) {
-			if(!curr && var == currVar)
-				curr = true;
-			else if(curr && var == v) {
-				return true;
-			/* case v = currVar covered before */
-			}
-
-		/* if the given var was not found at/after currVar */
 		return false;
-		}
 	}
 
 
@@ -421,34 +411,36 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	}
 
 	/**
-	 * @param cad 		CAD class
-	 * @param samples	current sample set (initially empty set)
+	 * computes whether an unsat cover can be found or whether there is a satisfying witness
+	 * 
 	 * @returns true if SAT, false if UNSAT
 	 * @returns in UNSAT case: intervals forming the unsat cover
-	 * @returns in SAT case: satisfying witness (ordered from lowest to highest dimension)
+	 * @returns in SAT case: satisfying witness
 	 * 
 	 * (Paper Alg. 3)
 	 */
 	template<typename CADIntervalBased>
-	std::tuple<bool, std::vector<CADInterval>, std::map<carl::Variable, RAN>> get_unsat_cover(
-		CADIntervalBased& cad, std::map<carl::Variable, RAN> samples
-		) {
-
+	std::tuple<bool, std::vector<CADInterval*>, std::map<carl::Variable, RAN>> get_unsat_cover(
+		CADIntervalBased& cad,					/**< corresponding CAD */
+		std::map<carl::Variable, RAN> samples,	/**< values for variables of depth i-1 (initially empty set) */
+		carl::Variable currVar					/**< var of depth i (current depth) */
+	) {
 		// get known unsat intervals
 		std::set<CADInterval*>& unsatinters = get_unsat_intervals(cad, samples);
 
 		// run until a cover was found
 		while(compute_cover(cad, unsatinters).empty()) {
-			//@todo get sample
+			// add new sample for current variable
+			std::map<carl::Variable, RAN> newsamples = samples;
+			RAN newval = chooseSample(cad, unsatinters);
+			newsamples.insert(std::make_pair(currVar, newval));
+
+			// if the sample set has full dimension we have a satifying witness
+			if(cad.dim() == cad.getDepthOfVar(currVar))
+				return std::make_tuple(true, std::vector<CADInterval*>(), newsamples);
 		}
 
-
-		// // get the current dimension
-		// int dim = samples.size();
-		// // there should be lifting levels for all former dimensions and none for the current one
-		// assert(cad.mLifting.size() == dim);
-		// //@todo initialize new lifting level with conss, get intervals
-		// cad.mLifting.emplace_back();
+		// @todo continue here
 
         // // no lifting is possible if an unsat cover was found
 		// if (cad.mLifting.back().isUnsatCover()) {
