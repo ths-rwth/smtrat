@@ -94,13 +94,13 @@ private:
 
 	void remove_job_id() {
 		if( std::remove( (settings_slurm().tmp_dir + "/slurmjob").c_str() ) != 0 ){
-			BENCHMAX_LOG_WARN("benchmax.slurm", "slurmjob file could not be deleted");
+			BENCHMAX_LOG_WARN("benchmax.slurm", settings_slurm().tmp_dir + "/slurmjob file could not be deleted");
 		}
 	}
  
 	void run_job_async(std::size_t n, bool wait_for_termination) {
 		if (load_job_id() != -1) {
-			BENCHMAX_LOG_ERROR("benchmax.slurm", "Another job is still running in this directory!");
+			BENCHMAX_LOG_ERROR("benchmax.slurm", "Another job is still running in this directory! If this is not the case, please delete " + settings_slurm().tmp_dir + "/slurmjob");
 			return;
 		}
 
