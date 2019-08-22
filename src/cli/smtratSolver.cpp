@@ -40,6 +40,7 @@
 #include "tools/config.h"
 #include "tools/execute_smtlib.h"
 #include "tools/Executor.h"
+#include "tools/formula_analyzer.h"
 #include "tools/parser_dimacs.h"
 #include "tools/parser_opb.h"
 #include "tools/parser_smtlib.h"
@@ -103,6 +104,9 @@ int main( int argc, char* argv[] )
 	#ifdef SMTRAT_DEVOPTION_Statistics
 	smtrat::statistics::registerStatisticsSettings(parser);
 	#endif
+	#ifdef CLI_ENABLE_ANALYZER
+	smtrat::analyzer::registerAnalyzerSettings(parser);
+	#endif
 	smtrat::SettingsComponents::getInstance().add_to_parser(parser);
 	parser.finalize();
 	parser.parse_options(argc, argv);
@@ -119,7 +123,7 @@ int main( int argc, char* argv[] )
 	
 	if (smtrat::settings_solver().preprocess) {
 		exitCode = smtrat::preprocess_file(smtrat::settings_parser().input_file, smtrat::settings_solver().preprocess_output_file);
-	} else if (smtrat::settings_solver().analyze_file) {
+	} else if (smtrat::settings_analyzer().enabled) {
 		exitCode = smtrat::analyze_file(smtrat::settings_parser().input_file);
 	} else {
 		SMTRAT_LOG_INFO("smtrat", "Constructing strategy.");

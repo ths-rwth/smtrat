@@ -102,82 +102,83 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mStatistics.add( constraint );
                 #endif
-                unsigned consistency = constraint.isConsistent();
-                if( consistency == 2 )
-                {
-                    mAssignmentFullfilsNonlinearConstraints = false;
-                    if( constraint.lhs().isLinear() )
-                    {
+				// FormulaT constructor simplifies constraint if isConsistent() != 2
+				assert(constraint.isConsistent() == 2);
+				mAssignmentFullfilsNonlinearConstraints = false;
+				if( constraint.lhs().isLinear() )
+				{
 //                        bool elementInserted = mLinearConstraints.insert( formula ).second;
 //                        if( elementInserted && mInitialized )
 //                        {
 //                            mTableau.newBound( formula );
 //                        }
-                        if( constraint.relation() != carl::Relation::NEQ )
-                        {
-                            if( constraint.hasVariable( objective() ) )
-                            {
-                                return true;
-                            }
-                            auto constrBoundIter = mTableau.constraintToBound().find( formula );
-                            assert( constrBoundIter != mTableau.constraintToBound().end() );
-                            const std::vector< const LRABound* >* bounds = constrBoundIter->second;
-                            assert( bounds != NULL );
-                            activateBound( *bounds->begin(), formula );
+					if( constraint.relation() != carl::Relation::NEQ )
+					{
+						if( constraint.hasVariable( objective() ) )
+						{
+							return true;
+						}
+						auto constrBoundIter = mTableau.constraintToBound().find( formula );
+						assert( constrBoundIter != mTableau.constraintToBound().end() );
+						const std::vector< const LRABound* >* bounds = constrBoundIter->second;
+						assert( bounds != NULL );
+						activateBound( *bounds->begin(), formula );
 
-                            if( !(*bounds->begin())->neqRepresentation().isTrue() )
-                            {
-                                auto pos = mActiveUnresolvedNEQConstraints.find( (*bounds->begin())->neqRepresentation() );
-                                if( pos != mActiveUnresolvedNEQConstraints.end() )
-                                {
-                                    auto entry = mActiveResolvedNEQConstraints.insert( *pos );
-                                    removeOrigin( pos->second.position, pos->second.origin );
-                                    entry.first->second.position = passedFormulaEnd();
-                                    mActiveUnresolvedNEQConstraints.erase( pos );
-                                    auto constrBoundIter = mTableau.constraintToBound().find( (*bounds->begin())->neqRepresentation() );
-                                    assert( constrBoundIter != mTableau.constraintToBound().end() );
-                                    const std::vector< const LRABound* >* boundsOfNeqConstraint = constrBoundIter->second;
-                                    if( *bounds->begin() == (*boundsOfNeqConstraint)[1] || *bounds->begin() == (*boundsOfNeqConstraint)[2] )
-                                    {
-                                        bool leqBoundActive = *bounds->begin() == (*boundsOfNeqConstraint)[1];
-                                        activateStrictBound( (*bounds->begin())->neqRepresentation(), **bounds->begin(), (*boundsOfNeqConstraint)[leqBoundActive ? 0 : 3] );
-                                    }
-                                }
-                            }
-                            return mInfeasibleSubsets.empty();
-                        }
-                        else
-                        {
-                            auto constrBoundIter = mTableau.constraintToBound().find( formula );
-                            assert( constrBoundIter != mTableau.constraintToBound().end() );
-                            const std::vector< const LRABound* >* bounds = constrBoundIter->second;
+						if( !(*bounds->begin())->neqRepresentation().isTrue() )
+						{
+							auto pos = mActiveUnresolvedNEQConstraints.find( (*bounds->begin())->neqRepresentation() );
+							if( pos != mActiveUnresolvedNEQConstraints.end() )
+							{
+								auto entry = mActiveResolvedNEQConstraints.insert( *pos );
+								removeOrigin( pos->second.position, pos->second.origin );
+								entry.first->second.position = passedFormulaEnd();
+								mActiveUnresolvedNEQConstraints.erase( pos );
+								auto constrBoundIter = mTableau.constraintToBound().find( (*bounds->begin())->neqRepresentation() );
+								assert( constrBoundIter != mTableau.constraintToBound().end() );
+								const std::vector< const LRABound* >* boundsOfNeqConstraint = constrBoundIter->second;
+								if( *bounds->begin() == (*boundsOfNeqConstraint)[1] || *bounds->begin() == (*boundsOfNeqConstraint)[2] )
+								{
+									bool leqBoundActive = *bounds->begin() == (*boundsOfNeqConstraint)[1];
+									activateStrictBound( (*bounds->begin())->neqRepresentation(), **bounds->begin(), (*boundsOfNeqConstraint)[leqBoundActive ? 0 : 3] );
+								}
+							}
+						}
+						return mInfeasibleSubsets.empty();
+					}
+					else
+					{
+						auto constrBoundIter = mTableau.constraintToBound().find( formula );
+						if (constrBoundIter == mTableau.constraintToBound().end()) {
+							std::quick_exit(57);
+						}
+						assert( constrBoundIter != mTableau.constraintToBound().end() );
+						const std::vector< const LRABound* >* bounds = constrBoundIter->second;
 //                            bool intValued = constraint.integerValued();
 //                            if( (intValued && ((*bounds)[1]->isActive() || (*bounds)[2]->isActive()))
 //                                || (!intValued && ((*bounds)[0]->isActive() || (*bounds)[1]->isActive() || (*bounds)[2]->isActive() || (*bounds)[3]->isActive())) )
-                            if( (*bounds)[0]->isActive() || (*bounds)[1]->isActive() || (*bounds)[2]->isActive() || (*bounds)[3]->isActive() )
-                            {
-                                Context context( formula, passedFormulaEnd() );
-                                mActiveResolvedNEQConstraints.insert( std::pair< FormulaT, Context >( formula, std::move(context) ) );
-                                bool leqBoundActive = (*bounds)[1]->isActive();
-                                if( leqBoundActive || (*bounds)[2]->isActive() )
-                                {
-                                    activateStrictBound( formula, *(*bounds)[leqBoundActive ? 1 : 2], (*bounds)[leqBoundActive ? 0 : 3] );
-                                }
-                            }
-                            else
-                            {
-                                Context context( formula, addSubformulaToPassedFormula( formula, formula ).first );
-                                mActiveUnresolvedNEQConstraints.insert( std::pair< FormulaT, Context >( formula, std::move(context) ) );
-                            }
-                        }
-                    }
-                    else
-                    {
-                        addSubformulaToPassedFormula( formula, formula );
-                        mNonlinearConstraints.insert( formula );
-                        return true;
-                    }
-                }
+						if( (*bounds)[0]->isActive() || (*bounds)[1]->isActive() || (*bounds)[2]->isActive() || (*bounds)[3]->isActive() )
+						{
+							Context context( formula, passedFormulaEnd() );
+							mActiveResolvedNEQConstraints.insert( std::pair< FormulaT, Context >( formula, std::move(context) ) );
+							bool leqBoundActive = (*bounds)[1]->isActive();
+							if( leqBoundActive || (*bounds)[2]->isActive() )
+							{
+								activateStrictBound( formula, *(*bounds)[leqBoundActive ? 1 : 2], (*bounds)[leqBoundActive ? 0 : 3] );
+							}
+						}
+						else
+						{
+							Context context( formula, addSubformulaToPassedFormula( formula, formula ).first );
+							mActiveUnresolvedNEQConstraints.insert( std::pair< FormulaT, Context >( formula, std::move(context) ) );
+						}
+					}
+				}
+				else
+				{
+					addSubformulaToPassedFormula( formula, formula );
+					mNonlinearConstraints.insert( formula );
+					return true;
+				}
             }
             default:
                 return true;
@@ -201,129 +202,128 @@ namespace smtrat
             #ifdef SMTRAT_DEVOPTION_Statistics
             mStatistics.remove( constraint );
             #endif
-            if( constraint.isConsistent() == 2 )
-            {
-                if( constraint.lhs().isLinear() )
-                {
-                    if( constraint.hasVariable( objective() ) )
-                        return;
-                    // Deactivate the bounds regarding the given constraint
-                    auto constrBoundIter = mTableau.constraintToBound().find( pformula );
-                    assert( constrBoundIter != mTableau.rConstraintToBound().end() );
-                    std::vector< const LRABound* >* bounds = constrBoundIter->second;
-                    assert( bounds != NULL );
-                    auto bound = bounds->begin();
-                    int pos = 0;
-                    int dontRemoveBeforePos = constraint.relation() == carl::Relation::NEQ ? 4 : 1;
-                    while( bound != bounds->end() )
-                    {
-                        if( !(*bound)->origins().empty() )
-                        {
-                            auto origin = (*bound)->pOrigins()->begin();
-                            bool mainOriginRemains = true;
-                            while( origin != (*bound)->origins().end() )
-                            {
-                                if( origin->getType() == carl::FormulaType::AND && origin->contains( pformula ) )
-                                {
-                                    origin = (*bound)->pOrigins()->erase( origin );
-                                }
-                                else if( mainOriginRemains && *origin == pformula )
-                                {
-                                    assert( origin->getType() == carl::FormulaType::CONSTRAINT );
-                                    origin = (*bound)->pOrigins()->erase( origin );
-                                    // ensures that only one main origin is removed, in the case that a formula is contained more than once in the module input
-                                    mainOriginRemains = false;
-                                }
-                                else
-                                {
-                                    ++origin;
-                                }
-                            }
-                            if( (*bound)->origins().empty() )
-                            {
-                                if( !(*bound)->neqRepresentation().isTrue() )
-                                {
-                                    auto constrBoundIterB = mTableau.constraintToBound().find( (*bound)->neqRepresentation() );
-                                    assert( constrBoundIterB != mTableau.constraintToBound().end() );
-                                    const std::vector< const LRABound* >* uebounds = constrBoundIterB->second;
-                                    assert( uebounds != NULL );
-                                    assert( uebounds->size() >= 4 );
+			// FormulaT constructor simplifies constraint if isConsistent() != 2
+			assert(constraint.isConsistent() == 2);
+			if( constraint.lhs().isLinear() )
+			{
+				if( constraint.hasVariable( objective() ) )
+					return;
+				// Deactivate the bounds regarding the given constraint
+				auto constrBoundIter = mTableau.constraintToBound().find( pformula );
+				assert( constrBoundIter != mTableau.rConstraintToBound().end() );
+				std::vector< const LRABound* >* bounds = constrBoundIter->second;
+				assert( bounds != NULL );
+				auto bound = bounds->begin();
+				int pos = 0;
+				int dontRemoveBeforePos = constraint.relation() == carl::Relation::NEQ ? 4 : 1;
+				while( bound != bounds->end() )
+				{
+					if( !(*bound)->origins().empty() )
+					{
+						auto origin = (*bound)->pOrigins()->begin();
+						bool mainOriginRemains = true;
+						while( origin != (*bound)->origins().end() )
+						{
+							if( origin->getType() == carl::FormulaType::AND && origin->contains( pformula ) )
+							{
+								origin = (*bound)->pOrigins()->erase( origin );
+							}
+							else if( mainOriginRemains && *origin == pformula )
+							{
+								assert( origin->getType() == carl::FormulaType::CONSTRAINT );
+								origin = (*bound)->pOrigins()->erase( origin );
+								// ensures that only one main origin is removed, in the case that a formula is contained more than once in the module input
+								mainOriginRemains = false;
+							}
+							else
+							{
+								++origin;
+							}
+						}
+						if( (*bound)->origins().empty() )
+						{
+							if( !(*bound)->neqRepresentation().isTrue() )
+							{
+								auto constrBoundIterB = mTableau.constraintToBound().find( (*bound)->neqRepresentation() );
+								assert( constrBoundIterB != mTableau.constraintToBound().end() );
+								const std::vector< const LRABound* >* uebounds = constrBoundIterB->second;
+								assert( uebounds != NULL );
+								assert( uebounds->size() >= 4 );
 //                                    bool intValued = (*bound)->neqRepresentation().constraint().integerValued();
 //                                    if( (intValued && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive()) ||
 //                                        (!intValued && !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive() && !(*uebounds)[3]->isActive()) )
-                                    if( !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive() && !(*uebounds)[3]->isActive() )
-                                    {
-                                        auto pos = mActiveResolvedNEQConstraints.find( (*bound)->neqRepresentation() );
-                                        if( pos != mActiveResolvedNEQConstraints.end() )
-                                        {
-                                            auto entry = mActiveUnresolvedNEQConstraints.insert( *pos );
-                                            mActiveResolvedNEQConstraints.erase( pos );
-                                            entry.first->second.position = addSubformulaToPassedFormula( entry.first->first, entry.first->second.origin ).first;
-                                        }
-                                    }
-                                }
-                                LRAVariable& var = *(*bound)->pVariable();
-                                if( var.deactivateBound( *bound, passedFormulaEnd() ) && !var.isBasic() )
-                                {
-                                    if( var.supremum() < var.assignment() )
-                                    {
-                                        mTableau.updateBasicAssignments( var.position(), LRAValue( var.supremum().limit() - var.assignment() ) );
-                                        var.rAssignment() = var.supremum().limit();
-                                    }
-                                    else if( var.infimum() > var.assignment() )
-                                    {
-                                        mTableau.updateBasicAssignments( var.position(), LRAValue( var.infimum().limit() - var.assignment() ) );
-                                        var.rAssignment() = var.infimum().limit();
-                                    }
-                                    if( var.isConflicting() )
-                                    {
-                                        FormulaSetT infsubset;
-                                        collectOrigins( *var.supremum().origins().begin(), infsubset );
-                                        collectOrigins( *var.infimum().origins().begin(), infsubset );
-                                        mInfeasibleSubsets.push_back( std::move(infsubset) );
-                                    }
-                                }
-                                if( !(*bound)->pVariable()->pSupremum()->isInfinite() )
-                                {
-                                    mBoundCandidatesToPass.push_back( (*bound)->pVariable()->pSupremum() );
-                                }
-                                if( !(*bound)->pVariable()->pInfimum()->isInfinite() )
-                                {
-                                    mBoundCandidatesToPass.push_back( (*bound)->pVariable()->pInfimum() );
-                                }
+								if( !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive() && !(*uebounds)[3]->isActive() )
+								{
+									auto pos = mActiveResolvedNEQConstraints.find( (*bound)->neqRepresentation() );
+									if( pos != mActiveResolvedNEQConstraints.end() )
+									{
+										auto entry = mActiveUnresolvedNEQConstraints.insert( *pos );
+										mActiveResolvedNEQConstraints.erase( pos );
+										entry.first->second.position = addSubformulaToPassedFormula( entry.first->first, entry.first->second.origin ).first;
+									}
+								}
+							}
+							LRAVariable& var = *(*bound)->pVariable();
+							if( var.deactivateBound( *bound, passedFormulaEnd() ) && !var.isBasic() )
+							{
+								if( var.supremum() < var.assignment() )
+								{
+									mTableau.updateBasicAssignments( var.position(), LRAValue( var.supremum().limit() - var.assignment() ) );
+									var.rAssignment() = var.supremum().limit();
+								}
+								else if( var.infimum() > var.assignment() )
+								{
+									mTableau.updateBasicAssignments( var.position(), LRAValue( var.infimum().limit() - var.assignment() ) );
+									var.rAssignment() = var.infimum().limit();
+								}
+								if( var.isConflicting() )
+								{
+									FormulaSetT infsubset;
+									collectOrigins( *var.supremum().origins().begin(), infsubset );
+									collectOrigins( *var.infimum().origins().begin(), infsubset );
+									mInfeasibleSubsets.push_back( std::move(infsubset) );
+								}
+							}
+							if( !(*bound)->pVariable()->pSupremum()->isInfinite() )
+							{
+								mBoundCandidatesToPass.push_back( (*bound)->pVariable()->pSupremum() );
+							}
+							if( !(*bound)->pVariable()->pInfimum()->isInfinite() )
+							{
+								mBoundCandidatesToPass.push_back( (*bound)->pVariable()->pInfimum() );
+							}
 
-                                if( !mMinimizingCheck && !(*bound)->variable().hasBound() && (*bound)->variable().isBasic() && !(*bound)->variable().isOriginal() )
-                                {
-                                    mTableau.deactivateBasicVar( (*bound)->pVariable() );
-                                }
-                            }
-                        }
-                        if( (*bound)->origins().empty() && pos >= dontRemoveBeforePos )
-                            bound = bounds->erase( bound );
-                        else
-                        {
-                            ++bound;
-                            ++pos;
-                        }
-                    }
-                    if( constraint.relation() == carl::Relation::NEQ )
-                    {
-                        if( mActiveResolvedNEQConstraints.erase( pformula ) == 0 )
-                        {
-                            auto iter = mActiveUnresolvedNEQConstraints.find( pformula );
-                            if( iter != mActiveUnresolvedNEQConstraints.end() )
-                            {
-                                removeOrigin( iter->second.position, iter->second.origin );
-                                mActiveUnresolvedNEQConstraints.erase( iter );
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    mNonlinearConstraints.erase( pformula );
-                }
-            }
+							if( !mMinimizingCheck && !(*bound)->variable().hasBound() && (*bound)->variable().isBasic() && !(*bound)->variable().isOriginal() )
+							{
+								mTableau.deactivateBasicVar( (*bound)->pVariable() );
+							}
+						}
+					}
+					if( (*bound)->origins().empty() && pos >= dontRemoveBeforePos )
+						bound = bounds->erase( bound );
+					else
+					{
+						++bound;
+						++pos;
+					}
+				}
+				if( constraint.relation() == carl::Relation::NEQ )
+				{
+					if( mActiveResolvedNEQConstraints.erase( pformula ) == 0 )
+					{
+						auto iter = mActiveUnresolvedNEQConstraints.find( pformula );
+						if( iter != mActiveUnresolvedNEQConstraints.end() )
+						{
+							removeOrigin( iter->second.position, iter->second.origin );
+							mActiveUnresolvedNEQConstraints.erase( iter );
+						}
+					}
+				}
+			}
+			else
+			{
+				mNonlinearConstraints.erase( pformula );
+			}
         }
     }
 
