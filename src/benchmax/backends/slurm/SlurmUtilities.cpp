@@ -192,7 +192,7 @@ bool is_job_finished(int jobid) {
 	cmd << "sacct -o state  -j " << jobid;
 	BENCHMAX_LOG_DEBUG("benchmax.slurm", "Command: " << cmd.str());
 	std::string output;
-	call_program(cmd.str(), output, true);
+	call_program(cmd.str(), output, false);
 	
 	std::istringstream iss(output);
 	std::string line;
