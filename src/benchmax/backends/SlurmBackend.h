@@ -143,16 +143,16 @@ private:
 		}
 	}
 
-	void collect_results() override {
+	bool collect_results() override {
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Check if job finished.");
 		int jobid = load_job_id();
 		if (jobid == -1) {
 			BENCHMAX_LOG_ERROR("benchmax.slurm", "Jobid could not be determined!");
-			return;
+			return false;
 		}
 		if (!slurm::is_job_finished(jobid)) {
 			BENCHMAX_LOG_WARN("benchmax.slurm", "Job is not finished yet.");
-			return;
+			return false;
 		}
 		remove_job_id();
 
@@ -172,6 +172,8 @@ private:
 			});
 		}
 		slurm::remove_log_files(files, !settings_slurm().keep_logs);
+
+		return true;
 	}
 public:
 	bool suspendable() const {

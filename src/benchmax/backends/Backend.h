@@ -57,7 +57,7 @@ protected:
 		}
 	}
 
-	virtual void collect_results() {}
+	virtual bool collect_results() {}
 	void sanitize_results(const Jobs& jobs) const {
 		for (const auto& j: jobs) {
 			auto res = mResults.get(j.first, j.second);
@@ -78,9 +78,12 @@ public:
 		return false;
 	}
 	void process_results(const Jobs& jobs) {
-		collect_results();
-		sanitize_results(jobs);
-		write_results(jobs);
+		if (collect_results()) {
+			sanitize_results(jobs);
+			write_results(jobs);
+		} else {
+			BENCHMAX_LOG_WARN("benchmax", "Aborted.");
+		}
 	}
 	/// Add a result.
 	void addResult(const Tool* tool, const fs::path& file, BenchmarkResult& result) {
