@@ -116,5 +116,12 @@ std::string parse_result_info(const std::string& content, const std::string& nam
  */
 void remove_log_files(const std::vector<fs::path>& files, bool remove);
 
+/**
+ * Checks if the given job is finished.
+ * @param jobid The job id.
+ * @return True if the job is completed.
+ */
+bool is_job_finished(int jobid);
+
 }
 }

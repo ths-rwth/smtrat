@@ -75,6 +75,23 @@ private:
 		);
 	}
 
+	void store_job_id(int jobid) {
+		std::ofstream out(settings_slurm().tmp_dir + "/slurmjob");
+		out << jobid;
+		out.close();
+	}
+
+	int load_job_id() {
+		std::ifstream in(settings_slurm().tmp_dir + "/slurmjob");
+		if (!in) {
+			return -1;
+		}
+		int jobid;
+		in >> jobid;
+		in.close();
+		return jobid;
+	}
+
 	void run_job_async(std::size_t n, bool wait_for_termination) {
 		std::string jobsfilename = settings_slurm().tmp_dir + "/jobs-" + std::to_string(settings_core().start_time) + "-" + std::to_string(n+1) + ".jobs";
 		slurm::generate_jobs_file(jobsfilename, get_job_range(n), mResults);
@@ -107,6 +124,7 @@ private:
 		std::string output;
 		call_program(cmd.str(), output, true);
 		int jobid = slurm::parse_job_id(output);
+		store_job_id(jobid);
 		if (wait_for_termination) {
 			BENCHMAX_LOG_INFO("benchmax.slurm", "Job terminated.");
 		} else {
@@ -115,7 +133,18 @@ private:
 	}
 
 	void collect_results() override {
-		BENCHMAX_LOG_INFO("benchmax.slurm", "collecting results.");
+		BENCHMAX_LOG_INFO("benchmax.slurm", "Check if job finished.");
+		int jobid = load_job_id();
+		if (jobid == -1) {
+			BENCHMAX_LOG_ERROR("benchmax.slurm", "Jobid could not be determined!");
+			return;
+		}
+		if (slurm::is_job_finished(jobid)) {
+			BENCHMAX_LOG_WARN("benchmax.slurm", "Job is not finished yet.");
+			return;
+		}
+
+		BENCHMAX_LOG_INFO("benchmax.slurm", "Collecting results.");
 		auto files = slurm::collect_result_files(settings_slurm().tmp_dir);
 		for (const auto& f: files) {
 			parse_result_file(f);
@@ -155,7 +184,11 @@ public:
 		for (auto& f: tasks) {
 			f.wait();
 		}
-		BENCHMAX_LOG_DEBUG("benchmax.slurm", "All jobs terminated.");
+		if (wait_for_termination) {
+			BENCHMAX_LOG_DEBUG("benchmax.slurm", "All jobs terminated.");
+		} else {
+			BENCHMAX_LOG_DEBUG("benchmax.slurm", "All jobs scheduled.");
+		}
 	}
 };
 
