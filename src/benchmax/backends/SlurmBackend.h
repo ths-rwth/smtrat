@@ -92,7 +92,18 @@ private:
 		return jobid;
 	}
 
+	void remove_job_id() {
+		if( std::remove( (settings_slurm().tmp_dir + "/slurmjob").c_str() ) != 0 ){
+			BENCHMAX_LOG_WARN("benchmax.slurm", "slurmjob file could not be deleted");
+		}
+	}
+ 
 	void run_job_async(std::size_t n, bool wait_for_termination) {
+		if (load_job_id() != -1) {
+			BENCHMAX_LOG_ERROR("benchmax.slurm", "Another job is still running in this directory!");
+			return;
+		}
+
 		std::string jobsfilename = settings_slurm().tmp_dir + "/jobs-" + std::to_string(settings_core().start_time) + "-" + std::to_string(n+1) + ".jobs";
 		slurm::generate_jobs_file(jobsfilename, get_job_range(n), mResults);
 
@@ -139,10 +150,11 @@ private:
 			BENCHMAX_LOG_ERROR("benchmax.slurm", "Jobid could not be determined!");
 			return;
 		}
-		if (slurm::is_job_finished(jobid)) {
+		if (!slurm::is_job_finished(jobid)) {
 			BENCHMAX_LOG_WARN("benchmax.slurm", "Job is not finished yet.");
 			return;
 		}
+		remove_job_id();
 
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Collecting results.");
 		auto files = slurm::collect_result_files(settings_slurm().tmp_dir);
