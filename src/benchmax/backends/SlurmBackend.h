@@ -100,7 +100,7 @@ private:
  
 	void run_job_async(std::size_t n, bool wait_for_termination) {
 		if (load_job_id() != -1) {
-			BENCHMAX_LOG_ERROR("benchmax.slurm", "Another job is still running in the specified temporary directory! If this is not the case, please delete " + settings_slurm().tmp_dir + "/slurmjob");
+			BENCHMAX_LOG_ERROR("benchmax.slurm", "Another job " << load_job_id() << " is still running in the specified temporary directory! If this is not the case, please delete " + settings_slurm().tmp_dir + "/slurmjob");
 			return;
 		}
 
@@ -151,7 +151,7 @@ private:
 			return false;
 		}
 		if (!slurm::is_job_finished(jobid)) {
-			BENCHMAX_LOG_WARN("benchmax.slurm", "Job is not finished yet.");
+			BENCHMAX_LOG_WARN("benchmax.slurm", "Job " << jobid << " is not finished yet.");
 			return false;
 		}
 		remove_job_id();
