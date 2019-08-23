@@ -132,7 +132,6 @@ public:
 			return false;
 		}
 		
-		std::sort(list.begin(), list.end()); // computeCover requires roots to be in increasing order
 		mRI.add(list);
 		mRootMap.emplace(f, std::make_pair(std::move(list), fnew));
 		return true;
@@ -186,7 +185,7 @@ public:
 		Covering cover(mRI.size() * 2 + 1);
 		for (const auto& c: mRootMap) {
 			carl::Bitset b;
-			const auto& roots = c.second.first;
+			const auto& roots = c.second.first; // sorted
 			const auto& constraint = c.second.second;
 			std::size_t last = 0;
 			for (const auto& r: roots) {
