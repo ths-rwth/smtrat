@@ -57,7 +57,7 @@ protected:
 		}
 	}
 
-	virtual bool collect_results(bool check_finished) {}
+	virtual bool collect_results(const Jobs& jobs, bool check_finished) {}
 	void sanitize_results(const Jobs& jobs) const {
 		for (const auto& j: jobs) {
 			auto res = mResults.get(j.first, j.second);
@@ -78,7 +78,7 @@ public:
 		return false;
 	}
 	void process_results(const Jobs& jobs, bool check_finished) {
-		if (collect_results(check_finished)) {
+		if (collect_results(jobs, check_finished)) {
 			sanitize_results(jobs);
 			write_results(jobs);
 		} else {

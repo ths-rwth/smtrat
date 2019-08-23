@@ -5,6 +5,7 @@
 #include <string>
 #include <stdexcept>
 #include <vector>
+#include <regex>
 
 #include <boost/functional/hash.hpp>
 #include <boost/version.hpp>
@@ -83,6 +84,17 @@ public:
 	/// Compose commandline for this tool with another binary name and the given input file.
 	virtual std::string getCommandline(const std::string& file, const std::string& localBinary) const {
 		return localBinary + " " + mArguments + " " + file;
+	}
+	/// Compose commandline for this tool and the given input file.
+	virtual std::optional<std::string> parseCommandline(const std::string& cmdline) const {
+		std::regex regex(getCommandline("(.+)"));
+		std::smatch match;
+		if (std::regex_match(cmdline, match, regex)) {
+            assert (match.size() == 2);
+            return match[1].str();
+        } else {
+			return {};
+		}
 	}
 
 	/// Checks whether this cool can handle this file type.
