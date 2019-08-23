@@ -4,7 +4,6 @@
 
 #include "common.h"
 #include "projection/Projection.h"
-// #include "lifting/LiftingLevel.h" @todo
 #include "utils/CADConstraints.h"
 #include "utils/CADCoreIntervalBased.h"
 #include "utils/ConflictGraph.h"
@@ -28,14 +27,14 @@ namespace cad {
 		// ID scheme for variables x,y,z:
 		// Projection: x=1,y=2,z=3
 		// Lifting: x=3,y=2,z=1,anonymous=0
-		std::size_t idPL(std::size_t level) const {
-			assert(level > 0 && level <= dim());
-			return dim() - level + 1;
-		}
-		std::size_t idLP(std::size_t level) const {
-			assert(level > 0 && level <= dim());
-			return dim() - level + 1;
-		}
+		// std::size_t idPL(std::size_t level) const {
+		// 	assert(level > 0 && level <= dim());
+		// 	return dim() - level + 1;
+		// }
+		// std::size_t idLP(std::size_t level) const {
+		// 	assert(level > 0 && level <= dim());
+		// 	return dim() - level + 1;
+		// }
 
 	public:
 		debug::TikzHistoryPrinter thp;
@@ -80,6 +79,28 @@ namespace cad {
 					return i+1;
 			}
 			return 0;
+		}
+
+		/** @brief gets the next variable in the order 
+		 * 
+		 * @note if the var is the last one, it is returned
+		 * @note if the given var is not in the list, the first one in the list is output
+		 * 
+		 * @returns next variable in var order
+		 */
+		carl::Variable getNextVar(
+			carl::Variable var	/**< get var after this one */
+		) {
+			for(size_t i = 0; i < mVariables.size(); i++) {
+				// case var is last one in order
+				if(var == mVariables.back())
+					return var;
+				// case var is found in order & is not last one in order
+				if(var == mVariables.at(i))
+					return mVariables.at(i+1);
+			}
+			// if var was not found, return first one in order
+			return mVariables.at(0);
 		}
 
 		void reset(const std::vector<carl::Variable>& vars) {

@@ -410,6 +410,26 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		return sampleinterval->getRepresentative();
 	}
 
+	template<typename CADIntervalBased>
+	smtrat::Poly construct_characterization(
+		CADIntervalBased& cad,					/**< corresponding CAD */
+		std::map<carl::Variable, RAN> samples,	/**< values for variables till depth i */
+		std::vector<CADInterval*> intervals		/**< intervals */
+	) {
+		//@todo
+	}
+
+	template<typename CADIntervalBased>
+	CADInterval* interval_from_characterization(
+		CADIntervalBased& cad,					/**< corresponding CAD */
+	 	std::map<carl::Variable, RAN> samples,	/**< values for variables till depth i-1 */
+		carl::Variable currVar,					/**< var of depth i (current depth) */
+		RAN val, 								/**< value for currVar */
+		smtrat::Poly butler						/**< poly characterization */
+	) {
+		//@todo
+	}
+
 	/**
 	 * computes whether an unsat cover can be found or whether there is a satisfying witness
 	 * 
@@ -426,50 +446,35 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		carl::Variable currVar					/**< var of depth i (current depth) */
 	) {
 		// get known unsat intervals
-		std::set<CADInterval*>& unsatinters = get_unsat_intervals(cad, samples);
+		std::vector<CADInterval*>& unsatinters = get_unsat_intervals(cad, samples);
 
 		// run until a cover was found
 		while(compute_cover(cad, unsatinters).empty()) {
 			// add new sample for current variable
-			std::map<carl::Variable, RAN> newsamples = samples;
+			std::map<carl::Variable, RAN> newsamples = new std::map<carl::Variable, RAN>(samples);
 			RAN newval = chooseSample(cad, unsatinters);
+			SMTRAT_LOG_TRACE("smtrat.cad", "Next sample " << std::endl << newval);
 			newsamples.insert(std::make_pair(currVar, newval));
 
 			// if the sample set has full dimension we have a satifying witness
 			if(cad.dim() == cad.getDepthOfVar(currVar))
 				return std::make_tuple(true, std::vector<CADInterval*>(), newsamples);
+
+			// recursive recall for next dimension
+			auto nextcall = get_unsat_cover(cad, newsamples, cad.getNextVar(currVar));
+			// if SAT
+			if(std::get<0>(nextcall))
+				return nextcall;
+			else {
+				smtrat::Poly butler = construct_characterization(cad, newsamples, std::get<1>(nextcall));
+				CADInterval* butlerinter = interval_from_characterization(cad, samples, currVar, newval, butler);
+				unsatinters.push_back(butlerinter);
+			}
 		}
 
-		// @todo continue here
-
-        // // no lifting is possible if an unsat cover was found
-		// if (cad.mLifting.back().isUnsatCover()) {
-		// 	return std::make_tuple(false, std::vector<CADInterval>(), std::vector<Sample>());
-		// }
-
-        // while(!cad.mLifting.back().isUnsatCover()) {
-        //     // compute a new sample outside of known unsat intervals
-        //     auto s = cad.mLifting.back().chooseSample();
-        //     SMTRAT_LOG_TRACE("smtrat.cad", "Next sample" << std::endl << s);
-		// 	samples.push_back(s);
-		// 	// have we reached full dimension yet?
-		// 	if(samples.size() == cad.dim())
-		// 		return std::tuple<bool, std::vector<CADInterval>, std::vector<Sample>>(true, std::vector<CADInterval>(), samples);
-
-		// 	auto samplecheck = getUnsatCover(cad, samples);
-        //     //@todo check whether all former levels + new sample are sat, if true return sat
-
-		// 	// if the result was sat, return the resulting samples as witnesses
-		// 	if(std::get<0>(samplecheck) == true) 
-		// 		return std::tuple<bool, std::vector<CADInterval>, std::vector<Sample>>(true, std::vector<CADInterval>(), std::get<2>(samplecheck));
-		// 	else
-		// 	{
-		// 		auto r = cad.construct_characterization(samples); //@todo
-		// 		CADInterval i = cad.interval_from_characterization(samples, std::get<1>(samplecheck)); //@todo
-		// 		cad.mLifting.back().addUnsatInterval(i);
-		// 	}
-        // }
-		// return std::make_tuple(true, std::vector<CADInterval>(), std::vector<Sample>());
+		// in case the loop exits a cover was found
+		auto res = std::make_tuple(false, unsatinters, std::map<carl::Variable, RAN>());
+		return res;
 	}
 
 
