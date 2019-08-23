@@ -132,7 +132,6 @@ public:
 			return false;
 		}
 		
-		std::sort(list.begin(), list.end()); // computeCover requires roots to be in increasing order
 		mRI.add(list);
 		mRootMap.emplace(f, std::make_pair(std::move(list), fnew));
 		return true;

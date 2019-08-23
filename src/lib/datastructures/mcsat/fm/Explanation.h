@@ -1,11 +1,14 @@
 #pragma once
 
+#include "../common.h"
+
+#include "FMStatistics.h"
+
 #include <smtrat-mcsat/smtrat-mcsat.h>
 
 namespace smtrat {
 namespace mcsat {
 namespace fm {
-
 
 using carl::operator<<;
 
@@ -35,7 +38,7 @@ struct ConflictGenerator {
 	 * 
 	 * The input is a constraint c: p*x~q which can be used as a bound on x with p,q multivariate polynomials.
 	 * If x only occurs linearly in c, this decomposition is possible.
-	 * If p is zero, then c is conflicting iff !(0~q). If this is the case, we can return (c && p=0) -> 0~q as explanation.
+	 * If p is zero, then c is conflicting iff !(0~q). If this is the case, we can return !c && p=0 -> 0~q as explanation.
 	 * Otherwise, we evaluate c over the partial model and obtain x~r, where r is a rational.
 	 * To properly perform the elimination step detailed below, we additionally store whether p is negative over the current assignment as a Boolean.
 	 *
@@ -325,6 +328,80 @@ struct MinVarCountComparator {
 
 	bool operator()(const Bound& b1, const Bound& b2) const {
 		return b1.constr.variables().size() < b2.constr.variables().size();
+	}
+};
+
+
+struct DefaultSettings {
+	static constexpr bool use_all_constraints = false;
+};
+struct IgnoreCoreSettings {
+	static constexpr bool use_all_constraints = true;
+};
+
+template<class Settings>
+struct Explanation {
+
+#ifdef SMTRAT_DEVOPTION_Statistics
+	FMStatistics& mStatistics = statistics_get<FMStatistics>("mcsat-explanation-fm");
+#endif
+
+	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason) const {
+		#ifdef SMTRAT_DEVOPTION_Statistics
+		mStatistics.explanationCalled();
+		#endif
+
+		carl::Variables allowedVars(data.assignedVariables().begin(), data.assignedVariables().end());
+		allowedVars.insert(var);
+
+		std::vector<ConstraintT> bounds;
+
+		if (!Settings::use_all_constraints) {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " <<  reason);
+		
+			for (const auto& b : reason) {
+				if (b.getType() != carl::FormulaType::CONSTRAINT) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-constraint bound " << b);
+					continue;
+				}
+				// Note that FM can only eliminate one variable. Thus, only syntactically univariate bounds can be handled!
+				if (!isSubset(b.variables(), allowedVars)) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-univariate bound " << b);
+					continue;
+				}
+				assert(b.getType() == carl::FormulaType::CONSTRAINT);
+				bounds.emplace_back(b.constraint());
+			}
+		} else {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " <<  data.constraints());
+
+			for (const auto& b : data.constraints()) {
+				if (!isSubset(b.variables(), allowedVars)) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-univariate bound " << b);
+					continue;
+				}
+				assert(b.getType() == carl::FormulaType::CONSTRAINT);
+				bounds.emplace_back(b.constraint());
+			}
+		}
+
+		boost::optional<FormulasT> res = boost::none;
+		ConflictGenerator<DefaultComparator>(bounds, data.model(), var).generateExplanation([&](FormulasT expl) -> bool {
+			res = expl;
+			return true; // stop searching for conflicts after first conflict has been found
+		});
+
+		if (res) {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Found conflict " << *res);
+			#ifdef SMTRAT_DEVOPTION_Statistics
+			mStatistics.explanationSuccess();
+			#endif
+			return mcsat::Explanation(FormulaT(carl::FormulaType::OR, std::move(*res)));
+		}
+		else {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Did not find a conflict");
+			return boost::none;
+		}
 	}
 };
 

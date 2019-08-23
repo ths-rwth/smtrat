@@ -187,26 +187,5 @@ void remove_log_files(const std::vector<fs::path>& files, bool remove) {
 	}
 }
 
-bool is_job_finished(int jobid) {
-	std::stringstream cmd;
-	cmd << "sacct -o state  -j " << jobid;
-	BENCHMAX_LOG_DEBUG("benchmax.slurm", "Command: " << cmd.str());
-	std::string output;
-	call_program(cmd.str(), output, false);
-	
-	std::istringstream iss(output);
-	std::string line;
-	std::getline(iss, line);
-	assert(line.find("State") != std::string::npos);
-	std::getline(iss, line);
-	assert(line.find("----------") != std::string::npos);
-	while (std::getline(iss, line)) {
-		if (line.find("COMPLETED") == std::string::npos && line.find("CANCELLED") == std::string::npos) {
-			return false;
-		}
-	}
-	return true;
-}
-
 }
 }

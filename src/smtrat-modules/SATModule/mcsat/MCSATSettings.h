@@ -1,5 +1,7 @@
 #pragma once
 
+#include <lib/datastructures/mcsat/fm/Explanation.h>
+
 #include <smtrat-mcsat/assignments/arithmetic/AssignmentFinder.h>
 #include <smtrat-mcsat/assignments/smtaf/AssignmentFinder.h>
 #include <smtrat-mcsat/assignments/SequentialAssignment.h>
@@ -9,7 +11,6 @@
 #include <smtrat-mcsat/explanations/nlsat/Explanation.h>
 #include <smtrat-mcsat/explanations/onecellcad/Explanation.h>
 #include <smtrat-mcsat/explanations/vs/Explanation.h>
-#include <smtrat-mcsat/explanations/fm/Explanation.h>
 #include <smtrat-mcsat/variableordering/VariableOrdering.h>
 
 namespace smtrat {

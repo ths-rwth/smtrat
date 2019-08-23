@@ -1,9 +1,15 @@
-#include "triangular_ordering.h"
+#pragma once
+
+#include <carl/core/Variable.h>
+#include <smtrat-common/smtrat-common.h>
 
 #include <algorithm>
 #include <numeric>
+#include <vector>
 
-namespace smtrat::cad::variable_ordering {
+namespace smtrat {
+namespace cad {
+namespace variable_ordering {
 
 template<typename T>
 class VariableMap {
@@ -62,4 +68,6 @@ std::vector<carl::Variable> triangular_ordering(const std::vector<Poly>& polys) 
 	return res;
 }
 
+}
+}
 }

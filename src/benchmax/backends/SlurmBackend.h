@@ -37,8 +37,6 @@ private:
 	std::vector<JobData> mResults;
 	/// Mutex for submission delay.
 	std::mutex mSubmissionMutex;
-	/// Mutex for slurmjobs file
-	std::mutex mSlurmjobMutex;
 
 	/// Parse the content of an output file.
 	void parse_result_file(const std::filesystem::path& file) {
@@ -77,33 +75,6 @@ private:
 		);
 	}
 
-	void store_job_id(int jobid) {
-		mSlurmjobMutex.lock();
-		std::ofstream out(settings_slurm().tmp_dir + "/slurmjobs", std::ios_base::app);
-		out << jobid << std::endl;
-		out.close();
-	}
-
-	std::vector<int> load_job_ids() {
-		std::vector<int> res;
-		std::ifstream in(settings_slurm().tmp_dir + "/slurmjobs");
-		if (!in) {
-			return res;
-		}
-		int jobid;
-		while(in >> jobid) {
-			res.push_back(jobid);
-		}
-		in.close();
-		return res;
-	}
-
-	void remove_job_ids() {
-		if( std::remove( (settings_slurm().tmp_dir + "/slurmjobs").c_str() ) != 0 ){
-			BENCHMAX_LOG_WARN("benchmax.slurm", settings_slurm().tmp_dir + "/slurmjobs file could not be deleted");
-		}
-	}
- 
 	void run_job_async(std::size_t n, bool wait_for_termination) {
 		std::string jobsfilename = settings_slurm().tmp_dir + "/jobs-" + std::to_string(settings_core().start_time) + "-" + std::to_string(n+1) + ".jobs";
 		slurm::generate_jobs_file(jobsfilename, get_job_range(n), mResults);
@@ -139,29 +110,12 @@ private:
 		if (wait_for_termination) {
 			BENCHMAX_LOG_INFO("benchmax.slurm", "Job terminated.");
 		} else {
-			store_job_id(jobid);
 			BENCHMAX_LOG_INFO("benchmax.slurm", "Job " << jobid << " was scheduled.");
 		}
 	}
 
-	bool collect_results(bool check_finished) override {
-		if (check_finished) {
-			BENCHMAX_LOG_INFO("benchmax.slurm", "Check if job finished.");
-			auto jobids = load_job_ids();
-			if (jobids.size() == 0) {
-				BENCHMAX_LOG_ERROR("benchmax.slurm", "Jobids could not be determined!");
-				return false;
-			}
-			for (int jobid : jobids) {
-				if (!slurm::is_job_finished(jobid)) {
-					BENCHMAX_LOG_WARN("benchmax.slurm", "Job " << jobid << " is not finished yet.");
-					return false;
-				}
-			}
-			remove_job_ids();
-		}
-
-		BENCHMAX_LOG_INFO("benchmax.slurm", "Collecting results.");
+	void collect_results() override {
+		BENCHMAX_LOG_INFO("benchmax.slurm", "collecting results.");
 		auto files = slurm::collect_result_files(settings_slurm().tmp_dir);
 		for (const auto& f: files) {
 			parse_result_file(f);
@@ -177,8 +131,6 @@ private:
 			});
 		}
 		slurm::remove_log_files(files, !settings_slurm().keep_logs);
-
-		return true;
 	}
 public:
 	bool suspendable() const {
@@ -186,11 +138,6 @@ public:
 	}
 	/// Run all tools on all benchmarks using Slurm.
 	void run(const Jobs& jobs, bool wait_for_termination) {
-		if (load_job_ids().size() > 0) {
-			BENCHMAX_LOG_ERROR("benchmax.slurm", "Benchmax is still running in the specified tmp_dir! If this is not the case, please delete " + settings_slurm().tmp_dir + "/slurmjobs");
-			return;
-		}
-
 		for (const auto& [tool, file]: jobs.randomized()) {
 			mResults.emplace_back(JobData { tool, file, BenchmarkResult() });
 		}
@@ -208,11 +155,7 @@ public:
 		for (auto& f: tasks) {
 			f.wait();
 		}
-		if (wait_for_termination) {
-			BENCHMAX_LOG_DEBUG("benchmax.slurm", "All jobs terminated.");
-		} else {
-			BENCHMAX_LOG_DEBUG("benchmax.slurm", "All jobs scheduled.");
-		}
+		BENCHMAX_LOG_DEBUG("benchmax.slurm", "All jobs terminated.");
 	}
 };
 

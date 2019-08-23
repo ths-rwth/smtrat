@@ -18,7 +18,7 @@ void execute_backend(const std::string& name, const Jobs& jobs) {
 	Backend backend;
 	if (settings_operation().mode == "both") {
 		backend.run(jobs, true);
-		backend.process_results(jobs, false);
+		backend.process_results(jobs);
 	} else {
 		if (!backend.suspendable()) {
 			BENCHMAX_LOG_ERROR("benchmax", "The selected backend cannot be suspended. You need to use mode=\"both\".");
@@ -27,7 +27,7 @@ void execute_backend(const std::string& name, const Jobs& jobs) {
 		if (settings_operation().mode == "execute") {
 			backend.run(jobs, false);
 		} else if (settings_operation().mode == "collect") {
-			backend.process_results(jobs, true);
+			backend.process_results(jobs);
 		} else {
 			BENCHMAX_LOG_ERROR("benchmax", "Unsupported operation mode \"" << settings_operation().mode << "\". Use one of \"execute\", \"collect\", \"both\".");
 			return;
