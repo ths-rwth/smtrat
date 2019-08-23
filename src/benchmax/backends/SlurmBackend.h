@@ -66,7 +66,7 @@ private:
 				auto& res = std::get<2>(results.back());
 				if (extension == ".out") {
 					res.stdout = (*i)[3];
-					res.exitCode = std::stoi(slurm::parse_result_info((*i)[3], "exitcode"));
+					res.exitCode = std::stoi(slurm::parse_result_info((*i)[4], "exitcode"));
 					res.time = std::chrono::milliseconds(std::stoi(slurm::parse_result_info((*i)[4], "time")));
 					BENCHMAX_LOG_DEBUG("benchmax.slurm", "Got " << res << " for task " << id << " from stdout");
 				} else if (extension == ".err") {
