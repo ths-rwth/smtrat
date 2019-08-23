@@ -50,7 +50,6 @@ private:
 		auto reEnd = std::sregex_iterator();
 		for (auto i = reBegin; i != reEnd; ++i) {
 			std::size_t id = std::stoull((*i)[2]) - 1;
-			assert(id > 0);
 			bool toolFound = false;
 			std::string cmdline = (*i)[1];
 			for (const auto& tool : jobs.tools()) {
