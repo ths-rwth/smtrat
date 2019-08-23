@@ -33,79 +33,90 @@ private:
 		BenchmarkResult
 	>;
 	
-	/// All jobs.
-	std::vector<JobData> mResults;
 	/// Mutex for submission delay.
 	std::mutex mSubmissionMutex;
+	/// Mutex for slurmjobs file
+	std::mutex mSlurmjobMutex;
 
 	/// Parse the content of an output file.
-	void parse_result_file(const std::filesystem::path& file) {
+	void parse_result_file(const Jobs& jobs, const std::filesystem::path& file, std::vector<JobData>& results) {
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Processing file " << file);
 		std::ifstream in(file);
 		std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
 		auto extension = file.extension();
-		std::regex filere("# START ([0-9]+) #([^#]*)# END \\1 #(?:([^#]*)# END DATA \\1 #)?");
+		std::regex filere("Executing (.+)\\n# START ([0-9]+) #([^#]*)# END \\2 #(?:([^#]*)# END DATA \\2 #)?");
 
 		auto reBegin = std::sregex_iterator(content.begin(), content.end(), filere);
 		auto reEnd = std::sregex_iterator();
 		for (auto i = reBegin; i != reEnd; ++i) {
-			assert(std::stoi((*i)[1]) > 0);
-			std::size_t id = std::stoull((*i)[1]) - 1;
-			if (id >= mResults.size()) continue;
-			auto& res = std::get<2>(mResults[id]);
-			if (extension == ".out") {
-				res.stdout = (*i)[2];
-				res.exitCode = std::stoi(slurm::parse_result_info((*i)[3], "exitcode"));
-				res.time = std::chrono::milliseconds(std::stoi(slurm::parse_result_info((*i)[3], "time")));
-				BENCHMAX_LOG_DEBUG("benchmax.slurm", "Got " << res << " for task " << id << " from stdout");
-			} else if (extension == ".err") {
-				res.stderr = (*i)[2];
-				BENCHMAX_LOG_DEBUG("benchmax.slurm", "Got " << res << " for task " << id << " from stderr");
+			std::size_t id = std::stoull((*i)[2]) - 1;
+			bool toolFound = false;
+			std::string cmdline = (*i)[1];
+			for (const auto& tool : jobs.tools()) {
+				auto t = tool->parseCommandline(cmdline);
+				if (t) {
+					results.emplace_back(JobData { tool.get(), std::filesystem::path(*t), BenchmarkResult() });
+					toolFound = true;
+					break;
+				}
+			}
+			if (!toolFound) {
+				BENCHMAX_LOG_WARN("benchmax.slurm", "Could not find tool for " << cmdline);
 			} else {
-				BENCHMAX_LOG_WARN("benchmax.slurm", "Trying to parse output file with unexpected extension " << extension);
+				auto& res = std::get<2>(results.back());
+				if (extension == ".out") {
+					res.stdout = (*i)[3];
+					res.exitCode = std::stoi(slurm::parse_result_info((*i)[4], "exitcode"));
+					res.time = std::chrono::milliseconds(std::stoi(slurm::parse_result_info((*i)[4], "time")));
+					BENCHMAX_LOG_DEBUG("benchmax.slurm", "Got " << res << " for task " << id << " from stdout");
+				} else if (extension == ".err") {
+					res.stderr = (*i)[3];
+					BENCHMAX_LOG_DEBUG("benchmax.slurm", "Got " << res << " for task " << id << " from stderr");
+				} else {
+					BENCHMAX_LOG_WARN("benchmax.slurm", "Trying to parse output file with unexpected extension " << extension);
+				}
 			}
 		}
 	}
 
-	std::pair<std::size_t,std::size_t> get_job_range(std::size_t n) const {
+	std::pair<std::size_t,std::size_t> get_job_range(std::size_t n, std::size_t numJobs) const {
 		std::size_t job_size = settings_slurm().array_size * settings_slurm().slice_size;
 		return std::make_pair(
 			job_size * n,
-			std::min(job_size * (n + 1), mResults.size())
+			std::min(job_size * (n + 1), numJobs)
 		);
 	}
 
 	void store_job_id(int jobid) {
-		std::ofstream out(settings_slurm().tmp_dir + "/slurmjob");
-		out << jobid;
+		mSlurmjobMutex.lock();
+		std::ofstream out(settings_slurm().tmp_dir + "/slurmjobs", std::ios_base::app);
+		out << jobid << std::endl;
 		out.close();
 	}
 
-	int load_job_id() {
-		std::ifstream in(settings_slurm().tmp_dir + "/slurmjob");
+	std::vector<int> load_job_ids() {
+		std::vector<int> res;
+		std::ifstream in(settings_slurm().tmp_dir + "/slurmjobs");
 		if (!in) {
-			return -1;
+			return res;
 		}
 		int jobid;
-		in >> jobid;
+		while(in >> jobid) {
+			res.push_back(jobid);
+		}
 		in.close();
-		return jobid;
+		return res;
 	}
 
-	void remove_job_id() {
-		if( std::remove( (settings_slurm().tmp_dir + "/slurmjob").c_str() ) != 0 ){
-			BENCHMAX_LOG_WARN("benchmax.slurm", settings_slurm().tmp_dir + "/slurmjob file could not be deleted");
+	void remove_job_ids() {
+		if( std::remove( (settings_slurm().tmp_dir + "/slurmjobs").c_str() ) != 0 ){
+			BENCHMAX_LOG_WARN("benchmax.slurm", settings_slurm().tmp_dir + "/slurmjobs file could not be deleted");
 		}
 	}
- 
-	void run_job_async(std::size_t n, bool wait_for_termination) {
-		if (load_job_id() != -1) {
-			BENCHMAX_LOG_ERROR("benchmax.slurm", "Another job " << load_job_id() << " is still running in the specified temporary directory! If this is not the case, please delete " + settings_slurm().tmp_dir + "/slurmjob");
-			return;
-		}
 
+	void run_job_async(std::size_t n, const std::vector<JobData>& results, bool wait_for_termination) {
 		std::string jobsfilename = settings_slurm().tmp_dir + "/jobs-" + std::to_string(settings_core().start_time) + "-" + std::to_string(n+1) + ".jobs";
-		slurm::generate_jobs_file(jobsfilename, get_job_range(n), mResults);
+		slurm::generate_jobs_file(jobsfilename, get_job_range(n, results.size()), results);
 
 		auto submitfile = slurm::generate_submit_file_chunked({
 			std::to_string(settings_core().start_time) + "-" + std::to_string(n),
@@ -135,34 +146,39 @@ private:
 		std::string output;
 		call_program(cmd.str(), output, true);
 		int jobid = slurm::parse_job_id(output);
-		store_job_id(jobid);
 		if (wait_for_termination) {
 			BENCHMAX_LOG_INFO("benchmax.slurm", "Job terminated.");
 		} else {
+			store_job_id(jobid);
 			BENCHMAX_LOG_INFO("benchmax.slurm", "Job " << jobid << " was scheduled.");
 		}
 	}
 
-	bool collect_results() override {
-		BENCHMAX_LOG_INFO("benchmax.slurm", "Check if job finished.");
-		int jobid = load_job_id();
-		if (jobid == -1) {
-			BENCHMAX_LOG_ERROR("benchmax.slurm", "Jobid could not be determined!");
-			return false;
+	bool collect_results(const Jobs& jobs, bool check_finished) override {
+		if (check_finished) {
+			BENCHMAX_LOG_INFO("benchmax.slurm", "Check if job finished.");
+			auto jobids = load_job_ids();
+			if (jobids.size() == 0) {
+				BENCHMAX_LOG_ERROR("benchmax.slurm", "Jobids could not be determined!");
+				return false;
+			}
+			for (int jobid : jobids) {
+				if (!slurm::is_job_finished(jobid)) {
+					BENCHMAX_LOG_WARN("benchmax.slurm", "Job " << jobid << " is not finished yet.");
+					return false;
+				}
+			}
+			remove_job_ids();
 		}
-		if (!slurm::is_job_finished(jobid)) {
-			BENCHMAX_LOG_WARN("benchmax.slurm", "Job " << jobid << " is not finished yet.");
-			return false;
-		}
-		remove_job_id();
 
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Collecting results.");
+		std::vector<JobData> results;
 		auto files = slurm::collect_result_files(settings_slurm().tmp_dir);
 		for (const auto& f: files) {
-			parse_result_file(f);
+			parse_result_file(jobs, f, results);
 		}
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Parsed results.");
-		for (auto& r: mResults) {
+		for (auto& r: results) {
 			addResult(std::get<0>(r), std::get<1>(r), std::get<2>(r));
 		}
 		if (settings_slurm().archive_log_file != "") {
@@ -181,17 +197,23 @@ public:
 	}
 	/// Run all tools on all benchmarks using Slurm.
 	void run(const Jobs& jobs, bool wait_for_termination) {
-		for (const auto& [tool, file]: jobs.randomized()) {
-			mResults.emplace_back(JobData { tool, file, BenchmarkResult() });
+		if (load_job_ids().size() > 0) {
+			BENCHMAX_LOG_ERROR("benchmax.slurm", "Benchmax is still running in the specified tmp_dir! If this is not the case, please delete " + settings_slurm().tmp_dir + "/slurmjobs");
+			return;
 		}
-		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Gathered " << mResults.size() << " jobs");
+
+		std::vector<JobData> results;
+		for (const auto& [tool, file]: jobs.randomized()) {
+			results.emplace_back(JobData { tool, file, BenchmarkResult() });
+		}
+		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Gathered " << results.size() << " jobs");
 		
 		std::vector<std::future<void>> tasks;
-		std::size_t count = mResults.size() / (settings_slurm().array_size * settings_slurm().slice_size) + 1;
+		std::size_t count = results.size() / (settings_slurm().array_size * settings_slurm().slice_size) + 1;
 		for (std::size_t i = 0; i < count; ++i) {
 			tasks.emplace_back(std::async(std::launch::async,
-				[i,wait_for_termination,this](){
-					return run_job_async(i, wait_for_termination);
+				[i,&results,wait_for_termination,this](){
+					return run_job_async(i, results, wait_for_termination);
 				}
 			));
 		}
