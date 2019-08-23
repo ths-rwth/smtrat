@@ -7,6 +7,7 @@
  */
 
 #include "ESModule.h"
+#include <smtrat-solver/Manager.h>
 
 namespace smtrat
 {
@@ -139,11 +140,13 @@ namespace smtrat
                                 Poly subPoly;
                                 if( tmp.constraint().getSubstitution( subVar, subPoly, false, objective() ) )
                                 {
-                                    SMTRAT_LOG_INFO("smtrat.es", "found substitution [" << subVar << " -> " << subPoly << "]");
-                                    assert( mArithSubs.find( subVar ) == mArithSubs.end() );
-                                    addedArithSubs.push_back( mArithSubs.emplace( subVar, subPoly ).first );
-                                    foundSubstitutions.insert( tmp );
-                                    foundNewSubstitution = true;
+									if (!mpManager->isObjectiveVariable(subVar)) {
+										SMTRAT_LOG_INFO("smtrat.es", "found substitution [" << subVar << " -> " << subPoly << "]");
+										assert( mArithSubs.find( subVar ) == mArithSubs.end() );
+										addedArithSubs.push_back( mArithSubs.emplace( subVar, subPoly ).first );
+										foundSubstitutions.insert( tmp );
+										foundNewSubstitution = true;
+									}
                                 }
                                 else
                                 {
