@@ -144,20 +144,22 @@ private:
 		}
 	}
 
-	bool collect_results() override {
-		BENCHMAX_LOG_INFO("benchmax.slurm", "Check if job finished.");
-		auto jobids = load_job_ids();
-		if (jobids.size() == 0) {
-			BENCHMAX_LOG_ERROR("benchmax.slurm", "Jobids could not be determined!");
-			return false;
-		}
-		for (int jobid : jobids) {
-			if (!slurm::is_job_finished(jobid)) {
-				BENCHMAX_LOG_WARN("benchmax.slurm", "Job " << jobid << " is not finished yet.");
+	bool collect_results(bool check_finished) override {
+		if (check_finished) {
+			BENCHMAX_LOG_INFO("benchmax.slurm", "Check if job finished.");
+			auto jobids = load_job_ids();
+			if (jobids.size() == 0) {
+				BENCHMAX_LOG_ERROR("benchmax.slurm", "Jobids could not be determined!");
 				return false;
 			}
+			for (int jobid : jobids) {
+				if (!slurm::is_job_finished(jobid)) {
+					BENCHMAX_LOG_WARN("benchmax.slurm", "Job " << jobid << " is not finished yet.");
+					return false;
+				}
+			}
+			remove_job_ids();
 		}
-		remove_job_ids();
 
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Collecting results.");
 		auto files = slurm::collect_result_files(settings_slurm().tmp_dir);
