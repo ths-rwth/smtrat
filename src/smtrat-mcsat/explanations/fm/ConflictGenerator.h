@@ -35,7 +35,7 @@ struct ConflictGenerator {
 	 * 
 	 * The input is a constraint c: p*x~q which can be used as a bound on x with p,q multivariate polynomials.
 	 * If x only occurs linearly in c, this decomposition is possible.
-	 * If p is zero, then c is conflicting iff !(0~q). If this is the case, we can return !c && p=0 -> 0~q as explanation.
+	 * If p is zero, then c is conflicting iff !(0~q). If this is the case, we can return (c && p=0) -> 0~q as explanation.
 	 * Otherwise, we evaluate c over the partial model and obtain x~r, where r is a rational.
 	 * To properly perform the elimination step detailed below, we additionally store whether p is negative over the current assignment as a Boolean.
 	 *

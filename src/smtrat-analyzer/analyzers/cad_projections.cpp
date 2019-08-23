@@ -7,7 +7,7 @@
 #include <smtrat-cad/projection/Projection.h>
 #include <smtrat-cad/projectionoperator/utils.h>
 #include <smtrat-cad/utils/CADConstraints.h>
-#include <smtrat-cad/variableordering/TriangularOrdering.h>
+#include <smtrat-cad/variableordering/triangular_ordering.h>
 
 namespace smtrat::analyzer {
 
