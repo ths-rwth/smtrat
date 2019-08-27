@@ -15,6 +15,8 @@ struct SSHBackendSettings {
 	std::string tmpdir;
 	/// Use wallclock timeouts instead of CPU time.
 	bool use_wallclock;
+	/// Resolve and upload dependencies of binaries.
+	bool resolve_deps;
 };
 
 /// Registers SSH settings with settings parser.

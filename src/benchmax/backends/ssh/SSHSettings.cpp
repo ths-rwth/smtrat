@@ -20,6 +20,7 @@ void registerSSHBackendSettings(SettingsParser* parser) {
 		("ssh.basedir", po::value<std::string>(&s.basedir)->default_value("~/"), "remote base directory")
 		("ssh.tmpdir", po::value<std::string>(&s.tmpdir)->default_value("/tmp/"), "remote temporary directory")
 		("ssh.wallclock", po::bool_switch(&s.use_wallclock), "use wall clock for timeout")
+		("ssh.resolvedeps", po::bool_switch(&s.resolve_deps), "resolve and upload dependencies of binaries")
 	;
 }
 }

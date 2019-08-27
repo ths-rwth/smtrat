@@ -30,6 +30,11 @@ private:
 	const std::unique_ptr<SSHConnection>& get();
 	/// Create a name for a temporary directory.
 	std::string tmpDirName(const Tool* tool, const fs::path& file) const;
+	/// Create a name for a temporary directory.
+	std::string tmpDirName(const Tool* tool) const;
+
+	/// Remote tool locations
+	std::map<std::pair<const Tool*, const SSHConnection*>, std::string> mRemoteToolLocations;
 public:
 	/// Initializes all SSH connections.
 	SSHScheduler();
