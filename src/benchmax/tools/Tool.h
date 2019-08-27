@@ -83,12 +83,12 @@ public:
 		if (code == 0) {
 			BENCHMAX_LOG_INFO("benchmax.tool", "Got dependencies");
 			std::vector<std::string> results;
-			std::regex regex("(.+) => (.+) \\([0-9a-fx]+\\)\\n");
+			std::regex regex("\\t(.+) => (.+) \\([0-9a-fx]+\\)\\n");
 			auto reBegin = std::sregex_iterator(output.begin(), output.end(), regex);
 			auto reEnd = std::sregex_iterator();
 			for (auto i = reBegin; i != reEnd; ++i) {
-				std::string lib = (*i)[0];
-				std::string path = (*i)[1];
+				std::string lib = (*i)[1];
+				std::string path = (*i)[2];
 				if (path == "not found") {
 					BENCHMAX_LOG_WARN("benchmax.tool", "Could not resolve dependency " << lib);
 				} else {
