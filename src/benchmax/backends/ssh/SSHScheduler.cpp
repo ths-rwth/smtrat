@@ -105,9 +105,9 @@ void SSHScheduler::uploadTool(const Tool* tool) {
 		while (!c->jobFree()) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
-		assert(mRemoteToolLocations.count(std::make_pair(tool, c.get())) == 0);
+		assert(mRemoteToolLocations.count(std::make_pair(tool, c->getNode().hostname)) == 0);
 		std::string folder = c->createTmpDir(tmpDirName(tool));
-		mRemoteToolLocations.emplace(std::make_pair(tool, c.get()), folder);
+		mRemoteToolLocations.emplace(std::make_pair(tool, c->getNode().hostname), folder);
 		for (const auto& f : filesToUpload) {
 			c->uploadFile(f.native(), folder, f.filename().native(), S_IRWXU);
 		}
@@ -124,8 +124,8 @@ bool SSHScheduler::executeJob(const Tool* tool, const fs::path& file, Backend* b
 	c->uploadFile(file, folder, file.filename().native());
 	// Execute benchmark run
 	BenchmarkResult result;
-	assert(mRemoteToolLocations.find(std::make_pair(tool, c.get())) != mRemoteToolLocations.end());
-	std::string toolFolder = mRemoteToolLocations.at(std::make_pair(tool, c.get()));
+	assert(mRemoteToolLocations.find(std::make_pair(tool, c->getNode().hostname)) != mRemoteToolLocations.end());
+	std::string toolFolder = mRemoteToolLocations.at(std::make_pair(tool, c->getNode().hostname));
 	std::string cmdLine = tool->getCommandline(folder + file.filename().native(), toolFolder + tool->binary().filename().native());
 	if (settings_ssh().resolve_deps) {
 		cmdLine = "LD_LIBRARY_PATH=. " + cmdLine;

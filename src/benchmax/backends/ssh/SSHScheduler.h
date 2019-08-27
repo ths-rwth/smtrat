@@ -34,7 +34,7 @@ private:
 	std::string tmpDirName(const Tool* tool) const;
 
 	/// Remote tool locations
-	std::map<std::pair<const Tool*, const SSHConnection*>, std::string> mRemoteToolLocations;
+	std::map<std::pair<const Tool*, std::string>, std::string> mRemoteToolLocations;
 public:
 	/// Initializes all SSH connections.
 	SSHScheduler();
