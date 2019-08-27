@@ -81,7 +81,7 @@ public:
 		BENCHMAX_LOG_WARN("benchmax.tool", "Determining dependencies using " << ss.str());
 		int code = call_program(ss.str(), output);
 		if (code == 0) {
-			BENCHMAX_LOG_INFO("benchmax.tool", "Got dependencies");
+			BENCHMAX_LOG_TRACE("benchmax.tool", "Got dependencies");
 			std::vector<std::string> results;
 			std::regex regex("\\t(.+) => (.+) \\([0-9a-fx]+\\)\\n");
 			auto reBegin = std::sregex_iterator(output.begin(), output.end(), regex);
@@ -93,10 +93,10 @@ public:
 					BENCHMAX_LOG_WARN("benchmax.tool", "Could not resolve dependency " << lib);
 				} else {
 					if (!is_system_lib(path)) {
-						BENCHMAX_LOG_INFO("benchmax.tool", "Found dependency " << lib << "(" << path << ")");
+						BENCHMAX_LOG_TRACE("benchmax.tool", "Found dependency " << lib << "(" << path << ")");
 						results.emplace_back(path);
 					} else {
-						BENCHMAX_LOG_INFO("benchmax.tool", "Skipping system library " << lib << "(" << path << ")");
+						BENCHMAX_LOG_TRACE("benchmax.tool", "Skipping system library " << lib << "(" << path << ")");
 					}
 				}
 			}
