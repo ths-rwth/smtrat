@@ -124,6 +124,7 @@ bool SSHScheduler::executeJob(const Tool* tool, const fs::path& file, Backend* b
 	c->uploadFile(file, folder, file.filename().native());
 	// Execute benchmark run
 	BenchmarkResult result;
+	assert(mRemoteToolLocations.find(std::make_pair(tool, c.get())) != mRemoteToolLocations.end());
 	std::string toolFolder = mRemoteToolLocations.at(std::make_pair(tool, c.get()));
 	std::string cmdLine = tool->getCommandline(folder + file.filename().native(), toolFolder + tool->binary().filename().native());
 	if (settings_ssh().resolve_deps) {
