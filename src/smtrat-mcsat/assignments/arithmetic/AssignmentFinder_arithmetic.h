@@ -132,6 +132,7 @@ public:
 			return false;
 		}
 		
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Adding " << list << " with " << fnew);
 		mRI.add(list);
 		mRootMap.emplace(f, std::make_pair(std::move(list), fnew));
 		return true;
@@ -173,8 +174,8 @@ public:
 		std::vector<RAN> list;
 		if (value.isRational()) list.emplace_back(value.asRational());
 		else list.push_back(value.asRAN());
-		mRI.add(list);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Adding " << list << " with " << fnew);
+		mRI.add(list);
 		mRootMap.emplace(f, std::make_pair(std::move(list), fnew));
 		return true;
 	}
