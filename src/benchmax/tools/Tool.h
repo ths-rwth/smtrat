@@ -90,7 +90,7 @@ public:
 				std::string lib = (*i)[1];
 				std::string path = (*i)[2];
 				if (path == "not found") {
-					BENCHMAX_LOG_WARN("benchmax.tool", "Could not resolve dependency " << lib);
+					BENCHMAX_LOG_WARN("benchmax.tool", "Unmet dependency " << lib);
 				} else {
 					if (!is_system_lib(path)) {
 						BENCHMAX_LOG_TRACE("benchmax.tool", "Found dependency " << lib << "(" << path << ")");
