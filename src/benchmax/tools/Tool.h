@@ -93,10 +93,10 @@ public:
 					BENCHMAX_LOG_WARN("benchmax.tool", "Unmet dependency " << lib);
 				} else {
 					if (!is_system_lib(path)) {
-						BENCHMAX_LOG_TRACE("benchmax.tool", "Found dependency " << lib << "(" << path << ")");
+						BENCHMAX_LOG_TRACE("benchmax.tool", "Found dependency " << lib << " (" << path << ")");
 						results.emplace_back(path);
 					} else {
-						BENCHMAX_LOG_TRACE("benchmax.tool", "Skipping system library " << lib << "(" << path << ")");
+						BENCHMAX_LOG_TRACE("benchmax.tool", "Skipping system library " << lib << " (" << path << ")");
 					}
 				}
 			}
