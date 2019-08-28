@@ -182,12 +182,15 @@ bool ResultantRule::addPoly(const UPoly& poly, std::size_t level, const std::vec
         ++level;
         p = mp.toUnivariatePolynomial(mVars[level]);
     }
-    SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Inserting " << p << " into level " << level);
-    SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Into " << mData);
+    SMTRAT_LOG_TRACE("smtrat.cad.pp", "Inserting " << p << " into level " << level);
+    SMTRAT_LOG_TRACE("smtrat.cad.pp", "Into " << mData);
+	if (std::find(mData[level].begin(), mData[level].end(), p) != mData[level].end()) {
+		return true;
+	}
     mData[level].emplace_back(p);
     ConstraintT cons(mp, carl::Relation::EQ);
     mOrigins.add(FormulaT(mp, carl::Relation::EQ), origin);
-    SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Origins: " << mOrigins.mOrigins);
+    SMTRAT_LOG_TRACE("smtrat.cad.pp", "Origins: " << mOrigins.mOrigins);
     mNewECs.emplace_back(cons);
     if (cons.isConsistent() == 0) return false;
     return true;
