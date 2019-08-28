@@ -14,10 +14,16 @@
 #include <benchmax/results/BenchmarkResult.h>
 #include <benchmax/settings/Settings.h>
 #include <benchmax/utils/filesystem.h>
+#include <benchmax/utils/execute.h>
+
 
 namespace benchmax {
 
 namespace fs = std::filesystem;
+
+inline bool is_system_lib(std::string path) {
+	return path.rfind("/usr", 0) == 0 || path.rfind("/lib", 0) == 0;
+}
 
 /**
  * Base class for any tool.
@@ -65,6 +71,41 @@ public:
 	/// A set of attributes, for example compilation options.
 	const std::map<std::string,std::string>& attributes() const {
 		return mAttributes;
+	}
+
+	/// Get dependencies of binary required to run it (via ldd)
+	std::vector<std::string> resolveDependencies() const {
+		std::string output;
+		std::stringstream ss;
+		ss << "ldd " << binary();
+		BENCHMAX_LOG_WARN("benchmax.tool", "Determining dependencies using " << ss.str());
+		int code = call_program(ss.str(), output);
+		if (code == 0) {
+			BENCHMAX_LOG_TRACE("benchmax.tool", "Got dependencies");
+			std::vector<std::string> results;
+			std::regex regex("\\t(.+) => (.+) \\([0-9a-fx]+\\)\\n");
+			auto reBegin = std::sregex_iterator(output.begin(), output.end(), regex);
+			auto reEnd = std::sregex_iterator();
+			for (auto i = reBegin; i != reEnd; ++i) {
+				std::string lib = (*i)[1];
+				std::string path = (*i)[2];
+				if (path == "not found") {
+					BENCHMAX_LOG_WARN("benchmax.tool", "Unmet dependency " << lib);
+				} else {
+					if (!is_system_lib(path)) {
+						BENCHMAX_LOG_TRACE("benchmax.tool", "Found dependency " << lib << " (" << path << ")");
+						results.emplace_back(path);
+					} else {
+						BENCHMAX_LOG_TRACE("benchmax.tool", "Skipping system library " << lib << " (" << path << ")");
+					}
+				}
+			}
+			return results;
+		} else {
+			BENCHMAX_LOG_WARN("benchmax.tool", "Could not determine dependencies of binary");
+			BENCHMAX_LOG_WARN("benchmax.tool", output);
+			return {};
+		}
 	}
 	
 	/// Hash of the attributes.

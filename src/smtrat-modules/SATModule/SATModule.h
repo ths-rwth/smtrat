@@ -587,8 +587,7 @@ namespace smtrat
             bool mAllActivitiesChanged;
             /// Stores all clauses in which the activities have been changed.
             std::vector<signed> mChangedActivities;
-            /// Stores the just introduced Boolean variables for theory splitting decisions.
-            std::vector<signed> mNewSplittingVars;
+
             /// Stores for each variable the corresponding formulas which control its value
             VarLemmaMap mPropagatedLemmas;
 			/// Stores Minisat indexes of all relevant variables
@@ -1192,11 +1191,6 @@ namespace smtrat
              * @return true, if the current assignment is a full one.
              */
             bool fullAssignment();
-            
-            /**
-             * @return The next decision variable meant to invoke a splitting..
-             */
-            Minisat::Var pickSplittingVar();
             
             /**
              * @return The next decision variable.

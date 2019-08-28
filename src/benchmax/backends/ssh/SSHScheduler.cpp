@@ -69,6 +69,9 @@ const std::unique_ptr<SSHConnection>& SSHScheduler::get() {
 std::string SSHScheduler::tmpDirName(const Tool* tool, const fs::path& file) const {
 	return "benchmax-" + std::to_string(settings_core().start_time) + "-" + std::to_string(std::size_t(tool)) + "-" + std::to_string(std::hash<std::string>()(file.native()));
 }
+std::string SSHScheduler::tmpDirName(const Tool* tool) const {
+	return "benchmax-" + std::to_string(settings_core().start_time) + "-" + std::to_string(std::size_t(tool));
+}
 SSHScheduler::SSHScheduler(): mWorkerCount(0), mRunningJobs(0) {
 	ssh_threads_set_callbacks(ssh_threads_get_pthread());
 	ssh_init();
@@ -84,6 +87,17 @@ SSHScheduler::SSHScheduler(): mWorkerCount(0), mRunningJobs(0) {
 void SSHScheduler::uploadTool(const Tool* tool) {
 	std::lock_guard<std::mutex> lock(mMutex);
 	BENCHMAX_LOG_DEBUG("benchmax.ssh", "Uploading " << tool);
+
+	std::vector<std::filesystem::path> filesToUpload;
+	filesToUpload.emplace_back(tool->binary());
+
+	if (settings_ssh().resolve_deps) {
+		auto deps = tool->resolveDependencies();
+		for (const auto& dep : deps) {
+			filesToUpload.emplace_back(dep);
+		}
+	}
+	
 	std::set<std::string> nodes;
 	for (const auto& c: mConnections) {
 		// Check if we have already uploaded to this host
@@ -91,7 +105,27 @@ void SSHScheduler::uploadTool(const Tool* tool) {
 		while (!c->jobFree()) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
-		c->uploadFile(tool->binary().native(), settings_ssh().basedir, tool->binary().filename().native(), S_IRWXU);
+		assert(mRemoteToolLocations.count(std::make_pair(tool, c->getNode().hostname)) == 0);
+		std::string folder = c->createTmpDir(tmpDirName(tool));
+		mRemoteToolLocations.emplace(std::make_pair(tool, c->getNode().hostname), folder);
+		for (const auto& f : filesToUpload) {
+			c->uploadFile(f.native(), folder, f.filename().native(), S_IRWXU);
+		}
+	}
+}
+
+void SSHScheduler::cleanupTools() {
+	BENCHMAX_LOG_DEBUG("benchmax.ssh", "Cleaning up tools");
+	for (const auto& c: mConnections) {
+		for (auto it = mRemoteToolLocations.cbegin(); it != mRemoteToolLocations.cend(); ) {
+			if (it->first.second == c->getNode().hostname) {
+				c->removeDir(it->second);
+				it = mRemoteToolLocations.erase(it);
+			}
+			else {
+				++it;
+			}
+		}
 	}
 }
 
@@ -105,7 +139,12 @@ bool SSHScheduler::executeJob(const Tool* tool, const fs::path& file, Backend* b
 	c->uploadFile(file, folder, file.filename().native());
 	// Execute benchmark run
 	BenchmarkResult result;
-	std::string cmdLine = tool->getCommandline(folder + file.filename().native(), settings_ssh().basedir + tool->binary().filename().native());
+	assert(mRemoteToolLocations.find(std::make_pair(tool, c->getNode().hostname)) != mRemoteToolLocations.end());
+	std::string toolFolder = mRemoteToolLocations.at(std::make_pair(tool, c->getNode().hostname));
+	std::string cmdLine = tool->getCommandline(folder + file.filename().native(), toolFolder + tool->binary().filename().native());
+	if (settings_ssh().resolve_deps) {
+		cmdLine = "LD_LIBRARY_PATH=. " + cmdLine;
+	}
 	if (!c->executeCommand(cmdLine, result)) {
 		BENCHMAX_LOG_ERROR("benchmax.ssh", "Failed to execute command.");
 	}

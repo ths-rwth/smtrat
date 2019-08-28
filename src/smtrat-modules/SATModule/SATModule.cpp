@@ -130,7 +130,6 @@ namespace smtrat
         mChangedBooleans(),
         mAllActivitiesChanged( false ),
         mChangedActivities(),
-        mNewSplittingVars(),
         mPropagatedLemmas(),
         mRelevantVariables(),
         mNonTseitinShadowedOccurrences(),
@@ -3164,99 +3163,62 @@ namespace smtrat
     template<class Settings>
     bool SATModule<Settings>::fullAssignment()
     {
-        Var next = pickSplittingVar();
-        if( next != var_Undef )
-            return false;
         if (Settings::use_new_var_scheduler) {
             return var_scheduler.empty();
         } else {
+            Var next;
             while( !order_heap.empty() && ((next = order_heap[0]) == var_Undef || value( next ) != l_Undef || !decision[next]) )
                 order_heap.removeMin();
             return order_heap.empty();
         }
     }
         
-    // TODO REFACTOR unused??
-    template<class Settings>
-    Var SATModule<Settings>::pickSplittingVar()
-    {
-        Var next = var_Undef;
-        while( !mNewSplittingVars.empty() )
-        {
-            if( value( mNewSplittingVars.back() ) == l_Undef )
-            {
-                next = mNewSplittingVars.back();
-                assert( decision[next] );
-                return next;
-            }
-            mNewSplittingVars.pop_back();
-        }
-        return next;
-    }
-
     template<class Settings>
     Lit SATModule<Settings>::pickBranchLit()
     {
         Var next = var_Undef;
-        // Random decision:
-        //        if( drand( random_seed ) < random_var_freq &&!order_heap.empty() )
-        //        {
-        //            next = order_heap[irand( random_seed, order_heap.size() )];
-        //            if( value( next ) == l_Undef && decision[next] )
-        //                rnd_decisions++;
-        //        }
-        // Check first, if a splitting decision has to be made.
-        next = pickSplittingVar();
-        if( next != var_Undef ) {
-            mNewSplittingVars.pop_back();
-            SMTRAT_LOG_DEBUG("smtrat.sat", "Got " << next);
-            return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
-        }
-        else
+
+        if( /*!mReceivedFormulaPurelyPropositional &&*/ Settings::check_active_literal_occurrences && false)
         {
-            if( /*!mReceivedFormulaPurelyPropositional &&*/ Settings::check_active_literal_occurrences && false)
+            while( next == var_Undef && !mPropagationFreeDecisions.empty() )
             {
-                while( next == var_Undef && !mPropagationFreeDecisions.empty() )
+                Lit l = mPropagationFreeDecisions.back();
+                mPropagationFreeDecisions.pop_back();
+                if( assigns[var(l)] == l_Undef )
+                    return l;
+            }
+        }
+        if( mReceivedFormulaPurelyPropositional || Settings::theory_conflict_guided_decision_heuristic == TheoryGuidedDecisionHeuristicLevel::DISABLED || mCurrentAssignmentConsistent != SAT )
+        {
+            SMTRAT_LOG_TRACE("smtrat.sat", "Retrieving next variable from the heap");
+            if (Settings::use_new_var_scheduler) {
+                Lit next = var_scheduler.pop();
+                assert(next == lit_Undef || (decision[Minisat::var(next)] && bool_value(next) == l_Undef));
+                assert(!Settings::mc_sat || next == lit_Undef || mBooleanConstraintMap[Minisat::var(next)].first == nullptr || mBooleanConstraintMap[Minisat::var(next)].first->reabstraction.getType() != carl::FormulaType::VARASSIGN);
+                SMTRAT_LOG_TRACE("smtrat.sat", "Got " << next);
+                return next;
+            } else {
+                while( next == var_Undef || bool_value( next ) != l_Undef || !decision[next] )
                 {
-                    Lit l = mPropagationFreeDecisions.back();
-                    mPropagationFreeDecisions.pop_back();
-                    if( assigns[var(l)] == l_Undef )
-                        return l;
-                }
-            }
-            if( mReceivedFormulaPurelyPropositional || Settings::theory_conflict_guided_decision_heuristic == TheoryGuidedDecisionHeuristicLevel::DISABLED || mCurrentAssignmentConsistent != SAT )
-            {
-				SMTRAT_LOG_TRACE("smtrat.sat", "Retrieving next variable from the heap");
-                if (Settings::use_new_var_scheduler) {
-                    Lit next = var_scheduler.pop();
-                    assert(next == lit_Undef || (decision[Minisat::var(next)] && bool_value(next) == l_Undef));
-                    assert(!Settings::mc_sat || next == lit_Undef || mBooleanConstraintMap[Minisat::var(next)].first == nullptr || mBooleanConstraintMap[Minisat::var(next)].first->reabstraction.getType() != carl::FormulaType::VARASSIGN);
-                    SMTRAT_LOG_TRACE("smtrat.sat", "Got " << next);
-                    return next;
-                } else {
-                    while( next == var_Undef || bool_value( next ) != l_Undef || !decision[next] )
+                    if( order_heap.empty() )
                     {
-                        if( order_heap.empty() )
-                        {
-                            SMTRAT_LOG_TRACE("smtrat.sat", "Empty.");
-                            next = var_Undef;
-                            break;
-                        }
-                        else
-                            next = order_heap.removeMin();
-                        SMTRAT_LOG_TRACE("smtrat.sat", "Current " << next);
+                        SMTRAT_LOG_TRACE("smtrat.sat", "Empty.");
+                        next = var_Undef;
+                        break;
                     }
-                    SMTRAT_LOG_DEBUG("smtrat.sat", "Got " << next);
-                    return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
+                    else
+                        next = order_heap.removeMin();
+                    SMTRAT_LOG_TRACE("smtrat.sat", "Current " << next);
                 }
+                SMTRAT_LOG_DEBUG("smtrat.sat", "Got " << next);
+                return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
             }
-            else {
-                return bestBranchLit();
-            }
+        }
+        else {
+            return bestBranchLit();
         }
         assert(false);
         return lit_Undef;
-        //return next == var_Undef ? lit_Undef : mkLit( next, rnd_pol ? drand( random_seed ) < 0.5 : polarity[next] );
     }
     
     template<class Settings>
