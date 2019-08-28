@@ -173,8 +173,8 @@ bool ResultantRule::addPoly(const Poly& poly) {
 }
 
 bool ResultantRule::addPoly(const UPoly& poly, std::size_t level, const std::vector<FormulaT>& origin) {
-    if (isZero(poly)) return true;
-    SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
+    if (poly.isNumber()) return true;
+    SMTRAT_LOG_TRACE("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
     Poly mp(poly);
     UPoly p = poly;
     assert(p.mainVar() == mVars[level]);
