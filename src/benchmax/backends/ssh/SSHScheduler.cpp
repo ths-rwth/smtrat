@@ -114,6 +114,21 @@ void SSHScheduler::uploadTool(const Tool* tool) {
 	}
 }
 
+void SSHScheduler::cleanupTools() {
+	BENCHMAX_LOG_DEBUG("benchmax.ssh", "Cleaning up tools");
+	for (const auto& c: mConnections) {
+		for (auto it = mRemoteToolLocations.cbegin(); it != mRemoteToolLocations.cend(); ) {
+			if (it->first.second == c->getNode().hostname) {
+				c->removeDir(it->second);
+				it = mRemoteToolLocations.erase(it);
+			}
+			else {
+				++it;
+			}
+		}
+	}
+}
+
 bool SSHScheduler::executeJob(const Tool* tool, const fs::path& file, Backend* backend) {
 	mRunningJobs++;
 	const auto& c = get();

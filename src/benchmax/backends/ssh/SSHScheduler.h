@@ -49,6 +49,8 @@ public:
 	}
 	/// Upload a tool to all remotes.
 	void uploadTool(const Tool* tool);
+	/// Removes all tools from remotes.
+	void cleanupTools();
 	/// Execute a single job.
 	bool executeJob(const Tool* tool, const fs::path& file, Backend* backend);
 };

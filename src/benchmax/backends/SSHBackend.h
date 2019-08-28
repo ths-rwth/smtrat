@@ -43,6 +43,7 @@ protected:
 	}
 	virtual void finalize() {
 		while (!jobs.empty()) waitAndPop();
+		scheduler->cleanupTools();
 	}
 	virtual void execute(const Tool* tool, const fs::path& file) {
 		// Make sure enough jobs are active.
