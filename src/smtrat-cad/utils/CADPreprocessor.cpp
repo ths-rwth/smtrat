@@ -159,15 +159,15 @@ AssignmentCollector::CollectionResult AssignmentCollector::collect(std::map<Cons
 
 bool ResultantRule::addPoly(const Poly& poly) {
     if (isZero(poly)) return true;
-    SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
+    SMTRAT_LOG_TRACE("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
     std::size_t level = 0;
     UPoly p = poly.toUnivariatePolynomial(mVars[level]);
     while (p.isConstant()) {
         ++level;
         p = poly.toUnivariatePolynomial(mVars[level]);
     }
-    SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Inserting " << p << " into level " << level);
-    SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Into " << mData);
+    SMTRAT_LOG_TRACE("smtrat.cad.pp", "Inserting " << p << " into level " << level);
+    SMTRAT_LOG_TRACE("smtrat.cad.pp", "Into " << mData);
     mData[level].emplace_back(p);
     return true;
 }
@@ -200,6 +200,7 @@ std::optional<std::vector<FormulaT>> ResultantRule::computeResultants(std::size_
     for (std::size_t pid = 0; pid < mData[level].size(); ++pid) {
         for (std::size_t qid = pid + 1; qid < mData[level].size(); ++qid) {
             auto r = projection::resultant(mVars[level + 1], mData[level][pid], mData[level][qid]);
+			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Resultant(" << mData[level][pid] << ", " << mData[level][qid] << ") = " << r);
             std::vector<FormulaT> origin;
             const auto& op = mOrigins.get(FormulaT(Poly(mData[level][pid]), carl::Relation::EQ));
             origin.insert(origin.end(), op.begin(), op.end());
@@ -226,6 +227,7 @@ std::optional<std::vector<FormulaT>> ResultantRule::compute(const std::map<Const
         }
     }
 
+    SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Computing resultants from" << std::endl << mData);
     for (std::size_t level = 0; level < mData.size() - 1; ++level) {
         auto conflict = computeResultants(level);
         if (conflict) return conflict;
