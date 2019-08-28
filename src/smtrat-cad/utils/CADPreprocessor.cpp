@@ -123,7 +123,7 @@ AssignmentCollector::CollectionResult AssignmentCollector::simplify(std::map<Con
 	bool changed = false;
     for (auto& c: constraints) {
         auto tmp = carl::model::substitute(c.second, mModel);
-		if (tmp != c.second) {
+		if (tmp != c.second && constraints.find(tmp) == constraints.end()) {
 			changed = true;
 			c.second = tmp;
 		}
