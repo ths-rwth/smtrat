@@ -36,6 +36,7 @@ namespace cad {
 	using ProjectionHong = ProjectionMixin<ProjectionType::Hong>;
 	using ProjectionMcCallum = ProjectionMixin<ProjectionType::McCallum>;
 	using ProjectionMcCallum_partial = ProjectionMixin<ProjectionType::McCallum_partial>;
+	using ProjectionLazard = ProjectionMixin<ProjectionType::Lazard>;
 	using ProjectionBrown = ProjectionMixin<ProjectionType::Brown>;
 	
 	/// Mixin that provides settings for the sample comparison.
@@ -140,6 +141,9 @@ namespace cad {
 	};
 	struct NewCADSettingsMcCallumPartial: NewCADBaseProjectionSettings, cad::ProjectionMcCallum_partial {
 		static constexpr auto moduleName = "NewCADModule<NewCADMcCallumPartial>";
+	};
+	struct NewCADSettingsLazard: NewCADBaseProjectionSettings, cad::ProjectionLazard {
+		static constexpr auto moduleName = "NewCADModule<NewCADLazard>";
 	};
 	struct NewCADSettingsBrown: NewCADBaseProjectionSettings, cad::ProjectionBrown {
 		static constexpr auto moduleName = "NewCADModule<NewCADBrown>";
