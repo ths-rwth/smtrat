@@ -3772,11 +3772,10 @@ namespace smtrat
                 pFormulas->push_back( formula );
 
                 // Find formulas for contained variables
-                carl::Variables vars;
-                formula.booleanVars(vars);
-                for ( carl::Variables::const_iterator iter = vars.begin(); iter != vars.end(); ++iter )
-                {
-                    BooleanVarMap::const_iterator itVar = mBooleanVarMap.find( *iter );
+                carl::carlVariables vars;
+                formula.gatherVariables(vars);
+                for (const auto& v: vars.boolean().underlyingVariables()) {
+                    BooleanVarMap::const_iterator itVar = mBooleanVarMap.find( v );
                     assert( itVar != mBooleanVarMap.end() );
                     Minisat::Var var = itVar->second;
                     // Find possible formulas for variable
