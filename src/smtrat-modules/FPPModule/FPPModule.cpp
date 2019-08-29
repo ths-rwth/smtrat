@@ -59,7 +59,7 @@ namespace smtrat
             if( mMinimizingCheck ) {
 				// set the objective for all preprocessing modules. Each module has to check
 				// whether it is sound to perform the preprocessing on optimizing solver calls.
-                mPreprocessor.addObjective(Poly(objective()));
+				mPreprocessor.reuseObjectives(*mpManager);
 			}
 
             std::size_t iterations = 0;
