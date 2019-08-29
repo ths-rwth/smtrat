@@ -251,3 +251,10 @@ include(CPack)
 include(prepare-ci)
 include(dependency-graph)
 
+add_custom_target(profiling-data)
+add_custom_command(
+       TARGET profiling-data
+       BYPRODUCTS profiling.pdf
+       COMMAND gprof -m 0 smtrat-shared gmon.out | gprof2dot -n 0.0 -e 0.0 --strip | dot -Tpdf -oprofiling.pdf
+       WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/
+)
