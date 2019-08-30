@@ -16,14 +16,14 @@ namespace cad {
         };
 
 	private:
-        RAN lower = (RAN) 0;                        /**< lower bound */
-        RAN upper = (RAN) 0;                        /**< upper bound */
-        CADBoundType lowertype = INF;               /**< lower bound type */
-        CADBoundType uppertype = INF;               /**< upper bound type */
-        std::vector<Poly> lowerreason;              /**< collection of polynomials for lower bound */
-        std::vector<Poly> upperreason;              /**< collection of polynomials for upper bound */
-        smtrat::Poly poly = smtrat::Poly();         /**< interval represents the bounds computed from this polynom */
-        smtrat::Poly reducedpoly = smtrat::Poly();  /**< polynom without leading term P_i */
+        RAN lower = (RAN) 0;            /**< lower bound */
+        RAN upper = (RAN) 0;            /**< upper bound */
+        CADBoundType lowertype = INF;   /**< lower bound type */
+        CADBoundType uppertype = INF;   /**< upper bound type */
+        std::set<Poly> lowerreason;     /**< collection of polynomials for lower bound */
+        std::set<Poly> upperreason;     /**< collection of polynomials for upper bound */
+        std::set<smtrat::Poly> polys = std::set<smtrat::Poly>();         /**< interval represents the bounds computed from these polynoms (containing x_i) */
+        std::set<smtrat::Poly> lowerpolys = std::set<smtrat::Poly>();  /**< polynoms not containing main variable x_i */
 
     public:
         /** initializes interval as (-inf, +inf) */
@@ -43,23 +43,44 @@ namespace cad {
             uppertype = CLOSED;
         }
 
-        /** initializes closed point interval with polynom */
-        CADInterval(RAN point, const smtrat::Poly newpoly): 
-            lower(point), upper(point), poly(newpoly) {
+        /** initializes closed point interval with polynoms */
+        CADInterval(RAN point, const std::set<Poly> newpoly): 
+            lower(point), upper(point), polys(newpoly) {
             lowertype = CLOSED;
             uppertype = CLOSED;
         }
 
-        /** initializes open interval with given bounds and polynom */
-        CADInterval(RAN lowerbound, RAN upperbound, const smtrat::Poly newpoly): 
-            lower(lowerbound), upper(upperbound), poly(newpoly) {
+        /** initializes closed point interval with polynom */
+        CADInterval(RAN point, const smtrat::Poly newpoly): 
+            lower(point), upper(point) {
+            lowertype = CLOSED;
+            uppertype = CLOSED;
+            polys.insert(newpoly);
+        }
+
+        /** initializes open interval with given bounds and polynoms */
+        CADInterval(RAN lowerbound, RAN upperbound, const std::set<Poly> newpoly): 
+            lower(lowerbound), upper(upperbound), polys(newpoly) {
             lowertype = OPEN;
             uppertype = OPEN;
         }
 
+        /** initializes open interval with given bounds and polynom */
+        CADInterval(RAN lowerbound, RAN upperbound, const smtrat::Poly newpoly): 
+            lower(lowerbound), upper(upperbound){
+            lowertype = OPEN;
+            uppertype = OPEN;
+            polys.insert(newpoly);
+        }
+
+        /** initializes (-inf, +inf) interval with given polynoms */
+        CADInterval(const std::set<Poly> newpoly):
+            polys(newpoly) {
+        }
+
         /** initializes (-inf, +inf) interval with given polynom */
-        CADInterval(const smtrat::Poly newpoly):
-            poly(newpoly) {
+        CADInterval(const Poly newpoly) {
+            polys.insert(newpoly);
         }
 
         /** initializes interval with given bounds and bound types */
@@ -71,15 +92,26 @@ namespace cad {
             lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype) {
         }
 
+        /** initializes interval with given bounds, bound types and polynoms */
+        CADInterval(
+            RAN lowerbound, 
+            RAN upperbound, 
+            CADBoundType lowerboundtype, 
+            CADBoundType upperboundtype, 
+            std::set<Poly> newpoly):
+            lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), 
+            polys(newpoly) {
+        }
+
         /** initializes interval with given bounds, bound types and polynom */
         CADInterval(
             RAN lowerbound, 
             RAN upperbound, 
             CADBoundType lowerboundtype, 
             CADBoundType upperboundtype, 
-            const smtrat::Poly newpoly):
-            lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), 
-            poly(newpoly) {
+            Poly newpoly):
+            lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype) {
+            polys.insert(newpoly);
         }
 
         /** initializes interval with given bounds, bound types, reasons and polynom */
@@ -88,11 +120,11 @@ namespace cad {
             RAN upperbound, 
             CADBoundType lowerboundtype, 
             CADBoundType upperboundtype, 
-            std::vector<Poly> lowerres, 
-            std::vector<Poly> upperres, 
-            const smtrat::Poly newpoly):
+            std::set<Poly> lowerres,
+            std::set<Poly> upperres, 
+            std::set<Poly> newpoly):
             lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), 
-            lowerreason(lowerres), upperreason(upperres), poly(newpoly) {
+            lowerreason(lowerres), upperreason(upperres), polys(newpoly) {
         }
 
         /** initializes interval with given bounds, bound types, reasons, polynom and polynom without leading term */
@@ -101,12 +133,12 @@ namespace cad {
             RAN upperbound, 
             CADBoundType lowerboundtype, 
             CADBoundType upperboundtype, 
-            std::vector<Poly> lowerres, 
-            std::vector<Poly> upperres, 
-            const smtrat::Poly newpoly, 
-            const smtrat::Poly newredpoly):
+            std::set<Poly> lowerres, 
+            std::set<Poly> upperres, 
+            std::set<Poly> newpoly, 
+            std::set<Poly> newredpoly):
             lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype),
-            lowerreason(lowerres), upperreason(upperres), poly(newpoly), reducedpoly(newredpoly) {
+            lowerreason(lowerres), upperreason(upperres), polys(newpoly), lowerpolys(newredpoly) {
         }
 
         /** gets lower bound */
@@ -130,13 +162,13 @@ namespace cad {
         }
 
         /** gets polynom the interval originated from */
-        auto getPolynom() {
-            return poly;
+        auto getPolynoms() {
+            return polys;
         }
 
         /** gets the reduced polynom */
-        auto getRedPoly() {
-            return reducedpoly;
+        auto getLowerPolynoms() {
+            return lowerpolys;
         }
 
         /** sets lower bound value and bound type */
@@ -151,9 +183,10 @@ namespace cad {
             uppertype = type;
         }
 
-        /** sets polynom */
+        /** sets polynoms */
         void setPolynom(const smtrat::Poly newpoly) {
-            poly = newpoly;
+            polys.clear();
+            polys.insert(newpoly);
         }
 
         /** checks whether the interval is (-inf, +inf) */
