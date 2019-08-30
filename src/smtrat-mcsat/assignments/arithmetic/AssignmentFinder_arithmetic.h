@@ -132,6 +132,7 @@ public:
 			return false;
 		}
 		
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Adding " << list << " with " << fnew);
 		mRI.add(list);
 		mRootMap.emplace(f, std::make_pair(std::move(list), fnew));
 		return true;
@@ -173,8 +174,8 @@ public:
 		std::vector<RAN> list;
 		if (value.isRational()) list.emplace_back(value.asRational());
 		else list.push_back(value.asRAN());
-		mRI.add(list);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Adding " << list << " with " << fnew);
+		mRI.add(list);
 		mRootMap.emplace(f, std::make_pair(std::move(list), fnew));
 		return true;
 	}
@@ -185,7 +186,7 @@ public:
 		Covering cover(mRI.size() * 2 + 1);
 		for (const auto& c: mRootMap) {
 			carl::Bitset b;
-			const auto& roots = c.second.first;
+			const auto& roots = c.second.first; // sorted
 			const auto& constraint = c.second.second;
 			std::size_t last = 0;
 			for (const auto& r: roots) {

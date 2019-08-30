@@ -219,6 +219,17 @@ namespace smtrat
             {
                 return mObjectives;
             }
+
+			void reuseObjectives(const Manager& m) {
+				mObjectives = m.objectives();
+			}
+
+			bool isObjectiveVariable(carl::Variable var) const {
+				for (const auto& o: mObjectives) {
+					if (o.second.first == var) return true;
+				}
+				return false;
+			}
             
             const Poly& firstObjective() const
             {

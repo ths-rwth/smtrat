@@ -30,6 +30,11 @@ private:
 	const std::unique_ptr<SSHConnection>& get();
 	/// Create a name for a temporary directory.
 	std::string tmpDirName(const Tool* tool, const fs::path& file) const;
+	/// Create a name for a temporary directory.
+	std::string tmpDirName(const Tool* tool) const;
+
+	/// Remote tool locations
+	std::map<std::pair<const Tool*, std::string>, std::string> mRemoteToolLocations;
 public:
 	/// Initializes all SSH connections.
 	SSHScheduler();
@@ -44,6 +49,8 @@ public:
 	}
 	/// Upload a tool to all remotes.
 	void uploadTool(const Tool* tool);
+	/// Removes all tools from remotes.
+	void cleanupTools();
 	/// Execute a single job.
 	bool executeJob(const Tool* tool, const fs::path& file, Backend* backend);
 };
