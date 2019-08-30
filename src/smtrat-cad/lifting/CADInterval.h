@@ -190,15 +190,20 @@ namespace cad {
          * @returns true iff the lower bound is lower than the one of the given interval
          */
         bool isLowerThan(CADInterval inter) {
+            /* if this bound is inf (& the other one not), the other one is greater */
+            if(lowertype == INF && inter.getLowerBoundType() != INF)
+                return true;
             /* if other bound is inf, this one is not lower */
             if(inter.getLowerBoundType() == INF)
                 return false;
-            /* if this bound is inf (& the other one not), the other one is greater */
-            if(lowertype == INF)
-                return true;
 
             if(lower < inter.getLower())
                 return true;
+            // if equal let upper type decide
+            if(lower == inter.getLower()) {
+                if(upper <= inter.getUpper() && !(uppertype == INF))
+                    return true;
+            }
 
             return false;
         }
