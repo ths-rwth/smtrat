@@ -445,18 +445,18 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 * (Paper Alg. 5)
 	*/
 	template<typename CADIntervalBased>
-	smtrat::Poly required_coefficient(
+	std::set<smtrat::Poly> required_coefficient(
 		CADIntervalBased& cad,					/**< corresponding CAD */
 		std::map<carl::Variable, RAN> samples,	/**< values for variables till depth i */
 		smtrat::Poly poly						/**< polynom */
 	) {
-		smtrat::Poly coeffs;
+		std::set<smtrat::Poly> coeffs;
 		while(!carl::isZero(poly)) {
 			// add leading coefficient
 			smtrat::Poly lcpoly = smtrat::Poly(poly.lcoeff());
-			coeffs = coeffs + lcpoly;
+			coeffs.insert(lcpoly);
 			// if leading coeff evaluated at sample is non zero, stop
-			if(lcpoly.evaluate(samples) != (RAN) 0) //@todo does this work? is 0 Rational-convertable?
+			if(lcpoly.evaluate(samples) != (RAN) 0)
 				break;
 			// remove leading term
 			poly.stripLT();
@@ -471,7 +471,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 * (Paper Alg. 4)
 	 * */
 	template<typename CADIntervalBased>
-	smtrat::Poly construct_characterization(
+	std::set<smtrat::Poly> construct_characterization(
 		CADIntervalBased& cad,					/**< corresponding CAD */
 		std::map<carl::Variable, RAN> samples,	/**< values for variables till depth i */
 		std::vector<CADInterval*> intervals		/**< intervals containing a cover */
@@ -481,12 +481,15 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		assert(!subinters.empty());
 		subinters = sortIntervals(cad, subinters);
 
-		smtrat::Poly characterization = smtrat::Poly();
+		// create the characterization of the unsat region
+		std::set<smtrat::Poly> characterization = smtrat::Poly();
 		for(auto inter : subinters) {
-			characterization = characterization + inter->getRedPoly();
-			characterization = characterization + carl::discriminant(inter->getPolynom().toUnivariatePolynomial(getHighestVar(cad, inter->getPolynom())));
-			characterization = characterization + required_coefficients(cad, samples, inter->getPolynom());
+			characterization.insert(inter->getRedPoly());
+			characterization.insert(carl::discriminant(inter->getPolynom().toUnivariatePolynomial(getHighestVar(cad, inter->getPolynom()))));
+			auto coeffs = required_coefficients(cad, samples, inter->getPolynom());
+			characterization.insert(coeffs.begin(), coeffs.end());
 			//@todo
+			
 		}
 		//@todo
 	}
@@ -500,7 +503,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 	std::map<carl::Variable, RAN> samples,	/**< values for variables till depth i-1 */
 		carl::Variable currVar,					/**< var of depth i (current depth) */
 		RAN val, 								/**< value for currVar */
-		smtrat::Poly butler						/**< poly characterization */
+		std::set<smtrat::Poly> butler			/**< poly characterization */
 	) {
 		//@todo
 	}
@@ -541,7 +544,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			if(std::get<0>(nextcall))
 				return nextcall;
 			else {
-				smtrat::Poly butler = construct_characterization(cad, newsamples, std::get<1>(nextcall));
+				auto butler = construct_characterization(cad, newsamples, std::get<1>(nextcall));
 				CADInterval* butlerinter = interval_from_characterization(cad, samples, currVar, newval, butler);
 				unsatinters.insert(butlerinter);
 			}
