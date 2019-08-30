@@ -441,6 +441,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 
 
 	/** 
+	 * @brief get all coefficients required for the given sample set
 	 * (Paper Alg. 5)
 	*/
 	template<typename CADIntervalBased>
@@ -449,7 +450,18 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		std::map<carl::Variable, RAN> samples,	/**< values for variables till depth i */
 		smtrat::Poly poly						/**< polynom */
 	) {
-		//@todo
+		smtrat::Poly coeffs;
+		while(!carl::isZero(poly)) {
+			// add leading coefficient
+			smtrat::Poly lcpoly = smtrat::Poly(poly.lcoeff());
+			coeffs = coeffs + lcpoly;
+			// if leading coeff evaluated at sample is non zero, stop
+			if(lcpoly.evaluate(samples) != (RAN) 0) //@todo does this work? is 0 Rational-convertable?
+				break;
+			// remove leading term
+			poly.stripLT();
+		}
+		return coeffs;
 	}
 
 
@@ -473,6 +485,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		for(auto inter : subinters) {
 			characterization = characterization + inter->getRedPoly();
 			characterization = characterization + carl::discriminant(inter->getPolynom().toUnivariatePolynomial(getHighestVar(cad, inter->getPolynom())));
+			characterization = characterization + required_coefficients(cad, samples, inter->getPolynom());
 			//@todo
 		}
 		//@todo
