@@ -16,14 +16,15 @@ namespace cad {
         };
 
 	private:
-        RAN lower = (RAN) 0;                                            /**< lower bound */
-        RAN upper = (RAN) 0;                                            /**< upper bound */
-        CADBoundType lowertype = INF;                                   /**< lower bound type */
-        CADBoundType uppertype = INF;                                   /**< upper bound type */
-        std::vector<Poly> lowerreason;                                  /**< collection of polynomials for lower bound */
-        std::vector<Poly> upperreason;                                  /**< collection of polynomials for upper bound */
-        std::optional<ConstraintT> constraint = std::nullopt;           /**< this interval represents the bounds of this constraint */
-	
+        RAN lower = (RAN) 0;                        /**< lower bound */
+        RAN upper = (RAN) 0;                        /**< upper bound */
+        CADBoundType lowertype = INF;               /**< lower bound type */
+        CADBoundType uppertype = INF;               /**< upper bound type */
+        std::vector<Poly> lowerreason;              /**< collection of polynomials for lower bound */
+        std::vector<Poly> upperreason;              /**< collection of polynomials for upper bound */
+        smtrat::Poly poly = smtrat::Poly();         /**< interval represents the bounds computed from this polynom */
+        smtrat::Poly reducedpoly = smtrat::Poly();  /**< polynom without leading term P_i */
+
     public:
         /** initializes interval as (-inf, +inf) */
 		CADInterval(){}
@@ -42,38 +43,70 @@ namespace cad {
             uppertype = CLOSED;
         }
 
-        /** initializes closed point interval with constraint */
-        CADInterval(RAN point, const ConstraintT& cons): 
-            lower(point), upper(point), constraint(cons) {
+        /** initializes closed point interval with polynom */
+        CADInterval(RAN point, const smtrat::Poly newpoly): 
+            lower(point), upper(point), poly(newpoly) {
             lowertype = CLOSED;
             uppertype = CLOSED;
         }
 
-        /** initializes open interval with given bounds and constraint */
-        CADInterval(RAN lowerbound, RAN upperbound, const ConstraintT& cons): 
-            lower(lowerbound), upper(upperbound), constraint(cons) {
+        /** initializes open interval with given bounds and polynom */
+        CADInterval(RAN lowerbound, RAN upperbound, const smtrat::Poly newpoly): 
+            lower(lowerbound), upper(upperbound), poly(newpoly) {
             lowertype = OPEN;
             uppertype = OPEN;
         }
 
-        /** initializes (-inf, +inf) interval with given constraint */
-        CADInterval(const ConstraintT& cons):
-            constraint(cons) {
+        /** initializes (-inf, +inf) interval with given polynom */
+        CADInterval(const smtrat::Poly newpoly):
+            poly(newpoly) {
         }
 
         /** initializes interval with given bounds and bound types */
-        CADInterval(RAN lowerbound, RAN upperbound, CADBoundType lowerboundtype, CADBoundType upperboundtype):
+        CADInterval(
+            RAN lowerbound, 
+            RAN upperbound, 
+            CADBoundType lowerboundtype, 
+            CADBoundType upperboundtype):
             lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype) {
         }
 
-        /** initializes interval with given bounds, bound types and constraint */
-        CADInterval(RAN lowerbound, RAN upperbound, CADBoundType lowerboundtype, CADBoundType upperboundtype, const ConstraintT& cons):
-            lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), constraint(cons) {
+        /** initializes interval with given bounds, bound types and polynom */
+        CADInterval(
+            RAN lowerbound, 
+            RAN upperbound, 
+            CADBoundType lowerboundtype, 
+            CADBoundType upperboundtype, 
+            const smtrat::Poly newpoly):
+            lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), 
+            poly(newpoly) {
         }
 
-        /** initializes interval with given bounds, bound types, reasons and constraint */
-        CADInterval(RAN lowerbound, RAN upperbound, CADBoundType lowerboundtype, CADBoundType upperboundtype, std::vector<Poly> lowerres, std::vector<Poly> upperres, const ConstraintT& cons):
-            lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), lowerreason(lowerres), upperreason(upperres), constraint(cons) {
+        /** initializes interval with given bounds, bound types, reasons and polynom */
+        CADInterval(
+            RAN lowerbound, 
+            RAN upperbound, 
+            CADBoundType lowerboundtype, 
+            CADBoundType upperboundtype, 
+            std::vector<Poly> lowerres, 
+            std::vector<Poly> upperres, 
+            const smtrat::Poly newpoly):
+            lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), 
+            lowerreason(lowerres), upperreason(upperres), poly(newpoly) {
+        }
+
+        /** initializes interval with given bounds, bound types, reasons, polynom and polynom without leading term */
+        CADInterval(
+            RAN lowerbound, 
+            RAN upperbound, 
+            CADBoundType lowerboundtype, 
+            CADBoundType upperboundtype, 
+            std::vector<Poly> lowerres, 
+            std::vector<Poly> upperres, 
+            const smtrat::Poly newpoly, 
+            const smtrat::Poly newredpoly):
+            lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype),
+            lowerreason(lowerres), upperreason(upperres), poly(newpoly), reducedpoly(newredpoly) {
         }
 
         /** gets lower bound */
@@ -96,9 +129,14 @@ namespace cad {
             return uppertype;
         }
 
-        /** gets constraint the interval originated from */
-        auto getConstraint() {
-            return constraint;
+        /** gets polynom the interval originated from */
+        auto getPolynom() {
+            return poly;
+        }
+
+        /** gets the reduced polynom */
+        auto getRedPoly() {
+            return reducedpoly;
         }
 
         /** sets lower bound value and bound type */
@@ -113,9 +151,9 @@ namespace cad {
             uppertype = type;
         }
 
-        /** sets constraint */
-        void setConstraint(const ConstraintT& cons) {
-            constraint.emplace(cons);
+        /** sets polynom */
+        void setPolynom(const smtrat::Poly newpoly) {
+            poly = newpoly;
         }
 
         /** checks whether the interval is (-inf, +inf) */

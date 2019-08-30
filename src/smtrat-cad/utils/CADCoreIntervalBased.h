@@ -82,6 +82,26 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	}
 
 
+	/** @brief gets highest var in var order that is present in the polynom
+	 * 
+	 * with respect to variable order in cad
+	 * 
+	 * @returns highest var in polynom
+	*/
+	template<typename CADIntervalBased>
+	carl::Variable getHighestVar(
+		CADIntervalBased& cad,	/**< corresponding CAD */
+		smtrat::Poly poly		/**< polynom */
+	) {
+		carl::Variable var;
+		for(auto v : poly.gatherVariables()) {
+			if(cad.getDepthOfVar(v) > cad.getDepthOfVar(var)) 
+				var = v;
+		}
+		return var;
+	}
+
+
 	/**
 	 * Calculates the regions between the real roots of the polynom (left-hand side) of given constraint
 	 * @param samples variables to be substituted by given values, can be empty
@@ -108,17 +128,17 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		std::vector<RAN>::iterator it;
 		for (it = r.begin(); it != r.end(); it++) {
 			// add closed point interval for each root
-			regions.insert( new CADInterval(*it, c) );
+			regions.insert( new CADInterval(*it, c.lhs()) );
 
 			// add (-inf, x) for first root x
 			if (it == r.begin())
-				regions.insert( new CADInterval((RAN) 0, *it, CADInterval::CADBoundType::INF, CADInterval::CADBoundType::OPEN, c) );
+				regions.insert( new CADInterval((RAN) 0, *it, CADInterval::CADBoundType::INF, CADInterval::CADBoundType::OPEN, c.lhs()) );
 			
 			// for last root x add (x, inf)
 			if (it == r.rbegin().base())
-				regions.insert( new CADInterval(*it, (RAN) 0, CADInterval::CADBoundType::OPEN, CADInterval::CADBoundType::INF, c) );
+				regions.insert( new CADInterval(*it, (RAN) 0, CADInterval::CADBoundType::OPEN, CADInterval::CADBoundType::INF, c.lhs()) );
 			else // add open interval to next root
-				regions.insert( new CADInterval(*it, *(std::next(it, 1)), c) );
+				regions.insert( new CADInterval(*it, *(std::next(it, 1)), c.lhs()) );
 		}
 
 		/* sort intervals by ascending order of lower bounds */
@@ -192,7 +212,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			/* if unsat, return (-inf, +inf) */
 			if(issat == 0) { /*@todo is this equiv to "c(s) == false"? */
 				std::set<CADInterval*> set;
-				set.insert(new CADInterval(c));
+				set.insert(new CADInterval(c.lhs()));
 				return set;
 			}
 			/* if sat, constraint is finished */
@@ -212,7 +232,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 							lowerreason.push_back(c.lhs());
 						if(region->getUpperBoundType() != CADInterval::CADBoundType::INF)
 							upperreason.push_back(c.lhs());
-						newintervals.insert(new CADInterval(region->getLower(), region->getUpper(), region->getLowerBoundType(), region->getUpperBoundType(), lowerreason, upperreason, c));
+						newintervals.insert(new CADInterval(region->getLower(), region->getUpper(), region->getLowerBoundType(), region->getUpperBoundType(), lowerreason, upperreason, c.lhs()));
 					}
 				} 
 			}
@@ -420,9 +440,23 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	}
 
 
+	/** 
+	 * (Paper Alg. 5)
+	*/
+	template<typename CADIntervalBased>
+	smtrat::Poly required_coefficient(
+		CADIntervalBased& cad,					/**< corresponding CAD */
+		std::map<carl::Variable, RAN> samples,	/**< values for variables till depth i */
+		smtrat::Poly poly						/**< polynom */
+	) {
+		//@todo
+	}
+
+
 	/**
 	 * 
 	 * @note asserts that there is a cover in the given intervals
+	 * (Paper Alg. 4)
 	 * */
 	template<typename CADIntervalBased>
 	smtrat::Poly construct_characterization(
@@ -435,12 +469,18 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		assert(!subinters.empty());
 		subinters = sortIntervals(cad, subinters);
 
+		smtrat::Poly characterization = smtrat::Poly();
 		for(auto inter : subinters) {
+			characterization = characterization + inter->getRedPoly();
+			characterization = characterization + carl::discriminant(inter->getPolynom().toUnivariatePolynomial(getHighestVar(cad, inter->getPolynom())));
 			//@todo
 		}
 		//@todo
 	}
 
+	/**
+	 * (Paper Alg. 6)
+	 * */
 	template<typename CADIntervalBased>
 	CADInterval* interval_from_characterization(
 		CADIntervalBased& cad,					/**< corresponding CAD */
