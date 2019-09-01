@@ -161,7 +161,17 @@ namespace cad {
             return uppertype;
         }
 
-        /** gets polynom the interval originated from */
+        /** gets polynoms the lower bound is reasoned from */
+        auto getLowerReason() {
+            return lowerreason;
+        }
+
+        /** gets polynoms the upper bound is reasoned from */
+        auto getUpperReason() {
+            return upperreason;
+        }
+
+        /** gets polynoms the interval originated from */
         auto getPolynoms() {
             return polys;
         }

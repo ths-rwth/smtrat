@@ -468,6 +468,28 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	}
 
 
+	/**@brief checks whether (polynom with given offset == 0) is satisfied by given sample */
+	template<typename CADIntervalBased>
+	bool isSatWithOffset(
+		CADIntervalBased& cad,					/**< corresponding CAD */
+		RAN offset,								/**< offset */
+	 	std::map<carl::Variable, RAN> samples,	/**< values for variables till depth i-1 */
+		smtrat::Poly poly,						/**< polynom */
+		carl::Relation relation					/**< relation to use for constraint */
+	) {
+		smtrat::Poly offsetpoly = poly;
+		offsetpoly.addTerm(carl::Term(offset)); // @todo is this what is meant in alg.6, l.6-7?
+		ConstraintT eqzero = ConstraintT(offsetpoly, relation);
+
+		// check whether poly(samples x offset) == 0
+		unsigned issat = eqzero.satisfiedBy(makeEvalMap(cad, samples));
+		if(issat == 1)
+			return true;
+
+		return false;
+	}
+
+
 	/**
 	 * 
 	 * @note asserts that there is a cover in the given intervals
@@ -487,38 +509,57 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		// create the characterization of the unsat region
 		std::set<smtrat::Poly> characterization = smtrat::Poly();
 		for(auto inter : subinters) {
+			// add all polynoms not containing the main var
 			for(auto lowpoly : inter->getLowerPolynoms()) {
 				characterization.insert(lowpoly);
 			}
+			// add discriminant of polynoms containing main var
 			for(auto poly : inter->getPolynoms()) {
 				characterization.insert(carl::discriminant(poly.toUnivariatePolynomial(getHighestVar(cad, poly))));
 			}
+			// add relevant coefficients
 			auto coeffs = required_coefficients(cad, samples, inter->getPolynoms());
 			characterization.insert(coeffs.begin(), coeffs.end());
-			//@todo
-			
+			// add polynoms that guarantee bounds to be closest
+			for(auto q : inter->getPolynoms()) {
+				// @todo does the following correctly represent Alg. 4, l. 7-8?
+				// idea: P(s x \alpha) = 0, \alpha < l => P(s x l) > 0
+				if(isSatWithOffset(cad, inter->getLower(), samples, q, carl::Relation::GREATER)) {
+					for(auto p : inter->getLowerReason()) {
+						characterization.insert(carl::resultant(
+							p.toUnivariatePolynomial(getHighestVar(cad, p)),
+							q.toUnivariatePolynomial(getHighestVar(cad, q)) 
+						));
+					}
+				}
+				// analogously: P(s x \alpha) = 0, \alpha > u => P(s x u) < 0
+				if(isSatWithOffset(cad, inter->getUpper(), samples, q, carl::Relation::LESS)) {
+					for(auto p : inter->getUpperReason()) {
+						characterization.insert(carl::resultant(
+							p.toUnivariatePolynomial(getHighestVar(cad, p)),
+							q.toUnivariatePolynomial(getHighestVar(cad, q)) 
+						));
+					}
+				}
+			}
+
+			// add resultants of upper & lower reasons
+			// @todo why res(U_j, L_j-1)? why not all U with all L?
+			// @todo in Alg. 4 this is presented as outside of interval loop. This is wrong (!?)
+			auto itlower = inter->getLowerReason().begin();
+			itlower++;
+			auto itupper = inter->getUpperReason().begin();
+			while(itlower != inter->getLowerReason().end() && itupper != inter->getUpperReason().end()) {
+				characterization.insert(carl::resultant(
+					(*itupper).toUnivariatePolynomial(getHighestVar(cad, (*itupper))),
+					(*itlower).toUnivariatePolynomial(getHighestVar(cad, (*itlower))) 
+				));
+				itlower++;
+				itupper++;
+			}
 		}
-		//@todo
-	}
-
-	/**@brief checks whether (polynom with given offset == 0) is satisfied by given sample */
-	template<typename CADIntervalBased>
-	bool isSatWithOffset(
-		CADIntervalBased& cad,					/**< corresponding CAD */
-		RAN offset,								/**< offset */
-	 	std::map<carl::Variable, RAN> samples,	/**< values for variables till depth i-1 */
-		smtrat::Poly poly						/**< polynom */
-	) {
-		smtrat::Poly offsetpoly = poly;
-		offsetpoly.addTerm(carl::Term(offset)); // @todo is this what is meant in alg.6, l.6-7?
-		ConstraintT eqzero = ConstraintT(offsetpoly, carl::Relation::EQ);
-
-		// check whether poly(samples x offset) == 0
-		unsigned issat = eqzero.satisfiedBy(makeEvalMap(cad, samples));
-		if(issat == 1)
-			return true;
-
-		return false;
+		//@todo Alg. 4, l. 11: Perform standard CAD simplifications to characterization
+		return characterization;
 	}
 
 
@@ -579,12 +620,12 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			//@todo is the isSatWithOffset function what was meant in Alg. 6, l. 6-7?
 			// if no lower bound was found it is -inf, no polys will bound it
 			if(foundlower) {
-				if(isSatWithOffset(cad, lower, samples, poly))
+				if(isSatWithOffset(cad, lower, samples, poly, carl::Relation::EQ))
 					lowerres.insert(poly);
 			}
 			// analogously to lower bound
 			if(foundupper) {
-				if(isSatWithOffset(cad, upper, samples, poly))
+				if(isSatWithOffset(cad, upper, samples, poly, carl::Relation::EQ))
 					upperres.insert(poly);
 			}
 		}
