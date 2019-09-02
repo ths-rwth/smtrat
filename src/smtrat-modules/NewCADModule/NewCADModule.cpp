@@ -18,7 +18,7 @@ namespace smtrat
 		mCAD(),
 		mPreprocessor(mCAD.getVariables())
 	{
-		auto& pps = settings::Settings::getInstance().get<cad::CADPreprocessorSettings>("cad-pp");
+		auto& pps = settings::Settings::getInstance().get<cad::PreprocessorSettings>("cad-pp2");
 		if (Settings::pp_disable_variable_elimination) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Disable pp.variable-elimination from settings");
 			pps.disable_variable_elimination = true;
