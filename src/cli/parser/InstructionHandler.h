@@ -135,7 +135,7 @@ public:
 		return OutputWrapper(mRegular, "(info \"", "\")\n");
 	}
 	virtual void add(const FormulaT& f) = 0;
-	virtual void addSoft(const FormulaT& f, Rational weight) = 0;
+	virtual void addSoft(const FormulaT& f, Rational weight, const std::string& id) = 0;
 	virtual void annotateName(const FormulaT& f, const std::string& name) = 0;
 	virtual void check() = 0;
 	virtual void declareFun(const carl::Variable&) = 0;
@@ -154,6 +154,7 @@ public:
 		else error() << "no info set for :" << key;
 	}
 	virtual void getModel() = 0;
+	virtual void getObjectives() = 0;
 	void getOption(const std::string& key) {
 		if (this->options.count(key) > 0) regular() << "(:" << key << " " << this->options[key] << ")" << std::endl;
 		else error() << "no option set for :" << key;

@@ -31,7 +31,7 @@ public:
 	void add(const smtrat::FormulaT& f) {
 		solver.add(f);
 	}
-	void addSoft(const smtrat::FormulaT& f, Rational weight) {
+	void addSoft(const smtrat::FormulaT& f, Rational weight, const std::string& id) {
 		solver.add(f);
 	}
 	void annotateName(const smtrat::FormulaT& f, const std::string& name) {
@@ -61,6 +61,7 @@ public:
 	void getModel() {
 		mOutput << "(get-model)" << std::endl;
 	}
+	void getObjectives() {}
 	void getProof() {}
 	void getUnsatCore() {}
 	void getValue(const std::vector<carl::Variable>&) {}

@@ -33,7 +33,8 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat", "Asserting " << f);
 	}
 
-	void addSoft(const smtrat::FormulaT& f, smtrat::Rational weight) {
+	void addSoft(const smtrat::FormulaT& f, smtrat::Rational weight, const std::string& id) {
+		// TODO handle id parameter
 		this->solver.inform(f);
 		// formula is not part of the solver yet. Neither hard nor soft-typed
 		if (solver.weightedFormulas().find(f) == solver.weightedFormulas().end() && solver.formula().find(f) == solver.formula().end()) {
@@ -172,6 +173,9 @@ public:
 	}
 	void getProof() {
 		error() << "(get-proof) is not implemented.";
+	}
+	void getObjectives() {
+		error() << "(get-objectives) is not implemented.";
 	}
 	void getUnsatCore() {
 		//this->solver.printInfeasibleSubset(std::cout);
