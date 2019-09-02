@@ -13,11 +13,11 @@ namespace smtrat {
      *
      * See MaxSMTSettings.h to adjust the used backend.
      */
-    class MaxSATBackendStrategy:
+    class MAXSATBackendStrategy:
         public Manager
     {
         public:
-            MaxSATBackendStrategy(): Manager()
+            MAXSATBackendStrategy(): Manager()
             {
                 setStrategy(
                 {

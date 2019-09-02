@@ -33,7 +33,7 @@ namespace smtrat
 
 		static const MAXSATAlgorithm ALGORITHM = MAXSATAlgorithm::MSU3;
 
-		using Backend = MaxSATBackendStrategy;
+		using Backend = MAXSATBackendStrategy;
 	};
 
 	struct MaxSMTSettingsFuMalikIncrementalSAT : public MaxSMTSettings1

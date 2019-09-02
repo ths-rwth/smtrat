@@ -9,6 +9,7 @@
 #include <carl-io/SMTLIBStream.h>
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-unsat-cores/smtrat-unsat-cores.h>
+#include <smtrat-max-smt/smtrat-max-smt.h>
 
 namespace smtrat {
 
@@ -56,7 +57,14 @@ public:
 	}
 	void check() {
 		smtrat::resource::Limiter::getInstance().resetTimeout();
-		this->lastAnswer = this->solver.check();
+		if (!solver.weightedFormulas().empty()) {
+			// TODO model ...
+			// TODO implement same protocol as z3
+			this->lastAnswer = computeMaxSMT<MaxSMTStrategy::LINEAR_SEARCH>(solver).first;
+		} else {
+			this->lastAnswer = this->solver.check();
+		}
+		
 		switch (this->lastAnswer) {
 			case smtrat::Answer::SAT: {
 				if (this->infos.template has<std::string>("status") && this->infos.template get<std::string>("status") == "unsat") {
