@@ -47,8 +47,8 @@ void run(Solver& solver, const std::vector<FormulaT>& softClauses) {
 
         for (auto it : computeUnsatCore(solver, UnsatCoreStrategy::ModelExclusion)) {
             // skip hard clauses
-            if (std::find(softClauses.begin(), softClauses.end(), *it) == softClauses.end() &&
-                std::find(newSoftClauses.begin(), newSoftClauses.end(), *it) == newSoftClauses.end() ) continue; 
+            if (std::find(softClauses.begin(), softClauses.end(), it) == softClauses.end() &&
+                std::find(newSoftClauses.begin(), newSoftClauses.end(), it) == newSoftClauses.end() ) continue; 
 
             relaxationVars.push_back(carl::freshBooleanVariable()); // r
             carl::Variable blockingRelaxationVar = carl::freshBooleanVariable(); // b_r
