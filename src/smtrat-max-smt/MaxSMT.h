@@ -32,12 +32,11 @@ template<typename Solver>
 ModuleInput::iterator addToSolver(Solver& solver, const FormulaT& formula)
 {
 	solver.add(formula);
-	for (auto it = solver.formulaEnd(); it != solver.formulaBegin(); --it) {
+	for (auto it = solver.formulaBegin(); it != solver.formulaEnd(); ++it) {
 		if (it->formula() == formula) {
 			return it;
 		}
 	}
-
 	assert(false && "Formula was not added correctly to backend. Expected to find formula.");
 	return solver.formulaEnd();
 }
