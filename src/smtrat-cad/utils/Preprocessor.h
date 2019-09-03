@@ -67,7 +67,7 @@ private:
 	carl::Variable main_variable_of(const ConstraintT& c) const;
 
 	bool try_variable_elimination(const ConstraintT& cur);
-	void compute_resultants();
+	void compute_resultants(const ConstraintT& cur);
 public:
 	Preprocessor(const std::vector<carl::Variable>& vars):
 		mVars(vars)

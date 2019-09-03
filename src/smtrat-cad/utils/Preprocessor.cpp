@@ -1,5 +1,7 @@
 #include "Preprocessor.h"
 
+#include <smtrat-cad/projectionoperator/utils.h>
+
 #include <algorithm>
 
 namespace smtrat::cad {
@@ -35,6 +37,15 @@ void Preprocessor::resolve_conflict() {
 	mConflict = std::set<FormulaT>();
 	mConflict->insert(mTrail[mTrailID].second.begin(), mTrail[mTrailID].second.end());
 	postprocessConflict(*mConflict);
+}
+
+carl::Variable Preprocessor::main_variable_of(const ConstraintT& c) const {
+	carl::carlVariables vars;
+	c.gatherVariables(vars);
+	for (auto v: mVars) {
+		if (vars.has(v)) return v;
+	}
+	return carl::Variable::NO_VARIABLE;
 }
 
 bool Preprocessor::try_variable_elimination(const ConstraintT& cur) {
@@ -90,13 +101,33 @@ bool Preprocessor::try_variable_elimination(const ConstraintT& cur) {
 	return false;
 }
 
-void Preprocessor::compute_resultants() {
-
+void Preprocessor::compute_resultants(const ConstraintT& cur) {
+	carl::Variable mainvar = main_variable_of(cur);
+	if (mainvar == carl::Variable::NO_VARIABLE) return;
+	auto p = cur.lhs().toUnivariatePolynomial(mainvar);
+	SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Identified main variable of " << p << ": " << mainvar);
+	std::vector<ConstraintT> toAdd;
+	for (const auto& c: mCurrent) {
+		if (mainvar == main_variable_of(c)) {
+			auto q = c.lhs().toUnivariatePolynomial(mainvar);
+			auto r = projection::resultant(mainvar, p, q);
+			if (!r.isNumber()) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Resultant of " << p << " and " << q << " is " << r);
+				toAdd.emplace_back(Poly(r), carl::Relation::EQ);
+				Origins o({cur, c});
+				std::sort(o.begin(), o.end());
+				mTrail.emplace_back(toAdd.back(), o);
+			}
+		}
+	}
+	mCurrent.insert(toAdd.begin(), toAdd.end());
 }
 
 void Preprocessor::addConstraint(const ConstraintT& c) {
+	SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding " << c << " to" << std::endl << *this);
 	mCurrent.emplace(c);
 	mTrail.emplace_back(c, Origins());
+	SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Reapplying assignments to " << c << " in" << std::endl << *this);
 	apply_assignments(c);
 }
 void Preprocessor::removeConstraint(const ConstraintT& c) {
@@ -217,7 +248,7 @@ bool Preprocessor::preprocess() {
 		if (settings_cadpp().disable_resultants) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Resultant computation is disabled");
 		} else {
-			compute_resultants();
+			compute_resultants(cur);
 		}
 		++mTrailID;
 	
