@@ -8,6 +8,8 @@
 
 namespace smtrat {
 
+    // TODO avoid using a special backend module for MaxSMT
+
     /**
      * This strategy is used as a artificial backend in the MaxSMT Module
      *
