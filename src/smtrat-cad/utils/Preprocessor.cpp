@@ -102,12 +102,14 @@ bool Preprocessor::try_variable_elimination(const ConstraintT& cur) {
 }
 
 void Preprocessor::compute_resultants(const ConstraintT& cur) {
+	if (cur.relation() != carl::Relation::EQ) return;
 	carl::Variable mainvar = main_variable_of(cur);
 	if (mainvar == carl::Variable::NO_VARIABLE) return;
 	auto p = cur.lhs().toUnivariatePolynomial(mainvar);
 	SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Identified main variable of " << p << ": " << mainvar);
 	std::vector<ConstraintT> toAdd;
 	for (const auto& c: mCurrent) {
+		if (c.relation() != carl::Relation::EQ) continue;
 		if (mainvar == main_variable_of(c)) {
 			auto q = c.lhs().toUnivariatePolynomial(mainvar);
 			auto r = projection::resultant(mainvar, p, q);
