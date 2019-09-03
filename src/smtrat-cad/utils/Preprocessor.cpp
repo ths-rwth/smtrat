@@ -8,6 +8,7 @@ void Preprocessor::apply_assignments(const ConstraintT& c) {
 	ConstraintT cur = c;
 	assert(mCurrent.find(cur) != mCurrent.end());
 	Model m;
+	std::vector<ConstraintT> toAdd;
 	for (std::size_t tid = 0; tid < mTrailID; ++tid) {
 		auto it = mAssignments.find(mTrail[tid].first);
 		if (it != mAssignments.end()) {
@@ -16,18 +17,20 @@ void Preprocessor::apply_assignments(const ConstraintT& c) {
 			if (tmp != cur) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Simplifying " << cur << " -> " << tmp << " with " << *it);
 				if (tmp.isConsistent() != 1) {
-					Origins o({cur, it->first});
-					std::sort(o.begin(), o.end());
-					mTrail.emplace_back(tmp, o);
+					toAdd.emplace_back(tmp);
 				}
+				Origins o({cur, it->first});
+				std::sort(o.begin(), o.end());
+				mTrail.emplace_back(tmp, o);
 				mCurrent.erase(cur);
 				cur = tmp;
 			};
 		}
 	}
+	mCurrent.insert(toAdd.begin(), toAdd.end());
 }
 
-void Preprocessor::resolveConflict() {
+void Preprocessor::resolve_conflict() {
 	assert(mTrail[mTrailID].first.isConsistent() == 0);
 	mConflict = std::set<FormulaT>();
 	mConflict->insert(mTrail[mTrailID].second.begin(), mTrail[mTrailID].second.end());
@@ -181,7 +184,7 @@ bool Preprocessor::preprocess() {
 		if (cur.isConsistent() == 0) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Found conflict in " << mTrail[mTrailID]);
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "After preprocessing:" << std::endl << *this);
-			resolveConflict();
+			resolve_conflict();
 			return false;
 		}
 		auto it = mAssignments.find(cur);

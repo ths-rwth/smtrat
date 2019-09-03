@@ -63,7 +63,8 @@ private:
 	std::optional<std::set<FormulaT>> mConflict;
 
 	void apply_assignments(const ConstraintT& c);
-	void resolveConflict();
+	void resolve_conflict();
+	carl::Variable main_variable_of(const ConstraintT& c) const;
 
 	bool try_variable_elimination(const ConstraintT& cur);
 	void compute_resultants();
