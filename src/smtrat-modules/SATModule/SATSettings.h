@@ -242,4 +242,19 @@ namespace smtrat
 		using VarScheduler = VarSchedulerMcsatUnivariateConstraintsOnly<1, mcsat::VariableOrdering::FeatureBased>;
 		static constexpr bool check_active_literal_occurrences = true;
 	};
+	struct SATSettings_MCSAT_AF_FMOCNL_NLSAT : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATAFFMOCNLNLSAT>";
+		using MCSATSettings = mcsat::MCSAT_AF_FMOCNL;
+		using VarScheduler = VarSchedulerMcsatUnivariateClausesOnly<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBased>,false>;
+	};
+	struct SATSettings_MCSAT_AF_FMOCNL_TFDYN : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATAFFMOCNLTFDYN>";
+		using MCSATSettings = mcsat::MCSAT_AF_FMOCNL;
+		using VarScheduler = VarSchedulerMcsatTheoryFirst<VarSchedulerMinisat>;
+	};
+	struct SATSettings_MCSAT_AF_FMOCNL_UNIFORMTF : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATAFFMOCNLUNIFORMTF>";
+		using MCSATSettings = mcsat::MCSAT_AF_FMOCNL;
+		using VarScheduler = VarSchedulerMcsatActivityPreferTheory<mcsat::VariableOrdering::FeatureBased>;
+	};
 }
