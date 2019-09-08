@@ -64,8 +64,6 @@ namespace smtrat
 			LemmaLevel mLemmaLevel;
             /// objective variable
             carl::Variable mObjectiveVariable;
-			/// Number of calls to pop(), allows detection that pop() happened by modules.
-			std::size_t mNumberOfPops = 0;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all statistics for the solver this manager belongs to.
             SolverStatistics& mStatistics = statistics_get<SolverStatistics>("Solver");
@@ -483,10 +481,6 @@ namespace smtrat
 			inline const std::set<FormulaT>& getInformationRelevantFormulas()
 			{
 				return mInformationRelevantFormula;
-			}
-			
-			std::size_t getNumberOfPops() const {
-				return mNumberOfPops;
 			}
     };
 }    // namespace smtrat

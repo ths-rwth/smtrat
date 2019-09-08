@@ -184,7 +184,6 @@ namespace smtrat
             remove(it);
         }
         mBacktrackPoints.pop_back();
-        ++mNumberOfPops;
         return true;
     }
 
