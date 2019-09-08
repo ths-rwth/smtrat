@@ -221,7 +221,7 @@ namespace smtrat
             /// false, if this module should avoid too expensive procedures and rather return unknown instead.
             bool mFullCheck;
             /// true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
-            bool mMinimizingCheck;
+            bool mMinimizingCheck; // TODO can this be removed?
             ///
             std::vector<TheoryPropagation> mTheoryPropagations;
 
@@ -252,10 +252,8 @@ namespace smtrat
             ModuleInput::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
             mutable unsigned mSmallerMusesCheckCounter;
-            /// The variable for which to find a minimal assignment.
-            carl::Variable mObjective;
             /// The function to which the objective variable is equal.
-            Poly mObjectiveFunction;
+            Poly mObjectiveFunction; // TODO can this be removed?
             /// Maps variables to the number of their occurrences
             std::vector<std::size_t> mVariableCounters;
 
@@ -640,21 +638,13 @@ namespace smtrat
 				return mModuleName;
 			}
             
-            carl::Variable::Arg objective() const
-            {
-                return mObjective;
-            }
-            
-            void setObjective( carl::Variable::Arg _objective )
-            {
-                mObjective = _objective;
-            }
-            
+            carl::Variable::Arg objective() const;
+
             const Poly& objectiveFunction() const
             {
                 return mObjectiveFunction;
             }
-            
+
             /**
              * Excludes all variables from the current model, which do not occur in the received formula.
              */

@@ -56,11 +56,9 @@ namespace smtrat
 	template<class Settings>
 	Answer FPPModule<Settings>::checkCore()
 	{
-            if( mMinimizingCheck ) {
-				// set the objective for all preprocessing modules. Each module has to check
-				// whether it is sound to perform the preprocessing on optimizing solver calls.
-				mPreprocessor.reuseObjectives(*mpManager);
-			}
+            // set the objective for all preprocessing modules. Each module has to check
+            // whether it is sound to perform the preprocessing on optimizing solver calls.
+            mPreprocessor.takeObjectiveVariable(*mpManager);
 
             std::size_t iterations = 0;
             Answer answer = UNKNOWN;

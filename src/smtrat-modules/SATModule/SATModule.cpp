@@ -451,6 +451,7 @@ namespace smtrat
         }
         Minisat::lbool result = l_Undef;
         mUpperBoundOnMinimal = passedFormulaEnd();
+        bool isOptimal = true;
         while( true )
         {
             if( Settings::use_restarts )
@@ -496,7 +497,9 @@ namespace smtrat
             else
             {
                 assert( result == l_True );
-                runBackends( true, mFullCheck, true );
+                Answer runBackendAnswer = runBackends( true, mFullCheck, true );
+                assert(is_sat(runBackendAnswer));
+                isOptimal = isOptimal && (runBackendAnswer == OPTIMAL);
                 updateModel();
                 auto modelIter = mModel.find( objective() );
                 assert( modelIter != mModel.end() );
@@ -548,7 +551,7 @@ namespace smtrat
         #endif
         if( result == l_True )
         {
-            return SAT;
+            return (mMinimizingCheck && isOptimal) ? OPTIMAL : SAT;
         }
         else if( result == l_False )
         {

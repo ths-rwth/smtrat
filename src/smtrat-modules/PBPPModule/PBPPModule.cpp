@@ -451,7 +451,7 @@ namespace smtrat
 	void PBPPModule<Settings>::updateModel() const
 	{
 		mModel.clear();
-		if( solverState() == Answer::SAT )
+		if( is_sat(solverState()) )
 		{
 			getBackendsModel();
 		}

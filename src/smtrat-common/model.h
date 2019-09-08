@@ -29,4 +29,6 @@ using RationalInterval = carl::Interval<Rational>;
 using EvalDoubleIntervalMap = std::map<carl::Variable, DoubleInterval>;
 using EvalRationalIntervalMap = std::map<carl::Variable, RationalInterval>;
 
+using ObjectiveValues = std::vector<std::pair<std::variant<Poly,std::string>, Model::mapped_type>>;
+
 }

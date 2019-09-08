@@ -23,6 +23,7 @@ add_subdirectory(smtrat-solver)
 add_subdirectory(smtrat-strategies)
 add_subdirectory(smtrat-unsat-cores)
 add_subdirectory(smtrat-max-smt)
+add_subdirectory(smtrat-optimization)
 
 if(BUILD_SOLVER)
 	add_subdirectory(cli)

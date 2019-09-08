@@ -15,74 +15,78 @@ inline std::ostream& operator<<(std::ostream& os, MaxSMTStrategy ucs) {
 	}
 }
 
+/// Contains strategy implementations for max SMT computations.
 namespace maxsmt {
 
-std::vector<FormulaT> satisfiedFormulas(const std::vector<FormulaT>& formulas, const Model& model) {
-	std::vector<FormulaT> result;
-	for (const auto& f : formulas) {
-		auto res = carl::model::substitute(FormulaT(f), model);
-		if (res.isTrue()) {
-			result.push_back(f);
-		}
-	}
-	return result;
-}
-
-template<typename Solver>
-ModuleInput::iterator addToSolver(Solver& solver, const FormulaT& formula)
-{
-	solver.add(formula);
-	for (auto it = solver.formulaBegin(); it != solver.formulaEnd(); ++it) {
-		if (it->formula() == formula) {
-			return it;
-		}
-	}
-	assert(false && "Formula was not added correctly to backend. Expected to find formula.");
-	return solver.formulaEnd();
-}
-
 template<typename Solver, MaxSMTStrategy Strategy>
-struct MaxSMTBackend {};
+class MaxSMTBackend {};
+
+}
 
 
 template<typename Solver, MaxSMTStrategy Strategy>
 class MaxSMT {
 private:
-	Solver mSolver;
-	std::vector<FormulaT> mSoftFormulas; // TODO add support for weights
+	Solver& mSolver;
+	std::vector<FormulaT> mSoftFormulas;
+	std::map<FormulaT, std::string> mSoftFormulaIds;
+
+	bool satisfied(const FormulaT& formula, const Model& model) {
+		return carl::model::substitute(formula, model).isTrue();
+	}
 
 public:
-	MaxSMT(const Solver& s) {
-		for (const auto& form: s.formula()) {
-			mSolver.add(form.formula());
+	MaxSMT(Solver& s) : mSolver(s) {}
+
+	void add_soft_formula(const FormulaT& formula, Rational weight, const std::string& id) {
+		// TODO add support for weights
+		if (weight != 1) {
+			SMTRAT_LOG_WARN("smtrat.maxsmt", "Weights are not yet supported by MaxSMT backends.");
 		}
-	}
-
-	void addSoftFormula(const FormulaT& formula) {
 		mSoftFormulas.push_back(formula);
+		mSoftFormulaIds.emplace(formula, id);
 	}
 
-	const std::vector<FormulaT>& softFormulas() const {
-		return mSoftFormulas;
+	void remove_soft_formula(const FormulaT& formula) {
+		mSoftFormulas.erase(std::remove(mSoftFormulas.begin(), mSoftFormulas.end(), formula));
+		mSoftFormulaIds.erase(formula);
+	}
+
+	void reset() {
+		mSoftFormulas.clear();
 	}
 
 	const bool active() const {
 		return !mSoftFormulas.empty();
 	}
 
-	std::pair<Answer,Model> computeMax() {
+	std::tuple<Answer,Model,ObjectiveValues> compute() {
 		SMTRAT_LOG_INFO("smtrat.maxsmt", "Running MAXSMT.");
 		Answer ans = mSolver.check();
 		SMTRAT_LOG_DEBUG("smtrat.maxsmt", "Checking satisfiability of hard clauses -> " << ans);
-		if (ans != Answer::SAT) return std::make_pair(ans, Model());
+		if (ans != Answer::SAT) return std::make_tuple(ans, Model(), ObjectiveValues());
 		SMTRAT_LOG_INFO("smtrat.maxsmt", "Maximize weight for soft formulas " << mSoftFormulas);
-		MaxSMTBackend<Solver,Strategy>().run(mSolver, mSoftFormulas);
-		SMTRAT_LOG_DEBUG("smtrat.maxsmt", "Maximal set of satisfied soft clauses " << satisfiedFormulas(softFormulas(), mSolver.model()));
-		return std::make_pair(Answer::SAT, mSolver.model());
+		mSolver.push();
+		ans = maxsmt::MaxSMTBackend<Solver,Strategy>(mSolver, mSoftFormulas).run();
+		mSolver.pop();
+		if (!is_sat(ans)) {
+			SMTRAT_LOG_INFO("smtrat.maxsmt", "Got unexpected response " << ans);
+			return std::make_tuple(ans, Model(), ObjectiveValues());
+		} else {
+			std::map<std::string, Rational> objectives;
+			for (const auto& f : mSoftFormulas) {
+				if (satisfied(f, mSolver.model())) {
+					SMTRAT_LOG_DEBUG("smtrat.maxsmt", "Satisfied soft clause " << f << " of weight 1 with id " << mSoftFormulaIds.at(f));
+					objectives[mSoftFormulaIds.at(f)] += 1; // weights should be resprected here
+				} else {
+					objectives[mSoftFormulaIds.at(f)];
+				}
+			}
+			ObjectiveValues results;
+			for (const auto& p : objectives) results.emplace_back(p);
+			return std::make_tuple(Answer::SAT, mSolver.model(), results);
+		}
 	}
 };
 
-
-
-}
 }

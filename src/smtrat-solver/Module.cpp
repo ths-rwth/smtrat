@@ -74,7 +74,6 @@ namespace smtrat
         mInformedConstraints(),
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
         mSmallerMusesCheckCounter( 0 ),
-        mObjective( carl::Variable::NO_VARIABLE ),
         mObjectiveFunction(),
         mVariableCounters()
     {}
@@ -89,6 +88,11 @@ namespace smtrat
         mInformedConstraints.clear();
         delete mpPassedFormula;
         delete mBackendsFoundAnswer;
+    }
+
+    carl::Variable::Arg Module::objective() const {
+        assert(mpManager != nullptr);
+        return mpManager->objectiveVariable();
     }
     
     Answer Module::check( bool _final, bool _full, bool _minimize )

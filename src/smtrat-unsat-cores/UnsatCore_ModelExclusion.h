@@ -17,18 +17,17 @@ namespace unsatcore {
  * - 
  */
 template<typename Solver>
-class UnsatCore<Solver, UnsatCoreStrategy::ModelExclusion> {
+class UnsatCoreBackend<Solver, UnsatCoreStrategy::ModelExclusion> {
 private:
-	Solver mSolver;
+	Solver& mSolver;
 	carl::covering::TypedSetCover<FormulaT> mSetCover;
 	std::map<carl::Variable, FormulaT> mFormulas;
 	std::size_t mAssignments = 0;
 public:
-	UnsatCore(const Solver& s) {
+	UnsatCoreBackend<Solver, UnsatCoreStrategy::ModelExclusion>(Solver& s, const FormulasT& fs) : mSolver(s) {
 		FormulasT phis;
 		std::size_t id = 0;
-		for (const auto& form: s.formula()) {
-			FormulaT f = form.formula();
+		for (const auto& f : fs) {
 			auto it = mFormulas.emplace(carl::freshBooleanVariable(), f);
 			phis.emplace_back(FormulaT(it.first->first));
 			mSolver.add(FormulaT(carl::FormulaType::IFF, {FormulaT(it.first->first), f}));
@@ -55,7 +54,7 @@ public:
 		mSolver.add(FormulaT(carl::FormulaType::OR, std::move(subs)));
 		mAssignments++;
 	}
-	void compute() {
+	Answer compute() {
 		while (true) {
 			Answer a = mSolver.check();
 			switch (a) {
@@ -64,24 +63,31 @@ public:
 					break;
 				case Answer::UNSAT:
 					SMTRAT_LOG_INFO("smtrat.unsatcore", "Formula became unsat.");
-					return;
+					return a;
+				case Answer::OPTIMAL:
+					assert(false && "solver should not be in optimization mode");
+					return a;
 				default:
 					SMTRAT_LOG_ERROR("smtrat.unsatcore", "Unexpected answer " << a);
-					return;
+					return a;
 			}
 		}
 	}
-	FormulasT computeCore() {
-		compute();
-		auto covering = mSetCover.get_cover([](auto& sc) {
-			carl::Bitset res;
-			res |= carl::covering::heuristic::remove_duplicates(sc);
-			res |= carl::covering::heuristic::select_essential(sc);
-			res |= carl::covering::heuristic::greedy(sc);
-			return res;
-		});
-		SMTRAT_LOG_DEBUG("smtrat.unsatcore", "Greedy: " << covering);
-		return covering;
+	std::pair<Answer, FormulasT> run() {
+		Answer a = compute();
+		if (a != Answer::UNSAT) {
+			return std::make_pair(a, FormulasT());
+		} else {
+			auto covering = mSetCover.get_cover([](auto& sc) {
+				carl::Bitset res;
+				res |= carl::covering::heuristic::remove_duplicates(sc);
+				res |= carl::covering::heuristic::select_essential(sc);
+				res |= carl::covering::heuristic::greedy(sc);
+				return res;
+			});
+			SMTRAT_LOG_DEBUG("smtrat.unsatcore", "Greedy: " << covering);
+			return std::make_pair(Answer::UNSAT, covering);
+		}
 	}
 };
 
