@@ -7,21 +7,22 @@ namespace execution {
 enum Mode {
     START=0, ASSERT=1, SAT=2, UNSAT=3
 };
+
+
+struct Assertion {
+    FormulaT formula;
+};
+struct SoftAssertion {
+    FormulaT formula;
+    Rational weight;
+    std::string id;
+};
+struct Objective {
+    Poly function;
+    bool minimize;
+};
     
 class ExecutionState {
-    struct Assertion {
-        FormulaT formula;
-    };
-    struct SoftAssertion {
-        FormulaT formula;
-        Rational weight;
-        std::string id;
-    };
-    struct Objective {
-        Poly function;
-        bool minimize;
-    };
-
     Mode mMode;
 
     carl::Logic mLogic;
@@ -89,6 +90,10 @@ public:
 
     bool has_assertion(const FormulaT& formula) const {
         return std::find_if(mAssertions.begin(), mAssertions.end(), [&formula](const Assertion& a) { return a.formula == formula; } ) != mAssertions.end();
+    }
+
+    const auto& assertions() const {
+        return mAssertions;
     }
 
     void add_soft_assertion(const FormulaT& formula, Rational weight, const std::string& id) {
@@ -211,19 +216,24 @@ public:
     void reset() {
         if (!is_mode(Mode::START)) {
             mLogic = carl::Logic::UNDEFINED;
-            reset_assignments();
+            if (is_mode(Mode::SAT) || is_mode(Mode::UNSAT) || is_mode(Mode::ASSERT)) {
+                reset_answer();
+                mAssertions.clear();
+                mSoftAssertions.clear();
+                mObjectives.clear();
+                mBacktrackPoints.clear();
+                mAnnotatedNames.clear();
+            }
             set_mode(Mode::START);
         }
     }
 
-    void reset_assignments() {
-        if (is_mode(Mode::SAT) || is_mode(Mode::UNSAT) || is_mode(Mode::ASSERT)) {
-            reset_answer();
-            mAssertions.clear();
-            mSoftAssertions.clear();
-            mObjectives.clear();
-            mBacktrackPoints.clear();
-            mAnnotatedNames.clear();
+    void reset_assertions() {
+        if (!is_mode(Mode::START)) {
+            while (!mBacktrackPoints.empty()) pop();
+            mBacktrackPoints.emplace_back(0,0,0,0);
+            pop();
+            assert(is_mode(Mode::ASSERT));
         }
     }
 

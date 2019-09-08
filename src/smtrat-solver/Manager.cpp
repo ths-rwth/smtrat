@@ -238,23 +238,6 @@ namespace smtrat
     }
     #endif
     
-    void Manager::printAssertions( std::ostream& _out ) const
-    {
-        _out << "(";
-        if( mpPassedFormula->size() == 1 )
-        {
-            _out << mpPassedFormula->back().formula();
-        }
-        else
-        {
-            for( auto subFormula = mpPassedFormula->begin(); subFormula != mpPassedFormula->end(); ++subFormula )
-            {
-                _out << (*subFormula).formula() << std::endl;
-            }
-        }
-        _out << ")" << std::endl;
-    }
-
     void Manager::printInfeasibleSubset( std::ostream& _out ) const
     {
         _out << "(";

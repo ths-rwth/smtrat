@@ -11,7 +11,7 @@ public:
 	void add(const smtrat::FormulaT& f) {
 		mFormulas.emplace_back(f);
 	}
-	void addSoft(const FormulaT& f, Rational weight) {
+	void addSoft(const FormulaT& f, Rational weight, const std::string& name) {
 		mFormulas.emplace_back(f);
 	}
 	void annotateName(const smtrat::FormulaT&, const std::string&) {}
@@ -24,7 +24,6 @@ public:
 	void getAssertions() {}
 	void getAllModels() {}
 	void getAssignment() {}
-	void getAllAssignments() {}
 	void getModel() {}
 	void getProof() {}
 	void getUnsatCore() {}
@@ -33,6 +32,7 @@ public:
 	void pop(std::size_t) {}
 	void push(std::size_t) {}
 	void reset() {}
+	void resetAssertions() {}
 	void setLogic(const carl::Logic&) {}
 	int getExitCode() const {
 		return 0;

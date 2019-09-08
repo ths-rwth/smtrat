@@ -120,6 +120,7 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 			|	(qi::lit("pop") > (numeral | qi::attr(carl::constant_one<Integer>::get())) > ")")[px::bind(&Callee::pop, px::ref(callee), qi::_1)]
 			|	(qi::lit("push") > (numeral | qi::attr(carl::constant_one<Integer>::get())) > ")")[px::bind(&Callee::push, px::ref(callee), qi::_1)]
 			|	(qi::lit("reset") > ")")[px::bind(&Callee::reset, px::ref(callee))]
+			|	(qi::lit("reset-assertions") > ")")[px::bind(&Callee::resetAssertions, px::ref(callee))]
 			|	(qi::lit("set-info") > attribute > ")")[px::bind(&Callee::setInfo, px::ref(callee), qi::_1)]
 			|	(qi::lit("set-logic") > logic > ")")[px::bind(&Callee::setLogic, px::ref(callee), qi::_1)]
 			|	(qi::lit("set-option") > attribute > ")")[px::bind(&Callee::setOption, px::ref(callee), qi::_1)]

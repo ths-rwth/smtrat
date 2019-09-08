@@ -77,7 +77,6 @@ public:
 		if (isSoftFormula) {
 			callHandler(&InstructionHandler::addSoft, f, weight, id);
 		} else {
-			// if we add a soft constraint the usual way we would implicitly require them to be hard which is contradictory.
 			callHandler(&InstructionHandler::add, f);
 		}
 
@@ -181,6 +180,10 @@ public:
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(reset)");
 		state.reset();
 		callHandler(&InstructionHandler::reset);
+	}
+	void resetAssertions() {
+		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(reset-assertions)");
+		callHandler(&InstructionHandler::resetAssertions);
 	}
 	void setInfo(const Attribute& attribute) {
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(set-info :" << attribute << ")");

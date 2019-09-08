@@ -268,13 +268,7 @@ namespace smtrat
             {
                 mpPrimaryBackend->printAllModels( _out );
             }
-    
-            /**
-             * Prints the so far added formulas.
-             * @param _out The stream to print on.
-             */
-            void printAssertions( std::ostream& = std::cout ) const;
-            
+                
             /**
              * Prints the first found infeasible subset of the set of received formulas.
              * @param _out The stream to print on.

@@ -166,6 +166,7 @@ public:
 	virtual void pop(std::size_t) = 0;
 	virtual void push(std::size_t) = 0;
 	virtual void reset() = 0;
+	virtual void resetAssertions() = 0;
 	void setInfo(const Attribute& attr) {
 		if (this->infos.count(attr.key) > 0) warn() << "overwriting info for :" << attr.key;
 		if (attr.key == "name" || attr.key == "authors" || attr.key == "version") error() << "The info :" << attr.key << " is read-only.";

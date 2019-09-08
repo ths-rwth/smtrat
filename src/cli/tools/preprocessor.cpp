@@ -57,7 +57,6 @@ public:
 		mOutput << "(get-all-models)" << std::endl;
 	}
 	void getAssignment() {}
-	void getAllAssignments() {}
 	void getModel() {
 		mOutput << "(get-model)" << std::endl;
 	}
@@ -78,6 +77,12 @@ public:
 	void reset() {
 		solver.reset();
 		mOutput << "(reset)" << std::endl;
+	}
+	void resetAssertions() {
+		auto logic = solver.logic();
+		solver.reset();
+		solver.rLogic() = logic;
+		mOutput << "(reset-assertions)" << std::endl;
 	}
 	void setLogic(const carl::Logic& logic) {
 		solver.rLogic() = logic;

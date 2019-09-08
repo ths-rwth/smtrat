@@ -82,6 +82,7 @@ public:
 	}
 
 	void annotateName(const smtrat::FormulaT& f, const std::string& name) {
+		// TODO incompatible with SMTLIB: also sub-terms can be annotated
 		if (state.is_mode(execution::Mode::START)) setLogic(carl::Logic::UNDEFINED);
 
 		SMTRAT_LOG_DEBUG("smtrat", "Naming " << name << ": " << f);
@@ -109,7 +110,7 @@ public:
 			m = std::get<1>(res);
 			ov = std::get<2>(res);
 			if (lastAnswer == Answer::SAT ) {
-				error() << "the result might not optimal as the strategy contained a module not supporting optimization";
+				warn() << "the result might not optimal as the strategy contained a module not supporting optimization";
 			}
 		} else {
 			this->lastAnswer = this->solver.check();
@@ -183,9 +184,17 @@ public:
 	void exit() {
 	}
 	void getAssertions() {
-		this->solver.printAssertions(std::cout);
+		if (!state.is_mode(execution::Mode::START)) {
+			regular() << "(";
+			for (const auto& assertion : state.assertions()) {
+				regular() << assertion.formula << " ";
+			}
+			regular() << ")";
+		} else {
+			error() << "nothing is asserted";
+		}
 	}
-	void getAllModels() {
+	void getAllModels() { // non-standard
 		if (state.is_mode(execution::Mode::SAT)) {
 			for (const auto& m: this->solver.allModels()) {
 				regular() << carl::asSMTLIB(m) << std::endl;
@@ -195,13 +204,9 @@ public:
 		}
 	}
 	void getAssignment() {
+		// TODO incompatible with SMTLIB
 		if (state.is_mode(execution::Mode::SAT)) {
 			this->solver.printAssignment();
-		}
-	}
-	void getAllAssignments() {
-		if (state.is_mode(execution::Mode::SAT)) {
-			this->solver.printAllAssignments(std::cout);
 		}
 	}
 	void getModel() {
@@ -230,11 +235,11 @@ public:
 			}
 			regular() << ")" << std::endl;
 		} else {
-			error() << "no objectives available";
+			info() << "no objectives available";
 		}		
 	}
 	void getUnsatCore() {
-		//this->solver.printInfeasibleSubset(std::cout);
+		// this->solver.printInfeasibleSubset(std::cout);
 		if (state.is_mode(execution::Mode::UNSAT)) {
 			auto res = unsatcore.compute();
 			if (res.first == Answer::UNSAT) {
@@ -248,9 +253,12 @@ public:
 			error() << "(get-unsat-core) can only be called after (check-sat) returned unsat";
 		}
 	}
+	// TODO add (non-standard) method to access infeasible subsets
 	void getValue(const std::vector<carl::Variable>&) {
+		// TODO implement get-value (t_1 ... t_n)
 		error() << "(get-value (<variables>)) is not implemented.";
 	}
+	// TODO implement check-sat-assuming and get-unsat-assumptions
 	void addObjective(const smtrat::Poly& p, smtrat::parser::OptimizationType ot) {
 		if (state.is_mode(execution::Mode::START)) setLogic(carl::Logic::UNDEFINED);
 
@@ -273,6 +281,9 @@ public:
 		optimization.reset();
 		maxsmt.reset();
 		unsatcore.reset();
+	}
+	void resetAssertions() {
+		state.reset_assertions();
 	}
 	void setLogic(const carl::Logic& logic) {
 		if (!state.is_mode(execution::Mode::START)) {
