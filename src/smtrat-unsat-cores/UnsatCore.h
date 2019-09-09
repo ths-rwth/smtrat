@@ -60,26 +60,18 @@ public:
 				return std::make_pair(Answer::SAT, FormulasT());
 		}
 
-		std::cout << "UNSATCORE BEFORE: " << mSolver.formula() << std::endl;
-
 		for (const auto& f : formulas) {
 			mSolver.remove(f);
 		}
-
-		std::cout << "UNSATCORE BEFORE BACKEND: " << mSolver.formula() << std::endl;
 
 		SMTRAT_LOG_INFO("smtrat.unsatcore", "Calculate unsat core for " << formulas);
 		mSolver.push();
 		auto result = unsatcore::UnsatCoreBackend<Solver,Strategy>(mSolver, formulas).run();
 		mSolver.pop();
 
-		std::cout << "UNSATCORE AFTER BACKEND: " << mSolver.formula() << std::endl;
-
 		for (const auto& f : formulas) {
 			mSolver.add(f);
 		}
-
-		std::cout << "UNSATCORE AFTER: " << mSolver.formula() << std::endl;
 
 		return result;
 	}
