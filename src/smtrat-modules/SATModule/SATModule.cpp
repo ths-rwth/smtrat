@@ -3102,10 +3102,11 @@ namespace smtrat
         if( learnt_clause.size() == 1 )
         {
 			CARL_CHECKPOINT("nlsat", "new-assumption", learnt_clause[0]);
-            assert(decisionLevel() == assumptions.size());
+            assert((Settings::mc_sat && decisionLevel() <= assumptions.size()) || (!Settings::mc_sat && decisionLevel() == assumptions.size()));
             assumptions.push( learnt_clause[0] );
-            newDecisionLevel();
-            uncheckedEnqueue( learnt_clause[0] );
+            // assumptions are inserted in search()
+            // newDecisionLevel();
+            // uncheckedEnqueue( learnt_clause[0] );
         }
         else
         {
