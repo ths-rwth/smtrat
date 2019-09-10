@@ -7,7 +7,6 @@
 #include "../common.h"
 #include "../utils/CADConstraints.h"
 
-#include "LiftingOperator.h"
 #include "SampleIteratorQueue.h"
 #include "SampleComparator.h"
 
@@ -28,7 +27,6 @@ namespace cad {
 		SampleIteratorQueue<Iterator, FSC> mCheckingQueue;
 		SampleIteratorQueue<Iterator, SC> mLiftingQueue;
 		std::vector<Iterator> mRemovedFromLiftingQueue;
-		LiftingOperator<Iterator, Settings> mLifting;
 		
 		std::size_t dim() const {
 			return mVariables.size();
