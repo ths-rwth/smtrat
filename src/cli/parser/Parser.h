@@ -56,7 +56,7 @@ public:
 		}
 	}
 
-	void add(const types::TermType& t, bool isSoftFormula = false, Rational weight = Rational(1)) {
+	void add(const types::TermType& t, bool isSoftFormula = false, Rational weight = Rational(1), const std::string id = std::string()) {
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(assert " << t << ")");
 		FormulaT f;
 		conversion::VariantConverter<FormulaT> conv;
@@ -75,9 +75,8 @@ public:
 		}
 
 		if (isSoftFormula) {
-			callHandler(&InstructionHandler::addSoft, f, weight);
+			callHandler(&InstructionHandler::addSoft, f, weight, id);
 		} else {
-			// if we add a soft constraint the usual way we would implicitly require them to be hard which is contradictory.
 			callHandler(&InstructionHandler::add, f);
 		}
 
@@ -138,6 +137,10 @@ public:
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-model)");
 		callHandler(&InstructionHandler::getModel);
 	}
+	void getObjectives() {
+		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-objectives)");
+		callHandler(&InstructionHandler::getObjectives);
+	}
 	void getOption(const std::string& key) {
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-option " << key << ")");
 		callHandler(&InstructionHandler::getOption, key);
@@ -177,6 +180,10 @@ public:
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(reset)");
 		state.reset();
 		callHandler(&InstructionHandler::reset);
+	}
+	void resetAssertions() {
+		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(reset-assertions)");
+		callHandler(&InstructionHandler::resetAssertions);
 	}
 	void setInfo(const Attribute& attribute) {
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(set-info :" << attribute << ")");

@@ -43,7 +43,7 @@ namespace smtrat
             /// The propositions of the passed formula.
             carl::Condition mPropositions;
             /// Contains the backtrack points, that are iterators to the last formula to be kept when backtracking to the respective point.
-            std::vector<std::pair<ModuleInput::iterator, int>> mBacktrackPoints;
+            std::vector<ModuleInput::iterator> mBacktrackPoints;
             /// all generated instances of modules
             std::vector<Module*> mGeneratedModules;
             /// a mapping of each module to its backends
@@ -62,17 +62,8 @@ namespace smtrat
 			std::set<FormulaT> mInformationRelevantFormula;
 			/// Level of lemma generation
 			LemmaLevel mLemmaLevel;
-			/// Formulas that have been named in the SMT-LIB input.
-			std::map<std::string,FormulaT> mNamedFormulas;
-            /// Formulas that have been weighted in the SMT-LIB input.
-            std::map<FormulaT, Rational> mWeightedFormulas;
-            ///
-            std::vector<std::pair<Poly,std::pair<carl::Variable,bool>>> mObjectives;
-            ///
-            std::stack<carl::Variable> mReusableRealObjectiveVars;
-            std::stack<carl::Variable> mReusableIntObjectiveVars;
-			/// Number of calls to pop(), allows detection that pop() happened by modules.
-			std::size_t mNumberOfPops = 0;
+            /// objective variable
+            carl::Variable mObjectiveVariable;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores all statistics for the solver this manager belongs to.
             SolverStatistics& mStatistics = statistics_get<SolverStatistics>("Solver");
@@ -159,7 +150,7 @@ namespace smtrat
 				auto it = mpPassedFormula->end();
 				// If the list is empty use end(), otherwise an iterator to the last element
 				if (!mpPassedFormula->empty()) --it;
-                mBacktrackPoints.emplace_back(it,(int)mObjectives.size() - 1);
+                mBacktrackPoints.emplace_back(it);
             }
             
             /**
@@ -178,63 +169,18 @@ namespace smtrat
             {
                 while( pop() );
             }
-            
-            void addObjective( const Poly& _objective, bool _minimize = true )
-            {
-                if( _objective.integerValued() )
-                {
-                    if( mReusableIntObjectiveVars.empty() )
-                        mObjectives.push_back( std::make_pair( _objective, std::make_pair( carl::freshIntegerVariable(), _minimize ) ) );
-                    else
-                    {
-                        mObjectives.push_back( std::make_pair( _objective, std::make_pair( mReusableIntObjectiveVars.top(), _minimize ) ) );
-                        mReusableIntObjectiveVars.pop();
-                    }
-                }
-                else
-                {   
-                    if( mReusableRealObjectiveVars.empty() )
-                        mObjectives.push_back( std::make_pair( _objective, std::make_pair( carl::freshRealVariable(), _minimize ) ) );
-                    else
-                    {
-                        mObjectives.push_back( std::make_pair( _objective, std::make_pair( mReusableRealObjectiveVars.top(), _minimize ) ) );
-                        mReusableRealObjectiveVars.pop();
-                    }
-                }   
-            }
-            
-            void removeObjective( const Poly& _objective )
-            {
-                for( auto iter = mObjectives.rbegin(); iter != mObjectives.rend(); ++iter )
-                {
-                    if( iter->first == _objective )
-                    {
-                        mObjectives.erase( (++iter).base() );
-                        return;
-                    }
-                }
-            }
-            
-            const std::vector<std::pair<Poly,std::pair<carl::Variable,bool>>>& objectives() const
-            {
-                return mObjectives;
+
+            void setObjectiveVariable(carl::Variable var) {
+                mObjectiveVariable = var;
             }
 
-			void reuseObjectives(const Manager& m) {
-				mObjectives = m.objectives();
-			}
-
-			bool isObjectiveVariable(carl::Variable var) const {
-				for (const auto& o: mObjectives) {
-					if (o.second.first == var) return true;
-				}
-				return false;
-			}
-            
-            const Poly& firstObjective() const
-            {
-                return mObjectives.front().first;
+            const carl::Variable& objectiveVariable() const {
+                return mObjectiveVariable;
             }
+            
+			void takeObjectiveVariable(const Manager& m) {
+				mObjectiveVariable = m.objectiveVariable();
+			}
             
             void reset();
             
@@ -280,14 +226,6 @@ namespace smtrat
 			}
             
             /**
-             * @param _objFct The objective function to obtain the minimal assignment for.
-             * @return The minimal assignment of the given objective function. 
-             * Note, that a previous check call must have returned True beforehand.
-             * Note, that the objective must be added by addObjective beforehand.
-             */
-            ModelValue optimum( const Poly& _objFct ) const;
-            
-            /**
              * Returns the lemmas/tautologies which were made during the last solving provoked by check(). These lemmas
              * can be used in the same manner as infeasible subsets are used.
              * @return The lemmas/tautologies made during solving.
@@ -330,13 +268,7 @@ namespace smtrat
             {
                 mpPrimaryBackend->printAllModels( _out );
             }
-    
-            /**
-             * Prints the so far added formulas.
-             * @param _out The stream to print on.
-             */
-            void printAssertions( std::ostream& = std::cout ) const;
-            
+                
             /**
              * Prints the first found infeasible subset of the set of received formulas.
              * @param _out The stream to print on.
@@ -424,33 +356,6 @@ namespace smtrat
 			{
 				return level <= mLemmaLevel;
 			}
-			
-			/**
-			 * Return a reference to the named formulas.
-			 */
-			auto& namedFormulas() {
-				return mNamedFormulas;
-			}
-			/**
-			 * Return a reference to the named formulas.
-			 */
-			const auto& namedFormulas() const {
-				return mNamedFormulas;
-			}
-
-            /**
-             * Return a reference to the weighted formulas.
-             */
-            auto& weightedFormulas() {
-                return mWeightedFormulas;
-            }
-            /**
-             * Return a reference to the weighted formulas.
-             */
-            const auto& weightedFormulas() const {
-                return mWeightedFormulas;
-            }
-
             
             /**
              * @return A pair of a Boolean and a formula, where the Boolean is true, if the input formula 
@@ -470,8 +375,6 @@ namespace smtrat
              */
             ModuleInput::iterator remove( ModuleInput::iterator _subformula ); // @todo: we want a const_iterator here, but gcc 4.8 doesn't allow us :( even though it should
             
-        protected:
-
             /**
              * Temporarily added: (TODO: Discuss with Gereon)
              * Removes the given formula in the conjunction of formulas,
@@ -486,6 +389,8 @@ namespace smtrat
             {
                 return remove( mpPassedFormula->find( _subformula ) );
             }
+
+        protected:
 			
 		 	void setStrategy(const std::initializer_list<BackendLink>& backends) {
 				std::size_t id = mStrategyGraph.addRoot(backends);
@@ -570,10 +475,6 @@ namespace smtrat
 			inline const std::set<FormulaT>& getInformationRelevantFormulas()
 			{
 				return mInformationRelevantFormula;
-			}
-			
-			std::size_t getNumberOfPops() const {
-				return mNumberOfPops;
 			}
     };
 }    // namespace smtrat

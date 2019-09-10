@@ -4,79 +4,128 @@
 
 #include "../parser/InstructionHandler.h"
 #include "config.h"
+#include "ExecutionState.h"
 
 #include <carl-io/DIMACSExporter.h>
 #include <carl-io/SMTLIBStream.h>
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-unsat-cores/smtrat-unsat-cores.h>
+#include <smtrat-max-smt/smtrat-max-smt.h>
+#include <smtrat-optimization/smtrat-optimization.h>
+
 
 namespace smtrat {
 
 template<typename Strategy>
 class Executor : public smtrat::parser::InstructionHandler {
+	execution::ExecutionState state;
 	Strategy& solver;
+	MaxSMT<Strategy, MaxSMTStrategy::LINEAR_SEARCH> maxsmt;
+	Optimization<Strategy> optimization;
+	UnsatCore<Strategy, UnsatCoreStrategy::ModelExclusion> unsatcore;
 	int exitCode;
 public:
 	smtrat::Answer lastAnswer;
-	Executor(Strategy& solver) : smtrat::parser::InstructionHandler(), solver(solver) {}
+	Executor(Strategy& solver) : smtrat::parser::InstructionHandler(), solver(solver), maxsmt(solver), optimization(solver), unsatcore(solver) {
+		state.set_add_assertion_handler([this](const FormulaT& f) {
+			this->solver.add(f);
+		});
+		state.set_remove_assertion_handler([this](const FormulaT& f) {
+			this->solver.remove(f);
+		});
+		state.set_add_soft_assertion_handler([this](const FormulaT& f, Rational weight, const std::string& id) {
+			this->solver.inform(f);
+			this->maxsmt.add_soft_formula(f, weight, id);
+		});
+		state.set_add_annotated_name_handler([this](const FormulaT& f, const std::string& name) {
+			this->unsatcore.add_annotated_name(f, name);
+		});
+		state.set_remove_soft_assertion_handler([this](const FormulaT& f) {
+			this->solver.deinform(f);
+			this->maxsmt.remove_soft_formula(f);
+		});
+		state.set_add_objective_handler([this](const Poly& f, bool minimize) {
+			this->optimization.add_objective(f, minimize);
+		});
+		state.set_remove_objective_handler([this](const Poly& f) {
+			this->optimization.remove_objective(f);
+		});
+		state.set_remove_annotated_name_handler([this](const FormulaT& f) {
+			this->unsatcore.remove_annotated_name(f);
+		});
+	}
 	~Executor() {
 	}
 	void add(const smtrat::FormulaT& f) {
-		auto softFormulaIt = solver.weightedFormulas().find(f);
-		if (softFormulaIt != solver.weightedFormulas().end()) {
-			// if we have this formula as soft type already in the solver remove it! Hard types have priority.
-			solver.weightedFormulas().erase(softFormulaIt);
-		}
+		if (state.is_mode(execution::Mode::START)) setLogic(carl::Logic::UNDEFINED);
 
-		this->solver.add(f);
 		SMTRAT_LOG_DEBUG("smtrat", "Asserting " << f);
+		if (state.has_assertion(f)) {
+			error() << "assertion already exists";
+		} else if (state.has_soft_assertion(f)) {
+			error() << "soft assertion already exists";
+		} else {
+			state.add_assertion(f);
+		}
 	}
 
-	void addSoft(const smtrat::FormulaT& f, smtrat::Rational weight) {
-		this->solver.inform(f);
-		// formula is not part of the solver yet. Neither hard nor soft-typed
-		if (solver.weightedFormulas().find(f) == solver.weightedFormulas().end() && solver.formula().find(f) == solver.formula().end()) {
-			solver.weightedFormulas()[f] = weight;
-			return;
-		}
+	void addSoft(const smtrat::FormulaT& f, smtrat::Rational weight, const std::string& id) {
+		if (state.is_mode(execution::Mode::START)) setLogic(carl::Logic::UNDEFINED);
 
-		// formula is already known to the solver as a soft typed constraint - adjust the weight, take MAX
-		if (solver.weightedFormulas().find(f) != solver.weightedFormulas().end()) {
-			solver.weightedFormulas()[f] = std::max(weight, solver.weightedFormulas()[f]);
-			return;
+		if (state.has_assertion(f)) {
+			error() << "assertion already exists";
+		} else if (state.has_soft_assertion(f)) {
+			error() << "soft assertion already exists";
+		} else {
+			state.add_soft_assertion(f, weight, id);
 		}
-
-		// formula is already known as hard-typed formula. Hard type always wins, hence we do not add it
-		assert(solver.formula().find(f) != solver.formula().end());
 	}
 
 	void annotateName(const smtrat::FormulaT& f, const std::string& name) {
+		// TODO incompatible with SMTLIB: also sub-terms can be annotated
+		if (state.is_mode(execution::Mode::START)) setLogic(carl::Logic::UNDEFINED);
+
 		SMTRAT_LOG_DEBUG("smtrat", "Naming " << name << ": " << f);
-		this->solver.namedFormulas().emplace(name, f);
+		if (state.has_annotated_name(name)) {
+			error() << "annotated name already taken";
+		} else if (state.has_annotated_name_formula(f)) {
+			error() << "formula has already a name";
+		} else {
+			state.annotate_name(name, f);
+		}
 	}
 	void check() {
 		smtrat::resource::Limiter::getInstance().resetTimeout();
-		this->lastAnswer = this->solver.check();
+		state.reset_answer();
+		Model m;
+		ObjectiveValues ov;
+		if (maxsmt.active()) {
+			auto res = maxsmt.compute();
+			this->lastAnswer = std::get<0>(res);
+			m = std::get<1>(res);
+			ov = std::get<2>(res);
+		} else if (optimization.active()) {
+			auto res = optimization.compute();
+			this->lastAnswer = std::get<0>(res);
+			m = std::get<1>(res);
+			ov = std::get<2>(res);
+			if (lastAnswer == Answer::SAT ) {
+				warn() << "the result might not optimal as the strategy contained a module not supporting optimization";
+			}
+		} else {
+			this->lastAnswer = this->solver.check();
+			m = solver.model();
+		}
+		
 		switch (this->lastAnswer) {
-			case smtrat::Answer::SAT: {
+			case smtrat::Answer::SAT:
+			case smtrat::Answer::OPTIMAL: {
 				if (this->infos.template has<std::string>("status") && this->infos.template get<std::string>("status") == "unsat") {
 					error() << "expected unsat, but returned sat";
 					this->exitCode = SMTRAT_EXIT_WRONG_ANSWER;
 				} else {
 					regular() << "sat" << std::endl;
-					if (!this->solver.objectives().empty()) {
-						regular() << "(objectives" << std::endl;
-						for (const auto& obj : this->solver.objectives()) {
-							smtrat::ModelValue mv = this->solver.optimum(obj.first);
-							if (mv.isMinusInfinity() || mv.isPlusInfinity()) {
-								regular() << " (" << obj.first << " " << mv.asInfinity() << ")" << std::endl;
-							} else {
-								assert(mv.isRational());
-								regular() << " (" << obj.first << " " << mv.asRational() << ")" << std::endl;
-							}
-						}
-						regular() << ")" << std::endl;
-					}
+					state.enter_sat(m, ov);
 					this->exitCode = SMTRAT_EXIT_SAT;
 				}
 				break;
@@ -87,6 +136,7 @@ public:
 					this->exitCode = SMTRAT_EXIT_WRONG_ANSWER;
 				} else {
 					regular() << "unsat" << std::endl;
+					state.enter_unsat();
 					this->exitCode = SMTRAT_EXIT_UNSAT;
 				}
 				break;
@@ -134,10 +184,18 @@ public:
 	void exit() {
 	}
 	void getAssertions() {
-		this->solver.printAssertions(std::cout);
+		if (!state.is_mode(execution::Mode::START)) {
+			regular() << "(";
+			for (const auto& assertion : state.assertions()) {
+				regular() << assertion.formula << " ";
+			}
+			regular() << ")";
+		} else {
+			error() << "nothing is asserted";
+		}
 	}
-	void getAllModels() {
-		if (this->lastAnswer == smtrat::Answer::SAT) {
+	void getAllModels() { // non-standard
+		if (state.is_mode(execution::Mode::SAT)) {
 			for (const auto& m: this->solver.allModels()) {
 				regular() << carl::asSMTLIB(m) << std::endl;
 			}
@@ -146,18 +204,14 @@ public:
 		}
 	}
 	void getAssignment() {
-            if (this->lastAnswer == smtrat::Answer::SAT) {
-                this->solver.printAssignment();
-            }
-	}
-	void getAllAssignments() {
-		if (this->lastAnswer == smtrat::Answer::SAT) {
-			this->solver.printAllAssignments(std::cout);
+		// TODO incompatible with SMTLIB
+		if (state.is_mode(execution::Mode::SAT)) {
+			this->solver.printAssignment();
 		}
 	}
 	void getModel() {
-		if (this->lastAnswer == smtrat::Answer::SAT) {
-			regular() << carl::asSMTLIB(this->solver.model()) << std::endl;
+		if (state.is_mode(execution::Mode::SAT)) {
+			regular() << carl::asSMTLIB(state.model()) << std::endl;
 		} else {
 			error() << "Can only be called after a call that returned sat.";
 		}
@@ -165,34 +219,78 @@ public:
 	void getProof() {
 		error() << "(get-proof) is not implemented.";
 	}
-	void getUnsatCore() {
-		//this->solver.printInfeasibleSubset(std::cout);
-		smtrat::FormulasT core = computeUnsatCore(this->solver, smtrat::UnsatCoreStrategy::ModelExclusion);
-		regular() << "(and";
-		for (const auto& f: core) regular() << f << " ";
-		regular() << ")" << std::endl;
+	void getObjectives() {
+		if (!state.is_mode(execution::Mode::SAT)) {
+			error() << "Can only be called after a call that returned sat.";
+		} else if (!state.objectiveValues().empty()) {
+			regular() << "(objectives" << std::endl;
+			for (const auto& obj : state.objectiveValues()) {
+				const auto mv = obj.second;
+				if (mv.isMinusInfinity() || mv.isPlusInfinity()) {
+					regular() << " (" << obj.first << " " << mv.asInfinity() << ")" << std::endl;
+				} else {
+					assert(mv.isRational());
+					regular() << " (" << obj.first << " " << mv.asRational() << ")" << std::endl;
+				}
+			}
+			regular() << ")" << std::endl;
+		} else {
+			info() << "no objectives available";
+		}		
 	}
+	void getUnsatCore() {
+		// this->solver.printInfeasibleSubset(std::cout);
+		if (state.is_mode(execution::Mode::UNSAT)) {
+			auto res = unsatcore.compute();
+			if (res.first == Answer::UNSAT) {
+				regular() << "(";
+				for (const auto& f: res.second) regular() << f << " ";
+				regular() << ")" << std::endl;
+			} else {
+				error() << "got unexpected answer " << res.first;
+			}
+		} else {
+			error() << "(get-unsat-core) can only be called after (check-sat) returned unsat";
+		}
+	}
+	// TODO add (non-standard) method to access infeasible subsets
 	void getValue(const std::vector<carl::Variable>&) {
+		// TODO implement get-value (t_1 ... t_n)
 		error() << "(get-value (<variables>)) is not implemented.";
 	}
+	// TODO implement check-sat-assuming and get-unsat-assumptions
 	void addObjective(const smtrat::Poly& p, smtrat::parser::OptimizationType ot) {
-		this->solver.addObjective( p, ot == smtrat::parser::OptimizationType::Minimize );
+		if (state.is_mode(execution::Mode::START)) setLogic(carl::Logic::UNDEFINED);
+
+		if (!state.has_objective(p)) {
+			state.add_objective(p, ot == smtrat::parser::OptimizationType::Minimize);
+		} else {
+			error() << "objective function already set";
+		}
 	}
 	void pop(std::size_t n) {
-		this->solver.pop(n);
+		state.pop(n);
 	}
 	void push(std::size_t n) {
-		for (; n > 0; n--) this->solver.push();
+		state.push(n);
 	}
 	void reset() {
 		smtrat::resource::Limiter::getInstance().reset();
-		this->solver.reset();
+		state.reset();
+		solver.reset();
+		optimization.reset();
+		maxsmt.reset();
+		unsatcore.reset();
+	}
+	void resetAssertions() {
+		state.reset_assertions();
 	}
 	void setLogic(const carl::Logic& logic) {
-		if (this->solver.logic() != carl::Logic::UNDEFINED) {
+		if (!state.is_mode(execution::Mode::START)) {
 			error() << "The logic has already been set!";
 		} else {
-			this->solver.rLogic() = logic;
+			state.set_logic(logic);
+			solver.rLogic() = logic;
 		}
 	}
 	int getExitCode() const {

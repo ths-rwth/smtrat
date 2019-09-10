@@ -35,7 +35,7 @@ option( BUILD_SOLVER "Build the SMT-RAT Solver" ON )
 option( BUILD_GUI "Build the GUI" OFF )
 option( FORCE_SHIPPED_RESOURCES "Do not look in system for resources which are included" OFF )
 option( USE_GINAC "If disabled, all implementations using the ginac library are disabled." OFF )
-option( USE_COCOA "Use CoCoALib" OFF )
+option( USE_COCOA "Use CoCoALib" ON )
 option(${PROJECT_NAME}_DOC_CREATE_PDF "Create PDF reference manual" ON )
 option( ENABLE_TESTING "Enables test target" OFF)
 

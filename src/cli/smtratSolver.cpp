@@ -89,6 +89,7 @@ void setup_logging() {
 		("smtrat.nlsat.assignmentfinder", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.strategygraph", carl::logging::LogLevel::LVL_DEBUG)
+		("smtrat.optimization", carl::logging::LogLevel::LVL_TRACE)
 	;
 	carl::logging::logger().formatter("stdout")->printInformation = true;
 #endif
@@ -144,7 +145,7 @@ int main( int argc, char* argv[] )
 				auto e = smtrat::Executor<CMakeStrategySolver>(strategy);
 				exitCode = smtrat::executeFile(smtrat::settings_parser().input_file, e);
 
-				if (e.lastAnswer == smtrat::Answer::SAT) {
+				if (is_sat(e.lastAnswer)) {
 					if (smtrat::settings_solver().print_all_models) {
 						strategy.printAllAssignments(std::cout);
 					} else if (smtrat::settings_solver().print_model) {

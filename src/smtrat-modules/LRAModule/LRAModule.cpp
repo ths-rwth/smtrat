@@ -549,7 +549,7 @@ namespace smtrat
                 updateModel();
                 mModel.insert(mModel.end(), std::make_pair(objective(), objectiveFunction().constantPart() ) );
                 mOptimumComputed = true;
-                return _result;
+                return OPTIMAL;
             }
             Rational denominator = carl::abs( carl::getNum( objectiveFunction().coprimeFactor() ) );
             LRAVariable* optVar = mTableau.getObjectiveVariable( objectiveFunction()*denominator );
@@ -595,6 +595,7 @@ namespace smtrat
                 }
             }
             mTableau.deleteVariable( optVar, true );
+            return OPTIMAL;
         }
         // @todo Branch if assignment does not fulfill integer domains.
         return _result;

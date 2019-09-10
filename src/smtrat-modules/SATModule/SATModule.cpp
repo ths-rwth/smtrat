@@ -451,6 +451,7 @@ namespace smtrat
         }
         Minisat::lbool result = l_Undef;
         mUpperBoundOnMinimal = passedFormulaEnd();
+        bool isOptimal = true;
         while( true )
         {
             if( Settings::use_restarts )
@@ -496,7 +497,9 @@ namespace smtrat
             else
             {
                 assert( result == l_True );
-                runBackends( true, mFullCheck, true );
+                Answer runBackendAnswer = runBackends( true, mFullCheck, true );
+                assert(is_sat(runBackendAnswer));
+                isOptimal = isOptimal && (runBackendAnswer == OPTIMAL);
                 updateModel();
                 auto modelIter = mModel.find( objective() );
                 assert( modelIter != mModel.end() );
@@ -548,7 +551,7 @@ namespace smtrat
         #endif
         if( result == l_True )
         {
-            return SAT;
+            return (mMinimizingCheck && isOptimal) ? OPTIMAL : SAT;
         }
         else if( result == l_False )
         {
@@ -2951,9 +2954,11 @@ namespace smtrat
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Deciding upon " << next);
 				}
                 if (next == lit_Undef) {
-                    assert(mMCSAT.fullConsistencyCheck());
-                    assert(mMCSAT.theoryAssignmentComplete());
-                    SMTRAT_LOG_DEBUG("smtrat.sat", "No further theory variable to assign.");
+                    if (Settings::mc_sat) {
+                        assert(mMCSAT.fullConsistencyCheck());
+                        assert(mMCSAT.theoryAssignmentComplete());
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "No further theory variable to assign.");
+                    }
                     mCurrentAssignmentConsistent = SAT;
                 }
 
@@ -2964,7 +2969,7 @@ namespace smtrat
                     if( mReceivedFormulaPurelyPropositional || mCurrentAssignmentConsistent == SAT )
                     {
                         // Model found:
-                        assert(mMCSAT.isConsistent());
+                        if (Settings::mc_sat) assert(mMCSAT.isConsistent());
                         return l_True;
                     }
                     else
@@ -3102,10 +3107,11 @@ namespace smtrat
         if( learnt_clause.size() == 1 )
         {
 			CARL_CHECKPOINT("nlsat", "new-assumption", learnt_clause[0]);
-            assert(decisionLevel() == assumptions.size());
+            assert((Settings::mc_sat && decisionLevel() <= assumptions.size()) || (!Settings::mc_sat && decisionLevel() == assumptions.size()));
             assumptions.push( learnt_clause[0] );
-            newDecisionLevel();
-            uncheckedEnqueue( learnt_clause[0] );
+            // assumptions are inserted in search()
+            // newDecisionLevel();
+            // uncheckedEnqueue( learnt_clause[0] );
         }
         else
         {
