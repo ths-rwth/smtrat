@@ -64,18 +64,18 @@ namespace smtrat
              */
             void remove( ModuleInput::const_iterator _subformula );
 			
-			Answer check( bool _final = false, bool _full = true, bool _minimize = false );
+			Answer check( bool _final = false, bool _full = true, carl::Variable::Arg _objective = carl::Variable::NO_VARIABLE );
             
             /**
              * Runs the backend solvers on the passed formula.
              * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT.
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
-             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
+             * @param _objective if not set to NO_VARIABLE, the module should find an assignment minimizing this objective variable; otherwise any assignment is good.
              * @return True,    if the passed formula is consistent;
              *          False,   if the passed formula is inconsistent;
              *          Unknown, otherwise.
              */
-            Answer runBackends( bool _final = false, bool _full = true, bool _minimize = false );
+            Answer runBackends( bool _final = false, bool _full = true, carl::Variable::Arg _objective = carl::Variable::NO_VARIABLE );
             
             /**
              * @return A pair of a Boolean and a formula, where the Boolean is true, if the received formula 

@@ -127,9 +127,9 @@ public:
      * @param _modules
      * @param _final
      * @param _full
-     * @param _minimize
+     * @param _objective
      */
-	Answer runBackends(const std::vector<Module*>& _modules, bool _final, bool _full, bool _minimize);
+	Answer runBackends(const std::vector<Module*>& _modules, bool _final, bool _full, carl::Variable::Arg _objective);
 };
 
 }

@@ -293,7 +293,7 @@ namespace smtrat
 								mBoundCandidatesToPass.push_back( (*bound)->pVariable()->pInfimum() );
 							}
 
-							if( !mMinimizingCheck && !(*bound)->variable().hasBound() && (*bound)->variable().isBasic() && !(*bound)->variable().isOriginal() )
+							if( !is_minimizing() && !(*bound)->variable().hasBound() && (*bound)->variable().isBasic() && !(*bound)->variable().isOriginal() )
 							{
 								mTableau.deactivateBasicVar( (*bound)->pVariable() );
 							}
@@ -331,7 +331,7 @@ namespace smtrat
     Answer LRAModule<Settings>::checkCore()
     {
         #ifdef DEBUG_LRA_MODULE
-        std::cout << "LRAModule::check with mMinimizingCheck = " << mMinimizingCheck << std::endl;
+        std::cout << "LRAModule::check with is_minimizing() = " << is_minimizing() << std::endl;
         for( const auto& f : rReceivedFormula() )
             std::cout << f.formula() << std::endl;
         #endif
@@ -440,7 +440,7 @@ namespace smtrat
             mStatistics.setTableauSize( mTableau.rows().size()*mTableau.columns().size() );
         }
         #endif
-        if( mMinimizingCheck )
+        if( is_minimizing() )
             _result = optimize( _result );
         if( _result != UNKNOWN )
         {
@@ -542,6 +542,7 @@ namespace smtrat
     {
         if( _result == SAT )
         {
+            /* TODO remove
             if( objectiveFunction().isConstant() )
             {
                 mOptimumComputed = false;
@@ -551,8 +552,9 @@ namespace smtrat
                 mOptimumComputed = true;
                 return OPTIMAL;
             }
-            Rational denominator = carl::abs( carl::getNum( objectiveFunction().coprimeFactor() ) );
-            LRAVariable* optVar = mTableau.getObjectiveVariable( objectiveFunction()*denominator );
+            */
+            Poly objectivePoly(objective());
+            LRAVariable* optVar = mTableau.getObjectiveVariable( objectivePoly );
             assert( optVar->isBasic() );
             mTableau.activateBasicVar( optVar );
             for( ; ; )
@@ -585,7 +587,7 @@ namespace smtrat
                     mOptimumComputed = false;
                     updateModel();
                     const EvalRationalMap& ratModel = getRationalModel();
-                    Rational opti = optVar->expression().evaluate( ratModel )/denominator;
+                    Rational opti = optVar->expression().evaluate( ratModel );
                     #ifdef DEBUG_LRA_MODULE
                     std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: " << opti << std::endl;
                     #endif

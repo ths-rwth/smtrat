@@ -462,10 +462,10 @@ namespace smtrat
              * Submits an enquiry of a module to solve its passed formula.
              * @param _module The module which wants its passed formula to be solved.
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
-             * @param _minimize
+             * @param _objective
              * @return A future containing the answer, as soon as the enquiry has been processed.
              */
-			Answer runBackends(const std::vector<Module*>& modules, bool final, bool full, bool minimize);
+			Answer runBackends(const std::vector<Module*>& modules, bool final, bool full, carl::Variable::Arg objective);
             #endif
 
 			/**

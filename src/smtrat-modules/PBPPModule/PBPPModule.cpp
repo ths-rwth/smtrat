@@ -58,11 +58,13 @@ namespace smtrat
 	{
 		const FormulaT& formula = _subformula->formula();
 
+		/* TODO remove
+		whats the point of this here?
 		if (objective() != carl::Variable::NO_VARIABLE) {
 			for (const auto& var: objectiveFunction().gatherVariables()) {
 				mVariablesCache.emplace(var, carl::freshIntegerVariable());
 			}
-		}
+		}*/
 
 		addConstraints(formula);
 	

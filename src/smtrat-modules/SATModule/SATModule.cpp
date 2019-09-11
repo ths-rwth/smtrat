@@ -480,7 +480,7 @@ namespace smtrat
                 mExcludedAssignments = false;
             }
             // ##### Stop here if not in optimization mode!
-            if( !mMinimizingCheck )
+            if( !is_minimizing() )
                 break;
             std::vector<CRef> excludedAssignments;
             if( result == l_Undef )
@@ -497,7 +497,7 @@ namespace smtrat
             else
             {
                 assert( result == l_True );
-                Answer runBackendAnswer = runBackends( true, mFullCheck, true );
+                Answer runBackendAnswer = runBackends( true, mFullCheck, objective() );
                 assert(is_sat(runBackendAnswer));
                 isOptimal = isOptimal && (runBackendAnswer == OPTIMAL);
                 updateModel();
@@ -512,7 +512,7 @@ namespace smtrat
                 assert( mv.isRational() ); // @todo: how do we handle the other model value types?
                 // Add a new upper bound on the yet computed minimum
                 removeUpperBoundOnMinimal();
-                FormulaT newUpperBoundOnMinimal( objectiveFunction() - mv.asRational(), carl::Relation::LESS );
+                FormulaT newUpperBoundOnMinimal( objective() - mv.asRational(), carl::Relation::LESS );
                 addConstraintToInform_( newUpperBoundOnMinimal );
                 mUpperBoundOnMinimal = addSubformulaToPassedFormula( newUpperBoundOnMinimal, newUpperBoundOnMinimal ).first;
                 // Exclude the last theory call with a clause.
@@ -551,7 +551,7 @@ namespace smtrat
         #endif
         if( result == l_True )
         {
-            return (mMinimizingCheck && isOptimal) ? OPTIMAL : SAT;
+            return (is_minimizing() && isOptimal) ? OPTIMAL : SAT;
         }
         else if( result == l_False )
         {
@@ -680,7 +680,7 @@ namespace smtrat
         if( !mModelComputed && !mOptimumComputed )
         {
             clearModel();
-            if( solverState() != UNSAT || mMinimizingCheck )
+            if( solverState() != UNSAT || is_minimizing() )
             {
                 for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
                 {
@@ -2625,7 +2625,7 @@ namespace smtrat
                 std::cout << "### Check the constraints: { "; for( auto& subformula : rPassedFormula() ) std::cout << subformula.formula() << " "; std::cout << "}" << std::endl;
                 #endif
                 mChangedPassedFormula = false;
-                mCurrentAssignmentConsistent = runBackends( finalCheck, mFullCheck, false );
+                mCurrentAssignmentConsistent = runBackends( finalCheck, mFullCheck, carl::Variable::NO_VARIABLE );
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Result: " << mCurrentAssignmentConsistent);
                 switch( mCurrentAssignmentConsistent )
                 {

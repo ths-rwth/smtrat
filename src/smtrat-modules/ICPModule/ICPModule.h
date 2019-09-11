@@ -154,7 +154,7 @@ return SettingsType::moduleName;
 			 * Checks the received formula for consistency.
              * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
-             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
+             * @param _objective if not set to NO_VARIABLE, the module should find an assignment minimizing this objective variable; otherwise any assignment is good.
 			 * @return SAT,	if the received formula is satisfiable;
 			 *		 UNSAT,   if the received formula is not satisfiable;
 			 *		 Unknown, otherwise.
@@ -239,10 +239,10 @@ return SettingsType::moduleName;
             /**
              * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
-             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
+             * @param _objective if not set to NO_VARIABLE, the module should find an assignment minimizing this objective variable; otherwise any assignment is good.
              * @return 
              */
-            Answer callBackends( bool _final = false, bool _full = true, bool _minimize = false );
+            Answer callBackends( bool _final = false, bool _full = true, carl::Variable::Arg _objective = carl::Variable::NO_VARIABLE );
 
             /**
              * Creates the non-linear contraction candidates from all items in mTemporaryMonomes and empties mTemporaryMonomes.
