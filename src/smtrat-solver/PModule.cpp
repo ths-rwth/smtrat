@@ -53,7 +53,7 @@ namespace smtrat
         return Module::remove( _subformula );
     }
 	
-	Answer PModule::check( bool _final, bool _full, carl::Variable::Arg _objective )
+	Answer PModule::check( bool _final, bool _full, carl::Variable _objective )
 	{
 		Answer res = Module::check(_final, _full, _objective);
 		collectSimplifiedFormula();
@@ -61,7 +61,7 @@ namespace smtrat
 		return res;
 	}
     
-    Answer PModule::runBackends( bool _final, bool _full, carl::Variable::Arg _objective )
+    Answer PModule::runBackends( bool _final, bool _full, carl::Variable _objective )
     {
         mAppliedPreprocessing = true;
         return Module::runBackends( _final, _full, _objective );

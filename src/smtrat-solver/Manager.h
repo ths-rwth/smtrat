@@ -170,7 +170,7 @@ namespace smtrat
                 while( pop() );
             }
 
-            void setObjectiveVariable(carl::Variable::Arg var) {
+            void setObjectiveVariable(carl::Variable var) {
                 mObjectiveVariable = var;
             }
 
@@ -461,7 +461,7 @@ namespace smtrat
              * @param _objective
              * @return A future containing the answer, as soon as the enquiry has been processed.
              */
-			Answer runBackends(const std::vector<Module*>& modules, bool final, bool full, carl::Variable::Arg objective);
+			Answer runBackends(const std::vector<Module*>& modules, bool final, bool full, carl::Variable objective);
             #endif
 
 			/**

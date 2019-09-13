@@ -89,7 +89,7 @@ namespace smtrat
         delete mBackendsFoundAnswer;
     }
     
-    Answer Module::check( bool _final, bool _full, carl::Variable::Arg _objective )
+    Answer Module::check( bool _final, bool _full, carl::Variable _objective )
     {
 		mStatistics.start_check();
         SMTRAT_LOG_INFO("smtrat.module", __func__  << (_final ? " final" : " partial") << (_full ? " full" : " lazy" ) << " with module " << moduleName() << " (" << mId << ")");
@@ -749,7 +749,7 @@ namespace smtrat
         return result;
     }
 
-    Answer Module::runBackends( bool _final, bool _full, carl::Variable::Arg _objective )
+    Answer Module::runBackends( bool _final, bool _full, carl::Variable _objective )
     {
         if( mpManager == nullptr ) return UNKNOWN;
         *mBackendsFoundAnswer = false;

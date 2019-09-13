@@ -344,7 +344,7 @@ namespace smtrat
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            virtual Answer check( bool _final = false, bool _full = true, carl::Variable::Arg _objective = carl::Variable::NO_VARIABLE );
+            virtual Answer check( bool _final = false, bool _full = true, carl::Variable _objective = carl::Variable::NO_VARIABLE );
             
             /**
              * Removes everything related to the given sub-formula of the received formula. However,
@@ -636,7 +636,7 @@ namespace smtrat
 				return mModuleName;
 			}
             
-            carl::Variable::Arg objective() const {
+            carl::Variable objective() const {
                 return mObjectiveVariable;
             }
 
@@ -1081,7 +1081,7 @@ namespace smtrat
              *          False,   if the passed formula is inconsistent;
              *          Unknown, otherwise.
              */
-            virtual Answer runBackends( bool _final, bool _full, carl::Variable::Arg _objective );
+            virtual Answer runBackends( bool _final, bool _full, carl::Variable _objective );
             virtual Answer runBackends()
             {
                 return Module::runBackends( mFinalCheck, mFullCheck, mObjectiveVariable );

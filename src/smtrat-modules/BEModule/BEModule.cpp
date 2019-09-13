@@ -26,7 +26,7 @@ namespace smtrat
     Answer BEModule<Settings>::checkCore()
     {
 		if (is_minimizing()) { // TODO optimization possible?
-			SMTRAT_LOG_FATAL("smtrat.be", "Optimization not supported");
+			SMTRAT_LOG_ERROR("smtrat.be", "Optimization not supported");
 			assert(false);
 		}
 

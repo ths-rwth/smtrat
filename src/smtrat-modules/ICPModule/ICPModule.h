@@ -242,7 +242,7 @@ return SettingsType::moduleName;
              * @param _objective if not set to NO_VARIABLE, the module should find an assignment minimizing this objective variable; otherwise any assignment is good.
              * @return 
              */
-            Answer callBackends( bool _final = false, bool _full = true, carl::Variable::Arg _objective = carl::Variable::NO_VARIABLE );
+            Answer callBackends( bool _final = false, bool _full = true, carl::Variable _objective = carl::Variable::NO_VARIABLE );
 
             /**
              * Creates the non-linear contraction candidates from all items in mTemporaryMonomes and empties mTemporaryMonomes.

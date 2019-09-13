@@ -25,7 +25,7 @@ namespace smtrat
 	Answer SymmetryModule<Settings>::checkCore()
 	{
 		if (is_minimizing()) {
-			SMTRAT_LOG_FATAL("smtrat.symmetry", "Optimization not supported");
+			SMTRAT_LOG_ERROR("smtrat.symmetry", "Optimization not supported");
 			assert(false);
 		}
 

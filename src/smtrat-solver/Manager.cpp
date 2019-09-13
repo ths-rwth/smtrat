@@ -328,7 +328,7 @@ namespace smtrat
     }
 
     #ifdef SMTRAT_STRAT_PARALLEL_MODE
-	Answer Manager::runBackends(const std::vector<Module*>& _modules, bool _final, bool _full, carl::Variable::Arg _objective) {
+	Answer Manager::runBackends(const std::vector<Module*>& _modules, bool _final, bool _full, carl::Variable _objective) {
 		return mpThreadPool->runBackends(_modules, _final, _full, _objective);
 	}
     #endif

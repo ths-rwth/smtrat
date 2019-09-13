@@ -64,7 +64,7 @@ namespace smtrat
              */
             void remove( ModuleInput::const_iterator _subformula );
 			
-			Answer check( bool _final = false, bool _full = true, carl::Variable::Arg _objective = carl::Variable::NO_VARIABLE );
+			Answer check( bool _final = false, bool _full = true, carl::Variable _objective = carl::Variable::NO_VARIABLE );
             
             /**
              * Runs the backend solvers on the passed formula.
@@ -75,7 +75,7 @@ namespace smtrat
              *          False,   if the passed formula is inconsistent;
              *          Unknown, otherwise.
              */
-            Answer runBackends( bool _final, bool _full, carl::Variable::Arg _objective );
+            Answer runBackends( bool _final, bool _full, carl::Variable _objective );
 
             virtual Answer runBackends() {
                 return PModule::runBackends( false /* mFinalCheck */, true /* mFullCheck */, mObjectiveVariable );

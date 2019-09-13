@@ -726,7 +726,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer ICPModule<Settings>::callBackends( bool _final, bool _full, carl::Variable::Arg _objective )
+    Answer ICPModule<Settings>::callBackends( bool _final, bool _full, carl::Variable _objective )
     {
         #ifdef ICP_MODULE_DEBUG_0
         std::cout << "Ask backends " << (_full ? "full" : "lazy") << " for the satisfiability of:" << std::endl;

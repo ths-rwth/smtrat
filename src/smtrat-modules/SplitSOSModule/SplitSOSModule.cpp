@@ -26,7 +26,7 @@ namespace smtrat
     Answer SplitSOSModule<Settings>::checkCore()
     {
         if (is_minimizing()) { // TODO optimization possible?
-			SMTRAT_LOG_FATAL("smtrat.splitsos", "Optimization not supported");
+			SMTRAT_LOG_ERROR("smtrat.splitsos", "Optimization not supported");
 			assert(false);
 		}
 

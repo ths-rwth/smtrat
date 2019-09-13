@@ -10,7 +10,7 @@
 #include "Tableau.h"
 #include "TableauSettings.h"
 
-#define DEBUG_METHODS_TABLEAU
+//#define DEBUG_METHODS_TABLEAU
 //#define DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
 //#define LRA_PEDANTIC_CORRECTNESS_CHECKS
 

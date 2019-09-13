@@ -52,7 +52,7 @@ namespace smtrat
 		}*/
 	}
     
-	Answer ThreadPool::runBackends(const std::vector<Module*>& _modules, bool _final, bool _full, carl::Variable::Arg _objective) {
+	Answer ThreadPool::runBackends(const std::vector<Module*>& _modules, bool _final, bool _full, carl::Variable _objective) {
         if( _modules.empty() )
         {
             SMTRAT_LOG_DEBUG("smtrat.parallel", "Returning " << UNKNOWN);
