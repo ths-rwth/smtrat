@@ -1,4 +1,7 @@
 /**
+ * 
+ * Supports optimization.
+ * 
  * @file GBPPModule.h
  * @author YOUR NAME <YOUR EMAIL ADDRESS>
  *

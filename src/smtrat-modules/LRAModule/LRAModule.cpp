@@ -12,7 +12,7 @@
 #ifdef DEBUG_METHODS_TABLEAU
 //#define DEBUG_METHODS_LRA_MODULE
 #endif
-//#define DEBUG_LRA_MODULE
+#define DEBUG_LRA_MODULE
 
 using namespace smtrat::lra;
 

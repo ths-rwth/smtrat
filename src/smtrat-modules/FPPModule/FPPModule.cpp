@@ -58,7 +58,7 @@ namespace smtrat
 	{
             // set the objective for all preprocessing modules. Each module has to check
             // whether it is sound to perform the preprocessing on optimizing solver calls.
-            mPreprocessor.takeObjectiveVariable(*mpManager);
+            mPreprocessor.setObjectiveVariable(objective());
 
             std::size_t iterations = 0;
             Answer answer = UNKNOWN;
@@ -69,7 +69,7 @@ namespace smtrat
                 // call the preprocessing on the current formula
                 mPreprocessor.push();
                 mPreprocessor.add(formulaBeforePreprocessing);
-                answer = mPreprocessor.check(mFullCheck); // @todo: do we need to add the objective function to the preprocessors??
+                answer = mPreprocessor.check(mFullCheck);
                 // preprocessing detects satisfiability or unsatisfiability
                 if (answer != UNKNOWN) {
                     mPreprocessor.pop();

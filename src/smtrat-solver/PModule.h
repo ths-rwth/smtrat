@@ -75,7 +75,11 @@ namespace smtrat
              *          False,   if the passed formula is inconsistent;
              *          Unknown, otherwise.
              */
-            Answer runBackends( bool _final = false, bool _full = true, carl::Variable::Arg _objective = carl::Variable::NO_VARIABLE );
+            Answer runBackends( bool _final, bool _full, carl::Variable::Arg _objective );
+
+            virtual Answer runBackends() {
+                return PModule::runBackends( false /* mFinalCheck */, true /* mFullCheck */, mObjectiveVariable );
+            }
             
             /**
              * @return A pair of a Boolean and a formula, where the Boolean is true, if the received formula 

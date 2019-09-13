@@ -170,17 +170,13 @@ namespace smtrat
                 while( pop() );
             }
 
-            void setObjectiveVariable(carl::Variable var) {
+            void setObjectiveVariable(carl::Variable::Arg var) {
                 mObjectiveVariable = var;
             }
 
             const carl::Variable& objectiveVariable() const {
                 return mObjectiveVariable;
             }
-            
-			void takeObjectiveVariable(const Manager& m) {
-				mObjectiveVariable = m.objectiveVariable();
-			}
             
             void reset();
             

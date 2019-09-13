@@ -24,6 +24,11 @@ namespace smtrat
 	template<class Settings>
 	Answer SymmetryModule<Settings>::checkCore()
 	{
+		if (is_minimizing()) {
+			SMTRAT_LOG_FATAL("smtrat.symmetry", "Optimization not supported");
+			assert(false);
+		}
+
 		for (auto it = rReceivedFormula().begin(); it != rReceivedFormula().end(); ++it) {
 			addReceivedSubformulaToPassedFormula(it);
 		}

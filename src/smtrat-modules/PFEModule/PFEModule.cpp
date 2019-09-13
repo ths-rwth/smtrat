@@ -48,6 +48,12 @@ namespace smtrat
 			boundsChanged = false;
 		}
 		while (receivedFormula != rReceivedFormula().end()) {
+			if (is_minimizing() && receivedFormula->formula().variables().find(objective()) != receivedFormula->formula().variables().end()) {
+				SMTRAT_LOG_DEBUG("smtrat.pfe", "Ignoring " << receivedFormula->formula() << " as it containts the objective variable " << objective());
+				addReceivedSubformulaToPassedFormula(receivedFormula);
+				++receivedFormula;
+				continue;
+			}
 			if (receivedFormula->formula().isBound()) {
 				addReceivedSubformulaToPassedFormula(receivedFormula);
 				++receivedFormula;

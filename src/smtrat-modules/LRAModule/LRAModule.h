@@ -3,6 +3,9 @@
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  * @since 2012-04-05
  * @version 2014-10-01
+ * 
+ * Supports optimization.
+ * 
  */
 
 #pragma once

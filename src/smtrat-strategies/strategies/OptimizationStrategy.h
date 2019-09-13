@@ -5,6 +5,7 @@
 #include <smtrat-modules/SATModule/SATModule.h>
 #include <smtrat-modules/LRAModule/LRAModule.h>
 #include <smtrat-modules/PBPPModule/PBPPModule.h>
+#include <smtrat-modules/FPPModule/FPPModule.h>
 
 namespace smtrat {
 
@@ -19,11 +20,13 @@ namespace smtrat {
             {
                 setStrategy(
                 {
-                    //addBackend<PBPPModule<PBPPSettings1>>(
-                        addBackend<SATModule<SATSettings1>>(
-                            addBackend<LRAModule<LRASettings1>>()
-                        )
-                    //),
+                    //addBackend<FPPModule<FPPSettingsOptimization>>(
+                        //addBackend<PBPPModule<PBPPSettings1>>(
+                            addBackend<SATModule<SATSettings1>>(
+                                addBackend<LRAModule<LRASettings1>>()
+                            )
+                        //),
+                    //)
                 });
             }
     };
