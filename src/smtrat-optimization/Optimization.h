@@ -66,7 +66,7 @@ public:
         for (auto iter = objectives().begin(); iter != objectives().end(); iter++) {
 			const auto& objective = *iter;
 			SMTRAT_LOG_DEBUG("smtrat.optimization", "Optimizing objective " << objective.function << " (minimize=" << objective.minimize << ")");
-			FormulaT objectiveEquality( (objective.minimize ? -(objective.function) : objective.function) - objectiveVariable(objective), carl::Relation::EQ );
+			FormulaT objectiveEquality( (objective.minimize ? objective.function : -(objective.function)) - objectiveVariable(objective), carl::Relation::EQ );
 
 			SMTRAT_LOG_TRACE("smtrat.optimization", "Adding objective function " << objectiveEquality << " and set objective variable " << objectiveVariable(objective));
             mSolver.setObjectiveVariable(objectiveVariable(objective));
