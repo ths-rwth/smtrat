@@ -889,11 +889,11 @@ namespace smtrat
                 mFoundAnswer.back()->store( true );
         }
         SMTRAT_LOG_INFO("smtrat.module", __func__ << " of " << moduleName() << " (" << mId << ") is " << _answer);
-        if( _answer == SAT || _answer == UNKNOWN )
+        if( is_sat(_answer) || _answer == UNKNOWN )
         {
             mModelComputed = false;
         }
-        assert( _answer != SAT || checkModel() != 0 );
+        assert( !is_sat(_answer) || checkModel() != 0 );
         return _answer;
     }
 

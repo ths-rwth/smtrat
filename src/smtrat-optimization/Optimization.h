@@ -22,6 +22,8 @@ private:
 		return mObjectives;
 	}
 
+	// TODO reuse variables
+
 	// carl::Variable mOptimizationVarInt;
 	// carl::Variable mOptimizationVarReal;
 
@@ -111,6 +113,10 @@ public:
 		mSolver.pop();
 		if (!isOptimal) {
 			SMTRAT_LOG_WARN("smtrat.optimization", "Answer not necessarily optimal!");
+		}
+		SMTRAT_LOG_TRACE("smtrat.optimization", "Removing optimization variables from model");
+		for (const auto& opt : objectives()) {
+			model.erase(opt.variable);
 		}
 		return std::make_tuple(isOptimal ? OPTIMAL : SAT, model, optimalValues);
 	}
