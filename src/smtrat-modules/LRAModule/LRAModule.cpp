@@ -586,7 +586,6 @@ namespace smtrat
                     std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: " << opti << std::endl;
                     #endif
                     mModel.insert(mModel.end(), std::make_pair(objective(), opti ) );
-                    std::cout << "MODEL LRA: " << mModel << std::endl; // TODO REMOVE
                     mOptimumComputed = true;
                     break;
                 }
