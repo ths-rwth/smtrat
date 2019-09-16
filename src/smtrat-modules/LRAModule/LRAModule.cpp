@@ -536,17 +536,6 @@ namespace smtrat
     {
         if( _result == SAT )
         {
-            /* TODO remove
-            if( objectiveFunction().isConstant() )
-            {
-                mOptimumComputed = false;
-                mModelComputed = false;
-                updateModel();
-                mModel.insert(mModel.end(), std::make_pair(objective(), objectiveFunction().constantPart() ) );
-                mOptimumComputed = true;
-                return OPTIMAL;
-            }
-            */
             Poly objectivePoly(objective());
             LRAVariable* optVar = mTableau.getObjectiveVariable( objectivePoly );
             assert( optVar->isBasic() );
