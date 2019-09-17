@@ -81,12 +81,12 @@ namespace full {
 			std::function<bool(std::size_t,std::size_t)> mCanBePurged;
 			
 			auto& data(std::size_t level) {
-				assert(level > 0 && level <= mData.size());
-				return mData[level - 1];
+				assert(level >= 0 && level < mData.size());
+				return mData[level];
 			}
 			const auto& data(std::size_t level) const {
-				assert(level > 0 && level <= mData.size());
-				return mData[level - 1];
+				assert(level >= 0 && level < mData.size());
+				return mData[level];
 			}
 		public:
 			template<typename PurgeCheck>
@@ -100,7 +100,7 @@ namespace full {
 				data(qe.level).entries.push_back(qe);
 			}
 			void remove(std::size_t level, std::size_t id) {
-				assert(level > 0 && level <= mData.size());
+				assert(level >= 0 && level < mData.size());
 				data(level).evaluated.reset(id);
 				data(level).purged.reset(id);
 				auto it = std::remove_if(data(level).entries.begin(), data(level).entries.end(), [level,id](const QueueEntry& qe){
@@ -114,26 +114,27 @@ namespace full {
 				data(level).bounds.set(id, isBound);
 			}
 			bool isPurged(std::size_t level, std::size_t id) const {
-				assert(level > 0 && level <= mData.size());
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking whether " << level << "/" << id << " is purged.");
+				assert(level >= 0 && level < mData.size());
 				if (data(level).bounds.test(id)) {
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Do not purge as " << level << "/" << id << " is a bound.");
 					return false;
 				}
 				if (!data(level).evaluated.test(id)) {
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking if " << level << "/" << id << " can be purged.");
-					data(level).purged.set(id, mCanBePurged(level + 1, id));
+					data(level).purged.set(id, mCanBePurged(level, id));
 					data(level).evaluated.set(id);
 				}
 				return data(level).purged.test(id);
 			}
 			bool isPurged(const QueueEntry& qe) const {
-				assert(qe.level > 0 && qe.level <= mData.size());
+				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Is " << qe << " purged?");
+				assert(qe.level >= 0 && qe.level < mData.size());
 				if (qe.level == 0) {
 					assert(qe.first == qe.second);
 					return mCanBePurged(0, qe.first);
 				}
-				return isPurged(qe.level-1, qe.first) || isPurged(qe.level-1, qe.second);
+				return isPurged(qe.level, qe.first) || isPurged(qe.level, qe.second);
 			}
 			template<typename Restorer>
 			void restore(const Restorer& r) {
