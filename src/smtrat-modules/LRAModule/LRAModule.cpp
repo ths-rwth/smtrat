@@ -114,10 +114,6 @@ namespace smtrat
 //                        }
 					if( constraint.relation() != carl::Relation::NEQ )
 					{
-						if( constraint.hasVariable( objective() ) )
-						{
-							return true;
-						}
 						auto constrBoundIter = mTableau.constraintToBound().find( formula );
 						assert( constrBoundIter != mTableau.constraintToBound().end() );
 						const std::vector< const LRABound* >* bounds = constrBoundIter->second;
@@ -206,8 +202,6 @@ namespace smtrat
 			assert(constraint.isConsistent() == 2);
 			if( constraint.lhs().isLinear() )
 			{
-				if( constraint.hasVariable( objective() ) )
-					return;
 				// Deactivate the bounds regarding the given constraint
 				auto constrBoundIter = mTableau.constraintToBound().find( pformula );
 				assert( constrBoundIter != mTableau.rConstraintToBound().end() );
@@ -293,7 +287,7 @@ namespace smtrat
 								mBoundCandidatesToPass.push_back( (*bound)->pVariable()->pInfimum() );
 							}
 
-							if( !mMinimizingCheck && !(*bound)->variable().hasBound() && (*bound)->variable().isBasic() && !(*bound)->variable().isOriginal() )
+							if( !is_minimizing() && !(*bound)->variable().hasBound() && (*bound)->variable().isBasic() && !(*bound)->variable().isOriginal() )
 							{
 								mTableau.deactivateBasicVar( (*bound)->pVariable() );
 							}
@@ -331,7 +325,7 @@ namespace smtrat
     Answer LRAModule<Settings>::checkCore()
     {
         #ifdef DEBUG_LRA_MODULE
-        std::cout << "LRAModule::check with mMinimizingCheck = " << mMinimizingCheck << std::endl;
+        std::cout << "LRAModule::check with is_minimizing() = " << is_minimizing() << std::endl;
         for( const auto& f : rReceivedFormula() )
             std::cout << f.formula() << std::endl;
         #endif
@@ -440,7 +434,7 @@ namespace smtrat
             mStatistics.setTableauSize( mTableau.rows().size()*mTableau.columns().size() );
         }
         #endif
-        if( mMinimizingCheck )
+        if( is_minimizing() )
             _result = optimize( _result );
         if( _result != UNKNOWN )
         {
@@ -542,17 +536,8 @@ namespace smtrat
     {
         if( _result == SAT )
         {
-            if( objectiveFunction().isConstant() )
-            {
-                mOptimumComputed = false;
-                mModelComputed = false;
-                updateModel();
-                mModel.insert(mModel.end(), std::make_pair(objective(), objectiveFunction().constantPart() ) );
-                mOptimumComputed = true;
-                return OPTIMAL;
-            }
-            Rational denominator = carl::abs( carl::getNum( objectiveFunction().coprimeFactor() ) );
-            LRAVariable* optVar = mTableau.getObjectiveVariable( objectiveFunction()*denominator );
+            Poly objectivePoly(objective());
+            LRAVariable* optVar = mTableau.getObjectiveVariable( objectivePoly );
             assert( optVar->isBasic() );
             mTableau.activateBasicVar( optVar );
             for( ; ; )
@@ -585,7 +570,7 @@ namespace smtrat
                     mOptimumComputed = false;
                     updateModel();
                     const EvalRationalMap& ratModel = getRationalModel();
-                    Rational opti = optVar->expression().evaluate( ratModel )/denominator;
+                    Rational opti = optVar->expression().evaluate( ratModel );
                     #ifdef DEBUG_LRA_MODULE
                     std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: " << opti << std::endl;
                     #endif
@@ -1033,8 +1018,6 @@ namespace smtrat
     template<class Settings>
     void LRAModule<Settings>::setBound( const FormulaT& _constraint )
     {
-        if( _constraint.constraint().hasVariable( objective() ) )
-            return;
         mTableau.newBound( _constraint );
     }
     
@@ -1424,18 +1407,11 @@ namespace smtrat
         }
         for( auto iter = rReceivedFormula().begin(); iter != rReceivedFormula().end(); ++iter )
         {
-            if( !iter->formula().constraint().hasVariable( objective() )) {
-                unsigned sat = carl::model::satisfiedBy(iter->formula(), Model(rmodel));
-                if (sat != 1) {
-                    assert( sat == 0 );
-                    return false;
-                }
+            unsigned sat = carl::model::satisfiedBy(iter->formula(), Model(rmodel));
+            if (sat != 1) {
+                assert( sat == 0 );
+                return false;
             }
-            // if( !iter->formula().constraint().hasVariable( objective() ) && iter->formula().constraint().satisfiedBy( rmodel ) != 1 )
-            // {
-            //     assert( iter->formula().constraint().satisfiedBy( rmodel ) == 0 );
-            //     return false;
-            // }
         }
         return true;
     }

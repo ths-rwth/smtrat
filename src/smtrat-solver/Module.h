@@ -220,8 +220,8 @@ namespace smtrat
             bool mFinalCheck;
             /// false, if this module should avoid too expensive procedures and rather return unknown instead.
             bool mFullCheck;
-            /// true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
-            bool mMinimizingCheck; // TODO can this be removed?
+            /// Objective variable to be minimized. If set to NO_VARIABLE, a normal sat check should be performed.
+            carl::Variable mObjectiveVariable;
             ///
             std::vector<TheoryPropagation> mTheoryPropagations;
 
@@ -252,8 +252,6 @@ namespace smtrat
             ModuleInput::const_iterator mFirstUncheckedReceivedSubformula;
             /// Counter used for the generation of the smt2 files to check for smaller muses.
             mutable unsigned mSmallerMusesCheckCounter;
-            /// The function to which the objective variable is equal.
-            Poly mObjectiveFunction; // TODO can this be removed?
             /// Maps variables to the number of their occurrences
             std::vector<std::size_t> mVariableCounters;
 
@@ -341,12 +339,12 @@ namespace smtrat
              * internally and must be overwritten by any derived module.
              * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
-             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
+             * @param _objective if not set to NO_VARIABLE, the module should find an assignment minimizing this objective variable; otherwise any assignment is good.
              * @return True,    if the received formula is satisfiable;
              *         False,   if the received formula is not satisfiable;
              *         Unknown, otherwise.
              */
-            virtual Answer check( bool _final = false, bool _full = true, bool _minimize = false );
+            virtual Answer check( bool _final = false, bool _full = true, carl::Variable _objective = carl::Variable::NO_VARIABLE );
             
             /**
              * Removes everything related to the given sub-formula of the received formula. However,
@@ -638,11 +636,12 @@ namespace smtrat
 				return mModuleName;
 			}
             
-            carl::Variable::Arg objective() const;
+            carl::Variable objective() const {
+                return mObjectiveVariable;
+            }
 
-            const Poly& objectiveFunction() const
-            {
-                return mObjectiveFunction;
+            bool is_minimizing() const {
+                return mObjectiveVariable != carl::Variable::NO_VARIABLE;
             }
 
             /**
@@ -1077,15 +1076,15 @@ namespace smtrat
              * Runs the backend solvers on the passed formula.
              * @param _final true, if this satisfiability check will be the last one (for a global sat-check), if its result is SAT
              * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
-             * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
+             * @param _objective if not set to NO_VARIABLE, the module should find an assignment minimizing this objective variable; otherwise any assignment is good.
              * @return True,    if the passed formula is consistent;
              *          False,   if the passed formula is inconsistent;
              *          Unknown, otherwise.
              */
-            virtual Answer runBackends( bool _final, bool _full, bool _minimize );
+            virtual Answer runBackends( bool _final, bool _full, carl::Variable _objective );
             virtual Answer runBackends()
             {
-                return Module::runBackends( mFinalCheck, mFullCheck, mMinimizingCheck );
+                return Module::runBackends( mFinalCheck, mFullCheck, mObjectiveVariable );
             }
             
             /**

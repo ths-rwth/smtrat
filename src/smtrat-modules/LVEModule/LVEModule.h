@@ -1,4 +1,7 @@
 /**
+ * 
+ * Supports optimization.
+ * 
  * @file LVEModule.h
  * @author YOUR NAME <YOUR EMAIL ADDRESS>
  *

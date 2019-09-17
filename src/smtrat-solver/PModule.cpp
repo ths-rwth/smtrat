@@ -53,18 +53,18 @@ namespace smtrat
         return Module::remove( _subformula );
     }
 	
-	Answer PModule::check( bool _final, bool _full, bool _minimize )
+	Answer PModule::check( bool _final, bool _full, carl::Variable _objective )
 	{
-		Answer res = Module::check(_final, _full, _minimize);
+		Answer res = Module::check(_final, _full, _objective);
 		collectSimplifiedFormula();
 		SMTRAT_LOG_WARN("smtrat.pmodule", moduleName() << ": Simplified = " << mSimplifiedFormula);
 		return res;
 	}
     
-    Answer PModule::runBackends( bool _final, bool _full, bool _minimize )
+    Answer PModule::runBackends( bool _final, bool _full, carl::Variable _objective )
     {
         mAppliedPreprocessing = true;
-        return Module::runBackends( _final, _full, _minimize );
+        return Module::runBackends( _final, _full, _objective );
     }
     
     std::pair<bool,FormulaT> PModule::getReceivedFormulaSimplified()

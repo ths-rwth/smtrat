@@ -2,6 +2,8 @@
  * @file EMModule.h
  * @author Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
+ * 
+ * Supports optimization.
  *
  * @version 2015-09-10
  * Created on 2015-09-10.

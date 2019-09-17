@@ -126,7 +126,7 @@ namespace smtrat
     {
         *mPrimaryBackendFoundAnswer.back() = false;
         mpPassedFormula->updateProperties();
-        return mpPrimaryBackend->check( true, _full, objectiveVariable() != carl::Variable::NO_VARIABLE );
+        return mpPrimaryBackend->check( true, _full, objectiveVariable() );
     }
     
     const std::vector<FormulaSetT>& Manager::infeasibleSubsets() const
@@ -328,8 +328,8 @@ namespace smtrat
     }
 
     #ifdef SMTRAT_STRAT_PARALLEL_MODE
-	Answer Manager::runBackends(const std::vector<Module*>& _modules, bool _final, bool _full, bool _minimize) {
-		return mpThreadPool->runBackends(_modules, _final, _full, _minimize);
+	Answer Manager::runBackends(const std::vector<Module*>& _modules, bool _final, bool _full, carl::Variable _objective) {
+		return mpThreadPool->runBackends(_modules, _final, _full, _objective);
 	}
     #endif
 }    // namespace smtrat

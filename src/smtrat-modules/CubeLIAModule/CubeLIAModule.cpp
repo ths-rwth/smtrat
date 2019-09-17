@@ -164,7 +164,7 @@ namespace smtrat
             #endif
             mLRA.clearLemmas();
             mLRAFormula->updateProperties();
-            ans = mLRA.check( false, mFullCheck, mMinimizingCheck );
+            ans = mLRA.check( false, mFullCheck, objective() );
             switch( ans )
             {
                 case SAT:

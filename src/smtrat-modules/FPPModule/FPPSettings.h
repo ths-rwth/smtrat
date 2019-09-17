@@ -11,6 +11,7 @@
 #include <smtrat-strategies/strategies/PreprocessingOne.h>
 #include <smtrat-strategies/strategies/BVPreprocessing.h>
 #include <smtrat-strategies/strategies/PBPreprocessing.h>
+#include <smtrat-strategies/strategies/OptimizationPreprocessing.h>
 
 namespace smtrat
 {
@@ -48,5 +49,11 @@ namespace smtrat
     {
 	static constexpr auto moduleName = "FPPModule<FPPSettingsPB>";
 	using Preprocessor = PBPreprocessing;
+    };
+
+    struct FPPSettingsOptimization : FPPSettings1
+    {
+	static constexpr auto moduleName = "FPPModule<FPPSettingsOptimization>";
+	using Preprocessor = OptimizationPreprocessing;
     };
 }

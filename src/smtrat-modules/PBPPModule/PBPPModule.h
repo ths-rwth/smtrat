@@ -1,4 +1,7 @@
 /**
+ * 
+ * Supports optimization.
+ * 
  * @file PBPPModule.h
  * @author YOUR NAME <YOUR EMAIL ADDRESS>
  *

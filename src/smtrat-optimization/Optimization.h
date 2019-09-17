@@ -14,6 +14,7 @@ private:
 	struct Objective {
 		Poly function;
 		bool minimize;
+		carl::Variable variable;
 	};
 	std::vector<Objective> mObjectives;
 
@@ -21,22 +22,25 @@ private:
 		return mObjectives;
 	}
 
-	carl::Variable mOptimizationVarInt;
-	carl::Variable mOptimizationVarReal;
+	// TODO reuse variables
+
+	// carl::Variable mOptimizationVarInt;
+	// carl::Variable mOptimizationVarReal;
 
 	const carl::Variable& objectiveVariable(const Objective& objective) const {
-		return objective.function.integerValued() ? mOptimizationVarInt : mOptimizationVarReal;
+		return objective.variable;
+		// return objective.function.integerValued() ? mOptimizationVarInt : mOptimizationVarReal;
 	} 
 
 public:
 	Optimization(Solver& s) :
-		mSolver(s),
-		mOptimizationVarInt(carl::freshIntegerVariable("__opt_int")),
-		mOptimizationVarReal(carl::freshRealVariable("__opt_real"))
+		mSolver(s) //,
+		// mOptimizationVarInt(carl::freshIntegerVariable("__opt_int")),
+		// mOptimizationVarReal(carl::freshRealVariable("__opt_real"))
 	{}
 
 	void add_objective(const Poly& objective, bool minimize = true) {
-		mObjectives.push_back({ objective, minimize });
+		mObjectives.push_back({ objective, minimize, objective.integerValued() ? carl::freshIntegerVariable() : carl::freshRealVariable() });
 	}
 
 	void remove_objective(const Poly& objective) {
@@ -66,7 +70,7 @@ public:
         for (auto iter = objectives().begin(); iter != objectives().end(); iter++) {
 			const auto& objective = *iter;
 			SMTRAT_LOG_DEBUG("smtrat.optimization", "Optimizing objective " << objective.function << " (minimize=" << objective.minimize << ")");
-			FormulaT objectiveEquality( (objective.minimize ? -(objective.function) : objective.function) - objectiveVariable(objective), carl::Relation::EQ );
+			FormulaT objectiveEquality( (objective.minimize ? objective.function : -(objective.function)) - objectiveVariable(objective), carl::Relation::EQ );
 
 			SMTRAT_LOG_TRACE("smtrat.optimization", "Adding objective function " << objectiveEquality << " and set objective variable " << objectiveVariable(objective));
             mSolver.setObjectiveVariable(objectiveVariable(objective));
@@ -101,7 +105,7 @@ public:
 			// add bound
 			if (iter+1 != objectives().end()) {
 				assert(objModel->second.isRational());
-				FormulaT minimumUpperBound( (objective.minimize ? objective.function : -(objective.function)) - objModel->second.asRational(), carl::Relation::LESS );
+				FormulaT minimumUpperBound( (objective.minimize ? objective.function : -(objective.function)) - objModel->second.asRational(), carl::Relation::LEQ );
 				SMTRAT_LOG_TRACE("smtrat.optimization", "Adding minimum upper bound " << minimumUpperBound);
 				mSolver.add(minimumUpperBound);
 			}
@@ -109,6 +113,10 @@ public:
 		mSolver.pop();
 		if (!isOptimal) {
 			SMTRAT_LOG_WARN("smtrat.optimization", "Answer not necessarily optimal!");
+		}
+		SMTRAT_LOG_TRACE("smtrat.optimization", "Removing optimization variables from model");
+		for (const auto& opt : objectives()) {
+			model.erase(opt.variable);
 		}
 		return std::make_tuple(isOptimal ? OPTIMAL : SAT, model, optimalValues);
 	}

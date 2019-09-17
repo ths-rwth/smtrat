@@ -294,6 +294,10 @@ namespace smtrat
 	Answer LVEModule<Settings>::checkCore()
 	{
 		std::vector<carl::Variable> vars = get_lone_variables();
+		if (is_minimizing()) {
+			SMTRAT_LOG_DEBUG("smtrat.lve", "Ignore objective variable " << objective());
+			vars.erase(std::find(vars.begin(), vars.end(), objective()));
+		}
 #ifdef SMTRAT_DEVOPTION_Statistics
 		mStatistics.lone_variables = std::max(mStatistics.lone_variables, vars.size());
 #endif
