@@ -542,22 +542,25 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 					}
 				}
 			}
-
-			// add resultants of upper & lower reasons
-			// @todo why res(U_j, L_j-1)? why not all U with all L?
-			// @todo in Alg. 4 this is presented as outside of interval loop. This is wrong (!?)
-			auto itlower = inter->getLowerReason().begin();
-			itlower++;
-			auto itupper = inter->getUpperReason().begin();
-			while(itlower != inter->getLowerReason().end() && itupper != inter->getUpperReason().end()) {
-				characterization.insert(carl::resultant(
-					(*itupper).toUnivariatePolynomial(getHighestVar(cad, (*itupper))),
-					(*itlower).toUnivariatePolynomial(getHighestVar(cad, (*itlower))) 
-				));
-				itlower++;
-				itupper++;
-			}
 		}
+
+		// add resultants of upper & lower reasons
+		auto itlower = subinters.begin();
+		itlower++;
+		auto itupper = subinters.begin();
+		while(itlower != subinters.end()) {
+			for(auto lower : (*itlower)->getLowerReason()) {
+				for(auto upper : (*itupper)->getUpperReason()) {
+					characterization.insert(carl::resultant(
+						upper.toUnivariatePolynomial(getHighestVar(cad, upper)),
+						lower.toUnivariatePolynomial(getHighestVar(cad, lower))
+					));
+				}
+			}
+			itlower++;
+			itupper++;
+		}
+
 		//@todo Alg. 4, l. 11: Perform standard CAD simplifications to characterization
 		return characterization;
 	}
