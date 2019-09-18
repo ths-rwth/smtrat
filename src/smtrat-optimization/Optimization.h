@@ -14,7 +14,6 @@ private:
 	struct Objective {
 		Poly function;
 		bool minimize;
-		carl::Variable variable;
 	};
 	std::vector<Objective> mObjectives;
 
@@ -22,25 +21,22 @@ private:
 		return mObjectives;
 	}
 
-	// TODO reuse variables
-
-	// carl::Variable mOptimizationVarInt;
-	// carl::Variable mOptimizationVarReal;
+	carl::Variable mOptimizationVarInt;
+	carl::Variable mOptimizationVarReal;
 
 	const carl::Variable& objectiveVariable(const Objective& objective) const {
-		return objective.variable;
-		// return objective.function.integerValued() ? mOptimizationVarInt : mOptimizationVarReal;
+		return objective.function.integerValued() ? mOptimizationVarInt : mOptimizationVarReal;
 	} 
 
 public:
 	Optimization(Solver& s) :
-		mSolver(s) //,
-		// mOptimizationVarInt(carl::freshIntegerVariable("__opt_int")),
-		// mOptimizationVarReal(carl::freshRealVariable("__opt_real"))
+		mSolver(s) ,
+		mOptimizationVarInt(carl::freshIntegerVariable("__opt_int")),
+		mOptimizationVarReal(carl::freshRealVariable("__opt_real"))
 	{}
 
 	void add_objective(const Poly& objective, bool minimize = true) {
-		mObjectives.push_back({ objective, minimize, objective.integerValued() ? carl::freshIntegerVariable() : carl::freshRealVariable() });
+		mObjectives.push_back({ objective, minimize });
 	}
 
 	void remove_objective(const Poly& objective) {
@@ -116,9 +112,8 @@ public:
 			SMTRAT_LOG_WARN("smtrat.optimization", "Answer not necessarily optimal!");
 		}
 		SMTRAT_LOG_TRACE("smtrat.optimization", "Removing optimization variables from model");
-		for (const auto& opt : objectives()) {
-			model.erase(opt.variable);
-		}
+		model.erase(mOptimizationVarInt);
+		model.erase(mOptimizationVarReal);
 		return std::make_tuple(isOptimal ? OPTIMAL : SAT, model, optimalValues);
 	}
 };
