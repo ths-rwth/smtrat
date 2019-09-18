@@ -698,23 +698,15 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 
 	template<typename CADIntervalBased>
 	Answer operator()(Assignment& assignment, CADIntervalBased& cad) {
-        //@todo there should probably be a different preference order here?!
-		cad.mLifting.restoreRemovedSamples();
-		cad.mLifting.resetFullSamples();
-		while (true) {
-			Answer res = cad.checkFullSamples(assignment);
-			if (res == Answer::SAT) return Answer::SAT;
-			if (!cad.mLifting.hasNextSample()) {
-				if (!doProjection(cad)) return Answer::UNSAT;
-				cad.mLifting.restoreRemovedSamples();
-			}
-			if (preferLifting(cad.mLifting.getNextSample())) {
-				doLifting(cad);
-			} else {
-				doProjection(cad);
-				cad.mLifting.restoreRemovedSamples();
-			}
-		}
+		// look for unsat cover
+		auto res = get_unsat_cover(cad, Assignment(), cad.getVariables.at(0));
+		Answer ans = std::get<0>(res) ? Answer::SAT : Answer::UNSAT;
+
+		// if no cover was found, set SAT assignment
+		if(ans == Answer::SAT)
+			assignment = std::get<1>(res);
+
+		return res;
 	}
 };
 

@@ -43,10 +43,9 @@ namespace cad {
 				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(projection::normalize(p), cid, isBound); },
 				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addEqConstraint(projection::normalize(p), cid, isBound); },
 				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(projection::normalize(p), cid, isBound); }
-			),
-			mProjection(mConstraints)
+			)
 		{
-			//@todo what to initialize
+			//@todo add variables
 			
 			if (Settings::debugStepsToTikz) {
 				thp.configure<debug::TikzTreePrinter>("Lifting");
@@ -68,9 +67,6 @@ namespace cad {
 		const auto& getConstraints() const {
 			return mConstraints;
 		}
-		const auto& getProjection() const {
-			return mProjection;
-		}
 
 		/** @returns depth of var iff var is in var list, else 0 */
 		int getDepthOfVar(carl::Variable var) {
@@ -84,7 +80,7 @@ namespace cad {
 		/** @brief gets the next variable in the order 
 		 * 
 		 * @note if the var is the last one, it is returned
-		 * @note if the given var is not in the list, the first one in the list is output
+		 * @note if the given var is not in the list, the first one in the list is returned
 		 * 
 		 * @returns next variable in var order
 		 */
@@ -112,12 +108,17 @@ namespace cad {
 		//@todo add constraint to lifting level
 		void addConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Adding " << c);
-			//mConstraints.add(c);
+			mConstraints.push_back(c);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 		}
 		void removeConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing " << c);
-			//auto mask = mConstraints.remove(c);
+			for(auto it = mConstraints.begin(); it != mConstraints.end(); it++) {
+				if(*(it) == c) {
+					mConstraints.erase(it);
+					break;
+				}
+			}
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 		}
 		
@@ -126,11 +127,7 @@ namespace cad {
 			CADCoreIntervalBased<Settings::coreIntervalBasedHeuristic> cad;
 			auto res = cad(assignment, *this);
 			
-			/*assignment.insert(); */
-
-			//@todo check
-
-			return Answer::UNKNOWN;
+			return res;
 		}
 		
 		ConflictGraph generateConflictGraph() const {
