@@ -37,7 +37,7 @@ protected:
 	
 	std::vector<carl::Variable> mVariables;
 	Callback mAddCallback;
-        Callback mAddEqCallback; 
+	Callback mAddEqCallback;
 	Callback mRemoveCallback;
 	ConstraintMap mActiveConstraintMap;
 	ConstraintMap mConstraintMap;
