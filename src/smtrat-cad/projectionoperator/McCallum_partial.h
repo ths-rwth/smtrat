@@ -21,7 +21,7 @@ void single(const Poly& p, carl::Variable variable, Callback&& cb) {
 	for (std::size_t i = 0; i < p.coefficients().size(); ++i) {
 		const auto& coeff = p.coefficients()[i];
 		if (projection::doesNotVanish(coeff)) {
-			if (i == 0) {
+			if (i == p.coefficients().size()-1) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "lcoeff = " << p.lcoeff() << " does not vanish. No coefficients needed.");
 				return;
 			} else {
