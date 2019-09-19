@@ -6,6 +6,10 @@ namespace smtrat {
     class VarSchedulerMinisat;
     class VarSchedulerRandom;
     class VarSchedulerFixedRandom;
+
+    enum class TheoryGuidedDecisionHeuristicLevel : unsigned { CONFLICT_FIRST, SATISFIED_FIRST, DISABLED };
+    template<TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic>
+    class VarSchedulerSMTTheoryGuided;
     
     template<mcsat::VariableOrdering vot>
     class VarSchedulerMcsatBooleanFirst;

@@ -14,8 +14,6 @@
     
 namespace smtrat
 {
-    enum class TheoryGuidedDecisionHeuristicLevel : unsigned { CONFLICT_FIRST, SATISFIED_FIRST, DISABLED };
-    
     enum class CCES : unsigned { SECOND_LEVEL_MINIMIZER, LITERALS_BLOCKS_DISTANCE, SECOND_LEVEL_MINIMIZER_PLUS_LBD };
     
     enum class VARIABLE_ACTIVITY_STRATEGY : unsigned { NONE, MIN_COMPLEXITY_MAX_OCCURRENCES };
@@ -82,7 +80,8 @@ namespace smtrat
         /**
          * 
          */
-        static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::SATISFIED_FIRST;
+		// TODO this settings and the order_heap related code can be removed as the VarScheduler implementation turns out to be working:
+        static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::DISABLED;
         /**
          * 
          */
@@ -115,8 +114,8 @@ namespace smtrat
 
     static constexpr bool mcsat_backjump_decide = true;
 
-		static constexpr bool use_new_var_scheduler = false;
-		using VarScheduler = VarSchedulerBase; // noop scheduler
+		static constexpr bool use_new_var_scheduler = true;
+		using VarScheduler = VarSchedulerSMTTheoryGuided<TheoryGuidedDecisionHeuristicLevel::SATISFIED_FIRST>;
 
 		using MCSATSettings = mcsat::MCSATSettingsFMVSNL;
     };
