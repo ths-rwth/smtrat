@@ -2614,7 +2614,7 @@ namespace smtrat
             if( Settings::try_full_lazy_call_first && trail.size() == assigns.size() )
                 ++mNumberOfFullLazyCalls;
             // Check constraints corresponding to the positively assigned Boolean variables for consistency.
-            if( mCurrentAssignmentConsistent != SAT )
+            if( mCurrentAssignmentConsistent != SAT || is_minimizing())
             {
                 adaptPassedFormula();
             }
