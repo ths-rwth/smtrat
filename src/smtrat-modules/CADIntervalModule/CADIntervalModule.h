@@ -2,7 +2,7 @@
  * @file CADIntervalModule.h
  * @author Hanna Franzen <hanna.franzen@rwth-aachen.de>
  *
- * @version 2019-02-20
+ * @version 2019-09-20
  * Created on 2019-02-20.
  */
 
@@ -24,6 +24,10 @@ namespace smtrat
 			CADIntervalStatistics mStatistics;
 #endif
 			// Members.
+			std::vector<Poly> mPolynomials;			/**< polynomials gathered in inform, used for var ordering */
+			std::vector<ConstraintT> mConstraints; 	/**< constraints gathered by inform, cad initialization */
+			carl::carlVariables mVariables;			/**< variables */
+			cad::CADIntervalBased<Settings> mCAD;	/**< cad implementation */
 			
 		public:
 			typedef Settings SettingsType;

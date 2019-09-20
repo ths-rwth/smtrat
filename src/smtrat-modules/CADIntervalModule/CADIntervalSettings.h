@@ -8,17 +8,19 @@
 
 #pragma once
 
+#include <smtrat-cad/Settings.h>
+
 namespace smtrat
 {
-	struct CADIntervalSettings1
-	{
-		/// Name of the Module
-		static constexpr auto moduleName = "CADIntervalModule<CADIntervalSettings1>";
-		/**
-		 * Example for a setting.
-		 */
-		static const bool example_setting = true;
-	};
+	// struct CADIntervalSettings1
+	// {
+	// 	/// Name of the Module
+	// 	static constexpr auto moduleName = "CADIntervalModule<CADIntervalSettings1>";
+	// 	/**
+	// 	 * Example for a setting.
+	// 	 */
+	// 	static const bool example_setting = true;
+	// };
 
 	/**@todo adopted from NewCADSettings, this should be ok. recheck */
 	namespace cad {
@@ -31,6 +33,8 @@ namespace smtrat
 
 	/**@todo adopted from NewCADSettings, recheck whether to keep all of these */
 	struct CADIntervalBaseSettings: cad::MISHeuristicGreedy {
+		static constexpr auto moduleName = "CADIntervalModule<CADIntervalBaseSettings>";
+
 		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Default;
 		static constexpr cad::RootSplittingStrategy rootSplittingStrategy = cad::RootSplittingStrategy::DEFAULT;
 		static constexpr cad::CoreIntervalBasedHeuristic coreHeuristic = cad::CoreIntervalBasedHeuristic::UnsatCover;
@@ -47,6 +51,9 @@ namespace smtrat
 
 		static constexpr bool pp_disable_variable_elimination = true;
 		static constexpr bool pp_disable_resultants = true;
+
+		static constexpr cad::Incrementality incrementality = cad::Incrementality::NONE;
+		static constexpr cad::Backtracking backtracking = cad::Backtracking::ORDERED;
 	};
 
 	struct CADIntervalSettingsBase: CADIntervalBaseSettings {

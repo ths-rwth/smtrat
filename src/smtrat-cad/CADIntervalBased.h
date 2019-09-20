@@ -38,12 +38,14 @@ namespace cad {
 
 	public:
 		debug::TikzHistoryPrinter thp;
+
 		CADIntervalBased():
 			mConstraints(
 				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(projection::normalize(p), cid, isBound); },
 				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addEqConstraint(projection::normalize(p), cid, isBound); },
 				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(projection::normalize(p), cid, isBound); }
-			)
+			),
+			mProjection(mConstraints)
 		{
 			//@todo add variables
 			
@@ -124,7 +126,7 @@ namespace cad {
 		
 		Answer check(Assignment& assignment, std::vector<FormulaSetT>& mis) {
 
-			CADCoreIntervalBased<Settings::coreIntervalBasedHeuristic> cad;
+			CADCoreIntervalBased<Settings::CoreIntervalBasedHeuristic> cad;
 			auto res = cad(assignment, *this);
 			
 			return res;
