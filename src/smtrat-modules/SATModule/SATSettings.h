@@ -203,6 +203,11 @@ namespace smtrat
 		using MCSATSettings = mcsat::MCSAT_AF_FMICPOCNL;
 		using VarScheduler = VarSchedulerMcsatTheoryFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBased>>;
 	};
+	struct SATSettings_MCSAT_AF_FMICPVSOCNL_TF : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATAFFMICPVSOCNLTF>";
+		using MCSATSettings = mcsat::MCSAT_AF_FMICPVSOCNL;
+		using VarScheduler = VarSchedulerMcsatTheoryFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBased>>;
+	};
 	struct SATSettings_MCSAT_AF_FMVSOCNL_TF : BaseSATSettings_MCSAT {
 		static constexpr auto moduleName = "SATModule<MCSATAFFMVSOCNLTF>";
 		using MCSATSettings = mcsat::MCSAT_AF_FMVSOCNL;
