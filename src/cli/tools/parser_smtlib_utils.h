@@ -25,6 +25,7 @@ public:
 	void getAllModels() {}
 	void getAssignment() {}
 	void getModel() {}
+	void getObjectives() {}
 	void getProof() {}
 	void getUnsatCore() {}
 	void getValue(const std::vector<carl::Variable>&) {}
