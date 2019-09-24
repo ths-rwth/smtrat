@@ -115,7 +115,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	std::set<CADInterval*> calcRegionsFromPoly(
 		CADIntervalBased& cad,					/**< corresponding CAD */
 		ConstraintT c, 							/**< constraint containing the polynom */
-		std::map<carl::Variable, RAN> samples,	/**< variables to be substituted by given values, may be empty */
+		Assignment samples,	/**< variables to be substituted by given values, may be empty */
 		carl::Variable currVar					/**< constraint is considered as univariate in this variable */
 	) {
 		std::set<CADInterval*> regions;
@@ -146,13 +146,13 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		return regions;
 	}
 
-	/** converts a std::map<carl::Variable, RAN> to EvalRationalMap
+	/** converts a Assignment to EvalRationalMap
 	 * as different carl classes need the same information in different format
 	 */
 	template<typename CADIntervalBased>
 	 EvalRationalMap makeEvalMap( 
 		 CADIntervalBased& cad,						/**< corresponding CAD */ 
-		 const std::map<carl::Variable, RAN>& orig	/**< map to convert */
+		 const Assignment& orig	/**< map to convert */
 	) {
 		// convert eval map to usable format
 		EvalRationalMap map;
@@ -188,7 +188,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	const std::set<CADInterval*>& get_unsat_intervals(
 		CADIntervalBased& cad,					/**< corresponding CAD */ 
-		std::map<carl::Variable, RAN> samples,	/**< values for variables of depth till i-1 (only used if dimension is > 1) */
+		Assignment samples,	/**< values for variables of depth till i-1 (only used if dimension is > 1) */
 		carl::Variable currVar					/**< variable of current depth i */
 	) const {
 
@@ -223,7 +223,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				auto regions = calcRegionsFromPoly(cad, c, samples, currVar);
 				for(auto region : regions) {
 					auto r = region->getRepresentative();
-					std::map<carl::Variable, RAN> eval = new std::map<carl::Variable, RAN>(samples);
+					Assignment eval = new Assignment(samples);
 					eval.insert(std::pair<carl::Variable, RAN>(currVar, r));
 					std::vector<Poly> lowerreason;
 					std::vector<Poly> upperreason;
@@ -447,7 +447,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	std::set<smtrat::Poly> required_coefficients(
 		CADIntervalBased& cad,					/**< corresponding CAD */
-		std::map<carl::Variable, RAN> samples,	/**< values for variables till depth i */
+		Assignment samples,	/**< values for variables till depth i */
 		std::set<smtrat::Poly> polys			/**< polynoms */
 	) {
 		std::set<smtrat::Poly> coeffs;
@@ -473,7 +473,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	bool isSatWithOffset(
 		CADIntervalBased& cad,					/**< corresponding CAD */
 		RAN offset,								/**< offset */
-	 	std::map<carl::Variable, RAN> samples,	/**< values for variables till depth i-1 */
+	 	Assignment samples,	/**< values for variables till depth i-1 */
 		smtrat::Poly poly,						/**< polynom */
 		carl::Relation relation					/**< relation to use for constraint */
 	) {
@@ -498,7 +498,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	std::set<smtrat::Poly> construct_characterization(
 		CADIntervalBased& cad,					/**< corresponding CAD */
-		std::map<carl::Variable, RAN> samples,	/**< values for variables till depth i */
+		Assignment samples,	/**< values for variables till depth i */
 		std::vector<CADInterval*> intervals		/**< intervals containing a cover */
 	) {
 		// get subset of intervals that has no intervals contained in any other one
@@ -572,7 +572,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	CADInterval* interval_from_characterization(
 		CADIntervalBased& cad,					/**< corresponding CAD */
-	 	std::map<carl::Variable, RAN> samples,	/**< values for variables till depth i-1 */
+	 	Assignment samples,	/**< values for variables till depth i-1 */
 		carl::Variable currVar,					/**< var of depth i (current depth) */
 		RAN val, 								/**< value for currVar */
 		std::set<smtrat::Poly> butler			/**< poly characterization */
@@ -658,9 +658,9 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 * (Paper Alg. 3)
 	 */
 	template<typename CADIntervalBased>
-	std::tuple<bool, std::set<CADInterval*>, std::map<carl::Variable, RAN>> get_unsat_cover(
+	std::tuple<bool, std::set<CADInterval*>, Assignment> get_unsat_cover(
 		CADIntervalBased& cad,					/**< corresponding CAD */
-		std::map<carl::Variable, RAN> samples,	/**< values for variables of depth i-1 (initially empty set) */
+		Assignment samples,						/**< values for variables of depth i-1 (initially empty set) */
 		carl::Variable currVar					/**< var of depth i (current depth) */
 	) {
 		// get known unsat intervals
@@ -669,7 +669,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		// run until a cover was found
 		while(compute_cover(cad, unsatinters).empty()) {
 			// add new sample for current variable
-			std::map<carl::Variable, RAN> newsamples = new std::map<carl::Variable, RAN>(samples);
+			Assignment newsamples = new Assignment(samples);
 			RAN newval = chooseSample(cad, unsatinters);
 			SMTRAT_LOG_TRACE("smtrat.cad", "Next sample " << std::endl << newval);
 			newsamples.insert(std::make_pair(currVar, newval));
@@ -691,7 +691,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		}
 
 		// in case the loop exits a cover was found
-		auto res = std::make_tuple(false, unsatinters, std::map<carl::Variable, RAN>());
+		auto res = std::make_tuple(false, unsatinters, Assignment());
 		return res;
 	}
 
@@ -699,14 +699,14 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	Answer operator()(Assignment& assignment, CADIntervalBased& cad) {
 		// look for unsat cover
-		auto res = get_unsat_cover(cad, Assignment(), cad.getVariables.at(0));
+		auto res = get_unsat_cover(cad, Assignment(), cad.getVariables().at(0));
 		Answer ans = std::get<0>(res) ? Answer::SAT : Answer::UNSAT;
 
 		// if no cover was found, set SAT assignment
 		if(ans == Answer::SAT)
-			assignment = std::get<1>(res);
+			assignment = std::get<2>(res);
 
-		return res;
+		return ans;
 	}
 };
 

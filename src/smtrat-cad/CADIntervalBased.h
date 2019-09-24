@@ -22,7 +22,7 @@ namespace cad {
 	private:
 		std::vector<carl::Variable> mVariables;			/**< variables in given order */
 		std::vector<ConstraintT> mConstraints;			/**< constraints */
-		ProjectionT<Settings> mProjection;
+		// ProjectionT<Settings> mProjection;
 		
 		// ID scheme for variables x,y,z:
 		// Projection: x=1,y=2,z=3
@@ -40,12 +40,7 @@ namespace cad {
 		debug::TikzHistoryPrinter thp;
 
 		CADIntervalBased():
-			mConstraints(
-				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addPolynomial(projection::normalize(p), cid, isBound); },
-				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.addEqConstraint(projection::normalize(p), cid, isBound); },
-				[&](const UPoly& p, std::size_t cid, bool isBound){ mProjection.removePolynomial(projection::normalize(p), cid, isBound); }
-			),
-			mProjection(mConstraints)
+			mConstraints()
 		{
 			//@todo add variables
 			
@@ -104,15 +99,14 @@ namespace cad {
 		void reset(const std::vector<carl::Variable>& vars) {
 			mVariables = vars;
 			mConstraints.clear();
-			mProjection.reset();
 		}
 
-		//@todo add constraint to lifting level
 		void addConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Adding " << c);
 			mConstraints.push_back(c);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 		}
+
 		void removeConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Removing " << c);
 			for(auto it = mConstraints.begin(); it != mConstraints.end(); it++) {
@@ -124,9 +118,9 @@ namespace cad {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 		}
 		
-		Answer check(Assignment& assignment, std::vector<FormulaSetT>& mis) {
+		Answer check(Assignment& assignment) {
 
-			CADCoreIntervalBased<Settings::CoreIntervalBasedHeuristic> cad;
+			CADCoreIntervalBased<Settings::coreHeuristic> cad;
 			auto res = cad(assignment, *this);
 			
 			return res;

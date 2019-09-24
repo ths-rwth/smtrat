@@ -76,8 +76,10 @@ namespace smtrat
 			mCAD.reset(cad::variable_ordering::triangular_ordering(mPolynomials));
 		}
 
+		auto answer = mCAD.check(mLastAssignment);
+
 		// Your code.
-		return Answer::UNKNOWN; // This should be adapted according to your implementation.
+		return answer; // This should be adapted according to your implementation.
 	}
 }
 

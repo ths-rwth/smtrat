@@ -28,6 +28,8 @@ namespace smtrat
 			std::vector<ConstraintT> mConstraints; 	/**< constraints gathered by inform, cad initialization */
 			carl::carlVariables mVariables;			/**< variables */
 			cad::CADIntervalBased<Settings> mCAD;	/**< cad implementation */
+
+			cad::Assignment mLastAssignment;		/**< storage for last assignment */
 			
 		public:
 			typedef Settings SettingsType;
