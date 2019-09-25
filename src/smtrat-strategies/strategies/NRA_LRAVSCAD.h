@@ -21,9 +21,9 @@ namespace smtrat
 	 * @version
 	 *
 	 */
-	class NRA_CAD: public Manager {
+	class NRA_LRAVSCAD: public Manager {
 	public:
-		NRA_CAD(): Manager() {
+		NRA_LRAVSCAD(): Manager() {
 			setStrategy({
 				addBackend<FPPModule<FPPSettings1>>(
 					addBackend<SATModule<SATSettings1>>(
