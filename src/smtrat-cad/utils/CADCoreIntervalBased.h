@@ -198,7 +198,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		for(auto c : cad.mConstraints) {
 			auto consvars = c.variables();
 			for(auto v : consvars) {
-				if(isAtLeastCurrVar(v, currVar)) {
+				if(isAtLeastCurrVar(cad, v, currVar)) {
 					constraints.push_back(c);
 					break;
 				}
@@ -223,11 +223,11 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				auto regions = calcRegionsFromPoly(cad, c, samples, currVar);
 				for(auto region : regions) {
 					auto r = region->getRepresentative();
-					Assignment eval = new Assignment(samples);
-					eval.insert(std::pair<carl::Variable, RAN>(currVar, r));
+					auto eval = new Assignment(samples);
+					eval->insert(std::pair<carl::Variable, RAN>(currVar, r));
 					std::vector<Poly> lowerreason;
 					std::vector<Poly> upperreason;
-					if(c.satisfiedBy(makeEvalMap(cad, eval)) == 0) { //@todo again, is this right?
+					if(c.satisfiedBy(makeEvalMap(cad, *eval)) == 0) { //@todo again, is this right?
 						if(region->getLowerBoundType() != CADInterval::CADBoundType::INF)
 							lowerreason.push_back(c.lhs());
 						if(region->getUpperBoundType() != CADInterval::CADBoundType::INF)
@@ -498,8 +498,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	std::set<smtrat::Poly> construct_characterization(
 		CADIntervalBased& cad,					/**< corresponding CAD */
-		Assignment samples,	/**< values for variables till depth i */
-		std::vector<CADInterval*> intervals		/**< intervals containing a cover */
+		Assignment samples,						/**< values for variables till depth i */
+		std::set<CADInterval*> intervals		/**< intervals containing a cover */
 	) {
 		// get subset of intervals that has no intervals contained in any other one
 		std::set<CADInterval*> subinters = compute_cover(cad, intervals);
@@ -664,27 +664,27 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		carl::Variable currVar					/**< var of depth i (current depth) */
 	) {
 		// get known unsat intervals
-		std::set<CADInterval*>& unsatinters = get_unsat_intervals(cad, samples);
+		auto unsatinters = get_unsat_intervals(cad, samples, currVar);
 
 		// run until a cover was found
 		while(compute_cover(cad, unsatinters).empty()) {
 			// add new sample for current variable
-			Assignment newsamples = new Assignment(samples);
+			auto newsamples = new Assignment(samples);
 			RAN newval = chooseSample(cad, unsatinters);
 			SMTRAT_LOG_TRACE("smtrat.cad", "Next sample " << std::endl << newval);
-			newsamples.insert(std::make_pair(currVar, newval));
+			newsamples->insert(std::make_pair(currVar, newval));
 
 			// if the sample set has full dimension we have a satifying witness
 			if(cad.dim() == cad.getDepthOfVar(currVar))
-				return std::make_tuple(true, std::set<CADInterval*>(), newsamples);
+				return std::make_tuple(true, std::set<CADInterval*>(), *newsamples);
 
 			// recursive recall for next dimension
-			auto nextcall = get_unsat_cover(cad, newsamples, cad.getNextVar(currVar));
+			auto nextcall = get_unsat_cover(cad, *newsamples, cad.getNextVar(currVar));
 			// if SAT
 			if(std::get<0>(nextcall))
 				return nextcall;
 			else {
-				auto butler = construct_characterization(cad, newsamples, std::get<1>(nextcall));
+				auto butler = construct_characterization(cad, *newsamples, std::get<1>(nextcall));
 				CADInterval* butlerinter = interval_from_characterization(cad, samples, currVar, newval, butler);
 				unsatinters.insert(butlerinter);
 			}
