@@ -69,6 +69,10 @@ struct MCSAT_AF_FMICPOCNL {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
 	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,icp::Explanation,onecellcad::Explanation, nlsat::Explanation>;
 };
+struct MCSAT_AF_FMICPVSOCNL {
+	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,icp::Explanation,vs::Explanation,onecellcad::Explanation, nlsat::Explanation>;
+};
 struct MCSAT_AF_FMVSOCNL {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
 	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,onecellcad::Explanation, nlsat::Explanation>;

@@ -2310,7 +2310,7 @@ namespace smtrat
         // call mLRA to check linear feasibility
         mLRA.clearLemmas();
         mValidationFormula->updateProperties();
-        _answer = mLRA.check( mFinalCheck, true, false );
+        _answer = mLRA.check( mFinalCheck, true );
 
         // catch lemmas
         if( mFinalCheck )
@@ -2434,7 +2434,7 @@ namespace smtrat
             }
         }
         mValidationFormula->updateProperties();
-        Answer boxCheck = mLRA.check( false, true, false );
+        Answer boxCheck = mLRA.check( false, true );
         #ifdef ICP_MODULE_DEBUG_1
         mLRA.print();
         std::cout << "Boxcheck: " << boxCheck << std::endl;
