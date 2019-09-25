@@ -193,17 +193,10 @@ std::optional<OpenCADCell> mergeCellWithPoly(
 	if (level == 0) // We have a non-zero, constant-poly, so no roots and nothing to do
 		return std::optional<OpenCADCell>(cell);
 
-	std::vector<carl::Variable> variableOrder4Lvl(level);
-	std::copy_n(variableOrder.begin(), level, variableOrder4Lvl.begin());
-	// Plug in all points into 'poly' and check if its zero.
-	// This merge function is only correct for a full-dimensional CADCells,
-	// i.e. the 'point' is not allowed to be a root of 'poly'
-	// since this implies a lower-dimensional cell.
-	// Use this special eval function because we plug in algebraic reals into the poly.
-	RAN result = carl::RealAlgebraicNumberEvaluation::evaluate(poly,
-															   point.subpoint(level),
-															   variableOrder4Lvl);
-	if (result.isZero()) {
+	bool result = carl::RealAlgebraicNumberEvaluation::evaluate(
+			ConstraintT(poly, carl::Relation::EQ),
+			toStdMap(point, level, variableOrder));
+	if (result) {
 		SMTRAT_LOG_WARN("smtrat.opencad", "Poly vanished at point.");
 		return std::nullopt;
 	}
