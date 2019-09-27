@@ -83,7 +83,6 @@ namespace cad {
 
 	struct NewCADBaseSettings: cad::MISHeuristicGreedy {
 		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Default;
-		static constexpr cad::RootSplittingStrategy rootSplittingStrategy = cad::RootSplittingStrategy::DEFAULT;
 		static constexpr cad::CoreHeuristic coreHeuristic = cad::CoreHeuristic::PreferSampling;
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = false;
