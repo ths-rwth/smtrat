@@ -15,6 +15,7 @@
 #include <stack>
 #include <tuple>
 #include <vector>
+#include <queue>
 
 namespace smtrat {
 

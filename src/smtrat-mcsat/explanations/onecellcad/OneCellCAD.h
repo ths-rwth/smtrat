@@ -399,11 +399,6 @@ public:
 			return false; // cannot vanish early
 
 		const carl::Variable mainVariable = variableOrder[polyLevel];
-		// auto resultPoly =
-		// 	carl::RealAlgebraicNumberEvaluation::evaluateCoefficients(
-		// 		poly.toUnivariatePolynomial(mainVariable),
-		// 		prefixPointToStdMap(polyLevel));
-		// return carl::isZero(resultPoly);vanishes
 
 		return carl::RealAlgebraicNumberEvaluation::vanishes(
 				poly.toUnivariatePolynomial(mainVariable),
@@ -414,16 +409,10 @@ public:
 		const std::size_t polyLevel,
 		const Poly& poly) {
 		const std::size_t componentCount = polyLevel + 1;
-		std::vector<carl::Variable> subVariableOrder(
-			variableOrder.begin(),
-			variableOrder.begin() + (long)componentCount);
-		// 'evaluate' only accepts a point and variables with exactly
-		// 'componentCount' number of components
-		RAN result = carl::RealAlgebraicNumberEvaluation::evaluate(
-			poly,
-			point.prefixPoint(componentCount),
-			subVariableOrder);
-		return result.isZero();
+
+		return carl::RealAlgebraicNumberEvaluation::evaluate(
+			ConstraintT(poly, carl::Relation::EQ),
+			prefixPointToStdMap(componentCount));
 	}
 
 	inline bool isPointRootOfPoly(

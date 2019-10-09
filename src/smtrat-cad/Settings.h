@@ -1,6 +1,6 @@
 #pragma once
 
-#include <carl/core/rootfinder/IncrementalRootFinder.h>
+#include <carl/formula/model/ran/RealAlgebraicNumber.h>
 
 namespace smtrat {
 namespace cad {
@@ -29,7 +29,6 @@ namespace cad {
 	using SampleHeuristic = carl::RANSampleHeuristic;
 	enum class MISHeuristic { TRIVIAL, GREEDY, GREEDY_PRE, GREEDY_WEIGHTED, EXACT, HYBRID};
 	enum class CoreHeuristic { BySample, PreferProjection, PreferSampling, EnumerateAll, Interleave };
-	using RootSplittingStrategy = carl::rootfinder::SplittingStrategy;
 
 	struct BaseSettings {
 		static constexpr Incrementality incrementality = Incrementality::NONE;
@@ -46,7 +45,6 @@ namespace cad {
 		static constexpr SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Default;
 		static constexpr SampleCompareStrategy sampleComparator = cad::SampleCompareStrategy::Default;
 		static constexpr FullSampleCompareStrategy fullSampleComparator = cad::FullSampleCompareStrategy::Default;
-		static constexpr RootSplittingStrategy rootSplittingStrategy = cad::RootSplittingStrategy::DEFAULT;
 	};
 }
 }

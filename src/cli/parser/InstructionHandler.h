@@ -8,6 +8,7 @@
 #include <smtrat-qe/smtrat-qe.h>
 
 #include <iostream>
+#include <queue>
 
 namespace smtrat {
 namespace parser {
