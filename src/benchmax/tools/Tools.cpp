@@ -1,6 +1,7 @@
 #include "Tools.h"
 
 #include "MathSAT.h"
+#include "Minisat.h"
 #include "Minisatp.h"
 #include "SMTRAT.h"
 #include "SMTRAT_OPB.h"
@@ -38,6 +39,7 @@ Tools loadTools() {
 	Tools tools;
 	createTools<Tool>(settings_tools().tools_generic, tools);
 	createTools<MathSAT>(settings_tools().tools_mathsat, tools);
+	createTools<Minisat>(settings_tools().tools_minisat, tools);
 	createTools<Minisatp>(settings_tools().tools_minisatp, tools);
 	createTools<SMTRAT>(settings_tools().tools_smtrat, tools);
 	createTools<SMTRAT_OPB>(settings_tools().tools_smtrat_opb, tools);
@@ -69,6 +71,7 @@ void registerToolSettings(SettingsParser* parser) {
 		("statistics,s", po::bool_switch(&s.collect_statistics), "run tools with statistics")
 		("tool", po::value<std::vector<std::filesystem::path>>(&s.tools_generic), "a generic tool")
 		("mathsat", po::value<std::vector<std::filesystem::path>>(&s.tools_mathsat), "MathSAT with SMT-LIB interface")
+		("minisat", po::value<std::vector<std::filesystem::path>>(&s.tools_minisat), "Minisat with DIMACS interface")
 		("minisatp", po::value<std::vector<std::filesystem::path>>(&s.tools_minisatp), "Minisatp with OPB interface")
 		("smtrat,S", po::value<std::vector<std::filesystem::path>>(&s.tools_smtrat), "SMT-RAT with SMT-LIB interface")
 		("smtrat-opb,O", po::value<std::vector<std::filesystem::path>>(&s.tools_smtrat_opb), "SMT-RAT with OPB interface")
