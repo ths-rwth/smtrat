@@ -273,6 +273,7 @@ public:
 		ssh_channel channel = getChannel();
 		std::stringstream call;
 		call << "date +\"Start: %s%3N\" ; ";
+		call << "cd " << settings_ssh().basedir << " ; ";
 		auto timeout = (std::chrono::seconds(settings_benchmarks().limit_time) + std::chrono::seconds(3)).count();
 		if (settings_ssh().use_wallclock) call << "timeout " << timeout << "s ";
 		else call << "ulimit -S -t " << timeout << " && ";
