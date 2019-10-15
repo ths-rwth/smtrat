@@ -114,7 +114,7 @@ namespace cad {
             polys.insert(newpoly);
         }
 
-        /** initializes interval with given bounds, bound types, reasons and polynom */
+        /** initializes interval with given bounds, bound types, reasons and polynoms */
         CADInterval(
             RAN lowerbound, 
             RAN upperbound, 
@@ -125,6 +125,21 @@ namespace cad {
             std::set<Poly> newpoly):
             lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), 
             lowerreason(lowerres), upperreason(upperres), polys(newpoly) {
+        }
+
+        /** initializes interval with given bounds, bound types, reasons and polynom */
+        CADInterval(
+            RAN lowerbound, 
+            RAN upperbound, 
+            CADBoundType lowerboundtype, 
+            CADBoundType upperboundtype, 
+            std::set<Poly> lowerres,
+            std::set<Poly> upperres, 
+            Poly newpoly):
+            lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), 
+            lowerreason(lowerres), upperreason(upperres){
+            
+            polys.insert(newpoly);
         }
 
         /** initializes interval with given bounds, bound types, reasons, polynom and polynom without leading term */

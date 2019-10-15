@@ -152,7 +152,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	 EvalRationalMap makeEvalMap( 
 		 CADIntervalBased& cad,						/**< corresponding CAD */ 
-		 const Assignment& orig	/**< map to convert */
+		 const Assignment& orig						/**< map to convert */
 	) {
 		// convert eval map to usable format
 		EvalRationalMap map;
@@ -186,11 +186,11 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 * (Paper Alg. 1)
 	*/
 	template<typename CADIntervalBased>
-	const std::set<CADInterval*>& get_unsat_intervals(
-		CADIntervalBased& cad,					/**< corresponding CAD */ 
-		Assignment samples,	/**< values for variables of depth till i-1 (only used if dimension is > 1) */
-		carl::Variable currVar					/**< variable of current depth i */
-	) const {
+	std::set<CADInterval*> get_unsat_intervals(
+		CADIntervalBased& cad,			/**< corresponding CAD */ 
+		Assignment samples,				/**< values for variables of depth till i-1 (only used if dimension is > 1) */
+		carl::Variable currVar			/**< variable of current depth i */
+	) {
 
 		// @todo this checks all vars, not just main vars
 		/* constraints are filtered for ones with main var currVar or higher */
@@ -211,9 +211,9 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			unsigned issat = c.satisfiedBy(makeEvalMap(cad, samples));
 			/* if unsat, return (-inf, +inf) */
 			if(issat == 0) { /*@todo is this equiv to "c(s) == false"? */
-				std::set<CADInterval*> set;
-				set.insert(new CADInterval(c.lhs()));
-				return set;
+				newintervals.clear();
+				newintervals.insert(new CADInterval(c.lhs()));
+				return newintervals;
 			}
 			/* if sat, constraint is finished */
 			else if(issat == 1)
@@ -225,13 +225,13 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 					auto r = region->getRepresentative();
 					auto eval = new Assignment(samples);
 					eval->insert(std::pair<carl::Variable, RAN>(currVar, r));
-					std::vector<Poly> lowerreason;
-					std::vector<Poly> upperreason;
+					std::set<Poly> lowerreason;
+					std::set<Poly> upperreason;
 					if(c.satisfiedBy(makeEvalMap(cad, *eval)) == 0) { //@todo again, is this right?
 						if(region->getLowerBoundType() != CADInterval::CADBoundType::INF)
-							lowerreason.push_back(c.lhs());
+							lowerreason.insert(c.lhs());
 						if(region->getUpperBoundType() != CADInterval::CADBoundType::INF)
-							upperreason.push_back(c.lhs());
+							upperreason.insert(c.lhs());
 						newintervals.insert(new CADInterval(region->getLower(), region->getUpper(), region->getLowerBoundType(), region->getUpperBoundType(), lowerreason, upperreason, c.lhs()));
 					}
 				} 
@@ -359,7 +359,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 * (Paper Alg. 2)
 	 */
 	template<typename CADIntervalBased>
-	std::set<CADInterval>compute_cover(
+	std::set<CADInterval*>compute_cover(
 		CADIntervalBased& cad, 			/**< corresponding CAD */
 		std::set<CADInterval*> inters	/**< set of intervals over which to find a cover */
 	) {
@@ -383,7 +383,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		// if -inf is not a bound find sample in (-inf, first bound)
 		bool hasminf = false;
 		bool first = true;
-		RAN lowestval = 0;
+		RAN lowestval = RAN(0);
 		for(auto inter : inters) {
 			if(inter->getLowerBoundType() == CADInterval::CADBoundType::INF) {
 				hasminf = true;
@@ -507,7 +507,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		subinters = sortIntervals(cad, subinters);
 
 		// create the characterization of the unsat region
-		std::set<smtrat::Poly> characterization = smtrat::Poly();
+		std::set<smtrat::Poly> characterization;
 		for(auto inter : subinters) {
 			// add all polynoms not containing the main var
 			for(auto lowpoly : inter->getLowerPolynoms()) {
