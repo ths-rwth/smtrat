@@ -451,6 +451,7 @@ namespace smtrat
         }
         Minisat::lbool result = l_Undef;
         mUpperBoundOnMinimal = passedFormulaEnd();
+        bool isOptimal = true;
         while( true )
         {
             if( Settings::use_restarts )
@@ -479,7 +480,7 @@ namespace smtrat
                 mExcludedAssignments = false;
             }
             // ##### Stop here if not in optimization mode!
-            if( !mMinimizingCheck )
+            if( !is_minimizing() )
                 break;
             std::vector<CRef> excludedAssignments;
             if( result == l_Undef )
@@ -496,7 +497,9 @@ namespace smtrat
             else
             {
                 assert( result == l_True );
-                runBackends( true, mFullCheck, true );
+                Answer runBackendAnswer = runBackends( true, mFullCheck, objective() );
+                assert(is_sat(runBackendAnswer));
+                isOptimal = isOptimal && (runBackendAnswer == OPTIMAL);
                 updateModel();
                 auto modelIter = mModel.find( objective() );
                 assert( modelIter != mModel.end() );
@@ -509,7 +512,7 @@ namespace smtrat
                 assert( mv.isRational() ); // @todo: how do we handle the other model value types?
                 // Add a new upper bound on the yet computed minimum
                 removeUpperBoundOnMinimal();
-                FormulaT newUpperBoundOnMinimal( objectiveFunction() - mv.asRational(), carl::Relation::LESS );
+                FormulaT newUpperBoundOnMinimal( objective() - mv.asRational(), carl::Relation::LESS );
                 addConstraintToInform_( newUpperBoundOnMinimal );
                 mUpperBoundOnMinimal = addSubformulaToPassedFormula( newUpperBoundOnMinimal, newUpperBoundOnMinimal ).first;
                 // Exclude the last theory call with a clause.
@@ -548,7 +551,7 @@ namespace smtrat
         #endif
         if( result == l_True )
         {
-            return SAT;
+            return (is_minimizing() && isOptimal) ? OPTIMAL : SAT;
         }
         else if( result == l_False )
         {
@@ -677,7 +680,7 @@ namespace smtrat
         if( !mModelComputed && !mOptimumComputed )
         {
             clearModel();
-            if( solverState() != UNSAT || mMinimizingCheck )
+            if( solverState() != UNSAT || is_minimizing() )
             {
                 for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
                 {
@@ -2611,7 +2614,7 @@ namespace smtrat
             if( Settings::try_full_lazy_call_first && trail.size() == assigns.size() )
                 ++mNumberOfFullLazyCalls;
             // Check constraints corresponding to the positively assigned Boolean variables for consistency.
-            if( mCurrentAssignmentConsistent != SAT )
+            if( mCurrentAssignmentConsistent != SAT || is_minimizing())
             {
                 adaptPassedFormula();
             }
@@ -2622,7 +2625,7 @@ namespace smtrat
                 std::cout << "### Check the constraints: { "; for( auto& subformula : rPassedFormula() ) std::cout << subformula.formula() << " "; std::cout << "}" << std::endl;
                 #endif
                 mChangedPassedFormula = false;
-                mCurrentAssignmentConsistent = runBackends( finalCheck, mFullCheck, false );
+                mCurrentAssignmentConsistent = runBackends( finalCheck, mFullCheck, carl::Variable::NO_VARIABLE );
 				SMTRAT_LOG_DEBUG("smtrat.sat", "Result: " << mCurrentAssignmentConsistent);
                 switch( mCurrentAssignmentConsistent )
                 {
@@ -2951,9 +2954,11 @@ namespace smtrat
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Deciding upon " << next);
 				}
                 if (next == lit_Undef) {
-                    assert(mMCSAT.fullConsistencyCheck());
-                    assert(mMCSAT.theoryAssignmentComplete());
-                    SMTRAT_LOG_DEBUG("smtrat.sat", "No further theory variable to assign.");
+                    if (Settings::mc_sat) {
+                        assert(mMCSAT.fullConsistencyCheck());
+                        assert(mMCSAT.theoryAssignmentComplete());
+                        SMTRAT_LOG_DEBUG("smtrat.sat", "No further theory variable to assign.");
+                    }
                     mCurrentAssignmentConsistent = SAT;
                 }
 
@@ -2964,7 +2969,7 @@ namespace smtrat
                     if( mReceivedFormulaPurelyPropositional || mCurrentAssignmentConsistent == SAT )
                     {
                         // Model found:
-                        assert(mMCSAT.isConsistent());
+                        if (Settings::mc_sat) assert(mMCSAT.isConsistent());
                         return l_True;
                     }
                     else
@@ -3102,7 +3107,11 @@ namespace smtrat
         if( learnt_clause.size() == 1 )
         {
 			CARL_CHECKPOINT("nlsat", "new-assumption", learnt_clause[0]);
-            uncheckedEnqueue( learnt_clause[0] );
+            assert((Settings::mc_sat && decisionLevel() <= assumptions.size()) || (!Settings::mc_sat && decisionLevel() == assumptions.size()));
+            assumptions.push( learnt_clause[0] );
+            // assumptions are inserted in search()
+            // newDecisionLevel();
+            // uncheckedEnqueue( learnt_clause[0] );
         }
         else
         {

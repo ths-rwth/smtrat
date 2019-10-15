@@ -25,6 +25,11 @@ namespace smtrat
     template<class Settings>
     Answer SplitSOSModule<Settings>::checkCore()
     {
+        if (is_minimizing()) { // TODO optimization possible?
+			SMTRAT_LOG_ERROR("smtrat.splitsos", "Optimization not supported");
+			assert(false);
+		}
+
         auto receivedFormula = firstUncheckedReceivedSubformula();
         while( receivedFormula != rReceivedFormula().end() )
         {

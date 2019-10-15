@@ -2,6 +2,8 @@
  * A module, which iteratively finds boolean and arithmetic substitutions and applies them to all formulas
  * which are connected to this substitution by a conjunction.
  * 
+ * Supports optimization.
+ * 
  * @file ESModule.h
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  *

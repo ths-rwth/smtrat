@@ -5,6 +5,8 @@
  * Multiple-Choice Blasting
  * Detects arithmetic variabls that allow for a finite number of choices.
  * Blasts there choices to boolean variables.
+ * 
+ * Supports optimization.
  *
  * @version 2015-12-10
  * Created on 2015-12-10.

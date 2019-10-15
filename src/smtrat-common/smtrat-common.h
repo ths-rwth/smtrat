@@ -59,13 +59,15 @@ enum LemmaLevel { NONE = 0, NORMAL = 1, ADVANCED = 2 };
 
 
 ///An enum with the possible answers a Module can give
-enum Answer { SAT = 0, UNSAT = 1, UNKNOWN = 2, ABORTED = 3 };
+enum Answer { SAT = 0, UNSAT = 1, UNKNOWN = 2, ABORTED = 3, OPTIMAL = 4 };
+inline bool is_sat(Answer a) { return a == SAT || a == OPTIMAL; }
 inline std::ostream& operator<<(std::ostream& os, Answer a) {
 	switch (a) {
 		case Answer::SAT:		return os << "SAT";
 		case Answer::UNSAT:		return os << "UNSAT";
 		case Answer::UNKNOWN:	return os << "UNKNOWN";
 		case Answer::ABORTED:	return os << "ABORTED";
+		case Answer::OPTIMAL:	return os << "OPTIMAL";
 		default:
 			assert(false && "Invalid enum value for Answer");
 			return os << "Answer(" << carl::underlying_enum_value(a) << ")";

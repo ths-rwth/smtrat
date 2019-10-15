@@ -35,8 +35,7 @@ namespace smtrat
         mDebugOutputChannel( std::cout.rdbuf() ),
         mLogic( carl::Logic::UNDEFINED ),
         mInformationRelevantFormula(),
-        mLemmaLevel(LemmaLevel::NONE),
-        mObjectives()
+        mLemmaLevel(LemmaLevel::NONE)
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         ,
         mpThreadPool( nullptr ),
@@ -127,41 +126,7 @@ namespace smtrat
     {
         *mPrimaryBackendFoundAnswer.back() = false;
         mpPassedFormula->updateProperties();
-        if( mObjectives.empty() )
-            return mpPrimaryBackend->check( true, _full, false );
-        //assert( mObjectives.size() == 1 );
-        push(); // In this level we collect the upper bounds for the minimum of each objective function.
-        for( auto obVarIter = mObjectives.begin(); ; )
-        {
-            assert( obVarIter != mObjectives.end() );
-            push(); // In this level we store the equation between the objective function and it's introduced variable.
-            add( FormulaT( (obVarIter->second.second ? -(obVarIter->first) : obVarIter->first) - obVarIter->second.first, carl::Relation::EQ ) );
-            mpPrimaryBackend->setObjective( obVarIter->second.first );
-            Answer result = mpPrimaryBackend->check( true, _full, true );
-            if( result != SAT )
-            {
-                pop( 2 );
-                return result;
-            }
-            ++obVarIter;
-            if( obVarIter != mObjectives.end() )
-            {
-                const Model& primModel = model();
-                auto objModel = primModel.find( obVarIter->second.first );
-                assert( objModel != primModel.end() );
-                assert( objModel->second.isRational() ); // Non-linear optimization not yet supported.
-                FormulaT minimumUpperBound( (obVarIter->second.second ? obVarIter->first : -(obVarIter->first)) - objModel->second.asRational(), carl::Relation::LESS );
-                pop(); // Remove the equation between the objective function and it's introduced variable.
-                add( minimumUpperBound );
-            }
-            else
-            {
-                mpPrimaryBackend->updateModel();
-                pop( 2 );
-                return result;
-            }
-        }
-        
+        return mpPrimaryBackend->check( true, _full, objectiveVariable() );
     }
     
     const std::vector<FormulaSetT>& Manager::infeasibleSubsets() const
@@ -179,35 +144,7 @@ namespace smtrat
         mpPrimaryBackend->updateModel();
         return mpPrimaryBackend->model();
     }
-    
-    ModelValue Manager::optimum( const Poly& _objFct ) const
-    {
-        if( mObjectives.size() == 1 )
-        {
-            assert( mObjectives.front().first == _objFct );
-            const Model& curModel = model();
-            auto modelIter = curModel.find( mObjectives.front().second.first );
-            assert( modelIter != curModel.end() );
-            if( modelIter->second.isMinusInfinity() )
-                return mObjectives.front().second.second ? modelIter->second.asInfinity() : InfinityValue{true};
-            assert( modelIter->second.isRational() );
-            return mObjectives.front().second.second ? modelIter->second.asRational() : Rational(-(modelIter->second.asRational()));
-        }
-        for( auto& obj : mObjectives )
-        {
-            if( obj.first == _objFct )
-            {
-                const Model& curModel = model();
-                auto modelIter = curModel.find( obj.second.first );
-                assert( modelIter != curModel.end() );
-                assert( modelIter->second.isRational() );
-                return (obj.second.second ? modelIter->second.asRational() : Rational(-(modelIter->second.asRational())));
-            }
-        }
-        assert( false );
-        return ModelValue();
-    }
-    
+        
     std::vector<FormulaT> Manager::lemmas()
     {
         std::vector<FormulaT> result;
@@ -226,35 +163,7 @@ namespace smtrat
     
     void Manager::printAssignment() const
     {
-        if( mObjectives.empty() )
-            mpPrimaryBackend->printModel();
-        else
-        {
-            Model curModel = model();
-            auto objectivesIter = mObjectives.begin();
-            for( auto ass = curModel.begin(); ass != curModel.end(); )
-            {
-                if (ass->first.isVariable() || ass->first.isBVVariable())
-                {
-                    if( objectivesIter != mObjectives.end() && ass->first.asVariable() == objectivesIter->second.first )
-                    {
-                        if( ass->second.isMinusInfinity() )
-                            return;
-                        ++objectivesIter;
-                        ass = curModel.erase( ass );
-                    }
-                    else
-                        ++ass;
-                }
-                else
-                    ++ass;
-            }
-            curModel.clean();
-            if( !curModel.empty() )
-            {
-                std::cout << curModel;
-            }
-        }
+        mpPrimaryBackend->printModel();
     }
     
     ModuleInput::iterator Manager::remove( ModuleInput::iterator _subformula )
@@ -271,25 +180,10 @@ namespace smtrat
             // Remove until the list is either empty or the backtrack point is hit.
             auto it = mpPassedFormula->end();
             --it;
-            if (it == mBacktrackPoints.back().first) break;
+            if (it == mBacktrackPoints.back()) break;
             remove(it);
         }
-        int pos = (int)mObjectives.size();
-        while (!mObjectives.empty()) {
-            // Remove until the list is either empty or the backtrack point is hit.
-            if (--pos == mBacktrackPoints.back().second) break;
-            carl::Variable objVar = mObjectives.back().second.first;
-            if( objVar.type() == carl::VariableType::VT_INT )
-                mReusableIntObjectiveVars.push( objVar );
-            else
-            {
-                assert( objVar.type() == carl::VariableType::VT_REAL );
-                mReusableRealObjectiveVars.push( objVar );
-            }
-            mObjectives.pop_back();
-        }
         mBacktrackPoints.pop_back();
-        ++mNumberOfPops;
         return true;
     }
 
@@ -344,23 +238,6 @@ namespace smtrat
     }
     #endif
     
-    void Manager::printAssertions( std::ostream& _out ) const
-    {
-        _out << "(";
-        if( mpPassedFormula->size() == 1 )
-        {
-            _out << mpPassedFormula->back().formula();
-        }
-        else
-        {
-            for( auto subFormula = mpPassedFormula->begin(); subFormula != mpPassedFormula->end(); ++subFormula )
-            {
-                _out << (*subFormula).formula() << std::endl;
-            }
-        }
-        _out << ")" << std::endl;
-    }
-
     void Manager::printInfeasibleSubset( std::ostream& _out ) const
     {
         _out << "(";
@@ -386,7 +263,7 @@ namespace smtrat
     {
         auto btlIter = mBacktrackPoints.begin();
         std::size_t btlCounter = 0;
-        while (btlIter != mBacktrackPoints.end() && btlIter->first == mpPassedFormula->end()) {
+        while (btlIter != mBacktrackPoints.end() && *btlIter == mpPassedFormula->end()) {
             _out << "btl_" << btlCounter << ": (and ) skip" << std::endl;
             btlCounter++;
             btlIter++;
@@ -394,7 +271,7 @@ namespace smtrat
         _out << "btl_" << btlCounter << ": (and";
         for (auto it = mpPassedFormula->begin(); it != mpPassedFormula->end(); it++) {
             _out << " " << it->formula();
-            if (btlIter != mBacktrackPoints.end() && btlIter->first == it) {
+            if (btlIter != mBacktrackPoints.end() && *btlIter == it) {
                 btlCounter++;
                 btlIter++;
                 _out << " )" << std::endl << "btl_" << btlCounter << ": (and";
@@ -445,15 +322,14 @@ namespace smtrat
                 for(auto form = _requiredBy->rPassedFormula().begin(); form != _requiredBy->firstSubformulaToPass(); form++) {
                     newBackend->add(form);
                 }
-                newBackend->setObjective( _requiredBy->objective() );
             }
         }
         return backends;
     }
 
     #ifdef SMTRAT_STRAT_PARALLEL_MODE
-	Answer Manager::runBackends(const std::vector<Module*>& _modules, bool _final, bool _full, bool _minimize) {
-		return mpThreadPool->runBackends(_modules, _final, _full, _minimize);
+	Answer Manager::runBackends(const std::vector<Module*>& _modules, bool _final, bool _full, carl::Variable _objective) {
+		return mpThreadPool->runBackends(_modules, _final, _full, _objective);
 	}
     #endif
 }    // namespace smtrat

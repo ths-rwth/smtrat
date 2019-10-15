@@ -3,13 +3,13 @@
  */
 #pragma once
 
-#include "../solver/Manager.h"
-#include "../modules/FPPModule/FPPModule.h"
-#include "../modules/SATModule/SATModule.h"
-#include "../modules/LRAModule/LRAModule.h"
-#include "../modules/CubeLIAModule/CubeLIAModule.h"
-#include "../modules/VSModule/VSModule.h"
-#include "../modules/CADModule/CADModule.h"
+#include <smtrat-solver/Manager.h>
+#include <smtrat-modules/FPPModule/FPPModule.h>
+#include <smtrat-modules/SATModule/SATModule.h>
+#include <smtrat-modules/LRAModule/LRAModule.h>
+#include <smtrat-modules/CubeLIAModule/CubeLIAModule.h>
+#include <smtrat-modules/VSModule/VSModule.h>
+#include <smtrat-modules/CADModule/CADModule.h>
 
 namespace smtrat
 {

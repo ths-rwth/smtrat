@@ -34,6 +34,7 @@ void Origins::add(const FormulaT& f, const std::vector<FormulaT>& origin) {
         SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding new origins " << f << " -> " << origin);
         return;
     }
+    SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding new origins " << f << " -> " << origin);
     it->second.emplace_back(origin);
     std::sort(it->second.begin(), it->second.end(),
         [](const auto& a, const auto& b){
@@ -353,7 +354,9 @@ bool CADPreprocessor::preprocess() {
 			if (std::get<bool>(collectResult) == true) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Collected assignments:" << std::endl << *this);
 				for (const auto& de: mDerivedEqualities) {
-					mOrigins.add(FormulaT(de.second), {FormulaT(de.first)});
+					if (mOrigins.mOrigins.find(FormulaT(de.second)) == mOrigins.mOrigins.end()) {
+						mOrigins.add(FormulaT(de.second), {FormulaT(de.first)});
+					}
 				}
 				changed = true;
 			}

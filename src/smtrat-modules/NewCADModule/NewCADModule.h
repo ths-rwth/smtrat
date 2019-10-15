@@ -9,7 +9,8 @@
 #pragma once
 
 #include <smtrat-cad/CAD.h>
-#include <smtrat-cad/utils/CADPreprocessor.h>
+//#include <smtrat-cad/utils/CADPreprocessor.h>
+#include <smtrat-cad/utils/Preprocessor.h>
 #include <lib/datastructures/VariableBounds.h>
 
 #include <smtrat-solver/Module.h>
@@ -33,7 +34,7 @@ namespace smtrat
 			cad::Assignment mLastAssignment;
 			Model mLastModel;
 
-			cad::CADPreprocessor mPreprocessor;
+			cad::Preprocessor mPreprocessor;
 			
 			void addConstraint(const ConstraintT& c) {
 				mPreprocessor.addConstraint(c);
@@ -48,13 +49,14 @@ namespace smtrat
 				}
 			}
 			void removeConstraintsFromReplacer() {
-				while (!mPreprocessor.inequalities().empty()) {
-					mPreprocessor.removeConstraint(mPreprocessor.inequalities().begin()->first);
-				}
-				while (!mPreprocessor.equalities().empty()) {
-					mPreprocessor.removeConstraint(mPreprocessor.equalities().front());
-				}
-				mPreprocessor.preprocess();
+				//while (!mPreprocessor.inequalities().empty()) {
+				//	mPreprocessor.removeConstraint(mPreprocessor.inequalities().begin()->first);
+				//}
+				//while (!mPreprocessor.equalities().empty()) {
+				//	mPreprocessor.removeConstraint(mPreprocessor.equalities().front());
+				//}
+				//mPreprocessor.preprocess();
+				mPreprocessor.clear();
 			}
 
 		public:
@@ -112,7 +114,7 @@ namespace smtrat
 			/**
 			 * Checks the received formula for consistency.
 			 * @param _full false, if this module should avoid too expensive procedures and rather return unknown instead.
-                         * @param _minimize true, if the module should find an assignment minimizing its objective variable; otherwise any assignment is good.
+                         * @param _objective if not set to NO_VARIABLE, the module should find an assignment minimizing this objective variable; otherwise any assignment is good.
 			 * @return True,	if the received formula is satisfiable;
 			 *		 False,   if the received formula is not satisfiable;
 			 *		 Unknown, otherwise.

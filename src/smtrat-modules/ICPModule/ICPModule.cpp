@@ -415,7 +415,7 @@ namespace smtrat
                     // create Bounds and set them, add to passedFormula
                     pushBoundsToPassedFormula();
                     // lazy call of the backends on found box
-                    Answer lazyResult = callBackends( mFinalCheck, false, mMinimizingCheck );
+                    Answer lazyResult = callBackends( mFinalCheck, false, objective() );
                     if( lazyResult == ABORTED )
                         return lazyResult;
                     // if it led to a result or the backends require a splitting
@@ -424,7 +424,7 @@ namespace smtrat
                     // Full call of the backends, if no box has target diameter
                     bool furtherContractionOccurred = false;
                     if( !performSplit( mOriginalVariableIntervalContracted, furtherContractionOccurred ) )
-                        return callBackends( mFinalCheck, mFullCheck, mMinimizingCheck );
+                        return callBackends( mFinalCheck, mFullCheck, objective() );
                     if( mInvalidBox )
                     {
                         #ifdef ICP_MODULE_DEBUG_0
@@ -726,7 +726,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    Answer ICPModule<Settings>::callBackends( bool _final, bool _full, bool _minimize )
+    Answer ICPModule<Settings>::callBackends( bool _final, bool _full, carl::Variable _objective )
     {
         #ifdef ICP_MODULE_DEBUG_0
         std::cout << "Ask backends " << (_full ? "full" : "lazy") << " for the satisfiability of:" << std::endl;
@@ -734,7 +734,7 @@ namespace smtrat
             std::cout << "    " << f.formula().constraint() << std::endl;
         #endif
         ++mCountBackendCalls;
-        Answer a = runBackends( _final, _full, _minimize );
+        Answer a = runBackends( _final, _full, _objective );
         if( a == ABORTED )
             return a;
         updateLemmas();
@@ -2310,7 +2310,7 @@ namespace smtrat
         // call mLRA to check linear feasibility
         mLRA.clearLemmas();
         mValidationFormula->updateProperties();
-        _answer = mLRA.check( mFinalCheck, true, false );
+        _answer = mLRA.check( mFinalCheck, true );
 
         // catch lemmas
         if( mFinalCheck )
@@ -2434,7 +2434,7 @@ namespace smtrat
             }
         }
         mValidationFormula->updateProperties();
-        Answer boxCheck = mLRA.check( false, true, false );
+        Answer boxCheck = mLRA.check( false, true );
         #ifdef ICP_MODULE_DEBUG_1
         mLRA.print();
         std::cout << "Boxcheck: " << boxCheck << std::endl;

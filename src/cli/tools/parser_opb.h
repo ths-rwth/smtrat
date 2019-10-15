@@ -3,6 +3,7 @@
 #include "config.h"
 
 #include <smtrat-common/smtrat-common.h>
+#include <smtrat-optimization/smtrat-optimization.h>
 
 #ifdef CLI_ENABLE_OPB_PARSER
 
@@ -13,6 +14,7 @@ namespace smtrat {
 
 template<typename Strategy>
 int run_opb_file(Strategy& strategy, const std::string& filename) {
+	Optimization<Strategy> optimization(strategy);
 	carl::OPBImporter<Poly> opb(filename);
 	SMTRAT_LOG_INFO("smtrat", "Parsing " << filename << " using OPB");
 	int exitCode = 0;
@@ -23,34 +25,41 @@ int run_opb_file(Strategy& strategy, const std::string& filename) {
 	} else {
 		SMTRAT_LOG_INFO("smtrat", "Parsed " << input->first);
 		SMTRAT_LOG_INFO("smtrat", "with objective " << input->second);
-		if (!input->second.isConstant()) {
-			strategy.addObjective(input->second, true);
-		}
 		strategy.add(input->first);
-		switch (strategy.check()) {
-			case smtrat::Answer::SAT: {
-				std::cout << "sat" << std::endl;
-				exitCode = SMTRAT_EXIT_SAT;
-				break;
-			}
-			case smtrat::Answer::UNSAT: {
-				std::cout << "unsat" << std::endl;
-				exitCode = SMTRAT_EXIT_UNSAT;
-				break;
-			}
-			case smtrat::Answer::UNKNOWN: {
-				std::cout << "unknown" << std::endl;
-				exitCode = SMTRAT_EXIT_UNKNOWN;
-				break;
-			}
-			default: {
-				std::cerr << "unexpected output!";
-				exitCode = SMTRAT_EXIT_UNEXPECTED_ANSWER;
-				break;
-			}
+		if (!input->second.isConstant()) {
+			optimization.add_objective(input->second, true);
+			exitCode = handleAnswer(std::get<0>(optimization.compute()));
+		} else {
+			exitCode = handleAnswer(strategy.check());
 		}
 	}
 	return exitCode;
+}
+
+int handleAnswer(Answer a) {
+	switch (a) {
+		case smtrat::Answer::SAT:
+		case smtrat::Answer::OPTIMAL: {
+			std::cout << "sat" << std::endl;
+			return SMTRAT_EXIT_SAT;
+			break;
+		}
+		case smtrat::Answer::UNSAT: {
+			std::cout << "unsat" << std::endl;
+			return SMTRAT_EXIT_UNSAT;
+			break;
+		}
+		case smtrat::Answer::UNKNOWN: {
+			std::cout << "unknown" << std::endl;
+			return SMTRAT_EXIT_UNKNOWN;
+			break;
+		}
+		default: {
+			std::cerr << "unexpected output!";
+			return SMTRAT_EXIT_UNEXPECTED_ANSWER;
+			break;
+		}
+	}
 }
 
 }

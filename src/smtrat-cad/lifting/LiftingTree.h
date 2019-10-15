@@ -7,7 +7,6 @@
 #include "../common.h"
 #include "../utils/CADConstraints.h"
 
-#include "LiftingOperator.h"
 #include "SampleIteratorQueue.h"
 #include "SampleComparator.h"
 
@@ -28,7 +27,6 @@ namespace cad {
 		SampleIteratorQueue<Iterator, FSC> mCheckingQueue;
 		SampleIteratorQueue<Iterator, SC> mLiftingQueue;
 		std::vector<Iterator> mRemovedFromLiftingQueue;
-		LiftingOperator<Iterator, Settings> mLifting;
 		
 		std::size_t dim() const {
 			return mVariables.size();
@@ -182,7 +180,7 @@ namespace cad {
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Lifting " << m << " on " << p);
 			std::vector<Sample> newSamples;
 			// TODO: Check whether the polynomials becomes zero (check if McCallum is safe)
-			auto roots = carl::rootfinder::realRoots(p, m, RationalInterval::unboundedInterval(), Settings::rootSplittingStrategy);
+			auto roots = carl::rootfinder::realRoots(p, m, RationalInterval::unboundedInterval());
 			if (roots.empty()) roots = { RAN(0) };
 			for (const auto& r: roots) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tnew root sample: " << r);

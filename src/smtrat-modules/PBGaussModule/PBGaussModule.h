@@ -1,4 +1,7 @@
 /**
+ * 
+ * Supports optimization.
+ * 
  * @file PBGaussModule.h
  * @author YOUR NAME <YOUR EMAIL ADDRESS>
  *

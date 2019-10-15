@@ -14,8 +14,6 @@
     
 namespace smtrat
 {
-    enum class TheoryGuidedDecisionHeuristicLevel : unsigned { CONFLICT_FIRST, SATISFIED_FIRST, DISABLED };
-    
     enum class CCES : unsigned { SECOND_LEVEL_MINIMIZER, LITERALS_BLOCKS_DISTANCE, SECOND_LEVEL_MINIMIZER_PLUS_LBD };
     
     enum class VARIABLE_ACTIVITY_STRATEGY : unsigned { NONE, MIN_COMPLEXITY_MAX_OCCURRENCES };
@@ -82,7 +80,8 @@ namespace smtrat
         /**
          * 
          */
-        static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::SATISFIED_FIRST;
+		// TODO this settings and the order_heap related code can be removed as the VarScheduler implementation turns out to be working:
+        static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::DISABLED;
         /**
          * 
          */
@@ -115,8 +114,8 @@ namespace smtrat
 
     static constexpr bool mcsat_backjump_decide = true;
 
-		static constexpr bool use_new_var_scheduler = false;
-		using VarScheduler = VarSchedulerBase; // noop scheduler
+		static constexpr bool use_new_var_scheduler = true;
+		using VarScheduler = VarSchedulerSMTTheoryGuided<TheoryGuidedDecisionHeuristicLevel::SATISFIED_FIRST>;
 
 		using MCSATSettings = mcsat::MCSATSettingsFMVSNL;
     };
@@ -138,8 +137,8 @@ namespace smtrat
         static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::DISABLED;
 		    static constexpr bool use_new_var_scheduler = true;
         // using VarScheduler = VarSchedulerMcsatBooleanFirst<mcsat::VariableOrdering::FeatureBased>;
-        //using VarScheduler = VarSchedulerMcsatTheoryFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBased>>;
-        using VarScheduler = VarSchedulerMcsatUnivariateClausesOnly<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBased>,false>;
+        using VarScheduler = VarSchedulerMcsatTheoryFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBased>>;
+        //using VarScheduler = VarSchedulerMcsatUnivariateClausesOnly<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBased>,false>;
         // using VarScheduler = VarSchedulerMcsatTheoryFirst<VarSchedulerMinisat>;
         // using VarScheduler = VarSchedulerMcsatUnivariateConstraintsOnly<1, mcsat::VariableOrdering::FeatureBased>;
         // using VarScheduler = VarSchedulerMcsatActivityPreferTheory<mcsat::VariableOrdering::FeatureBased>;
@@ -177,4 +176,89 @@ namespace smtrat
 		static constexpr auto moduleName = "SATModule<MCSATICPNL>";
 		using MCSATSettings = mcsat::MCSATSettingsICPNL;
     };
+
+	struct BaseSATSettings_MCSAT : SATSettings1 {
+		static constexpr bool mc_sat = true;
+		static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::DISABLED;
+		static constexpr bool use_new_var_scheduler = true;
+	};
+	struct SATSettings_MCSAT_AF_FMOCNL_TF : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATAFFMOCNLTF>";
+		using MCSATSettings = mcsat::MCSAT_AF_FMOCNL;
+		using VarScheduler = VarSchedulerMcsatTheoryFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBased>>;
+	};
+
+	struct SATSettings_MCSAT_AF_NL_TF : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATAFNLTF>";
+		using MCSATSettings = mcsat::MCSAT_AF_NL;
+		using VarScheduler = VarSchedulerMcsatTheoryFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBased>>;
+	};
+	struct SATSettings_MCSAT_AF_OCNL_TF : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATAFOCNLTF>";
+		using MCSATSettings = mcsat::MCSAT_AF_OCNL;
+		using VarScheduler = VarSchedulerMcsatTheoryFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBased>>;
+	};
+	struct SATSettings_MCSAT_AF_FMICPOCNL_TF : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATAFFMICPOCNLTF>";
+		using MCSATSettings = mcsat::MCSAT_AF_FMICPOCNL;
+		using VarScheduler = VarSchedulerMcsatTheoryFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBased>>;
+	};
+	struct SATSettings_MCSAT_AF_FMICPVSOCNL_TF : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATAFFMICPVSOCNLTF>";
+		using MCSATSettings = mcsat::MCSAT_AF_FMICPVSOCNL;
+		using VarScheduler = VarSchedulerMcsatTheoryFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBased>>;
+	};
+	struct SATSettings_MCSAT_AF_FMVSOCNL_TF : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATAFFMVSOCNLTF>";
+		using MCSATSettings = mcsat::MCSAT_AF_FMVSOCNL;
+		using VarScheduler = VarSchedulerMcsatTheoryFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBased>>;
+	};
+
+	struct SATSettings_MCSAT_SMT_FMOCNL_TF : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATSMTFMOCNLTF>";
+		using MCSATSettings = mcsat::MCSAT_SMT_FMOCNL;
+		using VarScheduler = VarSchedulerMcsatTheoryFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBased>>;
+	};
+
+	struct SATSettings_MCSAT_AF_FMOCNL_BF : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATAFFMOCNLBF>";
+		using MCSATSettings = mcsat::MCSAT_AF_FMOCNL;
+		using VarScheduler = VarSchedulerMcsatBooleanFirst<mcsat::VariableOrdering::FeatureBased>;
+	};
+	struct SATSettings_MCSAT_AF_FMOCNL_RND : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATAFFMOCNLRND>";
+		using MCSATSettings = mcsat::MCSAT_AF_FMOCNL;
+		using VarScheduler = VarSchedulerFixedRandom;
+	};
+	struct SATSettings_MCSAT_AF_FMOCNL_UNIFORM : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATAFFMOCNLUNIFORM>";
+		using MCSATSettings = mcsat::MCSAT_AF_FMOCNL;
+		using VarScheduler = VarSchedulerMinisat;
+	};
+	struct SATSettings_MCSAT_AF_FMOCNL_UV : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATAFFMOCNLUV>";
+		using MCSATSettings = mcsat::MCSAT_AF_FMOCNL;
+		using VarScheduler = VarSchedulerMcsatUnivariateConstraintsOnly<1, mcsat::VariableOrdering::FeatureBased>;
+	};
+	struct SATSettings_MCSAT_AF_FMOCNL_UVactive : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATAFFMOCNLUVactive>";
+		using MCSATSettings = mcsat::MCSAT_AF_FMOCNL;
+		using VarScheduler = VarSchedulerMcsatUnivariateConstraintsOnly<1, mcsat::VariableOrdering::FeatureBased>;
+		static constexpr bool check_active_literal_occurrences = true;
+	};
+	struct SATSettings_MCSAT_AF_FMOCNL_NLSAT : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATAFFMOCNLNLSAT>";
+		using MCSATSettings = mcsat::MCSAT_AF_FMOCNL;
+		using VarScheduler = VarSchedulerMcsatUnivariateClausesOnly<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBased>,false>;
+	};
+	struct SATSettings_MCSAT_AF_FMOCNL_TFDYN : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATAFFMOCNLTFDYN>";
+		using MCSATSettings = mcsat::MCSAT_AF_FMOCNL;
+		using VarScheduler = VarSchedulerMcsatTheoryFirst<VarSchedulerMinisat>;
+	};
+	struct SATSettings_MCSAT_AF_FMOCNL_UNIFORMTF : BaseSATSettings_MCSAT {
+		static constexpr auto moduleName = "SATModule<MCSATAFFMOCNLUNIFORMTF>";
+		using MCSATSettings = mcsat::MCSAT_AF_FMOCNL;
+		using VarScheduler = VarSchedulerMcsatActivityPreferTheory<mcsat::VariableOrdering::FeatureBased>;
+	};
 }

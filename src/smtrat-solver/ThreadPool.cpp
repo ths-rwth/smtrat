@@ -52,7 +52,7 @@ namespace smtrat
 		}*/
 	}
     
-	Answer ThreadPool::runBackends(const std::vector<Module*>& _modules, bool _final, bool _full, bool _minimize) {
+	Answer ThreadPool::runBackends(const std::vector<Module*>& _modules, bool _final, bool _full, carl::Variable _objective) {
         if( _modules.empty() )
         {
             SMTRAT_LOG_DEBUG("smtrat.parallel", "Returning " << UNKNOWN);
@@ -68,7 +68,7 @@ namespace smtrat
 		std::vector<std::future<Answer>> futures;
 		for (const auto& m: _modules) {
 			SMTRAT_LOG_DEBUG("smtrat.parallel", "\tCreating task for " << m->moduleName());
-            Task* task = new Task(std::bind(&Module::check, m, _final, _full, _minimize), m, index);
+            Task* task = new Task(std::bind(&Module::check, m, _final, _full, _objective), m, index);
             ++mNumberThreads;
 			futures.emplace_back(task->getFuture());
 			submitBackend(task);

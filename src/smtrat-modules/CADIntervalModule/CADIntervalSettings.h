@@ -36,7 +36,6 @@ namespace smtrat
 		static constexpr auto moduleName = "CADIntervalModule<CADIntervalBaseSettings>";
 
 		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Default;
-		static constexpr cad::RootSplittingStrategy rootSplittingStrategy = cad::RootSplittingStrategy::DEFAULT;
 		static constexpr cad::CoreIntervalBasedHeuristic coreHeuristic = cad::CoreIntervalBasedHeuristic::UnsatCover;
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = false;

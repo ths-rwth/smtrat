@@ -8,6 +8,7 @@
 #include <smtrat-qe/smtrat-qe.h>
 
 #include <iostream>
+#include <queue>
 
 namespace smtrat {
 namespace parser {
@@ -135,7 +136,7 @@ public:
 		return OutputWrapper(mRegular, "(info \"", "\")\n");
 	}
 	virtual void add(const FormulaT& f) = 0;
-	virtual void addSoft(const FormulaT& f, Rational weight) = 0;
+	virtual void addSoft(const FormulaT& f, Rational weight, const std::string& id) = 0;
 	virtual void annotateName(const FormulaT& f, const std::string& name) = 0;
 	virtual void check() = 0;
 	virtual void declareFun(const carl::Variable&) = 0;
@@ -154,6 +155,7 @@ public:
 		else error() << "no info set for :" << key;
 	}
 	virtual void getModel() = 0;
+	virtual void getObjectives() = 0;
 	void getOption(const std::string& key) {
 		if (this->options.count(key) > 0) regular() << "(:" << key << " " << this->options[key] << ")" << std::endl;
 		else error() << "no option set for :" << key;
@@ -165,6 +167,7 @@ public:
 	virtual void pop(std::size_t) = 0;
 	virtual void push(std::size_t) = 0;
 	virtual void reset() = 0;
+	virtual void resetAssertions() = 0;
 	void setInfo(const Attribute& attr) {
 		if (this->infos.count(attr.key) > 0) warn() << "overwriting info for :" << attr.key;
 		if (attr.key == "name" || attr.key == "authors" || attr.key == "version") error() << "The info :" << attr.key << " is read-only.";

@@ -7,7 +7,7 @@
 #include <smtrat-cad/lifting/CADInterval.h>
 // @todo #include <smtrat-cad/lifting/LiftingLevel.h>
 
-#include <carl/core/rootfinder/RootFinder.h>
+#include <carl/core/polynomialfunctions/RootFinder.h>
 
 namespace smtrat {
 namespace cad {

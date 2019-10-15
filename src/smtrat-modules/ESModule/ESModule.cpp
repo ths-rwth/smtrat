@@ -139,11 +139,13 @@ namespace smtrat
                                 Poly subPoly;
                                 if( tmp.constraint().getSubstitution( subVar, subPoly, false, objective() ) )
                                 {
-                                    SMTRAT_LOG_INFO("smtrat.es", "found substitution [" << subVar << " -> " << subPoly << "]");
-                                    assert( mArithSubs.find( subVar ) == mArithSubs.end() );
-                                    addedArithSubs.push_back( mArithSubs.emplace( subVar, subPoly ).first );
-                                    foundSubstitutions.insert( tmp );
-                                    foundNewSubstitution = true;
+									if (subVar != objective()) {
+										SMTRAT_LOG_INFO("smtrat.es", "found substitution [" << subVar << " -> " << subPoly << "]");
+										assert( mArithSubs.find( subVar ) == mArithSubs.end() );
+										addedArithSubs.push_back( mArithSubs.emplace( subVar, subPoly ).first );
+										foundSubstitutions.insert( tmp );
+										foundNewSubstitution = true;
+									}
                                 }
                                 else
                                 {

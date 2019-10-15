@@ -679,11 +679,13 @@ public:
 	}
 
 	carl::Bitset projectNewPolynomial(const ConstraintSelection& cs = carl::Bitset(true)) {
+		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Projecting new polynomial from constraints " << cs);
 		if (updateInactiveQueue) {
+			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Going through mInactiveQueue...");
 			// activate all QE that became relevant again
 			for (auto it = mInactiveQueue.begin(); it != mInactiveQueue.end();) {
 				if (active(it->level, it->first) && active(it->level, it->second)) {
-					if (mInfo.usingEC(it->level) || it->level == 0) {
+					if (it->level == 0 || !mInfo.usingEC(it->level)) {
 						SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding to PQ " << *it);
 						mProjectionQueue.push((*it));
 						it = mInactiveQueue.erase(it);
@@ -761,6 +763,7 @@ public:
 
 template<typename S>
 std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::FULL, Backtracking::HIDE, S>& p) {
+	os << "Constraints:" << std::endl << p.mConstraints << std::endl;
 	os << "Global:" << std::endl << p.mInfo() << std::endl;
 	for (std::size_t level = 0; level <= p.dim(); level++) {
 		if (level == 0)
@@ -780,6 +783,7 @@ std::ostream& operator<<(std::ostream& os, const Projection<Incrementality::FULL
 		}
 	}
 	os << "Q: " << p.mProjectionQueue << std::endl;
+	os << "I: " << p.mInactiveQueue << std::endl;
 	return os;
 }
 } // namespace cad

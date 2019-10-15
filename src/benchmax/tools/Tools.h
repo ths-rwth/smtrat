@@ -35,6 +35,8 @@ struct ToolSettings {
 	std::vector<std::filesystem::path> tools_generic;
 	/// MathSAT with SMT-LIB interface.
 	std::vector<std::filesystem::path> tools_mathsat;
+	/// Minisat with DIMACS interface.
+	std::vector<std::filesystem::path> tools_minisat;
 	/// Minisatp with OPB interface.
 	std::vector<std::filesystem::path> tools_minisatp;
 	/// SMT-RAT with SMT-LIB interface.

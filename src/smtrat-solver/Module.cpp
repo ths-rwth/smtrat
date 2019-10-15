@@ -58,7 +58,7 @@ namespace smtrat
         mModelComputed( false ),
         mFinalCheck( true ),
         mFullCheck( true ),
-        mMinimizingCheck( false ),
+        mObjectiveVariable( carl::Variable::NO_VARIABLE ),
         mSolverState( UNKNOWN ),
 #ifdef __VS
         mBackendsFoundAnswer(new std::atomic<bool>(false)),
@@ -74,8 +74,6 @@ namespace smtrat
         mInformedConstraints(),
         mFirstUncheckedReceivedSubformula( mpReceivedFormula->end() ),
         mSmallerMusesCheckCounter( 0 ),
-        mObjective( carl::Variable::NO_VARIABLE ),
-        mObjectiveFunction(),
         mVariableCounters()
     {}
 
@@ -91,14 +89,14 @@ namespace smtrat
         delete mBackendsFoundAnswer;
     }
     
-    Answer Module::check( bool _final, bool _full, bool _minimize )
+    Answer Module::check( bool _final, bool _full, carl::Variable _objective )
     {
 		mStatistics.start_check();
         SMTRAT_LOG_INFO("smtrat.module", __func__  << (_final ? " final" : " partial") << (_full ? " full" : " lazy" ) << " with module " << moduleName() << " (" << mId << ")");
         print("\t");
         mFinalCheck = _final;
         mFullCheck = _full;
-        mMinimizingCheck = _minimize;
+        mObjectiveVariable = _objective;
         #ifdef SMTRAT_DEVOPTION_Statistics
 		++mStatistics.check_count;
         #endif
@@ -165,17 +163,6 @@ namespace smtrat
             if( var.id() >= mVariableCounters.size() )
                 mVariableCounters.resize( var.id()+1, 0 );
             ++mVariableCounters[var.id()];
-        }
-        if( _receivedSubformula->formula().getType() == carl::FormulaType::CONSTRAINT )
-        {
-            const ConstraintT& constraint = _receivedSubformula->formula().constraint();
-            if( constraint.hasVariable( objective() ) && constraint.relation() == carl::Relation::EQ )
-            {
-                Poly objCoeff = constraint.coefficient( objective(), 1 );
-                assert( objCoeff.isConstant() );
-                mObjectiveFunction = -(constraint.lhs()/objCoeff.constantPart());
-                mObjectiveFunction += objective();
-            }
         }
         bool result = addCore( _receivedSubformula );
         if( !result )
@@ -762,7 +749,7 @@ namespace smtrat
         return result;
     }
 
-    Answer Module::runBackends( bool _final, bool _full, bool _minimize )
+    Answer Module::runBackends( bool _final, bool _full, carl::Variable _objective )
     {
         if( mpManager == nullptr ) return UNKNOWN;
         *mBackendsFoundAnswer = false;
@@ -819,7 +806,7 @@ namespace smtrat
                 // Run the backend solver parallel until the first answers true or false.
                 if( anAnswerFound() )
                     return ABORTED;
-                Answer res = mpManager->runBackends(mUsedBackends, _final, _full, _minimize);
+                Answer res = mpManager->runBackends(mUsedBackends, _final, _full, _objective);
                 return res;
             }
             else
@@ -830,7 +817,7 @@ namespace smtrat
                 while( module != mUsedBackends.end() && result == UNKNOWN )
                 {
                     mStatistics.pause_all();
-                    result = (*module)->check( _final, _full, _minimize );
+                    result = (*module)->check( _final, _full, _objective );
                     mStatistics.continue_all();
                     (*module)->receivedFormulaChecked();
                     ++module;
@@ -902,11 +889,11 @@ namespace smtrat
                 mFoundAnswer.back()->store( true );
         }
         SMTRAT_LOG_INFO("smtrat.module", __func__ << " of " << moduleName() << " (" << mId << ") is " << _answer);
-        if( _answer == SAT || _answer == UNKNOWN )
+        if( is_sat(_answer) || _answer == UNKNOWN )
         {
             mModelComputed = false;
         }
-        assert( _answer != SAT || checkModel() != 0 );
+        assert( !is_sat(_answer) || checkModel() != 0 );
         return _answer;
     }
 

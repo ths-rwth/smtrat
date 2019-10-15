@@ -8,16 +8,18 @@
 
 namespace smtrat {
 
+    // TODO avoid using a special backend module for MaxSMT
+
     /**
      * This strategy is used as a artificial backend in the MaxSMT Module
      *
      * See MaxSMTSettings.h to adjust the used backend.
      */
-    class MaxSATBackendStrategy:
+    class MAXSATBackendStrategy:
         public Manager
     {
         public:
-            MaxSATBackendStrategy(): Manager()
+            MAXSATBackendStrategy(): Manager()
             {
                 setStrategy(
                 {

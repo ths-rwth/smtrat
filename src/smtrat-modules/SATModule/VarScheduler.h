@@ -17,6 +17,7 @@ namespace smtrat
     protected:
         std::function<double(Minisat::Var)> getActivity;
         std::function<char(Minisat::Var)> getPolarity;
+        std::function<void(Minisat::Var,bool)> setPolarity;
         std::function<bool(Minisat::Var)> isDecisionVar;
         std::function<bool(Minisat::Var)> isBoolValueUndef;
         std::function<bool(Minisat::Var)> isTheoryAbstraction;
@@ -25,13 +26,14 @@ namespace smtrat
         std::function<const Minisat::Clause&(Minisat::CRef)> getClause;
         std::function<Minisat::lbool(Minisat::Var)> getBoolVarValue;
         std::function<Minisat::lbool(Minisat::Lit)> getBoolLitValue;
-
+        std::function<unsigned(const FormulaT&)> currentlySatisfiedByBackend;
 
     public:
         template<typename BaseModule>
         VarSchedulerBase(BaseModule& baseModule) :
             getActivity([&baseModule](Minisat::Var v){ return baseModule.activity[v]; }),
             getPolarity([&baseModule](Minisat::Var v){ return baseModule.polarity[v]; }),
+            setPolarity([&baseModule](Minisat::Var v, bool p){ return baseModule.polarity[v] = p; }),
             isDecisionVar([&baseModule](Minisat::Var v){ return baseModule.decision[v]; }),
             isBoolValueUndef([&baseModule](Minisat::Var v){ return baseModule.bool_value(v) == l_Undef; }),
             isTheoryAbstraction([&baseModule](Minisat::Var v){ return (baseModule.mBooleanConstraintMap.size() > v) && (baseModule.mBooleanConstraintMap[v].first != nullptr); }),
@@ -39,7 +41,8 @@ namespace smtrat
             reabstractLiteral([&baseModule](Minisat::Lit l) -> const auto& { return Minisat::sign(l) ? baseModule.mBooleanConstraintMap[Minisat::var(l)].second->reabstraction : baseModule.mBooleanConstraintMap[Minisat::var(l)].first->reabstraction; }),
             getClause([&baseModule](Minisat::CRef cl) -> const auto& { return baseModule.getClause(cl); }),
             getBoolVarValue([&baseModule](Minisat::Var v){ return baseModule.bool_value(v); }),
-            getBoolLitValue([&baseModule](Minisat::Lit l){ return baseModule.bool_value(l); })
+            getBoolLitValue([&baseModule](Minisat::Lit l){ return baseModule.bool_value(l); }),
+            currentlySatisfiedByBackend([&baseModule](const FormulaT& f){ return baseModule.currentlySatisfiedByBackend(f); })
         {}
 
         /**
@@ -289,5 +292,117 @@ namespace smtrat
         void print() const {
             std::cout << "Random scheduler contents: " << vars << std::endl;
         }
+    };
+
+
+    /**
+     * Scheduler for SMT, implementing theory guided heuristics.
+     */
+    template<TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic>
+    class VarSchedulerSMTTheoryGuided : public VarSchedulerBase {
+        VarSchedulerMinisat minisat;
+
+    public:
+        template<typename BaseModule>
+        explicit VarSchedulerSMTTheoryGuided( BaseModule& baseModule ) :
+            VarSchedulerBase( baseModule ),
+            minisat( baseModule )
+        {}
+
+        void rebuild() {
+            minisat.rebuild();
+        }
+
+        void insert(Minisat::Var var) {
+            minisat.insert(var);
+        }
+
+        Minisat::Lit pop() {
+            Minisat::Var next = var_Undef;
+            std::vector<Minisat::Var> varsToRestore;
+
+            while (next == var_Undef) {
+                if (minisat.empty()) {
+                    next = var_Undef;
+                    break;
+                }
+                else {
+                    next = var(minisat.pop());
+
+                    if (isTheoryAbstraction(next)) {
+                        unsigned consistency = currentlySatisfiedByBackend(reabstractVariable(next));
+                        bool skipVariable = false;
+                        switch (theory_conflict_guided_decision_heuristic) {
+                            case TheoryGuidedDecisionHeuristicLevel::CONFLICT_FIRST: {
+                                switch (consistency) {
+                                    case 0:
+                                        setPolarity(next, false);
+                                        break;
+                                    case 1:
+                                        setPolarity(next, true);
+                                        break;
+                                    default:
+                                        skipVariable = true;
+                                        break;
+                                }
+                                break;
+                            }
+                            case TheoryGuidedDecisionHeuristicLevel::SATISFIED_FIRST: {
+                                switch (consistency) {
+                                    case 0:
+                                        setPolarity(next, true);
+                                        break;
+                                    case 1:
+                                        setPolarity(next, false);
+                                        break;
+                                    default:
+                                        skipVariable = true;
+                                        break;
+                                }
+                                break;
+                            }
+                            default:
+                                assert( theory_conflict_guided_decision_heuristic == TheoryGuidedDecisionHeuristicLevel::DISABLED );
+                                break;
+                        }
+                        if (skipVariable) {
+                            varsToRestore.push_back(next);
+                            next = var_Undef;
+                        }
+                    }
+                }
+            }
+            for (auto v : varsToRestore) {
+                minisat.insert(v);
+            }
+            if (next == var_Undef) {
+                return minisat.pop();
+            } else {
+                return Minisat::mkLit(next, getPolarity(next));
+            }
+        }
+
+        bool empty() {
+            return minisat.empty();
+        }
+
+        void print() const {
+            minisat.print();
+        }
+
+        // Events called by SATModule
+
+        void increaseActivity(Minisat::Var var) {
+            minisat.increaseActivity(var);
+        }
+
+        void decreaseActivity(Minisat::Var var) {
+            minisat.decreaseActivity(var);
+        }
+
+        void rebuildActivities() { 
+            minisat.rebuildActivities();
+        }
+
     };
 }

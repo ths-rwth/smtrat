@@ -1,6 +1,8 @@
 /**
  * @file ICEModule.h
  * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ * 
+ * Supports optimization.
  *
  * @version 2015-11-24
  * Created on 2015-11-24.
