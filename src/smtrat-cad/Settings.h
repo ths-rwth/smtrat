@@ -1,6 +1,8 @@
 #pragma once
 
-#include <carl/core/rootfinder/IncrementalRootFinder.h>
+// #include <carl/core/rootfinder/IncrementalRootFinder.h>
+#include <carl/core/polynomialfunctions/RootFinder.h>
+// #include <carl/core/rootfinder/RootFinder.h>
 
 namespace smtrat {
 namespace cad {
@@ -30,7 +32,7 @@ namespace cad {
 	enum class MISHeuristic { TRIVIAL, GREEDY, GREEDY_PRE, GREEDY_WEIGHTED, EXACT, HYBRID};
 	enum class CoreHeuristic { BySample, PreferProjection, PreferSampling, EnumerateAll, Interleave };
 	enum class CoreIntervalBasedHeuristic { UnsatCover };
-	using RootSplittingStrategy = carl::rootfinder::SplittingStrategy;
+	// using RootSplittingStrategy = carl::rootfinder::SplittingStrategy;
 
 	struct BaseSettings {
 		static constexpr Incrementality incrementality = Incrementality::NONE;
@@ -48,7 +50,7 @@ namespace cad {
 		static constexpr SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Default;
 		static constexpr SampleCompareStrategy sampleComparator = cad::SampleCompareStrategy::Default;
 		static constexpr FullSampleCompareStrategy fullSampleComparator = cad::FullSampleCompareStrategy::Default;
-		static constexpr RootSplittingStrategy rootSplittingStrategy = cad::RootSplittingStrategy::DEFAULT;
+		//static constexpr RootSplittingStrategy rootSplittingStrategy = cad::RootSplittingStrategy::DEFAULT;
 	};
 }
 }
