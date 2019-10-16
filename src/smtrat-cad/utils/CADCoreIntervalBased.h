@@ -478,7 +478,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		carl::Relation relation					/**< relation to use for constraint */
 	) {
 		smtrat::Poly offsetpoly = poly;
-		offsetpoly.addTerm(carl::Term(offset)); // @todo is this what is meant in alg.6, l.6-7?
+		const carl::Term<RAN>* term = new carl::Term(offset);
+		offsetpoly.addTerm(term); // @todo is this what is meant in alg.6, l.6-7?
 		ConstraintT eqzero = ConstraintT(offsetpoly, relation);
 
 		// check whether poly(samples x offset) == 0
@@ -515,7 +516,10 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			}
 			// add discriminant of polynoms containing main var
 			for(auto poly : inter->getPolynoms()) {
-				characterization.insert(carl::discriminant(poly.toUnivariatePolynomial(getHighestVar(cad, poly))));
+				smtrat::cad::UPoly upoly = carl::discriminant(poly.toUnivariatePolynomial(getHighestVar(cad, poly)));
+				// convert polynom to multivariate
+				smtrat::Poly inspoly = smtrat::Poly(upoly);
+				characterization.insert(inspoly);
 			}
 			// add relevant coefficients
 			auto coeffs = required_coefficients(cad, samples, inter->getPolynoms());
@@ -526,19 +530,25 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				// idea: P(s x \alpha) = 0, \alpha < l => P(s x l) > 0
 				if(isSatWithOffset(cad, inter->getLower(), samples, q, carl::Relation::GREATER)) {
 					for(auto p : inter->getLowerReason()) {
-						characterization.insert(carl::resultant(
+						smtrat::cad::UPoly upoly = carl::resultant(
 							p.toUnivariatePolynomial(getHighestVar(cad, p)),
-							q.toUnivariatePolynomial(getHighestVar(cad, q)) 
-						));
+							q.toUnivariatePolynomial(getHighestVar(cad, q))
+						);
+						// convert polynom to multivariate
+						smtrat::Poly inspoly = smtrat::Poly(upoly);
+						characterization.insert(inspoly);
 					}
 				}
 				// analogously: P(s x \alpha) = 0, \alpha > u => P(s x u) < 0
 				if(isSatWithOffset(cad, inter->getUpper(), samples, q, carl::Relation::LESS)) {
 					for(auto p : inter->getUpperReason()) {
-						characterization.insert(carl::resultant(
+						smtrat::cad::UPoly upoly = carl::resultant(
 							p.toUnivariatePolynomial(getHighestVar(cad, p)),
-							q.toUnivariatePolynomial(getHighestVar(cad, q)) 
-						));
+							q.toUnivariatePolynomial(getHighestVar(cad, q))
+						);
+						// convert polynom to multivariate
+						smtrat::Poly inspoly = smtrat::Poly(upoly);
+						characterization.insert(inspoly);
 					}
 				}
 			}
@@ -551,10 +561,13 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		while(itlower != subinters.end()) {
 			for(auto lower : (*itlower)->getLowerReason()) {
 				for(auto upper : (*itupper)->getUpperReason()) {
-					characterization.insert(carl::resultant(
+					// convert polynom to multivariate
+					smtrat::cad::UPoly upoly = carl::resultant(
 						upper.toUnivariatePolynomial(getHighestVar(cad, upper)),
 						lower.toUnivariatePolynomial(getHighestVar(cad, lower))
-					));
+					);
+					smtrat::Poly inspoly = smtrat::Poly(upoly);
+					characterization.insert(inspoly);
 				}
 			}
 			itlower++;
