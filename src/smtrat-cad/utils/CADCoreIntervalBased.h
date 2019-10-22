@@ -172,8 +172,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		std::set<CADInterval*> intervals	/**< set of intervals to be sorted */
 	) {
 		/* sort intervals by ascending order of lower bounds */
-		std::sort(intervals.begin(), intervals.end(), [](CADInterval* a, CADInterval* b) {
-			return (*a).isLowerThan(*b);
+		std::sort(intervals.begin(), intervals.end(), [](CADInterval& a, CADInterval& b) {
+			return a.isLowerThan(b);
 		});
 		return intervals;
 	}
@@ -447,7 +447,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	std::set<smtrat::Poly> required_coefficients(
 		CADIntervalBased& cad,					/**< corresponding CAD */
-		Assignment samples,	/**< values for variables till depth i */
+		Assignment samples,						/**< values for variables till depth i */
 		std::set<smtrat::Poly> polys			/**< polynoms */
 	) {
 		std::set<smtrat::Poly> coeffs;
@@ -456,8 +456,12 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				// add leading coefficient
 				smtrat::Poly lcpoly = smtrat::Poly(poly.lcoeff());
 				coeffs.insert(lcpoly);
+				// bring samples in right form for evaluation
+				std::map<carl::Variable, smtrat::Rational> map;
+				for(auto sample : samples)
+					map.insert(std::make_pair(sample.first, sample.second.value()));
 				// if leading coeff evaluated at sample is non zero, stop
-				if(lcpoly.evaluate(samples) != (RAN) 0)
+				if(lcpoly.evaluate(map) != (smtrat::Rational) 0)
 					break;
 				// remove leading term
 				poly = poly.stripLT();
@@ -478,8 +482,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		carl::Relation relation					/**< relation to use for constraint */
 	) {
 		smtrat::Poly offsetpoly = poly;
-		const carl::Term<RAN>* term = new carl::Term(offset);
-		offsetpoly.addTerm(term); // @todo is this what is meant in alg.6, l.6-7?
+		const carl::Term<smtrat::Rational>* term = new carl::Term(offset.value());
+		offsetpoly.addTerm((*term)); // @todo is this what is meant in alg.6, l.6-7?
 		ConstraintT eqzero = ConstraintT(offsetpoly, relation);
 
 		// check whether poly(samples x offset) == 0
