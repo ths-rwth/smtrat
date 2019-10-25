@@ -35,7 +35,7 @@ void Preprocessor::apply_assignments(const ConstraintT& c) {
 void Preprocessor::resolve_conflict() {
 	assert(mTrail[mTrailID].first.isConsistent() == 0);
 	mConflict = std::set<FormulaT>();
-	mConflict->insert(mTrail[mTrailID].second.begin(), mTrail[mTrailID].second.end());
+	std::transform(mTrail[mTrailID].second.begin(), mTrail[mTrailID].second.end(), std::inserter(*mConflict, mConflict->begin()), [](const ConstraintT& c) { return FormulaT(c); });
 	postprocessConflict(*mConflict);
 }
 
@@ -203,7 +203,7 @@ void Preprocessor::postprocessConflict(std::set<FormulaT>& mis) const {
 		if (it != mis.end()) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Replace " << cur.first << " by " << cur.second);
 			mis.erase(it);
-			mis.insert(cur.second.begin(), cur.second.end());
+			std::transform(cur.second.begin(), cur.second.end(), std::inserter(mis, mis.begin()), [](const ConstraintT& c) { return FormulaT(c); });
 		}
 	}
 	SMTRAT_LOG_DEBUG("smtrat.cad.pp", "-> " << mis);

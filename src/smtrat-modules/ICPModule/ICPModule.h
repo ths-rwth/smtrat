@@ -24,6 +24,7 @@
 #include "utils.h"
 #include "HistoryNode.h"
 #include <fstream>
+#include <queue>
 
 namespace smtrat
 {
