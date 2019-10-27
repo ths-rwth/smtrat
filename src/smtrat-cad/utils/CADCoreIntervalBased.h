@@ -134,20 +134,19 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		std::sort(r.begin(), r.end());
 		
 		// go through roots to build region intervals and add them to the lifting level
-		std::vector<RAN>::iterator it;
-		for (it = r.begin(); it != r.end(); it++) {
+		for (int i = 0; i < r.size(); i++) {
 			// add closed point interval for each root
-			regions.insert( new CADInterval(*it, c.lhs()) );
+			regions.insert( new CADInterval(r.at(i), c.lhs()) );
 
 			// add (-inf, x) for first root x
-			if (it == r.begin())
-				regions.insert( new CADInterval((RAN) 0, *it, CADInterval::CADBoundType::INF, CADInterval::CADBoundType::OPEN, c.lhs()) );
+			if (i == 0)
+				regions.insert( new CADInterval((RAN) 0, r.at(i), CADInterval::CADBoundType::INF, CADInterval::CADBoundType::OPEN, c.lhs()) );
 			
 			// for last root x add (x, inf)
-			if (it == r.rbegin().base())
-				regions.insert( new CADInterval(*it, (RAN) 0, CADInterval::CADBoundType::OPEN, CADInterval::CADBoundType::INF, c.lhs()) );
+			if (i == r.size()-1)
+				regions.insert( new CADInterval(r.at(i), (RAN) 0, CADInterval::CADBoundType::OPEN, CADInterval::CADBoundType::INF, c.lhs()) );
 			else // add open interval to next root
-				regions.insert( new CADInterval(*it, *(std::next(it, 1)), c.lhs()) );
+				regions.insert( new CADInterval(r.at(i), r.at(i+1), c.lhs()) );
 		}
 
 		return regions;
