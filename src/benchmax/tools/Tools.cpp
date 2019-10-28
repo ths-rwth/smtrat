@@ -54,7 +54,7 @@ namespace settings {
 /// Postprocess settings to compute common prefix.
 bool finalize_tool_settings(ToolSettings& s, const boost::program_options::variables_map&) {
 	s.tools_common_prefix = common_prefix({
-		s.tools_generic, s.tools_smtrat, s.tools_smtrat_opb,
+		s.tools_generic, s.tools_smtrat, s.tools_smtrat_opb, s.tools_smtrat_analyzer,
 		s.tools_minisatp, s.tools_z3
 	});
 	BENCHMAX_LOG_DEBUG("benchmax.tools", "Common tool prefix is " << s.tools_common_prefix);
