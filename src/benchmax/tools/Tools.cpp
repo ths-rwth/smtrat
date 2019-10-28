@@ -5,6 +5,7 @@
 #include "Minisatp.h"
 #include "SMTRAT.h"
 #include "SMTRAT_OPB.h"
+#include "SMTRAT_Analyzer.h"
 #include "Z3.h"
 
 #include <benchmax/settings/SettingsParser.h>
@@ -43,6 +44,7 @@ Tools loadTools() {
 	createTools<Minisatp>(settings_tools().tools_minisatp, tools);
 	createTools<SMTRAT>(settings_tools().tools_smtrat, tools);
 	createTools<SMTRAT_OPB>(settings_tools().tools_smtrat_opb, tools);
+	createTools<SMTRAT_Analyzer>(settings_tools().tools_smtrat_analyzer, tools);
 	createTools<Z3>(settings_tools().tools_z3, tools);
 	return tools;
 }
@@ -75,6 +77,7 @@ void registerToolSettings(SettingsParser* parser) {
 		("minisatp", po::value<std::vector<std::filesystem::path>>(&s.tools_minisatp), "Minisatp with OPB interface")
 		("smtrat,S", po::value<std::vector<std::filesystem::path>>(&s.tools_smtrat), "SMT-RAT with SMT-LIB interface")
 		("smtrat-opb,O", po::value<std::vector<std::filesystem::path>>(&s.tools_smtrat_opb), "SMT-RAT with OPB interface")
+		("smtrat-analyzer,A", po::value<std::vector<std::filesystem::path>>(&s.tools_smtrat_analyzer), "SMT-RAT formula analyzer")
 		("z3,Z", po::value<std::vector<std::filesystem::path>>(&s.tools_z3), "z3 with SMT-LIB interface")
 	;
 }
