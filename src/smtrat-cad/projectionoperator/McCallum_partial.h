@@ -26,7 +26,7 @@ void single(const Poly& p, carl::Variable variable, Callback&& cb) {
 				return;
 			} else {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "coeff " << coeff << " does not vanish. We only need the lcoeff() = " << p.lcoeff());
-				returnPoly(projection::normalize(p.lcoeff().toUnivariatePolynomial(variable)), cb);
+				returnPoly(projection::normalize(carl::to_univariate_polynomial(p.lcoeff(), variable)), cb);
 				return;
 			}
 		}
@@ -36,7 +36,7 @@ void single(const Poly& p, carl::Variable variable, Callback&& cb) {
 		if (isZero(coeff)) continue;
 		assert(!coeff.isConstant());
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "\t-> " << coeff);
-		returnPoly(projection::normalize(coeff.toUnivariatePolynomial(variable)), cb);
+		returnPoly(projection::normalize(carl::to_univariate_polynomial(coeff, variable)), cb);
 	}
 }
 

@@ -168,7 +168,7 @@ inline MultivariateRootT asRootExpr(carl::Variable rootVariable, Poly poly, std:
 	assert(poly.gatherVariables().count(rootVariable) == 1);
 	// Apparently we need this complicated construction. I forgot why a simple substitute is not okay.
 	return MultivariateRootT(Poly(carl::UnivariatePolynomial<Poly>(MultivariateRootT::var(),
-																   poly.toUnivariatePolynomial(rootVariable).coefficients())),
+																   carl::to_univariate_polynomial(poly, rootVariable).coefficients())),
 							 rootIdx);
 }
 
@@ -368,7 +368,7 @@ public:
 		// 'realRoots' returns std::nullopt if poly vanishes
 		// early, but here we don't care
 		return carl::rootfinder::realRoots(
-			poly.toUnivariatePolynomial(variableOrder[polyLevel]),
+			carl::to_univariate_polynomial(poly, variableOrder[polyLevel]),
 			prefixPointToStdMap(polyLevel));
 	}
 
@@ -401,7 +401,7 @@ public:
 		const carl::Variable mainVariable = variableOrder[polyLevel];
 
 		return carl::RealAlgebraicNumberEvaluation::vanishes(
-				poly.toUnivariatePolynomial(mainVariable),
+				carl::to_univariate_polynomial(poly, mainVariable),
 				prefixPointToStdMap(polyLevel));
 	}
 
@@ -604,7 +604,7 @@ public:
 	}
 
 	inline Poly discriminant(const carl::Variable& mainVariable, const Poly& p) {
-		return Poly(carl::discriminant(p.toUnivariatePolynomial(mainVariable)));
+		return Poly(carl::discriminant(carl::to_univariate_polynomial(p, mainVariable)));
 	}
 
 	ShrinkResult refineNull(
@@ -617,7 +617,7 @@ public:
 		SMTRAT_LOG_TRACE("smtrat.cad", "RefineNull");
 		const auto mainVariable = variableOrder[boundCandidate.level];
 		const auto boundCandidateUniPoly =
-			boundCandidate.poly.toUnivariatePolynomial(mainVariable);
+			carl::to_univariate_polynomial(boundCandidate.poly, mainVariable);
 		std::vector<TagPoly2> projectionResult;
 
 		projectionResult.emplace_back(TagPoly2{
@@ -695,8 +695,8 @@ public:
 
 	/** Compute the resultant of two multivariate polynomials wrt. a given 'mainVariable' */
 	inline Poly resultant(const carl::Variable& mainVariable, const Poly& p1, const Poly& p2) {
-		const auto p1UPoly = p1.toUnivariatePolynomial(mainVariable);
-		const auto p2UPoly = p2.toUnivariatePolynomial(mainVariable);
+		const auto p1UPoly = carl::to_univariate_polynomial(p1, mainVariable);
+		const auto p2UPoly = carl::to_univariate_polynomial(p2, mainVariable);
 		return Poly(carl::resultant(p1UPoly, p2UPoly));
 	}
 
@@ -728,7 +728,7 @@ public:
 
 		const auto mainVariable = variableOrder[boundCandidate.level];
 		const auto boundCandidateUniPoly =
-			boundCandidate.poly.toUnivariatePolynomial(mainVariable);
+			carl::to_univariate_polynomial(boundCandidate.poly, mainVariable);
 
 		// Do early-exit tests:
 		for (const auto& coeff : boundCandidateUniPoly.coefficients()) {
@@ -1117,14 +1117,14 @@ inline std::vector<TagPoly> singleLevelFullProjection(
 	SMTRAT_LOG_DEBUG("smtrat.cad", "Do full McCallum projection of " << polys);
 	std::vector<TagPoly> projectionResult;
 	for (std::size_t i = 0; i < polys.size(); i++) {
-		auto poly1 = polys[i].poly.toUnivariatePolynomial(mainVar);
+		auto poly1 = carl::to_univariate_polynomial(polys[i].poly, mainVar);
 		for (const auto& coeff : poly1.coefficients()) {
 			if (coeff.isConstant()) continue;
 			//            SMTRAT_LOG_DEBUG("smtrat.cad", " " << coeff);
-			projectionResult.emplace_back(TagPoly{InvarianceType ::SIGN_INV, Poly(smtrat::cad::projection::normalize(coeff.toUnivariatePolynomial(sndMainVar)))});
+			projectionResult.emplace_back(TagPoly{InvarianceType ::SIGN_INV, Poly(smtrat::cad::projection::normalize(carl::to_univariate_polynomial(coeff, sndMainVar)))});
 		}
 		//      Poly leadCoeff =
-		//        Poly(smtrat::cad::projection::normalize(poly1.lcoeff().toUnivariatePolynomial(sndMainVar)));
+		//        Poly(smtrat::cad::projection::normalize(carl::to_univariate_polynomial(poly1.lcoeff(), sndMainVar)));
 		//      if (!leadCoeff.isConstant())
 		//        projectionResult.emplace_back(TagPoly{InvarianceType::SIGN_INV, leadCoeff});
 		Poly discr =
@@ -1132,7 +1132,7 @@ inline std::vector<TagPoly> singleLevelFullProjection(
 		if (!discr.isConstant())
 			projectionResult.emplace_back(TagPoly{InvarianceType::ORD_INV, discr});
 		for (std::size_t j = i + 1; j < polys.size(); j++) {
-			auto poly2 = polys[j].poly.toUnivariatePolynomial(mainVar);
+			auto poly2 = carl::to_univariate_polynomial(polys[j].poly, mainVar);
 			Poly res =
 				Poly(smtrat::cad::projection::resultant(sndMainVar, poly1, poly2)); // already normalizes
 			if (!res.isConstant())

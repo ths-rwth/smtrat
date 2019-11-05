@@ -321,7 +321,7 @@ namespace smtrat
         {
             if( _constraint.relation() != carl::Relation::NEQ )
             {
-                const carl::Variable& var = *_constraint.variables().begin();
+                carl::Variable var = *_constraint.variables().underlyingVariables().begin();
                 if( _constraint.variables().size() == 1 && _constraint.maxDegree( var ) == 1 )
                 {
                     typename VariableBounds<T>::ConstraintBoundMap::iterator cbPair = mpConstraintBoundMap->find( _constraint );
@@ -360,10 +360,10 @@ namespace smtrat
                 {
                     if( mNonBoundConstraints.insert( _constraint ).second )
                     {
-                        for( auto sym = _constraint.variables().begin(); sym !=  _constraint.variables().end(); ++sym )
+						for (auto sym: _constraint.variables().underlyingVariables())
                         {
                             Variable<T>* variable = new Variable<T>();
-                            if( !mpVariableMap->insert( std::pair< const carl::Variable, Variable<T>* >( *sym, variable ) ).second )
+                            if( !mpVariableMap->insert( std::pair< const carl::Variable, Variable<T>* >( sym, variable ) ).second )
                                 delete variable;
                         }
                     }
@@ -371,10 +371,10 @@ namespace smtrat
             }
             else
             {
-                for( auto sym = _constraint.variables().begin(); sym !=  _constraint.variables().end(); ++sym )
+				for (auto sym: _constraint.variables().underlyingVariables())
                 {
                     Variable<T>* variable = new Variable<T>();
-                    if( !mpVariableMap->insert( std::pair< const carl::Variable, Variable<T>* >( *sym, variable ) ).second )
+                    if( !mpVariableMap->insert( std::pair< const carl::Variable, Variable<T>* >( sym, variable ) ).second )
                         delete variable;
                 }
             }
@@ -410,7 +410,7 @@ namespace smtrat
         {
             if( _constraint.relation() != carl::Relation::NEQ )
             {
-                const carl::Variable& var = *_constraint.variables().begin();
+                carl::Variable var = *_constraint.variables().underlyingVariables().begin();
                 if( _constraint.variables().size() == 1 && _constraint.maxDegree( var ) == 1 )
                 {
                     assert( mpConstraintBoundMap->find( _constraint ) != mpConstraintBoundMap->end() );
@@ -438,7 +438,7 @@ namespace smtrat
         {
             if( _constraint.relation() != carl::Relation::NEQ )
             {
-                const carl::Variable& var = *_constraint.variables().begin();
+                carl::Variable var = *_constraint.variables().underlyingVariables().begin();
                 if( _constraint.variables().size() == 1 && _constraint.maxDegree( var ) == 1 )
                 {
                     assert( mpConstraintBoundMap->find( _constraint ) != mpConstraintBoundMap->end() );
@@ -785,12 +785,12 @@ namespace smtrat
                 std::vector<ConstraintT> boundConstraints;
                 carl::Variables boundedVars;
                 carl::Variables notBoundedVars;
-                for( auto carlVar = cons->variables().begin(); carlVar != cons->variables().end(); ++carlVar )
+                for( auto carlVar: cons->variables().underlyingVariables() )
                 {
-                    const Variable<T>& var = *(mpVariableMap->find( *carlVar )->second);
+                    const Variable<T>& var = *(mpVariableMap->find( carlVar )->second);
                     if( !var.infimum().isInfinite() || !var.supremum().isInfinite() )
                     {
-                        boundedVars.insert( *carlVar );
+                        boundedVars.insert( carlVar );
                         if( !var.infimum().isInfinite() )
                         {
                             boundConstraints.push_back( (*var.infimum().origins().begin())->constraint() );
@@ -802,7 +802,7 @@ namespace smtrat
                     }
                     else
                     {
-                        notBoundedVars.insert( *carlVar );
+                        notBoundedVars.insert( carlVar );
                         if( notBoundedVars.size() > 1 )
                             break;
                     }

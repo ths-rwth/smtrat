@@ -73,10 +73,10 @@ namespace smtrat {
 	boost::optional<FormulaT> CardinalityEncoder::encodeExactly(const ConstraintT& constraint) {
 		// if (!encodeAsBooleanFormula(constraint)) return boost::none;
 
-		return encodeExactly(constraint.variables(), -constraint.constantPart());
+		return encodeExactly(constraint.variables().underlyingVariables(), -constraint.constantPart());
 	}
 
-	FormulaT CardinalityEncoder::encodeExactly(const std::set<carl::Variable>& variables, const Rational constant) {
+	FormulaT CardinalityEncoder::encodeExactly(const std::vector<carl::Variable>& variables, const Rational constant) {
 		// assert(variables.size() > constant && "This should have been handled before!");
 		assert(constant >= 0 && "This should have been handled before!");
 
@@ -89,16 +89,14 @@ namespace smtrat {
 			else signs.push_front(false);
 		}
 
-		std::vector<carl::Variable> variableVector(variables.begin(), variables.end());
-
 		FormulasT resultFormulaSet;
 		do {
 			FormulasT terms;
 			for (unsigned i = 0; i < signs.size(); i++) {
 				if(signs[i]){
-					terms.push_back(FormulaT(variableVector[i]));
+					terms.push_back(FormulaT(variables[i]));
 				}else{
-					terms.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(variableVector[i])));
+					terms.push_back(FormulaT(carl::FormulaType::NOT, FormulaT(variables[i])));
 				}
 			}
 
@@ -116,11 +114,11 @@ namespace smtrat {
 		assert(constant > 0);
 		if (constant <= constraint.variables().size()/2) {
 			for (Rational i = constant - 1; i > 0; i--) {
-				result.push_back(!encodeExactly(constraint.variables(), i));
+				result.push_back(!encodeExactly(constraint.variables().underlyingVariables(), i));
 			}
 
 			FormulasT orSet;
-			for (const auto& var : constraint.variables()) {
+			for (const auto& var : constraint.variables().underlyingVariables()) {
 				orSet.push_back(FormulaT(var));
 			}
 
@@ -129,7 +127,7 @@ namespace smtrat {
 					FormulaT(carl::FormulaType::AND, result));
 		} else { // constant > variables.size()/2
 			for (Rational i = constant; i <= constraint.variables().size(); i++) {
-				result.push_back(encodeExactly(constraint.variables(), i));
+				result.push_back(encodeExactly(constraint.variables().underlyingVariables(), i));
 			}
 
 			return FormulaT(carl::FormulaType::OR, result);
@@ -142,14 +140,14 @@ namespace smtrat {
 		Rational constant = -constraint.constantPart();
 		if (constant < constraint.variables().size()/2) {
 			for (unsigned i = 0 ; i <= constant; i++) {
-				result.push_back(FormulaT(encodeExactly(constraint.variables(), i)));
+				result.push_back(FormulaT(encodeExactly(constraint.variables().underlyingVariables(), i)));
 			}
 
 			return FormulaT(carl::FormulaType::OR, result);
 
 		} else {
 			for (size_t i = constraint.variables().size() ; i > constant; i--) {
-				result.push_back(FormulaT(!encodeExactly(constraint.variables(), i)));
+				result.push_back(FormulaT(!encodeExactly(constraint.variables().underlyingVariables(), i)));
 			}
 
 			return FormulaT(carl::FormulaType::AND, result);

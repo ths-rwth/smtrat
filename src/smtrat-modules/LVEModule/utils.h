@@ -25,7 +25,7 @@ carl::Sign sgn(carl::Variable v, const Poly& p, const carl::RealAlgebraicNumber<
 }
 
 std::optional<ModelValue> get_root(carl::Variable v, const Poly& p) {
-	auto res = carl::rootfinder::realRoots(p.toUnivariatePolynomial(v));
+	auto res = carl::rootfinder::realRoots(carl::to_univariate_polynomial(p, v));
 	if (res.empty()) {
 		return std::nullopt;
 	} else {
@@ -46,7 +46,7 @@ std::optional<ModelValue> get_value_for_sgn(carl::Variable v, const Poly& p, car
 	if (sgn(v, p, test) == sign) {
 		return ModelValue(test);
 	}
-	auto res = carl::rootfinder::realRoots(p.toUnivariatePolynomial(v));
+	auto res = carl::rootfinder::realRoots(carl::to_univariate_polynomial(p, v));
 	if (res.empty()) {
 		return std::nullopt;
 	}

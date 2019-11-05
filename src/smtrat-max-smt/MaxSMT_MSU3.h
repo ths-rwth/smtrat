@@ -1,5 +1,7 @@
 #pragma once
 
+#include <smtrat-unsat-cores/UnsatCore.h>
+
 namespace smtrat {
 namespace maxsmt {
 

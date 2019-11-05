@@ -57,7 +57,7 @@ namespace smtrat
 			const FormulaT& f = subformula.formula();
 			if(f.getType() == carl::FormulaType::CONSTRAINT){
 				const ConstraintT& c = f.constraint();
-				for (const auto& var : c.variables()) {
+				for (const auto& var : c.variables().underlyingVariables()) {
 					mVariables.insert(var);
 				}
 
@@ -110,7 +110,7 @@ namespace smtrat
 		// Collect all variables
 		carl::Variables eqVarSet;
 		for(const auto& it : mEquations){
-			for (const auto& var : it.variables()) {
+			for (const auto& var : it.variables().underlyingVariables()) {
 				eqVarSet.insert(var);
 			}
 		}

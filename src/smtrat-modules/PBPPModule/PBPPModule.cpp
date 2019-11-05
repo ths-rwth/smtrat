@@ -189,7 +189,7 @@ namespace smtrat
 
 		std::set<carl::Variable> variablesInLIA;
 		for (const auto& constraint : liaConstraints) {
-			for (const auto& cvar : constraint.variables()) {
+			for (const auto& cvar : constraint.variables().underlyingVariables()) {
 				variablesInLIA.insert(cvar);
 			}
 		}
@@ -213,7 +213,7 @@ namespace smtrat
 					continue;
 				}
 						
-				bool constraintContainsCurrentVariable = constraint.variables().find(var) != constraint.variables().end();
+				bool constraintContainsCurrentVariable = constraint.variables().has(var);
 				bool constraintContainsSubstitutedVariable = variableSubstitutions.find(var) != variableSubstitutions.end();
 
 				if (!isTrivial(constraint) && (constraintContainsCurrentVariable || constraintContainsSubstitutedVariable)) {
@@ -248,7 +248,7 @@ namespace smtrat
 			#ifdef DEBUG_PBPP
 			std::cout << "Encoded using " << encoderByConstraint[constraint]->name() << " " << constraint << " \t as \t " << *boolEncoding << std::endl;
 			#endif
-			for (const auto& var : constraint.variables()) {
+			for (const auto& var : constraint.variables().underlyingVariables()) {
 				variablesInBooleanPart.insert(var);
 			}
 
@@ -306,7 +306,7 @@ namespace smtrat
 	*/
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::forwardAsArithmetic(const ConstraintT& formula, const std::set<carl::Variable>& boolVariables){
-		carl::Variables variables = formula.variables();
+		carl::Variables variables = formula.variables().underlyingVariableSet();
 
 		std::set<carl::Variable> variableSetIntersection;
 		std::set_intersection(variables.begin(), variables.end(), 

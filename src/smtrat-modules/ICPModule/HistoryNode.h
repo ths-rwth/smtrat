@@ -182,11 +182,11 @@ namespace smtrat
                     if(!_addOnlyConstraint)
                     {
                         // also add all variables contained in the constraint to stateInfeasibleVariables
-                        for( auto variableIt = _constraint.variables().begin(); variableIt != _constraint.variables().end(); ++variableIt )
+                        for( auto variable: _constraint.variables().underlyingVariables() )
                         {
-                            if(mVariableReasons.find(*variableIt) != mVariableReasons.end())
+                            if(mVariableReasons.find(variable) != mVariableReasons.end())
                             {
-                                for( set_icpVariable::const_iterator icpVarIt = mVariableReasons.at(*variableIt).begin(); icpVarIt != mVariableReasons.at(*variableIt).end(); ++icpVarIt )
+                                for( set_icpVariable::const_iterator icpVarIt = mVariableReasons.at(variable).begin(); icpVarIt != mVariableReasons.at(variable).end(); ++icpVarIt )
                                     addInfeasibleVariable(*icpVarIt);
                             }
                         }
@@ -252,11 +252,11 @@ namespace smtrat
                     bool inserted = mReasons.at( _variable ).insert( _reason ).second;
                     if( inserted )
                     {
-                        for( auto varIt = _reason.variables().begin(); varIt != _reason.variables().end(); ++varIt )
+                        for( auto var: _reason.variables().underlyingVariables() )
                         {
-                            if( mReasons.find(*varIt) == mReasons.end() )
-                                mReasons[*varIt] = std::set<ConstraintT>();
-                            addReasons( _variable, mReasons.at( *varIt ) );
+                            if( mReasons.find(var) == mReasons.end() )
+                                mReasons[var] = std::set<ConstraintT>();
+                            addReasons( _variable, mReasons.at( var ) );
                         }
                     }
                     assert( mReasons.find( _variable ) != mReasons.end() );

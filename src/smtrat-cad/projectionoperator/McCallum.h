@@ -23,7 +23,7 @@ void single(const Poly& p, carl::Variable variable, Callback&& cb) {
 	for (const auto& coeff : p.coefficients()) {
 		if (coeff.isConstant()) continue;
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "\t-> coefficient " << coeff);
-		returnPoly(projection::normalize(coeff.toUnivariatePolynomial(variable)), cb);
+		returnPoly(projection::normalize(carl::to_univariate_polynomial(coeff, variable)), cb);
 	}
 }
 

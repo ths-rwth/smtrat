@@ -33,7 +33,7 @@ namespace smtrat {
 		assert(canEncode(constraint));
 
 		// 1. partition into groups of (mostly) equal size and introduce a group commander variable (bool)
-		std::map<carl::Variable, std::vector<carl::Variable>> commanderPartitions = partition(constraint.variables());
+		std::map<carl::Variable, std::vector<carl::Variable>> commanderPartitions = partition(constraint.variables().underlyingVariableSet());
 
 		FormulasT result;
 		std::vector<carl::Variable> commanders;
