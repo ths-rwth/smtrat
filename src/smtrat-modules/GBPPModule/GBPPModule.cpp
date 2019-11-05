@@ -8,6 +8,8 @@
 
 #include "GBPPModule.h"
 
+#include <carl/core/polynomialfunctions/Complexity.h>
+
 namespace smtrat
 {
 	template<class Settings>
@@ -44,7 +46,7 @@ namespace smtrat
 				if (f.formula().constraint().relation() == carl::Relation::EQ) {
 					SMTRAT_LOG_DEBUG("smtrat.gbpp", "Found equality " << f.formula().constraint());
 					mEqualities.emplace(f.formula().constraint());
-					mEqualityComplexity += f.formula().constraint().lhs().complexity();
+					mEqualityComplexity += carl::complexity(f.formula().constraint().lhs());
 				}
 			}
 		}
@@ -74,7 +76,7 @@ namespace smtrat
 		// Forward basis to backend
 		std::size_t basisComplexity = 0;
 		for (const auto& p: mBasis.getIdeal().getGenerators()) {
-			basisComplexity += p.complexity();
+			basisComplexity += carl::complexity(p);
 		}
 		if (basisComplexity >= mEqualityComplexity) {
 			for (const auto& f: mEqualities) {
