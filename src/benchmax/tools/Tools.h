@@ -43,8 +43,6 @@ struct ToolSettings {
 	std::vector<std::filesystem::path> tools_smtrat;
 	/// SMT-RAT with OPB interface.
 	std::vector<std::filesystem::path> tools_smtrat_opb;
-	/// SMT-RAT formula analyzer.
-	std::vector<std::filesystem::path> tools_smtrat_analyzer;
 	/// z3 with SMT-LIB interface.
 	std::vector<std::filesystem::path> tools_z3;
 	/// Common prefix of tool binaries to simplify output.
