@@ -401,7 +401,7 @@ namespace smtrat
 	{
 		// convert the constraints variable
 		std::vector<carl::Variable> variables;
-		for (auto i: c.variables()) {
+		for (auto i: c.variables().underlyingVariables()) {
 			variables.push_back(i);
 		}
 		carl::Sign signForConstraint = carl::Sign::ZERO;

@@ -41,11 +41,11 @@ namespace icp
         {
 //            std::cout << "[Closure] Add candidate ";
             _candidate->print();
-            for( auto symbolIt = _candidate->constraint().variables().begin(); symbolIt != _candidate->constraint().variables().end(); ++symbolIt )
+            for( auto symbol: _candidate->constraint().variables().underlyingVariables())
             {
                 for( auto candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
                 {
-                    if( (*candidateIt)->lhs() == (*symbolIt) )
+                    if( (*candidateIt)->lhs() == symbol )
                     {
                         closure(*candidateIt, _candidates);
                     }

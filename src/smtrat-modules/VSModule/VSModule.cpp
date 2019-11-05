@@ -70,8 +70,8 @@ namespace smtrat
             const vs::Condition* condition = new vs::Condition( constraint, mpConditionIdAllocator->get() );
             mFormulaConditionMap[constraintF] = condition;
             assert( constraint.isConsistent() == 2 );
-            for( auto var = constraint.variables().begin(); var != constraint.variables().end(); ++var )
-                mAllVariables.insert( *var );
+            for( auto var: constraint.variables().underlyingVariables() )
+                mAllVariables.insert( var );
             if( Settings::incremental_solving )
             {
                 removeStatesFromRanking( *mpStateTree );
@@ -1133,8 +1133,8 @@ namespace smtrat
             // The constraint to substitute in.
             const ConstraintT& currentConstraint = (**cond).constraint();
             // Does the condition contain the variable to substitute.
-            auto var = currentConstraint.variables().find( substitutionVariable );
-            if( var == currentConstraint.variables().end() )
+            //auto var = currentConstraint.variables().find( substitutionVariable );
+            if( !currentConstraint.variables().has( substitutionVariable ) )
             {
                 if( !anySubstitutionFailed )
                 {

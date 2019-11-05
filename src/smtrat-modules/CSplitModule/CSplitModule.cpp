@@ -424,7 +424,7 @@ namespace smtrat
 			if (formula.isBound())
 			{
 				const ConstraintT& constraint{formula.constraint()};
-				const carl::Variable& variable{*constraint.variables().begin()};
+				const carl::Variable variable{constraint.variables().underlyingVariables().front()};
 				auto expansionIter{mExpansions.secondFind(variable)};
 				if (expansionIter != mExpansions.end())
 				{

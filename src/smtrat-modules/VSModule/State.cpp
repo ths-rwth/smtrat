@@ -205,7 +205,7 @@ namespace vs
     bool State::substitutionApplicable( const smtrat::ConstraintT& _constraint ) const
     {
         if( !isRoot() )
-            if( _constraint.variables().find( substitution().variable() ) != _constraint.variables().end() )
+            if( _constraint.variables().has( substitution().variable() ))
                 return true;
         return false;
     }
@@ -293,8 +293,10 @@ namespace vs
 
     void State::variables( carl::Variables& _variables ) const
     {
-        for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
-            _variables.insert( (**cond).constraint().variables().begin(), (**cond).constraint().variables().end() );
+        for( auto cond = conditions().begin(); cond != conditions().end(); ++cond ) {
+			auto vars = (**cond).constraint().variables().underlyingVariables();
+            _variables.insert( vars.begin(), vars.end() );
+		}
     }
 
     unsigned State::numberOfNodes() const
@@ -593,7 +595,7 @@ namespace vs
                     {
                         case 0:
                         {
-                            auto tmp = mpVariableBounds->getOriginsOfBounds( constr.variables() );
+                            auto tmp = mpVariableBounds->getOriginsOfBounds( constr.variables().underlyingVariableSet() );
                             carl::PointerSet<Condition> condSet(tmp.begin(), tmp.end()); 
                             condSet.insert( *iter );
                             _conflictSet.insert( std::move( condSet ) );
@@ -611,7 +613,7 @@ namespace vs
                         {
                             if( stricterRelation != constr.relation() )
                             {
-                                auto tmp = mpVariableBounds->getOriginsOfBounds( constr.variables() );
+                                auto tmp = mpVariableBounds->getOriginsOfBounds( constr.variables().underlyingVariableSet() );
                                 carl::PointerSet<Condition> vbcondSet(tmp.begin(), tmp.end());
                                 size_t nValuation = (*iter)->valuation();
                                 bool nFlag = (*iter)->flag();
@@ -637,7 +639,7 @@ namespace vs
                                 }
                                 else if( nConstraint.isConsistent() == 0 )
                                 {
-                                    auto tmp = mpVariableBounds->getOriginsOfBounds( constr.variables() );
+                                    auto tmp = mpVariableBounds->getOriginsOfBounds( constr.variables().underlyingVariableSet() );
                                     carl::PointerSet<Condition> condSet(tmp.begin(), tmp.end());
                                     condSet.insert( *iter );
                                     _conflictSet.insert( std::move( condSet ) );
@@ -1453,7 +1455,7 @@ namespace vs
                     break;
                 }
                 // Does the constraint contain the variable to eliminate.
-                if( _constraint.variables().find( index() ) == _constraint.variables().end()
+                if( !_constraint.variables().has( index() )
                         || constraintWithFinitlyManySolutionCandidatesInIndexExists )
                 {
                     rConditions().push_back( new Condition( _constraint, mpConditionIdAllocator->get(), _valutation, true, _originalConditions, _recentlyAdded ) );
@@ -1547,7 +1549,7 @@ namespace vs
                         {
                             for( auto condB = rConditions().begin(); condB != conditions().end(); ++condB )
                             {
-                                if( (*condB)->constraint().variables().find( *changedVar ) != (*condB)->constraint().variables().end() )
+                                if( (*condB)->constraint().variables().has( *changedVar ) )
                                 {
                                     originsToRemove.insert( *condB );
                                     (*condB)->rRecentlyAdded() = true;
@@ -1628,7 +1630,7 @@ namespace vs
                     {
                         for( auto condB = rConditions().begin(); condB != conditions().end(); ++condB )
                         {
-                            if( (*condB)->constraint().variables().find( *changedVar ) != (*condB)->constraint().variables().end() )
+                            if( (*condB)->constraint().variables().has( *changedVar ) )
                             {
                                 originsToRemove.insert( *condB );
                                 (*condB)->rRecentlyAdded() = true;
@@ -2057,7 +2059,8 @@ namespace vs
         std::set<carl::Relation> relationSymbols = std::set<carl::Relation>();
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
         {
-            occuringVars.insert( (*cond)->constraint().variables().begin(), (*cond)->constraint().variables().end() );
+			auto vars = (*cond)->constraint().variables().underlyingVariables();
+            occuringVars.insert( vars.begin(), vars.end() );
             relationSymbols.insert( (*cond)->constraint().relation() );
         }
         mBackendCallValuation = 300000*occuringVars.size();
@@ -2538,7 +2541,7 @@ namespace vs
             constraintInconsistent = true;
         carl::PointerSet<Condition> origins;
         origins.insert( _condition );
-        auto conflictingBounds = variableBounds().getOriginsOfBounds( cons.variables() );
+        auto conflictingBounds = variableBounds().getOriginsOfBounds( cons.variables().underlyingVariableSet() );
         origins.insert( conflictingBounds.begin(), conflictingBounds.end() );
         ConditionSetSet conflicts;
         conflicts.insert( std::move(origins) );

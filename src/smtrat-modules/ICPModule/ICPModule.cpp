@@ -173,7 +173,7 @@ namespace smtrat
                 {
                     // TODO: here or somewhere later in isConsistent: remove constraints from passed formula which are implied by the current box
                     addSubformulaToPassedFormula( _formula->formula(), _formula->formula() );
-                    for( auto& var : _formula->formula().constraint().variables() )
+                    for( auto var : _formula->formula().constraint().variables().underlyingVariables() )
                     {
                         auto iter = mVariables.find( var );
                         if( Settings::original_polynomial_contraction && iter == mVariables.end() )
@@ -233,7 +233,7 @@ namespace smtrat
         }
         if( !constr.isBound() )
         {
-            for( auto& var : constr.variables() )
+            for( auto var : constr.variables().underlyingVariables() )
                 mVariables.at(var)->addOriginalConstraint( _formula->formula() );
         }
         // is it nonlinear?
@@ -468,15 +468,15 @@ namespace smtrat
         {
             const Poly& constr = constraint.lhs();
             // add original variables to substitution mapping
-            for( auto var = constraint.variables().begin(); var != constraint.variables().end(); ++var )
+            for( auto var: constraint.variables().underlyingVariables() )
             {
-                if( mSubstitutions.find( *var ) == mSubstitutions.end() )
+                if( mSubstitutions.find( var ) == mSubstitutions.end() )
                 {
-                    assert( mVariables.find(*var) == mVariables.end() );
-                    assert( mIntervals.find(*var) == mIntervals.end() );
-                    mSubstitutions.insert( std::make_pair( *var, carl::makePolynomial<Poly>(*var) ) );
-                    getIcpVariable( *var, true, nullptr ); // note that we have to set the lra variable later
-                    mHistoryRoot->addInterval( *var, DoubleInterval::unboundedInterval() );
+                    assert( mVariables.find(var) == mVariables.end() );
+                    assert( mIntervals.find(var) == mIntervals.end() );
+                    mSubstitutions.insert( std::make_pair( var, carl::makePolynomial<Poly>(var) ) );
+                    getIcpVariable( var, true, nullptr ); // note that we have to set the lra variable later
+                    mHistoryRoot->addInterval( var, DoubleInterval::unboundedInterval() );
                 }
             }
             // actual preprocessing
@@ -511,15 +511,15 @@ namespace smtrat
                 createLinearCCs( linearFormula, _formula );
             // set the lra variables for the icp variables regarding variables (introduced and original ones)
             // TODO: Refactor this last part - it seems to be too complicated
-            for( auto var = linearizedConstraint.variables().begin(); var != linearizedConstraint.variables().end(); ++var )
+            for( auto var: linearizedConstraint.variables().underlyingVariables() )
             {
-                auto iter = mVariables.find( *var );
+                auto iter = mVariables.find( var );
                 if( Settings::original_polynomial_contraction && iter == mVariables.end() )
                     continue;
                 assert( iter != mVariables.end() );
                 if( iter->second->lraVar() == nullptr )
                 {
-                    auto ovarIter = mLRA.originalVariables().find( *var );
+                    auto ovarIter = mLRA.originalVariables().find( var );
                     if( ovarIter != mLRA.originalVariables().end() )
                         iter->second->setLraVar( ovarIter->second );
                 }
@@ -905,7 +905,7 @@ namespace smtrat
         assert( slackvariable != nullptr );
         if( mLinearConstraints.find( slackvariable ) == mLinearConstraints.end() )
         {
-            carl::Variables variables = Settings::original_polynomial_contraction ? _original.constraint().variables() : _constraint.constraint().variables();
+            carl::Variables variables = Settings::original_polynomial_contraction ? _original.constraint().variables().underlyingVariableSet() : _constraint.constraint().variables().underlyingVariableSet();
             bool hasRealVar = false;
             for( auto var : variables )
             {
@@ -1091,10 +1091,10 @@ namespace smtrat
             #endif
             setContraction( _selection, icpVar, resultA.convexHull( resultB ) );
             icp::set_icpVariable variables;
-            for( auto variableIt = _selection->constraint().variables().begin(); variableIt != _selection->constraint().variables().end(); ++variableIt )
+            for( auto variable: _selection->constraint().variables().underlyingVariables() )
             {
-                assert(mVariables.find(*variableIt) != mVariables.end());
-                variables.insert(mVariables.at(*variableIt));
+                assert(mVariables.find(variable) != mVariables.end());
+                variables.insert(mVariables.at(variable));
             }
             mHistoryActual->addContraction(_selection, variables);
             /// create prequesites: ((oldBox AND CCs) -> newBox) in CNF: (oldBox OR CCs) OR newBox
@@ -1152,12 +1152,12 @@ namespace smtrat
         {
             mHistoryActual->addInterval(_selection->lhs(), mIntervals.at(_selection->lhs()));
             icp::set_icpVariable variables;
-            for( auto variableIt = _selection->constraint().variables().begin(); variableIt != _selection->constraint().variables().end(); ++variableIt )
+            for( auto variable: _selection->constraint().variables().underlyingVariables() )
             {
-                if( Settings::original_polynomial_contraction && mVariables.find(*variableIt) == mVariables.end() )
+                if( Settings::original_polynomial_contraction && mVariables.find(variable) == mVariables.end() )
                     continue;
-                assert(mVariables.find(*variableIt) != mVariables.end());
-                variables.insert(mVariables.at(*variableIt));
+                assert(mVariables.find(variable) != mVariables.end());
+                variables.insert(mVariables.at(variable));
             }
             mHistoryActual->addContraction(_selection, variables);
         }
@@ -2185,7 +2185,7 @@ namespace smtrat
         #endif
         assert( !_violatedConstraint.constraint().isBound() );
         assert( _violatedConstraint.getType() == carl::FormulaType::CONSTRAINT );
-        bool constraintContainsSplittingVar = _violatedConstraint.constraint().variables().find( _icpVar.var() ) == _violatedConstraint.constraint().variables().end();
+        bool constraintContainsSplittingVar = _violatedConstraint.constraint().variables().has( _icpVar.var() );
         setContraction( _violatedConstraint, _icpVar, (constraintContainsSplittingVar ? DoubleInterval::emptyInterval() : _contractedInterval), constraintContainsSplittingVar );
         if( constraintContainsSplittingVar )
             mInvalidBox = true;
@@ -2458,16 +2458,16 @@ namespace smtrat
                         if( !formulaIt->constraint().isBound() )
                         {
                             mHistoryActual->addInfeasibleConstraint(formulaIt->constraint());
-                            for( auto variableIt = formulaIt->constraint().variables().begin(); variableIt != formulaIt->constraint().variables().end(); ++variableIt )
+                            for( auto variable: formulaIt->constraint().variables().underlyingVariables() )
                             {
-                                assert( mVariables.find(*variableIt) != mVariables.end() );
-                                mHistoryActual->addInfeasibleVariable(mVariables.at(*variableIt));
+                                assert( mVariables.find(variable) != mVariables.end() );
+                                mHistoryActual->addInfeasibleVariable(mVariables.at(variable));
                             }
                         }
                         else
                         {
                             assert( mVariables.find( *formulaIt->constraint().variables().begin() ) != mVariables.end() );
-                            mHistoryActual->addInfeasibleVariable( mVariables.at( *formulaIt->constraint().variables().begin()) );
+                            mHistoryActual->addInfeasibleVariable( mVariables.at( formulaIt->constraint().variables().underlyingVariables().front() ) );
                         }
                     }
                 }

@@ -18,7 +18,7 @@ namespace smtrat {
 
 		private:
 			boost::optional<FormulaT> encodeExactly(const ConstraintT& constraint);
-			FormulaT encodeExactly(const std::set<carl::Variable>& variables, const Rational constant);
+			FormulaT encodeExactly(const std::vector<carl::Variable>& variables, const Rational constant);
 			boost::optional<FormulaT> encodeAtLeast(const ConstraintT& constraint);
 			boost::optional<FormulaT> encodeAtMost(const ConstraintT& constraint);
 

@@ -83,7 +83,8 @@ namespace vs
                     
                     if( conflictingWithSolutionSpace == 0 )
                     {
-                        _conflictingVars.insert( cons->variables().begin(), cons->variables().end() );
+						auto vars = cons->variables().underlyingVariables();
+                        _conflictingVars.insert( vars.begin(), vars.end() );
                         conjInconsistent = true;
                         break;
                     }
@@ -932,7 +933,7 @@ namespace vs
         bool result = true;
         if( !_cons.variables().empty() )
         {
-            if( _cons.variables().find( _subs.variable() ) != _cons.variables().end() )
+            if( _cons.variables().has( _subs.variable() ) )
             {
                 switch( _cons.relation() )
                 {
@@ -1041,7 +1042,7 @@ namespace vs
     {
         if( !_cons.variables().empty() )
         {
-            if( _cons.variables().find( _subs.variable() ) != _cons.variables().end() )
+            if( _cons.variables().has( _subs.variable() ) )
             {
                 if( _cons.relation() == Relation::EQ )
                     substituteTrivialCase( _cons, _subs, _result );
