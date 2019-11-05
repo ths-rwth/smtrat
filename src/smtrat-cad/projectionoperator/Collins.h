@@ -26,7 +26,7 @@ void single(const Poly& p, carl::Variable variable, Callback&& cb) {
 	// - PSC of all reducta
 	for (const auto& coeff : p.coefficients()) {
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "reductum lcoeff: " << coeff);
-		returnPoly(projection::normalize(coeff.toUnivariatePolynomial(variable)), cb);
+		returnPoly(projection::normalize(carl::to_univariate_polynomial(coeff, variable)), cb);
 	}
 
 	projection::Reducta<Poly> RED_p(p);

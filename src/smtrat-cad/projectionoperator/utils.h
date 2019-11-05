@@ -3,6 +3,7 @@
 #include <carl/core/polynomialfunctions/Factorization.h>
 #include <carl/core/polynomialfunctions/Resultant.h>
 #include <carl/core/polynomialfunctions/SquareFreePart.h>
+#include <carl/core/polynomialfunctions/to_univariate_polynomial.h>
 
 namespace smtrat {
 namespace cad {
@@ -93,7 +94,7 @@ template<typename Poly, typename Callback>
 void returnPoly(const Poly& p, Callback&& cb) {
 	if (true) {
 		for (const auto& fact: carl::factorization(carl::MultivariatePolynomial<Rational>(p), false)) {
-			auto uf = fact.first.toUnivariatePolynomial(p.mainVar());
+			auto uf = carl::to_univariate_polynomial(fact.first, p.mainVar());
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> " << uf);
 			cb(uf);
 		}

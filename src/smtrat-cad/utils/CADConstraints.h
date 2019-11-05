@@ -52,7 +52,7 @@ protected:
 	
 	template<typename CB, typename... Args>
 	void callCallback(const CB& cb, const ConstraintT& c, Args... args) const {
-		if (cb) cb(c.lhs().toUnivariatePolynomial(mVariables.front()), std::forward<Args>(args)...);
+		if (cb) cb(carl::to_univariate_polynomial(c.lhs(), mVariables.front()), std::forward<Args>(args)...);
 	}
 public:
 	CADConstraints(const Callback& onAdd, const Callback& onAddEq, const Callback& onRemove): mAddCallback(onAdd), mAddEqCallback(onAddEq), mRemoveCallback(onRemove) {}

@@ -20,8 +20,8 @@ template<typename Poly, typename Callback>
 void single(const Poly& p, carl::Variable variable, Callback&& cb) {
 	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Brown_single(" << p << ")");
 	returnPoly(projection::discriminant(variable, p), cb);
-	returnPoly(projection::normalize(p.lcoeff().toUnivariatePolynomial(variable)), cb);
-	returnPoly(projection::normalize(p.tcoeff().toUnivariatePolynomial(variable)), cb);
+	returnPoly(projection::normalize(carl::to_univariate_polynomial(p.lcoeff(), variable)), cb);
+	returnPoly(projection::normalize(carl::to_univariate_polynomial(p.tcoeff(), variable)), cb);
 }
 
 /**
