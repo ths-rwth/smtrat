@@ -1,7 +1,7 @@
 #pragma once
 
 #include <smtrat-common/smtrat-common.h>
-#include <carl-model/evaluation/ModelEvaluation.h>
+#include <carl-model/Model.h>
 #include <smtrat-solver/Module.h>
 
 namespace smtrat {
