@@ -49,7 +49,7 @@ namespace smtrat
 			const Poly normalization{constraint.lhs().normalize()};
 			carl::Relation relation{constraint.relation()};
 			if (carl::isNegative(constraint.lhs().lcoeff()))
-				relation = carl::turnAroundRelation(relation);
+				relation = carl::turn_around(relation);
 			
 			/// Purifiy and discretize the normalized left hand side to construct the linearization
 			auto linearizationIter{mLinearizations.firstFind(normalization)};
@@ -185,7 +185,7 @@ namespace smtrat
 			const Poly normalization{constraint.lhs().normalize()};
 			carl::Relation relation{constraint.relation()};
 			if (carl::isNegative(constraint.lhs().lcoeff()))
-				relation = carl::turnAroundRelation(relation);
+				relation = carl::turn_around(relation);
 			
 			/// Retrieve the normalized constraint and mark the separator object as changed
 			Linearization& linearization{mLinearizations.firstAt(normalization)};
@@ -506,7 +506,7 @@ namespace smtrat
 					{
 						carl::Relation relation{constraint.relation()};
 						if (carl::isNegative(constraint.lhs().lcoeff()))
-							relation = carl::turnAroundRelation(relation);
+							relation = carl::turn_around(relation);
 						infeasibleSubset.emplace(linearization.mNormalization, relation);
 					}
 				}

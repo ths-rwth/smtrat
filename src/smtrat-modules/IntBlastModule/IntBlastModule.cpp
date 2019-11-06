@@ -332,7 +332,7 @@ namespace smtrat
             const Integer& constant = constantPol.constant();
 
             // Assuming "variable op constant" now (i.e., constant is on the right side)
-            carl::Relation relation = left.isConstant() ? carl::turnAroundRelation(_constraint.relation()) : _constraint.relation();
+            carl::Relation relation = left.isConstant() ? carl::turn_around(_constraint.relation()) : _constraint.relation();
 
             if(relation == carl::Relation::EQ || relation == carl::Relation::NEQ) {
                 // is the constant outside the range of the variable?

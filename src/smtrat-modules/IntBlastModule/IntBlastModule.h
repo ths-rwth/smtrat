@@ -276,7 +276,7 @@ namespace smtrat
             if(leftPoly.lcoeff() < 0) {
                 rightPoly *= Rational(-1);
                 leftPoly *= Rational(-1);
-                mRelation = carl::turnAroundRelation(mRelation);
+                mRelation = carl::turn_around(mRelation);
             }
 
             mpLeftPoly = new PolyTree(leftPoly);

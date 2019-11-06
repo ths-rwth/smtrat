@@ -35,7 +35,7 @@ namespace smtrat
 			const Poly normalization{constraint.lhs().normalize()};
 			carl::Relation relation{constraint.relation()};
 			if (carl::isNegative(constraint.lhs().lcoeff()))
-				relation = carl::turnAroundRelation(relation);
+				relation = carl::turn_around(relation);
 			
 			/// Store the normalized constraint and mark the separator object as changed
 			Separator& separator{mSeparators.emplace(normalization, normalization).first->second};
@@ -131,7 +131,7 @@ namespace smtrat
 			const Poly normalization{constraint.lhs().normalize()};
 			carl::Relation relation{constraint.relation()};
 			if (carl::isNegative(constraint.lhs().lcoeff()))
-				relation = carl::turnAroundRelation(relation);
+				relation = carl::turn_around(relation);
 			
 			/// Retrieve the normalized constraint and mark the separator object as changed
 			Separator& separator{mSeparators.at(normalization)};
