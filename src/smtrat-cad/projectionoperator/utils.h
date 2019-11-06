@@ -45,7 +45,7 @@ Poly normalize(const Poly& p) {
  */
 template<typename Poly>
 Poly resultant(carl::Variable variable, const Poly& p, const Poly& q) {
-	auto res = normalize(carl::resultant(p,q).switchVariable(variable));
+	auto res = normalize(carl::switch_main_variable(carl::resultant(p,q), variable));
 	SMTRAT_LOG_TRACE("smtrat.cad.projection", "resultant(" << p << ", " << q << ") = " << res);
 	return res;
 }
@@ -60,7 +60,7 @@ Poly resultant(carl::Variable variable, const Poly& p, const Poly& q) {
  */
 template<typename Poly>
 Poly discriminant(carl::Variable variable, const Poly& p) {
-	auto dis = normalize(carl::discriminant(p).switchVariable(variable));
+	auto dis = normalize(carl::switch_main_variable(carl::discriminant(p), variable));
 	SMTRAT_LOG_TRACE("smtrat.cad.projection", "discriminant(" << p << ") = " << dis);
 	return dis;
 }

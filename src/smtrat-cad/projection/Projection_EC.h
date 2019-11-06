@@ -312,13 +312,13 @@ private:
 		 */
 	void extendProjection(const UPoly& p) {
 		std::size_t level = 1;
-		while ((level < dim()) && projection::canBeForwarded(level, p.switchVariable(var(level)))) {
+		while ((level < dim()) && projection::canBeForwarded(level, carl::switch_main_variable(p, var(level)))) {
 			level += 1;
 		}
-		if (mPolynomialIDs[level].find(p.switchVariable(var(level))) == mPolynomialIDs[level].end()) {
+		if (mPolynomialIDs[level].find(carl::switch_main_variable(p, var(level))) == mPolynomialIDs[level].end()) {
 			return;
 		}
-		std::size_t id = mPolynomialIDs[level].find(p.switchVariable(var(level)))->second;
+		std::size_t id = mPolynomialIDs[level].find(carl::switch_main_variable(p, var(level)))->second;
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking if " << p << " is part of an EC in " << level);
 		if (!mInfo.usingEC(level) || !mInfo.getUsedEC(level).test(id)) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "No, nothing to change.");
@@ -370,7 +370,7 @@ private:
 		}
 		if ((level < dim()) && projection::canBeForwarded(level, p)) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> but is forwarded to " << (level + 1));
-			return insertPolynomialTo(level + 1, p.switchVariable(var(level + 1)), origin, setBound);
+			return insertPolynomialTo(level + 1, carl::switch_main_variable(p, var(level + 1)), origin, setBound);
 		}
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "Inserting " << p << " into level " << level);
 		assert(level <= dim());
@@ -560,7 +560,7 @@ public:
 				std::size_t level = 1;
 				while (level <= dim()) {
 					mInfo(level).restrictEvaluatedToPurged();
-					if (!projection::canBeForwarded(level, p.switchVariable(var(level)))) break;
+					if (!projection::canBeForwarded(level, carl::switch_main_variable(p, var(level)))) break;
 					level += 1;
 				}
 				checkPurged = std::max(level, checkPurged);
@@ -580,7 +580,7 @@ public:
 			std::size_t level = 1;
 			while (level <= dim()) {
 				mInfo(level).restrictEvaluatedToPurged();
-				if (!projection::canBeForwarded(level, p.switchVariable(var(level)))) break;
+				if (!projection::canBeForwarded(level, carl::switch_main_variable(p, var(level)))) break;
 				level += 1;
 			}
 			checkPurged = std::max(level, checkPurged);
@@ -600,7 +600,7 @@ public:
 				std::size_t level = 1;
 				while (level <= dim()) {
 					mInfo(level).restrictEvaluatedToPurged();
-					if (!projection::canBeForwarded(level, p.switchVariable(var(level)))) break;
+					if (!projection::canBeForwarded(level, carl::switch_main_variable(p, var(level)))) break;
 					level += 1;
 				}
 				checkPurged = std::max(level, checkPurged);
@@ -622,7 +622,7 @@ public:
 			std::size_t level = 1;
 			while (level <= dim()) {
 				mInfo(level).restrictEvaluatedToPurged();
-				if (!projection::canBeForwarded(level, p.switchVariable(var(level)))) break;
+				if (!projection::canBeForwarded(level, carl::switch_main_variable(p, var(level)))) break;
 				level += 1;
 			}
 			checkPurged = std::max(level, checkPurged);
@@ -655,7 +655,7 @@ public:
 			while (level <= dim()) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Resetting evaluated on level " << level << ": " << mInfo(level).evaluated << " -= " << mInfo(level).purged);
 				mInfo(level).removePurgedFromEvaluated();
-				if (!projection::canBeForwarded(level, p.switchVariable(var(level)))) break;
+				if (!projection::canBeForwarded(level, carl::switch_main_variable(p, var(level)))) break;
 				level += 1;
 			}
 			checkPurged = std::max(level, checkPurged);

@@ -123,7 +123,7 @@ namespace cad {
                         assert(level > 0 && level <= dim());
 			if (projection::canBeRemoved(p)) return;
                         if ((level > 1) && (level < dim()) && projection::canBeForwarded(level, p)) {
-				addToCorrectLevel(level + 1, p.switchVariable(var(level+1)), origin);
+				addToCorrectLevel(level + 1, carl::switch_main_variable(p, var(level+1)), origin);
                                 return;
 			} 
                         SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
@@ -145,7 +145,7 @@ namespace cad {
 			if (projection::canBeRemoved(p)) return carl::Bitset();
                         // TODO warum > 1 und nicht > 0?
 			if ((level > 1) && (level < dim()) && projection::canBeForwarded(level, p)) {
-				return addToProjection(level + 1, p.switchVariable(var(level+1)), origin);
+				return addToProjection(level + 1, carl::switch_main_variable(p, var(level+1)), origin);
 			} 
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			assert(p.mainVar() == var(level));

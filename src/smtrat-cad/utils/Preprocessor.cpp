@@ -105,13 +105,13 @@ void Preprocessor::compute_resultants(const ConstraintT& cur) {
 	if (cur.relation() != carl::Relation::EQ) return;
 	carl::Variable mainvar = main_variable_of(cur);
 	if (mainvar == carl::Variable::NO_VARIABLE) return;
-	auto p = cur.lhs().toUnivariatePolynomial(mainvar);
+	auto p = carl::to_univariate_polynomial(cur.lhs(), mainvar);
 	SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Identified main variable of " << p << ": " << mainvar);
 	std::vector<ConstraintT> toAdd;
 	for (const auto& c: mCurrent) {
 		if (c.relation() != carl::Relation::EQ) continue;
 		if (mainvar == main_variable_of(c)) {
-			auto q = c.lhs().toUnivariatePolynomial(mainvar);
+			auto q = carl::to_univariate_polynomial(c.lhs(), mainvar);
 			auto r = projection::resultant(mainvar, p, q);
 			if (!r.isNumber()) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Resultant of " << p << " and " << q << " is " << r);

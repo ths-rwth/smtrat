@@ -200,7 +200,7 @@ namespace full {
 			}
 			if ((level < dim()) && projection::canBeForwarded(level, p)) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> but is forwarded to " << (level+1));
-				return insertPolynomialTo(level + 1, p.switchVariable(var(level + 1)), origin, setBound);
+				return insertPolynomialTo(level + 1, carl::switch_main_variable(p, var(level + 1)), origin, setBound);
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "Inserting " << p << " into level " << level);
 			assert(level <= dim());
