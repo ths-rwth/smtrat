@@ -121,12 +121,12 @@ namespace smtrat::qe::fm {
         // lower bounds
         for(auto fc : bounds[0]) {
             assert(fc.getType() == carl::FormulaType::CONSTRAINT);
-            constraints.emplace_back(fc.constraint().lhs().substitute(v, substitute), fc.constraint().relation());
+            constraints.emplace_back(carl::substitute(fc.constraint().lhs(), v, substitute), fc.constraint().relation());
         }
         // upper bounds
         for(auto fc : bounds[1]) {
             assert(fc.getType() == carl::FormulaType::CONSTRAINT);
-            constraints.emplace_back(fc.constraint().lhs().substitute(v, substitute), fc.constraint().relation());
+            constraints.emplace_back(carl::substitute(fc.constraint().lhs(), v, substitute), fc.constraint().relation());
         }
 
         return constraints;

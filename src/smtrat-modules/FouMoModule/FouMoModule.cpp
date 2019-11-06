@@ -1035,8 +1035,8 @@ namespace smtrat
             }
             ++iter_poly_lower;
         }
-        Poly upper_poly = upper_constr.lhs().substitute( corr_var, Poly() );
-        Poly lower_poly = lower_constr.lhs().substitute( corr_var, Poly() );
+        Poly upper_poly = carl::substitute(upper_constr.lhs(), corr_var, Poly() );
+        Poly lower_poly = carl::substitute(lower_constr.lhs(), corr_var, Poly() );
         if( upper_constr.relation() == carl::Relation::LEQ && lower_constr.relation() == carl::Relation::LEQ )
         {
             combined_formula = FormulaT( ConstraintT( Poly( coeff_upper*lower_poly ) + Poly( (Rational)(-1*coeff_lower)*upper_poly ), carl::Relation::LEQ ) );

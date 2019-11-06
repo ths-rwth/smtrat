@@ -1716,7 +1716,7 @@ namespace smtrat
                             {
                                 assert( varSolutions.find( *var ) != varSolutions.end() );
                                 partialVarSolutions[*var] = varSolutions[*var];
-                                Poly subPolyPartiallySubstituted = substitutionPoly.substitute( partialVarSolutions );
+                                Poly subPolyPartiallySubstituted = carl::substitute(substitutionPoly, partialVarSolutions );
                                 if( !carl::isZero(subPolyPartiallySubstituted) )
                                 {
                                     Rational cp = subPolyPartiallySubstituted.coprimeFactorWithoutConstant();
@@ -1740,7 +1740,7 @@ namespace smtrat
                         // Insert the (integer!) assignments of the other variables.
                         const SqrtEx& subTerm = currentState->substitution().term();
                         Rational evaluatedSubTerm;
-                        if( carl::isZero(subTerm.denominator().substitute( varSolutions )) )
+                        if( carl::isZero(carl::substitute(subTerm.denominator(), varSolutions )) )
                         {
 							SMTRAT_LOG_DEBUG("smtrat.vs", "Something is zero");
                             if( mFinalCheck )

@@ -297,7 +297,7 @@ inline std::optional<std::size_t> levelOf(
 	// it becomes empty is the highest appearing variable in 'poly'.
 
 	// 'gatherVariables()' collects only variables with positive degree
-	auto polyVariables = poly.gatherVariables();
+	auto polyVariables = carl::variables(poly).underlyingVariableSet();
 
 	if (polyVariables.empty()) {
 		return std::nullopt; // for const-polys like '2'

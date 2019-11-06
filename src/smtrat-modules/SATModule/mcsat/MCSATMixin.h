@@ -419,12 +419,12 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << literal << " under " << mBackend.getModel());
 		const auto& f = mGetter.reabstractLiteral(literal);
 
-		carl::Variables vars;
-		f.arithmeticVars(vars);
+		carl::carlVariables vars;
+		f.gatherVariables(vars);
 		for (const auto& v : mBackend.assignedVariables())
 			vars.erase(v);
 		assert(vars.size() == 1);
-		carl::Variable tvar = *(vars.begin());
+		carl::Variable tvar = carl::underlying_variable(*(vars.begin()));
 
 		auto conflict = mBackend.isInfeasible(tvar, !f);
 		assert(carl::variant_is_type<FormulasT>(conflict));
@@ -493,8 +493,8 @@ public:
 	
 	std::size_t computeTheoryLevel(const FormulaT& f) const {
 		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Computing theory level for " << f);
-		carl::Variables vars;
-		f.arithmeticVars(vars);
+		carl::carlVariables vars;
+		f.gatherVariables(vars);
 		if (vars.empty()) {
 			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " has no variable, thus on level 0");
 			return 0;
@@ -508,7 +508,7 @@ public:
 		for (std::size_t lvl = level(); lvl > 0; lvl--) {
 			if (variable(lvl) == carl::Variable::NO_VARIABLE) continue;
 			m.erase(variable(lvl));
-			if (vars.count(variable(lvl)) == 0) continue;
+			if (!vars.has(variable(lvl))) continue;
 			if (!carl::model::evaluate(f, m).isBool()) {
 				return lvl;
 			}

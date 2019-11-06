@@ -36,7 +36,7 @@ namespace smtrat
 					resultingReasons.calculateUnion(rule.second.second);
 				}
 			}
-			Polynomial result = inputPolynomial.substitute(substitutions);
+			Polynomial result = carl::substitute(inputPolynomial, substitutions);
 			result.setReasons(resultingReasons);
 			return result;
 		}

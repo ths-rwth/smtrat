@@ -1,6 +1,7 @@
 #pragma once
 
 #include <carl/core/polynomialfunctions/RootFinder.h>
+#include <carl/core/polynomialfunctions/Substitution.h>
 #include <carl-model/evaluation/ModelEvaluation.h>
 #include <smtrat-common/model.h>
 #include <smtrat-common/smtrat-common.h>
@@ -8,8 +9,8 @@
 namespace smtrat::lve {
 
 Rational evaluate(carl::Variable v, const Poly& p, const Rational& r) {
-	assert(p.substitute(v, Poly(r)).isConstant());
-	return p.substitute(v, Poly(r)).constantPart();
+	assert(carl::substitute(p, v, Poly(r)).isConstant());
+	return carl::substitute(p, v, Poly(r)).constantPart();
 }
 carl::Sign sgn(carl::Variable v, const Poly& p, const carl::RealAlgebraicNumber<Rational>& r) {
 	Model m;
