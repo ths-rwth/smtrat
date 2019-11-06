@@ -64,14 +64,15 @@ namespace parser {
 namespace arithmetic {
 	inline FormulaT makeConstraint(ArithmeticTheory& at, const Poly& lhs, const Poly& rhs, carl::Relation rel) {
 		Poly p = lhs - rhs;
-		std::set<carl::Variable> pVars = p.gatherVariables();
+		carl::carlVariables pVars;
+		carl::variables(p, pVars);
 		std::vector<carl::Variable> vars;
 		while (!pVars.empty()) {
-			auto it = at.mITEs.find(*pVars.begin());
-			pVars.erase(pVars.begin());
+			auto it = at.mITEs.find(carl::underlying_variable(*pVars.begin()));
+			pVars.erase(*pVars.begin());
 			if (it != at.mITEs.end()) {
-				std::get<1>(it->second).gatherVariables(pVars);
-				std::get<2>(it->second).gatherVariables(pVars);
+				carl::variables(std::get<1>(it->second), pVars);
+				carl::variables(std::get<2>(it->second), pVars);
 				vars.push_back(it->first);
 			}
 		}
