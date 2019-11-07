@@ -103,7 +103,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		smtrat::Poly poly		/**< polynom */
 	) {
 		carl::Variable var;
-		for(auto v : poly.gatherVariables()) {
+		for(auto v : carl::variables(poly).underlyingVariables()) {
 			if(cad.getDepthOfVar(v) > cad.getDepthOfVar(var)) 
 				var = v;
 		}
@@ -130,7 +130,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		std::set<CADInterval*, SortByLowerBound> regions;
 
 		// find real roots of constraint corresponding to current var
-		auto r = carl::rootfinder::realRoots(c.lhs().toUnivariatePolynomial(currVar), samples);
+		auto r = carl::rootfinder::realRoots(carl::to_univariate_polynomial(c.lhs(), currVar), samples);
 		std::sort(r.begin(), r.end());
 		
 		// go through roots to build region intervals and add them to the lifting level
@@ -186,9 +186,9 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		// @todo this checks all vars, not just main vars
 		/* constraints are filtered for ones with main var currVar or higher */
 		std::vector<ConstraintT> constraints;
-		for(auto c : cad.mConstraints) {
+		for(auto c : cad.getConstraints()) {
 			auto consvars = c.variables();
-			for(auto v : consvars) {
+			for(auto v : consvars.underlyingVariables()) {
 				if(isAtLeastCurrVar(cad, v, currVar)) {
 					constraints.push_back(c);
 					break;
@@ -507,7 +507,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			}
 			// add discriminant of polynoms containing main var
 			for(auto poly : inter->getPolynoms()) {
-				smtrat::cad::UPoly upoly = carl::discriminant(poly.toUnivariatePolynomial(getHighestVar(cad, poly)));
+				smtrat::cad::UPoly upoly = carl::discriminant(carl::to_univariate_polynomial(poly, getHighestVar(cad, poly)));
 				// convert polynom to multivariate
 				smtrat::Poly inspoly = smtrat::Poly(upoly);
 				characterization.insert(inspoly);
@@ -522,8 +522,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				if(isSatWithOffset(cad, inter->getLower(), samples, q, carl::Relation::GREATER)) {
 					for(auto p : inter->getLowerReason()) {
 						smtrat::cad::UPoly upoly = carl::resultant(
-							p.toUnivariatePolynomial(getHighestVar(cad, p)),
-							q.toUnivariatePolynomial(getHighestVar(cad, q))
+							carl::to_univariate_polynomial(p, getHighestVar(cad, p)),
+							carl::to_univariate_polynomial(q, getHighestVar(cad, q))
 						);
 						// convert polynom to multivariate
 						smtrat::Poly inspoly = smtrat::Poly(upoly);
@@ -534,8 +534,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				if(isSatWithOffset(cad, inter->getUpper(), samples, q, carl::Relation::LESS)) {
 					for(auto p : inter->getUpperReason()) {
 						smtrat::cad::UPoly upoly = carl::resultant(
-							p.toUnivariatePolynomial(getHighestVar(cad, p)),
-							q.toUnivariatePolynomial(getHighestVar(cad, q))
+							carl::to_univariate_polynomial(p, getHighestVar(cad, p)),
+							carl::to_univariate_polynomial(q, getHighestVar(cad, q))
 						);
 						// convert polynom to multivariate
 						smtrat::Poly inspoly = smtrat::Poly(upoly);
@@ -554,8 +554,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				for(auto upper : (*itupper)->getUpperReason()) {
 					// convert polynom to multivariate
 					smtrat::cad::UPoly upoly = carl::resultant(
-						upper.toUnivariatePolynomial(getHighestVar(cad, upper)),
-						lower.toUnivariatePolynomial(getHighestVar(cad, lower))
+						carl::to_univariate_polynomial(upper, getHighestVar(cad, upper)),
+						carl::to_univariate_polynomial(lower, getHighestVar(cad, lower))
 					);
 					smtrat::Poly inspoly = smtrat::Poly(upoly);
 					characterization.insert(inspoly);
@@ -592,7 +592,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			{
 				p_i.insert(poly);
 				// store the real roots with substituted values until depth i-1
-				auto roots = carl::rootfinder::realRoots(poly.toUnivariatePolynomial(currVar), samples);
+				auto roots = carl::rootfinder::realRoots(carl::to_univariate_polynomial(poly, currVar), samples);
 				realroots.insert(roots.begin(), roots.end());
 			}
 		}
@@ -709,6 +709,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		// if no cover was found, set SAT assignment
 		if(ans == Answer::SAT)
 			assignment = std::get<2>(res);
+		else assignment = Assignment();
 
 		return ans;
 	}
