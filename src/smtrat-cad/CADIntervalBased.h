@@ -22,6 +22,9 @@ namespace cad {
 	private:
 		std::vector<carl::Variable> mVariables;			/**< variables in given order */
 		std::vector<ConstraintT> mConstraints;			/**< constraints */
+
+		std::map<ConstraintT, int> mConstraintMap;
+
 		// ProjectionT<Settings> mProjection;
 		
 		// ID scheme for variables x,y,z:
@@ -42,7 +45,7 @@ namespace cad {
 		CADIntervalBased():
 			mConstraints()
 		{
-			//@todo add variables
+			//@todo add variables?
 			
 			if (Settings::debugStepsToTikz) {
 				thp.configure<debug::TikzTreePrinter>("Lifting");

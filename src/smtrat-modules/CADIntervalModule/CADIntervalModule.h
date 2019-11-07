@@ -9,7 +9,7 @@
 #pragma once
 
 #include "smtrat-cad/CADIntervalBased.h"
-
+#include "smtrat-cad/utils/Preprocessor.h"
 #include "smtrat-solver/Module.h"
 #include "CADIntervalStatistics.h"
 #include "CADIntervalSettings.h"
@@ -28,9 +28,10 @@ namespace smtrat
 			std::vector<ConstraintT> mConstraints; 	/**< constraints gathered by inform, cad initialization */
 			carl::carlVariables mVariables;			/**< variables */
 			cad::CADIntervalBased<Settings> mCAD;	/**< cad implementation */
-
 			cad::Assignment mLastAssignment;		/**< storage for last assignment */
-			
+			cad::Preprocessor mPreprocessor;		/**< for processing model */
+			Model mLastModel;						/**< last model */
+
 		public:
 			typedef Settings SettingsType;
 			std::string moduleName() const {
