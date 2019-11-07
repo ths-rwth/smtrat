@@ -925,7 +925,7 @@ namespace smtrat
                         Poly linearCoeff;
                         iter = coeffs.find( 1 );
                         if( iter != coeffs.end() ) linearCoeff = iter->second;
-                        Poly radicand = linearCoeff.pow( 2 ) - Rational( 4 ) * coeffs.rbegin()->second * constantCoeff;
+                        Poly radicand = carl::pow(linearCoeff, 2) - Rational( 4 ) * coeffs.rbegin()->second * constantCoeff;
                         bool constraintHasZeros = false;
                         ConstraintT cons11 = ConstraintT( coeffs.rbegin()->second, carl::Relation::EQ );
                         if( cons11 != ConstraintT( false ) )

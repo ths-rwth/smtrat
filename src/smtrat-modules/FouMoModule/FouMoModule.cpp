@@ -649,7 +649,7 @@ namespace smtrat
                 auto iter_constr = rReceivedFormula().begin();
                 while( iter_constr != rReceivedFormula().end() )
                 {
-                    if( iter_constr->formula().constraint().satisfiedBy( backends_solution ) == 0 || !( iter_constr->formula().constraint().lhs().substitute( backends_solution ) ).isConstant() )
+                    if( iter_constr->formula().constraint().satisfiedBy( backends_solution ) == 0 || !( carl::substitute(iter_constr->formula().constraint().lhs(), backends_solution) ).isConstant() )
                     {
                         #ifdef DEBUG_FouMoModule
                         std::cout << "The obtained solution is not correct!" << std::endl;
@@ -1084,7 +1084,7 @@ namespace smtrat
                 // and determine the lowest upper bound in the current level
                 atomic_formula_upper = iter_constr_upper->first;
                 to_be_substituted_upper = atomic_formula_upper.constraint().lhs();
-                to_be_substituted_upper = to_be_substituted_upper.substitute( mVarAss );
+                to_be_substituted_upper = carl::substitute(to_be_substituted_upper, mVarAss);
                 #ifdef DEBUG_FouMoModule
                 std::cout << "Remaining polynomial: " << to_be_substituted_upper << std::endl;
                 #endif
@@ -1114,7 +1114,7 @@ namespace smtrat
                     }
                     ++iter_poly_upper;
                 }
-                to_be_substituted_upper = to_be_substituted_upper.substitute( mVarAss );
+                to_be_substituted_upper = carl::substitute(to_be_substituted_upper, mVarAss);
                 if( first_iter_upper )
                 {
                     first_iter_upper = false;
@@ -1162,7 +1162,7 @@ namespace smtrat
                 // and determine the highest lower bound in the current level
                 atomic_formula_lower = iter_constr_lower->first;
                 to_be_substituted_lower = atomic_formula_lower.constraint().lhs();
-                to_be_substituted_lower = to_be_substituted_lower.substitute( mVarAss );
+                to_be_substituted_lower = carl::substitute(to_be_substituted_lower, mVarAss);
                 #ifdef DEBUG_FouMoModule
                 std::cout << "Remaining polynomial: " << to_be_substituted_lower << std::endl;
                 #endif
@@ -1192,7 +1192,7 @@ namespace smtrat
                     }
                     ++iter_poly_lower;
                 }
-                to_be_substituted_lower = to_be_substituted_lower.substitute( mVarAss );
+                to_be_substituted_lower = carl::substitute(to_be_substituted_lower, mVarAss);
                 if( first_iter_lower )
                 {
                     first_iter_lower = false;
@@ -1270,7 +1270,7 @@ namespace smtrat
         while( iter_eq != mEqualities.end() )
         {
             Poly constr_poly = iter_eq->first.constraint().lhs();
-            constr_poly = constr_poly.substitute( mVarAss );
+            constr_poly = carl::substitute(constr_poly, mVarAss);
             typename Poly::PolyType eqExpanded = (typename Poly::PolyType)constr_poly;
             auto iter_poly = eqExpanded.begin();
             bool found_var = false;
@@ -1296,7 +1296,7 @@ namespace smtrat
         auto iter_constr = rReceivedFormula().begin();
         while( iter_constr != rReceivedFormula().end() )
         {
-            if( !iter_constr->formula().constraint().satisfiedBy( mVarAss ) || !( iter_constr->formula().constraint().lhs().substitute( mVarAss ) ).isConstant() )
+            if( !iter_constr->formula().constraint().satisfiedBy( mVarAss ) || !( carl::substitute(iter_constr->formula().constraint().lhs(), mVarAss) ).isConstant() )
             {
                 #ifdef DEBUG_FouMoModule
                 std::cout << "The obtained solution is not correct!" << std::endl;

@@ -64,7 +64,7 @@ namespace smtrat
             while( iter_subs != mSubstitutions.end() )
             {
                 Poly tmp_poly = new_poly;
-                new_poly = new_poly.substitute( (iter_subs)->first, (iter_subs)->second );
+                new_poly = carl::substitute(new_poly, (iter_subs)->first, (iter_subs)->second );
                 if( tmp_poly != new_poly )
                 {
                     auto iter_var = mVariables.find( iter_subs->first );
@@ -161,7 +161,7 @@ namespace smtrat
             Poly maybe_sub = _subformula->formula().constraint().lhs();
             while( iter_temp != mSubstitutions.end() )
             {
-                if( maybe_sub.substitute( iter_temp->first, iter_temp->second ) == Poly() )
+                if( carl::substitute(maybe_sub, iter_temp->first, iter_temp->second ) == Poly() )
                 {
                     derived_sub = true;
                     #ifdef DEBUG_IntEqModule
@@ -327,7 +327,7 @@ namespace smtrat
                     #ifdef DEBUG_IntEqModule
                     std::cout << "Substitute: " << iter_temp->first << " by: " << iter_temp->second << std::endl;
                     #endif
-                    if( maybe_sub.substitute( iter_temp->first, iter_temp->second ) == Poly() )
+                    if( carl::substitute(maybe_sub, iter_temp->first, iter_temp->second ) == Poly() )
                     {
                         is_sub = true;
                         break;
@@ -539,7 +539,7 @@ namespace smtrat
             {
                 Poly new_poly = constr_iter->first.constraint().lhs();
                 Poly tmp_poly = new_poly;
-                new_poly = new_poly.substitute( new_pair->first, new_pair->second );
+                new_poly = carl::substitute(new_poly, new_pair->first, new_pair->second );
                 std::shared_ptr<std::vector<FormulaT>> origins_new = constr_iter->second;
                 if( new_poly != tmp_poly )
                 {
@@ -602,7 +602,7 @@ namespace smtrat
                 while( iter_subs != mSubstitutions.end() )
                 {
                     Poly tmp_poly = new_poly;
-                    new_poly = new_poly.substitute( (iter_subs)->first, (iter_subs)->second );
+                    new_poly = carl::substitute(new_poly, (iter_subs)->first, (iter_subs)->second );
                     if( tmp_poly != new_poly )
                     {
                         auto iter_help = mVariables.find( iter_subs->first );
@@ -691,7 +691,7 @@ namespace smtrat
             std::cout << "Substitution: " << iter_vars->first << " by " << iter_vars->second << std::endl;
             #endif
             Poly value = iter_vars->second;
-            value = value.substitute( temp_map );
+            value = carl::substitute(value, temp_map);
             assert( value.isConstant() );
             temp_map[ iter_vars->first ] = (Rational)value.constantPart();
             ModelValue assignment = carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>( value );

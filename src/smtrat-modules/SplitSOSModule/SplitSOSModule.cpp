@@ -8,6 +8,8 @@
 
 #include "SplitSOSModule.h"
 
+#include <carl/core/polynomialfunctions/SoSDecomposition.h>
+
 namespace smtrat
 {
     template<class Settings>
@@ -75,11 +77,11 @@ namespace smtrat
             std::vector<std::pair<Rational,Poly>> sosDec;
             bool lcoeffNeg = carl::isNegative( formula.constraint().lhs().lcoeff() );
             if( lcoeffNeg ) {
-                sosDec = (-formula.constraint().lhs()).sosDecomposition();
+                sosDec = carl::sos_decomposition(-formula.constraint().lhs());
             }
             else
             {
-                sosDec = formula.constraint().lhs().sosDecomposition();
+                sosDec = carl::sos_decomposition(formula.constraint().lhs());
             }
             if( sosDec.size() <= 1 )
             {

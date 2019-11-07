@@ -25,7 +25,7 @@ namespace smtrat
 			std::vector<carl::Variable> mOrdering;
 			
 			void addPoly(std::map<carl::Variable, std::size_t>& ordermap, const Poly& p) {
-				for (auto var: p.gatherVariables()) {
+				for (auto var: carl::variables(p).underlyingVariables()) {
 					auto it = ordermap.find(var);
 					if (it == ordermap.end()) {
 						ordermap.emplace(var, 1);

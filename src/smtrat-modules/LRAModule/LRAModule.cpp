@@ -1374,7 +1374,7 @@ namespace smtrat
     {
         for( auto slackVar : mTableau.slackVars() )
         {
-            Poly tmp = slackVar.first->substitute( _assignment );
+            Poly tmp = carl::substitute(*slackVar.first, _assignment );
             assert( tmp.isConstant() );
             LRABoundType slackVarAssignment = slackVar.second->assignment().mainPart() + slackVar.second->assignment().deltaPart() * _delta;
             if( !(tmp == Poly(Rational(slackVarAssignment))) )

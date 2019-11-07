@@ -18,7 +18,7 @@ template<typename Poly>
 bool doesNotVanish(const Poly& p) {
 	if (isZero(p)) return false;
 	if (p.isConstant()) return true;
-	auto def = p.definiteness();
+	auto def = carl::definiteness(p);
 	if (def == carl::Definiteness::POSITIVE) return true;
 	if (def == carl::Definiteness::NEGATIVE) return true;
 	return false;

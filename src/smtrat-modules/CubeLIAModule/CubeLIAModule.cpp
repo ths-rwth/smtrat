@@ -63,7 +63,7 @@ namespace smtrat
                         }
                     }
                     // Create the real relaxation of the constraint's left-hand side.
-                    Poly realRelax = constraint.lhs().substitute( mIntToRealVarMap );
+                    Poly realRelax = carl::substitute(constraint.lhs(), mIntToRealVarMap);
                     #ifdef DEBUG_CUBELIAMODULE
                     std::cout << "mIntToRealVarMap: " << mIntToRealVarMap << std::endl;
                     std::cout << "Real relaxation of " << constraint.lhs() << " is " << realRelax << std::endl;

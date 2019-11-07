@@ -927,7 +927,7 @@ namespace smtrat
             auto iter = mContractors.find( rhs );
             if( iter == mContractors.end() )
             {
-                iter = mContractors.emplace( std::move(Poly(rhs)), std::move(Contractor<carl::SimpleNewton>(rhs, rhs.substitute( mSubstitutions ))) ).first;
+                iter = mContractors.emplace( std::move(Poly(rhs)), std::move(Contractor<carl::SimpleNewton>(rhs, carl::substitute(rhs, mSubstitutions ))) ).first;
             }
             ContractionCandidates ccs;
             // Create candidates for every possible variable:
@@ -2891,7 +2891,7 @@ namespace smtrat
             if( iter == mDeLinearizations.end() )
             {
                 const ConstraintT& c = _deduction.constraint();
-                return FormulaT( c.lhs().substitute(mSubstitutions), c.relation() );
+                return FormulaT( carl::substitute(c.lhs(), mSubstitutions), c.relation() );
             }
             else
             {
