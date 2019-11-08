@@ -65,9 +65,7 @@ namespace smtrat
 	Answer CADIntervalModule<Settings>::checkCore()
 	{
 		// add vars in right order, clear constraints
-		//if (mCAD.dim() != mVariables.size()) {
 			mCAD.reset(cad::variable_ordering::triangular_ordering(mPolynomials));
-		//}
 
 		// add constraints tocad
 		for (const auto& f: rReceivedFormula())

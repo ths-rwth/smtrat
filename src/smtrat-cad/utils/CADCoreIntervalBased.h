@@ -137,7 +137,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		SMTRAT_LOG_INFO("smtrat.cdcad", "Roots of " << c << ": " << r);
 		
 		// go through roots to build region intervals and add them to the lifting level
-		for (int i = 0; i < r.size(); i++) {
+		for (std::size_t i = 0; i < r.size(); i++) {
 			// add closed point interval for each root
 			regions.insert( new CADInterval(r.at(i), c.lhs()) );
 
@@ -207,7 +207,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		for(auto c : constraints) {
 			unsigned issat = c.satisfiedBy(makeEvalMap(cad, samples));
 			/* if unsat, return (-inf, +inf) */
-			if(issat == 0) { /*@todo is this equiv to "c(s) == false"? */
+			if(issat == 0) {
 				newintervals.clear();
 				newintervals.insert(new CADInterval(c.lhs()));
 				SMTRAT_LOG_INFO("smtrat.cdcad", "Found trivial conflict: " << c << " with " << samples);
@@ -216,7 +216,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			/* if sat, constraint is finished */
 			else if(issat == 1)
 				continue;
-			else { /* @todo this should be the satisfiedBy result with open vars */
+			else {
 				// get unsat intervals for constraint
 				auto regions = calcRegionsFromPoly(cad, c, samples, currVar);
 				SMTRAT_LOG_INFO("smtrat.cdcad", "Constraint " << c << " yields " << regions);
@@ -259,12 +259,13 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 */
 	template<typename CADIntervalBased>
 	std::tuple<bool, RAN, CADInterval::CADBoundType, std::set<CADInterval*, SortByLowerBound>> getLowestUpperBound(
-		CADIntervalBased& cad,				/**< corresponding CAD */
+		CADIntervalBased& cad,								/**< corresponding CAD */
 		std::set<CADInterval*, SortByLowerBound> intervals	/**< set of intervals to be checked for unexplored regions */
 	) {
 		// check whether there are intervals
 		if(intervals.empty()) {
 			auto tuple = std::make_tuple(false, (RAN) 0, CADInterval::CADBoundType::OPEN, std::set<CADInterval*, SortByLowerBound>());
+			SMTRAT_LOG_INFO("smtrat.cdcad", "Invervals empty");
 			return tuple;
 		}
 
@@ -274,80 +275,138 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				auto infset = std::set<CADInterval*, SortByLowerBound>();
 				infset.insert(inter);
 				auto tuple = std::make_tuple(false, (RAN) 0, CADInterval::CADBoundType::OPEN, infset);
+				SMTRAT_LOG_INFO("smtrat.cdcad", "Found (-oo, +oo): " << inter);
+				return tuple;
 			}
 		}
 
-		std::set<CADInterval*, SortByLowerBound> cover;
-
 		// get an interval with -inf bound, store its higher bound
-		RAN highestbound = (RAN) 0;
-		CADInterval::CADBoundType boundopen = CADInterval::CADBoundType::OPEN;
 		bool hasminf = false;
+		std::vector<CADInterval*> starts;
 		for(auto inter : intervals) {
-			// check for singleton cover
-			if(inter->isInfinite()) {
-				auto infset = std::set<CADInterval*, SortByLowerBound>();
-				infset.insert(inter);
-				auto tuple = std::make_tuple(false, (RAN) 0, CADInterval::CADBoundType::OPEN, infset);
-				return tuple;
-			}
 			if(inter->getLowerBoundType() == CADInterval::CADBoundType::INF) {
-				// note: the higher bound cannot be +inf as there is singleton cover was checked before
-				highestbound = inter->getUpper();
-				boundopen = inter->getUpperBoundType();
-				cover.insert(inter);
+				// note: the higher bound cannot be +inf, whether there is singleton cover was checked before
+				starts.push_back(inter);
 				hasminf = true;
-				break;
 			}
 		}
 		// if -inf is no bound in any interval, there is some unexplored region before the first interval
 		if(!hasminf) {
 			auto tuple = std::make_tuple(true, (RAN) 0, CADInterval::CADBoundType::INF, std::set<CADInterval*, SortByLowerBound>());
+			assert(starts.empty());
+			SMTRAT_LOG_INFO("smtrat.cdcad", "Computing covering failed, no (-oo, a) interval");
 			return tuple;
 		}
+		else {
+			SMTRAT_LOG_INFO("smtrat.cdcad", "Computing covering, found starts: " << starts);
+		}
 
-		// iteratively check for highest reachable bound
-		bool stop = false;
-		while(!stop) {
-			bool updated = false;
-			for(auto inter : intervals) {
-				updated = false;
-				// if the upper bound is the highest bound but is included only update bound type
-				if(highestbound == inter->getUpper() && boundopen == CADInterval::CADBoundType::OPEN && inter->getUpperBoundType() == CADInterval::CADBoundType::CLOSED) {
-					boundopen = inter->getUpperBoundType();
-					cover.insert(inter);
-					updated = true;
-				}
-				// update if the upper bound is not equal to highestbound 
-				// note: checking (highestbound < upper bound) would ommit (upper bound == INF) case
-				else if( !(highestbound == inter->getUpper() && boundopen == inter->getUpperBoundType()) ) {
-					// and if highestbound is contained in the interval or is bordered by the lower bound of the interval
-					// (also excludes the case upper bound < highestbound)
-					assert(boundopen != CADInterval::CADBoundType::INF);
-					if(inter->contains(highestbound) ||
-						(highestbound == inter->getLower() && boundopen != inter->getLowerBoundType() && 
-						inter->getLowerBoundType() != CADInterval::CADBoundType::INF)) {
-						
+		// start at all available starting points until one leads to a cover or all are explored
+		std::set<CADInterval*, SortByLowerBound> cover;
+		RAN foundbound = (RAN) 0;
+		CADInterval::CADBoundType foundboundopen = CADInterval::CADBoundType::OPEN;
+		for(auto start : starts) {
+			RAN highestbound = (RAN) 0;
+			bool boundopen = true;
+
+			// add (-inf, u)
+			cover.insert(start);
+			SMTRAT_LOG_INFO("smtrat.cdcad", "Computing covering, added: " << start);
+			highestbound = start->getUpper();
+			assert(start->getUpperBoundType() != CADInterval::CADBoundType::INF);
+			boundopen = start->getUpperBoundType();
+
+			// iteratively check for highest reachable bound
+			bool stop = false;
+			while(!stop) {
+				bool updated = false;
+				for(auto inter : intervals) {
+					updated = false;
+					
+					// ignore other start intervals
+					if(inter->getLowerBoundType() == CADInterval::CADBoundType::INF)
+						continue;
+
+					// if upperbound is == highestbound but was formerly not included, update
+					// u) -> u]
+					else if(highestbound == inter->getUpper() && boundopen && inter->getUpperBoundType() == CADInterval::CADBoundType::CLOSED) {
 						cover.insert(inter);
-						if(inter->getUpperBoundType() == CADInterval::CADBoundType::INF) {
-							// an unset cover was found
-							auto tuple = std::make_tuple(false, (RAN) 0, CADInterval::CADBoundType::OPEN, cover);
-							return tuple;
-						}
-						// update to next higher bound
-						highestbound = inter->getUpper();
-						boundopen = inter->getUpperBoundType();
+						SMTRAT_LOG_INFO("smtrat.cdcad", "Computing covering, added: " << inter << " , highest bound: " << highestbound);
+						boundopen = false;
 						updated = true;
 					}
+
+					// if lowerbound == highestbound
+					// (l == (l
+					else if(highestbound == inter->getLower()) { // (-inf,b) is excluded above
+						// rule out case where lowerbound value is excluded
+						// ignore case (l, u) (u, b) as [u] is excluded
+						if(boundopen && inter->getLowerBoundType() == CADInterval::CADBoundType::OPEN)
+							continue;
+						// update highestbound
+						// (l, u) + [u, b]/) or (l, u] + (u, b]/) or (l, u] + [u, b]/)
+						else if(inter->getUpperBoundType() != CADInterval::CADBoundType::INF) {
+							cover.insert(inter);
+							SMTRAT_LOG_INFO("smtrat.cdcad", "Computing covering, added: " << inter << " , highest bound: " << highestbound);
+							highestbound = inter->getUpper();
+							boundopen = inter->getUpperBoundType();
+							updated = true;
+						}
+						// if upperbound is +inf, cover was completed and there is no highest bound
+						// (l, u]/) + [/(u, +inf) with [u] included
+						else if(inter->getUpperBoundType() == CADInterval::CADBoundType::INF) {
+							cover.insert(inter);
+							SMTRAT_LOG_INFO("smtrat.cdcad", "Computing covering, added: " << inter << " , highest bound: " << highestbound );
+							auto tuple = std::make_tuple(false, (RAN) 0, CADInterval::CADBoundType::OPEN, cover);
+							SMTRAT_LOG_INFO("smtrat.cdcad", "Found cover: " << cover);
+							return tuple;
+						}
+					}
+
+					// if highestbound is included in inter
+					// h \in (l, u)
+					else if(inter->contains(highestbound)) {
+						// if the interval is infinite, cover was found
+						if(inter->getUpperBoundType() == CADInterval::CADBoundType::INF) {
+							cover.insert(inter);
+							SMTRAT_LOG_INFO("smtrat.cdcad", "Computing covering, added: " << inter);
+							auto tuple = std::make_tuple(false, (RAN) 0, CADInterval::CADBoundType::OPEN, cover);
+							SMTRAT_LOG_INFO("smtrat.cdcad", "Found cover: " << cover);
+							return tuple;
+						}
+						// else update upper bound
+						else {
+							cover.insert(inter);
+							SMTRAT_LOG_INFO("smtrat.cdcad", "Computing covering, added: " << inter << " , highest bound: " << highestbound);
+							highestbound = inter->getUpper();
+							boundopen = inter->getUpperBoundType();
+							updated = true;
+						}
+					} 
+				}
+				// if the highest bound could not be updated (& was not +inf), break
+				if(!updated) {
+					stop = true;
 				}
 			}
-			// if the highest bound could not be updated (& was not +inf), break
-			if(!updated) {
-				stop = true;
+
+			//update bound if > formerly found ones
+			if(highestbound > foundbound) {
+				foundbound = highestbound;
+				if(boundopen)
+					foundboundopen = CADInterval::CADBoundType::OPEN;
+				else
+					foundboundopen = CADInterval::CADBoundType::CLOSED;
 			}
+			// if == formerly highest one, but bound is now closed
+			else if(foundbound == highestbound && foundboundopen == CADInterval::CADBoundType::OPEN && !boundopen)
+				foundboundopen = CADInterval::CADBoundType::CLOSED;
+
+			SMTRAT_LOG_INFO("smtrat.cdcad", "Computing covering, highest bound: " << foundbound);
 		}
 		
-		auto tuple = std::make_tuple(true, highestbound, boundopen, std::set<CADInterval*, SortByLowerBound>());
+		auto tuple = std::make_tuple(true, foundbound, foundboundopen, std::set<CADInterval*, SortByLowerBound>());
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Computing covering finished, no cover with highest bound: " << foundbound);
 		return tuple;
 	}
 
@@ -415,7 +474,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		// get lower bound of next interval after the unexplored region iff one exists
 		bool found = false;
 		RAN upperbound;
-		CADInterval::CADBoundType upperboundtype;
+		CADInterval::CADBoundType upperboundtype = CADInterval::CADBoundType::INF;
 		for(auto inter : inters) {
 			if(bound < inter->getLower() && inter->getLowerBoundType() != CADInterval::CADBoundType::INF) {
 				found = true;
@@ -425,7 +484,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			// case bound == inter.lower can only happen if found == true, initially was covered by getLowestUpperBound
 			else if(bound == inter->getLower() && upperboundtype == CADInterval::CADBoundType::OPEN 
 				&& inter->getLowerBoundType() == CADInterval::CADBoundType::CLOSED) {
-				upperboundtype == CADInterval::CADBoundType::CLOSED;
+				upperboundtype = CADInterval::CADBoundType::CLOSED;
 			}
 		}
 		// if none was found, next bound is +inf

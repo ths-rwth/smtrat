@@ -69,8 +69,8 @@ namespace cad {
 		}
 
 		/** @returns depth of var iff var is in var list, else 0 */
-		int getDepthOfVar(carl::Variable var) {
-			for(int i = 0; i < mVariables.size(); i++) {
+		std::size_t getDepthOfVar(carl::Variable var) {
+			for(std::size_t i = 0; i < mVariables.size(); i++) {
 				if(var == mVariables.at(i))
 					return i+1;
 			}
@@ -107,7 +107,6 @@ namespace cad {
 		void addConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Adding " << c);
 			mConstraints.push_back(c);
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 		}
 
 		void removeConstraint(const ConstraintT& c) {
@@ -118,7 +117,6 @@ namespace cad {
 					break;
 				}
 			}
-			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 		}
 		
 		Answer check(Assignment& assignment) {
