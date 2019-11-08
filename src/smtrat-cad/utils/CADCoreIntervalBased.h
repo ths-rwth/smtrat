@@ -131,7 +131,10 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 
 		// find real roots of constraint corresponding to current var
 		auto r = carl::rootfinder::realRoots(carl::to_univariate_polynomial(c.lhs(), currVar), samples);
+
 		std::sort(r.begin(), r.end());
+
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Roots of " << c << ": " << r);
 		
 		// go through roots to build region intervals and add them to the lifting level
 		for (int i = 0; i < r.size(); i++) {
@@ -143,9 +146,10 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				regions.insert( new CADInterval((RAN) 0, r.at(i), CADInterval::CADBoundType::INF, CADInterval::CADBoundType::OPEN, c.lhs()) );
 			
 			// for last root x add (x, inf)
-			if (i == r.size()-1)
+			if (i == r.size()-1) {
+				SMTRAT_LOG_INFO("smtrat.cdcad", "Adding region up to oo");
 				regions.insert( new CADInterval(r.at(i), (RAN) 0, CADInterval::CADBoundType::OPEN, CADInterval::CADBoundType::INF, c.lhs()) );
-			else // add open interval to next root
+			} else // add open interval to next root
 				regions.insert( new CADInterval(r.at(i), r.at(i+1), c.lhs()) );
 		}
 
@@ -196,6 +200,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			}
 		}
 
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Using " << constraints);
+
 		/* gather intervals from each constraint */
 		std::set<CADInterval*, SortByLowerBound> newintervals;
 		for(auto c : constraints) {
@@ -204,6 +210,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			if(issat == 0) { /*@todo is this equiv to "c(s) == false"? */
 				newintervals.clear();
 				newintervals.insert(new CADInterval(c.lhs()));
+				SMTRAT_LOG_INFO("smtrat.cdcad", "Found trivial conflict: " << c << " with " << samples);
 				return newintervals;
 			}
 			/* if sat, constraint is finished */
@@ -212,13 +219,16 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			else { /* @todo this should be the satisfiedBy result with open vars */
 				// get unsat intervals for constraint
 				auto regions = calcRegionsFromPoly(cad, c, samples, currVar);
+				SMTRAT_LOG_INFO("smtrat.cdcad", "Constraint " << c << " yields " << regions);
 				for(auto region : regions) {
 					auto r = region->getRepresentative();
+					SMTRAT_LOG_INFO("smtrat.cdcad", "Sample " << r << " from " << region);
 					auto eval = new Assignment(samples);
 					eval->insert(std::pair<carl::Variable, RAN>(currVar, r));
 					std::set<Poly> lowerreason;
 					std::set<Poly> upperreason;
 					if(c.satisfiedBy(makeEvalMap(cad, *eval)) == 0) { //@todo again, is this right?
+						SMTRAT_LOG_INFO("smtrat.cdcad", c << " is unsat on " << *eval);
 						if(region->getLowerBoundType() != CADInterval::CADBoundType::INF)
 							lowerreason.insert(c.lhs());
 						if(region->getUpperBoundType() != CADInterval::CADBoundType::INF)
@@ -228,6 +238,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				} 
 			}
 		}
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Result: " << newintervals);
 		return newintervals;
 	}
 
@@ -353,6 +364,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	) {
 		// return cover or empty set if none was found
 		auto boundtuple = getLowestUpperBound(cad, inters);
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Result: " << std::get<3>(boundtuple));
 		return std::get<3>(boundtuple);
 	}
 
@@ -669,13 +681,14 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	) {
 		// get known unsat intervals
 		auto unsatinters = get_unsat_intervals(cad, samples, currVar);
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Unsat intervals: " << unsatinters);
 
 		// run until a cover was found
 		while(compute_cover(cad, unsatinters).empty()) {
 			// add new sample for current variable
 			auto newsamples = new Assignment(samples);
 			RAN newval = chooseSample(cad, unsatinters);
-			SMTRAT_LOG_TRACE("smtrat.cad", "Next sample " << std::endl << newval);
+			SMTRAT_LOG_INFO("smtrat.cdcad", "Next sample " << newval);
 			newsamples->insert(std::make_pair(currVar, newval));
 
 			// if the sample set has full dimension we have a satifying witness

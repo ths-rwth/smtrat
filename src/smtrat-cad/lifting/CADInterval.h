@@ -157,22 +157,22 @@ namespace cad {
         }
 
         /** gets lower bound */
-        auto getLower() {
+        const auto& getLower() const {
             return lower;
         }
 
         /** gets lower bound type */
-        auto getLowerBoundType() {
+        auto getLowerBoundType() const {
             return lowertype;
         }
 
         /** gets upper bound */
-        auto getUpper() {
+        const auto& getUpper() const {
             return upper;
         }
 
         /** gets upper bound type */
-        auto getUpperBoundType() {
+        auto getUpperBoundType() const {
             return uppertype;
         }
 
@@ -259,7 +259,9 @@ namespace cad {
                 return true;
             // if equal let upper type decide
             if(lower == inter.getLower()) {
-                if(upper <= inter.getUpper() && !(uppertype == INF))
+				if (uppertype == INF) return false;
+				if (inter.getUpperBoundType() == INF) return true;
+				if(upper <= inter.getUpper())
                     return true;
             }
 
@@ -293,5 +295,20 @@ namespace cad {
             return sampleBetween(lower, upper);
         }
 	};
+
+std::ostream& operator<<(std::ostream& os, const CADInterval* i) {
+	switch (i->getLowerBoundType()) {
+		case CADInterval::CADBoundType::INF: os << "(-oo, "; break;
+		case CADInterval::CADBoundType::CLOSED: os << "[" << i->getLower() << ", "; break;
+		case CADInterval::CADBoundType::OPEN: os << "(" << i->getLower() << ", "; break;
+	}
+	switch (i->getUpperBoundType()) {
+		case CADInterval::CADBoundType::INF: os << "oo)"; break;
+		case CADInterval::CADBoundType::CLOSED: os << i->getUpper() << "]"; break;
+		case CADInterval::CADBoundType::OPEN: os << i->getUpper() << ")"; break;
+	}
+	return os;
+}
+
 }   //cad
 };  //smtrat

@@ -65,9 +65,9 @@ namespace smtrat
 	Answer CADIntervalModule<Settings>::checkCore()
 	{
 		// add vars in right order, clear constraints
-		if (mCAD.dim() != mVariables.size()) {
+		//if (mCAD.dim() != mVariables.size()) {
 			mCAD.reset(cad::variable_ordering::triangular_ordering(mPolynomials));
-		}
+		//}
 
 		// add constraints tocad
 		for (const auto& f: rReceivedFormula())
@@ -78,6 +78,7 @@ namespace smtrat
 
 		// update model if sat
 		if (answer == Answer::SAT) {
+			mLastModel.clear();
 			for (const auto& a: mLastAssignment) {
 				mLastModel.assign(a.first, a.second);
 			}
