@@ -12,15 +12,6 @@
 
 namespace smtrat
 {
-	// struct CADIntervalSettings1
-	// {
-	// 	/// Name of the Module
-	// 	static constexpr auto moduleName = "CADIntervalModule<CADIntervalSettings1>";
-	// 	/**
-	// 	 * Example for a setting.
-	// 	 */
-	// 	static const bool example_setting = true;
-	// };
 
 	/**@todo adopted from NewCADSettings, this should be ok. recheck */
 	namespace cad {
