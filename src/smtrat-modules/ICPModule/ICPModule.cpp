@@ -2466,7 +2466,7 @@ namespace smtrat
                         }
                         else
                         {
-                            assert( mVariables.find( *formulaIt->constraint().variables().begin() ) != mVariables.end() );
+                            assert( mVariables.find( carl::underlying_variable(*formulaIt->constraint().variables().begin()) ) != mVariables.end() );
                             mHistoryActual->addInfeasibleVariable( mVariables.at( formulaIt->constraint().variables().underlyingVariables().front() ) );
                         }
                     }
