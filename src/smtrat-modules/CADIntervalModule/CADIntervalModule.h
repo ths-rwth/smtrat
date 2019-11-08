@@ -29,7 +29,6 @@ namespace smtrat
 			carl::carlVariables mVariables;			/**< variables */
 			cad::CADIntervalBased<Settings> mCAD;	/**< cad implementation */
 			cad::Assignment mLastAssignment;		/**< storage for last assignment */
-			cad::Preprocessor mPreprocessor;		/**< for processing model */
 			Model mLastModel;						/**< last model */
 
 		public:

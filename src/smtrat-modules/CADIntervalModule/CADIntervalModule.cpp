@@ -16,8 +16,7 @@ namespace smtrat
 	template<class Settings>
 	CADIntervalModule<Settings>::CADIntervalModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
 		Module( _formula, _conditionals, _manager ),
-		mCAD(),
-		mPreprocessor(mCAD.getVariables())
+		mCAD()
 #ifdef SMTRAT_DEVOPTION_Statistics
 		, mStatistics(Settings::moduleName)
 #endif
@@ -70,26 +69,9 @@ namespace smtrat
 			mCAD.reset(cad::variable_ordering::triangular_ordering(mPolynomials));
 		}
 
-		// clear storage (as the algorithm is not incremental)
-		mPreprocessor.clear();
-		for (const auto& f: rReceivedFormula()) {
-			mPreprocessor.addConstraint(f.formula().constraint());
-		}
-		// check for more obvious conflicts
-		if (!mPreprocessor.preprocess()) {
-			return Answer::UNSAT;
-		}
-		// add/ remove constraints to/ from cad
-		auto conss = mCAD.getConstraints();
-		std::map<ConstraintT, int> constraintmap;
-		int dummyint = 0;
-		for(auto c : mConstraints) {
-			constraintmap.insert(std::make_pair(c, dummyint));
-		}
-
-		auto update = mPreprocessor.result(constraintmap);
-		for (const auto& c: update.toAdd)
-			mCAD.addConstraint(c);
+		// add constraints tocad
+		for (const auto& f: rReceivedFormula())
+			mCAD.addConstraint(f.formula().constraint());
 
 		// run covering check
 		auto answer = mCAD.check(mLastAssignment);
@@ -99,7 +81,6 @@ namespace smtrat
 			for (const auto& a: mLastAssignment) {
 				mLastModel.assign(a.first, a.second);
 			}
-			mLastModel.update(mPreprocessor.model(), false);
 		}
 
 		return answer;
