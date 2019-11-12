@@ -17,6 +17,7 @@ struct CADCoreIntervalBased {};
 
 template<>
 struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
+	// todo
 	// template<typename CADIntervalBased>
 	// bool doProjection(CADIntervalBased& cad) {
 	// 	auto r = cad.mProjection.projectNewPolynomial();
@@ -305,25 +306,27 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		std::set<CADInterval*, SortByLowerBound> cover;
 		RAN foundbound = (RAN) 0;
 		CADInterval::CADBoundType foundboundopen = CADInterval::CADBoundType::OPEN;
+		bool firstbound = true;
 		for(auto start : starts) {
 			RAN highestbound = (RAN) 0;
 			bool boundopen = true;
 
 			// add (-inf, u)
 			cover.insert(start);
-			SMTRAT_LOG_INFO("smtrat.cdcad", "Computing covering, added: " << start);
+			SMTRAT_LOG_INFO("smtrat.cdcad", "Computing covering started, added: " << start);
 			highestbound = start->getUpper();
 			assert(start->getUpperBoundType() != CADInterval::CADBoundType::INF);
 			boundopen = start->getUpperBoundType();
 
 			// iteratively check for highest reachable bound
-			bool stop = false;
-			while(!stop) {
+			// max number of added intervals is #intervals and start is already included -> 1 update
+			size_t nupdated = 1;
+			while(nupdated < intervals.size()) {
 				bool updated = false;
 				for(auto inter : intervals) {
 					updated = false;
 					
-					// ignore other start intervals
+					// ignore start intervals, the current start was added before
 					if(inter->getLowerBoundType() == CADInterval::CADBoundType::INF)
 						continue;
 
@@ -384,14 +387,17 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 						}
 					} 
 				}
-				// if the highest bound could not be updated (& was not +inf), break
-				if(!updated) {
-					stop = true;
-				}
+				// if the highest bound could not be updated (& was not +inf), stop here.
+				// (necessary to get to termination if not all intervals were added)
+				if(!updated)
+					break;
+				else
+					nupdated++;
 			}
 
 			//update bound if > formerly found ones
-			if(highestbound > foundbound) {
+			if(highestbound > foundbound || firstbound) {
+				firstbound = false;
 				foundbound = highestbound;
 				if(boundopen)
 					foundboundopen = CADInterval::CADBoundType::OPEN;
