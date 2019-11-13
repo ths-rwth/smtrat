@@ -81,6 +81,10 @@ namespace smtrat
 				mLastModel.assign(a.first, a.second);
 			}
 		}
+		else if(answer == Answer::UNSAT) {
+			FormulaSetT cover;
+			mInfeasibleSubsets.push_back(mCAD.getLastUnsatCover());
+		}
 
 		return answer;
 	}

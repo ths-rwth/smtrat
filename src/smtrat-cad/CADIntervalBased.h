@@ -22,42 +22,13 @@ namespace cad {
 	private:
 		std::vector<carl::Variable> mVariables;			/**< variables in given order */
 		std::vector<ConstraintT> mConstraints;			/**< constraints */
-
-		std::map<ConstraintT, int> mConstraintMap;
-
-		// ProjectionT<Settings> mProjection;
-		
-		// ID scheme for variables x,y,z:
-		// Projection: x=1,y=2,z=3
-		// Lifting: x=3,y=2,z=1,anonymous=0
-		// std::size_t idPL(std::size_t level) const {
-		// 	assert(level > 0 && level <= dim());
-		// 	return dim() - level + 1;
-		// }
-		// std::size_t idLP(std::size_t level) const {
-		// 	assert(level > 0 && level <= dim());
-		// 	return dim() - level + 1;
-		// }
+		FormulaSetT mLastUnsatCover;					/**< stores last unsat cover */
 
 	public:
-		debug::TikzHistoryPrinter thp;
-
 		CADIntervalBased():
-			mConstraints()
-		{
-			//@todo add variables?
-			
-			if (Settings::debugStepsToTikz) {
-				thp.configure<debug::TikzTreePrinter>("Lifting");
-				thp.configure<debug::TikzDAGPrinter>("Projection");
-			}
-		}
-		~CADIntervalBased() {
-			if (Settings::debugStepsToTikz) {
-				thp.layout();
-				thp.writeTo("cad_debug.tex");
-			}
-		}
+			mConstraints() {}
+		~CADIntervalBased() {}
+
 		std::size_t dim() const {
 			return mVariables.size();
 		}
@@ -66,6 +37,12 @@ namespace cad {
 		}
 		const auto& getConstraints() const {
 			return mConstraints;
+		}
+		const auto& getLastUnsatCover() const {
+			return mLastUnsatCover;
+		}
+		void setUnsatCover(const FormulaSetT& cover) {
+			mLastUnsatCover = cover;
 		}
 
 		/** @returns depth of var iff var is in var list, else 0 */
@@ -127,13 +104,6 @@ namespace cad {
 			return res;
 		}
 		
-		ConflictGraph generateConflictGraph() const {
-			ConflictGraph cg(mConstraints.size());
-			
-			//@todo generate graph
-
-			return cg;
-		}
 	};
 }
 }
