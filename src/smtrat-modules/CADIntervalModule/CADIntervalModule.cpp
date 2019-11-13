@@ -83,7 +83,10 @@ namespace smtrat
 		}
 		else if(answer == Answer::UNSAT) {
 			FormulaSetT cover;
-			mInfeasibleSubsets.push_back(mCAD.getLastUnsatCover());
+			if(mCAD.getLastUnsatCover().empty())
+				generateTrivialInfeasibleSubset();
+			else
+				mInfeasibleSubsets.push_back(mCAD.getLastUnsatCover());
 		}
 
 		return answer;

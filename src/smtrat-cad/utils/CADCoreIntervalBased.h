@@ -703,9 +703,10 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			if(std::get<0>(nextcall))
 				return nextcall;
 			else {
-				auto butler = construct_characterization(cad, *newsamples, std::get<1>(nextcall));
-				CADInterval* butlerinter = interval_from_characterization(cad, samples, currVar, newval, butler);
-				unsatinters.insert(butlerinter);
+				//todo
+				// auto butler = construct_characterization(cad, *newsamples, std::get<1>(nextcall));
+				// CADInterval* butlerinter = interval_from_characterization(cad, samples, currVar, newval, butler);
+				// unsatinters.insert(butlerinter);
 			}
 		}
 
@@ -731,7 +732,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			FormulaSetT cover;
 			for(auto inter : std::get<1>(res)) {
 				for(auto cons : inter->getConstraints())
-					cover.insert(cons);
+					cover.insert(carl::Formula(cons));
 			}
 			cad.setUnsatCover(cover);
 		}

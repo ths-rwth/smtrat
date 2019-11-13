@@ -75,7 +75,7 @@ namespace cad {
 
         /** initializes (-inf, +inf) interval with given constraints */
         CADInterval(const std::set<ConstraintT> newconss):
-            constraints(newcons) {
+            constraints(newconss) {
         }
 
         /** initializes (-inf, +inf) interval with given constraint */
