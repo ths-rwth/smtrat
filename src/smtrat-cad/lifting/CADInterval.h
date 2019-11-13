@@ -22,7 +22,7 @@ namespace cad {
         CADBoundType uppertype = INF;   /**< upper bound type */
         std::set<Poly> lowerreason;     /**< collection of polynomials for lower bound */
         std::set<Poly> upperreason;     /**< collection of polynomials for upper bound */
-        std::set<smtrat::Poly> polys = std::set<smtrat::Poly>();         /**< interval represents the bounds computed from these polynoms (containing x_i) */
+        std::set<smtrat::Poly> polys = std::set<smtrat::Poly>();       /**< interval represents the bounds computed from these polynoms (containing x_i) */
         std::set<smtrat::Poly> lowerpolys = std::set<smtrat::Poly>();  /**< polynoms not containing main variable x_i */
 
     public:
@@ -214,6 +214,21 @@ namespace cad {
             polys.insert(newpoly);
         }
 
+        /** adds poly to lowerreason */
+        void addLowerReason(const smtrat::Poly poly) {
+            lowerreason.insert(poly);
+        }
+
+        /** adds poly to upperreason */
+        void addUpperReason(const smtrat::Poly poly) {
+            upperreason.insert(poly);
+        }
+
+        /** adds poly to polynoms */
+        void addPolynom(const smtrat::Poly poly) {
+            polys.insert(poly);
+        }
+
         /** checks whether the interval is (-inf, +inf) */
         bool isInfinite() {
             if(lowertype == INF && uppertype == INF) {
@@ -242,29 +257,60 @@ namespace cad {
             return false;
         }
 
+
         /** @brief checks whether the lower bound is lower than the one of the given interval
          * 
-         * @note can handle inf bounds
+         * @note can handle inf bounds and considers upper bounds if equal
          * @returns true iff the lower bound is lower than the one of the given interval
          */
         bool isLowerThan(CADInterval inter) {
-            /* if this bound is inf (& the other one not), the other one is greater */
-            if(lowertype == INF && inter.getLowerBoundType() != INF)
-                return true;
-            /* if other bound is inf, this one is not lower */
-            if(inter.getLowerBoundType() == INF)
-                return false;
-
-            if(lower < inter.getLower())
-                return true;
-            // if equal let upper type decide
-            if(lower == inter.getLower()) {
-				if (uppertype == INF) return false;
-				if (inter.getUpperBoundType() == INF) return true;
-				if(upper <= inter.getUpper())
-                    return true;
+            // (-inf
+            if(lowertype == INF) {
+                // (-inf vs. (l
+                if(inter.getLowerBoundType() != INF) return true;
+                // (-inf, +inf) vs. (-inf is always not lower
+                else if(uppertype == INF) return false;
+                // (-inf, u) vs. (-inf, +inf)
+                else if(inter.getUpperBoundType() == INF) return true;
+                // (-inf, u1) vs. (-inf, u2), u1 < u2
+                else if(upper < inter.getUpper()) return true;
+                // (-inf, u1) vs. (-inf, u2), u1 > u2
+                else if(upper > inter.getUpper()) return false;
+                // (-inf, u)/] vs. (-inf, u)/]
+                else if(upper == inter.getUpper()) {
+                    // only lower if (-inf, u) vs. (-inf, u]
+                    if(uppertype == OPEN && inter.getUpperBoundType() == CLOSED) return true;
+                    else return false;
+                }
             }
-
+            // (l vs. (-inf
+            else if(inter.getLowerBoundType() == INF) return false;
+            // (l1 vs. (l2 with l1 < l2
+            else if(lower < inter.getLower()) return true;
+            // (l1 vs. (l2 with l1 > l2
+            else if(lower > inter.getLower()) return false;
+            // (l, vs. [l
+            else if(lowertype == OPEN && inter.getLowerBoundType() == CLOSED) return false;
+            // [l, vs. (l
+            else if(lowertype == CLOSED && inter.getLowerBoundType() == OPEN) return true;
+            // [l vs. [l or (l vs. (l
+            else {
+                // (l, -inf) vs. (l,
+                if(uppertype == INF) return false;
+                // (l, u) vs. (l, +inf)
+                else if(inter.getUpperBoundType() == INF) return true;
+                // (l, u1) vs. (l, u2) with u1 < u2
+                else if(upper < inter.getUpper()) return true;
+                // (l, u1) vs. (l, u2) with u1 > u2
+                else if(upper > inter.getUpper()) return false;
+                // u) vs. u]
+                else if(uppertype == OPEN && inter.getUpperBoundType() == CLOSED) return true;
+                // u] vs. u)
+                else if(uppertype == CLOSED && inter.getUpperBoundType() == OPEN) return false;
+                // (l, u) vs. same (l,u)
+                else return false;
+            }
+            // should not be reachable
             return false;
         }
 
