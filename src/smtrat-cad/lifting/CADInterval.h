@@ -341,7 +341,7 @@ namespace cad {
         }
 	};
 
-std::ostream& operator<<(std::ostream& os, const CADInterval* i) {
+inline std::ostream& operator<<(std::ostream& os, const CADInterval* i) {
 	switch (i->getLowerBoundType()) {
 		case CADInterval::CADBoundType::INF: os << "(-oo, "; break;
 		case CADInterval::CADBoundType::CLOSED: os << "[" << i->getLower() << ", "; break;
