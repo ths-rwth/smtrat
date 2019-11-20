@@ -63,6 +63,7 @@ include( smtratmacros )
 # TODO: iteratively search for cmake files and include them here.
 
 include( clang-tidy )
+include( clang-time-trace )
 
 if(USE_COTIRE)
 	# We use cotire, simply include it
