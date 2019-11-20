@@ -374,7 +374,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 */
 	template<typename CADIntervalBased>
 	RAN chooseSample(
-		CADIntervalBased& cad,			/**< corresponding CAD */
+		CADIntervalBased& cad,							/**< corresponding CAD */
 		std::set<CADInterval*, SortByLowerBound> inters	/**< known unsat intervals */
 	) {
 		// if -inf is not a bound find sample in (-inf, first bound)
@@ -384,6 +384,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		for(auto inter : inters) {
 			if(inter->getLowerBoundType() == CADInterval::CADBoundType::INF) {
 				hasminf = true;
+				SMTRAT_LOG_INFO("smtrat.cdcad", "Choose sample found -inf interval");
 				break;
 			}
 			else {
@@ -392,48 +393,74 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 					lowestval = inter->getLower();
 					first = false;
 				}
-				else {
-					if(inter->getLower() < lowestval)
-						lowestval = inter->getLower();
-				}
+				else if(inter->getLower() < lowestval)
+					lowestval = inter->getLower();
 			}
 		}
 		// if no -inf bound, get val below
 		if(!hasminf) {
-			return sampleBelow(lowestval);
+			auto samp = sampleBelow(lowestval);
+			SMTRAT_LOG_INFO("smtrat.cdcad", "Choose sample (no -inf interval): " << samp);
+			return samp;
 		}
 
-		// get first unexplored region
+		// get lowest upper bound of explored unsat regions (followed by unexplored region)
 		auto boundtuple = getLowestUpperBound(cad, inters);
-		assert(std::get<0>(boundtuple)); //@todo handle this instead
+		//@todo handle the following instead of assertion? should not happen
+		assert(std::get<0>(boundtuple) && std::get<2>(boundtuple) != CADInterval::CADBoundType::INF);
 		RAN bound = std::get<1>(boundtuple);
+		CADInterval::CADBoundType type = std::get<2>(boundtuple);
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Choose sample: last bound at " << bound);
+
+		// get unexplored region
+		// lower bound of next region is right after the lowest upper bound
+		// a) -> [a and a] -> (a
+		if(type == CADInterval::CADBoundType::OPEN)
+			type = CADInterval::CADBoundType::CLOSED;
+		else if(type == CADInterval::CADBoundType::CLOSED) {
+			SMTRAT_LOG_INFO("smtrat.cdcad", "Choose sample: last bound closed");
+			type = CADInterval::CADBoundType::OPEN;
+		}
 		// note: at this point the bound is not -inf (case is handled above)
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Choose sample: lower bound at " << bound);
 
 		// get lower bound of next interval after the unexplored region iff one exists
 		bool found = false;
-		RAN upperbound;
-		CADInterval::CADBoundType upperboundtype = CADInterval::CADBoundType::INF;
+		// init next interval with lower bound and highest upper bound
+		CADInterval* upperbound;
 		for(auto inter : inters) {
-			if(bound < inter->getLower() && inter->getLowerBoundType() != CADInterval::CADBoundType::INF) {
+			// first take any interval with greater lower bound
+			if(!found && bound < inter->getLower() && inter->getLowerBoundType() != CADInterval::CADBoundType::INF) {
+				upperbound = inter;
 				found = true;
-				upperbound = inter->getLower();
-				upperboundtype = inter->getLowerBoundType();
 			}
-			// case bound == inter.lower can only happen if found == true, initially was covered by getLowestUpperBound
-			else if(bound == inter->getLower() && upperboundtype == CADInterval::CADBoundType::OPEN 
-				&& inter->getLowerBoundType() == CADInterval::CADBoundType::CLOSED) {
-				upperboundtype = CADInterval::CADBoundType::CLOSED;
+			// if this is not the first interval to be found, update if lower
+			else if(found && bound < inter->getLower() && inter->getLowerBoundType() != CADInterval::CADBoundType::INF) {
+				if(inter->isLowerThan(*upperbound)) {
+					upperbound = inter;
+					SMTRAT_LOG_INFO("smtrat.cdcad", "Choose sample: new upper bound " << upperbound);
+				}
 			}
+			// todo another case if inter->getLower() == bound, different types?
 		}
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Choose sample: upper bound at " << upperbound);
 		// if none was found, next bound is +inf
+		CADInterval* sampleinterval;
 		if(!found) {
-			upperboundtype = CADInterval::CADBoundType::INF;
-			upperbound = (RAN) 0;
+			sampleinterval = new CADInterval(bound, RAN(0), type, CADInterval::CADBoundType::INF);
+			SMTRAT_LOG_INFO("smtrat.cdcad", "Choose sample: upper bound is oo");
+			
+		}
+		else {
+			// create interval in which to find the next sample (turn upper bound type to get right bound)
+			auto uppertype = (upperbound->getUpperBoundType() == CADInterval::CADBoundType::OPEN) ? CADInterval::CADBoundType::CLOSED : CADInterval::CADBoundType::OPEN;
+			CADInterval* sampleinterval = new CADInterval(bound, upperbound->getLower(), type, uppertype);
 		}
 
-		// create interval in which to find the next sample
-		CADInterval* sampleinterval = new CADInterval(bound, upperbound, std::get<2>(boundtuple), upperboundtype);
-		return sampleinterval->getRepresentative();
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Choose sample from " << sampleinterval);
+		auto samp = sampleinterval->getRepresentative();
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Choosen sample " << samp << " from intervals " << inters);
+		return samp;
 	}
 
 

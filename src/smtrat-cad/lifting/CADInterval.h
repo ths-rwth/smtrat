@@ -315,7 +315,6 @@ namespace cad {
         }
 
         /** gets a value within the interval
-         * @note if at least one bound is inf, some other value is given
         */
         RAN getRepresentative() {
             if(lowertype == INF && uppertype == INF)
