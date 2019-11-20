@@ -30,6 +30,8 @@
 #include "BVModule.h"
 #include <limits>
 
+#include <carl-model/Assignment.h>
+
 //#define DEBUG_BVMODULE
 
 namespace smtrat

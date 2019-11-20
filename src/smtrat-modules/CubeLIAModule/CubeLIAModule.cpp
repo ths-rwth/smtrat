@@ -9,6 +9,8 @@
 #include "CubeLIAModule.h"
 //#define DEBUG_CUBELIAMODULE
 
+#include <carl-model/Assignment.h>
+
 namespace smtrat
 {
     template<class Settings>
