@@ -21,10 +21,8 @@
 #include <vector>
 #include <set>
 #include <string>
-#include <chrono>
 #include <atomic>
 #include <mutex>
-#include <carl-model/Assignment.h>
 #include <carl/util/TimingCollector.h>
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/statistics/Statistics.h>
@@ -129,8 +127,6 @@ namespace smtrat
 #endif
 			};
 
-            /// For time measuring purposes.
-            typedef std::chrono::microseconds timeunit;
             /*
              * The type of a lemma.
              *     PERMANENT = The lemma should not be forgotten.
