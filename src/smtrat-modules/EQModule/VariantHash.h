@@ -22,6 +22,7 @@ namespace smtrat {
 	};
 }
 
+#if BOOST_VERSION < 107100
 namespace std {
 	template<BOOST_VARIANT_ENUM_PARAMS(typename Args)> struct hash< boost::variant<BOOST_VARIANT_ENUM_PARAMS(Args)> > {
 		size_t operator()(const boost::variant<BOOST_VARIANT_ENUM_PARAMS(Args)>& var) const noexcept {
@@ -35,5 +36,6 @@ namespace std {
 		}
 	};
 }
+#endif
 
 #endif
