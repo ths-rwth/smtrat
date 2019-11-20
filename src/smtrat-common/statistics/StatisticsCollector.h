@@ -2,6 +2,8 @@
 
 #include <carl/util/Singleton.h>
 
+#include <memory>
+#include <string>
 #include <vector>
 
 namespace smtrat {
