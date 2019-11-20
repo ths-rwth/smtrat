@@ -5,6 +5,8 @@
 
 #include <smtrat-cad/lifting/Sample.h>
 
+#include <fstream>
+
 namespace smtrat {
 namespace cad {
 
