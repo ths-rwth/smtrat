@@ -98,19 +98,22 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		
 		// go through roots to build region intervals and add them to the lifting level
 		for (std::size_t i = 0; i < r.size(); i++) {
+			assert(r.at(i).isNumeric());
 			// add closed point interval for each root
 			regions.insert( new CADInterval(r.at(i), c) );
 
 			// add (-inf, x) for first root x
 			if (i == 0)
-				regions.insert( new CADInterval((RAN) 0, r.at(i), CADInterval::CADBoundType::INF, CADInterval::CADBoundType::OPEN, c) );
+				regions.insert( new CADInterval(RAN(0), r.at(i), CADInterval::CADBoundType::INF, CADInterval::CADBoundType::OPEN, c) );
 			
 			// for last root x add (x, inf)
 			if (i == r.size()-1) {
 				SMTRAT_LOG_INFO("smtrat.cdcad", "Adding region up to oo");
-				regions.insert( new CADInterval(r.at(i), (RAN) 0, CADInterval::CADBoundType::OPEN, CADInterval::CADBoundType::INF, c) );
-			} else // add open interval to next root
+				regions.insert( new CADInterval(r.at(i), RAN(0), CADInterval::CADBoundType::OPEN, CADInterval::CADBoundType::INF, c) );
+			} else { // add open interval to next root
+				assert(r.at(i+1).isNumeric());
 				regions.insert( new CADInterval(r.at(i), r.at(i+1), c) );
+			}
 		}
 
 		return regions;
@@ -127,6 +130,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		// convert eval map to usable format
 		EvalRationalMap map;
 		for(auto entry : orig) {
+			// todo remove this assertion once fixed
+			assert(entry.second.isNumeric());
 			std::pair<carl::Variable, Rational> newentry = std::make_pair(entry.first, entry.second.value());
 			map.insert(newentry);
 		}
@@ -183,6 +188,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				SMTRAT_LOG_INFO("smtrat.cdcad", "Constraint " << c << " yields " << regions);
 				for(auto region : regions) {
 					auto r = region->getRepresentative();
+					// todo remove this assertion once fixed
+					assert(r.isNumeric());
 					SMTRAT_LOG_INFO("smtrat.cdcad", "Sample " << r << " from " << region);
 					auto eval = new Assignment(samples);
 					eval->insert(std::pair<carl::Variable, RAN>(currVar, r));

@@ -317,27 +317,44 @@ namespace cad {
         /** gets a value within the interval
         */
         RAN getRepresentative() {
-            if(lowertype == INF && uppertype == INF)
-                return (RAN) 0;
+            // todo remove excessive logging
+            if(lowertype == INF && uppertype == INF) {
+                SMTRAT_LOG_INFO("smtrat.cdcad", "Representative 0 from " << this);
+                return RAN(0);
+            }
 
             if(lowertype == INF) {
-                if(uppertype == CLOSED)
+                if(uppertype == CLOSED) {
+                    SMTRAT_LOG_INFO("smtrat.cdcad", "Representative " << upper <<" from " << this);
                     return upper;
-                if(uppertype == OPEN)
-                    return sampleBelow(upper);
+                }
+                if(uppertype == OPEN) {
+                    auto sample = sampleBelow(upper);
+                    SMTRAT_LOG_INFO("smtrat.cdcad", "Representative " << sample <<" from " << this);
+                    return sample;
+                }
             }
             
             if(uppertype == INF) {
-                if(lowertype == CLOSED)
+                if(lowertype == CLOSED) {
+                    SMTRAT_LOG_INFO("smtrat.cdcad", "Representative " << lower <<" from " << this);
                     return lower;
-                if(lowertype == OPEN)
-                    return sampleAbove(lower);
+                }
+                if(lowertype == OPEN) {
+                    auto sample = sampleAbove(lower);
+                    SMTRAT_LOG_INFO("smtrat.cdcad", "Representative " << sample <<" from " << this);
+                    return sample;
+                }
             }
             
-            if(lower == upper)
+            if(lower == upper) {
+                SMTRAT_LOG_INFO("smtrat.cdcad", "Representative " << lower <<" from " << this);
                 return lower;
+            }
 
-            return sampleBetween(lower, upper);
+            auto sample = sampleBetween(lower, upper);
+            SMTRAT_LOG_INFO("smtrat.cdcad", "Representative " << sample <<" from " << this);
+            return sample;
         }
 	};
 
