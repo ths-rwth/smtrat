@@ -168,12 +168,15 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		}
 		SMTRAT_LOG_INFO("smtrat.cdcad", "Using " << constraints);
 
+		// build model
+		carl::Model<RAN, Poly> model;
+		for(auto sample : samples)
+			model.assign(sample.first, sample.second);
+
 		/* gather intervals from each constraint */
 		std::set<CADInterval*, SortByLowerBound> newintervals;
 		for(auto c : constraints) {
-
-			carl::Model model = carl::Model<RAN, Poly>(samples);
-			ModelValue mv = carl::model::evaluate(c, model);
+			auto mv = carl::model::evaluate(c, model);
 
 			//unsigned issat = c.satisfiedBy(makeEvalMap(cad, samples));
 			/* if unsat, return (-inf, +inf) */
@@ -196,9 +199,9 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				for(auto region : regions) {
 					auto r = region->getRepresentative();
 					SMTRAT_LOG_INFO("smtrat.cdcad", "Sample " << r << " from " << region);
-					carl::Model modeladd = carl::Model<RAN, Poly>(samples);
+					carl::Model modeladd = carl::Model(model);
 					modeladd.assign(currVar, r);
-					ModelValue mvadd = carl::model::evaluate(c, modeladd);
+					auto mvadd = carl::model::evaluate(c, modeladd);
 					if(!mvadd.asBool()) {
 						SMTRAT_LOG_INFO("smtrat.cdcad", c << " is unsat on " << modeladd);
 						if(region->getLowerBoundType() != CADInterval::CADBoundType::INF)
