@@ -7,6 +7,7 @@
 #include <smtrat-common/model.h>
 #include <smtrat-qe/smtrat-qe.h>
 
+#include <fstream>
 #include <iostream>
 #include <queue>
 
