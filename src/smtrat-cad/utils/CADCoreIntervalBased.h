@@ -8,6 +8,8 @@
 // @todo #include <smtrat-cad/lifting/LiftingLevel.h>
 
 #include <carl/core/polynomialfunctions/RootFinder.h>
+#include <carl-model/Model.h>
+#include <carl-model/evaluation/ModelEvaluation.h>
 
 namespace smtrat {
 namespace cad {
@@ -169,34 +171,36 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		/* gather intervals from each constraint */
 		std::set<CADInterval*, SortByLowerBound> newintervals;
 		for(auto c : constraints) {
-			unsigned issat = c.satisfiedBy(makeEvalMap(cad, samples));
+
+			carl::Model model = carl::Model<RAN, Poly>(samples);
+			ModelValue mv = carl::model::evaluate(c, model);
+
+			//unsigned issat = c.satisfiedBy(makeEvalMap(cad, samples));
 			/* if unsat, return (-inf, +inf) */
-			if(issat == 0) {
+			if(mv.isBool() && !mv.asBool()) {
 				newintervals.clear();
 				newintervals.insert(new CADInterval(c));
 				SMTRAT_LOG_INFO("smtrat.cdcad", "Found trivial conflict: " << c << " with " << samples);
 				return newintervals;
 			}
 			/* if sat, constraint is finished */
-			else if(issat == 1) {
+			else if(mv.isBool() && mv.asBool()) {
 				SMTRAT_LOG_INFO("smtrat.cdcad", "Constraint " << c << " sat.");
 				continue;
 			}
+			//todo make following case reachable again
 			else {
 				// get unsat intervals for constraint
 				auto regions = calcRegionsFromPoly(cad, c, samples, currVar);
 				SMTRAT_LOG_INFO("smtrat.cdcad", "Constraint " << c << " yields " << regions);
 				for(auto region : regions) {
 					auto r = region->getRepresentative();
-					// todo remove this assertion once fixed
-					assert(r.isNumeric());
 					SMTRAT_LOG_INFO("smtrat.cdcad", "Sample " << r << " from " << region);
-					auto eval = new Assignment(samples);
-					eval->insert(std::pair<carl::Variable, RAN>(currVar, r));
-					std::set<ConstraintT> lowerreason;
-					std::set<ConstraintT> upperreason;
-					if(c.satisfiedBy(makeEvalMap(cad, *eval)) == 0) {
-						SMTRAT_LOG_INFO("smtrat.cdcad", c << " is unsat on " << *eval);
+					carl::Model modeladd = carl::Model<RAN, Poly>(samples);
+					modeladd.assign(currVar, r);
+					ModelValue mvadd = carl::model::evaluate(c, modeladd);
+					if(!mvadd.asBool()) {
+						SMTRAT_LOG_INFO("smtrat.cdcad", c << " is unsat on " << modeladd);
 						if(region->getLowerBoundType() != CADInterval::CADBoundType::INF)
 							region->addLowerReason(c);
 						if(region->getUpperBoundType() != CADInterval::CADBoundType::INF)
