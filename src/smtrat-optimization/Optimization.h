@@ -51,7 +51,7 @@ public:
 		mObjectives.clear();
 	}
 
-	const bool active() const {
+	bool active() const {
 		return !mObjectives.empty();
 	}
 

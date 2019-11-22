@@ -160,10 +160,10 @@ public:
             removeAnnotatedNameHandler(mAnnotatedNames[i].first);
         }
 
-        mAssertions.erase(mAssertions.begin() + std::get<0>(mBacktrackPoints.back()), mAssertions.end());
-        mSoftAssertions.erase(mSoftAssertions.begin() + std::get<1>(mBacktrackPoints.back()), mSoftAssertions.end());
-        mObjectives.erase(mObjectives.begin() + std::get<2>(mBacktrackPoints.back()), mObjectives.end());
-        mAnnotatedNames.erase(mAnnotatedNames.begin() + std::get<3>(mBacktrackPoints.back()), mAnnotatedNames.end());
+        mAssertions.erase(mAssertions.begin() + static_cast<long>(std::get<0>(mBacktrackPoints.back())), mAssertions.end());
+        mSoftAssertions.erase(mSoftAssertions.begin() + static_cast<long>(std::get<1>(mBacktrackPoints.back())), mSoftAssertions.end());
+        mObjectives.erase(mObjectives.begin() + static_cast<long>(std::get<2>(mBacktrackPoints.back())), mObjectives.end());
+        mAnnotatedNames.erase(mAnnotatedNames.begin() + static_cast<long>(std::get<3>(mBacktrackPoints.back())), mAnnotatedNames.end());
 
         mBacktrackPoints.pop_back();
     }
