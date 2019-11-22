@@ -317,44 +317,28 @@ namespace cad {
         /** gets a value within the interval
         */
         RAN getRepresentative() {
-            // todo remove excessive logging
             if(lowertype == INF && uppertype == INF) {
-                SMTRAT_LOG_INFO("smtrat.cdcad", "Representative 0 from " << this);
                 return RAN(0);
             }
 
             if(lowertype == INF) {
-                if(uppertype == CLOSED) {
-                    SMTRAT_LOG_INFO("smtrat.cdcad", "Representative " << upper <<" from " << this);
+                if(uppertype == CLOSED)
                     return upper;
-                }
-                if(uppertype == OPEN) {
-                    auto sample = sampleBelow(upper);
-                    SMTRAT_LOG_INFO("smtrat.cdcad", "Representative " << sample <<" from " << this);
-                    return sample;
-                }
+                if(uppertype == OPEN)
+                    return sampleBelow(upper);
             }
             
             if(uppertype == INF) {
-                if(lowertype == CLOSED) {
-                    SMTRAT_LOG_INFO("smtrat.cdcad", "Representative " << lower <<" from " << this);
+                if(lowertype == CLOSED)
                     return lower;
-                }
-                if(lowertype == OPEN) {
-                    auto sample = sampleAbove(lower);
-                    SMTRAT_LOG_INFO("smtrat.cdcad", "Representative " << sample <<" from " << this);
-                    return sample;
-                }
+                if(lowertype == OPEN) 
+                    return sampleAbove(lower);
             }
             
-            if(lower == upper) {
-                SMTRAT_LOG_INFO("smtrat.cdcad", "Representative " << lower <<" from " << this);
+            if(lower == upper)
                 return lower;
-            }
 
-            auto sample = sampleBetween(lower, upper);
-            SMTRAT_LOG_INFO("smtrat.cdcad", "Representative " << sample <<" from " << this);
-            return sample;
+            return sampleBetween(lower, upper);
         }
 	};
 

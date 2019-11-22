@@ -98,9 +98,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 
 		SMTRAT_LOG_INFO("smtrat.cdcad", "Roots of " << c << ": " << r);
 		
-		// go through roots to build region intervals and add them to the lifting level
+		// go through roots to build region intervals and add them to the regions
 		for (std::size_t i = 0; i < r.size(); i++) {
-			assert(r.at(i).isNumeric());
 			// add closed point interval for each root
 			regions.insert( new CADInterval(r.at(i), c) );
 
@@ -113,31 +112,11 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				SMTRAT_LOG_INFO("smtrat.cdcad", "Adding region up to oo");
 				regions.insert( new CADInterval(r.at(i), RAN(0), CADInterval::CADBoundType::OPEN, CADInterval::CADBoundType::INF, c) );
 			} else { // add open interval to next root
-				assert(r.at(i+1).isNumeric());
 				regions.insert( new CADInterval(r.at(i), r.at(i+1), c) );
 			}
 		}
 
 		return regions;
-	}
-
-	/** converts a Assignment to EvalRationalMap
-	 * as different carl classes need the same information in different format
-	 */
-	template<typename CADIntervalBased>
-	 EvalRationalMap makeEvalMap( 
-		 CADIntervalBased& cad,						/**< corresponding CAD */ 
-		 const Assignment& orig						/**< map to convert */
-	) {
-		// convert eval map to usable format
-		EvalRationalMap map;
-		for(auto entry : orig) {
-			// todo remove this assertion once fixed
-			assert(entry.second.isNumeric());
-			std::pair<carl::Variable, Rational> newentry = std::make_pair(entry.first, entry.second.value());
-			map.insert(newentry);
-		}
-		return map;
 	}
 
 
@@ -169,7 +148,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		SMTRAT_LOG_INFO("smtrat.cdcad", "Using " << constraints);
 
 		// build model
-		carl::Model<RAN, Poly> model;
+		carl::Model<Rational, Poly> model;
 		for(auto sample : samples)
 			model.assign(sample.first, sample.second);
 
@@ -178,20 +157,20 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		for(auto c : constraints) {
 			auto mv = carl::model::evaluate(c, model);
 
-			//unsigned issat = c.satisfiedBy(makeEvalMap(cad, samples));
 			/* if unsat, return (-inf, +inf) */
-			if(mv.isBool() && !mv.asBool()) {
-				newintervals.clear();
-				newintervals.insert(new CADInterval(c));
-				SMTRAT_LOG_INFO("smtrat.cdcad", "Found trivial conflict: " << c << " with " << samples);
-				return newintervals;
+			if(mv.isBool()) {
+				if(!mv.asBool()) {
+					newintervals.clear();
+					newintervals.insert(new CADInterval(c));
+					SMTRAT_LOG_INFO("smtrat.cdcad", "Found trivial conflict: " << c << " with " << samples);
+					return newintervals;
+				}
+				/* if sat, constraint is finished */
+				else if(mv.asBool()) {
+					SMTRAT_LOG_INFO("smtrat.cdcad", "Constraint " << c << " sat.");
+					continue;
+				}
 			}
-			/* if sat, constraint is finished */
-			else if(mv.isBool() && mv.asBool()) {
-				SMTRAT_LOG_INFO("smtrat.cdcad", "Constraint " << c << " sat.");
-				continue;
-			}
-			//todo make following case reachable again
 			else {
 				// get unsat intervals for constraint
 				auto regions = calcRegionsFromPoly(cad, c, samples, currVar);
@@ -202,7 +181,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 					carl::Model modeladd = carl::Model(model);
 					modeladd.assign(currVar, r);
 					auto mvadd = carl::model::evaluate(c, modeladd);
-					if(!mvadd.asBool()) {
+					if(mv.isBool() && !mvadd.asBool()) {
 						SMTRAT_LOG_INFO("smtrat.cdcad", c << " is unsat on " << modeladd);
 						if(region->getLowerBoundType() != CADInterval::CADBoundType::INF)
 							region->addLowerReason(c);
@@ -393,6 +372,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 * @returns RAN in unexplored interval
 	 * @note check whether an unsat cover has been found before calling this!
 	 */
+	// todo logging
 	template<typename CADIntervalBased>
 	RAN chooseSample(
 		CADIntervalBased& cad,							/**< corresponding CAD */
@@ -481,7 +461,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 
 		// SMTRAT_LOG_INFO("smtrat.cdcad", "Choose sample from " << sampleinterval);
 		auto samp = sampleinterval->getRepresentative();
-		// SMTRAT_LOG_INFO("smtrat.cdcad", "Choosen sample " << samp << " from intervals " << inters);
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Choosen sample " << samp << " from intervals " << inters);
 		return samp;
 	}
 
@@ -523,7 +503,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	bool isSatWithOffset(
 		CADIntervalBased& cad,					/**< corresponding CAD */
 		RAN offset,								/**< offset */
-	 	Assignment samples,	/**< values for variables till depth i-1 */
+	 	Assignment samples,						/**< values for variables till depth i-1 */
 		smtrat::Poly poly,						/**< polynom */
 		carl::Relation relation					/**< relation to use for constraint */
 	) {
@@ -533,8 +513,12 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		ConstraintT eqzero = ConstraintT(offsetpoly, relation);
 
 		// check whether poly(samples x offset) == 0
-		unsigned issat = eqzero.satisfiedBy(makeEvalMap(cad, samples));
-		if(issat == 1)
+		carl::Model<Rational, Poly> model;
+		for(auto sample : samples)
+			model.assign(sample.first, sample.second);
+		auto mv = carl::model::evaluate(eqzero, model);
+
+		if(mv.isBool() && mv.asBool())
 			return true;
 
 		return false;
