@@ -7,7 +7,7 @@ namespace smtrat {
 
     public:
         bool debugEnabled = false;
-        const bool isDebugEnabled() {
+        bool isDebugEnabled() {
             return  debugEnabled;
         }
     };
