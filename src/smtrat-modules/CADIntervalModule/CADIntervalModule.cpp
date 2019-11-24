@@ -83,6 +83,7 @@ namespace smtrat
 		}
 		else if(answer == Answer::UNSAT) {
 			FormulaSetT cover;
+			// todo there should always be an unsat cover in that case (remove trivial one)
 			if(mCAD.getLastUnsatCover().empty())
 				generateTrivialInfeasibleSubset();
 			else

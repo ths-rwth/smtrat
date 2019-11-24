@@ -831,8 +831,21 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			assignment = Assignment();
 			FormulaSetT cover;
 			for(auto inter : std::get<1>(res)) {
+				// add constraints that where directly responsible
 				for(auto cons : inter->getConstraints())
 					cover.insert(carl::Formula(cons));
+				for(auto cons : inter->getLowerConstraints())
+					cover.insert(carl::Formula(cons));
+
+				// add other constraints that where responsible
+				for(auto pair : inter->getLowerReason()) {
+					for(auto cons : pair.second)
+						cover.insert(carl::Formula(cons));
+				}
+				for(auto pair : inter->getUpperReason()) {
+					for(auto cons : pair.second)
+						cover.insert(carl::Formula(cons));
+				}
 			}
 			cad.setUnsatCover(cover);
 		}
