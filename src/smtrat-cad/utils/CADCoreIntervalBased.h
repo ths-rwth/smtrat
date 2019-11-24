@@ -92,7 +92,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		// if there is no real root, there is just one interval: (-inf, +inf)
 		if(r.empty()) {
 			SMTRAT_LOG_INFO("smtrat.cdcad", "Roots of " << c << " do not exists");
-			regions.insert( new CADInterval());
+			regions.insert( new CADInterval(c));
 			return regions;
 		}
 
@@ -182,10 +182,12 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 					auto mvadd = carl::model::evaluate(c, modeladd);
 					if(mv.isBool() && !mvadd.asBool()) {
 						SMTRAT_LOG_INFO("smtrat.cdcad", c << " is unsat on " << modeladd);
+						std::vector<ConstraintT> origin;
+						origin.push_back(c);
 						if(region->getLowerBoundType() != CADInterval::CADBoundType::INF)
-							region->addLowerReason(c);
+							region->addLowerReason(std::make_pair(c.lhs(), origin));
 						if(region->getUpperBoundType() != CADInterval::CADBoundType::INF)
-							region->addUpperReason(c);
+							region->addUpperReason(std::make_pair(c.lhs(), origin));
 						region->addConstraint(c);
 						newintervals.insert(region);
 						SMTRAT_LOG_INFO("smtrat.cdcad", "Added " << region << " to unsat intervals.");
@@ -355,7 +357,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 */
 	template<typename CADIntervalBased>
 	std::set<CADInterval*, SortByLowerBound>compute_cover(
-		CADIntervalBased& cad, 			/**< corresponding CAD */
+		CADIntervalBased& cad, 							/**< corresponding CAD */
 		std::set<CADInterval*, SortByLowerBound> inters	/**< set of intervals over which to find a cover */
 	) {
 		// return cover or empty set if none was found
@@ -467,29 +469,44 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 
 	/** 
 	 * @brief get all coefficients required for the given sample set
+	 * 
+	 * @returns set with coefficients and responsible constraint
+	 * @returns true iff the corresponding coefficient is equal to the whole polynomial of the given constraint
 	 * (Paper Alg. 5)
 	*/
 	template<typename CADIntervalBased>
-	std::set<smtrat::Poly> required_coefficients(
+	std::set<std::tuple<Poly, std::vector<ConstraintT>, bool>> required_coefficients(
 		CADIntervalBased& cad,					/**< corresponding CAD */
 		Assignment samples,						/**< values for variables till depth i */
-		std::set<smtrat::Poly> polys			/**< polynoms */
+		std::set<ConstraintT> constraints		/**< constraints */
 	) {
-		std::set<smtrat::Poly> coeffs;
-		for(auto poly : polys) {
+		std::set<std::tuple<Poly, std::vector<ConstraintT>, bool>> coeffs;
+		for(auto cons : constraints) {
+			auto poly = cons.lhs();
+			std::vector<ConstraintT> orig;
+			orig.push_back(cons);
 			while(!carl::isZero(poly)) {
 				// add leading coefficient
 				smtrat::Poly lcpoly = smtrat::Poly(poly.lcoeff());
-				coeffs.insert(lcpoly);
+				if(lcpoly == cons.lhs())
+					coeffs.insert(std::make_tuple(lcpoly, orig, true));
+				else
+					coeffs.insert(std::make_tuple(lcpoly, orig, false));
+
 				// bring samples in right form for evaluation
-				std::map<carl::Variable, smtrat::Rational> map;
+				carl::Model<Rational, Poly> model;
 				for(auto sample : samples)
-					map.insert(std::make_pair(sample.first, sample.second.value()));
+					model.assign(sample.first, sample.second);
+				auto mv = carl::model::evaluate(lcpoly, model);
+
+				// todo does this condition work?
 				// if leading coeff evaluated at sample is non zero, stop
-				if(lcpoly.evaluate(map) != (smtrat::Rational) 0)
-					break;
-				// remove leading term
-				poly = poly.stripLT();
+				if(mv.isRational() && mv.asRational() == Rational(0)) {
+					// remove leading term
+					poly = poly.stripLT();
+				}
+				// else break inner loop
+				else break;
 			}
 		}
 
@@ -507,7 +524,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		carl::Relation relation					/**< relation to use for constraint */
 	) {
 		smtrat::Poly offsetpoly = poly;
-		const carl::Term<smtrat::Rational>* term = new carl::Term(offset.value());
+		// todo is Rational ok?
+		const carl::Term<smtrat::Rational>* term = new carl::Term(offset);
 		offsetpoly.addTerm((*term)); // @todo is this what is meant in alg.6, l.6-7?
 		ConstraintT eqzero = ConstraintT(offsetpoly, relation);
 
@@ -525,89 +543,128 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 
 
 	/**
+	 *  @brief finds all polynoms responsible for unsat
+	 * 
+	 * @returns set of Polys with responsible constraints and whether these were input constraints
 	 * 
 	 * @note asserts that there is a cover in the given intervals
 	 * (Paper Alg. 4)
 	 * */
 	template<typename CADIntervalBased>
-	std::set<ConstraintT> construct_characterization(
+	std::set<std::tuple<Poly, std::vector<ConstraintT>, bool>> construct_characterization(
 		CADIntervalBased& cad,								/**< corresponding CAD */
 		Assignment samples,									/**< values for variables till depth i */
 		std::set<CADInterval*, SortByLowerBound> intervals	/**< intervals containing a cover */
 	) {
 		// todo
-		// // get subset of intervals that has no intervals contained in any other one
-		// std::set<CADInterval*, SortByLowerBound> subinters = compute_cover(cad, intervals);
-		// assert(!subinters.empty());
+		// get subset of intervals that has no intervals contained in any other one
+		std::set<CADInterval*, SortByLowerBound> subinters = compute_cover(cad, intervals);
+		assert(!subinters.empty());
 
-		// // create the characterization of the unsat region
-		// std::set<smtrat::Poly> characterization;
-		// for(auto inter : subinters) {
-		// 	// add all polynoms not containing the main var
-		// 	for(auto lowpoly : inter->getLowerPolynoms()) {
-		// 		characterization.insert(lowpoly);
-		// 	}
-		// 	// add discriminant of polynoms containing main var
-		// 	for(auto poly : inter->getPolynoms()) {
-		// 		smtrat::cad::UPoly upoly = carl::discriminant(carl::to_univariate_polynomial(poly, getHighestVar(cad, poly)));
-		// 		// convert polynom to multivariate
-		// 		smtrat::Poly inspoly = smtrat::Poly(upoly);
-		// 		characterization.insert(inspoly);
-		// 	}
-		// 	// add relevant coefficients
-		// 	auto coeffs = required_coefficients(cad, samples, inter->getPolynoms());
-		// 	characterization.insert(coeffs.begin(), coeffs.end());
-		// 	// add polynoms that guarantee bounds to be closest
-		// 	for(auto q : inter->getPolynoms()) {
-		// 		// @todo does the following correctly represent Alg. 4, l. 7-8?
-		// 		// idea: P(s x \alpha) = 0, \alpha < l => P(s x l) > 0
-		// 		if(isSatWithOffset(cad, inter->getLower(), samples, q, carl::Relation::GREATER)) {
-		// 			for(auto p : inter->getLowerReason()) {
-		// 				smtrat::cad::UPoly upoly = carl::resultant(
-		// 					carl::to_univariate_polynomial(p, getHighestVar(cad, p)),
-		// 					carl::to_univariate_polynomial(q, getHighestVar(cad, q))
-		// 				);
-		// 				// convert polynom to multivariate
-		// 				smtrat::Poly inspoly = smtrat::Poly(upoly);
-		// 				characterization.insert(inspoly);
-		// 			}
-		// 		}
-		// 		// analogously: P(s x \alpha) = 0, \alpha > u => P(s x u) < 0
-		// 		if(isSatWithOffset(cad, inter->getUpper(), samples, q, carl::Relation::LESS)) {
-		// 			for(auto p : inter->getUpperReason()) {
-		// 				smtrat::cad::UPoly upoly = carl::resultant(
-		// 					carl::to_univariate_polynomial(p, getHighestVar(cad, p)),
-		// 					carl::to_univariate_polynomial(q, getHighestVar(cad, q))
-		// 				);
-		// 				// convert polynom to multivariate
-		// 				smtrat::Poly inspoly = smtrat::Poly(upoly);
-		// 				characterization.insert(inspoly);
-		// 			}
-		// 		}
-		// 	}
-		// }
+		// create the characterization of the unsat region
+		std::set<std::tuple<Poly, std::vector<ConstraintT>, bool>> characterization;
+		for(auto inter : subinters) {
+			// add all polynoms not containing the main var
+			for(auto lowpoly : inter->getLowerConstraints()) {
+				std::vector<ConstraintT> orig;
+				orig.push_back(lowpoly);
+				characterization.insert(std::make_tuple(lowpoly.lhs(), orig, true));
+			}
+			// add discriminant of constraints
+			for(auto cons : inter->getConstraints()) {
+				smtrat::cad::UPoly upoly = carl::discriminant(carl::to_univariate_polynomial(cons.lhs(), getHighestVar(cad, cons.lhs())));
+				// convert polynom to multivariate
+				smtrat::Poly inspoly = smtrat::Poly(upoly);
+				std::vector<ConstraintT> orig;
+				orig.push_back(cons);
+				characterization.insert(std::make_tuple(inspoly, orig, false));
+			}
+			// add relevant coefficients
+			auto coeffs = required_coefficients(cad, samples, inter->getConstraints());
+			characterization.insert(coeffs.begin(), coeffs.end());
+			// add polynomials that guarantee bounds to be closest
+			for(auto q : inter->getConstraints()) {
+				// @todo does the following correctly represent Alg. 4, l. 7-8?
+				// todo ask Gereon
+				// idea: P(s x \alpha) = 0, \alpha < l => P(s x l) > 0
+				if(isSatWithOffset(cad, inter->getLower(), samples, q.lhs(), carl::Relation::GREATER)) {
+					for(auto ptuple : inter->getLowerReason()) {
+						// get polynomial from reason
+						auto p = std::get<0>(ptuple);
+						smtrat::cad::UPoly upoly = carl::resultant(
+							carl::to_univariate_polynomial(p, getHighestVar(cad, p)),
+							carl::to_univariate_polynomial(q.lhs(), getHighestVar(cad, q.lhs()))
+						);
+						// convert polynom to multivariate
+						smtrat::Poly inspoly = smtrat::Poly(upoly);
+						// add all responsible constraints
+						std::vector<ConstraintT> orig;
+						orig.push_back(q);
+						for(auto cons : std::get<1>(ptuple)) {
+							orig.push_back(cons);
+						}
+						
+						characterization.insert(std::make_tuple(inspoly, orig, false));
+					}
+				}
+				// analogously: P(s x \alpha) = 0, \alpha > u => P(s x u) < 0
+				if(isSatWithOffset(cad, inter->getUpper(), samples, q.lhs(), carl::Relation::LESS)) {
+					for(auto ptuple : inter->getUpperReason()) {
+						// get polynomial from reason
+						auto p = std::get<0>(ptuple);
+						smtrat::cad::UPoly upoly = carl::resultant(
+							carl::to_univariate_polynomial(p, getHighestVar(cad, p)),
+							carl::to_univariate_polynomial(q.lhs(), getHighestVar(cad, q.lhs()))
+						);
+						// convert polynom to multivariate
+						smtrat::Poly inspoly = smtrat::Poly(upoly);
 
-		// // add resultants of upper & lower reasons
-		// auto itlower = subinters.begin();
-		// itlower++;
-		// auto itupper = subinters.begin();
-		// while(itlower != subinters.end()) {
-		// 	for(auto lower : (*itlower)->getLowerReason()) {
-		// 		for(auto upper : (*itupper)->getUpperReason()) {
-		// 			// convert polynom to multivariate
-		// 			smtrat::cad::UPoly upoly = carl::resultant(
-		// 				carl::to_univariate_polynomial(upper, getHighestVar(cad, upper)),
-		// 				carl::to_univariate_polynomial(lower, getHighestVar(cad, lower))
-		// 			);
-		// 			smtrat::Poly inspoly = smtrat::Poly(upoly);
-		// 			characterization.insert(inspoly);
-		// 		}
-		// 	}
-		// 	itlower++;
-		// 	itupper++;
-		// }
+						// add all responsible constraints
+						std::vector<ConstraintT> orig;
+						orig.push_back(q);
+						for(auto cons : std::get<1>(ptuple)) {
+							orig.push_back(cons);
+						}
 
-		std::set<ConstraintT> characterization;
+						characterization.insert(std::make_tuple(inspoly, orig, false));
+					}
+				}
+			}
+		}
+
+		// add resultants of upper & lower reasons
+		auto itlower = subinters.begin();
+		itlower++;
+		auto itupper = subinters.begin();
+		while(itlower != subinters.end()) {
+			for(auto lower : (*itlower)->getLowerReason()) {
+				auto l = std::get<0>(lower);
+				for(auto upper : (*itupper)->getUpperReason()) {
+					auto u = std::get<0>(upper);
+					
+					smtrat::cad::UPoly upoly = carl::resultant(
+						carl::to_univariate_polynomial(upper, getHighestVar(cad, upper)),
+						carl::to_univariate_polynomial(lower, getHighestVar(cad, lower))
+					);
+
+					// convert polynomial to multivariate
+					smtrat::Poly inspoly = smtrat::Poly(upoly);
+
+					// add all responsible constraints
+					std::vector<ConstraintT> orig;
+					for(auto cons : std::get<1>(lower)) {
+						orig.push_back(cons);
+					}
+					for(auto cons : std::get<1>(upper)) {
+						orig.push_back(cons);
+					}
+					
+					characterization.insert(std::make_tuple(inspoly, orig, false));
+				}
+			}
+			itlower++;
+			itupper++;
+		}
 
 		return characterization;
 	}

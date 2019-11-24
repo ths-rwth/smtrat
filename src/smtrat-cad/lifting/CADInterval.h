@@ -16,14 +16,14 @@ namespace cad {
         };
 
 	private:
-        RAN lower = (RAN) 0;                /**< lower bound */
-        RAN upper = (RAN) 0;                /**< upper bound */
-        CADBoundType lowertype = INF;       /**< lower bound type */
-        CADBoundType uppertype = INF;       /**< upper bound type */
-        std::set<ConstraintT> lowerreason;  /**< collection of constraints for lower bound */
-        std::set<ConstraintT> upperreason;  /**< collection of constraints for upper bound */
-        std::set<ConstraintT> constraints;  /**< interval represents the bounds computed from these constraints (containing x_i) */
-        std::set<ConstraintT> lowerconss;   /**< constraints not containing main variable x_i */
+        RAN lower = (RAN) 0;                                                /**< lower bound */
+        RAN upper = (RAN) 0;                                                /**< upper bound */
+        CADBoundType lowertype = INF;                                       /**< lower bound type */
+        CADBoundType uppertype = INF;                                       /**< upper bound type */
+        std::set<std::pair<Poly, std::vector<ConstraintT>>> lowerreason;    /**< collection of polynomials for lower bound and from which constraints they originated */
+        std::set<std::pair<Poly, std::vector<ConstraintT>>> upperreason;    /**< collection of polynomials for upper bound and from which constraints they originated */
+        std::set<ConstraintT> constraints;                                  /**< interval represents the bounds computed from these polynomials (containing x_i) */
+        std::set<ConstraintT> lowerconss;                                   /**< polynomials not containing main variable x_i */
 
     public:
         /** initializes interval as (-inf, +inf) */
@@ -120,8 +120,8 @@ namespace cad {
             RAN upperbound, 
             CADBoundType lowerboundtype, 
             CADBoundType upperboundtype, 
-            std::set<ConstraintT> lowerres,
-            std::set<ConstraintT> upperres, 
+            std::set<std::pair<Poly, std::vector<ConstraintT>>> lowerres,
+            std::set<std::pair<Poly, std::vector<ConstraintT>>> upperres, 
             std::set<ConstraintT> newconss):
             lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), 
             lowerreason(lowerres), upperreason(upperres), constraints(newconss) {
@@ -133,8 +133,8 @@ namespace cad {
             RAN upperbound, 
             CADBoundType lowerboundtype, 
             CADBoundType upperboundtype, 
-            std::set<ConstraintT> lowerres,
-            std::set<ConstraintT> upperres, 
+            std::set<std::pair<Poly, std::vector<ConstraintT>>> lowerres,
+            std::set<std::pair<Poly, std::vector<ConstraintT>>> upperres, 
             ConstraintT newcons):
             lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), 
             lowerreason(lowerres), upperreason(upperres){
@@ -142,14 +142,14 @@ namespace cad {
             constraints.insert(newcons);
         }
 
-        /** initializes interval with given bounds, bound types, reasons, constraint and constraint without leading term */
+        /** initializes interval with given bounds, bound types, reasons, constraints and constraints without leading term */
         CADInterval(
             RAN lowerbound, 
             RAN upperbound, 
             CADBoundType lowerboundtype, 
             CADBoundType upperboundtype, 
-            std::set<ConstraintT> lowerres, 
-            std::set<ConstraintT> upperres, 
+            std::set<std::pair<Poly, std::vector<ConstraintT>>> lowerres, 
+            std::set<std::pair<Poly, std::vector<ConstraintT>>> upperres, 
             std::set<ConstraintT> newconss, 
             std::set<ConstraintT> newredconss):
             lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype),
@@ -176,12 +176,12 @@ namespace cad {
             return uppertype;
         }
 
-        /** gets constraints the lower bound is reasoned from */
+        /** gets polynomials the lower bound is reasoned from */
         const auto& getLowerReason() {
             return lowerreason;
         }
 
-        /** gets constraints the upper bound is reasoned from */
+        /** gets polynomials the upper bound is reasoned from */
         const auto& getUpperReason() {
             return upperreason;
         }
@@ -191,7 +191,7 @@ namespace cad {
             return constraints;
         }
 
-        /** gets the reduced constraint */
+        /** gets the reduced constraints */
         const auto& getLowerConstraints() {
             return lowerconss;
         }
@@ -214,14 +214,14 @@ namespace cad {
             constraints.insert(cons);
         }
 
-        /** adds cons to lowerreason */
-        void addLowerReason(const ConstraintT cons) {
-            lowerreason.insert(cons);
+        /** adds poly to lowerreason */
+        void addLowerReason(const std::pair<Poly, std::vector<ConstraintT>> poly) {
+            lowerreason.insert(poly);
         }
 
-        /** adds cons to upperreason */
-        void addUpperReason(const ConstraintT cons) {
-            upperreason.insert(cons);
+        /** adds poly to upperreason */
+        void addUpperReason(const std::pair<Poly, std::vector<ConstraintT>> poly) {
+            upperreason.insert(poly);
         }
 
         /** adds cons to constraints */
