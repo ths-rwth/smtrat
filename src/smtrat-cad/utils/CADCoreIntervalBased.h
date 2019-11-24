@@ -133,7 +133,6 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		carl::Variable currVar			/**< variable of current depth i */
 	) {
 
-		// @todo this checks all vars, not just main vars
 		/* constraints are filtered for ones with main var currVar or higher */
 		std::vector<ConstraintT> constraints;
 		for(auto c : cad.getConstraints()) {
@@ -586,7 +585,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		// 			}
 		// 		}
 		// 	}
-		// }
+		}
 
 		// // add resultants of upper & lower reasons
 		// auto itlower = subinters.begin();
