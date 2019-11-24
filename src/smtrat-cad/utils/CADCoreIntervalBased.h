@@ -585,7 +585,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		// 			}
 		// 		}
 		// 	}
-		}
+		// }
 
 		// // add resultants of upper & lower reasons
 		// auto itlower = subinters.begin();
