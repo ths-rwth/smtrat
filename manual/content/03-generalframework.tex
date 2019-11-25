@@ -1,36 +1,58 @@
-\chapter{System architecture}
-\label{chapter:generalframework}
-\smtrat is a \Cpp library consisting of a collection of
-SMT compliant implementations of methods for solving non-linear real
-and integer arithmetic \supportedLogics formulas, we refer to as modules. These modules can be 
-combined to (1) a theory solver in order to extend the supported logics of an
-existing SMT solver by \supportedLogics (see Figure~\ref{fig:frameworkb}) or (2) an SMT 
-solver for \supportedLogics (see Figure~\ref{fig:frameworka}). The latter is 
-especially intended to be a testing environment for the development 
-of SMT compliant implementations of further methods tackling \supportedLogics. Here,
-the developer only needs to implement the given interfaces of an \smtrat 
-module and does not need to care about parsing input files, transforming
-formulas to conjunctive normal form or embedding a SAT solver in order
-to solve the Boolean skeleton of the given formula. Instead, \smtrat
-provides this and more features, such as lemma exchange, which will be explained in following (taken from the system architecture description of our SAT'15 submission).
+\chapter{System architecture}\label{chapter:generalframework}
+
+\section{Different libraries}
+
+The different parts of \smtrat are split into multiple libraries (in the sense of a shared object library) that are responsible for the following tasks:
+\begin{itemize}
+	\item \code{smtrat-analyzer}: static analysis of input formulae;
+	\item \code{smtrat-cad}: back all CAD-based techniques;
+	\item \code{smtrat-common}: common definitions and includes;
+	\item \code{smtrat-max-smt}: takes care of max SMT queries;
+	\item \code{smtrat-mcsat}: utilities for the MCSAT-based solver;
+	\item \code{smtrat-modules}: all regular \smtrat modules;
+	\item \code{smtrat-optimization}: takes care of optimization queries;
+	\item \code{smtrat-qe}: methods for quantifier elimination;
+	\item \code{smtrat-solver}: core solving infrastructure;
+	\item \code{smtrat-strategies}: strategies for SMT solving;
+	\item \code{smtrat-unsat-cores}: takes care of unsat core computations.
+\end{itemize}
+
+All of these yield a library, while a full-fledged SMT solver is build from the \sourcepath{cli/} path, in particular the \sourcepath{cli/smtratSolver.cpp}.
+
+\section{Software design}
+
+The architecture of \smtrat puts its focus on modularity and composability of different solving techniques.
+Every solving technique, for example SAT solving or the simplex method, is encapsulated in a (derivation of the) \emph{module} class.
+These modules are composed to a \emph{strategy} that governs which modules are used in what order.
+The execution of a strategy is incumbent upon the \emph{manager}, that also offers an interface for basic SMT solving to the outsi.
+
+More advanced solving techniques like \emph{quantifier elimination}, computing \emph{unsatisfiable cores}, or tackling \emph{max SMT} and \emph{optimization} queries are implemented as individual components in the \emph{frontend}.
+The frontend implements (most of) an SMT-LIB compatible interface and can either be used by a generic SMT-LIB \emph{parser}, or an external tool.
+This structure is shown in \cref{fig:smtrat-architecture}.
 
 \begin{figure}[ht]
-\caption{A snapshot of an \smtrat composition being an SMT solver for NRA.}
-\begin{center}
-\input{figures/framework_for_smt_solver}
-\end{center}
-\label{fig:frameworka}
+	\centering
+	\input{figures/03-system-architecture}
+	\caption{Overview of the general \smtrat architecture.}\label{fig:smtrat-architecture}
 \end{figure}
+
+The parser itself is implemented in \sourcepath{cli/parser/} and run from \sourcepath{cli/tools/execute_smtlib.h}. The template argument \code{Executor} is usually instantiated with the executor from \sourcepath{cli/tools/Executor.h} which corresponds to the frontend.
+The components in the frontend are taken from the respective \smtrat libraries.
+
+The manager is a generic class from \sourcepath{smtrat-solver/Manager.h} that every strategy (from \sourcepath{smtrat-strategies/}) inherits from and only constructs the \emph{strategy graph} in its constructor.
+The strategy graph is at the core of the composition of \smtrat modules and \cref{fig:module-in-strategy} shows how a single module is embedded in a strategy.
 
 \begin{figure}[ht]
-\caption{A snapshot of an \smtrat composition being a theory solver embedded in an SMT solver.}
-\begin{center}
-\input{figures/framework_for_tsolver}
-\end{center}
-\label{fig:frameworkb}
+	\centering
+	\input{figures/03-module-in-strategy}
+	\caption{One \smtrat module in a strategy.}\label{fig:module-in-strategy}
 \end{figure}
 
-A \emph{module} fixes a common interface for the SMT compliant implementations of procedures to tackle the satisfiability question of the supported logics of \smtrat. They can then be composed to a solver according to a user defined \emph{strategy}. A \emph{manager} maintains their allocation to \emph{solving tasks} according to the strategy and provides the API, including the parsing of an \smtlibfile.
+Every module has (a pointer to) a set of \emph{received formulae} that represent its input and a set of \emph{passed formulae} that represent the formula that is passed on to some backend.
+The module may ``solve'' the query from its input on its own, or it may pass (one or more) queries to its \emph{backends} (in this case B-1, B-2 and B-3).
+Arrows to backends may be labeled with \emph{conditions} that restrict whether this particular backend can be used, for example checking whether the passed formulae are linear, contain integer variables or bit-vector formulae.
+
+When a module issues a backend call the manager identifies all suitable backend modules (where the condition evaluates to true) and calls all backend modules on the passed formulae. This happens either sequentially (until one backend module solves the query) or in parallel.
 
 \section{Modules}
 A module $m$ holds a set of formulas, called its \emph{set of received formulas} and denoted by $\Crcv(m)$. The main function of a module is \texttt{check(bool full)}, which either decides whether $\Crcv(m)$ is satisfiable or not, returning \SAT or \UNSAT, respectively, or returns \UNKNOWN. A set of formulas is semantically defined by their conjunction. If the function's argument \texttt{full} is set to \false, the underlying procedure of $m$ is allowed to omit hard obstacles during solving at the cost of returning \UNKNOWN in more cases. We can manipulate $\Crcv(m)$ by adding (removing) formulas $\varphi$ to (from) it with \texttt{add($\varphi$)} (\texttt{remove($\varphi$)}). Usually, $\Crcv(m)$ is only slightly changed between two consecutive \texttt{check} calls, hence, the solver's performance can be significantly improved if a module works incrementally and supports backtracking. In case $m$ determines the unsatisfiability of $\Crcv(m)$, it has to compute at least one preferably small \emph{infeasible subset} $\Cinf(m)\subseteq \Crcv(m)$. Moreover, a module can specify \emph{lemmas}, which are valid formulas. They encapsulate information which can be extracted from a module's internal state and propagated among other modules. Furthermore, a module itself can ask other modules for the satisfiability of its \emph{set of passed formulas} denoted by $\Cpass(m)$, if it invokes the procedure \texttt{runBackends(bool full)} (controlled by the manager). It thereby delegates work to modules that	 may be more suitable for the problem at hand. 

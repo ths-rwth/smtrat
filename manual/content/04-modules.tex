@@ -1,4 +1,4 @@
-\chapter{Implementing further modules}
+\chapter{\smtrat modules}
 \label{chapter:implementingamodule}
 In this chapter we explain how to implement further modules. A module is a derivation
 of the class \texttt{Module} and we give an 
@@ -240,3 +240,23 @@ if(Settings::mySettings)
 This methodology assures that the right control flow is chosen during compilation and, hence,  before runtime. 
 \end{itemize}
 
+\smtrat contributes a toolbox for composing an SMT compliant solver for its supported logics, that means it is incremental, supports backtracking and provides reasons for inconsistency. The resulting
+solver is either a fully operative SMT solver, which can be applied
+directly on \texttt{.smt2}-files, or a theory solver, which can be embedded into an SMT 
+solver in order to extend its supported logics by those provided by \smtrat.
+
+We are talking about composition and toolbox, as \smtrat contains implementations
+of many different procedures to tackle, \eg \supportedLogics, each of them
+embedded in a module with uniform interfaces. These modules form the tools in the toolbox
+and it is dedicated to a user how to use them for solving an SMT formula.
+We provide a self-explanatory graphical user interface (GUI) for the definition of a graph-based 
+strategy specifying which module(s) should be applied on which formula, 
+taking into account the modules which were already involved.
+
+In Section~\ref{sec::strategy} we have already introduced
+a strategy and in the following of this chapter we firstly give a brief introduction 
+to the existing modules equipped with an estimation of their input-based performances and then illustrate
+how to use the GUI for composing a strategy.
+
+\section{Existing module implementation}
+\input{module_list}

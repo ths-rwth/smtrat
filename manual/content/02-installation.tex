@@ -1,21 +1,17 @@
 \chapter{Installation}
 \label{chapter:installation}
 \section{Requirements}
-\smtrat has been successfully compiled and tested under Linux and Mac OS. For its configuration we use \cmake, which can be found on \cmakeURL, and for its compilation we tested successfully \gcc (version \gccVersion or higher), available on \gccURL, and \clang (version \clangVersion or higher). The configuration settings can be changed with the command line interface \ccmake. For the arithmetic calculations of rationals \smtrat uses the \Cpp library \Gmp, which can be found on \gmpURL  (but most often it is already installed on the system). The data structures and basic operations with polynomials and formulas within \smtrat are based on the \Cpp library \carl available at \carlURL. Optional, there is a graphical user interface for the composition of a solver, which needs \java (version \javaVersion or higher) and its package \ant, which can be found on \antURL. 
+\smtrat has been successfully compiled and tested under Linux.
+For its configuration we use \cmake, which can be found on \cmakeURL, and for its compilation we tested successfully \gcc (version \gccVersion or higher), available on \gccURL, and \clang (version \clangVersion or higher). The configuration settings can be changed with the command line interface \ccmake.
+For the arithmetic calculations of rationals \smtrat uses the \Cpp library \Gmp, which can be found on \gmpURL  (but most often it is already installed on the system) or alternatively \cln (from \clnURL).
+The data structures and basic operations with polynomials and formulas within \smtrat are based on the \Cpp library \carl available at \carlURL.
 
 Summarizing, you need the following packages:
 \begin{itemize}
 	\item \gcc (version \gccVersion or higher) or alternatively \clang (version \clangVersion or higher)
-	\item \cmake
+	\item \cmake and \ccmake
 	\item \Gmp
 	\item \Carl 
-\end{itemize}
-
-Optional:
-\begin{itemize}
-	\item \ccmake [for the command line interface for compiler settings]
-	\item \java (version 1.7 or higher) [for the GUI]
-	\item \Ant [for the GUI]
 \end{itemize}
 
 
@@ -42,9 +38,9 @@ More information can be found in the README file, which can be found in \smtrat 
 
 \section{Execute \smtrat as an SMT solver}
 You can find the executable of \smtrat, named \smtratSolverName, in the build-directory. It displays the usage information if it is invoked with the option flag \texttt{--help}:
-\begin{verbatim} ./smtrat --help\end{verbatim}
+\begin{verbatim} ./smtrat-shared --help\end{verbatim}
 The executable supports only \smtlibFiles as input, so the solving can be invoked by, e.g.:
-\begin{verbatim} ./smtrat path_to_your_smt_file.smt2\end{verbatim}
+\begin{verbatim} ./smtrat-shared path_to_your_smt_file.smt2\end{verbatim}
 
 %\section{Troubleshooting}
 %Here we list problems, which might occur during the installation:
