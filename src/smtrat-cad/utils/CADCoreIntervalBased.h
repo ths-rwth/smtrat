@@ -180,7 +180,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 					carl::Model modeladd = carl::Model(model);
 					modeladd.assign(currVar, r);
 					auto mvadd = carl::model::evaluate(c, modeladd);
-					if(mv.isBool() && !mvadd.asBool()) {
+					if(mvadd.isBool() && !mvadd.asBool()) {
 						SMTRAT_LOG_INFO("smtrat.cdcad", c << " is unsat on " << modeladd);
 						std::vector<ConstraintT> origin;
 						origin.push_back(c);
@@ -191,6 +191,9 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 						region->addConstraint(c);
 						newintervals.insert(region);
 						SMTRAT_LOG_INFO("smtrat.cdcad", "Added " << region << " to unsat intervals.");
+					}
+					else {
+						SMTRAT_LOG_INFO("smtrat.cdcad", c << " is sat on " << modeladd);
 					}
 				} 
 			}
@@ -506,6 +509,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			}
 		}
 
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Required coefficients: " << coeffs);
 		return coeffs;
 	}
 
@@ -532,9 +536,12 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			model.assign(sample.first, sample.second);
 		auto mv = carl::model::evaluate(eqzero, model);
 
-		if(mv.isBool() && mv.asBool())
+		if(mv.isBool() && mv.asBool()) {
+			SMTRAT_LOG_INFO("smtrat.cdcad", "SAT for poly " << poly << " + " << offset << relation << "0 on sample " << samples);
 			return true;
+		}
 
+			SMTRAT_LOG_INFO("smtrat.cdcad", "Not SAT for poly " << poly << " + " << offset << relation << "0 on sample " << samples);
 		return false;
 	}
 
@@ -553,7 +560,6 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		Assignment samples,									/**< values for variables till depth i */
 		std::set<CADInterval*, SortByLowerBound> intervals	/**< intervals containing a cover */
 	) {
-		// todo
 		// get subset of intervals that has no intervals contained in any other one
 		std::set<CADInterval*, SortByLowerBound> subinters = compute_cover(cad, intervals);
 		assert(!subinters.empty());
@@ -804,6 +810,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			if(std::get<0>(nextcall))
 				return nextcall;
 			else {
+				SMTRAT_LOG_INFO("smtrat.cdcad", "Computing new unsat interval");
 				auto butler = construct_characterization(cad, *newsamples, std::get<1>(nextcall));
 				CADInterval* butlerinter = interval_from_characterization(cad, samples, currVar, newval, butler);
 				unsatinters.insert(butlerinter);
