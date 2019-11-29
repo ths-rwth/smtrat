@@ -7,6 +7,7 @@ namespace smtrat::parseformula {
 class FormulaCollector : public smtrat::parser::InstructionHandler {
 private:
 	std::vector<FormulaT> mFormulas;
+	carl::Logic mLogic;
 public:
 	void add(const smtrat::FormulaT& f) {
 		mFormulas.emplace_back(f);
@@ -34,13 +35,18 @@ public:
 	void push(std::size_t) {}
 	void reset() {}
 	void resetAssertions() {}
-	void setLogic(const carl::Logic&) {}
+	void setLogic(const carl::Logic& l) {
+		mLogic = l;
+	}
 	int getExitCode() const {
 		return 0;
 	}
 
 	FormulaT getFormula() const {
 		return FormulaT(carl::FormulaType::AND, mFormulas);
+	}
+	auto getLogic() const {
+		return mLogic;
 	}
 };
 
