@@ -524,10 +524,15 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		smtrat::Poly poly,						/**< polynom */
 		carl::Relation relation					/**< relation to use for constraint */
 	) {
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Checking sat of " << poly << " + " << offset << relation << "0" );
+
 		smtrat::Poly offsetpoly = poly;
 		// todo is Rational ok? I want a RAN! find term with rans?
 		const carl::Term<smtrat::Rational>* term = new carl::Term(offset.value());
-		offsetpoly.addTerm((*term)); // @todo is this what is meant in alg.6, l.6-7?
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Checking term " << *term << " for zero");
+		if(!carl::isZero(*term))
+			offsetpoly.addTerm((*term)); // @todo is this what is meant in alg.6, l.6-7?
+			
 		ConstraintT eqzero = ConstraintT(offsetpoly, relation);
 
 		// check whether poly(samples x offset) == 0
@@ -563,34 +568,46 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		// get subset of intervals that has no intervals contained in any other one
 		std::set<CADInterval*, SortByLowerBound> subinters = compute_cover(cad, intervals);
 		assert(!subinters.empty());
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Computing characterization on: " << subinters);
 
 		// create the characterization of the unsat region
 		std::set<std::pair<Poly, std::vector<ConstraintT>>> characterization;
 		for(auto inter : subinters) {
+			SMTRAT_LOG_INFO("smtrat.cdcad", "Checking interval for characterization: " << inter);
 			// add all polynoms not containing the main var
+			if(inter->getLowerConstraints().empty())
+				SMTRAT_LOG_INFO("smtrat.cdcad", "No lower constraints to add in " << inter);
 			for(auto lowpoly : inter->getLowerConstraints()) {
 				std::vector<ConstraintT> orig;
 				orig.push_back(lowpoly);
 				characterization.insert(std::make_pair(lowpoly.lhs(), orig));
+				SMTRAT_LOG_INFO("smtrat.cdcad", "Add lower constraints to characterization: " << lowpoly.lhs() << " from " <<  lowpoly);
 			}
 			// add discriminant of constraints
+			if(inter->getConstraints().empty())
+				SMTRAT_LOG_INFO("smtrat.cdcad", "No constraints to compute discriminants from in " << inter);
 			for(auto cons : inter->getConstraints()) {
+				SMTRAT_LOG_INFO("smtrat.cdcad", "Checking discriminant of " << cons << " from " << inter);
 				smtrat::cad::UPoly upoly = carl::discriminant(carl::to_univariate_polynomial(cons.lhs(), getHighestVar(cad, cons.lhs())));
 				// convert polynom to multivariate
 				smtrat::Poly inspoly = smtrat::Poly(upoly);
 				std::vector<ConstraintT> orig;
 				orig.push_back(cons);
 				characterization.insert(std::make_pair(inspoly, orig));
+				SMTRAT_LOG_INFO("smtrat.cdcad", "Add discriminant to characterization: " << inspoly << " from " << cons);
 			}
 			// add relevant coefficients
 			auto coeffs = required_coefficients(cad, samples, inter->getConstraints());
 			characterization.insert(coeffs.begin(), coeffs.end());
+			SMTRAT_LOG_INFO("smtrat.cdcad", "Add coeffs to characterization: all from " << coeffs);
 			// add polynomials that guarantee bounds to be closest
 			for(auto q : inter->getConstraints()) {
+				SMTRAT_LOG_INFO("smtrat.cdcad", "Checking resultants of " << q << " from " << inter);
 				// @todo does the following correctly represent Alg. 4, l. 7-8?
 				// todo ask Gereon
 				// idea: P(s x \alpha) = 0, \alpha < l => P(s x l) > 0
 				if(isSatWithOffset(cad, inter->getLower(), samples, q.lhs(), carl::Relation::GREATER)) {
+					SMTRAT_LOG_INFO("smtrat.cdcad", "Checking resultants of lower" << q << " from " << inter);
 					for(auto ptuple : inter->getLowerReason()) {
 						// get polynomial from reason
 						auto p = ptuple.first;
@@ -608,10 +625,12 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 						}
 						
 						characterization.insert(std::make_pair(inspoly, orig));
+						SMTRAT_LOG_INFO("smtrat.cdcad", "Add resultant to characterization: " << inspoly << " from " << orig);
 					}
 				}
 				// analogously: P(s x \alpha) = 0, \alpha > u => P(s x u) < 0
 				if(isSatWithOffset(cad, inter->getUpper(), samples, q.lhs(), carl::Relation::LESS)) {
+					SMTRAT_LOG_INFO("smtrat.cdcad", "Checking resultants of upper" << q << " from " << inter);
 					for(auto ptuple : inter->getUpperReason()) {
 						// get polynomial from reason
 						auto p = ptuple.first;
@@ -630,12 +649,15 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 						}
 
 						characterization.insert(std::make_pair(inspoly, orig));
+						SMTRAT_LOG_INFO("smtrat.cdcad", "Add resultant to characterization: " << inspoly << " from " << orig);
 					}
 				}
+				SMTRAT_LOG_INFO("smtrat.cdcad", "Finished checking resultants of " << q << " from " << inter);
 			}
 		}
 
 		// add resultants of upper & lower reasons
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Add resultants of upper & lower reasons");
 		auto itlower = subinters.begin();
 		itlower++;
 		auto itupper = subinters.begin();
@@ -663,12 +685,14 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 					}
 
 					characterization.insert(std::make_pair(inspoly, orig));
+					SMTRAT_LOG_INFO("smtrat.cdcad", "Add resultant to characterization: " << inspoly << " from " << orig);
 				}
 			}
 			itlower++;
 			itupper++;
 		}
 
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Found characterization: " << characterization);
 		return characterization;
 	}
 
@@ -684,7 +708,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		RAN val, 								/**< value for currVar */
 		std::set<std::pair<Poly, std::vector<ConstraintT>>> butler /**< poly characterization */
 	) {
-		//todo
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Computing interval from characterization: " << butler);
 		// partition polynomials for containing currVar
 		std::set<std::pair<Poly, std::vector<ConstraintT>>> notp_i;
 		std::set<std::pair<Poly, std::vector<ConstraintT>>> p_i;

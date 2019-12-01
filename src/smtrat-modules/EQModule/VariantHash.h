@@ -23,11 +23,13 @@ namespace smtrat {
 }
 
 namespace std {
+#if BOOST_VERSION < 107100
 	template<BOOST_VARIANT_ENUM_PARAMS(typename Args)> struct hash< boost::variant<BOOST_VARIANT_ENUM_PARAMS(Args)> > {
 		size_t operator()(const boost::variant<BOOST_VARIANT_ENUM_PARAMS(Args)>& var) const noexcept {
 			return boost::apply_visitor(smtrat::variant_hash_visitor(), var);
 		}
 	};
+#endif
 
 	template<BOOST_VARIANT_ENUM_PARAMS(typename Args)> struct hash< const boost::variant<BOOST_VARIANT_ENUM_PARAMS(Args)> > {
 		size_t operator()(const boost::variant<BOOST_VARIANT_ENUM_PARAMS(Args)>& var) const noexcept {
