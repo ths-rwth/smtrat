@@ -527,6 +527,11 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		SMTRAT_LOG_INFO("smtrat.cdcad", "Checking sat of " << poly << " + " << offset << relation << "0" );
 
 		smtrat::Poly offsetpoly = poly;
+
+		//todo WORKAROUND FIX THIS
+		if(!offset.isNumeric())
+			return false;
+
 		// todo is Rational ok? I want a RAN! find term with rans?
 		const carl::Term<smtrat::Rational>* term = new carl::Term(offset.value());
 		SMTRAT_LOG_INFO("smtrat.cdcad", "Checking term " << *term << " for zero");
