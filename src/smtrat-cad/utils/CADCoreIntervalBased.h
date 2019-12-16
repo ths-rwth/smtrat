@@ -84,6 +84,14 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	) {
 		std::set<CADInterval*, SortByLowerBound> regions;
 
+		carl::carlVariables vars = carl::variables(c.lhs());
+		vars.erase(currVar);
+		for (const auto& s: samples) vars.erase(s.first);
+		if (!vars.empty()) {
+			SMTRAT_LOG_INFO("smtrat.cdcad", c << " is not univariate in " << currVar << " over " << samples);
+			return regions;
+		}
+
 		// find real roots of constraint corresponding to current var
 		auto r = carl::rootfinder::realRoots(carl::to_univariate_polynomial(c.lhs(), currVar), samples);
 
@@ -816,6 +824,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		Assignment samples,						/**< values for variables of depth i-1 (initially empty set) */
 		carl::Variable currVar					/**< var of depth i (current depth) */
 	) {
+		SMTRAT_LOG_INFO("smtrat.cdcad", samples << ", now " << currVar);
 		// get known unsat intervals
 		auto unsatinters = get_unsat_intervals(cad, samples, currVar);
 		SMTRAT_LOG_INFO("smtrat.cdcad", "Unsat intervals: " << unsatinters);
