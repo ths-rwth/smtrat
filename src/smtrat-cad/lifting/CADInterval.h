@@ -20,141 +20,162 @@ namespace cad {
         RAN upper = (RAN) 0;                                                /**< upper bound */
         CADBoundType lowertype = INF;                                       /**< lower bound type */
         CADBoundType uppertype = INF;                                       /**< upper bound type */
-        std::set<std::pair<Poly, std::vector<ConstraintT>>> lowerreason;    /**< collection of polynomials for lower bound and from which constraints they originated */
-        std::set<std::pair<Poly, std::vector<ConstraintT>>> upperreason;    /**< collection of polynomials for upper bound and from which constraints they originated */
-        std::set<ConstraintT> constraints;                                  /**< interval represents the bounds computed from these polynomials (containing x_i) */
-        std::set<ConstraintT> lowerconss;                                   /**< polynomials not containing main variable x_i */
+        std::set<Poly> lowerreason;    /**< collection of polynomials for lower bound and from which constraints they originated */
+        std::set<Poly> upperreason;    /**< collection of polynomials for upper bound and from which constraints they originated */
+        std::set<Poly> fulldim;                                  /**< interval represents the bounds computed from these polynomials (containing x_i) */
+        std::set<Poly> lowerdim;                                   /**< polynomials not containing main variable x_i */
+        std::vector<ConstraintT> reasons;
 
     public:
         /** initializes interval as (-inf, +inf) */
 		CADInterval(){}
 
+        /** initializes (-inf, +inf) interval with given constraint */
+        CADInterval(const ConstraintT& constraint):
+			lowertype(INF), uppertype(INF),
+			fulldim({constraint.lhs()}), reasons({constraint})
+		{}
+
+        /** initializes closed point interval with constraint */
+        CADInterval(const RAN& point, const ConstraintT& constraint): 
+            lower(point), upper(point),
+			lowertype(CLOSED), uppertype(CLOSED),
+			lowerreason({constraint.lhs()}), upperreason({constraint.lhs()}),
+			fulldim({constraint.lhs()}), reasons({constraint})
+        {}
+
+		/** initializes open interval with given bounds and constraint */
+        CADInterval(const RAN& lowerbound, const RAN& upperbound, const ConstraintT& constraint): 
+            lower(lowerbound), upper(upperbound),
+			lowertype(OPEN), uppertype(OPEN),
+			lowerreason({constraint.lhs()}), upperreason({constraint.lhs()}),
+			fulldim({constraint.lhs()}), reasons({constraint})
+		{}
+
+		/** initializes interval with given bounds, bound types and constraint */
+        CADInterval(const RAN& lowerbound, const RAN& upperbound, 
+            CADBoundType lowerboundtype, CADBoundType upperboundtype, 
+            const ConstraintT& constraint):
+            lower(lowerbound), upper(upperbound),
+			lowertype(lowerboundtype), uppertype(upperboundtype),
+			lowerreason({constraint.lhs()}), upperreason({constraint.lhs()}),
+			fulldim({constraint.lhs()}), reasons({constraint})
+		{}
+
+		/** initializes interval with given bounds, bound types, polynomials and reasons */
+        CADInterval(const RAN& lowerbound, const RAN& upperbound, 
+            CADBoundType lowerboundtype, CADBoundType upperboundtype, 
+			const std::set<Poly>& lreasons, const std::set<Poly>& ureasons,
+            const std::set<Poly>& fulldimpolys, const std::set<Poly>& lowerdimpolys,
+			const std::vector<ConstraintT>& constraints):
+            lower(lowerbound), upper(upperbound),
+			lowertype(lowerboundtype), uppertype(upperboundtype),
+			lowerreason(lreasons), upperreason(ureasons),
+			fulldim(fulldimpolys), lowerdim(lowerdimpolys), reasons(constraints)
+		{}
+
         /** initializes open interval with given bounds */
-        CADInterval(RAN lowerbound, RAN upperbound): 
+        /*CADInterval(RAN lowerbound, RAN upperbound): 
             lower(lowerbound), upper(upperbound) {
             lowertype = OPEN;
             uppertype = OPEN;
-        }
+        }*/
 
         /** initializes closed point interval */
-        CADInterval(RAN point): 
+        /*CADInterval(RAN point): 
             lower(point), upper(point) {
             lowertype = CLOSED;
             uppertype = CLOSED;
-        }
+        }*/
 
         /** initializes closed point interval with constraints */
-        CADInterval(RAN point, const std::set<ConstraintT> newconss): 
-            lower(point), upper(point), constraints(newconss) {
+        CADInterval(RAN point, const std::set<Poly> newconss): 
+            lower(point), upper(point), fulldim(newconss) {
             lowertype = CLOSED;
             uppertype = CLOSED;
-        }
-
-        /** initializes closed point interval with constraint */
-        CADInterval(RAN point, const ConstraintT newcons): 
-            lower(point), upper(point) {
-            lowertype = CLOSED;
-            uppertype = CLOSED;
-            constraints.insert(newcons);
         }
 
         /** initializes open interval with given bounds and constraints */
-        CADInterval(RAN lowerbound, RAN upperbound, const std::set<ConstraintT> newconss): 
-            lower(lowerbound), upper(upperbound), constraints(newconss) {
-            lowertype = OPEN;
-            uppertype = OPEN;
-        }
+        //CADInterval(RAN lowerbound, RAN upperbound, const std::set<ConstraintT> newconss): 
+        //    lower(lowerbound), upper(upperbound), constraints(newconss) {
+        //    lowertype = OPEN;
+        //    uppertype = OPEN;
+        //}
 
         /** initializes open interval with given bounds and constraint */
-        CADInterval(RAN lowerbound, RAN upperbound, const ConstraintT newcons): 
-            lower(lowerbound), upper(upperbound){
-            lowertype = OPEN;
-            uppertype = OPEN;
-            constraints.insert(newcons);
-        }
+        //CADInterval(RAN lowerbound, RAN upperbound, const ConstraintT newcons): 
+        //    lower(lowerbound), upper(upperbound){
+        //    lowertype = OPEN;
+        //    uppertype = OPEN;
+        //    constraints.insert(newcons);
+        //}
 
         /** initializes (-inf, +inf) interval with given constraints */
-        CADInterval(const std::set<ConstraintT> newconss):
-            constraints(newconss) {
-        }
-
-        /** initializes (-inf, +inf) interval with given constraint */
-        CADInterval(const ConstraintT newcons) {
-            constraints.insert(newcons);
-        }
+        //CADInterval(const std::set<ConstraintT> newconss):
+        //    constraints(newconss) {
+        //}
 
         /** initializes interval with given bounds and bound types */
-        CADInterval(
-            RAN lowerbound, 
-            RAN upperbound, 
-            CADBoundType lowerboundtype, 
-            CADBoundType upperboundtype):
-            lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype) {
-        }
+        //CADInterval(
+        //    RAN lowerbound, 
+        //    RAN upperbound, 
+        //    CADBoundType lowerboundtype, 
+        //    CADBoundType upperboundtype):
+        //    lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype) {
+        //}
 
         /** initializes interval with given bounds, bound types and constraints */
-        CADInterval(
-            RAN lowerbound, 
-            RAN upperbound, 
-            CADBoundType lowerboundtype, 
-            CADBoundType upperboundtype, 
-            std::set<ConstraintT> newconss):
-            lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), 
-            constraints(newconss) {
-        }
-
-        /** initializes interval with given bounds, bound types and constraint */
-        CADInterval(
-            RAN lowerbound, 
-            RAN upperbound, 
-            CADBoundType lowerboundtype, 
-            CADBoundType upperboundtype, 
-            ConstraintT newcons):
-            lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype) {
-            constraints.insert(newcons);
-        }
+        //CADInterval(
+        //    RAN lowerbound, 
+        //    RAN upperbound, 
+        //    CADBoundType lowerboundtype, 
+        //    CADBoundType upperboundtype, 
+        //    std::set<ConstraintT> newconss):
+        //    lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), 
+        //    constraints(newconss) {
+        //}
 
         /** initializes interval with given bounds, bound types, reasons and constraints */
-        CADInterval(
-            RAN lowerbound, 
-            RAN upperbound, 
-            CADBoundType lowerboundtype, 
-            CADBoundType upperboundtype, 
-            std::set<std::pair<Poly, std::vector<ConstraintT>>> lowerres,
-            std::set<std::pair<Poly, std::vector<ConstraintT>>> upperres, 
-            std::set<ConstraintT> newconss):
-            lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), 
-            lowerreason(lowerres), upperreason(upperres), constraints(newconss) {
-        }
+        //CADInterval(
+        //    RAN lowerbound, 
+        //    RAN upperbound, 
+        //    CADBoundType lowerboundtype, 
+        //    CADBoundType upperboundtype, 
+        //    std::set<std::pair<Poly, std::vector<Poly>>> lowerres,
+        //    std::set<std::pair<Poly, std::vector<Poly>>> upperres, 
+        //    std::set<ConstraintT> newconss):
+        //    lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), 
+        //    lowerreason(lowerres), upperreason(upperres), constraints(newconss) {
+        //}
 
         /** initializes interval with given bounds, bound types, reasons and constraint */
-        CADInterval(
-            RAN lowerbound, 
-            RAN upperbound, 
-            CADBoundType lowerboundtype, 
-            CADBoundType upperboundtype, 
-            std::set<std::pair<Poly, std::vector<ConstraintT>>> lowerres,
-            std::set<std::pair<Poly, std::vector<ConstraintT>>> upperres, 
-            ConstraintT newcons):
-            lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), 
-            lowerreason(lowerres), upperreason(upperres){
-            
-            constraints.insert(newcons);
-        }
+        //CADInterval(
+        //    RAN lowerbound, 
+        //    RAN upperbound, 
+        //    CADBoundType lowerboundtype, 
+        //    CADBoundType upperboundtype, 
+        //    std::set<std::pair<Poly, std::vector<Poly>>> lowerres,
+        //    std::set<std::pair<Poly, std::vector<Poly>>> upperres, 
+        //    ConstraintT newcons):
+        //    lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype), 
+        //    lowerreason(lowerres), upperreason(upperres){
+        //    
+        //    constraints.insert(newcons);
+        //}
 
         /** initializes interval with given bounds, bound types, reasons, constraints and constraints without leading term */
-        CADInterval(
-            RAN lowerbound, 
-            RAN upperbound, 
-            CADBoundType lowerboundtype, 
-            CADBoundType upperboundtype, 
-            std::set<std::pair<Poly, std::vector<ConstraintT>>> lowerres, 
-            std::set<std::pair<Poly, std::vector<ConstraintT>>> upperres, 
-            std::set<ConstraintT> newconss, 
-            std::set<ConstraintT> newredconss):
-            lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype),
-            lowerreason(lowerres), upperreason(upperres), constraints(newconss), lowerconss(newredconss) {
-        }
+        //CADInterval(
+        //    RAN lowerbound, 
+        //    RAN upperbound, 
+        //    CADBoundType lowerboundtype, 
+        //    CADBoundType upperboundtype, 
+        //    std::set<std::pair<Poly, std::vector<Poly>>> lowerres, 
+        //    std::set<std::pair<Poly, std::vector<Poly>>> upperres, 
+        //    std::set<ConstraintT> newconss, 
+        //    std::set<ConstraintT> newredconss):
+        //    lower(lowerbound), upper(upperbound), lowertype(lowerboundtype), uppertype(upperboundtype),
+        //    lowerreason(lowerres), upperreason(upperres), constraints(newconss), lowerconss(newredconss) {
+        //}
 
         /** gets lower bound */
         const auto& getLower() const {
@@ -187,14 +208,24 @@ namespace cad {
         }
 
         /** gets constraints the interval originated from */
-        const auto& getConstraints() {
-            return constraints;
+        const auto& getConstraints() const {
+            return fulldim;
+        }
+		const auto& getFullDim() const {
+            return fulldim;
         }
 
         /** gets the reduced constraints */
-        const auto& getLowerConstraints() {
-            return lowerconss;
+        const auto& getLowerConstraints() const {
+            return lowerdim;
         }
+		const auto& getLowerDim() const {
+            return lowerdim;
+        }
+
+		const auto& getReasons() const {
+			return reasons;
+		}
 
         /** sets lower bound value and bound type */
         void setLowerBound(const RAN& value, CADBoundType type) {
@@ -209,25 +240,29 @@ namespace cad {
         }
 
         /** sets constraints */
-        void setConstraint(const ConstraintT& cons) {
-            constraints.clear();
-            constraints.insert(cons);
-        }
+        //void setConstraint(const ConstraintT& cons) {
+        //    constraints.clear();
+        //    constraints.insert(cons);
+        //}
 
         /** adds poly to lowerreason */
-        void addLowerReason(const std::pair<Poly, std::vector<ConstraintT>>& poly) {
+        void addLowerReason(const Poly& poly) {
             lowerreason.insert(poly);
         }
 
         /** adds poly to upperreason */
-        void addUpperReason(const std::pair<Poly, std::vector<ConstraintT>>& poly) {
+        void addUpperReason(const Poly& poly) {
             upperreason.insert(poly);
         }
 
+		void addReasons(const std::vector<ConstraintT>& c) {
+			reasons.insert(reasons.end(), c.begin(), c.end());
+		}
+
         /** adds cons to constraints */
-        void addConstraint(const ConstraintT& cons) {
-            constraints.insert(cons);
-        }
+        //void addConstraint(const ConstraintT& cons) {
+        //    constraints.insert(cons);
+        //}
 
         /** checks whether the interval is (-inf, +inf) */
         bool isInfinite() {
