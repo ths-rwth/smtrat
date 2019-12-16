@@ -144,7 +144,7 @@ namespace vs
                 }
                 else
                 {
-                    carl::Definiteness defin = term->definiteness();
+                    carl::Definiteness defin = carl::definiteness(*term);
                     if( defin == carl::Definiteness::NON )
                     {
                         allOtherMonomialsPos = false;

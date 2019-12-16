@@ -109,13 +109,13 @@ namespace cad {
 		}
 		/// Adds the given polynomial to the projection. Converts to a UPoly and calls the appropriate overload.
 		carl::Bitset addPolynomial(const Poly& p, std::size_t cid, bool isBound) {
-			return addPolynomial(p.toUnivariatePolynomial(var(0)), cid, isBound);
+			return addPolynomial(carl::to_univariate_polynomial(p, var(0)), cid, isBound);
 		}
 		/// Adds the given polynomial to the projection.
 		virtual carl::Bitset addPolynomial(const UPoly& p, std::size_t cid, bool isBound) = 0;
                 /// Adds the given polynomial of an equational constraint to the projection. Converts to a UPoly and calls the appropriate overload.
 		carl::Bitset addEqConstraint(const Poly& p, std::size_t cid, bool isBound) {
-			return addEqConstraint(p.toUnivariatePolynomial(var(0)), cid, isBound);
+			return addEqConstraint(carl::to_univariate_polynomial(p, var(0)), cid, isBound);
 		}
 		/// Adds the given polynomial of an equational constraint to the projection.
 		virtual carl::Bitset addEqConstraint(const UPoly& p, std::size_t cid, bool isBound) {
@@ -123,7 +123,7 @@ namespace cad {
                 }
 		/// Removes the given polynomial from the projection. Converts to a UPoly and calls the appropriate overload.
 		void removePolynomial(const Poly& p, std::size_t cid, bool isBound) {
-			removePolynomial(p.toUnivariatePolynomial(var(0)), cid, isBound);
+			removePolynomial(carl::to_univariate_polynomial(p, var(0)), cid, isBound);
 		}
 		/// Removes the given polynomial from the projection.
 		virtual void removePolynomial(const UPoly& p, std::size_t cid, bool isBound) = 0;

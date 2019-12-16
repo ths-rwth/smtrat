@@ -32,7 +32,7 @@ void paired(const Poly& p, const UPoly& q, carl::Variable variable, Callback&& c
 	for (const auto& reducta_p : RED_p) {
 		for (const auto& psc : projection::PSC(reducta_p, q)) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "reducta pcs: " << psc);
-			returnPoly(projection::normalize(psc.switchVariable(variable)), cb);
+			returnPoly(projection::normalize(carl::switch_main_variable(psc, variable)), cb);
 		}
 	}
 }

@@ -92,8 +92,8 @@ namespace arithmetic {
 				std::vector<Poly> ptmp;
 				for (auto& p: polys) {
 					// Substitute both possibilities for this ITE.
-					ptmp.push_back(p.substitute(v, std::get<1>(t)));
-					ptmp.push_back(p.substitute(v, std::get<2>(t)));
+					ptmp.push_back(carl::substitute(p, v, std::get<1>(t)));
+					ptmp.push_back(carl::substitute(p, v, std::get<2>(t)));
 				}
 				std::swap(polys, ptmp);
 				// Add the conditions at the appropriate positions.

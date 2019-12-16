@@ -2,6 +2,7 @@
 
 #include <carl/util/Singleton.h>
 
+#include <memory>
 #include <vector>
 
 namespace smtrat {

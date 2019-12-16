@@ -570,7 +570,7 @@ namespace smtrat
                     mOptimumComputed = false;
                     updateModel();
                     const EvalRationalMap& ratModel = getRationalModel();
-                    Rational opti = optVar->expression().evaluate( ratModel );
+                    Rational opti = carl::evaluate(optVar->expression(), ratModel );
                     #ifdef DEBUG_LRA_MODULE
                     std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: " << opti << std::endl;
                     #endif
@@ -1282,7 +1282,7 @@ namespace smtrat
                 if( *gomory_poly != Rational(0) )
                 {
                     ConstraintT gomory_constr = ConstraintT( *gomory_poly , carl::Relation::GEQ );
-                    ConstraintT neg_gomory_constr = ConstraintT( *gomory_poly - (*gomory_poly).evaluate( rMap_ ), carl::Relation::LESS );
+                    ConstraintT neg_gomory_constr = ConstraintT( *gomory_poly - carl::evaluate(*gomory_poly, rMap_ ), carl::Relation::LESS );
                     //std::cout << gomory_constr << std::endl;
                     assert( !gomory_constr.satisfiedBy( rMap_ ) );
                     assert( !neg_gomory_constr.satisfiedBy( rMap_ ) );
@@ -1374,7 +1374,7 @@ namespace smtrat
     {
         for( auto slackVar : mTableau.slackVars() )
         {
-            Poly tmp = slackVar.first->substitute( _assignment );
+            Poly tmp = carl::substitute(*slackVar.first, _assignment );
             assert( tmp.isConstant() );
             LRABoundType slackVarAssignment = slackVar.second->assignment().mainPart() + slackVar.second->assignment().deltaPart() * _delta;
             if( !(tmp == Poly(Rational(slackVarAssignment))) )

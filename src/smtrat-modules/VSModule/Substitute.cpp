@@ -282,9 +282,9 @@ namespace vs
                 std::vector<std::pair<smtrat::Rational,smtrat::Poly>> sosDec;
                 bool lcoeffNeg = carl::isNegative(constraint.lhs().lcoeff());
                 if (lcoeffNeg)
-                    sosDec = (-constraint.lhs()).sosDecomposition();
+                    sosDec = carl::sos_decomposition(-constraint.lhs());
                 else
-                    sosDec = constraint.lhs().sosDecomposition();
+                    sosDec = carl::sos_decomposition(constraint.lhs());
                 if( sosDec.size() > 1 )
                 {
 //                    std::cout << "Sum-of-squares decomposition of " << constraint.lhs() << " = " << sosDec << std::endl;
@@ -736,7 +736,7 @@ namespace vs
     {
         if( _q.size() > MAX_NUM_OF_TERMS || _r.size() > MAX_NUM_OF_TERMS || _radicand.size() > MAX_NUM_OF_TERMS )
             return false;
-        smtrat::Poly lhs = _q.pow( 2 ) - _r.pow( 2 ) * _radicand;
+        smtrat::Poly lhs = carl::pow(_q, 2 ) - carl::pow(_r, 2 ) * _radicand;
         if( _accordingPaper )
         {
             smtrat::Poly qr = _q * _r;
@@ -777,7 +777,7 @@ namespace vs
     {
         if( _q.size() > MAX_NUM_OF_TERMS || _r.size() > MAX_NUM_OF_TERMS || _radicand.size() > MAX_NUM_OF_TERMS )
             return false;
-        smtrat::Poly lhs = _q.pow( 2 ) - _r.pow( 2 ) * _radicand;
+        smtrat::Poly lhs = carl::pow(_q, 2 ) - carl::pow(_r, 2 ) * _radicand;
         if( _accordingPaper )
         {
             smtrat::Poly qr = _q * _r;
@@ -812,7 +812,7 @@ namespace vs
     {
         if( _q.size() > MAX_NUM_OF_TERMS || _r.size() > MAX_NUM_OF_TERMS || _radicand.size() > MAX_NUM_OF_TERMS )
             return false;
-        smtrat::Poly lhs = _q.pow( 2 ) - _r.pow( 2 ) * _radicand;
+        smtrat::Poly lhs = carl::pow(_q, 2 ) - carl::pow(_r, 2 ) * _radicand;
         if( _accordingPaper )
         {
             smtrat::Poly qs = _q * _s;
@@ -875,7 +875,7 @@ namespace vs
     {
         if( _q.size() > MAX_NUM_OF_TERMS || _r.size() > MAX_NUM_OF_TERMS || _radicand.size() > MAX_NUM_OF_TERMS )
             return false;
-        smtrat::Poly lhs = _q.pow( 2 ) - _r.pow( 2 ) * _radicand;
+        smtrat::Poly lhs = carl::pow(_q, 2 ) - carl::pow(_r, 2 ) * _radicand;
         if( _accordingPaper )
         {
             smtrat::Poly qs = _q * _s;

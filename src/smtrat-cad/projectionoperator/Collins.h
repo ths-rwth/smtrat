@@ -36,7 +36,7 @@ void single(const Poly& p, carl::Variable variable, Callback&& cb) {
 		const auto& reducta_derivative = RED_d[i];
 		for (const auto& psc : projection::PSC(reducta, reducta_derivative)) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "reducta psc: " << psc);
-			returnPoly(projection::normalize(psc.switchVariable(variable)), cb);
+			returnPoly(projection::normalize(carl::switch_main_variable(psc, variable)), cb);
 		}
 	}
 }
@@ -54,7 +54,7 @@ void paired(const Poly& p, const UPoly& q, carl::Variable variable, Callback&& c
 		for (const auto& reducta_q : RED_q) {
 			for (const auto& psc : projection::PSC(reducta_p, reducta_q)) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "reducta psc: " << psc);
-				returnPoly(projection::normalize(psc.switchVariable(variable)), cb);
+				returnPoly(projection::normalize(carl::switch_main_variable(psc, variable)), cb);
 			}
 		}
 	}

@@ -2427,7 +2427,7 @@ namespace vs
         if( cons.lhs().isUnivariate() )
         {
             smtrat::DoubleInterval varDomain = variableBounds().getDoubleInterval( index() );
-            smtrat::Rational cb = carl::cauchyBound(cons.lhs().toUnivariatePolynomial());
+            smtrat::Rational cb = carl::cauchyBound(carl::to_univariate_polynomial(cons.lhs()));
             #ifdef VS_DEBUG_ROOTS_CHECK
             std::cout << "Cauchy bound of  " << cons.lhs() << "  is  " << cb << "." << std::endl;
             #endif
@@ -2457,7 +2457,7 @@ namespace vs
         {
             if( _useSturmSequence && cons.variables().size() == 1 ) // TODO: fails when having a multiple root at the boundary of the given interval for ss-computation
             {
-                carl::UnivariatePolynomial<smtrat::Rational> rup = cons.lhs().toUnivariatePolynomial();
+                carl::UnivariatePolynomial<smtrat::Rational> rup = carl::to_univariate_polynomial(cons.lhs());
                 auto seq = carl::sturm_sequence(rup);
                 smtrat::Rational leftBound = carl::rationalize<smtrat::Rational>( intervals.begin()->second.lower() );
                 smtrat::Rational rightBound = carl::rationalize<smtrat::Rational>( intervals.begin()->second.upper() );

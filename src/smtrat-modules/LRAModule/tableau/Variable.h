@@ -418,7 +418,7 @@ namespace smtrat
                  */
                 unsigned isSatisfiedBy( const EvalRationalMap& _ass ) const
                 {
-                    typename Poly::PolyType polyTmp = mExpression->substitute( _ass );
+                    typename Poly::PolyType polyTmp = carl::substitute(*mExpression, _ass );
                     if( polyTmp.isConstant() )
                         return (*mpInfimum) <= polyTmp.constantPart() && (*mpSupremum) >= polyTmp.constantPart();
 					for( auto& lb : mLowerbounds )
@@ -445,7 +445,7 @@ namespace smtrat
                  */
                 FormulaT inConflictWith( const EvalRationalMap& _ass ) const
                 {
-                    typename Poly::PolyType polyTmp = mExpression->substitute( _ass );
+                    typename Poly::PolyType polyTmp = carl::substitute(*mExpression, _ass );
 					assert( polyTmp.isConstant() );
                     
 					if( (*mpInfimum) > polyTmp.constantPart() )

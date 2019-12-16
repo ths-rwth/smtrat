@@ -131,7 +131,7 @@ namespace helper {
                     Poly linearCoeff;
                     iter = coeffs.find( 1 );
                     if( iter != coeffs.end() ) linearCoeff = iter->second;
-                    Poly radicand = linearCoeff.pow( 2 ) - Rational( 4 ) * coeffs.rbegin()->second * constantCoeff;
+                    Poly radicand = carl::pow(linearCoeff, 2 ) - Rational( 4 ) * coeffs.rbegin()->second * constantCoeff;
                     ConstraintT cons11 = ConstraintT( coeffs.rbegin()->second, carl::Relation::EQ );
                     if( cons11 != ConstraintT( false ) ) {
                         // Create state ({a==0, b!=0} + oldConditions, [x -> -c/b]):

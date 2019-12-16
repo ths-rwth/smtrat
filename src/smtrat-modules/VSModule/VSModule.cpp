@@ -925,7 +925,7 @@ namespace smtrat
                         Poly linearCoeff;
                         iter = coeffs.find( 1 );
                         if( iter != coeffs.end() ) linearCoeff = iter->second;
-                        Poly radicand = linearCoeff.pow( 2 ) - Rational( 4 ) * coeffs.rbegin()->second * constantCoeff;
+                        Poly radicand = carl::pow(linearCoeff, 2 ) - Rational( 4 ) * coeffs.rbegin()->second * constantCoeff;
                         bool constraintHasZeros = false;
                         ConstraintT cons11 = ConstraintT( coeffs.rbegin()->second, carl::Relation::EQ );
                         if( cons11 != ConstraintT( false ) )
@@ -1716,7 +1716,7 @@ namespace smtrat
                             {
                                 assert( varSolutions.find( *var ) != varSolutions.end() );
                                 partialVarSolutions[*var] = varSolutions[*var];
-                                Poly subPolyPartiallySubstituted = substitutionPoly.substitute( partialVarSolutions );
+                                Poly subPolyPartiallySubstituted = carl::substitute(substitutionPoly, partialVarSolutions );
                                 if( !carl::isZero(subPolyPartiallySubstituted) )
                                 {
                                     Rational cp = subPolyPartiallySubstituted.coprimeFactorWithoutConstant();
@@ -1740,7 +1740,7 @@ namespace smtrat
                         // Insert the (integer!) assignments of the other variables.
                         const SqrtEx& subTerm = currentState->substitution().term();
                         Rational evaluatedSubTerm;
-                        if( carl::isZero(subTerm.denominator().substitute( varSolutions )) )
+                        if( carl::isZero(carl::substitute(subTerm.denominator(), varSolutions )) )
                         {
 							SMTRAT_LOG_DEBUG("smtrat.vs", "Something is zero");
                             if( mFinalCheck )

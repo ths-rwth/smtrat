@@ -826,7 +826,7 @@ namespace smtrat
                         Poly varCoeff = cons->coefficient( var, 1 );
                         assert( !varCoeff.isZero() );
                         RationalInterval varCoeffEvaluated = carl::IntervalEvaluation::evaluate( varCoeff, bounds );
-                        Poly remainder = cons->lhs().substitute( var, Poly(0) );
+                        Poly remainder = carl::substitute(cons->lhs(), var, Poly(0) );
                         RationalInterval remainderEvaluated = carl::IntervalEvaluation::evaluate( remainder, bounds ).inverse();
                         
                         RationalInterval newBoundsA;

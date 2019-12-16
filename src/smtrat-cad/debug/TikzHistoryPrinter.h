@@ -4,6 +4,7 @@
 
 #include <boost/optional.hpp>
 
+#include <fstream>
 #include <map>
 #include <sstream>
 

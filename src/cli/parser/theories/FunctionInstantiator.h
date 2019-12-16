@@ -55,7 +55,7 @@ public:
 	template<typename TYPE = T>
 	typename std::enable_if<std::is_same<TYPE,Poly>::value, bool>::type
 	operator()(const Poly& p) {
-		result = p.substitute(var, replacement);
+		result = carl::substitute(p, var, replacement);
 		return true;
 	}
 	bool operator()(const FormulaT& f) {

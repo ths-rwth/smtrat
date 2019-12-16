@@ -85,7 +85,7 @@ namespace cad {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
 			if (projection::canBeRemoved(p)) return carl::Bitset();
 			if (level < dim() && projection::canBeForwarded(level, p)) {
-				return addToProjection(level + 1, p.switchVariable(var(level+1)), origin);
+				return addToProjection(level + 1, carl::switch_main_variable(p, var(level+1)), origin);
 			}
 			assert(p.mainVar() == var(level));
 			auto it = polyIDs(level).find(p);

@@ -37,6 +37,7 @@
 #include "parser/ParserSettings.h"
 #include <carl-io/SMTLIBStream.h>
 #include <carl/util/TimingCollector.h>
+#include <carl-logging/logging-internals.h>
 #include "tools/config.h"
 #include "tools/execute_smtlib.h"
 #include "tools/Executor.h"
