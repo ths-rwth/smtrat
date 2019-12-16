@@ -197,35 +197,35 @@ namespace cad {
         }
 
         /** sets lower bound value and bound type */
-        void setLowerBound(RAN value, CADBoundType type) {
+        void setLowerBound(const RAN& value, CADBoundType type) {
             lower = value;
             lowertype = type;
         }
 
         /** sets lower bound value and bound type */
-        void setUpperBound(RAN value, CADBoundType type) {
+        void setUpperBound(const RAN& value, CADBoundType type) {
             upper = value;
             uppertype = type;
         }
 
         /** sets constraints */
-        void setConstraint(const ConstraintT cons) {
+        void setConstraint(const ConstraintT& cons) {
             constraints.clear();
             constraints.insert(cons);
         }
 
         /** adds poly to lowerreason */
-        void addLowerReason(const std::pair<Poly, std::vector<ConstraintT>> poly) {
+        void addLowerReason(const std::pair<Poly, std::vector<ConstraintT>>& poly) {
             lowerreason.insert(poly);
         }
 
         /** adds poly to upperreason */
-        void addUpperReason(const std::pair<Poly, std::vector<ConstraintT>> poly) {
+        void addUpperReason(const std::pair<Poly, std::vector<ConstraintT>>& poly) {
             upperreason.insert(poly);
         }
 
         /** adds cons to constraints */
-        void addConstraint(const ConstraintT cons) {
+        void addConstraint(const ConstraintT& cons) {
             constraints.insert(cons);
         }
 
@@ -247,7 +247,7 @@ namespace cad {
         }
 
         /** checks whether the interval contains the given value */
-        bool contains(RAN val) {
+        bool contains(const RAN& val) {
             if((lowertype == INF || (lowertype == CLOSED && lower <= val) ||
                 (lowertype == OPEN && lower < val)) &&
                 (uppertype == INF || (uppertype == CLOSED && upper >= val) ||
@@ -263,7 +263,7 @@ namespace cad {
          * @note can handle inf bounds and considers upper bounds if equal
          * @returns true iff the lower bound is lower than the one of the given interval
          */
-        bool isLowerThan(CADInterval inter) {
+        bool isLowerThan(const CADInterval& inter) {
             // (-inf
             if(lowertype == INF) {
                 // (-inf vs. (l

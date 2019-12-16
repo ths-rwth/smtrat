@@ -55,7 +55,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	carl::Variable getHighestVar(
 		CADIntervalBased& cad,	/**< corresponding CAD */
-		smtrat::Poly poly		/**< polynom */
+		const smtrat::Poly& poly		/**< polynom */
 	) {
 		carl::Variable var;
 		for(auto v : carl::variables(poly).underlyingVariables()) {
@@ -78,8 +78,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	std::set<CADInterval*, SortByLowerBound> calcRegionsFromPoly(
 		CADIntervalBased& cad,		/**< corresponding CAD */
-		ConstraintT c, 				/**< constraint containing the polynom */
-		Assignment samples,			/**< variables to be substituted by given values, may be empty */
+		const ConstraintT& c, 				/**< constraint containing the polynom */
+		const Assignment& samples,			/**< variables to be substituted by given values, may be empty */
 		carl::Variable currVar		/**< constraint is considered as univariate in this variable */
 	) {
 		std::set<CADInterval*, SortByLowerBound> regions;
@@ -137,7 +137,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	std::set<CADInterval*, SortByLowerBound> get_unsat_intervals(
 		CADIntervalBased& cad,			/**< corresponding CAD */ 
-		Assignment samples,				/**< values for variables of depth till i-1 (only used if dimension is > 1) */
+		const Assignment& samples,				/**< values for variables of depth till i-1 (only used if dimension is > 1) */
 		carl::Variable currVar			/**< variable of current depth i */
 	) {
 
@@ -228,7 +228,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	std::tuple<bool, RAN, CADInterval::CADBoundType, std::set<CADInterval*, SortByLowerBound>> getLowestUpperBound(
 		CADIntervalBased& cad,								/**< corresponding CAD */
-		std::set<CADInterval*, SortByLowerBound> intervals	/**< set of intervals to be checked for unexplored regions */
+		const std::set<CADInterval*, SortByLowerBound>& intervals	/**< set of intervals to be checked for unexplored regions */
 	) {
 		// check whether there are intervals
 		if(intervals.empty()) {
@@ -369,7 +369,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	std::set<CADInterval*, SortByLowerBound>compute_cover(
 		CADIntervalBased& cad, 							/**< corresponding CAD */
-		std::set<CADInterval*, SortByLowerBound> inters	/**< set of intervals over which to find a cover */
+		const std::set<CADInterval*, SortByLowerBound>& inters	/**< set of intervals over which to find a cover */
 	) {
 		// return cover or empty set if none was found
 		auto boundtuple = getLowestUpperBound(cad, inters);
@@ -388,7 +388,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	RAN chooseSample(
 		CADIntervalBased& cad,							/**< corresponding CAD */
-		std::set<CADInterval*, SortByLowerBound> inters	/**< known unsat intervals */
+		const std::set<CADInterval*, SortByLowerBound>& inters	/**< known unsat intervals */
 	) {
 		// if -inf is not a bound find sample in (-inf, first bound)
 		bool hasminf = false;
@@ -487,8 +487,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	std::set<std::pair<Poly, std::vector<ConstraintT>>> required_coefficients(
 		CADIntervalBased& cad,					/**< corresponding CAD */
-		Assignment samples,						/**< values for variables till depth i */
-		std::set<ConstraintT> constraints		/**< constraints */
+		const Assignment& samples,						/**< values for variables till depth i */
+		const std::set<ConstraintT>& constraints		/**< constraints */
 	) {
 		std::set<std::pair<Poly, std::vector<ConstraintT>>> coeffs;
 		for(auto cons : constraints) {
@@ -527,9 +527,9 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	bool isSatWithOffset(
 		CADIntervalBased& cad,					/**< corresponding CAD */
-		RAN offset,								/**< offset */
-	 	Assignment samples,						/**< values for variables till depth i-1 */
-		smtrat::Poly poly,						/**< polynom */
+		const RAN& offset,								/**< offset */
+	 	const Assignment& samples,						/**< values for variables till depth i-1 */
+		const smtrat::Poly& poly,						/**< polynom */
 		carl::Relation relation					/**< relation to use for constraint */
 	) {
 		SMTRAT_LOG_INFO("smtrat.cdcad", "Checking sat of " << poly << " + " << offset << relation << "0" );
@@ -575,8 +575,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	std::set<std::pair<Poly, std::vector<ConstraintT>>> construct_characterization(
 		CADIntervalBased& cad,								/**< corresponding CAD */
-		Assignment samples,									/**< values for variables till depth i */
-		std::set<CADInterval*, SortByLowerBound> intervals	/**< intervals containing a cover */
+		const Assignment& samples,									/**< values for variables till depth i */
+		const std::set<CADInterval*, SortByLowerBound>& intervals	/**< intervals containing a cover */
 	) {
 		// get subset of intervals that has no intervals contained in any other one
 		std::set<CADInterval*, SortByLowerBound> subinters = compute_cover(cad, intervals);
@@ -716,10 +716,10 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	CADInterval* interval_from_characterization(
 		CADIntervalBased& cad,					/**< corresponding CAD */
-	 	Assignment samples,						/**< values for variables till depth i-1 */
+	 	const Assignment& samples,						/**< values for variables till depth i-1 */
 		carl::Variable currVar,					/**< var of depth i (current depth) */
-		RAN val, 								/**< value for currVar */
-		std::set<std::pair<Poly, std::vector<ConstraintT>>> butler /**< poly characterization */
+		const RAN& val, 								/**< value for currVar */
+		const std::set<std::pair<Poly, std::vector<ConstraintT>>>& butler /**< poly characterization */
 	) {
 		SMTRAT_LOG_INFO("smtrat.cdcad", "Computing interval from characterization: " << butler);
 		// partition polynomials for containing currVar
@@ -821,7 +821,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	std::tuple<bool, std::set<CADInterval*, SortByLowerBound>, Assignment> get_unsat_cover(
 		CADIntervalBased& cad,					/**< corresponding CAD */
-		Assignment samples,						/**< values for variables of depth i-1 (initially empty set) */
+		const Assignment& samples,						/**< values for variables of depth i-1 (initially empty set) */
 		carl::Variable currVar					/**< var of depth i (current depth) */
 	) {
 		SMTRAT_LOG_INFO("smtrat.cdcad", samples << ", now " << currVar);
