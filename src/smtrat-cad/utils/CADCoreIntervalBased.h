@@ -364,7 +364,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	 * (Paper Alg. 2)
 	 */
 	template<typename CADIntervalBased>
-	std::set<CADInterval*, SortByLowerBound>compute_cover(
+	std::set<CADInterval*, SortByLowerBound> compute_cover(
 		CADIntervalBased& cad, 							/**< corresponding CAD */
 		const std::set<CADInterval*, SortByLowerBound>& inters	/**< set of intervals over which to find a cover */
 	) {
@@ -640,12 +640,12 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	std::set<std::pair<Poly, std::vector<ConstraintT>>> construct_characterization(
 		CADIntervalBased& cad,								/**< corresponding CAD */
 		const Assignment& samples,									/**< values for variables till depth i */
-		const std::set<CADInterval*, SortByLowerBound>& intervals,	/**< intervals containing a cover */
+		const std::set<CADInterval*, SortByLowerBound>& subinters,	/**< intervals containing a cover */
 		carl::Variable currVar
 	) {
-		// get subset of intervals that has no intervals contained in any other one
-		std::set<CADInterval*, SortByLowerBound> subinters = compute_cover(cad, intervals);
-		assert(!subinters.empty());
+		
+		//std::set<CADInterval*, SortByLowerBound> subinters = compute_cover(cad, intervals);
+		//assert(!subinters.empty());
 		SMTRAT_LOG_INFO("smtrat.cdcad", "Computing characterization for " << samples << " on " << subinters);
 
 		// create the characterization of the unsat region
@@ -857,7 +857,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			uppertype = CADInterval::CADBoundType::CLOSED;
 		}
 
-		return new CADInterval(lower, upper, lowertype, uppertype, lowerres, upperres, fulldim, lowdim, constraints);
+		return new CADInterval(lower, upper, lowertype, uppertype, lowerres, upperres, fulldim, lowdim, {});
 	}
 
 	/**
@@ -899,8 +899,14 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				return nextcall;
 			else {
 				SMTRAT_LOG_TRACE("smtrat.cdcad", "Computing new unsat interval for " << currVar);
-				auto butler = construct_characterization(cad, *newsamples, std::get<1>(nextcall), cad.getNextVar(currVar));
+				// get subset of intervals that has no intervals contained in any other one
+				auto covering = compute_cover(cad, std::get<1>(nextcall));
+				assert(!covering.empty());
+				auto butler = construct_characterization(cad, *newsamples, covering, cad.getNextVar(currVar));
 				CADInterval* butlerinter = interval_from_characterization(cad, samples, currVar, newval, butler);
+				for (const auto& c: covering) {
+					butlerinter->addReasons(c->getReasons());
+				}
 				SMTRAT_LOG_TRACE("smtrat.cdcad", "Adding " << butlerinter);
 				unsatinters.insert(butlerinter);
 				SMTRAT_LOG_INFO("smtrat.cdcad", "I := " << unsatinters);
@@ -928,6 +934,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			assignment = Assignment();
 			FormulaSetT cover;
 			for(const auto& inter : std::get<1>(res)) {
+				SMTRAT_LOG_INFO("smtrat.cdcad", "Adding " << inter->getReasons() << " from " << inter);		
 				// add constraints that where directly responsible
 				for(const auto& cons : inter->getReasons())
 					cover.insert(carl::Formula(cons));

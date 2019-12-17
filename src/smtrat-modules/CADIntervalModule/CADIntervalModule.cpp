@@ -86,8 +86,10 @@ namespace smtrat
 			// todo there should always be an unsat cover in that case (remove trivial one)
 			if(mCAD.getLastUnsatCover().empty())
 				generateTrivialInfeasibleSubset();
-			else
+			else {
+				SMTRAT_LOG_INFO("smtrat.cdcad", "MIS: " << mCAD.getLastUnsatCover());
 				mInfeasibleSubsets.push_back(mCAD.getLastUnsatCover());
+			}
 		}
 
 		return answer;
