@@ -599,31 +599,21 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 	template<typename CADIntervalBased>
 	bool isSatWithOffset(
 		CADIntervalBased& cad,					/**< corresponding CAD */
+		carl::Variable currVar,
 		const RAN& offset,								/**< offset */
 	 	const Assignment& samples,						/**< values for variables till depth i-1 */
 		const smtrat::Poly& poly,						/**< polynom */
 		carl::Relation relation					/**< relation to use for constraint */
 	) {
-		SMTRAT_LOG_TRACE("smtrat.cdcad", "Checking sat of " << poly << " + " << offset << relation << "0" );
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Checking " << poly << " over " << samples << relation << "0" );
 
-		smtrat::Poly offsetpoly = poly;
-
-		//todo WORKAROUND FIX THIS
-		if(!offset.isNumeric())
-			return false;
-
-		// todo is Rational ok? I want a RAN! find term with rans?
-		const carl::Term<smtrat::Rational>* term = new carl::Term(offset.value());
-		SMTRAT_LOG_TRACE("smtrat.cdcad", "Checking term " << *term << " for zero");
-		if(!carl::isZero(*term))
-			offsetpoly.addTerm((*term)); // @todo is this what is meant in alg.6, l.6-7?
-			
-		ConstraintT eqzero = ConstraintT(offsetpoly, relation);
+		ConstraintT eqzero = ConstraintT(poly, relation);
 
 		// check whether poly(samples x offset) == 0
 		carl::Model<Rational, Poly> model;
-		for(auto sample : samples)
+		for(const auto& sample : samples)
 			model.assign(sample.first, sample.second);
+		model.assign(currVar, offset);
 		auto mv = carl::model::evaluate(eqzero, model);
 
 		if(mv.isBool() && mv.asBool()) {
@@ -694,7 +684,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				// @todo does the following correctly represent Alg. 4, l. 7-8?
 				// todo ask Gereon
 				// idea: P(s x \alpha) = 0, \alpha < l => P(s x l) > 0
-				if(isSatWithOffset(cad, inter->getLower(), samples, q, carl::Relation::GREATER)) {
+				if(isSatWithOffset(cad, currVar, inter->getLower(), samples, q, carl::Relation::GREATER)) {
 					SMTRAT_LOG_INFO("smtrat.cdcad", "-- Checking resultants of lower" << q << " from " << inter);
 					for(const auto& p : inter->getLowerReason()) {
 						// get polynomial from reason
@@ -712,7 +702,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 					}
 				}
 				// analogously: P(s x \alpha) = 0, \alpha > u => P(s x u) < 0
-				if(isSatWithOffset(cad, inter->getUpper(), samples, q, carl::Relation::LESS)) {
+				if(isSatWithOffset(cad, currVar, inter->getUpper(), samples, q, carl::Relation::LESS)) {
 					SMTRAT_LOG_INFO("smtrat.cdcad", "-- Checking resultants of upper " << q << " from " << inter);
 					for(const auto& p : inter->getUpperReason()) {
 						// get polynomial from reason
@@ -838,15 +828,16 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			// todo ask Gereon
 			// if no lower bound was found it is -inf, no conss will bound it
 			if(foundlower) {
-				if(isSatWithOffset(cad, lower, samples, poly, carl::Relation::EQ))
+				if(isSatWithOffset(cad, currVar, lower, samples, poly, carl::Relation::EQ))
 					lowerres.insert(poly);
 			}
 			// analogously to lower bound
 			if(foundupper) {
-				if(isSatWithOffset(cad, upper, samples, poly, carl::Relation::EQ))
+				if(isSatWithOffset(cad, currVar, upper, samples, poly, carl::Relation::EQ))
 					upperres.insert(poly);
 			}
 		}
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Reasons: " << lowerres << " and " << upperres << " from " << fulldim);
 
 		// determine bound types
 		// todo is that correct?
@@ -883,7 +874,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		const Assignment& samples,						/**< values for variables of depth i-1 (initially empty set) */
 		carl::Variable currVar					/**< var of depth i (current depth) */
 	) {
-		SMTRAT_LOG_INFO("smtrat.cdcad", samples << ", now " << currVar);
+		SMTRAT_LOG_INFO("smtrat.cdcad", "***** with " << samples << " for " << currVar);
 		// get known unsat intervals
 		auto unsatinters = get_unsat_intervals(cad, samples, currVar);
 		SMTRAT_LOG_INFO("smtrat.cdcad", "I := " << unsatinters);
@@ -915,7 +906,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				for (const auto& c: covering) {
 					butlerinter->addReasons(c->getReasons());
 				}
-				SMTRAT_LOG_TRACE("smtrat.cdcad", "Adding " << butlerinter);
+				SMTRAT_LOG_INFO("smtrat.cdcad", "Adding " << butlerinter << " with (" << butlerinter->getLowerReason() << ", " << butlerinter->getUpperReason() << ", " << butlerinter->getConstraints() << ", " << butlerinter->getLowerConstraints() << ")");
 				unsatinters.insert(butlerinter);
 				SMTRAT_LOG_INFO("smtrat.cdcad", "I := " << unsatinters);
 			}
@@ -924,6 +915,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		// in case the loop exits a cover was found
 		SMTRAT_LOG_INFO("smtrat.cdcad", "Unsat cover found for " << currVar);
 		auto res = std::make_tuple(false, unsatinters, Assignment());
+		SMTRAT_LOG_INFO("smtrat.cdcad", "***** done for " << currVar);
 		return res;
 	}
 
