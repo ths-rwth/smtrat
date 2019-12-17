@@ -144,11 +144,19 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		std::vector<ConstraintT> constraints;
 		for(auto c : cad.getConstraints()) {
 			auto consvars = c.variables();
+			bool found_cur_var = false;
+			bool found_higher_var = false;
 			for(auto v : consvars.underlyingVariables()) {
-				if(isAtLeastCurrVar(cad, v, currVar)) {
-					constraints.push_back(c);
+				if (cad.getDepthOfVar(v) == cad.getDepthOfVar(currVar)) {
+					found_cur_var = true;
+				}
+				if (cad.getDepthOfVar(v) > cad.getDepthOfVar(currVar)) {
+					found_higher_var = true;
 					break;
 				}
+			}
+			if (found_cur_var && !found_higher_var) {
+				constraints.push_back(c);
 			}
 		}
 
