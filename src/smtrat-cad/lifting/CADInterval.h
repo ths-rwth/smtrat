@@ -60,7 +60,10 @@ namespace cad {
 			lowertype(lowerboundtype), uppertype(upperboundtype),
 			lowerreason({constraint.lhs()}), upperreason({constraint.lhs()}),
 			fulldim({constraint.lhs()}), reasons({constraint})
-		{}
+		{
+			if (lowertype == CADBoundType::INF) lowerreason.clear();
+			if (uppertype == CADBoundType::INF) upperreason.clear();
+		}
 
 		/** initializes interval with given bounds, bound types, polynomials and reasons */
         CADInterval(const RAN& lowerbound, const RAN& upperbound, 
@@ -72,7 +75,10 @@ namespace cad {
 			lowertype(lowerboundtype), uppertype(upperboundtype),
 			lowerreason(lreasons), upperreason(ureasons),
 			fulldim(fulldimpolys), lowerdim(lowerdimpolys), reasons(constraints)
-		{}
+		{
+			if (lowertype == CADBoundType::INF) lowerreason.clear();
+			if (uppertype == CADBoundType::INF) upperreason.clear();
+		}
 
         /** initializes open interval with given bounds */
         /*CADInterval(RAN lowerbound, RAN upperbound): 

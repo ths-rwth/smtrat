@@ -563,11 +563,11 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		std::set<Poly> coeffs;
 		for(const auto& mpoly : polynomials) {
 			auto poly = carl::to_univariate_polynomial(mpoly, currVar);
-			SMTRAT_LOG_INFO("smtrat.cdcad", "Considering " << poly << " (in " << currVar << ")");
+			SMTRAT_LOG_TRACE("smtrat.cdcad", "Considering " << poly << " (in " << currVar << ")");
 			while(!carl::isZero(poly)) {
 				// add leading coefficient
 				smtrat::Poly lcpoly = smtrat::Poly(poly.lcoeff());
-				SMTRAT_LOG_INFO("smtrat.cdcad", "Current coeff: " << lcpoly);
+				SMTRAT_LOG_TRACE("smtrat.cdcad", "Current coeff: " << lcpoly);
 				if (!carl::is_zero(lcpoly) && !cad::projection::doesNotVanish(lcpoly)) {
 					coeffs.insert(lcpoly);
 				}
@@ -589,7 +589,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			}
 		}
 
-		SMTRAT_LOG_INFO("smtrat.cdcad", "Required coefficients: " << coeffs);
+		SMTRAT_LOG_TRACE("smtrat.cdcad", "Required coefficients: " << coeffs);
 		return coeffs;
 	}
 
@@ -605,7 +605,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		const smtrat::Poly& poly,						/**< polynom */
 		carl::Relation relation					/**< relation to use for constraint */
 	) {
-		SMTRAT_LOG_INFO("smtrat.cdcad", "Checking " << poly << " over " << samples << relation << "0" );
+		SMTRAT_LOG_TRACE("smtrat.cdcad", "Checking " << poly << " over " << samples << relation << "0" );
 
 		ConstraintT eqzero = ConstraintT(poly, relation);
 
@@ -622,6 +622,46 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		}
 
 			SMTRAT_LOG_TRACE("smtrat.cdcad", "Not SAT for poly " << poly << " + " << offset << relation << "0 on sample " << samples);
+		return false;
+	}
+
+	bool has_root_below(
+		carl::Variable currVar,
+		const RAN& reference,
+	 	const Assignment& samples,
+		const smtrat::Poly& poly
+	) {
+		carl::Model<Rational, Poly> model;
+		for(const auto& sample : samples)
+			model.assign(sample.first, sample.second);
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Computing roots of " << poly << " over " << model);
+		auto roots = carl::rootfinder::realRoots(carl::to_univariate_polynomial(poly, currVar), samples);
+		for (const auto& r: roots) {
+			if (r < reference) {
+				SMTRAT_LOG_INFO("smtrat.cdcad", "Found root " << r << " of " << poly << " below " << reference << " over " << samples);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool has_root_above(
+		carl::Variable currVar,
+		const RAN& reference,
+	 	const Assignment& samples,
+		const smtrat::Poly& poly
+	) {
+		carl::Model<Rational, Poly> model;
+		for(const auto& sample : samples)
+			model.assign(sample.first, sample.second);
+		SMTRAT_LOG_INFO("smtrat.cdcad", "Computing roots of " << poly << " over " << model);
+		auto roots = carl::rootfinder::realRoots(carl::to_univariate_polynomial(poly, currVar), samples);
+		for (const auto& r: roots) {
+			if (r > reference) {
+				SMTRAT_LOG_INFO("smtrat.cdcad", "Found root " << r << " of " << poly << " above " << reference << " over " << samples);
+				return true;
+			}
+		}
 		return false;
 	}
 
@@ -649,26 +689,26 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		// create the characterization of the unsat region
 		std::set<std::pair<Poly, std::vector<ConstraintT>>> characterization;
 		for(const auto& inter : subinters) {
-			SMTRAT_LOG_INFO("smtrat.cdcad", "Processing " << inter << " with (" << inter->getLowerReason() << ", " << inter->getUpperReason() << ", " << inter->getConstraints() << ", " << inter->getLowerConstraints() << ")");
+			SMTRAT_LOG_INFO("smtrat.cdcad", "-- Processing " << inter << " with (" << inter->getLowerReason() << ", " << inter->getUpperReason() << ", " << inter->getConstraints() << ", " << inter->getLowerConstraints() << ")");
 			// add all polynoms not containing the main var
 			if(inter->getLowerConstraints().empty())
-				SMTRAT_LOG_INFO("smtrat.cdcad", "-- No lower-dimensional constraints to add in " << inter);
+				SMTRAT_LOG_TRACE("smtrat.cdcad", "---- No lower-dimensional constraints to add in " << inter);
 			for(const auto& lowpoly : inter->getLowerConstraints()) {
 				characterization.insert(std::make_pair(lowpoly, inter->getReasons()));
-				SMTRAT_LOG_INFO("smtrat.cdcad", "-- Add lower-dimensional constraints: " << lowpoly);
+				SMTRAT_LOG_INFO("smtrat.cdcad", "---- Add lower-dimensional constraints: " << lowpoly);
 			}
 			// add discriminant of constraints
 			if(inter->getFullDim().empty())
-				SMTRAT_LOG_INFO("smtrat.cdcad", "-- No constraints to compute discriminants from in " << inter);
+				SMTRAT_LOG_INFO("smtrat.cdcad", "---- No constraints to compute discriminants from in " << inter);
 			for(const auto& cons : inter->getFullDim()) {
-				SMTRAT_LOG_TRACE("smtrat.cdcad", "Checking discriminant of " << cons << " from " << inter);
+				SMTRAT_LOG_TRACE("smtrat.cdcad", "---- Checking discriminant of " << cons << " from " << inter);
 				smtrat::cad::UPoly upoly = carl::discriminant(carl::to_univariate_polynomial(cons, getHighestVar(cad, cons)));
 				// convert polynom to multivariate
 				smtrat::Poly inspoly = smtrat::Poly(upoly);
 				if (carl::is_zero(inspoly)) continue;
 				if (cad::projection::doesNotVanish(inspoly)) continue;
 				characterization.insert(std::make_pair(inspoly, inter->getReasons()));
-				SMTRAT_LOG_INFO("smtrat.cdcad", "-- Add discriminant " << inspoly << " from " << cons);
+				SMTRAT_LOG_INFO("smtrat.cdcad", "---- Add discriminant " << inspoly << " from " << cons);
 			}
 			// add relevant coefficients
 			auto coeffs = required_coefficients(cad, samples, inter->getFullDim(), currVar);
@@ -676,55 +716,59 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				for (const auto& coeff: coeffs) {
 					characterization.emplace(coeff, inter->getReasons());
 				}
-				SMTRAT_LOG_INFO("smtrat.cdcad", "-- Add coeffs: " << coeffs);
+				SMTRAT_LOG_INFO("smtrat.cdcad", "---- Add coeffs: " << coeffs);
 			}
 			// add polynomials that guarantee bounds to be closest
 			for(const auto& q : inter->getFullDim()) {
-				SMTRAT_LOG_INFO("smtrat.cdcad", "-- Checking resultants with " << q << " from " << inter);
+				SMTRAT_LOG_TRACE("smtrat.cdcad", "---- Checking resultants with " << q << " from " << inter);
 				// @todo does the following correctly represent Alg. 4, l. 7-8?
 				// todo ask Gereon
 				// idea: P(s x \alpha) = 0, \alpha < l => P(s x l) > 0
-				if(isSatWithOffset(cad, currVar, inter->getLower(), samples, q, carl::Relation::GREATER)) {
-					SMTRAT_LOG_INFO("smtrat.cdcad", "-- Checking resultants of lower" << q << " from " << inter);
-					for(const auto& p : inter->getLowerReason()) {
-						// get polynomial from reason
-						smtrat::cad::UPoly upoly = carl::resultant(
-							carl::to_univariate_polynomial(p, getHighestVar(cad, p)),
-							carl::to_univariate_polynomial(q, getHighestVar(cad, q))
-						);
-						// convert polynom to multivariate
-						smtrat::Poly inspoly = smtrat::Poly(upoly);
-						if (carl::is_zero(inspoly)) continue;
-						if (cad::projection::doesNotVanish(inspoly)) continue;
-						
-						characterization.insert(std::make_pair(inspoly, inter->getReasons()));
-						SMTRAT_LOG_INFO("smtrat.cdcad", "-- Add resultant " << inspoly);
+				if (inter->getLowerBoundType() != CADInterval::CADBoundType::INF) {
+					if (has_root_below(currVar, inter->getLower(), samples, q)) {
+						SMTRAT_LOG_INFO("smtrat.cdcad", "---- Checking resultants of lower " << q << " from " << inter);
+						for(const auto& p : inter->getLowerReason()) {
+							// get polynomial from reason
+							smtrat::cad::UPoly upoly = carl::resultant(
+								carl::to_univariate_polynomial(p, getHighestVar(cad, p)),
+								carl::to_univariate_polynomial(q, getHighestVar(cad, q))
+							);
+							// convert polynom to multivariate
+							smtrat::Poly inspoly = smtrat::Poly(upoly);
+							if (carl::is_zero(inspoly)) continue;
+							if (cad::projection::doesNotVanish(inspoly)) continue;
+							
+							characterization.insert(std::make_pair(inspoly, inter->getReasons()));
+							SMTRAT_LOG_INFO("smtrat.cdcad", "---- Add resultant " << inspoly);
+						}
 					}
 				}
 				// analogously: P(s x \alpha) = 0, \alpha > u => P(s x u) < 0
-				if(isSatWithOffset(cad, currVar, inter->getUpper(), samples, q, carl::Relation::LESS)) {
-					SMTRAT_LOG_INFO("smtrat.cdcad", "-- Checking resultants of upper " << q << " from " << inter);
-					for(const auto& p : inter->getUpperReason()) {
-						// get polynomial from reason
-						smtrat::cad::UPoly upoly = carl::resultant(
-							carl::to_univariate_polynomial(p, getHighestVar(cad, p)),
-							carl::to_univariate_polynomial(q, getHighestVar(cad, q))
-						);
-						// convert polynom to multivariate
-						smtrat::Poly inspoly = smtrat::Poly(upoly);
-						if (carl::is_zero(inspoly)) continue;
-						if (cad::projection::doesNotVanish(inspoly)) continue;
+				if (inter->getUpperBoundType() != CADInterval::CADBoundType::INF) {
+					if (has_root_above(currVar, inter->getUpper(), samples, q)) {
+						SMTRAT_LOG_TRACE("smtrat.cdcad", "---- Checking resultants of upper " << q << " from " << inter);
+						for(const auto& p : inter->getUpperReason()) {
+							// get polynomial from reason
+							smtrat::cad::UPoly upoly = carl::resultant(
+								carl::to_univariate_polynomial(p, getHighestVar(cad, p)),
+								carl::to_univariate_polynomial(q, getHighestVar(cad, q))
+							);
+							// convert polynom to multivariate
+							smtrat::Poly inspoly = smtrat::Poly(upoly);
+							if (carl::is_zero(inspoly)) continue;
+							if (cad::projection::doesNotVanish(inspoly)) continue;
 
-						characterization.insert(std::make_pair(inspoly, inter->getReasons()));
-						SMTRAT_LOG_INFO("smtrat.cdcad", "-- Add resultant " << inspoly);
+							characterization.insert(std::make_pair(inspoly, inter->getReasons()));
+							SMTRAT_LOG_INFO("smtrat.cdcad", "---- Add resultant " << inspoly);
+						}
 					}
 				}
-				SMTRAT_LOG_TRACE("smtrat.cdcad", "Finished checking resultants of " << q << " from " << inter);
+				SMTRAT_LOG_TRACE("smtrat.cdcad", "---- Finished checking resultants of " << q << " from " << inter);
 			}
 		}
 
 		// add resultants of upper & lower reasons
-		SMTRAT_LOG_INFO("smtrat.cdcad", "Add resultants of upper & lower reasons");
+		SMTRAT_LOG_INFO("smtrat.cdcad", "-- Add resultants of upper & lower reasons");
 		auto itlower = subinters.begin();
 		itlower++;
 		auto itupper = subinters.begin();
@@ -749,7 +793,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 					}
 
 					characterization.insert(std::make_pair(inspoly, orig));
-					SMTRAT_LOG_INFO("smtrat.cdcad", "-- Add resultant " << inspoly << " from " << orig);
+					SMTRAT_LOG_INFO("smtrat.cdcad", "---- Add resultant " << inspoly << " from " << orig);
 				}
 			}
 			itlower++;
@@ -818,7 +862,12 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				upper = r;
 		}
 
-		SMTRAT_LOG_INFO("smtrat.cdcad", "Found bounds " << lower << " .. " << upper);
+		if (foundlower) {
+			SMTRAT_LOG_INFO("smtrat.cdcad", "Found lower bound " << lower);
+		}
+		if (foundupper) {
+			SMTRAT_LOG_INFO("smtrat.cdcad", "Found upper bound " << upper);
+		}
 
 		// find reasons for bounds
 		std::set<Poly> lowerres;
