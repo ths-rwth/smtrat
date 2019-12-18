@@ -45,6 +45,17 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		return false;
 	}
 
+	void remove_duplicates(std::vector<ConstraintT>& c) {
+		std::sort(c.begin(), c.end());
+		c.erase(std::unique(c.begin(), c.end()), c.end());
+	}
+
+	void insert_factorized(std::set<Poly>& set, const Poly& p) {
+		for (const auto& f: carl::irreducibleFactors(p, false)) {
+			set.insert(f);
+		}
+	}
+
 
 	/** @brief gets highest var in var order that is present in the polynom
 	 * 
@@ -203,10 +214,10 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 						}
 						region->addReasons({c});
 						newintervals.insert(region);
-						SMTRAT_LOG_INFO("smtrat.cdcad", c << " is unsat on " << modeladd << ", excluding " << region);
+						SMTRAT_LOG_INFO("smtrat.cdcad", c << " is unsat, excluding " << region);
 					}
 					else {
-						SMTRAT_LOG_INFO("smtrat.cdcad", c << " is sat on " << modeladd);
+						SMTRAT_LOG_TRACE("smtrat.cdcad", c << " is sat");
 					}
 				} 
 			}
@@ -429,7 +440,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				assert(inter->getUpperBoundType() != CADInterval::CADBoundType::INF);
 				if (current < inter->getUpper()) {
 					SMTRAT_LOG_INFO("smtrat.cdcad", "Overlapping with " << inter);
-					assert(inter->getUpperBoundType() != CADInterval::CADBoundType::OPEN);
+					assert(inter->getUpperBoundType() != CADInterval::CADBoundType::CLOSED);
 					current = inter->getUpper();
 					curbound = inter->getUpperBoundType();
 				}
@@ -566,11 +577,16 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			SMTRAT_LOG_TRACE("smtrat.cdcad", "Considering " << poly << " (in " << currVar << ")");
 			while(!carl::isZero(poly)) {
 				// add leading coefficient
-				smtrat::Poly lcpoly = smtrat::Poly(poly.lcoeff());
+				smtrat::Poly lcpoly = smtrat::Poly(cad::projection::normalize(carl::to_univariate_polynomial(poly.lcoeff(), currVar)));
 				SMTRAT_LOG_TRACE("smtrat.cdcad", "Current coeff: " << lcpoly);
 				if (!carl::is_zero(lcpoly) && !cad::projection::doesNotVanish(lcpoly)) {
 					coeffs.insert(lcpoly);
 				}
+
+				if (cad::projection::doesNotVanish(lcpoly)) break;
+
+				poly.truncate();
+				continue;
 
 				// bring samples in right form for evaluation
 				carl::Model<Rational, Poly> model;
@@ -634,11 +650,11 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		carl::Model<Rational, Poly> model;
 		for(const auto& sample : samples)
 			model.assign(sample.first, sample.second);
-		SMTRAT_LOG_INFO("smtrat.cdcad", "Computing roots of " << poly << " over " << model);
+		SMTRAT_LOG_TRACE("smtrat.cdcad", "Computing roots of " << poly << " over " << model);
 		auto roots = carl::rootfinder::realRoots(carl::to_univariate_polynomial(poly, currVar), samples);
 		for (const auto& r: roots) {
 			if (r < reference) {
-				SMTRAT_LOG_INFO("smtrat.cdcad", "Found root " << r << " of " << poly << " below " << reference << " over " << samples);
+				SMTRAT_LOG_TRACE("smtrat.cdcad", "Found root " << r << " of " << poly << " below " << reference << " over " << samples);
 				return true;
 			}
 		}
@@ -654,11 +670,11 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		carl::Model<Rational, Poly> model;
 		for(const auto& sample : samples)
 			model.assign(sample.first, sample.second);
-		SMTRAT_LOG_INFO("smtrat.cdcad", "Computing roots of " << poly << " over " << model);
+		SMTRAT_LOG_TRACE("smtrat.cdcad", "Computing roots of " << poly << " over " << model);
 		auto roots = carl::rootfinder::realRoots(carl::to_univariate_polynomial(poly, currVar), samples);
 		for (const auto& r: roots) {
 			if (r > reference) {
-				SMTRAT_LOG_INFO("smtrat.cdcad", "Found root " << r << " of " << poly << " above " << reference << " over " << samples);
+				SMTRAT_LOG_TRACE("smtrat.cdcad", "Found root " << r << " of " << poly << " above " << reference << " over " << samples);
 				return true;
 			}
 		}
@@ -704,7 +720,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 				SMTRAT_LOG_TRACE("smtrat.cdcad", "---- Checking discriminant of " << cons << " from " << inter);
 				smtrat::cad::UPoly upoly = carl::discriminant(carl::to_univariate_polynomial(cons, getHighestVar(cad, cons)));
 				// convert polynom to multivariate
-				smtrat::Poly inspoly = smtrat::Poly(upoly);
+				smtrat::Poly inspoly = smtrat::Poly(cad::projection::normalize(upoly));
 				if (carl::is_zero(inspoly)) continue;
 				if (cad::projection::doesNotVanish(inspoly)) continue;
 				characterization.insert(std::make_pair(inspoly, inter->getReasons()));
@@ -734,7 +750,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 								carl::to_univariate_polynomial(q, getHighestVar(cad, q))
 							);
 							// convert polynom to multivariate
-							smtrat::Poly inspoly = smtrat::Poly(upoly);
+							smtrat::Poly inspoly = smtrat::Poly(cad::projection::normalize(upoly));
 							if (carl::is_zero(inspoly)) continue;
 							if (cad::projection::doesNotVanish(inspoly)) continue;
 							
@@ -754,7 +770,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 								carl::to_univariate_polynomial(q, getHighestVar(cad, q))
 							);
 							// convert polynom to multivariate
-							smtrat::Poly inspoly = smtrat::Poly(upoly);
+							smtrat::Poly inspoly = smtrat::Poly(cad::projection::normalize(upoly));
 							if (carl::is_zero(inspoly)) continue;
 							if (cad::projection::doesNotVanish(inspoly)) continue;
 
@@ -782,7 +798,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 					);
 
 					// convert polynomial to multivariate
-					smtrat::Poly inspoly = smtrat::Poly(upoly);
+					smtrat::Poly inspoly = smtrat::Poly(cad::projection::normalize(upoly));
 					if (carl::is_zero(inspoly)) continue;
 					if (cad::projection::doesNotVanish(inspoly)) continue;
 
@@ -791,6 +807,7 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 					for (const auto& o: (*itupper)->getReasons()) {
 						orig.emplace_back(o);
 					}
+					remove_duplicates(orig);
 
 					characterization.insert(std::make_pair(inspoly, orig));
 					SMTRAT_LOG_INFO("smtrat.cdcad", "---- Add resultant " << inspoly << " from " << orig);
@@ -816,8 +833,8 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		const RAN& val, 								/**< value for currVar */
 		const std::set<std::pair<Poly, std::vector<ConstraintT>>>& butler /**< poly characterization */
 	) {
-		SMTRAT_LOG_INFO("smtrat.cdcad", "Current sample " << samples << ", considering " << currVar << " = " << val);
-		SMTRAT_LOG_INFO("smtrat.cdcad", "Computing interval from characterization: " << butler);
+		SMTRAT_LOG_TRACE("smtrat.cdcad", "Current sample " << samples << ", considering " << currVar << " = " << val);
+		SMTRAT_LOG_TRACE("smtrat.cdcad", "Computing interval from characterization: " << butler);
 		// partition polynomials for containing currVar
 		std::set<Poly> lowdim;
 		std::set<Poly> fulldim;
@@ -827,17 +844,18 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		for (const auto& tuple : butler) {
 			auto poly = tuple.first;
 			if(!poly.has(currVar))
-				lowdim.insert(poly);
+				insert_factorized(lowdim, poly);
 			else {
-				fulldim.insert(poly);
+				insert_factorized(fulldim, poly);
 				// store the real roots with substituted values until depth i-1
 				auto roots = carl::rootfinder::realRoots(carl::to_univariate_polynomial(poly, currVar), samples);
 				realroots.insert(roots.begin(), roots.end());
 			}
 			constraints.insert(constraints.end(), tuple.second.begin(), tuple.second.end());
 		}
-
-		SMTRAT_LOG_INFO("smtrat.cdcad", "Found roots " << realroots);
+		remove_duplicates(constraints);
+		
+		SMTRAT_LOG_TRACE("smtrat.cdcad", "Found roots " << realroots);
 
 		// find lower/upper bounds in roots
 		bool foundlower = false;
@@ -863,10 +881,10 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 		}
 
 		if (foundlower) {
-			SMTRAT_LOG_INFO("smtrat.cdcad", "Found lower bound " << lower);
+			SMTRAT_LOG_TRACE("smtrat.cdcad", "Found lower bound " << lower);
 		}
 		if (foundupper) {
-			SMTRAT_LOG_INFO("smtrat.cdcad", "Found upper bound " << upper);
+			SMTRAT_LOG_TRACE("smtrat.cdcad", "Found upper bound " << upper);
 		}
 
 		// find reasons for bounds
@@ -877,16 +895,18 @@ struct CADCoreIntervalBased<CoreIntervalBasedHeuristic::UnsatCover> {
 			// todo ask Gereon
 			// if no lower bound was found it is -inf, no conss will bound it
 			if(foundlower) {
-				if(isSatWithOffset(cad, currVar, lower, samples, poly, carl::Relation::EQ))
-					lowerres.insert(poly);
+				if(isSatWithOffset(cad, currVar, lower, samples, poly, carl::Relation::EQ)) {
+					insert_factorized(lowerres, poly);
+				}
 			}
 			// analogously to lower bound
 			if(foundupper) {
-				if(isSatWithOffset(cad, currVar, upper, samples, poly, carl::Relation::EQ))
-					upperres.insert(poly);
+				if(isSatWithOffset(cad, currVar, upper, samples, poly, carl::Relation::EQ)) {
+					insert_factorized(upperres, poly);
+				}
 			}
 		}
-		SMTRAT_LOG_INFO("smtrat.cdcad", "Reasons: " << lowerres << " and " << upperres << " from " << fulldim);
+		SMTRAT_LOG_TRACE("smtrat.cdcad", "Reasons: " << lowerres << " and " << upperres << " from " << fulldim);
 
 		// determine bound types
 		// todo is that correct?

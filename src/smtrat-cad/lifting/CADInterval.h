@@ -263,6 +263,8 @@ namespace cad {
 
 		void addReasons(const std::vector<ConstraintT>& c) {
 			reasons.insert(reasons.end(), c.begin(), c.end());
+			std::sort(reasons.begin(), reasons.end());
+			reasons.erase(std::unique(reasons.begin(), reasons.end()), reasons.end());
 		}
 
         /** adds cons to constraints */
