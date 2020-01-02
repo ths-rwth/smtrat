@@ -15,7 +15,7 @@
 
 #if defined LOGGING
 	#define SMTRAT_LOGGING_ENABLED
-	#include <carl/core/carlLogging.h>
+	#include <carl-logging/logging.h>
 	#define SMTRAT_LOG_FATAL(channel, msg) __CARL_LOG_FATAL(channel, msg)
 	#define SMTRAT_LOG_ERROR(channel, msg) __CARL_LOG_ERROR(channel, msg)
 	#define SMTRAT_LOG_WARN(channel, msg) __CARL_LOG_WARN(channel, msg)

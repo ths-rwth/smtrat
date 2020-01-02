@@ -1,6 +1,7 @@
 #pragma once
 
 #cmakedefine CLI_ENABLE_ANALYZER
+#cmakedefine CLI_ENABLE_CNF_CONVERSION
 #cmakedefine CLI_ENABLE_DIMACS_PARSER
 #cmakedefine CLI_ENABLE_FORMULAPARSER
 #cmakedefine CLI_ENABLE_OPB_PARSER

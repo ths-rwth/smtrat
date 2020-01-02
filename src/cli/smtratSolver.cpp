@@ -37,7 +37,9 @@
 #include "parser/ParserSettings.h"
 #include <carl-io/SMTLIBStream.h>
 #include <carl/util/TimingCollector.h>
+#include <carl-logging/logging-internals.h>
 #include "tools/config.h"
+#include "tools/cnf_conversion.h"
 #include "tools/execute_smtlib.h"
 #include "tools/Executor.h"
 #include "tools/formula_analyzer.h"
@@ -126,6 +128,10 @@ int main( int argc, char* argv[] )
 		exitCode = smtrat::preprocess_file(smtrat::settings_parser().input_file, smtrat::settings_solver().preprocess_output_file);
 	} else if (smtrat::settings_analyzer().enabled) {
 		exitCode = smtrat::analyze_file(smtrat::settings_parser().input_file);
+	} else if (smtrat::settings_solver().convert_to_cnf_dimacs) {
+		exitCode = smtrat::convert_to_cnf_dimacs(smtrat::settings_parser().input_file, smtrat::settings_solver().preprocess_output_file);
+	} else if (smtrat::settings_solver().convert_to_cnf_smtlib) {
+		exitCode = smtrat::convert_to_cnf_smtlib(smtrat::settings_parser().input_file, smtrat::settings_solver().preprocess_output_file);
 	} else {
 		SMTRAT_LOG_INFO("smtrat", "Constructing strategy.");
 

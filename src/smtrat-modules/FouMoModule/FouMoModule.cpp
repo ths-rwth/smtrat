@@ -8,6 +8,8 @@
 
 #include "FouMoModule.h"
 
+#include <carl-model/Assignment.h>
+
 //#define DEBUG_FouMoModule
 
 namespace smtrat

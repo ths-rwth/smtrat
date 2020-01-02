@@ -56,7 +56,7 @@ public:
 		mSoftFormulas.clear();
 	}
 
-	const bool active() const {
+	bool active() const {
 		return !mSoftFormulas.empty();
 	}
 

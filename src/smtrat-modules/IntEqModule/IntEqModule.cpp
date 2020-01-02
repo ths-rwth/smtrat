@@ -8,6 +8,8 @@
 
 #include "IntEqModule.h"
 
+#include <carl-model/Assignment.h>
+
 //#define DEBUG_IntEqModule
 
 namespace smtrat

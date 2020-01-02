@@ -27,7 +27,8 @@ struct SolverSettings {
 	bool print_all_models;
 	bool preprocess;
 	std::string preprocess_output_file;
-	bool preprocess_enable_cnf;
+	bool convert_to_cnf_dimacs;
+	bool convert_to_cnf_smtlib;
 	bool print_timings;
 };
 

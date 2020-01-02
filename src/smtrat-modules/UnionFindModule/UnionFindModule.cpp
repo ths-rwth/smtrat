@@ -11,6 +11,7 @@
 #include "UnionFind.h"
 
 #include <carl/formula/uninterpreted/UFInstanceManager.h>
+#include <carl-model/uninterpreted/SortValueManager.h>
 
 namespace smtrat
 {

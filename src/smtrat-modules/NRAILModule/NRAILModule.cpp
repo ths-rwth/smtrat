@@ -353,7 +353,7 @@ namespace smtrat
         //get polynomial(lhs) of constraint
         Poly poly = constraint.lhs();
         //counter of op[]
-        int indexCount = 0;
+        std::size_t indexCount = 0;
 
         //size of array
         std::vector<Poly> op(poly.getTerms().size());
@@ -677,11 +677,12 @@ namespace smtrat
         int loopCounter = 0;
         std::vector<AxiomFactory::AxiomType> axiomType(std::begin(Settings::axiomType), std::end(Settings::axiomType));
 
-        int axiom_type_size = axiomType.size() - 1;
+		assert(axiomType.size() > 0);
+        std::size_t axiom_type_size = axiomType.size() - 1;
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "axiom_type_size: " << axiom_type_size << std::endl; }
 
-        int axiomCounter = 0;
+        std::size_t axiomCounter = 0;
 
         bool isUnsatFormulasNotEmpty = true;
 

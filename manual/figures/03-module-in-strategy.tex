@@ -1,0 +1,22 @@
+\tikzset{component/.style={draw, text width=2.5cm, align=center, minimum height=0.5cm}}
+\tikzset{module/.style={draw, text width=0.75cm, align=center, minimum height=0.5cm}}
+
+\begin{tikzpicture}[line width=1pt]
+
+	\node (input) at (-3,0) {};
+	\node[module] (output1) at (5,1) {B-1};
+	\node[module] (output2) at (5,0) {B-2};
+	\node[module] (output3) at (5,-1) {B-3};
+	\node[component, rotate=90] (received) at (-2,0) {received};
+
+	\node[component, text width=2cm, rotate=90] (passed) at (1.25,0) {passed};
+
+	\node[component, text height=3cm, rotate=90] (module-box) at (0,0) {};
+	\node[align=left, anchor=north west] (module) at ($(module-box.north east)$) {Module};
+
+
+	\draw[->] (input) -- (received);
+	\draw[->] (passed) -- node[sloped, above, pos=0.6] {condition-1} (output1.west);
+	\draw[->] (passed) -- node[sloped, above, pos=0.6] {condition-2} (output2.west);
+	\draw[->] (passed) -- node[sloped, above, pos=0.6] {condition-3} (output3.west);
+\end{tikzpicture}

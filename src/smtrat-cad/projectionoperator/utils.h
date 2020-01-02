@@ -1,6 +1,7 @@
 #pragma once
 
 #include <carl/core/polynomialfunctions/Factorization.h>
+#include <carl/core/polynomialfunctions/PrimitivePart.h>
 #include <carl/core/polynomialfunctions/Resultant.h>
 #include <carl/core/polynomialfunctions/SquareFreePart.h>
 #include <carl/core/polynomialfunctions/to_univariate_polynomial.h>
@@ -29,7 +30,7 @@ bool doesNotVanish(const Poly& p) {
  */
 template<typename Poly>
 Poly normalize(const Poly& p) {
-	auto res = carl::squareFreePart(p).pseudoPrimpart().normalized();
+	auto res = carl::pseudo_primitive_part(carl::squareFreePart(p)).normalized();
 	SMTRAT_LOG_TRACE("smtrat.cad.projection", "Normalizing " << p << " to " << res);
 	return res;
 }

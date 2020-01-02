@@ -16,7 +16,7 @@ ExternalProject_Add(
 	CArL-EP
 	DOWNLOAD_COMMAND ""
 	CONFIGURE_COMMAND ""
-	BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} resources carl carl-covering carl-cad carl-io carl-model carl-settings
+	BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} resources carl carl-covering carl-cad carl-extpolys carl-io carl-logging carl-model carl-settings
 	INSTALL_COMMAND ${CMAKE_MAKE_PROGRAM} install/fast
 )
 
