@@ -23,7 +23,7 @@ def response_z3(res):
 
 filename = sys.argv[1]
 solvers = {
-	"smtrat": (["./smtrat"], response_smtrat),
+	"smtrat": (["./smtrat-shared"], response_smtrat),
 	"z3": (["z3"], response_z3),
 }
 
