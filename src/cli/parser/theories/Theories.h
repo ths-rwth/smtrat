@@ -13,6 +13,7 @@
 #ifdef PARSER_ENABLE_UNINTERPRETED
 #include "Uninterpreted.h"
 #endif
+#include "BooleanEncoding.h"
 
 #include "../ParserSettings.h"
 
@@ -27,16 +28,17 @@ namespace parser {
 struct Theories {
 	
 	typedef boost::mpl::vector<
-		CoreTheory*,
+		CoreTheory*
 #ifdef PARSER_ENABLE_ARITHMETIC
-		ArithmeticTheory*,
+		, ArithmeticTheory*
 #endif
 #ifdef PARSER_ENABLE_BITVECTOR
-		BitvectorTheory*,
+		, BitvectorTheory*
 #endif
 #ifdef PARSER_ENABLE_UNINTERPRETED
-		UninterpretedTheory*
+		, UninterpretedTheory*
 #endif	
+		, BooleanEncodingTheory*
 		>::type Modules;
 		
 		
@@ -54,6 +56,7 @@ struct Theories {
 #ifdef PARSER_ENABLE_UNINTERPRETED
 		theories.emplace("Uninterpreted", new UninterpretedTheory(state));
 #endif	
+		theories.emplace("BooleanEncoding", new BooleanEncodingTheory(state));
 	}
 	~Theories() {
 		auto it = theories.begin();
