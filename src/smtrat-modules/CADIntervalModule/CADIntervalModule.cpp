@@ -11,6 +11,8 @@
 
 #include <smtrat-cad/variableordering/TriangularOrdering.h>
 
+#include <smtrat-cad/utils/Preprocessor.h>
+
 namespace smtrat
 {
 	template<class Settings>
@@ -65,11 +67,22 @@ namespace smtrat
 	Answer CADIntervalModule<Settings>::checkCore()
 	{
 		// add vars in right order, clear constraints
-			mCAD.reset(cad::variable_ordering::triangular_ordering(mPolynomials));
+		mCAD.reset(cad::variable_ordering::triangular_ordering(mPolynomials));
+		cad::Preprocessor pp(mCAD.getVariables());
 
-		// add constraints tocad
-		for (const auto& f: rReceivedFormula())
-			mCAD.addConstraint(f.formula().constraint());
+		for (const auto& f: rReceivedFormula()) {
+			pp.addConstraint(f.formula().constraint());
+		}
+		if (!pp.preprocess()) {
+			SMTRAT_LOG_DEBUG("smtrat.cad", "Found unsat in preprocessor");
+			mInfeasibleSubsets.emplace_back(pp.getConflict());
+			return Answer::UNSAT;
+		}
+		
+		auto update = pp.result(std::map<ConstraintT, std::size_t>{});
+		for (const auto& c: update.toAdd) {
+			mCAD.addConstraint(c);
+		}
 
 		// run covering check
 		auto answer = mCAD.check(mLastAssignment);
@@ -80,6 +93,7 @@ namespace smtrat
 			for (const auto& a: mLastAssignment) {
 				mLastModel.assign(a.first, a.second);
 			}
+			mLastModel.update(pp.model(), false);
 		}
 		else if(answer == Answer::UNSAT) {
 			FormulaSetT cover;
@@ -89,6 +103,9 @@ namespace smtrat
 			else {
 				SMTRAT_LOG_INFO("smtrat.cdcad", "MIS: " << mCAD.getLastUnsatCover());
 				mInfeasibleSubsets.push_back(mCAD.getLastUnsatCover());
+			}
+			for (auto& mis : mInfeasibleSubsets) {
+				pp.postprocessConflict(mis);
 			}
 		}
 
