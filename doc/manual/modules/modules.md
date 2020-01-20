@@ -1,4 +1,6 @@
 Modules {#modules}
 =====
 
-@subpage cad
+
+@subpage FPPModule
+
