@@ -160,7 +160,7 @@ endif()
 add_subdirectory(manual EXCLUDE_FROM_ALL)
 
 if (TARGET Doxygen::doxygen)
-	add_subdirectory(doxygen-conf EXCLUDE_FROM_ALL)
+	add_subdirectory(doc EXCLUDE_FROM_ALL)
 endif()
 
 # # # # # # # # # # # # # # # # # # # # # #

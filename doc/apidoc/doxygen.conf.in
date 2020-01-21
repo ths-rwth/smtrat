@@ -36,7 +36,7 @@ EXTRACT_STATIC         = YES
 EXTRACT_LOCAL_CLASSES  = YES
 EXTRACT_LOCAL_METHODS  = YES
 EXTRACT_ANON_NSPACES   = YES
-CITE_BIB_FILES         = @CMAKE_SOURCE_DIR@/doc/literature.bib
+CITE_BIB_FILES         = @CMAKE_SOURCE_DIR@/doc/literature.bib @CMAKE_SOURCE_DIR@/doc/literature-theses.bib
 
 #########################
 ##### Warnings and progress

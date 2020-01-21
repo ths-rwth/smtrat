@@ -1,4 +1,4 @@
-Getting Started {#getting_started}
+Installation 213 {#installation}
 =======
 
 Download
@@ -35,7 +35,3 @@ We have tested carl successfully on the following platforms:
 Advanced building topics
 --------------------------------------------
 - @subpage build_cmake
-
-Troubleshooting
---------------------------------------------
-If you're experiencing problems, take a look at our @subpage troubleshooting section. If that doesn't help you, feel free to contact us.

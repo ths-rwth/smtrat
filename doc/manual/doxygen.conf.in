@@ -31,7 +31,7 @@ EXTRACT_LOCAL_CLASSES  = NO
 SHOW_USED_FILES        = NO
 SHOW_FILES             = NO
 SHOW_NAMESPACES        = NO
-CITE_BIB_FILES         = @CMAKE_SOURCE_DIR@/doc/literature.bib
+CITE_BIB_FILES         = @CMAKE_SOURCE_DIR@/doc/literature.bib @CMAKE_SOURCE_DIR@/doc/literature-theses.bib
 
 #########################
 ##### Warnings and progress
@@ -72,7 +72,7 @@ LATEX_EXTRA_FILES      = @PROJECT_SOURCE_DIR@/doc/manual/doxygen.sty
 PDF_HYPERLINKS         = YES
 LATEX_BATCHMODE        = NO
 LATEX_HIDE_INDICES     = NO
-LATEX_BIB_STYLE        = plain
+LATEX_BIB_STYLE        = plainnat
 
 #########################
 ##### Other outputs
