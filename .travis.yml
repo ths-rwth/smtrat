@@ -107,13 +107,8 @@ jobs:
           packages: [*packages_base, g++-9]
     - stage: dependencies
       os: osx
-      osx_image: xcode10.2
+      osx_image: xcode11.3
       script: TASK=dependencies source .ci/build.sh
-      addons:
-        homebrew:
-          packages:
-          - llvm
-          update: true
     - stage: build
       os: linux
       compiler: clang++-5.0
@@ -202,13 +197,8 @@ jobs:
           packages: [*packages_base, g++-9]
     - stage: build
       os: osx
-      osx_image: xcode10.2
+      osx_image: xcode11.3
       script: source .ci/build.sh
-      addons:
-        homebrew:
-          packages:
-          - llvm
-          update: true
     - stage: build
       os: linux
       compiler: g++-9
@@ -265,7 +255,7 @@ jobs:
       env: CC=gcc-9 CXX=g++-9
     - stage: build
       os: osx
-      osx_image: xcode10.2
+      osx_image: xcode11.3
     - stage: build
       os: linux
       env: CC=clang-9 CXX=clang++-9 TASK=tidy

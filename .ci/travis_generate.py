@@ -32,8 +32,8 @@ jobs = [
 	#job("2-macos", ["build", "xcode10", "build.sh", "mayfail"]),
 	#job("2-macos", ["dependencies", "xcode10.1", "build.sh"]),
 	#job("2-macos", ["build", "xcode10.1", "build.sh", "mayfail"]),
-	job("2-macos", ["dependencies", "xcode10.2", "build.sh"]),
-	job("2-macos", ["build", "xcode10.2", "build.sh", "mayfail"]),
+	job("2-macos", ["dependencies", "xcode11.3", "build.sh"]),
+	job("2-macos", ["build", "xcode11.3", "build.sh", "mayfail"]),
 	job("3-docs", ["build", "linux", "g++-9", "task.documentation", "j1", "build.sh"]),
 	job("4-tidy", ["build", "linux", "clang-9.0", "task.tidy", "build.sh", "mayfail"]),
 ]
