@@ -63,7 +63,7 @@ if(LATEX_FOUND)
 	)
 else(LATEX_FOUND)
 	message(STATUS "Did not find pdflatex, no pdf manual can be built.")
-	set(DOXYGEN_CREATE_PDF NO)
+	set(DOC_CREATE_PDF NO)
 endif(LATEX_FOUND)
 
 # umbrella target for the whole documentation
