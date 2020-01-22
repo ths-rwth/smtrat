@@ -1,5 +1,5 @@
 language: generic
-dist: xenial
+dist: bionic
 
 cache:
   apt: true
@@ -10,14 +10,14 @@ cache:
 
 addons:
   apt:
-    sources: &sources_base
-      - ubuntu-toolchain-r-test
+    sources_base: &sources_base
+      sourceline: 'ppa:ubuntu-toolchain-r/test'
     packages: &packages_base
       - texinfo
       - time
       - uuid-dev
 
-matrix:
+jobs:
   include:
     - stage: dependencies
       os: linux
@@ -28,7 +28,7 @@ matrix:
         apt:
           sources:
           - *sources_base
-          packages: [*packages_base, clang-5.0, libstdc++-8-dev]
+          packages: [*packages_base, clang-5.0]
     - stage: dependencies
       os: linux
       compiler: clang++-6.0
@@ -38,8 +38,7 @@ matrix:
         apt:
           sources:
           - *sources_base
-          - llvm-toolchain-xenial-6.0
-          packages: [*packages_base, clang-6.0, libstdc++-8-dev]
+          packages: [*packages_base, clang-6.0]
     - stage: dependencies
       os: linux
       compiler: clang++-7.0
@@ -49,7 +48,8 @@ matrix:
         apt:
           sources:
           - *sources_base
-          - llvm-toolchain-xenial-7
+          - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic main'
+            key_url: https://apt.llvm.org/llvm-snapshot.gpg.key
           packages: [*packages_base, clang-7, libstdc++-8-dev]
     - stage: dependencies
       os: linux
@@ -60,7 +60,8 @@ matrix:
         apt:
           sources:
           - *sources_base
-          - llvm-toolchain-xenial-8
+          - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-8 main'
+            key_url: https://apt.llvm.org/llvm-snapshot.gpg.key
           packages: [*packages_base, clang-8, libstdc++-8-dev]
     - stage: dependencies
       os: linux
@@ -71,7 +72,7 @@ matrix:
         apt:
           sources:
           - *sources_base
-          - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial main'
+          - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main'
             key_url: https://apt.llvm.org/llvm-snapshot.gpg.key
           packages: [*packages_base, clang-9, libstdc++-8-dev]
     - stage: dependencies
@@ -94,6 +95,16 @@ matrix:
           sources:
           - *sources_base
           packages: [*packages_base, g++-8]
+    - stage: dependencies
+      os: linux
+      compiler: g++-9
+      env: CC=gcc-9 CXX=g++-9
+      script: TASK=dependencies MAKE_PARALLEL=-j1 source .ci/build.sh
+      addons:
+        apt:
+          sources:
+          - *sources_base
+          packages: [*packages_base, g++-9]
     - stage: dependencies
       os: osx
       osx_image: xcode10.2
@@ -112,7 +123,7 @@ matrix:
         apt:
           sources:
           - *sources_base
-          packages: [*packages_base, clang-5.0, libstdc++-8-dev]
+          packages: [*packages_base, clang-5.0]
     - stage: build
       os: linux
       compiler: clang++-6.0
@@ -122,8 +133,7 @@ matrix:
         apt:
           sources:
           - *sources_base
-          - llvm-toolchain-xenial-6.0
-          packages: [*packages_base, clang-6.0, libstdc++-8-dev]
+          packages: [*packages_base, clang-6.0]
     - stage: build
       os: linux
       compiler: clang++-7.0
@@ -133,7 +143,8 @@ matrix:
         apt:
           sources:
           - *sources_base
-          - llvm-toolchain-xenial-7
+          - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic main'
+            key_url: https://apt.llvm.org/llvm-snapshot.gpg.key
           packages: [*packages_base, clang-7, libstdc++-8-dev]
     - stage: build
       os: linux
@@ -144,7 +155,8 @@ matrix:
         apt:
           sources:
           - *sources_base
-          - llvm-toolchain-xenial-8
+          - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-8 main'
+            key_url: https://apt.llvm.org/llvm-snapshot.gpg.key
           packages: [*packages_base, clang-8, libstdc++-8-dev]
     - stage: build
       os: linux
@@ -155,7 +167,7 @@ matrix:
         apt:
           sources:
           - *sources_base
-          - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial main'
+          - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main'
             key_url: https://apt.llvm.org/llvm-snapshot.gpg.key
           packages: [*packages_base, clang-9, libstdc++-8-dev]
     - stage: build
@@ -179,6 +191,16 @@ matrix:
           - *sources_base
           packages: [*packages_base, g++-8]
     - stage: build
+      os: linux
+      compiler: g++-9
+      env: CC=gcc-9 CXX=g++-9
+      script: MAKE_PARALLEL=-j1 source .ci/build.sh
+      addons:
+        apt:
+          sources:
+          - *sources_base
+          packages: [*packages_base, g++-9]
+    - stage: build
       os: osx
       osx_image: xcode10.2
       script: source .ci/build.sh
@@ -189,15 +211,15 @@ matrix:
           update: true
     - stage: build
       os: linux
-      compiler: g++-8
-      env: CC=gcc-8 CXX=g++-8 TASK=documentation
+      compiler: g++-9
+      env: CC=gcc-9 CXX=g++-9 TASK=documentation
       if: branch = master
       script: MAKE_PARALLEL=-j1 source .ci/build.sh
       addons:
         apt:
           sources:
           - *sources_base
-          packages: [*packages_base, g++-8, doxygen, ghostscript, latex-xcolor, lmodern, pgf, texinfo, texlive, texlive-font-utils, texlive-latex-extra, python3-pip, python3-setuptools]
+          packages: [*packages_base, g++-9, ghostscript, graphviz, libclang-7-dev, lmodern, texinfo, texlive, texlive-font-utils, texlive-latex-extra, texlive-plain-generic, python3-pip, python3-setuptools]
     - stage: build
       os: linux
       compiler: clang++-9.0
@@ -207,7 +229,7 @@ matrix:
         apt:
           sources:
           - *sources_base
-          - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial main'
+          - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main'
             key_url: https://apt.llvm.org/llvm-snapshot.gpg.key
           packages: [*packages_base, clang-9, libstdc++-8-dev]
   allow_failures:
@@ -223,6 +245,9 @@ matrix:
     - stage: dependencies
       os: linux
       env: CC=gcc-8 CXX=g++-8
+    - stage: dependencies
+      os: linux
+      env: CC=gcc-9 CXX=g++-9
     - stage: build
       os: linux
       env: CC=clang-8 CXX=clang++-8
@@ -235,6 +260,9 @@ matrix:
     - stage: build
       os: linux
       env: CC=gcc-8 CXX=g++-8
+    - stage: build
+      os: linux
+      env: CC=gcc-9 CXX=g++-9
     - stage: build
       os: osx
       osx_image: xcode10.2
@@ -249,13 +277,6 @@ notifications:
   email:
     on_failure: always
     on_success: change
-  irc:
-    channels:
-      - "chat.freenode.net#carl"
-    template:
-      - "Commit to %{repository_name}/%{branch} from %{author}"
-      - "%{commit_message}"
-      - "Build: %{message} %{duration} %{build_url}"
   slack:
     rooms:
       secure: "mL8Ku2omjsseTL5P2R2P3ddCedg8u9qSTKRjKNBhOYRJvpKNrIWr9fouP1tGsah9GBF+HL/JFWlA2sckCL9pURx6TdICHSgik1V/48QhpPKrV+ZkCmKenw3+hdXQY3YP36Xpj/SCCSMyRovA6kacWL3k0gRGJ++dxZYrYF7oVd8ltwxNC6+1o9HCmJnueCME5GBCKCgtOhYOr7izkjQ9wtFJvCmxHcI9EZxMQjWXmcHfItaWD1YFhR0/7AbsxJ9xtYZD0OMJrOgRBau671wV603a0EctIPcv0uKzjSsvB3yLndGOcMRsA8x/OPrFoOHbpLZ9d4O9gY3lvW5oueV+KTbbvHMSxJtvB9q3F0ZJSDHoG7cn1E2xb4gOHRdu4FhwqYy9abUM0DVUI/f7GaL+DMgzKeTduLB6h4GhtGR7fcWaBpCJYN1k8o33Vf/OPwaoPVCeiDRQIFqrqjDRcBc7ONe096WAf61albpMW6iCr5cBHy/j9XqEAGHu6sYftogWm/YVRqSF9+vnZy41cfQU+SYlFtWusUepqX1X/Kei+MCwESuddBnWj+oX8N8nreI8ql2IHG79IQVeEZZKMowxmo2IMsNnvkMyRTQsOmFY2u4NMRGga71QRCSbNvl01KxQ2ilyQ8Gu9Kjbs1QJ76jhOutChCzwOBAgc5aREdNCaV0="
