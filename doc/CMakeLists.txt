@@ -19,7 +19,8 @@ set(OUTPUT_DIR ${PROJECT_BINARY_DIR}/doc)
 
 # Collect all sources for proper dependencies
 set(CODE_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
-file(GLOB_RECURSE CODE_SOURCES "${CODE_SOURCE_DIR}/**/*.cpp" "${CODE_SOURCE_DIR}/**/*.h" "${CODE_SOURCE_DIR}/**/*.tpp" "${CODE_SOURCE_DIR}/**/*.md")
+file(GLOB_RECURSE COMMON_SOURCES "${CODE_SOURCE_DIR}/**/*.md")
+file(GLOB_RECURSE CODE_SOURCES "${CODE_SOURCE_DIR}/**/*.cpp" "${CODE_SOURCE_DIR}/**/*.h" "${CODE_SOURCE_DIR}/**/*.tpp")
 
 # Configure config for HTML documentation
 configure_file(apidoc/doxygen.conf.in ${OUTPUT_DIR}/config-apidoc/doxygen.conf)
@@ -28,7 +29,7 @@ configure_file(apidoc/doxygen.conf.in ${OUTPUT_DIR}/config-apidoc/doxygen.conf)
 add_custom_command(
 	OUTPUT ${OUTPUT_DIR}/html/index.html
 	COMMAND Doxygen::doxygen ${OUTPUT_DIR}/config-apidoc/doxygen.conf
-	DEPENDS ${OUTPUT_DIR}/config-apidoc/doxygen.conf ${CODE_SOURCES}
+	DEPENDS ${OUTPUT_DIR}/config-apidoc/doxygen.conf ${CODE_SOURCES} ${COMMON_SOURCES}
 )
 # Wrapper target to have proper dependencies
 add_custom_target(doc-html
@@ -40,8 +41,7 @@ find_package(LATEX COMPONENTS PDFLATEX BIBTEX)
 if(LATEX_FOUND)
 	add_subdirectory(manual)
 	
-	file(GLOB_RECURSE COMMON_SOURCES "${PROJECT_SOURCE_DIR}/doc/*")
-	file(GLOB_RECURSE MANUAL_SOURCES "${PROJECT_SOURCE_DIR}/doc/manual/**")
+	file(GLOB_RECURSE MANUAL_SOURCES "${PROJECT_SOURCE_DIR}/doc/*" "${PROJECT_SOURCE_DIR}/doc/manual/**")
 	# Configure config for Manual
 	configure_file(manual/doxygen.conf.in ${OUTPUT_DIR}/config-manual/doxygen.conf)
 	# Build latex sources
