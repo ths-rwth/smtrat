@@ -1,8 +1,8 @@
-Installation 213 {#installation}
-=======
+# Installation {#installation}
 
-Download
---------
+To install SMT-RAT, follow the steps below.
+
+## Download
 Here are archived versions of SMT-RAT for download:
 - [latest](https://github.com/smtrat/smtrat/releases)
 
@@ -10,28 +10,54 @@ We mirror our master branch to github.com. If you want to use the newest bleedin
 Although we try to keep the master branch stable, there is a chance that the current revision is broken.
 You can check [here](https://travis-ci.org/smtrat/smtrat/builds) if the current revision compiles.
 
-Quick installation guide
---------------------------------------------
-- Make sure all @subpage dependencies "dependencies" are available.
-- Download the latest release or clone the git repository from https://github.com/smtrat/smtrat.git
-- Prepare the build.
+## Dependencies
+
+To build and use SMT-RAT, you need the following other software:
+
+- `git` to checkout the git repository.
+- `g++` or `clang` to compile.
+- `cmake` to generate the make files.
+- `boost` for several additional libraries (automatically built locally if necessary).
+- `gmp` for calculations with large numbers (automatically built locally if necessary).
+- `carl` from http://smtrat.github.io/carl/ (automatically built locally if necessary).
+
+Optional dependencies
+- `ccmake` to set cmake flags.
+- `doxygen` to build the documentation.
+- `ginac` to enable the usage of polynomial factorization.
+
+When installing the dependencies, make sure that you meet the following version requirements:
+- `g++` \f$>=\f$ 7
+- `clang` \f$>=\f$ 5
+
+## Configuration
+
+SMT-RAT is configured with cmake. To prepare the build and perform the configuration run the following:
+
 @code{.sh}
 $ mkdir build && cd build && cmake ..
+$ ccmake ..
 @endcode
-- Build SMT-RAT (with tests and documentation).
+
+`ccmake` will show the cmake variables. Important variables you may want to change include the following:
+
+
+## Build
+
+To build SMT-RAT (with tests and documentation), simply run
+
 @code{.sh}
 $ make
 @endcode
- 
-Supported platforms
---------------------------------------------
-We have tested carl successfully on the following platforms:
 
-- @if Gereon @endif     Arch Linux (Kernel 3.19.2) with Clang 3.6.0 and GCC 4.9.2
-- @if Florian @endif    Ubuntu 12.04 LTS with GCC 4.8.1
-- @if Florian @endif    MacOSX 10.9 with Clang 3.3
-- @if Stefan @endif		MacOSX 10.9.1 with Clang 3.3
+Relevant targets you may want to build individually include:
 
-Advanced building topics
---------------------------------------------
-- @subpage build_cmake
+- `doc-html`: Builds the doxygen documentation as HTML.
+- `doc-pdf`: Builds the doxygen documentation as PDF.
+- `doc`: Builds both `doc-html` and `doc-pdf`.
+- `smtrat-shared`: Builds the (dynamically linked) executable SMT solver
+- `smtrat-static`: Builds the (dynamically linked) executable SMT solver
+- `smtrat`: Builds both `smtrat-shared` and `smtrat-static`.
+- `benchmax`: Builds the benchmarking tool.
+- `delta`: Builds the delta debugger.
+
