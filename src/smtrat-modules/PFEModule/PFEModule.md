@@ -7,25 +7,20 @@ It computes a factor \f$q\f$ such that \f$p = q \cdot r\f$ and evaluates \f$q\f$
 If the resulting interval \f$q(b)\f$ if sign-invariant, the constraint can be simplified or additional constraints can be added.
 We consider an interval to be sign-invariant, if it is positive, semi-positive, zero, semi-negative or negative.
 
-### Simplifications for \f$q \cdot r \sim 0\f$
-\f$\sim\f$ & \f$q(b) > 0\f$ & \f$q(b) \geq 0\f$ & \f$q(b) = 0\f$ & \f$q(b) < 0\f$ & \f$q(b) \leq 0\f$ \\
-\hline\hline
-\f$=\f$ & \multirow{6}{*}{\f$p := r\f$} & \f$f := q=0 \vee r=0\f$ & \multirow{6}{*}{\f$p := 0\f$} & \multirow{2}{*}{\f$p := r\f$} & \f$f := q=0 \vee r=0\f$ \\
-\cline{1-1}\cline{3-3}\cline{6-6}
-\f$\neq\f$ & & \f$f := q>0 \wedge r \neq 0\f$ & & & \f$f := q<0 \wedge r \neq 0\f$ \\
-\cline{1-1}\cline{3-3}\cline{5-6}
-\f$\geq\f$ & & \f$f := q=0 \vee r \geq 0\f$ & & \f$c := r \leq 0\f$ & \f$f := q=0 \vee r \leq 0\f$ \\
-\cline{1-1}\cline{3-3}\cline{5-6}
-\f$>\f$ & & \f$f := q>0 \wedge r>0\f$ & & \f$c := r<0\f$ & \f$f := q<0 \wedge r<0\f$ \\
-\cline{1-1}\cline{3-3}\cline{5-6}
-\f$\leq\f$ & & \f$f := q=0 \vee r \leq 0\f$ & & \f$c := r \geq 0\f$ & \f$f := q=0 \vee r \geq 0\f$ \\
-\cline{1-1}\cline{3-3}\cline{5-6}
-\f$<\f$ & & \f$f := q>0 \wedge r<0\f$ & & \f$c := r>0\f$ &  \f$f := q<0 \wedge r>0\f$ \\
-\hline
-\end{tabular}
-\caption{Notation: \f$p := p'\f$ replaces the polynomial, \f$c := p' \sim 0\f$ replaces the whole constraint by a new one and \f$f := f'\f$ replaces the constraint by a new formula.}
-\end{center}
-\end{table}
+### Simplifications
+
+The following simplifications are done for for \f$q \cdot r \sim 0\f$:
+
+| \f$\sim\f$	| \f$q(b) > 0\f$	| \f$q(b) \geq 0\f$					| \f$q(b) = 0\f$	| \f$q(b) < 0\f$		| \f$q(b) \leq 0\f$					|
+| ------------- | ----------------- | --------------------------------- | ----------------- | --------------------- | --------------------------------- |
+| \f$=\f$		| \f$p := r\f$		| \f$f := q=0 \vee r=0\f$			| \f$p := 0\f$		| \f$p := r\f$			| \f$f := q=0 \vee r=0\f$			|
+| \f$\neq\f$	| \f$p := r\f$		| \f$f := q>0 \wedge r \neq 0\f$	| \f$p := 0\f$		| \f$p := r\f$			| \f$f := q<0 \wedge r \neq 0\f$	|
+| \f$\geq\f$	| \f$p := r\f$		| \f$f := q=0 \vee r \geq 0\f$		| \f$p := 0\f$		| \f$c := r \leq 0\f$	| \f$f := q=0 \vee r \leq 0\f$		|
+| \f$>\f$		| \f$p := r\f$		| \f$f := q>0 \wedge r>0\f$ 		| \f$p := 0\f$		| \f$c := r<0\f$		| \f$f := q<0 \wedge r<0\f$			|
+| \f$\leq\f$	| \f$p := r\f$		| \f$f := q=0 \vee r \leq 0\f$		| \f$p := 0\f$		| \f$c := r \geq 0\f$	| \f$f := q=0 \vee r \geq 0\f$		|
+| \f$<\f$		| \f$p := r\f$		| \f$f := q>0 \wedge r<0\f$			| \f$p := 0\f$		| \f$c := r>0\f$		| \f$f := q<0 \wedge r>0\f$			|
+
+Notation: \f$p := p'\f$ replaces the polynomial, \f$c := p' \sim 0\f$ replaces the whole constraint by a new one and \f$f := f'\f$ replaces the constraint by a new formula.
 
 To maximize the cases where \f$q(b)\f$ actually is sign-invariant, we proceed as follows.
 We compute a factorization of \f$p\f$, that is a number of polynomials \f$p_i\f$ such that \f$p = \prod_{i=1}^k p_i\f$.
@@ -37,10 +32,12 @@ Assume that we start with a canonical factor \f$1\f$ and a sign-invariance of \f
 
 ### Combining types of sign-invariance
 
-**\f$\cdot\f$**	| **\f$>\f$**	| **\f$\geq\f$**	| **\f$=\f$**	| **\f$\leq\f$**	| **\f$<\f$**
-**\f$>\f$**		| \f$>\f$		| \f$\geq\f$		| \f$=\f$		| \f$\leq\f$		| \f$<\f$
-**\f$\geq\f$**	| \f$\geq\f$	| \f$\geq\f$		| \f$=\f$		| \f$\leq\f$		| \f$\leq\f$
-**\f$=\f$**		| \f$=\f$		| \f$=\f$			| \f$=\f$		| \f$=\f$			| \f$=\f$
-**\f$\leq\f$**	| \f$\leq\f$	| \f$\leq\f$		| \f$=\f$		| \f$\geq\f$		| \f$\geq\f$
-**\f$<\f$**		| \f$<\f$		| \f$\leq\f$		| \f$=\f$		| \f$\geq\f$		| \f$>\f$
+Combining two types of sign-invariance is done as follows:
 
+| \f$\cdot\f$	| \f$>\f$		| \f$\geq\f$		| \f$=\f$		| \f$\leq\f$		| \f$<\f$		|
+| ------------- | ------------- | ----------------- | ------------- | ----------------- | ------------- |
+| \f$>\f$		| \f$>\f$		| \f$\geq\f$		| \f$=\f$		| \f$\leq\f$		| \f$<\f$		|
+| \f$\geq\f$	| \f$\geq\f$	| \f$\geq\f$		| \f$=\f$		| \f$\leq\f$		| \f$\leq\f$	|
+| \f$=\f$		| \f$=\f$		| \f$=\f$			| \f$=\f$		| \f$=\f$			| \f$=\f$		|
+| \f$\leq\f$	| \f$\leq\f$	| \f$\leq\f$		| \f$=\f$		| \f$\geq\f$		| \f$\geq\f$	|
+| \f$<\f$		| \f$<\f$		| \f$\leq\f$		| \f$=\f$		| \f$\geq\f$		| \f$>\f$		|

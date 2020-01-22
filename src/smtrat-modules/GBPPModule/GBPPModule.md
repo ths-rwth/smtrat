@@ -1,4 +1,4 @@
-# GBPPModule
+# GBPPModule {#GBPPModule}
 
 Uses Gröbner basis computations to simplify the input formula.
 The underlying implementation of Gröbner bases is used from carl::groebner.
