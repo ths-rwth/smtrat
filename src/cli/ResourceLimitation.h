@@ -2,6 +2,8 @@
 
 #include "ExitCodes.h"
 
+#include "ResourceLimitation.h"
+
 #include <carl/util/platform.h>
 #include <carl/util/Singleton.h>
 
@@ -40,18 +42,7 @@ inline std::size_t getMemoryLimit() {
     getrlimit(RLIMIT_AS, &rl);
 	return rl.rlim_cur;
 }
-inline void signalHandler(int signal) {
-	if (signal == SIGXCPU) {
-		std::cerr << "(error \"CPU resource out\")" << std::endl;
-		std::quick_exit(SMTRAT_EXIT_TIMEOUT);
-	} else if (signal == ENOMEM) {
-		std::cerr << "(error \"Memory resource out\")" << std::endl;
-		std::quick_exit(SMTRAT_EXIT_MEMOUT);
-	} else {
-		std::cerr << "(error \"Unknown abort in resource limitation module\")" << std::endl;
-		std::quick_exit(SMTRAT_EXIT_GENERALERROR);
-	}
-}
+void signalHandler(int signal);
 inline void installSignalHandler() {
 	std::signal(SIGXCPU, signalHandler);
 	std::signal(ENOMEM, signalHandler);
@@ -71,6 +62,7 @@ private:
 	std::size_t mTimeout;
 	std::size_t mOriginalMemout;
 	std::size_t mOriginalTimeout;
+	std::function<void()> mTimeoutHandler;
 public:
 	void initialize() {
 		installSignalHandler();
@@ -102,7 +94,27 @@ public:
 			setCPULimit(usedCPU() + mTimeout);
 		}
 	}
+	void setTimeoutHandler(std::function<void()> f) {
+		mTimeoutHandler = f;
+	}
+	std::function<void()> timeoutHandler() const {
+		return mTimeoutHandler;
+	}
 };
+
+inline void signalHandler(int signal) {
+	if (signal == SIGXCPU) {
+		std::cerr << "(error \"CPU resource out\")" << std::endl;
+		smtrat::resource::Limiter::getInstance().timeoutHandler()();
+		std::quick_exit(SMTRAT_EXIT_TIMEOUT);
+	} else if (signal == ENOMEM) {
+		std::cerr << "(error \"Memory resource out\")" << std::endl;
+		std::quick_exit(SMTRAT_EXIT_MEMOUT);
+	} else {
+		std::cerr << "(error \"Unknown abort in resource limitation module\")" << std::endl;
+		std::quick_exit(SMTRAT_EXIT_GENERALERROR);
+	}
+}
 
 }
 }

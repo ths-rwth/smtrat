@@ -146,6 +146,7 @@ int main( int argc, char* argv[] )
 			exitCode = smtrat::run_opb_file(strategy, smtrat::settings_parser().input_file);
 		} else {
 			// Parse input.
+			smtrat::resource::Limiter::getInstance().setTimeoutHandler(&print_statistics);		
 			try {
 
 				auto e = smtrat::Executor<CMakeStrategySolver>(strategy);
