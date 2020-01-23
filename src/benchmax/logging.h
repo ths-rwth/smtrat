@@ -5,7 +5,8 @@
 
 #pragma once
 
-#include <carl/core/carlLogging.h>
+#include <carl-logging/carl-logging.h>
+#include <carl-logging/logging-internals.h>
 #include <carl/io/streamingOperators.h>
 
 namespace benchmax {
