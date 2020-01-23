@@ -1,0 +1,6 @@
+# ICPModule {#ICPModule}
+
+Implements a combination of interval constraint propagation equipped with a Newton-based contraction @cite Herbort1997 and LRA solving, for which we use our LRAModule. The implementation is inspired by @cite Gao2010, but additionally interacts with backends in order to exploit their efficiency on examples, where ICP fails. It thereby incorporates the possibility to invoke lightweight checks and highly benefits from the backends being optimized for small domains as, e.g. described in @cite Loup2013. This module tries to lift splitting decisions as well as lemmas encoding a nonzero contraction to a preceding SATModule. It ensures an efficient processing of these decisions, which are this way shared with other modules.
+
+### Efficiency
+It is very difficult to give a conclusive statement about the efficiency of ICP. Usually, it performs better, if the domains of all variables are bounded intervals, preferably with a small diameter. It might also benefit from a higher number of constraints, as this introduces more chances for the propagation. However, more constraints mean also more overhead.

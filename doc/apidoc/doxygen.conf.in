@@ -1,0 +1,124 @@
+#########################
+##### Project
+
+PROJECT_NAME           = @PROJECT_FULLNAME@
+PROJECT_NUMBER         = @PROJECT_VERSION@
+PROJECT_BRIEF          = @PROJECT_DESCRIPTION@
+PROJECT_LOGO           = @CMAKE_SOURCE_DIR@/doc/logo.png
+OUTPUT_DIRECTORY       = @CMAKE_BINARY_DIR@/doc/html
+CREATE_SUBDIRS         = YES
+INLINE_INHERITED_MEMB  = YES
+STRIP_FROM_PATH        = @CMAKE_SOURCE_DIR@/src
+SHORT_NAMES            = YES
+JAVADOC_AUTOBRIEF      = YES
+
+ALIASES                = "rcomplexity=\xrefitem rcomplexity \"Runtime complexity\" \"Runtime Complexity Bounds\""
+ALIASES                += "complexity=\xrefitem rcomplexity \"Runtime complexity\" \"Runtime Complexity Bounds\""
+ALIASES                += "scomplexity=\xrefitem scomplexity \"Space complexity\" \"Space Complexity Bounds\""
+ALIASES                += startcomment="\htmlonly/&#42;&#42;\endhtmlonly\latexonly$/\ast\ast$\endlatexonly"
+ALIASES                += endcomment="\htmlonly&#42;/\endhtmlonly\latexonly$\ast$/\endlatexonly"
+
+OPTIMIZE_OUTPUT_FOR_C  = YES
+MARKDOWN_SUPPORT       = YES
+BUILTIN_STL_SUPPORT    = YES
+DISTRIBUTE_GROUP_DOC   = YES
+GROUP_NESTED_COMPOUNDS = YES
+INLINE_GROUPED_CLASSES = YES
+
+#########################
+##### Build
+
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_PRIV_VIRTUAL   = YES
+EXTRACT_PACKAGE        = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_LOCAL_METHODS  = YES
+EXTRACT_ANON_NSPACES   = YES
+CITE_BIB_FILES         = @CMAKE_SOURCE_DIR@/doc/literature.bib @CMAKE_SOURCE_DIR@/doc/literature-theses.bib
+
+#########################
+##### Warnings and progress
+
+#########################
+##### Input
+
+INPUT                  = @PROJECT_SOURCE_DIR@/doc/manual @PROJECT_SOURCE_DIR@/src
+FILE_PATTERNS          = *.cpp *.h *.tpp *.dox *.py *.md
+RECURSIVE              = YES
+EXCLUDE_PATTERNS       = */tests/*
+EXCLUDE_SYMBOLS        = boost*
+EXAMPLE_PATH           = examples/
+EXAMPLE_RECURSIVE      = YES
+
+#########################
+##### Source browsing
+
+SOURCE_BROWSER         = YES
+STRIP_CODE_COMMENTS    = NO
+CLANG_ASSISTED_PARSING = YES
+CLANG_DATABASE_PATH    = @CMAKE_BINARY_DIR@/compile_commands.json
+
+#########################
+##### Alphabetical index
+
+ALPHABETICAL_INDEX     = YES
+COLS_IN_ALPHA_INDEX    = 5
+IGNORE_PREFIX          =
+
+#########################
+##### HTML output
+
+GENERATE_HTML          = YES
+HTML_OUTPUT            = @CMAKE_BINARY_DIR@/doc/html
+HTML_TIMESTAMP         = NO
+GENERATE_TREEVIEW      = YES
+
+#########################
+##### Other outputs
+
+GENERATE_LATEX         = NO
+GENERATE_RTF           = NO
+GENERATE_MAN           = NO
+GENERATE_XML           = NO
+GENERATE_DOCBOOK       = NO
+GENERATE_AUTOGEN_DEF   = NO
+GENERATE_PERLMOD       = NO
+GENERATE_TAGFILE       = 
+
+#########################
+##### Preprocessor
+
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+#INCLUDE_PATH           = .
+PREDEFINED             = _DOXYGEN DEBUG
+EXPAND_AS_DEFINED      = EASY_TYPE \
+                         EASY_DESTRUCTOR \
+                         EASY_METHOD \
+                         TRAIT_TRUE \
+                         TRAIT_FALSE \
+                         TRAIT_TYPE
+
+#########################
+##### Dot
+
+HAVE_DOT               = YES
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = YES
+GROUP_GRAPHS           = YES
+UML_LOOK               = NO
+TEMPLATE_RELATIONS     = YES
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+GRAPHICAL_HIERARCHY    = YES
+DIRECTORY_GRAPH        = YES
+DOT_PATH               = @DOT_PATH@
+DOT_GRAPH_MAX_NODES    = 50
+DOT_TRANSPARENT        = YES
+DOT_MULTI_TARGETS      = YES
+GENERATE_LEGEND        = YES

@@ -22,6 +22,8 @@ jobs = [
 	job("1-gcc", ["build", "linux", "g++-7", "j1", "build.sh", "mayfail"]),
 	job("1-gcc", ["dependencies", "linux", "g++-8", "j1", "build.sh", "mayfail"]),
 	job("1-gcc", ["build", "linux", "g++-8", "j1", "build.sh", "mayfail"]),
+	job("1-gcc", ["dependencies", "linux", "g++-9", "j1", "build.sh", "mayfail"]),
+	job("1-gcc", ["build", "linux", "g++-9", "j1", "build.sh", "mayfail"]),
 	#job("2-macos", ["dependencies", "xcode9.3", "build.sh"]),
 	#job("2-macos", ["build", "xcode9.3", "build.sh", "mayfail"]),
 	#job("2-macos", ["dependencies", "xcode9.4", "build.sh"]),
@@ -30,9 +32,9 @@ jobs = [
 	#job("2-macos", ["build", "xcode10", "build.sh", "mayfail"]),
 	#job("2-macos", ["dependencies", "xcode10.1", "build.sh"]),
 	#job("2-macos", ["build", "xcode10.1", "build.sh", "mayfail"]),
-	job("2-macos", ["dependencies", "xcode10.2", "build.sh"]),
-	job("2-macos", ["build", "xcode10.2", "build.sh", "mayfail"]),
-	job("3-docs", ["build", "linux", "g++-8", "task.documentation", "j1", "build.sh"]),
+	job("2-macos", ["dependencies", "xcode11.3", "build.sh"]),
+	job("2-macos", ["build", "xcode11.3", "build.sh", "mayfail"]),
+	job("3-docs", ["build", "linux", "g++-9", "task.documentation", "j1", "build.sh"]),
 	job("4-tidy", ["build", "linux", "clang-9.0", "task.tidy", "build.sh", "mayfail"]),
 ]
 
