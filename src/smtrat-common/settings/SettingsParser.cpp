@@ -47,6 +47,13 @@ SettingsParser::SettingsParser() {
 			("log.filename", po::value<std::string>(&s.log_filename)->default_value("validationlog.smt2"), "store the validation information in this file")
 		;
 	}
+
+	{
+		auto& s = settings.get<settings::ModuleSettings>("module");
+		add("Module settings").add_options()
+			("module.parameter", po::value<std::vector<std::string>>(&s.parameters), "add a parameter for modules")
+		;
+	}
 }
 
 }

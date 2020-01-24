@@ -39,6 +39,24 @@ struct ValidationSettings {
 	std::string log_filename;
 };
 
+struct ModuleSettings {
+	std::vector<std::string> parameters;
+
+	template<typename T>
+	T get(const std::string& key, T default_value) const {
+		for (const auto& param : parameters) {
+			std::string p_key = param.substr(0, param.find("="));
+			if (p_key == key) {
+	            std::istringstream iss(param.substr(param.find("=")+1));
+                T value;
+                iss >> value;
+                return value;		
+			}
+		}
+        return default_value;
+	}
+};
+
 struct Settings: public carl::Singleton<Settings>, public carl::settings::Settings {
 	friend carl::Singleton<Settings>;
 private:
@@ -46,6 +64,7 @@ private:
 		get<CoreSettings>("core");
 		get<SolverSettings>("solver");
 		get<ValidationSettings>("validation");
+		get<ModuleSettings>("module");
 	}
 };
 
@@ -65,6 +84,10 @@ inline const auto& settings_solver() {
 }
 inline const auto& settings_validation() {
 	static const auto& s = settings::Settings::getInstance().get<settings::ValidationSettings>("validation");
+	return s;
+}
+inline const auto& settings_module() {
+	static const auto& s = settings::Settings::getInstance().get<settings::ModuleSettings>("module");
 	return s;
 }
 
