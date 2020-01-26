@@ -42,7 +42,6 @@ protected:
 
 		std::ifstream ifs("stderr.log");
 		results.stderr.assign((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
-
 		if (settings_local().measure_peak_memory) {
 			std::regex regexpr("Maximum resident set size \\(kbytes\\): ([0-9]+)");
 			std::smatch base_match;
@@ -51,8 +50,10 @@ protected:
 			std::ssub_match base_sub_match = base_match[1];
 			results.additional.emplace("memory", base_sub_match.str());
 		}
+		results.stderr.clear();
 	
 		addResult(tool, file, results);
+		madeProgress();
 	}
 };
 
