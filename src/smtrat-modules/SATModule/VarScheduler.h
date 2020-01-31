@@ -27,6 +27,9 @@ namespace smtrat
         std::function<Minisat::lbool(Minisat::Var)> getBoolVarValue;
         std::function<Minisat::lbool(Minisat::Lit)> getBoolLitValue;
         std::function<unsigned(const FormulaT&)> currentlySatisfiedByBackend;
+        std::function<const Minisat::Var(const FormulaT&)> abstractVariable;
+        std::function<const Minisat::Lit(const FormulaT&)> abstractLiteral;
+        std::function<bool(const FormulaT&)> isAbstractedFormula;
 
     public:
         template<typename BaseModule>
@@ -42,7 +45,10 @@ namespace smtrat
             getClause([&baseModule](Minisat::CRef cl) -> const auto& { return baseModule.getClause(cl); }),
             getBoolVarValue([&baseModule](Minisat::Var v){ return baseModule.bool_value(v); }),
             getBoolLitValue([&baseModule](Minisat::Lit l){ return baseModule.bool_value(l); }),
-            currentlySatisfiedByBackend([&baseModule](const FormulaT& f){ return baseModule.currentlySatisfiedByBackend(f); })
+            currentlySatisfiedByBackend([&baseModule](const FormulaT& f){ return baseModule.currentlySatisfiedByBackend(f); }),
+            abstractVariable([&baseModule](const FormulaT& f) { return Minisat::var(baseModule.mConstraintLiteralMap.at(f).front()); }),
+            abstractLiteral([&baseModule](const FormulaT& f) { return baseModule.mConstraintLiteralMap.at(f).front(); }),
+            isAbstractedFormula([&baseModule](const FormulaT& f) { return baseModule.mConstraintLiteralMap.count(f) > 0; })
         {}
 
         /**
