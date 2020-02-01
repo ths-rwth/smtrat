@@ -17,7 +17,7 @@ void analyze_cnf(const FormulaT& f, AnalyzerStatistics& stats) {
 	for (const auto& sub: cnf) {
 		sum_clause_size += sub.size();
 		if (sub.size() > max_clause_size) max_clause_size = sub.size();
-		if (sub.size() < min_clause_size || min_clause_size == 1) min_clause_size = sub.size();
+		if (sub.size() < min_clause_size || min_clause_size == 0) min_clause_size = sub.size();
 	}
 
 	stats.add("num_clauses", num_clauses);
