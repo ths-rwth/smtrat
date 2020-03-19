@@ -4,6 +4,7 @@ dist: bionic
 cache:
   apt: true
   directories:
+    - $HOME/.cmake/
     - $HOME/usr/
     - $HOME/carl/
     - build/resources

@@ -40,6 +40,7 @@ jobs = [
 
 
 cached = [
+	"$HOME/.cmake/",
 	"$HOME/usr/",
 	"$HOME/carl/",
 	"build/resources",
