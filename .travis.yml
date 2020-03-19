@@ -238,6 +238,9 @@ jobs:
     - stage: dependencies
       os: linux
       env: CC=gcc-9 CXX=g++-9
+    - stage: dependencies
+      os: osx
+      osx_image: xcode11.3
     - stage: build
       os: linux
       env: CC=clang-8 CXX=clang++-8
