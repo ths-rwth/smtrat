@@ -7,6 +7,7 @@
 #include <cassert>
 #include <map>
 #include <string>
+#include <sstream>
 
 namespace smtrat {
 namespace settings {
