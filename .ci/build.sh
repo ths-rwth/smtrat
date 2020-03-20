@@ -28,6 +28,7 @@ if [[ ${TASK} == "dependencies" ]]; then
 elif [[ ${TASK} == "documentation" ]]; then
 	
 	cmake -D DOCUMENTATION_CREATE_PDF=ON ../
+	make doxygen-build || return 1p
 	make doc benchmax-doc || return 1
 	make manual || return 1
 	
