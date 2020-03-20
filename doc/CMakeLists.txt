@@ -56,7 +56,7 @@ if(LATEX_FOUND)
 	add_custom_target(doc-pdf
 		#COMMAND ${PDFLATEX_COMPILER} refman.tex
 		COMMAND ${BIBTEX_COMPILER} refman || /bin/true
-		COMMAND ${PDFLATEX_COMPILER} refman.tex
+		COMMAND ${PDFLATEX_COMPILER} -interaction=batchmode refman.tex
 		COMMAND cp ${OUTPUT_DIR}/manual/refman.pdf ${OUTPUT_DIR}/doc_${PROJECT_NAME}-${PROJECT_VERSION_LIB}.pdf
 		WORKING_DIRECTORY ${OUTPUT_DIR}/manual
 		DEPENDS ${OUTPUT_DIR}/manual/refman.tex
