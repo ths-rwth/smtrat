@@ -17,25 +17,25 @@
 
 \begin{document}
 
-\input{title}
+\input{content/00-title}
 
-\input{tableofcontents}
+\input{content/01-introduction}
 
-\input{introduction}
+\input{content/02-installation}
 
-\input{installation}
+\input{content/03-generalframework}
 
-\input{generalframework}
+\input{content/04-modules}
 
-\input{constructingformulas}
+\input{content/05-strategies}
 
-\input{embedding}
+\input{content/06-using-a-strategy}
+\input{content/06a-preliminaries}
+\input{content/06b-embedding}
 
-\input{implementingamodul}
+\input{content/07-using-stand-alone}
 
-\input{composingasolver}
-
-\input{more_features}
+\input{content/08-other-tools}
 
 \bibliographystyle{plain}
 \bibliography{string,literature,./local,crossref}
