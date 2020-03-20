@@ -54,7 +54,7 @@ if(LATEX_FOUND)
 	# Build the manual
 	set(TEX_DIR ${OUTPUT_DIR}/manual)
 	add_custom_target(doc-pdf
-		COMMAND ${PDFLATEX_COMPILER} refman.tex
+		COMMAND ${PDFLATEX_COMPILER} -interaction=batchmode refman.tex
 		COMMAND ${BIBTEX_COMPILER} refman || /bin/true
 		COMMAND ${PDFLATEX_COMPILER} -interaction=batchmode refman.tex
 		COMMAND cp ${OUTPUT_DIR}/manual/refman.pdf ${OUTPUT_DIR}/doc_${PROJECT_NAME}-${PROJECT_VERSION_LIB}.pdf
