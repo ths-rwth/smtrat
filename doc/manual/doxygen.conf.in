@@ -39,8 +39,8 @@ CITE_BIB_FILES         = @CMAKE_SOURCE_DIR@/doc/literature.bib @CMAKE_SOURCE_DIR
 #########################
 ##### Input
 
-INPUT                  = @PROJECT_SOURCE_DIR@/doc/markdown
-FILE_PATTERNS          = *.cpp *.h *.tpp *.dox *.py *.md
+INPUT                  = @PROJECT_SOURCE_DIR@/doc/markdown @PROJECT_SOURCE_DIR@/src/smtrat-modules
+FILE_PATTERNS          = *.dox *.md
 RECURSIVE              = YES
 EXCLUDE_PATTERNS       = */tests/* */smtrat-modules/*Module/*Settings.h */smtrat-strategies/strategies/*
 EXCLUDE_SYMBOLS        = boost*
