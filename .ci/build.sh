@@ -46,7 +46,7 @@ elif [[ ${TASK} == "documentation" ]]; then
 	cp ../doc/doc_smtrat-*.pdf .  || return 1
 	cp ../doc/doc_smtrat-*.pdf doc_smtrat-latest.pdf  || return 1
 	cp ../doc/manual_smtrat-*.pdf . || return 1
-	cp ../doc/manual_smtrat-*.pdf doc_smtrat-latest.pdf || return 1
+	cp ../doc/manual_smtrat-*.pdf manual_smtrat-latest.pdf || return 1
 	
 	# Benchmax
 	mkdir -p benchmax/
