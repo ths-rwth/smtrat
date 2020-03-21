@@ -25,14 +25,13 @@ Where the arguments mean the following:
 - `condition`: A boolean expression that can be passed to `assert()`.
 
 Typically, logging looks like this:
-@code{.cpp}
-bool checkStuff(Object o, bool flag) {
-	SMTRAT_LOG_FUNC("smtrat", o << ", " << flag);
-	bool result = o.property(flag);
-	SMTRAT_LOG_TRACE("smtrat", "Result: " << result);
-	return result;
-}
-@endcode
+
+	bool checkStuff(Object o, bool flag) {
+		SMTRAT_LOG_FUNC("smtrat", o << ", " << flag);
+		bool result = o.property(flag);
+		SMTRAT_LOG_TRACE("smtrat", "Result: " << result);
+		return result;
+	}
 
 Logging is enabled (or disabled) by the `LOGGING` macro in CMake.
 

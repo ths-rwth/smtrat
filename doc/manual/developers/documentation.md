@@ -42,17 +42,15 @@ bool isNormal() const;
 
 ### File headers
 
-@code
-/**
- * @file <filename>
- * @ingroup <groupid1>
- * @ingroup <groupid2>
- * @author <author1>
- * @author <author2>
- * 
- * [ Short description ]
- */
-@endcode
+	/**
+	 * @file <filename>
+	 * @ingroup <groupid1>
+	 * @ingroup <groupid2>
+	 * @author <author1>
+	 * @author <author2>
+	 * 
+	 * [ Short description ]
+	 */
 
 Descriptions may be omitted when the file contains a single class, either implementation or declaration.
 
@@ -62,27 +60,23 @@ Namespaces are documented in a separate file, found at '/doc/markdown/codedocs/n
 
 ### Class headers
 
-@code
-/**
- * @ingroup <groupid>
- * [ Description ]
- * @see <reference>
- * @see <OtherClass>
- */
-@endcode
+	/**
+	 * @ingroup <groupid>
+	 * [ Description ]
+	 * @see <reference>
+	 * @see <OtherClass>
+	 */
 
 ### Method headers
 
-@code
-/**
- * [ Usage Description ]
- * @param <p1> [ Short description for first parameter ] 
- * @param <p2> [ Short description for second parameter ]
- * @return [ Short description of return value ]
- * @see <reference>
- * @see <otherMethod>
- */
-@endcode
+	/**
+	 * [ Usage Description ]
+	 * @param <p1> [ Short description for first parameter ] 
+	 * @param <p2> [ Short description for second parameter ]
+	 * @return [ Short description of return value ]
+	 * @see <reference>
+	 * @see <otherMethod>
+	 */
 
 These method headers are written directly above the method declaration. 
 Comments about the implementation are written above the or inside the implementation. 
@@ -95,22 +89,20 @@ There are some cases when documenting each method is tedious and meaningless, fo
 In this case, we use doxygen method groups.
 
 For member operators (for example `operator+=`), this works as follows:
-@code
-/// @name In-place addition operators
-/// @{
-/**
- * Add something to this polynomial and return the changed polynomial.
- * @param rhs Right hand side.
- * @return Changed polynomial.
- */
-MultivariatePolynomial& operator+=(const MultivariatePolynomial& rhs);
-MultivariatePolynomial& operator+=(const Term<Coeff>& rhs);
-MultivariatePolynomial& operator+=(const Monomial& rhs);
-MultivariatePolynomial& operator+=(Variable::Arg rhs);
-MultivariatePolynomial& operator+=(const Coeff& rhs);
-/// @}
 
-@endcode
+	/// @name In-place addition operators
+	/// @{
+	/**
+	 * Add something to this polynomial and return the changed polynomial.
+	 * @param rhs Right hand side.
+	 * @return Changed polynomial.
+	 */
+	MultivariatePolynomial& operator+=(const MultivariatePolynomial& rhs);
+	MultivariatePolynomial& operator+=(const Term<Coeff>& rhs);
+	MultivariatePolynomial& operator+=(const Monomial& rhs);
+	MultivariatePolynomial& operator+=(Variable::Arg rhs);
+	MultivariatePolynomial& operator+=(const Coeff& rhs);
+	/// @}
 
 ## Writing out-of-source documentation
 
