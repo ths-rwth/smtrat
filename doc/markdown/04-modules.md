@@ -80,7 +80,7 @@ is satisfiable and returns \True, it determines unsatisfiability and returns
 false, or it cannot give a conclusive answer and returns \Unknown. 
 A module has also the opportunity to reason about the conflicts
 occurred, if it determines unsatisfiability. For this purpose it has to store at least one infeasible
-subset of the set of so far received formulas. If the method \texttt{check} is called with its argument being \false, this module is allowed to omit hard obstacles during solving at the cost of returning \UNKNOWN in more cases, we refer to as a \emph{lightweight check}.
+subset of the set of so far received formulas. If the method `check` is called with its argument being \false, this module is allowed to omit hard obstacles during solving at the cost of returning \UNKNOWN in more cases, we refer to as a \emph{lightweight check}.
 
 ### Updating the model/satisfying assignment
 
@@ -89,18 +89,18 @@ subset of the set of so far received formulas. If the method \texttt{check} is c
 	    // Write the implementation here.
 	}
 
-If this method is called, the last result of a satisfiability check was \True and no further formulas have been added to the received formula, this module needs to fill its member \texttt{mModel} with a model. This model must be complete, that is all variables and uninterpreted functions occurring in the received formula must be assigned to a value of their corresponding domain. It might be necessary to involve the backends using the method \texttt{getBackendsModel()} (if they have been asked for the satisfiability of a sub-problem). It stores the model of one backend into the model of this module.
+If this method is called, the last result of a satisfiability check was \True and no further formulas have been added to the received formula, this module needs to fill its member `mModel` with a model. This model must be complete, that is all variables and uninterpreted functions occurring in the received formula must be assigned to a value of their corresponding domain. It might be necessary to involve the backends using the method `getBackendsModel()` (if they have been asked for the satisfiability of a sub-problem). It stores the model of one backend into the model of this module.
 
 ## Running backend modules
 
 Modules can always call a backend in order to check the satisfiability of any conjunction of formulas.
 Fortunately, there is no need to manage the assertion of formulas to or removing of formulas from the backend. 
 This would be even more involved as we do allow changing the
-backend if it is appropriate (more details to this are explained in Chapter~\ref{chapter:composingats}).
+backend if it is appropriate (more details to this are explained in Chapter @ref chapter:composingats.
 Running the backend is done in two steps:
 
 1. Change the passed formula to the formula which should be solved by the backend. Keep in mind, that the passed formula could still contain formulas of the previous backend call. 
-2. Call \texttt{runBackends( full )}, where \texttt{full} being \false means that the backends have to perform a lightweight check.
+2. Call `runBackends(full)`, where `full` being \false means that the backends have to perform a lightweight check.
 
 The first step is a bit more tricky, as we need to know which received formulas led to a passed
 formula. For this purpose the \moduleInputClass maintains a mapping from a passed sub-formula to one or more conjunctions of received sub-formulas. We give a small example. Let us assume that a module has so far received the following
@@ -125,21 +125,20 @@ only the set consisting of the formula at the given position in the received for
 Adds the given formula to the passed formulas. It is mapped to the given conjunctions of origins in the received formula. 
 The second argument (if it exists) must only consist of formulas in the received formula.
 
-It returns a pair of a position in the passed formula and a `bool`. The \texttt{bool} is \true, if the formula at the given position in the received formula has been added to the passed formula, which is only the case, if this formula was not yet part of the 
-passed formula. Otherwise, the \texttt{bool} 
-is \false. The returned position in the passed formula points to the just added formula.
+It returns a pair of a position in the passed formula and a `bool`. The `bool` is true, if the formula at the given position in the received formula has been added to the passed formula, which is only the case, if this formula was not yet part of the 
+passed formula. Otherwise, the `bool` is false. The returned position in the passed formula points to the just added formula.
 
 The vector of conjunctions of origins can be passed as a shared pointer, which is due to a more efficient manipulation of these origins. Some of the current module implementations directly change this vector and thereby achieve directly a change in the origins of a passed formula.
 	\end{itemize}
 If, by reason of a later removing of received formulas, there is no conjunction of original formulas of a passed formula left (empty conjunction are removed), this passed formula will be automatically removed from the backends and the passed formula. That does also mean, that if we add
-a formula to the passed formula without giving any origin (which is done by the first version of \texttt{addSubformulaToPassedFormula}), the next call of \texttt{removeSubformula} of this module removes this formula from the passed formula. Specifying received formulas being the origins of a passed formula highly improves the incremental solving performance, so we recommend to do so. 
+a formula to the passed formula without giving any origin (which is done by the first version of `addSubformulaToPassedFormula`), the next call of `removeSubformula` of this module removes this formula from the passed formula. Specifying received formulas being the origins of a passed formula highly improves the incremental solving performance, so we recommend to do so. 
 
-The second step is really just calling \texttt{runBackends} and processing its return value, which can be
-\True, \False, or \Unknown.
+The second step is really just calling `runBackends` and processing its return value, which can be
+`True`, `False`, or `Unknown`.
 
 ## Auxiliary functions
 
-The \texttt{module} class provides a rich set of methods for the analysis of the implemented procedures in a module and debugging purposes. 
+The Module class provides a rich set of methods for the analysis of the implemented procedures in a module and debugging purposes. 
 Besides all the printing methods, which print the contents of a member of this module to the given output stream, SMT-RAT helps to maintain the correctness of new modules during their development. It therefore provides methods to store formulas with their assumed satisfiability status in order
 to check them belatedly by any SMT solver which is capable to parse `.smt2` files and solve
 the stored formula. To be able to use the following methods, the compiler flag `SMTRAT_DEVOPTION_Validation`
