@@ -1,10 +1,10 @@
 #########################
 ##### Project
 
-PROJECT_NAME           = @PROJECT_FULLNAME@
-PROJECT_NUMBER         = @PROJECT_VERSION@
-PROJECT_BRIEF          = @PROJECT_DESCRIPTION@
-PROJECT_LOGO           = @CMAKE_SOURCE_DIR@/doc/logo.png
+PROJECT_NAME           = "@PROJECT_FULLNAME@"
+PROJECT_NUMBER         = "@PROJECT_VERSION@"
+PROJECT_BRIEF          = "@PROJECT_DESCRIPTION@"
+PROJECT_LOGO           = @CMAKE_BINARY_DIR@/doc/pictures/logo_smtrat.png
 OUTPUT_DIRECTORY       = @CMAKE_BINARY_DIR@/doc/apidoc-html
 CREATE_SUBDIRS         = YES
 INLINE_INHERITED_MEMB  = YES
