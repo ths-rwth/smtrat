@@ -17,6 +17,9 @@ endif(TARGET Doxygen::dot)
 # Paths for documentations
 set(OUTPUT_DIR ${PROJECT_BINARY_DIR}/doc)
 
+# Build tikz pictures
+add_subdirectory(pictures)
+
 # Collect all sources for proper dependencies
 set(CODE_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 file(GLOB_RECURSE COMMON_SOURCES "${CODE_SOURCE_DIR}/**/*.md")
@@ -34,6 +37,7 @@ add_custom_command(
 # Wrapper target to have proper dependencies
 add_custom_target(doc-html
 	DEPENDS ${OUTPUT_DIR}/html/index.html
+	DEPENDS doc-pictures
 )
 
 # Configure targets
@@ -60,6 +64,7 @@ if(LATEX_FOUND)
 		COMMAND cp ${OUTPUT_DIR}/manual/refman.pdf ${OUTPUT_DIR}/doc_${PROJECT_NAME}-${PROJECT_VERSION_LIB}.pdf
 		WORKING_DIRECTORY ${OUTPUT_DIR}/manual
 		DEPENDS ${OUTPUT_DIR}/manual/refman.tex
+		DEPENDS doc-pictures
 	)
 else(LATEX_FOUND)
 	message(STATUS "Did not find pdflatex, no pdf manual can be built.")

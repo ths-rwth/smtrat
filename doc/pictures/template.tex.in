@@ -1,0 +1,9 @@
+\documentclass{standalone}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+
+\begin{document}
+
+\input{@FILENAME@}
+
+\end{document}
