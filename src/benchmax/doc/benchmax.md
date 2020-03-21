@@ -1,5 +1,4 @@
-Benchmax {#mainpage}
-============
+# Benchmax {#mainpage}
 
 Benchmax is a tool for automated benchmarking.
 Though it was developed and is primary used for testing SMT solvers, it aims to be agnostic of the tools and formats as good as possible.

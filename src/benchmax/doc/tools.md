@@ -1,5 +1,4 @@
-Tools {#tools}
-==============
+## Tools {#tools}
 
 A tool represents a binary that can be executed on some input files.
 It is responsible for deciding whether it can be applied to some given file, building a command line to execute it and retrieve additional results from stdout or stderr.
