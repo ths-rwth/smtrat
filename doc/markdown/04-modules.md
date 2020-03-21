@@ -125,7 +125,7 @@ only the set consisting of the formula at the given position in the received for
 Adds the given formula to the passed formulas. It is mapped to the given conjunctions of origins in the received formula. 
 The second argument (if it exists) must only consist of formulas in the received formula.
 
-It returns a pair of a position in the passed formula and a \texttt{bool}. The \texttt{bool} is \true, if the formula at the given position in the received formula has been added to the passed formula, which is only the case, if this formula was not yet part of the 
+It returns a pair of a position in the passed formula and a `bool`. The \texttt{bool} is \true, if the formula at the given position in the received formula has been added to the passed formula, which is only the case, if this formula was not yet part of the 
 passed formula. Otherwise, the \texttt{bool} 
 is \false. The returned position in the passed formula points to the just added formula.
 
@@ -141,60 +141,43 @@ The second step is really just calling \texttt{runBackends} and processing its r
 
 The \texttt{module} class provides a rich set of methods for the analysis of the implemented procedures in a module and debugging purposes. 
 Besides all the printing methods, which print the contents of a member of this module to the given output stream, SMT-RAT helps to maintain the correctness of new modules during their development. It therefore provides methods to store formulas with their assumed satisfiability status in order
-to check them belatedly by any SMT solver which is capable to parse \texttt{.smt2} files and solve
-the stored formula. To be able to use the following methods, the compiler flag \texttt{SMTRAT\_DEVOPTION\_Validation}
-must be activated, which can be easily achieved when using, e.g., \ccmake.
+to check them belatedly by any SMT solver which is capable to parse `.smt2` files and solve
+the stored formula. To be able to use the following methods, the compiler flag `SMTRAT_DEVOPTION_Validation`
+must be activated, which can be easily achieved when using, e.g., `ccmake`.
 
-\begin{itemize}
-	\item \begin{verbatim}static void addAssumptionToCheck( const X&, bool, const string& ) \end{verbatim}
-		Adds the given formulas to those, which are going to be stored as an \texttt{.smt2} file,
-		with the assumption that they are satisfiable, if the given Boolean argument is \true, or unsatisfiable,
-		if the given Boolean argument is \false. The formulas can be passed as one of the following types (\texttt{X} can be one of the following data structures)
-		\begin{itemize}
-		\item \texttt{Formula} (a single formula of any type)
-		\item \texttt{ModuleInput} (the entire received or passed formula of a module)
-		\item \texttt{FormulasT} (a set of formulas, which is considered to be a conjunction)
-		\item \texttt{ConstraintsT} (a set of constraints, which is considered to be a conjunction)
-		\end{itemize}
-		The third argument of this function is any string which helps to identify the assumption, e.g.,
-		involving the name of the module and for which purpose this assumption has been made.
-	\item \begin{verbatim}static void storeAssumptionsToCheck( const Manager& )\end{verbatim}
-		This method stores all collected assumptions to the file \texttt{assumptions.smt2}, which can be checked
-		later by any SMT solver which is capable to parse \texttt{.smt2} files and solve
-		the stored formula. As this method is static, we need to pass the module's manager (\texttt{*mpManager}).
-		Note that this method will be automatically called when destructing the given manager. Invoking this
-		method is only reasonable, if the solving aborts directly afterwards and, hence, omits the manager's
-		destructor.
-	\item \begin{verbatim}void checkInfSubsetForMinimality
-(
-    vector<FormulasT>::const_iterator,
-    const string&,
-    unsigned
-) const 
-\end{verbatim}
-This method checks the infeasible subset at the given position for minimality, that is it checks whether there is a subset of it having maximally $n$ elements less while still being infeasible.
-As for some approaches it is computationally too hard to provide always a minimal infeasible subset, they rather provide infeasible subsets not necessarily being minimal. This method helps 
-to analyze how close the size of the encountered infeasible subsets is to a minimal one.
+- `static void addAssumptionToCheck(const X&, bool, const string&)`
+	Adds the given formulas to those, which are going to be stored as an `.smt2` file, with the assumption that they are satisfiable, if the given Boolean argument is true, or unsatisfiable, if the given Boolean argument is false. The formulas can be passed as one of the following types (`X` can be one of the following data structures)
+	
+	- `Formula`: a single formula of any type
+	- `ModuleInput`: the entire received or passed formula of a module
+	- `FormulasT`: a set of formulas, which is considered to be a conjunction
+	- `ConstraintsT`: a set of constraints, which is considered to be a conjunction
+	
+	The third argument of this function is any string which helps to identify the assumption, e.g., involving the name of the module and for which purpose this assumption has been made.
 
-\item Another important feature during the development of a new module is the collection of statistics. The script \writeModule for the creation of a new module automatically adds a class to maintain statistics in the same folder in which the module itself is located. The members of this class store the statistics usually represented by primitive data types as integers and floats. They can be extended as one pleases and be manipulated by methods, which have also to be implemented in this class. SMT-RAT collects and prints these statistics automatically, if its command line interface is called with the option \texttt{--statistics} or \texttt{-s}.
+- `static void storeAssumptionsToCheck( const Manager& )`
+	This method stores all collected assumptions to the file `assumptions.smt2`, which can be checked later by any SMT solver which is capable to parse `.smt2` files and solve the stored formula. As this method is static, we need to pass the module's manager (`*mpManager`). Note that this method will be automatically called when destructing the given manager. Invoking this	method is only reasonable, if the solving aborts directly afterwards and, hence, omits the manager's destructor.
 
-\item If the script \writeModule for the creation of a new module is called with the option \texttt{-s}, the module has also a template parameter being a settings object. The different settings objects are stored in the settings file again in the same folder as the module is located. Each of these setting objects assigns all settings, which are usually of type \texttt{bool}, to values. The name of these objects must be of the form XYSettingsN, if the module is called XYModule and with N being preferably a positive integer. Fulfilling these requirements, the settings to compile this module with, can be chosen, \eg with \ccmake, by setting the compiler flag \texttt{SMTRAT\_XY\_Settings} to N. 
+- `void checkInfSubsetForMinimality(vector<FormulasT>::const_iterator, const string&, unsigned) const`
+	This method checks the infeasible subset at the given position for minimality, that is it checks whether there is a subset of it having maximally $n$ elements less while still being infeasible. As for some approaches it is computationally too hard to provide always a minimal infeasible subset, they rather provide infeasible subsets not necessarily being minimal. This method helps to analyze how close the size of the encountered infeasible subsets is to a minimal one.
 
-Within the implementation of the module, its settings can then be accessed using its template parameter \texttt{Settings}. If, for instance, we want to change the control flow of the implemented procedure in the new module depending on a setting \texttt{mySetting} being \true, we write the following:
-\begin{verbatim}
-..
-if(Settings::mySettings)
-{
-    ..
-}
-..
-\end{verbatim}
-This methodology assures that the right control flow is chosen during compilation and, hence,  before runtime. 
-\end{itemize}
+- Another important feature during the development of a new module is the collection of statistics. The script `writeModules.py` for the creation of a new module automatically adds a class to maintain statistics in the same folder in which the module itself is located. The members of this class store the statistics usually represented by primitive data types as integers and floats. They can be extended as one pleases and be manipulated by methods, which have also to be implemented in this class. SMT-RAT collects and prints these statistics automatically, if its command line interface is called with the option `--statistics` or `-s`.
+
+- If the script `writeModules.py` for the creation of a new module is called with the option `-s`, the module has also a template parameter being a settings object. The different settings objects are stored in the settings file again in the same folder as the module is located. Each of these setting objects assigns all settings, which are usually of type `bool`, to values. The name of these objects must be of the form XYSettingsN, if the module is called XYModule and with N being preferably a positive integer. Fulfilling these requirements, the settings to compile this module with, can be chosen, e.g. with `ccmake`, by setting the compiler flag `SMTRAT_XY_Settings` to N. 
+	Within the implementation of the module, its settings can then be accessed using its template parameter `Settings`. If, for instance, we want to change the control flow of the implemented procedure in the new module depending on a setting `mySetting` being true, we write the following:
+
+		..
+		if(Settings::mySettings)
+		{
+			..
+		}
+		..
+
+	This methodology assures that the right control flow is chosen during compilation and, hence,  before runtime. 
 
 SMT-RAT contributes a toolbox for composing an SMT compliant solver for its supported logics, that means it is incremental, supports backtracking and provides reasons for inconsistency. The resulting
 solver is either a fully operative SMT solver, which can be applied
-directly on \texttt{.smt2}-files, or a theory solver, which can be embedded into an SMT 
+directly on `.smt2` files, or a theory solver, which can be embedded into an SMT 
 solver in order to extend its supported logics by those provided by SMT-RAT.
 
 We are talking about composition and toolbox, as SMT-RAT contains implementations
@@ -205,7 +188,7 @@ We provide a self-explanatory graphical user interface (GUI) for the definition 
 strategy specifying which module(s) should be applied on which formula, 
 taking into account the modules which were already involved.
 
-In Section~\ref{sec::strategy} we have already introduced
+In Section @ref sec::strategy we have already introduced
 a strategy and in the following of this chapter we firstly give a brief introduction 
 to the existing modules equipped with an estimation of their input-based performances and then illustrate
 how to use the GUI for composing a strategy.
