@@ -4,7 +4,7 @@ SMT-RAT                         {#mainpage}
 This is the documentation of SMT-RAT, an Open Source C++ Toolbox for Strategic and Parallel SMT Solving.
 On this page, you can find introductory information on how to obtain and compile SMT-RAT and a traditional doxygen API documentation.
 
-If you are new to SMT-RAT and want to have a look around, we recommend reading the [manual](https://github.com/smtrat/smtrat/blob/master/manual/manual_smtrat-2.0.0.pdf).
+If you are new to SMT-RAT and want to have a look around, we recommend reading the [manual](https://github.com/smtrat/smtrat/blob/master/manual/manual_smtrat-2.0.0.pdf). [TODO: Link against generated manual]
 
 If you want to use SMT-RAT and want to know how to get and install it, have a look at @ref getting_started. 
 It covers the most important steps including obtaining the actual source code, obtaining dependencies, building the library and running our test suite.
