@@ -1,6 +1,6 @@
 \documentclass{standalone}
 \usepackage{tikz}
-\usetikzlibrary{positioning}
+\usetikzlibrary{calc, positioning}
 
 \begin{document}
 

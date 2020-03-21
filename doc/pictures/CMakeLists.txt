@@ -13,7 +13,7 @@ foreach(FILENAME ${SOURCES})
 	configure_file(template.tex.in "${MAIN}")
 	add_custom_target(doc-pictures-${MAINWE}
 		COMMAND ${PDFLATEX_COMPILER} -interaction=batchmode ${MAIN}
-		COMMAND convert ${MAINDIR}/${MAINWE}.pdf ${MAINDIR}/${MAINWE}.png
+		COMMAND convert ${MAINDIR}/${MAINWE}.pdf -strip ${MAINDIR}/${MAINWE}.png
 		WORKING_DIRECTORY ${MAINDIR}
 		DEPENDS ${FILENAME}
 	)
