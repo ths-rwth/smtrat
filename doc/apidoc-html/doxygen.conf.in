@@ -5,10 +5,11 @@ PROJECT_NAME           = @PROJECT_FULLNAME@
 PROJECT_NUMBER         = @PROJECT_VERSION@
 PROJECT_BRIEF          = @PROJECT_DESCRIPTION@
 PROJECT_LOGO           = @CMAKE_SOURCE_DIR@/doc/logo.png
-OUTPUT_DIRECTORY       = @CMAKE_BINARY_DIR@/doc/manual
-CREATE_SUBDIRS         = NO
+OUTPUT_DIRECTORY       = @CMAKE_BINARY_DIR@/doc/apidoc-html
+CREATE_SUBDIRS         = YES
 INLINE_INHERITED_MEMB  = YES
 STRIP_FROM_PATH        = @CMAKE_SOURCE_DIR@/src
+SHORT_NAMES            = NO
 JAVADOC_AUTOBRIEF      = YES
 
 ALIASES                = "rcomplexity=\xrefitem rcomplexity \"Runtime complexity\" \"Runtime Complexity Bounds\""
@@ -21,16 +22,20 @@ OPTIMIZE_OUTPUT_FOR_C  = YES
 MARKDOWN_SUPPORT       = YES
 BUILTIN_STL_SUPPORT    = YES
 DISTRIBUTE_GROUP_DOC   = YES
+GROUP_NESTED_COMPOUNDS = YES
+INLINE_GROUPED_CLASSES = YES
 
 #########################
 ##### Build
 
 EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_PRIV_VIRTUAL   = YES
+EXTRACT_PACKAGE        = YES
 EXTRACT_STATIC         = YES
-EXTRACT_LOCAL_CLASSES  = NO
-SHOW_USED_FILES        = NO
-SHOW_FILES             = NO
-SHOW_NAMESPACES        = NO
+EXTRACT_LOCAL_CLASSES  = YES
+EXTRACT_LOCAL_METHODS  = YES
+EXTRACT_ANON_NSPACES   = YES
 CITE_BIB_FILES         = @CMAKE_SOURCE_DIR@/doc/literature.bib @CMAKE_SOURCE_DIR@/doc/literature-theses.bib
 
 #########################
@@ -39,10 +44,10 @@ CITE_BIB_FILES         = @CMAKE_SOURCE_DIR@/doc/literature.bib @CMAKE_SOURCE_DIR
 #########################
 ##### Input
 
-INPUT                  = @PROJECT_SOURCE_DIR@/doc/markdown
+INPUT                  = @PROJECT_SOURCE_DIR@/doc/markdown @PROJECT_SOURCE_DIR@/src
 FILE_PATTERNS          = *.cpp *.h *.tpp *.dox *.py *.md
 RECURSIVE              = YES
-EXCLUDE_PATTERNS       = */tests/* */smtrat-modules/*Module/*Settings.h */smtrat-strategies/strategies/*
+EXCLUDE_PATTERNS       = */tests/*
 EXCLUDE_SYMBOLS        = boost*
 EXAMPLE_PATH           = examples/
 EXAMPLE_RECURSIVE      = YES
@@ -51,34 +56,30 @@ IMAGE_PATH             = @CMAKE_BINARY_DIR@/doc/pictures/
 #########################
 ##### Source browsing
 
+SOURCE_BROWSER         = YES
+STRIP_CODE_COMMENTS    = NO
 CLANG_ASSISTED_PARSING = YES
 CLANG_DATABASE_PATH    = @CMAKE_BINARY_DIR@/compile_commands.json
 
 #########################
 ##### Alphabetical index
 
-ALPHABETICAL_INDEX     = NO
+ALPHABETICAL_INDEX     = YES
 COLS_IN_ALPHA_INDEX    = 5
 IGNORE_PREFIX          =
 
 #########################
-##### LaTeX output
+##### HTML output
 
-GENERATE_LATEX         = YES
-LATEX_OUTPUT           = @CMAKE_BINARY_DIR@/doc/manual
-COMPACT_LATEX          = YES
-LATEX_HEADER           = @PROJECT_SOURCE_DIR@/doc/manual/header.tex
-LATEX_FOOTER           = @PROJECT_SOURCE_DIR@/doc/manual/footer.tex
-LATEX_EXTRA_FILES      = @PROJECT_SOURCE_DIR@/doc/manual/doxygen.sty
-PDF_HYPERLINKS         = YES
-LATEX_BATCHMODE        = NO
-LATEX_HIDE_INDICES     = NO
-LATEX_BIB_STYLE        = plainnat
+GENERATE_HTML          = YES
+HTML_OUTPUT            = @CMAKE_BINARY_DIR@/doc/apidoc-html
+HTML_TIMESTAMP         = NO
+GENERATE_TREEVIEW      = YES
 
 #########################
 ##### Other outputs
 
-GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
 GENERATE_RTF           = NO
 GENERATE_MAN           = NO
 GENERATE_XML           = NO
@@ -106,17 +107,17 @@ EXPAND_AS_DEFINED      = EASY_TYPE \
 ##### Dot
 
 HAVE_DOT               = YES
-CLASS_GRAPH            = NO
-COLLABORATION_GRAPH    = NO
-GROUP_GRAPHS           = NO
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = YES
+GROUP_GRAPHS           = YES
 UML_LOOK               = NO
-TEMPLATE_RELATIONS     = NO
-INCLUDE_GRAPH          = NO
-INCLUDED_BY_GRAPH      = NO
-CALL_GRAPH             = NO
-CALLER_GRAPH           = NO
-GRAPHICAL_HIERARCHY    = NO
-DIRECTORY_GRAPH        = NO
+TEMPLATE_RELATIONS     = YES
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+CALL_GRAPH             = YES
+CALLER_GRAPH           = YES
+GRAPHICAL_HIERARCHY    = YES
+DIRECTORY_GRAPH        = YES
 DOT_PATH               = @DOT_PATH@
 DOT_GRAPH_MAX_NODES    = 50
 DOT_TRANSPARENT        = YES
