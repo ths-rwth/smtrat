@@ -11,11 +11,15 @@ foreach(FILENAME ${SOURCES})
 	get_filename_component(MAINDIR "${MAIN}" DIRECTORY)
 	
 	configure_file(template.tex.in "${MAIN}")
-	add_custom_target(doc-pictures-${MAINWE}
+	add_custom_command(
+		OUTPUT ${MAINDIR}/${MAINWE}.png
 		COMMAND ${PDFLATEX_COMPILER} -interaction=batchmode ${MAIN}
 		COMMAND convert ${MAINDIR}/${MAINWE}.pdf -strip ${MAINDIR}/${MAINWE}.png
-		WORKING_DIRECTORY ${MAINDIR}
 		DEPENDS ${FILENAME}
+		WORKING_DIRECTORY ${MAINDIR}
+	)
+	add_custom_target(doc-pictures-${MAINWE}
+		DEPENDS ${MAINDIR}/${MAINWE}.png
 	)
 	add_dependencies(
 		doc-pictures
