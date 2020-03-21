@@ -30,7 +30,6 @@ elif [[ ${TASK} == "documentation" ]]; then
 	cmake -D DOCUMENTATION_CREATE_PDF=ON ../
 	make doxygen-build || return 1p
 	make doc benchmax-doc || return 1
-	make manual || return 1
 	
 	git config --global user.email "gereon.kremer@cs.rwth-aachen.de"
 	git config --global user.name "Travis doxygen daemon"
@@ -41,9 +40,11 @@ elif [[ ${TASK} == "documentation" ]]; then
 	git checkout --orphan master
 	
 	# Update cloned copy
-	cp -r ../doc/html/* ./ || return 1
-	cp ../doc/*.pdf .  || return 1
-	cp ../manual/*.pdf .  || return 1
+	cp -r ../doc/apidoc-html/* ./ || return 1
+	cp ../doc/doc_smtrat-*.pdf .  || return 1
+	cp ../doc/doc_smtrat-*.pdf doc_smtrat-latest.pdf  || return 1
+	cp ../doc/manual_smtrat-*.pdf . || return 1
+	cp ../doc/manual_smtrat-*.pdf doc_smtrat-latest.pdf || return 1
 	
 	# Benchmax
 	mkdir -p benchmax/
