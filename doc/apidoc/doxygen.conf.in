@@ -51,6 +51,7 @@ EXCLUDE_PATTERNS       = */tests/*
 EXCLUDE_SYMBOLS        = boost*
 EXAMPLE_PATH           = examples/
 EXAMPLE_RECURSIVE      = YES
+IMAGE_PATH             = @CMAKE_BINARY_DIR@/doc/pictures/
 
 #########################
 ##### Source browsing
