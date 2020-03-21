@@ -6,13 +6,8 @@
 \definecolor{ratRed1}{HTML}{CC071E}
 \definecolor{ratRed2}{HTML}{D85C41}
 \begin{tikzpicture}[scale=.25]
-    \node[] (s) at (20,11) {\color{ratGray}\fontsize{70}{70}\fontfamily{cmss} \fontseries{sbc} \selectfont \textbf{S}};
-    \node[] (m) [node distance = -35pt, right = of s] {\color{ratGray}\fontsize{70}{70}\fontfamily{cmss} \fontseries{sbc} \selectfont \textbf{M}};
-    \node[] (t) [node distance = -35pt, right = of m] {\color{ratGray}\fontsize{70}{70}\fontfamily{cmss} \fontseries{sbc} \selectfont \textbf{T}};
-    \node[] (r) [node distance = -10pt, below = of s]  {\color{ratGray}\fontsize{70}{70}\fontfamily{cmss} \fontseries{sbc} \selectfont \textbf{R}};
-    \node[] (a) [node distance = -26pt, right = of r] {\color{ratGray}\fontsize{70}{70}\fontfamily{cmss} \fontseries{sbc} \selectfont \textbf{A}};
-    %\node[] (minus) [node distance = -27pt, left = of r] {\color{ratGray}\fontsize{70}{70}\fontfamily{cmss} \fontseries{sbc} \selectfont \textbf{-}};
-        \node[] [node distance = -30pt, right = of a] {\color{ratGray}\fontsize{70}{70}\fontfamily{cmss} \fontseries{sbc} \selectfont \textbf{T}};
+    \node (smt) at (21,11) {\color{ratGray}\fontsize{70}{70}\fontfamily{cmss} \fontseries{sbc} \selectfont \textbf{SMT}};
+    \node (rat) [node distance = -10pt, below = of smt] {\color{ratGray}\fontsize{70}{70}\fontfamily{cmss} \fontseries{sbc} \selectfont \textbf{RAT}};
     \fill [draw=black, thick, fill=ratBordeaux1] (0,1) -- (3,3) -- (3,2) -- (0,1);
     \fill [draw=black, thick, fill=ratRed2] (3,3) -- (5,2) -- (5,1) -- (3,2) -- (3,3);
     \fill [draw=black, thick, fill=ratBordeaux2] (5,2) -- (8.6,3) -- (8.6,1.5) -- (5,1) -- (5,2);
