@@ -27,6 +27,8 @@ if [[ ${TASK} == "dependencies" ]]; then
 	
 elif [[ ${TASK} == "documentation" ]]; then
 	
+	sudo rm -f /etc/ImageMagick-6/policy.xml
+
 	cmake -D DOCUMENTATION_CREATE_PDF=ON ../
 	make doxygen-build || return 1p
 	make doc benchmax-doc || return 1
