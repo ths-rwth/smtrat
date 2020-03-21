@@ -39,12 +39,6 @@ The strategy graph is at the core of the composition of \smtrat modules and the 
 
 ![Module in a strategy](module_in_strategy.png)
 
-\begin{figure}[ht]
-	\centering
-	\input{figures/03-module-in-strategy}
-	\caption{One \smtrat module in a strategy.}\label{fig:module-in-strategy}
-\end{figure}
-
 Every module has (a pointer to) a set of received formulae that represent its input and a set of passed formulae that represent the formula that is passed on to some backend.
 The module may "solve" the query from its input on its own, or it may pass (one or more) queries to its backends (in this case B-1, B-2 and B-3).
 Arrows to backends may be labeled with conditions that restrict whether this particular backend can be used, for example checking whether the passed formulae are linear, contain integer variables or bit-vector formulae.
