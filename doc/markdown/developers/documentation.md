@@ -1,9 +1,9 @@
-Documentation {#documentation}
-==============================
+## Documentation {#documentation}
 
-On this page, we refer to some internal documentation rules.
-We use doxygen to generate our documentation and code reference.
-The most important conventions for documentation in SMT-RAT are collected here.
+For SMT-RAT, there are two sources of documentation: the in-source API documentation and the more manual-like documentation (you are reading right now).
+While the in-source API documentation is generated based on the doxygen comments from the actual source files, the manual is generated from the markdown files in `doc/markdown/`.
+
+### Writing documentation
 
 Note that some of the documentation may be incomplete or rendered incorrectly, especially if you use an old version of doxygen. Here is a list of known problems:
 - Comments in code blocks (see below) may not work correctly (e.g. with doxygen 1.8.1.2). See [here](http://doxygen.10944.n7.nabble.com/Including-doc-comments-in-code-blocks-in-markdown-td5592.html) for a workaround. This will however look ugly for newer doxygen versions, hence we do not use it.
@@ -11,21 +11,9 @@ Note that some of the documentation may be incomplete or rendered incorrectly, e
 - Member groups (usually used to group operators) may or may not work. There still seem to be a few cases where doxygen [messes up](https://bugzilla.gnome.org/show_bug.cgi?id=737112).
 - Documenting unnamed parameters is not possible. A corresponding [ticket](https://bugzilla.gnome.org/show_bug.cgi?id=152990) exists for several years.
 
-## Modules
-In order to structure the reference, we use the concept of
-[Doxygen modules](http://www.stack.nl/~dimitri/doxygen/manual/grouping.html#modules).
-Such modules are best thought of as a hierarchical set of tags, called groups. 
-We define those groups in `/doc/markdown/codedocs/groups.dox`.
-Please make sure to put new files and classes in the appropriate groups.
+### Literature references
 
-## Literature references
-Literature references should be provided when appropriate.
-
-We use a bibtex database located at `/doc/literature.bib` with the following conventions:
-
-- Label for one author: `LastnameYY`, for example `Ducos00` for @cite Ducos00 .
-- Label for multiple authors: `ABCYY` where `ABC` are the first letters of the authors last names. For example `GCL92` for @cite GCL92 .
-- Order the bibtex entrys by label.
+Literature references should be provided when appropriate by citing references from the bibtex database located at `doc/literature.bib` using the `@cite` command. The labels are the last name of the first author and the four-digit year. In case of duplicates, we append lowercase letters.
 
 These references can be used with `@cite label`, for example like this:
 @code

@@ -1,5 +1,4 @@
-Finding and Reporting Bugs {#bugs}
-==============================
+## Finding and Reporting Bugs {#bugs}
 
 This page is meant as a guide for the case that you find a bug or any unexpected behaviour.
 We consider any of the following events a (potential) bug:

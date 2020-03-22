@@ -1,7 +1,6 @@
-Logging {#logging}
-==================
+## Logging {#logging}
 
-## Logging frontend
+### Logging frontend
 
 The frontend for logging is defined in [logging.h](@ref logging.h).
 
@@ -34,12 +33,3 @@ Typically, logging looks like this:
 	}
 
 Logging is enabled (or disabled) by the `LOGGING` macro in CMake.
-
-## Logging configuration
-
-As of now, there is no frontend interface to configure logging.
-Hence, configuration is performed directly on the backend.
-
-## Logging backends
-
-As of now, only the CArL logging backend is supported.

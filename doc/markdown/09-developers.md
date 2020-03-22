@@ -1,5 +1,4 @@
-Developers' Guide {#devguide}
-===================
+# Developers information {#devguide}
 
 - @subpage documentation
 - @subpage logging
