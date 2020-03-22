@@ -1,2 +1,0 @@
-Incrementality {#cad_incrementality}
-=====

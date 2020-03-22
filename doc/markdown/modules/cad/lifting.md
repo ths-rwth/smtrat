@@ -1,2 +1,0 @@
-Lifting {#cad_lifting}
-=====

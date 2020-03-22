@@ -1,2 +1,0 @@
-Projection {#cad_projection}
-=====
