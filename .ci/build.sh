@@ -31,7 +31,6 @@ elif [[ ${TASK} == "documentation" ]]; then
 
 	make doxygen-build || return 1
 	make doc || return 1
-	make benchmax-doc || return 1
 	
 	git config --global user.email "gereon.kremer@cs.rwth-aachen.de"
 	git config --global user.name "Travis doxygen daemon"
@@ -47,10 +46,6 @@ elif [[ ${TASK} == "documentation" ]]; then
 	cp ../doc/doc_smtrat-*.pdf doc_smtrat-latest.pdf  || return 1
 	cp ../doc/manual_smtrat-*.pdf . || return 1
 	cp ../doc/manual_smtrat-*.pdf manual_smtrat-latest.pdf || return 1
-	
-	# Benchmax
-	mkdir -p benchmax/
-	cp -r ../doc/benchmax/html/* benchmax/
 	
 	# Check if something has changed
 	git diff --summary --exit-code && return 0
