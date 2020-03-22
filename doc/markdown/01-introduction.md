@@ -4,6 +4,7 @@ This is the documentation of SMT-RAT, an Open Source C++ Toolbox for Strategic a
 On this page, you can find introductory information on how to obtain and compile SMT-RAT and a traditional doxygen API documentation.
 
 If you are new to SMT-RAT and want to have a look around, we recommend reading the [manual](https://github.com/smtrat/smtrat.github.io/raw/master/manual_smtrat-latest.pdf).
+The full API documentation can be found either here, or in the [pdf documentation](https://github.com/smtrat/smtrat.github.io/raw/master/doc_smtrat-latest.pdf).
 
 If you want to use SMT-RAT and want to know how to get and install it, have a look at @ref getting_started. 
 It covers the most important steps including obtaining the actual source code, obtaining dependencies, building the library and running our test suite.
