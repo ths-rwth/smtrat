@@ -31,7 +31,7 @@ EXTRACT_LOCAL_CLASSES  = NO
 SHOW_USED_FILES        = NO
 SHOW_FILES             = NO
 SHOW_NAMESPACES        = NO
-CITE_BIB_FILES         = @CMAKE_SOURCE_DIR@/doc/literature.bib @CMAKE_SOURCE_DIR@/doc/literature-theses.bib
+CITE_BIB_FILES         = @CMAKE_SOURCE_DIR@/doc/literature.bib
 
 #########################
 ##### Warnings and progress
