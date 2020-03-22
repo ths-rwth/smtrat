@@ -21,7 +21,6 @@
 #include "settings/PresetSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsParser.h"
-#include "Stats.h"
 
 
 using namespace benchmax;
@@ -75,20 +74,6 @@ bool init_application(int argc, char** argv) {
 		return false;
 	}
 	
-	
-	//if(s.has("compose")) {
-	//	Stats::composeStats(s.composeFiles);
-	//	return false;
-	//}
-	//else if(Settings::ProduceLatex)
-	//{
-	//	Stats::createStatsCompose(settings_benchmarks().output_dir + "latexCompose.xsl");
-	//	system(
-	//	std::string("xsltproc -o " + settings_benchmarks().output_dir + "results.tex " + Settings::outputDir + "latexCompose.xsl "
-	//				+ settings_benchmarks().output_file_xml).c_str());
-	//	fs::remove(fs::path(settings_benchmarks().output_dir + "latexCompose.xsl"));
-	//}
-
 	if (settings_benchmarks().output_dir != "") {
 		std::filesystem::path oloc = std::filesystem::path(settings_benchmarks().output_dir);
 		if(!std::filesystem::exists(oloc) ||!std::filesystem::is_directory(oloc))
