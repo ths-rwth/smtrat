@@ -34,3 +34,6 @@ There are a couple of other arguments that are documented in the help: `./delta 
 ## Preprocessing
 
 ## Benchmarking
+
+Alongside SMT-RAT, `benchmax` allows to easily run solvers on benchmarks and export the results.
+See @subpage benchmax for more information.
