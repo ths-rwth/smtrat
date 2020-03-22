@@ -29,9 +29,11 @@ elif [[ ${TASK} == "documentation" ]]; then
 	
 	sudo rm -f /etc/ImageMagick-6/policy.xml
 
-	cmake -D DOCUMENTATION_CREATE_PDF=ON ../
-	make doxygen-build || return 1p
-	make doc benchmax-doc || return 1
+	make doxygen-build || return 1
+	make doc-apidoc-html || return 1
+	make doc-apidoc-pdf || (cat doc/apidoc-pdf/*.log && return 1)
+	make doc-manual || (cat doc/manual/*.log && return 1)
+	make benchmax-doc || return 1
 	
 	git config --global user.email "gereon.kremer@cs.rwth-aachen.de"
 	git config --global user.name "Travis doxygen daemon"
