@@ -8,12 +8,12 @@ namespace cad {
 namespace projection {
 
 /**
- * Contains the implementation of Browns projection operator as specified in @cite Brown01 after Theorem 3.1.
+ * Contains the implementation of Browns projection operator as specified in @cite Brown2001 after Theorem 3.1.
  */
 namespace brown {
 
 /**
- * Implements the part of Browns projection operator from @cite Brown01 that deals with a single polynomial `p`:
+ * Implements the part of Browns projection operator from @cite Brown2001 that deals with a single polynomial `p`:
  * \f$ \{ leading_coeff(p), discriminant(p) \} \f$
  */
 template<typename Poly, typename Callback>
@@ -24,7 +24,7 @@ void single(const Poly& p, carl::Variable variable, Callback&& cb) {
 }
 
 /**
- * Implements the part of Browns projection operator from @cite Brown01 that deals with two polynomials `p` and `q` which is just the respective part of McCallums projection operator mccallum::paired.
+ * Implements the part of Browns projection operator from @cite Brown2001 that deals with two polynomials `p` and `q` which is just the respective part of McCallums projection operator mccallum::paired.
  */
 template<typename Poly, typename Callback>
 void paired(const Poly& p, const UPoly& q, carl::Variable variable, Callback&& cb) {

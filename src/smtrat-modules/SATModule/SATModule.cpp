@@ -19,7 +19,7 @@
  * OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 /**
- * @file SATModule.tpp
+ * @file SATModule.cpp
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  * @since 2012-01-18
  * @version 2014-10-02

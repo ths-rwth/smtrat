@@ -531,6 +531,7 @@ namespace smtrat
              * Stores a lemma being a valid formula.
              * @param _lemma The eduction/lemma to store.
              * @param _lt The type of the lemma.
+             * @param _preferredFormula Hint for the next decision, which formula should be assigned to true.
              */
             void addLemma( const FormulaT& _lemma, const LemmaType& _lt = LemmaType::NORMAL, const FormulaT& _preferredFormula = FormulaT( carl::FormulaType::TRUE ) )
             {
@@ -676,7 +677,7 @@ namespace smtrat
             
             /**
              * Add a formula to the assumption vector and its predetermined consistency status.
-             * @param _subformulas The sub-formulas whose conjunction should be consistent/inconsistent.
+             * @param _formula The formula that should be consistent/inconsistent.
              * @param _consistent A flag indicating whether the conjunction of the given constraints should be
              *         consistent or inconsistent.
              * @param _label A label which will be encoded as a Boolean variable into the formula to represent the 
@@ -685,7 +686,17 @@ namespace smtrat
              * @see Module::storeAssumptionsToCheck
              */
             static void addAssumptionToCheck( const ModuleInput& _formula, bool _consistent, const std::string& _label );
-			static void addAssumptionToCheck( const ModuleInput& _subformulas, Answer _status, const std::string& _label );
+			/**
+             * Add a formula to the assumption vector and its predetermined consistency status.
+             * @param _subformulas The sub-formulas whose conjunction should be consistent/inconsistent.
+             * @param _status A flag indicating whether the conjunction of the given constraints should be
+             *         consistent or inconsistent.
+             * @param _label A label which will be encoded as a Boolean variable into the formula to represent the 
+             *               assumption, while keeping it equisatisfiable (the label could, e.g., be the name of the module
+             *               or its sub-procedure).
+             * @see Module::storeAssumptionsToCheck
+             */
+            static void addAssumptionToCheck( const ModuleInput& _subformulas, Answer _status, const std::string& _label );
             
             /**
              * Add a conjunction of formulas to the assumption vector and its predetermined consistency status.
@@ -752,7 +763,7 @@ namespace smtrat
              * @return false, if it can be easily decided whether the given constraint is inconsistent;
              *          true, otherwise.
              */
-            virtual bool informCore( const FormulaT& )
+            virtual bool informCore( const FormulaT& _constraint )
             {
                 return true;
             }
@@ -763,17 +774,17 @@ namespace smtrat
              * that a formula with this constraint must be solved again.
              * @param _constraint The constraint to remove from internal data structures.
              */
-            virtual void deinformCore( const FormulaT& ) {}
+            virtual void deinformCore( const FormulaT& _constraint ) {}
             
             /**
              * The module has to take the given sub-formula of the received formula into account.
              *
-             * @param The sub-formula to take additionally into account.
+             * @param formula The sub-formula to take additionally into account.
              * @return false, if it can be easily decided that this sub-formula causes a conflict with
              *          the already considered sub-formulas;
              *          true, otherwise.
              */
-            virtual bool addCore( ModuleInput::const_iterator )
+            virtual bool addCore( ModuleInput::const_iterator formula)
             {
                 return true;
             }
@@ -794,9 +805,9 @@ namespace smtrat
              * it is desired not to lose track of search spaces where no satisfying  assignment can 
              * be found for the remaining sub-formulas.
              *
-             * @param The sub formula of the received formula to remove.
+             * @param formula The sub formula of the received formula to remove.
              */
-            virtual void removeCore( ModuleInput::const_iterator ) {}
+            virtual void removeCore( ModuleInput::const_iterator formula) {}
             
             /**
              * Checks for all antecedent modules and those which run in parallel with the same antecedent modules, 
@@ -862,7 +873,7 @@ namespace smtrat
             /**
              * Adds the given set of formulas in the received formula to the origins of the given passed formula.
              * @param _formula The passed formula to set the origins for.
-             * @param _origins A set of formulas in the received formula of this module.
+             * @param _origin A set of formulas in the received formula of this module.
              */
             void addOrigin( ModuleInput::iterator _formula, const FormulaT& _origin )
             {
@@ -997,7 +1008,7 @@ namespace smtrat
             /**
              * This method actually implements the adding of a formula to the passed formula
              * @param _formula The formula to add to the passed formula.
-             * @param _hasOrigin true, if the next argument contains the formula being the single origin.
+             * @param _hasSingleOrigin true, if the next argument contains the formula being the single origin.
              * @param _origin The sub-formula of the received formula being responsible for the
              *        occurrence of the formula to add to the passed formula.
              * @param _origins The link of the formula to add to the passed formula to sub-formulas 
@@ -1141,7 +1152,7 @@ namespace smtrat
              * if this module returns Unknown and there exists a preceding SATModule. Note that the 
              * given value is rounded down and up, if the given variable is integer-valued.
              * @param _polynomial The variable to branch for.
-             * @pparam _integral A flag being true, if all variables in the polynomial to branch for are integral.
+             * @param _integral A flag being true, if all variables in the polynomial to branch for are integral.
              * @param _value The value to branch at.
              * @param _premise The sub-formulas of the received formula from which the branch is followed.
              *                 Note, that a premise is not necessary, as every branch is a valid formula.
@@ -1220,28 +1231,24 @@ namespace smtrat
             
             /**
              * Prints everything relevant of the solver.
-             * @param _out The output stream where the answer should be printed.
              * @param _initiation The line initiation.
              */
             void print( const std::string& _initiation = "***" ) const;
             
             /**
              * Prints the vector of the received formula.
-             * @param _out The output stream where the answer should be printed.
              * @param _initiation The line initiation.
              */
             void printReceivedFormula( const std::string& _initiation = "***" ) const;
             
             /**
              * Prints the vector of passed formula.
-             * @param _out The output stream where the answer should be printed.
              * @param _initiation The line initiation.
              */
             void printPassedFormula( const std::string& _initiation = "***" ) const;
             
             /**
              * Prints the infeasible subsets.
-             * @param _out The output stream where the answer should be printed.
              * @param _initiation The line initiation.
              */
             void printInfeasibleSubsets( const std::string& _initiation = "***" ) const;
@@ -1251,14 +1258,14 @@ namespace smtrat
              * and this module could find an assignment.
              * @param _out The stream to print the assignment on.
              */
-            void printModel( std::ostream& = std::cout ) const;
+            void printModel( std::ostream& _out = std::cout ) const;
             
             /**
              * Prints all assignments of this module satisfying its received formula if it satisfiable
              * and this module could find an assignment.
              * @param _out The stream to print the assignment on.
              */
-            void printAllModels( std::ostream& = std::cout );
+            void printAllModels( std::ostream& _out = std::cout );
         private:
             
             /**

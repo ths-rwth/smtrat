@@ -1,9 +1,5 @@
 /**
- * @file Symmetry.cpp
- * @author YOUR NAME <YOUR EMAIL ADDRESS>
- *
- * @version 2018-03-12
- * Created on 2018-03-12.
+ * @file SymmetryModule.cpp
  */
 
 #include "SymmetryModule.h"

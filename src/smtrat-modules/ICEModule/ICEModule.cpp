@@ -1,9 +1,5 @@
 /**
- * @file ICE.cpp
- * @author YOUR NAME <YOUR EMAIL ADDRESS>
- *
- * @version 2015-11-24
- * Created on 2015-11-24.
+ * @file ICEModule.cpp
  */
 
 #include "ICEModule.h"

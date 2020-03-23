@@ -21,11 +21,7 @@ namespace smtrat
     // Constructor.
     
     Manager::Manager():
-#ifdef __VS
-        mPrimaryBackendFoundAnswer(smtrat::Conditionals(1, new std::atomic<bool>(false))),
-#else
         mPrimaryBackendFoundAnswer(smtrat::Conditionals(1, new std::atomic_bool(false))),
-#endif
         mpPassedFormula(new ModuleInput()),
         mBacktrackPoints(),
         mGeneratedModules(),
@@ -70,11 +66,7 @@ namespace smtrat
         }
         while( !mPrimaryBackendFoundAnswer.empty() )
         {
-#ifdef __VS
-            std::atomic<bool>* toDelete = mPrimaryBackendFoundAnswer.back();
-#else
             std::atomic_bool* toDelete = mPrimaryBackendFoundAnswer.back();
-#endif
             mPrimaryBackendFoundAnswer.pop_back();
             delete toDelete;
         }
@@ -280,11 +272,7 @@ namespace smtrat
         _out << " )" << std::endl << std::endl;;
     }
     
-#ifdef __VS
-    vector<Module*> Manager::getBackends( Module* _requiredBy, std::atomic<bool>* _foundAnswer )
-#else
     std::vector<Module*> Manager::getBackends( Module* _requiredBy, std::atomic_bool* _foundAnswer )
-#endif
     {
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         std::lock_guard<std::mutex> lock(mBackendsMutex);

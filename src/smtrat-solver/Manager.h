@@ -250,7 +250,6 @@ namespace smtrat
              * Prints the currently found assignment of variables occurring in the so far 
              * added formulas to values of their domains, if the conjunction of these 
              * formulas is satisfiable.
-             * @param The stream to print on.
              */
             void printAssignment() const;
             
@@ -258,7 +257,7 @@ namespace smtrat
              * Prints all assignments of variables occurring in the so far 
              * added formulas to values of their domains, if the conjunction of these 
              * formulas is satisfiable.
-             * @param The stream to print on.
+             * @param _out The stream to print on.
              */
             void printAllAssignments( std::ostream& _out = std::cout )
             {
@@ -269,19 +268,19 @@ namespace smtrat
              * Prints the first found infeasible subset of the set of received formulas.
              * @param _out The stream to print on.
              */
-            void printInfeasibleSubset( std::ostream& = std::cout ) const;
+            void printInfeasibleSubset( std::ostream& _out = std::cout ) const;
             
             /**
              * Prints the stack of backtrack points.
              * @param _out The stream to print on.
              */
-            void printBackTrackStack( std::ostream& = std::cout ) const;
+            void printBackTrackStack( std::ostream& _out = std::cout ) const;
             
             /**
              * Prints the strategy of the solver maintained by this manager.
              * @param _out The stream to print on.
              */
-            void printStrategyGraph( std::ostream& _os = std::cout ) const
+            void printStrategyGraph( std::ostream& _out = std::cout ) const
             {
                 _os << mStrategyGraph << std::endl;
             }
@@ -440,18 +439,13 @@ namespace smtrat
             /**
              * Get the backends to call for the given problem instance required by the given module.
              *
-             * @param _formula     The problem instance.
              * @param _requiredBy  The module asking for a backend.
              * @param _foundAnswer A conditional
              *
              * @return  A vector of modules, which the module defined by _requiredBy calls in parallel to achieve
              *           an answer to the given instance.
              */
-#ifdef __VS
-            std::vector<Module*> getBackends( Module*, std::atomic<bool>* );
-#else
-            std::vector<Module*> getBackends( Module*, std::atomic_bool* );
-#endif
+            std::vector<Module*> getBackends( Module* _requiredBy, std::atomic_bool* _foundAnswer );
             
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             /**

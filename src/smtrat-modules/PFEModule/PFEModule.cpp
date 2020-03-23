@@ -1,5 +1,5 @@
 /**
- * @file PFEModule.tpp
+ * @file PFEModule.cpp
  * @author Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
  * @author Florian Corzilius <corzilius@cs.rwth-aachen.de>
  *
