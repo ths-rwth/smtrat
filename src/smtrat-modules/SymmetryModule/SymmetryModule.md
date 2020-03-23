@@ -1,7 +1,7 @@
 # SymmetryModule {#SymmetryModule}
 
 This module tries to recognize syntactic symmetries in the input formula and adds symmetry breaking constraints.
-The core functionality is provided by CArL through \textttcarl::formula::breakSymmetries() which internally encodes the formula as a graph and uses bliss to find automorphisms on this graph.
+The core functionality is provided by CArL through carl::formula::breakSymmetries() which internally encodes the formula as a graph and uses bliss to find automorphisms on this graph.
 
 ### Efficiency
 Finding automorphisms is as difficult as determining whether two graphs are isomorphic, and it is not known whether this problem can be solved in polynomial or exponential time.
