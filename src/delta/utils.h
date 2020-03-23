@@ -111,7 +111,7 @@ public:
 	}
 	/**
 	 * Print a progress bar for a progress of `progress / total`.
-	 * @param progress Progress.
+	 * @param p Progress.
 	 */
 	void operator()(const std::pair<std::size_t, std::size_t>& p) {
 		if (p.second != 0) (*this)(p.first, p.second);

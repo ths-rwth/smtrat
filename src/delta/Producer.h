@@ -62,7 +62,7 @@ public:
 	
 	/**
 	 * Apply simplifications to the given node.
-	 * @param n Node to simplify.
+	 * @param root Node to simplify.
 	 */
 	std::size_t operator()(Node& root) {
 		std::size_t skip = 0;
@@ -152,7 +152,7 @@ private:
 	 * Performs the actual simplifications.
 	 * @param root Root of the current smtlib file.
 	 * @param n Node that is currently processed.
-	 * @param progress Current progress.
+	 * @param num Current progress.
 	 */
 	void process(const Node& root, const Node& n, std::size_t num) {
 		if (n.immutable()) return;
