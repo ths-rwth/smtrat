@@ -282,7 +282,7 @@ namespace smtrat
              */
             void printStrategyGraph( std::ostream& _out = std::cout ) const
             {
-                _os << mStrategyGraph << std::endl;
+                _out << mStrategyGraph << std::endl;
             }
             
             // Internally used interfaces
