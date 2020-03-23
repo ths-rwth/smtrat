@@ -1,34 +1,36 @@
-# Rationale
+# OneCell Exlanation {#onecell}
+
+## Rationale
 To better understand the CAD implementation this document concisely explains
 important CAD terminology from the literature and high-level implementation
 design decisions. Low-level design decisions for structs and classes are found
 in the implementation files themselves.
 
-# Universe
+## Universe
 The n-dimensional space in which a CADCell exists.  The universe has n axes
 (=std basis vectors), numbered 0 to n-1, and each axis is associated with one
 variable.
 
-# Variables order
+## Variables order
 A variable order like x,y,z tell us that the universe is 3-dimensional, gives
 a name to the each coordinate axis (thus also defines an axis ordering), tells
 us how to interpret a point like (5,2,1), and allows us to define properties
 like "level" for points and polynomials and "cylindrical" for CADCells.
 
-# Level of a point
+## Level of a point
 Number of components that a point has but interpreted with respect to the first
 variables in a variable ordering. E.g., if the universe has 3 axes/variables
 like x,y,z in that (increasing) order, then a point of level 2 has exactly
 2 components representing the coordinates for the first two variables, x and y.
 
-# Level of a polynomial
+## Level of a polynomial
 The number/index of the highest variable, with respect to a variable
 ordering, that appears with a positive degree in a polynomial. E.g., if the
 universe has 3 axes/variables like x,y,z in that (increasing) order, then
 a polynomial of level 2 at most mentions the first 2 variables, x and y, and
 definitely mentions second variable y but no "higher" variable like z .
 
-# CADCell
+## CADCell
 A "cylindric algebraic cell" exists in an n-dimensional vector space called a
 "universe".  A cell is a subspace of that universe with a possibly lower
 dimension and is "cylindric" only with respect to a specific variable
@@ -49,11 +51,11 @@ those represents the fixed boundary number). A different position, i.e., a
 different variable replacement, yields a possibly different univariate
 polynomial with a different root.
 
-# Level of a sector/section
+## Level of a sector/section
 The number of the axis (with respect to some variable ordering that defines the
 same axis ordering) for which a sector/section defines the bounds. This number
 is also the level of the polynomial(s) inside the sector/section.
 
-# Open CADCell
+## Open CADCell
 A cell is "open" if it only consists of sectors, i.e., it is open along all
 axes and is therefore a subspace with the same dimension as its universe.

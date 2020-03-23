@@ -1,0 +1,3 @@
+# MCSAT architecture
+
+@subpage onecell
