@@ -49,8 +49,8 @@ private:
 	 * Calls the checker and checks the result.
 	 * Method that is called by `std::async`.
      * @param n Node to check.
-     * @param checker Checker.
      * @param message Message, if check is successful.
+	 * @param num Number of this node in the iteration.
      */
 	void performCheck(const Node& n, const std::string& message, std::size_t num) {
 		if (hasResult()) {
@@ -85,8 +85,8 @@ public:
 	/**
 	 * Initiate asynchronous check for the given node.
      * @param n Node to check.
-     * @param c Checker.
      * @param message Message.
+	 * @param num Number of this node in the iteration.
      */
 	void consume(const Node& n, const std::string& message, std::size_t num) {
 		if (hasResult()) return;

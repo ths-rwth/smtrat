@@ -266,10 +266,10 @@ namespace smtrat
 
             /**
              * Constructs a module.
-             * @param type The type of this module.
              * @param _formula The formula passed to this module, called received formula.
              * @param _foundAnswer Vector of Booleans: If any of them is true, we have to terminate a running check procedure.
              * @param _manager A reference to the manager of the solver using this module.
+             * @param module_name Name of this module as string for printing.
              */
             Module( const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager = nullptr, std::string module_name = "Module" );
             
