@@ -49,8 +49,9 @@ When a module issues a backend call the manager identifies all suitable backend 
 
 A module \f$m\f$ holds a set of formulas, called its set of received formulas and denoted by \f$C_{rcv}(m)\f$. The main function of a module is `check(bool full)`, which either decides whether \f$C_{rcv}(m)\f$ is satisfiable or not, returning `SAT` or `UNSAT`, respectively, or returns `UNKNOWN`. A set of formulas is semantically defined by their conjunction. If the function's argument `full` is set to false, the underlying procedure of \f$m\f$ is allowed to omit hard obstacles during solving at the cost of returning `UNKNOWN` in more cases. We can manipulate \f$C_{rcv}(m)\f$ by adding (removing) formulas \f$\varphi\f$ to (from) it with `add(\f$\varphi\f$)` (`remove(\f$\varphi\f$)`). Usually, \f$C_{rcv}(m)\f$ is only slightly changed between two consecutive `check` calls, hence, the solver's performance can be significantly improved if a module works incrementally and supports backtracking. In case \f$m\f$ determines the unsatisfiability of \f$C_{rcv}(m)\f$, it has to compute at least one preferably small infeasible subset \f$C_{inf}(m)\subseteq C_{rcv}(m)\f$. Moreover, a module can specify \emph{lemmas}, which are valid formulas. They encapsulate information which can be extracted from a module's internal state and propagated among other modules. Furthermore, a module itself can ask other modules for the satisfiability of its \emph{set of passed formulas} denoted by \f$C_{pas}(m)\f$, if it invokes the procedure `runBackends(bool full)` (controlled by the manager). It thereby delegates work to modules that may be more suitable for the problem at hand. 
 
-\section{Strategy}
-\label{sec::strategy}
+
+## Strategy
+
 \smtrat allows a user to decide how to compose the modules. For this purpose we provide a graphical user interface, where the user can create a \emph{strategy} specifying this composition. A strategy is a directed tree \f$T:=(V, E)\f$ with a set \f$V\f$ of modules as nodes and \f$E\subseteq V\times \Omega\times\Sigma\times V\f$, with \f$\Omega\f$ being the set of \emph{conditions} and \f$\Sigma\f$ being the set of \emph{priority values}. A condition is an arbitrary Boolean combination of formula properties, such as propositions about the Boolean structure of the formula, e.g., whether it is in conjunctive normal form (CNF), about the constraints, \eg whether it contains equations, or about the polynomials, e.g., whether they are linear. Furthermore, each edge carries a unique priority value from \f$\Sigma=\{1,\ \ldots,\ |E|\}\f$.
 
 ## Manager
@@ -66,7 +67,7 @@ In order to exploit the incrementality of the modules, all parallel executed bac
   
 ## Procedures implemented as modules
 
-The heart of an SMT solver usually forms a SAT solver. In SMT-RAT, the module SATModdule abstracts the received formulae to propositional logic and uses the efficient SAT solver MiniSat @cite minisat to find a Boolean assignment of the abstraction. It invokes `runBackends` where the passed formulae of the SATModule contain the constraints abstracted by the assigned Boolean variables in a less-lazy fashion @cite sebastiani2007lazy. 
+The heart of an SMT solver usually forms a SAT solver. In SMT-RAT, the module SATModule abstracts the received formulae to propositional logic and uses the efficient SAT solver MiniSat @cite minisat to find a Boolean assignment of the abstraction. It invokes `runBackends` where the passed formulae of the SATModule contain the constraints abstracted by the assigned Boolean variables in a less-lazy fashion @cite sebastiani2007lazy. 
 [Todo: Make a concise description here, refer to extensive discussion of modules]
 
 ## Infeasible subsets and lemmas

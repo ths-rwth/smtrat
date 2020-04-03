@@ -1,4 +1,4 @@
-# OneCell Exlanation {#onecell}
+# OneCell Explanation {#onecell}
 
 ## Rationale
 To better understand the CAD implementation this document concisely explains

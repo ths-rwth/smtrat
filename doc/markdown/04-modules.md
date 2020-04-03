@@ -105,10 +105,10 @@ Running the backend is done in two steps:
 The first step is a bit more tricky, as we need to know which received formulas led to a passed
 formula. For this purpose the \moduleInputClass maintains a mapping from a passed sub-formula to one or more conjunctions of received sub-formulas. We give a small example. Let us assume that a module has so far received the following
 constraints (wrapped in formulas)
-$$c_0:x\leq0,\ c_1:x\geq 0,\ c_2:x=0$$
-and combines the first two constraints $c_0$ and $c_1$ to $c_2$. Afterwards it calls its backend on the only remaining constraint,
-that means the passed formula contains only $c_2:x=0$. The mapping of $c_2$ in the passed formula to the received sub-formulas it
-stems from then is $$c_2\ \mapsto\ (c_0 \land c_1,\ c_2).$$
+\f\[c_0:x\leq0,\ c_1:x\geq 0,\ c_2:x=0\f\]
+and combines the first two constraints \f$c_0\f$ and \f$c_1\f$ to \f$c_2\f$. Afterwards it calls its backend on the only remaining constraint,
+that means the passed formula contains only \f$c_2:x=0\f$. The mapping of \f$c_2\f$ in the passed formula to the received sub-formulas it
+stems from then is \f\[c_2\ \mapsto\ (c_0 \land c_1,\ c_2).\f\]
 
 The mapping is maintained automatically and offers two methods to add formulas to the passed formulas:
 
