@@ -44,7 +44,7 @@ EndDefineModule()
 
 
 def texContent(module):
-	result = "Implements ...\n\n\paragraph{Efficiency} ...\n"
+	result = "# "+module+"Module (#"+module+"Module) \n\nImplements ...\n\n### Efficiency ...\n"
 	return result 
 
 def headerContent(module):
@@ -248,7 +248,7 @@ files = {
 	"CMakeLists.txt" : cmakeContent,
 	moduleName + "Module.h": headerContent,
 	moduleName + "Module.cpp": sourceContent,
-	moduleName + "Module.tex": texContent,
+	moduleName + "Module.md": texContent,
 	moduleName + "Settings.h": settingsContent,
 	"Instantiation.h.in": instantiationContent,
 }

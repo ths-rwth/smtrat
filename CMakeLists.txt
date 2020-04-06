@@ -36,7 +36,6 @@ option( BUILD_GUI "Build the GUI" OFF )
 option( FORCE_SHIPPED_RESOURCES "Do not look in system for resources which are included" OFF )
 option( USE_GINAC "If disabled, all implementations using the ginac library are disabled." OFF )
 option( USE_COCOA "Use CoCoALib" ON )
-option(${PROJECT_NAME}_DOC_CREATE_PDF "Create PDF reference manual" ON )
 option( ENABLE_TESTING "Enables test target" OFF)
 
 # Strategy
@@ -57,7 +56,7 @@ if (NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE "RELEASE")
 endif()
 
-set(SMTRAT_MANUAL_PATH ${PROJECT_SOURCE_DIR}/manual/manual_${PROJECT_NAME}-${PROJECT_VERSION}.pdf)
+set(SMTRAT_MANUAL_PATH ${PROJECT_SOURCE_DIR}/doc/manual_${PROJECT_NAME}-${PROJECT_VERSION}.pdf)
 set(SMTRAT_MODULES_PATH ${PROJECT_SOURCE_DIR}/src/lib/modules)
 # Include own macros.
 include( smtratmacros )
@@ -156,9 +155,6 @@ endif()
 # # # # # # # # # # # # # # # # # # # # # #
 # C.5. Development and debug libraries.
 # # # # # # # # # # # # # # # # # # # # # #
-
-# add_subdirectory(examples EXCLUDE_FROM_ALL) # offer as an optional target
-add_subdirectory(manual EXCLUDE_FROM_ALL)
 
 if (TARGET Doxygen::doxygen)
 	add_subdirectory(doc EXCLUDE_FROM_ALL)
