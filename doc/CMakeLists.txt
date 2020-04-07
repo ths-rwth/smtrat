@@ -43,7 +43,7 @@ configure_file(manual/doxygen.conf.in ${OUTPUT_DIR}/config-manual/doxygen.conf)
 # Build html apidoc
 add_custom_command(
 	OUTPUT ${OUTPUT_DIR}/apidoc-html/index.html
-	COMMAND Doxygen::doxygen ${OUTPUT_DIR}/config-apidoc-html/doxygen.conf
+	COMMAND Doxygen::doxygen ${OUTPUT_DIR}/config-apidoc-html/doxygen.conf 1>/dev/null 2>/dev/null
 	DEPENDS ${OUTPUT_DIR}/config-apidoc-html/doxygen.conf ${CODE_SOURCES} ${COMMON_SOURCES} ${MARKDOWN_SOURCES}
 )
 add_custom_target(doc-apidoc-html
@@ -54,13 +54,13 @@ add_custom_target(doc-apidoc-html
 # Build pdf apidoc
 add_custom_command(
 	OUTPUT ${OUTPUT_DIR}/apidoc-pdf/refman.tex
-	COMMAND Doxygen::doxygen ${OUTPUT_DIR}/config-apidoc-pdf/doxygen.conf
+	COMMAND Doxygen::doxygen ${OUTPUT_DIR}/config-apidoc-pdf/doxygen.conf 1>/dev/null 2>/dev/null
 	DEPENDS ${OUTPUT_DIR}/config-apidoc-pdf/doxygen.conf ${COMMON_SOURCES} ${CODE_SOURCES} ${MARKDOWN_SOURCES}
 )
 add_custom_target(doc-apidoc-pdf
-	COMMAND ${PDFLATEX_COMPILER} -interaction=batchmode refman.tex || cat refman.log
+	COMMAND ${PDFLATEX_COMPILER} -interaction=batchmode refman.tex 1>/dev/null 2>/dev/null || cat refman.log
 	COMMAND ${BIBTEX_COMPILER} refman || /bin/true
-	COMMAND ${PDFLATEX_COMPILER} -interaction=batchmode refman.tex || cat refman.log
+	COMMAND ${PDFLATEX_COMPILER} -interaction=batchmode refman.tex 1>/dev/null 2>/dev/null || cat refman.log
 	COMMAND cp ${OUTPUT_DIR}/apidoc-pdf/refman.pdf ${OUTPUT_DIR}/doc_${PROJECT_NAME}-${PROJECT_VERSION_LIB}.pdf
 	WORKING_DIRECTORY ${OUTPUT_DIR}/apidoc-pdf
 	DEPENDS ${OUTPUT_DIR}/apidoc-pdf/refman.tex
@@ -70,13 +70,13 @@ add_custom_target(doc-apidoc-pdf
 # Build manual
 add_custom_command(
 	OUTPUT ${OUTPUT_DIR}/manual/refman.tex
-	COMMAND Doxygen::doxygen ${OUTPUT_DIR}/config-manual/doxygen.conf
+	COMMAND Doxygen::doxygen ${OUTPUT_DIR}/config-manual/doxygen.conf 1>/dev/null 2>/dev/null
 	DEPENDS ${OUTPUT_DIR}/config-manual/doxygen.conf ${COMMON_SOURCES} ${MARKDOWN_SOURCES}
 )
 add_custom_target(doc-manual
-	COMMAND ${PDFLATEX_COMPILER} -interaction=batchmode refman.tex || cat refman.log
+	COMMAND ${PDFLATEX_COMPILER} -interaction=batchmode refman.tex 1>/dev/null 2>/dev/null || cat refman.log
 	COMMAND ${BIBTEX_COMPILER} refman || /bin/true
-	COMMAND ${PDFLATEX_COMPILER} -interaction=batchmode refman.tex || cat refman.log
+	COMMAND ${PDFLATEX_COMPILER} -interaction=batchmode refman.tex 1>/dev/null 2>/dev/null || cat refman.log
 	COMMAND cp ${OUTPUT_DIR}/manual/refman.pdf ${OUTPUT_DIR}/manual_${PROJECT_NAME}-${PROJECT_VERSION_LIB}.pdf
 	WORKING_DIRECTORY ${OUTPUT_DIR}/manual
 	DEPENDS ${OUTPUT_DIR}/manual/refman.tex
