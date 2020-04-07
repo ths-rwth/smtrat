@@ -39,8 +39,6 @@ if (ENABLE_TESTING)
     add_subdirectory(tests)
 endif()
 
-add_subdirectory(gui EXCLUDE_FROM_ALL)
-
 add_subdirectory(delta)
 
 if (CLANG_TIDY)

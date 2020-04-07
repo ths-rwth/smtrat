@@ -32,7 +32,6 @@ option( LOGGING "Enable logging within the carl library" OFF )
 option( LOGGING_CARL "Compile with the logging facility of the carl library" OFF )
 option( USE_COTIRE "Use cotire to generate and use precompiled headers" OFF )
 option( BUILD_SOLVER "Build the SMT-RAT Solver" ON )
-option( BUILD_GUI "Build the GUI" OFF )
 option( FORCE_SHIPPED_RESOURCES "Do not look in system for resources which are included" OFF )
 option( USE_GINAC "If disabled, all implementations using the ginac library are disabled." OFF )
 option( USE_COCOA "Use CoCoALib" ON )
@@ -141,16 +140,6 @@ endif()
 # # # # # # # # # # # # # # # # # # # # # #
 # C.2. required libraries
 # # # # # # # # # # # # # # # # # # # # # #
-
-# # # # # # # # # # # # # # # # # # # # # #
-# C.4. Required libraries for GUI.
-# # # # # # # # # # # # # # # # # # # # # #
-
-if( BUILD_GUI )
-    find_package(Ant REQUIRED) # for building the GUI
-    find_package(Java 1.7 REQUIRED) # for building the GUI
-    find_package(Java COMPONENTS Development REQUIRED) # for building the GUI
-endif()
 
 # # # # # # # # # # # # # # # # # # # # # #
 # C.5. Development and debug libraries.

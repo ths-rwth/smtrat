@@ -183,14 +183,10 @@ We are talking about composition and toolbox, as SMT-RAT contains implementation
 of many different procedures to tackle, \eg \supportedLogics, each of them
 embedded in a module with uniform interfaces. These modules form the tools in the toolbox
 and it is dedicated to a user how to use them for solving an SMT formula.
-We provide a self-explanatory graphical user interface (GUI) for the definition of a graph-based 
-strategy specifying which module(s) should be applied on which formula, 
-taking into account the modules which were already involved.
 
 In Section @ref sec::strategy we have already introduced
-a strategy and in the following of this chapter we firstly give a brief introduction 
-to the existing modules equipped with an estimation of their input-based performances and then illustrate
-how to use the GUI for composing a strategy.
+a strategy and in the following of this chapter we give a brief introduction 
+to the existing modules equipped with an estimation of their input-based performances.
 
 ## Existing module implementation
 
