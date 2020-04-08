@@ -43,7 +43,7 @@ configure_file(manual/doxygen.conf.in ${OUTPUT_DIR}/config-manual/doxygen.conf)
 # Build html apidoc
 add_custom_command(
 	OUTPUT ${OUTPUT_DIR}/apidoc-html/index.html
-	COMMAND Doxygen::doxygen ${OUTPUT_DIR}/config-apidoc-html/doxygen.conf 1>/dev/null 2>/dev/null
+	COMMAND Doxygen::doxygen ${OUTPUT_DIR}/config-apidoc-html/doxygen.conf
 	DEPENDS ${OUTPUT_DIR}/config-apidoc-html/doxygen.conf ${CODE_SOURCES} ${COMMON_SOURCES} ${MARKDOWN_SOURCES}
 )
 add_custom_target(doc-apidoc-html
@@ -70,7 +70,7 @@ add_custom_target(doc-apidoc-pdf
 # Build manual
 add_custom_command(
 	OUTPUT ${OUTPUT_DIR}/manual/refman.tex
-	COMMAND Doxygen::doxygen ${OUTPUT_DIR}/config-manual/doxygen.conf 1>/dev/null 2>/dev/null
+	COMMAND Doxygen::doxygen ${OUTPUT_DIR}/config-manual/doxygen.conf
 	DEPENDS ${OUTPUT_DIR}/config-manual/doxygen.conf ${COMMON_SOURCES} ${MARKDOWN_SOURCES}
 )
 add_custom_target(doc-manual
