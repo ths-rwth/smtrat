@@ -3,14 +3,14 @@
  */
 #pragma once
 
-#include "../solver/Manager.h"
+#include <smtrat-solver/Manager.h>
 
-#include "../modules/FPPModule/FPPModule.h"
-#include "../modules/SATModule/SATModule.h"
-#include "../modules/STropModule/STropModule.h"
-#include "../modules/ICPModule/ICPModule.h"
-#include "../modules/VSModule/VSModule.h"
-#include "../modules/NewCADModule/NewCADModule.h"
+#include <smtrat-modules/FPPModule/FPPModule.h>
+#include <smtrat-modules/SATModule/SATModule.h>
+#include <smtrat-modules/STropModule/STropModule.h>
+#include <smtrat-modules/ICPModule/ICPModule.h>
+#include <smtrat-modules/VSModule/VSModule.h>
+#include <smtrat-modules/NewCADModule/NewCADModule.h>
 
 namespace smtrat
 {
