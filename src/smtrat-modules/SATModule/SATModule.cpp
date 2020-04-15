@@ -2953,12 +2953,10 @@ namespace smtrat
                     }
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Deciding upon " << next);
 				}
-                if (next == lit_Undef) {
-                    if (Settings::mc_sat) {
-                        assert(mMCSAT.fullConsistencyCheck());
-                        assert(mMCSAT.theoryAssignmentComplete());
-                        SMTRAT_LOG_DEBUG("smtrat.sat", "No further theory variable to assign.");
-                    }
+                if (Settings::mc_sat && next == lit_Undef) {
+                    assert(mMCSAT.fullConsistencyCheck());
+                    assert(mMCSAT.theoryAssignmentComplete());
+                    SMTRAT_LOG_DEBUG("smtrat.sat", "No further theory variable to assign.");
                     mCurrentAssignmentConsistent = SAT;
                 }
 
