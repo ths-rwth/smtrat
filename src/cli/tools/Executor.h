@@ -61,9 +61,9 @@ public:
 
 		SMTRAT_LOG_DEBUG("smtrat", "Asserting " << f);
 		if (state.has_assertion(f)) {
-			error() << "assertion already exists";
+			// error() << "assertion already exists";
 		} else if (state.has_soft_assertion(f)) {
-			error() << "soft assertion already exists";
+			// error() << "soft assertion already exists";
 		} else {
 			state.add_assertion(f);
 		}
@@ -73,9 +73,9 @@ public:
 		if (state.is_mode(execution::Mode::START)) setLogic(carl::Logic::UNDEFINED);
 
 		if (state.has_assertion(f)) {
-			error() << "assertion already exists";
+			// error() << "assertion already exists";
 		} else if (state.has_soft_assertion(f)) {
-			error() << "soft assertion already exists";
+			// error() << "soft assertion already exists";
 		} else {
 			state.add_soft_assertion(f, weight, id);
 		}
