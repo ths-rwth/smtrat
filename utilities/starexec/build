@@ -1,6 +1,6 @@
 #!/bin/sh
 
-solver=smtrat
+solver=smtrat-static
 
 echo "Copying smtrat from build/"
 cp ../../build/$solver bin/smtrat
