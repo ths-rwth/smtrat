@@ -18,7 +18,7 @@ The actual transformation rules are implemented in `operations.h` and are enable
 The implemented rules are rather simple: removing a node, replacing a node by a child node, simplifying a number, replacing a symbol by a constant or eliminating a let expression.
 These transformations are designed such that they can be extended easily.
 For a given input `delta` applies each transformation to each node.
-Each application may produce arbitrarily many \emph{candidate inputs} which are then tested. The first candidate that provokes the error is then adopted, the other candidates are rejected.
+Each application may produce arbitrarily many *candidate inputs* which are then tested. The first candidate that provokes the error is then adopted, the other candidates are rejected.
 
 When analyzing the behavior, `delta` relies on the exit code of the program.
 It will run the program on the original input and obtain the original exit code.

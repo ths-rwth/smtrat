@@ -7,7 +7,7 @@ chapter. A new module and, hence, the corresponding C++ source and header files 
 created when using the script `writeModules.py`. Its single argument is the module's name
 and the script creates a new folder in `src/lib/modules/` containing the
 source and header file with the interfaces yet to implement. Furthermore, it is optional to create the
-module having a template parameter forming a settings object as explained in Section~\ref{sec:auxfunctions}.
+module having a template parameter forming a settings object as explained in @ref sec:auxfunctions.
 A new module should be created only this way, as the script takes care of a correct integration of the corresponding code
 into SMT-RAT. A module can be deleted belatedly by just removing the complete folder it is implemented in.
 
@@ -20,7 +20,7 @@ Here is an overview of the most important members of the class `Module`.
 - `const ModuleInput* mpReceivedFormula`: the received formula stores the conjunction of the so far received formulas, which this module considers for a satisfiability check. These formulas are of the type FormulaT and the ModuleInput is basically a list of such formulas, which never contains a formula more than once.
 - `ModuleInput* mpPassedFormula`: the passed formula stores the conjunction of the formulas which this module passes to a backend to be solved for satisfiability. There are dedicated methods to change this member, which are explained in the following.
 
-The received formula of a module is the passed formula of the preceding module. The owner is the preceding module, hence, a module has only read access to its received formula. The \moduleInputClass also stores a mapping of a sub-formula in the passed formula of a module to its origins in the received formula of the same module. Why this mapping is essential and how we can construct it is explained in Section @ref sec:runbackend.
+The received formula of a module is the passed formula of the preceding module. The owner is the preceding module, hence, a module has only read access to its received formula. The `ModuleInput` also stores a mapping of a sub-formula in the passed formula of a module to its origins in the received formula of the same module. Why this mapping is essential and how we can construct it is explained in Section @ref sec:runbackend.
 
 ## Interfaces to implement
 
@@ -40,8 +40,8 @@ is called, before a formula containing the given constraint is added
 to this module for consideration of a later satisfiability check. 
 This information might be useful for the module, e.g., for the 
 initialization of the data structures it uses. If the module
-can already decide whether the given constraint is not satisfiable itself, it returns false
-otherwise true.
+can already decide whether the given constraint is not satisfiable itself, it returns `false`
+otherwise `true`.
 
 ### Adding a received formula
 
@@ -53,7 +53,7 @@ otherwise true.
 Adds the formula at the given position in the conjunction of received formulas, meaning that this module has to include this formula
 in the next satisfiability check. If the module
 can already decide (with very low effort) whether the given formula is not satisfiable in combination
-with the already received formulas, it returns \false otherwise \true. This is usually determined using the 
+with the already received formulas, it returns `false` otherwise `true`. This is usually determined using the 
 solving results this module has stored after the last consistency checks. 
 In the most cases the implementation of a new module needs some initialization in this method.
 
@@ -76,11 +76,11 @@ which has been stored in this module and depends on this formula must be removed
 
 Implements the actual satisfiability check of the conjunction of formulas, which are in the received formula.
 There are three options how this module can answer: it either determines that the received formula
-is satisfiable and returns \True, it determines unsatisfiability and returns
-false, or it cannot give a conclusive answer and returns \Unknown. 
+is satisfiable and returns `true`, it determines unsatisfiability and returns
+`false`, or it cannot give a conclusive answer and returns `UNKNOWN`. 
 A module has also the opportunity to reason about the conflicts
 occurred, if it determines unsatisfiability. For this purpose it has to store at least one infeasible
-subset of the set of so far received formulas. If the method `check` is called with its argument being \false, this module is allowed to omit hard obstacles during solving at the cost of returning \UNKNOWN in more cases, we refer to as a \emph{lightweight check}.
+subset of the set of so far received formulas. If the method `check` is called with its argument being `false`, this module is allowed to omit hard obstacles during solving at the cost of returning `UNKNOWN` in more cases, we refer to as a *lightweight check*.
 
 ### Updating the model/satisfying assignment
 
@@ -89,7 +89,7 @@ subset of the set of so far received formulas. If the method `check` is called w
 	    // Write the implementation here.
 	}
 
-If this method is called, the last result of a satisfiability check was \True and no further formulas have been added to the received formula, this module needs to fill its member `mModel` with a model. This model must be complete, that is all variables and uninterpreted functions occurring in the received formula must be assigned to a value of their corresponding domain. It might be necessary to involve the backends using the method `getBackendsModel()` (if they have been asked for the satisfiability of a sub-problem). It stores the model of one backend into the model of this module.
+If this method is called, the last result of a satisfiability check was `true` and no further formulas have been added to the received formula, this module needs to fill its member `mModel` with a model. This model must be complete, that is all variables and uninterpreted functions occurring in the received formula must be assigned to a value of their corresponding domain. It might be necessary to involve the backends using the method `getBackendsModel()` (if they have been asked for the satisfiability of a sub-problem). It stores the model of one backend into the model of this module.
 
 ## Running backend modules
 
@@ -100,10 +100,10 @@ backend if it is appropriate (more details to this are explained in Chapter @ref
 Running the backend is done in two steps:
 
 1. Change the passed formula to the formula which should be solved by the backend. Keep in mind, that the passed formula could still contain formulas of the previous backend call. 
-2. Call `runBackends(full)`, where `full` being \false means that the backends have to perform a lightweight check.
+2. Call `runBackends(full)`, where `full` being `false` means that the backends have to perform a lightweight check.
 
 The first step is a bit more tricky, as we need to know which received formulas led to a passed
-formula. For this purpose the \moduleInputClass maintains a mapping from a passed sub-formula to one or more conjunctions of received sub-formulas. We give a small example. Let us assume that a module has so far received the following
+formula. For this purpose the `ModuleInput` maintains a mapping from a passed sub-formula to one or more conjunctions of received sub-formulas. We give a small example. Let us assume that a module has so far received the following
 constraints (wrapped in formulas)
 \f\[c_0:x\leq0,\ c_1:x\geq 0,\ c_2:x=0\f\]
 and combines the first two constraints \f$c_0\f$ and \f$c_1\f$ to \f$c_2\f$. Afterwards it calls its backend on the only remaining constraint,
@@ -115,7 +115,7 @@ The mapping is maintained automatically and offers two methods to add formulas t
 	pair<ModuleInput::iterator,bool> addReceivedSubformulaToPassedFormula(ModuleInput::const_iterator)
 
 Adds the formula at the given positition in the received formula
-to the passed formulas. The mapping to its \emph{original formulas} contains
+to the passed formulas. The mapping to its *original formulas* contains
 only the set consisting of the formula at the given position in the received formula.
 
 	pair<ModuleInput::iterator,bool> addSubformulaToPassedFormula(const Formula&)
@@ -125,8 +125,8 @@ only the set consisting of the formula at the given position in the received for
 Adds the given formula to the passed formulas. It is mapped to the given conjunctions of origins in the received formula. 
 The second argument (if it exists) must only consist of formulas in the received formula.
 
-It returns a pair of a position in the passed formula and a `bool`. The `bool` is true, if the formula at the given position in the received formula has been added to the passed formula, which is only the case, if this formula was not yet part of the 
-passed formula. Otherwise, the `bool` is false. The returned position in the passed formula points to the just added formula.
+It returns a pair of a position in the passed formula and a `bool`. The `bool` is `true`, if the formula at the given position in the received formula has been added to the passed formula, which is only the case, if this formula was not yet part of the 
+passed formula. Otherwise, the `bool` is `false`. The returned position in the passed formula points to the just added formula.
 
 The vector of conjunctions of origins can be passed as a shared pointer, which is due to a more efficient manipulation of these origins. Some of the current module implementations directly change this vector and thereby achieve directly a change in the origins of a passed formula.
 	\end{itemize}
@@ -136,7 +136,7 @@ a formula to the passed formula without giving any origin (which is done by the 
 The second step is really just calling `runBackends` and processing its return value, which can be
 `True`, `False`, or `Unknown`.
 
-## Auxiliary functions
+## Auxiliary functions {#auxfunctions}
 
 The Module class provides a rich set of methods for the analysis of the implemented procedures in a module and debugging purposes. 
 Besides all the printing methods, which print the contents of a member of this module to the given output stream, SMT-RAT helps to maintain the correctness of new modules during their development. It therefore provides methods to store formulas with their assumed satisfiability status in order
@@ -145,7 +145,7 @@ the stored formula. To be able to use the following methods, the compiler flag `
 must be activated, which can be easily achieved when using, e.g., `ccmake`.
 
 - `static void addAssumptionToCheck(const X&, bool, const string&)`
-	Adds the given formulas to those, which are going to be stored as an `.smt2` file, with the assumption that they are satisfiable, if the given Boolean argument is true, or unsatisfiable, if the given Boolean argument is false. The formulas can be passed as one of the following types (`X` can be one of the following data structures)
+	Adds the given formulas to those, which are going to be stored as an `.smt2` file, with the assumption that they are satisfiable, if the given Boolean argument is `true`, or unsatisfiable, if the given Boolean argument is `false`. The formulas can be passed as one of the following types (`X` can be one of the following data structures)
 	
 	- `Formula`: a single formula of any type
 	- `ModuleInput`: the entire received or passed formula of a module
@@ -163,7 +163,7 @@ must be activated, which can be easily achieved when using, e.g., `ccmake`.
 - Another important feature during the development of a new module is the collection of statistics. The script `writeModules.py` for the creation of a new module automatically adds a class to maintain statistics in the same folder in which the module itself is located. The members of this class store the statistics usually represented by primitive data types as integers and floats. They can be extended as one pleases and be manipulated by methods, which have also to be implemented in this class. SMT-RAT collects and prints these statistics automatically, if its command line interface is called with the option `--statistics` or `-s`.
 
 - If the script `writeModules.py` for the creation of a new module is called with the option `-s`, the module has also a template parameter being a settings object. The different settings objects are stored in the settings file again in the same folder as the module is located. Each of these setting objects assigns all settings, which are usually of type `bool`, to values. The name of these objects must be of the form XYSettingsN, if the module is called XYModule and with N being preferably a positive integer. Fulfilling these requirements, the settings to compile this module with, can be chosen, e.g. with `ccmake`, by setting the compiler flag `SMTRAT_XY_Settings` to N. 
-	Within the implementation of the module, its settings can then be accessed using its template parameter `Settings`. If, for instance, we want to change the control flow of the implemented procedure in the new module depending on a setting `mySetting` being true, we write the following:
+	Within the implementation of the module, its settings can then be accessed using its template parameter `Settings`. If, for instance, we want to change the control flow of the implemented procedure in the new module depending on a setting `mySetting` being `true`, we write the following:
 
 		..
 		if(Settings::mySettings)
