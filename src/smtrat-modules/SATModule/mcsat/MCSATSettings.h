@@ -31,7 +31,11 @@ struct MCSATSettingsFMVSOC {
 	//using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
 	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,onecellcad::Explanation, nlsat::Explanation>;
 };
-
+struct MCSATSettingsFMICPVSOC {
+	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+	//using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
+	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,icp::Explanation,vs::Explanation,onecellcad::Explanation, nlsat::Explanation>;
+};
 struct MCSATSettingsFMNL {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
 	// using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
