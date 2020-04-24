@@ -17,8 +17,8 @@ public:
 	}
     void addTimingCollector(const carl::TimingCollector& tc) {
         for (const auto& d: tc.data()) {
-            Statistics::addKeyValuePair(d.first + " (duration in ms)", d.second.overall.count());
-            Statistics::addKeyValuePair(d.first + " (count)", d.second.count);
+            Statistics::addKeyValuePair(d.first + "_duration_ms", d.second.overall.count());
+            Statistics::addKeyValuePair(d.first + "_count", d.second.count);
         }
     }
 	void collect() {
