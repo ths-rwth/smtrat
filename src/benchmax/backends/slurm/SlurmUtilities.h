@@ -117,6 +117,12 @@ std::string parse_result_info(const std::string& content, const std::string& nam
 void remove_log_files(const std::vector<fs::path>& files, bool remove);
 
 /**
+ * Clear log files from directory
+ * @param basedir Base directory to search in.
+ */
+void clear_log_files(const fs::path& basedir);
+
+/**
  * Checks if the given job is finished.
  * @param jobid The job id.
  * @return True if the job is completed.
