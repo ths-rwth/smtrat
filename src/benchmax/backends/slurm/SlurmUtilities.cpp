@@ -188,16 +188,21 @@ void remove_log_files(const std::vector<fs::path>& files, bool remove) {
 }
 
 void clear_log_files(const fs::path& basedir) {
+
 	BENCHMAX_LOG_INFO("benchmax.slurm", "Remove old logs in " << basedir);
-	size_t ctr = 0;
+	std::vector<fs::path> files;
+
 	std::regex filenamere("JOB.[0-9]+_[0-9]+.(out|err)");
 	for (const auto& f: fs::directory_iterator(basedir)) {
 		if (!std::regex_match(f.path().filename().string(), filenamere)) {
+			continue;
 		}
-		std::filesystem::remove(f.path());
-		ctr++;
+		files.emplace_back(f.path());
 	}
-	BENCHMAX_LOG_INFO("benchmax.slurm", "Cleared " << ctr << " log files.");
+	for (const auto& f: files) {
+		std::filesystem::remove(f);
+	}
+	BENCHMAX_LOG_INFO("benchmax.slurm", "Cleared " << files.size() << " log files.");
 }
 
 bool is_job_finished(int jobid) {
