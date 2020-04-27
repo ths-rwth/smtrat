@@ -14,7 +14,7 @@ It is much more compact, though, and may thus be more approachable as an introdu
 If you are new to SMT-RAT and want to have a look around, we recommend reading the [manual](https://github.com/smtrat/smtrat.github.io/raw/master/manual_smtrat-latest.pdf).
 The full API documentation can be found either [online](https://smtrat.github.io/), or in the [pdf documentation](https://github.com/smtrat/smtrat.github.io/raw/master/doc_smtrat-latest.pdf).
 
-If you want to use SMT-RAT and want to know how to get and install it, have a look at @ref getting_started. 
+If you want to use SMT-RAT and want to know how to get and install it, have a look at @ref installation. 
 It covers the most important steps including obtaining the actual source code, obtaining dependencies, building the library and running our test suite.
 
 If you already use SMT-RAT and want to dig deeper or submit new code, you can additionally browse in @ref devguide.
