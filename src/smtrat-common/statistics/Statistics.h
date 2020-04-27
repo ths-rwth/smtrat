@@ -17,7 +17,7 @@ private:
 protected:
 	template<typename T>
 	void addKeyValuePair(const std::string& key, const T& value) {
-		assert(std::find_if(key.begin(), key.end(), isspace) == key.end() && "spaces are not allowed here");
+		assert(std::find_if(key.begin(), key.end(), [](char c){ return std::isspace(static_cast<unsigned char>(c));}) == key.end() && "spaces are not allowed here");
 		if constexpr(std::is_same<T,std::string>::value) {
 			assert(std::find_if(value.begin(), value.end(), isspace) == value.end() && "spaces are not allowed here");
 			mCollected.emplace(key, value);
