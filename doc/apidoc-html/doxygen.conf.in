@@ -41,7 +41,7 @@ CITE_BIB_FILES         = @CMAKE_SOURCE_DIR@/doc/literature.bib
 #########################
 ##### Warnings and progress
 
-QUIET                  = YES
+QUIET                  = NO # YES
 # WARNINGS               = NO
 
 #########################
