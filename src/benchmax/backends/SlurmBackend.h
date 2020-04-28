@@ -39,43 +39,55 @@ private:
 	std::mutex mSlurmjobMutex;
 
 	/// Parse the content of an output file.
-	void parse_result_file(const Jobs& jobs, const std::filesystem::path& file, std::vector<JobData>& results) {
+	void parse_result_file(const Jobs& jobs, const std::filesystem::path& file, std::map<size_t, JobData>& results) {
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Processing file " << file);
 		std::ifstream in(file);
 		std::string content((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
 		auto extension = file.extension();
-		std::regex filere("Executing (.+)\\n# START ([0-9]+) #([^#]*)# END \\2 #(?:([^#]*)# END DATA \\2 #)?");
 
-		auto reBegin = std::sregex_iterator(content.begin(), content.end(), filere);
-		auto reEnd = std::sregex_iterator();
-		for (auto i = reBegin; i != reEnd; ++i) {
-			std::size_t id = std::stoull((*i)[2]) - 1;
-			bool toolFound = false;
-			std::string cmdline = (*i)[1];
-			for (const auto& tool : jobs.tools()) {
-				auto t = tool->parseCommandline(cmdline);
-				if (t) {
-					results.emplace_back(JobData { tool.get(), std::filesystem::path(*t), BenchmarkResult() });
-					toolFound = true;
-					break;
+		if (extension == ".out") {
+			std::regex filere("Executing (.+)\\n# START ([0-9]+) #([^#]*)# END \\2 #(?:([^#]*)# END DATA \\2 #)?");
+			auto reBegin = std::sregex_iterator(content.begin(), content.end(), filere);
+			auto reEnd = std::sregex_iterator();
+			for (auto i = reBegin; i != reEnd; ++i) {
+				std::size_t id = std::stoull((*i)[2]) - 1;
+				if (results.find(id) == results.end()) results.emplace(id, JobData {jobs.tools().begin()->get(), "", BenchmarkResult() });
+
+				bool toolFound = false;
+				std::string cmdline = (*i)[1];
+				for (const auto& tool : jobs.tools()) {
+					auto t = tool->parseCommandline(cmdline);
+					if (t) {
+						std::get<0>(results[id]) = tool.get();
+						std::get<1>(results[id]) = std::filesystem::path(*t);
+						toolFound = true;
+						break;
+					}
 				}
-			}
-			if (!toolFound) {
-				BENCHMAX_LOG_WARN("benchmax.slurm", "Could not find tool for " << cmdline);
-			} else {
-				auto& res = std::get<2>(results.back());
-				if (extension == ".out") {
-					res.stdout = (*i)[3];
-					res.exitCode = std::stoi(slurm::parse_result_info((*i)[4], "exitcode"));
-					res.time = std::chrono::milliseconds(std::stoi(slurm::parse_result_info((*i)[4], "time")));
-					BENCHMAX_LOG_DEBUG("benchmax.slurm", "Got " << res << " for task " << id << " from stdout");
-				} else if (extension == ".err") {
-					res.stderr = (*i)[3];
-					BENCHMAX_LOG_DEBUG("benchmax.slurm", "Got " << res << " for task " << id << " from stderr");
-				} else {
-					BENCHMAX_LOG_WARN("benchmax.slurm", "Trying to parse output file with unexpected extension " << extension);
+				if (!toolFound) {
+					BENCHMAX_LOG_WARN("benchmax.slurm", "Could not find tool for " << cmdline);
 				}
+
+				auto& res = std::get<2>(results[id]);
+				res.stdout = (*i)[3];
+				res.exitCode = std::stoi(slurm::parse_result_info((*i)[4], "exitcode"));
+				res.time = std::chrono::milliseconds(std::stoi(slurm::parse_result_info((*i)[4], "time")));
+				BENCHMAX_LOG_DEBUG("benchmax.slurm", "Got " << res << " for task " << id << " from stdout");
 			}
+		} else if (extension == ".err") {
+			std::regex filere("# START ([0-9]+) #([^#]*)# END \\1 #(?:([^#]*)# END DATA \\1 #)?"); // TODO tool ...
+			auto reBegin = std::sregex_iterator(content.begin(), content.end(), filere);
+			auto reEnd = std::sregex_iterator();
+			for (auto i = reBegin; i != reEnd; ++i) {
+				std::size_t id = std::stoull((*i)[1]) - 1;
+				if (results.find(id) == results.end()) results.emplace(id, JobData {jobs.tools().begin()->get(), "", BenchmarkResult() });
+				
+				auto& res = std::get<2>(results[id]);
+				res.stderr = (*i)[2];
+				BENCHMAX_LOG_DEBUG("benchmax.slurm", "Got " << res << " for task " << id << " from stderr");
+			}
+		} else {
+			BENCHMAX_LOG_WARN("benchmax.slurm", "Trying to parse output file with unexpected extension " << extension);
 		}
 	}
 
@@ -174,13 +186,13 @@ private:
 		}
 
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Collecting results.");
-		std::vector<JobData> results;
+		std::map<size_t, JobData> results;
 		auto files = slurm::collect_result_files(settings_slurm().tmp_dir);
 		for (const auto& f: files) {
 			parse_result_file(jobs, f, results);
 		}
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Parsed results.");
-		for (auto& r: results) {
+		for (auto& [rid, r]: results) {
 			addResult(std::get<0>(r), std::get<1>(r), std::get<2>(r));
 		}
 		if (settings_slurm().archive_log_file != "") {
