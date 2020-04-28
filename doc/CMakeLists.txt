@@ -58,9 +58,9 @@ add_custom_command(
 	DEPENDS ${OUTPUT_DIR}/config-apidoc-pdf/doxygen.conf ${COMMON_SOURCES} ${CODE_SOURCES} ${MARKDOWN_SOURCES}
 )
 add_custom_target(doc-apidoc-pdf
-	COMMAND ${PDFLATEX_COMPILER} -interaction=batchmode refman.tex || /bin/true # cat refman.log
+	COMMAND ${PDFLATEX_COMPILER} -interaction=batchmode refman.tex || echo "done" # cat refman.log
 	COMMAND ${BIBTEX_COMPILER} refman || /bin/true
-	COMMAND ${PDFLATEX_COMPILER} -interaction=batchmode refman.tex || /bin/true # cat refman.log
+	COMMAND ${PDFLATEX_COMPILER} -interaction=batchmode refman.tex || echo "done" # cat refman.log
 	COMMAND cp ${OUTPUT_DIR}/apidoc-pdf/refman.pdf ${OUTPUT_DIR}/doc_${PROJECT_NAME}-${PROJECT_VERSION_LIB}.pdf
 	WORKING_DIRECTORY ${OUTPUT_DIR}/apidoc-pdf
 	DEPENDS ${OUTPUT_DIR}/apidoc-pdf/refman.tex
