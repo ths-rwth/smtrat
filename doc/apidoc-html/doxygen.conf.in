@@ -41,7 +41,7 @@ CITE_BIB_FILES         = @CMAKE_SOURCE_DIR@/doc/literature.bib
 #########################
 ##### Warnings and progress
 
-QUIET                  = NO # YES
+QUIET                  = YES
 # WARNINGS               = NO
 
 #########################
@@ -78,6 +78,8 @@ GENERATE_HTML          = YES
 HTML_OUTPUT            = @CMAKE_BINARY_DIR@/doc/apidoc-html
 HTML_TIMESTAMP         = NO
 GENERATE_TREEVIEW      = YES
+
+EXTRA_PACKAGES         = array
 
 #########################
 ##### Other outputs

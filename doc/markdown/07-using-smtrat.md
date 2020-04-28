@@ -270,7 +270,7 @@ d' = \left\{
 If additionally \f$\frac{d}{g}\f$ is not integral and \f$\sim'\f$ is \f$=\f$, the constraint is simplified \f$0<0\f$, or if \f$\sim'\f$ is \f$\neq\f$,
 the constraint is simplified \f$0=0\f$.
 
-We do some further simplifactions, such as the elimination of multiple roots of the left-hand sides in equations and inequalities with the relation symbol \f$\neq\f$, e.g., \f$x^3=0\f$ is simplified to \f$x=0\f$. We also simplify constraints whose left-hand sides are obviously positive (semi)/negative (semi) definite, e.g., \f$x^2\leq 0\f$ is simplified to \f$x^2=0\f$, which again can be simplified to \f$x=0\f$ according to the first simplification rule.
+We do some further simplifications, such as the elimination of multiple roots of the left-hand sides in equations and inequalities with the relation symbol \f$\neq\f$, e.g., \f$x^3=0\f$ is simplified to \f$x=0\f$. We also simplify constraints whose left-hand sides are obviously positive (semi)/negative (semi) definite, e.g., \f$x^2\leq 0\f$ is simplified to \f$x^2=0\f$, which again can be simplified to \f$x=0\f$ according to the first simplification rule.
 
 ### Linking
 
