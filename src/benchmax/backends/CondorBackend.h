@@ -82,7 +82,7 @@ private:
 	
 public:
 	/// Run all tools on all benchmarks.
-	void run(const Jobs& jobs, bool wait_for_termination) {
+	void run(const Jobs& /*jobs*/, bool /*wait_for_termination*/) {
 		BENCHMAX_LOG_INFO("benchmax.condor", "Generating submit files...");
 		
 		//for (const auto& tool: tools) {
