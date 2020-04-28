@@ -75,7 +75,7 @@ private:
 				BENCHMAX_LOG_DEBUG("benchmax.slurm", "Got " << res << " for task " << id << " from stdout");
 			}
 		} else if (extension == ".err") {
-			std::regex filere("# START ([0-9]+) #([^#]*)# END \\1 #(?:([^#]*)# END DATA \\1 #)?"); // TODO tool ...
+			std::regex filere("# START ([0-9]+) #([^#]*)# END \\1 #(?:([^#]*)# END DATA \\1 #)?");
 			auto reBegin = std::sregex_iterator(content.begin(), content.end(), filere);
 			auto reEnd = std::sregex_iterator();
 			for (auto i = reBegin; i != reEnd; ++i) {
