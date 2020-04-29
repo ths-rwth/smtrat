@@ -262,8 +262,8 @@ and
 \f\[
 d' = \left\{
 \begin{array}{ll}
-\lceil\frac{d}{g}\rceil &\text{ if }\sim'\text{ is }\leq \\[1.5ex]
-\lfloor\frac{d}{g}\rfloor &\text{ if }\sim'\text{ is }\geq \\[1.5ex]
+\lceil\frac{d}{g}\rceil &\text{ if }\sim'\text{ is }\leq \\
+\lfloor\frac{d}{g}\rfloor &\text{ if }\sim'\text{ is }\geq \\
 \frac{d}{g} &\text{ otherwise }
 \end{array}
 \right.\f\]

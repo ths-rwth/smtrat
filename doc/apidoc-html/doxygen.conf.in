@@ -79,7 +79,7 @@ HTML_OUTPUT            = @CMAKE_BINARY_DIR@/doc/apidoc-html
 HTML_TIMESTAMP         = NO
 GENERATE_TREEVIEW      = YES
 
-EXTRA_PACKAGES         = array
+EXTRA_PACKAGES         = array, amssymb, amsmath
 
 #########################
 ##### Other outputs
