@@ -99,8 +99,12 @@ namespace parser {
 		}
 		void popScriptScope() {
 			assert(expressionScopes.empty());
+			assert(!scriptScopes.empty());
 			scriptScopes.top().discharge(*this);
 			scriptScopes.pop();
+		}
+		std::size_t script_scope_size() const {
+			return scriptScopes.size();
 		}
 
 		void reset() {

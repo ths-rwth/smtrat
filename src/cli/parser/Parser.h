@@ -168,8 +168,13 @@ public:
 	}
 	void pop(const Integer& n) {
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(pop " << n << ")");
-		theories.popScriptScope(carl::toInt<carl::uint>(n));
-		callHandler(&InstructionHandler::pop, carl::toInt<carl::uint>(n));
+		auto nint = carl::toInt<carl::uint>(n);
+		if (nint >= state.script_scope_size()) {
+			SMTRAT_LOG_ERROR("smtrat.parser", "Can not pop " << nint << " scopes, we only have " << state.script_scope_size() << " right now.");
+			return;
+		}
+		theories.popScriptScope(nint);
+		callHandler(&InstructionHandler::pop, nint);
 	}
 	void push(const Integer& n) {
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(push " << n << ")");
