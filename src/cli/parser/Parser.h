@@ -169,7 +169,7 @@ public:
 	void pop(const Integer& n) {
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(pop " << n << ")");
 		auto nint = carl::toInt<carl::uint>(n);
-		if (nint >= state.script_scope_size()) {
+		if (nint > state.script_scope_size()) {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Can not pop " << nint << " scopes, we only have " << state.script_scope_size() << " right now.");
 			handler.error() << "Can not pop " << nint << " scopes, we only have " << state.script_scope_size() << " right now.";
 			return;
