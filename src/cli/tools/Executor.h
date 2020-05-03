@@ -96,8 +96,8 @@ public:
 	}
 	void check() {
 		if (state.is_mode(execution::Mode::START)) {
-			error() << "no logic has been set.";
-			return;
+			warn() << "no logic has been set.";
+			if (state.is_mode(execution::Mode::START)) setLogic(carl::Logic::UNDEFINED);
 		}
 		smtrat::resource::Limiter::getInstance().resetTimeout();
 		state.reset_answer();
@@ -273,9 +273,19 @@ public:
 		}
 	}
 	void pop(std::size_t n) {
+		if (state.is_mode(execution::Mode::START)) {
+			warn() << "no logic has been set.";
+			if (state.is_mode(execution::Mode::START)) setLogic(carl::Logic::UNDEFINED);
+		}
+		
 		state.pop(n);
 	}
 	void push(std::size_t n) {
+		if (state.is_mode(execution::Mode::START)) {
+			warn() << "no logic has been set.";
+			if (state.is_mode(execution::Mode::START)) setLogic(carl::Logic::UNDEFINED);
+		}
+		
 		state.push(n);
 	}
 	void reset() {
