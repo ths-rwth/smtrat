@@ -130,56 +130,60 @@ void CADElimination::simplifyCAD() {
 	truthBoundaryCells.clear();
 	S.clear();
 
-	for (std::size_t i = k - 1; i > 0; i--) {
-		std::vector<Poly> N;
-		std::size_t numberOfProjectionFactors = mCAD.getProjection().size(n + 1 - i);
-		for (std::size_t id = 0; id < numberOfProjectionFactors; id++) {
-			if (mCAD.getProjection().hasPolynomialById(n + 1 - i, id)) {
-				if (mCAD.getProjection().testProjectionFactor(n + 1 - i, id)) {
-					N.emplace_back(mCAD.getProjection().getPolynomialById(n + 1 - i, id));
-				}
-			}
-		}
-		for (auto it = tree().begin_depth(i); it != tree().end_depth(); it++) {
-			if (it->isRoot()) {
-				TreeIT c = it;
-				TreeIT b = it.previous();
-				TreeIT d = it.next().next();
-				if (truthBoundaryTest(b, c, d)) {
-					SMTRAT_LOG_DEBUG("smtrat.qe", mCAD.getLifting().extractSampleMap(c) << " is a truth-boundary cell");
-					truthBoundaryCells.push_back(c);
-				}
-			}
-		}
-		for (const auto& cell : truthBoundaryCells) {
-			std::vector<Poly> P;
+	if (k > 0) {
+		for (std::size_t i = k - 1; i > 0; i--) {
+			std::vector<Poly> N;
+			std::size_t numberOfProjectionFactors = mCAD.getProjection().size(n + 1 - i);
 			for (std::size_t id = 0; id < numberOfProjectionFactors; id++) {
 				if (mCAD.getProjection().hasPolynomialById(n + 1 - i, id)) {
-					Poly p(mCAD.getProjection().getPolynomialById(n + 1 - i, id));
-					if (carl::Sign::ZERO == carl::sgn(carl::RealAlgebraicNumberEvaluation::evaluate(p, mCAD.getLifting().extractSampleMap(cell)))) {
-						P.push_back(p);
+					if (mCAD.getProjection().testProjectionFactor(n + 1 - i, id)) {
+						N.emplace_back(mCAD.getProjection().getPolynomialById(n + 1 - i, id));
 					}
 				}
 			}
-			if (!P.empty()) {
-				S.push_back(P);
-			}
-		}
-		if (!S.empty()) {
-			std::vector<Poly> H = computeHittingSet(S);
-			for (std::size_t id = 0; id < numberOfProjectionFactors; id++) {
-				if (mCAD.getProjection().hasPolynomialById(n + 1 - i, id)) {
-					Poly p(mCAD.getProjection().getPolynomialById(n + 1 - i, id));
-					if (std::find(N.begin(), N.end(), p) == N.end() && std::find(H.begin(), H.end(), p) == H.end()) {
-						SMTRAT_LOG_DEBUG("smtrat.qe", "Remove " << p);
-						mCAD.removePolynomial(n + 1 - i, id);
+			for (auto it = tree().begin_depth(i); it != tree().end_depth(); it++) {
+				if (it->isRoot()) {
+					TreeIT c = it;
+					TreeIT b = it.previous();
+					TreeIT d = it.next().next();
+					if (truthBoundaryTest(b, c, d)) {
+						SMTRAT_LOG_DEBUG("smtrat.qe", mCAD.getLifting().extractSampleMap(c) << " is a truth-boundary cell");
+						truthBoundaryCells.push_back(c);
 					}
 				}
 			}
-			H.clear();
+			for (const auto& cell : truthBoundaryCells) {
+				std::vector<Poly> P;
+				for (std::size_t id = 0; id < numberOfProjectionFactors; id++) {
+					if (mCAD.getProjection().hasPolynomialById(n + 1 - i, id)) {
+						Poly p(mCAD.getProjection().getPolynomialById(n + 1 - i, id));
+						if (carl::Sign::ZERO == carl::sgn(carl::RealAlgebraicNumberEvaluation::evaluate(p, mCAD.getLifting().extractSampleMap(cell)))) {
+							P.push_back(p);
+						}
+					}
+				}
+				if (!P.empty()) {
+					S.push_back(P);
+				}
+			}
+			if (!S.empty()) {
+				std::vector<Poly> H = computeHittingSet(S);
+				for (std::size_t id = 0; id < numberOfProjectionFactors; id++) {
+					if (mCAD.getProjection().hasPolynomialById(n + 1 - i, id)) {
+						Poly p(mCAD.getProjection().getPolynomialById(n + 1 - i, id));
+						if (std::find(N.begin(), N.end(), p) == N.end() && std::find(H.begin(), H.end(), p) == H.end()) {
+							SMTRAT_LOG_DEBUG("smtrat.qe", "Remove " << p);
+							mCAD.removePolynomial(n + 1 - i, id);
+						}
+					}
+				}
+				H.clear();
+			}
+			truthBoundaryCells.clear();
+			S.clear();
 		}
-		truthBoundaryCells.clear();
-		S.clear();
+	} else {
+		SMTRAT_LOG_DEBUG("smtrat.qe", "Can not simplify CAD further, as there are no free variables.");
 	}
 	computeTruthValues();
 }
