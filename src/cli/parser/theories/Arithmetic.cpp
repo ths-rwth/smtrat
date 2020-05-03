@@ -347,7 +347,17 @@ namespace arithmetic {
 		if (!convertArguments(op, arguments, args, errors)) return false;
 		
 		if (boost::get<Poly::ConstructorOperation>(&op) != nullptr) {
-			result = Poly(boost::get<Poly::ConstructorOperation>(op), args);
+			auto o = boost::get<Poly::ConstructorOperation>(op);
+			if (o == Poly::ConstructorOperation::DIV) {
+				if (args.size() > 1 && carl::is_zero(args[1])) {
+					SMTRAT_LOG_WARN("smtrat.smtlib", "Though SMTLIB allows for the second operator of \"" << o << "\" to be zero, we strongly discourage doing this.");
+					result = Poly();
+				} else {
+					result = Poly(o, args);
+				}
+			} else {
+				result = Poly(o, args);
+			}
 		} else if (boost::get<carl::Relation>(&op) != nullptr) {
 			if (args.size() == 2) {
 				result = arithmetic::makeConstraint(*this, args[0], args[1], boost::get<carl::Relation>(op));
