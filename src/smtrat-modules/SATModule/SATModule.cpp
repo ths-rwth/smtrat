@@ -387,7 +387,11 @@ namespace smtrat
                 var_scheduler.insert(v);
             }
 			assert(mMCSAT.level() == 0);
-            var_scheduler.rebuildTheoryVars(mBooleanConstraintMap);
+            if (var_scheduler.empty()) {
+                SMTRAT_LOG_DEBUG("smtrat.sat", "We have no variables in our variable scheduler.");
+            } else {
+                var_scheduler.rebuildTheoryVars(mBooleanConstraintMap);
+            }
 		}
         ++solves;
         // compared to original minisat we add the number of clauses with size 1 (nAssigns()) and learnts, we got after init()
