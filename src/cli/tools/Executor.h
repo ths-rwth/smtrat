@@ -95,6 +95,10 @@ public:
 		}
 	}
 	void check() {
+		if (state.is_mode(execution::Mode::START)) {
+			error() << "no logic has been set.";
+			return;
+		}
 		smtrat::resource::Limiter::getInstance().resetTimeout();
 		state.reset_answer();
 		Model m;
