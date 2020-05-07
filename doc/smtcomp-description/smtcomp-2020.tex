@@ -10,43 +10,43 @@
 
 \maketitle
 
-\texttt{SMT-RAT}~\cite{Corzilius2015} is an open-source \texttt{C++} toolbox for strategic and parallel SMT solving
-consisting of a collection of SMT compliant implementations of methods for
-solving quantifier-free first-order formulas with a focus on nonlinear real and integer arithmetic.
+\texttt{SMT-RAT}~\cite{Corzilius2015} is an open-source \texttt{C++} toolbox for strategic and parallel SMT solving consisting of a collection of SMT compliant implementations of methods for
+solving quantifier-free first-order formulas with a focus on non-linear real and integer arithmetic.
 Further supported theories include linear real and integer arithmetic, difference logic, bit-vectors and pseudo-Boolean constraints.
 A more detailed description of \texttt{SMT-RAT} can be found at \href{https://smtrat.github.io/}{\color{blue}https://smtrat.github.io/}.
-There will be two versions of \texttt{SMT-RAT} that employ different strategies that we call \texttt{SMT-RAT}, \texttt{SMT-RAT-MCSAT} and \texttt{SMT-RAT-CDCAC}.
+There will be three versions of \texttt{SMT-RAT} that employ different approaches that we call \texttt{SMT-RAT}, \texttt{SMT-RAT-MCSAT} and \texttt{SMT-RAT-CDCAC}.
+
+
 
 \paragraph{\texttt{SMT-RAT}} focuses on non-linear arithmetic.
-As core theory solving modules, it employs interval constraint propagation (ICP) as presented in~\cite{GGIGSC10}, virtual substitution (VS)~\cite{Article_Corzilius_FCT2011} and the cylindrical algebraic decomposition (CAD)~\cite{Loup2013}. For ICP, lifting splitting decisions and contraction lemmas to the SAT solving and aided by the other approaches for non-linear constraints in case it cannot determine whether a box contains a solution or not. For non-linear integer problems, we employ bit blasting up to some fixed number of bits~\cite{kruger2015bitvectors} and use branch-and-bound~\cite{Kremer2016} afterwards.
-The SAT solving takes place in an adaption of the SAT solver \texttt{minisat}~\cite{Een2003} and we use it for SMT solving in a less-lazy fashion~\cite{sebastiani2007lazy}.
 
-For linear inputs we use the Simplex method equipped with branch-and-bound and cutting-plane procedures as presented in \cite{DM06}.
-Furthermore, we apply several preprocessing techniques, e.g., using factorizations to simplify constraints, applying substitutions gained by constraints being equations or breaking symmetries. We also normalize and simplify formulas if it is obvious.
+We apply several preprocessing techniques, e.g., using factorizations to simplify constraints, applying substitutions gained by constraints being equations or breaking symmetries. We also normalize and simplify formulas if it is obvious. For non-linear integer problems, we employ bit blasting up to some fixed number of bits~\cite{kruger2015bitvectors} as preprocessing and use branch-and-bound~\cite{Kremer2016} afterwards.
 
-\paragraph{\texttt{SMT-RAT-MCSAT}} uses our implementation of the MCSAT framework \cite{Moura2013} that is still being worked on.
-It is equipped with multiple explanation backends based on the following: NLSAT-style CAD-based; Fourier-Motzkin variable elimination; Virtual substitution as in \cite{Abraham2017}; OneCell CAD as in \cite{Neuss2018}; Interval Constraint Propagation.
-The general MCSAT framework is integrated in our adapted \texttt{minisat}~\cite{Een2003} solver, but is not particularly optimized yet.
-The latest addition has been making the variable ordering fully dynamic as suggested in \cite{Jovanovic2013}.
+The SAT solving takes place in the SAT solver \texttt{minisat}~\cite{Een2003} which we adapted for SMT solving in a less-lazy fashion~\cite{sebastiani2007lazy}.
 
-\paragraph{\texttt{SMT-RAT-CDCAC}} contains a straight-forward not-yet optimized implementation of a novel method based on cylindrical algebraic coverings as described in~\cite{Abraham2020} for NRA solving. Except that the CAD module is replaced by the covering-based method, this solver is identical to \texttt{SMT-RAT} for solving non-linear real arithmetic.
+For solving non-linear real arithmetic, as core theory solving modules, we employ several incomplete but efficient methods, namely subtropical satisfiability~\cite{Fontaine2017}, interval constraint propagation (ICP) as presented in~\cite{GGIGSC10} and virtual substitution (VS)~\cite{Article_Corzilius_FCT2011} which are called in this order before the computationally heavy cylindrical algebraic decomposition (CAD)~\cite{Loup2013} method is called. The ICP lifts splitting decisions and contraction lemmas to the SAT solver and relies on the methods called subsequently in case it cannot determine whether a box contains a solution or not. 
+
+For linear arithmetic, we do not employ the methods used for non-linear inputs, instead we use the Simplex method equipped with branch-and-bound and cutting-plane procedures as presented in \cite{DM06}.
+
+
+\paragraph{\texttt{SMT-RAT-MCSAT}} uses our implementation of the MCSAT framework \cite{Moura2013}.
+As for less-lazy SMT solving, we employ incomplete methods to handle simpler problem classes more efficiently. Thus, our implementation is equipped with multiple explanation backends based on Fourier-Motzkin variable elimination, interval constraint propagation, virtual substitution as in \cite{Abraham2017}, one-cell CAD as in \cite{Neuss2018} and NLSAT-style model-based CAD projections, which are called in this order. The general MCSAT framework is integrated in our adapted \texttt{minisat}~\cite{Een2003} solver, but is not particularly optimized yet.
+%The latest addition has been making the variable ordering fully dynamic as suggested in \cite{Jovanovic2013}.
+
+\paragraph{\texttt{SMT-RAT-CDCAC}} contains a straight-forward not-yet optimized implementation of a novel method based on cylindrical algebraic coverings (CAlC) as recently published in~\cite{Abraham2020} for NRA solving; submission to the Journal of Logical and Algebraic Methods in Programming is currently under review. Except that the CAD module is replaced by the covering-based method, this solver is identical to \texttt{SMT-RAT} for solving non-linear real arithmetic.
+
+\newpage
 
 \paragraph{Authors}
+Jasper Nalbach, Gereon Kremer, Erika \'Abrah\'am
+(Theory of Hybrid Systems Group, RWTH Aachen University).
 
-Erika \'Abrah\'am\textsuperscript{1},
-Gereon Kremer\textsuperscript{3},
-Jasper Nalbach\textsuperscript{1},
-Rebecca Haehn\textsuperscript{1},
-Florian Corzilius\textsuperscript{2},
-Sebastian Junges\textsuperscript{4},
+\paragraph{Previous contributions by current and former group members}
+Florian Corzilius,
+Rebecca Haehn,
+Sebastian Junges,
 Stefan Schupp\textsuperscript{1}.
 
-\noindent
-\textsuperscript{1} Theory of Hybrid Systems Group, RWTH Aachen University \\
-\textsuperscript{2} Former members of THS group \\
-\textsuperscript{3} Stanford University \\
-\textsuperscript{4} Learn and Verify Group, UC Berkeley
-\newpage
 
 \bibliographystyle{plain}
 \bibliography{literature}
