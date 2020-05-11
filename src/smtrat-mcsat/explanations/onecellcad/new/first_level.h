@@ -483,8 +483,10 @@ void project(const covering_at_level& covering, const Model& model, carl::Variab
         const Poly& right_i = std::holds_alternative<sector>(covering.cells[i]) ? std::get<sector>(covering.cells[i]).right_defining_poly->poly : std::get<section>(covering.cells[i]).point_defining_poly.poly;
         const Poly& left_ip1 = std::holds_alternative<sector>(covering.cells[i+1]) ? std::get<sector>(covering.cells[i+1]).left_defining_poly->poly : std::get<section>(covering.cells[i+1]).point_defining_poly.poly;
 
-        auto respoly = Poly(carl::resultant(carl::to_univariate_polynomial(right_i, variable), carl::to_univariate_polynomial(left_ip1, variable)));
-        insert_projection_result(respoly, InvarianceType::ORD_INV, results);
+        if (right_i != left_ip1) {
+            auto respoly = Poly(carl::resultant(carl::to_univariate_polynomial(right_i, variable), carl::to_univariate_polynomial(left_ip1, variable)));
+            insert_projection_result(respoly, InvarianceType::ORD_INV, results);
+        }
     }
 }
 
@@ -587,8 +589,8 @@ covering_at_level compute_covering(const std::vector<cell_at_level>& cells) {
     covering.cells.push_back(**iter);
     SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Chose first section " << **iter);
     std::optional<RAN> current_right = std::get<sector>(**iter).right;
+    iter++;
     while (current_right) {
-        iter++;
         assert(iter != sorted_cells.end());
         if (std::holds_alternative<sector>(**iter)) {
             std::optional<RAN> current_left = *std::get<sector>(**iter).left;
@@ -596,27 +598,29 @@ covering_at_level compute_covering(const std::vector<cell_at_level>& cells) {
                 SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Section " << **iter << " is redundant");
                 iter++;
             }
-            if (!std::get<sector>(**(iter)).right || *std::get<sector>(**(iter)).right > current_right) {
+            if (!std::get<sector>(**(iter)).right || *std::get<sector>(**(iter)).right > *current_right) {
                 covering.cells.push_back(**iter);
                 current_right = std::get<sector>(**(iter)).right;
                 SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Choose section " << **iter);
+                iter++;
             } else {
                 SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Section " << **iter << " is redundant");
+                iter++;
             }
-            
         } else {
             assert(std::holds_alternative<section>(**iter));
-            if (std::get<section>(**iter).point < current_right) {
-                SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Sector " << **iter << " is redundant");
-                continue;
-            }
-            assert(std::get<section>(**iter).point == current_right);
-            covering.cells.push_back(**iter);
-            SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Chose sector " << **iter);
-            iter++;
-            while (std::holds_alternative<section>(**iter)) {
+            if (std::get<section>(**iter).point < *current_right) {
                 SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Sector " << **iter << " is redundant");
                 iter++;
+            } else {
+                assert(std::get<section>(**iter).point == *current_right);
+                covering.cells.push_back(**iter);
+                SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Chose sector " << **iter);
+                iter++;
+                while (std::holds_alternative<section>(**iter)) {
+                    SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Sector " << **iter << " is redundant");
+                    iter++;
+                }
             }
         }
     }
