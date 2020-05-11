@@ -187,16 +187,16 @@ bool var_subset(const carl::Variables& vars, const Model& model, carl::Variable 
 
 
 bool compute_unsat_intervals(const VariableComparisonT& constr, const Model& model, carl::Variable variable, std::vector<cell_at_level>& results) {
-    assert(constr.var() == variable);
-
     SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Compute unsat intervals of " << constr);
 
+    if (constr.var() != variable) {
+        return false;
+    }
     carl::Variables vars;
     constr.collectVariables(vars);
     if (!var_subset(vars, model, variable)) {
         return false;
     }
-
     if (carl::RealAlgebraicNumberEvaluation::vanishes(carl::to_univariate_polynomial(constr.definingPolynomial(), variable), as_ran_map(model))) {
         return false;
     }
@@ -247,17 +247,18 @@ bool compute_unsat_intervals(const VariableComparisonT& constr, const Model& mod
 bool compute_unsat_intervals(const ConstraintT& constr, const Model& model, carl::Variable variable, std::vector<cell_at_level>& results) {
     assert(!carl::is_zero(constr.lhs()));
     assert(!carl::is_constant(constr.lhs()));
-    assert(constr.lhs().has(variable));
-
+    
     SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Compute unsat intervals of " << constr);
 
+    if (!constr.lhs().has(variable)) {
+        return false;
+    }
     auto vars_tmp = constr.variables().underlyingVariables();
     carl::Variables vars(vars_tmp.begin(), vars_tmp.end());
     if (!var_subset(vars, model, variable)) {
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Contains unassigned variables");
         return false;
     }
-    
     if (carl::RealAlgebraicNumberEvaluation::vanishes(carl::to_univariate_polynomial(constr.lhs(), variable), as_ran_map(model))) {
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Vanishes");
         return false;
