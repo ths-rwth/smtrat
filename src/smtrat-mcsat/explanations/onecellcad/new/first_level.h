@@ -541,12 +541,12 @@ covering_at_level compute_covering(const std::vector<cell_at_level>& cells) {
 
         if (std::holds_alternative<section>(cell1) && std::holds_alternative<section>(cell2)) {
             return std::get<section>(cell1).point < std::get<section>(cell2).point;
-        } else if (std::holds_alternative<section>(cell1) && std::holds_alternative<sector>(cell2)) {
+        } else if (std::holds_alternative<sector>(cell1) && std::holds_alternative<section>(cell2)) {
             if (!cell1_has_left) return true;
             else {
                 return std::get<sector>(cell1).left < std::get<section>(cell2).point;
             }
-        } else if (std::holds_alternative<sector>(cell1) && std::holds_alternative<section>(cell2)) {
+        } else if (std::holds_alternative<section>(cell1) && std::holds_alternative<sector>(cell2)) {
             if (!cell2_has_left) return false;
             else {
                 return std::get<section>(cell1).point <= std::get<sector>(cell2).left;
