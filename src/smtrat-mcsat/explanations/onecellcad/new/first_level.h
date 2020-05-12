@@ -27,13 +27,14 @@ std::ostream& operator<<(std::ostream& os, const indexed_root& data) {
     return os;
 }
 
-// TODO datastructures are inefficient: maybe introduce datastructure representing polynomials on a level
+// TODO datastructures are inefficient: maybe introduce datastructure representing polynomials on a level, avoid double storing polys
 // TODO more flexible orderings
 
 // TODO use projection candidates instead of computing the actual projections? then, some double computations could be saved
 
 // TODO use inheritance instead of variant? OR: use intervals instead of section/sector
 struct section {
+    std::vector<Poly> current_level;
     std::vector<Poly> lower_level;
 
     indexed_root point_defining_poly;
@@ -45,6 +46,7 @@ std::ostream& operator<<(std::ostream& os, const section& data) {
     return os;
 }
 struct sector {
+    std::vector<Poly> current_level;
     std::vector<Poly> lower_level;
 
     std::optional<indexed_root> left_defining_poly;
@@ -199,12 +201,13 @@ bool compute_unsat_intervals(const VariableComparisonT& constr, const Model& mod
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Contains unassigned variables");
         return false;
     }
-    // if (carl::RealAlgebraicNumberEvaluation::vanishes(carl::to_univariate_polynomial(constr.definingPolynomial(), variable), as_ran_map(model))) {
-    //    return false;
-    // }
+    if (carl::RealAlgebraicNumberEvaluation::vanishes(carl::to_univariate_polynomial(constr.definingPolynomial(), variable), as_ran_map(model))) {
+        SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Vanishes");
+        return false;
+    }
     auto eval = carl::model::evaluate(FormulaT(constr), model);
     if (eval.isBool()) {
-        SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Already evaluates to a constant");
+        SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Already evaluates to a constant"); // TODO is this case possible?
         return false;
     }
 
@@ -232,18 +235,21 @@ bool compute_unsat_intervals(const VariableComparisonT& constr, const Model& mod
 
     if (point) {
         section sec;
+        sec.current_level.push_back(ir.poly);
         sec.point = ran; 
         sec.point_defining_poly = ir;
         results.push_back(sec);
     }
     if (below) {
         sector sec;
+        sec.current_level.push_back(ir.poly);
         sec.right = ran; 
         sec.right_defining_poly = ir;
         results.push_back(sec);
     }
     if (above) {
         sector sec;
+        sec.current_level.push_back(ir.poly);
         sec.left = ran; 
         sec.left_defining_poly = ir;
         results.push_back(sec);
@@ -267,18 +273,32 @@ bool compute_unsat_intervals(const ConstraintT& constr, const Model& model, carl
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Contains unassigned variables");
         return false;
     }
-    //if (carl::RealAlgebraicNumberEvaluation::vanishes(carl::to_univariate_polynomial(constr.lhs(), variable), as_ran_map(model))) {
-    //    SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Vanishes");
-    //    return false;
-    //}
+    if (carl::RealAlgebraicNumberEvaluation::vanishes(carl::to_univariate_polynomial(constr.lhs(), variable), as_ran_map(model))) {
+        SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Vanishes");
+        return false;
+    }
     // this is stronger than in CAC / OneCell: (not only nullification)
     auto eval = carl::model::evaluate(constr, model);
     if (eval.isBool()) {
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Already evaluates to a constant");
-        return false;
+        if (!eval.asBool()) {
+            SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Already evaluates to false");
+            sector sec;
+            auto factors = carl::irreducibleFactors(constr.lhs(), false);
+            for (const auto& f : factors) {
+                if (!f.has(variable)) {
+                    sec.lower_level.push_back(f);
+                } else {
+                    sec.current_level.push_back(f);
+                }
+            }
+            results.push_back(sec);
+        }
+        return true;
     }
  
     std::vector<Poly> lower_level;
+    std::vector<Poly> current_level;
 
     root_indexer ri;
     auto factors = carl::irreducibleFactors(constr.lhs(), false);
@@ -289,6 +309,7 @@ bool compute_unsat_intervals(const ConstraintT& constr, const Model& model, carl
             SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Factor " << f << " is of lower level");
             lower_level.push_back(f);
         } else {
+            current_level.push_back(f);
             auto f_roots = carl::model::realRoots(f, variable, model);
             SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Factor " << f << " has roots " << f_roots);
             for (size_t index = 0; index < f_roots.size(); index++) {
@@ -305,6 +326,7 @@ bool compute_unsat_intervals(const ConstraintT& constr, const Model& model, carl
             if (!carl::evaluate(carl::Sign::ZERO, constr.relation())) {
                 section sec;
                 sec.lower_level = lower_level;
+                sec.current_level = current_level;
                 {
                     sec.point = s.val;
                     const auto& indexed_roots = ri.indexed_roots_at(sec.point);
@@ -328,6 +350,7 @@ bool compute_unsat_intervals(const ConstraintT& constr, const Model& model, carl
             if (!res.asBool()) {
                 sector sec;
                 sec.lower_level = lower_level;
+                sec.current_level = current_level;
                 if (s.left) {
                     sec.left = **s.left;
                     const auto& indexed_roots = ri.indexed_roots_at(*sec.left);
@@ -415,14 +438,8 @@ void required_coefficients(const Poly& mpoly, const Model& model, carl::Variable
 void project(const sector& cell, const Model& model, carl::Variable variable, projection_results& results) {
     // TODO try out different projection schemes (e.g. multiple endpoints)
     for (const auto& l : cell.lower_level) results.emplace(l, InvarianceType::ORD_INV);
-
-    std::set<Poly> current_level;
-    std::copy(cell.others_left.begin(), cell.others_left.end(), std::inserter(current_level, current_level.end()));
-    std::copy(cell.others_right.begin(), cell.others_right.end(), std::inserter(current_level, current_level.end()));
-    if (cell.left_defining_poly) current_level.insert(cell.left_defining_poly->poly);
-    if (cell.right_defining_poly) current_level.insert(cell.right_defining_poly->poly);
     
-    for (const auto& poly : current_level) {
+    for (const auto& poly : cell.current_level) {
         { // discriminant
             auto respoly = Poly(carl::discriminant(carl::to_univariate_polynomial(poly, variable)));
             insert_projection_result(respoly, InvarianceType::ORD_INV, results);
@@ -450,12 +467,8 @@ void project(const sector& cell, const Model& model, carl::Variable variable, pr
 void project(const section& cell, const Model& model, carl::Variable variable, projection_results& results) {
     // TODO adapt Brown's version
     for (const auto& l : cell.lower_level) results.emplace(l, InvarianceType::ORD_INV);
-
-    std::set<Poly> current_level;
-    std::copy(cell.others.begin(), cell.others.end(), std::inserter(current_level, current_level.end()));
-    current_level.insert(cell.point_defining_poly.poly);
     
-    for (const auto& poly : current_level) {
+    for (const auto& poly : cell.current_level) {
         // discriminant
         {
             auto respoly = Poly(carl::discriminant(carl::to_univariate_polynomial(poly, variable)));
