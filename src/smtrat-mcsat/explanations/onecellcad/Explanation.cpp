@@ -52,7 +52,11 @@ inline std::ostream& operator<<(std::ostream& os, const std::vector<std::vector<
 boost::optional<mcsat::Explanation>
 Explanation::operator()(const mcsat::Bookkeeping& trail, // current assignment state
 						carl::Variable var,
-						const FormulasT& trailLiterals, bool covering_at_first_level) const {
+						const FormulasT& trailLiterals) const {
+	
+	bool covering_at_first_level=false;
+	bool strict_unassigned_handling=true;
+
 	assert(trail.model().size() == trail.assignedVariables().size());
 
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -127,6 +131,10 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, // current assignment s
 												<< projectionLevels);
 		// Project higher level polys down to "normal" level
 		auto maxLevel = fullProjectionVarOrder.size() - 1;
+		if (maxLevel - oneCellMaxLvl > 1 && strict_unassigned_handling) {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "More than one unassigned variable.");
+			return boost::none;
+		}
 		for (std::size_t currentLvl = maxLevel; currentLvl > oneCellMaxLvl; currentLvl--) {
 			auto currentVar = fullProjectionVarOrder[currentLvl];
 			assert(currentLvl >= 1);

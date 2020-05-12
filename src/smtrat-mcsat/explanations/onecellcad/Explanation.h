@@ -18,7 +18,7 @@ struct Explanation {
 	boost::optional<mcsat::Explanation>
 	operator()(const mcsat::Bookkeeping& trail, // current assignment state
 			   carl::Variable var,
-			   const FormulasT& trailLiterals, bool covering_at_first_level=true) const;
+			   const FormulasT& trailLiterals) const;
 };
 
 } // namespace onecellcad
