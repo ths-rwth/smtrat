@@ -513,7 +513,7 @@ void project(const covering_at_level& covering, const Model& model, carl::Variab
         const Poly& right_i = std::holds_alternative<sector>(covering.cells[i]) ? std::get<sector>(covering.cells[i]).right_defining_poly->poly : std::get<section>(covering.cells[i]).point_defining_poly.poly;
         const Poly& left_ip1 = std::holds_alternative<sector>(covering.cells[i+1]) ? std::get<sector>(covering.cells[i+1]).left_defining_poly->poly : std::get<section>(covering.cells[i+1]).point_defining_poly.poly;
 
-        if (right_i != left_ip1) {
+        if (right_i.normalize() != left_ip1.normalize()) {
             auto respoly = Poly(carl::resultant(carl::to_univariate_polynomial(right_i, variable), carl::to_univariate_polynomial(left_ip1, variable)));
             insert_projection_result(respoly, InvarianceType::ORD_INV, results);
         }
