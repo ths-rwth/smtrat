@@ -190,14 +190,21 @@ bool compute_unsat_intervals(const VariableComparisonT& constr, const Model& mod
     SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Compute unsat intervals of " << constr);
 
     if (constr.var() != variable) {
+        SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Does not have variable");
         return false;
     }
     carl::Variables vars;
     constr.collectVariables(vars);
     if (!var_subset(vars, model, variable)) {
+        SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Contains unassigned variables");
         return false;
     }
-    if (carl::RealAlgebraicNumberEvaluation::vanishes(carl::to_univariate_polynomial(constr.definingPolynomial(), variable), as_ran_map(model))) {
+    // if (carl::RealAlgebraicNumberEvaluation::vanishes(carl::to_univariate_polynomial(constr.definingPolynomial(), variable), as_ran_map(model))) {
+    //    return false;
+    // }
+    auto eval = carl::model::evaluate(FormulaT(constr), model);
+    if (eval.isBool()) {
+        SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Already evaluates to a constant");
         return false;
     }
 
@@ -251,6 +258,7 @@ bool compute_unsat_intervals(const ConstraintT& constr, const Model& model, carl
     SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Compute unsat intervals of " << constr);
 
     if (!constr.lhs().has(variable)) {
+        SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Does not have variable");
         return false;
     }
     auto vars_tmp = constr.variables().underlyingVariables();
@@ -259,8 +267,14 @@ bool compute_unsat_intervals(const ConstraintT& constr, const Model& model, carl
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Contains unassigned variables");
         return false;
     }
-    if (carl::RealAlgebraicNumberEvaluation::vanishes(carl::to_univariate_polynomial(constr.lhs(), variable), as_ran_map(model))) {
-        SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Vanishes");
+    //if (carl::RealAlgebraicNumberEvaluation::vanishes(carl::to_univariate_polynomial(constr.lhs(), variable), as_ran_map(model))) {
+    //    SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Vanishes");
+    //    return false;
+    //}
+    // this is stronger than in CAC / OneCell: (not only nullification)
+    auto eval = carl::model::evaluate(constr, model);
+    if (eval.isBool()) {
+        SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Already evaluates to a constant");
         return false;
     }
  
