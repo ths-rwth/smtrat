@@ -364,13 +364,15 @@ bool compute_unsat_intervals(const ConstraintT& constr, const Model& model, carl
                 bool left_of_sector = (bool) s.left;
                 for (const auto& os : ri.roots()) {
                     const auto& indexed_roots = ri.indexed_roots_at(os);
-                    for (auto o = indexed_roots.begin()+1; o != indexed_roots.end(); o++) {
+                    for (auto o = indexed_roots.begin(); o != indexed_roots.end(); o++) {
                         if (left_of_sector) {
-                            if (!sec.left_defining_poly || o->poly != sec.left_defining_poly->poly) {
+                            assert(s.left);
+                            if (o->poly != sec.left_defining_poly->poly) {
                                 sec.others_left.insert(o->poly);
                             }
                         } else {
-                            if (!sec.right_defining_poly || o->poly != sec.right_defining_poly->poly) {
+                            assert(s.right);
+                            if (o->poly != sec.right_defining_poly->poly) {
                                 sec.others_right.insert(o->poly);
                             }
                         }
