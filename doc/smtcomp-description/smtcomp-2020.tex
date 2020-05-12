@@ -33,7 +33,7 @@ For linear arithmetic, we do not employ the methods used for non-linear inputs, 
 As for less-lazy SMT solving, we employ incomplete methods to handle simpler problem classes more efficiently. Thus, our implementation is equipped with multiple explanation backends based on Fourier-Motzkin variable elimination, interval constraint propagation, virtual substitution as in \cite{Abraham2017}, one-cell CAD as in \cite{Neuss2018} and NLSAT-style model-based CAD projections, which are called in this order. The general MCSAT framework is integrated in our adapted \texttt{minisat}~\cite{Een2003} solver, but is not particularly optimized yet.
 %The latest addition has been making the variable ordering fully dynamic as suggested in \cite{Jovanovic2013}.
 
-\paragraph{\texttt{SMT-RAT-CDCAC}} contains a straight-forward not-yet optimized implementation of a novel method based on cylindrical algebraic coverings (CAlC) as recently published in~\cite{Abraham2020} for NRA solving; submission to the Journal of Logical and Algebraic Methods in Programming is currently under review. Except that the CAD module is replaced by the covering-based method, this solver is identical to \texttt{SMT-RAT} for solving non-linear real arithmetic.
+\paragraph{\texttt{SMT-RAT-CAlC}} contains a straight-forward not-yet optimized implementation of a novel method based on cylindrical algebraic coverings (CAlC) as recently published in~\cite{Abraham2020} for NRA solving; submission to the Journal of Logical and Algebraic Methods in Programming is currently under review. Except that the CAD module is replaced by the covering-based method, this solver is identical to \texttt{SMT-RAT} for solving non-linear real arithmetic.
 
 \newpage
 
