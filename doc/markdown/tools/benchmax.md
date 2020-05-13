@@ -23,6 +23,10 @@ For more information, run `./benchmax --help`.
 
 Some tools like SMT-RAT or Z3 can provide statistics about the solving process for each individual benchmark. By using the `-s` respectively `--statistics`, statistics are collected and stored in the output file.
 
+#### Large output
+
+It is recommended to aggregate statistics as much as possible inside SMT-RAT. However, if the output might get large, you might want to use `--use-tmp` to prevent benchmax running out of memory.
+
 ### Working with the results
 
 In the SMT-RAT repository, several tools for converting the result XML file are included: `utilities/xml2ods.py` converting it to a *Flat XML LibreOffice Calc Sheet*. In `utilities/evaluation` is a small python library for importing the results into Python (or a Jupyter notebook).

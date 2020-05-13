@@ -4,6 +4,14 @@
 #include <iostream>
 #include <map>
 
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/serialization/map.hpp>
+#include <fstream>
+#include <filesystem>
+
+#include "../settings/Settings.h"
+
 namespace benchmax {
 
 /**
@@ -21,7 +29,9 @@ struct BenchmarkResult {
 	/// Error output (mostly for parsing the answer and additional information).
 	std::string stderr;
 	/// Arbitrary additional information that can be provided by the tool class.
-	std::map<std::string, std::string> additional;
+	mutable std::map<std::string, std::string> additional;
+	/// Identifier for temporary file.
+	mutable size_t stored_id = 0;
 	
 	/**
 	 * Properly detect timeouts.
@@ -34,6 +44,38 @@ struct BenchmarkResult {
 		}
 		stdout = "";
 		stderr = "";
+	}
+
+	auto get_path() const {
+		assert(stored_id > 0);
+		return std::filesystem::temp_directory_path()/("benchmark-result-" + std::to_string(stored_id) + ".xml");
+	}
+	void store(size_t id) const {
+		if (settings_operation().use_temp) {
+			stored_id = id;
+			std::ofstream ofs(get_path());
+			boost::archive::text_oarchive oa(ofs);
+			oa << additional;
+			store();
+		}
+	}
+	void store() const {
+		if (settings_operation().use_temp) {
+			additional.clear();
+		}
+	}
+	void restore() const {
+		if (settings_operation().use_temp) {
+			std::ifstream ifs(get_path());
+			boost::archive::text_iarchive ia(ifs);
+			ia >> additional;
+		}
+	}
+	void forget() const {
+		if (settings_operation().use_temp) {
+			std::filesystem::remove(get_path());
+			additional.clear();
+		}
 	}
 };
 

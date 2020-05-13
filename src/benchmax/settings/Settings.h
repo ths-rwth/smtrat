@@ -51,6 +51,8 @@ struct OperationSettings {
 	std::string convert_ods_filename;
 	/// Name of the xslt filter used for ods import.
 	std::string convert_ods_filter;
+	/// Use temporary directory.
+	bool use_temp;
 };
 
 /**

@@ -28,6 +28,7 @@ SettingsParser::SettingsParser() {
 			("mode", po::value<std::string>(&s.mode)->default_value("both"), "Which tasks to perform (\"execute\", \"collect\" or \"both\")")
 			("convert", po::value<std::string>(&s.convert_ods_filename), "Convert a XML result file to .ods")
 			("convert-filter", po::value<std::string>(&s.convert_ods_filter)->default_value("Benchmax"), "XSLT filter name to import XML file into libreoffice")
+			("use-tmp", po::bool_switch(&s.use_temp), "Use temporary files for saving memory")
 		;
 	}
 }

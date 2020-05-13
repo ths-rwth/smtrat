@@ -35,6 +35,7 @@ private:
 	std::map<const Tool*, std::size_t> mTools;
 	std::map<fs::path, std::size_t> mFiles;
 	std::map<std::pair<std::size_t,std::size_t>, BenchmarkResult> mData;
+	size_t result_id = 1;
 public:
 	std::optional<std::reference_wrapper<const BenchmarkResult>> get(const Tool* tool, const fs::path& file) const {
 		auto toolIt = mTools.find(tool);
@@ -59,7 +60,8 @@ public:
 		if (fileIt == mFiles.end()) {
 			fileIt = mFiles.emplace(file, mFiles.size()).first;
 		}
-		mData.emplace(std::make_pair(toolIt->second, fileIt->second), results);
+		results.store(result_id++);
+		mData.emplace(std::make_pair(toolIt->second, fileIt->second), std::move(results));
 	}
 	
 	/// Store all results to some database.
@@ -79,10 +81,12 @@ public:
 		for (const auto& it: mData) {
 			std::size_t tool = toolIDs[it.first.first];
 			std::size_t file = fileIDs[it.first.second];
+			it.second.restore();
 			std::size_t id = db.addBenchmarkResult(benchmarkID, tool, file, it.second.exitCode, std::size_t(std::chrono::milliseconds(it.second.time).count()));
 			for (const auto& attr: it.second.additional) {
 				db.addBenchmarkAttribute(id, attr.first, attr.second);
 			}
+			it.second.forget();
 		}
 	}
 	

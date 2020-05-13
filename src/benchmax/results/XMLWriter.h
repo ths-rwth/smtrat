@@ -43,9 +43,11 @@ private:
 	std::vector<std::string> collectStatistics(const Results& results) const {
 		std::vector<std::string> res;
 		for (const auto& run: results.data()) {
+			run.second.restore();
 			for (const auto& stat: run.second.additional) {
 				res.emplace_back(stat.first);
 			}
+			run.second.store();
 		}
 		std::sort(res.begin(), res.end());
 		res.erase(
@@ -85,6 +87,7 @@ public:
 				const auto& result = results.get(tool.get(), filename);
 				if (!result) continue;
 				const auto& res = result->get();
+				res.restore();
 				mFile << "\t\t\t<run solver_id=\"" << sanitizeTool(tool) << "\">" << std::endl;
 				if (!res.additional.empty()) {
 					mFile << "\t\t\t\t<statistics>" << std::endl;
@@ -99,6 +102,7 @@ public:
 				mFile << "\t\t\t\t\t<result name=\"runtime\" type=\"milliseconds\">" << std::chrono::milliseconds(res.time).count() << "</result>" << std::endl;
 				mFile << "\t\t\t\t</results>" << std::endl;
 				mFile << "\t\t\t</run>" << std::endl;
+				res.forget();
 			}
 			mFile << "\t\t</file>" << std::endl;
 		}
