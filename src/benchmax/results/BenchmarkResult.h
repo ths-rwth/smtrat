@@ -16,9 +16,9 @@ struct BenchmarkResult {
 	std::chrono::milliseconds time;
 	/// Answer string.
 	std::string answer;
-	/// Standard output (mostly for parsing the answer and dditional information).
+	/// Standard output (mostly for parsing the answer and additional information).
 	std::string stdout;
-	/// Error output (mostly for parsing the answer and dditional information).
+	/// Error output (mostly for parsing the answer and additional information).
 	std::string stderr;
 	/// Arbitrary additional information that can be provided by the tool class.
 	std::map<std::string, std::string> additional;
