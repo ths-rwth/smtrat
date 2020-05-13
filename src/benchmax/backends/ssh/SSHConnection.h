@@ -298,7 +298,7 @@ public:
 			if (n > 0 && collectOutput) result.stdout += std::string(buf, std::size_t(n));
 			SSH_LOCKED(n = ssh_channel_read_nonblocking(channel, buf, sizeof(buf), 1));
 			if (n > 0 && collectOutput) result.stderr += std::string(buf, std::size_t(n));
-			collectOutput = (result.stdout.size() < 10240) && (result.stderr.size() < 10240);
+			collectOutput = (result.stdout.size() < 1000000) && (result.stderr.size() < 1000000);
 			std::this_thread::yield();
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
