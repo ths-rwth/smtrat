@@ -193,7 +193,7 @@ private:
 		}
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Parsed results.");
 		for (auto& [rid, r]: results) {
-			addResult(std::get<0>(r), std::get<1>(r), std::get<2>(r));
+			addResult(std::get<0>(r), std::get<1>(r), std::move(std::get<2>(r)));
 		}
 		if (settings_slurm().archive_log_file != "") {
 			slurm::archive_log_files({

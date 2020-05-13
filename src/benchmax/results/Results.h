@@ -49,7 +49,7 @@ public:
 		return mData;
 	}
 	/// Add a new result.
-	void addResult(const Tool* tool, const fs::path& file, const BenchmarkResult& results) {
+	void addResult(const Tool* tool, const fs::path& file, BenchmarkResult&& results) {
 		std::lock_guard<std::mutex> lock(mMutex);
 		auto toolIt = mTools.find(tool);
 		if (toolIt == mTools.end()) {

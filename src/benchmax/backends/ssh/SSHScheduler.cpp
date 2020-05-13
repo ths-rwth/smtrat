@@ -151,7 +151,7 @@ bool SSHScheduler::executeJob(const Tool* tool, const fs::path& file, Backend* b
 	// Remove temporary directory
 	c->removeDir(folder);
 	// Store result
-	backend->addResult(tool, file, result);
+	backend->addResult(tool, file, std::move(result));
 	c->finishJob();
 	mRunningJobs--;
 	return true;

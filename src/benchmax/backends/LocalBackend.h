@@ -52,7 +52,7 @@ protected:
 		}
 		results.stderr.clear();
 	
-		addResult(tool, file, results);
+		addResult(tool, file, std::move(results));
 		madeProgress();
 	}
 };
