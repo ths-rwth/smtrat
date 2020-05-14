@@ -55,7 +55,7 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, // current assignment s
 						const FormulasT& trailLiterals) const {
 	
 	bool covering_at_first_level=false;
-	bool strict_unassigned_handling=true;
+	bool strict_unassigned_handling=false;
 
 	assert(trail.model().size() == trail.assignedVariables().size());
 
