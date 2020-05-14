@@ -8,6 +8,8 @@
 
 #include <algorithm>
 
+#include "new/first_level.h"
+
 namespace smtrat {
 namespace mcsat {
 namespace onecellcad {
@@ -51,6 +53,10 @@ boost::optional<mcsat::Explanation>
 Explanation::operator()(const mcsat::Bookkeeping& trail, // current assignment state
 						carl::Variable var,
 						const FormulasT& trailLiterals) const {
+	
+	bool covering_at_first_level=false;
+	bool strict_unassigned_handling=true;
+
 	assert(trail.model().size() == trail.assignedVariables().size());
 
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -88,16 +94,11 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, // current assignment s
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Ascending variable order: " << varOrder
 																		<< " and eliminate down from: " << var);
 
-	std::vector<Poly> polys; // extract from trailLiterals
-	for (const auto& constraint : nlsat::helper::convertToConstraints(trailLiterals))
-		polys.emplace_back(constraint.lhs()); // constraints have the form 'poly < 0' with  <, = etc.
-
 	const auto& trailVariables = trail.assignedVariables();
 	std::vector<carl::Variable> fullProjectionVarOrder = varOrder;
 	std::vector<carl::Variable> oneCellCADVarOrder;
 	for (std::size_t i = 0; i < trailVariables.size(); i++)
 		oneCellCADVarOrder.emplace_back(fullProjectionVarOrder[i]);
-
 	//    std::vector<carl::Variable> fullProjectionVarOrder(trailVariables.size());
 	//    std::vector<carl::Variable> oneCellCADVarOrder;
 	//    fullProjectionVarOrder.reserve(varOrder.size());
@@ -110,35 +111,50 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, // current assignment s
 	//        oneCellCADVarOrder.push_back(variable);
 	//    }
 	//    std::copy_n(oneCellCADVarOrder.begin(), oneCellCADVarOrder.size(), fullProjectionVarOrder.begin());
-
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "FullProjVarOrder: " << fullProjectionVarOrder);
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "OneCellVarOrder: " << oneCellCADVarOrder);
+
 	std::size_t oneCellMaxLvl = trail.model().size() - 1;										   // -1, b/c we count first var = poly level 0
 	std::vector<std::vector<onecellcad::TagPoly>> projectionLevels(fullProjectionVarOrder.size()); // init all levels with empty vector
-	onecellcad::categorizeByLevel(
-		projectionLevels,
-		fullProjectionVarOrder,
-		onecellcad::nonConstIrreducibleFactors(toTagPoly(polys)));
 
-	SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Polys at levels before full CAD projection:\n"
-											   << projectionLevels);
-	// Project higher level polys down to "normal" level
-	auto maxLevel = fullProjectionVarOrder.size() - 1;
-	for (std::size_t currentLvl = maxLevel; currentLvl > oneCellMaxLvl; currentLvl--) {
-		auto currentVar = fullProjectionVarOrder[currentLvl];
-		assert(currentLvl >= 1);
-		auto nextLowerVar = fullProjectionVarOrder[currentLvl - 1];
-		auto projectionFactors = onecellcad::singleLevelFullProjection(currentVar, nextLowerVar, projectionLevels[currentLvl]);
+	if (!covering_at_first_level) { // full projection
+		std::vector<Poly> polys; // extract from trailLiterals
+		for (const auto& constraint : nlsat::helper::convertToConstraints(trailLiterals))
+			polys.emplace_back(constraint.lhs()); // constraints have the form 'poly < 0' with  <, = etc. 
+
 		onecellcad::categorizeByLevel(
 			projectionLevels,
 			fullProjectionVarOrder,
-			onecellcad::nonConstIrreducibleFactors(projectionFactors));
-		projectionLevels[currentLvl].clear();
-		SMTRAT_LOG_TRACE("smtrat.mcsat.nlsat", "Polys at levels after a CAD projection at level: " << currentLvl << ":\n"
-																								   << projectionLevels);
+			onecellcad::nonConstIrreducibleFactors(toTagPoly(polys)));
+
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Polys at levels before full CAD projection:\n"
+												<< projectionLevels);
+		// Project higher level polys down to "normal" level
+		auto maxLevel = fullProjectionVarOrder.size() - 1;
+		if (maxLevel - oneCellMaxLvl > 1 && strict_unassigned_handling) {
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "More than one unassigned variable.");
+			return boost::none;
+		}
+		for (std::size_t currentLvl = maxLevel; currentLvl > oneCellMaxLvl; currentLvl--) {
+			auto currentVar = fullProjectionVarOrder[currentLvl];
+			assert(currentLvl >= 1);
+			auto nextLowerVar = fullProjectionVarOrder[currentLvl - 1];
+			auto projectionFactors = onecellcad::singleLevelFullProjection(currentVar, nextLowerVar, projectionLevels[currentLvl]);
+			onecellcad::categorizeByLevel(
+				projectionLevels,
+				fullProjectionVarOrder,
+				onecellcad::nonConstIrreducibleFactors(projectionFactors));
+			projectionLevels[currentLvl].clear();
+			SMTRAT_LOG_TRACE("smtrat.mcsat.nlsat", "Polys at levels after a CAD projection at level: " << currentLvl << ":\n"
+																									<< projectionLevels);
+		}
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Polys at levels after full CAD projection:\n"
+												<< projectionLevels);
+	} else { // covering based projection
+		auto proj = firstlevel::first_level_projection(trailLiterals, trail.model(), fullProjectionVarOrder[trail.model().size()]);
+		if (!proj) return boost::none;
+		onecellcad::categorizeByLevel(projectionLevels,	fullProjectionVarOrder,	*proj);
 	}
-	SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Polys at levels after full CAD projection:\n"
-											   << projectionLevels);
 
 	std::vector<onecellcad::TagPoly2> oneCellPolys;
 	//    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "OneCellMaxLvl: " << oneCellMaxLvl << " ProjectionLvls: " << projectionLevels);
