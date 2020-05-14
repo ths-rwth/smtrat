@@ -23,10 +23,8 @@
 #include <string>
 #include <atomic>
 #include <mutex>
-#include <carl/util/TimingCollector.h>
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/statistics/Statistics.h>
-#include <smtrat-common/statistics/StatisticsCollector.h>
 #include "ModuleInput.h"
 
 namespace smtrat
@@ -83,13 +81,13 @@ namespace smtrat
         public:
 			struct ModuleStatistics: public Statistics {
 #ifdef SMTRAT_DEVOPTION_Statistics
-				carl::timing::time_point timer_add_started;
-				carl::timing::time_point timer_check_started;
-				carl::timing::time_point timer_remove_started;
-				carl::timing::time_point timer_pause_started;
-				carl::timing::duration timer_add_total;
-				carl::timing::duration timer_check_total;
-				carl::timing::duration timer_remove_total;
+				carl::statistics::timing::time_point timer_add_started;
+				carl::statistics::timing::time_point timer_check_started;
+				carl::statistics::timing::time_point timer_remove_started;
+				carl::statistics::timing::time_point timer_pause_started;
+				carl::statistics::timing::duration timer_add_total;
+				carl::statistics::timing::duration timer_check_total;
+				carl::statistics::timing::duration timer_remove_total;
 				bool timer_add_running;
 				bool timer_check_running;
 				bool timer_remove_running;
@@ -102,19 +100,19 @@ namespace smtrat
 					addKeyValuePair("check_count", check_count);
 				}
 
-				void start_add() { timer_add_started = carl::timing::now(); }
-				void start_check() { timer_check_started = carl::timing::now(); }
-				void start_remove() { timer_remove_started = carl::timing::now(); }
-				void pause_all() { timer_pause_started = carl::timing::now(); }
+				void start_add() { timer_add_started = carl::statistics::timing::now(); }
+				void start_check() { timer_check_started = carl::statistics::timing::now(); }
+				void start_remove() { timer_remove_started = carl::statistics::timing::now(); }
+				void pause_all() { timer_pause_started = carl::statistics::timing::now(); }
 				void continue_all() {
-					auto diff = carl::timing::since(timer_pause_started);
+					auto diff = carl::statistics::timing::since(timer_pause_started);
 					timer_add_started += diff;
 					timer_check_started += diff;
 					timer_remove_started += diff;
 				}
-				void stop_add() { timer_add_total += carl::timing::since(timer_add_started); }
-				void stop_check() { timer_check_total += carl::timing::since(timer_check_started); }
-				void stop_remove() { timer_remove_total += carl::timing::since(timer_remove_started); }
+				void stop_add() { timer_add_total += carl::statistics::timing::since(timer_add_started); }
+				void stop_check() { timer_check_total += carl::statistics::timing::since(timer_check_started); }
+				void stop_remove() { timer_remove_total += carl::statistics::timing::since(timer_remove_started); }
 #else
 				void start_add() {}
 				void start_check() {}

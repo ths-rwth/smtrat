@@ -3,7 +3,6 @@
 #define LICENSE_CONTENT R"licenseString(@LICENSE_CONTENT_IN@)licenseString"
 
 #cmakedefine LOGGING
-#cmakedefine LOGGING_CARL
 
 #ifdef _MSC_VER
 #define __VS

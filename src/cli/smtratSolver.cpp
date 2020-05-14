@@ -21,12 +21,9 @@
 #endif
 
 #ifdef SMTRAT_DEVOPTION_Statistics
-#include <smtrat-common/statistics/StatisticsCollector.h>
-#include <smtrat-common/statistics/StatisticsPrinter.h>
+#include <carl-statistics/StatisticsCollector.h>
+#include <carl-statistics/StatisticsPrinter.h>
 #include <smtrat-common/statistics/StatisticsSettings.h>
-#ifdef TIMING
-#include <smtrat-common/statistics/TimingStatistics.h>
-#endif // TIMING
 #endif //SMTRAT_DEVOPTION_Statistics
 
 #include <smtrat-common/settings/SettingsComponents.h>
@@ -36,7 +33,6 @@
 #include "parser/ParserWrapper.h"
 #include "parser/ParserSettings.h"
 #include <carl-io/SMTLIBStream.h>
-#include <carl/util/TimingCollector.h>
 #include <carl-logging/logging-internals.h>
 #include "tools/config.h"
 #include "tools/cnf_conversion.h"
@@ -51,19 +47,12 @@
 
 void print_statistics() {
 #ifdef SMTRAT_DEVOPTION_Statistics
-	#ifdef TIMING
-	if (smtrat::settings_solver().print_timings) {
-		std::cout << carl::TimingCollector::getInstance() << std::endl;
-	}
-	smtrat::TimingStatistics& timingStatistics = smtrat::statistics_get<smtrat::TimingStatistics>("Timing");
-	timingStatistics.addTimingCollector(carl::TimingCollector::getInstance());
-	#endif
-	smtrat::StatisticsCollector::getInstance().collect();
+	carl::statistics::StatisticsCollector::getInstance().collect();
 	if (smtrat::settings_statistics().print_as_smtlib) {
-		std::cout << smtrat::statistics_as_smtlib() << std::endl;
+		std::cout << carl::statistics::statistics_as_smtlib() << std::endl;
 	}
 	if (smtrat::settings_statistics().export_as_xml) {
-		smtrat::statistics_to_xml_file(smtrat::settings_statistics().xml_filename);
+		carl::statistics::statistics_to_xml_file(smtrat::settings_statistics().xml_filename);
 	}
 #endif
 }

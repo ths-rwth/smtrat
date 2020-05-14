@@ -44,23 +44,39 @@ This is then instantiated by calling
     auto& myStatistics = statistics_get<myModule::MyStatistics>("MyModuleName");
     #endif
 
+or, as shortcut
+
+    SMTRAT_INIT_STATISTICS(myModule::MyStatistics, myStatistics, "MyModuleName")
+
+
 and statistics can be collected by calling the user defined operations (e.g. `myStatistics.count()`).
 
-All statistics-related code should be encapsulated by the `SMTRAT_DEVOPTION_Statistics` flag.
+All statistics-related code should be encapsulated by the `SMTRAT_DEVOPTION_Statistics` flag. Alternatively, code can be encapsulated in `SMTRAT_CALL_STATISTICS()`.
 
 ### Timing
 
-CARL has the ability to easily collect timings. To enable this feature, CARL must be compiled with `TIMING` set to `ON` in CMake. SMT-RAT needs to use this this version of CARL. Furthermore, in SMT-RAT `SMTRAT_DEVOPTION_Statistics` needs to be enabled as well.
+The statistics framework has the ability to easily collect timings.
 
-The following call will measure the total running time of the code block as well as the times the code block was executed:
+The following code will measure the total running time of the code block as well as the number of times the code block was executed:
 
-    #include "../util/TimingCollector.h"
+    class MyStatistics : public Statistics {
+    private:
+        carl::statistics::timer mTimer;
 
-    // ...
+    public:
+        void collect() {
+            Statistics::addKeyValuePair("timer", mTimer);
+        }
+        auto& timer() {
+            return mTimer;
+        }
+    };
 
-    auto start = CARL_TIME_START();
+    SMTRAT_INIT_STATISTICS(myModule::MyStatistics, myStatistics, "MyModuleName")
+
+    auto start = SMTRAT_TIME_START();
 	// expensive code
-	CARL_TIME_FINISH("name.of.statistic", start);
+	SMTRAT_TIME_FINISH(myStatistics.timer(), start);
 
 
 The measured timings will then appear alongside the statistics.

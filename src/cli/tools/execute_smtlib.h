@@ -2,11 +2,13 @@
 
 #include "../parser/ParserWrapper.h"
 
-#include <carl/util/TimingCollector.h>
+#include "../CLIStatistics.h"
 
 #include <string>
 
 namespace smtrat {
+
+
 
 
 template<typename Executor>
@@ -45,7 +47,7 @@ int executeFile(const std::string& pathToInputFile, Executor& e) {
 	setrlimit(RLIMIT_STACK, &rl);
 #endif
 
-	auto start = CARL_TIME_START();
+	auto start = SMTRAT_TIME_START();
 	bool queueInstructions = true;
 	if (!parseInput(pathToInputFile, e, queueInstructions)) {
 		std::cerr << "Parse error" << std::endl;
@@ -59,7 +61,7 @@ int executeFile(const std::string& pathToInputFile, Executor& e) {
 			SMTRAT_LOG_WARN("smtrat", "Did not parse any instructions.");
 		}
 	}
-	CARL_TIME_FINISH("parsing", start);
+	SMTRAT_TIME_FINISH(cli::statistics().parsing, start);
 	return e.getExitCode();
 }
 
