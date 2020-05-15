@@ -2,10 +2,6 @@
 
 **Contact**
 
-    Florian Corzilius <corzilius@cs.rwth-aachen.de>
-    Gereon Kremer <gereon.kremer@cs.rwth-aachen.de>
-    Sebastian Junges <sebastian.junges@cs.rwth-aachen.de>
-    Stefan Schupp <stefan.schupp@cs.rwth-aachen.de>
     Jasper Nalbach <nalbach@cs.rwth-aachen.de>
 
 ## Documentation
