@@ -41,7 +41,6 @@ Some of these are enabled (or disabled) by a set of `cmake` options of the form 
 	  --print-model                         print a model if the input is 
 	                                        satisfiable
 	  --print-all-models                    print all models of the input
-	  --timings                             print timings after solving
 
 	Validation settings:
 	  --log.lemmata                         store all lemmata for validation

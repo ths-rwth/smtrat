@@ -34,7 +34,6 @@ SettingsParser::SettingsParser() {
 			("to-cnf-smtlib", po::bool_switch(&s.convert_to_cnf_smtlib), "transform formula to cnf as smtlib")
 			("print-model", po::bool_switch(&s.print_model), "print a model if the input is satisfiable")
 			("print-all-models", po::bool_switch(&s.print_all_models), "print all models of the input")
-			("timings", po::bool_switch(&s.print_timings), "print timings after solving")
 		;
 	}
 

@@ -30,7 +30,6 @@ struct SolverSettings {
 	std::string preprocess_output_file;
 	bool convert_to_cnf_dimacs;
 	bool convert_to_cnf_smtlib;
-	bool print_timings;
 };
 
 struct ValidationSettings {
