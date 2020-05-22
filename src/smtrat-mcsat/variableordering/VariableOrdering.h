@@ -8,7 +8,8 @@ namespace mcsat {
 
 enum class VariableOrdering {
 	GreedyMaxUnivariate,
-	FeatureBased
+	FeatureBased,
+	FeatureBasedZ3
 };
 
 template<VariableOrdering vot, typename Constraints>
@@ -26,6 +27,8 @@ std::vector<carl::Variable> calculate_variable_order(const Constraints& c) {
 			return variableordering::greedy_max_univariate(constraints);
 		case VariableOrdering::FeatureBased:
 			return variableordering::feature_based(constraints);
+		case VariableOrdering::FeatureBasedZ3:
+			return variableordering::feature_based_z3(constraints);
 	}
 }
 

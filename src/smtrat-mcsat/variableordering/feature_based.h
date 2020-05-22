@@ -99,6 +99,20 @@ double max_coefficient(const Constraints& constraints, carl::Variable v) {
 	);
 }
 
+template<typename Constraints>
+double num_occurrences(const Constraints& constraints, carl::Variable v) {
+	return abstract_feature(constraints, 0.0,
+		[](double a, double b){ return a+b; },
+		[v](const auto& c){ 
+			if (c.hasVariable(v)) {
+				return 1;
+			} else {
+				return 0;
+			}
+		}
+	);
+}
+
 }
 	
 template<typename Constraints>
@@ -108,7 +122,24 @@ std::vector<carl::Variable> feature_based(const Constraints& c) {
 	features.addFeature(detail::max_degree<Constraints>, 0, -1.0);
 	features.addFeature(detail::max_term_total_degree<Constraints>, 0, -0.5);
 	features.addFeature(detail::max_coefficient<Constraints>, 1, 1);
+
+	carl::carlVariables vars;
+	gatherVariables(vars, c);
+	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Collected variables " << vars);
+	auto orderedVars = features.sortVariables(c, vars.underlyingVariables());
 	
+	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Calculated variable ordering " << vars);
+	return orderedVars;
+	
+}
+
+template<typename Constraints>
+std::vector<carl::Variable> feature_based_z3(const Constraints& c) {
+	detail::FeatureCollector<Constraints> features;
+
+	features.addFeature(detail::max_degree<Constraints>, 0, -1.0);
+	features.addFeature(detail::num_occurrences<Constraints>, 1, -1.0);
+
 	carl::carlVariables vars;
 	gatherVariables(vars, c);
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Collected variables " << vars);
