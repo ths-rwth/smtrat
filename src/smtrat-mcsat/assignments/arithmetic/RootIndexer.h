@@ -55,6 +55,9 @@ public:
 	const RAN& sampleFrom(std::size_t n) const {
 		return mSamples[n];
 	}
+	bool is_root(std::size_t n) const {
+		return (n % 2) == 1;
+	}
 };
 inline std::ostream& operator<<(std::ostream& os, const RootIndexer& ri) {
 	os << "Roots:" << std::endl;

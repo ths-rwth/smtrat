@@ -57,7 +57,8 @@ private:
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", lhs << " < " << rhs << "?");
 		const auto& l = mRI.sampleFrom(lhs);
 		const auto& r = mRI.sampleFrom(rhs);
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", l << " < " << r << "?");
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", l << " (" << mRI.is_root(lhs) << ") < " << r << " (" << mRI.is_root(rhs) << ") ?");
+		if ((l.isIntegral() || l.isNumeric()) && (r.isIntegral() || r.isNumeric()) && (mRI.is_root(lhs) != mRI.is_root(rhs))) return mRI.is_root(lhs);
 		if (l.isIntegral() != r.isIntegral()) return l.isIntegral();
 		if (l.isNumeric() != r.isNumeric()) return l.isNumeric();
 		if (l.size() != r.size()) return l.size() < r.size();
