@@ -70,8 +70,9 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, // current assignment s
 
 	// compute compatible complete variable ordering
 	std::vector varOrder(trail.assignedVariables());
+	varOrder.push_back(var);
 	for (const auto& v : trail.variables()) {
-		if (std::find(trail.assignedVariables().begin(), trail.assignedVariables().end(), v) == trail.assignedVariables().end()) {
+		if (std::find(varOrder.begin(), varOrder.end(), v) == varOrder.end()) {
 			varOrder.push_back(v);
 		}
 	}
