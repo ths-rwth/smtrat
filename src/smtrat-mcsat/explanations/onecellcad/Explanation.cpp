@@ -131,6 +131,8 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, // current assignment s
 												<< projectionLevels);
 		// Project higher level polys down to "normal" level
 		auto maxLevel = fullProjectionVarOrder.size() - 1;
+		while(projectionLevels[maxLevel].empty() && maxLevel > 0) maxLevel--;
+		assert(maxLevel > 0 || !projectionLevels[0].empty());
 		if (maxLevel - oneCellMaxLvl > 1 && strict_unassigned_handling) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "More than one unassigned variable.");
 			return boost::none;
