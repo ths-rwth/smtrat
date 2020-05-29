@@ -519,7 +519,7 @@ namespace smtrat
 	template<class Settings>
 	void CSplitModule<Settings>::changeActiveDomain(Expansion& expansion, RationalInterval&& domain)
 	{
-		RationalInterval activeDomain{move(expansion.mActiveDomain)};
+		RationalInterval activeDomain{std::move(expansion.mActiveDomain)};
 		expansion.mActiveDomain = domain;
 		
 		/// Update the variable bounds
