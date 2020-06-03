@@ -40,7 +40,7 @@ Node getNode(const std::string& _nodeAsString)
 			if (matches[4] != "") port = std::stoul(matches[4]);
 			if (matches[5] != "") cores = std::stoul(matches[5]);
 			if (matches[6] != "") connections = std::stoul(matches[6]);
-		} catch (std::out_of_range) {
+		} catch (const std::out_of_range&) {
 			BENCHMAX_LOG_ERROR("benchmax", "Value for port or number of cores is out of range.");
 			BENCHMAX_LOG_ERROR("benchmax", "\tPort: " << matches[4]);
 			BENCHMAX_LOG_ERROR("benchmax", "\tCores: " << matches[5]);
