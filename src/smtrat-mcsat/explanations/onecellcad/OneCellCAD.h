@@ -32,6 +32,7 @@
 #include <vector>
 
 #include <carl/formula/model/ran/RealAlgebraicNumberIntervalExtra.h>
+#include <carl/formula/model/ran/RealAlgebraicPoint.h>
 
 namespace smtrat {
 namespace mcsat {

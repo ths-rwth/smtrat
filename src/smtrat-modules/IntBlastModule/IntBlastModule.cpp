@@ -1151,7 +1151,7 @@ namespace smtrat
             const BlastedPoly& blasting = mPolyBlastings.at(Poly(variable));
 
             if(blasting.isConstant()) {
-                auto modelValue = carl::RealAlgebraicNumber<Rational>(blasting.constant(), false);
+                auto modelValue = carl::RealAlgebraicNumber<Rational>(blasting.constant());
                 mModel.emplace(ModelVariable(variable), ModelValue(modelValue));
             } else {
                 const carl::BVTerm& blastedTerm = blasting.term().term();

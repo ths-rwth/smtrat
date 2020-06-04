@@ -35,7 +35,6 @@ namespace cad {
 		}
 		void setIsRoot(bool isRoot) {
 			mIsRoot = isRoot;
-			mValue.setIsRoot(isRoot);
 		}
 		const SampleLiftedWith& liftedWith() const {
 			return mLiftedWith;

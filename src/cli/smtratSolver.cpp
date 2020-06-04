@@ -80,7 +80,7 @@ void setup_logging() {
 		("smtrat.nlsat.assignmentfinder", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.strategygraph", carl::logging::LogLevel::LVL_DEBUG)
-		("smtrat.mcsat.onecellcad.firstlevel", carl::logging::LogLevel::LVL_TRACE)
+		("smtrat.cdcad", carl::logging::LogLevel::LVL_TRACE)
 	;
 	carl::logging::logger().formatter("stdout")->printInformation = true;
 #endif

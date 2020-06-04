@@ -26,6 +26,7 @@
 #include <carl/formula/uninterpreted/UFInstanceManager.h>
 #include <carl-model/Model.h>
 #include <carl-model/evaluation/ModelEvaluation.h>
+#include <carl/formula/model/ran/RealAlgebraicPoint.h>
 
 #include <smtrat-common/smtrat-common.h>
 
