@@ -128,9 +128,8 @@ std::vector<carl::Variable> feature_based(const Constraints& c) {
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Collected variables " << vars);
 	auto orderedVars = features.sortVariables(c, vars.underlyingVariables());
 	
-	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Calculated variable ordering " << vars);
+	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Calculated variable ordering " << orderedVars);
 	return orderedVars;
-	
 }
 
 template<typename Constraints>
@@ -145,9 +144,8 @@ std::vector<carl::Variable> feature_based_z3(const Constraints& c) {
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Collected variables " << vars);
 	auto orderedVars = features.sortVariables(c, vars.underlyingVariables());
 	
-	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Calculated variable ordering " << vars);
+	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Calculated variable ordering " << orderedVars);
 	return orderedVars;
-	
 }
 
 }
