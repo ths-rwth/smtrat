@@ -3,6 +3,7 @@
 #include "Tool.h"
 
 #include <regex>
+#include <initializer_list>
 
 namespace benchmax {
 
@@ -45,9 +46,9 @@ public:
 		if  (m_iter == m_end) return std::nullopt;
 		else return ss.str();
 	}
-	std::optional<std::string> read_until_whitespace_or(const char c) {
+	std::optional<std::string> read_until_whitespace_or(const std::initializer_list<char> cs) {
 		std::stringstream ss;
-		while (m_iter != m_end && !isspace(*m_iter) && *m_iter != c) {
+		while (m_iter != m_end && !isspace(*m_iter) && std::find(cs.begin(), cs.end(), *m_iter) == cs.end()) {
 			ss << *m_iter;
 			m_iter++;
 		}
@@ -92,7 +93,7 @@ public:
 				auto key = p.read_until_whitespace();
 				if (!key) return false;
 				p.skip_whitespace();
-				auto value = p.read_until_whitespace_or(')');
+				auto value = p.read_until_whitespace_or(')', ':');
 				if (!value) return false;
 				result.additional.emplace(*prefix + "_" + *key, *value);
 				p.skip_whitespace();
