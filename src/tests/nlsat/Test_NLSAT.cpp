@@ -2,6 +2,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <smtrat-common/smtrat-common.h>
+#include <carl-logging/logging-internals.h>
 
 struct NLSATFixture {
 	NLSATFixture() {

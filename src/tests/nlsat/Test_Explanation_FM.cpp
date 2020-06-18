@@ -1,7 +1,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <smtrat-mcsat/smtrat-mcsat.h>
-#include <lib/datastructures/mcsat/fm/Explanation.h>
+#include <smtrat-mcsat/explanations/fm/Explanation.h>
 
 using namespace smtrat;
 
