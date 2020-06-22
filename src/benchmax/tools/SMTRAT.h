@@ -93,7 +93,7 @@ public:
 				auto key = p.read_until_whitespace();
 				if (!key) return false;
 				p.skip_whitespace();
-				auto value = p.read_until_whitespace_or(')', ':');
+				auto value = p.read_until_whitespace_or({')', ':'});
 				if (!value) return false;
 				result.additional.emplace(*prefix + "_" + *key, *value);
 				p.skip_whitespace();
