@@ -1,6 +1,6 @@
 #pragma once
 
-#include <carl/core/polynomialfunctions/RootFinder.h>
+#include <carl/formula/model/ran/RootFinder.h>
 #include <carl/core/polynomialfunctions/Substitution.h>
 #include <carl-model/evaluation/ModelEvaluation.h>
 #include <smtrat-common/model.h>
