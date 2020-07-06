@@ -5,7 +5,7 @@
 #include <carl-model/evaluation/ModelEvaluation.h>
 #include <smtrat-cad/projectionoperator/utils.h>
 #include <carl-covering/carl-covering.h>
-#include <carl/formula/model/ran/RealAlgebraicNumberIntervalExtra.h>
+#include <carl/formula/model/ran/interval/ran_interval_extra.h>
 #include "../OneCellCAD.h"
 
 
@@ -120,12 +120,12 @@ public:
         std::sort(m_roots.begin(), m_roots.end());
         m_samples.reserve(2 * m_roots.size() + 1);
         for (std::size_t n = 0; n < m_roots.size(); n++) {
-            if (n == 0) m_samples.emplace_back(carl::sampleBelow(m_roots.front()), std::nullopt, &m_roots.front());
-            else m_samples.emplace_back(carl::sampleBetween(m_roots[n-1], m_roots[n]), &m_roots[n-1], &m_roots[n]);
+            if (n == 0) m_samples.emplace_back(carl::sample_below(m_roots.front()), std::nullopt, &m_roots.front());
+            else m_samples.emplace_back(carl::sample_between(m_roots[n-1], m_roots[n]), &m_roots[n-1], &m_roots[n]);
             m_samples.emplace_back(m_roots[n], &m_roots[n], &m_roots[n]);
         }
         if (m_roots.empty()) m_samples.emplace_back(RAN(0), std::nullopt, std::nullopt);
-        else m_samples.emplace_back(carl::sampleAbove(m_roots.back()), &m_roots.back(), std::nullopt);
+        else m_samples.emplace_back(carl::sample_above(m_roots.back()), &m_roots.back(), std::nullopt);
     }
 
     const auto& samples() {
@@ -173,7 +173,7 @@ std::ostream& operator<<(std::ostream& os, const root_indexer& data) {
 }
 
 auto as_ran_map(const Model& model) {
-    carl::RealAlgebraicNumberEvaluation::RANMap<Rational> eval_map;
+    carl::ran::RANMap<Rational> eval_map;
     for (const auto& [key, value] : model) {
         eval_map.emplace(key.asVariable(), value.asRAN());
     }
@@ -201,7 +201,7 @@ bool compute_unsat_intervals(const VariableComparisonT& constr, const Model& mod
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Contains unassigned variables");
         return false;
     }
-    if (carl::RealAlgebraicNumberEvaluation::vanishes(carl::to_univariate_polynomial(constr.definingPolynomial(), variable), as_ran_map(model))) {
+    if (carl::ran::interval::vanishes(carl::to_univariate_polynomial(constr.definingPolynomial(), variable), as_ran_map(model))) {
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Vanishes");
         return false;
     }
@@ -273,7 +273,7 @@ bool compute_unsat_intervals(const ConstraintT& constr, const Model& model, carl
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Contains unassigned variables");
         return false;
     }
-    if (carl::RealAlgebraicNumberEvaluation::vanishes(carl::to_univariate_polynomial(constr.lhs(), variable), as_ran_map(model))) {
+    if (carl::ran::interval::vanishes(carl::to_univariate_polynomial(constr.lhs(), variable), as_ran_map(model))) {
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Vanishes");
         return false;
     }

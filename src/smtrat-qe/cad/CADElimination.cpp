@@ -101,7 +101,7 @@ void CADElimination::simplifyCAD() {
 		for (std::size_t id = 0; id < numberOfProjectionFactors; id++) {
 			if (mCAD.getProjection().hasPolynomialById(n + 1 - k, id)) {
 				Poly p(mCAD.getProjection().getPolynomialById(n + 1 - k, id));
-				if (carl::Sign::ZERO == carl::sgn(carl::RealAlgebraicNumberEvaluation::evaluate(p, mCAD.getLifting().extractSampleMap(cell)))) {
+				if (carl::Sign::ZERO == carl::sgn(carl::evaluate(p, mCAD.getLifting().extractSampleMap(cell)))) {
 					P.push_back(p);
 				}
 			}
@@ -157,7 +157,7 @@ void CADElimination::simplifyCAD() {
 				for (std::size_t id = 0; id < numberOfProjectionFactors; id++) {
 					if (mCAD.getProjection().hasPolynomialById(n + 1 - i, id)) {
 						Poly p(mCAD.getProjection().getPolynomialById(n + 1 - i, id));
-						if (carl::Sign::ZERO == carl::sgn(carl::RealAlgebraicNumberEvaluation::evaluate(p, mCAD.getLifting().extractSampleMap(cell)))) {
+						if (carl::Sign::ZERO == carl::sgn(carl::evaluate(p, mCAD.getLifting().extractSampleMap(cell)))) {
 							P.push_back(p);
 						}
 					}
@@ -265,7 +265,7 @@ void CADElimination::computeSignatures() {
 			std::size_t numberOfProjectionFactors = mCAD.getProjection().size(n + 1 - i);
 			for (std::size_t id = 0; id < numberOfProjectionFactors; id++) {
 				if (mCAD.getProjection().hasPolynomialById(n + 1 - i, id)) {
-					signature.push_back(carl::sgn(carl::RealAlgebraicNumberEvaluation::evaluate(Poly(mCAD.getProjection().getPolynomialById(n + 1 - i, id)), assignment)));
+					signature.push_back(carl::sgn(carl::evaluate(Poly(mCAD.getProjection().getPolynomialById(n + 1 - i, id)), assignment)));
 				}
 			}
 		}
@@ -353,7 +353,7 @@ void CADElimination::makeProjectionDefinable() {
 					carl::UnivariatePolynomial<Poly> projectionFactor = mCAD.getProjection().getPolynomialById(n + 1 - i, id);
 					TreeIT it = conflictingPair.second;
 					while (*conflictingPair.first < *it) {
-						if (carl::Sign::ZERO == carl::sgn(carl::RealAlgebraicNumberEvaluation::evaluate(Poly(projectionFactor), mCAD.getLifting().extractSampleMap(it)))) {
+						if (carl::Sign::ZERO == carl::sgn(carl::evaluate(Poly(projectionFactor), mCAD.getLifting().extractSampleMap(it)))) {
 							zeroInSomeCell = true;
 						} else {
 							vanish = false;
@@ -362,7 +362,7 @@ void CADElimination::makeProjectionDefinable() {
 					}
 					if (vanish) {
 						for (auto child = tree().begin_children(tree().get_parent(conflictingPair.first)); child != tree().end_children(tree().get_parent(conflictingPair.first)); child++) {
-							if (carl::Sign::ZERO != carl::sgn(carl::RealAlgebraicNumberEvaluation::evaluate(Poly(projectionFactor), mCAD.getLifting().extractSampleMap(child)))) {
+							if (carl::Sign::ZERO != carl::sgn(carl::evaluate(Poly(projectionFactor), mCAD.getLifting().extractSampleMap(child)))) {
 								vanish = false;
 							}
 						}

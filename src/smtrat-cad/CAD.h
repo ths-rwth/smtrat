@@ -117,7 +117,7 @@ namespace cad {
 			if (sample.evaluatedWith().test(cid)) {
 				return sample.evaluationResult().test(cid);
 			}
-			bool evalResult = carl::RealAlgebraicNumberEvaluation::evaluate(constraint.first, assignment);
+			bool evalResult = carl::evaluate(constraint.first, assignment);
 			SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Evaluating " << constraint.first << " on " << assignment << " -> " << evalResult);
 			sample.evaluatedWith().set(cid, true);
 			sample.evaluationResult().set(cid, evalResult);

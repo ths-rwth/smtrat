@@ -31,7 +31,7 @@
 #include <variant>
 #include <vector>
 
-#include <carl/formula/model/ran/RealAlgebraicNumberIntervalExtra.h>
+#include <carl/formula/model/ran/interval/ran_interval_extra.h>
 #include <carl/formula/model/ran/RealAlgebraicPoint.h>
 
 namespace smtrat {
@@ -368,7 +368,7 @@ public:
 		const Poly& poly) {
 		// 'realRoots' returns std::nullopt if poly vanishes
 		// early, but here we don't care
-		return carl::rootfinder::realRoots(
+		return carl::realRoots(
 			carl::to_univariate_polynomial(poly, variableOrder[polyLevel]),
 			prefixPointToStdMap(polyLevel));
 	}
@@ -401,7 +401,7 @@ public:
 
 		const carl::Variable mainVariable = variableOrder[polyLevel];
 
-		return carl::RealAlgebraicNumberEvaluation::vanishes(
+		return carl::ran::interval::vanishes(
 				carl::to_univariate_polynomial(poly, mainVariable),
 				prefixPointToStdMap(polyLevel));
 	}
@@ -411,7 +411,7 @@ public:
 		const Poly& poly) {
 		const std::size_t componentCount = polyLevel + 1;
 
-		return carl::RealAlgebraicNumberEvaluation::evaluate(
+		return carl::evaluate(
 			ConstraintT(poly, carl::Relation::EQ),
 			prefixPointToStdMap(componentCount));
 	}

@@ -24,9 +24,8 @@
 #include <carl/core/UnivariatePolynomial.h>
 #include <carl/core/Variable.h>
 #include <carl/core/VariablePool.h>
-#include <carl/formula/model/ran/RootFinder.h>
+#include <carl/formula/model/ran/real_roots.h>
 #include <carl/formula/model/ran/RealAlgebraicNumber.h>
-#include <carl/formula/model/ran/RealAlgebraicNumberEvaluation.h>
 #include <carl/formula/model/ran/RealAlgebraicPoint.h>
 
 #include <smtrat-common/smtrat-common.h>
@@ -193,7 +192,7 @@ std::optional<OpenCADCell> mergeCellWithPoly(
 	if (level == 0) // We have a non-zero, constant-poly, so no roots and nothing to do
 		return std::optional<OpenCADCell>(cell);
 
-	bool result = carl::RealAlgebraicNumberEvaluation::evaluate(
+	bool result = carl::evaluate(
 			ConstraintT(poly, carl::Relation::EQ),
 			toStdMap(point, level, variableOrder));
 	if (result) {
@@ -254,7 +253,7 @@ std::optional<OpenCADCell> mergeCellWithPoly(
 	SMTRAT_LOG_INFO("smtrat.opencad", "Continue at level " << level
 														   << ". Search closest bounds to " << point_k);
 	// It must be ensured that poly does not vanish under this point!
-	std::vector<RAN> roots = carl::rootfinder::realRoots(polyAsUnivar,
+	std::vector<RAN> roots = carl::realRoots(polyAsUnivar,
 														  toStdMap(point, level - 1, variableOrder));
 	if (roots.empty()) {
 		SMTRAT_LOG_INFO("smtrat.opencad", "No bound candidates");

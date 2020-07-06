@@ -170,7 +170,7 @@ template<>
 struct CADCore<CoreHeuristic::Interleave> {
 	template<typename It>
 	bool preferLifting(const It& it) {
-		return it->value().isNumeric();
+		return it->value().is_numeric();
 	}
 	template<typename CAD>
 	bool doProjection(CAD& cad) {

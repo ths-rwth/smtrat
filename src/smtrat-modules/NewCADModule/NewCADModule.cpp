@@ -135,8 +135,8 @@ namespace smtrat
 				const auto& r = it->second.asRAN();
 				if (carl::isInteger(r)) continue;
 				if (mFinalCheck) {
-					branchAt(v, r.branchingPoint(), true, true, true);
-					SMTRAT_LOG_DEBUG("smtrat.cad", "Branching on " << v << " at " << r.branchingPoint());
+					branchAt(v, branching_point(r), true, true, true);
+					SMTRAT_LOG_DEBUG("smtrat.cad", "Branching on " << v << " at " << branching_point(r));
 					answer = UNKNOWN;
 				}
 			}

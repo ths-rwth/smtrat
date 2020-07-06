@@ -58,9 +58,9 @@ private:
 		const auto& l = mRI.sampleFrom(lhs);
 		const auto& r = mRI.sampleFrom(rhs);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", l << " (" << mRI.is_root(lhs) << ") < " << r << " (" << mRI.is_root(rhs) << ") ?");
-		if ((l.isIntegral() || l.isNumeric()) && (r.isIntegral() || r.isNumeric()) && (mRI.is_root(lhs) != mRI.is_root(rhs))) return mRI.is_root(lhs);
-		if (l.isIntegral() != r.isIntegral()) return l.isIntegral();
-		if (l.isNumeric() != r.isNumeric()) return l.isNumeric();
+		if ((l.is_integral() || l.is_numeric()) && (r.is_integral() || r.is_numeric()) && (mRI.is_root(lhs) != mRI.is_root(rhs))) return mRI.is_root(lhs);
+		if (l.is_integral() != r.is_integral()) return l.is_integral();
+		if (l.is_numeric() != r.is_numeric()) return l.is_numeric();
 		if (l.size() != r.size()) return l.size() < r.size();
 		if (l.abs() != r.abs()) return l.abs() < r.abs();
 		return l < r;
@@ -259,7 +259,7 @@ public:
 			ModelValue assignment = selectAssignment(cover);
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Assignment: " << mVar << " = " << assignment << " from interval " << cover.satisfyingInterval());
 			assert(assignment.isRAN());
-			if (assignment.asRAN().isNumeric()) {
+			if (assignment.asRAN().is_numeric()) {
 				assignment = assignment.asRAN().value();
 			}
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Assignment: " << mVar << " = " << assignment);

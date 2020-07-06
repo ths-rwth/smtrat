@@ -283,8 +283,8 @@ private:
 	std::string nodeValue(const Sample& s, bool asTex = false) const {
 		std::stringstream ss;
 		if (asTex) ss << "$";
-		if (s.value().isNumeric()) ss << s.value().value();
-		else ss << s.value().getInterval();
+		if (s.value().is_numeric()) ss << s.value().value();
+		else ss << s.value().interval();
 		if (asTex) {
 			if (s.isRoot()) ss << "_R";
 			ss << "$";
@@ -293,8 +293,8 @@ private:
 	}
 	std::string sampleID(const Sample& s) const {
 		double val = 0;
-		if (s.value().isNumeric()) val = carl::toDouble(s.value().value());
-		else val = carl::toDouble(carl::center(s.value().getInterval()));
+		if (s.value().is_numeric()) val = carl::toDouble(s.value().value());
+		else val = carl::toDouble(carl::center(s.value().interval()));
 		if (val < 0) val = -1 / (val - 1);
 		else val = val + 1;
 		return std::to_string(val);

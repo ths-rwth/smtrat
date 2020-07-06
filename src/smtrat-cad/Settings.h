@@ -26,7 +26,6 @@ namespace cad {
 		Default = LT
 	};
 	enum class FullSampleCompareStrategy { Type, Value, T, Default = T };
-	using SampleHeuristic = carl::RANSampleHeuristic;
 	enum class MISHeuristic { TRIVIAL, GREEDY, GREEDY_PRE, GREEDY_WEIGHTED, EXACT, HYBRID};
 	enum class CoreHeuristic { BySample, PreferProjection, PreferSampling, EnumerateAll, Interleave };
 
@@ -42,7 +41,6 @@ namespace cad {
 		static constexpr bool simplifyProjectionByBounds = true;
 		
 		static constexpr ProjectionCompareStrategy projectionComparator = cad::ProjectionCompareStrategy::Default;
-		static constexpr SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Default;
 		static constexpr SampleCompareStrategy sampleComparator = cad::SampleCompareStrategy::Default;
 		static constexpr FullSampleCompareStrategy fullSampleComparator = cad::FullSampleCompareStrategy::Default;
 	};

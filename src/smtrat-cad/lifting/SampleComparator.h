@@ -33,8 +33,8 @@ namespace sample_compare {
 	}
 	template<typename It>
 	auto get(const It& it, type) {
-		if (!it->value().isNumeric()) return 0;
-		if (!it->value().isIntegral()) return 1;
+		if (!it->value().is_numeric()) return 0;
+		if (!it->value().is_integral()) return 1;
 		return 2;
 	}
 
@@ -105,14 +105,14 @@ namespace sample_compare {
 			return res;
 		}
 		bool compare(const Iterator& lhs, const Iterator& rhs) const {
-			bool l1 = lhs->value().isIntegral();
-			bool r1 = rhs->value().isIntegral();
+			bool l1 = lhs->value().is_integral();
+			bool r1 = rhs->value().is_integral();
 			SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", lhs->value() << " < " << rhs->value() << ": Int " << r1);
 			if (l1 != r1) {
 				return r1;
 			}
-			bool l2 = lhs->value().isNumeric();
-			bool r2 = rhs->value().isNumeric();
+			bool l2 = lhs->value().is_numeric();
+			bool r2 = rhs->value().is_numeric();
 			SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", lhs->value() << " < " << rhs->value() << ": Num " << r2);
 			if (l2 != r2) {
 				return r2;

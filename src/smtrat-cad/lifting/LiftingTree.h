@@ -98,20 +98,20 @@ namespace cad {
 			auto tend = mTree.end_children(parent);
 			auto tit = tbegin, tlast = tbegin;
 			if (tbegin->isRoot()) {
-				auto it = mTree.insert(tbegin, Sample(carl::sampleBelow(tlast->value())));
+				auto it = mTree.insert(tbegin, Sample(carl::sample_below(tlast->value())));
 				addToQueue(it);
 			}
 			while (true) {
 				tit++;
 				if (tit == tend) break;
 				if (tlast->isRoot() && tit->isRoot()) {
-					auto it = mTree.insert(tit, Sample(carl::sampleBetween(tlast->value(), tit->value(), Settings::sampleHeuristic)));
+					auto it = mTree.insert(tit, Sample(carl::sample_between(tlast->value(), tit->value())));
 					addToQueue(it);
 				}
 				tlast = tit;
 			}
 			if (tlast->isRoot()) {
-				auto it = mTree.append(parent, Sample(carl::sampleAbove(tlast->value())));
+				auto it = mTree.append(parent, Sample(carl::sample_above(tlast->value())));
 				addToQueue(it);
 			}
 			
@@ -180,7 +180,7 @@ namespace cad {
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Lifting " << m << " on " << p);
 			std::vector<Sample> newSamples;
 			// TODO: Check whether the polynomials becomes zero (check if McCallum is safe)
-			auto roots = carl::rootfinder::realRoots(p, m, RationalInterval::unboundedInterval());
+			auto roots = carl::realRoots(p, m, RationalInterval::unboundedInterval());
 			if (roots.empty()) roots = { RAN(0) };
 			for (const auto& r: roots) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tnew root sample: " << r);

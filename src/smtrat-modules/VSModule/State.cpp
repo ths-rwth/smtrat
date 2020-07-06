@@ -12,6 +12,8 @@
 #include <cmath>
 #include <float.h>
 #include <numeric>
+#include <carl/core/polynomialfunctions/RootBounds.h>
+#include <carl/core/polynomialfunctions/RootCounting.h>
 
 //#define VS_DEBUG_VARIABLE_VALUATIONS
 //#define VS_DEBUG_VARIABLE_BOUNDS

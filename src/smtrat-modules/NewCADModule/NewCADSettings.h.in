@@ -82,7 +82,6 @@ namespace cad {
 }
 
 	struct NewCADBaseSettings: cad::MISHeuristicGreedy {
-		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Default;
 		static constexpr cad::CoreHeuristic coreHeuristic = cad::CoreHeuristic::PreferSampling;
 		static constexpr std::size_t trivialSampleRadius = 1;
 		static constexpr bool simplifyProjectionByBounds = false;
@@ -165,36 +164,7 @@ namespace cad {
 	struct NewCADSettingsPPVERR: NewCADBasePPSettings {
 		static constexpr auto moduleName = "NewCADModule<NewCADPPVERR>";
 	};
-	
-	//
-	// Settings to test different sampling heuristics
-	//
-	struct NewCADSettingsFU_SC: NewCADSettingsFU {
-		static constexpr auto moduleName = "NewCADModule<NewCADFU_SC>";
-		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::Center;
-	};
-	struct NewCADSettingsFU_SI: NewCADSettingsFU {
-		static constexpr auto moduleName = "NewCADModule<NewCADFU_SI>";
-		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::CenterInt;
-	};
-	struct NewCADSettingsFU_SL: NewCADSettingsFU {
-		static constexpr auto moduleName = "NewCADModule<NewCADFU_SL>";
-		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::LeftInt;
-	};
-	struct NewCADSettingsFU_SR: NewCADSettingsFU {
-		static constexpr auto moduleName = "NewCADModule<NewCADFU_SR>";
-		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::RightInt;
-	};
-	struct NewCADSettingsFU_SZ: NewCADSettingsFU {
-		static constexpr auto moduleName = "NewCADModule<NewCADFU_SZ>";
-		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::ZeroInt;
-	};
-	struct NewCADSettingsFU_SInf: NewCADSettingsFU {
-		static constexpr auto moduleName = "NewCADModule<NewCADFU_SInf>";
-		static constexpr cad::SampleHeuristic sampleHeuristic = cad::SampleHeuristic::InftyInt;
-	};
-	// end of sampling heuristics
-	
+		
 	//
 	// Settings to test different lifting order heuristics
 	//

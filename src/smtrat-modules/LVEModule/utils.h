@@ -1,6 +1,6 @@
 #pragma once
 
-#include <carl/formula/model/ran/RootFinder.h>
+#include <carl/formula/model/ran/real_roots.h>
 #include <carl/core/polynomialfunctions/Substitution.h>
 #include <carl-model/evaluation/ModelEvaluation.h>
 #include <smtrat-common/model.h>
@@ -26,7 +26,7 @@ carl::Sign sgn(carl::Variable v, const Poly& p, const carl::RealAlgebraicNumber<
 }
 
 std::optional<ModelValue> get_root(carl::Variable v, const Poly& p) {
-	auto res = carl::rootfinder::realRoots(carl::to_univariate_polynomial(p, v));
+	auto res = carl::realRoots(carl::to_univariate_polynomial(p, v));
 	if (res.empty()) {
 		return std::nullopt;
 	} else {
@@ -47,20 +47,20 @@ std::optional<ModelValue> get_value_for_sgn(carl::Variable v, const Poly& p, car
 	if (sgn(v, p, test) == sign) {
 		return ModelValue(test);
 	}
-	auto res = carl::rootfinder::realRoots(carl::to_univariate_polynomial(p, v));
+	auto res = carl::realRoots(carl::to_univariate_polynomial(p, v));
 	if (res.empty()) {
 		return std::nullopt;
 	}
-	test = sampleBelow(res.front());
+	test = sample_below(res.front());
 	if (sgn(v, p, test) == sign) {
 		return ModelValue(test);
 	}
-	test = sampleAbove(res.back());
+	test = sample_above(res.back());
 	if (sgn(v, p, test) == sign) {
 		return ModelValue(test);
 	}
 	for (std::size_t i = 0; i < res.size() - 1; ++i) {
-		test = sampleBetween(res[i], res[i+1]);
+		test = sample_between(res[i], res[i+1]);
 		if (sgn(v, p, test) == sign) {
 			return ModelValue(test);
 		}	

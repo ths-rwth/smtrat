@@ -6,6 +6,8 @@
 #include <carl/util/Common.h>
 #include <carl-model/evaluation/ModelEvaluation.h>
 
+// #include <carl/formula/model/ran/interval/ran_interval.h>
+
 #include <variant>
 
 namespace smtrat {
@@ -326,17 +328,17 @@ namespace helper {
 
     inline bool generateZeros(const carl::RealAlgebraicNumber<Rational>& ran, std::function<void(SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions)> yield_result) {
         SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generating zeros of VariableComparison with RealAlgebraicNumber " << ran);
-        if (ran.isNumeric()) {
+        if (ran.is_numeric()) {
             // should have been simplified to a ConstraintT before...
             SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Not implemented for numeric content");
             assert(false);
             return false;
         }
-        else if (ran.isInterval()) {
-            // get zeros of ran.getIRPolynomial().mainVar() in ran.getIRPolynomial()
-            ConstraintT constraint(Poly(ran.getIRPolynomial()), carl::Relation::EQ);
+        else /* if (std::is_same<carl::RealAlgebraicNumber<Rational>, carl::real_algebraic_number_interval<Rational>>::value) */ {
+            // get zeros of ran.polynomial().mainVar() in ran.polynomial()
+            ConstraintT constraint(Poly(ran.polynomial()), carl::Relation::EQ);
             std::vector<std::pair<SqrtEx, ConstraintsT>> zeros;
-            bool result = generateZeros(constraint, ran.getIRPolynomial().mainVar(), [&](SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions) {
+            bool result = generateZeros(constraint, ran.polynomial().mainVar(), [&](SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions) {
                 zeros.push_back(std::make_pair(std::move(sqrtExpression), std::move(sideConditions)));
             });
             if (!result) {
@@ -344,12 +346,12 @@ namespace helper {
                 return false;
             }
 
-            // get zero that is in interval ran.getInterval()
+            // get zero that is in interval ran.interval()
             static Model model;
             for (const auto& zero : zeros) {
                  // RAN uses open intervals and the polynomial has rational coefficients
-                bool res1 = rationalLessThanSqrtEx(ran.getInterval().lower(), zero.first, model);
-                bool res2 = sqrtExLessThanRational(zero.first, ran.getInterval().upper(), model);
+                bool res1 = rationalLessThanSqrtEx(ran.interval().lower(), zero.first, model);
+                bool res2 = sqrtExLessThanRational(zero.first, ran.interval().upper(), model);
                 if (res1 && res2) {
                     SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Generate zero " << zero.first << " with " << zero.second);
                     yield_result(SqrtEx(zero.first), ConstraintsT(zero.second));
@@ -360,11 +362,10 @@ namespace helper {
             SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "No zero was in the specified interval!");
             assert(false);
             return false;
-        }
-        else {
-            SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Not implemented for Thom encoding");
+        } /* else {
+            SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "RAN representation not supported.");
             return false;
-        }
+        } */
     }
 
     inline bool generateZeros(const VariableComparisonT& variableComparison, const carl::Variable& eliminationVar, const Model& model, std::function<void(SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions)> yield_result) {

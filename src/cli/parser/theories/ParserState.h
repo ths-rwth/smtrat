@@ -10,6 +10,8 @@
 #include "FunctionInstantiator.h"
 #include "../InstructionHandler.h"
 
+#include <stack>
+
 namespace smtrat {
 namespace parser {
 
