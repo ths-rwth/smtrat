@@ -48,7 +48,7 @@ int run_dimacs_file(Strategy& strategy, const std::string& filename) {
 namespace smtrat {
 
 template<typename Strategy>
-int run_dimacs_file(Strategy& strategy, const std::string& filename) {
+int run_dimacs_file(Strategy&, const std::string&) {
 	SMTRAT_LOG_ERROR("smtrat", "This version of SMT-RAT was compiled without support for DIMACS parsing.");
 	return 0;
 }
