@@ -38,7 +38,7 @@ option( ENABLE_TESTING "Enables test target" OFF)
 
 # Strategy
 option( SMTRAT_STRAT_Factorization "Factorization" ON )
-set(SMTRAT_Strategy "RatComp2016" CACHE STRING "Used strategy in the solver")
+set(SMTRAT_Strategy "SMTCOMP" CACHE STRING "Used strategy in the solver")
 option( SMTRAT_STRAT_PARALLEL_MODE "Parallel mode" OFF )
 
 # Development options
