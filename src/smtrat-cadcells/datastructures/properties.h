@@ -6,6 +6,8 @@
 
 namespace smtrat::cadcells::datastructures {
 
+// TODO polynomialpool
+
 struct poly_oi {
     Poly poly;
     
@@ -18,6 +20,40 @@ std::ostream& operator<<(std::ostream& os, const poly_oi& data) {
     return os;
 }
 
+struct disc_oi {
+    Poly poly;
+};
+size_t level_of(const var_order& order, const poly_oi& prop) {
+    return level_of(order, prop.poly) - 1;
+}
+std::ostream& operator<<(std::ostream& os, const poly_oi& data) {
+    os << "disc(" << data.poly << ") oi";
+    return os;
+}
+
+struct res_oi {
+    Poly poly;
+    Poly poly2;
+};
+size_t level_of(const var_order& order, const poly_oi& prop) {
+    return level_of(order, prop.poly) - 1;
+}
+std::ostream& operator<<(std::ostream& os, const poly_oi& data) {
+    os << "res(" << data.poly << ", " << data.poly2 << ") oi";
+    return os;
+}
+
+struct ldcf_si {
+    Poly poly;
+};
+size_t level_of(const var_order& order, const poly_oi& prop) {
+    return level_of(order, prop.poly) - 1;
+}
+std::ostream& operator<<(std::ostream& os, const poly_oi& data) {
+    os << "ldcf(" << data.poly << ") oi";
+    return os;
+}
+
 struct poly_si {
     Poly poly;   
 };
@@ -26,6 +62,17 @@ size_t level_of(const var_order& order, const poly_si& prop) {
 }
 std::ostream& operator<<(std::ostream& os, const poly_si& data) {
     os << data.poly << " si";
+    return os;
+}
+
+struct poly_non_null {
+    Poly poly;   
+};
+size_t level_of(const var_order& order, const poly_si& prop) {
+    return level_of(order, prop.poly) - 1;
+}
+std::ostream& operator<<(std::ostream& os, const poly_si& data) {
+    os << data.poly << " non-null";
     return os;
 }
 
