@@ -19,7 +19,7 @@ using var_order = std::vector<carl::Variable> m_variables;
 
 /**
  * Find the index of the highest variable (wrt. the ordering in 'order') that occurs with positive degree in 'poly'.
- * We start counting at 1 and represent "no level/variable" as 0 because it simplifies using the level directly as an index into arrays or vectors.
+ * We start counting at 1 and represent "no level/variable" as 0.
  * Examples:
  * - level(2) == 0 wrt. any variable order
  * - level(0*x+2) == 0 wrt. any variable order

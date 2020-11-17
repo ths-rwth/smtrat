@@ -8,6 +8,8 @@ namespace smtrat::cadcells::datastructures {
 
 // TODO polynomialpool
 
+// TODO is this already part of projection?
+
 struct poly_oi {
     Poly poly;
     
@@ -19,6 +21,8 @@ std::ostream& operator<<(std::ostream& os, const poly_oi& data) {
     os << data.poly << " oi";
     return os;
 }
+
+/*
 
 struct disc_oi {
     Poly poly;
@@ -53,6 +57,7 @@ std::ostream& operator<<(std::ostream& os, const poly_oi& data) {
     os << "ldcf(" << data.poly << ") oi";
     return os;
 }
+*/
 
 struct poly_si {
     Poly poly;   
@@ -76,7 +81,7 @@ std::ostream& operator<<(std::ostream& os, const poly_si& data) {
     return os;
 }
 
-using property = std::variant<poly_oi,poly_si>;
+using property = std::variant<poly_oi,poly_si,poly_non_null>;
 size_t level_of(const var_order& order, const poly_si& prop) {
     return std::visit([](const auto& p) { return level_of(order, p); }, prop);
 }

@@ -4,7 +4,7 @@
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
 
-namespace smtrat::cadcells::datastructures {
+namespace smtrat::cadcells::datastructures { // TODO treat each property type separately (possible using templates?)
 
 class properties {
     const var_order& m_var_order;
