@@ -6,6 +6,12 @@
 
 namespace smtrat::cadcells::datastructures { // TODO treat each property type separately (possible using templates?)
 
+template<typename ... T>
+struct prop_set {
+
+};
+
+template<typename ... T>
 class properties {
     const var_order& m_var_order;
     size_t m_level;
