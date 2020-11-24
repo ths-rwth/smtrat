@@ -2,10 +2,9 @@
 
 #include "projection.h"
 
-namespace smtrat::cadcells::projection {
+namespace smtrat::cadcells::projection::mccallum {
 
-template<>
-cell_at_level project<projection_type::McCallum>(const properties& properties_in, properties& properties_out) {
+cell_at_level project(const properties& properties_in, const var_order& order, const Model& sample, properties& properties_out) {
     
 }
     

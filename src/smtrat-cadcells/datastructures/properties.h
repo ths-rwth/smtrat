@@ -6,12 +6,12 @@
 
 namespace smtrat::cadcells::datastructures {
 
-// TODO polynomialpool
+// TODO resolve poly_ref
 
 // TODO is this already part of projection?
 
 struct poly_oi {
-    Poly poly;
+    poly_ref poly;
     
 };
 size_t level_of(const var_order& order, const poly_oi& prop) {
@@ -60,7 +60,7 @@ std::ostream& operator<<(std::ostream& os, const poly_oi& data) {
 */
 
 struct poly_si {
-    Poly poly;   
+    poly_ref poly;   
 };
 size_t level_of(const var_order& order, const poly_si& prop) {
     return level_of(order, prop.poly);
@@ -71,7 +71,7 @@ std::ostream& operator<<(std::ostream& os, const poly_si& data) {
 }
 
 struct poly_non_null {
-    Poly poly;   
+    poly_ref poly;   
 };
 size_t level_of(const var_order& order, const poly_si& prop) {
     return level_of(order, prop.poly) - 1;
