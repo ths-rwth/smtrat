@@ -23,11 +23,18 @@ Each application may produce arbitrarily many *candidate inputs* which are then 
 When analyzing the behavior, `delta` relies on the exit code of the program.
 It will run the program on the original input and obtain the original exit code.
 Whenever the program returns the same exit code, `delta` assumes that the program behaved the same.
-Hence, if you want to debug a specific assertion (or error, faulty output, ...), make sure that this event results in a unique exit code.
+
+### Using delta
 
 Using `delta` is rather easy.
 It accepts the input file and the solver as its two main arguments: `./delta -i input.smt2 -s ./solver`.
 There are a couple of other arguments that are documented in the help: `./delta --help`.
+
+#### Exit code
+As delta relies on the exit code of the program, make sure that this event results in a unique exit code:
+
+* **Specific assertions**: Return a unique exit code by replacing the assertion with `if (!assertion_condition) { std:exit(70); }`.
+* **Faulty output**: Remove the `(set-info :status unsat)`/`(set-info :status sat)` line from the benchmark and use the script `utilities/result-incorrect.py` as solver. Note that you need to install z3 first.
 
 ## Analyzer
 
