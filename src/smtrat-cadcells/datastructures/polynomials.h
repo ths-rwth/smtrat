@@ -13,6 +13,8 @@ struct poly_ref{
 };
 
 class poly_pool {
+    const var_order& m_var_order;
+
     // TODO safe memory somehow:
     std::vector<carl::IDPool> m_id_pools;
     std::vector<std::vector<Poly>> m_polys;
@@ -20,9 +22,13 @@ class poly_pool {
 
 public:
 
+    poly_pool(const var_order& var_order) : m_var_order(var_order) {}
+
+    const var_order& var_order() { return m_var_order; }
+
     poly_ref operator()(const Poly& poly) {
         poly_ref ref;
-        ref.level = level_of(poly);
+        ref.level = level_of(m_var_order, poly);
         auto res = m_poly_ids[ref.level-1].find(poly);
         if (res == m_poly_ids[ref.level-1].end()) {
             ref.id = m_id_pools[ref.level-1].get();

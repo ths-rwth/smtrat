@@ -8,20 +8,19 @@
 
 namespace smtrat::cadcells::datastructures {
 
-class cache { // TODO encapsulate all computations here?
-
+class projections { // TODO encapsulate all computations here?
     poly_pool& m_polys;
 
 public:
-    cache(poly_pool& polys) : m_polys(polys) {}
+    projections(poly_pool& polys) : m_polys(polys) {}
 
-    poly_id resultant(poly_id a, poly_id b) { // TODO
+    poly_ref resultant(poly_ref a, poly_ref b) { // TODO implement
         assert(a.level == b.level);
         return m_polys(carl::resultant(m_polys(a), m_polys(b)));
         
     }
 
-    poly_id discriminant(poly_id a) { // TODO
+    poly_ref discriminant(poly_ref a) { // TODO implement
         return m_polys(carl::discriminant(m_polys(a)));
     }
 
