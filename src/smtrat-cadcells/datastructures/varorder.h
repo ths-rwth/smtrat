@@ -1,19 +1,8 @@
-#pragma once
-
 #include "../common.h"
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
 
 namespace smtrat::cadcells::datastructures {
-
-struct indexed_root {
-    Poly poly;
-    size_t index;
-};
-std::ostream& operator<<(std::ostream& os, const indexed_root& data) {
-    os << "root(" << data.poly << ", " << data.index << ")";
-    return os;
-}
 
 using var_order = std::vector<carl::Variable> m_variables;
 
@@ -46,33 +35,5 @@ size_t level_of(const var_order& order, const Poly& poly) {
     assert(false && "Poly contains variable not found in order"); // precondition violated
     return 0;
 }
-
-enum class bound { infty, weak };
-struct cell_at_level {
-private: 
-    enum class type { section, sector /*, sector_lweak, sector_uweak, sector_weak*/ };
-
-    std::optional<indexed_root> m_lower;
-    std::optional<indexed_root> m_upper;
-    type m_type;
-
-public:
-
-    cell_at_level(indexed_root bound) : m_lower(bound), m_type(type::section) {}
-    cell_at_level(indexed_root lower, indexed_root upper) : m_lower(lower), m_upper(upper), m_type(type::sector) {}
-    cell_at_level(bound lower, indexed_root upper) : m_upper(upper), m_type(type::sector) {}
-    cell_at_level(indexed_root lower, bound upper) : m_lower(lower), m_type(type::sector) {}
-
-    bool is_sector() const {
-        return m_type == type::sector;
-    }
-
-    bool is_section() const {
-        return m_type == type::section;
-    }
-
-    // TODO finish ...
-
-};
 
 }

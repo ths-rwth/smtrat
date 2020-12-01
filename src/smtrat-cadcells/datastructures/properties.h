@@ -40,19 +40,6 @@ class properties {
     std::shared_ptr<properties<Ts...>> m_lower; 
     detail::prop_sets<Ts...> m_properties;
 
-private:
-    template<typename P>
-    void insert_at_level(size_t level, P&& property) {
-        assert(level <= m_level);
-        if (level < m_level) {
-            assert(level > 0);
-            assert(m_lower != std::nullptr);
-            m_lower->insert_at_level(level, std::move(property));
-        } else {
-            get<P>(m_properties).emplace(std::move(property));
-        }
-    }
-
 public:
     properties(const poly_pool& polynomials, size_t level) : m_polynomials(polynomials), m_level(level) {
         if (level > 0) {
@@ -66,7 +53,28 @@ public:
 
     template<typename P>
     void insert(P&& property) {
-        insert_at_level(level_of(m_polynomials.var_order(), property), std::move(property));
+        assert(level_of(m_polynomials.var_order(), property) <= m_level && level_of(m_polynomials.var_order(), property) > 0);
+
+        if (level_of(m_polynomials.var_order(), property) == m_level) {
+            if (!is_trivial(m_projections, property)) {
+                get<P>(m_properties).emplace(std::move(property));
+            }
+        } else {
+            assert(m_lower != std::nullptr);
+            m_lower->insert(std::move(property));
+        }
+    }
+
+    template<typename P>
+    bool contains(const P& property) {
+        assert(level_of(m_polynomials.var_order(), property) <= m_level && level_of(m_polynomials.var_order(), property) > 0);
+
+        if (level_of(m_polynomials.var_order(), property) == m_level) {
+            return get<P>(m_properties).contains(property);
+        } else {
+            assert(m_lower != std::nullptr);
+            return m_lower->contains(property);
+        }
     }
 
     template<typename P>
