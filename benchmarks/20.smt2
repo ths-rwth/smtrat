@@ -1,7 +1,0 @@
-(set-logic QF_NRA)
-(declare-fun a () Real)
-(declare-fun x () Real)
-(declare-fun y () Real)
-(assert (and (not (= a 0)) (implies (= (+ (- (- (+ (- (* 16 (* (* a a) (* y y))) (* 8 (* (* a a) y))) (* 4 (* x x))) (* 4 x)) (* 3 (* a a))) 1) 0) (<= (- (+ (* y y) (* x x)) 1) 0))))
-(eliminate-quantifiers (forall x y))
-(exit)
