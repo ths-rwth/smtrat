@@ -1,10 +1,13 @@
 #pragma once
 
+#include <optional>
+
 #include "../common.h"
-#include <smtrat-common/smtrat-common.h>
-#include <smtrat-common/model.h>
 
 #include "polynomials.h"
+
+#include <carl/core/polynomialfunctions/Factorization.h>
+#include <carl-model/evaluation/ModelEvaluation.h>
 
 namespace smtrat::cadcells::datastructures {
 
@@ -22,6 +25,7 @@ struct poly_properties {
 
 }
 
+
 /**
  * Encapsulates all computations on polynomials. 
  * Computations are cached with respect to a poly_pool.
@@ -36,11 +40,17 @@ class projections {
         return m_cache[p.level-1][p.id];
     }
 
-    auto main_var(poly_ref p) {
+    const auto& cache(poly_ref p) const {
+        assert(p.level-1 < m_cache.size());
+        assert(p.id < m_cache[p.level-1].size());
+        return m_cache[p.level-1][p.id];
+    }
+
+    auto main_var(poly_ref p) const {
         return m_pool.var_order()[p.level];
     }
 
-    auto as_univariate(poly_ref p) {
+    auto as_univariate(poly_ref p) const {
         return carl::to_univariate_polynomial(m_pool(p), main_var(p));
     }
 
@@ -56,21 +66,33 @@ public:
         if (cache(p).res.find(q) != cache(p).res.end()) {
             return cache(p).res[q];
         } else {
-            auto res = m_pool(carl::resultant(as_univariate(p), as_univariate(q)));
-            assert(!is_zero(res));
-            cache(p).insert(q, res);
-            return res;
+            auto upoly = carl::resultant(as_univariate(p), as_univariate(q));
+            assert(carl::is_constant(upoly));
+            auto result = m_pool(Poly(upoly));
+            assert(!is_zero(result));
+            cache(p).res.insert(q, result);
+            return result;
         }
     }
+
+    bool know_disc(poly_ref p) const {
+        return (bool) cache(p).disc;
+    }
+
+    bool known(const Poly& p) const {
+        return m_pool.known(p);
+    } 
 
     poly_ref disc(poly_ref p) {
         if (cache(p).disc) {
             return *cache(p).disc;
         } else {
-            auto disc = m_pool(carl::discriminant(as_univariate(p)));
-            assert(!is_zero(disc));
-            cache(p).disc = disc;
-            return disc;
+            auto upoly = carl::discriminant(as_univariate(p));
+            assert(carl::is_constant(upoly));
+            auto result = m_pool(Poly(upoly));
+            assert(!is_zero(result));
+            cache(p).disc = result;
+            return result;
         }
     }
 
@@ -78,37 +100,53 @@ public:
         if (cache(p).ldcf) {
             return *cache(p).ldcf;
         } else {
-            auto ldcf = m_pool(p).lcoeff(main_var(p));
-            assert(!is_zero(ldcf));
-            cache(p).ldcf = ldcf;
-            return ldcf;
+            auto result = m_pool(m_pool(p).lcoeff(main_var(p)));
+            assert(!is_zero(result));
+            cache(p).ldcf = result;
+            return result;
         }
     }
 
-    size_t num_roots(const Model& sample, poly_ref p) {
-        // TODO implement
+    size_t num_roots(const Model& sample, poly_ref p) { // TODO cache
+        return carl::model::realRoots(m_pool(p), main_var(p), sample).size();
     }
 
-    std::vector<RealAlgebraicNumber> real_roots(const Model& sample, poly_ref p) {
-        // TODO implement
+    std::vector<ran> real_roots(const Model& sample, poly_ref p) { // TODO cache
+        return carl::model::realRoots(m_pool(p), main_var(p), sample);
     }
 
-    // TODO cache real roots?
-
-    bool is_zero(const Model& sample, poly_ref p) {
-        // TODO implement
+    std::vector<poly_ref> factors_nonconst(poly_ref p) { // TODO cache
+        std::vector<poly_ref> results;
+        for (const auto& factor : carl::irreducibleFactors(m_pool(p), false)) {
+            results.emplace_back(m_pool(factor));
+        }
+        return results; 
     }
 
-    bool is_nullified(const Model& sample, poly_ref p) {
-        // TODO implement
+    bool is_zero(const Model& sample, poly_ref p) { // TODO cache
+        auto mv = carl::model::evaluate(ConstraintT(m_pool(p), carl::Relation::EQ), sample);
+        assert(mv.isBool());
+        return mv.asBool();
+    }
+
+    bool is_nullified(const Model& sample, poly_ref p) { // TODO cache
+        auto poly = m_pool(p);
+		assert(!poly.isConstant());
+		if (poly.isLinear()) return false;
+
+        std::map<carl::Variable, ran> varToRANMap;
+		for (const auto& [key, value] : sample)
+			varToRANMap[key] = value.asRAN();
+
+		return carl::ran::interval::vanishes(as_univariate(p), varToRANMap);
     }
 
     bool is_ldcf_zero(const Model& sample, poly_ref p) {
-        return zero(ldcf(p));
+        return is_zero(ldcf(p));
     }
 
     bool is_disc_zero(const Model& sample, poly_ref p) {
-        return zero(disc(p));
+        return is_zero(disc(p));
     }
 
     bool is_const(poly_ref p) {
@@ -117,6 +155,30 @@ public:
 
     bool is_zero(poly_ref p) {
         return carl::is_zero(m_pool(p));
+    }
+
+    bool has_const_coeff(poly_ref p) const {
+        auto poly = as_univariate(p);
+        for (const auto& coeff :  poly.coefficients()) {
+            if (coeff.isConstant() && !carl::isZero(coeff)) return true;
+        }
+        return false;
+    }
+
+    poly_ref simplest_nonzero_coeff(const Model& sample, poly_ref p, std::function<bool(const Poly&,const Poly&)> compare) const {
+        std::optional<Poly> result;
+        auto poly = as_univariate(p);
+        for (const auto& coeff : poly.coefficients()) {
+            auto mv = carl::model::evaluate(ConstraintT(coeff, carl::Relation::NEQ), sample);
+            assert(mv.isBool());
+            if (mv.asBool()) {
+                if (!result || compare(coeff,*result)) {
+                    result = coeff;
+                }
+            }
+        }
+        assert(result);
+        return m_pool(*result);
     }
 
 };

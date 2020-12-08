@@ -1,74 +1,62 @@
 #pragma once
 
+#include "../datastructures/polynomials.h"
 #include "../datastructures/properties.h"
+#include "../datastructures/projections.h"
 
 
 namespace smtrat::cadcells::operators::mccallum::properties {
 
-struct poly_si {
-    poly_ref poly;   
+struct poly_sgn_inv {
+    datastructures::poly_ref poly;   
 };
-size_t level_of(const poly_pool&, const poly_si& prop) {
+size_t level_of(const datastructures::poly_pool&, const poly_sgn_inv& prop) {
     return prop.poly.level;
 }
-bool is_trivial(const projections& proj, const poly_si& prop) {
+bool is_trivial(datastructures::projections& proj, const poly_sgn_inv& prop) {
     return proj.is_const(prop.poly);
 }
-std::ostream& operator<<(std::ostream& os, const poly_si& data) {
+std::ostream& operator<<(std::ostream& os, const poly_sgn_inv& data) {
     os << data.poly << " si";
     return os;
 }
 
-struct poly_irreducible_si {
-    poly_ref poly;   
+struct poly_irreducible_sgn_inv {
+    datastructures::poly_ref poly;   
 };
-size_t level_of(const poly_pool&, const poly_irreducible_si& prop) {
+size_t level_of(const datastructures::poly_pool&, const poly_irreducible_sgn_inv& prop) {
     return prop.poly.level;
 }
-bool is_trivial(const projections& proj, const poly_irreducible_si& prop) {
+bool is_trivial(datastructures::projections& proj, const poly_irreducible_sgn_inv& prop) {
     return proj.is_const(prop.poly);
 }
-std::ostream& operator<<(std::ostream& os, const poly_si& data) {
+std::ostream& operator<<(std::ostream& os, const poly_irreducible_sgn_inv& data) {
     os << data.poly << " si and irreducible";
     return os;
 }
 
-struct poly_oi {
-    poly_ref poly;
+struct poly_ord_inv {
+    datastructures::poly_ref poly;
 };
-size_t level_of(const poly_pool&, const poly_oi& prop) {
+size_t level_of(const datastructures::poly_pool&, const poly_ord_inv& prop) {
     return prop.poly.level;
 }
-bool is_trivial(const projections& proj, const poly_oi& prop) {
+bool is_trivial(datastructures::projections& proj, const poly_ord_inv& prop) {
     return proj.is_const(prop.poly);
 }
-std::ostream& operator<<(std::ostream& os, const poly_oi& data) {
+std::ostream& operator<<(std::ostream& os, const poly_ord_inv& data) {
     os << data.poly << " oi";
     return os;
 }
 
-struct poly_non_null {
-    poly_ref poly;   
-};
-size_t level_of(const poly_pool&, const poly_non_null& prop) {
-    return prop.poly.level - 1;
-}
-bool is_trivial(const projections& proj, const poly_non_null& prop) {
-    return proj.is_const(prop.poly);
-}
-std::ostream& operator<<(std::ostream& os, const poly_non_null& data) {
-    os << data.poly << " non-null";
-    return os;
-}
-
 struct root_well_def {
-    poly_ref poly;
+    datastructures::poly_ref poly;
     size_t idx;   
 };
-size_t level_of(const poly_pool&, const root_well_def& prop) {
+size_t level_of(const datastructures::poly_pool&, const root_well_def& prop) {
     return prop.poly.level - 1;
 }
-bool is_trivial(const projections& proj, const root_well_def& prop) {
+bool is_trivial(datastructures::projections& proj, const root_well_def& prop) {
     return false;
 }
 std::ostream& operator<<(std::ostream& os, const root_well_def& data) {
@@ -77,12 +65,12 @@ std::ostream& operator<<(std::ostream& os, const root_well_def& data) {
 }
 
 struct poly_pdel {
-    poly_ref poly;
+    datastructures::poly_ref poly;
 };
-size_t level_of(const poly_pool&, const poly_pdel& prop) {
+size_t level_of(const datastructures::poly_pool&, const poly_pdel& prop) {
     return prop.poly.level - 1;
 }
-bool is_trivial(const projections& proj, const poly_pdel& prop) {
+bool is_trivial(datastructures::projections& proj, const poly_pdel& prop) {
     return false;
 }
 std::ostream& operator<<(std::ostream& os, const poly_pdel& data) {
@@ -90,6 +78,6 @@ std::ostream& operator<<(std::ostream& os, const poly_pdel& data) {
     return os;
 }
 
-using properties = ::datastructures::properties<poly_si,poly_irreducible_si,poly_oi,poly_non_null,root_well_def,poly_pdel>;
+using properties = datastructures::properties<poly_sgn_inv,poly_sgn_inv,poly_ord_inv,root_well_def,poly_pdel>;
 
 }

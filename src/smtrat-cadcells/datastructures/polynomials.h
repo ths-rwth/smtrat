@@ -5,17 +5,24 @@
 #include <smtrat-common/model.h>
 #include <carl/util/IDPool.h>
 
+#include "../datastructures/varorder.h"
+
 namespace smtrat::cadcells::datastructures {
 
-struct poly_ref{
+struct poly_ref {
     size_t level;
     size_t id;    
 };
 
+std::ostream& operator<<(std::ostream& os, const poly_ref& data) {
+    os << "(" << data.level << " " << data.id << ")";
+    return os;
+}
+
 // TODO make polynomials univariate
 
 class poly_pool {
-    const var_order& m_var_order;
+    const variable_ordering& m_var_order;
 
     // TODO safe memory somehow:
     std::vector<carl::IDPool> m_id_pools;
@@ -24,9 +31,9 @@ class poly_pool {
 
 public:
 
-    poly_pool(const var_order& var_order) : m_var_order(var_order) {}
+    poly_pool(const variable_ordering& var_order) : m_var_order(var_order) {}
 
-    const var_order& var_order() { return m_var_order; }
+    const variable_ordering& var_order() const { return m_var_order; }
 
     poly_ref operator()(const Poly& poly) {
         auto npoly = poly.normalize();
@@ -38,7 +45,7 @@ public:
             m_poly_ids[ref.level-1].emplace(npoly, ref.id);
             m_polys[ref.level-1][ref.id] = npoly;
         } else {
-            ref.id = *res;
+            ref.id = res->second;
         }
         return ref;
     }
@@ -47,6 +54,13 @@ public:
         assert(ref.level <= m_id_pools.size());
         assert(ref.id < m_polys[ref.level-1].size());
         return m_polys[ref.level-1][ref.id];
+    }
+
+    bool known(const Poly& poly) const {
+        auto npoly = poly.normalize();
+        auto level = level_of(m_var_order, npoly);
+        auto res = m_poly_ids[level-1].find(npoly);
+        return res != m_poly_ids[level-1].end();
     }
 
     void clear_level(size_t level) {

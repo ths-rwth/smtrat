@@ -1,10 +1,12 @@
+#pragma once
+
 #include "../common.h"
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
 
 namespace smtrat::cadcells::datastructures {
 
-using var_order = std::vector<carl::Variable> m_variables;
+using variable_ordering = std::vector<carl::Variable>;
 
 /**
  * Find the index of the highest variable (wrt. the ordering in 'order') that occurs with positive degree in 'poly'.
@@ -21,7 +23,7 @@ using var_order = std::vector<carl::Variable> m_variables;
  * Preconditions:
  * - 'poly.gatherVariables()' must be a subset of 'order'.
  */
-size_t level_of(const var_order& order, const Poly& poly) {
+size_t level_of(const variable_ordering& order, const Poly& poly) {
     // assert(isSubset(asVector(poly.gatherVariables()), order));
     auto poly_variables = carl::variables(poly).underlyingVariableSet();
     if (poly_variables.empty()) {
