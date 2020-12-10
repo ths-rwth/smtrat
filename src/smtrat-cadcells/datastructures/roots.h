@@ -15,10 +15,10 @@ std::ostream& operator<<(std::ostream& os, const indexed_root& data) {
     return os;
 }
 
-enum class bound { infty, weak };
+enum class bound { infty };
 struct cell_at_level {
 private: 
-    enum class type { section, sector /*, sector_lweak, sector_uweak, sector_weak*/ };
+    enum class type { section, sector };
 
     std::optional<indexed_root> m_lower;
     std::optional<indexed_root> m_upper;
@@ -39,8 +39,18 @@ public:
         return m_type == type::section;
     }
 
-    // TODO finish ...
+    indexed_root sector_defining() const {
+        assert(is_sector());
+        return *m_lower;
+    }
 
+    auto lower() const {
+        return m_lower;
+    }
+
+    auto upper() const {
+        return m_upper;
+    }
 };
 
 }

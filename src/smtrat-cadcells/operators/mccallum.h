@@ -36,5 +36,5 @@ datastructures::cell_at_level construct_cell(datastructures::projections& projec
 
 
 }
-    
+
 }

@@ -46,10 +46,6 @@ class projections {
         return m_cache[p.level-1][p.id];
     }
 
-    auto main_var(poly_ref p) const {
-        return m_pool.var_order()[p.level];
-    }
-
     auto as_univariate(poly_ref p) const {
         return carl::to_univariate_polynomial(m_pool(p), main_var(p));
     }
@@ -57,13 +53,17 @@ class projections {
 public:
     projections(poly_pool& pool) : m_pool(pool) {}
 
+    auto main_var(poly_ref p) const {
+        return m_pool.var_order()[p.level];
+    }
+
     poly_ref res(poly_ref p, poly_ref q) {
         assert(p.level == q.level && p.id != q.id);
 
         if (p.id > q.id) return res(q,p);
         assert(p.id < q.id);
 
-        if (cache(p).res.find(q) != cache(p).res.end()) {
+        if (cache(p).res.f(q) != cache(p).res.end()) {
             return cache(p).res[q];
         } else {
             auto upoly = carl::resultant(as_univariate(p), as_univariate(q));
@@ -136,7 +136,7 @@ public:
 
         std::map<carl::Variable, ran> varToRANMap;
 		for (const auto& [key, value] : sample)
-			varToRANMap[key] = value.asRAN();
+			varToRANMap[key.asVariable()] = value.asRAN();
 
 		return carl::ran::interval::vanishes(as_univariate(p), varToRANMap);
     }
