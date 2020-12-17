@@ -4,7 +4,7 @@
 
 #include <smtrat-modules/BEModule/BEModule.h>
 #include <smtrat-modules/BVModule/BVModule.h>
-#include <smtrat-modules/CADModule/CADModule.h>
+#include <smtrat-modules/NewCADModule/NewCADModule.h>
 #include <smtrat-modules/CNFerModule/CNFerModule.h>
 #include <smtrat-modules/EMModule/EMModule.h>
 #include <smtrat-modules/EQModule/EQModule.h>
@@ -33,7 +33,7 @@ namespace smtrat
 				setStrategy({
 					addBackend<BEModule<BESettings1>>(),
 					addBackend<BVModule<BVSettings1>>(),
-					addBackend<CADModule<CADSettingsReal>>(),
+					addBackend<NewCADModule<NewCADSettingsNaive>>(),
 					addBackend<CNFerModule>(),
 					addBackend<EMModule<EMSettings1>>(),
 					addBackend<EQModule<EQSettings1>>(),
