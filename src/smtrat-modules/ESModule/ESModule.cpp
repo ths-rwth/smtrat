@@ -352,6 +352,7 @@ namespace smtrat
                 if (sub != _formula.quantifiedFormula())
                     result = FormulaT(_formula.getType(), _formula.quantifiedVariables(), sub);
             }
+            default: {}
         }
 		if (!_outermost) {
 	        iter = mBoolSubs.find( result );
