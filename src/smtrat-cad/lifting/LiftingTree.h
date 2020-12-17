@@ -180,11 +180,15 @@ namespace cad {
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Lifting " << m << " on " << p);
 			std::vector<Sample> newSamples;
 			// TODO: Check whether the polynomials becomes zero (check if McCallum is safe)
-			auto roots = carl::realRoots(p, m, RationalInterval::unboundedInterval());
-			if (roots.empty()) roots = { RAN(0) };
-			for (const auto& r: roots) {
-				SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tnew root sample: " << r);
-				newSamples.emplace_back(r, pid);
+			auto result = carl::real_roots(p, m, RationalInterval::unboundedInterval());
+			if (!result.is_univariate() || result.roots().empty()) {
+				SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tnew root sample: " << RAN(0));
+				newSamples.emplace_back(RAN(0), pid);
+			} else {
+				for (const auto& r: result.roots()) {
+					SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tnew root sample: " << r);
+					newSamples.emplace_back(r, pid);
+				}
 			}
 			auto bounds = mConstraints.bounds().getInterval(mVariables[sample.depth()]);
 			if (bounds.lowerBoundType() != carl::BoundType::INFTY) {

@@ -135,9 +135,9 @@ BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_MVRoot_multivar) {
 }
 BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_RAN_simple) {
 	carl::Variable r = carl::freshRealVariable("r");
-	carl::UnivariatePolynomial<Rational> pol = (Poly(r)*r-Rational(2)).toUnivariatePolynomial();
+	carl::UnivariatePolynomial<Rational> pol = carl::to_univariate_polynomial(Poly(r)*r-Rational(2));
 	carl::Interval<Rational> interval(Rational(1), carl::BoundType::STRICT, Rational(2), carl::BoundType::STRICT);
-	carl::RealAlgebraicNumber<Rational> ran(pol, interval, true);
+	auto ran = carl::RealAlgebraicNumber<Rational>::create_safe(pol, interval);
 
 	bool result = generateZeros(ran, [&](const SqrtEx&& sqrtExpression, const ConstraintsT&& sideConditions) {
 		// sqrt(2) = 0+1*sqrt(8)/2
@@ -319,9 +319,9 @@ BOOST_AUTO_TEST_CASE(Test_substitute_varComp_varNotContained) {
 	carl::Variable y = carl::freshRealVariable("y");
 
 	carl::Variable r = carl::freshRealVariable("r");
-	carl::UnivariatePolynomial<Rational> pol = (Poly(r)*r-Rational(2)).toUnivariatePolynomial();
+	carl::UnivariatePolynomial<Rational> pol = carl::to_univariate_polynomial(Poly(r)*r-Rational(2));
 	carl::Interval<Rational> interval(Rational(1), carl::BoundType::STRICT, Rational(2), carl::BoundType::STRICT);
-	carl::RealAlgebraicNumber<Rational> ran(pol, interval, true);
+	auto ran = carl::RealAlgebraicNumber<Rational>::create_safe(pol, interval);
 	
 	::vs::Substitution substitution(y, SqrtEx(Poly(Rational(1))), ::vs::Substitution::Type::NORMAL, carl::PointerSet<::vs::Condition>(), ConstraintsT());
 	VariableComparisonT varcomp(x, ran, carl::Relation::EQ);
@@ -363,7 +363,7 @@ BOOST_AUTO_TEST_CASE(Test_getExplanation_substitution) {
 	ordering.push_back(y);
 
 	std::vector<FormulaT> constraints;
-	ConstraintT c1((Poly(x)-Rational(2)).pow(2) + (Poly(y)-Rational(2)).pow(2) - Rational(1), carl::Relation::LESS);
+	ConstraintT c1(carl::pow(Poly(x)-Rational(2),2) + carl::pow(Poly(y)-Rational(2),2) - Rational(1), carl::Relation::LESS);
 	constraints.push_back(FormulaT(c1));
 	ConstraintT c2(Poly(x)-y, carl::Relation::EQ);
 	constraints.push_back(FormulaT(c2));

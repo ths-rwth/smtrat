@@ -118,11 +118,13 @@ private:
 		for (std::size_t pid = 0; pid < mProjection.size(level); pid++) {
 			const auto& poly = mProjection.getPolynomialById(level, pid);
 			if (carl::isZero(carl::model::substitute(poly, model))) continue;
-			auto list = carl::model::realRoots(poly, model);
-			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Looking at " << poly << " with roots " << list);
+			auto list = carl::model::real_roots(poly, model);
+			if (list.is_nullified()) continue;
+			assert(list.is_univariate());
+			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Looking at " << poly << " with roots " << list.roots());
 			// Find the closest roots/rootIdx around value.
 			std::size_t rootID = 1;
-			for (const auto& root: list) {
+			for (const auto& root: list.roots()) {
 			  // Need to use poly with its main variable replaced by the special MultivariateRootT::var().
 				auto param = std::make_pair(Poly(carl::UnivariatePolynomial<Poly>(MultivariateRootT::var(), poly.coefficients())), rootID);
 				SMTRAT_LOG_TRACE("smtrat.nlsat", root << " -> " << param);

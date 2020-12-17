@@ -1,6 +1,6 @@
 #pragma once
 
-#include <carl/formula/model/ran/RealAlgebraicNumber.h>
+#include <carl/ran/ran.h>
 
 namespace smtrat {
 namespace cad {

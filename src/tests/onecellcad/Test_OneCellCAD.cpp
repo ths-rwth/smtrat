@@ -6,7 +6,7 @@
 
 #include <carl/core/MultivariatePolynomial.h>
 #include <carl/core/Variable.h>
-#include <carl/formula/model/ran/RealAlgebraicPoint.h>
+#include <carl/ran/RealAlgebraicPoint.h>
 
 #include <smtrat-mcsat/explanations/onecellcad/OneCellCAD.h>
 

@@ -24,9 +24,9 @@
 #include <carl/core/UnivariatePolynomial.h>
 #include <carl/core/Variable.h>
 #include <carl/core/VariablePool.h>
-#include <carl/formula/model/ran/real_roots.h>
-#include <carl/formula/model/ran/RealAlgebraicNumber.h>
-#include <carl/formula/model/ran/RealAlgebraicPoint.h>
+#include <carl/ran/real_roots.h>
+#include <carl/ran/ran.h>
+#include <carl/ran/RealAlgebraicPoint.h>
 
 #include <smtrat-common/smtrat-common.h>
 
@@ -192,10 +192,11 @@ std::optional<OpenCADCell> mergeCellWithPoly(
 	if (level == 0) // We have a non-zero, constant-poly, so no roots and nothing to do
 		return std::optional<OpenCADCell>(cell);
 
-	bool result = carl::evaluate(
+	auto result = carl::evaluate(
 			ConstraintT(poly, carl::Relation::EQ),
 			toStdMap(point, level, variableOrder));
-	if (result) {
+	assert(result);
+	if (*result) {
 		SMTRAT_LOG_WARN("smtrat.opencad", "Poly vanished at point.");
 		return std::nullopt;
 	}
@@ -203,7 +204,7 @@ std::optional<OpenCADCell> mergeCellWithPoly(
 	std::optional<OpenCADCell> newCell(cell);
 	carl::Variable mainVariable = variableOrder[levelVariableIdx];
 	SMTRAT_LOG_TRACE("smtrat.opencad", "Current level variable: " << mainVariable);
-	MultiCoeffUniPoly polyAsUnivar = poly.toUnivariatePolynomial(mainVariable);
+	MultiCoeffUniPoly polyAsUnivar = carl::to_univariate_polynomial(poly, mainVariable);
 	if (level > 1) {
 		SMTRAT_LOG_INFO("smtrat.opencad", "Do Open-McCallum projection of this poly into level " << level - 1);
 		std::vector<MultiPoly> projectionPolys;
@@ -215,14 +216,14 @@ std::optional<OpenCADCell> mergeCellWithPoly(
 		Sector& sectorAtLvl = (*newCell)[levelVariableIdx];
 		// Add resultant of poly and lower sector bound
 		if (!sectorAtLvl.isLowBoundNegInfty()) {
-			MultiPoly resultant(carl::resultant(sectorAtLvl.lowBound->poly.toUnivariatePolynomial(mainVariable), polyAsUnivar));
+			MultiPoly resultant(carl::resultant(carl::to_univariate_polynomial(sectorAtLvl.lowBound->poly, mainVariable), polyAsUnivar));
 			projectionPolys.emplace_back(resultant);
 			SMTRAT_LOG_TRACE("smtrat.opencad", "Add resultant with cell's low bound: " << resultant);
 		}
 
 		// Add resultant of poly and higher sector bound
 		if (!sectorAtLvl.isHighBoundInfty()) {
-			MultiPoly resultant(carl::resultant(sectorAtLvl.highBound->poly.toUnivariatePolynomial(mainVariable), polyAsUnivar));
+			MultiPoly resultant(carl::resultant(carl::to_univariate_polynomial(sectorAtLvl.highBound->poly,mainVariable), polyAsUnivar));
 			projectionPolys.emplace_back(resultant);
 			SMTRAT_LOG_TRACE("smtrat.opencad", "Add resultant with cell's high bound: " << resultant);
 		}
@@ -253,8 +254,8 @@ std::optional<OpenCADCell> mergeCellWithPoly(
 	SMTRAT_LOG_INFO("smtrat.opencad", "Continue at level " << level
 														   << ". Search closest bounds to " << point_k);
 	// It must be ensured that poly does not vanish under this point!
-	std::vector<RAN> roots = carl::realRoots(polyAsUnivar,
-														  toStdMap(point, level - 1, variableOrder));
+	std::vector<RAN> roots = carl::real_roots(polyAsUnivar,
+														  toStdMap(point, level - 1, variableOrder)).roots();
 	if (roots.empty()) {
 		SMTRAT_LOG_INFO("smtrat.opencad", "No bound candidates");
 		return newCell;

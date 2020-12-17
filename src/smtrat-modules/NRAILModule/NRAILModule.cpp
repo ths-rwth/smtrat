@@ -35,7 +35,7 @@ namespace smtrat
     {}
 
     template<class Settings>
-    bool NRAILModule<Settings>::informCore( const FormulaT& _constraint )
+    bool NRAILModule<Settings>::informCore( const FormulaT& )
     {
         // Your code.
         return true; // This should be adapted according to your implementation.
