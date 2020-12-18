@@ -156,7 +156,7 @@ private:
 		}
 	}
 public:
-	ExplanationGenerator(const std::vector<FormulaT>& constraints, const std::vector<carl::Variable>& vars, carl::Variable targetVar, const Model& model):
+	ExplanationGenerator(const std::vector<FormulaT>& constraints, const std::vector<carl::Variable>& vars, carl::Variable, const Model& model):
 		mModel(model),
 		mConstraints(constraints),
 		mCADConstraints(
