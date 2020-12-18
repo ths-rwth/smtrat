@@ -414,7 +414,8 @@ public:
 		auto res = carl::evaluate(
 			ConstraintT(poly, carl::Relation::EQ),
 			prefixPointToStdMap(componentCount));
-		return *res;
+		assert(!indeterminate(res));
+		return (bool)res;
 	}
 
 	inline bool isPointRootOfPoly(
