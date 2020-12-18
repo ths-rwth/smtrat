@@ -150,6 +150,7 @@ namespace smtrat
 							case carl::Relation::GREATER: return FormulaT(carl::FormulaType::AND, {FormulaT(getPoly(Pq), carl::Relation::GREATER), FormulaT(getPoly(Pr), rel)});
 							case carl::Relation::LEQ: return FormulaT(carl::FormulaType::OR, {FormulaT(getPoly(Pq), carl::Relation::EQ), FormulaT(getPoly(Pr), rel)});
 							case carl::Relation::LESS: return FormulaT(carl::FormulaType::AND, {FormulaT(getPoly(Pq), carl::Relation::GREATER), FormulaT(getPoly(Pr), rel)});
+							default: return formula;
 						}
 					case carl::Relation::EQ: return FormulaT(Poly(0), rel);
 					case carl::Relation::LEQ:
@@ -160,6 +161,7 @@ namespace smtrat
 							case carl::Relation::GREATER: return FormulaT(carl::FormulaType::AND, {FormulaT(getPoly(Pq), carl::Relation::LESS), FormulaT(getPoly(Pr), carl::Relation::LESS)});
 							case carl::Relation::LEQ: return FormulaT(carl::FormulaType::OR, {FormulaT(getPoly(Pq), carl::Relation::EQ), FormulaT(getPoly(Pr), carl::Relation::GEQ)});
 							case carl::Relation::LESS: return FormulaT(carl::FormulaType::AND, {FormulaT(getPoly(Pq), carl::Relation::LESS), FormulaT(getPoly(Pr), carl::Relation::GREATER)});
+							default: return formula;
 						}
 					case carl::Relation::LESS:
 						switch (rel) {
@@ -169,6 +171,7 @@ namespace smtrat
 							case carl::Relation::GREATER: return FormulaT(getPoly(Pr), carl::Relation::LESS);
 							case carl::Relation::LEQ: return FormulaT(getPoly(Pr), carl::Relation::GEQ);
 							case carl::Relation::LESS: return FormulaT(getPoly(Pr), carl::Relation::GREATER);
+							default: return formula;
 						}
 					default: return formula;
 				}

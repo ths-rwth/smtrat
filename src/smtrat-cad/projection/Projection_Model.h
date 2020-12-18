@@ -93,11 +93,13 @@ namespace cad {
                                 const auto& poly = getPolynomialById(level, pid); 
                                 auto psubs = carl::model::substitute(poly, model);
                                 if (carl::isZero(psubs)) continue;
-                                auto list = carl::model::realRoots(poly, model);
+                                auto list = carl::model::real_roots(poly, model);
+								if (list.is_nullified()) continue;
+								assert(list.is_univariate());
 
                                 boost::optional<std::pair<RAN,bool>> lower;
                                 boost::optional<std::pair<RAN,bool>> upper;
-                                for (const auto& root: list) {
+                                for (const auto& root: list.roots()) {
                                         if (root < value) {
                                                 if (!lower || root > lower->first) {
                                                         lower = std::make_pair(root, true);

@@ -31,8 +31,8 @@
 #include <variant>
 #include <vector>
 
-#include <carl/formula/model/ran/interval/ran_interval_extra.h>
-#include <carl/formula/model/ran/RealAlgebraicPoint.h>
+#include <carl/ran/interval/ran_interval_extra.h>
+#include <carl/ran/RealAlgebraicPoint.h>
 
 namespace smtrat {
 namespace mcsat {
@@ -366,11 +366,11 @@ public:
 	std::vector<RAN> isolateLastVariableRoots(
 		const std::size_t polyLevel,
 		const Poly& poly) {
-		// 'realRoots' returns std::nullopt if poly vanishes
+		// 'real_roots' returns std::nullopt if poly vanishes
 		// early, but here we don't care
-		return carl::realRoots(
+		return carl::real_roots(
 			carl::to_univariate_polynomial(poly, variableOrder[polyLevel]),
-			prefixPointToStdMap(polyLevel));
+			prefixPointToStdMap(polyLevel)).roots();
 	}
 
 	bool isAlreadyProcessed(const TagPoly2& poly) {
@@ -411,9 +411,11 @@ public:
 		const Poly& poly) {
 		const std::size_t componentCount = polyLevel + 1;
 
-		return carl::evaluate(
+		auto res = carl::evaluate(
 			ConstraintT(poly, carl::Relation::EQ),
 			prefixPointToStdMap(componentCount));
+		assert(!indeterminate(res));
+		return (bool)res;
 	}
 
 	inline bool isPointRootOfPoly(

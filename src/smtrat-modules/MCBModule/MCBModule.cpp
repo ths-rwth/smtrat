@@ -33,7 +33,7 @@ namespace smtrat
 		virtual carl::ModelSubstitutionPtr<Rational,Poly> clone() const {
 			return carl::createSubstitutionPtr<Rational,Poly,MCBModelSubstitution>(mAssignments);
 		}
-		virtual FormulaT representingFormula( const ModelVariable& mv ) {
+		virtual FormulaT representingFormula( const ModelVariable& ) {
 			assert(false);
 			return FormulaT();
 		}

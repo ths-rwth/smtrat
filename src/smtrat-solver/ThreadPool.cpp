@@ -43,7 +43,7 @@ namespace smtrat
     
     void ThreadPool::submitBackend(Task* task) {
 		SMTRAT_LOG_DEBUG("smtrat.parallel", "Submitting " << task->getModule()->moduleName());
-        auto tmpCounter = mCounter.load();
+        /*auto tmpCounter =*/ mCounter.load();
 		//if (tmpCounter < mMaxThreads) { // TODO: Counter does currently not work correctly
             std::thread(&ThreadPool::runTask, this, task).detach();
 		/*} else {
@@ -110,10 +110,11 @@ namespace smtrat
                         res = Answer::UNKNOWN;
                     break;
                 }
+				case Answer::OPTIMAL:
 				case Answer::SAT:
                 {
                     assert( res != Answer::UNSAT );
-                    res = Answer::SAT;
+                    res = ans;
                     break;
                 }
 				case Answer::UNSAT:

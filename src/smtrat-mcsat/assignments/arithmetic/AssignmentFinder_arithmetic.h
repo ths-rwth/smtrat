@@ -115,14 +115,20 @@ public:
 		if (fnew.getType() == carl::FormulaType::CONSTRAINT) {
 			const auto& poly = fnew.constraint().lhs();
 			SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Real roots of " << poly << " in " << mVar << " w.r.t. " << mModel);
-			auto roots = carl::model::tryRealRoots(poly, mVar, mModel);
-			if (roots) {
-				list = *roots;
+			auto roots = carl::model::real_roots(poly, mVar, mModel);
+			if (roots.is_univariate()) {
+				list = roots.roots();
 				SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "-> " << list);
 			} else {
-				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Failed to compute roots because polynomial is not univariate or became zero.");
-				mMVBounds.emplace_back(f);
-				return true;
+				assert(roots.is_nullified());
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Failed to compute roots because polynomial is nullified.");
+				if (carl::evaluate(carl::Sign::ZERO, fnew.constraint().relation())) {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << " simplified to true.");
+					return true;
+				} else {
+					SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
+					return false;
+				}
 			}
 		} else if (fnew.isTrue()) {
 			SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Ignoring " << f << " which simplified to true.");

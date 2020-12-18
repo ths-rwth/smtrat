@@ -5,7 +5,7 @@
 #include <carl-model/evaluation/ModelEvaluation.h>
 #include <smtrat-cad/projectionoperator/utils.h>
 #include <carl-covering/carl-covering.h>
-#include <carl/formula/model/ran/interval/ran_interval_extra.h>
+#include <carl/ran/interval/ran_interval_extra.h>
 #include "../OneCellCAD.h"
 
 
@@ -310,10 +310,11 @@ bool compute_unsat_intervals(const ConstraintT& constr, const Model& model, carl
             lower_level.push_back(f);
         } else {
             current_level.push_back(f);
-            auto f_roots = carl::model::realRoots(f, variable, model);
-            SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Factor " << f << " has roots " << f_roots);
-            for (size_t index = 0; index < f_roots.size(); index++) {
-                ri.insert_root(f_roots[index], indexed_root({f, index}));
+            auto f_roots = carl::model::real_roots(f, variable, model);
+            assert(f_roots.is_univariate());
+            SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Factor " << f << " has roots " << f_roots.roots());
+            for (size_t index = 0; index < f_roots.roots().size(); index++) {
+                ri.insert_root(f_roots.roots()[index], indexed_root({f, index}));
             }
         }
     }

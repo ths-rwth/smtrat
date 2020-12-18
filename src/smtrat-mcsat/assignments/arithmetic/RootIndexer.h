@@ -26,7 +26,7 @@ public:
 	void process() {
 		std::sort(mRoots.begin(), mRoots.end());
 		mRoots.erase(std::unique(mRoots.begin(), mRoots.end()), mRoots.end());
-		SMTRAT_LOG_DEBUG("smtrat.nlsat.rootindexer", "Roots: " << mRoots);
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.rootindexer", "Roots: " << mRoots);
 		for (std::size_t i = 0; i < mRoots.size(); i++) {
 			mMap.emplace(mRoots[i], i);
 		}
@@ -38,7 +38,7 @@ public:
 		}
 		if (mRoots.empty()) mSamples.emplace_back(RAN(0));
 		else mSamples.emplace_back(carl::sample_above(mRoots.back()));
-		SMTRAT_LOG_DEBUG("smtrat.nlsat.rootindexer", "Samples: " << mSamples);
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.rootindexer", "Samples: " << mSamples);
 	}
 	std::size_t size() const {
 		return mRoots.size();

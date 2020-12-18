@@ -31,10 +31,10 @@ public:
 	void add(const smtrat::FormulaT& f) {
 		solver.add(f);
 	}
-	void addSoft(const smtrat::FormulaT& f, Rational weight, const std::string& id) {
+	void addSoft(const smtrat::FormulaT& f, Rational, const std::string&) {
 		solver.add(f);
 	}
-	void annotateName(const smtrat::FormulaT& f, const std::string& name) {
+	void annotateName(const smtrat::FormulaT&, const std::string&) {
 		SMTRAT_LOG_WARN("smtrat.preprocessor", "Preprocessor does not supprt named annotations.")
 	}
 	void check() {
@@ -48,7 +48,7 @@ public:
 	void declareFun(const carl::Variable&) {}
 	void declareSort(const std::string&, const unsigned&) {}
 	void defineSort(const std::string&, const std::vector<std::string>&, const carl::Sort&) {}
-	void eliminateQuantifiers(const smtrat::qe::QEQuery& q) {}
+	void eliminateQuantifiers(const smtrat::qe::QEQuery&) {}
 	void exit() {
 		mOutput << "(exit)" << std::endl;
 	}
@@ -64,7 +64,7 @@ public:
 	void getProof() {}
 	void getUnsatCore() {}
 	void getValue(const std::vector<carl::Variable>&) {}
-	void addObjective(const smtrat::Poly& p, smtrat::parser::OptimizationType ot) {}
+	void addObjective(const smtrat::Poly&, smtrat::parser::OptimizationType) {}
 	void pop(std::size_t n) {
 
 		solver.pop(n);

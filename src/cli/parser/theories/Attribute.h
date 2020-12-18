@@ -3,6 +3,8 @@
 #include "Common.h"
 #include "TheoryTypes.h"
 
+#include <boost/optional.hpp>
+
 namespace smtrat {
 namespace parser {
 	

@@ -113,7 +113,7 @@ namespace vs
                 lCoeffWeight = 3;
         }
         // Check the number of variables.
-        double numberOfVariableWeight = (double) constraint().variables().size();
+        //double numberOfVariableWeight = (double) constraint().variables().size();
         // Check how in how many monomials the variable occurs.
         double numberOfVariableOccurencesWeight = (double)varInfo.occurence();
         if( maximum <= numberOfVariableOccurencesWeight )

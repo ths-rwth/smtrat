@@ -186,7 +186,7 @@ public:
 	void clear(std::size_t level, std::size_t pid) {
 		mPolyData[level][pid] = std::nullopt;
 	}
-	void reset(std::size_t dim) {
+	void reset(std::size_t) {
 		mPolyData.clear();
 	}
 };
@@ -271,7 +271,7 @@ public:
 		(*this)(0).ecs.addPolyToEC(ecid, pid);
 	}
 
-	void removeECConstraint(std::size_t pid) {
+	void removeECConstraint(std::size_t) {
 
 	}
 

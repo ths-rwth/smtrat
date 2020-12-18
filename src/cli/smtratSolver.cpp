@@ -68,19 +68,14 @@ void setup_logging() {
 	//carl::logging::logger().formatter("stdout")->printInformation = false;
 	carl::logging::logger().filter("smtrat")
 		("smtrat", carl::logging::LogLevel::LVL_INFO)
-		("smtrat.cad", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
 	;
 	carl::logging::logger().filter("stdout")
 		("smtrat", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.module", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.parser", carl::logging::LogLevel::LVL_INFO)
-		("smtrat.cad", carl::logging::LogLevel::LVL_INFO)
-		("smtrat.nlsat.rootindexer", carl::logging::LogLevel::LVL_INFO)
-		("smtrat.nlsat.assignmentfinder", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
-		("smtrat.strategygraph", carl::logging::LogLevel::LVL_DEBUG)
-		("smtrat.cdcad", carl::logging::LogLevel::LVL_TRACE)
+		("smtrat.strategygraph", carl::logging::LogLevel::LVL_INFO)
 	;
 	carl::logging::logger().formatter("stdout")->printInformation = true;
 #endif

@@ -55,7 +55,7 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, // current assignment s
 						const FormulasT& trailLiterals) const {
 	
 	bool covering_at_first_level=false;
-	bool strict_unassigned_handling=false;
+	bool strict_nullification_handling=false;
 
 	assert(trail.model().size() == trail.assignedVariables().size());
 
@@ -134,13 +134,23 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, // current assignment s
 		auto maxLevel = fullProjectionVarOrder.size() - 1;
 		while(projectionLevels[maxLevel].empty() && maxLevel > 0) maxLevel--;
 		assert(maxLevel > 0 || !projectionLevels[0].empty());
-		if (maxLevel - oneCellMaxLvl > 1 && strict_unassigned_handling) {
+		if (maxLevel - oneCellMaxLvl > 1 && strict_nullification_handling) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "More than one unassigned variable.");
 			return boost::none;
 		}
 		for (std::size_t currentLvl = maxLevel; currentLvl > oneCellMaxLvl; currentLvl--) {
 			auto currentVar = fullProjectionVarOrder[currentLvl];
 			assert(currentLvl >= 1);
+			if (strict_nullification_handling) {
+				for (const auto& p : projectionLevels[currentLvl]) {
+					std::map<carl::Variable, carl::RealAlgebraicNumber<Rational>> irmap;
+					for (const auto& [k,v] : trail.model()) irmap.emplace(k.asVariable(),v.asRAN());
+					if (carl::ran::interval::vanishes(carl::to_univariate_polynomial(p.poly, currentVar), irmap)) {
+						SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Polynomial " << p.poly << " vanishes over " << trail.model());
+						return boost::none;
+					}
+				}
+			}
 			auto nextLowerVar = fullProjectionVarOrder[currentLvl - 1];
 			auto projectionFactors = onecellcad::singleLevelFullProjection(currentVar, nextLowerVar, projectionLevels[currentLvl]);
 			onecellcad::categorizeByLevel(

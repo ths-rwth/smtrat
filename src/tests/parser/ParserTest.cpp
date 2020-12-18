@@ -100,12 +100,12 @@
 // 	}
 // };
 // 
-int main(int argc, char* argv[]) {
+int main(/*int argc, char* argv[]*/) {
 	// TODO - this looks like it has not been touched for quite a while. It doesn't compile, either.
 	// Refactor the test and make it compile again.
-	if (!carl::logging::logger().has("stdout")) {
+	/*if (!carl::logging::logger().has("stdout")) {
 		carl::logging::logger().configure("stdout", std::cout);
-	}
+	}*/
 	
 	// Executor* e = new Executor();
 	// smtrat::parser::SMTLIBParser p(e, false);
