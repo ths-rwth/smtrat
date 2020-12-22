@@ -34,19 +34,19 @@ namespace smtrat
         /**
          *
          */
-        #ifdef SMTRAT_STRAT_PARALLEL_MODE
+        //#ifdef SMTRAT_STRAT_PARALLEL_MODE
         typedef Rational BoundType;
-        #else
-        typedef carl::Numeric<Rational> BoundType;
-        #endif
+        //#else
+        //typedef carl::Numeric<Rational> BoundType;
+        //#endif
         /**
          *
          */
-        #ifdef SMTRAT_STRAT_PARALLEL_MODE
+        //#ifdef SMTRAT_STRAT_PARALLEL_MODE
         typedef Rational EntryType;
-        #else
-        typedef carl::Numeric<Rational> EntryType;
-        #endif
+        //#else
+        //typedef carl::Numeric<Rational> EntryType;
+        //#endif
         /**
          *
          */
