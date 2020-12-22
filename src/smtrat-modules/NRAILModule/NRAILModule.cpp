@@ -553,7 +553,7 @@ namespace smtrat
                 }
             }
             if(counter == 0){
-                estimatedModel.emplace(*it1, ZERO_RATIONAL);
+                estimatedModel.emplace(*it1, Rational(0));
             }
         }
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
@@ -589,7 +589,7 @@ namespace smtrat
 
         MonomialMap monomialMap = smtrat::MonomialMappingByVariablePool::getInstance().getMMonomialMapping();
         for (MonomialMapIterator it = monomialMap.begin(); it != monomialMap.end(); ++it) {
-            linearizedModel.emplace(it->first, ZERO_RATIONAL);
+            linearizedModel.emplace(it->first, Rational(0));
         }
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             std::cout << "Abstract model for checking axioms: " << "\n";

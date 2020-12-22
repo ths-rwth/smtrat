@@ -83,17 +83,6 @@ namespace smtrat
 
     // Constants.
     ///@todo move static variables to own cpp
-    static const Rational ZERO_RATIONAL = Rational( 0 );
-
-    static const Rational ONE_RATIONAL = Rational( 1 );
-
-    static const Rational MINUS_ONE_RATIONAL = Rational( -1 );
-
-    static const Poly ZERO_POLYNOMIAL = Poly( ZERO_RATIONAL );
-
-    static const Poly ONE_POLYNOMIAL = Poly( ONE_RATIONAL );
-
-    static const Poly MINUS_ONE_POLYNOMIAL = Poly( MINUS_ONE_RATIONAL );
 
     static const unsigned MAX_DEGREE_FOR_FACTORIZATION = 6;
 
