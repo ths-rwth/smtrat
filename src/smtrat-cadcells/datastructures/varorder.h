@@ -6,6 +6,8 @@
 
 namespace smtrat::cadcells::datastructures {
 
+// TODO ordered assignment
+
 using variable_ordering = std::vector<carl::Variable>;
 
 /**

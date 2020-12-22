@@ -22,17 +22,15 @@ datastructures::cell_at_level construct_cell(datastructures::projections& projec
         rules::poly_sgn_inv(projections, properties, sample, prop.poly);
     }
 
-    std::vector<datastructures::poly_ref> nullified;
-    std::vector<datastructures::poly_ref> non_nullified;
+    auto main_var = projections.var_order()[properties.level()-1];
+    delineation del(main_var);
     for(const auto& prop : properties.get<properties::poly_irreducible_sgn_inv>()) {
-        if (projections.is_nullified(sample, prop.poly)) {
-            nullified.push_back(prop.poly);
-        } else {
-            non_nullified.push_back(prop.poly);
-        }
+        delineate(projections, del, prop);
     }
+    del.set_sample(sample[main_var]);
 
-    // TODO
+    // TODO construct cell from delineation
+
 
 
 }

@@ -16,8 +16,7 @@ std::ostream& operator<<(std::ostream& os, const indexed_root& data) {
 }
 
 enum class bound { infty };
-struct cell_at_level {
-private: 
+class cell_at_level {
     enum class type { section, sector };
 
     std::optional<indexed_root> m_lower;
@@ -51,6 +50,16 @@ public:
     auto upper() const {
         return m_upper;
     }
+};
+
+class indexed_root_ordering {
+
+};
+
+struct representative {
+    cell_at_level interval;
+    indexed_root_ordering ordering;
+    std::vector<poly_ref> equational;
 };
 
 }

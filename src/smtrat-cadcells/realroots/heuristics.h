@@ -1,6 +1,0 @@
-namespace smtrat::cadcells::realroots {
-
-    
-
-
-};

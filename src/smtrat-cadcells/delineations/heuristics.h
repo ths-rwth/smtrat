@@ -1,0 +1,6 @@
+namespace smtrat::cadcells::delineations {
+
+    
+
+
+};
