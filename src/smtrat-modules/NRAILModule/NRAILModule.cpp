@@ -479,7 +479,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    void NRAILModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
+    void NRAILModule<Settings>::removeCore( ModuleInput::const_iterator )
     {
         // Your code.
     }

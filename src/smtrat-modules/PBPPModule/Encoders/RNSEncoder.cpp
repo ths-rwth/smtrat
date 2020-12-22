@@ -227,7 +227,7 @@ namespace smtrat {
 		return primes;
 	}
 
-	bool RNSEncoder::canEncode(const ConstraintT& constraint) {
+	bool RNSEncoder::canEncode(const ConstraintT&) {
 		return false;
 	}
 
