@@ -15,8 +15,9 @@ std::ostream& operator<<(std::ostream& os, const indexed_root& data) {
     return os;
 }
 
+// TODO rename to region?
 enum class bound { infty };
-class cell_at_level {
+class cell {
     enum class type { section, sector };
 
     std::optional<indexed_root> m_lower;
@@ -25,10 +26,10 @@ class cell_at_level {
 
 public:
 
-    cell_at_level(indexed_root bound) : m_lower(bound), m_type(type::section) {}
-    cell_at_level(indexed_root lower, indexed_root upper) : m_lower(lower), m_upper(upper), m_type(type::sector) {}
-    cell_at_level(bound lower, indexed_root upper) : m_upper(upper), m_type(type::sector) {}
-    cell_at_level(indexed_root lower, bound upper) : m_lower(lower), m_type(type::sector) {}
+    cell(indexed_root bound) : m_lower(bound), m_type(type::section) {}
+    cell(indexed_root lower, indexed_root upper) : m_lower(lower), m_upper(upper), m_type(type::sector) {}
+    cell(bound lower, indexed_root upper) : m_upper(upper), m_type(type::sector) {}
+    cell(indexed_root lower, bound upper) : m_lower(lower), m_type(type::sector) {}
 
     bool is_sector() const {
         return m_type == type::sector;
@@ -52,12 +53,27 @@ public:
     }
 };
 
-class indexed_root_ordering {
+// TODO:
 
+class indexed_root_ordering {
+    std::vector<std::pair<indexed_root, indexed_root>> m_data;
+
+public:
+    void add(indexed_root first, indexed_root second) {
+        assert(first.poly.level == second.poly.level && first != second);
+        if (first.poly.id > second.poly.id || (first.poly.id == second.poly.id && first.index > second.index)) {
+            return add_relation(second, first);
+        }
+        m_data.push_back(std::make_pair(first, second));
+    }
+
+    const auto& relation() const {
+        return m_data;
+    }
 };
 
 struct representative {
-    cell_at_level interval;
+    cell interval;
     indexed_root_ordering ordering;
     std::vector<poly_ref> equational;
 };
