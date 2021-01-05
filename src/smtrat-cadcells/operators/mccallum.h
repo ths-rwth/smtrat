@@ -8,7 +8,7 @@
 
 namespace smtrat::cadcells::operators::mccallum {
 
-datastructures::cell_at_level construct_cell(datastructures::projections& projections, properties::properties& properties, const Model& sample) {
+std::optional<datastructures::cell> construct_cell(datastructures::projections& projections, properties::properties& properties, const Model& sample) {
     for(const auto& prop : properties.get<properties::root_well_def>()) {
         rules::root_well_def(projections, properties, sample, prop.poly, prop.idx);
     }
@@ -29,10 +29,39 @@ datastructures::cell_at_level construct_cell(datastructures::projections& projec
     }
     del.set_sample(sample[main_var]);
 
-    // TODO construct cell from delineation
+    auto repr = compute_representation(del); // TODO where to detect nullifications in sector case?
 
+    if (!repr) return std::nullopt;
 
+    for(const auto& prop : properties.get<properties::poly_irreducible_sgn_inv>()) {
+        if (repr->equational.find(prop.poly) == repr->equational.end()) {
+            properties.insert(properties::poly_pdel{ poly });
+        }
+    }
 
+    for (const auto& poly : del.nonzero()) {
+        if (repr->equational.find(poly) == repr->equational.end()) {
+            rules::poly_irrecubile_nonzero_sgn_inv(projections, properties, sample, poly);
+        }
+    }
+
+    rules::cell_connected(projections, properties, sample, repr->cell);
+    rules::cell_analytic_submanifold(projections, properties, sample, repr->cell);
+    rules::cell_represents(projections, properties, sample, repr->cell);
+
+    for (const auto& poly : repr.equational) {
+        rules::poly_irrecubile_sgn_inv_ec(projections, properties, sample, repr->cell, poly);
+    }
+
+    rules::root_ordering_holds(projections, properties, sample, repr->cell, repr->ordering);
+
+    for(const auto& prop : properties.get<properties::poly_irreducible_sgn_inv>()) {
+        if (repr.equational.find(prop.poly) == repr.equational.end() && del.nonzero().find(prop.poly) == del.nonzero().end()) {
+            rules::poly_irrecubile_sgn_inv(projections, properties, sample, repr->cell, repr->.ordering, prop.poly);
+        }
+    }
+
+    return repr->cell;
 }
 
 }

@@ -53,29 +53,41 @@ public:
     }
 };
 
-// TODO:
-
 class indexed_root_ordering {
-    std::vector<std::pair<indexed_root, indexed_root>> m_data;
+    std::vector<std::pair<indexed_root, indexed_root>> m_data_below;
+    std::vector<std::pair<indexed_root, indexed_root>> m_data_above;
+
+    void add(std::vector<std::pair<indexed_root, indexed_root>>& data, indexed_root first, indexed_root second) {
+        assert(first.poly.level == second.poly.level && first != second);
+        data.push_back(std::make_pair(first, second));
+    }
 
 public:
-    void add(indexed_root first, indexed_root second) {
-        assert(first.poly.level == second.poly.level && first != second);
-        if (first.poly.id > second.poly.id || (first.poly.id == second.poly.id && first.index > second.index)) {
-            return add_relation(second, first);
-        }
-        m_data.push_back(std::make_pair(first, second));
+    /**
+     * first is the root closer to the lower bound
+     * 
+     * relations need to be added in descending order of the first elements
+     */
+    void add_below_cell(indexed_root first, indexed_root second) {
+        return add(m_data_below, first, second);
     }
 
-    const auto& relation() const {
-        return m_data;
+    /**
+     * first is the root closer to the upper bound
+     * 
+     * relations need to be added in ascending order of the first elements
+     */
+    void add_above_cell(indexed_root first, indexed_root second) {
+        return add(m_data_above, first, second);
     }
-};
 
-struct representative {
-    cell interval;
-    indexed_root_ordering ordering;
-    std::vector<poly_ref> equational;
+    const auto& data_below() const {
+        return m_data_below;
+    }
+
+    const auto& data_above() const {
+        return m_data_above;
+    }
 };
 
 }

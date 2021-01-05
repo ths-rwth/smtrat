@@ -68,10 +68,18 @@ void poly_irrecubile_nonzero_sgn_inv(datastructures::projections& proj, properti
     }
 }
 
-void cell_analytic_submanifold(datastructures::projections& proj, properties::properties& props, const Model& sample, const cell_at_level& representative) {
+void cell_connected(datastructures::projections& proj, properties::properties& props, const Model& sample, const cell& representative) {
+    if (representative.is_sector() && representative.lower() && representative.upper() && representative.lower()->poly != representative.upper()->poly) {
+        assert(props.contains(properties::poly_pdel{ representative.lower()->poly }));
+        assert(props.contains(properties::poly_pdel{ representative.upper()->poly }));
+        props.insert(properties::poly_ord_inv{ proj.res(representative.lower()->poly, representative.upper()->poly) });
+    }
 }
 
-void poly_irrecubile_sgn_inv_ec(datastructures::projections& proj, properties::properties& props, const Model& sample, const cell_at_level& representative, datastructures::poly_ref poly) {
+void cell_analytic_submanifold(datastructures::projections& proj, properties::properties& props, const Model& sample, const cell& representative) {
+}
+
+void poly_irrecubile_sgn_inv_ec(datastructures::projections& proj, properties::properties& props, const Model& sample, const cell& representative, datastructures::poly_ref poly) {
     assert(representative.is_section());
     assert(props.contains(properties::poly_pdel{ representative.sector_defining().poly }));
     assert(props.contains(properties::poly_sgn_inv{ proj.ldcf(representative.sector_defining().poly) }));
@@ -80,16 +88,12 @@ void poly_irrecubile_sgn_inv_ec(datastructures::projections& proj, properties::p
     }
 }
 
-// TODO ir_ord
-
-// TODO sgn_inv (def 2.17, 2.18)
-
 void root_represents(datastructures::projections& proj, properties::properties& props, const Model& sample, indexed_root root) {
     assert(props.contains(properties::poly_pdel{ root.poly }));
     props.insert(properties::poly_sgn_inv{ proj.ldcf(root.poly) });
 }
 
-void cell_represents(datastructures::projections& proj, properties::properties& props, const Model& sample, const cell_at_level& representative) {
+void cell_represents(datastructures::projections& proj, properties::properties& props, const Model& sample, const cell& representative) {
     if (representative.lower()) {
         root_represents(proj, props, sample, *representative.lower());
     }
@@ -98,7 +102,46 @@ void cell_represents(datastructures::projections& proj, properties::properties& 
     }
 }
 
-// TODO defer computation of resultants to next level
+void root_ordering_holds(datastructures::projections& proj, properties::properties& props, const Model& sample, const cell& representative, const indexed_root_ordering& ordering) {
+    for (const auto& rel : ordering.data_below()) {
+        if (rel.first.poly != rel.second.poly) {
+            assert(props.contains(properties::poly_pdel{ rel.first.poly }));
+            assert(props.contains(properties::poly_pdel{ rel.second.poly }));
+            props.insert(properties::poly_ord_inv{ proj.res(rel.first.poly, rel.second.poly) });
+            props.insert(properties::root_well_def{ rel.first });
+        }
+    }
+    for (const auto& rel : ordering.data_above()) {
+        if (rel.first.poly != rel.second.poly) {
+            assert(props.contains(properties::poly_pdel{ rel.first.poly }));
+            assert(props.contains(properties::poly_pdel{ rel.second.poly }));
+            props.insert(properties::poly_ord_inv{ proj.res(rel.first.poly, rel.second.poly) });
+            props.insert(properties::root_well_def{ rel.first });
+        }
+    }
+}
 
+void poly_irrecubile_sgn_inv(datastructures::projections& proj, properties::properties& props, const Model& sample, const cell& representative, const indexed_root_ordering& ordering, datastructures::poly_ref poly) {
+    assert(props.contains(properties::poly_pdel{ poly }));
+    if (representative.is_section() && proj.is_zero(sample, poly)) {
+        auto roots = proj.real_roots(poly);
+        auto it = std::find(roots.begin(), roots.end(), 0);
+        props.insert(properties::root_well_def{ poly, std::distance(roots.begin(), it) + 1 });
+    } else {
+        assert(!proj.is_zero(sample, poly));
+        if (representative.is_sector() && (del.lower_unbounded() || del.upper_unbounded())) {
+            props.insert(properties::poly_sgn_inv{ proj.ldcf(poly) });
+        } else {
+            bool has_lower = (poly == representative.lower().poly) || std::find_if(ordering.below().begin(), ordering.below().end(), [&poly](const auto& rel) { return rel.second.poly == poly }) != ordering.below().end();
+            bool has_upper = (poly == representative.upper().poly) || std::find_if(ordering.above().begin(), ordering.above().end(), [&poly](const auto& rel) { return rel.second.poly == poly }) != ordering.above().end();
+            if (!(has_lower && has_upper)) {
+                // TODO implement further checks
+                props.insert(properties::poly_sgn_inv{ proj.ldcf(poly) });
+            }
+        }
+    }
+}
+
+// TODO defer computation of resultants to next level
 
 }

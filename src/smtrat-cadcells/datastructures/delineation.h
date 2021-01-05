@@ -1,5 +1,7 @@
 #pragma once
 
+#include <map>
+
 namespace smtrat::cadcells::datastructures {
 
 class delineation {
@@ -9,12 +11,12 @@ class delineation {
     root_map m_roots;
     boost::flat_set<poly_ref> m_polys_nullified;
     boost::flat_set<poly_ref> m_polys_noroot;
-    std::optional<root_map::const_iterator> m_lower;
-    std::optional<root_map::const_iterator> m_upper;
+    root_map::const_iterator m_lower;
+    root_map::const_iterator m_upper;
 
 public: 
 
-    delineation(carl::Variable main_var) : m_main_var(main_var) {}
+    delineation(carl::Variable main_var) : m_main_var(main_var), m_lower(m_roots.end()), m_upper(m_roots.end()) {}
 
     const main_var() const {
         return m_main_var;
@@ -32,37 +34,35 @@ public:
         return m_polys_noroot;
     }
 
-    const auto& section() const {
-        assert(m_lower && *m_lower != m_roots.end());
-        return *m_lower;
+    const bool is_section() const {
+        return m_lower != m_roots.end() && m_upper != m_roots.end() && m_lower == m_upper;
     }
 
     const auto& lower() const {
-        assert(m_lower && m_upper && *m_lower != m_roots.end());
-        return *m_lower;
+        assert(m_lower != m_roots.end());
+        return m_lower;
     }
     const bool lower_unbounded() const {
-        assert(m_lower && m_upper);
-        return *m_lower != m_roots.end();
+        return m_lower != m_roots.end();
     }
 
     const auto& upper() const {
-        assert(m_lower && m_upper && *m_upper != m_roots.end());
-        return *m_upper;
+        assert(m_upper != m_roots.end());
+        return m_upper;
     }
     const bool upper_unbounded() const {
-        assert(m_lower && m_upper);
-        return *m_upper != m_roots.end();
+        return m_upper != m_roots.end();
     }
 
     void set_sample(const ran& sample) {
         if (m_roots.empty()) {
-            m_lower = m_roots.end()
-            m_upper = m_roots.end()
+            m_lower = m_roots.end();
+            m_upper = m_roots.end();
         } else {
             auto section = m_roots.find(sample);
             if (section != m_roots.end()) {
                 m_lower = section;
+                m_upper = section;
             } else {
                 m_upper = ordering.roots().upper_bound(sample);
                 if (m_upper == ordering.roots().begin()) {
