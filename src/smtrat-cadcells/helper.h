@@ -1,14 +1,8 @@
 #pragma once
 
-#include "../common.h"
-#include <smtrat-common/smtrat-common.h>
-#include <smtrat-common/model.h>
+#include "common.h"
 
-namespace smtrat::cadcells::datastructures {
-
-// TODO ordered assignment
-
-using variable_ordering = std::vector<carl::Variable>;
+namespace smtrat::cadcells::helper {
 
 /**
  * Find the index of the highest variable (wrt. the ordering in 'order') that occurs with positive degree in 'poly'.

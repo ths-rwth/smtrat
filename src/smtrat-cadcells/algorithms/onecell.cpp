@@ -12,7 +12,7 @@ namespace detail {
     }
 };
 
-FormulaT onecell(const std::set<Poly>& polynomials, const datastructures::variable_ordering& varorder, const Model& sample) {
+FormulaT onecell(const std::set<Poly>& polynomials, const datastructures::variable_ordering& varorder, const assignment& sample) {
     datastructures::poly_pool pool(varorder);
     datastructures::projections proj(pool);
     auto props = std::make_shared<operators::mccallum::properties>(pool, varorder.size());
@@ -23,8 +23,15 @@ FormulaT onecell(const std::set<Poly>& polynomials, const datastructures::variab
 
     FormulasT description;
     while (props->level() > 0) {
-        auto cell = operators:mccallum::construct_cell(proj,prop,sample);
-        description.emplace_back(to_formula(cell));
+        operators:mccallum::project_basic_properties(proj,props,sample);
+        auto cell_delineation = delineate_cell_properties(proj,props,sample);
+        if (!cell_delineation) {
+            return FormulaT();
+        }
+        auto cell_representation = compute_representation(cell_delineation);
+        operators:mccallum::project_cell_properties(proj,props,sample,cell_delineation,cell_representation);
+
+        description.emplace_back(to_formula(cell_representation.cell));
         props = props->lower();
         pool.clear(props->level()+1);
         proj.clear(props->level()+1);

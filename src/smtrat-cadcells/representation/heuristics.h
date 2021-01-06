@@ -11,14 +11,28 @@ namespace smtrat::cadcells::representation {
         std::vector<poly_ref> equational;
     };
 
-    struct heuristic {
+    struct covering_representation {
+        covering cover;
+        std::vector<cell_representation> cells;
+    };
+
+    struct cell_heuristic {
         DEFAULT
     };
 
-    template<heuristic H>
+    struct covering_heuristic {
+        DEFAULT
+    };
+
+    template<cell_heuristic H>
+    std::optional<covering_representation> compute_representation<H> (const std::vector<delineation>& del) {
+        // TODO how to say which cells are chosen, connection to properties object
+    }
+
+    template<cell_heuristic H>
     std::optional<cell_representation> compute_representation<H> (const delineation& del);
 
-    std::optional<cell_representation> compute_representation<heuristic::DEFAULT>(const delineation& del) {
+    std::optional<cell_representation> compute_representation<cell_heuristic::DEFAULT>(const delineation& del) {
         cell_representation response;
         response.cell = compute_simplest_cell(del);
 

@@ -8,7 +8,7 @@
 
 namespace smtrat::cadcells::operators::mccallum {
 
-std::optional<datastructures::cell> construct_cell(datastructures::projections& projections, properties::properties& properties, const Model& sample) {
+void project_basic_properties(datastructures::projections& projections, properties::properties& properties, const assignment& sample) {
     for(const auto& prop : properties.get<properties::root_well_def>()) {
         rules::root_well_def(projections, properties, sample, prop.poly, prop.idx);
     }
@@ -21,18 +21,19 @@ std::optional<datastructures::cell> construct_cell(datastructures::projections& 
     for(const auto& prop : properties.get<properties::poly_sgn_inv>()) {
         rules::poly_sgn_inv(projections, properties, sample, prop.poly);
     }
+}
 
+auto delineate_cell_properties(datastructures::projections& projections, properties::properties& properties, const assignment& sample) {
     auto main_var = projections.var_order()[properties.level()-1];
     delineation del(main_var);
     for(const auto& prop : properties.get<properties::poly_irreducible_sgn_inv>()) {
-        delineate(projections, del, prop);
+        delineate(projections, del, sample, prop);
     }
     del.set_sample(sample[main_var]);
+    return del;
+}
 
-    auto repr = compute_representation(del); // TODO where to detect nullifications in sector case?
-
-    if (!repr) return std::nullopt;
-
+void project_cell_properties(datastructures::projections& projections, properties::properties& properties, const assignment& sample, const delineation& del, const cell_representation& repr) {
     for(const auto& prop : properties.get<properties::poly_irreducible_sgn_inv>()) {
         if (repr->equational.find(prop.poly) == repr->equational.end()) {
             properties.insert(properties::poly_pdel{ poly });
@@ -60,8 +61,6 @@ std::optional<datastructures::cell> construct_cell(datastructures::projections& 
             rules::poly_irrecubile_sgn_inv(projections, properties, sample, repr->cell, repr->.ordering, prop.poly);
         }
     }
-
-    return repr->cell;
 }
 
 }

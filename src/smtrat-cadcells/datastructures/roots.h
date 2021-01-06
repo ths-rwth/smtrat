@@ -1,8 +1,6 @@
 #pragma once
 
 #include "../common.h"
-#include <smtrat-common/smtrat-common.h>
-#include <smtrat-common/model.h>
 
 namespace smtrat::cadcells::datastructures {
 
@@ -15,7 +13,6 @@ std::ostream& operator<<(std::ostream& os, const indexed_root& data) {
     return os;
 }
 
-// TODO rename to region?
 enum class bound { infty };
 class cell {
     enum class type { section, sector };
@@ -52,6 +49,14 @@ public:
         return m_upper;
     }
 };
+
+class covering {
+    std::vector<cell> m_data;
+
+public:
+    // TODO
+
+}
 
 class indexed_root_ordering {
     std::vector<std::pair<indexed_root, indexed_root>> m_data_below;

@@ -4,7 +4,7 @@
 
 namespace smtrat::cadcells::operators::mccallum::rules {
 
-void root_well_def(datastructures::projections& proj, properties::properties& props, const Model& sample, indexed_root root) {
+void root_well_def(datastructures::projections& proj, properties::properties& props, const assignment& sample, indexed_root root) {
     assert(props.contains(properties::poly_pdel{ root.poly }));
 
     if (root.idx != 1 && idx != proj.num_roots(sample, root.poly)) return;
@@ -14,7 +14,7 @@ void root_well_def(datastructures::projections& proj, properties::properties& pr
     }
 }
 
-void poly_non_null(datastructures::projections& proj, properties::properties& props, const Model& sample, datastructures::poly_ref poly) {
+void poly_non_null(datastructures::projections& proj, properties::properties& props, const assignment& sample, datastructures::poly_ref poly) {
     assert(!proj.is_nullified(sample, poly));
 
     if (proj.has_const_coeff(poly)) return;
@@ -30,26 +30,26 @@ void poly_non_null(datastructures::projections& proj, properties::properties& pr
     props.insert(properties::poly_sgn_inv{ coeff });
 }
 
-void poly_pdel(datastructures::projections& proj, properties::properties& props, const Model& sample, datastructures::poly_ref poly) {
+void poly_pdel(datastructures::projections& proj, properties::properties& props, const assignment& sample, datastructures::poly_ref poly) {
     poly_non_null(proj, props, sample, poly);
     props.insert(properties::poly_ord_inv{ proj.disc(poly) });
 }
 
-void poly_irrecubile_ord_inv(datastructures::projections& proj, properties::properties& props, const Model& sample, datastructures::poly_ref poly) {
+void poly_irrecubile_ord_inv(datastructures::projections& proj, properties::properties& props, const assignment& sample, datastructures::poly_ref poly) {
     props.insert(properties::poly_irreducible_sgn_inv{ poly });
     if (proj.is_zero(sample, poly)) {
         props.insert(properties::poly_pdel{ poly });
     }
 }
 
-void poly_ord_inv(datastructures::projections& proj, properties::properties& props, const Model& sample, datastructures::poly_ref poly) {
+void poly_ord_inv(datastructures::projections& proj, properties::properties& props, const assignment& sample, datastructures::poly_ref poly) {
     auto factors = proj.factors_nonconst(poly);
     for (const auto& factor : factors) {
         poly_irrecubile_ord_inv(proj, props, sample, factor);
     }
 }
 
-void poly_sgn_inv(datastructures::projections& proj, properties::properties& props, const Model& sample, datastructures::poly_ref poly) {
+void poly_sgn_inv(datastructures::projections& proj, properties::properties& props, const assignment& sample, datastructures::poly_ref poly) {
     if (props.contains(properties::poly_ord_inv{ poly })) return;
     else {
         auto factors = proj.factors_nonconst(poly);
@@ -60,7 +60,7 @@ void poly_sgn_inv(datastructures::projections& proj, properties::properties& pro
 }
 
 
-void poly_irrecubile_nonzero_sgn_inv(datastructures::projections& proj, properties::properties& props, const Model& sample, datastructures::poly_ref poly) {
+void poly_irrecubile_nonzero_sgn_inv(datastructures::projections& proj, properties::properties& props, const assignment& sample, datastructures::poly_ref poly) {
     assert(props.contains(properties::poly_pdel{ poly }));
     assert(proj.num_roots(sample, poly) == 0);
     if (proj.is_ldcf_zero(sample, poly)) {
@@ -68,7 +68,7 @@ void poly_irrecubile_nonzero_sgn_inv(datastructures::projections& proj, properti
     }
 }
 
-void cell_connected(datastructures::projections& proj, properties::properties& props, const Model& sample, const cell& representative) {
+void cell_connected(datastructures::projections& proj, properties::properties& props, const assignment& sample, const cell& representative) {
     if (representative.is_sector() && representative.lower() && representative.upper() && representative.lower()->poly != representative.upper()->poly) {
         assert(props.contains(properties::poly_pdel{ representative.lower()->poly }));
         assert(props.contains(properties::poly_pdel{ representative.upper()->poly }));
@@ -76,10 +76,10 @@ void cell_connected(datastructures::projections& proj, properties::properties& p
     }
 }
 
-void cell_analytic_submanifold(datastructures::projections& proj, properties::properties& props, const Model& sample, const cell& representative) {
+void cell_analytic_submanifold(datastructures::projections& proj, properties::properties& props, const assignment& sample, const cell& representative) {
 }
 
-void poly_irrecubile_sgn_inv_ec(datastructures::projections& proj, properties::properties& props, const Model& sample, const cell& representative, datastructures::poly_ref poly) {
+void poly_irrecubile_sgn_inv_ec(datastructures::projections& proj, properties::properties& props, const assignment& sample, const cell& representative, datastructures::poly_ref poly) {
     assert(representative.is_section());
     assert(props.contains(properties::poly_pdel{ representative.sector_defining().poly }));
     assert(props.contains(properties::poly_sgn_inv{ proj.ldcf(representative.sector_defining().poly) }));
@@ -88,12 +88,12 @@ void poly_irrecubile_sgn_inv_ec(datastructures::projections& proj, properties::p
     }
 }
 
-void root_represents(datastructures::projections& proj, properties::properties& props, const Model& sample, indexed_root root) {
+void root_represents(datastructures::projections& proj, properties::properties& props, const assignment& sample, indexed_root root) {
     assert(props.contains(properties::poly_pdel{ root.poly }));
     props.insert(properties::poly_sgn_inv{ proj.ldcf(root.poly) });
 }
 
-void cell_represents(datastructures::projections& proj, properties::properties& props, const Model& sample, const cell& representative) {
+void cell_represents(datastructures::projections& proj, properties::properties& props, const assignment& sample, const cell& representative) {
     if (representative.lower()) {
         root_represents(proj, props, sample, *representative.lower());
     }
@@ -102,7 +102,7 @@ void cell_represents(datastructures::projections& proj, properties::properties& 
     }
 }
 
-void root_ordering_holds(datastructures::projections& proj, properties::properties& props, const Model& sample, const cell& representative, const indexed_root_ordering& ordering) {
+void root_ordering_holds(datastructures::projections& proj, properties::properties& props, const assignment& sample, const cell& representative, const indexed_root_ordering& ordering) {
     for (const auto& rel : ordering.data_below()) {
         if (rel.first.poly != rel.second.poly) {
             assert(props.contains(properties::poly_pdel{ rel.first.poly }));
@@ -121,7 +121,7 @@ void root_ordering_holds(datastructures::projections& proj, properties::properti
     }
 }
 
-void poly_irrecubile_sgn_inv(datastructures::projections& proj, properties::properties& props, const Model& sample, const cell& representative, const indexed_root_ordering& ordering, datastructures::poly_ref poly) {
+void poly_irrecubile_sgn_inv(datastructures::projections& proj, properties::properties& props, const assignment& sample, const cell& representative, const indexed_root_ordering& ordering, datastructures::poly_ref poly) {
     assert(props.contains(properties::poly_pdel{ poly }));
     if (representative.is_section() && proj.is_zero(sample, poly)) {
         auto roots = proj.real_roots(poly);

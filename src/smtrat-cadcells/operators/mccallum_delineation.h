@@ -4,7 +4,7 @@
 
 namespace smtrat::cadcells::operators::mccallum {
 
-void delineate(datastructures::projections& proj, delineation& delineation, const properties::poly_irreducible_sgn_inv& prop) {
+void delineate(datastructures::projections& proj, delineation& delineation, const assignment& sample, const properties::poly_irreducible_sgn_inv& prop) {
     if (proj.is_nullified(prop.poly)) {
         delineation.add_poly_nullified(prop.poly);
     } else {

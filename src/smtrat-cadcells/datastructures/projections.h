@@ -11,6 +11,8 @@
 
 namespace smtrat::cadcells::datastructures {
 
+    // TODO refactor ??
+
 namespace detail {
 
 struct poly_properties {
