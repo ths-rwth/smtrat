@@ -576,9 +576,6 @@ namespace smtrat
             mLemmas.emplace_back( FormulaT( carl::FormulaType::OR, s1.negated(), FormulaT( constraintA ) ), LemmaType::NORMAL, FormulaT( carl::FormulaType::TRUE ) );
             // Create (s2 -> constraintB)
             mLemmas.emplace_back( FormulaT( carl::FormulaType::OR, s2.negated(), FormulaT( constraintB ) ), LemmaType::NORMAL, FormulaT( carl::FormulaType::TRUE ) );
-            #ifdef SMTRAT_DEVOPTION_Statistics
-			if (mpManager != nullptr) { mpManager->mStatistics.addBranchingLemma(); }
-            #endif
             return true;
         }
         assert( constraintB.isConsistent() != 2  );
