@@ -1,8 +1,8 @@
 #pragma once
 
-#include "mccallum_properties.h"
+#include "properties.h"
 
-namespace smtrat::cadcells::operators::mccallum {
+namespace smtrat::cadcells::operators::delineation {
 
 void delineate(datastructures::projections& proj, delineation& delineation, const assignment& sample, const properties::poly_irreducible_sgn_inv& prop) {
     if (proj.is_nullified(prop.poly)) {

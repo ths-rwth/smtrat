@@ -34,11 +34,16 @@ std::unordered_set<S>& get(prop_sets<T, Ts...>& sets) {
 }
 
 template<typename ... Ts>
-class properties {
+class derivation {
     const poly_pool& m_polynomials;
+
     size_t m_level;
+    detail::prop_sets<Ts...> m_properties;
+    delineation m_delineation; // TODO
+    assignment m_assignment; // TODO
+
     std::shared_ptr<properties<Ts...>> m_lower; 
-    detail::prop_sets<Ts...> m_data;
+    
 
 public:
     properties(const poly_pool& polynomials, size_t level, std::shared_ptr<properties> lower) : m_polynomials(polynomials), m_level(level), m_lower(lower) {}
@@ -49,19 +54,16 @@ public:
         }
     }
     
-
+    auto main_var() { return m_polynomials.var_order()[m_level-1]; }
     size_t level() { return m_level; }
     auto lower() { return m_lower; }
 
     template<typename P>
     void insert(P&& property) {
-        assert(level_of(m_polynomials.var_order(), property) <= m_level && level_of(m_polynomials.var_order(), property) > 0);
+        assert(property.level() <= m_level && property.level() > 0);
 
-        if (level_of(m_polynomials.var_order(), property) == m_level) {
-            // TODO triviality check
-            //if (!is_trivial(m_projections, property)) {
-                get<P>(m_data).emplace(std::move(property));
-            //}
+        if (property.level() == m_level) {
+            get<P>(m_properties).emplace(std::move(property));
         } else {
             assert(m_lower != nullptr);
             m_lower->insert(std::move(property));
@@ -70,10 +72,10 @@ public:
 
     template<typename P>
     bool contains(const P& property) {
-        assert(level_of(m_polynomials.var_order(), property) <= m_level && level_of(m_polynomials.var_order(), property) > 0);
+        assert(property.level() <= m_level && property.level() > 0);
 
-        if (level_of(m_polynomials.var_order(), property) == m_level) {
-            return get<P>(m_data).contains(property);
+        if (property.level() == m_level) {
+            return get<P>(m_properties).contains(property);
         } else {
             assert(m_lower != nullptr);
             return m_lower->contains(property);
@@ -82,14 +84,14 @@ public:
 
     template<typename P>
     const std::set<P> get() {
-        return get<P>(m_data);
+        return get<P>(m_properties);
     }
 
     /*
     void merge(const properties& other) {
         assert(other.m_level == m_level && other.m_var_order = m_var_order);
         // TODO:
-        m_data.insert(other.m_data.begin(), other.m_data.end());
+        m_properties.insert(other.m_properties.begin(), other.m_properties.end());
         if (level > 0) {
             assert(m_lower != std::nullptr_t && other.m_lower != std::nullptr_t);
             m_lower->merge(*other.m_lower);

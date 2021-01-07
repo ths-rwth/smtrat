@@ -1,8 +1,8 @@
 #pragma once
 
-#include "mccallum_properties.h"
+#include "properties.h"
 
-namespace smtrat::cadcells::operators::mccallum::rules {
+namespace smtrat::cadcells::operators::rules {
 
 void root_well_def(datastructures::projections& proj, properties::properties& props, const assignment& sample, indexed_root root) {
     assert(props.contains(properties::poly_pdel{ root.poly }));
@@ -36,6 +36,8 @@ void poly_pdel(datastructures::projections& proj, properties::properties& props,
 }
 
 void poly_irrecubile_ord_inv(datastructures::projections& proj, properties::properties& props, const assignment& sample, datastructures::poly_ref poly) {
+    if (proj.is_const(prop.poly)) return;
+    
     props.insert(properties::poly_irreducible_sgn_inv{ poly });
     if (proj.is_zero(sample, poly)) {
         props.insert(properties::poly_pdel{ poly });
@@ -43,6 +45,8 @@ void poly_irrecubile_ord_inv(datastructures::projections& proj, properties::prop
 }
 
 void poly_ord_inv(datastructures::projections& proj, properties::properties& props, const assignment& sample, datastructures::poly_ref poly) {
+    if (proj.is_const(prop.poly)) return;
+
     auto factors = proj.factors_nonconst(poly);
     for (const auto& factor : factors) {
         poly_irrecubile_ord_inv(proj, props, sample, factor);
@@ -50,6 +54,8 @@ void poly_ord_inv(datastructures::projections& proj, properties::properties& pro
 }
 
 void poly_sgn_inv(datastructures::projections& proj, properties::properties& props, const assignment& sample, datastructures::poly_ref poly) {
+    if (proj.is_const(prop.poly)) return;
+
     if (props.contains(properties::poly_ord_inv{ poly })) return;
     else {
         auto factors = proj.factors_nonconst(poly);
@@ -125,7 +131,7 @@ void poly_irrecubile_sgn_inv(datastructures::projections& proj, properties::prop
     assert(props.contains(properties::poly_pdel{ poly }));
     if (representative.is_section() && proj.is_zero(sample, poly)) {
         auto roots = proj.real_roots(poly);
-        auto it = std::find(roots.begin(), roots.end(), 0);
+        auto it = std::find(roots.begin(), roots.end(), sample);
         props.insert(properties::root_well_def{ poly, std::distance(roots.begin(), it) + 1 });
     } else {
         assert(!proj.is_zero(sample, poly));

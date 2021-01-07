@@ -2,13 +2,18 @@
 
 #include "../datastructures/roots.h"
 
-#include "mccallum_properties.h"
-#include "mccallum_rules.h"
+#include "properties.h"
+#include "rules.h"
+#include "operator.h"
 
 
-namespace smtrat::cadcells::operators::mccallum {
+namespace smtrat::cadcells::operators {
 
-void project_basic_properties(datastructures::projections& projections, properties::properties& properties, const assignment& sample) {
+template <>
+using properties<op:mccallum> = datastructures::properties<poly_sgn_inv,poly_sgn_inv,poly_ord_inv,root_well_def,poly_pdel>;
+
+template <>
+void project_basic_properties<op::mccallum>(datastructures::projections& projections, properties& properties, const assignment& sample) {
     for(const auto& prop : properties.get<properties::root_well_def>()) {
         rules::root_well_def(projections, properties, sample, prop.poly, prop.idx);
     }
@@ -23,17 +28,19 @@ void project_basic_properties(datastructures::projections& projections, properti
     }
 }
 
-auto delineate_cell_properties(datastructures::projections& projections, properties::properties& properties, const assignment& sample) {
+template <>
+delineation delineate_properties<op::mccallum>(datastructures::projections& projections, properties& properties, const assignment& sample) {
     auto main_var = projections.var_order()[properties.level()-1];
     delineation del(main_var);
     for(const auto& prop : properties.get<properties::poly_irreducible_sgn_inv>()) {
         delineate(projections, del, sample, prop);
     }
-    del.set_sample(sample[main_var]);
     return del;
 }
 
-void project_cell_properties(datastructures::projections& projections, properties::properties& properties, const assignment& sample, const delineation& del, const cell_representation& repr) {
+// TODO how can the delineatin inject new polys?
+template <>
+void project_cell_properties<op::mccallum>(datastructures::projections& projections, properties& properties, const assignment& sample, const delineation& del, const cell_representation& repr) {
     for(const auto& prop : properties.get<properties::poly_irreducible_sgn_inv>()) {
         if (repr->equational.find(prop.poly) == repr->equational.end()) {
             properties.insert(properties::poly_pdel{ poly });
@@ -61,6 +68,15 @@ void project_cell_properties(datastructures::projections& projections, propertie
             rules::poly_irrecubile_sgn_inv(projections, properties, sample, repr->cell, repr->.ordering, prop.poly);
         }
     }
+}
+
+// TODO wonaders lösen?:
+template <>
+void project_covering_properties<op::mccallum>(datastructures::projections& projections, properties& properties, const assignment& sample, const covering_representation& repr) {
+    // TODO project all cells:
+    project_cell_properties<op:mccallum>
+
+    // TODO project covering property
 }
 
 }

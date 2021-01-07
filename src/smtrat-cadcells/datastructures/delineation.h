@@ -1,77 +1,35 @@
 #pragma once
 
 #include <map>
+#include <vector>
+#include <boost/container/flat_set.hpp>
 
 namespace smtrat::cadcells::datastructures {
 
 class delineation {
+    friend class cell_delineation;
+
     using root_map = std::map<ran, std::vector<indexed_root>>;
 
     carl::Variable m_main_var;
     root_map m_roots;
     boost::flat_set<poly_ref> m_polys_nullified;
     boost::flat_set<poly_ref> m_polys_noroot;
-    root_map::const_iterator m_lower;
-    root_map::const_iterator m_upper;
 
 public: 
-
     delineation(carl::Variable main_var) : m_main_var(main_var), m_lower(m_roots.end()), m_upper(m_roots.end()) {}
 
-    const main_var() const {
+    const auto main_var() const {
         return m_main_var;
     }
-
     const auto& roots() const {
         return m_roots;
     }
-
     const auto& nullified() const {
         return m_polys_nullified;
     }
-
     const auto& noroot() const {
         return m_polys_noroot;
-    }
-
-    const bool is_section() const {
-        return m_lower != m_roots.end() && m_upper != m_roots.end() && m_lower == m_upper;
-    }
-
-    const auto& lower() const {
-        assert(m_lower != m_roots.end());
-        return m_lower;
-    }
-    const bool lower_unbounded() const {
-        return m_lower != m_roots.end();
-    }
-
-    const auto& upper() const {
-        assert(m_upper != m_roots.end());
-        return m_upper;
-    }
-    const bool upper_unbounded() const {
-        return m_upper != m_roots.end();
-    }
-
-    void set_sample(const ran& sample) {
-        if (m_roots.empty()) {
-            m_lower = m_roots.end();
-            m_upper = m_roots.end();
-        } else {
-            auto section = m_roots.find(sample);
-            if (section != m_roots.end()) {
-                m_lower = section;
-                m_upper = section;
-            } else {
-                m_upper = ordering.roots().upper_bound(sample);
-                if (m_upper == ordering.roots().begin()) {
-                    m_lower = m_roots.end();
-                } else {
-                    m_lower = m_upper-1;
-                }
-            }
-        }
     }
 
     void add_root(ran&& root, indexed_root&& ir_root) {
@@ -142,5 +100,66 @@ public:
     }
     */
 };
+
+class cell_delineation {
+    const delineation& m_del;
+    delineation::root_map::const_iterator m_lower;
+    delineation::root_map::const_iterator m_upper;
+
+public:
+
+    cell_delineation(const delineation& del, const ran& sample) : m_del(del) {
+        if (del.m_roots.empty()) {
+            m_lower = del.m_roots.end();
+            m_upper = del.m_roots.end();
+        } else {
+            auto section = del.m_roots.find(sample);
+            if (section != del.m_roots.end()) {
+                m_lower = section;
+                m_upper = section;
+            } else {
+                m_upper = del.m_roots.upper_bound(sample);
+                if (m_upper == del.m_roots.begin()) {
+                    m_lower = m_roots.end();
+                } else {
+                    m_lower = m_upper-1;
+                }
+            }
+        }
+    }
+
+    const bool is_section() const {
+        return m_lower != m_roots.end() && m_upper != m_roots.end() && m_lower == m_upper;
+    }
+
+    const auto& lower() const {
+        assert(m_lower != m_roots.end());
+        return m_lower;
+    }
+    const bool lower_unbounded() const {
+        return m_lower != m_roots.end();
+    }
+
+    const auto& upper() const {
+        assert(m_upper != m_roots.end());
+        return m_upper;
+    }
+    const bool upper_unbounded() const {
+        return m_upper != m_roots.end();
+    }
+
+    const auto main_var() const {
+        return m_del.m_main_var;
+    }
+    const auto& roots() const {
+        return m_del.m_roots;
+    }
+    const auto& nullified() const {
+        return m_del.m_polys_nullified;
+    }
+    const auto& noroot() const {
+        return m_del.m_polys_noroot;
+    }
+};    
 
 } 

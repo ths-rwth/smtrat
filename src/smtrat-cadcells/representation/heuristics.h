@@ -1,21 +1,8 @@
 #pragma once
 
-#include "../datastructures/roots.h"
-#include "../datastructures/delination.h"
+#include "../datastructures/representation.h"
 
 namespace smtrat::cadcells::representation {
-
-    struct cell_representation {
-        cell interval;
-        indexed_root_ordering ordering;
-        std::vector<poly_ref> equational;
-    };
-
-    struct covering_representation {
-        covering cover;
-        std::vector<cell_representation> cells;
-    };
-
     struct cell_heuristic {
         DEFAULT
     };
@@ -24,15 +11,20 @@ namespace smtrat::cadcells::representation {
         DEFAULT
     };
 
-    template<cell_heuristic H>
-    std::optional<covering_representation> compute_representation<H> (const std::vector<delineation>& del) {
-        // TODO how to say which cells are chosen, connection to properties object
-    }
+    template<typename H>
+    std::optional<datastructures::covering_representation> compute_representation<H> (const std::vector<delineation>& del);
 
-    template<cell_heuristic H>
-    std::optional<cell_representation> compute_representation<H> (const delineation& del);
+    template<typename H>
+    std::optional<datastructures::cell_representation> compute_representation<H> (const delineation& del);
+    
+    
+    std::optional<datastructures::covering_representation> compute_representation<covering_heuristic::DEFAULT> (const std::vector<delineation>& dels) {
+        // TODO how to detect if two delineations have the same originating polynomial?
 
-    std::optional<cell_representation> compute_representation<cell_heuristic::DEFAULT>(const delineation& del) {
+        // TODO connection to properties object?
+    }   
+
+    std::optional<datastructures::cell_representation> compute_representation<cell_heuristic::DEFAULT>(const delineation& del) {
         cell_representation response;
         response.cell = compute_simplest_cell(del);
 
