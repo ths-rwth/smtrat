@@ -4,16 +4,16 @@
 
 namespace smtrat::cadcells::operators::delineation {
 
-void delineate(datastructures::projections& proj, delineation& delineation, const assignment& sample, const properties::poly_irreducible_sgn_inv& prop) {
-    if (proj.is_nullified(prop.poly)) {
-        delineation.add_poly_nullified(prop.poly);
+void delineate(derivation& deriv, const properties::poly_irreducible_sgn_inv& prop) {
+    if (deriv.proj().is_nullified(prop.poly)) {
+        deriv.delineation().add_poly_nullified(prop.poly);
     } else {
-        auto roots = proj.real_roots(sample, prop.poly);
+        auto roots = deriv.proj().real_roots(deriv.underlying_sample(), prop.poly);
         if (roots.empty()) {
-            delineation.add_poly_noroot(prop.poly);
+            deriv.delineation().add_poly_noroot(prop.poly);
         } else {
             for (size_t idx = 0; idx < roots.size(); idx++) {
-                delineation.add_root(roots[idx], indexed_root(prop.poly, idx));
+                deriv.delineation().add_root(roots[idx], indexed_root(prop.poly, idx));
             }
         }
     }

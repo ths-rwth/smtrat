@@ -11,31 +11,30 @@ namespace smtrat::cadcells::representation {
         DEFAULT
     };
 
-    template<typename H>
-    std::optional<datastructures::covering_representation> compute_representation<H> (const std::vector<delineation>& del);
+    template<typename H, typename T>
+    std::optional<datastructures::covering_representation> compute_representation<H> (const std::vector<cell_derivation<T>>& del);
 
-    template<typename H>
-    std::optional<datastructures::cell_representation> compute_representation<H> (const delineation& del);
+    template<typename H, typename T>
+    std::optional<datastructures::cell_representation> compute_representation<H> (const cell_derivation<T>& del);
     
-    
-    std::optional<datastructures::covering_representation> compute_representation<covering_heuristic::DEFAULT> (const std::vector<delineation>& dels) {
-        // TODO how to detect if two delineations have the same originating polynomial?
+    template<typename T>
+    std::optional<datastructures::covering_representation> compute_covering_representation<covering_heuristic::DEFAULT> (const std::vector<std::shared_ptr<cell_derivation<T>>> ders) {
+        // TODO compute covering
+    }
 
-        // TODO connection to properties object?
-    }   
-
-    std::optional<datastructures::cell_representation> compute_representation<cell_heuristic::DEFAULT>(const delineation& del) {
+    template<typename T>
+    std::optional<datastructures::cell_representation> compute_cell_representation<cell_heuristic::DEFAULT>(const std::shared_ptr<cell_derivation<T>> der) {
         cell_representation response;
-        response.cell = compute_simplest_cell(del);
+        response.cell = compute_simplest_cell(der.delineation());
 
-        if (del.is_section()) {
-            for (const auto& poly : del.nullified()) {
+        if (der.delineation_cell().is_section()) {
+            for (const auto& poly : der.delineation().nullified()) {
                 response.equational.push_back(poly);
             }
-            for (const auto& poly : del.noroot()) {
+            for (const auto& poly : der.delineation().noroot()) {
                 response.equational.push_back(poly);
             }
-            for (const auto& [ran,irexprs] : del.roots()) {
+            for (const auto& [ran,irexprs] : der.delineation().roots()) {
                 for (const auto& ir : irexprs) {
                     if (ir.idx == 1 && ir.poly != response.cell.sector_defining().poly) { // add poly only once
                         response.equational.push_back(ir.poly);
@@ -43,28 +42,28 @@ namespace smtrat::cadcells::representation {
                 }
             }
         } else { // sector
-            if (!del.nullified().empty()) return std::nullopt;
+            if (!der.delineation().nullified().empty()) return std::nullopt;
 
-            if (!del.lower_unbounded()) {
-                auto it = del.lower()+1;
+            if (!der.delineation_cell().lower_unbounded()) {
+                auto it = der.delineation_cell().lower()+1;
                 do {
                     it--;
                     for (const auto& ir : *it) {
                         response.ordering.add_below(std::make_pair(response.cell.lower(), ir));
                     }
-                } while(it != del.roots.begin())
+                } while(it != der.delineation().roots().begin())
             }
-            if (!del.upper_unbounded()) {
-                auto it = del.upper();
+            if (!der.delineation_cell().upper_unbounded()) {
+                auto it = der.delineation_cell().upper();
                 do {
                     for (const auto& ir : *it) {
                         response.ordering.add_above(std::make_pair(response.cell.upper(), ir));
                     }
                     it++;
-                } while(it != del.roots.end())
+                } while(it != der.delineation().roots().end())
             }
         }
-
+        response.base = der;
         return response;
     }
 
@@ -82,7 +81,7 @@ namespace smtrat::cadcells::representation {
         }
     }
 
-    indexed_root simplest_bound(const std::vector<indexed_root>& bounds) {
+    indexed_root simplest_bound(const std::vector<indexed_root>& bounds) { // TODO improve
         assert(!bound.empty());
         return *bounds.begin();
     }

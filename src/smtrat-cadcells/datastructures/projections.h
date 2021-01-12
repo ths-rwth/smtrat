@@ -55,6 +55,8 @@ class projections {
 public:
     projections(poly_pool& pool) : m_pool(pool) {}
 
+    auto& poly_pool() { return m_pool; }
+
     auto main_var(poly_ref p) const {
         return m_pool.var_order()[p.level];
     }
