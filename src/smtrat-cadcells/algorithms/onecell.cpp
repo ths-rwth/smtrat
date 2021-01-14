@@ -6,30 +6,6 @@
 
 namespace smtrat::cadcells::algorithms {
 
-namespace detail {
-    inline MultivariateRootT as_multivariate_root(const poly_pool& pool, carl::Variable main_var, indexed_root r) {
-        const Poly& poly = pool(r.poly);
-        assert(poly.gatherVariables().count(main_var) == 1);
-        return MultivariateRootT(Poly(carl::UnivariatePolynomial<Poly>(MultivariateRootT::var(), carl::to_univariate_polynomial(poly, main_var).coefficients())), r.idx);
-    }
-
-    FormulaT to_formula(const poly_pool& pool, carl::Variable main_var, cell c) {
-        if (c.is_section()) {
-            return FormulaT(VarComparisonT(main_var, as_multivariate_root(pool,main_var,c.sector_defining()), carl::Relation::EQ));
-        } else {
-            FormulasT subformulas;
-            if (c.lower()) {
-                subformulas.emplace_back(VarComparisonT(main_var, as_multivariate_root(pool,main_var,*c.lower()), carl::Relation::GEQ));
-            }
-            FormulaT lower(carl::FormulaType::TRUE);
-            if (c.upper()) {
-                subformulas.emplace_back(VarComparisonT(main_var, as_multivariate_root(pool,main_var,*c.upper()), carl::Relation::LEQ));
-            }
-            return FormulaT(carl::FormulaType::AND, std::move(subformulas));
-        } 
-    }
-};
-
 std::vector<std::shared_ptr<cell_derivation>> get_unsat_intervals(const ConstraintT& c, const projection& proj, const assignment& sample) {
     assert(level_of(vars, c.lhs()) == sample.size()+1);
 
@@ -52,7 +28,7 @@ std::vector<std::shared_ptr<cell_derivation>> get_unsat_intervals(const Constrai
     } else {
         results.emplace_back(deriv.delineate_cell(carl::sample_below(roots.front().first)));        
         for (auto root = roots.begin(); root != roots.end(); root++) {
-            if (c.relation().isWeak()) {
+            if (c.relation().isWeak()) { // TODO later: allow weak bounds for cell_derivations
                 results.emplace_back(make_cell_derivation(deriv, root->first));
             }
             
@@ -74,39 +50,49 @@ std::vector<std::shared_ptr<cell_derivation>> get_unsat_intervals(const Constrai
     return results;
 }
 
+std::optional<cell_derivation_ref> covering(datastructures::projections& proj, const std::set<ConstraintT>& constraints, const assignment& sample) {
+    std::vector<cell_derivation_ref> unsat_cells;
+    for (const auto& c : constraints) {
+        unsat_cells.push_back(get_unsat_intervals(c, proj, sample));
+    }
+
+    auto covering_representation = compute_representation(unsat_cells); // TODO distinguish between: not enough interval for covering and mccallum fails
+    if (!covering_representation) {
+        return std::nullopt;
+    }
+
+    merge_underlying_cells(covering_representation.cells);
+
+    project_covering_properties<op::mccallum>(/* TODO derivation */, covering_representation);
+    
+    return covering_representation.cells.first().underlying_cell();
+}
+
 FormulaT onecell(const std::set<ConstraintT>& constraints, const datastructures::variable_ordering& vars, const assignment& sample) {
     datastructures::poly_pool pool(vars);
     datastructures::projections proj(pool);
 
-    {
-        std::vector<std::shared_ptr<cell_derivation>> unsat_cells;
-        for (const auto& c : constraints) {
-            unsat_cells.push_back(get_unsat_intervals(c, proj, sample));
-        }
-
-        auto covering_representative = compute_representation(unsat_cells);
-        if (!covering_representation) {
-            return FormulaT();
-        }
-        // TODO first merge underlying cells
-        // TODO then compute covering and project cells
+    auto cov_res = covering(proj, constraints, sample);
+    if (!cov_res) {
+        return FormulaT();
     }
-
-    auto cell_deriv = ...;
+    cell_derivation_ref cell_deriv = *cov_res;
 
     FormulasT description;
     while (props->level() > 0) {
-        operators::project_basic_properties(cell_deriv);
-        operators::delineate_properties(cell_deriv);
-        cell_deriv.set_sample(sample[cell_deriv.main_var()]);
-        auto cell_representation = compute_representation(cell_deriv);
+        operators::project_cell_properties(*cell_deriv);
+        operators::project_basic_properties(*cell_deriv);
+        operators::delineate_properties(*cell_deriv);
+        cell_deriv.delineate_cell();
+        auto cell_representation = compute_representation(*cell_deriv);
         if (!cell_representation) {
             return FormulaT();
         }
-        operators::project_cell_properties(cell_deriv,cell_representation);
+        operators::project_delineated_cell_properties(*dell_deriv, cell_representation);
 
         description.emplace_back(helper::to_formula(cell_deriv.main_var(),cell_representation.cell));
-        cell_deriv = cell_deriv->underlying();
+        if (props->level() > 1) cell_deriv = cell_deriv->underlying_cell();
+        else cell_deriv = std::nullptr;
         pool.clear(props->level()+1);
         proj.clear(props->level()+1);
     }

@@ -1,18 +1,18 @@
 #pragma once
 
 #include "roots.h"
-#include "delineation.h"
+#include "derivation.h"
 
 namespace smtrat::cadcells::datastructures {
     struct cell_representation {
         cell interval;
         indexed_root_ordering ordering;
         std::vector<poly_ref> equational;
-        const cell_derivation& base;
+        const cell_derivation& base; // TODO better solution?
     };
 
     struct covering_representation {
-        std::vector<cell_representation> cell_representations;
+        std::vector<cell_representation> cells;
         covering covering() {
             covering cov;
             for (const auto& cell_repr : cell_representations) {

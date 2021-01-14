@@ -4,7 +4,7 @@
 
 namespace smtrat::cadcells::operators::delineation {
 
-void delineate(derivation& deriv, const properties::poly_irreducible_sgn_inv& prop) {
+void delineate(base_derivation& deriv, const properties::poly_irreducible_sgn_inv& prop) {
     if (deriv.proj().is_nullified(prop.poly)) {
         deriv.delineation().add_poly_nullified(prop.poly);
     } else {

@@ -14,14 +14,14 @@ using properties<op::mccallum> = datastructures::properties<poly_sgn_inv,poly_ir
 
 // TODO wie viel sinn hat diese funktion noch?
 template <>
-void project_basic_properties<op::mccallum>(derivation& deriv) {
+void project_basic_properties<op::mccallum>(base_derivation& deriv) {
     for(const auto& prop : properties.get<properties::poly_sgn_inv>()) {
         rules::poly_sgn_inv(deriv, prop.poly);
     }
 }
 
 template <>
-delineation delineate_properties<op::mccallum>(derivation& deriv) {
+delineation delineate_properties<op::mccallum>(base_derivation& deriv) {
     auto main_var = projections.var_order()[properties.level()-1];
     delineation del(main_var);
     for(const auto& prop : properties.get<properties::poly_irreducible_sgn_inv>()) {
@@ -31,7 +31,7 @@ delineation delineate_properties<op::mccallum>(derivation& deriv) {
 }
 
 template <>
-void project_delineated_cell_properties<op::mccallum>(derivation& deriv, const cell_representation& repr) {
+void project_delineated_cell_properties<op::mccallum>(cell_derivation& deriv, const cell_representation& repr) { // TODO parameters are redundant
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         if (repr->equational.find(prop.poly) == repr->equational.end()) {
             properties.insert(properties::poly_pdel{ poly });
@@ -74,13 +74,14 @@ void project_cell_properties<op::mccallum>(cell_derivation& deriv) {
     }
 }
 
-// TODO woanders lösen?:
 template <>
-void project_covering_properties<op::mccallum>(datastructures::projections& projections, properties& properties, const assignment& sample, const covering_representation& repr) {
-    // TODO project all cells:
-    project_cell_properties<op:mccallum>
-
-    // TODO project covering property
+void project_covering_properties<op::mccallum>(derivation& deriv, const covering_representation& repr) {
+    for (const auto& cell_repr : repr.cells) { // TODO maybe do this step outside?
+        // TODO where to get cell derivation from?
+        project_delineated_cell_properties<op::mccallum>(cell_deriv, cell_repr);
+    }
+    
+    rules::covering_holds(deriv, repr.covering());
 }
 
 }

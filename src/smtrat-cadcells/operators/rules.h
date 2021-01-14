@@ -22,10 +22,10 @@ void poly_non_null(cell_derivation& deriv, datastructures::poly_ref poly) {
     if (deriv.proj().know_disc(poly)) {
         if (!deriv.proj().is_disc_zero(deriv.sample(), poly) && deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) } )) return;
     }
-    auto coeff = deriv.proj().simplest_nonzero_coeff(deriv.sample(), poly, [&](const Poly& a, const Poly& b) { // TODO:
+    auto coeff = deriv.proj().simplest_nonzero_coeff(deriv.sample(), poly, [&](const Poly& a, const Poly& b) {
         if (deriv.proj().known(a) && deriv.contains( properties::poly_sgn_inv { m_pool(a)} )) return true;
         if (deriv.proj().known(b) && deriv.contains( properties::poly_sgn_inv { m_pool(b)} )) return true;
-        return datastructures::level_of(a) < datastructures::level_of(b) || (datastructures::level_of(a) == datastructures::level_of(b) && a.degree() < b.degree());
+        return level_of(deriv.poly_pool().var_order(),a) < level_of(deriv.poly_pool().var_order(),b) || (level_of(deriv.poly_pool().var_order(),a) == level_of(deriv.poly_pool().var_order(),b) && a.degree() < b.degree());
     });
     deriv.insert(properties::poly_sgn_inv{ coeff });
 }
@@ -53,7 +53,7 @@ void poly_ord_inv(cell_derivation& deriv, datastructures::poly_ref poly) {
     }
 }
 
-void poly_sgn_inv(derivation& deriv, datastructures::poly_ref poly) {
+void poly_sgn_inv(base_derivation& deriv, datastructures::poly_ref poly) {
     if (deriv.proj().is_const(prop.poly)) return;
 
     if (deriv.contains(properties::poly_ord_inv{ poly })) return;
@@ -65,7 +65,7 @@ void poly_sgn_inv(derivation& deriv, datastructures::poly_ref poly) {
     }
 }
 
-void poly_irrecubile_nonzero_sgn_inv(derivation& deriv, datastructures::poly_ref poly) {
+void poly_irrecubile_nonzero_sgn_inv(base_derivation& deriv, datastructures::poly_ref poly) {
     assert(deriv.contains(properties::poly_pdel{ poly }));
     assert(deriv.proj().num_roots(deriv.underlying_sample(), poly) == 0);
     if (deriv.proj().is_ldcf_zero(deriv.underlying_sample(), poly)) {
@@ -140,13 +140,21 @@ void poly_irrecubile_sgn_inv(cell_derivation& deriv, const cell& representative,
             bool has_lower = (poly == representative.lower().poly) || std::find_if(ordering.below().begin(), ordering.below().end(), [&poly](const auto& rel) { return rel.second.poly == poly }) != ordering.below().end();
             bool has_upper = (poly == representative.upper().poly) || std::find_if(ordering.above().begin(), ordering.above().end(), [&poly](const auto& rel) { return rel.second.poly == poly }) != ordering.above().end();
             if (!(has_lower && has_upper)) {
-                // TODO implement further checks
+                // TODO later: implement further checks
                 deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
             }
         }
     }
 }
 
-// TODO defer computation of resultants to next level
+void covering_holds(derivation& deriv, const covering& covering) {
+    for (auto it = covering.cells().begin(); it != covering.cells().end()-1; it++) {
+        assert(deriv.contains(properties::root_well_def{ it->upper() }));
+        assert(deriv.contains(properties::root_well_def{ (it+1)->lower() }));
+        if (it->upper().poly != (it+1)->lower().poly) {
+            deriv.insert(properties::poly_ord_inv{ deriv.proj().res(it->upper().poly, (it+1)->lower().poly) });
+        }
+    }
+}
 
 }

@@ -12,18 +12,18 @@ namespace smtrat::cadcells::representation {
     };
 
     template<typename H, typename T>
-    std::optional<datastructures::covering_representation> compute_representation<H> (const std::vector<cell_derivation<T>>& del);
+    std::optional<datastructures::covering_representation> compute_representation<H> (std::vector<std::shared_ptr<cell_derivation<T>>>& ders);
 
     template<typename H, typename T>
-    std::optional<datastructures::cell_representation> compute_representation<H> (const cell_derivation<T>& del);
-    
+    std::optional<datastructures::cell_representation> compute_representation<H> (std::shared_ptr<cell_derivation<T>>& der);
+
     template<typename T>
-    std::optional<datastructures::covering_representation> compute_covering_representation<covering_heuristic::DEFAULT> (const std::vector<std::shared_ptr<cell_derivation<T>>> ders) {
+    std::optional<datastructures::covering_representation> compute_covering_representation<covering_heuristic::DEFAULT> (std::vector<std::shared_ptr<cell_derivation<T>>>& ders) {
         // TODO compute covering
     }
 
     template<typename T>
-    std::optional<datastructures::cell_representation> compute_cell_representation<cell_heuristic::DEFAULT>(const std::shared_ptr<cell_derivation<T>> der) {
+    std::optional<datastructures::cell_representation> compute_cell_representation<cell_heuristic::DEFAULT>(std::shared_ptr<cell_derivation<T>>& der) {
         cell_representation response;
         response.cell = compute_simplest_cell(der.delineation());
 
@@ -81,7 +81,7 @@ namespace smtrat::cadcells::representation {
         }
     }
 
-    indexed_root simplest_bound(const std::vector<indexed_root>& bounds) { // TODO improve
+    indexed_root simplest_bound(const std::vector<indexed_root>& bounds) { // TODO later: improve
         assert(!bound.empty());
         return *bounds.begin();
     }

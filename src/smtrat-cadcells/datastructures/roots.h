@@ -54,9 +54,19 @@ class covering {
     std::vector<cell> m_data;
 
 public:
-    // TODO
+    void add(const cell& c) {
+        assert(!m_data.empty() || (c.is_sector() && !c.lower()));
+        assert(m_data.empty() || c.lower());
+        assert(m_data.empty() || m_data.back().upper());
+        assert(m_data.empty() || *m_data.back().upper() <= *c.lower());
+        assert(m_data.empty() || !m_data.back().lower() || *m_data.back().lower() <= *c.lower());
+        m_data.push_back(c);
+    }
 
-}
+    const auto& cells() {
+        return m_data;
+    }
+};
 
 class indexed_root_ordering {
     std::vector<std::pair<indexed_root, indexed_root>> m_data_below;

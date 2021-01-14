@@ -19,12 +19,12 @@ std::ostream& operator<<(std::ostream& os, const poly_ref& data) {
     return os;
 }
 
-// TODO make polynomials univariate
+// TODO later: make polynomials univariate
 
 class poly_pool {
     const variable_ordering& m_var_order;
 
-    // TODO safe memory somehow:
+    // TODO later: safe memory
     std::vector<carl::IDPool> m_id_pools;
     std::vector<std::vector<Poly>> m_polys;
     std::vector<std::map<Poly, size_t>> m_poly_ids;
