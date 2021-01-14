@@ -13,7 +13,8 @@ using base_derivation_ref = base_derivation_ref;
 template<typename Properties>
 using cell_derivation_ref = cell_derivation_ref;
 
-using derivation_ref = std::variant<base_derivation_ref, cell_derivation_ref>;
+template<typename Properties>
+using derivation_ref = std::variant<base_derivation_ref<Properties>, cell_derivation_ref<Properties>>;
 
 base_derivation_ref base_of(derivation_ref derivation) {
     if (std::holds_alternative<base_derivation_ref>(derivation)) {

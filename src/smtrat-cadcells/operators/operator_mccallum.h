@@ -12,7 +12,6 @@ namespace smtrat::cadcells::operators {
 template <>
 using properties<op::mccallum> = datastructures::properties<poly_sgn_inv,poly_irrecubile_sgn_inv,poly_ord_inv,root_well_def,poly_pdel>;
 
-// TODO wie viel sinn hat diese funktion noch?
 template <>
 void project_basic_properties<op::mccallum>(base_derivation& deriv) {
     for(const auto& prop : properties.get<properties::poly_sgn_inv>()) {
@@ -31,7 +30,9 @@ delineation delineate_properties<op::mccallum>(base_derivation& deriv) {
 }
 
 template <>
-void project_delineated_cell_properties<op::mccallum>(cell_derivation& deriv, const cell_representation& repr) { // TODO parameters are redundant
+void project_delineated_cell_properties<op::mccallum>(cell_representation& repr) {
+    cell_derivation& deriv = repr.derivation;
+
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         if (repr->equational.find(prop.poly) == repr->equational.end()) {
             properties.insert(properties::poly_pdel{ poly });
@@ -44,19 +45,19 @@ void project_delineated_cell_properties<op::mccallum>(cell_derivation& deriv, co
         }
     }
 
-    rules::cell_connected(deriv, repr->cell);
-    rules::cell_analytic_submanifold(deriv, repr->cell);
-    rules::cell_represents(deriv, repr->cell);
+    rules::cell_connected(deriv, repr->description);
+    rules::cell_analytic_submanifold(deriv, repr->description);
+    rules::cell_represents(deriv, repr->description);
 
     for (const auto& poly : repr.equational) {
-        rules::poly_irrecubile_sgn_inv_ec(deriv, repr->cell, poly);
+        rules::poly_irrecubile_sgn_inv_ec(deriv, repr->description, poly);
     }
 
-    rules::root_ordering_holds(deriv.underlying_cell(), repr->cell, repr->ordering);
+    rules::root_ordering_holds(deriv.underlying_cell(), repr->description, repr->ordering);
 
     for(const auto& prop : properties.get<properties::poly_irreducible_sgn_inv>()) {
         if (repr.equational.find(prop.poly) == repr.equational.end() && del.nonzero().find(prop.poly) == del.nonzero().end()) {
-            rules::poly_irrecubile_sgn_inv(deriv, repr->cell, repr->ordering, prop.poly);
+            rules::poly_irrecubile_sgn_inv(deriv, repr->description, repr->ordering, prop.poly);
         }
     }
 }
@@ -75,13 +76,11 @@ void project_cell_properties<op::mccallum>(cell_derivation& deriv) {
 }
 
 template <>
-void project_covering_properties<op::mccallum>(derivation& deriv, const covering_representation& repr) {
-    for (const auto& cell_repr : repr.cells) { // TODO maybe do this step outside?
-        // TODO where to get cell derivation from?
-        project_delineated_cell_properties<op::mccallum>(cell_deriv, cell_repr);
+void project_covering_properties<op::mccallum>(covering_representation& repr) {
+    for (const auto& cell_repr : repr.cells) {
+        project_delineated_cell_properties<op::mccallum>(cell_repr);
     }
-    
-    rules::covering_holds(deriv, repr.covering());
+    rules::covering_holds(base_of(repr.cells.front().derivation).underlying_cell(), repr.covering());
 }
 
 }

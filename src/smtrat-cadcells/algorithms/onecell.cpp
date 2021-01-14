@@ -61,10 +61,9 @@ std::optional<cell_derivation_ref> covering(datastructures::projections& proj, c
         return std::nullopt;
     }
 
-    merge_underlying_cells(covering_representation.cells);
+    merge_underlying_cells(covering_representation.cell_derivations());
+    project_covering_properties<op::mccallum>(covering_representation);
 
-    project_covering_properties<op::mccallum>(/* TODO derivation */, covering_representation);
-    
     return covering_representation.cells.first().underlying_cell();
 }
 
@@ -88,7 +87,7 @@ FormulaT onecell(const std::set<ConstraintT>& constraints, const datastructures:
         if (!cell_representation) {
             return FormulaT();
         }
-        operators::project_delineated_cell_properties(*dell_deriv, cell_representation);
+        operators::project_delineated_cell_properties(cell_representation);
 
         description.emplace_back(helper::to_formula(cell_deriv.main_var(),cell_representation.cell));
         if (props->level() > 1) cell_deriv = cell_deriv->underlying_cell();
