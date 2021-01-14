@@ -34,9 +34,9 @@ Doing so, a `db.db` file is created.
 ## Loading entries from the SQLite database into a pandas dataframe
 
 ```python
-data = lib.get_table(solvers, 
+data = evaluation.get_table(solvers, 
     [
-        ('solver_name', 'statistics_name', 'column_name_in_dataframe'), ...
+        ('solver_name', 'statistics_name'), ...
     ])
 ).fillna(0)
 ```
