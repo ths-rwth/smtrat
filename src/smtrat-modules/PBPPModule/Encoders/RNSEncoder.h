@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "lib/Common.h"
+#include <smtrat-common/smtrat-common.h>
 #include "PseudoBoolEncoder.h"
 
 namespace smtrat {
