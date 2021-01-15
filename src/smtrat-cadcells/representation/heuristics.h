@@ -12,18 +12,18 @@ namespace smtrat::cadcells::representation {
     };
 
     template<typename H, typename T>
-    std::optional<datastructures::covering_representation> compute_representation<H> (const std::vector<cell_derivation_ref<T>>& ders);
+    std::optional<datastructures::covering_representation> compute_representation<H> (std::vector<cell_derivation_ref<T>>& ders);
 
     template<typename H, typename T>
-    std::optional<datastructures::cell_representation> compute_representation<H> (const cell_derivation_ref<T>& der);
+    std::optional<datastructures::cell_representation> compute_representation<H> (cell_derivation_ref<T>& der);
 
     template<typename T>
-    std::optional<datastructures::covering_representation> compute_covering_representation<covering_heuristic::DEFAULT> (const std::vector<cell_derivation_ref<T>>& ders) {
+    std::optional<datastructures::covering_representation> compute_covering_representation<covering_heuristic::DEFAULT> (std::vector<cell_derivation_ref<T>>& ders) {
         // TODO compute covering
     }
 
     template<typename T>
-    std::optional<datastructures::cell_representation> compute_cell_representation<cell_heuristic::DEFAULT>(const cell_derivation_ref<T>& der) {
+    std::optional<datastructures::cell_representation> compute_cell_representation<cell_heuristic::DEFAULT>(cell_derivation_ref<T>& der) {
         cell_representation response;
         response.cell = compute_simplest_cell(der.delineation());
 
@@ -63,6 +63,7 @@ namespace smtrat::cadcells::representation {
                 } while(it != der.delineation().roots().end())
             }
         }
+        response.derivation = der;
         return response;
     }
 
