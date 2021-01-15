@@ -9,7 +9,7 @@ namespace smtrat::cadcells::datastructures {
         cell description;
         indexed_root_ordering ordering;
         std::vector<poly_ref> equational;
-        cell_derivation_ref<Properties> derivation;
+        sampled_derivation_ref<Properties> derivation;
     };
 
     struct covering_representation {
@@ -21,8 +21,8 @@ namespace smtrat::cadcells::datastructures {
             }
             return cov;
         }
-        std::vector<cell_derivation_ref<Properties>> cell_derivations() {
-            std::vector<cell_derivation_ref<Properties>> cov;
+        std::vector<sampled_derivation_ref<Properties>> sampled_derivations() {
+            std::vector<sampled_derivation_ref<Properties>> cov;
             for (const auto& cell : cell_representations) {
                 cov.add(cell.base);
             }

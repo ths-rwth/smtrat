@@ -31,7 +31,7 @@ delineation delineate_properties<op::mccallum>(base_derivation& deriv) {
 
 template <>
 void project_delineated_cell_properties<op::mccallum>(cell_representation& repr) {
-    cell_derivation& deriv = repr.derivation;
+    sampled_derivation& deriv = repr.derivation;
 
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         if (repr->equational.find(prop.poly) == repr->equational.end()) {
@@ -63,7 +63,7 @@ void project_delineated_cell_properties<op::mccallum>(cell_representation& repr)
 }
 
 template <>
-void project_cell_properties<op::mccallum>(cell_derivation& deriv) {
+void project_cell_properties<op::mccallum>(sampled_derivation& deriv) {
     for(const auto& prop : properties.get<properties::root_well_def>()) {
         rules::root_well_def(deriv, prop.poly, prop.idx);
     }

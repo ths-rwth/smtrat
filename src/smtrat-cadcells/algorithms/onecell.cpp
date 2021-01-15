@@ -6,7 +6,7 @@
 
 namespace smtrat::cadcells::algorithms { // TODO write mcsat backend!
 
-std::vector<std::shared_ptr<cell_derivation>> get_unsat_intervals(const ConstraintT& c, const projection& proj, const assignment& sample) {
+std::vector<std::shared_ptr<sampled_derivation>> get_unsat_intervals(const ConstraintT& c, const projection& proj, const assignment& sample) {
     auto vars = proj.poly_pool().var_order();
     auto current_var = vars[sample.size()];
     auto tmp_sample = sample;
@@ -19,39 +19,39 @@ std::vector<std::shared_ptr<cell_derivation>> get_unsat_intervals(const Constrai
     operators::project_basic_properties<op::mccallum>(deriv);
     operators::delineate_cell_properties<op::mccallum>(deriv);
 
-    std::vector<std::shared_ptr<cell_derivation>> results;
+    std::vector<std::shared_ptr<sampled_derivation>> results;
     auto& roots = deriv.delineation().roots(); 
     if (roots.empty()) {
         tmp_sample.insert(current_var, 0);
         if (!carl::evaluate(c, tmp_sample)) {
-            results.emplace_back(make_cell_derivation(deriv,0));
+            results.emplace_back(make_sampled_derivation(deriv,0));
         }
     } else {
         results.emplace_back(deriv.delineate_cell(carl::sample_below(roots.front().first)));        
         for (auto root = roots.begin(); root != roots.end(); root++) {
-            if (c.relation().isWeak()) { // TODO later: allow weak bounds for cell_derivations
-                results.emplace_back(make_cell_derivation(deriv, root->first));
+            if (c.relation().isWeak()) { // TODO later: allow weak bounds for sampled_derivations
+                results.emplace_back(make_sampled_derivation(deriv, root->first));
             }
             
             auto current_sample = carl::sample_between(root->first, (root+1)->first);
             tmp_sample.insert(current_var, 0);
             if (!carl::evaluate(c, tmp_sample)) {
-                results.emplace_back(make_cell_derivation(deriv, current_sample));
+                results.emplace_back(make_sampled_derivation(deriv, current_sample));
             }
         }
         if (c.relation().isWeak()) {
-            results.emplace_back(make_cell_derivation(deriv, roots.back().first));
+            results.emplace_back(make_sampled_derivation(deriv, roots.back().first));
         }
         auto current_sample = carl::sample_above(roots.back().first);
         tmp_sample.insert(current_var, 0);
         if (!carl::evaluate(c, tmp_sample)) {
-            results.emplace_back(make_cell_derivation(deriv, current_sample));
+            results.emplace_back(make_sampled_derivation(deriv, current_sample));
         }
     }
     return results;
 }
 
-std::vector<std::shared_ptr<cell_derivation>> get_unsat_intervals(const VariableComparisonT& c, const projection& proj, const assignment& sample) {
+std::vector<std::shared_ptr<sampled_derivation>> get_unsat_intervals(const VariableComparisonT& c, const projection& proj, const assignment& sample) {
     auto vars = proj.poly_pool().var_order();
     auto current_var = vars[sample.size()];
     auto tmp_sample = sample;
@@ -66,8 +66,8 @@ std::vector<std::shared_ptr<cell_derivation>> get_unsat_intervals(const Variable
     return;
 }
 
-std::optional<cell_derivation_ref> covering(datastructures::projections& proj, const std::set<ConstraintT>& constraints, const assignment& sample) {
-    std::vector<cell_derivation_ref> unsat_cells;
+std::optional<sampled_derivation_ref> covering(datastructures::projections& proj, const std::set<ConstraintT>& constraints, const assignment& sample) {
+    std::vector<sampled_derivation_ref> unsat_cells;
     for (const auto& c : constraints) {
         unsat_cells.push_back(get_unsat_intervals(c, proj, sample));
     }
@@ -77,7 +77,7 @@ std::optional<cell_derivation_ref> covering(datastructures::projections& proj, c
         return std::nullopt;
     }
 
-    merge_underlying_cells(covering_representation.cell_derivations());
+    merge_underlying_cells(covering_representation.sampled_derivations());
     project_covering_properties<op::mccallum>(covering_representation);
 
     return covering_representation.cells.first().underlying_cell();
@@ -91,7 +91,7 @@ FormulaT onecell(const std::set<ConstraintT>& constraints, const variable_orderi
     if (!cov_res) {
         return FormulaT();
     }
-    cell_derivation_ref cell_deriv = *cov_res;
+    sampled_derivation_ref cell_deriv = *cov_res;
 
     FormulasT description;
     while (props->level() > 0) {

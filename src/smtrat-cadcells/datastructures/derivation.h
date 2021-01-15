@@ -11,16 +11,16 @@ template<typename Properties>
 using base_derivation_ref = base_derivation_ref;
 
 template<typename Properties>
-using cell_derivation_ref = cell_derivation_ref;
+using sampled_derivation_ref = sampled_derivation_ref;
 
 template<typename Properties>
-using derivation_ref = std::variant<base_derivation_ref<Properties>, cell_derivation_ref<Properties>>;
+using derivation_ref = std::variant<base_derivation_ref<Properties>, sampled_derivation_ref<Properties>>;
 
 base_derivation_ref base_of(derivation_ref derivation) {
     if (std::holds_alternative<base_derivation_ref>(derivation)) {
         return std::get<base_derivation_ref>(derivation);
     } else {
-        return std::get<cell_derivation_ref>(derivation)->base_derivation();
+        return std::get<sampled_derivation_ref>(derivation)->base_derivation();
     }
 }
 
@@ -38,7 +38,7 @@ class base_derivation {
         assert(level == 0 && underlying == std::nullptr || level > 0 && underlying != std::nullptr);
     }
 
-    friend std::variant<base_derivation_ref, cell_derivation_ref> make_derivation(projections& projections, const assignment& assignment);
+    friend std::variant<base_derivation_ref, sampled_derivation_ref> make_derivation(projections& projections, const assignment& assignment);
 
 public:
 
@@ -51,7 +51,7 @@ public:
     size_t level() { return m_level; }
 
     auto underlying() { assert(m_level > 0); return *m_underlying; }
-    auto underlying_cell() { assert(m_level > 0); return std::get<std::shared_ptr<cell_derivation<Ts...>>>(*m_underlying); }
+    auto underlying_cell() { assert(m_level > 0); return std::get<std::shared_ptr<sampled_derivation<Ts...>>>(*m_underlying); }
     assignment& underlying_sample() { assert(m_level > 0); return underlying_cell()->sample(); }
 
     auto& delineation() { return m_delineation; }
@@ -96,17 +96,17 @@ public:
 };
 
 template<typename Properties>
-class cell_derivation { // TODO rename to sampled_derivation
+class sampled_derivation { // TODO rename to sampled_derivation
     base_derivation_ref m_base_derivation;
     std::optional<delineation_cell> m_delineation_cell;
     assignment m_sample;
 
-    cell_derivation(base_derivation_ref base_derivation, ran main_sample) : m_base_derivation(projections) {
+    sampled_derivation(base_derivation_ref base_derivation, ran main_sample) : m_base_derivation(projections) {
         m_sample = base_derivation().underlying_sample();
         m_sample->insert(base_derivation().main_var(), main_sample);
     }
 
-    friend std::variant<base_derivation_ref, cell_derivation_ref> make_derivation(projections& projections, const assignment& assignment);
+    friend std::variant<base_derivation_ref, sampled_derivation_ref> make_derivation(projections& projections, const assignment& assignment);
     friend class base_derivation<Properties>;
 
 public:
@@ -124,14 +124,14 @@ public:
 };
 
 template<typename Properties>
-std::variant<std::shared_ptr<Properties>, cell_derivation_ref> make_derivation(projections& projections, const assignment& assignment, size_t level) {
+std::variant<std::shared_ptr<Properties>, sampled_derivation_ref> make_derivation(projections& projections, const assignment& assignment, size_t level) {
     const auto& vars = projections.poly_pool().var_order();
 
     derivation_ref current = make_shared<base_derivation>(proj, 0, std::nullptr);
     for (size_t i = 1; i <= level; i++) {
         if (assignment.find(vars[level-1]) != assignment.end()) {
             auto base = make_shared<base_derivation>(proj, level, current);
-            current = make_shared<cell_derivation>(base, assignment[vars[level-1]]);
+            current = make_shared<sampled_derivation>(base, assignment[vars[level-1]]);
         } else {
             current = make_shared<base_derivation>(proj, level, current);
         }
@@ -141,9 +141,9 @@ std::variant<std::shared_ptr<Properties>, cell_derivation_ref> make_derivation(p
 }
 
 template<typename Properties>
-cell_derivation_ref make_cell_derivation(base_derivation_ref delineation, const ran& main_sample) {
-    assert(std::holds_alternative<cell_derivation_ref>(delineation->m_underlying));
-    auto cell_del = make_shared<cell_derivation>(delineation, main_sample);
+sampled_derivation_ref make_sampled_derivation(base_derivation_ref delineation, const ran& main_sample) {
+    assert(std::holds_alternative<sampled_derivation_ref>(delineation->m_underlying));
+    auto cell_del = make_shared<sampled_derivation>(delineation, main_sample);
     cell_del.delineate_cell();
     return cell_del;
 }

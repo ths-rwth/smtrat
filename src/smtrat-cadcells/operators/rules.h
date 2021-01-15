@@ -4,7 +4,7 @@
 
 namespace smtrat::cadcells::operators::rules {
 
-void root_well_def(cell_derivation& deriv, indexed_root root) {
+void root_well_def(sampled_derivation& deriv, indexed_root root) {
     assert(deriv.contains(properties::poly_pdel{ root.poly }));
 
     if (root.idx != 1 && idx != deriv.proj().num_roots(deriv.sample(), root.poly)) return;
@@ -14,7 +14,7 @@ void root_well_def(cell_derivation& deriv, indexed_root root) {
     }
 }
 
-void poly_non_null(cell_derivation& deriv, datastructures::poly_ref poly) {
+void poly_non_null(sampled_derivation& deriv, datastructures::poly_ref poly) {
     assert(!deriv.proj().is_nullified(deriv.sample(), poly));
 
     if (deriv.proj().has_const_coeff(poly)) return;
@@ -30,12 +30,12 @@ void poly_non_null(cell_derivation& deriv, datastructures::poly_ref poly) {
     deriv.insert(properties::poly_sgn_inv{ coeff });
 }
 
-void poly_pdel(cell_derivation& deriv, datastructures::poly_ref poly) {
+void poly_pdel(sampled_derivation& deriv, datastructures::poly_ref poly) {
     poly_non_null(deriv, poly);
     deriv.insert(properties::poly_ord_inv{ deriv.proj().disc(poly) });
 }
 
-void poly_irrecubile_ord_inv(cell_derivation& deriv, datastructures::poly_ref poly) {
+void poly_irrecubile_ord_inv(sampled_derivation& deriv, datastructures::poly_ref poly) {
     if (deriv.proj().is_const(prop.poly)) return;
     
     deriv.insert(properties::poly_irreducible_sgn_inv{ poly });
@@ -44,7 +44,7 @@ void poly_irrecubile_ord_inv(cell_derivation& deriv, datastructures::poly_ref po
     }
 }
 
-void poly_ord_inv(cell_derivation& deriv, datastructures::poly_ref poly) {
+void poly_ord_inv(sampled_derivation& deriv, datastructures::poly_ref poly) {
     if (deriv.proj().is_const(prop.poly)) return;
 
     auto factors = deriv.proj().factors_nonconst(poly);
@@ -73,7 +73,7 @@ void poly_irrecubile_nonzero_sgn_inv(base_derivation& deriv, datastructures::pol
     }
 }
 
-void cell_connected(cell_derivation& deriv, const cell& representative) {
+void cell_connected(sampled_derivation& deriv, const cell& representative) {
     if (representative.is_sector() && representative.lower() && representative.upper() && representative.lower()->poly != representative.upper()->poly) {
         assert(deriv.contains(properties::poly_pdel{ representative.lower()->poly }));
         assert(deriv.contains(properties::poly_pdel{ representative.upper()->poly }));
@@ -81,10 +81,10 @@ void cell_connected(cell_derivation& deriv, const cell& representative) {
     }
 }
 
-void cell_analytic_submanifold(cell_derivation& deriv, const cell& representative) {
+void cell_analytic_submanifold(sampled_derivation& deriv, const cell& representative) {
 }
 
-void poly_irrecubile_sgn_inv_ec(cell_derivation& deriv, const cell& representative, datastructures::poly_ref poly) {
+void poly_irrecubile_sgn_inv_ec(sampled_derivation& deriv, const cell& representative, datastructures::poly_ref poly) {
     assert(representative.is_section());
     assert(deriv.contains(properties::poly_pdel{ representative.sector_defining().poly }));
     assert(deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(representative.sector_defining().poly) }));
@@ -93,12 +93,12 @@ void poly_irrecubile_sgn_inv_ec(cell_derivation& deriv, const cell& representati
     }
 }
 
-void root_represents(cell_derivation& deriv, indexed_root root) {
+void root_represents(sampled_derivation& deriv, indexed_root root) {
     assert(deriv.contains(properties::poly_pdel{ root.poly }));
     deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(root.poly) });
 }
 
-void cell_represents(cell_derivation& deriv, const cell& representative) {
+void cell_represents(sampled_derivation& deriv, const cell& representative) {
     if (representative.lower()) {
         root_represents(deriv, *representative.lower());
     }
@@ -107,7 +107,7 @@ void cell_represents(cell_derivation& deriv, const cell& representative) {
     }
 }
 
-void root_ordering_holds(cell_derivation& deriv, const cell& representative, const indexed_root_ordering& ordering) {
+void root_ordering_holds(sampled_derivation& deriv, const cell& representative, const indexed_root_ordering& ordering) {
     for (const auto& rel : ordering.data_below()) {
         if (rel.first.poly != rel.second.poly) {
             assert(deriv.contains(properties::poly_pdel{ rel.first.poly }));
@@ -126,7 +126,7 @@ void root_ordering_holds(cell_derivation& deriv, const cell& representative, con
     }
 }
 
-void poly_irrecubile_sgn_inv(cell_derivation& deriv, const cell& representative, const indexed_root_ordering& ordering, datastructures::poly_ref poly) {
+void poly_irrecubile_sgn_inv(sampled_derivation& deriv, const cell& representative, const indexed_root_ordering& ordering, datastructures::poly_ref poly) {
     assert(deriv.contains(properties::poly_pdel{ poly }));
     if (representative.is_section() && deriv.proj().is_zero(sample, poly)) {
         auto roots = deriv.proj().real_roots(poly);
