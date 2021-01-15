@@ -1,18 +1,19 @@
 #include "onecell.h"
 #include "helper.h"
 
-#include "../operators/mccallum.h"
+#include "../operators/operator_mccallum.h"
 
 
-namespace smtrat::cadcells::algorithms {
+namespace smtrat::cadcells::algorithms { // TODO write mcsat backend!
 
 std::vector<std::shared_ptr<cell_derivation>> get_unsat_intervals(const ConstraintT& c, const projection& proj, const assignment& sample) {
-    assert(level_of(vars, c.lhs()) == sample.size()+1);
-
+    auto vars = proj.poly_pool().var_order();
     auto current_var = vars[sample.size()];
     auto tmp_sample = sample;
 
-    auto deriv = make_derivation<properties<op::mccallum>>(proj, sample);
+    assert(level_of(vars, c.lhs()) == sample.size()+1);
+
+    auto deriv = make_derivation<properties<op::mccallum>>(proj, sample, sample.size() + 1);
 
     deriv->insert(operators::properties::sgn_inv(pool(c.lhs())));
     operators::project_basic_properties<op::mccallum>(deriv);
@@ -50,6 +51,21 @@ std::vector<std::shared_ptr<cell_derivation>> get_unsat_intervals(const Constrai
     return results;
 }
 
+std::vector<std::shared_ptr<cell_derivation>> get_unsat_intervals(const VariableComparisonT& c, const projection& proj, const assignment& sample) {
+    auto vars = proj.poly_pool().var_order();
+    auto current_var = vars[sample.size()];
+    auto tmp_sample = sample;
+
+    assert(c.var() == current_var);
+    assert(std::holds_alternative<ran>(c.value()) || level_of(vars, std::get<MultivariateRootT>(c.value()).poly(current_var) == sample.size() + 1));
+
+    auto deriv = make_derivation<properties<op::mccallum>>(proj, sample, sample.size() + 1);
+    
+    // TODO!!
+
+    return;
+}
+
 std::optional<cell_derivation_ref> covering(datastructures::projections& proj, const std::set<ConstraintT>& constraints, const assignment& sample) {
     std::vector<cell_derivation_ref> unsat_cells;
     for (const auto& c : constraints) {
@@ -67,7 +83,7 @@ std::optional<cell_derivation_ref> covering(datastructures::projections& proj, c
     return covering_representation.cells.first().underlying_cell();
 }
 
-FormulaT onecell(const std::set<ConstraintT>& constraints, const datastructures::variable_ordering& vars, const assignment& sample) {
+FormulaT onecell(const std::set<ConstraintT>& constraints, const variable_ordering& vars, const assignment& sample) {
     datastructures::poly_pool pool(vars);
     datastructures::projections proj(pool);
 

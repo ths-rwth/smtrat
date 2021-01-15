@@ -12,18 +12,38 @@ namespace smtrat::cadcells::representation {
     };
 
     template<typename H, typename T>
-    std::optional<datastructures::covering_representation> compute_representation<H> (std::vector<cell_derivation_ref<T>>& ders);
+    std::optional<datastructures::covering_representation<T>> compute_representation<H> (const std::vector<cell_derivation_ref<T>>& ders);
 
     template<typename H, typename T>
-    std::optional<datastructures::cell_representation> compute_representation<H> (cell_derivation_ref<T>& der);
+    std::optional<datastructures::cell_representation<T>> compute_representation<H> (cell_derivation_ref<T>& der);
 
     template<typename T>
-    std::optional<datastructures::covering_representation> compute_covering_representation<covering_heuristic::DEFAULT> (std::vector<cell_derivation_ref<T>>& ders) {
-        // TODO compute covering
+    std::optional<datastructures::covering_representation<T>> compute_covering_representation<covering_heuristic::DEFAULT> (const std::vector<cell_derivation_ref<T>>& ders) {
+        datastructures::covering_representation<T> result;
+        
+        std::vector<cell_derivation_ref<T>> sorted_ders;
+        for (const auto& der : ders) sorted_ders.emplace_back(der);
+
+        std::sort(sorted_ders.begin(), sorted_ders.end(), [](const cell_derivation_ref<T> p_cell1, const cell_derivation_ref<T> p_cell2) { // cell1 < cell2
+            const auto& cell1 = p_cell1->cell_delineation();
+            const auto& cell2 = p_cell1->cell_delineation();
+            return lower_less(cell1, cell2) || (lower_equal(cell1, cell2) && upper_less(cell1, cell2));
+        });
+
+        auto iter = sorted_ders.begin();
+        while (iter != sorted_cells.end()) {
+            while (iter+1 != sorted_cells.end() && lower_equal(*iter, *(iter+1)) && !upper_less(cell2, cell1)) iter++;
+            auto cell_result = compute_cell_representation(*iter);
+            if (!cell_result) return std::nullopt;
+            result.cells.emplace_back(*cell_result);
+            iter++;
+        }
+
+        return result;
     }
 
     template<typename T>
-    std::optional<datastructures::cell_representation> compute_cell_representation<cell_heuristic::DEFAULT>(cell_derivation_ref<T>& der) {
+    std::optional<datastructures::cell_representation<T>> compute_cell_representation<cell_heuristic::DEFAULT>(cell_derivation_ref<T>& der) {
         cell_representation response;
         response.cell = compute_simplest_cell(der.delineation());
 

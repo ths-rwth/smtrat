@@ -2,10 +2,8 @@
 
 #include "../common.h"
 #include <smtrat-common/smtrat-common.h>
-#include <smtrat-common/model.h>
 #include <carl/util/IDPool.h>
 
-#include "../datastructures/varorder.h"
 
 namespace smtrat::cadcells::datastructures {
 

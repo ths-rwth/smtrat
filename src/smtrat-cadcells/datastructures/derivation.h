@@ -96,7 +96,7 @@ public:
 };
 
 template<typename Properties>
-class cell_derivation {
+class cell_derivation { // TODO rename to sampled_derivation
     base_derivation_ref m_base_derivation;
     std::optional<delineation_cell> m_delineation_cell;
     assignment m_sample;

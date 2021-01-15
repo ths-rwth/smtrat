@@ -82,7 +82,7 @@ public:
     }
 };
 
-class delineation_cell {
+class delineation_cell { // TODO rename
     root_map::const_iterator m_lower;
     root_map::const_iterator m_upper;
 
@@ -109,5 +109,28 @@ public:
         return m_upper != m_roots.end();
     }
 };    
+
+bool lower_less(const delineation_cell& del1, const delineation_cell& del2) {
+    if (del1.lower_unbounded()) return !del2.lower_unbounded();
+    else if (del2.lower_unbounded()) return false;
+    else if (del1.lower()->first < del2.lower()->first) return true;
+    else if (del1.lower()->first == del2.lower()->first) return del1.is_section() && !del2.is_section();
+    else return false;
+}
+
+bool lower_equal(const delineation_cell& del1, const delineation_cell& del2) {
+    if (del1.lower_unbounded() && del2.lower_unbounded()) return true;
+    else if (del1.lower()->first != del2.lower()->first) return false;
+    else return del1.is_section() && del2.is_section();
+}
+
+bool upper_less(const delineation_cell& del1, const delineation_cell& del2) {
+    if (del1.upper_unbounded()) return !del2.lower_unbounded();
+    else if (del2.upper_unbounded()) return true;
+    else if (del1.upper()->first < del2.upper()->first) return true;
+    else if (del1.upper()->first == del2.upper()->first) return del1.is_section() && !del2.is_section();
+    else return false;
+}
+
 
 } 
