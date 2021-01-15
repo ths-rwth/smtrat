@@ -83,7 +83,6 @@ void setup_logging() {
 
 int main( int argc, char* argv[] )
 {
-	carl::numbers::initialize_gmpxx();
 	setup_logging();
 	SMTRAT_LOG_DEBUG("smtrat", "Starting smtrat.");
 

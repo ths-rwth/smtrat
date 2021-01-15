@@ -881,9 +881,9 @@ namespace smtrat {
     }
 
     bool isAnyRationalIsZero (RationalCapsule rationalCapsule) {
-        return carl::getNum(rationalCapsule.getARational()) == ZERO_RATIONAL ||
-                carl::getNum(rationalCapsule.getBRational()) == ZERO_RATIONAL ||
-                carl::getNum(rationalCapsule.getCRational()) == ZERO_RATIONAL;
+        return carl::getNum(rationalCapsule.getARational()) == Rational(0) ||
+                carl::getNum(rationalCapsule.getBRational()) == Rational(0) ||
+                carl::getNum(rationalCapsule.getCRational()) == Rational(0);
     }
 
 

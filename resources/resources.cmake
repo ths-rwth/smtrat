@@ -44,3 +44,4 @@ add_custom_target(carl-required-version
 
 include(resources/immer.cmake)
 
+include(resources/mimalloc.cmake)

@@ -9,7 +9,7 @@
 
 
 #include "../dto/VariableCapsule.h"
-#include "lib/Common.h"
+#include <smtrat-common/smtrat-common.h>
 #include "../Util.h"
 #include "../../../smtrat-common/model.h"
 #include "../dto/RationalCapsule.h"

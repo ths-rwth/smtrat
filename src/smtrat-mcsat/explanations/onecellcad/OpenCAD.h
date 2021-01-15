@@ -195,8 +195,8 @@ std::optional<OpenCADCell> mergeCellWithPoly(
 	auto result = carl::evaluate(
 			ConstraintT(poly, carl::Relation::EQ),
 			toStdMap(point, level, variableOrder));
-	assert(result);
-	if (*result) {
+	assert(!indeterminate(result));
+	if (result) {
 		SMTRAT_LOG_WARN("smtrat.opencad", "Poly vanished at point.");
 		return std::nullopt;
 	}

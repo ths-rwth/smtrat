@@ -3,7 +3,7 @@
 #include <carl/util/parser/Parser.h>
 #include "carl/core/Monomial.h"
 #include "unordered_map"
-#include "lib/Common.h"
+#include <smtrat-common/smtrat-common.h>
 
 
 namespace smtrat

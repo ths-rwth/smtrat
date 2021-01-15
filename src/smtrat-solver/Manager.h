@@ -14,7 +14,6 @@
 #include <vector>
 
 #include "StrategyGraph.h"
-#include "SolverStatistics.h"
 #ifdef SMTRAT_STRAT_PARALLEL_MODE
 #include "ThreadPool.h"
 #endif
@@ -64,10 +63,6 @@ namespace smtrat
 			LemmaLevel mLemmaLevel;
             /// objective variable
             carl::Variable mObjectiveVariable;
-            #ifdef SMTRAT_DEVOPTION_Statistics
-            /// Stores all statistics for the solver this manager belongs to.
-            SolverStatistics& mStatistics = statistics_get<SolverStatistics>("Solver");
-            #endif
             #ifdef SMTRAT_STRAT_PARALLEL_MODE
             /// contains all threads to assign jobs to
             ThreadPool* mpThreadPool;

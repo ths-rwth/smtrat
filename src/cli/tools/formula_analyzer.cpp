@@ -29,7 +29,7 @@ int analyze_file(const std::string& filename) {
 
 namespace smtrat {
 
-int analyze_file(const std::string& filename) {
+int analyze_file(const std::string&) {
 	return 0;
 }
 
