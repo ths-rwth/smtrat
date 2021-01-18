@@ -58,7 +58,7 @@ public:
     const auto& nullified() const {
         return m_polys_nullified;
     }
-    const auto& noroot() const {
+    const auto& nonzero() const {
         return m_polys_noroot;
     }
     bool empty() const {

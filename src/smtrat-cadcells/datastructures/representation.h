@@ -3,12 +3,14 @@
 #include "roots.h"
 #include "derivation.h"
 
+#include <boost/container/flat_set.hpp>
+
 namespace smtrat::cadcells::datastructures {
     template<typename P>
     struct cell_representation {
         cell description;
         indexed_root_ordering ordering;
-        std::vector<poly_ref> equational;
+        boost::container::flat_set<poly_ref> equational;
         sampled_derivation_ref<P> derivation;
     };
 

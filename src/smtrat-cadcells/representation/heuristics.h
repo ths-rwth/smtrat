@@ -51,7 +51,7 @@ namespace smtrat::cadcells::representation {
             for (const auto& poly : der.delin().nullified()) {
                 response.equational.push_back(poly);
             }
-            for (const auto& poly : der.delin().noroot()) {
+            for (const auto& poly : der.delin().nonzero()) {
                 response.equational.push_back(poly);
             }
             for (const auto& [ran,irexprs] : der.delin().roots()) {

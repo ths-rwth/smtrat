@@ -4,7 +4,8 @@
 
 namespace smtrat::cadcells::operators::delineation {
 
-void delineate(base_derivation& deriv, const properties::poly_irreducible_sgn_inv& prop) {
+template<typename P>
+void delineate(datastructures::base_derivation<P>& deriv, const properties::poly_irreducible_sgn_inv& prop) {
     if (deriv.proj().is_nullified(prop.poly)) {
         deriv.delin().add_poly_nullified(prop.poly);
     } else {
@@ -13,7 +14,7 @@ void delineate(base_derivation& deriv, const properties::poly_irreducible_sgn_in
             deriv.delin().add_poly_noroot(prop.poly);
         } else {
             for (size_t idx = 0; idx < roots.size(); idx++) {
-                deriv.delin().add_root(roots[idx], indexed_root(prop.poly, idx));
+                deriv.delin().add_root(roots[idx], datastructures::indexed_root(prop.poly, idx));
             }
         }
     }
