@@ -34,4 +34,19 @@ size_t level_of(const variable_ordering& order, const Poly& poly) {
     return 0;
 }
 
+carl::Variable main_var(const variable_ordering& order, const Poly& poly) {
+    // assert(isSubset(asVector(poly.gatherVariables()), order));
+    auto poly_variables = carl::variables(poly).underlyingVariableSet();
+    if (poly_variables.empty()) {
+        // polynomial is constant
+        return carl::Variable::NO_VARIABLE;
+    }
+    for (std::size_t level = 0; level < order.size(); ++level) {
+        if (poly_variables.size() == 1) return *poly_variables.begin();
+        poly_variables.erase(order[level]);
+    }
+    assert(false && "Poly contains variable not found in order"); // precondition violated
+    return carl::Variable::NO_VARIABLE;
+}
+
 }

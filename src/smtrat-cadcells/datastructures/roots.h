@@ -64,7 +64,7 @@ public:
         m_data.push_back(c);
     }
 
-    const auto& cells() {
+    const auto& cells() const {
         return m_data;
     }
 };
@@ -97,11 +97,11 @@ public:
         return add(m_data_above, first, second);
     }
 
-    const auto& data_below() const {
+    const auto& below() const {
         return m_data_below;
     }
 
-    const auto& data_above() const {
+    const auto& above() const {
         return m_data_above;
     }
 };

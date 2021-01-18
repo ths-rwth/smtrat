@@ -7,7 +7,7 @@
 namespace smtrat::cadcells::algorithms { // TODO write mcsat backend!
 
 std::vector<std::shared_ptr<sampled_derivation>> get_unsat_intervals(const ConstraintT& c, const projection& proj, const assignment& sample) {
-    auto vars = proj.poly_pool().var_order();
+    auto vars = proj.polys().var_order();
     auto current_var = vars[sample.size()];
     auto tmp_sample = sample;
 
@@ -20,7 +20,7 @@ std::vector<std::shared_ptr<sampled_derivation>> get_unsat_intervals(const Const
     operators::delineate_cell_properties<op::mccallum>(deriv);
 
     std::vector<std::shared_ptr<sampled_derivation>> results;
-    auto& roots = deriv.delineation().roots(); 
+    auto& roots = deriv.delin().roots(); 
     if (roots.empty()) {
         tmp_sample.insert(current_var, 0);
         if (!carl::evaluate(c, tmp_sample)) {
@@ -52,7 +52,7 @@ std::vector<std::shared_ptr<sampled_derivation>> get_unsat_intervals(const Const
 }
 
 std::vector<std::shared_ptr<sampled_derivation>> get_unsat_intervals(const VariableComparisonT& c, const projection& proj, const assignment& sample) {
-    auto vars = proj.poly_pool().var_order();
+    auto vars = proj.polys().var_order();
     auto current_var = vars[sample.size()];
     auto tmp_sample = sample;
 

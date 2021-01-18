@@ -1,22 +1,28 @@
 #pragma once
 
+#include "../datastructures/derivation.h"
+#include "../datastructures/representation.h"
+
 namespace smtrat::cadcells::operators {
 
 enum op { mccallum };
 
-template <typename T>
-class base_derivation;
+template <typename Op>
+class properties_set;
 
-template <typename T>
-void project_basic_properties(base_derivation& deriv);
+template <typename Op>
+void project_basic_properties(datastructures::base_derivation<properties_set<Op>>& deriv);
 
-template <typename T>
-delineation delineate_properties(base_derivation& deriv);
+template <typename Op>
+datastructures::delineation delineate_properties(datastructures::base_derivation<properties_set<Op>>& deriv);
 
-template <typename T>
-void project_delineated_cell_properties(base_derivation& deriv, const cell_representation& repr);
+template <typename Op>
+void project_delineated_cell_properties(datastructures::cell_representation<Op>& deriv);
 
-template <typename T>
-void project_cell_properties(base_derivation& deriv);
+template <typename Op>
+void project_cell_properties(datastructures::base_derivation<properties_set<Op>>& deriv);
+
+template <typename Op>
+void project_covering_properties(datastructures::covering_representation<properties_set<Op>>& repr);
 
 } 

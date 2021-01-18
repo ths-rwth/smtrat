@@ -12,6 +12,12 @@ struct poly_ref {
     size_t level;
     size_t id;    
 };
+bool operator==(const poly_ref& lhs, const poly_ref& rhs) {
+    return lhs.level == rhs.level && lhs.id == rhs.id;
+}
+bool operator!=(const poly_ref& lhs, const poly_ref& rhs) {
+    return !(lhs == rhs);
+}
 
 std::ostream& operator<<(std::ostream& os, const poly_ref& data) {
     os << "(" << data.level << " " << data.id << ")";

@@ -3,21 +3,51 @@
 #include <map>
 #include <vector>
 #include <boost/container/flat_set.hpp>
-
 namespace smtrat::cadcells::datastructures {
 
 using root_map = std::map<ran, std::vector<indexed_root>>;
+
+class delineation_cell { // TODO rename
+    root_map::const_iterator m_lower;
+    root_map::const_iterator m_upper;
+    root_map::const_iterator m_end;
+
+    delineation_cell(root_map::const_iterator&& lower, root_map::const_iterator&& upper, root_map::const_iterator&& end) : m_lower(lower), m_upper(upper), m_end(end) {};
+
+    friend class delineation;
+
+public:
+    const bool is_section() const {
+        return m_lower != m_end && m_upper != m_end && m_lower == m_upper;
+    }
+
+    const auto& lower() const {
+        assert(m_lower != m_end);
+        return m_lower;
+    }
+    const bool lower_unbounded() const {
+        return m_lower != m_end;
+    }
+
+    const auto& upper() const {
+        assert(m_upper != m_end);
+        return m_upper;
+    }
+    const bool upper_unbounded() const {
+        return m_upper != m_end;
+    }
+};    
 
 class delineation {
     friend class delineation_cell;
 
     carl::Variable m_main_var;
     root_map m_roots;
-    boost::flat_set<poly_ref> m_polys_nullified;
-    boost::flat_set<poly_ref> m_polys_noroot;
+    boost::container::flat_set<poly_ref> m_polys_nullified;
+    boost::container::flat_set<poly_ref> m_polys_noroot;
 
 public: 
-    delineation(carl::Variable main_var) : m_main_var(main_var), m_lower(m_roots.end()), m_upper(m_roots.end()) {}
+    delineation(carl::Variable main_var) : m_main_var(main_var) {}
 
     const auto main_var() const {
         return m_main_var;
@@ -52,24 +82,24 @@ public:
                 if (upper == m_roots.begin()) {
                     lower = m_roots.end();
                 } else {
-                    lower = upper-1;
+                    lower = upper;
+                    lower--;
                 }
             }
         }
 
-        return std::make_shared(delineation_cell(lower,upper));
+        return std::make_shared<delineation_cell>(std::move(lower),std::move(upper),std::move(m_roots.end()));
     }
 
     void add_root(ran&& root, indexed_root&& ir_root) {
-        assert(!m_lower);
         assert(proj.main_var(ir_root.poly) == m_main_var);
         auto irs = m_roots.find(root);
         if (irs == m_roots.end()) {
-            irs = m_roots.emplace(std::move(root), std::vector<indexed_root>());
+            irs = m_roots.emplace(std::move(root), std::vector<indexed_root>()).first;
         }
-        auto loc = std::find(irs->begin(), irs->end(), ir_root);
-        if (loc == irs->end()) {
-            irs->push_back(std::move(ir_root));
+        auto loc = std::find(irs->second.begin(), irs->second.end(), ir_root);
+        if (loc == irs->second.end()) {
+            irs->second.push_back(std::move(ir_root));
         }
     }
 
@@ -81,34 +111,6 @@ public:
         m_polys_nullified.insert(poly);
     }
 };
-
-class delineation_cell { // TODO rename
-    root_map::const_iterator m_lower;
-    root_map::const_iterator m_upper;
-
-public:
-    delineation_cell(root_map::const_iterator&& lower, root_map::const_iterator&& upper) : m_lower(lower), m_upper(upper) {};
-
-    const bool is_section() const {
-        return m_lower != m_roots.end() && m_upper != m_roots.end() && m_lower == m_upper;
-    }
-
-    const auto& lower() const {
-        assert(m_lower != m_roots.end());
-        return m_lower;
-    }
-    const bool lower_unbounded() const {
-        return m_lower != m_roots.end();
-    }
-
-    const auto& upper() const {
-        assert(m_upper != m_roots.end());
-        return m_upper;
-    }
-    const bool upper_unbounded() const {
-        return m_upper != m_roots.end();
-    }
-};    
 
 bool lower_less(const delineation_cell& del1, const delineation_cell& del2) {
     if (del1.lower_unbounded()) return !del2.lower_unbounded();

@@ -25,8 +25,8 @@ namespace smtrat::cadcells::representation {
         for (const auto& der : ders) sorted_ders.emplace_back(der);
 
         std::sort(sorted_ders.begin(), sorted_ders.end(), [](const sampled_derivation_ref<T> p_cell1, const sampled_derivation_ref<T> p_cell2) { // cell1 < cell2
-            const auto& cell1 = p_cell1->cell_delineation();
-            const auto& cell2 = p_cell1->cell_delineation();
+            const auto& cell1 = p_cell1->cell_delin();
+            const auto& cell2 = p_cell1->cell_delin();
             return lower_less(cell1, cell2) || (lower_equal(cell1, cell2) && upper_less(cell1, cell2));
         });
 
@@ -45,16 +45,16 @@ namespace smtrat::cadcells::representation {
     template<typename T>
     std::optional<datastructures::cell_representation<T>> compute_cell_representation<cell_heuristic::DEFAULT>(sampled_derivation_ref<T>& der) {
         cell_representation response;
-        response.cell = compute_simplest_cell(der.delineation());
+        response.cell = compute_simplest_cell(der.delin());
 
-        if (der.delineation_cell().is_section()) {
-            for (const auto& poly : der.delineation().nullified()) {
+        if (der.cell().is_section()) {
+            for (const auto& poly : der.delin().nullified()) {
                 response.equational.push_back(poly);
             }
-            for (const auto& poly : der.delineation().noroot()) {
+            for (const auto& poly : der.delin().noroot()) {
                 response.equational.push_back(poly);
             }
-            for (const auto& [ran,irexprs] : der.delineation().roots()) {
+            for (const auto& [ran,irexprs] : der.delin().roots()) {
                 for (const auto& ir : irexprs) {
                     if (ir.idx == 1 && ir.poly != response.cell.sector_defining().poly) { // add poly only once
                         response.equational.push_back(ir.poly);
@@ -62,25 +62,25 @@ namespace smtrat::cadcells::representation {
                 }
             }
         } else { // sector
-            if (!der.delineation().nullified().empty()) return std::nullopt;
+            if (!der.delin().nullified().empty()) return std::nullopt;
 
-            if (!der.delineation_cell().lower_unbounded()) {
-                auto it = der.delineation_cell().lower()+1;
+            if (!der.cell().lower_unbounded()) {
+                auto it = der.cell().lower()+1;
                 do {
                     it--;
                     for (const auto& ir : *it) {
                         response.ordering.add_below(std::make_pair(response.cell.lower(), ir));
                     }
-                } while(it != der.delineation().roots().begin())
+                } while(it != der.delin().roots().begin())
             }
-            if (!der.delineation_cell().upper_unbounded()) {
-                auto it = der.delineation_cell().upper();
+            if (!der.cell().upper_unbounded()) {
+                auto it = der.cell().upper();
                 do {
                     for (const auto& ir : *it) {
                         response.ordering.add_above(std::make_pair(response.cell.upper(), ir));
                     }
                     it++;
-                } while(it != der.delineation().roots().end())
+                } while(it != der.delin().roots().end())
             }
         }
         response.derivation = der;
