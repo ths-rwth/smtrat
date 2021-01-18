@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../common.h"
+#include "polynomials.h"
 
 namespace smtrat::cadcells::datastructures {
 

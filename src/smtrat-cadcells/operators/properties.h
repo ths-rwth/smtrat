@@ -40,11 +40,11 @@ std::ostream& operator<<(std::ostream& os, const poly_ord_inv& data) {
 struct root_well_def {
     datastructures::indexed_root root;
     size_t level() const {
-        return poly.level-1;
+        return root.poly.level-1;
     }
 };
 std::ostream& operator<<(std::ostream& os, const root_well_def& data) {
-    os << data.root.poly << " " << data.root.idx << " well-def";
+    os << data.root.poly << " " << data.root.index << " well-def";
     return os;
 }
 

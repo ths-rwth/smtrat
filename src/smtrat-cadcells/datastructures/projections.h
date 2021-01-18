@@ -7,7 +7,6 @@
 #include "polynomials.h"
 
 #include <carl/core/polynomialfunctions/Factorization.h>
-#include <carl-model/evaluation/ModelEvaluation.h>
 
 namespace smtrat::cadcells::datastructures {
 
@@ -48,6 +47,12 @@ class projections {
         return m_cache[p.level-1][p.id];
     }
 
+public:
+    auto main_var(poly_ref p) const {
+        return m_pool.var_order()[p.level];
+    }
+
+private:
     auto as_univariate(poly_ref p) const {
         return carl::to_univariate_polynomial(m_pool(p), main_var(p));
     }
@@ -55,11 +60,9 @@ class projections {
 public:
     projections(poly_pool& pool) : m_pool(pool) {}
 
-    auto& poly_pool() { return m_pool; }
+    auto& polys() { return m_pool; }
 
-    auto main_var(poly_ref p) const {
-        return m_pool.var_order()[p.level];
-    }
+    
 
     poly_ref res(poly_ref p, poly_ref q) {
         assert(p.level == q.level && p.id != q.id);
@@ -67,7 +70,7 @@ public:
         if (p.id > q.id) return res(q,p);
         assert(p.id < q.id);
 
-        if (cache(p).res.f(q) != cache(p).res.end()) {
+        if (cache(p).res.find(q) != cache(p).res.end()) {
             return cache(p).res[q];
         } else {
             auto upoly = carl::resultant(as_univariate(p), as_univariate(q));
@@ -111,12 +114,12 @@ public:
         }
     }
 
-    size_t num_roots(const Model& sample, poly_ref p) { // TODO cache
-        return carl::model::realRoots(m_pool(p), main_var(p), sample).size();
+    size_t num_roots(const assignment& sample, poly_ref p) { // TODO cache
+        return carl::real_roots(as_univariate(p), sample).roots().size();
     }
 
-    std::vector<ran> real_roots(const Model& sample, poly_ref p) { // TODO cache
-        return carl::model::realRoots(m_pool(p), main_var(p), sample);
+    std::vector<ran> real_roots(const assignment& sample, poly_ref p) { // TODO cache
+        return carl::real_roots(as_univariate(p), sample).roots();
     }
 
     std::vector<poly_ref> factors_nonconst(poly_ref p) { // TODO cache
@@ -127,29 +130,25 @@ public:
         return results; 
     }
 
-    bool is_zero(const Model& sample, poly_ref p) { // TODO cache
-        auto mv = carl::model::evaluate(ConstraintT(m_pool(p), carl::Relation::EQ), sample);
-        assert(mv.isBool());
-        return mv.asBool();
+    bool is_zero(const assignment& sample, poly_ref p) { // TODO cache
+        auto mv = carl::evaluate(ConstraintT(m_pool(p), carl::Relation::EQ), sample);
+        assert(!indeterminate(mv));
+        return (bool) mv;
     }
 
-    bool is_nullified(const Model& sample, poly_ref p) { // TODO cache
+    bool is_nullified(const assignment& sample, poly_ref p) { // TODO cache
         auto poly = m_pool(p);
 		assert(!poly.isConstant());
 		if (poly.isLinear()) return false;
 
-        std::map<carl::Variable, ran> varToRANMap;
-		for (const auto& [key, value] : sample)
-			varToRANMap[key.asVariable()] = value.asRAN();
-
-		return carl::ran::interval::vanishes(as_univariate(p), varToRANMap);
+		return carl::real_roots(as_univariate(p), sample).is_nullified();
     }
 
-    bool is_ldcf_zero(const Model& sample, poly_ref p) {
+    bool is_ldcf_zero(const assignment& sample, poly_ref p) {
         return is_zero(ldcf(p));
     }
 
-    bool is_disc_zero(const Model& sample, poly_ref p) {
+    bool is_disc_zero(const assignment& sample, poly_ref p) {
         return is_zero(disc(p));
     }
 
@@ -169,13 +168,13 @@ public:
         return false;
     }
 
-    poly_ref simplest_nonzero_coeff(const Model& sample, poly_ref p, std::function<bool(const Poly&,const Poly&)> compare) const {
+    poly_ref simplest_nonzero_coeff(const assignment& sample, poly_ref p, std::function<bool(const Poly&,const Poly&)> compare) const {
         std::optional<Poly> result;
         auto poly = as_univariate(p);
         for (const auto& coeff : poly.coefficients()) {
-            auto mv = carl::model::evaluate(ConstraintT(coeff, carl::Relation::NEQ), sample);
-            assert(mv.isBool());
-            if (mv.asBool()) {
+            auto mv = carl::evaluate(ConstraintT(coeff, carl::Relation::NEQ), sample);
+            assert(!indeterminate(mv));
+            if (mv) {
                 if (!result || compare(coeff,*result)) {
                     result = coeff;
                 }

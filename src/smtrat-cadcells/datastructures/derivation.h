@@ -4,23 +4,32 @@
 
 #include "polynomials.h"
 #include "properties.h"
+#include "projections.h"
+#include "delineation.h"
 
 namespace smtrat::cadcells::datastructures {
 
 template<typename Properties>
-using base_derivation_ref = base_derivation_ref;
+class base_derivation;
 
 template<typename Properties>
-using sampled_derivation_ref = sampled_derivation_ref;
+class sampled_derivation;
+
+template<typename Properties>
+using base_derivation_ref = std::shared_ptr<base_derivation<Properties>>;
+
+template<typename Properties>
+using sampled_derivation_ref = std::shared_ptr<sampled_derivation<Properties>>;
 
 template<typename Properties>
 using derivation_ref = std::variant<base_derivation_ref<Properties>, sampled_derivation_ref<Properties>>;
 
-base_derivation_ref base_of(derivation_ref derivation) {
-    if (std::holds_alternative<base_derivation_ref>(derivation)) {
-        return std::get<base_derivation_ref>(derivation);
+template<typename Properties>
+base_derivation_ref<Properties> base_of(derivation_ref<Properties> derivation) {
+    if (std::holds_alternative<base_derivation_ref<Properties>>(derivation)) {
+        return std::get<base_derivation_ref<Properties>>(derivation);
     } else {
-        return std::get<sampled_derivation_ref>(derivation)->base_derivation();
+        return std::get<sampled_derivation_ref<Properties>>(derivation)->base_derivation();
     }
 }
 

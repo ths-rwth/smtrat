@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../common.h"
+#include "../helper.h"
 #include <smtrat-common/smtrat-common.h>
 #include <carl/util/IDPool.h>
 
@@ -36,7 +37,7 @@ public:
     poly_ref operator()(const Poly& poly) {
         auto npoly = poly.normalize();
         poly_ref ref;
-        ref.level = level_of(m_var_order, npoly);
+        ref.level = helper::level_of(m_var_order, npoly);
         auto res = m_poly_ids[ref.level-1].find(npoly);
         if (res == m_poly_ids[ref.level-1].end()) {
             ref.id = m_id_pools[ref.level-1].get();
@@ -56,7 +57,7 @@ public:
 
     bool known(const Poly& poly) const {
         auto npoly = poly.normalize();
-        auto level = level_of(m_var_order, npoly);
+        auto level = helper::level_of(m_var_order, npoly);
         auto res = m_poly_ids[level-1].find(npoly);
         return res != m_poly_ids[level-1].end();
     }
