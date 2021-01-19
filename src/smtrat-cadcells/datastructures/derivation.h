@@ -34,6 +34,15 @@ base_derivation_ref<Properties> base_of(derivation_ref<Properties>& derivation) 
 }
 
 template<typename Properties>
+const base_derivation_ref<Properties> base_of(const derivation_ref<Properties>& derivation) {
+    if (std::holds_alternative<base_derivation_ref<Properties>>(derivation)) {
+        return std::get<base_derivation_ref<Properties>>(derivation);
+    } else {
+        return std::get<sampled_derivation_ref<Properties>>(derivation)->base();
+    }
+}
+
+template<typename Properties>
 class base_derivation {
     projections& m_projections;
 
@@ -61,9 +70,9 @@ public:
     }
     size_t level() { return m_level; }
 
-    auto underlying() { assert(m_level > 0); return m_underlying; }
-    auto underlying_cell() { assert(m_level > 0); return std::get<sampled_derivation_ref<Properties>>(m_underlying); }
-    assignment& underlying_sample() { assert(m_level > 0); return underlying_cell()->sample(); }
+    auto& underlying() { assert(m_level > 0); return m_underlying; }
+    auto& underlying_cell() { assert(m_level > 0); return std::get<sampled_derivation_ref<Properties>>(m_underlying); }
+    const assignment& underlying_sample() { assert(m_level > 0); return underlying_cell()->sample(); }
 
     auto& delin() { return m_delineation; }
 
@@ -84,7 +93,7 @@ public:
         assert(property.level() <= m_level && property.level() > 0);
 
         if (property.level() == m_level) {
-            return get<P>(m_properties).contains(property);
+            return get<P>(m_properties).find(property) != get<P>(m_properties).end();
         } else {
             assert(m_underlying != nullptr);
             return base_of(m_underlying)->contains(property);
@@ -99,9 +108,9 @@ public:
     void merge(const base_derivation<Properties>& other) {
         assert(other.m_level == m_level && &other.m_projections == &m_projections);
         assert(m_delineation.empty() && other.m_delineation.empty());
-        merge(m_properties, other.m_properties);
+        merge<>(m_properties, other.m_properties);
         if (m_level > 0) {
-            base_of(m_underlying)->merge(base_of(*other.m_underlying));
+            base_of(m_underlying)->merge(*base_of(other.m_underlying));
         }
     }
 };
@@ -113,8 +122,8 @@ class sampled_derivation {
     assignment m_sample;
 
     sampled_derivation(base_derivation_ref<Properties> base, ran main_sample) : m_base(base) {
-        m_sample = base().underlying_sample();
-        m_sample.insert(base().main_var(), main_sample);
+        m_sample = base()->underlying_sample();
+        m_sample.insert(base()->main_var(), main_sample);
     }
 
     friend derivation_ref<Properties> make_derivation(projections& projections, const assignment& assignment);
@@ -122,11 +131,12 @@ class sampled_derivation {
 
 public:
     auto& proj() { return m_base->proj(); }
+    auto& polys() { return proj().polys(); }
     auto& base() { return m_base; }
     const delineation_cell& cell() { return *m_cell; }
 
     void delineate_cell() {
-        m_cell = base()->delin().delineate_cell(m_sample(base().main_var()));
+        m_cell = base()->delin().delineate_cell(m_sample.at(base()->main_var()));
     }
 
     const assignment& sample() {
@@ -176,11 +186,12 @@ void merge_underlying(std::vector<derivation_ref<Properties>>& derivations) {
         underlying.insert(base_of(base_of(deriv)->underlying()));
     }
     assert(!underlying.empty());
+    auto first_underlying = *underlying.begin();
     for (auto iter = std::next(underlying.begin()); iter != underlying.end(); iter++) {
-        (*underlying.begin())->merge(*iter);
+        first_underlying->merge(**iter);
     }
-    for (const auto& deriv : derivations) {
-        base_of(deriv)->m_underlying = *underlying.begin();
+    for (auto& deriv : derivations) {
+        base_of(deriv)->m_underlying = first_underlying;
     }
 }
 

@@ -30,7 +30,7 @@ void merge(properties<T>& sets_a, const properties<T>& sets_b) {
 }
 
 template <class T, class... Ts>
-void get(properties<T, Ts...>& sets_a, const properties<T, Ts...>& sets_b) {
+void merge(properties<T, Ts...>& sets_a, const properties<T, Ts...>& sets_b) {
     sets_a.content.insert(sets_b.content.begin(), sets_b.content.end());
 
     properties<Ts...>& base_a = sets_a;

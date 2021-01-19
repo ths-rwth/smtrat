@@ -29,6 +29,7 @@ public:
     cell(bound lower, indexed_root upper) : m_upper(upper), m_type(type::sector) {}
     cell(indexed_root lower, bound upper) : m_lower(lower), m_type(type::sector) {}
     cell(bound lower, bound upper) : m_type(type::sector) {}
+    cell() : m_type(type::sector) {}
 
     bool is_sector() const {
         return m_type == type::sector;
@@ -85,7 +86,7 @@ public:
      * 
      * relations need to be added in descending order of the first elements
      */
-    void add_below_cell(indexed_root first, indexed_root second) {
+    void add_below(indexed_root first, indexed_root second) {
         return add(m_data_below, first, second);
     }
 
@@ -94,7 +95,7 @@ public:
      * 
      * relations need to be added in ascending order of the first elements
      */
-    void add_above_cell(indexed_root first, indexed_root second) {
+    void add_above(indexed_root first, indexed_root second) {
         return add(m_data_above, first, second);
     }
 

@@ -17,53 +17,6 @@ namespace smtrat::cadcells::representation {
     template<typename T, cell_heuristic H>
     std::optional<datastructures::cell_representation<T>> compute_cell_representation(datastructures::sampled_derivation_ref<T>& der);
 
-    
-
-    template<typename T>
-    std::optional<datastructures::cell_representation<T>> compute_cell_representation<cell_heuristic::DEFAULT>(datastructures::sampled_derivation_ref<T>& der) {
-        datastructures::cell_representation<T> response;
-        response.cell = compute_simplest_cell(der.delin());
-
-        if (der.cell().is_section()) {
-            for (const auto& poly : der.delin().nullified()) {
-                response.equational.push_back(poly);
-            }
-            for (const auto& poly : der.delin().nonzero()) {
-                response.equational.push_back(poly);
-            }
-            for (const auto& [ran,irexprs] : der.delin().roots()) {
-                for (const auto& ir : irexprs) {
-                    if (ir.idx == 1 && ir.poly != response.cell.sector_defining().poly) { // add poly only once
-                        response.equational.push_back(ir.poly);
-                    }
-                }
-            }
-        } else { // sector
-            if (!der.delin().nullified().empty()) return std::nullopt;
-
-            if (!der.cell().lower_unbounded()) {
-                auto it = std::next(der.cell().lower());
-                do {
-                    it--;
-                    for (const auto& ir : *it) {
-                        response.ordering.add_below(std::make_pair(response.cell.lower(), ir));
-                    }
-                } while(it != der.delin().roots().begin());
-            }
-            if (!der.cell().upper_unbounded()) {
-                auto it = der.cell().upper();
-                do {
-                    for (const auto& ir : *it) {
-                        response.ordering.add_above(std::make_pair(response.cell.upper(), ir));
-                    }
-                    it++;
-                } while(it != der.delin().roots().end());
-            }
-        }
-        response.derivation = der;
-        return response;
-    }
-
     datastructures::indexed_root simplest_bound(const std::vector<datastructures::indexed_root>& bounds) { // TODO later: improve
         assert(!bound.empty());
         return *bounds.begin();
@@ -81,6 +34,50 @@ namespace smtrat::cadcells::representation {
         } else {
             return datastructures::cell(simplest_bound(del.lower()->second), simplest_bound(del.upper()->second));
         }
+    }
+    
+    template<typename T>
+    std::optional<datastructures::cell_representation<T>> compute_cell_representation<cell_heuristic::DEFAULT>(datastructures::sampled_derivation_ref<T>& der) {
+        datastructures::cell_representation<T> response(der);
+        response.description = compute_simplest_cell(der->cell());
+
+        if (der->cell().is_section()) {
+            for (const auto& poly : der->base()->delin().nullified()) {
+                response.equational.insert(poly);
+            }
+            for (const auto& poly : der->base()->delin().nonzero()) {
+                response.equational.insert(poly);
+            }
+            for (const auto& [ran,irexprs] : der->base()->delin().roots()) {
+                for (const auto& ir : irexprs) {
+                    if (ir.index == 1 && ir.poly != response.description.sector_defining().poly) { // add poly only once
+                        response.equational.insert(ir.poly);
+                    }
+                }
+            }
+        } else { // sector
+            if (!der->base()->delin().nullified().empty()) return std::nullopt;
+
+            if (!der->cell().lower_unbounded()) {
+                auto it = std::next(der->cell().lower());
+                do {
+                    it--;
+                    for (const auto& ir : it->second) {
+                        response.ordering.add_below(ir, *response.description.lower());
+                    }
+                } while(it != der->base()->delin().roots().begin());
+            }
+            if (!der->cell().upper_unbounded()) {
+                auto it = der->cell().upper();
+                do {
+                    for (const auto& ir : it->second) {
+                        response.ordering.add_above(*response.description.upper(), ir);
+                    }
+                    it++;
+                } while(it != der->base()->delin().roots().end());
+            }
+        }
+        return response;
     }
 
     template<typename T>

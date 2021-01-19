@@ -80,7 +80,8 @@ void project_covering_properties<op::mccallum>(datastructures::covering_represen
     for (auto& cell_repr : repr.cells) {
         project_delineated_cell_properties<op::mccallum>(cell_repr);
     }
-    rules::covering_holds(*datastructures::base_of(repr.cells.front().derivation->base()->underlying()), repr.get_covering());
+    auto cov = repr.get_covering();
+    rules::covering_holds(*datastructures::base_of(repr.cells.front().derivation->base()->underlying()), cov);
 }
 
 }

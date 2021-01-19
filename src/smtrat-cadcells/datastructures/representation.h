@@ -12,6 +12,8 @@ namespace smtrat::cadcells::datastructures {
         indexed_root_ordering ordering;
         boost::container::flat_set<poly_ref> equational;
         sampled_derivation_ref<P> derivation;
+
+        cell_representation(sampled_derivation_ref<P>& deriv) : derivation(deriv) {}
     };
 
     template<typename P>

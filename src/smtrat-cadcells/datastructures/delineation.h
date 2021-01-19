@@ -88,7 +88,7 @@ public:
             }
         }
 
-        return std::make_shared<delineation_cell>(std::move(lower),std::move(upper),std::move(m_roots.end()));
+        return delineation_cell(std::move(lower),std::move(upper),std::move(m_roots.end()));
     }
 
     void add_root(ran&& root, indexed_root&& ir_root) {
