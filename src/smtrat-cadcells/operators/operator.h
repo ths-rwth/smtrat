@@ -20,7 +20,7 @@ template <op Op>
 void project_delineated_cell_properties(datastructures::cell_representation<typename properties_set<Op>::type>& deriv);
 
 template <op Op>
-void project_cell_properties(datastructures::base_derivation<typename properties_set<Op>::type>& deriv);
+void project_cell_properties(datastructures::sampled_derivation<typename properties_set<Op>::type>& deriv);
 
 template <op Op>
 void project_covering_properties(datastructures::covering_representation<typename properties_set<Op>::type>& repr);

@@ -53,7 +53,7 @@ void project_delineated_cell_properties<op::mccallum>(datastructures::cell_repre
         rules::poly_irrecubile_sgn_inv_ec(deriv, repr.description, poly);
     }
 
-    rules::root_ordering_holds(deriv.base()->underlying_cell(), repr.description, repr.ordering);
+    rules::root_ordering_holds(*deriv.base()->underlying_cell(), repr.description, repr.ordering);
 
     for(const auto& prop : deriv.base()->properties<properties::poly_irreducible_sgn_inv>()) {
         if (repr.equational.find(prop.poly) == repr.equational.end() && deriv.base()->delin().nonzero().find(prop.poly) == deriv.base()->delin().nonzero().end()) {
@@ -64,23 +64,23 @@ void project_delineated_cell_properties<op::mccallum>(datastructures::cell_repre
 
 template <>
 void project_cell_properties<op::mccallum>(datastructures::sampled_derivation<properties_set<op::mccallum>::type>& deriv) {
-    for(const auto& prop : deriv.properties<properties::root_well_def>()) {
-        rules::root_well_def(deriv, prop.poly, prop.idx);
+    for(const auto& prop : deriv.base()->properties<properties::root_well_def>()) {
+        rules::root_well_def(deriv, prop.root);
     }
-    for(const auto& prop : deriv.properties<properties::poly_pdel>()) {
+    for(const auto& prop : deriv.base()->properties<properties::poly_pdel>()) {
         rules::poly_pdel(deriv, prop.poly);
     }
-    for(const auto& prop : deriv.properties<properties::poly_ord_inv>()) {
+    for(const auto& prop : deriv.base()->properties<properties::poly_ord_inv>()) {
         rules::poly_ord_inv(deriv, prop.poly);
     }
 }
 
 template <>
 void project_covering_properties<op::mccallum>(datastructures::covering_representation<properties_set<op::mccallum>::type>& repr) {
-    for (const auto& cell_repr : repr.cells) {
+    for (auto& cell_repr : repr.cells) {
         project_delineated_cell_properties<op::mccallum>(cell_repr);
     }
-    rules::covering_holds(datastructures::base_of(repr.cells.front().derivation).underlying_cell(), repr.get_covering());
+    rules::covering_holds(*datastructures::base_of(repr.cells.front().derivation->base()->underlying()), repr.get_covering());
 }
 
 }

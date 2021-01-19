@@ -9,7 +9,7 @@ template<typename P>
 void root_well_def(datastructures::sampled_derivation<P>& deriv, datastructures::indexed_root root) {
     assert(deriv.contains(properties::poly_pdel{ root.poly }));
 
-    if (root.index != 1 && index != deriv.proj().num_roots(deriv.sample(), root.poly)) return;
+    if (root.index != 1 && root.index != deriv.proj().num_roots(deriv.sample(), root.poly)) return;
     else if (!deriv.proj().is_ldcf_zero(deriv.sample(), root.poly)) return;
     else {
         deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(root.poly) });
@@ -144,7 +144,7 @@ template<typename P>
 void poly_irrecubile_sgn_inv(datastructures::sampled_derivation<P>& deriv, const datastructures::cell& representative, const datastructures::indexed_root_ordering& ordering, datastructures::poly_ref poly) {
     assert(deriv.contains(properties::poly_pdel{ poly }));
     if (representative.is_section() && deriv.proj().is_zero(deriv.sample(), poly)) {
-        auto roots = deriv.proj().real_roots(poly);
+        auto roots = deriv.proj().real_roots(deriv.sample(), poly);
         auto it = std::find(roots.begin(), roots.end(), deriv.sample());
         deriv.insert(properties::root_well_def{ poly, std::distance(roots.begin(), it) + 1 });
     } else {
@@ -166,9 +166,9 @@ template<typename P>
 void covering_holds(datastructures::base_derivation<P>& deriv, const datastructures::covering& covering) {
     for (auto it = covering.cells().begin(); it != covering.cells().end()-1; it++) {
         assert(deriv.contains(properties::root_well_def{ it->upper() }));
-        assert(deriv.contains(properties::root_well_def{ (it+1)->lower() }));
-        if (it->upper()->poly != (it+1)->lower()->poly) {
-            deriv.insert(properties::poly_ord_inv{ deriv.proj().res(it->upper()->poly, (it+1)->lower()->poly) });
+        assert(deriv.contains(properties::root_well_def{ std::next(it)->lower() }));
+        if (it->upper()->poly != std::next(it)->lower()->poly) {
+            deriv.insert(properties::poly_ord_inv{ deriv.proj().res(it->upper()->poly, std::next(it)->lower()->poly) });
         }
     }
 }

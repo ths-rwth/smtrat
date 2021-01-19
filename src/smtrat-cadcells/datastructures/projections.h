@@ -18,9 +18,6 @@ struct poly_properties {
     std::map<poly_ref, poly_ref> res;
     std::optional<poly_ref> disc;
     std::optional<poly_ref> ldcf;
-    std::optional<std::map<Model, bool>> is_zero;
-    std::optional<std::map<Model, bool>> is_nullified;
-    std::optional<std::map<Model, size_t>> num_roots;
 };
 
 
@@ -77,7 +74,7 @@ public:
             assert(carl::is_constant(upoly));
             auto result = m_pool(Poly(upoly));
             assert(!is_zero(result));
-            cache(p).res.insert(q, result);
+            cache(p).res.emplace(q, result);
             return result;
         }
     }

@@ -24,10 +24,10 @@ namespace smtrat::cadcells::datastructures {
             }
             return cov;
         }
-        std::vector<sampled_derivation_ref<P>> sampled_derivations() const {
-            std::vector<sampled_derivation_ref<P>> cov;
+        std::vector<derivation_ref<P>> sampled_derivations() {
+            std::vector<derivation_ref<P>> cov;
             for (const auto& cell : cells) {
-                cov.add(cell.base);
+                cov.push_back(cell.derivation);
             }
             return cov;
         }

@@ -25,7 +25,7 @@ template<typename Properties>
 using derivation_ref = std::variant<base_derivation_ref<Properties>, sampled_derivation_ref<Properties>>;
 
 template<typename Properties>
-base_derivation_ref<Properties> base_of(derivation_ref<Properties> derivation) {
+base_derivation_ref<Properties> base_of(derivation_ref<Properties>& derivation) {
     if (std::holds_alternative<base_derivation_ref<Properties>>(derivation)) {
         return std::get<base_derivation_ref<Properties>>(derivation);
     } else {
@@ -48,6 +48,8 @@ class base_derivation {
     }
 
     friend derivation_ref<Properties> make_derivation(projections& projections, const assignment& assignment);
+
+    friend void merge_underlying(std::vector<derivation_ref<Properties>>& derivations);
 
 public:
 
@@ -73,7 +75,7 @@ public:
             get<P>(m_properties).emplace(std::move(property));
         } else {
             assert(m_underlying != nullptr);
-            m_underlying->insert(std::move(property));
+            base_of(m_underlying)->insert(std::move(property));
         }
     }
 
@@ -85,12 +87,12 @@ public:
             return get<P>(m_properties).contains(property);
         } else {
             assert(m_underlying != nullptr);
-            return m_underlying->contains(property);
+            return base_of(m_underlying)->contains(property);
         }
     }
 
     template<typename P>
-    const std::set<P> properties() {
+    const auto& properties() {
         return get<P>(m_properties);
     }
 
@@ -119,17 +121,27 @@ class sampled_derivation {
     friend class base_derivation<Properties>;
 
 public:
-    auto& proj() { return m_base.proj(); }
+    auto& proj() { return m_base->proj(); }
     auto& base() { return m_base; }
     const delineation_cell& cell() { return *m_cell; }
 
     void delineate_cell() {
-        m_cell = base().delin().delineate_cell(m_sample(base().main_var()));
+        m_cell = base()->delin().delineate_cell(m_sample(base().main_var()));
     }
 
     const assignment& sample() {
         return m_sample;
     }
+
+    template<typename P>
+    auto contains(const P& p) { return base()->contains(p); }
+
+    template<typename P>
+    void insert(P&& p) { base()->insert(p); }
+
+    template<typename P>
+    const auto& properties() { return base()->properties(); }
+
 };
 
 template<typename Properties>
@@ -152,23 +164,23 @@ derivation_ref<Properties> make_derivation(projections& proj, const assignment& 
 template<typename Properties>
 sampled_derivation_ref<Properties> make_sampled_derivation(base_derivation_ref<Properties> delineation, const ran& main_sample) {
     assert(std::holds_alternative<sampled_derivation_ref<Properties>>(delineation->m_underlying));
-    auto cell_del = std::make_shared<sampled_derivation<Properties>>(delineation, main_sample);
-    cell_del.delineate_cell();
-    return cell_del;
+    auto sampled_der = std::make_shared<sampled_derivation<Properties>>(delineation, main_sample);
+    sampled_der->delineate_cell();
+    return sampled_der;
 }
 
 template<typename Properties>
 void merge_underlying(std::vector<derivation_ref<Properties>>& derivations) {
-    std::set<derivation_ref<Properties>> underlying;
-    for (const auto& deriv : derivations) {
-        underlying.insert(base_of(base_of(deriv).underlying()));
+    std::set<base_derivation_ref<Properties>> underlying;
+    for (auto& deriv : derivations) {
+        underlying.insert(base_of(base_of(deriv)->underlying()));
     }
     assert(!underlying.empty());
-    for (auto iter = underlying.begin()+1; iter != underlying.end(); iter++) {
-        underlying.front().merge(*iter);
+    for (auto iter = std::next(underlying.begin()); iter != underlying.end(); iter++) {
+        (*underlying.begin())->merge(*iter);
     }
     for (const auto& deriv : derivations) {
-        base_of(deriv).m_underlying = underlying.front();
+        base_of(deriv)->m_underlying = *underlying.begin();
     }
 }
 

@@ -28,6 +28,7 @@ public:
     cell(indexed_root lower, indexed_root upper) : m_lower(lower), m_upper(upper), m_type(type::sector) {}
     cell(bound lower, indexed_root upper) : m_upper(upper), m_type(type::sector) {}
     cell(indexed_root lower, bound upper) : m_lower(lower), m_type(type::sector) {}
+    cell(bound lower, bound upper) : m_type(type::sector) {}
 
     bool is_sector() const {
         return m_type == type::sector;
