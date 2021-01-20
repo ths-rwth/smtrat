@@ -9,13 +9,16 @@ struct indexed_root {
     poly_ref poly;
     size_t index;
 };
+bool operator==(const indexed_root& lhs, const indexed_root& rhs) {
+    return lhs.poly == rhs.poly && lhs.index == rhs.index;
+}
 std::ostream& operator<<(std::ostream& os, const indexed_root& data) {
     os << "root(" << data.poly << ", " << data.index << ")";
     return os;
 }
 
 enum class bound { infty };
-class cell {
+class cell_description {
     enum class type { section, sector };
 
     std::optional<indexed_root> m_lower;
@@ -24,12 +27,12 @@ class cell {
 
 public:
 
-    cell(indexed_root bound) : m_lower(bound), m_type(type::section) {}
-    cell(indexed_root lower, indexed_root upper) : m_lower(lower), m_upper(upper), m_type(type::sector) {}
-    cell(bound lower, indexed_root upper) : m_upper(upper), m_type(type::sector) {}
-    cell(indexed_root lower, bound upper) : m_lower(lower), m_type(type::sector) {}
-    cell(bound lower, bound upper) : m_type(type::sector) {}
-    cell() : m_type(type::sector) {}
+    cell_description(indexed_root bound) : m_lower(bound), m_type(type::section) {}
+    cell_description(indexed_root lower, indexed_root upper) : m_lower(lower), m_upper(upper), m_type(type::sector) {}
+    cell_description(bound lower, indexed_root upper) : m_upper(upper), m_type(type::sector) {}
+    cell_description(indexed_root lower, bound upper) : m_lower(lower), m_type(type::sector) {}
+    cell_description(bound lower, bound upper) : m_type(type::sector) {}
+    cell_description() : m_type(type::sector) {}
 
     bool is_sector() const {
         return m_type == type::sector;
@@ -53,11 +56,11 @@ public:
     }
 };
 
-class covering {
-    std::vector<cell> m_data;
+class covering_description {
+    std::vector<cell_description> m_data;
 
 public:
-    void add(const cell& c) {
+    void add(const cell_description& c) {
         assert(!m_data.empty() || (c.is_sector() && !c.lower()));
         assert(m_data.empty() || c.lower());
         assert(m_data.empty() || m_data.back().upper());

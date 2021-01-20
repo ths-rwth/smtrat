@@ -34,7 +34,7 @@ void merge(properties<T, Ts...>& sets_a, const properties<T, Ts...>& sets_b) {
     sets_a.content.insert(sets_b.content.begin(), sets_b.content.end());
 
     properties<Ts...>& base_a = sets_a;
-    properties<Ts...>& base_b = sets_b;
+    const properties<Ts...>& base_b = sets_b;
     return merge(base_a, base_b);
 }
 

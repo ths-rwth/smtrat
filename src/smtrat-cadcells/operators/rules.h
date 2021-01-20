@@ -82,7 +82,7 @@ void poly_irrecubile_nonzero_sgn_inv(datastructures::base_derivation<P>& deriv, 
 }
 
 template<typename P>
-void cell_connected(datastructures::sampled_derivation<P>& deriv, const datastructures::cell& representative) {
+void cell_connected(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description& representative) {
     if (representative.is_sector() && representative.lower() && representative.upper() && representative.lower()->poly != representative.upper()->poly) {
         assert(deriv.contains(properties::poly_pdel{ representative.lower()->poly }));
         assert(deriv.contains(properties::poly_pdel{ representative.upper()->poly }));
@@ -91,11 +91,11 @@ void cell_connected(datastructures::sampled_derivation<P>& deriv, const datastru
 }
 
 template<typename P>
-void cell_analytic_submanifold(datastructures::sampled_derivation<P>& deriv, const datastructures::cell& representative) {
+void cell_analytic_submanifold(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description& representative) {
 }
 
 template<typename P>
-void poly_irrecubile_sgn_inv_ec(datastructures::sampled_derivation<P>& deriv, const datastructures::cell& representative, datastructures::poly_ref poly) {
+void poly_irrecubile_sgn_inv_ec(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description& representative, datastructures::poly_ref poly) {
     assert(representative.is_section());
     assert(deriv.contains(properties::poly_pdel{ representative.sector_defining().poly }));
     assert(deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(representative.sector_defining().poly) }));
@@ -111,7 +111,7 @@ void root_represents(datastructures::sampled_derivation<P>& deriv, datastructure
 }
 
 template<typename P>
-void cell_represents(datastructures::sampled_derivation<P>& deriv, const datastructures::cell& representative) {
+void cell_represents(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description& representative) {
     if (representative.lower()) {
         root_represents(deriv, *representative.lower());
     }
@@ -121,7 +121,7 @@ void cell_represents(datastructures::sampled_derivation<P>& deriv, const datastr
 }
 
 template<typename P>
-void root_ordering_holds(datastructures::sampled_derivation<P>& deriv, const datastructures::cell& representative, const datastructures::indexed_root_ordering& ordering) {
+void root_ordering_holds(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description& representative, const datastructures::indexed_root_ordering& ordering) {
     for (const auto& rel : ordering.below()) {
         if (rel.first.poly != rel.second.poly) {
             assert(deriv.contains(properties::poly_pdel{ rel.first.poly }));
@@ -141,7 +141,7 @@ void root_ordering_holds(datastructures::sampled_derivation<P>& deriv, const dat
 }
 
 template<typename P>
-void poly_irrecubile_sgn_inv(datastructures::sampled_derivation<P>& deriv, const datastructures::cell& representative, const datastructures::indexed_root_ordering& ordering, datastructures::poly_ref poly) {
+void poly_irrecubile_sgn_inv(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description& representative, const datastructures::indexed_root_ordering& ordering, datastructures::poly_ref poly) {
     assert(deriv.contains(properties::poly_pdel{ poly }));
     if (representative.is_section() && deriv.proj().is_zero(deriv.sample(), poly)) {
         auto roots = deriv.proj().real_roots(deriv.sample(), poly);
@@ -163,7 +163,7 @@ void poly_irrecubile_sgn_inv(datastructures::sampled_derivation<P>& deriv, const
 }
 
 template<typename P>
-void covering_holds(datastructures::base_derivation<P>& deriv, const datastructures::covering& covering) {
+void covering_holds(datastructures::base_derivation<P>& deriv, const datastructures::covering_description& covering) {
     for (auto it = covering.cells().begin(); it != covering.cells().end()-1; it++) {
         assert(deriv.contains(properties::root_well_def{ it->upper() }));
         assert(deriv.contains(properties::root_well_def{ std::next(it)->lower() }));

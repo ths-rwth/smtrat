@@ -11,7 +11,7 @@ inline MultivariateRootT as_multivariate_root(const datastructures::poly_pool& p
     return MultivariateRootT(Poly(carl::UnivariatePolynomial<Poly>(MultivariateRootT::var(), carl::to_univariate_polynomial(poly, main_var).coefficients())), r.index);
 }
 
-FormulaT to_formula(const datastructures::poly_pool& pool, carl::Variable main_var, datastructures::cell c) {
+FormulaT to_formula(const datastructures::poly_pool& pool, carl::Variable main_var, datastructures::cell_description& c) {
     if (c.is_section()) {
         return FormulaT(VariableComparisonT(main_var, as_multivariate_root(pool,main_var,c.sector_defining()), carl::Relation::EQ));
     } else {

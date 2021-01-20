@@ -8,7 +8,7 @@
 namespace smtrat::cadcells::datastructures {
     template<typename P>
     struct cell_representation {
-        cell description;
+        cell_description description;
         indexed_root_ordering ordering;
         boost::container::flat_set<poly_ref> equational;
         sampled_derivation_ref<P> derivation;
@@ -19,8 +19,8 @@ namespace smtrat::cadcells::datastructures {
     template<typename P>
     struct covering_representation {
         std::vector<cell_representation<P>> cells;
-        covering get_covering() const {
-            covering cov;
+        covering_description get_covering() const {
+            covering_description cov;
             for (const auto& cell : cells) {
                 cov.add(cell.description);
             }

@@ -72,14 +72,14 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
 }
 */
 
-std::optional<datastructures::sampled_derivation_ref<propset>> covering(datastructures::projections& proj, const std::set<ConstraintT>& constraints, const assignment& sample) {
+std::optional<datastructures::sampled_derivation_ref<propset>> get_covering(datastructures::projections& proj, const std::set<ConstraintT>& constraints, const assignment& sample) {
     std::vector<datastructures::sampled_derivation_ref<propset>> unsat_cells;
     for (const auto& c : constraints) {
         auto intervals = get_unsat_intervals(c, proj, sample);
         unsat_cells.insert(unsat_cells.end(), intervals.begin(), intervals.end());
     }
 
-    auto covering_repr = representation::compute_covering_representation(unsat_cells); // TODO distinguish between: not enough interval for covering and mccallum fails
+    auto covering_repr = representation::covering<representation::default_covering>::compute(unsat_cells); // TODO distinguish between: not enough interval for covering and mccallum fails
     if (!covering_repr) {
         return std::nullopt;
     }
@@ -95,7 +95,7 @@ FormulaT onecell(const std::set<ConstraintT>& constraints, const variable_orderi
     datastructures::poly_pool pool(vars);
     datastructures::projections proj(pool);
 
-    auto cov_res = covering(proj, constraints, sample);
+    auto cov_res = get_covering(proj, constraints, sample);
     if (!cov_res) {
         return FormulaT();
     }
@@ -107,7 +107,7 @@ FormulaT onecell(const std::set<ConstraintT>& constraints, const variable_orderi
         operators::project_basic_properties<op>(*cell_deriv->base());
         operators::delineate_properties<op>(*cell_deriv->base());
         cell_deriv->delineate_cell();
-        auto cell_repr = representation::compute_cell_representation(cell_deriv);
+        auto cell_repr = representation::cell<representation::default_cell>::compute(cell_deriv);
         if (!cell_repr) {
             return FormulaT();
         }

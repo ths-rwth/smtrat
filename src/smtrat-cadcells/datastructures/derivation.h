@@ -56,9 +56,11 @@ class base_derivation {
         assert(level == 0 && underlying == std::nullptr || level > 0 && underlying != std::nullptr);
     }
 
-    friend derivation_ref<Properties> make_derivation(projections& projections, const assignment& assignment);
+    template<typename P>
+    friend derivation_ref<P> make_derivation(projections& projections, const assignment& assignment);
 
-    friend void merge_underlying(std::vector<derivation_ref<Properties>>& derivations);
+    template<typename P>
+    friend void merge_underlying(std::vector<derivation_ref<P>>& derivations);
 
 public:
 
@@ -77,14 +79,14 @@ public:
     auto& delin() { return m_delineation; }
 
     template<typename P>
-    void insert(P&& property) {
+    void insert(P property) {
         assert(property.level() <= m_level && property.level() > 0);
 
         if (property.level() == m_level) {
-            get<P>(m_properties).emplace(std::move(property));
+            get<P>(m_properties).emplace(property);
         } else {
             assert(m_underlying != nullptr);
-            base_of(m_underlying)->insert(std::move(property));
+            base_of(m_underlying)->insert(property);
         }
     }
 
@@ -105,12 +107,12 @@ public:
         return get<P>(m_properties);
     }
 
-    void merge(const base_derivation<Properties>& other) {
+    void merge_with(const base_derivation<Properties>& other) {
         assert(other.m_level == m_level && &other.m_projections == &m_projections);
         assert(m_delineation.empty() && other.m_delineation.empty());
-        merge<>(m_properties, other.m_properties);
+        merge(m_properties, other.m_properties);
         if (m_level > 0) {
-            base_of(m_underlying)->merge(*base_of(other.m_underlying));
+            base_of(m_underlying)->merge_with(*base_of(other.m_underlying));
         }
     }
 };
@@ -126,8 +128,8 @@ class sampled_derivation {
         m_sample.insert(base()->main_var(), main_sample);
     }
 
-    friend derivation_ref<Properties> make_derivation(projections& projections, const assignment& assignment);
-    friend class base_derivation<Properties>;
+    template<typename P>
+    friend derivation_ref<P> make_derivation(projections& projections, const assignment& assignment);
 
 public:
     auto& proj() { return m_base->proj(); }
@@ -188,7 +190,7 @@ void merge_underlying(std::vector<derivation_ref<Properties>>& derivations) {
     assert(!underlying.empty());
     auto first_underlying = *underlying.begin();
     for (auto iter = std::next(underlying.begin()); iter != underlying.end(); iter++) {
-        first_underlying->merge(**iter);
+        first_underlying->merge_with(**iter);
     }
     for (auto& deriv : derivations) {
         base_of(deriv)->m_underlying = first_underlying;
