@@ -145,7 +145,7 @@ void poly_irrecubile_sgn_inv(datastructures::sampled_derivation<P>& deriv, const
     assert(deriv.contains(properties::poly_pdel{ poly }));
     if (representative.is_section() && deriv.proj().is_zero(deriv.sample(), poly)) {
         auto roots = deriv.proj().real_roots(deriv.sample(), poly);
-        auto it = std::find(roots.begin(), roots.end(), deriv.sample());
+        auto it = std::find(roots.begin(), roots.end(), deriv.main_var_sample());
         deriv.insert(properties::root_well_def{ poly, std::distance(roots.begin(), it) + 1 });
     } else {
         assert(!deriv.proj().is_zero(deriv.sample(), poly));

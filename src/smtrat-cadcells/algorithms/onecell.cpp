@@ -17,7 +17,8 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
 
     assert(level_of(vars, c.lhs()) == sample.size()+1);
 
-    auto base_deriv = std::get<datastructures::base_derivation_ref<propset>>(datastructures::make_derivation<propset>(proj, sample, sample.size() + 1));
+    auto deriv = datastructures::make_derivation<propset>(proj, sample, sample.size() + 1);
+    auto base_deriv = std::get<datastructures::base_derivation_ref<propset>>(deriv);
 
     base_deriv->insert(operators::properties::poly_sgn_inv{ proj.polys()(c.lhs()) });
     operators::project_basic_properties<op>(*base_deriv);

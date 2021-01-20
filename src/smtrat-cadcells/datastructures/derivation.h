@@ -7,7 +7,7 @@
 #include "projections.h"
 #include "delineation.h"
 
-namespace smtrat::cadcells::datastructures {
+namespace smtrat::cadcells::datastructures { // TODO refactor (tidy up pseudo-polymorphism)
 
 template<typename Properties>
 class base_derivation;
@@ -52,17 +52,15 @@ class base_derivation {
 
     derivation_ref<Properties> m_underlying; 
 
-    base_derivation(const projections& projections, size_t level, derivation_ref<Properties> underlying) : m_projections(projections), m_level(level), m_underlying(underlying) {
-        assert(level == 0 && underlying == std::nullptr || level > 0 && underlying != std::nullptr);
-    }
-
-    template<typename P>
-    friend derivation_ref<P> make_derivation(projections& projections, const assignment& assignment);
-
     template<typename P>
     friend void merge_underlying(std::vector<derivation_ref<P>>& derivations);
 
 public:
+
+    // should be private, but does not work with make_shared:
+    base_derivation(projections& projections, size_t level, derivation_ref<Properties> underlying) : m_projections(projections), m_level(level), m_underlying(underlying) {
+        assert(level == 0 && underlying == std::nullptr || level > 0 && underlying != std::nullptr);
+    }
 
     auto& polys() { return m_projections.polys(); }
     auto& proj() { return m_projections; }
@@ -118,20 +116,18 @@ public:
 };
 
 template<typename Properties>
-class sampled_derivation {
+class sampled_derivation { // TODO const semantic
     base_derivation_ref<Properties> m_base;
     std::optional<delineation_cell> m_cell;
     assignment m_sample;
 
+public:
+    // should be private, but does not work with make_shared
     sampled_derivation(base_derivation_ref<Properties> base, ran main_sample) : m_base(base) {
-        m_sample = base()->underlying_sample();
-        m_sample.insert(base()->main_var(), main_sample);
+        m_sample = m_base->underlying_sample();
+        m_sample.emplace(m_base->main_var(), main_sample);
     }
 
-    template<typename P>
-    friend derivation_ref<P> make_derivation(projections& projections, const assignment& assignment);
-
-public:
     auto& proj() { return m_base->proj(); }
     auto& polys() { return proj().polys(); }
     auto& base() { return m_base; }
@@ -143,6 +139,10 @@ public:
 
     const assignment& sample() {
         return m_sample;
+    }
+
+    const ran& main_var_sample() {
+        return m_sample.at(base()->main_var());
     }
 
     template<typename P>
@@ -160,7 +160,7 @@ template<typename Properties>
 derivation_ref<Properties> make_derivation(projections& proj, const assignment& assignment, size_t level) {
     const auto& vars = proj.polys().var_order();
 
-    derivation_ref<Properties> current = std::make_shared<base_derivation<Properties>>(proj, 0, nullptr);
+    derivation_ref<Properties> current = std::make_shared<base_derivation<Properties>>(proj, 0, base_derivation_ref<Properties>(nullptr));
     for (size_t i = 1; i <= level; i++) {
         if (assignment.find(vars[level-1]) != assignment.end()) {
             auto base = std::make_shared<base_derivation<Properties>>(proj, level, current);

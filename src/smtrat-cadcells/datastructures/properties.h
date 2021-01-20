@@ -5,21 +5,28 @@
 
 namespace smtrat::cadcells::datastructures {
 
+template<typename T>
+struct property_hash {
+    std::size_t operator()(const T& p) const {
+        return p.hash_on_level();
+    }
+};
+
 template<typename... Ts>
 struct properties {};
 
 template <class T, class... Ts>
 struct properties<T, Ts...> : properties<Ts...> {
-    std::unordered_set<T> content;
+    std::unordered_set<T, property_hash<T>> content; 
 };
 
 template <class T, class... Ts>
-std::unordered_set<T>& get(properties<T, Ts...>& sets) {
+auto& get(properties<T, Ts...>& sets) {
     return sets.content;
 }
 
 template <class S, class T, class... Ts, typename std::enable_if<!std::is_same<S, T>::value>::type>
-std::unordered_set<S>& get(properties<T, Ts...>& sets) {
+auto& get(properties<T, Ts...>& sets) {
     properties<Ts...>& base = sets;
     return get<S>(base);
 }

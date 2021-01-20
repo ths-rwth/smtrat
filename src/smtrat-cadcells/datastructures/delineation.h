@@ -41,17 +41,13 @@ public:
 class delineation {
     friend class delineation_cell;
 
-    carl::Variable m_main_var;
     root_map m_roots;
     boost::container::flat_set<poly_ref> m_polys_nullified;
     boost::container::flat_set<poly_ref> m_polys_noroot;
 
 public: 
-    delineation(carl::Variable main_var) : m_main_var(main_var) {}
+    delineation() {}
 
-    const auto main_var() const {
-        return m_main_var;
-    }
     const auto& roots() const {
         return m_roots;
     }
@@ -92,7 +88,6 @@ public:
     }
 
     void add_root(ran&& root, indexed_root&& ir_root) {
-        assert(proj.main_var(ir_root.poly) == m_main_var);
         auto irs = m_roots.find(root);
         if (irs == m_roots.end()) {
             irs = m_roots.emplace(std::move(root), std::vector<indexed_root>()).first;
