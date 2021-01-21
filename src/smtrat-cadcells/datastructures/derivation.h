@@ -55,11 +55,14 @@ class base_derivation {
     template<typename P>
     friend void merge_underlying(std::vector<derivation_ref<P>>& derivations);
 
+    template<typename P>
+    friend sampled_derivation_ref<P> make_sampled_derivation(base_derivation_ref<P> base, const ran& main_sample);
+
 public:
 
     // should be private, but does not work with make_shared:
     base_derivation(projections& projections, size_t level, derivation_ref<Properties> underlying) : m_projections(projections), m_level(level), m_underlying(underlying) {
-        assert(level == 0 && underlying == std::nullptr || level > 0 && underlying != std::nullptr);
+        // assert(level == 0 && underlying == nullptr || level > 0 && underlying != nullptr);
     }
 
     auto& polys() { return m_projections.polys(); }
@@ -72,7 +75,7 @@ public:
 
     auto& underlying() { assert(m_level > 0); return m_underlying; }
     auto& underlying_cell() { assert(m_level > 0); return std::get<sampled_derivation_ref<Properties>>(m_underlying); }
-    const assignment& underlying_sample() { assert(m_level > 0); return underlying_cell()->sample(); }
+    const assignment& underlying_sample() { assert(m_level > 0); return underlying_cell()->sample(); } // TODO causes segfault
 
     auto& delin() { return m_delineation; }
 
@@ -83,7 +86,7 @@ public:
         if (property.level() == m_level) {
             get<P>(m_properties).emplace(property);
         } else {
-            assert(m_underlying != nullptr);
+            // assert(m_underlying != nullptr);
             base_of(m_underlying)->insert(property);
         }
     }
@@ -95,7 +98,7 @@ public:
         if (property.level() == m_level) {
             return get<P>(m_properties).find(property) != get<P>(m_properties).end();
         } else {
-            assert(m_underlying != nullptr);
+            // assert(m_underlying != nullptr);
             return base_of(m_underlying)->contains(property);
         }
     }
@@ -174,9 +177,9 @@ derivation_ref<Properties> make_derivation(projections& proj, const assignment& 
 }
 
 template<typename Properties>
-sampled_derivation_ref<Properties> make_sampled_derivation(base_derivation_ref<Properties> delineation, const ran& main_sample) {
-    assert(std::holds_alternative<sampled_derivation_ref<Properties>>(delineation->m_underlying));
-    auto sampled_der = std::make_shared<sampled_derivation<Properties>>(delineation, main_sample);
+sampled_derivation_ref<Properties> make_sampled_derivation(base_derivation_ref<Properties> base, const ran& main_sample) {
+    assert(std::holds_alternative<sampled_derivation_ref<Properties>>(base->m_underlying));
+    auto sampled_der = std::make_shared<sampled_derivation<Properties>>(base, main_sample);
     sampled_der->delineate_cell();
     return sampled_der;
 }

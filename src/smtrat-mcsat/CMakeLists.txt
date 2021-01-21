@@ -13,12 +13,14 @@ target_link_libraries(smtrat-mcsat-shared
 	smtrat-solver-shared
 	smtrat-module-LRAModule-shared
 	smtrat-module-VSModule-shared
+	smtrat-cadcells-shared
 )
 target_link_libraries(smtrat-mcsat-static
 	smtrat-common-static
 	smtrat-solver-static
 	smtrat-module-LRAModule-static
 	smtrat-module-VSModule-static
+	smtrat-cadcells-static
 )
 
 install_libraries(smtrat smtrat-mcsat-shared smtrat-mcsat-static)

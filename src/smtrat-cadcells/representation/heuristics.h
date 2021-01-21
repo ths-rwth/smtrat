@@ -26,7 +26,7 @@ namespace smtrat::cadcells::representation {
     template <>
     struct cell<cell_heuristic::default_cell> {
         static datastructures::indexed_root simplest_bound(const std::vector<datastructures::indexed_root>& bounds) { // TODO later: improve
-            assert(!bound.empty());
+            assert(!bounds.empty());
             return *bounds.begin();
         }
 
@@ -100,7 +100,7 @@ namespace smtrat::cadcells::representation {
 
             std::sort(sorted_ders.begin(), sorted_ders.end(), [](const datastructures::sampled_derivation_ref<T>& p_cell1, const datastructures::sampled_derivation_ref<T>& p_cell2) { // cell1 < cell2
                 const auto& cell1 = p_cell1->cell();
-                const auto& cell2 = p_cell1->cell();
+                const auto& cell2 = p_cell2->cell();
                 return lower_less(cell1, cell2) || (lower_equal(cell1, cell2) && upper_less(cell1, cell2));
             });
 

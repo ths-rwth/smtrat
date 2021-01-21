@@ -142,11 +142,11 @@ public:
     }
 
     bool is_ldcf_zero(const assignment& sample, poly_ref p) {
-        return is_zero(ldcf(p));
+        return is_zero(sample, ldcf(p));
     }
 
     bool is_disc_zero(const assignment& sample, poly_ref p) {
-        return is_zero(disc(p));
+        return is_zero(sample, disc(p));
     }
 
     bool is_const(poly_ref p) {

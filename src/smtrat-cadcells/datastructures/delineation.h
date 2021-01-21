@@ -17,7 +17,7 @@ class delineation_cell { // TODO rename
     friend class delineation;
 
 public:
-    const bool is_section() const {
+    bool is_section() const {
         return m_lower != m_end && m_upper != m_end && m_lower == m_upper;
     }
 
@@ -25,7 +25,7 @@ public:
         assert(m_lower != m_end);
         return m_lower;
     }
-    const bool lower_unbounded() const {
+    bool lower_unbounded() const {
         return m_lower != m_end;
     }
 
@@ -33,7 +33,7 @@ public:
         assert(m_upper != m_end);
         return m_upper;
     }
-    const bool upper_unbounded() const {
+    bool upper_unbounded() const {
         return m_upper != m_end;
     }
 };    
