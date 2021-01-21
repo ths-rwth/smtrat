@@ -11,6 +11,7 @@
 #include <smtrat-mcsat/explanations/vs/Explanation.h>
 #include <smtrat-mcsat/explanations/fm/Explanation.h>
 #include <smtrat-mcsat/variableordering/VariableOrdering.h>
+#include <smtrat-mcsat/explanations/onecell/Explanation.h>
 
 namespace smtrat {
 namespace mcsat {
@@ -25,6 +26,10 @@ struct MCSATSettingsNL {
 struct MCSATSettingsOC {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
     using ExplanationBackend = SequentialExplanation<onecellcad::Explanation, nlsat::Explanation>;
+};
+struct MCSATSettingsOCNew {
+	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+    using ExplanationBackend = SequentialExplanation<onecell::Explanation, nlsat::Explanation>;
 };
 struct MCSATSettingsFMVSOC {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
