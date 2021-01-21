@@ -5,6 +5,6 @@
 
 namespace smtrat::cadcells::algorithms {
 
-void onecell(const std::set<Poly>& polynomials, const variable_ordering& vars, const assignment& sample);
+std::optional<FormulaT> onecell(const FormulasT& constraints, const variable_ordering& vars, const assignment& sample);
 
 }
