@@ -125,11 +125,13 @@ std::optional<datastructures::sampled_derivation_ref<propset>> get_covering(data
         unsat_cells.insert(unsat_cells.end(), intervals.begin(), intervals.end());
     }
 
+    SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Computing covering representation");
     auto covering_repr = representation::covering<representation::default_covering>::compute(unsat_cells); // TODO distinguish between: not enough interval for covering and mccallum fails
     if (!covering_repr) {
         return std::nullopt;
     }
 
+    SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Compute covering projection");
     auto cell_derivs = covering_repr->sampled_derivations();
     datastructures::merge_underlying(cell_derivs);
     operators::project_covering_properties<op>(*covering_repr);
@@ -150,14 +152,19 @@ std::optional<FormulaT> onecell(const FormulasT& constraints, const variable_ord
 
     FormulasT description;
     while (cell_deriv->base()->level() > 0) {
+        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Constructing cell on level " << cell_deriv->base()->level());
+
+        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project properties and delineate");
         operators::project_cell_properties<op>(*cell_deriv);
         operators::project_basic_properties<op>(*cell_deriv->base());
         operators::delineate_properties<op>(*cell_deriv->delineated());
         cell_deriv->delineate_cell();
+        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Compute cell representation");
         auto cell_repr = representation::cell<representation::default_cell>::compute(cell_deriv);
         if (!cell_repr) {
             return std::nullopt;
         }
+        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project cell");
         operators::project_delineated_cell_properties<op>(*cell_repr);
 
         description.emplace_back(helper::to_formula(proj.polys(), cell_deriv->main_var(),cell_repr->description));

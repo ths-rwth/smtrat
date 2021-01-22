@@ -30,44 +30,6 @@ public:
     derivation_ref(const delineated_derivation_ref<Properties>& data) : m_data(data) {}
     derivation_ref(const sampled_derivation_ref<Properties>& data) : m_data(data) {}
 
-    auto& base() {
-        if (std::holds_alternative<base_derivation_ref<Properties>>(m_data)) {
-            return *std::get<base_derivation_ref<Properties>>(m_data);
-        } else if (std::holds_alternative<delineated_derivation_ref<Properties>>(m_data)) {
-            return *std::get<delineated_derivation_ref<Properties>>(m_data)->base();
-        } else {
-            return *std::get<sampled_derivation_ref<Properties>>(m_data)->base();
-        }
-    }
-    auto& delineated() {
-        if (std::holds_alternative<delineated_derivation_ref<Properties>>(m_data)) {
-            return *std::get<delineated_derivation_ref<Properties>>(m_data);
-        } else {
-            return *std::get<sampled_derivation_ref<Properties>>(m_data)->delineated();
-        }
-    }
-    auto& sampled() {
-        return *std::get<sampled_derivation_ref<Properties>>(m_data);
-    }
-    const auto& base() const {
-        if (std::holds_alternative<base_derivation_ref<Properties>>(m_data)) {
-            return *std::get<base_derivation_ref<Properties>>(m_data);
-        } else if (std::holds_alternative<delineated_derivation_ref<Properties>>(m_data)) {
-            return *std::get<delineated_derivation_ref<Properties>>(m_data)->base();
-        } else {
-            return *std::get<sampled_derivation_ref<Properties>>(m_data)->base();
-        }
-    }
-    const auto& delineated() const {
-        if (std::holds_alternative<delineated_derivation_ref<Properties>>(m_data)) {
-            return *std::get<delineated_derivation_ref<Properties>>(m_data);
-        } else {
-            return *std::get<sampled_derivation_ref<Properties>>(m_data)->delineated();
-        }
-    }
-    const auto& sampled() const {
-        return *std::get<sampled_derivation_ref<Properties>>(m_data);
-    }
     bool is_null() const {
         if (std::holds_alternative<base_derivation_ref<Properties>>(m_data)) {
             return std::get<base_derivation_ref<Properties>>(m_data) == nullptr;
@@ -80,12 +42,14 @@ public:
     bool is_sampled() const {
         return std::holds_alternative<sampled_derivation_ref<Properties>>(m_data);
     }
+
     auto& base_ref() {
         if (std::holds_alternative<base_derivation_ref<Properties>>(m_data)) {
             return std::get<base_derivation_ref<Properties>>(m_data);
         } else if (std::holds_alternative<delineated_derivation_ref<Properties>>(m_data)) {
             return std::get<delineated_derivation_ref<Properties>>(m_data)->base();
         } else {
+            assert(is_sampled());
             return std::get<sampled_derivation_ref<Properties>>(m_data)->base();
         }
     }
@@ -93,12 +57,53 @@ public:
         if (std::holds_alternative<delineated_derivation_ref<Properties>>(m_data)) {
             return std::get<delineated_derivation_ref<Properties>>(m_data);
         } else {
+            assert(is_sampled());
             return std::get<sampled_derivation_ref<Properties>>(m_data)->delineated();
         }
     }
     auto& sampled_ref() {
+        assert(is_sampled());
         return std::get<sampled_derivation_ref<Properties>>(m_data);
     }
+
+    const auto& base_ref() const {
+        if (std::holds_alternative<base_derivation_ref<Properties>>(m_data)) {
+            return std::get<base_derivation_ref<Properties>>(m_data);
+        } else if (std::holds_alternative<delineated_derivation_ref<Properties>>(m_data)) {
+            return std::get<delineated_derivation_ref<Properties>>(m_data)->base();
+        } else {
+            assert(is_sampled());
+            return std::get<sampled_derivation_ref<Properties>>(m_data)->base();
+        }
+    }
+    const auto& delineated_ref() const {
+        if (std::holds_alternative<delineated_derivation_ref<Properties>>(m_data)) {
+            return std::get<delineated_derivation_ref<Properties>>(m_data);
+        } else {
+            assert(is_sampled());
+            return std::get<sampled_derivation_ref<Properties>>(m_data)->delineated();
+        }
+    }
+    const auto& sampled_ref() const {
+        assert(is_sampled());
+        return std::get<sampled_derivation_ref<Properties>>(m_data);
+    }
+
+    auto& base() { return *base_ref(); }
+    auto& delineated() { return *delineated_ref(); }
+    auto& sampled() { return *sampled_ref(); }
+    const auto& base() const { return *base_ref(); }
+    const auto& delineated() const { return *delineated_ref(); }
+    const auto& sampled() const { return *sampled_ref(); }  
+
+    template<typename P>
+    friend bool operator==(const derivation_ref<P>& lhs, const derivation_ref<P>& rhs) {
+        return lhs.m_data == rhs.m_data;
+    }  
+    template<typename P>
+    friend bool operator<(const derivation_ref<P>& lhs, const derivation_ref<P>& rhs) {
+        return lhs.m_data < rhs.m_data;
+    }  
 };
 
 
@@ -284,14 +289,14 @@ sampled_derivation_ref<Properties> make_sampled_derivation(delineated_derivation
 
 template<typename Properties>
 void merge_underlying(std::vector<std::reference_wrapper<sampled_derivation<Properties>>>& derivations) {
-    std::set<base_derivation_ref<Properties>> underlying;
+    std::set<derivation_ref<Properties>> underlying;
     for (auto& deriv : derivations) {
-        underlying.insert(deriv.get().underlying().base_ref());
+        underlying.insert(deriv.get().underlying());
     }
     assert(!underlying.empty());
     auto first_underlying = *underlying.begin();
     for (auto iter = std::next(underlying.begin()); iter != underlying.end(); iter++) {
-        first_underlying->merge_with(**iter);
+        first_underlying.base().merge_with(iter->base());
     }
     for (auto& deriv : derivations) {
         deriv.get().base()->m_underlying = first_underlying;

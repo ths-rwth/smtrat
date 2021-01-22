@@ -26,7 +26,7 @@ public:
         return m_lower;
     }
     bool lower_unbounded() const {
-        return m_lower != m_end;
+        return m_lower == m_end;
     }
 
     const auto& upper() const {
@@ -34,7 +34,7 @@ public:
         return m_upper;
     }
     bool upper_unbounded() const {
-        return m_upper != m_end;
+        return m_upper == m_end;
     }
 };    
 
@@ -117,12 +117,13 @@ bool lower_less(const delineation_interval& del1, const delineation_interval& de
 
 bool lower_equal(const delineation_interval& del1, const delineation_interval& del2) {
     if (del1.lower_unbounded() && del2.lower_unbounded()) return true;
+    if (del1.lower_unbounded() != del2.lower_unbounded()) return false;
     else if (del1.lower()->first != del2.lower()->first) return false;
     else return del1.is_section() && del2.is_section();
 }
 
 bool upper_less(const delineation_interval& del1, const delineation_interval& del2) {
-    if (del1.upper_unbounded()) return !del2.lower_unbounded();
+    if (del1.upper_unbounded()) return !del2.upper_unbounded();
     else if (del2.upper_unbounded()) return true;
     else if (del1.upper()->first < del2.upper()->first) return true;
     else if (del1.upper()->first == del2.upper()->first) return del1.is_section() && !del2.is_section();
