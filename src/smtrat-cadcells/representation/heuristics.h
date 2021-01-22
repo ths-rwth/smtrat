@@ -30,7 +30,7 @@ namespace smtrat::cadcells::representation {
             return *bounds.begin();
         }
 
-        static datastructures::cell_description compute_simplest_cell(const datastructures::delineation_cell& del) {
+        static datastructures::cell_description compute_simplest_cell(const datastructures::delineation_interval& del) {
             if (del.is_section()) {
                 return datastructures::cell_description(simplest_bound(del.lower()->second));
             } else if (del.lower_unbounded() && del.upper_unbounded()) {

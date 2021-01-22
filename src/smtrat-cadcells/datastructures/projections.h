@@ -46,7 +46,7 @@ class projections {
 
 public:
     auto main_var(poly_ref p) const {
-        return m_pool.var_order()[p.level];
+        return m_pool.var_order()[p.level-1];
     }
 
 private:
@@ -111,11 +111,15 @@ public:
     }
 
     size_t num_roots(const assignment& sample, poly_ref p) { // TODO cache
-        return carl::real_roots(as_univariate(p), sample).roots().size();
+        auto rrs = carl::real_roots(as_univariate(p), sample);
+        assert(rrs.is_univariate());
+        return rrs.roots().size();
     }
 
     std::vector<ran> real_roots(const assignment& sample, poly_ref p) { // TODO cache
-        return carl::real_roots(as_univariate(p), sample).roots();
+        auto rrs = carl::real_roots(as_univariate(p), sample);
+        assert(rrs.is_univariate());
+        return rrs.roots();
     }
 
     std::vector<poly_ref> factors_nonconst(poly_ref p) { // TODO cache
@@ -136,7 +140,6 @@ public:
         auto poly = m_pool(p);
 		assert(!poly.isConstant());
 		if (poly.isLinear()) return false;
-
 		return carl::real_roots(as_univariate(p), sample).is_nullified();
     }
 

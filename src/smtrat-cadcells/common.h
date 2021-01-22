@@ -10,5 +10,7 @@ using ran = carl::real_algebraic_number<Rational>;
 using assignment = carl::ran_assignment<Rational>;
 using variable_ordering = std::vector<carl::Variable>;
 
+static const assignment empty_assignment;
+
 }
 

@@ -5,7 +5,7 @@
 #include "../representation/heuristics.h"
 
 
-namespace smtrat::cadcells::algorithms { // TODO write mcsat backend!
+namespace smtrat::cadcells::algorithms {
 
 constexpr auto op = operators::op::mccallum;
 using propset = operators::properties_set<op>::type;
@@ -142,7 +142,7 @@ std::optional<FormulaT> onecell(const FormulasT& constraints, const variable_ord
     datastructures::poly_pool pool(vars);
     datastructures::projections proj(pool);
 
-    auto cov_res = get_covering(proj, constraints, sample);
+    auto cov_res = get_covering(proj, constraints, sample); // TODO alternative to covering: project delineation
     if (!cov_res) {
         return std::nullopt;
     }
