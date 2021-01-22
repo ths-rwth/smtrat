@@ -14,7 +14,7 @@ template <op Op>
 void project_basic_properties(datastructures::base_derivation<typename properties_set<Op>::type>& deriv);
 
 template <op Op>
-void delineate_properties(datastructures::base_derivation<typename properties_set<Op>::type>& deriv);
+void delineate_properties(datastructures::delineated_derivation<typename properties_set<Op>::type>& deriv);
 
 template <op Op>
 void project_delineated_cell_properties(datastructures::cell_representation<typename properties_set<Op>::type>& deriv);

@@ -73,7 +73,7 @@ void poly_sgn_inv(datastructures::base_derivation<P>& deriv, datastructures::pol
 }
 
 template<typename P>
-void poly_irrecubile_nonzero_sgn_inv(datastructures::base_derivation<P>& deriv, datastructures::poly_ref poly) {
+void poly_irrecubile_nonzero_sgn_inv(datastructures::delineated_derivation<P>& deriv, datastructures::poly_ref poly) {
     assert(deriv.contains(properties::poly_pdel{ poly }));
     assert(deriv.proj().num_roots(deriv.underlying_sample(), poly) == 0);
     if (deriv.proj().is_ldcf_zero(deriv.underlying_sample(), poly)) {
@@ -165,7 +165,7 @@ void poly_irrecubile_sgn_inv(datastructures::sampled_derivation<P>& deriv, const
 }
 
 template<typename P>
-void covering_holds(datastructures::base_derivation<P>& deriv, const datastructures::covering_description& covering) {
+void covering_holds(datastructures::delineated_derivation<P>& deriv, const datastructures::covering_description& covering) {
     for (auto it = covering.cells().begin(); it != covering.cells().end()-1; it++) {
         assert(deriv.contains(properties::root_well_def{ *it->upper() }));
         assert(deriv.contains(properties::root_well_def{ *std::next(it)->lower() }));

@@ -12,7 +12,7 @@ namespace smtrat::cadcells::operators {
 
 template <>
 struct properties_set<op::mccallum> {
-    using type = datastructures::properties<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel>;
+    using type = datastructures::properties_t<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel>;
 };
 
 template <>
@@ -23,7 +23,7 @@ void project_basic_properties<op::mccallum>(datastructures::base_derivation<prop
 }
 
 template <>
-void delineate_properties<op::mccallum>(datastructures::base_derivation<properties_set<op::mccallum>::type>& deriv) {
+void delineate_properties<op::mccallum>(datastructures::delineated_derivation<properties_set<op::mccallum>::type>& deriv) {
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         delineation::delineate(deriv, prop);
     }
@@ -41,7 +41,7 @@ void project_delineated_cell_properties<op::mccallum>(datastructures::cell_repre
 
     for (const auto& poly : deriv.delin().nonzero()) {
         if (repr.equational.find(poly) == repr.equational.end()) {
-            rules::poly_irrecubile_nonzero_sgn_inv(*deriv.base(), poly);
+            rules::poly_irrecubile_nonzero_sgn_inv(*deriv.delineated(), poly);
         }
     }
 
@@ -53,7 +53,7 @@ void project_delineated_cell_properties<op::mccallum>(datastructures::cell_repre
         rules::poly_irrecubile_sgn_inv_ec(deriv, repr.description, poly);
     }
 
-    rules::root_ordering_holds(*deriv.underlying_cell(), repr.description, repr.ordering);
+    rules::root_ordering_holds(deriv.underlying().sampled(), repr.description, repr.ordering);
 
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         if (repr.equational.find(prop.poly) == repr.equational.end() && deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {
@@ -81,7 +81,7 @@ void project_covering_properties<op::mccallum>(datastructures::covering_represen
         project_delineated_cell_properties<op::mccallum>(cell_repr);
     }
     auto cov = repr.get_covering();
-    rules::covering_holds(*datastructures::base_of(repr.cells.front().derivation->base()->underlying()), cov);
+    rules::covering_holds(repr.cells.front().derivation.underlying().delineated(), cov);
 }
 
 }

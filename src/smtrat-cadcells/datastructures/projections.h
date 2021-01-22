@@ -58,9 +58,8 @@ public:
     projections(poly_pool& pool) : m_pool(pool) {}
 
     auto& polys() { return m_pool; }
-
+    const auto& polys() const { return m_pool; }
     
-
     poly_ref res(poly_ref p, poly_ref q) {
         assert(p.level == q.level && p.id != q.id);
 

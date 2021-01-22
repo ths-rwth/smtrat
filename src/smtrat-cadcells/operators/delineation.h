@@ -5,7 +5,7 @@
 namespace smtrat::cadcells::operators::delineation {
 
 template<typename P>
-void delineate(datastructures::base_derivation<P>& deriv, const properties::poly_irreducible_sgn_inv& prop) {
+void delineate(datastructures::delineated_derivation<P>& deriv, const properties::poly_irreducible_sgn_inv& prop) {
     if (deriv.proj().is_nullified(deriv.underlying_sample(), prop.poly)) {
         deriv.delin().add_poly_nullified(prop.poly);
     } else {

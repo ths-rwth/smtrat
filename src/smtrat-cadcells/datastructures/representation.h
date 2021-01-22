@@ -26,8 +26,8 @@ namespace smtrat::cadcells::datastructures {
             }
             return cov;
         }
-        std::vector<std::reference_wrapper<derivation<P>>> sampled_derivations() {
-            std::vector<std::reference_wrapper<derivation<P>>> cov;
+        std::vector<std::reference_wrapper<sampled_derivation<P>>> sampled_derivations() {
+            std::vector<std::reference_wrapper<sampled_derivation<P>>> cov;
             for (const auto& cell : cells) {
                 cov.push_back(cell.derivation);
             }

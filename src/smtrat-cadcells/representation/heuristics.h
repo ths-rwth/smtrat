@@ -14,13 +14,13 @@ namespace smtrat::cadcells::representation {
     template<cell_heuristic H>
     struct cell {
         template<typename T>
-        static std::optional<datastructures::cell_representation<T>> compute(datastructures::sampled_derivation<T>::ref& der);
+        static std::optional<datastructures::cell_representation<T>> compute(datastructures::sampled_derivation_ref<T>& der);
     };
 
     template<covering_heuristic H>
     struct covering {
         template<typename T>
-        static std::optional<datastructures::covering_representation<T>> compute(const std::vector<datastructures::sampled_derivation<T>::ref>& ders);
+        static std::optional<datastructures::covering_representation<T>> compute(const std::vector<datastructures::sampled_derivation_ref<T>>& ders);
     };
 
     template <>
@@ -45,18 +45,18 @@ namespace smtrat::cadcells::representation {
         }
 
         template<typename T>
-        static std::optional<datastructures::cell_representation<T>> compute(datastructures::sampled_derivation<T>::ref& der) {
-            datastructures::cell_representation<T> response(der);
+        static std::optional<datastructures::cell_representation<T>> compute(datastructures::sampled_derivation_ref<T>& der) {
+            datastructures::cell_representation<T> response(*der);
             response.description = compute_simplest_cell(der->cell());
 
             if (der->cell().is_section()) {
-                for (const auto& poly : der->base()->delin().nullified()) {
+                for (const auto& poly : der->delin().nullified()) {
                     response.equational.insert(poly);
                 }
-                for (const auto& poly : der->base()->delin().nonzero()) {
+                for (const auto& poly : der->delin().nonzero()) {
                     response.equational.insert(poly);
                 }
-                for (const auto& [ran,irexprs] : der->base()->delin().roots()) {
+                for (const auto& [ran,irexprs] : der->delin().roots()) {
                     for (const auto& ir : irexprs) {
                         if (ir.index == 1 && ir.poly != response.description.sector_defining().poly) { // add poly only once
                             response.equational.insert(ir.poly);
@@ -64,7 +64,7 @@ namespace smtrat::cadcells::representation {
                     }
                 }
             } else { // sector
-                if (!der->base()->delin().nullified().empty()) return std::nullopt;
+                if (!der->delin().nullified().empty()) return std::nullopt;
 
                 if (!der->cell().lower_unbounded()) {
                     auto it = std::next(der->cell().lower());
@@ -73,7 +73,7 @@ namespace smtrat::cadcells::representation {
                         for (const auto& ir : it->second) {
                             response.ordering.add_below(ir, *response.description.lower());
                         }
-                    } while(it != der->base()->delin().roots().begin());
+                    } while(it != der->delin().roots().begin());
                 }
                 if (!der->cell().upper_unbounded()) {
                     auto it = der->cell().upper();
@@ -82,7 +82,7 @@ namespace smtrat::cadcells::representation {
                             response.ordering.add_above(*response.description.upper(), ir);
                         }
                         it++;
-                    } while(it != der->base()->delin().roots().end());
+                    } while(it != der->delin().roots().end());
                 }
             }
             return response;
@@ -92,13 +92,13 @@ namespace smtrat::cadcells::representation {
     template <>
     struct covering<covering_heuristic::default_covering> {
         template<typename T>
-        static std::optional<datastructures::covering_representation<T>> compute(const std::vector<datastructures::sampled_derivation<T>::ref>& ders) {
+        static std::optional<datastructures::covering_representation<T>> compute(const std::vector<datastructures::sampled_derivation_ref<T>>& ders) {
             datastructures::covering_representation<T> result;
             
-            std::vector<datastructures::sampled_derivation<T>::ref> sorted_ders;
+            std::vector<datastructures::sampled_derivation_ref<T>> sorted_ders;
             for (auto& der : ders) sorted_ders.emplace_back(der);
 
-            std::sort(sorted_ders.begin(), sorted_ders.end(), [](const datastructures::sampled_derivation<T>::ref& p_cell1, const datastructures::sampled_derivation<T>::ref& p_cell2) { // cell1 < cell2
+            std::sort(sorted_ders.begin(), sorted_ders.end(), [](const datastructures::sampled_derivation_ref<T>& p_cell1, const datastructures::sampled_derivation_ref<T>& p_cell2) { // cell1 < cell2
                 const auto& cell1 = p_cell1->cell();
                 const auto& cell2 = p_cell2->cell();
                 return lower_less(cell1, cell2) || (lower_equal(cell1, cell2) && upper_less(cell1, cell2));
