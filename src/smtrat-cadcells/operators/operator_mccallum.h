@@ -31,15 +31,15 @@ void delineate_properties<op::mccallum>(datastructures::base_derivation<properti
 
 template <>
 void project_delineated_cell_properties<op::mccallum>(datastructures::cell_representation<properties_set<op::mccallum>::type>& repr) {
-    auto& deriv = *repr.derivation;
+    auto& deriv = repr.derivation;
 
-    for(const auto& prop : deriv.base()->properties<properties::poly_irreducible_sgn_inv>()) {
+    for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         if (repr.equational.find(prop.poly) == repr.equational.end()) {
-            deriv.base()->insert(properties::poly_pdel{ prop.poly });
+            deriv.insert(properties::poly_pdel{ prop.poly });
         }
     }
 
-    for (const auto& poly : deriv.base()->delin().nonzero()) {
+    for (const auto& poly : deriv.delin().nonzero()) {
         if (repr.equational.find(poly) == repr.equational.end()) {
             rules::poly_irrecubile_nonzero_sgn_inv(*deriv.base(), poly);
         }
@@ -53,10 +53,10 @@ void project_delineated_cell_properties<op::mccallum>(datastructures::cell_repre
         rules::poly_irrecubile_sgn_inv_ec(deriv, repr.description, poly);
     }
 
-    rules::root_ordering_holds(*deriv.base()->underlying_cell(), repr.description, repr.ordering);
+    rules::root_ordering_holds(*deriv.underlying_cell(), repr.description, repr.ordering);
 
-    for(const auto& prop : deriv.base()->properties<properties::poly_irreducible_sgn_inv>()) {
-        if (repr.equational.find(prop.poly) == repr.equational.end() && deriv.base()->delin().nonzero().find(prop.poly) == deriv.base()->delin().nonzero().end()) {
+    for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
+        if (repr.equational.find(prop.poly) == repr.equational.end() && deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {
             rules::poly_irrecubile_sgn_inv(deriv, repr.description, repr.ordering, prop.poly);
         }
     }
@@ -64,13 +64,13 @@ void project_delineated_cell_properties<op::mccallum>(datastructures::cell_repre
 
 template <>
 void project_cell_properties<op::mccallum>(datastructures::sampled_derivation<properties_set<op::mccallum>::type>& deriv) {
-    for(const auto& prop : deriv.base()->properties<properties::root_well_def>()) {
+    for(const auto& prop : deriv.properties<properties::root_well_def>()) {
         rules::root_well_def(deriv, prop.root);
     }
-    for(const auto& prop : deriv.base()->properties<properties::poly_pdel>()) {
+    for(const auto& prop : deriv.properties<properties::poly_pdel>()) {
         rules::poly_pdel(deriv, prop.poly);
     }
-    for(const auto& prop : deriv.base()->properties<properties::poly_ord_inv>()) {
+    for(const auto& prop : deriv.properties<properties::poly_ord_inv>()) {
         rules::poly_ord_inv(deriv, prop.poly);
     }
 }

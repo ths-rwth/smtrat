@@ -11,9 +11,9 @@ namespace smtrat::cadcells::datastructures {
         cell_description description;
         indexed_root_ordering ordering;
         boost::container::flat_set<poly_ref> equational;
-        sampled_derivation_ref<P> derivation;
+        sampled_derivation<P>& derivation;
 
-        cell_representation(sampled_derivation_ref<P>& deriv) : derivation(deriv) {}
+        cell_representation(sampled_derivation<P>& deriv) : derivation(deriv) {}
     };
 
     template<typename P>
@@ -26,8 +26,8 @@ namespace smtrat::cadcells::datastructures {
             }
             return cov;
         }
-        std::vector<derivation_ref<P>> sampled_derivations() {
-            std::vector<derivation_ref<P>> cov;
+        std::vector<std::reference_wrapper<derivation<P>>> sampled_derivations() {
+            std::vector<std::reference_wrapper<derivation<P>>> cov;
             for (const auto& cell : cells) {
                 cov.push_back(cell.derivation);
             }

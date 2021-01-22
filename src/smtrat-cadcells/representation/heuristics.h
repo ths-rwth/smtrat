@@ -14,13 +14,13 @@ namespace smtrat::cadcells::representation {
     template<cell_heuristic H>
     struct cell {
         template<typename T>
-        static std::optional<datastructures::cell_representation<T>> compute(datastructures::sampled_derivation_ref<T>& der);
+        static std::optional<datastructures::cell_representation<T>> compute(datastructures::sampled_derivation<T>::ref& der);
     };
 
     template<covering_heuristic H>
     struct covering {
         template<typename T>
-        static std::optional<datastructures::covering_representation<T>> compute(const std::vector<datastructures::sampled_derivation_ref<T>>& ders);
+        static std::optional<datastructures::covering_representation<T>> compute(const std::vector<datastructures::sampled_derivation<T>::ref>& ders);
     };
 
     template <>
@@ -45,7 +45,7 @@ namespace smtrat::cadcells::representation {
         }
 
         template<typename T>
-        static std::optional<datastructures::cell_representation<T>> compute(datastructures::sampled_derivation_ref<T>& der) {
+        static std::optional<datastructures::cell_representation<T>> compute(datastructures::sampled_derivation<T>::ref& der) {
             datastructures::cell_representation<T> response(der);
             response.description = compute_simplest_cell(der->cell());
 
@@ -92,13 +92,13 @@ namespace smtrat::cadcells::representation {
     template <>
     struct covering<covering_heuristic::default_covering> {
         template<typename T>
-        static std::optional<datastructures::covering_representation<T>> compute(const std::vector<datastructures::sampled_derivation_ref<T>>& ders) {
+        static std::optional<datastructures::covering_representation<T>> compute(const std::vector<datastructures::sampled_derivation<T>::ref>& ders) {
             datastructures::covering_representation<T> result;
             
-            std::vector<datastructures::sampled_derivation_ref<T>> sorted_ders;
+            std::vector<datastructures::sampled_derivation<T>::ref> sorted_ders;
             for (auto& der : ders) sorted_ders.emplace_back(der);
 
-            std::sort(sorted_ders.begin(), sorted_ders.end(), [](const datastructures::sampled_derivation_ref<T>& p_cell1, const datastructures::sampled_derivation_ref<T>& p_cell2) { // cell1 < cell2
+            std::sort(sorted_ders.begin(), sorted_ders.end(), [](const datastructures::sampled_derivation<T>::ref& p_cell1, const datastructures::sampled_derivation<T>::ref& p_cell2) { // cell1 < cell2
                 const auto& cell1 = p_cell1->cell();
                 const auto& cell2 = p_cell2->cell();
                 return lower_less(cell1, cell2) || (lower_equal(cell1, cell2) && upper_less(cell1, cell2));
