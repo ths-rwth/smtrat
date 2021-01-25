@@ -77,6 +77,7 @@ void project_cell_properties<op::mccallum>(datastructures::sampled_derivation<pr
 
 template <>
 void project_covering_properties<op::mccallum>(datastructures::covering_representation<properties_set<op::mccallum>::type>& repr) {
+    // TODO ensure that root_represents is not projected as not necessary!
     for (auto& cell_repr : repr.cells) {
         project_delineated_cell_properties<op::mccallum>(cell_repr);
     }

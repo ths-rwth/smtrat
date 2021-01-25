@@ -27,30 +27,37 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
 
     std::vector<datastructures::sampled_derivation_ref<propset>> results;
     auto& roots = deriv->delin().roots(); 
+    SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got roots " << roots);
     if (roots.empty()) {
         tmp_sample.emplace(current_var, ran(0));
         if (!carl::evaluate(c, tmp_sample)) {
+            SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval (-oo, oo)");
             results.emplace_back(datastructures::make_sampled_derivation<propset>(deriv,ran(0)));
         }
     } else {
+        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval (-oo, " << roots.begin()->first << ")");
         results.emplace_back(datastructures::make_sampled_derivation(deriv, ran(carl::sample_below(roots.begin()->first))));
-        for (auto root = roots.begin(); root != roots.end(); root++) {
+        for (auto root = roots.begin(); root != std::prev(roots.end()); root++) {
             if (carl::isWeak(c.relation())) { // TODO later: allow weak bounds for sampled_derivations
+                SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval [" << roots.begin()->first << ", " << roots.begin()->first << "]");
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, root->first));
             }
 
             auto current_sample = carl::sample_between(root->first, std::next(root)->first);
             tmp_sample.emplace(current_var, current_sample);
             if (!carl::evaluate(c, tmp_sample)) {
+                SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval (" << root->first << ", " << std::next(root)->first << ")");
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
             }
         }
         if (carl::isWeak(c.relation())) {
+            SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval [" << (--roots.end())->first << ", " << (--roots.end())->first << "]");
             results.emplace_back(datastructures::make_sampled_derivation(deriv, (--roots.end())->first));
         }
         auto current_sample = carl::sample_above((--roots.end())->first);
         tmp_sample.emplace(current_var, current_sample);
         if (!carl::evaluate(c, tmp_sample)) {
+            SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval (" << roots.begin()->first << ", oo)");
             results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
         }
     }
@@ -139,7 +146,7 @@ std::optional<datastructures::sampled_derivation_ref<propset>> get_covering(data
     return covering_repr->cells.front().derivation.underlying().sampled_ref();
 }
 
-std::optional<FormulaT> onecell(const FormulasT& constraints, const variable_ordering& vars, const assignment& sample) {
+std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constraints, const variable_ordering& vars, const assignment& sample) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", constraints << ", " << vars << ", " << sample);
     datastructures::poly_pool pool(vars);
     datastructures::projections proj(pool);
@@ -151,8 +158,8 @@ std::optional<FormulaT> onecell(const FormulasT& constraints, const variable_ord
     datastructures::sampled_derivation_ref<propset> cell_deriv = *cov_res;
 
     FormulasT description;
-    while (cell_deriv->base()->level() > 0) {
-        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Constructing cell on level " << cell_deriv->base()->level());
+    while (cell_deriv->level() > 0) {
+        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Constructing cell on level " << cell_deriv->level());
 
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project properties");
         operators::project_cell_properties<op>(*cell_deriv);
@@ -169,13 +176,12 @@ std::optional<FormulaT> onecell(const FormulasT& constraints, const variable_ord
         operators::project_delineated_cell_properties<op>(*cell_repr);
 
         description.emplace_back(helper::to_formula(proj.polys(), cell_deriv->main_var(),cell_repr->description));
-        if (cell_deriv->base()->level() > 1) cell_deriv = cell_deriv->underlying().sampled_ref();
-        else cell_deriv = nullptr;
+        cell_deriv = cell_deriv->underlying().sampled_ref();
         // TODO pool.clear(props->level()+1);
         // TODO proj.clear(props->level()+1);
     }
 
-    return FormulaT(carl::FormulaType::AND, std::move(description));
+    return std::make_pair(constraints, FormulaT(carl::FormulaType::AND, std::move(description)));
 }
 
 }

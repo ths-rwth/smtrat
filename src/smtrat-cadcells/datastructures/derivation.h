@@ -181,8 +181,7 @@ class delineated_derivation {
 public:
     // should be private, but does not work with make_shared:
     delineated_derivation(base_derivation_ref<Properties> base) : m_base(base) {
-        assert(base->level() > 0);
-        assert(base->underlying().is_sampled() || base->level() == 1);
+        assert(base->level() == 0 || base->underlying().is_sampled());
     }
 
     base_derivation_ref<Properties>& base() { return m_base; };
@@ -190,7 +189,7 @@ public:
 
     delineation& delin() { return m_delineation; };
     const assignment& underlying_sample() const {
-        if(m_base->level() == 1) { return empty_assignment; }
+        if(m_base->level() <= 1) { return empty_assignment; }
         else {
             return underlying().sampled().sample();
         }
@@ -226,7 +225,9 @@ public:
     // should be private, but does not work with make_shared
     sampled_derivation(delineated_derivation_ref<Properties> base, ran main_sample) : m_delineated(base) {
         m_sample = m_delineated->underlying_sample();
-        m_sample.emplace(m_delineated->main_var(), main_sample);
+        if (m_delineated->level() > 0) {
+            m_sample.emplace(m_delineated->main_var(), main_sample);
+        }
     }
 
     delineated_derivation_ref<Properties>& delineated() { return m_delineated; };
@@ -234,7 +235,9 @@ public:
 
     const delineation_interval& cell() const { return *m_cell; }
     void delineate_cell() {
-        m_cell = m_delineated->delin().delineate_cell(main_var_sample());
+        if (m_delineated->level() > 0) {
+            m_cell = m_delineated->delin().delineate_cell(main_var_sample());
+        }
     }
 
     const assignment& sample() const { return m_sample; };
@@ -266,7 +269,10 @@ template<typename Properties>
 derivation_ref<Properties> make_derivation(projections& proj, const assignment& assignment, size_t level) {
     const auto& vars = proj.polys().var_order();
 
-    derivation_ref<Properties> current = std::make_shared<base_derivation<Properties>>(proj, base_derivation_ref<Properties>(nullptr), 0);
+    auto zero_base = std::make_shared<base_derivation<Properties>>(proj, base_derivation_ref<Properties>(nullptr), 0);
+    auto zero_delineated = std::make_shared<delineated_derivation<Properties>>(zero_base);
+    derivation_ref<Properties> current = std::make_shared<sampled_derivation<Properties>>(zero_delineated, ran(0));
+
     for (size_t i = 1; i <= level; i++) {
         auto base = std::make_shared<base_derivation<Properties>>(proj, current, i);
         auto delineated = std::make_shared<delineated_derivation<Properties>>(base);
