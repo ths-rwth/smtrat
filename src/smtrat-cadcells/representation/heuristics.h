@@ -58,7 +58,7 @@ namespace smtrat::cadcells::representation {
                 }
                 for (const auto& [ran,irexprs] : der->delin().roots()) {
                     for (const auto& ir : irexprs) {
-                        if (ir.index == 1 && ir.poly != response.description.sector_defining().poly) { // add poly only once
+                        if (ir.index == 1 && ir.poly != response.description.section_defining().poly) { // add poly only once
                             response.equational.insert(ir.poly);
                         }
                     }
@@ -67,19 +67,23 @@ namespace smtrat::cadcells::representation {
                 if (!der->delin().nullified().empty()) return std::nullopt;
 
                 if (!der->cell().lower_unbounded()) {
-                    auto it = std::next(der->cell().lower());
+                    auto it = der->cell().lower();
                     do {
-                        it--;
                         for (const auto& ir : it->second) {
-                            response.ordering.add_below(ir, *response.description.lower());
+                            if (ir != *response.description.lower()) {
+                                response.ordering.add_below(ir, *response.description.lower());
+                            } 
                         }
+                        it--;
                     } while(it != der->delin().roots().begin());
                 }
                 if (!der->cell().upper_unbounded()) {
                     auto it = der->cell().upper();
                     do {
                         for (const auto& ir : it->second) {
-                            response.ordering.add_above(*response.description.upper(), ir);
+                            if (ir != *response.description.upper()) {
+                                response.ordering.add_above(*response.description.upper(), ir);
+                            }
                         }
                         it++;
                     } while(it != der->delin().roots().end());

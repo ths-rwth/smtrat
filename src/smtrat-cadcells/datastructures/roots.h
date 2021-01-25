@@ -8,6 +8,8 @@ namespace smtrat::cadcells::datastructures {
 struct indexed_root {
     poly_ref poly;
     size_t index;
+    indexed_root(poly_ref p, size_t i) : poly(p), index(i) { assert(i>0); }
+    indexed_root() : indexed_root( poly_ref{0,0}, 1) {}
 };
 bool operator==(const indexed_root& lhs, const indexed_root& rhs) {
     return lhs.poly == rhs.poly && lhs.index == rhs.index;
@@ -45,8 +47,8 @@ public:
         return m_type == type::section;
     }
 
-    indexed_root sector_defining() const {
-        assert(is_sector());
+    indexed_root section_defining() const {
+        assert(is_section());
         return *m_lower;
     }
 
@@ -80,7 +82,8 @@ class indexed_root_ordering {
     std::vector<std::pair<indexed_root, indexed_root>> m_data_above;
 
     void add(std::vector<std::pair<indexed_root, indexed_root>>& data, indexed_root first, indexed_root second) {
-        assert(first.poly.level == second.poly.level && first != second);
+        assert(first.poly.level == second.poly.level);
+        assert(first != second);
         data.push_back(std::make_pair(first, second));
     }
 

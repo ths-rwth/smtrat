@@ -138,7 +138,7 @@ public:
 
     template<typename P>
     void insert(P property) {
-        assert(property.level() <= m_level && property.level() > 0);
+        assert(property.level() <= m_level && property.level() >= 0);
 
         if (property.level() == m_level) {
             get<P>(m_properties).emplace(property);
@@ -150,7 +150,7 @@ public:
 
     template<typename P>
     bool contains(const P& property) const {
-        assert(property.level() <= m_level && property.level() > 0);
+        assert(property.level() <= m_level && property.level() >= 0);
 
         if (property.level() == m_level) {
             return get<P>(m_properties).find(property) != get<P>(m_properties).end();

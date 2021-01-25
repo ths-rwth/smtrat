@@ -97,10 +97,10 @@ void cell_analytic_submanifold(datastructures::sampled_derivation<P>&, const dat
 template<typename P>
 void poly_irrecubile_sgn_inv_ec(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description& cell, datastructures::poly_ref poly) {
     assert(cell.is_section());
-    assert(deriv.contains(properties::poly_pdel{ cell.sector_defining().poly }));
-    assert(deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(cell.sector_defining().poly) }));
-    if (cell.sector_defining().poly != poly) {
-        deriv.insert(properties::poly_ord_inv{ deriv.proj().res(cell.sector_defining().poly, poly) });
+    assert(deriv.contains(properties::poly_pdel{ cell.section_defining().poly }));
+    assert(deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(cell.section_defining().poly) }));
+    if (cell.section_defining().poly != poly) {
+        deriv.insert(properties::poly_ord_inv{ deriv.proj().res(cell.section_defining().poly, poly) });
     }
 }
 
@@ -144,11 +144,11 @@ template<typename P>
 void poly_irrecubile_sgn_inv(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description& cell, const datastructures::indexed_root_ordering& ordering, datastructures::poly_ref poly) {
     assert(deriv.contains(properties::poly_pdel{ poly }));
     if (cell.is_section() && deriv.proj().is_zero(deriv.sample(), poly)) {
-        auto roots = deriv.proj().real_roots(deriv.sample(), poly);
+        auto roots = deriv.proj().real_roots(deriv.underlying_sample(), poly);
         auto it = std::find(roots.begin(), roots.end(), deriv.main_var_sample());
         auto dist = std::distance(roots.begin(), it);
         assert(dist >= 0);
-        deriv.insert(properties::root_well_def{ poly, (size_t)dist + 1 });
+        deriv.insert(properties::root_well_def{ datastructures::indexed_root(poly, (size_t)dist + 1) });
     } else {
         assert(!deriv.proj().is_zero(deriv.sample(), poly));
         if (cell.is_sector() && (deriv.cell().lower_unbounded() || deriv.cell().upper_unbounded())) {

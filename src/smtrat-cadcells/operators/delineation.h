@@ -14,7 +14,7 @@ void delineate(datastructures::delineated_derivation<P>& deriv, const properties
             deriv.delin().add_poly_noroot(prop.poly);
         } else {
             for (size_t idx = 0; idx < roots.size(); idx++) {
-                deriv.delin().add_root(std::move(roots[idx]), datastructures::indexed_root{prop.poly, idx});
+                deriv.delin().add_root(std::move(roots[idx]), datastructures::indexed_root(prop.poly, idx+1));
             }
         }
     }

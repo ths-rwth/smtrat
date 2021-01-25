@@ -53,7 +53,7 @@ void project_delineated_cell_properties<op::mccallum>(datastructures::cell_repre
         rules::poly_irrecubile_sgn_inv_ec(deriv, repr.description, poly);
     }
 
-    rules::root_ordering_holds(deriv.underlying().sampled(), repr.description, repr.ordering);
+    rules::root_ordering_holds(deriv.underlying().sampled(), repr.description, repr.ordering); // TODO what to do on lowest level?
 
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         if (repr.equational.find(prop.poly) == repr.equational.end() && deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {

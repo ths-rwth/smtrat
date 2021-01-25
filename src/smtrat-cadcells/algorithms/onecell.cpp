@@ -76,10 +76,10 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
         auto poly = proj.polys()(c.definingPolynomial());
         auto poly_roots = proj.real_roots(assignment(), poly);
         size_t index = std::distance(poly_roots.begin(), std::find(poly_roots.begin(), poly_roots.end(), root)) + 1;
-        iroot = datastructures::indexed_root{ poly, index };
+        iroot = datastructures::indexed_root(poly, index);
     } else {
         root = *std::get<MultivariateRootT>(c.value()).evaluate(sample);
-        iroot = datastructures::indexed_root{ proj.polys()(c.definingPolynomial()), std::get<MultivariateRootT>(c.value()).k() };
+        iroot = datastructures::indexed_root(proj.polys()(c.definingPolynomial()), std::get<MultivariateRootT>(c.value()).k());
     }
 
     deriv->insert(operators::properties::poly_pdel{ iroot.poly });
@@ -144,7 +144,7 @@ std::optional<FormulaT> onecell(const FormulasT& constraints, const variable_ord
     datastructures::poly_pool pool(vars);
     datastructures::projections proj(pool);
 
-    auto cov_res = get_covering(proj, constraints, sample); // TODO alternative to covering: project delineation
+    auto cov_res = get_covering(proj, constraints, sample); // TODO later: alternative to covering: project delineation
     if (!cov_res) {
         return std::nullopt;
     }
