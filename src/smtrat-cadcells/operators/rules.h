@@ -121,6 +121,16 @@ void cell_represents(datastructures::sampled_derivation<P>& deriv, const datastr
 }
 
 template<typename P>
+void cell_well_def(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description& cell) {
+    if (cell.lower()) {
+        deriv.insert(properties::root_well_def{ *cell.lower() });
+    }
+    if (cell.upper()) {
+        deriv.insert(properties::root_well_def{ *cell.upper() });
+    }
+}
+
+template<typename P>
 void root_ordering_holds(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description&, const datastructures::indexed_root_ordering& ordering) {
     for (const auto& rel : ordering.below()) {
         if (rel.first.poly != rel.second.poly) {

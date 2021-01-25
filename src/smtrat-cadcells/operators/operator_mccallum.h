@@ -30,7 +30,7 @@ void delineate_properties<op::mccallum>(datastructures::delineated_derivation<pr
 }
 
 template <>
-void project_delineated_cell_properties<op::mccallum>(datastructures::cell_representation<properties_set<op::mccallum>::type>& repr) {
+void project_delineated_cell_properties<op::mccallum>(datastructures::cell_representation<properties_set<op::mccallum>::type>& repr, bool cell_represents) {
     auto& deriv = repr.derivation;
 
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
@@ -47,13 +47,17 @@ void project_delineated_cell_properties<op::mccallum>(datastructures::cell_repre
 
     rules::cell_connected(deriv, repr.description);
     rules::cell_analytic_submanifold(deriv, repr.description);
-    rules::cell_represents(deriv, repr.description);
+    if (cell_represents) {
+        rules::cell_represents(deriv, repr.description);
+    } else {
+        rules::cell_well_def(deriv, repr.description);
+    }
 
     for (const auto& poly : repr.equational) {
         rules::poly_irrecubile_sgn_inv_ec(deriv, repr.description, poly);
     }
 
-    rules::root_ordering_holds(deriv.underlying().sampled(), repr.description, repr.ordering); // TODO what to do on lowest level?
+    rules::root_ordering_holds(deriv.underlying().sampled(), repr.description, repr.ordering);
 
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         if (repr.equational.find(prop.poly) == repr.equational.end() && deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {
@@ -77,9 +81,8 @@ void project_cell_properties<op::mccallum>(datastructures::sampled_derivation<pr
 
 template <>
 void project_covering_properties<op::mccallum>(datastructures::covering_representation<properties_set<op::mccallum>::type>& repr) {
-    // TODO ensure that root_represents is not projected as not necessary!
     for (auto& cell_repr : repr.cells) {
-        project_delineated_cell_properties<op::mccallum>(cell_repr);
+        project_delineated_cell_properties<op::mccallum>(cell_repr, false);
     }
     auto cov = repr.get_covering();
     rules::covering_holds(repr.cells.front().derivation.underlying().delineated(), cov);
