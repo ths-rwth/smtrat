@@ -91,7 +91,7 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
 
     deriv->insert(operators::properties::poly_pdel{ iroot.poly });
     deriv->insert(operators::properties::root_well_def{ iroot });
-    deriv->delin().add_root(std::move(root), std::move(iroot));
+    deriv->delin().add_root(std::move(ran(root)), std::move(datastructures::indexed_root(iroot)));
 
     auto relation = c.negated() ? carl::inverse(c.relation()) : c.relation();
     bool point = relation == carl::Relation::GREATER || relation == carl::Relation::LESS || relation == carl::Relation::NEQ;
@@ -100,12 +100,15 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
 
     std::vector<datastructures::sampled_derivation_ref<propset>> results;
     if (point) {
+        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval [" << iroot << ", " << iroot << "]");
         results.emplace_back(datastructures::make_sampled_derivation(deriv, root));
     }
     if (below) {
+        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval (-oo, " << iroot << ")");
         results.emplace_back(datastructures::make_sampled_derivation(deriv, ran(carl::sample_below(root))));
     }
     if (above) {
+        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval (" << iroot << ", oo)");
         results.emplace_back(datastructures::make_sampled_derivation(deriv, ran(carl::sample_above(root))));
     }
 
