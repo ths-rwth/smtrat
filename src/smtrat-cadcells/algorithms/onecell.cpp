@@ -154,9 +154,10 @@ std::optional<FormulaT> onecell(const FormulasT& constraints, const variable_ord
     while (cell_deriv->base()->level() > 0) {
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Constructing cell on level " << cell_deriv->base()->level());
 
-        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project properties and delineate");
+        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project properties");
         operators::project_cell_properties<op>(*cell_deriv);
         operators::project_basic_properties<op>(*cell_deriv->base());
+        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Delineate properties");
         operators::delineate_properties<op>(*cell_deriv->delineated());
         cell_deriv->delineate_cell();
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Compute cell representation");
