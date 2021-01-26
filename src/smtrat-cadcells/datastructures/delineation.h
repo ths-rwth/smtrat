@@ -37,6 +37,20 @@ public:
         return m_upper == m_end;
     }
 };    
+std::ostream& operator<<(std::ostream& os, const delineation_interval& data) {
+    if (data.is_section()) {
+        os << "[" << *data.lower() << ", " << *data.upper() << "]";
+    } else if (!data.lower_unbounded() && !data.upper_unbounded()) {
+        os << "(" << *data.lower() << ", " << *data.upper() << ")";
+    } else if (!data.lower_unbounded()) {
+        os << "(" << *data.lower() << ", oo)";
+    } else if (!data.upper_unbounded()) {
+        os << "(-oo, " << *data.upper() << ")";
+    } else {
+        os << "(-oo, oo)";
+    }
+    return os;
+}
 
 class delineation {
     friend class delineation_interval;
@@ -106,6 +120,10 @@ public:
         m_polys_nullified.insert(poly);
     }
 };
+std::ostream& operator<<(std::ostream& os, const delineation& data) {
+    os << "(roots: " << data.roots() << "; nonzero: " << data.nonzero() << "; nullified: "  << data.nullified() << ")";
+    return os;
+}
 
 bool lower_less(const delineation_interval& del1, const delineation_interval& del2) {
     if (del1.lower_unbounded()) return !del2.lower_unbounded();

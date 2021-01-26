@@ -59,23 +59,42 @@ public:
         return m_type == type::section;
     }
 
-    indexed_root section_defining() const {
+    /**
+     * In case of a section, the defining indexed root is returned.
+     */
+    const indexed_root& section_defining() const {
         assert(is_section());
         return *m_lower;
     }
 
     /**
      * Returns the lower bound as indexed_root if finite or std::nullopt if the lower bound is -oo.
+     * 
+     * Asserts that the cell is a sector.
      */
-    auto lower() const {
+    const auto& lower() const {
+        assert(is_sector());
         return m_lower;
     }
 
     /**
      * Returns the upper bound as indexed_root if finite or std::nullopt if the upper bound is oo.
+     * 
+     * Asserts that the cell is a sector.
      */
-    auto upper() const {
+    const auto& upper() const {
+        assert(is_sector());
         return m_upper;
+    }
+
+    std::optional<indexed_root> lower_defining() const {
+        if (is_sector()) return lower();
+        else return section_defining();
+    }
+
+    std::optional<indexed_root> upper_defining() const {
+        if (is_sector()) return upper();
+        else return section_defining();
     }
 };
 std::ostream& operator<<(std::ostream& os, const cell_description& data) {
@@ -113,8 +132,8 @@ public:
      */
     void add(const cell_description& c) {
         assert(!m_data.empty() || (c.is_sector() && !c.lower()));
-        assert(m_data.empty() || c.lower());
-        assert(m_data.empty() || m_data.back().upper());
+        assert(m_data.empty() || c.is_section() || c.lower());
+        assert(m_data.empty() || m_data.back().is_section() || m_data.back().upper());
         m_data.push_back(c);
     }
 

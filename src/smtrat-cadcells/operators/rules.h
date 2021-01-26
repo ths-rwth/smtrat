@@ -112,21 +112,29 @@ void root_represents(datastructures::sampled_derivation<P>& deriv, datastructure
 
 template<typename P>
 void cell_represents(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description& cell) {
-    if (cell.lower()) {
-        root_represents(deriv, *cell.lower());
-    }
-    if (cell.upper()) {
-        root_represents(deriv, *cell.upper());
+    if (cell.is_sector()) {
+        if (cell.lower()) {
+            root_represents(deriv, *cell.lower());
+        }
+        if (cell.upper()) {
+            root_represents(deriv, *cell.upper());
+        }
+    } else {
+        root_represents(deriv, cell.section_defining());
     }
 }
 
 template<typename P>
 void cell_well_def(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description& cell) {
-    if (cell.lower()) {
-        deriv.insert(properties::root_well_def{ *cell.lower() });
-    }
-    if (cell.upper()) {
-        deriv.insert(properties::root_well_def{ *cell.upper() });
+    if (cell.is_sector()) {
+        if (cell.lower()) {
+            deriv.insert(properties::root_well_def{ *cell.lower() });
+        }
+        if (cell.upper()) {
+            deriv.insert(properties::root_well_def{ *cell.upper() });
+        }
+    } else {
+        deriv.insert(properties::root_well_def{ cell.section_defining() });
     }
 }
 
@@ -177,10 +185,10 @@ void poly_irrecubile_sgn_inv(datastructures::sampled_derivation<P>& deriv, const
 template<typename P>
 void covering_holds(datastructures::delineated_derivation<P>& deriv, const datastructures::covering_description& covering) {
     for (auto it = covering.cells().begin(); it != covering.cells().end()-1; it++) {
-        assert(deriv.contains(properties::root_well_def{ *it->upper() }));
-        assert(deriv.contains(properties::root_well_def{ *std::next(it)->lower() }));
-        if (it->upper()->poly != std::next(it)->lower()->poly) {
-            deriv.insert(properties::poly_ord_inv{ deriv.proj().res(it->upper()->poly, std::next(it)->lower()->poly) });
+        assert(deriv.contains(properties::root_well_def{ *it->upper_defining() }));
+        assert(deriv.contains(properties::root_well_def{ *std::next(it)->lower_defining() }));
+        if (it->upper_defining()->poly != std::next(it)->lower_defining()->poly) {
+            deriv.insert(properties::poly_ord_inv{ deriv.proj().res(it->upper_defining()->poly, std::next(it)->lower_defining()->poly) });
         }
     }
 }

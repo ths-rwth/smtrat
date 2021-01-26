@@ -24,7 +24,7 @@ namespace smtrat::cadcells::datastructures {
     };
     template<typename P>
     std::ostream& operator<<(std::ostream& os, const cell_representation<P>& data) {
-        os << "(cell: " << data.cell_description << "; ordering: " << data.ordering << "; equational: " << data.equational << "; derivation: " << &data.derivation << ")";
+        os << "(cell: " << data.description << "; ordering: " << data.ordering << "; equational: " << data.equational << "; derivation: " << &data.derivation << ")";
         return os;
     }
 
