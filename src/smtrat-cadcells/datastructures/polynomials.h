@@ -8,8 +8,13 @@
 
 namespace smtrat::cadcells::datastructures {
 
+/**
+ * Refers to a polynomial. 
+ */
 struct poly_ref {
+    /// The level of the polynomial.
     size_t level;
+    /// The id of the polynomial with respect to its level.
     size_t id;    
 };
 bool operator<(const poly_ref& lhs, const poly_ref& rhs) {
@@ -29,6 +34,11 @@ std::ostream& operator<<(std::ostream& os, const poly_ref& data) {
 
 // TODO later: make polynomials univariate
 
+/**
+ * A pool for polynomials.
+ * 
+ * The polynomials are stored in a table, that is, a list of lists of polynomials of a given level.
+ */
 class poly_pool {
     const variable_ordering& m_var_order;
 
@@ -45,6 +55,11 @@ class poly_pool {
     Poly positive_poly;
 
 public:
+    /**
+     * Constructs a polynomial pool with respect to a variable ordering.
+     * 
+     * @param var_order The variable ordering determining polynomial levels.
+     */
     poly_pool(const variable_ordering& var_order) : m_var_order(var_order), negative_poly(-1), zero_poly(0), positive_poly(1) {
         for (size_t i = 0; i < var_order.size(); i++) {
             // m_id_pools.emplace_back();
