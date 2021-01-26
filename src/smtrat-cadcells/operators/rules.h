@@ -137,7 +137,7 @@ void root_ordering_holds(datastructures::sampled_derivation<P>& deriv, const dat
             assert(deriv.contains(properties::poly_pdel{ rel.first.poly }));
             assert(deriv.contains(properties::poly_pdel{ rel.second.poly }));
             deriv.insert(properties::poly_ord_inv{ deriv.proj().res(rel.first.poly, rel.second.poly) });
-            deriv.insert(properties::root_well_def{ rel.first });
+            deriv.insert(properties::root_well_def{ rel.second });
         }
     }
     for (const auto& rel : ordering.above()) {

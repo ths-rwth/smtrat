@@ -5,8 +5,15 @@
 
 namespace smtrat::cadcells::datastructures {
 
+using carl::operator<<;
+
+/**
+ * Represents the i-th root of a multivariate polynomial at its main variable (given an appropriate sample).
+ */
 struct indexed_root {
+    /// A multivariate polynomial.
     poly_ref poly;
+    /// The index, must be > 0.
     size_t index;
     indexed_root(poly_ref p, size_t i) : poly(p), index(i) { assert(i>0); }
     indexed_root() : indexed_root( poly_ref{0,0}, 1) {}
@@ -22,7 +29,12 @@ std::ostream& operator<<(std::ostream& os, const indexed_root& data) {
     return os;
 }
 
+/// Bound type.
 enum class bound { infty };
+/**
+ * Holds the description of a cell.
+ * A cell is either a section [xi,xi] or a section (-00,xi), (xi, xi'), (xi, oo) where xi,xi' are indexed roots.
+ */
 class cell_description {
     enum class type { section, sector };
 
@@ -52,19 +64,53 @@ public:
         return *m_lower;
     }
 
+    /**
+     * Returns the lower bound as indexed_root if finite or std::nullopt if the lower bound is -oo.
+     */
     auto lower() const {
         return m_lower;
     }
 
+    /**
+     * Returns the upper bound as indexed_root if finite or std::nullopt if the upper bound is oo.
+     */
     auto upper() const {
         return m_upper;
     }
 };
+std::ostream& operator<<(std::ostream& os, const cell_description& data) {
+    if (data.is_section()) {
+        os << "[" << data.section_defining() << ", " << data.section_defining() << "]";
+    } else if (data.lower() && data.upper()) {
+        os << "(" << *data.lower() << ", " << *data.upper() << ")";
+    } else if (data.lower()) {
+        os << "(" << *data.lower() << ", oo)";
+    } else if (data.upper()) {
+        os << "(-oo, " << *data.upper() << ")";
+    } else {
+        os << "(-oo, oo)";
+    }
+    return os;
+}
 
+/**
+ * Describes a covering of the real line by cell_descriptions (given an appropriate sample).
+ */
 class covering_description {
     std::vector<cell_description> m_data;
 
 public:
+    /**
+     * Add a cell_description to the covering.
+     * 
+     * The added cell needs to be the rightmost cell of the already added cells and not be contained in any of these cells (or vice versa).
+     * 
+     * * The first cell needs to have -oo as left bound.
+     * * The last cell needs to have oo as right bound.
+     * * All cells need to cover the real line under an appropriate sample.
+     * * Evaluated under an appropriate sample, the left bound of the added cell c is strictly greater than the left bounds of already added cells (considering also "strictness" of the bounds).
+     * * The right bound of the added cell c needs to be greater than all right bounds of already added cells (considering also "strictness" of the bounds).
+     */
     void add(const cell_description& c) {
         assert(!m_data.empty() || (c.is_sector() && !c.lower()));
         assert(m_data.empty() || c.lower());
@@ -76,7 +122,14 @@ public:
         return m_data;
     }
 };
+std::ostream& operator<<(std::ostream& os, const covering_description& data) {
+    os << data.cells();
+    return os;
+}
 
+/**
+ * Describes an ordering of indexed_roots with respect to a cell_description (which is given implicitly).
+ */
 class indexed_root_ordering {
     std::vector<std::pair<indexed_root, indexed_root>> m_data_below;
     std::vector<std::pair<indexed_root, indexed_root>> m_data_above;
@@ -89,18 +142,18 @@ class indexed_root_ordering {
 
 public:
     /**
-     * first is the root closer to the lower bound
+     * Second is the root closer to the lower bound.
      * 
-     * relations need to be added in descending order of the first elements
+     * Relations need to be added in descending order of the second elements.
      */
     void add_below(indexed_root first, indexed_root second) {
         return add(m_data_below, first, second);
     }
 
     /**
-     * first is the root closer to the upper bound
+     * First is the root closer to the upper bound.
      * 
-     * relations need to be added in ascending order of the first elements
+     * Relations need to be added in ascending order of the first elements.
      */
     void add_above(indexed_root first, indexed_root second) {
         return add(m_data_above, first, second);
@@ -114,5 +167,9 @@ public:
         return m_data_above;
     }
 };
+std::ostream& operator<<(std::ostream& os, const indexed_root_ordering& data) {
+    os << data.below() << " " << data.above();
+    return os;
+}
 
 }
