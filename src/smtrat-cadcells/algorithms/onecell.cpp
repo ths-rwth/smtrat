@@ -76,22 +76,26 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
 
     auto deriv = datastructures::make_derivation<propset>(proj, sample, sample.size() + 1).delineated_ref();
 
-    datastructures::indexed_root iroot;
-    ran root;
-    if (std::holds_alternative<ran>(c.value())) {
-        root = std::get<ran>(c.value());
-        auto poly = proj.polys()(c.definingPolynomial());
-        auto poly_roots = proj.real_roots(assignment(), poly);
-        size_t index = std::distance(poly_roots.begin(), std::find(poly_roots.begin(), poly_roots.end(), root)) + 1;
-        iroot = datastructures::indexed_root(poly, index);
-    } else {
-        root = *std::get<MultivariateRootT>(c.value()).evaluate(sample);
-        iroot = datastructures::indexed_root(proj.polys()(c.definingPolynomial()), std::get<MultivariateRootT>(c.value()).k());
-    }
+    auto value_result = [&]() {
+        if (std::holds_alternative<ran>(c.value())) {
+            ran root = std::get<ran>(c.value());
+            auto poly = proj.polys()(c.definingPolynomial());
+            auto poly_roots = proj.real_roots(assignment(), poly);
+            size_t index = std::distance(poly_roots.begin(), std::find(poly_roots.begin(), poly_roots.end(), root)) + 1;
+            datastructures::indexed_root iroot = datastructures::indexed_root(poly, index);
+            return std::make_pair(iroot, root);
+        } else {
+            ran root = *std::get<MultivariateRootT>(c.value()).evaluate(sample);
+            datastructures::indexed_root iroot = datastructures::indexed_root(proj.polys()(c.definingPolynomial()), std::get<MultivariateRootT>(c.value()).k());
+            return std::make_pair(iroot, root);
+        }
+    }();
+    datastructures::indexed_root& iroot = value_result.first;
+    ran& root = value_result.second;
 
     deriv->insert(operators::properties::poly_pdel{ iroot.poly });
     deriv->insert(operators::properties::root_well_def{ iroot });
-    deriv->delin().add_root(std::move(ran(root)), std::move(datastructures::indexed_root(iroot)));
+    deriv->delin().add_root(root, iroot);
 
     auto relation = c.negated() ? carl::inverse(c.relation()) : c.relation();
     bool point = relation == carl::Relation::GREATER || relation == carl::Relation::LESS || relation == carl::Relation::NEQ;

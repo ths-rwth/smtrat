@@ -101,7 +101,7 @@ public:
         return delineation_interval(std::move(lower),std::move(upper),std::move(m_roots.end()));
     }
 
-    void add_root(ran&& root, indexed_root&& ir_root) {
+    void add_root(ran root, indexed_root ir_root) {
         auto irs = m_roots.find(root);
         if (irs == m_roots.end()) {
             irs = m_roots.emplace(std::move(root), std::vector<indexed_root>()).first;
