@@ -79,14 +79,18 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
     auto value_result = [&]() {
         if (std::holds_alternative<ran>(c.value())) {
             ran root = std::get<ran>(c.value());
-            auto poly = proj.polys()(c.definingPolynomial());
+            auto p = c.definingPolynomial();
+            auto poly = proj.polys()(p);
             auto poly_roots = proj.real_roots(assignment(), poly);
             size_t index = std::distance(poly_roots.begin(), std::find(poly_roots.begin(), poly_roots.end(), root)) + 1;
-            datastructures::indexed_root iroot = datastructures::indexed_root(poly, index);
+            datastructures::indexed_root iroot(poly, index);
             return std::make_pair(iroot, root);
         } else {
-            ran root = *std::get<MultivariateRootT>(c.value()).evaluate(sample);
-            datastructures::indexed_root iroot = datastructures::indexed_root(proj.polys()(c.definingPolynomial()), std::get<MultivariateRootT>(c.value()).k());
+            auto eval_res = std::get<MultivariateRootT>(c.value()).evaluate(sample);
+            assert(eval_res);
+            ran root = *eval_res;
+            auto p = c.definingPolynomial();
+            datastructures::indexed_root iroot(proj.polys()(p), std::get<MultivariateRootT>(c.value()).k());
             return std::make_pair(iroot, root);
         }
     }();
