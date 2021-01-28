@@ -105,16 +105,17 @@ namespace smtrat::cadcells::representation {
             std::sort(sorted_ders.begin(), sorted_ders.end(), [](const datastructures::sampled_derivation_ref<T>& p_cell1, const datastructures::sampled_derivation_ref<T>& p_cell2) { // cell1 < cell2
                 const auto& cell1 = p_cell1->cell();
                 const auto& cell2 = p_cell2->cell();
-                return lower_less(cell1, cell2) || (lower_equal(cell1, cell2) && upper_less(cell1, cell2));
+                return lower_less(cell1, cell2) || (lower_equal(cell1, cell2) && upper_less(cell2, cell1));
             });
 
             auto iter = sorted_ders.begin();
             while (iter != sorted_ders.end()) {
-                while (std::next(iter) != sorted_ders.end() && lower_equal((*iter)->cell(), (*std::next(iter))->cell()) && !upper_less((*std::next(iter))->cell(), (*iter)->cell())) iter++;
                 std::optional<datastructures::cell_representation<T>> cell_result = cell<default_cell>::compute(*iter);
                 if (!cell_result) return std::nullopt;
                 result.cells.emplace_back(*cell_result);
-                iter++;
+                auto& last_cell = (*iter)->cell();
+                iter++; 
+                while (iter != sorted_ders.end() && !upper_less(last_cell, (*iter)->cell())) iter++;
             }
 
             return result;

@@ -21,6 +21,10 @@ public:
         return m_lower != m_end && m_upper != m_end && m_lower == m_upper;
     }
 
+    bool is_sector() const {
+        return !is_section();
+    }
+
     const auto& lower() const {
         assert(m_lower != m_end);
         return m_lower;
@@ -141,10 +145,10 @@ bool lower_equal(const delineation_interval& del1, const delineation_interval& d
 }
 
 bool upper_less(const delineation_interval& del1, const delineation_interval& del2) {
-    if (del1.upper_unbounded()) return !del2.upper_unbounded();
-    else if (del2.upper_unbounded()) return true;
+    if (del1.upper_unbounded()) return false;
+    else if (del2.upper_unbounded()) return !del1.upper_unbounded();
     else if (del1.upper()->first < del2.upper()->first) return true;
-    else if (del1.upper()->first == del2.upper()->first) return del1.is_section() && !del2.is_section();
+    else if (del1.upper()->first == del2.upper()->first) return del1.is_sector() && del2.is_section();
     else return false;
 }
 
