@@ -62,7 +62,8 @@ namespace smtrat::cadcells::datastructures {
                 cell++;
                 if (std::prev(cell)->derivation.cell().upper_unbounded()) return false;
                 if (cell->derivation.cell().lower_unbounded()) return false;
-                if (std::prev(cell)->derivation.cell().upper()->first <= cell->derivation.cell().lower()->first) return false;
+                if (std::prev(cell)->derivation.cell().upper()->first < cell->derivation.cell().lower()->first) return false;
+                if (std::prev(cell)->derivation.cell().upper()->first == cell->derivation.cell().lower()->first && std::prev(cell)->derivation.cell().is_sector() && cell->derivation.cell().is_sector()) return false;
             }
             if (!cell->derivation.cell().upper_unbounded()) return false;
             return true;

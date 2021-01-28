@@ -44,6 +44,7 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
                 assert(results.back()->cell().is_section());
             }
         }
+        // TODO unify neighbouring intervals whenever the poly does not change its sign at a zero
 
         {
             auto current_sample = ran(carl::sample_below(roots.begin()->first));
