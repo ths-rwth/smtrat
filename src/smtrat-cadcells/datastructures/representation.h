@@ -39,6 +39,7 @@ namespace smtrat::cadcells::datastructures {
         std::vector<cell_representation<P>> cells;
         /// Returns a descriptions of the covering.
         covering_description get_covering() const {
+            assert(is_valid());
             covering_description cov;
             for (const auto& cell : cells) {
                 cov.add(cell.description);
@@ -52,6 +53,19 @@ namespace smtrat::cadcells::datastructures {
                 cov.push_back(cell.derivation);
             }
             return cov;
+        }
+        bool is_valid() const { // TODO extend for redundancy checks
+            auto cell = cells.begin();
+
+            if (!cell->derivation.cell().lower_unbounded()) return false;
+            while (cell != std::prev(cells.end())) {
+                cell++;
+                if (std::prev(cell)->derivation.cell().upper_unbounded()) return false;
+                if (cell->derivation.cell().lower_unbounded()) return false;
+                if (std::prev(cell)->derivation.cell().upper()->first <= cell->derivation.cell().lower()->first) return false;
+            }
+            if (!cell->derivation.cell().upper_unbounded()) return false;
+            return true;
         }
     };
     template<typename P>

@@ -29,7 +29,7 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
     auto& roots = deriv->delin().roots(); 
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got roots " << roots);
     if (roots.empty()) {
-        tmp_sample.emplace(current_var, ran(0));
+        tmp_sample.insert_or_assign(current_var, ran(0));
         if (!carl::evaluate(c, tmp_sample)) {
             results.emplace_back(datastructures::make_sampled_derivation<propset>(deriv,ran(0)));
             SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
@@ -47,7 +47,7 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
 
         {
             auto current_sample = ran(carl::sample_below(roots.begin()->first));
-            tmp_sample.emplace(current_var, current_sample);
+            tmp_sample.insert_or_assign(current_var, current_sample);
             if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c, tmp_sample))) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
                 SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
@@ -58,7 +58,7 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
         
         for (auto root = roots.begin(); root != std::prev(roots.end()); root++) {
             auto current_sample = carl::sample_between(root->first, std::next(root)->first);
-            tmp_sample.emplace(current_var, current_sample);
+            tmp_sample.insert_or_assign(current_var, current_sample);
             if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c, tmp_sample))) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
                 SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
@@ -70,7 +70,7 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
         
         {
             auto current_sample = ran(carl::sample_above((--roots.end())->first));
-            tmp_sample.emplace(current_var, current_sample);
+            tmp_sample.insert_or_assign(current_var, current_sample);
             if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c, tmp_sample))) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
                 SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
