@@ -17,11 +17,11 @@ FormulaT to_formula(const datastructures::poly_pool& pool, carl::Variable main_v
     } else {
         FormulasT subformulas;
         if (c.lower()) {
-            subformulas.emplace_back(VariableComparisonT(main_var, as_multivariate_root(pool,main_var,*c.lower()), carl::Relation::GEQ));
+            subformulas.emplace_back(VariableComparisonT(main_var, as_multivariate_root(pool,main_var,*c.lower()), carl::Relation::GREATER));
         }
         FormulaT lower(carl::FormulaType::TRUE);
         if (c.upper()) {
-            subformulas.emplace_back(VariableComparisonT(main_var, as_multivariate_root(pool,main_var,*c.upper()), carl::Relation::LEQ));
+            subformulas.emplace_back(VariableComparisonT(main_var, as_multivariate_root(pool,main_var,*c.upper()), carl::Relation::LESS));
         }
         return FormulaT(carl::FormulaType::AND, std::move(subformulas));
     } 
