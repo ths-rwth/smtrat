@@ -111,10 +111,12 @@ public:
         return res != m_poly_ids[level-1].end();
     }
 
-    void clear_level(size_t level) {
+    void clear_levels(size_t level) {
+        assert(level > 0);
+        assert(level <= m_polys.size());
         // m_id_pools[level-1].clear();
-        m_polys[level-1].clear();
-        m_poly_ids[level-1].clear();
+        m_polys.erase(m_polys.begin() + (level - 1), m_polys.end());
+        m_poly_ids.erase(m_poly_ids.begin() + (level - 1), m_poly_ids.end());
     }
 };
 

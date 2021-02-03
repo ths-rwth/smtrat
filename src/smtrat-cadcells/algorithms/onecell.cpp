@@ -210,8 +210,7 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
 
         description.emplace_back(helper::to_formula(proj.polys(), cell_deriv->main_var(),cell_repr->description));
         cell_deriv = cell_deriv->underlying().sampled_ref();
-        // TODO pool.clear(props->level()+1);
-        // TODO proj.clear(props->level()+1);
+        proj.clear_cache(cell_deriv->level()+2);
     }
 
     return std::make_pair(constraints, FormulaT(carl::FormulaType::AND, std::move(description)));

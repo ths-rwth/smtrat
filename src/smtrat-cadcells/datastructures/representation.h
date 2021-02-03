@@ -31,7 +31,7 @@ namespace smtrat::cadcells::datastructures {
     /**
      * Represents a covering over a cell.
      * 
-     * The cells forming the covering are in increasing order and no cell is contained in another cell.
+     * The cells forming the covering are in increasing order (ordered by lower bound) and no cell is contained in another cell.
      */
     template<typename P>
     struct covering_representation {
@@ -54,6 +54,7 @@ namespace smtrat::cadcells::datastructures {
             }
             return cov;
         }
+        /// Checks whether thsi represents a proper non-redundant covering.
         bool is_valid() const { // TODO extend for redundancy checks
             auto cell = cells.begin();
 
