@@ -68,25 +68,26 @@ namespace smtrat::cadcells::representation {
 
                 if (!der->cell().lower_unbounded()) {
                     auto it = der->cell().lower();
-                    do {
+                    while(true) {
                         for (const auto& ir : it->second) {
                             if (ir != *response.description.lower()) {
                                 response.ordering.add_below(ir, *response.description.lower());
                             } 
                         }
-                        it--;
-                    } while(it != der->delin().roots().begin());
+                        if (it != der->delin().roots().begin()) it--;
+                        else break;
+                    }
                 }
                 if (!der->cell().upper_unbounded()) {
                     auto it = der->cell().upper();
-                    do {
+                    while(it != der->delin().roots().end()) {
                         for (const auto& ir : it->second) {
                             if (ir != *response.description.upper()) {
                                 response.ordering.add_above(*response.description.upper(), ir);
                             }
                         }
                         it++;
-                    } while(it != der->delin().roots().end());
+                    }
                 }
             }
             return response;
