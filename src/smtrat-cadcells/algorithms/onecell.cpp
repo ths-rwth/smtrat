@@ -95,7 +95,7 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
 
     auto deriv = datastructures::make_derivation<propset>(proj, sample, sample.size() + 1).delineated_ref();
 
-    auto value_result = [&]() {
+    auto value_result = [&]() -> std::variant<std::pair<datastructures::indexed_root, ran>, datastructures::poly_ref> {
         if (std::holds_alternative<ran>(c.value())) {
             ran root = std::get<ran>(c.value());
             auto p = c.definingPolynomial();
@@ -106,40 +106,56 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
             return std::make_pair(iroot, root);
         } else {
             auto eval_res = std::get<MultivariateRootT>(c.value()).evaluate(sample);
-            if (!eval_res) std::exit(75);
-            assert(eval_res);
-            ran root = *eval_res;
-            auto p = c.definingPolynomial();
-            datastructures::indexed_root iroot(proj.polys()(p), std::get<MultivariateRootT>(c.value()).k());
-            return std::make_pair(iroot, root);
+            if (!eval_res) {
+                auto p = c.definingPolynomial();
+                return proj.polys()(p);
+            } else {
+                ran root = *eval_res;
+                auto p = c.definingPolynomial();
+                datastructures::indexed_root iroot(proj.polys()(p), std::get<MultivariateRootT>(c.value()).k());
+                return std::make_pair(iroot, root);
+            }
         }
     }();
-    datastructures::indexed_root& iroot = value_result.first;
-    ran& root = value_result.second;
-
-    deriv->insert(operators::properties::poly_pdel{ iroot.poly });
-    deriv->insert(operators::properties::root_well_def{ iroot });
-    deriv->delin().add_root(root, iroot);
-
-    auto relation = c.negated() ? carl::inverse(c.relation()) : c.relation();
-    bool point = relation == carl::Relation::GREATER || relation == carl::Relation::LESS || relation == carl::Relation::NEQ;
-    bool below = relation == carl::Relation::GREATER || relation == carl::Relation::GEQ || relation == carl::Relation::EQ;
-    bool above = relation == carl::Relation::LESS || relation == carl::Relation::LEQ || relation == carl::Relation::EQ;
 
     std::vector<datastructures::sampled_derivation_ref<propset>> results;
-    if (point) {
-        results.emplace_back(datastructures::make_sampled_derivation(deriv, root));
-        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
-    }
-    if (below) {
-        results.emplace_back(datastructures::make_sampled_derivation(deriv, ran(carl::sample_below(root))));
-        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
-    }
-    if (above) {
-        results.emplace_back(datastructures::make_sampled_derivation(deriv, ran(carl::sample_above(root))));
-        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
-    }
 
+    if (std::holds_alternative<std::pair<datastructures::indexed_root, ran>>(value_result)) {
+        datastructures::indexed_root& iroot = std::get<std::pair<datastructures::indexed_root, ran>>(value_result).first;
+        ran& root = std::get<std::pair<datastructures::indexed_root, ran>>(value_result).second;
+
+        deriv->insert(operators::properties::poly_pdel{ iroot.poly });
+        deriv->insert(operators::properties::root_well_def{ iroot });
+        deriv->delin().add_root(root, iroot);
+
+        auto relation = c.negated() ? carl::inverse(c.relation()) : c.relation();
+        bool point = relation == carl::Relation::GREATER || relation == carl::Relation::LESS || relation == carl::Relation::NEQ;
+        bool below = relation == carl::Relation::GREATER || relation == carl::Relation::GEQ || relation == carl::Relation::EQ;
+        bool above = relation == carl::Relation::LESS || relation == carl::Relation::LEQ || relation == carl::Relation::EQ;
+
+        if (point) {
+            results.emplace_back(datastructures::make_sampled_derivation(deriv, root));
+            SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
+        }
+        if (below) {
+            results.emplace_back(datastructures::make_sampled_derivation(deriv, ran(carl::sample_below(root))));
+            SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
+        }
+        if (above) {
+            results.emplace_back(datastructures::make_sampled_derivation(deriv, ran(carl::sample_above(root))));
+            SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
+        }
+    } else {
+        datastructures::poly_ref& poly = std::get<datastructures::poly_ref>(value_result);
+        if (proj.is_nullified(sample, poly)) {
+            deriv->delin().add_poly_nullified(poly);
+        } else {
+            deriv->insert(operators::properties::poly_pdel{ poly });
+            deriv->delin().add_poly_noroot(poly);
+        }
+        results.emplace_back(datastructures::make_sampled_derivation(deriv, ran(0)));
+        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
+    }
     return results;
 }
 
