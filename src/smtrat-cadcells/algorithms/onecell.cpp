@@ -32,7 +32,7 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
         tmp_sample.insert_or_assign(current_var, ran(0));
         if (!carl::evaluate(c, tmp_sample)) {
             results.emplace_back(datastructures::make_sampled_derivation<propset>(deriv,ran(0)));
-            SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
+            SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
             assert(results.back()->cell().lower_unbounded());
             assert(results.back()->cell().upper_unbounded());
         }
@@ -40,7 +40,7 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
         if (carl::isStrict(c.relation())) { // TODO later: allow weak bounds for sampled_derivations
             for (auto root = roots.begin(); root != roots.end(); root++) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, root->first));
-                SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
+                SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
                 assert(results.back()->cell().is_section());
             }
         }
@@ -51,7 +51,7 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
             tmp_sample.insert_or_assign(current_var, current_sample);
             if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c, tmp_sample))) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
-                SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
+                SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
                 assert(results.back()->cell().is_sector());
                 assert(results.back()->cell().lower_unbounded());
             }
@@ -62,7 +62,7 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
             tmp_sample.insert_or_assign(current_var, current_sample);
             if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c, tmp_sample))) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
-                SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
+                SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
                 assert(results.back()->cell().is_sector());
                 assert(!results.back()->cell().lower_unbounded());
                 assert(!results.back()->cell().upper_unbounded());
@@ -74,7 +74,7 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
             tmp_sample.insert_or_assign(current_var, current_sample);
             if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c, tmp_sample))) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
-                SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
+                SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
                 assert(results.back()->cell().is_sector());
                 assert(results.back()->cell().upper_unbounded());
             }
@@ -135,15 +135,15 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
 
         if (point) {
             results.emplace_back(datastructures::make_sampled_derivation(deriv, root));
-            SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
+            SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
         }
         if (below) {
             results.emplace_back(datastructures::make_sampled_derivation(deriv, ran(carl::sample_below(root))));
-            SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
+            SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
         }
         if (above) {
             results.emplace_back(datastructures::make_sampled_derivation(deriv, ran(carl::sample_above(root))));
-            SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
+            SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
         }
     } else {
         datastructures::poly_ref& poly = std::get<datastructures::poly_ref>(value_result);
@@ -154,7 +154,7 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
             deriv->delin().add_poly_noroot(poly);
         }
         results.emplace_back(datastructures::make_sampled_derivation(deriv, ran(0)));
-        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell());
+        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
     }
     return results;
 }
@@ -215,6 +215,7 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Delineate properties");
         operators::delineate_properties<op>(*cell_deriv->delineated());
         cell_deriv->delineate_cell();
+        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << cell_deriv->cell() << " wrt " << cell_deriv->delin());
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Compute cell representation");
         auto cell_repr = representation::cell<representation::default_cell>::compute(cell_deriv);
         if (!cell_repr) {

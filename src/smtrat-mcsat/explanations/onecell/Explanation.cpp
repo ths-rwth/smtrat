@@ -35,7 +35,7 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
         return boost::none;
     }
     else {
-        SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Got unsat cell " << result->second << " of constraints " << result->first);
+        SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Got unsat cell " << result->second << " of constraints " << result->first << " wrt " << vars << " and " << ass);
         FormulasT expl;
         for (const auto& f : result->first) expl.push_back(f.negated());
         expl.push_back(result->second.negated().resolveNegation());

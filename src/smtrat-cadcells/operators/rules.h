@@ -10,7 +10,7 @@ void root_well_def(datastructures::sampled_derivation<P>& deriv, datastructures:
     assert(deriv.contains(properties::poly_pdel{ root.poly }));
 
     if (root.index != 1 && root.index != deriv.proj().num_roots(deriv.sample(), root.poly)) return;
-    else if (!deriv.proj().is_ldcf_zero(deriv.sample(), root.poly)) return;
+    else if (deriv.proj().is_ldcf_zero(deriv.sample(), root.poly)) return;
     else {
         deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(root.poly) });
     }
