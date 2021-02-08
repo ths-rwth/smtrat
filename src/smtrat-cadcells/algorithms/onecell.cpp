@@ -149,9 +149,13 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
         datastructures::poly_ref& poly = std::get<datastructures::poly_ref>(value_result);
         if (proj.is_nullified(sample, poly)) {
             deriv->delin().add_poly_nullified(poly);
-        } else {
+        } else if (proj.num_roots(sample, poly) == 0) {
             deriv->insert(operators::properties::poly_pdel{ poly });
             deriv->delin().add_poly_noroot(poly);
+        } else {
+            assert(proj.num_roots(sample, poly) > 0 && proj.num_roots(sample, poly) < std::get<MultivariateRootT>(c.value()).k());
+            deriv->insert(operators::properties::poly_pdel{ poly });
+            deriv->insert(operators::properties::poly_sgn_inv{ deriv->proj().ldcf(poly) });
         }
         results.emplace_back(datastructures::make_sampled_derivation(deriv, ran(0)));
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
