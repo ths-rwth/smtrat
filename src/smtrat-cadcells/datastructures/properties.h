@@ -15,7 +15,8 @@ struct property_hash {
 template<typename... Ts>
 struct properties_t {};
 template<typename T>
-using properties_t_set = std::unordered_set<T, property_hash<T>>;
+//using properties_t_set = std::unordered_set<T, property_hash<T>>;
+using properties_t_set = std::set<T>;
 
 template <class T, class... Ts>
 struct properties_t<T, Ts...> : properties_t<Ts...> {

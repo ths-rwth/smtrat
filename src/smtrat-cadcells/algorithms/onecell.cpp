@@ -214,7 +214,10 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Constructing cell on level " << cell_deriv->level());
 
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project properties");
-        operators::project_cell_properties<op>(*cell_deriv);
+        if (!operators::project_cell_properties<op>(*cell_deriv)) {
+            SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Could not project properties");
+            return std::nullopt;
+        }
         operators::project_basic_properties<op>(*cell_deriv->base());
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Delineate properties");
         operators::delineate_properties<op>(*cell_deriv->delineated());
@@ -223,6 +226,7 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Compute cell representation");
         auto cell_repr = representation::cell<representation::default_cell>::compute(cell_deriv);
         if (!cell_repr) {
+            SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Could not compute representation");
             return std::nullopt;
         }
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got representation " << *cell_repr);

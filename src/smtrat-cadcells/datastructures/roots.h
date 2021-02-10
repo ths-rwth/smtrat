@@ -21,6 +21,9 @@ struct indexed_root {
 bool operator==(const indexed_root& lhs, const indexed_root& rhs) {
     return lhs.poly == rhs.poly && lhs.index == rhs.index;
 }
+bool operator<(const indexed_root& lhs, const indexed_root& rhs) {
+    return lhs.poly < rhs.poly || (lhs.poly == rhs.poly &&  lhs.index < rhs.index);
+}
 bool operator!=(const indexed_root& lhs, const indexed_root& rhs) {
     return !(lhs == rhs);
 }

@@ -67,16 +67,17 @@ void project_delineated_cell_properties<op::mccallum>(datastructures::cell_repre
 }
 
 template <>
-void project_cell_properties<op::mccallum>(datastructures::sampled_derivation<properties_set<op::mccallum>::type>& deriv) {
+bool project_cell_properties<op::mccallum>(datastructures::sampled_derivation<properties_set<op::mccallum>::type>& deriv) {
     for(const auto& prop : deriv.properties<properties::root_well_def>()) {
         rules::root_well_def(deriv, prop.root);
     }
     for(const auto& prop : deriv.properties<properties::poly_pdel>()) {
-        rules::poly_pdel(deriv, prop.poly);
+        if (!rules::poly_pdel(deriv, prop.poly)) return false;
     }
     for(const auto& prop : deriv.properties<properties::poly_ord_inv>()) {
         rules::poly_ord_inv(deriv, prop.poly);
     }
+    return true;
 }
 
 template <>
