@@ -33,8 +33,10 @@ private:
 	bool isUnivariate(const FormulaT& f) const {
 		return mcsat::constraint_type::isUnivariate(f, mModel, mVar);
 		SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "is " << f << " univariate in " << mVar << "?");
-		carl::Variables vars;
-		f.arithmeticVars(vars);
+		// TODO VARREFACTOR
+		carl::carlVariables _vars;
+		f.gatherVariables(_vars);
+		carl::Variables vars = _vars.arithmetic().underlyingVariableSet();
 		SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Collected " << vars);
 		auto it = vars.find(mVar);
 		if (it == vars.end()) return false;

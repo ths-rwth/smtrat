@@ -642,8 +642,10 @@ namespace smtrat
             while(!mBoxStorage.empty())
                 mBoxStorage.pop();
             icp::set_icpVariable icpVariables;
-            carl::Variables originalRealVariables;
-            rReceivedFormula().realValuedVars(originalRealVariables); // TODO: store original variables as member, updating them efficiently with assert and remove
+            carl::carlVariables _vars; // TODO VARREFACTOR
+            rReceivedFormula().gatherVariables(_vars);
+            carl::Variables originalRealVariables = _vars.arithmetic().underlyingVariableSet();
+            // TODO: store original variables as member, updating them efficiently with assert and remove
             for( auto variablesIt = originalRealVariables.begin(); variablesIt != originalRealVariables.end(); ++variablesIt )
             {
                 auto iter = mVariables.find(*variablesIt);
@@ -807,11 +809,10 @@ namespace smtrat
             if( iter == mVariableLinearizations.end() ) // no linearization yet
             {
                 // create mLinearzations entry
-                carl::Variables variables;
-                monom.gatherVariables( variables );
+                carl::carlVariables variables = carl::variables(monom);
                 bool hasRealVar = false;
 				for (auto var: variables) {
-					if (var.type() == carl::VariableType::VT_REAL) {
+					if (underlying_variable(var).type() == carl::VariableType::VT_REAL) {
 						hasRealVar = true;
 						break;
 					}
@@ -838,7 +839,7 @@ namespace smtrat
                     for( auto varIndex = variables.begin(); varIndex != variables.end(); ++varIndex )
                     {
                         // create a contraction candidate for m_i-v_i regarding the variable x_{i,1}
-                        icp::ContractionCandidate* tmpCandidate = mCandidateManager.createCandidate( newVar, rhs, tmp, *varIndex, mContractors.at( rhs ), Settings::use_propagation );
+                        icp::ContractionCandidate* tmpCandidate = mCandidateManager.createCandidate( newVar, rhs, tmp, underlying_variable(*varIndex), mContractors.at( rhs ), Settings::use_propagation );
                         ccsOfMonomial.insert( ccsOfMonomial.end(), tmpCandidate );
                         tmpCandidate->setNonlinear();
                         // add the contraction candidate to the icp variable of v_i
@@ -854,7 +855,7 @@ namespace smtrat
                     // add all contraction candidates for m_i-v_i to the icp variables of all x_{i,j}
                     for( auto var = variables.begin(); var != variables.end(); ++var )
                     {
-                        auto origIcpVar = mVariables.find( *var );
+                        auto origIcpVar = mVariables.find( underlying_variable(*var) );
                         assert( origIcpVar != mVariables.end() );
                         origIcpVar->second->addCandidates( ccsOfMonomial );
                     }
@@ -1636,8 +1637,9 @@ namespace smtrat
     template<class Settings>
     FormulasT ICPModule<Settings>::createBoxFormula( bool _onlyOriginalVariables )
     {
-        carl::Variables originalRealVariables;
-        rReceivedFormula().realValuedVars(originalRealVariables); // TODO: store original variables as member, updating them efficiently with assert and remove
+        carl::carlVariables _vars; // TODO VARREFACTOR
+        rReceivedFormula().gatherVariables(_vars);
+        carl::Variables originalRealVariables = _vars.arithmetic().underlyingVariableSet(); // TODO: store original variables as member, updating them efficiently with assert and remove
         FormulasT subformulas;
         for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
         {
@@ -2196,8 +2198,9 @@ namespace smtrat
     {
         bool testSuccessful = true;
         // find a point within the intervals
-        carl::Variables originalRealVariables;
-        rReceivedFormula().realValuedVars(originalRealVariables); // TODO: store original variables as member, updating them efficiently with assert and remove
+        carl::carlVariables _vars; // TODO VARREFACTOR
+        rReceivedFormula().gatherVariables(_vars);
+        carl::Variables originalRealVariables = _vars.arithmetic().underlyingVariableSet(); // TODO: store original variables as member, updating them efficiently with assert and remove
         std::map<carl::Variable, double> antipoint = createModel( true );
         mFoundSolution.clear();
         #ifdef ICP_MODULE_DEBUG_0
@@ -2550,8 +2553,9 @@ namespace smtrat
     template<class Settings>
     void ICPModule<Settings>::pushBoundsToPassedFormula()
     {
-        carl::Variables originalRealVariables;
-        rReceivedFormula().realValuedVars( originalRealVariables ); // TODO: store original variables as member, updating them efficiently with assert and remove
+        carl::carlVariables _vars; // TODO VARREFACTOR
+        rReceivedFormula().gatherVariables(_vars);
+        carl::Variables originalRealVariables = _vars.arithmetic().underlyingVariableSet(); // TODO: store original variables as member, updating them efficiently with assert and remove
         auto varIntervalIter = mIntervals.begin();
         auto varInitialIntervalIter = mInitialIntervals.begin();
         for( std::map<carl::Variable, icp::IcpVariable*>::iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
@@ -2629,8 +2633,9 @@ namespace smtrat
     EvalRationalIntervalMap ICPModule<Settings>::getCurrentBoxAsIntervals() const
     {
         EvalRationalIntervalMap result;
-        carl::Variables originalRealVariables;
-        rReceivedFormula().realValuedVars( originalRealVariables ); // TODO: store original variables as member, updating them efficiently with assert and remove
+        carl::carlVariables _vars; // TODO VARREFACTOR
+        rReceivedFormula().gatherVariables(_vars);
+        carl::Variables originalRealVariables = _vars.arithmetic().underlyingVariableSet(); // TODO: store original variables as member, updating them efficiently with assert and remove
         auto varIntervalIter = mIntervals.begin();
         auto varInitialIntervalIter = mInitialIntervals.begin();
         for( std::map<carl::Variable, icp::IcpVariable*>::const_iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
@@ -2660,8 +2665,9 @@ namespace smtrat
     FormulasT ICPModule<Settings>::getCurrentBoxAsFormulas() const
     {
         FormulasT result;
-        carl::Variables originalRealVariables;
-        rReceivedFormula().realValuedVars( originalRealVariables ); // TODO: store original variables as member, updating them efficiently with assert and remove
+        carl::carlVariables _vars; // TODO VARREFACTOR
+        rReceivedFormula().gatherVariables(_vars);
+        carl::Variables originalRealVariables = _vars.arithmetic().underlyingVariableSet(); // TODO: store original variables as member, updating them efficiently with assert and remove
         auto varIntervalIter = mIntervals.begin();
         auto varInitialIntervalIter = mInitialIntervals.begin();
         for( std::map<carl::Variable, icp::IcpVariable*>::const_iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
@@ -2776,8 +2782,9 @@ namespace smtrat
                 {
                     // std::cout << "Defining origin: " << **formulaIt << " FOR " << *(*variableIt) << std::endl;
                     bool hasAdditionalVariables = false;
-                    carl::Variables realValuedVars;
-                    rReceivedFormula().realValuedVars(realValuedVars); // TODO: store original variables as member, updating them efficiently with assert and remove
+                    carl::carlVariables _vars; // TODO VARREFACTOR
+                    rReceivedFormula().gatherVariables(_vars);
+                    carl::Variables realValuedVars = _vars.arithmetic().underlyingVariableSet(); // TODO: store original variables as member, updating them efficiently with assert and remove
                     for( auto varIt = realValuedVars.begin(); varIt != realValuedVars.end(); ++varIt )
                     {
                         if(*varIt != (*variableIt)->var() && formulaIt->constraint().hasVariable(*varIt))

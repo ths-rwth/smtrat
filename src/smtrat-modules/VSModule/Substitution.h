@@ -144,10 +144,7 @@ namespace vs
                 if( mpTermVariables == NULL )
                 {
                     mpTermVariables = new carl::Variables();
-                    mpTerm->constantPart().gatherVariables( *mpTermVariables );
-                    mpTerm->factor().gatherVariables( *mpTermVariables );
-                    mpTerm->denominator().gatherVariables( *mpTermVariables );
-                    mpTerm->radicand().gatherVariables( *mpTermVariables );
+                    *mpTermVariables = carl::variables(*mpTerm).underlyingVariableSet();
                 }
                 return *mpTermVariables;
             }

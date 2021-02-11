@@ -524,11 +524,12 @@ namespace smtrat
      * @param linearizedModel Model of linearized formula.
      */
     Model createEstimatedAssignment(Model linearizedModel){
-        carl::Variables allVarsOfOriginalFormula;
         Model estimatedModel;
 
         //collect the variables into the container "allVarsOfOriginalFormula"
-        originalFormula->vars(allVarsOfOriginalFormula);
+        carl::carlVariables _vars;
+        originalFormula->gatherVariables(_vars);
+        auto allVarsOfOriginalFormula = _vars.underlyingVariables(); // TODO VARREFACTOR
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             std::cout << "all variables of original formula: ";
             for (auto it = allVarsOfOriginalFormula.begin(); it != allVarsOfOriginalFormula.end(); ++it) {

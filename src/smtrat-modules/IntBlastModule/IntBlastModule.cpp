@@ -88,13 +88,14 @@ namespace smtrat
 
         for(const ConstraintT& constraint : containedConstraints) {
             // Retrieve all arithmetic variables in formula
-            carl::Variables variablesInFormula;
-            carl::Variables nonlinearVariablesInFormula;
+            carl::carlVariables nonlinearVariablesInFormula;
             const Poly& poly = constraint.lhs();
-            formula.arithmeticVars(variablesInFormula);
+            carl::carlVariables _vars;
+            formula.gatherVariables(_vars);
+            carl::Variables variablesInFormula = _vars.arithmetic().underlyingVariableSet(); // TODO VARREFACTOR
             for(auto termIt = poly.begin();termIt != poly.end();++termIt) {
                 if(termIt->getNrVariables() > 1 || ! termIt->isLinear()) {
-                    termIt->gatherVariables(nonlinearVariablesInFormula);
+                    carl::variables(*termIt, nonlinearVariablesInFormula);
                 }
             }
 
@@ -103,7 +104,7 @@ namespace smtrat
                 mInputVariables.add(variable, formula);
             }
             for(auto& variable : nonlinearVariablesInFormula) {
-                mNonlinearInputVariables.add(variable, formula);
+                mNonlinearInputVariables.add(underlying_variable(variable), formula);
             }
 
             // Introduce substitutes in ICP

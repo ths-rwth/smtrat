@@ -841,9 +841,7 @@ namespace smtrat
             {
                 for( auto iter = constraint.factorization().begin(); iter != constraint.factorization().end(); ++iter )
                 {
-                    carl::Variables factorVars;
-                    iter->first.gatherVariables( factorVars );
-                    if( factorVars.find( _eliminationVar ) != factorVars.end() )
+                    if( carl::variables(iter->first).has( _eliminationVar ) )
                         factors.push_back( iter->first );
                     else
                     {

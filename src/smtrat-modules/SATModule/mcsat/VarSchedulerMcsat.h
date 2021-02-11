@@ -116,8 +116,9 @@ namespace smtrat {
                 return 0;
             const auto& reabstraction = reabstractVariable(v);
 
-            carl::Variables vars;
-            reabstraction.arithmeticVars(vars);
+            carl::carlVariables _vars;
+            reabstraction.gatherVariables(_vars);
+            carl::Variables vars = _vars.arithmetic().underlyingVariableSet(); // TODO VARREFACTOR
             if (vars.empty())
                 return 0;
             for (std::size_t i = ordering.size(); i > 0; i--) {
@@ -453,8 +454,9 @@ namespace smtrat {
 
                         const auto substituted = carl::model::substitute(reabstraction, currentModel());
 
-                        carl::Variables vars;
-                        substituted.arithmeticVars(vars);
+                        carl::carlVariables _vars;
+                        substituted.gatherVariables(_vars);
+                        carl::Variables vars = _vars.arithmetic().underlyingVariableSet(); // TODO VARREFACTOR
 
                         auto size = vars.size();
                         for (auto iter = mTheoryLevels.begin(); iter != std::prev(mTheoryLevels.end()); iter++) {

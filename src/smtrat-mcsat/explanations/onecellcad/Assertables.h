@@ -70,7 +70,7 @@ bool polyVarsAreAllInList(
 	const std::vector<PolyType>& polys,
 	const std::vector<carl::Variable>& variables) {
 	for (const auto& poly : polys) {
-		if (!isSubset<carl::Variable>(asVector(poly.gatherVariables()), variables))
+		if (!isSubset<carl::Variable>(carl::variables(poly).underlyingVariables(), variables))
 			return false;
 	}
 	return true;

@@ -43,12 +43,14 @@ namespace smtrat
             // All variables which occur in the root of the constructed state tree but were incidentally eliminated
             // (during the elimination of another variable) can have an arbitrary assignment. If the variable has the
             // real domain, we leave at as a parameter, and, if it has the integer domain we assign 0 to it.
-            carl::Variables receivedVars;
-            rReceivedFormula().vars( receivedVars );
+            carl::carlVariables _vars;
+            rReceivedFormula().gatherVariables(_vars);
+            carl::Variables receivedVars = _vars.underlyingVariableSet(); // TODO VARREFACTOR
             if( solverState() != SAT && appliedPreprocessing() )
             {
-                carl::Variables passedVars;
-                rPassedFormula().vars( passedVars );
+                carl::carlVariables _vars1;
+                rPassedFormula().gatherVariables(_vars1);
+                carl::Variables passedVars = _vars1.underlyingVariableSet(); // TODO VARREFACTOR
                 auto rvIter = receivedVars.begin();
                 auto pvIter = passedVars.begin();
                 while( rvIter != receivedVars.end() && pvIter != passedVars.end() )

@@ -95,9 +95,8 @@ namespace smtrat
                     {
                         if( iter_poly->getNrVariables() > 1 )
                         {
-                            std::set< carl::Variable > temp;
-                            iter_poly->gatherVariables( temp );
-                            if( temp.find( *iter_var ) != temp.find( *iter_var ) )
+                            auto temp = carl::variables(*iter_poly);
+                            if( temp.has( *iter_var ) )
                             {
                                 simple_assert = false;
                                 break;
@@ -920,7 +919,8 @@ namespace smtrat
                     }
                     else
                     {
-                        iter_poly->gatherVariables( forbidden_fruits );
+                        for (const auto& var : carl::variables(*iter_poly))
+                            forbidden_fruits.insert(underlying_variable(var));
                     }
                 }
                 if( !iter_poly->isConstant() )
@@ -970,14 +970,13 @@ namespace smtrat
                     }
                     else
                     {
-                        std::set<carl::Variable> temp_vars;
-                        iter_poly->gatherVariables( temp_vars );
+                        auto temp_vars = carl::variables(*iter_poly);
                         auto iter_vars = temp_vars.begin();
                         while( iter_vars != temp_vars.end() )
                         {
-                            if( var_corr_constr.find( *iter_vars ) != var_corr_constr.end() )
+                            if( var_corr_constr.find( underlying_variable(*iter_vars) ) != var_corr_constr.end() )
                             {
-                                var_corr_constr.erase( *iter_vars );
+                                var_corr_constr.erase( underlying_variable(*iter_vars) );
                             }
                             ++iter_vars;
                         }

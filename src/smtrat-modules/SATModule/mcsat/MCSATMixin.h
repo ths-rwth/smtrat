@@ -403,8 +403,9 @@ public:
 
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Inconsistent: " << confl << " evaluates to false");
 			// pick any unassigned variable in confl (it must exist, otherwise the AssignmentFinder is incorrect)
-			carl::Variables vars;
-			confl.arithmeticVars(vars);
+			carl::carlVariables _vars;
+			confl.gatherVariables(_vars);
+			carl::Variables vars = _vars.arithmetic().underlyingVariableSet(); // TODO VARREFACTOR
 			for (const auto& avar : mBackend.assignedVariables())
 				vars.erase(avar);
 			assert(vars.size() > 0);
@@ -584,8 +585,9 @@ public:
 				const auto& reabstraction = mGetter.reabstractVariable(var);
 				if (reabstraction.getType() == carl::FormulaType::CONSTRAINT) {
 					const auto& constr = reabstraction.constraint();
-					carl::Variables vars;
-					reabstraction.arithmeticVars(vars);
+					carl::carlVariables _vars;
+					reabstraction.gatherVariables(_vars);
+					carl::Variables vars = _vars.arithmetic().underlyingVariableSet(); // TODO VARREFACTOR
 					std::size_t maxDeg = 0;
 					for (const auto& tvar : vars) {
 						std::size_t deg = constr.lhs().degree(tvar);
@@ -614,8 +616,9 @@ public:
 				mVarPropertyCache[v].theoryVars = std::vector<Minisat::Var>();
 			} else {
 				const auto& reabstraction = mGetter.reabstractVariable(var);
-				carl::Variables tvars;
-				reabstraction.arithmeticVars(tvars);
+				carl::carlVariables _vars;
+				reabstraction.gatherVariables(_vars);
+				carl::Variables tvars = _vars.arithmetic().underlyingVariableSet(); // TODO VARREFACTOR
 				std::vector<Minisat::Var> vars;
 				for (const auto& tvar : tvars) {
 					vars.push_back(minisatVar(tvar));

@@ -209,8 +209,7 @@ namespace smtrat
 		Poly with_v = Poly(1);
 		Poly without_v = Poly(1);
 		for (const auto& factor: carl::factorization(c.lhs())) {
-			carl::carlVariables vars;
-			factor.first.gatherVariables(vars);
+			carl::carlVariables vars = carl::variables(factor.first);
 			if (vars == carl::carlVariables({ v })) {
 				with_v *= carl::pow(factor.first, factor.second);
 			} else if (std::find(vars.begin(), vars.end(), carl::VariableVariant(v)) == vars.end()) {

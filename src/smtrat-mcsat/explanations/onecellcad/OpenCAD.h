@@ -133,7 +133,7 @@ OpenCADCell createFullspaceCoveringCell(size_t level) {
 size_t levelOf(const MultiPoly& poly,
 			   const std::vector<carl::Variable>& variableOrder) {
 	// 'gatherVariables()' collects only vars with positive degree
-	std::set<carl::Variable> polyVarSet = poly.gatherVariables();
+	std::set<carl::Variable> polyVarSet = carl::variables(poly).underlyingVariableSet();
 	// Algorithm:
 	// Iterate through each variable inside 'variableOrder' in ascending order
 	// and remove it from 'polyVarSet'. The last variable in 'polyVarSet' before

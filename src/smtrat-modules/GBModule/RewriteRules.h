@@ -20,18 +20,18 @@ namespace smtrat
 		{
 			std::map<carl::Variable, TermT> substitutions;
 
-			std::set<carl::Variable> vars;
+			carl::carlVariables vars;
 			carl::BitVector resultingReasons;
 			if( Polynomial::has_reasons )
 			{
 				resultingReasons = inputPolynomial.getReasons();
-				vars = inputPolynomial.gatherVariables();
+				vars = carl::variables(inputPolynomial);
 			}
 
 			for(auto rule : rules)
 			{
 				substitutions.insert(std::make_pair(rule.first, rule.second.first));
-				if(Polynomial::has_reasons && vars.count(rule.first) == 1)
+				if(Polynomial::has_reasons && vars.has(rule.first))
 				{
 					resultingReasons.calculateUnion(rule.second.second);
 				}

@@ -40,22 +40,22 @@ struct triangular_data {
 
 std::vector<carl::Variable> triangular_ordering(const std::vector<Poly>& polys) {
 	SMTRAT_LOG_DEBUG("smtrat.cad.variableordering", "Building order based on " << polys);
-	carl::Variables vars;
+	carl::carlVariables vars;
 	triangular_data data;
 	std::vector<VariableMap<std::size_t>> maxdeg;
 	maxdeg.resize(polys.size());
 	for (std::size_t i = 0; i < polys.size(); ++i) {
-		polys[i].gatherVariables(vars);
-		for (auto var: polys[i].gatherVariables()) {
+		carl::variables(polys[i], vars);
+		for (auto var: carl::variables(polys[i]).underlyingVariables()) { //TODO VARREFACTOR
 			maxdeg[i][var] = polys[i].degree(var);
 			data.max_deg[var] = std::max(data.max_deg[var], maxdeg[i][var]);
 			data.max_tdeg[var] = std::max(data.max_tdeg[var], polys[i].lcoeff(var).totalDegree());
 		}
 	}
-	for (auto var: vars) {
+	std::vector<carl::Variable> res = vars.underlyingVariables();
+	for (auto var: res) {
 		data.sum_deg[var] = std::accumulate(maxdeg.begin(), maxdeg.end(), 0ul, [var](std::size_t i, const auto& m) { return i + m[var]; });
 	}
-	std::vector<carl::Variable> res(vars.begin(), vars.end());
 	SMTRAT_LOG_DEBUG("smtrat.cad.variableordering", "Collected variables: " << res);
 	std::sort(res.begin(), res.end(), data);
 	SMTRAT_LOG_DEBUG("smtrat.cad.variableordering", "Sorted: " << res);

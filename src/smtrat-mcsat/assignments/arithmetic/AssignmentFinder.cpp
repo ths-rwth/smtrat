@@ -57,7 +57,7 @@ bool AssignmentFinder::active(const mcsat::Bookkeeping& data, const FormulaT& f)
 				return true;
 			} else {
 				const auto& mvroot = std::get<MultivariateRootT>(val);
-				auto vars = mvroot.poly().gatherVariables();
+				auto vars = carl::variables(mvroot.poly()).underlyingVariableSet(); // TODO VARREFACTOR
 				vars.erase(mvroot.var());
 				for (auto iter = data.assignedVariables().begin(); iter != data.assignedVariables().end(); iter++) {
 					if (*iter == f.variableComparison().var()) {

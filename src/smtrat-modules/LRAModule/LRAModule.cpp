@@ -1270,11 +1270,10 @@ namespace smtrat
         bool all_int = true;
         for( LRAVariable* basicVar : mTableau.rows() )
         {
-            carl::Variables vars;
-            basicVar->expression().gatherVariables( vars );
+            auto vars = carl::variables(basicVar->expression());
             // TODO JNE why should this hold? Doesn't this correspond to the variables of a tableu row?
-            assert( vars.size() >= 1 );
-            auto found_ex = rMap_.find(*vars.begin());
+            assert( !vars.empty() );
+            auto found_ex = rMap_.find(underlying_variable(*vars.begin()));
             const Rational& ass = found_ex->second;
             if( !carl::isInteger( ass ) )
             {
@@ -1392,8 +1391,9 @@ namespace smtrat
         if( solverState() == UNSAT ) return true;
         if( !mAssignmentFullfilsNonlinearConstraints ) return true;
         const EvalRationalMap& rmodel = getRationalModel();
-        carl::Variables inputVars;
-        rReceivedFormula().arithmeticVars( inputVars );
+        carl::carlVariables _inputVars;
+        rReceivedFormula().gatherVariables( _inputVars );
+		carl::Variables inputVars = _inputVars.arithmetic().underlyingVariableSet(); // TODO VARREFACTOR
         for( auto ass = rmodel.begin(); ass != rmodel.end(); ++ass )
         {
             if( ass->first.type() == carl::VariableType::VT_INT && !carl::isInteger( ass->second ) && inputVars.find( ass->first ) != inputVars.end() )
