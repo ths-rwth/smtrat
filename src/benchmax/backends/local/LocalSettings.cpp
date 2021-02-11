@@ -12,7 +12,7 @@ void registerLocalBackendSettings(SettingsParser* parser) {
 	auto& s = settings.get<LocalBackendSettings>("backend-local");
 	
 	parser->add("Local Backend settings").add_options()
-		("local.measurepeakmemory", po::bool_switch(&s.measure_peak_memory), "measure the peak memory usage of each call")
+		//("local.measurepeakmemory", po::bool_switch(&s.measure_peak_memory), "measure the peak memory usage of each call")
 	;
 }
 }

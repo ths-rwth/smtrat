@@ -13,6 +13,7 @@
 #include <mutex>
 #include <regex>
 
+#include "../utils/parsing.h"
 namespace benchmax {
 
 /**
@@ -84,6 +85,7 @@ private:
 				
 				auto& res = std::get<2>(results[id]);
 				res.stderr = (*i)[2];
+				res.peak_memory_kbytes = parse_peak_memory(res.stderr);
 				BENCHMAX_LOG_DEBUG("benchmax.slurm", "Got " << res << " for task " << id << " from stderr");
 			}
 		} else {

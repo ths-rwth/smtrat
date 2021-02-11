@@ -8,7 +8,7 @@ namespace  settings {
 /// Settings for local backend.
 struct LocalBackendSettings {
 	/// Measure the peak memory usage of each call.
-	bool measure_peak_memory;
+	//bool measure_peak_memory;
 };
 
 /// Registers local settings with settings parser.

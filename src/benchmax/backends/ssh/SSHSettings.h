@@ -17,8 +17,6 @@ struct SSHBackendSettings {
 	bool use_wallclock;
 	/// Resolve and upload dependencies of binary.
 	bool resolve_deps;
-	/// Measure the peak memory usage of each call.
-	bool measure_peak_memory;
 };
 
 /// Registers SSH settings with settings parser.
