@@ -71,7 +71,7 @@ public:
 	SSHBackend(): Backend() {}
 	~SSHBackend() {}
 	/// Dummy if SSH is disabled.
-	void run(const Jobs&, bool wait_for_termination) {
+	void run(const Jobs&, bool /*wait_for_termination*/) {
 		BENCHMAX_LOG_ERROR("benchmax", "This version of benchmax was compiled without support for SSH.");
 	}
 };

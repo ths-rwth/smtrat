@@ -22,7 +22,7 @@ BenchmarkSet loadBenchmarks() {
 namespace settings {
 
 /// Postprocess benchmark settings.
-bool finalize_benchmark_settings(BenchmarkSettings& s, const boost::program_options::variables_map& values) {
+bool finalize_benchmark_settings(BenchmarkSettings& s, const boost::program_options::variables_map& /*values*/) {
 	s.input_directories_common_prefix = common_prefix(s.input_directories, false);
 	return false;
 }
