@@ -132,7 +132,8 @@ private:
 		slurm::clear_log_files(settings_slurm().tmp_dir);
 
 		std::string jobsfilename = settings_slurm().tmp_dir + "/jobs-" + std::to_string(settings_core().start_time) + "-" + std::to_string(n+1) + ".jobs";
-		slurm::generate_jobs_file(jobsfilename, get_job_range(n, results.size()), results);
+		auto job_range = get_job_range(n, results.size());
+		slurm::generate_jobs_file(jobsfilename, job_range, results);
 
 		auto submitfile = slurm::generate_submit_file_chunked({
 			std::to_string(settings_core().start_time) + "-" + std::to_string(n),
@@ -142,7 +143,8 @@ private:
 			settings_benchmarks().grace_time,
 			settings_benchmarks().limit_memory,
 			settings_slurm().array_size,
-			settings_slurm().slice_size
+			settings_slurm().slice_size,
+			job_range.second + 1 - job_range.first
 		});
 
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Delaying for " << settings_slurm().submission_delay);

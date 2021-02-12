@@ -129,8 +129,9 @@ std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p) {
 	out << "max=$SLURM_ARRAY_TASK_MAX" << std::endl;
 	out << "cur=$SLURM_ARRAY_TASK_ID" << std::endl;
 	out << "slicesize=" << p.slice_size << std::endl;
+	out << "thisslicesize=" << p.this_slice_size << std::endl;
 	out << "start=$(( (cur - 1) * slicesize + 1 ))" << std::endl;
-	out << "end=$(( start + slicesize - 1 ))" << std::endl;
+	out << "end=$(( start + thisslicesize - 1 ))" << std::endl;
 
 	// Execute this slice
 	out << "for i in `seq ${start} ${end}`; do" << std::endl;
