@@ -144,7 +144,7 @@ private:
 			settings_benchmarks().limit_memory,
 			settings_slurm().array_size,
 			settings_slurm().slice_size,
-			job_range.second - job_range.first
+			job_range
 		});
 
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Delaying for " << settings_slurm().submission_delay);

@@ -77,7 +77,7 @@ struct ChunkedSubmitfileProperties {
 	/// Slice size.
 	std::size_t slice_size;
 	/// This slice size.
-	std::size_t this_slice_size;
+	std::pair<std::size_t,std::size_t> job_range;
 };
 
 std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p);
