@@ -225,7 +225,8 @@ public:
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Gathered " << results.size() << " jobs");
 		
 		std::vector<std::future<void>> tasks;
-		std::size_t count = results.size() / (settings_slurm().array_size * settings_slurm().slice_size) + 1;
+		std::size_t count = results.size() / (settings_slurm().array_size * settings_slurm().slice_size);
+		if (results.size() % (settings_slurm().array_size * settings_slurm().slice_size) > 0) count += 1;
 		for (std::size_t i = 0; i < count; ++i) {
 			tasks.emplace_back(std::async(std::launch::async,
 				[i,&results,wait_for_termination,this](){
