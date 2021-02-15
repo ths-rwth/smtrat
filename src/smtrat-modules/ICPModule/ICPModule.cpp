@@ -644,7 +644,7 @@ namespace smtrat
             icp::set_icpVariable icpVariables;
             carl::carlVariables _vars; // TODO VARREFACTOR
             rReceivedFormula().gatherVariables(_vars);
-            carl::Variables originalRealVariables = _vars.arithmetic().as_set();
+            carl::Variables originalRealVariables = _vars.real().as_set();
             // TODO: store original variables as member, updating them efficiently with assert and remove
             for( auto variablesIt = originalRealVariables.begin(); variablesIt != originalRealVariables.end(); ++variablesIt )
             {
@@ -1639,7 +1639,7 @@ namespace smtrat
     {
         carl::carlVariables _vars; // TODO VARREFACTOR
         rReceivedFormula().gatherVariables(_vars);
-        carl::Variables originalRealVariables = _vars.arithmetic().as_set(); // TODO: store original variables as member, updating them efficiently with assert and remove
+        carl::Variables originalRealVariables = _vars.real().as_set(); // TODO: store original variables as member, updating them efficiently with assert and remove
         FormulasT subformulas;
         for( auto intervalIt = mIntervals.begin(); intervalIt != mIntervals.end(); ++intervalIt )
         {
@@ -2200,7 +2200,7 @@ namespace smtrat
         // find a point within the intervals
         carl::carlVariables _vars; // TODO VARREFACTOR
         rReceivedFormula().gatherVariables(_vars);
-        carl::Variables originalRealVariables = _vars.arithmetic().as_set(); // TODO: store original variables as member, updating them efficiently with assert and remove
+        carl::Variables originalRealVariables = _vars.real().as_set(); // TODO: store original variables as member, updating them efficiently with assert and remove
         std::map<carl::Variable, double> antipoint = createModel( true );
         mFoundSolution.clear();
         #ifdef ICP_MODULE_DEBUG_0
@@ -2555,7 +2555,7 @@ namespace smtrat
     {
         carl::carlVariables _vars; // TODO VARREFACTOR
         rReceivedFormula().gatherVariables(_vars);
-        carl::Variables originalRealVariables = _vars.arithmetic().as_set(); // TODO: store original variables as member, updating them efficiently with assert and remove
+        carl::Variables originalRealVariables = _vars.real().as_set(); // TODO: store original variables as member, updating them efficiently with assert and remove
         auto varIntervalIter = mIntervals.begin();
         auto varInitialIntervalIter = mInitialIntervals.begin();
         for( std::map<carl::Variable, icp::IcpVariable*>::iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
@@ -2635,7 +2635,7 @@ namespace smtrat
         EvalRationalIntervalMap result;
         carl::carlVariables _vars; // TODO VARREFACTOR
         rReceivedFormula().gatherVariables(_vars);
-        carl::Variables originalRealVariables = _vars.arithmetic().as_set(); // TODO: store original variables as member, updating them efficiently with assert and remove
+        carl::Variables originalRealVariables = _vars.real().as_set(); // TODO: store original variables as member, updating them efficiently with assert and remove
         auto varIntervalIter = mIntervals.begin();
         auto varInitialIntervalIter = mInitialIntervals.begin();
         for( std::map<carl::Variable, icp::IcpVariable*>::const_iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
@@ -2667,7 +2667,7 @@ namespace smtrat
         FormulasT result;
         carl::carlVariables _vars; // TODO VARREFACTOR
         rReceivedFormula().gatherVariables(_vars);
-        carl::Variables originalRealVariables = _vars.arithmetic().as_set(); // TODO: store original variables as member, updating them efficiently with assert and remove
+        carl::Variables originalRealVariables = _vars.real().as_set(); // TODO: store original variables as member, updating them efficiently with assert and remove
         auto varIntervalIter = mIntervals.begin();
         auto varInitialIntervalIter = mInitialIntervals.begin();
         for( std::map<carl::Variable, icp::IcpVariable*>::const_iterator iter = mVariables.begin(); iter != mVariables.end(); ++iter )
