@@ -1273,7 +1273,7 @@ namespace smtrat
             auto vars = carl::variables(basicVar->expression());
             // TODO JNE why should this hold? Doesn't this correspond to the variables of a tableu row?
             assert( !vars.empty() );
-            auto found_ex = rMap_.find(underlying_variable(*vars.begin()));
+            auto found_ex = rMap_.find(*vars.begin());
             const Rational& ass = found_ex->second;
             if( !carl::isInteger( ass ) )
             {

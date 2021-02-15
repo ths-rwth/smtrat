@@ -212,7 +212,7 @@ namespace smtrat
 			carl::carlVariables vars = carl::variables(factor.first);
 			if (vars == carl::carlVariables({ v })) {
 				with_v *= carl::pow(factor.first, factor.second);
-			} else if (std::find(vars.begin(), vars.end(), carl::VariableVariant(v)) == vars.end()) {
+			} else if (std::find(vars.begin(), vars.end(), v) == vars.end()) {
 				without_v *= carl::pow(factor.first, factor.second);
 			} else {
 				return std::nullopt;

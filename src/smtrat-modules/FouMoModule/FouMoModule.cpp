@@ -920,7 +920,7 @@ namespace smtrat
                     else
                     {
                         for (const auto& var : carl::variables(*iter_poly))
-                            forbidden_fruits.insert(underlying_variable(var));
+                            forbidden_fruits.insert(var);
                     }
                 }
                 if( !iter_poly->isConstant() )
@@ -974,9 +974,9 @@ namespace smtrat
                         auto iter_vars = temp_vars.begin();
                         while( iter_vars != temp_vars.end() )
                         {
-                            if( var_corr_constr.find( underlying_variable(*iter_vars) ) != var_corr_constr.end() )
+                            if( var_corr_constr.find( *iter_vars ) != var_corr_constr.end() )
                             {
-                                var_corr_constr.erase( underlying_variable(*iter_vars) );
+                                var_corr_constr.erase( *iter_vars );
                             }
                             ++iter_vars;
                         }

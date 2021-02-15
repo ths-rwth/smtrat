@@ -425,7 +425,7 @@ public:
 		for (const auto& v : mBackend.assignedVariables())
 			vars.erase(v);
 		assert(vars.size() == 1);
-		carl::Variable tvar = carl::underlying_variable(*(vars.begin()));
+		carl::Variable tvar = *(vars.begin());
 
 		auto conflict = mBackend.isInfeasible(tvar, !f);
 		assert(carl::variant_is_type<FormulasT>(conflict));

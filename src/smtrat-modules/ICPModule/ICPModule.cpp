@@ -812,7 +812,7 @@ namespace smtrat
                 carl::carlVariables variables = carl::variables(monom);
                 bool hasRealVar = false;
 				for (auto var: variables) {
-					if (underlying_variable(var).type() == carl::VariableType::VT_REAL) {
+					if (var.type() == carl::VariableType::VT_REAL) {
 						hasRealVar = true;
 						break;
 					}
@@ -839,7 +839,7 @@ namespace smtrat
                     for( auto varIndex = variables.begin(); varIndex != variables.end(); ++varIndex )
                     {
                         // create a contraction candidate for m_i-v_i regarding the variable x_{i,1}
-                        icp::ContractionCandidate* tmpCandidate = mCandidateManager.createCandidate( newVar, rhs, tmp, underlying_variable(*varIndex), mContractors.at( rhs ), Settings::use_propagation );
+                        icp::ContractionCandidate* tmpCandidate = mCandidateManager.createCandidate( newVar, rhs, tmp, *varIndex, mContractors.at( rhs ), Settings::use_propagation );
                         ccsOfMonomial.insert( ccsOfMonomial.end(), tmpCandidate );
                         tmpCandidate->setNonlinear();
                         // add the contraction candidate to the icp variable of v_i
@@ -855,7 +855,7 @@ namespace smtrat
                     // add all contraction candidates for m_i-v_i to the icp variables of all x_{i,j}
                     for( auto var = variables.begin(); var != variables.end(); ++var )
                     {
-                        auto origIcpVar = mVariables.find( underlying_variable(*var) );
+                        auto origIcpVar = mVariables.find( *var );
                         assert( origIcpVar != mVariables.end() );
                         origIcpVar->second->addCandidates( ccsOfMonomial );
                     }
@@ -2469,7 +2469,7 @@ namespace smtrat
                         }
                         else
                         {
-                            assert( mVariables.find( carl::underlying_variable(*formulaIt->constraint().variables().begin()) ) != mVariables.end() );
+                            assert( mVariables.find( *formulaIt->constraint().variables().begin() ) != mVariables.end() );
                             mHistoryActual->addInfeasibleVariable( mVariables.at( formulaIt->constraint().variables().underlyingVariables().front() ) );
                         }
                     }

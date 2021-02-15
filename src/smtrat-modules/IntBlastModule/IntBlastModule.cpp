@@ -104,7 +104,7 @@ namespace smtrat
                 mInputVariables.add(variable, formula);
             }
             for(auto& variable : nonlinearVariablesInFormula) {
-                mNonlinearInputVariables.add(underlying_variable(variable), formula);
+                mNonlinearInputVariables.add(variable, formula);
             }
 
             // Introduce substitutes in ICP

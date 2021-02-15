@@ -68,7 +68,7 @@ namespace arithmetic {
 		carl::variables(p, pVars);
 		std::vector<carl::Variable> vars;
 		while (!pVars.empty()) {
-			auto it = at.mITEs.find(carl::underlying_variable(*pVars.begin()));
+			auto it = at.mITEs.find(*pVars.begin());
 			pVars.erase(*pVars.begin());
 			if (it != at.mITEs.end()) {
 				carl::variables(std::get<1>(it->second), pVars);
