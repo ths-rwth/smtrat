@@ -47,8 +47,7 @@ public:
 				const ConstraintT& constr = c[i].first->reabstraction.constraint(); 
 				constr.gatherVariables(vars);
 			}
-			const auto& varvec = vars.underlyingVariables();
-			mBookkeeping.updateVariables(carl::Variables(varvec.begin(), varvec.end()));
+			mBookkeeping.updateVariables(vars.as_set());
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variables " << variables());
 		}
 	}

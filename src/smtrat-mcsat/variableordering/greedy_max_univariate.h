@@ -17,7 +17,7 @@ namespace variableordering {
 namespace detail {
 inline carl::Bitset variablesOf(const ConstraintT& c, VariableIDs& vids) {
 	carl::Bitset res;
-	for (auto v: c.variables().underlyingVariables()) {
+	for (auto v: c.variables()) {
 		res.set(vids[v]);
 	}
 	return res;

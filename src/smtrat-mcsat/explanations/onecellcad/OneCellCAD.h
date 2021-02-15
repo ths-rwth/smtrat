@@ -290,7 +290,7 @@ inline std::optional<std::size_t> levelOf(
 	const std::vector<carl::Variable>& variableOrder,
 	const Poly& poly) {
 	// precondition:
-	assert(isSubset(carl::variables(poly).underlyingVariables(), variableOrder));
+	assert(isSubset(carl::variables(poly).as_vector(), variableOrder));
 
 	// Algorithm:
 	// Iterate through each variable inside 'variableOrder' in ascending order
@@ -298,7 +298,7 @@ inline std::optional<std::size_t> levelOf(
 	// it becomes empty is the highest appearing variable in 'poly'.
 
 	// 'gatherVariables()' collects only variables with positive degree
-	auto polyVariables = carl::variables(poly).underlyingVariableSet();
+	auto polyVariables = carl::variables(poly).as_set();
 
 	if (polyVariables.empty()) {
 		return std::nullopt; // for const-polys like '2'

@@ -169,7 +169,7 @@ namespace smtrat
 		mRemaining.clear();
 		carl::carlVariables _vars; // TODO VARREFACTOR
 		res.gatherVariables(_vars);
-		mRemaining = _vars.underlyingVariableSet();
+		mRemaining = _vars.as_set();
 		FormulasT equiv;
 		for (const auto& v: variables) {
 			if (mRemaining.count(v) > 0) {

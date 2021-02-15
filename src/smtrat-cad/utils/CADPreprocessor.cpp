@@ -294,7 +294,7 @@ bool CADPreprocessor::addModelToConflict(std::set<FormulaT>& conflict, carl::Var
     for (const auto& f: conflict) f.gatherVariables(vars);
     while (!vars.empty()) {
         carl::carlVariables newvars;
-        for (auto v: vars.underlyingVariables()) {
+        for (auto v: vars) {
             auto it = mAssignments.reasons().find(v);
             if (it == mAssignments.reasons().end()) continue;
             if (added.find(v) != added.end()) continue;

@@ -296,7 +296,7 @@ namespace vs
     void State::variables( carl::Variables& _variables ) const
     {
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond ) {
-			auto vars = (**cond).constraint().variables().underlyingVariables();
+			auto vars = (**cond).constraint().variables();
             _variables.insert( vars.begin(), vars.end() );
 		}
     }
@@ -597,7 +597,7 @@ namespace vs
                     {
                         case 0:
                         {
-                            auto tmp = mpVariableBounds->getOriginsOfBounds( constr.variables().underlyingVariableSet() );
+                            auto tmp = mpVariableBounds->getOriginsOfBounds( constr.variables().as_set() );
                             carl::PointerSet<Condition> condSet(tmp.begin(), tmp.end()); 
                             condSet.insert( *iter );
                             _conflictSet.insert( std::move( condSet ) );
@@ -615,7 +615,7 @@ namespace vs
                         {
                             if( stricterRelation != constr.relation() )
                             {
-                                auto tmp = mpVariableBounds->getOriginsOfBounds( constr.variables().underlyingVariableSet() );
+                                auto tmp = mpVariableBounds->getOriginsOfBounds( constr.variables().as_set() );
                                 carl::PointerSet<Condition> vbcondSet(tmp.begin(), tmp.end());
                                 size_t nValuation = (*iter)->valuation();
                                 bool nFlag = (*iter)->flag();
@@ -641,7 +641,7 @@ namespace vs
                                 }
                                 else if( nConstraint.isConsistent() == 0 )
                                 {
-                                    auto tmp = mpVariableBounds->getOriginsOfBounds( constr.variables().underlyingVariableSet() );
+                                    auto tmp = mpVariableBounds->getOriginsOfBounds( constr.variables().as_set() );
                                     carl::PointerSet<Condition> condSet(tmp.begin(), tmp.end());
                                     condSet.insert( *iter );
                                     _conflictSet.insert( std::move( condSet ) );
@@ -2061,7 +2061,7 @@ namespace vs
         std::set<carl::Relation> relationSymbols = std::set<carl::Relation>();
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
         {
-			auto vars = (*cond)->constraint().variables().underlyingVariables();
+			auto vars = (*cond)->constraint().variables();
             occuringVars.insert( vars.begin(), vars.end() );
             relationSymbols.insert( (*cond)->constraint().relation() );
         }
@@ -2543,7 +2543,7 @@ namespace vs
             constraintInconsistent = true;
         carl::PointerSet<Condition> origins;
         origins.insert( _condition );
-        auto conflictingBounds = variableBounds().getOriginsOfBounds( cons.variables().underlyingVariableSet() );
+        auto conflictingBounds = variableBounds().getOriginsOfBounds( cons.variables().as_set() );
         origins.insert( conflictingBounds.begin(), conflictingBounds.end() );
         ConditionSetSet conflicts;
         conflicts.insert( std::move(origins) );

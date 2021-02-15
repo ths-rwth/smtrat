@@ -36,7 +36,7 @@ private:
 		// TODO VARREFACTOR
 		carl::carlVariables _vars;
 		f.gatherVariables(_vars);
-		carl::Variables vars = _vars.arithmetic().underlyingVariableSet();
+		carl::Variables vars = _vars.arithmetic().as_set();
 		SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Collected " << vars);
 		auto it = vars.find(mVar);
 		if (it == vars.end()) return false;

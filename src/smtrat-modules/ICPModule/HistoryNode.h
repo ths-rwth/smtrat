@@ -182,7 +182,7 @@ namespace smtrat
                     if(!_addOnlyConstraint)
                     {
                         // also add all variables contained in the constraint to stateInfeasibleVariables
-                        for( auto variable: _constraint.variables().underlyingVariables() )
+                        for( auto variable: _constraint.variables() )
                         {
                             if(mVariableReasons.find(variable) != mVariableReasons.end())
                             {
@@ -252,7 +252,7 @@ namespace smtrat
                     bool inserted = mReasons.at( _variable ).insert( _reason ).second;
                     if( inserted )
                     {
-                        for( auto var: _reason.variables().underlyingVariables() )
+                        for( auto var: _reason.variables() )
                         {
                             if( mReasons.find(var) == mReasons.end() )
                                 mReasons[var] = std::set<ConstraintT>();

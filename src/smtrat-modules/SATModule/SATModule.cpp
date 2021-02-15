@@ -232,7 +232,7 @@ namespace smtrat
                     // Add literal from unary clause to lemmas
                     carl::carlVariables _vars;
                      _subformula->formula().gatherVariables(_vars);
-                    carl::Variables vars = _vars.boolean().underlyingVariableSet(); // TODO VARREFACTOR
+                    carl::Variables vars = _vars.boolean().as_set(); // TODO VARREFACTOR
                     assert(vars.size() == 1);
                     // Get corresponding Minisat variable
                     BooleanVarMap::const_iterator itVar = mBooleanVarMap.find(*vars.begin());
@@ -3784,9 +3784,9 @@ namespace smtrat
                 pFormulas->push_back( formula );
 
                 // Find formulas for contained variables
-                carl::carlVariables vars;
+                carl::carlVariables vars; // TODO VARREFACTOR
                 formula.gatherVariables(vars);
-                for (const auto& v: vars.boolean().underlyingVariables()) {
+                for (const auto& v: vars.boolean()) {
                     BooleanVarMap::const_iterator itVar = mBooleanVarMap.find( v );
                     assert( itVar != mBooleanVarMap.end() );
                     Minisat::Var var = itVar->second;

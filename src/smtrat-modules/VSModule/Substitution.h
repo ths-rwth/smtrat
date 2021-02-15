@@ -144,7 +144,7 @@ namespace vs
                 if( mpTermVariables == NULL )
                 {
                     mpTermVariables = new carl::Variables();
-                    *mpTermVariables = carl::variables(*mpTerm).underlyingVariableSet();
+                    *mpTermVariables = carl::variables(*mpTerm).as_set();
                 }
                 return *mpTermVariables;
             }

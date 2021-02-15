@@ -73,7 +73,7 @@ namespace smtrat {
 	boost::optional<FormulaT> CardinalityEncoder::encodeExactly(const ConstraintT& constraint) {
 		// if (!encodeAsBooleanFormula(constraint)) return boost::none;
 
-		return encodeExactly(constraint.variables().underlyingVariables(), -constraint.constantPart());
+		return encodeExactly(constraint.variables().as_vector(), -constraint.constantPart());
 	}
 
 	FormulaT CardinalityEncoder::encodeExactly(const std::vector<carl::Variable>& variables, const Rational constant) {
@@ -114,11 +114,11 @@ namespace smtrat {
 		assert(constant > 0);
 		if (constant <= constraint.variables().size()/2) {
 			for (Rational i = constant - 1; i > 0; i--) {
-				result.push_back(!encodeExactly(constraint.variables().underlyingVariables(), i));
+				result.push_back(!encodeExactly(constraint.variables().as_vector(), i));
 			}
 
 			FormulasT orSet;
-			for (const auto& var : constraint.variables().underlyingVariables()) {
+			for (const auto& var : constraint.variables()) {
 				orSet.push_back(FormulaT(var));
 			}
 
@@ -127,7 +127,7 @@ namespace smtrat {
 					FormulaT(carl::FormulaType::AND, result));
 		} else { // constant > variables.size()/2
 			for (Rational i = constant; i <= constraint.variables().size(); i++) {
-				result.push_back(encodeExactly(constraint.variables().underlyingVariables(), i));
+				result.push_back(encodeExactly(constraint.variables().as_vector(), i));
 			}
 
 			return FormulaT(carl::FormulaType::OR, result);
@@ -140,14 +140,14 @@ namespace smtrat {
 		Rational constant = -constraint.constantPart();
 		if (constant < constraint.variables().size()/2) {
 			for (unsigned i = 0 ; i <= constant; i++) {
-				result.push_back(FormulaT(encodeExactly(constraint.variables().underlyingVariables(), i)));
+				result.push_back(FormulaT(encodeExactly(constraint.variables().as_vector(), i)));
 			}
 
 			return FormulaT(carl::FormulaType::OR, result);
 
 		} else {
 			for (size_t i = constraint.variables().size() ; i > constant; i--) {
-				result.push_back(FormulaT(!encodeExactly(constraint.variables().underlyingVariables(), i)));
+				result.push_back(FormulaT(!encodeExactly(constraint.variables().as_vector(), i)));
 			}
 
 			return FormulaT(carl::FormulaType::AND, result);

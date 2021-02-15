@@ -183,7 +183,7 @@ namespace smtrat
         ModuleInput::const_iterator rf = firstUncheckedReceivedSubformula();
         carl::carlVariables _vars;
         rReceivedFormula().gatherVariables(_vars);
-        carl::Variables arithVars = _vars.arithmetic().underlyingVariableSet(); // TODO VARREFACTOR
+        carl::Variables arithVars = _vars.arithmetic().as_set(); // TODO VARREFACTOR
         if( Settings::use_icp )
         {
             Answer icpResult = mICP->check();

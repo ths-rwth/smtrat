@@ -405,7 +405,7 @@ public:
 			// pick any unassigned variable in confl (it must exist, otherwise the AssignmentFinder is incorrect)
 			carl::carlVariables _vars;
 			confl.gatherVariables(_vars);
-			carl::Variables vars = _vars.arithmetic().underlyingVariableSet(); // TODO VARREFACTOR
+			carl::Variables vars = _vars.arithmetic().as_set(); // TODO VARREFACTOR
 			for (const auto& avar : mBackend.assignedVariables())
 				vars.erase(avar);
 			assert(vars.size() > 0);
@@ -587,7 +587,7 @@ public:
 					const auto& constr = reabstraction.constraint();
 					carl::carlVariables _vars;
 					reabstraction.gatherVariables(_vars);
-					carl::Variables vars = _vars.arithmetic().underlyingVariableSet(); // TODO VARREFACTOR
+					carl::Variables vars = _vars.arithmetic().as_set(); // TODO VARREFACTOR
 					std::size_t maxDeg = 0;
 					for (const auto& tvar : vars) {
 						std::size_t deg = constr.lhs().degree(tvar);
@@ -618,7 +618,7 @@ public:
 				const auto& reabstraction = mGetter.reabstractVariable(var);
 				carl::carlVariables _vars;
 				reabstraction.gatherVariables(_vars);
-				carl::Variables tvars = _vars.arithmetic().underlyingVariableSet(); // TODO VARREFACTOR
+				carl::Variables tvars = _vars.arithmetic().as_set(); // TODO VARREFACTOR
 				std::vector<Minisat::Var> vars;
 				for (const auto& tvar : tvars) {
 					vars.push_back(minisatVar(tvar));

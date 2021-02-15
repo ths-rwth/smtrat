@@ -69,8 +69,8 @@ namespace smtrat
             #ifdef SMTRAT_DEVOPTION_Statistics
             carl::carlVariables _vars;
             rPassedFormula().gatherVariables(_vars);
-            carl::Variables avars = _vars.arithmetic().underlyingVariableSet(); // TODO VARREFACTOR
-            carl::Variables bvars = _vars.boolean().underlyingVariableSet(); // TODO VARREFACTOR
+            carl::Variables avars = _vars.arithmetic().as_set(); // TODO VARREFACTOR
+            carl::Variables bvars = _vars.boolean().as_set(); // TODO VARREFACTOR
             mStatistics.nrOfArithVariables() = avars.size();
             mStatistics.nrOfBoolVariables() = bvars.size();
             #endif

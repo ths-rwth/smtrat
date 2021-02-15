@@ -41,7 +41,7 @@ namespace constraint_type {
 		t.gatherVariables(vars);
 		if (vars.empty()) return ConstraintType::Constant;
 		bool foundNext = false;
-		for (const auto& var: vars.underlyingVariables()) {
+		for (const auto& var: vars) {
 			if (var == next) {
 				foundNext = true;
 				continue;
@@ -74,7 +74,7 @@ namespace constraint_type {
 		// Avoid unnecessary overhead of categorize()
 		carl::carlVariables vars;
 		t.gatherVariables(vars);
-		for (const auto& var: vars.underlyingVariables()) {
+		for (const auto& var: vars) {
 			if (model.find(var) == model.end()) return false;
 		}
 		return true;

@@ -527,9 +527,8 @@ namespace smtrat
         Model estimatedModel;
 
         //collect the variables into the container "allVarsOfOriginalFormula"
-        carl::carlVariables _vars;
-        originalFormula->gatherVariables(_vars);
-        auto allVarsOfOriginalFormula = _vars.underlyingVariables(); // TODO VARREFACTOR
+        carl::carlVariables allVarsOfOriginalFormula;
+        originalFormula->gatherVariables(allVarsOfOriginalFormula);
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             std::cout << "all variables of original formula: ";
             for (auto it = allVarsOfOriginalFormula.begin(); it != allVarsOfOriginalFormula.end(); ++it) {

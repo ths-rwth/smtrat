@@ -20,7 +20,7 @@ namespace smtrat
 	void LVEModule<Settings>::count_variables(std::map<carl::Variable, std::size_t>& count, const ConstraintT& c) const {
 		carl::carlVariables vars;
 		c.gatherVariables(vars);
-		for (auto v: vars.underlyingVariables()) {
+		for (auto v: vars) {
 			count[v] += 1;
 		}
 	}

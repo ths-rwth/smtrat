@@ -117,7 +117,7 @@ std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isBooleanDec
 
 	carl::carlVariables _vars;
 	f.gatherVariables(_vars);
-	carl::Variables vars = _vars.arithmetic().underlyingVariableSet(); // TODO VARREFACTOR
+	carl::Variables vars = _vars.arithmetic().as_set(); // TODO VARREFACTOR
 	for (const auto& v : mBackend.assignedVariables())
 		vars.erase(v);
 	
@@ -165,7 +165,7 @@ std::pair<boost::tribool, boost::optional<Explanation>> MCSATMixin<Settings>::pr
 	
 	carl::carlVariables _vars;
 	f.gatherVariables(_vars);
-	carl::Variables vars = _vars.arithmetic().underlyingVariableSet(); // TODO VARREFACTOR
+	carl::Variables vars = _vars.arithmetic().as_set(); // TODO VARREFACTOR
 	for (const auto& v : mBackend.assignedVariables())
 		vars.erase(v);
 	
@@ -233,7 +233,7 @@ bool MCSATMixin<Settings>::isFormulaUnivariate(const FormulaT& formula, std::siz
 	assert(level < mTheoryStack.size());
 	carl::carlVariables _vars;
 	formula.gatherVariables(_vars);
-	carl::Variables vars = _vars.arithmetic().underlyingVariableSet(); // TODO VARREFACTOR
+	carl::Variables vars = _vars.arithmetic().as_set(); // TODO VARREFACTOR
 	for (std::size_t lvl = 1; lvl <= level; lvl++) {
 		vars.erase(variable(lvl));
 	}

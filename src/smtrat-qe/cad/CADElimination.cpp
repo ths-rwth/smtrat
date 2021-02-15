@@ -20,7 +20,7 @@ CADElimination::CADElimination(const FormulaT& quantifierFreePart, const QEQuery
 		mVariables.emplace_back(v.second);
 		vars.erase(v.second);
 	}
-	for (auto v : vars.underlyingVariables()) {
+	for (auto v : vars) {
 		mVariables.emplace_back(v);
 	}
 

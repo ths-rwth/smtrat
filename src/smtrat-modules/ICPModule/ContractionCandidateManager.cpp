@@ -41,7 +41,7 @@ namespace icp
         {
 //            std::cout << "[Closure] Add candidate ";
             _candidate->print();
-            for( auto symbol: _candidate->constraint().variables().underlyingVariables())
+            for( auto symbol: _candidate->constraint().variables())
             {
                 for( auto candidateIt = mCandidates.begin(); candidateIt != mCandidates.end(); ++candidateIt )
                 {

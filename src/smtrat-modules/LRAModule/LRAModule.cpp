@@ -1393,7 +1393,7 @@ namespace smtrat
         const EvalRationalMap& rmodel = getRationalModel();
         carl::carlVariables _inputVars;
         rReceivedFormula().gatherVariables( _inputVars );
-		carl::Variables inputVars = _inputVars.arithmetic().underlyingVariableSet(); // TODO VARREFACTOR
+		carl::Variables inputVars = _inputVars.arithmetic().as_set(); // TODO VARREFACTOR
         for( auto ass = rmodel.begin(); ass != rmodel.end(); ++ass )
         {
             if( ass->first.type() == carl::VariableType::VT_INT && !carl::isInteger( ass->second ) && inputVars.find( ass->first ) != inputVars.end() )
