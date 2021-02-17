@@ -90,9 +90,7 @@ namespace smtrat
             // Retrieve all arithmetic variables in formula
             carl::carlVariables nonlinearVariablesInFormula;
             const Poly& poly = constraint.lhs();
-            carl::carlVariables _vars;
-            formula.gatherVariables(_vars);
-            carl::Variables variablesInFormula = _vars.arithmetic().as_set(); // TODO VARREFACTOR
+            carl::Variables variablesInFormula = carl::arithmetic_variables(formula).as_set();
             for(auto termIt = poly.begin();termIt != poly.end();++termIt) {
                 if(termIt->getNrVariables() > 1 || ! termIt->isLinear()) {
                     carl::variables(*termIt, nonlinearVariablesInFormula);

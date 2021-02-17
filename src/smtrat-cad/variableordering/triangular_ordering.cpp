@@ -56,7 +56,7 @@ std::vector<carl::Variable> triangular_ordering(const std::vector<Poly>& polys) 
 		data.sum_deg[var] = std::accumulate(maxdeg.begin(), maxdeg.end(), 0ul, [var](std::size_t i, const auto& m) { return i + m[var]; });
 	}
 	SMTRAT_LOG_DEBUG("smtrat.cad.variableordering", "Collected variables: " << res);
-	std::vector<carl::Variable> res = vars.as_vector(); //TODO VARREFACTOR (move)
+	std::vector<carl::Variable> res(std::move(vars.as_vector()));
 	std::sort(res.begin(), res.end(), data);
 	SMTRAT_LOG_DEBUG("smtrat.cad.variableordering", "Sorted: " << res);
 	return res;

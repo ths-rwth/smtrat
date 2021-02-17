@@ -115,9 +115,7 @@ std::pair<bool, boost::optional<Explanation>> MCSATMixin<Settings>::isBooleanDec
 	// assert that literal is consistent with the trail
 	assert(evaluateLiteral(lit) != l_False);
 
-	carl::carlVariables _vars;
-	f.gatherVariables(_vars);
-	carl::Variables vars = _vars.arithmetic().as_set(); // TODO VARREFACTOR
+	auto vars = carl::arithmetic_variables(f);
 	for (const auto& v : mBackend.assignedVariables())
 		vars.erase(v);
 	
@@ -163,9 +161,7 @@ std::pair<boost::tribool, boost::optional<Explanation>> MCSATMixin<Settings>::pr
 	if (!mGetter.isTheoryAbstraction(var)) return std::make_pair(boost::indeterminate, boost::none);
 	const auto& f = mGetter.reabstractLiteral(lit);
 	
-	carl::carlVariables _vars;
-	f.gatherVariables(_vars);
-	carl::Variables vars = _vars.arithmetic().as_set(); // TODO VARREFACTOR
+	auto vars = carl::arithmetic_variables(f);
 	for (const auto& v : mBackend.assignedVariables())
 		vars.erase(v);
 	
@@ -231,9 +227,7 @@ std::size_t MCSATMixin<Settings>::addBooleanVariable(Minisat::Var variable) {
 template<typename Settings>
 bool MCSATMixin<Settings>::isFormulaUnivariate(const FormulaT& formula, std::size_t level) const {
 	assert(level < mTheoryStack.size());
-	carl::carlVariables _vars;
-	formula.gatherVariables(_vars);
-	carl::Variables vars = _vars.arithmetic().as_set(); // TODO VARREFACTOR
+	auto vars = carl::arithmetic_variables(formula);
 	for (std::size_t lvl = 1; lvl <= level; lvl++) {
 		vars.erase(variable(lvl));
 	}

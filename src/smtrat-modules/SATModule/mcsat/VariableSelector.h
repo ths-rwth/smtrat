@@ -44,12 +44,9 @@ private:
 	}
 public:
 	void add(const FormulaT& formula) {
-		carl::carlVariables _vars;
-		formula.gatherVariables(_vars);
-		carl::Variables vars = _vars.arithmetic().as_set(); // TODO VARREFACTOR
-		add(vars);
+		add(carl::arithmetic_variables(formula));
 	}
-	void add(const carl::Variables& vars) {
+	void add(const carl::carlVariables& vars) {
 		for (auto v: vars) add(v);
 	}
 	void add(carl::Variable v) {

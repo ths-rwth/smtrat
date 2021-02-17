@@ -1142,11 +1142,10 @@ namespace smtrat
     
     void Module::checkInfSubsetForMinimality( std::vector<FormulaSetT>::const_iterator _infsubset, const std::string& _filename, unsigned _maxSizeDifference ) const
     {
-		carl::carlVariables _vars;
+		carl::carlVariables vars(carl::variable_type_filter::arithmetic());
 		for( auto it = _infsubset->begin(); it != _infsubset->end(); ++it ) {
-			it->gatherVariables(_vars);
+			it->gatherVariables(vars);
 		}
-		carl::Variables vars = _vars.arithmetic().as_set(); // TODO VARREFACTOR
         std::stringstream filename;
         filename << _filename << "_" << moduleName() << "_" << mSmallerMusesCheckCounter << ".smt2";
         std::ofstream smtlibFile;

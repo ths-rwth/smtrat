@@ -1391,12 +1391,11 @@ namespace smtrat
         if( solverState() == UNSAT ) return true;
         if( !mAssignmentFullfilsNonlinearConstraints ) return true;
         const EvalRationalMap& rmodel = getRationalModel();
-        carl::carlVariables _inputVars;
-        rReceivedFormula().gatherVariables( _inputVars );
-		carl::Variables inputVars = _inputVars.arithmetic().as_set(); // TODO VARREFACTOR
+        carl::carlVariables inputVars(carl::variable_type_filter::arithmetic());
+        rReceivedFormula().gatherVariables( inputVars );
         for( auto ass = rmodel.begin(); ass != rmodel.end(); ++ass )
         {
-            if( ass->first.type() == carl::VariableType::VT_INT && !carl::isInteger( ass->second ) && inputVars.find( ass->first ) != inputVars.end() )
+            if( ass->first.type() == carl::VariableType::VT_INT && !carl::isInteger( ass->second ) && inputVars.has( ass->first ) )
             {
                 return false;
             }
