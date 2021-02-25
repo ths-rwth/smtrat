@@ -13,6 +13,7 @@
 #include <mutex>
 #include <regex>
 
+#include "../utils/parsing.h"
 namespace benchmax {
 
 /**
@@ -84,6 +85,7 @@ private:
 				
 				auto& res = std::get<2>(results[id]);
 				res.stderr = (*i)[2];
+				res.peak_memory_kbytes = parse_peak_memory(res.stderr);
 				BENCHMAX_LOG_DEBUG("benchmax.slurm", "Got " << res << " for task " << id << " from stderr");
 			}
 		} else {
@@ -130,7 +132,8 @@ private:
 		slurm::clear_log_files(settings_slurm().tmp_dir);
 
 		std::string jobsfilename = settings_slurm().tmp_dir + "/jobs-" + std::to_string(settings_core().start_time) + "-" + std::to_string(n+1) + ".jobs";
-		slurm::generate_jobs_file(jobsfilename, get_job_range(n, results.size()), results);
+		auto job_range = get_job_range(n, results.size());
+		slurm::generate_jobs_file(jobsfilename, job_range, results);
 
 		auto submitfile = slurm::generate_submit_file_chunked({
 			std::to_string(settings_core().start_time) + "-" + std::to_string(n),
@@ -140,7 +143,8 @@ private:
 			settings_benchmarks().grace_time,
 			settings_benchmarks().limit_memory,
 			settings_slurm().array_size,
-			settings_slurm().slice_size
+			settings_slurm().slice_size,
+			job_range
 		});
 
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Delaying for " << settings_slurm().submission_delay);
@@ -223,7 +227,8 @@ public:
 		BENCHMAX_LOG_DEBUG("benchmax.slurm", "Gathered " << results.size() << " jobs");
 		
 		std::vector<std::future<void>> tasks;
-		std::size_t count = results.size() / (settings_slurm().array_size * settings_slurm().slice_size) + 1;
+		std::size_t count = results.size() / (settings_slurm().array_size * settings_slurm().slice_size);
+		if (results.size() % (settings_slurm().array_size * settings_slurm().slice_size) > 0) count += 1;
 		for (std::size_t i = 0; i < count; ++i) {
 			tasks.emplace_back(std::async(std::launch::async,
 				[i,&results,wait_for_termination,this](){

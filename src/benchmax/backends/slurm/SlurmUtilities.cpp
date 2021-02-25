@@ -84,7 +84,7 @@ std::string generate_submit_file(const SubmitfileProperties& p) {
 	out << "\techo \"# START ${i} #\"" << std::endl;
 	out << "\techo \"# START ${i} #\" >&2" << std::endl;
 	out << "\tstart=`date +\"%s%3N\"`" << std::endl;
-	out << "\tulimit -c 0 && ulimit -S -v " << p.limit_memory.kibi() << " && ulimit -S -t " << std::chrono::seconds(timeout).count() << " && eval time $cmd ; rc=$?" << std::endl;
+	out << "\tulimit -c 0 && ulimit -S -v " << p.limit_memory.kibi() << " && ulimit -S -t " << std::chrono::seconds(timeout).count() << " && eval /usr/bin/time -v $cmd ; rc=$?" << std::endl;
 	out << "\tend=`date +\"%s%3N\"`" << std::endl;
 	out << "\techo \"# END ${i} #\"" << std::endl;
 	out << "\techo \"# END ${i} #\" 1>&2" << std::endl;
@@ -129,17 +129,19 @@ std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p) {
 	out << "max=$SLURM_ARRAY_TASK_MAX" << std::endl;
 	out << "cur=$SLURM_ARRAY_TASK_ID" << std::endl;
 	out << "slicesize=" << p.slice_size << std::endl;
-	out << "start=$(( (cur - 1) * slicesize + 1 ))" << std::endl;
-	out << "end=$(( start + slicesize - 1 ))" << std::endl;
+	out << "start=$(( (cur - 1) * slicesize + 1 + " << p.job_range.first << " ))" << std::endl;
+	out << "end=$(( start + slicesize - 1 + " << p.job_range.first << " ))" << std::endl;
+	out << "end=$((end<" << p.job_range.second << " ? end : " << p.job_range.second << "))" << std::endl;
 
 	// Execute this slice
 	out << "for i in `seq ${start} ${end}`; do" << std::endl;
-	out << "\tcmd=$(time sed -n \"${i}p\" < " << p.filename_jobs << ")" << std::endl;
+	out << "lineidx=$(( i - " << p.job_range.first << " ))" << std::endl;
+	out << "\tcmd=$(time sed -n \"${lineidx}p\" < " << p.filename_jobs << ")" << std::endl;
 	out << "\techo \"Executing $cmd\"" << std::endl;
 	out << "\techo \"# START ${i} #\"" << std::endl;
 	out << "\techo \"# START ${i} #\" >&2" << std::endl;
 	out << "\tstart=`date +\"%s%3N\"`" << std::endl;
-	out << "\tulimit -c 0 && ulimit -S -v " << p.limit_memory.kibi() << " && ulimit -S -t " << std::chrono::seconds(timeout).count() << " && eval time $cmd ; rc=$?" << std::endl;
+	out << "\tulimit -c 0 && ulimit -S -v " << p.limit_memory.kibi() << " && ulimit -S -t " << std::chrono::seconds(timeout).count() << " && eval /usr/bin/time -v $cmd ; rc=$?" << std::endl;
 	out << "\tend=`date +\"%s%3N\"`" << std::endl;
 	out << "\techo \"# END ${i} #\"" << std::endl;
 	out << "\techo \"# END ${i} #\" 1>&2" << std::endl;
