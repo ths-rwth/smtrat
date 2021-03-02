@@ -68,7 +68,7 @@ The Slurm backend supports starting (`--mode execute`) and collecting results (`
 
 The [SSHBackend](@ref benchmax::SSHBackend) can be used if you have multiple workers that can be reached via ssh (essentially a cluster without a batch job system). It allows to configure one or more computing nodes and manually schedules all the jobs on the different computing nodes.
 
-Using `--ssh.node`, a node is specified  in the format `<user>[:<password>]@<hostname>[:<port = 22>][@<cores = 1>][#<connections = 1>]`.
+Using `--ssh.node`, a node is specified  in the format `<user>[:<password>]@<hostname>[:<port = 22>][@<cores = 1>][#<connections = 1>]`; benchmax will then connect to the specified server with given credentials `connections` times and will run `cores` threads per connection. Thus, the number of overall parallel threads equals `connections` * `cores` (note that enough memory should be available on the node).
 
 By setting the flag `--ssh.resolvedeps`, dependencies (i.e. dynamic libraries) are resolved and uploaded with the solver.
 
