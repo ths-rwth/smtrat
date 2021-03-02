@@ -107,11 +107,11 @@ namespace smtrat
 		}
 		carl::FormulaSubstitutor<FormulaT> subs;
 		FormulaT res = subs.substitute(f, repl);
-		carl::Variables remainingVars;
-		res.allVars(remainingVars);
+		carl::carlVariables remainingVars;
+		res.gatherVariables(remainingVars);
 		FormulasT impl;
 		for (const auto& v: variables) {
-			if (remainingVars.count(v) > 0) {
+			if (remainingVars.has(v)) {
 				for (const auto& r: mReplacements) {
 					if (v != std::get<0>(r.first)) continue;
 					FormulaT form = std::get<1>(r.first);

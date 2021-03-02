@@ -167,7 +167,7 @@ namespace smtrat
 		SMTRAT_LOG_DEBUG("smtrat.mcb", "Resulting in\n\t" << res);
 		
 		mRemaining.clear();
-		res.allVars(mRemaining);
+		mRemaining = carl::variables(res).as_set();
 		FormulasT equiv;
 		for (const auto& v: variables) {
 			if (mRemaining.count(v) > 0) {

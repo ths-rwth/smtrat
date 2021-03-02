@@ -50,8 +50,7 @@ namespace smtrat
                 if( iter == mCubifications.end() )
                 {
                     // For all variables in the constraint, which do not yet have a real relaxation, create one.
-                    carl::Variables vars = constraint.lhs().gatherVariables();
-                    for( carl::Variable::Arg var : vars )
+                    for( carl::Variable::Arg var : carl::variables(constraint.lhs()) )
                     {
                         if( var.type() == carl::VariableType::VT_INT ||  var.type() == carl::VariableType::VT_BOOL )
                         {

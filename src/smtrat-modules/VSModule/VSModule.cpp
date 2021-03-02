@@ -70,7 +70,7 @@ namespace smtrat
             const vs::Condition* condition = new vs::Condition( constraint, mpConditionIdAllocator->get() );
             mFormulaConditionMap[constraintF] = condition;
             assert( constraint.isConsistent() == 2 );
-            for( auto var: constraint.variables().underlyingVariables() )
+            for( auto var: constraint.variables() )
                 mAllVariables.insert( var );
             if( Settings::incremental_solving )
             {
@@ -841,9 +841,7 @@ namespace smtrat
             {
                 for( auto iter = constraint.factorization().begin(); iter != constraint.factorization().end(); ++iter )
                 {
-                    carl::Variables factorVars;
-                    iter->first.gatherVariables( factorVars );
-                    if( factorVars.find( _eliminationVar ) != factorVars.end() )
+                    if( carl::variables(iter->first).has( _eliminationVar ) )
                         factors.push_back( iter->first );
                     else
                     {

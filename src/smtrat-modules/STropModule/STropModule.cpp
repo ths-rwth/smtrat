@@ -331,15 +331,15 @@ namespace smtrat
 				const std::vector<FormulaSetT> LRAConflicts{mLRAModule.infeasibleSubsets()};
 				for (const FormulaSetT& LRAConflict : LRAConflicts)
 				{
-					carl::Variables variables;
+					carl::carlVariables variables;
 					for (const FormulaT& formula : LRAConflict)
-						formula.allVars(variables);
+						formula.gatherVariables(variables);
 					Conflict conflict;
 					for (const auto& separatorsEntry : mSeparators)
 					{
 						const Separator& separator{separatorsEntry.second};
 						if (separator.mActiveDirection
-							&& variables.count(separator.mBias))
+							&& variables.has(separator.mBias))
 							conflict.emplace_back(&separator, *separator.mActiveDirection);
 					}
 					mLinearizationConflicts.emplace_back(std::move(conflict));

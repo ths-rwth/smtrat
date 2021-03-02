@@ -4,7 +4,7 @@ namespace smtrat {
 	boost::optional<FormulaT> LongFormulaEncoder::doEncode(const ConstraintT& constraint) {
 		const auto& cLHS = constraint.lhs();
 		carl::Relation cRel = constraint.relation();
-		std::set<carl::Variable> cVars = constraint.variables().underlyingVariableSet();
+		std::set<carl::Variable> cVars = constraint.variables().as_set();
 		Rational cRHS = -constraint.constantPart();
 		bool positive = true;
 		bool negative = true;

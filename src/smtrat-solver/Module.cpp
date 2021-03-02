@@ -911,7 +911,6 @@ namespace smtrat
 			f.formula().gatherVariables(variables);
 			f.formula().gatherUFs(functions);
 		}
-		auto vars = variables.underlyingVariables();
 		// Filter model
 		for (auto it = mModel.begin(); it != mModel.end(); ) {
 			bool remove = false;
@@ -924,7 +923,7 @@ namespace smtrat
 				if (it->first.isVariable()) v = it->first.asVariable();
 				else if (it->first.isBVVariable()) v = it->first.asBVVariable().variable();
 				else if (it->first.isUVariable()) v = it->first.asUVariable().variable();
-				if (std::find(vars.begin(), vars.end(), v) == vars.end()) {
+				if (!variables.has(v)) {
 					remove = true;
 				}
 			}
@@ -1143,9 +1142,9 @@ namespace smtrat
     
     void Module::checkInfSubsetForMinimality( std::vector<FormulaSetT>::const_iterator _infsubset, const std::string& _filename, unsigned _maxSizeDifference ) const
     {
-		carl::Variables vars;
+		carl::carlVariables vars(carl::variable_type_filter::arithmetic());
 		for( auto it = _infsubset->begin(); it != _infsubset->end(); ++it ) {
-			it->arithmeticVars(vars);
+			it->gatherVariables(vars);
 		}
         std::stringstream filename;
         filename << _filename << "_" << moduleName() << "_" << mSmallerMusesCheckCounter << ".smt2";

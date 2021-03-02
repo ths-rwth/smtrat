@@ -166,7 +166,7 @@ bool contains(const std::vector<T>& list, const T& elem) {
      *  It will be replaced by the special unique root-variable "_z"  common in root-expressions.
      */
 inline MultivariateRootT asRootExpr(carl::Variable rootVariable, Poly poly, std::size_t rootIdx) {
-	assert(poly.gatherVariables().count(rootVariable) == 1);
+	assert(carl::variables(poly).has(rootVariable));
 	// Apparently we need this complicated construction. I forgot why a simple substitute is not okay.
 	return MultivariateRootT(Poly(carl::UnivariatePolynomial<Poly>(MultivariateRootT::var(),
 																   carl::to_univariate_polynomial(poly, rootVariable).coefficients())),
@@ -290,7 +290,7 @@ inline std::optional<std::size_t> levelOf(
 	const std::vector<carl::Variable>& variableOrder,
 	const Poly& poly) {
 	// precondition:
-	assert(isSubset(asVector(poly.gatherVariables()), variableOrder));
+	assert(isSubset(carl::variables(poly).as_vector(), variableOrder));
 
 	// Algorithm:
 	// Iterate through each variable inside 'variableOrder' in ascending order
@@ -298,7 +298,7 @@ inline std::optional<std::size_t> levelOf(
 	// it becomes empty is the highest appearing variable in 'poly'.
 
 	// 'gatherVariables()' collects only variables with positive degree
-	auto polyVariables = carl::variables(poly).underlyingVariableSet();
+	auto polyVariables = carl::variables(poly).as_set();
 
 	if (polyVariables.empty()) {
 		return std::nullopt; // for const-polys like '2'

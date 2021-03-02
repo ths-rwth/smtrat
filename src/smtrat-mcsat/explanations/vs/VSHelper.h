@@ -78,9 +78,7 @@ namespace helper {
 
         if(constraint.hasFactorization()) {
             for(const auto& iter : constraint.factorization()) {
-                carl::Variables factorVars;
-                iter.first.gatherVariables( factorVars );
-                if(factorVars.find( eliminationVar ) != factorVars.end()) {
+                if(carl::variables(iter.first).has( eliminationVar )) {
                     factors.push_back( iter.first );
                 }
                 else {

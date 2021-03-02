@@ -103,7 +103,7 @@ namespace smtrat
 			
 			EvalRationalIntervalMap completeBounds(const Poly& p) const {
 				auto res = varbounds.getEvalIntervalMap();
-				for (auto var: p.gatherVariables()) {
+				for (auto var: carl::variables(p)) {
 					if (res.find(var) == res.end()) {
 						res[var] = RationalInterval::unboundedInterval();
 					}

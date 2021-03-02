@@ -34,15 +34,6 @@ inline std::ostream& operator<<(std::ostream& os, const VariableIDs& vids) {
 }
 
 template<typename Constraints>
-std::vector<carl::Variable> collectVariables(const Constraints& constraints) {
-	std::set<carl::Variable> vars;
-	for (const auto& c: constraints) {
-		vars.insert(c.variables().begin(), c.variables().end());
-	}
-	return std::vector<carl::Variable>(vars.begin(), vars.end());
-}
-
-template<typename Constraints>
 void gatherVariables(carl::carlVariables& vars, const Constraints& constraints) {
 	for (const auto& c: constraints) {
 		c.gatherVariables(vars);

@@ -385,61 +385,6 @@ namespace smtrat
 			}
 		}
         
-        /**
-         * Collects all variables occurring in this formula.
-         * @param _vars The container to collect the variables in.
-         */
-		[[deprecated("Use gatherVariables() instead.")]]
-        void vars( carl::Variables& _vars ) const
-        {
-            for( const FormulaWithOrigins& fwo : *this )
-                fwo.formula().allVars( _vars );
-        }
-        
-        /**
-         * Collects all real valued variables occurring in this formula.
-         * @param _realVars The container to collect the real valued variables in.
-         */
-		[[deprecated("Use gatherVariables() instead.")]]
-        void realValuedVars( carl::Variables& _realVars ) const
-        {
-            for( const FormulaWithOrigins& fwo : *this )
-                fwo.formula().realValuedVars( _realVars );
-        }
-
-        /**
-         * Collects all integer valued variables occurring in this formula.
-         * @param _intVars The container to collect the integer valued variables in.
-         */
-		[[deprecated("Use gatherVariables() instead.")]]
-        void integerValuedVars( carl::Variables& _intVars ) const
-        {
-            for( const FormulaWithOrigins& fwo : *this )
-                fwo.formula().integerValuedVars( _intVars );
-        }
-
-        /**
-         * Collects all arithmetic variables occurring in this formula.
-         * @param _arithmeticVars The container to collect the arithmetic variables in.
-         */
-		[[deprecated("Use gatherVariables() instead.")]]
-        void arithmeticVars( carl::Variables& _arithmeticVars ) const
-        {
-            for( const FormulaWithOrigins& fwo : *this )
-                fwo.formula().arithmeticVars( _arithmeticVars );
-        }
-
-        /**
-         * Collects all Boolean variables occurring in this formula.
-         * @param _booleanVars The container to collect the Boolean variables in.
-         */
-		[[deprecated("Use gatherVariables() instead.")]]
-        void booleanVars( carl::Variables& _booleanVars ) const
-        {
-            for( const FormulaWithOrigins& fwo : *this )
-                fwo.formula().booleanVars( _booleanVars );
-        }
-        
         struct IteratorCompare
         {
             bool operator() ( const_iterator i1, const_iterator i2 ) const

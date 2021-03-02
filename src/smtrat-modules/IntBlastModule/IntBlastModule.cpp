@@ -88,13 +88,12 @@ namespace smtrat
 
         for(const ConstraintT& constraint : containedConstraints) {
             // Retrieve all arithmetic variables in formula
-            carl::Variables variablesInFormula;
-            carl::Variables nonlinearVariablesInFormula;
+            carl::carlVariables nonlinearVariablesInFormula;
             const Poly& poly = constraint.lhs();
-            formula.arithmeticVars(variablesInFormula);
+            carl::Variables variablesInFormula = carl::arithmetic_variables(formula).as_set();
             for(auto termIt = poly.begin();termIt != poly.end();++termIt) {
                 if(termIt->getNrVariables() > 1 || ! termIt->isLinear()) {
-                    termIt->gatherVariables(nonlinearVariablesInFormula);
+                    carl::variables(*termIt, nonlinearVariablesInFormula);
                 }
             }
 

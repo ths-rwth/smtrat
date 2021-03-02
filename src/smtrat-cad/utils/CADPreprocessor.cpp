@@ -289,11 +289,11 @@ bool CADPreprocessor::collectOriginsOfConflict(std::set<FormulaT>& conflict, con
 
 bool CADPreprocessor::addModelToConflict(std::set<FormulaT>& conflict, carl::Variables& added) const {
     SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding necessary parts of model to conflict: " << conflict);
-    carl::Variables vars;
+    carl::carlVariables vars;
     bool changed = false;
-    for (const auto& f: conflict) f.allVars(vars);
+    for (const auto& f: conflict) f.gatherVariables(vars);
     while (!vars.empty()) {
-        carl::Variables newvars;
+        carl::carlVariables newvars;
         for (auto v: vars) {
             auto it = mAssignments.reasons().find(v);
             if (it == mAssignments.reasons().end()) continue;
@@ -302,7 +302,7 @@ bool CADPreprocessor::addModelToConflict(std::set<FormulaT>& conflict, carl::Var
             auto cit = conflict.emplace(it->second);
             changed = true;
             if (cit.second) {
-                cit.first->allVars(newvars);
+                cit.first->gatherVariables(newvars);
                 SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Added " << it->second << " to conflict.");
             }
         }
