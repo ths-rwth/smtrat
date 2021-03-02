@@ -10,6 +10,8 @@
 #include <benchmax/benchmarks/benchmarks.h>
 #include <benchmax/logging.h>
 
+#include "../../utils/parsing.h"
+
 #define SSH_LOCKED(expr) { std::lock_guard<std::mutex> guard(mutex); expr; }
 
 namespace benchmax {
@@ -45,15 +47,6 @@ private:
 		} else {
 			return std::chrono::milliseconds(0);
 		}
-	}
-
-	std::string parse_peak_memory(const std::string& output) const {
-		std::regex regexpr("Maximum resident set size \\(kbytes\\): ([0-9]+)");
-		std::smatch base_match;
-		bool match = std::regex_search(output, base_match, regexpr);
-		assert(match && base_match.size() == 2);
-		std::ssub_match base_sub_match = base_match[1];
-		return base_sub_match.str();
 	}
 	
 	/// Allocate a new channel from the current SSH session.
@@ -287,9 +280,7 @@ public:
 		if (settings_ssh().use_wallclock) call << "timeout " << timeout << "s ";
 		else call << "ulimit -S -t " << timeout << " && ";
 		call << "ulimit -S -v " << settings_benchmarks().limit_memory.kibi() << " && ";
-		if (settings_ssh().measure_peak_memory) {
-			call << "/usr/bin/time -v ";
-		}
+		call << "/usr/bin/time -v ";
 		call << cmd << " ; rc=$? ;";
 		call << "date +\"End: %s%3N\" ; exit $rc";
 		int rc;
@@ -322,9 +313,7 @@ public:
 		}
 		SSH_LOCKED(result.exitCode = ssh_channel_get_exit_status(channel));
 		result.time = parse_duration(result.stdout);
-		if (settings_ssh().measure_peak_memory) {
-			result.additional.emplace("memory", parse_peak_memory(result.stderr));
-		}
+		result.peak_memory_kbytes = parse_peak_memory(result.stderr);
 		destroy(channel);
 		return true;
 	}

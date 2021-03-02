@@ -180,7 +180,7 @@ auto as_ran_map(const Model& model) {
     return eval_map;
 }
 
-bool var_subset(const carl::Variables& vars, const Model& model, carl::Variable var) {
+bool var_subset(const carl::carlVariables& vars, const Model& model, carl::Variable var) {
     for (const auto& v : vars) {
         if (model.find(v) == model.end() && v != var) return false;
     }
@@ -195,8 +195,8 @@ bool compute_unsat_intervals(const VariableComparisonT& constr, const Model& mod
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Does not have variable");
         return false;
     }
-    carl::Variables vars;
-    constr.collectVariables(vars);
+    carl::carlVariables vars;
+    constr.gatherVariables(vars);
     if (!var_subset(vars, model, variable)) {
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Contains unassigned variables");
         return false;
@@ -267,9 +267,7 @@ bool compute_unsat_intervals(const ConstraintT& constr, const Model& model, carl
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Does not have variable");
         return false;
     }
-    auto vars_tmp = constr.variables().underlyingVariables();
-    carl::Variables vars(vars_tmp.begin(), vars_tmp.end());
-    if (!var_subset(vars, model, variable)) {
+    if (!var_subset(constr.variables(), model, variable)) {
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Contains unassigned variables");
         return false;
     }

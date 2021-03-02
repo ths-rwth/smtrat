@@ -68,14 +68,15 @@ namespace smtrat
 	template<class Settings>
 	void NewCADModule<Settings>::updateModel() const
 	{
-		carl::carlVariables vars;
-		for (const auto& f: rReceivedFormula()) {
-			f.formula().gatherVariables(vars);
-		}
 		mModel.clear();
-		if( solverState() == SAT )
-		{
-			mModel = mLastModel;
+		if( solverState() == SAT ) {
+			carl::carlVariables vars;
+			for (const auto& f: rReceivedFormula()) {
+				f.formula().gatherVariables(vars);
+			}
+			for (const auto var : vars) {
+				mModel.assign(var, mLastModel.at(var));
+			}
 		}
 	}
 	

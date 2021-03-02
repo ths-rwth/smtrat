@@ -67,12 +67,10 @@ namespace smtrat
         else
         {
             #ifdef SMTRAT_DEVOPTION_Statistics
-            carl::Variables avars;
-            rPassedFormula().arithmeticVars( avars );
-            mStatistics.nrOfArithVariables() = avars.size();
-            carl::Variables bvars;
-            rPassedFormula().booleanVars( bvars );
-            mStatistics.nrOfBoolVariables() = bvars.size();
+            carl::carlVariables _vars;
+            rPassedFormula().gatherVariables(_vars);
+            mStatistics.nrOfArithVariables() = _vars.arithmetic().size();
+            mStatistics.nrOfBoolVariables()  = _vars.boolean().size();
             #endif
             Answer a = runBackends();
 

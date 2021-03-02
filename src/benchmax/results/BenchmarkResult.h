@@ -24,6 +24,8 @@ struct BenchmarkResult {
 	std::chrono::milliseconds time;
 	/// Answer string.
 	std::string answer;
+	/// Peak memory usage.
+	std::size_t peak_memory_kbytes;
 	/// Standard output (mostly for parsing the answer and additional information).
 	std::string stdout;
 	/// Error output (mostly for parsing the answer and additional information).

@@ -4,17 +4,17 @@ namespace smtrat {
 	boost::optional<FormulaT> TotalizerEncoder::doEncode(const ConstraintT& constraint) {
 		assert(canEncode(constraint) && "Input must be <=-cardinality constraint.");
 
-		auto treeIt = mTreeCache.find(constraint.variables().underlyingVariableSet());
+		auto treeIt = mTreeCache.find(constraint.variables().as_set());
 		if (treeIt == mTreeCache.end()) {
-			TotalizerTree* tree = new TotalizerTree(constraint.variables().underlyingVariableSet());
-			mTreeCache.insert(std::map<carl::Variables, TotalizerTree*>::value_type(constraint.variables().underlyingVariableSet(), tree));
-			mSumPropagationFormulaCache.insert(std::map<carl::Variables, FormulaT>::value_type(constraint.variables().underlyingVariableSet(), encodeSumPropagation(*tree)));
+			TotalizerTree* tree = new TotalizerTree(constraint.variables().as_set());
+			mTreeCache.insert(std::map<carl::Variables, TotalizerTree*>::value_type(constraint.variables().as_set(), tree));
+			mSumPropagationFormulaCache.insert(std::map<carl::Variables, FormulaT>::value_type(constraint.variables().as_set(), encodeSumPropagation(*tree)));
 		}
 
-		TotalizerTree* tree = mTreeCache[constraint.variables().underlyingVariableSet()];
+		TotalizerTree* tree = mTreeCache[constraint.variables().as_set()];
 
 		// traverse non-leaf nodes and construct formula
-		FormulaT sumPropagation = mSumPropagationFormulaCache[constraint.variables().underlyingVariableSet()];
+		FormulaT sumPropagation = mSumPropagationFormulaCache[constraint.variables().as_set()];
 		FormulaT cardinalityRestriction = encodeCardinalityRestriction(*tree, carl::abs(constraint.constantPart()));
 
 		return FormulaT(carl::FormulaType::AND, sumPropagation, cardinalityRestriction);

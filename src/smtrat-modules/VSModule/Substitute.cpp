@@ -84,8 +84,7 @@ namespace vs
                     
                     if( conflictingWithSolutionSpace == 0 )
                     {
-						auto vars = cons->variables().underlyingVariables();
-                        _conflictingVars.insert( vars.begin(), vars.end() );
+                        _conflictingVars.insert( cons->variables().begin(), cons->variables().end() );
                         conjInconsistent = true;
                         break;
                     }

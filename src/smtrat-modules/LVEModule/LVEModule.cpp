@@ -20,7 +20,7 @@ namespace smtrat
 	void LVEModule<Settings>::count_variables(std::map<carl::Variable, std::size_t>& count, const ConstraintT& c) const {
 		carl::carlVariables vars;
 		c.gatherVariables(vars);
-		for (auto v: vars.underlyingVariables()) {
+		for (auto v: vars) {
 			count[v] += 1;
 		}
 	}
@@ -209,11 +209,10 @@ namespace smtrat
 		Poly with_v = Poly(1);
 		Poly without_v = Poly(1);
 		for (const auto& factor: carl::factorization(c.lhs())) {
-			carl::carlVariables vars;
-			factor.first.gatherVariables(vars);
+			carl::carlVariables vars = carl::variables(factor.first);
 			if (vars == carl::carlVariables({ v })) {
 				with_v *= carl::pow(factor.first, factor.second);
-			} else if (std::find(vars.begin(), vars.end(), carl::VariableVariant(v)) == vars.end()) {
+			} else if (std::find(vars.begin(), vars.end(), v) == vars.end()) {
 				without_v *= carl::pow(factor.first, factor.second);
 			} else {
 				return std::nullopt;

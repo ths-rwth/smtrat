@@ -163,7 +163,7 @@ namespace smtrat
             carl::carlVariables bvars;
             rReceivedFormula().gatherVariables(bvars);
             auto modelIter = mModel.begin();
-            for( carl::Variable var : bvars.underlyingVariables() )
+            for( carl::Variable var : bvars )
             {
 				if (var.type() != carl::VariableType::VT_BOOL) continue;
                 auto bmodelIter = bModel.find( var );

@@ -88,6 +88,10 @@ public:
 	/// Add a result.
 	void addResult(const Tool* tool, const fs::path& file, BenchmarkResult&& result) {
 		tool->additionalResults(file, result);
+		if (result.answer == "segfault" && result.peak_memory_kbytes > settings_benchmarks().limit_memory.kibi()) {
+			result.answer = "memout";
+		}
+		result.additional.emplace("peak_memory_kbytes", std::to_string(result.peak_memory_kbytes)); // lazy hack
 		if (result.time > settings_benchmarks().limit_time + 2*settings_benchmarks().grace_time) {
 			BENCHMAX_LOG_WARN("benchmax", "Computation took longer than it should: " << carl::settings::duration(result.time) << " > " << settings_benchmarks().limit_time << " + " << settings_benchmarks().grace_time);
 			BENCHMAX_LOG_WARN("benchmax", "Offending command: " << tool->name() << " " << file);

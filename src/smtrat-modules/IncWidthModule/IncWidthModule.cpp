@@ -181,8 +181,9 @@ namespace smtrat
         for( const auto& f : rReceivedFormula() ) std::cout << "   " << f.formula() << std::endl;
         #endif
         ModuleInput::const_iterator rf = firstUncheckedReceivedSubformula();
-        carl::Variables arithVars;
-        rReceivedFormula().arithmeticVars( arithVars );
+        auto _vars = carl::carlVariables().arithmetic();
+        rReceivedFormula().gatherVariables(_vars);
+        carl::Variables arithVars = _vars.as_set();
         if( Settings::use_icp )
         {
             Answer icpResult = mICP->check();
