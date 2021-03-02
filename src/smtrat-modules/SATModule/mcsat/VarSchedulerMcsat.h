@@ -454,7 +454,7 @@ namespace smtrat {
 
                         auto vars = carl::arithmetic_variables(substituted);
 
-                        auto size = arithmeticVars.size();
+                        auto size = vars.size();
                         for (auto iter = mTheoryLevels.begin(); iter != std::prev(mTheoryLevels.end()); iter++) {
                             if (vars.has(iter->variable)){
                                 size --;

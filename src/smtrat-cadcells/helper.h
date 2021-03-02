@@ -21,7 +21,7 @@ namespace smtrat::cadcells::helper {
  */
 size_t level_of(const variable_ordering& order, const Poly& poly) {
     // assert(isSubset(asVector(poly.gatherVariables()), order));
-    auto poly_variables = carl::variables(poly).underlyingVariableSet();
+    auto poly_variables = carl::variables(poly).as_set();
     if (poly_variables.empty()) {
         // polynomial is constant
         return 0;
@@ -36,7 +36,7 @@ size_t level_of(const variable_ordering& order, const Poly& poly) {
 
 carl::Variable main_var(const variable_ordering& order, const Poly& poly) {
     // assert(isSubset(asVector(poly.gatherVariables()), order));
-    auto poly_variables = carl::variables(poly).underlyingVariableSet();
+    auto poly_variables = carl::variables(poly).as_set();
     if (poly_variables.empty()) {
         // polynomial is constant
         return carl::Variable::NO_VARIABLE;

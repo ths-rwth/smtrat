@@ -7,7 +7,7 @@ namespace smtrat::cadcells::algorithms::helper {
 
 inline MultivariateRootT as_multivariate_root(const datastructures::poly_pool& pool, carl::Variable main_var, datastructures::indexed_root r) {
     const Poly& poly = pool(r.poly);
-    assert(poly.gatherVariables().count(main_var) == 1);
+    assert(carl::variables(poly).has(main_var));
     return MultivariateRootT(Poly(carl::UnivariatePolynomial<Poly>(MultivariateRootT::var(), carl::to_univariate_polynomial(poly, main_var).coefficients())), r.index);
 }
 

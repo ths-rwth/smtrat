@@ -20,7 +20,7 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
 
     carl::carlVariables reason_vars;
     for (const auto& r : reason) r.gatherVariables(reason_vars);
-    for (const auto v : reason_vars.underlyingVariables()) {
+    for (const auto v : reason_vars) {
         if (ass.find(v) == ass.end() && v != var) {
             SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Conflict reasons are of higher level than the current one.");
             return boost::none;
