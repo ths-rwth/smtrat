@@ -59,8 +59,8 @@ private:
 		helper::getFormulaAtoms(inputFormula, atoms);
 
 		// generate test candidates
-		std::vector<smtrat::vs::Substitution> testCandidates;
-		if (helper::generateTestCandidates(testCandidates, var, mModel, atoms)) {
+		std::vector<carl::vs::substitution<Poly>> testCandidates;
+		if (helper::generateTestCandidates(testCandidates, var, atoms)) {
 			FormulasT res;
 			res.reserve(testCandidates.size());
 			for (const auto& tc : testCandidates) {
@@ -74,7 +74,7 @@ private:
 
 						// calculate substitution
 						FormulaT substitutionResult; // TODO reduceConflictConstraints?
-						if (!helper::substitute(constr, tc, mModel, substitutionResult)) {
+						if (!helper::substitute(constr, tc, substitutionResult)) {
 							SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution failed");
 							return boost::none;
 						}
@@ -101,7 +101,7 @@ private:
 				// add side condition
 				FormulasT branch;
 				branch.push_back(std::move(branchResult));				
-				for (const auto& sc : tc.sideCondition()) {
+				for (const auto& sc : tc.side_condition()) {
 					branch.emplace_back(sc);
 				}
 				
