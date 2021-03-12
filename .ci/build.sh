@@ -60,6 +60,11 @@ elif [[ ${TASK} == "tidy" ]]; then
 
 	/usr/bin/time make tidy || return 1
 
+elif [[ ${TASK} == "parallel" ]]; then
+	start_keep_waiting
+	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
+	stop_keep_waiting
+	/usr/bin/time make ${MAKE_PARALLEL} || return 1
 else
 	start_keep_waiting
 	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
