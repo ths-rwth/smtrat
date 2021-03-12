@@ -5,6 +5,6 @@ build-gcc-8:
   image: gcc:8
   # stage: build
   before_script:
-    - apt update && apt -y install make texinfo time uuid-dev
+    - apt update && apt -y install make texinfo time uuid-dev cmake
   script:
     - MAKE_PARALLEL=-j8 TASK=parallel source .ci/build.sh
