@@ -22,6 +22,9 @@ dependencies-gcc-9:
   cache: {}
   script:
     - MAKE_PARALLEL=-j4 TASK=dependencies source .ci/build.sh
+  only:
+    - master
+    - development
 
 docs-gcc-9:
   #extends: .setup
@@ -32,33 +35,47 @@ docs-gcc-9:
     - apt update && apt -y install ghostscript graphviz libclang-7-dev lmodern texinfo texlive texlive-font-utils texlive-latex-extra texlive-plain-generic python3-pip python3-setuptools
   script:
     - MAKE_PARALLEL=-j4 TASK=documentation source .ci/build.sh
+  only:
+    - master
+
+tidy-clang-9:
+  extends: .setup
+  image: silkeh/clang:9
+  script:
+    - MAKE_PARALLEL=-j4 TASK=tidy source .ci/build.sh
 
 build-gcc-8:
   extends: .build
   image: gcc:8
+  only:
+    - master
+    - development
 
-# build-gcc-9:
-#   extends: .build
-#   image: gcc:9
-# 
-# build-gcc-10:
-#   extends: .build
-#   image: gcc:10
-# 
-# build-clang-5:
-#   extends: .build
-#   image: silkeh/clang:5
-# 
-# build-clang-9:
-#   extends: .build
-#   image: silkeh/clang:9
-# 
-# build-clang-11:
-#   extends: .build
-#   image: silkeh/clang:11
-# 
-# tidy-clang-9:
-#   extends: .setup
-#   image: silkeh/clang:9
-#   script:
-#     - MAKE_PARALLEL=-j4 TASK=tidy source .ci/build.sh
+build-gcc-9:
+  extends: .build
+  image: gcc:9
+
+build-gcc-10:
+  extends: .build
+  image: gcc:10
+  only:
+    - master
+    - development
+
+build-clang-5:
+  extends: .build
+  image: silkeh/clang:5
+  only:
+    - master
+    - development
+
+build-clang-9:
+  extends: .build
+  image: silkeh/clang:9
+
+build-clang-11:
+  extends: .build
+  image: silkeh/clang:11
+  only:
+    - master
+    - development
