@@ -1,6 +1,3 @@
-# TODO extensive jobs on development only
-# TODO builds docs
-
 cache:
   key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
   paths:
@@ -29,7 +26,7 @@ docs-gcc-9:
   #extends: .setup
   image: gcc:9
   before_script:
-    - apt update && apt -y install make texinfo time uuid-dev cmake flex bison
+    - apt update && apt -y install make texinfo time uuid-dev cmake flex bison doxygen
     - git config --global user.email "runner@ths.rwth-aachen.de"
     - apt update && apt -y install ghostscript graphviz libclang-7-dev lmodern texinfo texlive texlive-font-utils texlive-latex-extra texlive-plain-generic python3-pip python3-setuptools
   script:
