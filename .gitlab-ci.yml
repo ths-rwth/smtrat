@@ -41,7 +41,7 @@ tidy-clang-9:
   extends: .setup
   before_script:
     - *setup-before_script
-    - apt-get -y install libboost-all-dev
+#    - apt-get -y install libboost-all-dev
   script:
     - MAKE_PARALLEL=-j4 TASK=parallel source .ci/build.sh
 
