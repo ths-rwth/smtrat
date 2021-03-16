@@ -7,5 +7,6 @@ build-gcc-8:
   # stage: build
   before_script:
     - apt update && apt -y install make texinfo time uuid-dev cmake flex bison
+    - git config --global user.email "runner@ths.rwth-aachen.de"
   script:
     - MAKE_PARALLEL=-j1 TASK=parallel source .ci/build.sh
