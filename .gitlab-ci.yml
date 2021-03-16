@@ -5,8 +5,8 @@ cache:
 
 .setup:
   before_script: &setup-before_script
-    - apt update 
-    - apt -y install make texinfo time uuid-dev cmake flex bison
+    - apt-get update 
+    - apt-get -y install make texinfo time uuid-dev cmake flex bison
     - git config --global user.email "runner@ths.rwth-aachen.de"
 
 dependencies-gcc-9:
@@ -23,7 +23,7 @@ docs-gcc-9:
   image: gcc:9
   before_script:
     - *setup-before_script
-    - apt -y install ghostscript graphviz libclang-7-dev lmodern texinfo texlive texlive-font-utils texlive-latex-extra texlive-plain-generic python3-pip python3-setuptools
+    - apt-get -y install ghostscript graphviz libclang-7-dev lmodern texinfo texlive texlive-font-utils texlive-latex-extra texlive-plain-generic python3-pip python3-setuptools
   script:
     - MAKE_PARALLEL=-j4 TASK=documentation source .ci/build.sh
   only:
@@ -41,7 +41,7 @@ tidy-clang-9:
   extends: .setup
   before_script:
     - *setup-before_script
-    - apt -y libboost-all-dev
+    - apt-get -y install libboost-all-dev
   script:
     - MAKE_PARALLEL=-j4 TASK=parallel source .ci/build.sh
 
@@ -49,8 +49,8 @@ tidy-clang-9:
   extends: .setup
   before_script:
     - *setup-before_script
-    - apt -y libboost-all-dev
-    - apt -y install python3
+    - apt-get -y install libboost-all-dev
+    - apt-get -y install python3
   script:
     - CC=clang CXX=clang++ MAKE_PARALLEL=-j4 TASK=parallel source .ci/build.sh
 
