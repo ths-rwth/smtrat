@@ -1,6 +1,6 @@
 # Developers information {#devguide}
 
-- @subpage Code style
+- @subpage code-style
 - @subpage documentation
 - @subpage logging
 - @subpage statistics-and-timing
