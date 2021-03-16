@@ -28,7 +28,12 @@ if [[ ${TASK} == "dependencies" ]]; then
 elif [[ ${TASK} == "documentation" ]]; then
 	
 	# To allow convert for doc/pictures/
-	sudo rm -f /etc/ImageMagick-6/policy.xml
+	if ! command -v sudo &> /dev/null
+	then
+		sudo rm -f /etc/ImageMagick-6/policy.xml
+	else
+		rm -f /etc/ImageMagick-6/policy.xml
+	fi
 
 	make doxygen-build || return 1
 	make doc || return 1
