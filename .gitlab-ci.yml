@@ -1,6 +1,3 @@
-# TODO extensive jobs on development only
-# TODO builds docs
-
 cache:
   key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
   paths:
