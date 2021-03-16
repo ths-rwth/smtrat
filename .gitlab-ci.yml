@@ -23,7 +23,6 @@ dependencies-gcc-9:
   script:
     - MAKE_PARALLEL=-j4 TASK=dependencies source .ci/build.sh
   only:
-    - master
     - development
 
 docs-gcc-9:
@@ -43,39 +42,41 @@ tidy-clang-9:
   image: silkeh/clang:9
   script:
     - MAKE_PARALLEL=-j4 TASK=tidy source .ci/build.sh
+  except:
+    - master
 
 build-gcc-8:
   extends: .build
   image: gcc:8
   only:
-    - master
     - development
 
 build-gcc-9:
   extends: .build
   image: gcc:9
+  except:
+    - master
 
 build-gcc-10:
   extends: .build
   image: gcc:10
   only:
-    - master
     - development
 
 build-clang-5:
   extends: .build
   image: silkeh/clang:5
   only:
-    - master
     - development
 
 build-clang-9:
   extends: .build
   image: silkeh/clang:9
+  except:
+    - master
 
 build-clang-11:
   extends: .build
   image: silkeh/clang:11
   only:
-    - master
     - development
