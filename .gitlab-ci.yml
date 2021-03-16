@@ -8,11 +8,6 @@ cache:
     - apt update && apt -y install make texinfo time uuid-dev cmake flex bison python3
     - git config --global user.email "runner@ths.rwth-aachen.de"
 
-.build:
-  extends: .setup
-  script:
-    - MAKE_PARALLEL=-j4 TASK=parallel source .ci/build.sh
-
 dependencies-gcc-9:
   extends: .setup
   image: gcc:9
@@ -42,6 +37,16 @@ tidy-clang-9:
   except:
     - master
 
+.build:
+  extends: .setup
+  script:
+    - MAKE_PARALLEL=-j4 TASK=parallel source .ci/build.sh
+
+.build-clang:
+  extends: .setup
+  script:
+    - CC=clang CXX=clang++ MAKE_PARALLEL=-j4 TASK=parallel source .ci/build.sh
+
 build-gcc-8:
   extends: .build
   image: gcc:8
@@ -61,19 +66,19 @@ build-gcc-10:
     - development
 
 build-clang-5:
-  extends: .build
+  extends: .build-clang
   image: silkeh/clang:5
   only:
     - development
 
 build-clang-9:
-  extends: .build
+  extends: .build-clang
   image: silkeh/clang:9
   except:
     - master
 
 build-clang-11:
-  extends: .build
+  extends: .build-clang
   image: silkeh/clang:11
   only:
     - development
