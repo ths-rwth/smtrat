@@ -5,7 +5,7 @@ cache:
 
 .setup:
   before_script:
-    - apt update && apt -y install make texinfo time uuid-dev cmake flex bison
+    - apt update && apt -y install make texinfo time uuid-dev cmake flex bison python3
     - git config --global user.email "runner@ths.rwth-aachen.de"
 
 .build:
