@@ -11,7 +11,7 @@ cache:
 .build:
   extends: .setup
   script:
-    - MAKE_PARALLEL=-j8 TASK=parallel source .ci/build.sh
+    - MAKE_PARALLEL=-j4 TASK=parallel source .ci/build.sh
 
 dependencies-gcc-9:
   extends: .setup
