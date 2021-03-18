@@ -152,6 +152,10 @@ namespace smtrat
     static constexpr auto muduleName = "SATModule<MCSATOC>";
     using MCSATSettings = mcsat::MCSATSettingsOC;
   };
+  struct SATSettingsMCSATOCNew : SATSettingsMCSAT {
+    static constexpr auto muduleName = "SATModule<MCSATOCNew>";
+    using MCSATSettings = mcsat::MCSATSettingsOCNew;
+  };
   struct SATSettingsMCSATFMVSOC : SATSettingsMCSAT {
     static constexpr auto muduleName = "SATModule<MCSATFMVSOC>";
     using MCSATSettings = mcsat::MCSATSettingsFMVSOC;

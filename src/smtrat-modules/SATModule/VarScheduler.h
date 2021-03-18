@@ -27,7 +27,7 @@ namespace smtrat
         std::function<Minisat::lbool(Minisat::Var)> getBoolVarValue;
         std::function<Minisat::lbool(Minisat::Lit)> getBoolLitValue;
         std::function<unsigned(const FormulaT&)> currentlySatisfiedByBackend;
-        std::function<const Minisat::Var(const FormulaT&)> abstractVariable;
+        std::function</*const*/ Minisat::Var(const FormulaT&)> abstractVariable;
         std::function<const Minisat::Lit(const FormulaT&)> abstractLiteral;
         std::function<bool(const FormulaT&)> isAbstractedFormula;
 
@@ -69,12 +69,12 @@ namespace smtrat
         /**
          * Returns and removes the next variable to be decided.
          */
-        Minisat::Lit pop() { assert(false); }
+        Minisat::Lit pop() { assert(false); return Minisat::mkLit(0); }
 
         /**
          * Check if empty.
          */
-        bool empty() {assert(false); }
+        bool empty() {assert(false); return true; }
 
         /**
          * Check if variable is contained.
