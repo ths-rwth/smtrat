@@ -11,26 +11,26 @@
 namespace smtrat::cadcells::operators {
 
 template <>
-struct properties_set<op::mccallum> {
+struct PropertiesSet<op::mccallum> {
     using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel>;
 };
 
 template <>
-void project_basic_properties<op::mccallum>(datastructures::BaseDerivation<properties_set<op::mccallum>::type>& deriv) {
+void project_basic_properties<op::mccallum>(datastructures::BaseDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
     for(const auto& prop : deriv.properties<properties::poly_sgn_inv>()) {
         rules::poly_sgn_inv(deriv, prop.poly);
     }
 }
 
 template <>
-void delineate_properties<op::mccallum>(datastructures::DelineatedDerivation<properties_set<op::mccallum>::type>& deriv) {
+void delineate_properties<op::mccallum>(datastructures::DelineatedDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         delineation::delineate(deriv, prop);
     }
 }
 
 template <>
-void project_delineated_cell_properties<op::mccallum>(datastructures::CellRepresentation<properties_set<op::mccallum>::type>& repr, bool cell_represents) {
+void project_delineated_cell_properties<op::mccallum>(datastructures::CellRepresentation<PropertiesSet<op::mccallum>::type>& repr, bool cell_represents) {
     auto& deriv = repr.derivation;
 
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
@@ -67,7 +67,7 @@ void project_delineated_cell_properties<op::mccallum>(datastructures::CellRepres
 }
 
 template <>
-bool project_cell_properties<op::mccallum>(datastructures::SampledDerivation<properties_set<op::mccallum>::type>& deriv) {
+bool project_cell_properties<op::mccallum>(datastructures::SampledDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
     for(const auto& prop : deriv.properties<properties::root_well_def>()) {
         rules::root_well_def(deriv, prop.root);
     }
@@ -81,7 +81,7 @@ bool project_cell_properties<op::mccallum>(datastructures::SampledDerivation<pro
 }
 
 template <>
-void project_covering_properties<op::mccallum>(datastructures::CoveringRepresentation<properties_set<op::mccallum>::type>& repr) {
+void project_covering_properties<op::mccallum>(datastructures::CoveringRepresentation<PropertiesSet<op::mccallum>::type>& repr) {
     for (auto& cell_repr : repr.cells) {
         project_delineated_cell_properties<op::mccallum>(cell_repr, false);
     }
