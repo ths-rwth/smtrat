@@ -13,49 +13,49 @@ struct property_hash {
 };
 
 template<typename... Ts>
-struct properties_t {};
+struct PropertiesT {};
 template<typename T>
-//using properties_t_set = std::unordered_set<T, property_hash<T>>;
-using properties_t_set = std::set<T>;
+//using PropertiesTSet = std::unordered_set<T, property_hash<T>>;
+using PropertiesTSet = std::set<T>;
 
 template <class T, class... Ts>
-struct properties_t<T, Ts...> : properties_t<Ts...> {
-    properties_t_set<T> content; 
+struct PropertiesT<T, Ts...> : PropertiesT<Ts...> {
+    PropertiesTSet<T> content; 
 };
 
 template <class T, class... Ts>
-auto& get(properties_t<T, Ts...>& sets) {
+auto& get(PropertiesT<T, Ts...>& sets) {
     return sets.content;
 }
 
 template <class S, class T, class... Ts, typename std::enable_if<!std::is_same<S, T>::value>::type>
-auto& get(properties_t<T, Ts...>& sets) {
-    properties_t<Ts...>& base = sets;
+auto& get(PropertiesT<T, Ts...>& sets) {
+    PropertiesT<Ts...>& base = sets;
     return get<S>(base);
 }
 
 template <class T, class... Ts>
-const auto& get(const properties_t<T, Ts...>& sets) {
+const auto& get(const PropertiesT<T, Ts...>& sets) {
     return sets.content;
 }
 
 template <class S, class T, class... Ts, typename std::enable_if<!std::is_same<S, T>::value>::type>
-const auto& get(const properties_t<T, Ts...>& sets) {
-    const properties_t<Ts...>& base = sets;
+const auto& get(const PropertiesT<T, Ts...>& sets) {
+    const PropertiesT<Ts...>& base = sets;
     return get<S>(base);
 }
 
 template <class T>
-void merge(properties_t<T>& sets_a, const properties_t<T>& sets_b) {
+void merge(PropertiesT<T>& sets_a, const PropertiesT<T>& sets_b) {
     sets_a.content.insert(sets_b.content.begin(), sets_b.content.end());
 }
 
 template <class T, class... Ts>
-void merge(properties_t<T, Ts...>& sets_a, const properties_t<T, Ts...>& sets_b) {
+void merge(PropertiesT<T, Ts...>& sets_a, const PropertiesT<T, Ts...>& sets_b) {
     sets_a.content.insert(sets_b.content.begin(), sets_b.content.end());
 
-    properties_t<Ts...>& base_a = sets_a;
-    const properties_t<Ts...>& base_b = sets_b;
+    PropertiesT<Ts...>& base_a = sets_a;
+    const PropertiesT<Ts...>& base_b = sets_b;
     return merge(base_a, base_b);
 }
 

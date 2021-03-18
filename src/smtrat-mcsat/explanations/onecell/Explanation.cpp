@@ -5,17 +5,17 @@ namespace smtrat::mcsat::onecell {
 
 boost::optional<mcsat::Explanation>
 Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, const FormulasT& reason) const {
-    cadcells::assignment ass;
+    cadcells::Assignment ass;
     for (const auto& [key, value] : trail.model()) {
         if (value.isRAN()) {
             ass.emplace(key.asVariable(), value.asRAN());
         } else {
             assert(value.isRational());
-            ass.emplace(key.asVariable(), cadcells::ran(value.asRational()));
+            ass.emplace(key.asVariable(), cadcells::RAN(value.asRational()));
         }
         
     }
-    cadcells::variable_ordering vars = trail.assignedVariables();
+    cadcells::VariableOrdering vars = trail.assignedVariables();
     vars.push_back(var);
 
     carl::carlVariables reason_vars;

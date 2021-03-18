@@ -11,23 +11,23 @@ namespace smtrat::cadcells::datastructures {
 /**
  * Refers to a polynomial. 
  */
-struct poly_ref {
+struct PolyRef {
     /// The level of the polynomial.
     size_t level;
     /// The id of the polynomial with respect to its level.
     size_t id;    
 };
-bool operator<(const poly_ref& lhs, const poly_ref& rhs) {
+bool operator<(const PolyRef& lhs, const PolyRef& rhs) {
     return lhs.level < rhs.level  || (lhs.level == rhs.level && lhs.id < rhs.id);
 }
-bool operator==(const poly_ref& lhs, const poly_ref& rhs) {
+bool operator==(const PolyRef& lhs, const PolyRef& rhs) {
     return lhs.level == rhs.level && lhs.id == rhs.id;
 }
-bool operator!=(const poly_ref& lhs, const poly_ref& rhs) {
+bool operator!=(const PolyRef& lhs, const PolyRef& rhs) {
     return !(lhs == rhs);
 }
 
-std::ostream& operator<<(std::ostream& os, const poly_ref& data) {
+std::ostream& operator<<(std::ostream& os, const PolyRef& data) {
     os << "(" << data.level << " " << data.id << ")";
     return os;
 }
@@ -39,17 +39,17 @@ std::ostream& operator<<(std::ostream& os, const poly_ref& data) {
  * 
  * The polynomials are stored in a table, that is, a list of lists of polynomials of a given level.
  */
-class poly_pool {
-    const variable_ordering& m_var_order;
+class PolyPool {
+    const VariableOrdering& m_var_order;
 
     // TODO later: safe memory
     // std::vector<carl::IDPool> m_id_pools;
     std::vector<std::vector<Poly>> m_polys;
     std::vector<std::map<Poly, size_t>> m_poly_ids;
 
-    inline poly_ref negative_poly_ref() const { return poly_ref {0, 0}; }
-    inline poly_ref zero_poly_ref() const { return poly_ref {0, 1}; }
-    inline poly_ref positive_poly_ref() const { return poly_ref {0, 2}; }
+    inline PolyRef negative_poly_ref() const { return PolyRef {0, 0}; }
+    inline PolyRef zero_poly_ref() const { return PolyRef {0, 1}; }
+    inline PolyRef positive_poly_ref() const { return PolyRef {0, 2}; }
     Poly negative_poly;
     Poly zero_poly;
     Poly positive_poly;
@@ -60,7 +60,7 @@ public:
      * 
      * @param var_order The variable ordering determining polynomial levels.
      */
-    poly_pool(const variable_ordering& var_order) : m_var_order(var_order), negative_poly(-1), zero_poly(0), positive_poly(1) {
+    PolyPool(const VariableOrdering& var_order) : m_var_order(var_order), negative_poly(-1), zero_poly(0), positive_poly(1) {
         for (size_t i = 0; i < var_order.size(); i++) {
             // m_id_pools.emplace_back();
             m_polys.emplace_back();
@@ -68,11 +68,11 @@ public:
         }
     }
 
-    const variable_ordering& var_order() const { return m_var_order; }
+    const VariableOrdering& var_order() const { return m_var_order; }
 
-    poly_ref operator()(const Poly& poly) {
+    PolyRef operator()(const Poly& poly) {
         auto npoly = poly.normalize();
-        poly_ref ref;
+        PolyRef ref;
         ref.level = helper::level_of(m_var_order, npoly);
         if (ref.level == 0) {
             assert(poly.isConstant());
@@ -92,7 +92,7 @@ public:
         return ref;
     }
 
-    const Poly& operator()(poly_ref ref) const {
+    const Poly& operator()(PolyRef ref) const {
         assert(ref.level <= m_polys.size());
         if (ref.level == 0) {
             assert(ref.id <=2);

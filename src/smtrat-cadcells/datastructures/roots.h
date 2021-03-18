@@ -10,49 +10,49 @@ using carl::operator<<;
 /**
  * Represents the i-th root of a multivariate polynomial at its main variable (given an appropriate sample).
  */
-struct indexed_root {
+struct IndexedRoot {
     /// A multivariate polynomial.
-    poly_ref poly;
+    PolyRef poly;
     /// The index, must be > 0.
     size_t index;
-    indexed_root(poly_ref p, size_t i) : poly(p), index(i) { assert(i>0); }
-    indexed_root() : indexed_root( poly_ref{0,0}, 1) {}
+    IndexedRoot(PolyRef p, size_t i) : poly(p), index(i) { assert(i>0); }
+    IndexedRoot() : IndexedRoot( PolyRef{0,0}, 1) {}
 };
-bool operator==(const indexed_root& lhs, const indexed_root& rhs) {
+bool operator==(const IndexedRoot& lhs, const IndexedRoot& rhs) {
     return lhs.poly == rhs.poly && lhs.index == rhs.index;
 }
-bool operator<(const indexed_root& lhs, const indexed_root& rhs) {
+bool operator<(const IndexedRoot& lhs, const IndexedRoot& rhs) {
     return lhs.poly < rhs.poly || (lhs.poly == rhs.poly &&  lhs.index < rhs.index);
 }
-bool operator!=(const indexed_root& lhs, const indexed_root& rhs) {
+bool operator!=(const IndexedRoot& lhs, const IndexedRoot& rhs) {
     return !(lhs == rhs);
 }
-std::ostream& operator<<(std::ostream& os, const indexed_root& data) {
+std::ostream& operator<<(std::ostream& os, const IndexedRoot& data) {
     os << "root(" << data.poly << ", " << data.index << ")";
     return os;
 }
 
 /// Bound type.
-enum class bound { infty };
+enum class Bound { infty };
 /**
  * Holds the description of a cell.
  * A cell is either a section [xi,xi] or a section (-00,xi), (xi, xi'), (xi, oo) where xi,xi' are indexed roots.
  */
-class cell_description {
+class CellDescription {
     enum class type { section, sector };
 
-    std::optional<indexed_root> m_lower;
-    std::optional<indexed_root> m_upper;
+    std::optional<IndexedRoot> m_lower;
+    std::optional<IndexedRoot> m_upper;
     type m_type;
 
 public:
 
-    cell_description(indexed_root bound) : m_lower(bound), m_type(type::section) {}
-    cell_description(indexed_root lower, indexed_root upper) : m_lower(lower), m_upper(upper), m_type(type::sector) {}
-    cell_description(bound, indexed_root upper) : m_upper(upper), m_type(type::sector) {}
-    cell_description(indexed_root lower, bound) : m_lower(lower), m_type(type::sector) {}
-    cell_description(bound, bound) : m_type(type::sector) {}
-    cell_description() : m_type(type::sector) {}
+    CellDescription(IndexedRoot bound) : m_lower(bound), m_type(type::section) {}
+    CellDescription(IndexedRoot lower, IndexedRoot upper) : m_lower(lower), m_upper(upper), m_type(type::sector) {}
+    CellDescription(Bound, IndexedRoot upper) : m_upper(upper), m_type(type::sector) {}
+    CellDescription(IndexedRoot lower, Bound) : m_lower(lower), m_type(type::sector) {}
+    CellDescription(Bound, Bound) : m_type(type::sector) {}
+    CellDescription() : m_type(type::sector) {}
 
     bool is_sector() const {
         return m_type == type::sector;
@@ -65,13 +65,13 @@ public:
     /**
      * In case of a section, the defining indexed root is returned.
      */
-    const indexed_root& section_defining() const {
+    const IndexedRoot& section_defining() const {
         assert(is_section());
         return *m_lower;
     }
 
     /**
-     * Returns the lower bound as indexed_root if finite or std::nullopt if the lower bound is -oo.
+     * Returns the lower bound as IndexedRoot if finite or std::nullopt if the lower bound is -oo.
      * 
      * Asserts that the cell is a sector.
      */
@@ -81,7 +81,7 @@ public:
     }
 
     /**
-     * Returns the upper bound as indexed_root if finite or std::nullopt if the upper bound is oo.
+     * Returns the upper bound as IndexedRoot if finite or std::nullopt if the upper bound is oo.
      * 
      * Asserts that the cell is a sector.
      */
@@ -90,17 +90,17 @@ public:
         return m_upper;
     }
 
-    std::optional<indexed_root> lower_defining() const {
+    std::optional<IndexedRoot> lower_defining() const {
         if (is_sector()) return lower();
         else return section_defining();
     }
 
-    std::optional<indexed_root> upper_defining() const {
+    std::optional<IndexedRoot> upper_defining() const {
         if (is_sector()) return upper();
         else return section_defining();
     }
 };
-std::ostream& operator<<(std::ostream& os, const cell_description& data) {
+std::ostream& operator<<(std::ostream& os, const CellDescription& data) {
     if (data.is_section()) {
         os << "[" << data.section_defining() << ", " << data.section_defining() << "]";
     } else if (data.lower() && data.upper()) {
@@ -116,14 +116,14 @@ std::ostream& operator<<(std::ostream& os, const cell_description& data) {
 }
 
 /**
- * Describes a covering of the real line by cell_descriptions (given an appropriate sample).
+ * Describes a covering of the real line by CellDescriptions (given an appropriate sample).
  */
-class covering_description {
-    std::vector<cell_description> m_data;
+class CoveringDescription {
+    std::vector<CellDescription> m_data;
 
 public:
     /**
-     * Add a cell_description to the covering.
+     * Add a CellDescription to the covering.
      * 
      * The added cell needs to be the rightmost cell of the already added cells and not be contained in any of these cells (or vice versa).
      * 
@@ -133,7 +133,7 @@ public:
      * * Evaluated under an appropriate sample, the left bound of the added cell c is strictly greater than the left bounds of already added cells (considering also "strictness" of the bounds).
      * * The right bound of the added cell c needs to be greater than all right bounds of already added cells (considering also "strictness" of the bounds).
      */
-    void add(const cell_description& c) {
+    void add(const CellDescription& c) {
         assert(!m_data.empty() || (c.is_sector() && !c.lower()));
         assert(m_data.empty() || c.is_section() || c.lower());
         assert(m_data.empty() || m_data.back().is_section() || m_data.back().upper());
@@ -144,19 +144,19 @@ public:
         return m_data;
     }
 };
-std::ostream& operator<<(std::ostream& os, const covering_description& data) {
+std::ostream& operator<<(std::ostream& os, const CoveringDescription& data) {
     os << data.cells();
     return os;
 }
 
 /**
- * Describes an ordering of indexed_roots with respect to a cell_description (which is given implicitly).
+ * Describes an ordering of IndexedRoots with respect to a CellDescription (which is given implicitly).
  */
-class indexed_root_ordering {
-    std::vector<std::pair<indexed_root, indexed_root>> m_data_below;
-    std::vector<std::pair<indexed_root, indexed_root>> m_data_above;
+class IndexedRootOrdering {
+    std::vector<std::pair<IndexedRoot, IndexedRoot>> m_data_below;
+    std::vector<std::pair<IndexedRoot, IndexedRoot>> m_data_above;
 
-    void add(std::vector<std::pair<indexed_root, indexed_root>>& data, indexed_root first, indexed_root second) {
+    void add(std::vector<std::pair<IndexedRoot, IndexedRoot>>& data, IndexedRoot first, IndexedRoot second) {
         assert(first.poly.level == second.poly.level);
         assert(first != second);
         data.push_back(std::make_pair(first, second));
@@ -168,7 +168,7 @@ public:
      * 
      * Relations need to be added in descending order of the second elements.
      */
-    void add_below(indexed_root first, indexed_root second) {
+    void add_below(IndexedRoot first, IndexedRoot second) {
         return add(m_data_below, first, second);
     }
 
@@ -177,7 +177,7 @@ public:
      * 
      * Relations need to be added in ascending order of the first elements.
      */
-    void add_above(indexed_root first, indexed_root second) {
+    void add_above(IndexedRoot first, IndexedRoot second) {
         return add(m_data_above, first, second);
     }
 
@@ -189,7 +189,7 @@ public:
         return m_data_above;
     }
 };
-std::ostream& operator<<(std::ostream& os, const indexed_root_ordering& data) {
+std::ostream& operator<<(std::ostream& os, const IndexedRootOrdering& data) {
     os << data.below() << " " << data.above();
     return os;
 }

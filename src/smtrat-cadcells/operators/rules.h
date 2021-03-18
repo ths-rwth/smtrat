@@ -6,7 +6,7 @@
 namespace smtrat::cadcells::operators::rules {
 
 template<typename P>
-void root_well_def(datastructures::sampled_derivation<P>& deriv, datastructures::indexed_root root) {
+void root_well_def(datastructures::SampledDerivation<P>& deriv, datastructures::IndexedRoot root) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "well_def(" << root << ", " << deriv.sample() << ")");
     assert(deriv.contains(properties::poly_pdel{ root.poly }));
 
@@ -23,7 +23,7 @@ void root_well_def(datastructures::sampled_derivation<P>& deriv, datastructures:
 }
 
 template<typename P>
-bool poly_non_null(datastructures::sampled_derivation<P>& deriv, datastructures::poly_ref poly) {
+bool poly_non_null(datastructures::SampledDerivation<P>& deriv, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "non_null(" << poly << ")");
     if(deriv.proj().is_nullified(deriv.sample(), poly)) {
         SMTRAT_LOG_TRACE("-> smtrat.cadcells.operators.rules", "non_null(" << poly << ") <= false");
@@ -50,7 +50,7 @@ bool poly_non_null(datastructures::sampled_derivation<P>& deriv, datastructures:
 }
 
 template<typename P>
-bool poly_pdel(datastructures::sampled_derivation<P>& deriv, datastructures::poly_ref poly) {
+bool poly_pdel(datastructures::SampledDerivation<P>& deriv, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "proj_del(" << poly << ")");
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> proj_del(" << poly << ") <= non_null(" << poly << ") && ord_inv(disc(" << poly <<"))");
     if (!poly_non_null(deriv, poly)) return false;
@@ -59,7 +59,7 @@ bool poly_pdel(datastructures::sampled_derivation<P>& deriv, datastructures::pol
 }
 
 template<typename P>
-void poly_irrecubile_ord_inv(datastructures::sampled_derivation<P>& deriv, datastructures::poly_ref poly) {
+void poly_irrecubile_ord_inv(datastructures::SampledDerivation<P>& deriv, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ord_inv(" << poly << "), " << poly << " irreducible");
     if (deriv.proj().is_const(poly)) {
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> ord_inv(" << poly << ") <= " << poly << " const");
@@ -75,7 +75,7 @@ void poly_irrecubile_ord_inv(datastructures::sampled_derivation<P>& deriv, datas
 }
 
 template<typename P>
-void poly_ord_inv(datastructures::sampled_derivation<P>& deriv, datastructures::poly_ref poly) {
+void poly_ord_inv(datastructures::SampledDerivation<P>& deriv, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ord_inv(" << poly << ")");
     if (deriv.proj().is_const(poly)) {
         SMTRAT_LOG_TRACE("-> smtrat.cadcells.operators.rules", "-> ord_inv(" << poly << ") <= " << poly << " const");
@@ -89,7 +89,7 @@ void poly_ord_inv(datastructures::sampled_derivation<P>& deriv, datastructures::
 }
 
 template<typename P>
-void poly_sgn_inv(datastructures::base_derivation<P>& deriv, datastructures::poly_ref poly) {
+void poly_sgn_inv(datastructures::BaseDerivation<P>& deriv, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << ")");
     if (deriv.proj().is_const(poly)) {
         SMTRAT_LOG_TRACE("-> smtrat.cadcells.operators.rules", "-> sgn_inv(" << poly << ") <= " << poly << " const");
@@ -105,7 +105,7 @@ void poly_sgn_inv(datastructures::base_derivation<P>& deriv, datastructures::pol
 }
 
 template<typename P>
-void poly_irrecubile_nonzero_sgn_inv(datastructures::delineated_derivation<P>& deriv, datastructures::poly_ref poly) {
+void poly_irrecubile_nonzero_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible and non-zero");
     assert(deriv.contains(properties::poly_pdel{ poly }));
     assert(deriv.proj().num_roots(deriv.underlying_sample(), poly) == 0);
@@ -115,7 +115,7 @@ void poly_irrecubile_nonzero_sgn_inv(datastructures::delineated_derivation<P>& d
 }
 
 template<typename P>
-void cell_connected(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description& cell) {
+void cell_connected(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "connected(" << deriv.level() << ")");
     if (cell.is_sector() && cell.lower() && cell.upper() && cell.lower()->poly != cell.upper()->poly) {
         assert(deriv.contains(properties::poly_pdel{ cell.lower()->poly }));
@@ -125,12 +125,12 @@ void cell_connected(datastructures::sampled_derivation<P>& deriv, const datastru
 }
 
 template<typename P>
-void cell_analytic_submanifold(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description&) {
+void cell_analytic_submanifold(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription&) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "an_sub(" << deriv.level() << ")");
 }
 
 template<typename P>
-void poly_irrecubile_sgn_inv_ec(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description& cell, datastructures::poly_ref poly) {
+void poly_irrecubile_sgn_inv_ec(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), using EC");
     assert(cell.is_section());
     assert(deriv.contains(properties::poly_pdel{ cell.section_defining().poly }));
@@ -141,14 +141,14 @@ void poly_irrecubile_sgn_inv_ec(datastructures::sampled_derivation<P>& deriv, co
 }
 
 template<typename P>
-void root_represents(datastructures::sampled_derivation<P>& deriv, datastructures::indexed_root root) {
+void root_represents(datastructures::SampledDerivation<P>& deriv, datastructures::IndexedRoot root) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ir_rep(" << root << ", " << deriv.sample() << ")");
     assert(deriv.contains(properties::poly_pdel{ root.poly }));
     deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(root.poly) });
 }
 
 template<typename P>
-void cell_represents(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description& cell) {
+void cell_represents(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "repr(" << cell << ")");
     if (cell.is_sector()) {
         if (cell.lower()) {
@@ -163,7 +163,7 @@ void cell_represents(datastructures::sampled_derivation<P>& deriv, const datastr
 }
 
 template<typename P>
-void cell_well_def(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description& cell) {
+void cell_well_def(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "well_def(" << cell << ")");
     if (cell.is_sector()) {
         if (cell.lower()) {
@@ -178,7 +178,7 @@ void cell_well_def(datastructures::sampled_derivation<P>& deriv, const datastruc
 }
 
 template<typename P>
-void root_ordering_holds(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description&, const datastructures::indexed_root_ordering& ordering) {
+void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription&, const datastructures::IndexedRootOrdering& ordering) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ir_rep(" << ordering << ", " << deriv.sample() << ")");
     for (const auto& rel : ordering.below()) {
         if (rel.first.poly != rel.second.poly) {
@@ -199,7 +199,7 @@ void root_ordering_holds(datastructures::sampled_derivation<P>& deriv, const dat
 }
 
 template<typename P>
-void poly_irrecubile_sgn_inv(datastructures::sampled_derivation<P>& deriv, const datastructures::cell_description& cell, const datastructures::indexed_root_ordering& ordering, datastructures::poly_ref poly) {
+void poly_irrecubile_sgn_inv(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell, const datastructures::IndexedRootOrdering& ordering, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
     assert(deriv.contains(properties::poly_pdel{ poly }));
     if (cell.is_section() && deriv.proj().is_zero(deriv.sample(), poly)) {
@@ -207,7 +207,7 @@ void poly_irrecubile_sgn_inv(datastructures::sampled_derivation<P>& deriv, const
         auto it = std::find(roots.begin(), roots.end(), deriv.main_var_sample());
         auto dist = std::distance(roots.begin(), it);
         assert(dist >= 0);
-        deriv.insert(properties::root_well_def{ datastructures::indexed_root(poly, (size_t)dist + 1) });
+        deriv.insert(properties::root_well_def{ datastructures::IndexedRoot(poly, (size_t)dist + 1) });
     } else {
         assert(!deriv.proj().is_zero(deriv.sample(), poly));
         if (cell.is_sector() && (deriv.cell().lower_unbounded() || deriv.cell().upper_unbounded())) {
@@ -224,7 +224,7 @@ void poly_irrecubile_sgn_inv(datastructures::sampled_derivation<P>& deriv, const
 }
 
 template<typename P>
-void covering_holds(datastructures::delineated_derivation<P>& deriv, const datastructures::covering_description& covering) {
+void covering_holds(datastructures::DelineatedDerivation<P>& deriv, const datastructures::CoveringDescription& covering) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "holds(" << covering << ")");
     for (auto it = covering.cells().begin(); it != covering.cells().end()-1; it++) {
         assert(deriv.contains(properties::root_well_def{ *it->upper_defining() }));

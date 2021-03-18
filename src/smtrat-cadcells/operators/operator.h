@@ -11,18 +11,18 @@ template <op Op>
 struct properties_set;
 
 template <op Op>
-void project_basic_properties(datastructures::base_derivation<typename properties_set<Op>::type>& deriv);
+void project_basic_properties(datastructures::BaseDerivation<typename properties_set<Op>::type>& deriv);
 
 template <op Op>
-void delineate_properties(datastructures::delineated_derivation<typename properties_set<Op>::type>& deriv);
+void delineate_properties(datastructures::DelineatedDerivation<typename properties_set<Op>::type>& deriv);
 
 template <op Op>
-void project_delineated_cell_properties(datastructures::cell_representation<typename properties_set<Op>::type>& deriv, bool cell_represents = true);
+void project_delineated_cell_properties(datastructures::CellRepresentation<typename properties_set<Op>::type>& deriv, bool cell_represents = true);
 
 template <op Op>
-bool project_cell_properties(datastructures::sampled_derivation<typename properties_set<Op>::type>& deriv);
+bool project_cell_properties(datastructures::SampledDerivation<typename properties_set<Op>::type>& deriv);
 
 template <op Op>
-void project_covering_properties(datastructures::covering_representation<typename properties_set<Op>::type>& repr);
+void project_covering_properties(datastructures::CoveringRepresentation<typename properties_set<Op>::type>& repr);
 
 } 

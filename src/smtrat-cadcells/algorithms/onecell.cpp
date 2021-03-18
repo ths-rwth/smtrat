@@ -10,7 +10,7 @@ namespace smtrat::cadcells::algorithms {
 constexpr auto op = operators::op::mccallum;
 using propset = operators::properties_set<op>::type;
 
-std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals(const ConstraintT& c, datastructures::projections& proj, const assignment& sample) {
+std::vector<datastructures::SampledDerivationRef<propset>> get_unsat_intervals(const ConstraintT& c, datastructures::Projections& proj, const Assignment& sample) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", c << ", " << sample);
     
     auto vars = proj.polys().var_order();
@@ -25,19 +25,19 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
     operators::project_basic_properties<op>(*deriv->base());
     operators::delineate_properties<op>(*deriv);
 
-    std::vector<datastructures::sampled_derivation_ref<propset>> results;
+    std::vector<datastructures::SampledDerivationRef<propset>> results;
     auto& roots = deriv->delin().roots(); 
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got roots " << roots);
     if (roots.empty()) {
-        tmp_sample.insert_or_assign(current_var, ran(0));
+        tmp_sample.insert_or_assign(current_var, RAN(0));
         if (!carl::evaluate(c, tmp_sample)) {
-            results.emplace_back(datastructures::make_sampled_derivation<propset>(deriv,ran(0)));
+            results.emplace_back(datastructures::make_sampled_derivation<propset>(deriv,RAN(0)));
             SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
             assert(results.back()->cell().lower_unbounded());
             assert(results.back()->cell().upper_unbounded());
         }
     } else {
-        if (carl::isStrict(c.relation())) { // TODO later: allow weak bounds for sampled_derivations
+        if (carl::isStrict(c.relation())) { // TODO later: allow weak bounds for SampledDerivations
             for (auto root = roots.begin(); root != roots.end(); root++) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, root->first));
                 SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
@@ -47,7 +47,7 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
         // TODO unify neighbouring intervals whenever the poly does not change its sign at a zero
 
         {
-            auto current_sample = ran(carl::sample_below(roots.begin()->first));
+            auto current_sample = RAN(carl::sample_below(roots.begin()->first));
             tmp_sample.insert_or_assign(current_var, current_sample);
             if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c, tmp_sample))) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
@@ -70,7 +70,7 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
         }
         
         {
-            auto current_sample = ran(carl::sample_above((--roots.end())->first));
+            auto current_sample = RAN(carl::sample_above((--roots.end())->first));
             tmp_sample.insert_or_assign(current_var, current_sample);
             if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c, tmp_sample))) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
@@ -83,7 +83,7 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
     return results;
 }
 
-std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals(const VariableComparisonT& c, datastructures::projections& proj, const assignment& sample) {
+std::vector<datastructures::SampledDerivationRef<propset>> get_unsat_intervals(const VariableComparisonT& c, datastructures::Projections& proj, const Assignment& sample) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", c << ", " << sample);
 
     auto vars = proj.polys().var_order();
@@ -91,18 +91,18 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
     auto tmp_sample = sample;
 
     assert(c.var() == current_var);
-    assert(std::holds_alternative<ran>(c.value()) || cadcells::helper::level_of(vars, std::get<MultivariateRootT>(c.value()).poly(current_var)) == sample.size() + 1);
+    assert(std::holds_alternative<RAN>(c.value()) || cadcells::helper::level_of(vars, std::get<MultivariateRootT>(c.value()).poly(current_var)) == sample.size() + 1);
 
     auto deriv = datastructures::make_derivation<propset>(proj, sample, sample.size() + 1).delineated_ref();
 
-    auto value_result = [&]() -> std::variant<std::pair<datastructures::indexed_root, ran>, datastructures::poly_ref> {
-        if (std::holds_alternative<ran>(c.value())) {
-            ran root = std::get<ran>(c.value());
+    auto value_result = [&]() -> std::variant<std::pair<datastructures::IndexedRoot, RAN>, datastructures::PolyRef> {
+        if (std::holds_alternative<RAN>(c.value())) {
+            RAN root = std::get<RAN>(c.value());
             auto p = c.definingPolynomial();
             auto poly = proj.polys()(p);
-            auto poly_roots = proj.real_roots(assignment(), poly);
+            auto poly_roots = proj.real_roots(Assignment(), poly);
             size_t index = std::distance(poly_roots.begin(), std::find(poly_roots.begin(), poly_roots.end(), root)) + 1;
-            datastructures::indexed_root iroot(poly, index);
+            datastructures::IndexedRoot iroot(poly, index);
             return std::make_pair(iroot, root);
         } else {
             auto eval_res = std::get<MultivariateRootT>(c.value()).evaluate(sample);
@@ -110,19 +110,19 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
                 auto p = c.definingPolynomial();
                 return proj.polys()(p);
             } else {
-                ran root = *eval_res;
+                RAN root = *eval_res;
                 auto p = c.definingPolynomial();
-                datastructures::indexed_root iroot(proj.polys()(p), std::get<MultivariateRootT>(c.value()).k());
+                datastructures::IndexedRoot iroot(proj.polys()(p), std::get<MultivariateRootT>(c.value()).k());
                 return std::make_pair(iroot, root);
             }
         }
     }();
 
-    std::vector<datastructures::sampled_derivation_ref<propset>> results;
+    std::vector<datastructures::SampledDerivationRef<propset>> results;
 
-    if (std::holds_alternative<std::pair<datastructures::indexed_root, ran>>(value_result)) {
-        datastructures::indexed_root& iroot = std::get<std::pair<datastructures::indexed_root, ran>>(value_result).first;
-        ran& root = std::get<std::pair<datastructures::indexed_root, ran>>(value_result).second;
+    if (std::holds_alternative<std::pair<datastructures::IndexedRoot, RAN>>(value_result)) {
+        datastructures::IndexedRoot& iroot = std::get<std::pair<datastructures::IndexedRoot, RAN>>(value_result).first;
+        RAN& root = std::get<std::pair<datastructures::IndexedRoot, RAN>>(value_result).second;
 
         deriv->insert(operators::properties::poly_pdel{ iroot.poly });
         deriv->insert(operators::properties::root_well_def{ iroot });
@@ -138,15 +138,15 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
             SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
         }
         if (below) {
-            results.emplace_back(datastructures::make_sampled_derivation(deriv, ran(carl::sample_below(root))));
+            results.emplace_back(datastructures::make_sampled_derivation(deriv, RAN(carl::sample_below(root))));
             SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
         }
         if (above) {
-            results.emplace_back(datastructures::make_sampled_derivation(deriv, ran(carl::sample_above(root))));
+            results.emplace_back(datastructures::make_sampled_derivation(deriv, RAN(carl::sample_above(root))));
             SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
         }
     } else {
-        datastructures::poly_ref& poly = std::get<datastructures::poly_ref>(value_result);
+        datastructures::PolyRef& poly = std::get<datastructures::PolyRef>(value_result);
         if (proj.is_nullified(sample, poly)) {
             deriv->delin().add_poly_nullified(poly);
         } else if (proj.num_roots(sample, poly) == 0) {
@@ -157,13 +157,13 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
             deriv->insert(operators::properties::poly_pdel{ poly });
             deriv->insert(operators::properties::poly_sgn_inv{ deriv->proj().ldcf(poly) });
         }
-        results.emplace_back(datastructures::make_sampled_derivation(deriv, ran(0)));
+        results.emplace_back(datastructures::make_sampled_derivation(deriv, RAN(0)));
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
     }
     return results;
 }
 
-std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals(const FormulaT& c, datastructures::projections& proj, const assignment& sample) {
+std::vector<datastructures::SampledDerivationRef<propset>> get_unsat_intervals(const FormulaT& c, datastructures::Projections& proj, const Assignment& sample) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", c << ", " << sample);
     if (c.getType() == carl::FormulaType::CONSTRAINT) {
         return get_unsat_intervals(c.constraint(), proj, sample);
@@ -171,20 +171,20 @@ std::vector<datastructures::sampled_derivation_ref<propset>> get_unsat_intervals
         return get_unsat_intervals(c.variableComparison(), proj, sample);
     } else {
         assert(false);
-        return std::vector<datastructures::sampled_derivation_ref<propset>>();
+        return std::vector<datastructures::SampledDerivationRef<propset>>();
     }
 }
 
-std::optional<datastructures::sampled_derivation_ref<propset>> get_covering(datastructures::projections& proj, const FormulasT& constraints, const assignment& sample) {
+std::optional<datastructures::SampledDerivationRef<propset>> get_covering(datastructures::Projections& proj, const FormulasT& constraints, const Assignment& sample) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", constraints << ", " << sample);
-    std::vector<datastructures::sampled_derivation_ref<propset>> unsat_cells;
+    std::vector<datastructures::SampledDerivationRef<propset>> unsat_cells;
     for (const auto& c : constraints) {
         auto intervals = get_unsat_intervals(c, proj, sample);
         unsat_cells.insert(unsat_cells.end(), intervals.begin(), intervals.end());
     }
 
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Computing covering representation");
-    auto covering_repr = representation::covering<representation::default_covering>::compute(unsat_cells); // TODO distinguish between: not enough interval for covering and mccallum fails
+    auto covering_repr = representation::covering<representation::DEFAULT_COVERING>::compute(unsat_cells); // TODO distinguish between: not enough interval for covering and mccallum fails
     if (!covering_repr) {
         return std::nullopt;
     }
@@ -198,16 +198,16 @@ std::optional<datastructures::sampled_derivation_ref<propset>> get_covering(data
     return covering_repr->cells.front().derivation.underlying().sampled_ref();
 }
 
-std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constraints, const variable_ordering& vars, const assignment& sample) {
+std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constraints, const VariableOrdering& vars, const Assignment& sample) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", constraints << ", " << vars << ", " << sample);
-    datastructures::poly_pool pool(vars);
-    datastructures::projections proj(pool);
+    datastructures::PolyPool pool(vars);
+    datastructures::Projections proj(pool);
 
     auto cov_res = get_covering(proj, constraints, sample); // TODO later: alternative to covering: project delineation
     if (!cov_res) {
         return std::nullopt;
     }
-    datastructures::sampled_derivation_ref<propset> cell_deriv = *cov_res;
+    datastructures::SampledDerivationRef<propset> cell_deriv = *cov_res;
 
     FormulasT description;
     while (cell_deriv->level() > 0) {
@@ -224,7 +224,7 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
         cell_deriv->delineate_cell();
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << cell_deriv->cell() << " wrt " << cell_deriv->delin());
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Compute cell representation");
-        auto cell_repr = representation::cell<representation::default_cell>::compute(cell_deriv);
+        auto cell_repr = representation::cell<representation::DEFAULT_CELL>::compute(cell_deriv);
         if (!cell_repr) {
             SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Could not compute representation");
             return std::nullopt;

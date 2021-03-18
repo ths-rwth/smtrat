@@ -10,20 +10,20 @@ namespace smtrat::cadcells::datastructures {
      * Represents a cell.
      */
     template<typename P>
-    struct cell_representation {
+    struct CellRepresentation {
         /// Description of a cell.
-        cell_description description;
+        CellDescription description;
         /// An ordering of the roots that protects the cell.
-        indexed_root_ordering ordering;
+        IndexedRootOrdering ordering;
         /// Polynomials that should be projected using the equational constraints projection.
-        boost::container::flat_set<poly_ref> equational;
+        boost::container::flat_set<PolyRef> equational;
         /// Derivation.
-        sampled_derivation<P>& derivation;
+        SampledDerivation<P>& derivation;
 
-        cell_representation(sampled_derivation<P>& deriv) : derivation(deriv) {}
+        CellRepresentation(SampledDerivation<P>& deriv) : derivation(deriv) {}
     };
     template<typename P>
-    std::ostream& operator<<(std::ostream& os, const cell_representation<P>& data) {
+    std::ostream& operator<<(std::ostream& os, const CellRepresentation<P>& data) {
         os << "(cell: " << data.description << "; ordering: " << data.ordering << "; equational: " << data.equational << "; derivation: " << &data.derivation << ")";
         return os;
     }
@@ -34,21 +34,21 @@ namespace smtrat::cadcells::datastructures {
      * The cells forming the covering are in increasing order (ordered by lower bound) and no cell is contained in another cell.
      */
     template<typename P>
-    struct covering_representation {
+    struct CoveringRepresentation {
         /// Cells of the covering in increasing order and no cell is contained in another cell.
-        std::vector<cell_representation<P>> cells;
+        std::vector<CellRepresentation<P>> cells;
         /// Returns a descriptions of the covering.
-        covering_description get_covering() const {
+        CoveringDescription get_covering() const {
             assert(is_valid());
-            covering_description cov;
+            CoveringDescription cov;
             for (const auto& cell : cells) {
                 cov.add(cell.description);
             }
             return cov;
         }
         /// Returns the derivations.
-        std::vector<std::reference_wrapper<sampled_derivation<P>>> sampled_derivations() {
-            std::vector<std::reference_wrapper<sampled_derivation<P>>> cov;
+        std::vector<std::reference_wrapper<SampledDerivation<P>>> sampled_derivations() {
+            std::vector<std::reference_wrapper<SampledDerivation<P>>> cov;
             for (const auto& cell : cells) {
                 cov.push_back(cell.derivation);
             }
@@ -83,7 +83,7 @@ namespace smtrat::cadcells::datastructures {
         }
     };
     template<typename P>
-    std::ostream& operator<<(std::ostream& os, const covering_representation<P>& data) {
+    std::ostream& operator<<(std::ostream& os, const CoveringRepresentation<P>& data) {
         os << data.cells;
         return os;
     }

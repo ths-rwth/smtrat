@@ -5,13 +5,13 @@
 
 namespace smtrat::cadcells::algorithms::helper {
 
-inline MultivariateRootT as_multivariate_root(const datastructures::poly_pool& pool, carl::Variable main_var, datastructures::indexed_root r) {
+inline MultivariateRootT as_multivariate_root(const datastructures::PolyPool& pool, carl::Variable main_var, datastructures::IndexedRoot r) {
     const Poly& poly = pool(r.poly);
     assert(carl::variables(poly).has(main_var));
     return MultivariateRootT(Poly(carl::UnivariatePolynomial<Poly>(MultivariateRootT::var(), carl::to_univariate_polynomial(poly, main_var).coefficients())), r.index);
 }
 
-FormulaT to_formula(const datastructures::poly_pool& pool, carl::Variable main_var, datastructures::cell_description& c) {
+FormulaT to_formula(const datastructures::PolyPool& pool, carl::Variable main_var, datastructures::CellDescription& c) {
     if (c.is_section()) {
         return FormulaT(VariableComparisonT(main_var, as_multivariate_root(pool,main_var,c.section_defining()), carl::Relation::EQ));
     } else {

@@ -6,11 +6,11 @@
 
 namespace smtrat::cadcells {
 
-using ran = carl::real_algebraic_number<Rational>;
-using assignment = carl::ran_assignment<Rational>;
-using variable_ordering = std::vector<carl::Variable>;
+using RAN = carl::real_algebraic_number<Rational>;
+using Assignment = carl::ran_assignment<Rational>;
+using VariableOrdering = std::vector<carl::Variable>;
 
-static const assignment empty_assignment;
+static const Assignment empty_assignment;
 
 }
 

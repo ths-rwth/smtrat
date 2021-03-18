@@ -3,50 +3,50 @@
 #include "../datastructures/representation.h"
 
 namespace smtrat::cadcells::representation {
-    enum cell_heuristic {
-        default_cell
+    enum CellHeuristic {
+        DEFAULT_CELL
     };
 
-    enum covering_heuristic {
-        default_covering
+    enum CoveringHeuristic {
+        DEFAULT_COVERING
     };
 
-    template<cell_heuristic H>
+    template<CellHeuristic H>
     struct cell {
         template<typename T>
-        static std::optional<datastructures::cell_representation<T>> compute(datastructures::sampled_derivation_ref<T>& der);
+        static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der);
     };
 
-    template<covering_heuristic H>
+    template<CoveringHeuristic H>
     struct covering {
         template<typename T>
-        static std::optional<datastructures::covering_representation<T>> compute(const std::vector<datastructures::sampled_derivation_ref<T>>& ders);
+        static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& ders);
     };
 
     template <>
-    struct cell<cell_heuristic::default_cell> {
-        static datastructures::indexed_root simplest_bound(const std::vector<datastructures::indexed_root>& bounds) { // TODO later: improve
+    struct cell<CellHeuristic::DEFAULT_CELL> {
+        static datastructures::IndexedRoot simplest_bound(const std::vector<datastructures::IndexedRoot>& bounds) { // TODO later: improve
             assert(!bounds.empty());
             return *bounds.begin();
         }
 
-        static datastructures::cell_description compute_simplest_cell(const datastructures::delineation_interval& del) {
+        static datastructures::CellDescription compute_simplest_cell(const datastructures::DelineationInterval& del) {
             if (del.is_section()) {
-                return datastructures::cell_description(simplest_bound(del.lower()->second));
+                return datastructures::CellDescription(simplest_bound(del.lower()->second));
             } else if (del.lower_unbounded() && del.upper_unbounded()) {
-                return datastructures::cell_description(datastructures::bound::infty, datastructures::bound::infty);
+                return datastructures::CellDescription(datastructures::Bound::infty, datastructures::Bound::infty);
             } else if (del.lower_unbounded() ) {
-                return datastructures::cell_description(datastructures::bound::infty, simplest_bound(del.upper()->second));
+                return datastructures::CellDescription(datastructures::Bound::infty, simplest_bound(del.upper()->second));
             } else if (del.upper_unbounded()) {
-                return datastructures::cell_description(simplest_bound(del.lower()->second), datastructures::bound::infty);
+                return datastructures::CellDescription(simplest_bound(del.lower()->second), datastructures::Bound::infty);
             } else {
-                return datastructures::cell_description(simplest_bound(del.lower()->second), simplest_bound(del.upper()->second));
+                return datastructures::CellDescription(simplest_bound(del.lower()->second), simplest_bound(del.upper()->second));
             }
         }
 
         template<typename T>
-        static std::optional<datastructures::cell_representation<T>> compute(datastructures::sampled_derivation_ref<T>& der) {
-            datastructures::cell_representation<T> response(*der);
+        static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
+            datastructures::CellRepresentation<T> response(*der);
             response.description = compute_simplest_cell(der->cell());
 
             if (der->cell().is_section()) {
@@ -95,15 +95,15 @@ namespace smtrat::cadcells::representation {
     };
 
     template <>
-    struct covering<covering_heuristic::default_covering> {
+    struct covering<CoveringHeuristic::DEFAULT_COVERING> {
         template<typename T>
-        static std::optional<datastructures::covering_representation<T>> compute(const std::vector<datastructures::sampled_derivation_ref<T>>& ders) {
-            datastructures::covering_representation<T> result;
+        static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& ders) {
+            datastructures::CoveringRepresentation<T> result;
             
-            std::vector<datastructures::sampled_derivation_ref<T>> sorted_ders;
+            std::vector<datastructures::SampledDerivationRef<T>> sorted_ders;
             for (auto& der : ders) sorted_ders.emplace_back(der);
 
-            std::sort(sorted_ders.begin(), sorted_ders.end(), [](const datastructures::sampled_derivation_ref<T>& p_cell1, const datastructures::sampled_derivation_ref<T>& p_cell2) { // cell1 < cell2
+            std::sort(sorted_ders.begin(), sorted_ders.end(), [](const datastructures::SampledDerivationRef<T>& p_cell1, const datastructures::SampledDerivationRef<T>& p_cell2) { // cell1 < cell2
                 const auto& cell1 = p_cell1->cell();
                 const auto& cell2 = p_cell2->cell();
                 return lower_less(cell1, cell2) || (lower_equal(cell1, cell2) && upper_less(cell2, cell1));
@@ -111,7 +111,7 @@ namespace smtrat::cadcells::representation {
 
             auto iter = sorted_ders.begin();
             while (iter != sorted_ders.end()) {
-                std::optional<datastructures::cell_representation<T>> cell_result = cell<default_cell>::compute(*iter);
+                std::optional<datastructures::CellRepresentation<T>> cell_result = cell<DEFAULT_CELL>::compute(*iter);
                 if (!cell_result) return std::nullopt;
                 result.cells.emplace_back(*cell_result);
                 auto& last_cell = (*iter)->cell();

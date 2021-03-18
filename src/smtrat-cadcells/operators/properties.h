@@ -6,7 +6,7 @@
 namespace smtrat::cadcells::operators::properties {
 
 struct poly_sgn_inv {
-    datastructures::poly_ref poly;
+    datastructures::PolyRef poly;
     size_t level() const {
         return poly.level;
     }
@@ -26,7 +26,7 @@ std::ostream& operator<<(std::ostream& os, const poly_sgn_inv& data) {
 }
 
 struct poly_irreducible_sgn_inv {
-    datastructures::poly_ref poly;   
+    datastructures::PolyRef poly;   
     size_t level() const {
         return poly.level;
     }
@@ -46,7 +46,7 @@ std::ostream& operator<<(std::ostream& os, const poly_irreducible_sgn_inv& data)
 }
 
 struct poly_ord_inv {
-    datastructures::poly_ref poly;
+    datastructures::PolyRef poly;
     size_t level() const {
         return poly.level;
     }
@@ -66,7 +66,7 @@ std::ostream& operator<<(std::ostream& os, const poly_ord_inv& data) {
 }
 
 struct root_well_def {
-    datastructures::indexed_root root;
+    datastructures::IndexedRoot root;
     size_t level() const {
         return root.poly.level-1;
     }
@@ -91,7 +91,7 @@ std::ostream& operator<<(std::ostream& os, const root_well_def& data) {
 }
 
 struct poly_pdel {
-    datastructures::poly_ref poly;
+    datastructures::PolyRef poly;
     size_t level() const {
         return poly.level-1;
     }
