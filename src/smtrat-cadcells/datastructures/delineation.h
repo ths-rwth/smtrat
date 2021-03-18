@@ -7,6 +7,9 @@ namespace smtrat::cadcells::datastructures {
 
 using RootMap = std::map<RAN, std::vector<IndexedRoot>>;
 
+/**
+ * An interval of a delineation.
+ */
 class DelineationInterval {
     RootMap::const_iterator m_lower;
     RootMap::const_iterator m_upper;
@@ -56,22 +59,40 @@ std::ostream& operator<<(std::ostream& os, const DelineationInterval& data) {
     return os;
 }
 
+/**
+ * Represents the delineation of a set of polynomials (at a sample), that is
+ * - the ordering of all roots,
+ * - the set of nullified polynomials,
+ * - the set of polynomials without a root.
+ */
 class Delineation {
     friend class DelineationInterval;
 
+    /// A map from the actual roots to indexed root expressions. Not that this map is sorted.
     RootMap m_roots;
+    /// The set of all nullified polynomials.
     boost::container::flat_set<PolyRef> m_polys_nullified;
+    /// The set of all polynomials without a root.
     boost::container::flat_set<PolyRef> m_polys_noroot;
 
 public: 
     Delineation() {}
 
+    /**
+     * Returns the underlying root map, which is a set of real algebraic numbers to indexed root expressions.
+     */
     const auto& roots() const {
         return m_roots;
     }
+    /**
+     * The set of nullified polynomials.
+     */
     const auto& nullified() const {
         return m_polys_nullified;
     }
+    /**
+     * The set of polynomials without roots.
+     */
     const auto& nonzero() const {
         return m_polys_noroot;
     }
@@ -79,6 +100,9 @@ public:
         return m_roots.empty() && m_polys_nullified.empty() && m_polys_noroot.empty();
     }
 
+    /**
+     * Computes the bounds of the interval around the given sample w.r.t. this delineation. 
+     */
     auto delineate_cell(const RAN& sample) const {
         RootMap::const_iterator lower;
         RootMap::const_iterator upper;

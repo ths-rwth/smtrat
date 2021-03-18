@@ -159,6 +159,9 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     return results;
 }
 
+/**
+ * Returns the unsat intervals of the given atom w.r.t. a sample.
+ */
 template <cadcells::operators::op op>
 std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>> get_unsat_intervals(const FormulaT& c, datastructures::Projections& proj, const Assignment& sample) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", c << ", " << sample);
