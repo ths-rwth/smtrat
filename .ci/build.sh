@@ -28,7 +28,12 @@ if [[ ${TASK} == "dependencies" ]]; then
 elif [[ ${TASK} == "documentation" ]]; then
 	
 	# To allow convert for doc/pictures/
-	sudo rm -f /etc/ImageMagick-6/policy.xml
+	if ! command -v sudo &> /dev/null
+	then
+		rm -f /etc/ImageMagick-6/policy.xml
+	else
+		sudo rm -f /etc/ImageMagick-6/policy.xml
+	fi
 
 	make doxygen-build || return 1
 	make doc || return 1
@@ -60,6 +65,11 @@ elif [[ ${TASK} == "tidy" ]]; then
 
 	/usr/bin/time make tidy || return 1
 
+elif [[ ${TASK} == "parallel" ]]; then
+	start_keep_waiting
+	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
+	stop_keep_waiting
+	/usr/bin/time make ${MAKE_PARALLEL} || return 1
 else
 	start_keep_waiting
 	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1

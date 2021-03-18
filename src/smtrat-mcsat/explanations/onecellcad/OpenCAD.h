@@ -234,7 +234,7 @@ std::optional<OpenCADCell> mergeCellWithPoly(
 		// factors.
 		carl::CoCoAAdaptor<MultiPoly> factorizer(projectionPolys);
 		for (auto& p : projectionPolys) {
-			for (const auto& factor : factorizer.irreducibleFactorsOf(p)) {
+			for (const auto& factor : factorizer.irreducibleFactors(p, false)) {
 				SMTRAT_LOG_DEBUG("smtrat.opencad", "Merge irreducible factor: " << factor);
 				if (!(newCell = mergeCellWithPoly(
 						  *newCell,

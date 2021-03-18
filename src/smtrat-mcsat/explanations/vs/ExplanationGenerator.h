@@ -59,8 +59,8 @@ private:
 		helper::getFormulaAtoms(inputFormula, atoms);
 
 		// generate test candidates
-		std::vector<smtrat::vs::Substitution> testCandidates;
-		if (helper::generateTestCandidates(testCandidates, var, mModel, atoms)) {
+		std::vector<helper::TestCandidate> testCandidates;
+		if (helper::generateTestCandidates(testCandidates, var, atoms)) {
 			FormulasT res;
 			res.reserve(testCandidates.size());
 			for (const auto& tc : testCandidates) {
@@ -70,11 +70,11 @@ private:
 				for (const auto& constr : atoms) {
 					// check if branchResult still contains constr
 					//if (branchResult.contains(constr)) {
-						SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substituting " << tc << " into " << constr);
+						SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substituting " << tc.term << " for " << var << " into " << constr);
 
 						// calculate substitution
 						FormulaT substitutionResult; // TODO reduceConflictConstraints?
-						if (!helper::substitute(constr, tc, mModel, substitutionResult)) {
+						if (!helper::substitute(constr, var, tc.term, substitutionResult)) {
 							SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution failed");
 							return boost::none;
 						}
@@ -101,12 +101,12 @@ private:
 				// add side condition
 				FormulasT branch;
 				branch.push_back(std::move(branchResult));				
-				for (const auto& sc : tc.sideCondition()) {
+				for (const auto& sc : tc.side_condition) {
 					branch.emplace_back(sc);
 				}
 				
 				res.emplace_back(carl::FormulaType::AND, std::move(branch));
-				SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution of " << tc << " into formula obtained " << res.back());
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution of " << tc.term << " into formula obtained " << res.back());
 				assert(res.back() != FormulaT(carl::FormulaType::TRUE));
 			}
 
