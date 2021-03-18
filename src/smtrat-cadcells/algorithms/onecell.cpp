@@ -70,9 +70,11 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
         operators::project_delineated_cell_properties<op>(*cell_repr);
 
         description.emplace_back(helper::to_formula(proj.polys(), cell_deriv->main_var(),cell_repr->description));
+        proj.clear_assignment_cache(cell_deriv->sample());
         cell_deriv = cell_deriv->underlying().sampled_ref();
         proj.clear_cache(cell_deriv->level()+2);
     }
+    proj.clear_assignment_cache(empty_assignment);
 
     return std::make_pair(constraints, FormulaT(carl::FormulaType::AND, std::move(description)));
 }

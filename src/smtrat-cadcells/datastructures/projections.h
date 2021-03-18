@@ -10,8 +10,6 @@
 
 namespace smtrat::cadcells::datastructures {
 
-    // TODO refactor ??
-
 namespace detail {
 
 struct PolyProperties {
@@ -19,6 +17,11 @@ struct PolyProperties {
     std::optional<PolyRef> disc;
     std::optional<PolyRef> ldcf;
     std::vector<PolyRef> factors_nonconst;
+};
+
+struct AssignmentProperties {
+    std::map<PolyRef, carl::ran::real_roots_result<RAN>> real_roots;
+    std::map<PolyRef, bool> is_zero;
 };
 
 }
@@ -30,6 +33,7 @@ struct PolyProperties {
 class Projections {
     PolyPool& m_pool;
     std::vector<std::vector<detail::PolyProperties>> m_poly_cache;
+    std::vector<std::map<Assignment,detail::AssignmentProperties>> m_assignment_cache;
 
     auto& cache(PolyRef p) {
         assert(p.level > 0);
@@ -44,6 +48,20 @@ class Projections {
         return m_poly_cache[p.level-1][p.id];
     }
 
+    size_t level_of(const Assignment& a) const {
+        return a.size();
+    }
+
+    auto& cache(const Assignment& a) {
+        m_assignment_cache.resize(level_of(a)+1);
+        return m_assignment_cache[level_of(a)][a];
+    }
+    const auto& cache(const Assignment& a) const {
+        assert(level_of(a) < m_assignment_cache.size());
+        assert(m_assignment_cache[level_of(a)].find(a) != m_assignment_cache[level_of(a)].end());
+        return m_assignment_cache[level_of(a)].at(a);
+    }
+
 public:
     auto main_var(PolyRef p) const {
         return m_pool.var_order()[p.level-1];
@@ -52,6 +70,15 @@ public:
 private:
     auto as_univariate(PolyRef p) const {
         return carl::to_univariate_polynomial(m_pool(p), main_var(p));
+    }
+
+    Assignment restrict_assignment(Assignment ass, PolyRef p) {
+        auto vars = carl::variables(m_pool(p));
+        for(auto i = m_pool.var_order().rbegin(); i !=  m_pool.var_order().rend(); i++) {
+            if (!vars.has(*i)) ass.erase(*i);
+            else return ass;
+        }
+        return ass;
     }
 
 public:
@@ -65,6 +92,13 @@ public:
         m_pool.clear_levels(level);
         if (level <= m_poly_cache.size()) {
             m_poly_cache.erase(m_poly_cache.begin() + (level - 1), m_poly_cache.end());
+            m_assignment_cache.erase(m_assignment_cache.begin() + level, m_assignment_cache.end());
+        }
+    }
+
+    void clear_assignment_cache(const Assignment& assignment) {
+        if (level_of(assignment) < m_assignment_cache.size()) {
+            m_assignment_cache[level_of(assignment)].erase(assignment);
         }
     }
     
@@ -127,29 +161,48 @@ public:
         return cache(p).factors_nonconst;
     }
 
-    size_t num_roots(const Assignment& sample, PolyRef p) { // TODO cache
-        auto rrs = carl::real_roots(as_univariate(p), sample);
-        assert(rrs.is_univariate());
-        return rrs.roots().size();
+    bool is_zero(const Assignment& sample, PolyRef p) {
+        auto restricted_sample = restrict_assignment(sample ,p);
+        assert(p.level == level_of(restricted_sample));
+        if (restricted_sample.empty()) return is_zero(p);
+        if (cache(restricted_sample).is_zero.find(p) == cache(restricted_sample).is_zero.end()) {
+            auto mv = carl::evaluate(ConstraintT(m_pool(p), carl::Relation::EQ), restricted_sample);
+            assert(!indeterminate(mv));
+            cache(restricted_sample).is_zero[p] = (bool) mv;
+        }
+        return cache(restricted_sample).is_zero[p];
     }
 
-    std::vector<RAN> real_roots(const Assignment& sample, PolyRef p) { // TODO cache
-        auto rrs = carl::real_roots(as_univariate(p), sample);
-        assert(rrs.is_univariate());
-        return rrs.roots();
+    size_t num_roots(const Assignment& sample, PolyRef p) {
+        assert(p.level == level_of(sample)+1);
+        assert(!m_pool(p).isConstant());
+        if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {
+            cache(sample).real_roots.emplace(p, carl::real_roots(as_univariate(p), sample));
+            assert(cache(sample).real_roots.at(p).is_univariate());
+        }
+        return cache(sample).real_roots.at(p).roots().size();
     }
 
-    bool is_nullified(const Assignment& sample, PolyRef p) { // TODO cache
+    std::vector<RAN> real_roots(const Assignment& sample, PolyRef p) {
+        assert(p.level == level_of(sample)+1);
+        assert(!m_pool(p).isConstant());
+        if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {
+            cache(sample).real_roots.emplace(p, carl::real_roots(as_univariate(p), sample));
+            assert(cache(sample).real_roots.at(p).is_univariate());
+        }
+        return cache(sample).real_roots.at(p).roots();
+    }
+
+    bool is_nullified(const Assignment& sample, PolyRef p) {
+        assert(p.level == level_of(sample)+1);
         auto poly = m_pool(p);
 		assert(!poly.isConstant());
 		if (poly.isLinear()) return false;
-		return carl::real_roots(as_univariate(p), sample).is_nullified();
-    }
-
-    bool is_zero(const Assignment& sample, PolyRef p) { // TODO cache
-        auto mv = carl::evaluate(ConstraintT(m_pool(p), carl::Relation::EQ), sample);
-        assert(!indeterminate(mv));
-        return (bool) mv;
+        if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {
+            cache(sample).real_roots.emplace(p, carl::real_roots(as_univariate(p), sample));
+            assert(cache(sample).real_roots.at(p).is_univariate());
+        }
+		return cache(sample).real_roots.at(p).is_nullified();
     }
 
     bool is_ldcf_zero(const Assignment& sample, PolyRef p) {
