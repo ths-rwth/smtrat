@@ -9,7 +9,7 @@
 #pragma once
 
 #include <smtrat-solver/Module.h>
-#include <lib/datastructures/VariableBounds.h>
+#include <smtrat-variablebounds/VariableBounds.h>
 #include "../ICPModule/ICPModule.h"
 #include "IncWidthSettings.h"
 namespace smtrat

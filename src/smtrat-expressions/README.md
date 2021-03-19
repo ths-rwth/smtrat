@@ -1,0 +1,3 @@
+This is dead code. 
+
+The expressions were meant as an alternative to carl::Formula. Instead of having own theory constraints for each theory, here, everything is stored in a single tree structure. This would make theory combinations easier (think of a variable being interpreted both as uninterpreted and as arithmetic variable); furthermore, handling ite expression is easer: currently, we need to resolve ite expressions within the theory in the parser, leading to bad performance on some examples.

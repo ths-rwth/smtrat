@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <unordered_map>
 
-#include <lib/datastructures/eq/alloc.h>
+#include "datastructures/alloc.h"
 #include "PairHash.h"
 
 namespace smtrat {

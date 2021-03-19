@@ -16,7 +16,7 @@
 #include "ModuleWrapper.h"
 #include "../EQModule/VariantHash.h"
 #include "../EQModule/PairHash.h"
-#include <lib/datastructures/eq/union_find.h>
+#include <smtrat-modules/EQModule/datastructures/union_find.h>
 #include "../EQModule/pmatrix.hpp"
 #include "EQPreprocessingStatistics.h"
 #include "EQPreprocessingSettings.h"

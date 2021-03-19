@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <lib/datastructures/VariableBounds.h>
+#include <smtrat-variablebounds/VariableBounds.h>
 #include <smtrat-strategies/strategies/BVSolver.h>
 #include <smtrat-solver/Module.h>
 #include "../ICPModule/ICPModule.h"

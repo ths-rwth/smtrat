@@ -11,7 +11,7 @@
 #pragma once
 
 #include <smtrat-solver/PModule.h>
-#include <lib/datastructures/VariableBounds.h>
+#include <smtrat-variablebounds/VariableBounds.h>
 
 #include "ICESettings.h"
 #include "ForwardHyperGraph.h"

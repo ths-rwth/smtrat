@@ -47,7 +47,6 @@ file(GLOB_RECURSE smtrat_cli_sources "*.cpp")
 
 add_library(smtrat-objects OBJECT ${smtrat_cli_sources})
 add_dependencies(smtrat-objects
-	smtrat-lib-shared
 	carl-shared
 	carl-io-shared
 	smtrat-common-shared
@@ -56,7 +55,6 @@ add_dependencies(smtrat-objects
 	smtrat-strategy-${SMTRAT_Strategy}-shared
 )
 target_include_dirs_from(smtrat-objects "" PUBLIC
-	smtrat-lib-shared
 	carl-shared
 	carl-io-shared
 	smtrat-common-shared
@@ -69,7 +67,6 @@ add_executable(smtrat-shared $<TARGET_OBJECTS:smtrat-objects>)
 add_executable(smtrat-static $<TARGET_OBJECTS:smtrat-objects>)
 
 target_link_libraries(smtrat-shared
-	smtrat-lib-shared
 	carl-shared
 	carl-io-shared
 	smtrat-common-shared
@@ -79,7 +76,6 @@ target_link_libraries(smtrat-shared
 )
 target_link_libraries(smtrat-static
 	"-static"
-	smtrat-lib-static
 	carl-static
 	carl-io-static
 	smtrat-common-static

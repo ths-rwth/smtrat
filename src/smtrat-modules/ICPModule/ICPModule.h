@@ -18,7 +18,7 @@
 #include "../LRAModule/LRAModule.h"
 #include "../LRAModule/LRASettings.h"
 #include <smtrat-common/smtrat-common.h>
-#include <lib/datastructures/VariableBounds.h>
+#include <smtrat-variablebounds/VariableBounds.h>
 #include "IcpVariable.h"
 #include "ICPSettings.h"
 #include "utils.h"

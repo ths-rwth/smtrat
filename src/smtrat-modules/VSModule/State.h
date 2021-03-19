@@ -12,7 +12,7 @@
 #include "config.h"
 #include "Substitution.h"
 #include <carl/util/IDPool.h>
-#include <lib/datastructures/VariableBounds.h>
+#include <smtrat-variablebounds/VariableBounds.h>
 #include "VSSettings.h"
 
 #ifdef SMTRAT_DEVOPTION_Statistics

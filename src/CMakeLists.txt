@@ -13,7 +13,6 @@
 
 
 add_subdirectory(smtrat-common)
-add_subdirectory(lib)
 add_subdirectory(smtrat-analyzer)
 add_subdirectory(smtrat-cad)
 add_subdirectory(smtrat-cadcells)
@@ -25,6 +24,7 @@ add_subdirectory(smtrat-strategies)
 add_subdirectory(smtrat-unsat-cores)
 add_subdirectory(smtrat-max-smt)
 add_subdirectory(smtrat-optimization)
+add_subdirectory(smtrat-variablebounds)
 
 if(BUILD_SOLVER)
 	add_subdirectory(cli)

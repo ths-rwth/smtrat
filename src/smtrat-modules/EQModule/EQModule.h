@@ -30,8 +30,8 @@
 #include <boost/variant.hpp>
 #include <boost/circular_buffer.hpp>
 #include <boost/operators.hpp>
-#include <lib/datastructures/eq/alloc.h>
-#include <lib/datastructures/eq/union_find.h>
+#include "datastructures/alloc.h"
+#include "datastructures/union_find.h"
 
 namespace smtrat
 {

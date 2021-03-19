@@ -11,7 +11,7 @@
 #include <smtrat-cad/CAD.h>
 //#include <smtrat-cad/utils/CADPreprocessor.h>
 #include <smtrat-cad/utils/Preprocessor.h>
-#include <lib/datastructures/VariableBounds.h>
+#include <smtrat-variablebounds/VariableBounds.h>
 
 #include <smtrat-solver/Module.h>
 #include "NewCADStatistics.h"

@@ -9,7 +9,7 @@
 #pragma once
 
 #include <boost/optional.hpp>
-#include <lib/datastructures/VariableBounds.h>
+#include <smtrat-variablebounds/VariableBounds.h>
 #include <smtrat-solver/Manager.h>
 #include <smtrat-solver/Module.h>
 #include "../SATModule/SATModule.h"
