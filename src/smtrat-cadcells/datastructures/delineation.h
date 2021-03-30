@@ -126,7 +126,7 @@ public:
             }
         }
 
-        return DelineationInterval(std::move(lower),std::move(upper),std::move(m_roots.end()));
+        return DelineationInterval(std::move(lower),std::move(upper),m_roots.end());
     }
 
     void add_root(RAN root, IndexedRoot ir_root) {

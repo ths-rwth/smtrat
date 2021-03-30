@@ -97,7 +97,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
             auto p = c.definingPolynomial();
             auto poly = proj.polys()(p);
             auto poly_roots = proj.real_roots(Assignment(), poly);
-            size_t index = std::distance(poly_roots.begin(), std::find(poly_roots.begin(), poly_roots.end(), root)) + 1;
+            size_t index = (size_t)std::distance(poly_roots.begin(), std::find(poly_roots.begin(), poly_roots.end(), root)) + 1;
             datastructures::IndexedRoot iroot(poly, index);
             return std::make_pair(iroot, root);
         } else {
