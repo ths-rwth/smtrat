@@ -117,11 +117,12 @@ namespace cad {
 			if (sample.evaluatedWith().test(cid)) {
 				return sample.evaluationResult().test(cid);
 			}
-			bool evalResult = carl::evaluate(constraint.first, assignment);
+			auto evalResult = carl::evaluate(constraint.first, assignment);
+			assert(!indeterminate(evalResult));
 			SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Evaluating " << constraint.first << " on " << assignment << " -> " << evalResult);
 			sample.evaluatedWith().set(cid, true);
-			sample.evaluationResult().set(cid, evalResult);
-			return evalResult;
+			sample.evaluationResult().set(cid, (bool)evalResult);
+			return (bool)evalResult;
 		}
 		
 		std::vector<Assignment> enumerateSolutions() {
