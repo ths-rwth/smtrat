@@ -307,6 +307,8 @@ public:
 		}
 		if (!collectOutput) {
 			result.additional.emplace("output", "truncated");
+			result.stdout = "";
+			result.stderr = "";
 		} else {
 			BENCHMAX_LOG_DEBUG("benchmax.ssh", "stdout = " << result.stdout);
 			BENCHMAX_LOG_DEBUG("benchmax.ssh", "stderr = " << result.stderr);
