@@ -45,18 +45,21 @@ const auto& get(const PropertiesT<T, Ts...>& sets) {
     return get<S>(base);
 }
 
-template <class T>
-void merge(PropertiesT<T>& sets_a, const PropertiesT<T>& sets_b) {
-    sets_a.content.insert(sets_b.content.begin(), sets_b.content.end());
-}
+//template <class T, class... Ts, typename std::enable_if<(sizeof...(Ts) == 0)>::type>
+//void merge(PropertiesT<T>& sets_a, const PropertiesT<T>& sets_b) {
+//    sets_a.content.insert(sets_b.content.begin(), sets_b.content.end());
+//}
 
+//template <class T, class... Ts, typename std::enable_if<(sizeof...(Ts) > 0)>::type>
 template <class T, class... Ts>
 void merge(PropertiesT<T, Ts...>& sets_a, const PropertiesT<T, Ts...>& sets_b) {
     sets_a.content.insert(sets_b.content.begin(), sets_b.content.end());
 
-    PropertiesT<Ts...>& base_a = sets_a;
-    const PropertiesT<Ts...>& base_b = sets_b;
-    return merge(base_a, base_b);
+    if constexpr(sizeof...(Ts) > 0) {
+        PropertiesT<Ts...>& base_a = sets_a;
+        const PropertiesT<Ts...>& base_b = sets_b;
+        return merge(base_a, base_b);
+    }
 }
 
 }
