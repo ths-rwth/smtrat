@@ -9,18 +9,18 @@ cache:
     - apt-get -y install make texinfo time uuid-dev cmake flex bison
     - git config --global user.email "runner@ths.rwth-aachen.de"
 
-dependencies-gcc-9:
+dependencies-gcc-10:
   extends: .setup
-  image: gcc:9
+  image: gcc:10
   cache: {}
   script:
     - MAKE_PARALLEL=-j4 TASK=dependencies source .ci/build.sh
   only:
     - development
 
-docs-gcc-9:
+docs-gcc-10:
   extends: .setup
-  image: gcc:9
+  image: gcc:10
   before_script:
     - *setup-before_script
     - apt-get -y install ghostscript graphviz libclang-7-dev lmodern texinfo texlive texlive-font-utils texlive-latex-extra texlive-plain-generic python3-pip python3-setuptools
@@ -29,9 +29,9 @@ docs-gcc-9:
   only:
     - master
 
-tidy-clang-9:
+tidy-clang-11:
   extends: .setup
-  image: silkeh/clang:9
+  image: silkeh/clang:11
   script:
     - MAKE_PARALLEL=-j4 TASK=tidy source .ci/build.sh
   except:
@@ -57,12 +57,6 @@ tidy-clang-9:
 build-gcc-8:
   extends: .build
   image: gcc:8
-  only:
-    - development
-
-build-gcc-9:
-  extends: .build
-  image: gcc:9
   except:
     - master
 
@@ -75,12 +69,6 @@ build-gcc-10:
 build-clang-5:
   extends: .build-clang
   image: silkeh/clang:5
-  only:
-    - development
-
-build-clang-9:
-  extends: .build-clang
-  image: silkeh/clang:9
   except:
     - master
 
