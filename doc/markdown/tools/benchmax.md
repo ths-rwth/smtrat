@@ -76,3 +76,7 @@ By setting the flag `--ssh.resolvedeps`, dependencies (i.e. dynamic libraries) a
 ### CondorBackend (unstable)
 
 The [CondorBackend](@ref benchmax::CondorBackend) is aimed at the HTCondor batch system and works similar to the SlurmBackend. Note however that this backend is not well tested and we therefore consider it unstable.
+
+## Troubleshooting
+
+* If benchmax terminates due to a segmentation fault without any message, then it probably exceeded available memory. A common error is that SMT-RAT has produced too much logging output. To fix this, simply build SMT-RAT with `LOGGING=OFF`.
