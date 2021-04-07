@@ -17,8 +17,9 @@ resources:
   stage: dependencies
   script:
      - MAKE_PARALLEL=-j12 TASK=dependencies COMPILER=g++-10 source .ci/build.sh
-  <<: *global_cache #override global cache settings to allow pushing
-  policy: push-pull
+  cache:
+    <<: *global_cache #override global cache settings to allow pushing
+    policy: pull-push
   only:
     - ci-kroll
 
