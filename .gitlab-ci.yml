@@ -7,3 +7,10 @@ build-gcc10:
   only:
     - ci-kroll
 
+build-gcc9:
+  type: build
+  script:
+     - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=gcc-9 source .ci/build.sh
+  only:
+    - ci-kroll
+
