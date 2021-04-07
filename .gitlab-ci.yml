@@ -1,6 +1,7 @@
 image: registry.git.rwth-aachen.de/ths/smt/smtrat:latest
 
 #Gleicher Cache für alle Branches, Verschiedene für jeden Job
+#Für alle Jobs der gleiche Cache klappt leider nicht, da diese bei verschiedenen Compilern neu compiliert werden müssen
 cache: &global_cache
   key: ${CI_JOB_NAME}
   paths:
@@ -8,7 +9,8 @@ cache: &global_cache
   policy: pull-push
 
 stages:
-  - build
+  - build-gcc
+  - build-clang
   - test #Todo
 
 #update dependencies if necessary
@@ -23,15 +25,43 @@ stages:
 #    - ci-kroll
 
 build-gcc10:
-  stage: build
+  stage: build-gcc
   script:
      - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=g++-10 source .ci/build.sh
   only:
     - ci-kroll
 
 build-gcc9:
-  stage: build
+  stage: build-gcc
   script:
      - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=g++-9 source .ci/build.sh
+  only:
+    - ci-kroll
+  
+build-gcc8:
+  stage: build-gcc
+  script:
+     - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=g++-8 source .ci/build.sh
+  only:
+    - ci-kroll
+
+build-clang11:
+  stage: build-clang
+  script:
+     - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=clang-11 source .ci/build.sh
+  only:
+    - ci-kroll
+
+build-clang10:
+  stage: build-clang
+  script:
+     - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=clang-10 source .ci/build.sh
+  only:
+    - ci-kroll
+
+build-clang9:
+  stage: build-clang
+  script:
+     - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=clang-9 source .ci/build.sh
   only:
     - ci-kroll
