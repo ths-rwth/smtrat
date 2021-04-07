@@ -1,16 +1,37 @@
 image: registry.git.rwth-aachen.de/ths/smt/smtrat:latest
 
+#Gleicher Cache für alle Branches
+cache: &global_cache
+  key: one-key-to-rule-them-all
+  paths:
+    - build/resources/
+  policy: pull
+
+stages:
+  - dependencies
+  - build
+  - test
+
+#update dependencies if necessary
+resources: 
+  stage: resources
+  script:
+     - MAKE_PARALLEL=-j12 TASK=dependencies COMPILER=g++-10 source .ci/build.sh
+  <<: *global_cache #override global cache settings to allow pushing
+    policy: push-pull
+  only:
+    - ci-kroll
+
 build-gcc10:
-  type: build
+  stage: build
   script:
      - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=g++-10 source .ci/build.sh
   only:
     - ci-kroll
 
 build-gcc9:
-  type: build
+  stage: build
   script:
      - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=g++-9 source .ci/build.sh
   only:
     - ci-kroll
-
