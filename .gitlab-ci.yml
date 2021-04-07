@@ -3,14 +3,14 @@ image: registry.git.rwth-aachen.de/ths/smt/smtrat:latest
 build-gcc10:
   type: build
   script:
-     - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=gcc-10 source .ci/build.sh
+     - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=g++-10 source .ci/build.sh
   only:
     - ci-kroll
 
 build-gcc9:
   type: build
   script:
-     - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=gcc-9 source .ci/build.sh
+     - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=g++-9 source .ci/build.sh
   only:
     - ci-kroll
 
