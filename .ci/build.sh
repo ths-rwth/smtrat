@@ -23,6 +23,8 @@ if [[ ${TASK} == "dependencies" ]]; then
 	
 	start_keep_waiting
 	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
+	/usr/bin/time make ${MAKE_PARALLEL} carl-required-version || return 1
+	/usr/bin/time make ${MAKE_PARALLEL} mimalloc-EP || return 1
 	stop_keep_waiting
 	
 elif [[ ${TASK} == "documentation" ]]; then
