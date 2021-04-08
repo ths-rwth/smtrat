@@ -48,6 +48,7 @@ build-gcc8:
 build-clang11:
   stage: build-clang
   script:
+     - export CC=/usr/bin/clang-11 && export CXX=/usr/bin/clang++-11
      - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=clang++-11 source .ci/build.sh
   only:
     - ci-kroll
@@ -55,6 +56,7 @@ build-clang11:
 build-clang10:
   stage: build-clang
   script:
+     - export CC=/usr/bin/clang-10 && export CXX=/usr/bin/clang++-10
      - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=clang++-10 source .ci/build.sh
   only:
     - ci-kroll
@@ -62,6 +64,7 @@ build-clang10:
 build-clang9:
   stage: build-clang
   script:
+     - export CC=/usr/bin/clang-9 && export CXX=/usr/bin/clang++-9
      - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=clang++-9 source .ci/build.sh
   only:
     - ci-kroll
