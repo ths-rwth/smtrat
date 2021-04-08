@@ -48,20 +48,20 @@ build-gcc8:
 build-clang11:
   stage: build-clang
   script:
-     - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=clang-11 source .ci/build.sh
+     - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=clang++-11 source .ci/build.sh
   only:
     - ci-kroll
 
 build-clang10:
   stage: build-clang
   script:
-     - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=clang-10 source .ci/build.sh
+     - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=clang++-10 source .ci/build.sh
   only:
     - ci-kroll
 
 build-clang9:
   stage: build-clang
   script:
-     - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=clang-9 source .ci/build.sh
+     - MAKE_PARALLEL=-j12 TASK=parallel COMPILER=clang++-9 source .ci/build.sh
   only:
     - ci-kroll
