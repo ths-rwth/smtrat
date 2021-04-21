@@ -57,7 +57,10 @@ private:
 		const auto& l = mRI.sampleFrom(lhs);
 		const auto& r = mRI.sampleFrom(rhs);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", l << " (" << mRI.is_root(lhs) << ") < " << r << " (" << mRI.is_root(rhs) << ") ?");
-		if ((l.is_integral() || l.is_numeric()) && (r.is_integral() || r.is_numeric()) && (mRI.is_root(lhs) != mRI.is_root(rhs))) return !mRI.is_root(lhs);
+		// this is more like z3, but performs worse:
+		// if ((l.is_integral() || l.is_numeric()) && (r.is_integral() || r.is_numeric()) && (mRI.is_root(lhs) != mRI.is_root(rhs))) return !mRI.is_root(lhs);
+		// even the opposite performs better (but not better than not respecting samples being a root):
+		// if ((l.is_integral() || l.is_numeric()) && (r.is_integral() || r.is_numeric()) && (mRI.is_root(lhs) != mRI.is_root(rhs))) return mRI.is_root(lhs);
 		if (l.is_integral() != r.is_integral()) return l.is_integral();
 		if (l.is_numeric() != r.is_numeric()) return l.is_numeric();
 		if (l.size() != r.size()) return l.size() < r.size();
