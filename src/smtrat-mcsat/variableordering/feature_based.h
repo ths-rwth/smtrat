@@ -148,6 +148,26 @@ std::vector<carl::Variable> feature_based_z3(const Constraints& c) {
 	return orderedVars;
 }
 
+/**
+ * According to https://www.usna.edu/Users/cs/wcbrown/research/ISSAC04/handout.pdf
+ */
+template<typename Constraints>
+std::vector<carl::Variable> feature_based_brown(const Constraints& c) {
+	detail::FeatureCollector<Constraints> features;
+	
+	features.addFeature(detail::max_degree<Constraints>, 0, -1.0);
+	features.addFeature(detail::max_term_total_degree<Constraints>, 1, -1.0);
+	features.addFeature(detail::num_occurrences<Constraints>, 2, -1.0);
+
+	carl::carlVariables vars;
+	gatherVariables(vars, c);
+	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Collected variables " << vars);
+	auto orderedVars = features.sortVariables(c, vars.as_vector());
+	
+	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Calculated variable ordering " << orderedVars);
+	return orderedVars;
+}
+
 }
 }
 }
