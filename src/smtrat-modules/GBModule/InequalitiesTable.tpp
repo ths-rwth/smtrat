@@ -102,7 +102,7 @@ namespace smtrat
                             }
                             else
                             {
-                                FormulaT simplifiedConstraint = FormulaT( carl::makePolynomial<Poly>(typename smtrat::Poly::PolyType(std::get<2>(it->second).back().second)), std::get<1>(it->second) );
+                                FormulaT simplifiedConstraint = FormulaT( Poly(typename smtrat::Poly::PolyType(std::get<2>(it->second).back().second)), std::get<1>(it->second) );
                                 assert( simplifiedConstraint.getType() != carl::FormulaType::FALSE );
                                 if( simplifiedConstraint.getType() == carl::FormulaType::TRUE )
                                 {
@@ -374,7 +374,7 @@ namespace smtrat
                 std::get < 2 > (it->second).push_back( CellEntry( mBtnumber, reduced ) );
                 if( Settings::passInequalities == FULL_REDUCED || (Settings::passInequalities == FULL_REDUCED_IF && pass) )
                 {
-                    FormulaT redResult = FormulaT( carl::makePolynomial<Poly>(typename smtrat::Poly::PolyType(reduced)), relation );
+                    FormulaT redResult = FormulaT( Poly(typename smtrat::Poly::PolyType(reduced)), relation );
                     switch( redResult.getType() )
                     {
                         case carl::FormulaType::TRUE:

@@ -912,7 +912,7 @@ void GBModule<Settings>::passGB( )
         // We now add polynomial = 0 as a constraint to the passed formula.
         // We use the originals set calculated before as reason set.
         assert(!simplIt->isConstant());
-        auto res = addSubformulaToPassedFormula( FormulaT( carl::makePolynomial<Poly>(typename smtrat::Poly::PolyType((*simplIt))), carl::Relation::EQ ), FormulaT( carl::FormulaType::AND, originals ) );
+        auto res = addSubformulaToPassedFormula( FormulaT( Poly(typename smtrat::Poly::PolyType((*simplIt))), carl::Relation::EQ ), FormulaT( carl::FormulaType::AND, originals ) );
         if( res.second )
             mGbEqualities.push_back(res.first->formula());
     }

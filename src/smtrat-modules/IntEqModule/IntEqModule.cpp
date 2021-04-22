@@ -469,7 +469,7 @@ namespace smtrat
                         if( (*iter_coeff).getSingleVariable() != corr_var )
                         {
                             carl::Variable var = (*iter_coeff).getSingleVariable();
-                            *temp += carl::makePolynomial<Poly>(var)*Poly(Rational(-1)*sign*(Rational)(*iter_coeff).coeff());
+                            *temp += Poly(var)*Poly(Rational(-1)*sign*(Rational)(*iter_coeff).coeff());
                         }                          
                     }
                     else
@@ -497,11 +497,11 @@ namespace smtrat
                             carl::Variable var = (*iter_coeff).getSingleVariable();        
                             if( positive )
                             {
-                                *temp -= sign*Poly( Rational( carl::floor( carl::div( coeff, smallest_abs_value ) ) ) )*carl::makePolynomial<Poly>(var);
+                                *temp -= sign*Poly( Rational( carl::floor( carl::div( coeff, smallest_abs_value ) ) ) )*Poly(var);
                             }
                             else
                             {
-                                *temp -= sign*Poly( (Rational)(-1)*Rational( carl::floor( carl::div( (Rational)(-1)*coeff, smallest_abs_value ) ) ) )*carl::makePolynomial<Poly>(var);
+                                *temp -= sign*Poly( (Rational)(-1)*Rational( carl::floor( carl::div( (Rational)(-1)*coeff, smallest_abs_value ) ) ) )*Poly(var);
                             }    
                         }   
                     }
@@ -520,7 +520,7 @@ namespace smtrat
                 }
                 carl::Variable fresh_var = carl::freshVariable( carl::VariableType::VT_INT ); 
                 mAuxiliaries.insert( fresh_var );
-                *temp += carl::makePolynomial<Poly>(fresh_var);
+                *temp += Poly(fresh_var);
             }
             // Substitute the reformulation of the found variable for all occurences
             // of this variable in equations of mProc_Constraints

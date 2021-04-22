@@ -58,7 +58,7 @@ namespace smtrat
                             if( iter == mIntToRealVarMap.end() )
                             {
                                 carl::Variable realVar = carl::freshRealVariable();
-                                mIntToRealVarMap[var] = carl::makePolynomial<Poly>(realVar);
+                                mIntToRealVarMap[var] = Poly(realVar);
                                 mRealToIntVarMap[realVar] = var;
                             }
                         }
