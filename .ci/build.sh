@@ -2,32 +2,15 @@
 
 mkdir -p build || return 1
 cd build/ || return 1
-cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=AllModulesStrategy -D CMAKE_CXX_COMPILER=${COMPILER} ../ || return 1
-
-function keep_waiting() {
-  while true; do
-    echo -e "."
-    sleep 60
-  done
-}
-function start_keep_waiting() {
-  keep_waiting &
-  disown
-  keep_waiting_id=$!
-}
-function stop_keep_waiting() {
-  kill $keep_waiting_id
-}
 
 if [[ ${TASK} == "dependencies" ]]; then
-	
-	start_keep_waiting
+	cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=AllModulesStrategy ../ || return 1
 	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
 	/usr/bin/time make ${MAKE_PARALLEL} carl-required-version || return 1
 	/usr/bin/time make ${MAKE_PARALLEL} mimalloc-EP || return 1
-	stop_keep_waiting
 	
 elif [[ ${TASK} == "documentation" ]]; then
+	cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=AllModulesStrategy ../ || return 1
 	
 	# To allow convert for doc/pictures/
 	if ! command -v sudo &> /dev/null
@@ -64,18 +47,26 @@ elif [[ ${TASK} == "documentation" ]]; then
 	git push -f origin master || return 1
 
 elif [[ ${TASK} == "tidy" ]]; then
-
+	cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=AllModulesStrategy ../ || return 1
 	/usr/bin/time make tidy || return 1
 
 elif [[ ${TASK} == "parallel" ]]; then
-	start_keep_waiting
-	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
-	stop_keep_waiting
+	cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=AllModulesStrategy ../ || return 1
 	/usr/bin/time make ${MAKE_PARALLEL} || return 1
+
+elif [[ ${TASK} == "getCarl" ]]; then 
+	#check if Carl branch with the same name exists and download the artifacts with the same job name
+	CARL_ID=56538
+	CARL_URL=https://git.rwth-aachen.de/api/v4/projects/${CARL_ID}/jobs/artifacts/${BRANCH_NAME}/download?job=${JOB_NAME}
+	if curl -L --fail --output artifacts.zip --header "PRIVATE-TOKEN: ${TOKEN}" "${CARL_URL}" ; then 
+		mkdir -p carl/
+    	unzip -q artifacts.zip -d carl/
+	else 
+    echo "Artifact for Carl Branch: ${BRANCH_NAME} and Job: ${JOB_NAME} does not exist"
+	fi
 else
-	start_keep_waiting
-	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
-	stop_keep_waiting
+	#no task specified... just build with one core
+	cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=AllModulesStrategy ../ || return 1
 	/usr/bin/time make -j1 || return 1
 fi
 
