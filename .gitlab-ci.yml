@@ -1,18 +1,12 @@
 image: registry.git.rwth-aachen.de/ths/smt/smtrat/ci:latest
 
-#Gleicher Cache für alle Branches, Verschiedene für jeden Job
+#Verschiedene für jeden Job und Branches -> Erste Pipeline in einem neuen Branch wird lange dauern
 #Für alle Jobs der gleiche Cache klappt leider nicht, da diese bei verschiedenen Compilern neu compiliert werden müssen
-cache: &global_cache
-  key: ${CI_JOB_NAME}
+cache: 
+  key: ${CI_JOB_NAME}-${CI_COMMIT_REF_SLUG}
   paths:
     - build/resources/
   policy: pull-push
-#Für jeden Branch und jeden Job seperat -> Multiple Caches sind aus!
-#  key: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
-#  paths: 
-#    - build/*.so*
-#    - build/*.a*
-#  policy: pull-push
 
 
 stages:
@@ -20,16 +14,7 @@ stages:
   - build-clang #Carl Singleton redefinition Todo
   - test #Todo
 
-#update dependencies if necessary
-#resources: 
-#  stage: dependencies
-#  script:
-#     - MAKE_PARALLEL=-j12 TASK=dependencies source .ci/build.sh
-#  cache:
-#    <<: *global_cache #override global cache settings to allow pushing
-#    policy: pull-push
-#  only:
-#    - ci-kroll
+
 
 build-gcc10:
   stage: build-gcc
