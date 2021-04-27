@@ -57,7 +57,7 @@ elif [[ ${TASK} == "getCarl" ]]; then
 	CARL_ID=56538
 	CARL_URL=https://git.rwth-aachen.de/api/v4/projects/${CARL_ID}/jobs/artifacts/${BRANCH_NAME}/download?job=${JOB_NAME}
 	if curl -v -L --fail --output artifacts.zip --header "PRIVATE-TOKEN: ${TOKEN}" "${CARL_URL}" ; then 
-		mkdir -p carl/
+		mkdir -p /builds/ths/smt/carl/
     	unzip -q artifacts.zip -d /builds/ths/smt/carl/
 		#todo check for carl in build cache and remove it
 	else 
