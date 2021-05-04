@@ -57,7 +57,7 @@ elif [[ ${TASK} == "getCarl" ]]; then
 	CARL_ID=56538
 	CARL_URL_OWN=https://git.rwth-aachen.de/api/v4/projects/${CARL_ID}/jobs/artifacts/${BRANCH_NAME}/download?job=${JOB_NAME}
 	#URL for Development Branch
-	CARL_URL_DEVELOP=https://git.rwth-aachen.de/api/v4/projects/${CARL_ID}/jobs/artifacts/${BRANCH_NAME}/download?job=${JOB_NAME}
+	CARL_URL_DEVELOP=https://git.rwth-aachen.de/api/v4/projects/${CARL_ID}/jobs/artifacts/development/download?job=${JOB_NAME}
 	if curl -v -L --fail --output artifacts.zip --header "PRIVATE-TOKEN: ${TOKEN}" "${CARL_URL_OWN}" ; then 
 		mkdir -p /builds/ths/smt/carl/
     	unzip -o -q artifacts.zip -d /builds/ths/smt/carl/
