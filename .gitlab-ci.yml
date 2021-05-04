@@ -8,6 +8,9 @@ cache:
     - build/resources/
   policy: pull-push
 
+variables:
+  DOCKER_TLS_CERTDIR: "" #do not change, needed for docker in docker (quality)
+
 
 stages:
   - build-gcc
