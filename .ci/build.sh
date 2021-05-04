@@ -60,7 +60,7 @@ elif [[ ${TASK} == "getCarl" ]]; then
 	CARL_URL_DEVELOP=https://git.rwth-aachen.de/api/v4/projects/${CARL_ID}/jobs/artifacts/${BRANCH_NAME}/download?job=${JOB_NAME}
 	if curl -v -L --fail --output artifacts.zip --header "PRIVATE-TOKEN: ${TOKEN}" "${CARL_URL_OWN}" ; then 
 		mkdir -p /builds/ths/smt/carl/
-    	unzip -q artifacts.zip -d /builds/ths/smt/carl/
+    	unzip -o -q artifacts.zip -d /builds/ths/smt/carl/
 		#todo check for carl in build cache and remove it
 	elif curl -v -L --fail --output artifacts.zip --header "PRIVATE-TOKEN: ${TOKEN}" "${CARL_URL_DEVELOP}" ; then
 		mkdir -p /builds/ths/smt/carl/
@@ -69,7 +69,6 @@ elif [[ ${TASK} == "getCarl" ]]; then
 	else 
     echo "Artifact for Carl Branch: ${BRANCH_NAME} and Job: ${JOB_NAME} and for Development Branch does not exist"
 	fi
-	cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=AllModulesStrategy -D carl_DIR=/builds/ths/smt/carl/build ../ || return 1
 else
 	#no task specified... just build with one core
 	/usr/bin/time make -j1 || return 1
