@@ -85,3 +85,11 @@ docs:
     - MAKE_PARALLEL=-j4 TASK=documentation source .ci/build.sh
   only:
     - master
+
+### UNUSED ###
+#tidy-clang:
+#  cache: {}
+#  script:
+#    - MAKE_PARALLEL=-j4 TASK=tidy source .ci/build.sh
+#  except:
+#    - master
