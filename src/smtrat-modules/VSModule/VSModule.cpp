@@ -837,22 +837,26 @@ namespace smtrat
             Substitution::Type subType = weakConstraint ? Substitution::NORMAL : Substitution::PLUS_EPSILON;
             std::vector< Poly > factors = std::vector< Poly >();
             ConstraintsT sideConditions;
-            if( Settings::elimination_with_factorization && constraint.hasFactorization() )
+            if( Settings::elimination_with_factorization )
             {
-                for( auto iter = constraint.factorization().begin(); iter != constraint.factorization().end(); ++iter )
-                {
-                    if( carl::variables(iter->first).has( _eliminationVar ) )
-                        factors.push_back( iter->first );
-                    else
+                auto factorization = carl::factorization(constraint.lhs());
+                if (!carl::is_trivial(factorization)) {
+                    for( auto iter = factorization.begin(); iter != factorization.end(); ++iter )
                     {
-                        ConstraintT cons = ConstraintT( iter->first, carl::Relation::NEQ );
-                        if( cons != ConstraintT( true ) )
+                        if( carl::variables(iter->first).has( _eliminationVar ) )
+                            factors.push_back( iter->first );
+                        else
                         {
-                            assert( cons != ConstraintT( false ) );
-                            sideConditions.insert( cons );
+                            ConstraintT cons = ConstraintT( iter->first, carl::Relation::NEQ );
+                            if( cons != ConstraintT( true ) )
+                            {
+                                assert( cons != ConstraintT( false ) );
+                                sideConditions.insert( cons );
+                            }
                         }
                     }
                 }
+                
             }
             else
                 factors.push_back( constraint.lhs() );

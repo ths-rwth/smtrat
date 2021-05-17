@@ -134,7 +134,8 @@ namespace vs
         std::vector<DisjunctionOfConstraintConjunctions> toCombine;
         for( auto constraint = _toSimplify.begin(); constraint != _toSimplify.end(); ++constraint )
         {
-            if( constraint->hasFactorization() )
+            auto factorization = carl::factorization(constraint->lhs());
+            if( !carl::is_trivial(factorization) )
             {
                 switch( constraint->relation() )
                 {
@@ -143,7 +144,6 @@ namespace vs
                         if( !_onlyNeq )
                         {
                             toCombine.emplace_back();
-                            const smtrat::Factorization& factorization = constraint->factorization();
                             for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                             {
                                 toCombine.back().emplace_back();
@@ -163,7 +163,7 @@ namespace vs
                     {
                         toCombine.emplace_back();
                         toCombine.back().emplace_back();
-                        const smtrat::Factorization& factorization = constraint->factorization();
+                        const smtrat::Factorization factorization = carl::factorization(constraint->lhs());
                         for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                             toCombine.back().back().push_back( smtrat::ConstraintT( factor->first, Relation::NEQ ) );
                         simplify( toCombine.back() );
@@ -202,7 +202,8 @@ namespace vs
     DisjunctionOfConstraintConjunctions splitProducts( const smtrat::ConstraintT& _constraint, bool _onlyNeq )
     {
         DisjunctionOfConstraintConjunctions result;
-        if( _constraint.hasFactorization() )
+        auto factorization = carl::factorization(_constraint.lhs());
+        if( !carl::is_trivial(factorization) )
         {
             switch( _constraint.relation() )
             {
@@ -210,7 +211,6 @@ namespace vs
                 {
                     if( !_onlyNeq )
                     {
-                        const smtrat::Factorization& factorization = _constraint.factorization();
                         for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                         {
                             result.emplace_back();
@@ -228,7 +228,6 @@ namespace vs
                 case Relation::NEQ:
                 {
                     result.emplace_back();
-                    const smtrat::Factorization& factorization = _constraint.factorization();
                     for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                         result.back().push_back( smtrat::ConstraintT( factor->first, Relation::NEQ ) );
                     simplify( result );
@@ -396,7 +395,8 @@ namespace vs
     DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::ConstraintT& _constraint )
     {
         DisjunctionOfConstraintConjunctions combinations;
-        if( _constraint.hasFactorization() && _constraint.factorization().size() <= MAX_PRODUCT_SPLIT_NUMBER )
+        auto factorization = carl::factorization(_constraint.lhs());
+        if( !carl::is_trivial(factorization) && factorization.size() <= MAX_PRODUCT_SPLIT_NUMBER )
         {
             assert( _constraint.relation() == Relation::GREATER || _constraint.relation() == Relation::LESS
                     || _constraint.relation() == Relation::GEQ || _constraint.relation() == Relation::LEQ );
@@ -413,8 +413,7 @@ namespace vs
             ConstraintVector negatives;
             ConstraintVector alwaysnegatives;
             unsigned numOfAlwaysNegatives = 0;
-            const smtrat::Factorization& product = _constraint.factorization();
-            for( auto factor = product.begin(); factor != product.end(); ++factor )
+            for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
             {
                 smtrat::ConstraintT consPos = smtrat::ConstraintT( factor->first, relPos );
                 unsigned posConsistent = consPos.isConsistent();
