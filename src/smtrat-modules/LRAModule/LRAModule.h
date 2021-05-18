@@ -185,6 +185,11 @@ namespace smtrat
              *         Unknown, otherwise.
              */
             Answer checkCore();
+
+			/*
+			 * Added Functions for infeasibility
+			 */
+            Answer checkCore_old();
             
             Answer processResult( Answer _result );
             
@@ -279,7 +284,7 @@ namespace smtrat
             }
             
             /**
-             * @return A reference to the original variables.
+             * @return A constant reference to the slack variables.
              */
             const ExVariableMap& slackVariables() const
             {
