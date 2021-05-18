@@ -31,6 +31,7 @@ namespace smtrat
          *
          */
         static const bool use_gomory_cuts = true;
+        static const bool use_SoI_simplex = false;
         /**
          *
          */
