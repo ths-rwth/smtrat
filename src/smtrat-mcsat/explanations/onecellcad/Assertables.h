@@ -76,6 +76,6 @@ bool polyVarsAreAllInList(
 	return true;
 }
 
-} // namespace onecellcad
+} // namespace onecellcad_lw
 } // namespace mcsat
 } // namespace smtrat
