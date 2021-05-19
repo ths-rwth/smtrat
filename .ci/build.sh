@@ -4,26 +4,11 @@ mkdir -p build || return 1
 cd build/ || return 1
 cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=AllModulesStrategy ../ || return 1
 
-function keep_waiting() {
-  while true; do
-    echo -e "."
-    sleep 60
-  done
-}
-function start_keep_waiting() {
-  keep_waiting &
-  disown
-  keep_waiting_id=$!
-}
-function stop_keep_waiting() {
-  kill $keep_waiting_id
-}
 
 if [[ ${TASK} == "dependencies" ]]; then
-	
-	start_keep_waiting
 	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
-	stop_keep_waiting
+	/usr/bin/time make ${MAKE_PARALLEL} carl-required-version || return 1
+	/usr/bin/time make ${MAKE_PARALLEL} mimalloc-EP || return 1
 	
 elif [[ ${TASK} == "documentation" ]]; then
 	
@@ -62,18 +47,32 @@ elif [[ ${TASK} == "documentation" ]]; then
 	git push -f origin master || return 1
 
 elif [[ ${TASK} == "tidy" ]]; then
-
 	/usr/bin/time make tidy || return 1
 
 elif [[ ${TASK} == "parallel" ]]; then
-	start_keep_waiting
-	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
-	stop_keep_waiting
 	/usr/bin/time make ${MAKE_PARALLEL} || return 1
+
+elif [[ ${TASK} == "getCarl" ]]; then 
+	#check if Carl branch with the same name exists and download the artifacts with the same job name
+	CARL_ID=56538
+	CARL_URL_OWN=https://git.rwth-aachen.de/api/v4/projects/${CARL_ID}/jobs/artifacts/${BRANCH_NAME}/download?job=${JOB_NAME}
+	#URL for Development Branch
+	CARL_URL_DEVELOP=https://git.rwth-aachen.de/api/v4/projects/${CARL_ID}/jobs/artifacts/development/download?job=${JOB_NAME}
+	if curl -L --fail --output artifacts.zip --header "PRIVATE-TOKEN: ${TOKEN}" "${CARL_URL_OWN}" ; then 
+		mkdir -p /builds/ths/smt/carl/
+    	unzip -o -q artifacts.zip -d /builds/ths/smt/carl/
+		#todo check for carl in build cache and remove it
+		cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=AllModulesStrategy -D carl_DIR=/builds/ths/smt/carl/build ../ || return 1
+	elif curl -L --fail --output artifacts.zip --header "PRIVATE-TOKEN: ${TOKEN}" "${CARL_URL_DEVELOP}" ; then
+		mkdir -p /builds/ths/smt/carl/
+    	unzip -q artifacts.zip -d /builds/ths/smt/carl/
+		#todo check for carl in build cache and remove it 
+		cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=AllModulesStrategy -D carl_DIR=/builds/ths/smt/carl/build ../ || return 1
+	else 
+    echo "Artifact for Carl Branch: ${BRANCH_NAME} and Job: ${JOB_NAME} and for Development Branch does not exist"
+	fi
 else
-	start_keep_waiting
-	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
-	stop_keep_waiting
+	#no task specified... just build with one core
 	/usr/bin/time make -j1 || return 1
 fi
 
