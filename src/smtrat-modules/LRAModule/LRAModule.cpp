@@ -425,9 +425,7 @@ namespace smtrat
                     if(Settings::use_SoI_simplex){
                         #ifdef DEBUG_LRA_MODULE
                         auto newVioSum = mTableau.violationSum();
-                        #endif
                         SMTRAT_LOG_DEBUG("smtrat", "newVioSum " << newVioSum << " oldVioSum " << oldVioSum << " dVio " << mTableau.get_dVioSum() );
-                        #ifdef DEBUG_LRA_MODULE
                         if(!mTableau.usedBlandsRule()){
                             assert(newVioSum <= oldVioSum);
                             assert(newVioSum == oldVioSum + mTableau.get_dVioSum());
