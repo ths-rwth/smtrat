@@ -134,8 +134,8 @@ boost::optional<mcsat::Explanation> Explanation<Setting1,Setting2>::operator()(c
         }
     } else if(Setting2::heuristic != 0){
         SMTRAT_LOG_WARN("smtrat.mcsat.nlsat", "Invalid heuristic input");
-
     }
+    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Polys after possible reordering: \n" << projectionLevels);
 
 	setNullification(Setting1::cover_nullification);
 	std::optional<CADCell> cellOpt = cad.pointEnclosingCADCell(projectionLevels);
