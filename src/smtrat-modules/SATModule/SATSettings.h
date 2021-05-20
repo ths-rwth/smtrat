@@ -148,17 +148,21 @@ namespace smtrat
         // using VarScheduler = VarSchedulerMinisat;
         // using VarScheduler = VarSchedulerFixedRandom;
     };
-  struct SATSettingsMCSATOC : SATSettingsMCSAT {
+struct SATSettingsMCSATOC : SATSettingsMCSAT {
     static constexpr auto muduleName = "SATModule<MCSATOC>";
     using MCSATSettings = mcsat::MCSATSettingsOC;
-  };
-  struct SATSettingsMCSATOCNew : SATSettingsMCSAT {
+};
+struct SATSettingsMCSATOCNew : SATSettingsMCSAT {
     static constexpr auto muduleName = "SATModule<MCSATOCNew>";
     using MCSATSettings = mcsat::MCSATSettingsOCNew;
-  };
-struct SATSettingsMCSATOCNN : SATSettingsMCSAT {
-	static constexpr auto muduleName = "SATModule<MCSATOCNN>";
-	using MCSATSettings = mcsat::MCSATSettingsOCNN;
+};
+struct SATSettingsMCSATOCNNASC : SATSettingsMCSAT {
+	static constexpr auto muduleName = "SATModule<MCSATOCNNASC>";
+	using MCSATSettings = mcsat::MCSATSettingsOCNNASC;
+};
+struct SATSettingsMCSATOCNNDSC : SATSettingsMCSAT {
+    static constexpr auto muduleName = "SATModule<MCSATOCNNDSC>";
+    using MCSATSettings = mcsat::MCSATSettingsOCNNDSC;
 };
 struct SATSettingsMCSATOCLWH11 : SATSettingsMCSAT {
 	static constexpr auto muduleName = "SATModule<MCSATOCLWH11>";

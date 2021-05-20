@@ -103,6 +103,8 @@ Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // c
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Polys at levels after a CAD projection at level: " << currentLvl << ":\n" << projectionLevels);
 	}
 
+    assert(1 <= Setting1::sectionHeuristic && Setting1::sectionHeuristic <= 3);
+    assert(1 <= Setting2::sectorHeuristic && Setting2::sectorHeuristic <= 3);
 	std::optional<CADCell> cellOpt =
 	        cad.constructCADCellEnclosingPoint(projectionLevels, Setting1::sectionHeuristic, Setting2::sectorHeuristic);
 	if (!cellOpt) {

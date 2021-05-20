@@ -26,11 +26,27 @@ struct MCSATSettingsNL {
 //OneCell only
 struct MCSATSettingsOC {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-    using ExplanationBackend = SequentialExplanation<onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification>, nlsat::Explanation>;
+    using ExplanationBackend = SequentialExplanation<
+            onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification, onecellcad::recursive::NoHeuristic>,
+            nlsat::Explanation>;
 };
 struct MCSATSettingsOCNN {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-	using ExplanationBackend = SequentialExplanation<onecellcad::recursive::Explanation<onecellcad::recursive::DontCoverNullification>, nlsat::Explanation>;
+	using ExplanationBackend = SequentialExplanation<
+	        onecellcad::recursive::Explanation<onecellcad::recursive::DontCoverNullification, onecellcad::recursive::NoHeuristic>,
+	        nlsat::Explanation>;
+};
+struct MCSATSettingsOCNNASC {
+    using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+    using ExplanationBackend = SequentialExplanation<
+            onecellcad::recursive::Explanation<onecellcad::recursive::DontCoverNullification, onecellcad::recursive::DegreeAscending>,
+            nlsat::Explanation>;
+};
+struct MCSATSettingsOCNNDSC {
+    using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+    using ExplanationBackend = SequentialExplanation<
+            onecellcad::recursive::Explanation<onecellcad::recursive::DontCoverNullification, onecellcad::recursive::DegreeAscending>,
+            nlsat::Explanation>;
 };
 struct MCSATSettingsOCLWH11 {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
@@ -113,12 +129,12 @@ struct MCSATSettingsOCNew {
 struct MCSATSettingsFMVSOC {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
 	//using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
-	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification>, nlsat::Explanation>;
+	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification, onecellcad::recursive::NoHeuristic>, nlsat::Explanation>;
 };
 struct MCSATSettingsFMICPVSOC {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
 	//using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
-	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,icp::Explanation,vs::Explanation,onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification>, nlsat::Explanation>;
+	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,icp::Explanation,vs::Explanation,onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification, onecellcad::recursive::NoHeuristic>, nlsat::Explanation>;
 };
 struct MCSATSettingsFMNL {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
@@ -147,28 +163,28 @@ struct MCSAT_AF_NL {
 };
 struct MCSAT_AF_OCNL {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-	using ExplanationBackend = SequentialExplanation<onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification>, nlsat::Explanation>;
+	using ExplanationBackend = SequentialExplanation<onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification, onecellcad::recursive::NoHeuristic>, nlsat::Explanation>;
 };
 struct MCSAT_AF_FMOCNL {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification>, nlsat::Explanation>;
+	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification, onecellcad::recursive::NoHeuristic>, nlsat::Explanation>;
 };
 struct MCSAT_AF_FMICPOCNL {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,icp::Explanation,onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification>, nlsat::Explanation>;
+	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,icp::Explanation,onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification, onecellcad::recursive::NoHeuristic>, nlsat::Explanation>;
 };
 struct MCSAT_AF_FMICPVSOCNL {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,icp::Explanation,vs::Explanation,onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification>, nlsat::Explanation>;
+	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,icp::Explanation,vs::Explanation,onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification, onecellcad::recursive::NoHeuristic>, nlsat::Explanation>;
 };
 struct MCSAT_AF_FMVSOCNL {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
-	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification>, nlsat::Explanation>;
+	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,vs::Explanation,onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification, onecellcad::recursive::NoHeuristic>, nlsat::Explanation>;
 };
 
 struct MCSAT_SMT_FMOCNL {
 	using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
-	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification>, nlsat::Explanation>;
+	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification, onecellcad::recursive::NoHeuristic>, nlsat::Explanation>;
 };
 
 }

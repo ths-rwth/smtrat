@@ -16,9 +16,18 @@ struct CoverNullification {
 struct DontCoverNullification {
 	static constexpr bool cover_nullification = false;
 };
+struct NoHeuristic {
+    static constexpr int heuristic = 0;
+};
+struct DegreeAscending {
+    static constexpr int heuristic = 1;
+};
+struct DegreeDescending {
+    static constexpr int heuristic = 2;
+};
 
 
-template<class Settings>
+template<class Setting1, class Setting2>
 struct Explanation {
 
 #ifdef SMTRAT_DEVOPTION_Statistics

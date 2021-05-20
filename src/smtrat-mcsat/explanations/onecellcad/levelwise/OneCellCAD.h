@@ -26,14 +26,6 @@ namespace mcsat {
 namespace onecellcad {
 namespace levelwise {
 
-/**
-* @param p Polynomial to get degree from
-* @param v Rootvariable for degree calc
-* @return
-*/
-inline int getDegree(TagPoly p, carl::Variable v) {
-    return (int) carl::total_degree(carl::to_univariate_polynomial(p.poly, v));
-}
 
 class LevelwiseCAD : public OneCellCAD {
     public:
@@ -81,8 +73,7 @@ class LevelwiseCAD : public OneCellCAD {
                     return std::nullopt;
                 } else if (isPointRootOfPoly(poly)) {
                     sector = false;
-                    int locDeg = (int) carl::total_degree(
-                            carl::to_univariate_polynomial(poly.poly, rootVariable));
+                    int locDeg = (int)getDegree(poly, rootVariable);
                     assert(locDeg >= 1);
                     // for section: find defining polynomial with smallest degree in i-th variable
                     if (locDeg > deg) {
@@ -140,10 +131,8 @@ class LevelwiseCAD : public OneCellCAD {
                     appendOnCorrectLevel(ldcf, InvarianceType::SIGN_INV, polys, variableOrder);
 
 
-                    std::vector<std::tuple<RAN, TagPoly>> upper2;
-                    std::vector<std::tuple<RAN, TagPoly>> lower2;
-                    std::vector<std::tuple<RAN, TagPoly, int>> upper3;
-                    std::vector<std::tuple<RAN, TagPoly, int>> lower3;
+                    std::vector<std::tuple<RAN, TagPoly>> upper;
+                    std::vector<std::tuple<RAN, TagPoly>> lower;
                     std::vector<std::pair<Poly, Poly>> resultants;
                     std::vector<Poly> noProjection1;
                     std::vector<Poly> noProjection2;
@@ -159,7 +148,7 @@ class LevelwiseCAD : public OneCellCAD {
                             }
 
                         } else if (sectionHeuristic == 2) {
-                            //Heuristic 2: calculate resultant in chain-form over lower2 and upper2
+                            //Heuristic 2: calculate resultant in chain-form over lower and upper
                             SMTRAT_LOG_TRACE("smtrat.cad", "Poly: " << poly.poly);
                             std::vector<RAN> isolatedRoots = isolateLastVariableRoots(poly.level,
                                                                                       poly.poly);
@@ -172,31 +161,31 @@ class LevelwiseCAD : public OneCellCAD {
                             }
 
                             //guaranteed at least one root
-                            //find closest root above and below sample (if existent) and put into upper2 and lower2 respectively
+                            //find closest root above and below sample (if existent) and put into upper and lower respectively
                             if (isolatedRoots.front() >= pointComp) {
                                 //poly only has roots above pointComp
                                 SMTRAT_LOG_DEBUG("smtrat.cad", "Smallest root above PointComp(1): "
                                         << isolatedRoots.front());
-                                upper2.emplace_back(std::make_tuple(isolatedRoots.front(), poly));
+                                upper.emplace_back(std::make_tuple(isolatedRoots.front(), poly));
                             } else if (isolatedRoots.back() <= pointComp) {
                                 //poly only has roots below pointComp
                                 SMTRAT_LOG_DEBUG("smtrat.cad", "Biggest root below PointComp(1): "
                                         << isolatedRoots.back());
-                                lower2.emplace_back(std::make_tuple(isolatedRoots.back(), poly));
+                                lower.emplace_back(std::make_tuple(isolatedRoots.back(), poly));
                             } else {
                                 auto lb = std::lower_bound(isolatedRoots.begin(), isolatedRoots.end(),
                                                            pointComp);
                                 if (*(lb - 1) == std::get<Section>(cell[i]).isolatedRoot) {
                                     SMTRAT_LOG_DEBUG("smtrat.cad", "Root at PointComp: " << *(lb - 1));
-                                    lower2.emplace_back(std::make_tuple(*(lb - 1), poly));
+                                    lower.emplace_back(std::make_tuple(*(lb - 1), poly));
                                 } else {
                                     //poly has root above and below pointComp
                                     SMTRAT_LOG_DEBUG("smtrat.cad",
                                                      "Smallest root above PointComp(2): " << *lb);
-                                    upper2.emplace_back(std::make_tuple(*lb, poly));
+                                    upper.emplace_back(std::make_tuple(*lb, poly));
                                     SMTRAT_LOG_DEBUG("smtrat.cad",
                                                      "Biggest root below PointComp(2): " << *(lb - 1));
-                                    lower2.emplace_back(std::make_tuple(*(lb - 1), poly));
+                                    lower.emplace_back(std::make_tuple(*(lb - 1), poly));
                                 }
                             }
 
@@ -224,31 +213,31 @@ class LevelwiseCAD : public OneCellCAD {
                             }
 
                             //guaranteed at least one root
-                            //find closest root above and below sample (if existent) and put into upper2 and lower2 respectively
-                            int deg = (int) carl::total_degree(carl::to_univariate_polynomial(poly.poly, rootVariable));
+                            //find closest root above and below sample (if existent) and put into upper and lower respectively
+                            poly.deg = getDegree(poly, rootVariable);
                             if (isolatedRoots.front() >= pointComp) {
                                 //poly only has roots above pointComp
                                 SMTRAT_LOG_DEBUG("smtrat.cad", "Smallest root above PointComp(1): "
                                         << isolatedRoots.front());
-                                upper3.emplace_back(std::make_tuple(isolatedRoots.front(), poly, deg));
+                                upper.emplace_back(std::make_tuple(isolatedRoots.front(), poly));
                             } else if (isolatedRoots.back() <= pointComp) {
                                 //poly only has roots below pointComp
                                 SMTRAT_LOG_DEBUG("smtrat.cad", "Biggest root below PointComp(1): "
                                         << isolatedRoots.back());
-                                lower3.emplace_back(std::make_tuple(isolatedRoots.back(), poly, deg));
+                                lower.emplace_back(std::make_tuple(isolatedRoots.back(), poly));
                             } else {
                                 auto lb = std::lower_bound(isolatedRoots.begin(), isolatedRoots.end(), pointComp);
                                 if (*(lb - 1) == std::get<Section>(cell[i]).isolatedRoot) {
                                     SMTRAT_LOG_DEBUG("smtrat.cad", "Root at PointComp: " << *(lb - 1));
-                                    lower3.emplace_back(std::make_tuple(*(lb - 1), poly, deg));
+                                    lower.emplace_back(std::make_tuple(*(lb - 1), poly));
                                 } else {
                                     //poly has root above and below pointComp
                                     SMTRAT_LOG_DEBUG("smtrat.cad",
                                                      "Smallest root above PointComp(2): " << *lb);
-                                    upper3.emplace_back(std::make_tuple(*lb, poly, deg));
+                                    upper.emplace_back(std::make_tuple(*lb, poly));
                                     SMTRAT_LOG_DEBUG("smtrat.cad",
                                                      "Biggest root below PointComp(2): " << *(lb - 1));
-                                    lower3.emplace_back(std::make_tuple(*(lb - 1), poly, deg));
+                                    lower.emplace_back(std::make_tuple(*(lb - 1), poly));
                                 }
                             }
                         } else {
@@ -285,67 +274,65 @@ class LevelwiseCAD : public OneCellCAD {
 
                     if (sectionHeuristic == 2) {
                         //sort closest roots of pols below and above sample
-                        std::sort(lower2.begin(), lower2.end(), [](auto const &t1, auto const &t2) {
+                        std::sort(lower.begin(), lower.end(), [](auto const &t1, auto const &t2) {
                             return std::get<0>(t1) < std::get<0>(t2);
                         });
-                        std::sort(upper2.begin(), upper2.end(), [](auto const &t1, auto const &t2) {
+                        std::sort(upper.begin(), upper.end(), [](auto const &t1, auto const &t2) {
                             return std::get<0>(t1) < std::get<0>(t2);
                         });
 
                         //calculate resultants
-                        if (!lower2.empty()) {
-                            for (auto it = lower2.begin(); it != lower2.end() - 1; it++) {
+                        if (!lower.empty()) {
+                            for (auto it = lower.begin(); it != lower.end() - 1; it++) {
                                 resultants.emplace_back(std::make_pair(std::get<1>(*it).poly,
                                                                        std::get<1>(*(it + 1)).poly));
                             }
                         }
 
-                        if (!lower2.empty() && !upper2.empty()) {
-                            resultants.emplace_back(std::make_pair(std::get<1>(lower2.back()).poly,
-                                                                   std::get<1>(upper2.front()).poly));
+                        if (!lower.empty() && !upper.empty()) {
+                            resultants.emplace_back(std::make_pair(std::get<1>(lower.back()).poly,
+                                                                   std::get<1>(upper.front()).poly));
                         }
 
-                        if (!upper2.empty()) {
-                            for (auto it = upper2.begin(); it != upper2.end() - 1; it++) {
+                        if (!upper.empty()) {
+                            for (auto it = upper.begin(); it != upper.end() - 1; it++) {
                                 resultants.emplace_back(std::make_pair(std::get<1>(*it).poly,
                                                                        std::get<1>(*(it + 1)).poly));
                             }
                         }
                     } else if (sectionHeuristic == 3) {
                         //sort closest roots of pols below and above sample
-                        std::sort(lower3.begin(), lower3.end(), [](auto const &t1, auto const &t2) {
+                        std::sort(lower.begin(), lower.end(), [](auto const &t1, auto const &t2) {
                             return std::get<0>(t1) < std::get<0>(t2);
                         });
-                        std::sort(upper3.begin(), upper3.end(), [](auto const &t1, auto const &t2) {
+                        std::sort(upper.begin(), upper.end(), [](auto const &t1, auto const &t2) {
                             return std::get<0>(t1) < std::get<0>(t2);
                         });
 
                         //calculate resultants
-                        if (!lower3.empty()) {
-                            //optimization: for multiple entries with the same root in lower3, sort the one with the
+                        if (!lower.empty()) {
+                            //optimization: for multiple entries with the same root in lower, sort the one with the
                             //  lowest degree to the smallest possible position for optimal resultant calculation
-                            for (auto it = lower3.begin() + 1; it != lower3.end(); it++) {
+                            for (auto it = lower.begin() + 1; it != lower.end(); it++) {
                                 if (std::get<0>(*(it - 1)) == std::get<0>(*it) &&
-                                    std::get<2>(*(it - 1)) < std::get<2>(*it)) {
+                                    std::get<1>(*(it - 1)).deg < std::get<1>(*it).deg) {
                                     std::iter_swap(it - 1, it);
                                 }
                             }
 
-                            while (lower3.size() != 1) {
-                                auto cur = std::min_element(lower3.rbegin(), lower3.rend() - 1,
+                            while (lower.size() != 1) {
+                                auto cur = std::min_element(lower.rbegin(), lower.rend() - 1,
                                                             [](auto const &t1, auto const &t2) {
-                                                                return std::get<2>(t1) <
-                                                                       std::get<2>(t2);
+                                                                return std::get<1>(t1).deg < std::get<1>(t2).deg;
                                                             });
 
                                 auto it = cur + 1;
-                                while (it != lower3.rend()) {
-                                    resultants.emplace_back(std::make_pair(std::get<1>(*cur).poly,
-                                                                           std::get<1>(*it).poly));
+                                while (it != lower.rend()) {
+                                    resultants.emplace_back(std::make_pair(std::get<1>(*cur).poly, std::get<1>(*it).poly));
                                     it++;
                                 }
                                 //Reverse the reverse iterator to use erase
-                                lower3.erase(lower3.begin(), cur.base() - 1);
+                                lower.erase(lower.begin(), cur.base() - 1);
                             }
 
                             // optimization: find polynomials only connected to bound t because they dont need disc and ldcf
@@ -379,27 +366,29 @@ class LevelwiseCAD : public OneCellCAD {
                         }
 
                         std::vector<std::pair<Poly, Poly>> tmpResultants;
-                        if (!upper3.empty()) {
-                            //optimization: for multiple entries with the same root in upper3, sort the one with the
+                        if (!upper.empty()) {
+                            //optimization: for multiple entries with the same root in upper, sort the one with the
                             //  lowest degree to the smallest possible position for optimal resultant calculation
-                            for (auto it = upper3.begin() + 1; it != upper3.end(); it++) {
+                            for (auto it = upper.begin() + 1; it != upper.end(); it++) {
                                 if (std::get<0>(*(it - 1)) == std::get<0>(*it) &&
-                                    std::get<2>(*(it - 1)) > std::get<2>(*it)) {
+                                    std::get<1>(*(it - 1)).deg > std::get<1>(*it).deg) {
                                     std::iter_swap(it - 1, it);
                                 }
                             }
 
-                            while (upper3.size() != 1) {
-                                auto cur = std::min_element(upper3.begin(), upper3.end() - 1,
-                                                            [](auto const &t1, auto const &t2) { return std::get<2>(t1) < std::get<2>(t2); });
+                            while (upper.size() != 1) {
+                                auto cur = std::min_element(upper.begin(), upper.end() - 1,
+                                                            [](auto const &t1, auto const &t2) {
+                                                                return std::get<1>(t1).deg < std::get<1>(t2).deg;
+                                                            });
 
                                 auto it = cur + 1;
-                                while (it != upper3.end()) {
+                                while (it != upper.end()) {
                                     tmpResultants.emplace_back(std::make_pair(std::get<1>(*cur).poly, std::get<1>(*it).poly));
                                     it++;
                                 }
 
-                                upper3.erase(cur + 1, upper3.end());
+                                upper.erase(cur + 1, upper.end());
                             }
 
                             // optimization: find polynomials only connected to bound t because they dont need disc and ldcf
@@ -434,9 +423,9 @@ class LevelwiseCAD : public OneCellCAD {
                             }
                         }
 
-                        if (!lower3.empty() && !upper3.empty()) {
-                            resultants.emplace_back(std::make_pair(std::get<1>(lower3.back()).poly,
-                                                                   std::get<1>(upper3.front()).poly));
+                        if (!lower.empty() && !upper.empty()) {
+                            resultants.emplace_back(std::make_pair(std::get<1>(lower.back()).poly,
+                                                                   std::get<1>(upper.front()).poly));
                         }
 
                         //Additionally calculate disc and ldcf (if necessary)
@@ -474,8 +463,6 @@ class LevelwiseCAD : public OneCellCAD {
                 std::vector<TagPoly> lower1;
                 std::vector<std::tuple<RAN, TagPoly, int>> upper2;
                 std::vector<std::tuple<RAN, TagPoly, int>> lower2;
-                std::vector<std::tuple<RAN, TagPoly, int, int>> upper3;
-                std::vector<std::tuple<RAN, TagPoly, int, int>> lower3;
                 std::vector<Poly> needsNoLdcf;
                 TagPoly curUp;
                 TagPoly curLow;
@@ -544,7 +531,7 @@ class LevelwiseCAD : public OneCellCAD {
                     }
 
                 } else if (sectorHeuristic == 1) {
-                    // for convenience, upper3 (lower3 respectively) is used here to save all possible upper bounds
+                    // for convenience, upper2 (lower2 respectively) is used here to save all possible upper bounds
                     // => poly with smallest degree in i-th variable is then chosen
                     std::optional<RAN> closestLower, closestUpper;
                     for (const auto &poly : polys[i]) {
@@ -571,20 +558,20 @@ class LevelwiseCAD : public OneCellCAD {
                                 low = true;
                                 if (!closestLower || *closestLower < root) {
                                     closestLower = root;
-                                    lower3.clear();
-                                    lower3.emplace_back(std::make_tuple(root, poly, rootIdx, 0));
+                                    lower2.clear();
+                                    lower2.emplace_back(std::make_tuple(root, poly, rootIdx));
                                 } else if (*closestLower == root) {
-                                    lower3.emplace_back(std::make_tuple(root, poly, rootIdx, 0));
+                                    lower2.emplace_back(std::make_tuple(root, poly, rootIdx));
                                 }
                             } else { // pointComp < root
                                 SMTRAT_LOG_TRACE("smtrat.cad", "Bigger: " << root);
                                 up = true;
                                 if (!closestUpper || root < *closestUpper) {
                                     closestUpper = root;
-                                    upper3.clear();
-                                    upper3.emplace_back(std::make_tuple(root, poly, rootIdx, 0));
+                                    upper2.clear();
+                                    upper2.emplace_back(std::make_tuple(root, poly, rootIdx));
                                 } else if (*closestUpper == root) {
-                                    upper3.emplace_back(std::make_tuple(root, poly, rootIdx, 0));
+                                    upper2.emplace_back(std::make_tuple(root, poly, rootIdx));
                                 } else {
                                     // Optimization: break out of loop since isolatedRoots is sorted
                                     break;
@@ -602,13 +589,13 @@ class LevelwiseCAD : public OneCellCAD {
                     }
 
                     // Set bounds according to degree that is first calculated
-                    if (!lower3.empty()) {
-                        for (auto elem : lower3) {
-                            std::get<3>(elem) = getDegree(std::get<1>(elem), rootVariable);
+                    if (!lower2.empty()) {
+                        for (auto elem : lower2) {
+                            std::get<1>(elem).deg = getDegree(std::get<1>(elem), rootVariable);
                         }
-                        auto smallest = *std::min_element(lower3.begin(), lower3.end(),
+                        auto smallest = *std::min_element(lower2.begin(), lower2.end(),
                                                           [](auto const &t1, auto const &t2) {
-                                                              return std::get<3>(t1) < std::get<3>(t2);
+                                                              return std::get<1>(t1).deg < std::get<1>(t2).deg;
                                                           });
 
                         curLow = std::get<1>(smallest);
@@ -619,13 +606,13 @@ class LevelwiseCAD : public OneCellCAD {
                                 << " " << sector);
                     }
 
-                    if (!upper3.empty()) {
-                        for (auto elem : upper3) {
-                            std::get<3>(elem) = getDegree(std::get<1>(elem), rootVariable);
+                    if (!upper2.empty()) {
+                        for (auto elem : upper2) {
+                            std::get<1>(elem).deg = getDegree(std::get<1>(elem), rootVariable);
                         }
-                        auto smallest = *std::min_element(upper3.begin(), upper3.end(),
+                        auto smallest = *std::min_element(upper2.begin(), upper2.end(),
                                                           [](auto const &t1, auto const &t2) {
-                                                              return std::get<3>(t1) < std::get<3>(t2);
+                                                              return std::get<1>(t1).deg < std::get<1>(t2).deg;
                                                           });
 
                         curUp = std::get<1>(smallest);
@@ -696,9 +683,9 @@ class LevelwiseCAD : public OneCellCAD {
                         while (it != lower2.rend()) {
                             if (std::get<0>(*it) == std::get<0>(*curPos)) {
                                 if (curDeg == -1) {
-                                    curDeg = getDegree(std::get<1>(*curPos), rootVariable);
+                                    curDeg = (int)getDegree(std::get<1>(*curPos), rootVariable);
                                 }
-                                int degree = getDegree(std::get<1>(*it), rootVariable);
+                                int degree = (int)getDegree(std::get<1>(*it), rootVariable);
                                 if (degree < curDeg) {
                                     curPos = it;
                                     curDeg = degree;
@@ -731,9 +718,9 @@ class LevelwiseCAD : public OneCellCAD {
                         while (it != upper2.end()) {
                             if (std::get<0>(*it) == std::get<0>(*curPos)) {
                                 if (curDeg == -1) {
-                                    curDeg = getDegree(std::get<1>(*curPos), rootVariable);
+                                    curDeg = (int)getDegree(std::get<1>(*curPos), rootVariable);
                                 }
-                                int degree = getDegree(std::get<1>(*it), rootVariable);
+                                int degree = (int)getDegree(std::get<1>(*it), rootVariable);
                                 if (degree < curDeg) {
                                     curPos = it;
                                     curDeg = degree;
@@ -757,8 +744,8 @@ class LevelwiseCAD : public OneCellCAD {
                     }
 
                 } else if (sectorHeuristic == 3) {
-                    //while determining bounds create lists upper3 and lower3 which are sorted by their order around the sample
-                    for (const auto &poly : polys[i]) {
+                    //while determining bounds create lists upper2 and lower2 which are sorted by their order around the sample
+                    for (auto &poly : polys[i]) {
                         SMTRAT_LOG_TRACE("smtrat.cad", "Poly: " << poly.poly);
                         std::vector<RAN> isolatedRoots = isolateLastVariableRoots(poly.level,
                                                                                   poly.poly);
@@ -772,50 +759,46 @@ class LevelwiseCAD : public OneCellCAD {
                         }
 
                         //guaranteed at least one root
-                        //find closest root above and below sample (if existent) and put into upper3 and lower3 respectively
-                        int deg = (int) carl::total_degree(
-                                carl::to_univariate_polynomial(poly.poly, rootVariable));
+                        //find closest root above and below sample (if existent) and put into upper2 and lower2 respectively
+                        size_t deg = getDegree(poly, rootVariable);
                         if (isolatedRoots.front() > pointComp) {
                             //poly only has roots above pointComp
                             SMTRAT_LOG_DEBUG("smtrat.cad", "Smallest root above PointComp(1): "
                                     << isolatedRoots.front());
-                            upper3.emplace_back(std::make_tuple(isolatedRoots.front(), poly, 1, deg));
+                            upper2.emplace_back(std::make_tuple(isolatedRoots.front(), poly, 1));
+                            poly.deg = deg;
                         } else if (isolatedRoots.back() < pointComp) {
                             //poly only has roots below pointComp
                             SMTRAT_LOG_DEBUG("smtrat.cad", "Biggest root below PointComp(1): "
                                     << isolatedRoots.back());
-                            lower3.emplace_back(std::make_tuple(isolatedRoots.back(), poly,
-                                                                isolatedRoots.end() -
-                                                                isolatedRoots.begin(), deg));
+                            lower2.emplace_back(std::make_tuple(isolatedRoots.back(), poly, isolatedRoots.end() - isolatedRoots.begin()));
+                            poly.deg = deg;
                         } else {
-                            auto lb = std::lower_bound(isolatedRoots.begin(), isolatedRoots.end(),
-                                                       pointComp);
+                            auto lb = std::lower_bound(isolatedRoots.begin(), isolatedRoots.end(), pointComp);
                             //poly has root above and below pointComp
                             SMTRAT_LOG_DEBUG("smtrat.cad", "Smallest root above PointComp(2): " << *lb);
-                            upper3.emplace_back(
-                                    std::make_tuple(*lb, poly, (int) (lb - isolatedRoots.begin()) + 1,
-                                                    deg));
+                            upper2.emplace_back(std::make_tuple(*lb, poly, (int) (lb - isolatedRoots.begin()) + 1));
+                            poly.deg = deg;
                             SMTRAT_LOG_DEBUG("smtrat.cad",
                                              "Biggest root below PointComp(2): " << *(lb - 1));
-                            lower3.emplace_back(
-                                    std::make_tuple(*(lb - 1), poly, (int) (lb - isolatedRoots.begin()),
-                                                    deg));
+                            lower2.emplace_back(std::make_tuple(*(lb - 1), poly, (int) (lb - isolatedRoots.begin())));
+                            poly.deg = deg;
                         }
                     }
 
                     //sort closest roots of pols below and above sample
-                    std::sort(lower3.begin(), lower3.end(), [](auto const &t1, auto const &t2) {
+                    std::sort(lower2.begin(), lower2.end(), [](auto const &t1, auto const &t2) {
                         return std::get<0>(t1) < std::get<0>(t2);
                     });
-                    std::sort(upper3.begin(), upper3.end(), [](auto const &t1, auto const &t2) {
+                    std::sort(upper2.begin(), upper2.end(), [](auto const &t1, auto const &t2) {
                         return std::get<0>(t1) < std::get<0>(t2);
                     });
 
 
-                    if (!lower3.empty()) {
-                        //optimization: for multiple entries with the same root in lower3, sort the one with the
+                    if (!lower2.empty()) {
+                        //optimization: for multiple entries with the same root in lower2, sort the one with the
                         //  lowest degree to the smallest possible position for optimal resultant calculation
-                        for (auto it = lower3.begin() + 1; it != lower3.end(); it++) {
+                        for (auto it = lower2.begin() + 1; it != lower2.end(); it++) {
                             if (std::get<0>(*(it - 1)) == std::get<0>(*it) &&
                                 std::get<2>(*(it - 1)) < std::get<2>(*it)) {
                                 std::iter_swap(it - 1, it);
@@ -823,10 +806,10 @@ class LevelwiseCAD : public OneCellCAD {
                         }
 
                         //set lower bound
-                        curLow = std::get<1>(lower3.back());
+                        curLow = std::get<1>(lower2.back());
                         sector.lowBound = Section{
-                                asRootExpr(rootVariable, curLow.poly, std::get<2>(lower3.back())),
-                                std::get<0>(lower3.back())};
+                                asRootExpr(rootVariable, curLow.poly, std::get<2>(lower2.back())),
+                                std::get<0>(lower2.back())};
                         SMTRAT_LOG_TRACE("smtrat.cad", "Lower bound: "
                                 << " " << sector);
 
@@ -834,10 +817,10 @@ class LevelwiseCAD : public OneCellCAD {
                         SMTRAT_LOG_TRACE("smtrat.cad", "Open lower bound");
                     }
 
-                    if (!upper3.empty()) {
-                        //optimization: for multiple entries with the same root in upper3, sort the one with the
+                    if (!upper2.empty()) {
+                        //optimization: for multiple entries with the same root in upper2, sort the one with the
                         //  lowest degree to the smallest possible position for optimal resultant calculation
-                        for (auto it = upper3.begin() + 1; it != upper3.end(); it++) {
+                        for (auto it = upper2.begin() + 1; it != upper2.end(); it++) {
                             if (std::get<0>(*(it - 1)) == std::get<0>(*it) &&
                                 std::get<2>(*(it - 1)) > std::get<2>(*it)) {
                                 std::iter_swap(it - 1, it);
@@ -845,10 +828,10 @@ class LevelwiseCAD : public OneCellCAD {
                         }
 
                         //set upper bound
-                        curUp = std::get<1>(upper3.front());
+                        curUp = std::get<1>(upper2.front());
                         sector.highBound = Section{
-                                asRootExpr(rootVariable, curUp.poly, std::get<2>(upper3.front())),
-                                std::get<0>(upper3.front())};
+                                asRootExpr(rootVariable, curUp.poly, std::get<2>(upper2.front())),
+                                std::get<0>(upper2.front())};
                         SMTRAT_LOG_TRACE("smtrat.cad", "Upper bound: "
                                 << " " << sector);
 
@@ -928,8 +911,8 @@ class LevelwiseCAD : public OneCellCAD {
 
                         lower1.clear();
                         upper1.clear();
-                        lower3.clear();
-                        upper3.clear();
+                        lower2.clear();
+                        upper2.clear();
                     } else if (sectorHeuristic == 2) {
                         //Heuristic 2: calculate resultant in chain-form over lower2 and upper2
                         if (sector.lowBound.has_value()) {
@@ -952,48 +935,47 @@ class LevelwiseCAD : public OneCellCAD {
                         upper2.clear();
                     } else if (sectorHeuristic == 3) {
                         //heuristic 3: smart
-                        if (!lower3.empty()) {
-                            while (lower3.size() != 1) {
-                                auto cur = std::min_element(lower3.rbegin(), lower3.rend() - 1,
+                        if (!lower2.empty()) {
+                            while (lower2.size() != 1) {
+                                auto cur = std::min_element(lower2.rbegin(), lower2.rend() - 1,
                                                             [](auto const &t1, auto const &t2) {
-                                                                return std::get<3>(t1) <
-                                                                       std::get<3>(t2);
+                                                                return std::get<1>(t1).deg < std::get<1>(t2).deg;
                                                             });
 
                                 auto it = cur + 1;
-                                while (it != lower3.rend()) {
+                                while (it != lower2.rend()) {
                                     resultants.emplace_back(std::get<1>(*cur).poly,
                                                             std::get<1>(*it).poly);
                                     it++;
                                 }
                                 //Reverse the reverse iterator to use erase
-                                lower3.erase(lower3.begin(), cur.base() - 1);
+                                lower2.erase(lower2.begin(), cur.base() - 1);
                             }
                         }
 
-                        if (!upper3.empty()) {
-                            while (upper3.size() != 1) {
-                                auto cur = std::min_element(upper3.begin(), upper3.end() - 1,
+                        if (!upper2.empty()) {
+                            while (upper2.size() != 1) {
+                                auto cur = std::min_element(upper2.begin(), upper2.end() - 1,
                                                             [](auto const &t1, auto const &t2) {
-                                                                return std::get<3>(t1) <
-                                                                       std::get<3>(t2);
+                                                                return std::get<1>(t1).deg <
+                                                                       std::get<1>(t2).deg;
                                                             });
 
                                 auto it = cur + 1;
-                                while (it != upper3.end()) {
+                                while (it != upper2.end()) {
                                     resultants.emplace_back(std::get<1>(*cur).poly,
                                                             std::get<1>(*it).poly);
                                     it++;
                                 }
 
-                                upper3.erase(cur + 1, upper3.end());
+                                upper2.erase(cur + 1, upper2.end());
                             }
                         }
 
                         addResultants(resultants, polys, variableOrder[i], variableOrder);
 
-                        lower3.clear();
-                        upper3.clear();
+                        lower2.clear();
+                        upper2.clear();
                     } else {
                         SMTRAT_LOG_WARN("smtrat.cad", "Building failed: Incorrect heuristic input");
                         return std::nullopt;

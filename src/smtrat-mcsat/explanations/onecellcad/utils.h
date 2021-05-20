@@ -65,6 +65,9 @@ struct TagPoly {
 
     // Cache the poly's level to avoid recomputing it in many places.
     std::size_t level;
+
+    // Optional possibility to cache total degree of polynomial
+    std::size_t deg = 0;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const TagPoly& p) {
@@ -90,6 +93,15 @@ inline std::ostream& operator<<(std::ostream& os, const std::vector<std::vector<
         lvl--;
     }
     return os;
+}
+
+/**
+* @param p Polynomial to get degree from
+* @param v Rootvariable for degree calc
+* @return
+*/
+inline std::size_t getDegree(TagPoly p, carl::Variable v) {
+    return carl::total_degree(carl::to_univariate_polynomial(p.poly, v));
 }
 
 /**

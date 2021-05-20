@@ -15,8 +15,8 @@ inline void setNullification(bool n){
 	cover_nullification = n;
 }
 
-template<class Settings>
-boost::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsat::Bookkeeping& trail, // current assignment state
+template<class Setting1, class Setting2>
+boost::optional<mcsat::Explanation> Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // current assignment state
 						carl::Variable var,
 						const FormulasT& trailLiterals) const {
 	
@@ -112,7 +112,32 @@ boost::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsa
         SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Polys at levels after a CAD projection at level: " << currentLvl << ":\n" << projectionLevels);
     }
 
-	setNullification(Settings::cover_nullification);
+    if(Setting2::heuristic == 1){
+        // reorder polynomials in ascending order by degree
+        for (int i = (int)projectionLevels.size()-1; i >= 0; i--){
+            for(auto & tpoly : projectionLevels[i]){
+                tpoly.deg = getDegree(tpoly, fullProjectionVarOrder[i]);
+            }
+            std::sort(projectionLevels[i].begin(), projectionLevels[i].end(), [](auto const &t1, auto const &t2) {
+                return t1.deg < t2.deg;
+            });
+        }
+    } else if(Setting2::heuristic == 2){
+        // reorder polynomials in descending order by degree
+        for (int i = (int)projectionLevels.size()-1; i >= 0; i--){
+            for(auto & tpoly : projectionLevels[i]){
+                tpoly.deg = getDegree(tpoly, fullProjectionVarOrder[i]);
+            }
+            std::sort(projectionLevels[i].begin(), projectionLevels[i].end(), [](auto const &t1, auto const &t2) {
+                return t1.deg > t2.deg;
+            });
+        }
+    } else if(Setting2::heuristic != 0){
+        SMTRAT_LOG_WARN("smtrat.mcsat.nlsat", "Invalid heuristic input");
+
+    }
+
+	setNullification(Setting1::cover_nullification);
 	std::optional<CADCell> cellOpt = cad.pointEnclosingCADCell(projectionLevels);
 	if (!cellOpt) {
 		SMTRAT_LOG_WARN("smtrat.mcsat.nlsat", "OneCell construction failed");
@@ -168,8 +193,10 @@ boost::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsa
 }
 
 // Instantiations
-template struct Explanation<CoverNullification>;
-template struct Explanation<DontCoverNullification>;
+template struct Explanation<CoverNullification, NoHeuristic>;
+template struct Explanation<DontCoverNullification, NoHeuristic>;
+template struct Explanation<DontCoverNullification, DegreeAscending>;
+template struct Explanation<DontCoverNullification, DegreeDescending>;
 
 } // namespace recursive
 } // namespace onecellcad
