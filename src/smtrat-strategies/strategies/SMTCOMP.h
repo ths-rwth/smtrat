@@ -13,6 +13,7 @@
 #include <smtrat-modules/NewCADModule/NewCADModule.h>
 #include <smtrat-modules/SATModule/SATModule.h>
 #include <smtrat-modules/VSModule/VSModule.h>
+#include <smtrat-modules/STropModule/STropModule.h>
 
 namespace smtrat
 {
