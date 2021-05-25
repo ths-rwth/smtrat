@@ -86,15 +86,18 @@ namespace smtrat
                 {
                     addBackend<SATModule<SATSettings1>>(
                     {
-                        addBackend<ICPModule<ICPSettings1>>(
+                        addBackend<STropModule<STropSettings1>>(
                         {
-                            addBackend<VSModule<VSSettings234>>(
+                            addBackend<ICPModule<ICPSettings1>>(
                             {
-                                addBackend<NewCADModule<NewCADSettingsFOS>>()
+                                addBackend<VSModule<VSSettings234>>(
+                                {
+                                    addBackend<NewCADModule<NewCADSettingsFOS>>()
+                                })
                             })
                         })
                     })
-                }).condition( &conditionEvaluation16 ),
+                })).condition( &conditionEvaluation16 ),
                 addBackend<FPPModule<FPPSettings1>>(
                 {
                     addBackend<SATModule<SATSettings1>>(
