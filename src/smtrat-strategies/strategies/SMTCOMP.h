@@ -97,7 +97,7 @@ namespace smtrat
                             })
                         })
                     })
-                })).condition( &conditionEvaluation16 ),
+                }).condition( &conditionEvaluation16 ),
                 addBackend<FPPModule<FPPSettings1>>(
                 {
                     addBackend<SATModule<SATSettings1>>(
