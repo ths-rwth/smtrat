@@ -351,7 +351,7 @@ inline std::vector<std::pair<Poly, Poly>> duplicateElimination(std::vector<std::
     return vec;
 }
 
-inline std::vector<Poly> duplicateElimination(std::vector<Poly> vec){
+inline void duplicateElimination(std::vector<Poly>& vec){
     if(!vec.empty()) {
         for (auto it1 = vec.begin(); it1 != vec.end() - 1; it1++) {
             for (auto it2 = it1 + 1; it2 != vec.end();) {
@@ -363,7 +363,6 @@ inline std::vector<Poly> duplicateElimination(std::vector<Poly> vec){
             }
         }
     }
-    return vec;
 }
 
 
@@ -394,12 +393,12 @@ inline Poly leadcoefficient(const carl::Variable& mainVariable, const Poly& p) {
 }
 
 
-inline void addResultants(std::vector<std::pair<Poly, Poly>> resultants,
+inline void addResultants(std::vector<std::pair<Poly, Poly>>& resultants,
         std::vector<std::vector<TagPoly>>& polys,
         carl::Variable mainVar,
         const std::vector<carl::Variable>& variableOrder){
     if(!resultants.empty()) {
-        resultants = duplicateElimination(resultants);
+        duplicateElimination(resultants);
 
         for (auto const& elem : resultants) {
             Poly res = resultant(mainVar, elem.first, elem.second);

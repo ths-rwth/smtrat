@@ -73,7 +73,7 @@ class LevelwiseCAD : public OneCellCAD {
                     return std::nullopt;
                 } else if (isPointRootOfPoly(poly)) {
                     sector = false;
-                    int locDeg = (int)getDegree(poly, rootVariable);
+                    int locDeg = (int) getDegree(poly, rootVariable);
                     assert(locDeg >= 1);
                     // for section: find defining polynomial with smallest degree in i-th variable
                     if (locDeg > deg) {
@@ -134,20 +134,24 @@ class LevelwiseCAD : public OneCellCAD {
                     std::vector<std::tuple<RAN, TagPoly>> upper;
                     std::vector<std::tuple<RAN, TagPoly>> lower;
                     std::vector<std::pair<Poly, Poly>> resultants;
-                    std::vector<Poly> noProjection1;
-                    std::vector<Poly> noProjection2;
+                    std::vector<Poly> noDisc1;
+                    std::vector<Poly> noDisc2;
+                    std::vector<Poly> noLdcf;
                     //project rest of polynomials
-                    for (auto &poly : polys[i]) {
 
-                        if (sectionHeuristic == 1) {
+
+                    if (sectionHeuristic == 1) {
+                        for (auto &poly : polys[i]) {
                             //Heuristic 1: calculate resultant between defining pol t and every pol that has root above or below t
                             if (!isolateLastVariableRoots(poly.level, poly.poly).empty()) {
                                 if (poly.poly != t.poly) {
                                     resultants.emplace_back(std::make_pair(t.poly, poly.poly));
                                 }
                             }
+                        }
 
-                        } else if (sectionHeuristic == 2) {
+                    } else if (sectionHeuristic == 2) {
+                        for (auto &poly : polys[i]) {
                             //Heuristic 2: calculate resultant in chain-form over lower and upper
                             SMTRAT_LOG_TRACE("smtrat.cad", "Poly: " << poly.poly);
                             std::vector<RAN> isolatedRoots = isolateLastVariableRoots(poly.level,
@@ -189,18 +193,65 @@ class LevelwiseCAD : public OneCellCAD {
                                 }
                             }
 
-                            //Additionally calculate disc and ldcf
+                            //Additionally calculate disc
                             disc = discriminant(variableOrder[i], poly.poly);
                             SMTRAT_LOG_TRACE("smtrat.cad",
                                              "Add discriminant: " << disc << " (if not const)");
                             appendOnCorrectLevel(disc, InvarianceType::ORD_INV, polys, variableOrder);
+                        }
 
-                            ldcf = leadcoefficient(variableOrder[i], poly.poly);
-                            SMTRAT_LOG_TRACE("smtrat.cad",
-                                             "Add leadcoefficient: " << ldcf << " (if not const)");
-                            appendOnCorrectLevel(ldcf, InvarianceType::SIGN_INV, polys, variableOrder);
+                        //sort closest roots of pols below and above sample
+                        std::sort(lower.begin(), lower.end(), [](auto const &t1, auto const &t2) {
+                            return std::get<0>(t1) < std::get<0>(t2);
+                        });
+                        std::sort(upper.begin(), upper.end(), [](auto const &t1, auto const &t2) {
+                            return std::get<0>(t1) < std::get<0>(t2);
+                        });
 
-                        } else if (sectionHeuristic == 3) {
+                        //calculate resultants
+                        if (!lower.empty()) {
+                            for (auto it = lower.begin(); it != lower.end() - 1; it++) {
+                                resultants.emplace_back(std::make_pair(std::get<1>(*it).poly,
+                                                                       std::get<1>(*(it + 1)).poly));
+                            }
+                        }
+
+                        if (!lower.empty() && !upper.empty()) {
+                            resultants.emplace_back(std::make_pair(std::get<1>(lower.back()).poly,
+                                                                   std::get<1>(upper.front()).poly));
+                        }
+
+                        if (!upper.empty()) {
+                            for (auto it = upper.begin(); it != upper.end() - 1; it++) {
+                                resultants.emplace_back(std::make_pair(std::get<1>(*it).poly,
+                                                                       std::get<1>(*(it + 1)).poly));
+                            }
+                        }
+
+                        // Need no ldcf if its beginning or end of resultant-chain and has poly above and below sample
+                        if (!lower.empty() && std::find_if(upper.begin(), upper.end(),
+                                                           [](auto const &t1) {
+                                                               return (std::get<1>(t1).poly == std::get<1>(*lower.begin()).poly);
+                                                           }) != upper.end()) {
+                            noLdcf.emplace_back(std::get<1>(*lower.begin()).poly);
+                        }
+                        if (!upper.empty() && std::find_if(lower.begin(), lower.end(),
+                                                           [](auto const &t1) {
+                                                               return (std::get<1>(t1).poly == std::get<1>(*(upper.end() - 1)).poly);
+                                                           }) != lower.end()) {
+                            noLdcf.emplace_back(std::get<1>(*(upper.end() - 1)).poly);
+                        }
+
+                        for (auto &poly : polys[i]) {
+                            if (!contains(noLdcf, poly.poly)) {
+                                ldcf = leadcoefficient(variableOrder[i], poly.poly);
+                                SMTRAT_LOG_TRACE("smtrat.cad", "Add leadcoefficient: " << ldcf << " (if not const)");
+                                appendOnCorrectLevel(ldcf, InvarianceType::SIGN_INV, polys, variableOrder);
+                            }
+                        }
+
+                    } else if (sectionHeuristic == 3) {
+                        for (auto &poly : polys[i]) {
                             //Heuristic 3: smart
                             SMTRAT_LOG_TRACE("smtrat.cad", "Poly: " << poly.poly);
                             std::vector<RAN> isolatedRoots = isolateLastVariableRoots(poly.level, poly.poly);
@@ -240,67 +291,8 @@ class LevelwiseCAD : public OneCellCAD {
                                     lower.emplace_back(std::make_tuple(*(lb - 1), poly));
                                 }
                             }
-                        } else {
-                            SMTRAT_LOG_WARN("smtrat.cad", "Building failed: Incorrect heuristic input");
-                            return std::nullopt;
                         }
 
-                        if (poly.poly != t.poly) {
-                            if (isPointRootOfPoly(poly)) {
-                                if (poly.tag == InvarianceType::ORD_INV) {
-                                    SMTRAT_LOG_TRACE("smtrat.cad", "Check for vanishing coefficient");
-                                    auto coeff = coeffNonNull(poly);
-                                    if (coeff.has_value()) {
-                                        SMTRAT_LOG_TRACE("smtrat.cad",
-                                                         "Add result of coeffNonNull: " << coeff.value()
-                                                                                        << " (if not const)");
-                                        appendOnCorrectLevel(coeff.value(), InvarianceType::SIGN_INV,
-                                                             polys, variableOrder);
-                                    }
-                                    if (sectionHeuristic == 1) {
-                                        //otherwise the discriminant has already been calculated
-                                        disc = discriminant(variableOrder[i], poly.poly);
-                                        SMTRAT_LOG_TRACE("smtrat.cad", "Add discriminant: " << disc
-                                                                                            << " (if not const)");
-                                        appendOnCorrectLevel(disc, InvarianceType::ORD_INV, polys,
-                                                             variableOrder);
-                                    }
-                                }
-                            } else {
-                                poly.tag = InvarianceType::ORD_INV;
-                            }
-                        }
-                    }
-
-                    if (sectionHeuristic == 2) {
-                        //sort closest roots of pols below and above sample
-                        std::sort(lower.begin(), lower.end(), [](auto const &t1, auto const &t2) {
-                            return std::get<0>(t1) < std::get<0>(t2);
-                        });
-                        std::sort(upper.begin(), upper.end(), [](auto const &t1, auto const &t2) {
-                            return std::get<0>(t1) < std::get<0>(t2);
-                        });
-
-                        //calculate resultants
-                        if (!lower.empty()) {
-                            for (auto it = lower.begin(); it != lower.end() - 1; it++) {
-                                resultants.emplace_back(std::make_pair(std::get<1>(*it).poly,
-                                                                       std::get<1>(*(it + 1)).poly));
-                            }
-                        }
-
-                        if (!lower.empty() && !upper.empty()) {
-                            resultants.emplace_back(std::make_pair(std::get<1>(lower.back()).poly,
-                                                                   std::get<1>(upper.front()).poly));
-                        }
-
-                        if (!upper.empty()) {
-                            for (auto it = upper.begin(); it != upper.end() - 1; it++) {
-                                resultants.emplace_back(std::make_pair(std::get<1>(*it).poly,
-                                                                       std::get<1>(*(it + 1)).poly));
-                            }
-                        }
-                    } else if (sectionHeuristic == 3) {
                         //sort closest roots of pols below and above sample
                         std::sort(lower.begin(), lower.end(), [](auto const &t1, auto const &t2) {
                             return std::get<0>(t1) < std::get<0>(t2);
@@ -320,46 +312,51 @@ class LevelwiseCAD : public OneCellCAD {
                                 }
                             }
 
+                            auto mark = lower.rend();
                             while (lower.size() != 1) {
-                                auto cur = std::min_element(lower.rbegin(), lower.rend() - 1,
-                                                            [](auto const &t1, auto const &t2) {
-                                                                return std::get<1>(t1).deg < std::get<1>(t2).deg;
-                                                            });
+                                auto cur = std::min_element(lower.rbegin(), mark - 1, [](auto const &t1, auto const &t2) {
+                                    return std::get<1>(t1).deg < std::get<1>(t2).deg;
+                                });
 
                                 auto it = cur + 1;
-                                while (it != lower.rend()) {
+                                while (it != mark) {
                                     resultants.emplace_back(std::make_pair(std::get<1>(*cur).poly, std::get<1>(*it).poly));
+                                    // Ldcfs of pols not necessary if they  are only connected to 1 pol AND also appear on the other side of sample point
+                                    if (std::find_if(upper.begin(), upper.end(),
+                                                     [](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(*it).poly); }) != upper.end()) {
+                                        noLdcf.emplace_back(std::get<1>(*it).poly);
+                                    }
                                     it++;
                                 }
-                                //Reverse the reverse iterator to use erase
-                                lower.erase(lower.begin(), cur.base() - 1);
+
+                                mark = cur;
                             }
 
-                            // optimization: find polynomials only connected to bound t because they dont need disc and ldcf
-                            if(!resultants.empty()) {
+                            // optimization: find polynomials only connected to bound t because they need no discriminant
+                            if (!resultants.empty()) {
                                 resultants = duplicateElimination(resultants);
                                 for (auto &res : resultants) {
                                     if (res.first == t.poly) {
-                                        noProjection1.push_back(res.second);
+                                        noDisc1.push_back(res.second);
                                     }
                                     if (res.second == t.poly) {
-                                        noProjection1.push_back(res.first);
+                                        noDisc1.push_back(res.first);
                                     }
                                 }
-                                if(!noProjection1.empty()) {
-                                    noProjection1 = duplicateElimination(noProjection1);
+                                if (!noDisc1.empty()) {
+                                    duplicateElimination(noDisc1);
                                     bool inc;
-                                    for (auto it = noProjection1.begin(); it != noProjection1.end();) {
+                                    for (auto it = noDisc1.begin(); it != noDisc1.end();) {
                                         inc = true;
                                         for (auto &res : resultants) {
                                             if ((res.first == *it && res.second != t.poly) ||
                                                 (res.second == *it && res.first != t.poly)) {
-                                                it = noProjection1.erase(it);
+                                                it = noDisc1.erase(it);
                                                 inc = false;
                                                 break;
                                             }
                                         }
-                                        if(inc){it++;}
+                                        if (inc) { it++; }
                                     }
                                 }
                             }
@@ -376,46 +373,51 @@ class LevelwiseCAD : public OneCellCAD {
                                 }
                             }
 
+                            auto mark = upper.end();
                             while (upper.size() != 1) {
-                                auto cur = std::min_element(upper.begin(), upper.end() - 1,
-                                                            [](auto const &t1, auto const &t2) {
-                                                                return std::get<1>(t1).deg < std::get<1>(t2).deg;
-                                                            });
+                                auto cur = std::min_element(upper.begin(), mark - 1, [](auto const &t1, auto const &t2) {
+                                    return std::get<1>(t1).deg < std::get<1>(t2).deg;
+                                });
 
                                 auto it = cur + 1;
                                 while (it != upper.end()) {
                                     tmpResultants.emplace_back(std::make_pair(std::get<1>(*cur).poly, std::get<1>(*it).poly));
+                                    // Ldcfs of pols not necessary if they  are only connected to 1 pol AND also appear on the other side of  sample point
+                                    if (std::find_if(lower.begin(), lower.end(),
+                                                     [](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(*it).poly); }) != lower.end()) {
+                                        noLdcf.emplace_back(std::get<1>(*it).poly);
+                                    }
                                     it++;
                                 }
 
-                                upper.erase(cur + 1, upper.end());
+                                upper.end() = cur;
                             }
 
-                            // optimization: find polynomials only connected to bound t because they dont need disc and ldcf
-                            if(!tmpResultants.empty()) {
+                            // optimization: find polynomials only connected to bound t because they need no discriminant
+                            if (!tmpResultants.empty()) {
                                 tmpResultants = duplicateElimination(tmpResultants);
                                 for (auto &res : tmpResultants) {
                                     if (res.first == t.poly) {
-                                        noProjection2.push_back(res.second);
+                                        noDisc2.push_back(res.second);
                                     }
                                     if (res.second == t.poly) {
-                                        noProjection2.push_back(res.first);
+                                        noDisc2.push_back(res.first);
                                     }
                                 }
-                                if(!noProjection2.empty()) {
-                                    noProjection2 = duplicateElimination(noProjection2);
+                                if (!noDisc2.empty()) {
+                                    duplicateElimination(noDisc2);
                                     bool inc;
-                                    for (auto it = noProjection2.begin(); it != noProjection2.end();) {
+                                    for (auto it = noDisc2.begin(); it != noDisc2.end();) {
                                         inc = true;
                                         for (auto &res : tmpResultants) {
                                             if ((res.first == *it && res.second != t.poly) ||
                                                 (res.second == *it && res.first != t.poly)) {
-                                                it = noProjection2.erase(it);
+                                                it = noDisc2.erase(it);
                                                 inc = false;
                                                 break;
                                             }
                                         }
-                                        if(inc){it++;}
+                                        if (inc) { it++; }
                                     }
                                 }
                                 resultants.insert(resultants.end(), tmpResultants.begin(), tmpResultants.end());
@@ -428,28 +430,51 @@ class LevelwiseCAD : public OneCellCAD {
                                                                    std::get<1>(upper.front()).poly));
                         }
 
-                        //Additionally calculate disc and ldcf (if necessary)
+                        //Additionally calculate discs and ldcfs (if necessary)
                         for (auto &poly : polys[i]) {
-                            if (!contains(noProjection1, poly.poly) && !contains(noProjection2, poly.poly)) {
+                            if (!contains(noDisc1, poly.poly) && !contains(noDisc2, poly.poly)) {
                                 disc = discriminant(variableOrder[i], poly.poly);
-                                SMTRAT_LOG_TRACE("smtrat.cad",
-                                                 "Add discriminant: " << disc << " (if not const)");
-                                appendOnCorrectLevel(disc, InvarianceType::ORD_INV, polys,
-                                                     variableOrder);
+                                SMTRAT_LOG_TRACE("smtrat.cad", "Add discriminant: " << disc << " (if not const)");
+                                appendOnCorrectLevel(disc, InvarianceType::ORD_INV, polys, variableOrder);
+                            }
 
+                            if (!contains(noLdcf, poly.poly)) {
                                 ldcf = leadcoefficient(variableOrder[i], poly.poly);
-                                SMTRAT_LOG_TRACE("smtrat.cad",
-                                                 "Add leadcoefficient: " << ldcf << " (if not const)");
-                                appendOnCorrectLevel(ldcf, InvarianceType::SIGN_INV, polys,
-                                                     variableOrder);
+                                SMTRAT_LOG_TRACE("smtrat.cad", "Add leadcoefficient: " << ldcf << " (if not const)");
+                                appendOnCorrectLevel(ldcf, InvarianceType::SIGN_INV, polys, variableOrder);
+                            }
+                        }
+
+                    } else {
+                        SMTRAT_LOG_WARN("smtrat.cad", "Building failed: Incorrect heuristic input");
+                        return std::nullopt;
+                    }
+
+                    for (auto &poly : polys[i]) {
+                        if (poly.poly != t.poly) {
+                            if (isPointRootOfPoly(poly)) {
+                                if (poly.tag == InvarianceType::ORD_INV) {
+                                    SMTRAT_LOG_TRACE("smtrat.cad", "Check for vanishing coefficient");
+                                    auto coeff = coeffNonNull(poly);
+                                    if (coeff.has_value()) {
+                                        SMTRAT_LOG_TRACE("smtrat.cad", "Add result of coeffNonNull: " << coeff.value() << " (if not const)");
+                                        appendOnCorrectLevel(coeff.value(), InvarianceType::SIGN_INV, polys, variableOrder);
+                                    }
+                                    if (sectionHeuristic == 1) {
+                                        //for other heuristics, discriminants have already been calculated
+                                        disc = discriminant(variableOrder[i], poly.poly);
+                                        SMTRAT_LOG_TRACE("smtrat.cad", "Add discriminant: " << disc << " (if not const)");
+                                        appendOnCorrectLevel(disc, InvarianceType::ORD_INV, polys, variableOrder);
+                                    }
+                                }
+                            } else {
+                                poly.tag = InvarianceType::ORD_INV;
                             }
                         }
                     }
 
-
                     // Add all calculate resultants (independent from heuristic)
                     addResultants(resultants, polys, variableOrder[i], variableOrder);
-
                 }
             } else {
                 /** Current level is a Sector */
@@ -463,10 +488,9 @@ class LevelwiseCAD : public OneCellCAD {
                 std::vector<TagPoly> lower1;
                 std::vector<std::tuple<RAN, TagPoly, int>> upper2;
                 std::vector<std::tuple<RAN, TagPoly, int>> lower2;
-                std::vector<Poly> needsNoLdcf;
+                std::vector<Poly> noLdcf;
                 TagPoly curUp;
                 TagPoly curLow;
-
                 // Different heuristics for resultant calculation need different setups of control data
                 // Level 1 does not need control data at all
                 if (i == 0) {
@@ -541,7 +565,6 @@ class LevelwiseCAD : public OneCellCAD {
 
                         if (isolatedRoots.empty()) {
                             SMTRAT_LOG_TRACE("smtrat.cad", "No isolatable isolatedRoots");
-                            needsNoLdcf.emplace_back(poly.poly);
                             continue;
                         } else {
                             SMTRAT_LOG_TRACE("smtrat.cad", "Isolated roots: " << isolatedRoots);
@@ -623,6 +646,12 @@ class LevelwiseCAD : public OneCellCAD {
                                 << " " << sector);
                     }
 
+                    // polys with root above and below sample need no ldcf
+                    for (auto &poly : polys[i]) {
+                        if (contains(lower1, poly) && contains(upper1, poly)) {
+                            noLdcf.emplace_back(poly.poly);
+                        }
+                    }
 
                 } else if (sectorHeuristic == 2) {
                     //while determining bounds create lists upper2 and lower2 which are sorted by their order around the sample
@@ -633,7 +662,6 @@ class LevelwiseCAD : public OneCellCAD {
 
                         if (isolatedRoots.empty()) {
                             SMTRAT_LOG_TRACE("smtrat.cad", "No isolatable isolatedRoots");
-                            needsNoLdcf.emplace_back(poly.poly);
                             continue;
                         } else {
                             SMTRAT_LOG_TRACE("smtrat.cad", "Isolated roots: " << isolatedRoots);
@@ -683,9 +711,9 @@ class LevelwiseCAD : public OneCellCAD {
                         while (it != lower2.rend()) {
                             if (std::get<0>(*it) == std::get<0>(*curPos)) {
                                 if (curDeg == -1) {
-                                    curDeg = (int)getDegree(std::get<1>(*curPos), rootVariable);
+                                    curDeg = (int) getDegree(std::get<1>(*curPos), rootVariable);
                                 }
-                                int degree = (int)getDegree(std::get<1>(*it), rootVariable);
+                                int degree = (int) getDegree(std::get<1>(*it), rootVariable);
                                 if (degree < curDeg) {
                                     curPos = it;
                                     curDeg = degree;
@@ -718,9 +746,9 @@ class LevelwiseCAD : public OneCellCAD {
                         while (it != upper2.end()) {
                             if (std::get<0>(*it) == std::get<0>(*curPos)) {
                                 if (curDeg == -1) {
-                                    curDeg = (int)getDegree(std::get<1>(*curPos), rootVariable);
+                                    curDeg = (int) getDegree(std::get<1>(*curPos), rootVariable);
                                 }
-                                int degree = (int)getDegree(std::get<1>(*it), rootVariable);
+                                int degree = (int) getDegree(std::get<1>(*it), rootVariable);
                                 if (degree < curDeg) {
                                     curPos = it;
                                     curDeg = degree;
@@ -752,7 +780,6 @@ class LevelwiseCAD : public OneCellCAD {
 
                         if (isolatedRoots.empty()) {
                             SMTRAT_LOG_TRACE("smtrat.cad", "No isolatable isolatedRoots");
-                            needsNoLdcf.emplace_back(poly.poly);
                             continue;
                         } else {
                             SMTRAT_LOG_TRACE("smtrat.cad", "Isolated roots: " << isolatedRoots);
@@ -852,34 +879,21 @@ class LevelwiseCAD : public OneCellCAD {
                         //Add discriminant
                         Poly disc = discriminant(variableOrder[i], poly.poly);
                         SMTRAT_LOG_TRACE("smtrat.cad",
-                                         "Add discriminant(" << poly.poly << ") = " << disc
-                                                             << " (if not const)");
+                                         "Add discriminant(" << poly.poly << ") = " << disc << " (if not const)");
                         appendOnCorrectLevel(disc, InvarianceType::ORD_INV, polys, variableOrder);
-
-                        //Add leadcoefficient if necessary
-                        if (!sector.highBound.has_value() || !sector.lowBound.has_value() ||
-                            !contains(needsNoLdcf, poly.poly)) {
-                            Poly ldcf = leadcoefficient(variableOrder[i], poly.poly);
-                            SMTRAT_LOG_TRACE("smtrat.cad",
-                                             "Add leadcoefficient(" << poly.poly << ") = " << ldcf
-                                                                    << " (if not const)");
-                            appendOnCorrectLevel(ldcf, InvarianceType::SIGN_INV, polys, variableOrder);
-                        }
 
                         SMTRAT_LOG_TRACE("smtrat.cad", "Check for vanishing coefficient");
                         auto coeff = coeffNonNull(poly);
                         if (coeff.has_value()) {
                             SMTRAT_LOG_TRACE("smtrat.cad",
-                                             "Add result of coeffNonNull: " << coeff.value()
-                                                                            << " (if not const)");
-                            appendOnCorrectLevel(coeff.value(), InvarianceType::SIGN_INV, polys,
-                                                 variableOrder);
+                                             "Add result of coeffNonNull: " << coeff.value() << " (if not const)");
+                            appendOnCorrectLevel(coeff.value(), InvarianceType::SIGN_INV, polys, variableOrder);
                         }
 
                         poly.tag = InvarianceType::ORD_INV;
                     }
 
-                    //Calculate and comulatively append resultants
+                    //Calculate and comulatively append resultants and leadcoefficients
                     std::vector<std::pair<Poly, Poly>> resultants;
 
                     if (sector.lowBound.has_value() && sector.highBound.has_value() &&
@@ -907,12 +921,27 @@ class LevelwiseCAD : public OneCellCAD {
                             }
                         }
 
-                        addResultants(resultants, polys, variableOrder[i], variableOrder);
+                        // Need no ldcf if it also appears on other side
+                        if (!lower2.empty()) {
+                            for (auto &element : upper2) {
+                                if (std::find_if(upper2.begin(), upper2.end(),
+                                                 [](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(element).poly); }) !=
+                                    upper2.end()) {
+                                    noLdcf.emplace_back(std::get<1>(element).poly);
+                                }
+                            }
+                        }
 
-                        lower1.clear();
-                        upper1.clear();
-                        lower2.clear();
-                        upper2.clear();
+                        if (!upper2.empty()) {
+                            for (auto &element : lower2) {
+                                if (std::find_if(lower2.begin(), lower2.end(),
+                                                 [](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(element).poly); }) !=
+                                    lower2.end()) {
+                                    noLdcf.emplace_back(std::get<1>(element).poly);
+                                }
+                            }
+                        }
+
                     } else if (sectorHeuristic == 2) {
                         //Heuristic 2: calculate resultant in chain-form over lower2 and upper2
                         if (sector.lowBound.has_value()) {
@@ -929,33 +958,66 @@ class LevelwiseCAD : public OneCellCAD {
                             }
                         }
 
-                        addResultants(resultants, polys, variableOrder[i], variableOrder);
+                        // Need no ldcf if its beginning or end of resultant-chain and has poly above and below sample
+                        if (!lower2.empty() && std::find_if(upper2.begin(), upper2.end(), [](auto const &t1) {
+                            return (std::get<1>(t1).poly == std::get<1>(*lower2.begin()).poly);
+                        }) != upper2.end()) {
+                            noLdcf.emplace_back(std::get<1>(*lower2.begin()).poly);
+                        }
+                        if (!upper2.empty() && std::find_if(lower2.begin(), lower2.end(), [](auto const &t1) {
+                            return (std::get<1>(t1).poly == std::get<1>(*(upper2.end() - 1)).poly);
+                        }) != lower2.end()) {
+                            noLdcf.emplace_back(std::get<1>(*(upper2.end() - 1)).poly);
+                        }
 
-                        lower2.clear();
-                        upper2.clear();
                     } else if (sectorHeuristic == 3) {
                         //heuristic 3: smart
                         if (!lower2.empty()) {
+                            //optimization: for multiple entries with the same root in lower, sort the one with the
+                            //  lowest degree to the smallest possible position for optimal resultant calculation
+                            for (auto it = lower2.begin() + 1; it != lower2.end(); it++) {
+                                if (std::get<0>(*(it - 1)) == std::get<0>(*it) &&
+                                    std::get<1>(*(it - 1)).deg < std::get<1>(*it).deg) {
+                                    std::iter_swap(it - 1, it);
+                                }
+                            }
+
+                            auto mark = lower2.rend();
                             while (lower2.size() != 1) {
-                                auto cur = std::min_element(lower2.rbegin(), lower2.rend() - 1,
+                                auto cur = std::min_element(lower2.rbegin(), mark - 1,
                                                             [](auto const &t1, auto const &t2) {
                                                                 return std::get<1>(t1).deg < std::get<1>(t2).deg;
                                                             });
 
                                 auto it = cur + 1;
-                                while (it != lower2.rend()) {
-                                    resultants.emplace_back(std::get<1>(*cur).poly,
-                                                            std::get<1>(*it).poly);
+                                while (it != mark) {
+                                    resultants.emplace_back(std::get<1>(*cur).poly, std::get<1>(*it).poly);
+                                    // Ldcfs of pols not necessary if they  are only connected to 1 pol AND also appear on the other side of  sample point
+                                    if (std::find_if(upper2.begin(), upper2.end(),
+                                                     [](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(*it).poly); }) !=
+                                        upper2.end()) {
+                                        noLdcf.emplace_back(std::get<1>(*it).poly);
+                                    }
                                     it++;
                                 }
-                                //Reverse the reverse iterator to use erase
-                                lower2.erase(lower2.begin(), cur.base() - 1);
+
+                                mark = cur;
                             }
                         }
 
                         if (!upper2.empty()) {
+                            //optimization: for multiple entries with the same root in upper, sort the one with the
+                            //  lowest degree to the smallest possible position for optimal resultant calculation
+                            for (auto it = upper2.begin() + 1; it != upper2.end(); it++) {
+                                if (std::get<0>(*(it - 1)) == std::get<0>(*it) &&
+                                    std::get<1>(*(it - 1)).deg > std::get<1>(*it).deg) {
+                                    std::iter_swap(it - 1, it);
+                                }
+                            }
+
+                            auto mark = upper2.end();
                             while (upper2.size() != 1) {
-                                auto cur = std::min_element(upper2.begin(), upper2.end() - 1,
+                                auto cur = std::min_element(upper2.begin(), mark - 1,
                                                             [](auto const &t1, auto const &t2) {
                                                                 return std::get<1>(t1).deg <
                                                                        std::get<1>(t2).deg;
@@ -963,26 +1025,43 @@ class LevelwiseCAD : public OneCellCAD {
 
                                 auto it = cur + 1;
                                 while (it != upper2.end()) {
-                                    resultants.emplace_back(std::get<1>(*cur).poly,
-                                                            std::get<1>(*it).poly);
+                                    resultants.emplace_back(std::get<1>(*cur).poly, std::get<1>(*it).poly);
+                                    // Ldcfs of pols not necessary if they  are only connected to 1 pol AND also appear on the other side of  sample point
+                                    if (std::find_if(lower2.begin(), lower2.end(),
+                                                     [](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(*it).poly); }) !=
+                                        lower2.end()) {
+                                        noLdcf.emplace_back(std::get<1>(*it).poly);
+                                    }
                                     it++;
                                 }
 
-                                upper2.erase(cur + 1, upper2.end());
+                                mark = cur;
                             }
                         }
 
-                        addResultants(resultants, polys, variableOrder[i], variableOrder);
-
-                        lower2.clear();
-                        upper2.clear();
                     } else {
                         SMTRAT_LOG_WARN("smtrat.cad", "Building failed: Incorrect heuristic input");
                         return std::nullopt;
                     }
+
+                    lower1.clear();
+                    upper1.clear();
+                    lower2.clear();
+                    upper2.clear();
+
+                    //Add resultants and leadcoefficients depending on heuristic
+                    addResultants(resultants, polys, variableOrder[i], variableOrder);
+
+                    for (auto &poly : polys[i]) {
+                        if (!contains(noLdcf, poly.poly)) {
+                            Poly ldcf = leadcoefficient(variableOrder[i], poly.poly);
+                            SMTRAT_LOG_TRACE("smtrat.cad", "Add leadcoefficient(" << poly.poly << ") = " << ldcf << " (if not const)");
+                            appendOnCorrectLevel(ldcf, InvarianceType::SIGN_INV, polys, variableOrder);
+                        }
+                    }
+
                     /** optimize memory*/
                     resultants.clear();
-                    needsNoLdcf.clear();
                 } else {
                     SMTRAT_LOG_TRACE("smtrat.cad", "Level 1, so no projection");
                 }
