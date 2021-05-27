@@ -230,13 +230,13 @@ class LevelwiseCAD : public OneCellCAD {
 
                         // Need no ldcf if its beginning or end of resultant-chain and has poly above and below sample
                         if (!lower.empty() && std::find_if(upper.begin(), upper.end(),
-                                                           [](auto const &t1) {
+                                                           [&](auto const &t1) {
                                                                return (std::get<1>(t1).poly == std::get<1>(*lower.begin()).poly);
                                                            }) != upper.end()) {
                             noLdcf.emplace_back(std::get<1>(*lower.begin()).poly);
                         }
                         if (!upper.empty() && std::find_if(lower.begin(), lower.end(),
-                                                           [](auto const &t1) {
+                                                           [&](auto const &t1) {
                                                                return (std::get<1>(t1).poly == std::get<1>(*(upper.end() - 1)).poly);
                                                            }) != lower.end()) {
                             noLdcf.emplace_back(std::get<1>(*(upper.end() - 1)).poly);
@@ -323,7 +323,7 @@ class LevelwiseCAD : public OneCellCAD {
                                     resultants.emplace_back(std::make_pair(std::get<1>(*cur).poly, std::get<1>(*it).poly));
                                     // Ldcfs of pols not necessary if they  are only connected to 1 pol AND also appear on the other side of sample point
                                     if (std::find_if(upper.begin(), upper.end(),
-                                                     [](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(*it).poly); }) != upper.end()) {
+                                                     [&](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(*it).poly); }) != upper.end()) {
                                         noLdcf.emplace_back(std::get<1>(*it).poly);
                                     }
                                     it++;
@@ -384,7 +384,7 @@ class LevelwiseCAD : public OneCellCAD {
                                     tmpResultants.emplace_back(std::make_pair(std::get<1>(*cur).poly, std::get<1>(*it).poly));
                                     // Ldcfs of pols not necessary if they  are only connected to 1 pol AND also appear on the other side of  sample point
                                     if (std::find_if(lower.begin(), lower.end(),
-                                                     [](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(*it).poly); }) != lower.end()) {
+                                                     [&](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(*it).poly); }) != lower.end()) {
                                         noLdcf.emplace_back(std::get<1>(*it).poly);
                                     }
                                     it++;
@@ -925,7 +925,7 @@ class LevelwiseCAD : public OneCellCAD {
                         if (!lower2.empty()) {
                             for (auto &element : upper2) {
                                 if (std::find_if(upper2.begin(), upper2.end(),
-                                                 [](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(element).poly); }) !=
+                                                 [&](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(element).poly); }) !=
                                     upper2.end()) {
                                     noLdcf.emplace_back(std::get<1>(element).poly);
                                 }
@@ -935,7 +935,7 @@ class LevelwiseCAD : public OneCellCAD {
                         if (!upper2.empty()) {
                             for (auto &element : lower2) {
                                 if (std::find_if(lower2.begin(), lower2.end(),
-                                                 [](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(element).poly); }) !=
+                                                 [&](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(element).poly); }) !=
                                     lower2.end()) {
                                     noLdcf.emplace_back(std::get<1>(element).poly);
                                 }
@@ -959,12 +959,12 @@ class LevelwiseCAD : public OneCellCAD {
                         }
 
                         // Need no ldcf if its beginning or end of resultant-chain and has poly above and below sample
-                        if (!lower2.empty() && std::find_if(upper2.begin(), upper2.end(), [](auto const &t1) {
+                        if (!lower2.empty() && std::find_if(upper2.begin(), upper2.end(), [&](auto const &t1) {
                             return (std::get<1>(t1).poly == std::get<1>(*lower2.begin()).poly);
                         }) != upper2.end()) {
                             noLdcf.emplace_back(std::get<1>(*lower2.begin()).poly);
                         }
-                        if (!upper2.empty() && std::find_if(lower2.begin(), lower2.end(), [](auto const &t1) {
+                        if (!upper2.empty() && std::find_if(lower2.begin(), lower2.end(), [&](auto const &t1) {
                             return (std::get<1>(t1).poly == std::get<1>(*(upper2.end() - 1)).poly);
                         }) != lower2.end()) {
                             noLdcf.emplace_back(std::get<1>(*(upper2.end() - 1)).poly);
@@ -994,7 +994,7 @@ class LevelwiseCAD : public OneCellCAD {
                                     resultants.emplace_back(std::get<1>(*cur).poly, std::get<1>(*it).poly);
                                     // Ldcfs of pols not necessary if they  are only connected to 1 pol AND also appear on the other side of  sample point
                                     if (std::find_if(upper2.begin(), upper2.end(),
-                                                     [](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(*it).poly); }) !=
+                                                     [&](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(*it).poly); }) !=
                                         upper2.end()) {
                                         noLdcf.emplace_back(std::get<1>(*it).poly);
                                     }
@@ -1028,7 +1028,7 @@ class LevelwiseCAD : public OneCellCAD {
                                     resultants.emplace_back(std::get<1>(*cur).poly, std::get<1>(*it).poly);
                                     // Ldcfs of pols not necessary if they  are only connected to 1 pol AND also appear on the other side of  sample point
                                     if (std::find_if(lower2.begin(), lower2.end(),
-                                                     [](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(*it).poly); }) !=
+                                                     [&](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(*it).poly); }) !=
                                         lower2.end()) {
                                         noLdcf.emplace_back(std::get<1>(*it).poly);
                                     }
