@@ -9,10 +9,11 @@ namespace mcsat {
 namespace onecellcad {
 namespace recursive {
 
-class OCStatistics: public Statistics {
+class OCStatistics : public Statistics {
 private:
 	std::size_t mExplanationCalled = 0;
 	std::size_t mExplanationSuccess = 0;
+
 public:
 	bool enabled() const {
 		return (mExplanationCalled > 0) || (mExplanationSuccess > 0);

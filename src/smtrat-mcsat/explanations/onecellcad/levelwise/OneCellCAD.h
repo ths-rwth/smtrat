@@ -312,21 +312,19 @@ class LevelwiseCAD : public OneCellCAD {
                                 }
                             }
 
-                            auto mark = lower.rend();
-                            while (lower.size() != 1) {
-                                auto cur = std::min_element(lower.rbegin(), mark - 1, [](auto const &t1, auto const &t2) {
+                            auto mark = lower.rend()-1;
+                            while (mark != lower.rbegin()) {
+                                auto cur = std::min_element(lower.rbegin(), mark, [](auto const &t1, auto const &t2) {
                                     return std::get<1>(t1).deg < std::get<1>(t2).deg;
                                 });
 
-                                auto it = cur + 1;
-                                while (it != mark) {
+                                for (auto it = cur + 1; it != mark+1; it++) {
                                     resultants.emplace_back(std::make_pair(std::get<1>(*cur).poly, std::get<1>(*it).poly));
                                     // Ldcfs of pols not necessary if they  are only connected to 1 pol AND also appear on the other side of sample point
                                     if (std::find_if(upper.begin(), upper.end(),
                                                      [&](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(*it).poly); }) != upper.end()) {
                                         noLdcf.emplace_back(std::get<1>(*it).poly);
                                     }
-                                    it++;
                                 }
 
                                 mark = cur;
@@ -373,24 +371,22 @@ class LevelwiseCAD : public OneCellCAD {
                                 }
                             }
 
-                            auto mark = upper.end();
-                            while (upper.size() != 1) {
-                                auto cur = std::min_element(upper.begin(), mark - 1, [](auto const &t1, auto const &t2) {
+                            auto mark = upper.end()-1;
+                            while (mark != upper.begin()) {
+                                auto cur = std::min_element(upper.begin(), mark, [](auto const &t1, auto const &t2) {
                                     return std::get<1>(t1).deg < std::get<1>(t2).deg;
                                 });
 
-                                auto it = cur + 1;
-                                while (it != upper.end()) {
+                                for (auto it = cur + 1; it != mark+1; it++) {
                                     tmpResultants.emplace_back(std::make_pair(std::get<1>(*cur).poly, std::get<1>(*it).poly));
                                     // Ldcfs of pols not necessary if they  are only connected to 1 pol AND also appear on the other side of  sample point
                                     if (std::find_if(lower.begin(), lower.end(),
                                                      [&](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(*it).poly); }) != lower.end()) {
                                         noLdcf.emplace_back(std::get<1>(*it).poly);
                                     }
-                                    it++;
                                 }
 
-                                upper.end() = cur;
+                                mark = cur;
                             }
 
                             // optimization: find polynomials only connected to bound t because they need no discriminant
@@ -787,32 +783,27 @@ class LevelwiseCAD : public OneCellCAD {
 
                         //guaranteed at least one root
                         //find closest root above and below sample (if existent) and put into upper2 and lower2 respectively
-                        size_t deg = getDegree(poly, rootVariable);
+                        poly.deg = getDegree(poly, rootVariable);
                         if (isolatedRoots.front() > pointComp) {
                             //poly only has roots above pointComp
                             SMTRAT_LOG_DEBUG("smtrat.cad", "Smallest root above PointComp(1): "
                                     << isolatedRoots.front());
                             upper2.emplace_back(std::make_tuple(isolatedRoots.front(), poly, 1));
-                            poly.deg = deg;
                         } else if (isolatedRoots.back() < pointComp) {
                             //poly only has roots below pointComp
                             SMTRAT_LOG_DEBUG("smtrat.cad", "Biggest root below PointComp(1): "
                                     << isolatedRoots.back());
-                            lower2.emplace_back(std::make_tuple(isolatedRoots.back(), poly, isolatedRoots.end() - isolatedRoots.begin()));
-                            poly.deg = deg;
+                            lower2.emplace_back(std::make_tuple(isolatedRoots.back(), poly, (int) (isolatedRoots.end() - isolatedRoots.begin())));
                         } else {
                             auto lb = std::lower_bound(isolatedRoots.begin(), isolatedRoots.end(), pointComp);
                             //poly has root above and below pointComp
                             SMTRAT_LOG_DEBUG("smtrat.cad", "Smallest root above PointComp(2): " << *lb);
                             upper2.emplace_back(std::make_tuple(*lb, poly, (int) (lb - isolatedRoots.begin()) + 1));
-                            poly.deg = deg;
                             SMTRAT_LOG_DEBUG("smtrat.cad",
                                              "Biggest root below PointComp(2): " << *(lb - 1));
                             lower2.emplace_back(std::make_tuple(*(lb - 1), poly, (int) (lb - isolatedRoots.begin())));
-                            poly.deg = deg;
                         }
                     }
-
                     //sort closest roots of pols below and above sample
                     std::sort(lower2.begin(), lower2.end(), [](auto const &t1, auto const &t2) {
                         return std::get<0>(t1) < std::get<0>(t2);
@@ -821,13 +812,12 @@ class LevelwiseCAD : public OneCellCAD {
                         return std::get<0>(t1) < std::get<0>(t2);
                     });
 
-
                     if (!lower2.empty()) {
                         //optimization: for multiple entries with the same root in lower2, sort the one with the
-                        //  lowest degree to the smallest possible position for optimal resultant calculation
+                        //  lowest degree to the biggest possible position for optimal resultant calculation
                         for (auto it = lower2.begin() + 1; it != lower2.end(); it++) {
                             if (std::get<0>(*(it - 1)) == std::get<0>(*it) &&
-                                std::get<2>(*(it - 1)) < std::get<2>(*it)) {
+                                std::get<1>(*(it - 1)).deg > std::get<1>(*it).deg) {
                                 std::iter_swap(it - 1, it);
                             }
                         }
@@ -837,8 +827,7 @@ class LevelwiseCAD : public OneCellCAD {
                         sector.lowBound = Section{
                                 asRootExpr(rootVariable, curLow.poly, std::get<2>(lower2.back())),
                                 std::get<0>(lower2.back())};
-                        SMTRAT_LOG_TRACE("smtrat.cad", "Lower bound: "
-                                << " " << sector);
+                        SMTRAT_LOG_TRACE("smtrat.cad", "Lower bound: " << " " << sector);
 
                     } else {
                         SMTRAT_LOG_TRACE("smtrat.cad", "Open lower bound");
@@ -849,7 +838,7 @@ class LevelwiseCAD : public OneCellCAD {
                         //  lowest degree to the smallest possible position for optimal resultant calculation
                         for (auto it = upper2.begin() + 1; it != upper2.end(); it++) {
                             if (std::get<0>(*(it - 1)) == std::get<0>(*it) &&
-                                std::get<2>(*(it - 1)) > std::get<2>(*it)) {
+                                std::get<1>(*(it - 1)).deg > std::get<1>(*it).deg) {
                                 std::iter_swap(it - 1, it);
                             }
                         }
@@ -922,23 +911,19 @@ class LevelwiseCAD : public OneCellCAD {
                         }
 
                         // Need no ldcf if it also appears on other side
-                        if (!lower2.empty()) {
-                            for (auto &element : upper2) {
-                                if (std::find_if(upper2.begin(), upper2.end(),
-                                                 [&](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(element).poly); }) !=
-                                    upper2.end()) {
-                                    noLdcf.emplace_back(std::get<1>(element).poly);
-                                }
+                        for (auto &element : lower2) {
+                            if (std::find_if(upper2.begin(), upper2.end(),
+                                             [&](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(element).poly); }) !=
+                                upper2.end()) {
+                                noLdcf.emplace_back(std::get<1>(element).poly);
                             }
                         }
 
-                        if (!upper2.empty()) {
-                            for (auto &element : lower2) {
-                                if (std::find_if(lower2.begin(), lower2.end(),
-                                                 [&](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(element).poly); }) !=
-                                    lower2.end()) {
-                                    noLdcf.emplace_back(std::get<1>(element).poly);
-                                }
+                         for (auto &element : upper2) {
+                            if (std::find_if(lower2.begin(), lower2.end(),
+                                             [&](auto const &t1) { return (std::get<1>(t1).poly == std::get<1>(element).poly); }) !=
+                                lower2.end()) {
+                                noLdcf.emplace_back(std::get<1>(element).poly);
                             }
                         }
 
@@ -982,15 +967,14 @@ class LevelwiseCAD : public OneCellCAD {
                                 }
                             }
 
-                            auto mark = lower2.rend();
-                            while (lower2.size() != 1) {
-                                auto cur = std::min_element(lower2.rbegin(), mark - 1,
+                            auto mark = lower2.rend()-1;
+                            while (mark != lower2.rbegin()) {
+                                auto cur = std::min_element(lower2.rbegin(), mark,
                                                             [](auto const &t1, auto const &t2) {
                                                                 return std::get<1>(t1).deg < std::get<1>(t2).deg;
                                                             });
 
-                                auto it = cur + 1;
-                                while (it != mark) {
+                                for (auto it = cur + 1; it != mark+1; it++) {
                                     resultants.emplace_back(std::get<1>(*cur).poly, std::get<1>(*it).poly);
                                     // Ldcfs of pols not necessary if they  are only connected to 1 pol AND also appear on the other side of  sample point
                                     if (std::find_if(upper2.begin(), upper2.end(),
@@ -998,7 +982,6 @@ class LevelwiseCAD : public OneCellCAD {
                                         upper2.end()) {
                                         noLdcf.emplace_back(std::get<1>(*it).poly);
                                     }
-                                    it++;
                                 }
 
                                 mark = cur;
@@ -1015,16 +998,15 @@ class LevelwiseCAD : public OneCellCAD {
                                 }
                             }
 
-                            auto mark = upper2.end();
-                            while (upper2.size() != 1) {
-                                auto cur = std::min_element(upper2.begin(), mark - 1,
+                            auto mark = upper2.end()-1;
+                            while (mark != upper2.begin()) {
+                                auto cur = std::min_element(upper2.begin(), mark,
                                                             [](auto const &t1, auto const &t2) {
                                                                 return std::get<1>(t1).deg <
                                                                        std::get<1>(t2).deg;
                                                             });
 
-                                auto it = cur + 1;
-                                while (it != upper2.end()) {
+                                for (auto it = cur + 1; it != mark+1; it++) {
                                     resultants.emplace_back(std::get<1>(*cur).poly, std::get<1>(*it).poly);
                                     // Ldcfs of pols not necessary if they  are only connected to 1 pol AND also appear on the other side of  sample point
                                     if (std::find_if(lower2.begin(), lower2.end(),
@@ -1032,7 +1014,6 @@ class LevelwiseCAD : public OneCellCAD {
                                         lower2.end()) {
                                         noLdcf.emplace_back(std::get<1>(*it).poly);
                                     }
-                                    it++;
                                 }
 
                                 mark = cur;

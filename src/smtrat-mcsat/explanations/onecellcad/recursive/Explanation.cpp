@@ -117,6 +117,7 @@ boost::optional<mcsat::Explanation> Explanation<Setting1,Setting2>::operator()(c
         for (int i = (int)projectionLevels.size()-1; i >= 0; i--){
             for(auto & tpoly : projectionLevels[i]){
                 tpoly.deg = getDegree(tpoly, fullProjectionVarOrder[i]);
+                SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Add level of poly: " << tpoly.deg);
             }
             std::sort(projectionLevels[i].begin(), projectionLevels[i].end(), [](auto const &t1, auto const &t2) {
                 return t1.deg < t2.deg;
@@ -127,6 +128,7 @@ boost::optional<mcsat::Explanation> Explanation<Setting1,Setting2>::operator()(c
         for (int i = (int)projectionLevels.size()-1; i >= 0; i--){
             for(auto & tpoly : projectionLevels[i]){
                 tpoly.deg = getDegree(tpoly, fullProjectionVarOrder[i]);
+                SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Add level of poly: " << tpoly.deg);
             }
             std::sort(projectionLevels[i].begin(), projectionLevels[i].end(), [](auto const &t1, auto const &t2) {
                 return t1.deg > t2.deg;
