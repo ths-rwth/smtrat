@@ -65,7 +65,7 @@ elif [[ ${TASK} == "getCarl" ]]; then
 		cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=AllModulesStrategy -D carl_DIR=/builds/ths/smt/carl/build ../ || return 1
 	elif curl -L --fail --output artifacts.zip --header "PRIVATE-TOKEN: ${TOKEN}" "${CARL_URL_DEVELOP}" ; then
 		mkdir -p /builds/ths/smt/carl/
-    	unzip -q artifacts.zip -d /builds/ths/smt/carl/
+    	unzip -o -q artifacts.zip -d /builds/ths/smt/carl/
 		#todo check for carl in build cache and remove it 
 		cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=AllModulesStrategy -D carl_DIR=/builds/ths/smt/carl/build ../ || return 1
 	else 
