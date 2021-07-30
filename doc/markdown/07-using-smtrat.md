@@ -91,7 +91,7 @@ While many SMT-RAT strategies employ certain preprocessing techniques, it is som
 ### Quantifier elimination {#quantifier-elimination}
 
 Instead of regular SMT solving, SMT-RAT can also perform quantifier elimination tasks as described in @cite Neuhaeuser2018.
-This technique is used when the SMTLIB file contains a `eliminate-quantifier` command like `(eliminate-quantifier (exists x y) (forall z))`.
+This technique is used when the SMTLIB file contains a `eliminate-quantifiers` command like `(eliminate-quantifiers (exists x y) (forall z))`.
 
 ### DIMACS solving {#dimacs-solving}
 
