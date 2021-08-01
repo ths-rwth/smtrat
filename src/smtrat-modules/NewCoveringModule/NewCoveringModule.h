@@ -11,14 +11,46 @@
 #include <smtrat-solver/Module.h>
 #include "NewCoveringSettings.h"
 
+//Import Datastructures used for caching etc.
+#include <smtrat-cadcells/datastructures/polynomials.h>
+#include <smtrat-cadcells/datastructures/projections.h>
+
+#include "Backend.h"
+
+//#include "../../smtrat-cadcells/datastructures/polynomials.h"
+
 namespace smtrat
 {
+
+	struct Helpers{
+		//Cache for Polynomials (the constraints) - Variable Ordering must be known before init
+		std::shared_ptr<smtrat::cadcells::datastructures::PolyPool> mPool ;
+
+		//Cache for polynomial computations
+		std::shared_ptr<smtrat::cadcells::datastructures::Projections> mProjections ;
+	} ;
+
 	template<typename Settings>
 	class NewCoveringModule : public Module
 	{
 		private:
-			// Members.
-			
+
+		//List of Polynomials not known in mPool
+		std::vector<carl::MultivariatePolynomial<mpq_class>> mPolynomials ;
+
+		//Set of all known Variables 
+		carl::carlVariables mVariables ;
+
+		//Variable Ordering, Initialized once in checkCore
+		std::vector<carl::Variable> mVariableOrdering ;
+
+		//Contains the last model which satisfied the given constraints
+		Model mLastModel ;
+
+		Helpers helpers ; 
+
+		Backend<Settings> backend ;
+
 		public:
 			using SettingsType = Settings;
 
