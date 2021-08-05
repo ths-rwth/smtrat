@@ -13,7 +13,7 @@
 #ifdef DEBUG_METHODS_TABLEAU
 //#define DEBUG_METHODS_LRA_MODULE
 #endif
-//#define DEBUG_LRA_MODULE
+//#define DEBUG_LRA_MODULE // this way no errors occur
 
 using namespace smtrat::lra;
 
@@ -321,7 +321,7 @@ namespace smtrat
 			}
         }
     }
-
+    
     template<class Settings>
     Answer LRAModule<Settings>::checkCore()
     {
@@ -342,16 +342,32 @@ namespace smtrat
 //        if( mTableau.isConflicting() )
 //            exit(77);
         assert( !mTableau.isConflicting() );
-        mTableau.setBlandsRuleStart( 1000 );//(unsigned) mTableau.columns().size() );
+        
+        mTableau.setBlandsRuleStart( 100 );//(unsigned) mTableau.columns().size() );
         mTableau.compressRows();
         mCheckedWithBackends = false;
-        for( ; ; )
-        {
+
+        // Nonbasic vars satisfy bound       
+
+        // update and pivot
+        #ifdef DEBUG_LRA_MODULE
+        mTableau.print(); mTableau.printVariables(); std::cout << "True" << std::endl;
+        #endif
+        while(true){
+            #ifdef DEBUG_LRA_MODULE
+            mTableau.print();
+            #endif 
             // Check whether a module which has been called on the same instance in parallel, has found an answer.
             if( anAnswerFound() )
                 return processResult( UNKNOWN );
             // Find a pivoting element in the tableau.
-            std::pair<EntryID,bool> pivotingElement = mTableau.nextPivotingElement();
+            if(Settings::use_SoI_simplex)
+                mTableau.setInfeasibilityRow();
+            std::pair<EntryID,bool> pivotingElement;
+            if(Settings::use_SoI_simplex)
+                pivotingElement = mTableau.nextPivotingElementInfeasibilities();
+            else
+                pivotingElement = mTableau.nextPivotingElement();
             #ifdef DEBUG_LRA_MODULE
             if( pivotingElement.second && pivotingElement.first != LAST_ENTRY_ID )
             {
@@ -359,11 +375,9 @@ namespace smtrat
             }
             #endif
             // If there is no conflict.
-            if( pivotingElement.second )
-            {
+            if(pivotingElement.second){
                 // If no basic variable violates its bounds (and hence no variable at all).
-                if( pivotingElement.first == lra::LAST_ENTRY_ID )
-                {
+                if( pivotingElement.first == lra::LAST_ENTRY_ID){
                     #ifdef DEBUG_LRA_MODULE
                     mTableau.print(); mTableau.printVariables(); std::cout << "True" << std::endl;
                     #endif
@@ -374,8 +388,10 @@ namespace smtrat
                     {
                         if( containsIntegerValuedVariables )
                         {
-                            if( branch_and_bound() )
+                            if( branch_and_bound() ){
+                                SMTRAT_LOG_DEBUG("smtrat", "Run in branch and bound");
                                 return processResult( UNKNOWN );
+                            }
                         }
                         return processResult( SAT );
                     }
@@ -385,15 +401,19 @@ namespace smtrat
                         mCheckedWithBackends = true;
                         adaptPassedFormula();
                         Answer a = runBackends();
-                        if( a == UNSAT )
+                        if( a == UNSAT ){
                             getInfeasibleSubsets();
+                        }
                         return processResult( a );
                     }
                 }
-                else
-                {
+                else{
                     // Pivot at the found pivoting entry.
+                    #ifdef DEBUG_LRA_MODULE
+                    auto oldVioSum = mTableau.violationSum();
+                    #endif
                     mTableau.pivot( pivotingElement.first );
+                    // update infeasibility row
                     #ifdef SMTRAT_DEVOPTION_Statistics
                     mStatistics.pivotStep();
                     #endif
@@ -402,6 +422,16 @@ namespace smtrat
                     // Maybe an easy conflict occurred with the learned bounds.
                     if( !mInfeasibleSubsets.empty() )
                         return processResult( UNSAT );
+                    if(Settings::use_SoI_simplex){
+                        #ifdef DEBUG_LRA_MODULE
+                        auto newVioSum = mTableau.violationSum();
+                        SMTRAT_LOG_DEBUG("smtrat", "newVioSum " << newVioSum << " oldVioSum " << oldVioSum << " dVio " << mTableau.get_dVioSum() );
+                        if(!mTableau.usedBlandsRule()){
+                            assert(newVioSum <= oldVioSum);
+                            assert(newVioSum == oldVioSum + mTableau.get_dVioSum());
+                        }
+                        #endif
+                    }
                 }
             }
             // There is a conflict, namely a basic variable violating its bounds without any suitable non-basic variable.
@@ -694,9 +724,19 @@ namespace smtrat
     template<class Settings>
     void LRAModule<Settings>::createInfeasibleSubsets( EntryID _tableauEntry )
     {
+        std::pair<EntryID,bool> conflictPair = mTableau.hasConflict();
         if( Settings::one_conflict_reason )
         {
-            std::vector< const LRABound* > conflict = mTableau.getConflict( _tableauEntry );
+            std::vector< const LRABound* > conflict;
+
+            if(!conflictPair.second){
+                SMTRAT_LOG_DEBUG("smtrat", "In simple creation");
+                conflict = mTableau.getConflict( _tableauEntry );
+            }
+            else{
+                SMTRAT_LOG_DEBUG("smtrat", "In multiline creation");
+                conflict = mTableau.getMultilineConflict();
+            }
             FormulaSetT infSubSet;
             for( auto bound = conflict.begin(); bound != conflict.end(); ++bound )
             {
@@ -707,17 +747,29 @@ namespace smtrat
         }
         else
         {
-            std::vector< std::vector< const LRABound* > > conflictingBounds = mTableau.getConflictsFrom( _tableauEntry );
+            std::vector< std::vector< const LRABound* > > conflictingBounds;
+            if(!conflictPair.second){
+                SMTRAT_LOG_DEBUG("smtrat", "In simple creation");
+                conflictingBounds = mTableau.getConflictsFrom( _tableauEntry );
+            }
+            else{
+                SMTRAT_LOG_DEBUG("smtrat", "In multiline creation");
+                assert(mTableau.hasMultilineConflict());
+                std::vector< const LRABound* > conflict = mTableau.getMultilineConflict();
+                conflictingBounds.push_back(conflict);
+            }
             for( auto conflict = conflictingBounds.begin(); conflict != conflictingBounds.end(); ++conflict )
             {
                 FormulaSetT infSubSet;
                 for( auto bound = conflict->begin(); bound != conflict->end(); ++bound )
                 {
                     assert( (*bound)->isActive() );
+                    SMTRAT_LOG_DEBUG("smtrat","collected for " << *(*bound)->origins().begin());
                     collectOrigins( *(*bound)->origins().begin(), infSubSet );
                 }
                 mInfeasibleSubsets.push_back( infSubSet );
             }
+        assert(!mInfeasibleSubsets.empty());
         }
     }
 
@@ -787,20 +839,20 @@ namespace smtrat
                 if( bound.type() != LRABound::Type::EQUAL )
                 {
                     mTheoryPropagations.emplace_back( std::move(FormulasT(subformulas)), bound.asConstraint() );
-//                    std::cout << "theory propagation [" << (_upperBound ? "upper" : "lower") << "]:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
+                    SMTRAT_LOG_DEBUG("smtrat", "theory propagation [" << (_upperBound ? "upper" : "lower") << "]:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion );
                 }
                 else if( premiseOnlyEqualities )
                 {
-//                    std::cout << _learnedBound.newLimit << " == " << bound.limit() << std::endl;
+                     SMTRAT_LOG_DEBUG("smtrat", _learnedBound.newLimit << " == " << bound.limit() );
                     if( _learnedBound.newLimit == bound.limit() )
                     {
                         mTheoryPropagations.emplace_back( std::move(FormulasT(subformulas)), bound.asConstraint() );
-//                        std::cout << "### theory propagation [" << (_upperBound ? "upper" : "lower") << "]:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
+                        SMTRAT_LOG_DEBUG("smtrat", "### theory propagation [" << (_upperBound ? "upper" : "lower") << "]:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion );
                     }
                     else
                     {
                         mTheoryPropagations.emplace_back( std::move(FormulasT(subformulas)), bound.asConstraint().negated() );
-//                        std::cout << "### theory propagation [" << (_upperBound ? "upper" : "lower") << "]:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
+                        SMTRAT_LOG_DEBUG("smtrat", "### theory propagation [" << (_upperBound ? "upper" : "lower") << "]:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion );
                     }
                 }
             }
@@ -815,19 +867,19 @@ namespace smtrat
             if( nextWeakerBound.type() != LRABound::Type::EQUAL )
             {
                 mTheoryPropagations.emplace_back( std::move(subformulas), nextWeakerBound.asConstraint() );
-//                std::cout << "theory propagation [" << (_upperBound ? "upper" : "lower") << "]:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
+                SMTRAT_LOG_DEBUG("smtrat", "theory propagation [" << (_upperBound ? "upper" : "lower") << "]:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion );
             }
             else if( premiseOnlyEqualities )
             {
                 if( _learnedBound.newLimit == nextWeakerBound.limit() )
                 {
                     mTheoryPropagations.emplace_back( std::move(FormulasT(subformulas)), nextWeakerBound.asConstraint() );
-//                        std::cout << "### theory propagation [" << (_upperBound ? "upper" : "lower") << "]:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
+                    SMTRAT_LOG_DEBUG("smtrat", "### theory propagation [" << (_upperBound ? "upper" : "lower") << "]:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion );
                 }
                 else
                 {
                     mTheoryPropagations.emplace_back( std::move(FormulasT(subformulas)), nextWeakerBound.asConstraint().negated() );
-//                        std::cout << "### theory propagation [" << (_upperBound ? "upper" : "lower") << "]:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion << std::endl;
+                    SMTRAT_LOG_DEBUG("smtrat", "### theory propagation [" << (_upperBound ? "upper" : "lower") << "]:  " << mTheoryPropagations.back().mPremise << " => " << mTheoryPropagations.back().mConclusion );
                 }
             }
         }
@@ -1259,7 +1311,7 @@ namespace smtrat
                 setBound( constraint );
             }
 //            mTableau.setSize( mTableau.slackVars().size(), mTableau.originalVars().size(), mLinearConstraints.size() );
-            mTableau.setBlandsRuleStart( 1000 );//(unsigned) mTableau.columns().size() );
+            mTableau.setBlandsRuleStart( 100 );
         }
     }
 

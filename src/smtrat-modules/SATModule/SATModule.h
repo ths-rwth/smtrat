@@ -1638,7 +1638,7 @@ namespace smtrat
 				if (Settings::mc_sat) {
 					int tl = mMCSAT.decisionLevel(x);
 					SMTRAT_LOG_DEBUG("smtrat.sat", "Theory level of " << x << " is " << tl);
-					if (level(x) >= 0) return std::min(level(x), tl);
+					if (bool_value(x) != l_Undef && level(x) >= 0) return std::min(level(x), tl);
 					return tl;
 				} else {
 					return level(x);

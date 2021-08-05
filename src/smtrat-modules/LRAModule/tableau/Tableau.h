@@ -11,6 +11,7 @@
 #include <stack>
 #include <map>
 #include <deque>
+#include <limits>
 #include "Variable.h"
 #include <carl/util/IDPool.h>
 
@@ -264,6 +265,8 @@ namespace smtrat
                 std::vector<Variable<T1,T2>*> mConflictingRows;
                 ///
                 Value<T1>* mpTheta;
+                ///
+                bool onlyUpdate = false;
                 /// 
                 mutable T1 mCurDelta;
                 ///
@@ -278,6 +281,16 @@ namespace smtrat
                 carl::FastPointerMap<Variable<T1,T2>, LearnedBound> mLearnedUpperBounds;
                 ///
                 std::vector<typename carl::FastPointerMap<Variable<T1,T2>, LearnedBound>::iterator> mNewLearnedBounds;
+
+                // Helper variables used to controll changes in violation sum and throw assertions
+                Value<T1> mOldVioSum = Value<T1>(-1); // stored violation sum
+                Value<T1> mOld_dVioSum = Value<T1>(1);// stored change in violation sum -> new violation sum == old violation sum + dVio
+
+                // Locally stored infeasibility row to prevent recomputation is every loop.
+                std::vector<T2> mInfeasibilityRow;
+
+                // Const after when the canidate search is dynamically adjusted
+                std::size_t mFullCandidateSearch = 3;
 
                 /**
                  *
@@ -650,12 +663,106 @@ namespace smtrat
                  * 
                  */
                 void compressRows();
+
+                /**
+                 * Returns true, if the next pivoting element is selected by blands rule. 
+                 */
+                bool usedBlandsRule();
+
+                /**
+                 * @return In SUM-Simplex a conflict is possibly created with multiple rows. 
+                 * This function returns true iff the multi-conflict settings occured.
+                 */
+                bool hasMultilineConflict();
+
+                /**
+                 * @return In SUM-Simplex a conflict is possibly created with multiple rows. 
+                 * This function returns the single conflict if possible and otherwise construct the multiline conflict.
+                 */
+                std::vector< const Bound<T1, T2>* > getMultilineConflict();
                 
                 /**
                  * 
                  * @return 
                  */
                 std::pair<EntryID, bool> nextPivotingElement();
+
+                /**
+                 * Method to compute the sum of derivations to the closest bounds.
+                 */
+                Value<T1> violationSum();
+                
+                /**
+                 * Computes the change in the violation sum when an the update value is added to the assignment of the nonbassi variable nVar.
+                 * @param nVar variable to be updated
+                 * @param update Update value
+                 */
+                Value<T1> dViolationSum(const Variable<T1, T2>* nVar, const Value<T1>& update);
+
+                /**
+                 * Used as assertion-function to check the progress of the tableau.
+                 */
+                Value<T1> get_dVioSum(){
+                    return mOld_dVioSum;
+                }
+
+                /**
+                 * Updated Method to computed dVio more efficienlty. For this the fact is used, that VioSum is piecewise linear (the proof can be found in the SoI paper).
+                 * @param candidates Update candidates, IMPORTANT: Must be sorted with an stabloe sorting algorithm
+                 * @param nVar The updated nonbasic variable
+                 * @param positive Whether the positve or negative update values are checked
+                 */
+                std::map<Value<T1>, Value<T1>> compute_dVio(const std::vector< std::pair< Value<T1>, Variable<T1,T2>* > >& candidates, const Variable<T1,T2>& nVar, bool positive);
+
+				/**
+				 * Method for next pivoting element according to "Simplex with Sum of Infeasibilities for SMT" by Tim King and Clark Barrett. 
+                 * Herefore, one counts the vialation of every bound and searches for elements who minimize the violation sum of the next iteration.
+				 * @return
+				 */
+				std::pair<EntryID, bool> nextPivotingElementInfeasibilities();
+
+                /**
+                * Helper method to compute leavind candidates used in nextPivotingElementInfeasibilities.
+                * Computes for every non-basic variable the breaking points. 
+                * Updates from non-basic vars of 0 are omitted to prevent loops.
+                * @param i : Index if entering (nonbasic ) variable.
+                * @param leaving_candidates : Used as storage object for update candidates.
+                */
+                void computeLeavingCandidates(const int& i, std::vector< std::pair< Value<T1>, Variable<T1,T2>* > >& leaving_candidates);
+                
+                /**
+                 * Updates a nonbasic variable by the assignment stored in mpTheta and triggers updates of depending basic variables. 
+                 * @param _pivotingElement Element in the row of the nonbasic variable
+                 */
+                void updateNonbasicVariable(EntryID _pivotingElement);
+
+                /**
+                 * Updates a nonbasic variable by the given assignment and triggers updates of depending basic variables. 
+                 * @param _pivotingElement Element in the row of the nonbasic variable
+                 * @param update Update Value of non-basic var
+                 */
+                void updateNonbasicVariable(EntryID _pivotingElement, Value<T1> update);
+
+                /**
+                 * Checks if a conflicting pair exists. In a conflict is found, the cell and false is returned. If not, LAST_ENTRY_ID and true is returned.
+                 */
+                std::pair<EntryID,bool> hasConflict();
+
+                void printEntries(){
+                    for(auto h: *mpEntries){
+                        std::cout <<h.content()<< '\n';
+                    }
+                }
+                
+                /**
+                 * Method to compute the infeasibility row to the current tableau. 
+                 */
+                std::vector<T2> getInfeasibilityRow();
+
+                /**
+                 * Method to set the initital infeasibility row to avoid recomputation in every round.
+                 */
+                void setInfeasibilityRow();
                 
                 /**
                  * 
@@ -678,6 +785,16 @@ namespace smtrat
                  * @return 
                  */
                 EntryID isSuitable( const Variable<T1, T2>& _basicVar, bool _forIncreasingAssignment ) const;
+
+                /**
+                 * Checks if the basic variable is pivotable.
+                 * Returns LAST_ENTRY_ID as EntryID if a conflict was found. In difference to isSuitable returns this function an EntryID as soon as 
+                 * the EntryID bestEntry is unequal to LAST_ENTRY_ID. The assertions are still checked.  
+                 * @param _basicVar
+                 * @param _forIncreasingAssignment
+                 * @return 
+                 */
+                EntryID isSuitableConflictDetection( const Variable<T1, T2>& _basicVar, bool _forIncreasingAssignment ) const;
                 
                 /**
                  * 

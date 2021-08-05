@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE(OneCellCadBug) {
   bookkeeping.pushConstraint(f1);
   bookkeeping.pushConstraint(f2);
   bookkeeping.pushAssignment(b, Rational(-1), FormulaT(carl::FormulaType::TRUE));
-  ::smtrat::mcsat::onecellcad::Explanation expl;
+  ::smtrat::mcsat::onecellcad::recursive::Explanation<onecellcad::recursive::CoverNullification> expl;
   auto explanation = expl(bookkeeping, x, FormulasT({f1,f2}));
 
 
