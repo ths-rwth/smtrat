@@ -83,7 +83,6 @@ private:
 						if (Settings::reduceConflictConstraints) {
 							carl::ModelValue<Rational,Poly> eval = carl::model::evaluate(substitutionResult, mModel);
 							// If constraint is not fully evaluated or evaluates to false, we take it in.
-							std::cout << substitutionResult << " " << mModel << " " << eval.isBool() << " " << eval.asBool() << std::endl;
 							if (!eval.isBool() || !eval.asBool()) {
 								SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Use constraint " << constr << " for explanation");
 							}					
@@ -108,7 +107,6 @@ private:
 				
 				res.emplace_back(carl::FormulaType::AND, std::move(branch));
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution of " << tc.term << " into formula obtained " << res.back());
-				if (res.back() == FormulaT(carl::FormulaType::TRUE)) std::exit(124);
 				assert(res.back() != FormulaT(carl::FormulaType::TRUE));
 			}
 
