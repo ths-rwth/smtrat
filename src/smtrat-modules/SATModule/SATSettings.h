@@ -204,6 +204,14 @@ struct SATSettingsMCSATFMICPVSOCLWH13 : SATSettingsMCSAT {
 	static constexpr auto muduleName = "SATModule<MCSATFMICPVSOCLWH13>";
 	using MCSATSettings = mcsat::MCSATSettingsFMICPVSOCLWH13;
 };
+struct SATSettingsMCSATFMICPVSOCNNASC : SATSettingsMCSAT {
+    static constexpr auto muduleName = "SATModule<MCSATFMICPVSOCNNASC>";
+    using MCSATSettings = mcsat::MCSATSettingsFMICPVSOCNNASC;
+};
+struct SATSettingsMCSATFMICPVSOCNNDSC : SATSettingsMCSAT {
+    static constexpr auto muduleName = "SATModule<MCSATFMICPVSOCNNDSC>";
+    using MCSATSettings = mcsat::MCSATSettingsFMICPVSOCNNDSC;
+};
 struct SATSettingsMCSATFMICPVSOCPARALLEL : SATSettingsMCSAT {
     static constexpr auto muduleName = "SATModule<MCSATFMICPVSOCPARALLEL>";
     using MCSATSettings = mcsat::MCSATSettingsFMICPVSOCPARALLEL;

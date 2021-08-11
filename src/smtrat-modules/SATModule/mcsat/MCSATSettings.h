@@ -90,6 +90,18 @@ struct MCSATSettingsFMICPVSOCLWH13 {
 	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,icp::Explanation,vs::Explanation,
 	                                onecellcad::levelwise::Explanation<onecellcad::levelwise::SectionHeuristic1,onecellcad::levelwise::SectorHeuristic3>, nlsat::Explanation>;
 };
+struct MCSATSettingsFMICPVSOCNNASC {
+    using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+    //using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
+    using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,icp::Explanation,vs::Explanation,
+            onecellcad::recursive::Explanation<onecellcad::recursive::DontCoverNullification, onecellcad::recursive::DegreeAscending>, nlsat::Explanation>;
+};
+struct MCSATSettingsFMICPVSOCNNDSC {
+    using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+    //using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
+    using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,icp::Explanation,vs::Explanation,
+            onecellcad::recursive::Explanation<onecellcad::recursive::DontCoverNullification, onecellcad::recursive::DegreeDescending>, nlsat::Explanation>;
+};
 struct MCSATSettingsFMICPVSOCPARALLEL {
     using AssignmentFinderBackend = arithmetic::AssignmentFinder;
     //using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
