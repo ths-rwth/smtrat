@@ -2350,8 +2350,8 @@ namespace smtrat
             {
                 assert( rf.formula().getType() == carl::FormulaType::CONSTRAINT );
                 const ConstraintT& cons = rf.formula().constraint();
-                assert( !cons.lhs().isLinear() || cons.relation() == carl::Relation::NEQ || cons.satisfiedBy( sol ) == 1 );
-                if( (!cons.lhs().isLinear() || cons.relation() == carl::Relation::NEQ) && cons.satisfiedBy( sol ) != 1 )
+                assert( !cons.lhs().isLinear() || cons.relation() == carl::Relation::NEQ || satisfiedBy( cons,sol ) == 1 );
+                if( (!cons.lhs().isLinear() || cons.relation() == carl::Relation::NEQ) && satisfiedBy( cons,sol ) != 1 )
                 {
                     solutionFound = false;
                     break;

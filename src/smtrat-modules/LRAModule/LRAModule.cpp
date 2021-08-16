@@ -1336,8 +1336,8 @@ namespace smtrat
                     ConstraintT gomory_constr = ConstraintT( *gomory_poly , carl::Relation::GEQ );
                     ConstraintT neg_gomory_constr = ConstraintT( *gomory_poly - carl::evaluate(*gomory_poly, rMap_ ), carl::Relation::LESS );
                     //std::cout << gomory_constr << std::endl;
-                    assert( !gomory_constr.satisfiedBy( rMap_ ) );
-                    assert( !neg_gomory_constr.satisfiedBy( rMap_ ) );
+                    assert( !satisfiedBy( gomory_constr, rMap_ ) );
+                    assert( !satisfiedBy( neg_gomory_constr, rMap_ ) );
                     FormulasT subformulas;
                     mTableau.collect_premises( basicVar, subformulas );
                     FormulasT premisesOrigins;
