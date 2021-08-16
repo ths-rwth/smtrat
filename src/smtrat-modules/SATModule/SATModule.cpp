@@ -428,13 +428,13 @@ namespace smtrat
                 }
                 if( mBooleanConstraintMap[pos].first != nullptr )
                 {
-                    act /= (double)complexity(mBooleanConstraintMap[pos].first->reabstraction);
+                    act /= (double)mBooleanConstraintMap[pos].first->reabstraction.complexity();
                 }
                 else
                 {
                     auto tvfIter = mTseitinVarFormulaMap.find( pos );
                     if( tvfIter != mTseitinVarFormulaMap.end() )
-                        act /= (double)complexity(tvfIter->second);
+                        act /= (double)tvfIter->second.complexity();
                 }
                 if( act > highestActivity )
                     highestActivity = act;

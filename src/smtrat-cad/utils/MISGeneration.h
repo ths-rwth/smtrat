@@ -4,6 +4,7 @@
 #include "../common.h"
 
 #include <carl-covering/carl-covering.h>
+#include <carl/core/polynomialfunctions/Complexity.h>
 
 namespace smtrat {
 namespace cad {
@@ -84,7 +85,7 @@ namespace cad {
 			[](const ConstraintT& c){
 				constexpr double constant_weight   = 10.0;
 				constexpr double complexity_weight = 0.1;
-				return constant_weight + complexity_weight * c.complexity();
+				return constant_weight + complexity_weight * complexity(c);
 			}, 12
 		);
 		SMTRAT_LOG_DEBUG("smtrat.mis", "After greedy: " << covering << std::endl << cov);
@@ -131,7 +132,7 @@ namespace cad {
 			[](const ConstraintT& c){
 				constexpr double constant_weight   = 5.0;
 				constexpr double complexity_weight = 0.1;
-				return constant_weight + complexity_weight * c.complexity();
+				return constant_weight + complexity_weight * complexity(c);
 			}
 		);
 
