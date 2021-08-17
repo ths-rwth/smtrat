@@ -9,6 +9,8 @@
 #include "ESModule.h"
 #include <smtrat-solver/Manager.h>
 
+#include <carl/core/polynomialfunctions/Substitution_Constraint.h>
+
 namespace smtrat
 {
     template<class Settings>
@@ -137,14 +139,13 @@ namespace smtrat
                             }
                             else if( tmp.getType() != carl::FormulaType::TRUE )
                             {
-                                carl::Variable subVar;
-                                Poly subPoly;
-                                if( tmp.constraint().getSubstitution( subVar, subPoly, false, objective() ) )
+                                auto subs = carl::get_substitution(tmp.constraint(), false, objective());
+                                if( subs )
                                 {
-									if (subVar != objective()) {
-										SMTRAT_LOG_INFO("smtrat.es", "found substitution [" << subVar << " -> " << subPoly << "]");
-										assert( mArithSubs.find( subVar ) == mArithSubs.end() );
-										addedArithSubs.push_back( mArithSubs.emplace( subVar, subPoly ).first );
+									if (subs->first != objective()) {
+										SMTRAT_LOG_INFO("smtrat.es", "found substitution [" << subs->first << " -> " << subs->second << "]");
+										assert( mArithSubs.find( subs->first ) == mArithSubs.end() );
+										addedArithSubs.push_back( mArithSubs.emplace( subs->first, subs->second ).first );
 										foundSubstitutions.insert( tmp );
 										foundNewSubstitution = true;
 									}
@@ -242,15 +243,14 @@ namespace smtrat
                 FormulaT cond = elimSubstitutions( _formula.condition() );
                 if( cond.getType() == carl::FormulaType::CONSTRAINT )
                 {
-                    carl::Variable subVar;
-                    Poly subPoly;
-                    if( cond.constraint().getSubstitution( subVar, subPoly, false ) )
+                    auto subs = carl::get_substitution(cond.constraint(), false);
+                    if( subs )
                     {
-                        SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found substitution [" << subVar << " -> " << subPoly << "]" );
+                        SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found substitution [" << subs->first << " -> " << subs->second << "]" );
                         auto addedBoolSub = cond.getType() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), false ) : mBoolSubs.emplace( cond, true );
                         SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]");
                         assert( addedBoolSub.second );
-                        auto iterB = mArithSubs.emplace( subVar, subPoly ).first;
+                        auto iterB = mArithSubs.emplace( subs->first, subs->second ).first;
                         FormulaT firstCaseTmp = elimSubstitutions( _formula.firstCase() );
                         mArithSubs.erase( iterB );
                         mBoolSubs.erase( addedBoolSub.first );
@@ -262,23 +262,27 @@ namespace smtrat
                         result = FormulaT( carl::FormulaType::ITE, {cond, firstCaseTmp, secondCaseTmp} );
                         break;
                     }
-                    else if( cond.constraint().getSubstitution( subVar, subPoly, true ) )
+                    else
                     {
-                        SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found substitution [" << subVar << " -> " << subPoly << "]" );
-                        auto addedBoolSub = cond.getType() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), false ) : mBoolSubs.emplace( cond, true );
-                        SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" );
-                        assert( addedBoolSub.second );
-                        FormulaT firstCaseTmp = elimSubstitutions( _formula.firstCase() );
-                        mBoolSubs.erase( addedBoolSub.first );
-                        addedBoolSub = cond.getType() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), true ) : mBoolSubs.emplace( cond, false );
-                        SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" );
-                        assert( addedBoolSub.second );
-                        auto iterB = mArithSubs.emplace( subVar, subPoly ).first;
-                        FormulaT secondCaseTmp = elimSubstitutions( _formula.secondCase() );
-                        mArithSubs.erase( iterB );
-                        mBoolSubs.erase( addedBoolSub.first );
-                        result = FormulaT( carl::FormulaType::ITE, {cond, firstCaseTmp, secondCaseTmp} );
-                        break;
+                        subs = carl::get_substitution(cond.constraint(), true);
+                        if( subs )
+                        {
+                            SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found substitution [" << subs->first << " -> " << subs->second << "]" );
+                            auto addedBoolSub = cond.getType() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), false ) : mBoolSubs.emplace( cond, true );
+                            SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" );
+                            assert( addedBoolSub.second );
+                            FormulaT firstCaseTmp = elimSubstitutions( _formula.firstCase() );
+                            mBoolSubs.erase( addedBoolSub.first );
+                            addedBoolSub = cond.getType() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), true ) : mBoolSubs.emplace( cond, false );
+                            SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" );
+                            assert( addedBoolSub.second );
+                            auto iterB = mArithSubs.emplace( subs->first, subs->second ).first;
+                            FormulaT secondCaseTmp = elimSubstitutions( _formula.secondCase() );
+                            mArithSubs.erase( iterB );
+                            mBoolSubs.erase( addedBoolSub.first );
+                            result = FormulaT( carl::FormulaType::ITE, {cond, firstCaseTmp, secondCaseTmp} );
+                            break;
+                        }
                     }
                 }
                 if( cond.isTrue() )

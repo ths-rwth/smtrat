@@ -4,6 +4,8 @@
 
 #include <algorithm>
 
+#include <carl/core/polynomialfunctions/Substitution_Constraint.h>
+
 namespace smtrat::cad {
 
 void Preprocessor::apply_assignments(const ConstraintT& c) {
@@ -53,26 +55,30 @@ bool Preprocessor::try_variable_elimination(const ConstraintT& cur) {
 	Rational r;
 	Poly p;
 	bool foundAssignment = false;
-	if (cur.getAssignment(v, r)) {
-		auto mit = mModel.find(v);
+	auto assignment = carl::get_assignment(cur);
+	if (assignment) {
+		auto mit = mModel.find(assignment->first);
 		if (mit != mModel.end()) {
-			assert(mModel.at(v).isRational() && mModel.at(v).asRational() == r);
+			assert(mModel.at(assignment->first).isRational() && mModel.at(assignment->first).asRational() == assignment->second);
 			return false;
 		}
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Newly extracted " << v << " = " << r);
-		mModel.emplace(v, r);
-		mAssignments.emplace(cur, v);
+		mModel.emplace(assignment->first, assignment->second);
+		mAssignments.emplace(cur, assignment->first);
 		foundAssignment = true;
-	} else if (cur.getSubstitution(v, p)) {
-		auto mit = mModel.find(v);
-		if (mit != mModel.end()) {
-			return false;
+	} else {
+		auto substitution = carl::get_substitution(cur);
+		if (substitution) {
+			auto mit = mModel.find(substitution->first);
+			if (mit != mModel.end()) {
+				return false;
+			}
+			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Newly extracted " << substitution->first << " = " << substitution->second);
+			mModel.emplace(substitution->first, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>(substitution->second));
+			mAssignments.emplace(cur, substitution->first);
+			foundAssignment = true;
 		}
-		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Newly extracted " << v << " = " << p);
-		mModel.emplace(v, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>(p));
-		mAssignments.emplace(cur, v);
-		foundAssignment = true;
-	}
+	} 
 	if (foundAssignment) {
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Simplifying with new assignment");
 		std::vector<ConstraintT> toAdd;
