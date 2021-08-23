@@ -14,21 +14,16 @@
 //Import Datastructures used for caching etc.
 #include <smtrat-cadcells/datastructures/polynomials.h>
 #include <smtrat-cadcells/datastructures/projections.h>
+#include <smtrat-cadcells/datastructures/roots.h>
+#include <smtrat-cadcells/datastructures/derivation.h>
 
+#include "CoveringUtils.h"
+#include "PolyRefVector.h"
 #include "Backend.h"
 
-//#include "../../smtrat-cadcells/datastructures/polynomials.h"
 
 namespace smtrat
 {
-
-	struct Helpers{
-		//Cache for Polynomials (the constraints) - Variable Ordering must be known before init
-		std::shared_ptr<smtrat::cadcells::datastructures::PolyPool> mPool ;
-
-		//Cache for polynomial computations
-		std::shared_ptr<smtrat::cadcells::datastructures::Projections> mProjections ;
-	} ;
 
 	template<typename Settings>
 	class NewCoveringModule : public Module
@@ -37,6 +32,9 @@ namespace smtrat
 
 		//List of Polynomials not known in mPool
 		std::vector<carl::MultivariatePolynomial<mpq_class>> mPolynomials ;
+
+		//Ordered List of Polynomials in mPool 
+		std::vector<PolyRefVector> mKnownPolynomials ;
 
 		//Set of all known Variables 
 		carl::carlVariables mVariables ;
@@ -108,5 +106,6 @@ namespace smtrat
 			 *		 Unknown, otherwise.
 			 */
 			Answer checkCore();
+
 	};
 }

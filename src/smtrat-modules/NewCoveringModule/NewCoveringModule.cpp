@@ -63,44 +63,58 @@ Answer NewCoveringModule<Settings>::checkCore() {
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Dimensions dont match -> make new variable ordering: " << mVariableOrdering);
 
-
-		// 	//init PolyPool
+		//init PolyPool
 		helpers.mPool = std::make_shared<smtrat::cadcells::datastructures::PolyPool>(mVariableOrdering);
 		helpers.mProjections = std::make_shared<smtrat::cadcells::datastructures::Projections>(*helpers.mPool);
 
 		//TODO: add move operator
 		for (const carl::MultivariatePolynomial<mpq_class>& poly : mPolynomials) {
-			helpers.mPool->insert(poly);
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Converting Poly: " << poly);
+			auto ref = helpers.mPool->insert(poly);
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Got: " << ref);
+
+			//Todo: lowest level is 1 but vectors start at 0
+			if (ref.level > mKnownPolynomials.size()) {
+				mKnownPolynomials.resize(ref.level);
+			}
+
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Found : " << mKnownPolynomials);
+
+			mKnownPolynomials[ref.level - 1].add(ref);
 		}
 		mPolynomials.clear();
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Initialised PolyPool");
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Initialised Projections");
 
+		//pass Helpers to Backend
+		backend.setHelpers(helpers);
+
+		//prune redundant polynomials
+		for (auto& polys : mKnownPolynomials) {
+			polys.reduce();
+		}
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Found after pruning : " << mKnownPolynomials);
+		//pass polynomials and variables to backend
+		backend.setConstraints(mKnownPolynomials);
+		backend.setVariableOrdering(mVariableOrdering);
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Got Ordering: " << helpers.mPool->var_order());
 
-	} else if(backend.dimension() != mVariables.size()){
-		//Due to an incremental call, we have more Variable than before and are out of sync with the backend and the Helpers
+	} else if (backend.dimension() != mVariables.size()) {
+		//This is an incremental call, we have more Variable than before and are out of sync with the backend and the Helpers
+		//Add unknown polynomials to PolyPool
 
 		//TODO: Change Var ordering in PolyPool
+		assert(false);
 	}
 
 	else {
-		//This is either an incremental call or a backtracking call
+		//This is either an incremental call or a backtracking call but the set of known variables is the same
 		//Add unknown polynomials to PolyPool
-		//TODO: add move operator
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Insert " << mPolynomials << " into PolyPool");
-
-		for (const carl::MultivariatePolynomial<mpq_class>& poly : mPolynomials) {
-			helpers.mPool->insert(poly) ;
-		}
-
-		mPolynomials.clear();
+		
+		assert(false);
 	}
-	
-	
 
-	return Answer::UNKNOWN; // This should be adapted according to your implementation.
+	//Todo: Update model accordingly
+	return backend.getUnsatCover(0);
 }
 } // namespace smtrat
 
