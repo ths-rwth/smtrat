@@ -23,7 +23,7 @@ namespace smtrat::cadcells::datastructures {
         CellRepresentation(SampledDerivation<P>& deriv) : derivation(deriv) {}
     };
     template<typename P>
-    std::ostream& operator<<(std::ostream& os, const CellRepresentation<P>& data) {
+    inline std::ostream& operator<<(std::ostream& os, const CellRepresentation<P>& data) {
         os << "(cell: " << data.description << "; ordering: " << data.ordering << "; equational: " << data.equational << "; derivation: " << &data.derivation << ")";
         return os;
     }
@@ -83,7 +83,7 @@ namespace smtrat::cadcells::datastructures {
         }
     };
     template<typename P>
-    std::ostream& operator<<(std::ostream& os, const CoveringRepresentation<P>& data) {
+    inline std::ostream& operator<<(std::ostream& os, const CoveringRepresentation<P>& data) {
         os << data.cells;
         return os;
     }
