@@ -3,6 +3,8 @@
 #include <optional>
 
 #include <carl/ran/ran.h>
+#include <carl/interval/operators.h> //Operators to compare the bounds
+
 
 #include "PolyRefVector.h"
 
@@ -11,13 +13,24 @@ namespace smtrat {
 //RAN, with rational coefficients
 using RAN = carl::RealAlgebraicNumber<mpq_class>;
 
+//If the number is not set infty is assumed
+struct LowerBound{
+	std::optional<RAN> number ;
+	bool isOpen ;
+} ;
+
+struct UpperBound{
+	std::optional<RAN> number ;
+	bool isOpen ;
+} ;
 
 //Todo: add bound types -> maybe use carl::Interval 
 //Todo: carl::Interval can not have RAN as bounds?
+//Use carl::LowerBound and carl::UpperBound?
 struct CellInformation {
 	//If not set, infinite is assumed
-	std::optional<RAN> mLowerBound;
-	std::optional<RAN> mUpperBound;
+	LowerBound mLowerBound;
+	UpperBound mUpperBound;
 
 	//Polynomials in main variable (corresponds to the level in the variable ordering)
 	PolyRefVector mMainPolys;

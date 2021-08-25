@@ -134,13 +134,14 @@ public:
 			for (const auto& mainPoly : cell.mMainPolys) {
 				result.add(helpers.mProjections->disc(mainPoly)); //Algo line 6
 				result.add(requiredCoefficients(mainPoly));		  //Algo line 7
+				//Todo check if bounds are +- infty
 				for (const auto& lowerReasonPoly : cell.mLowerPolys) {
-					if (hasRootBelow(lowerReasonPoly, cell.mLowerBound.value())) {
+					if (hasRootBelow(lowerReasonPoly, cell.mLowerBound.number.value())) {
 						result.add(helpers.mProjections->res(mainPoly, lowerReasonPoly)); //Algo line 8
 					}
 				}
 				for (const auto& upperReasonPoly : cell.mUpperPolys) {
-					if (hasRootAbove(upperReasonPoly, cell.mUpperBound.value())) {
+					if (hasRootAbove(upperReasonPoly, cell.mUpperBound.number.value())) {
 						result.add(helpers.mProjections->res(mainPoly, upperReasonPoly)); //Algo line 9
 					}
 				}
@@ -187,7 +188,7 @@ public:
 		if (tmp_u != roots.end()) {
 			u = *tmp_u;
 		}
-		//todo make special case for u = l != +-infty
+
 		if (l) { //if l is not -infty
 			mCurrentAssignment[mVariableOrdering[level]] = l.value();
 			for (const auto& poly : main) {
@@ -197,19 +198,34 @@ public:
 			}
 			mCurrentAssignment.erase(mVariableOrdering[level]);
 		}
-		if (u) { //if u is not infty
-			mCurrentAssignment[mVariableOrdering[level]] = u.value();
-			for (const auto& poly : main) {
-				if (helpers.mProjections->is_zero(mCurrentAssignment, poly)) {
 
-					upperReasons.add(poly);
+		if (u) { //if u is not infty
+			if (l && l.value() == u.value()) {
+				//special case for u = l != +-infty
+				upperReasons = lowerReasons;
+				return CellInformation{LowerBound{l.value(), false}, UpperBound{l.value(), false}, main, bottom, lowerReasons, upperReasons};
+			} else {
+				mCurrentAssignment[mVariableOrdering[level]] = u.value();
+				for (const auto& poly : main) {
+					if (helpers.mProjections->is_zero(mCurrentAssignment, poly)) {
+
+						upperReasons.add(poly);
+					}
 				}
+				mCurrentAssignment.erase(mVariableOrdering[level]);
 			}
-			mCurrentAssignment.erase(mVariableOrdering[level]);
 		}
 
-		//Todo make more specific
-		return CellInformation{l, u, main, bottom, lowerReasons, upperReasons};
+		if (!u && !l) {
+			return CellInformation{LowerBound{std::nullopt, true}, UpperBound{std::nullopt, true}, main, bottom, lowerReasons, upperReasons};
+		}
+		if (!u) {
+			return CellInformation{LowerBound{l.value(), true}, UpperBound{std::nullopt, true}, main, bottom, lowerReasons, upperReasons};
+		}
+		if (!l) {
+			return CellInformation{LowerBound{std::nullopt, true}, UpperBound{u.value(), true}, main, bottom, lowerReasons, upperReasons};
+		}
+		return CellInformation{LowerBound{l.value(), true}, UpperBound{u.value(), true}, main, bottom, lowerReasons, upperReasons};
 	}
 
 	//TODO: Use substitute instead of evaluate!
@@ -220,7 +236,7 @@ public:
 		carl::Variable mainVar = mVariableOrdering[level];
 		assert(mCurrentAssignment.count(mainVar) == 0);
 		for (const auto& constraint : mConstraints[level]) {
-			SMTRAT_LOG_DEBUG("smtrat.covering", "Current constraint: " << constraint << " ;  Current assignment: " << mCurrentAssignment);
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Current constraint: " << helpers.mPool->get(constraint) << " ;  Current assignment: " << mCurrentAssignment);
 			//Note: Roots are sorted in ascending order
 			std::vector<RAN> roots = helpers.mProjections->real_roots(mCurrentAssignment, constraint);
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Found roots: " << roots);
@@ -240,7 +256,7 @@ public:
 					continue; //Algo line 9
 				} else {
 					//False case ;
-					result.push_back(CellInformation{std::nullopt, std::nullopt, {constraint}, {}, {}, {}});
+					result.push_back(CellInformation{LowerBound{std::nullopt, true}, UpperBound{std::nullopt, true}, {constraint}, {}, {}, {}});
 					return result; //Algo line 7
 				}
 				if (wasSet) {
@@ -256,7 +272,7 @@ public:
 
 			bool wasSet = mCurrentAssignment.count(mainVar) != 0;
 			RAN oldValue;
-			RAN value ;
+			RAN value;
 			if (wasSet) {
 				oldValue = mCurrentAssignment[mainVar];
 			}
@@ -266,7 +282,8 @@ public:
 			value = carl::evaluate(helpers.mPool->get(constraint), mCurrentAssignment).value();
 			if (!carl::compare(value, mpq_class(0), carl::Relation::GEQ)) {
 				//If constraint evaluates to false
-				result.push_back(CellInformation{std::nullopt, roots.front(), {constraint}, {}, {}, {constraint}});
+				result.push_back(CellInformation{LowerBound{std::nullopt, true}, UpperBound{roots.front(), true}, {constraint}, {}, {}, {constraint}});
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Adding: " << result.back());
 			}
 
 			//add [roots[0], roots[0]]
@@ -274,33 +291,36 @@ public:
 			value = carl::evaluate(helpers.mPool->get(constraint), mCurrentAssignment).value();
 			if (!carl::compare(value, mpq_class(0), carl::Relation::GEQ)) {
 				//If constraint evaluates to false
-				result.push_back(CellInformation{roots.front(), roots.front(), {constraint}, {}, {constraint}, {constraint}});
+				result.push_back(CellInformation{LowerBound{roots.front(), false}, UpperBound{roots.front(), false}, {constraint}, {}, {constraint}, {constraint}});
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Adding: " << result.back());
 			}
 
 			for (std::size_t i = 0; i < roots.size() - 1; i++) {
 				//add (roots[i], roots[i+1])
-				mCurrentAssignment[mainVar] = carl::sample_between(roots[i], roots[i+1]);
+				mCurrentAssignment[mainVar] = carl::sample_between(roots[i], roots[i + 1]);
 				value = carl::evaluate(helpers.mPool->get(constraint), mCurrentAssignment).value();
 				if (!carl::compare(value, mpq_class(0), carl::Relation::GEQ)) {
 					//If constraint evaluates to false
-					result.push_back(CellInformation{roots[i], roots[i+1], {constraint}, {}, {}, {constraint}});
+					result.push_back(CellInformation{LowerBound{roots[i], true}, UpperBound{roots[i + 1], true}, {constraint}, {}, {}, {constraint}});
+					SMTRAT_LOG_DEBUG("smtrat.covering", "Adding: " << result.back());
 				}
 				//add [roots[i+1], roots[i+1]]
-				mCurrentAssignment[mainVar] = roots[i+1];
+				mCurrentAssignment[mainVar] = roots[i + 1];
 				value = carl::evaluate(helpers.mPool->get(constraint), mCurrentAssignment).value();
 				if (!carl::compare(value, mpq_class(0), carl::Relation::GEQ)) {
 					//If constraint evaluates to false
-					result.push_back(CellInformation{roots[i+1], roots[i+1], {constraint}, {}, {}, {constraint}});
+					result.push_back(CellInformation{LowerBound{roots[i + 1], false}, UpperBound{roots[i + 1], false}, {constraint}, {}, {}, {constraint}});
+					SMTRAT_LOG_DEBUG("smtrat.covering", "Adding: " << result.back());
 				}
 			}
 
-			
 			//Add (roots[roots.size()], infty])
 			mCurrentAssignment[mainVar] = carl::sample_above(roots.back());
 			value = carl::evaluate(helpers.mPool->get(constraint), mCurrentAssignment).value();
 			if (!carl::compare(value, mpq_class(0), carl::Relation::GEQ)) {
 				//If constraint evaluates to false
-				result.push_back(CellInformation{roots.back(), std::nullopt, {constraint}, {}, {constraint}, {}});
+				result.push_back(CellInformation{LowerBound{roots.back(), true}, UpperBound{std::nullopt, true}, {constraint}, {}, {constraint}, {}});
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Adding: " << result.back());
 			}
 
 			//Set Assignment to before state
@@ -310,7 +330,7 @@ public:
 				mCurrentAssignment.erase(mainVar);
 			}
 		}
-		
+
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Found Unsat Intervals: " << result);
 		return result;
 	}
@@ -338,6 +358,7 @@ public:
 			mCoveringInformation[level].push_back(interval);
 			//delete stored information of next higher dimension
 			mCoveringInformation[level + 1].clear();
+			orderAndCleanIntervals(mCoveringInformation[level]); //Todo is that necessary
 		}
 		mCoveringInformation[level + 1].clear(); //Todo is that necessary?
 		return Answer::UNSAT;
