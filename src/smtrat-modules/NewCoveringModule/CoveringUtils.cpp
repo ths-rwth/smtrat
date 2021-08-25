@@ -24,6 +24,14 @@ std::ostream& operator<<(std::ostream& os, const UpperBound& data) {
 	return os << data.number.value() << "]";
 }
 
+bool operator==(const LowerBound& lhs, const LowerBound& rhs) {
+	return lhs.number == rhs.number && lhs.isOpen == rhs.isOpen;
+}
+
+bool operator==(const UpperBound& lhs, const UpperBound& rhs) {
+	return lhs.number == rhs.number && lhs.isOpen == rhs.isOpen;
+}
+
 bool operator<(const LowerBound& lhs, const LowerBound& rhs) {
 	if (!rhs.number) return false; // rhs is -infty
 	if (!lhs.number) return true;  // lhs is -infty
@@ -54,16 +62,19 @@ bool operator<=(const UpperBound& lhs, const UpperBound& rhs) {
 	return !(rhs < lhs);
 }
 
-bool operator<(const UpperBound& lhs, const LowerBound& rhs){
-	if(!lhs.number) return false ; //lhs is infty
-	if(!rhs.number) return false ; //rhs is infty
-	if(lhs.isOpen || rhs.isOpen) return lhs.number.value() <= rhs.number.value() ;
-	return lhs.number.value() < rhs.number.value() ; 
+bool operator<(const UpperBound& lhs, const LowerBound& rhs) {
+	if (!lhs.number) return false; //lhs is infty
+	if (!rhs.number) return false; //rhs is infty
+	if (lhs.isOpen || rhs.isOpen) return lhs.number.value() <= rhs.number.value();
+	return lhs.number.value() < rhs.number.value();
 }
-
 
 std::ostream& operator<<(std::ostream& os, const CellInformation& data) {
 	return os << data.mLowerBound << "  " << data.mUpperBound;
+}
+
+bool operator==(const CellInformation& lhs, const CellInformation& rhs) {
+	return lhs.mLowerBound == rhs.mLowerBound && lhs.mUpperBound == rhs.mUpperBound;
 }
 
 //encode inequalities of 4.4.1
@@ -130,25 +141,34 @@ bool isInsideOf(const CellInformation& lhs, const CellInformation& rhs) {
 }
 
 void orderAndCleanIntervals(std::vector<CellInformation>& cells) {
-
 	if (cells.size() <= 1) return;
+
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Before: " << cells);
 
 	std::sort(cells.begin(), cells.end(), [](const CellInformation& lhs, const CellInformation& rhs) {
 		return lhs <= rhs;
 	});
 
-	//todo testing...
+
+	//remove redundancy of the first kind
+
+	//remove trivial duplicates
+	cells.erase(std::unique(cells.begin(), cells.end()), cells.end());
+
+	//todo stupid implementation while i think of a better one...
 	auto iter = cells.begin();
-	auto next = ++iter;
-	while (next != cells.end()) {
-		if (isInsideOf(*iter, *next)) {
-			next = cells.erase(next);
-			//todo: is iter now invalidated?
-		} else {
-			++iter;
-			++next;
+	while (iter != cells.end()) {
+		auto tmp = cells.begin();
+		while (tmp != cells.begin()) {
+			if (iter == tmp) continue;
+			if (isInsideOf(*iter, *tmp)) {
+				tmp = cells.erase(tmp);
+				iter = cells.begin();
+			}
 		}
+		iter++;
 	}
+	SMTRAT_LOG_DEBUG("smtrat.covering", "After removing redundancies of first type: " << cells);
 }
 
 bool disjoint(const CellInformation& lhs, const CellInformation& rhs) {

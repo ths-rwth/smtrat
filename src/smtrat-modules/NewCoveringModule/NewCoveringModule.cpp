@@ -21,6 +21,7 @@ NewCoveringModule<Settings>::~NewCoveringModule() {}
 
 template<class Settings>
 bool NewCoveringModule<Settings>::informCore(const FormulaT& _constraint) {
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Got constraint: " << _constraint.constraint());
 	mPolynomials.emplace_back(_constraint.constraint().lhs());
 	_constraint.gatherVariables(mVariables);
 	return true; // This should be adapted according to your implementation.

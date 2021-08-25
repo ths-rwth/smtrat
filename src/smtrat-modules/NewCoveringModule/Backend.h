@@ -240,18 +240,26 @@ public:
 			//Note: Roots are sorted in ascending order
 			std::vector<RAN> roots = helpers.mProjections->real_roots(mCurrentAssignment, constraint);
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Found roots: " << roots);
-
+			bool wasSet = mCurrentAssignment.count(mainVar) != 0;
+			RAN oldValue;
+			if (wasSet) {
+				oldValue = mCurrentAssignment[mainVar];
+			}
 			if (roots.empty()) {
 				//either true or false for whole number line
 				//Just check at 0
-				bool wasSet = mCurrentAssignment.count(mainVar) != 0;
-				RAN oldValue;
-				if (wasSet) {
-					oldValue = mCurrentAssignment[mainVar];
-				}
 				mCurrentAssignment[mainVar] = RAN(0);
 				RAN value = carl::evaluate(helpers.mPool->get(constraint), mCurrentAssignment).value();
-				if (carl::compare(value, mpq_class(0), carl::Relation::GEQ)) {
+				//Reset the assignment
+				SMTRAT_LOG_DEBUG("smtrat.covering", "No roots, evaluation at 0 got: " << value);
+
+				if (wasSet) {
+					mCurrentAssignment[mainVar] = oldValue;
+				} else {
+					mCurrentAssignment.erase(mainVar);
+				}
+
+				if (carl::compare(value, mpq_class(0), carl::Relation::LESS)) {
 					//True case
 					continue; //Algo line 9
 				} else {
@@ -259,28 +267,19 @@ public:
 					result.push_back(CellInformation{LowerBound{std::nullopt, true}, UpperBound{std::nullopt, true}, {constraint}, {}, {}, {}});
 					return result; //Algo line 7
 				}
-				if (wasSet) {
-					mCurrentAssignment[mainVar] = oldValue;
-				} else {
-					mCurrentAssignment.erase(mainVar);
-				}
 			}
 
 			//Todo: Use proper infeasible intervals and bound types
 			//Todo: Think about how to clean up the following code
 			//Todo: Polynomial simplifications of section 4.4.3 (they are already normalized but not square free -> to that in PolyRefVector::add?)
 
-			bool wasSet = mCurrentAssignment.count(mainVar) != 0;
-			RAN oldValue;
 			RAN value;
-			if (wasSet) {
-				oldValue = mCurrentAssignment[mainVar];
-			}
 			//Algo line 11 and following
 			//Add (-infty, roots[0])
 			mCurrentAssignment[mainVar] = carl::sample_below(roots.front());
 			value = carl::evaluate(helpers.mPool->get(constraint), mCurrentAssignment).value();
-			if (!carl::compare(value, mpq_class(0), carl::Relation::GEQ)) {
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Evaluation at " << mCurrentAssignment << " got: " << value);
+			if (!carl::compare(value, mpq_class(0), carl::Relation::LESS)) {
 				//If constraint evaluates to false
 				result.push_back(CellInformation{LowerBound{std::nullopt, true}, UpperBound{roots.front(), true}, {constraint}, {}, {}, {constraint}});
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Adding: " << result.back());
@@ -289,7 +288,8 @@ public:
 			//add [roots[0], roots[0]]
 			mCurrentAssignment[mainVar] = roots.front();
 			value = carl::evaluate(helpers.mPool->get(constraint), mCurrentAssignment).value();
-			if (!carl::compare(value, mpq_class(0), carl::Relation::GEQ)) {
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Evaluation at " << mCurrentAssignment << " got: " << value);
+			if (!carl::compare(value, mpq_class(0), carl::Relation::LESS)) {
 				//If constraint evaluates to false
 				result.push_back(CellInformation{LowerBound{roots.front(), false}, UpperBound{roots.front(), false}, {constraint}, {}, {constraint}, {constraint}});
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Adding: " << result.back());
@@ -299,7 +299,8 @@ public:
 				//add (roots[i], roots[i+1])
 				mCurrentAssignment[mainVar] = carl::sample_between(roots[i], roots[i + 1]);
 				value = carl::evaluate(helpers.mPool->get(constraint), mCurrentAssignment).value();
-				if (!carl::compare(value, mpq_class(0), carl::Relation::GEQ)) {
+				SMTRAT_LOG_DEBUG("smtrat.covering", "No roots, evaluation at " << mCurrentAssignment << " got: " << value);
+				if (!carl::compare(value, mpq_class(0), carl::Relation::LESS)) {
 					//If constraint evaluates to false
 					result.push_back(CellInformation{LowerBound{roots[i], true}, UpperBound{roots[i + 1], true}, {constraint}, {}, {}, {constraint}});
 					SMTRAT_LOG_DEBUG("smtrat.covering", "Adding: " << result.back());
@@ -307,7 +308,8 @@ public:
 				//add [roots[i+1], roots[i+1]]
 				mCurrentAssignment[mainVar] = roots[i + 1];
 				value = carl::evaluate(helpers.mPool->get(constraint), mCurrentAssignment).value();
-				if (!carl::compare(value, mpq_class(0), carl::Relation::GEQ)) {
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Evaluation at " << mCurrentAssignment << " got: " << value);
+				if (!carl::compare(value, mpq_class(0), carl::Relation::LESS)) {
 					//If constraint evaluates to false
 					result.push_back(CellInformation{LowerBound{roots[i + 1], false}, UpperBound{roots[i + 1], false}, {constraint}, {}, {}, {constraint}});
 					SMTRAT_LOG_DEBUG("smtrat.covering", "Adding: " << result.back());
@@ -317,7 +319,8 @@ public:
 			//Add (roots[roots.size()], infty])
 			mCurrentAssignment[mainVar] = carl::sample_above(roots.back());
 			value = carl::evaluate(helpers.mPool->get(constraint), mCurrentAssignment).value();
-			if (!carl::compare(value, mpq_class(0), carl::Relation::GEQ)) {
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Evaluation at " << mCurrentAssignment << " got: " << value);
+			if (!carl::compare(value, mpq_class(0), carl::Relation::LESS)) {
 				//If constraint evaluates to false
 				result.push_back(CellInformation{LowerBound{roots.back(), true}, UpperBound{std::nullopt, true}, {constraint}, {}, {constraint}, {}});
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Adding: " << result.back());
@@ -336,15 +339,16 @@ public:
 	}
 
 	Answer getUnsatCover(const std::size_t level) {
-		SMTRAT_LOG_DEBUG("smtrat.covering", " getUnsatCover for level: " << level);
+		SMTRAT_LOG_DEBUG("smtrat.covering", " getUnsatCover for level: " << level << " with current assignment: " << mCurrentAssignment);
 		std::vector<CellInformation> cells = getUnsatIntervals(level);
 		mCoveringInformation[level].insert(mCoveringInformation[level].end(), cells.begin(), cells.end());
 		orderAndCleanIntervals(mCoveringInformation[level]);
 		RAN sample;
 		while (sampleOutside(mCoveringInformation[level], sample)) {
 			mCurrentAssignment[mVariableOrdering[level]] = sample;
-			if (level == mVariableOrdering.size()) {
+			if (level + 1 == mVariableOrdering.size()) { //Size is one higher than level because we start at level 0
 				//sample is full dimensional -> return SAT
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Found satisfying assignment: " << mCurrentAssignment);
 				return Answer::SAT;
 			}
 			Answer recursiveCall = getUnsatCover(level + 1);
