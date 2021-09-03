@@ -84,11 +84,17 @@ struct MCSATSettingsOCLWH33 {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
 	using ExplanationBackend = SequentialExplanation<onecellcad::levelwise::Explanation<onecellcad::levelwise::SectionHeuristic3,onecellcad::levelwise::SectorHeuristic3>, nlsat::Explanation>;
 };
+struct MCSATSettingsFMICPVSOCLWH12 {
+    using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+    //using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
+    using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,icp::Explanation,vs::Explanation,
+            onecellcad::levelwise::Explanation<onecellcad::levelwise::SectionHeuristic1,onecellcad::levelwise::SectorHeuristic2>, nlsat::Explanation>;
+};
 struct MCSATSettingsFMICPVSOCLWH13 {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
 	//using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
 	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,icp::Explanation,vs::Explanation,
-	                                onecellcad::levelwise::Explanation<onecellcad::levelwise::SectionHeuristic1,onecellcad::levelwise::SectorHeuristic3>, nlsat::Explanation>;
+	        onecellcad::levelwise::Explanation<onecellcad::levelwise::SectionHeuristic1,onecellcad::levelwise::SectorHeuristic3>, nlsat::Explanation>;
 };
 struct MCSATSettingsFMICPVSOCNNASC {
     using AssignmentFinderBackend = arithmetic::AssignmentFinder;

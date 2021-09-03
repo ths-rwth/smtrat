@@ -200,6 +200,10 @@ struct SATSettingsMCSATOCLWH33 : SATSettingsMCSAT {
 	static constexpr auto muduleName = "SATModule<MCSATOCLWH33>";
 	using MCSATSettings = mcsat::MCSATSettingsOCLWH33;
 };
+struct SATSettingsMCSATFMICPVSOCLWH12 : SATSettingsMCSAT {
+    static constexpr auto muduleName = "SATModule<MCSATFMICPVSOCLWH12>";
+    using MCSATSettings = mcsat::MCSATSettingsFMICPVSOCLWH12;
+};
 struct SATSettingsMCSATFMICPVSOCLWH13 : SATSettingsMCSAT {
 	static constexpr auto muduleName = "SATModule<MCSATFMICPVSOCLWH13>";
 	using MCSATSettings = mcsat::MCSATSettingsFMICPVSOCLWH13;
