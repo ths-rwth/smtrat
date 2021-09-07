@@ -152,6 +152,10 @@ struct SATSettingsMCSATOC : SATSettingsMCSAT {
     static constexpr auto muduleName = "SATModule<MCSATOC>";
     using MCSATSettings = mcsat::MCSATSettingsOC;
 };
+struct SATSettingsMCSATOCNN : SATSettingsMCSAT {
+    static constexpr auto muduleName = "SATModule<MCSATOCNN>";
+    using MCSATSettings = mcsat::MCSATSettingsOCNN;
+};
 struct SATSettingsMCSATOCNew : SATSettingsMCSAT {
     static constexpr auto muduleName = "SATModule<MCSATOCNew>";
     using MCSATSettings = mcsat::MCSATSettingsOCNew;
