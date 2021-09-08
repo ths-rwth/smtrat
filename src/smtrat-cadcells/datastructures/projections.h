@@ -178,8 +178,8 @@ public:
         assert(!m_pool(p).isConstant());
         if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {
             cache(sample).real_roots.emplace(p, carl::real_roots(as_univariate(p), sample));
-            assert(cache(sample).real_roots.at(p).is_univariate());
         }
+        assert(cache(sample).real_roots.at(p).is_univariate());
         return cache(sample).real_roots.at(p).roots().size();
     }
 
@@ -188,8 +188,8 @@ public:
         assert(!m_pool(p).isConstant());
         if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {
             cache(sample).real_roots.emplace(p, carl::real_roots(as_univariate(p), sample));
-            assert(cache(sample).real_roots.at(p).is_univariate());
         }
+        assert(cache(sample).real_roots.at(p).is_univariate());
         return cache(sample).real_roots.at(p).roots();
     }
 
@@ -200,7 +200,6 @@ public:
 		if (poly.isLinear()) return false;
         if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {
             cache(sample).real_roots.emplace(p, carl::real_roots(as_univariate(p), sample));
-            assert(cache(sample).real_roots.at(p).is_univariate());
         }
 		return cache(sample).real_roots.at(p).is_nullified();
     }
