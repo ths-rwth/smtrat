@@ -64,25 +64,20 @@ Answer NewCoveringModule<Settings>::checkCore() {
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Dimensions dont match -> make new variable ordering: " << mVariableOrdering);
 
-		//init PolyPool
+		//init Helpers
 		helpers.mPool = std::make_shared<smtrat::cadcells::datastructures::PolyPool>(mVariableOrdering);
 		helpers.mProjections = std::make_shared<smtrat::cadcells::datastructures::Projections>(*helpers.mPool);
 
 		//TODO: add move operator
 		for (const carl::MultivariatePolynomial<mpq_class>& poly : mPolynomials) {
-			SMTRAT_LOG_DEBUG("smtrat.covering", "Converting Poly: " << poly);
 			auto ref = helpers.mPool->insert(poly);
-			SMTRAT_LOG_DEBUG("smtrat.covering", "Got: " << ref);
-
-			//Todo: lowest level is 1 but vectors start at 0
 			if (ref.level > mKnownPolynomials.size()) {
 				mKnownPolynomials.resize(ref.level);
 			}
-
-			SMTRAT_LOG_DEBUG("smtrat.covering", "Found : " << mKnownPolynomials);
-
+			//We have no constant polynomials thus the lowest level is 1 but vectors start at 0 
 			mKnownPolynomials[ref.level - 1].add(ref);
 		}
+		//All Polynomials have been converted
 		mPolynomials.clear();
 
 		//pass Helpers to Backend
@@ -110,12 +105,41 @@ Answer NewCoveringModule<Settings>::checkCore() {
 	else {
 		//This is either an incremental call or a backtracking call but the set of known variables is the same
 		//Add unknown polynomials to PolyPool
-		
+
 		assert(false);
 	}
 
-	//Todo: Update model accordingly
-	return backend.getUnsatCover(0);
+	Answer answer = backend.getUnsatCover(0);
+
+	//Todo can be made simpler by adding the polynomials directly in the backend
+	if (answer == Answer::UNSAT) {
+		PolyRefVector infeasible_refs;
+		for (auto& coveringInformation : backend.getCoveringInformation()) {
+			for (CellInformation& cell : coveringInformation) {
+				infeasible_refs.add(cell.mUpperPolys);
+				infeasible_refs.add(cell.mLowerPolys);
+				infeasible_refs.add(cell.mMainPolys);
+				infeasible_refs.add(cell.mBottomPolys);
+			}
+		}
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Got infeasible subset: " << infeasible_refs);
+		infeasible_refs.reduce(); //remove duplicates
+
+		 //Convert into the needed datastructure
+		FormulaSetT infeasibleSubset;
+		for (const auto& ref : infeasible_refs) {
+			infeasibleSubset.insert(carl::Formula(ConstraintT(helpers.mPool->get(ref), carl::Relation::LESS)));
+		}
+		mInfeasibleSubsets.push_back(std::move(infeasibleSubset));
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Got infeasible subset: " << mInfeasibleSubsets);
+	}else{
+		//Answer is SAT -> Update the last satisfying Model
+		for(const auto& assignment : backend.getCurrentAssignment()){
+			mLastModel.assign(assignment.first, assignment.second);
+		}
+	}
+
+	return answer;
 }
 } // namespace smtrat
 

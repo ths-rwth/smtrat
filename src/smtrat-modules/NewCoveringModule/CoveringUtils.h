@@ -73,4 +73,6 @@ void orderAndCleanIntervals(std::vector<CellInformation>& cells);
 //Returns whether a sample was found or if the cells cover the whole number line
 bool sampleOutside(std::vector<CellInformation>& cells, RAN& sample);
 
+void collectInfeasiblePolynomials(PolyRefVector& result, std::vector<CellInformation>& cells);
+
 } // namespace smtrat

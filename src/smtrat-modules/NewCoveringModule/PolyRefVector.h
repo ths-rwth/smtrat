@@ -40,11 +40,6 @@ public:
     //Sort and remove duplicates
     void reduce();
 
-    //Add all PolyRefs to given vector
-    void collect(std::vector<smtrat::cadcells::datastructures::PolyRef> collector){
-        collector.insert(collector.end(), begin(), end()) ;
-    }
-
 };
 
 inline std::ostream& operator<<(std::ostream& os, const PolyRefVector& vec){

@@ -69,6 +69,14 @@ public:
 		}
 	}
 
+	std::vector<std::vector<CellInformation>>& getCoveringInformation() {
+		return mCoveringInformation;
+	}
+
+	carl::ran_assignment<Rational> getCurrentAssignment() {
+		return mCurrentAssignment;
+	}
+
 	//The new Variable ordering must be an "extension" to the old one
 	void setVariableOrdering(const std::vector<carl::Variable>& newVarOrdering) {
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Old Variable ordering: " << mVariableOrdering);
@@ -94,6 +102,9 @@ public:
 
 	bool hasRootAbove(const cadcells::datastructures::PolyRef& poly, const RAN& number) {
 		std::vector<RAN> roots = helpers.mProjections->real_roots(mCurrentAssignment, poly);
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Poly: " << helpers.mPool->get(poly) << " for assignment " << mCurrentAssignment << " : " << std::any_of(roots.begin(), roots.end(), [&number](const RAN& root) {
+												return root >= number;
+											}););
 		return std::any_of(roots.begin(), roots.end(), [&number](const RAN& root) {
 			return root >= number;
 		});
@@ -101,6 +112,9 @@ public:
 
 	bool hasRootBelow(const cadcells::datastructures::PolyRef& poly, const RAN& number) {
 		std::vector<RAN> roots = helpers.mProjections->real_roots(mCurrentAssignment, poly);
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Poly: " << helpers.mPool->get(poly) << " for assignment " << mCurrentAssignment << " : " << std::any_of(roots.begin(), roots.end(), [&number](const RAN& root) {
+												return root <= number;
+											}););
 		return std::any_of(roots.begin(), roots.end(), [&number](const RAN& root) {
 			return root <= number;
 		});
@@ -110,19 +124,26 @@ public:
 		PolyRefVector result;
 		//Get "real" poly object to substract leading term if necessary
 		carl::MultivariatePolynomial<Rational> p = helpers.mPool->get(poly);
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Get required Coefficients of: " << p);
+		//SMTRAT_LOG_DEBUG("smtrat.covering", "Get required Coefficients of: " << p);
 		while (!carl::is_zero(p)) {
+			//SMTRAT_LOG_DEBUG("smtrat.covering", "Start While with: " << p);
+			if (carl::is_constant(p)) {
+				//Check is necessary because ldcf asserts that level of p > 0
+				result.add(helpers.mPool->insert(p));
+				break;
+			}
 			cadcells::datastructures::PolyRef ldcf = helpers.mProjections->ldcf(helpers.mPool->insert(p));
-			SMTRAT_LOG_DEBUG("smtrat.covering", "Found leading coefficient: " << ldcf);
+			//SMTRAT_LOG_DEBUG("smtrat.covering", "Found leading coefficient: " << helpers.mPool->get(ldcf));
 			result.add(ldcf);
 			if (helpers.mProjections->is_zero(mCurrentAssignment, ldcf)) {
-				SMTRAT_LOG_DEBUG("smtrat.covering", "Evaluated to zero at current assignment");
+				//SMTRAT_LOG_DEBUG("smtrat.covering", "Evaluated to zero at current assignment");
 				break;
 			}
 			p = p - p.lterm();
-			SMTRAT_LOG_DEBUG("smtrat.covering", "After substracting leading term: " << p);
 		}
 
+		result.reduce(); //remove duplicates
+		//SMTRAT_LOG_DEBUG("smtrat.covering", "Found required Coefficients: " << result);
 		return result;
 	}
 
@@ -133,15 +154,19 @@ public:
 			result.add(cell.mBottomPolys); //Algo line 5
 			for (const auto& mainPoly : cell.mMainPolys) {
 				result.add(helpers.mProjections->disc(mainPoly)); //Algo line 6
-				result.add(requiredCoefficients(mainPoly));		  //Algo line 7
+				SMTRAT_LOG_DEBUG("smtrat.covering", "After adding discriminants: " << result);
+				result.add(requiredCoefficients(mainPoly)); //Algo line 7
+				SMTRAT_LOG_DEBUG("smtrat.covering", "After adding required coefficients: " << result);
 				//Todo check if bounds are +- infty
 				for (const auto& lowerReasonPoly : cell.mLowerPolys) {
 					if (hasRootBelow(lowerReasonPoly, cell.mLowerBound.number.value())) {
+						SMTRAT_LOG_DEBUG("smtrat.covering", "Calculating Lower Resultants: " << helpers.mPool->get(mainPoly) << "  ,  " << helpers.mPool->get(lowerReasonPoly));
 						result.add(helpers.mProjections->res(mainPoly, lowerReasonPoly)); //Algo line 8
 					}
 				}
 				for (const auto& upperReasonPoly : cell.mUpperPolys) {
 					if (hasRootAbove(upperReasonPoly, cell.mUpperBound.number.value())) {
+						SMTRAT_LOG_DEBUG("smtrat.covering", "Calculating Upper Resultants: " << helpers.mPool->get(mainPoly) << "  ,  " << helpers.mPool->get(upperReasonPoly));
 						result.add(helpers.mProjections->res(mainPoly, upperReasonPoly)); //Algo line 9
 					}
 				}
@@ -150,6 +175,7 @@ public:
 		for (std::size_t i = 0; i < mCoveringInformation[level + 1].size() - 1; i++) {
 			for (const auto& p : mCoveringInformation[level + 1][i].mUpperPolys) {
 				for (const auto& q : mCoveringInformation[level + 1][i + 1].mLowerPolys) {
+					SMTRAT_LOG_DEBUG("smtrat.covering", "Calculating Pair Resultants: " << helpers.mPool->get(p) << "  ,  " << helpers.mPool->get(q));
 					result.add(helpers.mProjections->res(p, q)); //Algo line 11
 				}
 			}
@@ -168,26 +194,33 @@ public:
 		std::optional<RAN> u;
 		std::vector<RAN> roots;
 
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Characterization: " << characterization << " Sample: " << sample);
+
 		for (const auto& poly : characterization) {
 			if (poly.level == level) {
 				main.add(poly); //Algo line 2
 			} else {
 				bottom.add(poly); //Algo line 1
 			}
+			if (helpers.mProjections->is_const(poly)) continue; // Skip if poly is constant
 			std::vector<RAN> cur_roots = helpers.mProjections->real_roots(mCurrentAssignment, poly);
 			roots.insert(roots.end(), cur_roots.begin(), cur_roots.end());
 		}
 
 		std::sort(roots.begin(), roots.end());
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Found roots: " << roots);
 
 		auto tmp_l = std::lower_bound(roots.begin(), roots.end(), sample); //Algo line 4
 		if (tmp_l != roots.end()) {
 			l = *tmp_l;
 		}
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Found Lower bound: " << l);
+
 		auto tmp_u = std::upper_bound(roots.begin(), roots.end(), sample); //Algo line 5
 		if (tmp_u != roots.end()) {
 			u = *tmp_u;
 		}
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Found Upper bound: " << u);
 
 		if (l) { //if l is not -infty
 			mCurrentAssignment[mVariableOrdering[level]] = l.value();
@@ -238,7 +271,11 @@ public:
 		for (const auto& constraint : mConstraints[level]) {
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Current constraint: " << helpers.mPool->get(constraint) << " ;  Current assignment: " << mCurrentAssignment);
 			//Note: Roots are sorted in ascending order
-			std::vector<RAN> roots = helpers.mProjections->real_roots(mCurrentAssignment, constraint);
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Mainvar: " << helpers.mProjections->main_var(constraint));
+			std::vector<RAN> roots;
+			if (!helpers.mProjections->is_nullified(mCurrentAssignment, constraint)) {
+				roots = helpers.mProjections->real_roots(mCurrentAssignment, constraint);
+			}
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Found roots: " << roots);
 			bool wasSet = mCurrentAssignment.count(mainVar) != 0;
 			RAN oldValue;
@@ -358,13 +395,16 @@ public:
 			PolyRefVector characterization = constructCharacterization(level);
 			mCurrentAssignment.erase(mVariableOrdering[level]);
 			CellInformation interval = intervalFromCharacterization(characterization, sample, level);
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Found Unsat Interval: " << interval);
+
 			//todo: Add directly into the correct position according to interval ordering
 			mCoveringInformation[level].push_back(interval);
+			SMTRAT_LOG_DEBUG("smtrat.covering", "New Unsat Intervals: " << mCoveringInformation[level] << " for sample: " << sample);
+
 			//delete stored information of next higher dimension
 			mCoveringInformation[level + 1].clear();
-			orderAndCleanIntervals(mCoveringInformation[level]); //Todo is that necessary
 		}
-		mCoveringInformation[level + 1].clear(); //Todo is that necessary?
+		if (level + 1 != mVariableOrdering.size()) mCoveringInformation[level + 1].clear(); //Todo is that necessary?
 		return Answer::UNSAT;
 	}
 

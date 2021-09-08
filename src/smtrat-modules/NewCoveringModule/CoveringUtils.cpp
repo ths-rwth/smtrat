@@ -143,12 +143,11 @@ bool isInsideOf(const CellInformation& lhs, const CellInformation& rhs) {
 void orderAndCleanIntervals(std::vector<CellInformation>& cells) {
 	if (cells.size() <= 1) return;
 
-	SMTRAT_LOG_DEBUG("smtrat.covering", "Before: " << cells);
-
 	std::sort(cells.begin(), cells.end(), [](const CellInformation& lhs, const CellInformation& rhs) {
 		return lhs <= rhs;
 	});
 
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Before removing redundancies: " << cells);
 
 	//remove redundancy of the first kind
 
@@ -159,19 +158,26 @@ void orderAndCleanIntervals(std::vector<CellInformation>& cells) {
 	auto iter = cells.begin();
 	while (iter != cells.end()) {
 		auto tmp = cells.begin();
-		while (tmp != cells.begin()) {
-			if (iter == tmp) continue;
+		while (tmp != cells.end()) {
+			if (iter == tmp) {
+				tmp++;
+				continue;
+			};
+			//SMTRAT_LOG_DEBUG("smtrat.covering", "Is " << *tmp << " inside of " << *iter << " : " << isInsideOf(*iter, *tmp));
 			if (isInsideOf(*iter, *tmp)) {
 				tmp = cells.erase(tmp);
 				iter = cells.begin();
+			} else {
+				tmp++;
 			}
 		}
 		iter++;
 	}
-	SMTRAT_LOG_DEBUG("smtrat.covering", "After removing redundancies of first type: " << cells);
+	SMTRAT_LOG_DEBUG("smtrat.covering", "After removing redundancies: " << cells);
 }
 
 bool disjoint(const CellInformation& lhs, const CellInformation& rhs) {
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Is" << lhs << " disjoint from " << rhs << " : " << bool(lhs.mUpperBound < rhs.mLowerBound || rhs.mUpperBound < lhs.mLowerBound));
 	return lhs.mUpperBound < rhs.mLowerBound || rhs.mUpperBound < lhs.mLowerBound; //TODO
 }
 
@@ -197,7 +203,8 @@ bool sampleOutside(std::vector<CellInformation>& cells, RAN& sample) {
 	}
 	//Search for 2 adjacent cells which are disjoint, take a point between
 	//we can skip the first and the last cell as there have infty as lower/upper bounds
-	for (std::size_t i = 1; i < cells.size() - 2; i++) {
+	for (std::size_t i = 1; i + 2  < cells.size(); i++) {
+		SMTRAT_LOG_DEBUG("smtrat.covering", "IN FOR LOOP" << i << " size " << cells.size() - 2);
 		if (disjoint(cells[i], cells[i + 1])) {
 			sample = carl::sample_between(cells[i].mUpperBound.number.value(), cells[i + 1].mLowerBound.number.value());
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Found disjoint cells: " << cells[i] << " and " << cells[i + 1]);
@@ -208,6 +215,11 @@ bool sampleOutside(std::vector<CellInformation>& cells, RAN& sample) {
 
 	SMTRAT_LOG_DEBUG("smtrat.covering", "No sample was found, the cells cover the whole number line");
 	return false;
+}
+
+void collectInfeasiblePolynomials(PolyRefVector& result, std::vector<CellInformation>& cells) {
+
+	result.reduce();
 }
 
 } // namespace smtrat
