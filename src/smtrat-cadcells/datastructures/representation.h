@@ -54,6 +54,43 @@ namespace smtrat::cadcells::datastructures {
             }
             return cov;
         }
+
+
+        //returns true iff the a sample outside of the current covering has been found  
+        bool sample_outside(RAN& sample) const {
+            SMTRAT_LOG_DEBUG("smtrat.covering", "Sampling outside of:  " << cells.size());
+            if(cells.empty()){
+                //There are no cells, just take trivially 0
+                sample = RAN(0);
+                return true ;
+            }
+
+            assert(is_valid());
+
+            if(!cells.front().derivation.cell().lower_unbounded()){
+                //Lower bound is finite, just take a sufficiently large negative number
+                sample  = carl::sample_below(cells.front().derivation.cell().lower()->first);
+                return true ;
+            }
+
+            if(!cells.back().derivation.cell().upper_unbounded()){
+                //Upper bound is finite, just take a sufficiently large positive number
+                sample = carl::sample_above(cells.back().derivation.cell().upper()->first); 
+                return true ;
+            }
+
+            //Search for adjacent disjoint cells and sample between
+            for(size_t i = 0; i + 1 < cells.size(); i++){
+                if(disjoint(cells[i].derivation.cell(), cells[i+1].derivation.cell())){
+                    sample = carl::sample_between(cells[i].derivation.cell().upper()->first, cells[i+1].derivation.cell().lower()->first) ;
+                    return true ;
+                }
+            }
+
+            //There are no disjoint cells -> the covering spans the whole number line
+            return false ;
+        }
+
         /// Checks whether this represents a proper non-redundant covering.
         bool is_valid() const {
             auto cell = cells.begin();
