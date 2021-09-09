@@ -22,9 +22,8 @@ NewCoveringModule<Settings>::~NewCoveringModule() {}
 template<class Settings>
 bool NewCoveringModule<Settings>::informCore(const FormulaT& _constraint) {
 	SMTRAT_LOG_DEBUG("smtrat.covering", "Got constraint: " << _constraint.constraint());
-	mPolynomials.emplace_back(_constraint.constraint().lhs());
-	_constraint.gatherVariables(mVariables);
-	return true; // This should be adapted according to your implementation.
+	mUnknownConstraints.push_back(_constraint);
+	return true; 
 }
 
 template<class Settings>
@@ -34,13 +33,14 @@ template<class Settings>
 bool NewCoveringModule<Settings>::addCore(ModuleInput::const_iterator _subformula) {
 	//Incremental call
 	//TODO: is it possible that new (unknown) Variable are in the new constraints?
-	mPolynomials.emplace_back(_subformula->formula().constraint().lhs());
-	return true; // This should be adapted according to your implementation.
+	mUnknownConstraints.push_back(_subformula->formula());
+	return true; 
 }
 
 template<class Settings>
 void NewCoveringModule<Settings>::removeCore(ModuleInput::const_iterator _subformula) {
 	//Backtracking
+	assert(false);
 	// Your code.
 }
 
@@ -54,45 +54,31 @@ void NewCoveringModule<Settings>::updateModel() const {
 
 template<class Settings>
 Answer NewCoveringModule<Settings>::checkCore() {
-	//Check if this is the first time checkCore is called
-	SMTRAT_LOG_DEBUG("smtrat.covering", "Check Core called with new polynomials: " << mPolynomials);
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Check Core called with unknown constraints: " << mUnknownConstraints << " and known constraints: " << mKnownConstraints);
 
+	//Check if this is the first time checkCore is called
 	if (mVariableOrdering.empty()) {
 		//Init variable odering
+		
+		for(const FormulaT& formula : mUnknownConstraints){
+			formula.gatherVariables(mVariables);
+		}
+
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Got Variables: " << mVariables);
+
 		//Just take the current ordering of the set -> we do heuristics later
-		std::copy(mVariables.begin(), mVariables.end(), std::back_inserter(mVariableOrdering));
+		std::copy(mVariables.as_vector().begin(), mVariables.as_vector().end(), std::back_inserter(mVariableOrdering));
 
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Dimensions dont match -> make new variable ordering: " << mVariableOrdering);
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Got Variable Ordering : " << mVariableOrdering);
 
-		//init Helpers
-		helpers.mPool = std::make_shared<smtrat::cadcells::datastructures::PolyPool>(mVariableOrdering);
-		helpers.mProjections = std::make_shared<smtrat::cadcells::datastructures::Projections>(*helpers.mPool);
+		//init backend
+		backend.init(mVariableOrdering);
 
-		//TODO: add move operator
-		for (const carl::MultivariatePolynomial<mpq_class>& poly : mPolynomials) {
-			auto ref = helpers.mPool->insert(poly);
-			if (ref.level > mKnownPolynomials.size()) {
-				mKnownPolynomials.resize(ref.level);
-			}
-			//We have no constant polynomials thus the lowest level is 1 but vectors start at 0 
-			mKnownPolynomials[ref.level - 1].add(ref);
+		//Add unknown constraints to backend
+		for(const auto& constraint : mUnknownConstraints){
+			//Asserts that it is indeed a constraint
+			backend.addConstraint(constraint.constraint()) ;
 		}
-		//All Polynomials have been converted
-		mPolynomials.clear();
-
-		//pass Helpers to Backend
-		backend.setHelpers(helpers);
-
-		//prune redundant polynomials
-		for (auto& polys : mKnownPolynomials) {
-			polys.reduce();
-		}
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Found after pruning : " << mKnownPolynomials);
-		//pass polynomials and variables to backend
-		backend.setConstraints(mKnownPolynomials);
-		backend.setVariableOrdering(mVariableOrdering);
-
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Got Ordering: " << helpers.mPool->var_order());
 
 	} else if (backend.dimension() != mVariables.size()) {
 		//This is an incremental call, we have more Variable than before and are out of sync with the backend and the Helpers
@@ -110,34 +96,6 @@ Answer NewCoveringModule<Settings>::checkCore() {
 	}
 
 	Answer answer = backend.getUnsatCover(0);
-
-	//Todo can be made simpler by adding the polynomials directly in the backend
-	if (answer == Answer::UNSAT) {
-		PolyRefVector infeasible_refs;
-		for (auto& coveringInformation : backend.getCoveringInformation()) {
-			for (CellInformation& cell : coveringInformation) {
-				infeasible_refs.add(cell.mUpperPolys);
-				infeasible_refs.add(cell.mLowerPolys);
-				infeasible_refs.add(cell.mMainPolys);
-				infeasible_refs.add(cell.mBottomPolys);
-			}
-		}
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Got infeasible subset: " << infeasible_refs);
-		infeasible_refs.reduce(); //remove duplicates
-
-		 //Convert into the needed datastructure
-		FormulaSetT infeasibleSubset;
-		for (const auto& ref : infeasible_refs) {
-			infeasibleSubset.insert(carl::Formula(ConstraintT(helpers.mPool->get(ref), carl::Relation::LESS)));
-		}
-		mInfeasibleSubsets.push_back(std::move(infeasibleSubset));
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Got infeasible subset: " << mInfeasibleSubsets);
-	}else{
-		//Answer is SAT -> Update the last satisfying Model
-		for(const auto& assignment : backend.getCurrentAssignment()){
-			mLastModel.assign(assignment.first, assignment.second);
-		}
-	}
 
 	return answer;
 }

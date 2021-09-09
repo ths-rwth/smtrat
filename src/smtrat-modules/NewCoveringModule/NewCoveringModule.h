@@ -8,56 +8,53 @@
 
 #pragma once
 
-#include <smtrat-solver/Module.h>
 #include "NewCoveringSettings.h"
+#include <boost/container/flat_set.hpp>
+#include <smtrat-solver/Module.h>
+
+#include <smtrat-cadcells/common.h>
 
 //Import Datastructures used for caching etc.
 #include <smtrat-cadcells/datastructures/polynomials.h>
 #include <smtrat-cadcells/datastructures/projections.h>
-#include <smtrat-cadcells/datastructures/roots.h>
-#include <smtrat-cadcells/datastructures/derivation.h>
 
-#include "CoveringUtils.h"
-#include "PolyRefVector.h"
+#include <smtrat-cadcells/operators/operator_mccallum.h>
+#include <smtrat-cadcells/representation/heuristics.h>
+
 #include "Backend.h"
 
+namespace smtrat {
 
-namespace smtrat
-{
+template<typename Settings>
+class NewCoveringModule : public Module {
+private:
+	//List of unknown Constraints
+	FormulasT mUnknownConstraints;
 
-	template<typename Settings>
-	class NewCoveringModule : public Module
-	{
-		private:
+	//List of known Constraints
+	FormulasT mKnownConstraints;
 
-		//List of Polynomials not known in mPool
-		std::vector<carl::MultivariatePolynomial<mpq_class>> mPolynomials ;
+	//Set of all known Variables
+	carl::carlVariables mVariables;
 
-		//Ordered List of Polynomials in mPool 
-		std::vector<PolyRefVector> mKnownPolynomials ;
+	//Variable Ordering, Initialized in checkCore
+	std::vector<carl::Variable> mVariableOrdering;
 
-		//Set of all known Variables 
-		carl::carlVariables mVariables ;
+	//Contains the last model which satisfied the given constraints
+	Model mLastModel;
 
-		//Variable Ordering, Initialized once in checkCore
-		std::vector<carl::Variable> mVariableOrdering ;
+	//The actual algorithm
+	Backend<Settings> backend;
 
-		//Contains the last model which satisfied the given constraints
-		Model mLastModel ;
+public:
+	using SettingsType = Settings;
 
-		Helpers helpers ; 
+	NewCoveringModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
 
-		Backend<Settings> backend ;
+	~NewCoveringModule();
 
-		public:
-			using SettingsType = Settings;
-
-			NewCoveringModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
-
-			~NewCoveringModule();
-			
-			// Main interfaces.
-			/**
+	// Main interfaces.
+	/**
 			 * Informs the module about the given constraint. It should be tried to inform this
 			 * module about any constraint it could receive eventually before assertSubformula
 			 * is called (preferably for the first time, but at least before adding a formula
@@ -66,15 +63,15 @@ namespace smtrat
 			 * @return false, if it can be easily decided whether the given constraint is inconsistent;
 			 *		  true, otherwise.
 			 */
-			bool informCore( const FormulaT& _constraint );
+	bool informCore(const FormulaT& _constraint);
 
-			/**
+	/**
 			 * Informs all backends about the so far encountered constraints, which have not yet been communicated.
 			 * This method must not and will not be called more than once and only before the first runBackends call.
 			 */
-			void init();
+	void init();
 
-			/**
+	/**
 			 * The module has to take the given sub-formula of the received formula into account.
 			 *
 			 * @param _subformula The sub-formula to take additionally into account.
@@ -82,30 +79,29 @@ namespace smtrat
 			 *		  the already considered sub-formulas;
 			 *		  true, otherwise.
 			 */
-			bool addCore( ModuleInput::const_iterator _subformula );
+	bool addCore(ModuleInput::const_iterator _subformula);
 
-			/**
+	/**
 			 * Removes the subformula of the received formula at the given position to the considered ones of this module.
 			 * Note that this includes every stored calculation which depended on this subformula, but should keep the other
 			 * stored calculation, if possible, untouched.
 			 *
 			 * @param _subformula The position of the subformula to remove.
 			 */
-			void removeCore( ModuleInput::const_iterator _subformula );
+	void removeCore(ModuleInput::const_iterator _subformula);
 
-			/**
+	/**
 			 * Updates the current assignment into the model.
 			 * Note, that this is a unique but possibly symbolic assignment maybe containing newly introduced variables.
 			 */
-			void updateModel() const;
+	void updateModel() const;
 
-			/**
+	/**
 			 * Checks the received formula for consistency.
 			 * @return True,	if the received formula is satisfiable;
 			 *		 False,   if the received formula is not satisfiable;
 			 *		 Unknown, otherwise.
 			 */
-			Answer checkCore();
-
-	};
-}
+	Answer checkCore();
+};
+} // namespace smtrat
