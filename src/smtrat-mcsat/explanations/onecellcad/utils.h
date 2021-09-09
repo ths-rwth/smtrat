@@ -17,6 +17,8 @@
 #include <carl/ran/RealAlgebraicPoint.h>
 #include <carl/ran/interval/ran_interval_extra.h>
 
+#include "OCStatistics.h"
+
 
 namespace smtrat {
 namespace mcsat {
@@ -176,8 +178,21 @@ inline void appendOnCorrectLevel(const Poly& poly, InvarianceType tag, std::vect
     //This could be violated by the initially entered polys in OneCell construction but that only leads to less efficiency and no error
     std::vector<TagPoly> factors = nonConstIrreducibleFactors(variableOrder, poly, tag);
     // to do carl::normalize()
+    #ifdef SMTRAT_DEVOPTION_Statistics
+        levelwise::OCStatistics& mStatistics = statistics_get<levelwise::OCStatistics>("mcsat-explanation-onecellcad-lw");
+    #endif
     for (const auto& factor : factors) {
         if (!factor.poly.isConstant()) {
+            #ifdef SMTRAT_DEVOPTION_Statistics
+                // change this to en-/disable mMaxDegree Statistic
+                bool maxDegStatisticOn = true;
+                if(maxDegStatisticOn){
+                    std::size_t curDeg = getDegree(factor, variableOrder[factor.level]);
+                    if(curDeg > mStatistics.getCurrentMaxDegree()){
+                        mStatistics.updateMaxDegree(curDeg);
+                    }
+                }
+            #endif
             TagPoly siFactor = factor;
             TagPoly oiFactor = factor;
             siFactor.tag = InvarianceType::SIGN_INV;
