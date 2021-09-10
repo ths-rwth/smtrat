@@ -996,6 +996,9 @@ class LevelwiseCAD : public OneCellCAD {
                                 }
 
                                 mark = cur;
+                                #ifdef SMTRAT_DEVOPTION_Statistics
+                                    mStatistics.resultantBarrierCreated();
+                                #endif
                             }
                         }
 
@@ -1028,6 +1031,9 @@ class LevelwiseCAD : public OneCellCAD {
                                 }
 
                                 mark = cur;
+                                #ifdef SMTRAT_DEVOPTION_Statistics
+                                    mStatistics.resultantBarrierCreated();
+                                #endif
                             }
                         }
 
