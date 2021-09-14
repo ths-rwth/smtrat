@@ -16,7 +16,6 @@ private:
 	std::size_t mResultantBarriersH3 = 0;
 	// saves the maximal degree a polynomial has during calculations
 	std::size_t mMaxDegree = 0;
-
 public:
 	bool enabled() const {
 		return true;
