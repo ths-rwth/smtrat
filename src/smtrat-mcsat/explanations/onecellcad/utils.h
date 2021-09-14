@@ -1,3 +1,5 @@
+#pragma once
+
 #include <carl/core/polynomialfunctions/Derivative.h>
 #include <carl/core/polynomialfunctions/Factorization.h>
 #include <carl/core/polynomialfunctions/Resultant.h>
