@@ -27,10 +27,6 @@ namespace onecellcad {
 namespace levelwise {
 
 class LevelwiseCAD : public OneCellCAD {
-    private:
-    #ifdef SMTRAT_DEVOPTION_Statistics
-        OCStatistics& mStatistics = statistics_get<OCStatistics>("mcsat-explanation-onecellcad-lw");
-    #endif
     public:
     using OneCellCAD::OneCellCAD;
 

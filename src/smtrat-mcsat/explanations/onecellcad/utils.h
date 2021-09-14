@@ -17,8 +17,8 @@
 #include <carl/ran/RealAlgebraicPoint.h>
 #include <carl/ran/interval/ran_interval_extra.h>
 
-#include "levelwise/OCStatistics.h"
-
+#include "OCStatistics.h"
+#include "Assertables.h"
 
 namespace smtrat {
 namespace mcsat {
@@ -27,6 +27,9 @@ namespace onecellcad {
 using RAN = carl::RealAlgebraicNumber<smtrat::Rational>;
 using RANMap = std::map<carl::Variable, RAN>;
 
+#ifdef SMTRAT_DEVOPTION_Statistics
+    OCStatistics& getStatistic();
+#endif
 
 /**
  * Invariance Types
@@ -96,6 +99,8 @@ inline std::ostream& operator<<(std::ostream& os, const std::vector<std::vector<
     }
     return os;
 }
+
+
 
 /**
 * @param p Polynomial to get degree from
@@ -178,12 +183,10 @@ inline void appendOnCorrectLevel(const Poly& poly, InvarianceType tag, std::vect
     //This could be violated by the initially entered polys in OneCell construction but that only leads to less efficiency and no error
     std::vector<TagPoly> factors = nonConstIrreducibleFactors(variableOrder, poly, tag);
     // to do carl::normalize()
-    #ifdef SMTRAT_DEVOPTION_Statistics
-        levelwise::OCStatistics& mStatistics = statistics_get<levelwise::OCStatistics>("mcsat-explanation-onecellcad-lw");
-    #endif
     for (const auto& factor : factors) {
         if (!factor.poly.isConstant()) {
             #ifdef SMTRAT_DEVOPTION_Statistics
+                OCStatistics& mStatistics = getStatistic();
                 // change this to en-/disable mMaxDegree Statistic
                 bool maxDegStatisticOn = true;
                 if(maxDegStatisticOn){

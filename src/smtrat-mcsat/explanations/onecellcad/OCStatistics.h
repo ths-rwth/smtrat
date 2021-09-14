@@ -7,7 +7,6 @@
 namespace smtrat {
 namespace mcsat {
 namespace onecellcad {
-namespace levelwise {
 
 class OCStatistics : public Statistics {
 private:
@@ -22,6 +21,7 @@ public:
 	bool enabled() const {
 		return true;
 	}
+
 	void collect() {
 		Statistics::addKeyValuePair("explanation_called", mExplanationCalled);
 		Statistics::addKeyValuePair("explanation_success", mExplanationSuccess);
@@ -51,7 +51,6 @@ public:
 	}
 };
 
-}
 }
 }
 }
