@@ -203,7 +203,7 @@ namespace vs
     DisjunctionOfConstraintConjunctions splitProducts( const smtrat::ConstraintT& _constraint, bool _onlyNeq )
     {
         DisjunctionOfConstraintConjunctions result;
-        auto factorization = carl::factorization(_constraint.lhs());
+        auto& factorization = carl::factorization(_constraint);
         if( !carl::is_trivial(factorization) )
         {
             switch( _constraint.relation() )
@@ -396,7 +396,7 @@ namespace vs
     DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::ConstraintT& _constraint )
     {
         DisjunctionOfConstraintConjunctions combinations;
-        auto factorization = carl::factorization(_constraint.lhs());
+        auto& factorization = carl::factorization(_constraint);
         if( !carl::is_trivial(factorization) && factorization.size() <= MAX_PRODUCT_SPLIT_NUMBER )
         {
             assert( _constraint.relation() == Relation::GREATER || _constraint.relation() == Relation::LESS
