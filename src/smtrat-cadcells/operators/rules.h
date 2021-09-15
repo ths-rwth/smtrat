@@ -185,7 +185,6 @@ void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const data
             assert(deriv.contains(properties::poly_pdel{ rel.first.poly }));
             assert(deriv.contains(properties::poly_pdel{ rel.second.poly }));
             deriv.insert(properties::poly_ord_inv{ deriv.proj().res(rel.first.poly, rel.second.poly) });
-            deriv.insert(properties::root_well_def{ rel.second });
         }
     }
     for (const auto& rel : ordering.above()) {
@@ -193,7 +192,6 @@ void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const data
             assert(deriv.contains(properties::poly_pdel{ rel.first.poly }));
             assert(deriv.contains(properties::poly_pdel{ rel.second.poly }));
             deriv.insert(properties::poly_ord_inv{ deriv.proj().res(rel.first.poly, rel.second.poly) });
-            deriv.insert(properties::root_well_def{ rel.first });
         }
     }
 }
@@ -203,11 +201,12 @@ void poly_irrecubile_sgn_inv(datastructures::SampledDerivation<P>& deriv, const 
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
     assert(deriv.contains(properties::poly_pdel{ poly }));
     if (cell.is_section() && deriv.proj().is_zero(deriv.sample(), poly)) {
-        auto roots = deriv.proj().real_roots(deriv.underlying_sample(), poly);
-        auto it = std::find(roots.begin(), roots.end(), deriv.main_var_sample());
-        auto dist = std::distance(roots.begin(), it);
-        assert(dist >= 0);
-        deriv.insert(properties::root_well_def{ datastructures::IndexedRoot(poly, (size_t)dist + 1) });
+        // not needed anymore:
+        // auto roots = deriv.proj().real_roots(deriv.underlying_sample(), poly);
+        // auto it = std::find(roots.begin(), roots.end(), deriv.main_var_sample());
+        // auto dist = std::distance(roots.begin(), it);
+        // assert(dist >= 0);
+        // deriv.insert(properties::root_well_def{ datastructures::IndexedRoot(poly, (size_t)dist + 1) });
     } else {
         assert(!deriv.proj().is_zero(deriv.sample(), poly));
         if (cell.is_sector() && (deriv.cell().lower_unbounded() || deriv.cell().upper_unbounded())) {
