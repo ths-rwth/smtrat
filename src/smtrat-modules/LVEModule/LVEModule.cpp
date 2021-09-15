@@ -305,7 +305,7 @@ namespace smtrat
 				const auto& c = f.formula().constraint();
 				carl::Variable target = carl::Variable::NO_VARIABLE;
 				for (auto v: vars) {
-					if (c.variables().has(v)) {
+					if (c.hasVariable(v)) {
 						target = v;
 						break;
 					}

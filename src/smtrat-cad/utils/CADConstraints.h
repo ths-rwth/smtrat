@@ -24,7 +24,7 @@ public:
 protected:
 	struct ConstraintComparator {
 		std::size_t complexity(const ConstraintT& c) const {
-			return c.maxDegree() * c.variables().size() * c.lhs().size();
+			return c.maxDegree() * variables(c).size() * c.lhs().size();
 		}
 		bool operator()(const ConstraintT& lhs, const ConstraintT& rhs) const {
 			auto cl = complexity(lhs);
@@ -132,7 +132,7 @@ public:
                         assert(r.second);
                         mConstraintIts[id] = r.first;
 		}
-		auto vars = c.variables();
+		auto vars = carl::variables(c);
 		for (std::size_t level = mVariables.size(); level > 0; level--) {
 			vars.erase(mVariables[level - 1]);
 			if (vars.empty()) {

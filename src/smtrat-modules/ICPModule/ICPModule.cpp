@@ -2460,7 +2460,7 @@ namespace smtrat
                         if( !formulaIt->constraint().isBound() )
                         {
                             mHistoryActual->addInfeasibleConstraint(formulaIt->constraint());
-                            for( auto variable: formulaIt->constraint().variables() )
+                            for( auto variable: formulaIt->variables() )
                             {
                                 assert( mVariables.find(variable) != mVariables.end() );
                                 mHistoryActual->addInfeasibleVariable(mVariables.at(variable));
@@ -2468,8 +2468,8 @@ namespace smtrat
                         }
                         else
                         {
-                            assert( mVariables.find( *formulaIt->constraint().variables().begin() ) != mVariables.end() );
-                            mHistoryActual->addInfeasibleVariable( mVariables.at( formulaIt->constraint().variables().as_vector().front() ) );
+                            assert( mVariables.find( *formulaIt->variables().begin() ) != mVariables.end() );
+                            mHistoryActual->addInfeasibleVariable( mVariables.at( *formulaIt->variables().begin() ) );
                         }
                     }
                 }

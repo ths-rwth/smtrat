@@ -84,7 +84,8 @@ namespace vs
                     
                     if( conflictingWithSolutionSpace == 0 )
                     {
-                        _conflictingVars.insert( cons->variables().begin(), cons->variables().end() );
+                        auto vars = carl::variables(*cons);
+                        _conflictingVars.insert( vars.begin(), vars.end() );
                         conjInconsistent = true;
                         break;
                     }

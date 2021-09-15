@@ -321,8 +321,9 @@ namespace smtrat
         {
             if( _constraint.relation() != carl::Relation::NEQ )
             {
-                carl::Variable var = *_constraint.variables().begin();
-                if( _constraint.variables().size() == 1 && _constraint.maxDegree( var ) == 1 )
+                auto vars = carl::variables(_constraint);
+                carl::Variable var = *vars.begin();
+                if( vars.size() == 1 && _constraint.maxDegree( var ) == 1 )
                 {
                     typename VariableBounds<T>::ConstraintBoundMap::iterator cbPair = mpConstraintBoundMap->find( _constraint );
                     if( cbPair != mpConstraintBoundMap->end() )
@@ -360,7 +361,7 @@ namespace smtrat
                 {
                     if( mNonBoundConstraints.insert( _constraint ).second )
                     {
-						for (auto sym: _constraint.variables())
+						for (auto sym: carl::variables(_constraint))
                         {
                             Variable<T>* variable = new Variable<T>();
                             if( !mpVariableMap->insert( std::pair< const carl::Variable, Variable<T>* >( sym, variable ) ).second )
@@ -371,7 +372,7 @@ namespace smtrat
             }
             else
             {
-				for (auto sym: _constraint.variables())
+				for (auto sym: carl::variables(_constraint))
                 {
                     Variable<T>* variable = new Variable<T>();
                     if( !mpVariableMap->insert( std::pair< const carl::Variable, Variable<T>* >( sym, variable ) ).second )
@@ -410,8 +411,9 @@ namespace smtrat
         {
             if( _constraint.relation() != carl::Relation::NEQ )
             {
-                carl::Variable var = *_constraint.variables().begin();
-                if( _constraint.variables().size() == 1 && _constraint.maxDegree( var ) == 1 )
+                auto vars = carl::variables(_constraint);
+                carl::Variable var = *vars.begin();
+                if( vars.size() == 1 && _constraint.maxDegree( var ) == 1 )
                 {
                     assert( mpConstraintBoundMap->find( _constraint ) != mpConstraintBoundMap->end() );
                     const Bound<T>& bound = *(*mpConstraintBoundMap)[_constraint];
@@ -438,8 +440,9 @@ namespace smtrat
         {
             if( _constraint.relation() != carl::Relation::NEQ )
             {
-                carl::Variable var = *_constraint.variables().begin();
-                if( _constraint.variables().size() == 1 && _constraint.maxDegree( var ) == 1 )
+                auto vars = carl::variables(_constraint);
+                carl::Variable var = *vars.begin();
+                if( vars.size() == 1 && _constraint.maxDegree( var ) == 1 )
                 {
                     assert( mpConstraintBoundMap->find( _constraint ) != mpConstraintBoundMap->end() );
                     const Bound<T>& bound = *(*mpConstraintBoundMap)[_constraint];

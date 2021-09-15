@@ -213,7 +213,7 @@ namespace smtrat
 					continue;
 				}
 						
-				bool constraintContainsCurrentVariable = constraint.variables().has(var);
+				bool constraintContainsCurrentVariable = constraint.hasVariable(var);
 				bool constraintContainsSubstitutedVariable = variableSubstitutions.find(var) != variableSubstitutions.end();
 
 				if (!isTrivial(constraint) && (constraintContainsCurrentVariable || constraintContainsSubstitutedVariable)) {
