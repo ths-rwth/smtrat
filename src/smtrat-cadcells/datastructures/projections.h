@@ -244,6 +244,10 @@ public:
         return m_pool(*result);
     }
 
+    std::size_t degree(PolyRef p) {
+        return m_pool(p).degree(main_var(p));
+    }
+
 };
 
 }

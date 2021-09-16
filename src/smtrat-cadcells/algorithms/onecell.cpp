@@ -60,7 +60,7 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
         cell_deriv->delineate_cell();
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << cell_deriv->cell() << " wrt " << cell_deriv->delin());
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Compute cell representation");
-        auto cell_repr = representation::cell<representation::DEFAULT_CELL>::compute(cell_deriv);
+        auto cell_repr = representation::cell<representation::CHAIN>::compute(cell_deriv);
         if (!cell_repr) {
             SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Could not compute representation");
             return std::nullopt;
