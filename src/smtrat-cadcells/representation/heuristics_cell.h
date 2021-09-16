@@ -28,6 +28,7 @@ datastructures::CellDescription compute_simplest_cell(datastructures::Projection
     }
 }
 
+template<typename T>
 void compute_section_all_equational(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response) {
     for (const auto& poly : der->delin().nullified()) {
         response.equational.insert(poly);
