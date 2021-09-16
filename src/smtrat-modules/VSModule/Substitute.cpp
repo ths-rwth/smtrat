@@ -135,7 +135,7 @@ namespace vs
         std::vector<DisjunctionOfConstraintConjunctions> toCombine;
         for( auto constraint = _toSimplify.begin(); constraint != _toSimplify.end(); ++constraint )
         {
-            auto factorization = carl::factorization(constraint);
+            auto& factorization = carl::factorization(*constraint);
             if( !carl::is_trivial(factorization) )
             {
                 switch( constraint->relation() )
@@ -164,7 +164,6 @@ namespace vs
                     {
                         toCombine.emplace_back();
                         toCombine.back().emplace_back();
-                        const smtrat::Factorization factorization = carl::factorization(constraint);
                         for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                             toCombine.back().back().push_back( smtrat::ConstraintT( factor->first, Relation::NEQ ) );
                         simplify( toCombine.back() );
