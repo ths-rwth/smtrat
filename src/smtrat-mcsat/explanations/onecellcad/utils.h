@@ -3,10 +3,13 @@
 #include <carl/core/polynomialfunctions/Derivative.h>
 #include <carl/core/polynomialfunctions/Factorization.h>
 #include <carl/core/polynomialfunctions/Resultant.h>
+#include <carl/core/polynomialfunctions/Definiteness.h>
+#include <carl/core/polynomialfunctions/Representation.h>
 
-#include <smtrat-cad/projectionoperator/utils.h>
-#include <smtrat-common/model.h>
 #include <smtrat-common/smtrat-common.h>
+#include <smtrat-common/model.h>
+#include <smtrat-cad/projectionoperator/utils.h>
+#include <smtrat-mcsat/utils/Bookkeeping.h>
 
 #include <algorithm>
 #include <optional>
