@@ -110,7 +110,7 @@ namespace smtrat
 	template<typename Settings>
 	FormulaT PFEModule<Settings>::removeFactors(const FormulaT& formula){
 		if(formula.getType() == carl::FormulaType::CONSTRAINT) {
-			const auto factors = carl::factorization(formula.constraint().lhs());
+			const auto factors = carl::factorization(formula.constraint());
 			SMTRAT_LOG_TRACE("smtrat.pfe", "Factorization of " << formula << " = " << factors);
 			std::vector<Factorization::const_iterator> Pq;
 			std::vector<Factorization::const_iterator> Pr;
@@ -182,7 +182,7 @@ namespace smtrat
 	
 	template<typename Settings>
 	FormulaT PFEModule<Settings>::removeSquaresFromStrict(const FormulaT& formula) {
-		const auto factors = carl::factorization(formula.constraint().lhs());
+		const auto factors = carl::factorization(formula.constraint());
 		std::vector<Factorization::const_iterator> Pq;
 		std::vector<Factorization::const_iterator> Pr;
 		
@@ -232,7 +232,7 @@ namespace smtrat
 	FormulaT PFEModule<Settings>::implyDefinitenessFromStrict(const FormulaT& formula) {
 		FormulasT res;
 		res.emplace_back(formula);
-		for (const auto f: carl::factorization(formula.constraint().lhs())) {
+		for (const auto f: carl::factorization(formula.constraint())) {
 			res.emplace_back(ConstraintT(f.first, carl::Relation::NEQ));
 		}
 		return FormulaT(carl::FormulaType::AND, std::move(res));
