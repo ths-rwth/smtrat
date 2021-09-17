@@ -164,9 +164,9 @@ class IndexedRootOrdering {
 
 public:
     /**
-     * Second is the root closer to the lower bound.
+     * First is the root closer to the lower bound.
      * 
-     * Relations need to be added in descending order of the second elements.
+     * Relations need to be added in descending order of the first elements.
      */
     void add_below(IndexedRoot first, IndexedRoot second) {
         return add(m_data_below, first, second);
@@ -187,6 +187,14 @@ public:
 
     const auto& above() const {
         return m_data_above;
+    }
+
+    bool poly_has_lower(PolyRef poly) const {
+        return std::find_if(below().begin(), below().end(), [&poly](const auto& rel) { return rel.second.poly == poly; }) != below().end();
+    }
+
+    bool poly_has_upper(PolyRef poly) const {
+        return std::find_if(above().begin(), above().end(), [&poly](const auto& rel) { return rel.second.poly == poly; }) != above().end();
     }
 };
 std::ostream& operator<<(std::ostream& os, const IndexedRootOrdering& data) {

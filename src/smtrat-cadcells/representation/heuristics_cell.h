@@ -62,7 +62,7 @@ struct cell<CellHeuristic::BIGGEST_CELL> {
                 while(true) {
                     for (const auto& ir : it->second) {
                         if (ir != *response.description.lower()) {
-                            response.ordering.add_below(ir, *response.description.lower());
+                            response.ordering.add_below(*response.description.lower(), ir);
                         } 
                     }
                     if (it != der->delin().roots().begin()) it--;
@@ -102,11 +102,11 @@ struct cell<CellHeuristic::CHAIN_EQ> {
                 while(true) {
                     auto simplest = simplest_bound(der->proj(), it->second);
                     if (simplest != *response.description.lower()) {
-                        response.ordering.add_below(simplest, *response.description.lower());
+                        response.ordering.add_below(*response.description.lower(), simplest);
                     }
                     for (const auto& ir : it->second) {
                         if (ir != simplest) {
-                            response.ordering.add_below(ir, simplest);
+                            response.ordering.add_below(simplest, ir);
                         } 
                     }
                     if (it != der->delin().roots().begin()) it--;
@@ -118,16 +118,161 @@ struct cell<CellHeuristic::CHAIN_EQ> {
                 while(it != der->delin().roots().end()) {
                     auto simplest = simplest_bound(der->proj(), it->second);
                     if (simplest != *response.description.upper()) {
-                        response.ordering.add_above(simplest, *response.description.upper());
+                        response.ordering.add_above(*response.description.upper(), simplest);
                     }
                     for (const auto& ir : it->second) {
                         if (ir != simplest) {
-                            response.ordering.add_above(ir, simplest);
+                            response.ordering.add_above(simplest, ir);
                         } 
                     }
                     it++;
                 }
             }
+        }
+        return response;
+    }
+};
+
+template<typename T>
+void compute_sector_barriers(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response) {
+    if (!der->cell().lower_unbounded()) {
+        auto it = der->cell().lower();
+        auto barrier = *response.description.lower();
+        while(true) {
+            auto old_barrier = barrier;
+            auto current_simplest = simplest_bound(der->proj(), it->second);
+            if (der->proj().degree(current_simplest.poly) < der->proj().degree(barrier.poly)) {
+                barrier = current_simplest;
+            }
+            assert(it != der->cell().lower() || barrier == *response.description.lower());
+            if (barrier != old_barrier) {
+                response.ordering.add_below(old_barrier, barrier);
+            }
+            for (const auto& ir : it->second) {
+                if (ir != barrier) {
+                    response.ordering.add_below(barrier, ir);
+                } 
+            }
+            if (it != der->delin().roots().begin()) it--;
+            else break;
+        }
+    }
+    if (!der->cell().upper_unbounded()) {
+        auto it = der->cell().upper();
+        auto barrier = *response.description.upper();
+        while(it != der->delin().roots().end()) {
+            auto old_barrier = barrier;
+            auto current_simplest = simplest_bound(der->proj(), it->second);
+            if (der->proj().degree(current_simplest.poly) < der->proj().degree(barrier.poly)) {
+                barrier = current_simplest;
+            }
+            assert(it != der->cell().upper() || barrier == *response.description.upper());
+            if (barrier != old_barrier) {
+                response.ordering.add_above(old_barrier, barrier);
+            }
+            for (const auto& ir : it->second) {
+                if (ir != barrier) {
+                    response.ordering.add_above(barrier, ir);
+                } 
+            }
+            it++;
+        }
+    }
+}
+
+template <>
+struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_EQ> {
+    template<typename T>
+    static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
+        datastructures::CellRepresentation<T> response(*der);
+        response.description = compute_simplest_cell(der->proj(), der->cell());
+
+        if (der->cell().is_section()) {
+            compute_section_all_equational(der, response);
+        } else { // sector
+            if (!der->delin().nullified().empty()) return std::nullopt;
+            compute_sector_barriers(der, response);
+        }
+        return response;
+    }
+};
+
+
+template <>
+struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS> {
+    template<typename T>
+    static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
+        datastructures::CellRepresentation<T> response(*der);
+        response.description = compute_simplest_cell(der->proj(), der->cell());
+
+        if (der->cell().is_section()) {
+            for (const auto& poly : der->delin().nullified()) {
+                response.equational.insert(poly);
+            }
+            for (const auto& poly : der->delin().nonzero()) {
+                response.equational.insert(poly);
+            }
+
+            {
+                auto it = der->cell().lower();
+                auto barrier = response.description.section_defining();
+                while(true) {
+                    auto old_barrier = barrier;
+                    for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
+                        if (response.equational.contains(ir->poly)) continue;
+                        if (der->proj().degree(ir->poly) < der->proj().degree(barrier.poly)) {
+                            barrier = *ir;
+                        }
+                    }
+                    assert(it != der->cell().lower() || barrier == response.description.section_defining());
+                    if (barrier != old_barrier) {
+                        response.ordering.add_below(old_barrier, barrier);
+                    }
+                    for (const auto& ir : it->second) {
+                        if (response.equational.contains(ir.poly)) continue;
+                        if (ir != barrier) {
+                            if (barrier == response.description.section_defining()) {
+                                response.equational.insert(ir.poly);
+                            } else {
+                                response.ordering.add_below(barrier, ir);
+                            }
+                        } 
+                    }
+                    if (it != der->delin().roots().begin()) it--;
+                    else break;
+                }
+            }
+            {
+                auto it = der->cell().upper();
+                auto barrier = response.description.section_defining();
+                while(it != der->delin().roots().end()) {
+                    auto old_barrier = barrier;
+                    for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
+                        if (response.equational.contains(ir->poly)) continue;
+                        if (der->proj().degree(ir->poly) < der->proj().degree(barrier.poly)) {
+                            barrier = *ir;
+                        }
+                    }
+                    assert(it != der->cell().upper() || barrier == response.description.section_defining());
+                    if (barrier != old_barrier) {
+                        response.ordering.add_above(old_barrier, barrier);
+                    }
+                    for (const auto& ir : it->second) {
+                        if (response.equational.contains(ir.poly)) continue;
+                        if (ir != barrier) {
+                            if (barrier == response.description.section_defining()) {
+                                response.equational.insert(ir.poly);
+                            } else {
+                                response.ordering.add_above(barrier, ir);
+                            }
+                        } 
+                    }
+                    it++;
+                }
+            }
+        } else { // sector
+            if (!der->delin().nullified().empty()) return std::nullopt;
+            compute_sector_barriers(der, response);
         }
         return response;
     }
