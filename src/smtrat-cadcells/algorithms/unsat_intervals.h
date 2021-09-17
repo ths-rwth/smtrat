@@ -96,7 +96,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
             RAN root = std::get<RAN>(c.value());
             auto p = c.definingPolynomial();
             auto poly = proj.polys()(p);
-            auto poly_roots = proj.real_roots(Assignment(), poly);
+            auto poly_roots = proj.real_roots(sample, poly); // TODO sample is irrelevant here, but needed for the correct level...
             size_t index = (size_t)std::distance(poly_roots.begin(), std::find(poly_roots.begin(), poly_roots.end(), root)) + 1;
             datastructures::IndexedRoot iroot(poly, index);
             return std::make_pair(iroot, root);
