@@ -8,7 +8,10 @@
 
 namespace smtrat::cadcells::algorithms {
 
+constexpr auto cell_heuristic = representation::BIGGEST_CELL;
+constexpr auto covering_heuristic = representation::DEFAULT_COVERING;
 constexpr auto op = operators::op::mccallum;
+
 using PropSet = operators::PropertiesSet<op>::type;
 
 std::optional<datastructures::SampledDerivationRef<PropSet>> get_covering(datastructures::Projections& proj, const FormulasT& constraints, const Assignment& sample) {
@@ -20,7 +23,7 @@ std::optional<datastructures::SampledDerivationRef<PropSet>> get_covering(datast
     }
 
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Computing covering representation");
-    auto covering_repr = representation::covering<representation::DEFAULT_COVERING>::compute(unsat_cells); // TODO distinguish between: not enough interval for covering and mccallum fails
+    auto covering_repr = representation::covering<covering_heuristic>::compute(unsat_cells); // TODO distinguish between: not enough interval for covering and mccallum fails
     if (!covering_repr) {
         return std::nullopt;
     }
@@ -60,7 +63,7 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
         cell_deriv->delineate_cell();
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << cell_deriv->cell() << " wrt " << cell_deriv->delin());
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Compute cell representation");
-        auto cell_repr = representation::cell<representation::LOWEST_DEGREE_BARRIERS>::compute(cell_deriv);
+        auto cell_repr = representation::cell<cell_heuristic>::compute(cell_deriv);
         if (!cell_repr) {
             SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Could not compute representation");
             return std::nullopt;
