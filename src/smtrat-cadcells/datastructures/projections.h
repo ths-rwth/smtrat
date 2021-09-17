@@ -92,6 +92,8 @@ public:
         m_pool.clear_levels(level);
         if (level <= m_poly_cache.size()) {
             m_poly_cache.erase(m_poly_cache.begin() + (level - 1), m_poly_cache.end());
+        }
+        if (level < m_assignment_cache.size()) {
             m_assignment_cache.erase(m_assignment_cache.begin() + level, m_assignment_cache.end());
         }
     }
