@@ -1,5 +1,7 @@
 namespace smtrat::cadcells::representation {
 
+    // TODO only consider one root per polynomial and side!
+
 datastructures::IndexedRoot simplest_bound(datastructures::Projections& proj, const std::vector<datastructures::IndexedRoot>& bounds) { // TODO later: improve
     assert(!bounds.empty());
     // return *bounds.begin();
