@@ -53,7 +53,7 @@ private:
 	carl::ran_assignment<Rational> mCurrentAssignment;
 
 	//Current Covering Information
-	std::vector<std::vector<datastructures::SampledDerivation<PropSet>>> mCoveringInformation;
+	std::vector<datastructures::CoveringRepresentation<PropSet>> mCoveringInformation;
 
 public:
 	//Init with empty variable ordering
@@ -72,6 +72,7 @@ public:
 		//Init Constraint sets
 		mKnownConstraints.resize(varOrdering.size());
 		mUnknownConstraints.resize(varOrdering.size());
+		mCoveringInformation.resize(varOrdering.size());
 	}
 
 	size_t dimension() {
@@ -108,42 +109,74 @@ public:
 	//Delete all stored data with level higher or equal
 	void resetStoredData(std::size_t level) {
 		for (size_t i = level; i < dimension(); i++) {
-			mCoveringInformation[i].clear();
+			//mCoveringInformation.erase(i); TODO
 			mCurrentAssignment.erase(mVariableOrdering[i]);
 		}
 	}
 
 	Answer getUnsatCover(const std::size_t level) {
 		SMTRAT_LOG_DEBUG("smtrat.covering", " getUnsatCover for level: " << level << " with current assignment: " << mCurrentAssignment);
-
 		std::vector<datastructures::SampledDerivationRef<PropSet>> unsat_cells;
-
 		for (const ConstraintT& constraint : mUnknownConstraints[level]) {
 			auto intervals = algorithms::get_unsat_intervals<op>(constraint, *mProjections, mCurrentAssignment);
+			for (const auto& interval : intervals) {
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Found UNSAT Interval: " << interval->cell() << "  from constraint: " << constraint);
+			}
 			unsat_cells.insert(unsat_cells.end(), intervals.begin(), intervals.end());
 		}
 
-		for (const auto& cell : unsat_cells) {
-			SMTRAT_LOG_DEBUG("smtrat.covering", "Found Unsat cells: " << cell->cell());
-		}
+		//Add stored cells to unsat_cells to compute covering of all known cells
+		//for (const auto& cell : mCoveringInformation[level].sampled_derivations()) {
+		//	//todo reference_wrapper to shared_pointer?
+		//	unsat_cells.push_back(std::make_shared<datastructures::SampledDerivation<PropSet>>(cell.get()));
+		//}
 
-		//Todo: Sample outside of covering
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Found unsat cells: " << unsat_cells);
+
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Computing covering representation");
 		auto covering_repr = representation::covering<representation::DEFAULT_COVERING>::compute(unsat_cells);
 		if (!covering_repr) {
+			SMTRAT_LOG_DEBUG("smtrat.covering", "McCallum failed -> Aborting");
 			assert(false); //McCallum failed -> What do then?
 		}
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Got representation " << *covering_repr);
 
-		RAN sample ; 
+		//Store the new Covering
+		mCoveringInformation[level].cells = std::move(covering_repr.value().cells);
 
-		while(covering_repr->sample_outside(sample)){
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Got representation " << mCoveringInformation[level]);
+
+		RAN sample;
+		while (mCoveringInformation[level].sample_outside(sample)) {
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Found sample outside " << sample);
-			assert(false);
+			mCurrentAssignment[mVariableOrdering[level]] = sample;
+			if (level == mVariableOrdering.size()) {
+				//SAT
+				return Answer::SAT;
+			}
+
+			//Make iterative instead of recursion?
+			Answer nextLevel = getUnsatCover(level + 1);
+
+			if (nextLevel == Answer::SAT) {
+				//Push down SAT
+				return nextLevel;
+			} else if (nextLevel == Answer::UNSAT) {
+				//NextLevel is Unsat -> Generate Unsat-Cell
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Got covering for the next level: " << mCoveringInformation[level + 1]);
+				operators::project_covering_properties(mCoveringInformation[level + 1]);
+				//operators::delineate_properties<op>(mCoveringInformation[level + 1].delineated()); //construct characterization
+				//auto cell = mCoveringInformation[level + 1]->delineate_cell();					   //interval from characterization
+				//SMTRAT_LOG_DEBUG("smtrat.covering", "Found UnsatCell: " << cell);
+				assert(false);
+
+			} else {
+				assert(false);
+				return Answer::UNKNOWN;
+			}
 		}
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Cells cover the numberline ");
-		return Answer::UNKNOWN;
+		return Answer::UNSAT;
 	}
 
 	~Backend() {
